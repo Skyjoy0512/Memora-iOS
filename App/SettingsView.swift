@@ -90,6 +90,14 @@ struct SettingsView: View {
           Text("通常は変更不要です。端末やOSに合う方法をMemoraが選びます。")
         }
 
+        Section("デバイス") {
+          NavigationLink {
+            ExternalRecorderSettingsView()
+          } label: {
+            LabeledContent("外部レコーダー", value: model.omiPairingManager.state.shortLabel)
+          }
+        }
+
         Section("プライバシーと保存") {
           NavigationLink {
             PrivacyStorageView()

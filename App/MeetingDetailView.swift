@@ -49,7 +49,14 @@ struct MeetingDetailView: View {
           model.isDetailComposerVisible = true
         }
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+          ToolbarItem(placement: .topBarLeading) {
+            Button("前に戻る", systemImage: "chevron.left") {
+              dismiss()
+            }
+            .labelStyle(.iconOnly)
+          }
           ToolbarItem(placement: .principal) {
             Text(meeting.title)
               .font(.headline)
@@ -166,10 +173,7 @@ struct MeetingDetailView: View {
 
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
-    VStack(alignment: .center, spacing: 12) {
-      Label("サマリー", systemImage: "sparkles")
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
+    VStack(alignment: .center, spacing: 0) {
       Text(meeting.summary)
         .font(.title3.weight(.medium))
         .lineSpacing(6)

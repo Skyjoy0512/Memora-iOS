@@ -50,6 +50,7 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 
 - アカウントとSubscription
 - 文字起こし・AIの高度な設定
+- Omi・PLAUDなど外部レコーダーとの接続と音声取り込み
 - ローカル保存とプライバシー
 - ヘルプとデータ管理
 
@@ -161,6 +162,7 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 - 録音継続: 画面を閉じても継続し、会議画面のストリップとLive Activityから復帰
 - 処理: 内容を即時作成し、段階表示。終わった成果物から開放
 - インポート: Files picker → 進捗 → 会議詳細 → 自動処理
+- 外部レコーダー: 設定の「デバイス」から接続し、利用可能な経路だけを明示して音声を取り込む
 - タスク完了: スプリングアニメーションで状態変更、元会議への導線を維持
 - AI composer: ホームではGlobal、詳細ではFileへ質問範囲を自動で合わせ、利用者には切り替えを意識させない
 - AI: 質問送信中は状態に応じて呼吸するThinking Orbで根拠探索中を表現し、回答後にSourceを表示
@@ -235,4 +237,4 @@ Widgetはアプリを開いた時とタイムライン更新時に更新する�
 
 ## Implementation boundary
 
-このBitrigプロジェクトは、設計を操作検証できるSwiftUIリファレンス実装である。録音・ファイルコピー・Live Activityは実動し、文字起こし・音声入力・AI回答・オンライン会議キャプチャは処理状態を含むプロトタイプ体験として再現する。React Native + Expo本体へ移植する場合も、NavigationStack相当、bottom navigation、file picker、native recording bridge、ActivityKit bridgeへ分割可能な構成にしている。
+このBitrigプロジェクトは、設計を操作検証できるSwiftUIリファレンス実装である。録音・ファイルコピー・Live Activityに加え、Omiは公開BLEサービスを使った検出と接続、PLAUDはFiles経由の音声取り込みが実動する。PLAUD Embeddedによる直接接続は、開発者資格情報と実機専用SDKを組み込む段階まで「準備中」として区別する。文字起こし・音声入力・AI回答・オンライン会議キャプチャは処理状態を含むプロトタイプ体験として再現する。React Native + Expo本体へ移植する場合も、NavigationStack相当、bottom navigation、file picker、native recording bridge、ActivityKit bridgeへ分割可能な構成にしている。

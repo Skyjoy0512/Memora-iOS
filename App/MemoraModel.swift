@@ -23,6 +23,7 @@ final class MemoraModel {
   var account: MemoraAccount?
   var isAuthPresented = false
   var isPaywallPresented = false
+  var omiPairingManager = OmiPairingManager()
   /// Meeting details temporarily hide their contextual AI field once people
   /// move into the document.
   var isDetailComposerVisible = true

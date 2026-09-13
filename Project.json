@@ -36,6 +36,7 @@
             }
           ],
           "CFBundleVersion": "1",
+          "NSBluetoothAlwaysUsageDescription": "近くのOmiレコーダーを見つけて、会話の音声をMemoraへ取り込むためにBluetoothを使用します。",
           "NSMicrophoneUsageDescription": "会話を録音して、文字起こしと議事録を作成するためにマイクを使用します。",
           "NSSupportsLiveActivities": true,
           "UIBackgroundModes": [
