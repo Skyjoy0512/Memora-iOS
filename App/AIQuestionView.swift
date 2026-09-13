@@ -57,7 +57,7 @@ struct AIQuestionView: View {
             VStack(alignment: .leading, spacing: 18) {
               Label("回答", systemImage: "sparkles")
                 .font(.headline)
-                .foregroundStyle(.indigo)
+                .foregroundStyle(.primary)
 
               Text(answer)
                 .font(.body)
@@ -75,7 +75,7 @@ struct AIQuestionView: View {
                   } label: {
                     HStack(spacing: 10) {
                       Image(systemName: "quote.bubble")
-                        .foregroundStyle(.indigo)
+                        .foregroundStyle(.primary)
                       VStack(alignment: .leading, spacing: 2) {
                         Text(meeting.title)
                           .font(.subheadline.weight(.semibold))
@@ -90,7 +90,7 @@ struct AIQuestionView: View {
                         .foregroundStyle(.secondary)
                     }
                     .padding(12)
-                    .background(.indigo.opacity(0.07), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                   }
                   .buttonStyle(.plain)
                   .accessibilityHint("根拠になった文字起こしを開きます")
@@ -153,8 +153,8 @@ struct AIQuestionView: View {
       .labelStyle(.iconOnly)
       .font(.headline)
       .frame(width: 44, height: 44)
-      .foregroundStyle(.white)
-      .background(question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.indigo), in: Circle())
+      .foregroundStyle(Color(uiColor: .systemBackground))
+      .background(question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary), in: Circle())
       .disabled(question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAnswering)
     }
     .padding(.horizontal, 14)
@@ -194,7 +194,7 @@ struct AIQuestionView: View {
     case .file(let id):
       return model.meeting(id: id)?.title ?? "この会議"
     case .space(let id):
-      return model.space(id: id)?.name ?? "このスペース"
+      return model.space(id: id)?.name ?? "このプロジェクト"
     case .global:
       return "すべての会話"
     }

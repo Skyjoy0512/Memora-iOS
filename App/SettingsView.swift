@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  var showsCloseButton = true
   @AppStorage("hasSeenMemoraWelcome") private var hasSeenWelcome = true
   @State private var isPaywallPresented = false
   @State private var isDeleteConfirmationPresented = false
@@ -15,7 +16,7 @@ struct SettingsView: View {
             LabeledContent("状態", value: "このiPhoneのみ")
           } icon: {
             Image(systemName: "person")
-              .foregroundStyle(.indigo)
+              .foregroundStyle(.primary)
           }
 
           Button("Appleでサインイン", systemImage: "apple.logo") {}
@@ -90,7 +91,9 @@ struct SettingsView: View {
 
           Button("初回体験をもう一度見る", systemImage: "arrow.counterclockwise") {
             hasSeenWelcome = false
-            dismiss()
+            if showsCloseButton {
+              dismiss()
+            }
           }
 
           Button("サンプルを復元", systemImage: "arrow.clockwise") {
@@ -104,8 +107,10 @@ struct SettingsView: View {
       }
       .navigationTitle("設定")
       .toolbar {
-        ToolbarItem(placement: .confirmationAction) {
-          Button("完了") { dismiss() }
+        if showsCloseButton {
+          ToolbarItem(placement: .confirmationAction) {
+            Button("完了") { dismiss() }
+          }
         }
       }
       .sheet(isPresented: $isPaywallPresented) {
@@ -114,7 +119,9 @@ struct SettingsView: View {
       .confirmationDialog("サンプルを空にしますか？", isPresented: $isDeleteConfirmationPresented, titleVisibility: .visible) {
         Button("空にする", role: .destructive) {
           model.removeAllContent()
-          dismiss()
+          if showsCloseButton {
+            dismiss()
+          }
         }
         Button("キャンセル", role: .cancel) {}
       } message: {
@@ -301,7 +308,7 @@ private struct PrivacyStorageView: View {
           }
         } icon: {
           Image(systemName: "iphone")
-            .foregroundStyle(.indigo)
+            .foregroundStyle(.primary)
         }
       }
 

@@ -11,7 +11,7 @@ struct ImportProgressOverlay: View {
       VStack(spacing: 16) {
         ProgressView(value: progress)
           .progressViewStyle(.linear)
-          .tint(.indigo)
+          .tint(.primary)
 
         VStack(spacing: 4) {
           Text("音声を取り込んでいます")

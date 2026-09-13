@@ -14,7 +14,7 @@ struct TaskRow: View {
       }
       .labelStyle(.iconOnly)
       .font(.title3)
-      .foregroundStyle(task.isCompleted ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+      .foregroundStyle(task.isCompleted ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
 
       VStack(alignment: .leading, spacing: 6) {
         Text(task.title)
@@ -38,7 +38,7 @@ struct TaskRow: View {
         if showsSource, let meeting = model.meeting(id: task.meetingID) {
           Label(meeting.title, systemImage: "quote.bubble")
             .font(.caption)
-            .foregroundStyle(.indigo)
+            .foregroundStyle(.primary)
             .lineLimit(1)
         }
       }

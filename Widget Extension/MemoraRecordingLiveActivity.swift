@@ -6,8 +6,8 @@ struct MemoraRecordingLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: MemoraRecordingAttributes.self) { context in
       MemoraLiveActivityView(context: context)
-        .activityBackgroundTint(Color.indigo.opacity(0.18))
-        .activitySystemActionForegroundColor(.indigo)
+        .activityBackgroundTint(Color.primary.opacity(0.12))
+        .activitySystemActionForegroundColor(.primary)
         .widgetURL(URL(string: "memora://recording"))
     } dynamicIsland: { context in
       DynamicIsland {
@@ -41,7 +41,7 @@ struct MemoraRecordingLiveActivity: Widget {
         Image(systemName: "waveform")
           .foregroundStyle(.red)
       }
-      .keylineTint(.indigo)
+      .keylineTint(.primary)
       .widgetURL(URL(string: "memora://recording"))
     }
     .supplementalActivityFamilies([.small, .medium])

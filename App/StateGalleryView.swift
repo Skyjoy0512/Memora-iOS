@@ -23,14 +23,14 @@ struct StateGalleryView: View {
           symbol: "arrow.down.doc",
           title: "音声を読み込み中",
           detail: "62% · 完了後に文字起こしを開始",
-          tint: .indigo,
+          tint: .primary,
           progress: 0.62
         )
         StateExampleRow(
           symbol: "text.bubble",
           title: "文字起こし中",
           detail: "完成した発言から利用可能",
-          tint: .indigo,
+          tint: .primary,
           progress: 0.38
         )
         StateExampleRow(
@@ -61,19 +61,19 @@ struct StateGalleryView: View {
           symbol: "waveform",
           title: "会議が0件",
           detail: "録音または音声インポートへ案内",
-          tint: .indigo
+          tint: .primary
         )
         StateExampleRow(
           symbol: "checkmark.square",
           title: "タスクが0件",
           detail: "会話から見つかると自動で集約",
-          tint: .green
+          tint: .primary
         )
         StateExampleRow(
           symbol: "sparkles",
           title: "AI履歴が0件",
           detail: "質問例から最初の検索へ案内",
-          tint: .indigo
+          tint: .primary
         )
       }
     }

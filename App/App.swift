@@ -8,7 +8,7 @@ struct MemoraApp: App {
     WindowGroup {
       ContentView()
         .environment(model)
-        .tint(.indigo)
+        .tint(.accentColor)
         .onOpenURL { url in
           Task {
             await model.handle(url)

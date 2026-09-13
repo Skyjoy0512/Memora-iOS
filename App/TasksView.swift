@@ -3,9 +3,10 @@ import SwiftUI
 struct TasksView: View {
   @Environment(MemoraModel.self) private var model
   @State private var showsCompleted = false
+  @State private var path: [UUID] = []
 
   var body: some View {
-    NavigationStack {
+    NavigationStack(path: $path) {
       VStack(spacing: 0) {
         Picker("表示するタスク", selection: $showsCompleted) {
           Text("未完了").tag(false)
@@ -27,15 +28,17 @@ struct TasksView: View {
             ForEach(visibleTasks) { task in
               HStack(alignment: .top, spacing: 8) {
                 TaskRow(task: task, showsSource: true)
-                NavigationLink {
-                  MeetingDetailView(meetingID: task.meetingID)
-                } label: {
-                  Image(systemName: "chevron.right")
-                    .foregroundStyle(.tertiary)
-                    .frame(width: 32, height: 44)
+
+                // A Button rather than a NavigationLink so List does not add a
+                // second disclosure indicator next to this one.
+                Button("元の会議を開く", systemImage: "chevron.right") {
+                  path.append(task.meetingID)
                 }
+                .labelStyle(.iconOnly)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+                .frame(width: 32, height: 44)
                 .buttonStyle(.plain)
-                .accessibilityLabel("元の会議を開く")
               }
               .padding(.vertical, 5)
             }
@@ -44,12 +47,8 @@ struct TasksView: View {
         }
       }
       .navigationTitle("タスク")
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("設定", systemImage: "gearshape") {
-            model.isSettingsPresented = true
-          }
-        }
+      .navigationDestination(for: UUID.self) { meetingID in
+        MeetingDetailView(meetingID: meetingID)
       }
     }
   }

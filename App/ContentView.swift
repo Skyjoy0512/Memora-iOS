@@ -26,9 +26,6 @@ struct ContentView: View {
     .fullScreenCover(isPresented: $model.isCapturePresented) {
       CaptureSessionView()
     }
-    .sheet(isPresented: $model.isSettingsPresented) {
-      SettingsView()
-    }
     .overlay {
       if model.isImporting {
         ImportProgressOverlay(progress: model.importProgress)

@@ -8,9 +8,7 @@ struct LibraryView: View {
 
     NavigationStack(path: $model.libraryPath) {
       ScrollView {
-        LazyVStack(alignment: .leading, spacing: 28) {
-          CaptureHeroView()
-
+        LazyVStack(alignment: .leading, spacing: 22) {
           if model.isRecording {
             ActiveRecordingStrip()
           }
@@ -19,12 +17,10 @@ struct LibraryView: View {
             ContentUnavailableView {
               Label("まだ会話がありません", systemImage: "waveform")
             } description: {
-              Text("録音するか音声を読み込むと、ここに要点とタスクが並びます。")
+              Text("右下の＋から録音するか、音声を読み込んでください。")
             } actions: {
-              Button("録音を始める", systemImage: "record.circle") {
-                Task {
-                  await model.startCapture()
-                }
+              Button("新しく追加", systemImage: "plus") {
+                model.isCaptureSourcePresented = true
               }
               .buttonStyle(.borderedProminent)
             }
@@ -32,7 +28,7 @@ struct LibraryView: View {
             .padding(.vertical, 32)
           } else {
             if !model.spaces.isEmpty {
-              spacesSection
+              projectsSection
             }
             recentSection
           }
@@ -42,14 +38,7 @@ struct LibraryView: View {
         .padding(.bottom, 32)
       }
       .background(Color(uiColor: .systemBackground))
-      .navigationTitle("Memora")
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("設定", systemImage: "gearshape") {
-            model.isSettingsPresented = true
-          }
-        }
-      }
+      .navigationTitle("会議")
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id):
@@ -69,10 +58,10 @@ struct LibraryView: View {
     }
   }
 
-  private var spacesSection: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("スペース")
-        .font(.title2.bold())
+  private var projectsSection: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Text("プロジェクト")
+        .font(.headline)
 
       ScrollView(.horizontal) {
         HStack(spacing: 10) {
@@ -80,9 +69,9 @@ struct LibraryView: View {
             NavigationLink(value: LibraryRoute.space(space.id)) {
               HStack(spacing: 10) {
                 Image(systemName: space.symbol)
-                  .foregroundStyle(.indigo)
-                  .frame(width: 34, height: 34)
-                  .background(.indigo.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                  .foregroundStyle(.primary)
+                  .frame(width: 30, height: 30)
+                  .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
                   Text(space.name)
@@ -93,9 +82,9 @@ struct LibraryView: View {
                     .foregroundStyle(.secondary)
                 }
               }
-              .padding(.vertical, 10)
-              .padding(.horizontal, 12)
-              .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+              .padding(.vertical, 8)
+              .padding(.horizontal, 10)
+              .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
             .buttonStyle(.plain)
           }
@@ -108,7 +97,7 @@ struct LibraryView: View {
   private var recentSection: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack {
-        Text("最近の会話")
+        Text("最近の会議")
           .font(.title2.bold())
         Spacer()
         NavigationLink("すべて表示", value: LibraryRoute.allMeetings)
@@ -116,13 +105,13 @@ struct LibraryView: View {
       }
 
       LazyVStack(spacing: 0) {
-        ForEach(model.meetings.prefix(4)) { meeting in
+        ForEach(model.meetings) { meeting in
           NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
             MeetingRow(meeting: meeting)
           }
           .buttonStyle(.plain)
 
-          if meeting.id != model.meetings.prefix(4).last?.id {
+          if meeting.id != model.meetings.last?.id {
             Divider()
               .padding(.leading, 52)
           }

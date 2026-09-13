@@ -14,19 +14,12 @@ struct SearchView: View {
           resultsView
         }
       }
-      .navigationTitle("探す")
+      .navigationTitle("Ask AI")
       .searchable(
         text: $query,
         placement: .navigationBarDrawer(displayMode: .always),
         prompt: "会議、発言、決定、タスク"
       )
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("設定", systemImage: "gearshape") {
-            model.isSettingsPresented = true
-          }
-        }
-      }
       .sheet(isPresented: $isAskingAI) {
         AIQuestionView(scope: .global, suggestedQuestion: query)
       }
@@ -42,7 +35,7 @@ struct SearchView: View {
           VStack(alignment: .leading, spacing: 14) {
             Image(systemName: "sparkles")
               .font(.title2.weight(.semibold))
-              .foregroundStyle(.indigo)
+              .foregroundStyle(.primary)
             Text("覚えていない言葉でも、\n意味から探せます")
               .font(.title2.bold())
               .foregroundStyle(.primary)
@@ -51,11 +44,11 @@ struct SearchView: View {
               .foregroundStyle(.secondary)
             Label("Memoraに聞く", systemImage: "arrow.right")
               .font(.headline)
-              .foregroundStyle(.indigo)
+              .foregroundStyle(.primary)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(20)
-          .background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+          .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .buttonStyle(.plain)
 
@@ -105,7 +98,7 @@ struct SearchView: View {
         } label: {
           Label("「\(query)」をMemoraに聞く", systemImage: "sparkles")
             .font(.headline)
-            .foregroundStyle(.indigo)
+            .foregroundStyle(.primary)
             .lineLimit(2)
         }
       }

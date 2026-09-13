@@ -19,27 +19,26 @@ Memoraは、音声を保管するアプリではなく、会話を「あとか�
 
 ## C. Information architecture
 
-トップレベルは3領域に絞る。
+トップレベルは4領域と、どこからでも届く独立した追加アクションに絞る。
 
 ### 会議
 
-- 最優先の録音開始
-- 音声インポート
 - 最近の会話
 - すべての会話
-- スペース
+- プロジェクト
+- 会議文脈を保ったQuick AI / AI Chat
 
-Projectsは「管理対象」ではなく、関連する会話を束ねる軽量な**スペース**として会議ライブラリへ統合する。フォルダ分けを先に要求せず、必要になったユーザーだけが利用する。
+Projectsは「管理対象」ではなく、関連する会話を束ねる軽量な**プロジェクト**として会議ライブラリへ統合する。フォルダ分けを先に要求せず、必要になったユーザーだけが利用する。
 
-### 探す
+### Ask AI
 
 - タイトル・発言・決定・タスクを横断する通常検索
 - 自然文によるAI検索
-- File / Space / Globalの検索範囲
+- File / Project / Globalの検索範囲
 - 回答の根拠となった会議とタイムスタンプ
 - 質問履歴
 
-AIは独立したチャットアプリにせず、「探す」の拡張と会議詳細の文脈アクションとして配置する。
+AIは独立したチャットアプリにせず、Ask AIによる横断検索と、会議一覧・詳細の下部composerによる文脈アクションとして配置する。
 
 ### タスク
 
@@ -47,7 +46,14 @@ AIは独立したチャットアプリにせず、「探す」の拡張と会議
 - 担当者、期限、元の会議
 - 完了済みの確認
 
-設定は利用頻度が低いためタブにせず、各トップレベル画面のツールバーから開く。
+### 設定
+
+- アカウントとSubscription
+- 文字起こし・AIの高度な設定
+- ローカル保存とプライバシー
+- ヘルプとデータ管理
+
+右端にはタブと視覚的に分離した「＋」を置く。押すと録音開始・音声インポート・オンライン会議キャプチャを選択できる。
 
 ## D. Main user flow
 
@@ -58,15 +64,15 @@ AIは独立したチャットアプリにせず、「探す」の拡張と会議
 5. 停止直後に音声をFileとして保存し、一覧と会議詳細へ即反映する
 6. 「音声を保存 → 文字にする → 要点と行動を整理」の進行を人間向けの言葉で表示する
 7. 完成済みの文字起こしは、AI整理が未完了でも先に利用可能にする
-8. 完了後は、概要 → 決定 → 次の行動 → 未決事項 → 重要点の順に読む
-9. 必要な時だけ全文文字起こし、音声、AI質問へ進む
+8. 完了後は、サマリー → 決定 → 次の行動 → 未決事項 → 重要点の順に読む
+9. 要約・文字起こし・ノートを同じ詳細画面で切り替え、必要なら下部からAIへ質問する
 10. タスクは元の会議と結び付いたまま、横断タスク画面にも集約する
 
 ## E. Navigation
 
-標準のTabViewで「会議／探す／タスク」を常に切り替えられる。タブは場所の移動にだけ使い、録音開始をタブ項目や中央FABにはしない。録音は会議画面の最初の内容として、片手で届きやすい大きなアクション面に置く。
+標準のTabViewを状態管理に使いながら、下部の明確なナビゲーションで「会議／Ask AI／タスク／設定」を常に切り替える。タブは場所の移動だけに使い、追加操作は右端の独立した円形FABへ分離する。FABはどの領域でも同じ場所にあり、録音開始・音声インポート・オンライン会議キャプチャの起点になる。
 
-会議詳細はNavigationStackで深掘りし、録音セッションとAI質問は一時的で自己完結するためモーダル表示にする。これは、主要領域を少なく保ち、タブをアクションに使わないという[AppleのiOS設計](https://developer.apple.com/design/human-interface-guidelines/designing-for-ios)と[Tab barガイダンス](https://developer.apple.com/design/human-interface-guidelines/tab-bars)にも沿う。
+会議詳細はNavigationStackで深掘りし、録音セッション・追加方法の選択・AI回答は一時的で自己完結するためモーダル表示にする。会議一覧と詳細では、ナビゲーションの直上へQuick AI / AI Chat composerを固定し、スコープをGlobal / Fileへ自動で切り替える。
 
 ## F. Screen list
 
@@ -81,35 +87,34 @@ AIは独立したチャットアプリにせず、「探す」の拡張と会議
 7. Partial-success meeting detail
 8. Full transcript
 9. Speaker correction
-10. Audio player
-11. Contextual AI question
-12. AI answer with sources
+10. Contextual Quick AI / AI Chat composer
+11. AI answer with sources
 
 ### Retrieval and organization
 
-13. All meetings
-14. Unified search results
-15. Space detail
-16. Cross-meeting tasks
+12. All meetings
+13. Unified search results
+14. Project detail
+15. Cross-meeting tasks
 
 ### Account and business
 
-17. Settings
-18. Speech recognition settings
-19. AI settings / API key entry
-20. Privacy and storage
-21. Subscription / Paywall
+16. Settings
+17. Speech recognition settings
+18. AI settings / API key entry
+19. Privacy and storage
+20. Subscription / Paywall
 
 ### State coverage
 
-22. Empty meetings
-23. Empty tasks
-24. Empty AI history
-25. Microphone denied / recording error
-26. Import error
-27. STT error and retry
-28. AI-only failure with transcript preserved
-29. Missing API key / network error
+21. Empty meetings
+22. Empty tasks
+23. Empty AI history
+24. Microphone denied / recording error
+25. Import error
+26. STT error and retry
+27. AI-only failure with transcript preserved
+28. Missing API key / network error
 
 ## G. High-fidelity UI
 
@@ -119,19 +124,19 @@ AIは独立したチャットアプリにせず、「探す」の拡張と会議
 
 ### Meetings
 
-大きなインディゴのCapture surfaceを一つだけ置き、その下は軽いスペースピルと罫線ベースの会議一覧にする。カードを反復せず、タイトル・日時・長さ・処理状態を一目で走査できる。
+ヒーローカードは置かず、画面を開いた直後からプロジェクトと罫線ベースの会議一覧を表示する。整理済みの行にはサマリーを最大3行表示し、タイトル・内容・日時・長さ・処理状態を一覧だけで走査できる。追加操作は右下の＋に集約する。
 
 ### Meeting detail
 
-音声・文字起こし・要約・AIを同列タブに分けない。最初のスクロール面は「一目でわかる」「決まったこと」「次にすること」「まだ決まっていないこと」「重要なポイント」の読み順とし、全文と音声は二次レイヤーに置く。
+詳細は「要約／文字起こし／ノート」の3領域をセグメントで切り替える。要約では「サマリー」「決まったこと」「次にすること」「まだ決まっていないこと」「重要なポイント」の読み順を保つ。音声再生は今回の範囲から外し、情報の理解と活用に集中する。
 
 ### Transcript
 
-タイムスタンプを再生位置へのリンクとして扱い、再生中の発言を背景で示す。確度の低い話者には色だけでなく「？」を併記し、タップで修正できる。
+各発言にタイムスタンプを残す。確度の低い話者には色だけでなく「？」を併記し、タップで修正できる。将来音声再生を戻す時に、タイムスタンプを音声位置へ結び付けられる情報構造を維持する。
 
 ### Ask
 
-質問はFile / Space / Globalの範囲を明示する。回答直下に根拠会議と時刻を表示し、文字起こしへ移動できる。
+質問はFile / Project / Globalの範囲を明示する。下部composerではQuick AI / AI Chatとモデルを選び、マイクによる入力も開始できる。回答直下に根拠会議と時刻を表示し、文字起こしへ移動できる。
 
 ## H. Interaction
 
@@ -141,7 +146,7 @@ AIは独立したチャットアプリにせず、「探す」の拡張と会議
 - 処理: 内容を即時作成し、段階表示。終わった成果物から開放
 - インポート: Files picker → 進捗 → 会議詳細 → 自動処理
 - タスク完了: スプリングアニメーションで状態変更、元会議への導線を維持
-- 音声: Play/Pause、連続シーク、現在時刻、総時間。全文側では発言追従
+- AI composer: 会議一覧ではGlobal、詳細ではFileへ自動でスコープを合わせ、モード・モデル・音声入力をその場で選択
 - AI: 質問送信中は根拠探索中と表現し、回答後にSourceを表示
 - Reduce MotionやDynamic Typeを壊さない標準コンテナとテキストスタイルを優先
 
@@ -169,21 +174,22 @@ AIは独立したチャットアプリにせず、「探す」の拡張と会議
 ### Color
 
 - Canvas / grouped surfaces: iOS semantic system colors
-- Primary action / intelligence: system Indigo
+- Primary action / intelligence: semantic Black（Dark ModeではWhiteへ反転）
 - Recording / critical interruption: system Red
-- Decision / complete: system Green
 - Ambiguity / recoverable warning: system Orange
+- 完了・決定・AIは色分けせず、黒・白・グレーとsymbolで意味を伝える
 - 状態は色だけに依存せず、必ずsymbolとtextを併記
 
 ### Components
 
-- Capture surface
+- Independent capture FAB and source picker
+- Quick AI / AI Chat composer
+- Compact project chip
 - Meeting row
 - Processing steps
 - Partial-success banner
 - Insight section
 - Provenance-aware task row
-- Audio player bar
 - Source link
 - ContentUnavailableView-based empty state
 - Form-based settings
@@ -202,4 +208,4 @@ Widgetはアプリを開いた時とタイムライン更新時に更新する�
 
 ## Implementation boundary
 
-このBitrigプロジェクトは、設計を操作検証できるSwiftUIリファレンス実装である。録音・ファイルコピー・AVAudioEngine再生・Live Activityは実動し、文字起こしとAI回答は処理状態を含むデモデータで再現する。React Native + Expo本体へ移植する場合も、NavigationStack相当、native tab bar、file picker、native recording bridge、ActivityKit bridgeへ分割可能な構成にしている。
+このBitrigプロジェクトは、設計を操作検証できるSwiftUIリファレンス実装である。録音・ファイルコピー・Live Activityは実動し、文字起こし・音声入力・AI回答・オンライン会議キャプチャは処理状態を含むプロトタイプ体験として再現する。React Native + Expo本体へ移植する場合も、NavigationStack相当、bottom navigation、file picker、native recording bridge、ActivityKit bridgeへ分割可能な構成にしている。

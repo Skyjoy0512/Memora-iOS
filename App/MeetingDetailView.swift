@@ -4,7 +4,8 @@ struct MeetingDetailView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var meetingID: UUID
-  @State private var isAskingAI = false
+  @State private var selectedSection = MeetingDetailSection.summary
+  @State private var noteText = ""
   @State private var isRenaming = false
   @State private var isDeleting = false
 
@@ -15,32 +16,39 @@ struct MeetingDetailView: View {
           VStack(alignment: .leading, spacing: 30) {
             meetingHeader(meeting)
 
-            switch meeting.status {
-            case .importing, .transcribing, .organizing:
-              ProcessingOverview(meeting: meeting)
-            case .failed(let message):
-              FailureOverview(message: message) {
-                model.retryProcessing(meeting.id)
+            Picker("表示内容", selection: $selectedSection) {
+              ForEach(MeetingDetailSection.allCases) { section in
+                Text(section.label).tag(section)
               }
-            case .partialFailure(let message):
-              PartialFailureBanner(message: message) {
-                model.retryProcessing(meeting.id)
-              }
-              insightContent(meeting)
-            case .ready:
-              insightContent(meeting)
             }
+            .pickerStyle(.segmented)
 
-            transcriptPreview(meeting)
-            attachmentsRow
-            askAIButton
+            switch selectedSection {
+            case .summary:
+              switch meeting.status {
+              case .importing, .transcribing, .organizing:
+                ProcessingOverview(meeting: meeting)
+              case .failed(let message):
+                FailureOverview(message: message) {
+                  model.retryProcessing(meeting.id)
+                }
+              case .partialFailure(let message):
+                PartialFailureBanner(message: message) {
+                  model.retryProcessing(meeting.id)
+                }
+                insightContent(meeting)
+              case .ready:
+                insightContent(meeting)
+              }
+            case .transcript:
+              MeetingTranscriptContent(meeting: meeting)
+            case .notes:
+              MeetingNotesContent(noteText: $noteText)
+            }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.horizontal, 18)
           .padding(.bottom, 24)
-        }
-        .safeAreaInset(edge: .bottom) {
-          AudioPlayerBar(meeting: meeting)
         }
         .background(Color(uiColor: .systemBackground))
         .navigationBarTitleDisplayMode(.inline)
@@ -55,9 +63,6 @@ struct MeetingDetailView: View {
               }
             }
           }
-        }
-        .sheet(isPresented: $isAskingAI) {
-          AIQuestionView(scope: .file(meeting.id), suggestedQuestion: "この会議で次にすることは？")
         }
         .sheet(isPresented: $isRenaming) {
           RenameMeetingSheet(meeting: meeting)
@@ -106,7 +111,7 @@ struct MeetingDetailView: View {
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("一目でわかる")
+      Text("サマリー")
         .font(.title2.bold())
       Text(meeting.summary)
         .font(.body)
@@ -117,7 +122,7 @@ struct MeetingDetailView: View {
     InsightSection(
       title: "決まったこと",
       symbol: "checkmark.seal.fill",
-      color: .green,
+      color: .primary,
       items: meeting.decisions,
       emptyText: "明確な決定は見つかりませんでした"
     )
@@ -127,7 +132,7 @@ struct MeetingDetailView: View {
     InsightSection(
       title: "まだ決まっていないこと",
       symbol: "questionmark.bubble.fill",
-      color: .orange,
+      color: .primary,
       items: meeting.openQuestions,
       emptyText: "未決事項はありません"
     )
@@ -135,75 +140,117 @@ struct MeetingDetailView: View {
     InsightSection(
       title: "重要なポイント",
       symbol: "pin.fill",
-      color: .indigo,
+      color: .primary,
       items: meeting.keyPoints,
       emptyText: "ポイントを抽出中です"
     )
   }
 
-  private func transcriptPreview(_ meeting: Meeting) -> some View {
-    VStack(alignment: .leading, spacing: 14) {
+}
+
+private enum MeetingDetailSection: String, CaseIterable, Identifiable {
+  case summary
+  case transcript
+  case notes
+
+  var id: Self { self }
+
+  var label: String {
+    switch self {
+    case .summary:
+      "要約"
+    case .transcript:
+      "文字起こし"
+    case .notes:
+      "ノート"
+    }
+  }
+}
+
+private struct MeetingTranscriptContent: View {
+  var meeting: Meeting
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 22) {
       HStack {
-        Text("会話の記録")
+        Text("文字起こし")
           .font(.title2.bold())
         Spacer()
-        NavigationLink("全文", value: LibraryRoute.transcript(meeting.id))
+        NavigationLink("編集", value: LibraryRoute.transcript(meeting.id))
           .font(.subheadline)
           .disabled(meeting.transcript.isEmpty)
       }
 
-      if let segment = meeting.transcript.first {
-        VStack(alignment: .leading, spacing: 8) {
-          HStack {
-            Text(segment.speaker)
-              .font(.caption.weight(.semibold))
-            Text(MemoraFormat.duration(segment.timestamp))
-              .font(.caption.monospacedDigit())
-              .foregroundStyle(.secondary)
-          }
-          Text(segment.text)
-            .font(.body)
-            .lineLimit(3)
-            .foregroundStyle(.secondary)
+      if meeting.transcript.isEmpty {
+        ContentUnavailableView {
+          Label("文字起こし中", systemImage: "text.bubble")
+        } description: {
+          Text("完成した発言から、この画面に表示されます。")
         }
+        .frame(maxWidth: .infinity)
       } else {
-        Text("文字起こしが届くと、ここから発言を確認できます。")
+        ForEach(meeting.transcript) { segment in
+          HStack(alignment: .top, spacing: 12) {
+            Text(MemoraFormat.duration(segment.timestamp))
+              .font(.caption.monospacedDigit().weight(.medium))
+              .foregroundStyle(.secondary)
+              .frame(width: 42, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 6) {
+              HStack(spacing: 4) {
+                Text(segment.speaker)
+                  .font(.caption.weight(.semibold))
+                if !segment.speakerIsCertain {
+                  Image(systemName: "questionmark")
+                    .font(.caption2.bold())
+                }
+              }
+              .foregroundStyle(segment.speakerIsCertain ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+
+              Text(segment.text)
+                .font(.body)
+                .lineSpacing(4)
+                .textSelection(.enabled)
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+private struct MeetingNotesContent: View {
+  @Binding var noteText: String
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("ノート")
+          .font(.title2.bold())
+        Text("AIの整理とは別に、自分だけのメモを残せます。")
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
-    }
-  }
 
-  private var attachmentsRow: some View {
-    Button("参考資料を追加", systemImage: "paperclip") {}
-      .font(.subheadline.weight(.medium))
-      .foregroundStyle(.secondary)
-      .accessibilityHint("将来の添付資料機能の入口です")
-  }
-
-  private var askAIButton: some View {
-    Button {
-      isAskingAI = true
-    } label: {
-      HStack(spacing: 12) {
-        Image(systemName: "sparkles")
-          .font(.title3.weight(.semibold))
-        VStack(alignment: .leading, spacing: 2) {
-          Text("この会議について聞く")
-            .font(.headline)
-          Text("回答から元の発言へ戻れます")
-            .font(.caption)
-            .foregroundStyle(.secondary)
+      TextEditor(text: $noteText)
+        .frame(minHeight: 220)
+        .padding(12)
+        .scrollContentBackground(.hidden)
+        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(alignment: .topLeading) {
+          if noteText.isEmpty {
+            Text("気づきや補足を入力…")
+              .foregroundStyle(.tertiary)
+              .padding(.horizontal, 17)
+              .padding(.vertical, 20)
+              .allowsHitTesting(false)
+          }
         }
-        Spacer()
-        Image(systemName: "arrow.up.right")
-          .font(.subheadline.weight(.semibold))
-      }
-      .foregroundStyle(.primary)
-      .padding(16)
-      .background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+      Button("参考資料を追加", systemImage: "paperclip") {}
+        .font(.subheadline.weight(.medium))
+        .foregroundStyle(.primary)
     }
-    .buttonStyle(.plain)
   }
 }
 
@@ -249,7 +296,7 @@ private struct MeetingTasksSection: View {
     VStack(alignment: .leading, spacing: 12) {
       Label("次にすること", systemImage: "arrow.right.circle.fill")
         .font(.title3.bold())
-        .foregroundStyle(.indigo)
+        .foregroundStyle(.primary)
 
       if meetingTasks.isEmpty {
         Text("この会議からタスクは見つかりませんでした")
@@ -322,7 +369,7 @@ private struct ProcessStep: View {
   var body: some View {
     HStack(spacing: 10) {
       Image(systemName: isComplete ? "checkmark.circle.fill" : isCurrent ? "circle.dotted" : "circle")
-        .foregroundStyle(isComplete ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+        .foregroundStyle(isComplete ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
       Text(title)
         .font(.subheadline)
         .foregroundStyle(isCurrent || isComplete ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))

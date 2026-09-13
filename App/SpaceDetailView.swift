@@ -16,14 +16,14 @@ struct SpaceDetailView: View {
           } label: {
             HStack {
               Image(systemName: "sparkles")
-              Text("このスペースについて聞く")
+              Text("このプロジェクトについて聞く")
                 .font(.headline)
               Spacer()
               Image(systemName: "arrow.up.right")
             }
             .foregroundStyle(.primary)
             .padding(16)
-            .background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
           }
           .buttonStyle(.plain)
 
@@ -60,10 +60,10 @@ struct SpaceDetailView: View {
       .navigationTitle(space.name)
       .navigationBarTitleDisplayMode(.inline)
       .sheet(isPresented: $isAskingAI) {
-        AIQuestionView(scope: .space(space.id), suggestedQuestion: "このスペースでまだ決まっていないことは？")
+        AIQuestionView(scope: .space(space.id), suggestedQuestion: "このプロジェクトでまだ決まっていないことは？")
       }
     } else {
-      ContentUnavailableView("スペースが見つかりません", systemImage: "folder.badge.questionmark")
+      ContentUnavailableView("プロジェクトが見つかりません", systemImage: "folder.badge.questionmark")
     }
   }
 
@@ -71,9 +71,9 @@ struct SpaceDetailView: View {
     HStack(spacing: 16) {
       Image(systemName: space.symbol)
         .font(.title2.weight(.semibold))
-        .foregroundStyle(.indigo)
+        .foregroundStyle(.primary)
         .frame(width: 56, height: 56)
-        .background(.indigo.opacity(0.1), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
       VStack(alignment: .leading, spacing: 4) {
         Text(space.name)
           .font(.title.bold())

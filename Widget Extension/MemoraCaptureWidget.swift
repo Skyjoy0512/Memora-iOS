@@ -6,7 +6,7 @@ struct MemoraCaptureWidget: Widget {
     StaticConfiguration(kind: "app.bitrig.memora.capture", provider: MemoraTimelineProvider()) { entry in
       MemoraWidgetView(entry: entry)
         .containerBackground(for: .widget) {
-          Color.indigo
+          Color.black
         }
     }
     .configurationDisplayName("クイック記録")

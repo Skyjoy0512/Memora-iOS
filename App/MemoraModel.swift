@@ -12,7 +12,7 @@ final class MemoraModel {
   var tasks: [MemoraTask]
   var aiHistory: [AIConversationEntry]
   var isCapturePresented = false
-  var isSettingsPresented = false
+  var isCaptureSourcePresented = false
   var isRecording = false
   var recordingElapsed: TimeInterval = 0
   var recordingErrorMessage: String?

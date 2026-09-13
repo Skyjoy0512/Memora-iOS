@@ -83,7 +83,7 @@ private struct RecordingWaveform: View {
         let phase = elapsed + Double(index) * 0.67
         let height = 14 + abs(sin(phase)) * 70
         Capsule()
-          .fill(index.isMultiple(of: 5) ? Color.red : Color.indigo.opacity(0.76))
+          .fill(index.isMultiple(of: 5) ? Color.red : Color.primary.opacity(0.76))
           .frame(maxWidth: .infinity)
           .frame(height: height)
       }

@@ -10,9 +10,9 @@ struct OnboardingView: View {
 
       Image(systemName: "waveform")
         .font(.system(size: 36, weight: .semibold))
-        .foregroundStyle(.white)
+        .foregroundStyle(Color(uiColor: .systemBackground))
         .frame(width: 72, height: 72)
-        .background(.indigo, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(.primary, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .accessibilityHidden(true)
 
       Text("話せば、\n次にすることまで残る。")
@@ -42,8 +42,8 @@ struct OnboardingView: View {
             .font(.headline)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .foregroundStyle(.white)
-            .background(.indigo, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .foregroundStyle(Color(uiColor: .systemBackground))
+            .background(.primary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
 
@@ -73,9 +73,9 @@ private struct JourneyStep: View {
     VStack(spacing: 8) {
       Image(systemName: symbol)
         .font(.body.weight(.semibold))
-        .foregroundStyle(.indigo)
+        .foregroundStyle(.primary)
         .frame(width: 42, height: 42)
-        .background(.indigo.opacity(0.1), in: Circle())
+        .background(Color.primary.opacity(0.08), in: Circle())
       Text(title)
         .font(.caption.weight(.medium))
         .foregroundStyle(.secondary)

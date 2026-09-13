@@ -11,9 +11,9 @@ struct PaywallView: View {
           VStack(alignment: .leading, spacing: 12) {
             Image(systemName: "sparkles")
               .font(.system(size: 30, weight: .semibold))
-              .foregroundStyle(.indigo)
+              .foregroundStyle(.primary)
               .frame(width: 60, height: 60)
-              .background(.indigo.opacity(0.1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+              .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             Text("会議が終わった瞬間から、\n次の仕事を始められる。")
               .font(.largeTitle.bold())
               .tracking(-0.7)
@@ -25,7 +25,7 @@ struct PaywallView: View {
 
           VStack(alignment: .leading, spacing: 16) {
             BenefitRow(symbol: "infinity", title: "高度なAI整理を制限なく", detail: "要約・決定・タスク・未決事項まで")
-            BenefitRow(symbol: "square.stack.3d.up", title: "複数会議をまとめて質問", detail: "スペースや全会議から根拠付きで回答")
+            BenefitRow(symbol: "square.stack.3d.up", title: "複数会議をまとめて質問", detail: "プロジェクトや全会議から根拠付きで回答")
             BenefitRow(symbol: "icloud", title: "クラウド保存と同期", detail: "必要な人だけ選べる保存先")
             BenefitRow(symbol: "rectangle.slash", title: "広告なし", detail: "会議内容だけに集中")
           }
@@ -50,8 +50,8 @@ struct PaywallView: View {
               }
               .frame(maxWidth: .infinity)
               .padding(.vertical, 14)
-              .foregroundStyle(.white)
-              .background(.indigo, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+              .foregroundStyle(Color(uiColor: .systemBackground))
+              .background(.primary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .buttonStyle(.plain)
 
@@ -113,7 +113,7 @@ private struct BenefitRow: View {
     HStack(alignment: .top, spacing: 14) {
       Image(systemName: symbol)
         .font(.body.weight(.semibold))
-        .foregroundStyle(.indigo)
+        .foregroundStyle(.primary)
         .frame(width: 30)
       VStack(alignment: .leading, spacing: 3) {
         Text(title)

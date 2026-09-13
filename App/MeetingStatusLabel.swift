@@ -30,7 +30,7 @@ struct MeetingStatusLabel: View {
   private var style: AnyShapeStyle {
     switch status {
     case .ready:
-      AnyShapeStyle(.green)
+      AnyShapeStyle(.primary)
     case .partialFailure, .failed:
       AnyShapeStyle(.orange)
     default:

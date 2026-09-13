@@ -6,6 +6,10 @@ enum SampleContent {
   static let productMeetingID = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
   static let oneOnOneMeetingID = UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB")!
   static let salesMeetingID = UUID(uuidString: "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC")!
+  static let designMeetingID = UUID(uuidString: "DDDDDDDD-DDDD-DDDD-DDDD-DDDDDDDDDDDD")!
+  static let weeklyMeetingID = UUID(uuidString: "EEEEEEEE-EEEE-EEEE-EEEE-EEEEEEEEEEEE")!
+  static let interviewMeetingID = UUID(uuidString: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")!
+  static let ideaMeetingID = UUID(uuidString: "99999999-9999-9999-9999-999999999999")!
 
   static let generatedTranscript = [
     TranscriptSegment(
@@ -103,6 +107,69 @@ enum SampleContent {
         ],
         transcript: generatedTranscript,
         spaceID: salesSpaceID,
+        audioURL: nil
+      ),
+      Meeting(
+        id: designMeetingID,
+        title: "デザインレビュー",
+        createdAt: Calendar.current.date(byAdding: .day, value: -5, to: .now)!,
+        duration: 2_246,
+        source: .recording,
+        status: .ready,
+        summary: "会議一覧は装飾を抑え、過去の内容を短時間で読み返せる密度を優先します。質問は閲覧中の文脈を保ったまま入力でき、主要操作は画面下部へまとめる方針です。",
+        keyPoints: [
+          "会議の要約を一覧から3行まで確認できるようにする",
+          "プロジェクトは分類が必要になった時だけ使えるようにする"
+        ],
+        decisions: ["メインカラーは黒を基調にする"],
+        openQuestions: ["長いプロジェクト名の表示方法"],
+        transcript: generatedTranscript,
+        spaceID: productSpaceID,
+        audioURL: nil
+      ),
+      Meeting(
+        id: weeklyMeetingID,
+        title: "週次プロダクト定例",
+        createdAt: Calendar.current.date(byAdding: .day, value: -7, to: .now)!,
+        duration: 3_582,
+        source: .recording,
+        status: .ready,
+        summary: "ベータ版の主要フローは予定どおり進行しています。文字起こしの部分成功を保持し、AI整理が失敗した場合でも会議内容を失わず再試行できる状態を次の検証対象にしました。",
+        keyPoints: ["処理状態はユーザーの言葉で簡潔に伝える"],
+        decisions: ["部分成功をMVPから正式に扱う"],
+        openQuestions: ["再試行の自動実行条件"],
+        transcript: generatedTranscript,
+        spaceID: productSpaceID,
+        audioURL: nil
+      ),
+      Meeting(
+        id: interviewMeetingID,
+        title: "ユーザーインタビュー #08",
+        createdAt: Calendar.current.date(byAdding: .day, value: -10, to: .now)!,
+        duration: 2_918,
+        source: .importFile,
+        status: .ready,
+        summary: "参加者は会議直後に要約を共有し、その後必要な発言だけを確認しています。音声の聞き直しより、決定事項と担当タスクへすぐ移れることに最も強い価値を感じていました。",
+        keyPoints: ["要約から原文へ戻れる根拠表示が重要"],
+        decisions: [],
+        openQuestions: ["外部タスク管理サービスとの連携"],
+        transcript: generatedTranscript,
+        spaceID: nil,
+        audioURL: nil
+      ),
+      Meeting(
+        id: ideaMeetingID,
+        title: "移動中のアイデアメモ",
+        createdAt: Calendar.current.date(byAdding: .day, value: -14, to: .now)!,
+        duration: 746,
+        source: .recording,
+        status: .ready,
+        summary: "会議だけでなく一人の音声メモも、考えの断片を次の行動へ変える素材として同じ流れで扱います。記録後の分類は自動化し、ユーザーに事前設定を求めない方針です。",
+        keyPoints: ["短い音声メモも会議と同じ知識モデルへ統合する"],
+        decisions: ["録音前の種類選択は設けない"],
+        openQuestions: [],
+        transcript: generatedTranscript,
+        spaceID: nil,
         audioURL: nil
       )
     ]
