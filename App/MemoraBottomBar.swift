@@ -2,66 +2,83 @@ import SwiftUI
 
 struct MemoraBottomBar: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Namespace private var selection
   @State private var addFeedback = 0
 
   var body: some View {
-    HStack(spacing: 10) {
-      HStack(spacing: 2) {
-        BottomTabButton(tab: .records, title: "会議", symbol: "waveform")
-        BottomTabButton(tab: .search, title: "Ask AI", symbol: "sparkles")
-        BottomTabButton(tab: .tasks, title: "タスク", symbol: "checkmark.square")
-        BottomTabButton(tab: .settings, title: "設定", symbol: "gearshape")
-      }
-      .padding(4)
-      .frame(maxWidth: .infinity)
-      .background(.regularMaterial, in: Capsule())
-      .overlay {
-        Capsule()
-          .stroke(Color(uiColor: .separator).opacity(0.7), lineWidth: 0.5)
-      }
+    MemoraGlassContainer(spacing: 18) {
+      HStack(spacing: 10) {
+        HStack(spacing: 2) {
+          BottomTabButton(tab: .records, title: "会議", symbol: "waveform", selection: selection)
+          BottomTabButton(tab: .search, title: "Ask AI", symbol: "sparkles", selection: selection)
+          BottomTabButton(tab: .tasks, title: "タスク", symbol: "checkmark.square", selection: selection)
+          BottomTabButton(tab: .settings, title: "設定", symbol: "gearshape", selection: selection)
+        }
+        .padding(4)
+        .frame(maxWidth: .infinity)
+        .memoraGlass(in: Capsule())
 
-      Button("追加", systemImage: "plus") {
-        addFeedback += 1
-        model.isCaptureSourcePresented = true
+        Button("追加", systemImage: "plus") {
+          addFeedback += 1
+          model.isCaptureSourcePresented = true
+        }
+        .labelStyle(.iconOnly)
+        .font(.title3.weight(.semibold))
+        .frame(width: 56, height: 56)
+        .foregroundStyle(Color(uiColor: .systemBackground))
+        .memoraGlass(in: Circle(), tint: .primary, interactive: true)
+        .sensoryFeedback(.impact(weight: .medium), trigger: addFeedback)
+        .accessibilityHint("録音、音声インポート、オンライン会議から選びます")
       }
-      .labelStyle(.iconOnly)
-      .font(.title3.weight(.semibold))
-      .frame(width: 56, height: 56)
-      .foregroundStyle(Color(uiColor: .systemBackground))
-      .background(.primary, in: Circle())
-      .shadow(color: .black.opacity(0.14), radius: 10, y: 5)
-      .sensoryFeedback(.impact(weight: .medium), trigger: addFeedback)
-      .accessibilityHint("録音、音声インポート、オンライン会議から選びます")
     }
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.selectedTab)
   }
 }
 
 private struct BottomTabButton: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var tab: RootTab
   var title: String
   var symbol: String
+  var selection: Namespace.ID
 
   var body: some View {
     Button {
-      model.selectedTab = tab
+      guard model.selectedTab != tab else { return }
+      withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+        model.selectedTab = tab
+      }
     } label: {
       VStack(spacing: 3) {
         Image(systemName: symbol)
-          .font(.body.weight(model.selectedTab == tab ? .semibold : .regular))
+          .font(.body.weight(isSelected ? .semibold : .regular))
+          .symbolEffect(.bounce, value: isSelected)
         Text(title)
-          .font(.caption2.weight(model.selectedTab == tab ? .semibold : .regular))
+          .font(.caption2.weight(isSelected ? .semibold : .regular))
           .lineLimit(1)
           .minimumScaleFactor(0.8)
       }
-      .foregroundStyle(model.selectedTab == tab ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+      .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
       .frame(maxWidth: .infinity)
       .frame(height: 48)
-      .background(model.selectedTab == tab ? Color.primary.opacity(0.08) : .clear, in: Capsule())
+      .background {
+        if isSelected {
+          Capsule()
+            .fill(Color.primary.opacity(0.1))
+            .matchedGeometryEffect(id: "selectedTab", in: selection)
+        }
+      }
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+    .sensoryFeedback(.selection, trigger: isSelected)
     .accessibilityLabel(title)
-    .accessibilityAddTraits(model.selectedTab == tab ? .isSelected : [])
+    .accessibilityAddTraits(isSelected ? .isSelected : [])
+  }
+
+  private var isSelected: Bool {
+    model.selectedTab == tab
   }
 }
