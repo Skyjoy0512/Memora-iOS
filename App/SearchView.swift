@@ -4,97 +4,118 @@ struct SearchView: View {
   @Environment(MemoraModel.self) private var model
   @State private var query = ""
   @State private var isAskingAI = false
+  @State private var isSearchSheetPresented = false
+  @State private var isHistoryPresented = false
 
   var body: some View {
     NavigationStack {
-      Group {
-        if query.isEmpty {
-          discoveryView
-        } else {
-          resultsView
+      askAIHome
+      .navigationTitle("Ask AI")
+      .toolbar {
+        ToolbarItemGroup(placement: .topBarTrailing) {
+          Button("検索", systemImage: "magnifyingglass") {
+            isSearchSheetPresented = true
+          }
+          .labelStyle(.iconOnly)
+
+          Button("履歴", systemImage: "clock.arrow.circlepath") {
+            isHistoryPresented = true
+          }
+          .labelStyle(.iconOnly)
         }
       }
-      .navigationTitle("Ask AI")
-      .searchable(
-        text: $query,
-        placement: .navigationBarDrawer(displayMode: .always),
-        prompt: "会議、発言、決定、タスク"
-      )
       .sheet(isPresented: $isAskingAI) {
         AIQuestionView(scope: .global, askingQuestion: query)
       }
-    }
-  }
-
-  private var discoveryView: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 28) {
-        Button {
-          isAskingAI = true
-        } label: {
-          VStack(alignment: .leading, spacing: 14) {
-            Image(systemName: "sparkles")
-              .font(.title2.weight(.semibold))
-              .foregroundStyle(.primary)
-            Text("覚えていない言葉でも、\n意味から探せます")
-              .font(.title2.bold())
-              .foregroundStyle(.primary)
-            Text("「田中さんの未完了タスクは？」のように質問してください。")
-              .font(.subheadline)
-              .foregroundStyle(.secondary)
-            Label("Memoraに聞く", systemImage: "arrow.right")
-              .font(.headline)
-              .foregroundStyle(.primary)
+      .sheet(isPresented: $isSearchSheetPresented) {
+        NavigationStack {
+          Group {
+            if query.isEmpty {
+              ContentUnavailableView(
+                "会話を検索",
+                systemImage: "magnifyingglass",
+                description: Text("タイトル、発言、決定、タスクから探せます。")
+              )
+            } else {
+              resultsView
+            }
           }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(20)
-          .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        }
-        .buttonStyle(.plain)
-
-        if !model.aiHistory.isEmpty {
-          VStack(alignment: .leading, spacing: 12) {
-            Text("最近の質問")
-              .font(.title2.bold())
-            ForEach(model.aiHistory.prefix(3)) { entry in
-              Button {
-                query = entry.question
-                isAskingAI = true
-              } label: {
-                HStack(alignment: .top, spacing: 12) {
-                  Image(systemName: "clock.arrow.circlepath")
-                    .foregroundStyle(.secondary)
-                  VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.question)
-                      .font(.body.weight(.medium))
-                      .foregroundStyle(.primary)
-                    Text(entry.scopeLabel)
-                      .font(.caption)
-                      .foregroundStyle(.secondary)
-                  }
-                  Spacer()
-                  Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-                }
-                .padding(.vertical, 8)
-              }
-              .buttonStyle(.plain)
+          .navigationTitle("検索")
+          .navigationBarTitleDisplayMode(.inline)
+          .searchable(text: $query, prompt: "会議、発言、決定、タスク")
+          .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+              Button("完了") { isSearchSheetPresented = false }
             }
           }
         }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, 18)
-      .padding(.bottom, 32)
+      .sheet(isPresented: $isHistoryPresented) {
+        AIHistoryView(entries: model.aiHistory) { question in
+          query = question
+          isHistoryPresented = false
+          Task {
+            try? await Task.sleep(for: .milliseconds(250))
+            isAskingAI = true
+          }
+        }
+      }
     }
+  }
+
+  private var askAIHome: some View {
+    VStack(spacing: 24) {
+      Spacer(minLength: 54)
+
+      ThinkingOrbView(state: .breathing, size: 78)
+
+      VStack(spacing: 8) {
+        Text("何を知りたいですか？")
+          .font(.title2.bold())
+        Text("言葉を思い出せなくても、会話の意味から探せます。")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .multilineTextAlignment(.center)
+      }
+
+      Button {
+        isAskingAI = true
+      } label: {
+        HStack(spacing: 10) {
+          Text("Ask AI…")
+            .foregroundStyle(.secondary)
+          Spacer()
+          Image(systemName: "arrow.up")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 18)
+        .frame(height: 56)
+        .contentShape(Capsule())
+        .background(Color.primary.opacity(0.055), in: Capsule())
+        .overlay {
+          MemoraBorderBeam(cornerRadius: 28, strength: 0.7)
+        }
+      }
+      .buttonStyle(.plain)
+      .accessibilityHint("すべての会話について質問します")
+
+      Spacer()
+    }
+    .frame(maxWidth: .infinity)
+    .padding(.horizontal, 24)
+    .padding(.bottom, 24)
   }
 
   private var resultsView: some View {
     List {
       Section {
         Button {
-          isAskingAI = true
+          isSearchSheetPresented = false
+          Task {
+            try? await Task.sleep(for: .milliseconds(250))
+            isAskingAI = true
+          }
         } label: {
           Label("「\(query)」をMemoraに聞く", systemImage: "sparkles")
             .font(.headline)
@@ -104,7 +125,7 @@ struct SearchView: View {
       }
 
       if !matchingMeetings.isEmpty {
-        Section("会議") {
+        Section("会話") {
           ForEach(matchingMeetings) { meeting in
             NavigationLink {
               MeetingDetailView(meetingID: meeting.id)
@@ -144,5 +165,46 @@ struct SearchView: View {
 
   private var matchingTasks: [MemoraTask] {
     model.tasks.filter { $0.title.localizedCaseInsensitiveContains(query) }
+  }
+}
+
+private struct AIHistoryView: View {
+  @Environment(\.dismiss) private var dismiss
+  var entries: [AIConversationEntry]
+  var select: (String) -> Void
+
+  var body: some View {
+    NavigationStack {
+      Group {
+        if entries.isEmpty {
+          ContentUnavailableView("まだ履歴がありません", systemImage: "clock.arrow.circlepath")
+        } else {
+          List(entries) { entry in
+            Button {
+              select(entry.question)
+            } label: {
+              VStack(alignment: .leading, spacing: 4) {
+                Text(entry.question)
+                  .font(.body.weight(.medium))
+                  .foregroundStyle(.primary)
+                Text(entry.scopeLabel)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.vertical, 4)
+            }
+            .buttonStyle(.plain)
+          }
+        }
+      }
+      .navigationTitle("質問履歴")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .confirmationAction) {
+          Button("完了") { dismiss() }
+        }
+      }
+    }
   }
 }

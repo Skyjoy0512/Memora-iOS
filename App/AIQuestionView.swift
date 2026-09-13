@@ -95,14 +95,15 @@ struct AIQuestionView: View {
 
       if isAnswering {
         HStack(spacing: 8) {
-          ProgressView()
-            .controlSize(.small)
+          ThinkingOrbView(state: .searching, size: 20)
           Text("会議の中から根拠を探しています")
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
         .padding(.top, 4)
         .transition(.opacity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("会議の中から根拠を探しています")
       }
     }
     .padding(16)
@@ -196,6 +197,9 @@ struct AIQuestionView: View {
         .padding(.trailing, 4)
         .padding(.vertical, 5)
         .memoraGlass(in: RoundedRectangle(cornerRadius: 27, style: .continuous))
+        .overlay {
+          MemoraBorderBeam(cornerRadius: 27, strength: 0.7, active: !isAnswering)
+        }
 
         Button("送信", systemImage: "arrow.up") {
           ask()

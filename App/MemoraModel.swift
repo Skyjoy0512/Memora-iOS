@@ -23,6 +23,9 @@ final class MemoraModel {
   var account: MemoraAccount?
   var isAuthPresented = false
   var isPaywallPresented = false
+  /// Meeting details temporarily hide their contextual AI field once people
+  /// move into the document.
+  var isDetailComposerVisible = true
 
   /// Onboarding runs once. Sign-in and Plus stay optional so people can judge
   /// the app before committing to either.
@@ -35,6 +38,7 @@ final class MemoraModel {
   @ObservationIgnored private var recordingTicker: Task<Void, Never>?
   @ObservationIgnored private var processingTasks: [UUID: Task<Void, Never>] = [:]
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
+  @ObservationIgnored private var pendingMeetingNavigationID: UUID?
   @ObservationIgnored private let recorder = AudioRecorderService()
 
   init() {
@@ -185,7 +189,6 @@ final class MemoraModel {
     recordingTicker?.cancel()
     recordingTicker = nil
     isRecording = false
-    isCapturePresented = false
     await endLiveActivity()
 
     let meeting = Meeting(
@@ -207,8 +210,16 @@ final class MemoraModel {
     recordingURL = nil
     recordingStartedAt = nil
     selectedTab = .records
-    libraryPath = [.meeting(meeting.id)]
+    pendingMeetingNavigationID = meeting.id
+    isCapturePresented = false
     beginProcessing(meeting.id)
+  }
+
+  func completeCaptureDismissal() {
+    guard let meetingID = pendingMeetingNavigationID else { return }
+    pendingMeetingNavigationID = nil
+    selectedTab = .records
+    libraryPath = [.meeting(meetingID)]
   }
 
   func cancelCapture() async {

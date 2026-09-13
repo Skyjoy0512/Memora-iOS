@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 struct MeetingDetailView: View {
@@ -9,6 +10,7 @@ struct MeetingDetailView: View {
   @State private var noteText = ""
   @State private var isRenaming = false
   @State private var isDeleting = false
+  @State private var isCompactTitleVisible = false
 
   var body: some View {
     Group {
@@ -17,21 +19,12 @@ struct MeetingDetailView: View {
           VStack(alignment: .leading, spacing: 22) {
             meetingHeader(meeting)
 
-            VStack(alignment: .leading, spacing: 10) {
-              Picker("会議の表示", selection: $selectedSection) {
-                ForEach(MeetingDetailSection.allCases) { section in
-                  Text(section.label).tag(section)
-                }
+            Picker("会議の表示", selection: $selectedSection) {
+              ForEach(MeetingDetailSection.allCases) { section in
+                Text(section.label).tag(section)
               }
-              .pickerStyle(.segmented)
-
-              Label(selectedSection.description, systemImage: selectedSection.symbol)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .contentTransition(.symbolEffect(.replace))
-                .id(selectedSection)
-                .transition(.opacity)
             }
+            .pickerStyle(.segmented)
 
             sectionContent(meeting)
               .id(selectedSection)
@@ -44,8 +37,27 @@ struct MeetingDetailView: View {
           .animation(reduceMotion ? nil : MemoraMotion.screen, value: meeting.status)
         }
         .background(Color(uiColor: .systemBackground))
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+          geometry.contentOffset.y + geometry.contentInsets.top
+        } action: { _, newOffset in
+          updateScrollState(to: newOffset)
+        }
+        .onAppear {
+          model.isDetailComposerVisible = true
+        }
+        .onDisappear {
+          model.isDetailComposerVisible = true
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+          ToolbarItem(placement: .principal) {
+            Text(meeting.title)
+              .font(.headline)
+              .lineLimit(1)
+              .opacity(isCompactTitleVisible ? 1 : 0)
+              .accessibilityHidden(!isCompactTitleVisible)
+              .animation(reduceMotion ? nil : MemoraMotion.control, value: isCompactTitleVisible)
+          }
           ToolbarItem(placement: .topBarTrailing) {
             Menu("その他", systemImage: "ellipsis") {
               Button("名前を変更", systemImage: "pencil") {
@@ -78,10 +90,24 @@ struct MeetingDetailView: View {
   private var sectionTransition: AnyTransition {
     reduceMotion
       ? .opacity
-      : .asymmetric(
-        insertion: .opacity.combined(with: .move(edge: .trailing)),
-        removal: .opacity
-      )
+      : .opacity.combined(with: .scale(scale: 0.99, anchor: .top))
+  }
+
+  private func updateScrollState(to newOffset: CGFloat) {
+    let compactTitleShouldShow = newOffset > 76
+    if compactTitleShouldShow != isCompactTitleVisible {
+      withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+        isCompactTitleVisible = compactTitleShouldShow
+      }
+    }
+
+    let shouldShowComposer = newOffset < 64
+
+    if model.isDetailComposerVisible != shouldShowComposer {
+      withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+        model.isDetailComposerVisible = shouldShowComposer
+      }
+    }
   }
 
   @ViewBuilder
@@ -138,23 +164,26 @@ struct MeetingDetailView: View {
 
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .center, spacing: 12) {
       Label("サマリー", systemImage: "sparkles")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
       Text(meeting.summary)
         .font(.title3.weight(.medium))
         .lineSpacing(6)
+        .multilineTextAlignment(.center)
         .textSelection(.enabled)
         .memoraTextReveal(delay: 0.04)
     }
-    .padding(18)
+    .frame(maxWidth: .infinity, alignment: .center)
+    .padding(.horizontal, 24)
+    .padding(.vertical, 28)
     .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     .memoraAppear()
 
     InsightSection(
       title: "決まったこと",
-      symbol: "checkmark.seal.fill",
+      symbol: "checkmark.seal",
       color: .primary,
       items: meeting.decisions,
       emptyText: "明確な決定は見つかりませんでした"
@@ -166,7 +195,7 @@ struct MeetingDetailView: View {
 
     InsightSection(
       title: "まだ決まっていないこと",
-      symbol: "questionmark.bubble.fill",
+      symbol: "questionmark.bubble",
       color: .primary,
       items: meeting.openQuestions,
       emptyText: "未決事項はありません"
@@ -175,7 +204,7 @@ struct MeetingDetailView: View {
 
     InsightSection(
       title: "重要なポイント",
-      symbol: "pin.fill",
+      symbol: "pin",
       color: .primary,
       items: meeting.keyPoints,
       emptyText: "ポイントを抽出中です"
@@ -203,27 +232,6 @@ private enum MeetingDetailSection: String, CaseIterable, Identifiable {
     }
   }
 
-  var symbol: String {
-    switch self {
-    case .summary:
-      "sparkles"
-    case .transcript:
-      "text.quote"
-    case .notes:
-      "square.and.pencil"
-    }
-  }
-
-  var description: String {
-    switch self {
-    case .summary:
-      "結論と、次にすること"
-    case .transcript:
-      "発言を時系列で確認"
-    case .notes:
-      "自分だけのメモ"
-    }
-  }
 }
 
 private struct MeetingTranscriptContent: View {
@@ -281,37 +289,58 @@ private struct MeetingTranscriptContent: View {
 
 private struct MeetingNotesContent: View {
   @Binding var noteText: String
+  @State private var photoItem: PhotosPickerItem?
+  @State private var photoData: Data?
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 16) {
-      VStack(alignment: .leading, spacing: 4) {
+    VStack(alignment: .leading, spacing: 14) {
+      HStack {
         Text("ノート")
           .font(.title2.bold())
-        Text("AIの整理とは別に、自分だけのメモを残せます。")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
+
+        Spacer()
+
+        PhotosPicker(selection: $photoItem, matching: .images) {
+          Label("写真を追加", systemImage: "photo.badge.plus")
+            .labelStyle(.iconOnly)
+            .font(.title3)
+            .frame(width: 44, height: 44)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+      }
+
+      if let photoData, let image = UIImage(data: photoData) {
+        Image(uiImage: image)
+          .resizable()
+          .scaledToFill()
+          .frame(maxWidth: .infinity)
+          .frame(height: 220)
+          .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+          .transition(.opacity.combined(with: .scale(scale: 0.98)))
       }
 
       TextEditor(text: $noteText)
-        .frame(minHeight: 220)
-        .padding(12)
+        .font(.body)
+        .frame(minHeight: 360)
         .scrollContentBackground(.hidden)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(alignment: .topLeading) {
           if noteText.isEmpty {
-            Text("気づきや補足を入力…")
+            Text("タップして入力")
               .foregroundStyle(.tertiary)
-              .padding(.horizontal, 17)
-              .padding(.vertical, 20)
+              .padding(.horizontal, 5)
+              .padding(.vertical, 8)
               .allowsHitTesting(false)
           }
         }
-
-      Button("参考資料を追加", systemImage: "paperclip") {}
-        .font(.subheadline.weight(.medium))
-        .foregroundStyle(.primary)
     }
     .memoraAppear()
+    .animation(.smooth, value: photoData)
+    .onChange(of: photoItem) { _, newValue in
+      Task {
+        photoData = try? await newValue?.loadTransferable(type: Data.self)
+      }
+    }
   }
 }
 
@@ -356,7 +385,7 @@ private struct MeetingTasksSection: View {
   var body: some View {
     let meetingTasks = model.tasks.filter { $0.meetingID == meetingID }
     VStack(alignment: .leading, spacing: 12) {
-      Label("次にすること", systemImage: "arrow.right.circle.fill")
+      Label("次にすること", systemImage: "arrow.right.circle")
         .font(.title3.bold())
         .foregroundStyle(.primary)
 

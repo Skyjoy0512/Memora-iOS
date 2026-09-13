@@ -8,11 +8,7 @@ struct MeetingRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      Image(systemName: meeting.source == .recording ? "waveform" : "arrow.down.doc")
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(.primary)
-        .frame(width: 36, height: 36)
-        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+      MemoraIconBadge(symbol: meeting.source == .recording ? "waveform" : "square.and.arrow.down")
 
       VStack(alignment: .leading, spacing: 6) {
         Text(meeting.title)

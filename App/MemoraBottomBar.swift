@@ -53,7 +53,8 @@ private struct BottomTabButton: View {
     } label: {
       VStack(spacing: 3) {
         Image(systemName: symbol)
-          .font(.body.weight(isSelected ? .semibold : .regular))
+          .font(.body.weight(.medium))
+          .symbolRenderingMode(.monochrome)
           .symbolEffect(.bounce, value: isSelected)
         Text(title)
           .font(.caption2.weight(isSelected ? .semibold : .regular))

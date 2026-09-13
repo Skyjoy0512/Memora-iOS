@@ -51,6 +51,9 @@ struct QuickAIComposer: View {
         .padding(.trailing, 4)
         .padding(.vertical, 5)
         .memoraGlass(in: RoundedRectangle(cornerRadius: 27, style: .continuous))
+        .overlay {
+          MemoraBorderBeam(cornerRadius: 27, strength: 0.7)
+        }
 
         Button("送信", systemImage: "arrow.up") {
           submit()
@@ -85,7 +88,7 @@ struct QuickAIComposer: View {
     case .space(let spaceID):
       model.space(id: spaceID).map { "「\($0.name)」に質問" } ?? "このプロジェクトに質問"
     case .global:
-      "すべての会話に質問"
+      "Ask AI…"
     }
   }
 

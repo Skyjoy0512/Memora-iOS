@@ -28,14 +28,14 @@ struct RootTabView: View {
     }
     .safeAreaInset(edge: .bottom, spacing: 8) {
       VStack(spacing: 8) {
-        if let scope = composerScope {
+        if let scope = composerScope, shouldShowComposer {
           QuickAIComposer(scope: scope, isComposing: $isComposing)
             .id(scope)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
 
         // Typing gets the full screen; the bar comes back on dismiss.
-        if !isComposing {
+        if !isComposing && !isShowingMeetingDetail {
           MemoraBottomBar()
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
@@ -45,12 +45,15 @@ struct RootTabView: View {
       .background(alignment: .bottom) {
         // Content scrolls under the glass, but not into the home indicator
         // strip below it. The offset drops the fill just past the bar.
-        Color(uiColor: .systemBackground)
-          .frame(height: bottomStripHeight)
-          .offset(y: bottomStripHeight)
+        if showsBottomControls {
+          Color(uiColor: .systemBackground)
+            .frame(height: bottomStripHeight)
+            .offset(y: bottomStripHeight)
+        }
       }
       .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
       .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     }
     .sheet(isPresented: $model.isCaptureSourcePresented) {
       CaptureSourceSheet()
@@ -66,6 +69,24 @@ struct RootTabView: View {
       return .file(meetingID)
     }
     return nil
+  }
+
+  private var shouldShowComposer: Bool {
+    !isShowingMeetingDetail || model.isDetailComposerVisible
+  }
+
+  private var showsBottomControls: Bool {
+    (composerScope != nil && shouldShowComposer) || (!isComposing && !isShowingMeetingDetail)
+  }
+
+  private var isShowingMeetingDetail: Bool {
+    guard model.selectedTab == .records, let route = model.libraryPath.last else { return false }
+    return switch route {
+    case .meeting, .transcript:
+      true
+    default:
+      false
+    }
   }
 }
 

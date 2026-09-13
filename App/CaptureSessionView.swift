@@ -19,10 +19,9 @@ struct CaptureSessionView: View {
             .monospacedDigit()
             .contentTransition(.numericText())
 
-          RecordingWaveform()
-            .frame(height: 96)
-            .padding(.horizontal, 24)
-            .accessibilityHidden(true)
+          SiriWaveView()
+            .frame(height: 118)
+            .padding(.horizontal, 8)
         }
 
         Spacer()
@@ -58,6 +57,9 @@ struct CaptureSessionView: View {
       }
       .padding(.horizontal, 20)
       .background(Color(uiColor: .systemBackground))
+      .overlay {
+        RecordingBottomBeam()
+      }
       .navigationTitle("新しい会話")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -71,38 +73,5 @@ struct CaptureSessionView: View {
     }
     .sensoryFeedback(.impact(weight: .heavy), trigger: stopFeedback)
     .interactiveDismissDisabled()
-  }
-}
-
-private struct RecordingWaveform: View {
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  private let barCount = 24
-
-  var body: some View {
-    if reduceMotion {
-      bars(at: 0)
-    } else {
-      TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
-        bars(at: context.date.timeIntervalSinceReferenceDate)
-      }
-    }
-  }
-
-  private func bars(at time: TimeInterval) -> some View {
-    HStack(spacing: 4) {
-      ForEach(0..<barCount, id: \.self) { index in
-        Capsule()
-          .fill(.primary.opacity(0.78))
-          .frame(maxWidth: .infinity)
-          .frame(height: height(index: index, time: time))
-      }
-    }
-  }
-
-  /// Two out-of-step waves so the shape reads as speech rather than a pulse.
-  private func height(index: Int, time: TimeInterval) -> CGFloat {
-    let offset = Double(index) * 0.55
-    let wave = abs(sin(time * 2.1 + offset)) * 0.7 + abs(sin(time * 1.3 + offset * 1.7)) * 0.3
-    return 14 + wave * 70
   }
 }

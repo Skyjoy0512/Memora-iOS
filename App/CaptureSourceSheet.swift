@@ -95,11 +95,7 @@ private struct CaptureSourceRow: View {
       }
       .padding(.vertical, 6)
     } icon: {
-      Image(systemName: symbol)
-        .font(.body.weight(.semibold))
-        .foregroundStyle(.primary)
-        .frame(width: 36, height: 36)
-        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+      MemoraIconBadge(symbol: symbol)
     }
   }
 }

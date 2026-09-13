@@ -72,10 +72,7 @@ struct LibraryView: View {
           ForEach(model.spaces) { space in
             NavigationLink(value: LibraryRoute.space(space.id)) {
               HStack(spacing: 10) {
-                Image(systemName: space.symbol)
-                  .foregroundStyle(.primary)
-                  .frame(width: 30, height: 30)
-                  .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                MemoraIconBadge(symbol: space.symbol, size: 30)
 
                 VStack(alignment: .leading, spacing: 2) {
                   Text(space.name)
