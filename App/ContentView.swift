@@ -1,36 +1,49 @@
 import SwiftUI
 
 struct ContentView: View {
-  @AppStorage("hasSeenMemoraWelcome") private var hasSeenWelcome = false
   @Environment(MemoraModel.self) private var model
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.openURL) private var openURL
 
   var body: some View {
     @Bindable var model = model
 
     Group {
-      if hasSeenWelcome {
+      if model.hasCompletedOnboarding {
         RootTabView()
+          .transition(.opacity.combined(with: .scale(scale: 0.97)))
       } else {
         OnboardingView {
-          hasSeenWelcome = true
+          model.completeOnboarding()
           Task {
             await model.startCapture()
           }
         } showSample: {
-          hasSeenWelcome = true
+          model.completeOnboarding()
+        } signIn: {
+          model.completeOnboarding()
+          model.isAuthPresented = true
         }
+        .transition(.opacity)
       }
     }
-    .animation(.smooth, value: hasSeenWelcome)
+    .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.hasCompletedOnboarding)
     .fullScreenCover(isPresented: $model.isCapturePresented) {
       CaptureSessionView()
+    }
+    .sheet(isPresented: $model.isAuthPresented) {
+      AuthView()
+    }
+    .sheet(isPresented: $model.isPaywallPresented) {
+      PaywallView()
     }
     .overlay {
       if model.isImporting {
         ImportProgressOverlay(progress: model.importProgress)
+          .transition(.opacity)
       }
     }
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isImporting)
     .alert("マイクへのアクセスが必要です", isPresented: $model.microphonePermissionDenied) {
       Button("設定を開く") {
         if let url = URL(string: UIApplication.openSettingsURLString) {

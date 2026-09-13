@@ -20,6 +20,15 @@ final class MemoraModel {
   var isImporting = false
   var importProgress = 0.0
   var importErrorMessage: String?
+  var account: MemoraAccount?
+  var isAuthPresented = false
+  var isPaywallPresented = false
+
+  /// Onboarding runs once. Sign-in and Plus stay optional so people can judge
+  /// the app before committing to either.
+  private(set) var hasCompletedOnboarding: Bool
+  private(set) var isSubscribed: Bool
+  private var hasOfferedPlus: Bool
 
   @ObservationIgnored private var recordingURL: URL?
   @ObservationIgnored private var recordingStartedAt: Date?
@@ -29,6 +38,14 @@ final class MemoraModel {
   @ObservationIgnored private let recorder = AudioRecorderService()
 
   init() {
+    let defaults = UserDefaults.standard
+    hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
+    isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
+    hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
+    if let data = defaults.data(forKey: StorageKey.account) {
+      account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
+    }
+
     let sample = SampleContent.make()
     meetings = sample.meetings
     spaces = sample.spaces
@@ -43,6 +60,91 @@ final class MemoraModel {
       )
     ]
   }
+
+  // MARK: - Onboarding and account
+
+  func completeOnboarding() {
+    hasCompletedOnboarding = true
+    UserDefaults.standard.set(true, forKey: StorageKey.hasCompletedOnboarding)
+  }
+
+  func replayOnboarding() {
+    hasCompletedOnboarding = false
+    UserDefaults.standard.set(false, forKey: StorageKey.hasCompletedOnboarding)
+  }
+
+  var isSignedIn: Bool {
+    account != nil
+  }
+
+  func signIn(with provider: AuthProvider, email: String? = nil, displayName: String? = nil) {
+    let address = email ?? Self.placeholderEmail(for: provider)
+    persist(
+      MemoraAccount(
+        displayName: displayName ?? Self.placeholderName(for: provider, email: address),
+        email: address,
+        provider: provider,
+        createdAt: account?.createdAt ?? .now
+      )
+    )
+  }
+
+  func signOut() {
+    persist(nil)
+  }
+
+  func deleteAccount() {
+    persist(nil)
+    aiHistory = []
+  }
+
+  /// Purchases are tied to the Apple ID, so Plus does not require a Memora
+  /// account. Signing in only adds sync.
+  func startSubscription() {
+    isSubscribed = true
+    UserDefaults.standard.set(true, forKey: StorageKey.isSubscribed)
+  }
+
+  /// Offers Plus once, and only after someone has seen a conversation get
+  /// organized, so the value is visible before the price is.
+  private func offerPlusIfNeeded() {
+    guard !hasOfferedPlus, !isSubscribed else { return }
+    hasOfferedPlus = true
+    UserDefaults.standard.set(true, forKey: StorageKey.hasOfferedPlus)
+    isPaywallPresented = true
+  }
+
+  private func persist(_ account: MemoraAccount?) {
+    self.account = account
+    let defaults = UserDefaults.standard
+    if let account, let data = try? JSONEncoder().encode(account) {
+      defaults.set(data, forKey: StorageKey.account)
+    } else {
+      defaults.removeObject(forKey: StorageKey.account)
+    }
+  }
+
+  private static func placeholderEmail(for provider: AuthProvider) -> String {
+    switch provider {
+    case .apple:
+      "you@privaterelay.appleid.com"
+    case .google:
+      "you@gmail.com"
+    case .email:
+      "you@example.com"
+    }
+  }
+
+  private static func placeholderName(for provider: AuthProvider, email: String) -> String {
+    switch provider {
+    case .apple, .google:
+      provider.label + "ユーザー"
+    case .email:
+      String(email.prefix(while: { $0 != "@" }))
+    }
+  }
+
+  // MARK: - Content
 
   func meeting(id: UUID) -> Meeting? {
     meetings.first { $0.id == id }
@@ -303,11 +405,19 @@ final class MemoraModel {
       isCompleted: false
     )
     tasks.insert(task, at: 0)
+    offerPlusIfNeeded()
   }
 
   private func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) {
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
     change(&meetings[index])
+  }
+
+  private enum StorageKey {
+    static let hasCompletedOnboarding = "hasSeenMemoraWelcome"
+    static let hasOfferedPlus = "hasOfferedMemoraPlus"
+    static let isSubscribed = "memoraPlusActive"
+    static let account = "memoraAccount"
   }
 
   private func recordingsDirectory() throws -> URL {

@@ -4,35 +4,61 @@ struct SettingsView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var showsCloseButton = true
-  @AppStorage("hasSeenMemoraWelcome") private var hasSeenWelcome = true
-  @State private var isPaywallPresented = false
   @State private var isDeleteConfirmationPresented = false
+  @State private var isSignOutConfirmationPresented = false
+  @State private var isAccountDeletionPresented = false
 
   var body: some View {
     NavigationStack {
       Form {
         Section {
-          Label {
-            LabeledContent("状態", value: "このiPhoneのみ")
-          } icon: {
-            Image(systemName: "person")
-              .foregroundStyle(.primary)
-          }
+          if let account = model.account {
+            Label {
+              VStack(alignment: .leading, spacing: 3) {
+                Text(account.displayName)
+                  .font(.body.weight(.medium))
+                Text(account.email)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+                Text("\(account.provider.label)でサインイン中")
+                  .font(.caption2)
+                  .foregroundStyle(.secondary)
+              }
+              .padding(.vertical, 2)
+            } icon: {
+              Image(systemName: "person.crop.circle.fill")
+                .foregroundStyle(.primary)
+            }
 
-          Button("Appleでサインイン", systemImage: "apple.logo") {}
-          Button("Googleでサインイン", systemImage: "g.circle") {}
+            Button("サインアウト", systemImage: "rectangle.portrait.and.arrow.right") {
+              isSignOutConfirmationPresented = true
+            }
+          } else {
+            Label {
+              LabeledContent("状態", value: "このiPhoneのみ")
+            } icon: {
+              Image(systemName: "person")
+                .foregroundStyle(.primary)
+            }
+
+            Button("サインイン / 新規登録", systemImage: "person.badge.key") {
+              model.isAuthPresented = true
+            }
+          }
         } header: {
           Text("アカウント")
         } footer: {
-          Text("サインインしなくても録音とローカル文字起こしを試せます。同期が必要になった時に接続できます。")
+          Text(model.isSignedIn
+               ? "会議とタスクを同じアカウントの端末で同期します。"
+               : "サインインしなくても録音とローカル文字起こしを試せます。同期が必要になった時に接続できます。")
         }
 
         Section {
           Button {
-            isPaywallPresented = true
+            model.isPaywallPresented = true
           } label: {
             LabeledContent {
-              Text("Free")
+              Text(model.isSubscribed ? "Plus" : "Free")
                 .foregroundStyle(.secondary)
             } label: {
               Label("Memora Plus", systemImage: "sparkles")
@@ -41,7 +67,9 @@ struct SettingsView: View {
         } header: {
           Text("プラン")
         } footer: {
-          Text("あと4回、高度なAI整理を利用できます。")
+          Text(model.isSubscribed
+               ? "高度なAI整理を制限なく利用できます。"
+               : "あと4回、高度なAI整理を利用できます。")
         }
 
         Section {
@@ -90,7 +118,7 @@ struct SettingsView: View {
           }
 
           Button("初回体験をもう一度見る", systemImage: "arrow.counterclockwise") {
-            hasSeenWelcome = false
+            model.replayOnboarding()
             if showsCloseButton {
               dismiss()
             }
@@ -104,6 +132,16 @@ struct SettingsView: View {
             isDeleteConfirmationPresented = true
           }
         }
+
+        if model.isSignedIn {
+          Section {
+            Button("アカウントを削除", systemImage: "person.crop.circle.badge.xmark", role: .destructive) {
+              isAccountDeletionPresented = true
+            }
+          } footer: {
+            Text("アカウントと同期データを削除します。このiPhoneに保存した録音は残ります。")
+          }
+        }
       }
       .navigationTitle("設定")
       .toolbar {
@@ -113,8 +151,21 @@ struct SettingsView: View {
           }
         }
       }
-      .sheet(isPresented: $isPaywallPresented) {
-        PaywallView()
+      .confirmationDialog("サインアウトしますか？", isPresented: $isSignOutConfirmationPresented, titleVisibility: .visible) {
+        Button("サインアウト", role: .destructive) {
+          model.signOut()
+        }
+        Button("キャンセル", role: .cancel) {}
+      } message: {
+        Text("このiPhoneの録音と議事録はそのまま残ります。")
+      }
+      .confirmationDialog("アカウントを削除しますか？", isPresented: $isAccountDeletionPresented, titleVisibility: .visible) {
+        Button("削除", role: .destructive) {
+          model.deleteAccount()
+        }
+        Button("キャンセル", role: .cancel) {}
+      } message: {
+        Text("アカウントと同期データを削除します。取り消せません。")
       }
       .confirmationDialog("サンプルを空にしますか？", isPresented: $isDeleteConfirmationPresented, titleVisibility: .visible) {
         Button("空にする", role: .destructive) {
