@@ -3,8 +3,11 @@
     "Debug": "debug",
     "Release": "release"
   },
-  "name": "Project",
+  "name": "Memora",
   "options": {
+    "deploymentTarget": {
+      "iOS": "18.0"
+    },
     "groupSortPosition": "bottom",
     "transitivelyLinkDependencies": false
   },
@@ -15,23 +18,32 @@
     "Memora": {
       "dependencies": [
         {
-          "target": "New ProjectWidget"
+          "embed": true,
+          "target": "Memora Widget Extension"
         }
       ],
-      "deploymentTarget": "26.0",
       "info": {
         "path": "App/Info.plist",
         "properties": {
-          "CFBundleDisplayName": "New Project",
+          "CFBundleDisplayName": "Memora",
           "CFBundleShortVersionString": "1.0",
+          "CFBundleURLTypes": [
+            {
+              "CFBundleURLName": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4",
+              "CFBundleURLSchemes": [
+                "memora"
+              ]
+            }
+          ],
           "CFBundleVersion": "1",
-          "ITSAppUsesNonExemptEncryption": false,
+          "NSMicrophoneUsageDescription": "会話を録音して、文字起こしと議事録を作成するためにマイクを使用します。",
+          "NSSupportsLiveActivities": true,
+          "UIBackgroundModes": [
+            "audio"
+          ],
           "UILaunchScreen": {},
           "UISupportedInterfaceOrientations": [
-            "UIInterfaceOrientationPortrait",
-            "UIInterfaceOrientationPortraitUpsideDown",
-            "UIInterfaceOrientationLandscapeLeft",
-            "UIInterfaceOrientationLandscapeRight"
+            "UIInterfaceOrientationPortrait"
           ]
         }
       },
@@ -39,29 +51,24 @@
       "settings": {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
-        "CURRENT_PROJECT_VERSION": "1",
-        "MARKETING_VERSION": "1.0",
-        "PRODUCT_BUNDLE_IDENTIFIER": "app.bitrig.new.a8e58691-1b31-4bb3-8c2f-f9dec163a2ea",
-        "PRODUCT_NAME": "$(TARGET_NAME)",
-        "SWIFT_VERSION": "5.0",
+        "PRODUCT_BUNDLE_IDENTIFIER": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4",
         "TARGETED_DEVICE_FAMILY": "1"
       },
       "sources": [
         {
           "path": "App"
+        },
+        {
+          "path": "Shared"
         }
       ],
       "type": "application"
     },
-    "New ProjectWidget": {
-      "deploymentTarget": "26.0",
+    "Memora Widget Extension": {
       "info": {
-        "path": "Widget/Info.plist",
+        "path": "Widget Extension/Info.plist",
         "properties": {
-          "CFBundleDisplayName": "New ProjectWidget",
-          "CFBundleShortVersionString": "1.0",
-          "CFBundleVersion": "1",
-          "ITSAppUsesNonExemptEncryption": false,
+          "CFBundleDisplayName": "Memora Widget Extension",
           "NSExtension": {
             "NSExtensionPointIdentifier": "com.apple.widgetkit-extension"
           }
@@ -69,17 +76,16 @@
       },
       "platform": "iOS",
       "settings": {
-        "APPLICATION_EXTENSION_API_ONLY": "YES",
-        "CURRENT_PROJECT_VERSION": "1",
-        "MARKETING_VERSION": "1.0",
-        "PRODUCT_BUNDLE_IDENTIFIER": "app.bitrig.new.a8e58691-1b31-4bb3-8c2f-f9dec163a2ea.widget",
-        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "PRODUCT_BUNDLE_IDENTIFIER": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4.widget-extension",
         "SKIP_INSTALL": "YES",
-        "SWIFT_VERSION": "5.0"
+        "TARGETED_DEVICE_FAMILY": "1"
       },
       "sources": [
         {
-          "path": "Widget"
+          "path": "Widget Extension"
+        },
+        {
+          "path": "Shared"
         }
       ],
       "type": "app-extension"

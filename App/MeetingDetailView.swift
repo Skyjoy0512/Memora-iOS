@@ -1,0 +1,404 @@
+import SwiftUI
+
+struct MeetingDetailView: View {
+  @Environment(MemoraModel.self) private var model
+  @Environment(\.dismiss) private var dismiss
+  var meetingID: UUID
+  @State private var isAskingAI = false
+  @State private var isRenaming = false
+  @State private var isDeleting = false
+
+  var body: some View {
+    Group {
+      if let meeting = model.meeting(id: meetingID) {
+        ScrollView {
+          VStack(alignment: .leading, spacing: 30) {
+            meetingHeader(meeting)
+
+            switch meeting.status {
+            case .importing, .transcribing, .organizing:
+              ProcessingOverview(meeting: meeting)
+            case .failed(let message):
+              FailureOverview(message: message) {
+                model.retryProcessing(meeting.id)
+              }
+            case .partialFailure(let message):
+              PartialFailureBanner(message: message) {
+                model.retryProcessing(meeting.id)
+              }
+              insightContent(meeting)
+            case .ready:
+              insightContent(meeting)
+            }
+
+            transcriptPreview(meeting)
+            attachmentsRow
+            askAIButton
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 18)
+          .padding(.bottom, 24)
+        }
+        .safeAreaInset(edge: .bottom) {
+          AudioPlayerBar(meeting: meeting)
+        }
+        .background(Color(uiColor: .systemBackground))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            Menu("その他", systemImage: "ellipsis") {
+              Button("名前を変更", systemImage: "pencil") {
+                isRenaming = true
+              }
+              Button("削除", systemImage: "trash", role: .destructive) {
+                isDeleting = true
+              }
+            }
+          }
+        }
+        .sheet(isPresented: $isAskingAI) {
+          AIQuestionView(scope: .file(meeting.id), suggestedQuestion: "この会議で次にすることは？")
+        }
+        .sheet(isPresented: $isRenaming) {
+          RenameMeetingSheet(meeting: meeting)
+        }
+        .confirmationDialog("この会議を削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
+          Button("削除", role: .destructive) {
+            model.deleteMeeting(meeting.id)
+            dismiss()
+          }
+          Button("キャンセル", role: .cancel) {}
+        } message: {
+          Text("音声、文字起こし、議事録、関連タスクが削除されます。")
+        }
+      } else {
+        ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
+      }
+    }
+  }
+
+  private func meetingHeader(_ meeting: Meeting) -> some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Text(meeting.title)
+        .font(.largeTitle.bold())
+        .tracking(-0.6)
+
+      HStack(spacing: 8) {
+        Text(MemoraFormat.meetingDate(meeting.createdAt))
+        Text("·")
+        Text(MemoraFormat.duration(meeting.duration))
+        Text("·")
+        Text(meeting.source.label)
+      }
+      .font(.subheadline)
+      .foregroundStyle(.secondary)
+
+      HStack(spacing: 6) {
+        Image(systemName: "lock.fill")
+        Text("端末に保存")
+      }
+      .font(.caption.weight(.medium))
+      .foregroundStyle(.secondary)
+    }
+    .padding(.top, 8)
+  }
+
+  @ViewBuilder
+  private func insightContent(_ meeting: Meeting) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("一目でわかる")
+        .font(.title2.bold())
+      Text(meeting.summary)
+        .font(.body)
+        .lineSpacing(5)
+        .textSelection(.enabled)
+    }
+
+    InsightSection(
+      title: "決まったこと",
+      symbol: "checkmark.seal.fill",
+      color: .green,
+      items: meeting.decisions,
+      emptyText: "明確な決定は見つかりませんでした"
+    )
+
+    MeetingTasksSection(meetingID: meeting.id)
+
+    InsightSection(
+      title: "まだ決まっていないこと",
+      symbol: "questionmark.bubble.fill",
+      color: .orange,
+      items: meeting.openQuestions,
+      emptyText: "未決事項はありません"
+    )
+
+    InsightSection(
+      title: "重要なポイント",
+      symbol: "pin.fill",
+      color: .indigo,
+      items: meeting.keyPoints,
+      emptyText: "ポイントを抽出中です"
+    )
+  }
+
+  private func transcriptPreview(_ meeting: Meeting) -> some View {
+    VStack(alignment: .leading, spacing: 14) {
+      HStack {
+        Text("会話の記録")
+          .font(.title2.bold())
+        Spacer()
+        NavigationLink("全文", value: LibraryRoute.transcript(meeting.id))
+          .font(.subheadline)
+          .disabled(meeting.transcript.isEmpty)
+      }
+
+      if let segment = meeting.transcript.first {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack {
+            Text(segment.speaker)
+              .font(.caption.weight(.semibold))
+            Text(MemoraFormat.duration(segment.timestamp))
+              .font(.caption.monospacedDigit())
+              .foregroundStyle(.secondary)
+          }
+          Text(segment.text)
+            .font(.body)
+            .lineLimit(3)
+            .foregroundStyle(.secondary)
+        }
+      } else {
+        Text("文字起こしが届くと、ここから発言を確認できます。")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+      }
+    }
+  }
+
+  private var attachmentsRow: some View {
+    Button("参考資料を追加", systemImage: "paperclip") {}
+      .font(.subheadline.weight(.medium))
+      .foregroundStyle(.secondary)
+      .accessibilityHint("将来の添付資料機能の入口です")
+  }
+
+  private var askAIButton: some View {
+    Button {
+      isAskingAI = true
+    } label: {
+      HStack(spacing: 12) {
+        Image(systemName: "sparkles")
+          .font(.title3.weight(.semibold))
+        VStack(alignment: .leading, spacing: 2) {
+          Text("この会議について聞く")
+            .font(.headline)
+          Text("回答から元の発言へ戻れます")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        Spacer()
+        Image(systemName: "arrow.up.right")
+          .font(.subheadline.weight(.semibold))
+      }
+      .foregroundStyle(.primary)
+      .padding(16)
+      .background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+private struct InsightSection: View {
+  var title: String
+  var symbol: String
+  var color: Color
+  var items: [String]
+  var emptyText: String
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Label(title, systemImage: symbol)
+        .font(.title3.bold())
+        .foregroundStyle(color)
+
+      if items.isEmpty {
+        Text(emptyText)
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+      } else {
+        ForEach(items, id: \.self) { item in
+          HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Circle()
+              .fill(color)
+              .frame(width: 5, height: 5)
+            Text(item)
+              .font(.body)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          }
+        }
+      }
+    }
+  }
+}
+
+private struct MeetingTasksSection: View {
+  @Environment(MemoraModel.self) private var model
+  var meetingID: UUID
+
+  var body: some View {
+    let meetingTasks = model.tasks.filter { $0.meetingID == meetingID }
+    VStack(alignment: .leading, spacing: 12) {
+      Label("次にすること", systemImage: "arrow.right.circle.fill")
+        .font(.title3.bold())
+        .foregroundStyle(.indigo)
+
+      if meetingTasks.isEmpty {
+        Text("この会議からタスクは見つかりませんでした")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+      } else {
+        ForEach(meetingTasks) { task in
+          TaskRow(task: task)
+        }
+      }
+    }
+  }
+}
+
+private struct ProcessingOverview: View {
+  var meeting: Meeting
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 18) {
+      HStack(spacing: 12) {
+        ProgressView()
+          .controlSize(.large)
+        VStack(alignment: .leading, spacing: 3) {
+          Text(primaryText)
+            .font(.headline)
+          Text("終わった内容から順に使えるようになります")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        }
+      }
+
+      VStack(alignment: .leading, spacing: 12) {
+        ProcessStep(title: "音声を保存", isComplete: true, isCurrent: false)
+        ProcessStep(title: "文字にする", isComplete: hasTranscript, isCurrent: !hasTranscript)
+        ProcessStep(title: "要点と行動を整理", isComplete: false, isCurrent: isOrganizing)
+      }
+    }
+    .padding(18)
+    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+  }
+
+  private var primaryText: String {
+    switch meeting.status {
+    case .importing:
+      "音声を読み込んでいます"
+    case .transcribing:
+      "会話を文字にしています"
+    case .organizing(let detail):
+      detail
+    default:
+      "内容を整理しています"
+    }
+  }
+
+  private var hasTranscript: Bool {
+    !meeting.transcript.isEmpty
+  }
+
+  private var isOrganizing: Bool {
+    if case .organizing = meeting.status { return true }
+    return false
+  }
+}
+
+private struct ProcessStep: View {
+  var title: String
+  var isComplete: Bool
+  var isCurrent: Bool
+
+  var body: some View {
+    HStack(spacing: 10) {
+      Image(systemName: isComplete ? "checkmark.circle.fill" : isCurrent ? "circle.dotted" : "circle")
+        .foregroundStyle(isComplete ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+      Text(title)
+        .font(.subheadline)
+        .foregroundStyle(isCurrent || isComplete ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+    }
+  }
+}
+
+private struct FailureOverview: View {
+  var message: String
+  var retry: () -> Void
+
+  var body: some View {
+    ContentUnavailableView {
+      Label("処理を完了できませんでした", systemImage: "exclamationmark.triangle")
+    } description: {
+      Text(message)
+    } actions: {
+      Button("もう一度試す", systemImage: "arrow.clockwise", action: retry)
+        .buttonStyle(.borderedProminent)
+    }
+  }
+}
+
+private struct PartialFailureBanner: View {
+  var message: String
+  var retry: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Label("文字起こしは使えます", systemImage: "exclamationmark.triangle.fill")
+        .font(.headline)
+        .foregroundStyle(.orange)
+      Text(message)
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+      Button("AI整理だけ再試行", systemImage: "arrow.clockwise", action: retry)
+        .font(.subheadline.weight(.semibold))
+    }
+    .padding(16)
+    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+  }
+}
+
+private struct RenameMeetingSheet: View {
+  @Environment(MemoraModel.self) private var model
+  @Environment(\.dismiss) private var dismiss
+  var meeting: Meeting
+  @State private var title: String
+
+  init(meeting: Meeting) {
+    self.meeting = meeting
+    _title = State(initialValue: meeting.title)
+  }
+
+  var body: some View {
+    NavigationStack {
+      Form {
+        TextField("会議名", text: $title)
+      }
+      .navigationTitle("名前を変更")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("キャンセル") {
+            dismiss()
+          }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+          Button("保存") {
+            model.renameMeeting(meeting.id, title: title)
+            dismiss()
+          }
+          .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+      }
+    }
+    .presentationDetents([.medium])
+  }
+}

@@ -1,0 +1,15 @@
+import SwiftUI
+import WidgetKit
+
+@main
+struct MemoraWidgetBundle: WidgetBundle {
+  @WidgetBundleBuilder
+  var body: some Widget {
+    MemoraCaptureWidget()
+    MemoraRecordingLiveActivity()
+
+    if #available(iOSApplicationExtension 18.0, *) {
+      MemoraRecordControl()
+    }
+  }
+}
