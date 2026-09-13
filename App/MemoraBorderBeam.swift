@@ -7,13 +7,15 @@ struct MemoraBorderBeam: View {
   var cornerRadius: CGFloat
   var strength: Double = 0.7
   var active = true
+  var displayDuration: Duration = .seconds(3)
+  @State private var isVisible = false
 
   var body: some View {
     ZStack {
       RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         .stroke(Color.primary.opacity(0.1), lineWidth: 0.75)
 
-      if active {
+      if active && isVisible {
         if reduceMotion {
           beam(progress: 0.12)
         } else {
@@ -21,6 +23,19 @@ struct MemoraBorderBeam: View {
             beam(progress: context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 3.6) / 3.6)
           }
         }
+      }
+    }
+    .task(id: active) {
+      guard active else {
+        isVisible = false
+        return
+      }
+
+      isVisible = true
+      try? await Task.sleep(for: displayDuration)
+      guard !Task.isCancelled else { return }
+      withAnimation(.easeOut(duration: 0.35)) {
+        isVisible = false
       }
     }
     .allowsHitTesting(false)

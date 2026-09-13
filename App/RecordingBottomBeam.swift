@@ -3,18 +3,29 @@ import SwiftUI
 /// A traveling glow at the physical bottom edge while recording is live.
 struct RecordingBottomBeam: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var isVisible = false
 
   var body: some View {
     GeometryReader { proxy in
-      if reduceMotion {
-        beam(in: proxy.size, progress: 0.5)
-      } else {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-          beam(
-            in: proxy.size,
-            progress: context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.8) / 2.8
-          )
+      if isVisible {
+        if reduceMotion {
+          beam(in: proxy.size, progress: 0.5)
+        } else {
+          TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+            beam(
+              in: proxy.size,
+              progress: context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2.8) / 2.8
+            )
+          }
         }
+      }
+    }
+    .task {
+      isVisible = true
+      try? await Task.sleep(for: .seconds(3))
+      guard !Task.isCancelled else { return }
+      withAnimation(.easeOut(duration: 0.35)) {
+        isVisible = false
       }
     }
     .allowsHitTesting(false)

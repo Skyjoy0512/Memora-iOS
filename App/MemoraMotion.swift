@@ -50,16 +50,38 @@ private struct MemoraAppear: ViewModifier {
 private struct MemoraTextReveal: ViewModifier {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var delay: Double
-  @State private var isRevealed = false
+  @State private var revealProgress: CGFloat = 0
 
   func body(content: Content) -> some View {
     content
-      .opacity(isRevealed ? 1 : 0)
-      .blur(radius: isRevealed || reduceMotion ? 0 : 5)
-      .offset(y: isRevealed || reduceMotion ? 0 : 6)
+      .opacity(revealProgress)
+      .blur(radius: revealProgress == 1 || reduceMotion ? 0 : 3)
+      .offset(y: revealProgress == 1 || reduceMotion ? 0 : 4)
+      .mask {
+        if reduceMotion {
+          Rectangle()
+        } else {
+          GeometryReader { proxy in
+            let softEdge: CGFloat = 24
+            let revealWidth = (proxy.size.width + softEdge) * revealProgress
+
+            HStack(spacing: 0) {
+              Rectangle()
+                .frame(width: max(0, revealWidth - softEdge))
+              LinearGradient(
+                colors: [.white, .clear],
+                startPoint: .leading,
+                endPoint: .trailing
+              )
+              .frame(width: min(softEdge, revealWidth))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+          }
+        }
+      }
       .onAppear {
         withAnimation(animation) {
-          isRevealed = true
+          revealProgress = 1
         }
       }
   }
@@ -67,6 +89,6 @@ private struct MemoraTextReveal: ViewModifier {
   private var animation: Animation {
     reduceMotion
       ? .easeOut(duration: 0.18)
-      : MemoraMotion.screen.delay(delay)
+      : .smooth(duration: 0.58).delay(delay)
   }
 }

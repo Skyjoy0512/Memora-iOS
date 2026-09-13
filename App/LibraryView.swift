@@ -66,6 +66,7 @@ struct LibraryView: View {
     VStack(alignment: .leading, spacing: 10) {
       Text("プロジェクト")
         .font(.headline)
+        .memoraTextReveal()
 
       ScrollView(.horizontal) {
         HStack(spacing: 10) {
@@ -100,6 +101,7 @@ struct LibraryView: View {
       HStack {
         Text("最近の会話")
           .font(.title2.bold())
+          .memoraTextReveal(delay: 0.04)
         Spacer()
         NavigationLink("すべて表示", value: LibraryRoute.allMeetings)
           .font(.subheadline)

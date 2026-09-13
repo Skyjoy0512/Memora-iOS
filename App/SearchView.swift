@@ -72,10 +72,12 @@ struct SearchView: View {
       VStack(spacing: 8) {
         Text("何を知りたいですか？")
           .font(.title2.bold())
+          .memoraTextReveal(delay: 0.08)
         Text("言葉を思い出せなくても、会話の意味から探せます。")
           .font(.subheadline)
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
+          .memoraTextReveal(delay: 0.16)
       }
 
       Button {

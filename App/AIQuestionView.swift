@@ -78,9 +78,11 @@ struct AIQuestionView: View {
     VStack(alignment: .leading, spacing: 8) {
       Text("会議をまたいで、答えを探します")
         .font(.title2.bold())
+        .memoraTextReveal()
       Text("回答には、元の会議と発言時刻を表示します。")
         .font(.subheadline)
         .foregroundStyle(.secondary)
+        .memoraTextReveal(delay: 0.08)
     }
   }
 
@@ -116,11 +118,13 @@ struct AIQuestionView: View {
       Label("回答", systemImage: "sparkles")
         .font(.headline)
         .foregroundStyle(.primary)
+        .memoraTextReveal()
 
       Text(answer)
         .font(.body)
         .lineSpacing(5)
         .textSelection(.enabled)
+        .memoraTextReveal(delay: 0.06)
 
       VStack(alignment: .leading, spacing: 10) {
         Text("根拠")

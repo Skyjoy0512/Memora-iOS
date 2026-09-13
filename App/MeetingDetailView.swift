@@ -81,6 +81,7 @@ struct MeetingDetailView: View {
         } message: {
           Text("音声、文字起こし、議事録、関連タスクが削除されます。")
         }
+        .sensoryFeedback(.selection, trigger: selectedSection)
       } else {
         ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
       }
@@ -141,6 +142,7 @@ struct MeetingDetailView: View {
       Text(meeting.title)
         .font(.largeTitle.bold())
         .tracking(-0.6)
+        .memoraTextReveal()
 
       HStack(spacing: 8) {
         Text(MemoraFormat.meetingDate(meeting.createdAt))
@@ -242,6 +244,7 @@ private struct MeetingTranscriptContent: View {
       HStack {
         Text("文字起こし")
           .font(.title2.bold())
+          .memoraTextReveal()
         Spacer()
         NavigationLink("編集", value: LibraryRoute.transcript(meeting.id))
           .font(.subheadline)
@@ -297,6 +300,7 @@ private struct MeetingNotesContent: View {
       HStack {
         Text("ノート")
           .font(.title2.bold())
+          .memoraTextReveal()
 
         Spacer()
 
@@ -356,6 +360,7 @@ private struct InsightSection: View {
       Label(title, systemImage: symbol)
         .font(.title3.bold())
         .foregroundStyle(color)
+        .memoraTextReveal()
 
       if items.isEmpty {
         Text(emptyText)

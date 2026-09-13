@@ -33,6 +33,7 @@ struct MemoraBottomBar: View {
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.selectedTab)
+    .sensoryFeedback(.selection, trigger: model.selectedTab)
   }
 }
 
@@ -72,7 +73,6 @@ private struct BottomTabButton: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .sensoryFeedback(.selection, trigger: isSelected)
     .accessibilityLabel(title)
     .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
