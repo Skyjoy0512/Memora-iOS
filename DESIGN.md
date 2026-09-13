@@ -57,8 +57,8 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 
 ## D. Main user flow
 
-1. 初回起動で「話せば、次にすることまで残る」と価値を一文で理解する
-2. 「最初の会話を録音」を押した時にだけマイク権限を要求する
+1. 初回起動で3ページの短いオンボーディングを見る。いつでもスキップでき、二度目以降は出ない
+2. 「最初の会話を録音」を押した時にだけマイク権限を要求する。サインインも購入も要求しない
 3. 録音中は、経過時間・波形・端末保存中であること・停止操作だけを強調する
 4. 画面を閉じても録音を継続し、Live Activityで状態を確認できる
 5. 停止直後に音声をFileとして保存し、一覧と会議詳細へ即反映する
@@ -67,12 +67,16 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 8. 完了後は、サマリー → 決定 → 次の行動 → 未決事項 → 重要点の順に読む
 9. 要約・文字起こし・ノートを同じ詳細画面で切り替え、必要なら下部からAIへ質問する
 10. タスクは元の会議と結び付いたまま、横断タスク画面にも集約する
+11. 最初の会話が整理されたあとに一度だけPlusを提案する。価値を見る前に価格を見せない
+12. サインインは同期が欲しくなった時に、設定またはオンボーディング末尾から任意で行う
 
 ## E. Navigation
 
 標準のTabViewを状態管理に使いながら、下部の明確なナビゲーションで「会議／Ask AI／タスク／設定」を常に切り替える。タブは場所の移動だけに使い、追加操作は右端の独立した円形FABへ分離する。FABはどの領域でも同じ場所にあり、録音開始・音声インポート・オンライン会議キャプチャの起点になる。
 
-会議詳細はNavigationStackで深掘りし、録音セッション・追加方法の選択・AI回答は一時的で自己完結するためモーダル表示にする。会議一覧と詳細では、ナビゲーションの直上へQuick AI / AI Chat composerを固定し、スコープをGlobal / Fileへ自動で切り替える。
+会議詳細はNavigationStackで深掘りし、録音セッション・追加方法の選択・サインイン・Paywall・AI回答は一時的で自己完結するためモーダル表示にする。会議一覧と詳細では、ナビゲーションの直上へQuick AI / AI Chat composerを固定し、スコープをGlobal / Fileへ自動で切り替える。
+
+下部のバー・FAB・composerはLiquid Glassの機能レイヤーとして扱い、コンテンツはその下を流れる。HIGに従いガラスはこの3つだけに限り、コンテンツ層は標準マテリアルのままにする。キーボードが出ている間はバーを退避させ、composerだけがキーボードの上に残る。
 
 ## F. Screen list
 
@@ -104,23 +108,35 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 18. AI settings / API key entry
 19. Privacy and storage
 20. Subscription / Paywall
+21. Sign-in options
+22. Email sign-up / log-in
 
 ### State coverage
 
-21. Empty meetings
-22. Empty tasks
-23. Empty AI history
-24. Microphone denied / recording error
-25. Import error
-26. STT error and retry
-27. AI-only failure with transcript preserved
-28. Missing API key / network error
+23. Empty meetings
+24. Empty tasks
+25. Empty AI history
+26. Microphone denied / recording error
+27. Import error
+28. STT error and retry
+29. AI-only failure with transcript preserved
+30. Missing API key / network error
+31. Signed-out / signed-in account
+32. Free / subscribed plan
 
 ## G. High-fidelity UI
 
 ### First launch
 
-説明カルーセルを廃止し、価値の一文、Record → Understand → Actの短い図、録音CTA、サンプル導線だけで構成する。サインインや購入は要求しない。
+記録・理解・行動の3ページに絞り、各ページへ成果を示す小さなプレビューを添える。スキップは常に出し、最終ページで「最初の会話を録音」「サンプルで見る」「アカウントで続ける」を提示する。ページ間で見出しやCTAの位置が動かないよう、レイアウトを固定する。
+
+### Account
+
+サインインは任意で、遅らせられる限り遅らせる。Apple / Google / メールアドレスの3方式を出し、メールは新規登録とログインを同じ画面でセグメント切り替えする。同期以外の機能はサインインなしで使えることを、サインイン画面自身に明記する。作成したアカウントは設定から削除できる。
+
+### Paywall
+
+最初の会話が整理された直後に一度だけ提示し、以降は設定から開く。年額・月額を切り替え、無料トライアルの条件を控えめな文字で明示する。購入後は同じ画面が利用中の状態へ切り替わる。
 
 ### Meetings
 
@@ -136,7 +152,7 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 
 ### Ask
 
-質問はFile / Project / Globalの範囲を明示する。下部composerではQuick AI / AI Chatとモデルを選び、マイクによる入力も開始できる。回答直下に根拠会議と時刻を表示し、文字起こしへ移動できる。
+質問はFile / Project / Globalの範囲を明示する。下部composerはQuick AI / AI Chatの切り替えと入力に絞り、モデル選択は置かない。空いた場所は入力欄に回す。マイクからの音声入力も同じ行から始められ、キーボード表示中はその位置がキーボードを閉じる操作になる。回答直下に根拠会議と時刻を表示し、文字起こしへ移動できる。
 
 ## H. Interaction
 
@@ -146,8 +162,9 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 - 処理: 内容を即時作成し、段階表示。終わった成果物から開放
 - インポート: Files picker → 進捗 → 会議詳細 → 自動処理
 - タスク完了: スプリングアニメーションで状態変更、元会議への導線を維持
-- AI composer: 会議一覧ではGlobal、詳細ではFileへ自動でスコープを合わせ、モード・モデル・音声入力をその場で選択
+- AI composer: 会議一覧ではGlobal、詳細ではFileへ自動でスコープを合わせ、モードと音声入力をその場で選択
 - AI: 質問送信中は根拠探索中と表現し、回答後にSourceを表示
+- モーション: 画面遷移・コントロール・強調の3種類のスプリングに統一し、Reduce Motionでは移動を止めて不透明度だけを変える
 - Reduce MotionやDynamic Typeを壊さない標準コンテナとテキストスタイルを優先
 
 ## I. Design system
@@ -171,6 +188,12 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 - Screen horizontal inset: 18–24pt
 - Primary corner radius: 16–26pt, hierarchyに応じて使用
 
+### Material
+
+- Functional layer（bottom bar / FAB / composer）: Liquid Glass regular。iOS 26未満は同形状のマテリアルへフォールバック
+- Content layer: 標準マテリアルとsemantic backgroundのみ。ガラスは使わない
+- 強調したい面（FAB・送信）はガラスにtintを重ね、不透明な面として読ませる
+
 ### Color
 
 - Canvas / grouped surfaces: iOS semantic system colors
@@ -182,7 +205,7 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 
 ### Components
 
-- Independent capture FAB and source picker
+- Liquid Glass bottom bar, capture FAB, and source picker
 - Quick AI / AI Chat composer
 - Compact project chip
 - Meeting row
@@ -193,6 +216,8 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 - Source link
 - ContentUnavailableView-based empty state
 - Form-based settings
+- Onboarding page with outcome preview
+- Provider and email authentication forms
 
 ### Iconography
 

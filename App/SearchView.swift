@@ -109,7 +109,7 @@ struct SearchView: View {
             NavigationLink {
               MeetingDetailView(meetingID: meeting.id)
             } label: {
-              MeetingRow(meeting: meeting)
+              MeetingRow(meeting: meeting, showsDisclosure: false)
             }
           }
         }
@@ -124,6 +124,8 @@ struct SearchView: View {
       }
     }
     .listStyle(.insetGrouped)
+    .animation(.smooth, value: matchingMeetings)
+    .animation(.smooth, value: matchingTasks)
     .overlay {
       if matchingMeetings.isEmpty && matchingTasks.isEmpty {
         ContentUnavailableView.search(text: query)

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LibraryView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     @Bindable var model = model
@@ -11,6 +12,7 @@ struct LibraryView: View {
         LazyVStack(alignment: .leading, spacing: 22) {
           if model.isRecording {
             ActiveRecordingStrip()
+              .transition(.opacity.combined(with: .move(edge: .top)))
           }
 
           if model.meetings.isEmpty {
@@ -36,6 +38,8 @@ struct LibraryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 18)
         .padding(.bottom, 32)
+        .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isRecording)
+        .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.meetings)
       }
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("会議")

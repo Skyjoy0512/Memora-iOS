@@ -3,6 +3,7 @@ import SwiftUI
 struct MeetingDetailView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var meetingID: UUID
   @State private var selectedSection = MeetingDetailSection.summary
   @State private var noteText = ""
@@ -23,32 +24,14 @@ struct MeetingDetailView: View {
             }
             .pickerStyle(.segmented)
 
-            switch selectedSection {
-            case .summary:
-              switch meeting.status {
-              case .importing, .transcribing, .organizing:
-                ProcessingOverview(meeting: meeting)
-              case .failed(let message):
-                FailureOverview(message: message) {
-                  model.retryProcessing(meeting.id)
-                }
-              case .partialFailure(let message):
-                PartialFailureBanner(message: message) {
-                  model.retryProcessing(meeting.id)
-                }
-                insightContent(meeting)
-              case .ready:
-                insightContent(meeting)
-              }
-            case .transcript:
-              MeetingTranscriptContent(meeting: meeting)
-            case .notes:
-              MeetingNotesContent(noteText: $noteText)
-            }
+            sectionContent(meeting)
+              .transition(.opacity)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.horizontal, 18)
           .padding(.bottom, 24)
+          .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedSection)
+          .animation(reduceMotion ? nil : MemoraMotion.screen, value: meeting.status)
         }
         .background(Color(uiColor: .systemBackground))
         .navigationBarTitleDisplayMode(.inline)
@@ -79,6 +62,32 @@ struct MeetingDetailView: View {
       } else {
         ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
       }
+    }
+  }
+
+  @ViewBuilder
+  private func sectionContent(_ meeting: Meeting) -> some View {
+    switch selectedSection {
+    case .summary:
+      switch meeting.status {
+      case .importing, .transcribing, .organizing:
+        ProcessingOverview(meeting: meeting)
+      case .failed(let message):
+        FailureOverview(message: message) {
+          model.retryProcessing(meeting.id)
+        }
+      case .partialFailure(let message):
+        PartialFailureBanner(message: message) {
+          model.retryProcessing(meeting.id)
+        }
+        insightContent(meeting)
+      case .ready:
+        insightContent(meeting)
+      }
+    case .transcript:
+      MeetingTranscriptContent(meeting: meeting)
+    case .notes:
+      MeetingNotesContent(noteText: $noteText)
     }
   }
 

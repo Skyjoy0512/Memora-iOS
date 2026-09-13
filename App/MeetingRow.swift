@@ -2,6 +2,9 @@ import SwiftUI
 
 struct MeetingRow: View {
   var meeting: Meeting
+  /// `List` adds its own indicator for a `NavigationLink`, so rows inside one
+  /// should turn this off.
+  var showsDisclosure = true
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
@@ -38,10 +41,13 @@ struct MeetingRow: View {
 
       Spacer(minLength: 8)
 
-      Image(systemName: "chevron.right")
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.tertiary)
-        .padding(.top, 4)
+      if showsDisclosure {
+        Image(systemName: "chevron.right")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(.tertiary)
+          .padding(.top, 4)
+          .accessibilityHidden(true)
+      }
     }
     .padding(.vertical, 12)
     .contentShape(Rectangle())

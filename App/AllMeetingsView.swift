@@ -8,7 +8,7 @@ struct AllMeetingsView: View {
     List {
       ForEach(filteredMeetings) { meeting in
         NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
-          MeetingRow(meeting: meeting)
+          MeetingRow(meeting: meeting, showsDisclosure: false)
         }
         .swipeActions(edge: .trailing) {
           Button("削除", systemImage: "trash", role: .destructive) {
@@ -18,6 +18,7 @@ struct AllMeetingsView: View {
       }
     }
     .listStyle(.plain)
+    .animation(.smooth, value: filteredMeetings)
     .navigationTitle("すべての会話")
     .searchable(text: $query, prompt: "タイトル、発言、決定、タスク")
     .overlay {

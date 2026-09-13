@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MeetingStatusLabel: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var status: MeetingStatus
 
   var body: some View {
@@ -12,9 +13,11 @@ struct MeetingStatusLabel: View {
         Image(systemName: status.symbol)
       }
       Text(status.shortLabel)
+        .contentTransition(.opacity)
     }
     .font(.caption2.weight(.medium))
     .foregroundStyle(style)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: status)
     .accessibilityElement(children: .combine)
   }
 

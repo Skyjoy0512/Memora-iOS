@@ -48,8 +48,11 @@ struct SpaceDetailView: View {
                 MeetingRow(meeting: meeting)
               }
               .buttonStyle(.plain)
-              Divider()
-                .padding(.leading, 52)
+
+              if meeting.id != spaceMeetings.last?.id {
+                Divider()
+                  .padding(.leading, 52)
+              }
             }
           }
         }

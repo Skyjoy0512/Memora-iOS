@@ -19,7 +19,7 @@ struct CaptureSessionView: View {
             .monospacedDigit()
             .contentTransition(.numericText())
 
-          RecordingWaveform(elapsed: model.recordingElapsed)
+          RecordingWaveform()
             .frame(height: 96)
             .padding(.horizontal, 24)
             .accessibilityHidden(true)
@@ -75,18 +75,34 @@ struct CaptureSessionView: View {
 }
 
 private struct RecordingWaveform: View {
-  var elapsed: TimeInterval
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  private let barCount = 24
 
   var body: some View {
-    HStack(spacing: 4) {
-      ForEach(0..<24, id: \.self) { index in
-        let phase = elapsed + Double(index) * 0.67
-        let height = 14 + abs(sin(phase)) * 70
-        Capsule()
-          .fill(index.isMultiple(of: 5) ? Color.red : Color.primary.opacity(0.76))
-          .frame(maxWidth: .infinity)
-          .frame(height: height)
+    if reduceMotion {
+      bars(at: 0)
+    } else {
+      TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
+        bars(at: context.date.timeIntervalSinceReferenceDate)
       }
     }
+  }
+
+  private func bars(at time: TimeInterval) -> some View {
+    HStack(spacing: 4) {
+      ForEach(0..<barCount, id: \.self) { index in
+        Capsule()
+          .fill(.primary.opacity(0.78))
+          .frame(maxWidth: .infinity)
+          .frame(height: height(index: index, time: time))
+      }
+    }
+  }
+
+  /// Two out-of-step waves so the shape reads as speech rather than a pulse.
+  private func height(index: Int, time: TimeInterval) -> CGFloat {
+    let offset = Double(index) * 0.55
+    let wave = abs(sin(time * 2.1 + offset)) * 0.7 + abs(sin(time * 1.3 + offset * 1.7)) * 0.3
+    return 14 + wave * 70
   }
 }
