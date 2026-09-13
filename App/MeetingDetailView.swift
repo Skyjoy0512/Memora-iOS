@@ -14,18 +14,28 @@ struct MeetingDetailView: View {
     Group {
       if let meeting = model.meeting(id: meetingID) {
         ScrollView {
-          VStack(alignment: .leading, spacing: 30) {
+          VStack(alignment: .leading, spacing: 22) {
             meetingHeader(meeting)
 
-            Picker("表示内容", selection: $selectedSection) {
-              ForEach(MeetingDetailSection.allCases) { section in
-                Text(section.label).tag(section)
+            VStack(alignment: .leading, spacing: 10) {
+              Picker("会議の表示", selection: $selectedSection) {
+                ForEach(MeetingDetailSection.allCases) { section in
+                  Text(section.label).tag(section)
+                }
               }
+              .pickerStyle(.segmented)
+
+              Label(selectedSection.description, systemImage: selectedSection.symbol)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .contentTransition(.symbolEffect(.replace))
+                .id(selectedSection)
+                .transition(.opacity)
             }
-            .pickerStyle(.segmented)
 
             sectionContent(meeting)
-              .transition(.opacity)
+              .id(selectedSection)
+              .transition(sectionTransition)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.horizontal, 18)
@@ -63,6 +73,15 @@ struct MeetingDetailView: View {
         ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
       }
     }
+  }
+
+  private var sectionTransition: AnyTransition {
+    reduceMotion
+      ? .opacity
+      : .asymmetric(
+        insertion: .opacity.combined(with: .move(edge: .trailing)),
+        removal: .opacity
+      )
   }
 
   @ViewBuilder
@@ -119,14 +138,19 @@ struct MeetingDetailView: View {
 
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("サマリー")
-        .font(.title2.bold())
+    VStack(alignment: .leading, spacing: 10) {
+      Label("サマリー", systemImage: "sparkles")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
       Text(meeting.summary)
-        .font(.body)
-        .lineSpacing(5)
+        .font(.title3.weight(.medium))
+        .lineSpacing(6)
         .textSelection(.enabled)
+        .memoraTextReveal(delay: 0.04)
     }
+    .padding(18)
+    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .memoraAppear()
 
     InsightSection(
       title: "決まったこと",
@@ -135,8 +159,10 @@ struct MeetingDetailView: View {
       items: meeting.decisions,
       emptyText: "明確な決定は見つかりませんでした"
     )
+    .memoraAppear(delay: 0.05)
 
     MeetingTasksSection(meetingID: meeting.id)
+      .memoraAppear(delay: 0.1)
 
     InsightSection(
       title: "まだ決まっていないこと",
@@ -145,6 +171,7 @@ struct MeetingDetailView: View {
       items: meeting.openQuestions,
       emptyText: "未決事項はありません"
     )
+    .memoraAppear(delay: 0.15)
 
     InsightSection(
       title: "重要なポイント",
@@ -153,6 +180,7 @@ struct MeetingDetailView: View {
       items: meeting.keyPoints,
       emptyText: "ポイントを抽出中です"
     )
+    .memoraAppear(delay: 0.2)
   }
 
 }
@@ -167,11 +195,33 @@ private enum MeetingDetailSection: String, CaseIterable, Identifiable {
   var label: String {
     switch self {
     case .summary:
-      "要約"
+      "サマリー"
     case .transcript:
       "文字起こし"
     case .notes:
       "ノート"
+    }
+  }
+
+  var symbol: String {
+    switch self {
+    case .summary:
+      "sparkles"
+    case .transcript:
+      "text.quote"
+    case .notes:
+      "square.and.pencil"
+    }
+  }
+
+  var description: String {
+    switch self {
+    case .summary:
+      "結論と、次にすること"
+    case .transcript:
+      "発言を時系列で確認"
+    case .notes:
+      "自分だけのメモ"
     }
   }
 }
@@ -225,6 +275,7 @@ private struct MeetingTranscriptContent: View {
         }
       }
     }
+    .memoraAppear()
   }
 }
 
@@ -260,6 +311,7 @@ private struct MeetingNotesContent: View {
         .font(.subheadline.weight(.medium))
         .foregroundStyle(.primary)
     }
+    .memoraAppear()
   }
 }
 
@@ -293,6 +345,7 @@ private struct InsightSection: View {
         }
       }
     }
+    .padding(.vertical, 4)
   }
 }
 

@@ -42,7 +42,7 @@ struct LibraryView: View {
         .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.meetings)
       }
       .background(Color(uiColor: .systemBackground))
-      .navigationTitle("会議")
+      .navigationTitle("ホーム")
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id):
@@ -101,7 +101,7 @@ struct LibraryView: View {
   private var recentSection: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack {
-        Text("最近の会議")
+        Text("最近の会話")
           .font(.title2.bold())
         Spacer()
         NavigationLink("すべて表示", value: LibraryRoute.allMeetings)

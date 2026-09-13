@@ -10,9 +10,9 @@ struct MemoraBottomBar: View {
     MemoraGlassContainer(spacing: 18) {
       HStack(spacing: 10) {
         HStack(spacing: 2) {
-          BottomTabButton(tab: .records, title: "会議", symbol: "waveform", selection: selection)
+          BottomTabButton(tab: .records, title: "ホーム", symbol: "house", selection: selection)
           BottomTabButton(tab: .search, title: "Ask AI", symbol: "sparkles", selection: selection)
-          BottomTabButton(tab: .tasks, title: "タスク", symbol: "checkmark.square", selection: selection)
+          BottomTabButton(tab: .tasks, title: "タスク", symbol: "checklist", selection: selection)
           BottomTabButton(tab: .settings, title: "設定", symbol: "gearshape", selection: selection)
         }
         .padding(4)
@@ -65,9 +65,7 @@ private struct BottomTabButton: View {
       .frame(height: 48)
       .background {
         if isSelected {
-          Capsule()
-            .fill(Color.primary.opacity(0.1))
-            .matchedGeometryEffect(id: "selectedTab", in: selection)
+          BottomTabSelection(selection: selection)
         }
       }
       .contentShape(Rectangle())
@@ -80,5 +78,22 @@ private struct BottomTabButton: View {
 
   private var isSelected: Bool {
     model.selectedTab == tab
+  }
+}
+
+private struct BottomTabSelection: View {
+  var selection: Namespace.ID
+
+  var body: some View {
+    if #available(iOS 26.0, *) {
+      Capsule()
+        .fill(Color.primary.opacity(0.035))
+        .glassEffect(.regular.tint(Color.primary.opacity(0.12)), in: Capsule())
+        .glassEffectID("selectedTab", in: selection)
+    } else {
+      Capsule()
+        .fill(Color.primary.opacity(0.1))
+        .matchedGeometryEffect(id: "selectedTab", in: selection)
+    }
   }
 }

@@ -9,8 +9,10 @@ struct MeetingStatusLabel: View {
       if isProcessing {
         ProgressView()
           .controlSize(.mini)
+          .accessibilityHidden(true)
       } else {
         Image(systemName: status.symbol)
+          .accessibilityHidden(true)
       }
       Text(status.shortLabel)
         .contentTransition(.opacity)
@@ -18,7 +20,8 @@ struct MeetingStatusLabel: View {
     .font(.caption2.weight(.medium))
     .foregroundStyle(style)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: status)
-    .accessibilityElement(children: .combine)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(status.shortLabel)
   }
 
   private var isProcessing: Bool {

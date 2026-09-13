@@ -16,6 +16,12 @@ extension View {
   func memoraAppear(delay: Double = 0) -> some View {
     modifier(MemoraAppear(delay: delay))
   }
+
+  /// Lets important language resolve into place without turning reading into
+  /// a visual effect. Reduce Motion keeps only the brief opacity change.
+  func memoraTextReveal(delay: Double = 0) -> some View {
+    modifier(MemoraTextReveal(delay: delay))
+  }
 }
 
 private struct MemoraAppear: ViewModifier {
@@ -37,6 +43,30 @@ private struct MemoraAppear: ViewModifier {
   private var animation: Animation {
     reduceMotion
       ? .easeOut(duration: 0.2)
+      : MemoraMotion.screen.delay(delay)
+  }
+}
+
+private struct MemoraTextReveal: ViewModifier {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  var delay: Double
+  @State private var isRevealed = false
+
+  func body(content: Content) -> some View {
+    content
+      .opacity(isRevealed ? 1 : 0)
+      .blur(radius: isRevealed || reduceMotion ? 0 : 5)
+      .offset(y: isRevealed || reduceMotion ? 0 : 6)
+      .onAppear {
+        withAnimation(animation) {
+          isRevealed = true
+        }
+      }
+  }
+
+  private var animation: Animation {
+    reduceMotion
+      ? .easeOut(duration: 0.18)
       : MemoraMotion.screen.delay(delay)
   }
 }
