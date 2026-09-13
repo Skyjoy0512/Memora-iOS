@@ -63,7 +63,7 @@ struct SpaceDetailView: View {
       .navigationTitle(space.name)
       .navigationBarTitleDisplayMode(.inline)
       .sheet(isPresented: $isAskingAI) {
-        AIQuestionView(scope: .space(space.id), suggestedQuestion: "このプロジェクトでまだ決まっていないことは？")
+        AIQuestionView(scope: .space(space.id), askingQuestion: "このプロジェクトでまだ決まっていないことは？")
       }
     } else {
       ContentUnavailableView("プロジェクトが見つかりません", systemImage: "folder.badge.questionmark")

@@ -13,23 +13,33 @@ enum MemoraFormat {
   }
 
   static func relativeDate(_ date: Date) -> String {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.locale = Locale(identifier: "ja_JP")
-    formatter.unitsStyle = .short
-    return formatter.localizedString(for: date, relativeTo: .now)
+    relativeFormatter.localizedString(for: date, relativeTo: .now)
   }
 
   static func dueDate(_ date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "ja_JP")
-    formatter.setLocalizedDateFormatFromTemplate("M月d日(E)")
-    return formatter.string(from: date)
+    dueDateFormatter.string(from: date)
   }
 
   static func meetingDate(_ date: Date) -> String {
+    meetingDateFormatter.string(from: date)
+  }
+
+  private static let locale = Locale(identifier: "ja_JP")
+
+  private static let relativeFormatter: RelativeDateTimeFormatter = {
+    let formatter = RelativeDateTimeFormatter()
+    formatter.locale = locale
+    formatter.unitsStyle = .short
+    return formatter
+  }()
+
+  private static let dueDateFormatter = dateFormatter(template: "M月d日(E)")
+  private static let meetingDateFormatter = dateFormatter(template: "M月d日(E) H:mm")
+
+  private static func dateFormatter(template: String) -> DateFormatter {
     let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "ja_JP")
-    formatter.setLocalizedDateFormatFromTemplate("M月d日(E) H:mm")
-    return formatter.string(from: date)
+    formatter.locale = locale
+    formatter.setLocalizedDateFormatFromTemplate(template)
+    return formatter
   }
 }

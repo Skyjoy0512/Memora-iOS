@@ -109,19 +109,23 @@ struct LibraryView: View {
       }
 
       LazyVStack(spacing: 0) {
-        ForEach(model.meetings) { meeting in
+        ForEach(recentMeetings) { meeting in
           NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
             MeetingRow(meeting: meeting)
           }
           .buttonStyle(.plain)
 
-          if meeting.id != model.meetings.last?.id {
+          if meeting.id != recentMeetings.last?.id {
             Divider()
               .padding(.leading, 52)
           }
         }
       }
     }
+  }
+
+  private var recentMeetings: [Meeting] {
+    Array(model.meetings.prefix(12))
   }
 
   private func meetingCount(for spaceID: UUID) -> Int {

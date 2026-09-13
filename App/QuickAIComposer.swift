@@ -3,76 +3,66 @@ import SwiftUI
 /// The always-available way to ask about whatever is on screen. It sits on the
 /// floating control layer with the bottom bar, so it uses the same glass.
 struct QuickAIComposer: View {
+  @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var scope: AIQueryScope
   /// Lets the bottom bar step aside while someone is typing.
   @Binding var isComposing: Bool
-  @State private var mode = ComposerMode.quick
   @State private var question = ""
   @State private var isListening = false
   @State private var isQuestionPresented = false
   @FocusState private var isFieldFocused: Bool
 
   var body: some View {
-    HStack(spacing: 4) {
-      Picker("AIモード", selection: $mode) {
-        ForEach(ComposerMode.allCases) { option in
-          Text(option.label).tag(option)
+    // Field and send are separate glass surfaces, matching the bar and its FAB.
+    // Nesting the send button inside the field's glass let vibrancy wash its
+    // fill out to grey over light content.
+    MemoraGlassContainer(spacing: 16) {
+      HStack(alignment: .bottom, spacing: 8) {
+        HStack(alignment: .bottom, spacing: 4) {
+          TextField(placeholder, text: $question, axis: .vertical)
+            .font(.body)
+            .lineLimit(1...5)
+            .submitLabel(.send)
+            .onSubmit(submit)
+            .focused($isFieldFocused)
+            .padding(.leading, 4)
+            .padding(.vertical, 11)
+
+          // While the keyboard is up it covers the tab bar, so this slot becomes
+          // the way back out. Dictation stays one tap away on the keyboard.
+          Button(secondaryAction.title, systemImage: secondaryAction.symbol) {
+            switch secondaryAction {
+            case .dismissKeyboard:
+              isFieldFocused = false
+            case .startVoiceInput, .stopVoiceInput:
+              toggleVoiceInput()
+            }
+          }
+          .labelStyle(.iconOnly)
+          .font(.body)
+          .frame(width: 42, height: 42)
+          .foregroundStyle(isListening ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+          .symbolEffect(.variableColor.iterative, isActive: isListening)
+          .contentTransition(.symbolEffect(.replace))
+          .contentShape(Circle())
         }
-      }
-      .pickerStyle(.menu)
-      .labelsHidden()
-      .font(.caption.weight(.semibold))
-      .tint(.primary)
-      .fixedSize()
+        .padding(.leading, 14)
+        .padding(.trailing, 4)
+        .padding(.vertical, 5)
+        .memoraGlass(in: RoundedRectangle(cornerRadius: 27, style: .continuous))
 
-      Divider()
-        .frame(height: 18)
-        .padding(.horizontal, 2)
-
-      TextField(mode.placeholder, text: $question, axis: .vertical)
-        .font(.subheadline)
-        .lineLimit(1...3)
-        .submitLabel(.send)
-        .onSubmit(submit)
-        .focused($isFieldFocused)
-        .padding(.leading, 4)
-
-      // While the keyboard is up it covers the tab bar, so this slot becomes the
-      // way back out. Dictation is still one tap away on the keyboard itself.
-      Button(secondaryAction.title, systemImage: secondaryAction.symbol) {
-        switch secondaryAction {
-        case .dismissKeyboard:
-          isFieldFocused = false
-        case .startVoiceInput, .stopVoiceInput:
-          toggleVoiceInput()
+        Button("送信", systemImage: "arrow.up") {
+          submit()
         }
+        .labelStyle(.iconOnly)
+        .font(.body.weight(.semibold))
+        .frame(width: 54, height: 54)
+        .foregroundStyle(canSend ? AnyShapeStyle(Color(uiColor: .systemBackground)) : AnyShapeStyle(.secondary))
+        .memoraGlass(in: Circle(), tint: canSend ? .primary : nil, interactive: true)
+        .disabled(!canSend)
       }
-      .labelStyle(.iconOnly)
-      .font(.body)
-      .frame(width: 40, height: 40)
-      .foregroundStyle(isListening ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
-      .symbolEffect(.variableColor.iterative, isActive: isListening)
-      .contentTransition(.symbolEffect(.replace))
-      .contentShape(Circle())
-
-      Button("送信", systemImage: "arrow.up") {
-        submit()
-      }
-      .labelStyle(.iconOnly)
-      .font(.body.weight(.semibold))
-      .frame(width: 40, height: 40)
-      .foregroundStyle(canSend ? AnyShapeStyle(Color(uiColor: .systemBackground)) : AnyShapeStyle(.secondary))
-      // An explicit color, not the hierarchical `.primary`, which glass renders
-      // with vibrancy and washes out to grey.
-      .background(canSend ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.quaternary), in: Circle())
-      .scaleEffect(canSend ? 1 : 0.88)
-      .disabled(!canSend)
     }
-    .padding(.leading, 12)
-    .padding(.trailing, 5)
-    .padding(.vertical, 5)
-    .memoraGlass(in: RoundedRectangle(cornerRadius: 25, style: .continuous))
     .animation(reduceMotion ? nil : MemoraMotion.control, value: canSend)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isListening)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isFieldFocused)
@@ -81,7 +71,21 @@ struct QuickAIComposer: View {
       isComposing = isFieldFocused
     }
     .sheet(isPresented: $isQuestionPresented) {
-      AIQuestionView(scope: scope, suggestedQuestion: question)
+      question = ""
+    } content: {
+      AIQuestionView(scope: scope, askingQuestion: question)
+    }
+  }
+
+  /// Naming the scope saves a trip to the range picker in the common case.
+  private var placeholder: String {
+    switch scope {
+    case .file(let meetingID):
+      model.meeting(id: meetingID).map { "「\($0.title)」に質問" } ?? "この会議に質問"
+    case .space(let spaceID):
+      model.space(id: spaceID).map { "「\($0.name)」に質問" } ?? "このプロジェクトに質問"
+    case .global:
+      "すべての会話に質問"
     }
   }
 
@@ -111,7 +115,7 @@ struct QuickAIComposer: View {
     Task {
       try? await Task.sleep(for: .milliseconds(900))
       guard isListening else { return }
-      question = mode == .quick ? "この会議の決定事項は？" : "この会議の未決事項を詳しく教えて"
+      question = "この会議の決定事項は？"
       isListening = false
     }
   }
@@ -141,31 +145,6 @@ private enum SecondaryAction {
       "waveform"
     case .dismissKeyboard:
       "keyboard.chevron.compact.down"
-    }
-  }
-}
-
-private enum ComposerMode: String, CaseIterable, Identifiable {
-  case quick
-  case chat
-
-  var id: Self { self }
-
-  var label: String {
-    switch self {
-    case .quick:
-      "Quick AI"
-    case .chat:
-      "AI Chat"
-    }
-  }
-
-  var placeholder: String {
-    switch self {
-    case .quick:
-      "すぐに質問"
-    case .chat:
-      "会話を続けて質問"
     }
   }
 }

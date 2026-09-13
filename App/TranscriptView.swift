@@ -9,7 +9,7 @@ struct TranscriptView: View {
     Group {
       if let meeting = model.meeting(id: meetingID) {
         ScrollView {
-          LazyVStack(alignment: .leading, spacing: 24) {
+          LazyVStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 8) {
               Text(meeting.title)
                 .font(.title.bold())
@@ -18,6 +18,7 @@ struct TranscriptView: View {
                 .foregroundStyle(.secondary)
             }
             .padding(.top, 8)
+            .padding(.bottom, 12)
 
             if meeting.transcript.isEmpty {
               ContentUnavailableView {

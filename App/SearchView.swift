@@ -21,7 +21,7 @@ struct SearchView: View {
         prompt: "会議、発言、決定、タスク"
       )
       .sheet(isPresented: $isAskingAI) {
-        AIQuestionView(scope: .global, suggestedQuestion: query)
+        AIQuestionView(scope: .global, askingQuestion: query)
       }
     }
   }
