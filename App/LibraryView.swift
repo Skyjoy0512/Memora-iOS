@@ -3,6 +3,7 @@ import SwiftUI
 struct LibraryView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var query = ""
 
   var body: some View {
     @Bindable var model = model
@@ -29,10 +30,18 @@ struct LibraryView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 32)
           } else {
-            if !model.spaces.isEmpty {
+            if query.isEmpty, !model.spaces.isEmpty {
               projectsSection
             }
-            recentSection
+            if !matchingLifeLogEntries.isEmpty {
+              lifeLogSection
+            }
+            if query.isEmpty || !recentMeetings.isEmpty {
+              recentSection
+            } else if matchingLifeLogEntries.isEmpty {
+              ContentUnavailableView.search(text: query)
+                .frame(maxWidth: .infinity)
+            }
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -43,6 +52,11 @@ struct LibraryView: View {
       }
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ホーム")
+      .searchable(
+        text: $query,
+        placement: .navigationBarDrawer(displayMode: .always),
+        prompt: "会話とライフログを検索"
+      )
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id):
@@ -99,24 +113,31 @@ struct LibraryView: View {
   private var recentSection: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack {
-        Text("最近の会話")
+        Text(query.isEmpty ? "最近の会話" : "検索結果")
           .font(.title2.bold())
           .memoraTextReveal(delay: 0.04)
         Spacer()
-        NavigationLink("すべて表示", value: LibraryRoute.allMeetings)
-          .font(.subheadline)
+        if query.isEmpty {
+          NavigationLink("すべて表示", value: LibraryRoute.allMeetings)
+            .font(.subheadline)
+        }
       }
 
-      LazyVStack(spacing: 0) {
-        ForEach(recentMeetings) { meeting in
-          NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
-            MeetingRow(meeting: meeting)
-          }
-          .buttonStyle(.plain)
+      if recentMeetings.isEmpty {
+        ContentUnavailableView.search(text: query)
+          .frame(maxWidth: .infinity)
+      } else {
+        LazyVStack(spacing: 0) {
+          ForEach(recentMeetings) { meeting in
+            NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
+              MeetingRow(meeting: meeting)
+            }
+            .buttonStyle(.plain)
 
-          if meeting.id != recentMeetings.last?.id {
-            Divider()
-              .padding(.leading, 52)
+            if meeting.id != recentMeetings.last?.id {
+              Divider()
+                .padding(.leading, 52)
+            }
           }
         }
       }
@@ -124,11 +145,96 @@ struct LibraryView: View {
   }
 
   private var recentMeetings: [Meeting] {
-    Array(model.meetings.prefix(12))
+    let meetings = query.isEmpty ? model.meetings : model.meetings.filter(matchesQuery)
+    return Array(meetings.prefix(12))
+  }
+
+  private var matchingLifeLogEntries: [LifeLogEntry] {
+    let entries = query.isEmpty
+      ? model.lifeLogEntries
+      : model.lifeLogEntries.filter {
+        $0.title.localizedCaseInsensitiveContains(query)
+          || $0.summary.localizedCaseInsensitiveContains(query)
+          || $0.source.label.localizedCaseInsensitiveContains(query)
+      }
+    return Array(entries.sorted { $0.createdAt > $1.createdAt }.prefix(4))
+  }
+
+  private var lifeLogSection: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(alignment: .firstTextBaseline) {
+        Text("ライフログ")
+          .font(.title2.bold())
+          .memoraTextReveal(delay: 0.02)
+        Spacer()
+        Text("今日")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+      }
+
+      VStack(spacing: 0) {
+        ForEach(matchingLifeLogEntries) { entry in
+          if let meetingID = entry.meetingID {
+            NavigationLink(value: LibraryRoute.meeting(meetingID)) {
+              LifeLogRow(entry: entry)
+            }
+            .buttonStyle(.plain)
+          } else {
+            LifeLogRow(entry: entry)
+          }
+
+          if entry.id != matchingLifeLogEntries.last?.id {
+            Divider()
+              .padding(.leading, 58)
+          }
+        }
+      }
+      .padding(.horizontal, 14)
+      .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+  }
+
+  private func matchesQuery(_ meeting: Meeting) -> Bool {
+    meeting.title.localizedCaseInsensitiveContains(query)
+      || meeting.summary.localizedCaseInsensitiveContains(query)
+      || meeting.transcript.contains { $0.text.localizedCaseInsensitiveContains(query) }
   }
 
   private func meetingCount(for spaceID: UUID) -> Int {
     model.meetings.filter { $0.spaceID == spaceID }.count
+  }
+}
+
+private struct LifeLogRow: View {
+  var entry: LifeLogEntry
+
+  var body: some View {
+    HStack(alignment: .top, spacing: 12) {
+      Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(.secondary)
+        .frame(width: 46, alignment: .leading)
+
+      VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .firstTextBaseline) {
+          Text(entry.title)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.primary)
+            .lineLimit(1)
+          Spacer(minLength: 8)
+          Text(entry.source.label)
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(.secondary)
+        }
+        Text(entry.summary)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+          .frame(maxWidth: .infinity, alignment: .leading)
+      }
+    }
+    .padding(.vertical, 12)
+    .contentShape(Rectangle())
   }
 }
 

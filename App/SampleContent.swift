@@ -42,6 +42,36 @@ enum SampleContent {
     )
   ]
 
+  static func makeLifeLog() -> [LifeLogEntry] {
+    let calendar = Calendar.current
+    return [
+      LifeLogEntry(
+        id: UUID(),
+        createdAt: calendar.date(bySettingHour: 8, minute: 35, second: 0, of: .now) ?? .now,
+        title: "朝のアイデアメモ",
+        summary: "移動中に思いついた、録音開始までの迷いを減らす方法。",
+        source: .omi,
+        meetingID: nil
+      ),
+      LifeLogEntry(
+        id: UUID(),
+        createdAt: calendar.date(bySettingHour: 11, minute: 40, second: 0, of: .now) ?? .now,
+        title: "チームとの立ち話",
+        summary: "次の検証では、会議後すぐにタスクへ移れる流れを確認する。",
+        source: .omi,
+        meetingID: nil
+      ),
+      LifeLogEntry(
+        id: UUID(),
+        createdAt: calendar.date(bySettingHour: 16, minute: 5, second: 0, of: .now) ?? .now,
+        title: "リリース方針レビュー",
+        summary: "録音の速さと、次の行動につながる整理を優先する。",
+        source: .iphone,
+        meetingID: productMeetingID
+      )
+    ]
+  }
+
   static func make() -> (meetings: [Meeting], spaces: [MemoraSpace], tasks: [MemoraTask]) {
     let spaces = [
       MemoraSpace(id: productSpaceID, name: "新規アプリ", symbol: "square.stack.3d.up"),

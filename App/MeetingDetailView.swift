@@ -43,9 +43,13 @@ struct MeetingDetailView: View {
           updateScrollState(to: newOffset)
         }
         .onAppear {
+          model.activeDetailMeetingID = meeting.id
           model.isDetailComposerVisible = true
         }
         .onDisappear {
+          if model.activeDetailMeetingID == meeting.id {
+            model.activeDetailMeetingID = nil
+          }
           model.isDetailComposerVisible = true
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -173,15 +177,15 @@ struct MeetingDetailView: View {
 
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
-    VStack(alignment: .center, spacing: 0) {
+    VStack(alignment: .leading, spacing: 0) {
       Text(meeting.summary)
         .font(.title3.weight(.medium))
         .lineSpacing(6)
-        .multilineTextAlignment(.center)
+        .multilineTextAlignment(.leading)
         .textSelection(.enabled)
         .memoraTextReveal(delay: 0.04)
     }
-    .frame(maxWidth: .infinity, alignment: .center)
+    .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 24)
     .padding(.vertical, 28)
     .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))

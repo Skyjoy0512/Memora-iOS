@@ -12,17 +12,18 @@ struct AIQuestionView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var selectedScope: AIQueryScope
   @State private var question: String
+  @State private var attachment: AIAttachment?
   @State private var submittedQuestion: String?
+  @State private var submittedAttachment: AIAttachment?
   @State private var answer: String?
   @State private var isAnswering = false
-  @State private var isListening = false
-  @FocusState private var isFieldFocused: Bool
 
   /// A non-empty `askingQuestion` is asked on open, so arriving here from the
   /// composer or a suggestion does not need a second tap on send.
-  init(scope: AIQueryScope, askingQuestion: String = "") {
+  init(scope: AIQueryScope, askingQuestion: String = "", attachment: AIAttachment? = nil) {
     _selectedScope = State(initialValue: scope)
     _question = State(initialValue: askingQuestion)
+    _attachment = State(initialValue: attachment)
   }
 
   var body: some View {
@@ -94,6 +95,12 @@ struct AIQuestionView: View {
       Text(text)
         .font(.body.weight(.medium))
         .textSelection(.enabled)
+
+      if let submittedAttachment {
+        Label(submittedAttachment.name, systemImage: "paperclip")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
 
       if isAnswering {
         HStack(spacing: 8) {
@@ -175,65 +182,17 @@ struct AIQuestionView: View {
   }
 
   private var composer: some View {
-    MemoraGlassContainer(spacing: 16) {
-      HStack(alignment: .bottom, spacing: 8) {
-        HStack(alignment: .bottom, spacing: 4) {
-          TextField("会議について質問", text: $question, axis: .vertical)
-            .font(.body)
-            .lineLimit(1...5)
-            .submitLabel(.send)
-            .onSubmit(ask)
-            .focused($isFieldFocused)
-            .padding(.leading, 4)
-            .padding(.vertical, 11)
-
-          Button(isListening ? "音声入力を停止" : "音声で入力", systemImage: isListening ? "waveform" : "mic") {
-            toggleVoiceInput()
-          }
-          .labelStyle(.iconOnly)
-          .font(.body)
-          .frame(width: 42, height: 42)
-          .foregroundStyle(isListening ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
-          .symbolEffect(.variableColor.iterative, isActive: isListening)
-          .contentShape(Circle())
-        }
-        .padding(.leading, 14)
-        .padding(.trailing, 4)
-        .padding(.vertical, 5)
-        .memoraGlass(in: RoundedRectangle(cornerRadius: 27, style: .continuous))
-        .overlay {
-          MemoraBorderBeam(cornerRadius: 27, strength: 0.7, active: !isAnswering)
-        }
-
-        Button("送信", systemImage: "arrow.up") {
-          ask()
-        }
-        .labelStyle(.iconOnly)
-        .font(.body.weight(.semibold))
-        .frame(width: 54, height: 54)
-        .foregroundStyle(canSend ? AnyShapeStyle(Color(uiColor: .systemBackground)) : AnyShapeStyle(.secondary))
-        .memoraGlass(in: Circle(), tint: canSend ? .primary : nil, interactive: true)
-        .disabled(!canSend)
-      }
-    }
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: canSend)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: isListening)
-    .sensoryFeedback(.impact(weight: .light), trigger: isListening)
-  }
-
-  private func toggleVoiceInput() {
-    isListening.toggle()
-    guard isListening else { return }
-    Task {
-      try? await Task.sleep(for: .milliseconds(900))
-      guard isListening else { return }
-      question = "この会議の決定事項は？"
-      isListening = false
-    }
+    AIComposerBar(
+      text: $question,
+      attachment: $attachment,
+      placeholder: "会議について質問",
+      isBusy: isAnswering,
+      onSubmit: ask
+    )
   }
 
   private var canSend: Bool {
-    !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isAnswering
+    (!question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attachment != nil) && !isAnswering
   }
 
   private var scopeOptions: [AIQueryScope] {
@@ -281,10 +240,14 @@ struct AIQuestionView: View {
 
   private func ask() {
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty, !isAnswering else { return }
-    isFieldFocused = false
-    submittedQuestion = trimmed
+    guard (!trimmed.isEmpty || attachment != nil), !isAnswering else { return }
+    let effectiveQuestion = trimmed.isEmpty
+      ? "「\(attachment?.name ?? "添付ファイル")」を確認して"
+      : trimmed
+    submittedQuestion = effectiveQuestion
+    submittedAttachment = attachment
     question = ""
+    attachment = nil
     answer = nil
     isAnswering = true
 
@@ -293,7 +256,7 @@ struct AIQuestionView: View {
       let generatedAnswer = "次に行うことは、初回録音フローの仕様確定と、Acme社へセキュリティ資料を送ることです。録音開始の速さを優先し、データは既定で端末内に保存する方針が確認されています。"
       answer = generatedAnswer
       isAnswering = false
-      model.saveAIExchange(question: trimmed, answer: generatedAnswer, scopeLabel: label(for: selectedScope))
+      model.saveAIExchange(question: effectiveQuestion, answer: generatedAnswer, scopeLabel: label(for: selectedScope))
     }
   }
 

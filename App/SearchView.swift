@@ -65,7 +65,7 @@ struct SearchView: View {
 
   private var askAIHome: some View {
     VStack(spacing: 24) {
-      Spacer(minLength: 54)
+      Spacer(minLength: 72)
 
       ThinkingOrbView(state: .breathing, size: 78)
 
@@ -79,28 +79,6 @@ struct SearchView: View {
           .multilineTextAlignment(.center)
           .memoraTextReveal(delay: 0.16)
       }
-
-      Button {
-        isAskingAI = true
-      } label: {
-        HStack(spacing: 10) {
-          Text("Ask AI…")
-            .foregroundStyle(.secondary)
-          Spacer()
-          Image(systemName: "arrow.up")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.primary)
-        }
-        .padding(.horizontal, 18)
-        .frame(height: 56)
-        .contentShape(Capsule())
-        .background(Color.primary.opacity(0.055), in: Capsule())
-        .overlay {
-          MemoraBorderBeam(cornerRadius: 28, strength: 0.7)
-        }
-      }
-      .buttonStyle(.plain)
-      .accessibilityHint("すべての会話について質問します")
 
       Spacer()
     }

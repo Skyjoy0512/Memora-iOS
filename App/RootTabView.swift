@@ -26,8 +26,8 @@ struct RootTabView: View {
         .hidesSystemTabBar()
         .tag(RootTab.settings)
     }
-    .safeAreaInset(edge: .bottom, spacing: 8) {
-      VStack(spacing: 8) {
+    .safeAreaInset(edge: .bottom, spacing: 4) {
+      VStack(spacing: 4) {
         if let scope = composerScope, shouldShowComposer {
           QuickAIComposer(scope: scope, isComposing: $isComposing)
             .id(scope)
@@ -41,7 +41,7 @@ struct RootTabView: View {
         }
       }
       .padding(.horizontal, 12)
-      .padding(.top, 8)
+      .padding(.top, 4)
       .background(alignment: .bottom) {
         // Content scrolls under the glass, but not into the home indicator
         // strip below it. The offset drops the fill just past the bar.
@@ -63,9 +63,18 @@ struct RootTabView: View {
   private let bottomStripHeight: CGFloat = 140
 
   private var composerScope: AIQueryScope? {
+    if let meetingID = model.activeDetailMeetingID {
+      return .file(meetingID)
+    }
+    if model.selectedTab == .search {
+      return .global
+    }
     guard model.selectedTab == .records else { return nil }
     guard let route = model.libraryPath.last else { return .global }
     if case .meeting(let meetingID) = route {
+      return .file(meetingID)
+    }
+    if case .transcript(let meetingID) = route {
       return .file(meetingID)
     }
     return nil
@@ -80,6 +89,9 @@ struct RootTabView: View {
   }
 
   private var isShowingMeetingDetail: Bool {
+    if model.activeDetailMeetingID != nil {
+      return true
+    }
     guard model.selectedTab == .records, let route = model.libraryPath.last else { return false }
     return switch route {
     case .meeting, .transcript:

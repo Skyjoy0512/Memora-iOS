@@ -10,6 +10,7 @@ final class MemoraModel {
   var meetings: [Meeting]
   var spaces: [MemoraSpace]
   var tasks: [MemoraTask]
+  var lifeLogEntries: [LifeLogEntry]
   var aiHistory: [AIConversationEntry]
   var isCapturePresented = false
   var isCaptureSourcePresented = false
@@ -24,6 +25,7 @@ final class MemoraModel {
   var isAuthPresented = false
   var isPaywallPresented = false
   var omiPairingManager = OmiPairingManager()
+  var activeDetailMeetingID: UUID?
   /// Meeting details temporarily hide their contextual AI field once people
   /// move into the document.
   var isDetailComposerVisible = true
@@ -54,7 +56,13 @@ final class MemoraModel {
     let sample = SampleContent.make()
     meetings = sample.meetings
     spaces = sample.spaces
-    tasks = sample.tasks
+    lifeLogEntries = SampleContent.makeLifeLog()
+    if let taskData = defaults.data(forKey: StorageKey.tasks),
+       let storedTasks = try? JSONDecoder().decode([MemoraTask].self, from: taskData) {
+      tasks = storedTasks
+    } else {
+      tasks = sample.tasks
+    }
     aiHistory = [
       AIConversationEntry(
         id: UUID(),
@@ -208,6 +216,17 @@ final class MemoraModel {
       audioURL: recordingURL
     )
     meetings.insert(meeting, at: 0)
+    lifeLogEntries.insert(
+      LifeLogEntry(
+        id: UUID(),
+        createdAt: meeting.createdAt,
+        title: meeting.title,
+        summary: "iPhoneで新しい音声を記録しました。",
+        source: .iphone,
+        meetingID: meeting.id
+      ),
+      at: 0
+    )
     recordingURL = nil
     recordingStartedAt = nil
     selectedTab = .records
@@ -272,6 +291,17 @@ final class MemoraModel {
         audioURL: destination
       )
       meetings.insert(meeting, at: 0)
+      lifeLogEntries.insert(
+        LifeLogEntry(
+          id: UUID(),
+          createdAt: meeting.createdAt,
+          title: meeting.title,
+          summary: "音声ファイルをライフログへ取り込みました。",
+          source: .imported,
+          meetingID: meeting.id
+        ),
+        at: 0
+      )
       importProgress = 1
       try? await Task.sleep(for: .milliseconds(350))
       isImporting = false
@@ -284,6 +314,24 @@ final class MemoraModel {
     }
   }
 
+  func importAIAttachment(from sourceURL: URL) throws -> AIAttachment {
+    let hasSecurityScope = sourceURL.startAccessingSecurityScopedResource()
+    defer {
+      if hasSecurityScope {
+        sourceURL.stopAccessingSecurityScopedResource()
+      }
+    }
+
+    let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    let directory = base.appendingPathComponent("AIAttachments", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let destination = directory
+      .appendingPathComponent(UUID().uuidString)
+      .appendingPathExtension(sourceURL.pathExtension)
+    try FileManager.default.copyItem(at: sourceURL, to: destination)
+    return AIAttachment(id: UUID(), name: sourceURL.lastPathComponent, url: destination)
+  }
+
   func retryProcessing(_ id: UUID) {
     updateMeeting(id) { meeting in
       meeting.status = .transcribing(0.08)
@@ -294,6 +342,25 @@ final class MemoraModel {
   func toggleTask(_ id: UUID) {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     tasks[index].isCompleted.toggle()
+    persistTasks()
+  }
+
+  func addTask(title: String, assignee: String, dueDate: Date?) {
+    let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedTitle.isEmpty else { return }
+    let trimmedAssignee = assignee.trimmingCharacters(in: .whitespacesAndNewlines)
+    tasks.insert(
+      MemoraTask(
+        id: UUID(),
+        title: trimmedTitle,
+        meetingID: nil,
+        assignee: trimmedAssignee.isEmpty ? nil : trimmedAssignee,
+        dueDate: dueDate,
+        isCompleted: false
+      ),
+      at: 0
+    )
+    persistTasks()
   }
 
   func saveAIExchange(question: String, answer: String, scopeLabel: String) {
@@ -327,13 +394,16 @@ final class MemoraModel {
   func deleteMeeting(_ id: UUID) {
     meetings.removeAll { $0.id == id }
     tasks.removeAll { $0.meetingID == id }
+    persistTasks()
   }
 
   func resetSampleContent() {
     let sample = SampleContent.make()
     meetings = sample.meetings
     spaces = sample.spaces
+    lifeLogEntries = SampleContent.makeLifeLog()
     tasks = sample.tasks
+    persistTasks()
     aiHistory = []
     libraryPath = []
     selectedTab = .records
@@ -341,7 +411,9 @@ final class MemoraModel {
 
   func removeAllContent() {
     meetings = []
+    lifeLogEntries = []
     tasks = []
+    persistTasks()
     aiHistory = []
     spaces = []
     libraryPath = []
@@ -417,6 +489,7 @@ final class MemoraModel {
       isCompleted: false
     )
     tasks.insert(task, at: 0)
+    persistTasks()
     offerPlusIfNeeded()
   }
 
@@ -425,11 +498,17 @@ final class MemoraModel {
     change(&meetings[index])
   }
 
+  private func persistTasks() {
+    guard let data = try? JSONEncoder().encode(tasks) else { return }
+    UserDefaults.standard.set(data, forKey: StorageKey.tasks)
+  }
+
   private enum StorageKey {
     static let hasCompletedOnboarding = "hasSeenMemoraWelcome"
     static let hasOfferedPlus = "hasOfferedMemoraPlus"
     static let isSubscribed = "memoraPlusActive"
     static let account = "memoraAccount"
+    static let tasks = "memoraTasks"
   }
 
   private func recordingsDirectory() throws -> URL {

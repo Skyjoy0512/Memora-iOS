@@ -25,18 +25,21 @@ struct TaskRow: View {
 
         HStack(spacing: 8) {
           if let assignee = task.assignee {
-            Label(assignee, systemImage: "person")
+            Text(assignee)
           }
           if let dueDate = task.dueDate {
-            Label(MemoraFormat.dueDate(dueDate), systemImage: "calendar")
+            if task.assignee != nil {
+              Text("·")
+            }
+            Text(MemoraFormat.dueDate(dueDate))
               .foregroundStyle(dueDate < .now && !task.isCompleted ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
           }
         }
         .font(.caption)
         .foregroundStyle(.secondary)
 
-        if showsSource, let meeting = model.meeting(id: task.meetingID) {
-          Label(meeting.title, systemImage: "quote.bubble")
+        if showsSource, let meetingID = task.meetingID, let meeting = model.meeting(id: meetingID) {
+          Text(meeting.title)
             .font(.caption)
             .foregroundStyle(.primary)
             .lineLimit(1)

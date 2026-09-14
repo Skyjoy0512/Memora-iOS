@@ -94,6 +94,8 @@ struct SpaceDetailView: View {
 
   private var spaceTasks: [MemoraTask] {
     let meetingIDs = Set(spaceMeetings.map(\.id))
-    return model.tasks.filter { meetingIDs.contains($0.meetingID) && !$0.isCompleted }
+    return model.tasks.filter { task in
+      task.meetingID.map(meetingIDs.contains) == true && !task.isCompleted
+    }
   }
 }
