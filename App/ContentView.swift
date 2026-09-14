@@ -28,7 +28,7 @@ struct ContentView: View {
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.hasCompletedOnboarding)
-    .fullScreenCover(isPresented: $model.isCapturePresented, onDismiss: {
+    .sheet(isPresented: $model.isCapturePresented, onDismiss: {
       model.completeCaptureDismissal()
     }) {
       CaptureSessionView()

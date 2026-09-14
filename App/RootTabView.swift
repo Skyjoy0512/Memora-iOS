@@ -8,55 +8,82 @@ struct RootTabView: View {
   var body: some View {
     @Bindable var model = model
 
-    TabView(selection: $model.selectedTab) {
-      LibraryView()
-        .hidesSystemTabBar()
-        .scrollDismissesKeyboard(.immediately)
-        .tag(RootTab.records)
+    ZStack(alignment: .leading) {
+      TabView(selection: $model.selectedTab) {
+        LibraryView()
+          .hidesSystemTabBar()
+          .scrollDismissesKeyboard(.immediately)
+          .tag(RootTab.files)
 
-      SearchView()
-        .hidesSystemTabBar()
-        .tag(RootTab.search)
+        LifeLogView()
+          .hidesSystemTabBar()
+          .scrollDismissesKeyboard(.immediately)
+          .tag(RootTab.lifeLog)
 
-      TasksView()
-        .hidesSystemTabBar()
-        .tag(RootTab.tasks)
+        SearchView()
+          .hidesSystemTabBar()
+          .tag(RootTab.search)
 
-      SettingsView(showsCloseButton: false)
-        .hidesSystemTabBar()
-        .tag(RootTab.settings)
-    }
-    .safeAreaInset(edge: .bottom, spacing: 4) {
-      VStack(spacing: 4) {
-        if let scope = composerScope, shouldShowComposer {
-          QuickAIComposer(scope: scope, isComposing: $isComposing)
-            .id(scope)
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
-        }
+        TasksView()
+          .hidesSystemTabBar()
+          .tag(RootTab.tasks)
 
-        // Typing gets the full screen; the bar comes back on dismiss.
-        if !isComposing && !isShowingMeetingDetail {
-          MemoraBottomBar()
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
-        }
+        SettingsView(showsCloseButton: false)
+          .hidesSystemTabBar()
+          .tag(RootTab.settings)
       }
-      .padding(.horizontal, 12)
-      .padding(.top, 4)
-      .background(alignment: .bottom) {
-        // Content scrolls under the glass, but not into the home indicator
-        // strip below it. The offset drops the fill just past the bar.
-        if showsBottomControls {
-          Color(uiColor: .systemBackground)
-            .frame(height: bottomStripHeight)
-            .offset(y: bottomStripHeight)
+      .safeAreaInset(edge: .bottom, spacing: 4) {
+        VStack(spacing: 4) {
+          if let scope = composerScope, shouldShowComposer {
+            QuickAIComposer(scope: scope, isComposing: $isComposing)
+              .id(scope)
+              .transition(.opacity.combined(with: .move(edge: .bottom)))
+          }
+
+          if !isComposing && !isShowingMeetingDetail {
+            MemoraBottomBar()
+              .transition(.opacity.combined(with: .move(edge: .bottom)))
+          }
         }
+        .padding(.horizontal, 12)
+        .padding(.top, 4)
+        .background(alignment: .bottom) {
+          if showsBottomControls {
+            Color(uiColor: .systemBackground)
+              .frame(height: bottomStripHeight)
+              .offset(y: bottomStripHeight)
+          }
+        }
+        .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
+        .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
+        .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
       }
-      .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
-      .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
-      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
+
+      if model.isFileSidebarPresented {
+        Color.black.opacity(0.16)
+          .ignoresSafeArea()
+          .onTapGesture {
+            closeSidebar()
+          }
+          .transition(.opacity)
+
+        FileSidebarView()
+          .frame(maxWidth: min(332, UIScreen.main.bounds.width - 52))
+          .transition(.move(edge: .leading).combined(with: .opacity))
+      }
     }
+    .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isFileSidebarPresented)
     .sheet(isPresented: $model.isCaptureSourcePresented) {
       CaptureSourceSheet()
+    }
+    .sheet(isPresented: $model.isFileCreationPresented) {
+      FileCreationSheet()
+    }
+  }
+
+  private func closeSidebar() {
+    withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+      model.isFileSidebarPresented = false
     }
   }
 
@@ -69,7 +96,7 @@ struct RootTabView: View {
     if model.selectedTab == .search {
       return .global
     }
-    guard model.selectedTab == .records else { return nil }
+    guard model.selectedTab == .files else { return nil }
     guard let route = model.libraryPath.last else { return .global }
     if case .meeting(let meetingID) = route {
       return .file(meetingID)
@@ -92,7 +119,7 @@ struct RootTabView: View {
     if model.activeDetailMeetingID != nil {
       return true
     }
-    guard model.selectedTab == .records, let route = model.libraryPath.last else { return false }
+    guard model.selectedTab == .files, let route = model.libraryPath.last else { return false }
     return switch route {
     case .meeting, .transcript:
       true

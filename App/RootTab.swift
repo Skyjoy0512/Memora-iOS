@@ -1,5 +1,6 @@
 enum RootTab: Hashable {
-  case records
+  case files
+  case lifeLog
   case search
   case tasks
   case settings

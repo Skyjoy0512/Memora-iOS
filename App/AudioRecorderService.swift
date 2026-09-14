@@ -46,6 +46,14 @@ final class AudioRecorderService {
     try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
   }
 
+  func pause() {
+    recorder?.pause()
+  }
+
+  func resume() -> Bool {
+    recorder?.record() ?? false
+  }
+
   private func recordingsDirectory() throws -> URL {
     let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     let directory = base.appendingPathComponent("Recordings", isDirectory: true)

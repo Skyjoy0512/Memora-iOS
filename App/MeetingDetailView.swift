@@ -7,7 +7,6 @@ struct MeetingDetailView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var meetingID: UUID
   @State private var selectedSection = MeetingDetailSection.summary
-  @State private var noteText = ""
   @State private var isRenaming = false
   @State private var isDeleting = false
   @State private var isCompactTitleVisible = false
@@ -144,7 +143,10 @@ struct MeetingDetailView: View {
     case .transcript:
       MeetingTranscriptContent(meeting: meeting)
     case .notes:
-      MeetingNotesContent(noteText: $noteText)
+      MeetingNotesContent(noteText: Binding(
+        get: { model.meeting(id: meeting.id)?.notes ?? "" },
+        set: { model.updateMeetingNotes(meeting.id, notes: $0) }
+      ))
     }
   }
 

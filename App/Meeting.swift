@@ -14,6 +14,7 @@ struct Meeting: Identifiable, Hashable {
   var transcript: [TranscriptSegment]
   var spaceID: UUID?
   var audioURL: URL?
+  var notes = ""
 }
 
 enum MeetingSource: String, Hashable {

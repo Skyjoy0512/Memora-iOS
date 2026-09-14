@@ -19,18 +19,24 @@ Memoraは、音声を保管するアプリではなく、会話を「あとか�
 
 ## C. Information architecture
 
-トップレベルは4領域と、どこからでも届く独立した追加アクションに絞る。
+トップレベルは5領域と、どこからでも届く独立した追加アクションに絞る。
 
-### ホーム
+### ファイル
 
-- 会話とライフログを横断する検索
-- Omiなどの短い記録を時間順に読む今日のライフログ
-- 最近の会話
-- すべての会話
-- プロジェクト
+- 議事録ファイルの検索と一覧
+- プロジェクトの検索と一覧
+- 左サイドバーによる「議事録ファイル／プロジェクト」の切り替え
+- 右上の＋による議事録ファイルまたはプロジェクトの追加
 - 開いている会話の文脈を保ったAI質問
 
-Projectsは「管理対象」ではなく、関連する会話を束ねる軽量な**プロジェクト**として会議ライブラリへ統合する。フォルダ分けを先に要求せず、必要になったユーザーだけが利用する。
+Projectsは「管理対象」ではなく、関連する会話を束ねる軽量な**プロジェクト**としてファイル領域へ統合する。フォルダ分けを先に要求せず、必要になったユーザーだけが利用する。
+
+### ライフログ
+
+- Omiなどの短い記録を時間順に読む今日のタイムライン
+- 日常の記録だけを対象にした検索
+- 接続中・未接続・同期待ちを示す外部レコーダー状態
+- 会議に昇格した記録から元の議事録への導線
 
 ### Ask AI
 
@@ -63,7 +69,7 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 
 1. 初回起動で3ページの短いオンボーディングを見る。いつでもスキップでき、二度目以降は出ない
 2. 「最初の会話を録音」を押した時にだけマイク権限を要求する。サインインも購入も要求しない
-3. 録音中は、経過時間・Siriを思わせる呼吸する波形・端末保存中であること・停止操作だけを強調する。下端を走る細い光で、記録が途切れず続いていることをさりげなく伝える
+3. 録音中は下部シートへタイトル、ノート／文字起こし、一時停止、経過時間、終了をまとめる。Siriを思わせる呼吸する波形と開始後3秒だけ下端を走る細い光で、記録が始まったことをさりげなく伝える
 4. 画面を閉じても録音を継続し、Live Activityで状態を確認できる
 5. 停止直後に音声をFileとして保存し、一覧と会議詳細へ即反映する
 6. 「音声を保存 → 文字にする → 要点と行動を整理」の進行を人間向けの言葉で表示する
@@ -76,9 +82,11 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 
 ## E. Navigation
 
-標準のTabViewを状態管理に使いながら、下部の明確なナビゲーションで「ホーム／Ask AI／タスク／設定」を常に切り替える。選択中のLiquid Glassはタブ間をひとつの面として滑らかに移動し、場所が変わったことを説明せず伝える。タブは場所の移動だけに使い、追加操作は右端の独立した円形FABへ分離する。FABはどの領域でも同じ場所にあり、録音開始・音声インポート・オンライン会議キャプチャの起点になる。
+標準のTabViewを状態管理に使いながら、下部の明確なナビゲーションで「ファイル／ライフログ／Ask AI／タスク／設定」を切り替える。選択中のLiquid Glassはタブ間をひとつの面として滑らかに移動し、場所が変わったことを説明せず伝える。タブは場所の移動だけに使い、追加操作は右端の独立した円形FABへ分離する。FABはどの領域でも同じ場所にあり、録音開始・音声インポート・オンライン会議キャプチャの起点になる。
 
-会議詳細はNavigationStackで深掘りし、録音セッション・追加方法の選択・サインイン・Paywall・AI回答は一時的で自己完結するためモーダル表示にする。ホーム・Ask AI・会議詳細では、ナビゲーションの直上へ同じAI composerを固定し、質問範囲をGlobal / Fileへ自動で切り替える。会議詳細に入ったら進入元にかかわらず通常のタブバーを隠してcomposerだけを残し、戻る操作は常にNavigationStack上の1つ前へ戻す。本文を読み進めるとcomposerも自然に退避する。
+会議詳細はNavigationStackで深掘りし、録音セッション・追加方法の選択・サインイン・Paywall・AI回答は一時的で自己完結するためモーダル表示にする。ファイル・Ask AI・会議詳細では、ナビゲーションの直上へ同じAI composerを固定し、質問範囲をGlobal / Fileへ自動で切り替える。会議詳細に入ったら進入元にかかわらず通常のタブバーを隠してcomposerだけを残し、戻る操作は常にNavigationStack上の1つ前へ戻す。本文を読み進めるとcomposerも自然に退避する。
+
+ファイル内のサイドバーはトップレベルのタブを複製せず、「議事録ファイル／プロジェクト」という局所的な分類だけを扱う。iPhoneでは左から一時的に重ね、選択後に閉じることで本文幅を守る。
 
 下部のバー・FAB・composerはLiquid Glassの機能レイヤーとして扱い、コンテンツはその下を流れる。HIGに従いガラスはこの3つだけに限り、コンテンツ層は標準マテリアルのままにする。キーボードが出ている間はバーを退避させ、composerだけがキーボードの上に残る。
 
@@ -87,7 +95,7 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 ### Core flow
 
 1. First launch / Value statement
-2. Meetings / Library
+2. Files / Meeting files
 3. Recording session
 4. Import picker and import progress
 5. Processing meeting detail
@@ -100,33 +108,39 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 
 ### Retrieval and organization
 
-12. All meetings
-13. Unified search results
-14. Project detail
-15. Cross-meeting tasks
+12. File sidebar
+13. Project list and creation
+14. Life log timeline
+15. All meetings
+16. Unified search results
+17. Project detail
+18. Cross-meeting tasks
 
 ### Account and business
 
-16. Settings
-17. Speech recognition settings
-18. AI settings / API key entry
-19. Privacy and storage
-20. Subscription / Paywall
-21. Sign-in options
-22. Email sign-up / log-in
+19. Settings
+20. Speech recognition settings
+21. AI settings / API key entry
+22. Privacy and storage
+23. Subscription / Paywall
+24. Sign-in options
+25. Email sign-up / log-in
 
 ### State coverage
 
-23. Empty meetings
-24. Empty tasks
-25. Empty AI history
-26. Microphone denied / recording error
-27. Import error
-28. STT error and retry
-29. AI-only failure with transcript preserved
-30. Missing API key / network error
-31. Signed-out / signed-in account
-32. Free / subscribed plan
+26. Empty meeting files / projects / life log
+27. Files and projects search with no results
+28. Recording / paused / stopping
+29. Life log disconnected / connected / waiting / sync error
+30. Empty tasks
+31. Empty AI history
+32. Microphone denied / recording error
+33. Import error
+34. STT error and retry
+35. AI-only failure with transcript preserved
+36. Missing API key / network error
+37. Signed-out / signed-in account
+38. Free / subscribed plan
 
 ## G. High-fidelity UI
 
@@ -142,9 +156,17 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 
 最初の会話が整理された直後に一度だけ提示し、以降は設定から開く。年額・月額を切り替え、無料トライアルの条件を控えめな文字で明示する。購入後は同じ画面が利用中の状態へ切り替わる。
 
-### Meetings
+### Files
 
-ヒーローカードは置かず、画面を開いた直後からプロジェクトと罫線ベースの会議一覧を表示する。整理済みの行にはサマリーを最大3行表示し、タイトル・内容・日時・長さ・処理状態を一覧だけで走査できる。処理状態は重複するアイコンを置かず、短い文字だけで静かに伝える。追加操作は右下の＋に集約する。
+ヒーローカードは置かず、左のサイドバーから議事録ファイルとプロジェクトを切り替える。議事録の行にはサマリーを最大3行表示し、タイトル・内容・日時・長さ・処理状態を一覧だけで走査できる。処理状態は重複するアイコンを置かず、短い文字だけで静かに伝える。右上の＋では議事録ファイルとプロジェクトを明示して追加でき、右下の＋は素早い録音・インポートの入口として維持する。
+
+### Life log
+
+会議やプロジェクトとは別の時間軸として、Omiなどから届く短い日常記録を並べる。外部レコーダーの状態は最上段の一行へ静かに表示し、設定へ移動できる。接続は記録の転送完了を意味しないため、「接続中」と「新しい記録を待っています」を分けて伝える。
+
+### Recording session
+
+録音は全画面の専用モードではなく、元の文脈が背後に残る高さ70%の下部シートにする。タイトルは録音中に変更でき、ノートへメモを残せる。文字起こし側は波形と録音状態を示し、終了後に処理されることを正確に伝える。一時停止／再開、経過時間、終了を最下段の同じ操作群へまとめ、Liquid Glassはこの操作群と閉じるボタンだけに使う。
 
 ### Meeting detail
 
@@ -169,10 +191,22 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 - タスク追加: 右上の＋からタイトル・担当・期限を入力し、会議に紐付かない行動も保存する
 - AI入力: Filesの添付とSpeechによる音声入力を同じcomposerから開始する
 - タスク完了: スプリングアニメーションで状態変更、元会議への導線を維持
-- AI composer: ホームではGlobal、詳細ではFileへ質問範囲を自動で合わせ、利用者には切り替えを意識させない
+- AI composer: ファイルではGlobal、詳細ではFileへ質問範囲を自動で合わせ、利用者には切り替えを意識させない
 - AI: 質問送信中は状態に応じて呼吸するThinking Orbで根拠探索中を表現し、回答後にSourceを表示
 - モーション: 画面遷移・コントロール・強調の3種類のスプリングに統一する。主要な見出し・サマリー・AI回答は短いText Revealで読み始めを導き、一覧の各行や頻繁な操作には使わない。Reduce Motionでは移動とマスクを止めて不透明度だけを変える
 - Reduce MotionやDynamic Typeを壊さない標準コンテナとテキストスタイルを優先
+
+## UI state stack
+
+画面を「状態ごとの別デザイン」に分裂させず、次のレイヤーを同じ順序で重ねる。
+
+1. **Canvas**: ファイル一覧、ライフログ、詳細本文など長く残る内容
+2. **Context state**: 空、検索結果なし、処理中、部分成功、接続待ち
+3. **Floating controls**: タブバー、Ask AI composer、録音中ストリップ
+4. **Transient task**: ファイル追加、録音シート、認証、Paywall
+5. **System interruption**: 権限、録音失敗、インポート失敗
+
+Filesは「空／内容あり／検索中／結果なし」、Projectsは「空／内容あり／作成中」、Life logは「空／内容あり／未接続／接続中／同期待ち／失敗」、Recordingは「開始準備／録音中／一時停止／終了処理／失敗」、Meetingは「読み込み／文字起こし／整理中／部分成功／完了」を最低限の状態集合とする。上のレイヤーが現れても下の文脈を破棄せず、閉じた時に元の位置へ戻れることを共通契約にする。
 
 ## I. Design system
 
@@ -216,7 +250,7 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 - Context-aware AI composer
 - Native Border Beam and Thinking Orb
 - Siri-inspired recording wave and recording-edge beam
-- Compact project chip
+- File sidebar and project row
 - Meeting row
 - Processing steps
 - Partial-success banner
@@ -242,4 +276,4 @@ Widgetはアプリを開いた時とタイムライン更新時に更新する�
 
 ## Implementation boundary
 
-このBitrigプロジェクトは、設計を操作検証できるSwiftUIリファレンス実装である。録音・ファイルコピー・Live Activity・Ask AIの音声認識とファイル添付に加え、Omiは公開BLEサービスを使った検出と接続、PLAUDはFiles経由の音声取り込みが実動する。ホームのOmiライフログは将来の音声同期を受け取る表示モデルとサンプルであり、Omiからの音声転送自体はまだ接続後の実装境界にある。PLAUD Embeddedによる直接接続は、開発者資格情報と実機専用SDKを組み込む段階まで「準備中」として区別する。文字起こし・AI回答・オンライン会議キャプチャは処理状態を含むプロトタイプ体験として再現する。React Native + Expo本体へ移植する場合も、NavigationStack相当、bottom navigation、file picker、native recording bridge、ActivityKit bridgeへ分割可能な構成にしている。
+このBitrigプロジェクトは、設計を操作検証できるSwiftUIリファレンス実装である。録音・一時停止・ファイルコピー・Live Activity・Ask AIの音声認識とファイル添付に加え、Omiは公開BLEサービスを使った検出と接続、PLAUDはFiles経由の音声取り込みが実動する。専用ライフログタブは将来の音声同期を受け取る表示モデルとサンプルを持つが、Omiからの音声転送自体はまだ接続後の実装境界にある。PLAUD Embeddedによる直接接続は、開発者資格情報と実機専用SDKを組み込む段階まで「準備中」として区別する。文字起こし・AI回答・オンライン会議キャプチャは処理状態を含むプロトタイプ体験として再現する。React Native + Expo本体へ移植する場合も、NavigationStack相当、bottom navigation、file picker、native recording bridge、ActivityKit bridgeへ分割可能な構成にしている。

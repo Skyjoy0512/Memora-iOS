@@ -5,8 +5,11 @@ import Observation
 @MainActor
 @Observable
 final class MemoraModel {
-  var selectedTab = RootTab.records
+  var selectedTab = RootTab.files
   var libraryPath: [LibraryRoute] = []
+  var fileSection = FileSection.meetingFiles
+  var isFileSidebarPresented = false
+  var isFileCreationPresented = false
   var meetings: [Meeting]
   var spaces: [MemoraSpace]
   var tasks: [MemoraTask]
@@ -15,7 +18,10 @@ final class MemoraModel {
   var isCapturePresented = false
   var isCaptureSourcePresented = false
   var isRecording = false
+  var isRecordingPaused = false
   var recordingElapsed: TimeInterval = 0
+  var recordingTitle = ""
+  var recordingNote = ""
   var recordingErrorMessage: String?
   var microphonePermissionDenied = false
   var isImporting = false
@@ -38,6 +44,8 @@ final class MemoraModel {
 
   @ObservationIgnored private var recordingURL: URL?
   @ObservationIgnored private var recordingStartedAt: Date?
+  @ObservationIgnored private var recordingPausedAt: Date?
+  @ObservationIgnored private var recordingPausedDuration: TimeInterval = 0
   @ObservationIgnored private var recordingTicker: Task<Void, Never>?
   @ObservationIgnored private var processingTasks: [UUID: Task<Void, Never>] = [:]
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
@@ -182,7 +190,12 @@ final class MemoraModel {
     do {
       recordingURL = try recorder.start()
       recordingStartedAt = .now
+      recordingPausedAt = nil
+      recordingPausedDuration = 0
       recordingElapsed = 0
+      recordingTitle = ""
+      recordingNote = ""
+      isRecordingPaused = false
       isRecording = true
       isCapturePresented = true
       startRecordingTicker()
@@ -198,11 +211,14 @@ final class MemoraModel {
     recordingTicker?.cancel()
     recordingTicker = nil
     isRecording = false
+    isRecordingPaused = false
     await endLiveActivity()
 
-    let meeting = Meeting(
+    var meeting = Meeting(
       id: UUID(),
-      title: "新しい会話",
+      title: recordingTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        ? "新しい会話"
+        : recordingTitle.trimmingCharacters(in: .whitespacesAndNewlines),
       createdAt: .now,
       duration: max(recordingElapsed, 1),
       source: .recording,
@@ -215,6 +231,7 @@ final class MemoraModel {
       spaceID: nil,
       audioURL: recordingURL
     )
+    meeting.notes = recordingNote
     meetings.insert(meeting, at: 0)
     lifeLogEntries.insert(
       LifeLogEntry(
@@ -229,7 +246,12 @@ final class MemoraModel {
     )
     recordingURL = nil
     recordingStartedAt = nil
-    selectedTab = .records
+    recordingPausedAt = nil
+    recordingPausedDuration = 0
+    recordingTitle = ""
+    recordingNote = ""
+    selectedTab = .files
+    fileSection = .meetingFiles
     pendingMeetingNavigationID = meeting.id
     isCapturePresented = false
     beginProcessing(meeting.id)
@@ -238,7 +260,7 @@ final class MemoraModel {
   func completeCaptureDismissal() {
     guard let meetingID = pendingMeetingNavigationID else { return }
     pendingMeetingNavigationID = nil
-    selectedTab = .records
+    selectedTab = .files
     libraryPath = [.meeting(meetingID)]
   }
 
@@ -247,10 +269,33 @@ final class MemoraModel {
     recordingTicker?.cancel()
     recordingTicker = nil
     isRecording = false
+    isRecordingPaused = false
     isCapturePresented = false
     recordingURL = nil
     recordingStartedAt = nil
+    recordingPausedAt = nil
+    recordingPausedDuration = 0
     await endLiveActivity()
+  }
+
+  func toggleCapturePause() {
+    guard isRecording else { return }
+    if isRecordingPaused {
+      guard recorder.resume() else {
+        recordingErrorMessage = "録音を再開できませんでした。"
+        return
+      }
+      if let recordingPausedAt {
+        recordingPausedDuration += Date.now.timeIntervalSince(recordingPausedAt)
+      }
+      self.recordingPausedAt = nil
+      isRecordingPaused = false
+    } else {
+      recorder.pause()
+      recordingPausedAt = .now
+      isRecordingPaused = true
+    }
+    updateLiveActivity()
   }
 
   func importAudio(from sourceURL: URL) async {
@@ -305,7 +350,8 @@ final class MemoraModel {
       importProgress = 1
       try? await Task.sleep(for: .milliseconds(350))
       isImporting = false
-      selectedTab = .records
+      selectedTab = .files
+      fileSection = .meetingFiles
       libraryPath = [.meeting(meeting.id)]
       beginProcessing(meeting.id)
     } catch {
@@ -363,6 +409,12 @@ final class MemoraModel {
     persistTasks()
   }
 
+  func addSpace(name: String) {
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+    spaces.insert(MemoraSpace(id: UUID(), name: trimmed, symbol: "folder"), at: 0)
+  }
+
   func saveAIExchange(question: String, answer: String, scopeLabel: String) {
     aiHistory.insert(
       AIConversationEntry(
@@ -380,6 +432,10 @@ final class MemoraModel {
     let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return }
     updateMeeting(id) { $0.title = trimmed }
+  }
+
+  func updateMeetingNotes(_ id: UUID, notes: String) {
+    updateMeeting(id) { $0.notes = notes }
   }
 
   func renameSpeaker(meetingID: UUID, segmentID: UUID, name: String) {
@@ -406,7 +462,7 @@ final class MemoraModel {
     persistTasks()
     aiHistory = []
     libraryPath = []
-    selectedTab = .records
+    selectedTab = .files
   }
 
   func removeAllContent() {
@@ -421,7 +477,7 @@ final class MemoraModel {
 
   func handle(_ url: URL) async {
     guard url.scheme == "memora" else { return }
-    selectedTab = .records
+    selectedTab = .files
     libraryPath = []
     if url.host == "capture" {
       await startCapture()
@@ -436,7 +492,8 @@ final class MemoraModel {
       while !Task.isCancelled {
         try? await Task.sleep(for: .seconds(1))
         guard let self, let startedAt = self.recordingStartedAt else { return }
-        self.recordingElapsed = Date.now.timeIntervalSince(startedAt)
+        let currentPause = self.recordingPausedAt.map { Date.now.timeIntervalSince($0) } ?? 0
+        self.recordingElapsed = max(0, Date.now.timeIntervalSince(startedAt) - self.recordingPausedDuration - currentPause)
       }
     }
   }
@@ -525,6 +582,15 @@ final class MemoraModel {
     let state = MemoraRecordingAttributes.ContentState(startedAt: startedAt, isPaused: false)
     let content = ActivityContent(state: state, staleDate: nil)
     recordingActivity = try? Activity.request(attributes: attributes, content: content)
+  }
+
+  private func updateLiveActivity() {
+    guard let recordingActivity, let startedAt = recordingStartedAt else { return }
+    let state = MemoraRecordingAttributes.ContentState(startedAt: startedAt, isPaused: isRecordingPaused)
+    let content = ActivityContent(state: state, staleDate: nil)
+    Task {
+      await recordingActivity.update(content)
+    }
   }
 
   private func endLiveActivity() async {

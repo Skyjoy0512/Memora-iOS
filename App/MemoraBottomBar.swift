@@ -9,8 +9,9 @@ struct MemoraBottomBar: View {
   var body: some View {
     MemoraGlassContainer(spacing: 18) {
       HStack(spacing: 10) {
-        HStack(spacing: 2) {
-          BottomTabButton(tab: .records, title: "ホーム", symbol: "house", selection: selection)
+        HStack(spacing: 0) {
+          BottomTabButton(tab: .files, title: "ファイル", symbol: "folder", selection: selection)
+          BottomTabButton(tab: .lifeLog, title: "ライフログ", symbol: "waveform.path.ecg", selection: selection)
           BottomTabButton(tab: .search, title: "Ask AI", symbol: "sparkles", selection: selection)
           BottomTabButton(tab: .tasks, title: "タスク", symbol: "checklist", selection: selection)
           BottomTabButton(tab: .settings, title: "設定", symbol: "gearshape", selection: selection)
@@ -60,7 +61,7 @@ private struct BottomTabButton: View {
         Text(title)
           .font(.caption2.weight(isSelected ? .semibold : .regular))
           .lineLimit(1)
-          .minimumScaleFactor(0.8)
+          .minimumScaleFactor(0.72)
       }
       .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
       .frame(maxWidth: .infinity)

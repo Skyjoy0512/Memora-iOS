@@ -3,10 +3,11 @@ import SwiftUI
 /// A SwiftUI interpretation of the luminous, layered iOS 9 Siri waveform.
 struct SiriWaveView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  var isPaused = false
 
   var body: some View {
     Group {
-      if reduceMotion {
+      if reduceMotion || isPaused {
         waves(at: 0)
       } else {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
@@ -14,6 +15,8 @@ struct SiriWaveView: View {
         }
       }
     }
+    .opacity(isPaused ? 0.38 : 1)
+    .animation(.smooth, value: isPaused)
     .accessibilityHidden(true)
   }
 

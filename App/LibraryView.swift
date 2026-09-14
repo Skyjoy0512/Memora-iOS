@@ -16,127 +16,90 @@ struct LibraryView: View {
               .transition(.opacity.combined(with: .move(edge: .top)))
           }
 
-          if model.meetings.isEmpty {
-            ContentUnavailableView {
-              Label("まだ会話がありません", systemImage: "waveform")
-            } description: {
-              Text("右下の＋から録音するか、音声を読み込んでください。")
-            } actions: {
-              Button("新しく追加", systemImage: "plus") {
-                model.isCaptureSourcePresented = true
-              }
-              .buttonStyle(.borderedProminent)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 32)
-          } else {
-            if query.isEmpty, !model.spaces.isEmpty {
-              projectsSection
-            }
-            if !matchingLifeLogEntries.isEmpty {
-              lifeLogSection
-            }
-            if query.isEmpty || !recentMeetings.isEmpty {
-              recentSection
-            } else if matchingLifeLogEntries.isEmpty {
-              ContentUnavailableView.search(text: query)
-                .frame(maxWidth: .infinity)
-            }
+          switch model.fileSection {
+          case .meetingFiles:
+            meetingFilesContent
+          case .projects:
+            projectsContent
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 18)
         .padding(.bottom, 32)
         .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isRecording)
-        .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.meetings)
+        .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.fileSection)
       }
       .background(Color(uiColor: .systemBackground))
-      .navigationTitle("ホーム")
+      .navigationTitle("ファイル")
       .searchable(
         text: $query,
         placement: .navigationBarDrawer(displayMode: .always),
-        prompt: "会話とライフログを検索"
+        prompt: model.fileSection == .meetingFiles ? "議事録を検索" : "プロジェクトを検索"
       )
+      .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button("ファイルメニュー", systemImage: "line.3.horizontal") {
+            withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+              model.isFileSidebarPresented = true
+            }
+          }
+          .labelStyle(.iconOnly)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+          Button("新規作成", systemImage: "plus") {
+            model.isFileCreationPresented = true
+          }
+          .labelStyle(.iconOnly)
+        }
+      }
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
-        case .meeting(let id):
-          MeetingDetailView(meetingID: id)
-        case .transcript(let id):
-          TranscriptView(meetingID: id)
-        case .space(let id):
-          SpaceDetailView(spaceID: id)
-        case .allMeetings:
-          AllMeetingsView()
-        case .settings:
-          SettingsView()
-        case .stateGallery:
-          StateGalleryView()
+        case .meeting(let id): MeetingDetailView(meetingID: id)
+        case .transcript(let id): TranscriptView(meetingID: id)
+        case .space(let id): SpaceDetailView(spaceID: id)
+        case .allMeetings: AllMeetingsView()
+        case .settings: SettingsView()
+        case .stateGallery: StateGalleryView()
         }
       }
     }
   }
 
-  private var projectsSection: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      Text("プロジェクト")
-        .font(.headline)
-        .memoraTextReveal()
-
-      ScrollView(.horizontal) {
-        HStack(spacing: 10) {
-          ForEach(model.spaces) { space in
-            NavigationLink(value: LibraryRoute.space(space.id)) {
-              HStack(spacing: 10) {
-                MemoraIconBadge(symbol: space.symbol, size: 30)
-
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(space.name)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                  Text("\(meetingCount(for: space.id))件の会話")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-              }
-              .padding(.vertical, 8)
-              .padding(.horizontal, 10)
-              .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-            }
-            .buttonStyle(.plain)
+  @ViewBuilder
+  private var meetingFilesContent: some View {
+    if matchingMeetings.isEmpty {
+      if query.isEmpty {
+        ContentUnavailableView {
+          Label("まだ議事録がありません", systemImage: "doc.text")
+        } description: {
+          Text("録音するか、音声ファイルを読み込むとここに整理されます。")
+        } actions: {
+          Button("議事録を追加", systemImage: "plus") {
+            model.isCaptureSourcePresented = true
           }
+          .buttonStyle(.borderedProminent)
         }
-      }
-      .scrollIndicators(.hidden)
-    }
-  }
-
-  private var recentSection: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      HStack {
-        Text(query.isEmpty ? "最近の会話" : "検索結果")
-          .font(.title2.bold())
-          .memoraTextReveal(delay: 0.04)
-        Spacer()
-        if query.isEmpty {
-          NavigationLink("すべて表示", value: LibraryRoute.allMeetings)
-            .font(.subheadline)
-        }
-      }
-
-      if recentMeetings.isEmpty {
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+      } else {
         ContentUnavailableView.search(text: query)
           .frame(maxWidth: .infinity)
-      } else {
+      }
+    } else {
+      VStack(alignment: .leading, spacing: 10) {
+        Text(query.isEmpty ? "議事録ファイル" : "検索結果")
+          .font(.title2.bold())
+          .memoraTextReveal()
+
         LazyVStack(spacing: 0) {
-          ForEach(recentMeetings) { meeting in
+          ForEach(matchingMeetings) { meeting in
             NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
               MeetingRow(meeting: meeting)
             }
             .buttonStyle(.plain)
 
-            if meeting.id != recentMeetings.last?.id {
-              Divider()
-                .padding(.leading, 52)
+            if meeting.id != matchingMeetings.last?.id {
+              Divider().padding(.leading, 52)
             }
           }
         }
@@ -144,53 +107,68 @@ struct LibraryView: View {
     }
   }
 
-  private var recentMeetings: [Meeting] {
-    let meetings = query.isEmpty ? model.meetings : model.meetings.filter(matchesQuery)
-    return Array(meetings.prefix(12))
-  }
-
-  private var matchingLifeLogEntries: [LifeLogEntry] {
-    let entries = query.isEmpty
-      ? model.lifeLogEntries
-      : model.lifeLogEntries.filter {
-        $0.title.localizedCaseInsensitiveContains(query)
-          || $0.summary.localizedCaseInsensitiveContains(query)
-          || $0.source.label.localizedCaseInsensitiveContains(query)
+  @ViewBuilder
+  private var projectsContent: some View {
+    if matchingSpaces.isEmpty {
+      if query.isEmpty {
+        ContentUnavailableView {
+          Label("プロジェクトを作りましょう", systemImage: "folder")
+        } description: {
+          Text("関連する議事録をひとつの場所にまとめられます。")
+        } actions: {
+          Button("プロジェクトを追加", systemImage: "plus") {
+            model.isFileCreationPresented = true
+          }
+          .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+      } else {
+        ContentUnavailableView.search(text: query)
+          .frame(maxWidth: .infinity)
       }
-    return Array(entries.sorted { $0.createdAt > $1.createdAt }.prefix(4))
-  }
-
-  private var lifeLogSection: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      HStack(alignment: .firstTextBaseline) {
-        Text("ライフログ")
+    } else {
+      VStack(alignment: .leading, spacing: 10) {
+        Text(query.isEmpty ? "プロジェクト" : "検索結果")
           .font(.title2.bold())
-          .memoraTextReveal(delay: 0.02)
-        Spacer()
-        Text("今日")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-      }
+          .memoraTextReveal()
 
-      VStack(spacing: 0) {
-        ForEach(matchingLifeLogEntries) { entry in
-          if let meetingID = entry.meetingID {
-            NavigationLink(value: LibraryRoute.meeting(meetingID)) {
-              LifeLogRow(entry: entry)
+        LazyVStack(spacing: 10) {
+          ForEach(matchingSpaces) { space in
+            NavigationLink(value: LibraryRoute.space(space.id)) {
+              HStack(spacing: 14) {
+                MemoraIconBadge(symbol: space.symbol, size: 38)
+                VStack(alignment: .leading, spacing: 3) {
+                  Text(space.name)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                  Text("\(meetingCount(for: space.id))件の議事録")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                  .font(.caption.bold())
+                  .foregroundStyle(.tertiary)
+              }
+              .padding(14)
+              .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
             .buttonStyle(.plain)
-          } else {
-            LifeLogRow(entry: entry)
-          }
-
-          if entry.id != matchingLifeLogEntries.last?.id {
-            Divider()
-              .padding(.leading, 58)
           }
         }
       }
-      .padding(.horizontal, 14)
-      .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+  }
+
+  private var matchingMeetings: [Meeting] {
+    let result = query.isEmpty ? model.meetings : model.meetings.filter(matchesQuery)
+    return Array(result.prefix(24))
+  }
+
+  private var matchingSpaces: [MemoraSpace] {
+    query.isEmpty ? model.spaces : model.spaces.filter {
+      $0.name.localizedCaseInsensitiveContains(query)
     }
   }
 
@@ -205,39 +183,6 @@ struct LibraryView: View {
   }
 }
 
-private struct LifeLogRow: View {
-  var entry: LifeLogEntry
-
-  var body: some View {
-    HStack(alignment: .top, spacing: 12) {
-      Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-        .font(.caption.monospacedDigit())
-        .foregroundStyle(.secondary)
-        .frame(width: 46, alignment: .leading)
-
-      VStack(alignment: .leading, spacing: 4) {
-        HStack(alignment: .firstTextBaseline) {
-          Text(entry.title)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.primary)
-            .lineLimit(1)
-          Spacer(minLength: 8)
-          Text(entry.source.label)
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(.secondary)
-        }
-        Text(entry.summary)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .lineLimit(2)
-          .frame(maxWidth: .infinity, alignment: .leading)
-      }
-    }
-    .padding(.vertical, 12)
-    .contentShape(Rectangle())
-  }
-}
-
 private struct ActiveRecordingStrip: View {
   @Environment(MemoraModel.self) private var model
 
@@ -246,12 +191,12 @@ private struct ActiveRecordingStrip: View {
       model.isCapturePresented = true
     } label: {
       HStack(spacing: 12) {
-        Image(systemName: "waveform")
+        Image(systemName: model.isRecordingPaused ? "pause.fill" : "waveform")
           .foregroundStyle(.red)
-          .symbolEffect(.variableColor.iterative)
+          .symbolEffect(.variableColor.iterative, isActive: !model.isRecordingPaused)
 
         VStack(alignment: .leading, spacing: 2) {
-          Text("録音を続けています")
+          Text(model.isRecordingPaused ? "録音を一時停止中" : "録音を続けています")
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.primary)
           Text("画面を閉じても安全に保存中")
