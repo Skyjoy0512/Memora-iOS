@@ -1,6 +1,6 @@
 import Foundation
 
-struct Meeting: Identifiable, Hashable {
+struct Meeting: Identifiable, Hashable, Codable {
   var id: UUID
   var title: String
   var createdAt: Date
@@ -17,7 +17,7 @@ struct Meeting: Identifiable, Hashable {
   var notes = ""
 }
 
-enum MeetingSource: String, Hashable {
+enum MeetingSource: String, Hashable, Codable {
   case recording
   case importFile
 
@@ -31,7 +31,9 @@ enum MeetingSource: String, Hashable {
   }
 }
 
-enum MeetingStatus: Hashable {
+enum MeetingStatus: Hashable, Codable {
+  case waitingForTranscription
+  case waitingForSummary
   case importing(Double)
   case transcribing(Double)
   case organizing(String)
@@ -41,6 +43,10 @@ enum MeetingStatus: Hashable {
 
   var shortLabel: String {
     switch self {
+    case .waitingForTranscription:
+      "未処理"
+    case .waitingForSummary:
+      "要約待ち"
     case .importing(let progress):
       "読み込み \(Int(progress * 100))%"
     case .transcribing(let progress):
@@ -58,6 +64,10 @@ enum MeetingStatus: Hashable {
 
   var symbol: String {
     switch self {
+    case .waitingForTranscription:
+      "waveform.badge.plus"
+    case .waitingForSummary:
+      "sparkles"
     case .importing:
       "arrow.down.doc"
     case .transcribing:

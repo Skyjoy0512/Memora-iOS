@@ -22,9 +22,21 @@ struct StateGalleryView: View {
         StateExampleRow(
           symbol: "arrow.down.doc",
           title: "音声を読み込み中",
-          detail: "62% · 完了後に文字起こしを開始",
+          detail: "62% · 完了後は未処理のまま保存",
           tint: .primary,
           progress: 0.62
+        )
+        StateExampleRow(
+          symbol: "waveform.badge.plus",
+          title: "文字起こし待ち",
+          detail: "開始するまでAI利用は発生しません",
+          tint: .secondary
+        )
+        StateExampleRow(
+          symbol: "sparkles",
+          title: "要約待ち",
+          detail: "テンプレートを選んで手動生成",
+          tint: .secondary
         )
         StateExampleRow(
           symbol: "text.bubble",

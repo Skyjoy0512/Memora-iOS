@@ -62,9 +62,24 @@ final class MemoraModel {
     }
 
     let sample = SampleContent.make()
-    meetings = sample.meetings
-    spaces = sample.spaces
-    lifeLogEntries = SampleContent.makeLifeLog()
+    if let meetingData = defaults.data(forKey: StorageKey.meetings),
+       let storedMeetings = try? JSONDecoder().decode([Meeting].self, from: meetingData) {
+      meetings = storedMeetings
+    } else {
+      meetings = sample.meetings
+    }
+    if let spaceData = defaults.data(forKey: StorageKey.spaces),
+       let storedSpaces = try? JSONDecoder().decode([MemoraSpace].self, from: spaceData) {
+      spaces = storedSpaces
+    } else {
+      spaces = sample.spaces
+    }
+    if let lifeLogData = defaults.data(forKey: StorageKey.lifeLogEntries),
+       let storedEntries = try? JSONDecoder().decode([LifeLogEntry].self, from: lifeLogData) {
+      lifeLogEntries = storedEntries
+    } else {
+      lifeLogEntries = SampleContent.makeLifeLog()
+    }
     if let taskData = defaults.data(forKey: StorageKey.tasks),
        let storedTasks = try? JSONDecoder().decode([MemoraTask].self, from: taskData) {
       tasks = storedTasks
@@ -233,6 +248,7 @@ final class MemoraModel {
     )
     meeting.notes = recordingNote
     meetings.insert(meeting, at: 0)
+    persistMeetings()
     lifeLogEntries.insert(
       LifeLogEntry(
         id: UUID(),
@@ -244,6 +260,7 @@ final class MemoraModel {
       ),
       at: 0
     )
+    persistLifeLog()
     recordingURL = nil
     recordingStartedAt = nil
     recordingPausedAt = nil
@@ -326,8 +343,8 @@ final class MemoraModel {
         createdAt: .now,
         duration: 0,
         source: .importFile,
-        status: .transcribing(0.1),
-        summary: "音声を取り込みました。文字起こしを準備しています。",
+        status: .waitingForTranscription,
+        summary: "音声を保存しました。必要な時に文字起こしを開始できます。",
         keyPoints: [],
         decisions: [],
         openQuestions: [],
@@ -336,24 +353,13 @@ final class MemoraModel {
         audioURL: destination
       )
       meetings.insert(meeting, at: 0)
-      lifeLogEntries.insert(
-        LifeLogEntry(
-          id: UUID(),
-          createdAt: meeting.createdAt,
-          title: meeting.title,
-          summary: "音声ファイルをライフログへ取り込みました。",
-          source: .imported,
-          meetingID: meeting.id
-        ),
-        at: 0
-      )
+      persistMeetings()
       importProgress = 1
       try? await Task.sleep(for: .milliseconds(350))
       isImporting = false
       selectedTab = .files
       fileSection = .meetingFiles
       libraryPath = [.meeting(meeting.id)]
-      beginProcessing(meeting.id)
     } catch {
       isImporting = false
       importErrorMessage = "音声を読み込めませんでした。ファイル形式と空き容量を確認してください。"
@@ -385,6 +391,34 @@ final class MemoraModel {
     beginProcessing(id)
   }
 
+  func startImportedTranscription(_ id: UUID) {
+    guard let meeting = meeting(id: id), meeting.source == .importFile else { return }
+    updateMeeting(id) { $0.status = .transcribing(0.08) }
+    processingTasks[id]?.cancel()
+    processingTasks[id] = Task { [weak self] in
+      try? await Task.sleep(for: .milliseconds(850))
+      guard !Task.isCancelled else { return }
+      self?.updateMeeting(id) { $0.status = .transcribing(0.62) }
+      try? await Task.sleep(for: .milliseconds(900))
+      guard !Task.isCancelled else { return }
+      self?.updateMeeting(id) { meeting in
+        meeting.transcript = SampleContent.generatedTranscript
+        meeting.status = .waitingForSummary
+      }
+    }
+  }
+
+  func generateSummary(_ id: UUID, template: SummaryTemplate) {
+    guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
+    updateMeeting(id) { $0.status = .organizing(template.processingLabel) }
+    processingTasks[id]?.cancel()
+    processingTasks[id] = Task { [weak self] in
+      try? await Task.sleep(for: .milliseconds(1_100))
+      guard !Task.isCancelled else { return }
+      self?.finishProcessing(id)
+    }
+  }
+
   func toggleTask(_ id: UUID) {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     tasks[index].isCompleted.toggle()
@@ -413,6 +447,45 @@ final class MemoraModel {
     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return }
     spaces.insert(MemoraSpace(id: UUID(), name: trimmed, symbol: "folder"), at: 0)
+    persistSpaces()
+  }
+
+  func addLifeLogEntry(
+    kind: LifeLogKind,
+    title: String,
+    summary: String,
+    createdAt: Date,
+    photoData: Data?,
+    eventDate: Date?,
+    locationName: String?
+  ) {
+    let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    let trimmedLocation = locationName?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let resolvedTitle: String
+    if !trimmedTitle.isEmpty {
+      resolvedTitle = trimmedTitle
+    } else if kind == .location, let trimmedLocation, !trimmedLocation.isEmpty {
+      resolvedTitle = "\(trimmedLocation)に到着"
+    } else {
+      resolvedTitle = kind.label
+    }
+
+    lifeLogEntries.insert(
+      LifeLogEntry(
+        id: UUID(),
+        createdAt: createdAt,
+        title: resolvedTitle,
+        summary: summary.trimmingCharacters(in: .whitespacesAndNewlines),
+        source: .iphone,
+        meetingID: nil,
+        kind: kind,
+        photoData: photoData,
+        eventDate: eventDate,
+        locationName: trimmedLocation
+      ),
+      at: 0
+    )
+    persistLifeLog()
   }
 
   func saveAIExchange(question: String, answer: String, scopeLabel: String) {
@@ -445,10 +518,12 @@ final class MemoraModel {
           let segmentIndex = meetings[meetingIndex].transcript.firstIndex(where: { $0.id == segmentID }) else { return }
     meetings[meetingIndex].transcript[segmentIndex].speaker = trimmed
     meetings[meetingIndex].transcript[segmentIndex].speakerIsCertain = true
+    persistMeetings()
   }
 
   func deleteMeeting(_ id: UUID) {
     meetings.removeAll { $0.id == id }
+    persistMeetings()
     tasks.removeAll { $0.meetingID == id }
     persistTasks()
   }
@@ -457,7 +532,10 @@ final class MemoraModel {
     let sample = SampleContent.make()
     meetings = sample.meetings
     spaces = sample.spaces
+    persistMeetings()
+    persistSpaces()
     lifeLogEntries = SampleContent.makeLifeLog()
+    persistLifeLog()
     tasks = sample.tasks
     persistTasks()
     aiHistory = []
@@ -468,10 +546,13 @@ final class MemoraModel {
   func removeAllContent() {
     meetings = []
     lifeLogEntries = []
+    persistLifeLog()
     tasks = []
     persistTasks()
     aiHistory = []
     spaces = []
+    persistMeetings()
+    persistSpaces()
     libraryPath = []
   }
 
@@ -553,11 +634,27 @@ final class MemoraModel {
   private func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) {
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
     change(&meetings[index])
+    persistMeetings()
   }
 
   private func persistTasks() {
     guard let data = try? JSONEncoder().encode(tasks) else { return }
     UserDefaults.standard.set(data, forKey: StorageKey.tasks)
+  }
+
+  private func persistLifeLog() {
+    guard let data = try? JSONEncoder().encode(lifeLogEntries) else { return }
+    UserDefaults.standard.set(data, forKey: StorageKey.lifeLogEntries)
+  }
+
+  private func persistMeetings() {
+    guard let data = try? JSONEncoder().encode(meetings) else { return }
+    UserDefaults.standard.set(data, forKey: StorageKey.meetings)
+  }
+
+  private func persistSpaces() {
+    guard let data = try? JSONEncoder().encode(spaces) else { return }
+    UserDefaults.standard.set(data, forKey: StorageKey.spaces)
   }
 
   private enum StorageKey {
@@ -566,6 +663,9 @@ final class MemoraModel {
     static let isSubscribed = "memoraPlusActive"
     static let account = "memoraAccount"
     static let tasks = "memoraTasks"
+    static let lifeLogEntries = "memoraLifeLogEntries"
+    static let meetings = "memoraMeetings"
+    static let spaces = "memoraSpaces"
   }
 
   private func recordingsDirectory() throws -> URL {

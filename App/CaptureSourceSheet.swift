@@ -39,6 +39,20 @@ struct CaptureSourceSheet: View {
               detail: "Zoom、Meet、Teamsなど"
             )
           }
+
+          Button {
+            dismiss()
+            Task { @MainActor in
+              try? await Task.sleep(for: .milliseconds(250))
+              model.isFileCreationPresented = true
+            }
+          } label: {
+            CaptureSourceRow(
+              symbol: "folder.badge.plus",
+              title: "プロジェクトを作成",
+              detail: "関連する議事録をまとめる"
+            )
+          }
         }
       }
       .navigationTitle("新しく追加")

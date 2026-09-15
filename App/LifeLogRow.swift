@@ -5,30 +5,71 @@ struct LifeLogRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
-        .font(.caption.monospacedDigit())
-        .foregroundStyle(.secondary)
-        .frame(width: 46, alignment: .leading)
+      VStack(spacing: 6) {
+        ZStack {
+          Circle()
+            .fill(Color(uiColor: .secondarySystemBackground))
+          Image(systemName: entry.kind.symbol)
+            .font(.caption.weight(.semibold))
+        }
+        .frame(width: 34, height: 34)
 
-      VStack(alignment: .leading, spacing: 4) {
+        Rectangle()
+          .fill(Color(uiColor: .separator).opacity(0.45))
+          .frame(width: 1)
+          .frame(maxHeight: .infinity)
+      }
+
+      VStack(alignment: .leading, spacing: 10) {
         HStack(alignment: .firstTextBaseline) {
-          Text(entry.title)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.primary)
-            .lineLimit(1)
-          Spacer(minLength: 8)
+          Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
+            .font(.caption.monospacedDigit().weight(.medium))
+            .foregroundStyle(.secondary)
+          Spacer()
           Text(entry.source.label)
             .font(.caption2.weight(.medium))
             .foregroundStyle(.secondary)
         }
-        Text(entry.summary)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .lineLimit(3)
+
+        Text(entry.title)
+          .font(.headline)
+          .foregroundStyle(.primary)
           .frame(maxWidth: .infinity, alignment: .leading)
+
+        if !entry.summary.isEmpty {
+          Text(entry.summary)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .lineLimit(4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
+        if let eventDate = entry.eventDate {
+          Label(eventDate.formatted(date: .abbreviated, time: .shortened), systemImage: "calendar")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.secondary)
+        }
+
+        if let locationName = entry.locationName, !locationName.isEmpty {
+          Label(locationName, systemImage: "location.fill")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.secondary)
+        }
+
+        if let photoData = entry.photoData, let image = UIImage(data: photoData) {
+          Image(uiImage: image)
+            .resizable()
+            .scaledToFill()
+            .frame(maxWidth: .infinity)
+            .frame(height: 172)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .accessibilityLabel("添付写真")
+        }
       }
+      .padding(16)
+      .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+      .padding(.bottom, 8)
     }
-    .padding(.vertical, 12)
     .contentShape(Rectangle())
   }
 }

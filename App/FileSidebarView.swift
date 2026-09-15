@@ -10,14 +10,6 @@ struct FileSidebarView: View {
         Text("ファイル")
           .font(.title.bold())
         Spacer()
-        Button("新規作成", systemImage: "plus") {
-          model.isFileSidebarPresented = false
-          model.isFileCreationPresented = true
-        }
-        .labelStyle(.iconOnly)
-        .font(.title3.weight(.semibold))
-        .frame(width: 44, height: 44)
-        .memoraGlass(in: Circle(), interactive: true)
       }
       .padding(.horizontal, 20)
       .padding(.top, 62)

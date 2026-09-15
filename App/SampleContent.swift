@@ -10,6 +10,7 @@ enum SampleContent {
   static let weeklyMeetingID = UUID(uuidString: "EEEEEEEE-EEEE-EEEE-EEEE-EEEEEEEEEEEE")!
   static let interviewMeetingID = UUID(uuidString: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")!
   static let ideaMeetingID = UUID(uuidString: "99999999-9999-9999-9999-999999999999")!
+  static let importedWaitingMeetingID = UUID(uuidString: "88888888-8888-8888-8888-888888888888")!
 
   static let generatedTranscript = [
     TranscriptSegment(
@@ -51,7 +52,8 @@ enum SampleContent {
         title: "朝のアイデアメモ",
         summary: "移動中に思いついた、録音開始までの迷いを減らす方法。",
         source: .omi,
-        meetingID: nil
+        meetingID: nil,
+        kind: .memo
       ),
       LifeLogEntry(
         id: UUID(),
@@ -59,7 +61,9 @@ enum SampleContent {
         title: "チームとの立ち話",
         summary: "次の検証では、会議後すぐにタスクへ移れる流れを確認する。",
         source: .omi,
-        meetingID: nil
+        meetingID: nil,
+        kind: .event,
+        eventDate: calendar.date(bySettingHour: 11, minute: 40, second: 0, of: .now)
       ),
       LifeLogEntry(
         id: UUID(),
@@ -67,7 +71,19 @@ enum SampleContent {
         title: "リリース方針レビュー",
         summary: "録音の速さと、次の行動につながる整理を優先する。",
         source: .iphone,
-        meetingID: productMeetingID
+        meetingID: productMeetingID,
+        kind: .event,
+        eventDate: calendar.date(bySettingHour: 16, minute: 5, second: 0, of: .now)
+      ),
+      LifeLogEntry(
+        id: UUID(),
+        createdAt: calendar.date(bySettingHour: 7, minute: 52, second: 0, of: .now) ?? .now,
+        title: "渋谷駅に到着",
+        summary: "朝の移動を記録しました。",
+        source: .iphone,
+        meetingID: nil,
+        kind: .location,
+        locationName: "渋谷駅"
       )
     ]
   }
@@ -79,6 +95,21 @@ enum SampleContent {
     ]
 
     let meetings = [
+      Meeting(
+        id: importedWaitingMeetingID,
+        title: "顧客インタビュー音声",
+        createdAt: Calendar.current.date(byAdding: .hour, value: -1, to: .now)!,
+        duration: 2_106,
+        source: .importFile,
+        status: .waitingForTranscription,
+        summary: "音声を保存しました。必要な時に文字起こしを開始できます。",
+        keyPoints: [],
+        decisions: [],
+        openQuestions: [],
+        transcript: [],
+        spaceID: nil,
+        audioURL: nil
+      ),
       Meeting(
         id: productMeetingID,
         title: "リリース方針レビュー",

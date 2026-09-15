@@ -10,6 +10,7 @@ struct MeetingDetailView: View {
   @State private var isRenaming = false
   @State private var isDeleting = false
   @State private var isCompactTitleVisible = false
+  @State private var isSummaryGenerationPresented = false
 
   var body: some View {
     Group {
@@ -82,6 +83,9 @@ struct MeetingDetailView: View {
         .sheet(isPresented: $isRenaming) {
           RenameMeetingSheet(meeting: meeting)
         }
+        .sheet(isPresented: $isSummaryGenerationPresented) {
+          SummaryGenerationSheet(meetingID: meeting.id)
+        }
         .confirmationDialog("この会議を削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
           Button("削除", role: .destructive) {
             model.deleteMeeting(meeting.id)
@@ -126,6 +130,24 @@ struct MeetingDetailView: View {
     switch selectedSection {
     case .summary:
       switch meeting.status {
+      case .waitingForTranscription:
+        ManualAIProcessingCard(
+          symbol: "waveform.badge.plus",
+          title: "文字起こしはまだ始まっていません",
+          detail: "音声は端末に保存済みです。必要な時に開始してください。",
+          actionTitle: "文字起こしを開始"
+        ) {
+          model.startImportedTranscription(meeting.id)
+        }
+      case .waitingForSummary:
+        ManualAIProcessingCard(
+          symbol: "sparkles",
+          title: "文字起こしが完成しました",
+          detail: "要約方法を選ぶまで、追加のAI処理は行いません。",
+          actionTitle: "要約を生成"
+        ) {
+          isSummaryGenerationPresented = true
+        }
       case .importing, .transcribing, .organizing:
         ProcessingOverview(meeting: meeting)
       case .failed(let message):
@@ -224,6 +246,42 @@ struct MeetingDetailView: View {
     .memoraAppear(delay: 0.2)
   }
 
+}
+
+private struct ManualAIProcessingCard: View {
+  var symbol: String
+  var title: String
+  var detail: String
+  var actionTitle: String
+  var action: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 18) {
+      HStack(alignment: .top, spacing: 14) {
+        MemoraIconBadge(symbol: symbol, size: 42)
+        VStack(alignment: .leading, spacing: 5) {
+          Text(title)
+            .font(.headline)
+          Text(detail)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        }
+      }
+
+      Label("実行するまでAI利用は発生しません", systemImage: "hand.raised")
+        .font(.footnote.weight(.medium))
+        .foregroundStyle(.secondary)
+
+      Button(actionTitle, systemImage: symbol, action: action)
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .frame(maxWidth: .infinity)
+    }
+    .padding(20)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .memoraAppear()
+  }
 }
 
 private enum MeetingDetailSection: String, CaseIterable, Identifiable {

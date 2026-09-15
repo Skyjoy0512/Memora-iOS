@@ -217,7 +217,7 @@ private struct PlaudConnectionView: View {
           VStack(alignment: .leading, spacing: 12) {
             Label("PLAUDの記録をMemoraへ", systemImage: "waveform.badge.mic")
               .font(.headline)
-            Text("PLAUDアプリから書き出した音声を選ぶと、そのまま文字起こしと整理を始めます。")
+            Text("PLAUDアプリから書き出した音声を保存します。文字起こしと要約は、取り込み後に必要なタイミングで開始できます。")
               .font(.subheadline)
               .foregroundStyle(.secondary)
             Button("音声を取り込む", systemImage: "square.and.arrow.down") {

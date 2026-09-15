@@ -45,12 +45,6 @@ struct LibraryView: View {
           }
           .labelStyle(.iconOnly)
         }
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("新規作成", systemImage: "plus") {
-            model.isFileCreationPresented = true
-          }
-          .labelStyle(.iconOnly)
-        }
       }
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
