@@ -1,86 +1,53 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// A compact action palette anchored to the main FAB.
 struct CaptureSourceSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @State private var isFileImporterPresented = false
 
   var body: some View {
-    NavigationStack {
-      List {
-        Section {
-          Button {
-            beginRecording()
-          } label: {
-            CaptureSourceRow(
-              symbol: "waveform",
-              title: "録音を開始",
-              detail: "マイクからすぐに記録"
-            )
-          }
-
-          Button {
-            isFileImporterPresented = true
-          } label: {
-            CaptureSourceRow(
-              symbol: "square.and.arrow.down",
-              title: "音声をインポート",
-              detail: "Filesから既存の音声を追加"
-            )
-          }
-
-          NavigationLink {
-            OnlineMeetingCaptureView(beginRecording: beginRecording)
-          } label: {
-            CaptureSourceRow(
-              symbol: "video",
-              title: "オンライン会議をキャプチャ",
-              detail: "Zoom、Meet、Teamsなど"
-            )
-          }
-
-          Button {
-            dismiss()
-            Task { @MainActor in
-              try? await Task.sleep(for: .milliseconds(250))
-              model.isFileCreationPresented = true
-            }
-          } label: {
-            CaptureSourceRow(
-              symbol: "folder.badge.plus",
-              title: "プロジェクトを作成",
-              detail: "関連する議事録をまとめる"
-            )
-          }
-        }
+    VStack(spacing: 2) {
+      CaptureSourceButton(symbol: "waveform", title: "録音を開始") {
+        beginRecording()
       }
-      .navigationTitle("新しく追加")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("閉じる") { dismiss() }
-        }
+
+      CaptureSourceButton(symbol: "square.and.arrow.down", title: "音声を取り込む") {
+        isFileImporterPresented = true
       }
-      .fileImporter(
-        isPresented: $isFileImporterPresented,
-        allowedContentTypes: [.audio],
-        allowsMultipleSelection: false
-      ) { result in
-        switch result {
-        case .success(let urls):
-          guard let url = urls.first else { return }
-          dismiss()
-          Task {
-            try? await Task.sleep(for: .milliseconds(250))
-            await model.importAudio(from: url)
-          }
-        case .failure:
-          model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"
-        }
+
+      CaptureSourceButton(symbol: "video", title: "オンライン会議") {
+        presentOnlineMeeting()
+      }
+
+      Divider()
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+
+      CaptureSourceButton(symbol: "folder.badge.plus", title: "プロジェクトを作成") {
+        presentProjectCreation()
       }
     }
-    .presentationDetents([.medium, .large])
+    .padding(10)
+    .frame(width: 292)
+    .fileImporter(
+      isPresented: $isFileImporterPresented,
+      allowedContentTypes: [.audio],
+      allowsMultipleSelection: false
+    ) { result in
+      switch result {
+      case .success(let urls):
+        guard let url = urls.first else { return }
+        dismiss()
+        Task {
+          try? await Task.sleep(for: .milliseconds(250))
+          await model.importAudio(from: url)
+        }
+      case .failure:
+        model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"
+      }
+    }
   }
 
   private func beginRecording() {
@@ -90,31 +57,53 @@ struct CaptureSourceSheet: View {
       await model.startCapture()
     }
   }
-}
 
-private struct CaptureSourceRow: View {
-  var symbol: String
-  var title: String
-  var detail: String
+  private func presentOnlineMeeting() {
+    dismiss()
+    Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(250))
+      model.isOnlineMeetingCapturePresented = true
+    }
+  }
 
-  var body: some View {
-    Label {
-      VStack(alignment: .leading, spacing: 3) {
-        Text(title)
-          .font(.body.weight(.semibold))
-          .foregroundStyle(.primary)
-        Text(detail)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-      }
-      .padding(.vertical, 6)
-    } icon: {
-      MemoraIconBadge(symbol: symbol)
+  private func presentProjectCreation() {
+    dismiss()
+    Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(250))
+      model.isFileCreationPresented = true
     }
   }
 }
 
-private struct OnlineMeetingCaptureView: View {
+private struct CaptureSourceButton: View {
+  var symbol: String
+  var title: String
+  var action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      HStack(spacing: 14) {
+        Image(systemName: symbol)
+          .font(.title3.weight(.semibold))
+          .symbolRenderingMode(.monochrome)
+          .frame(width: 42, height: 42)
+          .background(Color.primary.opacity(0.07), in: Circle())
+
+        Text(title)
+          .font(.body.weight(.semibold))
+          .foregroundStyle(.primary)
+
+        Spacer(minLength: 12)
+      }
+      .padding(.horizontal, 8)
+      .frame(maxWidth: .infinity, minHeight: 54)
+      .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+struct OnlineMeetingCaptureView: View {
   var beginRecording: () -> Void
 
   var body: some View {

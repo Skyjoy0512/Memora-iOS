@@ -4,6 +4,7 @@ struct LibraryView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var query = ""
+  var onOpenSidebar: () -> Void
 
   var body: some View {
     @Bindable var model = model
@@ -29,7 +30,7 @@ struct LibraryView: View {
         .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isRecording)
         .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.fileSection)
       }
-      .compactBottomBarOnScroll()
+      .hideBottomBarOnScroll()
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ファイル")
       .searchable(
@@ -39,10 +40,8 @@ struct LibraryView: View {
       )
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
-          Button("ファイルメニュー", systemImage: "line.3.horizontal") {
-            withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-              model.isFileSidebarPresented = true
-            }
+          Button("プロフィールとメニュー", systemImage: "person.crop.circle") {
+            onOpenSidebar()
           }
           .labelStyle(.iconOnly)
         }

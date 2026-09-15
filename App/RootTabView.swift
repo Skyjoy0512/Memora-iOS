@@ -4,86 +4,202 @@ struct RootTabView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isComposing = false
+  @State private var showMenu = false
+  @GestureState private var menuDragOffset: CGFloat = 0
 
   var body: some View {
     @Bindable var model = model
 
-    ZStack(alignment: .leading) {
-      TabView(selection: $model.selectedTab) {
-        LibraryView()
-          .hidesSystemTabBar()
-          .scrollDismissesKeyboard(.immediately)
-          .tag(RootTab.files)
+    GeometryReader { geometry in
+      let menuWidth = min(340, geometry.size.width * 0.8)
+      let contentOffset = resolvedMenuOffset(menuWidth: menuWidth)
+      let progress = menuWidth > 0 ? contentOffset / menuWidth : 0
 
-        LifeLogView()
-          .hidesSystemTabBar()
-          .scrollDismissesKeyboard(.immediately)
-          .tag(RootTab.lifeLog)
-
-        SearchView()
-          .hidesSystemTabBar()
-          .tag(RootTab.search)
-
-        TasksView()
-          .hidesSystemTabBar()
-          .tag(RootTab.tasks)
-
-        SettingsView(showsCloseButton: false)
-          .hidesSystemTabBar()
-          .tag(RootTab.settings)
-      }
-      .safeAreaInset(edge: .bottom, spacing: 4) {
-        VStack(spacing: 4) {
-          if let scope = composerScope, shouldShowComposer {
-            QuickAIComposer(scope: scope, isComposing: $isComposing)
-              .id(scope)
-              .transition(.opacity.combined(with: .move(edge: .bottom)))
-          }
-
-          if !isComposing && !isShowingMeetingDetail {
-            MemoraBottomBar()
-              .transition(.opacity.combined(with: .move(edge: .bottom)))
-          }
-        }
-        .padding(.horizontal, 12)
-        .padding(.top, 4)
-        .background(alignment: .bottom) {
-          if showsBottomControls {
-            Color(uiColor: .systemBackground)
-              .frame(height: bottomStripHeight)
-              .offset(y: bottomStripHeight)
-          }
-        }
-        .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
-        .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
-        .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
-      }
-
-      if model.isFileSidebarPresented {
-        Color.black.opacity(0.16)
-          .ignoresSafeArea()
-          .onTapGesture {
-            closeSidebar()
-          }
+      ZStack(alignment: .leading) {
+        if showMenu || menuDragOffset > 0 {
+          FileSidebarView(
+            onSelectSection: selectFileSection,
+            onSelectTab: selectTab,
+            onClose: closeSidebar
+          )
+          .frame(width: menuWidth)
+          .offset(x: -menuWidth * 0.12 * (1 - progress))
+          .opacity(0.62 + (0.38 * progress))
+          .allowsHitTesting(showMenu)
           .transition(.opacity)
+        }
 
-        FileSidebarView()
-          .frame(maxWidth: min(332, UIScreen.main.bounds.width - 52))
-          .transition(.move(edge: .leading).combined(with: .opacity))
+        mainSurface
+          .clipShape(
+            RoundedRectangle(
+              cornerRadius: progress > 0 ? 28 : 0,
+              style: .continuous
+            )
+          )
+          .scaleEffect(1 - (0.04 * progress), anchor: .trailing)
+          .accessibilityHidden(showMenu)
+          .overlay {
+            if progress > 0 {
+              Color.black.opacity(0.18 * progress)
+                .contentShape(Rectangle())
+                .onTapGesture(perform: closeSidebar)
+                .allowsHitTesting(showMenu)
+                .accessibilityLabel("メニューを閉じる")
+                .accessibilityAddTraits(.isButton)
+            }
+          }
+          .offset(x: contentOffset)
+          .shadow(
+            color: .black.opacity(0.16 * progress),
+            radius: 24,
+            x: -8
+          )
       }
+      .background(Color(uiColor: .systemBackground))
+      .simultaneousGesture(sidebarGesture(menuWidth: menuWidth))
     }
-    .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isFileSidebarPresented)
-    .sheet(isPresented: $model.isCaptureSourcePresented) {
-      CaptureSourceSheet()
+    .animation(reduceMotion ? nil : .smooth, value: showMenu)
+    .onChange(of: model.selectedTab) { _, _ in
+      if showMenu {
+        closeSidebar()
+      }
     }
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
     }
+    .sheet(isPresented: $model.isOnlineMeetingCapturePresented) {
+      NavigationStack {
+        OnlineMeetingCaptureView {
+          model.isOnlineMeetingCapturePresented = false
+          Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(250))
+            await model.startCapture()
+          }
+        }
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("閉じる") {
+              model.isOnlineMeetingCapturePresented = false
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private var mainSurface: some View {
+    @Bindable var model = model
+
+    return TabView(selection: $model.selectedTab) {
+      LibraryView(onOpenSidebar: openSidebar)
+        .hidesSystemTabBar()
+        .scrollDismissesKeyboard(.immediately)
+        .tag(RootTab.files)
+
+      LifeLogView()
+        .hidesSystemTabBar()
+        .scrollDismissesKeyboard(.immediately)
+        .tag(RootTab.lifeLog)
+
+      SearchView()
+        .hidesSystemTabBar()
+        .tag(RootTab.search)
+
+      TasksView()
+        .hidesSystemTabBar()
+        .tag(RootTab.tasks)
+
+      SettingsView(showsCloseButton: false)
+        .hidesSystemTabBar()
+        .tag(RootTab.settings)
+    }
+    .safeAreaInset(edge: .bottom, spacing: 4) {
+      VStack(spacing: 4) {
+        if let scope = composerScope, shouldShowComposer {
+          QuickAIComposer(scope: scope, isComposing: $isComposing)
+            .id(scope)
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
+        }
+
+        if !isComposing && !isShowingMeetingDetail && !model.isBottomBarHidden {
+          MemoraBottomBar()
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
+        }
+      }
+      .padding(.horizontal, 12)
+      .padding(.top, 4)
+      .background(alignment: .bottom) {
+        if showsBottomControls {
+          Color(uiColor: .systemBackground)
+            .frame(height: bottomStripHeight)
+            .offset(y: bottomStripHeight)
+        }
+      }
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isBottomBarHidden)
+    }
+    .background(Color(uiColor: .systemBackground))
+  }
+
+  private func resolvedMenuOffset(menuWidth: CGFloat) -> CGFloat {
+    let restingOffset = showMenu ? menuWidth : 0
+    return min(max(restingOffset + menuDragOffset, 0), menuWidth)
+  }
+
+  private func sidebarGesture(menuWidth: CGFloat) -> some Gesture {
+    DragGesture(minimumDistance: 10, coordinateSpace: .global)
+      .updating($menuDragOffset) { value, state, _ in
+        guard showMenu || canRevealSidebar && value.startLocation.x <= 28 else { return }
+        state = showMenu
+          ? min(0, max(-menuWidth, value.translation.width))
+          : max(0, min(menuWidth, value.translation.width))
+      }
+      .onEnded { value in
+        guard showMenu || canRevealSidebar && value.startLocation.x <= 28 else { return }
+        let restingOffset = showMenu ? menuWidth : 0
+        let projectedOffset = min(
+          max(restingOffset + value.predictedEndTranslation.width, 0),
+          menuWidth
+        )
+        withAnimation(reduceMotion ? nil : .smooth) {
+          showMenu = projectedOffset > menuWidth * 0.5
+        }
+      }
+  }
+
+  private var canRevealSidebar: Bool {
+    model.selectedTab == .files
+      && model.libraryPath.isEmpty
+  }
+
+  private func openSidebar() {
+    guard canRevealSidebar else { return }
+    withAnimation(reduceMotion ? nil : .smooth) {
+      showMenu = true
+    }
   }
 
   private func closeSidebar() {
+    withAnimation(reduceMotion ? nil : .smooth) {
+      showMenu = false
+    }
+  }
+
+  private func selectFileSection(_ section: FileSection) {
     withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-      model.isFileSidebarPresented = false
+      model.selectedTab = .files
+      model.fileSection = section
+      model.libraryPath = []
+      showMenu = false
+    }
+  }
+
+  private func selectTab(_ tab: RootTab) {
+    withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+      model.selectedTab = tab
+      showMenu = false
     }
   }
 

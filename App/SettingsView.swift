@@ -151,7 +151,7 @@ struct SettingsView: View {
           }
         }
       }
-      .compactBottomBarOnScroll()
+      .hideBottomBarOnScroll()
       .navigationTitle("設定")
       .toolbar {
         if showsCloseButton {

@@ -4,6 +4,7 @@ struct ContentView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.openURL) private var openURL
+  @AppStorage("memora.prefersDarkAppearance") private var prefersDarkAppearance = false
 
   var body: some View {
     @Bindable var model = model
@@ -46,6 +47,7 @@ struct ContentView: View {
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isImporting)
+    .preferredColorScheme(prefersDarkAppearance ? .dark : nil)
     .alert("マイクへのアクセスが必要です", isPresented: $model.microphonePermissionDenied) {
       Button("設定を開く") {
         if let url = URL(string: UIApplication.openSettingsURLString) {

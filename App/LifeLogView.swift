@@ -57,7 +57,7 @@ struct LifeLogView: View {
         .padding(.horizontal, 18)
         .padding(.bottom, 32)
       }
-      .compactBottomBarOnScroll()
+      .hideBottomBarOnScroll()
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ライフログ")
       .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "ライフログを検索")

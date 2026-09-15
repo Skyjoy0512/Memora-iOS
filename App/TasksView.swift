@@ -46,7 +46,7 @@ struct TasksView: View {
               .padding(.vertical, 5)
             }
           }
-          .compactBottomBarOnScroll()
+          .hideBottomBarOnScroll()
           .listStyle(.plain)
         }
       }

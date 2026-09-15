@@ -8,9 +8,8 @@ final class MemoraModel {
   var selectedTab = RootTab.files
   var libraryPath: [LibraryRoute] = []
   var fileSection = FileSection.meetingFiles
-  var isFileSidebarPresented = false
   var isFileCreationPresented = false
-  var isBottomBarCompact = false
+  var isBottomBarHidden = false
   var meetings: [Meeting]
   var spaces: [MemoraSpace]
   var tasks: [MemoraTask]
@@ -18,6 +17,7 @@ final class MemoraModel {
   var aiHistory: [AIConversationEntry]
   var isCapturePresented = false
   var isCaptureSourcePresented = false
+  var isOnlineMeetingCapturePresented = false
   var isRecording = false
   var isRecordingPaused = false
   var recordingElapsed: TimeInterval = 0
@@ -385,6 +385,18 @@ final class MemoraModel {
     return AIAttachment(id: UUID(), name: sourceURL.lastPathComponent, url: destination)
   }
 
+  func importAIPhoto(data: Data, fileExtension: String) throws -> AIAttachment {
+    let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    let directory = base.appendingPathComponent("AIAttachments", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let safeExtension = fileExtension.lowercased().filter { $0.isLetter || $0.isNumber }
+    let resolvedExtension = safeExtension.isEmpty ? "jpg" : safeExtension
+    let fileName = "写真-(UUID().uuidString.prefix(8)).(resolvedExtension)"
+    let destination = directory.appendingPathComponent(fileName)
+    try data.write(to: destination, options: .atomic)
+    return AIAttachment(id: UUID(), name: fileName, url: destination)
+  }
+
   func retryProcessing(_ id: UUID) {
     updateMeeting(id) { meeting in
       meeting.status = .transcribing(0.08)
@@ -409,9 +421,9 @@ final class MemoraModel {
     }
   }
 
-  func generateSummary(_ id: UUID, template: SummaryTemplate, aiModel: SummaryAIModel) {
+  func generateSummary(_ id: UUID, template: SummaryTemplate) {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
-    updateMeeting(id) { $0.status = .organizing("\(template.processingLabel) · \(aiModel.title)") }
+    updateMeeting(id) { $0.status = .organizing(template.processingLabel) }
     processingTasks[id]?.cancel()
     processingTasks[id] = Task { [weak self] in
       try? await Task.sleep(for: .milliseconds(1_100))

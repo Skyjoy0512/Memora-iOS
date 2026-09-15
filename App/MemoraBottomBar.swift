@@ -7,8 +7,10 @@ struct MemoraBottomBar: View {
   @State private var addFeedback = 0
 
   var body: some View {
+    @Bindable var model = model
+
     MemoraGlassContainer(spacing: 18) {
-      HStack(spacing: model.isBottomBarCompact ? 8 : 10) {
+      HStack(spacing: 10) {
         HStack(spacing: 0) {
           BottomTabButton(tab: .files, title: "ファイル", symbol: "folder", selection: selection)
           BottomTabButton(tab: .lifeLog, title: "ライフログ", symbol: "waveform.path.ecg", selection: selection)
@@ -16,7 +18,7 @@ struct MemoraBottomBar: View {
           BottomTabButton(tab: .tasks, title: "タスク", symbol: "checklist", selection: selection)
           BottomTabButton(tab: .settings, title: "設定", symbol: "gearshape", selection: selection)
         }
-        .padding(model.isBottomBarCompact ? 3 : 4)
+        .padding(4)
         .frame(maxWidth: .infinity)
         .memoraGlass(in: Capsule())
 
@@ -26,18 +28,22 @@ struct MemoraBottomBar: View {
         }
         .labelStyle(.iconOnly)
         .font(.title3.weight(.semibold))
-        .frame(
-          width: model.isBottomBarCompact ? 48 : 56,
-          height: model.isBottomBarCompact ? 48 : 56
-        )
+        .frame(width: 56, height: 56)
         .foregroundStyle(Color(uiColor: .systemBackground))
         .memoraGlass(in: Circle(), tint: .primary, interactive: true)
         .sensoryFeedback(.impact(weight: .medium), trigger: addFeedback)
         .accessibilityHint("録音、音声インポート、オンライン会議から選びます")
+        .popover(
+          isPresented: $model.isCaptureSourcePresented,
+          attachmentAnchor: .rect(.bounds),
+          arrowEdge: .bottom
+        ) {
+          CaptureSourceSheet()
+            .presentationCompactAdaptation(.popover)
+        }
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.selectedTab)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isBottomBarCompact)
     .sensoryFeedback(.selection, trigger: model.selectedTab)
   }
 }
@@ -57,13 +63,19 @@ private struct BottomTabButton: View {
         model.selectedTab = tab
       }
     } label: {
-      Image(systemName: symbol)
-        .font((model.isBottomBarCompact ? Font.subheadline : Font.body).weight(.medium))
-        .symbolRenderingMode(.monochrome)
-        .symbolEffect(.bounce, value: isSelected)
+      VStack(spacing: 2) {
+        Image(systemName: symbol)
+          .font(.body.weight(.medium))
+          .symbolRenderingMode(.monochrome)
+          .symbolEffect(.bounce, value: isSelected)
+
+        Text(title)
+          .font(.caption2.weight(isSelected ? .semibold : .medium))
+          .lineLimit(1)
+          .minimumScaleFactor(0.72)
+      }
       .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-      .frame(maxWidth: .infinity)
-      .frame(height: model.isBottomBarCompact ? 36 : 44)
+      .frame(maxWidth: .infinity, minHeight: 48)
       .background {
         if isSelected {
           BottomTabSelection(selection: selection)
@@ -72,7 +84,6 @@ private struct BottomTabButton: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .accessibilityLabel(title)
     .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
 

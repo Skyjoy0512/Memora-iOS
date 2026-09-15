@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import UniformTypeIdentifiers
 
 struct AIComposerBar: View {
@@ -13,6 +14,9 @@ struct AIComposerBar: View {
 
   @State private var speechInput = SpeechInputService()
   @State private var isImporterPresented = false
+  @State private var isAudioImporterPresented = false
+  @State private var isPhotoPickerPresented = false
+  @State private var photoItem: PhotosPickerItem?
   @State private var importErrorMessage: String?
   @FocusState private var isFieldFocused: Bool
 
@@ -42,8 +46,18 @@ struct AIComposerBar: View {
       }
 
       HStack(alignment: .bottom, spacing: 2) {
-        Button("ファイルを添付", systemImage: "plus") {
-          isImporterPresented = true
+        Menu {
+          Button("写真を選択…", systemImage: "photo") {
+            isPhotoPickerPresented = true
+          }
+          Button("音声を選択…", systemImage: "waveform") {
+            isAudioImporterPresented = true
+          }
+          Button("ファイルを選択…", systemImage: "doc") {
+            isImporterPresented = true
+          }
+        } label: {
+          Label("添付を追加", systemImage: "plus")
         }
         .labelStyle(.iconOnly)
         .font(.body.weight(.medium))
@@ -107,11 +121,24 @@ struct AIComposerBar: View {
       allowedContentTypes: [.item],
       allowsMultipleSelection: false
     ) { result in
-      do {
-        guard let sourceURL = try result.get().first else { return }
-        attachment = try model.importAIAttachment(from: sourceURL)
-      } catch {
-        importErrorMessage = "ファイルを添付できませんでした。もう一度お試しください。"
+      importFile(result)
+    }
+    .fileImporter(
+      isPresented: $isAudioImporterPresented,
+      allowedContentTypes: [.audio],
+      allowsMultipleSelection: false
+    ) { result in
+      importFile(result)
+    }
+    .photosPicker(
+      isPresented: $isPhotoPickerPresented,
+      selection: $photoItem,
+      matching: .images
+    )
+    .onChange(of: photoItem) { _, newItem in
+      guard let newItem else { return }
+      Task {
+        await importPhoto(newItem)
       }
     }
     .alert("添付できませんでした", isPresented: importErrorPresented) {
@@ -149,5 +176,27 @@ struct AIComposerBar: View {
     speechInput.stop()
     isFieldFocused = false
     onSubmit()
+  }
+
+  private func importFile(_ result: Result<[URL], any Error>) {
+    do {
+      guard let sourceURL = try result.get().first else { return }
+      attachment = try model.importAIAttachment(from: sourceURL)
+    } catch {
+      importErrorMessage = "ファイルを添付できませんでした。もう一度お試しください。"
+    }
+  }
+
+  private func importPhoto(_ item: PhotosPickerItem) async {
+    defer { photoItem = nil }
+    do {
+      guard let data = try await item.loadTransferable(type: Data.self) else {
+        throw CocoaError(.fileReadCorruptFile)
+      }
+      let fileExtension = item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg"
+      attachment = try model.importAIPhoto(data: data, fileExtension: fileExtension)
+    } catch {
+      importErrorMessage = "写真を添付できませんでした。もう一度お試しください。"
+    }
   }
 }
