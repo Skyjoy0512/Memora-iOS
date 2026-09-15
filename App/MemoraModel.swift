@@ -10,6 +10,7 @@ final class MemoraModel {
   var fileSection = FileSection.meetingFiles
   var isFileSidebarPresented = false
   var isFileCreationPresented = false
+  var isBottomBarCompact = false
   var meetings: [Meeting]
   var spaces: [MemoraSpace]
   var tasks: [MemoraTask]
@@ -408,9 +409,9 @@ final class MemoraModel {
     }
   }
 
-  func generateSummary(_ id: UUID, template: SummaryTemplate) {
+  func generateSummary(_ id: UUID, template: SummaryTemplate, aiModel: SummaryAIModel) {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
-    updateMeeting(id) { $0.status = .organizing(template.processingLabel) }
+    updateMeeting(id) { $0.status = .organizing("\(template.processingLabel) · \(aiModel.title)") }
     processingTasks[id]?.cancel()
     processingTasks[id] = Task { [weak self] in
       try? await Task.sleep(for: .milliseconds(1_100))

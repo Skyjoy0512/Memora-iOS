@@ -8,7 +8,7 @@ struct MemoraBottomBar: View {
 
   var body: some View {
     MemoraGlassContainer(spacing: 18) {
-      HStack(spacing: 10) {
+      HStack(spacing: model.isBottomBarCompact ? 8 : 10) {
         HStack(spacing: 0) {
           BottomTabButton(tab: .files, title: "ファイル", symbol: "folder", selection: selection)
           BottomTabButton(tab: .lifeLog, title: "ライフログ", symbol: "waveform.path.ecg", selection: selection)
@@ -16,7 +16,7 @@ struct MemoraBottomBar: View {
           BottomTabButton(tab: .tasks, title: "タスク", symbol: "checklist", selection: selection)
           BottomTabButton(tab: .settings, title: "設定", symbol: "gearshape", selection: selection)
         }
-        .padding(4)
+        .padding(model.isBottomBarCompact ? 3 : 4)
         .frame(maxWidth: .infinity)
         .memoraGlass(in: Capsule())
 
@@ -26,7 +26,10 @@ struct MemoraBottomBar: View {
         }
         .labelStyle(.iconOnly)
         .font(.title3.weight(.semibold))
-        .frame(width: 56, height: 56)
+        .frame(
+          width: model.isBottomBarCompact ? 48 : 56,
+          height: model.isBottomBarCompact ? 48 : 56
+        )
         .foregroundStyle(Color(uiColor: .systemBackground))
         .memoraGlass(in: Circle(), tint: .primary, interactive: true)
         .sensoryFeedback(.impact(weight: .medium), trigger: addFeedback)
@@ -34,6 +37,7 @@ struct MemoraBottomBar: View {
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.selectedTab)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isBottomBarCompact)
     .sensoryFeedback(.selection, trigger: model.selectedTab)
   }
 }
@@ -53,19 +57,13 @@ private struct BottomTabButton: View {
         model.selectedTab = tab
       }
     } label: {
-      VStack(spacing: 3) {
-        Image(systemName: symbol)
-          .font(.body.weight(.medium))
-          .symbolRenderingMode(.monochrome)
-          .symbolEffect(.bounce, value: isSelected)
-        Text(title)
-          .font(.caption2.weight(isSelected ? .semibold : .regular))
-          .lineLimit(1)
-          .minimumScaleFactor(0.72)
-      }
+      Image(systemName: symbol)
+        .font((model.isBottomBarCompact ? Font.subheadline : Font.body).weight(.medium))
+        .symbolRenderingMode(.monochrome)
+        .symbolEffect(.bounce, value: isSelected)
       .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
       .frame(maxWidth: .infinity)
-      .frame(height: 48)
+      .frame(height: model.isBottomBarCompact ? 36 : 44)
       .background {
         if isSelected {
           BottomTabSelection(selection: selection)

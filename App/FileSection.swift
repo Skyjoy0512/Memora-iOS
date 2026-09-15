@@ -9,7 +9,7 @@ enum FileSection: String, CaseIterable, Identifiable {
   var title: String {
     switch self {
     case .meetingFiles:
-      "議事録ファイル"
+      "ファイル"
     case .projects:
       "プロジェクト"
     }

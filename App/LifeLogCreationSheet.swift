@@ -12,6 +12,7 @@ struct LifeLogCreationSheet: View {
   @State private var locationName = ""
   @State private var photoItem: PhotosPickerItem?
   @State private var photoData: Data?
+  @State private var locationCapture = LocationCaptureService()
 
   var body: some View {
     NavigationStack {
@@ -41,10 +42,32 @@ struct LifeLogCreationSheet: View {
         if kind == .location {
           Section {
             TextField("例：渋谷駅", text: $locationName)
+
+            Button {
+              locationCapture.requestCurrentPlace()
+            } label: {
+              switch locationCapture.state {
+              case .locating:
+                HStack(spacing: 10) {
+                  ProgressView()
+                  Text("現在地を確認中")
+                }
+              default:
+                Label("現在地から場所を取得", systemImage: "location.fill")
+              }
+            }
+            .disabled(locationCapture.state == .locating)
           } header: {
             Text("場所")
           } footer: {
-            Text("現在地は取得せず、入力した場所だけを保存します。")
+            switch locationCapture.state {
+            case .found(let name):
+              Text("「\(name)」を候補にしました。必要なら編集できます。")
+            case .failed(let message):
+              Text(message)
+            default:
+              Text("近くの駅を候補にします。取得した場所名は保存前に編集できます。")
+            }
           }
         }
 
@@ -79,6 +102,14 @@ struct LifeLogCreationSheet: View {
           photoData = try? await newValue?.loadTransferable(type: Data.self)
           if photoData != nil, kind == .memo {
             kind = .photo
+          }
+        }
+      }
+      .onChange(of: locationCapture.state) { _, newState in
+        if case .found(let name) = newState {
+          locationName = name
+          if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            title = "\(name)に到着"
           }
         }
       }

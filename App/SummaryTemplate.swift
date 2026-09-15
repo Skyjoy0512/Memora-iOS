@@ -35,3 +35,35 @@ enum SummaryTemplate: String, CaseIterable, Identifiable {
     }
   }
 }
+
+enum SummaryAIModel: String, CaseIterable, Identifiable {
+  case economy
+  case standard
+  case deep
+
+  var id: Self { self }
+
+  var title: String {
+    switch self {
+    case .economy: "省コスト"
+    case .standard: "標準"
+    case .deep: "高精度"
+    }
+  }
+
+  var detail: String {
+    switch self {
+    case .economy: "短い記録を軽量に整理"
+    case .standard: "品質とコストのバランス"
+    case .deep: "長い会話を時間をかけて詳しく整理"
+    }
+  }
+
+  var costLabel: String {
+    switch self {
+    case .economy: "低"
+    case .standard: "中"
+    case .deep: "高"
+    }
+  }
+}

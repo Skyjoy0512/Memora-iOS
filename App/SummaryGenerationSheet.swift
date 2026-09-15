@@ -5,6 +5,7 @@ struct SummaryGenerationSheet: View {
   @Environment(\.dismiss) private var dismiss
   @State private var mode = SummaryGenerationMode.automatic
   @State private var template = SummaryTemplate.meetingMinutes
+  @State private var aiModel = SummaryAIModel.standard
   @State private var selectedDetent = PresentationDetent.medium
   var meetingID: UUID
 
@@ -67,30 +68,44 @@ struct SummaryGenerationSheet: View {
             .transition(.opacity.combined(with: .move(edge: .top)))
           }
 
-          HStack(spacing: 12) {
-            Image(systemName: "cpu")
-              .frame(width: 28)
-            VStack(alignment: .leading, spacing: 2) {
-              Text("AI処理")
-                .font(.headline)
-              Text("この操作を確定した時だけ実行")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+          NavigationLink {
+            SummaryAIModelPicker(selection: $aiModel)
+          } label: {
+            HStack(spacing: 12) {
+              Image(systemName: "cpu")
+                .frame(width: 28)
+              VStack(alignment: .leading, spacing: 2) {
+                Text("AIモデル")
+                  .font(.headline)
+                  .foregroundStyle(.primary)
+                Text("推定コスト \(aiModel.costLabel) · 確定時だけ実行")
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+              Spacer()
+              Text(aiModel.title)
+                .font(.body.weight(.medium))
+                .foregroundStyle(.primary)
+              Image(systemName: "chevron.right")
+                .font(.caption.bold())
+                .foregroundStyle(.tertiary)
             }
-            Spacer()
-            Text("標準")
-              .font(.body.weight(.medium))
           }
+          .buttonStyle(.plain)
           .padding(.horizontal, 4)
 
           Button("生成") {
-            model.generateSummary(meetingID, template: mode == .automatic ? .automatic : template)
+            model.generateSummary(
+              meetingID,
+              template: mode == .automatic ? .automatic : template,
+              aiModel: aiModel
+            )
             dismiss()
           }
           .font(.headline)
           .foregroundStyle(Color(uiColor: .systemBackground))
           .frame(maxWidth: .infinity, minHeight: 56)
-          .background(Color.primary, in: Capsule())
+          .background(Color(uiColor: .label), in: Capsule())
           .contentShape(Capsule())
           .buttonStyle(.plain)
         }
@@ -146,6 +161,50 @@ struct SummaryGenerationSheet: View {
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(mode == candidate ? .isSelected : [])
+  }
+}
+
+private struct SummaryAIModelPicker: View {
+  @Environment(\.dismiss) private var dismiss
+  @Binding var selection: SummaryAIModel
+
+  var body: some View {
+    List {
+      ForEach(SummaryAIModel.allCases) { model in
+        Button {
+          selection = model
+          dismiss()
+        } label: {
+          HStack(spacing: 14) {
+            Image(systemName: model == .economy ? "leaf" : model == .deep ? "brain.head.profile" : "cpu")
+              .font(.title3)
+              .frame(width: 30)
+            VStack(alignment: .leading, spacing: 3) {
+              Text(model.title)
+                .font(.headline)
+                .foregroundStyle(.primary)
+              Text(model.detail)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text("コスト \(model.costLabel)")
+              .font(.caption.weight(.medium))
+              .foregroundStyle(.secondary)
+            if selection == model {
+              Image(systemName: "checkmark")
+                .font(.body.bold())
+                .foregroundStyle(.primary)
+            }
+          }
+          .padding(.vertical, 6)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selection == model ? .isSelected : [])
+      }
+    }
+    .navigationTitle("AIモデルを選択")
+    .navigationBarTitleDisplayMode(.inline)
   }
 }
 

@@ -29,12 +29,13 @@ struct LibraryView: View {
         .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isRecording)
         .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.fileSection)
       }
+      .compactBottomBarOnScroll()
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ファイル")
       .searchable(
         text: $query,
         placement: .navigationBarDrawer(displayMode: .always),
-        prompt: model.fileSection == .meetingFiles ? "議事録を検索" : "プロジェクトを検索"
+        prompt: model.fileSection == .meetingFiles ? "ファイルを検索" : "プロジェクトを検索"
       )
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
@@ -81,7 +82,7 @@ struct LibraryView: View {
       }
     } else {
       VStack(alignment: .leading, spacing: 10) {
-        Text(query.isEmpty ? "議事録ファイル" : "検索結果")
+        Text(query.isEmpty ? "ファイル" : "検索結果")
           .font(.title2.bold())
           .memoraTextReveal()
 
