@@ -5,13 +5,13 @@ struct RootTabView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isComposing = false
   @State private var showMenu = false
-  @GestureState private var menuDragOffset: CGFloat = 0
+  @State private var menuDragOffset: CGFloat = 0
 
   var body: some View {
     @Bindable var model = model
 
     GeometryReader { geometry in
-      let menuWidth = min(340, geometry.size.width * 0.8)
+      let menuWidth = min(360, geometry.size.width * 0.75)
       let contentOffset = resolvedMenuOffset(menuWidth: menuWidth)
       let progress = menuWidth > 0 ? contentOffset / menuWidth : 0
 
@@ -23,8 +23,7 @@ struct RootTabView: View {
             onClose: closeSidebar
           )
           .frame(width: menuWidth)
-          .offset(x: -menuWidth * 0.12 * (1 - progress))
-          .opacity(0.62 + (0.38 * progress))
+          .offset(x: resolvedSidebarOffset(menuWidth: menuWidth))
           .allowsHitTesting(showMenu)
           .transition(.opacity)
         }
@@ -32,17 +31,18 @@ struct RootTabView: View {
         mainSurface
           .clipShape(
             RoundedRectangle(
-              cornerRadius: progress > 0 ? 28 : 0,
+              cornerRadius: progress > 0 ? 24 : 0,
               style: .continuous
             )
           )
-          .scaleEffect(1 - (0.04 * progress), anchor: .trailing)
+          .scaleEffect(reduceMotion ? 1 : 1 - (0.1 * progress), anchor: .trailing)
           .accessibilityHidden(showMenu)
           .overlay {
             if progress > 0 {
-              Color.black.opacity(0.18 * progress)
+              Color.black.opacity(0.3 * progress)
                 .contentShape(Rectangle())
                 .onTapGesture(perform: closeSidebar)
+                .gesture(sidebarGesture(menuWidth: menuWidth))
                 .allowsHitTesting(showMenu)
                 .accessibilityLabel("メニューを閉じる")
                 .accessibilityAddTraits(.isButton)
@@ -50,15 +50,23 @@ struct RootTabView: View {
           }
           .offset(x: contentOffset)
           .shadow(
-            color: .black.opacity(0.16 * progress),
-            radius: 24,
-            x: -8
+            color: .black.opacity(0.15 * progress),
+            radius: 10,
+            x: -5
           )
+
+        if !showMenu && canRevealSidebar {
+          Color.clear
+            .frame(width: 50)
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(sidebarGesture(menuWidth: menuWidth))
+            .accessibilityHidden(true)
+        }
       }
       .background(Color(uiColor: .systemBackground))
-      .simultaneousGesture(sidebarGesture(menuWidth: menuWidth))
     }
-    .animation(reduceMotion ? nil : .smooth, value: showMenu)
+    .animation(reduceMotion ? nil : .smooth(duration: 0.25), value: showMenu)
     .onChange(of: model.selectedTab) { _, _ in
       if showMenu {
         closeSidebar()
@@ -148,23 +156,37 @@ struct RootTabView: View {
     return min(max(restingOffset + menuDragOffset, 0), menuWidth)
   }
 
+  private func resolvedSidebarOffset(menuWidth: CGFloat) -> CGFloat {
+    if showMenu {
+      return min(0, menuDragOffset)
+    }
+    return -menuWidth + max(0, menuDragOffset)
+  }
+
   private func sidebarGesture(menuWidth: CGFloat) -> some Gesture {
     DragGesture(minimumDistance: 10, coordinateSpace: .global)
-      .updating($menuDragOffset) { value, state, _ in
-        guard showMenu || canRevealSidebar && value.startLocation.x <= 28 else { return }
-        state = showMenu
+      .onChanged { value in
+        guard abs(value.translation.width) > abs(value.translation.height) else { return }
+        guard showMenu || canRevealSidebar && value.startLocation.x <= 50 else { return }
+        menuDragOffset = showMenu
           ? min(0, max(-menuWidth, value.translation.width))
           : max(0, min(menuWidth, value.translation.width))
       }
       .onEnded { value in
-        guard showMenu || canRevealSidebar && value.startLocation.x <= 28 else { return }
-        let restingOffset = showMenu ? menuWidth : 0
-        let projectedOffset = min(
-          max(restingOffset + value.predictedEndTranslation.width, 0),
-          menuWidth
-        )
-        withAnimation(reduceMotion ? nil : .smooth) {
-          showMenu = projectedOffset > menuWidth * 0.5
+        guard showMenu || canRevealSidebar && value.startLocation.x <= 50 else {
+          menuDragOffset = 0
+          return
+        }
+        let projectedTravel = value.predictedEndTranslation.width - value.translation.width
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) {
+          if showMenu {
+            if menuDragOffset < -menuWidth / 3 || projectedTravel < -100 {
+              showMenu = false
+            }
+          } else if menuDragOffset > menuWidth / 3 || projectedTravel > 100 {
+            showMenu = true
+          }
+          menuDragOffset = 0
         }
       }
   }
@@ -176,14 +198,16 @@ struct RootTabView: View {
 
   private func openSidebar() {
     guard canRevealSidebar else { return }
-    withAnimation(reduceMotion ? nil : .smooth) {
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) {
       showMenu = true
+      menuDragOffset = 0
     }
   }
 
   private func closeSidebar() {
-    withAnimation(reduceMotion ? nil : .smooth) {
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) {
       showMenu = false
+      menuDragOffset = 0
     }
   }
 

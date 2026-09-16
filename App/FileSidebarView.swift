@@ -16,7 +16,7 @@ struct FileSidebarView: View {
         .padding(.horizontal, 22)
 
       ScrollView {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
           sectionButton(.meetingFiles)
           sectionButton(.projects)
 
@@ -51,37 +51,25 @@ struct FileSidebarView: View {
 
   private var profileHeader: some View {
     VStack(alignment: .leading, spacing: 14) {
-      HStack(alignment: .top) {
-        Button {
-          onClose()
-          if model.isSignedIn {
-            onSelectTab(.settings)
-          } else {
-            model.isAuthPresented = true
-          }
-        } label: {
-          ZStack {
-            Circle()
-              .fill(Color.primary.opacity(0.08))
-            Image(systemName: model.isSignedIn ? "person.fill" : "person")
-              .font(.title2.weight(.semibold))
-              .foregroundStyle(.primary)
-          }
-          .frame(width: 52, height: 52)
+      Button {
+        onClose()
+        if model.isSignedIn {
+          onSelectTab(.settings)
+        } else {
+          model.isAuthPresented = true
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("プロフィール")
-
-        Spacer()
-
-        Button("閉じる", systemImage: "xmark") {
-          onClose()
+      } label: {
+        ZStack {
+          Circle()
+            .fill(Color.primary.opacity(0.08))
+          Image(systemName: model.isSignedIn ? "person.fill" : "person")
+            .font(.title2.weight(.semibold))
+            .foregroundStyle(.primary)
         }
-        .labelStyle(.iconOnly)
-        .font(.body.weight(.semibold))
-        .frame(width: 44, height: 44)
-        .contentShape(Circle())
+        .frame(width: 52, height: 52)
       }
+      .buttonStyle(.plain)
+      .accessibilityLabel("プロフィール")
 
       VStack(alignment: .leading, spacing: 3) {
         Text(displayName)
@@ -102,31 +90,34 @@ struct FileSidebarView: View {
   }
 
   private var footer: some View {
-    VStack(spacing: 4) {
+    VStack(spacing: 0) {
       Divider()
-        .padding(.bottom, 8)
 
-      Toggle(isOn: $prefersDarkAppearance) {
-        Label("ダークモード", systemImage: "moon")
-          .font(.body.weight(.medium))
-      }
-      .tint(.primary)
-      .frame(minHeight: 48)
-      .padding(.horizontal, 20)
+      HStack {
+        Button("設定とプライバシー", systemImage: "gearshape") {
+          onSelectTab(.settings)
+        }
+        .labelStyle(.iconOnly)
+        .font(.title3)
+        .foregroundStyle(.primary)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
 
-      Button {
-        onSelectTab(.settings)
-      } label: {
-        Label("設定とプライバシー", systemImage: "gearshape")
-          .font(.body.weight(.medium))
-          .foregroundStyle(.primary)
-          .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-          .contentShape(Rectangle())
+        Spacer()
+
+        Button(prefersDarkAppearance ? "システムの外観を使用" : "ダークモード", systemImage: prefersDarkAppearance ? "sun.max" : "moon") {
+          prefersDarkAppearance.toggle()
+        }
+        .labelStyle(.iconOnly)
+        .font(.title3)
+        .foregroundStyle(.primary)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
       }
-      .buttonStyle(.plain)
-      .padding(.horizontal, 20)
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
     }
-    .padding(.bottom, 24)
+    .padding(.bottom, 12)
   }
 
   private func sectionButton(_ section: FileSection) -> some View {
@@ -170,18 +161,26 @@ private struct SidebarMenuItemView: View {
 
   var body: some View {
     Button(action: action) {
-      Label(title, systemImage: symbol)
-        .font(.body.weight(isSelected ? .semibold : .medium))
-        .foregroundStyle(.primary)
-        .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
-        .padding(.horizontal, 14)
-        .background {
-          if isSelected {
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-              .fill(Color.primary.opacity(0.08))
-          }
+      HStack(spacing: 16) {
+        Image(systemName: symbol)
+          .font(.title3)
+          .frame(width: 24)
+
+        Text(title)
+          .font(.body.weight(isSelected ? .semibold : .medium))
+
+        Spacer()
+      }
+      .foregroundStyle(.primary)
+      .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
+      .padding(.horizontal, 14)
+      .background {
+        if isSelected {
+          RoundedRectangle(cornerRadius: 15, style: .continuous)
+            .fill(Color.primary.opacity(0.08))
         }
-        .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+      }
+      .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(isSelected ? .isSelected : [])
