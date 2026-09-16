@@ -5,10 +5,11 @@ import Observation
 @MainActor
 @Observable
 final class MemoraModel {
-  var selectedTab = RootTab.files
+  var selectedTab = RootTab.home
   var libraryPath: [LibraryRoute] = []
   var fileSection = FileSection.meetingFiles
   var isFileCreationPresented = false
+  var isSettingsPresented = false
   var isBottomBarHidden = false
   var meetings: [Meeting]
   var spaces: [MemoraSpace]
@@ -553,7 +554,7 @@ final class MemoraModel {
     persistTasks()
     aiHistory = []
     libraryPath = []
-    selectedTab = .files
+    selectedTab = .home
   }
 
   func removeAllContent() {

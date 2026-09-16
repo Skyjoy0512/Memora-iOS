@@ -1,7 +1,26 @@
-enum RootTab: Hashable {
+enum RootTab: String, Hashable, CaseIterable, Identifiable {
+  case home
   case files
-  case lifeLog
-  case search
+  case askAI
   case tasks
-  case settings
+
+  var id: Self { self }
+
+  var title: String {
+    switch self {
+    case .home: "ホーム"
+    case .files: "ファイル"
+    case .askAI: "Ask AI"
+    case .tasks: "タスク"
+    }
+  }
+
+  var symbol: String {
+    switch self {
+    case .home: "house"
+    case .files: "folder"
+    case .askAI: "sparkles"
+    case .tasks: "checklist"
+    }
+  }
 }

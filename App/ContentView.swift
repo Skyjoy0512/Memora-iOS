@@ -34,6 +34,9 @@ struct ContentView: View {
     }) {
       CaptureSessionView()
     }
+    .sheet(isPresented: $model.isSettingsPresented) {
+      SettingsView()
+    }
     .sheet(isPresented: $model.isAuthPresented) {
       AuthView()
     }
