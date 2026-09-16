@@ -21,57 +21,61 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
   /// never disappears mid-slide and never lingers in the accessibility tree
   /// once it is closed.
   @State private var isPanelMounted = false
+  /// Measured from the full-bleed container rather than a `GeometryReader`, so
+  /// the content keeps filling the screen instead of being inset to the safe
+  /// area, which left white bands above and below it.
+  @State private var containerWidth: CGFloat = 0
 
   var body: some View {
-    GeometryReader { proxy in
-      let width = min(320, proxy.size.width * 0.82)
-      let offset = resolvedOffset(width: width)
-      let progress = width > 0 ? offset / width : 0
+    let width = min(320, containerWidth * 0.82)
+    let offset = resolvedOffset(width: width)
+    let progress = width > 0 ? offset / width : 0
 
-      ZStack(alignment: .leading) {
-        if isPanelMounted {
-          sidebar()
-            .frame(width: width)
-            .frame(maxHeight: .infinity, alignment: .top)
-            // Letting the panel trail slightly behind the content reads as
-            // depth instead of two boards sliding as one.
-            .offset(x: -(1 - progress) * width * 0.24)
-            .opacity(progress)
-            .allowsHitTesting(isOpen)
-            .accessibilityHidden(!isOpen)
-        }
-
-        content()
-          .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
-          .overlay {
-            if progress > 0 {
-              Color.black
-                .opacity(0.22 * progress)
-                .contentShape(Rectangle())
-                .onTapGesture { setOpen(false) }
-                .gesture(closeDrag(width: width))
-                .allowsHitTesting(isOpen)
-                .accessibilityLabel("メニューを閉じる")
-                .accessibilityAddTraits(.isButton)
-            }
-          }
-          .accessibilityHidden(isOpen)
-          .offset(x: offset)
-          .shadow(color: .black.opacity(0.2 * progress), radius: 24, x: -6)
-
-        if isEnabled && !isOpen {
-          // Narrow enough to stay out of the way of content taps, matching the
-          // edge the system itself reserves for a back swipe.
-          Color.clear
-            .frame(width: 16)
-            .frame(maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .gesture(openDrag(width: width))
-            .accessibilityHidden(true)
-        }
+    ZStack(alignment: .leading) {
+      if isPanelMounted {
+        sidebar()
+          .frame(width: width)
+          .frame(maxHeight: .infinity, alignment: .top)
+          // Letting the panel trail slightly behind the content reads as
+          // depth instead of two boards sliding as one.
+          .offset(x: -(1 - progress) * width * 0.24)
+          .opacity(progress)
+          .allowsHitTesting(isOpen)
+          .accessibilityHidden(!isOpen)
       }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+      content()
+        .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
+        .overlay {
+          if progress > 0 {
+            // Kept transparent on purpose: the pushed-aside screen stays as
+            // bright as it was, and only needs to catch a tap or drag to close.
+            Color.clear
+              .contentShape(Rectangle())
+              .onTapGesture { setOpen(false) }
+              .gesture(closeDrag(width: width))
+              .allowsHitTesting(isOpen)
+              .accessibilityLabel("メニューを閉じる")
+              .accessibilityAddTraits(.isButton)
+          }
+        }
+        .accessibilityHidden(isOpen)
+        .offset(x: offset)
+        .shadow(color: .black.opacity(0.2 * progress), radius: 24, x: -6)
+
+      if isEnabled && !isOpen {
+        // Narrow enough to stay out of the way of content taps, matching the
+        // edge the system itself reserves for a back swipe.
+        Color.clear
+          .frame(width: 16)
+          .frame(maxHeight: .infinity)
+          .contentShape(Rectangle())
+          .gesture(openDrag(width: width))
+          .accessibilityHidden(true)
+      }
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { containerWidth = $0 }
     .background(Color(uiColor: .systemBackground).ignoresSafeArea())
     .onChange(of: isEnabled) { _, enabled in
       guard !enabled, isOpen else { return }

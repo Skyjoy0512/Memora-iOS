@@ -6,6 +6,7 @@ import Observation
 @Observable
 final class MemoraModel {
   var selectedTab = RootTab.home
+  var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
   var fileSection = FileSection.meetingFiles
   var isFileCreationPresented = false
@@ -553,6 +554,7 @@ final class MemoraModel {
     tasks = sample.tasks
     persistTasks()
     aiHistory = []
+    homePath = []
     libraryPath = []
     selectedTab = .home
   }
@@ -567,6 +569,7 @@ final class MemoraModel {
     spaces = []
     persistMeetings()
     persistSpaces()
+    homePath = []
     libraryPath = []
   }
 

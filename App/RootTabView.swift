@@ -77,7 +77,7 @@ struct RootTabView: View {
     @Bindable var model = model
 
     return TabView(selection: $model.selectedTab) {
-      HomeView()
+      HomeView(onOpenSidebar: openSidebar)
         .hidesSystemTabBar()
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.home)
@@ -139,9 +139,15 @@ struct RootTabView: View {
   }
 
   private var canRevealSidebar: Bool {
-    model.selectedTab == .files
-      && model.libraryPath.isEmpty
-      && !model.isCaptureSourcePresented
+    guard !model.isCaptureSourcePresented else { return false }
+    switch model.selectedTab {
+    case .home:
+      return model.homePath.isEmpty
+    case .files:
+      return model.libraryPath.isEmpty
+    default:
+      return false
+    }
   }
 
   private func openSidebar() {

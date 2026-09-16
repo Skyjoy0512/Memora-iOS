@@ -5,11 +5,13 @@ import SwiftUI
 struct HomeView: View {
   @Environment(MemoraModel.self) private var model
   @State private var query = ""
-  @State private var path: [LibraryRoute] = []
   @State private var isCreationPresented = false
+  var onOpenSidebar: () -> Void
 
   var body: some View {
-    NavigationStack(path: $path) {
+    @Bindable var model = model
+
+    NavigationStack(path: $model.homePath) {
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 18) {
           if query.isEmpty {
@@ -77,6 +79,13 @@ struct HomeView: View {
       .navigationTitle("ホーム")
       .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "記録を検索")
       .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button("プロフィールとメニュー", systemImage: "person.crop.circle") {
+            onOpenSidebar()
+          }
+          .labelStyle(.iconOnly)
+        }
+
         ToolbarItem(placement: .topBarTrailing) {
           Button("記録を追加", systemImage: "plus") {
             isCreationPresented = true
