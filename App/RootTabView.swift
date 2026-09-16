@@ -6,6 +6,7 @@ struct RootTabView: View {
   @State private var isComposing = false
   @State private var showMenu = false
   @State private var menuDragOffset: CGFloat = 0
+  @State private var isSidebarMounted = false
 
   var body: some View {
     @Bindable var model = model
@@ -16,16 +17,18 @@ struct RootTabView: View {
       let progress = menuWidth > 0 ? contentOffset / menuWidth : 0
 
       ZStack(alignment: .leading) {
-        if showMenu || menuDragOffset > 0 {
+        Color(uiColor: .secondarySystemBackground)
+          .ignoresSafeArea()
+
+        if isSidebarMounted {
           FileSidebarView(
             onSelectSection: selectFileSection,
             onSelectTab: selectTab,
             onClose: closeSidebar
           )
           .frame(width: menuWidth)
-          .offset(x: resolvedSidebarOffset(menuWidth: menuWidth))
           .allowsHitTesting(showMenu)
-          .transition(.opacity)
+          .accessibilityHidden(!showMenu)
         }
 
         mainSurface
@@ -57,14 +60,14 @@ struct RootTabView: View {
 
         if !showMenu && canRevealSidebar {
           Color.clear
-            .frame(width: 50)
+            .frame(width: 24)
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
             .gesture(sidebarGesture(menuWidth: menuWidth))
             .accessibilityHidden(true)
         }
       }
-      .background(Color(uiColor: .systemBackground))
+      .background(Color(uiColor: .secondarySystemBackground).ignoresSafeArea())
     }
     .animation(reduceMotion ? nil : .smooth(duration: 0.25), value: showMenu)
     .onChange(of: model.selectedTab) { _, _ in
@@ -130,7 +133,7 @@ struct RootTabView: View {
         }
 
         if !isComposing && !isShowingMeetingDetail && !model.isBottomBarHidden {
-          MemoraBottomBar()
+          MemoraBottomBar(avoidsComposer: composerScope != nil && shouldShowComposer)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
       }
@@ -156,24 +159,20 @@ struct RootTabView: View {
     return min(max(restingOffset + menuDragOffset, 0), menuWidth)
   }
 
-  private func resolvedSidebarOffset(menuWidth: CGFloat) -> CGFloat {
-    if showMenu {
-      return min(0, menuDragOffset)
-    }
-    return -menuWidth + max(0, menuDragOffset)
-  }
-
   private func sidebarGesture(menuWidth: CGFloat) -> some Gesture {
     DragGesture(minimumDistance: 10, coordinateSpace: .global)
       .onChanged { value in
         guard abs(value.translation.width) > abs(value.translation.height) else { return }
-        guard showMenu || canRevealSidebar && value.startLocation.x <= 50 else { return }
+        guard showMenu || canRevealSidebar && value.startLocation.x <= 24 else { return }
+        if !showMenu {
+          isSidebarMounted = true
+        }
         menuDragOffset = showMenu
           ? min(0, max(-menuWidth, value.translation.width))
           : max(0, min(menuWidth, value.translation.width))
       }
       .onEnded { value in
-        guard showMenu || canRevealSidebar && value.startLocation.x <= 50 else {
+        guard showMenu || canRevealSidebar && value.startLocation.x <= 24 else {
           menuDragOffset = 0
           return
         }
@@ -188,6 +187,9 @@ struct RootTabView: View {
           }
           menuDragOffset = 0
         }
+        if !showMenu {
+          scheduleSidebarUnmount()
+        }
       }
   }
 
@@ -198,6 +200,7 @@ struct RootTabView: View {
 
   private func openSidebar() {
     guard canRevealSidebar else { return }
+    isSidebarMounted = true
     withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) {
       showMenu = true
       menuDragOffset = 0
@@ -209,6 +212,15 @@ struct RootTabView: View {
       showMenu = false
       menuDragOffset = 0
     }
+    scheduleSidebarUnmount()
+  }
+
+  private func scheduleSidebarUnmount() {
+    Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 260))
+      guard !showMenu, menuDragOffset == 0 else { return }
+      isSidebarMounted = false
+    }
   }
 
   private func selectFileSection(_ section: FileSection) {
@@ -218,6 +230,7 @@ struct RootTabView: View {
       model.libraryPath = []
       showMenu = false
     }
+    scheduleSidebarUnmount()
   }
 
   private func selectTab(_ tab: RootTab) {
@@ -225,6 +238,7 @@ struct RootTabView: View {
       model.selectedTab = tab
       showMenu = false
     }
+    scheduleSidebarUnmount()
   }
 
   private let bottomStripHeight: CGFloat = 140

@@ -26,11 +26,14 @@ struct FileSidebarView: View {
           SidebarMenuItemView(title: "ライフログ", symbol: "waveform.path.ecg") {
             onSelectTab(.lifeLog)
           }
+          SidebarMenuItemView(title: "タスク", symbol: "checklist") {
+            onSelectTab(.tasks)
+          }
           SidebarMenuItemView(title: "Ask AI", symbol: "sparkles") {
             onSelectTab(.search)
           }
-          SidebarMenuItemView(title: "リスト", symbol: "checklist") {
-            onSelectTab(.tasks)
+          SidebarMenuItemView(title: "デバイスと連携", symbol: "antenna.radiowaves.left.and.right") {
+            onSelectTab(.settings)
           }
           SidebarMenuItemView(title: "Memora Plus", symbol: "crown") {
             onClose()
@@ -45,7 +48,7 @@ struct FileSidebarView: View {
       footer
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    .background(Color(uiColor: .systemBackground))
+    .background(Color(uiColor: .secondarySystemBackground))
     .ignoresSafeArea()
   }
 
@@ -71,17 +74,17 @@ struct FileSidebarView: View {
       .buttonStyle(.plain)
       .accessibilityLabel("プロフィール")
 
-      VStack(alignment: .leading, spacing: 3) {
+      VStack(alignment: .leading, spacing: 4) {
         Text(displayName)
           .font(.title3.bold())
-        Text(userID)
+        Text(accountStatus)
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
 
-      HStack(spacing: 18) {
-        profileCount(value: 0, label: "フォロー")
-        profileCount(value: 0, label: "フォロワー")
+      HStack(spacing: 8) {
+        libraryStatus(value: model.meetings.count, label: "ファイル", symbol: "doc.text")
+        libraryStatus(value: model.spaces.count, label: "プロジェクト", symbol: "folder")
       }
     }
     .padding(.horizontal, 22)
@@ -130,26 +133,29 @@ struct FileSidebarView: View {
     }
   }
 
-  private func profileCount(value: Int, label: String) -> some View {
-    HStack(spacing: 4) {
-      Text(value.formatted())
-        .font(.subheadline.bold())
-      Text(label)
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
+  private func libraryStatus(value: Int, label: String, symbol: String) -> some View {
+    Label {
+      Text("\(value.formatted()) \(label)")
+        .font(.caption.weight(.medium))
+    } icon: {
+      Image(systemName: symbol)
+        .font(.caption.weight(.semibold))
     }
+    .foregroundStyle(.secondary)
+    .padding(.horizontal, 10)
+    .frame(minHeight: 30)
+    .background(Color.primary.opacity(0.055), in: Capsule())
   }
 
   private var displayName: String {
     model.account?.displayName ?? "ゲスト"
   }
 
-  private var userID: String {
-    guard let email = model.account?.email,
-          let localPart = email.split(separator: "@").first else {
-      return "@memora"
+  private var accountStatus: String {
+    if let email = model.account?.email {
+      return email
     }
-    return "@\(localPart)"
+    return "このiPhoneに安全に保存"
   }
 }
 

@@ -1,76 +1,96 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
-/// A compact action palette anchored to the main FAB.
-struct CaptureSourceSheet: View {
-  @Environment(MemoraModel.self) private var model
-  @Environment(\.dismiss) private var dismiss
-  @State private var isFileImporterPresented = false
+enum CaptureAction: CaseIterable, Identifiable {
+  case recording
+  case importAudio
+  case onlineMeeting
+  case project
+
+  var id: Self { self }
+
+  var title: String {
+    switch self {
+    case .recording: "録音を開始"
+    case .importAudio: "音声を取り込む"
+    case .onlineMeeting: "オンライン会議"
+    case .project: "プロジェクトを作成"
+    }
+  }
+
+  var symbol: String {
+    switch self {
+    case .recording: "waveform"
+    case .importAudio: "square.and.arrow.down"
+    case .onlineMeeting: "video"
+    case .project: "folder.badge.plus"
+    }
+  }
+}
+
+/// An inline action palette that morphs out of the persistent capture FAB.
+struct CaptureActionMenu: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  var glassNamespace: Namespace.ID
+  var onSelect: (CaptureAction) -> Void
+  @State private var visibleItemCount = 0
 
   var body: some View {
-    VStack(spacing: 2) {
-      CaptureSourceButton(symbol: "waveform", title: "録音を開始") {
-        beginRecording()
+    menuSurface
+      .task {
+        await revealItems()
       }
+  }
 
-      CaptureSourceButton(symbol: "square.and.arrow.down", title: "音声を取り込む") {
-        isFileImporterPresented = true
-      }
+  @ViewBuilder
+  private var menuSurface: some View {
+    let content = menuContent
+      .padding(10)
+      .frame(width: 292)
 
-      CaptureSourceButton(symbol: "video", title: "オンライン会議") {
-        presentOnlineMeeting()
-      }
-
-      Divider()
-        .padding(.horizontal, 10)
-        .padding(.vertical, 4)
-
-      CaptureSourceButton(symbol: "folder.badge.plus", title: "プロジェクトを作成") {
-        presentProjectCreation()
-      }
-    }
-    .padding(10)
-    .frame(width: 292)
-    .fileImporter(
-      isPresented: $isFileImporterPresented,
-      allowedContentTypes: [.audio],
-      allowsMultipleSelection: false
-    ) { result in
-      switch result {
-      case .success(let urls):
-        guard let url = urls.first else { return }
-        dismiss()
-        Task {
-          try? await Task.sleep(for: .milliseconds(250))
-          await model.importAudio(from: url)
+    if #available(iOS 26.0, *) {
+      content
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .glassEffectID("captureMenu", in: glassNamespace)
+        .glassEffectTransition(.matchedGeometry)
+        .shadow(color: .black.opacity(0.12), radius: 24, y: 10)
+    } else {
+      content
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay {
+          RoundedRectangle(cornerRadius: 28, style: .continuous)
+            .stroke(Color(uiColor: .separator).opacity(0.55), lineWidth: 0.5)
         }
-      case .failure:
-        model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"
+        .shadow(color: .black.opacity(0.14), radius: 24, y: 10)
+    }
+  }
+
+  private var menuContent: some View {
+    VStack(spacing: 2) {
+      ForEach(Array(CaptureAction.allCases.enumerated()), id: \.element.id) { index, action in
+        CaptureSourceButton(symbol: action.symbol, title: action.title) {
+          onSelect(action)
+        }
+        .opacity(index < visibleItemCount ? 1 : 0)
+        .offset(y: index < visibleItemCount ? 0 : 8)
+        .allowsHitTesting(index < visibleItemCount)
+        .accessibilityHidden(index >= visibleItemCount)
       }
     }
   }
 
-  private func beginRecording() {
-    dismiss()
-    Task {
-      try? await Task.sleep(for: .milliseconds(250))
-      await model.startCapture()
+  private func revealItems() async {
+    if reduceMotion {
+      visibleItemCount = CaptureAction.allCases.count
+      return
     }
-  }
 
-  private func presentOnlineMeeting() {
-    dismiss()
-    Task { @MainActor in
-      try? await Task.sleep(for: .milliseconds(250))
-      model.isOnlineMeetingCapturePresented = true
-    }
-  }
-
-  private func presentProjectCreation() {
-    dismiss()
-    Task { @MainActor in
-      try? await Task.sleep(for: .milliseconds(250))
-      model.isFileCreationPresented = true
+    for count in 1...CaptureAction.allCases.count {
+      try? await Task.sleep(for: .milliseconds(45))
+      guard !Task.isCancelled else { return }
+      withAnimation(.snappy(duration: 0.24)) {
+        visibleItemCount = count
+      }
     }
   }
 }
