@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 struct MemoraBottomBar: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  var avoidsComposer = false
   @Namespace private var selection
   @Namespace private var captureGlass
   @State private var addFeedback = 0
@@ -24,14 +23,25 @@ struct MemoraBottomBar: View {
         }
         .padding(4)
         .frame(maxWidth: .infinity)
+        .frame(height: 56)
         .memoraGlass(in: Capsule())
+        .compositingGroup()
+        .blur(radius: model.isCaptureSourcePresented ? 8 : 0)
+        .opacity(model.isCaptureSourcePresented ? 0.62 : 1)
+        .overlay {
+          if model.isCaptureSourcePresented {
+            Capsule().fill(.regularMaterial)
+          }
+        }
+        .allowsHitTesting(!model.isCaptureSourcePresented)
+        .accessibilityHidden(model.isCaptureSourcePresented)
 
         captureButton
       }
       .overlay(alignment: .bottomTrailing) {
         if model.isCaptureSourcePresented {
           CaptureActionMenu(glassNamespace: captureGlass, onSelect: performCaptureAction)
-            .padding(.bottom, avoidsComposer ? 112 : 66)
+            .padding(.bottom, 66)
             .transition(
               reduceMotion
                 ? .opacity
@@ -41,7 +51,7 @@ struct MemoraBottomBar: View {
         }
       }
     }
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.selectedTab)
+    .animation(reduceMotion ? nil : .smooth(duration: 0.28), value: model.selectedTab)
     .animation(reduceMotion ? nil : .smooth(duration: 0.32), value: model.isCaptureSourcePresented)
     .sensoryFeedback(.selection, trigger: model.selectedTab)
     .fileImporter(
@@ -60,17 +70,21 @@ struct MemoraBottomBar: View {
 
   @ViewBuilder
   private var captureButton: some View {
-    let button = Button(model.isCaptureSourcePresented ? "作成メニューを閉じる" : "作成メニューを開く", systemImage: "plus") {
+    let button = Button {
       addFeedback += 1
       withAnimation(reduceMotion ? nil : .smooth(duration: 0.32)) {
         model.isCaptureSourcePresented.toggle()
       }
+    } label: {
+      Image(systemName: "plus")
+        .font(.title3.weight(.semibold))
+        .rotationEffect(.degrees(model.isCaptureSourcePresented ? 45 : 0))
+        .frame(width: 56, height: 56)
     }
-    .labelStyle(.iconOnly)
-    .font(.title3.weight(.semibold))
-    .frame(width: 56, height: 56)
+    .buttonStyle(.plain)
     .foregroundStyle(.white)
     .sensoryFeedback(.impact(weight: .medium), trigger: addFeedback)
+    .accessibilityLabel(model.isCaptureSourcePresented ? "作成メニューを閉じる" : "作成メニューを開く")
     .accessibilityHint(model.isCaptureSourcePresented ? "もう一度タップすると閉じます" : "録音やファイルの取り込み方法を選びます")
 
     if #available(iOS 26.0, *) {
@@ -144,7 +158,7 @@ private struct BottomTabButton: View {
   var body: some View {
     Button {
       guard model.selectedTab != tab else { return }
-      withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+      withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
         model.selectedTab = tab
       }
     } label: {
@@ -152,7 +166,6 @@ private struct BottomTabButton: View {
         Image(systemName: symbol)
           .font(.body.weight(.medium))
           .symbolRenderingMode(.monochrome)
-          .symbolEffect(.bounce, value: isSelected)
 
         Text(title)
           .font(.caption2.weight(isSelected ? .semibold : .medium))
@@ -166,6 +179,7 @@ private struct BottomTabButton: View {
           BottomTabSelection(selection: selection)
         }
       }
+      .blur(radius: model.isCaptureSourcePresented ? 8 : 0)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
@@ -182,10 +196,10 @@ private struct BottomTabSelection: View {
 
   var body: some View {
     if #available(iOS 26.0, *) {
-      Capsule()
-        .fill(Color.primary.opacity(0.035))
+      Color.clear
         .glassEffect(.regular.tint(Color.primary.opacity(0.12)), in: Capsule())
         .glassEffectID("selectedTab", in: selection)
+        .glassEffectTransition(.matchedGeometry)
     } else {
       Capsule()
         .fill(Color.primary.opacity(0.1))

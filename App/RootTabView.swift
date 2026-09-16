@@ -12,12 +12,12 @@ struct RootTabView: View {
     @Bindable var model = model
 
     GeometryReader { geometry in
-      let menuWidth = min(360, geometry.size.width * 0.75)
+      let menuWidth = min(350, geometry.size.width * 0.8)
       let contentOffset = resolvedMenuOffset(menuWidth: menuWidth)
       let progress = menuWidth > 0 ? contentOffset / menuWidth : 0
 
       ZStack(alignment: .leading) {
-        Color(uiColor: .secondarySystemBackground)
+        Color(uiColor: .systemBackground)
           .ignoresSafeArea()
 
         if isSidebarMounted {
@@ -34,15 +34,14 @@ struct RootTabView: View {
         mainSurface
           .clipShape(
             RoundedRectangle(
-              cornerRadius: progress > 0 ? 24 : 0,
+              cornerRadius: progress > 0 ? 22 : 0,
               style: .continuous
             )
           )
-          .scaleEffect(reduceMotion ? 1 : 1 - (0.1 * progress), anchor: .trailing)
           .accessibilityHidden(showMenu)
           .overlay {
             if progress > 0 {
-              Color.black.opacity(0.3 * progress)
+              Color.black.opacity(0.12 * progress)
                 .contentShape(Rectangle())
                 .onTapGesture(perform: closeSidebar)
                 .gesture(sidebarGesture(menuWidth: menuWidth))
@@ -53,9 +52,9 @@ struct RootTabView: View {
           }
           .offset(x: contentOffset)
           .shadow(
-            color: .black.opacity(0.15 * progress),
-            radius: 10,
-            x: -5
+            color: .black.opacity(0.12 * progress),
+            radius: 18,
+            x: -4
           )
 
         if !showMenu && canRevealSidebar {
@@ -67,7 +66,7 @@ struct RootTabView: View {
             .accessibilityHidden(true)
         }
       }
-      .background(Color(uiColor: .secondarySystemBackground).ignoresSafeArea())
+      .background(Color(uiColor: .systemBackground).ignoresSafeArea())
     }
     .animation(reduceMotion ? nil : .smooth(duration: 0.25), value: showMenu)
     .onChange(of: model.selectedTab) { _, _ in
@@ -124,16 +123,40 @@ struct RootTabView: View {
         .hidesSystemTabBar()
         .tag(RootTab.settings)
     }
+    .blur(radius: model.isCaptureSourcePresented ? 8 : 0)
+    .accessibilityHidden(model.isCaptureSourcePresented)
+    .overlay {
+      if model.isCaptureSourcePresented {
+        Color.black.opacity(0.08)
+          .ignoresSafeArea()
+          .contentShape(Rectangle())
+          .onTapGesture {
+            withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
+              model.isCaptureSourcePresented = false
+            }
+          }
+          .accessibilityLabel("作成メニューを閉じる")
+          .accessibilityAddTraits(.isButton)
+      }
+    }
     .safeAreaInset(edge: .bottom, spacing: 4) {
       VStack(spacing: 4) {
         if let scope = composerScope, shouldShowComposer {
           QuickAIComposer(scope: scope, isComposing: $isComposing)
             .id(scope)
+            .blur(radius: model.isCaptureSourcePresented ? 8 : 0)
+            .overlay {
+              if model.isCaptureSourcePresented {
+                Capsule().fill(.regularMaterial)
+              }
+            }
+            .allowsHitTesting(!model.isCaptureSourcePresented)
+            .accessibilityHidden(model.isCaptureSourcePresented)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
 
         if !isComposing && !isShowingMeetingDetail && !model.isBottomBarHidden {
-          MemoraBottomBar(avoidsComposer: composerScope != nil && shouldShowComposer)
+          MemoraBottomBar()
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
       }

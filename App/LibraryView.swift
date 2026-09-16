@@ -81,9 +81,11 @@ struct LibraryView: View {
       }
     } else {
       VStack(alignment: .leading, spacing: 10) {
-        Text(query.isEmpty ? "ファイル" : "検索結果")
-          .font(.title2.bold())
-          .memoraTextReveal()
+        if !query.isEmpty {
+          Text("検索結果")
+            .font(.title2.bold())
+            .memoraTextReveal()
+        }
 
         LazyVStack(spacing: 0) {
           ForEach(matchingMeetings) { meeting in

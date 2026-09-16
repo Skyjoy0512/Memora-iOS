@@ -12,48 +12,52 @@ struct FileSidebarView: View {
     VStack(alignment: .leading, spacing: 0) {
       profileHeader
 
-      Divider()
-        .padding(.horizontal, 22)
-
       ScrollView {
-        VStack(alignment: .leading, spacing: 8) {
-          sectionButton(.meetingFiles)
-          sectionButton(.projects)
+        VStack(alignment: .leading, spacing: 22) {
+          sidebarSection("ライブラリ") {
+            sectionButton(.meetingFiles)
+            sectionButton(.projects)
+          }
 
-          Divider()
-            .padding(.vertical, 10)
+          sidebarSection("記録と整理") {
+            SidebarMenuItemView(title: "ライフログ", symbol: "waveform.path.ecg") {
+              onSelectTab(.lifeLog)
+            }
+            SidebarMenuItemView(title: "タスク", symbol: "checklist") {
+              onSelectTab(.tasks)
+            }
+          }
 
-          SidebarMenuItemView(title: "ライフログ", symbol: "waveform.path.ecg") {
-            onSelectTab(.lifeLog)
+          sidebarSection("AIと接続") {
+            SidebarMenuItemView(title: "Ask AI", symbol: "sparkles") {
+              onSelectTab(.search)
+            }
+            SidebarMenuItemView(title: "デバイスと連携", symbol: "antenna.radiowaves.left.and.right") {
+              onSelectTab(.settings)
+            }
           }
-          SidebarMenuItemView(title: "タスク", symbol: "checklist") {
-            onSelectTab(.tasks)
-          }
-          SidebarMenuItemView(title: "Ask AI", symbol: "sparkles") {
-            onSelectTab(.search)
-          }
-          SidebarMenuItemView(title: "デバイスと連携", symbol: "antenna.radiowaves.left.and.right") {
-            onSelectTab(.settings)
-          }
-          SidebarMenuItemView(title: "Memora Plus", symbol: "crown") {
-            onClose()
-            model.isPaywallPresented = true
+
+          sidebarSection("アカウント") {
+            SidebarMenuItemView(title: "Memora Plus", symbol: "crown") {
+              onClose()
+              model.isPaywallPresented = true
+            }
           }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
       }
       .scrollIndicators(.hidden)
 
       footer
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    .background(Color(uiColor: .secondarySystemBackground))
+    .background(Color(uiColor: .systemBackground))
     .ignoresSafeArea()
   }
 
   private var profileHeader: some View {
-    VStack(alignment: .leading, spacing: 14) {
+    HStack(spacing: 12) {
       Button {
         onClose()
         if model.isSignedIn {
@@ -66,61 +70,61 @@ struct FileSidebarView: View {
           Circle()
             .fill(Color.primary.opacity(0.08))
           Image(systemName: model.isSignedIn ? "person.fill" : "person")
-            .font(.title2.weight(.semibold))
+            .font(.body.weight(.semibold))
             .foregroundStyle(.primary)
         }
-        .frame(width: 52, height: 52)
+        .frame(width: 44, height: 44)
       }
       .buttonStyle(.plain)
       .accessibilityLabel("プロフィール")
 
       VStack(alignment: .leading, spacing: 4) {
         Text(displayName)
-          .font(.title3.bold())
+          .font(.headline)
         Text(accountStatus)
-          .font(.subheadline)
+          .font(.caption)
           .foregroundStyle(.secondary)
       }
 
-      HStack(spacing: 8) {
-        libraryStatus(value: model.meetings.count, label: "ファイル", symbol: "doc.text")
-        libraryStatus(value: model.spaces.count, label: "プロジェクト", symbol: "folder")
+      Spacer(minLength: 8)
+
+      Button("設定", systemImage: "gearshape") {
+        onSelectTab(.settings)
       }
+      .labelStyle(.iconOnly)
+      .font(.body.weight(.medium))
+      .foregroundStyle(.primary)
+      .frame(width: 44, height: 44)
+      .contentShape(Rectangle())
     }
-    .padding(.horizontal, 22)
-    .padding(.top, 58)
-    .padding(.bottom, 20)
+    .padding(.horizontal, 20)
+    .padding(.top, 56)
+    .padding(.bottom, 18)
   }
 
   private var footer: some View {
-    VStack(spacing: 0) {
-      Divider()
+    HStack(spacing: 10) {
+      Label(accountStatus, systemImage: model.isSignedIn ? "checkmark.icloud" : "lock")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
 
-      HStack {
-        Button("設定とプライバシー", systemImage: "gearshape") {
-          onSelectTab(.settings)
-        }
-        .labelStyle(.iconOnly)
-        .font(.title3)
-        .foregroundStyle(.primary)
-        .frame(width: 44, height: 44)
-        .contentShape(Rectangle())
+      Spacer(minLength: 8)
 
-        Spacer()
-
-        Button(prefersDarkAppearance ? "システムの外観を使用" : "ダークモード", systemImage: prefersDarkAppearance ? "sun.max" : "moon") {
-          prefersDarkAppearance.toggle()
-        }
-        .labelStyle(.iconOnly)
-        .font(.title3)
-        .foregroundStyle(.primary)
-        .frame(width: 44, height: 44)
-        .contentShape(Rectangle())
+      Button(prefersDarkAppearance ? "システムの外観を使用" : "ダークモード", systemImage: prefersDarkAppearance ? "sun.max" : "moon") {
+        prefersDarkAppearance.toggle()
       }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 10)
+      .labelStyle(.iconOnly)
+      .font(.body)
+      .foregroundStyle(.primary)
+      .frame(width: 44, height: 44)
+      .contentShape(Rectangle())
     }
-    .padding(.bottom, 12)
+    .padding(.leading, 22)
+    .padding(.trailing, 16)
+    .padding(.vertical, 10)
+    .padding(.bottom, 10)
+    .overlay(alignment: .top) { Divider() }
   }
 
   private func sectionButton(_ section: FileSection) -> some View {
@@ -133,18 +137,18 @@ struct FileSidebarView: View {
     }
   }
 
-  private func libraryStatus(value: Int, label: String, symbol: String) -> some View {
-    Label {
-      Text("\(value.formatted()) \(label)")
-        .font(.caption.weight(.medium))
-    } icon: {
-      Image(systemName: symbol)
+  private func sidebarSection<Content: View>(
+    _ title: String,
+    @ViewBuilder content: () -> Content
+  ) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Text(title)
         .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 12)
+
+      content()
     }
-    .foregroundStyle(.secondary)
-    .padding(.horizontal, 10)
-    .frame(minHeight: 30)
-    .background(Color.primary.opacity(0.055), in: Capsule())
   }
 
   private var displayName: String {
@@ -169,8 +173,9 @@ private struct SidebarMenuItemView: View {
     Button(action: action) {
       HStack(spacing: 16) {
         Image(systemName: symbol)
-          .font(.title3)
-          .frame(width: 24)
+          .font(.body.weight(.medium))
+          .symbolRenderingMode(.monochrome)
+          .frame(width: 22)
 
         Text(title)
           .font(.body.weight(isSelected ? .semibold : .medium))
@@ -178,15 +183,15 @@ private struct SidebarMenuItemView: View {
         Spacer()
       }
       .foregroundStyle(.primary)
-      .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
-      .padding(.horizontal, 14)
+      .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+      .padding(.horizontal, 12)
       .background {
         if isSelected {
-          RoundedRectangle(cornerRadius: 15, style: .continuous)
-            .fill(Color.primary.opacity(0.08))
+          RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(Color.primary.opacity(0.07))
         }
       }
-      .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+      .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(isSelected ? .isSelected : [])
