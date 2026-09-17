@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 /// A drawer that slides the screen aside to reveal navigation beneath it.
 ///
@@ -19,10 +18,6 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
   @State private var dragTranslation: CGFloat = 0
-  /// Kept in step with the animation rather than a guessed timer, so the panel
-  /// never disappears mid-slide and never lingers in the accessibility tree
-  /// once it is closed.
-  @State private var isPanelMounted = false
   /// The drawer breaks out of the safe area so the app can fill the screen, so
   /// the panel reads the window's insets directly to keep its own contents clear
   /// of the status bar and home indicator.
@@ -35,21 +30,21 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
       let progress = width > 0 ? offset / width : 0
 
       ZStack(alignment: .leading) {
-        if isPanelMounted {
-          sidebar()
-            .frame(width: width)
-            .frame(maxHeight: .infinity, alignment: .top)
-            // The panel's own background bleeds to the edges; its contents stay
-            // clear of the status bar and home indicator.
-            .padding(.top, windowInsets.top)
-            .padding(.bottom, windowInsets.bottom)
-            // Letting the panel trail slightly behind the content reads as
-            // depth instead of two boards sliding as one.
-            .offset(x: -(1 - progress) * width * 0.24)
-            .opacity(progress)
-            .allowsHitTesting(isOpen)
-            .accessibilityHidden(!isOpen)
-        }
+        // Always in the hierarchy so a programmatic open and a drag animate the
+        // same way; `progress` alone decides whether it is seen or interactive.
+        sidebar()
+          .frame(width: width)
+          .frame(maxHeight: .infinity, alignment: .top)
+          // The panel's own background bleeds to the edges; its contents stay
+          // clear of the status bar and home indicator.
+          .padding(.top, windowInsets.top)
+          .padding(.bottom, windowInsets.bottom)
+          // Letting the panel trail slightly behind the content reads as
+          // depth instead of two boards sliding as one.
+          .offset(x: -(1 - progress) * width * 0.24)
+          .opacity(progress)
+          .allowsHitTesting(isOpen)
+          .accessibilityHidden(!isOpen)
 
         content()
           .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
@@ -100,13 +95,9 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
   }
 
   private func refreshWindowInsets() {
-    let windows = UIApplication.shared.connectedScenes
-      .compactMap { $0 as? UIWindowScene }
-      .flatMap(\.windows)
-    let insets = (windows.first { $0.isKeyWindow } ?? windows.first)?.safeAreaInsets ?? .zero
-    let edgeInsets = EdgeInsets(top: insets.top, leading: insets.left, bottom: insets.bottom, trailing: insets.right)
-    if edgeInsets != windowInsets {
-      windowInsets = edgeInsets
+    let insets = WindowSafeArea.insets
+    if insets != windowInsets {
+      windowInsets = insets
     }
   }
 
@@ -120,7 +111,6 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
         guard !isOpen, isEnabled else { return }
         // A mostly vertical swipe belongs to the list underneath.
         guard abs(value.translation.width) > abs(value.translation.height) else { return }
-        isPanelMounted = true
         dragTranslation = max(0, min(width, value.translation.width))
       }
       .onEnded { value in
@@ -154,16 +144,9 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
   }
 
   private func slide(to open: Bool) {
-    if open {
-      isPanelMounted = true
-    }
-
     withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) {
       dragTranslation = 0
       isOpen = open
-    } completion: {
-      guard !isOpen, dragTranslation == 0 else { return }
-      isPanelMounted = false
     }
   }
 }

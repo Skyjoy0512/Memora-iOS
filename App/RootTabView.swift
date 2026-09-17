@@ -3,8 +3,12 @@ import SwiftUI
 struct RootTabView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.scenePhase) private var scenePhase
   @State private var isComposing = false
   @State private var isSidebarOpen = false
+  /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
+  /// controls re-add the home indicator inset themselves.
+  @State private var safeAreaInsets = EdgeInsets()
 
   var body: some View {
     @Bindable var model = model
@@ -23,6 +27,9 @@ struct RootTabView: View {
     .onChange(of: model.selectedTab) { _, _ in
       closeSidebar()
     }
+    .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshSafeAreaInsets() }
+    .onChange(of: scenePhase) { _, _ in refreshSafeAreaInsets() }
+    .onAppear { refreshSafeAreaInsets() }
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
     }
@@ -68,6 +75,7 @@ struct RootTabView: View {
         CaptureControl()
           .frame(maxWidth: .infinity, alignment: .trailing)
           .padding(.trailing, 12)
+          .padding(.bottom, safeAreaInsets.bottom + 8)
           .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
     }
@@ -120,6 +128,9 @@ struct RootTabView: View {
     }
     .padding(.horizontal, 12)
     .padding(.top, 4)
+    // `safeAreaInset` no longer contributes the home indicator inset inside the
+    // full-bleed drawer, so add it back here.
+    .padding(.bottom, safeAreaInsets.bottom)
     .background(alignment: .bottom) {
       // Keeps scrolling content from peeking out under the home indicator.
       if showsBottomControls {
@@ -164,6 +175,13 @@ struct RootTabView: View {
   private func setSidebar(open: Bool) {
     withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) {
       isSidebarOpen = open
+    }
+  }
+
+  private func refreshSafeAreaInsets() {
+    let insets = WindowSafeArea.insets
+    if insets != safeAreaInsets {
+      safeAreaInsets = insets
     }
   }
 
