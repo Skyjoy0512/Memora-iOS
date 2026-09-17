@@ -22,7 +22,7 @@ struct RootTabView: View {
         onClose: closeSidebar
       )
     } content: {
-      mainSurface
+      tabSurface
     }
     .onChange(of: model.selectedTab) { _, _ in
       closeSidebar()
@@ -51,35 +51,6 @@ struct RootTabView: View {
         }
       }
     }
-  }
-
-  private var mainSurface: some View {
-    ZStack(alignment: .bottom) {
-      tabSurface
-
-      if model.isCaptureSourcePresented {
-        // One full-bleed frost for the whole screen, tab bar included. It has
-        // to ignore the safe areas or the status bar and the home indicator
-        // stay sharp while everything between them blurs.
-        Rectangle()
-          .fill(.ultraThinMaterial)
-          .ignoresSafeArea()
-          .contentShape(Rectangle())
-          .onTapGesture(perform: collapseCaptureMenu)
-          .accessibilityLabel("作成メニューを閉じる")
-          .accessibilityAddTraits(.isButton)
-          .transition(.opacity)
-      }
-
-      if showsCaptureControl {
-        CaptureControl()
-          .frame(maxWidth: .infinity, alignment: .trailing)
-          .padding(.trailing, 12)
-          .padding(.bottom, safeAreaInsets.bottom + 8)
-          .transition(.opacity.combined(with: .move(edge: .bottom)))
-      }
-    }
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: showsCaptureControl)
   }
 
   private var tabSurface: some View {
@@ -112,18 +83,26 @@ struct RootTabView: View {
   }
 
   private var bottomControls: some View {
+    @Bindable var model = model
+
     // The composer keeps a clear gap from the tab bar so the two never read as
     // one stacked slab of controls.
-    VStack(spacing: 18) {
+    return VStack(spacing: 18) {
       if let scope = composerScope, shouldShowComposer {
         QuickAIComposer(scope: scope, isComposing: $isComposing)
           .id(scope)
           .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
 
-      if showsCaptureControl {
-        MemoraBottomBar()
-          .transition(.opacity.combined(with: .move(edge: .bottom)))
+      if showsBottomBar {
+        ProminentTabBar(
+          selection: $model.selectedTab,
+          isProminentPresented: $model.isCaptureSourcePresented,
+          prominentSymbol: "plus"
+        ) {
+          CaptureMenuPopover()
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
     }
     .padding(.horizontal, 12)
@@ -131,22 +110,13 @@ struct RootTabView: View {
     // `safeAreaInset` no longer contributes the home indicator inset inside the
     // full-bleed drawer, so add it back here.
     .padding(.bottom, safeAreaInsets.bottom)
-    .background(alignment: .bottom) {
-      // Keeps scrolling content from peeking out under the home indicator.
-      if showsBottomControls {
-        Color(uiColor: .systemBackground)
-          .frame(height: bottomStripHeight)
-          .offset(y: bottomStripHeight)
-      }
-    }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isBottomBarHidden)
   }
 
-  /// The tab bar and the capture button appear and disappear together.
-  private var showsCaptureControl: Bool {
+  private var showsBottomBar: Bool {
     !isComposing && !isShowingMeetingDetail && !model.isBottomBarHidden
   }
 
@@ -214,15 +184,6 @@ struct RootTabView: View {
     model.isSettingsPresented = true
   }
 
-  private func collapseCaptureMenu() {
-    guard model.isCaptureSourcePresented else { return }
-    withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
-      model.isCaptureSourcePresented = false
-    }
-  }
-
-  private let bottomStripHeight: CGFloat = 140
-
   private var composerScope: AIQueryScope? {
     if let meetingID = model.activeDetailMeetingID {
       return .file(meetingID)
@@ -245,10 +206,6 @@ struct RootTabView: View {
     !isShowingMeetingDetail || model.isDetailComposerVisible
   }
 
-  private var showsBottomControls: Bool {
-    (composerScope != nil && shouldShowComposer) || (!isComposing && !isShowingMeetingDetail)
-  }
-
   private var isShowingMeetingDetail: Bool {
     if model.activeDetailMeetingID != nil {
       return true
@@ -264,7 +221,7 @@ struct RootTabView: View {
 }
 
 private extension View {
-  /// Removes the system tab bar so `MemoraBottomBar` is the only bottom navigation.
+  /// Removes the system tab bar so `ProminentTabBar` is the only bottom navigation.
   /// The modifier has to be applied inside a tab, not on the `TabView` itself.
   @ViewBuilder
   func hidesSystemTabBar() -> some View {
