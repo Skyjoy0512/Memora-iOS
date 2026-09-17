@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// A drawer that slides the screen aside to reveal navigation beneath it.
 ///
@@ -16,70 +17,96 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
   @ViewBuilder var content: () -> Content
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.scenePhase) private var scenePhase
   @State private var dragTranslation: CGFloat = 0
   /// Kept in step with the animation rather than a guessed timer, so the panel
   /// never disappears mid-slide and never lingers in the accessibility tree
   /// once it is closed.
   @State private var isPanelMounted = false
-  /// Measured from the full-bleed container rather than a `GeometryReader`, so
-  /// the content keeps filling the screen instead of being inset to the safe
-  /// area, which left white bands above and below it.
-  @State private var containerWidth: CGFloat = 0
+  /// The drawer breaks out of the safe area so the app can fill the screen, so
+  /// the panel reads the window's insets directly to keep its own contents clear
+  /// of the status bar and home indicator.
+  @State private var windowInsets = EdgeInsets()
 
   var body: some View {
-    let width = min(320, containerWidth * 0.82)
-    let offset = resolvedOffset(width: width)
-    let progress = width > 0 ? offset / width : 0
+    GeometryReader { proxy in
+      let width = min(320, proxy.size.width * 0.82)
+      let offset = resolvedOffset(width: width)
+      let progress = width > 0 ? offset / width : 0
 
-    ZStack(alignment: .leading) {
-      if isPanelMounted {
-        sidebar()
-          .frame(width: width)
-          .frame(maxHeight: .infinity, alignment: .top)
-          // Letting the panel trail slightly behind the content reads as
-          // depth instead of two boards sliding as one.
-          .offset(x: -(1 - progress) * width * 0.24)
-          .opacity(progress)
-          .allowsHitTesting(isOpen)
-          .accessibilityHidden(!isOpen)
-      }
-
-      content()
-        .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
-        .overlay {
-          if progress > 0 {
-            // Kept transparent on purpose: the pushed-aside screen stays as
-            // bright as it was, and only needs to catch a tap or drag to close.
-            Color.clear
-              .contentShape(Rectangle())
-              .onTapGesture { setOpen(false) }
-              .gesture(closeDrag(width: width))
-              .allowsHitTesting(isOpen)
-              .accessibilityLabel("メニューを閉じる")
-              .accessibilityAddTraits(.isButton)
-          }
+      ZStack(alignment: .leading) {
+        if isPanelMounted {
+          sidebar()
+            .frame(width: width)
+            .frame(maxHeight: .infinity, alignment: .top)
+            // The panel's own background bleeds to the edges; its contents stay
+            // clear of the status bar and home indicator.
+            .padding(.top, windowInsets.top)
+            .padding(.bottom, windowInsets.bottom)
+            // Letting the panel trail slightly behind the content reads as
+            // depth instead of two boards sliding as one.
+            .offset(x: -(1 - progress) * width * 0.24)
+            .opacity(progress)
+            .allowsHitTesting(isOpen)
+            .accessibilityHidden(!isOpen)
         }
-        .accessibilityHidden(isOpen)
-        .offset(x: offset)
-        .shadow(color: .black.opacity(0.2 * progress), radius: 24, x: -6)
 
-      if isEnabled && !isOpen {
-        // Narrow enough to stay out of the way of content taps, matching the
-        // edge the system itself reserves for a back swipe.
-        Color.clear
-          .frame(width: 16)
-          .frame(maxHeight: .infinity)
-          .contentShape(Rectangle())
-          .gesture(openDrag(width: width))
-          .accessibilityHidden(true)
+        content()
+          .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
+          .overlay {
+            if progress > 0 {
+              // Kept transparent on purpose: the pushed-aside screen stays as
+              // bright as it was, and only needs to catch a tap or drag to close.
+              Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { setOpen(false) }
+                .gesture(closeDrag(width: width))
+                .allowsHitTesting(isOpen)
+                .accessibilityLabel("メニューを閉じる")
+                .accessibilityAddTraits(.isButton)
+            }
+          }
+          .accessibilityHidden(isOpen)
+          .offset(x: offset)
+          .shadow(color: .black.opacity(0.2 * progress), radius: 24, x: -6)
+
+        if isEnabled && !isOpen {
+          // Narrow enough to stay out of the way of content taps, matching the
+          // edge the system itself reserves for a back swipe.
+          Color.clear
+            .frame(width: 16)
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(openDrag(width: width))
+            .accessibilityHidden(true)
+        }
       }
+      .frame(width: proxy.size.width, height: proxy.size.height)
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { containerWidth = $0 }
+    .ignoresSafeArea()
     .background(Color(uiColor: .systemBackground).ignoresSafeArea())
     .onChange(of: isEnabled) { _, enabled in
       guard !enabled, isOpen else { return }
       setOpen(false)
+    }
+    .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshWindowInsets() }
+    .onChange(of: scenePhase) { _, _ in refreshWindowInsets() }
+    .onAppear { refreshWindowInsets() }
+    .task {
+      // The window may not be key yet on the first pass, so re-read once the
+      // first layout has settled.
+      refreshWindowInsets()
+    }
+  }
+
+  private func refreshWindowInsets() {
+    let windows = UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap(\.windows)
+    let insets = (windows.first { $0.isKeyWindow } ?? windows.first)?.safeAreaInsets ?? .zero
+    let edgeInsets = EdgeInsets(top: insets.top, leading: insets.left, bottom: insets.bottom, trailing: insets.right)
+    if edgeInsets != windowInsets {
+      windowInsets = edgeInsets
     }
   }
 
