@@ -11,6 +11,7 @@ struct RootTabView: View {
 
     SidebarContainer(isOpen: $isSidebarOpen, isEnabled: canRevealSidebar) {
       FileSidebarView(
+        onSelectTab: selectTab,
         onSelectSection: selectFileSection,
         onSelectSpace: openSpace,
         onOpenSettings: openSettings,
@@ -163,6 +164,14 @@ struct RootTabView: View {
   private func setSidebar(open: Bool) {
     withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) {
       isSidebarOpen = open
+    }
+  }
+
+  private func selectTab(_ tab: RootTab) {
+    closeSidebar()
+    guard model.selectedTab != tab else { return }
+    withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+      model.selectedTab = tab
     }
   }
 

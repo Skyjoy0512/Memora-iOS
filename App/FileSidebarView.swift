@@ -7,6 +7,7 @@ struct FileSidebarView: View {
   @Environment(MemoraModel.self) private var model
   @AppStorage("memora.prefersDarkAppearance") private var prefersDarkAppearance = false
 
+  var onSelectTab: (RootTab) -> Void
   var onSelectSection: (FileSection) -> Void
   var onSelectSpace: (MemoraSpace) -> Void
   var onOpenSettings: () -> Void
@@ -18,12 +19,25 @@ struct FileSidebarView: View {
 
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
+          sidebarSection("メニュー") {
+            ForEach(RootTab.allCases) { tab in
+              SidebarRow(
+                title: tab.title,
+                symbol: tab.symbol,
+                detail: detail(for: tab),
+                isSelected: model.selectedTab == tab
+              ) {
+                onSelectTab(tab)
+              }
+            }
+          }
+
           sidebarSection("ライブラリ") {
             ForEach(FileSection.allCases) { section in
               SidebarRow(
                 title: section.title,
                 symbol: section.symbol,
-                isSelected: model.fileSection == section
+                isSelected: model.selectedTab == .files && model.fileSection == section
               ) {
                 onSelectSection(section)
               }
@@ -31,8 +45,8 @@ struct FileSidebarView: View {
           }
 
           if !model.spaces.isEmpty {
-            sidebarSection("プロジェクト") {
-              ForEach(model.spaces.prefix(8)) { space in
+            sidebarSection("最近のプロジェクト") {
+              ForEach(model.spaces.prefix(6)) { space in
                 SidebarRow(
                   title: space.name,
                   symbol: space.symbol,
@@ -41,6 +55,16 @@ struct FileSidebarView: View {
                   onSelectSpace(space)
                 }
               }
+            }
+          }
+
+          sidebarSection("接続") {
+            SidebarRow(
+              title: isOmiConnected ? "Omi 接続中" : "外部レコーダー",
+              symbol: isOmiConnected ? "dot.radiowaves.left.and.right" : "link",
+              detail: isOmiConnected ? nil : "未接続"
+            ) {
+              onOpenSettings()
             }
           }
         }
@@ -152,6 +176,20 @@ struct FileSidebarView: View {
 
   private func meetingCount(for spaceID: UUID) -> Int {
     model.meetings.filter { $0.spaceID == spaceID }.count
+  }
+
+  private func detail(for tab: RootTab) -> String? {
+    guard tab == .tasks, openTaskCount > 0 else { return nil }
+    return "\(openTaskCount)"
+  }
+
+  private var openTaskCount: Int {
+    model.tasks.filter { !$0.isCompleted }.count
+  }
+
+  private var isOmiConnected: Bool {
+    if case .connected = model.omiPairingManager.state { return true }
+    return false
   }
 
   private var displayName: String {
