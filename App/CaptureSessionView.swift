@@ -103,23 +103,29 @@ struct CaptureSessionView: View {
       .padding(.horizontal, 16)
       .padding(.bottom, 16)
     }
-    .background {
-      ZStack(alignment: .bottom) {
-        Color(uiColor: .systemBackground)
-        VoiceGlow(
-          level: model.recordingLevel,
-          isActive: model.isRecording && !model.isRecordingPaused
-        )
-        .frame(height: 300)
-      }
-      .ignoresSafeArea()
+    .presentationBackground {
+      sheetBackground
     }
-    .presentationDetents([.fraction(0.7)])
+    .presentationDetents([.fraction(0.5)])
     .presentationDragIndicator(.visible)
     .presentationCornerRadius(38)
     .interactiveDismissDisabled()
     .sensoryFeedback(.impact(weight: .medium), trigger: pauseFeedback)
     .sensoryFeedback(.impact(weight: .heavy), trigger: stopFeedback)
+  }
+
+  /// A Liquid Glass surface with the live voice glow gathering at the bottom.
+  private var sheetBackground: some View {
+    ZStack(alignment: .bottom) {
+      Rectangle()
+        .fill(.regularMaterial)
+
+      VoiceGlow(
+        level: model.recordingLevel,
+        isActive: model.isRecording && !model.isRecordingPaused
+      )
+      .frame(height: 300)
+    }
   }
 }
 
