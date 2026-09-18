@@ -100,7 +100,8 @@ struct RootTabView: View {
     // The composer keeps a clear gap from the tab bar so the two never read as
     // one stacked slab of controls.
     return VStack(spacing: 18) {
-      if shouldShowComposer {
+      // The composer retreats with the bar so the two never separate mid-scroll.
+      if shouldShowComposer, !model.isBottomBarHidden {
         QuickAIComposer(
           scope: composerScope,
           isComposing: $isComposing,
