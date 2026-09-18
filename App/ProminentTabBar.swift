@@ -17,6 +17,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   var prominentSymbol: String
   @ViewBuilder var popover: PopoverContent
 
+  @Environment(\.colorScheme) private var colorScheme
   @Namespace private var namespace
 
   var body: some View {
@@ -36,7 +37,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
   @ViewBuilder
   private var segmentedControl: some View {
-    let control = ProminentSegmentedControl(selection: $selection)
+    let control = ProminentSegmentedControl(selection: $selection, colorScheme: colorScheme)
 
     if #available(iOS 26.0, *) {
       control.glassEffect(.regular.interactive(), in: .capsule)
@@ -85,6 +86,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
       .font(.title)
       .scaleEffect(0.95)
       .frame(width: 40, height: 50)
+      .accessibilityLabel("作成メニューを開く")
   }
 }
 
@@ -92,6 +94,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 /// system, with each segment rendered as an icon over its title.
 private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresentable {
   @Binding var selection: Item
+  var colorScheme: ColorScheme
   @Environment(\.displayScale) private var displayScale
 
   private var allTabs: [Item] { Array(Item.allCases) }
@@ -108,14 +111,24 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     }
 
     control.selectedSegmentIndex = allTabs.firstIndex(of: selection) ?? 0
-    control.selectedSegmentTintColor = UIColor(Color.gray.opacity(0.18))
+    control.selectedSegmentTintColor = UIColor.secondarySystemFill
     control.addTarget(context.coordinator, action: #selector(Coordinator.didChange(_:)), for: .valueChanged)
+    context.coordinator.appliedColorScheme = colorScheme
     return control
   }
 
   func updateUIView(_ uiView: UISegmentedControl, context: Context) {
     if let index = allTabs.firstIndex(of: selection), uiView.selectedSegmentIndex != index {
       uiView.selectedSegmentIndex = index
+    }
+
+    // The rendered images bake in the text color, so redraw them when the
+    // appearance changes instead of leaving last mode's colors behind.
+    if context.coordinator.appliedColorScheme != colorScheme {
+      context.coordinator.appliedColorScheme = colorScheme
+      for (index, item) in allTabs.enumerated() {
+        uiView.setImage(generatedImage(for: item), forSegmentAt: index)
+      }
     }
   }
 
@@ -133,6 +146,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
 
   final class Coordinator: NSObject {
     @Binding var selection: Item
+    var appliedColorScheme: ColorScheme?
 
     init(selection: Binding<Item>) {
       _selection = selection
@@ -147,7 +161,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   }
 
   private func generatedImage(for item: Item) -> UIImage? {
-    let renderer = ImageRenderer(content: VStack(spacing: 4) {
+    let label = VStack(spacing: 4) {
       Image(systemName: item.symbol)
         .font(.title3)
         .fontWeight(.regular)
@@ -156,7 +170,10 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
 
       Text(item.title)
         .font(.caption2)
-    })
+    }
+    .environment(\.colorScheme, colorScheme)
+
+    let renderer = ImageRenderer(content: label)
     renderer.scale = displayScale
     return renderer.uiImage
   }

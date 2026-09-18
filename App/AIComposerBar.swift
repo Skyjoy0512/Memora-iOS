@@ -115,9 +115,7 @@ struct AIComposerBar: View {
       focusChanged?(focused)
     }
     .onChange(of: focusRequest) { _, requested in
-      if requested {
-        isFieldFocused = true
-      }
+      isFieldFocused = requested
     }
     .onAppear {
       if focusRequest {

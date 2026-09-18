@@ -28,6 +28,10 @@ struct RootTabView: View {
     }
     .onChange(of: model.selectedTab) { _, _ in
       closeSidebar()
+      // A screen that was scrolled when you left it should not hide the bar on
+      // the next screen, and the capture popover belongs to the tab it opened on.
+      model.isBottomBarHidden = false
+      model.isCaptureSourcePresented = false
     }
     .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshSafeAreaInsets() }
     .onChange(of: scenePhase) { _, _ in refreshSafeAreaInsets() }
