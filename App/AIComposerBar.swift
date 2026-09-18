@@ -9,6 +9,7 @@ struct AIComposerBar: View {
   @Binding var attachment: AIAttachment?
   var placeholder: String
   var isBusy = false
+  var focusRequest = false
   var onSubmit: () -> Void
   var focusChanged: ((Bool) -> Void)?
 
@@ -112,6 +113,16 @@ struct AIComposerBar: View {
     .sensoryFeedback(.impact(weight: .light), trigger: speechInput.isListening)
     .onChange(of: isFieldFocused) { _, focused in
       focusChanged?(focused)
+    }
+    .onChange(of: focusRequest) { _, requested in
+      if requested {
+        isFieldFocused = true
+      }
+    }
+    .onAppear {
+      if focusRequest {
+        isFieldFocused = true
+      }
     }
     .onDisappear {
       speechInput.stop()

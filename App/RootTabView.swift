@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct RootTabView: View {
   @Environment(MemoraModel.self) private var model
@@ -6,6 +7,7 @@ struct RootTabView: View {
   @Environment(\.scenePhase) private var scenePhase
   @State private var isComposing = false
   @State private var isSidebarOpen = false
+  @State private var isKeyboardVisible = false
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
   /// controls re-add the home indicator inset themselves.
   @State private var safeAreaInsets = EdgeInsets()
@@ -30,6 +32,12 @@ struct RootTabView: View {
     .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshSafeAreaInsets() }
     .onChange(of: scenePhase) { _, _ in refreshSafeAreaInsets() }
     .onAppear { refreshSafeAreaInsets() }
+    .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+      isKeyboardVisible = true
+    }
+    .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+      isKeyboardVisible = false
+    }
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
     }
@@ -88,10 +96,14 @@ struct RootTabView: View {
     // The composer keeps a clear gap from the tab bar so the two never read as
     // one stacked slab of controls.
     return VStack(spacing: 18) {
-      if let scope = composerScope, shouldShowComposer {
-        QuickAIComposer(scope: scope, isComposing: $isComposing)
-          .id(scope)
-          .transition(.opacity.combined(with: .move(edge: .bottom)))
+      if shouldShowComposer {
+        QuickAIComposer(
+          scope: composerScope,
+          isComposing: $isComposing,
+          focusRequest: model.selectedTab == .askAI
+        )
+        .id(composerScope)
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
 
       if showsBottomBar {
@@ -108,8 +120,9 @@ struct RootTabView: View {
     .padding(.horizontal, 12)
     .padding(.top, 4)
     // `safeAreaInset` no longer contributes the home indicator inset inside the
-    // full-bleed drawer, so add it back here.
-    .padding(.bottom, safeAreaInsets.bottom)
+    // full-bleed drawer, so add it back here — except while the keyboard is up,
+    // where the keyboard's own safe area already lifts these controls.
+    .padding(.bottom, isKeyboardVisible ? 0 : safeAreaInsets.bottom)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
@@ -184,22 +197,22 @@ struct RootTabView: View {
     model.isSettingsPresented = true
   }
 
-  private var composerScope: AIQueryScope? {
+  /// Ask AI is available from every tab; only an open meeting narrows the scope.
+  private var composerScope: AIQueryScope {
     if let meetingID = model.activeDetailMeetingID {
       return .file(meetingID)
     }
-    if model.selectedTab == .askAI {
+    guard model.selectedTab == .files, let route = model.libraryPath.last else {
       return .global
     }
-    guard model.selectedTab == .files else { return nil }
-    guard let route = model.libraryPath.last else { return .global }
-    if case .meeting(let meetingID) = route {
+    switch route {
+    case .meeting(let meetingID), .transcript(let meetingID):
       return .file(meetingID)
+    case .space(let spaceID):
+      return .space(spaceID)
+    default:
+      return .global
     }
-    if case .transcript(let meetingID) = route {
-      return .file(meetingID)
-    }
-    return nil
   }
 
   private var shouldShowComposer: Bool {

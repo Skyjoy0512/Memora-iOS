@@ -78,7 +78,9 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
       }
       .frame(width: proxy.size.width, height: proxy.size.height)
     }
-    .ignoresSafeArea()
+    // Fill the screen but keep the keyboard's safe area, so the composer rises
+    // above the keyboard instead of staying hidden behind it.
+    .ignoresSafeArea(.container, edges: .all)
     .background(Color(uiColor: .systemBackground).ignoresSafeArea())
     .onChange(of: isEnabled) { _, enabled in
       guard !enabled, isOpen else { return }

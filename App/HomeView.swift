@@ -80,7 +80,7 @@ struct HomeView: View {
       .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "記録を検索")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
-          Button("プロフィールとメニュー", systemImage: "person.crop.circle") {
+          Button("メニュー", systemImage: "line.3.horizontal") {
             onOpenSidebar()
           }
           .labelStyle(.iconOnly)

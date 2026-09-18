@@ -5,10 +5,18 @@ private struct BottomBarScrollBehavior: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .onScrollGeometryChange(for: Bool.self) { geometry in
-        geometry.contentOffset.y + geometry.contentInsets.top > 24
-      } action: { _, isAwayFromTop in
-        model.isBottomBarHidden = isAwayFromTop
+      .onScrollGeometryChange(for: CGFloat.self) { geometry in
+        geometry.contentOffset.y + geometry.contentInsets.top
+      } action: { previousOffset, offset in
+        // Back at the top always brings the bar home; otherwise the direction of
+        // the scroll decides, so scrolling up recovers it before reaching the top.
+        if offset <= 24 {
+          model.isBottomBarHidden = false
+        } else if offset > previousOffset + 4 {
+          model.isBottomBarHidden = true
+        } else if offset < previousOffset - 4 {
+          model.isBottomBarHidden = false
+        }
       }
       .onDisappear {
         model.isBottomBarHidden = false

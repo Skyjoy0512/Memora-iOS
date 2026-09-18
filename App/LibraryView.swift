@@ -40,7 +40,7 @@ struct LibraryView: View {
       )
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
-          Button("プロフィールとメニュー", systemImage: "person.crop.circle") {
+          Button("メニュー", systemImage: "line.3.horizontal") {
             onOpenSidebar()
           }
           .labelStyle(.iconOnly)
