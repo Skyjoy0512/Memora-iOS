@@ -38,6 +38,12 @@ final class MemoraModel {
   /// Meeting details temporarily hide their contextual AI field once people
   /// move into the document.
   var isDetailComposerVisible = true
+  /// The engine the Ask AI composer asks with.
+  var aiModel: AIModel = .standard {
+    didSet {
+      UserDefaults.standard.set(aiModel.rawValue, forKey: StorageKey.aiModel)
+    }
+  }
 
   /// Onboarding runs once. Sign-in and Plus stay optional so people can judge
   /// the app before committing to either.
@@ -60,6 +66,7 @@ final class MemoraModel {
     hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
+    aiModel = AIModel(rawValue: defaults.string(forKey: StorageKey.aiModel) ?? "") ?? .standard
     if let data = defaults.data(forKey: StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
     }
@@ -683,6 +690,7 @@ final class MemoraModel {
     static let lifeLogEntries = "memoraLifeLogEntries"
     static let meetings = "memoraMeetings"
     static let spaces = "memoraSpaces"
+    static let aiModel = "memoraAIModel"
   }
 
   private func recordingsDirectory() throws -> URL {

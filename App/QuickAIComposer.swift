@@ -39,7 +39,7 @@ struct QuickAIComposer: View {
     case .space(let spaceID):
       model.space(id: spaceID).map { "「\($0.name)」に質問" } ?? "このプロジェクトに質問"
     case .global:
-      "Ask AI…"
+      "Ask Anything"
     }
   }
 
