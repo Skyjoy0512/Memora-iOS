@@ -4,6 +4,7 @@ struct LibraryView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var query = ""
+  @Namespace private var heroNamespace
   var onOpenSidebar: () -> Void
 
   var body: some View {
@@ -48,7 +49,9 @@ struct LibraryView: View {
       }
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
-        case .meeting(let id): MeetingDetailView(meetingID: id)
+        case .meeting(let id):
+          MeetingDetailView(meetingID: id)
+            .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
         case .transcript(let id): TranscriptView(meetingID: id)
         case .space(let id): SpaceDetailView(spaceID: id)
         case .allMeetings: AllMeetingsView()
@@ -87,16 +90,13 @@ struct LibraryView: View {
             .memoraTextReveal()
         }
 
-        LazyVStack(spacing: 0) {
+        LazyVStack(spacing: 16) {
           ForEach(matchingMeetings) { meeting in
             NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
-              MeetingRow(meeting: meeting)
+              MeetingCard(meeting: meeting)
+                .matchedTransitionSource(id: meeting.id, in: heroNamespace)
             }
             .buttonStyle(.plain)
-
-            if meeting.id != matchingMeetings.last?.id {
-              Divider().padding(.leading, 52)
-            }
           }
         }
       }

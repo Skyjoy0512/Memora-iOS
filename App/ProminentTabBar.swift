@@ -72,11 +72,13 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
         prominentLabel
           .foregroundStyle(.primary)
           .background(Color.primary.opacity(0.08), in: Circle())
+          .matchedTransitionSource(id: "prominentAction", in: namespace)
       }
       .buttonStyle(.plain)
       .popover(isPresented: $isProminentPresented) {
         popover
           .presentationCompactAdaptation(.popover)
+          .navigationTransition(.zoom(sourceID: "prominentAction", in: namespace))
       }
     }
   }

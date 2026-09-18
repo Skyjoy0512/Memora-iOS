@@ -56,9 +56,6 @@ struct AIComposerBar: View {
       .padding(.bottom, 8)
     }
     .memoraGlass(in: RoundedRectangle(cornerRadius: 28, style: .continuous), interactive: true)
-    .overlay {
-      MemoraBorderBeam(cornerRadius: 28, strength: 0.7)
-    }
     .shadow(color: .black.opacity(0.08), radius: 18, y: 8)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
