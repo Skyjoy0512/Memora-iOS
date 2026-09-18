@@ -67,6 +67,9 @@ struct AIComposerBar: View {
     .onChange(of: focusRequest) { _, requested in
       isFieldFocused = requested
     }
+    .onChange(of: model.composerDismissRequests) { _, _ in
+      isFieldFocused = false
+    }
     .onAppear {
       if focusRequest {
         isFieldFocused = true

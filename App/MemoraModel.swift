@@ -38,6 +38,8 @@ final class MemoraModel {
   /// Meeting details temporarily hide their contextual AI field once people
   /// move into the document.
   var isDetailComposerVisible = true
+  /// Bumped by a screen to ask the focused composer to put the keyboard away.
+  var composerDismissRequests = 0
   /// The engine the Ask AI composer asks with.
   var aiModel: AIModel = .standard {
     didSet {

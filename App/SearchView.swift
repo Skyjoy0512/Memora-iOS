@@ -85,6 +85,14 @@ struct SearchView: View {
     .frame(maxWidth: .infinity)
     .padding(.horizontal, 24)
     .padding(.bottom, 24)
+    // The composer focuses itself here, and this screen has nothing to scroll,
+    // so give people a tap target to put the keyboard away.
+    .contentShape(Rectangle())
+    .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
+  }
+
+  private func dismissKeyboard() {
+    model.composerDismissRequests += 1
   }
 
   private var resultsView: some View {
