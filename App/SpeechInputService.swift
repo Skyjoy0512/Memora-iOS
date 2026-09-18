@@ -8,6 +8,8 @@ import Speech
 final class SpeechInputService {
   private(set) var isListening = false
   private(set) var errorMessage: String?
+  /// Smoothed 0...1 loudness for the voice glow.
+  private(set) var audioLevel: Double = 0
 
   @ObservationIgnored private let audioEngine = AVAudioEngine()
   @ObservationIgnored private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -35,6 +37,7 @@ final class SpeechInputService {
     recognitionRequest = nil
     recognitionTask = nil
     isListening = false
+    audioLevel = 0
     try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
   }
 
@@ -73,8 +76,12 @@ final class SpeechInputService {
       guard format.sampleRate > 0 else {
         throw SpeechInputError.noAudioInput
       }
-      inputNode.installTap(onBus: 0, bufferSize: 1_024, format: format) { buffer, _ in
+      inputNode.installTap(onBus: 0, bufferSize: 1_024, format: format) { [weak self] buffer, _ in
         request.append(buffer)
+        let level = Self.loudness(of: buffer)
+        Task { @MainActor [weak self] in
+          self?.apply(level: level)
+        }
       }
       hasInstalledInputTap = true
 
@@ -96,6 +103,30 @@ final class SpeechInputService {
       stop()
       errorMessage = error.localizedDescription
     }
+  }
+
+  /// Maps a buffer's RMS to 0...1 and eases toward it so the glow is lively
+  /// without flickering.
+  private func apply(level: Double) {
+    let rate = level > audioLevel ? 0.6 : 0.12
+    audioLevel += (level - audioLevel) * rate
+  }
+
+  private nonisolated static func loudness(of buffer: AVAudioPCMBuffer) -> Double {
+    guard let samples = buffer.floatChannelData?[0] else { return 0 }
+    let frames = Int(buffer.frameLength)
+    guard frames > 0 else { return 0 }
+
+    var sum: Float = 0
+    for index in 0..<frames {
+      let sample = samples[index]
+      sum += sample * sample
+    }
+    let rms = sqrt(sum / Float(frames))
+    guard rms > 0 else { return 0 }
+
+    let decibels = 20 * log10(rms)
+    return Double(max(0, min(1, (decibels + 50) / 50)))
   }
 
   private func requestSpeechPermission() async -> Bool {

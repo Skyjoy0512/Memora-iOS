@@ -112,8 +112,18 @@ struct CaptureSessionView: View {
       .padding(.horizontal, 16)
       .padding(.bottom, 16)
     }
-    .background(Color(uiColor: .systemBackground))
-    .overlay { RecordingBottomBeam() }
+    .environment(\.colorScheme, .dark)
+    .background {
+      ZStack(alignment: .bottom) {
+        Color.black
+        VoiceGlow(
+          level: model.recordingLevel,
+          isActive: model.isRecording && !model.isRecordingPaused
+        )
+        .frame(height: 280)
+      }
+      .ignoresSafeArea()
+    }
     .presentationDetents([.fraction(0.7)])
     .presentationDragIndicator(.visible)
     .presentationCornerRadius(38)

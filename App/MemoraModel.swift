@@ -23,6 +23,8 @@ final class MemoraModel {
   var isRecording = false
   var isRecordingPaused = false
   var recordingElapsed: TimeInterval = 0
+  /// Smoothed 0...1 loudness for the recording glow.
+  var recordingLevel: Double = 0
   var recordingTitle = ""
   var recordingNote = ""
   var recordingErrorMessage: String?
@@ -58,6 +60,7 @@ final class MemoraModel {
   @ObservationIgnored private var recordingPausedAt: Date?
   @ObservationIgnored private var recordingPausedDuration: TimeInterval = 0
   @ObservationIgnored private var recordingTicker: Task<Void, Never>?
+  @ObservationIgnored private var levelTicker: Task<Void, Never>?
   @ObservationIgnored private var processingTasks: [UUID: Task<Void, Never>] = [:]
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
   @ObservationIgnored private var pendingMeetingNavigationID: UUID?
@@ -225,7 +228,9 @@ final class MemoraModel {
       isRecordingPaused = false
       isRecording = true
       isCapturePresented = true
+      recordingLevel = 0
       startRecordingTicker()
+      startLevelTicker()
       startLiveActivity()
     } catch {
       recordingErrorMessage = error.localizedDescription
@@ -237,6 +242,9 @@ final class MemoraModel {
     recorder.stop()
     recordingTicker?.cancel()
     recordingTicker = nil
+    levelTicker?.cancel()
+    levelTicker = nil
+    recordingLevel = 0
     isRecording = false
     isRecordingPaused = false
     await endLiveActivity()
@@ -297,6 +305,9 @@ final class MemoraModel {
     recorder.stop()
     recordingTicker?.cancel()
     recordingTicker = nil
+    levelTicker?.cancel()
+    levelTicker = nil
+    recordingLevel = 0
     isRecording = false
     isRecordingPaused = false
     isCapturePresented = false
@@ -601,6 +612,20 @@ final class MemoraModel {
         guard let self, let startedAt = self.recordingStartedAt else { return }
         let currentPause = self.recordingPausedAt.map { Date.now.timeIntervalSince($0) } ?? 0
         self.recordingElapsed = max(0, Date.now.timeIntervalSince(startedAt) - self.recordingPausedDuration - currentPause)
+      }
+    }
+  }
+
+  /// Samples the recorder at ~22Hz so the glow can follow the voice.
+  private func startLevelTicker() {
+    levelTicker?.cancel()
+    levelTicker = Task { [weak self] in
+      while !Task.isCancelled {
+        try? await Task.sleep(for: .milliseconds(45))
+        guard let self else { return }
+        let target = self.isRecordingPaused ? 0 : self.recorder.level()
+        let rate = target > self.recordingLevel ? 0.6 : 0.12
+        self.recordingLevel += (target - self.recordingLevel) * rate
       }
     }
   }

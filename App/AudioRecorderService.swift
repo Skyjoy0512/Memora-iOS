@@ -32,6 +32,7 @@ final class AudioRecorderService {
       AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
     ]
     let recorder = try AVAudioRecorder(url: url, settings: settings)
+    recorder.isMeteringEnabled = true
     recorder.prepareToRecord()
     guard recorder.record() else {
       throw AudioRecorderError.couldNotStart
@@ -44,6 +45,14 @@ final class AudioRecorderService {
     recorder?.stop()
     recorder = nil
     try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+  }
+
+  /// 0...1 loudness for the voice glow.
+  func level() -> Double {
+    guard let recorder else { return 0 }
+    recorder.updateMeters()
+    let decibels = Double(recorder.averagePower(forChannel: 0))
+    return max(0, min(1, (decibels + 50) / 50))
   }
 
   func pause() {
