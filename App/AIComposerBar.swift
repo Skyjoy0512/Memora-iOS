@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 struct AIComposerBar: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @Environment(\.colorScheme) private var colorScheme
   @Binding var text: String
   @Binding var attachment: AIAttachment?
   var placeholder: String
@@ -56,7 +55,6 @@ struct AIComposerBar: View {
       .padding(.trailing, 8)
       .padding(.bottom, 8)
     }
-    .environment(\.colorScheme, speechInput.isListening ? .dark : colorScheme)
     .background { listeningBackdrop }
     .memoraGlass(in: RoundedRectangle(cornerRadius: 28, style: .continuous), interactive: true)
     .shadow(color: .black.opacity(speechInput.isListening ? 0.3 : 0.08), radius: 18, y: 8)
@@ -118,17 +116,13 @@ struct AIComposerBar: View {
     }
   }
 
-  /// While the mic is live the card goes dark and a glow gathers along the
-  /// bottom edge, reacting to the voice.
+  /// While the mic is live a glow gathers along the bottom edge, reacting to
+  /// the voice without changing the card's appearance.
   @ViewBuilder
   private var listeningBackdrop: some View {
     if speechInput.isListening {
-      RoundedRectangle(cornerRadius: 28, style: .continuous)
-        .fill(Color.black.opacity(0.88))
-        .overlay {
-          VoiceGlow(level: speechInput.audioLevel)
-            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        }
+      VoiceGlow(level: speechInput.audioLevel)
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
   }
 

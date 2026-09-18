@@ -3,7 +3,7 @@ import SwiftUI
 struct CaptureSessionView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var section = CaptureSection.transcript
+  @State private var section = CaptureSection.notes
   @State private var stopFeedback = 0
   @State private var pauseFeedback = 0
 
@@ -11,11 +11,20 @@ struct CaptureSessionView: View {
     @Bindable var model = model
 
     VStack(spacing: 0) {
-      HStack(alignment: .top, spacing: 12) {
-        TextField("タイトルを追加", text: $model.recordingTitle, axis: .vertical)
-          .font(.largeTitle.weight(.semibold))
-          .lineLimit(1...2)
-          .submitLabel(.done)
+      HStack(spacing: 12) {
+        HStack(spacing: 8) {
+          Circle()
+            .fill(model.isRecordingPaused ? Color.secondary : Color.red)
+            .frame(width: 8, height: 8)
+
+          Text(MemoraFormat.duration(model.recordingElapsed))
+            .font(.subheadline.monospacedDigit().weight(.semibold))
+            .contentTransition(.numericText())
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("録音時間 \(MemoraFormat.duration(model.recordingElapsed))")
+
+        Spacer()
 
         Button("録音画面を閉じる", systemImage: "xmark") {
           model.isCapturePresented = false
@@ -37,6 +46,13 @@ struct CaptureSessionView: View {
       .padding(.horizontal, 20)
       .padding(.top, 18)
 
+      TextField("タイトルを追加", text: $model.recordingTitle, axis: .vertical)
+        .font(.title2.weight(.semibold))
+        .lineLimit(1...2)
+        .submitLabel(.done)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+
       Group {
         switch section {
         case .notes:
@@ -53,20 +69,7 @@ struct CaptureSessionView: View {
               }
             }
         case .transcript:
-          VStack(spacing: 14) {
-            Spacer()
-            SiriWaveView(isPaused: model.isRecordingPaused)
-              .frame(height: 84)
-              .padding(.horizontal, 10)
-            Text(model.isRecordingPaused ? "一時停止中" : "聞いています")
-              .font(.subheadline.weight(.medium))
-              .foregroundStyle(model.isRecordingPaused ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
-            Text("文字起こしは録音を終了すると表示されます")
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-            Spacer()
-          }
-          .frame(maxWidth: .infinity)
+          Color.clear
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -86,18 +89,6 @@ struct CaptureSessionView: View {
           .frame(maxWidth: .infinity, minHeight: 56)
           .memoraGlass(in: Capsule(), interactive: true)
 
-          HStack(spacing: 8) {
-            Circle()
-              .fill(model.isRecordingPaused ? Color.secondary : Color.red)
-              .frame(width: 8, height: 8)
-            Text(MemoraFormat.duration(model.recordingElapsed))
-              .font(.subheadline.monospacedDigit().weight(.semibold))
-              .contentTransition(.numericText())
-          }
-          .frame(minWidth: 86)
-          .accessibilityElement(children: .combine)
-          .accessibilityLabel("録音時間 \(MemoraFormat.duration(model.recordingElapsed))")
-
           Button("終了", systemImage: "stop.fill") {
             stopFeedback += 1
             Task { await model.stopCapture() }
@@ -112,15 +103,14 @@ struct CaptureSessionView: View {
       .padding(.horizontal, 16)
       .padding(.bottom, 16)
     }
-    .environment(\.colorScheme, .dark)
     .background {
       ZStack(alignment: .bottom) {
-        Color.black
+        Color(uiColor: .systemBackground)
         VoiceGlow(
           level: model.recordingLevel,
           isActive: model.isRecording && !model.isRecordingPaused
         )
-        .frame(height: 280)
+        .frame(height: 300)
       }
       .ignoresSafeArea()
     }

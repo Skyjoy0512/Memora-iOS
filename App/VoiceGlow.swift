@@ -4,6 +4,7 @@ import SwiftUI
 /// container. Drive `level` with a 0...1 microphone amplitude.
 struct VoiceGlow: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.colorScheme) private var colorScheme
 
   /// 0...1, how loud the voice is right now.
   var level: Double
@@ -37,7 +38,10 @@ struct VoiceGlow: View {
 
   private func glow(in size: CGSize, time: Double) -> some View {
     let loudness = isActive ? max(0, min(1, level)) : 0
-    let intensity = isActive ? 0.18 + 0.62 * loudness : 0
+    // On dark surfaces the lobes add light; on light surfaces they tint, so
+    // they need a little less weight to stay a gradient rather than a stain.
+    let isDark = colorScheme == .dark
+    let intensity = isActive ? (0.18 + 0.62 * loudness) * (isDark ? 1 : 0.8) : 0
     let lobeWidth = max(size.width * 0.5, 40)
 
     return ZStack(alignment: .bottom) {
@@ -70,6 +74,6 @@ struct VoiceGlow: View {
         .opacity(intensity * 0.7)
     }
     .frame(width: size.width, height: size.height)
-    .blendMode(.plusLighter)
+    .blendMode(isDark ? .plusLighter : .normal)
   }
 }
