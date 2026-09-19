@@ -11,6 +11,7 @@ struct MeetingDetailView: View {
   @State private var isDeleting = false
   @State private var isCompactTitleVisible = false
   @State private var isSummaryGenerationPresented = false
+  @State private var isAddingPeople = false
 
   var body: some View {
     Group {
@@ -18,6 +19,8 @@ struct MeetingDetailView: View {
         ScrollView {
           VStack(alignment: .leading, spacing: 22) {
             meetingHeader(meeting)
+
+            participantsRow(meeting)
 
             Picker("会議の表示", selection: $selectedSection) {
               ForEach(MeetingDetailSection.allCases) { section in
@@ -92,6 +95,9 @@ struct MeetingDetailView: View {
         .sheet(isPresented: $isSummaryGenerationPresented) {
           SummaryGenerationSheet(meetingID: meeting.id)
         }
+        .sheet(isPresented: $isAddingPeople) {
+          AddPeopleSheet(meetingID: meeting.id)
+        }
         .confirmationDialog("この会議を削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
           Button("削除", role: .destructive) {
             model.deleteMeeting(meeting.id)
@@ -106,6 +112,41 @@ struct MeetingDetailView: View {
         ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
       }
     }
+  }
+
+  /// People tagged on the recording, with a way to add more.
+  private func participantsRow(_ meeting: Meeting) -> some View {
+    let participants = model.participants(in: meeting.id)
+
+    return ScrollView(.horizontal) {
+      HStack(spacing: 8) {
+        ForEach(participants) { person in
+          HStack(spacing: 6) {
+            PersonAvatar(name: person.name, size: 22)
+            Text(person.name)
+              .font(.subheadline)
+          }
+          .padding(.horizontal, 8)
+          .padding(.vertical, 5)
+          .background(Color.primary.opacity(0.06), in: Capsule())
+        }
+
+        Button {
+          isAddingPeople = true
+        } label: {
+          Label(participants.isEmpty ? "参加者を追加" : "追加", systemImage: "person.badge.plus")
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.primary.opacity(0.06), in: Capsule())
+        }
+        .buttonStyle(.plain)
+
+        Spacer(minLength: 0)
+      }
+    }
+    .scrollIndicators(.hidden)
   }
 
   private var sectionTransition: AnyTransition {

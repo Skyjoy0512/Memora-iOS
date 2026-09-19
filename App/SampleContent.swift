@@ -12,6 +12,16 @@ enum SampleContent {
   static let ideaMeetingID = UUID(uuidString: "99999999-9999-9999-9999-999999999999")!
   static let importedWaitingMeetingID = UUID(uuidString: "88888888-8888-8888-8888-888888888888")!
 
+  static let tanakaID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
+  static let satoID = UUID(uuidString: "66666666-7777-8888-9999-000000000000")!
+
+  static func makePeople() -> [Person] {
+    [
+      Person(id: tanakaID, name: "田中", note: nil, contactIdentifier: nil),
+      Person(id: satoID, name: "佐藤", note: nil, contactIdentifier: nil)
+    ]
+  }
+
   static let generatedTranscript = [
     TranscriptSegment(
       id: UUID(),
@@ -94,7 +104,7 @@ enum SampleContent {
       MemoraSpace(id: salesSpaceID, name: "法人提案", symbol: "briefcase")
     ]
 
-    let meetings = [
+    var meetings = [
       Meeting(
         id: importedWaitingMeetingID,
         title: "顧客インタビュー音声",
@@ -261,6 +271,17 @@ enum SampleContent {
         isCompleted: true
       )
     ]
+
+    for index in meetings.indices {
+      switch meetings[index].id {
+      case productMeetingID, salesMeetingID:
+        meetings[index].participantIDs = [tanakaID]
+      case oneOnOneMeetingID:
+        meetings[index].participantIDs = [satoID]
+      default:
+        break
+      }
+    }
 
     return (meetings, spaces, tasks)
   }

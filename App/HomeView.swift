@@ -108,6 +108,7 @@ struct HomeView: View {
         case .meeting(let id): MeetingDetailView(meetingID: id)
         case .transcript(let id): TranscriptView(meetingID: id)
         case .space(let id): SpaceDetailView(spaceID: id)
+        case .person(let id): PersonDetailView(personID: id)
         case .allMeetings: AllMeetingsView()
         case .settings: SettingsView()
         case .stateGallery: StateGalleryView()

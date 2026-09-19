@@ -17,6 +17,8 @@ final class MemoraModel {
   var tasks: [MemoraTask]
   var lifeLogEntries: [LifeLogEntry]
   var aiHistory: [AIConversationEntry]
+  /// People who can be tagged on recordings.
+  var people: [Person] = []
   /// The Ask AI chat transcript.
   var aiMessages: [AIChatMessage] = []
   /// What new Ask AI questions look across.
@@ -105,6 +107,12 @@ final class MemoraModel {
       tasks = storedTasks
     } else {
       tasks = sample.tasks
+    }
+    if let peopleData = defaults.data(forKey: StorageKey.people),
+       let storedPeople = try? JSONDecoder().decode([Person].self, from: peopleData) {
+      people = storedPeople
+    } else {
+      people = SampleContent.makePeople()
     }
     aiHistory = [
       AIConversationEntry(
@@ -627,6 +635,69 @@ final class MemoraModel {
     persistLifeLog()
   }
 
+  // MARK: - People
+
+  func person(id: UUID) -> Person? {
+    people.first { $0.id == id }
+  }
+
+  @discardableResult
+  func addPerson(name: String, contactIdentifier: String? = nil) -> Person? {
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return nil }
+
+    if let contactIdentifier,
+       let existing = people.first(where: { $0.contactIdentifier == contactIdentifier }) {
+      return existing
+    }
+
+    let person = Person(id: UUID(), name: trimmed, note: nil, contactIdentifier: contactIdentifier)
+    people.append(person)
+    persistPeople()
+    return person
+  }
+
+  func deletePerson(_ id: UUID) {
+    people.removeAll { $0.id == id }
+    persistPeople()
+    for index in meetings.indices {
+      meetings[index].participantIDs?.removeAll { $0 == id }
+    }
+    persistMeetings()
+  }
+
+  func toggleParticipant(personID: UUID, meeting meetingID: UUID) {
+    guard let index = meetings.firstIndex(where: { $0.id == meetingID }) else { return }
+    var ids = meetings[index].participantIDs ?? []
+    if let existing = ids.firstIndex(of: personID) {
+      ids.remove(at: existing)
+    } else {
+      ids.append(personID)
+    }
+    meetings[index].participantIDs = ids.isEmpty ? nil : ids
+    persistMeetings()
+  }
+
+  func participants(in meetingID: UUID) -> [Person] {
+    let ids = meeting(id: meetingID)?.participantIDs ?? []
+    return people.filter { ids.contains($0.id) }
+  }
+
+  func meetingCount(forPerson personID: UUID) -> Int {
+    meetings.filter { ($0.participantIDs ?? []).contains(personID) }.count
+  }
+
+  func meetings(withPerson personID: UUID) -> [Meeting] {
+    meetings
+      .filter { ($0.participantIDs ?? []).contains(personID) }
+      .sorted { $0.createdAt > $1.createdAt }
+  }
+
+  private func persistPeople() {
+    guard let data = try? JSONEncoder().encode(people) else { return }
+    UserDefaults.standard.set(data, forKey: StorageKey.people)
+  }
+
   func resetSampleContent() {
     let sample = SampleContent.make()
     meetings = sample.meetings
@@ -637,6 +708,8 @@ final class MemoraModel {
     persistLifeLog()
     tasks = sample.tasks
     persistTasks()
+    people = SampleContent.makePeople()
+    persistPeople()
     aiHistory = []
     aiMessages = []
     homePath = []
@@ -650,6 +723,8 @@ final class MemoraModel {
     persistLifeLog()
     tasks = []
     persistTasks()
+    people = []
+    persistPeople()
     aiHistory = []
     aiMessages = []
     spaces = []
@@ -792,6 +867,7 @@ final class MemoraModel {
     static let meetings = "memoraMeetings"
     static let spaces = "memoraSpaces"
     static let aiModel = "memoraAIModel"
+    static let people = "memoraPeople"
   }
 
   private func recordingsDirectory() throws -> URL {

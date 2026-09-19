@@ -15,6 +15,8 @@ struct Meeting: Identifiable, Hashable, Codable {
   var spaceID: UUID?
   var audioURL: URL?
   var notes = ""
+  /// People tagged on this recording.
+  var participantIDs: [UUID]? = nil
 }
 
 enum MeetingSource: String, Hashable, Codable {

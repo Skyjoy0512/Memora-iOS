@@ -36,6 +36,8 @@ struct LibraryView: View {
           filesPage
         case .projects:
           projectsPage
+        case .people:
+          PeopleListView()
         }
       }
       .background(Color(uiColor: .systemBackground))
@@ -62,6 +64,7 @@ struct LibraryView: View {
         case .space(let id):
           SpaceDetailView(spaceID: id)
             .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
+        case .person(let id): PersonDetailView(personID: id)
         case .allMeetings: AllMeetingsView()
         case .settings: SettingsView()
         case .stateGallery: StateGalleryView()
