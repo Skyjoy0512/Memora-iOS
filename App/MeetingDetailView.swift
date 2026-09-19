@@ -12,6 +12,9 @@ struct MeetingDetailView: View {
   @State private var isCompactTitleVisible = false
   @State private var isSummaryGenerationPresented = false
   @State private var isAddingPeople = false
+  @State private var isSharing = false
+  @State private var shareItems: [Any] = []
+  @State private var notionMessage: String?
 
   var body: some View {
     Group {
@@ -80,6 +83,13 @@ struct MeetingDetailView: View {
           }
           ToolbarItem(placement: .topBarTrailing) {
             Menu("その他", systemImage: "ellipsis") {
+              Button("PDFで共有", systemImage: "doc.richtext") {
+                sharePDF(meeting)
+              }
+              Button("Notionへ保存", systemImage: "arrow.up.doc") {
+                saveToNotion(meeting)
+              }
+              .disabled(!NotionService.isConfigured)
               Button("名前を変更", systemImage: "pencil") {
                 isRenaming = true
               }
@@ -97,6 +107,14 @@ struct MeetingDetailView: View {
         }
         .sheet(isPresented: $isAddingPeople) {
           AddPeopleSheet(meetingID: meeting.id)
+        }
+        .sheet(isPresented: $isSharing) {
+          ActivityView(items: shareItems)
+        }
+        .alert("Notion", isPresented: notionAlertBinding) {
+          Button("OK") { notionMessage = nil }
+        } message: {
+          Text(notionMessage ?? "")
         }
         .confirmationDialog("この会議を削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
           Button("削除", role: .destructive) {
@@ -147,6 +165,30 @@ struct MeetingDetailView: View {
       }
     }
     .scrollIndicators(.hidden)
+  }
+
+  private var notionAlertBinding: Binding<Bool> {
+    Binding(
+      get: { notionMessage != nil },
+      set: { if !$0 { notionMessage = nil } }
+    )
+  }
+
+  private func sharePDF(_ meeting: Meeting) {
+    guard let url = MeetingPDF.write(meeting: meeting, tasks: model.tasks) else { return }
+    shareItems = [url]
+    isSharing = true
+  }
+
+  private func saveToNotion(_ meeting: Meeting) {
+    Task {
+      do {
+        try await NotionService.save(meeting: meeting, tasks: model.tasks)
+        notionMessage = "Notionに保存しました。"
+      } catch {
+        notionMessage = "Notionに保存できませんでした。設定のトークンと保存先を確認してください。"
+      }
+    }
   }
 
   private var sectionTransition: AnyTransition {
