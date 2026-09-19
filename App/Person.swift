@@ -7,4 +7,6 @@ struct Person: Identifiable, Hashable, Codable {
   var name: String
   var note: String?
   var contactIdentifier: String?
+  /// A small JPEG of the person, if one has been chosen.
+  var photoData: Data? = nil
 }

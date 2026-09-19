@@ -426,7 +426,7 @@ final class MemoraModel {
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     let safeExtension = fileExtension.lowercased().filter { $0.isLetter || $0.isNumber }
     let resolvedExtension = safeExtension.isEmpty ? "jpg" : safeExtension
-    let fileName = "写真-(UUID().uuidString.prefix(8)).(resolvedExtension)"
+    let fileName = "写真-\(UUID().uuidString.prefix(8)).\(resolvedExtension)"
     let destination = directory.appendingPathComponent(fileName)
     try data.write(to: destination, options: .atomic)
     return AIAttachment(id: UUID(), name: fileName, url: destination)
@@ -686,6 +686,12 @@ final class MemoraModel {
     people.append(person)
     persistPeople()
     return person
+  }
+
+  func setPersonPhoto(_ id: UUID, data: Data?) {
+    guard let index = people.firstIndex(where: { $0.id == id }) else { return }
+    people[index].photoData = data
+    persistPeople()
   }
 
   func deletePerson(_ id: UUID) {

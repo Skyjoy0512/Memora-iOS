@@ -3,7 +3,6 @@ import Foundation
 enum FileSection: String, CaseIterable, Identifiable {
   case meetingFiles
   case projects
-  case people
 
   var id: Self { self }
 
@@ -13,8 +12,6 @@ enum FileSection: String, CaseIterable, Identifiable {
       "ファイル"
     case .projects:
       "プロジェクト"
-    case .people:
-      "人"
     }
   }
 
@@ -24,8 +21,6 @@ enum FileSection: String, CaseIterable, Identifiable {
       "doc.text"
     case .projects:
       "square.stack.3d.up"
-    case .people:
-      "person.2"
     }
   }
 }

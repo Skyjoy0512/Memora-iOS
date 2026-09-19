@@ -4,8 +4,11 @@ import SwiftUI
 /// day unroll as a timeline of everything Memora captured.
 struct HomeView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var query = ""
   @State private var isCreationPresented = false
+  @State private var selectedPersonID: UUID?
+  @State private var isManagingPeople = false
   var onOpenSidebar: () -> Void
 
   var body: some View {
@@ -14,7 +17,14 @@ struct HomeView: View {
     NavigationStack(path: $model.homePath) {
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 18) {
-          if query.isEmpty {
+          PeopleStrip(
+            people: model.people,
+            selectedID: selectedPersonID,
+            onSelect: { selectedPersonID = $0 },
+            onManage: { isManagingPeople = true }
+          )
+
+          if query.isEmpty, selectedPerson == nil {
             TodayDigestCard(
               entries: todayEntries,
               meetingCount: todayMeetings.count,
@@ -26,13 +36,18 @@ struct HomeView: View {
             sourceStatus
           }
 
+          if let person = selectedPerson {
+            filterHeader(person)
+          }
+
           if matchingEntries.isEmpty {
             ContentUnavailableView {
-              Label("まだライフログがありません", systemImage: "waveform.path.ecg")
+              Label(
+                selectedPerson == nil ? "まだライフログがありません" : "この人の記録はありません",
+                systemImage: "waveform.path.ecg"
+              )
             } description: {
-              Text(query.isEmpty
-                   ? "録音やOmiから届いた記録、手で足したメモが時間順に並びます。"
-                   : "「\(query)」に一致する記録はありません。")
+              Text(emptyDescription)
             } actions: {
               if query.isEmpty {
                 Button("記録を追加", systemImage: "plus") {
@@ -105,12 +120,14 @@ struct HomeView: View {
       .sheet(isPresented: $isCreationPresented) {
         LifeLogCreationSheet()
       }
+      .sheet(isPresented: $isManagingPeople) {
+        PeopleManagerSheet()
+      }
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id): MeetingDetailView(meetingID: id)
         case .transcript(let id): TranscriptView(meetingID: id)
         case .space(let id): SpaceDetailView(spaceID: id)
-        case .person(let id): PersonDetailView(personID: id)
         case .allMeetings: AllMeetingsView()
         case .settings: SettingsView()
         case .stateGallery: StateGalleryView()
@@ -153,11 +170,55 @@ struct HomeView: View {
 
   private var matchingEntries: [LifeLogEntry] {
     let sorted = model.lifeLogEntries.sorted { $0.createdAt > $1.createdAt }
-    guard !query.isEmpty else { return sorted }
-    return sorted.filter {
+
+    let scoped: [LifeLogEntry]
+    if let personID = selectedPersonID {
+      let meetingIDs = Set(model.meetings(withPerson: personID).map(\.id))
+      scoped = sorted.filter { entry in
+        guard let meetingID = entry.meetingID else { return false }
+        return meetingIDs.contains(meetingID)
+      }
+    } else {
+      scoped = sorted
+    }
+
+    guard !query.isEmpty else { return scoped }
+    return scoped.filter {
       $0.title.localizedCaseInsensitiveContains(query)
         || $0.summary.localizedCaseInsensitiveContains(query)
         || $0.source.label.localizedCaseInsensitiveContains(query)
+    }
+  }
+
+  private var selectedPerson: Person? {
+    selectedPersonID.flatMap { model.person(id: $0) }
+  }
+
+  private var emptyDescription: String {
+    if !query.isEmpty {
+      return "「\(query)」に一致する記録はありません。"
+    }
+    if let person = selectedPerson {
+      return "\(person.name)さんにひもづいた記録はまだありません。会議の詳細から参加者に追加できます。"
+    }
+    return "録音やOmiから届いた記録、手で足したメモが時間順に並びます。"
+  }
+
+  private func filterHeader(_ person: Person) -> some View {
+    HStack(spacing: 10) {
+      PersonAvatar(name: person.name, size: 30, photoData: person.photoData)
+
+      Text("\(person.name)の記録")
+        .font(.title3.bold())
+
+      Spacer()
+
+      Button("解除") {
+        withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+          selectedPersonID = nil
+        }
+      }
+      .font(.subheadline)
     }
   }
 
