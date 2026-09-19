@@ -8,32 +8,37 @@ struct MeetingCard: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      badge
-
-      Spacer(minLength: 32)
-
-      HStack(alignment: .bottom, spacing: 12) {
-        VStack(alignment: .leading, spacing: 4) {
-          Text(meeting.title)
-            .font(.title2.bold())
-            .foregroundStyle(.primary)
-            .lineLimit(2)
-
-          Text(subtitle)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
-        }
+      HStack(alignment: .top, spacing: 8) {
+        badge
 
         Spacer(minLength: 8)
 
-        Image(systemName: "arrow.up.right")
-          .font(.subheadline.weight(.semibold))
-          .foregroundStyle(.primary)
-          .frame(width: 38, height: 38)
-          .background(.thinMaterial, in: Circle())
-          .accessibilityHidden(true)
+        MeetingStatusLabel(status: meeting.status)
+          .padding(.horizontal, 10)
+          .padding(.vertical, 6)
+          .background(.thinMaterial, in: Capsule())
       }
+
+      Spacer(minLength: 28)
+
+      Text(meeting.title)
+        .font(.title2.bold())
+        .foregroundStyle(.primary)
+        .lineLimit(2)
+
+      Text(subtitle)
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .lineLimit(2)
+        .padding(.top, 4)
+
+      HStack(spacing: 5) {
+        Image(systemName: "calendar")
+        Text(recordingDate)
+      }
+      .font(.caption.weight(.medium))
+      .foregroundStyle(.secondary)
+      .padding(.top, 10)
     }
     .padding(18)
     .frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
@@ -44,7 +49,11 @@ struct MeetingCard: View {
     }
     .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.08), radius: 18, y: 10)
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("\(meeting.title)、\(MemoraFormat.duration(meeting.duration))、\(subtitle)")
+    .accessibilityLabel("\(meeting.title)、\(recordingDate)、\(MemoraFormat.duration(meeting.duration))、\(meeting.status.shortLabel)")
+  }
+
+  private var recordingDate: String {
+    meeting.createdAt.formatted(.dateTime.month().day().hour().minute())
   }
 
   private var badge: some View {

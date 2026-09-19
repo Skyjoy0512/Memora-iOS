@@ -124,31 +124,25 @@ struct LibraryView: View {
           .frame(maxWidth: .infinity)
       }
     } else {
-      VStack(alignment: .leading, spacing: 10) {
+      VStack(alignment: .leading, spacing: 14) {
         Text(query.isEmpty ? "プロジェクト" : "検索結果")
           .font(.title2.bold())
           .memoraTextReveal()
 
-        LazyVStack(spacing: 10) {
+        LazyVGrid(
+          columns: [
+            GridItem(.flexible(), spacing: 16),
+            GridItem(.flexible(), spacing: 16)
+          ],
+          spacing: 22
+        ) {
           ForEach(matchingSpaces) { space in
             NavigationLink(value: LibraryRoute.space(space.id)) {
-              HStack(spacing: 14) {
-                MemoraIconBadge(symbol: space.symbol, size: 38)
-                VStack(alignment: .leading, spacing: 3) {
-                  Text(space.name)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                  Text("\(meetingCount(for: space.id))件の議事録")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                  .font(.caption.bold())
-                  .foregroundStyle(.tertiary)
-              }
-              .padding(14)
-              .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+              ProjectFolderTile(
+                space: space,
+                meetingCount: meetingCount(for: space.id),
+                symbols: recentSymbols(for: space.id)
+              )
             }
             .buttonStyle(.plain)
           }
@@ -176,6 +170,15 @@ struct LibraryView: View {
 
   private func meetingCount(for spaceID: UUID) -> Int {
     model.meetings.filter { $0.spaceID == spaceID }.count
+  }
+
+  /// Up to four icons for the folder preview, newest first.
+  private func recentSymbols(for spaceID: UUID) -> [String] {
+    model.meetings
+      .filter { $0.spaceID == spaceID }
+      .sorted { $0.createdAt > $1.createdAt }
+      .prefix(4)
+      .map { $0.source == .recording ? "waveform" : "square.and.arrow.down" }
   }
 }
 
