@@ -561,6 +561,8 @@ final class MemoraModel {
     persistMeetings()
     tasks.removeAll { $0.meetingID == id }
     persistTasks()
+    lifeLogEntries.removeAll { $0.meetingID == id }
+    persistLifeLog()
   }
 
   func resetSampleContent() {

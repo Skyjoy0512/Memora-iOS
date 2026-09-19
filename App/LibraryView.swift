@@ -11,35 +11,34 @@ struct LibraryView: View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
-      ScrollViewReader { proxy in
-        ScrollView {
-          LazyVStack(alignment: .leading, spacing: 26) {
-            if model.isRecording {
-              ActiveRecordingStrip()
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
+      VStack(spacing: 0) {
+        Picker("表示", selection: $model.fileSection) {
+          ForEach(FileSection.allCases) { section in
+            Text(section.title).tag(section)
+          }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 18)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
 
-            if query.isEmpty {
-              projectsSection
-              filesSection
-            } else {
-              searchResults
-            }
-          }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 18)
-          .padding(.bottom, 32)
-          .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isRecording)
+        if model.isRecording {
+          ActiveRecordingStrip()
+            .padding(.horizontal, 18)
+            .padding(.bottom, 10)
+            .transition(.opacity.combined(with: .move(edge: .top)))
         }
-        // The sidebar's library rows stay useful as jump targets now that both
-        // sections share one screen.
-        .onChange(of: model.fileSection) { _, section in
-          withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-            proxy.scrollTo(section, anchor: .top)
-          }
+
+        // Pages so a horizontal swipe and the sidebar both switch the section.
+        TabView(selection: $model.fileSection) {
+          filesPage
+            .tag(FileSection.meetingFiles)
+
+          projectsPage
+            .tag(FileSection.projects)
         }
+        .tabViewStyle(.page(indexDisplayMode: .never))
       }
-      .hideBottomBarOnScroll()
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ファイル")
       .searchable(
@@ -72,57 +71,71 @@ struct LibraryView: View {
     }
   }
 
-  private var projectsSection: some View {
-    VStack(alignment: .leading, spacing: 14) {
-      sectionHeader("プロジェクト")
-
-      if matchingSpaces.isEmpty {
-        createProjectPrompt
-      } else {
-        projectsGrid(matchingSpaces)
-      }
-    }
-    .id(FileSection.projects)
-  }
-
-  private var filesSection: some View {
-    VStack(alignment: .leading, spacing: 14) {
-      sectionHeader("ファイル")
-
+  private var filesPage: some View {
+    List {
       if matchingMeetings.isEmpty {
-        emptyFilesPrompt
+        Group {
+          if query.isEmpty {
+            emptyFilesPrompt
+          } else {
+            ContentUnavailableView.search(text: query)
+          }
+        }
+        .frame(maxWidth: .infinity)
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 48, leading: 18, bottom: 48, trailing: 18))
       } else {
-        filesList(matchingMeetings)
+        ForEach(matchingMeetings) { meeting in
+          Button {
+            model.libraryPath.append(.meeting(meeting.id))
+          } label: {
+            MeetingCard(meeting: meeting)
+              .matchedTransitionSource(id: meeting.id, in: heroNamespace)
+          }
+          .buttonStyle(.plain)
+          .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18))
+          .listRowSeparator(.hidden)
+          .listRowBackground(Color.clear)
+          .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+              withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+                model.deleteMeeting(meeting.id)
+              }
+            } label: {
+              Label("削除", systemImage: "trash")
+            }
+          }
+        }
       }
     }
-    .id(FileSection.meetingFiles)
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
+    .hideBottomBarOnScroll()
   }
 
-  @ViewBuilder
-  private var searchResults: some View {
-    if matchingSpaces.isEmpty && matchingMeetings.isEmpty {
-      ContentUnavailableView.search(text: query)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
-    } else {
-      VStack(alignment: .leading, spacing: 26) {
-        sectionHeader("検索結果")
-
-        if !matchingSpaces.isEmpty {
+  private var projectsPage: some View {
+    ScrollView {
+      LazyVStack(alignment: .leading, spacing: 22) {
+        if matchingSpaces.isEmpty {
+          Group {
+            if query.isEmpty {
+              createProjectPrompt
+            } else {
+              ContentUnavailableView.search(text: query)
+            }
+          }
+          .padding(.top, 40)
+        } else {
           projectsGrid(matchingSpaces)
         }
-
-        if !matchingMeetings.isEmpty {
-          filesList(matchingMeetings)
-        }
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 18)
+      .padding(.top, 8)
+      .padding(.bottom, 32)
     }
-  }
-
-  private func sectionHeader(_ title: String) -> some View {
-    Text(title)
-      .font(.title2.bold())
-      .memoraTextReveal()
+    .hideBottomBarOnScroll()
   }
 
   private func projectsGrid(_ spaces: [MemoraSpace]) -> some View {
@@ -141,18 +154,6 @@ struct LibraryView: View {
             symbols: recentSymbols(for: space.id)
           )
           .matchedTransitionSource(id: space.id, in: heroNamespace)
-        }
-        .buttonStyle(.plain)
-      }
-    }
-  }
-
-  private func filesList(_ meetings: [Meeting]) -> some View {
-    LazyVStack(spacing: 16) {
-      ForEach(meetings) { meeting in
-        NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
-          MeetingCard(meeting: meeting)
-            .matchedTransitionSource(id: meeting.id, in: heroNamespace)
         }
         .buttonStyle(.plain)
       }
