@@ -1,0 +1,113 @@
+import Foundation
+
+/// How new recordings and imports are transcribed.
+enum TranscriptionEngine: String, CaseIterable, Identifiable {
+  case automatic
+  case speechAnalyzer
+  case onDevice
+  case cloud
+
+  var id: Self { self }
+
+  var label: String {
+    switch self {
+    case .automatic: "自動（おすすめ）"
+    case .speechAnalyzer: "Apple SpeechAnalyzer"
+    case .onDevice: "端末内（Whisper）"
+    case .cloud: "クラウド（BYOK）"
+    }
+  }
+
+  var detail: String {
+    switch self {
+    case .automatic:
+      "対応状況に合わせて、端末内を優先して選びます。"
+    case .speechAnalyzer:
+      "iOS 26以降のSpeechAnalyzerで、音声を外部へ送らず処理します。"
+    case .onDevice:
+      "Whisperモデルを端末にダウンロードして使います。"
+    case .cloud:
+      "APIキーを使ってクラウドで文字起こしします。"
+    }
+  }
+
+  var usesCloud: Bool { self == .cloud }
+}
+
+/// How summaries and Ask AI answers are produced.
+enum AIEngine: String, CaseIterable, Identifiable {
+  case automatic
+  case foundation
+  case local
+  case cloud
+
+  var id: Self { self }
+
+  var label: String {
+    switch self {
+    case .automatic: "自動（おすすめ）"
+    case .foundation: "Apple Foundation Models"
+    case .local: "ローカルLLM"
+    case .cloud: "クラウド（BYOK）"
+    }
+  }
+
+  var detail: String {
+    switch self {
+    case .automatic:
+      "対応状況に合わせて、端末内を優先して選びます。"
+    case .foundation:
+      "iOS 26以降のFoundation Modelsで、端末内で整理します。"
+    case .local:
+      "ローカルLLMを端末にダウンロードして使います。"
+    case .cloud:
+      "APIキーを使ってLLMプロバイダーのAPIを利用します。"
+    }
+  }
+
+  var usesCloud: Bool { self == .cloud }
+}
+
+/// A bring-your-own-key provider.
+enum CloudProvider: String, CaseIterable, Identifiable {
+  case openAI
+  case anthropic
+  case google
+  case deepgram
+
+  var id: Self { self }
+
+  var label: String {
+    switch self {
+    case .openAI: "OpenAI"
+    case .anthropic: "Anthropic"
+    case .google: "Google Cloud"
+    case .deepgram: "Deepgram"
+    }
+  }
+}
+
+/// Spoken language preference.
+enum RecognitionLanguage: String, CaseIterable, Identifiable {
+  case japanese
+  case english
+  case automatic
+
+  var id: Self { self }
+
+  var label: String {
+    switch self {
+    case .japanese: "日本語"
+    case .english: "英語"
+    case .automatic: "自動検出"
+    }
+  }
+
+  var locale: Locale {
+    switch self {
+    case .japanese: Locale(identifier: "ja-JP")
+    case .english: Locale(identifier: "en-US")
+    case .automatic: Locale.current
+    }
+  }
+}

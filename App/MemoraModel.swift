@@ -547,14 +547,19 @@ final class MemoraModel {
     Task { [weak self] in
       try? await Task.sleep(for: .milliseconds(1_100))
       guard let self else { return }
-      let response = self.aiAnswer(for: trimmed, scope: scope)
+      let canned = self.aiAnswer(for: trimmed, scope: scope)
+      let engineAnswer = await AIEngineService.answer(question: trimmed, scopeLabel: scope.scopeLabel)
+      let answer = engineAnswer ?? canned.answer
+      let thinking = engineAnswer == nil
+        ? canned.thinking
+        : "\(scope.scopeLabel)の記録から、選んだAIエンジンで生成しました。"
       if let index = self.aiMessages.firstIndex(where: { $0.id == placeholder.id }) {
-        self.aiMessages[index].text = response.answer
-        self.aiMessages[index].thinking = response.thinking
+        self.aiMessages[index].text = answer
+        self.aiMessages[index].thinking = thinking
         self.aiMessages[index].isThinking = false
       }
       self.isAIChatResponding = false
-      self.saveAIExchange(question: trimmed, answer: response.answer, scopeLabel: scope.scopeLabel)
+      self.saveAIExchange(question: trimmed, answer: answer, scopeLabel: scope.scopeLabel)
     }
   }
 
@@ -694,20 +699,28 @@ final class MemoraModel {
   private func beginProcessing(_ id: UUID) {
     processingTasks[id]?.cancel()
     processingTasks[id] = Task { [weak self] in
-      try? await Task.sleep(for: .milliseconds(900))
+      guard let self else { return }
+      try? await Task.sleep(for: .milliseconds(700))
       guard !Task.isCancelled else { return }
-      self?.updateMeeting(id) { $0.status = .transcribing(0.58) }
+      self.updateMeeting(id) { $0.status = .transcribing(0.58) }
 
-      try? await Task.sleep(for: .milliseconds(900))
+      // Use a real engine when one is available here; otherwise keep the
+      // placeholder transcript so the flow still completes.
+      let outcome = await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
       guard !Task.isCancelled else { return }
-      self?.updateMeeting(id) { meeting in
+
+      self.updateMeeting(id) { meeting in
         meeting.status = .organizing("決定と次の行動を整理中")
-        meeting.transcript = SampleContent.generatedTranscript
+        if case .segments(let segments) = outcome {
+          meeting.transcript = segments
+        } else {
+          meeting.transcript = SampleContent.generatedTranscript
+        }
       }
 
-      try? await Task.sleep(for: .milliseconds(1_100))
+      try? await Task.sleep(for: .milliseconds(900))
       guard !Task.isCancelled else { return }
-      self?.finishProcessing(id)
+      self.finishProcessing(id)
     }
   }
 

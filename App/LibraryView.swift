@@ -4,7 +4,6 @@ struct LibraryView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var query = ""
-  @State private var fileFilter = MeetingFilter.all
   @Namespace private var heroNamespace
   var onOpenSidebar: () -> Void
 
@@ -72,10 +71,7 @@ struct LibraryView: View {
   }
 
   private var filesPage: some View {
-    VStack(spacing: 0) {
-      filterPills
-
-      List {
+    List {
       if matchingMeetings.isEmpty {
         Group {
           if query.isEmpty {
@@ -111,54 +107,10 @@ struct LibraryView: View {
           }
         }
       }
-      }
-      .listStyle(.plain)
-      .scrollContentBackground(.hidden)
-      .hideBottomBarOnScroll()
     }
-  }
-
-  private var filterPills: some View {
-    ScrollView(.horizontal) {
-      HStack(spacing: 8) {
-        ForEach(MeetingFilter.allCases) { filter in
-          let available = filter == .all || count(for: filter) > 0
-
-          Button {
-            withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-              fileFilter = filter
-            }
-          } label: {
-            Text(filter.title)
-              .font(.subheadline.weight(.medium))
-              .foregroundStyle(
-                fileFilter == filter
-                  ? AnyShapeStyle(Color(uiColor: .systemBackground))
-                  : AnyShapeStyle(.primary)
-              )
-              .padding(.horizontal, 14)
-              .padding(.vertical, 8)
-              .background(
-                fileFilter == filter
-                  ? AnyShapeStyle(.primary)
-                  : AnyShapeStyle(Color.primary.opacity(0.06)),
-                in: Capsule()
-              )
-          }
-          .buttonStyle(.plain)
-          .disabled(!available)
-          .opacity(available ? 1 : 0.4)
-        }
-      }
-      .padding(.horizontal, 18)
-      .padding(.bottom, 10)
-    }
-    .scrollIndicators(.hidden)
-  }
-
-  private func count(for filter: MeetingFilter) -> Int {
-    let base = query.isEmpty ? model.meetings : model.meetings.filter(matchesQuery)
-    return base.filter { filter.matches($0.status) }.count
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
+    .hideBottomBarOnScroll()
   }
 
   private var projectsPage: some View {
@@ -241,8 +193,8 @@ struct LibraryView: View {
   }
 
   private var matchingMeetings: [Meeting] {
-    let base = query.isEmpty ? model.meetings : model.meetings.filter(matchesQuery)
-    return Array(base.filter { fileFilter.matches($0.status) }.prefix(24))
+    let result = query.isEmpty ? model.meetings : model.meetings.filter(matchesQuery)
+    return Array(result.prefix(24))
   }
 
   private var matchingSpaces: [MemoraSpace] {
