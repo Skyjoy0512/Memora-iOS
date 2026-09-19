@@ -253,7 +253,7 @@ struct AIQuestionView: View {
 
     Task {
       try? await Task.sleep(for: .milliseconds(850))
-      let generatedAnswer = "次に行うことは、初回録音フローの仕様確定と、Acme社へセキュリティ資料を送ることです。録音開始の速さを優先し、データは既定で端末内に保存する方針が確認されています。"
+      let generatedAnswer = model.aiAnswer(for: effectiveQuestion).answer
       answer = generatedAnswer
       isAnswering = false
       model.saveAIExchange(question: effectiveQuestion, answer: generatedAnswer, scopeLabel: label(for: selectedScope))

@@ -17,6 +17,9 @@ final class MemoraModel {
   var tasks: [MemoraTask]
   var lifeLogEntries: [LifeLogEntry]
   var aiHistory: [AIConversationEntry]
+  /// The Ask AI chat transcript.
+  var aiMessages: [AIChatMessage] = []
+  private(set) var isAIChatResponding = false
   var isCapturePresented = false
   var isCaptureSourcePresented = false
   var isOnlineMeetingCapturePresented = false
@@ -523,6 +526,50 @@ final class MemoraModel {
     persistLifeLog()
   }
 
+  /// Appends a turn to the Ask AI chat and answers it a moment later.
+  func sendAIChat(_ question: String) {
+    let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty, !isAIChatResponding else { return }
+
+    aiMessages.append(AIChatMessage(role: .user, text: trimmed))
+    let placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
+    aiMessages.append(placeholder)
+    isAIChatResponding = true
+
+    Task { [weak self] in
+      try? await Task.sleep(for: .milliseconds(1_100))
+      guard let self else { return }
+      let response = self.aiAnswer(for: trimmed)
+      if let index = self.aiMessages.firstIndex(where: { $0.id == placeholder.id }) {
+        self.aiMessages[index].text = response.answer
+        self.aiMessages[index].thinking = response.thinking
+        self.aiMessages[index].isThinking = false
+      }
+      self.isAIChatResponding = false
+      self.saveAIExchange(question: trimmed, answer: response.answer, scopeLabel: "すべての会話")
+    }
+  }
+
+  /// A canned answer with its reasoning, shaped by the question.
+  func aiAnswer(for question: String) -> (answer: String, thinking: String) {
+    if question.contains("タスク") {
+      return (
+        "未完了のタスクは「初回録音フローの仕様を確定する」と「Acme社へセキュリティ資料を送る」の2件です。どちらも元の会議にひも付いていて、そこから発言まで戻れます。",
+        "タスクを会議横断で集め、期限の近い順に並べました。"
+      )
+    }
+    if question.contains("決") {
+      return (
+        "直近では、録音とタスク抽出を最優先で提供すること、会議データは既定で端末内に保存することが決まっています。クラウド同期の提供時期はまだ未決です。",
+        "決定事項を新しい会議から順に読み、未決事項と分けて確認しました。"
+      )
+    }
+    return (
+      "次に行うことは、初回録音フローの仕様確定と、Acme社へセキュリティ資料を送ることです。録音開始の速さを優先し、データは既定で端末内に保存する方針が確認されています。",
+      "まず未完了の行動を集め、次に関連する会議から根拠をたどりました。"
+    )
+  }
+
   func saveAIExchange(question: String, answer: String, scopeLabel: String) {
     aiHistory.insert(
       AIConversationEntry(
@@ -576,6 +623,7 @@ final class MemoraModel {
     tasks = sample.tasks
     persistTasks()
     aiHistory = []
+    aiMessages = []
     homePath = []
     libraryPath = []
     selectedTab = .home
@@ -588,6 +636,7 @@ final class MemoraModel {
     tasks = []
     persistTasks()
     aiHistory = []
+    aiMessages = []
     spaces = []
     persistMeetings()
     persistSpaces()

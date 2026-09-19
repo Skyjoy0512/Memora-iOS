@@ -269,7 +269,8 @@ struct AIComposerBar: View {
   private func submit() {
     guard canSend else { return }
     speechInput.stop()
-    isFieldFocused = false
+    // The Ask AI chat keeps the keyboard up for the next turn; a sheet does not.
+    isFieldFocused = focusRequest
     onSubmit()
   }
 

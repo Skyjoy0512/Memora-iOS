@@ -49,6 +49,17 @@ struct QuickAIComposer: View {
 
   private func submit() {
     guard canSend else { return }
+
+    // On the Ask AI tab the question joins the chat; elsewhere it opens the
+    // focused answer sheet.
+    if scope == .global, model.selectedTab == .askAI {
+      let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
+      model.sendAIChat(trimmed.isEmpty ? "この添付を確認して" : trimmed)
+      question = ""
+      attachment = nil
+      return
+    }
+
     isQuestionPresented = true
   }
 }

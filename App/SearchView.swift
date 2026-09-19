@@ -3,13 +3,18 @@ import SwiftUI
 struct SearchView: View {
   @Environment(MemoraModel.self) private var model
   @State private var query = ""
-  @State private var isAskingAI = false
   @State private var isSearchSheetPresented = false
   @State private var isHistoryPresented = false
 
   var body: some View {
     NavigationStack {
-      askAIHome
+      Group {
+        if model.aiMessages.isEmpty {
+          chatEmptyState
+        } else {
+          chatTranscript
+        }
+      }
       .navigationTitle("Ask AI")
       .toolbar {
         ToolbarItemGroup(placement: .topBarTrailing) {
@@ -24,75 +29,125 @@ struct SearchView: View {
           .labelStyle(.iconOnly)
         }
       }
-      .sheet(isPresented: $isAskingAI) {
-        AIQuestionView(scope: .global, askingQuestion: query)
-      }
       .sheet(isPresented: $isSearchSheetPresented) {
-        NavigationStack {
-          Group {
-            if query.isEmpty {
-              ContentUnavailableView(
-                "会話を検索",
-                systemImage: "magnifyingglass",
-                description: Text("タイトル、発言、決定、タスクから探せます。")
-              )
-            } else {
-              resultsView
-            }
-          }
-          .navigationTitle("検索")
-          .navigationBarTitleDisplayMode(.inline)
-          .searchable(text: $query, prompt: "会議、発言、決定、タスク")
-          .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-              Button("完了") { isSearchSheetPresented = false }
-            }
-          }
-        }
+        searchSheet
       }
       .sheet(isPresented: $isHistoryPresented) {
         AIHistoryView(entries: model.aiHistory) { question in
-          query = question
           isHistoryPresented = false
           Task {
             try? await Task.sleep(for: .milliseconds(250))
-            isAskingAI = true
+            model.sendAIChat(question)
           }
         }
       }
     }
   }
 
-  private var askAIHome: some View {
-    VStack(spacing: 24) {
-      Spacer(minLength: 72)
-
-      ThinkingOrbView(state: .breathing, size: 78)
-
-      VStack(spacing: 8) {
-        Text("何を知りたいですか？")
-          .font(.title2.bold())
-          .memoraTextReveal(delay: 0.08)
-        Text("言葉を思い出せなくても、会話の意味から探せます。")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-          .multilineTextAlignment(.center)
-          .memoraTextReveal(delay: 0.16)
+  private var chatTranscript: some View {
+    ScrollViewReader { proxy in
+      ScrollView {
+        LazyVStack(alignment: .leading, spacing: 22) {
+          ForEach(model.aiMessages) { message in
+            AIMessageView(message: message)
+              .id(message.id)
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
       }
-
-      Spacer()
+      .scrollDismissesKeyboard(.interactively)
+      .hideBottomBarOnScroll()
+      .onChange(of: model.aiMessages.count) { _, _ in
+        scrollToLatest(proxy)
+      }
+      .onAppear {
+        scrollToLatest(proxy)
+      }
     }
-    .frame(maxWidth: .infinity)
-    .padding(.horizontal, 24)
-    .padding(.bottom, 24)
-    // The composer focuses itself here, and this screen has nothing to scroll,
-    // so give people a tap target to put the keyboard away.
-    .contentShape(Rectangle())
-    .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
   }
 
-  private func dismissKeyboard() {
-    model.composerDismissRequests += 1
+  private func scrollToLatest(_ proxy: ScrollViewProxy) {
+    guard let last = model.aiMessages.last else { return }
+    withAnimation(.smooth(duration: 0.3)) {
+      proxy.scrollTo(last.id, anchor: .bottom)
+    }
+  }
+
+  private var chatEmptyState: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 26) {
+        Spacer(minLength: 48)
+
+        VStack(alignment: .leading, spacing: 8) {
+          Text("何を知りたいですか？")
+            .font(.largeTitle.bold())
+            .memoraTextReveal()
+          Text("会議をまたいで、意味から答えを探します。")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .memoraTextReveal(delay: 0.08)
+        }
+
+        VStack(spacing: 4) {
+          ForEach(Self.suggestions, id: \.title) { suggestion in
+            Button {
+              model.sendAIChat(suggestion.title)
+            } label: {
+              HStack(spacing: 14) {
+                Image(systemName: suggestion.symbol)
+                  .font(.body.weight(.medium))
+                  .foregroundStyle(.primary)
+                  .frame(width: 34, height: 34)
+                  .background(
+                    Color.primary.opacity(0.06),
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                  )
+
+                Text(suggestion.title)
+                  .font(.body)
+                  .foregroundStyle(.primary)
+                  .multilineTextAlignment(.leading)
+
+                Spacer(minLength: 0)
+              }
+              .padding(.vertical, 8)
+              .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+          }
+        }
+
+        Spacer(minLength: 48)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 18)
+    }
+  }
+
+  private var searchSheet: some View {
+    NavigationStack {
+      Group {
+        if query.isEmpty {
+          ContentUnavailableView(
+            "会話を検索",
+            systemImage: "magnifyingglass",
+            description: Text("タイトル、発言、決定、タスクから探せます。")
+          )
+        } else {
+          resultsView
+        }
+      }
+      .navigationTitle("検索")
+      .navigationBarTitleDisplayMode(.inline)
+      .searchable(text: $query, prompt: "会議、発言、決定、タスク")
+      .toolbar {
+        ToolbarItem(placement: .confirmationAction) {
+          Button("完了") { isSearchSheetPresented = false }
+        }
+      }
+    }
   }
 
   private var resultsView: some View {
@@ -102,7 +157,7 @@ struct SearchView: View {
           isSearchSheetPresented = false
           Task {
             try? await Task.sleep(for: .milliseconds(250))
-            isAskingAI = true
+            model.sendAIChat(query)
           }
         } label: {
           Label("「\(query)」をMemoraに聞く", systemImage: "sparkles")
@@ -154,6 +209,12 @@ struct SearchView: View {
   private var matchingTasks: [MemoraTask] {
     model.tasks.filter { $0.title.localizedCaseInsensitiveContains(query) }
   }
+
+  private static let suggestions: [(title: String, symbol: String)] = [
+    ("今週決まったことは？", "checkmark.seal"),
+    ("未完了のタスクを教えて", "checkmark.square"),
+    ("先週の会議を3行でまとめて", "text.alignleft")
+  ]
 }
 
 private struct AIHistoryView: View {
