@@ -127,7 +127,7 @@ struct RootTabView: View {
     // `safeAreaInset` no longer contributes the home indicator inset inside the
     // full-bleed drawer, so add it back here — except while the keyboard is up,
     // where the keyboard's own safe area already lifts these controls.
-    .padding(.bottom, isKeyboardVisible ? 0 : safeAreaInsets.bottom)
+    .padding(.bottom, isKeyboardVisible ? 14 : safeAreaInsets.bottom)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)

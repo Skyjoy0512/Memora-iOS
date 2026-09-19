@@ -49,7 +49,7 @@ struct SearchView: View {
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 22) {
           ForEach(model.aiMessages) { message in
-            AIMessageView(message: message)
+            AIMessageView(message: message, animates: message.id == model.aiMessages.last?.id)
               .id(message.id)
           }
         }

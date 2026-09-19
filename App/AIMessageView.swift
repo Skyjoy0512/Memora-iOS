@@ -4,6 +4,8 @@ import SwiftUI
 /// reasoning tucked behind a disclosure.
 struct AIMessageView: View {
   var message: AIChatMessage
+  /// Only the latest reply streams; older ones are already settled.
+  var animates = true
 
   var body: some View {
     switch message.role {
@@ -61,11 +63,7 @@ struct AIMessageView: View {
           .tint(.secondary)
         }
 
-        Text(message.text)
-          .font(.body)
-          .lineSpacing(5)
-          .textSelection(.enabled)
-          .memoraTextReveal()
+        StreamingText(text: message.text, lineSpacing: 5, animates: animates)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

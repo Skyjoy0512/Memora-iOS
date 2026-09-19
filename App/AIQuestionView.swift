@@ -127,11 +127,7 @@ struct AIQuestionView: View {
         .foregroundStyle(.primary)
         .memoraTextReveal()
 
-      Text(answer)
-        .font(.body)
-        .lineSpacing(5)
-        .textSelection(.enabled)
-        .memoraTextReveal(delay: 0.06)
+      StreamingText(text: answer, lineSpacing: 5)
 
       VStack(alignment: .leading, spacing: 10) {
         Text("根拠")
