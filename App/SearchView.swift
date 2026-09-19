@@ -7,7 +7,9 @@ struct SearchView: View {
   @State private var isHistoryPresented = false
 
   var body: some View {
-    NavigationStack {
+    @Bindable var model = model
+
+    return NavigationStack {
       Group {
         if model.aiMessages.isEmpty {
           chatEmptyState
@@ -15,9 +17,37 @@ struct SearchView: View {
           chatTranscript
         }
       }
+      // Tapping the conversation puts the keyboard away.
+      .contentShape(Rectangle())
+      .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
       .navigationTitle("Ask AI")
       .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Menu {
+            Picker("対象", selection: $model.aiScope) {
+              ForEach(AIChatScope.allCases) { scope in
+                Label(scope.title, systemImage: scope.symbol).tag(scope)
+              }
+            }
+          } label: {
+            HStack(spacing: 4) {
+              Image(systemName: model.aiScope.symbol)
+              Text(model.aiScope.title)
+              Image(systemName: "chevron.down")
+                .font(.caption2.weight(.semibold))
+            }
+            .font(.subheadline.weight(.medium))
+          }
+          .accessibilityLabel("対象: \(model.aiScope.title)")
+        }
+
         ToolbarItemGroup(placement: .topBarTrailing) {
+          Button("新しいチャット", systemImage: "square.and.pencil") {
+            model.startNewAIChat()
+          }
+          .labelStyle(.iconOnly)
+          .disabled(model.aiMessages.isEmpty)
+
           Button("検索", systemImage: "magnifyingglass") {
             isSearchSheetPresented = true
           }
@@ -66,6 +96,10 @@ struct SearchView: View {
         scrollToLatest(proxy)
       }
     }
+  }
+
+  private func dismissKeyboard() {
+    model.composerDismissRequests += 1
   }
 
   private func scrollToLatest(_ proxy: ScrollViewProxy) {
