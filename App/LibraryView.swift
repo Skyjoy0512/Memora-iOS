@@ -105,6 +105,12 @@ struct LibraryView: View {
               Label("削除", systemImage: "trash")
             }
           }
+          .swipeActions(edge: .leading) {
+            ShareLink(item: MeetingShareText.make(meeting: meeting, tasks: model.tasks)) {
+              Label("共有", systemImage: "square.and.arrow.up")
+            }
+            .tint(.blue)
+          }
         }
       }
     }

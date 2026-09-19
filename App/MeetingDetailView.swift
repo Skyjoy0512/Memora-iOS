@@ -70,6 +70,12 @@ struct MeetingDetailView: View {
               .animation(reduceMotion ? nil : MemoraMotion.control, value: isCompactTitleVisible)
           }
           ToolbarItem(placement: .topBarTrailing) {
+            ShareLink(item: MeetingShareText.make(meeting: meeting, tasks: model.tasks)) {
+              Label("共有", systemImage: "square.and.arrow.up")
+                .labelStyle(.iconOnly)
+            }
+          }
+          ToolbarItem(placement: .topBarTrailing) {
             Menu("その他", systemImage: "ellipsis") {
               Button("名前を変更", systemImage: "pencil") {
                 isRenaming = true
