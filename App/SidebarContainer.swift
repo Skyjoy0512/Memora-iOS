@@ -47,14 +47,14 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
           .accessibilityHidden(!isOpen)
 
         content()
-          // A thin blur reads as depth without dimming the screen.
-          .blur(radius: 1.5 * progress)
           .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
           .overlay {
             if progress > 0 {
-              // Kept transparent on purpose: the pushed-aside screen stays as
-              // bright as it was, and only needs to catch a tap or drag to close.
-              Color.clear
+              // A material frosts the screen behind it, so the pushed-aside side
+              // reads as a thin blur without paying for a live blur while the
+              // drawer is closed. It also catches the tap or drag that closes it.
+              Rectangle()
+                .fill(.ultraThinMaterial)
                 .contentShape(Rectangle())
                 .onTapGesture { setOpen(false) }
                 .gesture(closeDrag(width: width))

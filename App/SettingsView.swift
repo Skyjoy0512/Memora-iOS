@@ -192,20 +192,43 @@ struct SettingsView: View {
 }
 
 private struct SpeechRecognitionSettingsView: View {
-  @State private var mode = RecognitionMode.automatic
-  @State private var language = RecognitionLanguage.japanese
+  @AppStorage("memora.transcriptionEngine") private var engine = TranscriptionEngine.automatic
+  @AppStorage("memora.transcriptionLanguage") private var language = RecognitionLanguage.japanese
+  @AppStorage("memora.transcriptionProvider") private var provider = CloudProvider.openAI
+  @State private var isKeySheetPresented = false
 
   var body: some View {
     Form {
-      Section("文字起こし方法") {
-        Picker("方法", selection: $mode) {
-          ForEach(RecognitionMode.allCases) { option in
+      Section {
+        Picker("方法", selection: $engine) {
+          ForEach(TranscriptionEngine.allCases) { option in
             Text(option.label).tag(option)
           }
         }
-        Text(mode.description)
+        Text(engine.detail)
           .font(.footnote)
           .foregroundStyle(.secondary)
+      } header: {
+        Text("文字起こし方法")
+      } footer: {
+        Text("端末内を優先し、必要な時だけクラウドを使います。")
+      }
+
+      if engine.usesCloud {
+        Section {
+          Picker("プロバイダー", selection: $provider) {
+            ForEach(CloudProvider.allCases) { option in
+              Text(option.label).tag(option)
+            }
+          }
+          Button("APIキーを設定", systemImage: "key") {
+            isKeySheetPresented = true
+          }
+        } header: {
+          Text("クラウド（BYOK）")
+        } footer: {
+          Text("キーはKeychainに保存し、設定画面にも再表示しません。")
+        }
       }
 
       Section("言語") {
@@ -217,30 +240,59 @@ private struct SpeechRecognitionSettingsView: View {
       }
     }
     .navigationTitle("文字起こし")
+    .sheet(isPresented: $isKeySheetPresented) {
+      APIKeySheet(provider: provider.label)
+    }
   }
 }
 
-private enum RecognitionMode: String, CaseIterable, Identifiable {
+private enum TranscriptionEngine: String, CaseIterable, Identifiable {
   case automatic
-  case localOnly
+  case speechAnalyzer
+  case onDevice
+  case cloud
 
   var id: Self { self }
 
   var label: String {
     switch self {
-    case .automatic:
-      "自動（おすすめ）"
-    case .localOnly:
-      "端末内のみ"
+    case .automatic: "自動（おすすめ）"
+    case .speechAnalyzer: "Apple SpeechAnalyzer"
+    case .onDevice: "端末内（Whisper）"
+    case .cloud: "クラウド（BYOK）"
     }
   }
 
-  var description: String {
+  var detail: String {
     switch self {
     case .automatic:
-      "端末とOSに合う方法をMemoraが選びます。外部処理を使う場合は事前に分かるよう表示します。"
-    case .localOnly:
-      "対応する端末では、音声を外部へ送らず文字起こしします。"
+      "対応状況に合わせて、端末内を優先して選びます。"
+    case .speechAnalyzer:
+      "iOS 26以降のSpeechAnalyzerで、音声を外部へ送らず処理します。"
+    case .onDevice:
+      "Whisperモデルを端末にダウンロードして使います。"
+    case .cloud:
+      "APIキーを使ってクラウドで文字起こしします。"
+    }
+  }
+
+  var usesCloud: Bool { self == .cloud }
+}
+
+private enum CloudProvider: String, CaseIterable, Identifiable {
+  case openAI
+  case anthropic
+  case google
+  case deepgram
+
+  var id: Self { self }
+
+  var label: String {
+    switch self {
+    case .openAI: "OpenAI"
+    case .anthropic: "Anthropic"
+    case .google: "Google Cloud"
+    case .deepgram: "Deepgram"
     }
   }
 }
@@ -265,7 +317,9 @@ private enum RecognitionLanguage: String, CaseIterable, Identifiable {
 }
 
 private struct AISettingsView: View {
-  @State private var style = SummaryStyle.automatic
+  @AppStorage("memora.aiEngine") private var engine = AIEngine.automatic
+  @AppStorage("memora.aiProvider") private var provider = CloudProvider.openAI
+  @AppStorage("memora.summaryStyle") private var style = SummaryStyle.automatic
   @State private var isAPIKeySheetPresented = false
 
   var body: some View {
@@ -283,21 +337,75 @@ private struct AISettingsView: View {
       }
 
       Section {
-        LabeledContent("現在", value: "Memora")
-        Button("APIキーを設定", systemImage: "key") {
-          isAPIKeySheetPresented = true
+        Picker("エンジン", selection: $engine) {
+          ForEach(AIEngine.allCases) { option in
+            Text(option.label).tag(option)
+          }
         }
+        Text(engine.detail)
+          .font(.footnote)
+          .foregroundStyle(.secondary)
       } header: {
-        Text("AIプロバイダー")
+        Text("AIエンジン")
       } footer: {
-        Text("シークレットはKeychainに保存し、設定画面にも再表示しません。")
+        Text("端末内を優先し、必要な時だけクラウドを使います。")
+      }
+
+      if engine.usesCloud {
+        Section {
+          Picker("プロバイダー", selection: $provider) {
+            ForEach(CloudProvider.allCases) { option in
+              Text(option.label).tag(option)
+            }
+          }
+          Button("APIキーを設定", systemImage: "key") {
+            isAPIKeySheetPresented = true
+          }
+        } header: {
+          Text("クラウド（BYOK）")
+        } footer: {
+          Text("シークレットはKeychainに保存し、設定画面にも再表示しません。")
+        }
       }
     }
     .navigationTitle("AI整理")
     .sheet(isPresented: $isAPIKeySheetPresented) {
-      APIKeySheet()
+      APIKeySheet(provider: provider.label)
     }
   }
+}
+
+private enum AIEngine: String, CaseIterable, Identifiable {
+  case automatic
+  case foundation
+  case local
+  case cloud
+
+  var id: Self { self }
+
+  var label: String {
+    switch self {
+    case .automatic: "自動（おすすめ）"
+    case .foundation: "Apple Foundation Models"
+    case .local: "ローカルLLM"
+    case .cloud: "クラウド（BYOK）"
+    }
+  }
+
+  var detail: String {
+    switch self {
+    case .automatic:
+      "対応状況に合わせて、端末内を優先して選びます。"
+    case .foundation:
+      "iOS 26以降のFoundation Modelsで、端末内で整理します。"
+    case .local:
+      "ローカルLLMを端末にダウンロードして使います。"
+    case .cloud:
+      "APIキーを使ってLLMプロバイダーのAPIを利用します。"
+    }
+  }
+
+  var usesCloud: Bool { self == .cloud }
 }
 
 private enum SummaryStyle: String, CaseIterable, Identifiable {
@@ -324,6 +432,7 @@ private enum SummaryStyle: String, CaseIterable, Identifiable {
 
 private struct APIKeySheet: View {
   @Environment(\.dismiss) private var dismiss
+  var provider: String
   @State private var key = ""
 
   var body: some View {
@@ -333,7 +442,7 @@ private struct APIKeySheet: View {
           SecureField("キーを入力", text: $key)
             .textContentType(.password)
         } header: {
-          Text("APIキー")
+          Text("\(provider) のAPIキー")
         } footer: {
           Text("保存後は値を表示しません。削除と置き換えだけができます。")
         }
