@@ -21,6 +21,8 @@ struct HomeView: View {
               openTaskCount: openTasks.count
             )
 
+            UpcomingMeetingCard()
+
             sourceStatus
           }
 

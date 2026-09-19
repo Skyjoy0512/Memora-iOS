@@ -556,7 +556,11 @@ final class MemoraModel {
       try? await Task.sleep(for: .milliseconds(1_100))
       guard let self else { return }
       let canned = self.aiAnswer(for: trimmed, scope: scope)
-      let engineAnswer = await AIEngineService.answer(question: trimmed, scopeLabel: scope.scopeLabel)
+      let engineAnswer = await AIEngineService.answer(
+        question: trimmed,
+        scopeLabel: scope.scopeLabel,
+        context: self.aiContext()
+      )
       let answer = engineAnswer ?? canned.answer
       let thinking = engineAnswer == nil
         ? canned.thinking
@@ -569,6 +573,33 @@ final class MemoraModel {
       self.isAIChatResponding = false
       self.saveAIExchange(question: trimmed, answer: answer, scopeLabel: scope.scopeLabel)
     }
+  }
+
+  /// A compact digest of the data, so an on-device model answers from the
+  /// records rather than from general knowledge.
+  func aiContext() -> String {
+    var lines: [String] = []
+
+    let openTasks = tasks.filter { !$0.isCompleted }
+    if !openTasks.isEmpty {
+      lines.append("未完了のタスク:")
+      lines.append(contentsOf: openTasks.map { task in
+        if let assignee = task.assignee, !assignee.isEmpty {
+          return "- \(task.title)（\(assignee)）"
+        }
+        return "- \(task.title)"
+      })
+    }
+
+    let recent = meetings.sorted { $0.createdAt > $1.createdAt }.prefix(3)
+    if !recent.isEmpty {
+      lines.append("最近の会議:")
+      lines.append(contentsOf: recent.map { meeting in
+        meeting.summary.isEmpty ? "- \(meeting.title)" : "- \(meeting.title): \(meeting.summary)"
+      })
+    }
+
+    return lines.joined(separator: "\n")
   }
 
   /// A canned answer with its reasoning, shaped by the question and scope.

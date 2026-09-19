@@ -250,7 +250,11 @@ struct AIQuestionView: View {
     Task {
       try? await Task.sleep(for: .milliseconds(850))
       let scopeLabel = label(for: selectedScope)
-      let engineAnswer = await AIEngineService.answer(question: effectiveQuestion, scopeLabel: scopeLabel)
+      let engineAnswer = await AIEngineService.answer(
+        question: effectiveQuestion,
+        scopeLabel: scopeLabel,
+        context: model.aiContext()
+      )
       let generatedAnswer = engineAnswer ?? model.aiAnswer(for: effectiveQuestion).answer
       answer = generatedAnswer
       isAnswering = false
