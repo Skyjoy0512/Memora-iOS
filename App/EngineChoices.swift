@@ -85,6 +85,10 @@ enum CloudProvider: String, CaseIterable, Identifiable {
     case .deepgram: "Deepgram"
     }
   }
+
+  /// Which providers can answer questions rather than transcribe.
+  var supportsAI: Bool { self == .openAI || self == .anthropic }
+  var supportsTranscription: Bool { self == .openAI || self == .deepgram }
 }
 
 /// Spoken language preference.

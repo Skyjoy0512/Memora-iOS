@@ -15,8 +15,13 @@ struct MeetingDetailView: View {
   @State private var isAddingPeople = false
   @State private var isSharing = false
   @State private var shareItems: [Any] = []
-  @State private var notionMessage: String?
-  @State private var linkMessage: String?
+  @State private var statusAlert: StatusAlert?
+
+  private struct StatusAlert: Identifiable {
+    let id = UUID()
+    var title: String
+    var message: String
+  }
 
   var body: some View {
     Group {
@@ -116,15 +121,12 @@ struct MeetingDetailView: View {
         .sheet(isPresented: $isSharing) {
           ActivityView(items: shareItems)
         }
-        .alert("Notion", isPresented: notionAlertBinding) {
-          Button("OK") { notionMessage = nil }
-        } message: {
-          Text(notionMessage ?? "")
-        }
-        .alert("共有リンク", isPresented: linkAlertBinding) {
-          Button("OK") { linkMessage = nil }
-        } message: {
-          Text(linkMessage ?? "")
+        .alert(item: $statusAlert) { alert in
+          Alert(
+            title: Text(alert.title),
+            message: Text(alert.message),
+            dismissButton: .default(Text("OK"))
+          )
         }
         .confirmationDialog("この会議を削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
           Button("削除", role: .destructive) {
@@ -177,24 +179,10 @@ struct MeetingDetailView: View {
     .scrollIndicators(.hidden)
   }
 
-  private var notionAlertBinding: Binding<Bool> {
-    Binding(
-      get: { notionMessage != nil },
-      set: { if !$0 { notionMessage = nil } }
-    )
-  }
-
-  private var linkAlertBinding: Binding<Bool> {
-    Binding(
-      get: { linkMessage != nil },
-      set: { if !$0 { linkMessage = nil } }
-    )
-  }
-
   private func copyLink(_ meeting: Meeting) {
     guard let url = MeetingLink.url(for: meeting.id) else { return }
     UIPasteboard.general.string = url.absoluteString
-    linkMessage = "共有リンクをコピーしました。Memoraを入れている人は開けます。"
+    statusAlert = StatusAlert(title: "共有リンク", message: "共有リンクをコピーしました。Memoraを入れている人は開けます。")
   }
 
   private func sharePDF(_ meeting: Meeting) {
@@ -207,9 +195,9 @@ struct MeetingDetailView: View {
     Task {
       do {
         try await NotionService.save(meeting: meeting, tasks: model.tasks)
-        notionMessage = "Notionに保存しました。"
+        statusAlert = StatusAlert(title: "Notion", message: "Notionに保存しました。")
       } catch {
-        notionMessage = "Notionに保存できませんでした。設定のトークンと保存先を確認してください。"
+        statusAlert = StatusAlert(title: "Notion", message: "Notionに保存できませんでした。設定のトークンと保存先を確認してください。")
       }
     }
   }

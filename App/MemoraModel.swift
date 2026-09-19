@@ -444,13 +444,20 @@ final class MemoraModel {
     updateMeeting(id) { $0.status = .transcribing(0.08) }
     processingTasks[id]?.cancel()
     processingTasks[id] = Task { [weak self] in
-      try? await Task.sleep(for: .milliseconds(850))
+      guard let self else { return }
+      try? await Task.sleep(for: .milliseconds(600))
       guard !Task.isCancelled else { return }
-      self?.updateMeeting(id) { $0.status = .transcribing(0.62) }
-      try? await Task.sleep(for: .milliseconds(900))
+      self.updateMeeting(id) { $0.status = .transcribing(0.62) }
+
+      let outcome = await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
       guard !Task.isCancelled else { return }
-      self?.updateMeeting(id) { meeting in
-        meeting.transcript = SampleContent.generatedTranscript
+
+      self.updateMeeting(id) { meeting in
+        if case .segments(let segments) = outcome {
+          meeting.transcript = segments
+        } else {
+          meeting.transcript = SampleContent.generatedTranscript
+        }
         meeting.status = .waitingForSummary
       }
     }
@@ -862,7 +869,10 @@ final class MemoraModel {
       meeting.openQuestions = [
         "クラウド同期を有料プランのどの段階で提供するか"
       ]
-      meeting.transcript = SampleContent.generatedTranscript
+      // Keep a real transcription; only fill in the sample when none exists.
+      if meeting.transcript.isEmpty {
+        meeting.transcript = SampleContent.generatedTranscript
+      }
     }
 
     let task = MemoraTask(

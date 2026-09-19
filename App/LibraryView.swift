@@ -112,6 +112,15 @@ struct LibraryView: View {
             .tint(.blue)
           }
         }
+
+        if query.isEmpty {
+          NavigationLink(value: LibraryRoute.allMeetings) {
+            Label("すべての会話を一覧で見る", systemImage: "list.bullet")
+              .font(.subheadline.weight(.medium))
+          }
+          .listRowSeparator(.hidden)
+          .listRowBackground(Color.clear)
+        }
       }
     }
     .listStyle(.plain)

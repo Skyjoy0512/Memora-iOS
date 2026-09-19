@@ -35,6 +35,7 @@ struct PeopleManagerSheet: View {
               )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("写真を選ぶ")
 
             TextField("名前", text: $newName)
               .onSubmit(add)

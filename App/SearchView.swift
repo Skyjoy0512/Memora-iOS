@@ -92,6 +92,9 @@ struct SearchView: View {
       .onChange(of: model.aiMessages.count) { _, _ in
         scrollToLatest(proxy)
       }
+      .onChange(of: model.isAIChatResponding) { _, _ in
+        scrollToLatest(proxy)
+      }
       .onAppear {
         scrollToLatest(proxy)
       }

@@ -123,6 +123,11 @@ struct HomeView: View {
       .sheet(isPresented: $isManagingPeople) {
         PeopleManagerSheet()
       }
+      .onChange(of: model.people) { _, people in
+        if let id = selectedPersonID, !people.contains(where: { $0.id == id }) {
+          selectedPersonID = nil
+        }
+      }
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id): MeetingDetailView(meetingID: id)
@@ -172,7 +177,7 @@ struct HomeView: View {
     let sorted = model.lifeLogEntries.sorted { $0.createdAt > $1.createdAt }
 
     let scoped: [LifeLogEntry]
-    if let personID = selectedPersonID {
+    if let personID = selectedPerson?.id {
       let meetingIDs = Set(model.meetings(withPerson: personID).map(\.id))
       scoped = sorted.filter { entry in
         guard let meetingID = entry.meetingID else { return false }

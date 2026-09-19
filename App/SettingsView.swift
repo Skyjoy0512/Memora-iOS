@@ -4,6 +4,9 @@ struct SettingsView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var showsCloseButton = true
+  @AppStorage("memora.transcriptionEngine") private var transcriptionEngine = TranscriptionEngine.automatic
+  @AppStorage("memora.transcriptionLanguage") private var transcriptionLanguage = RecognitionLanguage.japanese
+  @AppStorage("memora.aiEngine") private var aiEngine = AIEngine.automatic
   @State private var isDeleteConfirmationPresented = false
   @State private var isSignOutConfirmationPresented = false
   @State private var isAccountDeletionPresented = false
@@ -76,13 +79,13 @@ struct SettingsView: View {
           NavigationLink {
             SpeechRecognitionSettingsView()
           } label: {
-            LabeledContent("文字起こし", value: "自動 · 日本語")
+            LabeledContent("文字起こし", value: "\(transcriptionEngine.label) · \(transcriptionLanguage.label)")
           }
 
           NavigationLink {
             AISettingsView()
           } label: {
-            LabeledContent("AI整理", value: "自動")
+            LabeledContent("AI整理", value: aiEngine.label)
           }
         } header: {
           Text("処理")
@@ -225,7 +228,7 @@ private struct SpeechRecognitionSettingsView: View {
       if engine.usesCloud {
         Section {
           Picker("プロバイダー", selection: $provider) {
-            ForEach(CloudProvider.allCases) { option in
+            ForEach(CloudProvider.allCases.filter(\.supportsTranscription)) { option in
               Text(option.label).tag(option)
             }
           }
@@ -250,6 +253,11 @@ private struct SpeechRecognitionSettingsView: View {
     .navigationTitle("文字起こし")
     .sheet(isPresented: $isKeySheetPresented) {
       APIKeySheet(provider: provider.label, account: "transcription.\(provider.rawValue)")
+    }
+    .onAppear {
+      if !provider.supportsTranscription {
+        provider = .openAI
+      }
     }
   }
 }
@@ -292,7 +300,7 @@ private struct AISettingsView: View {
       if engine.usesCloud {
         Section {
           Picker("プロバイダー", selection: $provider) {
-            ForEach(CloudProvider.allCases) { option in
+            ForEach(CloudProvider.allCases.filter(\.supportsAI)) { option in
               Text(option.label).tag(option)
             }
           }
@@ -309,6 +317,11 @@ private struct AISettingsView: View {
     .navigationTitle("AI整理")
     .sheet(isPresented: $isAPIKeySheetPresented) {
       APIKeySheet(provider: provider.label, account: "ai.\(provider.rawValue)")
+    }
+    .onAppear {
+      if !provider.supportsAI {
+        provider = .openAI
+      }
     }
   }
 }
