@@ -773,6 +773,16 @@ final class MemoraModel {
 
   func handle(_ url: URL) async {
     guard url.scheme == "memora" else { return }
+
+    if url.host == "meeting" {
+      if let id = UUID(uuidString: url.lastPathComponent) {
+        selectedTab = .files
+        fileSection = .meetingFiles
+        libraryPath = [.meeting(id)]
+      }
+      return
+    }
+
     selectedTab = .files
     libraryPath = []
     if url.host == "capture" {

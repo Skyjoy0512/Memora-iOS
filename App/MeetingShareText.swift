@@ -32,6 +32,10 @@ enum MeetingShareText {
       lines.append(contentsOf: meeting.openQuestions.map { "・\($0)" })
     }
 
+    if let url = MeetingLink.url(for: meeting.id) {
+      lines.append(contentsOf: ["", url.absoluteString])
+    }
+
     lines.append(contentsOf: ["", "Memora で共有"])
     return lines.joined(separator: "\n")
   }

@@ -1,5 +1,6 @@
 import PhotosUI
 import SwiftUI
+import UIKit
 
 struct MeetingDetailView: View {
   @Environment(MemoraModel.self) private var model
@@ -15,6 +16,7 @@ struct MeetingDetailView: View {
   @State private var isSharing = false
   @State private var shareItems: [Any] = []
   @State private var notionMessage: String?
+  @State private var linkMessage: String?
 
   var body: some View {
     Group {
@@ -86,6 +88,9 @@ struct MeetingDetailView: View {
               Button("PDFで共有", systemImage: "doc.richtext") {
                 sharePDF(meeting)
               }
+              Button("リンクをコピー", systemImage: "link") {
+                copyLink(meeting)
+              }
               Button("Notionへ保存", systemImage: "arrow.up.doc") {
                 saveToNotion(meeting)
               }
@@ -115,6 +120,11 @@ struct MeetingDetailView: View {
           Button("OK") { notionMessage = nil }
         } message: {
           Text(notionMessage ?? "")
+        }
+        .alert("共有リンク", isPresented: linkAlertBinding) {
+          Button("OK") { linkMessage = nil }
+        } message: {
+          Text(linkMessage ?? "")
         }
         .confirmationDialog("この会議を削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
           Button("削除", role: .destructive) {
@@ -172,6 +182,19 @@ struct MeetingDetailView: View {
       get: { notionMessage != nil },
       set: { if !$0 { notionMessage = nil } }
     )
+  }
+
+  private var linkAlertBinding: Binding<Bool> {
+    Binding(
+      get: { linkMessage != nil },
+      set: { if !$0 { linkMessage = nil } }
+    )
+  }
+
+  private func copyLink(_ meeting: Meeting) {
+    guard let url = MeetingLink.url(for: meeting.id) else { return }
+    UIPasteboard.general.string = url.absoluteString
+    linkMessage = "共有リンクをコピーしました。Memoraを入れている人は開けます。"
   }
 
   private func sharePDF(_ meeting: Meeting) {
