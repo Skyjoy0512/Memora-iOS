@@ -35,8 +35,21 @@ enum TranscriptionService {
       }
       return .unavailable
 
-    case .onDevice, .cloud:
-      // Whisper downloads and cloud BYOK are not wired yet; the caller falls back.
+    case .cloud:
+      let provider = CloudProvider(
+        rawValue: defaults.string(forKey: "memora.transcriptionProvider") ?? ""
+      ) ?? .openAI
+      if let segments = try? await CloudTranscriptionService.transcribe(
+        fileURL: fileURL,
+        locale: language.locale,
+        provider: provider
+      ) {
+        return .segments(segments)
+      }
+      return .unavailable
+
+    case .onDevice:
+      // Whisper still needs a bundled model; the caller falls back for now.
       return .unavailable
     }
   }

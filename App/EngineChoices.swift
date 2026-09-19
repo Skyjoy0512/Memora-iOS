@@ -25,9 +25,9 @@ enum TranscriptionEngine: String, CaseIterable, Identifiable {
     case .speechAnalyzer:
       "iOS 26以降のSpeechAnalyzerで、音声を外部へ送らず処理します。"
     case .onDevice:
-      "Whisperモデルを端末にダウンロードして使います。"
+      "Whisperはモデルの同梱が必要で、この版では未接続です。"
     case .cloud:
-      "APIキーを使ってクラウドで文字起こしします。"
+      "APIキーを保存すると、選んだプロバイダーで文字起こしします。"
     }
   }
 
@@ -59,9 +59,9 @@ enum AIEngine: String, CaseIterable, Identifiable {
     case .foundation:
       "iOS 26以降のFoundation Modelsで、端末内で整理します。"
     case .local:
-      "ローカルLLMを端末にダウンロードして使います。"
+      "ローカルLLMはモデルの同梱が必要で、この版では未接続です。"
     case .cloud:
-      "APIキーを使ってLLMプロバイダーのAPIを利用します。"
+      "APIキーを保存すると、選んだプロバイダーのAPIで回答します。"
     }
   }
 

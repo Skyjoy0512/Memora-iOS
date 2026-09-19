@@ -241,7 +241,7 @@ private struct SpeechRecognitionSettingsView: View {
     }
     .navigationTitle("文字起こし")
     .sheet(isPresented: $isKeySheetPresented) {
-      APIKeySheet(provider: provider.label)
+      APIKeySheet(provider: provider.label, account: "transcription.\(provider.rawValue)")
     }
   }
 }
@@ -300,7 +300,7 @@ private struct AISettingsView: View {
     }
     .navigationTitle("AI整理")
     .sheet(isPresented: $isAPIKeySheetPresented) {
-      APIKeySheet(provider: provider.label)
+      APIKeySheet(provider: provider.label, account: "ai.\(provider.rawValue)")
     }
   }
 }
@@ -330,7 +330,9 @@ private enum SummaryStyle: String, CaseIterable, Identifiable {
 private struct APIKeySheet: View {
   @Environment(\.dismiss) private var dismiss
   var provider: String
+  var account: String
   @State private var key = ""
+  @State private var hasStoredKey = false
 
   var body: some View {
     NavigationStack {
@@ -341,7 +343,17 @@ private struct APIKeySheet: View {
         } header: {
           Text("\(provider) のAPIキー")
         } footer: {
-          Text("保存後は値を表示しません。削除と置き換えだけができます。")
+          Text("キーチェーンに保存し、設定画面にも再表示しません。")
+        }
+
+        if hasStoredKey {
+          Section {
+            Button("キーを削除", systemImage: "trash", role: .destructive) {
+              KeychainStore.set(nil, forKey: account)
+              hasStoredKey = false
+              dismiss()
+            }
+          }
         }
       }
       .navigationTitle("APIキーを設定")
@@ -351,12 +363,19 @@ private struct APIKeySheet: View {
           Button("キャンセル") { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("安全に保存") { dismiss() }
-            .disabled(key.isEmpty)
+          Button("安全に保存") {
+            KeychainStore.set(key, forKey: account)
+            hasStoredKey = true
+            dismiss()
+          }
+          .disabled(key.trimmingCharacters(in: .whitespaces).isEmpty)
         }
       }
     }
     .presentationDetents([.medium])
+    .onAppear {
+      hasStoredKey = KeychainStore.has(account)
+    }
   }
 }
 

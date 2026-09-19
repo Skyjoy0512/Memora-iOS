@@ -20,8 +20,19 @@ enum AIEngineService {
       }
       return nil
 
-    case .local, .cloud:
-      // Local LLM downloads and BYOK cloud calls are not wired yet.
+    case .cloud:
+      let provider = CloudProvider(
+        rawValue: UserDefaults.standard.string(forKey: "memora.aiProvider") ?? ""
+      ) ?? .openAI
+      return try? await CloudAIService.answer(
+        question: question,
+        scopeLabel: scopeLabel,
+        context: context,
+        provider: provider
+      )
+
+    case .local:
+      // A local LLM still needs a bundled model; fall back for now.
       return nil
     }
   }
