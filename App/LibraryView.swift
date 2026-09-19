@@ -11,25 +11,33 @@ struct LibraryView: View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
-      ScrollView {
-        LazyVStack(alignment: .leading, spacing: 22) {
-          if model.isRecording {
-            ActiveRecordingStrip()
-              .transition(.opacity.combined(with: .move(edge: .top)))
-          }
+      ScrollViewReader { proxy in
+        ScrollView {
+          LazyVStack(alignment: .leading, spacing: 26) {
+            if model.isRecording {
+              ActiveRecordingStrip()
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
 
-          switch model.fileSection {
-          case .meetingFiles:
-            meetingFilesContent
-          case .projects:
-            projectsContent
+            if query.isEmpty {
+              projectsSection
+              filesSection
+            } else {
+              searchResults
+            }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 18)
+          .padding(.bottom, 32)
+          .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isRecording)
+        }
+        // The sidebar's library rows stay useful as jump targets now that both
+        // sections share one screen.
+        .onChange(of: model.fileSection) { _, section in
+          withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+            proxy.scrollTo(section, anchor: .top)
           }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .padding(.bottom, 32)
-        .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isRecording)
-        .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.fileSection)
       }
       .hideBottomBarOnScroll()
       .background(Color(uiColor: .systemBackground))
@@ -37,7 +45,7 @@ struct LibraryView: View {
       .searchable(
         text: $query,
         placement: .navigationBarDrawer(displayMode: .always),
-        prompt: model.fileSection == .meetingFiles ? "ファイルを検索" : "プロジェクトを検索"
+        prompt: "ファイルやプロジェクトを検索"
       )
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
@@ -53,7 +61,9 @@ struct LibraryView: View {
           MeetingDetailView(meetingID: id)
             .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
         case .transcript(let id): TranscriptView(meetingID: id)
-        case .space(let id): SpaceDetailView(spaceID: id)
+        case .space(let id):
+          SpaceDetailView(spaceID: id)
+            .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
         case .allMeetings: AllMeetingsView()
         case .settings: SettingsView()
         case .stateGallery: StateGalleryView()
@@ -62,93 +72,124 @@ struct LibraryView: View {
     }
   }
 
+  private var projectsSection: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      sectionHeader("プロジェクト")
+
+      if matchingSpaces.isEmpty {
+        createProjectPrompt
+      } else {
+        projectsGrid(matchingSpaces)
+      }
+    }
+    .id(FileSection.projects)
+  }
+
+  private var filesSection: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      sectionHeader("ファイル")
+
+      if matchingMeetings.isEmpty {
+        emptyFilesPrompt
+      } else {
+        filesList(matchingMeetings)
+      }
+    }
+    .id(FileSection.meetingFiles)
+  }
+
   @ViewBuilder
-  private var meetingFilesContent: some View {
-    if matchingMeetings.isEmpty {
-      if query.isEmpty {
-        ContentUnavailableView {
-          Label("まだ議事録がありません", systemImage: "doc.text")
-        } description: {
-          Text("録音するか、音声ファイルを読み込むとここに整理されます。")
-        } actions: {
-          Button("議事録を追加", systemImage: "plus") {
-            model.isCaptureSourcePresented = true
-          }
-          .buttonStyle(.borderedProminent)
-        }
+  private var searchResults: some View {
+    if matchingSpaces.isEmpty && matchingMeetings.isEmpty {
+      ContentUnavailableView.search(text: query)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
-      } else {
-        ContentUnavailableView.search(text: query)
-          .frame(maxWidth: .infinity)
-      }
     } else {
-      VStack(alignment: .leading, spacing: 10) {
-        if !query.isEmpty {
-          Text("検索結果")
-            .font(.title2.bold())
-            .memoraTextReveal()
+      VStack(alignment: .leading, spacing: 26) {
+        sectionHeader("検索結果")
+
+        if !matchingSpaces.isEmpty {
+          projectsGrid(matchingSpaces)
         }
 
-        LazyVStack(spacing: 16) {
-          ForEach(matchingMeetings) { meeting in
-            NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
-              MeetingCard(meeting: meeting)
-                .matchedTransitionSource(id: meeting.id, in: heroNamespace)
-            }
-            .buttonStyle(.plain)
-          }
+        if !matchingMeetings.isEmpty {
+          filesList(matchingMeetings)
         }
       }
     }
   }
 
-  @ViewBuilder
-  private var projectsContent: some View {
-    if matchingSpaces.isEmpty {
-      if query.isEmpty {
-        ContentUnavailableView {
-          Label("プロジェクトを作りましょう", systemImage: "folder")
-        } description: {
-          Text("関連する議事録をひとつの場所にまとめられます。")
-        } actions: {
-          Button("プロジェクトを追加", systemImage: "plus") {
-            model.isFileCreationPresented = true
-          }
-          .buttonStyle(.borderedProminent)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
-      } else {
-        ContentUnavailableView.search(text: query)
-          .frame(maxWidth: .infinity)
-      }
-    } else {
-      VStack(alignment: .leading, spacing: 14) {
-        Text(query.isEmpty ? "プロジェクト" : "検索結果")
-          .font(.title2.bold())
-          .memoraTextReveal()
+  private func sectionHeader(_ title: String) -> some View {
+    Text(title)
+      .font(.title2.bold())
+      .memoraTextReveal()
+  }
 
-        LazyVGrid(
-          columns: [
-            GridItem(.flexible(), spacing: 16),
-            GridItem(.flexible(), spacing: 16)
-          ],
-          spacing: 22
-        ) {
-          ForEach(matchingSpaces) { space in
-            NavigationLink(value: LibraryRoute.space(space.id)) {
-              ProjectFolderTile(
-                space: space,
-                meetingCount: meetingCount(for: space.id),
-                symbols: recentSymbols(for: space.id)
-              )
-            }
-            .buttonStyle(.plain)
-          }
+  private func projectsGrid(_ spaces: [MemoraSpace]) -> some View {
+    LazyVGrid(
+      columns: [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+      ],
+      spacing: 22
+    ) {
+      ForEach(spaces) { space in
+        NavigationLink(value: LibraryRoute.space(space.id)) {
+          ProjectFolderTile(
+            space: space,
+            meetingCount: meetingCount(for: space.id),
+            symbols: recentSymbols(for: space.id)
+          )
+          .matchedTransitionSource(id: space.id, in: heroNamespace)
         }
+        .buttonStyle(.plain)
       }
     }
+  }
+
+  private func filesList(_ meetings: [Meeting]) -> some View {
+    LazyVStack(spacing: 16) {
+      ForEach(meetings) { meeting in
+        NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
+          MeetingCard(meeting: meeting)
+            .matchedTransitionSource(id: meeting.id, in: heroNamespace)
+        }
+        .buttonStyle(.plain)
+      }
+    }
+  }
+
+  private var createProjectPrompt: some View {
+    Button {
+      model.isFileCreationPresented = true
+    } label: {
+      HStack(spacing: 10) {
+        Image(systemName: "plus")
+        Text("プロジェクトを作成")
+        Spacer()
+      }
+      .font(.subheadline.weight(.medium))
+      .foregroundStyle(.primary)
+      .padding(14)
+      .frame(maxWidth: .infinity)
+      .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+    .buttonStyle(.plain)
+  }
+
+  private var emptyFilesPrompt: some View {
+    ContentUnavailableView {
+      Label("まだファイルがありません", systemImage: "doc.text")
+    } description: {
+      Text("録音するか、音声ファイルを読み込むとここに整理されます。")
+    } actions: {
+      Button("議事録を追加", systemImage: "plus") {
+        model.isCaptureSourcePresented = true
+      }
+      .buttonStyle(.borderedProminent)
+    }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 24)
   }
 
   private var matchingMeetings: [Meeting] {

@@ -48,7 +48,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
 
         content()
           // A thin blur reads as depth without dimming the screen.
-          .blur(radius: 3 * progress)
+          .blur(radius: 1.5 * progress)
           .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
           .overlay {
             if progress > 0 {
