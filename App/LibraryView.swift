@@ -11,37 +11,15 @@ struct LibraryView: View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
-      VStack(spacing: 0) {
-        if !model.isLibraryChromeHidden {
-          Picker("表示", selection: $model.fileSection) {
-            ForEach(FileSection.allCases) { section in
-              Text(section.title).tag(section)
-            }
-          }
-          .pickerStyle(.segmented)
-          .padding(.horizontal, 18)
-          .padding(.top, 8)
-          .padding(.bottom, 10)
-          .transition(.opacity.combined(with: .move(edge: .top)))
-        }
-
-        if model.isRecording {
-          ActiveRecordingStrip()
-            .padding(.horizontal, 18)
-            .padding(.bottom, 10)
-            .transition(.opacity.combined(with: .move(edge: .top)))
-        }
-
-        // Only the control and the sidebar switch sections: a horizontal page
-        // swipe fought the cards' swipe-to-delete.
-        switch model.fileSection {
-        case .meetingFiles:
-          filesPage
-        case .projects:
-          projectsPage
-        }
+      // The section switch lives inside the scroll content so it moves out of
+      // the way as you read, and the list stays the screen's own scroll view so
+      // the title and search bar collapse the way the system expects.
+      switch model.fileSection {
+      case .meetingFiles:
+        filesPage
+      case .projects:
+        projectsPage
       }
-      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isLibraryChromeHidden)
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ファイル")
       .searchable(
@@ -49,8 +27,6 @@ struct LibraryView: View {
         placement: .navigationBarDrawer(displayMode: .automatic),
         prompt: "ファイルやプロジェクトを検索"
       )
-      // The whole top bar steps aside while reading down the list.
-      .toolbar(model.isLibraryChromeHidden ? .hidden : .visible, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           Button("メニュー", systemImage: "line.3.horizontal") {
@@ -73,6 +49,28 @@ struct LibraryView: View {
         case .stateGallery: StateGalleryView()
         }
       }
+    }
+  }
+
+  /// The section switch and the live recording strip, as the first rows of the
+  /// list so they scroll away with it.
+  @ViewBuilder
+  private var listHeaderRows: some View {
+    Picker("表示", selection: $model.fileSection) {
+      ForEach(FileSection.allCases) { section in
+        Text(section.title).tag(section)
+      }
+    }
+    .pickerStyle(.segmented)
+    .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 10, trailing: 18))
+    .listRowSeparator(.hidden)
+    .listRowBackground(Color.clear)
+
+    if model.isRecording {
+      ActiveRecordingStrip()
+        .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 10, trailing: 18))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
   }
 
