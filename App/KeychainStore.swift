@@ -11,26 +11,46 @@ enum KeychainStore {
   /// A key mapped to its value, or to `nil` when it is known to be absent.
   private static var cache: [String: String?] = [:]
 
-  static func set(_ value: String?, forKey key: String) {
+  /// Writes a secret. The in-memory cache is only updated once the keychain
+  /// write succeeded, so a failed save never looks like a success.
+  @discardableResult
+  static func set(_ value: String?, forKey key: String) -> Bool {
     let stored = (value?.isEmpty == false) ? value : nil
-
-    lock.lock()
-    cache[key] = stored
-    lock.unlock()
 
     let base: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
       kSecAttrAccount as String: key
     ]
-    SecItemDelete(base as CFDictionary)
 
-    guard let stored, let data = stored.data(using: .utf8) else { return }
+    let succeeded: Bool
 
-    var attributes = base
-    attributes[kSecValueData as String] = data
-    attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-    SecItemAdd(attributes as CFDictionary, nil)
+    if let stored, let data = stored.data(using: .utf8) {
+      // Update in place so a failure leaves the previous secret untouched.
+      let updateStatus = SecItemUpdate(
+        base as CFDictionary,
+        [kSecValueData as String: data] as CFDictionary
+      )
+
+      if updateStatus == errSecItemNotFound {
+        var attributes = base
+        attributes[kSecValueData as String] = data
+        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        succeeded = SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
+      } else {
+        succeeded = updateStatus == errSecSuccess
+      }
+    } else {
+      let deleteStatus = SecItemDelete(base as CFDictionary)
+      succeeded = deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound
+    }
+
+    guard succeeded else { return false }
+
+    lock.lock()
+    cache[key] = stored
+    lock.unlock()
+    return true
   }
 
   static func string(forKey key: String) -> String? {

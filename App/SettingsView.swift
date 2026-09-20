@@ -168,6 +168,7 @@ struct SettingsView: View {
           Button("すべて空にしてEmptyを確認", systemImage: "tray", role: .destructive) {
             isDeleteConfirmationPresented = true
           }
+          #endif
         }
 
         if model.isSignedIn {

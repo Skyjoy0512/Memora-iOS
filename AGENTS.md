@@ -29,7 +29,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 ## Known gaps (not bugs to fix silently)
 
-- A recording in progress has no discard path: closing the capture sheet keeps
-  recording, and `MemoraModel.cancelCapture()` is defined but not wired to any UI.
 - Cloud storage, MCP, Google Drive, on-device Whisper and local LLM are
-  preferences only; the services behind them are not implemented.
+  preferences only; the services behind them are not implemented. The app says
+  so rather than returning sample results.
+- Recording, transcription and summarization never fill in sample content: when
+  no engine can run, the record keeps its audio and shows the failure with a
+  retry.
+- Sign-in and purchase are still prototype flows (a local account object and a
+  local subscription flag); there is no auth or StoreKit behind them yet.
+- Backlog and phase status live in `docs/IMPROVEMENT_BACKLOG.md` and
+  `docs/OPENCODE_IMPLEMENTATION.md`.

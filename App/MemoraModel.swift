@@ -172,6 +172,10 @@ final class MemoraModel {
 
   // MARK: - Onboarding and account
 
+  func dismissLoadFailure() {
+    loadFailureMessage = nil
+  }
+
   func completeOnboarding() {
     hasCompletedOnboarding = true
     UserDefaults.standard.set(true, forKey: StorageKey.hasCompletedOnboarding)

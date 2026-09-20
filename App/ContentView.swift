@@ -71,6 +71,36 @@ struct ContentView: View {
     } message: {
       Text(model.importErrorMessage ?? "別の音声ファイルをお試しください。")
     }
+    .alert("保存データを読み込めませんでした", isPresented: loadFailureBinding) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(model.loadFailureMessage ?? "")
+    }
+    .alert("ファイルを削除できませんでした", isPresented: deletionFailureBinding) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(model.deletionFailureMessage ?? "")
+    }
+  }
+
+  private var loadFailureBinding: Binding<Bool> {
+    Binding {
+      model.loadFailureMessage != nil
+    } set: { isPresented in
+      if !isPresented {
+        model.dismissLoadFailure()
+      }
+    }
+  }
+
+  private var deletionFailureBinding: Binding<Bool> {
+    Binding {
+      model.deletionFailureMessage != nil
+    } set: { isPresented in
+      if !isPresented {
+        model.deletionFailureMessage = nil
+      }
+    }
   }
 
   private var recordingErrorBinding: Binding<Bool> {
