@@ -19,35 +19,35 @@ enum SummaryTemplateCatalog {
       title: "振り返り（KPT）",
       detail: "続けたいこと・課題・次の試みで整理",
       symbol: "arrow.triangle.2.circlepath",
-      lead: "振り返りとして、続けたいこと・課題・次の試みの観点で整理しました。"
+      lead: "振り返り（続けたいこと・課題・次の試み）"
     ),
     SummaryMarketTemplate(
       id: "market.oneOnOne",
       title: "1on1",
       detail: "本人の状態と次の一歩に絞って整理",
       symbol: "person.2",
-      lead: "1on1として、本人の状態と次にすることに絞って整理しました。"
+      lead: "1on1（本人の状態と次の一歩）"
     ),
     SummaryMarketTemplate(
       id: "market.sales",
       title: "商談",
       detail: "顧客の要望と次の一手に絞って整理",
       symbol: "briefcase",
-      lead: "商談として、顧客の要望と次の一手に絞って整理しました。"
+      lead: "商談（顧客の要望と次の一手）"
     ),
     SummaryMarketTemplate(
       id: "market.decisionLog",
       title: "決定ログ",
       detail: "決めたことと理由を中心に残す",
       symbol: "checkmark.seal",
-      lead: "決定ログとして、決めたこととその理由を中心に残しました。"
+      lead: "決定ログ（決めたことと理由）"
     ),
     SummaryMarketTemplate(
       id: "market.standup",
       title: "デイリー",
       detail: "進捗と止まっている点を短く整理",
       symbol: "clock",
-      lead: "デイリーとして、進捗と止まっている点を短く整理しました。"
+      lead: "デイリー（進捗と止まっている点）"
     )
   ]
 
@@ -112,7 +112,7 @@ enum SummaryTemplateChoice: Hashable, Identifiable {
         "次の文字起こしから、担当と次にすることを中心に日本語でまとめてください。記録に無いことは書かないでください。"
       }
     case .market(let template):
-      "\(template.lead) 次の文字起こしをその観点で日本語で簡潔にまとめてください。記録に無いことは書かないでください。"
+      "次の文字起こしを、\(template.lead)の観点で日本語で簡潔にまとめてください。記録に無いことは書かないでください。"
     }
   }
 

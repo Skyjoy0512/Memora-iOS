@@ -67,6 +67,11 @@ final class MemoraModel {
   var isImporting = false
   var importProgress = 0.0
   var importErrorMessage: String?
+  /// Set when stored data exists but could not be read. The data is kept aside
+  /// rather than overwritten with samples.
+  private(set) var loadFailureMessage: String?
+  /// Set when a media file that should have been removed could not be.
+  var deletionFailureMessage: String?
   var account: MemoraAccount?
   var isAuthPresented = false
   var isPaywallPresented = false
@@ -737,12 +742,23 @@ final class MemoraModel {
   }
 
   func deleteMeeting(_ id: UUID) {
+    // Stop anything still being generated for this record, and drop its audio
+    // once the record itself is gone.
+    let audioURL = meeting(id: id)?.audioURL
+    processingTasks[id]?.cancel()
+    processingTasks[id] = nil
+    processingRevisions[id] = nil
+
     meetings.removeAll { $0.id == id }
     persistMeetings()
     tasks.removeAll { $0.meetingID == id }
     persistTasks()
     lifeLogEntries.removeAll { $0.meetingID == id }
     persistLifeLog()
+
+    if !MediaFiles.delete(audioURL) {
+      deletionFailureMessage = "会議の音声ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
+    }
   }
 
   func addMeetingPhoto(_ id: UUID, data: Data) {
