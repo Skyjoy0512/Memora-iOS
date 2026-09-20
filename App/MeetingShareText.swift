@@ -32,9 +32,8 @@ enum MeetingShareText {
       lines.append(contentsOf: meeting.openQuestions.map { "・\($0)" })
     }
 
-    if let url = MeetingLink.url(for: meeting.id) {
-      lines.append(contentsOf: ["", url.absoluteString])
-    }
+    // A `memora://` link only resolves on the device that holds the record, so
+    // it is not added to shared text as if others could open it.
 
     lines.append(contentsOf: ["", "Memora で共有"])
     return lines.joined(separator: "\n")

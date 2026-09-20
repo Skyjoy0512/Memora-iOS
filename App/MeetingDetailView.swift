@@ -195,7 +195,7 @@ struct MeetingDetailView: View {
   private func copyLink(_ meeting: Meeting) {
     guard let url = MeetingLink.url(for: meeting.id) else { return }
     UIPasteboard.general.string = url.absoluteString
-    statusAlert = StatusAlert(title: "共有リンク", message: "共有リンクをコピーしました。Memoraを入れている人は開けます。")
+    statusAlert = StatusAlert(title: "この端末の記録へのリンク", message: "コピーしました。このリンクは、この端末のMemoraでのみ開けます。")
   }
 
   private func sharePDF(_ meeting: Meeting) {

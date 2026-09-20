@@ -51,9 +51,7 @@ struct SettingsView: View {
         } header: {
           Text("アカウント")
         } footer: {
-          Text(model.isSignedIn
-               ? "会議とタスクを同じアカウントの端末で同期します。"
-               : "サインインしなくても録音とローカル文字起こしを試せます。同期が必要になった時に接続できます。")
+          Text("同期とアカウントはまだ接続されていません。録音と整理は、このiPhoneの中で使えます。")
         }
 
         Section {
@@ -70,9 +68,7 @@ struct SettingsView: View {
         } header: {
           Text("プラン")
         } footer: {
-          Text(model.isSubscribed
-               ? "高度なAI整理を制限なく利用できます。"
-               : "あと4回、高度なAI整理を利用できます。")
+          Text("購入と利用回数の管理はまだ接続されていません。")
         }
 
         Section {

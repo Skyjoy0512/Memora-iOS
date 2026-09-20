@@ -79,7 +79,7 @@ struct PaywallView: View {
                   .controlSize(.small)
                   .tint(Color(uiColor: .systemBackground))
               }
-              Text("7日間無料で試す")
+              Text("購入は準備中")
                 .font(.headline)
             }
             Text(plan.priceLine)
@@ -97,7 +97,7 @@ struct PaywallView: View {
         .disabled(isPurchasing)
         .sensoryFeedback(.success, trigger: model.isSubscribed)
 
-        Text("無料期間終了の24時間前までにキャンセルすれば料金はかかりません。")
+        Text("購入・無料期間・復元はまだ接続されていません。")
           .font(.caption2)
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
@@ -160,9 +160,9 @@ private enum SubscriptionPlan: String, CaseIterable, Identifiable {
   var priceLine: String {
     switch self {
     case .annual:
-      "その後 年額 ¥8,800"
+      "価格は未定（準備中）"
     case .monthly:
-      "その後 月額 ¥880"
+      "価格は未定（準備中）"
     }
   }
 }
