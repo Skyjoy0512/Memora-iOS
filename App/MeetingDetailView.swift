@@ -310,7 +310,7 @@ struct MeetingDetailView: View {
       .memoraTextReveal(delay: 0.04)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.horizontal, 24)
+    .padding(.horizontal, 16)
     .padding(.vertical, 24)
     .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     .memoraAppear()

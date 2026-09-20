@@ -49,6 +49,10 @@ final class MemoraModel {
   var isDetailComposerVisible = true
   /// Bumped by a screen to ask the focused composer to put the keyboard away.
   var composerDismissRequests = 0
+  /// How many inline editors are open. The Ask AI field steps aside while the
+  /// keyboard belongs to the document being edited.
+  var inlineEditingCount = 0
+  var isInlineEditing: Bool { inlineEditingCount > 0 }
   /// The engine the Ask AI composer asks with.
   var aiModel: AIModel = .standard {
     didSet {

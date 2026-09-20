@@ -9,6 +9,7 @@ struct MemoraApp: App {
       ContentView()
         .environment(model)
         .tint(.accentColor)
+        .dismissKeyboardOnOutsideTap()
         .onOpenURL { url in
           Task {
             await model.handle(url)

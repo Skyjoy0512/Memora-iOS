@@ -130,6 +130,7 @@ struct RootTabView: View {
     .padding(.bottom, isKeyboardVisible ? 14 : safeAreaInsets.bottom)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isBottomBarHidden)
   }
@@ -221,7 +222,8 @@ struct RootTabView: View {
   }
 
   private var shouldShowComposer: Bool {
-    !isShowingMeetingDetail || model.isDetailComposerVisible
+    // The Ask AI field steps aside while a document field holds the keyboard.
+    !model.isInlineEditing && (!isShowingMeetingDetail || model.isDetailComposerVisible)
   }
 
   private var isShowingMeetingDetail: Bool {
