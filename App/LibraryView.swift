@@ -76,6 +76,8 @@ struct LibraryView: View {
 
   private var filesPage: some View {
     List {
+      listHeaderRows
+
       if matchingMeetings.isEmpty {
         Group {
           if query.isEmpty {
@@ -130,12 +132,22 @@ struct LibraryView: View {
     .listStyle(.plain)
     .scrollContentBackground(.hidden)
     .hideBottomBarOnScroll()
-    .hideTopChromeOnScroll()
   }
 
   private var projectsPage: some View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 22) {
+        Picker("表示", selection: $model.fileSection) {
+          ForEach(FileSection.allCases) { section in
+            Text(section.title).tag(section)
+          }
+        }
+        .pickerStyle(.segmented)
+
+        if model.isRecording {
+          ActiveRecordingStrip()
+        }
+
         if matchingSpaces.isEmpty {
           Group {
             if query.isEmpty {
@@ -155,7 +167,6 @@ struct LibraryView: View {
       .padding(.bottom, 32)
     }
     .hideBottomBarOnScroll()
-    .hideTopChromeOnScroll()
   }
 
   private func projectsGrid(_ spaces: [MemoraSpace]) -> some View {
