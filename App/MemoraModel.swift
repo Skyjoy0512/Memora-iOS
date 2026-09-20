@@ -594,6 +594,7 @@ final class MemoraModel {
           meeting.summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
           meeting.status = .ready
         }
+        self.offerPlusIfNeeded()
       } else {
         self.updateMeeting(id) {
           $0.status = .failed("要約を生成できませんでした。AIエンジンとキーを確認して再試行してください。")
