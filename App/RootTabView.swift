@@ -105,7 +105,7 @@ struct RootTabView: View {
         QuickAIComposer(
           scope: composerScope,
           isComposing: $isComposing,
-          focusRequest: model.selectedTab == .askAI
+          keepsFocusAfterSubmit: model.selectedTab == .askAI
         )
         .id(composerScope)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
