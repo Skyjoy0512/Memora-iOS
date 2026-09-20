@@ -5,8 +5,10 @@ struct AllMeetingsView: View {
   @State private var query = ""
 
   var body: some View {
+    let meetings = filteredMeetings
+
     List {
-      ForEach(filteredMeetings) { meeting in
+      ForEach(meetings) { meeting in
         NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
           MeetingRow(meeting: meeting, showsDisclosure: false)
         }
@@ -18,11 +20,11 @@ struct AllMeetingsView: View {
       }
     }
     .listStyle(.plain)
-    .animation(.smooth, value: filteredMeetings)
+    .animation(.smooth, value: meetings.map(\.id))
     .navigationTitle("すべての会話")
     .searchable(text: $query, prompt: "タイトル、発言、決定、タスク")
     .overlay {
-      if filteredMeetings.isEmpty {
+      if meetings.isEmpty {
         ContentUnavailableView.search(text: query)
       }
     }
@@ -30,10 +32,8 @@ struct AllMeetingsView: View {
 
   private var filteredMeetings: [Meeting] {
     guard !query.isEmpty else { return model.meetings }
-    return model.meetings.filter { meeting in
-      meeting.title.localizedCaseInsensitiveContains(query)
-        || meeting.summary.localizedCaseInsensitiveContains(query)
-        || meeting.transcript.contains { $0.text.localizedCaseInsensitiveContains(query) }
+    return model.meetings.filter {
+      model.searchText(for: $0).localizedCaseInsensitiveContains(query)
     }
   }
 }

@@ -244,9 +244,7 @@ struct LibraryView: View {
   }
 
   private func matchesQuery(_ meeting: Meeting) -> Bool {
-    meeting.title.localizedCaseInsensitiveContains(query)
-      || meeting.summary.localizedCaseInsensitiveContains(query)
-      || meeting.transcript.contains { $0.text.localizedCaseInsensitiveContains(query) }
+    model.searchText(for: meeting).localizedCaseInsensitiveContains(query)
   }
 
   private func meetingCount(for spaceID: UUID) -> Int {

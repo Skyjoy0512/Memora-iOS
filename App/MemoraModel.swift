@@ -13,7 +13,10 @@ final class MemoraModel {
   var isSettingsPresented = false
   var isBottomBarHidden = false
   var meetings: [Meeting] {
-    didSet { meetingIndex.invalidate() }
+    didSet {
+      meetingIndex.invalidate()
+      meetingSearchTexts.removeAll(keepingCapacity: true)
+    }
   }
   var spaces: [MemoraSpace] {
     didSet { spaceIndex.invalidate() }
@@ -27,6 +30,7 @@ final class MemoraModel {
   }
   /// Positions for the array lookups the screens do constantly.
   @ObservationIgnored private var meetingIndex = IdentifiableIndex<Meeting>()
+  @ObservationIgnored private var meetingSearchTexts: [UUID: MeetingSearchText] = [:]
   @ObservationIgnored private var spaceIndex = IdentifiableIndex<MemoraSpace>()
   @ObservationIgnored private var personIndex = IdentifiableIndex<Person>()
   /// Marketplace summary templates the person has added.
@@ -232,6 +236,28 @@ final class MemoraModel {
 
   func meeting(id: UUID) -> Meeting? {
     meetingIndex.element(id, in: meetings)
+  }
+
+  /// The text a meeting is matched against while searching. It is joined once
+  /// and reused, so typing does not rebuild every transcript on each keystroke.
+  /// `includingSections` adds the extracted decisions, as the Ask AI search does.
+  func searchText(for meeting: Meeting, includingSections: Bool = false) -> String {
+    if let cached = meetingSearchTexts[meeting.id] {
+      return includingSections ? cached.extended : cached.core
+    }
+
+    let transcript = meeting.transcript.map(\.text)
+    let core = ([meeting.title, meeting.summary] + transcript).joined(separator: "\n")
+    let extended = ([meeting.title, meeting.summary] + meeting.decisions + transcript)
+      .joined(separator: "\n")
+
+    meetingSearchTexts[meeting.id] = MeetingSearchText(core: core, extended: extended)
+    return includingSections ? extended : core
+  }
+
+  private struct MeetingSearchText {
+    var core: String
+    var extended: String
   }
 
   func space(id: UUID) -> MemoraSpace? {
