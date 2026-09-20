@@ -17,8 +17,8 @@ struct Meeting: Identifiable, Hashable, Codable {
   var notes = ""
   /// People tagged on this recording.
   var participantIDs: [UUID]? = nil
-  /// Small JPEGs attached to the record.
-  var photoData: [Data]? = nil
+  /// File names of the photos attached to the record, inside the media folder.
+  var photoFileNames: [String]? = nil
 }
 
 extension Meeting {
@@ -38,6 +38,8 @@ extension Meeting {
     case audioURL
     case notes
     case participantIDs
+    case photoFileNames
+    /// Legacy: photos used to be stored inline in the record.
     case photoData
   }
 
@@ -57,7 +59,17 @@ extension Meeting {
     spaceID = try container.decodeIfPresent(UUID.self, forKey: .spaceID)
     notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
     participantIDs = try container.decodeIfPresent([UUID].self, forKey: .participantIDs)
-    photoData = try container.decodeIfPresent([Data].self, forKey: .photoData)
+
+    // Photos moved out of the record and into the media folder; older records
+    // carry the bytes inline and are written out the first time they are read.
+    if let names = try container.decodeIfPresent([String].self, forKey: .photoFileNames) {
+      photoFileNames = names.isEmpty ? nil : names
+    } else if let legacy = try container.decodeIfPresent([Data].self, forKey: .photoData), !legacy.isEmpty {
+      let names = legacy.compactMap { MediaFiles.writePhoto($0) }
+      photoFileNames = names.isEmpty ? nil : names
+    } else {
+      photoFileNames = nil
+    }
 
     // Stored as a path relative to the media folder since 2.x; older records
     // hold an absolute path, which is only kept when it resolves to a file the
@@ -85,7 +97,7 @@ extension Meeting {
     try container.encodeIfPresent(spaceID, forKey: .spaceID)
     try container.encode(notes, forKey: .notes)
     try container.encodeIfPresent(participantIDs, forKey: .participantIDs)
-    try container.encodeIfPresent(photoData, forKey: .photoData)
+    try container.encodeIfPresent(photoFileNames, forKey: .photoFileNames)
 
     if let audioURL, let reference = MediaFiles.reference(for: audioURL) {
       try container.encode(reference, forKey: .audioURL)

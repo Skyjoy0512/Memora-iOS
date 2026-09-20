@@ -999,6 +999,9 @@ final class MemoraModel {
     let record = trashedRecords.remove(at: index)
     persistTrash()
 
+    for name in record.meeting.photoFileNames ?? [] {
+      MediaFiles.deletePhoto(name)
+    }
     if !MediaFiles.delete(record.meeting.audioURL) {
       deletionFailureMessage = "音声ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
     }
@@ -1011,6 +1014,9 @@ final class MemoraModel {
     guard !expired.isEmpty else { return }
 
     for record in expired {
+      for name in record.meeting.photoFileNames ?? [] {
+        MediaFiles.deletePhoto(name)
+      }
       MediaFiles.delete(record.meeting.audioURL)
     }
     trashedRecords.removeAll { $0.deletedAt < cutoff }
@@ -1021,20 +1027,33 @@ final class MemoraModel {
     persistInBackground(trashedRecords, forKey: StorageKey.trash)
   }
 
+  /// The photos attached to a record, read back from the media folder.
+  func meetingPhotos(_ id: UUID) -> [Data] {
+    (meeting(id: id)?.photoFileNames ?? []).compactMap { MediaFiles.photoData($0) }
+  }
+
   func addMeetingPhoto(_ id: UUID, data: Data) {
+    guard let name = MediaFiles.writePhoto(data) else {
+      persistenceFailureMessage = "写真を保存できませんでした。ストレージの空き容量を確認してください。"
+      return
+    }
     updateMeeting(id) { meeting in
-      var photos = meeting.photoData ?? []
-      photos.append(data)
-      meeting.photoData = photos
+      var names = meeting.photoFileNames ?? []
+      names.append(name)
+      meeting.photoFileNames = names
     }
   }
 
   func removeMeetingPhoto(_ id: UUID, index: Int) {
+    var removed: String?
     updateMeeting(id) { meeting in
-      var photos = meeting.photoData ?? []
-      guard photos.indices.contains(index) else { return }
-      photos.remove(at: index)
-      meeting.photoData = photos.isEmpty ? nil : photos
+      var names = meeting.photoFileNames ?? []
+      guard names.indices.contains(index) else { return }
+      removed = names.remove(at: index)
+      meeting.photoFileNames = names.isEmpty ? nil : names
+    }
+    if let removed {
+      MediaFiles.deletePhoto(removed)
     }
   }
 

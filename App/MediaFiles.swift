@@ -42,6 +42,49 @@ enum MediaFiles {
     return candidate
   }
 
+  /// The folder photos are stored in.
+  static var photosDirectory: URL {
+    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("Photos", isDirectory: true)
+  }
+
+  /// Writes a photo and returns the file name to store on the record.
+  static func writePhoto(_ data: Data) -> String? {
+    let name = "\(UUID().uuidString).jpg"
+    let url = photosDirectory.appendingPathComponent(name)
+    do {
+      try FileManager.default.createDirectory(at: photosDirectory, withIntermediateDirectories: true)
+      try data.write(to: url, options: .atomic)
+      return name
+    } catch {
+      return nil
+    }
+  }
+
+  /// Resolves a stored photo file name, refusing anything outside the folder.
+  static func photoURL(_ name: String) -> URL? {
+    let root = photosDirectory.standardizedFileURL
+    let url = root.appendingPathComponent(name).standardizedFileURL
+    return url.path.hasPrefix(root.path) ? url : nil
+  }
+
+  static func photoData(_ name: String) -> Data? {
+    guard let url = photoURL(name) else { return nil }
+    return try? Data(contentsOf: url)
+  }
+
+  @discardableResult
+  static func deletePhoto(_ name: String) -> Bool {
+    guard let url = photoURL(name) else { return true }
+    guard FileManager.default.fileExists(atPath: url.path) else { return true }
+    do {
+      try FileManager.default.removeItem(at: url)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   /// Deletes a file the app manages. Returns false when a file that should have
   /// been removed could not be, so the caller can tell the person.
   @discardableResult

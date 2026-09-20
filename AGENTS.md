@@ -10,7 +10,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   optimise and refactor code without altering what is on screen.
 - Build after every change and keep the working tree committed.
 - Records live in the SQLite store (`App/LocalStore.swift`); only settings belong
-  in `UserDefaults`. Audio is referenced relative to `App/MediaFiles.swift`.
+  in `UserDefaults`. Audio and photos are files under the app container, referenced
+  from a record by name (`App/MediaFiles.swift`); never inline the bytes again.
 - One type per file; comments explain why, not what; prefer `var` for stored
   properties in structs; no `#Preview` or `PreviewProvider`.
 

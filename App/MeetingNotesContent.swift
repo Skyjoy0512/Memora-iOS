@@ -9,7 +9,7 @@ struct MeetingNotesContent: View {
   @State private var editingPhoto: PhotoEditRequest?
 
   var body: some View {
-    let photos = model.meeting(id: meetingID)?.photoData ?? []
+    let photos = model.meetingPhotos(meetingID)
     let noteText = model.meeting(id: meetingID)?.notes ?? ""
 
     VStack(alignment: .leading, spacing: 14) {
