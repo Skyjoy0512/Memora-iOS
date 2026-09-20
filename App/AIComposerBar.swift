@@ -223,7 +223,7 @@ struct AIComposerBar: View {
         .contentTransition(.symbolEffect(.replace))
     }
     .buttonStyle(.plain)
-    .disabled(isBusy)
+    .disabled(isBusy || (!canSend && model.isRecording))
     .accessibilityLabel(actionLabel)
   }
 
@@ -234,6 +234,7 @@ struct AIComposerBar: View {
 
   private var actionLabel: String {
     if canSend { return "送信" }
+    if model.isRecording { return "録音中は音声入力を使用できません" }
     return speechInput.isListening ? "音声入力を停止" : "音声で入力"
   }
 
@@ -260,6 +261,12 @@ struct AIComposerBar: View {
   }
 
   private func toggleSpeechInput() {
+    // A recording owns the shared audio session, so voice input waits its turn
+    // rather than stopping the recording.
+    guard !model.isRecording else {
+      speechInput.refuse("録音中は音声入力を使用できません。録音を終えてからお試しください。")
+      return
+    }
     Task {
       await speechInput.toggle { transcript in
         text = transcript

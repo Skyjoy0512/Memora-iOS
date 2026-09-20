@@ -45,6 +45,12 @@ final class SpeechInputService {
     errorMessage = nil
   }
 
+  /// Explains why voice input is not available without touching the audio
+  /// session — used while a recording owns it.
+  func refuse(_ reason: String) {
+    errorMessage = reason
+  }
+
   private func start(transcriptChanged: @escaping @MainActor (String) -> Void) async {
     errorMessage = nil
 

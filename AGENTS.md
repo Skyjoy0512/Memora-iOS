@@ -37,6 +37,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - Recording, transcription and summarization never fill in sample content: when
   no engine can run, the record keeps its audio and shows the failure with a
   retry.
+- A recording in progress keeps a draft; if the app stops, the audio is recovered
+  as its own record and is never re-recorded automatically. Voice input is
+  refused (with a reason) while a recording owns the audio session.
 - Sign-in and purchase are not connected: the screens say so, and no local
   account or subscription flag is set from them. `MemoraAccount` and
   `startSubscription()` stay in the model for a later phase.

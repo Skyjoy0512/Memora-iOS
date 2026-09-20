@@ -57,6 +57,11 @@ final class MemoraModel {
   var isOnlineMeetingCapturePresented = false
   var isRecording = false
   var isRecordingPaused = false
+  /// True while permission is being asked for and the recorder is starting, so
+  /// repeated taps cannot begin two recordings.
+  private(set) var isPreparingCapture = false
+  /// True while a recording is being finished and stored.
+  private(set) var isSavingCapture = false
   var recordingElapsed: TimeInterval = 0
   /// Smoothed 0...1 loudness for the recording glow.
   var recordingLevel: Double = 0
@@ -115,6 +120,8 @@ final class MemoraModel {
   @ObservationIgnored private var processingRevisions: [UUID: Int] = [:]
   /// Records whose processing was still running the last time the app stopped.
   @ObservationIgnored private var interruptedJobIDs: [String] = []
+  /// What a recording in progress would need to be recovered after a stop.
+  @ObservationIgnored private var recordingDraft: RecordingDraft?
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
   @ObservationIgnored private var pendingMeetingNavigationID: UUID?
   @ObservationIgnored private let recorder = AudioRecorderService()
@@ -170,6 +177,9 @@ final class MemoraModel {
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: sample.tasks)
     people = load([Person].self, forKey: StorageKey.people, fallback: SampleContent.makePeople())
     interruptedJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
+    if let draftData = storedData(forKey: StorageKey.recordingDraft) {
+      recordingDraft = try? JSONDecoder().decode(RecordingDraft.self, from: draftData)
+    }
 
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = [
@@ -189,6 +199,10 @@ final class MemoraModel {
     // Anything that was mid-processing when the app stopped is offered for
     // retry instead of looking stuck forever.
     recoverInterruptedJobs()
+
+    // A recording that was cut off by a stop is recovered as its own record,
+    // never re-recorded.
+    Task { await recoverRecordingDraft() }
   }
 
   /// Marks records whose processing was interrupted by a stop or a crash, so the
@@ -229,6 +243,85 @@ final class MemoraModel {
 
   private func persistInterruptedJobs() {
     persistInBackground(interruptedJobIDs, forKey: StorageKey.activeJobs)
+  }
+
+  // MARK: - Recording recovery
+
+  /// The minimum needed to bring back a recording the app did not get to save.
+  private struct RecordingDraft: Codable {
+    var fileName: String
+    var title: String
+    var note: String
+    var startedAt: Date
+  }
+
+  /// Writes what a running recording would need if the app stopped now.
+  private func persistRecordingDraft() {
+    guard let recordingDraft else {
+      try? LocalStore.shared.remove(StorageKey.recordingDraft)
+      return
+    }
+    persistInBackground(recordingDraft, forKey: StorageKey.recordingDraft)
+  }
+
+  /// Brings back a recording that was interrupted: its audio becomes a record
+  /// awaiting transcription, or, when no audio survived, the note becomes a
+  /// memo. Recording is never restarted on its own.
+  private func recoverRecordingDraft() async {
+    guard let draft = recordingDraft else { return }
+    recordingDraft = nil
+    persistRecordingDraft()
+
+    let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    let note = draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard let audioURL = MediaFiles.resolve(draft.fileName) else {
+      if !note.isEmpty {
+        addLifeLogEntry(
+          kind: .memo,
+          title: title.isEmpty ? "復旧したメモ" : title,
+          summary: note,
+          createdAt: draft.startedAt,
+          photoData: nil,
+          eventDate: nil,
+          locationName: nil
+        )
+      }
+      return
+    }
+
+    let duration = await MediaFiles.duration(of: audioURL) ?? 1
+    var meeting = Meeting(
+      id: UUID(),
+      title: title.isEmpty ? "復旧した録音" : title,
+      createdAt: draft.startedAt,
+      duration: duration,
+      source: .recording,
+      status: .waitingForTranscription,
+      summary: "アプリが中断する前に録音していた音声を復旧しました。文字起こしを開始できます。",
+      keyPoints: [],
+      decisions: [],
+      openQuestions: [],
+      transcript: [],
+      spaceID: nil,
+      audioURL: audioURL
+    )
+    meeting.notes = note
+    meetings.insert(meeting, at: 0)
+    persistMeetings()
+
+    lifeLogEntries.insert(
+      LifeLogEntry(
+        id: UUID(),
+        createdAt: draft.startedAt,
+        title: meeting.title,
+        summary: "中断前に録音していた音声を復旧しました。",
+        source: .iphone,
+        meetingID: meeting.id
+      ),
+      at: 0
+    )
+    persistLifeLog()
   }
 
   // MARK: - Onboarding and account
@@ -382,16 +475,24 @@ final class MemoraModel {
   }
 
   func startCapture() async {
+    // Starting twice (a double tap, or two entry points) must not begin two
+    // recordings, so a start already under way wins.
+    guard !isPreparingCapture, !isSavingCapture else { return }
     guard !isRecording else {
       isCapturePresented = true
       return
     }
+
+    isPreparingCapture = true
+    defer { isPreparingCapture = false }
 
     let allowed = await recorder.requestPermission()
     guard allowed else {
       microphonePermissionDenied = true
       return
     }
+    // The permission sheet can take a moment; re-check before starting.
+    guard !isRecording, !isSavingCapture else { return }
 
     do {
       recordingURL = try recorder.start()
@@ -408,13 +509,20 @@ final class MemoraModel {
       startRecordingTicker()
       startLevelTicker()
       startLiveActivity()
+      if let recordingURL, let fileName = MediaFiles.reference(for: recordingURL) {
+        recordingDraft = RecordingDraft(fileName: fileName, title: "", note: "", startedAt: .now)
+        persistRecordingDraft()
+      }
     } catch {
       recordingErrorMessage = error.localizedDescription
     }
   }
 
   func stopCapture() async {
-    guard isRecording else { return }
+    guard isRecording, !isSavingCapture else { return }
+    isSavingCapture = true
+    defer { isSavingCapture = false }
+
     recorder.stop()
     recordingTicker?.cancel()
     recordingTicker = nil
@@ -457,6 +565,8 @@ final class MemoraModel {
       at: 0
     )
     persistLifeLog()
+    recordingDraft = nil
+    persistRecordingDraft()
     recordingURL = nil
     recordingStartedAt = nil
     recordingPausedAt = nil
@@ -471,6 +581,14 @@ final class MemoraModel {
   }
 
   func completeCaptureDismissal() {
+    // The sheet can be closed while recording continues, so remember what was
+    // typed in case the app does not get to save.
+    if isRecording, recordingDraft != nil {
+      recordingDraft?.title = recordingTitle
+      recordingDraft?.note = recordingNote
+      persistRecordingDraft()
+    }
+
     guard let meetingID = pendingMeetingNavigationID else { return }
     pendingMeetingNavigationID = nil
     selectedTab = .files
@@ -488,6 +606,8 @@ final class MemoraModel {
     isRecordingPaused = false
     isCapturePresented = false
     // Discarding means the audio goes too; nothing is kept for the journal.
+    recordingDraft = nil
+    persistRecordingDraft()
     if !MediaFiles.delete(recordingURL) {
       deletionFailureMessage = "録音ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
     }
@@ -1033,6 +1153,7 @@ final class MemoraModel {
     static let installedTemplates = "memoraInstalledTemplates"
     static let cloudStorage = "memoraCloudStorage"
     static let activeJobs = "memoraActiveJobs"
+    static let recordingDraft = "memoraRecordingDraft"
   }
 
   private func recordingsDirectory() throws -> URL {

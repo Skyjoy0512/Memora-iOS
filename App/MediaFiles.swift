@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 /// Owns the app's media files. Everything lives inside the app's container, and
@@ -7,6 +8,14 @@ enum MediaFiles {
   static var directory: URL {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
       .appendingPathComponent("Recordings", isDirectory: true)
+  }
+
+  /// The length of a media file, or nil when it cannot be read.
+  static func duration(of url: URL) async -> TimeInterval? {
+    let asset = AVURLAsset(url: url)
+    guard let duration = try? await asset.load(.duration) else { return nil }
+    let seconds = CMTimeGetSeconds(duration)
+    return seconds.isFinite && seconds > 0 ? seconds : nil
   }
 
   /// The managed path for a file, relative to the media folder, so records do

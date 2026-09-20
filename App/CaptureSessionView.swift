@@ -99,10 +99,11 @@ struct CaptureSessionView: View {
           .frame(maxWidth: .infinity, minHeight: 56)
           .memoraGlass(in: Capsule(), interactive: true)
 
-          Button("終了", systemImage: "stop.fill") {
+          Button(model.isSavingCapture ? "保存しています…" : "終了", systemImage: "stop.fill") {
             stopFeedback += 1
             Task { await model.stopCapture() }
           }
+          .disabled(model.isSavingCapture)
           .labelStyle(.titleOnly)
           .font(.headline)
           .foregroundStyle(Color(uiColor: .systemBackground))
