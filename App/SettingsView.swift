@@ -141,7 +141,7 @@ struct SettingsView: View {
           Link(destination: URL(string: "https://example.com/privacy")!) {
             Label("プライバシーポリシー", systemImage: "hand.raised")
           }
-          LabeledContent("バージョン", value: "1.0")
+          LabeledContent("バージョン", value: Bundle.main.appVersion)
         }
 
         Section("プロトタイプ") {
@@ -151,6 +151,9 @@ struct SettingsView: View {
             Label("状態と復旧UIを確認", systemImage: "rectangle.stack.badge.play")
           }
 
+          #if DEBUG
+          // Destructive resets only exist for development; a shipped build must
+          // never offer to replace or empty someone's records.
           Button("初回体験をもう一度見る", systemImage: "arrow.counterclockwise") {
             model.replayOnboarding()
             if showsCloseButton {
@@ -158,7 +161,7 @@ struct SettingsView: View {
             }
           }
 
-          Button("サンプルを復元", systemImage: "arrow.clockwise") {
+          Button("デモデータを入れ直す（今の内容を置き換えます）", systemImage: "arrow.clockwise") {
             model.resetSampleContent()
           }
 
