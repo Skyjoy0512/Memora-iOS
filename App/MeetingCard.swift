@@ -43,14 +43,20 @@ struct MeetingCard: View {
     .padding(18)
     .frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
     .background {
-      SeededGradient(seed: meeting.id)
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+      RoundedRectangle(cornerRadius: 26, style: .continuous)
+        .fill(
+          LinearGradient(
+            colors: [Color.primary.opacity(0.075), Color.primary.opacity(0.025)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          )
+        )
     }
     .overlay {
       RoundedRectangle(cornerRadius: 26, style: .continuous)
-        .stroke(.white.opacity(colorScheme == .dark ? 0.08 : 0.5), lineWidth: 0.5)
+        .stroke(Color.primary.opacity(colorScheme == .dark ? 0.1 : 0.06), lineWidth: 0.5)
     }
-    .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.08), radius: 18, y: 10)
+    .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.06), radius: 16, y: 8)
     .accessibilityElement(children: .combine)
     .accessibilityLabel("\(meeting.title)、\(recordingDate)、\(MemoraFormat.duration(meeting.duration))、\(meeting.status.shortLabel)")
   }
