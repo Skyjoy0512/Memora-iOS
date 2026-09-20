@@ -49,6 +49,8 @@ struct LibraryView: View {
         placement: .navigationBarDrawer(displayMode: .automatic),
         prompt: "ファイルやプロジェクトを検索"
       )
+      // The whole top bar steps aside while reading down the list.
+      .toolbar(model.isLibraryChromeHidden ? .hidden : .visible, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           Button("メニュー", systemImage: "line.3.horizontal") {

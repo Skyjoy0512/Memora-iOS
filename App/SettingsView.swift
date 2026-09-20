@@ -251,6 +251,7 @@ private struct SpeechRecognitionSettingsView: View {
       }
     }
     .navigationTitle("文字起こし")
+    .memoraBackButton()
     .sheet(isPresented: $isKeySheetPresented) {
       APIKeySheet(provider: provider.label, account: "transcription.\(provider.rawValue)")
     }
@@ -315,6 +316,7 @@ private struct AISettingsView: View {
       }
     }
     .navigationTitle("AI整理")
+    .memoraBackButton()
     .sheet(isPresented: $isAPIKeySheetPresented) {
       APIKeySheet(provider: provider.label, account: "ai.\(provider.rawValue)")
     }
@@ -428,6 +430,7 @@ private struct PrivacyStorageView: View {
       }
     }
     .navigationTitle("データの保存先")
+    .memoraBackButton()
   }
 }
 
@@ -476,6 +479,7 @@ private struct NotionSettingsView: View {
       }
     }
     .navigationTitle("Notion")
+    .memoraBackButton()
     .onAppear {
       hasToken = KeychainStore.has("integration.notion")
     }

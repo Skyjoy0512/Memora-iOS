@@ -90,6 +90,7 @@ struct StateGalleryView: View {
       }
     }
     .navigationTitle("状態と復旧")
+    .memoraBackButton()
     .navigationBarTitleDisplayMode(.inline)
   }
 }

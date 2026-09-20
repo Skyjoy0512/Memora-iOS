@@ -113,6 +113,10 @@ struct MeetingDetailView: View {
                 saveToNotion(meeting)
               }
               .disabled(!NotionService.isConfigured)
+              Button("要約をやり直す", systemImage: "sparkles") {
+                isSummaryGenerationPresented = true
+              }
+              .disabled(meeting.transcript.isEmpty)
               Button("名前を変更", systemImage: "pencil") {
                 isRenaming = true
               }
@@ -333,10 +337,7 @@ struct MeetingDetailView: View {
       )
       .memoraTextReveal(delay: 0.04)
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.horizontal, 16)
-    .padding(.vertical, 24)
-    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .insightCard()
     .memoraAppear()
 
     InlineEditableList(
@@ -346,9 +347,11 @@ struct MeetingDetailView: View {
       emptyText: "明確な決定は見つかりませんでした",
       onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) }
     )
+    .insightCard()
     .memoraAppear(delay: 0.05)
 
     MeetingTasksSection(meetingID: meeting.id)
+      .insightCard()
       .memoraAppear(delay: 0.1)
 
     InlineEditableList(
@@ -358,6 +361,7 @@ struct MeetingDetailView: View {
       emptyText: "未決事項はありません",
       onCommit: { model.updateMeetingList(meeting.id, \.openQuestions, items: $0) }
     )
+    .insightCard()
     .memoraAppear(delay: 0.15)
 
     InlineEditableList(
@@ -367,9 +371,20 @@ struct MeetingDetailView: View {
       emptyText: "ポイントを抽出中です",
       onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }
     )
+    .insightCard()
     .memoraAppear(delay: 0.2)
   }
 
+}
+
+extension View {
+  /// Groups one summary section — heading and content — into a single block so
+  /// the sections do not blur into one another.
+  func insightCard() -> some View {
+    padding(16)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+  }
 }
 
 private struct ManualAIProcessingCard: View {

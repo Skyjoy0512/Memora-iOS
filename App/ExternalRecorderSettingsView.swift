@@ -31,6 +31,7 @@ struct ExternalRecorderSettingsView: View {
       }
     }
     .navigationTitle("外部レコーダー")
+    .memoraBackButton()
     .sheet(isPresented: $isOmiPresented) {
       OmiPairingView(manager: model.omiPairingManager)
     }
