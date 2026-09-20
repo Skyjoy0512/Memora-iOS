@@ -120,7 +120,7 @@ struct SettingsView: View {
           NavigationLink {
             MCPSettingsView()
           } label: {
-            LabeledContent("ChatGPT (MCP)", value: KeychainStore.has("integration.mcp") ? "設定済み" : "未設定")
+            LabeledContent("ChatGPT (MCP)", value: MCPIntegration.isConfigured ? "設定済み" : "未設定")
           }
         }
 

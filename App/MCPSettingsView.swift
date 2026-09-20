@@ -6,7 +6,7 @@ import SwiftUI
 struct MCPSettingsView: View {
   @State private var token = ""
   @State private var hasToken = false
-  @AppStorage("memora.mcpServerURL") private var serverURL = "https://mcp.memora.app/mcp"
+  @AppStorage(MCPIntegration.serverURLKey) private var serverURL = MCPIntegration.defaultServerURL
   @AppStorage("memora.mcpShareSummaries") private var sharesSummaries = true
   @AppStorage("memora.mcpShareTranscripts") private var sharesTranscripts = false
   @AppStorage("memora.mcpShareJournal") private var sharesJournal = true
@@ -31,15 +31,15 @@ struct MCPSettingsView: View {
           .textContentType(.password)
 
         Button("トークンを保存") {
-          KeychainStore.set(token, forKey: "integration.mcp")
+          KeychainStore.set(token, forKey: MCPIntegration.tokenKey)
           token = ""
-          hasToken = KeychainStore.has("integration.mcp")
+          hasToken = MCPIntegration.isConfigured
         }
         .disabled(token.trimmingCharacters(in: .whitespaces).isEmpty)
 
         if hasToken {
           Button("トークンを削除", systemImage: "trash", role: .destructive) {
-            KeychainStore.set(nil, forKey: "integration.mcp")
+            KeychainStore.set(nil, forKey: MCPIntegration.tokenKey)
             hasToken = false
           }
         }
@@ -68,7 +68,7 @@ struct MCPSettingsView: View {
     .navigationTitle("ChatGPT (MCP)")
     .memoraBackButton()
     .onAppear {
-      hasToken = KeychainStore.has("integration.mcp")
+      hasToken = MCPIntegration.isConfigured
     }
   }
 }
