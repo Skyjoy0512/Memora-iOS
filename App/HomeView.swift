@@ -9,6 +9,8 @@ struct HomeView: View {
   @State private var isCreationPresented = false
   @State private var selectedPersonID: UUID?
   @State private var isManagingPeople = false
+  /// The day the Journal is showing.
+  @State private var selectedDate = Calendar.current.startOfDay(for: .now)
   var onOpenSidebar: () -> Void
 
   var body: some View {
@@ -24,16 +26,12 @@ struct HomeView: View {
             onManage: { isManagingPeople = true }
           )
 
+          if query.isEmpty {
+            JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
+          }
+
           if query.isEmpty, selectedPerson == nil {
-            TodayDigestCard(
-              entries: todayEntries,
-              meetingCount: todayMeetings.count,
-              openTaskCount: openTasks.count
-            )
-
             UpcomingMeetingCard()
-
-            sourceStatus
           }
 
           if let person = selectedPerson {
@@ -93,7 +91,7 @@ struct HomeView: View {
       }
       .hideBottomBarOnScroll()
       .background(Color(uiColor: .systemBackground))
-      .navigationTitle("ホーム")
+      .navigationTitle("ジャーナル")
       .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "記録を検索")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
@@ -101,6 +99,10 @@ struct HomeView: View {
             onOpenSidebar()
           }
           .labelStyle(.iconOnly)
+        }
+
+        ToolbarItem(placement: .topBarLeading) {
+          sourceStatusButton
         }
 
         ToolbarItem(placement: .topBarTrailing) {
@@ -141,31 +143,23 @@ struct HomeView: View {
     }
   }
 
-  private var sourceStatus: some View {
+  /// The lifelog connection lives beside the menu so the journal itself keeps
+  /// the full screen.
+  private var sourceStatusButton: some View {
     Button {
       model.isSettingsPresented = true
     } label: {
-      HStack(spacing: 12) {
-        Image(systemName: isOmiConnected ? "dot.radiowaves.left.and.right" : "link")
-          .foregroundStyle(isOmiConnected ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
-        VStack(alignment: .leading, spacing: 2) {
-          Text(isOmiConnected ? "Omi 接続中" : "ライフログの接続先")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.primary)
-          Text(isOmiConnected ? "新しい記録を待っています" : "Omiは設定からペアリングできます")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        Spacer()
-        Image(systemName: "chevron.right")
-          .font(.caption.bold())
-          .foregroundStyle(.tertiary)
-      }
-      .padding(14)
-      .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      Label("Omi", systemImage: isOmiConnected ? "dot.radiowaves.left.and.right" : "link")
+        .font(.subheadline.weight(.medium))
+        .foregroundStyle(isOmiConnected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
     }
-    .buttonStyle(.plain)
+    .accessibilityLabel(isOmiConnected ? "Omi 接続中" : "ライフログの接続先")
     .accessibilityHint("レコーダー設定を開きます")
+  }
+
+  /// Days that hold at least one record, for the calendar's dot.
+  private var markedDays: Set<Date> {
+    Set(model.lifeLogEntries.map { Calendar.current.startOfDay(for: $0.createdAt) })
   }
 
   private var isOmiConnected: Bool {
@@ -187,12 +181,16 @@ struct HomeView: View {
       scoped = sorted
     }
 
-    guard !query.isEmpty else { return scoped }
-    return scoped.filter {
-      $0.title.localizedCaseInsensitiveContains(query)
-        || $0.summary.localizedCaseInsensitiveContains(query)
-        || $0.source.label.localizedCaseInsensitiveContains(query)
+    if !query.isEmpty {
+      return scoped.filter {
+        $0.title.localizedCaseInsensitiveContains(query)
+          || $0.summary.localizedCaseInsensitiveContains(query)
+          || $0.source.label.localizedCaseInsensitiveContains(query)
+      }
     }
+
+    // The journal shows the day picked in the calendar.
+    return scoped.filter { Calendar.current.isDate($0.createdAt, inSameDayAs: selectedDate) }
   }
 
   private var selectedPerson: Person? {
@@ -227,18 +225,6 @@ struct HomeView: View {
     }
   }
 
-  private var todayEntries: [LifeLogEntry] {
-    matchingEntries.filter { Calendar.current.isDateInToday($0.createdAt) }
-  }
-
-  private var todayMeetings: [Meeting] {
-    model.meetings.filter { Calendar.current.isDateInToday($0.createdAt) }
-  }
-
-  private var openTasks: [MemoraTask] {
-    model.tasks.filter { !$0.isCompleted }
-  }
-
   private var dayGroups: [LifeLogDayGroup] {
     let grouped = Dictionary(grouping: matchingEntries) {
       Calendar.current.startOfDay(for: $0.createdAt)
@@ -259,148 +245,4 @@ private struct LifeLogDayGroup: Identifiable {
   var day: Date
   var entries: [LifeLogEntry]
   var id: Date { day }
-}
-
-/// One glance at the day: how much was captured, what still needs doing, and
-/// when it all happened.
-private struct TodayDigestCard: View {
-  @Environment(MemoraModel.self) private var model
-  var entries: [LifeLogEntry]
-  var meetingCount: Int
-  var openTaskCount: Int
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 18) {
-      VStack(alignment: .leading, spacing: 3) {
-        Text("今日")
-          .font(.headline)
-        Text(Date.now.formatted(.dateTime.month(.wide).day().weekday(.wide)))
-          .font(.caption)
-          .foregroundStyle(.secondary)
-      }
-
-      HStack(spacing: 0) {
-        DigestStat(value: meetingCount, label: "会議") {
-          model.selectedTab = .files
-          model.fileSection = .meetingFiles
-        }
-
-        DigestStat(value: openTaskCount, label: "未完了") {
-          model.selectedTab = .tasks
-        }
-
-        DigestStat(value: entries.count, label: "記録", action: nil)
-      }
-
-      if !entries.isEmpty {
-        DayTimelineBar(entries: entries)
-
-        HStack(spacing: 14) {
-          ForEach(LifeLogKind.allCases) { kind in
-            let count = entries.filter { $0.kind == kind }.count
-            if count > 0 {
-              Label("\(count)", systemImage: kind.symbol)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-            }
-          }
-        }
-      }
-    }
-    .padding(18)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(
-      LinearGradient(
-        colors: [Color.primary.opacity(0.075), Color.primary.opacity(0.025)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-      ),
-      in: RoundedRectangle(cornerRadius: 22, style: .continuous)
-    )
-  }
-}
-
-private struct DigestStat: View {
-  var value: Int
-  var label: String
-  var action: (() -> Void)?
-
-  var body: some View {
-    if let action {
-      Button(action: action) {
-        content
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("\(label) \(value)件")
-      .accessibilityHint("\(label)の画面を開きます")
-    } else {
-      content
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(label) \(value)件")
-    }
-  }
-
-  private var content: some View {
-    VStack(alignment: .leading, spacing: 2) {
-      Text("\(value)")
-        .font(.title.bold())
-        .monospacedDigit()
-        .contentTransition(.numericText())
-      Text(label)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .contentShape(Rectangle())
-  }
-}
-
-/// Places each record along a 24 hour line so the shape of the day is visible
-/// before reading a single word.
-private struct DayTimelineBar: View {
-  var entries: [LifeLogEntry]
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      GeometryReader { proxy in
-        ZStack(alignment: .leading) {
-          Capsule()
-            .fill(Color.primary.opacity(0.08))
-            .frame(height: 4)
-
-          ForEach(entries) { entry in
-            Circle()
-              .fill(Color.primary)
-              .frame(width: 11, height: 11)
-              .overlay {
-                Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 2)
-              }
-              .offset(x: markerOffset(for: entry.createdAt, width: proxy.size.width))
-          }
-        }
-        .frame(maxHeight: .infinity, alignment: .center)
-      }
-      .frame(height: 12)
-
-      if !timeRange.isEmpty {
-        Text(timeRange)
-          .font(.caption.monospacedDigit())
-          .foregroundStyle(.secondary)
-      }
-    }
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel("今日の記録は\(entries.count)件。\(timeRange)")
-  }
-
-  private var timeRange: String {
-    guard let earliest = entries.min(by: { $0.createdAt < $1.createdAt })?.createdAt,
-          let latest = entries.max(by: { $0.createdAt < $1.createdAt })?.createdAt else { return "" }
-    return "\(earliest.formatted(date: .omitted, time: .shortened))–\(latest.formatted(date: .omitted, time: .shortened))"
-  }
-
-  private func markerOffset(for date: Date, width: CGFloat) -> CGFloat {
-    let components = Calendar.current.dateComponents([.hour, .minute], from: date)
-    let minutes = Double((components.hour ?? 0) * 60 + (components.minute ?? 0))
-    return max(0, min(width - 11, (width - 11) * minutes / 1_440))
-  }
 }

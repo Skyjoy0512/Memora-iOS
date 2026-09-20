@@ -34,7 +34,7 @@ struct UpcomingMeetingCard: View {
         promptCard(
           symbol: "calendar.badge.plus",
           title: "カレンダーと接続",
-          detail: "次の会議をホームに表示し、すぐ録音を始められます"
+          detail: "次の会議をジャーナルに表示し、すぐ録音を始められます"
         ) {
           Task { await connect() }
         }

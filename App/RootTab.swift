@@ -8,7 +8,7 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
 
   var title: String {
     switch self {
-    case .home: "ホーム"
+    case .home: "ジャーナル"
     case .files: "ファイル"
     case .askAI: "Ask AI"
     case .tasks: "タスク"
@@ -17,7 +17,7 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
 
   var symbol: String {
     switch self {
-    case .home: "house"
+    case .home: "calendar"
     case .files: "folder"
     case .askAI: "sparkles"
     case .tasks: "checklist"

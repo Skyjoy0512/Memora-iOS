@@ -327,7 +327,12 @@ struct MeetingDetailView: View {
 
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
-    VStack(alignment: .leading, spacing: 0) {
+    VStack(alignment: .leading, spacing: 12) {
+      Label("サマリー", systemImage: "text.alignleft")
+        .font(.title3.bold())
+        .foregroundStyle(.primary)
+        .memoraTextReveal()
+
       InlineMarkdownEditor(
         text: meeting.summary,
         placeholder: "要約を追加",

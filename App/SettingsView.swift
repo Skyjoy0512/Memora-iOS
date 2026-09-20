@@ -107,6 +107,12 @@ struct SettingsView: View {
           } label: {
             LabeledContent("Notion", value: NotionService.isConfigured ? "設定済み" : "未設定")
           }
+
+          NavigationLink {
+            MCPSettingsView()
+          } label: {
+            LabeledContent("ChatGPT (MCP)", value: KeychainStore.has("integration.mcp") ? "設定済み" : "未設定")
+          }
         }
 
         Section("プライバシーと保存") {
