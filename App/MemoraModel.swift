@@ -129,36 +129,31 @@ final class MemoraModel {
     }
 
     let sample = SampleContent.make()
-    if let meetingData = defaults.data(forKey: StorageKey.meetings),
-       let storedMeetings = try? JSONDecoder().decode([Meeting].self, from: meetingData) {
-      meetings = storedMeetings
-    } else {
-      meetings = sample.meetings
+
+    // Absent data means a first run, which seeds the demo. Data that exists but
+    // cannot be read is set aside rather than replaced, so nothing is lost.
+    var didFindUnreadableData = false
+    func load<T: Decodable>(_ type: [T].Type, forKey key: String, fallback: [T]) -> [T] {
+      guard let data = defaults.data(forKey: key) else { return fallback }
+      if let stored = try? JSONDecoder().decode([T].self, from: data) {
+        return stored
+      }
+      defaults.set(data, forKey: key + ".unreadable")
+      defaults.removeObject(forKey: key)
+      didFindUnreadableData = true
+      return []
     }
-    if let spaceData = defaults.data(forKey: StorageKey.spaces),
-       let storedSpaces = try? JSONDecoder().decode([MemoraSpace].self, from: spaceData) {
-      spaces = storedSpaces
-    } else {
-      spaces = sample.spaces
-    }
-    if let lifeLogData = defaults.data(forKey: StorageKey.lifeLogEntries),
-       let storedEntries = try? JSONDecoder().decode([LifeLogEntry].self, from: lifeLogData) {
-      lifeLogEntries = storedEntries
-    } else {
-      lifeLogEntries = SampleContent.makeLifeLog()
-    }
-    if let taskData = defaults.data(forKey: StorageKey.tasks),
-       let storedTasks = try? JSONDecoder().decode([MemoraTask].self, from: taskData) {
-      tasks = storedTasks
-    } else {
-      tasks = sample.tasks
-    }
-    if let peopleData = defaults.data(forKey: StorageKey.people),
-       let storedPeople = try? JSONDecoder().decode([Person].self, from: peopleData) {
-      people = storedPeople
-    } else {
-      people = SampleContent.makePeople()
-    }
+
+    meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: sample.meetings)
+    spaces = load([MemoraSpace].self, forKey: StorageKey.spaces, fallback: sample.spaces)
+    lifeLogEntries = load(
+      [LifeLogEntry].self,
+      forKey: StorageKey.lifeLogEntries,
+      fallback: SampleContent.makeLifeLog()
+    )
+    tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: sample.tasks)
+    people = load([Person].self, forKey: StorageKey.people, fallback: SampleContent.makePeople())
+
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = [
       AIConversationEntry(
@@ -169,6 +164,10 @@ final class MemoraModel {
         createdAt: Calendar.current.date(byAdding: .hour, value: -4, to: .now)!
       )
     ]
+
+    loadFailureMessage = didFindUnreadableData
+      ? "保存されたデータの一部を読み込めませんでした。元のデータは端末に退避しています。"
+      : nil
   }
 
   // MARK: - Onboarding and account
