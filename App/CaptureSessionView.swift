@@ -6,6 +6,7 @@ struct CaptureSessionView: View {
   @State private var section = CaptureSection.notes
   @State private var stopFeedback = 0
   @State private var pauseFeedback = 0
+  @State private var isDiscardConfirmationPresented = false
 
   var body: some View {
     @Bindable var model = model
@@ -25,6 +26,15 @@ struct CaptureSessionView: View {
         .accessibilityLabel("録音時間 \(MemoraFormat.duration(model.recordingElapsed))")
 
         Spacer()
+
+        Button("録音を破棄", systemImage: "trash") {
+          isDiscardConfirmationPresented = true
+        }
+        .labelStyle(.iconOnly)
+        .font(.body.weight(.semibold))
+        .foregroundStyle(.red)
+        .frame(width: 44, height: 44)
+        .memoraGlass(in: Circle(), interactive: true)
 
         Button("録音画面を閉じる", systemImage: "xmark") {
           model.isCapturePresented = false
@@ -110,6 +120,18 @@ struct CaptureSessionView: View {
     .presentationDragIndicator(.visible)
     .presentationCornerRadius(38)
     .interactiveDismissDisabled()
+    .confirmationDialog(
+      "録音を破棄しますか？",
+      isPresented: $isDiscardConfirmationPresented,
+      titleVisibility: .visible
+    ) {
+      Button("破棄", role: .destructive) {
+        Task { await model.cancelCapture() }
+      }
+      Button("キャンセル", role: .cancel) {}
+    } message: {
+      Text("録音した音声は保存されず、文字起こしも作成しません。")
+    }
     .sensoryFeedback(.impact(weight: .medium), trigger: pauseFeedback)
     .sensoryFeedback(.impact(weight: .heavy), trigger: stopFeedback)
   }

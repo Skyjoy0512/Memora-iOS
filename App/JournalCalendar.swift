@@ -39,8 +39,33 @@ struct JournalCalendar: View {
       Color(uiColor: .secondarySystemBackground),
       in: RoundedRectangle(cornerRadius: 22, style: .continuous)
     )
+    .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    // A sideways flick moves a week (or a month when the grid is open) without
+    // competing with the vertical scroll underneath.
+    .simultaneousGesture(
+      DragGesture(minimumDistance: 24).onEnded { value in
+        guard abs(value.translation.width) > abs(value.translation.height) else { return }
+        if value.translation.width < -44 {
+          shift(1)
+        } else if value.translation.width > 44 {
+          shift(-1)
+        }
+      }
+    )
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isExpanded)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: visibleMonth)
+  }
+
+  /// Moves to the next or previous week, or month when expanded.
+  private func shift(_ delta: Int) {
+    if isExpanded {
+      shiftMonth(delta)
+      return
+    }
+
+    guard let next = calendar.date(byAdding: .weekOfYear, value: delta, to: selectedDate) else { return }
+    selectedDate = calendar.startOfDay(for: next)
+    visibleMonth = next
   }
 
   private var header: some View {

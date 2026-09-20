@@ -149,6 +149,23 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
         uiView.setImage(generatedImage(for: item), forSegmentAt: index)
       }
     }
+
+    applySegmentLabels(uiView)
+  }
+
+  /// The segments are images, so UIKit has no names to read out. Label each
+  /// segment view itself, which is what VoiceOver enumerates.
+  private func applySegmentLabels(_ control: UISegmentedControl) {
+    let labels = allTabs.map(\.title)
+    let selected = allTabs.firstIndex(of: selection)
+
+    guard control.subviews.count == labels.count else { return }
+
+    for (index, segment) in control.subviews.enumerated() {
+      segment.isAccessibilityElement = true
+      segment.accessibilityLabel = labels[index]
+      segment.accessibilityTraits = index == selected ? [.button, .selected] : .button
+    }
   }
 
   func sizeThatFits(

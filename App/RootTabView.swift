@@ -107,7 +107,8 @@ struct RootTabView: View {
           isComposing: $isComposing,
           keepsFocusAfterSubmit: model.selectedTab == .askAI
         )
-        .id(composerScope)
+        // Note: no `.id(composerScope)` — recreating the field would throw away
+        // what someone had already typed when the scope changed.
         .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
 
@@ -128,7 +129,6 @@ struct RootTabView: View {
     // full-bleed drawer, so add it back here — except while the keyboard is up,
     // where the keyboard's own safe area already lifts these controls.
     .padding(.bottom, isKeyboardVisible ? 14 : safeAreaInsets.bottom)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: composerScope)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)

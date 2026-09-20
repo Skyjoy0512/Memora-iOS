@@ -50,7 +50,7 @@ struct HomeView: View {
                 .foregroundStyle(.secondary)
 
               VStack(spacing: 6) {
-                Text(selectedPerson == nil ? "まだライフログがありません" : "この人の記録はありません")
+                Text(emptyTitle)
                   .font(.headline)
 
                 Text(emptyDescription)
@@ -105,7 +105,9 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 18)
-        .padding(.bottom, 32)
+        // The floating composer and tab bar do not inset this scroll view, so
+        // leave room for the last records to clear them.
+        .padding(.bottom, 184)
       }
       .hideBottomBarOnScroll()
       .background(Color(uiColor: .systemBackground))
@@ -182,6 +184,13 @@ struct HomeView: View {
   /// Days that hold at least one record, for the calendar's dot.
   private var markedDays: Set<Date> {
     Set(model.lifeLogEntries.map { Calendar.current.startOfDay(for: $0.createdAt) })
+  }
+
+  private var emptyTitle: String {
+    if !query.isEmpty {
+      return "見つかりませんでした"
+    }
+    return selectedPerson == nil ? "まだライフログがありません" : "この人の記録はありません"
   }
 
   /// A journal left open past midnight should move to the new day, unless the

@@ -251,29 +251,35 @@ struct PhotoEditorView: View {
     let pan = offset
     let previewSize = preview.size
 
-    let rotated = original.rotated(quarterTurns: turns)
-    let adjusted = rotated.applyingAdjustments(brightness: bright, contrast: cont, context: ciContext) ?? rotated
+    // Rendering and encoding a full-size photo is heavy; keep it off the main
+    // thread so the button press stays responsive.
+    Task.detached(priority: .userInitiated) {
+      let rotated = original.rotated(quarterTurns: turns)
+      let adjusted = rotated.applyingAdjustments(brightness: bright, contrast: cont, context: CIContext()) ?? rotated
 
-    let ratio = adjusted.size.width / max(1, previewSize.width)
-    let rect = cropRect(area: area, imageSize: previewSize, zoom: zoom, pan: pan)
-    let scaled = CGRect(
-      x: rect.origin.x * ratio,
-      y: rect.origin.y * ratio,
-      width: rect.width * ratio,
-      height: rect.height * ratio
-    )
+      let ratio = adjusted.size.width / max(1, previewSize.width)
+      let rect = PhotoEditorView.cropRect(area: area, imageSize: previewSize, zoom: zoom, pan: pan)
+      let scaled = CGRect(
+        x: rect.origin.x * ratio,
+        y: rect.origin.y * ratio,
+        width: rect.width * ratio,
+        height: rect.height * ratio
+      )
 
-    guard let cropped = adjusted.cropped(to: scaled),
-          let data = cropped.jpegData(compressionQuality: 0.9) else {
-      isExporting = false
-      return
+      let data = adjusted.cropped(to: scaled)?.jpegData(compressionQuality: 0.9)
+
+      await MainActor.run {
+        guard let data else {
+          isExporting = false
+          return
+        }
+        onComplete(data)
+        dismiss()
+      }
     }
-
-    onComplete(data)
-    dismiss()
   }
 
-  private func cropRect(area: CGSize, imageSize: CGSize, zoom: CGFloat, pan: CGSize) -> CGRect {
+  private static func cropRect(area: CGSize, imageSize: CGSize, zoom: CGFloat, pan: CGSize) -> CGRect {
     let fillScale = max(area.width / imageSize.width, area.height / imageSize.height)
     let unit = fillScale * zoom
     let visibleWidth = area.width / unit
