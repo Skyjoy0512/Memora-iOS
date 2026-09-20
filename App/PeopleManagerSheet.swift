@@ -13,6 +13,7 @@ struct PeopleManagerSheet: View {
   @State private var isPhotoPickerPresented = false
   @State private var photoTarget: PhotoTarget?
   @State private var photoItem: PhotosPickerItem?
+  @State private var editingPhoto: PhotoEditRequest?
 
   private enum PhotoTarget: Equatable {
     case new
@@ -81,7 +82,24 @@ struct PeopleManagerSheet: View {
       .photosPicker(isPresented: $isPhotoPickerPresented, selection: $photoItem, matching: .images)
       .onChange(of: photoItem) { _, item in
         guard let item else { return }
-        Task { await applyPhoto(item) }
+        Task {
+          guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+          photoItem = nil
+          editingPhoto = PhotoEditRequest(data: data)
+        }
+      }
+      .sheet(item: $editingPhoto) { request in
+        PhotoEditorView(source: request.data) { edited in
+          guard let small = ImageDownscale.jpeg(edited) else { return }
+          switch photoTarget {
+          case .new:
+            newPhotoData = small
+          case .person(let id):
+            model.setPersonPhoto(id, data: small)
+          case nil:
+            break
+          }
+        }
       }
     }
   }
@@ -93,21 +111,5 @@ struct PeopleManagerSheet: View {
     }
     newName = ""
     newPhotoData = nil
-  }
-
-  private func applyPhoto(_ item: PhotosPickerItem) async {
-    defer { photoItem = nil }
-
-    guard let data = try? await item.loadTransferable(type: Data.self),
-          let small = ImageDownscale.jpeg(data) else { return }
-
-    switch photoTarget {
-    case .new:
-      newPhotoData = small
-    case .person(let id):
-      model.setPersonPhoto(id, data: small)
-    case nil:
-      break
-    }
   }
 }

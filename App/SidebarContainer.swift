@@ -50,11 +50,10 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
           .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
           .overlay {
             if progress > 0 {
-              // A material frosts the screen behind it, so the pushed-aside side
-              // reads as a thin blur without paying for a live blur while the
-              // drawer is closed. It also catches the tap or drag that closes it.
+              // A light wash, not a blur: the pushed-aside screen stays readable
+              // behind the drawer. It also catches the tap or drag that closes it.
               Rectangle()
-                .fill(.ultraThinMaterial)
+                .fill(Color(uiColor: .systemBackground).opacity(0.45))
                 .contentShape(Rectangle())
                 .onTapGesture { setOpen(false) }
                 .gesture(closeDrag(width: width))
