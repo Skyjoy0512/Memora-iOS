@@ -104,6 +104,8 @@ final class MemoraModel {
   @ObservationIgnored private var recordingTicker: Task<Void, Never>?
   @ObservationIgnored private var levelTicker: Task<Void, Never>?
   @ObservationIgnored private var processingTasks: [UUID: Task<Void, Never>] = [:]
+  /// The generation each record's most recent summary request belongs to.
+  @ObservationIgnored private var processingRevisions: [UUID: Int] = [:]
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
   @ObservationIgnored private var pendingMeetingNavigationID: UUID?
   @ObservationIgnored private let recorder = AudioRecorderService()
@@ -551,15 +553,60 @@ final class MemoraModel {
     }
   }
 
+  /// Rewrites the summary from the real transcript with the chosen template.
+  /// Nothing is invented: when no engine can answer, the record says so and
+  /// keeps whatever the person had, rather than filling in sample text.
   func generateSummary(_ id: UUID, choice: SummaryTemplateChoice) {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
+
+    let revision = bumpProcessingRevision(for: id)
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     processingTasks[id]?.cancel()
+
     processingTasks[id] = Task { [weak self] in
-      try? await Task.sleep(for: .milliseconds(1_100))
-      guard !Task.isCancelled else { return }
-      self?.finishProcessing(id, choice: choice)
+      guard let self else { return }
+
+      let transcript = meeting.transcript
+        .map { "\($0.speaker): \($0.text)" }
+        .joined(separator: "\n")
+      let summary = await AIEngineService.answer(
+        question: choice.summaryInstruction,
+        scopeLabel: "文字起こし",
+        context: transcript
+      )
+
+      // A newer request or a deleted record makes this result stale.
+      guard !Task.isCancelled,
+            self.processingRevision(for: id) == revision,
+            self.meeting(id: id) != nil else { return }
+
+      if let summary, !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        self.updateMeeting(id) { meeting in
+          meeting.summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+          meeting.status = .ready
+        }
+      } else {
+        self.updateMeeting(id) {
+          $0.status = .failed("要約を生成できませんでした。AIエンジンとキーを確認して再試行してください。")
+        }
+      }
+
+      self.processingTasks[id] = nil
     }
+  }
+
+  // MARK: - Processing revisions
+
+  /// Bumped for each new summary request, so an older result cannot overwrite a
+  /// newer edit or a deleted record.
+  private func bumpProcessingRevision(for id: UUID) -> Int {
+    let next = (processingRevisions[id] ?? 0) + 1
+    processingRevisions[id] = next
+    return next
+  }
+
+  private func processingRevision(for id: UUID) -> Int {
+    processingRevisions[id] ?? 0
   }
 
   // MARK: - Summary templates
