@@ -145,39 +145,58 @@ struct MeetingDetailView: View {
     }
   }
 
-  /// People tagged on the recording, with a way to add more.
+  /// People tagged on the recording, shown as round story-style avatars with a
+  /// round add button at the end.
   private func participantsRow(_ meeting: Meeting) -> some View {
     let participants = model.participants(in: meeting.id)
 
     return ScrollView(.horizontal) {
-      HStack(spacing: 8) {
+      HStack(spacing: 14) {
         ForEach(participants) { person in
-          HStack(spacing: 6) {
-            PersonAvatar(name: person.name, size: 22)
+          VStack(spacing: 6) {
+            PersonAvatar(name: person.name, size: 56, photoData: person.photoData)
+              .overlay {
+                Circle()
+                  .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+              }
+
             Text(person.name)
-              .font(.subheadline)
+              .font(.caption)
+              .foregroundStyle(.primary)
+              .lineLimit(1)
+              .frame(width: 64)
           }
-          .padding(.horizontal, 8)
-          .padding(.vertical, 5)
-          .background(Color.primary.opacity(0.06), in: Capsule())
+          .accessibilityElement(children: .ignore)
+          .accessibilityLabel(person.name)
         }
 
         Button {
           isAddingPeople = true
         } label: {
-          Label(participants.isEmpty ? "参加者を追加" : "追加", systemImage: "person.badge.plus")
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.primary.opacity(0.06), in: Capsule())
+          VStack(spacing: 6) {
+            ZStack {
+              Circle()
+                .fill(Color.primary.opacity(0.08))
+              Image(systemName: participants.isEmpty ? "person.badge.plus" : "plus")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+            }
+            .frame(width: 56, height: 56)
+
+            Text("追加")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .frame(width: 64)
+          }
         }
         .buttonStyle(.plain)
-
-        Spacer(minLength: 0)
+        .accessibilityLabel("参加者を追加")
       }
+      .padding(.horizontal, 18)
+      .padding(.vertical, 2)
     }
     .scrollIndicators(.hidden)
+    .padding(.horizontal, -18)
   }
 
   private func copyLink(_ meeting: Meeting) {

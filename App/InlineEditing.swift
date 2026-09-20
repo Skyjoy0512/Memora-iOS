@@ -114,8 +114,9 @@ struct InlineMarkdownEditor: View {
   }
 }
 
-/// Shows a bulleted list; an edit button swaps in a one-per-line editor that
-/// keeps any formatting on the lines.
+/// Shows a bulleted list; tapping the section swaps in a one-per-line editor
+/// that keeps any formatting on the lines. There is no separate edit button —
+/// the content itself is the control.
 struct InlineEditableList: View {
   var title: String
   var symbol: String
@@ -135,13 +136,17 @@ struct InlineEditableList: View {
           .font(.title3.bold())
           .foregroundStyle(.primary)
           .memoraTextReveal()
+          .contentShape(Rectangle())
+          .onTapGesture { beginEditing() }
+          .accessibilityAddTraits(.isButton)
+          .accessibilityHint("タップして編集")
 
         Spacer()
 
-        Button(isEditing ? "完了" : "編集") {
-          isEditing ? endEditing() : beginEditing()
+        if isEditing {
+          Button("完了") { endEditing() }
+            .font(.subheadline.weight(.semibold))
         }
-        .font(.subheadline.weight(.medium))
       }
 
       if isEditing {
@@ -157,25 +162,28 @@ struct InlineEditableList: View {
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
-      } else if items.isEmpty {
-        Text(emptyText)
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-          .contentShape(Rectangle())
-          .onTapGesture { beginEditing() }
       } else {
-        VStack(alignment: .leading, spacing: 8) {
-          ForEach(items, id: \.self) { item in
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-              Circle()
-                .fill(Color.primary)
-                .frame(width: 5, height: 5)
-              Text(InlineMarkdownEditor.attributed(item))
-                .font(.body)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        Group {
+          if items.isEmpty {
+            Text(emptyText)
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+          } else {
+            VStack(alignment: .leading, spacing: 8) {
+              ForEach(items, id: \.self) { item in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                  Circle()
+                    .fill(Color.primary)
+                    .frame(width: 5, height: 5)
+                  Text(InlineMarkdownEditor.attributed(item))
+                    .font(.body)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+              }
             }
           }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { beginEditing() }
       }
