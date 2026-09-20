@@ -17,6 +17,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   var prominentSymbol: String
   @ViewBuilder var popover: PopoverContent
 
+  @Environment(\.colorScheme) private var colorScheme
   @Namespace private var namespace
 
   var body: some View {
@@ -36,9 +37,11 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
   @ViewBuilder
   private var segmentedControl: some View {
-    let control = ProminentSegmentedControl(selection: $selection)
+    let control = ProminentSegmentedControl(selection: $selection, colorScheme: colorScheme)
 
     if #available(iOS 26.0, *) {
+      // The system control draws and animates its Liquid Glass selection
+      // bubble; the glass keeps the capsule the design intends.
       control.glassEffect(.regular.interactive(), in: .capsule)
     } else {
       control
@@ -91,83 +94,106 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   }
 }
 
-/// The destinations, drawn in SwiftUI: one tappable segment each — so a tap
-/// always lands on the tab under the finger — with one selection capsule that
-/// slides between them through `matchedGeometryEffect`.
-private struct ProminentSegmentedControl<Item: ProminentTabItem>: View {
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+/// The tabs are drawn by `UISegmentedControl` so the selection keeps the system's
+/// Liquid Glass bubble and its morph, with each segment rendered as an icon over
+/// its title.
+private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresentable {
   @Binding var selection: Item
-  @Namespace private var pill
-  /// Shared press state, so the whole glass capsule squishes while any segment
-  /// is held, the way interactively lit glass does.
-  @State private var isPressed = false
+  var colorScheme: ColorScheme
+  @Environment(\.displayScale) private var displayScale
 
-  private let height: CGFloat = 66
-  private let pillInset: CGFloat = 2
+  private var allTabs: [Item] { Array(Item.allCases) }
 
-  private var tabs: [Item] { Array(Item.allCases) }
+  func makeUIView(context: Context) -> UISegmentedControl {
+    let control = UISegmentedControl()
 
-  var body: some View {
-    HStack(spacing: 0) {
-      ForEach(tabs, id: \.self) { item in
-        segment(item)
+    for (index, item) in allTabs.enumerated() {
+      if let image = generatedImage(for: item) {
+        control.insertSegment(with: image, at: index, animated: false)
+      } else {
+        control.insertSegment(withTitle: item.title, at: index, animated: false)
       }
     }
-    .frame(height: height)
-    .scaleEffect(isPressed && !reduceMotion ? 0.97 : 1)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: isPressed)
+
+    control.selectedSegmentIndex = allTabs.firstIndex(of: selection) ?? 0
+    control.selectedSegmentTintColor = UIColor.secondarySystemFill
+    control.addTarget(context.coordinator, action: #selector(Coordinator.didChange(_:)), for: .valueChanged)
+    context.coordinator.appliedColorScheme = colorScheme
+    return control
   }
 
-  private func segment(_ item: Item) -> some View {
-    let isSelected = item == selection
-
-    return Button {
-      guard selection != item else { return }
-      withAnimation(reduceMotion ? nil : MemoraMotion.tabSelection) {
-        selection = item
-      }
-    } label: {
-      VStack(spacing: 4) {
-        Image(systemName: item.symbol)
-          .font(.title3)
-          .fontWeight(.regular)
-          .symbolVariant(.fill)
-          .frame(height: 25)
-
-        Text(item.title)
-          .font(.caption2)
-      }
-      .foregroundStyle(.primary)
-      .frame(maxWidth: .infinity)
-      .frame(height: height)
-      .contentShape(Rectangle())
-      .background {
-        if isSelected {
-          Capsule()
-            .fill(Color(uiColor: .secondarySystemFill))
-            .padding(pillInset)
-            .matchedGeometryEffect(id: "segmentPill", in: pill)
-        }
+  func updateUIView(_ uiView: UISegmentedControl, context: Context) {
+    // Never move the selection while a finger is down: doing so cancels the
+    // touch in progress, which is what swallowed the first tap on a tab.
+    if !uiView.isTracking,
+       let index = allTabs.firstIndex(of: selection),
+       uiView.selectedSegmentIndex != index {
+      // An external change (the sidebar, a deep link) arrives programmatically;
+      // animating it drives the control's own Liquid Glass morph.
+      UIView.animate(
+        withDuration: 0.35,
+        delay: 0,
+        usingSpringWithDamping: 0.82,
+        initialSpringVelocity: 0
+      ) {
+        uiView.selectedSegmentIndex = index
+        uiView.layoutIfNeeded()
       }
     }
-    .buttonStyle(SegmentPressStyle(isPressed: $isPressed, reduceMotion: reduceMotion))
-    .accessibilityLabel(item.title)
-    .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-  }
-}
 
-/// Reports whether the segment is held so the glass can react, and gives the
-/// segment's own content a small press.
-private struct SegmentPressStyle: ButtonStyle {
-  @Binding var isPressed: Bool
-  var reduceMotion: Bool
-
-  func makeBody(configuration: Configuration) -> some View {
-    configuration.label
-      .scaleEffect(configuration.isPressed && !reduceMotion ? 0.94 : 1)
-      .animation(reduceMotion ? nil : MemoraMotion.control, value: configuration.isPressed)
-      .onChange(of: configuration.isPressed) { _, newValue in
-        isPressed = newValue
+    // The rendered images bake in the text color, so redraw them when the
+    // appearance changes instead of leaving last mode's colors behind.
+    if context.coordinator.appliedColorScheme != colorScheme {
+      context.coordinator.appliedColorScheme = colorScheme
+      for (index, item) in allTabs.enumerated() {
+        uiView.setImage(generatedImage(for: item), forSegmentAt: index)
       }
+    }
+  }
+
+  func sizeThatFits(
+    _ proposal: ProposedViewSize,
+    uiView: UISegmentedControl,
+    context: Context
+  ) -> CGSize? {
+    CGSize(width: proposal.replacingUnspecifiedDimensions().width, height: 66)
+  }
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(selection: $selection)
+  }
+
+  final class Coordinator: NSObject {
+    @Binding var selection: Item
+    var appliedColorScheme: ColorScheme?
+
+    init(selection: Binding<Item>) {
+      _selection = selection
+    }
+
+    @objc func didChange(_ control: UISegmentedControl) {
+      let tabs = Array(Item.allCases)
+      let index = control.selectedSegmentIndex
+      guard tabs.indices.contains(index) else { return }
+      selection = tabs[index]
+    }
+  }
+
+  private func generatedImage(for item: Item) -> UIImage? {
+    let label = VStack(spacing: 4) {
+      Image(systemName: item.symbol)
+        .font(.title3)
+        .fontWeight(.regular)
+        .symbolVariant(.fill)
+        .frame(height: 25)
+
+      Text(item.title)
+        .font(.caption2)
+    }
+    .environment(\.colorScheme, colorScheme)
+
+    let renderer = ImageRenderer(content: label)
+    renderer.scale = displayScale
+    return renderer.uiImage
   }
 }
