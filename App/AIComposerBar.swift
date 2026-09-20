@@ -260,7 +260,7 @@ struct AIComposerBar: View {
     guard canSend else { return }
     speechInput.stop()
     // The Ask AI chat keeps the keyboard up for the next turn; a sheet does not.
-    isFieldFocused = focusRequest
+    isFieldFocused = keepsFocusAfterSubmit
     onSubmit()
   }
 

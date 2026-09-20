@@ -7,8 +7,9 @@ struct QuickAIComposer: View {
   var scope: AIQueryScope
   /// Lets the bottom bar step aside while someone is typing.
   @Binding var isComposing: Bool
-  /// Raises the keyboard when the Ask AI tab comes to the front.
-  var focusRequest = false
+  /// Keeps the keyboard up after sending on the Ask AI tab. The field is never
+  /// focused on its own, so switching tabs does not raise the keyboard.
+  var keepsFocusAfterSubmit = false
   @State private var question = ""
   @State private var attachment: AIAttachment?
   @State private var isQuestionPresented = false
@@ -18,7 +19,7 @@ struct QuickAIComposer: View {
       text: $question,
       attachment: $attachment,
       placeholder: placeholder,
-      focusRequest: focusRequest,
+      keepsFocusAfterSubmit: keepsFocusAfterSubmit,
       onSubmit: submit
     ) { focused in
       isComposing = focused
