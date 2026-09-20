@@ -5,7 +5,7 @@ struct MeetingTasksSection: View {
   var meetingID: UUID
 
   var body: some View {
-    let meetingTasks = model.tasks.filter { $0.meetingID == meetingID }
+    let meetingTasks = model.tasks(forMeeting: meetingID)
     VStack(alignment: .leading, spacing: 12) {
       Label("次にすること", systemImage: "arrow.right.circle")
         .font(.title3.bold())

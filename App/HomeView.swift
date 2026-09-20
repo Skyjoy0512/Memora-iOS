@@ -169,7 +169,7 @@ struct HomeView: View {
   }
 
   private var matchingEntries: [LifeLogEntry] {
-    let sorted = model.lifeLogEntries.sorted { $0.createdAt > $1.createdAt }
+    let sorted = model.newestLifeLogEntries
 
     let scoped: [LifeLogEntry]
     if let personID = selectedPerson?.id {

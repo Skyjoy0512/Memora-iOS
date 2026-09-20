@@ -21,8 +21,12 @@ final class MemoraModel {
   var spaces: [MemoraSpace] {
     didSet { spaceIndex.invalidate() }
   }
-  var tasks: [MemoraTask]
-  var lifeLogEntries: [LifeLogEntry]
+  var tasks: [MemoraTask] {
+    didSet { tasksByMeeting = nil }
+  }
+  var lifeLogEntries: [LifeLogEntry] {
+    didSet { newestEntries = nil }
+  }
   var aiHistory: [AIConversationEntry]
   /// People who can be tagged on recordings.
   var people: [Person] = [] {
@@ -33,6 +37,10 @@ final class MemoraModel {
   @ObservationIgnored private var meetingSearchTexts: [UUID: MeetingSearchText] = [:]
   @ObservationIgnored private var spaceIndex = IdentifiableIndex<MemoraSpace>()
   @ObservationIgnored private var personIndex = IdentifiableIndex<Person>()
+  /// Tasks grouped by the meeting they belong to, built once per change.
+  @ObservationIgnored private var tasksByMeeting: [UUID: [MemoraTask]]?
+  /// The journal's records newest first, sorted once per change.
+  @ObservationIgnored private var newestEntries: [LifeLogEntry]?
   /// Marketplace summary templates the person has added.
   private(set) var installedTemplateIDs: [String] = []
   /// The Ask AI chat transcript.
@@ -258,6 +266,27 @@ final class MemoraModel {
   private struct MeetingSearchText {
     var core: String
     var extended: String
+  }
+
+  /// The tasks attached to one meeting, grouped once per change.
+  func tasks(forMeeting id: UUID) -> [MemoraTask] {
+    if tasksByMeeting == nil {
+      var grouped: [UUID: [MemoraTask]] = [:]
+      for task in tasks {
+        guard let meetingID = task.meetingID else { continue }
+        grouped[meetingID, default: []].append(task)
+      }
+      tasksByMeeting = grouped
+    }
+    return tasksByMeeting?[id] ?? []
+  }
+
+  /// The journal's records, newest first, sorted once per change.
+  var newestLifeLogEntries: [LifeLogEntry] {
+    if let newestEntries { return newestEntries }
+    let sorted = lifeLogEntries.sorted { $0.createdAt > $1.createdAt }
+    newestEntries = sorted
+    return sorted
   }
 
   func space(id: UUID) -> MemoraSpace? {
