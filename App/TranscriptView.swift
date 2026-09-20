@@ -52,16 +52,7 @@ struct TranscriptView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 20)
           }
-          // Lift the line being edited above the keyboard once it has settled.
-          .onChange(of: model.focusedInlineEditorID) { _, newValue in
-            guard let id = newValue else { return }
-            Task { @MainActor in
-              try? await Task.sleep(for: .milliseconds(350))
-              withAnimation(.smooth) {
-                proxy.scrollTo(id, anchor: .center)
-              }
-            }
-          }
+          .scrollFocusedEditorAboveKeyboard(in: proxy)
         }
         .navigationTitle("文字起こし")
         .navigationBarTitleDisplayMode(.inline)

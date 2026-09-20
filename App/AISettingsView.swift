@@ -3,23 +3,10 @@ import SwiftUI
 struct AISettingsView: View {
   @AppStorage("memora.aiEngine") private var engine = AIEngine.automatic
   @AppStorage("memora.aiProvider") private var provider = CloudProvider.openAI
-  @AppStorage("memora.summaryStyle") private var style = SummaryStyle.automatic
   @State private var isAPIKeySheetPresented = false
 
   var body: some View {
     Form {
-      Section {
-        Picker("まとめ方", selection: $style) {
-          ForEach(SummaryStyle.allCases) { option in
-            Text(option.label).tag(option)
-          }
-        }
-      } header: {
-        Text("議事録")
-      } footer: {
-        Text("おすすめの「自動」は、会話に合わせて要約・決定・タスク・未決事項を整理します。")
-      }
-
       Section {
         Picker("エンジン", selection: $engine) {
           ForEach(AIEngine.allCases) { option in
@@ -61,28 +48,6 @@ struct AISettingsView: View {
       if !provider.supportsAI {
         provider = .openAI
       }
-    }
-  }
-}
-
-private enum SummaryStyle: String, CaseIterable, Identifiable {
-  case automatic
-  case summary
-  case detailed
-  case actionFocused
-
-  var id: Self { self }
-
-  var label: String {
-    switch self {
-    case .automatic:
-      "自動（おすすめ）"
-    case .summary:
-      "短い要約"
-    case .detailed:
-      "詳しい議事録"
-    case .actionFocused:
-      "アクション重視"
     }
   }
 }
