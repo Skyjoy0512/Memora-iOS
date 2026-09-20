@@ -14,7 +14,6 @@ struct MeetingDetailView: View {
   @State private var isSummaryGenerationPresented = false
   @State private var isAddingPeople = false
   @State private var isSharing = false
-  @State private var isEditingContent = false
   @State private var shareItems: [Any] = []
   @State private var statusAlert: StatusAlert?
 
@@ -92,9 +91,6 @@ struct MeetingDetailView: View {
           }
           ToolbarItem(placement: .topBarTrailing) {
             Menu("その他", systemImage: "ellipsis") {
-              Button("内容を編集", systemImage: "square.and.pencil") {
-                isEditingContent = true
-              }
               Button("PDFで共有", systemImage: "doc.richtext") {
                 sharePDF(meeting)
               }
@@ -125,9 +121,6 @@ struct MeetingDetailView: View {
         }
         .sheet(isPresented: $isSharing) {
           ActivityView(items: shareItems)
-        }
-        .sheet(isPresented: $isEditingContent) {
-          MeetingContentEditSheet(meetingID: meeting.id)
         }
         .alert(item: $statusAlert) { alert in
           Alert(
@@ -273,13 +266,7 @@ struct MeetingDetailView: View {
     case .transcript:
       MeetingTranscriptContent(meeting: meeting)
     case .notes:
-      MeetingNotesContent(
-        meetingID: meeting.id,
-        noteText: Binding(
-          get: { model.meeting(id: meeting.id)?.notes ?? "" },
-          set: { model.updateMeetingNotes(meeting.id, notes: $0) }
-        )
-      )
+      MeetingNotesContent(meetingID: meeting.id)
     }
   }
 
@@ -313,46 +300,48 @@ struct MeetingDetailView: View {
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
     VStack(alignment: .leading, spacing: 0) {
-      Text(meeting.summary)
-        .font(.title3.weight(.medium))
-        .lineSpacing(6)
-        .multilineTextAlignment(.leading)
-        .textSelection(.enabled)
-        .memoraTextReveal(delay: 0.04)
+      InlineMarkdownEditor(
+        text: meeting.summary,
+        placeholder: "要約を追加",
+        font: .title3.weight(.medium),
+        minHeight: 120,
+        onCommit: { model.updateMeetingSummary(meeting.id, summary: $0) }
+      )
+      .memoraTextReveal(delay: 0.04)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 24)
-    .padding(.vertical, 28)
+    .padding(.vertical, 24)
     .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     .memoraAppear()
 
-    InsightSection(
+    InlineEditableList(
       title: "決まったこと",
       symbol: "checkmark.seal",
-      color: .primary,
       items: meeting.decisions,
-      emptyText: "明確な決定は見つかりませんでした"
+      emptyText: "明確な決定は見つかりませんでした",
+      onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) }
     )
     .memoraAppear(delay: 0.05)
 
     MeetingTasksSection(meetingID: meeting.id)
       .memoraAppear(delay: 0.1)
 
-    InsightSection(
+    InlineEditableList(
       title: "まだ決まっていないこと",
       symbol: "questionmark.bubble",
-      color: .primary,
       items: meeting.openQuestions,
-      emptyText: "未決事項はありません"
+      emptyText: "未決事項はありません",
+      onCommit: { model.updateMeetingList(meeting.id, \.openQuestions, items: $0) }
     )
     .memoraAppear(delay: 0.15)
 
-    InsightSection(
+    InlineEditableList(
       title: "重要なポイント",
       symbol: "pin",
-      color: .primary,
       items: meeting.keyPoints,
-      emptyText: "ポイントを抽出中です"
+      emptyText: "ポイントを抽出中です",
+      onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }
     )
     .memoraAppear(delay: 0.2)
   }
@@ -472,11 +461,11 @@ private struct MeetingTranscriptContent: View {
 private struct MeetingNotesContent: View {
   @Environment(MemoraModel.self) private var model
   var meetingID: UUID
-  @Binding var noteText: String
   @State private var photoItem: PhotosPickerItem?
 
   var body: some View {
     let photos = model.meeting(id: meetingID)?.photoData ?? []
+    let noteText = model.meeting(id: meetingID)?.notes ?? ""
 
     VStack(alignment: .leading, spacing: 14) {
       HStack {
@@ -526,19 +515,12 @@ private struct MeetingNotesContent: View {
         .scrollIndicators(.hidden)
       }
 
-      TextEditor(text: $noteText)
-        .font(.body)
-        .frame(minHeight: 360)
-        .scrollContentBackground(.hidden)
-        .overlay(alignment: .topLeading) {
-          if noteText.isEmpty {
-            Text("タップして入力")
-              .foregroundStyle(.tertiary)
-              .padding(.horizontal, 5)
-              .padding(.vertical, 8)
-              .allowsHitTesting(false)
-          }
-        }
+      InlineMarkdownEditor(
+        text: noteText,
+        placeholder: "タップして入力",
+        minHeight: 360,
+        onCommit: { model.updateMeetingNotes(meetingID, notes: $0) }
+      )
     }
     .memoraAppear()
     .animation(.smooth, value: photos.count)
@@ -553,41 +535,6 @@ private struct MeetingNotesContent: View {
           let small = ImageDownscale.jpeg(data) else { return }
     model.addMeetingPhoto(meetingID, data: small)
     photoItem = nil
-  }
-}
-
-private struct InsightSection: View {
-  var title: String
-  var symbol: String
-  var color: Color
-  var items: [String]
-  var emptyText: String
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Label(title, systemImage: symbol)
-        .font(.title3.bold())
-        .foregroundStyle(color)
-        .memoraTextReveal()
-
-      if items.isEmpty {
-        Text(emptyText)
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-      } else {
-        ForEach(items, id: \.self) { item in
-          HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Circle()
-              .fill(color)
-              .frame(width: 5, height: 5)
-            Text(item)
-              .font(.body)
-              .frame(maxWidth: .infinity, alignment: .leading)
-          }
-        }
-      }
-    }
-    .padding(.vertical, 4)
   }
 }
 

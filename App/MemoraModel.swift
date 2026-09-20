@@ -654,6 +654,14 @@ final class MemoraModel {
     updateMeeting(id) { $0.notes = notes }
   }
 
+  func updateMeetingSummary(_ id: UUID, summary: String) {
+    updateMeeting(id) { $0.summary = summary }
+  }
+
+  func updateMeetingList(_ id: UUID, _ keyPath: WritableKeyPath<Meeting, [String]>, items: [String]) {
+    updateMeeting(id) { $0[keyPath: keyPath] = items }
+  }
+
   func renameSpeaker(meetingID: UUID, segmentID: UUID, name: String) {
     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty,
@@ -687,27 +695,6 @@ final class MemoraModel {
       guard photos.indices.contains(index) else { return }
       photos.remove(at: index)
       meeting.photoData = photos.isEmpty ? nil : photos
-    }
-  }
-
-  /// Saves edits a person made to the generated content.
-  func updateMeetingContent(
-    id: UUID,
-    title: String,
-    summary: String,
-    decisions: [String],
-    openQuestions: [String],
-    keyPoints: [String]
-  ) {
-    updateMeeting(id) { meeting in
-      let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-      if !trimmedTitle.isEmpty {
-        meeting.title = trimmedTitle
-      }
-      meeting.summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
-      meeting.decisions = decisions
-      meeting.openQuestions = openQuestions
-      meeting.keyPoints = keyPoints
     }
   }
 
