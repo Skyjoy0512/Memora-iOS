@@ -817,23 +817,26 @@ final class MemoraModel {
       guard !Task.isCancelled else { return }
       self.updateMeeting(id) { $0.status = .transcribing(0.58) }
 
-      // Use a real engine when one is available here; otherwise keep the
-      // placeholder transcript so the flow still completes.
+      // Only a real engine's transcript is ever stored. When none can run, the
+      // record says so and keeps the audio for a retry — never sample text.
       let outcome = await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
       guard !Task.isCancelled else { return }
 
-      self.updateMeeting(id) { meeting in
-        meeting.status = .organizing("決定と次の行動を整理中")
-        if case .segments(let segments) = outcome {
+      switch outcome {
+      case .segments(let segments):
+        self.updateMeeting(id) { meeting in
           meeting.transcript = segments
-        } else {
-          meeting.transcript = SampleContent.generatedTranscript
+          meeting.status = .waitingForSummary
         }
+      case .unavailable:
+        self.updateMeeting(id) {
+          $0.status = .failed("この端末では文字起こしを利用できません。音声は保存されています。設定で別のエンジンを選ぶか、別の端末でお試しください。")
+        }
+      case .failed(let message):
+        self.updateMeeting(id) { $0.status = .failed(message) }
       }
 
-      try? await Task.sleep(for: .milliseconds(900))
-      guard !Task.isCancelled else { return }
-      self.finishProcessing(id)
+      self.processingTasks[id] = nil
     }
   }
 

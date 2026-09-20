@@ -5,8 +5,11 @@ import Speech
 
 enum TranscriptionOutcome {
   case segments([TranscriptSegment])
-  /// No engine could run here — the caller falls back to its placeholder.
+  /// No engine can run here — missing assets, an unsupported locale, or an
+  /// engine that is not wired yet.
   case unavailable
+  /// An engine ran but failed. `message` explains why and how to retry.
+  case failed(String)
 }
 
 /// Transcribes audio with the chosen engine and falls back when it cannot run
@@ -39,17 +42,25 @@ enum TranscriptionService {
       let provider = CloudProvider(
         rawValue: defaults.string(forKey: "memora.transcriptionProvider") ?? ""
       ) ?? .openAI
-      if let segments = try? await CloudTranscriptionService.transcribe(
-        fileURL: fileURL,
-        locale: language.locale,
-        provider: provider
-      ) {
+      do {
+        let segments = try await CloudTranscriptionService.transcribe(
+          fileURL: fileURL,
+          locale: language.locale,
+          provider: provider
+        )
         return .segments(segments)
+      } catch CloudTranscriptionService.Failure.missingKey {
+        return .failed("クラウド文字起こしのAPIキーが設定されていません。設定から入力してください。")
+      } catch CloudTranscriptionService.Failure.unsupported {
+        return .failed("このプロバイダーは文字起こしに対応していません。設定で別のプロバイダーを選んでください。")
+      } catch CloudTranscriptionService.Failure.empty {
+        return .failed("音声から発言を取得できませんでした。音声を確認して再試行してください。")
+      } catch {
+        return .failed("クラウド文字起こしに失敗しました。通信環境とAPIキーを確認して再試行してください。")
       }
-      return .unavailable
 
     case .onDevice:
-      // Whisper still needs a bundled model; the caller falls back for now.
+      // Whisper still needs a bundled model; nothing can run here yet.
       return .unavailable
     }
   }
