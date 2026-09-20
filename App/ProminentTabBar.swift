@@ -92,11 +92,12 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 }
 
 /// The destinations, drawn in SwiftUI: one tappable segment each — so a tap
-/// always lands on the tab under the finger — with the selection pill sliding
-/// between them on the shared control spring.
+/// always lands on the tab under the finger — with one selection capsule that
+/// slides between them through `matchedGeometryEffect`.
 private struct ProminentSegmentedControl<Item: ProminentTabItem>: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Binding var selection: Item
+  @Namespace private var pill
   /// Shared press state, so the whole glass capsule squishes while any segment
   /// is held, the way interactively lit glass does.
   @State private var isPressed = false
@@ -106,42 +107,25 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: View {
 
   private var tabs: [Item] { Array(Item.allCases) }
 
-  private var selectedIndex: Int {
-    tabs.firstIndex(of: selection) ?? 0
-  }
-
   var body: some View {
-    GeometryReader { proxy in
-      let segmentWidth = proxy.size.width / CGFloat(max(1, tabs.count))
-
-      ZStack(alignment: .leading) {
-        if segmentWidth > 0 {
-          Capsule()
-            .fill(Color(uiColor: .secondarySystemFill))
-            .frame(width: max(0, segmentWidth - pillInset * 2), height: height - pillInset * 2)
-            .offset(x: CGFloat(selectedIndex) * segmentWidth + pillInset)
-            .animation(reduceMotion ? nil : MemoraMotion.control, value: selection)
-        }
-
-        HStack(spacing: 0) {
-          ForEach(tabs, id: \.self) { item in
-            segment(item, width: segmentWidth)
-          }
-        }
+    HStack(spacing: 0) {
+      ForEach(tabs, id: \.self) { item in
+        segment(item)
       }
-      .frame(height: height)
     }
     .frame(height: height)
     .scaleEffect(isPressed && !reduceMotion ? 0.97 : 1)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isPressed)
   }
 
-  private func segment(_ item: Item, width: CGFloat) -> some View {
+  private func segment(_ item: Item) -> some View {
     let isSelected = item == selection
 
     return Button {
       guard selection != item else { return }
-      selection = item
+      withAnimation(reduceMotion ? nil : MemoraMotion.tabSelection) {
+        selection = item
+      }
     } label: {
       VStack(spacing: 4) {
         Image(systemName: item.symbol)
@@ -154,8 +138,17 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: View {
           .font(.caption2)
       }
       .foregroundStyle(.primary)
-      .frame(width: max(0, width), height: height)
+      .frame(maxWidth: .infinity)
+      .frame(height: height)
       .contentShape(Rectangle())
+      .background {
+        if isSelected {
+          Capsule()
+            .fill(Color(uiColor: .secondarySystemFill))
+            .padding(pillInset)
+            .matchedGeometryEffect(id: "segmentPill", in: pill)
+        }
+      }
     }
     .buttonStyle(SegmentPressStyle(isPressed: $isPressed, reduceMotion: reduceMotion))
     .accessibilityLabel(item.title)

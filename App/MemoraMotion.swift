@@ -7,6 +7,8 @@ enum MemoraMotion {
   static let screen = Animation.smooth(duration: 0.38)
   /// Controls responding to a tap.
   static let control = Animation.snappy(duration: 0.26)
+  /// The tab bar's selection capsule sliding to its new tab.
+  static let tabSelection = Animation.spring(response: 0.35, dampingFraction: 0.82)
   /// Moments worth celebrating, such as finishing a recording.
   static let emphasis = Animation.bouncy(duration: 0.46, extraBounce: 0.08)
 }
