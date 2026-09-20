@@ -9,7 +9,9 @@ struct AIComposerBar: View {
   @Binding var attachment: AIAttachment?
   var placeholder: String
   var isBusy = false
-  var focusRequest = false
+  /// Keeps the keyboard up after sending, so a chat can continue. The field is
+  /// never focused on its own.
+  var keepsFocusAfterSubmit = false
   var onSubmit: () -> Void
   var focusChanged: ((Bool) -> Void)?
 
@@ -26,35 +28,31 @@ struct AIComposerBar: View {
     VStack(alignment: .leading, spacing: 0) {
       if attachment != nil {
         attachmentStrip
-          .padding(.horizontal, 16)
-          .padding(.top, 12)
+          .padding(.horizontal, 14)
+          .padding(.top, 8)
 
         Divider()
-          .padding(.horizontal, 16)
-          .padding(.top, 8)
+          .padding(.horizontal, 14)
+          .padding(.top, 6)
       }
 
-      TextField(placeholder, text: $text, axis: .vertical)
-        .font(.body)
-        .lineLimit(1...6)
-        .submitLabel(.send)
-        .onSubmit(submit)
-        .focused($isFieldFocused)
-        .padding(.horizontal, 18)
-        .padding(.top, 16)
-        .padding(.bottom, 10)
-
-      HStack(spacing: 8) {
+      HStack(spacing: 6) {
         attachmentMenu
 
-        Spacer(minLength: 8)
+        TextField(placeholder, text: $text, axis: .vertical)
+          .font(.body)
+          .lineLimit(1...5)
+          .submitLabel(.send)
+          .onSubmit(submit)
+          .focused($isFieldFocused)
+          .padding(.vertical, 8)
 
         modelMenu
         actionButton
       }
       .padding(.leading, 8)
       .padding(.trailing, 8)
-      .padding(.bottom, 8)
+      .padding(.vertical, 6)
     }
     .background { listeningBackdrop }
     .memoraGlass(in: RoundedRectangle(cornerRadius: 28, style: .continuous), interactive: true)
@@ -66,16 +64,8 @@ struct AIComposerBar: View {
     .onChange(of: isFieldFocused) { _, focused in
       focusChanged?(focused)
     }
-    .onChange(of: focusRequest) { _, requested in
-      isFieldFocused = requested
-    }
     .onChange(of: model.composerDismissRequests) { _, _ in
       isFieldFocused = false
-    }
-    .onAppear {
-      if focusRequest {
-        isFieldFocused = true
-      }
     }
     .onDisappear {
       speechInput.stop()
@@ -164,7 +154,7 @@ struct AIComposerBar: View {
       Image(systemName: "paperclip")
         .font(.body.weight(.medium))
         .foregroundStyle(.primary)
-        .frame(width: 40, height: 40)
+        .frame(width: 34, height: 34)
         .contentShape(Circle())
     }
     .labelStyle(.iconOnly)
@@ -198,8 +188,8 @@ struct AIComposerBar: View {
           .foregroundStyle(.secondary)
       }
       .foregroundStyle(.primary)
-      .padding(.horizontal, 8)
-      .frame(height: 40)
+      .padding(.horizontal, 6)
+      .frame(height: 32)
       .contentShape(Rectangle())
     }
     .accessibilityLabel("使用するAI")
@@ -216,7 +206,7 @@ struct AIComposerBar: View {
       Image(systemName: actionSymbol)
         .font(.body.weight(.semibold))
         .foregroundStyle(Color(uiColor: .systemBackground))
-        .frame(width: 44, height: 44)
+        .frame(width: 36, height: 36)
         .background(Circle().fill(.primary))
         .symbolEffect(.variableColor.iterative, isActive: speechInput.isListening)
         .contentTransition(.symbolEffect(.replace))
