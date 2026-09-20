@@ -97,6 +97,9 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 private struct ProminentSegmentedControl<Item: ProminentTabItem>: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Binding var selection: Item
+  /// Shared press state, so the whole glass capsule squishes while any segment
+  /// is held, the way interactively lit glass does.
+  @State private var isPressed = false
 
   private let height: CGFloat = 66
   private let pillInset: CGFloat = 2
@@ -129,6 +132,8 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: View {
       .frame(height: height)
     }
     .frame(height: height)
+    .scaleEffect(isPressed && !reduceMotion ? 0.97 : 1)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: isPressed)
   }
 
   private func segment(_ item: Item, width: CGFloat) -> some View {
@@ -152,8 +157,24 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: View {
       .frame(width: max(0, width), height: height)
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(SegmentPressStyle(isPressed: $isPressed, reduceMotion: reduceMotion))
     .accessibilityLabel(item.title)
     .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+  }
+}
+
+/// Reports whether the segment is held so the glass can react, and gives the
+/// segment's own content a small press.
+private struct SegmentPressStyle: ButtonStyle {
+  @Binding var isPressed: Bool
+  var reduceMotion: Bool
+
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .scaleEffect(configuration.isPressed && !reduceMotion ? 0.94 : 1)
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: configuration.isPressed)
+      .onChange(of: configuration.isPressed) { _, newValue in
+        isPressed = newValue
+      }
   }
 }
