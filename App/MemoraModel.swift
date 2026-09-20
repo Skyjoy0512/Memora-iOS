@@ -22,6 +22,8 @@ final class MemoraModel {
   var aiHistory: [AIConversationEntry]
   /// People who can be tagged on recordings.
   var people: [Person] = []
+  /// Marketplace summary templates the person has added.
+  private(set) var installedTemplateIDs: [String] = []
   /// The Ask AI chat transcript.
   var aiMessages: [AIChatMessage] = []
   /// What new Ask AI questions look across.
@@ -124,6 +126,7 @@ final class MemoraModel {
     } else {
       people = SampleContent.makePeople()
     }
+    installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = [
       AIConversationEntry(
         id: UUID(),
@@ -473,15 +476,37 @@ final class MemoraModel {
     }
   }
 
-  func generateSummary(_ id: UUID, template: SummaryTemplate) {
+  func generateSummary(_ id: UUID, choice: SummaryTemplateChoice) {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
-    updateMeeting(id) { $0.status = .organizing(template.processingLabel) }
+    updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     processingTasks[id]?.cancel()
     processingTasks[id] = Task { [weak self] in
       try? await Task.sleep(for: .milliseconds(1_100))
       guard !Task.isCancelled else { return }
-      self?.finishProcessing(id)
+      self?.finishProcessing(id, choice: choice)
     }
+  }
+
+  // MARK: - Summary templates
+
+  /// Templates added from the marketplace, in catalog order.
+  var installedMarketTemplates: [SummaryMarketTemplate] {
+    SummaryTemplateCatalog.market.filter { installedTemplateIDs.contains($0.id) }
+  }
+
+  func installTemplate(_ id: String) {
+    guard !installedTemplateIDs.contains(id) else { return }
+    installedTemplateIDs.append(id)
+    persistInstalledTemplates()
+  }
+
+  func uninstallTemplate(_ id: String) {
+    installedTemplateIDs.removeAll { $0 == id }
+    persistInstalledTemplates()
+  }
+
+  private func persistInstalledTemplates() {
+    UserDefaults.standard.set(installedTemplateIDs, forKey: StorageKey.installedTemplates)
   }
 
   func toggleTask(_ id: UUID) {
@@ -896,11 +921,15 @@ final class MemoraModel {
     }
   }
 
-  private func finishProcessing(_ id: UUID) {
+  private func finishProcessing(_ id: UUID, choice: SummaryTemplateChoice? = nil) {
     updateMeeting(id) { meeting in
       meeting.title = meeting.title == "新しい会話" ? "プロダクト方針の確認" : meeting.title
       meeting.status = .ready
-      meeting.summary = "次期リリースは、録音開始の速さと会議後の行動につながる体験を優先する方針で合意しました。"
+      if case .market(let template)? = choice {
+        meeting.summary = template.summary(from: meeting.transcript)
+      } else {
+        meeting.summary = "次期リリースは、録音開始の速さと会議後の行動につながる体験を優先する方針で合意しました。"
+      }
       meeting.keyPoints = [
         "初回体験は説明よりも実際の録音を優先する",
         "AIの詳細設定は必要になった時だけ見せる"
@@ -968,6 +997,7 @@ final class MemoraModel {
     static let spaces = "memoraSpaces"
     static let aiModel = "memoraAIModel"
     static let people = "memoraPeople"
+    static let installedTemplates = "memoraInstalledTemplates"
   }
 
   private func recordingsDirectory() throws -> URL {

@@ -5,7 +5,7 @@ struct SummaryGenerationSheet: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var mode = SummaryGenerationMode.automatic
-  @State private var template = SummaryTemplate.meetingMinutes
+  @State private var template = SummaryTemplateChoice.builtIn(.meetingMinutes)
   @State private var selectedDetent = PresentationDetent.medium
   var meetingID: UUID
 
@@ -35,7 +35,7 @@ struct SummaryGenerationSheet: View {
                   .font(.title3.bold())
 
                 VStack(spacing: 8) {
-                  ForEach(SummaryTemplate.allCases.filter { $0 != .automatic }) { item in
+                  ForEach(choices) { item in
                     templateChoice(item)
                   }
                 }
@@ -76,7 +76,7 @@ struct SummaryGenerationSheet: View {
       Button("生成") {
         model.generateSummary(
           meetingID,
-          template: mode == .automatic ? .automatic : template
+          choice: mode == .automatic ? .builtIn(.automatic) : template
         )
         dismiss()
       }
@@ -91,6 +91,10 @@ struct SummaryGenerationSheet: View {
     .padding(.top, 10)
     .padding(.bottom, 12)
     .background(.bar)
+  }
+
+  private var choices: [SummaryTemplateChoice] {
+    SummaryTemplateChoice.builtInChoices + model.installedMarketTemplates.map { .market($0) }
   }
 
   private func generationChoice(
@@ -131,7 +135,7 @@ struct SummaryGenerationSheet: View {
     .accessibilityAddTraits(mode == candidate ? .isSelected : [])
   }
 
-  private func templateChoice(_ item: SummaryTemplate) -> some View {
+  private func templateChoice(_ item: SummaryTemplateChoice) -> some View {
     let isSelected = template == item
 
     return Button {

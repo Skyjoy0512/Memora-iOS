@@ -70,6 +70,7 @@ AIは独立したチャットアプリにせず、Ask AIによる横断検索と
 - アカウントとSubscription
 - 文字起こしエンジン（自動／Apple SpeechAnalyzer／端末内Whisper／クラウドBYOK）と言語
 - AIエンジン（自動／Apple Foundation Models／ローカルLLM／クラウドBYOK）とプロバイダー・APIキー
+- 要約テンプレートのマーケットプレイス。組み込みのテンプレートに加え、追加分を足す／外すと、要約生成時の選択肢へ反映する
 - Omi・PLAUDなど外部レコーダーとの接続と音声取り込み
 - 連携: Notion、およびChatGPTなど外部アシスタントから読ませるMCPの接続先・トークン・公開範囲
 - ローカル保存とプライバシー

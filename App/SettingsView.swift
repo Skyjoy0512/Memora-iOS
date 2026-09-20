@@ -87,6 +87,15 @@ struct SettingsView: View {
           } label: {
             LabeledContent("AI整理", value: aiEngine.label)
           }
+
+          NavigationLink {
+            SummaryTemplateMarketplaceView()
+          } label: {
+            LabeledContent(
+              "要約テンプレート",
+              value: model.installedTemplateIDs.isEmpty ? "標準" : "\(model.installedTemplateIDs.count)個追加"
+            )
+          }
         } header: {
           Text("処理")
         } footer: {
