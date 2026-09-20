@@ -21,6 +21,7 @@ struct AIComposerBar: View {
   @State private var isPhotoPickerPresented = false
   @State private var isCameraPresented = false
   @State private var photoItem: PhotosPickerItem?
+  @State private var editingPhoto: PhotoEditRequest?
   @State private var importErrorMessage: String?
   @FocusState private var isFieldFocused: Bool
 
@@ -96,6 +97,15 @@ struct AIComposerBar: View {
       guard let newItem else { return }
       Task {
         await importPhoto(newItem)
+      }
+    }
+    .sheet(item: $editingPhoto) { request in
+      PhotoEditorView(source: request.data) { edited in
+        do {
+          attachment = try model.importAIPhoto(data: edited, fileExtension: "jpg")
+        } catch {
+          importErrorMessage = "写真を添付できませんでした。もう一度お試しください。"
+        }
       }
     }
     .alert("添付できませんでした", isPresented: importErrorPresented) {
@@ -274,15 +284,13 @@ struct AIComposerBar: View {
   }
 
   private func importPhoto(_ item: PhotosPickerItem) async {
-    defer { photoItem = nil }
-    do {
-      guard let data = try await item.loadTransferable(type: Data.self) else {
-        throw CocoaError(.fileReadCorruptFile)
-      }
-      let fileExtension = item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg"
-      attachment = try model.importAIPhoto(data: data, fileExtension: fileExtension)
-    } catch {
+    guard let data = try? await item.loadTransferable(type: Data.self) else {
+      photoItem = nil
       importErrorMessage = "写真を添付できませんでした。もう一度お試しください。"
+      return
     }
+    photoItem = nil
+    // Crop and adjust before attaching.
+    editingPhoto = PhotoEditRequest(data: data)
   }
 }
