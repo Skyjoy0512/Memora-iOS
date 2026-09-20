@@ -89,10 +89,10 @@ final class MemoraModel {
   /// The inline editor that most recently took focus, so its screen can lift it
   /// clear of the keyboard.
   var focusedInlineEditorID: UUID?
-  /// The engine the Ask AI composer asks with.
-  var aiModel: AIModel = .standard {
+  /// The engine Ask AI and summaries actually use.
+  var aiEngine: AIEngine = .automatic {
     didSet {
-      UserDefaults.standard.set(aiModel.rawValue, forKey: StorageKey.aiModel)
+      UserDefaults.standard.set(aiEngine.rawValue, forKey: StorageKey.aiEngine)
     }
   }
 

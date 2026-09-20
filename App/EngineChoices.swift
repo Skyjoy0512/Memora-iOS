@@ -52,6 +52,25 @@ enum AIEngine: String, CaseIterable, Identifiable {
     }
   }
 
+  /// A short form for the composer chip, which has little room.
+  var shortLabel: String {
+    switch self {
+    case .automatic: "自動"
+    case .foundation: "端末内"
+    case .local: "ローカル"
+    case .cloud: "クラウド"
+    }
+  }
+
+  var symbol: String {
+    switch self {
+    case .automatic: "sparkles"
+    case .foundation: "iphone"
+    case .local: "desktopcomputer"
+    case .cloud: "cloud"
+    }
+  }
+
   var detail: String {
     switch self {
     case .automatic:
