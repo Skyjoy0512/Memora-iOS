@@ -40,23 +40,36 @@ struct HomeView: View {
           }
 
           if entries.isEmpty {
-            ContentUnavailableView {
-              Label(
-                selectedPerson == nil ? "まだライフログがありません" : "この人の記録はありません",
-                systemImage: "waveform.path.ecg"
-              )
-            } description: {
-              Text(emptyDescription)
-            } actions: {
+            VStack(spacing: 16) {
+              Image(systemName: "waveform.path.ecg")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+
+              VStack(spacing: 6) {
+                Text(selectedPerson == nil ? "まだライフログがありません" : "この人の記録はありません")
+                  .font(.headline)
+
+                Text(emptyDescription)
+                  .font(.subheadline)
+                  .foregroundStyle(.secondary)
+                  .multilineTextAlignment(.center)
+              }
+
               if query.isEmpty {
-                Button("記録を追加", systemImage: "plus") {
+                Button("記録を追加") {
                   isCreationPresented = true
                 }
-                .buttonStyle(.borderedProminent)
+                .font(.headline)
+                .foregroundStyle(Color(uiColor: .systemBackground))
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background(Color(uiColor: .label), in: Capsule())
+                .contentShape(Capsule())
+                .buttonStyle(.plain)
               }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 32)
+            .padding(20)
+            .memoraCard()
           } else {
             if !query.isEmpty {
               Text("検索結果")
