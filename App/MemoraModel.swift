@@ -117,6 +117,8 @@ final class MemoraModel {
 
   init() {
     let defaults = UserDefaults.standard
+    try? LocalStore.shared.prepare()
+
     hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
@@ -124,13 +126,11 @@ final class MemoraModel {
     // Cloud storage is a paid option: without Plus the records stay on device.
     cloudStorageEnabled = defaults.bool(forKey: StorageKey.isSubscribed)
       && defaults.bool(forKey: StorageKey.cloudStorage)
-    if let data = defaults.data(forKey: StorageKey.account) {
+    if let data = LocalStore.shared.read(StorageKey.account) ?? defaults.data(forKey: StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
     }
 
     let sample = SampleContent.make()
-
-    try? LocalStore.shared.prepare()
 
     /// Reads a document from the local store, moving any legacy `UserDefaults`
     /// copy across on first run. The old value is left in place as a safety
@@ -247,11 +247,15 @@ final class MemoraModel {
 
   private func persistAccount(_ account: MemoraAccount?) {
     self.account = account
-    let defaults = UserDefaults.standard
     if let account, let data = try? JSONEncoder().encode(account) {
-      defaults.set(data, forKey: StorageKey.account)
+      do {
+        try LocalStore.shared.write(StorageKey.account, data: data)
+        // The legacy copy is only cleared once the store has it.
+        UserDefaults.standard.removeObject(forKey: StorageKey.account)
+      } catch {}
     } else {
-      defaults.removeObject(forKey: StorageKey.account)
+      try? LocalStore.shared.remove(StorageKey.account)
+      UserDefaults.standard.removeObject(forKey: StorageKey.account)
     }
   }
 
@@ -805,8 +809,7 @@ final class MemoraModel {
   }
 
   func persistPeople() {
-    guard let data = try? JSONEncoder().encode(people) else { return }
-    UserDefaults.standard.set(data, forKey: StorageKey.people)
+    persistInBackground(people, forKey: StorageKey.people)
   }
 
   func resetSampleContent() {
@@ -945,14 +948,20 @@ final class MemoraModel {
     persistInBackground(spaces, forKey: StorageKey.spaces)
   }
 
-  /// Encoding and writing run off the main thread, and in order, so a burst of
-  /// edits does not stall the UI or leave an older snapshot behind.
+  /// Encoding runs off the main thread, and the store writes in order, so a
+  /// burst of edits does not stall the UI or leave an older snapshot behind.
   private let persistenceQueue = DispatchQueue(label: "app.memora.persistence", qos: .utility)
 
   private func persistInBackground<T: Encodable & Sendable>(_ value: T, forKey key: String) {
-    persistenceQueue.async {
+    persistenceQueue.async { [weak self] in
       guard let data = try? JSONEncoder().encode(value) else { return }
-      UserDefaults.standard.set(data, forKey: key)
+      do {
+        try LocalStore.shared.write(key, data: data)
+      } catch {
+        Task { @MainActor in
+          self?.persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
+        }
+      }
     }
   }
 
