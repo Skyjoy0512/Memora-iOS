@@ -67,7 +67,7 @@ struct LifeLogRow: View {
         }
       }
       .padding(16)
-      .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+      .memoraCard(radius: 20)
       .padding(.bottom, 8)
     }
     .contentShape(Rectangle())

@@ -13,17 +13,22 @@ final class MemoraModel {
   var isSettingsPresented = false
   var isBottomBarHidden = false
   var meetings: [Meeting] {
-    didSet { meetingIndexIsStale = true }
+    didSet { meetingIndex.invalidate() }
   }
-  /// Cached positions for `meeting(id:)`; rebuilt the next time it is asked.
-  @ObservationIgnored private var meetingIndex: [UUID: Int] = [:]
-  @ObservationIgnored private var meetingIndexIsStale = true
-  var spaces: [MemoraSpace]
+  var spaces: [MemoraSpace] {
+    didSet { spaceIndex.invalidate() }
+  }
   var tasks: [MemoraTask]
   var lifeLogEntries: [LifeLogEntry]
   var aiHistory: [AIConversationEntry]
   /// People who can be tagged on recordings.
-  var people: [Person] = []
+  var people: [Person] = [] {
+    didSet { personIndex.invalidate() }
+  }
+  /// Positions for the array lookups the screens do constantly.
+  @ObservationIgnored private var meetingIndex = IdentifiableIndex<Meeting>()
+  @ObservationIgnored private var spaceIndex = IdentifiableIndex<MemoraSpace>()
+  @ObservationIgnored private var personIndex = IdentifiableIndex<Person>()
   /// Marketplace summary templates the person has added.
   private(set) var installedTemplateIDs: [String] = []
   /// The Ask AI chat transcript.
@@ -158,7 +163,7 @@ final class MemoraModel {
 
   func signIn(with provider: AuthProvider, email: String? = nil, displayName: String? = nil) {
     let address = email ?? Self.placeholderEmail(for: provider)
-    persist(
+    persistAccount(
       MemoraAccount(
         displayName: displayName ?? Self.placeholderName(for: provider, email: address),
         email: address,
@@ -169,11 +174,11 @@ final class MemoraModel {
   }
 
   func signOut() {
-    persist(nil)
+    persistAccount(nil)
   }
 
   func deleteAccount() {
-    persist(nil)
+    persistAccount(nil)
     aiHistory = []
   }
 
@@ -193,7 +198,7 @@ final class MemoraModel {
     isPaywallPresented = true
   }
 
-  private func persist(_ account: MemoraAccount?) {
+  private func persistAccount(_ account: MemoraAccount?) {
     self.account = account
     let defaults = UserDefaults.standard
     if let account, let data = try? JSONEncoder().encode(account) {
@@ -226,20 +231,11 @@ final class MemoraModel {
   // MARK: - Content
 
   func meeting(id: UUID) -> Meeting? {
-    // Screens look meetings up by id constantly, so keep an index instead of
-    // scanning the array each time.
-    if meetingIndexIsStale {
-      meetingIndex = Dictionary(
-        uniqueKeysWithValues: meetings.enumerated().map { ($0.element.id, $0.offset) }
-      )
-      meetingIndexIsStale = false
-    }
-    guard let index = meetingIndex[id], meetings.indices.contains(index) else { return nil }
-    return meetings[index]
+    meetingIndex.element(id, in: meetings)
   }
 
   func space(id: UUID) -> MemoraSpace? {
-    spaces.first { $0.id == id }
+    spaceIndex.element(id, in: spaces)
   }
 
   func startCapture() async {
@@ -755,7 +751,7 @@ final class MemoraModel {
   // MARK: - People
 
   func person(id: UUID) -> Person? {
-    people.first { $0.id == id }
+    personIndex.element(id, in: people)
   }
 
   @discardableResult

@@ -388,7 +388,7 @@ extension View {
   func insightCard() -> some View {
     padding(16)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+      .memoraCard(radius: 20)
   }
 }
 
@@ -423,7 +423,7 @@ private struct ManualAIProcessingCard: View {
     }
     .padding(20)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .memoraCard(radius: 20)
     .memoraAppear()
   }
 }
@@ -676,7 +676,7 @@ private struct ProcessingOverview: View {
       }
     }
     .padding(18)
-    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .memoraCard(radius: 20)
   }
 
   private var primaryText: String {

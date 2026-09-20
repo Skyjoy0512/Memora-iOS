@@ -117,7 +117,7 @@ struct AIQuestionView: View {
     }
     .padding(16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .memoraCard(radius: 18)
   }
 
   private func answerContent(_ answer: String) -> some View {

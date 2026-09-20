@@ -200,7 +200,7 @@ private struct OnboardingPreview: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(16)
-    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .memoraCard(radius: 20)
     .accessibilityHidden(true)
   }
 

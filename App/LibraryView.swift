@@ -212,7 +212,7 @@ struct LibraryView: View {
       .foregroundStyle(.primary)
       .padding(14)
       .frame(maxWidth: .infinity)
-      .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .memoraCard(radius: 18)
     }
     .buttonStyle(.plain)
   }
