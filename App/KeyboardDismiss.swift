@@ -28,6 +28,10 @@ private struct KeyboardDismissInstaller: UIViewRepresentable {
 
       let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
       tap.cancelsTouchesInView = false
+      // Never hold up the touches that reach controls underneath, or the first
+      // tap on a segmented control or button can be missed.
+      tap.delaysTouchesBegan = false
+      tap.delaysTouchesEnded = false
       tap.delegate = self
       window.addGestureRecognizer(tap)
     }

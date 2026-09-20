@@ -87,7 +87,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     Image(systemName: prominentSymbol)
       .font(.title)
       .scaleEffect(0.95)
-      .frame(width: 40, height: 50)
+      .frame(width: 44, height: 55)
       .accessibilityLabel("作成メニューを開く")
   }
 }
@@ -120,7 +120,11 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   }
 
   func updateUIView(_ uiView: UISegmentedControl, context: Context) {
-    if let index = allTabs.firstIndex(of: selection), uiView.selectedSegmentIndex != index {
+    // Never move the selection while a finger is down: doing so cancels the
+    // touch in progress, which is what swallowed the first tap on a tab.
+    if !uiView.isTracking,
+       let index = allTabs.firstIndex(of: selection),
+       uiView.selectedSegmentIndex != index {
       uiView.selectedSegmentIndex = index
     }
 
@@ -139,7 +143,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     uiView: UISegmentedControl,
     context: Context
   ) -> CGSize? {
-    CGSize(width: proposal.replacingUnspecifiedDimensions().width, height: 60)
+    CGSize(width: proposal.replacingUnspecifiedDimensions().width, height: 66)
   }
 
   func makeCoordinator() -> Coordinator {
