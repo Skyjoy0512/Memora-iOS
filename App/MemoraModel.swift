@@ -113,6 +113,8 @@ final class MemoraModel {
   @ObservationIgnored private var processingTasks: [UUID: Task<Void, Never>] = [:]
   /// The generation each record's most recent summary request belongs to.
   @ObservationIgnored private var processingRevisions: [UUID: Int] = [:]
+  /// Records whose processing was still running the last time the app stopped.
+  @ObservationIgnored private var interruptedJobIDs: [String] = []
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
   @ObservationIgnored private var pendingMeetingNavigationID: UUID?
   @ObservationIgnored private let recorder = AudioRecorderService()
@@ -167,6 +169,7 @@ final class MemoraModel {
     )
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: sample.tasks)
     people = load([Person].self, forKey: StorageKey.people, fallback: SampleContent.makePeople())
+    interruptedJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
 
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = [
@@ -182,6 +185,50 @@ final class MemoraModel {
     loadFailureMessage = didFindUnreadableData
       ? "保存されたデータの一部を読み込めませんでした。元のデータは端末に退避しています。"
       : nil
+
+    // Anything that was mid-processing when the app stopped is offered for
+    // retry instead of looking stuck forever.
+    recoverInterruptedJobs()
+  }
+
+  /// Marks records whose processing was interrupted by a stop or a crash, so the
+  /// screen shows a retry rather than a spinner.
+  private func recoverInterruptedJobs() {
+    guard !interruptedJobIDs.isEmpty else { return }
+    let ids = Set(interruptedJobIDs.compactMap(UUID.init(uuidString:)))
+    interruptedJobIDs = []
+    persistInterruptedJobs()
+
+    var changed = false
+    for index in meetings.indices where ids.contains(meetings[index].id) {
+      switch meetings[index].status {
+      case .importing, .transcribing, .organizing:
+        meetings[index].status = .failed("処理が中断されました。音声は保存されています。もう一度試せます。")
+        changed = true
+      default:
+        break
+      }
+    }
+    if changed {
+      persistMeetings()
+    }
+  }
+
+  /// Records whether a record has a processing job running, so an interrupted
+  /// one can be recovered on the next launch.
+  private func setJobActive(_ id: UUID, active: Bool) {
+    if active {
+      if !interruptedJobIDs.contains(id.uuidString) {
+        interruptedJobIDs.append(id.uuidString)
+      }
+    } else {
+      interruptedJobIDs.removeAll { $0 == id.uuidString }
+    }
+    persistInterruptedJobs()
+  }
+
+  private func persistInterruptedJobs() {
+    persistInBackground(interruptedJobIDs, forKey: StorageKey.activeJobs)
   }
 
   // MARK: - Onboarding and account
@@ -592,6 +639,7 @@ final class MemoraModel {
     let revision = bumpProcessingRevision(for: id)
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     processingTasks[id]?.cancel()
+    setJobActive(id, active: true)
 
     processingTasks[id] = Task { [weak self] in
       guard let self else { return }
@@ -623,6 +671,7 @@ final class MemoraModel {
       }
 
       self.processingTasks[id] = nil
+      self.setJobActive(id, active: false)
     }
   }
 
@@ -774,6 +823,7 @@ final class MemoraModel {
     processingTasks[id]?.cancel()
     processingTasks[id] = nil
     processingRevisions[id] = nil
+    setJobActive(id, active: false)
 
     meetings.removeAll { $0.id == id }
     persistMeetings()
@@ -899,6 +949,7 @@ final class MemoraModel {
 
   private func beginProcessing(_ id: UUID) {
     processingTasks[id]?.cancel()
+    setJobActive(id, active: true)
     processingTasks[id] = Task { [weak self] in
       guard let self else { return }
       try? await Task.sleep(for: .milliseconds(700))
@@ -925,6 +976,7 @@ final class MemoraModel {
       }
 
       self.processingTasks[id] = nil
+      self.setJobActive(id, active: false)
     }
   }
 
@@ -980,6 +1032,7 @@ final class MemoraModel {
     static let people = "memoraPeople"
     static let installedTemplates = "memoraInstalledTemplates"
     static let cloudStorage = "memoraCloudStorage"
+    static let activeJobs = "memoraActiveJobs"
   }
 
   private func recordingsDirectory() throws -> URL {

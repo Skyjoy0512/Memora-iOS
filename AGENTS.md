@@ -9,6 +9,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - Change the UI, layout, or copy only when the request asks for it. Otherwise
   optimise and refactor code without altering what is on screen.
 - Build after every change and keep the working tree committed.
+- Records live in the SQLite store (`App/LocalStore.swift`); only settings belong
+  in `UserDefaults`. Audio is referenced relative to `App/MediaFiles.swift`.
 - One type per file; comments explain why, not what; prefer `var` for stored
   properties in structs; no `#Preview` or `PreviewProvider`.
 
