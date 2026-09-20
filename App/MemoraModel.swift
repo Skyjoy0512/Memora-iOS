@@ -12,6 +12,10 @@ final class MemoraModel {
   var isFileCreationPresented = false
   var isSettingsPresented = false
   var isBottomBarHidden = false
+  /// Records stay on the device unless Plus turns cloud storage on.
+  var cloudStorageEnabled = false {
+    didSet { UserDefaults.standard.set(cloudStorageEnabled, forKey: StorageKey.cloudStorage) }
+  }
   var meetings: [Meeting] {
     didSet {
       meetingIndex.invalidate()
@@ -110,6 +114,8 @@ final class MemoraModel {
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
     aiModel = AIModel(rawValue: defaults.string(forKey: StorageKey.aiModel) ?? "") ?? .standard
+    // Cloud storage is a paid option: without Plus the records stay on device.
+    cloudStorageEnabled = isSubscribed && defaults.bool(forKey: StorageKey.cloudStorage)
     if let data = defaults.data(forKey: StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
     }
@@ -908,6 +914,7 @@ final class MemoraModel {
     static let aiModel = "memoraAIModel"
     static let people = "memoraPeople"
     static let installedTemplates = "memoraInstalledTemplates"
+    static let cloudStorage = "memoraCloudStorage"
   }
 
   private func recordingsDirectory() throws -> URL {
