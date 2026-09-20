@@ -15,6 +15,7 @@ struct HomeView: View {
 
   var body: some View {
     @Bindable var model = model
+    let entries = matchingEntries
 
     NavigationStack(path: $model.homePath) {
       ScrollView {
@@ -38,7 +39,7 @@ struct HomeView: View {
             filterHeader(person)
           }
 
-          if matchingEntries.isEmpty {
+          if entries.isEmpty {
             ContentUnavailableView {
               Label(
                 selectedPerson == nil ? "まだライフログがありません" : "この人の記録はありません",
@@ -63,7 +64,7 @@ struct HomeView: View {
                 .memoraTextReveal()
             }
 
-            ForEach(dayGroups) { group in
+            ForEach(dayGroups(of: entries)) { group in
               VStack(alignment: .leading, spacing: 10) {
                 Text(dayLabel(for: group.day))
                   .font(.title2.bold())
@@ -225,8 +226,8 @@ struct HomeView: View {
     }
   }
 
-  private var dayGroups: [LifeLogDayGroup] {
-    let grouped = Dictionary(grouping: matchingEntries) {
+  private func dayGroups(of entries: [LifeLogEntry]) -> [LifeLogDayGroup] {
+    let grouped = Dictionary(grouping: entries) {
       Calendar.current.startOfDay(for: $0.createdAt)
     }
     return grouped

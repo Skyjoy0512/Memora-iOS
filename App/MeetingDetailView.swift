@@ -478,13 +478,15 @@ private struct MeetingTranscriptContent: View {
         }
         .frame(maxWidth: .infinity)
       } else {
-        ForEach(meeting.transcript) { segment in
-          TranscriptSegmentText(
-            meetingID: meeting.id,
-            segment: segment,
-            showsSpeaker: meeting.hasSpeakerSeparation,
-            timeWidth: 42
-          )
+        LazyVStack(alignment: .leading, spacing: 22) {
+          ForEach(meeting.transcript) { segment in
+            TranscriptSegmentText(
+              meetingID: meeting.id,
+              segment: segment,
+              showsSpeaker: meeting.hasSpeakerSeparation,
+              timeWidth: 42
+            )
+          }
         }
       }
     }

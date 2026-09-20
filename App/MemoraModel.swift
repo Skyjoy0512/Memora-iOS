@@ -15,7 +15,12 @@ final class MemoraModel {
   /// Set while the Files screen is scrolled away from the top, so its section
   /// switch and search bar can step aside.
   var isLibraryChromeHidden = false
-  var meetings: [Meeting]
+  var meetings: [Meeting] {
+    didSet { meetingIndexIsStale = true }
+  }
+  /// Cached positions for `meeting(id:)`; rebuilt the next time it is asked.
+  @ObservationIgnored private var meetingIndex: [UUID: Int] = [:]
+  @ObservationIgnored private var meetingIndexIsStale = true
   var spaces: [MemoraSpace]
   var tasks: [MemoraTask]
   var lifeLogEntries: [LifeLogEntry]
@@ -224,7 +229,16 @@ final class MemoraModel {
   // MARK: - Content
 
   func meeting(id: UUID) -> Meeting? {
-    meetings.first { $0.id == id }
+    // Screens look meetings up by id constantly, so keep an index instead of
+    // scanning the array each time.
+    if meetingIndexIsStale {
+      meetingIndex = Dictionary(
+        uniqueKeysWithValues: meetings.enumerated().map { ($0.element.id, $0.offset) }
+      )
+      meetingIndexIsStale = false
+    }
+    guard let index = meetingIndex[id], meetings.indices.contains(index) else { return nil }
+    return meetings[index]
   }
 
   func space(id: UUID) -> MemoraSpace? {
@@ -967,23 +981,30 @@ final class MemoraModel {
   }
 
   private func persistTasks() {
-    guard let data = try? JSONEncoder().encode(tasks) else { return }
-    UserDefaults.standard.set(data, forKey: StorageKey.tasks)
+    persistInBackground(tasks, forKey: StorageKey.tasks)
   }
 
   private func persistLifeLog() {
-    guard let data = try? JSONEncoder().encode(lifeLogEntries) else { return }
-    UserDefaults.standard.set(data, forKey: StorageKey.lifeLogEntries)
+    persistInBackground(lifeLogEntries, forKey: StorageKey.lifeLogEntries)
   }
 
   private func persistMeetings() {
-    guard let data = try? JSONEncoder().encode(meetings) else { return }
-    UserDefaults.standard.set(data, forKey: StorageKey.meetings)
+    persistInBackground(meetings, forKey: StorageKey.meetings)
   }
 
   private func persistSpaces() {
-    guard let data = try? JSONEncoder().encode(spaces) else { return }
-    UserDefaults.standard.set(data, forKey: StorageKey.spaces)
+    persistInBackground(spaces, forKey: StorageKey.spaces)
+  }
+
+  /// Encoding and writing run off the main thread, and in order, so a burst of
+  /// edits does not stall the UI or leave an older snapshot behind.
+  private let persistenceQueue = DispatchQueue(label: "app.memora.persistence", qos: .utility)
+
+  private func persistInBackground<T: Encodable & Sendable>(_ value: T, forKey key: String) {
+    persistenceQueue.async {
+      guard let data = try? JSONEncoder().encode(value) else { return }
+      UserDefaults.standard.set(data, forKey: key)
+    }
   }
 
   private enum StorageKey {

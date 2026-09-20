@@ -79,9 +79,19 @@ struct InlineMarkdownEditor: View {
   }
 
   static func attributed(_ markdown: String) -> AttributedString {
+    if let cached = markdownCache.value(for: markdown) {
+      return cached
+    }
+
     let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-    return (try? AttributedString(markdown: markdown, options: options)) ?? AttributedString(markdown)
+    let parsed = (try? AttributedString(markdown: markdown, options: options)) ?? AttributedString(markdown)
+    markdownCache.store(parsed, for: markdown)
+    return parsed
   }
+
+  /// Parsing is reused across renders, so scrolling and typing do not re-parse
+  /// the same text. `NSCache` is thread safe and evicts on its own.
+  private static let markdownCache = MarkdownRenderCache()
 
   /// Turns the edited attributed text back into markdown so the formatting
   /// survives the round trip through storage and rendering.
@@ -267,5 +277,28 @@ private struct RichMarkdownEditorField: View {
       .onChange(of: richText) { _, newValue in
         markdown = InlineMarkdownEditor.markdown(from: newValue)
       }
+  }
+}
+
+/// Remembers the parsed form of recently shown markdown so repeated renders and
+/// repeated strings only pay for parsing once.
+private final class MarkdownRenderCache {
+  private final class Box {
+    let value: AttributedString
+    init(_ value: AttributedString) { self.value = value }
+  }
+
+  private let cache: NSCache<NSString, Box> = {
+    let cache = NSCache<NSString, Box>()
+    cache.countLimit = 500
+    return cache
+  }()
+
+  func value(for key: String) -> AttributedString? {
+    cache.object(forKey: key as NSString)?.value
+  }
+
+  func store(_ value: AttributedString, for key: String) {
+    cache.setObject(Box(value), forKey: key as NSString)
   }
 }
