@@ -12,6 +12,9 @@ final class MemoraModel {
   var isFileCreationPresented = false
   var isSettingsPresented = false
   var isBottomBarHidden = false
+  /// Set while the Files screen is scrolled away from the top, so its section
+  /// switch and search bar can step aside.
+  var isLibraryChromeHidden = false
   var meetings: [Meeting]
   var spaces: [MemoraSpace]
   var tasks: [MemoraTask]
@@ -676,6 +679,14 @@ final class MemoraModel {
           let segmentIndex = meetings[meetingIndex].transcript.firstIndex(where: { $0.id == segmentID }) else { return }
     meetings[meetingIndex].transcript[segmentIndex].speaker = trimmed
     meetings[meetingIndex].transcript[segmentIndex].speakerIsCertain = true
+    persistMeetings()
+  }
+
+  /// Corrects the body of one transcript segment, leaving the speaker as is.
+  func updateTranscriptSegment(meetingID: UUID, segmentID: UUID, text: String) {
+    guard let meetingIndex = meetings.firstIndex(where: { $0.id == meetingID }),
+          let segmentIndex = meetings[meetingIndex].transcript.firstIndex(where: { $0.id == segmentID }) else { return }
+    meetings[meetingIndex].transcript[segmentIndex].text = text.trimmingCharacters(in: .whitespacesAndNewlines)
     persistMeetings()
   }
 

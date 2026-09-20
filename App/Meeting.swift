@@ -21,6 +21,15 @@ struct Meeting: Identifiable, Hashable, Codable {
   var photoData: [Data]? = nil
 }
 
+extension Meeting {
+  /// True when the engine identified at least one speaker. Engines that cannot
+  /// separate speakers leave every segment uncertain, so the transcript reads as
+  /// continuous text instead of a back-and-forth.
+  var hasSpeakerSeparation: Bool {
+    transcript.contains { $0.speakerIsCertain }
+  }
+}
+
 enum MeetingSource: String, Hashable, Codable {
   case recording
   case importFile

@@ -12,15 +12,18 @@ struct LibraryView: View {
 
     NavigationStack(path: $model.libraryPath) {
       VStack(spacing: 0) {
-        Picker("表示", selection: $model.fileSection) {
-          ForEach(FileSection.allCases) { section in
-            Text(section.title).tag(section)
+        if !model.isLibraryChromeHidden {
+          Picker("表示", selection: $model.fileSection) {
+            ForEach(FileSection.allCases) { section in
+              Text(section.title).tag(section)
+            }
           }
+          .pickerStyle(.segmented)
+          .padding(.horizontal, 18)
+          .padding(.top, 8)
+          .padding(.bottom, 10)
+          .transition(.opacity.combined(with: .move(edge: .top)))
         }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, 18)
-        .padding(.top, 8)
-        .padding(.bottom, 10)
 
         if model.isRecording {
           ActiveRecordingStrip()
@@ -38,11 +41,12 @@ struct LibraryView: View {
           projectsPage
         }
       }
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isLibraryChromeHidden)
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ファイル")
       .searchable(
         text: $query,
-        placement: .navigationBarDrawer(displayMode: .always),
+        placement: .navigationBarDrawer(displayMode: .automatic),
         prompt: "ファイルやプロジェクトを検索"
       )
       .toolbar {
@@ -126,6 +130,7 @@ struct LibraryView: View {
     .listStyle(.plain)
     .scrollContentBackground(.hidden)
     .hideBottomBarOnScroll()
+    .hideTopChromeOnScroll()
   }
 
   private var projectsPage: some View {
@@ -150,6 +155,7 @@ struct LibraryView: View {
       .padding(.bottom, 32)
     }
     .hideBottomBarOnScroll()
+    .hideTopChromeOnScroll()
   }
 
   private func projectsGrid(_ spaces: [MemoraSpace]) -> some View {

@@ -4,6 +4,9 @@ struct TaskRow: View {
   @Environment(MemoraModel.self) private var model
   var task: MemoraTask
   var showsSource = false
+  /// Off where the row is read as part of a summary, so the assignee and due
+  /// date do not add noise.
+  var showsMetadata = true
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
@@ -23,20 +26,22 @@ struct TaskRow: View {
           .foregroundStyle(task.isCompleted ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
           .frame(maxWidth: .infinity, alignment: .leading)
 
-        HStack(spacing: 8) {
-          if let assignee = task.assignee {
-            Text(assignee)
-          }
-          if let dueDate = task.dueDate {
-            if task.assignee != nil {
-              Text("·")
+        if showsMetadata {
+          HStack(spacing: 8) {
+            if let assignee = task.assignee {
+              Text(assignee)
             }
-            Text(MemoraFormat.dueDate(dueDate))
-              .foregroundStyle(dueDate < .now && !task.isCompleted ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+            if let dueDate = task.dueDate {
+              if task.assignee != nil {
+                Text("·")
+              }
+              Text(MemoraFormat.dueDate(dueDate))
+                .foregroundStyle(dueDate < .now && !task.isCompleted ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+            }
           }
+          .font(.caption)
+          .foregroundStyle(.secondary)
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
 
         if showsSource, let meetingID = task.meetingID, let meeting = model.meeting(id: meetingID) {
           Text(meeting.title)

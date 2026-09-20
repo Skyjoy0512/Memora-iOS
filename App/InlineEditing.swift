@@ -20,20 +20,12 @@ struct InlineMarkdownEditor: View {
   var body: some View {
     Group {
       if isEditing {
-        VStack(alignment: .leading, spacing: 10) {
-          MarkdownEditorField(
-            markdown: $draft,
-            font: font,
-            minHeight: minHeight,
-            isFocused: $isFocused
-          )
-
-          HStack {
-            Spacer()
-            Button("完了") { endEditing() }
-              .font(.subheadline.weight(.semibold))
-          }
-        }
+        MarkdownEditorField(
+          markdown: $draft,
+          font: font,
+          minHeight: minHeight,
+          isFocused: $isFocused
+        )
       } else {
         Group {
           if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -138,23 +130,15 @@ struct InlineEditableList: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      HStack {
-        Label(title, systemImage: symbol)
-          .font(.title3.bold())
-          .foregroundStyle(.primary)
-          .memoraTextReveal()
-          .contentShape(Rectangle())
-          .onTapGesture { beginEditing() }
-          .accessibilityAddTraits(.isButton)
-          .accessibilityHint("タップして編集")
-
-        Spacer()
-
-        if isEditing {
-          Button("完了") { endEditing() }
-            .font(.subheadline.weight(.semibold))
-        }
-      }
+      Label(title, systemImage: symbol)
+        .font(.title3.bold())
+        .foregroundStyle(.primary)
+        .memoraTextReveal()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { beginEditing() }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("タップして編集")
 
       if isEditing {
         VStack(alignment: .leading, spacing: 8) {

@@ -8,37 +8,60 @@ struct TranscriptView: View {
   var body: some View {
     Group {
       if let meeting = model.meeting(id: meetingID) {
-        ScrollView {
-          LazyVStack(alignment: .leading, spacing: 6) {
-            VStack(alignment: .leading, spacing: 8) {
-              Text(meeting.title)
-                .font(.title.bold())
-              Text("話者名はタップして修正できます。")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            }
-            .padding(.top, 8)
-            .padding(.bottom, 12)
-
-            if meeting.transcript.isEmpty {
-              ContentUnavailableView {
-                Label("文字起こし中", systemImage: "text.bubble")
-              } description: {
-                Text("完成した発言から、ここに表示されます。")
+        ScrollViewReader { proxy in
+          ScrollView {
+            LazyVStack(alignment: .leading, spacing: 6) {
+              VStack(alignment: .leading, spacing: 8) {
+                Text(meeting.title)
+                  .font(.title.bold())
+                if !meeting.transcript.isEmpty {
+                  Text(
+                    meeting.hasSpeakerSeparation
+                      ? "話者名と本文はタップして修正できます。"
+                      : "この文字起こしは話者を分けていません。本文はタップすると修正できます。"
+                  )
+                  .font(.subheadline)
+                  .foregroundStyle(.secondary)
+                }
               }
-              .frame(maxWidth: .infinity)
-              .padding(.vertical, 40)
-            } else {
-              ForEach(meeting.transcript) { segment in
-                TranscriptSegmentRow(segment: segment) {
-                  editingSegment = segment
+              .padding(.top, 8)
+              .padding(.bottom, 12)
+
+              if meeting.transcript.isEmpty {
+                ContentUnavailableView {
+                  Label("文字起こし中", systemImage: "text.bubble")
+                } description: {
+                  Text("完成した発言から、ここに表示されます。")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+              } else {
+                ForEach(meeting.transcript) { segment in
+                  TranscriptSegmentText(
+                    meetingID: meeting.id,
+                    segment: segment,
+                    showsSpeaker: meeting.hasSpeakerSeparation,
+                    timeWidth: 62,
+                    onEditSpeaker: { editingSegment = segment }
+                  )
+                  .padding(.vertical, 2)
                 }
               }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 18)
+            .padding(.bottom, 20)
           }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 18)
-          .padding(.bottom, 20)
+          // Lift the line being edited above the keyboard once it has settled.
+          .onChange(of: model.focusedInlineEditorID) { _, newValue in
+            guard let id = newValue else { return }
+            Task { @MainActor in
+              try? await Task.sleep(for: .milliseconds(350))
+              withAnimation(.smooth) {
+                proxy.scrollTo(id, anchor: .center)
+              }
+            }
+          }
         }
         .navigationTitle("文字起こし")
         .navigationBarTitleDisplayMode(.inline)
@@ -57,44 +80,6 @@ struct TranscriptView: View {
         ContentUnavailableView("文字起こしが見つかりません", systemImage: "doc.questionmark")
       }
     }
-  }
-}
-
-private struct TranscriptSegmentRow: View {
-  var segment: TranscriptSegment
-  var editSpeaker: () -> Void
-
-  var body: some View {
-    HStack(alignment: .top, spacing: 12) {
-      Text(MemoraFormat.duration(segment.timestamp))
-        .font(.caption.monospacedDigit().weight(.medium))
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(Color.primary.opacity(0.06), in: Capsule())
-
-      VStack(alignment: .leading, spacing: 7) {
-        Button(action: editSpeaker) {
-          HStack(spacing: 4) {
-            Text(segment.speaker)
-              .font(.caption.weight(.semibold))
-            if !segment.speakerIsCertain {
-              Image(systemName: "questionmark")
-                .font(.caption2.bold())
-            }
-          }
-          .foregroundStyle(segment.speakerIsCertain ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint("話者名を編集します")
-
-        Text(segment.text)
-          .font(.body)
-          .lineSpacing(4)
-          .textSelection(.enabled)
-      }
-    }
-    .padding(12)
   }
 }
 

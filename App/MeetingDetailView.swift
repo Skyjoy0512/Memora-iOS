@@ -317,13 +317,6 @@ struct MeetingDetailView: View {
       }
       .font(.subheadline)
       .foregroundStyle(.secondary)
-
-      HStack(spacing: 6) {
-        Image(systemName: "lock.fill")
-        Text("端末に保存")
-      }
-      .font(.caption.weight(.medium))
-      .foregroundStyle(.secondary)
     }
     .padding(.top, 8)
   }
@@ -436,18 +429,25 @@ private enum MeetingDetailSection: String, CaseIterable, Identifiable {
 }
 
 private struct MeetingTranscriptContent: View {
+  @Environment(MemoraModel.self) private var model
   var meeting: Meeting
 
   var body: some View {
     VStack(alignment: .leading, spacing: 22) {
-      HStack {
+      VStack(alignment: .leading, spacing: 6) {
         Text("文字起こし")
           .font(.title2.bold())
           .memoraTextReveal()
-        Spacer()
-        NavigationLink("編集", value: LibraryRoute.transcript(meeting.id))
+
+        if !meeting.transcript.isEmpty {
+          Text(
+            meeting.hasSpeakerSeparation
+              ? "本文はタップすると修正できます。"
+              : "この文字起こしは話者を分けていません。本文はタップすると修正できます。"
+          )
           .font(.subheadline)
-          .disabled(meeting.transcript.isEmpty)
+          .foregroundStyle(.secondary)
+        }
       }
 
       if meeting.transcript.isEmpty {
@@ -459,33 +459,70 @@ private struct MeetingTranscriptContent: View {
         .frame(maxWidth: .infinity)
       } else {
         ForEach(meeting.transcript) { segment in
-          HStack(alignment: .top, spacing: 12) {
-            Text(MemoraFormat.duration(segment.timestamp))
-              .font(.caption.monospacedDigit().weight(.medium))
-              .foregroundStyle(.secondary)
-              .frame(width: 42, alignment: .leading)
-
-            VStack(alignment: .leading, spacing: 6) {
-              HStack(spacing: 4) {
-                Text(segment.speaker)
-                  .font(.caption.weight(.semibold))
-                if !segment.speakerIsCertain {
-                  Image(systemName: "questionmark")
-                    .font(.caption2.bold())
-                }
-              }
-              .foregroundStyle(segment.speakerIsCertain ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-
-              Text(segment.text)
-                .font(.body)
-                .lineSpacing(4)
-                .textSelection(.enabled)
-            }
-          }
+          TranscriptSegmentText(
+            meetingID: meeting.id,
+            segment: segment,
+            showsSpeaker: meeting.hasSpeakerSeparation,
+            timeWidth: 42
+          )
         }
       }
     }
     .memoraAppear()
+  }
+}
+
+/// One transcript line whose body can be corrected in place. Used by both the
+/// detail's transcript section and the full transcript screen.
+struct TranscriptSegmentText: View {
+  @Environment(MemoraModel.self) private var model
+  var meetingID: UUID
+  var segment: TranscriptSegment
+  var showsSpeaker: Bool
+  var timeWidth: CGFloat = 50
+  var onEditSpeaker: (() -> Void)?
+
+  var body: some View {
+    HStack(alignment: .top, spacing: 12) {
+      Text(MemoraFormat.duration(segment.timestamp))
+        .font(.caption.monospacedDigit().weight(.medium))
+        .foregroundStyle(.secondary)
+        .frame(width: timeWidth, alignment: .leading)
+
+      VStack(alignment: .leading, spacing: 6) {
+        if showsSpeaker {
+          if let onEditSpeaker {
+            Button(action: onEditSpeaker) {
+              speakerLabel
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("話者名を編集します")
+          } else {
+            speakerLabel
+          }
+        }
+
+        InlineMarkdownEditor(
+          text: segment.text,
+          placeholder: "タップして入力",
+          font: .body,
+          minHeight: 60,
+          onCommit: { model.updateTranscriptSegment(meetingID: meetingID, segmentID: segment.id, text: $0) }
+        )
+      }
+    }
+  }
+
+  private var speakerLabel: some View {
+    HStack(spacing: 4) {
+      Text(segment.speaker)
+        .font(.caption.weight(.semibold))
+      if !segment.speakerIsCertain {
+        Image(systemName: "questionmark")
+          .font(.caption2.bold())
+      }
+    }
+    .foregroundStyle(segment.speakerIsCertain ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
   }
 }
 
@@ -499,52 +536,9 @@ private struct MeetingNotesContent: View {
     let noteText = model.meeting(id: meetingID)?.notes ?? ""
 
     VStack(alignment: .leading, spacing: 14) {
-      HStack {
-        Text("ノート")
-          .font(.title2.bold())
-          .memoraTextReveal()
-
-        Spacer()
-
-        PhotosPicker(selection: $photoItem, matching: .images) {
-          Label("写真を追加", systemImage: "photo.badge.plus")
-            .labelStyle(.iconOnly)
-            .font(.title3)
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-      }
-
-      if !photos.isEmpty {
-        ScrollView(.horizontal) {
-          HStack(spacing: 10) {
-            ForEach(Array(photos.enumerated()), id: \.offset) { index, data in
-              if let image = UIImage(data: data) {
-                Image(uiImage: image)
-                  .resizable()
-                  .scaledToFill()
-                  .frame(width: 160, height: 160)
-                  .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                  .overlay(alignment: .topTrailing) {
-                    Button {
-                      model.removeMeetingPhoto(meetingID, index: index)
-                    } label: {
-                      Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, .black.opacity(0.45))
-                        .padding(6)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("写真を削除")
-                  }
-              }
-            }
-          }
-        }
-        .scrollIndicators(.hidden)
-      }
+      Text("ノート")
+        .font(.title2.bold())
+        .memoraTextReveal()
 
       InlineMarkdownEditor(
         text: noteText,
@@ -552,6 +546,49 @@ private struct MeetingNotesContent: View {
         minHeight: 360,
         onCommit: { model.updateMeetingNotes(meetingID, notes: $0) }
       )
+
+      ScrollView(.horizontal) {
+        HStack(spacing: 10) {
+          ForEach(Array(photos.enumerated()), id: \.offset) { index, data in
+            if let image = UIImage(data: data) {
+              Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 160, height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(alignment: .topTrailing) {
+                  Button {
+                    model.removeMeetingPhoto(meetingID, index: index)
+                  } label: {
+                    Image(systemName: "xmark.circle.fill")
+                      .font(.title3)
+                      .symbolRenderingMode(.palette)
+                      .foregroundStyle(.white, .black.opacity(0.45))
+                      .padding(6)
+                  }
+                  .buttonStyle(.plain)
+                  .accessibilityLabel("写真を削除")
+                }
+            }
+          }
+
+          PhotosPicker(selection: $photoItem, matching: .images) {
+            VStack(spacing: 8) {
+              Image(systemName: "photo.badge.plus")
+                .font(.title2)
+              Text("写真を追加")
+                .font(.caption.weight(.medium))
+            }
+            .foregroundStyle(.secondary)
+            .frame(width: 160, height: 160)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel("写真を追加")
+        }
+      }
+      .scrollIndicators(.hidden)
     }
     .memoraAppear()
     .animation(.smooth, value: photos.count)
@@ -586,7 +623,7 @@ private struct MeetingTasksSection: View {
           .foregroundStyle(.secondary)
       } else {
         ForEach(meetingTasks) { task in
-          TaskRow(task: task)
+          TaskRow(task: task, showsMetadata: false)
         }
       }
     }

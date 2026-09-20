@@ -42,12 +42,6 @@ struct SearchView: View {
         }
 
         ToolbarItemGroup(placement: .topBarTrailing) {
-          Button("新しいチャット", systemImage: "square.and.pencil") {
-            model.startNewAIChat()
-          }
-          .labelStyle(.iconOnly)
-          .disabled(model.aiMessages.isEmpty)
-
           Button("検索", systemImage: "magnifyingglass") {
             isSearchSheetPresented = true
           }
@@ -57,6 +51,12 @@ struct SearchView: View {
             isHistoryPresented = true
           }
           .labelStyle(.iconOnly)
+
+          Button("新しいチャット", systemImage: "square.and.pencil") {
+            model.startNewAIChat()
+          }
+          .labelStyle(.iconOnly)
+          .disabled(model.aiMessages.isEmpty)
         }
       }
       .sheet(isPresented: $isSearchSheetPresented) {
