@@ -47,6 +47,8 @@ final class MemoraModel {
   @ObservationIgnored private var newestEntries: [LifeLogEntry]?
   /// Marketplace summary templates the person has added.
   private(set) var installedTemplateIDs: [String] = []
+  /// Records that were deleted and can still be brought back.
+  private(set) var trashedRecords: [TrashedRecord] = []
   /// The Ask AI chat transcript.
   var aiMessages: [AIChatMessage] = []
   /// What new Ask AI questions look across.
@@ -177,6 +179,7 @@ final class MemoraModel {
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: sample.tasks)
     people = load([Person].self, forKey: StorageKey.people, fallback: SampleContent.makePeople())
     interruptedJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
+    trashedRecords = load([TrashedRecord].self, forKey: StorageKey.trash, fallback: [])
     if let draftData = storedData(forKey: StorageKey.recordingDraft) {
       recordingDraft = try? JSONDecoder().decode(RecordingDraft.self, from: draftData)
     }
@@ -199,6 +202,9 @@ final class MemoraModel {
     // Anything that was mid-processing when the app stopped is offered for
     // retry instead of looking stuck forever.
     recoverInterruptedJobs()
+
+    // Records kept past their recovery window are removed for good.
+    purgeExpiredTrash()
 
     // A recording that was cut off by a stop is recovered as its own record,
     // never re-recorded.
@@ -936,25 +942,83 @@ final class MemoraModel {
     persistMeetings()
   }
 
+  /// Moves a record to the trash. Its audio, tasks, and journal entries are kept
+  /// so it can be restored exactly, and removed only when the trash is emptied.
   func deleteMeeting(_ id: UUID) {
-    // Stop anything still being generated for this record, and drop its audio
-    // once the record itself is gone.
-    let audioURL = meeting(id: id)?.audioURL
+    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
+
     processingTasks[id]?.cancel()
     processingTasks[id] = nil
     processingRevisions[id] = nil
     setJobActive(id, active: false)
 
-    meetings.removeAll { $0.id == id }
-    persistMeetings()
+    let removed = meetings.remove(at: index)
+    let removedTasks = tasks.filter { $0.meetingID == id }
+    let removedEntries = lifeLogEntries.filter { $0.meetingID == id }
     tasks.removeAll { $0.meetingID == id }
-    persistTasks()
     lifeLogEntries.removeAll { $0.meetingID == id }
-    persistLifeLog()
 
-    if !MediaFiles.delete(audioURL) {
-      deletionFailureMessage = "会議の音声ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
+    trashedRecords.insert(
+      TrashedRecord(
+        meeting: removed,
+        tasks: removedTasks,
+        lifeLogEntries: removedEntries,
+        deletedAt: .now
+      ),
+      at: 0
+    )
+
+    persistMeetings()
+    persistTasks()
+    persistLifeLog()
+    persistTrash()
+  }
+
+  /// Puts a trashed record back exactly as it was.
+  func restoreTrashedRecord(_ id: UUID) {
+    guard let index = trashedRecords.firstIndex(where: { $0.id == id }) else { return }
+    let record = trashedRecords.remove(at: index)
+
+    meetings.insert(record.meeting, at: 0)
+    if !record.tasks.isEmpty {
+      tasks.insert(contentsOf: record.tasks, at: 0)
     }
+    if !record.lifeLogEntries.isEmpty {
+      lifeLogEntries.append(contentsOf: record.lifeLogEntries)
+    }
+
+    persistMeetings()
+    persistTasks()
+    persistLifeLog()
+    persistTrash()
+  }
+
+  /// Removes a trashed record and its audio for good.
+  func permanentlyDeleteTrashedRecord(_ id: UUID) {
+    guard let index = trashedRecords.firstIndex(where: { $0.id == id }) else { return }
+    let record = trashedRecords.remove(at: index)
+    persistTrash()
+
+    if !MediaFiles.delete(record.meeting.audioURL) {
+      deletionFailureMessage = "音声ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
+    }
+  }
+
+  /// Drops trashed records once their recovery window has passed.
+  private func purgeExpiredTrash() {
+    let cutoff = Date().addingTimeInterval(-TrashedRecord.lifetime)
+    let expired = trashedRecords.filter { $0.deletedAt < cutoff }
+    guard !expired.isEmpty else { return }
+
+    for record in expired {
+      MediaFiles.delete(record.meeting.audioURL)
+    }
+    trashedRecords.removeAll { $0.deletedAt < cutoff }
+    persistTrash()
+  }
+
+  private func persistTrash() {
+    persistInBackground(trashedRecords, forKey: StorageKey.trash)
   }
 
   func addMeetingPhoto(_ id: UUID, data: Data) {
@@ -1154,6 +1218,7 @@ final class MemoraModel {
     static let cloudStorage = "memoraCloudStorage"
     static let activeJobs = "memoraActiveJobs"
     static let recordingDraft = "memoraRecordingDraft"
+    static let trash = "memoraTrash"
   }
 
   private func recordingsDirectory() throws -> URL {

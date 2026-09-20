@@ -128,6 +128,15 @@ struct SettingsView: View {
           }
 
           LabeledContent("クラウド保管", value: model.cloudStorageEnabled ? "オン" : "オフ")
+
+          NavigationLink {
+            RecentlyDeletedView()
+          } label: {
+            LabeledContent(
+              "最近削除した項目",
+              value: model.trashedRecords.isEmpty ? "なし" : "\(model.trashedRecords.count)件"
+            )
+          }
         }
 
         Section("サポート") {

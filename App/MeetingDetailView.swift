@@ -143,7 +143,7 @@ struct MeetingDetailView: View {
           }
           Button("キャンセル", role: .cancel) {}
         } message: {
-          Text("音声、文字起こし、議事録、関連タスクが削除されます。")
+          Text("「最近削除した項目」に移動します。30日間は元に戻せます。")
         }
         .sensoryFeedback(.selection, trigger: selectedSection)
       } else {
