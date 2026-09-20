@@ -83,7 +83,7 @@ struct AIQuestionView: View {
 
   private func askedQuestion(_ text: String) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("\(model.aiModel.title) · \(label(for: selectedScope))")
+      Text("\(model.aiEngine.label) · \(label(for: selectedScope))")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
       Text(text)

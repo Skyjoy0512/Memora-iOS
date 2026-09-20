@@ -120,7 +120,7 @@ final class MemoraModel {
     hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
-    aiModel = AIModel(rawValue: defaults.string(forKey: StorageKey.aiModel) ?? "") ?? .standard
+    aiEngine = AIEngine(rawValue: defaults.string(forKey: StorageKey.aiEngine) ?? "") ?? .automatic
     // Cloud storage is a paid option: without Plus the records stay on device.
     cloudStorageEnabled = defaults.bool(forKey: StorageKey.isSubscribed)
       && defaults.bool(forKey: StorageKey.cloudStorage)
@@ -953,7 +953,7 @@ final class MemoraModel {
     static let lifeLogEntries = "memoraLifeLogEntries"
     static let meetings = "memoraMeetings"
     static let spaces = "memoraSpaces"
-    static let aiModel = "memoraAIModel"
+    static let aiEngine = "memora.aiEngine"
     static let people = "memoraPeople"
     static let installedTemplates = "memoraInstalledTemplates"
     static let cloudStorage = "memoraCloudStorage"

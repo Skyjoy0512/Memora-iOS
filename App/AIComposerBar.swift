@@ -171,25 +171,26 @@ struct AIComposerBar: View {
     .accessibilityLabel("添付を追加")
   }
 
+  /// Shows the engine that will actually answer, not a separate model label.
   private var modelMenu: some View {
     Menu {
-      ForEach(AIModel.allCases) { option in
+      ForEach(AIEngine.allCases) { option in
         Button {
-          model.aiModel = option
+          model.aiEngine = option
         } label: {
-          if option == model.aiModel {
-            Label(option.title, systemImage: "checkmark")
+          if option == model.aiEngine {
+            Label(option.label, systemImage: "checkmark")
           } else {
-            Text(option.title)
+            Text(option.label)
           }
         }
       }
     } label: {
       HStack(spacing: 6) {
-        Image(systemName: model.aiModel.symbol)
+        Image(systemName: model.aiEngine.symbol)
           .font(.subheadline)
 
-        Text(model.aiModel.title)
+        Text(model.aiEngine.shortLabel)
           .font(.subheadline.weight(.medium))
           .lineLimit(1)
 
@@ -202,7 +203,7 @@ struct AIComposerBar: View {
       .frame(height: 32)
       .contentShape(Rectangle())
     }
-    .accessibilityLabel("使用するAI")
+    .accessibilityLabel("使用するAIエンジン")
   }
 
   private var actionButton: some View {
