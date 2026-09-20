@@ -99,7 +99,7 @@ struct PeopleManagerSheet: View {
     defer { photoItem = nil }
 
     guard let data = try? await item.loadTransferable(type: Data.self),
-          let small = Self.downscaled(data) else { return }
+          let small = ImageDownscale.jpeg(data) else { return }
 
     switch photoTarget {
     case .new:
@@ -109,18 +109,5 @@ struct PeopleManagerSheet: View {
     case nil:
       break
     }
-  }
-
-  private static func downscaled(_ data: Data) -> Data? {
-    guard let image = UIImage(data: data) else { return nil }
-
-    let maxSide: CGFloat = 320
-    let scale = min(1, maxSide / max(image.size.width, image.size.height))
-    let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-
-    let resized = UIGraphicsImageRenderer(size: size).image { _ in
-      image.draw(in: CGRect(origin: .zero, size: size))
-    }
-    return resized.jpegData(compressionQuality: 0.8)
   }
 }

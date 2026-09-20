@@ -17,6 +17,8 @@ struct Meeting: Identifiable, Hashable, Codable {
   var notes = ""
   /// People tagged on this recording.
   var participantIDs: [UUID]? = nil
+  /// Small JPEGs attached to the record.
+  var photoData: [Data]? = nil
 }
 
 enum MeetingSource: String, Hashable, Codable {

@@ -14,6 +14,7 @@ struct MeetingDetailView: View {
   @State private var isSummaryGenerationPresented = false
   @State private var isAddingPeople = false
   @State private var isSharing = false
+  @State private var isEditingContent = false
   @State private var shareItems: [Any] = []
   @State private var statusAlert: StatusAlert?
 
@@ -91,6 +92,9 @@ struct MeetingDetailView: View {
           }
           ToolbarItem(placement: .topBarTrailing) {
             Menu("その他", systemImage: "ellipsis") {
+              Button("内容を編集", systemImage: "square.and.pencil") {
+                isEditingContent = true
+              }
               Button("PDFで共有", systemImage: "doc.richtext") {
                 sharePDF(meeting)
               }
@@ -121,6 +125,9 @@ struct MeetingDetailView: View {
         }
         .sheet(isPresented: $isSharing) {
           ActivityView(items: shareItems)
+        }
+        .sheet(isPresented: $isEditingContent) {
+          MeetingContentEditSheet(meetingID: meeting.id)
         }
         .alert(item: $statusAlert) { alert in
           Alert(
@@ -266,10 +273,13 @@ struct MeetingDetailView: View {
     case .transcript:
       MeetingTranscriptContent(meeting: meeting)
     case .notes:
-      MeetingNotesContent(noteText: Binding(
-        get: { model.meeting(id: meeting.id)?.notes ?? "" },
-        set: { model.updateMeetingNotes(meeting.id, notes: $0) }
-      ))
+      MeetingNotesContent(
+        meetingID: meeting.id,
+        noteText: Binding(
+          get: { model.meeting(id: meeting.id)?.notes ?? "" },
+          set: { model.updateMeetingNotes(meeting.id, notes: $0) }
+        )
+      )
     }
   }
 
@@ -460,11 +470,14 @@ private struct MeetingTranscriptContent: View {
 }
 
 private struct MeetingNotesContent: View {
+  @Environment(MemoraModel.self) private var model
+  var meetingID: UUID
   @Binding var noteText: String
   @State private var photoItem: PhotosPickerItem?
-  @State private var photoData: Data?
 
   var body: some View {
+    let photos = model.meeting(id: meetingID)?.photoData ?? []
+
     VStack(alignment: .leading, spacing: 14) {
       HStack {
         Text("ノート")
@@ -483,14 +496,34 @@ private struct MeetingNotesContent: View {
         .buttonStyle(.plain)
       }
 
-      if let photoData, let image = UIImage(data: photoData) {
-        Image(uiImage: image)
-          .resizable()
-          .scaledToFill()
-          .frame(maxWidth: .infinity)
-          .frame(height: 220)
-          .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-          .transition(.opacity.combined(with: .scale(scale: 0.98)))
+      if !photos.isEmpty {
+        ScrollView(.horizontal) {
+          HStack(spacing: 10) {
+            ForEach(Array(photos.enumerated()), id: \.offset) { index, data in
+              if let image = UIImage(data: data) {
+                Image(uiImage: image)
+                  .resizable()
+                  .scaledToFill()
+                  .frame(width: 160, height: 160)
+                  .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                  .overlay(alignment: .topTrailing) {
+                    Button {
+                      model.removeMeetingPhoto(meetingID, index: index)
+                    } label: {
+                      Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .black.opacity(0.45))
+                        .padding(6)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("写真を削除")
+                  }
+              }
+            }
+          }
+        }
+        .scrollIndicators(.hidden)
       }
 
       TextEditor(text: $noteText)
@@ -508,12 +541,18 @@ private struct MeetingNotesContent: View {
         }
     }
     .memoraAppear()
-    .animation(.smooth, value: photoData)
-    .onChange(of: photoItem) { _, newValue in
-      Task {
-        photoData = try? await newValue?.loadTransferable(type: Data.self)
-      }
+    .animation(.smooth, value: photos.count)
+    .onChange(of: photoItem) { _, item in
+      Task { await addPhoto(item) }
     }
+  }
+
+  private func addPhoto(_ item: PhotosPickerItem?) async {
+    guard let item,
+          let data = try? await item.loadTransferable(type: Data.self),
+          let small = ImageDownscale.jpeg(data) else { return }
+    model.addMeetingPhoto(meetingID, data: small)
+    photoItem = nil
   }
 }
 

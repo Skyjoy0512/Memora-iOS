@@ -673,6 +673,44 @@ final class MemoraModel {
     persistLifeLog()
   }
 
+  func addMeetingPhoto(_ id: UUID, data: Data) {
+    updateMeeting(id) { meeting in
+      var photos = meeting.photoData ?? []
+      photos.append(data)
+      meeting.photoData = photos
+    }
+  }
+
+  func removeMeetingPhoto(_ id: UUID, index: Int) {
+    updateMeeting(id) { meeting in
+      var photos = meeting.photoData ?? []
+      guard photos.indices.contains(index) else { return }
+      photos.remove(at: index)
+      meeting.photoData = photos.isEmpty ? nil : photos
+    }
+  }
+
+  /// Saves edits a person made to the generated content.
+  func updateMeetingContent(
+    id: UUID,
+    title: String,
+    summary: String,
+    decisions: [String],
+    openQuestions: [String],
+    keyPoints: [String]
+  ) {
+    updateMeeting(id) { meeting in
+      let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+      if !trimmedTitle.isEmpty {
+        meeting.title = trimmedTitle
+      }
+      meeting.summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+      meeting.decisions = decisions
+      meeting.openQuestions = openQuestions
+      meeting.keyPoints = keyPoints
+    }
+  }
+
   // MARK: - People
 
   func person(id: UUID) -> Person? {
