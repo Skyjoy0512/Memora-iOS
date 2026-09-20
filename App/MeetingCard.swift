@@ -42,7 +42,10 @@ struct MeetingCard: View {
     }
     .padding(18)
     .frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
-    .background(gradient, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+    .background {
+      SeededGradient(seed: meeting.id)
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
     .overlay {
       RoundedRectangle(cornerRadius: 26, style: .continuous)
         .stroke(.white.opacity(colorScheme == .dark ? 0.08 : 0.5), lineWidth: 0.5)
@@ -77,31 +80,4 @@ struct MeetingCard: View {
     }
   }
 
-  private var gradient: LinearGradient {
-    LinearGradient(colors: palette, startPoint: .topLeading, endPoint: .bottomTrailing)
-  }
-
-  private var palette: [Color] {
-    (colorScheme == .dark ? Self.darkPalettes : Self.lightPalettes)[paletteIndex]
-  }
-
-  /// Derived from the id's first byte so a file keeps the same tint across launches.
-  private var paletteIndex: Int {
-    let bytes = withUnsafeBytes(of: meeting.id.uuid) { Array($0) }
-    return Int(bytes.first ?? 0) % Self.lightPalettes.count
-  }
-
-  private static let lightPalettes: [[Color]] = [
-    [Color(red: 0.78, green: 0.87, blue: 1.00), Color(red: 0.90, green: 0.94, blue: 1.00), .white],
-    [Color(red: 0.89, green: 0.81, blue: 1.00), Color(red: 0.95, green: 0.92, blue: 1.00), .white],
-    [Color(red: 0.80, green: 0.92, blue: 0.99), Color(red: 0.92, green: 0.97, blue: 1.00), .white],
-    [Color(red: 1.00, green: 0.88, blue: 0.93), Color(red: 0.99, green: 0.95, blue: 0.97), .white]
-  ]
-
-  private static let darkPalettes: [[Color]] = [
-    [Color(red: 0.10, green: 0.15, blue: 0.28), Color(red: 0.08, green: 0.10, blue: 0.18), Color(red: 0.05, green: 0.06, blue: 0.10)],
-    [Color(red: 0.18, green: 0.12, blue: 0.28), Color(red: 0.11, green: 0.08, blue: 0.18), Color(red: 0.05, green: 0.06, blue: 0.10)],
-    [Color(red: 0.08, green: 0.17, blue: 0.26), Color(red: 0.07, green: 0.11, blue: 0.17), Color(red: 0.05, green: 0.06, blue: 0.10)],
-    [Color(red: 0.24, green: 0.12, blue: 0.17), Color(red: 0.14, green: 0.08, blue: 0.11), Color(red: 0.05, green: 0.06, blue: 0.10)]
-  ]
 }
