@@ -419,6 +419,10 @@ final class MemoraModel {
     isRecording = false
     isRecordingPaused = false
     isCapturePresented = false
+    // Discarding means the audio goes too; nothing is kept for the journal.
+    if !MediaFiles.delete(recordingURL) {
+      deletionFailureMessage = "録音ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
+    }
     recordingURL = nil
     recordingStartedAt = nil
     recordingPausedAt = nil
