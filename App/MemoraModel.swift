@@ -130,16 +130,28 @@ final class MemoraModel {
 
     let sample = SampleContent.make()
 
+    try? LocalStore.shared.prepare()
+
+    /// Reads a document from the local store, moving any legacy `UserDefaults`
+    /// copy across on first run. The old value is left in place as a safety
+    /// copy, so this can be undone by reverting the build.
+    func storedData(forKey key: String) -> Data? {
+      if let data = LocalStore.shared.read(key) { return data }
+      guard let legacy = defaults.data(forKey: key) else { return nil }
+      try? LocalStore.shared.write(key, data: legacy)
+      return legacy
+    }
+
     // Absent data means a first run, which seeds the demo. Data that exists but
     // cannot be read is set aside rather than replaced, so nothing is lost.
     var didFindUnreadableData = false
     func load<T: Decodable>(_ type: [T].Type, forKey key: String, fallback: [T]) -> [T] {
-      guard let data = defaults.data(forKey: key) else { return fallback }
+      guard let data = storedData(forKey: key) else { return fallback }
       if let stored = try? JSONDecoder().decode([T].self, from: data) {
         return stored
       }
-      defaults.set(data, forKey: key + ".unreadable")
-      defaults.removeObject(forKey: key)
+      try? LocalStore.shared.write(key + ".unreadable", data: data)
+      try? LocalStore.shared.remove(key)
       didFindUnreadableData = true
       return []
     }
