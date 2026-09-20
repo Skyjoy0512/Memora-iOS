@@ -69,25 +69,12 @@ extension MemoraModel {
     return lines.joined(separator: "\n")
   }
 
-  /// A canned answer with its reasoning, shaped by the question and scope.
+  /// The fallback shown only when no engine can answer. It says so instead of
+  /// inventing decisions, tasks, or quotes.
   func aiAnswer(for question: String, scope: AIChatScope = .all) -> (answer: String, thinking: String) {
-    let lead = scope == .all ? "" : "対象を\(scope.scopeLabel)に絞って確認しました。"
-
-    if question.contains("タスク") {
-      return (
-        "未完了のタスクは「初回録音フローの仕様を確定する」と「Acme社へセキュリティ資料を送る」の2件です。どちらも元の会議にひも付いていて、そこから発言まで戻れます。",
-        lead + "タスクを会議横断で集め、期限の近い順に並べました。"
-      )
-    }
-    if question.contains("決") {
-      return (
-        "直近では、録音とタスク抽出を最優先で提供すること、会議データは既定で端末内に保存することが決まっています。クラウド同期の提供時期はまだ未決です。",
-        lead + "決定事項を新しい会議から順に読み、未決事項と分けて確認しました。"
-      )
-    }
-    return (
-      lead + "次に行うことは、初回録音フローの仕様確定と、Acme社へセキュリティ資料を送ることです。録音開始の速さを優先し、データは既定で端末内に保存する方針が確認されています。",
-      lead + "まず未完了の行動を集め、次に関連する会議から根拠をたどりました。"
+    (
+      "この端末ではAIエンジンを利用できないため、記録に基づく回答を作成できませんでした。設定の「AI整理」でエンジンとキーを確認してください。",
+      ""
     )
   }
 

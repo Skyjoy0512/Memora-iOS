@@ -5,7 +5,7 @@ struct PaywallView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var plan = SubscriptionPlan.annual
-  @State private var isPurchasing = false
+  @State private var isUnavailableNoticePresented = false
 
   var body: some View {
     NavigationStack {
@@ -58,6 +58,11 @@ struct PaywallView: View {
       }
       .animation(reduceMotion ? nil : MemoraMotion.control, value: plan)
       .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isSubscribed)
+      .alert("購入はまだ接続されていません", isPresented: $isUnavailableNoticePresented) {
+        Button("OK", role: .cancel) {}
+      } message: {
+        Text("この画面はプランの説明のみです。StoreKitによる購入・復元はまだ実装されていません。")
+      }
     }
   }
 
@@ -73,15 +78,8 @@ struct PaywallView: View {
       VStack(spacing: 10) {
         Button(action: purchase) {
           VStack(spacing: 2) {
-            HStack(spacing: 8) {
-              if isPurchasing {
-                ProgressView()
-                  .controlSize(.small)
-                  .tint(Color(uiColor: .systemBackground))
-              }
-              Text("購入は準備中")
-                .font(.headline)
-            }
+            Text("購入は準備中")
+              .font(.headline)
             Text(plan.priceLine)
               .font(.caption)
               .opacity(0.8)
@@ -94,8 +92,6 @@ struct PaywallView: View {
           .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
-        .disabled(isPurchasing)
-        .sensoryFeedback(.success, trigger: model.isSubscribed)
 
         Text("購入・無料期間・復元はまだ接続されていません。")
           .font(.caption2)
@@ -104,9 +100,11 @@ struct PaywallView: View {
           .frame(maxWidth: .infinity)
       }
 
-      Button("購入を復元") {}
-        .font(.footnote)
-        .frame(maxWidth: .infinity)
+      Button("購入を復元") {
+        isUnavailableNoticePresented = true
+      }
+      .font(.footnote)
+      .frame(maxWidth: .infinity)
     }
   }
 
@@ -132,13 +130,10 @@ struct PaywallView: View {
     .transition(.opacity)
   }
 
+  /// There is no StoreKit behind this yet, so pressing purchase explains that
+  /// rather than flipping a local flag that would look like a real purchase.
   private func purchase() {
-    isPurchasing = true
-    Task {
-      try? await Task.sleep(for: .milliseconds(700))
-      model.startSubscription()
-      isPurchasing = false
-    }
+    isUnavailableNoticePresented = true
   }
 }
 

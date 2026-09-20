@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// Optional sign-in. The HIG asks to delay sign-in for as long as possible, so
-/// this is always reachable and always skippable.
+/// Optional sign-in. There is no auth service behind it yet, so the screen
+/// explains that rather than pretending to create an account.
 struct AuthView: View {
-  @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
-  @State private var emailFlow: EmailAuthView.Mode?
+  @State private var isUnavailableNoticePresented = false
 
   var body: some View {
     NavigationStack {
@@ -19,13 +18,13 @@ struct AuthView: View {
             .accessibilityHidden(true)
             .memoraAppear()
 
-          Text("どの端末でも、\n同じ会話の続きから。")
+          Text("サインインはまだ\n接続されていません。")
             .font(.largeTitle.bold())
             .tracking(-0.7)
             .padding(.top, 22)
             .memoraAppear(delay: 0.05)
 
-          Text("サインインすると、会議・タスク・プロジェクトをiPhoneとiPadで同期できます。サインインしなくても、録音と整理はこのまま使えます。")
+          Text("アカウント連携と複数端末の同期は、まだ実装されていません。録音・文字起こし・整理は、このiPhoneの中だけで使えます。")
             .font(.body)
             .foregroundStyle(.secondary)
             .lineSpacing(4)
@@ -33,26 +32,12 @@ struct AuthView: View {
             .memoraAppear(delay: 0.1)
 
           VStack(spacing: 10) {
-            AuthProviderButton(provider: .apple, isProminent: true) {
-              signIn(with: .apple)
-            }
-            AuthProviderButton(provider: .google) {
-              signIn(with: .google)
-            }
-            AuthProviderButton(provider: .email) {
-              emailFlow = .signUp
-            }
+            AuthProviderButton(provider: .apple, isProminent: true) { showUnavailable() }
+            AuthProviderButton(provider: .google) { showUnavailable() }
+            AuthProviderButton(provider: .email) { showUnavailable() }
           }
           .padding(.top, 30)
           .memoraAppear(delay: 0.15)
-
-          Button("すでにアカウントをお持ちですか？ ログイン") {
-            emailFlow = .logIn
-          }
-          .font(.subheadline)
-          .frame(maxWidth: .infinity)
-          .padding(.top, 20)
-          .memoraAppear(delay: 0.2)
 
           Label("録音そのものは、サインインの有無にかかわらずこのiPhoneに保存されます。", systemImage: "lock.shield")
             .font(.footnote)
@@ -72,17 +57,16 @@ struct AuthView: View {
           Button("あとで") { dismiss() }
         }
       }
-      .navigationDestination(item: $emailFlow) { mode in
-        EmailAuthView(mode: mode) { dismiss() }
+      .alert("サインインは準備中です", isPresented: $isUnavailableNoticePresented) {
+        Button("OK", role: .cancel) {}
+      } message: {
+        Text("アカウント連携と同期はまだ実装されていません。今はこのiPhoneの中で動作します。")
       }
     }
   }
 
-  private func signIn(with provider: AuthProvider) {
-    withAnimation(MemoraMotion.screen) {
-      model.signIn(with: provider)
-    }
-    dismiss()
+  private func showUnavailable() {
+    isUnavailableNoticePresented = true
   }
 }
 

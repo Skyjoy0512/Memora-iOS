@@ -35,7 +35,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - Recording, transcription and summarization never fill in sample content: when
   no engine can run, the record keeps its audio and shows the failure with a
   retry.
-- Sign-in and purchase are still prototype flows (a local account object and a
-  local subscription flag); there is no auth or StoreKit behind them yet.
+- Sign-in and purchase are not connected: the screens say so, and no local
+  account or subscription flag is set from them. `MemoraAccount` and
+  `startSubscription()` stay in the model for a later phase.
+- The Ask AI fallback never invents answers; when no engine can run it says so.
+- The composer shows the real AI engine (`AIEngine`), not a separate model label.
 - Backlog and phase status live in `docs/IMPROVEMENT_BACKLOG.md` and
   `docs/OPENCODE_IMPLEMENTATION.md`.
