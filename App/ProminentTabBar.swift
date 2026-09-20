@@ -17,7 +17,6 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   var prominentSymbol: String
   @ViewBuilder var popover: PopoverContent
 
-  @Environment(\.colorScheme) private var colorScheme
   @Namespace private var namespace
 
   var body: some View {
@@ -37,13 +36,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
   @ViewBuilder
   private var segmentedControl: some View {
-    // The control draws the system's Liquid Glass pill and animates the
-    // selection, but taps are handled by SwiftUI on top of it: the converted
-    // control's own hit testing landed taps on the wrong segment.
-    let control = ProminentSegmentedControl(selection: $selection, colorScheme: colorScheme)
-      .accessibilityHidden(true)
-      .allowsHitTesting(false)
-      .overlay { segmentTapTargets }
+    let control = ProminentSegmentedControl(selection: $selection)
 
     if #available(iOS 26.0, *) {
       control.glassEffect(.regular.interactive(), in: .capsule)
@@ -53,27 +46,6 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
         .overlay {
           Capsule().stroke(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5)
         }
-    }
-  }
-
-  /// One clear tap target per segment, so a tap always chooses the tab under
-  /// the finger.
-  private var segmentTapTargets: some View {
-    HStack(spacing: 0) {
-      ForEach(Array(Item.allCases), id: \.self) { item in
-        let isSelected = item == selection
-
-        Button {
-          guard selection != item else { return }
-          selection = item
-        } label: {
-          Color.clear
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(item.title)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-      }
     }
   }
 
@@ -119,95 +91,69 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   }
 }
 
-/// The tabs are drawn by `UISegmentedControl` so the selection pill matches the
-/// system, with each segment rendered as an icon over its title.
-private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresentable {
+/// The destinations, drawn in SwiftUI: one tappable segment each — so a tap
+/// always lands on the tab under the finger — with the selection pill sliding
+/// between them on the shared control spring.
+private struct ProminentSegmentedControl<Item: ProminentTabItem>: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Binding var selection: Item
-  var colorScheme: ColorScheme
-  @Environment(\.displayScale) private var displayScale
 
-  private var allTabs: [Item] { Array(Item.allCases) }
+  private let height: CGFloat = 66
+  private let pillInset: CGFloat = 2
 
-  func makeUIView(context: Context) -> UISegmentedControl {
-    let control = UISegmentedControl()
+  private var tabs: [Item] { Array(Item.allCases) }
 
-    for (index, item) in allTabs.enumerated() {
-      if let image = generatedImage(for: item) {
-        control.insertSegment(with: image, at: index, animated: false)
-      } else {
-        control.insertSegment(withTitle: item.title, at: index, animated: false)
+  private var selectedIndex: Int {
+    tabs.firstIndex(of: selection) ?? 0
+  }
+
+  var body: some View {
+    GeometryReader { proxy in
+      let segmentWidth = proxy.size.width / CGFloat(max(1, tabs.count))
+
+      ZStack(alignment: .leading) {
+        if segmentWidth > 0 {
+          Capsule()
+            .fill(Color(uiColor: .secondarySystemFill))
+            .frame(width: max(0, segmentWidth - pillInset * 2), height: height - pillInset * 2)
+            .offset(x: CGFloat(selectedIndex) * segmentWidth + pillInset)
+            .animation(reduceMotion ? nil : MemoraMotion.control, value: selection)
+        }
+
+        HStack(spacing: 0) {
+          ForEach(tabs, id: \.self) { item in
+            segment(item, width: segmentWidth)
+          }
+        }
       }
+      .frame(height: height)
     }
-
-    control.selectedSegmentIndex = allTabs.firstIndex(of: selection) ?? 0
-    control.selectedSegmentTintColor = UIColor.secondarySystemFill
-    control.addTarget(context.coordinator, action: #selector(Coordinator.didChange(_:)), for: .valueChanged)
-    context.coordinator.appliedColorScheme = colorScheme
-    return control
+    .frame(height: height)
   }
 
-  func updateUIView(_ uiView: UISegmentedControl, context: Context) {
-    // Never move the selection while a finger is down: doing so cancels the
-    // touch in progress, which is what swallowed the first tap on a tab.
-    if !uiView.isTracking,
-       let index = allTabs.firstIndex(of: selection),
-       uiView.selectedSegmentIndex != index {
-      uiView.selectedSegmentIndex = index
-    }
+  private func segment(_ item: Item, width: CGFloat) -> some View {
+    let isSelected = item == selection
 
-    // The rendered images bake in the text color, so redraw them when the
-    // appearance changes instead of leaving last mode's colors behind.
-    if context.coordinator.appliedColorScheme != colorScheme {
-      context.coordinator.appliedColorScheme = colorScheme
-      for (index, item) in allTabs.enumerated() {
-        uiView.setImage(generatedImage(for: item), forSegmentAt: index)
+    return Button {
+      guard selection != item else { return }
+      selection = item
+    } label: {
+      VStack(spacing: 4) {
+        Image(systemName: item.symbol)
+          .font(.title3)
+          .fontWeight(.regular)
+          .symbolVariant(.fill)
+          .frame(height: 25)
+
+        Text(item.title)
+          .font(.caption2)
       }
+      .foregroundStyle(.primary)
+      .frame(width: max(0, width), height: height)
+      .contentShape(Rectangle())
     }
-  }
-
-  func sizeThatFits(
-    _ proposal: ProposedViewSize,
-    uiView: UISegmentedControl,
-    context: Context
-  ) -> CGSize? {
-    CGSize(width: proposal.replacingUnspecifiedDimensions().width, height: 66)
-  }
-
-  func makeCoordinator() -> Coordinator {
-    Coordinator(selection: $selection)
-  }
-
-  final class Coordinator: NSObject {
-    @Binding var selection: Item
-    var appliedColorScheme: ColorScheme?
-
-    init(selection: Binding<Item>) {
-      _selection = selection
-    }
-
-    @objc func didChange(_ control: UISegmentedControl) {
-      let tabs = Array(Item.allCases)
-      let index = control.selectedSegmentIndex
-      guard tabs.indices.contains(index) else { return }
-      selection = tabs[index]
-    }
-  }
-
-  private func generatedImage(for item: Item) -> UIImage? {
-    let label = VStack(spacing: 4) {
-      Image(systemName: item.symbol)
-        .font(.title3)
-        .fontWeight(.regular)
-        .symbolVariant(.fill)
-        .frame(height: 25)
-
-      Text(item.title)
-        .font(.caption2)
-    }
-    .environment(\.colorScheme, colorScheme)
-
-    let renderer = ImageRenderer(content: label)
-    renderer.scale = displayScale
-    return renderer.uiImage
+    .buttonStyle(.plain)
+    .accessibilityLabel(item.title)
+    .accessibilityAddTraits(isSelected ? [.isSelected] : [])
   }
 }
