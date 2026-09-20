@@ -5,12 +5,16 @@ import SwiftUI
 struct HomeView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.scenePhase) private var scenePhase
   @State private var query = ""
   @State private var isCreationPresented = false
   @State private var selectedPersonID: UUID?
   @State private var isManagingPeople = false
   /// The day the Journal is showing.
   @State private var selectedDate = Calendar.current.startOfDay(for: .now)
+  /// The day "today" meant when the screen was last seen, so a journal left
+  /// open past midnight follows the new day.
+  @State private var todayAnchor = Calendar.current.startOfDay(for: .now)
   var onOpenSidebar: () -> Void
 
   var body: some View {
@@ -144,6 +148,10 @@ struct HomeView: View {
           selectedPersonID = nil
         }
       }
+      .onChange(of: scenePhase) { _, phase in
+        guard phase == .active else { return }
+        refreshTodayIfNeeded()
+      }
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id): MeetingDetailView(meetingID: id)
@@ -174,6 +182,17 @@ struct HomeView: View {
   /// Days that hold at least one record, for the calendar's dot.
   private var markedDays: Set<Date> {
     Set(model.lifeLogEntries.map { Calendar.current.startOfDay(for: $0.createdAt) })
+  }
+
+  /// A journal left open past midnight should move to the new day, unless the
+  /// person had picked another day themselves.
+  private func refreshTodayIfNeeded() {
+    let today = Calendar.current.startOfDay(for: .now)
+    guard today != todayAnchor else { return }
+    if selectedDate == todayAnchor {
+      selectedDate = today
+    }
+    todayAnchor = today
   }
 
   private var isOmiConnected: Bool {

@@ -82,13 +82,14 @@ enum CloudTranscriptionService {
   }
 
   private static func deepgram(fileURL: URL, language: String, key: String) async throws -> String {
-    var components = URLComponents(string: "https://api.deepgram.com/v1/listen")!
-    components.queryItems = [
+    var components = URLComponents(string: "https://api.deepgram.com/v1/listen")
+    components?.queryItems = [
       URLQueryItem(name: "language", value: language),
       URLQueryItem(name: "punctuate", value: "true")
     ]
 
-    var request = URLRequest(url: components.url!)
+    guard let url = components?.url else { throw Failure.unsupported }
+    var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("Token \(key)", forHTTPHeaderField: "Authorization")
     request.setValue("audio/mp4", forHTTPHeaderField: "Content-Type")

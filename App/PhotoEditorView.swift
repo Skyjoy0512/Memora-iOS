@@ -329,7 +329,10 @@ enum PhotoAspect: String, CaseIterable, Identifiable {
 
 private extension UIImage {
   /// Draws the image upright with a 1:1 scale, so points and pixels agree.
+  /// Already-upright images at 1:1 need no redraw.
   func normalizedOrientation() -> UIImage {
+    guard imageOrientation != .up || scale != 1 else { return self }
+
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = 1
     return UIGraphicsImageRenderer(size: size, format: format).image { _ in
