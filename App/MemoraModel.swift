@@ -840,45 +840,6 @@ final class MemoraModel {
     }
   }
 
-  private func finishProcessing(_ id: UUID, choice: SummaryTemplateChoice? = nil) {
-    updateMeeting(id) { meeting in
-      meeting.title = meeting.title == "新しい会話" ? "プロダクト方針の確認" : meeting.title
-      meeting.status = .ready
-      if case .market(let template)? = choice {
-        meeting.summary = template.summary(from: meeting.transcript)
-      } else {
-        meeting.summary = "次期リリースは、録音開始の速さと会議後の行動につながる体験を優先する方針で合意しました。"
-      }
-      meeting.keyPoints = [
-        "初回体験は説明よりも実際の録音を優先する",
-        "AIの詳細設定は必要になった時だけ見せる"
-      ]
-      meeting.decisions = [
-        "次期リリースでは録音とタスク抽出を最優先にする",
-        "会議データは既定で端末内に保存する"
-      ]
-      meeting.openQuestions = [
-        "クラウド同期を有料プランのどの段階で提供するか"
-      ]
-      // Keep a real transcription; only fill in the sample when none exists.
-      if meeting.transcript.isEmpty {
-        meeting.transcript = SampleContent.generatedTranscript
-      }
-    }
-
-    let task = MemoraTask(
-      id: UUID(),
-      title: "初回録音フローの仕様を確定する",
-      meetingID: id,
-      assignee: "自分",
-      dueDate: Calendar.current.date(byAdding: .day, value: 3, to: .now),
-      isCompleted: false
-    )
-    tasks.insert(task, at: 0)
-    persistTasks()
-    offerPlusIfNeeded()
-  }
-
   private func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) {
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
     change(&meetings[index])
