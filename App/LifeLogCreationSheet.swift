@@ -12,6 +12,7 @@ struct LifeLogCreationSheet: View {
   @State private var locationName = ""
   @State private var photoItem: PhotosPickerItem?
   @State private var photoData: Data?
+  @State private var editingPhoto: PhotoEditRequest?
   @State private var locationCapture = LocationCaptureService()
 
   var body: some View {
@@ -99,8 +100,16 @@ struct LifeLogCreationSheet: View {
       }
       .onChange(of: photoItem) { _, newValue in
         Task {
-          photoData = try? await newValue?.loadTransferable(type: Data.self)
-          if photoData != nil, kind == .memo {
+          guard let data = try? await newValue?.loadTransferable(type: Data.self) else { return }
+          photoItem = nil
+          editingPhoto = PhotoEditRequest(data: data)
+        }
+      }
+      .sheet(item: $editingPhoto) { request in
+        PhotoEditorView(source: request.data) { edited in
+          guard let small = ImageDownscale.jpeg(edited, maxSide: 640) else { return }
+          photoData = small
+          if kind == .memo {
             kind = .photo
           }
         }

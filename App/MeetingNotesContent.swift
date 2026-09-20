@@ -6,6 +6,7 @@ struct MeetingNotesContent: View {
   @Environment(MemoraModel.self) private var model
   var meetingID: UUID
   @State private var photoItem: PhotosPickerItem?
+  @State private var editingPhoto: PhotoEditRequest?
 
   var body: some View {
     let photos = model.meeting(id: meetingID)?.photoData ?? []
@@ -71,13 +72,17 @@ struct MeetingNotesContent: View {
     .onChange(of: photoItem) { _, item in
       Task { await addPhoto(item) }
     }
+    .sheet(item: $editingPhoto) { request in
+      PhotoEditorView(source: request.data) { edited in
+        guard let small = ImageDownscale.jpeg(edited) else { return }
+        model.addMeetingPhoto(meetingID, data: small)
+      }
+    }
   }
 
   private func addPhoto(_ item: PhotosPickerItem?) async {
-    guard let item,
-          let data = try? await item.loadTransferable(type: Data.self),
-          let small = ImageDownscale.jpeg(data) else { return }
-    model.addMeetingPhoto(meetingID, data: small)
+    guard let item, let data = try? await item.loadTransferable(type: Data.self) else { return }
     photoItem = nil
+    editingPhoto = PhotoEditRequest(data: data)
   }
 }
