@@ -126,8 +126,8 @@ struct HomeView: View {
       .sheet(isPresented: $isManagingPeople) {
         PeopleManagerSheet()
       }
-      .onChange(of: model.people) { _, people in
-        if let id = selectedPersonID, !people.contains(where: { $0.id == id }) {
+      .onChange(of: model.people.map(\.id)) { _, ids in
+        if let id = selectedPersonID, !ids.contains(id) {
           selectedPersonID = nil
         }
       }

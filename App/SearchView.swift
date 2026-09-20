@@ -225,8 +225,8 @@ struct SearchView: View {
       }
     }
     .listStyle(.insetGrouped)
-    .animation(.smooth, value: matchingMeetings)
-    .animation(.smooth, value: matchingTasks)
+    .animation(.smooth, value: matchingMeetings.map(\.id))
+    .animation(.smooth, value: matchingTasks.map(\.id))
     .overlay {
       if matchingMeetings.isEmpty && matchingTasks.isEmpty {
         ContentUnavailableView.search(text: query)
@@ -235,11 +235,8 @@ struct SearchView: View {
   }
 
   private var matchingMeetings: [Meeting] {
-    model.meetings.filter { meeting in
-      meeting.title.localizedCaseInsensitiveContains(query)
-        || meeting.summary.localizedCaseInsensitiveContains(query)
-        || meeting.decisions.contains { $0.localizedCaseInsensitiveContains(query) }
-        || meeting.transcript.contains { $0.text.localizedCaseInsensitiveContains(query) }
+    model.meetings.filter {
+      model.searchText(for: $0, includingSections: true).localizedCaseInsensitiveContains(query)
     }
   }
 
