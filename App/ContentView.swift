@@ -81,6 +81,21 @@ struct ContentView: View {
     } message: {
       Text(model.deletionFailureMessage ?? "")
     }
+    .alert("保存できませんでした", isPresented: persistenceFailureBinding) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(model.persistenceFailureMessage ?? "")
+    }
+  }
+
+  private var persistenceFailureBinding: Binding<Bool> {
+    Binding {
+      model.persistenceFailureMessage != nil
+    } set: { isPresented in
+      if !isPresented {
+        model.persistenceFailureMessage = nil
+      }
+    }
   }
 
   private var loadFailureBinding: Binding<Bool> {

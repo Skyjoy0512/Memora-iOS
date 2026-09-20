@@ -72,6 +72,8 @@ final class MemoraModel {
   private(set) var loadFailureMessage: String?
   /// Set when a media file that should have been removed could not be.
   var deletionFailureMessage: String?
+  /// Set when a change could not be written to the local store.
+  var persistenceFailureMessage: String?
   var account: MemoraAccount?
   var isAuthPresented = false
   var isPaywallPresented = false

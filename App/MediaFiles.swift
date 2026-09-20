@@ -9,6 +9,30 @@ enum MediaFiles {
       .appendingPathComponent("Recordings", isDirectory: true)
   }
 
+  /// The managed path for a file, relative to the media folder, so records do
+  /// not depend on the container's absolute path. Nil when the file is not ours.
+  static func reference(for url: URL) -> String? {
+    let managed = directory.standardizedFileURL.path
+    let target = url.standardizedFileURL.path
+    guard target.hasPrefix(managed + "/") else { return nil }
+    return String(target.dropFirst(managed.count + 1))
+  }
+
+  /// Resolves a stored reference back to a file. Legacy absolute paths are only
+  /// honoured when they point inside the managed folder and the file is there.
+  static func resolve(_ stored: String) -> URL? {
+    let managed = directory.standardizedFileURL
+    let candidate = stored.hasPrefix("/")
+      ? URL(fileURLWithPath: stored).standardizedFileURL
+      : managed.appendingPathComponent(stored).standardizedFileURL
+
+    guard candidate.path.hasPrefix(managed.path),
+          FileManager.default.fileExists(atPath: candidate.path) else {
+      return nil
+    }
+    return candidate
+  }
+
   /// Deletes a file the app manages. Returns false when a file that should have
   /// been removed could not be, so the caller can tell the person.
   @discardableResult
