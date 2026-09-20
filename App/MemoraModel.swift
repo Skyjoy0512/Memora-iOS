@@ -12,9 +12,6 @@ final class MemoraModel {
   var isFileCreationPresented = false
   var isSettingsPresented = false
   var isBottomBarHidden = false
-  /// Set while the Files screen is scrolled away from the top, so its section
-  /// switch and search bar can step aside.
-  var isLibraryChromeHidden = false
   var meetings: [Meeting] {
     didSet { meetingIndexIsStale = true }
   }

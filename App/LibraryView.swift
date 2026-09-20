@@ -14,11 +14,13 @@ struct LibraryView: View {
       // The section switch lives inside the scroll content so it moves out of
       // the way as you read, and the list stays the screen's own scroll view so
       // the title and search bar collapse the way the system expects.
-      switch model.fileSection {
-      case .meetingFiles:
-        filesPage
-      case .projects:
-        projectsPage
+      Group {
+        switch model.fileSection {
+        case .meetingFiles:
+          filesPage
+        case .projects:
+          projectsPage
+        }
       }
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ファイル")
@@ -52,19 +54,30 @@ struct LibraryView: View {
     }
   }
 
-  /// The section switch and the live recording strip, as the first rows of the
-  /// list so they scroll away with it.
-  @ViewBuilder
-  private var listHeaderRows: some View {
-    Picker("表示", selection: $model.fileSection) {
+  /// The 「ファイル／プロジェクト」 switch, shared by both pages.
+  private var sectionSwitch: some View {
+    Picker(
+      "表示",
+      selection: Binding(
+        get: { model.fileSection },
+        set: { model.fileSection = $0 }
+      )
+    ) {
       ForEach(FileSection.allCases) { section in
         Text(section.title).tag(section)
       }
     }
     .pickerStyle(.segmented)
-    .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 10, trailing: 18))
-    .listRowSeparator(.hidden)
-    .listRowBackground(Color.clear)
+  }
+
+  /// The section switch and the live recording strip, as the first rows of the
+  /// list so they scroll away with it.
+  @ViewBuilder
+  private var listHeaderRows: some View {
+    sectionSwitch
+      .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 10, trailing: 18))
+      .listRowSeparator(.hidden)
+      .listRowBackground(Color.clear)
 
     if model.isRecording {
       ActiveRecordingStrip()
@@ -137,12 +150,7 @@ struct LibraryView: View {
   private var projectsPage: some View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 22) {
-        Picker("表示", selection: $model.fileSection) {
-          ForEach(FileSection.allCases) { section in
-            Text(section.title).tag(section)
-          }
-        }
-        .pickerStyle(.segmented)
+        sectionSwitch
 
         if model.isRecording {
           ActiveRecordingStrip()
