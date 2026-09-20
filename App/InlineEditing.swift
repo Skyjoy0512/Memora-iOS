@@ -14,6 +14,7 @@ struct InlineMarkdownEditor: View {
   @Environment(MemoraModel.self) private var model
   @State private var isEditing = false
   @State private var draft = ""
+  @State private var editorID = UUID()
   @FocusState private var isFocused: Bool
 
   var body: some View {
@@ -51,6 +52,7 @@ struct InlineMarkdownEditor: View {
         .accessibilityHint("タップして編集")
       }
     }
+    .id(editorID)
     .onChange(of: isFocused) { _, focused in
       if !focused {
         endEditing()
@@ -64,6 +66,7 @@ struct InlineMarkdownEditor: View {
     draft = text
     isEditing = true
     model.inlineEditingCount += 1
+    model.focusedInlineEditorID = editorID
     Task { @MainActor in
       try? await Task.sleep(for: .milliseconds(60))
       isFocused = true
@@ -75,6 +78,9 @@ struct InlineMarkdownEditor: View {
     isEditing = false
     isFocused = false
     model.inlineEditingCount = max(0, model.inlineEditingCount - 1)
+    if model.focusedInlineEditorID == editorID {
+      model.focusedInlineEditorID = nil
+    }
     if draft != text {
       onCommit(draft)
     }
@@ -127,6 +133,7 @@ struct InlineEditableList: View {
   @Environment(MemoraModel.self) private var model
   @State private var isEditing = false
   @State private var draft = ""
+  @State private var editorID = UUID()
   @FocusState private var isFocused: Bool
 
   var body: some View {
@@ -189,6 +196,7 @@ struct InlineEditableList: View {
       }
     }
     .padding(.vertical, 4)
+    .id(editorID)
     .onChange(of: isFocused) { _, focused in
       if !focused {
         endEditing()
@@ -202,6 +210,7 @@ struct InlineEditableList: View {
     draft = items.joined(separator: "\n")
     isEditing = true
     model.inlineEditingCount += 1
+    model.focusedInlineEditorID = editorID
     Task { @MainActor in
       try? await Task.sleep(for: .milliseconds(60))
       isFocused = true
@@ -213,6 +222,9 @@ struct InlineEditableList: View {
     isEditing = false
     isFocused = false
     model.inlineEditingCount = max(0, model.inlineEditingCount - 1)
+    if model.focusedInlineEditorID == editorID {
+      model.focusedInlineEditorID = nil
+    }
 
     let lines = draft
       .split(separator: "\n")

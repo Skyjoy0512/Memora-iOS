@@ -26,45 +26,57 @@ struct MeetingDetailView: View {
   var body: some View {
     Group {
       if let meeting = model.meeting(id: meetingID) {
-        ScrollView {
-          VStack(alignment: .leading, spacing: 22) {
-            meetingHeader(meeting)
+        ScrollViewReader { proxy in
+          ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+              meetingHeader(meeting)
 
-            participantsRow(meeting)
+              participantsRow(meeting)
 
-            Picker("会議の表示", selection: $selectedSection) {
-              ForEach(MeetingDetailSection.allCases) { section in
-                Text(section.label).tag(section)
+              Picker("会議の表示", selection: $selectedSection) {
+                ForEach(MeetingDetailSection.allCases) { section in
+                  Text(section.label).tag(section)
+                }
+              }
+              .pickerStyle(.segmented)
+
+              sectionContent(meeting)
+                .id(selectedSection)
+                .transition(sectionTransition)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 18)
+            // Room to scroll the last section clear of the floating AI composer.
+            .padding(.bottom, 120)
+            .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedSection)
+            .animation(reduceMotion ? nil : MemoraMotion.screen, value: meeting.status)
+          }
+          .background(Color(uiColor: .systemBackground))
+          .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top
+          } action: { _, newOffset in
+            updateScrollState(to: newOffset)
+          }
+          .onAppear {
+            model.activeDetailMeetingID = meeting.id
+            model.isDetailComposerVisible = true
+          }
+          .onDisappear {
+            if model.activeDetailMeetingID == meeting.id {
+              model.activeDetailMeetingID = nil
+            }
+            model.isDetailComposerVisible = true
+          }
+          // Lift the field being edited above the keyboard once it has settled.
+          .onChange(of: model.focusedInlineEditorID) { _, newValue in
+            guard let id = newValue else { return }
+            Task { @MainActor in
+              try? await Task.sleep(for: .milliseconds(350))
+              withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+                proxy.scrollTo(id, anchor: .center)
               }
             }
-            .pickerStyle(.segmented)
-
-            sectionContent(meeting)
-              .id(selectedSection)
-              .transition(sectionTransition)
           }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 18)
-          // Room to scroll the last section clear of the floating AI composer.
-          .padding(.bottom, 120)
-          .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedSection)
-          .animation(reduceMotion ? nil : MemoraMotion.screen, value: meeting.status)
-        }
-        .background(Color(uiColor: .systemBackground))
-        .onScrollGeometryChange(for: CGFloat.self) { geometry in
-          geometry.contentOffset.y + geometry.contentInsets.top
-        } action: { _, newOffset in
-          updateScrollState(to: newOffset)
-        }
-        .onAppear {
-          model.activeDetailMeetingID = meeting.id
-          model.isDetailComposerVisible = true
-        }
-        .onDisappear {
-          if model.activeDetailMeetingID == meeting.id {
-            model.activeDetailMeetingID = nil
-          }
-          model.isDetailComposerVisible = true
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)

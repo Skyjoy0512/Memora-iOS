@@ -53,6 +53,9 @@ final class MemoraModel {
   /// keyboard belongs to the document being edited.
   var inlineEditingCount = 0
   var isInlineEditing: Bool { inlineEditingCount > 0 }
+  /// The inline editor that most recently took focus, so its screen can lift it
+  /// clear of the keyboard.
+  var focusedInlineEditorID: UUID?
   /// The engine the Ask AI composer asks with.
   var aiModel: AIModel = .standard {
     didSet {
