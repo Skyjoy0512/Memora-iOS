@@ -88,10 +88,12 @@ struct LibraryView: View {
   }
 
   private var filesPage: some View {
-    List {
+    let meetings = matchingMeetings
+
+    return List {
       listHeaderRows
 
-      if matchingMeetings.isEmpty {
+      if meetings.isEmpty {
         Group {
           if query.isEmpty {
             emptyFilesPrompt
@@ -104,7 +106,7 @@ struct LibraryView: View {
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets(top: 48, leading: 18, bottom: 48, trailing: 18))
       } else {
-        ForEach(matchingMeetings) { meeting in
+        ForEach(meetings) { meeting in
           Button {
             model.libraryPath.append(.meeting(meeting.id))
           } label: {
@@ -148,7 +150,9 @@ struct LibraryView: View {
   }
 
   private var projectsPage: some View {
-    ScrollView {
+    let spaces = matchingSpaces
+
+    return ScrollView {
       LazyVStack(alignment: .leading, spacing: 22) {
         sectionSwitch
 
@@ -156,7 +160,7 @@ struct LibraryView: View {
           ActiveRecordingStrip()
         }
 
-        if matchingSpaces.isEmpty {
+        if spaces.isEmpty {
           Group {
             if query.isEmpty {
               createProjectPrompt
@@ -166,7 +170,7 @@ struct LibraryView: View {
           }
           .padding(.top, 40)
         } else {
-          projectsGrid(matchingSpaces)
+          projectsGrid(spaces)
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
