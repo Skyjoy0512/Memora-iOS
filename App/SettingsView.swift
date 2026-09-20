@@ -131,7 +131,7 @@ struct SettingsView: View {
             Label("データの保存先", systemImage: "lock.shield")
           }
 
-          LabeledContent("クラウド同期", value: "オフ")
+          LabeledContent("クラウド保管", value: model.cloudStorageEnabled ? "オン" : "オフ")
         }
 
         Section("サポート") {

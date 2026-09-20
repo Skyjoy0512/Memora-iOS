@@ -115,7 +115,8 @@ final class MemoraModel {
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
     aiModel = AIModel(rawValue: defaults.string(forKey: StorageKey.aiModel) ?? "") ?? .standard
     // Cloud storage is a paid option: without Plus the records stay on device.
-    cloudStorageEnabled = isSubscribed && defaults.bool(forKey: StorageKey.cloudStorage)
+    cloudStorageEnabled = defaults.bool(forKey: StorageKey.isSubscribed)
+      && defaults.bool(forKey: StorageKey.cloudStorage)
     if let data = defaults.data(forKey: StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
     }
@@ -205,6 +206,12 @@ final class MemoraModel {
   func startSubscription() {
     isSubscribed = true
     UserDefaults.standard.set(true, forKey: StorageKey.isSubscribed)
+  }
+
+  /// Turns cloud storage on or off. It stays off without Plus, so the records
+  /// remain local unless the paid option is active.
+  func setCloudStorageEnabled(_ enabled: Bool) {
+    cloudStorageEnabled = isSubscribed && enabled
   }
 
   /// Offers Plus once, and only after someone has seen a conversation get
