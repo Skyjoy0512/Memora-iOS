@@ -146,22 +146,35 @@ private enum SpeechAnalyzerTranscriber {
       }
       return segments
     }
+    // Whatever happens below — the parent being cancelled, an engine failure, or
+    // a return — the collector does not outlive this call.
+    defer { collect.cancel() }
 
     do {
       _ = try await analyzer.analyzeSequence(from: audioFile)
       try await analyzer.finalizeAndFinishThroughEndOfInput()
     } catch {
-      collect.cancel()
-      throw error is CancellationError ? CancellationError() : Failure.failed("\(error)")
+      // End the analysis session as well as the collector, so a cancelled or
+      // failed run leaves no session behind.
+      await analyzer.cancelAndFinishNow()
+      if error is CancellationError { throw CancellationError() }
+      throw Failure.failed("\(error)")
     }
 
     let segments: [TranscriptSegment]
     do {
       segments = try await collect.value
     } catch is CancellationError {
+      await analyzer.cancelAndFinishNow()
       return .cancelled
     } catch {
+      await analyzer.cancelAndFinishNow()
       throw Failure.failed("\(error)")
+    }
+    // The parent may have been cancelled while the results were being gathered.
+    if Task.isCancelled {
+      await analyzer.cancelAndFinishNow()
+      return .cancelled
     }
     return segments.isEmpty ? .nothingRecognized : .segments(segments)
   }
