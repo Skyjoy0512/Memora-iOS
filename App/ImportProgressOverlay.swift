@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct ImportProgressOverlay: View {
-  var progress: Double
+  /// Nil while the work cannot be measured, shown as an indeterminate bar.
+  var progress: Double?
 
   var body: some View {
     ZStack {
@@ -9,9 +10,14 @@ struct ImportProgressOverlay: View {
         .ignoresSafeArea()
 
       VStack(spacing: 16) {
-        ProgressView(value: progress)
-          .progressViewStyle(.linear)
-          .tint(.primary)
+        if let progress {
+          ProgressView(value: progress)
+            .progressViewStyle(.linear)
+            .tint(.primary)
+        } else {
+          ProgressView()
+            .tint(.primary)
+        }
 
         VStack(spacing: 4) {
           Text("音声を取り込んでいます")
@@ -28,6 +34,6 @@ struct ImportProgressOverlay: View {
       .shadow(color: .black.opacity(0.12), radius: 24, y: 10)
     }
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("音声を取り込み中、\(Int(progress * 100))パーセント")
+    .accessibilityLabel(progress.map { "音声を取り込み中、\(Int($0 * 100))パーセント" } ?? "音声を取り込み中")
   }
 }

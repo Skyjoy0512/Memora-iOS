@@ -7,7 +7,16 @@ enum CloudTranscriptionService {
     case unsupported
     case http
     case empty
+    /// The file is larger than the provider accepts, in bytes.
+    case tooLarge(Int)
   }
+
+  /// Upload limits from the providers' documentation. OpenAI's audio
+  /// transcriptions endpoint accepts 25 MB; Deepgram's pre-recorded endpoint
+  /// accepts up to 2 GB per request. Files are checked before anything is sent,
+  /// so an oversized recording is explained rather than failing mid-upload.
+  private static let openAILimit = 25 * 1024 * 1024
+  private static let deepgramLimit = 2 * 1024 * 1024 * 1024
 
   static func transcribe(
     fileURL: URL,
@@ -45,36 +54,55 @@ enum CloudTranscriptionService {
   }
 
   private static func openAI(fileURL: URL, language: String, key: String) async throws -> String {
+    try checkSize(fileURL, limit: openAILimit)
+
     let boundary = "Boundary-\(UUID().uuidString)"
+    let mime = MediaFiles.mimeType(for: fileURL)
+
+    // The multipart body is assembled in a temporary file: a long recording is
+    // never read into memory.
+    let bodyURL = FileManager.default.temporaryDirectory
+      .appendingPathComponent("openai-upload-\(UUID().uuidString).body")
+    defer { try? FileManager.default.removeItem(at: bodyURL) }
+
+    guard FileManager.default.createFile(atPath: bodyURL.path, contents: nil) else {
+      throw Failure.unsupported
+    }
+    let body = try FileHandle(forWritingTo: bodyURL)
+    defer { try? body.close() }
+
+    func write(_ string: String) {
+      body.write(Data(string.utf8))
+    }
+    func copyFileContents() throws {
+      let input = try FileHandle(forReadingFrom: fileURL)
+      defer { try? input.close() }
+      while let chunk = try input.read(upToCount: 1 << 20), !chunk.isEmpty {
+        body.write(chunk)
+      }
+    }
+
+    write("--\(boundary)\r\n")
+    write("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
+    write("whisper-1\r\n")
+    write("--\(boundary)\r\n")
+    write("Content-Disposition: form-data; name=\"language\"\r\n\r\n")
+    write("\(language)\r\n")
+    write("--\(boundary)\r\n")
+    write("Content-Disposition: form-data; name=\"file\"; filename=\"audio.\(fileURL.pathExtension)\"\r\n")
+    write("Content-Type: \(mime)\r\n\r\n")
+    try copyFileContents()
+    write("\r\n--\(boundary)--\r\n")
+    try body.close()
+
     var request = URLRequest(url: URL(string: "https://api.openai.com/v1/audio/transcriptions")!)
     request.httpMethod = "POST"
     request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
     request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
-    let audio = try Data(contentsOf: fileURL)
-    var body = Data()
-    func append(_ string: String) {
-      body.append(Data(string.utf8))
-    }
-
-    append("--\(boundary)\r\n")
-    append("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
-    append("whisper-1\r\n")
-
-    append("--\(boundary)\r\n")
-    append("Content-Disposition: form-data; name=\"language\"\r\n\r\n")
-    append("\(language)\r\n")
-
-    append("--\(boundary)\r\n")
-    append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"\r\n")
-    append("Content-Type: audio/mp4\r\n\r\n")
-    body.append(audio)
-    append("\r\n--\(boundary)--\r\n")
-
-    request.httpBody = body
-
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let (data, response) = try await URLSession.shared.upload(for: request, fromFile: bodyURL)
     try validate(response)
+
     guard let decoded = try? JSONDecoder().decode(OpenAITranscript.self, from: data) else {
       throw Failure.empty
     }
@@ -82,6 +110,8 @@ enum CloudTranscriptionService {
   }
 
   private static func deepgram(fileURL: URL, language: String, key: String) async throws -> String {
+    try checkSize(fileURL, limit: deepgramLimit)
+
     var components = URLComponents(string: "https://api.deepgram.com/v1/listen")
     components?.queryItems = [
       URLQueryItem(name: "language", value: language),
@@ -92,13 +122,23 @@ enum CloudTranscriptionService {
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("Token \(key)", forHTTPHeaderField: "Authorization")
-    request.setValue("audio/mp4", forHTTPHeaderField: "Content-Type")
-    request.httpBody = try Data(contentsOf: fileURL)
+    request.setValue(MediaFiles.mimeType(for: fileURL), forHTTPHeaderField: "Content-Type")
 
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let (data, response) = try await URLSession.shared.upload(for: request, fromFile: fileURL)
     try validate(response)
+
     let decoded = try JSONDecoder().decode(DeepgramTranscript.self, from: data)
     return decoded.results?.channels.first?.alternatives.first?.transcript ?? ""
+  }
+
+  /// Refuses a file that is too large before any of it is sent.
+  private static func checkSize(_ fileURL: URL, limit: Int) throws {
+    guard let size = try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize else {
+      throw Failure.unsupported
+    }
+    guard size <= limit else {
+      throw Failure.tooLarge(limit)
+    }
   }
 
   private static func validate(_ response: URLResponse) throws {

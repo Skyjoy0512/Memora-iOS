@@ -55,6 +55,8 @@ enum TranscriptionService {
         return .failed("このプロバイダーは文字起こしに対応していません。設定で別のプロバイダーを選んでください。")
       } catch CloudTranscriptionService.Failure.empty {
         return .failed("音声から発言を取得できませんでした。音声を確認して再試行してください。")
+      } catch CloudTranscriptionService.Failure.tooLarge(let limit) {
+        return .failed("音声が大きすぎます（上限\(limit / (1024 * 1024))MB）。ファイルを分割してお試しください。")
       } catch {
         return .failed("クラウド文字起こしに失敗しました。通信環境とAPIキーを確認して再試行してください。")
       }

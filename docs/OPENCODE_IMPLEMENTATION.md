@@ -169,6 +169,11 @@
 - B08: 録音シートの文字起こしタブに説明（「録音を終えると文字起こしします」）を表示。
 - B11: `ActiveRecordingStrip` を独立ファイル化し、ジャーナル・タスク・Ask AIにも表示（ファイルは既存）。録音中であることと経過時間が見え、タップで録音画面に戻れる。
 
+### フェーズ3（追加9）
+
+- B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
+- B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
+
 ### フェーズ2の残り
 
 - 写真（`Meeting.photoData`）のファイル参照化、A09（ごみ箱と復元）、

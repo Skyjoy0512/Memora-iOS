@@ -77,7 +77,8 @@ final class MemoraModel {
   var recordingInterruptionMessage: String?
   var microphonePermissionDenied = false
   var isImporting = false
-  var importProgress = 0.0
+  /// Shown as indeterminate while the copy cannot be measured.
+  var importProgress: Double?
   var importErrorMessage: String?
   /// Set when stored data exists but could not be read. The data is kept aside
   /// rather than overwritten with samples.
@@ -680,9 +681,13 @@ final class MemoraModel {
     updateLiveActivity()
   }
 
+  /// Copies an audio file into the app, checks that it can actually be played,
+  /// and records its real length. The file work runs off the main actor, and a
+  /// failed import leaves nothing behind.
   func importAudio(from sourceURL: URL) async {
+    guard !isImporting else { return }
     isImporting = true
-    importProgress = 0.08
+    importProgress = nil
     importErrorMessage = nil
 
     let hasSecurityScope = sourceURL.startAccessingSecurityScopedResource()
@@ -692,21 +697,38 @@ final class MemoraModel {
       }
     }
 
-    do {
-      let directory = try recordingsDirectory()
-      let fileName = sourceURL.deletingPathExtension().lastPathComponent
-      let destination = directory
-        .appendingPathComponent(UUID().uuidString)
-        .appendingPathExtension(sourceURL.pathExtension)
-      try FileManager.default.copyItem(at: sourceURL, to: destination)
-      importProgress = 0.72
-      try? await Task.sleep(for: .milliseconds(450))
+    let fileExtension = sourceURL.pathExtension.isEmpty ? "m4a" : sourceURL.pathExtension
+    let outcome = await Task.detached(priority: .userInitiated) { () -> ImportOutcome in
+      let directory = MediaFiles.directory
+      do {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
+        // Work under a temporary name so a failure cannot leave a half file.
+        let working = directory.appendingPathComponent("importing-\(UUID().uuidString).\(fileExtension)")
+        try FileManager.default.copyItem(at: sourceURL, to: working)
+
+        guard let duration = await MediaFiles.duration(of: working) else {
+          try? FileManager.default.removeItem(at: working)
+          return .unreadable
+        }
+
+        let destination = directory.appendingPathComponent("\(UUID().uuidString).\(fileExtension)")
+        try? FileManager.default.removeItem(at: destination)
+        try FileManager.default.moveItem(at: working, to: destination)
+        return .imported(destination, duration)
+      } catch {
+        return .failed
+      }
+    }.value
+
+    let title = sourceURL.deletingPathExtension().lastPathComponent
+    switch outcome {
+    case .imported(let destination, let duration):
       let meeting = Meeting(
         id: UUID(),
-        title: fileName.isEmpty ? "インポートした音声" : fileName,
+        title: title.isEmpty ? "インポートした音声" : title,
         createdAt: .now,
-        duration: 0,
+        duration: duration,
         source: .importFile,
         status: .waitingForTranscription,
         summary: "音声を保存しました。必要な時に文字起こしを開始できます。",
@@ -720,15 +742,23 @@ final class MemoraModel {
       meetings.insert(meeting, at: 0)
       persistMeetings()
       importProgress = 1
-      try? await Task.sleep(for: .milliseconds(350))
       isImporting = false
       selectedTab = .files
       fileSection = .meetingFiles
       libraryPath = [.meeting(meeting.id)]
-    } catch {
+    case .unreadable:
+      isImporting = false
+      importErrorMessage = "この音声は再生できないため取り込めませんでした。別のファイルをお試しください。"
+    case .failed:
       isImporting = false
       importErrorMessage = "音声を読み込めませんでした。ファイル形式と空き容量を確認してください。"
     }
+  }
+
+  private enum ImportOutcome {
+    case imported(URL, TimeInterval)
+    case unreadable
+    case failed
   }
 
   func importAIAttachment(from sourceURL: URL) throws -> AIAttachment {

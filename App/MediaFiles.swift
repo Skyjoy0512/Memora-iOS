@@ -89,6 +89,21 @@ enum MediaFiles {
     }
   }
 
+  /// The content type for a media file, taken from its extension so uploads
+  /// describe what they actually contain.
+  static func mimeType(for url: URL) -> String {
+    switch url.pathExtension.lowercased() {
+    case "m4a", "mp4": "audio/mp4"
+    case "mp3": "audio/mpeg"
+    case "wav": "audio/wav"
+    case "aif", "aiff": "audio/aiff"
+    case "caf": "audio/x-caf"
+    case "flac": "audio/flac"
+    case "ogg": "audio/ogg"
+    default: "application/octet-stream"
+    }
+  }
+
   /// Deletes a file the app manages. Returns false when a file that should have
   /// been removed could not be, so the caller can tell the person.
   @discardableResult
