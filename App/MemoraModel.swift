@@ -305,6 +305,19 @@ final class MemoraModel {
       loadFailureMessage = nil
     }
 
+    // A transcript saved by a build that stored the transcriber's progress one
+    // step at a time is collapsed to one line per phrase.
+    var repairedTranscripts = 0
+    for index in meetings.indices {
+      if let repaired = SpeechTranscriptionCollapse.repair(meetings[index].transcript) {
+        meetings[index].transcript = repaired
+        repairedTranscripts += 1
+      }
+    }
+    if repairedTranscripts > 0 {
+      persistMeetings()
+    }
+
     // Anything that was mid-processing when the app stopped is offered for
     // retry instead of looking stuck forever.
     recoverInterruptedJobs()

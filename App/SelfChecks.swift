@@ -60,6 +60,8 @@ enum SelfChecks {
     group("Status filter", checkStatusFilter)
     group("Audio session claims", checkAudioSessionClaims)
     group("Store failure injection", checkStoreFailureInjection)
+    group("Speech progress collapse", checkSpeechProgressCollapse)
+    group("Speech transcript repair", checkSpeechTranscriptRepair)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
     // its result when it finishes.
@@ -284,6 +286,57 @@ enum SelfChecks {
     }
     if terms.contains(where: { $0.contains("？") || $0.contains("?") }) {
       report("question words kept punctuation: \(terms)")
+    }
+  }
+
+  /// A progressive transcriber reports a phrase again as it grows. Each step
+  /// must not become its own transcript line, and a phrase cut off before it
+  /// finalized must keep its last text.
+  private static func checkSpeechProgressCollapse() {
+    let progress = ["こ", "こん", "こんに", "こんにち", "こんにちは"]
+      .enumerated()
+      .map { SpeechUpdate(text: $0.element, timestamp: 0, isFinal: false) }
+    let finished = progress + [
+      SpeechUpdate(text: "こんにちはテストです。", timestamp: 0, isFinal: true),
+      SpeechUpdate(text: "次の文", timestamp: 4.2, isFinal: false),
+      SpeechUpdate(text: "次の文です。", timestamp: 4.2, isFinal: true)
+    ]
+
+    let collapsed = SpeechTranscriptionCollapse.collapse(finished)
+    if collapsed.map(\.text) != ["こんにちはテストです。", "次の文です。"] {
+      report("speech collapse kept progress steps: \(collapsed.map(\.text))")
+    }
+    if collapsed.map(\.timestamp) != [0, 4.2] {
+      report("speech collapse lost the timestamps: \(collapsed.map(\.timestamp))")
+    }
+
+    // Nothing was marked final: the latest progress is kept rather than all of it.
+    let cutOff = [
+      SpeechUpdate(text: "とちゅう", timestamp: 1, isFinal: false),
+      SpeechUpdate(text: "とちゅうで終", timestamp: 1, isFinal: false)
+    ]
+    let kept = SpeechTranscriptionCollapse.collapse(cutOff)
+    if kept.map(\.text) != ["とちゅうで終"] {
+      report("speech collapse kept unfinished progress steps: \(kept.map(\.text))")
+    }
+  }
+
+  /// A transcript already stored one progress step at a time is repaired, while
+  /// genuine sentences are left alone.
+  private static func checkSpeechTranscriptRepair() {
+    let steps = ["こ", "こん", "こんに", "こんにちは"]
+      .map { TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: false, timestamp: 0, text: $0) }
+    let repaired = SpeechTranscriptionCollapse.repair(steps)
+    if repaired?.map(\.text) != ["こんにちは"] {
+      report("speech repair did not collapse the steps: \(repaired?.map(\.text) ?? [])")
+    }
+
+    let sentences = [
+      TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: false, timestamp: 0, text: "おはようございます。"),
+      TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: false, timestamp: 3.5, text: "今日はよろしくお願いします。")
+    ]
+    if SpeechTranscriptionCollapse.repair(sentences) != nil {
+      report("speech repair changed sentences that were fine")
     }
   }
 

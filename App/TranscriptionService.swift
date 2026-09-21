@@ -96,22 +96,20 @@ private enum SpeechAnalyzerTranscriber {
     let analyzer = SpeechAnalyzer(modules: [transcriber])
 
     let collect = Task { () -> [TranscriptSegment] in
-      var segments: [TranscriptSegment] = []
+      var updates: [SpeechUpdate] = []
       for try await result in transcriber.results {
         let text = String(result.text.characters).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { continue }
         let seconds = CMTimeGetSeconds(result.range.start)
-        segments.append(
-          TranscriptSegment(
-            id: UUID(),
-            speaker: "話者",
-            speakerIsCertain: false,
+        updates.append(
+          SpeechUpdate(
+            text: text,
             timestamp: seconds.isFinite ? seconds : 0,
-            text: text
+            isFinal: result.isFinal
           )
         )
       }
-      return segments
+      return SpeechTranscriptionCollapse.collapse(updates)
     }
 
     _ = try await analyzer.analyzeSequence(from: audioFile)
@@ -121,4 +119,5 @@ private enum SpeechAnalyzerTranscriber {
     guard !segments.isEmpty else { throw Failure.empty }
     return segments
   }
+
 }
