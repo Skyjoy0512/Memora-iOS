@@ -216,6 +216,9 @@ final class MemoraModel {
     // never re-recorded.
     Task { await recoverRecordingDraft() }
 
+    // Nothing is recording at launch, so no Live Activity should still be up.
+    Task { await endStaleLiveActivities() }
+
     // Calls, route changes, and audio resets pause the recording instead of
     // silently losing it.
     recorder.onInterruption = { [weak self] event in
@@ -1438,9 +1441,16 @@ final class MemoraModel {
     recordingActivity = try? Activity.request(attributes: attributes, content: content)
   }
 
+  /// Anchors the state to the real elapsed time, so the live timer matches the
+  /// screen and a pause freezes the number instead of counting on.
   private func updateLiveActivity() {
-    guard let recordingActivity, let startedAt = recordingStartedAt else { return }
-    let state = MemoraRecordingAttributes.ContentState(startedAt: startedAt, isPaused: isRecordingPaused)
+    guard let recordingActivity else { return }
+    let elapsed = recordingElapsed
+    let state = MemoraRecordingAttributes.ContentState(
+      startedAt: Date.now.addingTimeInterval(-elapsed),
+      isPaused: isRecordingPaused,
+      pausedElapsed: elapsed
+    )
     let content = ActivityContent(state: state, staleDate: nil)
     Task {
       await recordingActivity.update(content)
@@ -1449,10 +1459,21 @@ final class MemoraModel {
 
   private func endLiveActivity() async {
     guard let recordingActivity else { return }
-    let startedAt = recordingStartedAt ?? .now
-    let state = MemoraRecordingAttributes.ContentState(startedAt: startedAt, isPaused: false)
+    let state = MemoraRecordingAttributes.ContentState(
+      startedAt: recordingStartedAt ?? .now,
+      isPaused: false,
+      pausedElapsed: recordingElapsed
+    )
     let content = ActivityContent(state: state, staleDate: nil)
     await recordingActivity.end(content, dismissalPolicy: .immediate)
     self.recordingActivity = nil
+  }
+
+  /// Ends any activity left over from a previous run. Recording never resumes on
+  /// its own, so a stale one would only show the wrong thing.
+  private func endStaleLiveActivities() async {
+    for activity in Activity<MemoraRecordingAttributes>.activities {
+      await activity.end(nil, dismissalPolicy: .immediate)
+    }
   }
 }

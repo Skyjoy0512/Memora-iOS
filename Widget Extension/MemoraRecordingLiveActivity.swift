@@ -21,12 +21,12 @@ struct MemoraRecordingLiveActivity: Widget {
             .lineLimit(1)
         }
         DynamicIslandExpandedRegion(.trailing) {
-          Text(timerInterval: context.state.startedAt...Date.distantFuture, countsDown: false)
+          elapsedText(context.state)
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
         }
         DynamicIslandExpandedRegion(.bottom) {
-          Text("このiPhoneに安全に保存しています")
+          Text(context.state.isPaused ? "一時停止中" : "このiPhoneに安全に保存しています")
             .font(.caption)
             .foregroundStyle(.secondary)
         }
@@ -34,7 +34,7 @@ struct MemoraRecordingLiveActivity: Widget {
         Image(systemName: "waveform")
           .foregroundStyle(.red)
       } compactTrailing: {
-        Text(timerInterval: context.state.startedAt...Date.distantFuture, countsDown: false)
+        elapsedText(context.state)
           .font(.caption2.monospacedDigit())
           .frame(width: 42)
       } minimal: {
@@ -55,15 +55,15 @@ private struct MemoraLiveActivityView: View {
   var body: some View {
     if activityFamily == .small {
       HStack {
-        Image(systemName: "waveform")
+        Image(systemName: context.state.isPaused ? "pause.fill" : "waveform")
           .foregroundStyle(.red)
-        Text(timerInterval: context.state.startedAt...Date.distantFuture, countsDown: false)
+        elapsedText(context.state)
           .font(.headline.monospacedDigit())
       }
       .padding()
     } else {
       HStack(spacing: 14) {
-        Image(systemName: "waveform")
+        Image(systemName: context.state.isPaused ? "pause.fill" : "waveform")
           .font(.title2.weight(.semibold))
           .foregroundStyle(.red)
 
@@ -71,17 +71,39 @@ private struct MemoraLiveActivityView: View {
           Text(context.attributes.title)
             .font(.headline)
             .lineLimit(1)
-          Text("録音中 · 端末に保存")
+          Text(context.state.isPaused ? "一時停止中 · 端末に保存" : "録音中 · 端末に保存")
             .font(.caption)
             .foregroundStyle(.secondary)
         }
 
         Spacer()
 
-        Text(timerInterval: context.state.startedAt...Date.distantFuture, countsDown: false)
+        elapsedText(context.state)
           .font(.title3.monospacedDigit().weight(.medium))
       }
       .padding()
     }
   }
+}
+
+/// A live timer while recording; the frozen elapsed time while paused, so the
+/// number never keeps counting during a pause.
+@ViewBuilder
+private func elapsedText(_ state: MemoraRecordingAttributes.ContentState) -> some View {
+  if state.isPaused {
+    Text(formatElapsed(state.pausedElapsed))
+  } else {
+    Text(timerInterval: state.startedAt...Date.distantFuture, countsDown: false)
+  }
+}
+
+private func formatElapsed(_ interval: TimeInterval) -> String {
+  let total = max(0, Int(interval))
+  let hours = total / 3_600
+  let minutes = (total % 3_600) / 60
+  let seconds = total % 60
+  if hours > 0 {
+    return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+  }
+  return String(format: "%02d:%02d", minutes, seconds)
 }

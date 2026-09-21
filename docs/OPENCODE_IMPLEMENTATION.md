@@ -160,6 +160,10 @@
 - D06: `DraftStore` と `InlineMarkdownEditor.draftKey` を追加。要約・ノートの編集中テキストを800msのデバウンスで保存し、次に開いたときに「書きかけの内容を復元しました」と表示して復帰。確定時に下書きを削除。
 - 併せて `SelfChecks`（DEBUG限定・起動時）を追加し、Markdown往復と下書き保存の往復を検証（失敗はログ）。正式なテストターゲットは bitrig-standard-project の手順が未確認のため保留。
 
+### フェーズ3（追加7）
+
+- B07: `MemoraRecordingAttributes.ContentState` に `pausedElapsed` を追加し、`startedAt` を実経過時間に合わせて再アンカー。ウィジェットは録音中はライブタイマー、一時停止中は凍結した時間と「一時停止中」を表示。起動時に残っているActivityを終了する（録音は自動再開しないため）。
+
 ### フェーズ2の残り
 
 - 写真（`Meeting.photoData`）のファイル参照化、A09（ごみ箱と復元）、
