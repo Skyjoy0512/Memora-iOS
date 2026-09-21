@@ -174,6 +174,10 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ5（追加26・自己チェック追加）
+
+- `SelfChecks` に、処理の入力リビジョン（文字起こしの指紋が安定で、編集を検知する）、写真のサムネイル命名（`photoFiles` が対で返す）、状態フィルターの対応（完了＝ready）を追加。DEBUG起動時に検証する。
+
 ### フェーズ5（追加25・F06の残りとF10の計測手段）
 
 - F06: `MeetingPDF.write(meeting:tasks:onProgress:)` を async 化。本文の描画はメインアクター、ページ生成は `Task.detached` でオフメイン。ページごとに進捗を返し、`Task` キャンセルで中断（`ExportError.cancelled`）。詳細画面は進捗カード（％と「キャンセル」）を表示。

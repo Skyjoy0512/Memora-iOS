@@ -28,6 +28,52 @@ enum SelfChecks {
 
     checkQuestionWords()
     checkScopeIsolation()
+    checkProcessingRevision()
+    checkPhotoThumbnailNaming()
+    checkStatusFilter()
+  }
+
+  /// A summary must not be applied to a transcript that changed while it was
+  /// being written, so the fingerprint has to notice an edit.
+  private static func checkProcessingRevision() {
+    let segment = TranscriptSegment(
+      id: UUID(),
+      speaker: "話者",
+      speakerIsCertain: false,
+      timestamp: 0,
+      text: "最初の内容"
+    )
+    let before = ProcessingService.inputRevision([segment])
+    var edited = segment
+    edited.text = "直した内容"
+    if ProcessingService.inputRevision([edited]) == before {
+      report("processing input revision did not change")
+    }
+    if ProcessingService.inputRevision([segment]) != before {
+      report("processing input revision is not stable")
+    }
+  }
+
+  /// A photo's thumbnail is found from the stored name, and both files belong to
+  /// the record so a backup carries them together.
+  private static func checkPhotoThumbnailNaming() {
+    let name = "ABC.jpg"
+    if MediaFiles.photoFiles(for: [name]) != [name, "ABC.jpg.thumb.jpg"] {
+      report("photo thumbnail naming: \(MediaFiles.photoFiles(for: [name]))")
+    }
+  }
+
+  /// The state filter both lists share: a record is finished when it is ready.
+  private static func checkStatusFilter() {
+    if !SearchFilters.Status.finished.matches(.ready) {
+      report("status filter: ready is not finished")
+    }
+    if SearchFilters.Status.finished.matches(.transcribing(0.5)) {
+      report("status filter: transcribing counted as finished")
+    }
+    if !SearchFilters.Status.needsAttention.matches(.failed("x")) {
+      report("status filter: failed is not needs attention")
+    }
   }
 
   /// A question asked of a project must not carry records or tasks from outside
