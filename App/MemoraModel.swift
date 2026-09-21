@@ -209,6 +209,9 @@ final class MemoraModel {
   @ObservationIgnored let performance = PerformanceLog.shared
   /// What a recording in progress would need to be recovered after a stop.
   @ObservationIgnored private var recordingDraft: RecordingDraft?
+  /// Media whose record is already gone but whose files could not be removed.
+  /// Kept so the removal can be tried again instead of being dropped silently.
+  @ObservationIgnored private var pendingMediaDeletions: [PendingMediaDeletion] = []
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
   @ObservationIgnored private var pendingMeetingNavigationID: UUID?
   @ObservationIgnored private let recorder = AudioRecorderService()
@@ -280,16 +283,34 @@ final class MemoraModel {
       forKey: StorageKey.lifeLogTrash,
       fallback: []
     )
-    if case .data(let draftData) = RecordStore.load(StorageKey.recordingDraft) {
-      recordingDraft = try? JSONDecoder().decode(RecordingDraft.self, from: draftData)
-      // A draft from an older build has no id; give it a stable one now so a
-      // recovery that is cut off and retried does not make a second record.
-      if recordingDraft?.id == nil {
-        recordingDraft?.id = UUID()
+    pendingMediaDeletions = load(
+      [PendingMediaDeletion].self,
+      forKey: StorageKey.pendingMediaDeletions,
+      fallback: []
+    )
+    // The recording draft is what a recovery depends on, so a failure to read it
+    // counts like any other: the store is treated as unreadable and nothing is
+    // written over it. A draft that cannot be decoded is set aside the same way
+    // an unreadable record is.
+    switch RecordStore.load(StorageKey.recordingDraft) {
+    case .absent:
+      break
+    case .failed:
+      didFailToReadStore = true
+    case .data(let draftData):
+      if let decoded = try? JSONDecoder().decode(RecordingDraft.self, from: draftData) {
+        recordingDraft = decoded
+        // A draft from an older build has no id; give it a stable one now so a
+        // recovery that is cut off and retried does not make a second record.
+        if recordingDraft?.id == nil {
+          recordingDraft?.id = UUID()
+        }
+      } else if RecordStore.quarantine(draftData, key: StorageKey.recordingDraft) {
+        didFindUnreadableData = true
+      } else {
+        didFailToReadStore = true
       }
     }
-
-    isStoreProtected = didFailToReadStore
 
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [
@@ -301,6 +322,10 @@ final class MemoraModel {
         createdAt: Calendar.current.date(byAdding: .hour, value: -4, to: .now)!
       )
     ])
+
+    // Protection is decided only once every document has been read, so a failure
+    // in the last one (AI history, say) still stops the app from overwriting it.
+    isStoreProtected = didFailToReadStore
 
     if didFailToReadStore {
       loadFailureMessage = "保存データを読み込めませんでした。データを壊さないため、この起動では保存を停止しています。アプリを再起動してください。"
@@ -320,6 +345,9 @@ final class MemoraModel {
 
     // Records kept past their recovery window are removed for good.
     purgeExpiredTrash()
+
+    // A removal of media that failed last time is tried again.
+    retryPendingMediaDeletions()
 
     // A recording that was cut off by a stop is recovered as its own record,
     // never re-recorded.
@@ -477,6 +505,14 @@ final class MemoraModel {
     var title: String
     var note: String
     var startedAt: Date
+  }
+
+  /// A removal that still has to happen: the record it belongs to is gone from
+  /// the store, but one or more of its files remain on disk.
+  private struct PendingMediaDeletion: Codable, Identifiable {
+    var id: UUID
+    var audioReference: String?
+    var photoNames: [String]
   }
 
   /// Writes what a running recording would need if the app stopped now.
@@ -1358,20 +1394,37 @@ final class MemoraModel {
     persistMeetings()
   }
 
+  /// True while the store is protected stops every change that would write over
+  /// data that could not be read — including deletes, restores, and the removal
+  /// of files, which would otherwise leave the store and the media disagreeing.
+  private func blockProtectedChanges() {
+    persistenceFailureMessage = storeProtectedMessage
+  }
+
   /// Moves a record to the trash. Its audio, tasks, and journal entries are kept
   /// so it can be restored exactly, and removed only when the trash is emptied.
+  /// The lists are only changed once the write lands, so a failed save leaves
+  /// the screen showing what the store actually holds.
   func deleteMeeting(_ id: UUID) {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
 
     processing.cancel(id)
 
-    let removed = meetings.remove(at: index)
-    let removedTasks = tasks.filter { $0.meetingID == id }
-    let removedEntries = lifeLogEntries.filter { $0.meetingID == id }
-    tasks.removeAll { $0.meetingID == id }
-    lifeLogEntries.removeAll { $0.meetingID == id }
+    var candidateMeetings = meetings
+    var candidateTasks = tasks
+    var candidateEntries = lifeLogEntries
+    var candidateTrash = trashedRecords
 
-    trashedRecords.insert(
+    let removed = candidateMeetings.remove(at: index)
+    let removedTasks = candidateTasks.filter { $0.meetingID == id }
+    let removedEntries = candidateEntries.filter { $0.meetingID == id }
+    candidateTasks.removeAll { $0.meetingID == id }
+    candidateEntries.removeAll { $0.meetingID == id }
+    candidateTrash.insert(
       TrashedRecord(
         meeting: removed,
         tasks: removedTasks,
@@ -1383,84 +1436,184 @@ final class MemoraModel {
 
     // One operation: the record, its tasks, its journal entries, and the trash
     // entry land together or not at all.
-    persistBatch {
+    let stored = persistBatch {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
-        (key: StorageKey.tasks, data: try RecordStore.encoded(tasks)),
-        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries)),
-        (key: StorageKey.trash, data: try RecordStore.encoded(trashedRecords))
+        (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
+        (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
+        (key: StorageKey.trash, data: try RecordStore.encoded(candidateTrash))
       ]
     }
+    guard stored else { return }
+
+    meetings = candidateMeetings
+    tasks = candidateTasks
+    lifeLogEntries = candidateEntries
+    trashedRecords = candidateTrash
   }
 
-  /// Puts a trashed record back exactly as it was.
+  /// Puts a trashed record back exactly as it was, again only after the write.
   func restoreTrashedRecord(_ id: UUID) {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
     guard let index = trashedRecords.firstIndex(where: { $0.id == id }) else { return }
-    let record = trashedRecords.remove(at: index)
 
-    meetings.insert(record.meeting, at: 0)
+    var candidateTrash = trashedRecords
+    let record = candidateTrash.remove(at: index)
+    var candidateMeetings = meetings
+    var candidateTasks = tasks
+    var candidateEntries = lifeLogEntries
+    candidateMeetings.insert(record.meeting, at: 0)
     if !record.tasks.isEmpty {
-      tasks.insert(contentsOf: record.tasks, at: 0)
+      candidateTasks.insert(contentsOf: record.tasks, at: 0)
     }
     if !record.lifeLogEntries.isEmpty {
-      lifeLogEntries.append(contentsOf: record.lifeLogEntries)
+      candidateEntries.append(contentsOf: record.lifeLogEntries)
     }
 
-    persistBatch {
+    let stored = persistBatch {
       [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
-        (key: StorageKey.tasks, data: try RecordStore.encoded(tasks)),
-        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries)),
-        (key: StorageKey.trash, data: try RecordStore.encoded(trashedRecords))
+        (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
+        (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
+        (key: StorageKey.trash, data: try RecordStore.encoded(candidateTrash))
       ]
     }
+    guard stored else { return }
+
+    trashedRecords = candidateTrash
+    meetings = candidateMeetings
+    tasks = candidateTasks
+    lifeLogEntries = candidateEntries
   }
 
-  /// Removes a trashed record and its audio for good.
+  /// Removes a trashed record and its media for good. The trash entry leaves the
+  /// store first; the files are only removed once that write landed, so a failed
+  /// write can never lose the attachments while the entry is still there.
   func permanentlyDeleteTrashedRecord(_ id: UUID) {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
     guard let index = trashedRecords.firstIndex(where: { $0.id == id }) else { return }
-    let record = trashedRecords.remove(at: index)
-    persistTrash()
 
-    for name in record.meeting.photoFileNames ?? [] {
-      MediaFiles.deletePhoto(name)
+    var candidate = trashedRecords
+    let record = candidate.remove(at: index)
+    let stored = persistBatch {
+      [(key: StorageKey.trash, data: try RecordStore.encoded(candidate))]
     }
-    if !MediaFiles.delete(record.meeting.audioURL) {
-      deletionFailureMessage = "音声ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
-    }
+    guard stored else { return }
+
+    trashedRecords = candidate
+    deleteMedia(
+      audioURL: record.meeting.audioURL,
+      photoNames: record.meeting.photoFileNames ?? []
+    )
   }
 
-  /// Drops trashed records once their recovery window has passed.
+  /// Removes media for records that are already gone from the store. A file that
+  /// cannot be removed is remembered and retried, so this never fails in a way
+  /// that could only be noticed later.
+  private func deleteMedia(audioURL: URL?, photoNames: [String]) {
+    var remainingPhotos: [String] = []
+    for name in photoNames where !MediaFiles.deletePhoto(name) {
+      remainingPhotos.append(name)
+    }
+    // Keep the managed reference, not the resolved path, so a retry after the
+    // app container moves still finds the right file.
+    var remainingAudio: String?
+    if let audioURL, !MediaFiles.delete(audioURL) {
+      remainingAudio = MediaFiles.reference(for: audioURL)
+    }
+
+    guard remainingAudio != nil || !remainingPhotos.isEmpty else { return }
+    pendingMediaDeletions.append(
+      PendingMediaDeletion(id: UUID(), audioReference: remainingAudio, photoNames: remainingPhotos)
+    )
+    persistPendingMediaDeletions()
+    deletionFailureMessage = "一部のメディアを削除できませんでした。次回の起動で再試行します。"
+  }
+
+  /// Tries the removals that failed before, keeping any that fail again.
+  private func retryPendingMediaDeletions() {
+    guard !isStoreProtected, !pendingMediaDeletions.isEmpty else { return }
+
+    var remaining: [PendingMediaDeletion] = []
+    for deletion in pendingMediaDeletions {
+      var photos: [String] = []
+      for name in deletion.photoNames where !MediaFiles.deletePhoto(name) {
+        photos.append(name)
+      }
+      var audio: String?
+      if let reference = deletion.audioReference,
+         let url = MediaFiles.resolve(reference),
+         !MediaFiles.delete(url) {
+        audio = reference
+      }
+      if audio != nil || !photos.isEmpty {
+        remaining.append(PendingMediaDeletion(id: deletion.id, audioReference: audio, photoNames: photos))
+      }
+    }
+    pendingMediaDeletions = remaining
+    persistPendingMediaDeletions()
+  }
+
+  /// Drops trashed records once their recovery window has passed. The entries
+  /// are removed from the store first and their files afterwards, so an
+  /// interruption leaves either the entry or the files, never a missing file
+  /// with the entry still present.
   private func purgeExpiredTrash() {
+    guard !isStoreProtected else { return }
     let cutoff = Date().addingTimeInterval(-TrashedRecord.lifetime)
 
     let expiredRecords = trashedRecords.filter { $0.deletedAt < cutoff }
-    if !expiredRecords.isEmpty {
-      for record in expiredRecords {
-        for name in record.meeting.photoFileNames ?? [] {
-          MediaFiles.deletePhoto(name)
-        }
-        MediaFiles.delete(record.meeting.audioURL)
+    let expiredEntries = trashedLifeLogEntries.filter { $0.deletedAt < cutoff }
+    guard !expiredRecords.isEmpty || !expiredEntries.isEmpty else { return }
+
+    let candidateRecords = trashedRecords.filter { $0.deletedAt >= cutoff }
+    let candidateEntries = trashedLifeLogEntries.filter { $0.deletedAt >= cutoff }
+    let stored = persistBatch {
+      var documents: [(key: String, data: Data)] = []
+      if !expiredRecords.isEmpty {
+        documents.append((key: StorageKey.trash, data: try RecordStore.encoded(candidateRecords)))
       }
-      trashedRecords.removeAll { $0.deletedAt < cutoff }
-      persistTrash()
+      if !expiredEntries.isEmpty {
+        documents.append((key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidateEntries)))
+      }
+      return documents
+    }
+    guard stored else { return }
+
+    if !expiredRecords.isEmpty {
+      trashedRecords = candidateRecords
+    }
+    if !expiredEntries.isEmpty {
+      trashedLifeLogEntries = candidateEntries
     }
 
-    let expiredEntries = trashedLifeLogEntries.filter { $0.deletedAt < cutoff }
-    if !expiredEntries.isEmpty {
-      for record in expiredEntries {
-        if let name = record.entry.photoFileName {
-          MediaFiles.deletePhoto(name)
-        }
-      }
-      trashedLifeLogEntries.removeAll { $0.deletedAt < cutoff }
-      persistLifeLogTrash()
+    for record in expiredRecords {
+      deleteMedia(
+        audioURL: record.meeting.audioURL,
+        photoNames: record.meeting.photoFileNames ?? []
+      )
+    }
+    for record in expiredEntries {
+      deleteMedia(
+        audioURL: nil,
+        photoNames: record.entry.photoFileName.map { [$0] } ?? []
+      )
     }
   }
 
   // MARK: - Journal entries
 
   func updateLifeLogEntry(_ id: UUID, title: String, summary: String, createdAt: Date) {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
     guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return }
@@ -1471,31 +1624,74 @@ final class MemoraModel {
     persistLifeLog()
   }
 
-  /// Moves an entry to the trash. Its photo stays until it is removed for good.
+  /// Moves an entry to the trash, as one write, and only then changes the lists.
   func deleteLifeLogEntry(_ id: UUID) {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
     guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
-    let removed = lifeLogEntries.remove(at: index)
-    trashedLifeLogEntries.insert(TrashedLifeLogEntry(entry: removed, deletedAt: .now), at: 0)
-    persistLifeLog()
-    persistLifeLogTrash()
+
+    var candidateEntries = lifeLogEntries
+    var candidateTrash = trashedLifeLogEntries
+    let removed = candidateEntries.remove(at: index)
+    candidateTrash.insert(TrashedLifeLogEntry(entry: removed, deletedAt: .now), at: 0)
+
+    let stored = persistBatch {
+      [
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
+        (key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidateTrash))
+      ]
+    }
+    guard stored else { return }
+
+    lifeLogEntries = candidateEntries
+    trashedLifeLogEntries = candidateTrash
   }
 
   func restoreTrashedLifeLogEntry(_ id: UUID) {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
     guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
-    let record = trashedLifeLogEntries.remove(at: index)
-    lifeLogEntries.append(record.entry)
-    persistLifeLog()
-    persistLifeLogTrash()
+
+    var candidateTrash = trashedLifeLogEntries
+    let record = candidateTrash.remove(at: index)
+    var candidateEntries = lifeLogEntries
+    candidateEntries.append(record.entry)
+
+    let stored = persistBatch {
+      [
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
+        (key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidateTrash))
+      ]
+    }
+    guard stored else { return }
+
+    trashedLifeLogEntries = candidateTrash
+    lifeLogEntries = candidateEntries
   }
 
   func permanentlyDeleteTrashedLifeLogEntry(_ id: UUID) {
-    guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
-    let record = trashedLifeLogEntries.remove(at: index)
-    persistLifeLogTrash()
-
-    if let name = record.entry.photoFileName {
-      MediaFiles.deletePhoto(name)
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
     }
+    guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
+
+    var candidate = trashedLifeLogEntries
+    let record = candidate.remove(at: index)
+    let stored = persistBatch {
+      [(key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidate))]
+    }
+    guard stored else { return }
+
+    trashedLifeLogEntries = candidate
+    deleteMedia(
+      audioURL: nil,
+      photoNames: record.entry.photoFileName.map { [$0] } ?? []
+    )
   }
 
   private func persistLifeLogTrash() {
@@ -1504,6 +1700,10 @@ final class MemoraModel {
 
   private func persistTrash() {
     persistInBackground(trashedRecords, forKey: StorageKey.trash)
+  }
+
+  private func persistPendingMediaDeletions() {
+    persistInBackground(pendingMediaDeletions, forKey: StorageKey.pendingMediaDeletions)
   }
 
   // MARK: - Backup
@@ -1581,17 +1781,30 @@ final class MemoraModel {
     }
   }
 
+  /// Removes a photo from a record. The record is written first and the file is
+  /// only removed once that write landed, so a failed save cannot leave the
+  /// record pointing at a file that was already erased.
   func removeMeetingPhoto(_ id: UUID, index: Int) {
-    var removed: String?
-    updateMeeting(id) { meeting in
-      var names = meeting.photoFileNames ?? []
-      guard names.indices.contains(index) else { return }
-      removed = names.remove(at: index)
-      meeting.photoFileNames = names.isEmpty ? nil : names
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
     }
-    if let removed {
-      MediaFiles.deletePhoto(removed)
+    guard let meetingIndex = meetings.firstIndex(where: { $0.id == id }) else { return }
+
+    var candidate = meetings
+    var names = candidate[meetingIndex].photoFileNames ?? []
+    guard names.indices.contains(index) else { return }
+    let removed = names.remove(at: index)
+    candidate[meetingIndex].photoFileNames = names.isEmpty ? nil : names
+    meetingSearchTexts.removeValue(forKey: id)
+
+    let stored = persistBatch {
+      [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))]
     }
+    guard stored else { return }
+
+    meetings = candidate
+    MediaFiles.deletePhoto(removed)
   }
 
   // MARK: - People
@@ -1985,6 +2198,7 @@ final class MemoraModel {
     static let trash = "memoraTrash"
     static let lifeLogTrash = "memoraLifeLogTrash"
     static let aiHistory = "memoraAIHistory"
+    static let pendingMediaDeletions = "memoraPendingMediaDeletions"
   }
 
   private func recordingsDirectory() throws -> URL {

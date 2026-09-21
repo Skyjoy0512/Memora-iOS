@@ -118,7 +118,7 @@ final class LocalStore {
   func applyBatch(writes: [(key: String, data: Data)], removing removals: [String]) throws {
     lock.lock()
     defer { lock.unlock() }
-    guard let db else { throw StoreError.open(0) }
+    guard db != nil else { throw StoreError.open(0) }
     guard !writes.isEmpty || !removals.isEmpty else { return }
 
     try exec("BEGIN IMMEDIATE;")
