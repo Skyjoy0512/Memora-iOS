@@ -201,6 +201,9 @@ final class MemoraModel {
   /// Transcription and summary jobs, with the rules that decide whether a
   /// result still applies.
   @ObservationIgnored let processing = ProcessingService()
+  /// Timings for the paths that matter when comparing builds. Holds numbers and
+  /// names only, never content.
+  @ObservationIgnored let performance = PerformanceLog.shared
   /// What a recording in progress would need to be recovered after a stop.
   @ObservationIgnored private var recordingDraft: RecordingDraft?
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
@@ -210,6 +213,8 @@ final class MemoraModel {
   init() {
     let defaults = UserDefaults.standard
     RecordStore.prepare()
+    performance.loadStored()
+    let launchStartedAt = Date()
 
     hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
@@ -311,6 +316,14 @@ final class MemoraModel {
     processing.onActiveIDsChanged = { [weak self] in
       self?.persistInterruptedJobs()
     }
+
+    // How long the app needs before the first screen can be drawn, recorded
+    // without any of the content that was loaded.
+    performance.record(
+      "起動（準備完了まで）",
+      milliseconds: Date.now.timeIntervalSince(launchStartedAt) * 1_000,
+      count: meetings.count
+    )
 
     // A day or time zone change moves records between journal days.
     let dayChange: @Sendable (Notification) -> Void = { [weak self] _ in
@@ -702,7 +715,14 @@ final class MemoraModel {
   func stopCapture() async {
     guard isRecording, !isSavingCapture else { return }
     isSavingCapture = true
-    defer { isSavingCapture = false }
+    let startedAt = Date()
+    defer {
+      isSavingCapture = false
+      performance.record(
+        "保存（録音の確定）",
+        milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000
+      )
+    }
 
     recorder.stop()
     recordingTicker?.cancel()
@@ -949,6 +969,14 @@ final class MemoraModel {
     updateMeeting(id) { $0.status = .transcribing(0.08) }
     processing.run(id: id) { [weak self] in
       guard let self else { return TranscriptionOutcome.unavailable }
+      let availability = await EngineAvailability.transcription(
+        EngineAvailability.currentTranscriptionEngine(),
+        language: EngineAvailability.currentTranscriptionLanguage(),
+        provider: EngineAvailability.currentTranscriptionProvider()
+      )
+      guard availability.isReady else {
+        return .failed(availability.message ?? "文字起こしを開始できませんでした。")
+      }
       try? await Task.sleep(for: .milliseconds(600))
       guard !Task.isCancelled else { return .unavailable }
       self.updateMeeting(id) { $0.status = .transcribing(0.62) }
@@ -982,6 +1010,7 @@ final class MemoraModel {
 
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     let inputRevision = ProcessingService.inputRevision(meeting.transcript)
+    let startedAt = Date()
 
     processing.run(id: id) { [weak self] in
       guard let self else { return AIAnswerResult.failure(.noEngine) }
@@ -998,6 +1027,10 @@ final class MemoraModel {
       )
     } apply: { [weak self] result in
       guard let self, !Task.isCancelled else { return }
+      self.performance.record(
+        "処理（要約）",
+        milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000
+      )
       // The service checks the job's generation; the transcript fingerprint
       // catches an edit made while the answer was being written.
       guard let current = self.meeting(id: id),
@@ -1508,6 +1541,7 @@ final class MemoraModel {
       } else {
         DraftStore.save(self.composerDraft, key: Self.composerDraftKey)
       }
+      self.composerDraftSaveTask = nil
     }
   }
 
@@ -1551,6 +1585,23 @@ final class MemoraModel {
   private func beginProcessing(_ id: UUID) {
     processing.run(id: id) { [weak self] in
       guard let self else { return TranscriptionOutcome.unavailable }
+      // Checked before the job starts, so a missing key or an unsupported
+      // language is reported at once instead of after a spinner.
+      let availability = await EngineAvailability.transcription(
+        EngineAvailability.currentTranscriptionEngine(),
+        language: EngineAvailability.currentTranscriptionLanguage(),
+        provider: EngineAvailability.currentTranscriptionProvider()
+      )
+      guard availability.isReady else {
+        return .failed(availability.message ?? "文字起こしを開始できませんでした。")
+      }
+      let startedAt = Date()
+      defer {
+        self.performance.record(
+          "処理（文字起こし）",
+          milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000
+        )
+      }
       try? await Task.sleep(for: .milliseconds(700))
       guard !Task.isCancelled else { return .unavailable }
       self.updateMeeting(id) { $0.status = .transcribing(0.58) }
@@ -1594,7 +1645,52 @@ final class MemoraModel {
     persistInBackground(lifeLogEntries, forKey: StorageKey.lifeLogEntries)
   }
 
+#if DEBUG
+  /// The prefix the synthetic records used for measurements carry, so they can
+  /// be recognised and removed again.
+  static let measurementTitlePrefix = "計測用レコード "
+
+  /// Adds numbered records so launch, search, and save can be measured at the
+  /// sizes the review asks about (100 / 1,000). They hold no audio, no summary,
+  /// and no transcript — only a label and a date.
+  func addMeasurementRecords(_ count: Int) {
+    let existing = meetings.filter { $0.title.hasPrefix(Self.measurementTitlePrefix) }.count
+    for offset in 0..<count {
+      meetings.insert(
+        Meeting(
+          id: UUID(),
+          title: "\(Self.measurementTitlePrefix)\(existing + offset + 1)",
+          createdAt: .now.addingTimeInterval(-Double(offset) * 60),
+          duration: 60,
+          source: .importFile,
+          status: .ready,
+          summary: "",
+          keyPoints: [],
+          decisions: [],
+          openQuestions: [],
+          transcript: []
+        ),
+        at: 0
+      )
+    }
+    persistMeetings()
+  }
+
+  func removeMeasurementRecords() {
+    meetings.removeAll { $0.title.hasPrefix(Self.measurementTitlePrefix) }
+    persistMeetings()
+  }
+#endif
+
   func persistMeetings() {
+    let startedAt = Date()
+    defer {
+      performance.record(
+        "保存（会議の引き渡し）",
+        milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000,
+        count: meetings.count
+      )
+    }
     persistInBackground(meetings, forKey: StorageKey.meetings)
   }
 

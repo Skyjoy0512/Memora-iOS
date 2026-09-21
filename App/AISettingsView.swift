@@ -3,6 +3,7 @@ import SwiftUI
 struct AISettingsView: View {
   @Environment(MemoraModel.self) private var model
   @State private var isAPIKeySheetPresented = false
+  @State private var availability = EngineAvailability.Status()
 
   var body: some View {
     @Bindable var model = model
@@ -17,6 +18,12 @@ struct AISettingsView: View {
           }
         }
         LabeledContent("実際に使う", value: effectiveLabel)
+        LabeledContent("この設定での状態", value: availability.summary)
+        if let message = availability.message {
+          Text(message)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
         Text(model.aiEngine.detail)
           .font(.footnote)
           .foregroundStyle(.secondary)
@@ -54,6 +61,13 @@ struct AISettingsView: View {
       if !model.aiProvider.supportsAI {
         model.aiProvider = .openAI
       }
+      availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
+    }
+    .onChange(of: model.aiEngine) { _, _ in
+      availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
+    }
+    .onChange(of: model.aiProvider) { _, _ in
+      availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
     }
   }
 

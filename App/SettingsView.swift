@@ -162,6 +162,12 @@ struct SettingsView: View {
           }
 
           #if DEBUG
+          NavigationLink {
+            PerformanceLogView()
+          } label: {
+            Label("計測（ビルド比較用）", systemImage: "stopwatch")
+          }
+
           // Destructive resets only exist for development; a shipped build must
           // never offer to replace or empty someone's records.
           Button("初回体験をもう一度見る", systemImage: "arrow.counterclockwise") {

@@ -54,6 +54,9 @@ final class OmiPairingManager: NSObject {
   @ObservationIgnored private var centralManager: CBCentralManager?
   @ObservationIgnored private var peripherals: [UUID: CBPeripheral] = [:]
   @ObservationIgnored private var connectedPeripheral: CBPeripheral?
+  /// True only while someone is looking for a device. Bluetooth coming back on
+  /// must not start a scan by itself.
+  @ObservationIgnored private var wantsScanning = false
 
   private static let audioService = CBUUID(string: "19B10000-E8F2-537E-4F6C-D104768A1214")
   private static let rememberedNameKey = "omiRememberedDeviceName"
@@ -71,6 +74,7 @@ final class OmiPairingManager: NSObject {
     #if targetEnvironment(simulator)
     state = .unsupported
     #else
+    wantsScanning = true
     devices = []
     peripherals = [:]
     state = .preparing
@@ -84,7 +88,9 @@ final class OmiPairingManager: NSObject {
   }
 
   func stopScanning() {
+    wantsScanning = false
     centralManager?.stopScan()
+    releaseUnconnectedPeripherals()
     if case .scanning = state {
       state = rememberedState
     }
@@ -92,6 +98,7 @@ final class OmiPairingManager: NSObject {
 
   func connect(to device: Device) {
     guard let peripheral = peripherals[device.id], let centralManager else { return }
+    wantsScanning = false
     centralManager.stopScan()
     state = .connecting(device.name)
     centralManager.connect(peripheral)
@@ -101,9 +108,22 @@ final class OmiPairingManager: NSObject {
     if let connectedPeripheral, let centralManager {
       centralManager.cancelPeripheralConnection(connectedPeripheral)
     }
+    wantsScanning = false
     connectedPeripheral = nil
+    peripherals = [:]
+    devices = []
     UserDefaults.standard.removeObject(forKey: Self.rememberedNameKey)
     state = .idle
+  }
+
+  /// Frees the discovered peripherals once they are no longer being looked at,
+  /// so a scan does not keep every device it saw.
+  private func releaseUnconnectedPeripherals() {
+    guard let connectedPeripheral else {
+      peripherals = [:]
+      return
+    }
+    peripherals = [connectedPeripheral.identifier: connectedPeripheral]
   }
 
   private var rememberedState: ConnectionState {
@@ -115,23 +135,36 @@ final class OmiPairingManager: NSObject {
   }
 
   private func beginScanIfPossible(using central: CBCentralManager) {
+    guard wantsScanning else {
+      state = availabilityState(for: central)
+      return
+    }
+    guard central.state == .poweredOn else {
+      state = availabilityState(for: central)
+      return
+    }
+    state = .scanning
+    central.scanForPeripherals(
+      withServices: [Self.audioService],
+      options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+    )
+  }
+
+  /// What to say about Bluetooth without starting anything.
+  private func availabilityState(for central: CBCentralManager) -> ConnectionState {
     switch central.state {
     case .poweredOn:
-      state = .scanning
-      central.scanForPeripherals(
-        withServices: [Self.audioService],
-        options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
-      )
+      rememberedState
     case .poweredOff:
-      state = .bluetoothOff
+      .bluetoothOff
     case .unauthorized:
-      state = .unauthorized
+      .unauthorized
     case .unsupported:
-      state = .unsupported
+      .unsupported
     case .resetting, .unknown:
-      state = .preparing
+      .preparing
     @unknown default:
-      state = .failed("Bluetoothの状態を確認できませんでした。")
+      .failed("Bluetoothの状態を確認できませんでした。")
     }
   }
 }
@@ -168,11 +201,13 @@ extension OmiPairingManager: CBCentralManagerDelegate {
   }
 
   func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+    peripherals[peripheral.identifier] = nil
     state = .failed(error?.localizedDescription ?? "Omiへ接続できませんでした。")
   }
 
   func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
     connectedPeripheral = nil
+    peripherals[peripheral.identifier] = nil
     if let error {
       state = .failed(error.localizedDescription)
     } else {

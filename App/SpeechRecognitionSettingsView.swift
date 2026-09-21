@@ -5,6 +5,7 @@ struct SpeechRecognitionSettingsView: View {
   @AppStorage("memora.transcriptionLanguage") private var language = RecognitionLanguage.japanese
   @AppStorage("memora.transcriptionProvider") private var provider = CloudProvider.openAI
   @State private var isKeySheetPresented = false
+  @State private var availability = EngineAvailability.Status()
 
   var body: some View {
     Form {
@@ -51,6 +52,19 @@ struct SpeechRecognitionSettingsView: View {
       } footer: {
         Text(language.detail)
       }
+
+      Section {
+        LabeledContent("この設定での状態", value: availability.summary)
+        if let message = availability.message {
+          Text(message)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
+      } header: {
+        Text("対応状況")
+      } footer: {
+        Text("対応言語・モデルの準備・キーの有無を、実行前にここで確認できます。")
+      }
     }
     .navigationTitle("文字起こし")
     .memoraBackButton()
@@ -61,6 +75,9 @@ struct SpeechRecognitionSettingsView: View {
       if !provider.supportsTranscription {
         provider = .openAI
       }
+    }
+    .task(id: "\(engine.rawValue)-\(language.rawValue)-\(provider.rawValue)") {
+      availability = await EngineAvailability.transcription(engine, language: language, provider: provider)
     }
   }
 }

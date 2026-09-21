@@ -19,9 +19,14 @@ enum MediaImageCache {
     }
     guard let url = thumbnailURL(for: name) else { return nil }
 
+    let startedAt = Date()
     let image = await Task.detached(priority: .userInitiated) {
       ImageDownscale.downsampled(at: url, maxPixelSize: maxPixelSize)
     }.value
+    PerformanceLog.shared.record(
+      "画像のデコード",
+      milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000
+    )
 
     guard let image else { return nil }
     cache.setObject(image, forKey: key as NSString)
