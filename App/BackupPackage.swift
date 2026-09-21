@@ -73,7 +73,7 @@ enum BackupPackage {
          copy(audioURL, named: name, into: mediaURL) {
         audioNames.append(name)
       }
-      for name in meeting.photoFileNames ?? [] {
+      for name in MediaFiles.photoFiles(for: meeting.photoFileNames ?? []) {
         if let url = MediaFiles.photoURL(name), copy(url, named: name, into: mediaURL) {
           photoNames.append(name)
         }

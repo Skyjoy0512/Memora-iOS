@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import UIKit
 
 /// Owns the app's media files. Everything lives inside the app's container, and
 /// only files that belong there are ever removed.
@@ -52,17 +53,37 @@ enum MediaFiles {
       .appendingPathComponent("Photos", isDirectory: true)
   }
 
-  /// Writes a photo and returns the file name to store on the record.
-  static func writePhoto(_ data: Data) -> String? {
+  /// The small copy kept beside a stored photo. Derived from the stored name,
+  /// so a record keeps one name and photos saved before thumbnails existed fall
+  /// back to the full-size file.
+  static func thumbnailName(for name: String) -> String {
+    "\(name).thumb.jpg"
+  }
+
+  /// Writes a photo and returns the file name to store on the record. When
+  /// `thumbnailMaxSide` is given, a small copy is written beside it so lists can
+  /// draw a tile without decoding the full-size file.
+  static func writePhoto(_ data: Data, thumbnailMaxSide: CGFloat? = nil) -> String? {
     let name = "\(UUID().uuidString).jpg"
     let url = photosDirectory.appendingPathComponent(name)
     do {
       try FileManager.default.createDirectory(at: photosDirectory, withIntermediateDirectories: true)
       try data.write(to: url, options: .atomic)
+      if let thumbnailMaxSide, let small = ImageDownscale.jpeg(data, maxSide: thumbnailMaxSide) {
+        try? small.write(
+          to: photosDirectory.appendingPathComponent(thumbnailName(for: name)),
+          options: .atomic
+        )
+      }
       return name
     } catch {
       return nil
     }
+  }
+
+  /// The photo files that back the given names, including their thumbnails.
+  static func photoFiles(for names: [String]) -> [String] {
+    names.flatMap { [$0, thumbnailName(for: $0)] }
   }
 
   /// Resolves a stored photo file name, refusing anything outside the folder.
@@ -77,16 +98,29 @@ enum MediaFiles {
     return try? Data(contentsOf: url)
   }
 
+  /// The small copy for lists, falling back to the full-size file for photos
+  /// saved before thumbnails existed.
+  static func photoThumbnailData(_ name: String) -> Data? {
+    guard let url = photoURL(thumbnailName(for: name)),
+          let data = try? Data(contentsOf: url) else {
+      return photoData(name)
+    }
+    return data
+  }
+
   @discardableResult
   static func deletePhoto(_ name: String) -> Bool {
-    guard let url = photoURL(name) else { return true }
-    guard FileManager.default.fileExists(atPath: url.path) else { return true }
-    do {
-      try FileManager.default.removeItem(at: url)
-      return true
-    } catch {
-      return false
+    var removedEverything = true
+    for candidate in [name, thumbnailName(for: name)] {
+      guard let url = photoURL(candidate),
+            FileManager.default.fileExists(atPath: url.path) else { continue }
+      do {
+        try FileManager.default.removeItem(at: url)
+      } catch {
+        removedEverything = false
+      }
     }
+    return removedEverything
   }
 
   /// The content type for a media file, taken from its extension so uploads

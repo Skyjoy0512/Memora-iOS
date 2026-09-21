@@ -1010,7 +1010,7 @@ final class MemoraModel {
     }
 
     // Photos live in the media folder; the entry keeps the file name.
-    let photoFileName = photoData.flatMap { MediaFiles.writePhoto($0) }
+    let photoFileName = photoData.flatMap { MediaFiles.writePhoto($0, thumbnailMaxSide: 400) }
 
     lifeLogEntries.insert(
       LifeLogEntry(
@@ -1258,13 +1258,13 @@ final class MemoraModel {
     persistAIHistory()
   }
 
-  /// The photos attached to a record, read back from the media folder.
-  func meetingPhotos(_ id: UUID) -> [Data] {
-    (meeting(id: id)?.photoFileNames ?? []).compactMap { MediaFiles.photoData($0) }
+  /// The photos attached to a record, as the small copies the strip draws.
+  func meetingPhotoThumbnails(_ id: UUID) -> [Data] {
+    (meeting(id: id)?.photoFileNames ?? []).compactMap { MediaFiles.photoThumbnailData($0) }
   }
 
   func addMeetingPhoto(_ id: UUID, data: Data) {
-    guard let name = MediaFiles.writePhoto(data) else {
+    guard let name = MediaFiles.writePhoto(data, thumbnailMaxSide: 400) else {
       persistenceFailureMessage = "写真を保存できませんでした。ストレージの空き容量を確認してください。"
       return
     }

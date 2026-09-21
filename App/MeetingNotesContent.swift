@@ -10,7 +10,7 @@ struct MeetingNotesContent: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
-    let photos = model.meetingPhotos(meetingID)
+    let photos = model.meetingPhotoThumbnails(meetingID)
     let noteText = model.meeting(id: meetingID)?.notes ?? ""
 
     VStack(alignment: .leading, spacing: 14) {
@@ -76,8 +76,9 @@ struct MeetingNotesContent: View {
     }
     .sheet(item: $editingPhoto) { request in
       PhotoEditorView(source: request.data) { edited in
-        guard let small = ImageDownscale.jpeg(edited) else { return }
-        model.addMeetingPhoto(meetingID, data: small)
+        // The full-size photo is what gets stored; lists pay for a small copy.
+        guard let original = ImageDownscale.jpeg(edited, maxSide: 1024, quality: 0.85) else { return }
+        model.addMeetingPhoto(meetingID, data: original)
       }
     }
   }

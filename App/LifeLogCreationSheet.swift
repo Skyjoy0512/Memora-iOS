@@ -107,8 +107,9 @@ struct LifeLogCreationSheet: View {
       }
       .sheet(item: $editingPhoto) { request in
         PhotoEditorView(source: request.data) { edited in
-          guard let small = ImageDownscale.jpeg(edited, maxSide: 640) else { return }
-          photoData = small
+          // Keep the full-size photo; the model stores a small copy for lists.
+          guard let original = ImageDownscale.jpeg(edited, maxSide: 2048, quality: 0.85) else { return }
+          photoData = original
           if kind == .memo {
             kind = .photo
           }
