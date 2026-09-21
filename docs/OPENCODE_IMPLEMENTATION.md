@@ -174,6 +174,12 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ5（追加25・F06の残りとF10の計測手段）
+
+- F06: `MeetingPDF.write(meeting:tasks:onProgress:)` を async 化。本文の描画はメインアクター、ページ生成は `Task.detached` でオフメイン。ページごとに進捗を返し、`Task` キャンセルで中断（`ExportError.cancelled`）。詳細画面は進捗カード（％と「キャンセル」）を表示。
+- F10: 計測ビューに「計測を実行（検索20回）」を追加。読み込み済みの件数に対して検索パスを繰り返し計測し、p95 を読めるサンプルを記録する（測定対象はマッチング処理で、その後の画面描画は含まない）。
+- 実測は引き続き**未実施**（同一実機での比較が必要）。
+
 ### フェーズ5（追加24・F08〜F10）
 
 - F08: `OmiPairingManager` に `wantsScanning` を追加し、`centralManagerDidUpdateState` は状態の反映のみ（検索中のときだけ再開）。周辺機器の参照を停止・切断時に解放。下書き保存タスクも完了時に nil 化。Task寿命は各サービスで解放を確認。
