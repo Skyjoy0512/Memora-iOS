@@ -244,10 +244,13 @@ struct AIQuestionView: View {
     Task {
       try? await Task.sleep(for: .milliseconds(850))
       let scopeLabel = label(for: selectedScope)
+      // The same retrieval the chat uses, so the answer rests on records that
+      // contain the question's words.
+      let sources = model.aiSources(for: effectiveQuestion, scope: .all)
       let engineAnswer = await AIEngineService.answer(
         question: effectiveQuestion,
         scopeLabel: scopeLabel,
-        context: model.aiContext()
+        context: model.aiContext(for: sources)
       )
       let generatedAnswer = engineAnswer ?? model.aiAnswer(for: effectiveQuestion).answer
       answer = generatedAnswer

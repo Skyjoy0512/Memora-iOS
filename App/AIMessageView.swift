@@ -65,7 +65,49 @@ struct AIMessageView: View {
 
         StreamingText(text: message.text, lineSpacing: 5, animates: animates)
       }
+
+      if !message.isThinking, !message.sources.isEmpty {
+        sourceList
+      }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  /// The records the answer was built from, each opening the record itself.
+  private var sourceList: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text("参照した記録")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+
+      ForEach(message.sources) { source in
+        NavigationLink {
+          MeetingDetailView(meetingID: source.meetingID)
+        } label: {
+          HStack(spacing: 8) {
+            Image(systemName: "doc.text")
+              .font(.caption)
+            Text(source.title)
+              .font(.subheadline)
+              .lineLimit(1)
+            Spacer(minLength: 4)
+            Image(systemName: "chevron.right")
+              .font(.caption2.weight(.semibold))
+              .foregroundStyle(.tertiary)
+          }
+          .foregroundStyle(.primary)
+          .padding(.horizontal, 12)
+          .padding(.vertical, 9)
+          .background(
+            Color.primary.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+          )
+          .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("参照した記録: \(source.title)")
+        .accessibilityHint("記録を開きます")
+      }
+    }
   }
 }

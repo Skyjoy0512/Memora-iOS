@@ -25,6 +25,22 @@ enum SelfChecks {
     if DraftStore.load(key) != nil {
       report("draft clear")
     }
+
+    checkQuestionWords()
+  }
+
+  /// Ask AI reaches records by the words of the question; a Japanese question
+  /// has no spaces, so it must be cut into pieces that can still be found.
+  private static func checkQuestionWords() {
+    let terms = MemoraModel.questionWords(in: "会議の決定は？")
+    for expected in ["会議", "決定"] {
+      if !terms.contains(expected) {
+        report("question words missing \(expected): \(terms)")
+      }
+    }
+    if terms.contains(where: { $0.contains("？") || $0.contains("?") }) {
+      report("question words kept punctuation: \(terms)")
+    }
   }
 
   /// The editor parses markdown for display and writes it back; the text must

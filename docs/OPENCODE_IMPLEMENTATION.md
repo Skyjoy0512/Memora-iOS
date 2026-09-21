@@ -174,6 +174,12 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ4（追加18・根拠付きAIの基盤）
+
+- `MemoraModel+AI`: `aiSources(for:scope:)` が質問の語で記録を検索して最大5件を選び、`aiContext(for:)` はその記録だけ（要約・決定・未決・発言抜粋）＋未完了タスクを文脈にする。`questionWords` は日本語を2文字単位に分割（`SelfChecks` で検証）。スコープ（すべて／ファイル／プロジェクト）を反映。
+- `AIChatMessage.sources` と `AIChatSource` を追加し、`AIMessageView` が「参照した記録」を表示、タップで `MeetingDetailView` を開く。エンジン未接続の断りには参照を付けない。
+- `AIQuestionView` も同じ検索結果を文脈に使う。
+
 ### フェーズ3（追加17・アクセシビリティ点検）
 
 - 読み上げ: `MeetingRow`／`TaskRow`／`LifeLogRow` を1つのアクセシビリティ要素にまとめ、表示順ではなく意味の通るラベルに。タスク行には「タスクを編集します」ヒントとボタン特性を付与。写真有無・担当・期限切れ・元記録も読み上げに含める。
