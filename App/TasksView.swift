@@ -55,7 +55,7 @@ struct TasksView: View {
               .padding(.vertical, 5)
             }
           }
-          .hideBottomBarOnScroll()
+          .hideBottomBarOnScroll(RootTab.tasks.rawValue)
           .listStyle(.plain)
           .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
         }

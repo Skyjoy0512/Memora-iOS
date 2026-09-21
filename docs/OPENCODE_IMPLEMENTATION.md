@@ -174,6 +174,15 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ4（追加20・E03・E06〜E10）
+
+- E03: `BottomBarScrollBehavior` は画面IDを受け取り、モデルの `bottomBarHiddenScreens` に自分の分だけ記録。`RootTabView` は表示中のタブのIDだけを見る。VoiceOver使用中は隠さない。
+- E06: `handle(url)` は存在しないIDで遷移せず `MissingRecordNotice` を出し、ごみ箱にあれば開く導線を提示。共有本文は端末内リンクを自動付加しない（従来どおり）。リンクのコピーは「この端末の記録へのリンク」と説明。
+- E07: `MeetingPDF` をA4・複数ページ・ページ番号・一意な一時名に。`ActivityView` の完了で一時ファイルを削除。失敗はアラート。
+- E08: `NotionService.save` はページ作成＋100ブロック単位の追記、`Outcome`／`PartialPageFailure` で結果とURLを返す。`unknownOutcome` は自動再送しない。詳細画面は保存中表示と「開いて確認」。
+- E09: ヘルプ／プライバシーは準備中表示（example.comを削除）。`EmailAuthView` はアカウントを作らず「接続されていません」と説明。バージョンはBundleから。
+- E10: インライン編集とジャーナルの記録タップにボタン特性・ヒント・名前付きアクションを追加。
+
 ### フェーズ4（追加19・C01〜C13の残り）
 
 - C01: `meetings(in:from:)`／`openTasks(in:from:meetings:)` でスコープを先に絞り、`SelfChecks` で範囲外が混ざらないことを検証。

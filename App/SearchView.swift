@@ -107,7 +107,7 @@ struct SearchView: View {
       }
       .scrollDismissesKeyboard(.interactively)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-      .hideBottomBarOnScroll()
+      .hideBottomBarOnScroll(RootTab.askAI.rawValue)
       .onScrollGeometryChange(for: Bool.self) { geometry in
         geometry.contentOffset.y + geometry.containerSize.height
           >= geometry.contentSize.height - 80

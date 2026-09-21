@@ -55,6 +55,7 @@ struct InlineMarkdownEditor: View {
         .onTapGesture { beginEditing() }
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("タップして編集")
+        .accessibilityAction(named: "編集") { beginEditing() }
       }
     }
     .id(editorID)
@@ -192,6 +193,7 @@ struct InlineEditableList: View {
         .onTapGesture { beginEditing() }
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("タップして編集")
+        .accessibilityAction(named: "編集") { beginEditing() }
 
       if isEditing {
         VStack(alignment: .leading, spacing: 8) {
@@ -231,6 +233,9 @@ struct InlineEditableList: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { beginEditing() }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("タップして編集")
+        .accessibilityAction(named: "編集") { beginEditing() }
       }
     }
     .padding(.vertical, 4)

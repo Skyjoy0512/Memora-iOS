@@ -30,7 +30,7 @@ struct RootTabView: View {
       closeSidebar()
       // A screen that was scrolled when you left it should not hide the bar on
       // the next screen, and the capture popover belongs to the tab it opened on.
-      model.isBottomBarHidden = false
+      model.setBottomBarHidden(false, for: model.selectedTab.rawValue)
       model.isCaptureSourcePresented = false
     }
     .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshSafeAreaInsets() }
@@ -101,7 +101,7 @@ struct RootTabView: View {
     // one stacked slab of controls.
     return VStack(spacing: 18) {
       // The composer retreats with the bar so the two never separate mid-scroll.
-      if shouldShowComposer, !model.isBottomBarHidden {
+      if shouldShowComposer, !isBottomBarHidden {
         QuickAIComposer(
           scope: composerScope,
           isComposing: $isComposing,
@@ -137,11 +137,16 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isBottomBarHidden)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: isBottomBarHidden)
+  }
+
+  /// The bar follows the tab on top, so another screen's scrolling cannot move it.
+  private var isBottomBarHidden: Bool {
+    model.isBottomBarHidden(for: model.selectedTab.rawValue)
   }
 
   private var showsBottomBar: Bool {
-    !isComposing && !isShowingMeetingDetail && !model.isBottomBarHidden
+    !isComposing && !isShowingMeetingDetail && !isBottomBarHidden
   }
 
   private var canRevealSidebar: Bool {

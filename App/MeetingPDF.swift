@@ -1,18 +1,22 @@
 import SwiftUI
 import UIKit
 
-/// Renders a meeting summary to a PDF file for the share sheet, so it can be
-/// saved to Drive, sent to Notion, or attached to a message.
+/// Renders a meeting summary to an A4 PDF file for the share sheet, so it can
+/// be saved to Drive, sent to Notion, or attached to a message. Long records
+/// continue onto further pages, each numbered.
 @MainActor
 enum MeetingPDF {
+  /// A4 at 72 dpi.
+  private static let pageSize = CGSize(width: 595, height: 842)
+  private static let footerHeight: CGFloat = 36
+
   static func write(meeting: Meeting, tasks: [MemoraTask]) -> URL? {
     guard let data = data(meeting: meeting, tasks: tasks) else { return nil }
 
-    let safeTitle = meeting.title
-      .replacingOccurrences(of: "/", with: "-")
-      .replacingOccurrences(of: ":", with: "-")
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(safeTitle).pdf")
-
+    // A unique name, so two exports of the same record never collide in the
+    // temporary folder.
+    let url = FileManager.default.temporaryDirectory
+      .appendingPathComponent("\(safeFileName(for: meeting))-\(UUID().uuidString.prefix(8)).pdf")
     do {
       try data.write(to: url)
       return url
@@ -23,17 +27,54 @@ enum MeetingPDF {
 
   static func data(meeting: Meeting, tasks: [MemoraTask]) -> Data? {
     let renderer = ImageRenderer(content: MeetingPDFContent(meeting: meeting, tasks: tasks))
-    renderer.proposedSize = ProposedViewSize(width: 595, height: nil)
+    renderer.proposedSize = ProposedViewSize(width: pageSize.width, height: nil)
+    guard let image = renderer.uiImage, image.size.height > 0 else { return nil }
 
-    var result = Data()
-    renderer.render { size, draw in
-      let pageRect = CGRect(x: 0, y: 0, width: 595, height: max(size.height, 240))
-      result = UIGraphicsPDFRenderer(bounds: pageRect).pdfData { context in
+    // The space left for content once the footer has its strip.
+    let bodyHeight = pageSize.height - footerHeight
+    let pageCount = max(1, Int(ceil(image.size.height / bodyHeight)))
+
+    let result = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: pageSize)).pdfData { context in
+      for index in 0..<pageCount {
         context.beginPage()
-        draw(context.cgContext)
+        let cg = context.cgContext
+
+        // Draw the one tall image shifted up, clipped to this page's body.
+        cg.saveGState()
+        cg.clip(to: CGRect(x: 0, y: 0, width: pageSize.width, height: bodyHeight))
+        cg.translateBy(x: 0, y: -CGFloat(index) * bodyHeight)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        cg.restoreGState()
+
+        drawFooter(page: index + 1, of: pageCount)
       }
     }
     return result.isEmpty ? nil : result
+  }
+
+  private static func drawFooter(page: Int, of total: Int) {
+    let text = "Memora · \(page) / \(total)"
+    let attributes: [NSAttributedString.Key: Any] = [
+      .font: UIFont.systemFont(ofSize: 9),
+      .foregroundColor: UIColor.secondaryLabel
+    ]
+    let size = (text as NSString).size(withAttributes: attributes)
+    (text as NSString).draw(
+      at: CGPoint(
+        x: (pageSize.width - size.width) / 2,
+        y: pageSize.height - footerHeight + 12
+      ),
+      withAttributes: attributes
+    )
+  }
+
+  private static func safeFileName(for meeting: Meeting) -> String {
+    let name = meeting.title.isEmpty ? "記録" : meeting.title
+    let cleaned = name
+      .components(separatedBy: CharacterSet(charactersIn: "/\\:?%*|\"<>"))
+      .joined(separator: "-")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    return cleaned.isEmpty ? "記録" : String(cleaned.prefix(60))
   }
 }
 
@@ -78,10 +119,6 @@ private struct MeetingPDFContent: View {
       }
 
       Spacer(minLength: 0)
-
-      Text("Memora")
-        .font(.caption)
-        .foregroundStyle(.secondary)
     }
     .padding(40)
     .frame(width: 595, alignment: .leading)
@@ -113,9 +150,15 @@ private struct MeetingPDFContent: View {
 /// Presents the system share sheet for files and text.
 struct ActivityView: UIViewControllerRepresentable {
   var items: [Any]
+  /// Called when the sheet is finished, so a temporary export can be removed.
+  var onComplete: (() -> Void)?
 
   func makeUIViewController(context: Context) -> UIActivityViewController {
-    UIActivityViewController(activityItems: items, applicationActivities: nil)
+    let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+    controller.completionWithItemsHandler = { _, _, _, _ in
+      onComplete?()
+    }
+    return controller
   }
 
   func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}

@@ -104,6 +104,9 @@ struct HomeView: View {
                       LifeLogRow(entry: entry)
                         .contentShape(Rectangle())
                         .onTapGesture { openEntry = entry }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityHint("記録を開きます")
+                        .accessibilityAction(named: "開く") { openEntry = entry }
                     }
                   }
                 }
@@ -117,7 +120,7 @@ struct HomeView: View {
         // leave room for the last records to clear them.
         .padding(.bottom, model.bottomContentClearance)
       }
-      .hideBottomBarOnScroll()
+      .hideBottomBarOnScroll(RootTab.home.rawValue)
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ジャーナル")
       .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "記録を検索")

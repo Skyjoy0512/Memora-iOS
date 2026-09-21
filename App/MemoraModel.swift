@@ -12,7 +12,27 @@ final class MemoraModel {
   var fileSection = FileSection.meetingFiles
   var isFileCreationPresented = false
   var isSettingsPresented = false
-  var isBottomBarHidden = false
+  /// Shown when a `memora://` link points at a record this device does not
+  /// have. It says what the link is and how to get the record back.
+  var missingRecordNotice: MissingRecordNotice?
+  var isRecentlyDeletedPresented = false
+
+  /// Screens that asked for the bottom bar to step aside. The bar hides only
+  /// when the screen being read is one of them, so a background screen cannot
+  /// move the bar out from under the screen someone is actually using.
+  var bottomBarHiddenScreens: Set<String> = []
+
+  func isBottomBarHidden(for screenID: String) -> Bool {
+    bottomBarHiddenScreens.contains(screenID)
+  }
+
+  func setBottomBarHidden(_ hidden: Bool, for screenID: String) {
+    if hidden {
+      bottomBarHiddenScreens.insert(screenID)
+    } else {
+      bottomBarHiddenScreens.remove(screenID)
+    }
+  }
   /// Records stay on the device unless Plus turns cloud storage on.
   var cloudStorageEnabled = false {
     didSet { UserDefaults.standard.set(cloudStorageEnabled, forKey: StorageKey.cloudStorage) }
@@ -1387,10 +1407,23 @@ final class MemoraModel {
     guard url.scheme == "memora" else { return }
 
     if url.host == "meeting" {
-      if let id = UUID(uuidString: url.lastPathComponent) {
+      guard let id = UUID(uuidString: url.lastPathComponent) else { return }
+      // A link is to a record on this device; it resolves nowhere else, so a
+      // missing record is explained instead of opening an empty screen.
+      if meeting(id: id) != nil {
         selectedTab = .files
         fileSection = .meetingFiles
         libraryPath = [.meeting(id)]
+      } else if trashedRecords.contains(where: { $0.meeting.id == id }) {
+        missingRecordNotice = MissingRecordNotice(
+          message: "この記録は「最近削除した項目」にあります。元に戻すか確認してください。",
+          offersTrash: true
+        )
+      } else {
+        missingRecordNotice = MissingRecordNotice(
+          message: "この端末にこの記録はありません。リンクは記録のある端末でのみ開けます。バックアップから復元できる場合があります。",
+          offersTrash: false
+        )
       }
       return
     }

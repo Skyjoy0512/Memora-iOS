@@ -13,6 +13,7 @@ struct EmailAuthView: View {
   @State private var password = ""
   @State private var errorMessage: String?
   @State private var isWorking = false
+  @State private var isUnavailableNoticePresented = false
   @FocusState private var focusedField: Field?
 
   init(mode: Mode, onFinish: @escaping () -> Void) {
@@ -103,6 +104,11 @@ struct EmailAuthView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: errorMessage)
     .navigationTitle(selectedMode.label)
     .navigationBarTitleDisplayMode(.inline)
+    .alert("アカウントはまだ接続されていません", isPresented: $isUnavailableNoticePresented) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text("この画面からはアカウントを作成・ログインできません。端末には何も保存していません。")
+    }
     .onAppear {
       focusedField = selectedMode == .signUp ? .name : .email
     }
@@ -133,18 +139,9 @@ struct EmailAuthView: View {
       return
     }
 
-    errorMessage = nil
-    isWorking = true
-    Task {
-      try? await Task.sleep(for: .milliseconds(700))
-      model.signIn(
-        with: .email,
-        email: trimmedEmail,
-        displayName: selectedMode == .signUp ? name.trimmingCharacters(in: .whitespacesAndNewlines) : nil
-      )
-      isWorking = false
-      onFinish()
-    }
+    // Accounts are not connected yet, so this explains that instead of creating
+    // a local account and showing a sign-in that did not happen.
+    isUnavailableNoticePresented = true
   }
 
   enum Mode: String, CaseIterable, Identifiable, Hashable {

@@ -20,10 +20,15 @@ struct MeetingDetailView: View {
   @State private var player = AudioPlayerService()
   @State private var scrubTime: Double?
 
+  @State private var isSavingToNotion = false
+  @Environment(\.openURL) private var openURL
+
   private struct StatusAlert: Identifiable {
     let id = UUID()
     var title: String
     var message: String
+    /// Where the message can be checked, such as a Notion page that was written.
+    var linkURL: URL?
   }
 
   var body: some View {
@@ -101,6 +106,12 @@ struct MeetingDetailView: View {
               .accessibilityHidden(!isCompactTitleVisible)
               .animation(reduceMotion ? nil : MemoraMotion.control, value: isCompactTitleVisible)
           }
+          if isSavingToNotion {
+            ToolbarItem(placement: .topBarTrailing) {
+              ProgressView()
+                .accessibilityLabel("Notionへ保存中")
+            }
+          }
           ToolbarItem(placement: .topBarTrailing) {
             ShareLink(item: MeetingShareText.make(meeting: meeting, tasks: model.tasks)) {
               Label("共有", systemImage: "square.and.arrow.up")
@@ -115,10 +126,10 @@ struct MeetingDetailView: View {
               Button("リンクをコピー", systemImage: "link") {
                 copyLink(meeting)
               }
-              Button("Notionへ保存", systemImage: "arrow.up.doc") {
+              Button(isSavingToNotion ? "Notionへ保存中…" : "Notionへ保存", systemImage: "arrow.up.doc") {
                 saveToNotion(meeting)
               }
-              .disabled(!NotionService.isConfigured)
+              .disabled(!NotionService.isConfigured || isSavingToNotion)
               Button("要約をやり直す", systemImage: "sparkles") {
                 isSummaryGenerationPresented = true
               }
@@ -148,10 +159,18 @@ struct MeetingDetailView: View {
           SpacePickerSheet(meetingID: meeting.id)
         }
         .sheet(isPresented: $isSharing) {
-          ActivityView(items: shareItems)
+          ActivityView(items: shareItems, onComplete: cleanUpSharedFiles)
         }
         .alert(item: $statusAlert) { alert in
-          Alert(
+          if let url = alert.linkURL {
+            return Alert(
+              title: Text(alert.title),
+              message: Text(alert.message),
+              primaryButton: .default(Text("開いて確認")) { openURL(url) },
+              secondaryButton: .cancel(Text("OK"))
+            )
+          }
+          return Alert(
             title: Text(alert.title),
             message: Text(alert.message),
             dismissButton: .default(Text("OK"))
@@ -328,18 +347,55 @@ struct MeetingDetailView: View {
   }
 
   private func sharePDF(_ meeting: Meeting) {
-    guard let url = MeetingPDF.write(meeting: meeting, tasks: model.tasks) else { return }
+    guard let url = MeetingPDF.write(meeting: meeting, tasks: model.tasks) else {
+      statusAlert = StatusAlert(
+        title: "PDFを作成できませんでした",
+        message: "記録は残っています。もう一度お試しください。"
+      )
+      return
+    }
     shareItems = [url]
     isSharing = true
   }
 
+  /// The export is a temporary file; once the share sheet is done with it, it is
+  /// removed so the folder does not fill with copies.
+  private func cleanUpSharedFiles() {
+    for case let url as URL in shareItems where url.isFileURL {
+      try? FileManager.default.removeItem(at: url)
+    }
+    shareItems = []
+  }
+
   private func saveToNotion(_ meeting: Meeting) {
+    guard !isSavingToNotion else { return }
+    isSavingToNotion = true
     Task {
+      defer { isSavingToNotion = false }
       do {
-        try await NotionService.save(meeting: meeting, tasks: model.tasks)
-        statusAlert = StatusAlert(title: "Notion", message: "Notionに保存しました。")
+        let outcome = try await NotionService.save(meeting: meeting, tasks: model.tasks)
+        statusAlert = StatusAlert(
+          title: "Notion",
+          message: "Notionに保存しました。",
+          linkURL: outcome.pageURL
+        )
+      } catch let partial as NotionService.PartialPageFailure {
+        statusAlert = StatusAlert(
+          title: "Notion",
+          message: partial.message,
+          linkURL: partial.pageURL
+        )
+      } catch NotionService.Failure.unknownOutcome {
+        // The page may or may not exist; sending again could make a duplicate.
+        statusAlert = StatusAlert(
+          title: "Notion",
+          message: "保存できたか確認できませんでした。重複を避けるため自動では再送しません。Notionを開いて確認してください。"
+        )
       } catch {
-        statusAlert = StatusAlert(title: "Notion", message: "Notionに保存できませんでした。設定のトークンと保存先を確認してください。")
+        statusAlert = StatusAlert(
+          title: "Notion",
+          message: "Notionに保存できませんでした。設定のトークンと保存先を確認してください。"
+        )
       }
     }
   }

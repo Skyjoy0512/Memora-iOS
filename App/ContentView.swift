@@ -86,6 +86,39 @@ struct ContentView: View {
     } message: {
       Text(model.persistenceFailureMessage ?? "")
     }
+    .alert("この端末の記録へのリンク", isPresented: missingRecordBinding) {
+      if model.missingRecordNotice?.offersTrash == true {
+        Button("最近削除した項目を見る") {
+          model.missingRecordNotice = nil
+          model.isRecentlyDeletedPresented = true
+        }
+      }
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(model.missingRecordNotice?.message ?? "")
+    }
+    .sheet(isPresented: $model.isRecentlyDeletedPresented) {
+      NavigationStack {
+        RecentlyDeletedView()
+          .navigationTitle("最近削除した項目")
+          .navigationBarTitleDisplayMode(.inline)
+          .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+              Button("完了") { model.isRecentlyDeletedPresented = false }
+            }
+          }
+      }
+    }
+  }
+
+  private var missingRecordBinding: Binding<Bool> {
+    Binding {
+      model.missingRecordNotice != nil
+    } set: { isPresented in
+      if !isPresented {
+        model.missingRecordNotice = nil
+      }
+    }
   }
 
   private var persistenceFailureBinding: Binding<Bool> {

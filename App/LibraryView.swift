@@ -154,7 +154,7 @@ struct LibraryView: View {
     .listStyle(.plain)
     .scrollContentBackground(.hidden)
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-    .hideBottomBarOnScroll()
+    .hideBottomBarOnScroll(RootTab.files.rawValue)
   }
 
   private var projectsPage: some View {
@@ -187,7 +187,7 @@ struct LibraryView: View {
       .padding(.bottom, 32)
     }
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-    .hideBottomBarOnScroll()
+    .hideBottomBarOnScroll(RootTab.files.rawValue)
   }
 
   private func projectsGrid(_ spaces: [MemoraSpace]) -> some View {

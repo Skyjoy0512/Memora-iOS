@@ -144,14 +144,14 @@ struct SettingsView: View {
           }
         }
 
-        Section("サポート") {
-          Link(destination: URL(string: "https://example.com/help")!) {
-            Label("ヘルプ", systemImage: "questionmark")
-          }
-          Link(destination: URL(string: "https://example.com/privacy")!) {
-            Label("プライバシーポリシー", systemImage: "hand.raised")
-          }
+        Section {
+          LabeledContent("ヘルプ", value: "準備中")
+          LabeledContent("プライバシーポリシー", value: "準備中")
           LabeledContent("バージョン", value: Bundle.main.appVersion)
+        } header: {
+          Text("サポート")
+        } footer: {
+          Text("公開時に実際の窓口とポリシーのURLを登録します。それまでは準備中と表示し、存在しないリンクは開けません。")
         }
 
         Section("プロトタイプ") {
@@ -191,7 +191,7 @@ struct SettingsView: View {
           }
         }
       }
-      .hideBottomBarOnScroll()
+      .hideBottomBarOnScroll("settings")
       .navigationTitle("設定")
       .toolbar {
         if showsCloseButton {
