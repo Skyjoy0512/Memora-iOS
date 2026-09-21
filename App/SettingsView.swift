@@ -165,7 +165,7 @@ struct SettingsView: View {
           NavigationLink {
             PerformanceLogView()
           } label: {
-            Label("計測（ビルド比較用）", systemImage: "stopwatch")
+            Label("計測と自己チェック（ビルド比較用）", systemImage: "stopwatch")
           }
 
           // Destructive resets only exist for development; a shipped build must

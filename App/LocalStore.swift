@@ -89,11 +89,6 @@ final class LocalStore {
     }
   }
 
-  func read(_ key: String) -> Data? {
-    if case .data(let data) = readOutcome(key) { return data }
-    return nil
-  }
-
   /// Replaces the document for `key` inside a transaction, so a failure leaves
   /// the previous version in place.
   func write(_ key: String, data: Data) throws {

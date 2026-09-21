@@ -13,6 +13,34 @@ struct PerformanceLogView: View {
   var body: some View {
     NavigationStack {
       List {
+        Section {
+          if SelfChecks.results.isEmpty {
+            Text("自己チェックはまだ実行されていません。")
+              .foregroundStyle(.secondary)
+          } else {
+            ForEach(SelfChecks.results) { result in
+              Label {
+                VStack(alignment: .leading, spacing: 2) {
+                  Text(result.name)
+                  if let detail = result.detail {
+                    Text(detail)
+                      .font(.caption)
+                      .foregroundStyle(.secondary)
+                  }
+                }
+              } icon: {
+                Image(systemName: result.passed ? "checkmark.circle" : "xmark.circle")
+                  .foregroundStyle(result.passed ? Color.green : Color.red)
+              }
+              .accessibilityLabel("\(result.name): \(result.passed ? "成功" : "失敗")")
+            }
+          }
+        } header: {
+          Text("自己チェック（ビルド \(Bundle.main.appVersion)）")
+        } footer: {
+          Text("失敗しても処理は続きます。これはテストの証拠ではなく、実行の記録です。")
+        }
+
         if log.entries.isEmpty {
           ContentUnavailableView(
             "まだ計測がありません",
@@ -66,7 +94,7 @@ struct PerformanceLogView: View {
           }
         }
       }
-      .navigationTitle("計測")
+      .navigationTitle("計測と自己チェック")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

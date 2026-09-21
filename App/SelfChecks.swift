@@ -2,44 +2,87 @@
 import Foundation
 
 /// Quick checks that run in debug builds only, until the project has a test
-/// target. They cover the pieces most likely to break silently: the markdown
-/// round trip used by inline editing, and the draft store. Failures are logged
-/// rather than fatal, so a debug build never crashes over a check.
+/// target. They cover the pieces most likely to break silently. Failures are
+/// printed and recorded, not fatal, so a debug build never crashes over a check.
+///
+/// These are not proof that the app works: a check that fails only prints. What
+/// they can do is show, on a debug screen, which pieces were exercised and
+/// whether they passed, so a run on a real device is reviewable.
 @MainActor
 enum SelfChecks {
+  struct Result: Identifiable {
+    var name: String
+    var passed: Bool
+    var detail: String?
+    var ranAt: Date
+    var build: String
+
+    var id: String { name }
+  }
+
+  /// What the last run found, newest run only, so a debug screen can show it.
+  private(set) static var results: [Result] = []
+
   static func run() {
-    checkMarkdownRoundTrip("**太字**", name: "bold")
-    checkMarkdownRoundTrip("*斜体*", name: "italic")
-    checkMarkdownRoundTrip("`code`", name: "code")
-    checkMarkdownRoundTrip("~~取り消し~~", name: "strikethrough")
-    checkMarkdownRoundTrip("[リンク](https://example.com)", name: "link")
-    checkMarkdownRoundTrip("1行目\n**2行目**\n3行目", name: "newlines")
-    checkMarkdownRoundTrip("そのままの日本語テキスト", name: "plain text")
+    results = []
+    failures = 0
+    lastDetail = nil
 
-    let key = "selfcheck.draft"
-    DraftStore.save("下書きのテスト", key: key)
-    if DraftStore.load(key) != "下書きのテスト" {
-      report("draft round trip")
-    }
-    DraftStore.clear(key)
-    if DraftStore.load(key) != nil {
-      report("draft clear")
+    group("Markdown round trip") {
+      checkMarkdownRoundTrip("**太字**", name: "bold")
+      checkMarkdownRoundTrip("*斜体*", name: "italic")
+      checkMarkdownRoundTrip("`code`", name: "code")
+      checkMarkdownRoundTrip("~~取り消し~~", name: "strikethrough")
+      checkMarkdownRoundTrip("[リンク](https://example.com)", name: "link")
+      checkMarkdownRoundTrip("1行目\n**2行目**\n3行目", name: "newlines")
+      checkMarkdownRoundTrip("そのままの日本語テキスト", name: "plain text")
     }
 
-    checkQuestionWords()
-    checkScopeIsolation()
-    checkProcessingRevision()
-    checkMediaPaths()
-    checkPhotoFileRoles()
-    checkRequestScope()
-    checkPhotoThumbnailNaming()
+    group("Draft store") {
+      let key = "selfcheck.draft"
+      DraftStore.save("下書きのテスト", key: key)
+      if DraftStore.load(key) != "下書きのテスト" {
+        report("draft round trip")
+      }
+      DraftStore.clear(key)
+      if DraftStore.load(key) != nil {
+        report("draft clear")
+      }
+    }
 
-    checkAudioSessionClaims()
-    checkStoreFailureInjection()
+    group("Question terms", checkQuestionWords)
+    group("Scope isolation", checkScopeIsolation)
+    group("Processing input revision", checkProcessingRevision)
+    group("Media paths", checkMediaPaths)
+    group("Photo file roles", checkPhotoFileRoles)
+    group("Request scope", checkRequestScope)
+    group("Photo thumbnail naming", checkPhotoThumbnailNaming)
+    group("Status filter", checkStatusFilter)
+    group("Audio session claims", checkAudioSessionClaims)
+    group("Store failure injection", checkStoreFailureInjection)
 
-    // Ordering cannot be checked synchronously; it runs beside the app.
-    Task { await checkProcessingRunOwnership() }
-    checkStatusFilter()
+    // Ordering cannot be checked synchronously; it runs beside the app and adds
+    // its result when it finishes.
+    group("Processing run ownership", isAsync: true) {}
+    Task { await runOwnershipCheck() }
+  }
+
+  /// Runs one named check and records whether it passed, so the debug screen can
+  /// show it instead of leaving the answer in the console.
+  private static func group(_ name: String, isAsync: Bool = false, _ body: () -> Void) {
+    let failuresBefore = failures
+    let detailBefore = lastDetail
+    body()
+    let passed = failures == failuresBefore
+    results.append(
+      Result(
+        name: name,
+        passed: passed,
+        detail: passed ? nil : (lastDetail ?? detailBefore),
+        ranAt: .now,
+        build: Bundle.main.appVersion
+      )
+    )
   }
 
   /// A summary must not be applied to a transcript that changed while it was
@@ -397,8 +440,25 @@ enum SelfChecks {
     }
   }
 
+  /// Counted so a named group can tell whether anything inside it failed, and
+  /// printed as before.
+  private static var failures = 0
+  private static var lastDetail: String?
+
   private static func report(_ name: String) {
+    failures += 1
+    lastDetail = name
     print("SelfCheck failed — \(name)")
+  }
+
+  /// Runs the ordering check beside the app and fills in its place in the list.
+  private static func runOwnershipCheck() async {
+    let failuresBefore = failures
+    await checkProcessingRunOwnership()
+    let passed = failures == failuresBefore
+    guard let index = results.firstIndex(where: { $0.name == "Processing run ownership" }) else { return }
+    results[index].passed = passed
+    results[index].detail = passed ? nil : lastDetail
   }
 }
 #endif
