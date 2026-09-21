@@ -56,6 +56,21 @@ struct JournalCalendar: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: visibleMonth)
   }
 
+  private var previousLabel: String {
+    isExpanded ? "前の月" : "前の週"
+  }
+
+  private var nextLabel: String {
+    isExpanded ? "次の月" : "次の週"
+  }
+
+  /// Returns the calendar to today from wherever it was left.
+  private func goToToday() {
+    let today = calendar.startOfDay(for: .now)
+    selectedDate = today
+    visibleMonth = today
+  }
+
   /// Moves to the next or previous week, or month when expanded.
   private func shift(_ delta: Int) {
     if isExpanded {
@@ -69,25 +84,30 @@ struct JournalCalendar: View {
   }
 
   private var header: some View {
-    HStack(spacing: 14) {
+    HStack(spacing: 10) {
       Text(monthTitle)
         .font(.headline)
 
       Spacer()
 
-      if isExpanded {
-        Button("前の月", systemImage: "chevron.left") {
-          shiftMonth(-1)
+      if !calendar.isDateInToday(selectedDate) {
+        Button("今日") {
+          goToToday()
         }
-        .labelStyle(.iconOnly)
-        .accessibilityLabel("前の月")
-
-        Button("次の月", systemImage: "chevron.right") {
-          shiftMonth(1)
-        }
-        .labelStyle(.iconOnly)
-        .accessibilityLabel("次の月")
+        .font(.subheadline.weight(.semibold))
       }
+
+      Button(previousLabel, systemImage: "chevron.left") {
+        shift(-1)
+      }
+      .labelStyle(.iconOnly)
+      .accessibilityLabel(previousLabel)
+
+      Button(nextLabel, systemImage: "chevron.right") {
+        shift(1)
+      }
+      .labelStyle(.iconOnly)
+      .accessibilityLabel(nextLabel)
 
       Button(
         isExpanded ? "週に戻す" : "月を表示",
@@ -143,8 +163,15 @@ struct JournalCalendar: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .accessibilityLabel(day.formatted(date: .long, time: .omitted))
+    .accessibilityLabel(accessibilityLabel(for: day, isMarked: isMarked))
     .accessibilityAddTraits(isSelected ? .isSelected : [])
+  }
+
+  /// Reads the date and whether that day holds a record, which the dot shows
+  /// only visually.
+  private func accessibilityLabel(for day: Date, isMarked: Bool) -> String {
+    let date = day.formatted(date: .long, time: .omitted)
+    return isMarked ? "\(date)、記録あり" : "\(date)、記録なし"
   }
 
   private var columns: [GridItem] {

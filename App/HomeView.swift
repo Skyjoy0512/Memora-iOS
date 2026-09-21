@@ -197,11 +197,24 @@ struct HomeView: View {
     Set(model.lifeLogEntries.map { Calendar.current.startOfDay(for: $0.createdAt) })
   }
 
+  /// True while the journal is showing the current day.
+  private var isViewingToday: Bool {
+    Calendar.current.isDateInToday(selectedDate)
+  }
+
   private var emptyTitle: String {
     if !query.isEmpty {
       return "見つかりませんでした"
     }
-    return selectedPerson == nil ? "まだライフログがありません" : "この人の記録はありません"
+    if selectedPerson != nil {
+      return "この人の記録はありません"
+    }
+    return "\(selectedDayLabel)の記録はありません"
+  }
+
+  private var selectedDayLabel: String {
+    if isViewingToday { return "今日" }
+    return selectedDate.formatted(.dateTime.month().day())
   }
 
   /// A journal left open past midnight should move to the new day, unless the
@@ -257,7 +270,10 @@ struct HomeView: View {
     if let person = selectedPerson {
       return "\(person.name)さんにひもづいた記録はまだありません。会議の詳細から参加者に追加できます。"
     }
-    return "録音やOmiから届いた記録、手で足したメモが時間順に並びます。"
+    if isViewingToday {
+      return "録音やOmiから届いた記録、手で足したメモが時間順に並びます。"
+    }
+    return "この日の記録はまだありません。別の日を選ぶか、カレンダーの「今日」で今日に戻れます。"
   }
 
   private func filterHeader(_ person: Person) -> some View {

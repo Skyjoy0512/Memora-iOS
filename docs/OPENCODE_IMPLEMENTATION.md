@@ -174,6 +174,10 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ3（追加15）
+
+- D12: ジャーナルの空状態が選択日を語るようにし（今日／他日）、カレンダーへ「今日」・前週／次週（月表示では前月／次月）ボタンを追加。日セルの読み上げに記録の有無を追加。
+
 ### フェーズ3（追加14）
 
 - D09: `updatePerson`（名前・メモ、旧名を使うタスク担当の追従）と `mergePerson`（参加者参照の付け替え・重複除去、担当名の更新、写真の引き継ぎ、記録は残す）を追加。`PeopleManagerSheet` から行タップ／スワイプで `PersonEditSheet` を開き、統合は確認ダイアログで件数を提示。
