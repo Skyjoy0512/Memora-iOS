@@ -1740,22 +1740,33 @@ final class MemoraModel {
       && !aiHistory.contains { $0.id != Self.seedAIHistoryID }
   }
 
-  /// Writes a versioned package of the records and their media into `directory`.
-  func makeBackupPackage() throws -> URL {
-    try BackupPackage.write(
-      meetings: meetings,
-      spaces: spaces,
-      tasks: tasks,
-      lifeLogEntries: lifeLogEntries,
-      people: people,
-      aiHistory: aiHistory,
-      into: FileManager.default.temporaryDirectory
-    )
+  /// Writes a versioned package of the records and their media, off the main
+  /// actor so the screen stays responsive while the files are copied.
+  func makeBackupPackage() async throws -> URL {
+    let meetings = self.meetings
+    let spaces = self.spaces
+    let tasks = self.tasks
+    let lifeLogEntries = self.lifeLogEntries
+    let people = self.people
+    let aiHistory = self.aiHistory
+    return try await Task.detached(priority: .userInitiated) {
+      try BackupPackage.write(
+        meetings: meetings,
+        spaces: spaces,
+        tasks: tasks,
+        lifeLogEntries: lifeLogEntries,
+        people: people,
+        aiHistory: aiHistory,
+        into: FileManager.default.temporaryDirectory
+      )
+    }.value
   }
 
   /// Restores a package. It refuses to run when this device already holds
-  /// records, so a backup can never silently replace them.
-  func restoreBackup(from packageURL: URL) throws {
+  /// records, so a backup can never silently replace them. The package is
+  /// checked and its media put in place off the main actor; only the records are
+  /// applied here, once every file is confirmed.
+  func restoreBackup(from packageURL: URL) async throws {
     // A store that could not be read must not be written over, and nothing may
     // be in flight.
     guard !isStoreProtected else { throw BackupPackage.BackupError.storeProtected }
@@ -1764,9 +1775,11 @@ final class MemoraModel {
     }
     guard isEmpty else { throw BackupPackage.BackupError.notEmpty }
 
-    // The whole package is checked before anything is touched.
-    let manifest = try BackupPackage.read(from: packageURL)
-    let installed = try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
+    let (manifest, installed) = try await Task.detached(priority: .userInitiated) {
+      let manifest = try BackupPackage.read(from: packageURL)
+      let installed = try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
+      return (manifest, installed)
+    }.value
 
     // The records go in as one write. If it fails, only the files this restore
     // just created are taken back, so the device is left as it was.
