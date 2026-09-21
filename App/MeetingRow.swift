@@ -47,6 +47,20 @@ struct MeetingRow: View {
     }
     .padding(.vertical, 12)
     .contentShape(Rectangle())
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel(accessibilityLabel)
+  }
+
+  /// One sentence for VoiceOver instead of the pieces read in view order.
+  private var accessibilityLabel: String {
+    var parts = [meeting.displayTitle]
+    if showsSummary {
+      parts.append(meeting.summary)
+    }
+    parts.append(MemoraFormat.relativeDate(meeting.createdAt))
+    parts.append(MemoraFormat.duration(meeting.duration))
+    parts.append(meeting.status.shortLabel)
+    return parts.joined(separator: "、")
   }
 
   private var showsSummary: Bool {

@@ -1,6 +1,7 @@
 import ActivityKit
 import Foundation
 import Observation
+import UIKit
 
 @MainActor
 @Observable
@@ -540,6 +541,7 @@ final class MemoraModel {
     let allowed = await recorder.requestPermission()
     guard allowed else {
       microphonePermissionDenied = true
+      announce("マイクの使用が許可されていません。設定から許可してください。")
       return
     }
     // The permission sheet can take a moment; re-check before starting.
@@ -561,6 +563,7 @@ final class MemoraModel {
       startRecordingTicker()
       startLevelTicker()
       startLiveActivity()
+      announce("録音を開始しました")
       if let recordingURL, let fileName = MediaFiles.reference(for: recordingURL) {
         recordingDraft = RecordingDraft(
           fileName: fileName,
@@ -639,6 +642,7 @@ final class MemoraModel {
     pendingMeetingNavigationID = meeting.id
     isCapturePresented = false
     beginProcessing(meeting.id)
+    announce("録音を保存しました。文字起こしを準備しています。")
   }
 
   func completeCaptureDismissal() {
@@ -877,10 +881,12 @@ final class MemoraModel {
           meeting.status = .ready
         }
         self.offerPlusIfNeeded()
+        self.announce("文字起こしと要約ができました。")
       } else {
         self.updateMeeting(id) {
           $0.status = .failed("要約を生成できませんでした。AIエンジンとキーを確認して再試行してください。")
         }
+        self.announce("要約を作成できませんでした。AIエンジンとキーを確認してください。")
       }
 
       self.processingTasks[id] = nil
@@ -1395,6 +1401,12 @@ final class MemoraModel {
     }
   }
 
+  /// Tells VoiceOver about a change it cannot see, such as a recording that
+  /// started or a transcript that finished.
+  private func announce(_ message: String) {
+    UIAccessibility.post(notification: .announcement, argument: message)
+  }
+
   private func beginProcessing(_ id: UUID) {
     processingTasks[id]?.cancel()
     setJobActive(id, active: true)
@@ -1415,12 +1427,15 @@ final class MemoraModel {
           meeting.transcript = segments
           meeting.status = .waitingForSummary
         }
+        self.announce("文字起こしができました。要約を作成しています。")
       case .unavailable:
         self.updateMeeting(id) {
           $0.status = .failed("この端末では文字起こしを利用できません。音声は保存されています。設定で別のエンジンを選ぶか、別の端末でお試しください。")
         }
+        self.announce("文字起こしができませんでした。音声は保存されています。")
       case .failed(let message):
         self.updateMeeting(id) { $0.status = .failed(message) }
+        self.announce("文字起こしができませんでした。\(message)")
       }
 
       self.processingTasks[id] = nil

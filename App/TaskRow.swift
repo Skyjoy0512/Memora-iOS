@@ -60,7 +60,33 @@ struct TaskRow: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .contentShape(Rectangle())
       .onTapGesture { onOpen?() }
+      .accessibilityElement(children: .combine)
+      .accessibilityLabel(accessibilityLabel)
+      .accessibilityHint(onOpen == nil ? Text("") : Text("タスクを編集します"))
+      .accessibilityAddTraits(onOpen == nil ? [] : .isButton)
     }
     .contentShape(Rectangle())
+  }
+  /// One sentence for VoiceOver, including the state the checkbox shows.
+  private var accessibilityLabel: String {
+    var parts = [task.title]
+    if task.isCompleted {
+      parts.append("完了")
+    }
+    if showsMetadata {
+      if let assignee = task.assignee {
+        parts.append("担当 \(assignee)")
+      }
+      if let dueDate = task.dueDate {
+        if dueDate < .now && !task.isCompleted {
+          parts.append("期限切れ")
+        }
+        parts.append(MemoraFormat.dueDate(dueDate))
+      }
+    }
+    if showsSource, let meetingID = task.meetingID, let meeting = model.meeting(id: meetingID) {
+      parts.append("元 \(meeting.displayTitle)")
+    }
+    return parts.joined(separator: "、")
   }
 }

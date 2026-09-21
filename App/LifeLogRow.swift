@@ -73,5 +73,29 @@ struct LifeLogRow: View {
       .padding(.bottom, 8)
     }
     .contentShape(Rectangle())
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(accessibilityLabel)
+  }
+
+  /// The whole entry as one sentence, including that it has a photo.
+  private var accessibilityLabel: String {
+    var parts = [
+      entry.createdAt.formatted(date: .omitted, time: .shortened),
+      entry.source.label,
+      entry.title
+    ]
+    if !entry.summary.isEmpty {
+      parts.append(entry.summary)
+    }
+    if let eventDate = entry.eventDate {
+      parts.append("予定 \(eventDate.formatted(date: .abbreviated, time: .shortened))")
+    }
+    if let locationName = entry.locationName, !locationName.isEmpty {
+      parts.append(locationName)
+    }
+    if entry.photoFileName != nil {
+      parts.append("添付写真あり")
+    }
+    return parts.joined(separator: "、")
   }
 }
