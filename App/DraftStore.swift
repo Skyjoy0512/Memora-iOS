@@ -4,20 +4,31 @@ import Foundation
 /// screen or the app being stopped before it is saved. Writes go through the
 /// same ordered store as the records, so a draft that is cleared cannot come
 /// back from an older save that was still on its way.
+///
+/// A draft is stored as its own UTF-8 text behind a one-byte format marker, and
+/// read back the same way. Earlier builds wrote a JSON string but read the raw
+/// bytes, so quotes and newline escapes showed up in the body; `decode` reads
+/// that old form once, here, instead of handing it back as text.
 @MainActor
 enum DraftStore {
   private static let prefix = "draft."
+  private static let textFormatMarker: UInt8 = 0x01
 
   static func load(_ key: String) -> String? {
-    guard case .data(let data) = RecordStore.load(prefix + key),
-          let text = String(data: data, encoding: .utf8) else {
+    guard case .data(let data) = RecordStore.load(prefix + key) else {
       return nil
     }
-    return text
+    return decode(data)
   }
 
   static func save(_ text: String, key: String) {
-    RecordStore.save(text, key: prefix + key)
+    RecordStore.saveData(encode(text), key: prefix + key)
+  }
+
+  /// Saves and waits for the write, for callers that must know the draft landed
+  /// before they continue. Throws when it could not be stored.
+  static func saveAndWait(_ text: String, key: String) throws {
+    try RecordStore.saveDataNow(encode(text), key: prefix + key)
   }
 
   /// Removes the draft, waiting for any queued save of it so the two cannot
@@ -25,5 +36,20 @@ enum DraftStore {
   /// a safety copy, so a failure here is not reported as a lost record.
   static func clear(_ key: String) {
     try? RecordStore.remove(prefix + key)
+  }
+
+  private static func encode(_ text: String) -> Data {
+    var data = Data([textFormatMarker])
+    data.append(contentsOf: text.utf8)
+    return data
+  }
+
+  private static func decode(_ data: Data) -> String? {
+    if data.first == textFormatMarker {
+      return String(decoding: data.dropFirst(), as: UTF8.self)
+    }
+    // The old writer stored a JSON-encoded string; decoding it recovers the
+    // original text without the quotes and escapes that leaked before.
+    return try? JSONDecoder().decode(String.self, from: data)
   }
 }

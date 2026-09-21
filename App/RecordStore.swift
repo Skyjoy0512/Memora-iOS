@@ -55,16 +55,27 @@ enum RecordStore {
 
     // Migrated once, and never again: a marker records that this key has already
     // been brought across, so an emptied document cannot resurrect the old copy.
+    //
+    // The marker is read from the same store the document is written to. It used
+    // to live in `UserDefaults`, which nothing removed the old copy from, so a
+    // document that was migrated and then deleted was brought in again from the
+    // legacy copy on the next launch.
     let marker = key + ".migrated"
-    guard UserDefaults.standard.data(forKey: marker) == nil else { return .absent }
+    if case .data = LocalStore.shared.readOutcome(marker) { return .absent }
     guard let legacy = UserDefaults.standard.data(forKey: key) else { return .absent }
 
-    guard (try? LocalStore.shared.write(key, data: legacy)) != nil else {
-      // The copy is still in UserDefaults and the marker is not written, so the
-      // next launch tries again.
+    do {
+      // The document and its marker land in one transaction, so a document can
+      // never be migrated without also recording that it was. On failure the old
+      // copy is still in `UserDefaults` and no marker was written, so the next
+      // load tries again.
+      try saveBatch([
+        (key: key, data: legacy),
+        (key: marker, data: Data("1".utf8)),
+      ])
+    } catch {
       return .failed
     }
-    try? LocalStore.shared.write(marker, data: Data("1".utf8))
     return .data(legacy)
   }
 
@@ -110,11 +121,34 @@ enum RecordStore {
     }
   }
 
+  /// Saves already-encoded bytes off the main thread. For a document whose
+  /// format is not JSON — a draft's plain text, say — so that its reader and
+  /// writer agree on the bytes rather than on an encoding neither named.
+  static func saveData(
+    _ data: Data,
+    key: String,
+    onFailure: (@MainActor () -> Void)? = nil
+  ) {
+    queue.async {
+      do {
+        try LocalStore.shared.write(key, data: data)
+      } catch {
+        Task { @MainActor in onFailure?() }
+      }
+    }
+  }
+
   /// Saves on the caller's turn in the queue, throwing when it could not be
   /// written, for the places that must know before continuing. Waits for any
   /// earlier queued write, so ordering is preserved across both kinds of save.
   static func saveNow<T: Encodable>(_ value: T, key: String) throws {
     let data = try JSONEncoder().encode(value)
+    try saveBatch([(key: key, data: data)])
+  }
+
+  /// Saves already-encoded bytes on the caller's turn, throwing on failure, and
+  /// waiting for earlier queued writes. The awaitable form of `saveData`.
+  static func saveDataNow(_ data: Data, key: String) throws {
     try saveBatch([(key: key, data: data)])
   }
 

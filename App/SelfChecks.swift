@@ -38,17 +38,9 @@ enum SelfChecks {
       checkMarkdownRoundTrip("そのままの日本語テキスト", name: "plain text")
     }
 
-    group("Draft store") {
-      let key = "selfcheck.draft"
-      DraftStore.save("下書きのテスト", key: key)
-      if DraftStore.load(key) != "下書きのテスト" {
-        report("draft round trip")
-      }
-      DraftStore.clear(key)
-      if DraftStore.load(key) != nil {
-        report("draft clear")
-      }
-    }
+    group("Draft store", checkDraftStore)
+    group("Draft legacy format", checkDraftLegacyFormat)
+    group("Store migration", checkStoreMigration)
 
     group("Question terms", checkQuestionWords)
     group("Scope isolation", checkScopeIsolation)
@@ -323,7 +315,86 @@ enum SelfChecks {
     }
   }
 
-  /// A failing write must be reported to the caller, and the store must still  /// A failing write must be reported to the caller, and the store must still
+  /// A draft must come back exactly as it went in: newlines, quotes, Japanese
+  /// and the empty string alike, with no escaping added and nothing dropped.
+  private static func checkDraftStore() {
+    let key = "selfcheck.draft"
+    let samples = ["下書きのテスト", "1行目\n2行目", "引用符\"と'", "", "日本語\n\"複数\"\n行"]
+    for text in samples {
+      do {
+        try DraftStore.saveAndWait(text, key: key)
+      } catch {
+        report("draft save failed: \(error)")
+        continue
+      }
+      if DraftStore.load(key) != text {
+        report("draft round trip: \(text.debugDescription) -> \(String(describing: DraftStore.load(key)))")
+      }
+    }
+    DraftStore.clear(key)
+    if DraftStore.load(key) != nil {
+      report("draft clear")
+    }
+  }
+
+  /// A draft written by the old build was a JSON string read back as raw text.
+  /// It must decode to the original body once, not keep the quotes and escapes.
+  private static func checkDraftLegacyFormat() {
+    let key = "selfcheck.draft.legacy"
+    let original = "旧\"下書き\"\n2行目"
+    do {
+      let stored = try JSONEncoder().encode(original)
+      try RecordStore.saveDataNow(stored, key: "draft." + key)
+    } catch {
+      report("legacy draft could not be staged: \(error)")
+      return
+    }
+    if DraftStore.load(key) != original {
+      report("legacy draft was not decoded: \(String(describing: DraftStore.load(key)))")
+    }
+    DraftStore.clear(key)
+  }
+
+  /// The move off `UserDefaults` happens once per key. A failed move keeps the
+  /// old copy and can be retried, and a removed document stays removed.
+  private static func checkStoreMigration() {
+    let key = "selfcheck.migration"
+    let marker = key + ".migrated"
+    let legacy = Data("legacy".utf8)
+    UserDefaults.standard.set(legacy, forKey: key)
+    try? RecordStore.remove(marker)
+
+    // A failed migration must report failure and leave the old copy in place.
+    RecordStore.setFailureInjection(true)
+    if case .failed = RecordStore.load(key) {
+      // Expected.
+    } else {
+      report("a failed migration did not report failure")
+    }
+    if UserDefaults.standard.data(forKey: key) != legacy {
+      report("a failed migration dropped the old copy")
+    }
+
+    // The next attempt succeeds, because nothing was written on the failure.
+    guard case .data(let migrated) = RecordStore.load(key), migrated == legacy else {
+      report("the migration could not be retried")
+      try? RecordStore.remove(key)
+      try? RecordStore.remove(marker)
+      UserDefaults.standard.removeObject(forKey: key)
+      return
+    }
+
+    // Removing the document must not bring the old copy back.
+    try? RecordStore.remove(key)
+    if case .data = RecordStore.load(key) {
+      report("a removed document was migrated in again")
+    }
+
+    try? RecordStore.remove(marker)
+    UserDefaults.standard.removeObject(forKey: key)
+  }
+
+  /// A failing write must be reported to the caller, and the store must still
   /// work afterwards, so an error is a real outcome rather than a silent drop.
   private static func checkStoreFailureInjection() {
     let key = "selfcheck.injection"
