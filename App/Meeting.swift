@@ -4,6 +4,13 @@ struct Meeting: Identifiable, Hashable, Codable {
   var id: UUID
   var title: String
   var createdAt: Date
+
+  /// Never empty where a name is required, such as the system now-playing
+  /// controls, without changing what is stored.
+  var displayTitle: String {
+    title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の記録" : title
+  }
+
   var duration: TimeInterval
   var source: MeetingSource
   var status: MeetingStatus

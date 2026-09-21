@@ -67,7 +67,7 @@ struct MeetingDetailView: View {
           .onAppear {
             model.activeDetailMeetingID = meeting.id
             model.isDetailComposerVisible = true
-            player.load(meeting.audioURL)
+            player.load(meeting.audioURL, title: meeting.displayTitle)
           }
           .onChange(of: model.isRecording) { _, recording in
             // A recording owns the audio session, so playback steps aside.

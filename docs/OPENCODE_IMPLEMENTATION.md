@@ -174,6 +174,10 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ3（追加11）
+
+- B12: 再生中のNow Playing情報を実体に合わせて公開（記録名、経過時間、長さ、速度）。`MPRemoteCommandCenter` で再生・一時停止・シークを操作可能にし、停止時に情報とターゲットを消去。名前が空のときだけ「無題の記録」。
+
 ### フェーズ3（追加10）
 
 - E01（一部）: `RootTabView` が下部コントロールの高さを計測して `MemoraModel.bottomControlsHeight` に反映し、`bottomContentClearance`（高さ＋16）を各主要画面が使うように統一。ジャーナルの固定184ptを撤去。

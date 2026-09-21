@@ -1,5 +1,6 @@
 import AVFAudio
 import Foundation
+import MediaPlayer
 
 /// Plays one recording with `AVAudioEngine`, the way the app stores it: a file
 /// on disk. Supports pause, seeking, skipping, and a speed change.
@@ -13,8 +14,13 @@ final class AudioPlayerService {
   private(set) var errorMessage: String?
   /// Playback speed, kept across recordings.
   var rate: Float = 1 {
-    didSet { timePitch.rate = rate }
+    didSet {
+      timePitch.rate = rate
+      publishNowPlaying()
+    }
   }
+  /// The name shown in the system now-playing controls, set from the record.
+  private var nowPlayingTitle = ""
 
   private let engine = AVAudioEngine()
   private let player = AVAudioPlayerNode()
@@ -38,10 +44,11 @@ final class AudioPlayerService {
 
   /// Points the player at a recording. Loading the same file again does nothing,
   /// so scrolling the screen does not restart it.
-  func load(_ url: URL?) {
+  func load(_ url: URL?, title: String = "") {
     guard loadedURL != url else { return }
     stop()
     loadedURL = url
+    nowPlayingTitle = title
     errorMessage = nil
     guard let url else {
       file = nil
@@ -80,6 +87,7 @@ final class AudioPlayerService {
       let session = AVAudioSession.sharedInstance()
       try session.setCategory(.playback, mode: .spokenAudio)
       try session.setActive(true)
+      registerRemoteCommands()
 
       if !engine.isRunning {
         engine.prepare()
@@ -94,6 +102,7 @@ final class AudioPlayerService {
       )
       player.play()
       isPlaying = true
+      publishNowPlaying()
       startTicker()
     } catch {
       errorMessage = "再生を開始できませんでした。"
@@ -108,6 +117,7 @@ final class AudioPlayerService {
     startFrame = frame(for: elapsed)
     currentTime = min(elapsed, duration)
     isPlaying = false
+    publishNowPlaying()
     stopTicker()
   }
 
@@ -120,6 +130,7 @@ final class AudioPlayerService {
     }
     startFrame = frame(for: clamped)
     currentTime = clamped
+    publishNowPlaying()
     if wasPlaying {
       isPlaying = false
       play()
@@ -140,7 +151,57 @@ final class AudioPlayerService {
     isPlaying = false
     currentTime = 0
     startFrame = 0
+    // Nothing is playing any more, so the system should not keep a now-playing
+    // item that looks like it still is.
+    MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    let commands = MPRemoteCommandCenter.shared()
+    commands.playCommand.removeTarget(nil)
+    commands.pauseCommand.removeTarget(nil)
+    commands.togglePlayPauseCommand.removeTarget(nil)
+    commands.changePlaybackPositionCommand.removeTarget(nil)
     try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+  }
+
+  /// Publishes what is actually playing - the record own name, no invented
+  /// artist - so Control Center and the lock screen match the screen.
+  private func publishNowPlaying() {
+    guard file != nil, isPlaying || currentTime > 0 else {
+      MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+      return
+    }
+    var info: [String: Any] = [
+      MPMediaItemPropertyTitle: nowPlayingTitle.isEmpty ? "無題の記録" : nowPlayingTitle,
+      MPMediaItemPropertyArtist: "Memora",
+      MPMediaItemPropertyPlaybackDuration: duration,
+      MPNowPlayingInfoPropertyElapsedPlaybackTime: currentTime,
+      MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? Double(rate) : 0,
+      MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue
+    ]
+    info[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1
+    MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+  }
+
+  /// Lets the lock screen and Control Center drive this player, so their
+  /// buttons never claim to work while doing nothing.
+  private func registerRemoteCommands() {
+    let center = MPRemoteCommandCenter.shared()
+    center.playCommand.addTarget { [weak self] _ in
+      Task { @MainActor in self?.play() }
+      return .success
+    }
+    center.pauseCommand.addTarget { [weak self] _ in
+      Task { @MainActor in self?.pause() }
+      return .success
+    }
+    center.togglePlayPauseCommand.addTarget { [weak self] _ in
+      Task { @MainActor in self?.toggle() }
+      return .success
+    }
+    center.changePlaybackPositionCommand.addTarget { [weak self] event in
+      guard let position = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+      Task { @MainActor in self?.seek(to: position.positionTime) }
+      return .success
+    }
   }
 
   private func elapsedTime() -> TimeInterval {
