@@ -132,6 +132,10 @@
 - F07（一部）: ドキュメントの読み書きを `RecordStore` サービスへ集約。モデルは `LocalStore`・`UserDefaults`・保存キューを直接扱わなくなった（旧データの移行も `RecordStore` 内）。バックアップの一時領域もモデル側で決め、画面から `FileManager` を触らないようにした。
 - 残り: 処理ジョブの専用サービス化、画像処理（`PhotoEditorView`）の分離。
 
+### フェーズ3（着手）
+
+- B05: `AudioPlayerService` を追加（AVAudioEngine＋AVAudioPlayerNode＋時間ピッチで速度変更）。会議詳細に見出し下の再生バー（再生/一時停止・位置・15秒・速度0.5〜2倍）。録音中は再生せず、画面を離れると停止。
+
 ### フェーズ2の残り
 
 - 写真（`Meeting.photoData`）のファイル参照化、A09（ごみ箱と復元）、

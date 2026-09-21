@@ -16,6 +16,8 @@ struct MeetingDetailView: View {
   @State private var isSharing = false
   @State private var shareItems: [Any] = []
   @State private var statusAlert: StatusAlert?
+  @State private var player = AudioPlayerService()
+  @State private var scrubTime: Double?
 
   private struct StatusAlert: Identifiable {
     let id = UUID()
@@ -32,6 +34,10 @@ struct MeetingDetailView: View {
               meetingHeader(meeting)
 
               participantsRow(meeting)
+
+              if meeting.audioURL != nil {
+                playerCard(meeting)
+              }
 
               Picker("会議の表示", selection: $selectedSection) {
                 ForEach(MeetingDetailSection.allCases) { section in
@@ -60,6 +66,14 @@ struct MeetingDetailView: View {
           .onAppear {
             model.activeDetailMeetingID = meeting.id
             model.isDetailComposerVisible = true
+            player.load(meeting.audioURL)
+          }
+          .onChange(of: model.isRecording) { _, recording in
+            // A recording owns the audio session, so playback steps aside.
+            if recording { player.pause() }
+          }
+          .onDisappear {
+            player.stop()
           }
           .onDisappear {
             if model.activeDetailMeetingID == meeting.id {
@@ -149,6 +163,114 @@ struct MeetingDetailView: View {
       } else {
         ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
       }
+    }
+  }
+
+  /// Plays the recording: play/pause, position, 15-second jumps, and speed.
+  private func playerCard(_ meeting: Meeting) -> some View {
+    VStack(spacing: 12) {
+      HStack(spacing: 14) {
+        Button {
+          player.toggle()
+        } label: {
+          Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(Color(uiColor: .systemBackground))
+            .frame(width: 48, height: 48)
+            .background(Circle().fill(.primary))
+        }
+        .buttonStyle(.plain)
+        .disabled(model.isRecording)
+        .accessibilityLabel(player.isPlaying ? "一時停止" : "再生")
+
+        VStack(alignment: .leading, spacing: 2) {
+          Text(MemoraFormat.duration(scrubTime ?? player.currentTime))
+            .font(.subheadline.monospacedDigit().weight(.medium))
+          Text(MemoraFormat.duration(player.duration))
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+        }
+
+        Spacer(minLength: 8)
+
+        Button("15秒戻す", systemImage: "gobackward.15") {
+          player.skip(by: -15)
+        }
+        .labelStyle(.iconOnly)
+        .font(.title3)
+        .frame(width: 40, height: 40)
+        .contentShape(Circle())
+        .disabled(player.duration == 0)
+
+        Button("15秒進める", systemImage: "goforward.15") {
+          player.skip(by: 15)
+        }
+        .labelStyle(.iconOnly)
+        .font(.title3)
+        .frame(width: 40, height: 40)
+        .contentShape(Circle())
+        .disabled(player.duration == 0)
+
+        speedMenu
+      }
+
+      Slider(value: seekBinding, in: 0...max(player.duration, 0.1)) { editing in
+        if !editing, let time = scrubTime {
+          player.seek(to: time)
+          scrubTime = nil
+        }
+      }
+      .disabled(player.duration == 0)
+      .accessibilityLabel("再生位置")
+
+      if let message = player.errorMessage {
+        Label(message, systemImage: "exclamationmark.triangle")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+      } else if model.isRecording {
+        Label("録音中は再生できません", systemImage: "mic")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+      }
+    }
+    .padding(16)
+    .memoraCard()
+    .memoraAppear()
+  }
+
+  private var speedMenu: some View {
+    Menu {
+      ForEach([0.5, 1.0, 1.5, 2.0], id: \.self) { option in
+        Button {
+          player.rate = Float(option)
+        } label: {
+          if player.rate == Float(option) {
+            Label(speedLabel(option), systemImage: "checkmark")
+          } else {
+            Text(speedLabel(option))
+          }
+        }
+      }
+    } label: {
+      Text(speedLabel(Double(player.rate)))
+        .font(.subheadline.weight(.medium))
+        .frame(minWidth: 44, minHeight: 32)
+        .contentShape(Rectangle())
+    }
+    .accessibilityLabel("再生速度")
+  }
+
+  private func speedLabel(_ value: Double) -> String {
+    value == value.rounded() ? "\(Int(value))x" : String(format: "%.1fx", value)
+  }
+
+  private var seekBinding: Binding<Double> {
+    Binding {
+      scrubTime ?? player.currentTime
+    } set: { newValue in
+      scrubTime = newValue
     }
   }
 
