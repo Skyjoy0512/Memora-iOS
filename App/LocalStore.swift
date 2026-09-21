@@ -110,15 +110,24 @@ final class LocalStore {
   /// more than one document (moving a record to the trash, say) lands completely
   /// or not at all.
   func writeBatch(_ documents: [(key: String, data: Data)]) throws {
+    try applyBatch(writes: documents, removing: [])
+  }
+
+  /// Writes and removes documents in one transaction, so a commit that both
+  /// stores a record and discards its draft cannot leave the two disagreeing.
+  func applyBatch(writes: [(key: String, data: Data)], removing removals: [String]) throws {
     lock.lock()
     defer { lock.unlock() }
     guard let db else { throw StoreError.open(0) }
-    guard !documents.isEmpty else { return }
+    guard !writes.isEmpty || !removals.isEmpty else { return }
 
     try exec("BEGIN IMMEDIATE;")
     do {
-      for document in documents {
+      for document in writes {
         try writeLocked(document.key, data: document.data)
+      }
+      for key in removals {
+        try removeLocked(key)
       }
       try exec("COMMIT;")
     } catch {
@@ -157,6 +166,12 @@ final class LocalStore {
   func remove(_ key: String) throws {
     lock.lock()
     defer { lock.unlock() }
+    guard db != nil else { throw StoreError.open(0) }
+    try removeLocked(key)
+  }
+
+  /// One document removal. The caller holds the lock and the transaction.
+  private func removeLocked(_ key: String) throws {
     guard let db else { throw StoreError.open(0) }
 
     var statement: OpaquePointer?

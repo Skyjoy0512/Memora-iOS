@@ -282,6 +282,11 @@ final class MemoraModel {
     )
     if case .data(let draftData) = RecordStore.load(StorageKey.recordingDraft) {
       recordingDraft = try? JSONDecoder().decode(RecordingDraft.self, from: draftData)
+      // A draft from an older build has no id; give it a stable one now so a
+      // recovery that is cut off and retried does not make a second record.
+      if recordingDraft?.id == nil {
+        recordingDraft?.id = UUID()
+      }
     }
 
     isStoreProtected = didFailToReadStore
@@ -462,7 +467,12 @@ final class MemoraModel {
   // MARK: - Recording recovery
 
   /// The minimum needed to bring back a recording the app did not get to save.
+  /// The id identifies the record this recording will become, so an interrupted
+  /// recovery that is tried again finds the record it already made instead of
+  /// making a second one. Drafts written before the id was stored have none, and
+  /// are given one on the first load.
   private struct RecordingDraft: Codable {
+    var id: UUID?
     var fileName: String
     var title: String
     var note: String
@@ -483,31 +493,47 @@ final class MemoraModel {
   /// memo. Recording is never restarted on its own.
   private func recoverRecordingDraft() async {
     guard let draft = recordingDraft else { return }
+    // A store that could not be read must not be written over, so recovery waits
+    // for the next healthy launch instead of adding records that cannot be saved.
+    guard !isStoreProtected else { return }
+
+    let id = draft.id ?? UUID()
+    // A recovery that already stored the record but was cut off before the draft
+    // was removed must not make a second one.
+    if meetings.contains(where: { $0.id == id }) || lifeLogEntries.contains(where: { $0.id == id }) {
+      clearRecordingDraft()
+      return
+    }
 
     let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
     let note = draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
 
     guard let audioURL = MediaFiles.resolve(draft.fileName),
           FileManager.default.fileExists(atPath: audioURL.path) else {
-      if !note.isEmpty {
-        addLifeLogEntry(
-          kind: .memo,
-          title: title.isEmpty ? "復旧したメモ" : title,
-          summary: note,
-          createdAt: draft.startedAt,
-          photoData: nil,
-          eventDate: nil,
-          locationName: nil
-        )
+      // With no audio, the note becomes a memo. The memo and the draft removal
+      // are one commit, so a stop in the middle leaves one or the other. When
+      // there is nothing worth keeping, the draft is simply removed.
+      if note.isEmpty {
+        clearRecordingDraft()
+      } else if addLifeLogEntry(
+        id: id,
+        kind: .memo,
+        title: title.isEmpty ? "復旧したメモ" : title,
+        summary: note,
+        createdAt: draft.startedAt,
+        photoData: nil,
+        eventDate: nil,
+        locationName: nil,
+        removingDraft: StorageKey.recordingDraft
+      ) {
+        clearRecordingDraft(alreadyRemoved: true)
       }
-      // The memo is stored (or was not needed); the draft can go now.
-      clearRecordingDraft()
       return
     }
 
     let duration = await MediaFiles.duration(of: audioURL) ?? 1
     var meeting = Meeting(
-      id: UUID(),
+      id: id,
       title: title.isEmpty ? "復旧した録音" : title,
       createdAt: draft.startedAt,
       duration: duration,
@@ -526,7 +552,7 @@ final class MemoraModel {
 
     lifeLogEntries.insert(
       LifeLogEntry(
-        id: UUID(),
+        id: id,
         createdAt: draft.startedAt,
         title: meeting.title,
         summary: "中断前に録音していた音声を復旧しました。",
@@ -536,29 +562,31 @@ final class MemoraModel {
       at: 0
     )
 
-    // The recovered record and its journal entry are written together, and the
-    // draft is only cleared once they are stored, so a stop in the middle still
-    // leaves one of the two behind.
-    let stored = persistBatch {
+    // The recovered record, its journal entry and the draft removal are written
+    // together, so a stop in the middle leaves either all of it or none of it.
+    let stored = await persistBatchAsync({
       [
         (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))
       ]
-    }
+    }, removing: [StorageKey.recordingDraft])
     guard stored else {
       // Put the in-memory lists back so nothing points at a record that was not
       // written, and keep the draft for the next attempt.
-      meetings.removeAll { $0.id == meeting.id }
-      lifeLogEntries.removeAll { $0.meetingID == meeting.id }
+      meetings.removeAll { $0.id == id }
+      lifeLogEntries.removeAll { $0.id == id }
       return
     }
-    clearRecordingDraft()
+    recordingDraft = nil
   }
 
-  /// Forgets the recording draft and removes its stored copy.
-  private func clearRecordingDraft() {
+  /// Forgets the recording draft and removes its stored copy. `alreadyRemoved`
+  /// says a commit has just removed it, so no second removal is needed.
+  private func clearRecordingDraft(alreadyRemoved: Bool = false) {
     recordingDraft = nil
-    persistRecordingDraft()
+    if !alreadyRemoved {
+      persistRecordingDraft()
+    }
   }
 
   // MARK: - Onboarding and account
@@ -737,6 +765,7 @@ final class MemoraModel {
       announce("録音を開始しました")
       if let recordingURL, let fileName = MediaFiles.reference(for: recordingURL) {
         recordingDraft = RecordingDraft(
+          id: UUID(),
           fileName: fileName,
           title: event?.title ?? "",
           note: "",
@@ -772,7 +801,7 @@ final class MemoraModel {
     await endLiveActivity()
 
     var meeting = Meeting(
-      id: UUID(),
+      id: recordingDraft?.id ?? UUID(),
       title: recordingTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         ? "新しい会話"
         : recordingTitle.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -792,10 +821,9 @@ final class MemoraModel {
     meeting.calendarEventID = captureEvent?.id
     captureEvent = nil
     meetings.insert(meeting, at: 0)
-    persistMeetings()
     lifeLogEntries.insert(
       LifeLogEntry(
-        id: UUID(),
+        id: meeting.id,
         createdAt: meeting.createdAt,
         title: meeting.title,
         summary: "iPhoneで新しい音声を記録しました。",
@@ -804,9 +832,20 @@ final class MemoraModel {
       ),
       at: 0
     )
-    persistLifeLog()
-    recordingDraft = nil
-    persistRecordingDraft()
+    // The record, its journal entry and the draft removal are one commit: the
+    // draft is only gone once the record is stored, so a failure or a stop here
+    // leaves the audio recoverable rather than lost. On failure the draft stays
+    // and the next launch rebuilds the record from it (with the same id), so no
+    // duplicate is made.
+    let committed = await persistBatchAsync({
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))
+      ]
+    }, removing: [StorageKey.recordingDraft])
+    if committed {
+      recordingDraft = nil
+    }
     recordingInterruptionMessage = nil
     recordingURL = nil
     recordingStartedAt = nil
@@ -1229,15 +1268,18 @@ final class MemoraModel {
     updateMeeting(meetingID) { $0.spaceID = spaceID }
   }
 
+  @discardableResult
   func addLifeLogEntry(
+    id: UUID = UUID(),
     kind: LifeLogKind,
     title: String,
     summary: String,
     createdAt: Date,
     photoData: Data?,
     eventDate: Date?,
-    locationName: String?
-  ) {
+    locationName: String?,
+    removingDraft draftKey: String? = nil
+  ) -> Bool {
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedLocation = locationName?.trimmingCharacters(in: .whitespacesAndNewlines)
     let resolvedTitle: String
@@ -1254,7 +1296,7 @@ final class MemoraModel {
 
     lifeLogEntries.insert(
       LifeLogEntry(
-        id: UUID(),
+        id: id,
         createdAt: createdAt,
         title: resolvedTitle,
         summary: summary.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -1267,7 +1309,11 @@ final class MemoraModel {
       ),
       at: 0
     )
-    persistLifeLog()
+    // The entry and the draft removal land together when the caller asked for
+    // one, so leaving the draft behind cannot happen beside a stored memo.
+    return persistBatch({
+      [(key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))]
+    }, removing: draftKey.map { [$0] } ?? [])
   }
 
   func renameMeeting(_ id: UUID, title: String) {
@@ -1276,12 +1322,16 @@ final class MemoraModel {
     updateMeeting(id) { $0.title = trimmed }
   }
 
-  func updateMeetingNotes(_ id: UUID, notes: String) {
-    updateMeeting(id) { $0.notes = notes }
+  /// Notes and summary come from an editor that keeps a draft; the caller is
+  /// told whether the record was stored, and only then is the draft cleared.
+  @discardableResult
+  func updateMeetingNotes(_ id: UUID, notes: String) async -> Bool {
+    await commitMeetingChange(id) { $0.notes = notes }
   }
 
-  func updateMeetingSummary(_ id: UUID, summary: String) {
-    updateMeeting(id) { $0.summary = summary }
+  @discardableResult
+  func updateMeetingSummary(_ id: UUID, summary: String) async -> Bool {
+    await commitMeetingChange(id) { $0.summary = summary }
   }
 
   func updateMeetingList(_ id: UUID, _ keyPath: WritableKeyPath<Meeting, [String]>, items: [String]) {
@@ -1739,11 +1789,24 @@ final class MemoraModel {
     }
   }
 
-  private func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) {
-    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
+  @discardableResult
+  private func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) -> Bool {
+    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
     meetingSearchTexts.removeValue(forKey: id)
     change(&meetings[index])
     persistMeetings()
+    return true
+  }
+
+  /// Applies an edit and waits for it to be stored, reporting whether it landed.
+  /// Used where a draft is cleared afterwards, so the draft is kept when the
+  /// record could not be written.
+  @discardableResult
+  private func commitMeetingChange(_ id: UUID, change: (inout Meeting) -> Void) async -> Bool {
+    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
+    meetingSearchTexts.removeValue(forKey: id)
+    change(&meetings[index])
+    return await persistNowAsync(meetings, forKey: StorageKey.meetings)
   }
 
   func persistTasks() {
@@ -1837,20 +1900,66 @@ final class MemoraModel {
   }
 
   /// Waits for a write of several documents that belong to one operation, and
-  /// reports whether all of them landed.
+  /// reports whether all of them landed. `removing` lets the same commit discard
+  /// the draft that belongs to the operation.
   @discardableResult
-  private func persistBatch(_ build: () throws -> [(key: String, data: Data)]) -> Bool {
+  private func persistBatch(
+    _ build: () throws -> [(key: String, data: Data)],
+    removing: [String] = []
+  ) -> Bool {
     guard !isStoreProtected else {
       persistenceFailureMessage = storeProtectedMessage
       return false
     }
     do {
-      try RecordStore.saveBatch(try build())
+      try RecordStore.commitNow(writes: try build(), removing: removing)
       return true
     } catch {
-      persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
+      persistenceFailureMessage = saveFailureMessage
       return false
     }
+  }
+
+  /// The same commit, off the caller's turn, for a screen that must not wait on
+  /// disk while it finishes.
+  @discardableResult
+  private func persistBatchAsync(
+    _ build: () throws -> [(key: String, data: Data)],
+    removing: [String] = []
+  ) async -> Bool {
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return false
+    }
+    do {
+      try await RecordStore.commitAsync(writes: try build(), removing: removing)
+      return true
+    } catch {
+      persistenceFailureMessage = saveFailureMessage
+      return false
+    }
+  }
+
+  /// Stores one document and waits for it, without blocking the caller while the
+  /// write is in flight.
+  @discardableResult
+  private func persistNowAsync<T: Encodable>(_ value: T, forKey key: String) async -> Bool {
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return false
+    }
+    do {
+      let data = try RecordStore.encoded(value)
+      try await RecordStore.commitAsync(writes: [(key: key, data: data)], removing: [])
+      return true
+    } catch {
+      persistenceFailureMessage = saveFailureMessage
+      return false
+    }
+  }
+
+  private var saveFailureMessage: String {
+    "データを保存できませんでした。ストレージの空き容量を確認してください。"
   }
 
   private var storeProtectedMessage: String {

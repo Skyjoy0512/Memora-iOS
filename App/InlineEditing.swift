@@ -12,7 +12,10 @@ struct InlineMarkdownEditor: View {
   /// When set, what is being written is kept under this key, so leaving the
   /// screen or stopping the app does not lose the draft.
   var draftKey: String?
-  var onCommit: (String) -> Void
+  /// Commits the text and reports whether it was stored. The draft is only
+  /// cleared once this says the text is saved, so a failed write keeps what was
+  /// being written.
+  var onCommit: (String) async -> Bool
 
   @Environment(MemoraModel.self) private var model
   @State private var isEditing = false
@@ -102,12 +105,19 @@ struct InlineMarkdownEditor: View {
       model.focusedInlineEditorID = nil
     }
 
-    if draft != text {
-      onCommit(draft)
-    }
-    // The draft has served its purpose once the text is committed.
-    if let draftKey {
-      DraftStore.clear(draftKey)
+    let value = draft
+    let key = draftKey
+    if value != text {
+      // The draft is only cleared once the record is actually stored. If the
+      // write fails, the draft stays and is restored the next time this editor
+      // is opened.
+      Task { @MainActor in
+        guard await onCommit(value), let key else { return }
+        DraftStore.clear(key)
+      }
+    } else if let key {
+      // Nothing changed, so the safety copy has served its purpose.
+      DraftStore.clear(key)
     }
   }
 

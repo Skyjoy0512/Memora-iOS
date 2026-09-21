@@ -52,6 +52,7 @@ enum SelfChecks {
     group("Status filter", checkStatusFilter)
     group("Audio session claims", checkAudioSessionClaims)
     group("Store failure injection", checkStoreFailureInjection)
+    group("Atomic commit", checkAtomicCommit)
     group("Speech final results", checkSpeechFinalResults)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
@@ -392,6 +393,66 @@ enum SelfChecks {
 
     try? RecordStore.remove(marker)
     UserDefaults.standard.removeObject(forKey: key)
+  }
+
+  /// A commit that stores records and removes their draft must do both or
+  /// neither, so a record can never be saved beside a live draft, and a failed
+  /// commit must leave the draft and the documents as they were.
+  private static func checkAtomicCommit() {
+    let docA = "selfcheck.commit.a"
+    let docB = "selfcheck.commit.b"
+    let draft = "selfcheck.commit.draft"
+    let draftStorageKey = "draft." + draft
+    DraftStore.save("下書き", key: draft)
+
+    do {
+      try RecordStore.commitNow(
+        writes: [
+          (key: docA, data: Data("A".utf8)),
+          (key: docB, data: Data("B".utf8)),
+        ],
+        removing: [draftStorageKey]
+      )
+    } catch {
+      report("atomic commit failed: \(error)")
+    }
+    if DraftStore.load(draft) != nil {
+      report("the commit did not remove the draft")
+    }
+    if case .data(let data) = RecordStore.load(docA), data == Data("A".utf8) {
+      // Expected.
+    } else {
+      report("the commit did not store the first document")
+    }
+
+    // A failing commit changes nothing: the draft stays and the documents keep
+    // their previous contents.
+    DraftStore.save("下書き2", key: draft)
+    RecordStore.setFailureInjection(true)
+    do {
+      try RecordStore.commitNow(
+        writes: [
+          (key: docA, data: Data("A2".utf8)),
+          (key: docB, data: Data("B2".utf8)),
+        ],
+        removing: [draftStorageKey]
+      )
+      report("a failing commit reported success")
+    } catch {
+      // Expected.
+    }
+    if DraftStore.load(draft) != "下書き2" {
+      report("a failing commit changed the draft")
+    }
+    if case .data(let data) = RecordStore.load(docA), data == Data("A".utf8) {
+      // Expected: the earlier value is untouched.
+    } else {
+      report("a failing commit changed a document")
+    }
+
+    try? RecordStore.remove(docA)
+    try? RecordStore.remove(docB)
+    DraftStore.clear(draft)
   }
 
   /// A failing write must be reported to the caller, and the store must still

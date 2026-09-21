@@ -552,7 +552,7 @@ struct MeetingDetailView: View {
         font: .title3.weight(.medium),
         minHeight: 120,
         draftKey: "meeting.\(meeting.id).summary",
-        onCommit: { model.updateMeetingSummary(meeting.id, summary: $0) }
+        onCommit: { await model.updateMeetingSummary(meeting.id, summary: $0) }
       )
       .memoraTextReveal(delay: 0.04)
     }

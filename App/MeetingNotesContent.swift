@@ -24,7 +24,7 @@ struct MeetingNotesContent: View {
         placeholder: "タップして入力",
         minHeight: 360,
         draftKey: "meeting.\(meetingID).notes",
-        onCommit: { model.updateMeetingNotes(meetingID, notes: $0) }
+        onCommit: { await model.updateMeetingNotes(meetingID, notes: $0) }
       )
 
       ScrollView(.horizontal) {

@@ -155,22 +155,47 @@ enum RecordStore {
   /// Writes several documents in one transaction, so a logical operation that
   /// spans documents either lands completely or not at all.
   static func saveBatch(_ documents: [(key: String, data: Data)]) throws {
+    try commitNow(writes: documents, removing: [])
+  }
+
+  /// Writes and removes documents in one transaction on the caller's turn,
+  /// waiting for earlier queued writes. This is what lets a commit store a
+  /// record and discard its draft together.
+  static func commitNow(
+    writes: [(key: String, data: Data)],
+    removing removals: [String]
+  ) throws {
     try queue.sync {
 #if DEBUG
       try consumeInjectedFailure()
 #endif
-      try LocalStore.shared.writeBatch(documents)
+      try LocalStore.shared.applyBatch(writes: writes, removing: removals)
+    }
+  }
+
+  /// The same commit off the caller's turn, so a screen does not wait on disk.
+  static func commitAsync(
+    writes: [(key: String, data: Data)],
+    removing removals: [String]
+  ) async throws {
+    try await withCheckedThrowingContinuation { continuation in
+      queue.async {
+        do {
+#if DEBUG
+          try consumeInjectedFailure()
+#endif
+          try LocalStore.shared.applyBatch(writes: writes, removing: removals)
+          continuation.resume()
+        } catch {
+          continuation.resume(throwing: error)
+        }
+      }
     }
   }
 
   /// Removes a document, waiting for any queued write so an older save cannot
   /// land after the removal.
   static func remove(_ key: String) throws {
-    try queue.sync {
-#if DEBUG
-      try consumeInjectedFailure()
-#endif
-      try LocalStore.shared.remove(key)
-    }
+    try commitNow(writes: [], removing: [key])
   }
 }
