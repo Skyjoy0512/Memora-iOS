@@ -77,6 +77,11 @@ final class AudioPlayerService {
 
   func play() {
     guard let file, !isPlaying else { return }
+    guard AudioSessionCoordinator.shared.claim(.playback) else {
+      errorMessage = AudioSessionCoordinator.shared.refusal(for: .playback)
+        ?? "今は再生できません。"
+      return
+    }
 
     if startFrame >= file.length {
       startFrame = 0
@@ -105,6 +110,7 @@ final class AudioPlayerService {
       publishNowPlaying()
       startTicker()
     } catch {
+      AudioSessionCoordinator.shared.release(.playback)
       errorMessage = "再生を開始できませんでした。"
     }
   }
@@ -159,7 +165,9 @@ final class AudioPlayerService {
     commands.pauseCommand.removeTarget(nil)
     commands.togglePlayPauseCommand.removeTarget(nil)
     commands.changePlaybackPositionCommand.removeTarget(nil)
-    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    // Gives the session back only if this player is the one holding it, so
+    // leaving a screen cannot silence a recording.
+    AudioSessionCoordinator.shared.release(.playback)
   }
 
   /// Publishes what is actually playing - the record own name, no invented

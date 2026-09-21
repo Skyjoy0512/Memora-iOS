@@ -40,9 +40,17 @@ final class AudioRecorderService {
   }
 
   func start() throws -> URL {
+    // Recording takes the session from anything else, and keeps it until it
+    // stops, so another feature cannot switch the audio off underneath it.
+    AudioSessionCoordinator.shared.beginRecording()
     let session = AVAudioSession.sharedInstance()
-    try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetoothHFP])
-    try session.setActive(true)
+    do {
+      try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetoothHFP])
+      try session.setActive(true)
+    } catch {
+      AudioSessionCoordinator.shared.endRecording()
+      throw error
+    }
 
     let directory = try recordingsDirectory()
     let url = directory.appendingPathComponent("Memora-\(UUID().uuidString).m4a")
@@ -65,7 +73,7 @@ final class AudioRecorderService {
   func stop() {
     recorder?.stop()
     recorder = nil
-    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    AudioSessionCoordinator.shared.endRecording()
   }
 
   /// 0...1 loudness for the voice glow.
@@ -82,6 +90,7 @@ final class AudioRecorderService {
 
   func resume() -> Bool {
     // After an interruption the session has to be active again.
+    AudioSessionCoordinator.shared.beginRecording()
     try? AVAudioSession.sharedInstance().setActive(true)
     return recorder?.record() ?? false
   }

@@ -38,7 +38,10 @@ final class SpeechInputService {
     recognitionTask = nil
     isListening = false
     audioLevel = 0
-    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    // Only the feature holding the session may switch it off. Stopping voice
+    // input after a text question, or when a screen closes, must not silence a
+    // recording that is running.
+    AudioSessionCoordinator.shared.release(.speechInput)
   }
 
   func clearError() {
@@ -64,6 +67,14 @@ final class SpeechInputService {
     }
     guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP")), recognizer.isAvailable else {
       errorMessage = "音声入力を利用できません。通信状態を確認してください。"
+      return
+    }
+
+    // The permission prompts above can take a while, so the session is claimed
+    // only now, and only if it is still free.
+    guard AudioSessionCoordinator.shared.claim(.speechInput) else {
+      errorMessage = AudioSessionCoordinator.shared.refusal(for: .speechInput)
+        ?? "今は音声入力できません。"
       return
     }
 

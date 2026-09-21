@@ -34,6 +34,8 @@ enum SelfChecks {
     checkRequestScope()
     checkPhotoThumbnailNaming()
 
+    checkAudioSessionClaims()
+
     // Ordering cannot be checked synchronously; it runs beside the app.
     Task { await checkProcessingRunOwnership() }
     checkStatusFilter()
@@ -239,6 +241,41 @@ enum SelfChecks {
     if terms.contains(where: { $0.contains("？") || $0.contains("?") }) {
       report("question words kept punctuation: \(terms)")
     }
+  }
+
+  /// Only the feature holding the audio session may take or give it up, and a
+  /// recording keeps it against everything else — including a release from a
+  /// feature that does not own it.
+  private static func checkAudioSessionClaims() {
+    let coordinator = AudioSessionCoordinator()
+
+    if !coordinator.claim(.speechInput) {
+      report("voice input could not claim a free session")
+    }
+    if coordinator.claim(.playback) {
+      report("playback claimed the session while voice input held it")
+    }
+    if coordinator.refusal(for: .playback) == nil {
+      report("no reason given for a busy session")
+    }
+    coordinator.release(.playback)
+    if coordinator.claim(.playback) {
+      report("a feature that did not hold the session released it")
+    }
+
+    coordinator.beginRecording()
+    if coordinator.claim(.speechInput) {
+      report("voice input claimed the session during a recording")
+    }
+    coordinator.release(.speechInput)
+    if !coordinator.isRecording {
+      report("a stray release ended a recording")
+    }
+    coordinator.endRecording()
+    if !coordinator.claim(.playback) {
+      report("playback could not claim the session after a recording")
+    }
+    coordinator.release(.playback)
   }
 
   /// A gate the checks can wait on, so an order is set by the work itself rather
