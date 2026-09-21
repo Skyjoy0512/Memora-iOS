@@ -49,50 +49,6 @@ enum SpeechTranscriptionCollapse {
     return (finalized + unfinished).sorted { $0.timestamp < $1.timestamp }
   }
 
-  /// Collapses a transcript that was already stored one progress step at a time,
-  /// so a record written by the earlier build reads as sentences again. Returns
-  /// nil when nothing needs changing, leaving a healthy record untouched.
-  static func repair(_ segments: [TranscriptSegment]) -> [TranscriptSegment]? {
-    guard segments.count > 1 else { return nil }
-
-    var repaired: [TranscriptSegment] = []
-    var changed = false
-    var index = 0
-
-    while index < segments.count {
-      let groupKey = key(for: segments[index].timestamp)
-      var group = [segments[index]]
-      var next = index + 1
-      // One step of a phrase can carry a start time a bucket off from the
-      // others, so the neighbouring buckets join the same group.
-      while next < segments.count, abs(key(for: segments[next].timestamp) - groupKey) <= 1 {
-        group.append(segments[next])
-        next += 1
-      }
-
-      // Steps of the same phrase are each a prefix of the next. Real sentences
-      // sharing a start time are not shaped that way, so nothing else collapses.
-      if group.count > 1, isPrefixRun(group.map(\.text)) {
-        repaired.append(group[group.count - 1])
-        changed = true
-      } else {
-        repaired.append(contentsOf: group)
-      }
-      index = next
-    }
-
-    return changed ? repaired : nil
-  }
-
-  /// True when each text is a prefix of the one after it.
-  private static func isPrefixRun(_ texts: [String]) -> Bool {
-    guard texts.count > 1, texts.last?.isEmpty == false else { return false }
-    for index in 0..<(texts.count - 1) where !texts[index + 1].hasPrefix(texts[index]) {
-      return false
-    }
-    return true
-  }
-
   /// Phrases are matched by their start time, rounded to a tenth of a second so
   /// small differences between updates do not split one phrase in two.
   private static func key(for timestamp: TimeInterval) -> Int {

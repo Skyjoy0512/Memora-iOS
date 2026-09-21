@@ -61,7 +61,6 @@ enum SelfChecks {
     group("Audio session claims", checkAudioSessionClaims)
     group("Store failure injection", checkStoreFailureInjection)
     group("Speech progress collapse", checkSpeechProgressCollapse)
-    group("Speech transcript repair", checkSpeechTranscriptRepair)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
     // its result when it finishes.
@@ -318,25 +317,6 @@ enum SelfChecks {
     let kept = SpeechTranscriptionCollapse.collapse(cutOff)
     if kept.map(\.text) != ["とちゅうで終"] {
       report("speech collapse kept unfinished progress steps: \(kept.map(\.text))")
-    }
-  }
-
-  /// A transcript already stored one progress step at a time is repaired, while
-  /// genuine sentences are left alone.
-  private static func checkSpeechTranscriptRepair() {
-    let steps = ["こ", "こん", "こんに", "こんにちは"]
-      .map { TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: false, timestamp: 0, text: $0) }
-    let repaired = SpeechTranscriptionCollapse.repair(steps)
-    if repaired?.map(\.text) != ["こんにちは"] {
-      report("speech repair did not collapse the steps: \(repaired?.map(\.text) ?? [])")
-    }
-
-    let sentences = [
-      TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: false, timestamp: 0, text: "おはようございます。"),
-      TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: false, timestamp: 3.5, text: "今日はよろしくお願いします。")
-    ]
-    if SpeechTranscriptionCollapse.repair(sentences) != nil {
-      report("speech repair changed sentences that were fine")
     }
   }
 
