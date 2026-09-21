@@ -110,10 +110,9 @@ enum RecordStore {
     }
   }
 
-  /// Saves on the caller's turn in the queue and reports whether it worked, for
-  /// the places that must know before continuing. Waits for any earlier queued
-  /// write, so ordering is preserved across both kinds of save.
-  @discardableResult
+  /// Saves on the caller's turn in the queue, throwing when it could not be
+  /// written, for the places that must know before continuing. Waits for any
+  /// earlier queued write, so ordering is preserved across both kinds of save.
   static func saveNow<T: Encodable>(_ value: T, key: String) throws {
     let data = try JSONEncoder().encode(value)
     try saveBatch([(key: key, data: data)])
