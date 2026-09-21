@@ -60,7 +60,7 @@ enum SelfChecks {
     group("Status filter", checkStatusFilter)
     group("Audio session claims", checkAudioSessionClaims)
     group("Store failure injection", checkStoreFailureInjection)
-    group("Speech progress collapse", checkSpeechProgressCollapse)
+    group("Speech final results", checkSpeechFinalResults)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
     // its result when it finishes.
@@ -288,39 +288,42 @@ enum SelfChecks {
     }
   }
 
-  /// A progressive transcriber reports a phrase again as it grows. Each step
-  /// must not become its own transcript line, and a phrase cut off before it
-  /// finalized must keep its last text.
-  private static func checkSpeechProgressCollapse() {
-    let progress = ["こ", "こん", "こんに", "こんにち", "こんにちは"]
-      .enumerated()
-      .map { SpeechUpdate(text: $0.element, timestamp: 0, isFinal: false) }
-    let finished = progress + [
-      SpeechUpdate(text: "こんにちはテストです。", timestamp: 0, isFinal: true),
-      SpeechUpdate(text: "次の文", timestamp: 4.2, isFinal: false),
-      SpeechUpdate(text: "次の文です。", timestamp: 4.2, isFinal: true)
-    ]
-
-    let collapsed = SpeechTranscriptionCollapse.collapse(finished)
-    if collapsed.map(\.text) != ["こんにちはテストです。", "次の文です。"] {
-      report("speech collapse kept progress steps: \(collapsed.map(\.text))")
-    }
-    if collapsed.map(\.timestamp) != [0, 4.2] {
-      report("speech collapse lost the timestamps: \(collapsed.map(\.timestamp))")
+  /// Only settled results become transcript lines, and nothing is merged or
+  /// dropped for being close in time or said twice.
+  private static func checkSpeechFinalResults() {
+    func line(_ text: String, _ timestamp: TimeInterval, isFinal: Bool) -> TranscriptSegment? {
+      SpeechTranscriptionSegments.segment(
+        from: SpeechTranscriptionUpdate(text: text, timestamp: timestamp, isFinal: isFinal)
+      )
     }
 
-    // Nothing was marked final: the latest progress is kept rather than all of it.
-    let cutOff = [
-      SpeechUpdate(text: "とちゅう", timestamp: 1, isFinal: false),
-      SpeechUpdate(text: "とちゅうで終", timestamp: 1, isFinal: false)
-    ]
-    let kept = SpeechTranscriptionCollapse.collapse(cutOff)
-    if kept.map(\.text) != ["とちゅうで終"] {
-      report("speech collapse kept unfinished progress steps: \(kept.map(\.text))")
+    // Volatile progress is not stored, and an empty result stores nothing.
+    if line("こんにちは", 0, isFinal: false) != nil {
+      report("a volatile result became a transcript line")
+    }
+    if line("   ", 0, isFinal: true) != nil {
+      report("an empty result became a transcript line")
+    }
+
+    // Two settled phrases close together both stay.
+    let near = [line("はい", 1.00, isFinal: true), line("はい、進めましょう", 1.02, isFinal: true)]
+    if near.compactMap({ $0 }).count != 2 {
+      report("near-in-time results were merged: \(near.compactMap { $0?.text })")
+    }
+
+    // The same words said twice stay twice.
+    let repeated = [line("はい", 1, isFinal: true), line("はい", 5, isFinal: true)]
+    if repeated.compactMap({ $0 }).count != 2 {
+      report("a repeated phrase was dropped")
+    }
+
+    // The time is kept as the engine reported it.
+    if line("発言", 12.5, isFinal: true)?.timestamp != 12.5 {
+      report("the result time was not kept")
     }
   }
 
-  /// A failing write must be reported to the caller, and the store must still
+  /// A failing write must be reported to the caller, and the store must still  /// A failing write must be reported to the caller, and the store must still
   /// work afterwards, so an error is a real outcome rather than a silent drop.
   private static func checkStoreFailureInjection() {
     let key = "selfcheck.injection"

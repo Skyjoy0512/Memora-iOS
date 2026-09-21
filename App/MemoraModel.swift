@@ -1039,6 +1039,20 @@ final class MemoraModel {
       case .failed(let message):
         self.updateMeeting(id) { $0.status = .failed(message) }
         self.announce("文字起こしができませんでした。\(message)")
+      case .nothingRecognized:
+        self.updateMeeting(id) {
+          $0.status = .failed("音声から発言を認識できませんでした。音声は保存されています。もう一度お試しください。")
+        }
+        self.announce("音声から発言を認識できませんでした。")
+      case .cancelled:
+        // Nothing was applied: the record goes back to where it can be started
+        // again, rather than being left looking stuck.
+        self.updateMeeting(id) { meeting in
+          if case .transcribing = meeting.status {
+            meeting.status = .waitingForTranscription
+          }
+        }
+
       }
     }
   }
@@ -1707,6 +1721,20 @@ final class MemoraModel {
       case .failed(let message):
         self.updateMeeting(id) { $0.status = .failed(message) }
         self.announce("文字起こしができませんでした。\(message)")
+      case .nothingRecognized:
+        self.updateMeeting(id) {
+          $0.status = .failed("音声から発言を認識できませんでした。音声は保存されています。もう一度お試しください。")
+        }
+        self.announce("音声から発言を認識できませんでした。")
+      case .cancelled:
+        // Nothing was applied: the record goes back to where it can be started
+        // again, rather than being left looking stuck.
+        self.updateMeeting(id) { meeting in
+          if case .transcribing = meeting.status {
+            meeting.status = .waitingForTranscription
+          }
+        }
+
       }
     }
   }

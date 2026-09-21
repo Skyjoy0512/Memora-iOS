@@ -179,6 +179,14 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### 改善指示書（3回目）フェーズ2-2（T02）
+
+- **T02（実装済み・未検証）**: `SpeechTranscriber` を明示オプションで構築し、`reportingOptions` から `.volatileResults` を外した（保存済み音声は確定結果のみ）。`attributeOptions: [.audioTimeRange]` を維持。
+- 確定結果を1件ずつ行にする `SpeechTranscriptionSegments.segment(from:)` に置き換え。**統合・削除をしない**（近接時刻・同一文言を保持）。
+- `SpeechTranscriptionCollapse`（全途中結果の蓄積と推測的な統合）とその自己チェックを削除。自己チェックは「確定のみ・空を除く・近接や同一文言を保持・時刻保持」に置き換え。
+- `TranscriptionOutcome` に `.nothingRecognized`／`.cancelled` を追加し、モデル側で区別して扱う（キャンセルは未開始に戻し、いずれも音声は保持）。
+- 次段: T03。
+
 ### 改善指示書（3回目）フェーズ2-1（T01）
 
 - **T01（実装済み・未検証）**: 起動時に既存の文字起こしを書き換える自動修復（`SpeechTranscriptionCollapse.repair` と

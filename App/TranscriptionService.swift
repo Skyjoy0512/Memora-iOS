@@ -5,11 +5,17 @@ import Speech
 
 enum TranscriptionOutcome {
   case segments([TranscriptSegment])
+  /// The engine ran and settled, but understood nothing: silence, or no speech
+  /// in a language it can handle.
+  case nothingRecognized
   /// No engine can run here — missing assets, an unsupported locale, or an
   /// engine that is not wired yet.
   case unavailable
   /// An engine ran but failed. `message` explains why and how to retry.
   case failed(String)
+  /// The work was stopped before it produced anything. Nothing is applied and
+  /// the audio is kept.
+  case cancelled
 }
 
 /// Transcribes audio with the chosen engine and falls back when it cannot run
@@ -29,11 +35,24 @@ enum TranscriptionService {
     switch engine {
     case .speechAnalyzer, .automatic:
       if #available(iOS 26.0, *) {
-        if let segments = try? await SpeechAnalyzerTranscriber.transcribe(
-          fileURL: fileURL,
-          locale: language.locale
-        ) {
-          return .segments(segments)
+        do {
+          switch try await SpeechAnalyzerTranscriber.transcribe(
+            fileURL: fileURL,
+            locale: language.locale
+          ) {
+          case .segments(let segments):
+            return .segments(segments)
+          case .nothingRecognized:
+            return .nothingRecognized
+          case .cancelled:
+            return .cancelled
+          }
+        } catch SpeechAnalyzerTranscriber.Failure.unsupported {
+          return .unavailable
+        } catch is CancellationError {
+          return .cancelled
+        } catch {
+          return .failed("文字起こしに失敗しました。音声は保存されています。もう一度お試しください。")
         }
       }
       return .unavailable
@@ -71,20 +90,36 @@ enum TranscriptionService {
 /// Apple's on-device `SpeechAnalyzer`, available from iOS 26.
 @available(iOS 26.0, *)
 private enum SpeechAnalyzerTranscriber {
-  enum Failure: Error {
-    case unsupported
-    case empty
+  /// What one run over a saved file produced.
+  enum Outcome {
+    case segments([TranscriptSegment])
+    case nothingRecognized
+    case cancelled
   }
 
-  static func transcribe(fileURL: URL, locale: Locale) async throws -> [TranscriptSegment] {
+  enum Failure: Error {
+    /// No engine can run here (device, OS, or the language asked for).
+    case unsupported
+    /// The engine ran and failed.
+    case failed(String)
+  }
+
+  static func transcribe(fileURL: URL, locale: Locale) async throws -> Outcome {
     guard SpeechTranscriber.isAvailable,
           let supportedLocale = await SpeechTranscriber.supportedLocale(equivalentTo: locale) else {
       throw Failure.unsupported
     }
 
+    // Saved audio is transcribed once, so volatile progress is not asked for:
+    // with no `volatileResults`, a phrase is only reported once it has settled
+    // and cannot be withdrawn. `audioTimeRange` keeps each result's time.
     let transcriber = SpeechTranscriber(
       locale: supportedLocale,
-      preset: .timeIndexedProgressiveTranscription
+      transcriptionOptions: [.etiquetteReplacements],
+      // No `volatileResults`: a saved file is transcribed once, so only settled
+      // results are wanted. `audioTimeRange` keeps each result's time.
+      reportingOptions: [],
+      attributeOptions: [.audioTimeRange]
     )
 
     // Pull the model down once, then it is reused.
@@ -95,29 +130,40 @@ private enum SpeechAnalyzerTranscriber {
     let audioFile = try AVAudioFile(forReading: fileURL)
     let analyzer = SpeechAnalyzer(modules: [transcriber])
 
+    // Lines are appended as they settle. Nothing accumulates the raw results, so
+    // a long recording does not hold every progress string it ever produced.
     let collect = Task { () -> [TranscriptSegment] in
-      var updates: [SpeechUpdate] = []
+      var segments: [TranscriptSegment] = []
       for try await result in transcriber.results {
-        let text = String(result.text.characters).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { continue }
-        let seconds = CMTimeGetSeconds(result.range.start)
-        updates.append(
-          SpeechUpdate(
-            text: text,
-            timestamp: seconds.isFinite ? seconds : 0,
-            isFinal: result.isFinal
-          )
+        let update = SpeechTranscriptionUpdate(
+          text: String(result.text.characters),
+          timestamp: CMTimeGetSeconds(result.range.start),
+          isFinal: result.isFinal
         )
+        if let segment = SpeechTranscriptionSegments.segment(from: update) {
+          segments.append(segment)
+        }
       }
-      return SpeechTranscriptionCollapse.collapse(updates)
+      return segments
     }
 
-    _ = try await analyzer.analyzeSequence(from: audioFile)
-    try await analyzer.finalizeAndFinishThroughEndOfInput()
+    do {
+      _ = try await analyzer.analyzeSequence(from: audioFile)
+      try await analyzer.finalizeAndFinishThroughEndOfInput()
+    } catch {
+      collect.cancel()
+      throw error is CancellationError ? CancellationError() : Failure.failed("\(error)")
+    }
 
-    let segments = try await collect.value
-    guard !segments.isEmpty else { throw Failure.empty }
-    return segments
+    let segments: [TranscriptSegment]
+    do {
+      segments = try await collect.value
+    } catch is CancellationError {
+      return .cancelled
+    } catch {
+      throw Failure.failed("\(error)")
+    }
+    return segments.isEmpty ? .nothingRecognized : .segments(segments)
   }
 
 }
