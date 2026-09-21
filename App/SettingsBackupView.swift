@@ -69,7 +69,7 @@ struct SettingsBackupView: View {
   private func export() {
     isExporting = true
     do {
-      let url = try model.makeBackupPackage(in: FileManager.default.temporaryDirectory)
+      let url = try model.makeBackupPackage()
       shareItems = [url]
       isSharing = true
     } catch {

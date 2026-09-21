@@ -69,7 +69,7 @@
 | F04 | 未着手 |
 | F05 | 未着手 |
 | F06 | 一部（写真の書き出しはバックグラウンド化済み） |
-| F07 | 一部（AI/写真/媒体の一部を分離） |
+| F07 | 一部 実装済み | 保存を `RecordStore` に集約（モデルはストア・UserDefaults・キューに触れない）。音声は `AudioRecorderService`、AIは `AIEngineService`／`CloudAIService`、バックアップは `BackupPackage`。処理ジョブの専用サービス化と画像処理の分離は残 |
 | F08〜F10 | 未着手 |
 
 ## 保留の理由と解除条件

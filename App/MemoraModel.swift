@@ -133,7 +133,7 @@ final class MemoraModel {
 
   init() {
     let defaults = UserDefaults.standard
-    try? LocalStore.shared.prepare()
+    RecordStore.prepare()
 
     hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
@@ -142,7 +142,7 @@ final class MemoraModel {
     // Cloud storage is a paid option: without Plus the records stay on device.
     cloudStorageEnabled = defaults.bool(forKey: StorageKey.isSubscribed)
       && defaults.bool(forKey: StorageKey.cloudStorage)
-    if let data = LocalStore.shared.read(StorageKey.account) ?? defaults.data(forKey: StorageKey.account) {
+    if let data = RecordStore.read(StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
     }
 
@@ -152,10 +152,7 @@ final class MemoraModel {
     /// copy across on first run. The old value is left in place as a safety
     /// copy, so this can be undone by reverting the build.
     func storedData(forKey key: String) -> Data? {
-      if let data = LocalStore.shared.read(key) { return data }
-      guard let legacy = defaults.data(forKey: key) else { return nil }
-      try? LocalStore.shared.write(key, data: legacy)
-      return legacy
+      RecordStore.read(key)
     }
 
     // Absent data means a first run, which seeds the demo. Data that exists but
@@ -166,8 +163,7 @@ final class MemoraModel {
       if let stored = try? JSONDecoder().decode([T].self, from: data) {
         return stored
       }
-      try? LocalStore.shared.write(key + ".unreadable", data: data)
-      try? LocalStore.shared.remove(key)
+      RecordStore.quarantine(data, key: key)
       didFindUnreadableData = true
       return []
     }
@@ -297,7 +293,7 @@ final class MemoraModel {
   /// Writes what a running recording would need if the app stopped now.
   private func persistRecordingDraft() {
     guard let recordingDraft else {
-      try? LocalStore.shared.remove(StorageKey.recordingDraft)
+      RecordStore.remove(StorageKey.recordingDraft)
       return
     }
     persistInBackground(recordingDraft, forKey: StorageKey.recordingDraft)
@@ -429,14 +425,11 @@ final class MemoraModel {
 
   private func persistAccount(_ account: MemoraAccount?) {
     self.account = account
-    if let account, let data = try? JSONEncoder().encode(account) {
-      do {
-        try LocalStore.shared.write(StorageKey.account, data: data)
-        // The legacy copy is only cleared once the store has it.
-        UserDefaults.standard.removeObject(forKey: StorageKey.account)
-      } catch {}
-    } else {
-      try? LocalStore.shared.remove(StorageKey.account)
+    if let account, RecordStore.saveNow(account, key: StorageKey.account) {
+      // The legacy copy is only cleared once the store has it.
+      UserDefaults.standard.removeObject(forKey: StorageKey.account)
+    } else if account == nil {
+      RecordStore.remove(StorageKey.account)
       UserDefaults.standard.removeObject(forKey: StorageKey.account)
     }
   }
@@ -1080,7 +1073,7 @@ final class MemoraModel {
   }
 
   /// Writes a versioned package of the records and their media into `directory`.
-  func makeBackupPackage(in directory: URL) throws -> URL {
+  func makeBackupPackage() throws -> URL {
     try BackupPackage.write(
       meetings: meetings,
       spaces: spaces,
@@ -1088,7 +1081,7 @@ final class MemoraModel {
       lifeLogEntries: lifeLogEntries,
       people: people,
       aiHistory: aiHistory,
-      into: directory
+      into: FileManager.default.temporaryDirectory
     )
   }
 
@@ -1293,20 +1286,9 @@ final class MemoraModel {
     persistInBackground(spaces, forKey: StorageKey.spaces)
   }
 
-  /// Encoding runs off the main thread, and the store writes in order, so a
-  /// burst of edits does not stall the UI or leave an older snapshot behind.
-  private let persistenceQueue = DispatchQueue(label: "app.memora.persistence", qos: .utility)
-
   private func persistInBackground<T: Encodable & Sendable>(_ value: T, forKey key: String) {
-    persistenceQueue.async { [weak self] in
-      guard let data = try? JSONEncoder().encode(value) else { return }
-      do {
-        try LocalStore.shared.write(key, data: data)
-      } catch {
-        Task { @MainActor in
-          self?.persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
-        }
-      }
+    RecordStore.save(value, key: key) { [weak self] in
+      self?.persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
     }
   }
 
