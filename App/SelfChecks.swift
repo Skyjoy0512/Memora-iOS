@@ -35,6 +35,7 @@ enum SelfChecks {
     checkPhotoThumbnailNaming()
 
     checkAudioSessionClaims()
+    checkStoreFailureInjection()
 
     // Ordering cannot be checked synchronously; it runs beside the app.
     Task { await checkProcessingRunOwnership() }
@@ -241,6 +242,33 @@ enum SelfChecks {
     if terms.contains(where: { $0.contains("？") || $0.contains("?") }) {
       report("question words kept punctuation: \(terms)")
     }
+  }
+
+  /// A failing write must be reported to the caller, and the store must still
+  /// work afterwards, so an error is a real outcome rather than a silent drop.
+  private static func checkStoreFailureInjection() {
+    let key = "selfcheck.injection"
+    RecordStore.setFailureInjection(true)
+    do {
+      try RecordStore.saveNow("値", key: key)
+      report("a failing write reported success")
+    } catch {
+      // Expected.
+    }
+
+    // The injected failure is used up, so the store works again.
+    do {
+      try RecordStore.saveNow("値", key: key)
+    } catch {
+      report("the store did not recover after a failure: \(error)")
+    }
+    let stored = RecordStore.load(key)
+    guard case .data(let data) = stored, String(data: data, encoding: .utf8) == "\"値\"" else {
+      report("the recovered write was not stored")
+      try? RecordStore.remove(key)
+      return
+    }
+    try? RecordStore.remove(key)
   }
 
   /// Only the feature holding the audio session may take or give it up, and a

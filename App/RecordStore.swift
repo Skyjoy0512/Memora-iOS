@@ -24,6 +24,22 @@ enum RecordStore {
     try? LocalStore.shared.prepare()
   }
 
+#if DEBUG
+  /// Lets a debug check make the next write fail, so the error paths are
+  /// exercised rather than assumed. Never set in a shipped build.
+  @ObservationIgnored private static var failsNextWrite = false
+
+  static func setFailureInjection(_ enabled: Bool) {
+    failsNextWrite = enabled
+  }
+
+  private static func consumeInjectedFailure() throws {
+    guard failsNextWrite else { return }
+    failsNextWrite = false
+    throw LocalStore.StoreError.statement(1)
+  }
+#endif
+
   /// Reads a document. A missing document may be migrated from the legacy
   /// `UserDefaults` copy exactly once; a read failure is reported as such and
   /// never falls back to older data.
@@ -107,6 +123,9 @@ enum RecordStore {
   /// spans documents either lands completely or not at all.
   static func saveBatch(_ documents: [(key: String, data: Data)]) throws {
     try queue.sync {
+#if DEBUG
+      try consumeInjectedFailure()
+#endif
       try LocalStore.shared.writeBatch(documents)
     }
   }
@@ -115,6 +134,9 @@ enum RecordStore {
   /// land after the removal.
   static func remove(_ key: String) throws {
     try queue.sync {
+#if DEBUG
+      try consumeInjectedFailure()
+#endif
       try LocalStore.shared.remove(key)
     }
   }
