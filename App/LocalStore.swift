@@ -56,23 +56,42 @@ final class LocalStore {
       """)
   }
 
-  func read(_ key: String) -> Data? {
+  /// What a read found: the document, nothing stored, or a store that could not
+  /// answer. The three are kept apart because "nothing stored" may be a first
+  /// run, while a failure must never be treated as one.
+  enum ReadOutcome {
+    case missing
+    case data(Data)
+    case failed
+  }
+
+  func readOutcome(_ key: String) -> ReadOutcome {
     lock.lock()
     defer { lock.unlock() }
-    guard let db else { return nil }
+    guard let db else { return .failed }
 
     var statement: OpaquePointer?
     guard sqlite3_prepare_v2(db, "SELECT data FROM documents WHERE key = ?;", -1, &statement, nil) == SQLITE_OK else {
-      return nil
+      return .failed
     }
     defer { sqlite3_finalize(statement) }
 
     sqlite3_bind_text(statement, 1, key, -1, Self.transient)
-    guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+    switch sqlite3_step(statement) {
+    case SQLITE_DONE:
+      return .missing
+    case SQLITE_ROW:
+      guard let bytes = sqlite3_column_blob(statement, 0) else { return .missing }
+      let count = Int(sqlite3_column_bytes(statement, 0))
+      return .data(Data(bytes: bytes, count: count))
+    default:
+      return .failed
+    }
+  }
 
-    guard let bytes = sqlite3_column_blob(statement, 0) else { return nil }
-    let count = Int(sqlite3_column_bytes(statement, 0))
-    return Data(bytes: bytes, count: count)
+  func read(_ key: String) -> Data? {
+    if case .data(let data) = readOutcome(key) { return data }
+    return nil
   }
 
   /// Replaces the document for `key` inside a transaction, so a failure leaves
@@ -80,35 +99,63 @@ final class LocalStore {
   func write(_ key: String, data: Data) throws {
     lock.lock()
     defer { lock.unlock() }
-    guard let db else { throw StoreError.open(0) }
+    guard db != nil else { throw StoreError.open(0) }
 
     try exec("BEGIN IMMEDIATE;")
     do {
-      var statement: OpaquePointer?
-      guard sqlite3_prepare_v2(
-        db,
-        "INSERT OR REPLACE INTO documents (key, data, updated_at) VALUES (?, ?, ?);",
-        -1,
-        &statement,
-        nil
-      ) == SQLITE_OK else {
-        throw StoreError.statement(sqlite3_errcode(db))
-      }
-      defer { sqlite3_finalize(statement) }
+      try writeLocked(key, data: data)
+      try exec("COMMIT;")
+    } catch {
+      try? exec("ROLLBACK;")
+      throw error
+    }
+  }
 
-      sqlite3_bind_text(statement, 1, key, -1, Self.transient)
-      _ = data.withUnsafeBytes { buffer in
-        sqlite3_bind_blob(statement, 2, buffer.baseAddress, Int32(buffer.count), Self.transient)
-      }
-      sqlite3_bind_double(statement, 3, Date().timeIntervalSince1970)
+  /// Writes several documents in one transaction, so an operation that spans
+  /// more than one document (moving a record to the trash, say) lands completely
+  /// or not at all.
+  func writeBatch(_ documents: [(key: String, data: Data)]) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    guard let db else { throw StoreError.open(0) }
+    guard !documents.isEmpty else { return }
 
-      guard sqlite3_step(statement) == SQLITE_DONE else {
-        throw StoreError.statement(sqlite3_errcode(db))
+    try exec("BEGIN IMMEDIATE;")
+    do {
+      for document in documents {
+        try writeLocked(document.key, data: document.data)
       }
       try exec("COMMIT;")
     } catch {
       try? exec("ROLLBACK;")
       throw error
+    }
+  }
+
+  /// One document write. The caller holds the lock and the transaction.
+  private func writeLocked(_ key: String, data: Data) throws {
+    guard let db else { throw StoreError.open(0) }
+
+    var statement: OpaquePointer?
+    guard sqlite3_prepare_v2(
+      db,
+      "INSERT OR REPLACE INTO documents (key, data, updated_at) VALUES (?, ?, ?);",
+      -1,
+      &statement,
+      nil
+    ) == SQLITE_OK else {
+      throw StoreError.statement(sqlite3_errcode(db))
+    }
+    defer { sqlite3_finalize(statement) }
+
+    sqlite3_bind_text(statement, 1, key, -1, Self.transient)
+    _ = data.withUnsafeBytes { buffer in
+      sqlite3_bind_blob(statement, 2, buffer.baseAddress, Int32(buffer.count), Self.transient)
+    }
+    sqlite3_bind_double(statement, 3, Date().timeIntervalSince1970)
+
+    guard sqlite3_step(statement) == SQLITE_DONE else {
+      throw StoreError.statement(sqlite3_errcode(db))
     }
   }
 

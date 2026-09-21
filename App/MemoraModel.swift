@@ -169,6 +169,9 @@ final class MemoraModel {
   }
   @ObservationIgnored private var composerDraftSaveTask: Task<Void, Never>?
   private static let composerDraftKey = "composer.question"
+  /// True when the store could not be read at startup. Persisting is refused
+  /// while it is set, so unreadable existing data is never written over.
+  @ObservationIgnored private var isStoreProtected = false
   /// The engine Ask AI and summaries actually use. The model owns it, so what
   /// the composer shows and what the request calls cannot drift apart.
   var aiEngine: AIEngine = .automatic {
@@ -225,31 +228,40 @@ final class MemoraModel {
     // Cloud storage is a paid option: without Plus the records stay on device.
     cloudStorageEnabled = defaults.bool(forKey: StorageKey.isSubscribed)
       && defaults.bool(forKey: StorageKey.cloudStorage)
-    if let data = RecordStore.read(StorageKey.account) {
+    if case .data(let data) = RecordStore.load(StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
     }
 
     let sample = SampleContent.make()
 
     /// Reads a document from the local store, moving any legacy `UserDefaults`
-    /// copy across on first run. The old value is left in place as a safety
-    /// copy, so this can be undone by reverting the build.
-    func storedData(forKey key: String) -> Data? {
-      RecordStore.read(key)
+    /// copy across exactly once. The three outcomes are kept apart: absent means
+    /// a first run; unreadable means the bytes are set aside and the app says so;
+    /// a store failure means the data is left untouched and nothing is written
+    /// over it.
+    func load<T: Decodable>(_ type: [T].Type, forKey key: String, fallback: [T]) -> [T] {
+      switch RecordStore.load(key) {
+      case .absent:
+        return fallback
+      case .failed:
+        didFailToReadStore = true
+        return []
+      case .data(let data):
+        if let stored = try? JSONDecoder().decode([T].self, from: data) {
+          return stored
+        }
+        // The bytes are only removed once the copy beside them is safely stored.
+        if RecordStore.quarantine(data, key: key) {
+          didFindUnreadableData = true
+        } else {
+          didFailToReadStore = true
+        }
+        return []
+      }
     }
 
-    // Absent data means a first run, which seeds the demo. Data that exists but
-    // cannot be read is set aside rather than replaced, so nothing is lost.
     var didFindUnreadableData = false
-    func load<T: Decodable>(_ type: [T].Type, forKey key: String, fallback: [T]) -> [T] {
-      guard let data = storedData(forKey: key) else { return fallback }
-      if let stored = try? JSONDecoder().decode([T].self, from: data) {
-        return stored
-      }
-      RecordStore.quarantine(data, key: key)
-      didFindUnreadableData = true
-      return []
-    }
+    var didFailToReadStore = false
 
     meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: sample.meetings)
     spaces = load([MemoraSpace].self, forKey: StorageKey.spaces, fallback: sample.spaces)
@@ -268,9 +280,11 @@ final class MemoraModel {
       forKey: StorageKey.lifeLogTrash,
       fallback: []
     )
-    if let draftData = storedData(forKey: StorageKey.recordingDraft) {
+    if case .data(let draftData) = RecordStore.load(StorageKey.recordingDraft) {
       recordingDraft = try? JSONDecoder().decode(RecordingDraft.self, from: draftData)
     }
+
+    isStoreProtected = didFailToReadStore
 
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [
@@ -283,9 +297,13 @@ final class MemoraModel {
       )
     ])
 
-    loadFailureMessage = didFindUnreadableData
-      ? "保存されたデータの一部を読み込めませんでした。元のデータは端末に退避しています。"
-      : nil
+    if didFailToReadStore {
+      loadFailureMessage = "保存データを読み込めませんでした。データを壊さないため、この起動では保存を停止しています。アプリを再起動してください。"
+    } else if didFindUnreadableData {
+      loadFailureMessage = "保存されたデータの一部を読み込めませんでした。元のデータは端末に退避しています。"
+    } else {
+      loadFailureMessage = nil
+    }
 
     // Anything that was mid-processing when the app stopped is offered for
     // retry instead of looking stuck forever.
@@ -450,7 +468,7 @@ final class MemoraModel {
   /// Writes what a running recording would need if the app stopped now.
   private func persistRecordingDraft() {
     guard let recordingDraft else {
-      RecordStore.remove(StorageKey.recordingDraft)
+      try? RecordStore.remove(StorageKey.recordingDraft)
       return
     }
     persistInBackground(recordingDraft, forKey: StorageKey.recordingDraft)
@@ -461,8 +479,6 @@ final class MemoraModel {
   /// memo. Recording is never restarted on its own.
   private func recoverRecordingDraft() async {
     guard let draft = recordingDraft else { return }
-    recordingDraft = nil
-    persistRecordingDraft()
 
     let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
     let note = draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -480,6 +496,8 @@ final class MemoraModel {
           locationName: nil
         )
       }
+      // The memo is stored (or was not needed); the draft can go now.
+      clearRecordingDraft()
       return
     }
 
@@ -501,7 +519,6 @@ final class MemoraModel {
     )
     meeting.notes = note
     meetings.insert(meeting, at: 0)
-    persistMeetings()
 
     lifeLogEntries.insert(
       LifeLogEntry(
@@ -514,7 +531,30 @@ final class MemoraModel {
       ),
       at: 0
     )
-    persistLifeLog()
+
+    // The recovered record and its journal entry are written together, and the
+    // draft is only cleared once they are stored, so a stop in the middle still
+    // leaves one of the two behind.
+    let stored = persistBatch {
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))
+      ]
+    }
+    guard stored else {
+      // Put the in-memory lists back so nothing points at a record that was not
+      // written, and keep the draft for the next attempt.
+      meetings.removeAll { $0.id == meeting.id }
+      lifeLogEntries.removeAll { $0.meetingID == meeting.id }
+      return
+    }
+    clearRecordingDraft()
+  }
+
+  /// Forgets the recording draft and removes its stored copy.
+  private func clearRecordingDraft() {
+    recordingDraft = nil
+    persistRecordingDraft()
   }
 
   // MARK: - Onboarding and account
@@ -582,11 +622,11 @@ final class MemoraModel {
 
   private func persistAccount(_ account: MemoraAccount?) {
     self.account = account
-    if let account, RecordStore.saveNow(account, key: StorageKey.account) {
+    if let account, persistNow(account, forKey: StorageKey.account) {
       // The legacy copy is only cleared once the store has it.
       UserDefaults.standard.removeObject(forKey: StorageKey.account)
     } else if account == nil {
-      RecordStore.remove(StorageKey.account)
+      try? RecordStore.remove(StorageKey.account)
       UserDefaults.standard.removeObject(forKey: StorageKey.account)
     }
   }
@@ -1258,10 +1298,16 @@ final class MemoraModel {
       at: 0
     )
 
-    persistMeetings()
-    persistTasks()
-    persistLifeLog()
-    persistTrash()
+    // One operation: the record, its tasks, its journal entries, and the trash
+    // entry land together or not at all.
+    persistBatch {
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
+        (key: StorageKey.tasks, data: try RecordStore.encoded(tasks)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries)),
+        (key: StorageKey.trash, data: try RecordStore.encoded(trashedRecords))
+      ]
+    }
   }
 
   /// Puts a trashed record back exactly as it was.
@@ -1277,10 +1323,14 @@ final class MemoraModel {
       lifeLogEntries.append(contentsOf: record.lifeLogEntries)
     }
 
-    persistMeetings()
-    persistTasks()
-    persistLifeLog()
-    persistTrash()
+    persistBatch {
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
+        (key: StorageKey.tasks, data: try RecordStore.encoded(tasks)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries)),
+        (key: StorageKey.trash, data: try RecordStore.encoded(trashedRecords))
+      ]
+    }
   }
 
   /// Removes a trashed record and its audio for good.
@@ -1406,8 +1456,27 @@ final class MemoraModel {
   func restoreBackup(from packageURL: URL) throws {
     guard isEmpty else { throw BackupPackage.BackupError.notEmpty }
 
+    // The whole package is checked before anything is touched.
     let manifest = try BackupPackage.read(from: packageURL)
     try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
+
+    // The records go in as one write. If it fails, the media that was just put
+    // in place is taken back, so the device is left as it was.
+    let stored = persistBatch {
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(manifest.meetings)),
+        (key: StorageKey.spaces, data: try RecordStore.encoded(manifest.spaces)),
+        (key: StorageKey.tasks, data: try RecordStore.encoded(manifest.tasks)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(manifest.lifeLogEntries)),
+        (key: StorageKey.people, data: try RecordStore.encoded(manifest.people)),
+        (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory))
+      ]
+    }
+    guard stored else {
+      BackupPackage.removeInstalledMedia(manifest.audioFileNames, isAudio: true)
+      BackupPackage.removeInstalledMedia(manifest.photoFileNames, isAudio: false)
+      throw BackupPackage.BackupError.mediaInstallFailed(manifest.audioFileNames + manifest.photoFileNames)
+    }
 
     meetings = manifest.meetings
     spaces = manifest.spaces
@@ -1415,13 +1484,6 @@ final class MemoraModel {
     lifeLogEntries = manifest.lifeLogEntries
     people = manifest.people
     aiHistory = manifest.aiHistory
-
-    persistMeetings()
-    persistSpaces()
-    persistTasks()
-    persistLifeLog()
-    persistPeople()
-    persistAIHistory()
   }
 
   func addMeetingPhoto(_ id: UUID, data: Data) {
@@ -1699,9 +1761,53 @@ final class MemoraModel {
   }
 
   private func persistInBackground<T: Encodable & Sendable>(_ value: T, forKey key: String) {
+    // A store that could not be read must not be written over: the existing
+    // records may still be there, and replacing them would lose them.
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return
+    }
     RecordStore.save(value, key: key) { [weak self] in
       self?.persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
     }
+  }
+
+  /// Waits for the write and reports whether it worked, for operations that must
+  /// know before doing anything else.
+  @discardableResult
+  private func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return false
+    }
+    do {
+      try RecordStore.saveNow(value, key: key)
+      return true
+    } catch {
+      persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
+      return false
+    }
+  }
+
+  /// Waits for a write of several documents that belong to one operation, and
+  /// reports whether all of them landed.
+  @discardableResult
+  private func persistBatch(_ build: () throws -> [(key: String, data: Data)]) -> Bool {
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return false
+    }
+    do {
+      try RecordStore.saveBatch(try build())
+      return true
+    } catch {
+      persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
+      return false
+    }
+  }
+
+  private var storeProtectedMessage: String {
+    "保存データを読み込めなかったため、上書きを止めています。アプリを再起動してください。"
   }
 
   private enum StorageKey {

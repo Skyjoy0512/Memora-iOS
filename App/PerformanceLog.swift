@@ -36,7 +36,7 @@ final class PerformanceLog {
 
   /// Reads what earlier runs recorded. Called once the store is ready.
   func loadStored() {
-    guard let data = RecordStore.read(storeKey),
+    guard case .data(let data) = RecordStore.load(storeKey),
           let stored = try? JSONDecoder().decode([Entry].self, from: data) else { return }
     entries = stored
   }

@@ -19,32 +19,54 @@ enum MediaFiles {
     return seconds.isFinite && seconds > 0 ? seconds : nil
   }
 
-  /// The managed path for a file, relative to the media folder, so records do
-  /// not depend on the container's absolute path. Nil when the file is not ours.
-  static func reference(for url: URL) -> String? {
-    let managed = directory.standardizedFileURL.path
-    let target = url.standardizedFileURL.path
-    guard target.hasPrefix(managed + "/") else { return nil }
-    return String(target.dropFirst(managed.count + 1))
+  /// A stored media name must be a plain file name: no path separators, no
+  /// `.`/`..`, and nothing that could name the folder itself. Media never lives
+  /// in subfolders, so anything else is refused.
+  static func isPlainName(_ name: String) -> Bool {
+    guard !name.isEmpty, name != ".", name != ".." else { return false }
+    guard !name.contains("/"), !name.contains("\\") else { return false }
+    guard !name.contains("\0") else { return false }
+    return true
   }
 
-  /// Resolves a stored reference back to a file. A relative name is a reference
-  /// by construction; a legacy absolute path is only honoured when it still
-  /// points at a file the app manages.
-  static func resolve(_ stored: String) -> URL? {
-    let managed = directory.standardizedFileURL
+  /// True when `url` is a file strictly inside `folder`, after resolving
+  /// symlinks. A shared string prefix ("Recordings" vs "RecordingsOld") or the
+  /// folder itself does not count, so nothing outside is ever written or erased.
+  static func isInside(_ url: URL, folder: URL) -> Bool {
+    let target = url.resolvingSymlinksInPath().standardizedFileURL
+    let root = folder.resolvingSymlinksInPath().standardizedFileURL
+    guard target.path != root.path else { return false }
+    let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
+    return target.path.hasPrefix(rootPrefix)
+  }
 
+  /// The managed path for a file, relative to the media folder, so records do
+  /// not depend on the container's absolute path. Nil when the file is not ours,
+  /// when it is the folder itself, or when it sits in a subfolder.
+  static func reference(for url: URL) -> String? {
+    guard isInside(url, folder: directory) else { return nil }
+    let managed = directory.resolvingSymlinksInPath().standardizedFileURL.path
+    let target = url.resolvingSymlinksInPath().standardizedFileURL.path
+    let name = String(target.dropFirst(managed.count + 1))
+    return isPlainName(name) ? name : nil
+  }
+
+  /// Resolves a stored reference back to a file. A relative name must be a plain
+  /// file name; a legacy absolute path is only honoured when it still points at
+  /// a file inside the app's folder.
+  static func resolve(_ stored: String) -> URL? {
     if stored.hasPrefix("/") {
-      let candidate = URL(fileURLWithPath: stored).standardizedFileURL
-      guard candidate.path.hasPrefix(managed.path),
+      let candidate = URL(fileURLWithPath: stored)
+      guard isInside(candidate, folder: directory),
             FileManager.default.fileExists(atPath: candidate.path) else {
         return nil
       }
       return candidate
     }
 
-    let candidate = managed.appendingPathComponent(stored).standardizedFileURL
-    return candidate.path.hasPrefix(managed.path) ? candidate : nil
+    guard isPlainName(stored) else { return nil }
+    let candidate = directory.appendingPathComponent(stored)
+    return isInside(candidate, folder: directory) ? candidate : nil
   }
 
   /// The folder photos are stored in.
@@ -86,11 +108,24 @@ enum MediaFiles {
     names.flatMap { [$0, thumbnailName(for: $0)] }
   }
 
-  /// Resolves a stored photo file name, refusing anything outside the folder.
+  /// Resolves a stored photo file name, refusing anything that is not a plain
+  /// name inside the photo folder.
   static func photoURL(_ name: String) -> URL? {
-    let root = photosDirectory.standardizedFileURL
-    let url = root.appendingPathComponent(name).standardizedFileURL
-    return url.path.hasPrefix(root.path) ? url : nil
+    guard isPlainName(name) else { return nil }
+    let url = photosDirectory.appendingPathComponent(name)
+    return isInside(url, folder: photosDirectory) ? url : nil
+  }
+
+  /// The originals a record needs, as opposed to thumbnails, which can always be
+  /// built again from the original.
+  static func requiredPhotoFiles(for name: String) -> [String] {
+    [name]
+  }
+
+  /// The small copies that can be regenerated, so a backup can carry them when
+  /// they exist without failing over one that is missing.
+  static func regenerablePhotoFiles(for name: String) -> [String] {
+    [thumbnailName(for: name)]
   }
 
 
@@ -130,12 +165,15 @@ enum MediaFiles {
   static func delete(_ url: URL?) -> Bool {
     guard let url, url.isFileURL else { return true }
 
-    let managed = directory.standardizedFileURL.path
-    let target = url.standardizedFileURL
-    // Anything outside the managed folder is not ours to delete.
-    guard target.path.hasPrefix(managed) else { return true }
-
-    guard FileManager.default.fileExists(atPath: target.path) else { return true }
+    // Only a regular file strictly inside the managed folder is ours to remove.
+    // The folder itself and anything reached through a symlink are left alone.
+    guard isInside(url, folder: directory) else { return true }
+    let target = url.resolvingSymlinksInPath()
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: target.path, isDirectory: &isDirectory),
+          !isDirectory.boolValue else {
+      return true
+    }
 
     do {
       try FileManager.default.removeItem(at: target)
