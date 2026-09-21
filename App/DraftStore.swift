@@ -17,26 +17,13 @@ enum DraftStore {
   }
 
   static func save(_ text: String, key: String) {
-    RecordStore.save(text, key: prefix + key) { [weak self] in
-      self?.reportFailure()
-    }
+    RecordStore.save(text, key: prefix + key)
   }
 
   /// Removes the draft, waiting for any queued save of it so the two cannot
-  /// arrive out of order.
+  /// arrive out of order. The committed text is what matters; the draft is only
+  /// a safety copy, so a failure here is not reported as a lost record.
   static func clear(_ key: String) {
-    do {
-      try RecordStore.remove(prefix + key)
-    } catch {
-      reportFailure()
-    }
-  }
-
-  /// True when the store could not be written, so a caller that must know can
-  /// act on it.
-  private(set) static var lastWriteFailed = false
-
-  private static func reportFailure() {
-    lastWriteFailed = true
+    try? RecordStore.remove(prefix + key)
   }
 }

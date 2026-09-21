@@ -174,6 +174,15 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### 改修後レビュー フェーズ1（保存・バックアップ・復旧）
+
+- 媒体パス検証: `MediaFiles.isPlainName`（空・`.`・`..`・区切り・NULを拒否）と `isInside`（symlink解決後の**厳密な子**判定。フォルダ自身や `RecordingsOld` のような前方一致は不可）を追加し、`reference`／`resolve`／`photoURL`／`delete` を通した。
+- ストア: `LocalStore.ReadOutcome`（missing／data／failed）と `writeBatch`（1トランザクション）を追加。`RecordStore` は **全書き込みを同一キューで直列化**（`saveNow`／`saveBatch`／`remove` は待つ）、`load` は **absent／failed を区別**し、UserDefaultsからの移行は**マーカーで一度だけ**、隔離は**退避成功時のみ元を削除**。
+- 読込失敗時は `isStoreProtected` を立て、以後の保存を拒否して既存データを上書きしない（再起動を案内）。
+- ゴミ箱への移動／復元は **会議・タスク・ジャーナル・ゴミ箱を1回の書き込み**に統一。録音復旧は**復旧レコードの保存成功後にのみ下書きを削除**し、失敗時はメモリ上の挿入を取り消して下書きを残す。
+- バックアップ: **ジャーナル写真も収集**。原本は必須（欠落・コピー失敗は明示して失敗）、**サムネイルは再生成可能**として任意。出力先は**毎回一意**（日時＋UUID、失敗時は削除）。復元は **stagingで全ファイル検証 → 配置 → 記録を1回の書き込み**、記録書込失敗時は配置済み媒体を撤回。
+- 下書きは `RecordStore` 経由に統一（順序保証）。
+
 ### フェーズ5（追加26・自己チェック追加）
 
 - `SelfChecks` に、処理の入力リビジョン（文字起こしの指紋が安定で、編集を検知する）、写真のサムネイル命名（`photoFiles` が対で返す）、状態フィルターの対応（完了＝ready）を追加。DEBUG起動時に検証する。

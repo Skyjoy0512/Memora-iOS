@@ -29,6 +29,8 @@ enum SelfChecks {
     checkQuestionWords()
     checkScopeIsolation()
     checkProcessingRevision()
+    checkMediaPaths()
+    checkPhotoFileRoles()
     checkPhotoThumbnailNaming()
     checkStatusFilter()
   }
@@ -60,6 +62,38 @@ enum SelfChecks {
     let name = "ABC.jpg"
     if MediaFiles.photoFiles(for: [name]) != [name, "ABC.jpg.thumb.jpg"] {
       report("photo thumbnail naming: \(MediaFiles.photoFiles(for: [name]))")
+    }
+  }
+
+  /// A stored media name must be a plain file name, and nothing outside the
+  /// managed folder may ever be resolved or erased.
+  private static func checkMediaPaths() {
+    for bad in ["", ".", "..", "a/b", "../b", "/abs", "a\\b"] where MediaFiles.isPlainName(bad) {
+      report("media name accepted: \(bad.debugDescription)")
+    }
+    for good in ["abc.m4a", "abc.jpg", "abc.jpg.thumb.jpg"] where !MediaFiles.isPlainName(good) {
+      report("media name rejected: \(good)")
+    }
+
+    let folder = URL(fileURLWithPath: "/tmp/Recordings", isDirectory: true)
+    if MediaFiles.isInside(folder, folder: folder) {
+      report("media folder counted as inside itself")
+    }
+    if MediaFiles.isInside(URL(fileURLWithPath: "/tmp/RecordingsOld/x.m4a"), folder: folder) {
+      report("a shared name prefix counted as inside")
+    }
+    if !MediaFiles.isInside(URL(fileURLWithPath: "/tmp/Recordings/x.m4a"), folder: folder) {
+      report("a file in the folder was not counted as inside")
+    }
+  }
+
+  /// An original is required for a backup; a thumbnail can always be built again.
+  private static func checkPhotoFileRoles() {
+    if MediaFiles.requiredPhotoFiles(for: "A.jpg") != ["A.jpg"] {
+      report("required photo files: \(MediaFiles.requiredPhotoFiles(for: "A.jpg"))")
+    }
+    if MediaFiles.regenerablePhotoFiles(for: "A.jpg") != ["A.jpg.thumb.jpg"] {
+      report("regenerable photo files: \(MediaFiles.regenerablePhotoFiles(for: "A.jpg"))")
     }
   }
 
