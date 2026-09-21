@@ -7,6 +7,8 @@ struct TaskRow: View {
   /// Off where the row is read as part of a summary, so the assignee and due
   /// date do not add noise.
   var showsMetadata = true
+  /// Called when the text is tapped, so the task can be edited.
+  var onOpen: (() -> Void)?
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
@@ -32,11 +34,15 @@ struct TaskRow: View {
               Text(assignee)
             }
             if let dueDate = task.dueDate {
+              let isOverdue = dueDate < .now && !task.isCompleted
               if task.assignee != nil {
                 Text("·")
               }
+              if isOverdue {
+                Text("期限切れ")
+              }
               Text(MemoraFormat.dueDate(dueDate))
-                .foregroundStyle(dueDate < .now && !task.isCompleted ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                .foregroundStyle(isOverdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
             }
           }
           .font(.caption)
@@ -50,6 +56,9 @@ struct TaskRow: View {
             .lineLimit(1)
         }
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(Rectangle())
+      .onTapGesture { onOpen?() }
     }
     .contentShape(Rectangle())
   }

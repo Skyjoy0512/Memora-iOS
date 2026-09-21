@@ -5,6 +5,7 @@ struct TasksView: View {
   @State private var showsCompleted = false
   @State private var path: [UUID] = []
   @State private var isAddingTask = false
+  @State private var editingTask: MemoraTask?
 
   var body: some View {
     NavigationStack(path: $path) {
@@ -28,7 +29,9 @@ struct TasksView: View {
           List {
             ForEach(visibleTasks) { task in
               HStack(alignment: .top, spacing: 8) {
-                TaskRow(task: task, showsSource: true)
+                TaskRow(task: task, showsSource: true) {
+                  editingTask = task
+                }
 
                 if let meetingID = task.meetingID {
                   // A Button rather than a NavigationLink so List does not add
@@ -64,6 +67,9 @@ struct TasksView: View {
       }
       .sheet(isPresented: $isAddingTask) {
         AddTaskView()
+      }
+      .sheet(item: $editingTask) { task in
+        TaskEditView(task: task)
       }
     }
   }

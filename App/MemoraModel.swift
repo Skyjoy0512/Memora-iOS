@@ -869,6 +869,30 @@ final class MemoraModel {
     persistTasks()
   }
 
+  func updateTask(
+    _ id: UUID,
+    title: String,
+    assignee: String,
+    dueDate: Date?,
+    meetingID: UUID?
+  ) {
+    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+    let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedTitle.isEmpty else { return }
+    let trimmedAssignee = assignee.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    tasks[index].title = trimmedTitle
+    tasks[index].assignee = trimmedAssignee.isEmpty ? nil : trimmedAssignee
+    tasks[index].dueDate = dueDate
+    tasks[index].meetingID = meetingID
+    persistTasks()
+  }
+
+  func deleteTask(_ id: UUID) {
+    tasks.removeAll { $0.id == id }
+    persistTasks()
+  }
+
   func addTask(title: String, assignee: String, dueDate: Date?) {
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return }
