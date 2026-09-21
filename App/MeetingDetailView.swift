@@ -224,7 +224,7 @@ struct MeetingDetailView: View {
         }
         .labelStyle(.iconOnly)
         .font(.title3)
-        .frame(width: 40, height: 40)
+        .frame(width: 44, height: 44)
         .contentShape(Circle())
         .disabled(player.duration == 0)
 
@@ -233,7 +233,7 @@ struct MeetingDetailView: View {
         }
         .labelStyle(.iconOnly)
         .font(.title3)
-        .frame(width: 40, height: 40)
+        .frame(width: 44, height: 44)
         .contentShape(Circle())
         .disabled(player.duration == 0)
 

@@ -10,7 +10,7 @@ struct MeetingNotesContent: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
-    let photos = model.meetingPhotoThumbnails(meetingID)
+    let photos = model.meeting(id: meetingID)?.photoFileNames ?? []
     let noteText = model.meeting(id: meetingID)?.notes ?? ""
 
     VStack(alignment: .leading, spacing: 14) {
@@ -28,8 +28,8 @@ struct MeetingNotesContent: View {
 
       ScrollView(.horizontal) {
         HStack(spacing: 10) {
-          ForEach(Array(photos.enumerated()), id: \.offset) { index, data in
-            if let image = UIImage(data: data) {
+          ForEach(Array(photos.enumerated()), id: \.offset) { index, name in
+            if let image = MediaImageCache.thumbnail(named: name) {
               Image(uiImage: image)
                 .resizable()
                 .scaledToFill()

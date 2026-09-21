@@ -174,6 +174,14 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ5（追加21・E02/E04/E10の残りと性能）
+
+- E02: 入力中の質問を `MemoraModel.composerDraft` が持ち、600ms後に `DraftStore` へ保存、起動時に復元。`QuickAIComposer` はローカルStateをやめた。
+- E04: 添付メニュー・エンジン選択・送信・添付解除・再生の15秒送りを44ptのタップ領域に（描画サイズは維持）。
+- E10: 明暗は意味的な色（systemBackground／label／secondary）で構成されていることを確認（目視は未実施）。
+- 性能: `MediaImageCache`（NSCache）で一覧・拡大のデコード結果をファイル名キーで再利用。`meetingPhotoThumbnails` は不要になり削除。F02（検索キャッシュの一括破棄）は既に `meetings` の didSet で実施済みと確認。
+- ※ F01・F03〜F05・F08〜F10 は原文が未共有のため未着手のまま記録。
+
 ### フェーズ4（追加20・E03・E06〜E10）
 
 - E03: `BottomBarScrollBehavior` は画面IDを受け取り、モデルの `bottomBarHiddenScreens` に自分の分だけ記録。`RootTabView` は表示中のタブのIDだけを見る。VoiceOver使用中は隠さない。

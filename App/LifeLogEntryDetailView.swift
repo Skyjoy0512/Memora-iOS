@@ -60,9 +60,8 @@ struct LifeLogEntryDetailView: View {
   }
 
   private var photo: UIImage? {
-    guard let name = currentEntry?.photoFileName,
-          let data = MediaFiles.photoData(name) else { return nil }
-    return UIImage(data: data)
+    guard let name = currentEntry?.photoFileName else { return nil }
+    return MediaImageCache.photo(named: name)
   }
 
   private func content(_ entry: LifeLogEntry) -> some View {

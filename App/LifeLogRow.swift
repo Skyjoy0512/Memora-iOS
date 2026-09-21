@@ -57,8 +57,7 @@ struct LifeLogRow: View {
         }
 
         if let name = entry.photoFileName,
-           let data = MediaFiles.photoThumbnailData(name),
-           let image = UIImage(data: data) {
+           let image = MediaImageCache.thumbnail(named: name) {
           Image(uiImage: image)
             .resizable()
             .scaledToFill()

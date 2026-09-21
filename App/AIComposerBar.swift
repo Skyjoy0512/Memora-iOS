@@ -138,7 +138,7 @@ struct AIComposerBar: View {
         attachment = nil
       }
       .labelStyle(.iconOnly)
-      .frame(width: 32, height: 32)
+      .frame(width: 44, height: 44)
     }
     .font(.caption)
     .foregroundStyle(.secondary)
@@ -159,7 +159,7 @@ struct AIComposerBar: View {
       Image(systemName: "paperclip")
         .font(.body.weight(.medium))
         .foregroundStyle(.primary)
-        .frame(width: 34, height: 34)
+        .frame(width: 44, height: 44)
         .contentShape(Circle())
     }
     .labelStyle(.iconOnly)
@@ -198,7 +198,7 @@ struct AIComposerBar: View {
       }
       .foregroundStyle(.primary)
       .padding(.horizontal, 6)
-      .frame(minHeight: 32)
+      .frame(minWidth: 44, minHeight: 44)
       .contentShape(Rectangle())
     }
     .accessibilityLabel("使用するAIエンジン")
@@ -219,6 +219,9 @@ struct AIComposerBar: View {
         .background(Circle().fill(.primary))
         .symbolEffect(.variableColor.iterative, isActive: speechInput.isListening)
         .contentTransition(.symbolEffect(.replace))
+        // The circle stays small; the target around it does not.
+        .frame(width: 44, height: 44)
+        .contentShape(Circle())
     }
     .buttonStyle(.plain)
     .disabled(isBusy || (!canSend && model.isRecording))

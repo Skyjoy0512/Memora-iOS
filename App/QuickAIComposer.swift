@@ -10,13 +10,16 @@ struct QuickAIComposer: View {
   /// Keeps the keyboard up after sending on the Ask AI tab. The field is never
   /// focused on its own, so switching tabs does not raise the keyboard.
   var keepsFocusAfterSubmit = false
-  @State private var question = ""
   @State private var attachment: AIAttachment?
   @State private var isQuestionPresented = false
 
   var body: some View {
-    AIComposerBar(
-      text: $question,
+    // The draft lives in the model, so rebuilding this view or leaving the tab
+    // does not lose what was being typed.
+    @Bindable var model = model
+
+    return AIComposerBar(
+      text: $model.composerDraft,
       attachment: $attachment,
       placeholder: placeholder,
       keepsFocusAfterSubmit: keepsFocusAfterSubmit,
@@ -25,10 +28,10 @@ struct QuickAIComposer: View {
       isComposing = focused
     }
     .sheet(isPresented: $isQuestionPresented) {
-      question = ""
+      model.composerDraft = ""
       attachment = nil
     } content: {
-      AIQuestionView(scope: scope, askingQuestion: question, attachment: attachment)
+      AIQuestionView(scope: scope, askingQuestion: model.composerDraft, attachment: attachment)
     }
   }
 
@@ -45,7 +48,7 @@ struct QuickAIComposer: View {
   }
 
   private var canSend: Bool {
-    !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attachment != nil
+    !model.composerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attachment != nil
   }
 
   /// True when the send is accepted; the composer clears the field only then,
@@ -56,7 +59,7 @@ struct QuickAIComposer: View {
     // On the Ask AI tab the question joins the chat; elsewhere it opens the
     // focused answer sheet.
     if scope == .global, model.selectedTab == .askAI {
-      let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
+      let trimmed = model.composerDraft.trimmingCharacters(in: .whitespacesAndNewlines)
       return model.sendAIChat(
         trimmed.isEmpty ? "この添付を確認して" : trimmed,
         attachment: submitted

@@ -136,6 +136,17 @@ final class MemoraModel {
   /// The inline editor that most recently took focus, so its screen can lift it
   /// clear of the keyboard.
   var focusedInlineEditorID: UUID?
+  /// What is typed in the composer. It lives here, not in the view, so it
+  /// survives the composer being rebuilt, and in the draft store so it survives
+  /// the app being stopped.
+  var composerDraft = "" {
+    didSet {
+      guard composerDraft != oldValue else { return }
+      scheduleComposerDraftSave()
+    }
+  }
+  @ObservationIgnored private var composerDraftSaveTask: Task<Void, Never>?
+  private static let composerDraftKey = "composer.question"
   /// The engine Ask AI and summaries actually use. The model owns it, so what
   /// the composer shows and what the request calls cannot drift apart.
   var aiEngine: AIEngine = .automatic {
@@ -185,6 +196,7 @@ final class MemoraModel {
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
     aiEngine = AIEngine(rawValue: defaults.string(forKey: StorageKey.aiEngine) ?? "") ?? .automatic
     aiProvider = CloudProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
+    composerDraft = DraftStore.load(Self.composerDraftKey) ?? ""
     // Cloud storage is a paid option: without Plus the records stay on device.
     cloudStorageEnabled = defaults.bool(forKey: StorageKey.isSubscribed)
       && defaults.bool(forKey: StorageKey.cloudStorage)
@@ -1327,11 +1339,6 @@ final class MemoraModel {
     persistAIHistory()
   }
 
-  /// The photos attached to a record, as the small copies the strip draws.
-  func meetingPhotoThumbnails(_ id: UUID) -> [Data] {
-    (meeting(id: id)?.photoFileNames ?? []).compactMap { MediaFiles.photoThumbnailData($0) }
-  }
-
   func addMeetingPhoto(_ id: UUID, data: Data) {
     guard let name = MediaFiles.writePhoto(data, thumbnailMaxSide: 400) else {
       persistenceFailureMessage = "写真を保存できませんでした。ストレージの空き容量を確認してください。"
@@ -1434,6 +1441,21 @@ final class MemoraModel {
       await startCapture()
     } else if url.host == "recording", isRecording {
       isCapturePresented = true
+    }
+  }
+
+  /// Drafts are written a moment after typing stops, so a keystroke does not
+  /// wait on the store.
+  private func scheduleComposerDraftSave() {
+    composerDraftSaveTask?.cancel()
+    composerDraftSaveTask = Task { [weak self] in
+      try? await Task.sleep(for: .milliseconds(600))
+      guard let self, !Task.isCancelled else { return }
+      if self.composerDraft.isEmpty {
+        DraftStore.clear(Self.composerDraftKey)
+      } else {
+        DraftStore.save(self.composerDraft, key: Self.composerDraftKey)
+      }
     }
   }
 
