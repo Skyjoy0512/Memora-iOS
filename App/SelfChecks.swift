@@ -54,6 +54,7 @@ enum SelfChecks {
     group("Store failure injection", checkStoreFailureInjection)
     group("Atomic commit", checkAtomicCommit)
     group("Backup restore validation", checkBackupRestoreValidation)
+    group("Attachment read limit", checkAttachmentReadLimit)
     group("Speech final results", checkSpeechFinalResults)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
@@ -454,6 +455,28 @@ enum SelfChecks {
     try? RecordStore.remove(docA)
     try? RecordStore.remove(docB)
     DraftStore.clear(draft)
+  }
+
+  /// A very large attachment must be read only up to a limit, and the cut must
+  /// not make a Japanese text file look like it is not UTF-8.
+  private static func checkAttachmentReadLimit() {
+    let url = FileManager.default.temporaryDirectory
+      .appendingPathComponent("selfcheck-attachment-\(UUID().uuidString).txt")
+    defer { try? FileManager.default.removeItem(at: url) }
+    let body = String(repeating: "日本語のテキスト\n", count: 100_000)
+    guard (try? body.write(to: url, atomically: true, encoding: .utf8)) != nil else {
+      report("attachment self-check could not write a file")
+      return
+    }
+    let attachment = AIAttachment(id: UUID(), name: url.lastPathComponent, url: url)
+    switch AIAttachmentText.read(attachment) {
+    case .text(let text):
+      if !text.hasSuffix("（長いため先頭のみ送信しました）") {
+        report("a long attachment was not shortened")
+      }
+    case .unsupported(let reason):
+      report("a large UTF-8 attachment was refused: \(reason)")
+    }
   }
 
   /// A backup is checked by kind: a name cannot be both audio and photo, and a

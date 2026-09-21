@@ -14,18 +14,32 @@ enum AIAttachmentText {
   /// everything else.
   private static let maximumCharacters = 8_000
 
+  /// The most bytes read from a text file. Reading a whole file and shortening
+  /// the text afterwards still pulls all of it into memory; the read itself is
+  /// capped instead. Much larger than the character limit, since one character
+  /// can take several bytes.
+  private static let maximumBytes = 512 * 1024
+
+  /// A PDF is parsed as a whole, so it is refused before being opened when it is
+  /// too large to be worth reading.
+  private static let maximumPDFBytes = 50 * 1024 * 1024
+
   static func read(_ attachment: AIAttachment) -> Outcome {
     switch attachment.url.pathExtension.lowercased() {
     case "txt", "text", "md", "markdown", "csv", "json", "log", "srt", "vtt":
-      guard let data = try? Data(contentsOf: attachment.url) else {
+      guard let data = readPrefix(of: attachment.url, limit: maximumBytes) else {
         return .unsupported("ファイルを読み込めませんでした。")
       }
-      guard let text = String(data: data, encoding: .utf8) else {
+      guard let text = decodeUTF8(data) else {
         return .unsupported("UTF-8のテキストとして読めない形式です。")
       }
       return readable(text)
 
     case "pdf":
+      if let size = try? attachment.url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+         size > maximumPDFBytes {
+        return .unsupported("PDFが大きすぎるため読み込めません。")
+      }
       guard let document = PDFDocument(url: attachment.url) else {
         return .unsupported("PDFを読み込めませんでした。")
       }
@@ -44,6 +58,23 @@ enum AIAttachmentText {
     default:
       return .unsupported("この形式はAI解析に対応していません。")
     }
+  }
+
+  /// Reads at most `limit` bytes from the start of a file, so a very large file
+  /// is never loaded in full just to be shortened afterwards.
+  private static func readPrefix(of url: URL, limit: Int) -> Data? {
+    guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+    defer { try? handle.close() }
+    return try? handle.read(upToCount: limit)
+  }
+
+  /// Decodes UTF-8, allowing for a multibyte character cut by the read limit.
+  private static func decodeUTF8(_ data: Data) -> String? {
+    if let text = String(data: data, encoding: .utf8) { return text }
+    for dropped in 1...3 where data.count > dropped {
+      if let text = String(data: data.dropLast(dropped), encoding: .utf8) { return text }
+    }
+    return nil
   }
 
   private static func readable(_ text: String) -> Outcome {
