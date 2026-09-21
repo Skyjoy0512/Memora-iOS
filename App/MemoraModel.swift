@@ -962,6 +962,9 @@ final class MemoraModel {
       resolvedTitle = kind.label
     }
 
+    // Photos live in the media folder; the entry keeps the file name.
+    let photoFileName = photoData.flatMap { MediaFiles.writePhoto($0) }
+
     lifeLogEntries.insert(
       LifeLogEntry(
         id: UUID(),
@@ -971,7 +974,7 @@ final class MemoraModel {
         source: .iphone,
         meetingID: nil,
         kind: kind,
-        photoData: photoData,
+        photoFileName: photoFileName,
         eventDate: eventDate,
         locationName: trimmedLocation
       ),

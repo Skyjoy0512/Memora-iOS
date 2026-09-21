@@ -56,7 +56,9 @@ struct LifeLogRow: View {
             .foregroundStyle(.secondary)
         }
 
-        if let photoData = entry.photoData, let image = UIImage(data: photoData) {
+        if let name = entry.photoFileName,
+           let data = MediaFiles.photoData(name),
+           let image = UIImage(data: data) {
           Image(uiImage: image)
             .resizable()
             .scaledToFill()
