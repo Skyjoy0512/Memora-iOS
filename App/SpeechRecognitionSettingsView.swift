@@ -40,12 +40,16 @@ struct SpeechRecognitionSettingsView: View {
         }
       }
 
-      Section("言語") {
+      Section {
         Picker("主な言語", selection: $language) {
           ForEach(RecognitionLanguage.allCases) { option in
             Text(option.label).tag(option)
           }
         }
+      } header: {
+        Text("言語")
+      } footer: {
+        Text(language.detail)
       }
     }
     .navigationTitle("文字起こし")

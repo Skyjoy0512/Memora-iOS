@@ -27,6 +27,54 @@ enum SelfChecks {
     }
 
     checkQuestionWords()
+    checkScopeIsolation()
+  }
+
+  /// A question asked of a project must not carry records or tasks from outside
+  /// a project, so a scoped answer cannot rest on the wrong data.
+  private static func checkScopeIsolation() {
+    let spaceID = UUID()
+    let inProject = Meeting(
+      id: UUID(),
+      title: "プロジェクトの会議",
+      createdAt: .now,
+      duration: 60,
+      source: .recording,
+      status: .ready,
+      summary: "要約",
+      keyPoints: [],
+      decisions: [],
+      openQuestions: [],
+      transcript: [],
+      spaceID: spaceID
+    )
+    let loose = Meeting(
+      id: UUID(),
+      title: "未分類の会議",
+      createdAt: .now,
+      duration: 60,
+      source: .recording,
+      status: .ready,
+      summary: "",
+      keyPoints: [],
+      decisions: [],
+      openQuestions: [],
+      transcript: []
+    )
+
+    let scopedMeetings = MemoraModel.meetings(in: .projects, from: [inProject, loose])
+    if scopedMeetings.map(\.id) != [inProject.id] {
+      report("scope meetings: \(scopedMeetings.map(\.title))")
+    }
+
+    let tasks = [
+      MemoraTask(id: UUID(), title: "プロジェクトのタスク", meetingID: inProject.id, isCompleted: false),
+      MemoraTask(id: UUID(), title: "未分類のタスク", meetingID: loose.id, isCompleted: false)
+    ]
+    let scopedTasks = MemoraModel.openTasks(in: .projects, from: tasks, meetings: [inProject, loose])
+    if scopedTasks.map(\.title) != ["プロジェクトのタスク"] {
+      report("scope tasks: \(scopedTasks.map(\.title))")
+    }
   }
 
   /// Ask AI reaches records by the words of the question; a Japanese question

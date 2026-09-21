@@ -85,6 +85,10 @@ enum AIEngine: String, CaseIterable, Identifiable {
   }
 
   var usesCloud: Bool { self == .cloud }
+
+  /// False for engines this build cannot run, so the choice is visible but not
+  /// selectable instead of failing after it is picked.
+  var isSelectable: Bool { self != .local }
 }
 
 /// A bring-your-own-key provider.
@@ -122,7 +126,18 @@ enum RecognitionLanguage: String, CaseIterable, Identifiable {
     switch self {
     case .japanese: "日本語"
     case .english: "英語"
-    case .automatic: "自動検出"
+    case .automatic: "端末の言語"
+    }
+  }
+
+  /// Said plainly, because this is not real language detection: it uses the
+  /// device's own language. Engines that can detect the spoken language are
+  /// offered that choice instead.
+  var detail: String {
+    switch self {
+    case .japanese: "日本語として文字起こしします。"
+    case .english: "英語として文字起こしします。"
+    case .automatic: "この端末の言語（\(Locale.current.identifier)）で文字起こしします。話された言語の自動検出ではありません。"
     }
   }
 

@@ -48,15 +48,22 @@ struct AIMessageView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("考えています")
       } else {
-        if let thinking = message.thinking, !thinking.isEmpty {
+        if let details = message.details {
           DisclosureGroup {
-            Text(thinking)
-              .font(.subheadline)
-              .foregroundStyle(.secondary)
-              .lineSpacing(3)
-              .padding(.top, 6)
+            VStack(alignment: .leading, spacing: 6) {
+              detailRow("対象", details.scopeLabel)
+              detailRow(
+                "エンジン",
+                details.modelLabel.map { "\(details.engineLabel) · \($0)" } ?? details.engineLabel
+              )
+              detailRow("参照した記録", "\(details.sourceCount)件")
+              detailRow("生成", details.generatedAt.formatted(date: .abbreviated, time: .shortened))
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .padding(.top, 6)
           } label: {
-            Label("思考を表示", systemImage: "sparkles")
+            Label("参照した記録・処理情報", systemImage: "info.circle")
               .font(.subheadline.weight(.medium))
               .foregroundStyle(.secondary)
           }
@@ -73,6 +80,28 @@ struct AIMessageView: View {
     .frame(maxWidth: .infinity, alignment: .leading)
   }
 
+  private func accessibilityLabel(for source: AIChatSource) -> String {
+    var parts = ["参照した記録: \(source.title)"]
+    if let start = source.start {
+      parts.append(MemoraFormat.duration(start))
+    }
+    if let excerpt = source.excerpt {
+      parts.append(excerpt)
+    }
+    return parts.joined(separator: "、")
+  }
+
+  private func detailRow(_ title: String, _ value: String) -> some View {
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+      Text(title)
+        .foregroundStyle(.tertiary)
+      Text(value)
+      Spacer(minLength: 0)
+    }
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("\(title): \(value)")
+  }
+
   /// The records the answer was built from, each opening the record itself.
   private var sourceList: some View {
     VStack(alignment: .leading, spacing: 8) {
@@ -84,18 +113,33 @@ struct AIMessageView: View {
         NavigationLink {
           MeetingDetailView(meetingID: source.meetingID)
         } label: {
-          HStack(spacing: 8) {
-            Image(systemName: "doc.text")
-              .font(.caption)
-            Text(source.title)
-              .font(.subheadline)
-              .lineLimit(1)
-            Spacer(minLength: 4)
-            Image(systemName: "chevron.right")
-              .font(.caption2.weight(.semibold))
-              .foregroundStyle(.tertiary)
+          VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 8) {
+              Image(systemName: "doc.text")
+                .font(.caption)
+              Text(source.title)
+                .font(.subheadline)
+                .lineLimit(1)
+              if let start = source.start {
+                Text(MemoraFormat.duration(start))
+                  .font(.caption.monospacedDigit())
+                  .foregroundStyle(.secondary)
+              }
+              Spacer(minLength: 4)
+              Image(systemName: "chevron.right")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.tertiary)
+            }
+
+            if let excerpt = source.excerpt {
+              Text(excerpt)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            }
           }
           .foregroundStyle(.primary)
+          .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.horizontal, 12)
           .padding(.vertical, 9)
           .background(
@@ -105,7 +149,7 @@ struct AIMessageView: View {
           .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("参照した記録: \(source.title)")
+        .accessibilityLabel(accessibilityLabel(for: source))
         .accessibilityHint("記録を開きます")
       }
     }

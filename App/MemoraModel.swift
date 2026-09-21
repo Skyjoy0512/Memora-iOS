@@ -116,12 +116,22 @@ final class MemoraModel {
   /// The inline editor that most recently took focus, so its screen can lift it
   /// clear of the keyboard.
   var focusedInlineEditorID: UUID?
-  /// The engine Ask AI and summaries actually use.
+  /// The engine Ask AI and summaries actually use. The model owns it, so what
+  /// the composer shows and what the request calls cannot drift apart.
   var aiEngine: AIEngine = .automatic {
     didSet {
       UserDefaults.standard.set(aiEngine.rawValue, forKey: StorageKey.aiEngine)
     }
   }
+  /// The bring-your-own-key provider used when the engine is cloud.
+  var aiProvider: CloudProvider = .openAI {
+    didSet {
+      UserDefaults.standard.set(aiProvider.rawValue, forKey: StorageKey.aiProvider)
+    }
+  }
+  /// The request currently being answered, so a newer one can drop it.
+  @ObservationIgnored var aiChatRequestID: UUID?
+  @ObservationIgnored var aiChatTask: Task<Void, Never>?
 
   /// Onboarding runs once. Sign-in and Plus stay optional so people can judge
   /// the app before committing to either.
@@ -154,6 +164,7 @@ final class MemoraModel {
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
     aiEngine = AIEngine(rawValue: defaults.string(forKey: StorageKey.aiEngine) ?? "") ?? .automatic
+    aiProvider = CloudProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
     // Cloud storage is a paid option: without Plus the records stay on device.
     cloudStorageEnabled = defaults.bool(forKey: StorageKey.isSubscribed)
       && defaults.bool(forKey: StorageKey.cloudStorage)
@@ -836,13 +847,21 @@ final class MemoraModel {
       let outcome = await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
       guard !Task.isCancelled else { return }
 
-      self.updateMeeting(id) { meeting in
-        if case .segments(let segments) = outcome {
+      switch outcome {
+      case .segments(let segments):
+        self.updateMeeting(id) { meeting in
           meeting.transcript = segments
-        } else {
-          meeting.transcript = SampleContent.generatedTranscript
+          meeting.status = .waitingForSummary
         }
-        meeting.status = .waitingForSummary
+        self.announce("文字起こしができました。要約を作成しています。")
+      case .unavailable:
+        self.updateMeeting(id) {
+          $0.status = .failed("この端末では文字起こしを利用できません。音声は保存されています。設定で別のエンジンを選ぶか、別の端末でお試しください。")
+        }
+        self.announce("文字起こしができませんでした。音声は保存されています。")
+      case .failed(let message):
+        self.updateMeeting(id) { $0.status = .failed(message) }
+        self.announce("文字起こしができませんでした。\(message)")
       }
     }
   }
@@ -864,10 +883,13 @@ final class MemoraModel {
       let transcript = meeting.transcript
         .map { "\($0.speaker): \($0.text)" }
         .joined(separator: "\n")
-      let summary = await AIEngineService.answer(
+      let result = await AIEngineService.answer(
+        engine: self.aiEngine,
+        provider: self.aiProvider,
         question: choice.summaryInstruction,
         scopeLabel: "文字起こし",
-        context: transcript
+        context: transcript,
+        history: ""
       )
 
       // A newer request or a deleted record makes this result stale.
@@ -875,18 +897,25 @@ final class MemoraModel {
             self.processingRevision(for: id) == revision,
             self.meeting(id: id) != nil else { return }
 
-      if let summary, !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      let summary = result.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+      if let resultFailure = result.failure, resultFailure == .cancelled {
+        self.processingTasks[id] = nil
+        self.setJobActive(id, active: false)
+        return
+      }
+
+      if let summary, !summary.isEmpty {
         self.updateMeeting(id) { meeting in
-          meeting.summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+          meeting.summary = summary
           meeting.status = .ready
         }
         self.offerPlusIfNeeded()
         self.announce("文字起こしと要約ができました。")
       } else {
-        self.updateMeeting(id) {
-          $0.status = .failed("要約を生成できませんでした。AIエンジンとキーを確認して再試行してください。")
-        }
-        self.announce("要約を作成できませんでした。AIエンジンとキーを確認してください。")
+        let message = result.failure?.message
+          ?? "要約が空でした。もう一度お試しください。"
+        self.updateMeeting(id) { $0.status = .failed(message) }
+        self.announce("要約を作成できませんでした。\(message)")
       }
 
       self.processingTasks[id] = nil
@@ -1481,6 +1510,7 @@ final class MemoraModel {
     static let meetings = "memoraMeetings"
     static let spaces = "memoraSpaces"
     static let aiEngine = "memora.aiEngine"
+    static let aiProvider = "memora.aiProvider"
     static let people = "memoraPeople"
     static let installedTemplates = "memoraInstalledTemplates"
     static let cloudStorage = "memoraCloudStorage"

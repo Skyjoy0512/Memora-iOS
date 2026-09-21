@@ -6,6 +6,10 @@ struct SearchView: View {
   @State private var isSearchSheetPresented = false
   @State private var isHistoryPresented = false
   @State private var filters = SearchFilters()
+  /// Whether the newest message is in view, so scrolling back to read is not
+  /// interrupted by a reply arriving.
+  @State private var isNearBottom = true
+  @State private var hasUnseenAnswer = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
@@ -73,13 +77,17 @@ struct SearchView: View {
         searchSheet
       }
       .sheet(isPresented: $isHistoryPresented) {
-        AIHistoryView(entries: model.aiHistory) { question in
-          isHistoryPresented = false
-          Task {
-            try? await Task.sleep(for: .milliseconds(250))
-            model.sendAIChat(question)
-          }
-        }
+        AIHistoryView(
+          entries: model.aiHistory,
+          ask: { question in
+            isHistoryPresented = false
+            Task {
+              try? await Task.sleep(for: .milliseconds(250))
+              model.sendAIChat(question)
+            }
+          },
+          delete: { model.deleteAIHistoryEntry($0) }
+        )
       }
     }
   }
@@ -100,20 +108,54 @@ struct SearchView: View {
       .scrollDismissesKeyboard(.interactively)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
       .hideBottomBarOnScroll()
+      .onScrollGeometryChange(for: Bool.self) { geometry in
+        geometry.contentOffset.y + geometry.containerSize.height
+          >= geometry.contentSize.height - 80
+      } action: { _, nearBottom in
+        isNearBottom = nearBottom
+        if nearBottom {
+          hasUnseenAnswer = false
+        }
+      }
       .onChange(of: model.aiMessages.count) { _, _ in
-        scrollToLatest(proxy)
+        followLatest(proxy)
       }
       .onChange(of: model.isAIChatResponding) { _, _ in
-        scrollToLatest(proxy)
+        followLatest(proxy)
       }
       .onAppear {
         scrollToLatest(proxy)
+      }
+      .overlay(alignment: .bottom) {
+        if hasUnseenAnswer {
+          Button("新しい回答", systemImage: "arrow.down") {
+            hasUnseenAnswer = false
+            scrollToLatest(proxy)
+          }
+          .font(.subheadline.weight(.semibold))
+          .padding(.horizontal, 14)
+          .padding(.vertical, 9)
+          .background(.thinMaterial, in: Capsule())
+          .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+          .padding(.bottom, 12)
+          .accessibilityLabel("新しい回答を表示")
+        }
       }
     }
   }
 
   private func dismissKeyboard() {
     model.composerDismissRequests += 1
+  }
+
+  /// Follows the newest message only when the bottom is already in view;
+  /// otherwise it offers a button, so reading earlier answers is not yanked away.
+  private func followLatest(_ proxy: ScrollViewProxy) {
+    guard isNearBottom else {
+      hasUnseenAnswer = true
+      return
+    }
+    scrollToLatest(proxy)
   }
 
   private func scrollToLatest(_ proxy: ScrollViewProxy) {

@@ -177,7 +177,7 @@ struct AIQuestionView: View {
       attachment: $attachment,
       placeholder: "会議について質問",
       isBusy: isAnswering,
-      onSubmit: ask
+      onSubmit: { _ in ask() }
     )
   }
 
@@ -228,9 +228,12 @@ struct AIQuestionView: View {
     ask()
   }
 
-  private func ask() {
+  /// Returns true when it starts answering, so the composer clears the field
+  /// only when the question is actually taken.
+  @discardableResult
+  private func ask() -> Bool {
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard (!trimmed.isEmpty || attachment != nil), !isAnswering else { return }
+    guard (!trimmed.isEmpty || attachment != nil), !isAnswering else { return false }
     let effectiveQuestion = trimmed.isEmpty
       ? "「\(attachment?.name ?? "添付ファイル")」を確認して"
       : trimmed
@@ -247,16 +250,32 @@ struct AIQuestionView: View {
       // The same retrieval the chat uses, so the answer rests on records that
       // contain the question's words.
       let sources = model.aiSources(for: effectiveQuestion, scope: .all)
-      let engineAnswer = await AIEngineService.answer(
+      let result = await AIEngineService.answer(
+        engine: model.aiEngine,
+        provider: model.aiProvider,
         question: effectiveQuestion,
         scopeLabel: scopeLabel,
-        context: model.aiContext(for: sources)
+        context: model.aiContext(for: sources, scope: .all),
+        history: ""
       )
-      let generatedAnswer = engineAnswer ?? model.aiAnswer(for: effectiveQuestion).answer
-      answer = generatedAnswer
       isAnswering = false
-      model.saveAIExchange(question: effectiveQuestion, answer: generatedAnswer, scopeLabel: scopeLabel)
+
+      switch result {
+      case .answer(let text):
+        answer = text
+        model.saveAIExchange(
+          question: effectiveQuestion,
+          answer: text,
+          scopeLabel: scopeLabel,
+          engineLabel: AIEngineService.effectiveEngine(model.aiEngine).label,
+          modelLabel: AIEngineService.modelLabel(engine: model.aiEngine, provider: model.aiProvider)
+        )
+      case .failure(let failure):
+        guard failure != .cancelled else { return }
+        answer = failure.message
+      }
     }
+    return true
   }
 
   private static let suggestedQuestions = [

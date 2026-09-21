@@ -174,6 +174,22 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ4（追加19・C01〜C13の残り）
+
+- C01: `meetings(in:from:)`／`openTasks(in:from:meetings:)` でスコープを先に絞り、`SelfChecks` で範囲外が混ざらないことを検証。
+- C02: 根拠には実際に送った記録と、保存済み文字起こしからの一致1行（時刻つき）のみ。`aiContext` にも根拠発言として同じ行を入れる。
+- C03: `AIAttachmentText`（テキスト／PDFのみ、8,000字上限）。非対応形式は回答前に「送信していません」と明示。
+- C04: `aiEngine`／`aiProvider` をモデルが所有し、`AIEngineService` は引数で受ける。設定に「実際に使う」を表示、未対応は選択不可。
+- C05: `RecognitionLanguage.automatic` を「端末の言語」に改称し、端末Localeで処理することを明記。
+- C06: `sendAIChat` が Bool を返し、composerは受理時のみクリア。
+- C07: 会話ID・要求IDで所有権管理、旧タスクをキャンセル、直近6往復を履歴として送信。
+- C08: `AIHistoryView` は詳細（質問・回答・対象・エンジン・日時）を開く。再質問は「もう一度聞く」、削除はスワイプ。
+- C09: `AIAnswerFailure`／`AIAnswerResult` で失敗理由を区別（キャンセルは非表示）。
+- C10: `AIAnswerDetails` を表示、「思考を表示」を廃止。
+- C12: 最下部付近のみ追従、それ以外は「新しい回答」ボタン。
+- C13: `StreamingText` はタスクをキャンセル可能にし、長文・確定後は選択可能な `Text`。
+- 併せて修正: `startImportedTranscription` が失敗時にサンプル文字起こしを保存していたのを、理由を残して音声を保持する形に（A02/A03の趣旨）。
+
 ### フェーズ4（追加18・根拠付きAIの基盤）
 
 - `MemoraModel+AI`: `aiSources(for:scope:)` が質問の語で記録を検索して最大5件を選び、`aiContext(for:)` はその記録だけ（要約・決定・未決・発言抜粋）＋未完了タスクを文脈にする。`questionWords` は日本語を2文字単位に分割（`SelfChecks` で検証）。スコープ（すべて／ファイル／プロジェクト）を反映。

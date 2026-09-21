@@ -6,7 +6,6 @@ struct SettingsView: View {
   var showsCloseButton = true
   @AppStorage("memora.transcriptionEngine") private var transcriptionEngine = TranscriptionEngine.automatic
   @AppStorage("memora.transcriptionLanguage") private var transcriptionLanguage = RecognitionLanguage.japanese
-  @AppStorage("memora.aiEngine") private var aiEngine = AIEngine.automatic
   @State private var isDeleteConfirmationPresented = false
   @State private var isSignOutConfirmationPresented = false
   @State private var isAccountDeletionPresented = false
@@ -81,7 +80,7 @@ struct SettingsView: View {
           NavigationLink {
             AISettingsView()
           } label: {
-            LabeledContent("AI整理", value: aiEngine.label)
+            LabeledContent("AI整理", value: model.aiEngine.label)
           }
 
           NavigationLink {

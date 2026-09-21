@@ -1,0 +1,75 @@
+import SwiftUI
+
+/// One stored exchange: the question, the answer that was given, and what
+/// produced it. Asking it again is a separate choice, so opening a history
+/// entry never sends anything.
+struct AIHistoryDetailView: View {
+  @Environment(\.dismiss) private var dismiss
+  var entry: AIConversationEntry
+  var ask: (String) -> Void
+
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 6) {
+          Text("質問")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+          Text(entry.question)
+            .font(.headline)
+            .textSelection(.enabled)
+        }
+
+        VStack(alignment: .leading, spacing: 6) {
+          Text("回答")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+          Text(entry.answer)
+            .font(.body)
+            .lineSpacing(4)
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
+        VStack(alignment: .leading, spacing: 6) {
+          detailRow("対象", entry.scopeLabel)
+          detailRow("エンジン", engineLabel)
+          detailRow("日時", entry.createdAt.formatted(date: .abbreviated, time: .shortened))
+        }
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+
+        Button("もう一度聞く", systemImage: "arrow.clockwise") {
+          dismiss()
+          ask(entry.question)
+        }
+        .font(.headline)
+        .frame(maxWidth: .infinity, minHeight: 48)
+        .buttonStyle(.borderedProminent)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(18)
+    }
+    .navigationTitle("質問履歴")
+    .navigationBarTitleDisplayMode(.inline)
+  }
+
+  /// What really answered, recorded with the entry rather than read from
+  /// today's settings.
+  private var engineLabel: String {
+    guard let engine = entry.engineLabel else { return "記録なし" }
+    guard let model = entry.modelLabel else { return engine }
+    return "\(engine) · \(model)"
+  }
+
+  private func detailRow(_ title: String, _ value: String) -> some View {
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+      Text(title)
+        .foregroundStyle(.tertiary)
+      Text(value)
+      Spacer(minLength: 0)
+    }
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("\(title): \(value)")
+  }
+}

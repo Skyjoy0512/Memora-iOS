@@ -10,8 +10,9 @@ struct AIChatMessage: Identifiable, Hashable {
   var id = UUID()
   var role: Role
   var text: String
-  /// The reasoning the answer is collapsed behind.
-  var thinking: String?
+  /// What produced the answer: the scope, engine, model, and time. Shown
+  /// instead of an invented reasoning trace.
+  var details: AIAnswerDetails?
   /// The records the answer was built from. Empty when nothing grounded it,
   /// such as the fallback shown when no engine can run.
   var sources: [AIChatSource] = []

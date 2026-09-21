@@ -20,7 +20,7 @@ struct QuickAIComposer: View {
       attachment: $attachment,
       placeholder: placeholder,
       keepsFocusAfterSubmit: keepsFocusAfterSubmit,
-      onSubmit: submit
+      onSubmit: submit(attachment:)
     ) { focused in
       isComposing = focused
     }
@@ -48,19 +48,22 @@ struct QuickAIComposer: View {
     !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attachment != nil
   }
 
-  private func submit() {
-    guard canSend else { return }
+  /// True when the send is accepted; the composer clears the field only then,
+  /// so a question typed while an answer is on its way is not lost.
+  private func submit(attachment submitted: AIAttachment?) -> Bool {
+    guard canSend else { return false }
 
     // On the Ask AI tab the question joins the chat; elsewhere it opens the
     // focused answer sheet.
     if scope == .global, model.selectedTab == .askAI {
       let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
-      model.sendAIChat(trimmed.isEmpty ? "この添付を確認して" : trimmed)
-      question = ""
-      attachment = nil
-      return
+      return model.sendAIChat(
+        trimmed.isEmpty ? "この添付を確認して" : trimmed,
+        attachment: submitted
+      )
     }
 
     isQuestionPresented = true
+    return true
   }
 }

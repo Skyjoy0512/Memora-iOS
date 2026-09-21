@@ -12,7 +12,9 @@ struct AIComposerBar: View {
   /// Keeps the keyboard up after sending, so a chat can continue. The field is
   /// never focused on its own.
   var keepsFocusAfterSubmit = false
-  var onSubmit: () -> Void
+  /// Returns true when the send was accepted. Only then does the composer clear
+  /// what was typed, so a refused send keeps the text and the attachment.
+  var onSubmit: (AIAttachment?) -> Bool
   var focusChanged: ((Bool) -> Void)?
 
   @State private var speechInput = SpeechInputService()
@@ -165,6 +167,7 @@ struct AIComposerBar: View {
   }
 
   /// Shows the engine that will actually answer, not a separate model label.
+  /// Engines that cannot run in this build are listed but not selectable.
   private var modelMenu: some View {
     Menu {
       ForEach(AIEngine.allCases) { option in
@@ -177,6 +180,7 @@ struct AIComposerBar: View {
             Text(option.label)
           }
         }
+        .disabled(!option.isSelectable)
       }
     } label: {
       HStack(spacing: 6) {
@@ -271,9 +275,11 @@ struct AIComposerBar: View {
   private func submit() {
     guard canSend else { return }
     speechInput.stop()
+    guard onSubmit(attachment) else { return }
+    text = ""
+    attachment = nil
     // The Ask AI chat keeps the keyboard up for the next turn; a sheet does not.
     isFieldFocused = keepsFocusAfterSubmit
-    onSubmit()
   }
 
   private func importFile(_ result: Result<[URL], any Error>) {
