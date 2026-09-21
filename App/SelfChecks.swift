@@ -40,7 +40,8 @@ enum SelfChecks {
   }
 
   /// A summary must not be applied to a transcript that changed while it was
-  /// being written, so the fingerprint has to notice an edit.
+  /// being written, so the fingerprint has to notice an edit — including one
+  /// that keeps the same number of characters.
   private static func checkProcessingRevision() {
     let segment = TranscriptSegment(
       id: UUID(),
