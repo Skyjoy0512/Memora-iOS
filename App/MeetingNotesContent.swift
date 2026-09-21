@@ -21,6 +21,7 @@ struct MeetingNotesContent: View {
         text: noteText,
         placeholder: "タップして入力",
         minHeight: 360,
+        draftKey: "meeting.\(meetingID).notes",
         onCommit: { model.updateMeetingNotes(meetingID, notes: $0) }
       )
 

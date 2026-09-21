@@ -8,6 +8,11 @@ struct MemoraApp: App {
     WindowGroup {
       ContentView()
         .environment(model)
+        .onAppear {
+          #if DEBUG
+          SelfChecks.run()
+          #endif
+        }
         .tint(.accentColor)
         .dismissKeyboardOnOutsideTap()
         .onOpenURL { url in

@@ -9,23 +9,36 @@ struct InlineMarkdownEditor: View {
   var placeholder: String
   var font: Font = .body
   var minHeight: CGFloat = 120
+  /// When set, what is being written is kept under this key, so leaving the
+  /// screen or stopping the app does not lose the draft.
+  var draftKey: String?
   var onCommit: (String) -> Void
 
   @Environment(MemoraModel.self) private var model
   @State private var isEditing = false
   @State private var draft = ""
   @State private var editorID = UUID()
+  @State private var didRestoreDraft = false
+  @State private var draftSaveTask: Task<Void, Never>?
   @FocusState private var isFocused: Bool
 
   var body: some View {
     Group {
       if isEditing {
-        MarkdownEditorField(
-          markdown: $draft,
-          font: font,
-          minHeight: minHeight,
-          isFocused: $isFocused
-        )
+        VStack(alignment: .leading, spacing: 8) {
+          if didRestoreDraft {
+            Label("書きかけの内容を復元しました", systemImage: "arrow.uturn.backward")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+          }
+
+          MarkdownEditorField(
+            markdown: $draft,
+            font: font,
+            minHeight: minHeight,
+            isFocused: $isFocused
+          )
+        }
       } else {
         Group {
           if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -50,12 +63,23 @@ struct InlineMarkdownEditor: View {
         endEditing()
       }
     }
+    .onChange(of: draft) { _, newValue in
+      scheduleDraftSave(newValue)
+    }
     .onDisappear { endEditing() }
   }
 
   private func beginEditing() {
     guard !isEditing else { return }
-    draft = text
+
+    if let draftKey, let stored = DraftStore.load(draftKey), stored != text {
+      draft = stored
+      didRestoreDraft = true
+    } else {
+      draft = text
+      didRestoreDraft = false
+    }
+
     isEditing = true
     model.inlineEditingCount += 1
     model.focusedInlineEditorID = editorID
@@ -69,12 +93,31 @@ struct InlineMarkdownEditor: View {
     guard isEditing else { return }
     isEditing = false
     isFocused = false
+    draftSaveTask?.cancel()
+    draftSaveTask = nil
+    didRestoreDraft = false
     model.inlineEditingCount = max(0, model.inlineEditingCount - 1)
     if model.focusedInlineEditorID == editorID {
       model.focusedInlineEditorID = nil
     }
+
     if draft != text {
       onCommit(draft)
+    }
+    // The draft has served its purpose once the text is committed.
+    if let draftKey {
+      DraftStore.clear(draftKey)
+    }
+  }
+
+  /// Saves what is being typed a moment after the last keystroke.
+  private func scheduleDraftSave(_ value: String) {
+    guard isEditing, let draftKey else { return }
+    draftSaveTask?.cancel()
+    draftSaveTask = Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(800))
+      guard !Task.isCancelled else { return }
+      DraftStore.save(value, key: draftKey)
     }
   }
 

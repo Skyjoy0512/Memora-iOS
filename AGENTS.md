@@ -38,6 +38,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - Recording, transcription and summarization never fill in sample content: when
   no engine can run, the record keeps its audio and shows the failure with a
   retry.
+- Text being edited inline keeps a draft (`DraftStore`), restored next time that editor opens.
 - A recording in progress keeps a draft; if the app stops, the audio is recovered
   as its own record and is never re-recorded automatically. Voice input is
   refused (with a reason) while a recording owns the audio session.

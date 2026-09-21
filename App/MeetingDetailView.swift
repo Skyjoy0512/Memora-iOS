@@ -444,6 +444,7 @@ struct MeetingDetailView: View {
         placeholder: "要約を追加",
         font: .title3.weight(.medium),
         minHeight: 120,
+        draftKey: "meeting.\(meeting.id).summary",
         onCommit: { model.updateMeetingSummary(meeting.id, summary: $0) }
       )
       .memoraTextReveal(delay: 0.04)
