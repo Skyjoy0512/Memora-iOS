@@ -174,6 +174,11 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ3（追加14）
+
+- D09: `updatePerson`（名前・メモ、旧名を使うタスク担当の追従）と `mergePerson`（参加者参照の付け替え・重複除去、担当名の更新、写真の引き継ぎ、記録は残す）を追加。`PeopleManagerSheet` から行タップ／スワイプで `PersonEditSheet` を開き、統合は確認ダイアログで件数を提示。
+- D13: 添付メニューの「カメラで撮影…」と `CameraCaptureSheet` を削除（撮影は未実装のためTestFlightに出さない）。写真を選択・音声・ファイルは従来どおり。
+
 ### フェーズ3（追加13）
 
 - D02（完了）: `SearchFilters`（期間・人・プロジェクト・状態）と `MemoraModel+Search` を追加。`safeAreaInset` で結果の上に固定したチップから絞り込み、`解除` で戻す。タスクは期限・担当・元記録のプロジェクト・完了状態で絞り込み、記録固有の状態（処理中・要確認）では出さない。

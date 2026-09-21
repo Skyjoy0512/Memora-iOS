@@ -1420,7 +1420,7 @@ final class MemoraModel {
     persistMeetings()
   }
 
-  private func persistTasks() {
+  func persistTasks() {
     persistInBackground(tasks, forKey: StorageKey.tasks)
   }
 

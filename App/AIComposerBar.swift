@@ -19,7 +19,6 @@ struct AIComposerBar: View {
   @State private var isImporterPresented = false
   @State private var isAudioImporterPresented = false
   @State private var isPhotoPickerPresented = false
-  @State private var isCameraPresented = false
   @State private var photoItem: PhotosPickerItem?
   @State private var editingPhoto: PhotoEditRequest?
   @State private var importErrorMessage: String?
@@ -90,9 +89,6 @@ struct AIComposerBar: View {
       selection: $photoItem,
       matching: .images
     )
-    .fullScreenCover(isPresented: $isCameraPresented) {
-      CameraCaptureSheet()
-    }
     .onChange(of: photoItem) { _, newItem in
       guard let newItem else { return }
       Task {
@@ -148,9 +144,6 @@ struct AIComposerBar: View {
 
   private var attachmentMenu: some View {
     Menu {
-      Button("カメラで撮影…", systemImage: "camera") {
-        isCameraPresented = true
-      }
       Button("写真を選択…", systemImage: "photo") {
         isPhotoPickerPresented = true
       }

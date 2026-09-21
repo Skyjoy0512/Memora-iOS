@@ -19,6 +19,78 @@ extension MemoraModel {
     return person
   }
 
+  /// Renames a person and follows the change through to the tasks that used the
+  /// old name, so no task is left pointing at a name nobody has.
+  func updatePerson(_ id: UUID, name: String, note: String?) {
+    guard let index = people.firstIndex(where: { $0.id == id }) else { return }
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+
+    let oldName = people[index].name
+    let trimmedNote = note?.trimmingCharacters(in: .whitespacesAndNewlines)
+    people[index].name = trimmed
+    people[index].note = (trimmedNote?.isEmpty ?? true) ? nil : trimmedNote
+    persistPeople()
+
+    guard oldName.compare(trimmed, options: .caseInsensitive) != .orderedSame else { return }
+    var changed = false
+    for taskIndex in tasks.indices {
+      guard let assignee = tasks[taskIndex].assignee,
+            assignee.compare(oldName, options: .caseInsensitive) == .orderedSame else { continue }
+      tasks[taskIndex].assignee = trimmed
+      changed = true
+    }
+    if changed {
+      persistTasks()
+    }
+  }
+
+  /// Merges a duplicate into the person to keep: their tags and task assignments
+  /// move over, then the duplicate is removed. Recordings are never deleted.
+  func mergePerson(_ source: UUID, into target: UUID) {
+    guard source != target,
+          let targetIndex = people.firstIndex(where: { $0.id == target }),
+          let sourceIndex = people.firstIndex(where: { $0.id == source }) else { return }
+
+    let sourceName = people[sourceIndex].name
+    let targetName = people[targetIndex].name
+
+    // Keep a photo rather than losing it to the duplicate.
+    if people[targetIndex].photoData == nil {
+      people[targetIndex].photoData = people[sourceIndex].photoData
+    }
+
+    var meetingsChanged = false
+    for index in meetings.indices {
+      guard var ids = meetings[index].participantIDs, ids.contains(source) else { continue }
+      ids.removeAll { $0 == source }
+      if !ids.contains(target) {
+        ids.append(target)
+      }
+      meetings[index].participantIDs = ids.isEmpty ? nil : ids
+      meetingsChanged = true
+    }
+    if meetingsChanged {
+      persistMeetings()
+    }
+
+    if sourceName.compare(targetName, options: .caseInsensitive) != .orderedSame {
+      var tasksChanged = false
+      for index in tasks.indices {
+        guard let assignee = tasks[index].assignee,
+              assignee.compare(sourceName, options: .caseInsensitive) == .orderedSame else { continue }
+        tasks[index].assignee = targetName
+        tasksChanged = true
+      }
+      if tasksChanged {
+        persistTasks()
+      }
+    }
+
+    people.removeAll { $0.id == source }
+    persistPeople()
+  }
+
   func setPersonPhoto(_ id: UUID, data: Data?) {
     guard let index = people.firstIndex(where: { $0.id == id }) else { return }
     people[index].photoData = data

@@ -14,6 +14,7 @@ struct PeopleManagerSheet: View {
   @State private var photoTarget: PhotoTarget?
   @State private var photoItem: PhotosPickerItem?
   @State private var editingPhoto: PhotoEditRequest?
+  @State private var editingPerson: Person?
 
   private enum PhotoTarget: Equatable {
     case new
@@ -52,9 +53,21 @@ struct PeopleManagerSheet: View {
               HStack(spacing: 12) {
                 PersonAvatar(name: person.name, size: 44, photoData: person.photoData)
 
-                Text(person.name)
-
-                Spacer()
+                VStack(alignment: .leading, spacing: 2) {
+                  Text(person.name)
+                  if let note = person.note, !note.isEmpty {
+                    Text(note)
+                      .font(.caption)
+                      .foregroundStyle(.secondary)
+                      .lineLimit(1)
+                  }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { editingPerson = person }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityLabel("\(person.name)を編集")
 
                 Button("写真を変更", systemImage: "photo") {
                   photoTarget = .person(person.id)
@@ -62,6 +75,9 @@ struct PeopleManagerSheet: View {
                 }
                 .labelStyle(.iconOnly)
                 .foregroundStyle(.secondary)
+              }
+              .swipeActions(edge: .trailing) {
+                Button("編集", systemImage: "pencil") { editingPerson = person }
               }
             }
             .onDelete { indexSet in
@@ -87,6 +103,9 @@ struct PeopleManagerSheet: View {
           photoItem = nil
           editingPhoto = PhotoEditRequest(data: data)
         }
+      }
+      .sheet(item: $editingPerson) { person in
+        PersonEditSheet(personID: person.id)
       }
       .sheet(item: $editingPhoto) { request in
         PhotoEditorView(source: request.data) { edited in
