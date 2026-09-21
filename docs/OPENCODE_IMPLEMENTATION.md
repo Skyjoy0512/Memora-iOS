@@ -174,6 +174,15 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### 改修後レビュー フェーズ2（AIの参照範囲・根拠・送信内容）
+
+- 送信内容を `MemoraModel.requestContent(for:scopeLabel:allowedMeetings:tasks:)`（**純関数**）に集約し、**範囲外の記録・タスクを文脈に含めない**。順位付け・文脈生成・添付処理は共通基盤 `answer(request:...)` が担い、チャットと詳細画面で同一。
+- `AIQuestionRequest` を追加し、**送信時点の質問・範囲・添付を固定**（`AIQuestionView` は request を受けて開始し、処理中のUI変更に影響されない）。画面終了でタスクをキャンセルし、古い結果は適用しない。
+- `AIQuestionView` の **固定時刻「00:42 の発言」を削除**し、保存済み文字起こしから一致した発言と実時刻のみ表示。**失敗時は根拠セクションを出さず**、失敗メッセージのみ表示。
+- 添付は対応形式（テキスト／PDF）の内容を実際に文脈へ入れ、非対応は「送信していません」と明示。
+- `QuickAIComposer` は**送信時に `AIQuestionRequest` を組み立ててから**シートを開き、入力欄のクリアは受付成功後のみ。
+- 自己チェック: 会議Aへの質問に会議Bの内容が混ざらないこと、プロジェクト範囲が範囲外記録を運ばないことを検証。
+
 ### 改修後レビュー フェーズ1（保存・バックアップ・復旧）
 
 - 媒体パス検証: `MediaFiles.isPlainName`（空・`.`・`..`・区切り・NULを拒否）と `isInside`（symlink解決後の**厳密な子**判定。フォルダ自身や `RecordingsOld` のような前方一致は不可）を追加し、`reference`／`resolve`／`photoURL`／`delete` を通した。

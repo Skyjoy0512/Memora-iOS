@@ -31,6 +31,7 @@ enum SelfChecks {
     checkProcessingRevision()
     checkMediaPaths()
     checkPhotoFileRoles()
+    checkRequestScope()
     checkPhotoThumbnailNaming()
     checkStatusFilter()
   }
@@ -62,6 +63,71 @@ enum SelfChecks {
     let name = "ABC.jpg"
     if MediaFiles.photoFiles(for: [name]) != [name, "ABC.jpg.thumb.jpg"] {
       report("photo thumbnail naming: \(MediaFiles.photoFiles(for: [name]))")
+    }
+  }
+
+  /// A question asked of one meeting, or one project, must not carry another
+  /// record's contents. This checks the request the app would send, without
+  /// calling any engine.
+  private static func checkRequestScope() {
+    let meetingA = Meeting(
+      id: UUID(),
+      title: "会議A",
+      createdAt: .now,
+      duration: 60,
+      source: .recording,
+      status: .ready,
+      summary: "A社との見積もり",
+      keyPoints: [],
+      decisions: [],
+      openQuestions: [],
+      transcript: []
+    )
+    let meetingB = Meeting(
+      id: UUID(),
+      title: "会議B",
+      createdAt: .now,
+      duration: 60,
+      source: .recording,
+      status: .ready,
+      summary: "B社との採用",
+      keyPoints: [],
+      decisions: [],
+      openQuestions: [],
+      transcript: []
+    )
+
+    let fileRequest = AIQuestionRequest(question: "見積もりは？", scope: .file(meetingA.id), attachment: nil)
+    let fileAllowed = MemoraModel.meetings(in: fileRequest.scope, from: [meetingA, meetingB])
+    let fileContent = MemoraModel.requestContent(
+      for: fileRequest,
+      scopeLabel: "会議A",
+      allowedMeetings: fileAllowed,
+      tasks: []
+    )
+    if !fileContent.context.contains("A社との見積もり") {
+      report("request content missed the allowed record")
+    }
+    if fileContent.context.contains("B社との採用") {
+      report("request content carried a record outside the range")
+    }
+    if fileContent.sources.map(\.meetingID) != [meetingA.id] {
+      report("request sources outside the range: \(fileContent.sources.map(\.title))")
+    }
+
+    let spaceID = UUID()
+    var inProject = meetingA
+    inProject.spaceID = spaceID
+    let spaceRequest = AIQuestionRequest(question: "", scope: .space(spaceID), attachment: nil)
+    let spaceAllowed = MemoraModel.meetings(in: spaceRequest.scope, from: [inProject, meetingB])
+    let spaceContent = MemoraModel.requestContent(
+      for: spaceRequest,
+      scopeLabel: "プロジェクト",
+      allowedMeetings: spaceAllowed,
+      tasks: []
+    )
+    if spaceContent.sources.map(\.meetingID).contains(meetingB.id) {
+      report("project range carried a record outside it")
     }
   }
 
