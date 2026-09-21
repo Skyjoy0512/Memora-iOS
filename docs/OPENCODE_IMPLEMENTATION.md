@@ -174,6 +174,10 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ3（追加13）
+
+- D02（完了）: `SearchFilters`（期間・人・プロジェクト・状態）と `MemoraModel+Search` を追加。`safeAreaInset` で結果の上に固定したチップから絞り込み、`解除` で戻す。タスクは期限・担当・元記録のプロジェクト・完了状態で絞り込み、記録固有の状態（処理中・要確認）では出さない。
+
 ### フェーズ3（追加12）
 
 - D08: `MediaFiles.writePhoto(_:thumbnailMaxSide:)` が元画像とサムネイル（派生名 `<name>.thumb.jpg`）を書く。`photoThumbnailData` は無ければ元画像へフォールバック。`deletePhoto` は両方を削除、バックアップは `photoFiles(for:)` でサムネイルも同梱。ジャーナルの拡大表示は元画像、一覧はサムネイルを読む。
