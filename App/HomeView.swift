@@ -115,7 +115,7 @@ struct HomeView: View {
         .padding(.horizontal, 18)
         // The floating composer and tab bar do not inset this scroll view, so
         // leave room for the last records to clear them.
-        .padding(.bottom, 184)
+        .padding(.bottom, model.bottomContentClearance)
       }
       .hideBottomBarOnScroll()
       .background(Color(uiColor: .systemBackground))

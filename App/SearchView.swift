@@ -5,6 +5,7 @@ struct SearchView: View {
   @State private var query = ""
   @State private var isSearchSheetPresented = false
   @State private var isHistoryPresented = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     @Bindable var model = model
@@ -96,6 +97,7 @@ struct SearchView: View {
         .padding(.vertical, 16)
       }
       .scrollDismissesKeyboard(.interactively)
+      .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
       .hideBottomBarOnScroll()
       .onChange(of: model.aiMessages.count) { _, _ in
         scrollToLatest(proxy)
@@ -115,7 +117,7 @@ struct SearchView: View {
 
   private func scrollToLatest(_ proxy: ScrollViewProxy) {
     guard let last = model.aiMessages.last else { return }
-    withAnimation(.smooth(duration: 0.3)) {
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) {
       proxy.scrollTo(last.id, anchor: .bottom)
     }
   }
@@ -233,8 +235,8 @@ struct SearchView: View {
       }
     }
     .listStyle(.insetGrouped)
-    .animation(.smooth, value: matchingMeetings.map(\.id))
-    .animation(.smooth, value: matchingTasks.map(\.id))
+    .animation(reduceMotion ? nil : .smooth, value: matchingMeetings.map(\.id))
+    .animation(reduceMotion ? nil : .smooth, value: matchingTasks.map(\.id))
     .overlay {
       if matchingMeetings.isEmpty && matchingTasks.isEmpty {
         ContentUnavailableView.search(text: query)

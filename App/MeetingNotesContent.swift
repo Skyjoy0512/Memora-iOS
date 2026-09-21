@@ -7,6 +7,7 @@ struct MeetingNotesContent: View {
   var meetingID: UUID
   @State private var photoItem: PhotosPickerItem?
   @State private var editingPhoto: PhotoEditRequest?
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     let photos = model.meetingPhotos(meetingID)
@@ -69,7 +70,7 @@ struct MeetingNotesContent: View {
       .scrollIndicators(.hidden)
     }
     .memoraAppear()
-    .animation(.smooth, value: photos.count)
+    .animation(reduceMotion ? nil : .smooth, value: photos.count)
     .onChange(of: photoItem) { _, item in
       Task { await addPhoto(item) }
     }

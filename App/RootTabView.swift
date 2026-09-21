@@ -129,6 +129,11 @@ struct RootTabView: View {
     // full-bleed drawer, so add it back here — except while the keyboard is up,
     // where the keyboard's own safe area already lifts these controls.
     .padding(.bottom, isKeyboardVisible ? 14 : safeAreaInsets.bottom)
+    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+      if abs(model.bottomControlsHeight - height) > 0.5 {
+        model.bottomControlsHeight = height
+      }
+    }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)

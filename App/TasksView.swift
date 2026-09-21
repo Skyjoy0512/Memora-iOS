@@ -57,6 +57,7 @@ struct TasksView: View {
           }
           .hideBottomBarOnScroll()
           .listStyle(.plain)
+          .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
         }
       }
       .navigationTitle("タスク")

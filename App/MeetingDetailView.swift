@@ -54,7 +54,7 @@ struct MeetingDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 18)
             // Room to scroll the last section clear of the floating AI composer.
-            .padding(.bottom, 120)
+            .padding(.bottom, model.bottomContentClearance)
             .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedSection)
             .animation(reduceMotion ? nil : MemoraMotion.screen, value: meeting.status)
           }

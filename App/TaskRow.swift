@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TaskRow: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var task: MemoraTask
   var showsSource = false
   /// Off where the row is read as part of a summary, so the assignee and due
@@ -13,7 +14,7 @@ struct TaskRow: View {
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
       Button(task.isCompleted ? "未完了に戻す" : "完了にする", systemImage: task.isCompleted ? "checkmark.circle.fill" : "circle") {
-        withAnimation(.snappy) {
+        withAnimation(reduceMotion ? nil : .snappy) {
           model.toggleTask(task.id)
         }
       }

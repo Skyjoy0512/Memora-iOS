@@ -3,6 +3,7 @@ import SwiftUI
 struct AllMeetingsView: View {
   @Environment(MemoraModel.self) private var model
   @State private var query = ""
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     let meetings = filteredMeetings
@@ -20,7 +21,7 @@ struct AllMeetingsView: View {
       }
     }
     .listStyle(.plain)
-    .animation(.smooth, value: meetings.map(\.id))
+    .animation(reduceMotion ? nil : .smooth, value: meetings.map(\.id))
     .navigationTitle("すべての会話")
     .searchable(text: $query, prompt: "タイトル、発言、決定、タスク")
     .overlay {

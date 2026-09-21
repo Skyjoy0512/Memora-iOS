@@ -79,6 +79,13 @@ final class MemoraModel {
   var isImporting = false
   /// Shown as indeterminate while the copy cannot be measured.
   var importProgress: Double?
+  /// The floating controls' measured height. The shell is full-bleed, so the
+  /// tab contents do not receive it as a safe-area inset and ask for it here.
+  var bottomControlsHeight: CGFloat = 0
+  /// Room a scroll view needs so its last item clears the floating controls.
+  var bottomContentClearance: CGFloat {
+    max(bottomControlsHeight, 24) + 16
+  }
   var importErrorMessage: String?
   /// Set when stored data exists but could not be read. The data is kept aside
   /// rather than overwritten with samples.

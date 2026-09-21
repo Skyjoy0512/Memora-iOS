@@ -153,6 +153,7 @@ struct LibraryView: View {
     }
     .listStyle(.plain)
     .scrollContentBackground(.hidden)
+    .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     .hideBottomBarOnScroll()
   }
 
@@ -185,6 +186,7 @@ struct LibraryView: View {
       .padding(.top, 8)
       .padding(.bottom, 32)
     }
+    .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     .hideBottomBarOnScroll()
   }
 
