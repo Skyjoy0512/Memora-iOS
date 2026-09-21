@@ -3,7 +3,28 @@ import Foundation
 
 @MainActor
 final class AudioRecorderService {
+  /// Something the system did to the audio session while recording.
+  enum Interruption {
+    case began
+    case ended
+    case inputLost(String)
+    case reset
+  }
+
+  /// Called when the session is interrupted or the input goes away, so the
+  /// caller can keep its state honest and let the person resume.
+  var onInterruption: ((Interruption) -> Void)?
+
   private var recorder: AVAudioRecorder?
+  private var observers: [NSObjectProtocol] = []
+
+  init() {
+    observeSession()
+  }
+
+  deinit {
+    observers.forEach { NotificationCenter.default.removeObserver($0) }
+  }
 
   func requestPermission() async -> Bool {
     switch AVAudioApplication.shared.recordPermission {
@@ -60,7 +81,57 @@ final class AudioRecorderService {
   }
 
   func resume() -> Bool {
-    recorder?.record() ?? false
+    // After an interruption the session has to be active again.
+    try? AVAudioSession.sharedInstance().setActive(true)
+    return recorder?.record() ?? false
+  }
+
+  private func observeSession() {
+    let center = NotificationCenter.default
+    let session = AVAudioSession.sharedInstance()
+
+    observers.append(
+      center.addObserver(forName: AVAudioSession.interruptionNotification, object: session, queue: .main) { [weak self] note in
+        MainActor.assumeIsolated { self?.handleInterruption(note) }
+      }
+    )
+    observers.append(
+      center.addObserver(forName: AVAudioSession.routeChangeNotification, object: session, queue: .main) { [weak self] note in
+        MainActor.assumeIsolated { self?.handleRouteChange(note) }
+      }
+    )
+    observers.append(
+      center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: session, queue: .main) { [weak self] _ in
+        MainActor.assumeIsolated {
+          self?.recorder = nil
+          self?.onInterruption?(.reset)
+        }
+      }
+    )
+  }
+
+  private func handleInterruption(_ note: Notification) {
+    guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+          let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+
+    switch type {
+    case .began:
+      recorder?.pause()
+      onInterruption?(.began)
+    case .ended:
+      onInterruption?(.ended)
+    @unknown default:
+      break
+    }
+  }
+
+  private func handleRouteChange(_ note: Notification) {
+    guard let raw = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+          let reason = AVAudioSession.RouteChangeReason(rawValue: raw) else { return }
+
+    guard reason == .oldDeviceUnavailable else { return }
+    recorder?.pause()
+    onInterruption?(.inputLost("オーディオ機器が外れたため、録音を一時停止しました。「再開」で続けられます。"))
   }
 
   private func recordingsDirectory() throws -> URL {
