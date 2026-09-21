@@ -398,7 +398,7 @@ struct MeetingDetailView: View {
         insightContent(meeting)
       }
     case .transcript:
-      MeetingTranscriptContent(meeting: meeting)
+      MeetingTranscriptContent(meeting: meeting, player: player)
     case .notes:
       MeetingNotesContent(meetingID: meeting.id)
     }

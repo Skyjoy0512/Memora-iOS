@@ -3,6 +3,8 @@ import SwiftUI
 struct MeetingTranscriptContent: View {
   @Environment(MemoraModel.self) private var model
   var meeting: Meeting
+  /// The recording's playback, when there is one to follow.
+  var player: AudioPlayerService?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 22) {
@@ -36,7 +38,9 @@ struct MeetingTranscriptContent: View {
               meetingID: meeting.id,
               segment: segment,
               showsSpeaker: meeting.hasSpeakerSeparation,
-              timeWidth: 42
+              timeWidth: 42,
+              isActive: segment.id == activeSegmentID,
+              onSeek: seekAction
             )
           }
         }
@@ -44,24 +48,45 @@ struct MeetingTranscriptContent: View {
     }
     .memoraAppear()
   }
+
+  /// The line being played, so it can be highlighted.
+  private var activeSegmentID: UUID? {
+    guard hasTimeline, let player else { return nil }
+    return meeting.transcript.last { $0.timestamp <= player.currentTime }?.id
+  }
+
+  /// Seeking is only offered when the transcript actually carries times.
+  private var seekAction: ((TimeInterval) -> Void)? {
+    guard hasTimeline, let player else { return nil }
+    return { time in
+      player.seek(to: time)
+      player.play()
+    }
+  }
+
+  private var hasTimeline: Bool {
+    meeting.transcript.contains { $0.timestamp > 0 }
+  }
 }
 
 /// One transcript line whose body can be corrected in place. Used by both the
 /// detail's transcript section and the full transcript screen.
 struct TranscriptSegmentText: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var meetingID: UUID
   var segment: TranscriptSegment
   var showsSpeaker: Bool
   var timeWidth: CGFloat = 50
+  /// Highlighted while the recording is playing this line.
+  var isActive = false
+  /// Set when the line's time can be played from.
+  var onSeek: ((TimeInterval) -> Void)?
   var onEditSpeaker: (() -> Void)?
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      Text(MemoraFormat.duration(segment.timestamp))
-        .font(.caption.monospacedDigit().weight(.medium))
-        .foregroundStyle(.secondary)
-        .frame(width: timeWidth, alignment: .leading)
+      timeLabel
 
       VStack(alignment: .leading, spacing: 6) {
         if showsSpeaker {
@@ -85,6 +110,38 @@ struct TranscriptSegmentText: View {
         )
       }
     }
+    .padding(.vertical, 4)
+    .padding(.horizontal, 8)
+    .background {
+      if isActive {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+          .fill(Color.primary.opacity(0.06))
+      }
+    }
+    .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: isActive)
+  }
+
+  /// The time is tappable only when the recording can actually play from it.
+  @ViewBuilder
+  private var timeLabel: some View {
+    if let onSeek {
+      Button {
+        onSeek(segment.timestamp)
+      } label: {
+        timeText
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("\(MemoraFormat.duration(segment.timestamp)) から再生")
+    } else {
+      timeText
+    }
+  }
+
+  private var timeText: some View {
+    Text(MemoraFormat.duration(segment.timestamp))
+      .font(.caption.monospacedDigit().weight(isActive ? .bold : .medium))
+      .foregroundStyle(isActive ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+      .frame(width: timeWidth, alignment: .leading)
   }
 
   private var speakerLabel: some View {
