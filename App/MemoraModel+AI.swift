@@ -20,20 +20,9 @@ extension MemoraModel {
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
 
-    let scope = aiScope
     let engine = aiEngine
     let provider = aiProvider
-    let words = Self.questionWords(in: trimmed)
-    let sources = aiSources(for: trimmed, scope: scope)
-    let evidences = sources.map { meeting in
-      (meeting: meeting, excerpt: Self.bestExcerpt(in: meeting, words: words))
-    }
-    var context = aiContext(for: sources, scope: scope)
-    for evidence in evidences {
-      guard let excerpt = evidence.excerpt else { continue }
-      let stamp = MemoraFormat.duration(excerpt.start)
-      context += "\n根拠の発言（\(evidence.meeting.displayTitle) \(stamp)）: \(excerpt.text)"
-    }
+    let scope = aiScope
     let history = aiConversationContext()
     let requestID = UUID()
     aiChatRequestID = requestID
@@ -43,74 +32,43 @@ extension MemoraModel {
     aiMessages.append(placeholder)
     isAIChatResponding = true
 
-    // What the engines can read. Anything they cannot is named as not analysed
-    // rather than sent as though it had been.
-    var attachmentText = ""
-    var unsupportedNote: String?
-    if let attachment {
-      switch AIAttachmentText.read(attachment) {
-      case .text(let text):
-        attachmentText = "添付「\(attachment.name)」:\n\(text)"
-      case .unsupported(let reason):
-        unsupportedNote = "添付「\(attachment.name)」はAI解析に対応していないため、内容は送信していません。\(reason)"
-      }
-    }
-
     aiChatTask?.cancel()
     aiChatTask = Task { [weak self] in
       guard let self else { return }
-      // Tell the person what was left out before answering, so a send that
-      // carried nothing never looks successful.
-      if let unsupportedNote, let index = self.aiMessages.firstIndex(where: { $0.id == placeholder.id }) {
-        self.aiMessages.insert(
-          AIChatMessage(role: .assistant, text: unsupportedNote),
-          at: index
-        )
-      }
-
-      let promptContext = attachmentText.isEmpty ? context : "\(context)\n\n\(attachmentText)"
-      let result = await AIEngineService.answer(
-        engine: engine,
-        provider: provider,
-        question: trimmed,
+      let outcome = await self.answer(
+        request: AIQuestionRequest(question: trimmed, scope: .global, attachment: attachment),
         scopeLabel: scope.scopeLabel,
-        context: promptContext,
-        history: history
+        allowedMeetings: Self.meetings(in: scope, from: self.meetings),
+        history: history,
+        engine: engine,
+        provider: provider
       )
 
       // A newer chat or question owns the screen now; this result is stale.
       guard !Task.isCancelled, self.aiChatRequestID == requestID else { return }
 
-      let details = AIAnswerDetails(
-        scopeLabel: scope.scopeLabel,
-        engineLabel: AIEngineService.effectiveEngine(engine).label,
-        modelLabel: AIEngineService.modelLabel(engine: engine, provider: provider),
-        sourceCount: sources.count,
-        generatedAt: .now
-      )
+      // Tell the person what was left out before answering, so a send that
+      // carried nothing never looks successful.
+      if let unsupported = outcome.unsupportedAttachmentNote,
+         let index = self.aiMessages.firstIndex(where: { $0.id == placeholder.id }) {
+        self.aiMessages.insert(AIChatMessage(role: .assistant, text: unsupported), at: index)
+      }
 
-      switch result {
+      switch outcome.result {
       case .answer(let text):
         if let index = self.aiMessages.firstIndex(where: { $0.id == placeholder.id }) {
           self.aiMessages[index].text = text
-          self.aiMessages[index].details = details
+          self.aiMessages[index].details = outcome.details
           self.aiMessages[index].isThinking = false
           // Only records that were actually sent are offered as grounds.
-          self.aiMessages[index].sources = evidences.map { evidence in
-            AIChatSource(
-              meetingID: evidence.meeting.id,
-              title: evidence.meeting.displayTitle,
-              excerpt: evidence.excerpt?.text,
-              start: evidence.excerpt?.start
-            )
-          }
+          self.aiMessages[index].sources = outcome.sources
         }
         self.saveAIExchange(
-          question: trimmed,
+          question: outcome.question,
           answer: text,
-          scopeLabel: scope.scopeLabel,
-          engineLabel: details.engineLabel,
-          modelLabel: details.modelLabel
+          scopeLabel: outcome.scopeLabel,
+          engineLabel: outcome.details.engineLabel,
+          modelLabel: outcome.details.modelLabel
         )
 
       case .failure(let failure):
@@ -118,7 +76,7 @@ extension MemoraModel {
         guard failure != .cancelled else { return }
         if let index = self.aiMessages.firstIndex(where: { $0.id == placeholder.id }) {
           self.aiMessages[index].text = failure.message
-          self.aiMessages[index].details = details
+          self.aiMessages[index].details = outcome.details
           self.aiMessages[index].isThinking = false
         }
       }
@@ -129,6 +87,90 @@ extension MemoraModel {
     }
 
     return true
+  }
+
+  /// Answers a question with the chosen engine, using only the records the range
+  /// allows. Both the chat and the focused question screen come through here, so
+  /// the range, the attachment handling, and the grounds shown are decided once.
+  func answer(
+    request: AIQuestionRequest,
+    scopeLabel: String,
+    allowedMeetings: [Meeting],
+    history: String,
+    engine: AIEngine,
+    provider: CloudProvider
+  ) async -> AIAnswerOutcome {
+    let question = request.effectiveQuestion
+    let words = Self.questionWords(in: question)
+    let sources = aiSources(for: question, allowed: allowedMeetings)
+    let allowedTasks = Self.tasks(in: allowedMeetings, from: tanksForScope(allowedMeetings: allowedMeetings))
+    let evidences = sources.map { meeting in
+      (meeting: meeting, excerpt: Self.bestExcerpt(in: meeting, words: words))
+    }
+
+    var context = aiContext(for: sources, tasks: allowedTasks)
+    for evidence in evidences {
+      guard let excerpt = evidence.excerpt else { continue }
+      let stamp = MemoraFormat.duration(excerpt.start)
+      context += "\n根拠の発言（\(evidence.meeting.displayTitle) \(stamp)）: \(excerpt.text)"
+    }
+
+    // What the engines can read. Anything they cannot is named as not analysed
+    // rather than sent as though it had been.
+    var attachmentText = ""
+    var unsupportedNote: String?
+    if let attachment = request.attachment {
+      switch AIAttachmentText.read(attachment) {
+      case .text(let text):
+        attachmentText = "添付「\(attachment.name)」:\n\(text)"
+      case .unsupported(let reason):
+        unsupportedNote = "添付「\(attachment.name)」はAI解析に対応していないため、内容は送信していません。\(reason)"
+      }
+    }
+
+    let promptContext = attachmentText.isEmpty ? context : "\(context)\n\n\(attachmentText)"
+    let result = await AIEngineService.answer(
+      engine: engine,
+      provider: provider,
+      question: question,
+      scopeLabel: scopeLabel,
+      context: promptContext,
+      history: history
+    )
+
+    let details = AIAnswerDetails(
+      scopeLabel: scopeLabel,
+      engineLabel: AIEngineService.effectiveEngine(engine).label,
+      modelLabel: AIEngineService.modelLabel(engine: engine, provider: provider),
+      sourceCount: sources.count,
+      generatedAt: .now
+    )
+
+    return AIAnswerOutcome(
+      question: question,
+      scopeLabel: scopeLabel,
+      result: result,
+      // Only an answer is given grounds; a failure has none to show.
+      sources: result.text == nil ? [] : evidences.map { evidence in
+        AIChatSource(
+          meetingID: evidence.meeting.id,
+          title: evidence.meeting.displayTitle,
+          excerpt: evidence.excerpt?.text,
+          start: evidence.excerpt?.start
+        )
+      },
+      details: details,
+      unsupportedAttachmentNote: unsupportedNote
+    )
+  }
+
+  /// The tasks that belong to the records a question may use.
+  private func tanksForScope(allowedMeetings: [Meeting]) -> [MemoraTask] {
+    let allowedIDs = Set(allowedMeetings.map(\.id))
+    return tasks.filter { task in
+      guard let meetingID = task.meetingID else { return false }
+      return allowedIDs.contains(meetingID)
+    }
   }
 
   /// The exchanges so far in this chat, so a follow-up question has the thread
@@ -161,9 +203,9 @@ extension MemoraModel {
 
   /// The records a question reaches: those whose own text contains its words,
   /// ranked by how many of them match, then by recency. A question with nothing
-  /// to go on falls back to the most recent records.
-  func aiSources(for question: String, scope: AIChatScope) -> [Meeting] {
-    let scoped = Self.meetings(in: scope, from: meetings)
+  /// to go on falls back to the most recent records. `allowed` is the range the
+  /// question was asked over, so records outside it are never sent.
+  func aiSources(for question: String, allowed scoped: [Meeting]) -> [Meeting] {
     let words = Self.questionWords(in: question)
     if !words.isEmpty {
       let matched = scoped
@@ -182,6 +224,22 @@ extension MemoraModel {
     return Array(scoped.sorted { $0.createdAt > $1.createdAt }.prefix(3))
   }
 
+  func aiSources(for question: String, scope: AIChatScope) -> [Meeting] {
+    aiSources(for: question, allowed: Self.meetings(in: scope, from: meetings))
+  }
+
+  /// The records an `AIQueryScope` allows, mirroring the chat's ranges.
+  static func meetings(in scope: AIQueryScope, from meetings: [Meeting]) -> [Meeting] {
+    switch scope {
+    case .file(let id):
+      meetings.filter { $0.id == id }
+    case .space(let id):
+      meetings.filter { $0.spaceID == id }
+    case .global:
+      meetings
+    }
+  }
+
   /// Which records a scope reaches. Kept apart from the search so the scope can
   /// be checked without building a model.
   static func meetings(in scope: AIChatScope, from meetings: [Meeting]) -> [Meeting] {
@@ -190,6 +248,15 @@ extension MemoraModel {
       meetings
     case .projects:
       meetings.filter { $0.spaceID != nil }
+    }
+  }
+
+  /// The tasks whose record is within the allowed set.
+  static func tasks(in allowedMeetings: [Meeting], from tasks: [MemoraTask]) -> [MemoraTask] {
+    let allowedIDs = Set(allowedMeetings.map(\.id))
+    return tasks.filter { task in
+      guard let meetingID = task.meetingID else { return false }
+      return allowedIDs.contains(meetingID)
     }
   }
 
@@ -240,11 +307,19 @@ extension MemoraModel {
   }
 
   /// A compact digest of the records an answer is built from, plus the open
-  /// tasks, so a model answers from the data rather than from general knowledge.
+  /// tasks that belong to them, so a model answers from the data rather than
+  /// from general knowledge.
   func aiContext(for sources: [Meeting], scope: AIChatScope) -> String {
+    aiContext(
+      for: sources,
+      tasks: Self.openTasks(in: scope, from: tasks, meetings: meetings)
+    )
+  }
+
+  func aiContext(for sources: [Meeting], tasks allowedTasks: [MemoraTask]) -> String {
     var lines: [String] = []
 
-    let openTasks = Self.openTasks(in: scope, from: tasks, meetings: meetings)
+    let openTasks = allowedTasks.filter { !$0.isCompleted }
     if !openTasks.isEmpty {
       lines.append("未完了のタスク:")
       lines.append(contentsOf: openTasks.map { task in

@@ -11,7 +11,9 @@ struct QuickAIComposer: View {
   /// focused on its own, so switching tabs does not raise the keyboard.
   var keepsFocusAfterSubmit = false
   @State private var attachment: AIAttachment?
-  @State private var isQuestionPresented = false
+  /// The question handed to the focused screen. It is built when the sheet
+  /// opens, so clearing the composer afterwards cannot empty what is being asked.
+  @State private var pendingQuestion: AIQuestionRequest?
 
   var body: some View {
     // The draft lives in the model, so rebuilding this view or leaving the tab
@@ -27,11 +29,8 @@ struct QuickAIComposer: View {
     ) { focused in
       isComposing = focused
     }
-    .sheet(isPresented: $isQuestionPresented) {
-      model.composerDraft = ""
-      attachment = nil
-    } content: {
-      AIQuestionView(scope: scope, askingQuestion: model.composerDraft, attachment: attachment)
+    .sheet(item: $pendingQuestion) { request in
+      AIQuestionView(request: request)
     }
   }
 
@@ -66,7 +65,10 @@ struct QuickAIComposer: View {
       )
     }
 
-    isQuestionPresented = true
+    // The request is built from what is on screen now; the composer is only
+    // cleared by the bar once this returns true.
+    let trimmed = model.composerDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+    pendingQuestion = AIQuestionRequest(question: trimmed, scope: scope, attachment: submitted)
     return true
   }
 }

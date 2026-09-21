@@ -7,33 +7,44 @@ struct AIQuestionView: View {
   @State private var selectedScope: AIQueryScope
   @State private var question: String
   @State private var attachment: AIAttachment?
-  @State private var submittedQuestion: String?
-  @State private var submittedAttachment: AIAttachment?
+  @State private var submitted: AIQuestionRequest?
   @State private var answer: String?
+  @State private var failureMessage: String?
+  @State private var unsupportedAttachmentNote: String?
+  @State private var sources: [AIChatSource] = []
   @State private var isAnswering = false
+  @State private var askTask: Task<Void, Never>?
 
-  /// A non-empty `askingQuestion` is asked on open, so arriving here from the
-  /// composer or a suggestion does not need a second tap on send.
+  /// The request carries the question, the range it was asked over, and the
+  /// attachment, so what is sent cannot change while the answer is written.
+  init(request: AIQuestionRequest) {
+    _selectedScope = State(initialValue: request.scope)
+    _question = State(initialValue: request.question)
+    _attachment = State(initialValue: request.attachment)
+  }
+
+  /// A convenience for a screen that already knows its range.
   init(scope: AIQueryScope, askingQuestion: String = "", attachment: AIAttachment? = nil) {
-    _selectedScope = State(initialValue: scope)
-    _question = State(initialValue: askingQuestion)
-    _attachment = State(initialValue: attachment)
+    self.init(request: AIQuestionRequest(question: askingQuestion, scope: scope, attachment: attachment))
   }
 
   var body: some View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
-          if let submittedQuestion {
-            askedQuestion(submittedQuestion)
+          if let submitted {
+            askedQuestion(submitted)
           } else {
             intro
           }
 
-          if let answer {
+          if let failureMessage {
+            failureContent(failureMessage)
+              .transition(.opacity.combined(with: .move(edge: .bottom)))
+          } else if let answer {
             answerContent(answer)
               .transition(.opacity.combined(with: .move(edge: .bottom)))
-          } else if submittedQuestion == nil {
+          } else if submitted == nil {
             suggestions
           }
         }
@@ -41,7 +52,7 @@ struct AIQuestionView: View {
         .padding(18)
         .padding(.bottom, 24)
         .animation(reduceMotion ? nil : MemoraMotion.screen, value: isAnswering)
-        .animation(reduceMotion ? nil : MemoraMotion.screen, value: submittedQuestion)
+        .animation(reduceMotion ? nil : MemoraMotion.screen, value: submitted)
       }
       .background(Color(uiColor: .systemBackground))
       .scrollDismissesKeyboard(.immediately)
@@ -66,6 +77,11 @@ struct AIQuestionView: View {
         }
       }
       .onAppear(perform: askIfPrefilled)
+      .onDisappear {
+        // Leaving the screen stops the request; its result must not be applied.
+        askTask?.cancel()
+        askTask = nil
+      }
     }
   }
 
@@ -74,24 +90,30 @@ struct AIQuestionView: View {
       Text("会議をまたいで、答えを探します")
         .font(.title2.bold())
         .memoraTextReveal()
-      Text("回答には、元の会議と発言時刻を表示します。")
+      Text("回答には、元の会議と、根拠になった発言を表示します。")
         .font(.subheadline)
         .foregroundStyle(.secondary)
         .memoraTextReveal(delay: 0.08)
     }
   }
 
-  private func askedQuestion(_ text: String) -> some View {
+  private func askedQuestion(_ request: AIQuestionRequest) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("\(model.aiEngine.label) · \(label(for: selectedScope))")
+      Text("\(model.aiEngine.label) · \(label(for: request.scope))")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
-      Text(text)
+      Text(request.effectiveQuestion)
         .font(.body.weight(.medium))
         .textSelection(.enabled)
 
-      if let submittedAttachment {
-        Label(submittedAttachment.name, systemImage: "paperclip")
+      if let attachment = request.attachment {
+        Label(attachment.name, systemImage: "paperclip")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+
+      if let unsupportedAttachmentNote {
+        Text(unsupportedAttachmentNote)
           .font(.caption)
           .foregroundStyle(.secondary)
       }
@@ -123,39 +145,84 @@ struct AIQuestionView: View {
 
       StreamingText(text: answer, lineSpacing: 5)
 
-      VStack(alignment: .leading, spacing: 10) {
-        Text("根拠")
-          .font(.caption.weight(.semibold))
-          .foregroundStyle(.secondary)
-
-        ForEach(sourceMeetings) { meeting in
-          NavigationLink {
-            TranscriptView(meetingID: meeting.id)
-          } label: {
-            HStack(spacing: 10) {
-              Image(systemName: "quote.bubble")
-                .foregroundStyle(.primary)
-              VStack(alignment: .leading, spacing: 2) {
-                Text(meeting.title)
-                  .font(.subheadline.weight(.semibold))
-                  .foregroundStyle(.primary)
-                Text("00:42 の発言")
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-              }
-              Spacer()
-              Image(systemName: "arrow.up.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            }
-            .padding(12)
-            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-          }
-          .buttonStyle(.plain)
-          .accessibilityHint("根拠になった文字起こしを開きます")
-        }
+      if !sources.isEmpty {
+        sourceList
       }
     }
+  }
+
+  /// A failure says what went wrong and nothing else: it has no grounds to show.
+  private func failureContent(_ message: String) -> some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Label("回答できませんでした", systemImage: "exclamationmark.triangle")
+        .font(.headline)
+        .foregroundStyle(.primary)
+
+      Text(message)
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+    .padding(16)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .memoraCard(radius: 18)
+  }
+
+  /// The records that were sent, each with a line from the stored transcript
+  /// when one matched. Nothing here is invented to look like a quote.
+  private var sourceList: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Text("根拠")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+
+      ForEach(sources) { source in
+        NavigationLink {
+          TranscriptView(meetingID: source.meetingID)
+        } label: {
+          HStack(spacing: 10) {
+            Image(systemName: "quote.bubble")
+              .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 2) {
+              Text(source.title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+              if let start = source.start {
+                Text(MemoraFormat.duration(start))
+                  .font(.caption.monospacedDigit())
+                  .foregroundStyle(.secondary)
+              }
+              if let excerpt = source.excerpt {
+                Text(excerpt)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+                  .lineLimit(2)
+              }
+            }
+            Spacer()
+            Image(systemName: "arrow.up.right")
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(.secondary)
+          }
+          .padding(12)
+          .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(sourceAccessibilityLabel(source))
+        .accessibilityHint("根拠になった文字起こしを開きます")
+      }
+    }
+  }
+
+  private func sourceAccessibilityLabel(_ source: AIChatSource) -> String {
+    var parts = [source.title]
+    if let start = source.start {
+      parts.append(MemoraFormat.duration(start))
+    }
+    if let excerpt = source.excerpt {
+      parts.append(excerpt)
+    }
+    return parts.joined(separator: "、")
   }
 
   private var suggestions: some View {
@@ -177,7 +244,7 @@ struct AIQuestionView: View {
       attachment: $attachment,
       placeholder: "会議について質問",
       isBusy: isAnswering,
-      onSubmit: { _ in ask() }
+      onSubmit: { submittedAttachment in ask(attachment: submittedAttachment) }
     )
   }
 
@@ -201,17 +268,6 @@ struct AIQuestionView: View {
     }
   }
 
-  private var sourceMeetings: [Meeting] {
-    switch selectedScope {
-    case .file(let id):
-      return model.meeting(id: id).map { [$0] } ?? []
-    case .space(let id):
-      return Array(model.meetings.filter { $0.spaceID == id }.prefix(2))
-    case .global:
-      return Array(model.meetings.prefix(2))
-    }
-  }
-
   private func label(for scope: AIQueryScope) -> String {
     switch scope {
     case .file(let id):
@@ -224,55 +280,69 @@ struct AIQuestionView: View {
   }
 
   private func askIfPrefilled() {
-    guard submittedQuestion == nil, canSend else { return }
+    guard submitted == nil, canSend else { return }
     ask()
   }
 
   /// Returns true when it starts answering, so the composer clears the field
   /// only when the question is actually taken.
   @discardableResult
-  private func ask() -> Bool {
+  private func ask(attachment submittedAttachment: AIAttachment? = nil) -> Bool {
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard (!trimmed.isEmpty || attachment != nil), !isAnswering else { return false }
-    let effectiveQuestion = trimmed.isEmpty
-      ? "「\(attachment?.name ?? "添付ファイル")」を確認して"
-      : trimmed
-    submittedQuestion = effectiveQuestion
-    submittedAttachment = attachment
+    let attachmentToSend = submittedAttachment ?? attachment
+    guard (!trimmed.isEmpty || attachmentToSend != nil), !isAnswering else { return false }
+
+    // Everything the answer depends on is captured here, so changing the range
+    // on screen while it is being written cannot change what was asked.
+    let request = AIQuestionRequest(
+      question: trimmed,
+      scope: selectedScope,
+      attachment: attachmentToSend
+    )
+    submitted = request
     question = ""
     attachment = nil
     answer = nil
+    failureMessage = nil
+    sources = []
+    unsupportedAttachmentNote = nil
     isAnswering = true
 
-    Task {
-      try? await Task.sleep(for: .milliseconds(850))
-      let scopeLabel = label(for: selectedScope)
-      // The same retrieval the chat uses, so the answer rests on records that
-      // contain the question's words.
-      let sources = model.aiSources(for: effectiveQuestion, scope: .all)
-      let result = await AIEngineService.answer(
-        engine: model.aiEngine,
-        provider: model.aiProvider,
-        question: effectiveQuestion,
-        scopeLabel: scopeLabel,
-        context: model.aiContext(for: sources, scope: .all),
-        history: ""
-      )
-      isAnswering = false
+    let engine = model.aiEngine
+    let provider = model.aiProvider
+    let allowed = MemoraModel.meetings(in: request.scope, from: model.meetings)
 
-      switch result {
+    askTask?.cancel()
+    askTask = Task {
+      try? await Task.sleep(for: .milliseconds(850))
+      guard !Task.isCancelled else { return }
+
+      let outcome = await model.answer(
+        request: request,
+        scopeLabel: label(for: request.scope),
+        allowedMeetings: allowed,
+        history: "",
+        engine: engine,
+        provider: provider
+      )
+      guard !Task.isCancelled, submitted?.id == request.id else { return }
+      isAnswering = false
+      unsupportedAttachmentNote = outcome.unsupportedAttachmentNote
+
+      switch outcome.result {
       case .answer(let text):
         answer = text
+        sources = outcome.sources
         model.saveAIExchange(
-          question: effectiveQuestion,
+          question: outcome.question,
           answer: text,
-          scopeLabel: scopeLabel,
-          engineLabel: AIEngineService.effectiveEngine(model.aiEngine).label,
-          modelLabel: AIEngineService.modelLabel(engine: model.aiEngine, provider: model.aiProvider)
+          scopeLabel: outcome.scopeLabel,
+          engineLabel: outcome.details.engineLabel,
+          modelLabel: outcome.details.modelLabel
         )
       case .failure(let failure):
         guard failure != .cancelled else { return }
-        answer = failure.message
+        failureMessage = failure.message
       }
     }
     return true
@@ -284,4 +354,3 @@ struct AIQuestionView: View {
     "先週の会議を3行でまとめて"
   ]
 }
-
