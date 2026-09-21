@@ -1,6 +1,6 @@
 import Foundation
 
-struct AIConversationEntry: Identifiable, Hashable {
+struct AIConversationEntry: Identifiable, Hashable, Codable {
   var id: UUID
   var question: String
   var answer: String

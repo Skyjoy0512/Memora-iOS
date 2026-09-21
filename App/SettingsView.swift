@@ -130,6 +130,12 @@ struct SettingsView: View {
           LabeledContent("クラウド保管", value: model.cloudStorageEnabled ? "オン" : "オフ")
 
           NavigationLink {
+            SettingsBackupView()
+          } label: {
+            Label("バックアップ", systemImage: "externaldrive")
+          }
+
+          NavigationLink {
             RecentlyDeletedView()
           } label: {
             LabeledContent(

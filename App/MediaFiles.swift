@@ -27,19 +27,23 @@ enum MediaFiles {
     return String(target.dropFirst(managed.count + 1))
   }
 
-  /// Resolves a stored reference back to a file. Legacy absolute paths are only
-  /// honoured when they point inside the managed folder and the file is there.
+  /// Resolves a stored reference back to a file. A relative name is a reference
+  /// by construction; a legacy absolute path is only honoured when it still
+  /// points at a file the app manages.
   static func resolve(_ stored: String) -> URL? {
     let managed = directory.standardizedFileURL
-    let candidate = stored.hasPrefix("/")
-      ? URL(fileURLWithPath: stored).standardizedFileURL
-      : managed.appendingPathComponent(stored).standardizedFileURL
 
-    guard candidate.path.hasPrefix(managed.path),
-          FileManager.default.fileExists(atPath: candidate.path) else {
-      return nil
+    if stored.hasPrefix("/") {
+      let candidate = URL(fileURLWithPath: stored).standardizedFileURL
+      guard candidate.path.hasPrefix(managed.path),
+            FileManager.default.fileExists(atPath: candidate.path) else {
+        return nil
+      }
+      return candidate
     }
-    return candidate
+
+    let candidate = managed.appendingPathComponent(stored).standardizedFileURL
+    return candidate.path.hasPrefix(managed.path) ? candidate : nil
   }
 
   /// The folder photos are stored in.

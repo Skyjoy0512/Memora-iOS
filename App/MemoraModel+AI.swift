@@ -89,5 +89,6 @@ extension MemoraModel {
       ),
       at: 0
     )
+    persistAIHistory()
   }
 }

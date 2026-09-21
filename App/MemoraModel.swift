@@ -185,7 +185,7 @@ final class MemoraModel {
     }
 
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
-    aiHistory = [
+    aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [
       AIConversationEntry(
         id: UUID(),
         question: "今週決まったことは？",
@@ -193,7 +193,7 @@ final class MemoraModel {
         scopeLabel: "すべての会話",
         createdAt: Calendar.current.date(byAdding: .hour, value: -4, to: .now)!
       )
-    ]
+    ])
 
     loadFailureMessage = didFindUnreadableData
       ? "保存されたデータの一部を読み込めませんでした。元のデータは端末に退避しています。"
@@ -281,7 +281,8 @@ final class MemoraModel {
     let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
     let note = draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    guard let audioURL = MediaFiles.resolve(draft.fileName) else {
+    guard let audioURL = MediaFiles.resolve(draft.fileName),
+          FileManager.default.fileExists(atPath: audioURL.path) else {
       if !note.isEmpty {
         addLifeLogEntry(
           kind: .memo,
@@ -1027,6 +1028,57 @@ final class MemoraModel {
     persistInBackground(trashedRecords, forKey: StorageKey.trash)
   }
 
+  // MARK: - Backup
+
+  func persistAIHistory() {
+    persistInBackground(aiHistory, forKey: StorageKey.aiHistory)
+  }
+
+  /// True when a restore would not overwrite anything of the person's own.
+  var isEmpty: Bool {
+    meetings.isEmpty
+      && spaces.isEmpty
+      && tasks.isEmpty
+      && lifeLogEntries.isEmpty
+      && people.isEmpty
+  }
+
+  /// Writes a versioned package of the records and their media into `directory`.
+  func makeBackupPackage(in directory: URL) throws -> URL {
+    try BackupPackage.write(
+      meetings: meetings,
+      spaces: spaces,
+      tasks: tasks,
+      lifeLogEntries: lifeLogEntries,
+      people: people,
+      aiHistory: aiHistory,
+      into: directory
+    )
+  }
+
+  /// Restores a package. It refuses to run when this device already holds
+  /// records, so a backup can never silently replace them.
+  func restoreBackup(from packageURL: URL) throws {
+    guard isEmpty else { throw BackupPackage.BackupError.notEmpty }
+
+    let manifest = try BackupPackage.read(from: packageURL)
+    try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
+
+    meetings = manifest.meetings
+    spaces = manifest.spaces
+    tasks = manifest.tasks
+    lifeLogEntries = manifest.lifeLogEntries
+    people = manifest.people
+    aiHistory = manifest.aiHistory
+
+    persistMeetings()
+    persistSpaces()
+    persistTasks()
+    persistLifeLog()
+    persistPeople()
+    persistAIHistory()
+  }
+
   /// The photos attached to a record, read back from the media folder.
   func meetingPhotos(_ id: UUID) -> [Data] {
     (meeting(id: id)?.photoFileNames ?? []).compactMap { MediaFiles.photoData($0) }
@@ -1238,6 +1290,7 @@ final class MemoraModel {
     static let activeJobs = "memoraActiveJobs"
     static let recordingDraft = "memoraRecordingDraft"
     static let trash = "memoraTrash"
+    static let aiHistory = "memoraAIHistory"
   }
 
   private func recordingsDirectory() throws -> URL {
