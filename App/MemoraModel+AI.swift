@@ -100,15 +100,57 @@ extension MemoraModel {
     engine: AIEngine,
     provider: CloudProvider
   ) async -> AIAnswerOutcome {
+    let content = Self.requestContent(
+      for: request,
+      scopeLabel: scopeLabel,
+      allowedMeetings: allowedMeetings,
+      tasks: Self.tasks(in: allowedMeetings, from: tasks)
+    )
+
+    let result = await AIEngineService.answer(
+      engine: engine,
+      provider: provider,
+      question: content.question,
+      scopeLabel: scopeLabel,
+      context: content.context,
+      history: history
+    )
+
+    let details = AIAnswerDetails(
+      scopeLabel: scopeLabel,
+      engineLabel: AIEngineService.effectiveEngine(engine).label,
+      modelLabel: AIEngineService.modelLabel(engine: engine, provider: provider),
+      sourceCount: content.sources.count,
+      generatedAt: .now
+    )
+
+    return AIAnswerOutcome(
+      question: content.question,
+      scopeLabel: scopeLabel,
+      result: result,
+      // Only an answer is given grounds; a failure has none to show.
+      sources: result.text == nil ? [] : content.sources,
+      details: details,
+      unsupportedAttachmentNote: content.unsupportedAttachmentNote
+    )
+  }
+
+  /// Assembles what a request would send. Pure, so a test can check that records
+  /// outside the requested range are absent without calling an engine.
+  static func requestContent(
+    for request: AIQuestionRequest,
+    scopeLabel: String,
+    allowedMeetings: [Meeting],
+    tasks: [MemoraTask]
+  ) -> AIRequestContent {
     let question = request.effectiveQuestion
-    let words = Self.questionWords(in: question)
-    let sources = aiSources(for: question, allowed: allowedMeetings)
-    let allowedTasks = Self.tasks(in: allowedMeetings, from: tanksForScope(allowedMeetings: allowedMeetings))
-    let evidences = sources.map { meeting in
-      (meeting: meeting, excerpt: Self.bestExcerpt(in: meeting, words: words))
+    let words = questionWords(in: question)
+    let ranked = rank(meetings: allowedMeetings, words: words)
+    let evidences = ranked.map { meeting in
+      (meeting: meeting, excerpt: bestExcerpt(in: meeting, words: words))
     }
 
-    var context = aiContext(for: sources, tasks: allowedTasks)
+    var context = context(for: ranked, tasks: tasks)
     for evidence in evidences {
       guard let excerpt = evidence.excerpt else { continue }
       let stamp = MemoraFormat.duration(excerpt.start)
@@ -127,31 +169,15 @@ extension MemoraModel {
         unsupportedNote = "添付「\(attachment.name)」はAI解析に対応していないため、内容は送信していません。\(reason)"
       }
     }
+    if !attachmentText.isEmpty {
+      context += "\n\n\(attachmentText)"
+    }
 
-    let promptContext = attachmentText.isEmpty ? context : "\(context)\n\n\(attachmentText)"
-    let result = await AIEngineService.answer(
-      engine: engine,
-      provider: provider,
+    return AIRequestContent(
       question: question,
       scopeLabel: scopeLabel,
-      context: promptContext,
-      history: history
-    )
-
-    let details = AIAnswerDetails(
-      scopeLabel: scopeLabel,
-      engineLabel: AIEngineService.effectiveEngine(engine).label,
-      modelLabel: AIEngineService.modelLabel(engine: engine, provider: provider),
-      sourceCount: sources.count,
-      generatedAt: .now
-    )
-
-    return AIAnswerOutcome(
-      question: question,
-      scopeLabel: scopeLabel,
-      result: result,
-      // Only an answer is given grounds; a failure has none to show.
-      sources: result.text == nil ? [] : evidences.map { evidence in
+      context: context,
+      sources: evidences.map { evidence in
         AIChatSource(
           meetingID: evidence.meeting.id,
           title: evidence.meeting.displayTitle,
@@ -159,18 +185,76 @@ extension MemoraModel {
           start: evidence.excerpt?.start
         )
       },
-      details: details,
       unsupportedAttachmentNote: unsupportedNote
     )
   }
 
-  /// The tasks that belong to the records a question may use.
-  private func tanksForScope(allowedMeetings: [Meeting]) -> [MemoraTask] {
-    let allowedIDs = Set(allowedMeetings.map(\.id))
-    return tasks.filter { task in
-      guard let meetingID = task.meetingID else { return false }
-      return allowedIDs.contains(meetingID)
+  /// The records worth sending, ranked by how many of the question's terms they
+  /// contain and then by recency. Falls back to the most recent ones.
+  static func rank(meetings: [Meeting], words: [String]) -> [Meeting] {
+    guard !words.isEmpty else {
+      return Array(meetings.sorted { $0.createdAt > $1.createdAt }.prefix(3))
     }
+    let matched = meetings
+      .compactMap { meeting -> (meeting: Meeting, score: Int)? in
+        let text = searchableText(of: meeting)
+        let score = words.filter { text.localizedCaseInsensitiveContains($0) }.count
+        return score > 0 ? (meeting, score) : nil
+      }
+      .sorted { ($0.score, $0.meeting.createdAt) > ($1.score, $1.meeting.createdAt) }
+      .prefix(5)
+      .map(\.meeting)
+    return matched.isEmpty
+      ? Array(meetings.sorted { $0.createdAt > $1.createdAt }.prefix(3))
+      : Array(matched)
+  }
+
+  /// The text a record is searched by, without any cache, so the same result can
+  /// be produced outside the model.
+  static func searchableText(of meeting: Meeting) -> String {
+    ([meeting.title, meeting.notes, meeting.summary]
+      + meeting.decisions
+      + meeting.openQuestions
+      + meeting.keyPoints
+      + meeting.transcript.map(\.text))
+      .joined(separator: "\n")
+  }
+
+  /// The digest of the records and the tasks that belong to them.
+  static func context(for sources: [Meeting], tasks allowedTasks: [MemoraTask]) -> String {
+    var lines: [String] = []
+
+    let openTasks = allowedTasks.filter { !$0.isCompleted }
+    if !openTasks.isEmpty {
+      lines.append("未完了のタスク:")
+      lines.append(contentsOf: openTasks.map { task in
+        if let assignee = task.assignee, !assignee.isEmpty {
+          return "- \(task.title)（\(assignee)）"
+        }
+        return "- \(task.title)"
+      })
+    }
+
+    if !sources.isEmpty {
+      lines.append("会議の記録:")
+      for meeting in sources {
+        lines.append("\(meeting.displayTitle)（\(meeting.createdAt.formatted(date: .numeric, time: .omitted))）")
+        if !meeting.summary.isEmpty {
+          lines.append("要約: \(meeting.summary)")
+        }
+        for decision in meeting.decisions.prefix(3) {
+          lines.append("決定: \(decision)")
+        }
+        for question in meeting.openQuestions.prefix(3) {
+          lines.append("未決: \(question)")
+        }
+        if meeting.summary.isEmpty, let excerpt = meeting.transcript.first {
+          lines.append("発言: \(excerpt.text.prefix(400))")
+        }
+      }
+    }
+
+    return lines.joined(separator: "\n")
   }
 
   /// The exchanges so far in this chat, so a follow-up question has the thread
@@ -205,29 +289,6 @@ extension MemoraModel {
   /// ranked by how many of them match, then by recency. A question with nothing
   /// to go on falls back to the most recent records. `allowed` is the range the
   /// question was asked over, so records outside it are never sent.
-  func aiSources(for question: String, allowed scoped: [Meeting]) -> [Meeting] {
-    let words = Self.questionWords(in: question)
-    if !words.isEmpty {
-      let matched = scoped
-        .compactMap { meeting -> (meeting: Meeting, score: Int)? in
-          let text = searchText(for: meeting)
-          let score = words.filter { text.localizedCaseInsensitiveContains($0) }.count
-          return score > 0 ? (meeting, score) : nil
-        }
-        .sorted { ($0.score, $0.meeting.createdAt) > ($1.score, $1.meeting.createdAt) }
-        .prefix(5)
-        .map(\.meeting)
-      if !matched.isEmpty {
-        return Array(matched)
-      }
-    }
-    return Array(scoped.sorted { $0.createdAt > $1.createdAt }.prefix(3))
-  }
-
-  func aiSources(for question: String, scope: AIChatScope) -> [Meeting] {
-    aiSources(for: question, allowed: Self.meetings(in: scope, from: meetings))
-  }
-
   /// The records an `AIQueryScope` allows, mirroring the chat's ranges.
   static func meetings(in scope: AIQueryScope, from meetings: [Meeting]) -> [Meeting] {
     switch scope {
@@ -304,52 +365,6 @@ extension MemoraModel {
       }
     }
     return Array(terms)
-  }
-
-  /// A compact digest of the records an answer is built from, plus the open
-  /// tasks that belong to them, so a model answers from the data rather than
-  /// from general knowledge.
-  func aiContext(for sources: [Meeting], scope: AIChatScope) -> String {
-    aiContext(
-      for: sources,
-      tasks: Self.openTasks(in: scope, from: tasks, meetings: meetings)
-    )
-  }
-
-  func aiContext(for sources: [Meeting], tasks allowedTasks: [MemoraTask]) -> String {
-    var lines: [String] = []
-
-    let openTasks = allowedTasks.filter { !$0.isCompleted }
-    if !openTasks.isEmpty {
-      lines.append("未完了のタスク:")
-      lines.append(contentsOf: openTasks.map { task in
-        if let assignee = task.assignee, !assignee.isEmpty {
-          return "- \(task.title)（\(assignee)）"
-        }
-        return "- \(task.title)"
-      })
-    }
-
-    if !sources.isEmpty {
-      lines.append("会議の記録:")
-      for meeting in sources {
-        lines.append("\(meeting.displayTitle)（\(meeting.createdAt.formatted(date: .numeric, time: .omitted))）")
-        if !meeting.summary.isEmpty {
-          lines.append("要約: \(meeting.summary)")
-        }
-        for decision in meeting.decisions.prefix(3) {
-          lines.append("決定: \(decision)")
-        }
-        for question in meeting.openQuestions.prefix(3) {
-          lines.append("未決: \(question)")
-        }
-        if meeting.summary.isEmpty, let excerpt = meeting.transcript.first {
-          lines.append("発言: \(excerpt.text.prefix(400))")
-        }
-      }
-    }
-
-    return lines.joined(separator: "\n")
   }
 
   func saveAIExchange(

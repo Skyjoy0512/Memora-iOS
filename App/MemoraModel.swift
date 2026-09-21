@@ -663,14 +663,7 @@ final class MemoraModel {
   /// transcript on each keystroke.
   func searchText(for meeting: Meeting) -> String {
     if let cached = meetingSearchTexts[meeting.id] { return cached }
-
-    let parts = [meeting.title, meeting.notes, meeting.summary]
-      + meeting.decisions
-      + meeting.openQuestions
-      + meeting.keyPoints
-      + meeting.transcript.map(\.text)
-
-    let text = parts.joined(separator: "\n")
+    let text = MemoraModel.searchableText(of: meeting)
     meetingSearchTexts[meeting.id] = text
     return text
   }
