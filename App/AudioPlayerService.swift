@@ -29,6 +29,11 @@ final class AudioPlayerService {
   private var startFrame: AVAudioFramePosition = 0
   private var ticker: Task<Void, Never>?
   private var loadedURL: URL?
+  /// The session claim this player holds, so only this run gives it up.
+  private var sessionToken: AudioSessionCoordinator.Token?
+  /// The remote-command targets this player registered, so it removes only its
+  /// own and never duplicates them on repeated plays.
+  private var remoteCommandTargets: [(command: MPRemoteCommand, token: Any)] = []
 
   init() {
     engine.attach(player)
@@ -77,11 +82,12 @@ final class AudioPlayerService {
 
   func play() {
     guard let file, !isPlaying else { return }
-    guard AudioSessionCoordinator.shared.claim(.playback) else {
+    guard let token = AudioSessionCoordinator.shared.claim(.playback) else {
       errorMessage = AudioSessionCoordinator.shared.refusal(for: .playback)
         ?? "今は再生できません。"
       return
     }
+    sessionToken = token
 
     if startFrame >= file.length {
       startFrame = 0
@@ -110,7 +116,8 @@ final class AudioPlayerService {
       publishNowPlaying()
       startTicker()
     } catch {
-      AudioSessionCoordinator.shared.release(.playback)
+      AudioSessionCoordinator.shared.release(token)
+      sessionToken = nil
       errorMessage = "再生を開始できませんでした。"
     }
   }
@@ -160,14 +167,13 @@ final class AudioPlayerService {
     // Nothing is playing any more, so the system should not keep a now-playing
     // item that looks like it still is.
     MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
-    let commands = MPRemoteCommandCenter.shared()
-    commands.playCommand.removeTarget(nil)
-    commands.pauseCommand.removeTarget(nil)
-    commands.togglePlayPauseCommand.removeTarget(nil)
-    commands.changePlaybackPositionCommand.removeTarget(nil)
-    // Gives the session back only if this player is the one holding it, so
-    // leaving a screen cannot silence a recording.
-    AudioSessionCoordinator.shared.release(.playback)
+    removeRemoteCommands()
+    // Gives the session back only for this player's own claim, so leaving a
+    // screen cannot silence a recording or a newer playback.
+    if let sessionToken {
+      AudioSessionCoordinator.shared.release(sessionToken)
+      self.sessionToken = nil
+    }
   }
 
   /// Publishes what is actually playing - the record own name, no invented
@@ -190,26 +196,39 @@ final class AudioPlayerService {
   }
 
   /// Lets the lock screen and Control Center drive this player, so their
-  /// buttons never claim to work while doing nothing.
+  /// buttons never claim to work while doing nothing. The targets are added once
+  /// per playback and remembered, so repeated plays do not stack duplicates and
+  /// stopping removes only this player's own.
   private func registerRemoteCommands() {
+    guard remoteCommandTargets.isEmpty else { return }
     let center = MPRemoteCommandCenter.shared()
-    center.playCommand.addTarget { [weak self] _ in
-      Task { @MainActor in self?.play() }
-      return .success
+    remoteCommandTargets = [
+      (center.playCommand, center.playCommand.addTarget { [weak self] _ in
+        Task { @MainActor in self?.play() }
+        return .success
+      }),
+      (center.pauseCommand, center.pauseCommand.addTarget { [weak self] _ in
+        Task { @MainActor in self?.pause() }
+        return .success
+      }),
+      (center.togglePlayPauseCommand, center.togglePlayPauseCommand.addTarget { [weak self] _ in
+        Task { @MainActor in self?.toggle() }
+        return .success
+      }),
+      (center.changePlaybackPositionCommand, center.changePlaybackPositionCommand.addTarget { [weak self] event in
+        guard let position = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+        Task { @MainActor in self?.seek(to: position.positionTime) }
+        return .success
+      })
+    ]
+  }
+
+  /// Removes only the targets this player added.
+  private func removeRemoteCommands() {
+    for entry in remoteCommandTargets {
+      entry.command.removeTarget(entry.token)
     }
-    center.pauseCommand.addTarget { [weak self] _ in
-      Task { @MainActor in self?.pause() }
-      return .success
-    }
-    center.togglePlayPauseCommand.addTarget { [weak self] _ in
-      Task { @MainActor in self?.toggle() }
-      return .success
-    }
-    center.changePlaybackPositionCommand.addTarget { [weak self] event in
-      guard let position = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
-      Task { @MainActor in self?.seek(to: position.positionTime) }
-      return .success
-    }
+    remoteCommandTargets = []
   }
 
   private func elapsedTime() -> TimeInterval {

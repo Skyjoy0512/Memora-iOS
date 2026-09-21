@@ -626,33 +626,40 @@ enum SelfChecks {
   private static func checkAudioSessionClaims() {
     let coordinator = AudioSessionCoordinator()
 
-    if !coordinator.claim(.speechInput) {
+    guard let speechToken = coordinator.claim(.speechInput) else {
       report("voice input could not claim a free session")
+      return
     }
-    if coordinator.claim(.playback) {
+    if coordinator.claim(.playback) != nil {
       report("playback claimed the session while voice input held it")
     }
     if coordinator.refusal(for: .playback) == nil {
       report("no reason given for a busy session")
     }
-    coordinator.release(.playback)
-    if coordinator.claim(.playback) {
-      report("a feature that did not hold the session released it")
+    // A token that never held the session does nothing.
+    coordinator.release(AudioSessionCoordinator.Token(id: UUID(), use: .playback))
+    if coordinator.claim(.playback) != nil {
+      report("a token that did not hold the session released it")
     }
 
-    coordinator.beginRecording()
-    if coordinator.claim(.speechInput) {
+    let recordingToken = coordinator.beginRecording()
+    if coordinator.claim(.speechInput) != nil {
       report("voice input claimed the session during a recording")
     }
-    coordinator.release(.speechInput)
+    // The old voice-input token must not be able to end the recording.
+    coordinator.release(speechToken)
     if !coordinator.isRecording {
       report("a stray release ended a recording")
     }
-    coordinator.endRecording()
-    if !coordinator.claim(.playback) {
-      report("playback could not claim the session after a recording")
+    coordinator.endRecording(recordingToken)
+    if coordinator.isRecording {
+      report("the recording claim was not released")
     }
-    coordinator.release(.playback)
+    guard let playbackToken = coordinator.claim(.playback) else {
+      report("playback could not claim the session after a recording")
+      return
+    }
+    coordinator.release(playbackToken)
   }
 
   /// A gate the checks can wait on, so an order is set by the work itself rather

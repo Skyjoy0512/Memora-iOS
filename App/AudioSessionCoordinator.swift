@@ -25,51 +25,64 @@ final class AudioSessionCoordinator {
     }
   }
 
+  /// One claim on the session. The holder is the token, not the feature name, so
+  /// a late callback from an old run cannot give up a newer run's session.
+  struct Token: Equatable {
+    let id: UUID
+    let use: Use
+  }
+
   private(set) var owner: Use?
   private(set) var isRecording = false
-
-  /// True while some other feature holds the session.
-  private var isBusy: Bool {
-    guard let owner else { return false }
-    return owner != .recording || isRecording
-  }
+  private var ownerTokenID: UUID?
 
   /// A recording starting takes the session from anything else.
-  func beginRecording() {
+  @discardableResult
+  func beginRecording() -> Token {
     isRecording = true
     owner = .recording
+    let token = Token(id: UUID(), use: .recording)
+    ownerTokenID = token.id
+    return token
   }
 
-  func endRecording() {
+  /// Ends the recording, but only for the token that began it.
+  func endRecording(_ token: Token) {
+    guard token.use == .recording, ownerTokenID == token.id else { return }
     isRecording = false
     if owner == .recording {
       owner = nil
     }
+    ownerTokenID = nil
     deactivate()
   }
 
   /// Takes the session for `use`, or explains why it cannot. Recording wins over
-  /// everything; otherwise the session may only be taken when it is free.
-  func claim(_ use: Use) -> Bool {
+  /// everything; otherwise the session may only be taken when it is free. A new
+  /// claim for the same feature invalidates the previous one.
+  func claim(_ use: Use) -> Token? {
     if use != .recording, isRecording || owner == .recording {
-      return false
+      return nil
     }
     switch owner {
     case nil, use:
       owner = use
-      return true
+      let token = Token(id: UUID(), use: use)
+      ownerTokenID = token.id
+      return token
     default:
-      return false
+      return nil
     }
   }
 
-  /// Gives the session back, but only if this feature is the one holding it.
-  /// A recording is ended through `endRecording()` alone, so a stray release
-  /// cannot leave a running recording without the session.
-  func release(_ use: Use) {
-    guard use != .recording else { return }
-    guard owner == use else { return }
+  /// Gives the session back, but only for the token that holds it. A recording
+  /// is ended through `endRecording(_:)` alone, so a stray release cannot leave a
+  /// running recording without the session.
+  func release(_ token: Token) {
+    guard token.use != .recording else { return }
+    guard ownerTokenID == token.id, owner == token.use else { return }
     owner = nil
+    ownerTokenID = nil
     deactivate()
   }
 

@@ -17,6 +17,8 @@ final class AudioRecorderService {
 
   private var recorder: AVAudioRecorder?
   private var observers: [NSObjectProtocol] = []
+  /// The session claim this recorder holds, so only this run can give it up.
+  private var sessionToken: AudioSessionCoordinator.Token?
 
   init() {
     observeSession()
@@ -42,38 +44,46 @@ final class AudioRecorderService {
   func start() throws -> URL {
     // Recording takes the session from anything else, and keeps it until it
     // stops, so another feature cannot switch the audio off underneath it.
-    AudioSessionCoordinator.shared.beginRecording()
-    let session = AVAudioSession.sharedInstance()
+    // Every failure below hands the claim back.
+    sessionToken = AudioSessionCoordinator.shared.beginRecording()
     do {
+      let session = AVAudioSession.sharedInstance()
       try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetoothHFP])
       try session.setActive(true)
+
+      let directory = try recordingsDirectory()
+      let url = directory.appendingPathComponent("Memora-\(UUID().uuidString).m4a")
+      let settings: [String: Any] = [
+        AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+        AVSampleRateKey: 44_100,
+        AVNumberOfChannelsKey: 1,
+        AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+      ]
+      let recorder = try AVAudioRecorder(url: url, settings: settings)
+      recorder.isMeteringEnabled = true
+      recorder.prepareToRecord()
+      guard recorder.record() else {
+        throw AudioRecorderError.couldNotStart
+      }
+      self.recorder = recorder
+      return url
     } catch {
-      AudioSessionCoordinator.shared.endRecording()
+      releaseSession()
       throw error
     }
-
-    let directory = try recordingsDirectory()
-    let url = directory.appendingPathComponent("Memora-\(UUID().uuidString).m4a")
-    let settings: [String: Any] = [
-      AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-      AVSampleRateKey: 44_100,
-      AVNumberOfChannelsKey: 1,
-      AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-    ]
-    let recorder = try AVAudioRecorder(url: url, settings: settings)
-    recorder.isMeteringEnabled = true
-    recorder.prepareToRecord()
-    guard recorder.record() else {
-      throw AudioRecorderError.couldNotStart
-    }
-    self.recorder = recorder
-    return url
   }
 
   func stop() {
     recorder?.stop()
     recorder = nil
-    AudioSessionCoordinator.shared.endRecording()
+    releaseSession()
+  }
+
+  /// Hands the session back for this run's claim alone.
+  private func releaseSession() {
+    guard let sessionToken else { return }
+    AudioSessionCoordinator.shared.endRecording(sessionToken)
+    self.sessionToken = nil
   }
 
   /// 0...1 loudness for the voice glow.
@@ -89,10 +99,15 @@ final class AudioRecorderService {
   }
 
   func resume() -> Bool {
-    // After an interruption the session has to be active again.
-    AudioSessionCoordinator.shared.beginRecording()
+    // After an interruption the session has to be active again, under a fresh
+    // claim so an older run's token cannot end the recording.
+    sessionToken = AudioSessionCoordinator.shared.beginRecording()
     try? AVAudioSession.sharedInstance().setActive(true)
-    return recorder?.record() ?? false
+    let started = recorder?.record() ?? false
+    if !started {
+      releaseSession()
+    }
+    return started
   }
 
   private func observeSession() {

@@ -15,16 +15,26 @@ final class SpeechInputService {
   @ObservationIgnored private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
   @ObservationIgnored private var recognitionTask: SFSpeechRecognitionTask?
   @ObservationIgnored private var hasInstalledInputTap = false
+  /// Identifies one run, so callbacks and permission waits from a replaced run
+  /// cannot touch the current one.
+  @ObservationIgnored private var runID: UUID?
+  /// True from the moment a start begins, so repeated taps during the permission
+  /// prompts cannot begin two runs.
+  @ObservationIgnored private var isStarting = false
+  /// The session claim this run holds, so only this run gives it up.
+  @ObservationIgnored private var sessionToken: AudioSessionCoordinator.Token?
 
   func toggle(transcriptChanged: @escaping @MainActor (String) -> Void) async {
     if isListening {
       stop()
-    } else {
+    } else if !isStarting {
       await start(transcriptChanged: transcriptChanged)
     }
   }
 
   func stop() {
+    runID = nil
+    isStarting = false
     if audioEngine.isRunning {
       audioEngine.stop()
     }
@@ -38,10 +48,13 @@ final class SpeechInputService {
     recognitionTask = nil
     isListening = false
     audioLevel = 0
-    // Only the feature holding the session may switch it off. Stopping voice
-    // input after a text question, or when a screen closes, must not silence a
-    // recording that is running.
-    AudioSessionCoordinator.shared.release(.speechInput)
+    // Only the claim this run holds may switch it off. Stopping voice input
+    // after a text question, or when a screen closes, must not silence a
+    // recording that is running or a newer voice run.
+    if let sessionToken {
+      AudioSessionCoordinator.shared.release(sessionToken)
+      self.sessionToken = nil
+    }
   }
 
   func clearError() {
@@ -55,28 +68,38 @@ final class SpeechInputService {
   }
 
   private func start(transcriptChanged: @escaping @MainActor (String) -> Void) async {
+    let run = UUID()
+    runID = run
+    isStarting = true
+    defer { if runID == run { isStarting = false } }
     errorMessage = nil
 
+    // Each await can outlast the screen that asked for voice input, so the run
+    // is re-checked before touching any state.
     guard await requestSpeechPermission() else {
       errorMessage = "音声認識へのアクセスを設定で許可してください。"
       return
     }
+    guard runID == run else { return }
     guard await requestMicrophonePermission() else {
       errorMessage = "マイクへのアクセスを設定で許可してください。"
       return
     }
+    guard runID == run else { return }
     guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP")), recognizer.isAvailable else {
       errorMessage = "音声入力を利用できません。通信状態を確認してください。"
       return
     }
+    guard runID == run else { return }
 
     // The permission prompts above can take a while, so the session is claimed
     // only now, and only if it is still free.
-    guard AudioSessionCoordinator.shared.claim(.speechInput) else {
+    guard let token = AudioSessionCoordinator.shared.claim(.speechInput) else {
       errorMessage = AudioSessionCoordinator.shared.refusal(for: .speechInput)
         ?? "今は音声入力できません。"
       return
     }
+    sessionToken = token
 
     do {
       let session = AVAudioSession.sharedInstance()
@@ -97,18 +120,21 @@ final class SpeechInputService {
         request.append(buffer)
         let level = Self.loudness(of: buffer)
         Task { @MainActor [weak self] in
-          self?.apply(level: level)
+          guard let self, self.runID == run else { return }
+          self.apply(level: level)
         }
       }
       hasInstalledInputTap = true
 
       recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
         Task { @MainActor in
+          // A callback from a run that has since ended is ignored.
+          guard let self, self.runID == run else { return }
           if let result {
             transcriptChanged(result.bestTranscription.formattedString)
           }
           if result?.isFinal == true || error != nil {
-            self?.stop()
+            self.stop()
           }
         }
       }
