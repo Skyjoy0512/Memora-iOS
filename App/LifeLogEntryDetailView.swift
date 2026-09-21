@@ -52,6 +52,9 @@ struct LifeLogEntryDetailView: View {
       } message: {
         Text("「最近削除した項目」に移動します。30日間は元に戻せます。")
       }
+      .task(id: currentEntry?.photoFileName) {
+        await loadPhoto()
+      }
     }
   }
 
@@ -59,9 +62,17 @@ struct LifeLogEntryDetailView: View {
     model.lifeLogEntries.first { $0.id == entryID }
   }
 
-  private var photo: UIImage? {
-    guard let name = currentEntry?.photoFileName else { return nil }
-    return MediaImageCache.photo(named: name)
+  @State private var photo: UIImage?
+
+  /// Reads the photo at the size it is shown, off the main thread.
+  private func loadPhoto() async {
+    guard let name = currentEntry?.photoFileName else {
+      photo = nil
+      return
+    }
+    let loaded = await MediaImageCache.photo(named: name)
+    guard !Task.isCancelled, currentEntry?.photoFileName == name else { return }
+    photo = loaded
   }
 
   private func content(_ entry: LifeLogEntry) -> some View {

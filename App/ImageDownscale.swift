@@ -14,4 +14,23 @@ enum ImageDownscale {
     }
     return resized.jpegData(compressionQuality: quality)
   }
+
+  /// Decodes a file at (roughly) the size it will be drawn, without ever holding
+  /// the full image in memory. This is what lists use, so scrolling does not
+  /// decode a full-size photo again for each row.
+  static func downsampled(at url: URL, maxPixelSize: CGFloat) -> UIImage? {
+    let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, sourceOptions) else { return nil }
+
+    let options: [CFString: Any] = [
+      kCGImageSourceCreateThumbnailFromImageAlways: true,
+      kCGImageSourceCreateThumbnailWithTransform: true,
+      kCGImageSourceShouldCacheImmediately: true,
+      kCGImageSourceThumbnailMaxPixelSize: maxPixelSize
+    ]
+    guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+      return nil
+    }
+    return UIImage(cgImage: cgImage)
+  }
 }

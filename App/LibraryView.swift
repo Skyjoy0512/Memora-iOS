@@ -202,8 +202,8 @@ struct LibraryView: View {
         NavigationLink(value: LibraryRoute.space(space.id)) {
           ProjectFolderTile(
             space: space,
-            meetingCount: meetingCount(for: space.id),
-            symbols: recentSymbols(for: space.id)
+            meetingCount: model.spaceAggregates[space.id]?.meetingCount ?? 0,
+            symbols: model.spaceAggregates[space.id]?.icons ?? []
           )
           .matchedTransitionSource(id: space.id, in: heroNamespace)
         }
@@ -264,16 +264,4 @@ struct LibraryView: View {
     model.searchText(for: meeting).localizedCaseInsensitiveContains(query)
   }
 
-  private func meetingCount(for spaceID: UUID) -> Int {
-    model.meetings.filter { $0.spaceID == spaceID }.count
-  }
-
-  /// Up to four icons for the folder preview, newest first.
-  private func recentSymbols(for spaceID: UUID) -> [String] {
-    model.meetings
-      .filter { $0.spaceID == spaceID }
-      .sorted { $0.createdAt > $1.createdAt }
-      .prefix(4)
-      .map { $0.source == .recording ? "waveform" : "square.and.arrow.down" }
-  }
 }

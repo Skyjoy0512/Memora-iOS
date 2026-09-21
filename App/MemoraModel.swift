@@ -40,7 +40,13 @@ final class MemoraModel {
   var meetings: [Meeting] {
     didSet {
       meetingIndex.invalidate()
-      meetingSearchTexts.removeAll(keepingCapacity: true)
+      // Only entries for records that are gone are dropped here; a record that
+      // changed is invalidated at the update site, so one edit no longer throws
+      // away every other record's cached search text.
+      meetingSearchTexts = meetingSearchTexts.filter { id, _ in
+        meetingIndex.element(id, in: meetings) != nil
+      }
+      rebuildMeetingAggregates()
     }
   }
   var spaces: [MemoraSpace] {
@@ -50,8 +56,21 @@ final class MemoraModel {
     didSet { tasksByMeeting = nil }
   }
   var lifeLogEntries: [LifeLogEntry] {
-    didSet { newestEntries = nil }
+    didSet {
+      newestEntries = nil
+      rebuildLifeLogDays()
+    }
   }
+  /// Journal days newest first, with each day's records newest first. Built when
+  /// the records change, so redraws reuse it.
+  private(set) var lifeLogDays: [LifeLogDayGroup] = []
+  /// Days that hold at least one record, for the calendar's dot.
+  private(set) var markedLifeLogDays: Set<Date> = []
+  /// Per-project counts and previews, and per-person record counts.
+  private(set) var spaceAggregates: [UUID: SpaceAggregate] = [:]
+  private(set) var personMeetingCounts: [UUID: Int] = [:]
+  /// Records tagged with each person, newest first.
+  private(set) var meetingsByPerson: [UUID: [Meeting]] = [:]
   var aiHistory: [AIConversationEntry]
   /// People who can be tagged on recordings.
   var people: [Person] = [] {
@@ -60,6 +79,7 @@ final class MemoraModel {
   /// Positions for the array lookups the screens do constantly.
   @ObservationIgnored private var meetingIndex = IdentifiableIndex<Meeting>()
   @ObservationIgnored private var meetingSearchTexts: [UUID: String] = [:]
+  @ObservationIgnored private var dayChangeObservers: [NSObjectProtocol] = []
   @ObservationIgnored private var spaceIndex = IdentifiableIndex<MemoraSpace>()
   @ObservationIgnored private var personIndex = IdentifiableIndex<Person>()
   /// Tasks grouped by the meeting they belong to, built once per change.
@@ -93,7 +113,9 @@ final class MemoraModel {
   private(set) var isSavingCapture = false
   var recordingElapsed: TimeInterval = 0
   /// Smoothed 0...1 loudness for the recording glow.
-  var recordingLevel: Double = 0
+  /// The glow's microphone level, kept in its own observable object so the ~22
+  /// updates a second redraw only the view drawing the glow.
+  @ObservationIgnored let levelMeter = RecordingLevelMeter()
   var recordingTitle = ""
   var recordingNote = ""
   var recordingErrorMessage: String?
@@ -280,6 +302,70 @@ final class MemoraModel {
     recorder.onInterruption = { [weak self] event in
       self?.handleRecorderInterruption(event)
     }
+
+    // didSet does not run for the loads above, so the derived data is built here.
+    rebuildMeetingAggregates()
+    rebuildLifeLogDays()
+
+    // A day or time zone change moves records between journal days.
+    let dayChange: @Sendable (Notification) -> Void = { [weak self] _ in
+      Task { @MainActor in self?.rebuildLifeLogDays() }
+    }
+    dayChangeObservers = [
+      NotificationCenter.default.addObserver(
+        forName: .NSCalendarDayChanged, object: nil, queue: .main, using: dayChange
+      ),
+      NotificationCenter.default.addObserver(
+        forName: .NSSystemTimeZoneDidChange, object: nil, queue: .main, using: dayChange
+      ),
+      NotificationCenter.default.addObserver(
+        forName: UIApplication.significantTimeChangeNotification, object: nil, queue: .main, using: dayChange
+      )
+    ]
+  }
+
+  /// One pass over the records for the per-project and per-person numbers the
+  /// screens show, instead of a scan per tile per redraw.
+  private func rebuildMeetingAggregates() {
+    var personCounts: [UUID: Int] = [:]
+    var bySpace: [UUID: [Meeting]] = [:]
+
+    for meeting in meetings {
+      if let spaceID = meeting.spaceID {
+        bySpace[spaceID, default: []].append(meeting)
+      }
+      for personID in meeting.participantIDs ?? [] {
+        personCounts[personID, default: 0] += 1
+      }
+    }
+
+    spaceAggregates = bySpace.mapValues { group in
+      let newest = group.sorted { $0.createdAt > $1.createdAt }
+      return SpaceAggregate(
+        meetingCount: group.count,
+        icons: newest.prefix(4).map { $0.source == .recording ? "waveform" : "square.and.arrow.down" },
+        latestDate: newest.first?.createdAt
+      )
+    }
+    personMeetingCounts = personCounts
+
+    var byPerson: [UUID: [Meeting]] = [:]
+    for meeting in meetings {
+      for personID in meeting.participantIDs ?? [] {
+        byPerson[personID, default: []].append(meeting)
+      }
+    }
+    meetingsByPerson = byPerson.mapValues { $0.sorted { $0.createdAt > $1.createdAt } }
+  }
+
+  /// Groups the journal by day once, newest first.
+  private func rebuildLifeLogDays() {
+    let calendar = Calendar.current
+    let grouped = Dictionary(grouping: lifeLogEntries) { calendar.startOfDay(for: $0.createdAt) }
+    lifeLogDays = grouped
+      .map { LifeLogDayGroup(day: $0.key, entries: $0.value.sorted { $0.createdAt > $1.createdAt }) }
+      .sorted { $0.day > $1.day }
+    markedLifeLogDays = Set(grouped.keys)
   }
 
   private func handleRecorderInterruption(_ event: AudioRecorderService.Interruption) {
@@ -602,7 +688,7 @@ final class MemoraModel {
       isRecordingPaused = false
       isRecording = true
       isCapturePresented = true
-      recordingLevel = 0
+      levelMeter.reset()
       startRecordingTicker()
       startLevelTicker()
       startLiveActivity()
@@ -631,7 +717,7 @@ final class MemoraModel {
     recordingTicker = nil
     levelTicker?.cancel()
     levelTicker = nil
-    recordingLevel = 0
+    levelMeter.reset()
     isRecording = false
     isRecordingPaused = false
     await endLiveActivity()
@@ -709,7 +795,7 @@ final class MemoraModel {
     recordingTicker = nil
     levelTicker?.cancel()
     levelTicker = nil
-    recordingLevel = 0
+    levelMeter.reset()
     isRecording = false
     isRecordingPaused = false
     isCapturePresented = false
@@ -1136,6 +1222,7 @@ final class MemoraModel {
           let segmentIndex = meetings[meetingIndex].transcript.firstIndex(where: { $0.id == segmentID }) else { return }
     meetings[meetingIndex].transcript[segmentIndex].speaker = trimmed
     meetings[meetingIndex].transcript[segmentIndex].speakerIsCertain = true
+    meetingSearchTexts.removeValue(forKey: meetingID)
     persistMeetings()
   }
 
@@ -1144,6 +1231,7 @@ final class MemoraModel {
     guard let meetingIndex = meetings.firstIndex(where: { $0.id == meetingID }),
           let segmentIndex = meetings[meetingIndex].transcript.firstIndex(where: { $0.id == segmentID }) else { return }
     meetings[meetingIndex].transcript[segmentIndex].text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    meetingSearchTexts.removeValue(forKey: meetingID)
     persistMeetings()
   }
 
@@ -1478,9 +1566,14 @@ final class MemoraModel {
       while !Task.isCancelled {
         try? await Task.sleep(for: .milliseconds(45))
         guard let self else { return }
-        let target = self.isRecordingPaused ? 0 : self.recorder.level()
-        let rate = target > self.recordingLevel ? 0.6 : 0.12
-        self.recordingLevel += (target - self.recordingLevel) * rate
+        // Nothing shows the glow unless a screen asks for it, and recording
+        // itself does not depend on the level being sampled.
+        if self.levelMeter.isActive {
+          self.levelMeter.update(from: self.isRecordingPaused ? 0 : self.recorder.level())
+          try? await Task.sleep(for: .milliseconds(45))
+        } else {
+          try? await Task.sleep(for: .milliseconds(300))
+        }
       }
     }
   }
@@ -1529,6 +1622,7 @@ final class MemoraModel {
 
   private func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) {
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
+    meetingSearchTexts.removeValue(forKey: id)
     change(&meetings[index])
     persistMeetings()
   }

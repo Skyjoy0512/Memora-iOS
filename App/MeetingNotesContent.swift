@@ -8,6 +8,7 @@ struct MeetingNotesContent: View {
   @State private var photoItem: PhotosPickerItem?
   @State private var editingPhoto: PhotoEditRequest?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var photoImages: [String: UIImage] = [:]
 
   var body: some View {
     let photos = model.meeting(id: meetingID)?.photoFileNames ?? []
@@ -29,7 +30,7 @@ struct MeetingNotesContent: View {
       ScrollView(.horizontal) {
         HStack(spacing: 10) {
           ForEach(Array(photos.enumerated()), id: \.offset) { index, name in
-            if let image = MediaImageCache.thumbnail(named: name) {
+            if let image = photoImages[name] {
               Image(uiImage: image)
                 .resizable()
                 .scaledToFill()
@@ -73,6 +74,11 @@ struct MeetingNotesContent: View {
     .animation(reduceMotion ? nil : .smooth, value: photos.count)
     .onChange(of: photoItem) { _, item in
       Task { await addPhoto(item) }
+    }
+    .task(id: photos) {
+      for name in photos where photoImages[name] == nil {
+        photoImages[name] = await MediaImageCache.image(named: name, maxPixelSize: 480)
+      }
     }
     .sheet(item: $editingPhoto) { request in
       PhotoEditorView(source: request.data) { edited in

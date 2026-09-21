@@ -195,9 +195,10 @@ struct HomeView: View {
     .accessibilityHint("レコーダー設定を開きます")
   }
 
-  /// Days that hold at least one record, for the calendar's dot.
+  /// Days that hold at least one record, for the calendar's dot. Built with the
+  /// records rather than scanned on every redraw.
   private var markedDays: Set<Date> {
-    Set(model.lifeLogEntries.map { Calendar.current.startOfDay(for: $0.createdAt) })
+    model.markedLifeLogDays
   }
 
   /// True while the journal is showing the current day.
@@ -237,29 +238,33 @@ struct HomeView: View {
   }
 
   private var matchingEntries: [LifeLogEntry] {
-    let sorted = model.newestLifeLogEntries
+    // A search looks across every day; the journal otherwise shows the day
+    // picked in the calendar, taken from the index built with the records.
+    let base = query.isEmpty ? entriesForSelectedDay : model.newestLifeLogEntries
 
     let scoped: [LifeLogEntry]
     if let personID = selectedPerson?.id {
       let meetingIDs = Set(model.meetings(withPerson: personID).map(\.id))
-      scoped = sorted.filter { entry in
+      scoped = base.filter { entry in
         guard let meetingID = entry.meetingID else { return false }
         return meetingIDs.contains(meetingID)
       }
     } else {
-      scoped = sorted
+      scoped = base
     }
 
-    if !query.isEmpty {
-      return scoped.filter {
-        $0.title.localizedCaseInsensitiveContains(query)
-          || $0.summary.localizedCaseInsensitiveContains(query)
-          || $0.source.label.localizedCaseInsensitiveContains(query)
-      }
+    guard !query.isEmpty else { return scoped }
+    return scoped.filter {
+      $0.title.localizedCaseInsensitiveContains(query)
+        || $0.summary.localizedCaseInsensitiveContains(query)
+        || $0.source.label.localizedCaseInsensitiveContains(query)
     }
+  }
 
-    // The journal shows the day picked in the calendar.
-    return scoped.filter { Calendar.current.isDate($0.createdAt, inSameDayAs: selectedDate) }
+  /// The selected day's records, read from the model's day index.
+  private var entriesForSelectedDay: [LifeLogEntry] {
+    let calendar = Calendar.current
+    return model.lifeLogDays.first { calendar.isDate($0.day, inSameDayAs: selectedDate) }?.entries ?? []
   }
 
   private var selectedPerson: Person? {
@@ -313,8 +318,3 @@ struct HomeView: View {
   }
 }
 
-private struct LifeLogDayGroup: Identifiable {
-  var day: Date
-  var entries: [LifeLogEntry]
-  var id: Date { day }
-}

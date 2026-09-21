@@ -93,20 +93,6 @@ enum MediaFiles {
     return url.path.hasPrefix(root.path) ? url : nil
   }
 
-  static func photoData(_ name: String) -> Data? {
-    guard let url = photoURL(name) else { return nil }
-    return try? Data(contentsOf: url)
-  }
-
-  /// The small copy for lists, falling back to the full-size file for photos
-  /// saved before thumbnails existed.
-  static func photoThumbnailData(_ name: String) -> Data? {
-    guard let url = photoURL(thumbnailName(for: name)),
-          let data = try? Data(contentsOf: url) else {
-      return photoData(name)
-    }
-    return data
-  }
 
   @discardableResult
   static func deletePhoto(_ name: String) -> Bool {

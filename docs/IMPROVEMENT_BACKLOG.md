@@ -94,15 +94,17 @@
 
 | ID | 状態 |
 | --- | --- |
-| F01 | 未着手 |
-| F02 | 実装済み | 検索用テキストのキャッシュは `meetings` の変更で一括破棄（`meetingSearchTexts.removeAll`）。索引も同時に無効化 |
-| F03 | 未着手 |
-| F04 | 未着手 |
-| F05 | 未着手 |
-| F06 | 一部 実装済み | 写真の書き出しはバックグラウンド化済み。加えて一覧の写真は `MediaImageCache`（NSCache、ファイル名キー）でデコード結果を再利用し、スクロールごとの再デコードを避ける |
+| F01 | 実装済み（性能未検証） | 一覧の写真は `ImageDownscale.downsampled`（ImageIO）で**表示サイズに合わせて非同期デコード**し、`MediaImageCache`（NSCache、ファイル名×サイズ、上限80）で再利用。原本の繰り返しデコードをやめた |
+| F02 | 実装済み（性能未検証） | **記録単位の無効化**へ変更。`updateMeeting` と文字起こし編集で該当IDの検索テキストだけを破棄し、`meetings` の didSet では消えた記録の分のみ間引く（全文再構築をやめた） |
+| F03 | 実装済み（性能未検証） | 会議の変更時に1回の走査で**プロジェクト別件数・最新4件のアイコン・最新日時**と**人物別件数・人物別記録一覧**を集計（`spaceAggregates`／`personMeetingCounts`／`meetingsByPerson`）。タイルごとの filter/sort をやめた |
+| F04 | 実装済み（性能未検証） | 日別インデックス（`lifeLogDays`／`markedLifeLogDays`）を記録変更時に1回構築し、ジャーナルはそれを参照。`NSCalendarDayChanged`・タイムゾーン変更・`significantTimeChange` で再構築 |
+| F05 | 実装済み（性能未検証） | 音量を `RecordingLevelMeter`（独立したObservable）へ分離し、更新はグロー表示のみに伝播。**キャプチャ画面の表示中だけ**サンプリング（非表示時は300ms間隔、録音は継続） |
+| F06 | 一部 実装済み（性能未検証） | 一覧の写真デコードは非同期＋表示サイズ（F01）。残り: PDF描画（`ImageRenderer` のためメインアクター必須）の進行表示・キャンセル、取り込みコピーのさらなる分離 |
 | F07 | 一部 実装済み | 保存を `RecordStore` に集約（モデルはストア・UserDefaults・キューに触れない）。音声は `AudioRecorderService`、AIは `AIEngineService`／`CloudAIService`、バックアップは `BackupPackage`。処理ジョブの専用サービス化と画像処理の分離は残 |
-| F08〜F10 | 未着手（F原文が未共有） |
-| F01・F03・F04・F05 | 未着手（F原文が未共有） |
+| F07 | 一部 実装済み | 保存は `RecordStore`、音声は `AudioRecorderService`、AIは `AIEngineService`／`CloudAIService`、バックアップは `BackupPackage`、音量は `RecordingLevelMeter` に分離済み。**残り: 処理ジョブの `ProcessingService` 切り出し**（記録ID・リビジョン・世代による適用判定、再起動後の再試行、タスク重複防止、Task参照の解放を維持したまま） |
+| F08 | 未着手（未着手理由: 原文にはTask・通信・BLEの寿命と、BLEの明示的な検索意図分離が必要。次段で対応） |
+| F09 | 未着手 |
+| F10 | 未着手（計測の仕組みが必要） |
 
 ## 保留の理由と解除条件
 

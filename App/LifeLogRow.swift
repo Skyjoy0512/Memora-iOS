@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LifeLogRow: View {
   var entry: LifeLogEntry
+  @State private var photo: UIImage?
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
@@ -56,15 +57,25 @@ struct LifeLogRow: View {
             .foregroundStyle(.secondary)
         }
 
-        if let name = entry.photoFileName,
-           let image = MediaImageCache.thumbnail(named: name) {
-          Image(uiImage: image)
-            .resizable()
-            .scaledToFill()
-            .frame(maxWidth: .infinity)
-            .frame(height: 172)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .accessibilityLabel("添付写真")
+        if let name = entry.photoFileName {
+          Group {
+            if let photo {
+              Image(uiImage: photo)
+                .resizable()
+                .scaledToFill()
+                .accessibilityLabel("添付写真")
+            } else {
+              // A quiet placeholder while the small copy is decoded.
+              Color.primary.opacity(0.05)
+                .accessibilityHidden(true)
+            }
+          }
+          .frame(maxWidth: .infinity)
+          .frame(height: 172)
+          .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+          .task(id: name) {
+            photo = await MediaImageCache.image(named: name, maxPixelSize: 600)
+          }
         }
       }
       .padding(16)

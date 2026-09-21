@@ -174,6 +174,15 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ5（追加22・F01〜F05）
+
+- F01: `ImageDownscale.downsampled(at:maxPixelSize:)`（ImageIOのサムネイル生成）と `MediaImageCache.image/photo`（非同期・サイズ別・上限80）。`LifeLogRow`・写真ストリップ・拡大表示が利用。不要になった `photoData`／`photoThumbnailData` を削除。
+- F02: `updateMeeting` と文字起こし編集で記録単位に検索テキストを無効化。`meetings` の didSet は消えたIDの間引きのみ。
+- F03: `rebuildMeetingAggregates()` でプロジェクト別（件数・最新4件アイコン・最新日時）と人物別（件数・一覧）を1回の走査で集計。
+- F04: `rebuildLifeLogDays()` で日別インデックスを構築し、`NSCalendarDayChanged`・`NSSystemTimeZoneDidChange`・`UIApplication.significantTimeChangeNotification` で更新。
+- F05: `RecordingLevelMeter` に音量を分離。キャプチャ画面の表示中のみ45ms間隔でサンプリングし、非表示時は300ms（録音は継続）。
+- 性能は**未計測**（F10の計測手段が未実装のため）。バックログでは「実装済み（性能未検証）」として残す。
+
 ### フェーズ5（追加21・E02/E04/E10の残りと性能）
 
 - E02: 入力中の質問を `MemoraModel.composerDraft` が持ち、600ms後に `DraftStore` へ保存、起動時に復元。`QuickAIComposer` はローカルStateをやめた。

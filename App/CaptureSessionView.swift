@@ -173,6 +173,12 @@ struct CaptureSessionView: View {
       if dynamicTypeSize.isAccessibilitySize {
         selectedDetent = .large
       }
+      // The glow is the only reader of the level, so sampling runs only while
+      // this sheet is on screen. Recording itself is unaffected.
+      model.levelMeter.isActive = true
+    }
+    .onDisappear {
+      model.levelMeter.isActive = false
     }
     .presentationDragIndicator(.visible)
     .presentationCornerRadius(38)
@@ -200,7 +206,7 @@ struct CaptureSessionView: View {
         .fill(.regularMaterial)
 
       VoiceGlow(
-        level: model.recordingLevel,
+        level: model.levelMeter.level,
         isActive: model.isRecording && !model.isRecordingPaused
       )
       .frame(height: 300)

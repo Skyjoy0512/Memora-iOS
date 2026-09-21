@@ -124,12 +124,10 @@ extension MemoraModel {
   }
 
   func meetingCount(forPerson personID: UUID) -> Int {
-    meetings.filter { ($0.participantIDs ?? []).contains(personID) }.count
+    personMeetingCounts[personID] ?? 0
   }
 
   func meetings(withPerson personID: UUID) -> [Meeting] {
-    meetings
-      .filter { ($0.participantIDs ?? []).contains(personID) }
-      .sorted { $0.createdAt > $1.createdAt }
+    meetingsByPerson[personID] ?? []
   }
 }
