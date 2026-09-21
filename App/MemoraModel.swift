@@ -38,7 +38,7 @@ final class MemoraModel {
   }
   /// Positions for the array lookups the screens do constantly.
   @ObservationIgnored private var meetingIndex = IdentifiableIndex<Meeting>()
-  @ObservationIgnored private var meetingSearchTexts: [UUID: MeetingSearchText] = [:]
+  @ObservationIgnored private var meetingSearchTexts: [UUID: String] = [:]
   @ObservationIgnored private var spaceIndex = IdentifiableIndex<MemoraSpace>()
   @ObservationIgnored private var personIndex = IdentifiableIndex<Person>()
   /// Tasks grouped by the meeting they belong to, built once per change.
@@ -460,26 +460,22 @@ final class MemoraModel {
     meetingIndex.element(id, in: meetings)
   }
 
-  /// The text a meeting is matched against while searching. It is joined once
-  /// and reused, so typing does not rebuild every transcript on each keystroke.
-  /// `includingSections` adds the extracted decisions, as the Ask AI search does.
-  func searchText(for meeting: Meeting, includingSections: Bool = false) -> String {
-    if let cached = meetingSearchTexts[meeting.id] {
-      return includingSections ? cached.extended : cached.core
-    }
+  /// The text a record is matched against while searching: the same fields on
+  /// every screen — title, notes, summary, transcript, and the extracted
+  /// sections. It is joined once and reused, so typing does not rebuild every
+  /// transcript on each keystroke.
+  func searchText(for meeting: Meeting) -> String {
+    if let cached = meetingSearchTexts[meeting.id] { return cached }
 
-    let transcript = meeting.transcript.map(\.text)
-    let core = ([meeting.title, meeting.summary] + transcript).joined(separator: "\n")
-    let extended = ([meeting.title, meeting.summary] + meeting.decisions + transcript)
-      .joined(separator: "\n")
+    let parts = [meeting.title, meeting.notes, meeting.summary]
+      + meeting.decisions
+      + meeting.openQuestions
+      + meeting.keyPoints
+      + meeting.transcript.map(\.text)
 
-    meetingSearchTexts[meeting.id] = MeetingSearchText(core: core, extended: extended)
-    return includingSections ? extended : core
-  }
-
-  private struct MeetingSearchText {
-    var core: String
-    var extended: String
+    let text = parts.joined(separator: "\n")
+    meetingSearchTexts[meeting.id] = text
+    return text
   }
 
   /// The tasks attached to one meeting, grouped once per change.
@@ -896,6 +892,30 @@ final class MemoraModel {
     guard !trimmed.isEmpty else { return }
     spaces.insert(MemoraSpace(id: UUID(), name: trimmed, symbol: "folder"), at: 0)
     persistSpaces()
+  }
+
+  func renameSpace(_ id: UUID, name: String) {
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty, let index = spaces.firstIndex(where: { $0.id == id }) else { return }
+    spaces[index].name = trimmed
+    persistSpaces()
+  }
+
+  /// Removes a project. Its records are kept and become uncategorized.
+  func deleteSpace(_ id: UUID) {
+    guard spaces.contains(where: { $0.id == id }) else { return }
+    spaces.removeAll { $0.id == id }
+    persistSpaces()
+
+    for index in meetings.indices where meetings[index].spaceID == id {
+      meetings[index].spaceID = nil
+    }
+    persistMeetings()
+  }
+
+  /// Files a record under a project, or takes it out of every project.
+  func setSpace(_ spaceID: UUID?, forMeeting meetingID: UUID) {
+    updateMeeting(meetingID) { $0.spaceID = spaceID }
   }
 
   func addLifeLogEntry(

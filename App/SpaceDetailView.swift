@@ -2,8 +2,11 @@ import SwiftUI
 
 struct SpaceDetailView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.dismiss) private var dismiss
   var spaceID: UUID
   @State private var isAskingAI = false
+  @State private var isRenaming = false
+  @State private var isDeleting = false
 
   var body: some View {
     if let space = model.space(id: spaceID) {
@@ -62,8 +65,32 @@ struct SpaceDetailView: View {
       }
       .navigationTitle(space.name)
       .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Menu("その他", systemImage: "ellipsis") {
+            Button("名前を変更", systemImage: "pencil") { isRenaming = true }
+            Button("削除", systemImage: "trash", role: .destructive) { isDeleting = true }
+          }
+        }
+      }
       .sheet(isPresented: $isAskingAI) {
         AIQuestionView(scope: .space(space.id), askingQuestion: "このプロジェクトでまだ決まっていないことは？")
+      }
+      .sheet(isPresented: $isRenaming) {
+        RenameSpaceSheet(space: space)
+      }
+      .confirmationDialog(
+        "このプロジェクトを削除しますか？",
+        isPresented: $isDeleting,
+        titleVisibility: .visible
+      ) {
+        Button("削除", role: .destructive) {
+          model.deleteSpace(space.id)
+          dismiss()
+        }
+        Button("キャンセル", role: .cancel) {}
+      } message: {
+        Text("会話は削除されず、未分類に移動します。")
       }
     } else {
       ContentUnavailableView("プロジェクトが見つかりません", systemImage: "folder.badge.questionmark")

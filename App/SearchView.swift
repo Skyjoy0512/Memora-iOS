@@ -236,7 +236,7 @@ struct SearchView: View {
 
   private var matchingMeetings: [Meeting] {
     model.meetings.filter {
-      model.searchText(for: $0, includingSections: true).localizedCaseInsensitiveContains(query)
+      model.searchText(for: $0).localizedCaseInsensitiveContains(query)
     }
   }
 

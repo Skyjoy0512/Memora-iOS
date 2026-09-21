@@ -141,6 +141,13 @@ struct LibraryView: View {
           }
           .listRowSeparator(.hidden)
           .listRowBackground(Color.clear)
+        } else {
+          Text("\(meetings.count)件")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .accessibilityLabel("\(meetings.count)件の検索結果")
         }
       }
     }
@@ -236,9 +243,13 @@ struct LibraryView: View {
     .padding(.vertical, 24)
   }
 
+  /// The normal list stays short, but a search shows every match and reports
+  /// how many there are, so nothing is hidden behind a cap.
   private var matchingMeetings: [Meeting] {
-    let result = query.isEmpty ? model.meetings : model.meetings.filter(matchesQuery)
-    return Array(result.prefix(24))
+    if query.isEmpty {
+      return Array(model.meetings.prefix(24))
+    }
+    return model.meetings.filter(matchesQuery)
   }
 
   private var matchingSpaces: [MemoraSpace] {

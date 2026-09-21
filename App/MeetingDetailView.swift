@@ -13,6 +13,7 @@ struct MeetingDetailView: View {
   @State private var isCompactTitleVisible = false
   @State private var isSummaryGenerationPresented = false
   @State private var isAddingPeople = false
+  @State private var isChoosingSpace = false
   @State private var isSharing = false
   @State private var shareItems: [Any] = []
   @State private var statusAlert: StatusAlert?
@@ -122,6 +123,9 @@ struct MeetingDetailView: View {
                 isSummaryGenerationPresented = true
               }
               .disabled(meeting.transcript.isEmpty)
+              Button("プロジェクト", systemImage: "folder") {
+                isChoosingSpace = true
+              }
               Button("名前を変更", systemImage: "pencil") {
                 isRenaming = true
               }
@@ -139,6 +143,9 @@ struct MeetingDetailView: View {
         }
         .sheet(isPresented: $isAddingPeople) {
           AddPeopleSheet(meetingID: meeting.id)
+        }
+        .sheet(isPresented: $isChoosingSpace) {
+          SpacePickerSheet(meetingID: meeting.id)
         }
         .sheet(isPresented: $isSharing) {
           ActivityView(items: shareItems)
