@@ -70,6 +70,9 @@ final class MemoraModel {
   var recordingTitle = ""
   var recordingNote = ""
   var recordingErrorMessage: String?
+  /// Explains why a recording paused itself (a call, a lost input), so the
+  /// screen matches what actually happened.
+  var recordingInterruptionMessage: String?
   var microphonePermissionDenied = false
   var isImporting = false
   var importProgress = 0.0
@@ -209,6 +212,36 @@ final class MemoraModel {
     // A recording that was cut off by a stop is recovered as its own record,
     // never re-recorded.
     Task { await recoverRecordingDraft() }
+
+    // Calls, route changes, and audio resets pause the recording instead of
+    // silently losing it.
+    recorder.onInterruption = { [weak self] event in
+      self?.handleRecorderInterruption(event)
+    }
+  }
+
+  private func handleRecorderInterruption(_ event: AudioRecorderService.Interruption) {
+    guard isRecording else { return }
+
+    switch event {
+    case .began:
+      isRecordingPaused = true
+      recordingPausedAt = .now
+      recordingInterruptionMessage = "着信などでマイクが使えなくなり、録音を一時停止しました。「再開」で続けられます。"
+    case .ended:
+      if recordingInterruptionMessage == nil {
+        recordingInterruptionMessage = "マイクが使えるようになりました。「再開」で録音を続けられます。"
+      }
+    case .inputLost(let reason):
+      isRecordingPaused = true
+      recordingPausedAt = .now
+      recordingInterruptionMessage = reason
+    case .reset:
+      recordingInterruptionMessage = "オーディオがリセットされました。ここまでの録音を保存します。"
+      Task { await stopCapture() }
+    }
+
+    updateLiveActivity()
   }
 
   /// Marks records whose processing was interrupted by a stop or a crash, so the
@@ -574,6 +607,7 @@ final class MemoraModel {
     persistLifeLog()
     recordingDraft = nil
     persistRecordingDraft()
+    recordingInterruptionMessage = nil
     recordingURL = nil
     recordingStartedAt = nil
     recordingPausedAt = nil
@@ -615,6 +649,7 @@ final class MemoraModel {
     // Discarding means the audio goes too; nothing is kept for the journal.
     recordingDraft = nil
     persistRecordingDraft()
+    recordingInterruptionMessage = nil
     if !MediaFiles.delete(recordingURL) {
       deletionFailureMessage = "録音ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
     }
@@ -637,6 +672,7 @@ final class MemoraModel {
       }
       self.recordingPausedAt = nil
       isRecordingPaused = false
+      recordingInterruptionMessage = nil
     } else {
       recorder.pause()
       recordingPausedAt = .now

@@ -47,6 +47,16 @@ struct CaptureSessionView: View {
       .padding(.horizontal, 20)
       .padding(.top, 22)
 
+      if let message = model.recordingInterruptionMessage {
+        Label(message, systemImage: "exclamationmark.triangle")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 20)
+          .padding(.top, 10)
+          .accessibilityLabel(message)
+      }
+
       Picker("録音中の表示", selection: $section) {
         ForEach(CaptureSection.allCases) { item in
           Label(item.title, systemImage: item.symbol).tag(item)
