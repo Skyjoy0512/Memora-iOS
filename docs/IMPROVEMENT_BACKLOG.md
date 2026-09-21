@@ -101,7 +101,7 @@
 | F05 | 実装済み（性能未検証） | 音量を `RecordingLevelMeter`（独立したObservable）へ分離し、更新はグロー表示のみに伝播。**キャプチャ画面の表示中だけ**サンプリング（非表示時は300ms間隔、録音は継続） |
 | F06 | 一部 実装済み（性能未検証） | 一覧の写真デコードは非同期＋表示サイズ（F01）。残り: PDF描画（`ImageRenderer` のためメインアクター必須）の進行表示・キャンセル、取り込みコピーのさらなる分離 |
 | F07 | 一部 実装済み | 保存を `RecordStore` に集約（モデルはストア・UserDefaults・キューに触れない）。音声は `AudioRecorderService`、AIは `AIEngineService`／`CloudAIService`、バックアップは `BackupPackage`。処理ジョブの専用サービス化と画像処理の分離は残 |
-| F07 | 一部 実装済み | 保存は `RecordStore`、音声は `AudioRecorderService`、AIは `AIEngineService`／`CloudAIService`、バックアップは `BackupPackage`、音量は `RecordingLevelMeter` に分離済み。**残り: 処理ジョブの `ProcessingService` 切り出し**（記録ID・リビジョン・世代による適用判定、再起動後の再試行、タスク重複防止、Task参照の解放を維持したまま） |
+| F07 | 実装済み | 保存 `RecordStore`、音声 `AudioRecorderService`／`AudioPlayerService`、AI `AIEngineService`／`CloudAIService`、バックアップ `BackupPackage`、音量 `RecordingLevelMeter`、**処理ジョブ `ProcessingService`**。サービスは記録ごとの**世代**を管理し、`work`→`apply` で**現在の世代のときだけ結果を適用**、終了・失敗・キャンセルでTask参照を解放、`cancel` で旧結果を破棄。要約は**文面の入力リビジョン（文字起こしの指紋）**も照合し、生成中に編集されたら適用しない。中断ジョブの永続化は従来のキー・形式のままモデルが担当。PDF書き出しは `MeetingPDF` が生成・後始末を担い、画面はファイル操作をしない |
 | F08 | 未着手（未着手理由: 原文にはTask・通信・BLEの寿命と、BLEの明示的な検索意図分離が必要。次段で対応） |
 | F09 | 未着手 |
 | F10 | 未着手（計測の仕組みが必要） |

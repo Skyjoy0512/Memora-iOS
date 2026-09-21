@@ -358,12 +358,8 @@ struct MeetingDetailView: View {
     isSharing = true
   }
 
-  /// The export is a temporary file; once the share sheet is done with it, it is
-  /// removed so the folder does not fill with copies.
   private func cleanUpSharedFiles() {
-    for case let url as URL in shareItems where url.isFileURL {
-      try? FileManager.default.removeItem(at: url)
-    }
+    MeetingPDF.discard(shareItems)
     shareItems = []
   }
 

@@ -198,11 +198,9 @@ final class MemoraModel {
   @ObservationIgnored private var recordingPausedDuration: TimeInterval = 0
   @ObservationIgnored private var recordingTicker: Task<Void, Never>?
   @ObservationIgnored private var levelTicker: Task<Void, Never>?
-  @ObservationIgnored private var processingTasks: [UUID: Task<Void, Never>] = [:]
-  /// The generation each record's most recent summary request belongs to.
-  @ObservationIgnored private var processingRevisions: [UUID: Int] = [:]
-  /// Records whose processing was still running the last time the app stopped.
-  @ObservationIgnored private var interruptedJobIDs: [String] = []
+  /// Transcription and summary jobs, with the rules that decide whether a
+  /// result still applies.
+  @ObservationIgnored let processing = ProcessingService()
   /// What a recording in progress would need to be recovered after a stop.
   @ObservationIgnored private var recordingDraft: RecordingDraft?
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
@@ -257,7 +255,8 @@ final class MemoraModel {
     )
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: sample.tasks)
     people = load([Person].self, forKey: StorageKey.people, fallback: SampleContent.makePeople())
-    interruptedJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
+    let activeJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
+    processing.restoreInterrupted(activeJobIDs)
     trashedRecords = load([TrashedRecord].self, forKey: StorageKey.trash, fallback: [])
     trashedLifeLogEntries = load(
       [TrashedLifeLogEntry].self,
@@ -306,6 +305,12 @@ final class MemoraModel {
     // didSet does not run for the loads above, so the derived data is built here.
     rebuildMeetingAggregates()
     rebuildLifeLogDays()
+
+    // A finished job clears its flag, and the flag is what the next launch
+    // reads to decide whether a job was interrupted.
+    processing.onActiveIDsChanged = { [weak self] in
+      self?.persistInterruptedJobs()
+    }
 
     // A day or time zone change moves records between journal days.
     let dayChange: @Sendable (Notification) -> Void = { [weak self] _ in
@@ -395,9 +400,9 @@ final class MemoraModel {
   /// Marks records whose processing was interrupted by a stop or a crash, so the
   /// screen shows a retry rather than a spinner.
   private func recoverInterruptedJobs() {
-    guard !interruptedJobIDs.isEmpty else { return }
-    let ids = Set(interruptedJobIDs.compactMap(UUID.init(uuidString:)))
-    interruptedJobIDs = []
+    let ids = Set(processing.activeIDStrings.compactMap(UUID.init(uuidString:)))
+    guard !ids.isEmpty else { return }
+    processing.restoreInterrupted([])
     persistInterruptedJobs()
 
     var changed = false
@@ -415,21 +420,8 @@ final class MemoraModel {
     }
   }
 
-  /// Records whether a record has a processing job running, so an interrupted
-  /// one can be recovered on the next launch.
-  private func setJobActive(_ id: UUID, active: Bool) {
-    if active {
-      if !interruptedJobIDs.contains(id.uuidString) {
-        interruptedJobIDs.append(id.uuidString)
-      }
-    } else {
-      interruptedJobIDs.removeAll { $0 == id.uuidString }
-    }
-    persistInterruptedJobs()
-  }
-
   private func persistInterruptedJobs() {
-    persistInBackground(interruptedJobIDs, forKey: StorageKey.activeJobs)
+    persistInBackground(processing.activeIDStrings, forKey: StorageKey.activeJobs)
   }
 
   // MARK: - Recording recovery
@@ -955,16 +947,14 @@ final class MemoraModel {
   func startImportedTranscription(_ id: UUID) {
     guard let meeting = meeting(id: id), meeting.source == .importFile else { return }
     updateMeeting(id) { $0.status = .transcribing(0.08) }
-    processingTasks[id]?.cancel()
-    processingTasks[id] = Task { [weak self] in
-      guard let self else { return }
+    processing.run(id: id) { [weak self] in
+      guard let self else { return TranscriptionOutcome.unavailable }
       try? await Task.sleep(for: .milliseconds(600))
-      guard !Task.isCancelled else { return }
+      guard !Task.isCancelled else { return .unavailable }
       self.updateMeeting(id) { $0.status = .transcribing(0.62) }
-
-      let outcome = await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
-      guard !Task.isCancelled else { return }
-
+      return await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
+    } apply: { [weak self] outcome in
+      guard let self, !Task.isCancelled else { return }
       switch outcome {
       case .segments(let segments):
         self.updateMeeting(id) { meeting in
@@ -990,18 +980,15 @@ final class MemoraModel {
   func generateSummary(_ id: UUID, choice: SummaryTemplateChoice) {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
 
-    let revision = bumpProcessingRevision(for: id)
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
-    processingTasks[id]?.cancel()
-    setJobActive(id, active: true)
+    let inputRevision = ProcessingService.inputRevision(meeting.transcript)
 
-    processingTasks[id] = Task { [weak self] in
-      guard let self else { return }
-
+    processing.run(id: id) { [weak self] in
+      guard let self else { return AIAnswerResult.failure(.noEngine) }
       let transcript = meeting.transcript
         .map { "\($0.speaker): \($0.text)" }
         .joined(separator: "\n")
-      let result = await AIEngineService.answer(
+      return await AIEngineService.answer(
         engine: self.aiEngine,
         provider: self.aiProvider,
         question: choice.summaryInstruction,
@@ -1009,19 +996,16 @@ final class MemoraModel {
         context: transcript,
         history: ""
       )
+    } apply: { [weak self] result in
+      guard let self, !Task.isCancelled else { return }
+      // The service checks the job's generation; the transcript fingerprint
+      // catches an edit made while the answer was being written.
+      guard let current = self.meeting(id: id),
+            ProcessingService.inputRevision(current.transcript) == inputRevision else { return }
 
-      // A newer request or a deleted record makes this result stale.
-      guard !Task.isCancelled,
-            self.processingRevision(for: id) == revision,
-            self.meeting(id: id) != nil else { return }
+      if let resultFailure = result.failure, resultFailure == .cancelled { return }
 
       let summary = result.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-      if let resultFailure = result.failure, resultFailure == .cancelled {
-        self.processingTasks[id] = nil
-        self.setJobActive(id, active: false)
-        return
-      }
-
       if let summary, !summary.isEmpty {
         self.updateMeeting(id) { meeting in
           meeting.summary = summary
@@ -1035,24 +1019,7 @@ final class MemoraModel {
         self.updateMeeting(id) { $0.status = .failed(message) }
         self.announce("要約を作成できませんでした。\(message)")
       }
-
-      self.processingTasks[id] = nil
-      self.setJobActive(id, active: false)
     }
-  }
-
-  // MARK: - Processing revisions
-
-  /// Bumped for each new summary request, so an older result cannot overwrite a
-  /// newer edit or a deleted record.
-  private func bumpProcessingRevision(for id: UUID) -> Int {
-    let next = (processingRevisions[id] ?? 0) + 1
-    processingRevisions[id] = next
-    return next
-  }
-
-  private func processingRevision(for id: UUID) -> Int {
-    processingRevisions[id] ?? 0
   }
 
   // MARK: - Summary templates
@@ -1240,10 +1207,7 @@ final class MemoraModel {
   func deleteMeeting(_ id: UUID) {
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
 
-    processingTasks[id]?.cancel()
-    processingTasks[id] = nil
-    processingRevisions[id] = nil
-    setJobActive(id, active: false)
+    processing.cancel(id)
 
     let removed = meetings.remove(at: index)
     let removedTasks = tasks.filter { $0.meetingID == id }
@@ -1585,19 +1549,17 @@ final class MemoraModel {
   }
 
   private func beginProcessing(_ id: UUID) {
-    processingTasks[id]?.cancel()
-    setJobActive(id, active: true)
-    processingTasks[id] = Task { [weak self] in
-      guard let self else { return }
+    processing.run(id: id) { [weak self] in
+      guard let self else { return TranscriptionOutcome.unavailable }
       try? await Task.sleep(for: .milliseconds(700))
-      guard !Task.isCancelled else { return }
+      guard !Task.isCancelled else { return .unavailable }
       self.updateMeeting(id) { $0.status = .transcribing(0.58) }
 
       // Only a real engine's transcript is ever stored. When none can run, the
       // record says so and keeps the audio for a retry — never sample text.
-      let outcome = await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
-      guard !Task.isCancelled else { return }
-
+      return await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
+    } apply: { [weak self] outcome in
+      guard let self, !Task.isCancelled else { return }
       switch outcome {
       case .segments(let segments):
         self.updateMeeting(id) { meeting in
@@ -1614,9 +1576,6 @@ final class MemoraModel {
         self.updateMeeting(id) { $0.status = .failed(message) }
         self.announce("文字起こしができませんでした。\(message)")
       }
-
-      self.processingTasks[id] = nil
-      self.setJobActive(id, active: false)
     }
   }
 

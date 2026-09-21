@@ -174,6 +174,14 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ5（追加23・F07）
+
+- `App/ProcessingService.swift` を追加。記録ごとの**世代**（`begin`）、**現在性の判定**（`run(work:apply:)` は現在の世代のときだけ `apply`）、`cancel`（世代とTaskを破棄）、`activeIDs`（実行中ジョブ）を保持。終了時は `end` で Task 参照を解放。
+- `MemoraModel` は `processing.run` で文字起こし・要約を実行し、適用はサービスに委ねる。`deleteMeeting` は `processing.cancel`。中断ジョブの永続化（`memoraActiveJobs`）は従来どおりモデルが担当し、形式・キーは不変。
+- 要約は `ProcessingService.inputRevision`（文字起こしの指紋）を生成時に記録し、適用時に照合するため、生成中の編集結果を上書きしない。
+- 一時PDFの後始末を `MeetingPDF.discard` に移し、画面からファイル操作を排除（タスクの自動生成は元々無いため重複作成なし）。
+- 不変条件は維持: 削除・再試行・キャンセルで旧結果を反映しない／再起動後に中断を検出して再試行／完了・失敗・キャンセルでTask解放。
+
 ### フェーズ5（追加22・F01〜F05）
 
 - F01: `ImageDownscale.downsampled(at:maxPixelSize:)`（ImageIOのサムネイル生成）と `MediaImageCache.image/photo`（非同期・サイズ別・上限80）。`LifeLogRow`・写真ストリップ・拡大表示が利用。不要になった `photoData`／`photoThumbnailData` を削除。

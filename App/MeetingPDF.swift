@@ -52,6 +52,14 @@ enum MeetingPDF {
     return result.isEmpty ? nil : result
   }
 
+  /// Removes the exports once the share sheet is done with them, so the
+  /// temporary folder does not fill with copies.
+  static func discard(_ items: [Any]) {
+    for case let url as URL in items where url.isFileURL {
+      try? FileManager.default.removeItem(at: url)
+    }
+  }
+
   private static func drawFooter(page: Int, of total: Int) {
     let text = "Memora · \(page) / \(total)"
     let attributes: [NSAttributedString.Key: Any] = [
