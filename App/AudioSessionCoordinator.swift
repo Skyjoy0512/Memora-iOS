@@ -35,15 +35,43 @@ final class AudioSessionCoordinator {
   private(set) var owner: Use?
   private(set) var isRecording = false
   private var ownerTokenID: UUID?
+  /// Ways for a feature to be asked to stop before recording takes the session,
+  /// each keyed by a token so a replaced service's handler can be removed.
+  private var stoppers: [Use: [UUID: @MainActor () async -> Void]] = [:]
 
-  /// A recording starting takes the session from anything else.
+  /// Asks anything else using the session to stop, waits for it to finish, and
+  /// only then takes the session for recording, so a recorder never starts on top
+  /// of running playback or voice input.
+  func beginRecording() async -> Token {
+    for (use, handlers) in stoppers where use != .recording {
+      for handler in handlers.values {
+        await handler()
+      }
+    }
+    return takeRecordingSession()
+  }
+
+  /// Takes the session for recording without waiting on other users, for a resume
+  /// after an interruption, where this recorder already owns it.
   @discardableResult
-  func beginRecording() -> Token {
+  func takeRecordingSession() -> Token {
     isRecording = true
     owner = .recording
     let token = Token(id: UUID(), use: .recording)
     ownerTokenID = token.id
     return token
+  }
+
+  /// Registers a stop request for `use` and returns a token to remove it.
+  @discardableResult
+  func registerStopper(_ use: Use, _ handler: @escaping @MainActor () async -> Void) -> UUID {
+    let id = UUID()
+    stoppers[use, default: [:]][id] = handler
+    return id
+  }
+
+  func unregisterStopper(_ id: UUID, for use: Use) {
+    stoppers[use]?[id] = nil
   }
 
   /// Ends the recording, but only for the token that began it.

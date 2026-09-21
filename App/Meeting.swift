@@ -121,8 +121,16 @@ extension Meeting {
     try container.encodeIfPresent(spaceID, forKey: .spaceID)
     try container.encode(notes, forKey: .notes)
     try container.encodeIfPresent(participantIDs, forKey: .participantIDs)
-    try container.encodeIfPresent(photoFileNames, forKey: .photoFileNames)
     try container.encodeIfPresent(calendarEventID, forKey: .calendarEventID)
+
+    // A record still waiting to have its inline photos written keeps the bytes,
+    // so a save in between does not drop them. Once they are files, the names
+    // are what is stored.
+    if let photoFileNames {
+      try container.encodeIfPresent(photoFileNames, forKey: .photoFileNames)
+    } else if let legacy = legacyPhotoData, !legacy.isEmpty {
+      try container.encode(legacy, forKey: .photoData)
+    }
 
     if let audioURL, let reference = MediaFiles.reference(for: audioURL) {
       try container.encode(reference, forKey: .audioURL)
@@ -134,13 +142,26 @@ extension Meeting {
 extension Meeting {
   /// Writes photos that an older record held inline and turns them into file
   /// names. Called on the app's own records after loading, never during a decode.
-  mutating func materializeLegacyPhotos() {
-    guard let legacy = legacyPhotoData, !legacy.isEmpty else { return }
-    let names = legacy.compactMap { MediaFiles.writePhoto($0) }
-    if !names.isEmpty {
-      photoFileNames = names
+  /// Returns false when a photo could not be written: the original bytes are all
+  /// kept and any files just written are removed, so a retry neither loses the
+  /// photo nor leaves a duplicate behind. A later save stores the bytes again.
+  @discardableResult
+  mutating func materializeLegacyPhotos() -> Bool {
+    guard let legacy = legacyPhotoData, !legacy.isEmpty else { return true }
+
+    var names: [String] = []
+    for data in legacy {
+      guard let name = MediaFiles.writePhoto(data) else {
+        for written in names {
+          MediaFiles.deletePhoto(written)
+        }
+        return false
+      }
+      names.append(name)
     }
+    photoFileNames = names.isEmpty ? nil : names
     legacyPhotoData = nil
+    return true
   }
 }
 

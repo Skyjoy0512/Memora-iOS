@@ -41,6 +41,11 @@ final class AudioPlayerService {
     engine.connect(player, to: timePitch, format: nil)
     engine.connect(timePitch, to: engine.mainMixerNode, format: nil)
     timePitch.rate = rate
+    // A stale handler only holds a weak player, so it does nothing once this one
+    // is gone; it is registered once here rather than on every play.
+    AudioSessionCoordinator.shared.registerStopper(.playback) { [weak self] in
+      self?.stop()
+    }
   }
 
   private var sampleRate: Double {

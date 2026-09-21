@@ -376,6 +376,11 @@ enum BackupPackage {
     }
 
     for meeting in meetings {
+      // A record still holding inline photos would be refused on restore, so the
+      // export says so instead of writing a package that cannot come back.
+      if meeting.legacyPhotoData != nil {
+        throw BackupError.inlineMediaUnsupported
+      }
       try addAudio(meeting.audioURL)
       for name in meeting.photoFileNames ?? [] {
         try addPhoto(name)

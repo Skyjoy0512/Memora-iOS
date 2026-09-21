@@ -66,6 +66,14 @@ struct ContentView: View {
     } message: {
       Text(model.recordingErrorMessage ?? "もう一度お試しください。")
     }
+    .alert("録音を保存できませんでした", isPresented: $model.isUnsavedRecordingAlertPresented) {
+      Button("再試行") {
+        Task { await model.retrySavingRecording() }
+      }
+      Button("あとで", role: .cancel) {}
+    } message: {
+      Text("録音と下書きは端末に残っています。保存できるまで、新しい録音は始められません。「再試行」で保存してください。")
+    }
     .alert("インポートできませんでした", isPresented: importErrorBinding) {
       Button("OK", role: .cancel) {}
     } message: {

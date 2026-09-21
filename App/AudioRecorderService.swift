@@ -41,11 +41,11 @@ final class AudioRecorderService {
     }
   }
 
-  func start() throws -> URL {
-    // Recording takes the session from anything else, and keeps it until it
-    // stops, so another feature cannot switch the audio off underneath it.
-    // Every failure below hands the claim back.
-    sessionToken = AudioSessionCoordinator.shared.beginRecording()
+  func start() async throws -> URL {
+    // Recording waits for anything else using the session to stop, then takes it
+    // and keeps it until it stops, so another feature cannot switch the audio off
+    // underneath it. Every failure below hands the claim back.
+    sessionToken = await AudioSessionCoordinator.shared.beginRecording()
     do {
       let session = AVAudioSession.sharedInstance()
       try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetoothHFP])
@@ -100,8 +100,9 @@ final class AudioRecorderService {
 
   func resume() -> Bool {
     // After an interruption the session has to be active again, under a fresh
-    // claim so an older run's token cannot end the recording.
-    sessionToken = AudioSessionCoordinator.shared.beginRecording()
+    // claim so an older run's token cannot end the recording. This recorder
+    // already owns it, so there is nothing to stop first.
+    sessionToken = AudioSessionCoordinator.shared.takeRecordingSession()
     try? AVAudioSession.sharedInstance().setActive(true)
     let started = recorder?.record() ?? false
     if !started {

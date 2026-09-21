@@ -21,6 +21,9 @@ struct InlineMarkdownEditor: View {
   @State private var isEditing = false
   @State private var draft = ""
   @State private var editorID = UUID()
+  /// Identifies one editing session, so a commit that finishes late clears only
+  /// the draft belonging to the session it was editing.
+  @State private var draftSessionID = UUID()
   @State private var didRestoreDraft = false
   @State private var draftSaveTask: Task<Void, Never>?
   @FocusState private var isFocused: Bool
@@ -75,6 +78,8 @@ struct InlineMarkdownEditor: View {
 
   private func beginEditing() {
     guard !isEditing else { return }
+    // A new session under the same key; an older commit must not clear its draft.
+    draftSessionID = UUID()
 
     if let draftKey, let stored = DraftStore.load(draftKey), stored != text {
       draft = stored
@@ -107,12 +112,19 @@ struct InlineMarkdownEditor: View {
 
     let value = draft
     let key = draftKey
+    let session = draftSessionID
     if value != text {
-      // The draft is only cleared once the record is actually stored. If the
-      // write fails, the draft stays and is restored the next time this editor
-      // is opened.
+      // Keep the latest text in the draft before trying to commit, so a failed
+      // or slow write leaves what was just typed rather than an older debounced
+      // copy that the end of editing cancelled.
+      if let key {
+        try? DraftStore.saveAndWait(value, key: key)
+      }
+      // The draft is only cleared once the record is actually stored, and only
+      // if this editing session is still the current one — a newer edit may have
+      // written a newer draft under the same key while the commit was in flight.
       Task { @MainActor in
-        guard await onCommit(value), let key else { return }
+        guard await onCommit(value), let key, draftSessionID == session else { return }
         DraftStore.clear(key)
       }
     } else if let key {
@@ -124,10 +136,11 @@ struct InlineMarkdownEditor: View {
   /// Saves what is being typed a moment after the last keystroke.
   private func scheduleDraftSave(_ value: String) {
     guard isEditing, let draftKey else { return }
+    let session = draftSessionID
     draftSaveTask?.cancel()
     draftSaveTask = Task { @MainActor in
       try? await Task.sleep(for: .milliseconds(800))
-      guard !Task.isCancelled else { return }
+      guard !Task.isCancelled, draftSessionID == session, isEditing else { return }
       DraftStore.save(value, key: draftKey)
     }
   }

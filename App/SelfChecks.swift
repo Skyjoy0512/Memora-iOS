@@ -56,12 +56,15 @@ enum SelfChecks {
     group("Backup restore validation", checkBackupRestoreValidation)
     group("Attachment read limit", checkAttachmentReadLimit)
     group("Unassigned task scope", checkUnassignedTaskScope)
+    group("Legacy photo retention", checkLegacyPhotoRetention)
     group("Speech final results", checkSpeechFinalResults)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
     // its result when it finishes.
     group("Processing run ownership", isAsync: true) {}
     Task { await runOwnershipCheck() }
+    group("Recording stop order", isAsync: true) {}
+    Task { await runRecordingStopOrderCheck() }
   }
 
   /// Runs one named check and records whether it passed, so the debug screen can
@@ -458,6 +461,49 @@ enum SelfChecks {
     DraftStore.clear(draft)
   }
 
+  /// A record whose inline photos have not been written yet must keep its bytes
+  /// through a save, so nothing is lost while migration is pending; a successful
+  /// migration writes the files and drops the bytes.
+  private static func checkLegacyPhotoRetention() {
+    let original = Meeting(
+      id: UUID(),
+      title: "移行前",
+      createdAt: .now,
+      duration: 1,
+      source: .recording,
+      status: .ready,
+      summary: "",
+      keyPoints: [],
+      decisions: [],
+      openQuestions: [],
+      transcript: [],
+      legacyPhotoData: [Data([0x01, 0x02, 0x03])]
+    )
+
+    do {
+      let data = try JSONEncoder().encode([original])
+      let decoded = try JSONDecoder().decode([Meeting].self, from: data)
+      if decoded.first?.legacyPhotoData == nil {
+        report("inline photo bytes were dropped on save")
+      }
+    } catch {
+      report("legacy photo round trip failed: \(error)")
+    }
+
+    var migrated = original
+    if !migrated.materializeLegacyPhotos() {
+      report("a writable inline photo failed to migrate")
+    }
+    if migrated.legacyPhotoData != nil {
+      report("migrated photo bytes were kept")
+    }
+    guard let name = migrated.photoFileNames?.first else {
+      report("migrated photo was not given a file name")
+      return
+    }
+    MediaFiles.deletePhoto(name)
+  }
+
   /// A whole-library question must reach tasks that are not tied to a record,
   /// while a record or project range must not carry them.
   private static func checkUnassignedTaskScope() {
@@ -642,7 +688,7 @@ enum SelfChecks {
       report("a token that did not hold the session released it")
     }
 
-    let recordingToken = coordinator.beginRecording()
+    let recordingToken = coordinator.takeRecordingSession()
     if coordinator.claim(.speechInput) != nil {
       report("voice input claimed the session during a recording")
     }
@@ -770,6 +816,24 @@ enum SelfChecks {
     await checkProcessingRunOwnership()
     let passed = failures == failuresBefore
     guard let index = results.firstIndex(where: { $0.name == "Processing run ownership" }) else { return }
+    results[index].passed = passed
+    results[index].detail = passed ? nil : lastDetail
+  }
+
+  /// Recording must ask the other users of the session to stop and wait for it
+  /// before it takes the session.
+  private static func runRecordingStopOrderCheck() async {
+    let failuresBefore = failures
+    let coordinator = AudioSessionCoordinator()
+    var stoppedBeforeClaim = false
+    coordinator.registerStopper(.playback) { stoppedBeforeClaim = true }
+    let token = await coordinator.beginRecording()
+    if !stoppedBeforeClaim {
+      report("recording took the session before stopping the other user")
+    }
+    coordinator.endRecording(token)
+    let passed = failures == failuresBefore
+    guard let index = results.firstIndex(where: { $0.name == "Recording stop order" }) else { return }
     results[index].passed = passed
     results[index].detail = passed ? nil : lastDetail
   }

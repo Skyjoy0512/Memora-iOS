@@ -111,6 +111,16 @@ final class MemoraModel {
   private(set) var captureEvent: UpcomingMeeting?
   /// True while a recording is being finished and stored.
   private(set) var isSavingCapture = false
+  /// True when a finished recording could not be stored. Its audio, its record
+  /// and its draft are kept, and no new recording may start until it is saved
+  /// or discarded, so one recording cannot replace another.
+  private(set) var hasUnsavedRecording = false
+  /// Drives the retry alert. Separate from `hasUnsavedRecording` so dismissing
+  /// the alert does not lift the block on starting a new recording.
+  var isUnsavedRecordingAlertPresented = false
+  /// True while a backup restore is preparing files and before its records are
+  /// written, so a record added meanwhile cannot be silently replaced.
+  private(set) var isRestoring = false
   var recordingElapsed: TimeInterval = 0
   /// Smoothed 0...1 loudness for the recording glow.
   /// The glow's microphone level, kept in its own observable object so the ~22
@@ -329,11 +339,15 @@ final class MemoraModel {
 
     // Photos that older records held inline are written to files here, after
     // loading, so decoding a document (a backup, say) never writes into the
-    // app's folders as a side effect.
+    // app's folders as a side effect. A record whose photos could not all be
+    // written keeps its bytes, so nothing is lost; the person is told.
+    var didFailToMigratePhotos = false
     if meetings.contains(where: { $0.legacyPhotoData != nil }) {
       var materialized = meetings
-      for index in materialized.indices {
-        materialized[index].materializeLegacyPhotos()
+      for index in materialized.indices where materialized[index].legacyPhotoData != nil {
+        if !materialized[index].materializeLegacyPhotos() {
+          didFailToMigratePhotos = true
+        }
       }
       meetings = materialized
     }
@@ -342,6 +356,8 @@ final class MemoraModel {
       loadFailureMessage = "保存データを読み込めませんでした。データを壊さないため、この起動では保存を停止しています。アプリを再起動してください。"
     } else if didFindUnreadableData {
       loadFailureMessage = "保存されたデータの一部を読み込めませんでした。元のデータは端末に退避しています。"
+    } else if didFailToMigratePhotos {
+      loadFailureMessage = "古い形式の写真を移行できませんでした。写真は失われないよう記録に残しています。空き容量を確認して、アプリを再起動してください。"
     } else {
       loadFailureMessage = nil
     }
@@ -773,6 +789,13 @@ final class MemoraModel {
   }
 
   func startCapture(event: UpcomingMeeting? = nil) async {
+    // A finished recording still waiting to be stored comes first: starting a new
+    // one now could replace it, so save that one before recording anything else.
+    guard !isRestoring else { return }
+    guard !hasUnsavedRecording else {
+      await retrySavingRecording()
+      return
+    }
     // Starting twice (a double tap, or two entry points) must not begin two
     // recordings, so a start already under way wins.
     guard !isPreparingCapture, !isSavingCapture else { return }
@@ -794,7 +817,7 @@ final class MemoraModel {
     guard !isRecording, !isSavingCapture else { return }
 
     do {
-      recordingURL = try recorder.start()
+      recordingURL = try await recorder.start()
       recordingStartedAt = .now
       recordingPausedAt = nil
       recordingPausedDuration = 0
@@ -890,9 +913,66 @@ final class MemoraModel {
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))
       ]
     }, removing: [StorageKey.recordingDraft])
-    if committed {
-      recordingDraft = nil
+    guard committed else {
+      // Do not take the success path: keep the title, note, audio and draft so
+      // the recording can be saved again, and refuse to start another one until
+      // it is. The generic save alert is replaced by the recording one.
+      persistenceFailureMessage = nil
+      hasUnsavedRecording = true
+      isUnsavedRecordingAlertPresented = true
+      pendingMeetingNavigationID = meeting.id
+      isCapturePresented = false
+      return
     }
+    recordingDraft = nil
+    finishCaptureSave(meetingID: meeting.id)
+  }
+
+  /// Stores a recording the last attempt could not. The record and draft are
+  /// already in memory and on disk, so this only retries the write.
+  func retrySavingRecording() async {
+    guard hasUnsavedRecording, !isSavingCapture else { return }
+    isSavingCapture = true
+    defer { isSavingCapture = false }
+
+    let committed = await persistBatchAsync({
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))
+      ]
+    }, removing: [StorageKey.recordingDraft])
+    guard committed else {
+      persistenceFailureMessage = nil
+      return
+    }
+    hasUnsavedRecording = false
+    recordingDraft = nil
+    let meetingID = pendingMeetingNavigationID
+    if let meetingID {
+      finishCaptureSave(meetingID: meetingID)
+    }
+  }
+
+  /// Writes any inline photos older records still hold, so nothing is left in the
+  /// bytes-and-names in-between state before a save. Failures are left alone for
+  /// the load-time message to report.
+  private func materializePendingLegacyPhotos() {
+    guard meetings.contains(where: { $0.legacyPhotoData != nil }) else { return }
+    var materialized = meetings
+    var changed = false
+    for index in materialized.indices where materialized[index].legacyPhotoData != nil {
+      if materialized[index].materializeLegacyPhotos() {
+        changed = true
+      }
+    }
+    if changed {
+      meetings = materialized
+    }
+  }
+
+  /// The parts of finishing a capture that only run once the record is stored.
+  private func finishCaptureSave(meetingID: UUID) {
+    hasUnsavedRecording = false
     recordingInterruptionMessage = nil
     recordingURL = nil
     recordingStartedAt = nil
@@ -903,9 +983,9 @@ final class MemoraModel {
     captureEvent = nil
     selectedTab = .files
     fileSection = .meetingFiles
-    pendingMeetingNavigationID = meeting.id
+    pendingMeetingNavigationID = meetingID
     isCapturePresented = false
-    beginProcessing(meeting.id)
+    beginProcessing(meetingID)
     announce("録音を保存しました。文字起こしを準備しています。")
   }
 
@@ -1327,6 +1407,8 @@ final class MemoraModel {
     locationName: String?,
     removingDraft draftKey: String? = nil
   ) -> Bool {
+    // A restore is putting records in place; adding one now could be replaced.
+    guard !isRestoring else { return false }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedLocation = locationName?.trimmingCharacters(in: .whitespacesAndNewlines)
     let resolvedTitle: String
@@ -1743,6 +1825,9 @@ final class MemoraModel {
   /// Writes a versioned package of the records and their media, off the main
   /// actor so the screen stays responsive while the files are copied.
   func makeBackupPackage() async throws -> URL {
+    // Try once more to write any inline photos an older record still holds, so
+    // the package carries files instead of bytes a restore would refuse.
+    materializePendingLegacyPhotos()
     let meetings = self.meetings
     let spaces = self.spaces
     let tasks = self.tasks
@@ -1773,13 +1858,27 @@ final class MemoraModel {
     guard !isRecording, !isSavingCapture, recordingDraft == nil else {
       throw BackupPackage.BackupError.busy
     }
+    guard !isRestoring else { throw BackupPackage.BackupError.busy }
     guard isEmpty else { throw BackupPackage.BackupError.notEmpty }
+
+    // Held for the whole restore, so the model refuses changes that could add a
+    // record while the package is being prepared off the main actor.
+    isRestoring = true
+    defer { isRestoring = false }
 
     let (manifest, installed) = try await Task.detached(priority: .userInitiated) {
       let manifest = try BackupPackage.read(from: packageURL)
       let installed = try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
       return (manifest, installed)
     }.value
+
+    // The wait above yielded; a record could have been added since. Check again
+    // right before the write (no await between here and the commit) and take the
+    // newly created files back rather than replacing anything.
+    guard isEmpty else {
+      BackupPackage.removeInstalledMedia(installed)
+      throw BackupPackage.BackupError.notEmpty
+    }
 
     // The records go in as one write. If it fails, only the files this restore
     // just created are taken back, so the device is left as it was.

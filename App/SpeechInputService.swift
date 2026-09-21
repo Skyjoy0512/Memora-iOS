@@ -24,6 +24,14 @@ final class SpeechInputService {
   /// The session claim this run holds, so only this run gives it up.
   @ObservationIgnored private var sessionToken: AudioSessionCoordinator.Token?
 
+  init() {
+    // Registered once, so a recording can ask voice input to stop and wait for it
+    // before taking the session. The handler holds this service weakly.
+    AudioSessionCoordinator.shared.registerStopper(.speechInput) { [weak self] in
+      self?.stop()
+    }
+  }
+
   func toggle(transcriptChanged: @escaping @MainActor (String) -> Void) async {
     if isListening {
       stop()
