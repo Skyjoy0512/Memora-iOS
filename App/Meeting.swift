@@ -28,6 +28,14 @@ struct Meeting: Identifiable, Hashable, Codable {
   var photoFileNames: [String]? = nil
   /// The calendar event the recording was started from, when it was.
   var calendarEventID: String? = nil
+  /// Photos older records held inline, kept until they are written to files.
+  /// Decoding never writes to the app's folders, so reading a backup is free of
+  /// side effects; `materializeLegacyPhotos()` does the writing afterwards.
+  var legacyPhotoData: [Data]? = nil
+  /// The audio reference exactly as it was stored, before it was turned into a
+  /// URL. A backup checks this raw value, so an unsafe reference is refused
+  /// instead of quietly resolving to nil.
+  var rawAudioReference: String? = nil
 }
 
 extension Meeting {
@@ -71,21 +79,26 @@ extension Meeting {
     participantIDs = try container.decodeIfPresent([UUID].self, forKey: .participantIDs)
     calendarEventID = try container.decodeIfPresent(String.self, forKey: .calendarEventID)
 
-    // Photos moved out of the record and into the media folder; older records
-    // carry the bytes inline and are written out the first time they are read.
+    // Photos moved out of the record and into the media folder. Older records
+    // carry the bytes inline; they are kept for now and written out by
+    // `materializeLegacyPhotos()` on the app's own records, never while a backup
+    // is only being read.
     if let names = try container.decodeIfPresent([String].self, forKey: .photoFileNames) {
       photoFileNames = names.isEmpty ? nil : names
+      legacyPhotoData = nil
     } else if let legacy = try container.decodeIfPresent([Data].self, forKey: .photoData), !legacy.isEmpty {
-      let names = legacy.compactMap { MediaFiles.writePhoto($0) }
-      photoFileNames = names.isEmpty ? nil : names
+      photoFileNames = nil
+      legacyPhotoData = legacy
     } else {
       photoFileNames = nil
+      legacyPhotoData = nil
     }
 
     // Stored as a path relative to the media folder since 2.x; older records
     // hold an absolute path, which is only kept when it resolves to a file the
-    // app still manages.
-    if let stored = try container.decodeIfPresent(String.self, forKey: .audioURL) {
+    // app still manages. The raw value is kept so a backup can check it.
+    rawAudioReference = try container.decodeIfPresent(String.self, forKey: .audioURL)
+    if let stored = rawAudioReference {
       audioURL = MediaFiles.resolve(stored)
     } else {
       audioURL = nil
@@ -117,6 +130,19 @@ extension Meeting {
   }
 }
 
+
+extension Meeting {
+  /// Writes photos that an older record held inline and turns them into file
+  /// names. Called on the app's own records after loading, never during a decode.
+  mutating func materializeLegacyPhotos() {
+    guard let legacy = legacyPhotoData, !legacy.isEmpty else { return }
+    let names = legacy.compactMap { MediaFiles.writePhoto($0) }
+    if !names.isEmpty {
+      photoFileNames = names
+    }
+    legacyPhotoData = nil
+  }
+}
 
 extension Meeting {
   /// True when the engine identified at least one speaker. Engines that cannot

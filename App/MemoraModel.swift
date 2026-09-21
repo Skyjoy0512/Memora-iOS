@@ -315,7 +315,7 @@ final class MemoraModel {
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [
       AIConversationEntry(
-        id: UUID(),
+        id: Self.seedAIHistoryID,
         question: "今週決まったことは？",
         answer: "録音開始の速さを最優先にし、会議データは既定で端末内に保存する方針です。",
         scopeLabel: "すべての会話",
@@ -326,6 +326,17 @@ final class MemoraModel {
     // Protection is decided only once every document has been read, so a failure
     // in the last one (AI history, say) still stops the app from overwriting it.
     isStoreProtected = didFailToReadStore
+
+    // Photos that older records held inline are written to files here, after
+    // loading, so decoding a document (a backup, say) never writes into the
+    // app's folders as a side effect.
+    if meetings.contains(where: { $0.legacyPhotoData != nil }) {
+      var materialized = meetings
+      for index in materialized.indices {
+        materialized[index].materializeLegacyPhotos()
+      }
+      meetings = materialized
+    }
 
     if didFailToReadStore {
       loadFailureMessage = "保存データを読み込めませんでした。データを壊さないため、この起動では保存を停止しています。アプリを再起動してください。"
@@ -1712,13 +1723,21 @@ final class MemoraModel {
     persistInBackground(aiHistory, forKey: StorageKey.aiHistory)
   }
 
-  /// True when a restore would not overwrite anything of the person's own.
+  /// True when a restore would not overwrite anything of the person's own. It
+  /// counts the trash, unfinished drafts, and real AI history as well as the
+  /// records, so a restore cannot quietly discard something that is only out of
+  /// sight. The seed sample is not counted.
   var isEmpty: Bool {
     meetings.isEmpty
       && spaces.isEmpty
       && tasks.isEmpty
       && lifeLogEntries.isEmpty
       && people.isEmpty
+      && trashedRecords.isEmpty
+      && trashedLifeLogEntries.isEmpty
+      && recordingDraft == nil
+      && composerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      && !aiHistory.contains { $0.id != Self.seedAIHistoryID }
   }
 
   /// Writes a versioned package of the records and their media into `directory`.
@@ -1737,14 +1756,20 @@ final class MemoraModel {
   /// Restores a package. It refuses to run when this device already holds
   /// records, so a backup can never silently replace them.
   func restoreBackup(from packageURL: URL) throws {
+    // A store that could not be read must not be written over, and nothing may
+    // be in flight.
+    guard !isStoreProtected else { throw BackupPackage.BackupError.storeProtected }
+    guard !isRecording, !isSavingCapture, recordingDraft == nil else {
+      throw BackupPackage.BackupError.busy
+    }
     guard isEmpty else { throw BackupPackage.BackupError.notEmpty }
 
     // The whole package is checked before anything is touched.
     let manifest = try BackupPackage.read(from: packageURL)
-    try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
+    let installed = try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
 
-    // The records go in as one write. If it fails, the media that was just put
-    // in place is taken back, so the device is left as it was.
+    // The records go in as one write. If it fails, only the files this restore
+    // just created are taken back, so the device is left as it was.
     let stored = persistBatch {
       [
         (key: StorageKey.meetings, data: try RecordStore.encoded(manifest.meetings)),
@@ -1756,9 +1781,8 @@ final class MemoraModel {
       ]
     }
     guard stored else {
-      BackupPackage.removeInstalledMedia(manifest.audioFileNames, isAudio: true)
-      BackupPackage.removeInstalledMedia(manifest.photoFileNames, isAudio: false)
-      throw BackupPackage.BackupError.mediaInstallFailed(manifest.audioFileNames + manifest.photoFileNames)
+      BackupPackage.removeInstalledMedia(installed)
+      throw BackupPackage.BackupError.mediaInstallFailed(installed.map(\.name))
     }
 
     meetings = manifest.meetings
@@ -2178,6 +2202,11 @@ final class MemoraModel {
   private var storeProtectedMessage: String {
     "保存データを読み込めなかったため、上書きを止めています。アプリを再起動してください。"
   }
+
+  /// The one sample conversation shown before anything else exists. It has a
+  /// fixed id so it can be told apart from real history when deciding whether
+  /// the device is empty.
+  static let seedAIHistoryID = UUID(uuidString: "00000000-0000-0000-0000-0000000000A1")!
 
   private enum StorageKey {
     static let hasCompletedOnboarding = "hasSeenMemoraWelcome"

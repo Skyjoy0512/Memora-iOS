@@ -53,6 +53,7 @@ enum SelfChecks {
     group("Audio session claims", checkAudioSessionClaims)
     group("Store failure injection", checkStoreFailureInjection)
     group("Atomic commit", checkAtomicCommit)
+    group("Backup restore validation", checkBackupRestoreValidation)
     group("Speech final results", checkSpeechFinalResults)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
@@ -453,6 +454,97 @@ enum SelfChecks {
     try? RecordStore.remove(docA)
     try? RecordStore.remove(docB)
     DraftStore.clear(draft)
+  }
+
+  /// A backup is checked by kind: a name cannot be both audio and photo, and a
+  /// listed file must be a regular file, so a folder or a symlink is refused
+  /// rather than copied into the app's media folders.
+  private static func checkBackupRestoreValidation() {
+    let fileManager = FileManager.default
+    let root = fileManager.temporaryDirectory
+      .appendingPathComponent("selfcheck-backup-\(UUID().uuidString)", isDirectory: true)
+    defer { try? fileManager.removeItem(at: root) }
+
+    let packageURL = root.appendingPathComponent("backup", isDirectory: true)
+    let mediaURL = packageURL.appendingPathComponent(BackupPackage.mediaFolderName, isDirectory: true)
+    do {
+      try fileManager.createDirectory(at: mediaURL, withIntermediateDirectories: true)
+      try Data("audio".utf8).write(to: mediaURL.appendingPathComponent("a.m4a"))
+      try Data("photo".utf8).write(to: mediaURL.appendingPathComponent("p.jpg"))
+      try Data("x".utf8).write(to: mediaURL.appendingPathComponent("target.m4a"))
+      try fileManager.createSymbolicLink(
+        atPath: mediaURL.appendingPathComponent("link.m4a").path,
+        withDestinationPath: "target.m4a"
+      )
+      try fileManager.createDirectory(
+        at: mediaURL.appendingPathComponent("dir.m4a", isDirectory: true),
+        withIntermediateDirectories: true
+      )
+    } catch {
+      report("backup self-check could not build a package: \(error)")
+      return
+    }
+
+    func writeManifest(_ manifest: BackupPackage.Manifest) -> Bool {
+      do {
+        try JSONEncoder().encode(manifest).write(
+          to: packageURL.appendingPathComponent(BackupPackage.manifestName),
+          options: .atomic
+        )
+        return true
+      } catch {
+        report("backup self-check could not write a manifest: \(error)")
+        return false
+      }
+    }
+
+    func manifest(audio: [String], photo: [String]) -> BackupPackage.Manifest {
+      BackupPackage.Manifest(
+        version: BackupPackage.currentVersion,
+        exportedAt: .now,
+        meetings: [],
+        spaces: [],
+        tasks: [],
+        lifeLogEntries: [],
+        people: [],
+        aiHistory: [],
+        audioFileNames: audio,
+        photoFileNames: photo
+      )
+    }
+
+    // A name in both lists is a conflict.
+    if writeManifest(manifest(audio: ["a.m4a", "p.jpg"], photo: ["p.jpg"])) {
+      do {
+        _ = try BackupPackage.read(from: packageURL)
+        report("a file listed as both audio and photo was accepted")
+      } catch BackupPackage.BackupError.conflictingMedia {
+        // Expected.
+      } catch {
+        report("unexpected backup error for a kind conflict: \(error)")
+      }
+    }
+
+    // A symlink or a folder is not media.
+    for bad in ["link.m4a", "dir.m4a"] where writeManifest(manifest(audio: [bad], photo: [])) {
+      do {
+        _ = try BackupPackage.read(from: packageURL)
+        report("a non-regular file was accepted as media: \(bad)")
+      } catch BackupPackage.BackupError.missingMedia {
+        // Expected.
+      } catch {
+        report("unexpected backup error for \(bad): \(error)")
+      }
+    }
+
+    // A good package is accepted.
+    if writeManifest(manifest(audio: ["a.m4a"], photo: ["p.jpg"])) {
+      do {
+        _ = try BackupPackage.read(from: packageURL)
+      } catch {
+        report("a valid package was refused: \(error)")
+      }
+    }
   }
 
   /// A failing write must be reported to the caller, and the store must still

@@ -41,6 +41,16 @@ enum BackupPackage {
     case missingMedia([String])
     /// The media could not be put in place, so nothing was restored.
     case mediaInstallFailed([String])
+    /// A file in the package would replace one that is already on the device.
+    case mediaConflict(String)
+    /// The package lists the same file as both audio and photo.
+    case conflictingMedia(String)
+    /// The package carries a record that still holds its photos inline.
+    case inlineMediaUnsupported
+    /// The store could not be read, so nothing may be written over it.
+    case storeProtected
+    /// A recording or an unfinished draft is still in the way.
+    case busy
 
     var errorDescription: String? {
       switch self {
@@ -62,6 +72,16 @@ enum BackupPackage {
         "バックアップに不足しているファイルがあります: \(names.prefix(3).joined(separator: ", "))"
       case .mediaInstallFailed(let names):
         "バックアップの媒体を配置できませんでした。復元は行っていません: \(names.prefix(3).joined(separator: ", "))"
+      case .mediaConflict(let name):
+        "この端末に同じ名前のファイルがあるため復元できません: \(name)"
+      case .conflictingMedia(let name):
+        "同じファイルが音声と写真の両方に含まれています: \(name)"
+      case .inlineMediaUnsupported:
+        "このバックアップは古い形式の写真を含むため、復元できません。"
+      case .storeProtected:
+        "保存データを読み込めなかったため、復元できません。アプリを再起動してください。"
+      case .busy:
+        "録音中、または保存されていない下書きがあるため復元できません。"
       }
     }
   }
@@ -165,26 +185,44 @@ enum BackupPackage {
 
     try validateIdentifiers(manifest)
 
-    // The package's own list is checked, and so is every reference a record
-    // holds, so a record can never be restored pointing at a file that is not
-    // in the package.
-    let listed = Set(manifest.audioFileNames + manifest.photoFileNames)
-    for name in listed where !MediaFiles.isPlainName(name) {
+    // A record that still holds its photos inline cannot be restored without
+    // writing files during the read, so it is refused rather than half-restored.
+    guard !manifest.meetings.contains(where: { $0.legacyPhotoData != nil }) else {
+      throw BackupError.inlineMediaUnsupported
+    }
+
+    // The lists are checked as two kinds, and the two must not share a name: a
+    // file cannot be both an audio and a photo.
+    let listedAudio = Set(manifest.audioFileNames)
+    let listedPhotos = Set(manifest.photoFileNames)
+    if let shared = listedAudio.intersection(listedPhotos).sorted().first {
+      throw BackupError.conflictingMedia(shared)
+    }
+    for name in listedAudio where !MediaFiles.isPlainName(name) {
+      throw BackupError.unsafeReference(name)
+    }
+    for name in listedPhotos where !MediaFiles.isPlainName(name) {
       throw BackupError.unsafeReference(name)
     }
 
+    // Every reference a record holds is checked against its own kind, so an
+    // audio cannot be satisfied by a photo of the same name, and vice versa.
     let referenced = try referencedMedia(manifest)
     var missing: [String] = []
-    let mediaURL = packageURL.appendingPathComponent(mediaFolderName, isDirectory: true)
-    for name in referenced.requiredAudio.union(referenced.requiredPhotos) {
-      guard listed.contains(name),
-            FileManager.default.fileExists(atPath: mediaURL.appendingPathComponent(name).path) else {
-        missing.append(name)
-        continue
-      }
+    for name in referenced.requiredAudio where !listedAudio.contains(name) {
+      missing.append(name)
     }
-    // A file the package lists must really be there.
-    for name in listed where !FileManager.default.fileExists(atPath: mediaURL.appendingPathComponent(name).path) {
+    for name in referenced.requiredPhotos where !listedPhotos.contains(name) {
+      missing.append(name)
+    }
+
+    // Every listed file must be there, and must be a regular file: a folder or a
+    // symlink is not media this app will copy into place.
+    let mediaURL = packageURL.appendingPathComponent(mediaFolderName, isDirectory: true)
+    for name in listedAudio where !isRegularFile(mediaURL.appendingPathComponent(name)) {
+      missing.append(name)
+    }
+    for name in listedPhotos where !isRegularFile(mediaURL.appendingPathComponent(name)) {
       missing.append(name)
     }
     guard missing.isEmpty else { throw BackupError.missingMedia(Array(Set(missing)).sorted()) }
@@ -193,9 +231,14 @@ enum BackupPackage {
   }
 
   /// Verifies the package's media into a staging area, then moves it into the
-  /// app's folders. Nothing lands in the app until every file is present, and a
-  /// failure part-way takes back whatever was already moved.
-  static func install(mediaFrom packageURL: URL, manifest: Manifest) throws {
+  /// app's folders. Nothing lands in the app until every file is present, an
+  /// existing file is never replaced, and a failure part-way takes back only the
+  /// files this restore created. Returns those files so a later step can undo it.
+  @discardableResult
+  static func install(
+    mediaFrom packageURL: URL,
+    manifest: Manifest
+  ) throws -> [(name: String, isAudio: Bool)] {
     let fileManager = FileManager.default
     let staging = fileManager.temporaryDirectory
       .appendingPathComponent("MemoraRestore-\(UUID().uuidString)", isDirectory: true)
@@ -209,12 +252,22 @@ enum BackupPackage {
 
     let mediaURL = packageURL.appendingPathComponent(mediaFolderName, isDirectory: true)
 
-    // 1. Stage every file, checking that it really arrives.
+    // Named once per kind, so a repeated name cannot stage the same file twice.
+    let audioNames = Set(manifest.audioFileNames)
+    let photoNames = Set(manifest.photoFileNames)
+    if let shared = audioNames.intersection(photoNames).sorted().first {
+      throw BackupError.conflictingMedia(shared)
+    }
+
+    // 1. Stage every file, checking that it really arrives as a regular file.
     var staged: [(name: String, url: URL, isAudio: Bool)] = []
-    for (names, isAudio) in [(manifest.audioFileNames, true), (manifest.photoFileNames, false)] {
+    for (names, isAudio) in [(audioNames.sorted(), true), (photoNames.sorted(), false)] {
       for name in names {
         guard MediaFiles.isPlainName(name) else { throw BackupError.unsafeReference(name) }
         let source = mediaURL.appendingPathComponent(name)
+        guard isRegularFile(source) else {
+          throw BackupError.mediaInstallFailed([name])
+        }
         let destination = staging.appendingPathComponent(name)
         guard copy(from: source, to: destination) else {
           throw BackupError.mediaInstallFailed([name])
@@ -231,34 +284,39 @@ enum BackupPackage {
       throw BackupError.mediaInstallFailed([MediaFiles.directory.lastPathComponent])
     }
 
-    var installed: [URL] = []
+    var installed: [(name: String, isAudio: Bool)] = []
+    func rollBack() {
+      for entry in installed {
+        let folder = entry.isAudio ? MediaFiles.directory : MediaFiles.photosDirectory
+        try? fileManager.removeItem(at: folder.appendingPathComponent(entry.name))
+      }
+    }
     for file in staged {
       let folder = file.isAudio ? MediaFiles.directory : MediaFiles.photosDirectory
-      guard MediaFiles.isInside(staging.appendingPathComponent(file.name), folder: staging) else {
-        throw BackupError.unsafeReference(file.name)
-      }
       let destination = folder.appendingPathComponent(file.name)
+      // A same-named file on the device is a conflict, not a replacement, so
+      // nothing of the person's own is ever destroyed by a restore.
+      guard !fileManager.fileExists(atPath: destination.path) else {
+        rollBack()
+        throw BackupError.mediaConflict(file.name)
+      }
       do {
-        if fileManager.fileExists(atPath: destination.path) {
-          try fileManager.removeItem(at: destination)
-        }
         try fileManager.moveItem(at: file.url, to: destination)
-        installed.append(destination)
+        installed.append((file.name, file.isAudio))
       } catch {
-        for url in installed {
-          try? fileManager.removeItem(at: url)
-        }
+        rollBack()
         throw BackupError.mediaInstallFailed([file.name])
       }
     }
+    return installed
   }
 
-  /// Removes media an aborted restore had already put in place, so a failure
-  /// while writing the records leaves the device as it was.
-  static func removeInstalledMedia(_ names: [String], isAudio: Bool) {
-    let folder = isAudio ? MediaFiles.directory : MediaFiles.photosDirectory
-    for name in names where MediaFiles.isPlainName(name) {
-      try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
+  /// Removes exactly the files a restore put in place, so a later failure leaves
+  /// the device as it was without touching anything that was already there.
+  static func removeInstalledMedia(_ files: [(name: String, isAudio: Bool)]) {
+    for file in files where MediaFiles.isPlainName(file.name) {
+      let folder = file.isAudio ? MediaFiles.directory : MediaFiles.photosDirectory
+      try? FileManager.default.removeItem(at: folder.appendingPathComponent(file.name))
     }
   }
 
@@ -343,9 +401,17 @@ enum BackupPackage {
     var photos: Set<String> = []
 
     for meeting in manifest.meetings {
-      if let url = meeting.audioURL {
-        if let name = MediaFiles.reference(for: url) {
+      if let raw = meeting.rawAudioReference {
+        // The raw stored value is checked, not the resolved URL: an unsafe
+        // reference resolves to nil and would otherwise slip through unnoticed.
+        if raw.hasPrefix("/") {
+          guard let name = MediaFiles.reference(for: URL(fileURLWithPath: raw)) else {
+            throw BackupError.unsafeReference(raw)
+          }
           audio.insert(name)
+        } else {
+          guard MediaFiles.isPlainName(raw) else { throw BackupError.unsafeReference(raw) }
+          audio.insert(raw)
         }
       }
       for name in meeting.photoFileNames ?? [] {
@@ -360,6 +426,15 @@ enum BackupPackage {
     }
 
     return (audio, photos)
+  }
+
+  /// True for a real file, and false for a folder or a symlink. Media must be a
+  /// plain file, so a directory or a link in a package is refused.
+  private static func isRegularFile(_ url: URL) -> Bool {
+    guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]) else {
+      return false
+    }
+    return values.isRegularFile == true && values.isSymbolicLink != true
   }
 
   @discardableResult
