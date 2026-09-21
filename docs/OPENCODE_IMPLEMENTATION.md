@@ -174,6 +174,13 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ5（追加24・F08〜F10）
+
+- F08: `OmiPairingManager` に `wantsScanning` を追加し、`centralManagerDidUpdateState` は状態の反映のみ（検索中のときだけ再開）。周辺機器の参照を停止・切断時に解放。下書き保存タスクも完了時に nil 化。Task寿命は各サービスで解放を確認。
+- F09: `App/EngineAvailability.swift` を追加（OS対応／対応言語／モデル準備／キー有無）。文字起こし設定とAI設定に「この設定での状態」、文字起こしはジョブ開始前のプリチェック。
+- F10: `App/PerformanceLog.swift`（`PerformanceLog.shared`、上限500件、LocalStoreに保存）と `PerformanceLogView`（DEBUG）。起動・検索・保存（録音確定・会議の引き渡し）・画像デコード・処理を計測。検証データの生成（100／1,000件）はDEBUGのみ。
+- **性能の実測は未実施**（同一実機・同一ビルドでの比較が必要）。
+
 ### フェーズ5（追加23・F07）
 
 - `App/ProcessingService.swift` を追加。記録ごとの**世代**（`begin`）、**現在性の判定**（`run(work:apply:)` は現在の世代のときだけ `apply`）、`cancel`（世代とTaskを破棄）、`activeIDs`（実行中ジョブ）を保持。終了時は `end` で Task 参照を解放。
