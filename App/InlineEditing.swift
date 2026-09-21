@@ -214,7 +214,8 @@ struct InlineEditableList: View {
               .foregroundStyle(.secondary)
           } else {
             VStack(alignment: .leading, spacing: 8) {
-              ForEach(items, id: \.self) { item in
+              // Index identity: duplicate lines still get their own view.
+              ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                   Circle()
                     .fill(Color.primary)

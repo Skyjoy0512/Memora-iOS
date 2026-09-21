@@ -3,10 +3,12 @@ import SwiftUI
 struct CaptureSessionView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @State private var section = CaptureSection.notes
   @State private var stopFeedback = 0
   @State private var pauseFeedback = 0
   @State private var isDiscardConfirmationPresented = false
+  @State private var selectedDetent = PresentationDetent.fraction(0.5)
 
   var body: some View {
     @Bindable var model = model
@@ -115,6 +117,8 @@ struct CaptureSessionView: View {
           }
           .labelStyle(.titleOnly)
           .font(.headline)
+          .lineLimit(1)
+          .minimumScaleFactor(0.85)
           .frame(maxWidth: .infinity, minHeight: 56)
           .memoraGlass(in: Capsule(), interactive: true)
 
@@ -125,6 +129,8 @@ struct CaptureSessionView: View {
           .disabled(model.isSavingCapture)
           .labelStyle(.titleOnly)
           .font(.headline)
+          .lineLimit(1)
+          .minimumScaleFactor(0.85)
           .foregroundStyle(Color(uiColor: .systemBackground))
           .frame(maxWidth: .infinity, minHeight: 56)
           .memoraGlass(in: Capsule(), tint: .primary, interactive: true)
@@ -136,7 +142,28 @@ struct CaptureSessionView: View {
     .presentationBackground {
       sheetBackground
     }
-    .presentationDetents([.fraction(0.5)])
+    // Extra-large text needs more room than the half sheet gives, and the
+    // keyboard needs the tall sheet so the field it is editing stays visible.
+    .presentationDetents(
+      dynamicTypeSize.isAccessibilitySize ? [.large] : [.fraction(0.5), .large],
+      selection: $selectedDetent
+    )
+    .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+      withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+        selectedDetent = .large
+      }
+    }
+    .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+      guard !dynamicTypeSize.isAccessibilitySize else { return }
+      withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+        selectedDetent = .fraction(0.5)
+      }
+    }
+    .onAppear {
+      if dynamicTypeSize.isAccessibilitySize {
+        selectedDetent = .large
+      }
+    }
     .presentationDragIndicator(.visible)
     .presentationCornerRadius(38)
     .interactiveDismissDisabled()

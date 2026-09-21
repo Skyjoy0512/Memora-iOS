@@ -193,6 +193,7 @@ struct AIComposerBar: View {
         Text(model.aiEngine.shortLabel)
           .font(.subheadline.weight(.medium))
           .lineLimit(1)
+          .minimumScaleFactor(0.85)
 
         Image(systemName: "chevron.down")
           .font(.caption2.weight(.semibold))
@@ -200,7 +201,7 @@ struct AIComposerBar: View {
       }
       .foregroundStyle(.primary)
       .padding(.horizontal, 6)
-      .frame(height: 32)
+      .frame(minHeight: 32)
       .contentShape(Rectangle())
     }
     .accessibilityLabel("使用するAIエンジン")

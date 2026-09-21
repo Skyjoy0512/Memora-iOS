@@ -17,7 +17,7 @@ struct CaptureMenuPopover: View {
             Image(systemName: action.symbol)
               .font(.title3.weight(.semibold))
               .symbolRenderingMode(.monochrome)
-              .frame(width: 42, height: 42)
+              .frame(width: 44, height: 44)
               .background(Color.primary.opacity(0.07), in: Circle())
 
             Text(action.title)
