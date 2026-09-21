@@ -33,6 +33,9 @@ enum SelfChecks {
     checkPhotoFileRoles()
     checkRequestScope()
     checkPhotoThumbnailNaming()
+
+    // Ordering cannot be checked synchronously; it runs beside the app.
+    Task { await checkProcessingRunOwnership() }
     checkStatusFilter()
   }
 
@@ -234,6 +237,86 @@ enum SelfChecks {
     }
     if terms.contains(where: { $0.contains("？") || $0.contains("?") }) {
       report("question words kept punctuation: \(terms)")
+    }
+  }
+
+  /// A gate the checks can wait on, so an order is set by the work itself rather
+  /// than by sleeping and hoping.
+  @MainActor
+  private final class Gate {
+    private var isOpen = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func wait() async {
+      guard !isOpen else { return }
+      await withCheckedContinuation { continuation in
+        waiters.append(continuation)
+      }
+    }
+
+    func open() {
+      isOpen = true
+      for waiter in waiters {
+        waiter.resume()
+      }
+      waiters = []
+    }
+  }
+
+  /// An old job that is cancelled, replaced, and only then finishes must not
+  /// apply its result or clear the new job's record of running.
+  private static func checkProcessingRunOwnership() async {
+    let service = ProcessingService()
+    let id = UUID()
+
+    let oldGate = Gate()
+    let oldFinished = Gate()
+    service.run(id: id) {
+      await oldGate.wait()
+      oldFinished.open()
+      return "old"
+    } apply: { _ in
+      report("a replaced job applied its result")
+    }
+
+    service.cancel(id)
+    if service.isActive(id) {
+      report("a cancelled job is still marked as running")
+    }
+
+    let newGate = Gate()
+    let newFinished = Gate()
+    var applied: [String] = []
+    service.run(id: id) {
+      await newGate.wait()
+      newFinished.open()
+      return "new"
+    } apply: { value in
+      applied.append(value)
+    }
+    if !service.isActive(id) {
+      report("a running job is not marked as running")
+    }
+
+    // Let the replaced job finish while the new one is still running.
+    oldGate.open()
+    await oldFinished.wait()
+    await Task.yield()
+    if !service.isActive(id) {
+      report("a late old job cleared the new job's running state")
+    }
+    if !applied.isEmpty {
+      report("a replaced job applied after being replaced")
+    }
+
+    newGate.open()
+    await newFinished.wait()
+    await Task.yield()
+    if applied != ["new"] {
+      report("the running job did not apply its result: \(applied)")
+    }
+    if service.isActive(id) {
+      report("a finished job is still marked as running")
     }
   }
 

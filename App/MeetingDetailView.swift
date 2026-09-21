@@ -481,10 +481,12 @@ struct MeetingDetailView: View {
         ManualAIProcessingCard(
           symbol: "waveform.badge.plus",
           title: "文字起こしはまだ始まっていません",
-          detail: "音声は端末に保存済みです。必要な時に開始してください。",
+          detail: meeting.source == .recording
+            ? "復旧した音声は端末に保存済みです。開始すると文字起こしを行います。録音は自動で再開しません。"
+            : "音声は端末に保存済みです。必要な時に開始してください。",
           actionTitle: "文字起こしを開始"
         ) {
-          model.startImportedTranscription(meeting.id)
+          model.startTranscription(meeting.id)
         }
       case .waitingForSummary:
         ManualAIProcessingCard(

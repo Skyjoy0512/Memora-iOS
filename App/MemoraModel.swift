@@ -997,8 +997,12 @@ final class MemoraModel {
     beginProcessing(id)
   }
 
-  func startImportedTranscription(_ id: UUID) {
-    guard let meeting = meeting(id: id), meeting.source == .importFile else { return }
+  /// Starts transcription for any record that has audio and is not already being
+  /// processed: an imported file and a recovered recording take the same path.
+  func startTranscription(_ id: UUID) {
+    guard let meeting = meeting(id: id),
+          meeting.audioURL != nil,
+          !processing.isActive(id) else { return }
     updateMeeting(id) { $0.status = .transcribing(0.08) }
     processing.run(id: id) { [weak self] in
       guard let self else { return TranscriptionOutcome.unavailable }
@@ -1043,6 +1047,7 @@ final class MemoraModel {
 
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     let inputRevision = ProcessingService.inputRevision(meeting.transcript)
+    let summaryRevision = meeting.summary
     let startedAt = Date()
 
     processing.run(id: id) { [weak self] in
@@ -1064,12 +1069,29 @@ final class MemoraModel {
         "処理（要約）",
         milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000
       )
-      // The service checks the job's generation; the transcript fingerprint
-      // catches an edit made while the answer was being written.
-      guard let current = self.meeting(id: id),
-            ProcessingService.inputRevision(current.transcript) == inputRevision else { return }
 
-      if let resultFailure = result.failure, resultFailure == .cancelled { return }
+      // The service checks the run; these two fingerprints catch an edit made
+      // while the answer was being written. A transcript that changed or a
+      // summary that was edited by hand wins over the older result.
+      guard let current = self.meeting(id: id) else { return }
+      let transcriptChanged = ProcessingService.inputRevision(current.transcript) != inputRevision
+      let summaryEdited = current.summary != summaryRevision
+      guard !transcriptChanged, !summaryEdited else {
+        self.updateMeeting(id) { $0.status = .waitingForSummary }
+        self.announce("記録が編集されたため、古い要約は反映しませんでした。もう一度生成できます。")
+        return
+      }
+
+      if let resultFailure = result.failure, resultFailure == .cancelled {
+        // Cancelled without a newer request taking over: leave the record able
+        // to be generated again rather than stuck mid-process.
+        self.updateMeeting(id) { meeting in
+          if case .organizing = meeting.status {
+            meeting.status = .waitingForSummary
+          }
+        }
+        return
+      }
 
       let summary = result.text?.trimmingCharacters(in: .whitespacesAndNewlines)
       if let summary, !summary.isEmpty {

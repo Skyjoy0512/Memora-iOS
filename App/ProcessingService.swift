@@ -9,10 +9,15 @@ import Observation
 @MainActor
 @Observable
 final class ProcessingService {
-  /// The generation each record's job belongs to. A newer request bumps it, so
-  /// an older result cannot overwrite a newer one.
-  @ObservationIgnored private var generations: [UUID: Int] = [:]
-  @ObservationIgnored private var tasks: [UUID: Task<Void, Never>] = [:]
+  /// The run each record's job belongs to. Every run gets an identifier of its
+  /// own that is never handed out again, so a job that finishes late can neither
+  /// have its result applied over a newer one nor clear the newer job's record
+  /// of running.
+  private struct Run {
+    var id: UUID
+    var task: Task<Void, Never>
+  }
+  @ObservationIgnored private var runs: [UUID: Run] = [:]
   /// Records with a job running. The model persists this, so an interrupted job
   /// can be offered for retry after a restart.
   private(set) var activeIDs: Set<UUID> = []
@@ -39,50 +44,48 @@ final class ProcessingService {
     work: @escaping @MainActor () async -> Outcome,
     apply: @escaping @MainActor (Outcome) -> Void
   ) {
-    let generation = begin(id)
-    tasks[id]?.cancel()
-    tasks[id] = Task { [weak self] in
+    runs[id]?.task.cancel()
+    let token = UUID()
+    setActive(id, active: true)
+
+    let task = Task { [weak self] in
       let outcome = await work()
       guard let self else { return }
-      defer { self.end(id, generation: generation) }
-      guard !Task.isCancelled, self.generations[id] == generation else { return }
+      defer { self.end(id, token: token) }
+      guard !Task.isCancelled, self.runs[id]?.id == token else { return }
       apply(outcome)
     }
+    runs[id] = Run(id: token, task: task)
   }
 
   /// Drops the record's job: its result must never be applied, and nothing keeps
-  /// the task alive.
+  /// the task alive. A later run gets a fresh identifier, so this job finishing
+  /// late cannot disturb it.
   func cancel(_ id: UUID) {
-    tasks[id]?.cancel()
-    tasks[id] = nil
-    generations[id] = nil
+    runs[id]?.task.cancel()
+    runs[id] = nil
     setActive(id, active: false)
   }
 
-  /// A cheap fingerprint of the transcript a summary was built from, so a result
-  /// that raced an edit is not applied to the newer text.
+  /// A fingerprint of the transcript a summary was built from, so a result that
+  /// raced an edit is not applied to the newer text. It hashes the words
+  /// themselves, not their lengths, so an edit that keeps the length is caught.
   static func inputRevision(_ segments: [TranscriptSegment]) -> Int {
     var hasher = Hasher()
     hasher.combine(segments.count)
     for segment in segments {
       hasher.combine(segment.id)
-      hasher.combine(segment.text.count)
-      hasher.combine(segment.speaker.count)
+      hasher.combine(segment.text)
+      hasher.combine(segment.speaker)
+      hasher.combine(segment.timestamp)
     }
     return hasher.finalize()
   }
 
-  private func begin(_ id: UUID) -> Int {
-    let next = (generations[id] ?? 0) + 1
-    generations[id] = next
-    setActive(id, active: true)
-    return next
-  }
-
-  /// Clears the slot unless a newer job has taken it in the meantime.
-  private func end(_ id: UUID, generation: Int) {
-    guard generations[id] == generation else { return }
-    tasks[id] = nil
+  /// Clears the slot unless a newer run has taken it in the meantime.
+  private func end(_ id: UUID, token: UUID) {
+    guard runs[id]?.id == token else { return }
+    runs[id] = nil
     setActive(id, active: false)
   }
 
