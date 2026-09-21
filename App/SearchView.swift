@@ -5,6 +5,7 @@ struct SearchView: View {
   @State private var query = ""
   @State private var isSearchSheetPresented = false
   @State private var isHistoryPresented = false
+  @State private var filters = SearchFilters()
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
@@ -235,23 +236,145 @@ struct SearchView: View {
       }
     }
     .listStyle(.insetGrouped)
+    .safeAreaInset(edge: .top, spacing: 0) { filterBar }
     .animation(reduceMotion ? nil : .smooth, value: matchingMeetings.map(\.id))
     .animation(reduceMotion ? nil : .smooth, value: matchingTasks.map(\.id))
     .overlay {
       if matchingMeetings.isEmpty && matchingTasks.isEmpty {
-        ContentUnavailableView.search(text: query)
+        if filters.isActive {
+          ContentUnavailableView {
+            Label("条件に合う結果がありません", systemImage: "line.3.horizontal.decrease.circle")
+          } description: {
+            Text("絞り込みを変えるか、解除してみてください。")
+          } actions: {
+            Button("絞り込みを解除") { filters.reset() }
+          }
+        } else {
+          ContentUnavailableView.search(text: query)
+        }
       }
     }
   }
 
   private var matchingMeetings: [Meeting] {
-    model.meetings.filter {
-      model.searchText(for: $0).localizedCaseInsensitiveContains(query)
-    }
+    model.searchMeetings(matching: query, filters: filters)
   }
 
   private var matchingTasks: [MemoraTask] {
-    model.tasks.filter { $0.title.localizedCaseInsensitiveContains(query) }
+    model.searchTasks(matching: query, filters: filters)
+  }
+
+  /// Narrows the results by period, person, project and state. Kept above the
+  /// results so a filter is never scrolled out of sight while it is applied.
+  private var filterBar: some View {
+    ScrollView(.horizontal) {
+      HStack(spacing: 8) {
+        periodMenu
+        personMenu
+        spaceMenu
+        statusMenu
+        if filters.isActive {
+          Button("解除", systemImage: "xmark.circle") {
+            filters.reset()
+          }
+          .font(.subheadline.weight(.medium))
+          .padding(.horizontal, 12)
+          .padding(.vertical, 7)
+          .background(Color.primary.opacity(0.06), in: Capsule())
+          .contentShape(Capsule())
+        }
+      }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 8)
+    }
+    .scrollIndicators(.hidden)
+    .background(.bar)
+  }
+
+  private var periodMenu: some View {
+    Menu {
+      Picker("期間", selection: $filters.period) {
+        ForEach(SearchFilters.Period.allCases) { period in
+          Text(period.title).tag(period)
+        }
+      }
+    } label: {
+      filterChip(
+        title: filters.period == .all ? "期間" : filters.period.title,
+        symbol: "calendar",
+        isActive: filters.period != .all
+      )
+    }
+    .accessibilityLabel("期間で絞り込む")
+  }
+
+  private var personMenu: some View {
+    Menu {
+      Picker("人", selection: $filters.personID) {
+        Text("すべて").tag(UUID?.none)
+        ForEach(model.people) { person in
+          Text(person.name).tag(UUID?.some(person.id))
+        }
+      }
+    } label: {
+      filterChip(
+        title: filters.personID.flatMap { model.person(id: $0)?.name } ?? "人",
+        symbol: "person",
+        isActive: filters.personID != nil
+      )
+    }
+    .accessibilityLabel("人で絞り込む")
+  }
+
+  private var spaceMenu: some View {
+    Menu {
+      Picker("プロジェクト", selection: $filters.spaceID) {
+        Text("すべて").tag(UUID?.none)
+        ForEach(model.spaces) { space in
+          Text(space.name).tag(UUID?.some(space.id))
+        }
+      }
+    } label: {
+      filterChip(
+        title: model.spaces.first { $0.id == filters.spaceID }?.name ?? "プロジェクト",
+        symbol: "folder",
+        isActive: filters.spaceID != nil
+      )
+    }
+    .accessibilityLabel("プロジェクトで絞り込む")
+  }
+
+  private var statusMenu: some View {
+    Menu {
+      Picker("状態", selection: $filters.status) {
+        Text("すべて").tag(SearchFilters.Status?.none)
+        ForEach(SearchFilters.Status.allCases) { status in
+          Text(status.title).tag(SearchFilters.Status?.some(status))
+        }
+      }
+    } label: {
+      filterChip(
+        title: filters.status?.title ?? "状態",
+        symbol: "checkmark.circle",
+        isActive: filters.status != nil
+      )
+    }
+    .accessibilityLabel("状態で絞り込む")
+  }
+
+  private func filterChip(title: String, symbol: String, isActive: Bool) -> some View {
+    HStack(spacing: 4) {
+      Image(systemName: symbol)
+      Text(title)
+      Image(systemName: "chevron.down")
+        .font(.caption2.weight(.semibold))
+    }
+    .font(.subheadline.weight(.medium))
+    .foregroundStyle(isActive ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+    .padding(.horizontal, 12)
+    .padding(.vertical, 7)
+    .background(Color.primary.opacity(isActive ? 0.12 : 0.06), in: Capsule())
+    .contentShape(Capsule())
   }
 
   private static let suggestions: [(title: String, symbol: String)] = [
