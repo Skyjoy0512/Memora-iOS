@@ -10,11 +10,19 @@ struct SearchView: View {
     @Bindable var model = model
 
     return NavigationStack {
-      Group {
-        if model.aiMessages.isEmpty {
-          chatEmptyState
-        } else {
-          chatTranscript
+      VStack(spacing: 0) {
+        if model.isRecording {
+          ActiveRecordingStrip()
+            .padding(.horizontal, 18)
+            .padding(.bottom, 10)
+        }
+
+        Group {
+          if model.aiMessages.isEmpty {
+            chatEmptyState
+          } else {
+            chatTranscript
+          }
         }
       }
       // Tapping the conversation puts the keyboard away.

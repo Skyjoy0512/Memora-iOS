@@ -18,6 +18,12 @@ struct TasksView: View {
         .padding(.horizontal, 18)
         .padding(.bottom, 10)
 
+        if model.isRecording {
+          ActiveRecordingStrip()
+            .padding(.horizontal, 18)
+            .padding(.bottom, 10)
+        }
+
         if visibleTasks.isEmpty {
           ContentUnavailableView {
             Label(showsCompleted ? "完了したタスクはありません" : "タスクはありません", systemImage: "checkmark.square")

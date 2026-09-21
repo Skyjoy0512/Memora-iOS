@@ -26,6 +26,10 @@ struct HomeView: View {
     NavigationStack(path: $model.homePath) {
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 18) {
+          if model.isRecording {
+            ActiveRecordingStrip()
+          }
+
           PeopleStrip(
             people: model.people,
             selectedID: selectedPersonID,

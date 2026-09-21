@@ -89,7 +89,16 @@ struct CaptureSessionView: View {
               }
             }
         case .transcript:
-          Color.clear
+          VStack(spacing: 10) {
+            Image(systemName: "text.bubble")
+              .font(.title2)
+              .foregroundStyle(.secondary)
+            Text("録音を終えると文字起こしします")
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+          }
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .padding(.horizontal, 20)
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
