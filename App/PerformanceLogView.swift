@@ -6,6 +6,8 @@ import SwiftUI
 struct PerformanceLogView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(MemoraModel.self) private var model
+  @State private var isMeasuring = false
+  @State private var measurementNote: String?
   private var log: PerformanceLog { .shared }
 
   var body: some View {
@@ -31,6 +33,17 @@ struct PerformanceLogView: View {
         }
 
         Section {
+          Button("計測を実行（検索20回）", systemImage: "play") {
+            Task { await runMeasurement() }
+          }
+          .disabled(isMeasuring)
+
+          if let measurementNote {
+            Text(measurementNote)
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+          }
+
           Button("計測用に100件を追加", systemImage: "plus") {
             model.addMeasurementRecords(100)
           }
@@ -64,6 +77,24 @@ struct PerformanceLogView: View {
         }
       }
     }
+  }
+
+  /// Runs the search path over whatever is loaded, so the log holds a sample
+  /// worth reading a p95 from. It measures the matching pass, not the view
+  /// render that follows it.
+  private func runMeasurement() async {
+    guard !isMeasuring else { return }
+    isMeasuring = true
+    measurementNote = "計測中…"
+    defer { isMeasuring = false }
+
+    let filters = SearchFilters()
+    for _ in 0..<20 {
+      _ = model.searchMeetings(matching: "計測用", filters: filters)
+      await Task.yield()
+    }
+    model.persistMeetings()
+    measurementNote = "\(model.meetings.count)件で検索20回と保存1回を記録しました"
   }
 
   private func row(_ title: String, _ value: String) -> some View {

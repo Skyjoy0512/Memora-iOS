@@ -21,6 +21,9 @@ struct MeetingDetailView: View {
   @State private var scrubTime: Double?
 
   @State private var isSavingToNotion = false
+  /// The PDF export in progress, with its progress, while it runs.
+  @State private var pdfExportProgress: Double?
+  @State private var pdfExportTask: Task<Void, Never>?
   @Environment(\.openURL) private var openURL
 
   private struct StatusAlert: Identifiable {
@@ -64,6 +67,11 @@ struct MeetingDetailView: View {
             .animation(reduceMotion ? nil : MemoraMotion.screen, value: meeting.status)
           }
           .background(Color(uiColor: .systemBackground))
+          .overlay {
+            if let progress = pdfExportProgress {
+              pdfExportCard(progress)
+            }
+          }
           .onScrollGeometryChange(for: CGFloat.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top
           } action: { _, newOffset in
@@ -347,15 +355,60 @@ struct MeetingDetailView: View {
   }
 
   private func sharePDF(_ meeting: Meeting) {
-    guard let url = MeetingPDF.write(meeting: meeting, tasks: model.tasks) else {
-      statusAlert = StatusAlert(
-        title: "PDFを作成できませんでした",
-        message: "記録は残っています。もう一度お試しください。"
-      )
-      return
+    guard pdfExportTask == nil else { return }
+    pdfExportProgress = 0
+    pdfExportTask = Task {
+      defer {
+        pdfExportProgress = nil
+        pdfExportTask = nil
+      }
+      do {
+        let url = try await MeetingPDF.write(meeting: meeting, tasks: model.tasks) { progress in
+          pdfExportProgress = progress
+        }
+        shareItems = [url]
+        isSharing = true
+      } catch MeetingPDF.ExportError.cancelled {
+        // Cancelled on purpose; nothing to report.
+        return
+      } catch {
+        statusAlert = StatusAlert(
+          title: "PDFを作成できませんでした",
+          message: "記録は残っています。もう一度お試しください。"
+        )
+      }
     }
-    shareItems = [url]
-    isSharing = true
+  }
+
+  /// Shows that the export is running and how far along it is, with a way out of
+  /// a long one.
+  private func pdfExportCard(_ progress: Double) -> some View {
+    VStack(spacing: 12) {
+      ProgressView(value: progress)
+        .progressViewStyle(.linear)
+        .tint(.primary)
+
+      HStack(spacing: 12) {
+        Text("PDFを作成しています… \(Int(progress * 100))%")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+        Spacer(minLength: 8)
+        Button("キャンセル") { cancelPDFExport() }
+          .font(.subheadline.weight(.semibold))
+      }
+    }
+    .padding(16)
+    .frame(maxWidth: 320)
+    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .shadow(color: .black.opacity(0.12), radius: 18, y: 8)
+    .padding()
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("PDFを作成しています。\(Int(progress * 100))パーセント")
+    .accessibilityAction(named: "キャンセル") { cancelPDFExport() }
+  }
+
+  private func cancelPDFExport() {
+    pdfExportTask?.cancel()
   }
 
   private func cleanUpSharedFiles() {

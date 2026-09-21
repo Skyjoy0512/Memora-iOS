@@ -99,7 +99,7 @@
 | F03 | 実装済み（性能未検証） | 会議の変更時に1回の走査で**プロジェクト別件数・最新4件のアイコン・最新日時**と**人物別件数・人物別記録一覧**を集計（`spaceAggregates`／`personMeetingCounts`／`meetingsByPerson`）。タイルごとの filter/sort をやめた |
 | F04 | 実装済み（性能未検証） | 日別インデックス（`lifeLogDays`／`markedLifeLogDays`）を記録変更時に1回構築し、ジャーナルはそれを参照。`NSCalendarDayChanged`・タイムゾーン変更・`significantTimeChange` で再構築 |
 | F05 | 実装済み（性能未検証） | 音量を `RecordingLevelMeter`（独立したObservable）へ分離し、更新はグロー表示のみに伝播。**キャプチャ画面の表示中だけ**サンプリング（非表示時は300ms間隔、録音は継続） |
-| F06 | 一部 実装済み（性能未検証） | 一覧の写真デコードは非同期＋表示サイズ（F01）。残り: PDF描画（`ImageRenderer` のためメインアクター必須）の進行表示・キャンセル、取り込みコピーのさらなる分離 |
+| F06 | 実装済み（性能未検証） | 一覧の写真デコードは非同期＋表示サイズ（F01）。PDF書き出しは本文描画（メインアクター必須）と**ページ生成（オフメイン）**を分離し、**ページごとの進捗表示**と**キャンセル**を追加（`Task` キャンセルで中断、失敗・キャンセルを区別）。取り込みコピーは既にメインアクター外 |
 | F07 | 一部 実装済み | 保存を `RecordStore` に集約（モデルはストア・UserDefaults・キューに触れない）。音声は `AudioRecorderService`、AIは `AIEngineService`／`CloudAIService`、バックアップは `BackupPackage`。処理ジョブの専用サービス化と画像処理の分離は残 |
 | F07 | 実装済み | 保存 `RecordStore`、音声 `AudioRecorderService`／`AudioPlayerService`、AI `AIEngineService`／`CloudAIService`、バックアップ `BackupPackage`、音量 `RecordingLevelMeter`、**処理ジョブ `ProcessingService`**。サービスは記録ごとの**世代**を管理し、`work`→`apply` で**現在の世代のときだけ結果を適用**、終了・失敗・キャンセルでTask参照を解放、`cancel` で旧結果を破棄。要約は**文面の入力リビジョン（文字起こしの指紋）**も照合し、生成中に編集されたら適用しない。中断ジョブの永続化は従来のキー・形式のままモデルが担当。PDF書き出しは `MeetingPDF` が生成・後始末を担い、画面はファイル操作をしない |
 | F08 | 実装済み | BLEは**明示的な検索意図**（`wantsScanning`）と状態を分離し、**Bluetooth復帰だけで検索を始めない**。検索停止・切断・失敗時に周辺機器の参照を解放。Task寿命の点検: 録音／レベル／再生のticker、AIチャット、処理ジョブ、下書き保存、音声入力（要求・タスクを停止時に解放）。完了・キャンセルで参照を持ち越さない |

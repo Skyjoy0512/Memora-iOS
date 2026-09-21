@@ -6,50 +6,73 @@ import UIKit
 /// continue onto further pages, each numbered.
 @MainActor
 enum MeetingPDF {
-  /// A4 at 72 dpi.
-  private static let pageSize = CGSize(width: 595, height: 842)
-  private static let footerHeight: CGFloat = 36
+  enum ExportError: Error {
+    /// The record could not be drawn at all.
+    case renderFailed
+    /// The pages could not be written to a file.
+    case writeFailed
+    /// The export was cancelled before it finished.
+    case cancelled
+  }
 
-  static func write(meeting: Meeting, tasks: [MemoraTask]) -> URL? {
-    guard let data = data(meeting: meeting, tasks: tasks) else { return nil }
+  /// A4 at 72 dpi. These are plain values and pure drawing, so the pagination
+  /// can use them off the main actor.
+  private nonisolated static let pageSize = CGSize(width: 595, height: 842)
+  private nonisolated static let footerHeight: CGFloat = 36
+
+  /// Renders the record to a temporary A4 PDF. Drawing the text needs the main
+  /// actor; building the pages does not, so that part runs off it and reports
+  /// progress page by page. Cancelling the calling task stops the work.
+  static func write(
+    meeting: Meeting,
+    tasks: [MemoraTask],
+    onProgress: @escaping @MainActor (Double) -> Void
+  ) async throws -> URL {
+    let renderer = ImageRenderer(content: MeetingPDFContent(meeting: meeting, tasks: tasks))
+    renderer.proposedSize = ProposedViewSize(width: pageSize.width, height: nil)
+    guard let image = renderer.uiImage, image.size.height > 0 else {
+      throw ExportError.renderFailed
+    }
 
     // A unique name, so two exports of the same record never collide in the
     // temporary folder.
     let url = FileManager.default.temporaryDirectory
       .appendingPathComponent("\(safeFileName(for: meeting))-\(UUID().uuidString.prefix(8)).pdf")
-    do {
-      try data.write(to: url)
-      return url
-    } catch {
-      return nil
-    }
-  }
 
-  static func data(meeting: Meeting, tasks: [MemoraTask]) -> Data? {
-    let renderer = ImageRenderer(content: MeetingPDFContent(meeting: meeting, tasks: tasks))
-    renderer.proposedSize = ProposedViewSize(width: pageSize.width, height: nil)
-    guard let image = renderer.uiImage, image.size.height > 0 else { return nil }
+    let data = try await Task.detached(priority: .userInitiated) { () throws -> Data in
+      let bodyHeight = pageSize.height - footerHeight
+      let pageCount = max(1, Int(ceil(image.size.height / bodyHeight)))
+      var result = Data()
 
-    // The space left for content once the footer has its strip.
-    let bodyHeight = pageSize.height - footerHeight
-    let pageCount = max(1, Int(ceil(image.size.height / bodyHeight)))
+      result = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: pageSize)).pdfData { context in
+        for index in 0..<pageCount {
+          if Task.isCancelled { return }
+          context.beginPage()
+          let cg = context.cgContext
 
-    let result = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: pageSize)).pdfData { context in
-      for index in 0..<pageCount {
-        context.beginPage()
-        let cg = context.cgContext
+          // Draw the one tall image shifted up, clipped to this page's body.
+          cg.saveGState()
+          cg.clip(to: CGRect(x: 0, y: 0, width: pageSize.width, height: bodyHeight))
+          cg.translateBy(x: 0, y: -CGFloat(index) * bodyHeight)
+          image.draw(in: CGRect(origin: .zero, size: image.size))
+          cg.restoreGState()
 
-        // Draw the one tall image shifted up, clipped to this page's body.
-        cg.saveGState()
-        cg.clip(to: CGRect(x: 0, y: 0, width: pageSize.width, height: bodyHeight))
-        cg.translateBy(x: 0, y: -CGFloat(index) * bodyHeight)
-        image.draw(in: CGRect(origin: .zero, size: image.size))
-        cg.restoreGState()
-
-        drawFooter(page: index + 1, of: pageCount)
+          drawFooter(page: index + 1, of: pageCount)
+          Task { @MainActor in
+            onProgress(Double(index + 1) / Double(pageCount))
+          }
+        }
       }
+      guard !Task.isCancelled, !result.isEmpty else { throw ExportError.cancelled }
+      return result
+    }.value
+
+    do {
+      try data.write(to: url, options: .atomic)
+    } catch {
+      throw ExportError.writeFailed
     }
-    return result.isEmpty ? nil : result
+    return url
   }
 
   /// Removes the exports once the share sheet is done with them, so the
@@ -60,7 +83,7 @@ enum MeetingPDF {
     }
   }
 
-  private static func drawFooter(page: Int, of total: Int) {
+  private nonisolated static func drawFooter(page: Int, of total: Int) {
     let text = "Memora · \(page) / \(total)"
     let attributes: [NSAttributedString.Key: Any] = [
       .font: UIFont.systemFont(ofSize: 9),
