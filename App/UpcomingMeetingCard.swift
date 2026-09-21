@@ -1,3 +1,4 @@
+import EventKit
 import SwiftUI
 import UIKit
 
@@ -5,9 +6,11 @@ import UIKit
 struct UpcomingMeetingCard: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.openURL) private var openURL
+  @Environment(\.scenePhase) private var scenePhase
 
   @State private var phase: Phase
   @State private var isStarting = false
+  @State private var isLoading = false
 
   private enum Phase {
     case loading
@@ -59,12 +62,21 @@ struct UpcomingMeetingCard: View {
             title: "次の会議はありません",
             detail: "予定が入ると、ここからすぐ録音できます"
           ) {
-            Task { await load() }
+            Task { await refresh() }
           }
         }
       }
     }
-    .task { await load() }
+    // Reloads whenever the card appears, the app comes back, or the calendar
+    // itself changes, so a permission switched on in Settings is picked up too.
+    .task { await refresh() }
+    .onChange(of: scenePhase) { _, newPhase in
+      guard newPhase == .active else { return }
+      Task { await refresh() }
+    }
+    .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
+      Task { await refresh() }
+    }
   }
 
   private func nextMeetingCard(_ meeting: UpcomingMeeting) -> some View {
@@ -92,7 +104,7 @@ struct UpcomingMeetingCard: View {
       Button {
         Task {
           isStarting = true
-          await model.startCapture()
+          await model.startCapture(event: meeting)
           isStarting = false
         }
       } label: {
@@ -151,14 +163,30 @@ struct UpcomingMeetingCard: View {
     .buttonStyle(.plain)
   }
 
-  private func load() async {
-    guard case .loading = phase else { return }
+  /// Reloads in whatever state the card is in - including "no meetings" and
+  /// denied access - so the retry button and a return to the app both work.
+  private func refresh() async {
+    guard !isLoading else { return }
+    isLoading = true
+    defer { isLoading = false }
+
+    switch CalendarService.access {
+    case .denied:
+      phase = .denied
+      return
+    case .unknown:
+      phase = .needsAccess
+      return
+    case .granted:
+      break
+    }
+
     phase = .loaded(await CalendarService.upcoming())
   }
 
   private func connect() async {
     if await CalendarService.requestAccess() {
-      phase = .loaded(await CalendarService.upcoming())
+      await refresh()
     } else {
       phase = .denied
     }

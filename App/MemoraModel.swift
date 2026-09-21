@@ -64,6 +64,10 @@ final class MemoraModel {
   /// True while permission is being asked for and the recorder is starting, so
   /// repeated taps cannot begin two recordings.
   private(set) var isPreparingCapture = false
+  /// The calendar event the recording in progress was started from. Cleared
+  /// as soon as the record is saved or discarded, so only that record keeps
+  /// the link and no later recording is attached to the wrong event.
+  private(set) var captureEvent: UpcomingMeeting?
   /// True while a recording is being finished and stored.
   private(set) var isSavingCapture = false
   var recordingElapsed: TimeInterval = 0
@@ -521,7 +525,7 @@ final class MemoraModel {
     spaceIndex.element(id, in: spaces)
   }
 
-  func startCapture() async {
+  func startCapture(event: UpcomingMeeting? = nil) async {
     // Starting twice (a double tap, or two entry points) must not begin two
     // recordings, so a start already under way wins.
     guard !isPreparingCapture, !isSavingCapture else { return }
@@ -547,7 +551,8 @@ final class MemoraModel {
       recordingPausedAt = nil
       recordingPausedDuration = 0
       recordingElapsed = 0
-      recordingTitle = ""
+      captureEvent = event
+      recordingTitle = event?.title ?? ""
       recordingNote = ""
       isRecordingPaused = false
       isRecording = true
@@ -557,7 +562,12 @@ final class MemoraModel {
       startLevelTicker()
       startLiveActivity()
       if let recordingURL, let fileName = MediaFiles.reference(for: recordingURL) {
-        recordingDraft = RecordingDraft(fileName: fileName, title: "", note: "", startedAt: .now)
+        recordingDraft = RecordingDraft(
+          fileName: fileName,
+          title: event?.title ?? "",
+          note: "",
+          startedAt: .now
+        )
         persistRecordingDraft()
       }
     } catch {
@@ -598,6 +608,8 @@ final class MemoraModel {
       audioURL: recordingURL
     )
     meeting.notes = recordingNote
+    meeting.calendarEventID = captureEvent?.id
+    captureEvent = nil
     meetings.insert(meeting, at: 0)
     persistMeetings()
     lifeLogEntries.insert(
@@ -621,6 +633,7 @@ final class MemoraModel {
     recordingPausedDuration = 0
     recordingTitle = ""
     recordingNote = ""
+    captureEvent = nil
     selectedTab = .files
     fileSection = .meetingFiles
     pendingMeetingNavigationID = meeting.id
@@ -654,6 +667,7 @@ final class MemoraModel {
     isRecordingPaused = false
     isCapturePresented = false
     // Discarding means the audio goes too; nothing is kept for the journal.
+    captureEvent = nil
     recordingDraft = nil
     persistRecordingDraft()
     recordingInterruptionMessage = nil

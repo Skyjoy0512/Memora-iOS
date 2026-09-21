@@ -174,6 +174,11 @@
 - B09: `importAudio` を書き直し。コピーと検査を `Task.detached` でメインアクター外へ。一時名でコピー→`AVURLAsset` で再生可能性と実長さを取得→確定名へ移動（失敗時は一時ファイルを削除）。進捗は `Double?` になり、実測できない間は不定表示。
 - B10: `CloudTranscriptionService` をファイルベースのアップロード（`URLSession.upload(fromFile:)`）に変更。OpenAIはmultipartを一時ファイルで組み立て、Deepgramは本体を直接送信。MIMEは拡張子から決定。上限（OpenAI 25MB／Deepgram 2GB、各公式仕様）を送信前に検査し、超過は理由を表示。
 
+### フェーズ3（追加16）
+
+- D10: `UpcomingMeetingCard.refresh()` は loading 以外でも実行でき（`isLoading` で多重実行だけ防ぐ）、`.task`・`scenePhase` 復帰・`EKEventStoreChanged`・再接続から呼ぶ。設定で権限を変えても復帰時に反映。
+- D11: `startCapture(event:)` が予定を受け取り、タイトルを予定名で初期入力（そのまま編集可）。`Meeting.calendarEventID` を追加し、その録音から作られた記録にのみ保存、保存・破棄時に消去。録音シートに元の予定を表示。
+
 ### フェーズ3（追加15）
 
 - D12: ジャーナルの空状態が選択日を語るようにし（今日／他日）、カレンダーへ「今日」・前週／次週（月表示では前月／次月）ボタンを追加。日セルの読み上げに記録の有無を追加。

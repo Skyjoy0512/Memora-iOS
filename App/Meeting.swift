@@ -26,6 +26,8 @@ struct Meeting: Identifiable, Hashable, Codable {
   var participantIDs: [UUID]? = nil
   /// File names of the photos attached to the record, inside the media folder.
   var photoFileNames: [String]? = nil
+  /// The calendar event the recording was started from, when it was.
+  var calendarEventID: String? = nil
 }
 
 extension Meeting {
@@ -46,6 +48,7 @@ extension Meeting {
     case notes
     case participantIDs
     case photoFileNames
+    case calendarEventID
     /// Legacy: photos used to be stored inline in the record.
     case photoData
   }
@@ -66,6 +69,7 @@ extension Meeting {
     spaceID = try container.decodeIfPresent(UUID.self, forKey: .spaceID)
     notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
     participantIDs = try container.decodeIfPresent([UUID].self, forKey: .participantIDs)
+    calendarEventID = try container.decodeIfPresent(String.self, forKey: .calendarEventID)
 
     // Photos moved out of the record and into the media folder; older records
     // carry the bytes inline and are written out the first time they are read.
@@ -105,6 +109,7 @@ extension Meeting {
     try container.encode(notes, forKey: .notes)
     try container.encodeIfPresent(participantIDs, forKey: .participantIDs)
     try container.encodeIfPresent(photoFileNames, forKey: .photoFileNames)
+    try container.encodeIfPresent(calendarEventID, forKey: .calendarEventID)
 
     if let audioURL, let reference = MediaFiles.reference(for: audioURL) {
       try container.encode(reference, forKey: .audioURL)

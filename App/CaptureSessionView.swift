@@ -75,6 +75,16 @@ struct CaptureSessionView: View {
         .padding(.horizontal, 20)
         .padding(.top, 16)
 
+      if let event = model.captureEvent {
+        Label("\(event.title)の予定から録音しています", systemImage: "calendar")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 20)
+          .padding(.top, 6)
+          .accessibilityLabel("予定\(event.title)から録音しています。タイトルは変更できます")
+      }
+
       Group {
         switch section {
         case .notes:
