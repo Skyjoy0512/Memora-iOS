@@ -49,6 +49,8 @@ final class MemoraModel {
   private(set) var installedTemplateIDs: [String] = []
   /// Records that were deleted and can still be brought back.
   private(set) var trashedRecords: [TrashedRecord] = []
+  /// Journal entries that were deleted and can still be brought back.
+  private(set) var trashedLifeLogEntries: [TrashedLifeLogEntry] = []
   /// The Ask AI chat transcript.
   var aiMessages: [AIChatMessage] = []
   /// What new Ask AI questions look across.
@@ -179,6 +181,11 @@ final class MemoraModel {
     people = load([Person].self, forKey: StorageKey.people, fallback: SampleContent.makePeople())
     interruptedJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
     trashedRecords = load([TrashedRecord].self, forKey: StorageKey.trash, fallback: [])
+    trashedLifeLogEntries = load(
+      [TrashedLifeLogEntry].self,
+      forKey: StorageKey.lifeLogTrash,
+      fallback: []
+    )
     if let draftData = storedData(forKey: StorageKey.recordingDraft) {
       recordingDraft = try? JSONDecoder().decode(RecordingDraft.self, from: draftData)
     }
@@ -1087,17 +1094,73 @@ final class MemoraModel {
   /// Drops trashed records once their recovery window has passed.
   private func purgeExpiredTrash() {
     let cutoff = Date().addingTimeInterval(-TrashedRecord.lifetime)
-    let expired = trashedRecords.filter { $0.deletedAt < cutoff }
-    guard !expired.isEmpty else { return }
 
-    for record in expired {
-      for name in record.meeting.photoFileNames ?? [] {
-        MediaFiles.deletePhoto(name)
+    let expiredRecords = trashedRecords.filter { $0.deletedAt < cutoff }
+    if !expiredRecords.isEmpty {
+      for record in expiredRecords {
+        for name in record.meeting.photoFileNames ?? [] {
+          MediaFiles.deletePhoto(name)
+        }
+        MediaFiles.delete(record.meeting.audioURL)
       }
-      MediaFiles.delete(record.meeting.audioURL)
+      trashedRecords.removeAll { $0.deletedAt < cutoff }
+      persistTrash()
     }
-    trashedRecords.removeAll { $0.deletedAt < cutoff }
-    persistTrash()
+
+    let expiredEntries = trashedLifeLogEntries.filter { $0.deletedAt < cutoff }
+    if !expiredEntries.isEmpty {
+      for record in expiredEntries {
+        if let name = record.entry.photoFileName {
+          MediaFiles.deletePhoto(name)
+        }
+      }
+      trashedLifeLogEntries.removeAll { $0.deletedAt < cutoff }
+      persistLifeLogTrash()
+    }
+  }
+
+  // MARK: - Journal entries
+
+  func updateLifeLogEntry(_ id: UUID, title: String, summary: String, createdAt: Date) {
+    guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
+    let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedTitle.isEmpty else { return }
+
+    lifeLogEntries[index].title = trimmedTitle
+    lifeLogEntries[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+    lifeLogEntries[index].createdAt = createdAt
+    persistLifeLog()
+  }
+
+  /// Moves an entry to the trash. Its photo stays until it is removed for good.
+  func deleteLifeLogEntry(_ id: UUID) {
+    guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
+    let removed = lifeLogEntries.remove(at: index)
+    trashedLifeLogEntries.insert(TrashedLifeLogEntry(entry: removed, deletedAt: .now), at: 0)
+    persistLifeLog()
+    persistLifeLogTrash()
+  }
+
+  func restoreTrashedLifeLogEntry(_ id: UUID) {
+    guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
+    let record = trashedLifeLogEntries.remove(at: index)
+    lifeLogEntries.append(record.entry)
+    persistLifeLog()
+    persistLifeLogTrash()
+  }
+
+  func permanentlyDeleteTrashedLifeLogEntry(_ id: UUID) {
+    guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
+    let record = trashedLifeLogEntries.remove(at: index)
+    persistLifeLogTrash()
+
+    if let name = record.entry.photoFileName {
+      MediaFiles.deletePhoto(name)
+    }
+  }
+
+  private func persistLifeLogTrash() {
+    persistInBackground(trashedLifeLogEntries, forKey: StorageKey.lifeLogTrash)
   }
 
   private func persistTrash() {
@@ -1355,6 +1418,7 @@ final class MemoraModel {
     static let activeJobs = "memoraActiveJobs"
     static let recordingDraft = "memoraRecordingDraft"
     static let trash = "memoraTrash"
+    static let lifeLogTrash = "memoraLifeLogTrash"
     static let aiHistory = "memoraAIHistory"
   }
 

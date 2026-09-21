@@ -10,6 +10,8 @@ struct HomeView: View {
   @State private var isCreationPresented = false
   @State private var selectedPersonID: UUID?
   @State private var isManagingPeople = false
+  /// The journal entry opened from the timeline.
+  @State private var openEntry: LifeLogEntry?
   /// The day the Journal is showing.
   @State private var selectedDate = Calendar.current.startOfDay(for: .now)
   /// The day "today" meant when the screen was last seen, so a journal left
@@ -96,6 +98,8 @@ struct HomeView: View {
                       .buttonStyle(.plain)
                     } else {
                       LifeLogRow(entry: entry)
+                        .contentShape(Rectangle())
+                        .onTapGesture { openEntry = entry }
                     }
                   }
                 }
@@ -144,6 +148,9 @@ struct HomeView: View {
       }
       .sheet(isPresented: $isManagingPeople) {
         PeopleManagerSheet()
+      }
+      .sheet(item: $openEntry) { entry in
+        LifeLogEntryDetailView(entryID: entry.id)
       }
       .onChange(of: model.people.map(\.id)) { _, ids in
         if let id = selectedPersonID, !ids.contains(id) {
