@@ -13,6 +13,15 @@ extension MemoraModel {
     isAIChatResponding = false
   }
 
+  /// Changes what new questions look across, starting a fresh chat so an answer
+  /// produced for the old range cannot sit beside a question asked of the new
+  /// one. Saved history is left alone.
+  func changeAIScope(_ scope: AIChatScope) {
+    guard scope != aiScope else { return }
+    aiScope = scope
+    startNewAIChat()
+  }
+
   /// Asks the chat a question. Returns false while an answer is already on its
   /// way, so the caller keeps the text instead of losing it to a refused send.
   @discardableResult
@@ -35,17 +44,26 @@ extension MemoraModel {
     aiChatTask?.cancel()
     aiChatTask = Task { [weak self] in
       guard let self else { return }
+      let allowedMeetings = Self.meetings(in: scope, from: self.meetings)
       let outcome = await self.answer(
         request: AIQuestionRequest(question: trimmed, scope: .global, attachment: attachment),
         scopeLabel: scope.scopeLabel,
-        allowedMeetings: Self.meetings(in: scope, from: self.meetings),
+        allowedMeetings: allowedMeetings,
+        tasks: Self.openTasks(in: scope, from: self.tasks, meetings: allowedMeetings),
         history: history,
         engine: engine,
         provider: provider
       )
 
-      // A newer chat or question owns the screen now; this result is stale.
-      guard !Task.isCancelled, self.aiChatRequestID == requestID else { return }
+      // A newer chat or question owns the screen now; this result is stale, and
+      // only the owner clears the responding state.
+      guard self.aiChatRequestID == requestID else { return }
+      defer {
+        self.isAIChatResponding = false
+        self.aiChatTask = nil
+        self.aiChatRequestID = nil
+      }
+      guard !Task.isCancelled else { return }
 
       // Tell the person what was left out before answering, so a send that
       // carried nothing never looks successful.
@@ -80,10 +98,6 @@ extension MemoraModel {
           self.aiMessages[index].isThinking = false
         }
       }
-
-      self.isAIChatResponding = false
-      self.aiChatTask = nil
-      self.aiChatRequestID = nil
     }
 
     return true
@@ -96,6 +110,7 @@ extension MemoraModel {
     request: AIQuestionRequest,
     scopeLabel: String,
     allowedMeetings: [Meeting],
+    tasks scopedTasks: [MemoraTask],
     history: String,
     engine: AIEngine,
     provider: CloudProvider
@@ -104,8 +119,30 @@ extension MemoraModel {
       for: request,
       scopeLabel: scopeLabel,
       allowedMeetings: allowedMeetings,
-      tasks: Self.tasks(in: allowedMeetings, from: tasks)
+      tasks: scopedTasks
     )
+
+    // A question that is only an attachment no engine can read has nothing to
+    // answer. Saying so is better than answering from unrelated recent records.
+    if request.question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+       request.attachment != nil,
+       content.unsupportedAttachmentNote != nil {
+      let details = AIAnswerDetails(
+        scopeLabel: scopeLabel,
+        engineLabel: AIEngineService.effectiveEngine(engine).label,
+        modelLabel: AIEngineService.modelLabel(engine: engine, provider: provider),
+        sourceCount: 0,
+        generatedAt: .now
+      )
+      return AIAnswerOutcome(
+        question: content.question,
+        scopeLabel: scopeLabel,
+        result: .failure(.attachmentNotAnalysed),
+        sources: [],
+        details: details,
+        unsupportedAttachmentNote: content.unsupportedAttachmentNote
+      )
+    }
 
     let result = await AIEngineService.answer(
       engine: engine,
@@ -154,7 +191,7 @@ extension MemoraModel {
     for evidence in evidences {
       guard let excerpt = evidence.excerpt else { continue }
       let stamp = MemoraFormat.duration(excerpt.start)
-      context += "\n根拠の発言（\(evidence.meeting.displayTitle) \(stamp)）: \(excerpt.text)"
+      context += "\n参考資料の発言（\(evidence.meeting.displayTitle) \(stamp)）: \(excerpt.text)"
     }
 
     // What the engines can read. Anything they cannot is named as not analysed

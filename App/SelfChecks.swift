@@ -55,6 +55,7 @@ enum SelfChecks {
     group("Atomic commit", checkAtomicCommit)
     group("Backup restore validation", checkBackupRestoreValidation)
     group("Attachment read limit", checkAttachmentReadLimit)
+    group("Unassigned task scope", checkUnassignedTaskScope)
     group("Speech final results", checkSpeechFinalResults)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
@@ -455,6 +456,28 @@ enum SelfChecks {
     try? RecordStore.remove(docA)
     try? RecordStore.remove(docB)
     DraftStore.clear(draft)
+  }
+
+  /// A whole-library question must reach tasks that are not tied to a record,
+  /// while a record or project range must not carry them.
+  private static func checkUnassignedTaskScope() {
+    let unassigned = MemoraTask(
+      id: UUID(),
+      title: "担当未定のタスク",
+      meetingID: nil,
+      assignee: nil,
+      dueDate: nil,
+      isCompleted: false
+    )
+    if MemoraModel.openTasks(in: .all, from: [unassigned], meetings: []).isEmpty {
+      report("a library-wide question dropped an unassigned task")
+    }
+    if !MemoraModel.openTasks(in: .files, from: [unassigned], meetings: []).isEmpty {
+      report("a record range carried an unassigned task")
+    }
+    if !MemoraModel.openTasks(in: .projects, from: [unassigned], meetings: []).isEmpty {
+      report("a project range carried an unassigned task")
+    }
   }
 
   /// A very large attachment must be read only up to a limit, and the cut must

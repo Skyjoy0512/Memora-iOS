@@ -21,6 +21,8 @@ enum AIAnswerFailure: Error, Equatable {
   case empty
   /// The chosen provider cannot answer questions.
   case unsupportedProvider
+  /// The question was only an attachment no engine can read.
+  case attachmentNotAnalysed
 
   /// What to tell the person. Cancellation says nothing because a newer
   /// request has already replaced this one.
@@ -48,6 +50,8 @@ enum AIAnswerFailure: Error, Equatable {
       "回答が空でした。もう一度お試しください。"
     case .unsupportedProvider:
       "このプロバイダーは回答作成に対応していません。設定の「AI整理」でOpenAIかAnthropicを選んでください。"
+    case .attachmentNotAnalysed:
+      "この添付はAIが読める形式ではないため、回答できません。質問を入力するか、テキスト・文字入りPDFを添付してください。"
     }
   }
 }

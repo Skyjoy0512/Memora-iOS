@@ -90,7 +90,7 @@ struct AIQuestionView: View {
       Text("会議をまたいで、答えを探します")
         .font(.title2.bold())
         .memoraTextReveal()
-      Text("回答には、元の会議と、根拠になった発言を表示します。")
+      Text("回答には、AIに渡した参考資料（元の会議と一致した発言）を表示します。")
         .font(.subheadline)
         .foregroundStyle(.secondary)
         .memoraTextReveal(delay: 0.08)
@@ -121,14 +121,14 @@ struct AIQuestionView: View {
       if isAnswering {
         HStack(spacing: 8) {
           ThinkingOrbView(state: .searching, size: 20)
-          Text("会議の中から根拠を探しています")
+          Text("会議の中から参考資料を探しています")
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
         .padding(.top, 4)
         .transition(.opacity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("会議の中から根拠を探しています")
+        .accessibilityLabel("会議の中から参考資料を探しています")
       }
     }
     .padding(16)
@@ -172,7 +172,7 @@ struct AIQuestionView: View {
   /// when one matched. Nothing here is invented to look like a quote.
   private var sourceList: some View {
     VStack(alignment: .leading, spacing: 10) {
-      Text("根拠")
+      Text("AIに渡した参考資料")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
 
@@ -209,7 +209,7 @@ struct AIQuestionView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(sourceAccessibilityLabel(source))
-        .accessibilityHint("根拠になった文字起こしを開きます")
+        .accessibilityHint("参考資料の文字起こしを開きます")
       }
     }
   }
@@ -311,9 +311,24 @@ struct AIQuestionView: View {
     let engine = model.aiEngine
     let provider = model.aiProvider
     let allowed = MemoraModel.meetings(in: request.scope, from: model.meetings)
+    // A whole-library question reaches tasks that are not tied to a record too;
+    // a single record or project reaches only its own.
+    let scopedTasks: [MemoraTask]
+    if case .global = request.scope {
+      scopedTasks = MemoraModel.openTasks(in: .all, from: model.tasks, meetings: model.meetings)
+    } else {
+      scopedTasks = MemoraModel.tasks(in: allowed, from: model.tasks)
+    }
 
     askTask?.cancel()
     askTask = Task {
+      defer {
+        // Whatever ends this task — an answer, a failure, or a newer question —
+        // only the request that owns the screen clears the answering state.
+        if submitted?.id == request.id {
+          isAnswering = false
+        }
+      }
       try? await Task.sleep(for: .milliseconds(850))
       guard !Task.isCancelled else { return }
 
@@ -321,12 +336,12 @@ struct AIQuestionView: View {
         request: request,
         scopeLabel: label(for: request.scope),
         allowedMeetings: allowed,
+        tasks: scopedTasks,
         history: "",
         engine: engine,
         provider: provider
       )
       guard !Task.isCancelled, submitted?.id == request.id else { return }
-      isAnswering = false
       unsupportedAttachmentNote = outcome.unsupportedAttachmentNote
 
       switch outcome.result {

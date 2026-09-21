@@ -38,7 +38,10 @@ struct SearchView: View {
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           Menu {
-            Picker("対象", selection: $model.aiScope) {
+            Picker("対象", selection: Binding(
+              get: { model.aiScope },
+              set: { model.changeAIScope($0) }
+            )) {
               ForEach(AIChatScope.allCases) { scope in
                 Label(scope.title, systemImage: scope.symbol).tag(scope)
               }

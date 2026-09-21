@@ -56,14 +56,14 @@ struct AIMessageView: View {
                 "エンジン",
                 details.modelLabel.map { "\(details.engineLabel) · \($0)" } ?? details.engineLabel
               )
-              detailRow("参照した記録", "\(details.sourceCount)件")
+              detailRow("AIに渡した参考資料", "\(details.sourceCount)件")
               detailRow("生成", details.generatedAt.formatted(date: .abbreviated, time: .shortened))
             }
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .padding(.top, 6)
           } label: {
-            Label("参照した記録・処理情報", systemImage: "info.circle")
+            Label("AIに渡した参考資料・処理情報", systemImage: "info.circle")
               .font(.subheadline.weight(.medium))
               .foregroundStyle(.secondary)
           }
@@ -81,7 +81,7 @@ struct AIMessageView: View {
   }
 
   private func accessibilityLabel(for source: AIChatSource) -> String {
-    var parts = ["参照した記録: \(source.title)"]
+    var parts = ["AIに渡した参考資料: \(source.title)"]
     if let start = source.start {
       parts.append(MemoraFormat.duration(start))
     }
@@ -105,7 +105,7 @@ struct AIMessageView: View {
   /// The records the answer was built from, each opening the record itself.
   private var sourceList: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("参照した記録")
+      Text("AIに渡した参考資料")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
 
