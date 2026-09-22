@@ -4,6 +4,12 @@
     "Release" : "release"
   },
   "name" : "Memora",
+  "packages" : {
+    "Lottie" : {
+      "url" : "https://github.com/airbnb/lottie-ios.git",
+      "from" : "4.5.0"
+    }
+  },
   "options" : {
     "deploymentTarget" : {
       "iOS" : "18.0"
@@ -20,6 +26,10 @@
         {
           "embed" : true,
           "target" : "Memora Widget Extension"
+        },
+        {
+          "package" : "Lottie",
+          "product" : "Lottie"
         }
       ],
       "info" : {
