@@ -4,7 +4,7 @@ struct PaywallView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var plan = SubscriptionPlan.annual
+  @State private var selectedTier: PlanTier = .personal
   @State private var isUnavailableNoticePresented = false
 
   var body: some View {
@@ -12,32 +12,40 @@ struct PaywallView: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 28) {
           VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: "sparkles")
+            Image(systemName: selectedTier.symbol)
               .font(.system(size: 30, weight: .semibold))
               .foregroundStyle(.primary)
               .frame(width: 60, height: 60)
               .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
               .accessibilityHidden(true)
-            Text("会議が終わった瞬間から、\n次の仕事を始められる。")
+              .contentTransition(.symbolEffect(.replace))
+            Text(selectedTier.tagline)
               .font(.largeTitle.bold())
               .tracking(-0.7)
-            Text("Memora Plusは、長い会議も複数の会議も、要点と行動へ途切れず整理します。")
+            Text("会議が終わった瞬間から、次の仕事を始められる。Memora Plusは、長い会議も複数の会議も、要点と行動へ整理します。")
               .font(.body)
               .foregroundStyle(.secondary)
               .lineSpacing(4)
           }
           .memoraAppear()
 
+          Picker("プラン", selection: $selectedTier) {
+            ForEach(PlanTier.allCases) { tier in
+              Text(tier.label).tag(tier)
+            }
+          }
+          .pickerStyle(.segmented)
+          .memoraAppear(delay: 0.04)
+
           VStack(alignment: .leading, spacing: 16) {
-            BenefitRow(symbol: "infinity", title: "高度なAI整理を制限なく", detail: "要約・決定・タスク・未決事項まで")
-            BenefitRow(symbol: "square.stack.3d.up", title: "複数会議をまとめて質問", detail: "プロジェクトや全会議から根拠付きで回答")
-            BenefitRow(symbol: "icloud", title: "クラウド保存と同期", detail: "必要な人だけ選べる保存先")
-            BenefitRow(symbol: "rectangle.slash", title: "広告なし", detail: "会議内容だけに集中")
+            ForEach(selectedTier.features, id: \.self) { feature in
+              BenefitRow(symbol: "checkmark.circle.fill", title: feature, detail: nil)
+            }
           }
           .memoraAppear(delay: 0.06)
 
-          if model.isSubscribed {
-            subscribedFooter
+          if model.planTier == selectedTier {
+            currentPlanFooter
               .memoraAppear(delay: 0.12)
           } else {
             purchaseControls
@@ -56,67 +64,66 @@ struct PaywallView: View {
           Button("閉じる") { dismiss() }
         }
       }
-      .animation(reduceMotion ? nil : MemoraMotion.control, value: plan)
-      .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isSubscribed)
+      .onAppear { selectedTier = model.planTier ?? .personal }
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedTier)
+      .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.planTier)
       .alert("購入はまだ接続されていません", isPresented: $isUnavailableNoticePresented) {
         Button("OK", role: .cancel) {}
       } message: {
-        Text("この画面はプランの説明のみです。StoreKitによる購入・復元はまだ実装されていません。")
+        Text("StoreKitによる購入・復元はまだ実装されていません。選んだプランは、この端末で機能を試すためのローカルな設定として保存します。")
       }
     }
   }
 
   private var purchaseControls: some View {
-    VStack(spacing: 18) {
-      Picker("プラン", selection: $plan) {
-        ForEach(SubscriptionPlan.allCases) { option in
-          Text(option.label).tag(option)
+    VStack(spacing: 12) {
+      Button(action: choose) {
+        VStack(spacing: 2) {
+          Text("\(selectedTier.label)にする")
+            .font(.headline)
+          Text("購入は準備中 · いまは端末の設定として切り替えます")
+            .font(.caption)
+            .opacity(0.8)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .foregroundStyle(Color(uiColor: .systemBackground))
+        .background(.primary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
       }
-      .pickerStyle(.segmented)
+      .buttonStyle(.plain)
 
-      VStack(spacing: 10) {
-        Button(action: purchase) {
-          VStack(spacing: 2) {
-            Text("購入は準備中")
-              .font(.headline)
-            Text(plan.priceLine)
-              .font(.caption)
-              .opacity(0.8)
-              .contentTransition(.numericText())
-          }
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 14)
-          .foregroundStyle(Color(uiColor: .systemBackground))
-          .background(.primary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-          .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-        .buttonStyle(.plain)
-
-        Text("購入・無料期間・復元はまだ接続されていません。")
-          .font(.caption2)
-          .foregroundStyle(.secondary)
-          .multilineTextAlignment(.center)
-          .frame(maxWidth: .infinity)
-      }
+      Text("購入・無料期間・復元はまだ接続されていません。チーム共有は、この設定で機能を確認できます。")
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
 
       Button("購入を復元") {
         isUnavailableNoticePresented = true
       }
       .font(.footnote)
       .frame(maxWidth: .infinity)
+
+      #if DEBUG
+      Button("無料プランに戻す", role: .destructive) {
+        model.choosePlan(nil)
+        selectedTier = .personal
+      }
+      .font(.footnote)
+      #endif
     }
   }
 
-  private var subscribedFooter: some View {
+  private var currentPlanFooter: some View {
     VStack(spacing: 12) {
-      Label("Memora Plusを利用中", systemImage: "checkmark.seal.fill")
+      Label("\(selectedTier.label)を利用中", systemImage: "checkmark.seal.fill")
         .font(.headline)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
         .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-      Text("プランの変更と解約は、App Storeのサブスクリプション設定から行えます。")
+      Text("購入は未接続のため、この端末での設定です。課金の接続後は、App Storeのサブスクリプション設定から変更・解約できるようにします。")
         .font(.caption)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
@@ -130,56 +137,34 @@ struct PaywallView: View {
     .transition(.opacity)
   }
 
-  /// There is no StoreKit behind this yet, so pressing purchase explains that
-  /// rather than flipping a local flag that would look like a real purchase.
-  private func purchase() {
+  /// There is no StoreKit behind this yet, so choosing a plan explains that it
+  /// is a local setting rather than pretending a purchase happened.
+  private func choose() {
+    model.choosePlan(selectedTier)
     isUnavailableNoticePresented = true
-  }
-}
-
-private enum SubscriptionPlan: String, CaseIterable, Identifiable {
-  case annual
-  case monthly
-
-  var id: Self { self }
-
-  var label: String {
-    switch self {
-    case .annual:
-      "年額 · 2か月分お得"
-    case .monthly:
-      "月額"
-    }
-  }
-
-  var priceLine: String {
-    switch self {
-    case .annual:
-      "価格は未定（準備中）"
-    case .monthly:
-      "価格は未定（準備中）"
-    }
   }
 }
 
 private struct BenefitRow: View {
   var symbol: String
   var title: String
-  var detail: String
+  var detail: String?
 
   var body: some View {
     HStack(alignment: .top, spacing: 14) {
       Image(systemName: symbol)
         .font(.body.weight(.semibold))
-        .foregroundStyle(.primary)
+        .foregroundStyle(.tint)
         .frame(width: 30)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 3) {
         Text(title)
           .font(.headline)
-        Text(detail)
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
+        if let detail {
+          Text(detail)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        }
       }
     }
   }

@@ -11,6 +11,9 @@ struct LibraryView: View {
   @State private var isBulkSpacePickerPresented = false
   @State private var shareItems: [Any] = []
   @State private var isSharing = false
+  @State private var temporaryShareURL: URL?
+  @State private var isTeamShareNoticePresented = false
+  @State private var teamShareErrorMessage: String?
   var onOpenSidebar: () -> Void
 
   var body: some View {
@@ -82,8 +85,19 @@ struct LibraryView: View {
       .sheet(isPresented: $isBulkSpacePickerPresented) {
         BulkSpacePickerSheet(meetingIDs: selectedMeetingIDs) { endSelection() }
       }
-      .sheet(isPresented: $isSharing) {
-        ActivityView(items: shareItems, onComplete: nil)
+      .sheet(isPresented: $isSharing, onDismiss: cleanUpSharedFiles) {
+        ActivityView(items: shareItems, onComplete: cleanUpSharedFiles)
+      }
+      .alert("チームプランで利用できます", isPresented: $isTeamShareNoticePresented) {
+        Button("プランを見る") { model.isPaywallPresented = true }
+        Button("キャンセル", role: .cancel) {}
+      } message: {
+        Text("チーム共有は、選んだファイルを音声・写真つきのパッケージとして書き出し、チームのメンバーに渡せます。")
+      }
+      .alert("チーム共有を作成できませんでした", isPresented: teamShareErrorBinding) {
+        Button("OK", role: .cancel) {}
+      } message: {
+        Text(teamShareErrorMessage ?? "")
       }
       .onChange(of: model.fileSection) { _, _ in endSelection() }
     }
@@ -213,6 +227,12 @@ struct LibraryView: View {
   private var selectionBar: some View {
     HStack(spacing: 8) {
       selectionAction("共有", systemImage: "square.and.arrow.up") { shareSelected() }
+      selectionAction(
+        "チーム",
+        systemImage: model.hasTeamPlan ? "person.3.fill" : "person.3"
+      ) {
+        shareSelectedWithTeam()
+      }
       selectionAction("移動", systemImage: "folder") { isBulkSpacePickerPresented = true }
       selectionAction("削除", systemImage: "trash", isDestructive: true) {
         isBulkDeleteConfirmPresented = true
@@ -362,12 +382,50 @@ struct LibraryView: View {
   private func shareSelected() {
     let selected = model.meetings.filter { selectedMeetingIDs.contains($0.id) }
     guard !selected.isEmpty else { return }
+    temporaryShareURL = nil
     shareItems = [
       selected
         .map { MeetingShareText.make(meeting: $0, tasks: model.tasks) }
         .joined(separator: "\n\n———\n\n")
     ]
     isSharing = true
+  }
+
+  /// Writes the chosen records into a package a teammate can restore. Team plan
+  /// only, so it offers the plan rather than producing something for a free user.
+  private func shareSelectedWithTeam() {
+    guard model.hasTeamPlan else {
+      isTeamShareNoticePresented = true
+      return
+    }
+    let ids = selectedMeetingIDs
+    guard !ids.isEmpty else { return }
+    Task {
+      do {
+        let url = try await model.makeTeamSharePackage(meetingIDs: ids)
+        temporaryShareURL = url
+        shareItems = [url]
+        isSharing = true
+      } catch {
+        teamShareErrorMessage = error.localizedDescription
+      }
+    }
+  }
+
+  /// Removes the temporary team package after the share sheet is finished.
+  private func cleanUpSharedFiles() {
+    guard let url = temporaryShareURL else { return }
+    temporaryShareURL = nil
+    shareItems = []
+    try? FileManager.default.removeItem(at: url)
+  }
+
+  private var teamShareErrorBinding: Binding<Bool> {
+    Binding {
+      teamShareErrorMessage != nil
+    } set: { isPresented in
+      if !isPresented { teamShareErrorMessage = nil }
+    }
   }
 
   /// The normal list stays short, but a search shows every match and reports

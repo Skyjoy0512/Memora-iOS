@@ -203,6 +203,11 @@ final class MemoraModel {
   /// the app before committing to either.
   private(set) var hasCompletedOnboarding: Bool
   private(set) var isSubscribed: Bool
+  /// The chosen tier. Billing is not connected yet, so this is a local choice
+  /// that decides which features are unlocked; nil means the free plan.
+  private(set) var planTier: PlanTier?
+  /// True when the team tier is chosen. This is what gates team-only features.
+  var hasTeamPlan: Bool { isSubscribed && planTier == .team }
   private var hasOfferedPlus: Bool
 
   @ObservationIgnored private var recordingURL: URL?
@@ -234,6 +239,7 @@ final class MemoraModel {
 
     hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
+    planTier = PlanTier(rawValue: defaults.string(forKey: StorageKey.planTier) ?? "")
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
     aiEngine = AIEngine(rawValue: defaults.string(forKey: StorageKey.aiEngine) ?? "") ?? .automatic
     aiProvider = CloudProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
@@ -695,9 +701,23 @@ final class MemoraModel {
 
   /// Purchases are tied to the Apple ID, so Plus does not require a Memora
   /// account. Signing in only adds sync.
-  func startSubscription() {
-    isSubscribed = true
-    UserDefaults.standard.set(true, forKey: StorageKey.isSubscribed)
+  func startSubscription(tier: PlanTier = .personal) {
+    choosePlan(tier)
+  }
+
+  /// Sets the plan this device runs on. StoreKit is not connected, so this is a
+  /// local preference: the plan screen is explicit that no billing happened.
+  func choosePlan(_ tier: PlanTier?) {
+    planTier = tier
+    isSubscribed = tier != nil
+    let defaults = UserDefaults.standard
+    defaults.set(isSubscribed, forKey: StorageKey.isSubscribed)
+    if let tier {
+      defaults.set(tier.rawValue, forKey: StorageKey.planTier)
+    } else {
+      defaults.removeObject(forKey: StorageKey.planTier)
+      setCloudStorageEnabled(false)
+    }
   }
 
   /// Turns cloud storage on or off. It stays off without Plus, so the records
@@ -1926,6 +1946,39 @@ final class MemoraModel {
     }.value
   }
 
+  /// Writes a package of just the chosen records, for handing to a teammate.
+  /// Team plan only. It carries the records' audio, photos, tasks and journal
+  /// entries, but no AI history and no settings. The teammate still needs an
+  /// empty library to restore it, since merging packages is not built yet.
+  func makeTeamSharePackage(meetingIDs: Set<UUID>) async throws -> URL {
+    guard hasTeamPlan else { throw TeamShareError.requiresTeamPlan }
+    let selected = meetings.filter { meetingIDs.contains($0.id) }
+    guard !selected.isEmpty else { throw TeamShareError.empty }
+
+    // Try once more to write any inline photos, so the package carries files.
+    materializePendingLegacyPhotos()
+
+    let spaces = self.spaces.filter { space in
+      selected.contains { $0.spaceID == space.id }
+    }
+    let tasks = self.tasks.filter { $0.meetingID.map(meetingIDs.contains) ?? false }
+    let lifeLogEntries = self.lifeLogEntries.filter { $0.meetingID.map(meetingIDs.contains) ?? false }
+    let participantIDs = Set(selected.compactMap(\.participantIDs).flatMap { $0 })
+    let people = self.people.filter { participantIDs.contains($0.id) }
+
+    return try await Task.detached(priority: .userInitiated) {
+      try BackupPackage.write(
+        meetings: selected,
+        spaces: spaces,
+        tasks: tasks,
+        lifeLogEntries: lifeLogEntries,
+        people: people,
+        aiHistory: [],
+        into: FileManager.default.temporaryDirectory
+      )
+    }.value
+  }
+
   /// Restores a package. It refuses to run when this device already holds
   /// records, so a backup can never silently replace them. The package is
   /// checked and its media put in place off the main actor; only the records are
@@ -2403,6 +2456,7 @@ final class MemoraModel {
     static let hasCompletedOnboarding = "hasSeenMemoraWelcome"
     static let hasOfferedPlus = "hasOfferedMemoraPlus"
     static let isSubscribed = "memoraPlusActive"
+    static let planTier = "memoraPlanTier"
     static let account = "memoraAccount"
     static let tasks = "memoraTasks"
     static let lifeLogEntries = "memoraLifeLogEntries"

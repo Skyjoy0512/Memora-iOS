@@ -58,16 +58,36 @@ struct SettingsView: View {
             model.isPaywallPresented = true
           } label: {
             LabeledContent {
-              Text(model.isSubscribed ? "Plus" : "Free")
+              Text(model.planTier?.label ?? "Free")
                 .foregroundStyle(.secondary)
             } label: {
               Label("Memora Plus", systemImage: "sparkles")
             }
           }
+
+          if model.hasTeamPlan {
+            LabeledContent {
+              Text("Filesで選択して書き出し")
+                .foregroundStyle(.secondary)
+            } label: {
+              Label("チーム共有", systemImage: "person.3")
+            }
+          } else {
+            Button {
+              model.isPaywallPresented = true
+            } label: {
+              LabeledContent {
+                Text("チームプランで利用可")
+                  .foregroundStyle(.secondary)
+              } label: {
+                Label("チーム共有", systemImage: "person.3")
+              }
+            }
+          }
         } header: {
           Text("プラン")
         } footer: {
-          Text("購入と利用回数の管理はまだ接続されていません。")
+          Text("購入はまだ接続されていません。プランはこの端末の設定として保存し、チーム共有はチームプランで利用できます。")
         }
 
         Section {
