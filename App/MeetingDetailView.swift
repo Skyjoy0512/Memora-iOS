@@ -128,6 +128,9 @@ struct MeetingDetailView: View {
           }
           ToolbarItem(placement: .topBarTrailing) {
             Menu("その他", systemImage: "ellipsis") {
+              Button("チームで共有", systemImage: "person.badge.plus") {
+                Task { await model.shareMeetingWithTeam(meeting.id) }
+              }
               Button("PDFで共有", systemImage: "doc.richtext") {
                 sharePDF(meeting)
               }

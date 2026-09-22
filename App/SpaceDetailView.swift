@@ -67,6 +67,12 @@ struct SpaceDetailView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
+          Button("チームで共有", systemImage: "person.badge.plus") {
+            Task { await model.shareSpaceWithTeam(space.id) }
+          }
+          .labelStyle(.iconOnly)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
           Menu("その他", systemImage: "ellipsis") {
             Button("名前を変更", systemImage: "pencil") { isRenaming = true }
             Button("削除", systemImage: "trash", role: .destructive) { isDeleting = true }

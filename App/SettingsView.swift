@@ -66,11 +66,15 @@ struct SettingsView: View {
           }
 
           if model.hasTeamPlan {
-            LabeledContent {
-              Text("Filesで選択して書き出し")
-                .foregroundStyle(.secondary)
+            NavigationLink {
+              TeamSharesView()
             } label: {
-              Label("チーム共有", systemImage: "person.3")
+              LabeledContent {
+                Text(model.cloudSharing.receivedItems.isEmpty ? "なし" : "\(model.cloudSharing.receivedItems.count)件")
+                  .foregroundStyle(.secondary)
+              } label: {
+                Label("チームで共有されたもの", systemImage: "person.3")
+              }
             }
           } else {
             Button {

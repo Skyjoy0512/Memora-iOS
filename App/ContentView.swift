@@ -94,6 +94,16 @@ struct ContentView: View {
     } message: {
       Text(model.persistenceFailureMessage ?? "")
     }
+    .sheet(item: $model.pendingCloudShare) { request in
+      CloudShareSheet(share: request.share, container: request.container) {
+        model.pendingCloudShare = nil
+      }
+    }
+    .alert("チーム共有", isPresented: cloudShareMessageBinding) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(model.cloudShareMessage ?? "")
+    }
     .alert("この端末の記録へのリンク", isPresented: missingRecordBinding) {
       if model.missingRecordNotice?.offersTrash == true {
         Button("最近削除した項目を見る") {
@@ -136,6 +146,14 @@ struct ContentView: View {
       if !isPresented {
         model.persistenceFailureMessage = nil
       }
+    }
+  }
+
+  private var cloudShareMessageBinding: Binding<Bool> {
+    Binding {
+      model.cloudShareMessage != nil
+    } set: { isPresented in
+      if !isPresented { model.cloudShareMessage = nil }
     }
   }
 

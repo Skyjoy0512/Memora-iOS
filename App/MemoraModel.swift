@@ -222,6 +222,13 @@ final class MemoraModel {
   /// Timings for the paths that matter when comparing builds. Holds numbers and
   /// names only, never content.
   @ObservationIgnored let performance = PerformanceLog.shared
+  /// CloudKit team sharing. Kept out of the local write path: it runs only when
+  /// the person shares something or opens the team list.
+  @ObservationIgnored let cloudSharing = CloudSharingService.shared
+  /// The share the system sharing sheet is presenting, if any.
+  var pendingCloudShare: CloudSharingService.ShareRequest?
+  /// A team-sharing message to show, whether a refusal or a failure.
+  var cloudShareMessage: String?
   /// What a recording in progress would need to be recovered after a stop.
   @ObservationIgnored private var recordingDraft: RecordingDraft?
   /// Media whose record is already gone but whose files could not be removed.
@@ -1977,6 +1984,53 @@ final class MemoraModel {
         into: FileManager.default.temporaryDirectory
       )
     }.value
+  }
+
+  /// Shares a project with the team through CloudKit. Team plan only.
+  func shareSpaceWithTeam(_ id: UUID) async {
+    guard let space = space(id: id) else { return }
+    let inProject = meetings.filter { $0.spaceID == id }
+    let projectTasks = tasks.filter { task in inProject.contains { $0.id == task.meetingID } }
+    let snapshot = TeamShareSnapshot(kind: .project, space: space, meetings: inProject, tasks: projectTasks)
+    await beginCloudShare(title: space.name, snapshot: snapshot)
+  }
+
+  /// Shares a single record with the team through CloudKit. Team plan only.
+  func shareMeetingWithTeam(_ id: UUID) async {
+    guard let meeting = meeting(id: id) else { return }
+    let parentSpace = meeting.spaceID.flatMap { space(id: $0) }
+    let meetingTasks = tasks.filter { $0.meetingID == id }
+    let snapshot = TeamShareSnapshot(
+      kind: .meeting,
+      space: parentSpace,
+      meetings: [meeting],
+      tasks: meetingTasks
+    )
+    await beginCloudShare(title: meeting.displayTitle, snapshot: snapshot)
+  }
+
+  /// Publishes a snapshot and asks the system to invite people. It reports the
+  /// plan, iCloud, and save state rather than starting a share that cannot work.
+  private func beginCloudShare(title: String, snapshot: TeamShareSnapshot) async {
+    guard hasTeamPlan else {
+      cloudShareMessage = "チーム共有はチームプランで利用できます。設定の「プラン」から選べます。"
+      return
+    }
+    await cloudSharing.refreshAvailability()
+    if let message = cloudSharing.availabilityMessage {
+      cloudShareMessage = message
+      return
+    }
+    do {
+      let payload = try RecordStore.encoded(snapshot)
+      pendingCloudShare = try await cloudSharing.makeShare(
+        title: title,
+        kind: snapshot.kind.rawValue,
+        payload: payload
+      )
+    } catch {
+      cloudShareMessage = "共有を開始できませんでした。\(error.localizedDescription)"
+    }
   }
 
   /// Restores a package. It refuses to run when this device already holds
