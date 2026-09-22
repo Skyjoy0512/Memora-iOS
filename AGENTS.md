@@ -47,9 +47,14 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   it says plainly that no billing happened: the tier is a local preference
   (`choosePlan`) that unlocks the team share. `MemoraAccount` stays in the model
   for a later phase.
-- Team sharing exports the chosen records as a package (`makeTeamSharePackage`);
-  there is no team account, member management, cross-device sync, or package
-  merging, and the app does not pretend otherwise.
+- Team sharing publishes a project or a single record to CloudKit
+  (`CloudSharingService`) and lists what teammates share back, for both units.
+  It needs the iCloud capability and a container matching the bundle identifier;
+  without them, or without an iCloud account, the app says so instead of
+  pretending. Shared items are read-only snapshots on the receiver: merging into
+  the local editable store, member management, media (audio/photo) sync, and
+  conflict handling are not built. A manual package export
+  (`makeTeamSharePackage`) also remains.
 - The Ask AI fallback never invents answers; when no engine can run it says so.
 - The composer shows the real AI engine (`AIEngine`), not a separate model label.
 - Backlog and phase status live in `docs/IMPROVEMENT_BACKLOG.md` and
