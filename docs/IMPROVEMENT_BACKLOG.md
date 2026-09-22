@@ -200,3 +200,10 @@
   解除条件: バージョン付き書き出しパッケージの実装。
 - **E01（safe areaのルート整理）**: 全主要画面の確認が必要で、シミュレータの
   状態APIが復帰してから検証する。解除条件: 実機/シミュレータでの確認。
+- **CloudKitチーム共有の実機稼働（今回は保留）**: コード（`CloudSharingService`、
+  プロジェクト/会議単位の共有、受信一覧、subscription）は実装済みだが、
+  Apple Developer Program（年額）のアカウント接続とiCloudコンテナ/entitlementが
+  必要。未接続の間はアプリが「iCloudコンテナが設定されていません」等を表示する。
+  解除条件: Project Settings > Distribute にアカウントを接続し、バンドルIDの割り当て、
+  コンテナ作成、`MemoraSharedItem` スキーマの配備、実機での共有確認を行う。
+  それまでは手動のパッケージ書き出し（`makeTeamSharePackage`）のみ利用可能。
