@@ -5,6 +5,12 @@ struct LibraryView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var query = ""
   @Namespace private var heroNamespace
+  @State private var isSelectionMode = false
+  @State private var selectedMeetingIDs: Set<UUID> = []
+  @State private var isBulkDeleteConfirmPresented = false
+  @State private var isBulkSpacePickerPresented = false
+  @State private var shareItems: [Any] = []
+  @State private var isSharing = false
   var onOpenSidebar: () -> Void
 
   var body: some View {
@@ -23,7 +29,7 @@ struct LibraryView: View {
         }
       }
       .background(Color(uiColor: .systemBackground))
-      .navigationTitle("ファイル")
+      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ファイル")
       .searchable(
         text: $query,
         placement: .navigationBarDrawer(displayMode: .automatic),
@@ -31,10 +37,19 @@ struct LibraryView: View {
       )
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
-          Button("メニュー", systemImage: "line.3.horizontal") {
-            onOpenSidebar()
+          if isSelectionMode {
+            Button("キャンセル") { endSelection() }
+          } else {
+            Button("メニュー", systemImage: "line.3.horizontal") {
+              onOpenSidebar()
+            }
+            .labelStyle(.iconOnly)
           }
-          .labelStyle(.iconOnly)
+        }
+      }
+      .safeAreaInset(edge: .bottom, spacing: 0) {
+        if isSelectionMode {
+          selectionBar
         }
       }
       .navigationDestination(for: LibraryRoute.self) { route in
@@ -51,6 +66,26 @@ struct LibraryView: View {
         case .stateGallery: StateGalleryView()
         }
       }
+      .confirmationDialog(
+        "選択したファイルを削除しますか？",
+        isPresented: $isBulkDeleteConfirmPresented,
+        titleVisibility: .visible
+      ) {
+        Button("削除", role: .destructive) {
+          model.deleteMeetings(selectedMeetingIDs)
+          endSelection()
+        }
+        Button("キャンセル", role: .cancel) {}
+      } message: {
+        Text("\(selectedMeetingIDs.count)件を「最近削除した項目」へ移動します。30日間は復元できます。")
+      }
+      .sheet(isPresented: $isBulkSpacePickerPresented) {
+        BulkSpacePickerSheet(meetingIDs: selectedMeetingIDs) { endSelection() }
+      }
+      .sheet(isPresented: $isSharing) {
+        ActivityView(items: shareItems, onComplete: nil)
+      }
+      .onChange(of: model.fileSection) { _, _ in endSelection() }
     }
   }
 
@@ -107,31 +142,7 @@ struct LibraryView: View {
         .listRowInsets(EdgeInsets(top: 48, leading: 18, bottom: 48, trailing: 18))
       } else {
         ForEach(meetings) { meeting in
-          Button {
-            model.libraryPath.append(.meeting(meeting.id))
-          } label: {
-            MeetingCard(meeting: meeting)
-              .matchedTransitionSource(id: meeting.id, in: heroNamespace)
-          }
-          .buttonStyle(.plain)
-          .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18))
-          .listRowSeparator(.hidden)
-          .listRowBackground(Color.clear)
-          .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) {
-              withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-                model.deleteMeeting(meeting.id)
-              }
-            } label: {
-              Label("削除", systemImage: "trash")
-            }
-          }
-          .swipeActions(edge: .leading) {
-            ShareLink(item: MeetingShareText.make(meeting: meeting, tasks: model.tasks)) {
-              Label("共有", systemImage: "square.and.arrow.up")
-            }
-            .tint(.blue)
-          }
+          meetingRow(meeting)
         }
 
         if query.isEmpty {
@@ -155,6 +166,85 @@ struct LibraryView: View {
     .scrollContentBackground(.hidden)
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     .hideBottomBarOnScroll(RootTab.files.rawValue)
+  }
+
+  /// One file card. Tapping opens it, or selects it while a selection is being
+  /// made. A left swipe starts selecting with this record already chosen.
+  private func meetingRow(_ meeting: Meeting) -> some View {
+    Button {
+      if isSelectionMode {
+        toggleSelection(meeting.id)
+      } else {
+        model.libraryPath.append(.meeting(meeting.id))
+      }
+    } label: {
+      MeetingCard(
+        meeting: meeting,
+        isSelecting: isSelectionMode,
+        isSelected: selectedMeetingIDs.contains(meeting.id)
+      )
+      .matchedTransitionSource(id: meeting.id, in: heroNamespace)
+    }
+    .buttonStyle(.plain)
+    .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18))
+    .listRowSeparator(.hidden)
+    .listRowBackground(Color.clear)
+    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+      Button(role: .destructive) {
+        withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+          model.deleteMeeting(meeting.id)
+        }
+      } label: {
+        Label("削除", systemImage: "trash")
+      }
+    }
+    .swipeActions(edge: .leading) {
+      Button {
+        withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+          beginSelection(with: meeting.id)
+        }
+      } label: {
+        Label("選択", systemImage: "checkmark.circle")
+      }
+      .tint(.blue)
+    }
+  }
+
+  private var selectionBar: some View {
+    HStack(spacing: 8) {
+      selectionAction("共有", systemImage: "square.and.arrow.up") { shareSelected() }
+      selectionAction("移動", systemImage: "folder") { isBulkSpacePickerPresented = true }
+      selectionAction("削除", systemImage: "trash", isDestructive: true) {
+        isBulkDeleteConfirmPresented = true
+      }
+    }
+    .padding(6)
+    .memoraGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    .padding(.horizontal, 12)
+    .padding(.bottom, 8)
+    .transition(.move(edge: .bottom).combined(with: .opacity))
+  }
+
+  private func selectionAction(
+    _ title: String,
+    systemImage: String,
+    isDestructive: Bool = false,
+    action: @escaping () -> Void
+  ) -> some View {
+    Button(action: action) {
+      VStack(spacing: 3) {
+        Image(systemName: systemImage)
+          .font(.title3)
+        Text(title)
+          .font(.caption2.weight(.medium))
+      }
+      .frame(maxWidth: .infinity, minHeight: 48)
+      .foregroundStyle(isDestructive ? AnyShapeStyle(.red) : AnyShapeStyle(.tint))
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .disabled(selectedMeetingIDs.isEmpty)
+    .accessibilityLabel(title)
   }
 
   private var projectsPage: some View {
@@ -243,6 +333,41 @@ struct LibraryView: View {
     }
     .frame(maxWidth: .infinity)
     .padding(.vertical, 24)
+  }
+
+  // MARK: - Selection
+
+  private func beginSelection(with id: UUID) {
+    isSelectionMode = true
+    selectedMeetingIDs.insert(id)
+  }
+
+  private func toggleSelection(_ id: UUID) {
+    withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+      if selectedMeetingIDs.contains(id) {
+        selectedMeetingIDs.remove(id)
+      } else {
+        selectedMeetingIDs.insert(id)
+      }
+    }
+  }
+
+  private func endSelection() {
+    withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+      isSelectionMode = false
+      selectedMeetingIDs = []
+    }
+  }
+
+  private func shareSelected() {
+    let selected = model.meetings.filter { selectedMeetingIDs.contains($0.id) }
+    guard !selected.isEmpty else { return }
+    shareItems = [
+      selected
+        .map { MeetingShareText.make(meeting: $0, tasks: model.tasks) }
+        .joined(separator: "\n\n———\n\n")
+    ]
+    isSharing = true
   }
 
   /// The normal list stays short, but a search shows every match and reports

@@ -200,62 +200,54 @@ struct MeetingDetailView: View {
     }
   }
 
-  /// Plays the recording: play/pause, position, 15-second jumps, and speed.
+  /// Plays the recording the way a music app does: a now-playing header, a
+  /// scrubber between the elapsed and remaining time, and glass transport
+  /// controls around a prominent play button.
   private func playerCard(_ meeting: Meeting) -> some View {
-    VStack(spacing: 12) {
+    VStack(spacing: 16) {
       HStack(spacing: 14) {
-        Button {
-          player.toggle()
-        } label: {
-          Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-            .font(.title3.weight(.semibold))
-            .foregroundStyle(Color(uiColor: .systemBackground))
-            .frame(width: 48, height: 48)
-            .background(Circle().fill(.primary))
-        }
-        .buttonStyle(.plain)
-        .disabled(model.isRecording)
-        .accessibilityLabel(player.isPlaying ? "一時停止" : "再生")
+        nowPlayingArtwork
 
-        VStack(alignment: .leading, spacing: 2) {
-          Text(MemoraFormat.duration(scrubTime ?? player.currentTime))
-            .font(.subheadline.monospacedDigit().weight(.medium))
-          Text(MemoraFormat.duration(player.duration))
-            .font(.caption.monospacedDigit())
+        VStack(alignment: .leading, spacing: 3) {
+          Text(meeting.displayTitle)
+            .font(.headline)
+            .lineLimit(1)
+          Text(nowPlayingSubtitle(meeting))
+            .font(.subheadline)
             .foregroundStyle(.secondary)
+            .lineLimit(1)
         }
 
         Spacer(minLength: 8)
+      }
 
-        Button("15秒戻す", systemImage: "gobackward.15") {
-          player.skip(by: -15)
+      VStack(spacing: 6) {
+        Slider(value: seekBinding, in: 0...max(player.duration, 0.1)) { editing in
+          if !editing, let time = scrubTime {
+            player.seek(to: time)
+            scrubTime = nil
+          }
         }
-        .labelStyle(.iconOnly)
-        .font(.title3)
-        .frame(width: 44, height: 44)
-        .contentShape(Circle())
+        .tint(.primary)
         .disabled(player.duration == 0)
+        .accessibilityLabel("再生位置")
 
-        Button("15秒進める", systemImage: "goforward.15") {
-          player.skip(by: 15)
+        HStack {
+          Text(MemoraFormat.duration(scrubTime ?? player.currentTime))
+          Spacer()
+          Text("-\(MemoraFormat.duration(max(player.duration - (scrubTime ?? player.currentTime), 0)))")
         }
-        .labelStyle(.iconOnly)
-        .font(.title3)
-        .frame(width: 44, height: 44)
-        .contentShape(Circle())
-        .disabled(player.duration == 0)
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(.secondary)
+      }
 
+      transportControls
+
+      HStack {
+        Spacer()
         speedMenu
+        Spacer()
       }
-
-      Slider(value: seekBinding, in: 0...max(player.duration, 0.1)) { editing in
-        if !editing, let time = scrubTime {
-          player.seek(to: time)
-          scrubTime = nil
-        }
-      }
-      .disabled(player.duration == 0)
-      .accessibilityLabel("再生位置")
 
       if let message = player.errorMessage {
         Label(message, systemImage: "exclamationmark.triangle")
@@ -269,9 +261,77 @@ struct MeetingDetailView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
       }
     }
-    .padding(16)
+    .padding(18)
     .memoraCard()
     .memoraAppear()
+  }
+
+  /// The rounded artwork tile, with the waveform pulsing while it plays.
+  private var nowPlayingArtwork: some View {
+    RoundedRectangle(cornerRadius: 14, style: .continuous)
+      .fill(
+        LinearGradient(
+          colors: [Color.accentColor.opacity(0.95), Color.accentColor.opacity(0.55)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+      .frame(width: 56, height: 56)
+      .overlay {
+        Image(systemName: "waveform")
+          .font(.title3.weight(.semibold))
+          .foregroundStyle(.white)
+          .symbolEffect(.variableColor.iterative, isActive: player.isPlaying)
+      }
+      .accessibilityHidden(true)
+  }
+
+  private func nowPlayingSubtitle(_ meeting: Meeting) -> String {
+    let date = meeting.createdAt.formatted(.dateTime.month().day().hour().minute())
+    let length = player.duration > 0 ? player.duration : meeting.duration
+    return "\(date) · \(MemoraFormat.duration(length))"
+  }
+
+  /// The glass transport row: back 15, a prominent play/pause, forward 15.
+  private var transportControls: some View {
+    MemoraGlassContainer(spacing: 18) {
+      HStack(spacing: 26) {
+        Button("15秒戻す", systemImage: "gobackward.15") {
+          player.skip(by: -15)
+        }
+        .labelStyle(.iconOnly)
+        .font(.title3)
+        .frame(width: 52, height: 52)
+        .contentShape(Circle())
+        .memoraGlass(in: Circle(), interactive: true)
+        .disabled(player.duration == 0)
+
+        Button {
+          player.toggle()
+        } label: {
+          Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+            .font(.title2.weight(.bold))
+            .foregroundStyle(.white)
+            .frame(width: 68, height: 68)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .memoraGlass(in: Circle(), tint: .accentColor, interactive: true)
+        .disabled(model.isRecording)
+        .accessibilityLabel(player.isPlaying ? "一時停止" : "再生")
+
+        Button("15秒進める", systemImage: "goforward.15") {
+          player.skip(by: 15)
+        }
+        .labelStyle(.iconOnly)
+        .font(.title3)
+        .frame(width: 52, height: 52)
+        .contentShape(Circle())
+        .memoraGlass(in: Circle(), interactive: true)
+        .disabled(player.duration == 0)
+      }
+      .frame(maxWidth: .infinity)
+    }
   }
 
   private var speedMenu: some View {
@@ -288,10 +348,16 @@ struct MeetingDetailView: View {
         }
       }
     } label: {
-      Text(speedLabel(Double(player.rate)))
-        .font(.subheadline.weight(.medium))
-        .frame(minWidth: 44, minHeight: 32)
-        .contentShape(Rectangle())
+      HStack(spacing: 5) {
+        Image(systemName: "speedometer")
+        Text(speedLabel(Double(player.rate)))
+      }
+      .font(.subheadline.weight(.medium))
+      .foregroundStyle(.primary)
+      .padding(.horizontal, 16)
+      .frame(height: 40)
+      .contentShape(Capsule())
+      .memoraGlass(in: Capsule(), interactive: true)
     }
     .accessibilityLabel("再生速度")
   }

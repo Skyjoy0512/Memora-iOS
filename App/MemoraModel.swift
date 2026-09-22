@@ -1545,6 +1545,85 @@ final class MemoraModel {
     trashedRecords = candidateTrash
   }
 
+  /// Moves several records to the trash in one write, so a multi-selection
+  /// either lands completely or not at all. Each record keeps its own tasks and
+  /// journal entries so it can be restored exactly.
+  func deleteMeetings(_ ids: Set<UUID>) {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
+    guard !ids.isEmpty else { return }
+
+    let removed = meetings.filter { ids.contains($0.id) }
+    guard !removed.isEmpty else { return }
+    for meeting in removed {
+      processing.cancel(meeting.id)
+    }
+
+    var candidateMeetings = meetings
+    var candidateTasks = tasks
+    var candidateEntries = lifeLogEntries
+    var candidateTrash = trashedRecords
+
+    let removedTasks = candidateTasks.filter { $0.meetingID.map(ids.contains) ?? false }
+    let removedEntries = candidateEntries.filter { $0.meetingID.map(ids.contains) ?? false }
+    candidateMeetings.removeAll { ids.contains($0.id) }
+    candidateTasks.removeAll { $0.meetingID.map(ids.contains) ?? false }
+    candidateEntries.removeAll { $0.meetingID.map(ids.contains) ?? false }
+    candidateTrash.insert(
+      contentsOf: removed.map { meeting in
+        TrashedRecord(
+          meeting: meeting,
+          tasks: removedTasks.filter { $0.meetingID == meeting.id },
+          lifeLogEntries: removedEntries.filter { $0.meetingID == meeting.id },
+          deletedAt: .now
+        )
+      },
+      at: 0
+    )
+
+    let stored = persistBatch {
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
+        (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
+        (key: StorageKey.trash, data: try RecordStore.encoded(candidateTrash))
+      ]
+    }
+    guard stored else { return }
+
+    meetings = candidateMeetings
+    tasks = candidateTasks
+    lifeLogEntries = candidateEntries
+    trashedRecords = candidateTrash
+  }
+
+  /// Files several records under one project, or under none, in a single write.
+  func moveMeetings(_ ids: Set<UUID>, to spaceID: UUID?) {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
+    guard !ids.isEmpty else { return }
+
+    var candidate = meetings
+    var changed = false
+    for index in candidate.indices where ids.contains(candidate[index].id) {
+      guard candidate[index].spaceID != spaceID else { continue }
+      candidate[index].spaceID = spaceID
+      meetingSearchTexts.removeValue(forKey: candidate[index].id)
+      changed = true
+    }
+    guard changed else { return }
+
+    let stored = persistBatch {
+      [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))]
+    }
+    guard stored else { return }
+    meetings = candidate
+  }
+
   /// Puts a trashed record back exactly as it was, again only after the write.
   func restoreTrashedRecord(_ id: UUID) {
     guard !isStoreProtected else {

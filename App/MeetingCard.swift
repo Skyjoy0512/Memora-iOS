@@ -5,6 +5,9 @@ import SwiftUI
 struct MeetingCard: View {
   @Environment(\.colorScheme) private var colorScheme
   var meeting: Meeting
+  /// True while several cards are being chosen, so each shows a selection mark.
+  var isSelecting = false
+  var isSelected = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -54,11 +57,28 @@ struct MeetingCard: View {
     }
     .overlay {
       RoundedRectangle(cornerRadius: 26, style: .continuous)
-        .stroke(Color.primary.opacity(colorScheme == .dark ? 0.1 : 0.06), lineWidth: 0.5)
+        .stroke(
+          isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(Color.primary.opacity(colorScheme == .dark ? 0.1 : 0.06)),
+          lineWidth: isSelected ? 2 : 0.5
+        )
+    }
+    .overlay(alignment: .bottomTrailing) {
+      if isSelecting {
+        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+          .font(.title2)
+          .symbolRenderingMode(.palette)
+          .foregroundStyle(
+            isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary),
+            isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(.clear)
+          )
+          .padding(16)
+          .accessibilityHidden(true)
+      }
     }
     .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.06), radius: 16, y: 8)
     .accessibilityElement(children: .combine)
     .accessibilityLabel("\(meeting.title)、\(recordingDate)、\(MemoraFormat.duration(meeting.duration))、\(meeting.status.shortLabel)")
+    .accessibilityAddTraits(isSelected ? [.isSelected] : [])
   }
 
   private var recordingDate: String {
