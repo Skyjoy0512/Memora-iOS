@@ -42,9 +42,14 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - A recording in progress keeps a draft; if the app stops, the audio is recovered
   as its own record and is never re-recorded automatically. Voice input is
   refused (with a reason) while a recording owns the audio session.
-- Sign-in and purchase are not connected: the screens say so, and no local
-  account or subscription flag is set from them. `MemoraAccount` and
-  `startSubscription()` stay in the model for a later phase.
+- Sign-in and purchase are not connected: the screens say so, and no account is
+  created from them. The plan screen can select a tier (personal or team), but
+  it says plainly that no billing happened: the tier is a local preference
+  (`choosePlan`) that unlocks the team share. `MemoraAccount` stays in the model
+  for a later phase.
+- Team sharing exports the chosen records as a package (`makeTeamSharePackage`);
+  there is no team account, member management, cross-device sync, or package
+  merging, and the app does not pretend otherwise.
 - The Ask AI fallback never invents answers; when no engine can run it says so.
 - The composer shows the real AI engine (`AIEngine`), not a separate model label.
 - Backlog and phase status live in `docs/IMPROVEMENT_BACKLOG.md` and
