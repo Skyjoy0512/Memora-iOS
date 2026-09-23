@@ -30,6 +30,9 @@ struct JournalCalendar: View {
           }
         }
         .scrollTargetLayout()
+        // Breathing room so the Liquid Glass capsule is never clipped by the
+        // scroll view's bounds.
+        .padding(.vertical, 12)
       }
       .scrollTargetBehavior(.viewAligned)
       .scrollIndicators(.hidden)
@@ -41,7 +44,7 @@ struct JournalCalendar: View {
         scroll(proxy, to: day, animated: true)
       }
     }
-    .frame(height: 92)
+    .frame(height: 104)
   }
 
   private func scroll(_ proxy: ScrollViewProxy, to day: Date, animated: Bool) {
@@ -76,13 +79,17 @@ struct JournalCalendar: View {
         Text(day.formatted(.dateTime.day()))
           .font(.title2.weight(isSelected ? .semibold : .regular))
           .foregroundStyle(dayStyle)
-
+      }
+      .frame(width: 52, height: 80)
+      .modifier(SelectedDayGlass(isSelected: isSelected))
+      // The record dot is an overlay so it never shifts the day off the
+      // capsule's centre.
+      .overlay(alignment: .bottom) {
         Circle()
           .fill(isMarked ? weekdayStyle : AnyShapeStyle(.clear))
           .frame(width: 4, height: 4)
+          .padding(.bottom, 8)
       }
-      .frame(width: 52, height: 88)
-      .modifier(SelectedDayGlass(isSelected: isSelected))
       .contentShape(Capsule())
     }
     .buttonStyle(.plain)
