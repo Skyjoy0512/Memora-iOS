@@ -9,6 +9,8 @@ struct JournalCalendar: View {
   @Binding var selectedDate: Date
   /// Start-of-day dates that have at least one record.
   var markedDays: Set<Date>
+  /// Ties the selected day's glass together so it morphs between days.
+  @Namespace private var glassNamespace
 
   private let calendar = Calendar.current
   /// The days the strip can scroll through, anchored on today so the set keeps
@@ -24,15 +26,17 @@ struct JournalCalendar: View {
   var body: some View {
     ScrollViewReader { proxy in
       ScrollView(.horizontal) {
-        LazyHStack(spacing: 2) {
-          ForEach(stripDays, id: \.self) { day in
-            dayCell(day).id(day)
+        glassContainer {
+          LazyHStack(spacing: 2) {
+            ForEach(stripDays, id: \.self) { day in
+              dayCell(day).id(day)
+            }
           }
+          .scrollTargetLayout()
+          // Breathing room so the Liquid Glass capsule is never clipped by the
+          // scroll view's bounds.
+          .padding(.vertical, 12)
         }
-        .scrollTargetLayout()
-        // Breathing room so the Liquid Glass capsule is never clipped by the
-        // scroll view's bounds.
-        .padding(.vertical, 12)
       }
       .scrollTargetBehavior(.viewAligned)
       .scrollIndicators(.hidden)
@@ -54,6 +58,17 @@ struct JournalCalendar: View {
       withAnimation(MemoraMotion.control) { proxy.scrollTo(target, anchor: .center) }
     } else {
       proxy.scrollTo(target, anchor: .center)
+    }
+  }
+
+  /// Lets the day capsules morph into one another the way a system tab bar's
+  /// selection bubble does.
+  @ViewBuilder
+  private func glassContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+    if #available(iOS 26.0, *) {
+      GlassEffectContainer(spacing: 2) { content() }
+    } else {
+      content()
     }
   }
 
@@ -81,7 +96,7 @@ struct JournalCalendar: View {
           .foregroundStyle(dayStyle)
       }
       .frame(width: 52, height: 80)
-      .modifier(SelectedDayGlass(isSelected: isSelected))
+      .modifier(SelectedDayGlass(isSelected: isSelected, namespace: glassNamespace))
       // The record dot is an overlay so it never shifts the day off the
       // capsule's centre.
       .overlay(alignment: .bottom) {
@@ -136,16 +151,22 @@ struct JournalCalendar: View {
 /// fill where the effect is not available.
 private struct SelectedDayGlass: ViewModifier {
   var isSelected: Bool
+  var namespace: Namespace.ID
 
   func body(content: Content) -> some View {
-    if isSelected {
-      if #available(iOS 26.0, *) {
-        content.glassEffect(.regular.interactive(), in: Capsule())
+    if #available(iOS 26.0, *) {
+      if isSelected {
+        content
+          .glassEffect(.regular.interactive(), in: Capsule())
+          .glassEffectID("selectedDay", in: namespace)
+          .glassEffectTransition(.matchedGeometry)
       } else {
-        content.background(Capsule().fill(Color(uiColor: .tertiarySystemFill)))
+        content
       }
     } else {
-      content
+      content.background {
+        if isSelected { Capsule().fill(Color(uiColor: .tertiarySystemFill)) }
+      }
     }
   }
 }
