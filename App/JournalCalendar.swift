@@ -81,7 +81,7 @@ struct JournalCalendar: View {
       }
       .scrollTargetBehavior(.viewAligned)
       .scrollIndicators(.hidden)
-      .frame(height: 84)
+      .frame(height: 112)
       .onAppear {
         // The scroll targets need a pass of layout before they exist.
         DispatchQueue.main.async { scroll(proxy, to: selectedDate, animated: false) }
@@ -117,20 +117,20 @@ struct JournalCalendar: View {
         visibleMonth = day
       }
     } label: {
-      VStack(spacing: 4) {
+      VStack(spacing: 6) {
         Text(weekdaySymbol(for: day))
-          .font(.footnote)
+          .font(.subheadline)
           .foregroundStyle(weekdayStyle)
 
         Text(day.formatted(.dateTime.day()))
-          .font(.title3.weight(isSelected ? .semibold : .regular))
+          .font(.title2.weight(isSelected ? .semibold : .regular))
           .foregroundStyle(dayStyle)
 
         Circle()
           .fill(isMarked ? weekdayStyle : AnyShapeStyle(.clear))
           .frame(width: 4, height: 4)
       }
-      .frame(width: 54, height: 78)
+      .frame(width: 60, height: 104)
       .background {
         if isSelected {
           Capsule()
