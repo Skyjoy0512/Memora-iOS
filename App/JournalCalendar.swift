@@ -45,11 +45,15 @@ struct JournalCalendar: View {
       }
     }
     .padding(16)
-    .background(
-      Color(uiColor: .secondarySystemBackground),
-      in: RoundedRectangle(cornerRadius: 22, style: .continuous)
-    )
-    .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    .background {
+      RoundedRectangle(cornerRadius: 24, style: .continuous)
+        .fill(Color(uiColor: .systemBackground))
+    }
+    .overlay {
+      RoundedRectangle(cornerRadius: 24, style: .continuous)
+        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+    }
+    .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     // A sideways flick moves a month when the grid is open. The day strip has
     // its own scroll view, so the gesture stays out of its way.
     .simultaneousGesture(
@@ -130,16 +134,24 @@ struct JournalCalendar: View {
           .fill(isMarked ? weekdayStyle : AnyShapeStyle(.clear))
           .frame(width: 4, height: 4)
       }
-      .frame(width: 60, height: 104)
+      .frame(width: 56, height: 102)
       .background {
         if isSelected {
-          Capsule()
-            .fill(Color(uiColor: .systemBackground))
-            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-            .shadow(color: .black.opacity(0.06), radius: 5, y: 2)
+          RoundedRectangle(cornerRadius: 26, style: .continuous)
+            .fill(
+              LinearGradient(
+                colors: [Color(uiColor: .systemBackground), Color(uiColor: .systemGray6)],
+                startPoint: .top,
+                endPoint: .bottom
+              )
+            )
+            .overlay(
+              RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
+            )
         }
       }
-      .contentShape(Capsule())
+      .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityLabel(accessibilityLabel(for: day, isMarked: isMarked))
