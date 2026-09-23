@@ -9,13 +9,18 @@ struct JournalCalendar: View {
   @Binding var selectedDate: Date
   /// Start-of-day dates that have at least one record.
   var markedDays: Set<Date>
-  /// Ties the selected day's glass together so it morphs between days.
+  /// Ties the selection bubble's glass together so it morphs while moving.
   @Namespace private var glassNamespace
 
   private let calendar = Calendar.current
   /// The days the strip can scroll through, anchored on today so the set keeps
   /// its identity while the selection changes.
   private let stripDays: [Date]
+
+  private static let cellWidth: CGFloat = 52
+  private static let cellHeight: CGFloat = 80
+  private static let cellSpacing: CGFloat = 2
+  private static let verticalPadding: CGFloat = 12
 
   init(selectedDate: Binding<Date>, markedDays: Set<Date>) {
     _selectedDate = selectedDate
@@ -26,16 +31,17 @@ struct JournalCalendar: View {
   var body: some View {
     ScrollViewReader { proxy in
       ScrollView(.horizontal) {
-        glassContainer {
-          LazyHStack(spacing: 2) {
-            ForEach(stripDays, id: \.self) { day in
-              dayCell(day).id(day)
-            }
+        LazyHStack(spacing: Self.cellSpacing) {
+          ForEach(stripDays, id: \.self) { day in
+            dayCell(day).id(day)
           }
-          .scrollTargetLayout()
-          // Breathing room so the Liquid Glass capsule is never clipped by the
-          // scroll view's bounds.
-          .padding(.vertical, 12)
+        }
+        .scrollTargetLayout()
+        .padding(.vertical, Self.verticalPadding)
+        // The bubble is a background so the day's text always sits on top of
+        // the glass.
+        .background(alignment: .topLeading) {
+          selectionBubble
         }
       }
       .scrollTargetBehavior(.viewAligned)
@@ -48,7 +54,40 @@ struct JournalCalendar: View {
         scroll(proxy, to: day, animated: true)
       }
     }
-    .frame(height: 104)
+    .frame(height: Self.cellHeight + Self.verticalPadding * 2)
+  }
+
+  private var selectedDayIndex: Int? {
+    stripDays.firstIndex(of: calendar.startOfDay(for: selectedDate))
+  }
+
+  /// The glass capsule, placed behind the selected day and animated as the
+  /// selection moves.
+  @ViewBuilder
+  private var selectionBubble: some View {
+    if let index = selectedDayIndex {
+      bubble
+        .offset(
+          x: CGFloat(index) * (Self.cellWidth + Self.cellSpacing),
+          y: Self.verticalPadding
+        )
+        .allowsHitTesting(false)
+        .animation(reduceMotion ? nil : MemoraMotion.control, value: index)
+    }
+  }
+
+  @ViewBuilder
+  private var bubble: some View {
+    if #available(iOS 26.0, *) {
+      Color.clear
+        .frame(width: Self.cellWidth, height: Self.cellHeight)
+        .glassEffect(.regular.interactive(), in: Capsule())
+        .glassEffectID("selectedDay", in: glassNamespace)
+    } else {
+      Capsule()
+        .fill(Color(uiColor: .tertiarySystemFill))
+        .frame(width: Self.cellWidth, height: Self.cellHeight)
+    }
   }
 
   private func scroll(_ proxy: ScrollViewProxy, to day: Date, animated: Bool) {
@@ -58,17 +97,6 @@ struct JournalCalendar: View {
       withAnimation(MemoraMotion.control) { proxy.scrollTo(target, anchor: .center) }
     } else {
       proxy.scrollTo(target, anchor: .center)
-    }
-  }
-
-  /// Lets the day capsules morph into one another the way a system tab bar's
-  /// selection bubble does.
-  @ViewBuilder
-  private func glassContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-    if #available(iOS 26.0, *) {
-      GlassEffectContainer(spacing: 2) { content() }
-    } else {
-      content()
     }
   }
 
@@ -95,8 +123,7 @@ struct JournalCalendar: View {
           .font(.title2.weight(isSelected ? .semibold : .regular))
           .foregroundStyle(dayStyle)
       }
-      .frame(width: 52, height: 80)
-      .modifier(SelectedDayGlass(isSelected: isSelected, namespace: glassNamespace))
+      .frame(width: Self.cellWidth, height: Self.cellHeight)
       // The record dot is an overlay so it never shifts the day off the
       // capsule's centre.
       .overlay(alignment: .bottom) {
@@ -105,7 +132,7 @@ struct JournalCalendar: View {
           .frame(width: 4, height: 4)
           .padding(.bottom, 8)
       }
-      .contentShape(Capsule())
+      .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
     .accessibilityLabel(accessibilityLabel(for: day, isMarked: isMarked))
@@ -144,29 +171,5 @@ struct JournalCalendar: View {
       day = next
     }
     return days
-  }
-}
-
-/// Wraps the selected day in a Liquid Glass capsule, falling back to a plain
-/// fill where the effect is not available.
-private struct SelectedDayGlass: ViewModifier {
-  var isSelected: Bool
-  var namespace: Namespace.ID
-
-  func body(content: Content) -> some View {
-    if #available(iOS 26.0, *) {
-      if isSelected {
-        content
-          .glassEffect(.regular.interactive(), in: Capsule())
-          .glassEffectID("selectedDay", in: namespace)
-          .glassEffectTransition(.matchedGeometry)
-      } else {
-        content
-      }
-    } else {
-      content.background {
-        if isSelected { Capsule().fill(Color(uiColor: .tertiarySystemFill)) }
-      }
-    }
   }
 }
