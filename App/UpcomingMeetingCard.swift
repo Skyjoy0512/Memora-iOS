@@ -2,12 +2,16 @@ import EventKit
 import SwiftUI
 import UIKit
 
-/// Home's glance at the next calendar event, with a one-tap record button.
+/// A glance at the next calendar event, with a one-tap record button. In
+/// `showsOnlyNextMeeting` mode (used on the Files screen) it draws nothing
+/// unless there is a meeting coming up.
 struct UpcomingMeetingCard: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.openURL) private var openURL
   @Environment(\.scenePhase) private var scenePhase
 
+  /// When true, the card stays hidden in every state but "a meeting is next".
+  var showsOnlyNextMeeting: Bool
   @State private var phase: Phase
   @State private var isStarting = false
   @State private var isLoading = false
@@ -19,7 +23,8 @@ struct UpcomingMeetingCard: View {
     case loaded([UpcomingMeeting])
   }
 
-  init() {
+  init(showsOnlyNextMeeting: Bool = false) {
+    self.showsOnlyNextMeeting = showsOnlyNextMeeting
     switch CalendarService.access {
     case .granted: _phase = State(initialValue: .loading)
     case .denied: _phase = State(initialValue: .denied)
@@ -31,32 +36,40 @@ struct UpcomingMeetingCard: View {
     Group {
       switch phase {
       case .loading:
-        EmptyView()
+        collapsed
 
       case .needsAccess:
-        promptCard(
-          symbol: "calendar.badge.plus",
-          title: "カレンダーと接続",
-          detail: "次の会議をジャーナルに表示し、すぐ録音を始められます"
-        ) {
-          Task { await connect() }
+        if !showsOnlyNextMeeting {
+          promptCard(
+            symbol: "calendar.badge.plus",
+            title: "カレンダーと接続",
+            detail: "次の会議をファイルに表示し、すぐ録音を始められます"
+          ) {
+            Task { await connect() }
+          }
+        } else {
+          collapsed
         }
 
       case .denied:
-        promptCard(
-          symbol: "calendar.badge.exclamationmark",
-          title: "カレンダーがオフ",
-          detail: "設定で許可すると、次の会議からすぐ録音できます"
-        ) {
-          if let url = URL(string: UIApplication.openSettingsURLString) {
-            openURL(url)
+        if !showsOnlyNextMeeting {
+          promptCard(
+            symbol: "calendar.badge.exclamationmark",
+            title: "カレンダーがオフ",
+            detail: "設定で許可すると、次の会議からすぐ録音できます"
+          ) {
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+              openURL(url)
+            }
           }
+        } else {
+          collapsed
         }
 
       case .loaded(let events):
         if let next = events.first {
           nextMeetingCard(next)
-        } else {
+        } else if !showsOnlyNextMeeting {
           promptCard(
             symbol: "calendar",
             title: "次の会議はありません",
@@ -64,6 +77,8 @@ struct UpcomingMeetingCard: View {
           ) {
             Task { await refresh() }
           }
+        } else {
+          collapsed
         }
       }
     }
@@ -77,6 +92,11 @@ struct UpcomingMeetingCard: View {
     .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
       Task { await refresh() }
     }
+  }
+
+  /// Hides the card without leaving an empty row behind.
+  private var collapsed: some View {
+    Color.clear.frame(height: 0)
   }
 
   private func nextMeetingCard(_ meeting: UpcomingMeeting) -> some View {

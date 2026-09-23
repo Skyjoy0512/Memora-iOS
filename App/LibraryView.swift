@@ -128,6 +128,11 @@ struct LibraryView: View {
       .listRowSeparator(.hidden)
       .listRowBackground(Color.clear)
 
+    UpcomingMeetingCard(showsOnlyNextMeeting: true)
+      .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 0, trailing: 18))
+      .listRowSeparator(.hidden)
+      .listRowBackground(Color.clear)
+
     if model.isRecording {
       ActiveRecordingStrip()
         .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 10, trailing: 18))

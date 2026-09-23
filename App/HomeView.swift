@@ -4,12 +4,9 @@ import SwiftUI
 /// day unroll as a timeline of everything Memora captured.
 struct HomeView: View {
   @Environment(MemoraModel.self) private var model
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
   @State private var query = ""
   @State private var isCreationPresented = false
-  @State private var selectedPersonID: UUID?
-  @State private var isManagingPeople = false
   /// The journal entry opened from the timeline.
   @State private var openEntry: LifeLogEntry?
   /// The day the Journal is showing.
@@ -30,23 +27,8 @@ struct HomeView: View {
             ActiveRecordingStrip()
           }
 
-          PeopleStrip(
-            people: model.people,
-            selectedID: selectedPersonID,
-            onSelect: { selectedPersonID = $0 },
-            onManage: { isManagingPeople = true }
-          )
-
           if query.isEmpty {
             JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
-          }
-
-          if query.isEmpty, selectedPerson == nil {
-            UpcomingMeetingCard()
-          }
-
-          if let person = selectedPerson {
-            filterHeader(person)
           }
 
           if entries.isEmpty {
@@ -153,16 +135,8 @@ struct HomeView: View {
       .sheet(isPresented: $isCreationPresented) {
         LifeLogCreationSheet()
       }
-      .sheet(isPresented: $isManagingPeople) {
-        PeopleManagerSheet()
-      }
       .sheet(item: $openEntry) { entry in
         LifeLogEntryDetailView(entryID: entry.id)
-      }
-      .onChange(of: model.people.map(\.id)) { _, ids in
-        if let id = selectedPersonID, !ids.contains(id) {
-          selectedPersonID = nil
-        }
       }
       .onChange(of: scenePhase) { _, phase in
         guard phase == .active else { return }
@@ -210,9 +184,6 @@ struct HomeView: View {
     if !query.isEmpty {
       return "見つかりませんでした"
     }
-    if selectedPerson != nil {
-      return "この人の記録はありません"
-    }
     return "\(selectedDayLabel)の記録はありません"
   }
 
@@ -242,19 +213,8 @@ struct HomeView: View {
     // picked in the calendar, taken from the index built with the records.
     let base = query.isEmpty ? entriesForSelectedDay : model.newestLifeLogEntries
 
-    let scoped: [LifeLogEntry]
-    if let personID = selectedPerson?.id {
-      let meetingIDs = Set(model.meetings(withPerson: personID).map(\.id))
-      scoped = base.filter { entry in
-        guard let meetingID = entry.meetingID else { return false }
-        return meetingIDs.contains(meetingID)
-      }
-    } else {
-      scoped = base
-    }
-
-    guard !query.isEmpty else { return scoped }
-    return scoped.filter {
+    guard !query.isEmpty else { return base }
+    return base.filter {
       $0.title.localizedCaseInsensitiveContains(query)
         || $0.summary.localizedCaseInsensitiveContains(query)
         || $0.source.label.localizedCaseInsensitiveContains(query)
@@ -267,39 +227,14 @@ struct HomeView: View {
     return model.lifeLogDays.first { calendar.isDate($0.day, inSameDayAs: selectedDate) }?.entries ?? []
   }
 
-  private var selectedPerson: Person? {
-    selectedPersonID.flatMap { model.person(id: $0) }
-  }
-
   private var emptyDescription: String {
     if !query.isEmpty {
       return "「\(query)」に一致する記録はありません。"
-    }
-    if let person = selectedPerson {
-      return "\(person.name)さんにひもづいた記録はまだありません。会議の詳細から参加者に追加できます。"
     }
     if isViewingToday {
       return "録音やOmiから届いた記録、手で足したメモが時間順に並びます。"
     }
     return "この日の記録はまだありません。別の日を選ぶか、カレンダーの「今日」で今日に戻れます。"
-  }
-
-  private func filterHeader(_ person: Person) -> some View {
-    HStack(spacing: 10) {
-      PersonAvatar(name: person.name, size: 30, photoData: person.photoData)
-
-      Text("\(person.name)の記録")
-        .font(.title3.bold())
-
-      Spacer()
-
-      Button("解除") {
-        withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-          selectedPersonID = nil
-        }
-      }
-      .font(.subheadline)
-    }
   }
 
   private func dayGroups(of entries: [LifeLogEntry]) -> [LifeLogDayGroup] {
