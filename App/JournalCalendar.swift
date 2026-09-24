@@ -155,7 +155,11 @@ private struct DaySelectionGlass: ViewModifier {
     if #available(iOS 26.0, *) {
       if isSelected {
         content
-          .glassEffect(.regular.interactive(), in: Capsule())
+          // Not `interactive()`: its press scales the glass about a corner, so
+          // the day's text appeared to drift. The spring scale in
+          // `DayCellButtonStyle` grows the whole cell — glass and text
+          // together — about its centre instead.
+          .glassEffect(.regular, in: Capsule())
           .glassEffectID(day, in: namespace)
           .glassEffectTransition(.matchedGeometry)
       } else {
@@ -176,7 +180,7 @@ private struct DayCellButtonStyle: ButtonStyle {
 
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
-      .scaleEffect(configuration.isPressed ? 1.07 : 1)
+      .scaleEffect(configuration.isPressed ? 1.07 : 1, anchor: .center)
       .animation(
         animates ? .spring(response: 0.3, dampingFraction: 0.55) : nil,
         value: configuration.isPressed
