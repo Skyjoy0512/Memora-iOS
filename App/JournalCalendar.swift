@@ -9,7 +9,7 @@ struct JournalCalendar: View {
   @Binding var selectedDate: Date
   /// Start-of-day dates that have at least one record.
   var markedDays: Set<Date>
-  /// Ties the selection bubble's glass together so it morphs while moving.
+  /// Ties the day capsules together so the selection morphs between days.
   @Namespace private var glassNamespace
 
   private let calendar = Calendar.current
@@ -31,17 +31,16 @@ struct JournalCalendar: View {
   var body: some View {
     ScrollViewReader { proxy in
       ScrollView(.horizontal) {
-        LazyHStack(spacing: Self.cellSpacing) {
-          ForEach(stripDays, id: \.self) { day in
-            dayCell(day).id(day)
+        // The container lets the selected day's glass grow under the finger and
+        // morph into the next day's capsule as the selection moves.
+        MemoraGlassContainer(spacing: 4) {
+          LazyHStack(spacing: Self.cellSpacing) {
+            ForEach(stripDays, id: \.self) { day in
+              dayCell(day).id(day)
+            }
           }
-        }
-        .scrollTargetLayout()
-        .padding(.vertical, Self.verticalPadding)
-        // The bubble is a background so the day's text always sits on top of
-        // the glass.
-        .background(alignment: .topLeading) {
-          selectionBubble
+          .scrollTargetLayout()
+          .padding(.vertical, Self.verticalPadding)
         }
       }
       .scrollTargetBehavior(.viewAligned)
@@ -55,39 +54,6 @@ struct JournalCalendar: View {
       }
     }
     .frame(height: Self.cellHeight + Self.verticalPadding * 2)
-  }
-
-  private var selectedDayIndex: Int? {
-    stripDays.firstIndex(of: calendar.startOfDay(for: selectedDate))
-  }
-
-  /// The glass capsule, placed behind the selected day and animated as the
-  /// selection moves.
-  @ViewBuilder
-  private var selectionBubble: some View {
-    if let index = selectedDayIndex {
-      bubble
-        .offset(
-          x: CGFloat(index) * (Self.cellWidth + Self.cellSpacing),
-          y: Self.verticalPadding
-        )
-        .allowsHitTesting(false)
-        .animation(reduceMotion ? nil : MemoraMotion.control, value: index)
-    }
-  }
-
-  @ViewBuilder
-  private var bubble: some View {
-    if #available(iOS 26.0, *) {
-      Color.clear
-        .frame(width: Self.cellWidth, height: Self.cellHeight)
-        .glassEffect(.regular.interactive(), in: Capsule())
-        .glassEffectID("selectedDay", in: glassNamespace)
-    } else {
-      Capsule()
-        .fill(Color(uiColor: .tertiarySystemFill))
-        .frame(width: Self.cellWidth, height: Self.cellHeight)
-    }
   }
 
   private func scroll(_ proxy: ScrollViewProxy, to day: Date, animated: Bool) {
@@ -132,9 +98,12 @@ struct JournalCalendar: View {
           .frame(width: 4, height: 4)
           .padding(.bottom, 8)
       }
+      .modifier(
+        DaySelectionGlass(isSelected: isSelected, day: day, namespace: glassNamespace)
+      )
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(DayCellButtonStyle(animates: !reduceMotion))
     .accessibilityLabel(accessibilityLabel(for: day, isMarked: isMarked))
     .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
@@ -171,5 +140,46 @@ struct JournalCalendar: View {
       day = next
     }
     return days
+  }
+}
+
+/// Gives the selected day an interactive Liquid Glass capsule. Each day carries
+/// its own identifier so the capsule morphs into the next day's as the
+/// selection moves.
+private struct DaySelectionGlass: ViewModifier {
+  var isSelected: Bool
+  var day: Date
+  var namespace: Namespace.ID
+
+  func body(content: Content) -> some View {
+    if #available(iOS 26.0, *) {
+      if isSelected {
+        content
+          .glassEffect(.regular.interactive(), in: Capsule())
+          .glassEffectID(day, in: namespace)
+          .glassEffectTransition(.matchedGeometry)
+      } else {
+        content
+      }
+    } else {
+      content.background {
+        if isSelected { Capsule().fill(Color(uiColor: .tertiarySystemFill)) }
+      }
+    }
+  }
+}
+
+/// Grows a day under the finger with a spring, the same cue the system's
+/// Liquid Glass controls use.
+private struct DayCellButtonStyle: ButtonStyle {
+  var animates: Bool
+
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .scaleEffect(configuration.isPressed ? 1.07 : 1)
+      .animation(
+        animates ? .spring(response: 0.3, dampingFraction: 0.55) : nil,
+        value: configuration.isPressed
+      )
   }
 }

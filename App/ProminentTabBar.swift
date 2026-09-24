@@ -41,8 +41,10 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
     if #available(iOS 26.0, *) {
       // The system control draws and animates its Liquid Glass selection
-      // bubble; the glass keeps the capsule the design intends.
-      control.glassEffect(.regular.interactive(), in: .capsule)
+      // bubble; the glass keeps the capsule the design intends. It is not
+      // `interactive()` — that press layer sat over the control and swallowed
+      // taps, which made switching tabs feel unresponsive.
+      control.glassEffect(.regular, in: .capsule)
     } else {
       control
         .background(.regularMaterial, in: Capsule())
