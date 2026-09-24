@@ -49,7 +49,7 @@ struct UpcomingMeetingLiveCard: View {
       Divider().overlay(.white.opacity(0.12))
 
       Button(action: onStart) {
-        Label("録音を開始", systemImage: "waveform")
+        Text("録音を開始")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(.black)
           .frame(maxWidth: .infinity, minHeight: 44)

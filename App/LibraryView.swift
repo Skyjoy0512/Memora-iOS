@@ -1,8 +1,10 @@
+import EventKit
 import SwiftUI
 
 struct LibraryView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.scenePhase) private var scenePhase
   @State private var query = ""
   @Namespace private var heroNamespace
   @State private var isSelectionMode = false
@@ -14,8 +16,9 @@ struct LibraryView: View {
   @State private var temporaryShareURL: URL?
   @State private var isTeamShareNoticePresented = false
   @State private var teamShareErrorMessage: String?
-  /// The next-meeting card fades in when the Files screen is shown.
-  @State private var isMeetingCardRevealed = false
+  /// The next calendar event, shown only while one is coming up.
+  @State private var upcoming = UpcomingMeetingStore()
+  @State private var isStartingMeeting = false
   var onOpenSidebar: () -> Void
 
   var body: some View {
@@ -102,22 +105,26 @@ struct LibraryView: View {
         Text(teamShareErrorMessage ?? "")
       }
       .onChange(of: model.fileSection) { _, _ in endSelection() }
-      .onAppear { revealMeetingCard() }
+      .task { await upcoming.refresh() }
+      .onChange(of: scenePhase) { _, phase in
+        guard phase == .active else { return }
+        Task { await upcoming.refresh() }
+      }
       .onChange(of: model.selectedTab) { _, tab in
-        if tab == .files { revealMeetingCard() }
+        guard tab == .files else { return }
+        Task { await upcoming.refresh() }
+      }
+      .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
+        Task { await upcoming.refresh() }
       }
     }
   }
 
-  /// Fades the next-meeting card in when the Files screen appears.
-  private func revealMeetingCard() {
-    guard !reduceMotion else {
-      isMeetingCardRevealed = true
-      return
-    }
-    isMeetingCardRevealed = false
-    DispatchQueue.main.async {
-      withAnimation(MemoraMotion.screen) { isMeetingCardRevealed = true }
+  private func startRecording(for meeting: UpcomingMeeting) {
+    Task {
+      isStartingMeeting = true
+      await model.startCapture(event: meeting)
+      isStartingMeeting = false
     }
   }
 
@@ -137,8 +144,9 @@ struct LibraryView: View {
     .pickerStyle(.segmented)
   }
 
-  /// The section switch and the live recording strip, as the first rows of the
-  /// list so they scroll away with it.
+  /// The section switch, the next meeting (only while one is coming up) and the
+  /// live recording strip, as the first rows of the list so they scroll away
+  /// with it.
   @ViewBuilder
   private var listHeaderRows: some View {
     sectionSwitch
@@ -146,12 +154,14 @@ struct LibraryView: View {
       .listRowSeparator(.hidden)
       .listRowBackground(Color.clear)
 
-    UpcomingMeetingCard(showsOnlyNextMeeting: true)
-      .opacity(isMeetingCardRevealed ? 1 : 0)
-      .offset(y: isMeetingCardRevealed ? 0 : -12)
-      .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 0, trailing: 18))
+    if let meeting = upcoming.meeting {
+      UpcomingMeetingLiveCard(meeting: meeting, isStarting: isStartingMeeting) {
+        startRecording(for: meeting)
+      }
+      .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 12, trailing: 18))
       .listRowSeparator(.hidden)
       .listRowBackground(Color.clear)
+    }
 
     if model.isRecording {
       ActiveRecordingStrip()
@@ -204,7 +214,11 @@ struct LibraryView: View {
     .listStyle(.plain)
     .scrollContentBackground(.hidden)
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-    .refreshable { await model.refresh() }
+    .refreshable {
+      await model.refresh()
+      await upcoming.refresh()
+    }
+    .animation(reduceMotion ? nil : MemoraMotion.screen, value: upcoming.meeting?.id)
     .hideBottomBarOnScroll(RootTab.files.rawValue)
   }
 
