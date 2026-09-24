@@ -10,6 +10,15 @@ final class OmiPairingManager: NSObject {
     var signalStrength: Int
   }
 
+  /// What the connected device reports about itself.
+  struct DeviceDetails: Equatable {
+    var identifier: UUID
+    var name: String
+    var model: String?
+    var manufacturer: String?
+    var firmwareVersion: String?
+  }
+
   enum ConnectionState: Equatable {
     case idle
     case remembered(String)
@@ -50,6 +59,8 @@ final class OmiPairingManager: NSObject {
 
   private(set) var state: ConnectionState
   private(set) var devices: [Device] = []
+  /// Populated once a device is connected and it reports its own details.
+  private(set) var details: DeviceDetails?
 
   @ObservationIgnored private var centralManager: CBCentralManager?
   @ObservationIgnored private var peripherals: [UUID: CBPeripheral] = [:]
@@ -59,6 +70,10 @@ final class OmiPairingManager: NSObject {
   @ObservationIgnored private var wantsScanning = false
 
   private static let audioService = CBUUID(string: "19B10000-E8F2-537E-4F6C-D104768A1214")
+  private static let deviceInformationService = CBUUID(string: "180A")
+  private static let firmwareRevisionCharacteristic = CBUUID(string: "2A26")
+  private static let modelNumberCharacteristic = CBUUID(string: "2A24")
+  private static let manufacturerNameCharacteristic = CBUUID(string: "2A29")
   private static let rememberedNameKey = "omiRememberedDeviceName"
 
   override init() {
@@ -110,6 +125,7 @@ final class OmiPairingManager: NSObject {
     }
     wantsScanning = false
     connectedPeripheral = nil
+    details = nil
     peripherals = [:]
     devices = []
     UserDefaults.standard.removeObject(forKey: Self.rememberedNameKey)
@@ -197,6 +213,11 @@ extension OmiPairingManager: CBCentralManagerDelegate {
     connectedPeripheral = peripheral
     let name = peripheral.name ?? "Omi"
     UserDefaults.standard.set(name, forKey: Self.rememberedNameKey)
+    details = DeviceDetails(identifier: peripheral.identifier, name: name)
+    peripheral.delegate = self
+    // The Device Information service carries the firmware revision, model and
+    // manufacturer the details screen shows.
+    peripheral.discoverServices([Self.deviceInformationService, Self.audioService])
     state = .connected(name)
   }
 
@@ -207,11 +228,61 @@ extension OmiPairingManager: CBCentralManagerDelegate {
 
   func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
     connectedPeripheral = nil
+    details = nil
     peripherals[peripheral.identifier] = nil
     if let error {
       state = .failed(error.localizedDescription)
     } else {
       state = rememberedState
     }
+  }
+}
+
+extension OmiPairingManager: CBPeripheralDelegate {
+  func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+    guard error == nil, let services = peripheral.services else { return }
+    for service in services where service.uuid == Self.deviceInformationService {
+      peripheral.discoverCharacteristics(
+        [
+          Self.firmwareRevisionCharacteristic,
+          Self.modelNumberCharacteristic,
+          Self.manufacturerNameCharacteristic
+        ],
+        for: service
+      )
+    }
+  }
+
+  func peripheral(
+    _ peripheral: CBPeripheral,
+    didDiscoverCharacteristicsFor service: CBService,
+    error: Error?
+  ) {
+    guard error == nil, let characteristics = service.characteristics else { return }
+    for characteristic in characteristics {
+      switch characteristic.uuid {
+      case Self.firmwareRevisionCharacteristic,
+        Self.modelNumberCharacteristic,
+        Self.manufacturerNameCharacteristic:
+        peripheral.readValue(for: characteristic)
+      default:
+        break
+      }
+    }
+  }
+
+  func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+    guard error == nil, let data = characteristic.value else { return }
+    let value = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !value.isEmpty else { return }
+
+    var updated = details ?? DeviceDetails(identifier: peripheral.identifier, name: peripheral.name ?? "Omi")
+    switch characteristic.uuid {
+    case Self.firmwareRevisionCharacteristic: updated.firmwareVersion = value
+    case Self.modelNumberCharacteristic: updated.model = value
+    case Self.manufacturerNameCharacteristic: updated.manufacturer = value
+    default: return
+    }
+    details = updated
   }
 }

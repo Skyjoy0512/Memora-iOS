@@ -5,6 +5,9 @@ struct OmiPairingView: View {
   @Environment(\.openURL) private var openURL
   var manager: OmiPairingManager
 
+  /// Opens the device detail page right after a pairing completes.
+  @State private var showsDetails = false
+
   var body: some View {
     NavigationStack {
       List {
@@ -32,10 +35,17 @@ struct OmiPairingView: View {
       }
       .navigationTitle("Omiを接続")
       .navigationBarTitleDisplayMode(.inline)
+      .navigationDestination(isPresented: $showsDetails) {
+        OmiDeviceDetailView(manager: manager)
+      }
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
           Button("完了") { dismiss() }
         }
+      }
+      .onChange(of: manager.state) { previous, current in
+        guard case .connected = current, !isConnected(previous) else { return }
+        showsDetails = true
       }
       .onDisappear {
         manager.stopScanning()
@@ -85,6 +95,11 @@ struct OmiPairingView: View {
         Text("次回もこのOmiを接続候補として表示します。")
           .font(.subheadline)
           .foregroundStyle(.secondary)
+        NavigationLink {
+          OmiDeviceDetailView(manager: manager)
+        } label: {
+          Label("デバイスの詳細", systemImage: "info.circle")
+        }
         Button("接続を解除", systemImage: "xmark") {
           manager.disconnect()
         }
@@ -133,6 +148,11 @@ struct OmiPairingView: View {
 
   private var isConnecting: Bool {
     if case .connecting = manager.state { return true }
+    return false
+  }
+
+  private func isConnected(_ state: OmiPairingManager.ConnectionState) -> Bool {
+    if case .connected = state { return true }
     return false
   }
 
