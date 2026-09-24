@@ -10,7 +10,6 @@ struct MeetingDetailView: View {
   @State private var selectedSection = MeetingDetailSection.summary
   @State private var isRenaming = false
   @State private var isDeleting = false
-  @State private var isCompactTitleVisible = false
   @State private var isSummaryGenerationPresented = false
   @State private var isAddingPeople = false
   @State private var isChoosingSpace = false
@@ -18,7 +17,6 @@ struct MeetingDetailView: View {
   @State private var shareItems: [Any] = []
   @State private var statusAlert: StatusAlert?
   @State private var player = AudioPlayerService()
-  @State private var scrubTime: Double?
 
   @State private var isSavingToNotion = false
   /// The PDF export in progress, with its progress, while it runs.
@@ -43,10 +41,6 @@ struct MeetingDetailView: View {
               meetingHeader(meeting)
 
               participantsRow(meeting)
-
-              if meeting.audioURL != nil {
-                playerCard(meeting)
-              }
 
               Picker("会議の表示", selection: $selectedSection) {
                 ForEach(MeetingDetailSection.allCases) { section in
@@ -107,12 +101,20 @@ struct MeetingDetailView: View {
             .labelStyle(.iconOnly)
           }
           ToolbarItem(placement: .principal) {
-            Text(meeting.title)
-              .font(.headline)
-              .lineLimit(1)
-              .opacity(isCompactTitleVisible ? 1 : 0)
-              .accessibilityHidden(!isCompactTitleVisible)
-              .animation(reduceMotion ? nil : MemoraMotion.control, value: isCompactTitleVisible)
+            if meeting.audioURL != nil {
+              Button {
+                player.toggle()
+              } label: {
+                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                  .font(.headline.weight(.bold))
+                  .frame(width: 40, height: 40)
+                  .contentShape(Circle())
+              }
+              .buttonStyle(.plain)
+              .memoraGlass(in: Circle(), interactive: true)
+              .disabled(model.isRecording)
+              .accessibilityLabel(player.isPlaying ? "一時停止" : "再生")
+            }
           }
           if isSavingToNotion {
             ToolbarItem(placement: .topBarTrailing) {
@@ -200,180 +202,6 @@ struct MeetingDetailView: View {
       } else {
         ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
       }
-    }
-  }
-
-  /// Plays the recording the way a music app does: a now-playing header, a
-  /// scrubber between the elapsed and remaining time, and glass transport
-  /// controls around a prominent play button.
-  private func playerCard(_ meeting: Meeting) -> some View {
-    VStack(spacing: 16) {
-      HStack(spacing: 14) {
-        nowPlayingArtwork
-
-        VStack(alignment: .leading, spacing: 3) {
-          Text(meeting.displayTitle)
-            .font(.headline)
-            .lineLimit(1)
-          Text(nowPlayingSubtitle(meeting))
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-        }
-
-        Spacer(minLength: 8)
-      }
-
-      VStack(spacing: 6) {
-        Slider(value: seekBinding, in: 0...max(player.duration, 0.1)) { editing in
-          if !editing, let time = scrubTime {
-            player.seek(to: time)
-            scrubTime = nil
-          }
-        }
-        .tint(.primary)
-        .disabled(player.duration == 0)
-        .accessibilityLabel("再生位置")
-
-        HStack {
-          Text(MemoraFormat.duration(scrubTime ?? player.currentTime))
-          Spacer()
-          Text("-\(MemoraFormat.duration(max(player.duration - (scrubTime ?? player.currentTime), 0)))")
-        }
-        .font(.caption.monospacedDigit())
-        .foregroundStyle(.secondary)
-      }
-
-      transportControls
-
-      HStack {
-        Spacer()
-        speedMenu
-        Spacer()
-      }
-
-      if let message = player.errorMessage {
-        Label(message, systemImage: "exclamationmark.triangle")
-          .font(.footnote)
-          .foregroundStyle(.secondary)
-          .frame(maxWidth: .infinity, alignment: .leading)
-      } else if model.isRecording {
-        Label("録音中は再生できません", systemImage: "mic")
-          .font(.footnote)
-          .foregroundStyle(.secondary)
-          .frame(maxWidth: .infinity, alignment: .leading)
-      }
-    }
-    .padding(18)
-    .memoraCard()
-    .memoraAppear()
-  }
-
-  /// The rounded artwork tile, with the waveform pulsing while it plays.
-  private var nowPlayingArtwork: some View {
-    RoundedRectangle(cornerRadius: 14, style: .continuous)
-      .fill(
-        LinearGradient(
-          colors: [Color.accentColor.opacity(0.95), Color.accentColor.opacity(0.55)],
-          startPoint: .topLeading,
-          endPoint: .bottomTrailing
-        )
-      )
-      .frame(width: 56, height: 56)
-      .overlay {
-        Image(systemName: "waveform")
-          .font(.title3.weight(.semibold))
-          .foregroundStyle(.white)
-          .symbolEffect(.variableColor.iterative, isActive: player.isPlaying)
-      }
-      .accessibilityHidden(true)
-  }
-
-  private func nowPlayingSubtitle(_ meeting: Meeting) -> String {
-    let date = meeting.createdAt.formatted(.dateTime.month().day().hour().minute())
-    let length = player.duration > 0 ? player.duration : meeting.duration
-    return "\(date) · \(MemoraFormat.duration(length))"
-  }
-
-  /// The glass transport row: back 15, a prominent play/pause, forward 15.
-  private var transportControls: some View {
-    MemoraGlassContainer(spacing: 18) {
-      HStack(spacing: 26) {
-        Button("15秒戻す", systemImage: "gobackward.15") {
-          player.skip(by: -15)
-        }
-        .labelStyle(.iconOnly)
-        .font(.title3)
-        .frame(width: 52, height: 52)
-        .contentShape(Circle())
-        .memoraGlass(in: Circle(), interactive: true)
-        .disabled(player.duration == 0)
-
-        Button {
-          player.toggle()
-        } label: {
-          Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-            .font(.title2.weight(.bold))
-            .foregroundStyle(.white)
-            .frame(width: 68, height: 68)
-            .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .memoraGlass(in: Circle(), tint: .accentColor, interactive: true)
-        .disabled(model.isRecording)
-        .accessibilityLabel(player.isPlaying ? "一時停止" : "再生")
-
-        Button("15秒進める", systemImage: "goforward.15") {
-          player.skip(by: 15)
-        }
-        .labelStyle(.iconOnly)
-        .font(.title3)
-        .frame(width: 52, height: 52)
-        .contentShape(Circle())
-        .memoraGlass(in: Circle(), interactive: true)
-        .disabled(player.duration == 0)
-      }
-      .frame(maxWidth: .infinity)
-    }
-  }
-
-  private var speedMenu: some View {
-    Menu {
-      ForEach([0.5, 1.0, 1.5, 2.0], id: \.self) { option in
-        Button {
-          player.rate = Float(option)
-        } label: {
-          if player.rate == Float(option) {
-            Label(speedLabel(option), systemImage: "checkmark")
-          } else {
-            Text(speedLabel(option))
-          }
-        }
-      }
-    } label: {
-      HStack(spacing: 5) {
-        Image(systemName: "speedometer")
-        Text(speedLabel(Double(player.rate)))
-      }
-      .font(.subheadline.weight(.medium))
-      .foregroundStyle(.primary)
-      .padding(.horizontal, 16)
-      .frame(height: 40)
-      .contentShape(Capsule())
-      .memoraGlass(in: Capsule(), interactive: true)
-    }
-    .accessibilityLabel("再生速度")
-  }
-
-  private func speedLabel(_ value: Double) -> String {
-    value == value.rounded() ? "\(Int(value))x" : String(format: "%.1fx", value)
-  }
-
-  private var seekBinding: Binding<Double> {
-    Binding {
-      scrubTime ?? player.currentTime
-    } set: { newValue in
-      scrubTime = newValue
     }
   }
 
@@ -525,13 +353,6 @@ struct MeetingDetailView: View {
   }
 
   private func updateScrollState(to newOffset: CGFloat) {
-    let compactTitleShouldShow = newOffset > 76
-    if compactTitleShouldShow != isCompactTitleVisible {
-      withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-        isCompactTitleVisible = compactTitleShouldShow
-      }
-    }
-
     let shouldShowComposer = newOffset < 64
 
     if model.isDetailComposerVisible != shouldShowComposer {
