@@ -100,51 +100,13 @@ struct UpcomingMeetingCard: View {
   }
 
   private func nextMeetingCard(_ meeting: UpcomingMeeting) -> some View {
-    VStack(alignment: .leading, spacing: 14) {
-      HStack(spacing: 8) {
-        Image(systemName: "calendar")
-        Text("次の会議")
-          .font(.subheadline.weight(.semibold))
-        Spacer()
-        Text(relativeStart(meeting.start))
-          .font(.caption)
-          .foregroundStyle(.secondary)
+    UpcomingMeetingLiveCard(meeting: meeting, isStarting: isStarting) {
+      Task {
+        isStarting = true
+        await model.startCapture(event: meeting)
+        isStarting = false
       }
-
-      VStack(alignment: .leading, spacing: 4) {
-        Text(meeting.title)
-          .font(.title3.bold())
-          .foregroundStyle(.primary)
-          .lineLimit(2)
-        Text(timeRange(meeting))
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-      }
-
-      Button {
-        Task {
-          isStarting = true
-          await model.startCapture(event: meeting)
-          isStarting = false
-        }
-      } label: {
-        Label("録音を開始", systemImage: "waveform")
-          .font(.headline)
-          .frame(maxWidth: .infinity, minHeight: 48)
-      }
-      .buttonStyle(.borderedProminent)
-      .disabled(isStarting)
     }
-    .padding(18)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(
-      LinearGradient(
-        colors: [Color.primary.opacity(0.075), Color.primary.opacity(0.025)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-      ),
-      in: RoundedRectangle(cornerRadius: 22, style: .continuous)
-    )
   }
 
   private func promptCard(
@@ -210,18 +172,5 @@ struct UpcomingMeetingCard: View {
     } else {
       phase = .denied
     }
-  }
-
-  private func relativeStart(_ date: Date) -> String {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.locale = Locale(identifier: "ja_JP")
-    formatter.unitsStyle = .short
-    return formatter.localizedString(for: date, relativeTo: .now)
-  }
-
-  private func timeRange(_ meeting: UpcomingMeeting) -> String {
-    let start = meeting.start.formatted(date: .omitted, time: .shortened)
-    let end = meeting.end.formatted(date: .omitted, time: .shortened)
-    return "\(start)〜\(end)"
   }
 }

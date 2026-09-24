@@ -103,6 +103,7 @@ struct HomeView: View {
         .padding(.bottom, model.bottomContentClearance)
       }
       .hideBottomBarOnScroll(RootTab.home.rawValue)
+      .refreshable { await model.refresh() }
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ジャーナル")
       .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "記録を検索")

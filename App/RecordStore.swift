@@ -40,6 +40,14 @@ enum RecordStore {
   }
 #endif
 
+  /// Waits for any queued writes to land. A read after this sees everything
+  /// that has been saved, so a reload cannot pick up stale bytes.
+  static func flushAsync() async {
+    await withCheckedContinuation { continuation in
+      queue.async { continuation.resume() }
+    }
+  }
+
   /// Reads a document. A missing document may be migrated from the legacy
   /// `UserDefaults` copy exactly once; a read failure is reported as such and
   /// never falls back to older data.

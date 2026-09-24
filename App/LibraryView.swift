@@ -14,6 +14,8 @@ struct LibraryView: View {
   @State private var temporaryShareURL: URL?
   @State private var isTeamShareNoticePresented = false
   @State private var teamShareErrorMessage: String?
+  /// The next-meeting card fades in when the Files screen is shown.
+  @State private var isMeetingCardRevealed = false
   var onOpenSidebar: () -> Void
 
   var body: some View {
@@ -100,6 +102,22 @@ struct LibraryView: View {
         Text(teamShareErrorMessage ?? "")
       }
       .onChange(of: model.fileSection) { _, _ in endSelection() }
+      .onAppear { revealMeetingCard() }
+      .onChange(of: model.selectedTab) { _, tab in
+        if tab == .files { revealMeetingCard() }
+      }
+    }
+  }
+
+  /// Fades the next-meeting card in when the Files screen appears.
+  private func revealMeetingCard() {
+    guard !reduceMotion else {
+      isMeetingCardRevealed = true
+      return
+    }
+    isMeetingCardRevealed = false
+    DispatchQueue.main.async {
+      withAnimation(MemoraMotion.screen) { isMeetingCardRevealed = true }
     }
   }
 
@@ -129,6 +147,8 @@ struct LibraryView: View {
       .listRowBackground(Color.clear)
 
     UpcomingMeetingCard(showsOnlyNextMeeting: true)
+      .opacity(isMeetingCardRevealed ? 1 : 0)
+      .offset(y: isMeetingCardRevealed ? 0 : -12)
       .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 0, trailing: 18))
       .listRowSeparator(.hidden)
       .listRowBackground(Color.clear)
@@ -184,6 +204,7 @@ struct LibraryView: View {
     .listStyle(.plain)
     .scrollContentBackground(.hidden)
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
+    .refreshable { await model.refresh() }
     .hideBottomBarOnScroll(RootTab.files.rawValue)
   }
 
@@ -302,6 +323,7 @@ struct LibraryView: View {
       .padding(.bottom, 32)
     }
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
+    .refreshable { await model.refresh() }
     .hideBottomBarOnScroll(RootTab.files.rawValue)
   }
 

@@ -481,6 +481,35 @@ final class MemoraModel {
     markedLifeLogDays = Set(grouped.keys)
   }
 
+  /// Re-reads the on-device documents for pull-to-refresh, so a change written
+  /// since launch (a restored backup, say) is picked up. A document that is
+  /// missing or unreadable is left as-is rather than cleared.
+  func refresh() async {
+    // Let every queued save land first, so the reload below cannot read an
+    // older copy than what is on screen.
+    await RecordStore.flushAsync()
+    if let stored = Self.storedDocument([Meeting].self, forKey: StorageKey.meetings) {
+      meetings = stored
+    }
+    if let stored = Self.storedDocument([MemoraSpace].self, forKey: StorageKey.spaces) {
+      spaces = stored
+    }
+    if let stored = Self.storedDocument([LifeLogEntry].self, forKey: StorageKey.lifeLogEntries) {
+      lifeLogEntries = stored
+    }
+    if let stored = Self.storedDocument([MemoraTask].self, forKey: StorageKey.tasks) {
+      tasks = stored
+    }
+    if let stored = Self.storedDocument([Person].self, forKey: StorageKey.people) {
+      people = stored
+    }
+  }
+
+  private static func storedDocument<T: Decodable>(_ type: [T].Type, forKey key: String) -> [T]? {
+    guard case .data(let data) = RecordStore.load(key) else { return nil }
+    return try? JSONDecoder().decode([T].self, from: data)
+  }
+
   private func handleRecorderInterruption(_ event: AudioRecorderService.Interruption) {
     guard isRecording else { return }
 
