@@ -109,7 +109,15 @@ struct RootTabView: View {
         )
         // Note: no `.id(composerScope)` — recreating the field would throw away
         // what someone had already typed when the scope changed.
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        // A glass-like entrance: it blurs and rises into place instead of
+        // snapping in.
+        .transition(
+          reduceMotion
+            ? .opacity
+            : .move(edge: .bottom)
+              .combined(with: .opacity)
+              .combined(with: .scale(scale: 0.94, anchor: .bottom))
+        )
       }
 
       if showsBottomBar {
@@ -137,6 +145,7 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
+    .animation(reduceMotion ? nil : MemoraMotion.screen, value: shouldShowComposer)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isBottomBarHidden)
   }
 

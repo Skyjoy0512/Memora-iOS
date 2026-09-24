@@ -15,6 +15,9 @@ struct MeetingDetailView: View {
   @State private var isChoosingSpace = false
   @State private var isSharing = false
   @State private var shareItems: [Any] = []
+  /// The play button appears after the screen settles, so it reads as splitting
+  /// off the trailing controls rather than popping in.
+  @State private var isPlayButtonRevealed = false
   @State private var statusAlert: StatusAlert?
   @State private var player = AudioPlayerService()
 
@@ -75,6 +78,13 @@ struct MeetingDetailView: View {
             model.activeDetailMeetingID = meeting.id
             model.isDetailComposerVisible = true
             player.load(meeting.audioURL, title: meeting.displayTitle)
+            withAnimation(
+              reduceMotion
+                ? nil
+                : .spring(response: 0.45, dampingFraction: 0.72).delay(0.08)
+            ) {
+              isPlayButtonRevealed = true
+            }
           }
           .onChange(of: model.isRecording) { _, recording in
             // A recording owns the audio session, so playback steps aside.
@@ -101,7 +111,7 @@ struct MeetingDetailView: View {
             .labelStyle(.iconOnly)
           }
           ToolbarItem(placement: .principal) {
-            if meeting.audioURL != nil {
+            if meeting.audioURL != nil, isPlayButtonRevealed {
               Button {
                 player.toggle()
               } label: {
@@ -114,6 +124,16 @@ struct MeetingDetailView: View {
               .memoraGlass(in: Circle(), interactive: true)
               .disabled(model.isRecording)
               .accessibilityLabel(player.isPlaying ? "一時停止" : "再生")
+              // Grows out of the trailing controls the way a Liquid Glass
+              // selection splits off its neighbour.
+              .transition(
+                .asymmetric(
+                  insertion: .scale(scale: 0.2, anchor: .trailing)
+                    .combined(with: .opacity)
+                    .combined(with: .offset(x: 120)),
+                  removal: .opacity
+                )
+              )
             }
           }
           if isSavingToNotion {
