@@ -31,8 +31,11 @@ struct JournalCalendar: View {
   var body: some View {
     ScrollViewReader { proxy in
       ScrollView(.horizontal) {
-        // The container lets the selected day's glass grow under the finger and
-        // morph into the next day's capsule as the selection moves.
+        // The container lets the selected day's capsule grow under the finger
+        // and morph into the next day's as the selection moves. The system
+        // draws the press, so the day's text stays centred — scaling the cell
+        // ourselves pulled the text off centre because the container renders
+        // the glass separately from the scaled content.
         MemoraGlassContainer(spacing: 4) {
           LazyHStack(spacing: Self.cellSpacing) {
             ForEach(stripDays, id: \.self) { day in
@@ -103,7 +106,7 @@ struct JournalCalendar: View {
       )
       .contentShape(Rectangle())
     }
-    .buttonStyle(DayCellButtonStyle(animates: !reduceMotion))
+    .buttonStyle(.plain)
     .accessibilityLabel(accessibilityLabel(for: day, isMarked: isMarked))
     .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
@@ -145,7 +148,7 @@ struct JournalCalendar: View {
 
 /// Gives the selected day an interactive Liquid Glass capsule. Each day carries
 /// its own identifier so the capsule morphs into the next day's as the
-/// selection moves.
+/// selection moves, and the system draws the press reaction.
 private struct DaySelectionGlass: ViewModifier {
   var isSelected: Bool
   var day: Date
@@ -155,11 +158,7 @@ private struct DaySelectionGlass: ViewModifier {
     if #available(iOS 26.0, *) {
       if isSelected {
         content
-          // Not `interactive()`: its press scales the glass about a corner, so
-          // the day's text appeared to drift. The spring scale in
-          // `DayCellButtonStyle` grows the whole cell — glass and text
-          // together — about its centre instead.
-          .glassEffect(.regular, in: Capsule())
+          .glassEffect(.regular.interactive(), in: Capsule())
           .glassEffectID(day, in: namespace)
           .glassEffectTransition(.matchedGeometry)
       } else {
@@ -170,20 +169,5 @@ private struct DaySelectionGlass: ViewModifier {
         if isSelected { Capsule().fill(Color(uiColor: .tertiarySystemFill)) }
       }
     }
-  }
-}
-
-/// Grows a day under the finger with a spring, the same cue the system's
-/// Liquid Glass controls use.
-private struct DayCellButtonStyle: ButtonStyle {
-  var animates: Bool
-
-  func makeBody(configuration: Configuration) -> some View {
-    configuration.label
-      .scaleEffect(configuration.isPressed ? 1.07 : 1, anchor: .center)
-      .animation(
-        animates ? .spring(response: 0.3, dampingFraction: 0.55) : nil,
-        value: configuration.isPressed
-      )
   }
 }
