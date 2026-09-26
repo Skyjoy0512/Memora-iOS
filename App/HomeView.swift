@@ -1,3 +1,4 @@
+import EventKit
 import SwiftUI
 
 /// The landing screen. It answers "what happened today" first, then lets the
@@ -15,6 +16,14 @@ struct HomeView: View {
   @State private var calendarEvents: [JournalCalendarEvent] = []
   /// The journey whose station list is open.
   @State private var openMovement: JournalMovement?
+  /// The calendar event whose detail sheet is open.
+  @State private var openCalendarEvent: JournalCalendarEvent?
+  @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
+  @AppStorage("memora.journal.calendarIDs") private var journalCalendarIDsValue = ""
+
+  private var journalCalendarIDs: [String] {
+    journalCalendarIDsValue.isEmpty ? [] : journalCalendarIDsValue.components(separatedBy: "\n")
+  }
   /// The day "today" meant when the screen was last seen, so a journal left
   /// open past midnight follows the new day.
   @State private var todayAnchor = Calendar.current.startOfDay(for: .now)
@@ -39,7 +48,7 @@ struct HomeView: View {
             JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
           }
 
-          if entries.isEmpty {
+          if entries.isEmpty, query.isEmpty ? calendarEvents.isEmpty : true {
             VStack(spacing: 16) {
               Image(systemName: "waveform.path.ecg")
                 .font(.title2)
@@ -138,9 +147,19 @@ struct HomeView: View {
       .sheet(item: $openMovement) { movement in
         JournalMovementSheet(movement: movement)
       }
+      .sheet(item: $openCalendarEvent) { event in
+        CalendarEventSheet(event: event)
+      }
       .onChange(of: scenePhase) { _, phase in
         guard phase == .active else { return }
         refreshTodayIfNeeded()
+        Task { await loadEvents() }
+      }
+      .task(id: selectedDate) { await loadEvents() }
+      .onChange(of: showCalendarEvents) { _, _ in Task { await loadEvents() } }
+      .onChange(of: journalCalendarIDsValue) { _, _ in Task { await loadEvents() } }
+      .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
+        Task { await loadEvents() }
       }
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
@@ -227,9 +246,19 @@ struct HomeView: View {
     return model.lifeLogDays.first { calendar.isDate($0.day, inSameDayAs: selectedDate) }?.entries ?? []
   }
 
+  /// Reads the selected day's events when the journal is set to show them.
+  private func loadEvents() async {
+    guard showCalendarEvents else {
+      calendarEvents = []
+      return
+    }
+    let identifiers = journalCalendarIDs.isEmpty ? nil : journalCalendarIDs
+    calendarEvents = await CalendarService.events(on: selectedDate, calendarIdentifiers: identifiers)
+  }
+
   private var emptyDescription: String {
     if !query.isEmpty {
-      return "「\(query)」に一致する記録はありません。"
+      return "「\(query)」に一致する記録はありません。予定は検索の対象外です。"
     }
     if isViewingToday {
       return "録音やOmiから届いた記録、手で足したメモが時間順に並びます。"
@@ -296,13 +325,22 @@ struct HomeView: View {
       }
       .buttonStyle(.plain)
     } else {
-      calendarEventLabel(event)
+      Button {
+        openCalendarEvent = event
+      } label: {
+        calendarEventLabel(event)
+      }
+      .buttonStyle(.plain)
+      .accessibilityHint("予定の詳細を開きます")
     }
   }
 
   private func calendarEventLabel(_ event: JournalCalendarEvent) -> some View {
     HStack(alignment: .top, spacing: 12) {
-      timeText(event.start)
+      Text(eventTimeText(event))
+        .font(.caption.monospacedDigit().weight(.medium))
+        .foregroundStyle(.secondary)
+        .frame(width: 46, alignment: .leading)
 
       VStack(alignment: .leading, spacing: 2) {
         Text(event.title)
@@ -324,8 +362,20 @@ struct HomeView: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(
-      "\(event.start.formatted(date: .omitted, time: .shortened))、予定、\(event.title)、\(event.calendarTitle)"
+      "\(eventTimeText(event))、予定、\(event.title)、\(event.calendarTitle)"
     )
+  }
+
+  /// An event still running from the day before shows only its end, so it reads
+  /// as a continuation rather than a fresh start.
+  private func eventTimeText(_ event: JournalCalendarEvent) -> String {
+    let dayStart = Calendar.current.startOfDay(for: selectedDate)
+    let end = event.end.formatted(date: .omitted, time: .shortened)
+    if event.start < dayStart {
+      return "〜\(end)"
+    }
+    let start = event.start.formatted(date: .omitted, time: .shortened)
+    return "\(start)〜\(end)"
   }
 
   private func movementView(_ movement: JournalMovement) -> some View {

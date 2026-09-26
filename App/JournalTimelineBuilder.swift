@@ -23,9 +23,15 @@ enum JournalTimelineBuilder {
     now: Date = .now,
     calendar: Calendar = .current
   ) -> Result {
+    let dayStart = calendar.startOfDay(for: day)
+    let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(24 * 60 * 60)
+
     let dayEntries = entries.filter { calendar.isDate($0.createdAt, inSameDayAs: day) }
-    let timedEvents = events.filter { !$0.isAllDay && calendar.isDate($0.start, inSameDayAs: day) }
-    let allDayEvents = events.filter { $0.isAllDay && calendar.isDate($0.start, inSameDayAs: day) }
+    // An event belongs to the day if it overlaps it, so a stay that began the
+    // night before still appears, and a multi-day all-day event shows each day.
+    let overlapping = events.filter { $0.start < dayEnd && $0.end > dayStart }
+    let timedEvents = overlapping.filter { !$0.isAllDay }
+    let allDayEvents = overlapping.filter(\.isAllDay)
 
     // An event with a recording tied to it becomes one row that opens the
     // recording, and the recording's own journal line is dropped so the same

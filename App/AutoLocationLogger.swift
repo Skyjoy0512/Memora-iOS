@@ -186,7 +186,11 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
 
   // MARK: - Authorization
 
-  func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+  nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    MainActor.assumeIsolated { handleAuthorizationChange(manager) }
+  }
+
+  private func handleAuthorizationChange(_ manager: CLLocationManager) {
     switch manager.authorizationStatus {
     case .authorizedWhenInUse:
       switch enablePhase {
@@ -220,7 +224,11 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
 
   // MARK: - Locations
 
-  func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+  nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    MainActor.assumeIsolated { handleLocations(locations) }
+  }
+
+  private func handleLocations(_ locations: [CLLocation]) {
     guard let location = locations.last else {
       completeDebug(with: .failed)
       return
@@ -260,11 +268,15 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
     }
   }
 
-  func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+  nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
     // A failed fix is not worth surfacing; the next one may succeed.
   }
 
-  func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
+  nonisolated func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
+    MainActor.assumeIsolated { handleVisit(visit) }
+  }
+
+  private func handleVisit(_ visit: CLVisit) {
     guard Self.isEnabled else { return }
     let arrival = visit.arrivalDate
     let departure = visit.departureDate

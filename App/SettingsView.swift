@@ -7,7 +7,9 @@ struct SettingsView: View {
   @AppStorage("memora.transcriptionEngine") private var transcriptionEngine = TranscriptionEngine.automatic
   @AppStorage("memora.transcriptionLanguage") private var transcriptionLanguage = RecognitionLanguage.japanese
   @AppStorage("memora.autoLifeLog.enabled") private var autoLifeLogEnabled = false
+  @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @State private var isLocationPermissionAlertPresented = false
+  @State private var isCalendarPermissionAlertPresented = false
   @State private var excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
   @State private var isDeleteConfirmationPresented = false
   @Environment(\.openURL) private var openURL
@@ -158,10 +160,18 @@ struct SettingsView: View {
               value: excludedPlaceCount == 0 ? "なし" : "\(excludedPlaceCount)件"
             )
           }
+
+          Toggle("カレンダーの予定を表示", isOn: calendarEventsBinding)
+
+          NavigationLink {
+            CalendarSelectionView()
+          } label: {
+            Label("表示するカレンダー", systemImage: "calendar")
+          }
         } header: {
           Text("ジャーナル")
         } footer: {
-          Text("位置情報はこのiPhoneの中だけで使い、外部へ送信しません。電池への影響を抑えるため、駅の判定はおおよそです。")
+          Text("位置情報はこのiPhoneの中だけで使い、外部へ送信しません。電池への影響を抑えるため、駅の判定はおおよそです。カレンダーの予定は保存せず、表示のたびに読み込みます。")
         }
 
         Section("プライバシーと保存") {
@@ -291,6 +301,43 @@ struct SettingsView: View {
         Button("キャンセル", role: .cancel) {}
       } message: {
         Text("アプリを使っていない間の移動・滞在の記録には「常に」の許可が必要です。設定の位置情報から許可してください。")
+      }
+      .alert("カレンダーへのアクセスが必要です", isPresented: $isCalendarPermissionAlertPresented) {
+        Button("設定を開く") {
+          if let url = URL(string: UIApplication.openSettingsURLString) {
+            openURL(url)
+          }
+        }
+        Button("キャンセル", role: .cancel) {}
+      } message: {
+        Text("予定をジャーナルに表示するには、設定でカレンダーへのアクセスを許可してください。予定は表示のたびに読み込み、保存はしません。")
+      }
+    }
+  }
+
+  /// Turning the toggle on asks for calendar access the first time; a refusal
+  /// puts it back and explains why.
+  private var calendarEventsBinding: Binding<Bool> {
+    Binding {
+      showCalendarEvents
+    } set: { enabled in
+      guard enabled else {
+        showCalendarEvents = false
+        return
+      }
+      Task {
+        let granted: Bool
+        if CalendarService.access == .granted {
+          granted = true
+        } else {
+          granted = await CalendarService.requestAccess()
+        }
+        if granted {
+          showCalendarEvents = true
+        } else {
+          showCalendarEvents = false
+          isCalendarPermissionAlertPresented = true
+        }
       }
     }
   }

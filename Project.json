@@ -38,7 +38,7 @@
           "CFBundleVersion" : "1",
           "CKSharingSupported" : true,
           "NSBluetoothAlwaysUsageDescription" : "近くのOmiレコーダーを見つけて、会話の音声をMemoraへ取り込むためにBluetoothを使用します。",
-          "NSCalendarsFullAccessUsageDescription" : "次の会議をジャーナルに表示し、すぐ録音を始められるようにカレンダーを使用します。",
+          "NSCalendarsFullAccessUsageDescription" : "予定をジャーナルに表示し、会議の録音をすぐ始められるようにカレンダーを使用します。",
           "NSContactsUsageDescription" : "会議に参加した人を連絡先から選び、記録と人をひもづけるために連絡先を使用します。",
           "NSLocationAlwaysAndWhenInUseUsageDescription" : "移動や滞在をジャーナルに自動で記録するために、アプリを使っていない間も位置情報を使用します。位置情報はこのiPhoneの外へ送信しません。",
           "NSLocationWhenInUseUsageDescription" : "ジャーナルに近くの駅や場所の名前を追加し、移動や滞在を記録するために位置情報を使用します。位置情報はこのiPhoneの外へ送信しません。",
