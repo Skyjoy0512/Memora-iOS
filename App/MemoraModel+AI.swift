@@ -414,10 +414,9 @@ extension MemoraModel {
     }
 
     let spans = scoredSpans(of: meeting, words: words)
-    var chosen = spans.filter { $0.score > 0 }.sorted { $0.score > $1.score }.prefix(8)
-    if chosen.isEmpty {
-      chosen = spans.sorted { $0.start < $1.start }.prefix(3)
-    }
+    let scored = spans.filter { $0.score > 0 }.sorted { $0.score > $1.score }.prefix(8)
+    let hasMatches = !scored.isEmpty
+    let chosen = hasMatches ? Array(scored) : Array(spans.sorted { $0.start < $1.start }.prefix(3))
     let ordered = chosen.sorted { $0.start < $1.start }
 
     var text = ""
@@ -429,9 +428,13 @@ extension MemoraModel {
       used.append(span)
     }
 
-    let excerpts = used.prefix(3).map {
-      AIChatSource.Excerpt(text: snippet($0.text), start: $0.start)
-    }
+    // Only matched lines are shown as grounds; an unmatched question gets none
+    // rather than the transcript's opening lines presented as if they matched.
+    let excerpts = hasMatches
+      ? used.filter { $0.score > 0 }.prefix(3).map {
+        AIChatSource.Excerpt(text: snippet($0.text), start: $0.start)
+      }
+      : []
     return (text, excerpts)
   }
 
@@ -476,16 +479,14 @@ extension MemoraModel {
     return spans
   }
 
-  /// Up to three stored lines that match the question, in time order. With no
-  /// matching line, the opening lines stand in so a source still shows something
-  /// real.
+  /// Up to three stored lines that match the question, in time order. When no
+  /// line matches, there are no grounds to show; the opening lines are not shown
+  /// as though they did.
   private static func topExcerpts(
     _ transcript: [TranscriptSegment],
     words: [String]
   ) -> [AIChatSource.Excerpt] {
-    guard !words.isEmpty else {
-      return transcript.prefix(3).map { AIChatSource.Excerpt(text: snippet($0.text), start: $0.timestamp) }
-    }
+    guard !words.isEmpty else { return [] }
     let matched = transcript
       .map { segment -> (segment: TranscriptSegment, score: Int) in
         (segment, words.filter { segment.text.localizedCaseInsensitiveContains($0) }.count)
@@ -628,16 +629,26 @@ extension MemoraModel {
   private static let questionStopWords: Set<String> = [
     "こと", "です", "ます", "した", "する", "ある", "いる", "について", "なに", "どう",
     "何", "誰", "どこ", "いつ", "これ", "それ", "あれ", "から", "まで", "より", "ので",
-    "けど", "って", "には", "では", "とは", "たい", "ない", "ます"
+    "けど", "って", "には", "では", "とは", "たい", "ない"
   ]
 
   /// The terms worth matching a question on. Punctuation is dropped, and a run
   /// of Japanese is cut into two-character pieces, so 「会議の決定は？」 can still
   /// reach records that talk about 会議 and 決定. A two-character run of kana
   /// alone is a grammatical particle, not a term, so it is left out.
+  /// The Japanese letters a question can be made of. Built from scalar ranges,
+  /// not a literal string, so the whole blocks are covered.
+  private static let japaneseLetters: CharacterSet = {
+    var set = CharacterSet()
+    for value in 0x3041...0x309F { set.insert(Unicode.Scalar(value)!) } // hiragana
+    for value in 0x30A0...0x30FF { set.insert(Unicode.Scalar(value)!) } // katakana
+    for value in 0x4E00...0x9FFF { set.insert(Unicode.Scalar(value)!) } // CJK
+    set.insert(Unicode.Scalar(0x3005)!) // 々
+    return set
+  }()
+
   static func questionWords(in question: String) -> [String] {
-    let letters = CharacterSet.alphanumerics
-      .union(CharacterSet(charactersIn: "ぁ-んァ-ヶ一-龠々ー"))
+    let letters = CharacterSet.alphanumerics.union(japaneseLetters)
 
     var terms: Set<String> = []
     for token in question.components(separatedBy: letters.inverted) where !token.isEmpty {
