@@ -261,8 +261,8 @@
 | J02 | 実装済み・未検証 | JournalTimelineItem/Builder/Movement/CalendarEvent、LifeLogEntry.origin。HomeView は時刻昇順＋「いま」線。SelfChecks 追加。予定データは J04 で供給 |
 | J03 | 実装済み・未検証 | AutoLocationLogger（駅通過・滞在）＋受け箱取込、除外場所、設定の「ジャーナル」節、表示（移動・滞在・自動タグ）。実機の位置・バックグラウンド起動確認は未実施 |
 | J04 | 実装済み・未検証 | CalendarService.events（重なり判定）、CalendarEventSheet、CalendarSelectionView、HomeView の再読込。RX05（日をまたぐ予定・予定だけの日を空としない）対応済み。カレンダー実機確認は未実施 |
-| J05 | 未着手 | タイムラインの表示調整（RX04・RX08 を含む） |
-| J06 | 未着手 | DESIGN.md とバックログ更新 |
+| J05 | 実装済み・未検証 | 日付見出しと行のまとまり（RX04）、予定・移動を新規Viewに分離、時刻幅を@ScaledMetric（RX08）、「いま」線を.primary。実機確認は未実施 |
+| J06 | 実装済み（ドキュメント） | DESIGN.md と本表を更新 |
 
 ## RY・J04 のレビュー RZ01〜RZ03
 
