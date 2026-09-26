@@ -165,47 +165,22 @@ struct RootTabView: View {
         )
       }
 
-      VStack(spacing: 10) {
-        if showsContextualCreate, let action = contextualCreateAction {
-          HStack {
-            Spacer()
-            Button {
-              action.action()
-            } label: {
-              Image(systemName: action.symbol)
-                .font(.title3)
-                .foregroundStyle(.primary)
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .memoraGlass(in: Circle(), interactive: true)
-            .accessibilityLabel(action.title)
-            .padding(.trailing, 22)
-            .transition(
-              reduceMotion
-                ? .opacity
-                : .scale(scale: 0.4, anchor: .bottomTrailing).combined(with: .opacity)
-            )
-          }
+      if showsBottomBar {
+        ProminentTabBar(
+          selection: $model.selectedTab,
+          isProminentPresented: $model.isCaptureSourcePresented,
+          prominentSymbol: "plus",
+          secondaryAction: ProminentTabSecondaryAction(
+            symbol: "sparkles",
+            accessibilityLabel: "Ask AI",
+            action: { model.isAskAIPresented = true }
+          ),
+          contextualAction: showsContextualCreate ? contextualCreateAction : nil,
+          secondaryTransitionNamespace: askAINamespace
+        ) {
+          CaptureMenuPopover()
         }
-
-        if showsBottomBar {
-          ProminentTabBar(
-            selection: $model.selectedTab,
-            isProminentPresented: $model.isCaptureSourcePresented,
-            prominentSymbol: "plus",
-            secondaryAction: ProminentTabSecondaryAction(
-              symbol: "sparkles",
-              accessibilityLabel: "Ask AI",
-              action: { model.isAskAIPresented = true }
-            ),
-            secondaryTransitionNamespace: askAINamespace
-          ) {
-            CaptureMenuPopover()
-          }
-          .transition(.opacity.combined(with: .move(edge: .bottom)))
-        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
     }
     .padding(.horizontal, 12)
@@ -225,7 +200,7 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: shouldShowComposer)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isBottomBarHidden)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: contextualCreateAction?.id)
+    .animation(reduceMotion ? nil : MemoraMotion.emphasis, value: showsContextualCreate)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isCaptureSourcePresented)
   }
 

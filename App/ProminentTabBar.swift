@@ -25,12 +25,16 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   var prominentSymbol: String
   /// An extra round action between the tabs and the prominent button, if any.
   var secondaryAction: ProminentTabSecondaryAction?
+  /// The screen's create action, shown as a second round button that buds off
+  /// the prominent button, directly above it.
+  var contextualAction: ContextualCreateAction?
   /// Shared with the presenting screen so the extra action can zoom open.
   var secondaryTransitionNamespace: Namespace.ID?
   @ViewBuilder var popover: PopoverContent
 
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Namespace private var namespace
 
   var body: some View {
@@ -49,7 +53,48 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
         prominentButton
       }
+      // The create button buds off the prominent button: it is the same size,
+      // centred on it, and grows out of it from below. A top padding keeps room
+      // in the layout, so the controls' measured height includes it.
+      .padding(.top, contextualAction == nil ? 0 : 65)
+      .overlay(alignment: .topTrailing) {
+        if let contextualAction {
+          contextualButton(contextualAction)
+            .transition(
+              reduceMotion
+                ? .opacity
+                : .scale(scale: 0.2, anchor: .bottom).combined(with: .opacity)
+            )
+        }
+      }
     }
+  }
+
+  @ViewBuilder
+  private func contextualButton(_ action: ContextualCreateAction) -> some View {
+    if #available(iOS 26.0, *) {
+      Button(action: action.action) {
+        contextualLabel(action)
+      }
+      .buttonStyle(.glass)
+    } else {
+      Button(action: action.action) {
+        contextualLabel(action)
+          .foregroundStyle(.primary)
+          .background(Color.primary.opacity(0.08), in: Circle())
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  /// Matches the prominent button's size so the two read as one shape that
+  /// splits.
+  private func contextualLabel(_ action: ContextualCreateAction) -> some View {
+    Image(systemName: action.symbol)
+      .font(.title)
+      .scaleEffect(0.95)
+      .frame(width: 44, height: 55)
+      .accessibilityLabel(action.title)
   }
 
   @ViewBuilder
