@@ -2310,15 +2310,41 @@ final class MemoraModel {
     guard stored else { return }
 
     meetings = candidate
-    // The file itself waits for the offer to pass, so an undo still has a photo
-    // to show and nothing has to be decoded again from a deleted file.
+    // The file is registered as a pending removal right away, so it survives the
+    // app being stopped during the offer, but it is not deleted until the offer
+    // passes: an undo still has a photo to show.
+    let pendingDeletionID = registerPendingPhotoDeletion(removed)
     scheduleUndo(
       UndoAction(message: "写真を削除しました") { [weak self] in
+        self?.cancelPendingMediaDeletion(pendingDeletionID)
         self?.restoreMeetingPhoto(id, name: removed, at: index)
       } finalize: { [weak self] in
-        self?.deleteMedia(audioURL: nil, photoNames: [removed])
+        self?.finalizePendingMediaDeletion(pendingDeletionID)
       }
     )
+  }
+
+  /// Remembers a photo file for removal, so letting the app stop mid-offer still
+  /// leaves a record that it should be deleted.
+  private func registerPendingPhotoDeletion(_ name: String) -> UUID {
+    let entry = PendingMediaDeletion(id: UUID(), audioReference: nil, photoNames: [name])
+    pendingMediaDeletions.append(entry)
+    persistPendingMediaDeletions()
+    return entry.id
+  }
+
+  /// Drops a registration without deleting the file, for an undo.
+  private func cancelPendingMediaDeletion(_ id: UUID) {
+    pendingMediaDeletions.removeAll { $0.id == id }
+    persistPendingMediaDeletions()
+  }
+
+  /// Runs the removal an offer registered. A file that cannot be removed is
+  /// remembered again by `deleteMedia`.
+  private func finalizePendingMediaDeletion(_ id: UUID) {
+    guard let entry = pendingMediaDeletions.first(where: { $0.id == id }) else { return }
+    cancelPendingMediaDeletion(id)
+    deleteMedia(audioURL: nil, photoNames: entry.photoNames)
   }
 
   /// Puts a removed photo back at its old position, so undo restores the order.
