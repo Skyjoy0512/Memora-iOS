@@ -24,71 +24,79 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Namespace private var namespace
+  /// Shared by the two buttons so their Liquid Glass shapes can merge and split.
+  @Namespace private var glassNamespace
 
   var body: some View {
     let tabCount = Item.allCases.count
     let isSmall = tabCount <= 2
 
-    // The create button sits above the row, aligned to its trailing edge, which
-    // is the prominent button's trailing edge — and since the two buttons are
-    // the same width, their centres line up. The stack is only as wide as the
-    // row because the button is narrower, so "trailing" means the row's trailing
-    // edge, not the screen's.
-    MemoraGlassContainer(spacing: 10) {
-      VStack(alignment: .trailing, spacing: splitGap) {
-        if let contextualAction {
-          contextualButton(contextualAction)
-            .transition(splitTransition)
-        }
+    // The create button is an overlay of the prominent button and is always
+    // drawn. With no create action on the screen it sits exactly over the "＋"
+    // (the glass reads as one shape); when there is one it lifts straight up,
+    // and the two glass shapes part as it moves.
+    MemoraGlassContainer(spacing: glassSpacing) {
+      HStack(spacing: 10) {
+        segmentedControl
+          .padding(2)
+          .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
 
-        HStack(spacing: 10) {
-          segmentedControl
-            .padding(2)
-            .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
-
-          prominentButton
-        }
+        prominentButton
+          .overlay(alignment: .top) {
+            contextualOverlay
+          }
       }
+      .animation(reduceMotion ? nil : MemoraMotion.emphasis, value: isContextualShown)
+      .animation(reduceMotion ? nil : MemoraMotion.emphasis, value: contextualSymbol)
     }
   }
 
-  /// The prominent button's height plus the gap above it.
+  /// Smaller than the resting gap of the create button, so the two glass shapes
+  /// only merge while the button is moving past the "＋".
+  private var glassSpacing: CGFloat { 18 }
   private var splitGap: CGFloat { 21 }
   private var splitDistance: CGFloat { 55 + splitGap }
 
-  /// Rises out of the prominent button: it starts over the button, same size, and
-  /// slides straight up to its place. No scale or anchor, so nothing makes it
-  /// look like it grows from a corner; the glass container morphs the shapes.
-  private var splitTransition: AnyTransition {
-    guard !reduceMotion else { return .opacity }
-    return .offset(y: splitDistance).combined(with: .opacity)
-  }
+  private var isContextualShown: Bool { contextualAction != nil }
+  private var contextualSymbol: String { contextualAction?.symbol ?? prominentSymbol }
 
   @ViewBuilder
-  private func contextualButton(_ action: ContextualCreateAction) -> some View {
-    if #available(iOS 26.0, *) {
-      Button(action: action.action) {
-        contextualLabel(action)
+  private var contextualOverlay: some View {
+    Button {
+      contextualAction?.action()
+    } label: {
+      glassChrome(id: "contextual") {
+        Image(systemName: contextualSymbol)
+          .font(.title)
+          .scaleEffect(0.95)
+          .frame(width: 44, height: 55)
+          .opacity(isContextualShown ? 1 : 0)
+          .contentTransition(.symbolEffect(.replace))
+          .accessibilityLabel(contextualAction?.title ?? "")
       }
-      .buttonStyle(.glass)
-    } else {
-      Button(action: action.action) {
-        contextualLabel(action)
-          .foregroundStyle(.primary)
-          .background(Color.primary.opacity(0.08), in: Circle())
-      }
-      .buttonStyle(.plain)
     }
+    .buttonStyle(.plain)
+    .offset(y: isContextualShown ? -splitDistance : 0)
+    .allowsHitTesting(isContextualShown)
+    .accessibilityHidden(!isContextualShown)
   }
 
-  /// Matches the prominent button's size so the two read as one shape that
-  /// splits.
-  private func contextualLabel(_ action: ContextualCreateAction) -> some View {
-    Image(systemName: action.symbol)
-      .font(.title)
-      .scaleEffect(0.95)
-      .frame(width: 44, height: 55)
-      .accessibilityLabel(action.title)
+  /// Puts the Liquid Glass chrome on a button's label, with the identifier the
+  /// container uses to merge and split the shapes.
+  @ViewBuilder
+  private func glassChrome<Content: View>(id: String, @ViewBuilder content: () -> Content) -> some View {
+    if #available(iOS 26.0, *) {
+      content()
+        .glassEffect(.regular.interactive(), in: .capsule)
+        .glassEffectID(id, in: glassNamespace)
+    } else {
+      content()
+        .foregroundStyle(.primary)
+        .background(.regularMaterial, in: Capsule())
+        .overlay {
+          Capsule().stroke(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5)
+        }
+    }
   }
 
   @ViewBuilder
@@ -117,36 +125,20 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     }
   }
 
-  @ViewBuilder
   private var prominentButton: some View {
-    if #available(iOS 26.0, *) {
-      Button {
-        isProminentPresented = true
-      } label: {
+    Button {
+      isProminentPresented = true
+    } label: {
+      glassChrome(id: "prominent") {
         prominentLabel
-          .matchedTransitionSource(id: "prominentAction", in: namespace)
       }
-      .buttonStyle(.glass)
-      .popover(isPresented: $isProminentPresented) {
-        popover
-          .presentationCompactAdaptation(.popover)
-          .navigationTransition(.zoom(sourceID: "prominentAction", in: namespace))
-      }
-    } else {
-      Button {
-        isProminentPresented = true
-      } label: {
-        prominentLabel
-          .foregroundStyle(.primary)
-          .background(Color.primary.opacity(0.08), in: Circle())
-          .matchedTransitionSource(id: "prominentAction", in: namespace)
-      }
-      .buttonStyle(.plain)
-      .popover(isPresented: $isProminentPresented) {
-        popover
-          .presentationCompactAdaptation(.popover)
-          .navigationTransition(.zoom(sourceID: "prominentAction", in: namespace))
-      }
+      .matchedTransitionSource(id: "prominentAction", in: namespace)
+    }
+    .buttonStyle(.plain)
+    .popover(isPresented: $isProminentPresented) {
+      popover
+        .presentationCompactAdaptation(.popover)
+        .navigationTransition(.zoom(sourceID: "prominentAction", in: namespace))
     }
   }
 
