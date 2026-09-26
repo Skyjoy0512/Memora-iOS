@@ -336,10 +336,14 @@ extension MemoraModel {
     var sources: [AIChatSource] = []
     var used = 0
 
-    // A task with no record is reachable only from the whole-library range.
+    // A task with no record is reachable only from the whole-library range. It
+    // shares the same budget as everything else.
     let looseTasks = tasks.filter { !$0.isCompleted && $0.meetingID == nil }
-    if !looseTasks.isEmpty {
-      let block = "未完了のタスク:\n" + looseTasks.map { "- \($0.title)" }.joined(separator: "\n")
+    if !looseTasks.isEmpty, characterLimit > 0 {
+      let block = String(
+        ("未完了のタスク:\n" + looseTasks.map { "- \($0.title)" }.joined(separator: "\n"))
+          .prefix(characterLimit)
+      )
       used += block.count
       blocks.append(block)
     }
@@ -370,8 +374,14 @@ extension MemoraModel {
         lines.append(span.text)
       }
 
-      let block = lines.joined(separator: "\n")
-      if used + block.count > characterLimit { break }
+      var block = lines.joined(separator: "\n")
+      let remainingBudget = max(0, characterLimit - used)
+      if block.count > remainingBudget {
+        // The first record is always sent, trimmed to what is left, so a range
+        // with one huge record still carries something.
+        guard blocks.isEmpty, remainingBudget > 0 else { break }
+        block = String(block.prefix(remainingBudget))
+      }
       used += block.count + 2
       blocks.append(block)
       sources.append(

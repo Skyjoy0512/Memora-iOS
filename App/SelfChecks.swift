@@ -406,6 +406,23 @@ enum SelfChecks {
     if budgeted.context.count + budgeted.history.count > 2_000 {
       report("context and history together exceeded the budget")
     }
+
+    // A wide range whose first record alone is over budget still carries that
+    // record, trimmed, rather than sending nothing.
+    let globalRequest = AIQuestionRequest(question: "発言199は？", scope: .global, attachment: nil)
+    let globalContent = MemoraModel.requestContent(
+      for: globalRequest,
+      scopeLabel: "すべての会話",
+      allowedMeetings: [long],
+      tasks: [],
+      characterLimit: 600
+    )
+    if globalContent.context.isEmpty {
+      report("a wide range with one large record sent nothing")
+    }
+    if globalContent.context.count > 600 {
+      report("a wide range exceeded its budget: \(globalContent.context.count)")
+    }
   }
 
   /// Only settled results become transcript lines, and nothing is merged or
