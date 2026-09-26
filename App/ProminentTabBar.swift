@@ -57,7 +57,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
       // centred on it, and grows out of it from below. The top padding keeps
       // room in the layout (button height plus a gap), so the controls' measured
       // height includes it and the two shapes do not touch.
-      .padding(.top, contextualAction == nil ? 0 : 74)
+      .padding(.top, contextualAction == nil ? 0 : 76)
       .overlay(alignment: .topTrailing) {
         if let contextualAction {
           contextualButton(contextualAction)
