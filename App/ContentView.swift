@@ -4,6 +4,8 @@ struct ContentView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.openURL) private var openURL
+  @Environment(\.scenePhase) private var scenePhase
+  @State private var appLock = AppLockService()
   @AppStorage("memora.prefersDarkAppearance") private var prefersDarkAppearance = false
 
   var body: some View {
@@ -51,6 +53,11 @@ struct ContentView: View {
         ImportProgressOverlay(progress: model.importProgress)
           .transition(.opacity)
       }
+    }
+    .overlay { lockOverlay }
+    .onAppear { appLock.lockIfEnabled() }
+    .onChange(of: scenePhase) { _, phase in
+      appLock.handleScenePhase(phase, isRecording: model.isRecording)
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isImporting)
     .preferredColorScheme(prefersDarkAppearance ? .dark : nil)
@@ -230,6 +237,20 @@ struct ContentView: View {
       if !isPresented {
         model.pendingImportNotice = nil
       }
+    }
+  }
+
+  @ViewBuilder
+  private var lockOverlay: some View {
+    if appLock.isLocked {
+      LockScreenView {
+        Task { await appLock.unlock() }
+      }
+      .transition(.opacity)
+    } else if appLock.isCovered {
+      // A plain cover for the app switcher, without the unlock button.
+      Color(uiColor: .systemBackground)
+        .ignoresSafeArea()
     }
   }
 

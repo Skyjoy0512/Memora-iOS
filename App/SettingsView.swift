@@ -8,6 +8,7 @@ struct SettingsView: View {
   @AppStorage("memora.transcriptionLanguage") private var transcriptionLanguage = RecognitionLanguage.japanese
   @AppStorage("memora.autoLifeLog.enabled") private var autoLifeLogEnabled = false
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
+  @AppStorage("memora.appLock") private var appLockEnabled = false
   @State private var isLocationPermissionAlertPresented = false
   @State private var isCalendarPermissionAlertPresented = false
   @State private var excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
@@ -175,7 +176,9 @@ struct SettingsView: View {
           Text("位置情報はこのiPhoneの中だけで使い、外部へ送信しません。電池への影響を抑えるため、駅の判定はおおよそです。カレンダーの予定は保存せず、表示のたびに読み込みます。")
         }
 
-        Section("プライバシーと保存") {
+        Section {
+          Toggle("Face IDでロック", isOn: $appLockEnabled)
+
           NavigationLink {
             PrivacyStorageView()
           } label: {
@@ -198,6 +201,10 @@ struct SettingsView: View {
               value: model.trashedRecords.isEmpty ? "なし" : "\(model.trashedRecords.count)件"
             )
           }
+        } header: {
+          Text("プライバシーと保存")
+        } footer: {
+          Text("Face IDでロックは、アプリを開いたときと、5分以上離れたあとに戻ったときに解除を求めます。録音中はロックしません。")
         }
 
         Section {
