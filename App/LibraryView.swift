@@ -19,6 +19,12 @@ struct LibraryView: View {
   /// The next calendar event, shown only while one is coming up.
   @State private var upcoming = UpcomingMeetingStore()
   @State private var isStartingMeeting = false
+  @AppStorage("memora.files.layout") private var layout = FileListLayout.card
+  @AppStorage("memora.files.sort") private var sort = FileListSort.newest
+  @AppStorage("memora.files.filter") private var statusFilter = FileListFilter.all
+  @State private var renameTarget: Meeting?
+  @State private var moveTarget: Meeting?
+  @State private var shareTarget: Meeting?
   var onOpenSidebar: () -> Void
 
   var body: some View {
@@ -52,6 +58,29 @@ struct LibraryView: View {
               onOpenSidebar()
             }
             .labelStyle(.iconOnly)
+          }
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+          if model.fileSection == .meetingFiles, !isSelectionMode {
+            Menu {
+              Picker("表示", selection: $layout) {
+                ForEach(FileListLayout.allCases) { Text($0.label).tag($0) }
+              }
+              Picker("並べ替え", selection: $sort) {
+                ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
+              }
+              Picker("絞り込み", selection: $statusFilter) {
+                ForEach(FileListFilter.allCases) { Text($0.label).tag($0) }
+              }
+              Divider()
+              Button("選択", systemImage: "checkmark.circle") {
+                beginSelectionMode()
+              }
+            } label: {
+              Label("表示と並べ替え", systemImage: "line.3.horizontal.decrease")
+                .labelStyle(.iconOnly)
+            }
           }
         }
       }
@@ -92,6 +121,15 @@ struct LibraryView: View {
       }
       .sheet(isPresented: $isSharing, onDismiss: cleanUpSharedFiles) {
         ActivityView(items: shareItems, onComplete: cleanUpSharedFiles)
+      }
+      .sheet(item: $renameTarget) { meeting in
+        RenameMeetingSheet(meeting: meeting)
+      }
+      .sheet(item: $moveTarget) { meeting in
+        BulkSpacePickerSheet(meetingIDs: [meeting.id]) {}
+      }
+      .sheet(item: $shareTarget) { meeting in
+        ActivityView(items: [MeetingShareText.make(meeting: meeting, tasks: model.tasks)]) {}
       }
       .alert("チームプランで利用できます", isPresented: $isTeamShareNoticePresented) {
         Button("プランを見る") { model.isPaywallPresented = true }
@@ -172,7 +210,8 @@ struct LibraryView: View {
   }
 
   private var filesPage: some View {
-    let meetings = matchingMeetings
+    let sections = fileSections
+    let count = sections.reduce(0) { $0 + $1.meetings.count }
 
     return List {
       listHeaderRows
@@ -184,12 +223,18 @@ struct LibraryView: View {
           .listRowBackground(Color.clear)
       }
 
-      if meetings.isEmpty {
+      if statusFilter != .all {
+        filterChipRow
+      }
+
+      if sections.isEmpty {
         Group {
-          if query.isEmpty {
-            emptyFilesPrompt
-          } else {
+          if !query.isEmpty {
             ContentUnavailableView.search(text: query)
+          } else if statusFilter != .all {
+            filteredEmpty
+          } else {
+            emptyFilesPrompt
           }
         }
         .frame(maxWidth: .infinity)
@@ -197,24 +242,27 @@ struct LibraryView: View {
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets(top: 48, leading: 18, bottom: 48, trailing: 18))
       } else {
-        ForEach(meetings) { meeting in
-          meetingRow(meeting)
+        // Grouped by date, each heading inside the list so it scrolls away.
+        ForEach(sections) { section in
+          Section {
+            ForEach(section.meetings) { meeting in
+              meetingRow(meeting)
+            }
+          } header: {
+            Text(section.title)
+              .font(.subheadline.weight(.semibold))
+              .foregroundStyle(.secondary)
+              .textCase(nil)
+          }
         }
 
-        if query.isEmpty {
-          NavigationLink(value: LibraryRoute.allMeetings) {
-            Label("すべての会話を一覧で見る", systemImage: "list.bullet")
-              .font(.subheadline.weight(.medium))
-          }
-          .listRowSeparator(.hidden)
-          .listRowBackground(Color.clear)
-        } else {
-          Text("\(meetings.count)件")
+        if !query.isEmpty {
+          Text("\(count)件")
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
-            .accessibilityLabel("\(meetings.count)件の検索結果")
+            .accessibilityLabel("\(count)件の検索結果")
         }
       }
     }
@@ -229,27 +277,39 @@ struct LibraryView: View {
     .hideBottomBarOnScroll(RootTab.files.rawValue)
   }
 
-  /// One file card. Tapping opens it, or selects it while a selection is being
-  /// made. A left swipe starts selecting with this record already chosen.
-  private func meetingRow(_ meeting: Meeting) -> some View {
-    Button {
-      if isSelectionMode {
-        toggleSelection(meeting.id)
-      } else {
-        model.libraryPath.append(.meeting(meeting.id))
-      }
-    } label: {
-      MeetingCard(
-        meeting: meeting,
-        isSelecting: isSelectionMode,
-        isSelected: selectedMeetingIDs.contains(meeting.id)
-      )
-      .matchedTransitionSource(id: meeting.id, in: heroNamespace)
+  private var filterChipRow: some View {
+    HStack(spacing: 8) {
+      Label(statusFilter.label, systemImage: "line.3.horizontal.decrease")
+        .font(.subheadline.weight(.medium))
+      Spacer(minLength: 8)
+      Button("解除") { statusFilter = .all }
+        .font(.subheadline.weight(.semibold))
     }
-    .buttonStyle(.plain)
-    .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18))
+    .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 8, trailing: 18))
     .listRowSeparator(.hidden)
     .listRowBackground(Color.clear)
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("絞り込み中: \(statusFilter.label)")
+  }
+
+  private var filteredEmpty: some View {
+    ContentUnavailableView {
+      Label("該当する記録はありません", systemImage: "line.3.horizontal.decrease")
+    } actions: {
+      Button("絞り込みを解除") { statusFilter = .all }
+    }
+  }
+
+  /// One file row. Tapping opens it, or selects it while a selection is being
+  /// made. A left swipe starts selecting with this record already chosen.
+  private func meetingRow(_ meeting: Meeting) -> some View {
+    Group {
+      if layout == .card {
+        cardRow(meeting)
+      } else {
+        listRow(meeting)
+      }
+    }
     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
       Button(role: .destructive) {
         withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
@@ -268,6 +328,51 @@ struct LibraryView: View {
         Label("選択", systemImage: "checkmark.circle")
       }
       .tint(.blue)
+    }
+    .contextMenu {
+      Button("開く", systemImage: "arrow.up.right.square") {
+        model.libraryPath.append(.meeting(meeting.id))
+      }
+      Button("名前を変更", systemImage: "pencil") { renameTarget = meeting }
+      Button("プロジェクトへ移動", systemImage: "folder") { moveTarget = meeting }
+      Button("共有", systemImage: "square.and.arrow.up") { shareTarget = meeting }
+      Button("選択", systemImage: "checkmark.circle") { beginSelection(with: meeting.id) }
+      Button("削除", systemImage: "trash", role: .destructive) { model.deleteMeeting(meeting.id) }
+    }
+  }
+
+  private func cardRow(_ meeting: Meeting) -> some View {
+    Button {
+      openOrSelect(meeting)
+    } label: {
+      MeetingCard(
+        meeting: meeting,
+        isSelecting: isSelectionMode,
+        isSelected: selectedMeetingIDs.contains(meeting.id)
+      )
+      .matchedTransitionSource(id: meeting.id, in: heroNamespace)
+    }
+    .buttonStyle(.plain)
+    .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18))
+    .listRowSeparator(.hidden)
+    .listRowBackground(Color.clear)
+  }
+
+  private func listRow(_ meeting: Meeting) -> some View {
+    Button {
+      openOrSelect(meeting)
+    } label: {
+      MeetingRow(meeting: meeting, showsDisclosure: false)
+    }
+    .buttonStyle(.plain)
+    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 18))
+  }
+
+  private func openOrSelect(_ meeting: Meeting) {
+    if isSelectionMode {
+      toggleSelection(meeting.id)
+    } else {
+      model.libraryPath.append(.meeting(meeting.id))
     }
   }
 
@@ -426,6 +531,12 @@ struct LibraryView: View {
     selectedMeetingIDs.insert(id)
   }
 
+  private func beginSelectionMode() {
+    withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+      isSelectionMode = true
+    }
+  }
+
   private func toggleSelection(_ id: UUID) {
     withAnimation(reduceMotion ? nil : MemoraMotion.control) {
       if selectedMeetingIDs.contains(id) {
@@ -492,13 +603,57 @@ struct LibraryView: View {
     }
   }
 
-  /// The normal list stays short, but a search shows every match and reports
-  /// how many there are, so nothing is hidden behind a cap.
+  /// Every match, filtered, sorted and grouped by date. The list shows all of
+  /// them; `List` draws lazily, so nothing is cut off behind a cap.
   private var matchingMeetings: [Meeting] {
-    if query.isEmpty {
-      return Array(model.meetings.prefix(24))
+    var result = model.meetings.filter { statusFilter.matches($0.status) }
+    if !query.isEmpty {
+      result = result.filter(matchesQuery)
     }
-    return model.meetings.filter(matchesQuery)
+    switch sort {
+    case .newest: result.sort { $0.createdAt > $1.createdAt }
+    case .oldest: result.sort { $0.createdAt < $1.createdAt }
+    case .longest: result.sort { $0.duration > $1.duration }
+    }
+    return result
+  }
+
+  /// The meetings grouped into date sections, in the order the sort puts them.
+  private var fileSections: [FileDateSection] {
+    let calendar = Calendar.current
+    var sections: [FileDateSection] = []
+    for meeting in matchingMeetings {
+      let key = sectionKey(for: meeting.createdAt, calendar: calendar)
+      if let index = sections.firstIndex(where: { $0.id == key }) {
+        sections[index].meetings.append(meeting)
+      } else {
+        sections.append(
+          FileDateSection(
+            id: key,
+            title: sectionTitle(for: meeting.createdAt, calendar: calendar),
+            meetings: [meeting]
+          )
+        )
+      }
+    }
+    return sections
+  }
+
+  private func sectionKey(for date: Date, calendar: Calendar) -> String {
+    if calendar.isDateInToday(date) { return "today" }
+    if calendar.isDateInYesterday(date) { return "yesterday" }
+    if calendar.isDate(date, equalTo: .now, toGranularity: .weekOfYear) { return "week" }
+    if calendar.isDate(date, equalTo: .now, toGranularity: .month) { return "month" }
+    let parts = calendar.dateComponents([.year, .month], from: date)
+    return "m\(parts.year ?? 0)-\(parts.month ?? 0)"
+  }
+
+  private func sectionTitle(for date: Date, calendar: Calendar) -> String {
+    if calendar.isDateInToday(date) { return "今日" }
+    if calendar.isDateInYesterday(date) { return "昨日" }
+    if calendar.isDate(date, equalTo: .now, toGranularity: .weekOfYear) { return "今週" }
+    if calendar.isDate(date, equalTo: .now, toGranularity: .month) { return "今月" }
+    return date.formatted(.dateTime.year().month())
   }
 
   private var matchingSpaces: [MemoraSpace] {
@@ -511,4 +666,11 @@ struct LibraryView: View {
     model.searchText(for: meeting).localizedCaseInsensitiveContains(query)
   }
 
+}
+
+/// A date heading and the meetings under it, for the files list.
+private struct FileDateSection: Identifiable {
+  var id: String
+  var title: String
+  var meetings: [Meeting]
 }
