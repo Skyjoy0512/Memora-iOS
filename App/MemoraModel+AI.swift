@@ -71,6 +71,12 @@ extension MemoraModel {
          let index = self.aiMessages.firstIndex(where: { $0.id == placeholder.id }) {
         self.aiMessages.insert(AIChatMessage(role: .assistant, text: unsupported), at: index)
       }
+      // Say when the context had to be trimmed, so a short answer is not taken
+      // for a complete one.
+      if let note = outcome.contextNote,
+         let index = self.aiMessages.firstIndex(where: { $0.id == placeholder.id }) {
+        self.aiMessages.insert(AIChatMessage(role: .assistant, text: note), at: index)
+      }
 
       switch outcome.result {
       case .answer(let text):
@@ -120,6 +126,7 @@ extension MemoraModel {
       scopeLabel: scopeLabel,
       allowedMeetings: allowedMeetings,
       tasks: scopedTasks,
+      history: history,
       characterLimit: AIEngineService.contextCharacterLimit(for: engine)
     )
 
@@ -141,7 +148,8 @@ extension MemoraModel {
         result: .failure(.attachmentNotAnalysed),
         sources: [],
         details: details,
-        unsupportedAttachmentNote: content.unsupportedAttachmentNote
+        unsupportedAttachmentNote: content.unsupportedAttachmentNote,
+        contextNote: content.contextNote
       )
     }
 
@@ -151,7 +159,7 @@ extension MemoraModel {
       question: content.question,
       scopeLabel: scopeLabel,
       context: content.context,
-      history: history
+      history: content.history
     )
 
     // The on-device window is small. One retry at half the records gives a long
@@ -164,6 +172,7 @@ extension MemoraModel {
         scopeLabel: scopeLabel,
         allowedMeetings: allowedMeetings,
         tasks: scopedTasks,
+        history: history,
         characterLimit: reduced
       )
       result = await AIEngineService.answer(
@@ -172,7 +181,7 @@ extension MemoraModel {
         question: content.question,
         scopeLabel: scopeLabel,
         context: content.context,
-        history: history
+        history: content.history
       )
     }
 
@@ -191,7 +200,8 @@ extension MemoraModel {
       // Only an answer is given grounds; a failure has none to show.
       sources: result.text == nil ? [] : content.sources,
       details: details,
-      unsupportedAttachmentNote: content.unsupportedAttachmentNote
+      unsupportedAttachmentNote: content.unsupportedAttachmentNote,
+      contextNote: content.contextNote
     )
   }
 
@@ -207,38 +217,58 @@ extension MemoraModel {
     scopeLabel: String,
     allowedMeetings: [Meeting],
     tasks: [MemoraTask],
+    history: String = "",
     characterLimit: Int = AIEngineService.defaultContextCharacterLimit
   ) -> AIRequestContent {
     let question = request.effectiveQuestion
     let words = questionWords(in: question)
 
-    let built: (context: String, sources: [AIChatSource])
-    switch request.scope {
-    case .file:
-      built = fileContext(meeting: allowedMeetings.first, words: words, characterLimit: characterLimit)
-    case .space, .global:
-      built = libraryContext(
-        meetings: allowedMeetings,
-        tasks: tasks,
-        words: words,
-        characterLimit: characterLimit
-      )
-    }
+    // One budget, spent in order: the question, then the attachment, then the
+    // recent exchanges, then the records. Whatever is left reaches the records,
+    // so a long attachment cannot push the records past the engine's window.
+    var remaining = max(0, characterLimit - question.count)
+    var notes: [String] = []
 
-    var context = built.context
-
-    // What the engines can read. Anything they cannot is named as not analysed
-    // rather than sent as though it had been.
     var attachmentText = ""
     var unsupportedNote: String?
     if let attachment = request.attachment {
       switch AIAttachmentText.read(attachment) {
       case .text(let text):
-        attachmentText = "添付「\(attachment.name)」:\n\(text)"
+        let kept = String(text.prefix(remaining))
+        if kept.count < text.count {
+          notes.append("添付「\(attachment.name)」は長いため、先頭のみ送信しました。")
+        }
+        attachmentText = "添付「\(attachment.name)」:\n\(kept)"
+        remaining = max(0, remaining - attachmentText.count)
       case .unsupported(let reason):
         unsupportedNote = "添付「\(attachment.name)」はAI解析に対応していないため、内容は送信していません。\(reason)"
       }
     }
+
+    var historyText = ""
+    if !history.isEmpty, remaining > 0 {
+      let kept = String(history.prefix(remaining))
+      if kept.count < history.count {
+        notes.append("これまでのやりとりが長いため、一部のみ送信しました。")
+      }
+      historyText = kept
+      remaining = max(0, remaining - historyText.count)
+    }
+
+    let built: (context: String, sources: [AIChatSource])
+    switch request.scope {
+    case .file:
+      built = fileContext(meeting: allowedMeetings.first, words: words, characterLimit: remaining)
+    case .space, .global:
+      built = libraryContext(
+        meetings: allowedMeetings,
+        tasks: tasks,
+        words: words,
+        characterLimit: remaining
+      )
+    }
+
+    var context = built.context
     if !attachmentText.isEmpty {
       context += "\n\n\(attachmentText)"
     }
@@ -247,8 +277,10 @@ extension MemoraModel {
       question: question,
       scopeLabel: scopeLabel,
       context: context,
+      history: historyText,
       sources: built.sources,
-      unsupportedAttachmentNote: unsupportedNote
+      unsupportedAttachmentNote: unsupportedNote,
+      contextNote: notes.isEmpty ? nil : notes.joined(separator: "\n")
     )
   }
 
@@ -286,7 +318,9 @@ extension MemoraModel {
       title: meeting.displayTitle,
       excerpts: transcript.excerpts
     )
-    return (lines.joined(separator: "\n"), [source])
+    let joined = lines.joined(separator: "\n")
+    let bounded = joined.count > characterLimit ? String(joined.prefix(characterLimit)) : joined
+    return (bounded, [source])
   }
 
   /// A wider range: each record's digest and best spans, up to eight records and

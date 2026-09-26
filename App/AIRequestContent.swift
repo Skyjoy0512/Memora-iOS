@@ -8,8 +8,13 @@ struct AIRequestContent {
   /// What the model is given: the allowed records, the tasks that belong to
   /// them, and any attachment text.
   var context: String
-  /// The records actually included, each with a stored line when one matched.
+  /// The recent exchanges, already trimmed to the same budget.
+  var history: String
+  /// The records actually included, each with stored lines when they matched.
   var sources: [AIChatSource]
   /// Said instead of sending an attachment the engines cannot read.
   var unsupportedAttachmentNote: String?
+  /// Said when the attachment or the history was trimmed to fit the budget, so
+  /// a short answer is not mistaken for a complete one.
+  var contextNote: String?
 }

@@ -386,6 +386,26 @@ enum SelfChecks {
     if AIAnswerFailure.contextTooLarge.message == AIAnswerFailure.engineNotReady.message {
       report("a context overflow is shown as the model not being ready")
     }
+
+    // Attachment and history share the same budget as the records.
+    let longHistory = String(repeating: "やりとり", count: 2_000)
+    let budgeted = MemoraModel.requestContent(
+      for: fileRequest,
+      scopeLabel: "商談",
+      allowedMeetings: [small],
+      tasks: [],
+      history: longHistory,
+      characterLimit: 2_000
+    )
+    if budgeted.history.count > 2_000 {
+      report("history was not trimmed to the budget: \(budgeted.history.count)")
+    }
+    if budgeted.contextNote == nil {
+      report("a trimmed context was not reported")
+    }
+    if budgeted.context.count + budgeted.history.count > 2_000 {
+      report("context and history together exceeded the budget")
+    }
   }
 
   /// Only settled results become transcript lines, and nothing is merged or

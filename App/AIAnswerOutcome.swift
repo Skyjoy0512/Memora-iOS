@@ -15,6 +15,9 @@ struct AIAnswerOutcome {
   /// Said when an attachment could not be read, so a send that carried nothing
   /// never looks like it was understood.
   var unsupportedAttachmentNote: String?
+  /// Said when the attachment or the recent exchanges were trimmed to fit the
+  /// engine's budget, so a short answer is not mistaken for a complete one.
+  var contextNote: String?
 
   var isAnswer: Bool { result.text != nil }
 }

@@ -11,6 +11,7 @@ struct AIQuestionView: View {
   @State private var answer: String?
   @State private var failureMessage: String?
   @State private var unsupportedAttachmentNote: String?
+  @State private var contextNote: String?
   @State private var sources: [AIChatSource] = []
   @State private var isAnswering = false
   @State private var askTask: Task<Void, Never>?
@@ -114,6 +115,12 @@ struct AIQuestionView: View {
 
       if let unsupportedAttachmentNote {
         Text(unsupportedAttachmentNote)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+
+      if let contextNote {
+        Text(contextNote)
           .font(.caption)
           .foregroundStyle(.secondary)
       }
@@ -311,6 +318,7 @@ struct AIQuestionView: View {
     failureMessage = nil
     sources = []
     unsupportedAttachmentNote = nil
+    contextNote = nil
     isAnswering = true
 
     let engine = model.aiEngine
@@ -348,6 +356,7 @@ struct AIQuestionView: View {
       )
       guard !Task.isCancelled, submitted?.id == request.id else { return }
       unsupportedAttachmentNote = outcome.unsupportedAttachmentNote
+      contextNote = outcome.contextNote
 
       switch outcome.result {
       case .answer(let text):
