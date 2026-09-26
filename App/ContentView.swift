@@ -100,8 +100,11 @@ struct ContentView: View {
     .alert("サンプルを削除しますか？", isPresented: $model.isSampleCleanupSuggested) {
       Button("削除", role: .destructive) {
         model.deleteSampleContent()
+        model.completeSampleCleanupSuggestion()
       }
-      Button("残す", role: .cancel) {}
+      Button("残す", role: .cancel) {
+        model.completeSampleCleanupSuggestion()
+      }
     } message: {
       Text("最初の記録を保存しました。表示用のサンプルが残っています。削除しますか？")
     }

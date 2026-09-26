@@ -277,6 +277,9 @@ final class MemoraModel {
   @ObservationIgnored private var pendingMediaDeletions: [PendingMediaDeletion] = []
   @ObservationIgnored private var recordingActivity: Activity<MemoraRecordingAttributes>?
   @ObservationIgnored private var pendingMeetingNavigationID: UUID?
+  /// True when a real save should offer to clear the samples once the capture
+  /// sheet has closed, so the alert is not raised while a sheet is dismissing.
+  @ObservationIgnored private var pendingSampleCleanupSuggestion = false
   @ObservationIgnored private let recorder = AudioRecorderService()
 
   init() {
@@ -1010,7 +1013,7 @@ final class MemoraModel {
       return
     }
     recordingDraft = nil
-    offerSampleCleanupAfterRealSave()
+    noteRealSaveForSampleCleanup()
     finishCaptureSave(meetingID: meeting.id)
   }
 
@@ -1084,10 +1087,14 @@ final class MemoraModel {
       persistRecordingDraft()
     }
 
-    guard let meetingID = pendingMeetingNavigationID else { return }
+    guard let meetingID = pendingMeetingNavigationID else {
+      presentPendingSampleCleanupIfNeeded()
+      return
+    }
     pendingMeetingNavigationID = nil
     selectedTab = .files
     libraryPath = [.meeting(meetingID)]
+    presentPendingSampleCleanupIfNeeded()
   }
 
   func cancelCapture() async {
@@ -1196,7 +1203,9 @@ final class MemoraModel {
       )
       meetings.insert(meeting, at: 0)
       persistMeetings()
-      offerSampleCleanupAfterRealSave()
+      // No sheet is closing here, so the offer can be shown right away.
+      noteRealSaveForSampleCleanup()
+      presentPendingSampleCleanupIfNeeded()
       importProgress = 1
       isImporting = false
       selectedTab = .files
@@ -2412,13 +2421,30 @@ final class MemoraModel {
     }
   }
 
-  /// Called after the first real recording or import. Offers once to clear the
-  /// samples that are still around, and remembers that the offer was made.
-  func offerSampleCleanupAfterRealSave() {
-    let defaults = UserDefaults.standard
-    guard !defaults.bool(forKey: StorageKey.hasOfferedSampleDeletion), hasSampleContent else { return }
-    defaults.set(true, forKey: StorageKey.hasOfferedSampleDeletion)
+  /// Queues the one-time offer to clear the samples after a real save. A
+  /// recording's offer waits for its sheet to close; the flag is only recorded
+  /// when the person answers, so an offer that never appeared can still be made.
+  func noteRealSaveForSampleCleanup() {
+    guard isSampleCleanupOfferEligible else { return }
+    pendingSampleCleanupSuggestion = true
+  }
+
+  /// Shows a queued offer, once the screen that produced it has settled.
+  func presentPendingSampleCleanupIfNeeded() {
+    let eligible = pendingSampleCleanupSuggestion && isSampleCleanupOfferEligible
+    pendingSampleCleanupSuggestion = false
+    guard eligible else { return }
     isSampleCleanupSuggested = true
+  }
+
+  /// Records that the person answered the offer, so it is not made again.
+  func completeSampleCleanupSuggestion() {
+    UserDefaults.standard.set(true, forKey: StorageKey.hasOfferedSampleDeletion)
+    isSampleCleanupSuggested = false
+  }
+
+  private var isSampleCleanupOfferEligible: Bool {
+    !UserDefaults.standard.bool(forKey: StorageKey.hasOfferedSampleDeletion) && hasSampleContent
   }
 
   func removeAllContent() {
