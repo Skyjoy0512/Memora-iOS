@@ -8,12 +8,17 @@ protocol ProminentTabItem: CaseIterable, Hashable {
 
 extension RootTab: ProminentTabItem {}
 
+/// One place for the height shared by the tab row, the "＋" button, and the AI
+/// input, so the bottom controls line up.
+enum MemoraBarMetrics {
+  static let height: CGFloat = 56
+}
+
 /// A floating tab bar whose destinations live in a segmented control, paired
 /// with a single prominent button that opens a popover.
 struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
-  /// The height of the bar's row and the diameter of the prominent button. One
-  /// place, so the composer and the bar stay the same height.
-  static var barHeight: CGFloat { 56 }
+  /// The height of the bar's row and the diameter of the prominent button.
+  static var barHeight: CGFloat { MemoraBarMetrics.height }
 
   @Binding var selection: Item
   /// Exposed so an empty state can open the popover without a tab tap.
@@ -175,7 +180,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     uiView: UISegmentedControl,
     context: Context
   ) -> CGSize? {
-    CGSize(width: proposal.replacingUnspecifiedDimensions().width, height: 52)
+    CGSize(width: proposal.replacingUnspecifiedDimensions().width, height: MemoraBarMetrics.height)
   }
 
   func makeCoordinator() -> Coordinator {

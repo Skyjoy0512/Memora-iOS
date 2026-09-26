@@ -66,6 +66,9 @@ struct AIComposerBar: View {
       .padding(.leading, 8)
       .padding(.trailing, 8)
       .padding(.vertical, 6)
+      // One line matches the bar's height, so the input and the tab row read as
+      // one block.
+      .frame(minHeight: MemoraBarMetrics.height)
     }
     .background { listeningBackdrop }
     .memoraGlass(in: RoundedRectangle(cornerRadius: 28, style: .continuous), interactive: true)

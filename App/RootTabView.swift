@@ -121,9 +121,8 @@ struct RootTabView: View {
   private var bottomControls: some View {
     @Bindable var model = model
 
-    // The composer keeps a clear gap from the tab bar so the two never read as
-    // one stacked slab of controls.
-    return VStack(spacing: 18) {
+    // A small gap keeps the composer and the bar reading as one block.
+    return VStack(spacing: 12) {
       // The recording's transport rides above the composer, on the same floating
       // layer, so it never overlaps the composer or the home indicator.
       if showsPlaybackBar, let player = model.activePlayback {
