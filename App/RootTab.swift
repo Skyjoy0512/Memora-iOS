@@ -1,6 +1,8 @@
 enum RootTab: String, Hashable, CaseIterable, Identifiable {
-  case home
+  // The order here is the order the tabs appear in, left to right. The raw
+  // values stay the case names, so a reorder never changes a saved id.
   case files
+  case home
   case askAI
   case tasks
 

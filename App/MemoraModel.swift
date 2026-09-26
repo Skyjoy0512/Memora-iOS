@@ -6,7 +6,7 @@ import UIKit
 @MainActor
 @Observable
 final class MemoraModel {
-  var selectedTab = RootTab.home
+  var selectedTab = RootTab.files
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
   var fileSection = FileSection.meetingFiles
@@ -2404,7 +2404,9 @@ final class MemoraModel {
     persistAIHistory()
     homePath = []
     libraryPath = []
-    selectedTab = .home
+    // The samples are mostly recordings, and this matches the tab the app now
+    // opens on, so "サンプルで見る" lands where the samples are.
+    selectedTab = .files
   }
 
   /// Removes the display samples for good, without putting them in the trash.

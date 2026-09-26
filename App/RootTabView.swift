@@ -79,15 +79,15 @@ struct RootTabView: View {
     @Bindable var model = model
 
     return TabView(selection: $model.selectedTab) {
-      HomeView(onOpenSidebar: openSidebar)
-        .hidesSystemTabBar()
-        .scrollDismissesKeyboard(.immediately)
-        .tag(RootTab.home)
-
       LibraryView(onOpenSidebar: openSidebar)
         .hidesSystemTabBar()
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.files)
+
+      HomeView(onOpenSidebar: openSidebar)
+        .hidesSystemTabBar()
+        .scrollDismissesKeyboard(.immediately)
+        .tag(RootTab.home)
 
       SearchView()
         .hidesSystemTabBar()
