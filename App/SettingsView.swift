@@ -6,7 +6,10 @@ struct SettingsView: View {
   var showsCloseButton = true
   @AppStorage("memora.transcriptionEngine") private var transcriptionEngine = TranscriptionEngine.automatic
   @AppStorage("memora.transcriptionLanguage") private var transcriptionLanguage = RecognitionLanguage.japanese
+  @AppStorage("memora.autoLifeLog.enabled") private var autoLifeLogEnabled = false
+  @State private var isLocationPermissionAlertPresented = false
   @State private var isDeleteConfirmationPresented = false
+  @Environment(\.openURL) private var openURL
   @State private var isSignOutConfirmationPresented = false
   @State private var isAccountDeletionPresented = false
 
@@ -143,6 +146,25 @@ struct SettingsView: View {
           }
         }
 
+        Section {
+          Toggle("移動と滞在を自動で記録", isOn: autoLifeLogBinding)
+
+          NavigationLink {
+            ExcludedPlacesView()
+          } label: {
+            LabeledContent(
+              "記録しない場所",
+              value: AutoLocationLogger.excludedPlaces.isEmpty
+                ? "なし"
+                : "\(AutoLocationLogger.excludedPlaces.count)件"
+            )
+          }
+        } header: {
+          Text("ジャーナル")
+        } footer: {
+          Text("位置情報はこのiPhoneの中だけで使い、外部へ送信しません。電池への影響を抑えるため、駅の判定はおおよそです。")
+        }
+
         Section("プライバシーと保存") {
           NavigationLink {
             PrivacyStorageView()
@@ -256,6 +278,36 @@ struct SettingsView: View {
         Button("キャンセル", role: .cancel) {}
       } message: {
         Text("録音データではなく、このプロトタイプ内の表示用サンプルだけを消します。")
+      }
+      .alert("位置情報を「常に」許可してください", isPresented: $isLocationPermissionAlertPresented) {
+        Button("設定を開く") {
+          if let url = URL(string: UIApplication.openSettingsURLString) {
+            openURL(url)
+          }
+        }
+        Button("キャンセル", role: .cancel) {}
+      } message: {
+        Text("アプリを使っていない間の移動・滞在の記録には「常に」の許可が必要です。設定の位置情報から許可してください。")
+      }
+    }
+  }
+
+  /// Turning the toggle on asks for permission; only "always" lets the background
+  /// monitoring run, so a refusal puts it back and explains why.
+  private var autoLifeLogBinding: Binding<Bool> {
+    Binding {
+      autoLifeLogEnabled
+    } set: { enabled in
+      if enabled {
+        AutoLocationLogger.shared.enable { granted in
+          autoLifeLogEnabled = granted
+          if !granted {
+            isLocationPermissionAlertPresented = true
+          }
+        }
+      } else {
+        autoLifeLogEnabled = false
+        AutoLocationLogger.shared.disable()
       }
     }
   }

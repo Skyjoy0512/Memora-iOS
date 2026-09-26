@@ -87,6 +87,16 @@ struct PerformanceLogView: View {
           Text("音声・要約・文字起こしの無い、番号だけの記録です。計測が終わったら削除できます。")
         }
 
+        Section {
+          Button("現在地で駅判定を実行", systemImage: "location") {
+            AutoLocationLogger.shared.debugEvaluateCurrentLocation()
+          }
+        } header: {
+          Text("位置情報")
+        } footer: {
+          Text("設定の「移動と滞在を自動で記録」をオンにし、「常に」を許可したうえで実行してください。移動しなくても一連の処理を確認できます。結果はジャーナルに届きます。")
+        }
+
         if let latest = log.entries.last {
           Section("記録した環境") {
             row("ビルド", latest.build)

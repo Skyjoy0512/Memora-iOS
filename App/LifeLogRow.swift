@@ -23,12 +23,15 @@ struct LifeLogRow: View {
 
       VStack(alignment: .leading, spacing: 10) {
         HStack(alignment: .firstTextBaseline) {
-          Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
+          Text(timeLabel)
             .font(.caption.monospacedDigit().weight(.medium))
             .foregroundStyle(.secondary)
           Spacer()
           if SampleContent.isSample(lifeLogEntry: entry) {
             SampleTag()
+          }
+          if isAutomatic {
+            AutomaticLogTag()
           }
           Text(entry.source.label)
             .font(.caption2.weight(.medium))
@@ -90,10 +93,21 @@ struct LifeLogRow: View {
     .accessibilityLabel(accessibilityLabel)
   }
 
+  /// A stay shows its whole span; anything else shows just its time.
+  private var timeLabel: String {
+    let start = entry.createdAt.formatted(date: .omitted, time: .shortened)
+    guard let endDate = entry.endDate else { return start }
+    return "\(start)〜\(endDate.formatted(date: .omitted, time: .shortened))"
+  }
+
+  private var isAutomatic: Bool {
+    entry.origin != .manual
+  }
+
   /// The whole entry as one sentence, including that it has a photo.
   private var accessibilityLabel: String {
     var parts = [
-      entry.createdAt.formatted(date: .omitted, time: .shortened),
+      timeLabel,
       entry.source.label
     ]
     if SampleContent.isSample(lifeLogEntry: entry) {

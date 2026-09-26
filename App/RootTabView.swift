@@ -34,7 +34,14 @@ struct RootTabView: View {
       model.isCaptureSourcePresented = false
     }
     .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshSafeAreaInsets() }
-    .onChange(of: scenePhase) { _, _ in refreshSafeAreaInsets() }
+    .onChange(of: scenePhase) { _, phase in
+      refreshSafeAreaInsets()
+      // Automatic records written while the app was away land when it returns.
+      if phase == .active {
+        model.importAutoLifeLogInbox()
+        AutoLocationLogger.shared.startIfEnabled()
+      }
+    }
     .onAppear { refreshSafeAreaInsets() }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
       isKeyboardVisible = true

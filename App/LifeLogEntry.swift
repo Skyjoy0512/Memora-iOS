@@ -14,6 +14,11 @@ struct LifeLogEntry: Identifiable, Hashable, Codable {
   var locationName: String?
   /// How the entry got here. Defaults to a hand-made note for older data.
   var origin = LifeLogOrigin.manual
+  /// The end of a stay, for a record that spans time. Absent otherwise.
+  var endDate: Date?
+  /// Where the record was made, rounded, when it came from location.
+  var latitude: Double?
+  var longitude: Double?
 }
 
 extension LifeLogEntry {
@@ -31,6 +36,9 @@ extension LifeLogEntry {
     case eventDate
     case locationName
     case origin
+    case endDate
+    case latitude
+    case longitude
   }
 
   init(from decoder: Decoder) throws {
@@ -45,6 +53,9 @@ extension LifeLogEntry {
     eventDate = try container.decodeIfPresent(Date.self, forKey: .eventDate)
     locationName = try container.decodeIfPresent(String.self, forKey: .locationName)
     origin = try container.decodeIfPresent(LifeLogOrigin.self, forKey: .origin) ?? .manual
+    endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
+    latitude = try container.decodeIfPresent(Double.self, forKey: .latitude)
+    longitude = try container.decodeIfPresent(Double.self, forKey: .longitude)
 
     if let name = try container.decodeIfPresent(String.self, forKey: .photoFileName) {
       photoFileName = name
@@ -69,6 +80,9 @@ extension LifeLogEntry {
     try container.encodeIfPresent(eventDate, forKey: .eventDate)
     try container.encodeIfPresent(locationName, forKey: .locationName)
     try container.encode(origin, forKey: .origin)
+    try container.encodeIfPresent(endDate, forKey: .endDate)
+    try container.encodeIfPresent(latitude, forKey: .latitude)
+    try container.encodeIfPresent(longitude, forKey: .longitude)
   }
 }
 
@@ -76,6 +90,7 @@ enum LifeLogSource: String, Hashable, Codable {
   case iphone
   case omi
   case imported
+  case automatic
 
   var label: String {
     switch self {
@@ -85,6 +100,8 @@ enum LifeLogSource: String, Hashable, Codable {
       "Omi"
     case .imported:
       "取り込み"
+    case .automatic:
+      "自動"
     }
   }
 }

@@ -438,6 +438,9 @@ final class MemoraModel {
     rebuildMeetingAggregates()
     rebuildLifeLogDays()
 
+    // Automatic records the logger wrote while no model existed are brought in.
+    importAutoLifeLogInbox()
+
     // A finished job clears its flag, and the flag is what the next launch
     // reads to decide whether a job was interrupted.
     processing.onActiveIDsChanged = { [weak self] in
@@ -2409,6 +2412,30 @@ final class MemoraModel {
     selectedTab = .files
   }
 
+  /// Brings in journal records the automatic logger wrote while the model was
+  /// not running. Records already present are skipped by id, and the inbox is
+  /// cleared in the same write as the import, so nothing is taken twice.
+  func importAutoLifeLogInbox() {
+    guard !isStoreProtected else { return }
+    guard case .data(let data) = RecordStore.load(StorageKey.autoLifeLogInbox),
+          let inbox = try? JSONDecoder().decode([LifeLogEntry].self, from: data),
+          !inbox.isEmpty else { return }
+
+    let existing = Set(lifeLogEntries.map(\.id))
+    let incoming = inbox.filter { !existing.contains($0.id) }
+    var candidate = lifeLogEntries
+    candidate.append(contentsOf: incoming)
+
+    let stored = persistBatch {
+      [
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidate)),
+        (key: StorageKey.autoLifeLogInbox, data: try RecordStore.encoded([LifeLogEntry]()))
+      ]
+    }
+    guard stored else { return }
+    lifeLogEntries = candidate
+  }
+
   /// Removes the display samples for good, without putting them in the trash.
   /// Only records the samples own are removed; everything the person made,
   /// including tasks and journal entries that point at a real record, stays.
@@ -2868,6 +2895,7 @@ final class MemoraModel {
     static let aiHistory = "memoraAIHistory"
     static let pendingMediaDeletions = "memoraPendingMediaDeletions"
     static let hasOfferedSampleDeletion = "memora.hasOfferedSampleDeletion"
+    static let autoLifeLogInbox = "memoraAutoLifeLogInbox"
   }
 
   private func recordingsDirectory() throws -> URL {

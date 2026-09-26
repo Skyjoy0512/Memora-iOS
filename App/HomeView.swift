@@ -13,6 +13,8 @@ struct HomeView: View {
   @State private var selectedDate = Calendar.current.startOfDay(for: .now)
   /// Calendar events for the selected day, read from EventKit when that is on.
   @State private var calendarEvents: [JournalCalendarEvent] = []
+  /// The journey whose station list is open.
+  @State private var openMovement: JournalMovement?
   /// The day "today" meant when the screen was last seen, so a journal left
   /// open past midnight follows the new day.
   @State private var todayAnchor = Calendar.current.startOfDay(for: .now)
@@ -132,6 +134,9 @@ struct HomeView: View {
       }
       .sheet(item: $openEntry) { entry in
         LifeLogEntryDetailView(entryID: entry.id)
+      }
+      .sheet(item: $openMovement) { movement in
+        JournalMovementSheet(movement: movement)
       }
       .onChange(of: scenePhase) { _, phase in
         guard phase == .active else { return }
@@ -324,25 +329,34 @@ struct HomeView: View {
   }
 
   private func movementView(_ movement: JournalMovement) -> some View {
-    HStack(alignment: .top, spacing: 12) {
-      timeText(movement.start)
+    let stations = movement.entries.map { JournalMovementSheet.stationName(from: $0.title) }
 
-      VStack(alignment: .leading, spacing: 2) {
-        Text(movement.entries.map(\.title).joined(separator: " → "))
-          .font(.headline)
-          .lineLimit(2)
-        Text(
-          "\(movement.start.formatted(date: .omitted, time: .shortened))〜\(movement.end.formatted(date: .omitted, time: .shortened))"
-        )
-        .font(.caption)
-        .foregroundStyle(.secondary)
+    return Button {
+      openMovement = movement
+    } label: {
+      HStack(alignment: .top, spacing: 12) {
+        timeText(movement.start)
+
+        VStack(alignment: .leading, spacing: 2) {
+          Text(stations.joined(separator: " → "))
+            .font(.headline)
+            .lineLimit(2)
+          Text(
+            "\(movement.start.formatted(date: .omitted, time: .shortened))〜\(movement.end.formatted(date: .omitted, time: .shortened))"
+          )
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        }
+
+        Spacer(minLength: 0)
       }
-
-      Spacer(minLength: 0)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(Rectangle())
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .buttonStyle(.plain)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("移動、\(movement.entries.map(\.title).joined(separator: "、"))")
+    .accessibilityLabel("移動、\(stations.joined(separator: "、"))")
+    .accessibilityHint("各駅の時刻を開きます")
   }
 
   private var nowMarkerRow: some View {

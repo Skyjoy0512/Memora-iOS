@@ -29,6 +29,15 @@ struct LifeLogEntryDetailView: View {
         ToolbarItem(placement: .topBarTrailing) {
           Menu("その他", systemImage: "ellipsis") {
             Button("編集", systemImage: "pencil") { isEditing = true }
+            if let entry = currentEntry, let latitude = entry.latitude, let longitude = entry.longitude {
+              Button("この場所を今後記録しない", systemImage: "mappin.slash") {
+                AutoLocationLogger.addExcludedPlace(
+                  name: entry.title,
+                  latitude: latitude,
+                  longitude: longitude
+                )
+              }
+            }
             Button("削除", systemImage: "trash", role: .destructive) { isDeleting = true }
           }
         }
