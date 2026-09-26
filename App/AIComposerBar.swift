@@ -220,7 +220,9 @@ struct AIComposerBar: View {
       .frame(minWidth: 44, minHeight: 44)
       .contentShape(Rectangle())
     }
-    .accessibilityLabel("使用するAIエンジン")
+    // The chip shows the short name; the full engine name is read out here and
+    // listed in the menu.
+    .accessibilityLabel("使用するAIエンジン: \(model.aiEngine.label)")
   }
 
   private var actionButton: some View {
