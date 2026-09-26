@@ -7,6 +7,10 @@ import UIKit
 /// monitoring for stays. It is started by the app delegate, not a screen, so it
 /// also runs when iOS relaunches the app in the background. Records go to a
 /// local inbox the model picks up, because the model may not exist yet then.
+///
+/// On the main actor: the manager is created on the main thread, so its delegate
+/// callbacks arrive there, and the state it keeps is only touched from one place.
+@MainActor
 final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   static let shared = AutoLocationLogger()
 
