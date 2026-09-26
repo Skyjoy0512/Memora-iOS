@@ -1,5 +1,6 @@
 import CoreLocation
 import Foundation
+import UIKit
 
 /// Records journeys and stays into the journal from the two low-power location
 /// services: significant location changes for station passes and visit
@@ -227,17 +228,32 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
       return
     }
     if debugCompletion != nil {
-      Task { completeDebug(with: await recordStationPass(at: location)) }
+      runProtected {
+        self.completeDebug(with: await self.recordStationPass(at: location))
+      }
       return
     }
     guard Self.isEnabled else { return }
-    Task { await recordStationPass(at: location) }
+    runProtected { await self.recordStationPass(at: location) }
   }
 
   private func completeDebug(with result: DebugStationResult) {
     let completion = debugCompletion
     debugCompletion = nil
     completion?(result)
+  }
+
+  /// Keeps the work alive to its end when the app was launched in the background
+  /// for a location event: without this, the system can suspend it before the
+  /// inbox write lands.
+  private func runProtected(_ operation: @escaping @MainActor () async -> Void) {
+    Task { @MainActor in
+      let taskID = UIApplication.shared.beginBackgroundTask(withName: "AutoLifeLog")
+      await operation()
+      if taskID != .invalid {
+        UIApplication.shared.endBackgroundTask(taskID)
+      }
+    }
   }
 
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -254,7 +270,7 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
 
     let location = CLLocation(latitude: visit.coordinate.latitude, longitude: visit.coordinate.longitude)
     guard !Self.isExcluded(location) else { return }
-    Task { await recordVisit(at: location, arrival: arrival, departure: departure) }
+    runProtected { await self.recordVisit(at: location, arrival: arrival, departure: departure) }
   }
 
   @discardableResult
