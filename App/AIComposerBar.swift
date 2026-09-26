@@ -49,8 +49,15 @@ struct AIComposerBar: View {
           .onSubmit(submit)
           .focused($isFieldFocused)
           .padding(.vertical, 8)
+          // The field takes the width it needs and grows upward as text is
+          // added; the controls beside it keep their size instead of being
+          // pushed out by a long entry.
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .layoutPriority(1)
 
         modelMenu
+          .layoutPriority(0)
+          .frame(maxWidth: 130)
         actionButton
       }
       .padding(.leading, 8)
