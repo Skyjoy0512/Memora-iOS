@@ -4,6 +4,7 @@ struct SpeechRecognitionSettingsView: View {
   @AppStorage("memora.transcriptionEngine") private var engine = TranscriptionEngine.automatic
   @AppStorage("memora.transcriptionLanguage") private var language = RecognitionLanguage.japanese
   @AppStorage("memora.transcriptionProvider") private var provider = CloudProvider.openAI
+  @AppStorage("memora.liveTranscription") private var liveTranscription = true
   @State private var isKeySheetPresented = false
   @State private var availability = EngineAvailability.Status()
 
@@ -51,6 +52,14 @@ struct SpeechRecognitionSettingsView: View {
         Text("言語")
       } footer: {
         Text(language.detail)
+      }
+
+      Section {
+        Toggle("録音中に文字起こしを表示", isOn: $liveTranscription)
+      } header: {
+        Text("録音中")
+      } footer: {
+        Text("iOS 26 以降の端末内エンジンで、録音中に発言を表示します。表示だけに使い、保存する文字起こしは録音後に音声から作成します。")
       }
 
       Section {

@@ -140,6 +140,8 @@ final class MemoraModel {
   /// The glow's microphone level, kept in its own observable object so the ~22
   /// updates a second redraw only the view drawing the glow.
   @ObservationIgnored let levelMeter = RecordingLevelMeter()
+  /// The live transcription shown while recording, on iOS 26 only. Display-only.
+  @ObservationIgnored let realtimeTranscriber = RealtimeTranscriptionService()
   var recordingTitle = ""
   var recordingNote = ""
   var recordingErrorMessage: String?
@@ -972,6 +974,7 @@ final class MemoraModel {
       startRecordingTicker()
       startLevelTicker()
       startLiveActivity()
+      realtimeTranscriber.start()
       announce("録音を開始しました")
       if let recordingURL, let fileName = MediaFiles.reference(for: recordingURL) {
         recordingDraft = RecordingDraft(
@@ -1001,6 +1004,7 @@ final class MemoraModel {
     }
 
     recorder.stop()
+    realtimeTranscriber.stop()
     recordingTicker?.cancel()
     recordingTicker = nil
     levelTicker?.cancel()
@@ -1153,6 +1157,7 @@ final class MemoraModel {
 
   func cancelCapture() async {
     recorder.stop()
+    realtimeTranscriber.stop()
     recordingTicker?.cancel()
     recordingTicker = nil
     levelTicker?.cancel()
@@ -1189,8 +1194,10 @@ final class MemoraModel {
       self.recordingPausedAt = nil
       isRecordingPaused = false
       recordingInterruptionMessage = nil
+      realtimeTranscriber.start()
     } else {
       recorder.pause()
+      realtimeTranscriber.stop()
       recordingPausedAt = .now
       isRecordingPaused = true
     }

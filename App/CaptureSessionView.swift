@@ -101,16 +101,7 @@ struct CaptureSessionView: View {
               }
             }
         case .transcript:
-          VStack(spacing: 10) {
-            Image(systemName: "text.bubble")
-              .font(.title2)
-              .foregroundStyle(.secondary)
-            Text("録音を終えると文字起こしします")
-              .font(.subheadline)
-              .foregroundStyle(.secondary)
-          }
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .padding(.horizontal, 20)
+          RealtimeTranscriptView(service: model.realtimeTranscriber)
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
