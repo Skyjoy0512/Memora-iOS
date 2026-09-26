@@ -11,6 +11,8 @@ struct MemoraTask: Identifiable, Hashable, Codable {
   var completedAt: Date?
   /// Whether a reminder is wanted on the due date.
   var remindsAtDue: Bool
+  /// The time of day the reminder fires. nil means the default, 9:00.
+  var reminderTime: Date?
 
   init(
     id: UUID,
@@ -20,7 +22,8 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     dueDate: Date? = nil,
     isCompleted: Bool,
     completedAt: Date? = nil,
-    remindsAtDue: Bool = false
+    remindsAtDue: Bool = false,
+    reminderTime: Date? = nil
   ) {
     self.id = id
     self.title = title
@@ -30,10 +33,11 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     self.isCompleted = isCompleted
     self.completedAt = completedAt
     self.remindsAtDue = remindsAtDue
+    self.reminderTime = reminderTime
   }
 
   private enum CodingKeys: String, CodingKey {
-    case id, title, meetingID, assignee, dueDate, isCompleted, completedAt, remindsAtDue
+    case id, title, meetingID, assignee, dueDate, isCompleted, completedAt, remindsAtDue, reminderTime
   }
 
   init(from decoder: Decoder) throws {
@@ -46,6 +50,7 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     isCompleted = try container.decode(Bool.self, forKey: .isCompleted)
     completedAt = try container.decodeIfPresent(Date.self, forKey: .completedAt)
     remindsAtDue = try container.decodeIfPresent(Bool.self, forKey: .remindsAtDue) ?? false
+    reminderTime = try container.decodeIfPresent(Date.self, forKey: .reminderTime)
   }
 
   func encode(to encoder: Encoder) throws {
@@ -58,5 +63,6 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     try container.encode(isCompleted, forKey: .isCompleted)
     try container.encodeIfPresent(completedAt, forKey: .completedAt)
     try container.encode(remindsAtDue, forKey: .remindsAtDue)
+    try container.encodeIfPresent(reminderTime, forKey: .reminderTime)
   }
 }

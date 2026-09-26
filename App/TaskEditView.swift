@@ -15,6 +15,7 @@ struct TaskEditView: View {
   @State private var dueDate: Date
   @State private var meetingID: UUID?
   @State private var remindsAtDue: Bool
+  @State private var reminderTime: Date
   @State private var reminderDenied = false
   @State private var isDeleting = false
 
@@ -26,6 +27,7 @@ struct TaskEditView: View {
     _dueDate = State(initialValue: task.dueDate ?? Date.now.addingTimeInterval(86_400))
     _meetingID = State(initialValue: task.meetingID)
     _remindsAtDue = State(initialValue: task.remindsAtDue)
+    _reminderTime = State(initialValue: task.reminderTime ?? TaskReminderScheduler.defaultTimeToday())
   }
 
   var body: some View {
@@ -41,6 +43,14 @@ struct TaskEditView: View {
           if hasDueDate {
             DatePicker("期限", selection: $dueDate, displayedComponents: .date)
             Toggle("期限に通知", isOn: reminderBinding)
+            if remindsAtDue {
+              DatePicker("通知の時刻", selection: $reminderTime, displayedComponents: .hourAndMinute)
+              if isReminderTimePassed {
+                Text("この時刻は過ぎているため通知されません。")
+                  .font(.footnote)
+                  .foregroundStyle(.secondary)
+              }
+            }
             if reminderDenied {
               Text("通知が許可されていません。設定から通知を許可してください。")
                 .font(.footnote)
@@ -55,7 +65,7 @@ struct TaskEditView: View {
         } header: {
           Text("期限")
         } footer: {
-          Text(hasDueDate ? "期限を過ぎた未完了のタスクは期限切れとして表示します。通知は期限日の9:00に届きます。" : "期限なしのタスクとして扱います。")
+          Text(hasDueDate ? "期限を過ぎた未完了のタスクは期限切れとして表示します。通知は期限日の選んだ時刻に届きます。" : "期限なしのタスクとして扱います。")
         }
 
         Section("元の会議") {
@@ -88,7 +98,8 @@ struct TaskEditView: View {
               assignee: assignee,
               dueDate: hasDueDate ? dueDate : nil,
               meetingID: meetingID,
-              remindsAtDue: hasDueDate && remindsAtDue
+              remindsAtDue: hasDueDate && remindsAtDue,
+              reminderTime: hasDueDate && remindsAtDue ? reminderTime : nil
             )
             dismiss()
           }
@@ -107,6 +118,13 @@ struct TaskEditView: View {
       }
     }
     .presentationDetents([.medium, .large])
+  }
+
+  private var isReminderTimePassed: Bool {
+    guard hasDueDate, remindsAtDue,
+          let components = TaskReminderScheduler.fireComponents(dueDate: dueDate, reminderTime: reminderTime),
+          let fireDate = Calendar.current.date(from: components) else { return false }
+    return fireDate <= .now
   }
 
   private var reminderBinding: Binding<Bool> {

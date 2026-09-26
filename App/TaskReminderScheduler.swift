@@ -33,7 +33,9 @@ enum TaskReminderScheduler {
     center.removePendingNotificationRequests(withIdentifiers: [identifier(for: task.id)])
 
     guard task.remindsAtDue, !task.isCompleted, let dueDate = task.dueDate else { return }
-    guard let fireDate = calendarDateAtNine(on: dueDate), fireDate > .now else { return }
+    guard let components = fireComponents(dueDate: dueDate, reminderTime: task.reminderTime),
+          let fireDate = Calendar.current.date(from: components),
+          fireDate > .now else { return }
 
     let content = UNMutableNotificationContent()
     content.title = task.title
@@ -41,12 +43,23 @@ enum TaskReminderScheduler {
     content.sound = .default
     content.userInfo = [taskIDKey: task.id.uuidString]
 
-    let components = Calendar.current.dateComponents(
-      [.year, .month, .day, .hour, .minute],
-      from: fireDate
-    )
     let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
     center.add(UNNotificationRequest(identifier: identifier(for: task.id), content: content, trigger: trigger))
+  }
+
+  /// The due day with the chosen time (9:00 when none is set).
+  static func fireComponents(dueDate: Date, reminderTime: Date?) -> DateComponents? {
+    let calendar = Calendar.current
+    var day = calendar.dateComponents([.year, .month, .day], from: dueDate)
+    let time = calendar.dateComponents([.hour, .minute], from: reminderTime ?? defaultTimeToday())
+    day.hour = time.hour
+    day.minute = time.minute
+    return day
+  }
+
+  /// 9:00 today, used when a task has no chosen time.
+  static func defaultTimeToday() -> Date {
+    Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now) ?? .now
   }
 
   static func cancel(taskID: UUID) {
@@ -61,7 +74,4 @@ enum TaskReminderScheduler {
     }
   }
 
-  private static func calendarDateAtNine(on date: Date) -> Date? {
-    Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: date)
-  }
 }

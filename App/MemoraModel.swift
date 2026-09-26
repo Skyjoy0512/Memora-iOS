@@ -1477,7 +1477,8 @@ final class MemoraModel {
     assignee: String,
     dueDate: Date?,
     meetingID: UUID?,
-    remindsAtDue: Bool? = nil
+    remindsAtDue: Bool? = nil,
+    reminderTime: Date? = nil
   ) {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1491,6 +1492,7 @@ final class MemoraModel {
     if let remindsAtDue {
       tasks[index].remindsAtDue = remindsAtDue
     }
+    tasks[index].reminderTime = reminderTime
     persistTasks()
     // A due-date change or a completion moves or clears the reminder.
     TaskReminderScheduler.refresh(tasks[index])
@@ -1564,7 +1566,8 @@ final class MemoraModel {
     assignee: String,
     dueDate: Date?,
     meetingID: UUID? = nil,
-    remindsAtDue: Bool = false
+    remindsAtDue: Bool = false,
+    reminderTime: Date? = nil
   ) {
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return }
@@ -1576,7 +1579,8 @@ final class MemoraModel {
       assignee: trimmedAssignee.isEmpty ? nil : trimmedAssignee,
       dueDate: dueDate,
       isCompleted: false,
-      remindsAtDue: remindsAtDue
+      remindsAtDue: remindsAtDue,
+      reminderTime: reminderTime
     )
     tasks.insert(task, at: 0)
     persistTasks()
