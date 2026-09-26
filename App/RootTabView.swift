@@ -103,13 +103,13 @@ struct RootTabView: View {
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.home)
 
-      SearchView()
-        .hidesSystemTabBar()
-        .tag(RootTab.askAI)
-
       TasksView()
         .hidesSystemTabBar()
         .tag(RootTab.tasks)
+
+      SearchView()
+        .hidesSystemTabBar()
+        .tag(RootTab.askAI)
     }
     .safeAreaInset(edge: .bottom, spacing: 8) {
       bottomControls
@@ -313,9 +313,18 @@ struct RootTabView: View {
   }
 
   private var shouldShowComposer: Bool {
-    // The field belongs to the meeting detail alone now: the lists have no
-    // composer, and Ask AI has its own full-screen field.
-    isShowingMeetingDetail && !model.isInlineEditing && model.isDetailComposerVisible
+    guard !model.isInlineEditing else { return false }
+    // The detail keeps its own contextual field; Ask AI has its own chat field,
+    // so the shared "Ask Anything" bar is for the three list tabs.
+    if isShowingMeetingDetail {
+      return model.isDetailComposerVisible
+    }
+    switch model.selectedTab {
+    case .files, .home, .tasks:
+      return true
+    case .askAI:
+      return false
+    }
   }
 
   private var isShowingMeetingDetail: Bool {

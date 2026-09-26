@@ -3,8 +3,8 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
   // values stay the case names, so a reorder never changes a saved id.
   case files
   case home
-  case askAI
   case tasks
+  case askAI
 
   var id: Self { self }
 
