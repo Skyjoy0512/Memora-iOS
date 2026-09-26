@@ -1711,7 +1711,7 @@ final class MemoraModel {
     let trashID = candidateTrash[0].id
     scheduleUndo(
       UndoAction(message: "「\(removed.displayTitle)」を削除しました") { [weak self] in
-        self?.restoreTrashedRecord(trashID)
+        self?.restoreTrashedRecord(trashID, preservingPosition: true)
       } finalize: {}
     )
   }
@@ -1776,7 +1776,7 @@ final class MemoraModel {
     scheduleUndo(
       UndoAction(message: "\(removed.count)件の記録を削除しました") { [weak self] in
         for id in trashIDs {
-          self?.restoreTrashedRecord(id)
+          self?.restoreTrashedRecord(id, preservingPosition: true)
         }
       } finalize: {}
     )
@@ -1808,7 +1808,10 @@ final class MemoraModel {
   }
 
   /// Puts a trashed record back exactly as it was, again only after the write.
-  func restoreTrashedRecord(_ id: UUID) {
+  /// The saved position is only used when `preservingPosition` is set, which is
+  /// the undo path; a restore from the trash days later goes back by date, since
+  /// records added meanwhile would have made the old index wrong.
+  func restoreTrashedRecord(_ id: UUID, preservingPosition: Bool = false) {
     guard !isStoreProtected else {
       blockProtectedChanges()
       return
@@ -1820,22 +1823,24 @@ final class MemoraModel {
     var candidateMeetings = meetings
     var candidateTasks = tasks
     var candidateEntries = lifeLogEntries
-    // Put it back where it was. Records saved before positions existed fall
-    // back to date order, which is how the list reads.
-    let meetingPosition = record.meetingPosition
-      ?? (candidateMeetings.firstIndex { $0.createdAt < record.meeting.createdAt } ?? candidateMeetings.count)
+    // Put it back where it was. Undo uses the saved position; a later restore
+    // goes by date, which is how the list reads. Records saved before positions
+    // existed fall back to date order too.
+    let datePosition = candidateMeetings.firstIndex { $0.createdAt < record.meeting.createdAt }
+      ?? candidateMeetings.count
+    let meetingPosition = preservingPosition ? (record.meetingPosition ?? datePosition) : datePosition
     candidateMeetings.insert(record.meeting, at: min(meetingPosition, candidateMeetings.count))
 
-    // Attached tasks go back to their own positions, in ascending order so the
-    // inserts do not shift each other.
+    // Attached tasks go back to their own positions on undo, in ascending order
+    // so the inserts do not shift each other.
+    let positions = preservingPosition ? record.taskPositions : nil
     let orderedTasks = record.tasks.enumerated()
       .sorted { lhs, rhs in
-        (record.taskPositions?[lhs.element.id] ?? lhs.offset)
-          < (record.taskPositions?[rhs.element.id] ?? rhs.offset)
+        (positions?[lhs.element.id] ?? lhs.offset) < (positions?[rhs.element.id] ?? rhs.offset)
       }
       .map(\.element)
     for task in orderedTasks {
-      let position = record.taskPositions?[task.id] ?? 0
+      let position = positions?[task.id] ?? 0
       candidateTasks.insert(task, at: min(position, candidateTasks.count))
     }
 
