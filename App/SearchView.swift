@@ -10,6 +10,7 @@ struct SearchView: View {
   /// interrupted by a reply arriving.
   @State private var isNearBottom = true
   @State private var hasUnseenAnswer = false
+  @State private var isComposing = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
@@ -37,6 +38,14 @@ struct SearchView: View {
       .navigationTitle("Ask AI")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
+          Button("閉じる", systemImage: "xmark") {
+            model.isAskAIPresented = false
+          }
+          .labelStyle(.iconOnly)
+          .accessibilityHint("元の画面に戻ります")
+        }
+
+        ToolbarItem(placement: .principal) {
           Menu {
             Picker("対象", selection: Binding(
               get: { model.aiScope },
@@ -91,6 +100,16 @@ struct SearchView: View {
           },
           delete: { model.deleteAIHistoryEntry($0) }
         )
+      }
+      .safeAreaInset(edge: .bottom, spacing: 8) {
+        QuickAIComposer(
+          scope: .global,
+          isComposing: $isComposing,
+          keepsFocusAfterSubmit: true,
+          autofocus: model.aiMessages.isEmpty
+        )
+        .padding(.horizontal, 12)
+        .padding(.top, 4)
       }
     }
   }

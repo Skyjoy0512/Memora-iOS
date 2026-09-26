@@ -9,9 +9,10 @@ struct AIComposerBar: View {
   @Binding var attachment: AIAttachment?
   var placeholder: String
   var isBusy = false
-  /// Keeps the keyboard up after sending, so a chat can continue. The field is
-  /// never focused on its own.
+  /// Keeps the keyboard up after sending, so a chat can continue.
   var keepsFocusAfterSubmit = false
+  /// Focuses the field when it appears, used when Ask AI opens to an empty chat.
+  var autofocus = false
   /// Returns true when the send was accepted. Only then does the composer clear
   /// what was typed, so a refused send keeps the text and the attachment.
   var onSubmit: (AIAttachment?) -> Bool
@@ -68,6 +69,14 @@ struct AIComposerBar: View {
     }
     .onChange(of: model.composerDismissRequests) { _, _ in
       isFieldFocused = false
+    }
+    .onAppear {
+      guard autofocus else { return }
+      Task { @MainActor in
+        // Give the field a moment to join the window before focusing it.
+        try? await Task.sleep(for: .milliseconds(350))
+        isFieldFocused = true
+      }
     }
     .onDisappear {
       speechInput.stop()

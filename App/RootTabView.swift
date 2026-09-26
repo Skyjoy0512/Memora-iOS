@@ -8,6 +8,7 @@ struct RootTabView: View {
   @State private var isComposing = false
   @State private var isSidebarOpen = false
   @State private var isKeyboardVisible = false
+  @Namespace private var askAINamespace
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
   /// controls re-add the home indicator inset themselves.
   @State private var safeAreaInsets = EdgeInsets()
@@ -87,6 +88,19 @@ struct RootTabView: View {
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.pendingUndo?.id)
+    .fullScreenCover(isPresented: $model.isAskAIPresented) {
+      askAICover
+    }
+  }
+
+  @ViewBuilder
+  private var askAICover: some View {
+    if #available(iOS 18.0, *), !reduceMotion {
+      SearchView()
+        .navigationTransition(.zoom(sourceID: "secondaryAction", in: askAINamespace))
+    } else {
+      SearchView()
+    }
   }
 
   private var tabSurface: some View {
@@ -155,7 +169,13 @@ struct RootTabView: View {
         ProminentTabBar(
           selection: $model.selectedTab,
           isProminentPresented: $model.isCaptureSourcePresented,
-          prominentSymbol: "plus"
+          prominentSymbol: "plus",
+          secondaryAction: ProminentTabSecondaryAction(
+            symbol: "sparkles",
+            accessibilityLabel: "Ask AI",
+            action: { model.isAskAIPresented = true }
+          ),
+          secondaryTransitionNamespace: askAINamespace
         ) {
           CaptureMenuPopover()
         }

@@ -8,6 +8,14 @@ protocol ProminentTabItem: CaseIterable, Hashable {
 
 extension RootTab: ProminentTabItem {}
 
+/// A round glass button that sits between the tabs and the prominent button, for
+/// one extra top-level action such as Ask AI.
+struct ProminentTabSecondaryAction {
+  var symbol: String
+  var accessibilityLabel: String
+  var action: () -> Void
+}
+
 /// A floating tab bar whose destinations live in a segmented control, paired
 /// with a single prominent button that opens a popover.
 struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
@@ -15,6 +23,10 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   /// Exposed so an empty state can open the popover without a tab tap.
   @Binding var isProminentPresented: Bool
   var prominentSymbol: String
+  /// An extra round action between the tabs and the prominent button, if any.
+  var secondaryAction: ProminentTabSecondaryAction?
+  /// Shared with the presenting screen so the extra action can zoom open.
+  var secondaryTransitionNamespace: Namespace.ID?
   @ViewBuilder var popover: PopoverContent
 
   @Environment(\.colorScheme) private var colorScheme
@@ -30,9 +42,52 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
           .padding(2)
           .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
 
+        if let secondaryAction {
+          secondaryButton(secondaryAction)
+        }
+
         prominentButton
       }
     }
+  }
+
+  @ViewBuilder
+  private func secondaryButton(_ action: ProminentTabSecondaryAction) -> some View {
+    if #available(iOS 26.0, *) {
+      Button(action: action.action) {
+        transitionSource {
+          secondaryLabel(action)
+        }
+      }
+      .buttonStyle(.glass)
+    } else {
+      Button(action: action.action) {
+        transitionSource {
+          secondaryLabel(action)
+            .foregroundStyle(.primary)
+            .background(Color.primary.opacity(0.08), in: Circle())
+        }
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  @ViewBuilder
+  private func transitionSource<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    if let secondaryTransitionNamespace {
+      content()
+        .matchedTransitionSource(id: "secondaryAction", in: secondaryTransitionNamespace)
+    } else {
+      content()
+    }
+  }
+
+  private func secondaryLabel(_ action: ProminentTabSecondaryAction) -> some View {
+    Image(systemName: action.symbol)
+      .font(.title)
+      .scaleEffect(0.95)
+      .frame(width: 44, height: 55)
+      .accessibilityLabel(action.accessibilityLabel)
   }
 
   @ViewBuilder

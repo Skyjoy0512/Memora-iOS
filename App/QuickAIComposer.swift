@@ -10,6 +10,8 @@ struct QuickAIComposer: View {
   /// Keeps the keyboard up after sending on the Ask AI tab. The field is never
   /// focused on its own, so switching tabs does not raise the keyboard.
   var keepsFocusAfterSubmit = false
+  /// Focuses the field when it appears, for the full-screen Ask AI opening.
+  var autofocus = false
   @State private var attachment: AIAttachment?
   /// The question handed to the focused screen. It is built when the sheet
   /// opens, so clearing the composer afterwards cannot empty what is being asked.
@@ -25,6 +27,7 @@ struct QuickAIComposer: View {
       attachment: $attachment,
       placeholder: placeholder,
       keepsFocusAfterSubmit: keepsFocusAfterSubmit,
+      autofocus: autofocus,
       onSubmit: submit(attachment:)
     ) { focused in
       isComposing = focused
