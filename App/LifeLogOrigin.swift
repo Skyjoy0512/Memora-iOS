@@ -6,5 +6,4 @@ enum LifeLogOrigin: String, Hashable, Codable {
   case manual
   case stationPass
   case visit
-  case calendar
 }
