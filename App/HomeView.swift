@@ -7,7 +7,6 @@ struct HomeView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.scenePhase) private var scenePhase
   @State private var query = ""
-  @State private var isCreationPresented = false
   /// The journal entry opened from the timeline.
   @State private var openEntry: LifeLogEntry?
   /// The day the Journal is showing.
@@ -66,7 +65,7 @@ struct HomeView: View {
 
               if query.isEmpty {
                 Button("記録を追加") {
-                  isCreationPresented = true
+                  model.isLifeLogCreationPresented = true
                 }
                 .font(.headline)
                 .foregroundStyle(Color(uiColor: .systemBackground))
@@ -120,15 +119,12 @@ struct HomeView: View {
           .labelStyle(.iconOnly)
         }
 
-        ToolbarItem(placement: .topBarLeading) {
-          sourceStatusButton
-        }
-
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("記録を追加", systemImage: "plus") {
-            isCreationPresented = true
+        // The external recorder's state only earns a place here for people who
+        // have set one up; the sidebar still reaches the setting either way.
+        if isOmiConnected || OmiPairingManager.hasRememberedDevice {
+          ToolbarItem(placement: .topBarLeading) {
+            sourceStatusButton
           }
-          .labelStyle(.iconOnly)
         }
 
         ToolbarItem(placement: .topBarTrailing) {
@@ -138,7 +134,7 @@ struct HomeView: View {
           .labelStyle(.iconOnly)
         }
       }
-      .sheet(isPresented: $isCreationPresented) {
+      .sheet(isPresented: $model.isLifeLogCreationPresented) {
         LifeLogCreationSheet()
       }
       .sheet(item: $openEntry) { entry in

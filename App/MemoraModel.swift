@@ -15,6 +15,10 @@ final class MemoraModel {
   var fileSection = FileSection.meetingFiles
   var isFileCreationPresented = false
   var isSettingsPresented = false
+  /// Opened by the contextual create button on the tasks tab.
+  var isAddTaskPresented = false
+  /// Opened by the contextual create button on the journal tab.
+  var isLifeLogCreationPresented = false
   /// Shown when a `memora://` link points at a record this device does not
   /// have. It says what the link is and how to get the record back.
   var missingRecordNotice: MissingRecordNotice?

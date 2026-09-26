@@ -10,6 +10,13 @@ struct CaptureMenuPopover: View {
   var body: some View {
     VStack(spacing: 2) {
       ForEach(CaptureAction.allCases) { action in
+        // A break between capturing a conversation and adding to the journal.
+        if action == .lifeLog {
+          Divider()
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+        }
+
         Button {
           select(action)
         } label: {
@@ -58,6 +65,12 @@ struct CaptureMenuPopover: View {
       Task { @MainActor in
         try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
         model.isOnlineMeetingCapturePresented = true
+      }
+    case .lifeLog:
+      collapse()
+      Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+        model.isLifeLogCreationPresented = true
       }
     case .project:
       collapse()

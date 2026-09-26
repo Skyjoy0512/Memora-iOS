@@ -165,21 +165,47 @@ struct RootTabView: View {
         )
       }
 
-      if showsBottomBar {
-        ProminentTabBar(
-          selection: $model.selectedTab,
-          isProminentPresented: $model.isCaptureSourcePresented,
-          prominentSymbol: "plus",
-          secondaryAction: ProminentTabSecondaryAction(
-            symbol: "sparkles",
-            accessibilityLabel: "Ask AI",
-            action: { model.isAskAIPresented = true }
-          ),
-          secondaryTransitionNamespace: askAINamespace
-        ) {
-          CaptureMenuPopover()
+      VStack(spacing: 10) {
+        if showsContextualCreate, let action = contextualCreateAction {
+          HStack {
+            Spacer()
+            Button {
+              action.action()
+            } label: {
+              Image(systemName: action.symbol)
+                .font(.title3)
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .memoraGlass(in: Circle(), interactive: true)
+            .accessibilityLabel(action.title)
+            .padding(.trailing, 22)
+            .transition(
+              reduceMotion
+                ? .opacity
+                : .scale(scale: 0.4, anchor: .bottomTrailing).combined(with: .opacity)
+            )
+          }
         }
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
+
+        if showsBottomBar {
+          ProminentTabBar(
+            selection: $model.selectedTab,
+            isProminentPresented: $model.isCaptureSourcePresented,
+            prominentSymbol: "plus",
+            secondaryAction: ProminentTabSecondaryAction(
+              symbol: "sparkles",
+              accessibilityLabel: "Ask AI",
+              action: { model.isAskAIPresented = true }
+            ),
+            secondaryTransitionNamespace: askAINamespace
+          ) {
+            CaptureMenuPopover()
+          }
+          .transition(.opacity.combined(with: .move(edge: .bottom)))
+        }
       }
     }
     .padding(.horizontal, 12)
@@ -199,6 +225,8 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: shouldShowComposer)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isBottomBarHidden)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: contextualCreateAction?.id)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isCaptureSourcePresented)
   }
 
   /// The bar follows the tab on top, so another screen's scrolling cannot move it.
@@ -208,6 +236,31 @@ struct RootTabView: View {
 
   private var showsBottomBar: Bool {
     !isComposing && !isShowingMeetingDetail && !isBottomBarHidden
+  }
+
+  /// The create action for the screen on top. Derived from the tab and section,
+  /// so a screen left behind can never leave its button on another tab.
+  private var contextualCreateAction: ContextualCreateAction? {
+    switch model.selectedTab {
+    case .tasks:
+      ContextualCreateAction(id: "tasks", title: "タスクを追加", symbol: "checklist") {
+        model.isAddTaskPresented = true
+      }
+    case .home:
+      ContextualCreateAction(id: "home", title: "記録を追加", symbol: "square.and.pencil") {
+        model.isLifeLogCreationPresented = true
+      }
+    case .files:
+      model.fileSection == .projects
+        ? ContextualCreateAction(id: "files.projects", title: "プロジェクトを作成", symbol: "folder.badge.plus") {
+          model.isFileCreationPresented = true
+        }
+        : nil
+    }
+  }
+
+  private var showsContextualCreate: Bool {
+    contextualCreateAction != nil && showsBottomBar && !model.isCaptureSourcePresented
   }
 
   /// The transport only appears while a detail is playing and no field (the

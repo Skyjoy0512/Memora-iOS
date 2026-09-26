@@ -4,11 +4,12 @@ struct TasksView: View {
   @Environment(MemoraModel.self) private var model
   @State private var showsCompleted = false
   @State private var path: [UUID] = []
-  @State private var isAddingTask = false
   @State private var editingTask: MemoraTask?
 
   var body: some View {
-    NavigationStack(path: $path) {
+    @Bindable var model = model
+
+    return NavigationStack(path: $path) {
       VStack(spacing: 0) {
         Picker("表示するタスク", selection: $showsCompleted) {
           Text("未完了").tag(false)
@@ -62,18 +63,10 @@ struct TasksView: View {
         }
       }
       .navigationTitle("タスク")
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("新規タスク", systemImage: "plus") {
-            isAddingTask = true
-          }
-          .labelStyle(.iconOnly)
-        }
-      }
       .navigationDestination(for: UUID.self) { meetingID in
         MeetingDetailView(meetingID: meetingID)
       }
-      .sheet(isPresented: $isAddingTask) {
+      .sheet(isPresented: $model.isAddTaskPresented) {
         AddTaskView()
       }
       .sheet(item: $editingTask) { task in

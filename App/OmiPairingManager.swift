@@ -76,6 +76,12 @@ final class OmiPairingManager: NSObject {
   private static let manufacturerNameCharacteristic = CBUUID(string: "2A29")
   private static let rememberedNameKey = "omiRememberedDeviceName"
 
+  /// True once an external recorder has been paired, even if none is connected
+  /// now, so its shortcut can stay out of the way for people who have none.
+  static var hasRememberedDevice: Bool {
+    UserDefaults.standard.string(forKey: rememberedNameKey) != nil
+  }
+
   override init() {
     if let rememberedName = UserDefaults.standard.string(forKey: Self.rememberedNameKey) {
       state = .remembered(rememberedName)
