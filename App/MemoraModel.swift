@@ -1669,7 +1669,9 @@ final class MemoraModel {
         meeting: removed,
         tasks: removedTasks,
         lifeLogEntries: removedEntries,
-        deletedAt: .now
+        deletedAt: .now,
+        meetingPosition: index,
+        taskPositions: Self.taskPositions(of: removedTasks, in: tasks)
       ),
       at: 0
     )
@@ -1727,11 +1729,14 @@ final class MemoraModel {
     candidateEntries.removeAll { $0.meetingID.map(ids.contains) ?? false }
     candidateTrash.insert(
       contentsOf: removed.map { meeting in
-        TrashedRecord(
+        let meetingTasks = removedTasks.filter { $0.meetingID == meeting.id }
+        return TrashedRecord(
           meeting: meeting,
-          tasks: removedTasks.filter { $0.meetingID == meeting.id },
+          tasks: meetingTasks,
           lifeLogEntries: removedEntries.filter { $0.meetingID == meeting.id },
-          deletedAt: .now
+          deletedAt: .now,
+          meetingPosition: meetings.firstIndex(where: { $0.id == meeting.id }),
+          taskPositions: Self.taskPositions(of: meetingTasks, in: tasks)
         )
       },
       at: 0
@@ -1800,10 +1805,25 @@ final class MemoraModel {
     var candidateMeetings = meetings
     var candidateTasks = tasks
     var candidateEntries = lifeLogEntries
-    candidateMeetings.insert(record.meeting, at: 0)
-    if !record.tasks.isEmpty {
-      candidateTasks.insert(contentsOf: record.tasks, at: 0)
+    // Put it back where it was. Records saved before positions existed fall
+    // back to date order, which is how the list reads.
+    let meetingPosition = record.meetingPosition
+      ?? (candidateMeetings.firstIndex { $0.createdAt < record.meeting.createdAt } ?? candidateMeetings.count)
+    candidateMeetings.insert(record.meeting, at: min(meetingPosition, candidateMeetings.count))
+
+    // Attached tasks go back to their own positions, in ascending order so the
+    // inserts do not shift each other.
+    let orderedTasks = record.tasks.enumerated()
+      .sorted { lhs, rhs in
+        (record.taskPositions?[lhs.element.id] ?? lhs.offset)
+          < (record.taskPositions?[rhs.element.id] ?? rhs.offset)
+      }
+      .map(\.element)
+    for task in orderedTasks {
+      let position = record.taskPositions?[task.id] ?? 0
+      candidateTasks.insert(task, at: min(position, candidateTasks.count))
     }
+
     if !record.lifeLogEntries.isEmpty {
       candidateEntries.append(contentsOf: record.lifeLogEntries)
     }
@@ -1822,6 +1842,18 @@ final class MemoraModel {
     meetings = candidateMeetings
     tasks = candidateTasks
     lifeLogEntries = candidateEntries
+  }
+
+  /// Where each given task sat in the full list, so a restore can put it back.
+  private static func taskPositions(of tasks: [MemoraTask], in all: [MemoraTask]) -> [UUID: Int]? {
+    guard !tasks.isEmpty else { return nil }
+    var positions: [UUID: Int] = [:]
+    for task in tasks {
+      if let index = all.firstIndex(where: { $0.id == task.id }) {
+        positions[task.id] = index
+      }
+    }
+    return positions.isEmpty ? nil : positions
   }
 
   /// Removes a trashed record and its media for good. The trash entry leaves the

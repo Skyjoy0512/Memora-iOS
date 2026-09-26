@@ -9,6 +9,11 @@ struct TrashedRecord: Identifiable, Codable, Hashable {
   var tasks: [MemoraTask]
   var lifeLogEntries: [LifeLogEntry]
   var deletedAt: Date
+  /// Where the record sat in the list when it was removed, so a restore puts it
+  /// back instead of at the top. Absent for entries saved before this existed.
+  var meetingPosition: Int?
+  /// Where each attached task sat, by task id. Absent for older entries.
+  var taskPositions: [UUID: Int]?
 }
 
 extension TrashedRecord {
