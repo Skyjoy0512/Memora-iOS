@@ -41,44 +41,43 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     let tabCount = Item.allCases.count
     let isSmall = tabCount <= 2
 
+    // The create button sits above the row, aligned to its trailing edge, which
+    // is the prominent button's trailing edge — and since the two buttons are
+    // the same width, their centres line up. The stack is only as wide as the
+    // row because the button is narrower, so "trailing" means the row's trailing
+    // edge, not the screen's.
     MemoraGlassContainer(spacing: 10) {
-      HStack(spacing: 10) {
-        segmentedControl
-          .padding(2)
-          .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
-
-        if let secondaryAction {
-          secondaryButton(secondaryAction)
+      VStack(alignment: .trailing, spacing: splitGap) {
+        if let contextualAction {
+          contextualButton(contextualAction)
+            .transition(splitTransition)
         }
 
-        // The create button is an overlay of the prominent button, so it is
-        // centred on it exactly. It is shifted up by its own height plus a gap;
-        // the transition starts it back over the button and lifts it straight up.
-        prominentButton
-          .overlay(alignment: .top) {
-            if let contextualAction {
-              contextualButton(contextualAction)
-                .offset(y: -splitDistance)
-                .transition(splitTransition)
-            }
+        HStack(spacing: 10) {
+          segmentedControl
+            .padding(2)
+            .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
+
+          if let secondaryAction {
+            secondaryButton(secondaryAction)
           }
+
+          prominentButton
+        }
       }
-      // Room in the layout for the lifted button, so the controls' measured
-      // height includes it and nothing sits under it.
-      .padding(.top, contextualAction == nil ? 0 : splitDistance)
     }
   }
 
   /// The prominent button's height plus the gap above it.
-  private var splitDistance: CGFloat { 55 + 21 }
+  private var splitGap: CGFloat { 21 }
+  private var splitDistance: CGFloat { 55 + splitGap }
 
-  /// Grows out of the prominent button straight up: it starts over the button and
-  /// rises to its place while it scales up, rather than appearing from a corner.
+  /// Rises out of the prominent button: it starts over the button, same size, and
+  /// slides straight up to its place. No scale or anchor, so nothing makes it
+  /// look like it grows from a corner; the glass container morphs the shapes.
   private var splitTransition: AnyTransition {
     guard !reduceMotion else { return .opacity }
-    return .offset(y: splitDistance)
-      .combined(with: .scale(scale: 0.2, anchor: .center))
-      .combined(with: .opacity)
+    return .offset(y: splitDistance).combined(with: .opacity)
   }
 
   @ViewBuilder
