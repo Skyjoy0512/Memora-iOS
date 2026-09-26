@@ -13,8 +13,10 @@ struct IconRenderingChecks {
         print("MISSING \(name)")
         continue
       }
-      var rect = CGRect(origin: .zero, size: image.size)
-      guard let cg = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+      for (scaleName, scale) in [("small", NSImage.SymbolScale.small), ("medium", .medium), ("large", .large)] {
+      let configured = image.withSymbolConfiguration(.init(pointSize: 20, weight: .semibold, scale: scale)) ?? image
+      var rect = CGRect(origin: .zero, size: configured.size)
+      guard let cg = configured.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
         print("NO PIXELS \(name)")
         continue
       }
@@ -29,7 +31,8 @@ struct IconRenderingChecks {
         let bytes = buffer.bindMemory(to: UInt8.self)
         return stride(from: 3, to: bytes.count, by: 4).filter { bytes[$0] > 16 }.count
       }
-      print("\(name): \(width)x\(height), visible pixels=\(nonempty)")
+      print("\(name) \(scaleName): \(width)x\(height), visible pixels=\(nonempty)")
+      }
     }
   }
 }
