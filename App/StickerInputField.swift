@@ -22,10 +22,14 @@ struct StickerInputField: UIViewRepresentable {
 
   func updateUIView(_ view: EmojiTextView, context: Context) {
     context.coordinator.parent = self
-    if isActive, !view.isFirstResponder {
-      view.becomeFirstResponder()
-    } else if !isActive, view.isFirstResponder {
-      view.resignFirstResponder()
+    let wantsKeyboard = isActive
+    // Focus changes during a SwiftUI update can be dropped; defer them a turn.
+    DispatchQueue.main.async {
+      if wantsKeyboard, !view.isFirstResponder {
+        view.becomeFirstResponder()
+      } else if !wantsKeyboard, view.isFirstResponder {
+        view.resignFirstResponder()
+      }
     }
   }
 
