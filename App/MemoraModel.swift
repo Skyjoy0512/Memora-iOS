@@ -91,6 +91,9 @@ final class MemoraModel {
   @ObservationIgnored private var taskReminderObserver: NSObjectProtocol?
   /// Audio files handed to the app while a recording owns the microphone.
   @ObservationIgnored private var pendingImportURLs: [URL] = []
+  /// Files being imported right now, so the Inbox scan never mistakes a file
+  /// that is on its way in for one left behind.
+  @ObservationIgnored private var inFlightImportURLs: Set<URL> = []
   @ObservationIgnored private var spaceIndex = IdentifiableIndex<MemoraSpace>()
   @ObservationIgnored private var personIndex = IdentifiableIndex<Person>()
   /// Tasks grouped by the meeting they belong to, built once per change.
@@ -2650,6 +2653,7 @@ final class MemoraModel {
     guard Self.isAudioFile(url) else { return }
     if isRecording {
       pendingImportURLs.append(url)
+      inFlightImportURLs.insert(url)
       pendingImportNotice = "録音が終わったら取り込みます。"
       return
     }
@@ -2669,8 +2673,10 @@ final class MemoraModel {
   /// Imports a file and then removes the copy iOS made in the app's Inbox.
   /// A file the person picked themselves does not sit there and is left alone.
   private func importAndCleanUp(_ url: URL) async {
+    inFlightImportURLs.insert(url)
     await importAudio(from: url)
     removeInboxCopyIfNeeded(url)
+    inFlightImportURLs.remove(url)
   }
 
   private func removeInboxCopyIfNeeded(_ url: URL) {
@@ -2689,9 +2695,19 @@ final class MemoraModel {
       .appendingPathComponent("Inbox", isDirectory: true)
     let contents = (try? FileManager.default.contentsOfDirectory(
       at: inbox,
-      includingPropertiesForKeys: nil
+      includingPropertiesForKeys: [.contentModificationDateKey]
     )) ?? []
-    return contents.filter { Self.isAudioFile($0) }
+    let inFlight = inFlightImportURLs.union(pendingImportURLs)
+    return contents.filter { url in
+      guard Self.isAudioFile(url) else { return false }
+      if inFlight.contains(url) { return false }
+      // A file handed over just now is still arriving, not left behind.
+      if let modified = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+         Date.now.timeIntervalSince(modified) < 60 {
+        return false
+      }
+      return true
+    }
   }
 
   /// Looks for audio left in the Inbox and, if any, asks what to do with it.
