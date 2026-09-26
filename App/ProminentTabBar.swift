@@ -54,9 +54,10 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
         prominentButton
       }
       // The create button buds off the prominent button: it is the same size,
-      // centred on it, and grows out of it from below. A top padding keeps room
-      // in the layout, so the controls' measured height includes it.
-      .padding(.top, contextualAction == nil ? 0 : 65)
+      // centred on it, and grows out of it from below. The top padding keeps
+      // room in the layout (button height plus a gap), so the controls' measured
+      // height includes it and the two shapes do not touch.
+      .padding(.top, contextualAction == nil ? 0 : 74)
       .overlay(alignment: .topTrailing) {
         if let contextualAction {
           contextualButton(contextualAction)
