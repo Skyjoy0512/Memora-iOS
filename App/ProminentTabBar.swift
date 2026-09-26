@@ -42,33 +42,37 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     let isSmall = tabCount <= 2
 
     MemoraGlassContainer(spacing: 10) {
-      HStack(spacing: 10) {
-        segmentedControl
-          .padding(2)
-          .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
-
-        if let secondaryAction {
-          secondaryButton(secondaryAction)
-        }
-
-        prominentButton
-      }
-      // The create button buds off the prominent button: it is the same size,
-      // centred on it, and grows out of it from below. The top padding keeps
-      // room in the layout (button height plus a gap), so the controls' measured
-      // height includes it and the two shapes do not touch.
-      .padding(.top, contextualAction == nil ? 0 : 76)
-      .overlay(alignment: .topTrailing) {
+      VStack(spacing: 21) {
+        // The create button buds off the prominent button: same size, centred on
+        // it, and it rises straight up out of it.
         if let contextualAction {
           contextualButton(contextualAction)
-            .transition(
-              reduceMotion
-                ? .opacity
-                : .scale(scale: 0.2, anchor: .bottom).combined(with: .opacity)
-            )
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .transition(splitTransition)
+        }
+
+        HStack(spacing: 10) {
+          segmentedControl
+            .padding(2)
+            .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
+
+          if let secondaryAction {
+            secondaryButton(secondaryAction)
+          }
+
+          prominentButton
         }
       }
     }
+  }
+
+  /// Grows out of the prominent button straight up: it starts over the button and
+  /// slides to its place while it scales up, rather than appearing from a corner.
+  private var splitTransition: AnyTransition {
+    guard !reduceMotion else { return .opacity }
+    return .offset(y: 55 + 21)
+      .combined(with: .scale(scale: 0.2, anchor: .bottom))
+      .combined(with: .opacity)
   }
 
   @ViewBuilder
