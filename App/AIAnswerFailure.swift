@@ -7,6 +7,9 @@ enum AIAnswerFailure: Error, Equatable {
   case noEngine
   /// The on-device model exists but is not ready yet.
   case engineNotReady
+  /// The request was larger than the on-device model's context, even after a
+  /// smaller retry.
+  case contextTooLarge
   /// An engine that needs a bundled model, which this build does not ship.
   case notBundled
   case missingKey
@@ -32,6 +35,8 @@ enum AIAnswerFailure: Error, Equatable {
       "この端末ではAIエンジンを利用できません。設定の「AI整理」でクラウド（BYOK）を選ぶと回答できます。"
     case .engineNotReady:
       "端末内モデルの準備ができていません。少し待ってからもう一度お試しください。"
+    case .contextTooLarge:
+      "記録が長すぎて端末内AIでは扱えません。範囲を絞るか、クラウドを選んでください。"
     case .notBundled:
       "ローカルLLMはこのアプリにまだ入っていません。設定の「AI整理」で別のエンジンを選んでください。"
     case .missingKey:

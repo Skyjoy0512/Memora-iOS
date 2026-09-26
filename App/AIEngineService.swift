@@ -20,11 +20,18 @@ enum AIEngineService {
   }
 
   /// The most characters of context one engine is given. Kept in one place so
-  /// the on-device and cloud limits cannot drift apart between requests.
-  static let defaultContextCharacterLimit = 6_000
+  /// the on-device and cloud limits cannot drift apart between requests. The
+  /// on-device model's window is about 4,096 tokens and covers the instructions,
+  /// the history, and the answer too, so only half of it is spent on the records
+  /// and the rest is left as room; Japanese runs about one token per character.
+  static let defaultContextCharacterLimit = 2_000
 
   static func contextCharacterLimit(for engine: AIEngine) -> Int {
-    effectiveEngine(engine) == .cloud ? 40_000 : defaultContextCharacterLimit
+    guard effectiveEngine(engine) != .cloud else { return 40_000 }
+    if #available(iOS 26.0, *) {
+      return max(1_000, SystemLanguageModel.default.contextSize / 2)
+    }
+    return defaultContextCharacterLimit
   }
 
   static func answer(
@@ -90,6 +97,12 @@ private enum FoundationModelAnswer {
     } catch is CancellationError {
       return .failure(.cancelled)
     } catch {
+      // A context overflow is not "not ready"; saying which one it is keeps the
+      // advice meaningful.
+      if #available(iOS 27.0, *), let modelError = error as? LanguageModelError,
+         case .contextSizeExceeded = modelError {
+        return .failure(.contextTooLarge)
+      }
       return .failure(.engineNotReady)
     }
   }

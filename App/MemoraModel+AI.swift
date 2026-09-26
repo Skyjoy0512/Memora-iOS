@@ -115,7 +115,7 @@ extension MemoraModel {
     engine: AIEngine,
     provider: CloudProvider
   ) async -> AIAnswerOutcome {
-    let content = Self.requestContent(
+    var content = Self.requestContent(
       for: request,
       scopeLabel: scopeLabel,
       allowedMeetings: allowedMeetings,
@@ -145,7 +145,7 @@ extension MemoraModel {
       )
     }
 
-    let result = await AIEngineService.answer(
+    var result = await AIEngineService.answer(
       engine: engine,
       provider: provider,
       question: content.question,
@@ -153,6 +153,28 @@ extension MemoraModel {
       context: content.context,
       history: history
     )
+
+    // The on-device window is small. One retry at half the records gives a long
+    // meeting a chance before giving up.
+    if case .failure(.contextTooLarge) = result,
+       AIEngineService.effectiveEngine(engine) != .cloud {
+      let reduced = max(500, AIEngineService.contextCharacterLimit(for: engine) / 2)
+      content = Self.requestContent(
+        for: request,
+        scopeLabel: scopeLabel,
+        allowedMeetings: allowedMeetings,
+        tasks: scopedTasks,
+        characterLimit: reduced
+      )
+      result = await AIEngineService.answer(
+        engine: engine,
+        provider: provider,
+        question: content.question,
+        scopeLabel: scopeLabel,
+        context: content.context,
+        history: history
+      )
+    }
 
     let details = AIAnswerDetails(
       scopeLabel: scopeLabel,
@@ -248,7 +270,12 @@ extension MemoraModel {
     lines.append(contentsOf: meeting.decisions.prefix(8).map { "決定: \($0)" })
     lines.append(contentsOf: meeting.openQuestions.prefix(8).map { "未決: \($0)" })
 
-    let transcript = transcriptBlock(meeting, words: words, characterLimit: characterLimit)
+    // The transcript takes what is left after the digest, so the whole context
+    // stays within the engine's budget.
+    let prefix = lines.joined(separator: "\n")
+    let marker = "\n文字起こし:"
+    let budget = max(0, characterLimit - prefix.count - marker.count)
+    let transcript = transcriptBlock(meeting, words: words, characterLimit: budget)
     if !transcript.text.isEmpty {
       lines.append("文字起こし:")
       lines.append(transcript.text)
@@ -322,7 +349,8 @@ extension MemoraModel {
       )
     }
 
-    return (blocks.joined(separator: "\n\n"), Array(sources))
+    let joined = blocks.joined(separator: "\n\n")
+    return (String(joined.prefix(characterLimit)), Array(sources))
   }
 
   /// The transcript as sent: whole when it fits, otherwise the high-scoring spans

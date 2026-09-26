@@ -370,6 +370,22 @@ enum SelfChecks {
     if longContent.context.contains("発言199") {
       report("AI context kept the far end of a long transcript past the limit")
     }
+
+    // The on-device limit covers the whole context, not just the transcript.
+    let onDeviceLimit = AIEngineService.defaultContextCharacterLimit
+    let onDeviceContent = MemoraModel.requestContent(
+      for: longRequest,
+      scopeLabel: "長い会議",
+      allowedMeetings: [long],
+      tasks: [],
+      characterLimit: onDeviceLimit
+    )
+    if onDeviceContent.context.count > onDeviceLimit {
+      report("on-device context exceeded its limit: \(onDeviceContent.context.count)")
+    }
+    if AIAnswerFailure.contextTooLarge.message == AIAnswerFailure.engineNotReady.message {
+      report("a context overflow is shown as the model not being ready")
+    }
   }
 
   /// Only settled results become transcript lines, and nothing is merged or
