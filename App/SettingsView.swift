@@ -337,7 +337,7 @@ struct SettingsView: View {
       .toolbar {
         if showsCloseButton {
           ToolbarItem(placement: .confirmationAction) {
-            Button("完了") { dismiss() }
+            ToolbarIconButton("完了", icon: .checkmark) { dismiss() }
           }
         }
       }

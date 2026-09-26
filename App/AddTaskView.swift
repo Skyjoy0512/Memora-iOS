@@ -55,10 +55,10 @@ struct AddTaskView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("キャンセル") { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("追加") {
+          ToolbarIconButton("追加", icon: .plus) {
             model.addTask(
               title: title,
               assignee: assignee,

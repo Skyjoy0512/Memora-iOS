@@ -88,10 +88,10 @@ struct TaskEditView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("キャンセル") { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("保存") {
+          ToolbarIconButton("保存", icon: .checkmark) {
             model.updateTask(
               task.id,
               title: title,

@@ -40,7 +40,7 @@ struct CalendarEventSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
-          Button("完了") { dismiss() }
+          ToolbarIconButton("完了", icon: .checkmark) { dismiss() }
         }
       }
     }

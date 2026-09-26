@@ -91,10 +91,10 @@ struct LifeLogCreationSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("キャンセル") { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("追加", action: save)
+          ToolbarIconButton("追加", icon: .plus, action: save)
             .disabled(!canSave)
         }
       }

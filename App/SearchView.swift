@@ -239,7 +239,7 @@ struct SearchView: View {
       .searchable(text: $query, prompt: "会議、発言、決定、タスク")
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
-          Button("完了") { isSearchSheetPresented = false }
+          ToolbarIconButton("完了", icon: .checkmark) { isSearchSheetPresented = false }
         }
       }
     }

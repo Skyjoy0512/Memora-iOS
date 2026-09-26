@@ -11,10 +11,12 @@ struct SpeechRecognitionSettingsView: View {
   var body: some View {
     Form {
       Section {
-        Picker("方法", selection: $engine) {
+        Picker(selection: $engine) {
           ForEach(TranscriptionEngine.allCases) { option in
             Text(option.label).tag(option)
           }
+        } label: {
+          SettingsLabel("方法", icon: .waveform, color: .red)
         }
         Text(engine.detail)
           .font(.footnote)
@@ -27,10 +29,12 @@ struct SpeechRecognitionSettingsView: View {
 
       if engine.usesCloud {
         Section {
-          Picker("プロバイダー", selection: $provider) {
+          Picker(selection: $provider) {
             ForEach(CloudProvider.allCases.filter(\.supportsTranscription)) { option in
               Text(option.label).tag(option)
             }
+          } label: {
+            SettingsLabel("プロバイダー", icon: .cloud, color: .blue)
           }
           Button("APIキーを設定", icon: .key) {
             isKeySheetPresented = true
@@ -43,10 +47,12 @@ struct SpeechRecognitionSettingsView: View {
       }
 
       Section {
-        Picker("主な言語", selection: $language) {
+        Picker(selection: $language) {
           ForEach(RecognitionLanguage.allCases) { option in
             Text(option.label).tag(option)
           }
+        } label: {
+          SettingsLabel("主な言語", icon: .textBubble, color: .indigo)
         }
       } header: {
         Text("言語")
@@ -55,7 +61,9 @@ struct SpeechRecognitionSettingsView: View {
       }
 
       Section {
-        Toggle("録音中に文字起こしを表示", isOn: $liveTranscription)
+        Toggle(isOn: $liveTranscription) {
+          SettingsLabel("録音中に文字起こしを表示", icon: .textDocument, color: .purple)
+        }
       } header: {
         Text("録音中")
       } footer: {
@@ -63,7 +71,7 @@ struct SpeechRecognitionSettingsView: View {
       }
 
       Section {
-        LabeledContent("この設定での状態", value: availability.summary)
+        SettingsValue(title: "この設定での状態", value: availability.summary, icon: .infoCircle)
         if let message = availability.message {
           Text(message)
             .font(.footnote)

@@ -14,7 +14,7 @@ struct MCPSettingsView: View {
   var body: some View {
     Form {
       Section {
-        LabeledContent("状態", value: hasToken ? "設定済み" : "未設定")
+        SettingsValue(title: "状態", value: hasToken ? "設定済み" : "未設定", icon: .plugsConnected, color: .mint)
       } header: {
         Text("接続")
       } footer: {
@@ -22,15 +22,21 @@ struct MCPSettingsView: View {
       }
 
       Section {
-        TextField("サーバーURL", text: $serverURL)
+        HStack(spacing: 12) {
+          SettingsIcon(icon: .link, color: .blue)
+          TextField("サーバーURL", text: $serverURL)
           .textInputAutocapitalization(.never)
           .autocorrectionDisabled()
           .keyboardType(.URL)
+        }
 
-        SecureField("アクセストークン", text: $token)
-          .textContentType(.password)
+        HStack(spacing: 12) {
+          SettingsIcon(icon: .key, color: .orange)
+          SecureField("アクセストークン", text: $token)
+            .textContentType(.password)
+        }
 
-        Button("トークンを保存") {
+        Button("トークンを保存", icon: .checkmark) {
           KeychainStore.set(token, forKey: MCPIntegration.tokenKey)
           token = ""
           hasToken = MCPIntegration.isConfigured
@@ -50,9 +56,15 @@ struct MCPSettingsView: View {
       }
 
       Section {
-        Toggle("会議の要約", isOn: $sharesSummaries)
-        Toggle("文字起こし", isOn: $sharesTranscripts)
-        Toggle("ジャーナル", isOn: $sharesJournal)
+        Toggle(isOn: $sharesSummaries) {
+          SettingsLabel("会議の要約", icon: .docText, color: .indigo)
+        }
+        Toggle(isOn: $sharesTranscripts) {
+          SettingsLabel("文字起こし", icon: .waveform, color: .red)
+        }
+        Toggle(isOn: $sharesJournal) {
+          SettingsLabel("ジャーナル", icon: .calendar, color: .orange)
+        }
       } header: {
         Text("公開する内容")
       } footer: {

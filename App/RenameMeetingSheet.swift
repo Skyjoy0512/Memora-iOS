@@ -20,12 +20,12 @@ struct RenameMeetingSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("キャンセル") {
+          ToolbarIconButton("キャンセル", icon: .xmark) {
             dismiss()
           }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("保存") {
+          ToolbarIconButton("保存", icon: .checkmark) {
             model.renameMeeting(meeting.id, title: title)
             dismiss()
           }

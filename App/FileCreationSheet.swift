@@ -25,10 +25,10 @@ struct FileCreationSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("キャンセル") { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("作成", action: createProject)
+          ToolbarIconButton("作成", icon: .plus, action: createProject)
             .disabled(projectName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
       }

@@ -66,15 +66,18 @@ struct AIQuestionView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("閉じる") { dismiss() }
+          ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }
         ToolbarItem(placement: .topBarTrailing) {
-          Picker("検索範囲", selection: $selectedScope) {
+          Picker(selection: $selectedScope) {
             ForEach(scopeOptions, id: \.self) { scope in
               Text(label(for: scope)).tag(scope)
             }
+          } label: {
+            Label("検索範囲", icon: .magnifyingglass)
           }
           .pickerStyle(.menu)
+          .labelStyle(.iconOnly)
         }
       }
       .onAppear(perform: askIfPrefilled)

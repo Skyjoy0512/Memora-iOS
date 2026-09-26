@@ -53,7 +53,7 @@ struct JournalMovementSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
-          Button("完了") { dismiss() }
+          ToolbarIconButton("完了", icon: .checkmark) { dismiss() }
         }
       }
       .confirmationDialog("この移動を削除しますか？", isPresented: $isConfirmingDelete, titleVisibility: .visible) {

@@ -8,10 +8,13 @@ struct NotionSettingsView: View {
   var body: some View {
     Form {
       Section {
-        SecureField("インテグレーショントークン", text: $token)
-          .textContentType(.password)
+        HStack(spacing: 12) {
+          SettingsIcon(icon: .key, color: .orange)
+          SecureField("インテグレーショントークン", text: $token)
+            .textContentType(.password)
+        }
 
-        Button("トークンを保存") {
+        Button("トークンを保存", icon: .checkmark) {
           KeychainStore.set(token, forKey: "integration.notion")
           token = ""
           hasToken = KeychainStore.has("integration.notion")
@@ -31,9 +34,12 @@ struct NotionSettingsView: View {
       }
 
       Section {
-        TextField("ページID または データベースID", text: $pageID)
-          .textInputAutocapitalization(.never)
-          .autocorrectionDisabled()
+        HStack(spacing: 12) {
+          SettingsIcon(icon: .docText, color: .indigo)
+          TextField("ページID または データベースID", text: $pageID)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+        }
       } header: {
         Text("保存先")
       } footer: {
@@ -41,7 +47,7 @@ struct NotionSettingsView: View {
       }
 
       Section {
-        LabeledContent("状態", value: hasToken && !pageID.isEmpty ? "設定済み" : "未設定")
+        SettingsValue(title: "状態", value: hasToken && !pageID.isEmpty ? "設定済み" : "未設定", icon: .plugsConnected, color: .mint)
       }
     }
     .navigationTitle("Notion")

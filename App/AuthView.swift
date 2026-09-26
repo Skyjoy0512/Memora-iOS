@@ -54,7 +54,7 @@ struct AuthView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("あとで") { dismiss() }
+          ToolbarIconButton("あとで", icon: .xmark) { dismiss() }
         }
       }
       .alert("サインインは準備中です", isPresented: $isUnavailableNoticePresented) {
@@ -69,4 +69,3 @@ struct AuthView: View {
     isUnavailableNoticePresented = true
   }
 }
-

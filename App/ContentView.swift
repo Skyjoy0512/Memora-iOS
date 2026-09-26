@@ -155,7 +155,7 @@ struct ContentView: View {
           .navigationBarTitleDisplayMode(.inline)
           .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-              Button("完了") { model.isRecentlyDeletedPresented = false }
+              ToolbarIconButton("完了", icon: .checkmark) { model.isRecentlyDeletedPresented = false }
             }
           }
       }

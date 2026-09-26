@@ -118,7 +118,7 @@ struct PerformanceLogView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("閉じる") { dismiss() }
+          ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }
         ToolbarItem(placement: .topBarTrailing) {
           Button("消去", role: .destructive) { log.reset() }

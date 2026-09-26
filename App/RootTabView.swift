@@ -71,7 +71,7 @@ struct RootTabView: View {
         }
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {
-            Button("閉じる") {
+            ToolbarIconButton("閉じる", icon: .xmark) {
               model.isOnlineMeetingCapturePresented = false
             }
           }

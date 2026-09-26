@@ -27,7 +27,7 @@ struct SpacePickerSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("閉じる") { dismiss() }
+          ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }
       }
     }

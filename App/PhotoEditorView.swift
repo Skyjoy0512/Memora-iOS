@@ -44,10 +44,10 @@ struct PhotoEditorView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("キャンセル") { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("完了") { finish() }
+          ToolbarIconButton("完了", icon: .checkmark) { finish() }
             .disabled(preview == nil || isExporting)
         }
       }

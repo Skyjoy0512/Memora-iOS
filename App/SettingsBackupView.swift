@@ -32,13 +32,13 @@ struct SettingsBackupView: View {
   var body: some View {
     List {
       Section {
-        LabeledContent("会議", value: "\(model.meetings.count)件")
-        LabeledContent("プロジェクト", value: "\(model.spaces.count)件")
-        LabeledContent("タスク", value: "\(model.tasks.count)件")
-        LabeledContent("ジャーナル", value: "\(model.lifeLogEntries.count)件")
-        LabeledContent("人", value: "\(model.people.count)件")
-        LabeledContent("AI履歴", value: "\(model.aiHistory.count)件")
-        LabeledContent("音声と写真", value: "媒体として同梱")
+        SettingsValue(title: "会議", value: "\(model.meetings.count)件", icon: .docText, color: .indigo)
+        SettingsValue(title: "プロジェクト", value: "\(model.spaces.count)件", icon: .folder, color: .blue)
+        SettingsValue(title: "タスク", value: "\(model.tasks.count)件", icon: .checklist, color: .green)
+        SettingsValue(title: "ジャーナル", value: "\(model.lifeLogEntries.count)件", icon: .calendar, color: .orange)
+        SettingsValue(title: "人", value: "\(model.people.count)件", icon: .person2, color: .teal)
+        SettingsValue(title: "AI履歴", value: "\(model.aiHistory.count)件", icon: .chatBubble, color: .purple)
+        SettingsValue(title: "音声と写真", value: "媒体として同梱", icon: .photo)
       } header: {
         Text("含まれるもの")
       } footer: {

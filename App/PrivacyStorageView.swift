@@ -25,17 +25,16 @@ struct PrivacyStorageView: View {
       }
 
       Section {
-        Toggle(
-          "クラウドに保管",
-          isOn: Binding(
+        Toggle(isOn: Binding(
             get: { model.cloudStorageEnabled },
             set: { model.setCloudStorageEnabled($0) }
-          )
-        )
+          )) {
+            SettingsLabel("クラウドに保管", icon: .cloud, color: .blue)
+          }
         .disabled(!model.isSubscribed)
 
         if !model.isSubscribed {
-          Button("Memora Plus で利用する") {
+          Button("Memora Plus で利用する", icon: .crown) {
             model.isPaywallPresented = true
           }
         }
@@ -48,8 +47,8 @@ struct PrivacyStorageView: View {
       }
 
       Section {
-        LabeledContent("高度なAI整理", value: "実行前に表示")
-        LabeledContent("クラウド保管", value: model.cloudStorageEnabled ? "オン" : "オフ")
+        SettingsValue(title: "高度なAI整理", value: "実行前に表示", icon: .sparkles, color: .purple)
+        SettingsValue(title: "クラウド保管", value: model.cloudStorageEnabled ? "オン" : "オフ", icon: .cloud, color: .blue)
       } header: {
         Text("外部へ送られる可能性があるもの")
       } footer: {

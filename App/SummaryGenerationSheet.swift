@@ -55,7 +55,7 @@ struct SummaryGenerationSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("キャンセル") { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
         }
       }
       .animation(reduceMotion ? nil : .smooth, value: mode)

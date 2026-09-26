@@ -40,7 +40,7 @@ struct OmiPairingView: View {
       }
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
-          Button("完了") { dismiss() }
+          ToolbarIconButton("完了", icon: .checkmark) { dismiss() }
         }
       }
       .onChange(of: manager.state) { previous, current in
@@ -167,4 +167,3 @@ struct OmiPairingView: View {
     }
   }
 }
-
