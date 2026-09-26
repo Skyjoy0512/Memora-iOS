@@ -58,10 +58,12 @@ struct QuickAIComposer: View {
   private func submit(attachment submitted: AIAttachment?) -> Bool {
     guard canSend else { return false }
 
-    // On the Ask AI tab the question joins the chat; elsewhere it opens the
-    // focused answer sheet.
-    if scope == .global, model.selectedTab == .askAI {
+    // A whole-library question belongs in the Ask AI chat, from whichever list
+    // tab it was typed on; it switches there so the answer and the follow-ups
+    // stay in one thread. A record or project question opens the answer sheet.
+    if scope == .global {
       let trimmed = model.composerDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+      model.selectedTab = .askAI
       return model.sendAIChat(
         trimmed.isEmpty ? "この添付を確認して" : trimmed,
         attachment: submitted
