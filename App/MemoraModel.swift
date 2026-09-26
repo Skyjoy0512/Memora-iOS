@@ -80,6 +80,7 @@ final class MemoraModel {
   @ObservationIgnored private var meetingIndex = IdentifiableIndex<Meeting>()
   @ObservationIgnored private var meetingSearchTexts: [UUID: String] = [:]
   @ObservationIgnored private var dayChangeObservers: [NSObjectProtocol] = []
+  @ObservationIgnored private var inboxObserver: NSObjectProtocol?
   @ObservationIgnored private var spaceIndex = IdentifiableIndex<MemoraSpace>()
   @ObservationIgnored private var personIndex = IdentifiableIndex<Person>()
   /// Tasks grouped by the meeting they belong to, built once per change.
@@ -454,6 +455,16 @@ final class MemoraModel {
       milliseconds: Date.now.timeIntervalSince(launchStartedAt) * 1_000,
       count: meetings.count
     )
+
+    // A record the logger writes while the app is open is taken in at once, so
+    // it does not wait for the next time the app is activated.
+    inboxObserver = NotificationCenter.default.addObserver(
+      forName: .autoLifeLogInboxDidChange,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      Task { @MainActor in self?.importAutoLifeLogInbox() }
+    }
 
     // A day or time zone change moves records between journal days.
     let dayChange: @Sendable (Notification) -> Void = { [weak self] _ in

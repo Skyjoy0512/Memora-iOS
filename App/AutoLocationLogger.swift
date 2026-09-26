@@ -24,6 +24,33 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
     var longitude: Double
   }
 
+  /// What the debug check found, so a run that recorded nothing says why.
+  enum DebugStationResult: Equatable {
+    case disabled
+    case denied
+    case station(String)
+    case noStation
+    case excluded
+    case failed
+
+    var message: String {
+      switch self {
+      case .disabled:
+        "設定がオフです。設定の「ジャーナル」で「移動と滞在を自動で記録」をオンにしてください。"
+      case .denied:
+        "位置情報が許可されていません。設定から「常に」を許可してください。"
+      case .station(let name):
+        "\(name)駅付近を通過 を記録しました。"
+      case .noStation:
+        "近くに駅が見つかりませんでした。"
+      case .excluded:
+        "この場所は「記録しない場所」に入っています。"
+      case .failed:
+        "現在地を確認できませんでした。"
+      }
+    }
+  }
+
   private static let stationRepeatWindow: TimeInterval = 30 * 60
   private static let minimumStay: TimeInterval = 10 * 60
   private static let exclusionRadius: CLLocationDistance = 200
@@ -39,6 +66,8 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   private var enablePhase: EnablePhase?
   private var lastStationTitle: String?
   private var lastStationAt: Date?
+  /// Set while the debug screen waits for one location check's outcome.
+  private var debugCompletion: ((DebugStationResult) -> Void)?
 
   static var isEnabled: Bool {
     UserDefaults.standard.bool(forKey: enabledKey)
@@ -117,17 +146,24 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
     stopMonitoring()
   }
 
-  /// Runs one station check from the current location, for the debug screen.
-  func debugEvaluateCurrentLocation() {
+  /// Runs one station check from the current location, for the debug screen, and
+  /// reports what it found so a run without a station is distinguishable.
+  func debugEvaluateCurrentLocation(completion: @escaping (DebugStationResult) -> Void) {
+    guard Self.isEnabled else {
+      completion(.disabled)
+      return
+    }
     switch manager.authorizationStatus {
     case .authorizedAlways, .authorizedWhenInUse:
+      debugCompletion = completion
       manager.requestLocation()
     case .notDetermined:
       manager.requestWhenInUseAuthorization()
+      completion(.denied)
     case .denied, .restricted:
-      break
+      completion(.denied)
     @unknown default:
-      break
+      completion(.failed)
     }
   }
 
@@ -178,11 +214,28 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   // MARK: - Locations
 
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-    guard Self.isEnabled, let location = locations.last else { return }
+    guard let location = locations.last else {
+      completeDebug(with: .failed)
+      return
+    }
     // Significant changes are coarse; a fix poorer than a kilometre is not a
     // reliable station.
-    guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 1_000 else { return }
+    guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 1_000 else {
+      completeDebug(with: .failed)
+      return
+    }
+    if debugCompletion != nil {
+      Task { completeDebug(with: await recordStationPass(at: location)) }
+      return
+    }
+    guard Self.isEnabled else { return }
     Task { await recordStationPass(at: location) }
+  }
+
+  private func completeDebug(with result: DebugStationResult) {
+    let completion = debugCompletion
+    debugCompletion = nil
+    completion?(result)
   }
 
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -202,10 +255,11 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
     Task { await recordVisit(at: location, arrival: arrival, departure: departure) }
   }
 
-  private func recordStationPass(at location: CLLocation) async {
-    guard !Self.isExcluded(location) else { return }
+  @discardableResult
+  private func recordStationPass(at location: CLLocation) async -> DebugStationResult {
+    guard !Self.isExcluded(location) else { return .excluded }
     guard let station = await PlaceNameResolver.nearestStation(to: location),
-          station.location.distance(from: location) <= 400 else { return }
+          station.location.distance(from: location) <= 400 else { return .noStation }
 
     let base = PlaceNameResolver.stationNameWithoutSuffix(station.name)
     let title = "\(base)駅付近を通過"
@@ -213,10 +267,10 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
 
     if lastStationTitle == title, let last = lastStationAt,
        now.timeIntervalSince(last) < Self.stationRepeatWindow {
-      return
+      return .station(base)
     }
     if await inboxHasRecent(title: title, within: Self.stationRepeatWindow, now: now) {
-      return
+      return .station(base)
     }
     lastStationTitle = title
     lastStationAt = now
@@ -235,6 +289,7 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
         longitude: Self.rounded(location.coordinate.longitude)
       )
     )
+    return .station(base)
   }
 
   private func recordVisit(at location: CLLocation, arrival: Date, departure: Date) async {
@@ -273,6 +328,9 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
       }
       entries.append(entry)
       try? RecordStore.saveNow(entries, key: Self.inboxKey)
+      // The model may be alive in the foreground; let it take the record now
+      // instead of waiting for the next activation.
+      NotificationCenter.default.post(name: .autoLifeLogInboxDidChange, object: nil)
     }
   }
 
@@ -324,4 +382,10 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   static func rounded(_ value: Double) -> Double {
     (value * 1_000).rounded() / 1_000
   }
+}
+
+extension Notification.Name {
+  /// Posted when the automatic logger adds a record to its inbox, so a running
+  /// model can import it without waiting for the app to be reactivated.
+  static let autoLifeLogInboxDidChange = Notification.Name("memoraAutoLifeLogInboxDidChange")
 }

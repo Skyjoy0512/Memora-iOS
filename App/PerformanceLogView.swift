@@ -8,6 +8,7 @@ struct PerformanceLogView: View {
   @Environment(MemoraModel.self) private var model
   @State private var isMeasuring = false
   @State private var measurementNote: String?
+  @State private var stationCheckNote: String?
   private var log: PerformanceLog { .shared }
 
   var body: some View {
@@ -89,7 +90,16 @@ struct PerformanceLogView: View {
 
         Section {
           Button("現在地で駅判定を実行", systemImage: "location") {
-            AutoLocationLogger.shared.debugEvaluateCurrentLocation()
+            stationCheckNote = "確認中…"
+            AutoLocationLogger.shared.debugEvaluateCurrentLocation { result in
+              stationCheckNote = result.message
+            }
+          }
+
+          if let stationCheckNote {
+            Text(stationCheckNote)
+              .font(.footnote)
+              .foregroundStyle(.secondary)
           }
         } header: {
           Text("位置情報")
