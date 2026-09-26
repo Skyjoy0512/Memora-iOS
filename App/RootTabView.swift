@@ -110,6 +110,17 @@ struct RootTabView: View {
     // The composer keeps a clear gap from the tab bar so the two never read as
     // one stacked slab of controls.
     return VStack(spacing: 18) {
+      // The recording's transport rides above the composer, on the same floating
+      // layer, so it never overlaps the composer or the home indicator.
+      if showsPlaybackBar, let player = model.activePlayback {
+        MeetingPlaybackBar(player: player)
+          .transition(
+            reduceMotion
+              ? .opacity
+              : .move(edge: .bottom).combined(with: .opacity)
+          )
+      }
+
       // The composer retreats with the bar so the two never separate mid-scroll.
       if shouldShowComposer, !isBottomBarHidden {
         QuickAIComposer(
@@ -153,6 +164,7 @@ struct RootTabView: View {
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isComposing)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.activePlayback != nil)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: shouldShowComposer)
@@ -166,6 +178,12 @@ struct RootTabView: View {
 
   private var showsBottomBar: Bool {
     !isComposing && !isShowingMeetingDetail && !isBottomBarHidden
+  }
+
+  /// The transport only appears while a detail is playing and no field (the
+  /// composer or an inline editor) owns the keyboard.
+  private var showsPlaybackBar: Bool {
+    model.activePlayback != nil && !isComposing && !isKeyboardVisible && !model.isInlineEditing
   }
 
   private var canRevealSidebar: Bool {

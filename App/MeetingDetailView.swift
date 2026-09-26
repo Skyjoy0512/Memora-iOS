@@ -23,9 +23,6 @@ struct MeetingDetailView: View {
   @State private var isPlayButtonRevealed = false
   @State private var statusAlert: StatusAlert?
   @State private var player = AudioPlayerService()
-  /// True once playback has started here, so the transport bar stays for the
-  /// rest of the visit even after a pause.
-  @State private var hasStartedPlayback = false
 
   @State private var isSavingToNotion = false
   /// The PDF export in progress, with its progress, while it runs.
@@ -83,7 +80,6 @@ struct MeetingDetailView: View {
           .onAppear {
             model.activeDetailMeetingID = meeting.id
             model.isDetailComposerVisible = true
-            hasStartedPlayback = false
             player.load(meeting.audioURL, title: meeting.displayTitle)
             if let start = initialPlaybackStart, meeting.audioURL != nil {
               selectedSection = .transcript
@@ -104,6 +100,11 @@ struct MeetingDetailView: View {
           }
           .onDisappear {
             player.stop()
+            // Only the detail that owns the transport gives it up, so a stacked
+            // screen cannot silence the one below it.
+            if model.activePlayback === player {
+              model.activePlayback = nil
+            }
           }
           .onDisappear {
             if model.activeDetailMeetingID == meeting.id {
@@ -232,20 +233,10 @@ struct MeetingDetailView: View {
         }
         .sensoryFeedback(.selection, trigger: selectedSection)
         .onChange(of: player.isPlaying) { _, playing in
-          // The bar stays once playback has begun, so pausing does not make the
-          // controls vanish mid-listen.
-          if playing { hasStartedPlayback = true }
+          // The transport is handed to the floating controls once playback has
+          // begun, and stays for the rest of the visit.
+          if playing { model.activePlayback = player }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-          if meeting.audioURL != nil, hasStartedPlayback, !model.isInlineEditing {
-            MeetingPlaybackBar(player: player)
-              .padding(.horizontal, 12)
-              .padding(.bottom, 8)
-              .transition(playbackBarTransition)
-          }
-        }
-        .animation(reduceMotion ? nil : MemoraMotion.control, value: hasStartedPlayback)
-        .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
       } else {
         ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
       }
@@ -397,12 +388,6 @@ struct MeetingDetailView: View {
     reduceMotion
       ? .opacity
       : .opacity.combined(with: .scale(scale: 0.99, anchor: .top))
-  }
-
-  private var playbackBarTransition: AnyTransition {
-    reduceMotion
-      ? .opacity
-      : .move(edge: .bottom).combined(with: .opacity)
   }
 
   private func updateScrollState(to newOffset: CGFloat) {

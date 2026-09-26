@@ -170,6 +170,9 @@ final class MemoraModel {
   var isPaywallPresented = false
   var omiPairingManager = OmiPairingManager()
   var activeDetailMeetingID: UUID?
+  /// The playback running for the detail on screen, so its transport can live in
+  /// the floating controls above the composer instead of over them.
+  var activePlayback: AudioPlayerService?
   /// Meeting details temporarily hide their contextual AI field once people
   /// move into the document.
   var isDetailComposerVisible = true
