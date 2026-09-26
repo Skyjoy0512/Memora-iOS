@@ -200,23 +200,25 @@ struct RootTabView: View {
   /// The create action for the screen on top. Derived from the tab and section,
   /// so a screen left behind can never leave its button on another tab.
   private var contextualCreateAction: ContextualCreateAction? {
+    // Only at the top of a tab: a pushed screen (a meeting, a project) has no
+    // create action of its own, and showing the list's would be unrelated.
     switch model.selectedTab {
     case .tasks:
-      ContextualCreateAction(id: "tasks", title: "タスクを追加", symbol: "checklist") {
+      return ContextualCreateAction(id: "tasks", title: "タスクを追加", symbol: "text.badge.plus") {
         model.isAddTaskPresented = true
       }
     case .home:
-      ContextualCreateAction(id: "home", title: "記録を追加", symbol: "square.and.pencil") {
+      guard model.homePath.isEmpty else { return nil }
+      return ContextualCreateAction(id: "home", title: "記録を追加", symbol: "square.and.pencil") {
         model.isLifeLogCreationPresented = true
       }
     case .askAI:
-      nil
+      return nil
     case .files:
-      model.fileSection == .projects
-        ? ContextualCreateAction(id: "files.projects", title: "プロジェクトを作成", symbol: "folder.badge.plus") {
-          model.isFileCreationPresented = true
-        }
-        : nil
+      guard model.libraryPath.isEmpty, model.fileSection == .projects else { return nil }
+      return ContextualCreateAction(id: "files.projects", title: "プロジェクトを作成", symbol: "folder.badge.plus") {
+        model.isFileCreationPresented = true
+      }
     }
   }
 
