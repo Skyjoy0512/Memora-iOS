@@ -102,7 +102,14 @@ struct MeetingPlaybackBar: View {
   private var sliderValue: Binding<Double> {
     Binding(
       get: { isScrubbing ? scrubValue : player.currentTime },
-      set: { scrubValue = $0 }
+      set: { value in
+        scrubValue = value
+        // VoiceOver's increment and decrement change the value without starting
+        // an editing session, so they must seek here to take effect.
+        if !isScrubbing {
+          player.seek(to: value)
+        }
+      }
     )
   }
 

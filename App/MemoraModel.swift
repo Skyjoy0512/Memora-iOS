@@ -1460,10 +1460,16 @@ final class MemoraModel {
     finalizePendingUndo()
     pendingUndo = action
     undoDismissTask = Task { [weak self] in
-      try? await Task.sleep(for: .seconds(5))
+      try? await Task.sleep(for: .seconds(Self.undoDisplaySeconds))
       guard let self, !Task.isCancelled else { return }
       self.finalizePendingUndo()
     }
+  }
+
+  /// Longer with an assistive technology, where five seconds is too short to
+  /// reach the button.
+  private static var undoDisplaySeconds: TimeInterval {
+    UIAccessibility.isVoiceOverRunning || UIAccessibility.isSwitchControlRunning ? 10 : 5
   }
 
   /// Takes the offer back: the record returns and no file is removed.
