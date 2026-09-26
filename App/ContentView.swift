@@ -82,6 +82,11 @@ struct ContentView: View {
     } message: {
       Text(model.importErrorMessage ?? "別の音声ファイルをお試しください。")
     }
+    .alert("音声を取り込みます", isPresented: pendingImportNoticeBinding) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(model.pendingImportNotice ?? "")
+    }
     .alert("保存データを読み込めませんでした", isPresented: loadFailureBinding) {
       Button("OK", role: .cancel) {}
     } message: {
@@ -207,6 +212,16 @@ struct ContentView: View {
     } set: { isPresented in
       if !isPresented {
         model.importErrorMessage = nil
+      }
+    }
+  }
+
+  private var pendingImportNoticeBinding: Binding<Bool> {
+    Binding {
+      model.pendingImportNotice != nil
+    } set: { isPresented in
+      if !isPresented {
+        model.pendingImportNotice = nil
       }
     }
   }

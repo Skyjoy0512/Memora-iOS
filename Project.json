@@ -36,7 +36,19 @@
             }
           ],
           "CFBundleVersion" : "1",
+          "CFBundleDocumentTypes" : [
+            {
+              "CFBundleTypeName" : "音声",
+              "LSHandlerRank" : "Alternate",
+              "LSItemContentTypes" : [
+                "public.audio",
+                "public.mpeg-4-audio",
+                "com.apple.m4a-audio"
+              ]
+            }
+          ],
           "CKSharingSupported" : true,
+          "LSSupportsOpeningDocumentsInPlace" : false,
           "NSBluetoothAlwaysUsageDescription" : "近くのOmiレコーダーを見つけて、会話の音声をMemoraへ取り込むためにBluetoothを使用します。",
           "NSCalendarsFullAccessUsageDescription" : "予定をジャーナルに表示し、会議の録音をすぐ始められるようにカレンダーを使用します。",
           "NSContactsUsageDescription" : "会議に参加した人を連絡先から選び、記録と人をひもづけるために連絡先を使用します。",

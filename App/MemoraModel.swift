@@ -2,6 +2,7 @@ import ActivityKit
 import Foundation
 import Observation
 import UIKit
+import UniformTypeIdentifiers
 
 @MainActor
 @Observable
@@ -85,6 +86,8 @@ final class MemoraModel {
   @ObservationIgnored private var meetingSearchTexts: [UUID: String] = [:]
   @ObservationIgnored private var dayChangeObservers: [NSObjectProtocol] = []
   @ObservationIgnored private var inboxObserver: NSObjectProtocol?
+  /// Audio files handed to the app while a recording owns the microphone.
+  @ObservationIgnored private var pendingImportURLs: [URL] = []
   @ObservationIgnored private var spaceIndex = IdentifiableIndex<MemoraSpace>()
   @ObservationIgnored private var personIndex = IdentifiableIndex<Person>()
   /// Tasks grouped by the meeting they belong to, built once per change.
@@ -149,6 +152,9 @@ final class MemoraModel {
     max(bottomControlsHeight, 24) + 16
   }
   var importErrorMessage: String?
+  /// Shown when an audio file was handed to the app while recording, to say it
+  /// will be imported once the recording ends.
+  var pendingImportNotice: String?
   /// True when a first real recording or import landed while samples are still
   /// present, so the app offers once to remove them.
   var isSampleCleanupSuggested = false
@@ -1094,6 +1100,8 @@ final class MemoraModel {
     isCapturePresented = false
     beginProcessing(meetingID)
     announce("録音を保存しました。文字起こしを準備しています。")
+    // Files handed over during the recording wait until now.
+    Task { await processPendingImports() }
   }
 
   func completeCaptureDismissal() {
@@ -2583,7 +2591,41 @@ final class MemoraModel {
     libraryPath = []
   }
 
+  /// Imports an audio file handed to the app. While recording, it waits, so the
+  /// recording is not interrupted; it is taken in once the recording ends.
+  private func receiveImportedFile(_ url: URL) async {
+    guard Self.isAudioFile(url) else { return }
+    if isRecording {
+      pendingImportURLs.append(url)
+      pendingImportNotice = "録音が終わったら取り込みます。"
+      return
+    }
+    await importAudio(from: url)
+  }
+
+  /// Takes in the audio files that arrived during a recording, in order.
+  private func processPendingImports() async {
+    guard !pendingImportURLs.isEmpty, !isRecording else { return }
+    let urls = pendingImportURLs
+    pendingImportURLs = []
+    for url in urls {
+      await importAudio(from: url)
+    }
+  }
+
+  private static func isAudioFile(_ url: URL) -> Bool {
+    guard let type = UTType(filenameExtension: url.pathExtension) else { return false }
+    return type.conforms(to: .audio)
+  }
+
   func handle(_ url: URL) async {
+    // A file opened with "Open in Memora" (Voice Memos, PLAUD, a share sheet)
+    // arrives as a file URL and is imported as audio.
+    if url.isFileURL {
+      await receiveImportedFile(url)
+      return
+    }
+
     guard url.scheme == "memora" else { return }
 
     if url.host == "meeting" {
