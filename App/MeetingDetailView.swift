@@ -393,8 +393,10 @@ struct MeetingDetailView: View {
   /// Brings the detail to its transcript at a time: plays from there when the
   /// record has audio, and otherwise just highlights the line so the source is
   /// still identifiable.
-  private func applyPlaybackRequest(_ time: TimeInterval, meeting: Meeting, proxy: ScrollViewProxy) {
+  private func applyPlaybackRequest(_ time: TimeInterval?, meeting: Meeting, proxy: ScrollViewProxy) {
     selectedSection = .transcript
+    // A request with no time only opens the transcript; it does not play.
+    guard let time else { return }
     if meeting.audioURL != nil {
       player.seek(to: time)
       player.play()

@@ -266,7 +266,7 @@ struct AIQuestionView: View {
   /// the one that seeks.
   private func openInExistingDetail(_ meetingID: UUID, time: TimeInterval?) {
     dismiss()
-    model.detailPlaybackRequest = DetailPlaybackRequest(meetingID: meetingID, time: time ?? 0)
+    model.detailPlaybackRequest = DetailPlaybackRequest(meetingID: meetingID, time: time)
   }
 
   private func sourceAccessibilityLabel(_ source: AIChatSource) -> String {

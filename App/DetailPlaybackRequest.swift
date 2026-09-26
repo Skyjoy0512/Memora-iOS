@@ -6,5 +6,7 @@ import Foundation
 struct DetailPlaybackRequest: Equatable {
   var id = UUID()
   var meetingID: UUID
-  var time: TimeInterval
+  /// Where to play from. `nil` only moves to the transcript without playing,
+  /// such as when a source's title is tapped.
+  var time: TimeInterval?
 }
