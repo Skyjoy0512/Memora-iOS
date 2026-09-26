@@ -253,10 +253,28 @@ final class MemoraModel {
     }
   }
   /// The bring-your-own-key provider used when the engine is cloud.
-  var aiProvider: CloudProvider = .openAI {
+  var aiProvider: LLMProvider = .openAI {
     didSet {
       UserDefaults.standard.set(aiProvider.rawValue, forKey: StorageKey.aiProvider)
+      guard aiProvider != oldValue else { return }
+      // Each provider remembers its own model, so switching back restores it.
+      aiModelID = Self.storedModelID(for: aiProvider)
     }
+  }
+  /// The model called at the chosen provider.
+  var aiModelID: String = "" {
+    didSet {
+      UserDefaults.standard.set(aiModelID, forKey: StorageKey.aiModel(aiProvider))
+    }
+  }
+  /// The provider and model a cloud request goes to, read together.
+  var aiSelection: LLMSelection {
+    LLMSelection(provider: aiProvider, modelID: aiModelID)
+  }
+
+  private static func storedModelID(for provider: LLMProvider) -> String {
+    let stored = UserDefaults.standard.string(forKey: StorageKey.aiModel(provider)) ?? ""
+    return stored.isEmpty ? provider.defaultModelID : stored
   }
   /// The request currently being answered, so a newer one can drop it.
   @ObservationIgnored var aiChatRequestID: UUID?
@@ -315,7 +333,9 @@ final class MemoraModel {
     planTier = PlanTier(rawValue: defaults.string(forKey: StorageKey.planTier) ?? "")
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
     aiEngine = AIEngine(rawValue: defaults.string(forKey: StorageKey.aiEngine) ?? "") ?? .automatic
-    aiProvider = CloudProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
+    let storedProvider = LLMProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
+    aiProvider = storedProvider
+    aiModelID = Self.storedModelID(for: storedProvider)
     composerDraft = DraftStore.load(Self.composerDraftKey) ?? ""
     // Cloud storage is a paid option: without Plus the records stay on device.
     cloudStorageEnabled = defaults.bool(forKey: StorageKey.isSubscribed)
@@ -1398,7 +1418,7 @@ final class MemoraModel {
         .joined(separator: "\n")
       return await AIEngineService.answer(
         engine: self.aiEngine,
-        provider: self.aiProvider,
+        llm: self.aiSelection,
         question: choice.summaryInstruction,
         scopeLabel: "文字起こし",
         context: transcript,
@@ -3205,6 +3225,7 @@ final class MemoraModel {
     static let spaces = "memoraSpaces"
     static let aiEngine = "memora.aiEngine"
     static let aiProvider = "memora.aiProvider"
+    static func aiModel(_ provider: LLMProvider) -> String { "memora.aiModel.\(provider.rawValue)" }
     static let people = "memoraPeople"
     static let installedTemplates = "memoraInstalledTemplates"
     static let cloudStorage = "memoraCloudStorage"

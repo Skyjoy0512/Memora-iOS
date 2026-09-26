@@ -364,7 +364,7 @@ struct AIQuestionView: View {
     isAnswering = true
 
     let engine = model.aiEngine
-    let provider = model.aiProvider
+    let llm = model.aiSelection
     let allowed = MemoraModel.meetings(in: request.scope, from: model.meetings)
     // A whole-library question reaches tasks that are not tied to a record too;
     // a single record or project reaches only its own.
@@ -394,7 +394,7 @@ struct AIQuestionView: View {
         tasks: scopedTasks,
         history: "",
         engine: engine,
-        provider: provider
+        llm: llm
       )
       guard !Task.isCancelled, submitted?.id == request.id else { return }
       unsupportedAttachmentNote = outcome.unsupportedAttachmentNote

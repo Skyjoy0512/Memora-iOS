@@ -21,6 +21,11 @@ enum AIAnswerFailure: Error, Equatable {
   case missingKey
   /// The provider rejected the key.
   case unauthorized
+  /// The chosen model id does not exist for this key, usually because the
+  /// provider renamed or retired it.
+  case modelUnavailable
+  /// The model declined to answer for a safety reason.
+  case refused
   case rateLimited
   /// The provider answered with an error.
   case server
@@ -55,8 +60,12 @@ enum AIAnswerFailure: Error, Equatable {
       "APIキーが設定されていません。設定の「AI整理」でキーを保存してください。"
     case .unauthorized:
       "APIキーが受け付けられませんでした。設定の「AI整理」でキーを確認してください。"
+    case .modelUnavailable:
+      "選んだモデルはこのAPIキーでは使えません。設定の「AI整理」でモデルを選び直してください。"
+    case .refused:
+      "安全上の理由でAIが回答を控えました。質問や記録の内容を変えてお試しください。"
     case .rateLimited:
-      "APIの利用上限に達しました。しばらく待ってからもう一度お試しください。"
+      "APIの利用上限か残高の上限に達しました。しばらく待つか、プロバイダーの管理画面で残高を確認してください。"
     case .server:
       "AIのサーバーがエラーを返しました。時間をおいてもう一度お試しください。"
     case .network:
@@ -66,7 +75,7 @@ enum AIAnswerFailure: Error, Equatable {
     case .empty:
       "回答が空でした。もう一度お試しください。"
     case .unsupportedProvider:
-      "このプロバイダーは回答作成に対応していません。設定の「AI整理」でOpenAIかAnthropicを選んでください。"
+      "このプロバイダーは回答作成に対応していません。設定の「AI整理」で別のプロバイダーを選んでください。"
     case .attachmentNotAnalysed:
       "この添付はAIが読める形式ではないため、回答できません。質問を入力するか、テキスト・文字入りPDFを添付してください。"
     }

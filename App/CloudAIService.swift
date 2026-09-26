@@ -7,11 +7,12 @@ enum CloudAIService {
     scopeLabel: String,
     context: String,
     history: String,
-    provider: CloudProvider
+    llm: LLMSelection
   ) async -> AIAnswerResult {
-    guard let key = KeychainStore.string(forKey: "ai.\(provider.rawValue)"), !key.isEmpty else {
+    guard let key = KeychainStore.string(forKey: llm.provider.keychainAccount), !key.isEmpty else {
       return .failure(.missingKey)
     }
+    guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
 
     let system = "あなたは会議の記録を要約して答えるアシスタントです。短い日本語で、与えられた記録だけに沿って答えます。"
     let user = AIAnswerPrompt.text(
@@ -22,14 +23,12 @@ enum CloudAIService {
     )
 
     do {
-      switch provider {
-      case .openAI:
-        return .answer(try await openAI(system: system, user: user, key: key))
-      case .anthropic:
-        return .answer(try await anthropic(system: system, user: user, key: key))
-      case .google, .deepgram:
-        return .failure(.unsupportedProvider)
+      let text = if llm.provider.usesAnthropicAPI {
+        try await anthropic(system: system, user: user, model: llm.modelID, key: key)
+      } else {
+        try await chatCompletions(system: system, user: user, llm: llm, key: key)
       }
+      return .answer(text)
     } catch let failure as AIAnswerFailure {
       return .failure(failure)
     } catch is CancellationError {
@@ -41,14 +40,25 @@ enum CloudAIService {
     }
   }
 
-  private static func openAI(system: String, user: String, key: String) async throws -> String {
-    var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+  /// The OpenAI chat-completions shape, which every non-Anthropic provider here
+  /// accepts. No temperature or token cap is sent: newer reasoning models
+  /// reject both, and the defaults suit summaries.
+  private static func chatCompletions(
+    system: String,
+    user: String,
+    llm: LLMSelection,
+    key: String
+  ) async throws -> String {
+    var request = URLRequest(url: llm.provider.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
+    request.timeoutInterval = 180
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+    if llm.provider == .openRouter {
+      request.setValue("Memora", forHTTPHeaderField: "X-Title")
+    }
     request.httpBody = try JSONSerialization.data(withJSONObject: [
-      "model": CloudProvider.openAI.aiModelName,
-      "temperature": 0.2,
+      "model": llm.modelID,
       "messages": [
         ["role": "system", "content": system],
         ["role": "user", "content": user]
@@ -57,45 +67,64 @@ enum CloudAIService {
 
     let (data, response) = try await URLSession.shared.data(for: request)
     try validate(response)
-    let decoded = try JSONDecoder().decode(OpenAIResponse.self, from: data)
-    guard let text = decoded.choices.first?.message.content, !text.isEmpty else {
-      throw AIAnswerFailure.empty
-    }
+    let decoded = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
+    let text = decoded.choices.first?.message.content?
+      .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    guard !text.isEmpty else { throw AIAnswerFailure.empty }
     return text
   }
 
-  private static func anthropic(system: String, user: String, key: String) async throws -> String {
-    var request = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)
+  private static func anthropic(system: String, user: String, model: String, key: String) async throws -> String {
+    var request = URLRequest(url: LLMProvider.anthropic.baseURL.appendingPathComponent("messages"))
     request.httpMethod = "POST"
+    request.timeoutInterval = 300
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue(key, forHTTPHeaderField: "x-api-key")
     request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-    request.httpBody = try JSONSerialization.data(withJSONObject: [
-      "model": CloudProvider.anthropic.aiModelName,
-      "max_tokens": 500,
+
+    var body: [String: Any] = [
+      "model": model,
+      // Current models think before answering, and thinking counts against
+      // this cap, so a small cap cut summaries off mid-sentence.
+      "max_tokens": 16_000,
       "system": system,
       "messages": [["role": "user", "content": user]]
-    ])
+    ]
+    // These models may decline a request on a safety classifier; a server-side
+    // fallback lets another model answer instead of returning nothing.
+    if model == "claude-opus-5" || model == "claude-fable-5-1" {
+      request.setValue("server-side-fallback-2026-07-01", forHTTPHeaderField: "anthropic-beta")
+      body["fallbacks"] = "default"
+    }
+    request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
     let (data, response) = try await URLSession.shared.data(for: request)
     try validate(response)
     let decoded = try JSONDecoder().decode(AnthropicResponse.self, from: data)
-    guard let text = decoded.content.first?.text, !text.isEmpty else {
-      throw AIAnswerFailure.empty
-    }
+    if decoded.stopReason == "refusal" { throw AIAnswerFailure.refused }
+    // Thinking blocks come first and carry no text; only text blocks are the
+    // answer.
+    let text = decoded.content
+      .filter { $0.type == "text" }
+      .compactMap(\.text)
+      .joined()
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty else { throw AIAnswerFailure.empty }
     return text
   }
 
-  /// Turns the provider's status into the reason it failed, so a wrong key and
-  /// a busy API are not reported as the same thing.
-  private static func validate(_ response: URLResponse) throws {
+  /// Turns the provider's status into the reason it failed, so a wrong key, a
+  /// model that no longer exists, and a busy API are not reported alike.
+  static func validate(_ response: URLResponse) throws {
     guard let http = response as? HTTPURLResponse else { throw AIAnswerFailure.network }
     switch http.statusCode {
     case 200..<300:
       return
     case 401, 403:
       throw AIAnswerFailure.unauthorized
-    case 429:
+    case 404:
+      throw AIAnswerFailure.modelUnavailable
+    case 402, 429:
       throw AIAnswerFailure.rateLimited
     default:
       throw AIAnswerFailure.server
@@ -103,28 +132,24 @@ enum CloudAIService {
   }
 }
 
-extension CloudProvider {
-  /// The model this provider is called with. Shown in the answer's details so
-  /// the display cannot drift from the request.
-  var aiModelName: String {
-    switch self {
-    case .openAI: "gpt-4o-mini"
-    case .anthropic: "claude-3-5-haiku-latest"
-    case .google: "—"
-    case .deepgram: "—"
-    }
-  }
-}
-
-private struct OpenAIResponse: Decodable {
+private struct ChatCompletionResponse: Decodable {
   struct Choice: Decodable {
-    struct Message: Decodable { var content: String }
+    struct Message: Decodable { var content: String? }
     var message: Message
   }
   var choices: [Choice]
 }
 
 private struct AnthropicResponse: Decodable {
-  struct Block: Decodable { var text: String? }
+  struct Block: Decodable {
+    var type: String
+    var text: String?
+  }
   var content: [Block]
+  var stopReason: String?
+
+  enum CodingKeys: String, CodingKey {
+    case content
+    case stopReason = "stop_reason"
+  }
 }

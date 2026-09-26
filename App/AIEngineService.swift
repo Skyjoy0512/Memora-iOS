@@ -15,8 +15,8 @@ enum AIEngineService {
 
   /// The provider's model name, so the app shows what was called rather than a
   /// label that could drift from it.
-  static func modelLabel(engine: AIEngine, provider: CloudProvider) -> String? {
-    effectiveEngine(engine) == .cloud ? provider.aiModelName : nil
+  static func modelLabel(engine: AIEngine, llm: LLMSelection) -> String? {
+    effectiveEngine(engine) == .cloud ? llm.modelLabel : nil
   }
 
   /// The most characters of context one engine is given. Kept in one place so
@@ -36,7 +36,7 @@ enum AIEngineService {
 
   static func answer(
     engine: AIEngine,
-    provider: CloudProvider,
+    llm: LLMSelection,
     question: String,
     scopeLabel: String,
     context: String,
@@ -57,13 +57,12 @@ enum AIEngineService {
       return .failure(.notBundled)
 
     case .cloud:
-      guard provider.supportsAI else { return .failure(.unsupportedProvider) }
       return await CloudAIService.answer(
         question: question,
         scopeLabel: scopeLabel,
         context: context,
         history: history,
-        provider: provider
+        llm: llm
       )
     }
   }

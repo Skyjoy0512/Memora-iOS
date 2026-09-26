@@ -30,7 +30,7 @@ extension MemoraModel {
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
 
     let engine = aiEngine
-    let provider = aiProvider
+    let llm = aiSelection
     let scope = aiScope
     let history = aiConversationContext()
     let requestID = UUID()
@@ -52,7 +52,7 @@ extension MemoraModel {
         tasks: Self.openTasks(in: scope, from: self.tasks, meetings: allowedMeetings),
         history: history,
         engine: engine,
-        provider: provider
+        llm: llm
       )
 
       // A newer chat or question owns the screen now; this result is stale, and
@@ -119,7 +119,7 @@ extension MemoraModel {
     tasks scopedTasks: [MemoraTask],
     history: String,
     engine: AIEngine,
-    provider: CloudProvider
+    llm: LLMSelection
   ) async -> AIAnswerOutcome {
     var content = Self.requestContent(
       for: request,
@@ -138,7 +138,7 @@ extension MemoraModel {
       let details = AIAnswerDetails(
         scopeLabel: scopeLabel,
         engineLabel: AIEngineService.effectiveEngine(engine).label,
-        modelLabel: AIEngineService.modelLabel(engine: engine, provider: provider),
+        modelLabel: AIEngineService.modelLabel(engine: engine, llm: llm),
         sourceCount: 0,
         generatedAt: .now
       )
@@ -155,7 +155,7 @@ extension MemoraModel {
 
     var result = await AIEngineService.answer(
       engine: engine,
-      provider: provider,
+      llm: llm,
       question: content.question,
       scopeLabel: scopeLabel,
       context: content.context,
@@ -177,7 +177,7 @@ extension MemoraModel {
       )
       result = await AIEngineService.answer(
         engine: engine,
-        provider: provider,
+        llm: llm,
         question: content.question,
         scopeLabel: scopeLabel,
         context: content.context,
@@ -188,7 +188,7 @@ extension MemoraModel {
     let details = AIAnswerDetails(
       scopeLabel: scopeLabel,
       engineLabel: AIEngineService.effectiveEngine(engine).label,
-      modelLabel: AIEngineService.modelLabel(engine: engine, provider: provider),
+      modelLabel: AIEngineService.modelLabel(engine: engine, llm: llm),
       sourceCount: content.sources.count,
       generatedAt: .now
     )

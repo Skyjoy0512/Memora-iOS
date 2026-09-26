@@ -4,29 +4,14 @@ struct AISettingsView: View {
   @Environment(MemoraModel.self) private var model
   @State private var isAPIKeySheetPresented = false
   @State private var availability = EngineAvailability.Status()
+  @State private var hasKey = false
 
   var body: some View {
-    @Bindable var model = model
-
-    return Form {
+    Form {
       Section {
-        Picker("エンジン", selection: $model.aiEngine) {
-          ForEach(AIEngine.allCases) { option in
-            Text(option.label)
-              .tag(option)
-              .disabled(!option.isSelectable)
-          }
+        ForEach(AIEngine.allCases) { option in
+          engineRow(option)
         }
-        LabeledContent("実際に使う", value: effectiveLabel)
-        LabeledContent("この設定での状態", value: availability.summary)
-        if let message = availability.message {
-          Text(message)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
-        Text(model.aiEngine.detail)
-          .font(.footnote)
-          .foregroundStyle(.secondary)
       } header: {
         Text("AIエンジン")
       } footer: {
@@ -35,40 +20,95 @@ struct AISettingsView: View {
 
       if model.aiEngine.usesCloud {
         Section {
-          Picker("プロバイダー", selection: $model.aiProvider) {
-            ForEach(CloudProvider.allCases) { option in
-              Text(option.label)
-                .tag(option)
-                .disabled(!option.supportsAI)
+          NavigationLink {
+            LLMProviderPickerView()
+          } label: {
+            HStack(spacing: 12) {
+              ProviderLogo(provider: model.aiProvider, size: 29)
+              LabeledContent("プロバイダー", value: model.aiProvider.label)
             }
           }
-          Button("APIキーを設定", icon: .key) {
+
+          NavigationLink {
+            LLMModelPickerView()
+          } label: {
+            HStack(spacing: 12) {
+              SettingsIcon(icon: .cpu, color: .indigo)
+              LabeledContent("モデル", value: modelName)
+            }
+          }
+
+          Button {
             isAPIKeySheetPresented = true
+          } label: {
+            HStack(spacing: 12) {
+              SettingsIcon(icon: .keyFill, color: hasKey ? .green : .orange)
+              LabeledContent("APIキー", value: hasKey ? "保存済み" : "未設定")
+                .foregroundStyle(.primary)
+            }
           }
         } header: {
           Text("クラウド（BYOK）")
         } footer: {
-          Text("回答に使えるのは OpenAI と Anthropic です。シークレットはKeychainに保存し、設定画面にも再表示しません。")
+          Text("自分のAPIキーで各社のモデルを使います。キーはKeychainに保存し、設定画面にも再表示しません。記録の内容は、質問や要約のときだけ選んだプロバイダーへ送られます。")
         }
+      }
+
+      Section {
+        LabeledContent("実際に使う", value: effectiveLabel)
+        LabeledContent("この設定での状態", value: availability.summary)
+        if let message = availability.message {
+          Text(message)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
+      } header: {
+        Text("状態")
       }
     }
     .navigationTitle("AI整理")
     .memoraBackButton()
     .sheet(isPresented: $isAPIKeySheetPresented) {
-      APIKeySheet(provider: model.aiProvider.label, account: "ai.\(model.aiProvider.rawValue)")
+      APIKeySheet(llmProvider: model.aiProvider) { refresh() }
     }
-    .onAppear {
-      if !model.aiProvider.supportsAI {
-        model.aiProvider = .openAI
+    .onAppear(perform: refresh)
+    .onChange(of: model.aiEngine) { _, _ in refresh() }
+    .onChange(of: model.aiProvider) { _, _ in refresh() }
+  }
+
+  private func engineRow(_ option: AIEngine) -> some View {
+    Button {
+      model.aiEngine = option
+    } label: {
+      HStack(spacing: 12) {
+        SettingsIcon(icon: option.symbol, color: option.tint)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(option.label)
+            .foregroundStyle(option.isSelectable ? .primary : .secondary)
+          Text(option.detail)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        Spacer(minLength: 8)
+        if option == model.aiEngine {
+          Image(icon: .checkmark)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(.tint)
+        }
       }
-      availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
+      .contentShape(Rectangle())
     }
-    .onChange(of: model.aiEngine) { _, _ in
-      availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
-    }
-    .onChange(of: model.aiProvider) { _, _ in
-      availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
-    }
+    .disabled(!option.isSelectable)
+    .accessibilityAddTraits(option == model.aiEngine ? .isSelected : [])
+  }
+
+  private var modelName: String {
+    model.aiProvider.suggestedModels.first { $0.id == model.aiModelID }?.name ?? model.aiModelID
+  }
+
+  private func refresh() {
+    hasKey = EngineAvailability.hasKey(model.aiProvider.keychainAccount)
+    availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
   }
 
   /// What will really run, including the model called for a cloud provider.
@@ -76,7 +116,7 @@ struct AISettingsView: View {
     let engine = AIEngineService.effectiveEngine(model.aiEngine)
     switch engine {
     case .cloud:
-      return "\(model.aiProvider.label) · \(model.aiProvider.aiModelName)"
+      return model.aiSelection.modelLabel
     case .automatic:
       return "利用できません（クラウドを選ぶと回答できます）"
     default:

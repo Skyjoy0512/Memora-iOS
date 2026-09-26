@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 /// How new recordings and imports are transcribed.
 enum TranscriptionEngine: String, CaseIterable, Identifiable {
@@ -65,9 +65,19 @@ enum AIEngine: String, CaseIterable, Identifiable {
   var symbol: MemoraIcon {
     switch self {
     case .automatic: .sparkles
-    case .foundation: .iphone
-    case .local: .desktopcomputer
+    case .foundation: .appleLogo
+    case .local: .cpu
     case .cloud: .cloud
+    }
+  }
+
+  /// The settings tile color, one per engine.
+  var tint: Color {
+    switch self {
+    case .automatic: .purple
+    case .foundation: .gray
+    case .local: .teal
+    case .cloud: .blue
     }
   }
 
@@ -91,7 +101,7 @@ enum AIEngine: String, CaseIterable, Identifiable {
   var isSelectable: Bool { self != .local }
 }
 
-/// A bring-your-own-key provider.
+/// A bring-your-own-key transcription provider. Answering uses `LLMProvider`.
 enum CloudProvider: String, CaseIterable, Identifiable {
   case openAI
   case anthropic
@@ -109,8 +119,6 @@ enum CloudProvider: String, CaseIterable, Identifiable {
     }
   }
 
-  /// Which providers can answer questions rather than transcribe.
-  var supportsAI: Bool { self == .openAI || self == .anthropic }
   var supportsTranscription: Bool { self == .openAI || self == .deepgram }
 }
 

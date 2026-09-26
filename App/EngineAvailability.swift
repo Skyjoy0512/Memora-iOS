@@ -123,7 +123,7 @@ enum EngineAvailability {
   }
 
   /// Whether the chosen AI engine can answer.
-  static func ai(_ engine: AIEngine, provider: CloudProvider) -> Status {
+  static func ai(_ engine: AIEngine, provider: LLMProvider) -> Status {
     switch engine {
     case .automatic:
       if #available(iOS 26.0, *), SystemLanguageModel.default.isAvailable {
@@ -141,8 +141,7 @@ enum EngineAvailability {
       return Status(limits: [.notBundled])
 
     case .cloud:
-      guard provider.supportsAI else { return Status(limits: [.deviceNotSupported]) }
-      return hasKey("ai.\(provider.rawValue)")
+      return hasKey(provider.keychainAccount)
         ? Status()
         : Status(limits: [.missingKey("AI")])
     }

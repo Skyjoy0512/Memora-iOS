@@ -204,12 +204,35 @@ struct AIComposerBar: View {
         }
         .disabled(!option.isSelectable)
       }
+
+      // Providers with a saved key can be switched to without opening settings.
+      let readyProviders = LLMProvider.allCases.filter { EngineAvailability.hasKey($0.keychainAccount) }
+      if !readyProviders.isEmpty {
+        Section("クラウドのプロバイダー") {
+          ForEach(readyProviders) { provider in
+            Button {
+              model.aiEngine = .cloud
+              model.aiProvider = provider
+            } label: {
+              Label {
+                Text(provider.label)
+              } icon: {
+                Image(model.aiEngine == .cloud && model.aiProvider == provider ? MemoraIcon.checkmark.assetName : provider.logoAssetName)
+              }
+            }
+          }
+        }
+      }
     } label: {
       HStack(spacing: 6) {
-        Image(icon: model.aiEngine.symbol)
-          .font(.subheadline)
+        if model.aiEngine == .cloud {
+          ProviderLogo(provider: model.aiProvider, size: 22)
+        } else {
+          Image(icon: model.aiEngine.symbol)
+            .font(.subheadline)
+        }
 
-        Text(model.aiEngine.shortLabel)
+        Text(chipTitle)
           .font(.subheadline.weight(.medium))
           .lineLimit(1)
           .minimumScaleFactor(0.85)
@@ -225,7 +248,12 @@ struct AIComposerBar: View {
     }
     // The chip shows the short name; the full engine name is read out here and
     // listed in the menu.
-    .accessibilityLabel("使用するAIエンジン: \(model.aiEngine.label)")
+    .accessibilityLabel("使用するAIエンジン: \(model.aiEngine == .cloud ? model.aiSelection.modelLabel : model.aiEngine.label)")
+  }
+
+  /// The cloud engine is named by its provider, since that is what answers.
+  private var chipTitle: String {
+    model.aiEngine == .cloud ? model.aiProvider.label : model.aiEngine.shortLabel
   }
 
   private var actionButton: some View {
