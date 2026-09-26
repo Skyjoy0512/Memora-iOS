@@ -2374,7 +2374,12 @@ final class MemoraModel {
     let keptSpaces = spaces.filter { !SampleContent.isSample(spaceID: $0.id) }
     let keptTasks = tasks.filter { !SampleContent.isSample(task: $0) }
     let keptLifeLog = lifeLogEntries.filter { !SampleContent.isSample(lifeLogEntry: $0) }
-    let keptPeople = people.filter { !SampleContent.isSample(personID: $0.id) }
+    // A sample person stays if a record the person made still points at them, so
+    // deleting the samples never leaves a real record with a missing participant.
+    let referencedPeople = Set(keptMeetings.compactMap(\.participantIDs).flatMap { $0 })
+    let keptPeople = people.filter { person in
+      !SampleContent.isSample(personID: person.id) || referencedPeople.contains(person.id)
+    }
     let keptHistory = aiHistory.filter { $0.id != Self.seedAIHistoryID }
 
     let stored = persistBatch {
