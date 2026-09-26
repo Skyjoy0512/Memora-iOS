@@ -7,6 +7,9 @@ import UIKit
 @Observable
 final class MemoraModel {
   var selectedTab = RootTab.files
+  /// Ask AI is not a tab; it opens full screen from the bar's round button or
+  /// the sidebar.
+  var isAskAIPresented = false
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
   var fileSection = FileSection.meetingFiles

@@ -103,10 +103,6 @@ struct RootTabView: View {
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.home)
 
-      SearchView()
-        .hidesSystemTabBar()
-        .tag(RootTab.askAI)
-
       TasksView()
         .hidesSystemTabBar()
         .tag(RootTab.tasks)
@@ -140,7 +136,7 @@ struct RootTabView: View {
         QuickAIComposer(
           scope: composerScope,
           isComposing: $isComposing,
-          keepsFocusAfterSubmit: model.selectedTab == .askAI
+          keepsFocusAfterSubmit: false
         )
         // Note: no `.id(composerScope)` — recreating the field would throw away
         // what someone had already typed when the scope changed.

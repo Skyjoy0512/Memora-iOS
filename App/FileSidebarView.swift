@@ -30,6 +30,12 @@ struct FileSidebarView: View {
                 onSelectTab(tab)
               }
             }
+
+            // Ask AI is not a tab; it opens full screen from here or the bar.
+            SidebarRow(title: "Ask AI", symbol: "sparkles") {
+              onClose()
+              model.isAskAIPresented = true
+            }
           }
 
           sidebarSection("ライブラリ") {
