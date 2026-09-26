@@ -12,12 +12,21 @@ final class AudioPlayerService {
   private(set) var duration: TimeInterval = 0
   /// Shown when the file could not be opened.
   private(set) var errorMessage: String?
-  /// Playback speed, kept across recordings.
-  var rate: Float = 1 {
+  /// Playback speed, kept across recordings and app launches.
+  var rate: Float = AudioPlayerService.storedRate() {
     didSet {
       timePitch.rate = rate
+      UserDefaults.standard.set(rate, forKey: Self.rateKey)
       publishNowPlaying()
     }
+  }
+
+  private static let rateKey = "memora.playbackRate"
+
+  /// The speed this device last chose, so a new recording opens at the same one.
+  private static func storedRate() -> Float {
+    let stored = UserDefaults.standard.float(forKey: rateKey)
+    return stored == 0 ? 1 : stored
   }
   /// The name shown in the system now-playing controls, set from the record.
   private var nowPlayingTitle = ""
