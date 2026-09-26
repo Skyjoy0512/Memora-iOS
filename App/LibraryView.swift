@@ -389,18 +389,34 @@ struct LibraryView: View {
   }
 
   private var emptyFilesPrompt: some View {
-    ContentUnavailableView {
-      Label("まだファイルがありません", systemImage: "doc.text")
-    } description: {
-      Text("録音するか、音声ファイルを読み込むとここに整理されます。")
-    } actions: {
-      Button("議事録を追加", systemImage: "plus") {
+    VStack(spacing: 16) {
+      Image(systemName: "waveform")
+        .font(.title2)
+        .foregroundStyle(.secondary)
+
+      VStack(spacing: 6) {
+        Text("まだファイルがありません")
+          .font(.headline)
+
+        Text("録音するか、音声ファイルを読み込むとここに整理されます。")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .multilineTextAlignment(.center)
+      }
+
+      Button("録音または読み込み") {
         model.isCaptureSourcePresented = true
       }
-      .buttonStyle(.borderedProminent)
+      .font(.headline)
+      .foregroundStyle(Color(uiColor: .systemBackground))
+      .frame(maxWidth: .infinity, minHeight: 52)
+      .background(Color(uiColor: .label), in: Capsule())
+      .contentShape(Capsule())
+      .buttonStyle(.plain)
     }
     .frame(maxWidth: .infinity)
-    .padding(.vertical, 24)
+    .padding(20)
+    .memoraCard()
   }
 
   // MARK: - Selection
