@@ -12,6 +12,8 @@ struct LifeLogEntry: Identifiable, Hashable, Codable {
   var photoFileName: String?
   var eventDate: Date?
   var locationName: String?
+  /// How the entry got here. Defaults to a hand-made note for older data.
+  var origin = LifeLogOrigin.manual
 }
 
 extension LifeLogEntry {
@@ -28,6 +30,7 @@ extension LifeLogEntry {
     case photoData
     case eventDate
     case locationName
+    case origin
   }
 
   init(from decoder: Decoder) throws {
@@ -41,6 +44,7 @@ extension LifeLogEntry {
     kind = try container.decodeIfPresent(LifeLogKind.self, forKey: .kind) ?? .memo
     eventDate = try container.decodeIfPresent(Date.self, forKey: .eventDate)
     locationName = try container.decodeIfPresent(String.self, forKey: .locationName)
+    origin = try container.decodeIfPresent(LifeLogOrigin.self, forKey: .origin) ?? .manual
 
     if let name = try container.decodeIfPresent(String.self, forKey: .photoFileName) {
       photoFileName = name
@@ -64,6 +68,7 @@ extension LifeLogEntry {
     try container.encodeIfPresent(photoFileName, forKey: .photoFileName)
     try container.encodeIfPresent(eventDate, forKey: .eventDate)
     try container.encodeIfPresent(locationName, forKey: .locationName)
+    try container.encode(origin, forKey: .origin)
   }
 }
 

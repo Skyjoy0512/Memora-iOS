@@ -11,6 +11,8 @@ struct HomeView: View {
   @State private var openEntry: LifeLogEntry?
   /// The day the Journal is showing.
   @State private var selectedDate = Calendar.current.startOfDay(for: .now)
+  /// Calendar events for the selected day, read from EventKit when that is on.
+  @State private var calendarEvents: [JournalCalendarEvent] = []
   /// The day "today" meant when the screen was last seen, so a journal left
   /// open past midnight follows the new day.
   @State private var todayAnchor = Calendar.current.startOfDay(for: .now)
@@ -66,12 +68,10 @@ struct HomeView: View {
             .frame(maxWidth: .infinity)
             .padding(20)
             .memoraCard()
-          } else {
-            if !query.isEmpty {
-              Text("検索結果")
-                .font(.title2.bold())
-                .memoraTextReveal()
-            }
+          } else if !query.isEmpty {
+            Text("検索結果")
+              .font(.title2.bold())
+              .memoraTextReveal()
 
             ForEach(dayGroups(of: entries)) { group in
               VStack(alignment: .leading, spacing: 10) {
@@ -81,23 +81,13 @@ struct HomeView: View {
 
                 LazyVStack(spacing: 0) {
                   ForEach(group.entries) { entry in
-                    if let meetingID = entry.meetingID {
-                      NavigationLink(value: LibraryRoute.meeting(meetingID)) {
-                        LifeLogRow(entry: entry)
-                      }
-                      .buttonStyle(.plain)
-                    } else {
-                      LifeLogRow(entry: entry)
-                        .contentShape(Rectangle())
-                        .onTapGesture { openEntry = entry }
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityHint("記録を開きます")
-                        .accessibilityAction(named: "開く") { openEntry = entry }
-                    }
+                    entryView(entry)
                   }
                 }
               }
             }
+          } else {
+            timelineContent(entries)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -240,6 +230,163 @@ struct HomeView: View {
       return "録音やOmiから届いた記録、手で足したメモが時間順に並びます。"
     }
     return "この日の記録はまだありません。別の日を選ぶか、カレンダーの「今日」で今日に戻れます。"
+  }
+
+  /// The selected day's timeline: records, events and movements in morning to
+  /// night order, with an "now" line when it is today.
+  @ViewBuilder
+  private func timelineContent(_ entries: [LifeLogEntry]) -> some View {
+    let timeline = JournalTimelineBuilder.build(
+      day: selectedDate,
+      entries: entries,
+      events: calendarEvents,
+      meetings: model.meetings
+    )
+
+    if !timeline.allDayEvents.isEmpty {
+      allDayEventChips(timeline.allDayEvents)
+    }
+
+    ForEach(timeline.items) { item in
+      timelineRow(item)
+    }
+  }
+
+  @ViewBuilder
+  private func timelineRow(_ item: JournalTimelineItem) -> some View {
+    switch item {
+    case .entry(let entry):
+      entryView(entry)
+    case .calendarEvent(let event):
+      calendarEventView(event)
+    case .movement(let movement):
+      movementView(movement)
+    case .nowMarker:
+      nowMarkerRow
+    }
+  }
+
+  @ViewBuilder
+  private func entryView(_ entry: LifeLogEntry) -> some View {
+    if let meetingID = entry.meetingID {
+      NavigationLink(value: LibraryRoute.meeting(meetingID)) {
+        LifeLogRow(entry: entry)
+      }
+      .buttonStyle(.plain)
+    } else {
+      LifeLogRow(entry: entry)
+        .contentShape(Rectangle())
+        .onTapGesture { openEntry = entry }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("記録を開きます")
+        .accessibilityAction(named: "開く") { openEntry = entry }
+    }
+  }
+
+  @ViewBuilder
+  private func calendarEventView(_ event: JournalCalendarEvent) -> some View {
+    if let meetingID = event.meetingID {
+      NavigationLink(value: LibraryRoute.meeting(meetingID)) {
+        calendarEventLabel(event)
+      }
+      .buttonStyle(.plain)
+    } else {
+      calendarEventLabel(event)
+    }
+  }
+
+  private func calendarEventLabel(_ event: JournalCalendarEvent) -> some View {
+    HStack(alignment: .top, spacing: 12) {
+      timeText(event.start)
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text(event.title)
+          .font(.headline)
+        HStack(spacing: 4) {
+          if let color = event.calendarColor {
+            Circle()
+              .fill(color)
+              .frame(width: 8, height: 8)
+          }
+          Text(event.calendarTitle)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+      }
+
+      Spacer(minLength: 0)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(
+      "\(event.start.formatted(date: .omitted, time: .shortened))、予定、\(event.title)、\(event.calendarTitle)"
+    )
+  }
+
+  private func movementView(_ movement: JournalMovement) -> some View {
+    HStack(alignment: .top, spacing: 12) {
+      timeText(movement.start)
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text(movement.entries.map(\.title).joined(separator: " → "))
+          .font(.headline)
+          .lineLimit(2)
+        Text(
+          "\(movement.start.formatted(date: .omitted, time: .shortened))〜\(movement.end.formatted(date: .omitted, time: .shortened))"
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      }
+
+      Spacer(minLength: 0)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("移動、\(movement.entries.map(\.title).joined(separator: "、"))")
+  }
+
+  private var nowMarkerRow: some View {
+    HStack(spacing: 8) {
+      Text("いま")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+      Rectangle()
+        .fill(Color.primary.opacity(0.2))
+        .frame(height: 1)
+    }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("いま")
+  }
+
+  private func allDayEventChips(_ events: [JournalCalendarEvent]) -> some View {
+    ScrollView(.horizontal) {
+      HStack(spacing: 8) {
+        ForEach(events) { event in
+          HStack(spacing: 6) {
+            if let color = event.calendarColor {
+              Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+            }
+            Text(event.title)
+              .font(.caption.weight(.medium))
+          }
+          .padding(.horizontal, 10)
+          .padding(.vertical, 6)
+          .background(Color.primary.opacity(0.06), in: Capsule())
+          .accessibilityElement(children: .ignore)
+          .accessibilityLabel("終日の予定、\(event.title)、\(event.calendarTitle)")
+        }
+      }
+    }
+    .scrollIndicators(.hidden)
+  }
+
+  private func timeText(_ date: Date) -> some View {
+    Text(date.formatted(date: .omitted, time: .shortened))
+      .font(.caption.monospacedDigit().weight(.medium))
+      .foregroundStyle(.secondary)
+      .frame(width: 46, alignment: .leading)
   }
 
   private func dayGroups(of entries: [LifeLogEntry]) -> [LifeLogDayGroup] {

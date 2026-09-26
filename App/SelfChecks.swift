@@ -42,6 +42,7 @@ enum SelfChecks {
     group("Draft legacy format", checkDraftLegacyFormat)
     group("Store migration", checkStoreMigration)
 
+    group("Journal timeline", checkJournalTimeline)
     group("Question terms", checkQuestionWords)
     group("AI context limits", checkAIContextLimits)
     group("Scope isolation", checkScopeIsolation)
@@ -271,6 +272,136 @@ enum SelfChecks {
     let scopedTasks = MemoraModel.openTasks(in: .projects, from: tasks, meetings: [inProject, loose])
     if scopedTasks.map(\.title) != ["プロジェクトのタスク"] {
       report("scope tasks: \(scopedTasks.map(\.title))")
+    }
+  }
+
+  /// The day timeline orders records morning to night, groups nearby station
+  /// passes into one movement, keeps all-day events apart, and shows an event
+  /// with a recording as one row.
+  private static func checkJournalTimeline() {
+    let calendar = Calendar.current
+    let day = calendar.startOfDay(for: .now)
+    func at(_ hour: Int, _ minute: Int = 0, dayOf: Date? = nil) -> Date {
+      calendar.date(bySettingHour: hour, minute: minute, second: 0, of: dayOf ?? day)!
+    }
+    func entry(
+      _ title: String,
+      _ date: Date,
+      origin: LifeLogOrigin = .manual,
+      meetingID: UUID? = nil
+    ) -> LifeLogEntry {
+      LifeLogEntry(
+        id: UUID(),
+        createdAt: date,
+        title: title,
+        summary: "",
+        source: .iphone,
+        meetingID: meetingID,
+        origin: origin
+      )
+    }
+
+    // Morning to night ordering, whatever order the records arrive in.
+    let records = [
+      entry("夜", at(18)),
+      entry("朝", at(8)),
+      entry("昼", at(12))
+    ]
+    let ordered = JournalTimelineBuilder.build(day: day, entries: records, events: [], meetings: [])
+    let titles = ordered.items.compactMap { item -> String? in
+      if case .entry(let entry) = item { return entry.title }
+      return nil
+    }
+    if titles != ["朝", "昼", "夜"] {
+      report("journal timeline order: \(titles)")
+    }
+
+    // Station passes within an hour form one movement; a later one starts another.
+    let passes = [
+      entry("A駅", at(8, 0), origin: .stationPass),
+      entry("B駅", at(8, 30), origin: .stationPass),
+      entry("C駅", at(10, 30), origin: .stationPass)
+    ]
+    let movements = JournalTimelineBuilder.movements(from: passes)
+    if movements.count != 2 || movements.first?.entries.count != 2 {
+      report("journal movement grouping: \(movements.map(\.entries.count))")
+    }
+
+    // The "now" line is only on today, and sits at the current time.
+    let withNow = JournalTimelineBuilder.build(
+      day: day, entries: records, events: [], meetings: [], now: at(9)
+    )
+    let nowIndex = withNow.items.firstIndex { $0.id == "nowMarker" }
+    let noonIndex = withNow.items.firstIndex { if case .entry(let e) = $0 { return e.title == "昼" }; return false }
+    if nowIndex == nil || !(nowIndex! > 0) || !(nowIndex! < (noonIndex ?? 0)) {
+      report("journal now marker position: \(String(describing: nowIndex))")
+    }
+    let past = JournalTimelineBuilder.build(
+      day: calendar.date(byAdding: .day, value: -1, to: day)!,
+      entries: records,
+      events: [],
+      meetings: [],
+      now: at(9)
+    )
+    if past.items.contains(where: { $0.id == "nowMarker" }) {
+      report("journal now marker appeared on a past day")
+    }
+
+    // An event with a recording is one row, and the recording's own line is gone.
+    let meetingID = UUID()
+    var meeting = Meeting(
+      id: meetingID,
+      title: "定例",
+      createdAt: at(10, 5),
+      duration: 60,
+      source: .recording,
+      status: .ready,
+      summary: "",
+      keyPoints: [],
+      decisions: [],
+      openQuestions: [],
+      transcript: []
+    )
+    meeting.calendarEventID = "evt-1"
+    let event = JournalCalendarEvent(
+      eventIdentifier: "evt-1",
+      start: at(10),
+      end: at(11),
+      title: "定例",
+      isAllDay: false,
+      calendarTitle: "仕事",
+      calendarColor: nil,
+      location: nil
+    )
+    let allDay = JournalCalendarEvent(
+      eventIdentifier: "evt-2",
+      start: day,
+      end: day,
+      title: "終日",
+      isAllDay: true,
+      calendarTitle: "仕事",
+      calendarColor: nil,
+      location: nil
+    )
+    let matched = JournalTimelineBuilder.build(
+      day: day,
+      entries: [entry("録音", at(10, 5), meetingID: meetingID), entry("メモ", at(9))],
+      events: [event, allDay],
+      meetings: [meeting]
+    )
+    let eventRows = matched.items.filter { if case .calendarEvent = $0 { return true }; return false }
+    let recordingRows = matched.items.filter {
+      if case .entry(let e) = $0 { return e.meetingID == meetingID }
+      return false
+    }
+    if eventRows.count != 1 || !recordingRows.isEmpty {
+      report("recording-matched event was not one row: events \(eventRows.count), records \(recordingRows.count)")
+    }
+    if let first = eventRows.first, case .calendarEvent(let resolved) = first, resolved.meetingID != meetingID {
+      report("matched event did not carry the recording id")
+    }
+    if matched.allDayEvents.map(\.title) != ["終日"] {
+      report("all-day events were not kept apart: \(matched.allDayEvents.map(\.title))")
     }
   }
 
