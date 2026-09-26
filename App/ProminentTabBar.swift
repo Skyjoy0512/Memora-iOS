@@ -11,111 +11,47 @@ extension RootTab: ProminentTabItem {}
 /// A floating tab bar whose destinations live in a segmented control, paired
 /// with a single prominent button that opens a popover.
 struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
+  /// The height of the bar's row and the diameter of the prominent button. One
+  /// place, so the composer and the bar stay the same height.
+  static var barHeight: CGFloat { 56 }
+
   @Binding var selection: Item
   /// Exposed so an empty state can open the popover without a tab tap.
   @Binding var isProminentPresented: Bool
   var prominentSymbol: String
-  /// The screen's create action, shown as a second round button that buds off
-  /// the prominent button, directly above it.
-  var contextualAction: ContextualCreateAction?
   @ViewBuilder var popover: PopoverContent
 
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Namespace private var namespace
-  /// Shared by the two buttons so their Liquid Glass shapes can merge and split.
-  @Namespace private var glassNamespace
 
   var body: some View {
     let tabCount = Item.allCases.count
     let isSmall = tabCount <= 2
 
-    // The create button is an overlay of the prominent button and is always
-    // drawn. With no create action on the screen it sits exactly over the "＋"
-    // (the glass reads as one shape); when there is one it lifts straight up,
-    // and the two glass shapes part as it moves.
-    MemoraGlassContainer(spacing: glassSpacing) {
+    MemoraGlassContainer(spacing: 10) {
       HStack(spacing: 10) {
         segmentedControl
           .padding(2)
           .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
 
         prominentButton
-          .overlay(alignment: .top) {
-            contextualOverlay
-          }
       }
-      .animation(reduceMotion ? nil : MemoraMotion.emphasis, value: isContextualShown)
-      .animation(reduceMotion ? nil : MemoraMotion.emphasis, value: contextualSymbol)
     }
   }
 
-  /// Smaller than the resting gap of the create button, so the two glass shapes
-  /// only merge while the button is moving past the "＋".
-  private var glassSpacing: CGFloat { 18 }
-  private var splitGap: CGFloat { 21 }
-  /// The prominent button's height plus the gap, so the create button rests just
-  /// above it.
-  private var splitDistance: CGFloat { prominentButtonHeight + splitGap }
-  private var prominentButtonHeight: CGFloat { 60 }
-  private var prominentButtonWidth: CGFloat { 48 }
-
-  private var isContextualShown: Bool { contextualAction != nil }
-  private var contextualSymbol: String { contextualAction?.symbol ?? prominentSymbol }
-
+  /// The prominent button, one round Liquid Glass control.
   @ViewBuilder
-  private var contextualOverlay: some View {
-    Button {
-      contextualAction?.action()
-    } label: {
-      glassChrome(id: "contextual", circular: true) {
-        Image(systemName: contextualSymbol)
-          .font(.title3)
-          .scaleEffect(0.95)
-          .frame(width: prominentButtonWidth, height: prominentButtonWidth)
-          .opacity(isContextualShown ? 1 : 0)
-          .contentTransition(.symbolEffect(.replace))
-          .accessibilityLabel(contextualAction?.title ?? "")
-      }
-    }
-    .buttonStyle(.plain)
-    .offset(y: isContextualShown ? -splitDistance : 0)
-    .allowsHitTesting(isContextualShown)
-    .accessibilityHidden(!isContextualShown)
-  }
-
-  /// Puts the Liquid Glass chrome on a button's label, with the identifier the
-  /// container uses to merge and split the shapes.
-  @ViewBuilder
-  private func glassChrome<Content: View>(
-    id: String,
-    circular: Bool = false,
-    @ViewBuilder content: () -> Content
-  ) -> some View {
+  private func glassChrome<Content: View>(@ViewBuilder content: () -> Content) -> some View {
     if #available(iOS 26.0, *) {
-      if circular {
-        content()
-          .glassEffect(.regular.interactive(), in: .circle)
-          .glassEffectID(id, in: glassNamespace)
-      } else {
-        content()
-          .glassEffect(.regular.interactive(), in: .capsule)
-          .glassEffectID(id, in: glassNamespace)
-      }
-    } else if circular {
+      content()
+        .glassEffect(.regular.interactive(), in: .circle)
+    } else {
       content()
         .foregroundStyle(.primary)
         .background(.regularMaterial, in: Circle())
         .overlay {
           Circle().stroke(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5)
-        }
-    } else {
-      content()
-        .foregroundStyle(.primary)
-        .background(.regularMaterial, in: Capsule())
-        .overlay {
-          Capsule().stroke(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5)
         }
     }
   }
@@ -150,7 +86,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     Button {
       isProminentPresented = true
     } label: {
-      glassChrome(id: "prominent") {
+      glassChrome {
         prominentLabel
       }
       .matchedTransitionSource(id: "prominentAction", in: namespace)
@@ -165,9 +101,8 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
   private var prominentLabel: some View {
     Image(systemName: prominentSymbol)
-      .font(.title)
-      .scaleEffect(0.95)
-      .frame(width: prominentButtonWidth, height: prominentButtonHeight)
+      .font(.system(size: 22, weight: .medium))
+      .frame(width: Self.barHeight, height: Self.barHeight)
       .accessibilityLabel("作成メニューを開く")
   }
 }

@@ -62,6 +62,15 @@ struct LibraryView: View {
         }
 
         ToolbarItem(placement: .topBarTrailing) {
+          if model.fileSection == .projects, !isSelectionMode {
+            Button("プロジェクトを作成", systemImage: "folder.badge.plus") {
+              model.isFileCreationPresented = true
+            }
+            .labelStyle(.iconOnly)
+          }
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
           if model.fileSection == .meetingFiles, !isSelectionMode {
             Menu {
               Picker("表示", selection: $layout) {

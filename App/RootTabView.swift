@@ -162,8 +162,7 @@ struct RootTabView: View {
         ProminentTabBar(
           selection: $model.selectedTab,
           isProminentPresented: $model.isCaptureSourcePresented,
-          prominentSymbol: "plus",
-          contextualAction: showsContextualCreate ? contextualCreateAction : nil
+          prominentSymbol: "plus"
         ) {
           CaptureMenuPopover()
         }
@@ -187,7 +186,6 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: shouldShowComposer)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isBottomBarHidden)
-    .animation(reduceMotion ? nil : MemoraMotion.emphasis, value: showsContextualCreate)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isCaptureSourcePresented)
   }
 
@@ -200,34 +198,7 @@ struct RootTabView: View {
     !isComposing && !isShowingMeetingDetail && !isBottomBarHidden
   }
 
-  /// The create action for the screen on top. Derived from the tab and section,
-  /// so a screen left behind can never leave its button on another tab.
-  private var contextualCreateAction: ContextualCreateAction? {
-    // Only at the top of a tab: a pushed screen (a meeting, a project) has no
-    // create action of its own, and showing the list's would be unrelated.
-    switch model.selectedTab {
-    case .tasks:
-      return ContextualCreateAction(id: "tasks", title: "タスクを追加", symbol: "text.badge.plus") {
-        model.isAddTaskPresented = true
-      }
-    case .home:
-      guard model.homePath.isEmpty else { return nil }
-      return ContextualCreateAction(id: "home", title: "記録を追加", symbol: "square.and.pencil") {
-        model.isLifeLogCreationPresented = true
-      }
-    case .askAI:
-      return nil
-    case .files:
-      guard model.libraryPath.isEmpty, model.fileSection == .projects else { return nil }
-      return ContextualCreateAction(id: "files.projects", title: "プロジェクトを作成", symbol: "folder.badge.plus") {
-        model.isFileCreationPresented = true
-      }
-    }
-  }
 
-  private var showsContextualCreate: Bool {
-    contextualCreateAction != nil && showsBottomBar && !model.isCaptureSourcePresented
-  }
 
   /// The transport only appears while a detail is playing and no field (the
   /// composer or an inline editor) owns the keyboard.

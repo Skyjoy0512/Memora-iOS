@@ -59,6 +59,13 @@ struct TasksView: View {
       .navigationTitle("タスク")
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
+          Button("タスクを追加", systemImage: "text.badge.plus") {
+            model.isAddTaskPresented = true
+          }
+          .labelStyle(.iconOnly)
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
           Menu {
             Picker("担当", selection: $assigneeFilter) {
               Text("全員").tag(String?.none)
