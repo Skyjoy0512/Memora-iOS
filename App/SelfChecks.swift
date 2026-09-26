@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import UIKit
 
 /// Quick checks that run in debug builds only, until the project has a test
 /// target. They cover the pieces most likely to break silently. Failures are
@@ -60,6 +61,8 @@ enum SelfChecks {
     group("Unassigned task scope", checkUnassignedTaskScope)
     group("Legacy photo retention", checkLegacyPhotoRetention)
     group("Speech final results", checkSpeechFinalResults)
+    group("Icon assets", checkIconAssets)
+    group("LLM providers", checkLLMProviders)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
     // its result when it finishes.
@@ -85,6 +88,27 @@ enum SelfChecks {
         build: Bundle.main.appVersion
       )
     )
+  }
+
+  /// Every icon the code can name must exist in the catalog; a symbol missing
+  /// after regenerating the catalog would otherwise draw nothing, silently.
+  private static func checkIconAssets() {
+    for icon in MemoraIcon.allCases where UIImage(icon: icon) == nil {
+      report("icon missing: \(icon.rawValue)")
+    }
+  }
+
+  /// Each provider needs its mark, a model to call, and the stored names that
+  /// earlier builds wrote, so an existing choice and key carry over.
+  private static func checkLLMProviders() {
+    for provider in LLMProvider.allCases {
+      if UIImage(named: provider.logoAssetName) == nil { report("logo missing: \(provider.rawValue)") }
+      if provider.defaultModelID.isEmpty { report("no default model: \(provider.rawValue)") }
+    }
+    if LLMProvider(rawValue: "openAI") != .openAI || LLMProvider(rawValue: "anthropic") != .anthropic {
+      report("legacy provider names")
+    }
+    if LLMProvider.openAI.keychainAccount != "ai.openAI" { report("legacy key account") }
   }
 
   /// A summary must not be applied to a transcript that changed while it was

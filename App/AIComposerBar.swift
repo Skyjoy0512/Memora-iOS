@@ -25,6 +25,9 @@ struct AIComposerBar: View {
   @State private var photoItem: PhotosPickerItem?
   @State private var editingPhoto: PhotoEditRequest?
   @State private var importErrorMessage: String?
+  /// Providers with a saved key, read from the Keychain when the composer
+  /// appears or settings close rather than on every keystroke's redraw.
+  @State private var readyProviders: [LLMProvider] = []
   @FocusState private var isFieldFocused: Bool
 
   var body: some View {
@@ -138,6 +141,14 @@ struct AIComposerBar: View {
     } message: {
       Text(speechInput.errorMessage ?? "")
     }
+    .onAppear(perform: refreshReadyProviders)
+    .onChange(of: model.isSettingsPresented) { _, isPresented in
+      if !isPresented { refreshReadyProviders() }
+    }
+  }
+
+  private func refreshReadyProviders() {
+    readyProviders = LLMProvider.allCases.filter { EngineAvailability.hasKey($0.keychainAccount) }
   }
 
   /// While the mic is live a glow gathers along the bottom edge, reacting to
@@ -206,7 +217,6 @@ struct AIComposerBar: View {
       }
 
       // Providers with a saved key can be switched to without opening settings.
-      let readyProviders = LLMProvider.allCases.filter { EngineAvailability.hasKey($0.keychainAccount) }
       if !readyProviders.isEmpty {
         Section("クラウドのプロバイダー") {
           ForEach(readyProviders) { provider in
