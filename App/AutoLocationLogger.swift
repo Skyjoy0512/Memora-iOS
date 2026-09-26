@@ -73,6 +73,10 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   private let manager = CLLocationManager()
   private var enableCompletion: ((Bool) -> Void)?
   private var enablePhase: EnablePhase?
+  /// True once the app went to the background while the "always" prompt was
+  /// requested, which is what proves the prompt actually appeared.
+  private var didGoInactiveForAlways = false
+  private var alwaysPromptTimeout: Task<Void, Never>?
   /// Set while the debug screen waits for one location check's outcome.
   private var debugCompletion: ((DebugStationResult) -> Void)?
 
@@ -115,9 +119,7 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
         return
       }
       enableCompletion = completion
-      enablePhase = .askingAlways
-      UserDefaults.standard.set(true, forKey: Self.alwaysPromptShownKey)
-      manager.requestAlwaysAuthorization()
+      beginAlwaysRequest()
     case .denied, .restricted:
       completion(false)
     @unknown default:
@@ -125,22 +127,59 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
     }
   }
 
-  /// Called when the app returns to the front. If a permission request is still
-  /// unanswered (the person chose "keep when in use" without a callback), it is
-  /// finished as a refusal so the setting does not hang.
-  func resolvePendingEnableOnActivation() {
-    guard enableCompletion != nil else { return }
-    guard manager.authorizationStatus == .authorizedAlways else {
-      finishEnable(granted: false)
-      return
+  /// Requests the "always" permission and watches for whether iOS shows the
+  /// prompt at all. It shows only once; if it does not appear, the request must
+  /// not be left waiting, or an unrelated action later would raise the alert.
+  private func beginAlwaysRequest() {
+    enablePhase = .askingAlways
+    didGoInactiveForAlways = false
+    UserDefaults.standard.set(true, forKey: Self.alwaysPromptShownKey)
+    manager.requestAlwaysAuthorization()
+
+    alwaysPromptTimeout?.cancel()
+    alwaysPromptTimeout = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(1))
+      guard let self, !Task.isCancelled else { return }
+      // If the app never left the foreground, the prompt did not appear.
+      if self.enablePhase == .askingAlways, !self.didGoInactiveForAlways {
+        self.finishEnable(granted: false)
+      }
     }
-    finishEnable(granted: true)
+  }
+
+  /// Called when the app goes to the background or becomes inactive. If the
+  /// "always" prompt was being requested, this is the sign it appeared.
+  func handleSceneInactive() {
+    if enablePhase == .askingAlways {
+      didGoInactiveForAlways = true
+    }
+  }
+
+  /// Called when the app returns to the front. A request that was answered
+  /// without a callback is resolved here, but only when the prompt actually
+  /// appeared.
+  func resolvePendingEnableOnActivation() {
+    guard enableCompletion != nil, enablePhase == .askingAlways, didGoInactiveForAlways else { return }
+    finishEnable(granted: manager.authorizationStatus == .authorizedAlways)
+  }
+
+  /// Drops any request still waiting, e.g. when the settings screen is closed,
+  /// so it cannot surface an alert somewhere else later.
+  func discardPendingEnable() {
+    alwaysPromptTimeout?.cancel()
+    alwaysPromptTimeout = nil
+    enableCompletion = nil
+    enablePhase = nil
+    didGoInactiveForAlways = false
   }
 
   private func finishEnable(granted: Bool) {
+    alwaysPromptTimeout?.cancel()
+    alwaysPromptTimeout = nil
     let completion = enableCompletion
     enableCompletion = nil
     enablePhase = nil
+    didGoInactiveForAlways = false
     if granted {
       UserDefaults.standard.set(true, forKey: Self.enabledKey)
       startMonitoring()
@@ -197,9 +236,7 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
       case .askingWhenInUse:
         // "When in use" was just granted; now ask for "always", which the
         // background monitors need.
-        enablePhase = .askingAlways
-        UserDefaults.standard.set(true, forKey: Self.alwaysPromptShownKey)
-        manager.requestAlwaysAuthorization()
+        beginAlwaysRequest()
       case .askingAlways:
         // The "always" prompt was answered with "keep when in use"; it will not
         // be offered again, so finish as a refusal and let the UI explain.

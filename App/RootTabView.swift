@@ -43,6 +43,10 @@ struct RootTabView: View {
         // A permission request left unanswered when the app went away is
         // resolved here so the toggle does not hang.
         AutoLocationLogger.shared.resolvePendingEnableOnActivation()
+      } else {
+        // Leaving the foreground while the "always" prompt is requested is what
+        // shows the prompt really appeared.
+        AutoLocationLogger.shared.handleSceneInactive()
       }
     }
     .onAppear { refreshSafeAreaInsets() }

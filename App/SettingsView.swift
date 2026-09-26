@@ -254,6 +254,11 @@ struct SettingsView: View {
       }
       .hideBottomBarOnScroll("settings")
       .onAppear { excludedPlaceCount = AutoLocationLogger.excludedPlaces.count }
+      .onDisappear {
+        // A permission request the person walked away from must not surface its
+        // alert on another screen later.
+        AutoLocationLogger.shared.discardPendingEnable()
+      }
       .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
         excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
       }
