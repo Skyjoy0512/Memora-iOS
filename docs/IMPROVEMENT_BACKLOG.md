@@ -222,14 +222,30 @@
 | RW05 | 実装済み・未検証 | `restoreTrashedRecord(_:preservingPosition:)`。位置使用は取り消しのみ |
 | RW06 | 実装済み・未検証 | 案(a) シート内詳細にローカル再生バー |
 
+## RW・J01・J02 のレビュー RX01〜RX08
+
+`docs/UX_REVIEW_2026-09.md` 末尾のレビュー。RX01〜RX03・RX06・RX07 を実装。RX04・RX05・RX08 は J04・J05 で扱う。
+
+| ID | 状態 | メモ |
+| --- | --- | --- |
+| RX01 | 実装済み・未検証 | ファイル空状態をジャーナルと同じカードに。画面確認は未実施 |
+| RX02 | 実装済み・未検証 | 履歴を往復単位に分割、最新の質問を必ず残す。SelfChecks 追加 |
+| RX03 | 実装済み・未検証 | AudioSessionCoordinator が再生の持ち主を一時停止。同時再生を防ぐ |
+| RX04 | 未着手 | J05 で日付見出しと行のまとまりを戻す |
+| RX05 | 未着手 | J04 で日をまたぐ予定と予定だけの日を扱う |
+| RX06 | 実装済み・未検証 | JournalMovement.id を最初の記録のIDに |
+| RX07 | 実装済み・未検証 | 未使用の LifeLogOrigin.calendar を削除 |
+| RX08 | 未着手 | J05 で時刻列の幅を文字サイズに追従させる |
+
 ## ジャーナル v2（J01〜J06）
 
-`docs/JOURNAL_V2.md`。J01・J02 実装済み。
+`docs/JOURNAL_V2.md`。J01〜J03 実装済み。
 
 | ID | 状態 | メモ |
 | --- | --- | --- |
 | J01 | 実装済み・未検証 | RootTab 順を files/home/askAI/tasks、TabView 子も同順、起動は .files。rawValue 不変。loadSampleContent も .files。タブのモーフィング確認は未実施 |
 | J02 | 実装済み・未検証 | JournalTimelineItem/Builder/Movement/CalendarEvent、LifeLogEntry.origin。HomeView は時刻昇順＋「いま」線。SelfChecks 追加。予定データは J04 で供給 |
+| J03 | 実装済み・未検証 | AutoLocationLogger（駅通過・滞在）＋受け箱取込、除外場所、設定の「ジャーナル」節、表示（移動・滞在・自動タグ）。実機の位置・バックグラウンド起動確認は未実施 |
 | J03 | 未着手 | 位置情報からの駅通過・滞在の自動記録 |
 | J04 | 未着手 | カレンダー予定の表示 |
 | J05 | 未着手 | タイムラインの表示調整 |
