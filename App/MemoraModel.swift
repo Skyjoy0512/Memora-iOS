@@ -158,6 +158,9 @@ final class MemoraModel {
   /// Shown when an audio file was handed to the app while recording, to say it
   /// will be imported once the recording ends.
   var pendingImportNotice: String?
+  /// Count of audio files left in the Inbox (an import that was cut short), so
+  /// the person can import or remove them.
+  var pendingInboxCount: Int?
   /// True when a first real recording or import landed while samples are still
   /// present, so the app offers once to remove them.
   var isSampleCleanupSuggested = false
@@ -457,6 +460,9 @@ final class MemoraModel {
 
     // Any reminders that changed while the app was away are brought up to date.
     TaskReminderScheduler.refreshAll(tasks)
+
+    // Audio left in the Inbox by a cut-short import is offered back.
+    scanInboxForAudio()
 
     // A finished job clears its flag, and the flag is what the next launch
     // reads to decide whether a job was interrupted.
@@ -2670,6 +2676,41 @@ final class MemoraModel {
     let path = url.standardizedFileURL.path
     guard path.hasPrefix(inbox + "/") else { return }
     try? FileManager.default.removeItem(at: url)
+  }
+
+  /// The audio files sitting in the Inbox, e.g. an import cut short by the app
+  /// being closed.
+  private func inboxAudioURLs() -> [URL] {
+    let inbox = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("Inbox", isDirectory: true)
+    let contents = (try? FileManager.default.contentsOfDirectory(
+      at: inbox,
+      includingPropertiesForKeys: nil
+    )) ?? []
+    return contents.filter { Self.isAudioFile($0) }
+  }
+
+  /// Looks for audio left in the Inbox and, if any, asks what to do with it.
+  func scanInboxForAudio() {
+    guard !isRecording else { return }
+    let count = inboxAudioURLs().count
+    pendingInboxCount = count > 0 ? count : nil
+  }
+
+  func importInboxAudio() async {
+    let urls = inboxAudioURLs()
+    pendingInboxCount = nil
+    for url in urls {
+      await importAudio(from: url)
+      removeInboxCopyIfNeeded(url)
+    }
+  }
+
+  func discardInboxAudio() {
+    for url in inboxAudioURLs() {
+      try? FileManager.default.removeItem(at: url)
+    }
+    pendingInboxCount = nil
   }
 
   private static func isAudioFile(_ url: URL) -> Bool {

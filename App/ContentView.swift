@@ -87,6 +87,13 @@ struct ContentView: View {
     } message: {
       Text(model.pendingImportNotice ?? "")
     }
+    .alert("取り込まれていない音声があります", isPresented: pendingInboxBinding) {
+      Button("取り込む") { Task { await model.importInboxAudio() } }
+      Button("削除", role: .destructive) { model.discardInboxAudio() }
+      Button("あとで", role: .cancel) { model.pendingInboxCount = nil }
+    } message: {
+      Text("\(model.pendingInboxCount ?? 0)件の音声が、前回の取り込みの途中で残っています。")
+    }
     .alert("保存データを読み込めませんでした", isPresented: loadFailureBinding) {
       Button("OK", role: .cancel) {}
     } message: {
@@ -222,6 +229,16 @@ struct ContentView: View {
     } set: { isPresented in
       if !isPresented {
         model.pendingImportNotice = nil
+      }
+    }
+  }
+
+  private var pendingInboxBinding: Binding<Bool> {
+    Binding {
+      model.pendingInboxCount != nil
+    } set: { isPresented in
+      if !isPresented {
+        model.pendingInboxCount = nil
       }
     }
   }

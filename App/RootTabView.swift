@@ -39,6 +39,7 @@ struct RootTabView: View {
       // Automatic records written while the app was away land when it returns.
       if phase == .active {
         model.importAutoLifeLogInbox()
+        model.scanInboxForAudio()
         AutoLocationLogger.shared.startIfEnabled()
         // A permission request left unanswered when the app went away is
         // resolved here so the toggle does not hang.
