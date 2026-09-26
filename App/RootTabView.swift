@@ -299,8 +299,9 @@ struct RootTabView: View {
   }
 
   private var shouldShowComposer: Bool {
-    // The Ask AI field steps aside while a document field holds the keyboard.
-    !model.isInlineEditing && (!isShowingMeetingDetail || model.isDetailComposerVisible)
+    // The field belongs to the meeting detail alone now: the lists have no
+    // composer, and Ask AI has its own full-screen field.
+    isShowingMeetingDetail && !model.isInlineEditing && model.isDetailComposerVisible
   }
 
   private var isShowingMeetingDetail: Bool {
