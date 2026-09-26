@@ -16,42 +16,47 @@ struct SettingsView: View {
   @Environment(\.openURL) private var openURL
   @State private var isSignOutConfirmationPresented = false
   @State private var isAccountDeletionPresented = false
+  @State private var isProfileEditorPresented = false
 
   var body: some View {
     NavigationStack {
       Form {
+        profileSection
+
         Section {
           if let account = model.account {
-            Label {
-              VStack(alignment: .leading, spacing: 3) {
-                Text(account.displayName)
-                  .font(.body.weight(.medium))
-                Text(account.email)
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-                Text("\(account.provider.label)でサインイン中")
-                  .font(.caption2)
-                  .foregroundStyle(.secondary)
+            LabeledContent {
+              Text(account.provider.label)
+                .foregroundStyle(.secondary)
+            } label: {
+              Label {
+                VStack(alignment: .leading, spacing: 3) {
+                  Text(account.displayName)
+                    .font(.body.weight(.medium))
+                  Text(account.email)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+              } icon: {
+                SettingsIcon(icon: .personCropCircleFill, color: .blue)
               }
-              .padding(.vertical, 2)
-            } icon: {
-              Image(icon: .personCropCircleFill)
-                .foregroundStyle(.primary)
             }
 
-            Button("サインアウト", icon: .rectanglePortraitAndArrowRight) {
+            Button {
               isSignOutConfirmationPresented = true
+            } label: {
+              SettingsLabel("サインアウト", icon: .rectanglePortraitAndArrowRight, color: .gray)
             }
           } else {
-            Label {
-              LabeledContent("状態", value: "このiPhoneのみ")
-            } icon: {
-              Image(icon: .person)
-                .foregroundStyle(.primary)
-            }
-
-            Button("サインイン / 新規登録", icon: .personBadgeKey) {
+            Button {
               model.isAuthPresented = true
+            } label: {
+              LabeledContent {
+                Text("このiPhoneのみ")
+                  .foregroundStyle(.secondary)
+              } label: {
+                SettingsLabel("サインイン / 新規登録", icon: .personBadgeKey, color: .blue)
+              }
             }
           }
         } header: {
@@ -68,7 +73,7 @@ struct SettingsView: View {
               Text(model.planTier?.label ?? "Free")
                 .foregroundStyle(.secondary)
             } label: {
-              Label("Memora Plus", icon: .sparkles)
+              SettingsLabel("Memora Plus", icon: .crownFill, color: .orange)
             }
           }
 
@@ -78,9 +83,8 @@ struct SettingsView: View {
             } label: {
               LabeledContent {
                 Text(model.cloudSharing.receivedItems.isEmpty ? "なし" : "\(model.cloudSharing.receivedItems.count)件")
-                  .foregroundStyle(.secondary)
               } label: {
-                Label("チームで共有されたもの", icon: .person3)
+                SettingsLabel("チームで共有されたもの", icon: .person3Fill, color: .teal)
               }
             }
           } else {
@@ -91,7 +95,7 @@ struct SettingsView: View {
                 Text("チームプランで利用可")
                   .foregroundStyle(.secondary)
               } label: {
-                Label("チーム共有", icon: .person3)
+                SettingsLabel("チーム共有", icon: .person3Fill, color: .teal)
               }
             }
           }
@@ -105,22 +109,39 @@ struct SettingsView: View {
           NavigationLink {
             SpeechRecognitionSettingsView()
           } label: {
-            LabeledContent("文字起こし", value: "\(transcriptionEngine.label) · \(transcriptionLanguage.label)")
+            LabeledContent {
+              Text("\(transcriptionEngine.label) · \(transcriptionLanguage.label)")
+            } label: {
+              SettingsLabel("文字起こし", icon: .waveform, color: .red)
+            }
           }
 
           NavigationLink {
             AISettingsView()
           } label: {
-            LabeledContent("AI整理", value: model.aiEngine.label)
+            LabeledContent {
+              Text(model.aiEngine == .cloud ? model.aiProvider.label : model.aiEngine.label)
+            } label: {
+              Label {
+                Text("AI整理")
+              } icon: {
+                if model.aiEngine == .cloud {
+                  ProviderLogo(provider: model.aiProvider, size: 29)
+                } else {
+                  SettingsIcon(icon: .brainFill, color: .purple)
+                }
+              }
+            }
           }
 
           NavigationLink {
             SummaryTemplateMarketplaceView()
           } label: {
-            LabeledContent(
-              "要約テンプレート",
-              value: model.installedTemplateIDs.isEmpty ? "標準" : "\(model.installedTemplateIDs.count)個追加"
-            )
+            LabeledContent {
+              Text(model.installedTemplateIDs.isEmpty ? "標準" : "\(model.installedTemplateIDs.count)個追加")
+            } label: {
+              SettingsLabel("要約テンプレート", icon: .docTextFill, color: .indigo)
+            }
           }
         } header: {
           Text("処理")
@@ -132,7 +153,11 @@ struct SettingsView: View {
           NavigationLink {
             ExternalRecorderSettingsView()
           } label: {
-            LabeledContent("外部レコーダー", value: model.omiPairingManager.state.shortLabel)
+            LabeledContent {
+              Text(model.omiPairingManager.state.shortLabel)
+            } label: {
+              SettingsLabel("外部レコーダー", icon: .dotRadiowavesLeftAndRightFill, color: .green)
+            }
           }
         }
 
@@ -140,34 +165,47 @@ struct SettingsView: View {
           NavigationLink {
             NotionSettingsView()
           } label: {
-            LabeledContent("Notion", value: NotionService.isConfigured ? "設定済み" : "未設定")
+            LabeledContent {
+              Text(NotionService.isConfigured ? "設定済み" : "未設定")
+            } label: {
+              SettingsLabel("Notion", icon: .notionLogo, color: Color(white: 0.15))
+            }
           }
 
           NavigationLink {
             MCPSettingsView()
           } label: {
-            LabeledContent("ChatGPT (MCP)", value: MCPIntegration.isConfigured ? "設定済み" : "未設定")
+            LabeledContent {
+              Text(MCPIntegration.isConfigured ? "設定済み" : "未設定")
+            } label: {
+              SettingsLabel("ChatGPT (MCP)", icon: .plugsConnectedFill, color: .mint)
+            }
           }
         }
 
         Section {
-          Toggle("移動と滞在を自動で記録", isOn: autoLifeLogBinding)
+          Toggle(isOn: autoLifeLogBinding) {
+            SettingsLabel("移動と滞在を自動で記録", icon: .locationFill, color: .blue)
+          }
 
           NavigationLink {
             ExcludedPlacesView()
           } label: {
-            LabeledContent(
-              "記録しない場所",
-              value: excludedPlaceCount == 0 ? "なし" : "\(excludedPlaceCount)件"
-            )
+            LabeledContent {
+              Text(excludedPlaceCount == 0 ? "なし" : "\(excludedPlaceCount)件")
+            } label: {
+              SettingsLabel("記録しない場所", icon: .mappinSlashFill, color: .pink)
+            }
           }
 
-          Toggle("カレンダーの予定を表示", isOn: calendarEventsBinding)
+          Toggle(isOn: calendarEventsBinding) {
+            SettingsLabel("カレンダーの予定を表示", icon: .calendarFill, color: .red)
+          }
 
           NavigationLink {
             CalendarSelectionView()
           } label: {
-            Text("表示するカレンダー")
+            SettingsLabel("表示するカレンダー", icon: .calendarBadgeCheckmarkFill, color: .orange)
           }
           .disabled(!showCalendarEvents)
         } header: {
@@ -177,35 +215,42 @@ struct SettingsView: View {
         }
 
         Section {
-          Toggle("Face IDでロック", isOn: $appLockEnabled)
+          Toggle(isOn: $appLockEnabled) {
+            SettingsLabel("Face IDでロック", icon: .faceidFill, color: .green)
+          }
 
           NavigationLink {
             PrivacyStorageView()
           } label: {
-            Label("データの保存先", icon: .lockShield)
+            SettingsLabel("データの保存先", icon: .lockShieldFill, color: .blue)
           }
 
           NavigationLink {
             StorageUsageView()
           } label: {
-            Label("保存容量", icon: .internaldrive)
+            SettingsLabel("保存容量", icon: .internaldriveFill, color: .gray)
           }
 
-          LabeledContent("クラウド保管", value: model.cloudStorageEnabled ? "オン" : "オフ")
+          LabeledContent {
+            Text(model.cloudStorageEnabled ? "オン" : "オフ")
+          } label: {
+            SettingsLabel("クラウド保管", icon: .cloudFill, color: .cyan)
+          }
 
           NavigationLink {
             SettingsBackupView()
           } label: {
-            Label("バックアップ", icon: .externaldrive)
+            SettingsLabel("バックアップ", icon: .externaldriveFill, color: .brown)
           }
 
           NavigationLink {
             RecentlyDeletedView()
           } label: {
-            LabeledContent(
-              "最近削除した項目",
-              value: model.trashedRecords.isEmpty ? "なし" : "\(model.trashedRecords.count)件"
-            )
+            LabeledContent {
+              Text(model.trashedRecords.isEmpty ? "なし" : "\(model.trashedRecords.count)件")
+            } label: {
+              SettingsLabel("最近削除した項目", icon: .trashFill, color: .red)
+            }
           }
         } header: {
           Text("プライバシーと保存")
@@ -214,9 +259,21 @@ struct SettingsView: View {
         }
 
         Section {
-          LabeledContent("ヘルプ", value: "準備中")
-          LabeledContent("プライバシーポリシー", value: "準備中")
-          LabeledContent("バージョン", value: Bundle.main.appVersion)
+          LabeledContent {
+            Text("準備中")
+          } label: {
+            SettingsLabel("ヘルプ", icon: .questionmarkCircleFill, color: .blue)
+          }
+          LabeledContent {
+            Text("準備中")
+          } label: {
+            SettingsLabel("プライバシーポリシー", icon: .handRaisedFill, color: .blue)
+          }
+          LabeledContent {
+            Text(Bundle.main.appVersion)
+          } label: {
+            SettingsLabel("バージョン", icon: .infoCircleFill, color: .gray)
+          }
         } header: {
           Text("サポート")
         } footer: {
@@ -227,14 +284,14 @@ struct SettingsView: View {
           NavigationLink {
             StateGalleryView()
           } label: {
-            Label("状態と復旧UIを確認", icon: .rectangleStackBadgePlay)
+            SettingsLabel("状態と復旧UIを確認", icon: .rectangleStackFill, color: .gray)
           }
 
           #if DEBUG
           NavigationLink {
             PerformanceLogView()
           } label: {
-            Label("計測と自己チェック（ビルド比較用）", icon: .stopwatch)
+            SettingsLabel("計測と自己チェック（ビルド比較用）", icon: .stopwatchFill, color: .gray)
           }
 
           // Destructive resets only exist for development; a shipped build must
@@ -284,6 +341,9 @@ struct SettingsView: View {
           }
         }
       }
+      .sheet(isPresented: $isProfileEditorPresented) {
+        ProfileEditorView()
+      }
       .confirmationDialog("サインアウトしますか？", isPresented: $isSignOutConfirmationPresented, titleVisibility: .visible) {
         Button("サインアウト", role: .destructive) {
           model.signOut()
@@ -332,6 +392,50 @@ struct SettingsView: View {
         Text("予定をジャーナルに表示するには、設定でカレンダーへのアクセスを許可してください。予定は表示のたびに読み込み、保存はしません。")
       }
     }
+  }
+
+  /// The person's picture and name at the top, as in the system Settings app.
+  /// Tapping it opens the editor for the Memoji, photo, and name.
+  private var profileSection: some View {
+    Section {
+      Button {
+        isProfileEditorPresented = true
+      } label: {
+        VStack(spacing: 10) {
+          ProfileAvatar(profile: model.profile, size: 96)
+            .overlay(alignment: .bottomTrailing) {
+              Image(icon: .pencil)
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 30, height: 30)
+                .background(.tint, in: Circle())
+                .overlay { Circle().stroke(Color(uiColor: .systemGroupedBackground), lineWidth: 3) }
+            }
+
+          VStack(spacing: 3) {
+            Text(profileName)
+              .font(.title3.weight(.semibold))
+              .foregroundStyle(.primary)
+            Text("ミー文字・写真・名前を編集")
+              .font(.subheadline)
+              .foregroundStyle(.tint)
+          }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .listRowBackground(Color.clear)
+      .accessibilityLabel("プロフィール \(profileName)")
+      .accessibilityHint("ミー文字・写真・名前を編集します")
+    }
+  }
+
+  private var profileName: String {
+    let name = model.profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !name.isEmpty { return name }
+    return model.account?.displayName ?? "名前を設定"
   }
 
   /// Turning the toggle on asks for calendar access the first time; a refusal

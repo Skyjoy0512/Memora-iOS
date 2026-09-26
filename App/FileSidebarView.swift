@@ -89,11 +89,7 @@ struct FileSidebarView: View {
         }
       } label: {
         HStack(spacing: 12) {
-          Image(icon: model.isSignedIn ? .personFill : .person)
-            .font(.body.weight(.semibold))
-            .foregroundStyle(.primary)
-            .frame(width: 42, height: 42)
-            .background(Color.primary.opacity(0.08), in: Circle())
+          ProfileAvatar(profile: model.profile, size: 42)
 
           VStack(alignment: .leading, spacing: 3) {
             Text(displayName)
@@ -194,7 +190,8 @@ struct FileSidebarView: View {
   }
 
   private var displayName: String {
-    model.account?.displayName ?? "ゲスト"
+    let name = model.profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
+    return model.account?.displayName ?? (name.isEmpty ? "ゲスト" : name)
   }
 
   private var accountStatus: String {

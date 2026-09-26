@@ -128,10 +128,7 @@ struct HomeView: View {
         }
 
         ToolbarItem(placement: .topBarTrailing) {
-          Button("設定", icon: .gearshape) {
-            model.isSettingsPresented = true
-          }
-          .labelStyle(.iconOnly)
+          SettingsToolbarButton()
         }
 
         // The create action is the rightmost item, matching the other tabs.

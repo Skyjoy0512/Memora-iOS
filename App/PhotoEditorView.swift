@@ -8,6 +8,9 @@ import UIKit
 struct PhotoEditorView: View {
   @Environment(\.dismiss) private var dismiss
   var source: Data
+  /// Fixes the crop shape, for a profile picture that must be square. The
+  /// shape picker is hidden and a round guide shows what the avatar keeps.
+  var lockedAspect: PhotoAspect? = nil
   var onComplete: (Data) -> Void
 
   @State private var original: UIImage?
@@ -48,7 +51,12 @@ struct PhotoEditorView: View {
             .disabled(preview == nil || isExporting)
         }
       }
-      .onAppear(perform: load)
+      .onAppear {
+        if let lockedAspect {
+          aspect = lockedAspect
+        }
+        load()
+      }
       .onChange(of: brightness) { _, _ in schedulePreview() }
       .onChange(of: contrast) { _, _ in schedulePreview() }
       .onChange(of: aspect) { _, _ in clamp() }
@@ -72,6 +80,14 @@ struct PhotoEditorView: View {
         }
       }
       .frame(width: size.width, height: size.height)
+      .overlay {
+        if lockedAspect != nil {
+          Circle()
+            .strokeBorder(.white.opacity(0.9), lineWidth: 1.5)
+            .shadow(color: .black.opacity(0.3), radius: 2)
+            .allowsHitTesting(false)
+        }
+      }
       .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
       .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
       .gesture(magnificationGesture(size))
@@ -91,12 +107,14 @@ struct PhotoEditorView: View {
 
   private var controls: some View {
     VStack(spacing: 14) {
-      Picker("比率", selection: $aspect) {
-        ForEach(PhotoAspect.allCases) { option in
-          Text(option.label).tag(option)
+      if lockedAspect == nil {
+        Picker("比率", selection: $aspect) {
+          ForEach(PhotoAspect.allCases) { option in
+            Text(option.label).tag(option)
+          }
         }
+        .pickerStyle(.segmented)
       }
-      .pickerStyle(.segmented)
 
       HStack(spacing: 12) {
         Button("回転", icon: .rotateRight) {
@@ -279,7 +297,7 @@ struct PhotoEditorView: View {
     }
   }
 
-  private static func cropRect(area: CGSize, imageSize: CGSize, zoom: CGFloat, pan: CGSize) -> CGRect {
+  nonisolated private static func cropRect(area: CGSize, imageSize: CGSize, zoom: CGFloat, pan: CGSize) -> CGRect {
     let fillScale = max(area.width / imageSize.width, area.height / imageSize.height)
     let unit = fillScale * zoom
     let visibleWidth = area.width / unit

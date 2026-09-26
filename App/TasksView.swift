@@ -73,6 +73,10 @@ struct TasksView: View {
           }
         }
 
+        ToolbarItem(placement: .topBarTrailing) {
+          SettingsToolbarButton()
+        }
+
         // The create action is the rightmost item, matching the other tabs.
         ToolbarItem(placement: .primaryAction) {
           Button("タスクを追加", icon: .textBadgePlus) {

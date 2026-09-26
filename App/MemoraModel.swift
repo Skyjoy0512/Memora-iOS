@@ -303,6 +303,9 @@ final class MemoraModel {
   /// Timings for the paths that matter when comparing builds. Holds numbers and
   /// names only, never content.
   @ObservationIgnored let performance = PerformanceLog.shared
+  /// The person's own picture and name, shown on Settings and each tab's
+  /// top-right button.
+  @ObservationIgnored let profile = UserProfile()
   /// CloudKit team sharing. Kept out of the local write path: it runs only when
   /// the person shares something or opens the team list.
   @ObservationIgnored let cloudSharing = CloudSharingService.shared
