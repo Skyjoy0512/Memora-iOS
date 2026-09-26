@@ -42,36 +42,42 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     let isSmall = tabCount <= 2
 
     MemoraGlassContainer(spacing: 10) {
-      VStack(spacing: 21) {
-        // The create button buds off the prominent button: same size, centred on
-        // it, and it rises straight up out of it.
-        if let contextualAction {
-          contextualButton(contextualAction)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .transition(splitTransition)
+      HStack(spacing: 10) {
+        segmentedControl
+          .padding(2)
+          .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
+
+        if let secondaryAction {
+          secondaryButton(secondaryAction)
         }
 
-        HStack(spacing: 10) {
-          segmentedControl
-            .padding(2)
-            .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
-
-          if let secondaryAction {
-            secondaryButton(secondaryAction)
+        // The create button is an overlay of the prominent button, so it is
+        // centred on it exactly. It is shifted up by its own height plus a gap;
+        // the transition starts it back over the button and lifts it straight up.
+        prominentButton
+          .overlay(alignment: .top) {
+            if let contextualAction {
+              contextualButton(contextualAction)
+                .offset(y: -splitDistance)
+                .transition(splitTransition)
+            }
           }
-
-          prominentButton
-        }
       }
+      // Room in the layout for the lifted button, so the controls' measured
+      // height includes it and nothing sits under it.
+      .padding(.top, contextualAction == nil ? 0 : splitDistance)
     }
   }
 
+  /// The prominent button's height plus the gap above it.
+  private var splitDistance: CGFloat { 55 + 21 }
+
   /// Grows out of the prominent button straight up: it starts over the button and
-  /// slides to its place while it scales up, rather than appearing from a corner.
+  /// rises to its place while it scales up, rather than appearing from a corner.
   private var splitTransition: AnyTransition {
     guard !reduceMotion else { return .opacity }
-    return .offset(y: 55 + 21)
-      .combined(with: .scale(scale: 0.2, anchor: .bottom))
+    return .offset(y: splitDistance)
+      .combined(with: .scale(scale: 0.2, anchor: .center))
       .combined(with: .opacity)
   }
 
