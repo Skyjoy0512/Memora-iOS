@@ -52,7 +52,7 @@ struct LibraryView: View {
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           if isSelectionMode {
-            Button("キャンセル") { endSelection() }
+            ToolbarIconButton("キャンセル", icon: .xmark) { endSelection() }
           } else {
             Button("メニュー", icon: .line3Horizontal) {
               onOpenSidebar()

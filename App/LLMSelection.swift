@@ -5,11 +5,12 @@ import Foundation
 struct LLMSelection: Hashable, Sendable {
   var provider: LLMProvider
   var modelID: String
+  var displayName: String? = nil
 
   /// The name shown in an answer's details: the suggested name when the id is
   /// one of the suggestions, otherwise the id itself.
   var modelLabel: String {
-    let name = provider.suggestedModels.first { $0.id == modelID }?.name ?? modelID
+    let name = displayName ?? provider.suggestedModels.first { $0.id == modelID }?.name ?? modelID
     return "\(provider.label) · \(name)"
   }
 }

@@ -100,7 +100,7 @@ struct AIQuestionView: View {
 
   private func askedQuestion(_ request: AIQuestionRequest) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("\(model.aiEngine.label) · \(label(for: request.scope))")
+      Text("\(model.askAIModelName) · \(label(for: request.scope))")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
       Text(request.effectiveQuestion)
@@ -363,8 +363,9 @@ struct AIQuestionView: View {
     contextNote = nil
     isAnswering = true
 
-    let engine = model.aiEngine
-    let llm = model.aiSelection
+    let configuration = model.askAIConfiguration
+    let engine = configuration.engine
+    let llm = configuration.llm
     let allowed = MemoraModel.meetings(in: request.scope, from: model.meetings)
     // A whole-library question reaches tasks that are not tied to a record too;
     // a single record or project reaches only its own.

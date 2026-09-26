@@ -247,6 +247,7 @@ final class MemoraModel {
   @ObservationIgnored private var isStoreProtected = false
   /// The engine Ask AI and summaries actually use. The model owns it, so what
   /// the composer shows and what the request calls cannot drift apart.
+  var registeredLLMs = RegisteredLLMStore()
   var aiEngine: AIEngine = .automatic {
     didSet {
       UserDefaults.standard.set(aiEngine.rawValue, forKey: StorageKey.aiEngine)

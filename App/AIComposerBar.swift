@@ -25,9 +25,6 @@ struct AIComposerBar: View {
   @State private var photoItem: PhotosPickerItem?
   @State private var editingPhoto: PhotoEditRequest?
   @State private var importErrorMessage: String?
-  /// Providers with a saved key, read from the Keychain when the composer
-  /// appears or settings close rather than on every keystroke's redraw.
-  @State private var readyProviders: [LLMProvider] = []
   @FocusState private var isFieldFocused: Bool
 
   var body: some View {
@@ -141,14 +138,6 @@ struct AIComposerBar: View {
     } message: {
       Text(speechInput.errorMessage ?? "")
     }
-    .onAppear(perform: refreshReadyProviders)
-    .onChange(of: model.isSettingsPresented) { _, isPresented in
-      if !isPresented { refreshReadyProviders() }
-    }
-  }
-
-  private func refreshReadyProviders() {
-    readyProviders = LLMProvider.allCases.filter { EngineAvailability.hasKey($0.keychainAccount) }
   }
 
   /// While the mic is live a glow gathers along the bottom edge, reacting to
@@ -199,71 +188,8 @@ struct AIComposerBar: View {
     .accessibilityLabel("添付を追加")
   }
 
-  /// Shows the engine that will actually answer, not a separate model label.
-  /// Engines that cannot run in this build are listed but not selectable.
   private var modelMenu: some View {
-    Menu {
-      ForEach(AIEngine.allCases) { option in
-        Button {
-          model.aiEngine = option
-        } label: {
-          if option == model.aiEngine {
-            Label(option.label, icon: .checkmark)
-          } else {
-            Text(option.label)
-          }
-        }
-        .disabled(!option.isSelectable)
-      }
-
-      // Providers with a saved key can be switched to without opening settings.
-      if !readyProviders.isEmpty {
-        Section("クラウドのプロバイダー") {
-          ForEach(readyProviders) { provider in
-            Button {
-              model.aiEngine = .cloud
-              model.aiProvider = provider
-            } label: {
-              Label {
-                Text(provider.label)
-              } icon: {
-                Image(model.aiEngine == .cloud && model.aiProvider == provider ? MemoraIcon.checkmark.assetName : provider.logoAssetName)
-              }
-            }
-          }
-        }
-      }
-    } label: {
-      HStack(spacing: 6) {
-        if model.aiEngine == .cloud {
-          ProviderLogo(provider: model.aiProvider, size: 22)
-        } else {
-          Image(icon: model.aiEngine.symbol)
-            .font(.subheadline)
-        }
-
-        Text(chipTitle)
-          .font(.subheadline.weight(.medium))
-          .lineLimit(1)
-          .minimumScaleFactor(0.85)
-
-        Image(icon: .chevronDown)
-          .font(.caption2.weight(.semibold))
-          .foregroundStyle(.secondary)
-      }
-      .foregroundStyle(.primary)
-      .padding(.horizontal, 6)
-      .frame(minWidth: 44, minHeight: 44)
-      .contentShape(Rectangle())
-    }
-    // The chip shows the short name; the full engine name is read out here and
-    // listed in the menu.
-    .accessibilityLabel("使用するAIエンジン: \(model.aiEngine == .cloud ? model.aiSelection.modelLabel : model.aiEngine.label)")
-  }
-
-  /// The cloud engine is named by its provider, since that is what answers.
-  private var chipTitle: String {
-    model.aiEngine == .cloud ? model.aiProvider.label : model.aiEngine.shortLabel
+    AIModelPicker()
   }
 
   private var actionButton: some View {

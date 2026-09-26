@@ -47,13 +47,8 @@ struct SearchView: View {
               }
             }
           } label: {
-            HStack(spacing: 4) {
-              Image(icon: model.aiScope.symbol)
-              Text(model.aiScope.title)
-              Image(icon: .chevronDown)
-                .font(.caption2.weight(.semibold))
-            }
-            .font(.subheadline.weight(.medium))
+            Label(model.aiScope.title, icon: model.aiScope.symbol)
+              .labelStyle(.iconOnly)
           }
           .accessibilityLabel("対象: \(model.aiScope.title)")
         }
@@ -435,4 +430,3 @@ struct SearchView: View {
     ("先週の会議を3行でまとめて", .textAlignleft)
   ]
 }
-

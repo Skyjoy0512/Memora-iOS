@@ -18,5 +18,6 @@ struct SettingsLabel: View {
     } icon: {
       SettingsIcon(icon: icon, color: color)
     }
+    .labelStyle(.titleAndIcon)
   }
 }

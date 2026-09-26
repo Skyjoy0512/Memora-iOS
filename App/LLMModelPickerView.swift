@@ -94,6 +94,7 @@ struct LLMModelPickerView: View {
   private func row(id: String, title: String, detail: String?) -> some View {
     Button {
       model.aiModelID = id
+      model.registeredLLMs.register(provider: provider, modelID: id, name: title)
       dismiss()
     } label: {
       HStack(spacing: 12) {
@@ -122,6 +123,7 @@ struct LLMModelPickerView: View {
     let id = customID.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !id.isEmpty else { return }
     model.aiModelID = id
+    model.registeredLLMs.register(provider: provider, modelID: id, name: id)
     dismiss()
   }
 

@@ -29,8 +29,9 @@ extension MemoraModel {
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
 
-    let engine = aiEngine
-    let llm = aiSelection
+    let configuration = askAIConfiguration
+    let engine = configuration.engine
+    let llm = configuration.llm
     let scope = aiScope
     let history = aiConversationContext()
     let requestID = UUID()

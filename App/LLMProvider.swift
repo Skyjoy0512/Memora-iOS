@@ -4,7 +4,7 @@ import Foundation
 /// Raw values are stored in settings; `openAI` and `anthropic` match the names
 /// saved before more providers were added, so an existing choice and its key
 /// carry over.
-enum LLMProvider: String, CaseIterable, Identifiable {
+enum LLMProvider: String, CaseIterable, Identifiable, Codable {
   case anthropic
   case openAI
   case google

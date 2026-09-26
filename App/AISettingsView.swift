@@ -18,6 +18,16 @@ struct AISettingsView: View {
         Text("端末内を優先し、必要な時だけクラウドを使います。選べない項目はこの版では利用できません。")
       }
 
+      Section {
+        NavigationLink {
+          RegisteredLLMsView()
+        } label: {
+          SettingsLabel("登録済みモデル", icon: .cpu, color: .indigo)
+        }
+      } footer: {
+        Text("Ask AIはAutoが基本です。入力欄から登録済みモデルを手動選択できます。")
+      }
+
       if model.aiEngine.usesCloud {
         Section {
           NavigationLink {
@@ -55,8 +65,12 @@ struct AISettingsView: View {
       }
 
       Section {
-        LabeledContent("実際に使う", value: effectiveLabel)
-        LabeledContent("この設定での状態", value: availability.summary)
+        LabeledContent { Text(effectiveLabel) } label: {
+          SettingsLabel("実際に使う", icon: .sparkles, color: .purple)
+        }
+        LabeledContent { Text(availability.summary) } label: {
+          SettingsLabel("この設定での状態", icon: .infoCircle, color: .gray)
+        }
         if let message = availability.message {
           Text(message)
             .font(.footnote)
