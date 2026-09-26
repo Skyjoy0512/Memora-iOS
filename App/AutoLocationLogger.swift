@@ -15,6 +15,10 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   /// Set once the "always" prompt has been shown. iOS offers it only once, so a
   /// later attempt must send the person to Settings instead of waiting forever.
   private static let alwaysPromptShownKey = "memora.autoLifeLog.alwaysPromptShown"
+  /// The last station recorded, so the 30-minute repeat guard survives the app
+  /// being relaunched in the background for each significant change.
+  private static let lastStationTitleKey = "memora.autoLifeLog.lastStationTitle"
+  private static let lastStationAtKey = "memora.autoLifeLog.lastStationAt"
 
   /// A place events within 200 m of are not recorded.
   struct ExcludedPlace: Codable, Identifiable, Hashable {
@@ -64,8 +68,6 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   private let manager = CLLocationManager()
   private var enableCompletion: ((Bool) -> Void)?
   private var enablePhase: EnablePhase?
-  private var lastStationTitle: String?
-  private var lastStationAt: Date?
   /// Set while the debug screen waits for one location check's outcome.
   private var debugCompletion: ((DebugStationResult) -> Void)?
 
@@ -265,15 +267,19 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
     let title = "\(base)駅付近を通過"
     let now = Date.now
 
-    if lastStationTitle == title, let last = lastStationAt,
-       now.timeIntervalSince(last) < Self.stationRepeatWindow {
+    // The guard is kept in UserDefaults: a significant change can relaunch the
+    // app as a fresh process, where an in-memory value would be gone.
+    let defaults = UserDefaults.standard
+    if defaults.string(forKey: Self.lastStationTitleKey) == title,
+       let stamp = defaults.object(forKey: Self.lastStationAtKey) as? Double,
+       now.timeIntervalSince1970 - stamp < Self.stationRepeatWindow {
       return .station(base)
     }
     if await inboxHasRecent(title: title, within: Self.stationRepeatWindow, now: now) {
       return .station(base)
     }
-    lastStationTitle = title
-    lastStationAt = now
+    defaults.set(title, forKey: Self.lastStationTitleKey)
+    defaults.set(now.timeIntervalSince1970, forKey: Self.lastStationAtKey)
 
     appendToInbox(
       LifeLogEntry(
