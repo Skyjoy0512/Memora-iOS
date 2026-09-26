@@ -10,6 +10,9 @@ struct SpeakerEditSheet: View {
   var segment: TranscriptSegment
   @State private var name: String
   @State private var appliesToAllSegments = true
+  /// The registered person chosen by name, added to the recording only when the
+  /// change is saved, so cancelling leaves the participants as they were.
+  @State private var selectedPersonID: UUID?
 
   init(meetingID: UUID, segment: TranscriptSegment) {
     self.meetingID = meetingID
@@ -34,13 +37,13 @@ struct SpeakerEditSheet: View {
             ForEach(model.people) { person in
               Button {
                 name = person.name
-                addParticipant(person)
+                selectedPersonID = person.id
               } label: {
                 HStack {
                   Label(person.name, systemImage: "person")
                     .foregroundStyle(.primary)
                   Spacer()
-                  if name == person.name {
+                  if selectedPersonID == person.id {
                     Image(systemName: "checkmark")
                       .foregroundStyle(.tint)
                   }
@@ -74,6 +77,9 @@ struct SpeakerEditSheet: View {
               name: name,
               appliesToAllSegments: appliesToAllSegments
             )
+            if let personID = selectedPersonID {
+              addParticipant(personID)
+            }
             dismiss()
           }
           .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -83,10 +89,10 @@ struct SpeakerEditSheet: View {
     .presentationDetents([.medium, .large])
   }
 
-  /// Tags a person on the recording unless they are already there.
-  private func addParticipant(_ person: Person) {
-    let alreadyTagged = model.participants(in: meetingID).contains { $0.id == person.id }
+  /// Tags a chosen person on the recording unless they are already there.
+  private func addParticipant(_ personID: UUID) {
+    let alreadyTagged = model.participants(in: meetingID).contains { $0.id == personID }
     guard !alreadyTagged else { return }
-    model.toggleParticipant(personID: person.id, meeting: meetingID)
+    model.toggleParticipant(personID: personID, meeting: meetingID)
   }
 }
