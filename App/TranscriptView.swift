@@ -74,45 +74,4 @@ struct TranscriptView: View {
   }
 }
 
-private struct SpeakerEditSheet: View {
-  @Environment(MemoraModel.self) private var model
-  @Environment(\.dismiss) private var dismiss
-  var meetingID: UUID
-  var segment: TranscriptSegment
-  @State private var name: String
 
-  init(meetingID: UUID, segment: TranscriptSegment) {
-    self.meetingID = meetingID
-    self.segment = segment
-    _name = State(initialValue: segment.speaker)
-  }
-
-  var body: some View {
-    NavigationStack {
-      Form {
-        Section("話者") {
-          TextField("名前", text: $name)
-        }
-        Section {
-          Text("この発言の話者名だけを修正します。話者分離が曖昧な箇所は「？」で示します。")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
-      }
-      .navigationTitle("話者を修正")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("キャンセル") { dismiss() }
-        }
-        ToolbarItem(placement: .confirmationAction) {
-          Button("保存") {
-            model.renameSpeaker(meetingID: meetingID, segmentID: segment.id, name: name)
-            dismiss()
-          }
-        }
-      }
-    }
-    .presentationDetents([.medium])
-  }
-}

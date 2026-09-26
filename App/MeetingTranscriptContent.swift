@@ -5,6 +5,7 @@ struct MeetingTranscriptContent: View {
   var meeting: Meeting
   /// The recording's playback, when there is one to follow.
   var player: AudioPlayerService?
+  @State private var editingSpeakerSegment: TranscriptSegment?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 22) {
@@ -40,13 +41,19 @@ struct MeetingTranscriptContent: View {
               showsSpeaker: meeting.hasSpeakerSeparation,
               timeWidth: 42,
               isActive: segment.id == activeSegmentID,
-              onSeek: seekAction
+              onSeek: seekAction,
+              onEditSpeaker: meeting.hasSpeakerSeparation
+                ? { editingSpeakerSegment = segment }
+                : nil
             )
           }
         }
       }
     }
     .memoraAppear()
+    .sheet(item: $editingSpeakerSegment) { segment in
+      SpeakerEditSheet(meetingID: meeting.id, segment: segment)
+    }
   }
 
   /// The line being played, so it can be highlighted.
