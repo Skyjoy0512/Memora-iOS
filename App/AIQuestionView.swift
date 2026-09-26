@@ -185,50 +185,88 @@ struct AIQuestionView: View {
 
       ForEach(sources) { source in
         VStack(alignment: .leading, spacing: 6) {
-          NavigationLink {
-            TranscriptView(meetingID: source.meetingID)
-          } label: {
-            HStack(spacing: 10) {
-              Image(systemName: "quote.bubble")
-                .foregroundStyle(.primary)
-              Text(source.title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-              Spacer()
-              Image(systemName: "arrow.up.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            }
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel(sourceAccessibilityLabel(source))
-          .accessibilityHint("参考資料の文字起こしを開きます")
-
-          ForEach(Array(source.excerpts.enumerated()), id: \.offset) { _, excerpt in
-            NavigationLink {
-              MeetingDetailView(meetingID: source.meetingID, initialPlaybackStart: excerpt.start)
+          if model.isActiveDetail(source.meetingID) {
+            Button {
+              openInExistingDetail(source.meetingID, time: nil)
             } label: {
-              HStack(alignment: .top, spacing: 8) {
-                Text(MemoraFormat.duration(excerpt.start))
-                  .font(.caption.monospacedDigit())
-                  .foregroundStyle(.secondary)
-                Text(excerpt.text)
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-                  .lineLimit(2)
-                Spacer(minLength: 0)
-              }
-              .frame(maxWidth: .infinity, alignment: .leading)
+              sourceHeader(source)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(MemoraFormat.duration(excerpt.start))、\(excerpt.text)")
-            .accessibilityHint("この位置から再生します")
+            .accessibilityLabel(sourceAccessibilityLabel(source))
+            .accessibilityHint("開いている記録の文字起こしへ戻ります")
+          } else {
+            NavigationLink {
+              TranscriptView(meetingID: source.meetingID)
+            } label: {
+              sourceHeader(source)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(sourceAccessibilityLabel(source))
+            .accessibilityHint("参考資料の文字起こしを開きます")
+          }
+
+          ForEach(Array(source.excerpts.enumerated()), id: \.offset) { _, excerpt in
+            if model.isActiveDetail(source.meetingID) {
+              Button {
+                openInExistingDetail(source.meetingID, time: excerpt.start)
+              } label: {
+                excerptRow(excerpt)
+              }
+              .buttonStyle(.plain)
+              .accessibilityLabel("\(MemoraFormat.duration(excerpt.start))、\(excerpt.text)")
+              .accessibilityHint("開いている記録のこの位置から再生します")
+            } else {
+              NavigationLink {
+                MeetingDetailView(meetingID: source.meetingID, initialPlaybackStart: excerpt.start)
+              } label: {
+                excerptRow(excerpt)
+              }
+              .buttonStyle(.plain)
+              .accessibilityLabel("\(MemoraFormat.duration(excerpt.start))、\(excerpt.text)")
+              .accessibilityHint("この位置から再生します")
+            }
           }
         }
         .padding(12)
         .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
       }
     }
+  }
+
+  private func sourceHeader(_ source: AIChatSource) -> some View {
+    HStack(spacing: 10) {
+      Image(systemName: "quote.bubble")
+        .foregroundStyle(.primary)
+      Text(source.title)
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(.primary)
+      Spacer()
+      Image(systemName: "arrow.up.right")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+    }
+  }
+
+  private func excerptRow(_ excerpt: AIChatSource.Excerpt) -> some View {
+    HStack(alignment: .top, spacing: 8) {
+      Text(MemoraFormat.duration(excerpt.start))
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(.secondary)
+      Text(excerpt.text)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(2)
+      Spacer(minLength: 0)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  /// Closes the sheet and asks the record already on screen to move to its
+  /// transcript, so a second copy of it is never stacked and the open player is
+  /// the one that seeks.
+  private func openInExistingDetail(_ meetingID: UUID, time: TimeInterval?) {
+    dismiss()
+    model.detailPlaybackRequest = DetailPlaybackRequest(meetingID: meetingID, time: time ?? 0)
   }
 
   private func sourceAccessibilityLabel(_ source: AIChatSource) -> String {

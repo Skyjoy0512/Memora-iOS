@@ -23,6 +23,10 @@ struct MeetingDetailView: View {
   @State private var isPlayButtonRevealed = false
   @State private var statusAlert: StatusAlert?
   @State private var player = AudioPlayerService()
+  /// The line the initial time points at, highlighted even without audio.
+  @State private var focusedSegmentID: UUID?
+  /// The initial time is applied once; a later `onAppear` must not seek again.
+  @State private var didApplyInitialPlayback = false
 
   @State private var isSavingToNotion = false
   /// The PDF export in progress, with its progress, while it runs.
@@ -78,13 +82,12 @@ struct MeetingDetailView: View {
             updateScrollState(to: newOffset)
           }
           .onAppear {
-            model.activeDetailMeetingID = meeting.id
+            model.pushActiveDetail(meeting.id)
             model.isDetailComposerVisible = true
             player.load(meeting.audioURL, title: meeting.displayTitle)
-            if let start = initialPlaybackStart, meeting.audioURL != nil {
-              selectedSection = .transcript
-              player.seek(to: start)
-              player.play()
+            if !didApplyInitialPlayback, let start = initialPlaybackStart {
+              didApplyInitialPlayback = true
+              applyPlaybackRequest(start, meeting: meeting, proxy: proxy)
             }
             withAnimation(
               reduceMotion
@@ -106,10 +109,13 @@ struct MeetingDetailView: View {
               model.activePlayback = nil
             }
           }
+          .onChange(of: model.detailPlaybackRequest) { _, request in
+            guard let request, request.meetingID == meeting.id else { return }
+            applyPlaybackRequest(request.time, meeting: meeting, proxy: proxy)
+            model.detailPlaybackRequest = nil
+          }
           .onDisappear {
-            if model.activeDetailMeetingID == meeting.id {
-              model.activeDetailMeetingID = nil
-            }
+            model.popActiveDetail(meeting.id)
             model.isDetailComposerVisible = true
           }
           .scrollFocusedEditorAboveKeyboard(in: proxy)
@@ -384,6 +390,26 @@ struct MeetingDetailView: View {
     }
   }
 
+  /// Brings the detail to its transcript at a time: plays from there when the
+  /// record has audio, and otherwise just highlights the line so the source is
+  /// still identifiable.
+  private func applyPlaybackRequest(_ time: TimeInterval, meeting: Meeting, proxy: ScrollViewProxy) {
+    selectedSection = .transcript
+    if meeting.audioURL != nil {
+      player.seek(to: time)
+      player.play()
+    }
+    guard let segment = meeting.transcript.last(where: { $0.timestamp <= time }) else { return }
+    focusedSegmentID = segment.id
+    Task { @MainActor in
+      // Let the transcript render before scrolling to the line.
+      try? await Task.sleep(for: .milliseconds(150))
+      withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+        proxy.scrollTo(segment.id, anchor: .center)
+      }
+    }
+  }
+
   private var sectionTransition: AnyTransition {
     reduceMotion
       ? .opacity
@@ -440,7 +466,11 @@ struct MeetingDetailView: View {
         insightContent(meeting)
       }
     case .transcript:
-      MeetingTranscriptContent(meeting: meeting, player: player)
+      MeetingTranscriptContent(
+        meeting: meeting,
+        player: player,
+        focusedSegmentID: focusedSegmentID
+      )
     case .notes:
       MeetingNotesContent(meetingID: meeting.id)
     }

@@ -57,12 +57,10 @@ struct TranscriptView: View {
         .navigationTitle("文字起こし")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-          model.activeDetailMeetingID = meeting.id
+          model.pushActiveDetail(meeting.id)
         }
         .onDisappear {
-          if model.activeDetailMeetingID == meeting.id {
-            model.activeDetailMeetingID = nil
-          }
+          model.popActiveDetail(meeting.id)
         }
         .sheet(item: $editingSegment) { segment in
           SpeakerEditSheet(meetingID: meeting.id, segment: segment)

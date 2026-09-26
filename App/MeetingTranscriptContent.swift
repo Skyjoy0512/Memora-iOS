@@ -5,6 +5,8 @@ struct MeetingTranscriptContent: View {
   var meeting: Meeting
   /// The recording's playback, when there is one to follow.
   var player: AudioPlayerService?
+  /// A line to highlight even when nothing is playing, e.g. an AI source time.
+  var focusedSegmentID: UUID?
   @State private var editingSpeakerSegment: TranscriptSegment?
 
   var body: some View {
@@ -40,12 +42,13 @@ struct MeetingTranscriptContent: View {
               segment: segment,
               showsSpeaker: meeting.hasSpeakerSeparation,
               timeWidth: 42,
-              isActive: segment.id == activeSegmentID,
+              isActive: segment.id == activeSegmentID || segment.id == focusedSegmentID,
               onSeek: seekAction,
               onEditSpeaker: meeting.hasSpeakerSeparation
                 ? { editingSpeakerSegment = segment }
                 : nil
             )
+            .id(segment.id)
           }
         }
       }

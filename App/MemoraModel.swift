@@ -169,10 +169,31 @@ final class MemoraModel {
   var isAuthPresented = false
   var isPaywallPresented = false
   var omiPairingManager = OmiPairingManager()
-  var activeDetailMeetingID: UUID?
+  /// The details currently on screen, oldest first. A stack, not one value, so a
+  /// screen opened over another cannot clear the one below it when it closes.
+  private(set) var activeDetailMeetingIDs: [UUID] = []
+  var activeDetailMeetingID: UUID? { activeDetailMeetingIDs.last }
+  /// Asked by a source line to bring the open detail to its transcript at a
+  /// time, instead of stacking a second copy of the same record.
+  var detailPlaybackRequest: DetailPlaybackRequest?
   /// The playback running for the detail on screen, so its transport can live in
   /// the floating controls above the composer instead of over them.
   var activePlayback: AudioPlayerService?
+
+  func pushActiveDetail(_ id: UUID) {
+    activeDetailMeetingIDs.append(id)
+  }
+
+  /// Removes this screen's own entry, leaving any screen opened above it alone.
+  func popActiveDetail(_ id: UUID) {
+    if let index = activeDetailMeetingIDs.lastIndex(of: id) {
+      activeDetailMeetingIDs.remove(at: index)
+    }
+  }
+
+  func isActiveDetail(_ id: UUID) -> Bool {
+    activeDetailMeetingIDs.contains(id)
+  }
   /// Meeting details temporarily hide their contextual AI field once people
   /// move into the document.
   var isDetailComposerVisible = true
