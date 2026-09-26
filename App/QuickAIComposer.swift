@@ -60,7 +60,7 @@ struct QuickAIComposer: View {
 
     // On the Ask AI tab the question joins the chat; elsewhere it opens the
     // focused answer sheet.
-    if scope == .global, model.isAskAIPresented {
+    if scope == .global, model.selectedTab == .askAI {
       let trimmed = model.composerDraft.trimmingCharacters(in: .whitespacesAndNewlines)
       return model.sendAIChat(
         trimmed.isEmpty ? "この添付を確認して" : trimmed,

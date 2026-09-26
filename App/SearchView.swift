@@ -38,14 +38,6 @@ struct SearchView: View {
       .navigationTitle("Ask AI")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
-          Button("閉じる", systemImage: "xmark") {
-            model.isAskAIPresented = false
-          }
-          .labelStyle(.iconOnly)
-          .accessibilityHint("元の画面に戻ります")
-        }
-
-        ToolbarItem(placement: .principal) {
           Menu {
             Picker("対象", selection: Binding(
               get: { model.aiScope },
@@ -105,8 +97,7 @@ struct SearchView: View {
         QuickAIComposer(
           scope: .global,
           isComposing: $isComposing,
-          keepsFocusAfterSubmit: true,
-          autofocus: model.aiMessages.isEmpty
+          keepsFocusAfterSubmit: true
         )
         .padding(.horizontal, 12)
         .padding(.top, 4)
@@ -129,6 +120,7 @@ struct SearchView: View {
       }
       .scrollDismissesKeyboard(.interactively)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
+      .hideBottomBarOnScroll(RootTab.askAI.rawValue)
       .refreshable { await model.refresh() }
       .onScrollGeometryChange(for: Bool.self) { geometry in
         geometry.contentOffset.y + geometry.containerSize.height

@@ -3,6 +3,7 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
   // values stay the case names, so a reorder never changes a saved id.
   case files
   case home
+  case askAI
   case tasks
 
   var id: Self { self }
@@ -11,6 +12,7 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
     switch self {
     case .home: "ジャーナル"
     case .files: "ファイル"
+    case .askAI: "Ask AI"
     case .tasks: "タスク"
     }
   }
@@ -19,6 +21,7 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
     switch self {
     case .home: "calendar"
     case .files: "folder"
+    case .askAI: "sparkles"
     case .tasks: "checklist"
     }
   }
