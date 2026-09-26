@@ -190,6 +190,38 @@
 | UX05 | 実装済み・未検証 | `UndoAction`/`UndoToast`。会議（単体・一括）・ライフログ・タスク・写真の取り消し。5秒で確定、読み上げ、新トーストで前を確定 |
 | UX06〜UX16 | 未着手 | P1/P2。UX06「＋」一本化はオーナー決定済み（`a57c9f3`） |
 
+## P0 レビュー指摘 RV01〜RV12
+
+`docs/UX_REVIEW_2026-09.md` 末尾のレビュー指摘。ビルドは各件で成功。実行確認は未実施。
+
+| ID | 状態 | メモ |
+| --- | --- | --- |
+| RV01 | 実装済み・未検証 | 再生バーを `RootTabView.bottomControls` の composer 上へ。`model.activePlayback` に登録。isComposing・キーボード・インライン編集中は非表示。スクリーンショット確認は未実施 |
+| RV02 | 実装済み・未検証 | 端末内上限を `SystemLanguageModel.contextSize/2`（約2000字）。`contextTooLarge` を分離し半分で一度再試行。SelfChecks 追加 |
+| RV03 | 実装済み・未検証 | 予算を 質問→添付→履歴→記録 で配分。`AIRequestContent.history/contextNote`、切詰めを表示 |
+| RV04 | 実装済み・未検証 | `libraryContext` は超過ブロックを切詰めて必ず1件送る。SelfChecks 追加 |
+| RV05 | 実装済み・未検証 | `activeDetailMeetingIDs` のスタック化、同一会議は `DetailPlaybackRequest` で既存再生器を seek/play。initialPlaybackStart は音声なしでも行強調＋一度だけ |
+| RV06 | 実装済み・未検証 | `TrashedRecord.meetingPosition/taskPositions` に保存し元位置へ復元。旧データは日付順 |
+| RV07 | 実装済み・未検証 | 話者編集の参加者追加を「保存」時に（キャンセルでは追加しない） |
+| RV08 | 実装済み・未検証 | サンプル削除で実会議が参照する人は残す。確認文にタスク削除を明記 |
+| RV09 | 実装済み・未検証 | 提案を `completeCaptureDismissal` 後に表示。提案済みフラグは回答時に記録 |
+| RV10 | 実装済み・未検証 | 写真削除を `pendingMediaDeletions` に登録して永続化。取り消しで解除、確定で削除 |
+| RV11 | 実装済み・未検証 | Slider の VoiceOver 増減で即 seek。Undoトーストは VoiceOver/スイッチコントロール時10秒 |
+| RV12 | 実装済み・未検証 | 未一致時は根拠を出さない。stopword重複削除。文字種 CharacterSet をスカラー範囲から構築 |
+
+## ジャーナル v2（J01〜J06）
+
+`docs/JOURNAL_V2.md`。P0レビュー完了後に着手。
+
+| ID | 状態 | メモ |
+| --- | --- | --- |
+| J01 | 未着手 | タブ順を ファイル→ジャーナル→Ask AI→タスク、起動はファイル |
+| J02 | 未着手 | タイムラインの土台（JournalTimelineItem/Builder） |
+| J03 | 未着手 | 位置情報からの駅通過・滞在の自動記録 |
+| J04 | 未着手 | カレンダー予定の表示 |
+| J05 | 未着手 | タイムラインの表示調整 |
+| J06 | 未着手 | DESIGN.md とバックログ更新 |
+
 ## 次期改善候補（今回は実装しない）
 
 - 決定事項・担当者・期限・未解決事項の抽出と、**根拠確認後の採用**。
