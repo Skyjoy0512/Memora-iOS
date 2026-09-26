@@ -257,14 +257,35 @@
 
 | ID | 状態 | メモ |
 | --- | --- | --- |
-| J01 | 実装済み・未検証 | RootTab 順を files/home/askAI/tasks、TabView 子も同順、起動は .files。rawValue 不変。loadSampleContent も .files。タブのモーフィング確認は未実施 |
+| J01 | 実装済み・未検証 | タブ順をファイル→ジャーナル→タスクに（N01 で Ask AI を外して3タブ化）、起動は .files。rawValue 不変。タブのモーフィング確認は未実施 |
 | J02 | 実装済み・未検証 | JournalTimelineItem/Builder/Movement/CalendarEvent、LifeLogEntry.origin。HomeView は時刻昇順＋「いま」線。SelfChecks 追加。予定データは J04 で供給 |
 | J03 | 実装済み・未検証 | AutoLocationLogger（駅通過・滞在）＋受け箱取込、除外場所、設定の「ジャーナル」節、表示（移動・滞在・自動タグ）。実機の位置・バックグラウンド起動確認は未実施 |
 | J04 | 実装済み・未検証 | CalendarService.events（重なり判定）、CalendarEventSheet、CalendarSelectionView、HomeView の再読込。RX05（日をまたぐ予定・予定だけの日を空としない）対応済み。カレンダー実機確認は未実施 |
-| J03 | 未着手 | 位置情報からの駅通過・滞在の自動記録 |
-| J04 | 未着手 | カレンダー予定の表示 |
-| J05 | 未着手 | タイムラインの表示調整 |
+| J05 | 未着手 | タイムラインの表示調整（RX04・RX08 を含む） |
 | J06 | 未着手 | DESIGN.md とバックログ更新 |
+
+## RY・J04 のレビュー RZ01〜RZ03
+
+`docs/UX_REVIEW_2026-09.md` 末尾のレビュー。RZ01・RZ02 を実装、RZ03 は確認待ち。
+
+| ID | 状態 | メモ |
+| --- | --- | --- |
+| RZ01 | 実装済み・未検証 | 「常に」確認の有無を1秒判定＋scenePhaseで記録。設定を閉じたら待ちを破棄。シミュレータ再確認は未実施 |
+| RZ02 | 実装済み・未検証 | 終日の予定チップをタップ可能に。設定「表示するカレンダー」はオフ時無効・アイコン削除 |
+| RZ03 | 未対応（情報） | 時刻つき予定・録音つき予定・「録音を開始」のシミュレータ確認は次のレビューで |
+
+## ナビゲーション v2（N01〜N06）
+
+`docs/NAVIGATION_V2.md`。N01〜N06 実装済み。UX06 は N04 で完了。
+
+| ID | 状態 | メモ |
+| --- | --- | --- |
+| N01 | 実装済み・未検証 | RootTab を3つに、SearchView のタブを削除、askAI 参照を置換、サイドバーに Ask AI 行 |
+| N02 | 実装済み・未検証 | ProminentTabBar に secondaryAction（✦）。fullScreenCover で SearchView。ツールバー再編・下部 composer・空なら自動フォーカス |
+| N03 | 実装済み・未検証 | composer は会議詳細のみ。一覧タブには出さない |
+| N04 | 実装済み・未検証 | ContextualCreateAction を「＋」の上に。タスク/ジャーナル右上の＋を削除。CaptureMenuPopover を2グループ化。Omi ボタンは条件表示。**UX06 完了** |
+| N05 | 実装済み・未検証 | 最大文字サイズでタブを記号のみに。下部の高さは bottomControlsHeight に反映 |
+| N06 | 実装済み（ドキュメント） | DESIGN.md・AGENTS.md・本表を更新 |
 
 ## 次期改善候補（今回は実装しない）
 

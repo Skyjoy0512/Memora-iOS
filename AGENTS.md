@@ -21,7 +21,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   `UISegmentedControl`. It is what draws and animates the system's Liquid Glass
   selection bubble. Do not swap it for a SwiftUI segmented control and do not set
   `allowsHitTesting(false)` on it — either change makes the selection jump to the
-  new tab instead of morphing across.
+  new tab instead of morphing across. Ask AI is not a tab: it is the bar's
+  `secondaryAction` (the round ✦ button), which opens the full-screen Ask AI.
 - **Files screen top chrome**: do not drive the navigation bar's visibility from
   a scroll-offset flag. Hiding and showing the bar from that state re-runs
   layout, which is read back as more scrolling and freezes the screen. The
