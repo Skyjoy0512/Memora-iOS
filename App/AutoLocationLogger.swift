@@ -12,6 +12,9 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   static let enabledKey = "memora.autoLifeLog.enabled"
   static let excludedPlacesKey = "memora.autoLifeLog.excludedPlaces"
   static let inboxKey = "memoraAutoLifeLogInbox"
+  /// Set once the "always" prompt has been shown. iOS offers it only once, so a
+  /// later attempt must send the person to Settings instead of waiting forever.
+  private static let alwaysPromptShownKey = "memora.autoLifeLog.alwaysPromptShown"
 
   /// A place events within 200 m of are not recorded.
   struct ExcludedPlace: Codable, Identifiable, Hashable {
@@ -25,8 +28,15 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   private static let minimumStay: TimeInterval = 10 * 60
   private static let exclusionRadius: CLLocationDistance = 200
 
+  /// Which permission prompt the pending enable request is waiting on.
+  private enum EnablePhase {
+    case askingWhenInUse
+    case askingAlways
+  }
+
   private let manager = CLLocationManager()
   private var enableCompletion: ((Bool) -> Void)?
+  private var enablePhase: EnablePhase?
   private var lastStationTitle: String?
   private var lastStationAt: Date?
 
@@ -56,19 +66,50 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
       completion(true)
       return
     }
-    enableCompletion = completion
     switch manager.authorizationStatus {
     case .notDetermined:
+      enableCompletion = completion
+      enablePhase = .askingWhenInUse
       manager.requestWhenInUseAuthorization()
     case .authorizedWhenInUse:
+      // iOS shows the "always" prompt only once. If it has already been passed
+      // over, do not open a prompt that will never appear: say so at once.
+      guard !UserDefaults.standard.bool(forKey: Self.alwaysPromptShownKey) else {
+        completion(false)
+        return
+      }
+      enableCompletion = completion
+      enablePhase = .askingAlways
+      UserDefaults.standard.set(true, forKey: Self.alwaysPromptShownKey)
       manager.requestAlwaysAuthorization()
     case .denied, .restricted:
-      enableCompletion = nil
       completion(false)
     @unknown default:
-      enableCompletion = nil
       completion(false)
     }
+  }
+
+  /// Called when the app returns to the front. If a permission request is still
+  /// unanswered (the person chose "keep when in use" without a callback), it is
+  /// finished as a refusal so the setting does not hang.
+  func resolvePendingEnableOnActivation() {
+    guard enableCompletion != nil else { return }
+    guard manager.authorizationStatus == .authorizedAlways else {
+      finishEnable(granted: false)
+      return
+    }
+    finishEnable(granted: true)
+  }
+
+  private func finishEnable(granted: Bool) {
+    let completion = enableCompletion
+    enableCompletion = nil
+    enablePhase = nil
+    if granted {
+      UserDefaults.standard.set(true, forKey: Self.enabledKey)
+      startMonitoring()
+    }
+    completion?(granted)
   }
 
   func disable() {
@@ -105,22 +146,27 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
     switch manager.authorizationStatus {
     case .authorizedWhenInUse:
-      // "Always" is what background monitoring needs, so ask for it next.
-      if enableCompletion != nil {
+      switch enablePhase {
+      case .askingWhenInUse:
+        // "When in use" was just granted; now ask for "always", which the
+        // background monitors need.
+        enablePhase = .askingAlways
+        UserDefaults.standard.set(true, forKey: Self.alwaysPromptShownKey)
         manager.requestAlwaysAuthorization()
+      case .askingAlways:
+        // The "always" prompt was answered with "keep when in use"; it will not
+        // be offered again, so finish as a refusal and let the UI explain.
+        finishEnable(granted: false)
+      case nil:
+        break
       }
     case .authorizedAlways:
-      if let completion = enableCompletion {
-        enableCompletion = nil
-        UserDefaults.standard.set(true, forKey: Self.enabledKey)
-        startMonitoring()
-        completion(true)
+      if enableCompletion != nil {
+        finishEnable(granted: true)
       }
     case .denied, .restricted:
-      if let completion = enableCompletion {
-        enableCompletion = nil
-        UserDefaults.standard.set(false, forKey: Self.enabledKey)
-        completion(false)
+      if enableCompletion != nil {
+        finishEnable(granted: false)
       }
     case .notDetermined:
       break
