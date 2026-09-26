@@ -237,15 +237,30 @@
 | RX07 | 実装済み・未検証 | 未使用の LifeLogOrigin.calendar を削除 |
 | RX08 | 未着手 | J05 で時刻列の幅を文字サイズに追従させる |
 
+## RX・J03 のレビュー RY01〜RY07
+
+`docs/UX_REVIEW_2026-09.md` 末尾のレビュー。RY01〜RY07 を実装。
+
+| ID | 状態 | メモ |
+| --- | --- | --- |
+| RY01 | 実装済み・未検証 | 「常に」の段階管理・確認済み記録・未解決の解決。シミュレータ確認は未実施 |
+| RY02 | 実装済み・未検証 | 受け箱変更の通知で即取込。DEBUGの駅判定は結果を表示 |
+| RY03 | 実装済み・未検証 | 移動シートから詳細・スワイプ削除・「この移動を削除」（まとめて取り消し） |
+| RY04 | 実装済み・未検証 | 最後に記録した駅を UserDefaults に保存し30分重複を判定 |
+| RY05 | 実装済み・未検証 | 位置イベントの処理を beginBackgroundTask で保護 |
+| RY06 | 実装済み・未検証 | AutoLocationLogger を @MainActor に |
+| RY07 | 実装済み・未検証 | 除外時の確認（この記録も削除）、件数の再読込、ExcludedPlacesView の「現在地を追加」 |
+
 ## ジャーナル v2（J01〜J06）
 
-`docs/JOURNAL_V2.md`。J01〜J03 実装済み。
+`docs/JOURNAL_V2.md`。J01〜J04 実装済み（J04 で RX05 対応済み）。
 
 | ID | 状態 | メモ |
 | --- | --- | --- |
 | J01 | 実装済み・未検証 | RootTab 順を files/home/askAI/tasks、TabView 子も同順、起動は .files。rawValue 不変。loadSampleContent も .files。タブのモーフィング確認は未実施 |
 | J02 | 実装済み・未検証 | JournalTimelineItem/Builder/Movement/CalendarEvent、LifeLogEntry.origin。HomeView は時刻昇順＋「いま」線。SelfChecks 追加。予定データは J04 で供給 |
 | J03 | 実装済み・未検証 | AutoLocationLogger（駅通過・滞在）＋受け箱取込、除外場所、設定の「ジャーナル」節、表示（移動・滞在・自動タグ）。実機の位置・バックグラウンド起動確認は未実施 |
+| J04 | 実装済み・未検証 | CalendarService.events（重なり判定）、CalendarEventSheet、CalendarSelectionView、HomeView の再読込。RX05（日をまたぐ予定・予定だけの日を空としない）対応済み。カレンダー実機確認は未実施 |
 | J03 | 未着手 | 位置情報からの駅通過・滞在の自動記録 |
 | J04 | 未着手 | カレンダー予定の表示 |
 | J05 | 未着手 | タイムラインの表示調整 |
