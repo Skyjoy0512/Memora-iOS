@@ -90,7 +90,7 @@ struct AIQuestionView: View {
       Text("会議をまたいで、答えを探します")
         .font(.title2.bold())
         .memoraTextReveal()
-      Text("回答には、AIに渡した参考資料（元の会議と一致した発言）を表示します。")
+      Text("会議の要約・発言・タスクから、関係する部分を探して答えます。")
         .font(.subheadline)
         .foregroundStyle(.secondary)
         .memoraTextReveal(delay: 0.08)
@@ -168,8 +168,8 @@ struct AIQuestionView: View {
     .memoraCard(radius: 18)
   }
 
-  /// The records that were sent, each with a line from the stored transcript
-  /// when one matched. Nothing here is invented to look like a quote.
+  /// The records that were sent, each with the stored lines that matched. Nothing
+  /// here is invented to look like a quote; a line plays from its own time.
   private var sourceList: some View {
     VStack(alignment: .leading, spacing: 10) {
       Text("AIに渡した参考資料")
@@ -177,51 +177,56 @@ struct AIQuestionView: View {
         .foregroundStyle(.secondary)
 
       ForEach(sources) { source in
-        NavigationLink {
-          TranscriptView(meetingID: source.meetingID)
-        } label: {
-          HStack(spacing: 10) {
-            Image(systemName: "quote.bubble")
-              .foregroundStyle(.primary)
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 6) {
+          NavigationLink {
+            TranscriptView(meetingID: source.meetingID)
+          } label: {
+            HStack(spacing: 10) {
+              Image(systemName: "quote.bubble")
+                .foregroundStyle(.primary)
               Text(source.title)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
-              if let start = source.start {
-                Text(MemoraFormat.duration(start))
+              Spacer()
+              Image(systemName: "arrow.up.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            }
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(sourceAccessibilityLabel(source))
+          .accessibilityHint("参考資料の文字起こしを開きます")
+
+          ForEach(Array(source.excerpts.enumerated()), id: \.offset) { _, excerpt in
+            NavigationLink {
+              MeetingDetailView(meetingID: source.meetingID, initialPlaybackStart: excerpt.start)
+            } label: {
+              HStack(alignment: .top, spacing: 8) {
+                Text(MemoraFormat.duration(excerpt.start))
                   .font(.caption.monospacedDigit())
                   .foregroundStyle(.secondary)
-              }
-              if let excerpt = source.excerpt {
-                Text(excerpt)
+                Text(excerpt.text)
                   .font(.caption)
                   .foregroundStyle(.secondary)
                   .lineLimit(2)
+                Spacer(minLength: 0)
               }
+              .frame(maxWidth: .infinity, alignment: .leading)
             }
-            Spacer()
-            Image(systemName: "arrow.up.right")
-              .font(.caption.weight(.semibold))
-              .foregroundStyle(.secondary)
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(MemoraFormat.duration(excerpt.start))、\(excerpt.text)")
+            .accessibilityHint("この位置から再生します")
           }
-          .padding(12)
-          .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(sourceAccessibilityLabel(source))
-        .accessibilityHint("参考資料の文字起こしを開きます")
+        .padding(12)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
       }
     }
   }
 
   private func sourceAccessibilityLabel(_ source: AIChatSource) -> String {
     var parts = [source.title]
-    if let start = source.start {
-      parts.append(MemoraFormat.duration(start))
-    }
-    if let excerpt = source.excerpt {
-      parts.append(excerpt)
-    }
+    parts.append(contentsOf: source.excerpts.map { MemoraFormat.duration($0.start) + "、" + $0.text })
     return parts.joined(separator: "、")
   }
 

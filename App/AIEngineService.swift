@@ -19,6 +19,14 @@ enum AIEngineService {
     effectiveEngine(engine) == .cloud ? provider.aiModelName : nil
   }
 
+  /// The most characters of context one engine is given. Kept in one place so
+  /// the on-device and cloud limits cannot drift apart between requests.
+  static let defaultContextCharacterLimit = 6_000
+
+  static func contextCharacterLimit(for engine: AIEngine) -> Int {
+    effectiveEngine(engine) == .cloud ? 40_000 : defaultContextCharacterLimit
+  }
+
   static func answer(
     engine: AIEngine,
     provider: CloudProvider,

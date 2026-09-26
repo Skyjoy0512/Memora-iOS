@@ -119,7 +119,8 @@ extension MemoraModel {
       for: request,
       scopeLabel: scopeLabel,
       allowedMeetings: allowedMeetings,
-      tasks: scopedTasks
+      tasks: scopedTasks,
+      characterLimit: AIEngineService.contextCharacterLimit(for: engine)
     )
 
     // A question that is only an attachment no engine can read has nothing to
@@ -174,25 +175,35 @@ extension MemoraModel {
 
   /// Assembles what a request would send. Pure, so a test can check that records
   /// outside the requested range are absent without calling an engine.
+  ///
+  /// One record carries its whole transcript when it fits. A wider range, or one
+  /// too large to send whole, is cut into ~800-character spans: the high-scoring
+  /// spans are kept in time order up to the engine's limit, and at most eight
+  /// records are described.
   static func requestContent(
     for request: AIQuestionRequest,
     scopeLabel: String,
     allowedMeetings: [Meeting],
-    tasks: [MemoraTask]
+    tasks: [MemoraTask],
+    characterLimit: Int = AIEngineService.defaultContextCharacterLimit
   ) -> AIRequestContent {
     let question = request.effectiveQuestion
     let words = questionWords(in: question)
-    let ranked = rank(meetings: allowedMeetings, words: words)
-    let evidences = ranked.map { meeting in
-      (meeting: meeting, excerpt: bestExcerpt(in: meeting, words: words))
+
+    let built: (context: String, sources: [AIChatSource])
+    switch request.scope {
+    case .file:
+      built = fileContext(meeting: allowedMeetings.first, words: words, characterLimit: characterLimit)
+    case .space, .global:
+      built = libraryContext(
+        meetings: allowedMeetings,
+        tasks: tasks,
+        words: words,
+        characterLimit: characterLimit
+      )
     }
 
-    var context = context(for: ranked, tasks: tasks)
-    for evidence in evidences {
-      guard let excerpt = evidence.excerpt else { continue }
-      let stamp = MemoraFormat.duration(excerpt.start)
-      context += "\n参考資料の発言（\(evidence.meeting.displayTitle) \(stamp)）: \(excerpt.text)"
-    }
+    var context = built.context
 
     // What the engines can read. Anything they cannot is named as not analysed
     // rather than sent as though it had been.
@@ -214,35 +225,249 @@ extension MemoraModel {
       question: question,
       scopeLabel: scopeLabel,
       context: context,
-      sources: evidences.map { evidence in
-        AIChatSource(
-          meetingID: evidence.meeting.id,
-          title: evidence.meeting.displayTitle,
-          excerpt: evidence.excerpt?.text,
-          start: evidence.excerpt?.start
-        )
-      },
+      sources: built.sources,
       unsupportedAttachmentNote: unsupportedNote
     )
   }
 
-  /// The records worth sending, ranked by how many of the question's terms they
-  /// contain and then by recency. Falls back to the most recent ones.
-  static func rank(meetings: [Meeting], words: [String]) -> [Meeting] {
-    guard !words.isEmpty else {
-      return Array(meetings.sorted { $0.createdAt > $1.createdAt }.prefix(3))
+  /// One record's own context: its digest plus as much of the transcript as fits.
+  private static func fileContext(
+    meeting: Meeting?,
+    words: [String],
+    characterLimit: Int
+  ) -> (String, [AIChatSource]) {
+    guard let meeting else { return ("", []) }
+
+    var lines: [String] = [
+      "会議: \(meeting.displayTitle)",
+      "日付: \(meeting.createdAt.formatted(date: .numeric, time: .omitted))"
+    ]
+    if !meeting.summary.isEmpty {
+      lines.append("要約: \(meeting.summary)")
     }
+    lines.append(contentsOf: meeting.decisions.prefix(8).map { "決定: \($0)" })
+    lines.append(contentsOf: meeting.openQuestions.prefix(8).map { "未決: \($0)" })
+
+    let transcript = transcriptBlock(meeting, words: words, characterLimit: characterLimit)
+    if !transcript.text.isEmpty {
+      lines.append("文字起こし:")
+      lines.append(transcript.text)
+    }
+
+    let source = AIChatSource(
+      meetingID: meeting.id,
+      title: meeting.displayTitle,
+      excerpts: transcript.excerpts
+    )
+    return (lines.joined(separator: "\n"), [source])
+  }
+
+  /// A wider range: each record's digest and best spans, up to eight records and
+  /// the engine's character limit.
+  private static func libraryContext(
+    meetings: [Meeting],
+    tasks: [MemoraTask],
+    words: [String],
+    characterLimit: Int
+  ) -> (String, [AIChatSource]) {
+    let ranked = rank(meetings: meetings, words: words, tasks: tasks).prefix(8)
+    var blocks: [String] = []
+    var sources: [AIChatSource] = []
+    var used = 0
+
+    // A task with no record is reachable only from the whole-library range.
+    let looseTasks = tasks.filter { !$0.isCompleted && $0.meetingID == nil }
+    if !looseTasks.isEmpty {
+      let block = "未完了のタスク:\n" + looseTasks.map { "- \($0.title)" }.joined(separator: "\n")
+      used += block.count
+      blocks.append(block)
+    }
+
+    for meeting in ranked {
+      var lines: [String] = [
+        "会議: \(meeting.displayTitle)",
+        "日付: \(meeting.createdAt.formatted(date: .numeric, time: .omitted))"
+      ]
+      if !meeting.summary.isEmpty {
+        lines.append("要約: \(meeting.summary)")
+      }
+      lines.append(contentsOf: meeting.decisions.prefix(5).map { "決定: \($0)" })
+      lines.append(contentsOf: meeting.openQuestions.prefix(5).map { "未決: \($0)" })
+      lines.append(contentsOf: tasks
+        .filter { $0.meetingID == meeting.id && !$0.isCompleted }
+        .prefix(5)
+        .map { "タスク: \($0.title)" })
+
+      let spans = scoredSpans(of: meeting, words: words)
+      let best = spans
+        .filter { $0.score > 0 }
+        .sorted { $0.score > $1.score }
+        .prefix(3)
+        .sorted { $0.start < $1.start }
+      for span in best {
+        lines.append("発言:")
+        lines.append(span.text)
+      }
+
+      let block = lines.joined(separator: "\n")
+      if used + block.count > characterLimit { break }
+      used += block.count + 2
+      blocks.append(block)
+      sources.append(
+        AIChatSource(
+          meetingID: meeting.id,
+          title: meeting.displayTitle,
+          excerpts: best.map { AIChatSource.Excerpt(text: snippet($0.text), start: $0.start) }
+        )
+      )
+    }
+
+    return (blocks.joined(separator: "\n\n"), Array(sources))
+  }
+
+  /// The transcript as sent: whole when it fits, otherwise the high-scoring spans
+  /// in time order. Also returns the excerpts shown as grounds.
+  private static func transcriptBlock(
+    _ meeting: Meeting,
+    words: [String],
+    characterLimit: Int
+  ) -> (text: String, excerpts: [AIChatSource.Excerpt]) {
+    guard !meeting.transcript.isEmpty else { return ("", []) }
+
+    let full = meeting.transcript
+      .map { transcriptLine($0, showsSpeaker: meeting.hasSpeakerSeparation) }
+      .joined(separator: "\n")
+    if full.count <= characterLimit {
+      return (full, topExcerpts(meeting.transcript, words: words))
+    }
+
+    let spans = scoredSpans(of: meeting, words: words)
+    var chosen = spans.filter { $0.score > 0 }.sorted { $0.score > $1.score }.prefix(8)
+    if chosen.isEmpty {
+      chosen = spans.sorted { $0.start < $1.start }.prefix(3)
+    }
+    let ordered = chosen.sorted { $0.start < $1.start }
+
+    var text = ""
+    var used: [ScoredSpan] = []
+    for span in ordered {
+      let addition = text.isEmpty ? span.text : "\n" + span.text
+      if text.count + addition.count > characterLimit { break }
+      text += addition
+      used.append(span)
+    }
+
+    let excerpts = used.prefix(3).map {
+      AIChatSource.Excerpt(text: snippet($0.text), start: $0.start)
+    }
+    return (text, excerpts)
+  }
+
+  /// A transcript segment as one sent line, with its time (and speaker when the
+  /// record separates them).
+  private static func transcriptLine(_ segment: TranscriptSegment, showsSpeaker: Bool) -> String {
+    let stamp = MemoraFormat.duration(segment.timestamp)
+    if showsSpeaker, !segment.speaker.isEmpty {
+      return "[\(stamp)] \(segment.speaker): \(segment.text)"
+    }
+    return "[\(stamp)] \(segment.text)"
+  }
+
+  /// Transcript lines bundled into spans of about `maxLength` characters, each
+  /// scored by how many of the question's terms it holds.
+  private static func scoredSpans(of meeting: Meeting, words: [String]) -> [ScoredSpan] {
+    let showsSpeaker = meeting.hasSpeakerSeparation
+    var spans: [ScoredSpan] = []
+    var current: [TranscriptSegment] = []
+    var length = 0
+
+    func flush() {
+      guard let first = current.first else { return }
+      let text = current
+        .map { transcriptLine($0, showsSpeaker: showsSpeaker) }
+        .joined(separator: "\n")
+      let score = words.reduce(0) { total, word in
+        total + (text.localizedCaseInsensitiveContains(word) ? 1 : 0)
+      }
+      spans.append(ScoredSpan(start: first.timestamp, text: text, score: score))
+      current = []
+      length = 0
+    }
+
+    for segment in meeting.transcript {
+      let lineLength = segment.text.count + 18
+      if length > 0, length + lineLength > ScoredSpan.maxLength { flush() }
+      current.append(segment)
+      length += lineLength
+    }
+    flush()
+    return spans
+  }
+
+  /// Up to three stored lines that match the question, in time order. With no
+  /// matching line, the opening lines stand in so a source still shows something
+  /// real.
+  private static func topExcerpts(
+    _ transcript: [TranscriptSegment],
+    words: [String]
+  ) -> [AIChatSource.Excerpt] {
+    guard !words.isEmpty else {
+      return transcript.prefix(3).map { AIChatSource.Excerpt(text: snippet($0.text), start: $0.timestamp) }
+    }
+    let matched = transcript
+      .map { segment -> (segment: TranscriptSegment, score: Int) in
+        (segment, words.filter { segment.text.localizedCaseInsensitiveContains($0) }.count)
+      }
+      .filter { $0.score > 0 }
+      .sorted { $0.score > $1.score }
+      .prefix(3)
+      .map(\.segment)
+      .sorted { $0.timestamp < $1.timestamp }
+    return matched.map { AIChatSource.Excerpt(text: snippet($0.text), start: $0.timestamp) }
+  }
+
+  /// A stored excerpt as shown: the sentence shortened, never rewritten.
+  private static func snippet(_ text: String) -> String {
+    text.count > 120 ? String(text.prefix(120)) + "…" : text
+  }
+
+  /// The records worth sending, ranked by the question's terms: a title match
+  /// counts most, a decision, open question or task next, and body text least.
+  static func rank(meetings: [Meeting], words: [String], tasks: [MemoraTask] = []) -> [Meeting] {
+    guard !words.isEmpty else {
+      return Array(meetings.sorted { $0.createdAt > $1.createdAt }.prefix(8))
+    }
+
+    func score(of meeting: Meeting) -> Int {
+      var total = 0
+      for word in words where meeting.title.localizedCaseInsensitiveContains(word) {
+        total += 3
+      }
+      let supporting = (
+        meeting.decisions + meeting.openQuestions
+          + tasks.filter { $0.meetingID == meeting.id }.map(\.title)
+      ).joined(separator: "\n")
+      for word in words where supporting.localizedCaseInsensitiveContains(word) {
+        total += 2
+      }
+      let body = ([meeting.notes, meeting.summary] + meeting.transcript.map(\.text))
+        .joined(separator: "\n")
+      for word in words where body.localizedCaseInsensitiveContains(word) {
+        total += 1
+      }
+      return total
+    }
+
     let matched = meetings
       .compactMap { meeting -> (meeting: Meeting, score: Int)? in
-        let text = searchableText(of: meeting)
-        let score = words.filter { text.localizedCaseInsensitiveContains($0) }.count
-        return score > 0 ? (meeting, score) : nil
+        let value = score(of: meeting)
+        return value > 0 ? (meeting, value) : nil
       }
       .sorted { ($0.score, $0.meeting.createdAt) > ($1.score, $1.meeting.createdAt) }
-      .prefix(5)
+      .prefix(8)
       .map(\.meeting)
     return matched.isEmpty
-      ? Array(meetings.sorted { $0.createdAt > $1.createdAt }.prefix(3))
+      ? Array(meetings.sorted { $0.createdAt > $1.createdAt }.prefix(8))
       : Array(matched)
   }
 
@@ -257,43 +482,6 @@ extension MemoraModel {
       .joined(separator: "\n")
   }
 
-  /// The digest of the records and the tasks that belong to them.
-  static func context(for sources: [Meeting], tasks allowedTasks: [MemoraTask]) -> String {
-    var lines: [String] = []
-
-    let openTasks = allowedTasks.filter { !$0.isCompleted }
-    if !openTasks.isEmpty {
-      lines.append("未完了のタスク:")
-      lines.append(contentsOf: openTasks.map { task in
-        if let assignee = task.assignee, !assignee.isEmpty {
-          return "- \(task.title)（\(assignee)）"
-        }
-        return "- \(task.title)"
-      })
-    }
-
-    if !sources.isEmpty {
-      lines.append("会議の記録:")
-      for meeting in sources {
-        lines.append("\(meeting.displayTitle)（\(meeting.createdAt.formatted(date: .numeric, time: .omitted))）")
-        if !meeting.summary.isEmpty {
-          lines.append("要約: \(meeting.summary)")
-        }
-        for decision in meeting.decisions.prefix(3) {
-          lines.append("決定: \(decision)")
-        }
-        for question in meeting.openQuestions.prefix(3) {
-          lines.append("未決: \(question)")
-        }
-        if meeting.summary.isEmpty, let excerpt = meeting.transcript.first {
-          lines.append("発言: \(excerpt.text.prefix(400))")
-        }
-      }
-    }
-
-    return lines.joined(separator: "\n")
-  }
-
   /// The exchanges so far in this chat, so a follow-up question has the thread
   /// it belongs to.
   func aiConversationContext() -> String {
@@ -304,22 +492,6 @@ extension MemoraModel {
         "\(message.role == .user ? "利用者" : "回答"): \(message.text)"
       }
       .joined(separator: "\n")
-  }
-
-  /// The stored line that best matches the question. Read from the record, so
-  /// the quote shown with an answer is always one that is really there.
-  static func bestExcerpt(
-    in meeting: Meeting,
-    words: [String]
-  ) -> (text: String, start: TimeInterval)? {
-    guard !words.isEmpty else { return nil }
-    return meeting.transcript
-      .map { segment -> (segment: TranscriptSegment, score: Int) in
-        (segment, words.filter { segment.text.localizedCaseInsensitiveContains($0) }.count)
-      }
-      .filter { $0.score > 0 }
-      .max { $0.score < $1.score }
-      .map { ($0.segment.text, $0.segment.timestamp) }
   }
 
   /// The records a question reaches: those whose own text contains its words,
@@ -379,9 +551,18 @@ extension MemoraModel {
     }
   }
 
+  /// Terms that carry no meaning on their own, so matching on them would rank
+  /// records at random.
+  private static let questionStopWords: Set<String> = [
+    "こと", "です", "ます", "した", "する", "ある", "いる", "について", "なに", "どう",
+    "何", "誰", "どこ", "いつ", "これ", "それ", "あれ", "から", "まで", "より", "ので",
+    "けど", "って", "には", "では", "とは", "たい", "ない", "ます"
+  ]
+
   /// The terms worth matching a question on. Punctuation is dropped, and a run
   /// of Japanese is cut into two-character pieces, so 「会議の決定は？」 can still
-  /// reach records that talk about 会議 and 決定.
+  /// reach records that talk about 会議 and 決定. A two-character run of kana
+  /// alone is a grammatical particle, not a term, so it is left out.
   static func questionWords(in question: String) -> [String] {
     let letters = CharacterSet.alphanumerics
       .union(CharacterSet(charactersIn: "ぁ-んァ-ヶ一-龠々ー"))
@@ -395,13 +576,33 @@ extension MemoraModel {
         continue
       }
       guard token.count >= 2 else { continue }
-      terms.insert(token)
+      if isWorthKeeping(token) {
+        terms.insert(token)
+      }
       let characters = Array(token)
       for index in 0..<(characters.count - 1) {
-        terms.insert(String(characters[index...index + 1]))
+        let piece = String(characters[index...index + 1])
+        if isWorthKeeping(piece) {
+          terms.insert(piece)
+        }
       }
     }
     return Array(terms)
+  }
+
+  /// A term is worth keeping unless it is a stop word or a two-character run of
+  /// kana, which is almost always a particle.
+  private static func isWorthKeeping(_ term: String) -> Bool {
+    guard !questionStopWords.contains(term) else { return false }
+    if term.count == 2, term.allSatisfy(isHiragana) {
+      return false
+    }
+    return true
+  }
+
+  private static func isHiragana(_ character: Character) -> Bool {
+    guard let scalar = character.unicodeScalars.first else { return false }
+    return (0x3041...0x309F).contains(scalar.value)
   }
 
   func saveAIExchange(
@@ -430,4 +631,13 @@ extension MemoraModel {
     aiHistory.removeAll { $0.id == id }
     persistAIHistory()
   }
+}
+
+/// A bundle of transcript lines kept together when a record is too large to send
+/// whole, with where it starts and how well it matches the question.
+private struct ScoredSpan {
+  static let maxLength = 800
+  var start: TimeInterval
+  var text: String
+  var score: Int
 }

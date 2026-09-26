@@ -43,6 +43,7 @@ enum SelfChecks {
     group("Store migration", checkStoreMigration)
 
     group("Question terms", checkQuestionWords)
+    group("AI context limits", checkAIContextLimits)
     group("Scope isolation", checkScopeIsolation)
     group("Processing input revision", checkProcessingRevision)
     group("Media paths", checkMediaPaths)
@@ -274,7 +275,8 @@ enum SelfChecks {
   }
 
   /// Ask AI reaches records by the words of the question; a Japanese question
-  /// has no spaces, so it must be cut into pieces that can still be found.
+  /// has no spaces, so it must be cut into pieces that can still be found. Kana
+  /// pairs and stop words are not terms, or ranking would fire on particles.
   private static func checkQuestionWords() {
     let terms = MemoraModel.questionWords(in: "会議の決定は？")
     for expected in ["会議", "決定"] {
@@ -284,6 +286,89 @@ enum SelfChecks {
     }
     if terms.contains(where: { $0.contains("？") || $0.contains("?") }) {
       report("question words kept punctuation: \(terms)")
+    }
+
+    for stop in ["した", "です", "ます", "こと", "について"] where terms.contains(stop) {
+      report("question words kept a stop word: \(stop)")
+    }
+
+    func isHiraganaPair(_ term: String) -> Bool {
+      guard term.count == 2 else { return false }
+      return term.unicodeScalars.allSatisfy { (0x3041...0x309F).contains($0.value) }
+    }
+    let hiraganaOnly = MemoraModel.questionWords(in: "これはどうした")
+    if hiraganaOnly.contains(where: isHiraganaPair) {
+      report("question words kept a kana pair: \(hiraganaOnly)")
+    }
+  }
+
+  /// A file-scope question sends the whole transcript when it fits, never leaks a
+  /// record outside the range, and is trimmed to the engine's limit when it does
+  /// not.
+  private static func checkAIContextLimits() {
+    let small = Meeting(
+      id: UUID(),
+      title: "商談",
+      createdAt: .now,
+      duration: 60,
+      source: .recording,
+      status: .ready,
+      summary: "見積もりを確認",
+      keyPoints: [],
+      decisions: [],
+      openQuestions: [],
+      transcript: [
+        TranscriptSegment(id: UUID(), speaker: "田中", speakerIsCertain: true, timestamp: 0, text: "最初の発言です"),
+        TranscriptSegment(id: UUID(), speaker: "佐藤", speakerIsCertain: true, timestamp: 5, text: "二つ目の発言です")
+      ]
+    )
+    let fileRequest = AIQuestionRequest(question: "最初の発言は？", scope: .file(small.id), attachment: nil)
+    let fileContent = MemoraModel.requestContent(
+      for: fileRequest,
+      scopeLabel: "商談",
+      allowedMeetings: [small],
+      tasks: [],
+      characterLimit: 6_000
+    )
+    for expected in ["[00:00] 田中: 最初の発言です", "[00:05] 佐藤: 二つ目の発言です"] {
+      if !fileContent.context.contains(expected) {
+        report("AI context missed the full transcript line: \(expected)")
+      }
+    }
+    if fileContent.sources.map(\.meetingID) != [small.id] {
+      report("AI sources outside the range: \(fileContent.sources.map(\.title))")
+    }
+    if fileContent.sources.first?.excerpts.count != 2 {
+      report("AI source excerpts were not kept per line: \(fileContent.sources.first?.excerpts.count ?? 0)")
+    }
+
+    var longTranscript: [TranscriptSegment] = []
+    for index in 0..<200 {
+      longTranscript.append(
+        TranscriptSegment(
+          id: UUID(),
+          speaker: "話者",
+          speakerIsCertain: true,
+          timestamp: TimeInterval(index) * 10,
+          text: "発言\(index)" + String(repeating: "あ", count: 100)
+        )
+      )
+    }
+    var long = small
+    long.transcript = longTranscript
+    let longRequest = AIQuestionRequest(question: "発言199は？", scope: .file(long.id), attachment: nil)
+    let longContent = MemoraModel.requestContent(
+      for: longRequest,
+      scopeLabel: "長い会議",
+      allowedMeetings: [long],
+      tasks: [],
+      characterLimit: 1_000
+    )
+    if longContent.context.count > 2_000 {
+      report("AI context was not trimmed: \(longContent.context.count) characters")
+    }
+    if longContent.context.contains("発言199") {
+      report("AI context kept the far end of a long transcript past the limit")
     }
   }
 

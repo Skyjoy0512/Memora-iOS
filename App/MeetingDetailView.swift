@@ -7,6 +7,9 @@ struct MeetingDetailView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var meetingID: UUID
+  /// When set, the transcript opens and plays from here — used when an AI answer's
+  /// source line is tapped.
+  var initialPlaybackStart: TimeInterval?
   @State private var selectedSection = MeetingDetailSection.summary
   @State private var isRenaming = false
   @State private var isDeleting = false
@@ -82,6 +85,11 @@ struct MeetingDetailView: View {
             model.isDetailComposerVisible = true
             hasStartedPlayback = false
             player.load(meeting.audioURL, title: meeting.displayTitle)
+            if let start = initialPlaybackStart, meeting.audioURL != nil {
+              selectedSection = .transcript
+              player.seek(to: start)
+              player.play()
+            }
             withAnimation(
               reduceMotion
                 ? nil

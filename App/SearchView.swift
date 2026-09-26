@@ -178,7 +178,7 @@ struct SearchView: View {
           Text("何を知りたいですか？")
             .font(.largeTitle.bold())
             .memoraTextReveal()
-          Text("会議をまたいで、意味から答えを探します。")
+          Text("会議の要約・発言・タスクから、関係する部分を探して答えます。")
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .memoraTextReveal(delay: 0.08)
