@@ -224,8 +224,7 @@ extension MemoraModel {
     let words = questionWords(in: question)
 
     // One budget, spent in order: the question, then the attachment, then the
-    // recent exchanges, then the records. Whatever is left reaches the records,
-    // so a long attachment cannot push the records past the engine's window.
+    // recent exchanges, then the records. Whatever is left reaches the records.
     var remaining = max(0, characterLimit - question.count)
     var notes: [String] = []
 
@@ -247,9 +246,9 @@ extension MemoraModel {
 
     var historyText = ""
     if !history.isEmpty, remaining > 0 {
-      let kept = String(history.prefix(remaining))
+      let kept = Self.trailingHistory(history, budget: remaining)
       if kept.count < history.count {
-        notes.append("これまでのやりとりが長いため、一部のみ送信しました。")
+        notes.append("これまでのやりとりが長いため、新しい方を優先して送信しました。")
       }
       historyText = kept
       remaining = max(0, remaining - historyText.count)
@@ -282,6 +281,30 @@ extension MemoraModel {
       unsupportedAttachmentNote: unsupportedNote,
       contextNote: notes.isEmpty ? nil : notes.joined(separator: "\n")
     )
+  }
+
+  /// The newest exchanges that fit the budget, cut at a turn boundary so an
+  /// answer is never kept without its question. A follow-up needs the turns just
+  /// before it, so the start of the thread is what is dropped.
+  static func trailingHistory(_ history: String, budget: Int) -> String {
+    guard !history.isEmpty, budget > 0 else { return "" }
+    if history.count <= budget { return history }
+
+    let lines = history.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    var kept: [String] = []
+    var used = 0
+    for line in lines.reversed() {
+      let addition = line.count + (kept.isEmpty ? 0 : 1)
+      if used + addition > budget { break }
+      kept.append(line)
+      used += addition
+    }
+    kept.reverse()
+    // A turn boundary: drop a leading answer whose question was cut away.
+    if let first = kept.first, first.hasPrefix("回答:") {
+      kept.removeFirst()
+    }
+    return kept.joined(separator: "\n")
   }
 
   /// One record's own context: its digest plus as much of the transcript as fits.

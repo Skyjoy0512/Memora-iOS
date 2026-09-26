@@ -407,6 +407,17 @@ enum SelfChecks {
       report("context and history together exceeded the budget")
     }
 
+    // A trimmed history keeps the newest exchange, not the oldest.
+    let thread = "利用者: 古い質問A\n回答: 古い回答A\n利用者: 直前の質問\n回答: 直前の回答"
+    let lastExchange = "利用者: 直前の質問\n回答: 直前の回答"
+    let keptHistory = MemoraModel.trailingHistory(thread, budget: lastExchange.count)
+    if !keptHistory.contains("直前の質問") || !keptHistory.contains("直前の回答") {
+      report("a trimmed history dropped the newest exchange: \(keptHistory)")
+    }
+    if keptHistory.contains("古い質問A") {
+      report("a trimmed history kept the oldest exchange")
+    }
+
     // A wide range whose first record alone is over budget still carries that
     // record, trimmed, rather than sending nothing.
     let globalRequest = AIQuestionRequest(question: "発言199は？", scope: .global, attachment: nil)
