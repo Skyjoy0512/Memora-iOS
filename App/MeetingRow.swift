@@ -8,7 +8,7 @@ struct MeetingRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      MemoraIconBadge(symbol: meeting.source == .recording ? "waveform" : "square.and.arrow.down")
+      MemoraIconBadge(symbol: meeting.source == .recording ? .waveform : .squareAndArrowDown)
 
       VStack(alignment: .leading, spacing: 6) {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -44,7 +44,7 @@ struct MeetingRow: View {
       Spacer(minLength: 8)
 
       if showsDisclosure {
-        Image(systemName: "chevron.right")
+        Image(icon: .chevronRight)
           .font(.caption.weight(.semibold))
           .foregroundStyle(.tertiary)
           .padding(.top, 4)

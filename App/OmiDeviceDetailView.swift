@@ -28,7 +28,7 @@ struct OmiDeviceDetailView: View {
 
       Section {
         infoRow("インストール済み", details?.firmwareVersion ?? "取得できませんでした")
-        Button("ファームウェアを更新", systemImage: "arrow.triangle.2.circlepath") {
+        Button("ファームウェアを更新", icon: .arrowTriangle2Circlepath) {
           isFirmwareNoticePresented = true
         }
       } header: {
@@ -38,7 +38,7 @@ struct OmiDeviceDetailView: View {
       }
 
       Section {
-        Button("接続を解除", systemImage: "xmark.circle", role: .destructive) {
+        Button("接続を解除", icon: .xmarkCircle, role: .destructive) {
           manager.disconnect()
           dismiss()
         }
@@ -55,7 +55,7 @@ struct OmiDeviceDetailView: View {
 
   private var header: some View {
     HStack(spacing: 14) {
-      Image(systemName: "dot.radiowaves.left.and.right")
+      Image(icon: .dotRadiowavesLeftAndRight)
         .font(.title2)
         .foregroundStyle(.tint)
         .frame(width: 48, height: 48)
@@ -64,7 +64,7 @@ struct OmiDeviceDetailView: View {
       VStack(alignment: .leading, spacing: 3) {
         Text(details?.name ?? "Omi")
           .font(.headline)
-        Label("接続済み", systemImage: "checkmark.circle.fill")
+        Label("接続済み", icon: .checkmarkCircleFill)
           .font(.subheadline)
           .foregroundStyle(.green)
       }

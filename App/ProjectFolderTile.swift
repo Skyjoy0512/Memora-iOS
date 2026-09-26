@@ -5,7 +5,7 @@ import SwiftUI
 struct ProjectFolderTile: View {
   var space: MemoraSpace
   var meetingCount: Int
-  var symbols: [String]
+  var symbols: [MemoraIcon]
 
   var body: some View {
     VStack(spacing: 8) {
@@ -58,7 +58,7 @@ struct ProjectFolderTile: View {
   @ViewBuilder
   private func miniIcon(at index: Int) -> some View {
     if symbols.indices.contains(index) {
-      Image(systemName: symbols[index])
+      Image(icon: symbols[index])
         .font(.title3)
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -19,13 +19,13 @@ enum CaptureAction: CaseIterable, Identifiable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
-    case .recording: "waveform"
-    case .importAudio: "square.and.arrow.down"
-    case .onlineMeeting: "video"
-    case .lifeLog: "square.and.pencil"
-    case .project: "folder.badge.plus"
+    case .recording: .waveform
+    case .importAudio: .squareAndArrowDown
+    case .onlineMeeting: .video
+    case .lifeLog: .squareAndPencil
+    case .project: .folderBadgePlus
     }
   }
 }
@@ -36,9 +36,9 @@ struct OnlineMeetingCaptureView: View {
   var body: some View {
     List {
       Section {
-        Label("Zoom", systemImage: "video")
-        Label("Google Meet", systemImage: "video")
-        Label("Microsoft Teams", systemImage: "video")
+        Label("Zoom", icon: .video)
+        Label("Google Meet", icon: .video)
+        Label("Microsoft Teams", icon: .video)
       } header: {
         Text("対応する会議")
       } footer: {
@@ -46,7 +46,7 @@ struct OnlineMeetingCaptureView: View {
       }
 
       Section {
-        Button("録音の準備をする", systemImage: "waveform", action: beginRecording)
+        Button("録音の準備をする", icon: .waveform, action: beginRecording)
       }
     }
     .navigationTitle("オンライン会議")

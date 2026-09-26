@@ -21,7 +21,7 @@ struct CaptureMenuPopover: View {
           select(action)
         } label: {
           HStack(spacing: 14) {
-            Image(systemName: action.symbol)
+            Image(icon: action.symbol)
               .font(.title3.weight(.semibold))
               .symbolRenderingMode(.monochrome)
               .frame(width: 44, height: 44)

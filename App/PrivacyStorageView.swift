@@ -15,7 +15,7 @@ struct PrivacyStorageView: View {
               .foregroundStyle(.secondary)
           }
         } icon: {
-          Image(systemName: "iphone")
+          Image(icon: .iphone)
             .foregroundStyle(.primary)
         }
       } header: {

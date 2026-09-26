@@ -54,7 +54,7 @@ struct LibraryView: View {
           if isSelectionMode {
             Button("キャンセル") { endSelection() }
           } else {
-            Button("メニュー", systemImage: "line.3.horizontal") {
+            Button("メニュー", icon: .line3Horizontal) {
               onOpenSidebar()
             }
             .labelStyle(.iconOnly)
@@ -76,11 +76,11 @@ struct LibraryView: View {
                 ForEach(FileListFilter.allCases) { Text($0.label).tag($0) }
               }
               Divider()
-              Button("選択", systemImage: "checkmark.circle") {
+              Button("選択", icon: .checkmarkCircle) {
                 beginSelectionMode()
               }
             } label: {
-              Label("表示と並べ替え", systemImage: "line.3.horizontal.decrease")
+              Label("表示と並べ替え", icon: .line3HorizontalDecrease)
                 .labelStyle(.iconOnly)
             }
           }
@@ -89,7 +89,7 @@ struct LibraryView: View {
         // The create action is the rightmost item, matching the other tabs.
         if model.fileSection == .projects, !isSelectionMode {
           ToolbarItem(placement: .primaryAction) {
-            Button("プロジェクトを作成", systemImage: "folder.badge.plus") {
+            Button("プロジェクトを作成", icon: .folderBadgePlus) {
               model.isFileCreationPresented = true
             }
             .labelStyle(.iconOnly)
@@ -291,7 +291,7 @@ struct LibraryView: View {
 
   private var filterChipRow: some View {
     HStack(spacing: 8) {
-      Label(statusFilter.label, systemImage: "line.3.horizontal.decrease")
+      Label(statusFilter.label, icon: .line3HorizontalDecrease)
         .font(.subheadline.weight(.medium))
       Spacer(minLength: 8)
       Button("解除") { statusFilter = .all }
@@ -306,7 +306,7 @@ struct LibraryView: View {
 
   private var filteredEmpty: some View {
     ContentUnavailableView {
-      Label("該当する記録はありません", systemImage: "line.3.horizontal.decrease")
+      Label("該当する記録はありません", icon: .line3HorizontalDecrease)
     } actions: {
       Button("絞り込みを解除") { statusFilter = .all }
     }
@@ -328,7 +328,7 @@ struct LibraryView: View {
           model.deleteMeeting(meeting.id)
         }
       } label: {
-        Label("削除", systemImage: "trash")
+        Label("削除", icon: .trash)
       }
     }
     .swipeActions(edge: .leading) {
@@ -337,19 +337,19 @@ struct LibraryView: View {
           beginSelection(with: meeting.id)
         }
       } label: {
-        Label("選択", systemImage: "checkmark.circle")
+        Label("選択", icon: .checkmarkCircle)
       }
       .tint(.blue)
     }
     .contextMenu {
-      Button("開く", systemImage: "arrow.up.right.square") {
+      Button("開く", icon: .arrowUpRightSquare) {
         model.libraryPath.append(.meeting(meeting.id))
       }
-      Button("名前を変更", systemImage: "pencil") { renameTarget = meeting }
-      Button("プロジェクトへ移動", systemImage: "folder") { moveTarget = meeting }
-      Button("共有", systemImage: "square.and.arrow.up") { shareTarget = meeting }
-      Button("選択", systemImage: "checkmark.circle") { beginSelection(with: meeting.id) }
-      Button("削除", systemImage: "trash", role: .destructive) { model.deleteMeeting(meeting.id) }
+      Button("名前を変更", icon: .pencil) { renameTarget = meeting }
+      Button("プロジェクトへ移動", icon: .folder) { moveTarget = meeting }
+      Button("共有", icon: .squareAndArrowUp) { shareTarget = meeting }
+      Button("選択", icon: .checkmarkCircle) { beginSelection(with: meeting.id) }
+      Button("削除", icon: .trash, role: .destructive) { model.deleteMeeting(meeting.id) }
     }
   }
 
@@ -390,15 +390,15 @@ struct LibraryView: View {
 
   private var selectionBar: some View {
     HStack(spacing: 8) {
-      selectionAction("共有", systemImage: "square.and.arrow.up") { shareSelected() }
+      selectionAction("共有", icon: .squareAndArrowUp) { shareSelected() }
       selectionAction(
         "チーム",
-        systemImage: model.hasTeamPlan ? "person.3.fill" : "person.3"
+        icon: model.hasTeamPlan ? .person3Fill : .person3
       ) {
         shareSelectedWithTeam()
       }
-      selectionAction("移動", systemImage: "folder") { isBulkSpacePickerPresented = true }
-      selectionAction("削除", systemImage: "trash", isDestructive: true) {
+      selectionAction("移動", icon: .folder) { isBulkSpacePickerPresented = true }
+      selectionAction("削除", icon: .trash, isDestructive: true) {
         isBulkDeleteConfirmPresented = true
       }
     }
@@ -411,13 +411,13 @@ struct LibraryView: View {
 
   private func selectionAction(
     _ title: String,
-    systemImage: String,
+    icon: MemoraIcon,
     isDestructive: Bool = false,
     action: @escaping () -> Void
   ) -> some View {
     Button(action: action) {
       VStack(spacing: 3) {
-        Image(systemName: systemImage)
+        Image(icon: icon)
           .font(.title3)
         Text(title)
           .font(.caption2.weight(.medium))
@@ -492,7 +492,7 @@ struct LibraryView: View {
       model.isFileCreationPresented = true
     } label: {
       HStack(spacing: 10) {
-        Image(systemName: "plus")
+        Image(icon: .plus)
         Text("プロジェクトを作成")
         Spacer()
       }
@@ -507,7 +507,7 @@ struct LibraryView: View {
 
   private var emptyFilesPrompt: some View {
     VStack(spacing: 16) {
-      Image(systemName: "waveform")
+      Image(icon: .waveform)
         .font(.title2)
         .foregroundStyle(.secondary)
 

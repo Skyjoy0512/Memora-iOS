@@ -12,7 +12,7 @@ struct PaywallView: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 28) {
           VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: selectedTier.symbol)
+            Image(icon: selectedTier.symbol)
               .font(.system(size: 30, weight: .semibold))
               .foregroundStyle(.primary)
               .frame(width: 60, height: 60)
@@ -39,7 +39,7 @@ struct PaywallView: View {
 
           VStack(alignment: .leading, spacing: 16) {
             ForEach(selectedTier.features, id: \.self) { feature in
-              BenefitRow(symbol: "checkmark.circle.fill", title: feature, detail: nil)
+              BenefitRow(symbol: .checkmarkCircleFill, title: feature, detail: nil)
             }
           }
           .memoraAppear(delay: 0.06)
@@ -117,7 +117,7 @@ struct PaywallView: View {
 
   private var currentPlanFooter: some View {
     VStack(spacing: 12) {
-      Label("\(selectedTier.label)を利用中", systemImage: "checkmark.seal.fill")
+      Label("\(selectedTier.label)を利用中", icon: .checkmarkSealFill)
         .font(.headline)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -146,13 +146,13 @@ struct PaywallView: View {
 }
 
 private struct BenefitRow: View {
-  var symbol: String
+  var symbol: MemoraIcon
   var title: String
   var detail: String?
 
   var body: some View {
     HStack(alignment: .top, spacing: 14) {
-      Image(systemName: symbol)
+      Image(icon: symbol)
         .font(.body.weight(.semibold))
         .foregroundStyle(.tint)
         .frame(width: 30)

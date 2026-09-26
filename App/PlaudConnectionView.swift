@@ -10,12 +10,12 @@ struct PlaudConnectionView: View {
       List {
         Section {
           VStack(alignment: .leading, spacing: 12) {
-            Label("PLAUDの記録をMemoraへ", systemImage: "waveform.badge.mic")
+            Label("PLAUDの記録をMemoraへ", icon: .waveformBadgeMic)
               .font(.headline)
             Text("PLAUDアプリから書き出した音声を保存します。文字起こしと要約は、取り込み後に必要なタイミングで開始できます。")
               .font(.subheadline)
               .foregroundStyle(.secondary)
-            Button("音声を取り込む", systemImage: "square.and.arrow.down") {
+            Button("音声を取り込む", icon: .squareAndArrowDown) {
               isImporterPresented = true
             }
             .buttonStyle(.borderedProminent)

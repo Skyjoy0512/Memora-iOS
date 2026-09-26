@@ -11,7 +11,7 @@ struct AIHistoryView: View {
     NavigationStack {
       Group {
         if entries.isEmpty {
-          ContentUnavailableView("まだ履歴がありません", systemImage: "clock.arrow.circlepath")
+          ContentUnavailableView("まだ履歴がありません", icon: .clockArrowCirclepath)
         } else {
           List {
             ForEach(entries) { entry in

@@ -46,12 +46,12 @@ struct SettingsBackupView: View {
       }
 
       Section {
-        Button("バックアップを書き出す", systemImage: "square.and.arrow.up") {
+        Button("バックアップを書き出す", icon: .squareAndArrowUp) {
           export()
         }
         .disabled(isWorking)
 
-        Button("バックアップから復元", systemImage: "square.and.arrow.down") {
+        Button("バックアップから復元", icon: .squareAndArrowDown) {
           isImporterPresented = true
         }
         .disabled(isWorking || !model.isEmpty)

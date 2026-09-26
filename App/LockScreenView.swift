@@ -10,7 +10,7 @@ struct LockScreenView: View {
       Color(uiColor: .systemBackground).ignoresSafeArea()
 
       VStack(spacing: 20) {
-        Image(systemName: "lock.shield.fill")
+        Image(icon: .lockShieldFill)
           .font(.system(size: 44, weight: .semibold))
           .foregroundStyle(.primary)
           .frame(width: 84, height: 84)
@@ -25,7 +25,7 @@ struct LockScreenView: View {
             .foregroundStyle(.secondary)
         }
 
-        Button("ロックを解除", systemImage: "faceid", action: onUnlock)
+        Button("ロックを解除", icon: .faceid, action: onUnlock)
           .font(.headline)
           .foregroundStyle(Color(uiColor: .systemBackground))
           .frame(maxWidth: .infinity, minHeight: 52)

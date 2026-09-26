@@ -6,7 +6,7 @@ struct SummaryMarketTemplate: Identifiable, Hashable {
   var id: String
   var title: String
   var detail: String
-  var symbol: String
+  var symbol: MemoraIcon
   /// How the template frames the summary, used as the AI instruction's lead.
   var lead: String
 }
@@ -18,35 +18,35 @@ enum SummaryTemplateCatalog {
       id: "market.retro",
       title: "振り返り（KPT）",
       detail: "続けたいこと・課題・次の試みで整理",
-      symbol: "arrow.triangle.2.circlepath",
+      symbol: .arrowTriangle2Circlepath,
       lead: "振り返り（続けたいこと・課題・次の試み）"
     ),
     SummaryMarketTemplate(
       id: "market.oneOnOne",
       title: "1on1",
       detail: "本人の状態と次の一歩に絞って整理",
-      symbol: "person.2",
+      symbol: .person2,
       lead: "1on1（本人の状態と次の一歩）"
     ),
     SummaryMarketTemplate(
       id: "market.sales",
       title: "商談",
       detail: "顧客の要望と次の一手に絞って整理",
-      symbol: "briefcase",
+      symbol: .briefcase,
       lead: "商談（顧客の要望と次の一手）"
     ),
     SummaryMarketTemplate(
       id: "market.decisionLog",
       title: "決定ログ",
       detail: "決めたことと理由を中心に残す",
-      symbol: "checkmark.seal",
+      symbol: .checkmarkSeal,
       lead: "決定ログ（決めたことと理由）"
     ),
     SummaryMarketTemplate(
       id: "market.standup",
       title: "デイリー",
       detail: "進捗と止まっている点を短く整理",
-      symbol: "clock",
+      symbol: .clock,
       lead: "デイリー（進捗と止まっている点）"
     )
   ]
@@ -83,7 +83,7 @@ enum SummaryTemplateChoice: Hashable, Identifiable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
     case .builtIn(let template): template.symbol
     case .market(let template): template.symbol

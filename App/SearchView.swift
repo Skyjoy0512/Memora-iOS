@@ -43,14 +43,14 @@ struct SearchView: View {
               set: { model.changeAIScope($0) }
             )) {
               ForEach(AIChatScope.allCases) { scope in
-                Label(scope.title, systemImage: scope.symbol).tag(scope)
+                Label(scope.title, icon: scope.symbol).tag(scope)
               }
             }
           } label: {
             HStack(spacing: 4) {
-              Image(systemName: model.aiScope.symbol)
+              Image(icon: model.aiScope.symbol)
               Text(model.aiScope.title)
-              Image(systemName: "chevron.down")
+              Image(icon: .chevronDown)
                 .font(.caption2.weight(.semibold))
             }
             .font(.subheadline.weight(.medium))
@@ -59,17 +59,17 @@ struct SearchView: View {
         }
 
         ToolbarItemGroup(placement: .topBarTrailing) {
-          Button("検索", systemImage: "magnifyingglass") {
+          Button("検索", icon: .magnifyingglass) {
             isSearchSheetPresented = true
           }
           .labelStyle(.iconOnly)
 
-          Button("履歴", systemImage: "clock.arrow.circlepath") {
+          Button("履歴", icon: .clockArrowCirclepath) {
             isHistoryPresented = true
           }
           .labelStyle(.iconOnly)
 
-          Button("新しいチャット", systemImage: "square.and.pencil") {
+          Button("新しいチャット", icon: .squareAndPencil) {
             model.startNewAIChat()
           }
           .labelStyle(.iconOnly)
@@ -132,7 +132,7 @@ struct SearchView: View {
       }
       .overlay(alignment: .bottom) {
         if hasUnseenAnswer {
-          Button("新しい回答", systemImage: "arrow.down") {
+          Button("新しい回答", icon: .arrowDown) {
             hasUnseenAnswer = false
             scrollToLatest(proxy)
           }
@@ -190,7 +190,7 @@ struct SearchView: View {
               model.sendAIChat(suggestion.title)
             } label: {
               HStack(spacing: 14) {
-                Image(systemName: suggestion.symbol)
+                Image(icon: suggestion.symbol)
                   .font(.body.weight(.medium))
                   .foregroundStyle(.primary)
                   .frame(width: 34, height: 34)
@@ -226,7 +226,7 @@ struct SearchView: View {
         if query.isEmpty {
           ContentUnavailableView(
             "会話を検索",
-            systemImage: "magnifyingglass",
+            icon: .magnifyingglass,
             description: Text("タイトル、発言、決定、タスクから探せます。")
           )
         } else {
@@ -254,7 +254,7 @@ struct SearchView: View {
             model.sendAIChat(query)
           }
         } label: {
-          Label("「\(query)」をMemoraに聞く", systemImage: "sparkles")
+          Label("「\(query)」をMemoraに聞く", icon: .sparkles)
             .font(.headline)
             .foregroundStyle(.primary)
             .lineLimit(2)
@@ -289,7 +289,7 @@ struct SearchView: View {
       if matchingMeetings.isEmpty && matchingTasks.isEmpty {
         if filters.isActive {
           ContentUnavailableView {
-            Label("条件に合う結果がありません", systemImage: "line.3.horizontal.decrease.circle")
+            Label("条件に合う結果がありません", icon: .line3HorizontalDecreaseCircle)
           } description: {
             Text("絞り込みを変えるか、解除してみてください。")
           } actions: {
@@ -320,7 +320,7 @@ struct SearchView: View {
         spaceMenu
         statusMenu
         if filters.isActive {
-          Button("解除", systemImage: "xmark.circle") {
+          Button("解除", icon: .xmarkCircle) {
             filters.reset()
           }
           .font(.subheadline.weight(.medium))
@@ -347,7 +347,7 @@ struct SearchView: View {
     } label: {
       filterChip(
         title: filters.period == .all ? "期間" : filters.period.title,
-        symbol: "calendar",
+        symbol: .calendar,
         isActive: filters.period != .all
       )
     }
@@ -365,7 +365,7 @@ struct SearchView: View {
     } label: {
       filterChip(
         title: filters.personID.flatMap { model.person(id: $0)?.name } ?? "人",
-        symbol: "person",
+        symbol: .person,
         isActive: filters.personID != nil
       )
     }
@@ -383,7 +383,7 @@ struct SearchView: View {
     } label: {
       filterChip(
         title: model.spaces.first { $0.id == filters.spaceID }?.name ?? "プロジェクト",
-        symbol: "folder",
+        symbol: .folder,
         isActive: filters.spaceID != nil
       )
     }
@@ -401,18 +401,18 @@ struct SearchView: View {
     } label: {
       filterChip(
         title: filters.status?.title ?? "状態",
-        symbol: "checkmark.circle",
+        symbol: .checkmarkCircle,
         isActive: filters.status != nil
       )
     }
     .accessibilityLabel("状態で絞り込む")
   }
 
-  private func filterChip(title: String, symbol: String, isActive: Bool) -> some View {
+  private func filterChip(title: String, symbol: MemoraIcon, isActive: Bool) -> some View {
     HStack(spacing: 4) {
-      Image(systemName: symbol)
+      Image(icon: symbol)
       Text(title)
-      Image(systemName: "chevron.down")
+      Image(icon: .chevronDown)
         .font(.caption2.weight(.semibold))
     }
     .font(.subheadline.weight(.medium))
@@ -423,10 +423,10 @@ struct SearchView: View {
     .contentShape(Capsule())
   }
 
-  private static let suggestions: [(title: String, symbol: String)] = [
-    ("今週決まったことは？", "checkmark.seal"),
-    ("未完了のタスクを教えて", "checkmark.square"),
-    ("先週の会議を3行でまとめて", "text.alignleft")
+  private static let suggestions: [(title: String, symbol: MemoraIcon)] = [
+    ("今週決まったことは？", .checkmarkSeal),
+    ("未完了のタスクを教えて", .checkmarkSquare),
+    ("先週の会議を3行でまとめて", .textAlignleft)
   ]
 }
 

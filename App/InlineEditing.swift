@@ -33,7 +33,7 @@ struct InlineMarkdownEditor: View {
       if isEditing {
         VStack(alignment: .leading, spacing: 8) {
           if didRestoreDraft {
-            Label("書きかけの内容を復元しました", systemImage: "arrow.uturn.backward")
+            Label("書きかけの内容を復元しました", icon: .arrowUturnBackward)
               .font(.footnote)
               .foregroundStyle(.secondary)
           }
@@ -194,7 +194,7 @@ struct InlineMarkdownEditor: View {
 /// the content itself is the control.
 struct InlineEditableList: View {
   var title: String
-  var symbol: String
+  var symbol: MemoraIcon
   var items: [String]
   var emptyText: String
   var onCommit: ([String]) -> Void
@@ -207,7 +207,7 @@ struct InlineEditableList: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Label(title, systemImage: symbol)
+      Label(title, icon: symbol)
         .font(.title3.bold())
         .foregroundStyle(.primary)
         .memoraTextReveal()

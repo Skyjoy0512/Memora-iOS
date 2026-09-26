@@ -69,7 +69,7 @@ struct PeopleManagerSheet: View {
                 .accessibilityAddTraits(.isButton)
                 .accessibilityLabel("\(person.name)を編集")
 
-                Button("写真を変更", systemImage: "photo") {
+                Button("写真を変更", icon: .photo) {
                   photoTarget = .person(person.id)
                   isPhotoPickerPresented = true
                 }
@@ -77,7 +77,7 @@ struct PeopleManagerSheet: View {
                 .foregroundStyle(.secondary)
               }
               .swipeActions(edge: .trailing) {
-                Button("編集", systemImage: "pencil") { editingPerson = person }
+                Button("編集", icon: .pencil) { editingPerson = person }
               }
             }
             .onDelete { indexSet in

@@ -35,12 +35,12 @@ enum SummaryTemplate: String, CaseIterable, Identifiable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
-    case .automatic: "sparkles"
-    case .meetingMinutes: "text.document"
-    case .detailedMinutes: "list.bullet.rectangle"
-    case .actionPlan: "checkmark.circle"
+    case .automatic: .sparkles
+    case .meetingMinutes: .textDocument
+    case .detailedMinutes: .listBulletRectangle
+    case .actionPlan: .checkmarkCircle
     }
   }
 }

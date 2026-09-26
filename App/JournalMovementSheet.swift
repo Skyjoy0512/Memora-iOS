@@ -38,13 +38,13 @@ struct JournalMovementSheet: View {
               model.deleteLifeLogEntry(entry.id)
               dismiss()
             } label: {
-              Label("削除", systemImage: "trash")
+              Label("削除", icon: .trash)
             }
           }
         }
 
         Section {
-          Button("この移動を削除", systemImage: "trash", role: .destructive) {
+          Button("この移動を削除", icon: .trash, role: .destructive) {
             isConfirmingDelete = true
           }
         }

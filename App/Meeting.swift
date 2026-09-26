@@ -219,24 +219,24 @@ enum MeetingStatus: Hashable, Codable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
     case .waitingForTranscription:
-      "waveform.badge.plus"
+      .waveformBadgePlus
     case .waitingForSummary:
-      "sparkles"
+      .sparkles
     case .importing:
-      "arrow.down.doc"
+      .arrowDownDoc
     case .transcribing:
-      "text.bubble"
+      .textBubble
     case .organizing:
-      "sparkles"
+      .sparkles
     case .ready:
-      "checkmark"
+      .checkmark
     case .partialFailure:
-      "exclamationmark.triangle"
+      .exclamationmarkTriangle
     case .failed:
-      "arrow.clockwise"
+      .arrowClockwise
     }
   }
 }

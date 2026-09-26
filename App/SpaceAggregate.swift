@@ -4,6 +4,6 @@ import Foundation
 /// icons. Counted once when the records change rather than rescanned per tile.
 struct SpaceAggregate {
   var meetingCount: Int = 0
-  var icons: [String] = []
+  var icons: [MemoraIcon] = []
   var latestDate: Date?
 }

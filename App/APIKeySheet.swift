@@ -21,7 +21,7 @@ struct APIKeySheet: View {
 
         if hasStoredKey {
           Section {
-            Button("キーを削除", systemImage: "trash", role: .destructive) {
+            Button("キーを削除", icon: .trash, role: .destructive) {
               KeychainStore.set(nil, forKey: account)
               hasStoredKey = false
               dismiss()

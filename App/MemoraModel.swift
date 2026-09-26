@@ -542,7 +542,7 @@ final class MemoraModel {
       let newest = group.sorted { $0.createdAt > $1.createdAt }
       return SpaceAggregate(
         meetingCount: group.count,
-        icons: newest.prefix(4).map { $0.source == .recording ? "waveform" : "square.and.arrow.down" },
+        icons: newest.prefix(4).map { $0.source == .recording ? .waveform : .squareAndArrowDown },
         latestDate: newest.first?.createdAt
       )
     }

@@ -15,10 +15,10 @@ enum PlanTier: String, CaseIterable, Identifiable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
-    case .personal: "person.fill"
-    case .team: "person.3.fill"
+    case .personal: .personFill
+    case .team: .person3Fill
     }
   }
 

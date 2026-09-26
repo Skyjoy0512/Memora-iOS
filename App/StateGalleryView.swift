@@ -5,13 +5,13 @@ struct StateGalleryView: View {
     List {
       Section("権限と録音") {
         StateExampleRow(
-          symbol: "mic.slash",
+          symbol: .micSlash,
           title: "マイクを使えません",
           detail: "設定を開く · 録音以外は利用可能",
           tint: .red
         )
         StateExampleRow(
-          symbol: "exclamationmark.triangle",
+          symbol: .exclamationmarkTriangle,
           title: "録音を開始できませんでした",
           detail: "入力を確認して再試行",
           tint: .orange
@@ -20,33 +20,33 @@ struct StateGalleryView: View {
 
       Section("読み込みと処理") {
         StateExampleRow(
-          symbol: "arrow.down.doc",
+          symbol: .arrowDownDoc,
           title: "音声を読み込み中",
           detail: "62% · 完了後は未処理のまま保存",
           tint: .primary,
           progress: 0.62
         )
         StateExampleRow(
-          symbol: "waveform.badge.plus",
+          symbol: .waveformBadgePlus,
           title: "文字起こし待ち",
           detail: "開始するまでAI利用は発生しません",
           tint: .secondary
         )
         StateExampleRow(
-          symbol: "sparkles",
+          symbol: .sparkles,
           title: "要約待ち",
           detail: "テンプレートを選んで手動生成",
           tint: .secondary
         )
         StateExampleRow(
-          symbol: "text.bubble",
+          symbol: .textBubble,
           title: "文字起こし中",
           detail: "完成した発言から利用可能",
           tint: .primary,
           progress: 0.38
         )
         StateExampleRow(
-          symbol: "exclamationmark.triangle",
+          symbol: .exclamationmarkTriangle,
           title: "AI整理だけ未完了",
           detail: "文字起こしはそのまま利用できます",
           tint: .orange
@@ -55,13 +55,13 @@ struct StateGalleryView: View {
 
       Section("接続と設定") {
         StateExampleRow(
-          symbol: "wifi.slash",
+          symbol: .wifiSlash,
           title: "ネットワークに接続できません",
           detail: "ローカル処理は継続 · AI整理は後で再試行",
           tint: .orange
         )
         StateExampleRow(
-          symbol: "key",
+          symbol: .key,
           title: "APIキーが未設定です",
           detail: "Memoraの自動設定を使うか、設定で追加",
           tint: .secondary
@@ -70,19 +70,19 @@ struct StateGalleryView: View {
 
       Section("Empty") {
         StateExampleRow(
-          symbol: "waveform",
+          symbol: .waveform,
           title: "会議が0件",
           detail: "録音または音声インポートへ案内",
           tint: .primary
         )
         StateExampleRow(
-          symbol: "checkmark.square",
+          symbol: .checkmarkSquare,
           title: "タスクが0件",
           detail: "会話から見つかると自動で集約",
           tint: .primary
         )
         StateExampleRow(
-          symbol: "sparkles",
+          symbol: .sparkles,
           title: "AI履歴が0件",
           detail: "質問例から最初の検索へ案内",
           tint: .primary
@@ -96,7 +96,7 @@ struct StateGalleryView: View {
 }
 
 private struct StateExampleRow: View {
-  var symbol: String
+  var symbol: MemoraIcon
   var title: String
   var detail: String
   var tint: Color
@@ -104,7 +104,7 @@ private struct StateExampleRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      Image(systemName: symbol)
+      Image(icon: symbol)
         .font(.body.weight(.semibold))
         .foregroundStyle(tint)
         .frame(width: 28)

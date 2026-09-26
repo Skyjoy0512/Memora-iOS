@@ -27,11 +27,11 @@ struct CalendarEventSheet: View {
 
         Section {
           if canStartRecording {
-            Button("録音を開始", systemImage: "waveform") {
+            Button("録音を開始", icon: .waveform) {
               startRecording()
             }
           }
-          Button("カレンダーで開く", systemImage: "calendar") {
+          Button("カレンダーで開く", icon: .calendar) {
             openInCalendar()
           }
         }

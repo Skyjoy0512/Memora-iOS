@@ -13,7 +13,7 @@ struct TaskRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      Button(task.isCompleted ? "未完了に戻す" : "完了にする", systemImage: task.isCompleted ? "checkmark.circle.fill" : "circle") {
+      Button(task.isCompleted ? "未完了に戻す" : "完了にする", icon: task.isCompleted ? .checkmarkCircleFill : .circle) {
         withAnimation(reduceMotion ? nil : .snappy) {
           model.toggleTask(task.id)
         }

@@ -22,7 +22,7 @@ private struct MemoraWidgetView: View {
   var body: some View {
     Link(destination: URL(string: "memora://capture")!) {
       VStack(alignment: .leading, spacing: 10) {
-        Image(systemName: "waveform")
+        Image(icon: .waveform)
           .font(.title2.weight(.semibold))
           .foregroundStyle(.white)
 

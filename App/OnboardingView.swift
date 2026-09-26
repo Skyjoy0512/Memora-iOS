@@ -38,7 +38,7 @@ struct OnboardingView: View {
         .padding(.horizontal, 22)
         .frame(minHeight: 132, alignment: .top)
 
-      Label("録音はまず、このiPhoneに保存されます", systemImage: "lock.shield")
+      Label("録音はまず、このiPhoneに保存されます", icon: .lockShield)
         .font(.footnote)
         .foregroundStyle(.secondary)
         .padding(.top, 16)
@@ -101,14 +101,14 @@ enum OnboardingPage: String, CaseIterable, Identifiable, Hashable {
 
   var id: Self { self }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
     case .record:
-      "waveform"
+      .waveform
     case .understand:
-      "text.alignleft"
+      .textAlignleft
     case .act:
-      "checkmark"
+      .checkmark
     }
   }
 
@@ -151,7 +151,7 @@ private struct OnboardingPageView: View {
       Spacer(minLength: 0)
         .frame(maxHeight: 72)
 
-      Image(systemName: page.symbol)
+      Image(icon: page.symbol)
         .font(.system(size: 38, weight: .semibold))
         .foregroundStyle(Color(uiColor: .systemBackground))
         .frame(width: 78, height: 78)

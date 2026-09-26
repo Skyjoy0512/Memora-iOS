@@ -29,7 +29,7 @@ struct TasksView: View {
 
         if visibleTasks.isEmpty {
           ContentUnavailableView {
-            Label(showsCompleted ? "完了したタスクはありません" : "タスクはありません", systemImage: "checkmark.square")
+            Label(showsCompleted ? "完了したタスクはありません" : "タスクはありません", icon: .checkmarkSquare)
           } description: {
             Text(showsCompleted ? "完了にしたタスクがここに残ります。" : "会話から次の行動が見つかると、自動でここに集まります。")
           }
@@ -68,14 +68,14 @@ struct TasksView: View {
               }
             }
           } label: {
-            Label("担当で絞り込み", systemImage: "line.3.horizontal.decrease")
+            Label("担当で絞り込み", icon: .line3HorizontalDecrease)
               .labelStyle(.iconOnly)
           }
         }
 
         // The create action is the rightmost item, matching the other tabs.
         ToolbarItem(placement: .primaryAction) {
-          Button("タスクを追加", systemImage: "text.badge.plus") {
+          Button("タスクを追加", icon: .textBadgePlus) {
             model.isAddTaskPresented = true
           }
           .labelStyle(.iconOnly)
@@ -102,7 +102,7 @@ struct TasksView: View {
       }
 
       if let meetingID = task.meetingID {
-        Button("元の会議を開く", systemImage: "chevron.right") {
+        Button("元の会議を開く", icon: .chevronRight) {
           path.append(meetingID)
         }
         .labelStyle(.iconOnly)
@@ -119,7 +119,7 @@ struct TasksView: View {
       } label: {
         Label(
           task.isCompleted ? "未完了に戻す" : "完了",
-          systemImage: task.isCompleted ? "arrow.uturn.backward" : "checkmark"
+          icon: task.isCompleted ? .arrowUturnBackward : .checkmark
         )
       }
       .tint(.blue)
@@ -128,22 +128,22 @@ struct TasksView: View {
       Button(role: .destructive) {
         model.deleteTask(task.id)
       } label: {
-        Label("削除", systemImage: "trash")
+        Label("削除", icon: .trash)
       }
     }
     .contextMenu {
-      Button("編集", systemImage: "pencil") { editingTask = task }
-      Button("期限を今日に", systemImage: "sun.max") { model.setTaskDueDate(task.id, to: .now) }
-      Button("期限を明日に", systemImage: "sunrise") {
+      Button("編集", icon: .pencil) { editingTask = task }
+      Button("期限を今日に", icon: .sunMax) { model.setTaskDueDate(task.id, to: .now) }
+      Button("期限を明日に", icon: .sunrise) {
         model.setTaskDueDate(task.id, to: Calendar.current.date(byAdding: .day, value: 1, to: .now))
       }
-      Button("期限を来週に", systemImage: "calendar") {
+      Button("期限を来週に", icon: .calendar) {
         model.setTaskDueDate(task.id, to: Calendar.current.date(byAdding: .day, value: 7, to: .now))
       }
       if let meetingID = task.meetingID {
-        Button("元の会議を開く", systemImage: "doc.text") { path.append(meetingID) }
+        Button("元の会議を開く", icon: .docText) { path.append(meetingID) }
       }
-      Button("削除", systemImage: "trash", role: .destructive) { model.deleteTask(task.id) }
+      Button("削除", icon: .trash, role: .destructive) { model.deleteTask(task.id) }
     }
   }
 

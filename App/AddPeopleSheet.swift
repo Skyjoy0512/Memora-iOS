@@ -81,7 +81,7 @@ struct AddPeopleSheet: View {
           .foregroundStyle(.primary)
         Spacer()
         if isOn {
-          Image(systemName: "checkmark")
+          Image(icon: .checkmark)
             .font(.body.weight(.semibold))
             .foregroundStyle(.tint)
         }

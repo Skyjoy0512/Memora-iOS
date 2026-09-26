@@ -19,7 +19,7 @@ struct NotionSettingsView: View {
         .disabled(token.trimmingCharacters(in: .whitespaces).isEmpty)
 
         if hasToken {
-          Button("トークンを削除", systemImage: "trash", role: .destructive) {
+          Button("トークンを削除", icon: .trash, role: .destructive) {
             KeychainStore.set(nil, forKey: "integration.notion")
             hasToken = false
           }

@@ -108,7 +108,7 @@ struct AIQuestionView: View {
         .textSelection(.enabled)
 
       if let attachment = request.attachment {
-        Label(attachment.name, systemImage: "paperclip")
+        Label(attachment.name, icon: .paperclip)
           .font(.caption)
           .foregroundStyle(.secondary)
       }
@@ -145,7 +145,7 @@ struct AIQuestionView: View {
 
   private func answerContent(_ answer: String) -> some View {
     VStack(alignment: .leading, spacing: 18) {
-      Label("回答", systemImage: "sparkles")
+      Label("回答", icon: .sparkles)
         .font(.headline)
         .foregroundStyle(.primary)
         .memoraTextReveal()
@@ -161,7 +161,7 @@ struct AIQuestionView: View {
   /// A failure says what went wrong and nothing else: it has no grounds to show.
   private func failureContent(_ message: String) -> some View {
     VStack(alignment: .leading, spacing: 10) {
-      Label("回答できませんでした", systemImage: "exclamationmark.triangle")
+      Label("回答できませんでした", icon: .exclamationmarkTriangle)
         .font(.headline)
         .foregroundStyle(.primary)
 
@@ -239,13 +239,13 @@ struct AIQuestionView: View {
 
   private func sourceHeader(_ source: AIChatSource) -> some View {
     HStack(spacing: 10) {
-      Image(systemName: "quote.bubble")
+      Image(icon: .quoteBubble)
         .foregroundStyle(.primary)
       Text(source.title)
         .font(.subheadline.weight(.semibold))
         .foregroundStyle(.primary)
       Spacer()
-      Image(systemName: "arrow.up.right")
+      Image(icon: .arrowUpRight)
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
     }

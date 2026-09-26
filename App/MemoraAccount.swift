@@ -40,14 +40,14 @@ enum AuthProvider: String, Codable, Hashable, CaseIterable, Identifiable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
     case .apple:
-      "apple.logo"
+      .appleLogo
     case .google:
-      "g.circle"
+      .gCircle
     case .email:
-      "envelope"
+      .envelope
     }
   }
 }

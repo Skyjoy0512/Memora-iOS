@@ -99,7 +99,7 @@ struct PhotoEditorView: View {
       .pickerStyle(.segmented)
 
       HStack(spacing: 12) {
-        Button("回転", systemImage: "rotate.right") {
+        Button("回転", icon: .rotateRight) {
           quarterTurns += 1
           scale = 1
           offset = .zero
@@ -108,7 +108,7 @@ struct PhotoEditorView: View {
         }
         .buttonStyle(.bordered)
 
-        Button("リセット", systemImage: "arrow.counterclockwise") {
+        Button("リセット", icon: .arrowCounterclockwise) {
           brightness = 0
           contrast = 1
           quarterTurns = 0
@@ -121,19 +121,19 @@ struct PhotoEditorView: View {
         .disabled(quarterTurns == 0 && brightness == 0 && contrast == 1)
       }
 
-      slider(title: "明るさ", symbol: "sun.max", value: $brightness, range: -0.4...0.4)
-      slider(title: "コントラスト", symbol: "circle.lefthalf.filled", value: $contrast, range: 0.6...1.6)
+      slider(title: "明るさ", symbol: .sunMax, value: $brightness, range: -0.4...0.4)
+      slider(title: "コントラスト", symbol: .circleLefthalfFilled, value: $contrast, range: 0.6...1.6)
     }
   }
 
   private func slider(
     title: String,
-    symbol: String,
+    symbol: MemoraIcon,
     value: Binding<Double>,
     range: ClosedRange<Double>
   ) -> some View {
     VStack(alignment: .leading, spacing: 4) {
-      Label(title, systemImage: symbol)
+      Label(title, icon: symbol)
         .font(.footnote)
         .foregroundStyle(.secondary)
 

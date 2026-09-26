@@ -159,7 +159,7 @@ struct RootTabView: View {
         ProminentTabBar(
           selection: $model.selectedTab,
           isProminentPresented: $model.isCaptureSourcePresented,
-          prominentSymbol: "plus"
+          prominentSymbol: .plus
         ) {
           CaptureMenuPopover()
         }

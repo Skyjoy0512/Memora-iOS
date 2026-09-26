@@ -39,7 +39,7 @@ struct AIHistoryDetailView: View {
         .font(.subheadline)
         .foregroundStyle(.secondary)
 
-        Button("もう一度聞く", systemImage: "arrow.clockwise") {
+        Button("もう一度聞く", icon: .arrowClockwise) {
           dismiss()
           ask(entry.question)
         }

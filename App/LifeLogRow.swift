@@ -10,7 +10,7 @@ struct LifeLogRow: View {
         ZStack {
           Circle()
             .fill(Color(uiColor: .secondarySystemBackground))
-          Image(systemName: entry.kind.symbol)
+          Image(icon: entry.kind.symbol)
             .font(.caption.weight(.semibold))
         }
         .frame(width: 34, height: 34)
@@ -52,13 +52,13 @@ struct LifeLogRow: View {
         }
 
         if let eventDate = entry.eventDate {
-          Label(eventDate.formatted(date: .abbreviated, time: .shortened), systemImage: "calendar")
+          Label(eventDate.formatted(date: .abbreviated, time: .shortened), icon: .calendar)
             .font(.caption.weight(.medium))
             .foregroundStyle(.secondary)
         }
 
         if let locationName = entry.locationName, !locationName.isEmpty {
-          Label(locationName, systemImage: "location.fill")
+          Label(locationName, icon: .locationFill)
             .font(.caption.weight(.medium))
             .foregroundStyle(.secondary)
         }

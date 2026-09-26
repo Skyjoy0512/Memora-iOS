@@ -11,7 +11,7 @@ struct PeopleStrip: View {
   var body: some View {
     ScrollView(.horizontal) {
       HStack(spacing: 14) {
-        item(title: "すべて", symbol: "square.grid.2x2", imageData: nil, isSelected: selectedID == nil) {
+        item(title: "すべて", symbol: .squareGrid2x2, imageData: nil, isSelected: selectedID == nil) {
           onSelect(nil)
         }
 
@@ -26,7 +26,7 @@ struct PeopleStrip: View {
           }
         }
 
-        item(title: "管理", symbol: "plus", imageData: nil, isSelected: false, action: onManage)
+        item(title: "管理", symbol: .plus, imageData: nil, isSelected: false, action: onManage)
       }
       .padding(.horizontal, 18)
       .padding(.vertical, 2)
@@ -36,7 +36,7 @@ struct PeopleStrip: View {
 
   private func item(
     title: String,
-    symbol: String?,
+    symbol: MemoraIcon?,
     imageData: Data?,
     isSelected: Bool,
     action: @escaping () -> Void

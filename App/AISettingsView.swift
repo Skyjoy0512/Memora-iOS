@@ -42,7 +42,7 @@ struct AISettingsView: View {
                 .disabled(!option.supportsAI)
             }
           }
-          Button("APIキーを設定", systemImage: "key") {
+          Button("APIキーを設定", icon: .key) {
             isAPIKeySheetPresented = true
           }
         } header: {

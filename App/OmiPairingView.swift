@@ -25,7 +25,7 @@ struct OmiPairingView: View {
                   Text(signalLabel(for: device.signalStrength))
                     .foregroundStyle(.secondary)
                 } label: {
-                  Label(device.name, systemImage: "waveform")
+                  Label(device.name, icon: .waveform)
                 }
               }
               .disabled(isConnecting)
@@ -58,12 +58,12 @@ struct OmiPairingView: View {
     switch manager.state {
     case .idle, .remembered:
       VStack(alignment: .leading, spacing: 12) {
-        Label("Omiを近くに置いてください", systemImage: "dot.radiowaves.left.and.right")
+        Label("Omiを近くに置いてください", icon: .dotRadiowavesLeftAndRight)
           .font(.headline)
         Text("見つけたデバイスへ、このiPhoneから直接接続します。")
           .font(.subheadline)
           .foregroundStyle(.secondary)
-        Button("Omiを探す", systemImage: "antenna.radiowaves.left.and.right") {
+        Button("Omiを探す", icon: .antennaRadiowavesLeftAndRight) {
           manager.startScanning()
         }
         .buttonStyle(.borderedProminent)
@@ -90,7 +90,7 @@ struct OmiPairingView: View {
       .padding(.vertical, 8)
     case .connected(let name):
       VStack(alignment: .leading, spacing: 12) {
-        Label("\(name)に接続しました", systemImage: "checkmark.circle.fill")
+        Label("\(name)に接続しました", icon: .checkmarkCircleFill)
           .font(.headline)
         Text("次回もこのOmiを接続候補として表示します。")
           .font(.subheadline)
@@ -98,9 +98,9 @@ struct OmiPairingView: View {
         NavigationLink {
           OmiDeviceDetailView(manager: manager)
         } label: {
-          Label("デバイスの詳細", systemImage: "info.circle")
+          Label("デバイスの詳細", icon: .infoCircle)
         }
-        Button("接続を解除", systemImage: "xmark") {
+        Button("接続を解除", icon: .xmark) {
           manager.disconnect()
         }
       }
@@ -108,17 +108,17 @@ struct OmiPairingView: View {
     case .bluetoothOff:
       ContentUnavailableView(
         "Bluetoothがオフです",
-        systemImage: "antenna.radiowaves.left.and.right.slash",
+        icon: .antennaRadiowavesLeftAndRightSlash,
         description: Text("BluetoothをオンにするとOmiを探せます。")
       )
     case .unauthorized:
       VStack(alignment: .leading, spacing: 12) {
-        Label("Bluetoothへのアクセスが必要です", systemImage: "hand.raised")
+        Label("Bluetoothへのアクセスが必要です", icon: .handRaised)
           .font(.headline)
         Text("近くのOmiを見つけて接続するために使用します。")
           .font(.subheadline)
           .foregroundStyle(.secondary)
-        Button("設定を開く", systemImage: "gearshape") {
+        Button("設定を開く", icon: .gearshape) {
           if let url = URL(string: UIApplication.openSettingsURLString) {
             openURL(url)
           }
@@ -128,17 +128,17 @@ struct OmiPairingView: View {
     case .unsupported:
       ContentUnavailableView(
         "iPhone実機で接続できます",
-        systemImage: "iphone.and.arrow.forward",
+        icon: .iphoneAndArrowForward,
         description: Text("シミュレーターではBluetoothデバイスを検索できません。")
       )
     case .failed(let message):
       VStack(alignment: .leading, spacing: 12) {
-        Label("接続できませんでした", systemImage: "exclamationmark.triangle")
+        Label("接続できませんでした", icon: .exclamationmarkTriangle)
           .font(.headline)
         Text(message)
           .font(.subheadline)
           .foregroundStyle(.secondary)
-        Button("もう一度探す", systemImage: "arrow.clockwise") {
+        Button("もう一度探す", icon: .arrowClockwise) {
           manager.startScanning()
         }
       }

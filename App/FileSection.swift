@@ -15,12 +15,12 @@ enum FileSection: String, CaseIterable, Identifiable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
     case .meetingFiles:
-      "doc.text"
+      .docText
     case .projects:
-      "square.stack.3d.up"
+      .squareStack3dUp
     }
   }
 }

@@ -40,11 +40,11 @@ struct SpeakerEditSheet: View {
                 selectedPersonID = person.id
               } label: {
                 HStack {
-                  Label(person.name, systemImage: "person")
+                  Label(person.name, icon: .person)
                     .foregroundStyle(.primary)
                   Spacer()
                   if selectedPersonID == person.id {
-                    Image(systemName: "checkmark")
+                    Image(icon: .checkmark)
                       .foregroundStyle(.tint)
                   }
                 }

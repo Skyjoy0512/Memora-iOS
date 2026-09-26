@@ -43,7 +43,7 @@ struct StorageUsageView: View {
       }
 
       Section {
-        Button("90日より前の音声を削除", systemImage: "trash") {
+        Button("90日より前の音声を削除", icon: .trash) {
           isBulkDeletePresented = true
         }
         .disabled(oldAudioMeetings.isEmpty)

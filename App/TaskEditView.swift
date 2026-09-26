@@ -79,7 +79,7 @@ struct TaskEditView: View {
         }
 
         Section {
-          Button("削除", systemImage: "trash", role: .destructive) {
+          Button("削除", icon: .trash, role: .destructive) {
             isDeleting = true
           }
         }

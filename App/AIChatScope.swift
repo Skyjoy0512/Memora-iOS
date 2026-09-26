@@ -16,11 +16,11 @@ enum AIChatScope: String, CaseIterable, Identifiable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
-    case .all: "rectangle.stack"
-    case .files: "doc.text"
-    case .projects: "folder"
+    case .all: .rectangleStack
+    case .files: .docText
+    case .projects: .folder
     }
   }
 

@@ -2,7 +2,8 @@ import SwiftUI
 import UIKit
 
 protocol ProminentTabItem: CaseIterable, Hashable {
-  var symbol: String { get }
+  var symbol: MemoraIcon { get }
+  var filledSymbol: MemoraIcon { get }
   var title: String { get }
 }
 
@@ -23,7 +24,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   @Binding var selection: Item
   /// Exposed so an empty state can open the popover without a tab tap.
   @Binding var isProminentPresented: Bool
-  var prominentSymbol: String
+  var prominentSymbol: MemoraIcon
   @ViewBuilder var popover: PopoverContent
 
   @Environment(\.colorScheme) private var colorScheme
@@ -105,7 +106,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   }
 
   private var prominentLabel: some View {
-    Image(systemName: prominentSymbol)
+    Image(icon: prominentSymbol)
       .font(.system(size: 22, weight: .medium))
       .frame(width: Self.barHeight, height: Self.barHeight)
       .accessibilityLabel("作成メニューを開く")
@@ -211,10 +212,9 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
 
   private func generatedImage(for item: Item) -> UIImage? {
     let label = VStack(spacing: 3) {
-      Image(systemName: item.symbol)
+      Image(icon: item.filledSymbol)
         .font(.subheadline)
         .fontWeight(.regular)
-        .symbolVariant(.fill)
         .frame(height: 19)
 
       if showsTitles {

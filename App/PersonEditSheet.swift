@@ -49,7 +49,7 @@ struct PersonEditSheet: View {
               }
             }
           } label: {
-            Label("重複した相手と統合", systemImage: "arrow.triangle.merge")
+            Label("重複した相手と統合", icon: .arrowTriangleMerge)
           }
           .disabled(otherPeople.isEmpty)
         } footer: {

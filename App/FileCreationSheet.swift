@@ -16,7 +16,7 @@ struct FileCreationSheet: View {
         }
 
         Section {
-          Label("関連する議事録は、プロジェクトを作成した後に追加できます。", systemImage: "folder")
+          Label("関連する議事録は、プロジェクトを作成した後に追加できます。", icon: .folder)
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }

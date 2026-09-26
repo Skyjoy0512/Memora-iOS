@@ -6,11 +6,11 @@ struct FailureOverview: View {
 
   var body: some View {
     ContentUnavailableView {
-      Label("処理を完了できませんでした", systemImage: "exclamationmark.triangle")
+      Label("処理を完了できませんでした", icon: .exclamationmarkTriangle)
     } description: {
       Text(message)
     } actions: {
-      Button("もう一度試す", systemImage: "arrow.clockwise", action: retry)
+      Button("もう一度試す", icon: .arrowClockwise, action: retry)
         .buttonStyle(.borderedProminent)
     }
   }

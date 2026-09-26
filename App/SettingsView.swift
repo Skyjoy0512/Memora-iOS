@@ -35,22 +35,22 @@ struct SettingsView: View {
               }
               .padding(.vertical, 2)
             } icon: {
-              Image(systemName: "person.crop.circle.fill")
+              Image(icon: .personCropCircleFill)
                 .foregroundStyle(.primary)
             }
 
-            Button("サインアウト", systemImage: "rectangle.portrait.and.arrow.right") {
+            Button("サインアウト", icon: .rectanglePortraitAndArrowRight) {
               isSignOutConfirmationPresented = true
             }
           } else {
             Label {
               LabeledContent("状態", value: "このiPhoneのみ")
             } icon: {
-              Image(systemName: "person")
+              Image(icon: .person)
                 .foregroundStyle(.primary)
             }
 
-            Button("サインイン / 新規登録", systemImage: "person.badge.key") {
+            Button("サインイン / 新規登録", icon: .personBadgeKey) {
               model.isAuthPresented = true
             }
           }
@@ -68,7 +68,7 @@ struct SettingsView: View {
               Text(model.planTier?.label ?? "Free")
                 .foregroundStyle(.secondary)
             } label: {
-              Label("Memora Plus", systemImage: "sparkles")
+              Label("Memora Plus", icon: .sparkles)
             }
           }
 
@@ -80,7 +80,7 @@ struct SettingsView: View {
                 Text(model.cloudSharing.receivedItems.isEmpty ? "なし" : "\(model.cloudSharing.receivedItems.count)件")
                   .foregroundStyle(.secondary)
               } label: {
-                Label("チームで共有されたもの", systemImage: "person.3")
+                Label("チームで共有されたもの", icon: .person3)
               }
             }
           } else {
@@ -91,7 +91,7 @@ struct SettingsView: View {
                 Text("チームプランで利用可")
                   .foregroundStyle(.secondary)
               } label: {
-                Label("チーム共有", systemImage: "person.3")
+                Label("チーム共有", icon: .person3)
               }
             }
           }
@@ -182,13 +182,13 @@ struct SettingsView: View {
           NavigationLink {
             PrivacyStorageView()
           } label: {
-            Label("データの保存先", systemImage: "lock.shield")
+            Label("データの保存先", icon: .lockShield)
           }
 
           NavigationLink {
             StorageUsageView()
           } label: {
-            Label("保存容量", systemImage: "internaldrive")
+            Label("保存容量", icon: .internaldrive)
           }
 
           LabeledContent("クラウド保管", value: model.cloudStorageEnabled ? "オン" : "オフ")
@@ -196,7 +196,7 @@ struct SettingsView: View {
           NavigationLink {
             SettingsBackupView()
           } label: {
-            Label("バックアップ", systemImage: "externaldrive")
+            Label("バックアップ", icon: .externaldrive)
           }
 
           NavigationLink {
@@ -227,30 +227,30 @@ struct SettingsView: View {
           NavigationLink {
             StateGalleryView()
           } label: {
-            Label("状態と復旧UIを確認", systemImage: "rectangle.stack.badge.play")
+            Label("状態と復旧UIを確認", icon: .rectangleStackBadgePlay)
           }
 
           #if DEBUG
           NavigationLink {
             PerformanceLogView()
           } label: {
-            Label("計測と自己チェック（ビルド比較用）", systemImage: "stopwatch")
+            Label("計測と自己チェック（ビルド比較用）", icon: .stopwatch)
           }
 
           // Destructive resets only exist for development; a shipped build must
           // never offer to replace or empty someone's records.
-          Button("初回体験をもう一度見る", systemImage: "arrow.counterclockwise") {
+          Button("初回体験をもう一度見る", icon: .arrowCounterclockwise) {
             model.replayOnboarding()
             if showsCloseButton {
               dismiss()
             }
           }
 
-          Button("デモデータを入れ直す（今の内容を置き換えます）", systemImage: "arrow.clockwise") {
+          Button("デモデータを入れ直す（今の内容を置き換えます）", icon: .arrowClockwise) {
             model.loadSampleContent()
           }
 
-          Button("すべて空にしてEmptyを確認", systemImage: "tray", role: .destructive) {
+          Button("すべて空にしてEmptyを確認", icon: .tray, role: .destructive) {
             isDeleteConfirmationPresented = true
           }
           #endif
@@ -258,7 +258,7 @@ struct SettingsView: View {
 
         if model.isSignedIn {
           Section {
-            Button("アカウントを削除", systemImage: "person.crop.circle.badge.xmark", role: .destructive) {
+            Button("アカウントを削除", icon: .personCropCircleBadgeXmark, role: .destructive) {
               isAccountDeletionPresented = true
             }
           } footer: {

@@ -18,7 +18,7 @@ struct LifeLogEntryDetailView: View {
         if let entry = currentEntry {
           content(entry)
         } else {
-          ContentUnavailableView("記録が見つかりません", systemImage: "doc.questionmark")
+          ContentUnavailableView("記録が見つかりません", icon: .docQuestionmark)
         }
       }
       .navigationTitle("記録")
@@ -28,14 +28,14 @@ struct LifeLogEntryDetailView: View {
           Button("閉じる") { dismiss() }
         }
         ToolbarItem(placement: .topBarTrailing) {
-          Menu("その他", systemImage: "ellipsis") {
-            Button("編集", systemImage: "pencil") { isEditing = true }
+          Menu("その他", icon: .ellipsis) {
+            Button("編集", icon: .pencil) { isEditing = true }
             if let entry = currentEntry, entry.latitude != nil, entry.longitude != nil {
-              Button("この場所を今後記録しない", systemImage: "mappin.slash") {
+              Button("この場所を今後記録しない", icon: .mappinSlash) {
                 isExcludingPlace = true
               }
             }
-            Button("削除", systemImage: "trash", role: .destructive) { isDeleting = true }
+            Button("削除", icon: .trash, role: .destructive) { isDeleting = true }
           }
         }
       }
@@ -104,7 +104,7 @@ struct LifeLogEntryDetailView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 16) {
         HStack(spacing: 8) {
-          Image(systemName: entry.kind.symbol)
+          Image(icon: entry.kind.symbol)
           Text(entry.kind.label)
           Text("·")
           Text(entry.createdAt.formatted(date: .abbreviated, time: .shortened))
@@ -137,7 +137,7 @@ struct LifeLogEntryDetailView: View {
         }
 
         if let locationName = entry.locationName, !locationName.isEmpty {
-          Label(locationName, systemImage: "location.fill")
+          Label(locationName, icon: .locationFill)
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
@@ -179,7 +179,7 @@ private struct LifeLogPhotoViewer: View {
       VStack {
         HStack {
           Spacer()
-          Button("写真を閉じる", systemImage: "xmark") {
+          Button("写真を閉じる", icon: .xmark) {
             dismiss()
           }
           .labelStyle(.iconOnly)

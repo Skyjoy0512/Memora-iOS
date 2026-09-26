@@ -25,7 +25,7 @@ struct SummaryTemplateMarketplaceView: View {
     let isInstalled = model.installedTemplateIDs.contains(template.id)
 
     return HStack(spacing: 14) {
-      Image(systemName: template.symbol)
+      Image(icon: template.symbol)
         .font(.headline)
         .frame(width: 38, height: 38)
         .background(Color.primary.opacity(0.07), in: Circle())

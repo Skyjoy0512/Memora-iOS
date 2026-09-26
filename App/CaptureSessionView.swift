@@ -29,7 +29,7 @@ struct CaptureSessionView: View {
 
         Spacer()
 
-        Button("録音を破棄", systemImage: "trash") {
+        Button("録音を破棄", icon: .trash) {
           isDiscardConfirmationPresented = true
         }
         .labelStyle(.iconOnly)
@@ -38,7 +38,7 @@ struct CaptureSessionView: View {
         .frame(width: 44, height: 44)
         .memoraGlass(in: Circle(), interactive: true)
 
-        Button("録音画面を閉じる", systemImage: "xmark") {
+        Button("録音画面を閉じる", icon: .xmark) {
           model.isCapturePresented = false
         }
         .labelStyle(.iconOnly)
@@ -50,7 +50,7 @@ struct CaptureSessionView: View {
       .padding(.top, 22)
 
       if let message = model.recordingInterruptionMessage {
-        Label(message, systemImage: "exclamationmark.triangle")
+        Label(message, icon: .exclamationmarkTriangle)
           .font(.footnote)
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,7 +61,7 @@ struct CaptureSessionView: View {
 
       Picker("録音中の表示", selection: $section) {
         ForEach(CaptureSection.allCases) { item in
-          Label(item.title, systemImage: item.symbol).tag(item)
+          Label(item.title, icon: item.symbol).tag(item)
         }
       }
       .pickerStyle(.segmented)
@@ -76,7 +76,7 @@ struct CaptureSessionView: View {
         .padding(.top, 16)
 
       if let event = model.captureEvent {
-        Label("\(event.title)の予定から録音しています", systemImage: "calendar")
+        Label("\(event.title)の予定から録音しています", icon: .calendar)
           .font(.caption)
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -112,7 +112,7 @@ struct CaptureSessionView: View {
 
       MemoraGlassContainer(spacing: 12) {
         HStack(spacing: 12) {
-          Button(model.isRecordingPaused ? "再開" : "一時停止", systemImage: model.isRecordingPaused ? "play.fill" : "pause.fill") {
+          Button(model.isRecordingPaused ? "再開" : "一時停止", icon: model.isRecordingPaused ? .playFill : .pauseFill) {
             pauseFeedback += 1
             model.toggleCapturePause()
           }
@@ -123,7 +123,7 @@ struct CaptureSessionView: View {
           .frame(maxWidth: .infinity, minHeight: 56)
           .memoraGlass(in: Capsule(), interactive: true)
 
-          Button(model.isSavingCapture ? "保存しています…" : "終了", systemImage: "stop.fill") {
+          Button(model.isSavingCapture ? "保存しています…" : "終了", icon: .stopFill) {
             stopFeedback += 1
             Task { await model.stopCapture() }
           }
@@ -218,10 +218,10 @@ private enum CaptureSection: String, CaseIterable, Identifiable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
-    case .notes: "note.text"
-    case .transcript: "waveform"
+    case .notes: .noteText
+    case .transcript: .waveform
     }
   }
 }

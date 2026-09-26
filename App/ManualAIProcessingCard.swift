@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ManualAIProcessingCard: View {
-  var symbol: String
+  var symbol: MemoraIcon
   var title: String
   var detail: String
   var actionTitle: String
@@ -20,11 +20,11 @@ struct ManualAIProcessingCard: View {
         }
       }
 
-      Label("実行するまでAI利用は発生しません", systemImage: "hand.raised")
+      Label("実行するまでAI利用は発生しません", icon: .handRaised)
         .font(.footnote.weight(.medium))
         .foregroundStyle(.secondary)
 
-      Button(actionTitle, systemImage: symbol, action: action)
+      Button(actionTitle, icon: symbol, action: action)
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .frame(maxWidth: .infinity)

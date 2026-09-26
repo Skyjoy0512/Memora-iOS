@@ -7,7 +7,7 @@ struct AuthProviderButton: View {
 
   var body: some View {
     Button(action: action) {
-      Label(provider.signInTitle, systemImage: provider.symbol)
+      Label(provider.signInTitle, icon: provider.symbol)
         .font(.headline)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 15)

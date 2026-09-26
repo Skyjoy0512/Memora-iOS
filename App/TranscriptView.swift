@@ -29,7 +29,7 @@ struct TranscriptView: View {
 
               if meeting.transcript.isEmpty {
                 ContentUnavailableView {
-                  Label("文字起こし中", systemImage: "text.bubble")
+                  Label("文字起こし中", icon: .textBubble)
                 } description: {
                   Text("完成した発言から、ここに表示されます。")
                 }
@@ -66,7 +66,7 @@ struct TranscriptView: View {
           SpeakerEditSheet(meetingID: meeting.id, segment: segment)
         }
       } else {
-        ContentUnavailableView("文字起こしが見つかりません", systemImage: "doc.questionmark")
+        ContentUnavailableView("文字起こしが見つかりません", icon: .docQuestionmark)
       }
     }
   }

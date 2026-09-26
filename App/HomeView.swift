@@ -49,7 +49,7 @@ struct HomeView: View {
 
           if entries.isEmpty, query.isEmpty ? calendarEvents.isEmpty : true {
             VStack(spacing: 16) {
-              Image(systemName: "waveform.path.ecg")
+              Image(icon: .waveformPathEcg)
                 .font(.title2)
                 .foregroundStyle(.secondary)
 
@@ -113,7 +113,7 @@ struct HomeView: View {
       .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "記録を検索")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
-          Button("メニュー", systemImage: "line.3.horizontal") {
+          Button("メニュー", icon: .line3Horizontal) {
             onOpenSidebar()
           }
           .labelStyle(.iconOnly)
@@ -128,7 +128,7 @@ struct HomeView: View {
         }
 
         ToolbarItem(placement: .topBarTrailing) {
-          Button("設定", systemImage: "gearshape") {
+          Button("設定", icon: .gearshape) {
             model.isSettingsPresented = true
           }
           .labelStyle(.iconOnly)
@@ -136,7 +136,7 @@ struct HomeView: View {
 
         // The create action is the rightmost item, matching the other tabs.
         ToolbarItem(placement: .primaryAction) {
-          Button("記録を追加", systemImage: "square.and.pencil") {
+          Button("記録を追加", icon: .squareAndPencil) {
             model.isLifeLogCreationPresented = true
           }
           .labelStyle(.iconOnly)
@@ -184,7 +184,7 @@ struct HomeView: View {
     Button {
       model.isSettingsPresented = true
     } label: {
-      Label("Omi", systemImage: isOmiConnected ? "dot.radiowaves.left.and.right" : "link")
+      Label("Omi", icon: isOmiConnected ? .dotRadiowavesLeftAndRight : .link)
         .font(.subheadline.weight(.medium))
         .foregroundStyle(isOmiConnected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
     }

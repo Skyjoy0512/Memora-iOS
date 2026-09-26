@@ -10,7 +10,7 @@ struct ActiveRecordingStrip: View {
       model.isCapturePresented = true
     } label: {
       HStack(spacing: 12) {
-        Image(systemName: model.isRecordingPaused ? "pause.fill" : "waveform")
+        Image(icon: model.isRecordingPaused ? .pauseFill : .waveform)
           .foregroundStyle(.red)
           .symbolEffect(.variableColor.iterative, isActive: !model.isRecordingPaused)
 

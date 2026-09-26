@@ -17,12 +17,22 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
-    case .home: "calendar"
-    case .files: "folder"
-    case .askAI: "sparkles"
-    case .tasks: "checklist"
+    case .home: .calendar
+    case .files: .folder
+    case .askAI: .sparkles
+    case .tasks: .checklist
+    }
+  }
+
+  /// The filled form the tab bar draws, so the segments read as solid shapes.
+  var filledSymbol: MemoraIcon {
+    switch self {
+    case .home: .calendarFill
+    case .files: .folderFill
+    case .askAI: .sparklesFill
+    case .tasks: .checklistFill
     }
   }
 }

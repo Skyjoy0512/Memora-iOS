@@ -152,11 +152,11 @@ struct AIComposerBar: View {
 
   private var attachmentStrip: some View {
     HStack(spacing: 8) {
-      Image(systemName: "paperclip")
+      Image(icon: .paperclip)
       Text(attachment?.name ?? "")
         .lineLimit(1)
       Spacer(minLength: 4)
-      Button("添付を外す", systemImage: "xmark") {
+      Button("添付を外す", icon: .xmark) {
         attachment = nil
       }
       .labelStyle(.iconOnly)
@@ -168,17 +168,17 @@ struct AIComposerBar: View {
 
   private var attachmentMenu: some View {
     Menu {
-      Button("写真を選択…", systemImage: "photo") {
+      Button("写真を選択…", icon: .photo) {
         isPhotoPickerPresented = true
       }
-      Button("音声を選択…", systemImage: "waveform") {
+      Button("音声を選択…", icon: .waveform) {
         isAudioImporterPresented = true
       }
-      Button("ファイルを選択…", systemImage: "doc") {
+      Button("ファイルを選択…", icon: .doc) {
         isImporterPresented = true
       }
     } label: {
-      Image(systemName: "paperclip")
+      Image(icon: .paperclip)
         .font(.body.weight(.medium))
         .foregroundStyle(.primary)
         .frame(width: 44, height: 44)
@@ -197,7 +197,7 @@ struct AIComposerBar: View {
           model.aiEngine = option
         } label: {
           if option == model.aiEngine {
-            Label(option.label, systemImage: "checkmark")
+            Label(option.label, icon: .checkmark)
           } else {
             Text(option.label)
           }
@@ -206,7 +206,7 @@ struct AIComposerBar: View {
       }
     } label: {
       HStack(spacing: 6) {
-        Image(systemName: model.aiEngine.symbol)
+        Image(icon: model.aiEngine.symbol)
           .font(.subheadline)
 
         Text(model.aiEngine.shortLabel)
@@ -214,7 +214,7 @@ struct AIComposerBar: View {
           .lineLimit(1)
           .minimumScaleFactor(0.85)
 
-        Image(systemName: "chevron.down")
+        Image(icon: .chevronDown)
           .font(.caption2.weight(.semibold))
           .foregroundStyle(.secondary)
       }
@@ -236,7 +236,7 @@ struct AIComposerBar: View {
         toggleSpeechInput()
       }
     } label: {
-      Image(systemName: actionSymbol)
+      Image(icon: actionSymbol)
         .font(.body.weight(.semibold))
         .foregroundStyle(Color(uiColor: .systemBackground))
         .frame(width: 36, height: 36)
@@ -252,9 +252,9 @@ struct AIComposerBar: View {
     .accessibilityLabel(actionLabel)
   }
 
-  private var actionSymbol: String {
-    if isBusy { return "ellipsis" }
-    return canSend ? "arrow.up" : "waveform"
+  private var actionSymbol: MemoraIcon {
+    if isBusy { return .ellipsis }
+    return canSend ? .arrowUp : .waveform
   }
 
   private var actionLabel: String {

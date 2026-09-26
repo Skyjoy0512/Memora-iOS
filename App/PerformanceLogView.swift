@@ -30,7 +30,7 @@ struct PerformanceLogView: View {
                   }
                 }
               } icon: {
-                Image(systemName: result.passed ? "checkmark.circle" : "xmark.circle")
+                Image(icon: result.passed ? .checkmarkCircle : .xmarkCircle)
                   .foregroundStyle(result.passed ? Color.green : Color.red)
               }
               .accessibilityLabel("\(result.name): \(result.passed ? "成功" : "失敗")")
@@ -45,7 +45,7 @@ struct PerformanceLogView: View {
         if log.entries.isEmpty {
           ContentUnavailableView(
             "まだ計測がありません",
-            systemImage: "stopwatch",
+            icon: .stopwatch,
             description: Text("起動・検索・保存・画像表示・処理を通ると記録されます。")
           )
         }
@@ -62,7 +62,7 @@ struct PerformanceLogView: View {
         }
 
         Section {
-          Button("計測を実行（検索20回）", systemImage: "play") {
+          Button("計測を実行（検索20回）", icon: .play) {
             Task { await runMeasurement() }
           }
           .disabled(isMeasuring)
@@ -73,13 +73,13 @@ struct PerformanceLogView: View {
               .foregroundStyle(.secondary)
           }
 
-          Button("計測用に100件を追加", systemImage: "plus") {
+          Button("計測用に100件を追加", icon: .plus) {
             model.addMeasurementRecords(100)
           }
-          Button("計測用に1,000件を追加", systemImage: "plus") {
+          Button("計測用に1,000件を追加", icon: .plus) {
             model.addMeasurementRecords(1_000)
           }
-          Button("計測用データを削除", systemImage: "trash", role: .destructive) {
+          Button("計測用データを削除", icon: .trash, role: .destructive) {
             model.removeMeasurementRecords()
           }
         } header: {
@@ -89,7 +89,7 @@ struct PerformanceLogView: View {
         }
 
         Section {
-          Button("現在地で駅判定を実行", systemImage: "location") {
+          Button("現在地で駅判定を実行", icon: .location) {
             stationCheckNote = "確認中…"
             AutoLocationLogger.shared.debugEvaluateCurrentLocation { result in
               stationCheckNote = result.message

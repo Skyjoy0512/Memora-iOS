@@ -12,7 +12,7 @@ struct MemoraRecordingLiveActivity: Widget {
     } dynamicIsland: { context in
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          Image(systemName: "waveform")
+          Image(icon: .waveform)
             .foregroundStyle(.red)
         }
         DynamicIslandExpandedRegion(.center) {
@@ -31,14 +31,14 @@ struct MemoraRecordingLiveActivity: Widget {
             .foregroundStyle(.secondary)
         }
       } compactLeading: {
-        Image(systemName: "waveform")
+        Image(icon: .waveform)
           .foregroundStyle(.red)
       } compactTrailing: {
         elapsedText(context.state)
           .font(.caption2.monospacedDigit())
           .frame(width: 42)
       } minimal: {
-        Image(systemName: "waveform")
+        Image(icon: .waveform)
           .foregroundStyle(.red)
       }
       .keylineTint(.primary)
@@ -55,7 +55,7 @@ private struct MemoraLiveActivityView: View {
   var body: some View {
     if activityFamily == .small {
       HStack {
-        Image(systemName: context.state.isPaused ? "pause.fill" : "waveform")
+        Image(icon: context.state.isPaused ? .pauseFill : .waveform)
           .foregroundStyle(.red)
         elapsedText(context.state)
           .font(.headline.monospacedDigit())
@@ -63,7 +63,7 @@ private struct MemoraLiveActivityView: View {
       .padding()
     } else {
       HStack(spacing: 14) {
-        Image(systemName: context.state.isPaused ? "pause.fill" : "waveform")
+        Image(icon: context.state.isPaused ? .pauseFill : .waveform)
           .font(.title2.weight(.semibold))
           .foregroundStyle(.red)
 

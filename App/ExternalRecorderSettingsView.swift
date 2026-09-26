@@ -15,14 +15,14 @@ struct ExternalRecorderSettingsView: View {
           recorderRow(
             title: "Omi",
             detail: model.omiPairingManager.state.shortLabel,
-            symbol: "dot.radiowaves.left.and.right"
+            symbol: .dotRadiowavesLeftAndRight
           )
         }
 
         Button {
           isPlaudPresented = true
         } label: {
-          recorderRow(title: "PLAUD", detail: "取り込み可能", symbol: "waveform.badge.mic")
+          recorderRow(title: "PLAUD", detail: "取り込み可能", symbol: .waveformBadgeMic)
         }
       } header: {
         Text("レコーダー")
@@ -40,7 +40,7 @@ struct ExternalRecorderSettingsView: View {
     }
   }
 
-  private func recorderRow(title: String, detail: String, symbol: String) -> some View {
+  private func recorderRow(title: String, detail: String, symbol: MemoraIcon) -> some View {
     HStack(spacing: 12) {
       MemoraIconBadge(symbol: symbol, size: 34)
       Text(title)
@@ -49,7 +49,7 @@ struct ExternalRecorderSettingsView: View {
       Text(detail)
         .font(.subheadline)
         .foregroundStyle(.secondary)
-      Image(systemName: "chevron.right")
+      Image(icon: .chevronRight)
         .font(.caption.weight(.semibold))
         .foregroundStyle(.tertiary)
         .accessibilityHidden(true)

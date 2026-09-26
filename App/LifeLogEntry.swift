@@ -123,12 +123,12 @@ enum LifeLogKind: String, CaseIterable, Identifiable, Codable {
     }
   }
 
-  var symbol: String {
+  var symbol: MemoraIcon {
     switch self {
-    case .memo: "note.text"
-    case .photo: "photo"
-    case .event: "calendar"
-    case .location: "location"
+    case .memo: .noteText
+    case .photo: .photo
+    case .event: .calendar
+    case .location: .location
     }
   }
 }

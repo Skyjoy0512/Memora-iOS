@@ -9,7 +9,7 @@ struct MeetingTasksSection: View {
   var body: some View {
     let meetingTasks = model.tasks(forMeeting: meetingID)
     VStack(alignment: .leading, spacing: 12) {
-      Label("次にすること", systemImage: "arrow.right.circle")
+      Label("次にすること", icon: .arrowRightCircle)
         .font(.title3.bold())
         .foregroundStyle(.primary)
 
@@ -25,7 +25,7 @@ struct MeetingTasksSection: View {
         }
       }
 
-      Button("タスクを追加", systemImage: "text.badge.plus") {
+      Button("タスクを追加", icon: .textBadgePlus) {
         isAddingTask = true
       }
       .font(.subheadline.weight(.medium))

@@ -11,7 +11,7 @@ struct UpcomingMeetingLiveCard: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack(alignment: .top, spacing: 12) {
-        Image(systemName: "waveform")
+        Image(icon: .waveform)
           .font(.title3.weight(.semibold))
           .foregroundStyle(.white)
           .frame(width: 42, height: 42)

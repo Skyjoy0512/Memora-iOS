@@ -54,13 +54,13 @@ struct OnboardingPreview: View {
 
   private var understandPreview: some View {
     VStack(alignment: .leading, spacing: 10) {
-      PreviewLabel(title: "サマリー", symbol: "sparkles")
+      PreviewLabel(title: "サマリー", symbol: .sparkles)
       PreviewLine(widthRatio: 1)
       PreviewLine(widthRatio: 0.82)
 
       Divider()
 
-      PreviewLabel(title: "決まったこと", symbol: "checkmark.seal.fill")
+      PreviewLabel(title: "決まったこと", symbol: .checkmarkSealFill)
       PreviewLine(widthRatio: 0.66)
     }
   }
@@ -81,10 +81,10 @@ struct OnboardingPreview: View {
 
 private struct PreviewLabel: View {
   var title: String
-  var symbol: String
+  var symbol: MemoraIcon
 
   var body: some View {
-    Label(title, systemImage: symbol)
+    Label(title, icon: symbol)
       .font(.caption.weight(.semibold))
       .foregroundStyle(.secondary)
   }
@@ -108,7 +108,7 @@ private struct PreviewTask: View {
 
   var body: some View {
     HStack(spacing: 10) {
-      Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+      Image(icon: isCompleted ? .checkmarkCircleFill : .circle)
         .font(.body)
         .foregroundStyle(isCompleted ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
       PreviewLine(widthRatio: widthRatio)

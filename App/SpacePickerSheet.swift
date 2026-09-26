@@ -10,12 +10,12 @@ struct SpacePickerSheet: View {
     NavigationStack {
       List {
         Section {
-          row(title: "未分類", symbol: "tray", isSelected: currentSpaceID == nil) {
+          row(title: "未分類", symbol: .tray, isSelected: currentSpaceID == nil) {
             set(nil)
           }
 
           ForEach(model.spaces) { space in
-            row(title: space.name, symbol: space.symbol, isSelected: currentSpaceID == space.id) {
+            row(title: space.name, symbol: space.icon, isSelected: currentSpaceID == space.id) {
               set(space.id)
             }
           }
@@ -40,13 +40,13 @@ struct SpacePickerSheet: View {
 
   private func row(
     title: String,
-    symbol: String,
+    symbol: MemoraIcon,
     isSelected: Bool,
     action: @escaping () -> Void
   ) -> some View {
     Button(action: action) {
       HStack(spacing: 12) {
-        Image(systemName: symbol)
+        Image(icon: symbol)
           .frame(width: 24)
           .foregroundStyle(.secondary)
 
@@ -56,7 +56,7 @@ struct SpacePickerSheet: View {
         Spacer()
 
         if isSelected {
-          Image(systemName: "checkmark")
+          Image(icon: .checkmark)
             .foregroundStyle(.tint)
         }
       }

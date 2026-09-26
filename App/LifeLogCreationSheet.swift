@@ -21,7 +21,7 @@ struct LifeLogCreationSheet: View {
         Section {
           Picker("種類", selection: $kind) {
             ForEach(LifeLogKind.allCases) { item in
-              Label(item.label, systemImage: item.symbol).tag(item)
+              Label(item.label, icon: item.symbol).tag(item)
             }
           }
           .pickerStyle(.segmented)
@@ -54,7 +54,7 @@ struct LifeLogCreationSheet: View {
                   Text("現在地を確認中")
                 }
               default:
-                Label("現在地から場所を取得", systemImage: "location.fill")
+                Label("現在地から場所を取得", icon: .locationFill)
               }
             }
             .disabled(locationCapture.state == .locating)
@@ -74,7 +74,7 @@ struct LifeLogCreationSheet: View {
 
         Section("写真") {
           PhotosPicker(selection: $photoItem, matching: .images) {
-            Label(photoData == nil ? "写真を選択" : "写真を変更", systemImage: "photo.badge.plus")
+            Label(photoData == nil ? "写真を選択" : "写真を変更", icon: .photoBadgePlus)
           }
 
           if let photoData, let image = UIImage(data: photoData) {

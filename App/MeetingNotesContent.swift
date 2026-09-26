@@ -40,10 +40,11 @@ struct MeetingNotesContent: View {
                   Button {
                     model.removeMeetingPhoto(meetingID, index: index)
                   } label: {
-                    Image(systemName: "xmark.circle.fill")
-                      .font(.title3)
-                      .symbolRenderingMode(.palette)
-                      .foregroundStyle(.white, .black.opacity(0.45))
+                    Image(icon: .xmark)
+                      .font(.footnote.weight(.bold))
+                      .foregroundStyle(.white)
+                      .frame(width: 26, height: 26)
+                      .background(.black.opacity(0.45), in: Circle())
                       .padding(6)
                   }
                   .buttonStyle(.plain)
@@ -54,7 +55,7 @@ struct MeetingNotesContent: View {
 
           PhotosPicker(selection: $photoItem, matching: .images) {
             VStack(spacing: 8) {
-              Image(systemName: "photo.badge.plus")
+              Image(icon: .photoBadgePlus)
                 .font(.title2)
               Text("写真を追加")
                 .font(.caption.weight(.medium))

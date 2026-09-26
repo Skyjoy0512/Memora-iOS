@@ -60,7 +60,7 @@ struct EmailAuthView: View {
           .onSubmit(submit)
       } footer: {
         if let errorMessage {
-          Label(errorMessage, systemImage: "exclamationmark.circle")
+          Label(errorMessage, icon: .exclamationmarkCircle)
             .font(.footnote)
             .foregroundStyle(.red)
             .transition(.opacity)

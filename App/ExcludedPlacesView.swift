@@ -18,14 +18,14 @@ struct ExcludedPlacesView: View {
 
       if places.isEmpty {
         ContentUnavailableView {
-          Label("記録しない場所はありません", systemImage: "mappin.slash")
+          Label("記録しない場所はありません", icon: .mappinSlash)
         } description: {
           Text("記録の詳細から「この場所を今後記録しない」を選ぶと、ここに並びます。")
         }
         .listRowBackground(Color.clear)
       } else {
         ForEach(places) { place in
-          Label(place.name, systemImage: "mappin.slash")
+          Label(place.name, icon: .mappinSlash)
             .accessibilityLabel("記録しない場所、\(place.name)")
         }
         .onDelete(perform: delete)
@@ -35,7 +35,7 @@ struct ExcludedPlacesView: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        Button("現在地を追加", systemImage: "location.fill") {
+        Button("現在地を追加", icon: .locationFill) {
           addCurrentPlace()
         }
         .labelStyle(.iconOnly)

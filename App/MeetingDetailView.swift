@@ -131,7 +131,7 @@ struct MeetingDetailView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar {
           ToolbarItem(placement: .topBarLeading) {
-            Button("前に戻る", systemImage: "chevron.left") {
+            Button("前に戻る", icon: .chevronLeft) {
               dismiss()
             }
             .labelStyle(.iconOnly)
@@ -141,7 +141,7 @@ struct MeetingDetailView: View {
               Button {
                 player.toggle()
               } label: {
-                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                Image(icon: player.isPlaying ? .pauseFill : .playFill)
                   .font(.headline.weight(.bold))
                   .frame(width: 40, height: 40)
                   .contentShape(Circle())
@@ -170,41 +170,41 @@ struct MeetingDetailView: View {
           }
           ToolbarItem(placement: .topBarTrailing) {
             ShareLink(item: MeetingShareText.make(meeting: meeting, tasks: model.tasks)) {
-              Label("共有", systemImage: "square.and.arrow.up")
+              Label("共有", icon: .squareAndArrowUp)
                 .labelStyle(.iconOnly)
             }
           }
           ToolbarItem(placement: .topBarTrailing) {
-            Menu("その他", systemImage: "ellipsis") {
-              Button("チームで共有", systemImage: "person.badge.plus") {
+            Menu("その他", icon: .ellipsis) {
+              Button("チームで共有", icon: .personBadgePlus) {
                 Task { await model.shareMeetingWithTeam(meeting.id) }
               }
-              Button("PDFで共有", systemImage: "doc.richtext") {
+              Button("PDFで共有", icon: .docRichtext) {
                 sharePDF(meeting)
               }
-              Button("リンクをコピー", systemImage: "link") {
+              Button("リンクをコピー", icon: .link) {
                 copyLink(meeting)
               }
-              Button(isSavingToNotion ? "Notionへ保存中…" : "Notionへ保存", systemImage: "arrow.up.doc") {
+              Button(isSavingToNotion ? "Notionへ保存中…" : "Notionへ保存", icon: .arrowUpDoc) {
                 saveToNotion(meeting)
               }
               .disabled(!NotionService.isConfigured || isSavingToNotion)
-              Button("要約をやり直す", systemImage: "sparkles") {
+              Button("要約をやり直す", icon: .sparkles) {
                 isSummaryGenerationPresented = true
               }
               .disabled(meeting.transcript.isEmpty)
               if meeting.audioURL != nil {
-                Button("音声を削除（文字起こしと要約は残す）", systemImage: "waveform.badge.minus") {
+                Button("音声を削除（文字起こしと要約は残す）", icon: .waveformBadgeMinus) {
                   isRemovingAudio = true
                 }
               }
-              Button("プロジェクト", systemImage: "folder") {
+              Button("プロジェクト", icon: .folder) {
                 isChoosingSpace = true
               }
-              Button("名前を変更", systemImage: "pencil") {
+              Button("名前を変更", icon: .pencil) {
                 isRenaming = true
               }
-              Button("削除", systemImage: "trash", role: .destructive) {
+              Button("削除", icon: .trash, role: .destructive) {
                 isDeleting = true
               }
             }
@@ -279,7 +279,7 @@ struct MeetingDetailView: View {
         }
         .animation(reduceMotion ? nil : MemoraMotion.control, value: localPlaybackStarted)
       } else {
-        ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
+        ContentUnavailableView("会議が見つかりません", icon: .docQuestionmark)
       }
     }
   }
@@ -302,7 +302,7 @@ struct MeetingDetailView: View {
             ZStack {
               Circle()
                 .fill(Color.primary.opacity(0.08))
-              Image(systemName: participants.isEmpty ? "person.badge.plus" : "plus")
+              Image(icon: participants.isEmpty ? .personBadgePlus : .plus)
                 .font(.title3)
                 .foregroundStyle(.secondary)
             }
@@ -470,7 +470,7 @@ struct MeetingDetailView: View {
       switch meeting.status {
       case .waitingForTranscription:
         ManualAIProcessingCard(
-          symbol: "waveform.badge.plus",
+          symbol: .waveformBadgePlus,
           title: "文字起こしはまだ始まっていません",
           detail: meeting.source == .recording
             ? "復旧した音声は端末に保存済みです。開始すると文字起こしを行います。録音は自動で再開しません。"
@@ -481,7 +481,7 @@ struct MeetingDetailView: View {
         }
       case .waitingForSummary:
         ManualAIProcessingCard(
-          symbol: "sparkles",
+          symbol: .sparkles,
           title: "文字起こしが完成しました",
           detail: "要約方法を選ぶまで、追加のAI処理は行いません。",
           actionTitle: "要約を生成"
@@ -531,7 +531,7 @@ struct MeetingDetailView: View {
       .foregroundStyle(.secondary)
 
       if meeting.audioURL == nil, !SampleContent.isSample(meetingID: meeting.id) {
-        Label("音声は削除済み", systemImage: "waveform.slash")
+        Label("音声は削除済み", icon: .waveformSlash)
           .font(.caption)
           .foregroundStyle(.secondary)
       }
@@ -542,7 +542,7 @@ struct MeetingDetailView: View {
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
     VStack(alignment: .leading, spacing: 12) {
-      Label("サマリー", systemImage: "text.alignleft")
+      Label("サマリー", icon: .textAlignleft)
         .font(.title3.bold())
         .foregroundStyle(.primary)
         .memoraTextReveal()
@@ -562,7 +562,7 @@ struct MeetingDetailView: View {
 
     InlineEditableList(
       title: "決まったこと",
-      symbol: "checkmark.seal",
+      symbol: .checkmarkSeal,
       items: meeting.decisions,
       emptyText: "明確な決定は見つかりませんでした",
       onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) }
@@ -576,7 +576,7 @@ struct MeetingDetailView: View {
 
     InlineEditableList(
       title: "まだ決まっていないこと",
-      symbol: "questionmark.bubble",
+      symbol: .questionmarkBubble,
       items: meeting.openQuestions,
       emptyText: "未決事項はありません",
       onCommit: { model.updateMeetingList(meeting.id, \.openQuestions, items: $0) }
@@ -586,7 +586,7 @@ struct MeetingDetailView: View {
 
     InlineEditableList(
       title: "重要なポイント",
-      symbol: "pin",
+      symbol: .pin,
       items: meeting.keyPoints,
       emptyText: "ポイントを抽出中です",
       onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }

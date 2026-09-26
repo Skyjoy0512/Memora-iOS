@@ -10,7 +10,7 @@ struct RecentlyDeletedView: View {
     List {
       if model.trashedRecords.isEmpty && model.trashedLifeLogEntries.isEmpty {
         ContentUnavailableView {
-          Label("最近削除した項目はありません", systemImage: "trash")
+          Label("最近削除した項目はありません", icon: .trash)
         } description: {
           Text("削除した記録は30日間ここに残り、いつでも元に戻せます。")
         }
@@ -26,7 +26,7 @@ struct RecentlyDeletedView: View {
                 Button(role: .destructive) {
                   pendingEntryDeletion = record
                 } label: {
-                  Label("完全に削除", systemImage: "trash.slash")
+                  Label("完全に削除", icon: .trashSlash)
                 }
               }
               .swipeActions(edge: .leading) {
@@ -35,7 +35,7 @@ struct RecentlyDeletedView: View {
                     model.restoreTrashedLifeLogEntry(record.id)
                   }
                 } label: {
-                  Label("復元", systemImage: "arrow.uturn.backward")
+                  Label("復元", icon: .arrowUturnBackward)
                 }
                 .tint(.blue)
               }
@@ -50,7 +50,7 @@ struct RecentlyDeletedView: View {
               Button(role: .destructive) {
                 pendingDeletion = record
               } label: {
-                Label("完全に削除", systemImage: "trash.slash")
+                Label("完全に削除", icon: .trashSlash)
               }
             }
             .swipeActions(edge: .leading) {
@@ -59,7 +59,7 @@ struct RecentlyDeletedView: View {
                   model.restoreTrashedRecord(record.id)
                 }
               } label: {
-                Label("復元", systemImage: "arrow.uturn.backward")
+                Label("復元", icon: .arrowUturnBackward)
               }
               .tint(.blue)
             }

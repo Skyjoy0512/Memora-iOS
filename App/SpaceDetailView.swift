@@ -18,11 +18,11 @@ struct SpaceDetailView: View {
             isAskingAI = true
           } label: {
             HStack {
-              Image(systemName: "sparkles")
+              Image(icon: .sparkles)
               Text("このプロジェクトについて聞く")
                 .font(.headline)
               Spacer()
-              Image(systemName: "arrow.up.right")
+              Image(icon: .arrowUpRight)
             }
             .foregroundStyle(.primary)
             .padding(16)
@@ -67,15 +67,15 @@ struct SpaceDetailView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
-          Button("チームで共有", systemImage: "person.badge.plus") {
+          Button("チームで共有", icon: .personBadgePlus) {
             Task { await model.shareSpaceWithTeam(space.id) }
           }
           .labelStyle(.iconOnly)
         }
         ToolbarItem(placement: .topBarTrailing) {
-          Menu("その他", systemImage: "ellipsis") {
-            Button("名前を変更", systemImage: "pencil") { isRenaming = true }
-            Button("削除", systemImage: "trash", role: .destructive) { isDeleting = true }
+          Menu("その他", icon: .ellipsis) {
+            Button("名前を変更", icon: .pencil) { isRenaming = true }
+            Button("削除", icon: .trash, role: .destructive) { isDeleting = true }
           }
         }
       }
@@ -99,13 +99,13 @@ struct SpaceDetailView: View {
         Text("会話は削除されず、未分類に移動します。")
       }
     } else {
-      ContentUnavailableView("プロジェクトが見つかりません", systemImage: "folder.badge.questionmark")
+      ContentUnavailableView("プロジェクトが見つかりません", icon: .folderBadgeQuestionmark)
     }
   }
 
   private func header(_ space: MemoraSpace) -> some View {
     HStack(spacing: 16) {
-      Image(systemName: space.symbol)
+      Image(icon: space.icon)
         .font(.title2.weight(.semibold))
         .foregroundStyle(.primary)
         .frame(width: 56, height: 56)

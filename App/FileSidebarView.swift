@@ -50,7 +50,7 @@ struct FileSidebarView: View {
               ForEach(model.spaces.prefix(6)) { space in
                 SidebarRow(
                   title: space.name,
-                  symbol: space.symbol,
+                  symbol: space.icon,
                   detail: "\(meetingCount(for: space.id))"
                 ) {
                   onSelectSpace(space)
@@ -62,7 +62,7 @@ struct FileSidebarView: View {
           sidebarSection("接続") {
             SidebarRow(
               title: isOmiConnected ? "Omi 接続中" : "外部レコーダー",
-              symbol: isOmiConnected ? "dot.radiowaves.left.and.right" : "link",
+              symbol: isOmiConnected ? .dotRadiowavesLeftAndRight : .link,
               detail: isOmiConnected ? nil : "未接続"
             ) {
               onOpenSettings()
@@ -89,7 +89,7 @@ struct FileSidebarView: View {
         }
       } label: {
         HStack(spacing: 12) {
-          Image(systemName: model.isSignedIn ? "person.fill" : "person")
+          Image(icon: model.isSignedIn ? .personFill : .person)
             .font(.body.weight(.semibold))
             .foregroundStyle(.primary)
             .frame(width: 42, height: 42)
@@ -111,7 +111,7 @@ struct FileSidebarView: View {
       .buttonStyle(.plain)
       .accessibilityLabel(model.isSignedIn ? "アカウント \(displayName)" : "サインイン")
 
-      Button("設定", systemImage: "gearshape", action: onOpenSettings)
+      Button("設定", icon: .gearshape, action: onOpenSettings)
         .labelStyle(.iconOnly)
         .font(.body.weight(.medium))
         .foregroundStyle(.primary)
@@ -132,7 +132,7 @@ struct FileSidebarView: View {
           onClose()
           model.isPaywallPresented = true
         } label: {
-          Label(model.isSubscribed ? "Memora Plus" : "Memora Plus にする", systemImage: "crown")
+          Label(model.isSubscribed ? "Memora Plus" : "Memora Plus にする", icon: .crown)
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.primary)
             .lineLimit(1)
@@ -143,7 +143,7 @@ struct FileSidebarView: View {
 
         Button(
           prefersDarkAppearance ? "システムの外観にする" : "ダークモードにする",
-          systemImage: prefersDarkAppearance ? "sun.max" : "moon"
+          icon: prefersDarkAppearance ? .sunMax : .moon
         ) {
           prefersDarkAppearance.toggle()
         }
@@ -204,7 +204,7 @@ struct FileSidebarView: View {
 
 private struct SidebarRow: View {
   var title: String
-  var symbol: String
+  var symbol: MemoraIcon
   var detail: String?
   var isSelected = false
   var action: () -> Void
@@ -212,7 +212,7 @@ private struct SidebarRow: View {
   var body: some View {
     Button(action: action) {
       HStack(spacing: 14) {
-        Image(systemName: symbol)
+        Image(icon: symbol)
           .font(.body)
           .symbolRenderingMode(.monochrome)
           .frame(width: 24)

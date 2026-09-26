@@ -5,7 +5,7 @@ import SwiftUI
 /// photo, a symbol, or their initial.
 struct PersonBubble: View {
   var title: String
-  var symbol: String?
+  var symbol: MemoraIcon?
   var photoData: Data?
   var size: CGFloat = 62
   var isSelected = false
@@ -34,7 +34,7 @@ struct PersonBubble: View {
             .fill(Color.primary.opacity(0.08))
             .frame(width: size, height: size)
 
-          Image(systemName: symbol)
+          Image(icon: symbol)
             .font(.title3)
             .foregroundStyle(.secondary)
         } else {

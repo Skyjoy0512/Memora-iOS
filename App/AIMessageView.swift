@@ -63,7 +63,7 @@ struct AIMessageView: View {
             .foregroundStyle(.secondary)
             .padding(.top, 6)
           } label: {
-            Label("AIに渡した参考資料・処理情報", systemImage: "info.circle")
+            Label("AIに渡した参考資料・処理情報", icon: .infoCircle)
               .font(.subheadline.weight(.medium))
               .foregroundStyle(.secondary)
           }
@@ -141,13 +141,13 @@ struct AIMessageView: View {
 
   private func sourceHeader(_ source: AIChatSource) -> some View {
     HStack(spacing: 8) {
-      Image(systemName: "doc.text")
+      Image(icon: .docText)
         .font(.caption)
       Text(source.title)
         .font(.subheadline)
         .lineLimit(1)
       Spacer(minLength: 4)
-      Image(systemName: "chevron.right")
+      Image(icon: .chevronRight)
         .font(.caption2.weight(.semibold))
         .foregroundStyle(.tertiary)
     }

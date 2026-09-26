@@ -29,7 +29,7 @@ struct MeetingTranscriptContent: View {
 
       if meeting.transcript.isEmpty {
         ContentUnavailableView {
-          Label("文字起こし中", systemImage: "text.bubble")
+          Label("文字起こし中", icon: .textBubble)
         } description: {
           Text("完成した発言から、この画面に表示されます。")
         }
@@ -162,7 +162,7 @@ struct TranscriptSegmentText: View {
       Text(segment.speaker)
         .font(.caption.weight(.semibold))
       if !segment.speakerIsCertain {
-        Image(systemName: "questionmark")
+        Image(icon: .questionmark)
           .font(.caption2.bold())
       }
     }

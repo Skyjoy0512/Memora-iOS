@@ -32,7 +32,7 @@ struct CalendarSelectionView: View {
                   .foregroundStyle(.primary)
                 Spacer()
                 if selectedIDs.contains(calendar.id) {
-                  Image(systemName: "checkmark")
+                  Image(icon: .checkmark)
                     .foregroundStyle(.tint)
                 }
               }

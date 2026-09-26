@@ -19,13 +19,13 @@ struct SummaryGenerationSheet: View {
                 mode: .automatic,
                 title: "自動生成",
                 detail: "内容に応じて最適な形に自動要約",
-                symbol: "sparkles"
+                symbol: .sparkles
               )
               generationChoice(
                 mode: .custom,
                 title: "カスタム生成",
                 detail: "テンプレートを選択して要約",
-                symbol: "rectangle.grid.2x2"
+                symbol: .rectangleGrid2x2
               )
             }
 
@@ -101,13 +101,13 @@ struct SummaryGenerationSheet: View {
     mode candidate: SummaryGenerationMode,
     title: String,
     detail: String,
-    symbol: String
+    symbol: MemoraIcon
   ) -> some View {
     Button {
       mode = candidate
     } label: {
       HStack(spacing: 14) {
-        Image(systemName: symbol)
+        Image(icon: symbol)
           .font(.title3.weight(.semibold))
           .frame(width: 30)
         VStack(alignment: .leading, spacing: 3) {
@@ -119,7 +119,7 @@ struct SummaryGenerationSheet: View {
             .foregroundStyle(.secondary)
         }
         Spacer()
-        Image(systemName: mode == candidate ? "checkmark.circle.fill" : "circle")
+        Image(icon: mode == candidate ? .checkmarkCircleFill : .circle)
           .foregroundStyle(mode == candidate ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
       }
       .padding(14)
@@ -142,7 +142,7 @@ struct SummaryGenerationSheet: View {
       template = item
     } label: {
       HStack(spacing: 14) {
-        Image(systemName: item.symbol)
+        Image(icon: item.symbol)
           .font(.headline)
           .frame(width: 38, height: 38)
           .background(Color.primary.opacity(0.07), in: Circle())
@@ -161,7 +161,7 @@ struct SummaryGenerationSheet: View {
 
         Spacer(minLength: 8)
 
-        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+        Image(icon: isSelected ? .checkmarkCircleFill : .circle)
           .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
       }
       .padding(14)

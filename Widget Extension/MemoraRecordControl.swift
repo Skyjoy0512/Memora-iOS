@@ -9,7 +9,7 @@ struct MemoraRecordControl: ControlWidget {
   var body: some ControlWidgetConfiguration {
     StaticControlConfiguration(kind: Self.kind) {
       ControlWidgetButton(action: OpenMemoraIntent()) {
-        Label("録音", systemImage: "waveform")
+        Label("録音", icon: .waveform)
       }
     }
     .displayName("Memoraで録音")

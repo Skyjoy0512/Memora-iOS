@@ -40,7 +40,7 @@ struct MeetingCard: View {
         .padding(.top, 4)
 
       HStack(spacing: 5) {
-        Image(systemName: "calendar")
+        Image(icon: .calendar)
         Text(recordingDate)
       }
       .font(.caption.weight(.medium))
@@ -68,13 +68,16 @@ struct MeetingCard: View {
     }
     .overlay(alignment: .bottomTrailing) {
       if isSelecting {
-        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+        // The icons are single-layer, so the white behind the check is drawn
+        // separately rather than as a second palette color.
+        Image(icon: isSelected ? .checkmarkCircleFill : .circle)
           .font(.title2)
-          .symbolRenderingMode(.palette)
-          .foregroundStyle(
-            isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary),
-            isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(.clear)
-          )
+          .foregroundStyle(isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+          .background {
+            if isSelected {
+              Circle().fill(.white).padding(4)
+            }
+          }
           .padding(16)
           .accessibilityHidden(true)
       }
@@ -102,7 +105,7 @@ struct MeetingCard: View {
 
   private var badge: some View {
     HStack(spacing: 6) {
-      Image(systemName: meeting.source == .recording ? "waveform" : "square.and.arrow.down")
+      Image(icon: meeting.source == .recording ? .waveform : .squareAndArrowDown)
       Text(MemoraFormat.duration(meeting.duration))
     }
     .font(.caption.weight(.semibold))

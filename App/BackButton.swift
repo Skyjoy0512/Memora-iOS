@@ -7,7 +7,7 @@ struct MemoraBackButton: View {
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
-    Button("1つ前に戻る", systemImage: "chevron.left") {
+    Button("1つ前に戻る", icon: .chevronLeft) {
       dismiss()
     }
     .labelStyle(.iconOnly)

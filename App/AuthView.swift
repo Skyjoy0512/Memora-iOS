@@ -10,7 +10,7 @@ struct AuthView: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 0) {
-          Image(systemName: "person.badge.key")
+          Image(icon: .personBadgeKey)
             .font(.system(size: 28, weight: .semibold))
             .foregroundStyle(Color(uiColor: .systemBackground))
             .frame(width: 62, height: 62)
@@ -39,7 +39,7 @@ struct AuthView: View {
           .padding(.top, 30)
           .memoraAppear(delay: 0.15)
 
-          Label("録音そのものは、サインインの有無にかかわらずこのiPhoneに保存されます。", systemImage: "lock.shield")
+          Label("録音そのものは、サインインの有無にかかわらずこのiPhoneに保存されます。", icon: .lockShield)
             .font(.footnote)
             .foregroundStyle(.secondary)
             .padding(.top, 26)

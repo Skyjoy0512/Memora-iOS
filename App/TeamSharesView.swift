@@ -11,7 +11,7 @@ struct TeamSharesView: View {
     List {
       if let message = model.cloudSharing.availabilityMessage {
         Section {
-          Label(message, systemImage: "icloud.slash")
+          Label(message, icon: .icloudSlash)
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
@@ -19,14 +19,14 @@ struct TeamSharesView: View {
 
       if model.cloudSharing.receivedItems.isEmpty {
         ContentUnavailableView {
-          Label("共有されたものはありません", systemImage: "person.3")
+          Label("共有されたものはありません", icon: .person3)
         } description: {
           Text("チームのメンバーがプロジェクトや記録を共有すると、ここに表示されます。")
         }
       } else {
         ForEach(model.cloudSharing.receivedItems) { item in
           VStack(alignment: .leading, spacing: 4) {
-            Label(item.title, systemImage: item.kind == "project" ? "folder" : "doc.text")
+            Label(item.title, icon: item.kind == "project" ? .folder : .docText)
               .font(.body.weight(.medium))
             Text(item.kind == "project" ? "プロジェクト" : "記録")
               .font(.caption)

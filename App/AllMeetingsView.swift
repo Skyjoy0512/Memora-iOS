@@ -14,7 +14,7 @@ struct AllMeetingsView: View {
           MeetingRow(meeting: meeting, showsDisclosure: false)
         }
         .swipeActions(edge: .trailing) {
-          Button("削除", systemImage: "trash", role: .destructive) {
+          Button("削除", icon: .trash, role: .destructive) {
             model.deleteMeeting(meeting.id)
           }
         }
