@@ -177,6 +177,13 @@ struct LibraryView: View {
     return List {
       listHeaderRows
 
+      if model.hasSampleContent, query.isEmpty {
+        SampleNoticeRow()
+          .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 10, trailing: 18))
+          .listRowSeparator(.hidden)
+          .listRowBackground(Color.clear)
+      }
+
       if meetings.isEmpty {
         Group {
           if query.isEmpty {

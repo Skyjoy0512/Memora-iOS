@@ -144,6 +144,17 @@ final class MemoraModel {
     max(bottomControlsHeight, 24) + 16
   }
   var importErrorMessage: String?
+  /// True when a first real recording or import landed while samples are still
+  /// present, so the app offers once to remove them.
+  var isSampleCleanupSuggested = false
+  /// Whether the display samples are still among the records.
+  var hasSampleContent: Bool {
+    meetings.contains { SampleContent.isSample(meetingID: $0.id) }
+      || spaces.contains { SampleContent.isSample(spaceID: $0.id) }
+      || tasks.contains { SampleContent.isSample(task: $0) }
+      || lifeLogEntries.contains { SampleContent.isSample(lifeLogEntry: $0) }
+      || people.contains { SampleContent.isSample(personID: $0.id) }
+  }
   /// Set when stored data exists but could not be read. The data is kept aside
   /// rather than overwritten with samples.
   private(set) var loadFailureMessage: String?
@@ -258,8 +269,6 @@ final class MemoraModel {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
     }
 
-    let sample = SampleContent.make()
-
     /// Reads a document from the local store, moving any legacy `UserDefaults`
     /// copy across exactly once. The three outcomes are kept apart: absent means
     /// a first run; unreadable means the bytes are set aside and the app says so;
@@ -289,15 +298,13 @@ final class MemoraModel {
     var didFindUnreadableData = false
     var didFailToReadStore = false
 
-    meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: sample.meetings)
-    spaces = load([MemoraSpace].self, forKey: StorageKey.spaces, fallback: sample.spaces)
-    lifeLogEntries = load(
-      [LifeLogEntry].self,
-      forKey: StorageKey.lifeLogEntries,
-      fallback: SampleContent.makeLifeLog()
-    )
-    tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: sample.tasks)
-    people = load([Person].self, forKey: StorageKey.people, fallback: SampleContent.makePeople())
+    // A first run starts empty. Sample content is only added when the person
+    // chooses it from onboarding, so their own records are never mixed with it.
+    meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: [])
+    spaces = load([MemoraSpace].self, forKey: StorageKey.spaces, fallback: [])
+    lifeLogEntries = load([LifeLogEntry].self, forKey: StorageKey.lifeLogEntries, fallback: [])
+    tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: [])
+    people = load([Person].self, forKey: StorageKey.people, fallback: [])
     let activeJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
     processing.restoreInterrupted(activeJobIDs)
     trashedRecords = load([TrashedRecord].self, forKey: StorageKey.trash, fallback: [])
@@ -336,15 +343,7 @@ final class MemoraModel {
     }
 
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
-    aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [
-      AIConversationEntry(
-        id: Self.seedAIHistoryID,
-        question: "今週決まったことは？",
-        answer: "録音開始の速さを最優先にし、会議データは既定で端末内に保存する方針です。",
-        scopeLabel: "すべての会話",
-        createdAt: Calendar.current.date(byAdding: .hour, value: -4, to: .now)!
-      )
-    ])
+    aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [])
 
     // Protection is decided only once every document has been read, so a failure
     // in the last one (AI history, say) still stops the app from overwriting it.
@@ -981,6 +980,7 @@ final class MemoraModel {
       return
     }
     recordingDraft = nil
+    offerSampleCleanupAfterRealSave()
     finishCaptureSave(meetingID: meeting.id)
   }
 
@@ -1166,6 +1166,7 @@ final class MemoraModel {
       )
       meetings.insert(meeting, at: 0)
       persistMeetings()
+      offerSampleCleanupAfterRealSave()
       importProgress = 1
       isImporting = false
       selectedTab = .files
@@ -2186,23 +2187,82 @@ final class MemoraModel {
     persistInBackground(people, forKey: StorageKey.people)
   }
 
-  func resetSampleContent() {
+  /// Adds the display samples, used only when the person chooses them from
+  /// onboarding (or reloads them from the debug settings). Real records are not
+  /// touched, but the debug reload replaces the current set by design.
+  func loadSampleContent() {
     let sample = SampleContent.make()
     meetings = sample.meetings
     spaces = sample.spaces
+    lifeLogEntries = SampleContent.makeLifeLog()
+    tasks = sample.tasks
+    people = SampleContent.makePeople()
+    aiHistory = [Self.seedAIHistoryEntry()]
+    aiMessages = []
     persistMeetings()
     persistSpaces()
-    lifeLogEntries = SampleContent.makeLifeLog()
     persistLifeLog()
-    tasks = sample.tasks
     persistTasks()
-    people = SampleContent.makePeople()
     persistPeople()
-    aiHistory = []
-    aiMessages = []
+    persistAIHistory()
     homePath = []
     libraryPath = []
     selectedTab = .home
+  }
+
+  /// Removes the display samples for good, without putting them in the trash.
+  /// Only records the samples own are removed; everything the person made,
+  /// including tasks and journal entries that point at a real record, stays.
+  func deleteSampleContent() {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
+
+    let keptMeetings = meetings.filter { !SampleContent.isSample(meetingID: $0.id) }
+    let keptSpaces = spaces.filter { !SampleContent.isSample(spaceID: $0.id) }
+    let keptTasks = tasks.filter { !SampleContent.isSample(task: $0) }
+    let keptLifeLog = lifeLogEntries.filter { !SampleContent.isSample(lifeLogEntry: $0) }
+    let keptPeople = people.filter { !SampleContent.isSample(personID: $0.id) }
+    let keptHistory = aiHistory.filter { $0.id != Self.seedAIHistoryID }
+
+    let stored = persistBatch {
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(keptMeetings)),
+        (key: StorageKey.spaces, data: try RecordStore.encoded(keptSpaces)),
+        (key: StorageKey.tasks, data: try RecordStore.encoded(keptTasks)),
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(keptLifeLog)),
+        (key: StorageKey.people, data: try RecordStore.encoded(keptPeople)),
+        (key: StorageKey.aiHistory, data: try RecordStore.encoded(keptHistory))
+      ]
+    }
+    guard stored else { return }
+
+    meetings = keptMeetings
+    spaces = keptSpaces
+    tasks = keptTasks
+    lifeLogEntries = keptLifeLog
+    people = keptPeople
+    aiHistory = keptHistory
+    // A route left pointing at a removed sample would open an empty screen.
+    homePath.removeAll { route in
+      if case .meeting(let id) = route { return SampleContent.isSample(meetingID: id) }
+      return false
+    }
+    libraryPath.removeAll { route in
+      if case .meeting(let id) = route { return SampleContent.isSample(meetingID: id) }
+      if case .space(let id) = route { return SampleContent.isSample(spaceID: id) }
+      return false
+    }
+  }
+
+  /// Called after the first real recording or import. Offers once to clear the
+  /// samples that are still around, and remembers that the offer was made.
+  func offerSampleCleanupAfterRealSave() {
+    let defaults = UserDefaults.standard
+    guard !defaults.bool(forKey: StorageKey.hasOfferedSampleDeletion), hasSampleContent else { return }
+    defaults.set(true, forKey: StorageKey.hasOfferedSampleDeletion)
+    isSampleCleanupSuggested = true
   }
 
   func removeAllContent() {
@@ -2553,6 +2613,18 @@ final class MemoraModel {
   /// the device is empty.
   static let seedAIHistoryID = UUID(uuidString: "00000000-0000-0000-0000-0000000000A1")!
 
+  /// The one sample chat exchange shown with the samples, with the same fixed id
+  /// so it can be removed with them.
+  static func seedAIHistoryEntry() -> AIConversationEntry {
+    AIConversationEntry(
+      id: seedAIHistoryID,
+      question: "今週決まったことは？",
+      answer: "録音開始の速さを最優先にし、会議データは既定で端末内に保存する方針です。",
+      scopeLabel: "すべての会話",
+      createdAt: Calendar.current.date(byAdding: .hour, value: -4, to: .now)!
+    )
+  }
+
   private enum StorageKey {
     static let hasCompletedOnboarding = "hasSeenMemoraWelcome"
     static let hasOfferedPlus = "hasOfferedMemoraPlus"
@@ -2574,6 +2646,7 @@ final class MemoraModel {
     static let lifeLogTrash = "memoraLifeLogTrash"
     static let aiHistory = "memoraAIHistory"
     static let pendingMediaDeletions = "memoraPendingMediaDeletions"
+    static let hasOfferedSampleDeletion = "memora.hasOfferedSampleDeletion"
   }
 
   private func recordingsDirectory() throws -> URL {

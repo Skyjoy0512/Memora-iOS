@@ -31,7 +31,7 @@ struct ProjectFolderTile: View {
       }
       .aspectRatio(1, contentMode: .fit)
 
-      VStack(spacing: 2) {
+      VStack(spacing: 4) {
         Text(space.name)
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(.primary)
@@ -40,10 +40,19 @@ struct ProjectFolderTile: View {
         Text("\(meetingCount)件")
           .font(.caption)
           .foregroundStyle(.secondary)
+
+        if SampleContent.isSample(spaceID: space.id) {
+          SampleTag()
+        }
       }
     }
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("\(space.name)、\(meetingCount)件の議事録")
+    .accessibilityLabel(accessibilityLabel)
+  }
+
+  private var accessibilityLabel: String {
+    let sample = SampleContent.isSample(spaceID: space.id) ? "、サンプル" : ""
+    return "\(space.name)、\(meetingCount)件の議事録\(sample)"
   }
 
   @ViewBuilder

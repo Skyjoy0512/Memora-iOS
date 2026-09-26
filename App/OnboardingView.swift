@@ -5,6 +5,7 @@ struct OnboardingView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var startRecording: () -> Void
   var showSample: () -> Void
+  var skip: () -> Void
   var signIn: () -> Void
 
   @State private var page = OnboardingPage.record
@@ -13,7 +14,7 @@ struct OnboardingView: View {
     VStack(spacing: 0) {
       HStack {
         Spacer()
-        Button("スキップ", action: showSample)
+        Button("スキップ", action: skip)
           .font(.subheadline.weight(.medium))
           .foregroundStyle(.secondary)
           .opacity(isLastPage ? 0 : 1)

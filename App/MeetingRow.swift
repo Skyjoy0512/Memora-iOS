@@ -11,10 +11,16 @@ struct MeetingRow: View {
       MemoraIconBadge(symbol: meeting.source == .recording ? "waveform" : "square.and.arrow.down")
 
       VStack(alignment: .leading, spacing: 6) {
-        Text(meeting.title)
-          .font(.body.weight(.semibold))
-          .foregroundStyle(.primary)
-          .lineLimit(2)
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+          Text(meeting.title)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(.primary)
+            .lineLimit(2)
+
+          if SampleContent.isSample(meetingID: meeting.id) {
+            SampleTag()
+          }
+        }
 
         if showsSummary {
           Text(meeting.summary)
@@ -54,6 +60,9 @@ struct MeetingRow: View {
   /// One sentence for VoiceOver instead of the pieces read in view order.
   private var accessibilityLabel: String {
     var parts = [meeting.displayTitle]
+    if SampleContent.isSample(meetingID: meeting.id) {
+      parts.append("サンプル")
+    }
     if showsSummary {
       parts.append(meeting.summary)
     }

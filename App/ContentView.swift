@@ -21,6 +21,9 @@ struct ContentView: View {
           }
         } showSample: {
           model.completeOnboarding()
+          model.loadSampleContent()
+        } skip: {
+          model.completeOnboarding()
         } signIn: {
           model.completeOnboarding()
           model.isAuthPresented = true
@@ -93,6 +96,14 @@ struct ContentView: View {
       Button("OK", role: .cancel) {}
     } message: {
       Text(model.persistenceFailureMessage ?? "")
+    }
+    .alert("サンプルを削除しますか？", isPresented: $model.isSampleCleanupSuggested) {
+      Button("削除", role: .destructive) {
+        model.deleteSampleContent()
+      }
+      Button("残す", role: .cancel) {}
+    } message: {
+      Text("最初の記録を保存しました。表示用のサンプルが残っています。削除しますか？")
     }
     .sheet(item: $model.pendingCloudShare) { request in
       CloudShareSheet(share: request.share, container: request.container) {

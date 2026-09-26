@@ -27,6 +27,9 @@ struct LifeLogRow: View {
             .font(.caption.monospacedDigit().weight(.medium))
             .foregroundStyle(.secondary)
           Spacer()
+          if SampleContent.isSample(lifeLogEntry: entry) {
+            SampleTag()
+          }
           Text(entry.source.label)
             .font(.caption2.weight(.medium))
             .foregroundStyle(.secondary)
@@ -91,9 +94,12 @@ struct LifeLogRow: View {
   private var accessibilityLabel: String {
     var parts = [
       entry.createdAt.formatted(date: .omitted, time: .shortened),
-      entry.source.label,
-      entry.title
+      entry.source.label
     ]
+    if SampleContent.isSample(lifeLogEntry: entry) {
+      parts.append("サンプル")
+    }
+    parts.append(entry.title)
     if !entry.summary.isEmpty {
       parts.append(entry.summary)
     }

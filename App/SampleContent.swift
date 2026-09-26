@@ -15,6 +15,52 @@ enum SampleContent {
   static let tanakaID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
   static let satoID = UUID(uuidString: "66666666-7777-8888-9999-000000000000")!
 
+  static let firstTaskID = UUID(uuidString: "10000000-0000-0000-0000-000000000001")!
+  static let secondTaskID = UUID(uuidString: "10000000-0000-0000-0000-000000000002")!
+  static let thirdTaskID = UUID(uuidString: "10000000-0000-0000-0000-000000000003")!
+
+  static let morningMemoID = UUID(uuidString: "20000000-0000-0000-0000-000000000001")!
+  static let standupTalkID = UUID(uuidString: "20000000-0000-0000-0000-000000000002")!
+  static let releaseReviewID = UUID(uuidString: "20000000-0000-0000-0000-000000000003")!
+  static let arrivedStationID = UUID(uuidString: "20000000-0000-0000-0000-000000000004")!
+
+  static let meetingIDs: Set<UUID> = [
+    productMeetingID, oneOnOneMeetingID, salesMeetingID, designMeetingID,
+    weeklyMeetingID, interviewMeetingID, ideaMeetingID, importedWaitingMeetingID
+  ]
+  static let spaceIDs: Set<UUID> = [productSpaceID, salesSpaceID]
+  static let personIDs: Set<UUID> = [tanakaID, satoID]
+  static let taskIDs: Set<UUID> = [firstTaskID, secondTaskID, thirdTaskID]
+  static let lifeLogIDs: Set<UUID> = [morningMemoID, standupTalkID, releaseReviewID, arrivedStationID]
+
+  /// True when a record is one of the samples. Records and projects carry fixed
+  /// ids; tasks and journal entries are either fixed too, or tied to a sample
+  /// record. Nothing is guessed from content, so a person's own record is never
+  /// mistaken for a sample.
+  static func isSample(meetingID: UUID) -> Bool {
+    meetingIDs.contains(meetingID)
+  }
+
+  static func isSample(spaceID: UUID) -> Bool {
+    spaceIDs.contains(spaceID)
+  }
+
+  static func isSample(personID: UUID) -> Bool {
+    personIDs.contains(personID)
+  }
+
+  static func isSample(task: MemoraTask) -> Bool {
+    if taskIDs.contains(task.id) { return true }
+    if let meetingID = task.meetingID, isSample(meetingID: meetingID) { return true }
+    return false
+  }
+
+  static func isSample(lifeLogEntry: LifeLogEntry) -> Bool {
+    if lifeLogIDs.contains(lifeLogEntry.id) { return true }
+    if let meetingID = lifeLogEntry.meetingID, isSample(meetingID: meetingID) { return true }
+    return false
+  }
+
   static func makePeople() -> [Person] {
     [
       Person(id: tanakaID, name: "田中", note: nil, contactIdentifier: nil),
@@ -57,7 +103,7 @@ enum SampleContent {
     let calendar = Calendar.current
     return [
       LifeLogEntry(
-        id: UUID(),
+        id: morningMemoID,
         createdAt: calendar.date(bySettingHour: 8, minute: 35, second: 0, of: .now) ?? .now,
         title: "朝のアイデアメモ",
         summary: "移動中に思いついた、録音開始までの迷いを減らす方法。",
@@ -66,7 +112,7 @@ enum SampleContent {
         kind: .memo
       ),
       LifeLogEntry(
-        id: UUID(),
+        id: standupTalkID,
         createdAt: calendar.date(bySettingHour: 11, minute: 40, second: 0, of: .now) ?? .now,
         title: "チームとの立ち話",
         summary: "次の検証では、会議後すぐにタスクへ移れる流れを確認する。",
@@ -76,7 +122,7 @@ enum SampleContent {
         eventDate: calendar.date(bySettingHour: 11, minute: 40, second: 0, of: .now)
       ),
       LifeLogEntry(
-        id: UUID(),
+        id: releaseReviewID,
         createdAt: calendar.date(bySettingHour: 16, minute: 5, second: 0, of: .now) ?? .now,
         title: "リリース方針レビュー",
         summary: "録音の速さと、次の行動につながる整理を優先する。",
@@ -86,7 +132,7 @@ enum SampleContent {
         eventDate: calendar.date(bySettingHour: 16, minute: 5, second: 0, of: .now)
       ),
       LifeLogEntry(
-        id: UUID(),
+        id: arrivedStationID,
         createdAt: calendar.date(bySettingHour: 7, minute: 52, second: 0, of: .now) ?? .now,
         title: "渋谷駅に到着",
         summary: "朝の移動を記録しました。",
@@ -247,7 +293,7 @@ enum SampleContent {
 
     let tasks = [
       MemoraTask(
-        id: UUID(),
+        id: firstTaskID,
         title: "初回録音フローの仕様を確定する",
         meetingID: productMeetingID,
         assignee: "自分",
@@ -255,7 +301,7 @@ enum SampleContent {
         isCompleted: false
       ),
       MemoraTask(
-        id: UUID(),
+        id: secondTaskID,
         title: "セキュリティ資料をAcme社へ送る",
         meetingID: salesMeetingID,
         assignee: "田中",
@@ -263,7 +309,7 @@ enum SampleContent {
         isCompleted: false
       ),
       MemoraTask(
-        id: UUID(),
+        id: thirdTaskID,
         title: "要約テンプレートの候補を比較する",
         meetingID: productMeetingID,
         assignee: "自分",

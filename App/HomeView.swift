@@ -27,6 +27,10 @@ struct HomeView: View {
             ActiveRecordingStrip()
           }
 
+          if model.hasSampleContent, query.isEmpty {
+            SampleNoticeRow()
+          }
+
           if query.isEmpty {
             JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
           }

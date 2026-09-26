@@ -14,6 +14,10 @@ struct MeetingCard: View {
       HStack(alignment: .top, spacing: 8) {
         badge
 
+        if SampleContent.isSample(meetingID: meeting.id) {
+          SampleTag()
+        }
+
         Spacer(minLength: 8)
 
         MeetingStatusLabel(status: meeting.status)
@@ -77,12 +81,23 @@ struct MeetingCard: View {
     }
     .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.06), radius: 16, y: 8)
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("\(meeting.title)、\(recordingDate)、\(MemoraFormat.duration(meeting.duration))、\(meeting.status.shortLabel)")
+    .accessibilityLabel(accessibilityLabel)
     .accessibilityAddTraits(isSelected ? [.isSelected] : [])
   }
 
   private var recordingDate: String {
     meeting.createdAt.formatted(.dateTime.month().day().hour().minute())
+  }
+
+  private var accessibilityLabel: String {
+    var parts = [meeting.title]
+    if SampleContent.isSample(meetingID: meeting.id) {
+      parts.append("サンプル")
+    }
+    parts.append(recordingDate)
+    parts.append(MemoraFormat.duration(meeting.duration))
+    parts.append(meeting.status.shortLabel)
+    return parts.joined(separator: "、")
   }
 
   private var badge: some View {

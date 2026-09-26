@@ -202,7 +202,7 @@ struct SettingsView: View {
           }
 
           Button("デモデータを入れ直す（今の内容を置き換えます）", systemImage: "arrow.clockwise") {
-            model.resetSampleContent()
+            model.loadSampleContent()
           }
 
           Button("すべて空にしてEmptyを確認", systemImage: "tray", role: .destructive) {
@@ -248,7 +248,7 @@ struct SettingsView: View {
       }
       .confirmationDialog("サンプルを空にしますか？", isPresented: $isDeleteConfirmationPresented, titleVisibility: .visible) {
         Button("空にする", role: .destructive) {
-          model.removeAllContent()
+          model.deleteSampleContent()
           if showsCloseButton {
             dismiss()
           }
