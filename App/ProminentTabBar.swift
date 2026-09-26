@@ -30,6 +30,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   @ViewBuilder var popover: PopoverContent
 
   @Environment(\.colorScheme) private var colorScheme
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Namespace private var namespace
 
   var body: some View {
@@ -92,7 +93,14 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
   @ViewBuilder
   private var segmentedControl: some View {
-    let control = ProminentSegmentedControl(selection: $selection, colorScheme: colorScheme)
+    // At the largest text sizes the segment labels no longer fit on one row, so
+    // the tabs drop to their symbols; the names stay as accessibility labels.
+    let showsTitles = !dynamicTypeSize.isAccessibilitySize
+    let control = ProminentSegmentedControl(
+      selection: $selection,
+      colorScheme: colorScheme,
+      showsTitles: showsTitles
+    )
 
     if #available(iOS 26.0, *) {
       // The system control draws and animates its Liquid Glass selection
@@ -157,6 +165,8 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresentable {
   @Binding var selection: Item
   var colorScheme: ColorScheme
+  /// Draws the title under each symbol, or symbols only at the largest sizes.
+  var showsTitles: Bool
   @Environment(\.displayScale) private var displayScale
 
   private var allTabs: [Item] { Array(Item.allCases) }
@@ -176,6 +186,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     control.selectedSegmentTintColor = UIColor.secondarySystemFill
     control.addTarget(context.coordinator, action: #selector(Coordinator.didChange(_:)), for: .valueChanged)
     context.coordinator.appliedColorScheme = colorScheme
+    context.coordinator.appliedShowsTitles = showsTitles
     return control
   }
 
@@ -199,9 +210,12 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     }
 
     // The rendered images bake in the text color, so redraw them when the
-    // appearance changes instead of leaving last mode's colors behind.
-    if context.coordinator.appliedColorScheme != colorScheme {
+    // appearance changes instead of leaving last mode's colors behind. The
+    // labels are redrawn too when they switch to symbols only.
+    if context.coordinator.appliedColorScheme != colorScheme
+      || context.coordinator.appliedShowsTitles != showsTitles {
       context.coordinator.appliedColorScheme = colorScheme
+      context.coordinator.appliedShowsTitles = showsTitles
       for (index, item) in allTabs.enumerated() {
         uiView.setImage(generatedImage(for: item), forSegmentAt: index)
       }
@@ -240,6 +254,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   final class Coordinator: NSObject {
     @Binding var selection: Item
     var appliedColorScheme: ColorScheme?
+    var appliedShowsTitles: Bool?
 
     init(selection: Binding<Item>) {
       _selection = selection
@@ -261,8 +276,11 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
         .symbolVariant(.fill)
         .frame(height: 25)
 
-      Text(item.title)
-        .font(.caption2)
+      if showsTitles {
+        Text(item.title)
+          .font(.caption2)
+          .lineLimit(1)
+      }
     }
     .environment(\.colorScheme, colorScheme)
 
