@@ -8,6 +8,7 @@ struct SettingsView: View {
   @AppStorage("memora.transcriptionLanguage") private var transcriptionLanguage = RecognitionLanguage.japanese
   @AppStorage("memora.autoLifeLog.enabled") private var autoLifeLogEnabled = false
   @State private var isLocationPermissionAlertPresented = false
+  @State private var excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
   @State private var isDeleteConfirmationPresented = false
   @Environment(\.openURL) private var openURL
   @State private var isSignOutConfirmationPresented = false
@@ -154,9 +155,7 @@ struct SettingsView: View {
           } label: {
             LabeledContent(
               "記録しない場所",
-              value: AutoLocationLogger.excludedPlaces.isEmpty
-                ? "なし"
-                : "\(AutoLocationLogger.excludedPlaces.count)件"
+              value: excludedPlaceCount == 0 ? "なし" : "\(excludedPlaceCount)件"
             )
           }
         } header: {
@@ -244,6 +243,10 @@ struct SettingsView: View {
         }
       }
       .hideBottomBarOnScroll("settings")
+      .onAppear { excludedPlaceCount = AutoLocationLogger.excludedPlaces.count }
+      .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+        excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
+      }
       .navigationTitle("設定")
       .toolbar {
         if showsCloseButton {

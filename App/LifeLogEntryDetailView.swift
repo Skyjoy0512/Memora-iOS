@@ -9,6 +9,7 @@ struct LifeLogEntryDetailView: View {
   var entryID: UUID
   @State private var isEditing = false
   @State private var isDeleting = false
+  @State private var isExcludingPlace = false
   @State private var isViewingPhoto = false
 
   var body: some View {
@@ -29,13 +30,9 @@ struct LifeLogEntryDetailView: View {
         ToolbarItem(placement: .topBarTrailing) {
           Menu("その他", systemImage: "ellipsis") {
             Button("編集", systemImage: "pencil") { isEditing = true }
-            if let entry = currentEntry, let latitude = entry.latitude, let longitude = entry.longitude {
+            if let entry = currentEntry, entry.latitude != nil, entry.longitude != nil {
               Button("この場所を今後記録しない", systemImage: "mappin.slash") {
-                AutoLocationLogger.addExcludedPlace(
-                  name: entry.title,
-                  latitude: latitude,
-                  longitude: longitude
-                )
+                isExcludingPlace = true
               }
             }
             Button("削除", systemImage: "trash", role: .destructive) { isDeleting = true }
@@ -61,6 +58,19 @@ struct LifeLogEntryDetailView: View {
       } message: {
         Text("「最近削除した項目」に移動します。30日間は元に戻せます。")
       }
+      .confirmationDialog("この場所を今後記録しない", isPresented: $isExcludingPlace, titleVisibility: .visible) {
+        Button("記録しない（この記録も削除）", role: .destructive) {
+          excludeCurrentPlace()
+          model.deleteLifeLogEntry(entryID)
+          dismiss()
+        }
+        Button("記録しない（記録は残す）") {
+          excludeCurrentPlace()
+        }
+        Button("キャンセル", role: .cancel) {}
+      } message: {
+        Text("この場所の周辺では自動の記録を行いません。")
+      }
       .task(id: currentEntry?.photoFileName) {
         await loadPhoto()
       }
@@ -69,6 +79,12 @@ struct LifeLogEntryDetailView: View {
 
   private var currentEntry: LifeLogEntry? {
     model.lifeLogEntries.first { $0.id == entryID }
+  }
+
+  /// Adds this record's place to the excluded list, so the logger skips it.
+  private func excludeCurrentPlace() {
+    guard let entry = currentEntry, let latitude = entry.latitude, let longitude = entry.longitude else { return }
+    AutoLocationLogger.addExcludedPlace(name: entry.title, latitude: latitude, longitude: longitude)
   }
 
   @State private var photo: UIImage?

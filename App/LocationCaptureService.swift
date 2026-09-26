@@ -101,5 +101,7 @@ final class LocationCaptureService: NSObject, CLLocationManagerDelegate {
 
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
     state = .failed("現在地を確認できませんでした。場所名は手入力できます。")
+    placeCompletion?(.failed("現在地を確認できませんでした。"))
+    placeCompletion = nil
   }
 }
