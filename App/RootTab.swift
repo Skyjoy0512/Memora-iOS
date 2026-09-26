@@ -21,17 +21,17 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
     switch self {
     case .home: .calendar
     case .files: .folder
-    case .askAI: .sparkles
+    case .askAI: .chatBubble
     case .tasks: .checklist
     }
   }
 
-  /// The filled form the tab bar draws, so the segments read as solid shapes.
+  /// Only the active destination uses the filled silhouette.
   var filledSymbol: MemoraIcon {
     switch self {
     case .home: .calendarFill
     case .files: .folderFill
-    case .askAI: .sparklesFill
+    case .askAI: .chatBubbleFill
     case .tasks: .checklistFill
     }
   }

@@ -12,51 +12,51 @@
   <line id="Capline-M" style="fill:none;stroke:#27AAE1;stroke-width:0.5;" x1="263" x2="3036" y1="1055.54" y2="1055.54"/>
   <line id="Baseline-L" style="fill:none;stroke:#27AAE1;stroke-width:0.5;" x1="263" x2="3036" y1="1556" y2="1556"/>
   <line id="Capline-L" style="fill:none;stroke:#27AAE1;stroke-width:0.5;" x1="263" x2="3036" y1="1485.54" y2="1485.54"/>
-  <line id="left-margin-Ultralight-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="306.720" x2="306.720" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Ultralight-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="416.160" x2="416.160" y1="1030.79" y2="1150.12"/>
-  <line id="left-margin-Thin-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="606.720" x2="606.720" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Thin-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="716.160" x2="716.160" y1="1030.79" y2="1150.12"/>
-  <line id="left-margin-Light-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="906.720" x2="906.720" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Light-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1016.160" x2="1016.160" y1="1030.79" y2="1150.12"/>
-  <line id="left-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1206.720" x2="1206.720" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1316.160" x2="1316.160" y1="1030.79" y2="1150.12"/>
-  <line id="left-margin-Medium-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1506.720" x2="1506.720" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Medium-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1616.160" x2="1616.160" y1="1030.79" y2="1150.12"/>
-  <line id="left-margin-Semibold-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1806.720" x2="1806.720" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Semibold-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1916.160" x2="1916.160" y1="1030.79" y2="1150.12"/>
-  <line id="left-margin-Bold-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2106.720" x2="2106.720" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Bold-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2216.160" x2="2216.160" y1="1030.79" y2="1150.12"/>
-  <line id="left-margin-Heavy-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2406.720" x2="2406.720" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Heavy-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2516.160" x2="2516.160" y1="1030.79" y2="1150.12"/>
-  <line id="left-margin-Black-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2706.720" x2="2706.720" y1="1030.79" y2="1150.12"/>
-  <line id="right-margin-Black-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2816.160" x2="2816.160" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Ultralight-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="305.600" x2="305.600" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Ultralight-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="396.800" x2="396.800" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Thin-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="605.600" x2="605.600" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Thin-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="696.800" x2="696.800" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Light-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="905.600" x2="905.600" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Light-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="996.800" x2="996.800" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1205.600" x2="1205.600" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1296.800" x2="1296.800" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Medium-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1505.600" x2="1505.600" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Medium-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1596.800" x2="1596.800" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Semibold-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1805.600" x2="1805.600" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Semibold-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="1896.800" x2="1896.800" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Bold-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2105.600" x2="2105.600" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Bold-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2196.800" x2="2196.800" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Heavy-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2405.600" x2="2405.600" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Heavy-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2496.800" x2="2496.800" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Black-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2705.600" x2="2705.600" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Black-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="2796.800" x2="2796.800" y1="1030.79" y2="1150.12"/>
  </g>
  <g id="Symbols">
-  <g id="Ultralight-M" transform="matrix(0.48 0 0 0.48 300.000 1029.330)">
+  <g id="Ultralight-M" transform="matrix(0.4 0 0 0.4 300.000 1039.570)">
    <path d="M224,66H32A14,14,0,0,0,18,80v96a14,14,0,0,0,14,14H224a14,14,0,0,0,14-14V80A14,14,0,0,0,224,66Zm2,110a2,2,0,0,1-2,2H32a2,2,0,0,1-2-2V80a2,2,0,0,1,2-2H224a2,2,0,0,1,2,2Zm-28-48a10,10,0,1,1-10-10A10,10,0,0,1,198,128Z"/>
   </g>
-  <g id="Thin-M" transform="matrix(0.48 0 0 0.48 600.000 1029.330)">
+  <g id="Thin-M" transform="matrix(0.4 0 0 0.4 600.000 1039.570)">
    <path d="M224,66H32A14,14,0,0,0,18,80v96a14,14,0,0,0,14,14H224a14,14,0,0,0,14-14V80A14,14,0,0,0,224,66Zm2,110a2,2,0,0,1-2,2H32a2,2,0,0,1-2-2V80a2,2,0,0,1,2-2H224a2,2,0,0,1,2,2Zm-28-48a10,10,0,1,1-10-10A10,10,0,0,1,198,128Z"/>
   </g>
-  <g id="Light-M" transform="matrix(0.48 0 0 0.48 900.000 1029.330)">
+  <g id="Light-M" transform="matrix(0.4 0 0 0.4 900.000 1039.570)">
    <path d="M224,66H32A14,14,0,0,0,18,80v96a14,14,0,0,0,14,14H224a14,14,0,0,0,14-14V80A14,14,0,0,0,224,66Zm2,110a2,2,0,0,1-2,2H32a2,2,0,0,1-2-2V80a2,2,0,0,1,2-2H224a2,2,0,0,1,2,2Zm-28-48a10,10,0,1,1-10-10A10,10,0,0,1,198,128Z"/>
   </g>
-  <g id="Regular-M" transform="matrix(0.48 0 0 0.48 1200.000 1029.330)">
+  <g id="Regular-M" transform="matrix(0.4 0 0 0.4 1200.000 1039.570)">
    <path d="M224,64H32A16,16,0,0,0,16,80v96a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V80A16,16,0,0,0,224,64Zm0,112H32V80H224v96Zm-24-48a12,12,0,1,1-12-12A12,12,0,0,1,200,128Z"/>
   </g>
-  <g id="Medium-M" transform="matrix(0.48 0 0 0.48 1500.000 1029.330)">
+  <g id="Medium-M" transform="matrix(0.4 0 0 0.4 1500.000 1039.570)">
    <path d="M224,64H32A16,16,0,0,0,16,80v96a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V80A16,16,0,0,0,224,64Zm0,112H32V80H224v96Zm-24-48a12,12,0,1,1-12-12A12,12,0,0,1,200,128Z"/>
   </g>
-  <g id="Semibold-M" transform="matrix(0.48 0 0 0.48 1800.000 1029.330)">
+  <g id="Semibold-M" transform="matrix(0.4 0 0 0.4 1800.000 1039.570)">
+   <path d="M224,64H32A16,16,0,0,0,16,80v96a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V80A16,16,0,0,0,224,64Zm0,112H32V80H224v96Zm-24-48a12,12,0,1,1-12-12A12,12,0,0,1,200,128Z"/>
+  </g>
+  <g id="Bold-M" transform="matrix(0.4 0 0 0.4 2100.000 1039.570)">
    <path d="M224,60H32A20,20,0,0,0,12,80v96a20,20,0,0,0,20,20H224a20,20,0,0,0,20-20V80A20,20,0,0,0,224,60Zm-4,112H36V84H220Zm-56-44a16,16,0,1,1,16,16A16,16,0,0,1,164,128Z"/>
   </g>
-  <g id="Bold-M" transform="matrix(0.48 0 0 0.48 2100.000 1029.330)">
+  <g id="Heavy-M" transform="matrix(0.4 0 0 0.4 2400.000 1039.570)">
    <path d="M224,60H32A20,20,0,0,0,12,80v96a20,20,0,0,0,20,20H224a20,20,0,0,0,20-20V80A20,20,0,0,0,224,60Zm-4,112H36V84H220Zm-56-44a16,16,0,1,1,16,16A16,16,0,0,1,164,128Z"/>
   </g>
-  <g id="Heavy-M" transform="matrix(0.48 0 0 0.48 2400.000 1029.330)">
-   <path d="M224,60H32A20,20,0,0,0,12,80v96a20,20,0,0,0,20,20H224a20,20,0,0,0,20-20V80A20,20,0,0,0,224,60Zm-4,112H36V84H220Zm-56-44a16,16,0,1,1,16,16A16,16,0,0,1,164,128Z"/>
-  </g>
-  <g id="Black-M" transform="matrix(0.48 0 0 0.48 2700.000 1029.330)">
+  <g id="Black-M" transform="matrix(0.4 0 0 0.4 2700.000 1039.570)">
    <path d="M224,60H32A20,20,0,0,0,12,80v96a20,20,0,0,0,20,20H224a20,20,0,0,0,20-20V80A20,20,0,0,0,224,60Zm-4,112H36V84H220Zm-56-44a16,16,0,1,1,16,16A16,16,0,0,1,164,128Z"/>
   </g>
  </g>

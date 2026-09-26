@@ -35,6 +35,8 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case camera = "camera"
   case chartBar = "chart.bar"
   case chartBarFill = "chart.bar.fill"
+  case chatBubble = "chat.bubble"
+  case chatBubbleFill = "chat.bubble.fill"
   case checklist = "checklist"
   case checklistFill = "checklist.fill"
   case checkmark = "checkmark"

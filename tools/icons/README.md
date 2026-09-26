@@ -2,8 +2,18 @@
 
 The app draws its icons from `Shared/Icons.xcassets`, a set of custom symbols
 built from [Phosphor Icons](https://phosphoricons.com) (MIT). They behave like
-system symbols: they size with text, take `foregroundStyle`, and switch to
-Phosphor's bold weight for semibold and bold text.
+system symbols: they size with text and take `foregroundStyle`. Regular and
+semibold text use the regular outline; bold text keeps the heavier variant.
+The normalized canvas scale is 0.40, giving the glyphs more breathing room.
+
+The navigation set pairs the same silhouette in outline and fill: simple
+folder, blank calendar, check square, and round chat bubble. Only the selected
+tab uses fill. Both states are rendered at the same size and cached, so a tap
+does not perform image rendering or replace the native selection animation.
+
+Motion is tied to state: the create icon turns as its menu opens, task completion
+gets a brief bounce, and voice input / AI processing gets a subtle pulse.
+Custom movement respects Reduce Motion. Do not add decorative entrance loops.
 
 Code refers to them through `MemoraIcon` (`Shared/MemoraIcon.swift`), which is
 generated together with the catalog:

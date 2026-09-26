@@ -3,8 +3,8 @@
 
 Each icon becomes a custom symbol (`.symbolset`), so it sizes with text, follows
 `foregroundStyle`, and works in toolbars, menus, and UIKit exactly like a system
-symbol. Regular text uses Phosphor's regular weight; semibold and bold text use
-Phosphor's bold weight, so emphasis still reads as heavier.
+symbol. Chrome uses a restrained regular stroke, including beside semibold text;
+bold accessibility text still receives the heavier variant.
 
 Usage:
   curl -sSL -o ph.tgz https://registry.npmjs.org/@phosphor-icons/core/-/core-2.1.1.tgz
@@ -24,17 +24,19 @@ import sys
 ICONS = {
     # Navigation and chrome
     "calendar": "calendar-blank",
-    "calendar.fill": "calendar-dots!",
+    "calendar.fill": "calendar-blank!",
     "calendar.badge.checkmark": "calendar-check",
     "calendar.badge.checkmark.fill": "calendar-check!",
-    "folder": "folder",
-    "folder.fill": "folder!",
+    "folder": "folder-simple",
+    "folder.fill": "folder-simple!",
     "folder.badge.plus": "folder-plus",
     "folder.badge.questionmark": "folder-dashed",
     "sparkles": "sparkle",
     "sparkles.fill": "sparkle!",
-    "checklist": "list-checks",
-    "checklist.fill": "list-checks!",
+    "checklist": "check-square",
+    "checklist.fill": "check-square!",
+    "chat.bubble": "chat-circle",
+    "chat.bubble.fill": "chat-circle!",
     "plus": "plus",
     "xmark": "x",
     "xmark.circle": "x-circle",
@@ -56,9 +58,9 @@ ICONS = {
     "line.3.horizontal.decrease": "funnel-simple",
     "line.3.horizontal.decrease.circle": "funnel-simple",
     "magnifyingglass": "magnifying-glass",
-    "gearshape": "gear-six",
-    "gearshape.fill": "gear-six!",
-    "square.and.pencil": "note-pencil",
+    "gearshape": "gear",
+    "gearshape.fill": "gear!",
+    "square.and.pencil": "pencil-simple-line",
     "square.and.arrow.up": "export",
     "square.and.arrow.down": "tray-arrow-down",
     "arrow.up.right.square": "arrow-square-out",
@@ -146,8 +148,8 @@ ICONS = {
     "person": "user",
     "person.fill": "user!",
     "person.2": "users",
-    "person.3": "users-three",
-    "person.3.fill": "users-three!",
+    "person.3": "users",
+    "person.3.fill": "users!",
     "person.badge.key": "sign-in",
     "person.badge.plus": "user-plus",
     "person.crop.circle": "user-circle",
@@ -213,14 +215,14 @@ ICONS = {
     "chart.bar.fill": "chart-bar!",
 }
 
-SCALE = 0.48
+SCALE = 0.40
 BOX = 256 * SCALE
 INSET = 14 * SCALE
-# Regular text draws Phosphor's regular weight; heavier text its bold weight.
+# Keep semibold toolbar labels from turning every outline into a heavy glyph.
 WEIGHTS = [
     ("Ultralight", "light"), ("Thin", "light"), ("Light", "light"),
     ("Regular", "regular"), ("Medium", "regular"),
-    ("Semibold", "bold"), ("Bold", "bold"), ("Heavy", "bold"), ("Black", "bold"),
+    ("Semibold", "regular"), ("Bold", "bold"), ("Heavy", "bold"), ("Black", "bold"),
 ]
 SCALES = {"S": (696, 625.541), "M": (1126, 1055.54), "L": (1556, 1485.54)}
 

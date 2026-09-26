@@ -29,6 +29,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Namespace private var namespace
 
   var body: some View {
@@ -70,7 +71,9 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     let control = ProminentSegmentedControl(
       selection: $selection,
       colorScheme: colorScheme,
-      showsTitles: showsTitles
+      showsTitles: showsTitles,
+      dynamicTypeSize: dynamicTypeSize,
+      reduceMotion: reduceMotion
     )
 
     if #available(iOS 26.0, *) {
@@ -108,6 +111,8 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   private var prominentLabel: some View {
     Image(icon: prominentSymbol)
       .font(.system(size: 22, weight: .medium))
+      .rotationEffect(.degrees(isProminentPresented && prominentSymbol == .plus ? 45 : 0))
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: isProminentPresented)
       .frame(width: Self.barHeight, height: Self.barHeight)
       .accessibilityLabel("作成メニューを開く")
   }
@@ -121,15 +126,19 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   var colorScheme: ColorScheme
   /// Draws the title under each symbol, or symbols only at the largest sizes.
   var showsTitles: Bool
+  var dynamicTypeSize: DynamicTypeSize
+  var reduceMotion: Bool
   @Environment(\.displayScale) private var displayScale
 
   private var allTabs: [Item] { Array(Item.allCases) }
 
   func makeUIView(context: Context) -> UISegmentedControl {
     let control = UISegmentedControl()
+    context.coordinator.parent = self
+    context.coordinator.prepareImages()
 
     for (index, item) in allTabs.enumerated() {
-      if let image = generatedImage(for: item) {
+      if let image = context.coordinator.image(at: index, selected: item == selection) {
         control.insertSegment(with: image, at: index, animated: false)
       } else {
         control.insertSegment(withTitle: item.title, at: index, animated: false)
@@ -141,10 +150,14 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     control.addTarget(context.coordinator, action: #selector(Coordinator.didChange(_:)), for: .valueChanged)
     context.coordinator.appliedColorScheme = colorScheme
     context.coordinator.appliedShowsTitles = showsTitles
+    context.coordinator.appliedDynamicTypeSize = dynamicTypeSize
+    context.coordinator.appliedDisplayScale = displayScale
+    context.coordinator.appliedSelection = selection
     return control
   }
 
   func updateUIView(_ uiView: UISegmentedControl, context: Context) {
+    context.coordinator.parent = self
     // Never move the selection while a finger is down: doing so cancels the
     // touch in progress, which is what swallowed the first tap on a tab.
     if !uiView.isTracking,
@@ -152,14 +165,18 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
        uiView.selectedSegmentIndex != index {
       // An external change (the sidebar, a deep link) arrives programmatically;
       // animating it drives the control's own Liquid Glass morph.
-      UIView.animate(
-        withDuration: 0.35,
-        delay: 0,
-        usingSpringWithDamping: 0.82,
-        initialSpringVelocity: 0
-      ) {
+      if reduceMotion {
         uiView.selectedSegmentIndex = index
-        uiView.layoutIfNeeded()
+      } else {
+        UIView.animate(
+          withDuration: 0.35,
+          delay: 0,
+          usingSpringWithDamping: 0.82,
+          initialSpringVelocity: 0
+        ) {
+          uiView.selectedSegmentIndex = index
+          uiView.layoutIfNeeded()
+        }
       }
     }
 
@@ -167,12 +184,17 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     // appearance changes instead of leaving last mode's colors behind. The
     // labels are redrawn too when they switch to symbols only.
     if context.coordinator.appliedColorScheme != colorScheme
-      || context.coordinator.appliedShowsTitles != showsTitles {
+      || context.coordinator.appliedShowsTitles != showsTitles
+      || context.coordinator.appliedDynamicTypeSize != dynamicTypeSize
+      || context.coordinator.appliedDisplayScale != displayScale {
       context.coordinator.appliedColorScheme = colorScheme
       context.coordinator.appliedShowsTitles = showsTitles
-      for (index, item) in allTabs.enumerated() {
-        uiView.setImage(generatedImage(for: item), forSegmentAt: index)
-      }
+      context.coordinator.appliedDynamicTypeSize = dynamicTypeSize
+      context.coordinator.appliedDisplayScale = displayScale
+      context.coordinator.prepareImages()
+      context.coordinator.applyImages(to: uiView)
+    } else if context.coordinator.appliedSelection != selection {
+      context.coordinator.applyImages(to: uiView)
     }
   }
 
@@ -190,32 +212,57 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   }
 
   func makeCoordinator() -> Coordinator {
-    Coordinator(selection: $selection)
+    Coordinator(parent: self)
   }
 
   final class Coordinator: NSObject {
-    @Binding var selection: Item
+    var parent: ProminentSegmentedControl
     var appliedColorScheme: ColorScheme?
     var appliedShowsTitles: Bool?
+    var appliedDynamicTypeSize: DynamicTypeSize?
+    var appliedDisplayScale: CGFloat?
+    var appliedSelection: Item?
+    private var outlineImages: [UIImage?] = []
+    private var filledImages: [UIImage?] = []
 
-    init(selection: Binding<Item>) {
-      _selection = selection
+    init(parent: ProminentSegmentedControl) {
+      self.parent = parent
+    }
+
+    // Rendering stays out of the touch handler so changing the glyph never
+    // delays the segmented control's own selection animation.
+    func prepareImages() {
+      outlineImages = parent.allTabs.map { parent.generatedImage(for: $0, selected: false) }
+      filledImages = parent.allTabs.map { parent.generatedImage(for: $0, selected: true) }
+    }
+
+    func image(at index: Int, selected: Bool) -> UIImage? {
+      selected ? filledImages[index] : outlineImages[index]
+    }
+
+    func applyImages(to control: UISegmentedControl) {
+      for (index, _) in parent.allTabs.enumerated() {
+        control.setImage(image(at: index, selected: index == control.selectedSegmentIndex), forSegmentAt: index)
+      }
+      appliedSelection = parent.allTabs.indices.contains(control.selectedSegmentIndex)
+        ? parent.allTabs[control.selectedSegmentIndex] : nil
     }
 
     @objc func didChange(_ control: UISegmentedControl) {
       let tabs = Array(Item.allCases)
       let index = control.selectedSegmentIndex
       guard tabs.indices.contains(index) else { return }
-      selection = tabs[index]
+      parent.selection = tabs[index]
+      applyImages(to: control)
     }
   }
 
-  private func generatedImage(for item: Item) -> UIImage? {
+  private func generatedImage(for item: Item, selected: Bool) -> UIImage? {
     let label = VStack(spacing: 3) {
-      Image(icon: item.filledSymbol)
-        .font(.subheadline)
+      Image(icon: selected ? item.filledSymbol : item.symbol)
+        .font(.system(size: 18))
         .fontWeight(.regular)
-        .frame(height: 19)
+        .frame(width: 26, height: 22)
 
       if showsTitles {
         Text(item.title)
@@ -224,6 +271,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
       }
     }
     .environment(\.colorScheme, colorScheme)
+    .environment(\.dynamicTypeSize, dynamicTypeSize)
 
     let renderer = ImageRenderer(content: label)
     renderer.scale = displayScale

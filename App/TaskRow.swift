@@ -13,11 +13,18 @@ struct TaskRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      Button(task.isCompleted ? "未完了に戻す" : "完了にする", icon: task.isCompleted ? .checkmarkCircleFill : .circle) {
+      Button {
         withAnimation(reduceMotion ? nil : .snappy) {
           model.toggleTask(task.id)
         }
+      } label: {
+        Image(icon: task.isCompleted ? .checkmarkCircleFill : .circle)
+          .symbolEffect(.bounce, options: .speed(1.6), value: reduceMotion ? false : task.isCompleted)
+          .frame(width: 44, height: 44)
+          .contentShape(Rectangle())
       }
+      .accessibilityLabel(task.isCompleted ? "未完了に戻す" : "完了にする")
+      .sensoryFeedback(.selection, trigger: task.isCompleted)
       .labelStyle(.iconOnly)
       .font(.title3)
       .foregroundStyle(task.isCompleted ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
