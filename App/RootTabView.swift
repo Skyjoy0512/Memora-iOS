@@ -63,6 +63,16 @@ struct RootTabView: View {
         }
       }
     }
+    .overlay(alignment: .bottom) {
+      if let undo = model.pendingUndo {
+        UndoToast(action: undo)
+          .id(undo.id)
+          .padding(.horizontal, 12)
+          .padding(.bottom, max(model.bottomControlsHeight, 24) + 8)
+          .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.pendingUndo?.id)
   }
 
   private var tabSurface: some View {

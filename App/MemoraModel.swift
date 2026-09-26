@@ -158,6 +158,9 @@ final class MemoraModel {
   /// Set when stored data exists but could not be read. The data is kept aside
   /// rather than overwritten with samples.
   private(set) var loadFailureMessage: String?
+  /// The deletion that can still be taken back, shown as a toast. A newer one
+  /// finalizes the one before it, so only one offer is ever live.
+  var pendingUndo: UndoAction?
   /// Set when a media file that should have been removed could not be.
   var deletionFailureMessage: String?
   /// Set when a change could not be written to the local store.
@@ -189,6 +192,9 @@ final class MemoraModel {
     }
   }
   @ObservationIgnored private var composerDraftSaveTask: Task<Void, Never>?
+  /// Auto-dismiss for the undo toast. Cancelled when the offer is taken or
+  /// replaced, so only the live toast finalizes.
+  @ObservationIgnored private var undoDismissTask: Task<Void, Never>?
   private static let composerDraftKey = "composer.question"
   /// True when the store could not be read at startup. Persisting is refused
   /// while it is set, so unreadable existing data is never written over.
@@ -1399,8 +1405,50 @@ final class MemoraModel {
   }
 
   func deleteTask(_ id: UUID) {
-    tasks.removeAll { $0.id == id }
+    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+    let removed = tasks.remove(at: index)
     persistTasks()
+    scheduleUndo(
+      UndoAction(message: "「\(removed.title)」を削除しました") { [weak self] in
+        self?.restoreTask(removed, at: index)
+      } finalize: {}
+    )
+  }
+
+  /// Puts a removed task back where it was, so an undo restores its order too.
+  private func restoreTask(_ task: MemoraTask, at index: Int) {
+    let position = min(index, tasks.count)
+    tasks.insert(task, at: position)
+    persistTasks()
+  }
+
+  /// Shows the offer for one deletion, finalizing whatever offer it replaces.
+  func scheduleUndo(_ action: UndoAction) {
+    finalizePendingUndo()
+    pendingUndo = action
+    undoDismissTask = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(5))
+      guard let self, !Task.isCancelled else { return }
+      self.finalizePendingUndo()
+    }
+  }
+
+  /// Takes the offer back: the record returns and no file is removed.
+  func performPendingUndo() {
+    undoDismissTask?.cancel()
+    undoDismissTask = nil
+    let action = pendingUndo
+    pendingUndo = nil
+    action?.undo()
+  }
+
+  /// Passes over the offer, running its delayed work such as a file removal.
+  func finalizePendingUndo() {
+    undoDismissTask?.cancel()
+    undoDismissTask = nil
+    guard let action = pendingUndo else { return }
+    pendingUndo = nil
+    action.finalize()
   }
 
   func addTask(title: String, assignee: String, dueDate: Date?) {
@@ -1618,6 +1666,13 @@ final class MemoraModel {
     tasks = candidateTasks
     lifeLogEntries = candidateEntries
     trashedRecords = candidateTrash
+
+    let trashID = candidateTrash[0].id
+    scheduleUndo(
+      UndoAction(message: "「\(removed.displayTitle)」を削除しました") { [weak self] in
+        self?.restoreTrashedRecord(trashID)
+      } finalize: {}
+    )
   }
 
   /// Moves several records to the trash in one write, so a multi-selection
@@ -1672,6 +1727,15 @@ final class MemoraModel {
     tasks = candidateTasks
     lifeLogEntries = candidateEntries
     trashedRecords = candidateTrash
+
+    let trashIDs = candidateTrash.prefix(removed.count).map(\.id)
+    scheduleUndo(
+      UndoAction(message: "\(removed.count)件の記録を削除しました") { [weak self] in
+        for id in trashIDs {
+          self?.restoreTrashedRecord(id)
+        }
+      } finalize: {}
+    )
   }
 
   /// Files several records under one project, or under none, in a single write.
@@ -1894,6 +1958,13 @@ final class MemoraModel {
 
     lifeLogEntries = candidateEntries
     trashedLifeLogEntries = candidateTrash
+
+    let trashID = candidateTrash[0].id
+    scheduleUndo(
+      UndoAction(message: "「\(removed.title)」を削除しました") { [weak self] in
+        self?.restoreTrashedLifeLogEntry(trashID)
+      } finalize: {}
+    )
   }
 
   func restoreTrashedLifeLogEntry(_ id: UUID) {
@@ -2174,7 +2245,31 @@ final class MemoraModel {
     guard stored else { return }
 
     meetings = candidate
-    MediaFiles.deletePhoto(removed)
+    // The file itself waits for the offer to pass, so an undo still has a photo
+    // to show and nothing has to be decoded again from a deleted file.
+    scheduleUndo(
+      UndoAction(message: "写真を削除しました") { [weak self] in
+        self?.restoreMeetingPhoto(id, name: removed, at: index)
+      } finalize: { [weak self] in
+        self?.deleteMedia(audioURL: nil, photoNames: [removed])
+      }
+    )
+  }
+
+  /// Puts a removed photo back at its old position, so undo restores the order.
+  private func restoreMeetingPhoto(_ id: UUID, name: String, at index: Int) {
+    guard let meetingIndex = meetings.firstIndex(where: { $0.id == id }) else { return }
+    var candidate = meetings
+    var names = candidate[meetingIndex].photoFileNames ?? []
+    names.insert(name, at: min(index, names.count))
+    candidate[meetingIndex].photoFileNames = names
+    meetingSearchTexts.removeValue(forKey: id)
+
+    let stored = persistBatch {
+      [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))]
+    }
+    guard stored else { return }
+    meetings = candidate
   }
 
   // MARK: - People
