@@ -61,17 +61,10 @@ struct LibraryView: View {
           }
         }
 
-        ToolbarItem(placement: .topBarTrailing) {
-          if model.fileSection == .projects, !isSelectionMode {
-            Button("プロジェクトを作成", systemImage: "folder.badge.plus") {
-              model.isFileCreationPresented = true
-            }
-            .labelStyle(.iconOnly)
-          }
-        }
-
-        ToolbarItem(placement: .topBarTrailing) {
-          if model.fileSection == .meetingFiles, !isSelectionMode {
+        // The `if` sits outside the item, so an empty item never leaves an
+        // empty glass frame behind.
+        if model.fileSection == .meetingFiles, !isSelectionMode {
+          ToolbarItem(placement: .topBarTrailing) {
             Menu {
               Picker("表示", selection: $layout) {
                 ForEach(FileListLayout.allCases) { Text($0.label).tag($0) }
@@ -90,6 +83,16 @@ struct LibraryView: View {
               Label("表示と並べ替え", systemImage: "line.3.horizontal.decrease")
                 .labelStyle(.iconOnly)
             }
+          }
+        }
+
+        // The create action is the rightmost item, matching the other tabs.
+        if model.fileSection == .projects, !isSelectionMode {
+          ToolbarItem(placement: .primaryAction) {
+            Button("プロジェクトを作成", systemImage: "folder.badge.plus") {
+              model.isFileCreationPresented = true
+            }
+            .labelStyle(.iconOnly)
           }
         }
       }

@@ -128,15 +128,16 @@ struct HomeView: View {
         }
 
         ToolbarItem(placement: .topBarTrailing) {
-          Button("記録を追加", systemImage: "square.and.pencil") {
-            model.isLifeLogCreationPresented = true
+          Button("設定", systemImage: "gearshape") {
+            model.isSettingsPresented = true
           }
           .labelStyle(.iconOnly)
         }
 
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("設定", systemImage: "gearshape") {
-            model.isSettingsPresented = true
+        // The create action is the rightmost item, matching the other tabs.
+        ToolbarItem(placement: .primaryAction) {
+          Button("記録を追加", systemImage: "square.and.pencil") {
+            model.isLifeLogCreationPresented = true
           }
           .labelStyle(.iconOnly)
         }

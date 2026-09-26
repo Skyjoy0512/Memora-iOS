@@ -59,13 +59,6 @@ struct TasksView: View {
       .navigationTitle("タスク")
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
-          Button("タスクを追加", systemImage: "text.badge.plus") {
-            model.isAddTaskPresented = true
-          }
-          .labelStyle(.iconOnly)
-        }
-
-        ToolbarItem(placement: .topBarTrailing) {
           Menu {
             Picker("担当", selection: $assigneeFilter) {
               Text("全員").tag(String?.none)
@@ -78,6 +71,14 @@ struct TasksView: View {
             Label("担当で絞り込み", systemImage: "line.3.horizontal.decrease")
               .labelStyle(.iconOnly)
           }
+        }
+
+        // The create action is the rightmost item, matching the other tabs.
+        ToolbarItem(placement: .primaryAction) {
+          Button("タスクを追加", systemImage: "text.badge.plus") {
+            model.isAddTaskPresented = true
+          }
+          .labelStyle(.iconOnly)
         }
       }
       .navigationDestination(for: UUID.self) { meetingID in
