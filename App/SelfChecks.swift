@@ -418,6 +418,28 @@ enum SelfChecks {
       report("a trimmed history kept the oldest exchange")
     }
 
+    // A long attachment cannot take the records' share of the budget.
+    let attachmentURL = FileManager.default.temporaryDirectory
+      .appendingPathComponent("memora-selfcheck-\(UUID().uuidString).txt")
+    let attachmentText = String(repeating: "添付の本文。", count: 2_000)
+    if (try? attachmentText.write(to: attachmentURL, atomically: true, encoding: .utf8)) != nil {
+      let attachment = AIAttachment(id: UUID(), name: "長い資料.txt", url: attachmentURL)
+      let attachedRequest = AIQuestionRequest(question: "発言199は？", scope: .file(long.id), attachment: attachment)
+      let attachedLimit = 2_000
+      let attachedContent = MemoraModel.requestContent(
+        for: attachedRequest,
+        scopeLabel: "長い会議",
+        allowedMeetings: [long],
+        tasks: [],
+        characterLimit: attachedLimit
+      )
+      let recordsFloor = (attachedLimit - attachedRequest.effectiveQuestion.count) * 2 / 5
+      if attachedContent.context.count < recordsFloor {
+        report("a long attachment starved the records: \(attachedContent.context.count) < \(recordsFloor)")
+      }
+      try? FileManager.default.removeItem(at: attachmentURL)
+    }
+
     // A wide range whose first record alone is over budget still carries that
     // record, trimmed, rather than sending nothing.
     let globalRequest = AIQuestionRequest(question: "発言199は？", scope: .global, attachment: nil)

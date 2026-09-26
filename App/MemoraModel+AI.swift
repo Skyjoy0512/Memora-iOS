@@ -223,9 +223,14 @@ extension MemoraModel {
     let question = request.effectiveQuestion
     let words = questionWords(in: question)
 
-    // One budget, spent in order: the question, then the attachment, then the
-    // recent exchanges, then the records. Whatever is left reaches the records.
-    var remaining = max(0, characterLimit - question.count)
+    // After the question, the budget is shared: the attachment may take at most
+    // 40%, the recent exchanges at most 20%, and the records are guaranteed the
+    // rest. What the first two do not use goes to the records, so a long
+    // attachment can never crowd them out completely.
+    let budgetAfterQuestion = max(0, characterLimit - question.count)
+    let attachmentCap = budgetAfterQuestion * 2 / 5
+    let historyCap = budgetAfterQuestion / 5
+    var remaining = budgetAfterQuestion
     var notes: [String] = []
 
     var attachmentText = ""
@@ -233,11 +238,13 @@ extension MemoraModel {
     if let attachment = request.attachment {
       switch AIAttachmentText.read(attachment) {
       case .text(let text):
-        let kept = String(text.prefix(remaining))
+        let label = "添付「\(attachment.name)」:\n"
+        let allowance = max(0, min(remaining, attachmentCap) - label.count)
+        let kept = String(text.prefix(allowance))
         if kept.count < text.count {
           notes.append("添付「\(attachment.name)」は長いため、先頭のみ送信しました。")
         }
-        attachmentText = "添付「\(attachment.name)」:\n\(kept)"
+        attachmentText = label + kept
         remaining = max(0, remaining - attachmentText.count)
       case .unsupported(let reason):
         unsupportedNote = "添付「\(attachment.name)」はAI解析に対応していないため、内容は送信していません。\(reason)"
@@ -246,7 +253,8 @@ extension MemoraModel {
 
     var historyText = ""
     if !history.isEmpty, remaining > 0 {
-      let kept = Self.trailingHistory(history, budget: remaining)
+      let allowance = min(remaining, historyCap)
+      let kept = Self.trailingHistory(history, budget: allowance)
       if kept.count < history.count {
         notes.append("これまでのやりとりが長いため、新しい方を優先して送信しました。")
       }
