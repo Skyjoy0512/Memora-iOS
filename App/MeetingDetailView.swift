@@ -17,6 +17,7 @@ struct MeetingDetailView: View {
   @State private var selectedSection = MeetingDetailSection.summary
   @State private var isRenaming = false
   @State private var isDeleting = false
+  @State private var isRemovingAudio = false
   @State private var isSummaryGenerationPresented = false
   @State private var isAddingPeople = false
   @State private var isChoosingSpace = false
@@ -192,6 +193,11 @@ struct MeetingDetailView: View {
                 isSummaryGenerationPresented = true
               }
               .disabled(meeting.transcript.isEmpty)
+              if meeting.audioURL != nil {
+                Button("音声を削除（文字起こしと要約は残す）", systemImage: "waveform.badge.minus") {
+                  isRemovingAudio = true
+                }
+              }
               Button("プロジェクト", systemImage: "folder") {
                 isChoosingSpace = true
               }
@@ -233,6 +239,14 @@ struct MeetingDetailView: View {
             message: Text(alert.message),
             dismissButton: .default(Text("OK"))
           )
+        }
+        .confirmationDialog("音声を削除しますか？", isPresented: $isRemovingAudio, titleVisibility: .visible) {
+          Button("音声を削除", role: .destructive) {
+            model.removeMeetingAudio(meeting.id)
+          }
+          Button("キャンセル", role: .cancel) {}
+        } message: {
+          Text("文字起こし・要約・ノート・タスクは残ります。取り消せます。")
         }
         .confirmationDialog("この会議を削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
           Button("削除", role: .destructive) {
@@ -515,6 +529,12 @@ struct MeetingDetailView: View {
       }
       .font(.subheadline)
       .foregroundStyle(.secondary)
+
+      if meeting.audioURL == nil, !SampleContent.isSample(meetingID: meeting.id) {
+        Label("音声は削除済み", systemImage: "waveform.slash")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
     }
     .padding(.top, 8)
   }

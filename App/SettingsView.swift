@@ -185,6 +185,12 @@ struct SettingsView: View {
             Label("データの保存先", systemImage: "lock.shield")
           }
 
+          NavigationLink {
+            StorageUsageView()
+          } label: {
+            Label("保存容量", systemImage: "internaldrive")
+          }
+
           LabeledContent("クラウド保管", value: model.cloudStorageEnabled ? "オン" : "オフ")
 
           NavigationLink {
