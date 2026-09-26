@@ -10,7 +10,6 @@ struct SearchView: View {
   /// interrupted by a reply arriving.
   @State private var isNearBottom = true
   @State private var hasUnseenAnswer = false
-  @State private var isComposing = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
@@ -92,15 +91,6 @@ struct SearchView: View {
           },
           delete: { model.deleteAIHistoryEntry($0) }
         )
-      }
-      .safeAreaInset(edge: .bottom, spacing: 8) {
-        QuickAIComposer(
-          scope: .global,
-          isComposing: $isComposing,
-          keepsFocusAfterSubmit: true
-        )
-        .padding(.horizontal, 12)
-        .padding(.top, 4)
       }
     }
   }

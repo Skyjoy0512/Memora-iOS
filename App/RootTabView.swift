@@ -140,7 +140,7 @@ struct RootTabView: View {
         QuickAIComposer(
           scope: composerScope,
           isComposing: $isComposing,
-          keepsFocusAfterSubmit: false
+          keepsFocusAfterSubmit: model.selectedTab == .askAI
         )
         // Note: no `.id(composerScope)` — recreating the field would throw away
         // what someone had already typed when the scope changed.
@@ -319,12 +319,8 @@ struct RootTabView: View {
     if isShowingMeetingDetail {
       return model.isDetailComposerVisible
     }
-    switch model.selectedTab {
-    case .files, .home, .tasks:
-      return true
-    case .askAI:
-      return false
-    }
+    // Every list tab, including Ask AI, uses the shared input above the bar.
+    return true
   }
 
   private var isShowingMeetingDetail: Bool {
