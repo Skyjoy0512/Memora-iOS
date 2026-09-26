@@ -209,14 +209,27 @@
 | RV11 | 実装済み・未検証 | Slider の VoiceOver 増減で即 seek。Undoトーストは VoiceOver/スイッチコントロール時10秒 |
 | RV12 | 実装済み・未検証 | 未一致時は根拠を出さない。stopword重複削除。文字種 CharacterSet をスカラー範囲から構築 |
 
-## ジャーナル v2（J01〜J06）
+## RV の再レビュー RW01〜RW06
 
-`docs/JOURNAL_V2.md`。P0レビュー完了後に着手。
+`docs/UX_REVIEW_2026-09.md` 末尾の再レビュー。ビルドは各件で成功。実行確認は未実施。
 
 | ID | 状態 | メモ |
 | --- | --- | --- |
-| J01 | 未着手 | タブ順を ファイル→ジャーナル→Ask AI→タスク、起動はファイル |
-| J02 | 未着手 | タイムラインの土台（JournalTimelineItem/Builder） |
+| RW01 | 実装済み・未検証 | `trailingHistory` で新しい側から1往復の区切りで残す。SelfChecks 追加 |
+| RW02 | 実装済み・未検証 | 添付40%・履歴20%・記録40%の配分。長い添付でも記録を確保。SelfChecks 追加 |
+| RW03 | 実装済み・未検証 | iOS 26 の `GenerationError.exceededContextWindowSize` も `contextTooLarge`。失敗理由を細分化 |
+| RW04 | 実装済み・未検証 | `DetailPlaybackRequest.time` を任意に。見出しタップは再生しない |
+| RW05 | 実装済み・未検証 | `restoreTrashedRecord(_:preservingPosition:)`。位置使用は取り消しのみ |
+| RW06 | 実装済み・未検証 | 案(a) シート内詳細にローカル再生バー |
+
+## ジャーナル v2（J01〜J06）
+
+`docs/JOURNAL_V2.md`。J01・J02 実装済み。
+
+| ID | 状態 | メモ |
+| --- | --- | --- |
+| J01 | 実装済み・未検証 | RootTab 順を files/home/askAI/tasks、TabView 子も同順、起動は .files。rawValue 不変。loadSampleContent も .files。タブのモーフィング確認は未実施 |
+| J02 | 実装済み・未検証 | JournalTimelineItem/Builder/Movement/CalendarEvent、LifeLogEntry.origin。HomeView は時刻昇順＋「いま」線。SelfChecks 追加。予定データは J04 で供給 |
 | J03 | 未着手 | 位置情報からの駅通過・滞在の自動記録 |
 | J04 | 未着手 | カレンダー予定の表示 |
 | J05 | 未着手 | タイムラインの表示調整 |
