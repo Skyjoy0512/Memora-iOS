@@ -10,6 +10,12 @@ enum AIAnswerFailure: Error, Equatable {
   /// The request was larger than the on-device model's context, even after a
   /// smaller retry.
   case contextTooLarge
+  /// The on-device model does not support the language of the request.
+  case unsupportedLanguage
+  /// The on-device model declined for a safety reason.
+  case guardrail
+  /// The on-device model's assets are not available on this device.
+  case assetsUnavailable
   /// An engine that needs a bundled model, which this build does not ship.
   case notBundled
   case missingKey
@@ -37,6 +43,12 @@ enum AIAnswerFailure: Error, Equatable {
       "端末内モデルの準備ができていません。少し待ってからもう一度お試しください。"
     case .contextTooLarge:
       "記録が長すぎて端末内AIでは扱えません。範囲を絞るか、クラウドを選んでください。"
+    case .unsupportedLanguage:
+      "この言語は端末内AIが対応していません。設定の「AI整理」でクラウド（BYOK）を選ぶと回答できます。"
+    case .guardrail:
+      "安全上の理由で端末内AIが回答を控えました。質問や記録の内容を変えてお試しください。"
+    case .assetsUnavailable:
+      "端末内モデルの準備ができていません。少し待ってからもう一度お試しください。"
     case .notBundled:
       "ローカルLLMはこのアプリにまだ入っていません。設定の「AI整理」で別のエンジンを選んでください。"
     case .missingKey:
