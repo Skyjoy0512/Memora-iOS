@@ -291,28 +291,67 @@ extension MemoraModel {
     )
   }
 
-  /// The newest exchanges that fit the budget, cut at a turn boundary so an
-  /// answer is never kept without its question. A follow-up needs the turns just
-  /// before it, so the start of the thread is what is dropped.
+  /// The newest exchanges that fit the budget, kept whole where possible. A
+  /// follow-up needs the turns just before it, so the start of the thread is what
+  /// is dropped. An answer is multi-line, so exchanges are found from the
+  /// "利用者:" / "回答:" turn starts rather than by counting lines. When even the
+  /// latest exchange is too large, its question is kept whole and its answer is
+  /// shortened with an ellipsis, so the newest question is never lost.
   static func trailingHistory(_ history: String, budget: Int) -> String {
     guard !history.isEmpty, budget > 0 else { return "" }
     if history.count <= budget { return history }
 
-    let lines = history.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-    var kept: [String] = []
+    let exchanges = historyExchanges(history)
+    var kept: [[String]] = []
     var used = 0
-    for line in lines.reversed() {
-      let addition = line.count + (kept.isEmpty ? 0 : 1)
-      if used + addition > budget { break }
-      kept.append(line)
-      used += addition
+    for exchange in exchanges.reversed() {
+      let text = exchange.joined(separator: "\n")
+      let cost = text.count + (kept.isEmpty ? 0 : 1)
+      if used + cost <= budget {
+        kept.append(exchange)
+        used += cost
+      } else if kept.isEmpty {
+        kept.append(shorten(exchange, budget: budget))
+        break
+      } else {
+        break
+      }
     }
-    kept.reverse()
-    // A turn boundary: drop a leading answer whose question was cut away.
-    if let first = kept.first, first.hasPrefix("回答:") {
-      kept.removeFirst()
+    return kept.reversed().map { $0.joined(separator: "\n") }.joined(separator: "\n")
+  }
+
+  /// Splits the thread into exchanges, each an array of its lines. A new exchange
+  /// begins at a user turn, so multi-line answers stay with their question.
+  private static func historyExchanges(_ history: String) -> [[String]] {
+    var exchanges: [[String]] = []
+    var current: [String] = []
+    for line in history.components(separatedBy: "\n") {
+      if line.hasPrefix("利用者: "), !current.isEmpty {
+        exchanges.append(current)
+        current = []
+      }
+      current.append(line)
     }
-    return kept.joined(separator: "\n")
+    if !current.isEmpty {
+      exchanges.append(current)
+    }
+    return exchanges
+  }
+
+  /// Keeps an exchange's question whole and trims its answer to what fits.
+  private static func shorten(_ exchange: [String], budget: Int) -> [String] {
+    let answerStart = exchange.firstIndex { $0.hasPrefix("回答: ") } ?? exchange.count
+    let question = exchange[..<answerStart].joined(separator: "\n")
+    let answer = exchange[answerStart...].joined(separator: "\n")
+    guard !answer.isEmpty else {
+      return [String(question.prefix(budget))]
+    }
+    // One character is reserved for the newline between the two parts.
+    let available = budget - question.count - 1
+    guard available > 1 else {
+      return [String(question.prefix(budget))]
+    }
+    return [question, String(answer.prefix(available - 1)) + "…"]
   }
 
   /// One record's own context: its digest plus as much of the transcript as fits.

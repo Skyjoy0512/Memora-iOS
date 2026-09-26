@@ -549,6 +549,16 @@ enum SelfChecks {
       report("a trimmed history kept the oldest exchange")
     }
 
+    // A multi-line answer too large for the budget still keeps its question.
+    let multiline = "利用者: 古い\n回答: 古い回答\n利用者: 最新の質問\n回答: 1行目\n折り返しの2行目\nさらに3行目"
+    let trimmedMultiline = MemoraModel.trailingHistory(multiline, budget: 20)
+    if !trimmedMultiline.contains("利用者: 最新の質問") {
+      report("a large latest exchange lost its question: \(trimmedMultiline)")
+    }
+    if trimmedMultiline.contains("古い回答") {
+      report("a large latest exchange kept older turns")
+    }
+
     // A long attachment cannot take the records' share of the budget.
     let attachmentURL = FileManager.default.temporaryDirectory
       .appendingPathComponent("memora-selfcheck-\(UUID().uuidString).txt")
