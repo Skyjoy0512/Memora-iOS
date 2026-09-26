@@ -39,7 +39,10 @@ struct AIComposerBar: View {
           .padding(.top, 6)
       }
 
-      HStack(spacing: 6) {
+      // Bottom-aligned so that when a long entry grows the field upward, the
+      // attachment, model and send controls stay pinned to the component's
+      // bottom edge instead of floating to its middle.
+      HStack(alignment: .bottom, spacing: 6) {
         attachmentMenu
 
         TextField(placeholder, text: $text, axis: .vertical)
