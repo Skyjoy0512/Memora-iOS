@@ -38,6 +38,9 @@ final class AudioSessionCoordinator {
   /// Ways for a feature to be asked to stop before recording takes the session,
   /// each keyed by a token so a replaced service's handler can be removed.
   private var stoppers: [Use: [UUID: @MainActor () async -> Void]] = [:]
+  /// Ways to pause a running playback, so a second player taking over silences
+  /// the first instead of both sounding at once.
+  private var playbackPausers: [UUID: @MainActor () -> Void] = [:]
 
   /// Asks anything else using the session to stop, waits for it to finish, and
   /// only then takes the session for recording, so a recorder never starts on top
@@ -74,6 +77,18 @@ final class AudioSessionCoordinator {
     stoppers[use]?[id] = nil
   }
 
+  /// Registers a running player that can be paused when another one takes over.
+  @discardableResult
+  func registerPlaybackPauser(_ handler: @escaping @MainActor () -> Void) -> UUID {
+    let id = UUID()
+    playbackPausers[id] = handler
+    return id
+  }
+
+  func unregisterPlaybackPauser(_ id: UUID) {
+    playbackPausers[id] = nil
+  }
+
   /// Ends the recording, but only for the token that began it.
   func endRecording(_ token: Token) {
     guard token.use == .recording, ownerTokenID == token.id else { return }
@@ -93,7 +108,19 @@ final class AudioSessionCoordinator {
       return nil
     }
     switch owner {
-    case nil, use:
+    case nil:
+      owner = use
+      let token = Token(id: UUID(), use: use)
+      ownerTokenID = token.id
+      return token
+    case use:
+      // A new player taking playback pauses whoever held it, so two recordings
+      // spawned from different screens never sound at once.
+      if use == .playback {
+        for pauser in playbackPausers.values {
+          pauser()
+        }
+      }
       owner = use
       let token = Token(id: UUID(), use: use)
       ownerTokenID = token.id

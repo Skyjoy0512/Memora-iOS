@@ -40,6 +40,8 @@ final class AudioPlayerService {
   private var loadedURL: URL?
   /// The session claim this player holds, so only this run gives it up.
   private var sessionToken: AudioSessionCoordinator.Token?
+  /// The coordinator's handle for pausing this player when another takes over.
+  private var playbackPauserID: UUID?
   /// The remote-command targets this player registered, so it removes only its
   /// own and never duplicates them on repeated plays.
   private var remoteCommandTargets: [(command: MPRemoteCommand, token: Any)] = []
@@ -129,6 +131,11 @@ final class AudioPlayerService {
       isPlaying = true
       publishNowPlaying()
       startTicker()
+      if playbackPauserID == nil {
+        playbackPauserID = AudioSessionCoordinator.shared.registerPlaybackPauser { [weak self] in
+          self?.pause()
+        }
+      }
     } catch {
       AudioSessionCoordinator.shared.release(token)
       sessionToken = nil
@@ -181,6 +188,10 @@ final class AudioPlayerService {
     // Nothing is playing any more, so the system should not keep a now-playing
     // item that looks like it still is.
     MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    if let playbackPauserID {
+      AudioSessionCoordinator.shared.unregisterPlaybackPauser(playbackPauserID)
+      self.playbackPauserID = nil
+    }
     removeRemoteCommands()
     // Gives the session back only for this player's own claim, so leaving a
     // screen cannot silence a recording or a newer playback.
