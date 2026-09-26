@@ -180,7 +180,12 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     uiView: UISegmentedControl,
     context: Context
   ) -> CGSize? {
-    CGSize(width: proposal.replacingUnspecifiedDimensions().width, height: MemoraBarMetrics.height)
+    // The row adds 2pt padding top and bottom around this control, so the
+    // control is 4pt shorter than the bar and the row lands at the bar's height.
+    CGSize(
+      width: proposal.replacingUnspecifiedDimensions().width,
+      height: MemoraBarMetrics.height - 4
+    )
   }
 
   func makeCoordinator() -> Coordinator {
