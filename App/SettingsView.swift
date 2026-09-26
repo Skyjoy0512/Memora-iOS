@@ -166,8 +166,9 @@ struct SettingsView: View {
           NavigationLink {
             CalendarSelectionView()
           } label: {
-            Label("表示するカレンダー", systemImage: "calendar")
+            Text("表示するカレンダー")
           }
+          .disabled(!showCalendarEvents)
         } header: {
           Text("ジャーナル")
         } footer: {

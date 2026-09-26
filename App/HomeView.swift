@@ -426,24 +426,43 @@ struct HomeView: View {
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
         ForEach(events) { event in
-          HStack(spacing: 6) {
-            if let color = event.calendarColor {
-              Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
+          if let meetingID = event.meetingID {
+            NavigationLink(value: LibraryRoute.meeting(meetingID)) {
+              allDayChip(event)
             }
-            Text(event.title)
-              .font(.caption.weight(.medium))
+            .buttonStyle(.plain)
+          } else {
+            Button {
+              openCalendarEvent = event
+            } label: {
+              allDayChip(event)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("予定の詳細を開きます")
           }
-          .padding(.horizontal, 10)
-          .padding(.vertical, 6)
-          .background(Color.primary.opacity(0.06), in: Capsule())
-          .accessibilityElement(children: .ignore)
-          .accessibilityLabel("終日の予定、\(event.title)、\(event.calendarTitle)")
         }
       }
     }
     .scrollIndicators(.hidden)
+  }
+
+  private func allDayChip(_ event: JournalCalendarEvent) -> some View {
+    HStack(spacing: 6) {
+      if let color = event.calendarColor {
+        Circle()
+          .fill(color)
+          .frame(width: 8, height: 8)
+      }
+      Text(event.title)
+        .font(.caption.weight(.medium))
+        .foregroundStyle(.primary)
+    }
+    .padding(.horizontal, 10)
+    .padding(.vertical, 6)
+    .background(Color.primary.opacity(0.06), in: Capsule())
+    .contentShape(Capsule())
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("終日の予定、\(event.title)、\(event.calendarTitle)")
   }
 
   private func timeText(_ date: Date) -> some View {
