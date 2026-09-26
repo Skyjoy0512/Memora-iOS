@@ -280,9 +280,9 @@
 
 | ID | 状態 | メモ |
 | --- | --- | --- |
-| N01 | 実装済み・未検証 | RootTab を3つに、SearchView のタブを削除、askAI 参照を置換、サイドバーに Ask AI 行 |
-| N02 | 実装済み・未検証 | ProminentTabBar に secondaryAction（✦）。fullScreenCover で SearchView。ツールバー再編・下部 composer・空なら自動フォーカス |
-| N03 | 実装済み・未検証 | composer は会議詳細のみ。一覧タブには出さない |
+| N01 | 一部取り消し | RootTab を3つにした部分は取り消し、Ask AI を4つ目のタブへ（70b63b1）。タブのモーフィング確認は未実施 |
+| N02 | 一部取り消し | ✦（secondaryAction）と全画面表示は取り消し（70b63b1）。サイドバー行も削除 |
+| N03 | 一部取り消し | composer を会議詳細だけにした部分は取り消し、一覧3タブにも戻した（f65a82b）。Ask AI タブの入力欄は TB03 で扱う |
 | N04 | 実装済み・未検証 | ContextualCreateAction を「＋」の上に。タスク/ジャーナル右上の＋を削除。CaptureMenuPopover を2グループ化。Omi ボタンは条件表示。**UX06 完了** |
 | N05 | 実装済み・未検証 | 最大文字サイズでタブを記号のみに。下部の高さは bottomControlsHeight に反映 |
 | N06 | 実装済み（ドキュメント） | DESIGN.md・AGENTS.md・本表を更新 |
