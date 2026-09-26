@@ -13,11 +13,9 @@ struct SettingsLabel: View {
   }
 
   var body: some View {
-    Label {
-      Text(title)
-    } icon: {
+    HStack(spacing: 12) {
       SettingsIcon(icon: icon, color: color)
+      Text(title)
     }
-    .labelStyle(.titleAndIcon)
   }
 }

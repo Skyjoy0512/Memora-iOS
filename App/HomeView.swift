@@ -113,7 +113,7 @@ struct HomeView: View {
       .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "記録を検索")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
-          Button("メニュー", icon: .line3Horizontal) {
+          ToolbarIconButton("メニュー", icon: .line3Horizontal) {
             onOpenSidebar()
           }
           .labelStyle(.iconOnly)
@@ -133,7 +133,7 @@ struct HomeView: View {
 
         // The create action is the rightmost item, matching the other tabs.
         ToolbarItem(placement: .primaryAction) {
-          Button("記録を追加", icon: .squareAndPencil) {
+          ToolbarIconButton("記録を追加", icon: .squareAndPencil) {
             model.isLifeLogCreationPresented = true
           }
           .labelStyle(.iconOnly)
@@ -401,4 +401,3 @@ struct HomeView: View {
     return day.formatted(date: .abbreviated, time: .omitted)
   }
 }
-

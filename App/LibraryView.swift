@@ -54,7 +54,7 @@ struct LibraryView: View {
           if isSelectionMode {
             ToolbarIconButton("キャンセル", icon: .xmark) { endSelection() }
           } else {
-            Button("メニュー", icon: .line3Horizontal) {
+            ToolbarIconButton("メニュー", icon: .line3Horizontal) {
               onOpenSidebar()
             }
             .labelStyle(.iconOnly)
@@ -95,7 +95,7 @@ struct LibraryView: View {
         // The create action is the rightmost item, matching the other tabs.
         if model.fileSection == .projects, !isSelectionMode {
           ToolbarItem(placement: .primaryAction) {
-            Button("プロジェクトを作成", icon: .folderBadgePlus) {
+            ToolbarIconButton("プロジェクトを作成", icon: .folderBadgePlus) {
               model.isFileCreationPresented = true
             }
             .labelStyle(.iconOnly)

@@ -7,7 +7,10 @@ import UIKit
 
 extension Image {
   init(icon: MemoraIcon) {
-    self.init(icon.assetName)
+    // Resolve custom symbol assets before handing them to SwiftUI's control
+    // labels, which can otherwise reinterpret a named image in native chrome.
+    self.init(uiImage: UIImage(icon: icon) ?? UIImage())
+    self = renderingMode(.template)
   }
 }
 
@@ -19,12 +22,20 @@ extension UIImage {
 
 extension Label where Title == Text, Icon == Image {
   init(_ titleKey: LocalizedStringKey, icon: MemoraIcon) {
-    self.init(titleKey, image: icon.assetName)
+    self.init {
+      Text(titleKey)
+    } icon: {
+      Image(icon: icon)
+    }
   }
 
   @_disfavoredOverload
   init<S: StringProtocol>(_ title: S, icon: MemoraIcon) {
-    self.init(title, image: icon.assetName)
+    self.init {
+      Text(title)
+    } icon: {
+      Image(icon: icon)
+    }
   }
 }
 

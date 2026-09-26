@@ -60,17 +60,17 @@ struct SearchView: View {
         }
 
         ToolbarItemGroup(placement: .topBarTrailing) {
-          Button("検索", icon: .magnifyingglass) {
+          ToolbarIconButton("検索", icon: .magnifyingglass) {
             isSearchSheetPresented = true
           }
           .labelStyle(.iconOnly)
 
-          Button("履歴", icon: .clockArrowCirclepath) {
+          ToolbarIconButton("履歴", icon: .clockArrowCirclepath) {
             isHistoryPresented = true
           }
           .labelStyle(.iconOnly)
 
-          Button("新しいチャット", icon: .squareAndPencil) {
+          ToolbarIconButton("新しいチャット", icon: .squareAndPencil) {
             model.startNewAIChat()
           }
           .labelStyle(.iconOnly)

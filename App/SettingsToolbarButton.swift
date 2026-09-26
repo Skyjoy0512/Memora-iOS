@@ -5,10 +5,9 @@ struct SettingsToolbarButton: View {
   @Environment(MemoraModel.self) private var model
 
   var body: some View {
-    Button("設定", icon: .gearshape) {
+    ToolbarIconButton("設定", icon: .gearshape) {
       model.isSettingsPresented = true
     }
-    .labelStyle(.iconOnly)
     .accessibilityLabel("設定")
     .accessibilityHint("プロフィールと設定を開きます")
   }

@@ -79,7 +79,7 @@ struct TasksView: View {
 
         // The create action is the rightmost item, matching the other tabs.
         ToolbarItem(placement: .primaryAction) {
-          Button("タスクを追加", icon: .plus) {
+          ToolbarIconButton("タスクを追加", icon: .plus) {
             model.isAddTaskPresented = true
           }
           .labelStyle(.iconOnly)
