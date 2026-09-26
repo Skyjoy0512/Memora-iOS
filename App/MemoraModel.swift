@@ -2057,6 +2057,44 @@ final class MemoraModel {
     )
   }
 
+  /// Moves several journal entries to the trash in one write, with one undo, so
+  /// deleting a whole journey can be taken back as a whole.
+  func deleteLifeLogEntries(_ ids: Set<UUID>) {
+    guard !isStoreProtected else {
+      blockProtectedChanges()
+      return
+    }
+    guard !ids.isEmpty else { return }
+
+    let removed = lifeLogEntries.filter { ids.contains($0.id) }
+    guard !removed.isEmpty else { return }
+
+    var candidateEntries = lifeLogEntries
+    var candidateTrash = trashedLifeLogEntries
+    candidateEntries.removeAll { ids.contains($0.id) }
+    candidateTrash.insert(contentsOf: removed.map { TrashedLifeLogEntry(entry: $0, deletedAt: .now) }, at: 0)
+
+    let stored = persistBatch {
+      [
+        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
+        (key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidateTrash))
+      ]
+    }
+    guard stored else { return }
+
+    lifeLogEntries = candidateEntries
+    trashedLifeLogEntries = candidateTrash
+
+    let trashIDs = candidateTrash.prefix(removed.count).map(\.id)
+    scheduleUndo(
+      UndoAction(message: "\(removed.count)件の記録を削除しました") { [weak self] in
+        for id in trashIDs {
+          self?.restoreTrashedLifeLogEntry(id)
+        }
+      } finalize: {}
+    )
+  }
+
   func restoreTrashedLifeLogEntry(_ id: UUID) {
     guard !isStoreProtected else {
       blockProtectedChanges()
