@@ -55,7 +55,11 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   /// only merge while the button is moving past the "＋".
   private var glassSpacing: CGFloat { 18 }
   private var splitGap: CGFloat { 21 }
-  private var splitDistance: CGFloat { 55 + splitGap }
+  /// The prominent button's height plus the gap, so the create button rests just
+  /// above it.
+  private var splitDistance: CGFloat { prominentButtonHeight + splitGap }
+  private var prominentButtonHeight: CGFloat { 60 }
+  private var prominentButtonWidth: CGFloat { 48 }
 
   private var isContextualShown: Bool { contextualAction != nil }
   private var contextualSymbol: String { contextualAction?.symbol ?? prominentSymbol }
@@ -65,11 +69,11 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     Button {
       contextualAction?.action()
     } label: {
-      glassChrome(id: "contextual") {
+      glassChrome(id: "contextual", circular: true) {
         Image(systemName: contextualSymbol)
-          .font(.title)
+          .font(.title3)
           .scaleEffect(0.95)
-          .frame(width: 44, height: 55)
+          .frame(width: prominentButtonWidth, height: prominentButtonWidth)
           .opacity(isContextualShown ? 1 : 0)
           .contentTransition(.symbolEffect(.replace))
           .accessibilityLabel(contextualAction?.title ?? "")
@@ -84,11 +88,28 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   /// Puts the Liquid Glass chrome on a button's label, with the identifier the
   /// container uses to merge and split the shapes.
   @ViewBuilder
-  private func glassChrome<Content: View>(id: String, @ViewBuilder content: () -> Content) -> some View {
+  private func glassChrome<Content: View>(
+    id: String,
+    circular: Bool = false,
+    @ViewBuilder content: () -> Content
+  ) -> some View {
     if #available(iOS 26.0, *) {
+      if circular {
+        content()
+          .glassEffect(.regular.interactive(), in: .circle)
+          .glassEffectID(id, in: glassNamespace)
+      } else {
+        content()
+          .glassEffect(.regular.interactive(), in: .capsule)
+          .glassEffectID(id, in: glassNamespace)
+      }
+    } else if circular {
       content()
-        .glassEffect(.regular.interactive(), in: .capsule)
-        .glassEffectID(id, in: glassNamespace)
+        .foregroundStyle(.primary)
+        .background(.regularMaterial, in: Circle())
+        .overlay {
+          Circle().stroke(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5)
+        }
     } else {
       content()
         .foregroundStyle(.primary)
@@ -146,7 +167,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     Image(systemName: prominentSymbol)
       .font(.title)
       .scaleEffect(0.95)
-      .frame(width: 44, height: 55)
+      .frame(width: prominentButtonWidth, height: prominentButtonHeight)
       .accessibilityLabel("作成メニューを開く")
   }
 }
@@ -219,7 +240,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     uiView: UISegmentedControl,
     context: Context
   ) -> CGSize? {
-    CGSize(width: proposal.replacingUnspecifiedDimensions().width, height: 66)
+    CGSize(width: proposal.replacingUnspecifiedDimensions().width, height: 52)
   }
 
   func makeCoordinator() -> Coordinator {
@@ -244,12 +265,12 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   }
 
   private func generatedImage(for item: Item) -> UIImage? {
-    let label = VStack(spacing: 4) {
+    let label = VStack(spacing: 3) {
       Image(systemName: item.symbol)
-        .font(.title3)
+        .font(.subheadline)
         .fontWeight(.regular)
         .symbolVariant(.fill)
-        .frame(height: 25)
+        .frame(height: 19)
 
       if showsTitles {
         Text(item.title)

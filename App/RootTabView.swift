@@ -142,6 +142,9 @@ struct RootTabView: View {
           isComposing: $isComposing,
           keepsFocusAfterSubmit: model.selectedTab == .askAI
         )
+        // Kept narrower on the right so it never runs under the create button
+        // that sits above the "＋".
+        .padding(.trailing, 60)
         // Note: no `.id(composerScope)` — recreating the field would throw away
         // what someone had already typed when the scope changed.
         // A glass-like entrance: it blurs and rises into place instead of
