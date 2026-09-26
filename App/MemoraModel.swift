@@ -15,6 +15,8 @@ final class MemoraModel {
   var isSettingsPresented = false
   /// Opened by the contextual create button on the tasks tab.
   var isAddTaskPresented = false
+  /// A task to open for editing after its reminder was tapped.
+  var pendingTaskEditID: UUID?
   /// Opened by the contextual create button on the journal tab.
   var isLifeLogCreationPresented = false
   /// Shown when a `memora://` link points at a record this device does not
@@ -86,6 +88,7 @@ final class MemoraModel {
   @ObservationIgnored private var meetingSearchTexts: [UUID: String] = [:]
   @ObservationIgnored private var dayChangeObservers: [NSObjectProtocol] = []
   @ObservationIgnored private var inboxObserver: NSObjectProtocol?
+  @ObservationIgnored private var taskReminderObserver: NSObjectProtocol?
   /// Audio files handed to the app while a recording owns the microphone.
   @ObservationIgnored private var pendingImportURLs: [URL] = []
   @ObservationIgnored private var spaceIndex = IdentifiableIndex<MemoraSpace>()
@@ -452,6 +455,9 @@ final class MemoraModel {
     // Automatic records the logger wrote while no model existed are brought in.
     importAutoLifeLogInbox()
 
+    // Any reminders that changed while the app was away are brought up to date.
+    TaskReminderScheduler.refreshAll(tasks)
+
     // A finished job clears its flag, and the flag is what the next launch
     // reads to decide whether a job was interrupted.
     processing.onActiveIDsChanged = { [weak self] in
@@ -474,6 +480,19 @@ final class MemoraModel {
       queue: .main
     ) { [weak self] _ in
       Task { @MainActor in self?.importAutoLifeLogInbox() }
+    }
+
+    // A tapped task reminder opens the tasks tab with that task's editor.
+    taskReminderObserver = NotificationCenter.default.addObserver(
+      forName: .taskReminderTapped,
+      object: nil,
+      queue: .main
+    ) { [weak self] note in
+      guard let id = note.userInfo?["taskID"] as? UUID else { return }
+      Task { @MainActor in
+        self?.selectedTab = .tasks
+        self?.pendingTaskEditID = id
+      }
     }
 
     // A day or time zone change moves records between journal days.
@@ -1441,7 +1460,9 @@ final class MemoraModel {
   func toggleTask(_ id: UUID) {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     tasks[index].isCompleted.toggle()
+    tasks[index].completedAt = tasks[index].isCompleted ? .now : nil
     persistTasks()
+    TaskReminderScheduler.refresh(tasks[index])
   }
 
   func updateTask(
@@ -1449,7 +1470,8 @@ final class MemoraModel {
     title: String,
     assignee: String,
     dueDate: Date?,
-    meetingID: UUID?
+    meetingID: UUID?,
+    remindsAtDue: Bool? = nil
   ) {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1460,13 +1482,27 @@ final class MemoraModel {
     tasks[index].assignee = trimmedAssignee.isEmpty ? nil : trimmedAssignee
     tasks[index].dueDate = dueDate
     tasks[index].meetingID = meetingID
+    if let remindsAtDue {
+      tasks[index].remindsAtDue = remindsAtDue
+    }
     persistTasks()
+    // A due-date change or a completion moves or clears the reminder.
+    TaskReminderScheduler.refresh(tasks[index])
+  }
+
+  /// Changes just the due date, from the task list's long-press menu.
+  func setTaskDueDate(_ id: UUID, to date: Date?) {
+    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+    tasks[index].dueDate = date
+    persistTasks()
+    TaskReminderScheduler.refresh(tasks[index])
   }
 
   func deleteTask(_ id: UUID) {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     let removed = tasks.remove(at: index)
     persistTasks()
+    TaskReminderScheduler.cancel(taskID: id)
     scheduleUndo(
       UndoAction(message: "「\(removed.title)」を削除しました") { [weak self] in
         self?.restoreTask(removed, at: index)
@@ -1479,6 +1515,7 @@ final class MemoraModel {
     let position = min(index, tasks.count)
     tasks.insert(task, at: position)
     persistTasks()
+    TaskReminderScheduler.refresh(task)
   }
 
   /// Shows the offer for one deletion, finalizing whatever offer it replaces.
@@ -1516,22 +1553,28 @@ final class MemoraModel {
     action.finalize()
   }
 
-  func addTask(title: String, assignee: String, dueDate: Date?) {
+  func addTask(
+    title: String,
+    assignee: String,
+    dueDate: Date?,
+    meetingID: UUID? = nil,
+    remindsAtDue: Bool = false
+  ) {
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return }
     let trimmedAssignee = assignee.trimmingCharacters(in: .whitespacesAndNewlines)
-    tasks.insert(
-      MemoraTask(
-        id: UUID(),
-        title: trimmedTitle,
-        meetingID: nil,
-        assignee: trimmedAssignee.isEmpty ? nil : trimmedAssignee,
-        dueDate: dueDate,
-        isCompleted: false
-      ),
-      at: 0
+    let task = MemoraTask(
+      id: UUID(),
+      title: trimmedTitle,
+      meetingID: meetingID,
+      assignee: trimmedAssignee.isEmpty ? nil : trimmedAssignee,
+      dueDate: dueDate,
+      isCompleted: false,
+      remindsAtDue: remindsAtDue
     )
+    tasks.insert(task, at: 0)
     persistTasks()
+    TaskReminderScheduler.refresh(task)
   }
 
   func addSpace(name: String) {

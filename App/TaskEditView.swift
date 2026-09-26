@@ -1,10 +1,12 @@
 import SwiftUI
+import UIKit
 
 /// Edits one task: its title, who owns it, when it is due, and which record it
 /// came from. Tasks can also be removed here.
 struct TaskEditView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.openURL) private var openURL
   var task: MemoraTask
 
   @State private var title: String
@@ -12,6 +14,8 @@ struct TaskEditView: View {
   @State private var hasDueDate: Bool
   @State private var dueDate: Date
   @State private var meetingID: UUID?
+  @State private var remindsAtDue: Bool
+  @State private var reminderDenied = false
   @State private var isDeleting = false
 
   init(task: MemoraTask) {
@@ -21,6 +25,7 @@ struct TaskEditView: View {
     _hasDueDate = State(initialValue: task.dueDate != nil)
     _dueDate = State(initialValue: task.dueDate ?? Date.now.addingTimeInterval(86_400))
     _meetingID = State(initialValue: task.meetingID)
+    _remindsAtDue = State(initialValue: task.remindsAtDue)
   }
 
   var body: some View {
@@ -35,11 +40,22 @@ struct TaskEditView: View {
           Toggle("期限を設定", isOn: $hasDueDate)
           if hasDueDate {
             DatePicker("期限", selection: $dueDate, displayedComponents: .date)
+            Toggle("期限に通知", isOn: reminderBinding)
+            if reminderDenied {
+              Text("通知が許可されていません。設定から通知を許可してください。")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+              Button("設定を開く") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                  openURL(url)
+                }
+              }
+            }
           }
         } header: {
           Text("期限")
         } footer: {
-          Text(hasDueDate ? "期限を過ぎた未完了のタスクは期限切れとして表示します。" : "期限なしのタスクとして扱います。")
+          Text(hasDueDate ? "期限を過ぎた未完了のタスクは期限切れとして表示します。通知は期限日の9:00に届きます。" : "期限なしのタスクとして扱います。")
         }
 
         Section("元の会議") {
@@ -71,7 +87,8 @@ struct TaskEditView: View {
               title: title,
               assignee: assignee,
               dueDate: hasDueDate ? dueDate : nil,
-              meetingID: meetingID
+              meetingID: meetingID,
+              remindsAtDue: hasDueDate && remindsAtDue
             )
             dismiss()
           }
@@ -85,7 +102,30 @@ struct TaskEditView: View {
         }
         Button("キャンセル", role: .cancel) {}
       }
+      .onChange(of: hasDueDate) { _, isOn in
+        if !isOn { remindsAtDue = false }
+      }
     }
     .presentationDetents([.medium, .large])
+  }
+
+  private var reminderBinding: Binding<Bool> {
+    Binding {
+      remindsAtDue
+    } set: { enabled in
+      guard enabled else {
+        remindsAtDue = false
+        return
+      }
+      Task {
+        if await TaskReminderScheduler.requestAuthorization() {
+          remindsAtDue = true
+          reminderDenied = false
+        } else {
+          remindsAtDue = false
+          reminderDenied = true
+        }
+      }
+    }
   }
 }
