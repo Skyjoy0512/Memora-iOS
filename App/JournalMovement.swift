@@ -5,9 +5,9 @@ import Foundation
 struct JournalMovement: Identifiable, Hashable {
   var entries: [LifeLogEntry]
 
-  var id: String {
-    entries.map { $0.id.uuidString }.joined(separator: "-")
-  }
+  /// The first record's id, so adding a later station does not make the row look
+  /// like a different one and replay its entrance.
+  var id: String { entries.first?.id.uuidString ?? "movement" }
 
   var start: Date { entries.first?.createdAt ?? .now }
   var end: Date { entries.last?.createdAt ?? start }
