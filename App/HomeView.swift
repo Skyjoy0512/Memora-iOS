@@ -273,12 +273,22 @@ struct HomeView: View {
       meetings: model.meetings
     )
 
-    if !timeline.allDayEvents.isEmpty {
-      allDayEventChips(timeline.allDayEvents)
-    }
+    VStack(alignment: .leading, spacing: 10) {
+      // The day heading the list had before, with the rows grouped under it and
+      // the all-day events right below it.
+      Text(dayLabel(for: selectedDate))
+        .font(.title2.bold())
+        .memoraTextReveal()
 
-    ForEach(timeline.items) { item in
-      timelineRow(item)
+      if !timeline.allDayEvents.isEmpty {
+        allDayEventChips(timeline.allDayEvents)
+      }
+
+      LazyVStack(spacing: 0) {
+        ForEach(timeline.items) { item in
+          timelineRow(item)
+        }
+      }
     }
   }
 
@@ -288,11 +298,11 @@ struct HomeView: View {
     case .entry(let entry):
       entryView(entry)
     case .calendarEvent(let event):
-      calendarEventView(event)
+      JournalCalendarEventRow(day: selectedDate, event: event) { openCalendarEvent = $0 }
     case .movement(let movement):
-      movementView(movement)
+      JournalMovementRow(movement: movement) { openMovement = $0 }
     case .nowMarker:
-      nowMarkerRow
+      nowMarker
     }
   }
 
@@ -313,107 +323,17 @@ struct HomeView: View {
     }
   }
 
-  @ViewBuilder
-  private func calendarEventView(_ event: JournalCalendarEvent) -> some View {
-    if let meetingID = event.meetingID {
-      NavigationLink(value: LibraryRoute.meeting(meetingID)) {
-        calendarEventLabel(event)
-      }
-      .buttonStyle(.plain)
-    } else {
-      Button {
-        openCalendarEvent = event
-      } label: {
-        calendarEventLabel(event)
-      }
-      .buttonStyle(.plain)
-      .accessibilityHint("予定の詳細を開きます")
-    }
-  }
-
-  private func calendarEventLabel(_ event: JournalCalendarEvent) -> some View {
-    HStack(alignment: .top, spacing: 12) {
-      Text(eventTimeText(event))
-        .font(.caption.monospacedDigit().weight(.medium))
-        .foregroundStyle(.secondary)
-        .frame(width: 46, alignment: .leading)
-
-      VStack(alignment: .leading, spacing: 2) {
-        Text(event.title)
-          .font(.headline)
-        HStack(spacing: 4) {
-          if let color = event.calendarColor {
-            Circle()
-              .fill(color)
-              .frame(width: 8, height: 8)
-          }
-          Text(event.calendarTitle)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-      }
-
-      Spacer(minLength: 0)
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(
-      "\(eventTimeText(event))、予定、\(event.title)、\(event.calendarTitle)"
-    )
-  }
-
-  /// An event still running from the day before shows only its end, so it reads
-  /// as a continuation rather than a fresh start.
-  private func eventTimeText(_ event: JournalCalendarEvent) -> String {
-    let dayStart = Calendar.current.startOfDay(for: selectedDate)
-    let end = event.end.formatted(date: .omitted, time: .shortened)
-    if event.start < dayStart {
-      return "〜\(end)"
-    }
-    let start = event.start.formatted(date: .omitted, time: .shortened)
-    return "\(start)〜\(end)"
-  }
-
-  private func movementView(_ movement: JournalMovement) -> some View {
-    let stations = movement.entries.map { JournalMovementSheet.stationName(from: $0.title) }
-
-    return Button {
-      openMovement = movement
-    } label: {
-      HStack(alignment: .top, spacing: 12) {
-        timeText(movement.start)
-
-        VStack(alignment: .leading, spacing: 2) {
-          Text(stations.joined(separator: " → "))
-            .font(.headline)
-            .lineLimit(2)
-          Text(
-            "\(movement.start.formatted(date: .omitted, time: .shortened))〜\(movement.end.formatted(date: .omitted, time: .shortened))"
-          )
-          .font(.caption)
-          .foregroundStyle(.secondary)
-        }
-
-        Spacer(minLength: 0)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel("移動、\(stations.joined(separator: "、"))")
-    .accessibilityHint("各駅の時刻を開きます")
-  }
-
-  private var nowMarkerRow: some View {
+  /// The "now" line, in the primary colour (red stays for recording only).
+  private var nowMarker: some View {
     HStack(spacing: 8) {
       Text("いま")
         .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
+        .foregroundStyle(.primary)
       Rectangle()
-        .fill(Color.primary.opacity(0.2))
+        .fill(Color.primary.opacity(0.25))
         .frame(height: 1)
     }
+    .padding(.vertical, 6)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("いま")
   }
@@ -459,13 +379,6 @@ struct HomeView: View {
     .contentShape(Capsule())
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("終日の予定、\(event.title)、\(event.calendarTitle)")
-  }
-
-  private func timeText(_ date: Date) -> some View {
-    Text(date.formatted(date: .omitted, time: .shortened))
-      .font(.caption.monospacedDigit().weight(.medium))
-      .foregroundStyle(.secondary)
-      .frame(width: 46, alignment: .leading)
   }
 
   private func dayGroups(of entries: [LifeLogEntry]) -> [LifeLogDayGroup] {
