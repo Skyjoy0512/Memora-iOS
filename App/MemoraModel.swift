@@ -2643,7 +2643,7 @@ final class MemoraModel {
       pendingImportNotice = "録音が終わったら取り込みます。"
       return
     }
-    await importAudio(from: url)
+    await importAndCleanUp(url)
   }
 
   /// Takes in the audio files that arrived during a recording, in order.
@@ -2652,8 +2652,24 @@ final class MemoraModel {
     let urls = pendingImportURLs
     pendingImportURLs = []
     for url in urls {
-      await importAudio(from: url)
+      await importAndCleanUp(url)
     }
+  }
+
+  /// Imports a file and then removes the copy iOS made in the app's Inbox.
+  /// A file the person picked themselves does not sit there and is left alone.
+  private func importAndCleanUp(_ url: URL) async {
+    await importAudio(from: url)
+    removeInboxCopyIfNeeded(url)
+  }
+
+  private func removeInboxCopyIfNeeded(_ url: URL) {
+    let inbox = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("Inbox", isDirectory: true)
+      .standardizedFileURL.path
+    let path = url.standardizedFileURL.path
+    guard path.hasPrefix(inbox + "/") else { return }
+    try? FileManager.default.removeItem(at: url)
   }
 
   private static func isAudioFile(_ url: URL) -> Bool {
