@@ -217,7 +217,11 @@ struct AIQuestionView: View {
               .accessibilityHint("開いている記録のこの位置から再生します")
             } else {
               NavigationLink {
-                MeetingDetailView(meetingID: source.meetingID, initialPlaybackStart: excerpt.start)
+                MeetingDetailView(
+                  meetingID: source.meetingID,
+                  initialPlaybackStart: excerpt.start,
+                  showsLocalPlaybackBar: true
+                )
               } label: {
                 excerptRow(excerpt)
               }

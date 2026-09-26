@@ -10,6 +10,10 @@ struct MeetingDetailView: View {
   /// When set, the transcript opens and plays from here — used when an AI answer's
   /// source line is tapped.
   var initialPlaybackStart: TimeInterval?
+  /// True when this detail is opened inside a sheet (from an AI answer), where
+  /// the root transport is hidden behind it. The bar is then shown at this
+  /// screen's own bottom, where nothing else floats.
+  var showsLocalPlaybackBar = false
   @State private var selectedSection = MeetingDetailSection.summary
   @State private var isRenaming = false
   @State private var isDeleting = false
@@ -25,6 +29,8 @@ struct MeetingDetailView: View {
   @State private var player = AudioPlayerService()
   /// The line the initial time points at, highlighted even without audio.
   @State private var focusedSegmentID: UUID?
+  /// Set when this sheet-opened detail has begun playing, so its local bar stays.
+  @State private var localPlaybackStarted = false
   /// The initial time is applied once; a later `onAppear` must not seek again.
   @State private var didApplyInitialPlayback = false
 
@@ -240,9 +246,24 @@ struct MeetingDetailView: View {
         .sensoryFeedback(.selection, trigger: selectedSection)
         .onChange(of: player.isPlaying) { _, playing in
           // The transport is handed to the floating controls once playback has
-          // begun, and stays for the rest of the visit.
-          if playing { model.activePlayback = player }
+          // begun, and stays for the rest of the visit. Inside a sheet those
+          // controls are hidden behind it, so the bar is drawn here instead.
+          guard playing else { return }
+          if showsLocalPlaybackBar {
+            localPlaybackStarted = true
+          } else {
+            model.activePlayback = player
+          }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+          if showsLocalPlaybackBar, meeting.audioURL != nil, localPlaybackStarted, !model.isInlineEditing {
+            MeetingPlaybackBar(player: player)
+              .padding(.horizontal, 12)
+              .padding(.bottom, 8)
+              .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+          }
+        }
+        .animation(reduceMotion ? nil : MemoraMotion.control, value: localPlaybackStarted)
       } else {
         ContentUnavailableView("会議が見つかりません", systemImage: "doc.questionmark")
       }
