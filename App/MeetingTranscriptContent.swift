@@ -10,6 +10,12 @@ struct MeetingTranscriptContent: View {
   @State private var editingSpeakerSegment: TranscriptSegment?
 
   var body: some View {
+    // Each of these scans the transcript. Read once here rather than per line,
+    // which made a long transcript quadratic on every playback tick.
+    let showsSpeaker = meeting.hasSpeakerSeparation
+    let activeSegmentID = self.activeSegmentID
+    let seekAction = self.seekAction
+
     VStack(alignment: .leading, spacing: 22) {
       VStack(alignment: .leading, spacing: 6) {
         Text("文字起こし")
@@ -18,7 +24,7 @@ struct MeetingTranscriptContent: View {
 
         if !meeting.transcript.isEmpty {
           Text(
-            meeting.hasSpeakerSeparation
+            showsSpeaker
               ? "本文はタップすると修正できます。"
               : "この文字起こしは話者を分けていません。本文はタップすると修正できます。"
           )
@@ -40,11 +46,11 @@ struct MeetingTranscriptContent: View {
             TranscriptSegmentText(
               meetingID: meeting.id,
               segment: segment,
-              showsSpeaker: meeting.hasSpeakerSeparation,
+              showsSpeaker: showsSpeaker,
               timeWidth: 42,
               isActive: segment.id == activeSegmentID || segment.id == focusedSegmentID,
               onSeek: seekAction,
-              onEditSpeaker: meeting.hasSpeakerSeparation
+              onEditSpeaker: showsSpeaker
                 ? { editingSpeakerSegment = segment }
                 : nil
             )

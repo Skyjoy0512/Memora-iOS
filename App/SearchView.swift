@@ -246,7 +246,12 @@ struct SearchView: View {
   }
 
   private var resultsView: some View {
-    List {
+    // Each search walks every record's text, so it runs once per redraw and
+    // the list, the animation keys and the empty state share the result.
+    let matchingMeetings = model.searchMeetings(matching: query, filters: filters)
+    let matchingTasks = model.searchTasks(matching: query, filters: filters)
+
+    return List {
       Section {
         Button {
           isSearchSheetPresented = false
@@ -301,14 +306,6 @@ struct SearchView: View {
         }
       }
     }
-  }
-
-  private var matchingMeetings: [Meeting] {
-    model.searchMeetings(matching: query, filters: filters)
-  }
-
-  private var matchingTasks: [MemoraTask] {
-    model.searchTasks(matching: query, filters: filters)
   }
 
   /// Narrows the results by period, person, project and state. Kept above the
@@ -383,7 +380,7 @@ struct SearchView: View {
       }
     } label: {
       filterChip(
-        title: model.spaces.first { $0.id == filters.spaceID }?.name ?? "プロジェクト",
+        title: filters.spaceID.flatMap { model.space(id: $0)?.name } ?? "プロジェクト",
         symbol: .folder,
         isActive: filters.spaceID != nil
       )

@@ -8,6 +8,9 @@ struct TranscriptView: View {
   var body: some View {
     Group {
       if let meeting = model.meeting(id: meetingID) {
+        // Scans the transcript, so it is read once rather than for every line.
+        let showsSpeaker = meeting.hasSpeakerSeparation
+
         ScrollViewReader { proxy in
           ScrollView {
             LazyVStack(alignment: .leading, spacing: 6) {
@@ -16,7 +19,7 @@ struct TranscriptView: View {
                   .font(.title.bold())
                 if !meeting.transcript.isEmpty {
                   Text(
-                    meeting.hasSpeakerSeparation
+                    showsSpeaker
                       ? "話者名と本文はタップして修正できます。"
                       : "この文字起こしは話者を分けていません。本文はタップすると修正できます。"
                   )
@@ -40,7 +43,7 @@ struct TranscriptView: View {
                   TranscriptSegmentText(
                     meetingID: meeting.id,
                     segment: segment,
-                    showsSpeaker: meeting.hasSpeakerSeparation,
+                    showsSpeaker: showsSpeaker,
                     timeWidth: 62,
                     onEditSpeaker: { editingSegment = segment }
                   )
