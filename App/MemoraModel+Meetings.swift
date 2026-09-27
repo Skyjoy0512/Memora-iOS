@@ -80,4 +80,12 @@ extension MemoraModel {
     change(&meetings[index])
     return await persistNowAsync(meetings, forKey: StorageKey.meetings)
   }
+
+  /// Changes a record in memory only, for passing state such as a progress
+  /// label. Writing every record (transcripts included) for each tick is what
+  /// made a streaming summary slow the app down; the finished result is saved.
+  func updateMeetingTransiently(_ id: UUID, change: (inout Meeting) -> Void) {
+    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
+    change(&meetings[index])
+  }
 }

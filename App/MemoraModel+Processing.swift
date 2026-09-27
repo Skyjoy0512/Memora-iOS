@@ -79,7 +79,7 @@ extension MemoraModel {
       defer { background.end() }
       return await MeetingSummarizer.summarize(input, engine: engine, llm: llm) { step in
         guard let self, !Task.isCancelled else { return }
-        self.updateMeeting(id) { meeting in
+        self.updateMeetingTransiently(id) { meeting in
           if case .organizing = meeting.status {
             meeting.status = .organizing("\(choice.processingLabel)：\(step)")
           }

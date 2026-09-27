@@ -127,30 +127,47 @@ extension MemoraModel {
   /// and no transcript — only a label and a date.
   func addMeasurementRecords(_ count: Int) {
     let existing = meetings.filter { $0.title.hasPrefix(Self.measurementTitlePrefix) }.count
+    // Built aside and assigned once: inserting one by one rebuilt every derived
+    // index per record, which made the 1,000 case take minutes.
+    var added: [Meeting] = []
+    var addedTasks: [MemoraTask] = []
     for offset in 0..<count {
-      meetings.insert(
-        Meeting(
-          id: UUID(),
-          title: "\(Self.measurementTitlePrefix)\(existing + offset + 1)",
-          createdAt: .now.addingTimeInterval(-Double(offset) * 60),
-          duration: 60,
-          source: .importFile,
-          status: .ready,
-          summary: "",
-          keyPoints: [],
-          decisions: [],
-          openQuestions: [],
-          transcript: []
-        ),
-        at: 0
+      let meeting = Meeting(
+        id: UUID(),
+        title: "\(Self.measurementTitlePrefix)\(existing + offset + 1)",
+        createdAt: .now.addingTimeInterval(-Double(offset) * 60),
+        duration: 60,
+        source: .importFile,
+        status: .ready,
+        summary: "",
+        keyPoints: [],
+        decisions: [],
+        openQuestions: [],
+        transcript: []
       )
+      added.append(meeting)
+      // One task each, so a long task list can be measured too.
+      addedTasks.append(MemoraTask(
+        id: UUID(),
+        title: "計測用タスク \(existing + offset + 1)",
+        meetingID: meeting.id,
+        assignee: offset.isMultiple(of: 3) ? "Speaker 1" : nil,
+        dueDate: offset.isMultiple(of: 4) ? .now.addingTimeInterval(Double(offset % 14) * 86_400) : nil,
+        isCompleted: false
+      ))
     }
+    meetings.insert(contentsOf: added.reversed(), at: 0)
+    tasks.insert(contentsOf: addedTasks, at: 0)
     persistMeetings()
+    persistTasks()
   }
 
   func removeMeasurementRecords() {
-    meetings.removeAll { $0.title.hasPrefix(Self.measurementTitlePrefix) }
+    let removed = Set(meetings.filter { $0.title.hasPrefix(Self.measurementTitlePrefix) }.map(\.id))
+    meetings.removeAll { removed.contains($0.id) }
+    tasks.removeAll { $0.meetingID.map(removed.contains) ?? false }
     persistMeetings()
+    persistTasks()
   }
 #endif
 

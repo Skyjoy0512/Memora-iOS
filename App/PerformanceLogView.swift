@@ -85,7 +85,7 @@ struct PerformanceLogView: View {
         } header: {
           Text("検証データ")
         } footer: {
-          Text("音声・要約・文字起こしの無い、番号だけの記録です。計測が終わったら削除できます。")
+          Text("音声・要約・文字起こしの無い、番号だけの記録と、記録ごとに1件のタスクです。計測が終わったら削除できます。")
         }
 
         Section {

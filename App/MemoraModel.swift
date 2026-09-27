@@ -86,6 +86,10 @@ final class MemoraModel {
   private(set) var personMeetingCounts: [UUID: Int] = [:]
   /// Records tagged with each person, newest first.
   private(set) var meetingsByPerson: [UUID: [Meeting]] = [:]
+  /// Each record's title, for rows that only name their source record (a
+  /// task's). Reading this instead of the record keeps those rows from
+  /// redrawing whenever any record changes, such as a progress update.
+  private(set) var meetingTitles: [UUID: String] = [:]
   var aiHistory: [AIConversationEntry]
   /// People who can be tagged on recordings.
   var people: [Person] = [] {
@@ -584,6 +588,10 @@ final class MemoraModel {
     assignIfChanged(\.spaceAggregates, aggregates)
     assignIfChanged(\.personMeetingCounts, byPerson.mapValues(\.count))
     assignIfChanged(\.meetingsByPerson, byPerson)
+    assignIfChanged(
+      \.meetingTitles,
+      Dictionary(meetings.map { ($0.id, $0.title) }, uniquingKeysWith: { first, _ in first })
+    )
   }
 
   /// Groups the journal by day once, newest first.

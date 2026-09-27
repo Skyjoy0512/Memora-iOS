@@ -42,6 +42,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   a scroll-offset flag. Hiding and showing the bar from that state re-runs
   layout, which is read back as more scrolling and freezes the screen. The
   section switch belongs inside the scroll content so it scrolls away instead.
+- **Bottom bar hide on scroll** (`App/BottomBarScrollBehavior.swift`): only a
+  user-driven scroll phase may move the bar, and a callback where the content
+  size changed is layout, not scrolling (lists correct row heights as rows
+  appear). Near the end of a list and just after the bar moves, the state is
+  held. Dropping any of these brings back the loop where the bar and the list
+  push each other, the bar never returns on scrolling up, and long task lists
+  stop scrolling.
 - **Journal (Home)**: the tab's own `ScrollView`/`List` must stay the screen's
   primary scroll view, so the large title and search bar collapse the way the
   system expects.

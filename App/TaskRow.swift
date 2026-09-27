@@ -42,23 +42,23 @@ struct TaskRow: View {
               Text(assignee)
             }
             if let dueDate = task.dueDate {
-              let isOverdue = dueDate < .now && !task.isCompleted
+              let overdue = isOverdue(dueDate)
               if task.assignee != nil {
                 Text("·")
               }
-              if isOverdue {
+              if overdue {
                 Text("期限切れ")
               }
               Text(MemoraFormat.dueDate(dueDate))
-                .foregroundStyle(isOverdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                .foregroundStyle(overdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
             }
           }
           .font(.caption)
           .foregroundStyle(.secondary)
         }
 
-        if showsSource, let meetingID = task.meetingID, let meeting = model.meeting(id: meetingID) {
-          Text(meeting.title)
+        if showsSource, let title = sourceTitle {
+          Text(title)
             .font(.caption)
             .foregroundStyle(.primary)
             .lineLimit(1)
@@ -74,6 +74,19 @@ struct TaskRow: View {
     }
     .contentShape(Rectangle())
   }
+
+  /// The source record's title, read from the model's title map so the row does
+  /// not depend on the record itself.
+  private var sourceTitle: String? {
+    task.meetingID.flatMap { model.meetingTitles[$0] }
+  }
+
+  /// Overdue once the due day has passed. A task due today is not overdue
+  /// just because the time stored with its date (often midnight) went by.
+  private func isOverdue(_ dueDate: Date) -> Bool {
+    !task.isCompleted && dueDate < Calendar.current.startOfDay(for: .now)
+  }
+
   /// One sentence for VoiceOver, including the state the checkbox shows.
   private var accessibilityLabel: String {
     var parts = [task.title]
@@ -85,14 +98,14 @@ struct TaskRow: View {
         parts.append("担当 \(assignee)")
       }
       if let dueDate = task.dueDate {
-        if dueDate < .now && !task.isCompleted {
+        if isOverdue(dueDate) {
           parts.append("期限切れ")
         }
         parts.append(MemoraFormat.dueDate(dueDate))
       }
     }
-    if showsSource, let meetingID = task.meetingID, let meeting = model.meeting(id: meetingID) {
-      parts.append("元 \(meeting.displayTitle)")
+    if showsSource, let title = sourceTitle {
+      parts.append("元 \(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の記録" : title)")
     }
     return parts.joined(separator: "、")
   }
