@@ -1,19 +1,7 @@
 import SwiftUI
 import UIKit
 
-protocol ProminentTabItem: CaseIterable, Hashable {
-  var symbol: MemoraIcon { get }
-  var filledSymbol: MemoraIcon { get }
-  var title: String { get }
-}
-
 extension RootTab: ProminentTabItem {}
-
-/// One place for the height shared by the tab row, the "＋" button, and the AI
-/// input, so the bottom controls line up.
-enum MemoraBarMetrics {
-  static let height: CGFloat = 62
-}
 
 /// A floating tab bar whose destinations live in a segmented control, paired
 /// with a single prominent button that opens a popover.

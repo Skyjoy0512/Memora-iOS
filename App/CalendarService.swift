@@ -2,19 +2,6 @@ import EventKit
 import Foundation
 import SwiftUI
 
-struct UpcomingMeeting: Identifiable, Hashable {
-  var id: String
-  var title: String
-  var start: Date
-  var end: Date
-}
-
-enum CalendarAccess {
-  case unknown
-  case denied
-  case granted
-}
-
 /// Reads the next events from the calendar so Home can offer to record them.
 enum CalendarService {
   static var access: CalendarAccess {

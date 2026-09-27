@@ -1,37 +1,5 @@
 import Foundation
 
-/// How the files list is drawn. Persisted, so it survives a restart.
-enum FileListLayout: String, CaseIterable, Identifiable {
-  case card
-  case list
-
-  var id: Self { self }
-
-  var label: String {
-    switch self {
-    case .card: "カード"
-    case .list: "リスト"
-    }
-  }
-}
-
-/// The order the files list is shown in.
-enum FileListSort: String, CaseIterable, Identifiable {
-  case newest
-  case oldest
-  case longest
-
-  var id: Self { self }
-
-  var label: String {
-    switch self {
-    case .newest: "新しい順"
-    case .oldest: "古い順"
-    case .longest: "長い順"
-    }
-  }
-}
-
 /// A status filter for the files list.
 enum FileListFilter: String, CaseIterable, Identifiable {
   case all

@@ -1,0 +1,68 @@
+import SwiftUI
+
+/// How summaries and Ask AI answers are produced.
+enum AIEngine: String, CaseIterable, Identifiable {
+  case automatic
+  case foundation
+  case local
+  case cloud
+
+  var id: Self { self }
+
+  var label: String {
+    switch self {
+    case .automatic: "自動（おすすめ）"
+    case .foundation: "Apple Foundation Models"
+    case .local: "ローカルLLM"
+    case .cloud: "クラウド（BYOK）"
+    }
+  }
+
+  /// A short form for the composer chip, which has little room.
+  var shortLabel: String {
+    switch self {
+    case .automatic: "自動"
+    case .foundation: "端末内"
+    case .local: "ローカル"
+    case .cloud: "クラウド"
+    }
+  }
+
+  var symbol: MemoraIcon {
+    switch self {
+    case .automatic: .sparkles
+    case .foundation: .appleLogo
+    case .local: .cpu
+    case .cloud: .cloud
+    }
+  }
+
+  /// The settings tile color, one per engine.
+  var tint: Color {
+    switch self {
+    case .automatic: .purple
+    case .foundation: .gray
+    case .local: .teal
+    case .cloud: .blue
+    }
+  }
+
+  var detail: String {
+    switch self {
+    case .automatic:
+      "対応状況に合わせて、端末内を優先して選びます。"
+    case .foundation:
+      "iOS 26以降のFoundation Modelsで、端末内で整理します。"
+    case .local:
+      "ローカルLLMはモデルの同梱が必要で、この版では未接続です。"
+    case .cloud:
+      "APIキーを保存すると、選んだプロバイダーのAPIで回答します。"
+    }
+  }
+
+  var usesCloud: Bool { self == .cloud }
+
+  /// False for engines this build cannot run, so the choice is visible but not
+  /// selectable instead of failing after it is picked.
+  var isSelectable: Bool { self != .local }
+}

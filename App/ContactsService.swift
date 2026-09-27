@@ -1,11 +1,6 @@
 import Contacts
 import Foundation
 
-struct ContactSuggestion: Identifiable, Hashable {
-  var id: String
-  var name: String
-}
-
 /// Reads names from the address book so a recording can be tagged with the
 /// people who were there.
 enum ContactsService {
