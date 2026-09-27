@@ -24,6 +24,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   new tab instead of morphing across. Ask AI is the fourth tab (to the right of
   Tasks); do not move it back to a full-screen presentation or a bar
   `secondaryAction`.
+- **Create (＋) button**: it is a `.buttonStyle(.glass)` button whose label is the
+  `matchedTransitionSource`, opening `.popover` with
+  `.presentationCompactAdaptation(.popover)` and
+  `.navigationTransition(.zoom(sourceID:in:))`. That is the Liquid Glass morph
+  the owner asked for; do not replace it with an inline `glassEffectID` panel.
 - **Files screen top chrome**: do not drive the navigation bar's visibility from
   a scroll-offset flag. Hiding and showing the bar from that state re-runs
   layout, which is read back as more scrolling and freezes the screen. The
