@@ -49,12 +49,7 @@ struct CaptureSessionView: View {
           .accessibilityLabel(message)
       }
 
-      Picker("録音中の表示", selection: $section) {
-        ForEach(CaptureSection.allCases) { item in
-          Label(item.title, icon: item.symbol).tag(item)
-        }
-      }
-      .pickerStyle(.segmented)
+      GlassSegmentedPicker(items: CaptureSection.allCases, selection: $section, title: \.title)
       .padding(.horizontal, 20)
       .padding(.top, 18)
 

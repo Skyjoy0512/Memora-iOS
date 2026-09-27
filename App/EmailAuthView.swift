@@ -25,12 +25,7 @@ struct EmailAuthView: View {
   var body: some View {
     Form {
       Section {
-        Picker("操作", selection: $selectedMode) {
-          ForEach(Mode.allCases) { option in
-            Text(option.label).tag(option)
-          }
-        }
-        .pickerStyle(.segmented)
+        GlassSegmentedPicker(items: Mode.allCases, selection: $selectedMode, title: \.label)
         .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 10, trailing: 0))
         .listRowBackground(Color.clear)
       }

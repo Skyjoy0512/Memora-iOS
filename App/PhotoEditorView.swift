@@ -108,12 +108,7 @@ struct PhotoEditorView: View {
   private var controls: some View {
     VStack(spacing: 14) {
       if lockedAspect == nil {
-        Picker("比率", selection: $aspect) {
-          ForEach(PhotoAspect.allCases) { option in
-            Text(option.label).tag(option)
-          }
-        }
-        .pickerStyle(.segmented)
+        GlassSegmentedPicker(items: PhotoAspect.allCases, selection: $aspect, title: \.label)
       }
 
       HStack(spacing: 12) {

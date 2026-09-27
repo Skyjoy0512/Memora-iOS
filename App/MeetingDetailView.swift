@@ -59,12 +59,11 @@ struct MeetingDetailView: View {
 
               participantsRow(meeting)
 
-              Picker("会議の表示", selection: $selectedSection) {
-                ForEach(MeetingDetailSection.allCases) { section in
-                  Text(section.label).tag(section)
-                }
-              }
-              .pickerStyle(.segmented)
+              GlassSegmentedPicker(
+                items: MeetingDetailSection.allCases,
+                selection: $selectedSection,
+                title: \.label
+              )
 
               sectionContent(meeting)
                 .id(selectedSection)

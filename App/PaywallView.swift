@@ -29,12 +29,7 @@ struct PaywallView: View {
           }
           .memoraAppear()
 
-          Picker("プラン", selection: $selectedTier) {
-            ForEach(PlanTier.allCases) { tier in
-              Text(tier.label).tag(tier)
-            }
-          }
-          .pickerStyle(.segmented)
+          GlassSegmentedPicker(items: PlanTier.allCases, selection: $selectedTier, title: \.label)
           .memoraAppear(delay: 0.04)
 
           VStack(alignment: .leading, spacing: 16) {

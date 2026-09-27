@@ -14,11 +14,9 @@ struct TasksView: View {
 
     return NavigationStack(path: $path) {
       VStack(spacing: 0) {
-        Picker("表示するタスク", selection: $showsCompleted) {
-          Text("未完了").tag(false)
-          Text("完了").tag(true)
+        GlassSegmentedPicker(items: [false, true], selection: $showsCompleted) { completed in
+          completed ? "完了" : "未完了"
         }
-        .pickerStyle(.segmented)
         .padding(.horizontal, 18)
         .padding(.bottom, 10)
 

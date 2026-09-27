@@ -19,12 +19,9 @@ struct LifeLogCreationSheet: View {
     NavigationStack {
       Form {
         Section {
-          Picker("種類", selection: $kind) {
-            ForEach(LifeLogKind.allCases) { item in
-              Label(item.label, icon: item.symbol).tag(item)
-            }
-          }
-          .pickerStyle(.segmented)
+          GlassSegmentedPicker(items: LifeLogKind.allCases, selection: $kind, title: \.label)
+            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+            .listRowBackground(Color.clear)
         }
 
         Section("内容") {

@@ -26,6 +26,33 @@ struct AIComposerBar: View {
   @State private var editingPhoto: PhotoEditRequest?
   @State private var importErrorMessage: String?
   @FocusState private var isFieldFocused: Bool
+  @Namespace private var controlsNamespace
+
+  /// The capsule's height while collapsed; its corners make it fully round.
+  private static let collapsedHeight: CGFloat = 50
+
+  /// Open while typing, or while there is text or an attachment to send.
+  private var isExpanded: Bool {
+    isFieldFocused || hasContent
+  }
+
+  private var cornerRadius: CGFloat {
+    isExpanded ? 24 : Self.collapsedHeight / 2
+  }
+
+  private var textField: some View {
+    TextField(placeholder, text: $text, axis: .vertical)
+      .font(.body)
+      .lineLimit(isExpanded ? 1...6 : 1...1)
+      .submitLabel(.send)
+      .onSubmit(submit)
+      .focused($isFieldFocused)
+      .padding(.vertical, 8)
+      // The field takes the width it needs and grows as text is added; the
+      // controls keep their size instead of being pushed out by a long entry.
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .layoutPriority(1)
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -39,43 +66,51 @@ struct AIComposerBar: View {
           .padding(.top, 6)
       }
 
-      // Bottom-aligned so that when a long entry grows the field upward, the
-      // attachment, model and send controls stay pinned to the component's
-      // bottom edge instead of floating to its middle.
-      HStack(alignment: .bottom, spacing: 6) {
-        attachmentMenu
+      // Collapsed, the composer is one slim capsule: attach, the prompt and the
+      // voice button. Focused or holding something, it opens into a card with
+      // the text across the top and the controls on a row beneath. The text
+      // field keeps its place in the tree in both, so focusing it does not
+      // rebuild it and drop the keyboard; only the buttons move between rows.
+      HStack(alignment: .center, spacing: 4) {
+        if !isExpanded {
+          attachmentMenu
+            .matchedGeometryEffect(id: "attach", in: controlsNamespace)
+        }
 
-        TextField(placeholder, text: $text, axis: .vertical)
-          .font(.body)
-          .lineLimit(1...5)
-          .submitLabel(.send)
-          .onSubmit(submit)
-          .focused($isFieldFocused)
-          .padding(.vertical, 8)
-          // The field takes the width it needs and grows upward as text is
-          // added; the controls beside it keep their size instead of being
-          // pushed out by a long entry.
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .layoutPriority(1)
+        textField
 
-        modelMenu
-          .layoutPriority(0)
-          .frame(maxWidth: 130)
-        actionButton
+        if !isExpanded {
+          actionButton
+            .matchedGeometryEffect(id: "action", in: controlsNamespace)
+        }
       }
-      .padding(.leading, 8)
-      .padding(.trailing, 8)
-      .padding(.vertical, 6)
-      // One line matches the bar's height, so the input and the tab row read as
-      // one block.
-      .frame(minHeight: MemoraBarMetrics.height)
+      .padding(.leading, isExpanded ? 16 : 4)
+      .padding(.trailing, isExpanded ? 16 : 4)
+      .padding(.top, isExpanded ? 10 : 0)
+      .frame(minHeight: isExpanded ? 44 : Self.collapsedHeight)
+
+      if isExpanded {
+        HStack(spacing: 6) {
+          attachmentMenu
+            .matchedGeometryEffect(id: "attach", in: controlsNamespace)
+          Spacer(minLength: 8)
+          modelMenu
+            .frame(maxWidth: 150)
+          actionButton
+            .matchedGeometryEffect(id: "action", in: controlsNamespace)
+        }
+        .padding(.horizontal, 6)
+        .padding(.bottom, 6)
+        .transition(.opacity)
+      }
     }
     .background { listeningBackdrop }
-    .memoraGlass(in: RoundedRectangle(cornerRadius: 28, style: .continuous), interactive: true)
+    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), interactive: true)
     .shadow(color: .black.opacity(speechInput.isListening ? 0.3 : 0.08), radius: 18, y: 8)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: speechInput.isListening)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: isExpanded)
     .sensoryFeedback(.impact(weight: .light), trigger: speechInput.isListening)
     .onChange(of: isFieldFocused) { _, focused in
       focusChanged?(focused)
@@ -146,7 +181,7 @@ struct AIComposerBar: View {
   private var listeningBackdrop: some View {
     if speechInput.isListening {
       VoiceGlow(level: speechInput.audioLevel)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
   }
 

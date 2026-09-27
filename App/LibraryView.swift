@@ -186,16 +186,7 @@ struct LibraryView: View {
       get: { model.fileSection },
       set: { model.fileSection = $0 }
     )
-    if #available(iOS 26.0, *) {
-      GlassSegmentedControl(items: FileSection.allCases, selection: selection, title: { $0.title })
-        .glassEffect(.regular, in: .capsule)
-    } else {
-      GlassSegmentedControl(items: FileSection.allCases, selection: selection, title: { $0.title })
-        .background(.regularMaterial, in: Capsule())
-        .overlay {
-          Capsule().stroke(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5)
-        }
-    }
+    GlassSegmentedPicker(items: FileSection.allCases, selection: selection, title: { $0.title })
   }
 
   /// The section switch, the next meeting (only while one is coming up) and the
