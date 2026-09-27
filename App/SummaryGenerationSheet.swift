@@ -5,7 +5,9 @@ struct SummaryGenerationSheet: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var mode = SummaryGenerationMode.automatic
-  @State private var template = SummaryTemplateChoice.builtIn(.meetingMinutes)
+  @State private var template = SummaryTemplateChoice.standard
+  /// The engine for this summary only. Unset follows the settings engine.
+  @State private var engineChoice: AIEngine?
   @State private var selectedDetent = PresentationDetent.medium
   var meetingID: UUID
 
@@ -18,7 +20,7 @@ struct SummaryGenerationSheet: View {
               generationChoice(
                 mode: .automatic,
                 title: "自動生成",
-                detail: "内容に応じて最適な形に自動要約",
+                detail: "詳細な概要：トピックごとに要点・決定事項・アクション・未決事項を整理",
                 symbol: .sparkles
               )
               generationChoice(
@@ -42,6 +44,8 @@ struct SummaryGenerationSheet: View {
               }
               .transition(.opacity.combined(with: .move(edge: .top)))
             }
+
+            engineSection
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.horizontal, 20)
@@ -76,7 +80,8 @@ struct SummaryGenerationSheet: View {
       Button("生成") {
         model.generateSummary(
           meetingID,
-          choice: mode == .automatic ? .builtIn(.automatic) : template
+          choice: mode == .automatic ? .standard : template,
+          engine: selectedEngine
         )
         dismiss()
       }
@@ -91,6 +96,46 @@ struct SummaryGenerationSheet: View {
     .padding(.top, 10)
     .padding(.bottom, 12)
     .background(.bar)
+  }
+
+  private var selectedEngine: AIEngine {
+    engineChoice ?? model.aiEngine
+  }
+
+  /// Engines a summary can run on. The local LLM is only listed while the
+  /// settings still point at it, since this build does not ship one.
+  private var engineOptions: [AIEngine] {
+    AIEngine.allCases.filter { $0 != .local || model.aiEngine == .local }
+  }
+
+  private var engineSection: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Label("AIエンジン", icon: selectedEngine.symbol)
+          .font(.headline)
+        Spacer()
+        Picker("AIエンジン", selection: Binding {
+          selectedEngine
+        } set: { engineChoice = $0 }) {
+          ForEach(engineOptions) { engine in
+            Text(engine.label).tag(engine)
+          }
+        }
+        .pickerStyle(.menu)
+        .labelsHidden()
+      }
+
+      // Cloud and on-device differ in depth, so the sheet says which is coming.
+      Text(MeetingSummarizer.approach(for: selectedEngine, llm: model.aiSelection))
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+    .padding(14)
+    .background(
+      Color(uiColor: .secondarySystemBackground),
+      in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+    )
   }
 
   private var choices: [SummaryTemplateChoice] {

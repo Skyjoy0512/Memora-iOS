@@ -45,30 +45,40 @@ extension MemoraModel {
     runTranscription(id, preparation: .milliseconds(600), progress: 0.62, recordsTiming: false)
   }
 
-  /// Rewrites the summary from the real transcript with the chosen template.
-  /// Nothing is invented: when no engine can answer, the record says so and
-  /// keeps whatever the person had, rather than filling in sample text.
-  func generateSummary(_ id: UUID, choice: SummaryTemplateChoice) {
+  /// Rewrites the summary from the real transcript with the chosen template,
+  /// then files its decisions, open questions and key points on the record and
+  /// its actions in the tasks tab. Nothing is invented: when no engine can
+  /// answer, the record says so and keeps whatever the person had.
+  ///
+  /// `engine` is the choice made in the summary sheet; without one, the
+  /// settings engine is used.
+  func generateSummary(_ id: UUID, choice: SummaryTemplateChoice, engine: AIEngine? = nil) {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
 
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     let inputRevision = ProcessingService.inputRevision(meeting.transcript)
     let summaryRevision = meeting.summary
     let startedAt = Date()
+    let input = MeetingSummaryInput(
+      title: meeting.displayTitle,
+      date: meeting.createdAt,
+      duration: meeting.duration,
+      participantNames: (meeting.participantIDs ?? []).compactMap { person(id: $0)?.name },
+      transcript: meeting.transcript,
+      template: choice
+    )
+    let engine = engine ?? aiEngine
+    let llm = aiSelection
 
     processing.run(id: id) { [weak self] in
-      guard let self else { return AIAnswerResult.failure(.noEngine) }
-      let transcript = meeting.transcript
-        .map { "\($0.speaker): \($0.text)" }
-        .joined(separator: "\n")
-      return await AIEngineService.answer(
-        engine: self.aiEngine,
-        llm: self.aiSelection,
-        question: choice.summaryInstruction,
-        scopeLabel: "文字起こし",
-        context: transcript,
-        history: ""
-      )
+      await MeetingSummarizer.summarize(input, engine: engine, llm: llm) { step in
+        guard let self, !Task.isCancelled else { return }
+        self.updateMeeting(id) { meeting in
+          if case .organizing = meeting.status {
+            meeting.status = .organizing("\(choice.processingLabel)：\(step)")
+          }
+        }
+      }
     } apply: { [weak self] result in
       guard let self, !Task.isCancelled else { return }
       self.performance.record(
@@ -88,7 +98,19 @@ extension MemoraModel {
         return
       }
 
-      if let resultFailure = result.failure, resultFailure == .cancelled {
+      switch result {
+      case .success(let summary):
+        self.updateMeeting(id) { meeting in
+          meeting.summary = summary.markdown
+          meeting.keyPoints = summary.keyPoints
+          meeting.decisions = summary.decisions
+          meeting.openQuestions = summary.openQuestions
+          meeting.status = .ready
+        }
+        let added = self.addExtractedTasks(summary.actions, meetingID: id, meetingDate: current.createdAt)
+        self.offerPlusIfNeeded()
+        self.announce(added > 0 ? "要約ができました。タスクを\(added)件追加しました。" : "要約ができました。")
+      case .failure(.cancelled):
         // Cancelled without a newer request taking over: leave the record able
         // to be generated again rather than stuck mid-process.
         self.updateMeeting(id) { meeting in
@@ -96,20 +118,8 @@ extension MemoraModel {
             meeting.status = .waitingForSummary
           }
         }
-        return
-      }
-
-      let summary = result.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-      if let summary, !summary.isEmpty {
-        self.updateMeeting(id) { meeting in
-          meeting.summary = summary
-          meeting.status = .ready
-        }
-        self.offerPlusIfNeeded()
-        self.announce("文字起こしと要約ができました。")
-      } else {
-        let message = result.failure?.message
-          ?? "要約が空でした。もう一度お試しください。"
+      case .failure(let failure):
+        let message = failure == .empty ? "要約が空でした。もう一度お試しください。" : failure.message
         self.updateMeeting(id) { $0.status = .failed(message) }
         self.announce("要約を作成できませんでした。\(message)")
       }

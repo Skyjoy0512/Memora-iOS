@@ -93,41 +93,8 @@ private enum FoundationModelAnswer {
       let response = try await session.respond(to: prompt)
       let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
       return text.isEmpty ? .failure(.empty) : .answer(text)
-    } catch is CancellationError {
-      return .failure(.cancelled)
     } catch {
-      // Say which reason stopped the model instead of blaming "not ready" for
-      // everything. The error type differs before and after iOS 27.
-      if #available(iOS 27.0, *) {
-        if let modelError = error as? LanguageModelError {
-          return Self.failure(from: modelError)
-        }
-      } else if let generationError = error as? LanguageModelSession.GenerationError {
-        return Self.failure(from: generationError)
-      }
-      return .failure(.engineNotReady)
-    }
-  }
-
-  @available(iOS 27.0, *)
-  private static func failure(from error: LanguageModelError) -> AIAnswerResult {
-    switch error {
-    case .contextSizeExceeded: .failure(.contextTooLarge)
-    case .rateLimited: .failure(.rateLimited)
-    case .unsupportedLanguageOrLocale: .failure(.unsupportedLanguage)
-    case .guardrailViolation, .refusal: .failure(.guardrail)
-    default: .failure(.engineNotReady)
-    }
-  }
-
-  private static func failure(from error: LanguageModelSession.GenerationError) -> AIAnswerResult {
-    switch error {
-    case .exceededContextWindowSize: .failure(.contextTooLarge)
-    case .rateLimited: .failure(.rateLimited)
-    case .unsupportedLanguageOrLocale: .failure(.unsupportedLanguage)
-    case .guardrailViolation, .refusal: .failure(.guardrail)
-    case .assetsUnavailable: .failure(.assetsUnavailable)
-    default: .failure(.engineNotReady)
+      return .failure(FoundationModelFailure.reason(for: error))
     }
   }
 }

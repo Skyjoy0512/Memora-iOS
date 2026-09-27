@@ -1,0 +1,123 @@
+import Foundation
+
+/// Writes a summary with whichever engine was chosen. The cloud reads the whole
+/// transcript and writes the document itself; the on-device model works
+/// section by section and the app lays the document out. Both return the same
+/// shape, so the record is filed the same way either way.
+enum MeetingSummarizer {
+  /// A single cloud pass up to this many characters, about three hours of
+  /// Japanese speech; longer meetings are noted in parts and then merged.
+  static let singlePassCharacterLimit = 60_000
+  static let partCharacterLimit = 40_000
+
+  static func summarize(
+    _ input: MeetingSummaryInput,
+    engine: AIEngine,
+    llm: LLMSelection,
+    progress: @escaping @MainActor (String) -> Void
+  ) async -> Result<MeetingSummary, AIAnswerFailure> {
+    guard !input.transcript.isEmpty else { return .failure(.empty) }
+
+    switch AIEngineService.effectiveEngine(engine) {
+    case .foundation, .automatic:
+      guard #available(iOS 26.0, *) else { return .failure(.noEngine) }
+      return await OnDeviceSummarizer.summarize(input, progress: progress)
+    case .local:
+      // A local LLM still needs a bundled model; this build has none.
+      return .failure(.notBundled)
+    case .cloud:
+      return await cloud(input, llm: llm, progress: progress)
+    }
+  }
+
+  /// What the chosen engine will do, for the sheet to say before generating.
+  static func approach(for engine: AIEngine, llm: LLMSelection) -> String {
+    switch AIEngineService.effectiveEngine(engine) {
+    case .cloud:
+      "\(llm.modelLabel)が文字起こし全体を読んで詳しく作成します。"
+    case .foundation:
+      "端末内AIが区間ごとに整理して組み立てます。クラウドより簡潔になり、長い会議は数分かかります。"
+    case .automatic:
+      "この端末では端末内AIを使えません。設定の「AI整理」でクラウドを選んでください。"
+    case .local:
+      "ローカルLLMはまだ利用できません。別のエンジンを選んでください。"
+    }
+  }
+
+  private static func cloud(
+    _ input: MeetingSummaryInput,
+    llm: LLMSelection,
+    progress: @escaping @MainActor (String) -> Void
+  ) async -> Result<MeetingSummary, AIAnswerFailure> {
+    let lines = input.transcript
+      .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+      .map(MeetingSummaryInput.line(for:))
+    let transcript = lines.joined(separator: "\n")
+
+    let request: String
+    if transcript.count <= singlePassCharacterLimit {
+      await progress("文字起こし全体を読んでいます")
+      request = SummaryPrompt.document(for: input, transcript: transcript)
+    } else {
+      let parts = split(lines, limit: partCharacterLimit)
+      var notes: [String] = []
+      for (index, part) in parts.enumerated() {
+        guard !Task.isCancelled else { return .failure(.cancelled) }
+        await progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)）")
+        let range = timeRange(of: part)
+        let result = await CloudAIService.complete(
+          system: SummaryPrompt.system,
+          user: SummaryPrompt.partNotes(
+            for: input,
+            part: index + 1,
+            of: parts.count,
+            range: range,
+            transcript: part.joined(separator: "\n")
+          ),
+          llm: llm
+        )
+        switch result {
+        case .answer(let text): notes.append("# 部分\(index + 1)（\(range)）\n\(text)")
+        case .failure(let failure): return .failure(failure)
+        }
+      }
+      await progress("全体をまとめています")
+      request = SummaryPrompt.merge(for: input, notes: notes.joined(separator: "\n\n"))
+    }
+
+    guard !Task.isCancelled else { return .failure(.cancelled) }
+    switch await CloudAIService.complete(system: SummaryPrompt.system, user: request, llm: llm) {
+    case .answer(let reply):
+      let summary = SummaryResponseParser.parse(reply)
+      return summary.markdown.isEmpty ? .failure(.empty) : .success(summary)
+    case .failure(let failure):
+      return .failure(failure)
+    }
+  }
+
+  private static func split(_ lines: [String], limit: Int) -> [[String]] {
+    var parts: [[String]] = []
+    var current: [String] = []
+    var length = 0
+    for line in lines {
+      if !current.isEmpty, length + line.count + 1 > limit {
+        parts.append(current)
+        current = []
+        length = 0
+      }
+      current.append(line)
+      length += line.count + 1
+    }
+    if !current.isEmpty { parts.append(current) }
+    return parts
+  }
+
+  /// "mm:ss〜mm:ss" read off the first and last line of a part.
+  private static func timeRange(of part: [String]) -> String {
+    func stamp(_ line: String?) -> String {
+      guard let line, line.hasPrefix("["), let end = line.firstIndex(of: "]") else { return "" }
+      return String(line[line.index(after: line.startIndex)..<end])
+    }
+    return "\(stamp(part.first))〜\(stamp(part.last))"
+  }
+}

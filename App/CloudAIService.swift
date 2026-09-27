@@ -9,11 +9,6 @@ enum CloudAIService {
     history: String,
     llm: LLMSelection
   ) async -> AIAnswerResult {
-    guard let key = KeychainStore.string(forKey: llm.provider.keychainAccount), !key.isEmpty else {
-      return .failure(.missingKey)
-    }
-    guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
-
     let system = "あなたは会議の記録を要約して答えるアシスタントです。短い日本語で、与えられた記録だけに沿って答えます。"
     let user = AIAnswerPrompt.text(
       question: question,
@@ -21,6 +16,16 @@ enum CloudAIService {
       context: context,
       history: history
     )
+    return await complete(system: system, user: user, llm: llm)
+  }
+
+  /// Sends one system and user prompt to the chosen provider. Ask AI and the
+  /// summarizer share it, each with its own instructions.
+  static func complete(system: String, user: String, llm: LLMSelection) async -> AIAnswerResult {
+    guard let key = KeychainStore.string(forKey: llm.provider.keychainAccount), !key.isEmpty else {
+      return .failure(.missingKey)
+    }
+    guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
 
     do {
       let text = if llm.provider.usesAnthropicAPI {
