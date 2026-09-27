@@ -52,10 +52,7 @@ extension MemoraModel {
   }
 
   func updateLifeLogEntry(_ id: UUID, title: String, summary: String, createdAt: Date) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return }
@@ -68,10 +65,7 @@ extension MemoraModel {
 
   /// Moves an entry to the trash, as one write, and only then changes the lists.
   func deleteLifeLogEntry(_ id: UUID) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
 
     var candidateEntries = lifeLogEntries
@@ -101,10 +95,7 @@ extension MemoraModel {
   /// Moves several journal entries to the trash in one write, with one undo, so
   /// deleting a whole journey can be taken back as a whole.
   func deleteLifeLogEntries(_ ids: Set<UUID>) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard !ids.isEmpty else { return }
 
     let removed = lifeLogEntries.filter { ids.contains($0.id) }
@@ -137,10 +128,7 @@ extension MemoraModel {
   }
 
   func restoreTrashedLifeLogEntry(_ id: UUID) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
 
     var candidateTrash = trashedLifeLogEntries
@@ -161,10 +149,7 @@ extension MemoraModel {
   }
 
   func permanentlyDeleteTrashedLifeLogEntry(_ id: UUID) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
 
     var candidate = trashedLifeLogEntries

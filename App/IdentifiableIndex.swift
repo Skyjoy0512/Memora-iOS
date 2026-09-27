@@ -18,8 +18,11 @@ struct IdentifiableIndex<Element: Identifiable> {
 
   mutating func index(of id: Element.ID, in elements: [Element]) -> Int? {
     if isStale {
+      // A duplicated id (from an old backup, say) keeps its first position, the
+      // one `firstIndex(where:)` would find, instead of trapping.
       positions = Dictionary(
-        uniqueKeysWithValues: elements.enumerated().map { ($0.element.id, $0.offset) }
+        elements.enumerated().map { ($0.element.id, $0.offset) },
+        uniquingKeysWith: { first, _ in first }
       )
       isStale = false
     }

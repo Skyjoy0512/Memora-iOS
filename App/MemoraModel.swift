@@ -54,18 +54,26 @@ final class MemoraModel {
         meetingIndex.element(id, in: meetings) != nil
       }
       rebuildMeetingAggregates()
+      refreshSampleContentFlag()
     }
   }
   var spaces: [MemoraSpace] {
-    didSet { spaceIndex.invalidate() }
+    didSet {
+      spaceIndex.invalidate()
+      refreshSampleContentFlag()
+    }
   }
   var tasks: [MemoraTask] {
-    didSet { tasksByMeeting = nil }
+    didSet {
+      tasksByMeeting = nil
+      refreshSampleContentFlag()
+    }
   }
   var lifeLogEntries: [LifeLogEntry] {
     didSet {
       newestEntries = nil
       rebuildLifeLogDays()
+      refreshSampleContentFlag()
     }
   }
   /// Journal days newest first, with each day's records newest first. Built when
@@ -81,7 +89,10 @@ final class MemoraModel {
   var aiHistory: [AIConversationEntry]
   /// People who can be tagged on recordings.
   var people: [Person] = [] {
-    didSet { personIndex.invalidate() }
+    didSet {
+      personIndex.invalidate()
+      refreshSampleContentFlag()
+    }
   }
   /// Positions for the array lookups the screens do constantly.
   @ObservationIgnored private var meetingIndex = IdentifiableIndex<Meeting>()
@@ -169,14 +180,10 @@ final class MemoraModel {
   /// True when a first real recording or import landed while samples are still
   /// present, so the app offers once to remove them.
   var isSampleCleanupSuggested = false
-  /// Whether the display samples are still among the records.
-  var hasSampleContent: Bool {
-    meetings.contains { SampleContent.isSample(meetingID: $0.id) }
-      || spaces.contains { SampleContent.isSample(spaceID: $0.id) }
-      || tasks.contains { SampleContent.isSample(task: $0) }
-      || lifeLogEntries.contains { SampleContent.isSample(lifeLogEntry: $0) }
-      || people.contains { SampleContent.isSample(personID: $0.id) }
-  }
+  /// Whether the display samples are still among the records. Stored rather
+  /// than computed so a screen showing the samples notice only redraws when the
+  /// answer changes, not whenever any of the five lists does.
+  private(set) var hasSampleContent = false
   /// Set when stored data exists but could not be read. The data is kept aside
   /// rather than overwritten with samples.
   var loadFailureMessage: String?
@@ -483,6 +490,7 @@ final class MemoraModel {
     // didSet does not run for the loads above, so the derived data is built here.
     rebuildMeetingAggregates()
     rebuildLifeLogDays()
+    refreshSampleContentFlag()
 
     // Automatic records the logger wrote while no model existed are brought in.
     importAutoLifeLogInbox()
@@ -550,45 +558,62 @@ final class MemoraModel {
   /// One pass over the records for the per-project and per-person numbers the
   /// screens show, instead of a scan per tile per redraw.
   private func rebuildMeetingAggregates() {
-    var personCounts: [UUID: Int] = [:]
+    // Sorted once, so every group below is already newest first.
+    let newestFirst = meetings.sorted { $0.createdAt > $1.createdAt }
     var bySpace: [UUID: [Meeting]] = [:]
-
-    for meeting in meetings {
+    var byPerson: [UUID: [Meeting]] = [:]
+    for meeting in newestFirst {
       if let spaceID = meeting.spaceID {
         bySpace[spaceID, default: []].append(meeting)
       }
       for personID in meeting.participantIDs ?? [] {
-        personCounts[personID, default: 0] += 1
-      }
-    }
-
-    spaceAggregates = bySpace.mapValues { group in
-      let newest = group.sorted { $0.createdAt > $1.createdAt }
-      return SpaceAggregate(
-        meetingCount: group.count,
-        icons: newest.prefix(4).map { $0.source == .recording ? .waveform : .squareAndArrowDown },
-        latestDate: newest.first?.createdAt
-      )
-    }
-    personMeetingCounts = personCounts
-
-    var byPerson: [UUID: [Meeting]] = [:]
-    for meeting in meetings {
-      for personID in meeting.participantIDs ?? [] {
         byPerson[personID, default: []].append(meeting)
       }
     }
-    meetingsByPerson = byPerson.mapValues { $0.sorted { $0.createdAt > $1.createdAt } }
+
+    let aggregates = bySpace.mapValues { group in
+      SpaceAggregate(
+        meetingCount: group.count,
+        icons: group.prefix(4).map { $0.source == .recording ? .waveform : .squareAndArrowDown },
+        latestDate: group.first?.createdAt
+      )
+    }
+    // Every assignment redraws each screen that reads the value, and most edits
+    // (a progress tick while transcribing, a renamed record) change none of
+    // these, so they are only replaced when they differ.
+    assignIfChanged(\.spaceAggregates, aggregates)
+    assignIfChanged(\.personMeetingCounts, byPerson.mapValues(\.count))
+    assignIfChanged(\.meetingsByPerson, byPerson)
   }
 
   /// Groups the journal by day once, newest first.
   private func rebuildLifeLogDays() {
     let calendar = Calendar.current
     let grouped = Dictionary(grouping: lifeLogEntries) { calendar.startOfDay(for: $0.createdAt) }
-    lifeLogDays = grouped
+    let days = grouped
       .map { LifeLogDayGroup(day: $0.key, entries: $0.value.sorted { $0.createdAt > $1.createdAt }) }
       .sorted { $0.day > $1.day }
-    markedLifeLogDays = Set(grouped.keys)
+    // A day change that moves nothing leaves the journal as it was.
+    assignIfChanged(\.lifeLogDays, days)
+    assignIfChanged(\.markedLifeLogDays, Set(grouped.keys))
+  }
+
+  private func refreshSampleContentFlag() {
+    let hasSamples = meetings.contains { SampleContent.isSample(meetingID: $0.id) }
+      || spaces.contains { SampleContent.isSample(spaceID: $0.id) }
+      || tasks.contains { SampleContent.isSample(task: $0) }
+      || lifeLogEntries.contains { SampleContent.isSample(lifeLogEntry: $0) }
+      || people.contains { SampleContent.isSample(personID: $0.id) }
+    assignIfChanged(\.hasSampleContent, hasSamples)
+  }
+
+  private func assignIfChanged<Value: Equatable>(
+    _ keyPath: ReferenceWritableKeyPath<MemoraModel, Value>,
+    _ value: Value
+  ) {
+    if self[keyPath: keyPath] != value {
+      self[keyPath: keyPath] = value
+    }
   }
 
   /// Re-reads the on-device documents for pull-to-refresh, so a change written

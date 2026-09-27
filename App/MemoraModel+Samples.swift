@@ -30,10 +30,7 @@ extension MemoraModel {
   /// Only records the samples own are removed; everything the person made,
   /// including tasks and journal entries that point at a real record, stays.
   func deleteSampleContent() {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
 
     let keptMeetings = meetings.filter { !SampleContent.isSample(meetingID: $0.id) }
     let keptSpaces = spaces.filter { !SampleContent.isSample(spaceID: $0.id) }

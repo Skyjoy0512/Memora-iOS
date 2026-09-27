@@ -6,10 +6,7 @@ extension MemoraModel {
   /// The lists are only changed once the write lands, so a failed save leaves
   /// the screen showing what the store actually holds.
   func deleteMeeting(_ id: UUID) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
 
     processing.cancel(id)
@@ -65,10 +62,7 @@ extension MemoraModel {
   /// either lands completely or not at all. Each record keeps its own tasks and
   /// journal entries so it can be restored exactly.
   func deleteMeetings(_ ids: Set<UUID>) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard !ids.isEmpty else { return }
 
     let removed = meetings.filter { ids.contains($0.id) }
@@ -132,10 +126,7 @@ extension MemoraModel {
   /// the undo path; a restore from the trash days later goes back by date, since
   /// records added meanwhile would have made the old index wrong.
   func restoreTrashedRecord(_ id: UUID, preservingPosition: Bool = false) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard let index = trashedRecords.firstIndex(where: { $0.id == id }) else { return }
 
     var candidateTrash = trashedRecords
@@ -200,10 +191,7 @@ extension MemoraModel {
   /// store first; the files are only removed once that write landed, so a failed
   /// write can never lose the attachments while the entry is still there.
   func permanentlyDeleteTrashedRecord(_ id: UUID) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard let index = trashedRecords.firstIndex(where: { $0.id == id }) else { return }
 
     var candidate = trashedRecords

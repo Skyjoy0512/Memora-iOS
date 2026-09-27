@@ -34,10 +34,7 @@ extension MemoraModel {
 
   /// Files several records under one project, or under none, in a single write.
   func moveMeetings(_ ids: Set<UUID>, to spaceID: UUID?) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard !ids.isEmpty else { return }
 
     var candidate = meetings

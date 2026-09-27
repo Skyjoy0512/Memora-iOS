@@ -25,10 +25,7 @@ extension MemoraModel {
   /// only removed once that write landed, so a failed save cannot leave the
   /// record pointing at a file that was already erased.
   func removeMeetingPhoto(_ id: UUID, index: Int) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard let meetingIndex = meetings.firstIndex(where: { $0.id == id }) else { return }
 
     var candidate = meetings
@@ -98,10 +95,7 @@ extension MemoraModel {
   /// Removes a record's audio but keeps its transcript, summary, notes and
   /// tasks. The file waits for the offer to pass, so an undo still has audio.
   func removeMeetingAudio(_ id: UUID) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     guard let index = meetings.firstIndex(where: { $0.id == id }),
           let url = meetings[index].audioURL else { return }
 
@@ -140,10 +134,7 @@ extension MemoraModel {
   /// Removes the audio of every record older than `days`, keeping the rest of
   /// each record. One undo brings all of it back.
   func removeAudio(olderThanDays days: Int) {
-    guard !isStoreProtected else {
-      blockProtectedChanges()
-      return
-    }
+    guard isStoreWritable() else { return }
     let cutoff = Date.now.addingTimeInterval(-Double(days) * 24 * 60 * 60)
     let removed = meetings.filter { $0.audioURL != nil && $0.createdAt < cutoff }
     guard !removed.isEmpty else { return }

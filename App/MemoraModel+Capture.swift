@@ -100,15 +100,7 @@ extension MemoraModel {
       )
     }
 
-    recorder.stop()
-    realtimeTranscriber.stop()
-    recordingTicker?.cancel()
-    recordingTicker = nil
-    levelTicker?.cancel()
-    levelTicker = nil
-    levelMeter.reset()
-    isRecording = false
-    isRecordingPaused = false
+    stopRecorder()
     await endLiveActivity()
 
     var meeting = Meeting(
@@ -148,12 +140,7 @@ extension MemoraModel {
     // leaves the audio recoverable rather than lost. On failure the draft stays
     // and the next launch rebuilds the record from it (with the same id), so no
     // duplicate is made.
-    let committed = await persistBatchAsync({
-      [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
-        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))
-      ]
-    }, removing: [StorageKey.recordingDraft])
+    let committed = await commitRecordingSave()
     guard committed else {
       // Do not take the success path: keep the title, note, audio and draft so
       // the recording can be saved again, and refuse to start another one until
@@ -177,12 +164,7 @@ extension MemoraModel {
     isSavingCapture = true
     defer { isSavingCapture = false }
 
-    let committed = await persistBatchAsync({
-      [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(meetings)),
-        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))
-      ]
-    }, removing: [StorageKey.recordingDraft])
+    let committed = await commitRecordingSave()
     guard committed else {
       persistenceFailureMessage = nil
       return
@@ -199,10 +181,7 @@ extension MemoraModel {
   private func finishCaptureSave(meetingID: UUID) {
     hasUnsavedRecording = false
     recordingInterruptionMessage = nil
-    recordingURL = nil
-    recordingStartedAt = nil
-    recordingPausedAt = nil
-    recordingPausedDuration = 0
+    resetRecordingClock()
     recordingTitle = ""
     recordingNote = ""
     captureEvent = nil
@@ -236,15 +215,7 @@ extension MemoraModel {
   }
 
   func cancelCapture() async {
-    recorder.stop()
-    realtimeTranscriber.stop()
-    recordingTicker?.cancel()
-    recordingTicker = nil
-    levelTicker?.cancel()
-    levelTicker = nil
-    levelMeter.reset()
-    isRecording = false
-    isRecordingPaused = false
+    stopRecorder()
     isCapturePresented = false
     // Discarding means the audio goes too; nothing is kept for the journal.
     captureEvent = nil
@@ -254,11 +225,30 @@ extension MemoraModel {
     if !MediaFiles.delete(recordingURL) {
       deletionFailureMessage = "録音ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
     }
+    resetRecordingClock()
+    await endLiveActivity()
+  }
+
+  /// Stops the microphone, the live transcript and both tickers. Shared by
+  /// saving and discarding, which differ only in what happens to the audio.
+  private func stopRecorder() {
+    recorder.stop()
+    realtimeTranscriber.stop()
+    recordingTicker?.cancel()
+    recordingTicker = nil
+    levelTicker?.cancel()
+    levelTicker = nil
+    levelMeter.reset()
+    isRecording = false
+    isRecordingPaused = false
+  }
+
+  /// Forgets the finished recording's file and timing.
+  private func resetRecordingClock() {
     recordingURL = nil
     recordingStartedAt = nil
     recordingPausedAt = nil
     recordingPausedDuration = 0
-    await endLiveActivity()
   }
 
   func toggleCapturePause() {

@@ -1,19 +1,16 @@
 import Foundation
 
 extension MemoraModel {
-  /// True while the store is protected stops every change that would write over
-  /// data that could not be read — including deletes, restores, and the removal
+  /// While the store is protected, every change that would write over data that
+  /// could not be read is stopped — including deletes, restores, and the removal
   /// of files, which would otherwise leave the store and the media disagreeing.
-  func blockProtectedChanges() {
-    persistenceFailureMessage = storeProtectedMessage
-  }
-
-  private func persistLifeLogTrash() {
-    persistInBackground(trashedLifeLogEntries, forKey: StorageKey.lifeLogTrash)
-  }
-
-  private func persistTrash() {
-    persistInBackground(trashedRecords, forKey: StorageKey.trash)
+  /// Returns false, and says why, when the change must not happen.
+  func isStoreWritable() -> Bool {
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return false
+    }
+    return true
   }
 
   func persistPendingMediaDeletions() {
@@ -51,12 +48,9 @@ extension MemoraModel {
   func persistInBackground<T: Encodable & Sendable>(_ value: T, forKey key: String) {
     // A store that could not be read must not be written over: the existing
     // records may still be there, and replacing them would lose them.
-    guard !isStoreProtected else {
-      persistenceFailureMessage = storeProtectedMessage
-      return
-    }
+    guard isStoreWritable() else { return }
     RecordStore.save(value, key: key) { [weak self] in
-      self?.persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
+      self?.persistenceFailureMessage = self?.saveFailureMessage
     }
   }
 
@@ -64,15 +58,12 @@ extension MemoraModel {
   /// know before doing anything else.
   @discardableResult
   func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
-    guard !isStoreProtected else {
-      persistenceFailureMessage = storeProtectedMessage
-      return false
-    }
+    guard isStoreWritable() else { return false }
     do {
       try RecordStore.saveNow(value, key: key)
       return true
     } catch {
-      persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
+      persistenceFailureMessage = saveFailureMessage
       return false
     }
   }
@@ -85,10 +76,7 @@ extension MemoraModel {
     _ build: () throws -> [(key: String, data: Data)],
     removing: [String] = []
   ) -> Bool {
-    guard !isStoreProtected else {
-      persistenceFailureMessage = storeProtectedMessage
-      return false
-    }
+    guard isStoreWritable() else { return false }
     do {
       try RecordStore.commitNow(writes: try build(), removing: removing)
       return true
@@ -105,10 +93,7 @@ extension MemoraModel {
     _ build: () throws -> [(key: String, data: Data)],
     removing: [String] = []
   ) async -> Bool {
-    guard !isStoreProtected else {
-      persistenceFailureMessage = storeProtectedMessage
-      return false
-    }
+    guard isStoreWritable() else { return false }
     do {
       try await RecordStore.commitAsync(writes: try build(), removing: removing)
       return true
@@ -122,10 +107,7 @@ extension MemoraModel {
   /// write is in flight.
   @discardableResult
   func persistNowAsync<T: Encodable>(_ value: T, forKey key: String) async -> Bool {
-    guard !isStoreProtected else {
-      persistenceFailureMessage = storeProtectedMessage
-      return false
-    }
+    guard isStoreWritable() else { return false }
     do {
       let data = try RecordStore.encoded(value)
       try await RecordStore.commitAsync(writes: [(key: key, data: data)], removing: [])

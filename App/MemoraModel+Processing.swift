@@ -42,53 +42,7 @@ extension MemoraModel {
           meeting.audioURL != nil,
           !processing.isActive(id) else { return }
     updateMeeting(id) { $0.status = .transcribing(0.08) }
-    processing.run(id: id) { [weak self] in
-      guard let self else { return TranscriptionOutcome.unavailable }
-      let availability = await EngineAvailability.transcription(
-        EngineAvailability.currentTranscriptionEngine(),
-        language: EngineAvailability.currentTranscriptionLanguage(),
-        provider: EngineAvailability.currentTranscriptionProvider()
-      )
-      guard availability.isReady else {
-        return .failed(availability.message ?? "文字起こしを開始できませんでした。")
-      }
-      try? await Task.sleep(for: .milliseconds(600))
-      guard !Task.isCancelled else { return .unavailable }
-      self.updateMeeting(id) { $0.status = .transcribing(0.62) }
-      return await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
-    } apply: { [weak self] outcome in
-      guard let self, !Task.isCancelled else { return }
-      switch outcome {
-      case .segments(let segments):
-        self.updateMeeting(id) { meeting in
-          meeting.transcript = segments
-          meeting.status = .waitingForSummary
-        }
-        self.announce("文字起こしができました。要約を作成しています。")
-      case .unavailable:
-        self.updateMeeting(id) {
-          $0.status = .failed("この端末では文字起こしを利用できません。音声は保存されています。設定で別のエンジンを選ぶか、別の端末でお試しください。")
-        }
-        self.announce("文字起こしができませんでした。音声は保存されています。")
-      case .failed(let message):
-        self.updateMeeting(id) { $0.status = .failed(message) }
-        self.announce("文字起こしができませんでした。\(message)")
-      case .nothingRecognized:
-        self.updateMeeting(id) {
-          $0.status = .failed("音声から発言を認識できませんでした。音声は保存されています。もう一度お試しください。")
-        }
-        self.announce("音声から発言を認識できませんでした。")
-      case .cancelled:
-        // Nothing was applied: the record goes back to where it can be started
-        // again, rather than being left looking stuck.
-        self.updateMeeting(id) { meeting in
-          if case .transcribing = meeting.status {
-            meeting.status = .waitingForTranscription
-          }
-        }
-
-      }
-    }
+    runTranscription(id, preparation: .milliseconds(600), progress: 0.62, recordsTiming: false)
   }
 
   /// Rewrites the summary from the real transcript with the chosen template.
@@ -163,6 +117,18 @@ extension MemoraModel {
   }
 
   func beginProcessing(_ id: UUID) {
+    runTranscription(id, preparation: .milliseconds(700), progress: 0.58, recordsTiming: true)
+  }
+
+  /// The one transcription job both entry points share. They differ only in how
+  /// long the preparation pause is, where the progress bar lands after it, and
+  /// whether the run counts toward the performance log.
+  private func runTranscription(
+    _ id: UUID,
+    preparation: Duration,
+    progress: Double,
+    recordsTiming: Bool
+  ) {
     processing.run(id: id) { [weak self] in
       guard let self else { return TranscriptionOutcome.unavailable }
       // Checked before the job starts, so a missing key or an unsupported
@@ -177,49 +143,54 @@ extension MemoraModel {
       }
       let startedAt = Date()
       defer {
-        self.performance.record(
-          "処理（文字起こし）",
-          milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000
-        )
+        if recordsTiming {
+          self.performance.record(
+            "処理（文字起こし）",
+            milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000
+          )
+        }
       }
-      try? await Task.sleep(for: .milliseconds(700))
+      try? await Task.sleep(for: preparation)
       guard !Task.isCancelled else { return .unavailable }
-      self.updateMeeting(id) { $0.status = .transcribing(0.58) }
+      self.updateMeeting(id) { $0.status = .transcribing(progress) }
 
       // Only a real engine's transcript is ever stored. When none can run, the
       // record says so and keeps the audio for a retry — never sample text.
       return await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
     } apply: { [weak self] outcome in
       guard let self, !Task.isCancelled else { return }
-      switch outcome {
-      case .segments(let segments):
-        self.updateMeeting(id) { meeting in
-          meeting.transcript = segments
-          meeting.status = .waitingForSummary
-        }
-        self.announce("文字起こしができました。要約を作成しています。")
-      case .unavailable:
-        self.updateMeeting(id) {
-          $0.status = .failed("この端末では文字起こしを利用できません。音声は保存されています。設定で別のエンジンを選ぶか、別の端末でお試しください。")
-        }
-        self.announce("文字起こしができませんでした。音声は保存されています。")
-      case .failed(let message):
-        self.updateMeeting(id) { $0.status = .failed(message) }
-        self.announce("文字起こしができませんでした。\(message)")
-      case .nothingRecognized:
-        self.updateMeeting(id) {
-          $0.status = .failed("音声から発言を認識できませんでした。音声は保存されています。もう一度お試しください。")
-        }
-        self.announce("音声から発言を認識できませんでした。")
-      case .cancelled:
-        // Nothing was applied: the record goes back to where it can be started
-        // again, rather than being left looking stuck.
-        self.updateMeeting(id) { meeting in
-          if case .transcribing = meeting.status {
-            meeting.status = .waitingForTranscription
-          }
-        }
+      self.applyTranscription(outcome, to: id)
+    }
+  }
 
+  private func applyTranscription(_ outcome: TranscriptionOutcome, to id: UUID) {
+    switch outcome {
+    case .segments(let segments):
+      updateMeeting(id) { meeting in
+        meeting.transcript = segments
+        meeting.status = .waitingForSummary
+      }
+      announce("文字起こしができました。要約を作成しています。")
+    case .unavailable:
+      updateMeeting(id) {
+        $0.status = .failed("この端末では文字起こしを利用できません。音声は保存されています。設定で別のエンジンを選ぶか、別の端末でお試しください。")
+      }
+      announce("文字起こしができませんでした。音声は保存されています。")
+    case .failed(let message):
+      updateMeeting(id) { $0.status = .failed(message) }
+      announce("文字起こしができませんでした。\(message)")
+    case .nothingRecognized:
+      updateMeeting(id) {
+        $0.status = .failed("音声から発言を認識できませんでした。音声は保存されています。もう一度お試しください。")
+      }
+      announce("音声から発言を認識できませんでした。")
+    case .cancelled:
+      // Nothing was applied: the record goes back to where it can be started
+      // again, rather than being left looking stuck.
+      updateMeeting(id) { meeting in
+        if case .transcribing = meeting.status {
+          meeting.status = .waitingForTranscription
+        }
       }
     }
   }
