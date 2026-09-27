@@ -184,20 +184,24 @@ struct LibraryView: View {
     }
   }
 
-  /// The 「ファイル／プロジェクト」 switch, shared by both pages.
+  /// The 「ファイル／プロジェクト」 switch, shared by both pages. It uses the
+  /// same Liquid Glass surface as the floating tab bar.
+  @ViewBuilder
   private var sectionSwitch: some View {
-    Picker(
-      "表示",
-      selection: Binding(
-        get: { model.fileSection },
-        set: { model.fileSection = $0 }
-      )
-    ) {
-      ForEach(FileSection.allCases) { section in
-        Text(section.title).tag(section)
-      }
+    let selection = Binding(
+      get: { model.fileSection },
+      set: { model.fileSection = $0 }
+    )
+    if #available(iOS 26.0, *) {
+      GlassSegmentedControl(items: FileSection.allCases, selection: selection, title: { $0.title })
+        .glassEffect(.regular, in: .capsule)
+    } else {
+      GlassSegmentedControl(items: FileSection.allCases, selection: selection, title: { $0.title })
+        .background(.regularMaterial, in: Capsule())
+        .overlay {
+          Capsule().stroke(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5)
+        }
     }
-    .pickerStyle(.segmented)
   }
 
   /// The section switch, the next meeting (only while one is coming up) and the

@@ -12,7 +12,7 @@ extension RootTab: ProminentTabItem {}
 /// One place for the height shared by the tab row, the "＋" button, and the AI
 /// input, so the bottom controls line up.
 enum MemoraBarMetrics {
-  static let height: CGFloat = 56
+  static let height: CGFloat = 62
 }
 
 /// A floating tab bar whose destinations live in a segmented control, paired
