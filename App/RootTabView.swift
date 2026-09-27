@@ -192,7 +192,7 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: shouldShowComposer)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isBottomBarHidden)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isCaptureSourcePresented)
+    .animation(reduceMotion ? nil : MemoraMotion.morph, value: model.isCaptureSourcePresented)
   }
 
   /// The bar follows the tab on top, so another screen's scrolling cannot move it.
