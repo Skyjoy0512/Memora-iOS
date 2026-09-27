@@ -172,7 +172,7 @@ struct FileSidebarView: View {
   }
 
   private func meetingCount(for spaceID: UUID) -> Int {
-    model.meetings.filter { $0.spaceID == spaceID }.count
+    model.spaceAggregates[spaceID]?.meetingCount ?? 0
   }
 
   private func detail(for tab: RootTab) -> String? {

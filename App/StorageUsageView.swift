@@ -8,6 +8,8 @@ struct StorageUsageView: View {
   @State private var isBulkDeletePresented = false
 
   var body: some View {
+    let audio = AudioUsage(meetings: model.meetings)
+
     List {
       Section("使用量") {
         usageRow("音声", breakdown.audio)
@@ -16,14 +18,15 @@ struct StorageUsageView: View {
         usageRow("合計", breakdown.total)
       }
 
-      if !audioMeetings.isEmpty {
+      if !audio.largestFirst.isEmpty {
         Section {
-          ForEach(audioMeetings) { meeting in
+          ForEach(audio.largestFirst, id: \.meeting.id) { item in
+            let meeting = item.meeting
             HStack(alignment: .firstTextBaseline) {
               VStack(alignment: .leading, spacing: 2) {
                 Text(meeting.displayTitle)
                   .lineLimit(1)
-                Text(StorageUsage.text(StorageUsage.size(of: audioURL(meeting))))
+                Text(StorageUsage.text(item.bytes))
                   .font(.caption)
                   .foregroundStyle(.secondary)
               }
@@ -46,12 +49,12 @@ struct StorageUsageView: View {
         Button("90日より前の音声を削除", icon: .trash) {
           isBulkDeletePresented = true
         }
-        .disabled(oldAudioMeetings.isEmpty)
+        .disabled(audio.oldCount == 0)
       } footer: {
-        if oldAudioMeetings.isEmpty {
+        if audio.oldCount == 0 {
           Text("90日より前の音声はありません。")
         } else {
-          Text("\(oldAudioMeetings.count)件・\(StorageUsage.text(oldAudioTotal))を削除します。")
+          Text("\(audio.oldCount)件・\(StorageUsage.text(audio.oldBytes))を削除します。")
         }
       }
     }
@@ -69,7 +72,7 @@ struct StorageUsageView: View {
       }
       Button("キャンセル", role: .cancel) {}
     } message: {
-      Text("\(oldAudioMeetings.count)件・\(StorageUsage.text(oldAudioTotal))の音声を削除します。文字起こしと要約は残ります。取り消せます。")
+      Text("\(audio.oldCount)件・\(StorageUsage.text(audio.oldBytes))の音声を削除します。文字起こしと要約は残ります。取り消せます。")
     }
   }
 
@@ -81,23 +84,31 @@ struct StorageUsageView: View {
   private func refresh() {
     breakdown = StorageUsage.current()
   }
+}
 
-  private func audioURL(_ meeting: Meeting) -> URL {
-    meeting.audioURL ?? URL(fileURLWithPath: "/dev/null")
-  }
+/// Each record's audio with its size on disk, read once per redraw. Sorting by
+/// size used to read the file sizes inside every comparison.
+private struct AudioUsage {
+  var largestFirst: [(meeting: Meeting, bytes: Int64)]
+  var oldCount: Int
+  var oldBytes: Int64
 
-  private var audioMeetings: [Meeting] {
-    model.meetings
-      .filter { $0.audioURL != nil }
-      .sorted { StorageUsage.size(of: audioURL($0)) > StorageUsage.size(of: audioURL($1)) }
-  }
-
-  private var oldAudioMeetings: [Meeting] {
-    let cutoff = Date.now.addingTimeInterval(-90 * 24 * 60 * 60)
-    return model.meetings.filter { $0.audioURL != nil && $0.createdAt < cutoff }
-  }
-
-  private var oldAudioTotal: Int64 {
-    oldAudioMeetings.reduce(0) { $0 + StorageUsage.size(of: audioURL($1)) }
+  init(meetings: [Meeting], now: Date = .now) {
+    let cutoff = now.addingTimeInterval(-90 * 24 * 60 * 60)
+    var sized: [(meeting: Meeting, bytes: Int64)] = []
+    var oldCount = 0
+    var oldBytes: Int64 = 0
+    for meeting in meetings {
+      guard let url = meeting.audioURL else { continue }
+      let bytes = StorageUsage.size(of: url)
+      sized.append((meeting, bytes))
+      if meeting.createdAt < cutoff {
+        oldCount += 1
+        oldBytes += bytes
+      }
+    }
+    largestFirst = sized.sorted { $0.bytes > $1.bytes }
+    self.oldCount = oldCount
+    self.oldBytes = oldBytes
   }
 }

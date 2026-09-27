@@ -10,6 +10,7 @@ struct TasksView: View {
 
   var body: some View {
     @Bindable var model = model
+    let visibleTasks = self.visibleTasks
 
     return NavigationStack(path: $path) {
       VStack(spacing: 0) {
@@ -37,11 +38,11 @@ struct TasksView: View {
         } else {
           List {
             if showsCompleted {
-              ForEach(completedTasks) { task in
+              ForEach(completedFirst(visibleTasks)) { task in
                 taskRow(task)
               }
             } else {
-              ForEach(dueSections) { section in
+              ForEach(dueSections(of: visibleTasks)) { section in
                 Section(section.title) {
                   ForEach(section.tasks) { task in
                     taskRow(task)
@@ -162,8 +163,8 @@ struct TasksView: View {
     model.tasks.filter { $0.isCompleted == showsCompleted && matchesAssignee($0) }
   }
 
-  private var completedTasks: [MemoraTask] {
-    visibleTasks.sorted { lhs, rhs in
+  private func completedFirst(_ tasks: [MemoraTask]) -> [MemoraTask] {
+    tasks.sorted { lhs, rhs in
       switch (lhs.completedAt, rhs.completedAt) {
       case let (l?, r?): l > r
       case (nil, _?): false
@@ -175,45 +176,22 @@ struct TasksView: View {
 
   /// Incomplete tasks grouped by when they are due, in the order the sections
   /// should read. An empty section is left out.
-  private var dueSections: [TaskDueSection] {
+  private func dueSections(of tasks: [MemoraTask]) -> [TaskDueSection] {
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: .now)
     let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) ?? today
     let weekEnd = calendar.date(byAdding: .day, value: 7, to: today) ?? today
 
-    let ordered = visibleTasks.sorted {
+    let ordered = tasks.sorted {
       ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture)
     }
-    var sections: [TaskDueSection] = []
-    for task in ordered {
-      let bucket = dueBucket(task, today: today, tomorrow: tomorrow, weekEnd: weekEnd, calendar: calendar)
-      if let index = sections.firstIndex(where: { $0.id == bucket.id }) {
-        sections[index].tasks.append(task)
-      } else {
-        sections.append(TaskDueSection(id: bucket.id, title: bucket.title, tasks: [task]))
-      }
+    let grouped = Dictionary(grouping: ordered) { task in
+      TaskDueBucket(task.dueDate, today: today, tomorrow: tomorrow, weekEnd: weekEnd, calendar: calendar)
     }
     // A fixed order, so 期限切れ stays on top even when sorting hid it.
-    let order = ["overdue", "today", "tomorrow", "week", "later", "none"]
-    return sections.sorted {
-      (order.firstIndex(of: $0.id) ?? order.count) < (order.firstIndex(of: $1.id) ?? order.count)
+    return TaskDueBucket.allCases.compactMap { bucket in
+      grouped[bucket].map { TaskDueSection(bucket: bucket, tasks: $0) }
     }
-  }
-
-  private func dueBucket(
-    _ task: MemoraTask,
-    today: Date,
-    tomorrow: Date,
-    weekEnd: Date,
-    calendar: Calendar
-  ) -> (id: String, title: String) {
-    guard let due = task.dueDate else { return ("none", "期限なし") }
-    let day = calendar.startOfDay(for: due)
-    if day < today { return ("overdue", "期限切れ") }
-    if day == today { return ("today", "今日") }
-    if day == tomorrow { return ("tomorrow", "明日") }
-    if day < weekEnd { return ("week", "今週") }
-    return ("later", "それ以降")
   }
 
   private var assigneeNames: [String] {
@@ -235,7 +213,45 @@ struct TasksView: View {
 
 /// A due-date heading and the tasks under it, for the tasks list.
 private struct TaskDueSection: Identifiable {
-  var id: String
-  var title: String
+  var bucket: TaskDueBucket
   var tasks: [MemoraTask]
+
+  var id: TaskDueBucket { bucket }
+  var title: String { bucket.title }
+}
+
+/// When a task is due, relative to today. Declared in the order the sections
+/// read.
+private enum TaskDueBucket: CaseIterable {
+  case overdue, today, tomorrow, week, later, undated
+
+  init(_ due: Date?, today: Date, tomorrow: Date, weekEnd: Date, calendar: Calendar) {
+    guard let due else {
+      self = .undated
+      return
+    }
+    let day = calendar.startOfDay(for: due)
+    if day < today {
+      self = .overdue
+    } else if day == today {
+      self = .today
+    } else if day == tomorrow {
+      self = .tomorrow
+    } else if day < weekEnd {
+      self = .week
+    } else {
+      self = .later
+    }
+  }
+
+  var title: String {
+    switch self {
+    case .overdue: "期限切れ"
+    case .today: "今日"
+    case .tomorrow: "明日"
+    case .week: "今週"
+    case .later: "それ以降"
+    case .undated: "期限なし"
+    }
+  }
 }

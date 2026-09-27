@@ -10,9 +10,13 @@ struct SpaceDetailView: View {
 
   var body: some View {
     if let space = model.space(id: spaceID) {
+      // Filtered once per redraw; each row used to filter again for its divider.
+      let spaceMeetings = model.meetings.filter { $0.spaceID == spaceID }
+      let spaceTasks = openTasks(in: spaceMeetings)
+
       ScrollView {
         VStack(alignment: .leading, spacing: 28) {
-          header(space)
+          header(space, meetingCount: spaceMeetings.count, taskCount: spaceTasks.count)
 
           Button {
             isAskingAI = true
@@ -103,7 +107,7 @@ struct SpaceDetailView: View {
     }
   }
 
-  private func header(_ space: MemoraSpace) -> some View {
+  private func header(_ space: MemoraSpace, meetingCount: Int, taskCount: Int) -> some View {
     HStack(spacing: 16) {
       Image(icon: space.icon)
         .font(.title2.weight(.semibold))
@@ -113,7 +117,7 @@ struct SpaceDetailView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text(space.name)
           .font(.title.bold())
-        Text("\(spaceMeetings.count)件の会話 · \(spaceTasks.count)件のタスク")
+        Text("\(meetingCount)件の会話 · \(taskCount)件のタスク")
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
@@ -121,11 +125,7 @@ struct SpaceDetailView: View {
     .padding(.top, 8)
   }
 
-  private var spaceMeetings: [Meeting] {
-    model.meetings.filter { $0.spaceID == spaceID }
-  }
-
-  private var spaceTasks: [MemoraTask] {
+  private func openTasks(in spaceMeetings: [Meeting]) -> [MemoraTask] {
     let meetingIDs = Set(spaceMeetings.map(\.id))
     return model.tasks.filter { task in
       task.meetingID.map(meetingIDs.contains) == true && !task.isCompleted
