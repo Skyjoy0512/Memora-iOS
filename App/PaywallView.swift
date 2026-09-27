@@ -82,8 +82,8 @@ struct PaywallView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
-        .foregroundStyle(Color(uiColor: .systemBackground))
-        .background(.primary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .foregroundStyle(.white)
+        .background(.tint, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
       }
       .buttonStyle(.plain)

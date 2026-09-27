@@ -117,9 +117,9 @@ struct CaptureSessionView: View {
           .font(.headline)
           .lineLimit(1)
           .minimumScaleFactor(0.85)
-          .foregroundStyle(Color(uiColor: .systemBackground))
+          .foregroundStyle(.white)
           .frame(maxWidth: .infinity, minHeight: 56)
-          .memoraGlass(in: Capsule(), tint: .primary, interactive: true)
+          .memoraGlass(in: Capsule(), tint: .accentColor, interactive: true)
         }
       }
       .padding(.horizontal, 16)

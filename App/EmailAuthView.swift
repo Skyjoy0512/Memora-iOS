@@ -77,8 +77,8 @@ struct EmailAuthView: View {
           }
           .frame(maxWidth: .infinity)
           .padding(.vertical, 12)
-          .foregroundStyle(Color(uiColor: .systemBackground))
-          .background(.primary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+          .foregroundStyle(.white)
+          .background(.tint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
           .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
           .opacity(canSubmit ? 1 : 0.4)
         }

@@ -12,9 +12,9 @@ struct AuthView: View {
         VStack(alignment: .leading, spacing: 0) {
           Image(icon: .personBadgeKey)
             .font(.system(size: 28, weight: .semibold))
-            .foregroundStyle(Color(uiColor: .systemBackground))
+            .foregroundStyle(.white)
             .frame(width: 62, height: 62)
-            .background(.primary, in: RoundedRectangle(cornerRadius: 19, style: .continuous))
+            .background(.tint, in: RoundedRectangle(cornerRadius: 19, style: .continuous))
             .accessibilityHidden(true)
             .memoraAppear()
 

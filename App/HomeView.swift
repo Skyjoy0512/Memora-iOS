@@ -68,9 +68,9 @@ struct HomeView: View {
                   model.isLifeLogCreationPresented = true
                 }
                 .font(.headline)
-                .foregroundStyle(Color(uiColor: .systemBackground))
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, minHeight: 52)
-                .background(Color(uiColor: .label), in: Capsule())
+                .background(.tint, in: Capsule())
                 .contentShape(Capsule())
                 .buttonStyle(.plain)
               }

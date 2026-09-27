@@ -86,9 +86,9 @@ struct SummaryGenerationSheet: View {
         dismiss()
       }
       .font(.headline)
-      .foregroundStyle(Color(uiColor: .systemBackground))
+      .foregroundStyle(.white)
       .frame(maxWidth: .infinity, minHeight: 56)
-      .background(Color(uiColor: .label), in: Capsule())
+      .background(.tint, in: Capsule())
       .contentShape(Capsule())
       .buttonStyle(.plain)
     }

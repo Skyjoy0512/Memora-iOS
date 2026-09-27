@@ -361,7 +361,6 @@ struct MeetingDetailView: View {
     VStack(spacing: 12) {
       ProgressView(value: progress)
         .progressViewStyle(.linear)
-        .tint(.primary)
 
       HStack(spacing: 12) {
         Text("PDFを作成しています… \(Int(progress * 100))%")

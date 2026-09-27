@@ -13,10 +13,8 @@ struct ImportProgressOverlay: View {
         if let progress {
           ProgressView(value: progress)
             .progressViewStyle(.linear)
-            .tint(.primary)
         } else {
           ProgressView()
-            .tint(.primary)
         }
 
         VStack(spacing: 4) {

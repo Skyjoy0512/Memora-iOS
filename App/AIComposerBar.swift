@@ -237,11 +237,11 @@ struct AIComposerBar: View {
     } label: {
       Image(icon: actionSymbol)
         .font(.body.weight(.semibold))
-        .foregroundStyle(Color(uiColor: .systemBackground))
+        .foregroundStyle(.white)
         .symbolEffect(.pulse, isActive: !reduceMotion && (speechInput.isListening || isBusy))
         .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
         .frame(width: 36, height: 36)
-        .background(Circle().fill(.primary))
+        .background(Circle().fill(.tint))
         // The circle stays small; the target around it does not.
         .frame(width: 44, height: 44)
         .contentShape(Circle())

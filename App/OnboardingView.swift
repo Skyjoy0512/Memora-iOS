@@ -57,8 +57,8 @@ struct OnboardingView: View {
           .contentTransition(.opacity)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 16)
-          .foregroundStyle(Color(uiColor: .systemBackground))
-          .background(.primary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+          .foregroundStyle(.white)
+          .background(.tint, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
           .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
       }
       .buttonStyle(.plain)
@@ -106,9 +106,9 @@ private struct OnboardingPageView: View {
 
       Image(icon: page.symbol)
         .font(.system(size: 38, weight: .semibold))
-        .foregroundStyle(Color(uiColor: .systemBackground))
+        .foregroundStyle(.white)
         .frame(width: 78, height: 78)
-        .background(.primary, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(.tint, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .scaleEffect(isCurrent || reduceMotion ? 1 : 0.86)
         .animation(reduceMotion ? nil : MemoraMotion.emphasis, value: isCurrent)
         .accessibilityHidden(true)

@@ -14,7 +14,6 @@ struct MemoraApp: App {
           SelfChecks.run()
           #endif
         }
-        .tint(.accentColor)
         .dismissKeyboardOnOutsideTap()
         .onOpenURL { url in
           Task {
