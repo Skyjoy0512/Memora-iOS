@@ -220,6 +220,9 @@ struct AIComposerBar: View {
         .contentShape(Circle())
     }
     .labelStyle(.iconOnly)
+    // A menu tints its label with the accent; the attach glyph stays in the
+    // label color like the rest of the composer.
+    .tint(.primary)
     .accessibilityLabel("添付を追加")
   }
 

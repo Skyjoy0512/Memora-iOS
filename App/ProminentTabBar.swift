@@ -266,10 +266,11 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   }
 
   private func generatedImage(for item: Item, selected: Bool) -> UIImage? {
+    // The selected tab is drawn in the accent color, as the system tab bar
+    // marks its current tab; the others stay in the label color.
     let label = VStack(spacing: 3) {
       Image(icon: selected ? item.filledSymbol : item.symbol)
         .font(.system(size: 18))
-        .foregroundStyle(.primary)
 
       if showsTitles {
         Text(item.title)
@@ -277,6 +278,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
           .lineLimit(1)
       }
     }
+    .foregroundStyle(selected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
     .environment(\.colorScheme, colorScheme)
     .environment(\.dynamicTypeSize, dynamicTypeSize)
 
