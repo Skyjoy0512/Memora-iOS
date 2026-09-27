@@ -7,7 +7,7 @@ line set, packaged for npm as
 (CC BY 4.0). They behave like system symbols: they size with text and take
 `foregroundStyle`. Stratis is a single-weight, mostly stroke-based set, so every
 weight group draws the same glyph and bold text only widens the stroke. The
-normalized canvas scale is 0.40, giving the glyphs more breathing room.
+normalized canvas scale is 0.50, drawing the glyphs a little larger.
 
 Three brand marks — Apple, Google, and Notion — have no Stratis equivalent and
 stay on [Phosphor Icons](https://phosphoricons.com) (MIT).

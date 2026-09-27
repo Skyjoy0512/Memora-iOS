@@ -11,7 +11,7 @@ struct SettingsIcon: View {
     Image(icon: icon)
       .resizable()
       .scaledToFit()
-      .frame(width: size * 0.64, height: size * 0.64)
+      .frame(width: size * 0.7, height: size * 0.7)
       .foregroundStyle(.white)
       .frame(width: size, height: size)
       .background(color.gradient, in: RoundedRectangle(cornerRadius: size * 0.26, style: .continuous))

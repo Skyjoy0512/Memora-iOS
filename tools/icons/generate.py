@@ -225,7 +225,7 @@ ICONS = {
     "chart.bar.fill": "s:BarChart01",
 }
 
-SCALE = 0.40
+SCALE = 0.50
 BOX = 256 * SCALE
 INSET = 14 * SCALE
 # Keep semibold toolbar labels from turning every outline into a heavy glyph.
@@ -237,8 +237,8 @@ WEIGHTS = [
 SCALES = {"S": (696, 625.541), "M": (1126, 1055.54), "L": (1556, 1485.54)}
 
 # Stratis is a single-weight set, so the weight groups differ only by stroke.
-# The set ships 2.0; a heavier stroke reads bolder at small icon sizes.
-STROKE = {"light": 2.2, "regular": 2.6, "bold": 3.2}
+# The set ships 2.0; the app draws a noticeably heavier stroke than the set.
+STROKE = {"light": 2.6, "regular": 3.0, "bold": 3.6}
 DRAWING = {"path", "circle", "rect", "line", "polyline", "polygon", "ellipse"}
 
 

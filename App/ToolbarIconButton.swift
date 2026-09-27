@@ -5,7 +5,7 @@ struct ToolbarIconButton: View {
   var title: LocalizedStringKey
   var icon: MemoraIcon
   var action: () -> Void
-  @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 21
+  @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 25
 
   init(_ title: LocalizedStringKey, icon: MemoraIcon, action: @escaping () -> Void) {
     self.title = title
@@ -19,7 +19,7 @@ struct ToolbarIconButton: View {
         .resizable()
         .scaledToFit()
         .frame(width: iconSize, height: iconSize)
-        .frame(minWidth: 32, minHeight: 32)
+        .frame(minWidth: 36, minHeight: 36)
         .contentShape(Rectangle())
     }
     .accessibilityLabel(title)
