@@ -14,6 +14,15 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   from a record by name (`App/MediaFiles.swift`); never inline the bytes again.
 - One type per file; comments explain why, not what; prefer `var` for stored
   properties in structs; no `#Preview` or `PreviewProvider`.
+- `MemoraModel.swift` holds only stored state, loading and the derived indexes.
+  Behaviour lives in `MemoraModel+<Domain>.swift` (Capture, Processing, Import,
+  Meetings, Tasks, Journal, Trash, Media, Backup, Persistence, …); add new
+  model code to the matching extension. Derived values that screens observe
+  (aggregates, journal days, the samples flag) are assigned only when they
+  change, so an unrelated edit does not redraw every screen reading them.
+- In view bodies, compute a filtered or searched list once (`let` at the top of
+  `body`) and pass it down; never re-derive it per row. Fast-ticking values
+  (recording time, playback position) are read only in small leaf views.
 
 ## Known regressions to avoid
 
