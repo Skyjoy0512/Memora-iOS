@@ -50,6 +50,15 @@ python3 tools/icons/generate.py /tmp/st/package /tmp/ph/package/assets
 
 To add an icon, add a row to `ICONS` in `generate.py` and run it again.
 
+### Figma exports
+
+An icon exported by hand from the
+[Stratis Figma file](https://www.figma.com/community/file/1177180791780461401)
+overrides the packaged artwork. Drop the SVG in `tools/icons/figma/` named after
+the icon's raw value (for example `line.3.horizontal.svg`) and run the script:
+any `figma/<raw>.svg` is drawn in place of the Stratis component. This is the way
+to correct an icon whose packaged geometry is wrong or missing.
+
 AI provider logos (`App/Assets.xcassets/Providers`) come from
 [Lobe Icons](https://github.com/lobehub/lobe-icons) (MIT). The marks belong to
 their companies and are shown only to identify each provider.

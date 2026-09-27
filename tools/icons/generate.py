@@ -271,6 +271,23 @@ def read_stratis(root):
     return icons
 
 
+FIGMA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "figma")
+
+
+def read_svg(path):
+    """Reads an SVG exported from Figma into the same (viewBox, elements) shape
+    the Stratis reader returns, so the template can draw it unchanged."""
+    src = open(path).read()
+    view = re.search(r'viewBox="([^"]+)"', src)
+    elements = []
+    for element in re.finditer(r"<(path|circle|rect|line|polyline|polygon|ellipse)\b([^>]*?)/?>", src):
+        values = {"_tag": element.group(1)}
+        for attribute in re.finditer(r'([\w-]+)="([^"]*)"', element.group(2)):
+            values[attribute.group(1)] = attribute.group(2)
+        elements.append(values)
+    return (view.group(1) if view else "0 0 24 24"), elements
+
+
 def stratis_body(elements, stroke):
     """Renders one weight group's glyph. Coloured fills/strokes become the
     symbol's own black, which the system recolours."""
@@ -320,7 +337,9 @@ def phosphor_glyph(root, name, filled, style):
     return body, SCALE, 256.0, 256.0
 
 
-def glyph(source, name, style, stratis, phosphor_root):
+def glyph(source, name, style, stratis, phosphor_root, override):
+    if override is not None:
+        return stratis_glyph(override, style)
     if source == "s":
         component = name if name.endswith("Icon") else f"{name}Icon"
         return stratis_glyph(stratis[component], style)
@@ -328,18 +347,22 @@ def glyph(source, name, style, stratis, phosphor_root):
     return phosphor_glyph(phosphor_root, name.rstrip("!"), filled, style)
 
 
-def template(source, name, stratis, phosphor_root):
+def template(source, name, raw, stratis, phosphor_root, override):
     guides, glyphs = [], []
     x = 300.0
-    note = (f'Stratis UI Icons "{name}" (CC BY 4.0).'
-            if source == "s" else f'Phosphor Icons "{name}" (MIT).')
+    if override is not None:
+        note = f'Figma export "{raw}".'
+    elif source == "s":
+        note = f'Stratis UI Icons "{name}" (CC BY 4.0).'
+    else:
+        note = f'Phosphor Icons "{name}" (MIT).'
     for weight, style in WEIGHTS:
         variant = f"{weight}-M"
         top = SCALES["M"][0] - 35.23 - BOX / 2
         left_margin, right_margin = x + INSET, x + BOX - INSET
         guides.append(f'  <line id="left-margin-{variant}" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="{left_margin:.3f}" x2="{left_margin:.3f}" y1="1030.79" y2="1150.12"/>')
         guides.append(f'  <line id="right-margin-{variant}" style="fill:none;stroke:#00AEEF;stroke-width:0.5;" x1="{right_margin:.3f}" x2="{right_margin:.3f}" y1="1030.79" y2="1150.12"/>')
-        body, scale, width, height = glyph(source, name, style, stratis, phosphor_root)
+        body, scale, width, height = glyph(source, name, style, stratis, phosphor_root, override)
         tx = x + (BOX - width * scale) / 2
         ty = top + (BOX - height * scale) / 2
         glyphs.append(f'  <g id="{variant}" transform="matrix({scale:.6f} 0 0 {scale:.6f} {tx:.3f} {ty:.3f})">\n{body}\n  </g>')
@@ -385,10 +408,13 @@ def main():
 
     for raw, entry in ICONS.items():
         source, name = entry.split(":", 1)
+        # A hand-exported Figma SVG for this icon wins over the package artwork.
+        export = os.path.join(FIGMA, f"{raw}.svg")
+        override = read_svg(export) if os.path.exists(export) else None
         asset = f"memora.{raw}"
         folder = f"{catalog}/{asset}.symbolset"
         os.makedirs(folder)
-        open(f"{folder}/{asset}.svg", "w").write(template(source, name, stratis, phosphor_root))
+        open(f"{folder}/{asset}.svg", "w").write(template(source, name, raw, stratis, phosphor_root, override))
         json.dump({"info": {"author": "xcode", "version": 1},
                    "symbols": [{"filename": f"{asset}.svg", "idiom": "universal"}]},
                   open(f"{folder}/Contents.json", "w"), indent=2)
