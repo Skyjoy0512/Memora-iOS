@@ -59,10 +59,10 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   private var createMenu: some View {
     if #available(iOS 26.0, *), isProminentPresented {
       popover
-        .padding(.bottom, Self.barHeight + 10)
         .glassEffect(.regular, in: .rect(cornerRadius: 28))
         .glassEffectID("createMenu", in: glassNamespace)
         .glassEffectTransition(.matchedGeometry)
+        .offset(y: -(Self.barHeight + 10))
     }
   }
 
