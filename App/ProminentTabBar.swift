@@ -30,13 +30,15 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @Namespace private var namespace
+  /// Shared by the prominent button and the create menu so their Liquid Glass
+  /// shapes can morph into each other.
+  @Namespace private var glassNamespace
 
   var body: some View {
     let tabCount = Item.allCases.count
     let isSmall = tabCount <= 2
 
-    MemoraGlassContainer(spacing: 10) {
+    MemoraGlassContainer(spacing: 18) {
       HStack(spacing: 10) {
         segmentedControl
           .padding(2)
@@ -44,6 +46,23 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
         prominentButton
       }
+      .overlay(alignment: .bottomTrailing) {
+        createMenu
+      }
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: isProminentPresented)
+    }
+  }
+
+  /// The capture choices, drawn on the same Liquid Glass layer as the button so
+  /// opening them morphs the button into the panel instead of popping a window.
+  @ViewBuilder
+  private var createMenu: some View {
+    if #available(iOS 26.0, *), isProminentPresented {
+      popover
+        .padding(.bottom, Self.barHeight + 10)
+        .glassEffect(.regular, in: .rect(cornerRadius: 28))
+        .glassEffectID("createMenu", in: glassNamespace)
+        .glassEffectTransition(.matchedGeometry)
     }
   }
 
@@ -91,20 +110,30 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     }
   }
 
+  @ViewBuilder
   private var prominentButton: some View {
-    Button {
-      isProminentPresented = true
-    } label: {
-      glassChrome {
-        prominentLabel
+    if #available(iOS 26.0, *) {
+      Button {
+        isProminentPresented = true
+      } label: {
+        glassChrome {
+          prominentLabel
+        }
+        .glassEffectID("createFab", in: glassNamespace)
       }
-      .matchedTransitionSource(id: "prominentAction", in: namespace)
-    }
-    .buttonStyle(.plain)
-    .popover(isPresented: $isProminentPresented) {
-      popover
-        .presentationCompactAdaptation(.popover)
-        .navigationTransition(.zoom(sourceID: "prominentAction", in: namespace))
+      .buttonStyle(.plain)
+    } else {
+      Button {
+        isProminentPresented = true
+      } label: {
+        glassChrome {
+          prominentLabel
+        }
+      }
+      .buttonStyle(.plain)
+      .popover(isPresented: $isProminentPresented) {
+        popover.presentationCompactAdaptation(.popover)
+      }
     }
   }
 

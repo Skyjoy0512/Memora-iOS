@@ -112,6 +112,15 @@ struct RootTabView: View {
         .hidesSystemTabBar()
         .tag(RootTab.askAI)
     }
+    .overlay {
+      // The create menu is inline Liquid Glass, so it needs its own dismissal
+      // layer; the bar draws above this and keeps its taps.
+      if model.isCaptureSourcePresented {
+        Color.clear
+          .contentShape(Rectangle())
+          .onTapGesture { model.isCaptureSourcePresented = false }
+      }
+    }
     .safeAreaInset(edge: .bottom, spacing: 8) {
       bottomControls
     }
