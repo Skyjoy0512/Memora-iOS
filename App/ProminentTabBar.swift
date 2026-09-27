@@ -16,10 +16,13 @@ enum MemoraBarMetrics {
 }
 
 /// A floating tab bar whose destinations live in a segmented control, paired
-/// with a single prominent button that morphs into its menu.
+/// with a single prominent button that opens a popover.
 struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   /// The height of the bar's row and the diameter of the prominent button.
   static var barHeight: CGFloat { MemoraBarMetrics.height }
+  /// The `.glass` button style pads its label, so the symbol's frame is smaller
+  /// than the bar for the finished circle to match the bar's height.
+  private static var glassLabelSide: CGFloat { barHeight - 14 }
 
   @Binding var selection: Item
   /// Exposed so an empty state can open the popover without a tab tap.
@@ -30,9 +33,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  /// Shared by the prominent button and the create menu so their Liquid Glass
-  /// shapes can morph into each other.
-  @Namespace private var glassNamespace
+  @Namespace private var namespace
 
   var body: some View {
     let tabCount = Item.allCases.count
@@ -45,36 +46,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
           .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
 
         prominentButton
-          .frame(width: Self.barHeight, height: Self.barHeight)
       }
-      .overlay(alignment: .bottomTrailing) {
-        createMenu
-      }
-    }
-  }
-
-  /// The capture choices. They carry the button's glass ID, so opening them
-  /// morphs the round button into the panel (and back), the way a system menu
-  /// grows out of its glass control.
-  @ViewBuilder
-  private var createMenu: some View {
-    if #available(iOS 26.0, *), isProminentPresented {
-      popover
-        .glassEffect(.regular, in: .rect(cornerRadius: 28))
-        .glassEffectID(Self.createGlassID, in: glassNamespace)
-        .glassEffectTransition(.matchedGeometry)
-        // Padding outside the glass lifts the panel above the bar without
-        // growing its shape; the overlay leaves the bar's own size alone.
-        .padding(.bottom, Self.barHeight + 12)
-        .accessibilityAction(.escape) { setProminentPresented(false) }
-    }
-  }
-
-  private static var createGlassID: String { "createFab" }
-
-  private func setProminentPresented(_ isPresented: Bool) {
-    withAnimation(reduceMotion ? nil : MemoraMotion.morph) {
-      isProminentPresented = isPresented
     }
   }
 
@@ -125,19 +97,21 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   @ViewBuilder
   private var prominentButton: some View {
     if #available(iOS 26.0, *) {
-      // While the menu is open the button's glass has become the panel, so
-      // its slot stays empty but keeps the bar's layout.
-      if !isProminentPresented {
-        Button {
-          setProminentPresented(true)
-        } label: {
-          glassChrome {
-            prominentLabel
-          }
-          .glassEffectID(Self.createGlassID, in: glassNamespace)
-          .glassEffectTransition(.matchedGeometry)
-        }
-        .buttonStyle(.plain)
+      // The system glass button plus a zoom popover sourced from its symbol is
+      // what lets the button's Liquid Glass morph into the menu.
+      Button {
+        isProminentPresented = true
+      } label: {
+        prominentLabel
+          .frame(width: Self.glassLabelSide, height: Self.glassLabelSide)
+          .matchedTransitionSource(id: "prominentAction", in: namespace)
+      }
+      .buttonStyle(.glass)
+      .buttonBorderShape(.circle)
+      .popover(isPresented: $isProminentPresented) {
+        popover
+          .presentationCompactAdaptation(.popover)
+          .navigationTransition(.zoom(sourceID: "prominentAction", in: namespace))
       }
     } else {
       Button {
@@ -145,6 +119,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
       } label: {
         glassChrome {
           prominentLabel
+            .frame(width: Self.barHeight, height: Self.barHeight)
         }
       }
       .buttonStyle(.plain)
@@ -157,7 +132,8 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   private var prominentLabel: some View {
     Image(icon: prominentSymbol)
       .font(.system(size: 22, weight: .medium))
-      .frame(width: Self.barHeight, height: Self.barHeight)
+      .rotationEffect(.degrees(isProminentPresented && prominentSymbol == .plus ? 45 : 0))
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: isProminentPresented)
       .accessibilityLabel("作成メニューを開く")
   }
 }

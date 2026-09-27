@@ -7,9 +7,6 @@ enum MemoraMotion {
   static let screen = Animation.smooth(duration: 0.38)
   /// Controls responding to a tap.
   static let control = Animation.snappy(duration: 0.26)
-  /// Liquid Glass reshaping from one control into another, such as a button
-  /// into its menu; long enough for the shape change to be followed.
-  static let morph = Animation.bouncy(duration: 0.42, extraBounce: 0.04)
   /// Moments worth celebrating, such as finishing a recording.
   static let emphasis = Animation.bouncy(duration: 0.46, extraBounce: 0.08)
 }

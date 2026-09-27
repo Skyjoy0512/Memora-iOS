@@ -82,7 +82,7 @@ struct CaptureMenuPopover: View {
   }
 
   private func collapse() {
-    withAnimation(reduceMotion ? nil : MemoraMotion.morph) {
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
       model.isCaptureSourcePresented = false
     }
   }
