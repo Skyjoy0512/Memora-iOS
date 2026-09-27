@@ -381,7 +381,7 @@
 
 | ID | 状態 | 内容 |
 |---|---|---|
-| UI01 | 実装済み・未検証 | アイコンをSF SymbolsからStratis UI Iconsベースの独自シンボルへ置き換え（`MemoraIcon`、`tools/icons/generate.py`）。ブランドマーク（Apple・Google・Notion）のみPhosphor Icons。文字サイズと太さに追従し、ウィジェットにも同じ素材を入れる。DEBUG自己チェックで全アイコンの存在を確認 |
+| UI01 | 実装済み・未検証 | アイコンをSF Symbolsへ統一し、`MemoraIcon`（`Shared/MemoraIcon.swift`）の名前を通して描く。文字サイズに追従し、ウィジェットでも同じ名前を使う。DEBUG自己チェックで全アイコンの存在を確認 |
 | UI02 | 実装済み・未検証 | BYOKのLLMをClaude・OpenAI・Gemini・DeepSeek・Kimi・Grok・Mistral・Qwen・OpenRouterへ拡張。各社ロゴ（Lobe Icons）付きで選び、モデルはおすすめ・キーで取得した一覧・ID直接入力。プロバイダーごとにモデルを記憶。Claudeは思考ブロックを除いて本文を読み、refusal・存在しないモデル（404）を理由付きで表示。おすすめのモデルIDは2026年9月時点の公開情報で、改名に備えて一覧取得を用意 |
 | UI03 | 実装済み・未検証 | 設定の先頭にプロフィール（ミー文字・絵文字・写真と名前）。ミー文字は絵文字キーボードのステッカー（adaptive image glyph）から取り込み背景色を選択、写真は正方形固定の編集画面で調整。全項目にカラーアイコン |
 | UI04 | 実装済み・未検証 | 4タブすべての右上にプロフィール画像の設定ボタン。作成ボタンは一番右のまま |

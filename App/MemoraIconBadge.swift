@@ -8,9 +8,7 @@ struct MemoraIconBadge: View {
 
   var body: some View {
     Image(icon: symbol)
-      .resizable()
-      .scaledToFit()
-      .frame(width: size * 0.5, height: size * 0.5)
+      .font(.system(size: size * 0.42, weight: .medium))
       .symbolRenderingMode(.monochrome)
       .foregroundStyle(.primary)
       .frame(width: size, height: size)

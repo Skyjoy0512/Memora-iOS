@@ -3,20 +3,18 @@ import UIKit
 
 // Mirrors the `systemImage:` initializers, so an icon reads the same at every
 // call site and keeps the behaviors that come with a Label (icon-only toolbar
-// items, menu rows, VoiceOver names).
+// items, menu rows, VoiceOver names). Every icon is an SF Symbol named by the
+// raw value.
 
 extension Image {
   init(icon: MemoraIcon) {
-    // Resolve custom symbol assets before handing them to SwiftUI's control
-    // labels, which can otherwise reinterpret a named image in native chrome.
-    self.init(uiImage: UIImage(icon: icon) ?? UIImage())
-    self = renderingMode(.template)
+    self.init(systemName: icon.systemName)
   }
 }
 
 extension UIImage {
   convenience init?(icon: MemoraIcon, configuration: UIImage.SymbolConfiguration? = nil) {
-    self.init(named: icon.assetName, in: .main, with: configuration)
+    self.init(systemName: icon.systemName, withConfiguration: configuration)
   }
 }
 
@@ -78,6 +76,6 @@ extension Menu where Label == SwiftUI.Label<Text, Image> {
 
 extension ContentUnavailableView where Label == SwiftUI.Label<Text, Image>, Description == Text?, Actions == EmptyView {
   init(_ title: LocalizedStringKey, icon: MemoraIcon, description: Text? = nil) {
-    self.init(title, image: icon.assetName, description: description)
+    self.init(title, systemImage: icon.systemName, description: description)
   }
 }

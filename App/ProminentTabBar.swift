@@ -110,9 +110,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
 
   private var prominentLabel: some View {
     Image(icon: prominentSymbol)
-      .resizable()
-      .scaledToFit()
-      .frame(width: 26, height: 26)
+      .font(.system(size: 22, weight: .medium))
       .rotationEffect(.degrees(isProminentPresented && prominentSymbol == .plus ? 45 : 0))
       .animation(reduceMotion ? nil : MemoraMotion.control, value: isProminentPresented)
       .frame(width: Self.barHeight, height: Self.barHeight)
@@ -262,9 +260,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   private func generatedImage(for item: Item, selected: Bool) -> UIImage? {
     let label = VStack(spacing: 3) {
       Image(icon: selected ? item.filledSymbol : item.symbol)
-        .resizable()
-        .scaledToFit()
-        .frame(width: 28, height: 24)
+        .font(.system(size: 18))
         .foregroundStyle(.primary)
 
       if showsTitles {

@@ -9,9 +9,7 @@ struct SettingsIcon: View {
 
   var body: some View {
     Image(icon: icon)
-      .resizable()
-      .scaledToFit()
-      .frame(width: size * 0.7, height: size * 0.7)
+      .font(.system(size: size * 0.58, weight: .medium))
       .foregroundStyle(.white)
       .frame(width: size, height: size)
       .background(color.gradient, in: RoundedRectangle(cornerRadius: size * 0.26, style: .continuous))

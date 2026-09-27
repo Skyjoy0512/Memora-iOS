@@ -90,10 +90,10 @@ enum SelfChecks {
     )
   }
 
-  /// Every icon the code can name must exist in the catalog; a symbol missing
-  /// after regenerating the catalog would otherwise draw nothing, silently.
+  /// Every icon the code can name must exist as an SF Symbol; a name that no
+  /// longer resolves would otherwise draw nothing, silently.
   private static func checkIconAssets() {
-    for icon in MemoraIcon.allCases where UIImage(icon: icon) == nil {
+    for icon in MemoraIcon.allCases where UIImage(systemName: icon.systemName) == nil {
       report("icon missing: \(icon.rawValue)")
     }
   }
