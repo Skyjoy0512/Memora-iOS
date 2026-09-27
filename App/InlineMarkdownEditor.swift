@@ -9,6 +9,9 @@ struct InlineMarkdownEditor: View {
   var placeholder: String
   var font: Font = .body
   var minHeight: CGFloat = 120
+  /// Draws headings, lists and tables as a document when the text has them,
+  /// as a generated summary does. Off, everything reads as one text.
+  var rendersBlocks = false
   /// When set, what is being written is kept under this key, so leaving the
   /// screen or stopping the app does not lose the draft.
   var draftKey: String?
@@ -50,6 +53,8 @@ struct InlineMarkdownEditor: View {
           if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             Text(placeholder)
               .foregroundStyle(.tertiary)
+          } else if rendersBlocks, MarkdownBlockParser.hasBlockStructure(text) {
+            MarkdownDocumentView(markdown: text)
           } else {
             Text(Self.attributed(text))
           }

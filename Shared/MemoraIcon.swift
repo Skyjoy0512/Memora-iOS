@@ -40,6 +40,7 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case checkmarkSeal = "checkmark.seal"
   case checkmarkSealFill = "checkmark.seal.fill"
   case checkmarkSquare = "checkmark.square"
+  case square = "square"
   case chevronDown = "chevron.down"
   case chevronLeft = "chevron.left"
   case chevronRight = "chevron.right"

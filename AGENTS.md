@@ -75,7 +75,15 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - The composer defaults to Auto, which follows the configured `AIEngine` and
   cloud selection. Manual choices are saved in `RegisteredLLMStore` and display
   the user's registered model name and provider logo. Both Ask AI paths capture
-  `askAIConfiguration` once per question; summaries keep their settings engine.
+  `askAIConfiguration` once per question; summaries use the settings engine
+  unless the summary sheet picks another for that summary.
+- Summaries run through `MeetingSummarizer`, not the Ask AI prompt. 詳細な概要
+  (`SummaryTemplate.detailedOverview`) is the base template. The cloud writes
+  the whole document in one pass (part notes merged when very long); on-device
+  reads section by section with guided generation and `SummaryMarkdownBuilder`
+  lays the document out. Actions become tasks (existing titles skipped); owners
+  and due dates are only set when the meeting said them. Generated summaries
+  render with `MarkdownDocumentView`; cards and rows use `summaryPreview`.
 - Icons are SF Symbols named through `MemoraIcon` (`Shared/MemoraIcon.swift`).
   Draw them with `Image(icon:)`, `Label(_:icon:)`, `Button(_:icon:)` and friends
   rather than a literal `systemName`/`systemImage`, so a stored icon resolves the

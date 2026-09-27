@@ -123,7 +123,14 @@ private struct MeetingPDFContent: View {
           .foregroundStyle(.secondary)
       }
 
-      if !meeting.summary.isEmpty {
+      if MarkdownBlockParser.hasBlockStructure(meeting.summary) {
+        // A generated document keeps its headings and action cards on paper.
+        VStack(alignment: .leading, spacing: 8) {
+          Text("要約")
+            .font(.headline)
+          MarkdownDocumentView(markdown: meeting.summary)
+        }
+      } else if !meeting.summary.isEmpty {
         section("要約", paragraphs: [meeting.summary])
       }
 

@@ -547,11 +547,15 @@ struct MeetingDetailView: View {
         .foregroundStyle(.primary)
         .memoraTextReveal()
 
+      // A generated document reads and edits at body size; a short summary
+      // keeps its large single-text look.
+      let isDocument = MarkdownBlockParser.hasBlockStructure(meeting.summary)
       InlineMarkdownEditor(
         text: meeting.summary,
         placeholder: "要約を追加",
-        font: .title3.weight(.medium),
-        minHeight: 120,
+        font: isDocument ? .body : .title3.weight(.medium),
+        minHeight: isDocument ? 320 : 120,
+        rendersBlocks: true,
         draftKey: "meeting.\(meeting.id).summary",
         onCommit: { await model.updateMeetingSummary(meeting.id, summary: $0) }
       )

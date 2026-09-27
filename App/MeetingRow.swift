@@ -23,7 +23,7 @@ struct MeetingRow: View {
         }
 
         if showsSummary {
-          Text(meeting.summary)
+          Text(meeting.summaryPreview)
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .lineLimit(3)
@@ -64,7 +64,7 @@ struct MeetingRow: View {
       parts.append("サンプル")
     }
     if showsSummary {
-      parts.append(meeting.summary)
+      parts.append(meeting.summaryPreview)
     }
     parts.append(MemoraFormat.relativeDate(meeting.createdAt))
     parts.append(MemoraFormat.duration(meeting.duration))

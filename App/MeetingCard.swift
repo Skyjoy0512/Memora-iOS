@@ -118,7 +118,7 @@ struct MeetingCard: View {
   private var subtitle: String {
     switch meeting.status {
     case .ready, .partialFailure:
-      meeting.summary.isEmpty ? meeting.status.shortLabel : meeting.summary
+      meeting.summary.isEmpty ? meeting.status.shortLabel : meeting.summaryPreview
     default:
       meeting.status.shortLabel
     }

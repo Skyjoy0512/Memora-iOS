@@ -171,4 +171,13 @@ extension Meeting {
   var hasSpeakerSeparation: Bool {
     transcript.contains { $0.speakerIsCertain }
   }
+
+  /// The summary as one plain passage for cards, rows and VoiceOver. A
+  /// generated document gives its overview without markdown markers; a plain
+  /// summary is returned as written.
+  var summaryPreview: String {
+    MarkdownBlockParser.hasBlockStructure(summary)
+      ? MarkdownBlockParser.overview(of: summary)
+      : summary
+  }
 }

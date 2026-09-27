@@ -63,6 +63,10 @@ enum SelfChecks {
     group("Speech final results", checkSpeechFinalResults)
     group("Icon assets", checkIconAssets)
     group("LLM providers", checkLLMProviders)
+    group("Summary reply parsing", checkSummaryReplyParsing)
+    group("Summary fallback extraction", checkSummaryFallbackExtraction)
+    group("Summary action dates", checkSummaryActionDates)
+    group("Summary document blocks", checkSummaryDocumentBlocks)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
     // its result when it finishes.
@@ -92,6 +96,105 @@ enum SelfChecks {
 
   /// Every icon the code can name must exist as an SF Symbol; a name that no
   /// longer resolves would otherwise draw nothing, silently.
+  /// A reply with its data block: the document is kept apart from the block,
+  /// "未定" never becomes an owner, and a repeated action is filed once.
+  private static func checkSummaryReplyParsing() {
+    let reply = """
+    # 定例
+    ## トピック1：予算
+    本文
+
+    <memora-data>
+    {"keyPoints": ["予算を確定"], "decisions": ["上限は100万円"], "openQuestions": [],
+     "actions": [{"title": "見積もり送付", "detail": "", "owner": "@Speaker 2", "due": "未定"},
+                 {"title": "見積もり 送付", "detail": "", "owner": "未定", "due": "2026-10-09"}]}
+    </memora-data>
+    """
+    let summary = SummaryResponseParser.parse(reply)
+    if summary.markdown.contains("memora-data") { report("data block left in document") }
+    if !summary.markdown.hasPrefix("# 定例") { report("document start lost") }
+    if summary.decisions != ["上限は100万円"] { report("decisions: \(summary.decisions)") }
+    if summary.actions.count != 1 { report("duplicate action kept: \(summary.actions.count)") }
+    if summary.actions.first?.owner != "Speaker 2" { report("owner: \(String(describing: summary.actions.first?.owner))") }
+    if summary.actions.first?.due != nil { report("未定 kept as due") }
+  }
+
+  /// Without a data block, the table and the bullets under their headings are
+  /// read back; bullets under 予定アクション do not duplicate the table.
+  private static func checkSummaryFallbackExtraction() {
+    let document = """
+    ## トピック1：SID
+    ### サマリー
+    - **決定事項**:
+      - SIDを分ける
+    - **予定アクション**:
+      - 榎木さんへ報告
+    ### アクションアイテム
+    | タイトル | 説明 | 責任者 | 期限 | 備考 |
+    |:---|:---|:---|:---|:---|
+    | 榎木さんへ報告 | 遅延を共有 | Speaker 1 | 未定 | |
+    ### オープンクエスチョン
+    - [???] リリース日はいつか
+    """
+    let summary = SummaryResponseParser.parse(document)
+    if summary.decisions != ["SIDを分ける"] { report("fallback decisions: \(summary.decisions)") }
+    if summary.openQuestions != ["リリース日はいつか"] { report("fallback questions: \(summary.openQuestions)") }
+    if summary.actions.count != 1 || summary.actions.first?.owner != "Speaker 1" {
+      report("fallback actions: \(summary.actions.map(\.title))")
+    }
+  }
+
+  /// Only dates the meeting named become due dates; relative words stay unset.
+  private static func checkSummaryActionDates() {
+    let calendar = Calendar(identifier: .gregorian)
+    guard let meeting = calendar.date(from: DateComponents(year: 2026, month: 9, day: 15)) else { return }
+    func due(_ text: String) -> DateComponents? {
+      SummaryActionItem(title: "x", due: text).dueDate(relativeTo: meeting, calendar: calendar)
+        .map { calendar.dateComponents([.year, .month, .day], from: $0) }
+    }
+    if due("2026-10-09")?.day != 9 { report("ISO date not read") }
+    if due("10月9日")?.month != 10 { report("Japanese date not read") }
+    if due("1月20日")?.year != 2027 { report("date after new year not moved forward") }
+    if due("来週") != nil || due("未定") != nil { report("relative or unknown due became a date") }
+  }
+
+  /// A generated document is drawn as blocks; a table becomes its rows.
+  private static func checkSummaryDocumentBlocks() {
+    let document = """
+    # 見出し
+    - **要点**:
+      - 入れ子
+    | タイトル | 責任者 |
+    |:---|:---|
+    | 報告 | Speaker 1 |
+    ---
+    """
+    if !MarkdownBlockParser.hasBlockStructure(document) { report("structure not detected") }
+    if MarkdownBlockParser.hasBlockStructure("短い要約です。\n- 箇条書きだけ") { report("plain text treated as document") }
+    let blocks = MarkdownBlockParser.blocks(for: document)
+    guard blocks.count == 5 else {
+      report("block count \(blocks.count)")
+      return
+    }
+    if case .bullet(let level, _, _) = blocks[2], level != 1 { report("nesting level \(level)") }
+
+    let overviewDocument = """
+    # 定例
+    **日時**: 2026年9月15日  
+    **会議の概要**:  
+    **SID**を分ける方針で合意した。
+    ---
+    ## トピック1：SID
+    """
+    let preview = MarkdownBlockParser.overview(of: overviewDocument)
+    if preview != "SIDを分ける方針で合意した。" { report("overview preview: \(preview)") }
+    if case .table(let header, let rows) = blocks[3] {
+      if header != ["タイトル", "責任者"] || rows != [["報告", "Speaker 1"]] { report("table \(header) \(rows)") }
+    } else {
+      report("table not parsed")
+    }
+  }
+
   private static func checkIconAssets() {
     for icon in MemoraIcon.allCases where UIImage(systemName: icon.systemName) == nil {
       report("icon missing: \(icon.rawValue)")
