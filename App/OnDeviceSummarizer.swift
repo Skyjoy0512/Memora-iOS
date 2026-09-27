@@ -89,6 +89,7 @@ enum OnDeviceSummarizer {
   あなたは会議の文字起こしを整理するアシスタントです。文字起こしにあることだけを書きます。
   人名・数値・日付・金額・固有名詞は文字起こしの表記のまま使い、話者はラベル（例: Speaker 1）で呼びます。
   相槌や言い直しは無視し、議論の中身を具体的に残します。担当者や期限が述べられていなければ「未定」とします。
+  発言をそのまま書き写さず、「Speaker 1が〜と述べた」「〜で合意した」のような言い切りの文に要約します。
   """
 
   /// One section's topics. A section the model still finds too long is split
@@ -209,7 +210,7 @@ enum OnDeviceSummarizer {
       var block = "\(index + 1). \(topic.title)\n"
       block += topic.points.prefix(2).map { "- \($0)" }.joined(separator: "\n")
       if !topic.decisions.isEmpty {
-        block += "\n" + topic.decisions.prefix(2).map { "- 決定: \($0)" }.joined(separator: "\n")
+        block += "\n" + topic.decisions.prefix(2).map { "- （決定）\($0)" }.joined(separator: "\n")
       }
       guard notes.count + block.count < characterLimit else { break }
       notes += block + "\n"
@@ -238,7 +239,14 @@ enum OnDeviceSummarizer {
       return .success(Overview(
         headline: headline.isEmpty ? input.title : headline,
         overview: content.overview.trimmingCharacters(in: .whitespacesAndNewlines),
-        keyPoints: clean(content.keyPoints)
+        // The notes mark decisions with （決定）; that marker is not content.
+        keyPoints: clean(content.keyPoints.map { point in
+          var point = point
+          for marker in ["（決定）", "(決定)", "決定:", "決定："] where point.hasPrefix(marker) {
+            point.removeFirst(marker.count)
+          }
+          return point
+        })
       ))
     } catch {
       return .failure(FoundationModelFailure.reason(for: error))
@@ -284,7 +292,7 @@ private struct TopicDigest {
   var startTime: String
   @Guide(description: "この話題で発言した話者ラベル")
   var speakers: [String]
-  @Guide(description: "誰が何を述べたかが分かる具体的な要点。数値や固有名詞は正確に。", .maximumCount(6))
+  @Guide(description: "誰が何を述べたかが分かる具体的な要点。発言の書き写しではなく言い切りの文で。数値や固有名詞は正確に。", .maximumCount(6))
   var points: [String]
   @Guide(description: "決まったこと。無ければ空。", .maximumCount(4))
   var decisions: [String]
@@ -292,7 +300,7 @@ private struct TopicDigest {
   var concerns: [String]
   @Guide(description: "誰かがやると決まった次の行動。無ければ空。", .maximumCount(4))
   var actions: [ActionDigest]
-  @Guide(description: "結論が出なかった問い。無ければ空。", .maximumCount(3))
+  @Guide(description: "結論が出ずに残った問いを疑問文で。感想や決まったことは含めない。無ければ空。", .maximumCount(3))
   var questions: [String]
 }
 
@@ -314,6 +322,6 @@ private struct OverviewDigest {
   var headline: String
   @Guide(description: "主な議題・結論・決定・今後の予定が分かる3〜5文の概要")
   var overview: String
-  @Guide(description: "会議全体で重要なポイント", .maximumCount(5))
+  @Guide(description: "会議全体で重要なポイント。発言の書き写しではなく言い切りの文で。", .maximumCount(5))
   var keyPoints: [String]
 }
