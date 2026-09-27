@@ -6,8 +6,8 @@ struct SummaryGenerationSheet: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var mode = SummaryGenerationMode.automatic
   @State private var template = SummaryTemplateChoice.standard
-  /// The engine for this summary only. Unset follows the settings engine.
-  @State private var engineChoice: AIEngine?
+  /// The AI for this summary only. Unset starts on the one Ask AI uses.
+  @State private var engineChoice: SummaryEngineChoice?
   @State private var selectedDetent = PresentationDetent.medium
   var meetingID: UUID
 
@@ -81,7 +81,7 @@ struct SummaryGenerationSheet: View {
         model.generateSummary(
           meetingID,
           choice: mode == .automatic ? .standard : template,
-          engine: selectedEngine
+          configuration: model.summaryConfiguration(for: selectedEngine)
         )
         dismiss()
       }
@@ -98,27 +98,26 @@ struct SummaryGenerationSheet: View {
     .background(.bar)
   }
 
-  private var selectedEngine: AIEngine {
-    engineChoice ?? model.aiEngine
-  }
-
-  /// Engines a summary can run on. The local LLM is only listed while the
-  /// settings still point at it, since this build does not ship one.
-  private var engineOptions: [AIEngine] {
-    AIEngine.allCases.filter { $0 != .local || model.aiEngine == .local }
+  private var selectedEngine: SummaryEngineChoice {
+    engineChoice ?? model.defaultSummaryEngineChoice
   }
 
   private var engineSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    let configuration = model.summaryConfiguration(for: selectedEngine)
+
+    return VStack(alignment: .leading, spacing: 8) {
       HStack {
-        Label("AIエンジン", icon: selectedEngine.symbol)
+        Label("AIエンジン", icon: configuration.engine.symbol)
           .font(.headline)
         Spacer()
         Picker("AIエンジン", selection: Binding {
           selectedEngine
         } set: { engineChoice = $0 }) {
-          ForEach(engineOptions) { engine in
-            Text(engine.label).tag(engine)
+          Text("設定に従う（\(model.aiEngine.shortLabel)）").tag(SummaryEngineChoice.settings)
+          Text("端末内AI").tag(SummaryEngineChoice.onDevice)
+          ForEach(model.registeredLLMs.models) { registered in
+            Text("\(registered.name)（\(registered.provider.label)）")
+              .tag(SummaryEngineChoice.registered(registered.id))
           }
         }
         .pickerStyle(.menu)
@@ -126,7 +125,7 @@ struct SummaryGenerationSheet: View {
       }
 
       // Cloud and on-device differ in depth, so the sheet says which is coming.
-      Text(MeetingSummarizer.approach(for: selectedEngine, llm: model.aiSelection))
+      Text(MeetingSummarizer.approach(for: configuration.engine, llm: configuration.llm))
         .font(.footnote)
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)

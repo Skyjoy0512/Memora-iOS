@@ -65,7 +65,7 @@ enum MeetingSummarizer {
         guard !Task.isCancelled else { return .failure(.cancelled) }
         await progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)）")
         let range = timeRange(of: part)
-        let result = await CloudAIService.complete(
+        let result = await CloudAIService.completeStreaming(
           system: SummaryPrompt.system,
           user: SummaryPrompt.partNotes(
             for: input,
@@ -75,7 +75,9 @@ enum MeetingSummarizer {
             transcript: part.joined(separator: "\n")
           ),
           llm: llm
-        )
+        ) { count in
+          progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)・\(count)文字）")
+        }
         switch result {
         case .answer(let text): notes.append("# 部分\(index + 1)（\(range)）\n\(text)")
         case .failure(let failure): return .failure(failure)
@@ -86,7 +88,14 @@ enum MeetingSummarizer {
     }
 
     guard !Task.isCancelled else { return .failure(.cancelled) }
-    switch await CloudAIService.complete(system: SummaryPrompt.system, user: request, llm: llm) {
+    let reply = await CloudAIService.completeStreaming(
+      system: SummaryPrompt.system,
+      user: request,
+      llm: llm
+    ) { count in
+      progress("AIが書いています（\(count)文字）")
+    }
+    switch reply {
     case .answer(let reply):
       let summary = SummaryResponseParser.parse(reply)
       return summary.markdown.isEmpty ? .failure(.empty) : .success(summary)

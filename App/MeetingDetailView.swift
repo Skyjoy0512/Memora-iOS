@@ -492,11 +492,11 @@ struct MeetingDetailView: View {
         ProcessingOverview(meeting: meeting)
       case .failed(let message):
         FailureOverview(message: message) {
-          model.retryProcessing(meeting.id)
+          retryFailedStep(meeting)
         }
       case .partialFailure(let message):
         PartialFailureBanner(message: message) {
-          model.retryProcessing(meeting.id)
+          retryFailedStep(meeting)
         }
         insightContent(meeting)
       case .ready:
@@ -510,6 +510,16 @@ struct MeetingDetailView: View {
       )
     case .notes:
       MeetingNotesContent(meetingID: meeting.id)
+    }
+  }
+
+  /// A record that already has its transcript failed at the summary, so the
+  /// retry reopens the summary choice rather than transcribing again.
+  private func retryFailedStep(_ meeting: Meeting) {
+    if meeting.transcript.isEmpty {
+      model.retryProcessing(meeting.id)
+    } else {
+      isSummaryGenerationPresented = true
     }
   }
 

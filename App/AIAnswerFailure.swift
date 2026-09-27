@@ -30,6 +30,12 @@ enum AIAnswerFailure: Error, Equatable {
   /// The provider answered with an error.
   case server
   case network
+  /// The provider did not answer in time. Long summaries take minutes, so this
+  /// is told apart from having no connection at all.
+  case timedOut
+  /// The connection dropped mid-answer, usually because the app left the
+  /// screen while a long answer was still being written.
+  case connectionLost
   /// The request was superseded, so there is nothing to show.
   case cancelled
   case empty
@@ -68,6 +74,10 @@ enum AIAnswerFailure: Error, Equatable {
       "APIの利用上限か残高の上限に達しました。しばらく待つか、プロバイダーの管理画面で残高を確認してください。"
     case .server:
       "AIのサーバーがエラーを返しました。時間をおいてもう一度お試しください。"
+    case .timedOut:
+      "AIの応答が時間内に返ってきませんでした。長い会議の要約は数分かかることがあります。もう一度お試しください。"
+    case .connectionLost:
+      "AIとの通信が途中で切れました。要約が終わるまで、アプリを開いたままにしてお試しください。"
     case .network:
       "ネットワークに接続できませんでした。接続を確認してください。"
     case .cancelled:

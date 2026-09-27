@@ -39,10 +39,119 @@ enum CloudAIService {
     } catch is CancellationError {
       return .failure(.cancelled)
     } catch let error as URLError {
-      return .failure(error.code == .cancelled ? .cancelled : .network)
+      return .failure(failure(for: error))
     } catch {
       return .failure(.network)
     }
+  }
+
+  static func failure(for error: URLError) -> AIAnswerFailure {
+    switch error.code {
+    case .cancelled: .cancelled
+    case .timedOut: .timedOut
+    case .networkConnectionLost: .connectionLost
+    default: .network
+    }
+  }
+
+  /// Streams the answer instead of waiting for it whole. A long summary takes
+  /// minutes to write; streamed, the connection carries text the whole time, so
+  /// no idle timeout cuts it off, and `onProgress` can say how much has come in.
+  /// An answer cut off at the provider's length limit is continued, up to a few
+  /// times, rather than returned half-written.
+  static func completeStreaming(
+    system: String,
+    user: String,
+    llm: LLMSelection,
+    onProgress: @escaping @MainActor (Int) -> Void
+  ) async -> AIAnswerResult {
+    // The Anthropic path has its own long timeout and a generous token cap.
+    guard !llm.provider.usesAnthropicAPI else {
+      return await complete(system: system, user: user, llm: llm)
+    }
+    guard let key = KeychainStore.string(forKey: llm.provider.keychainAccount), !key.isEmpty else {
+      return .failure(.missingKey)
+    }
+    guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
+
+    var messages: [[String: String]] = [
+      ["role": "system", "content": system],
+      ["role": "user", "content": user]
+    ]
+    var answer = ""
+    do {
+      for _ in 0..<maxContinuations {
+        let alreadyWritten = answer.count
+        let part = try await streamChatCompletion(messages: messages, llm: llm, key: key) { count in
+          onProgress(alreadyWritten + count)
+        }
+        answer += part.text
+        guard part.wasCutOff else { break }
+        messages.append(["role": "assistant", "content": answer])
+        messages.append(["role": "user", "content": "出力が途中で切れました。直前の出力の続きから、重複させずにそのまま書き続けてください。"])
+      }
+      let text = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+      return text.isEmpty ? .failure(.empty) : .answer(text)
+    } catch let failure as AIAnswerFailure {
+      return .failure(failure)
+    } catch is CancellationError {
+      return .failure(.cancelled)
+    } catch let error as URLError {
+      return .failure(failure(for: error))
+    } catch {
+      return .failure(.network)
+    }
+  }
+
+  private static let maxContinuations = 4
+
+  private static func streamChatCompletion(
+    messages: [[String: String]],
+    llm: LLMSelection,
+    key: String,
+    onProgress: @escaping @MainActor (Int) -> Void
+  ) async throws -> (text: String, wasCutOff: Bool) {
+    var request = URLRequest(url: llm.provider.baseURL.appendingPathComponent("chat/completions"))
+    request.httpMethod = "POST"
+    // The gap allowed between two pieces of the stream, not the whole answer.
+    // Reasoning models can think quietly for a while before the first word.
+    request.timeoutInterval = 300
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+    request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+    if llm.provider == .openRouter {
+      request.setValue("Memora", forHTTPHeaderField: "X-Title")
+    }
+    request.httpBody = try JSONSerialization.data(withJSONObject: [
+      "model": llm.modelID,
+      "messages": messages,
+      "stream": true
+    ] as [String: Any])
+
+    let (bytes, response) = try await URLSession.shared.bytes(for: request)
+    try validate(response)
+
+    var text = ""
+    var finishReason: String?
+    var lastReported = 0
+    for try await line in bytes.lines {
+      // Blank lines and ": keep-alive" comments only keep the connection open.
+      guard line.hasPrefix("data:") else { continue }
+      let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+      if payload == "[DONE]" { break }
+      guard let data = payload.data(using: .utf8),
+            let chunk = try? JSONDecoder().decode(ChatCompletionChunk.self, from: data) else { continue }
+      if chunk.error != nil { throw AIAnswerFailure.server }
+      for choice in chunk.choices ?? [] {
+        if let piece = choice.delta?.content { text += piece }
+        if let reason = choice.finishReason { finishReason = reason }
+      }
+      if text.count - lastReported >= 400 {
+        lastReported = text.count
+        await onProgress(text.count)
+      }
+    }
+    return (text, finishReason == "length")
   }
 
   /// The OpenAI chat-completions shape, which every non-Anthropic provider here
@@ -157,4 +266,21 @@ private struct AnthropicResponse: Decodable {
     case content
     case stopReason = "stop_reason"
   }
+}
+
+/// One piece of a streamed chat-completions answer.
+private struct ChatCompletionChunk: Decodable {
+  struct Choice: Decodable {
+    struct Delta: Decodable { var content: String? }
+    var delta: Delta?
+    var finishReason: String?
+
+    enum CodingKeys: String, CodingKey {
+      case delta
+      case finishReason = "finish_reason"
+    }
+  }
+  struct StreamError: Decodable { var message: String? }
+  var choices: [Choice]?
+  var error: StreamError?
 }

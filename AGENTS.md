@@ -75,8 +75,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - The composer defaults to Auto, which follows the configured `AIEngine` and
   cloud selection. Manual choices are saved in `RegisteredLLMStore` and display
   the user's registered model name and provider logo. Both Ask AI paths capture
-  `askAIConfiguration` once per question; summaries use the settings engine
-  unless the summary sheet picks another for that summary.
+  `askAIConfiguration` once per question. The summary sheet starts on the model
+  Ask AI is using (`defaultSummaryEngineChoice`) and can switch to the settings
+  engine, the on-device model, or any registered model for that summary.
+- Cloud summaries stream (`CloudAIService.completeStreaming`), so a long answer
+  is not cut off by an idle timeout, and an answer stopped at the length limit
+  is continued. A failed summary on a record with a transcript retries the
+  summary, never the transcription.
 - Summaries run through `MeetingSummarizer`, not the Ask AI prompt. 詳細な概要
   (`SummaryTemplate.detailedOverview`) is the base template. The cloud writes
   the whole document in one pass (part notes merged when very long); on-device

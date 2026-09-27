@@ -50,9 +50,13 @@ extension MemoraModel {
   /// its actions in the tasks tab. Nothing is invented: when no engine can
   /// answer, the record says so and keeps whatever the person had.
   ///
-  /// `engine` is the choice made in the summary sheet; without one, the
+  /// `configuration` is the AI chosen in the summary sheet; without one, the
   /// settings engine is used.
-  func generateSummary(_ id: UUID, choice: SummaryTemplateChoice, engine: AIEngine? = nil) {
+  func generateSummary(
+    _ id: UUID,
+    choice: SummaryTemplateChoice,
+    configuration: (engine: AIEngine, llm: LLMSelection)? = nil
+  ) {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
 
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
@@ -67,11 +71,13 @@ extension MemoraModel {
       transcript: meeting.transcript,
       template: choice
     )
-    let engine = engine ?? aiEngine
-    let llm = aiSelection
+    let engine = configuration?.engine ?? aiEngine
+    let llm = configuration?.llm ?? aiSelection
 
     processing.run(id: id) { [weak self] in
-      await MeetingSummarizer.summarize(input, engine: engine, llm: llm) { step in
+      let background = BackgroundActivity(name: "要約を作成")
+      defer { background.end() }
+      return await MeetingSummarizer.summarize(input, engine: engine, llm: llm) { step in
         guard let self, !Task.isCancelled else { return }
         self.updateMeeting(id) { meeting in
           if case .organizing = meeting.status {
