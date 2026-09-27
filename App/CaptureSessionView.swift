@@ -15,17 +15,7 @@ struct CaptureSessionView: View {
 
     VStack(spacing: 0) {
       HStack(spacing: 12) {
-        HStack(spacing: 8) {
-          Circle()
-            .fill(model.isRecordingPaused ? Color.secondary : Color.red)
-            .frame(width: 8, height: 8)
-
-          Text(MemoraFormat.duration(model.recordingElapsed))
-            .font(.subheadline.monospacedDigit().weight(.semibold))
-            .contentTransition(.numericText())
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("録音時間 \(MemoraFormat.duration(model.recordingElapsed))")
+        RecordingElapsedLabel()
 
         Spacer()
 
