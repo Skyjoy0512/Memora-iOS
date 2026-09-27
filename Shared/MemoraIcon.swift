@@ -115,6 +115,7 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case micFill = "mic.fill"
   case micSlash = "mic.slash"
   case moon = "moon"
+  case moonFill = "moon.fill"
   case noteText = "note.text"
   case notionLogo = "notion.logo"
   case paintpalette = "paintpalette"

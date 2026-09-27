@@ -127,10 +127,6 @@ struct HomeView: View {
           }
         }
 
-        ToolbarItem(placement: .topBarTrailing) {
-          SettingsToolbarButton()
-        }
-
         // The create action is the rightmost item, matching the other tabs.
         ToolbarItem(placement: .primaryAction) {
           ToolbarIconButton("記録を追加", icon: .squareAndPencil) {

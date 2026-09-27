@@ -93,8 +93,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Draw them with `Image(icon:)`, `Label(_:icon:)`, `Button(_:icon:)` and friends
   rather than a literal `systemName`/`systemImage`, so a stored icon resolves the
   same everywhere. Raw values keep the names older builds stored.
-- Settings opens from the gear icon at the top right of every tab
-  (`SettingsToolbarButton`), left of that tab's create button. The editable
-  profile picture remains at the top of Settings.
+- Settings has one entry point: the gear at the bottom right of the side menu
+  (`FileSidebarView` footer, beside Memora Plus). Tabs carry no settings button.
+  Dark mode is a toggle in Settings › 表示, not in the side menu. The editable
+  profile picture remains at the top of Settings, and each Settings section
+  uses one tile color (`Tint` in `SettingsView.swift`).
 - Backlog and phase status live in `docs/IMPROVEMENT_BACKLOG.md` and
   `docs/OPENCODE_IMPLEMENTATION.md`.

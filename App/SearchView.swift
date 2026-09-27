@@ -53,12 +53,6 @@ struct SearchView: View {
           .accessibilityLabel("対象: \(model.aiScope.title)")
         }
 
-        // Settings sits left of the chat actions so "new chat", the create
-        // action here, stays rightmost like on the other tabs.
-        ToolbarItem(placement: .topBarTrailing) {
-          SettingsToolbarButton()
-        }
-
         ToolbarItemGroup(placement: .topBarTrailing) {
           ToolbarIconButton("検索", icon: .magnifyingglass) {
             isSearchSheetPresented = true

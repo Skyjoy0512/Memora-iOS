@@ -86,12 +86,6 @@ struct LibraryView: View {
           }
         }
 
-        if !isSelectionMode {
-          ToolbarItem(placement: .topBarTrailing) {
-            SettingsToolbarButton()
-          }
-        }
-
         // The create action is the rightmost item, matching the other tabs.
         if model.fileSection == .projects, !isSelectionMode {
           ToolbarItem(placement: .primaryAction) {

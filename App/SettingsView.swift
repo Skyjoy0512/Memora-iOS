@@ -9,6 +9,7 @@ struct SettingsView: View {
   @AppStorage("memora.autoLifeLog.enabled") private var autoLifeLogEnabled = false
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @AppStorage("memora.appLock") private var appLockEnabled = false
+  @AppStorage("memora.prefersDarkAppearance") private var prefersDarkAppearance = false
   @State private var isLocationPermissionAlertPresented = false
   @State private var isCalendarPermissionAlertPresented = false
   @State private var excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
@@ -38,14 +39,14 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                 }
               } icon: {
-                SettingsIcon(icon: .personCropCircleFill, color: .blue)
+                SettingsIcon(icon: .personCropCircleFill, color: Tint.account)
               }
             }
 
             Button {
               isSignOutConfirmationPresented = true
             } label: {
-              SettingsLabel("サインアウト", icon: .rectanglePortraitAndArrowRight, color: .gray)
+              SettingsLabel("サインアウト", icon: .rectanglePortraitAndArrowRight, color: Tint.account)
             }
           } else {
             Button {
@@ -55,7 +56,7 @@ struct SettingsView: View {
                 Text("このiPhoneのみ")
                   .foregroundStyle(.secondary)
               } label: {
-                SettingsLabel("サインイン / 新規登録", icon: .personBadgeKey, color: .blue)
+                SettingsLabel("サインイン / 新規登録", icon: .personBadgeKey, color: Tint.account)
               }
             }
           }
@@ -73,7 +74,7 @@ struct SettingsView: View {
               Text(model.planTier?.label ?? "Free")
                 .foregroundStyle(.secondary)
             } label: {
-              SettingsLabel("Memora Plus", icon: .crownFill, color: .orange)
+              SettingsLabel("Memora Plus", icon: .crownFill, color: Tint.plan)
             }
           }
 
@@ -84,7 +85,7 @@ struct SettingsView: View {
               LabeledContent {
                 Text(model.cloudSharing.receivedItems.isEmpty ? "なし" : "\(model.cloudSharing.receivedItems.count)件")
               } label: {
-                SettingsLabel("チームで共有されたもの", icon: .person3Fill, color: .teal)
+                SettingsLabel("チームで共有されたもの", icon: .person3Fill, color: Tint.plan, glyphScale: 0.72)
               }
             }
           } else {
@@ -95,7 +96,7 @@ struct SettingsView: View {
                 Text("チームプランで利用可")
                   .foregroundStyle(.secondary)
               } label: {
-                SettingsLabel("チーム共有", icon: .person3Fill, color: .teal)
+                SettingsLabel("チーム共有", icon: .person3Fill, color: Tint.plan, glyphScale: 0.72)
               }
             }
           }
@@ -106,13 +107,23 @@ struct SettingsView: View {
         }
 
         Section {
+          Toggle(isOn: $prefersDarkAppearance) {
+            SettingsLabel("ダークモード", icon: .moonFill, color: Tint.appearance)
+          }
+        } header: {
+          Text("表示")
+        } footer: {
+          Text("オフのときは、iPhoneの外観の設定に合わせます。")
+        }
+
+        Section {
           NavigationLink {
             SpeechRecognitionSettingsView()
           } label: {
             LabeledContent {
               Text("\(transcriptionEngine.label) · \(transcriptionLanguage.label)")
             } label: {
-              SettingsLabel("文字起こし", icon: .waveform, color: .red)
+              SettingsLabel("文字起こし", icon: .waveform, color: Tint.processing)
             }
           }
 
@@ -122,15 +133,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.aiEngine == .cloud ? model.aiProvider.label : model.aiEngine.label)
             } label: {
-              Label {
-                Text("AI整理")
-              } icon: {
-                if model.aiEngine == .cloud {
-                  ProviderLogo(provider: model.aiProvider, size: 29)
-                } else {
-                  SettingsIcon(icon: .brainFill, color: .purple)
-                }
-              }
+              SettingsLabel("AI整理", icon: .sparkles, color: Tint.processing, glyphScale: 0.85)
             }
           }
 
@@ -140,7 +143,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.installedTemplateIDs.isEmpty ? "標準" : "\(model.installedTemplateIDs.count)個追加")
             } label: {
-              SettingsLabel("要約テンプレート", icon: .docTextFill, color: .indigo)
+              SettingsLabel("要約テンプレート", icon: .docTextFill, color: Tint.processing)
             }
           }
         } header: {
@@ -156,7 +159,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.omiPairingManager.state.shortLabel)
             } label: {
-              SettingsLabel("外部レコーダー", icon: .dotRadiowavesLeftAndRightFill, color: .green)
+              SettingsLabel("外部レコーダー", icon: .dotRadiowavesLeftAndRightFill, color: Tint.device)
             }
           }
         }
@@ -168,7 +171,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(NotionService.isConfigured ? "設定済み" : "未設定")
             } label: {
-              SettingsLabel("Notion", icon: .notionLogo, color: Color(white: 0.15))
+              SettingsLabel("Notion", icon: .notionLogo, color: Tint.integrations)
             }
           }
 
@@ -178,14 +181,14 @@ struct SettingsView: View {
             LabeledContent {
               Text(MCPIntegration.isConfigured ? "設定済み" : "未設定")
             } label: {
-              SettingsLabel("ChatGPT (MCP)", icon: .plugsConnectedFill, color: .mint)
+              SettingsLabel("ChatGPT (MCP)", icon: .plugsConnectedFill, color: Tint.integrations)
             }
           }
         }
 
         Section {
           Toggle(isOn: autoLifeLogBinding) {
-            SettingsLabel("移動と滞在を自動で記録", icon: .locationFill, color: .blue)
+            SettingsLabel("移動と滞在を自動で記録", icon: .locationFill, color: Tint.journal)
           }
 
           NavigationLink {
@@ -194,18 +197,18 @@ struct SettingsView: View {
             LabeledContent {
               Text(excludedPlaceCount == 0 ? "なし" : "\(excludedPlaceCount)件")
             } label: {
-              SettingsLabel("記録しない場所", icon: .mappinSlashFill, color: .pink)
+              SettingsLabel("記録しない場所", icon: .mappinSlashFill, color: Tint.journal)
             }
           }
 
           Toggle(isOn: calendarEventsBinding) {
-            SettingsLabel("カレンダーの予定を表示", icon: .calendarFill, color: .red)
+            SettingsLabel("カレンダーの予定を表示", icon: .calendarFill, color: Tint.journal)
           }
 
           NavigationLink {
             CalendarSelectionView()
           } label: {
-            SettingsLabel("表示するカレンダー", icon: .calendarBadgeCheckmarkFill, color: .orange)
+            SettingsLabel("表示するカレンダー", icon: .calendarBadgeCheckmarkFill, color: Tint.journal)
           }
           .disabled(!showCalendarEvents)
         } header: {
@@ -216,31 +219,31 @@ struct SettingsView: View {
 
         Section {
           Toggle(isOn: $appLockEnabled) {
-            SettingsLabel("Face IDでロック", icon: .faceidFill, color: .green)
+            SettingsLabel("Face IDでロック", icon: .faceidFill, color: Tint.privacy)
           }
 
           NavigationLink {
             PrivacyStorageView()
           } label: {
-            SettingsLabel("データの保存先", icon: .lockShieldFill, color: .blue)
+            SettingsLabel("データの保存先", icon: .lockShieldFill, color: Tint.privacy)
           }
 
           NavigationLink {
             StorageUsageView()
           } label: {
-            SettingsLabel("保存容量", icon: .internaldriveFill, color: .gray)
+            SettingsLabel("保存容量", icon: .internaldriveFill, color: Tint.privacy)
           }
 
           LabeledContent {
             Text(model.cloudStorageEnabled ? "オン" : "オフ")
           } label: {
-            SettingsLabel("クラウド保管", icon: .cloudFill, color: .cyan)
+            SettingsLabel("クラウド保管", icon: .cloudFill, color: Tint.privacy)
           }
 
           NavigationLink {
             SettingsBackupView()
           } label: {
-            SettingsLabel("バックアップ", icon: .externaldriveFill, color: .brown)
+            SettingsLabel("バックアップ", icon: .externaldriveFill, color: Tint.privacy)
           }
 
           NavigationLink {
@@ -249,7 +252,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.trashedRecords.isEmpty ? "なし" : "\(model.trashedRecords.count)件")
             } label: {
-              SettingsLabel("最近削除した項目", icon: .trashFill, color: .red)
+              SettingsLabel("最近削除した項目", icon: .trashFill, color: Tint.privacy)
             }
           }
         } header: {
@@ -262,17 +265,17 @@ struct SettingsView: View {
           LabeledContent {
             Text("準備中")
           } label: {
-            SettingsLabel("ヘルプ", icon: .questionmarkCircleFill, color: .blue)
+            SettingsLabel("ヘルプ", icon: .questionmarkCircleFill, color: Tint.support)
           }
           LabeledContent {
             Text("準備中")
           } label: {
-            SettingsLabel("プライバシーポリシー", icon: .handRaisedFill, color: .blue)
+            SettingsLabel("プライバシーポリシー", icon: .handRaisedFill, color: Tint.support)
           }
           LabeledContent {
             Text(Bundle.main.appVersion)
           } label: {
-            SettingsLabel("バージョン", icon: .infoCircleFill, color: .gray)
+            SettingsLabel("バージョン", icon: .infoCircleFill, color: Tint.support)
           }
         } header: {
           Text("サポート")
@@ -284,14 +287,14 @@ struct SettingsView: View {
           NavigationLink {
             StateGalleryView()
           } label: {
-            SettingsLabel("状態と復旧UIを確認", icon: .rectangleStackFill, color: .gray)
+            SettingsLabel("状態と復旧UIを確認", icon: .rectangleStackFill, color: Tint.prototype)
           }
 
           #if DEBUG
           NavigationLink {
             PerformanceLogView()
           } label: {
-            SettingsLabel("計測と自己チェック（ビルド比較用）", icon: .stopwatchFill, color: .gray)
+            SettingsLabel("計測と自己チェック（ビルド比較用）", icon: .stopwatchFill, color: Tint.prototype)
           }
 
           // Destructive resets only exist for development; a shipped build must
@@ -484,4 +487,18 @@ struct SettingsView: View {
       }
     }
   }
+}
+
+/// One tile color per Settings section, so the rows of a section read as a group.
+private enum Tint {
+  static let account = Color.blue
+  static let plan = Color.orange
+  static let appearance = Color.indigo
+  static let processing = Color.purple
+  static let device = Color.green
+  static let integrations = Color.teal
+  static let journal = Color.red
+  static let privacy = Color.cyan
+  static let support = Color.gray
+  static let prototype = Color.gray
 }

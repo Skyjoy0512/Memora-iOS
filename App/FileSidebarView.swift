@@ -5,7 +5,6 @@ import SwiftUI
 /// you are looking at.
 struct FileSidebarView: View {
   @Environment(MemoraModel.self) private var model
-  @AppStorage("memora.prefersDarkAppearance") private var prefersDarkAppearance = false
 
   var onSelectTab: (RootTab) -> Void
   var onSelectSection: (FileSection) -> Void
@@ -106,13 +105,6 @@ struct FileSidebarView: View {
       }
       .buttonStyle(.plain)
       .accessibilityLabel(model.isSignedIn ? "アカウント \(displayName)" : "サインイン")
-
-      Button("設定", icon: .gearshape, action: onOpenSettings)
-        .labelStyle(.iconOnly)
-        .font(.body.weight(.medium))
-        .foregroundStyle(.primary)
-        .frame(width: 44, height: 44)
-        .contentShape(Rectangle())
     }
     .padding(.horizontal, 18)
     .padding(.top, 10)
@@ -137,18 +129,14 @@ struct FileSidebarView: View {
 
         Spacer(minLength: 8)
 
-        Button(
-          prefersDarkAppearance ? "システムの外観にする" : "ダークモードにする",
-          icon: prefersDarkAppearance ? .sunMax : .moon
-        ) {
-          prefersDarkAppearance.toggle()
-        }
-        .labelStyle(.iconOnly)
-        .font(.body)
-        .foregroundStyle(.primary)
-        .contentTransition(.symbolEffect(.replace))
-        .frame(width: 44, height: 44)
-        .contentShape(Rectangle())
+        // Settings has one entry point, here; the appearance lives inside it.
+        Button("設定", icon: .gearshape, action: onOpenSettings)
+          .labelStyle(.iconOnly)
+          .font(.body)
+          .foregroundStyle(.primary)
+          .frame(width: 44, height: 44)
+          .contentShape(Rectangle())
+          .accessibilityHint("プロフィールと設定を開きます")
       }
       .padding(.leading, 18)
       .padding(.trailing, 10)
