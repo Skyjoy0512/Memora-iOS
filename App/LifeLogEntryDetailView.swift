@@ -110,7 +110,7 @@ struct LifeLogEntryDetailView: View {
           Text(entry.createdAt.formatted(date: .abbreviated, time: .shortened))
         }
         .font(.subheadline)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(.primary)
 
         if let image = photo {
           Button {

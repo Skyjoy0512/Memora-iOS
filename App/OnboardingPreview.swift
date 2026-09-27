@@ -110,7 +110,7 @@ private struct PreviewTask: View {
     HStack(spacing: 10) {
       Image(icon: isCompleted ? .checkmarkCircleFill : .circle)
         .font(.body)
-        .foregroundStyle(isCompleted ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+        .foregroundStyle(.primary)
       PreviewLine(widthRatio: widthRatio)
         .opacity(isCompleted ? 0.6 : 1)
     }

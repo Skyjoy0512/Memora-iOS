@@ -57,7 +57,7 @@ struct OmiDeviceDetailView: View {
     HStack(spacing: 14) {
       Image(icon: .dotRadiowavesLeftAndRight)
         .font(.title2)
-        .foregroundStyle(.tint)
+        .foregroundStyle(.primary)
         .frame(width: 48, height: 48)
         .background(Color(uiColor: .secondarySystemBackground), in: Circle())
 

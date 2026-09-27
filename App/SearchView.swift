@@ -417,7 +417,7 @@ struct SearchView: View {
         .font(.caption2.weight(.semibold))
     }
     .font(.subheadline.weight(.medium))
-    .foregroundStyle(isActive ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+    .foregroundStyle(.primary)
     .padding(.horizontal, 12)
     .padding(.vertical, 7)
     .background(Color.primary.opacity(isActive ? 0.12 : 0.06), in: Capsule())

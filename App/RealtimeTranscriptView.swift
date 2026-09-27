@@ -11,7 +11,7 @@ struct RealtimeTranscriptView: View {
       VStack(spacing: 10) {
         Image(icon: .textBubble)
           .font(.title2)
-          .foregroundStyle(.secondary)
+          .foregroundStyle(.primary)
         Text(service.unavailableReason ?? "録音を終えると文字起こしします")
           .font(.subheadline)
           .foregroundStyle(.secondary)

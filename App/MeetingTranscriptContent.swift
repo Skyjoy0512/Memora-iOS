@@ -166,6 +166,6 @@ struct TranscriptSegmentText: View {
           .font(.caption2.bold())
       }
     }
-    .foregroundStyle(segment.speakerIsCertain ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+    .foregroundStyle(.primary)
   }
 }

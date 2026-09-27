@@ -111,7 +111,7 @@ struct LLMModelPickerView: View {
         if id == model.aiModelID {
           Image(icon: .checkmark)
             .font(.body.weight(.semibold))
-            .foregroundStyle(.tint)
+            .foregroundStyle(.primary)
         }
       }
       .contentShape(Rectangle())

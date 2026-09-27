@@ -120,7 +120,7 @@ struct SummaryGenerationSheet: View {
         }
         Spacer()
         Image(icon: mode == candidate ? .checkmarkCircleFill : .circle)
-          .foregroundStyle(mode == candidate ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+          .foregroundStyle(.primary)
       }
       .padding(14)
       .background(
@@ -162,7 +162,7 @@ struct SummaryGenerationSheet: View {
         Spacer(minLength: 8)
 
         Image(icon: isSelected ? .checkmarkCircleFill : .circle)
-          .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+          .foregroundStyle(.primary)
       }
       .padding(14)
       .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)

@@ -51,7 +51,7 @@ struct ExternalRecorderSettingsView: View {
         .foregroundStyle(.secondary)
       Image(icon: .chevronRight)
         .font(.caption.weight(.semibold))
-        .foregroundStyle(.tertiary)
+        .foregroundStyle(.primary)
         .accessibilityHidden(true)
     }
     .contentShape(Rectangle())

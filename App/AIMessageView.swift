@@ -149,7 +149,7 @@ struct AIMessageView: View {
       Spacer(minLength: 4)
       Image(icon: .chevronRight)
         .font(.caption2.weight(.semibold))
-        .foregroundStyle(.tertiary)
+        .foregroundStyle(.primary)
     }
     .foregroundStyle(.primary)
   }

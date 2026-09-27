@@ -17,7 +17,7 @@ struct RegisteredLLMsView: View {
                   .font(.caption).foregroundStyle(.secondary)
               }
               Spacer()
-              Image(icon: .pencil).foregroundStyle(.secondary)
+              Image(icon: .pencil).foregroundStyle(.primary)
             }
           }
           .swipeActions {

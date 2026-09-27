@@ -237,7 +237,8 @@ WEIGHTS = [
 SCALES = {"S": (696, 625.541), "M": (1126, 1055.54), "L": (1556, 1485.54)}
 
 # Stratis is a single-weight set, so the weight groups differ only by stroke.
-STROKE = {"light": 1.8, "regular": 2.0, "bold": 2.6}
+# The set ships 2.0; a heavier stroke reads bolder at small icon sizes.
+STROKE = {"light": 2.2, "regular": 2.6, "bold": 3.2}
 DRAWING = {"path", "circle", "rect", "line", "polyline", "polygon", "ellipse"}
 
 

@@ -58,7 +58,7 @@ private struct ProcessStep: View {
   var body: some View {
     HStack(spacing: 10) {
       Image(icon: isComplete ? .checkmarkCircleFill : isCurrent ? .circleDotted : .circle)
-        .foregroundStyle(isComplete ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+        .foregroundStyle(.primary)
       Text(title)
         .font(.subheadline)
         .foregroundStyle(isCurrent || isComplete ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))

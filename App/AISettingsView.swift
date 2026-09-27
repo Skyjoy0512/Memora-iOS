@@ -107,7 +107,7 @@ struct AISettingsView: View {
         if option == model.aiEngine {
           Image(icon: .checkmark)
             .font(.body.weight(.semibold))
-            .foregroundStyle(.tint)
+            .foregroundStyle(.primary)
         }
       }
       .contentShape(Rectangle())

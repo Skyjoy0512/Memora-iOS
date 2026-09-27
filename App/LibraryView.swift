@@ -515,7 +515,7 @@ struct LibraryView: View {
     VStack(spacing: 16) {
       Image(icon: .waveform)
         .font(.title2)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(.primary)
 
       VStack(spacing: 6) {
         Text("まだファイルがありません")

@@ -45,7 +45,7 @@ struct SpeakerEditSheet: View {
                   Spacer()
                   if selectedPersonID == person.id {
                     Image(icon: .checkmark)
-                      .foregroundStyle(.tint)
+                      .foregroundStyle(.primary)
                   }
                 }
               }

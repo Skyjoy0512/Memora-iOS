@@ -250,7 +250,7 @@ struct AIQuestionView: View {
       Spacer()
       Image(icon: .arrowUpRight)
         .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
+        .foregroundStyle(.primary)
     }
   }
 

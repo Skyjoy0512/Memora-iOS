@@ -60,7 +60,7 @@ struct BulkSpacePickerSheet: View {
       HStack(spacing: 12) {
         Image(icon: symbol)
           .frame(width: 24)
-          .foregroundStyle(.secondary)
+          .foregroundStyle(.primary)
 
         Text(title)
           .foregroundStyle(.primary)
@@ -69,7 +69,7 @@ struct BulkSpacePickerSheet: View {
 
         if isSelected {
           Image(icon: .checkmark)
-            .foregroundStyle(.tint)
+            .foregroundStyle(.primary)
         }
       }
     }

@@ -60,7 +60,7 @@ struct MeetingNotesContent: View {
               Text("写真を追加")
                 .font(.caption.weight(.medium))
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.primary)
             .frame(width: 160, height: 160)
             .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))

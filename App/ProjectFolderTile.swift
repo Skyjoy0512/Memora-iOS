@@ -60,7 +60,7 @@ struct ProjectFolderTile: View {
     if symbols.indices.contains(index) {
       Image(icon: symbols[index])
         .font(.title3)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(.primary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     } else {

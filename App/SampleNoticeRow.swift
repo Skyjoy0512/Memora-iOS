@@ -10,7 +10,7 @@ struct SampleNoticeRow: View {
   var body: some View {
     HStack(spacing: 10) {
       Image(icon: .sparkles)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(.primary)
 
       Text("サンプルを表示しています")
         .font(.subheadline)

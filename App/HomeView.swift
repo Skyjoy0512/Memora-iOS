@@ -51,7 +51,7 @@ struct HomeView: View {
             VStack(spacing: 16) {
               Image(icon: .waveformPathEcg)
                 .font(.title2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
 
               VStack(spacing: 6) {
                 Text(emptyTitle)

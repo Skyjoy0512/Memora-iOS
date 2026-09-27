@@ -44,7 +44,7 @@ struct MeetingCard: View {
         Text(recordingDate)
       }
       .font(.caption.weight(.medium))
-      .foregroundStyle(.secondary)
+      .foregroundStyle(.primary)
       .padding(.top, 10)
     }
     .padding(18)
@@ -72,7 +72,7 @@ struct MeetingCard: View {
         // separately rather than as a second palette color.
         Image(icon: isSelected ? .checkmarkCircleFill : .circle)
           .font(.title2)
-          .foregroundStyle(isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+          .foregroundStyle(.primary)
           .background {
             if isSelected {
               Circle().fill(.white).padding(4)

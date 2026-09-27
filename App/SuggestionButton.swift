@@ -13,7 +13,7 @@ struct SuggestionButton: View {
         Spacer()
         Image(icon: .arrowUpLeft)
           .font(.caption.weight(.semibold))
-          .foregroundStyle(.secondary)
+          .foregroundStyle(.primary)
       }
       .contentShape(Rectangle())
       .padding(.vertical, 10)

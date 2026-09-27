@@ -27,7 +27,7 @@ struct LLMProviderPickerView: View {
               if provider == model.aiProvider {
                 Image(icon: .checkmark)
                   .font(.body.weight(.semibold))
-                  .foregroundStyle(.tint)
+                  .foregroundStyle(.primary)
               }
             }
             .contentShape(Rectangle())

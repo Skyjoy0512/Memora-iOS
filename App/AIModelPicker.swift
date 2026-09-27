@@ -37,7 +37,7 @@ struct AIModelPicker: View {
           .truncationMode(.tail)
         Image(icon: .chevronDown)
           .font(.caption2.weight(.semibold))
-          .foregroundStyle(.secondary)
+          .foregroundStyle(.primary)
       }
       .foregroundStyle(.primary)
       .padding(.horizontal, 6)

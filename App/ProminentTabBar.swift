@@ -263,6 +263,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
         .font(.system(size: 18))
         .fontWeight(.regular)
         .frame(width: 26, height: 22)
+        .foregroundStyle(.primary)
 
       if showsTitles {
         Text(item.title)
@@ -276,8 +277,9 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     let renderer = ImageRenderer(content: label)
     renderer.scale = displayScale
     // The segments are images, so UIKit has no title to read out. Naming the
-    // image is what VoiceOver reads for that segment.
-    let image = renderer.uiImage
+    // image is what VoiceOver reads for that segment. Original rendering keeps
+    // the glyph label-black instead of letting the segment's tint grey it out.
+    let image = renderer.uiImage?.withRenderingMode(.alwaysOriginal)
     image?.accessibilityLabel = item.title
     return image
   }

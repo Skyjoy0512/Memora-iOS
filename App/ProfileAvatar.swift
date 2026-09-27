@@ -31,7 +31,7 @@ struct ProfileAvatar: View {
         Image(icon: .personFill)
           .resizable()
           .scaledToFit()
-          .foregroundStyle(.secondary)
+          .foregroundStyle(.primary)
           .padding(size * 0.24)
       }
     }

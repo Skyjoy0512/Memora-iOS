@@ -304,7 +304,7 @@ struct MeetingDetailView: View {
                 .fill(Color.primary.opacity(0.08))
               Image(icon: participants.isEmpty ? .personBadgePlus : .plus)
                 .font(.title3)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
             }
             .frame(width: 56, height: 56)
 

@@ -36,7 +36,7 @@ struct PersonBubble: View {
 
           Image(icon: symbol)
             .font(.title3)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.primary)
         } else {
           PersonAvatar(name: title, size: size, photoData: photoData)
         }

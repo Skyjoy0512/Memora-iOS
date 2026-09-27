@@ -154,7 +154,7 @@ private struct BenefitRow: View {
     HStack(alignment: .top, spacing: 14) {
       Image(icon: symbol)
         .font(.body.weight(.semibold))
-        .foregroundStyle(.tint)
+        .foregroundStyle(.primary)
         .frame(width: 30)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 3) {

@@ -83,7 +83,7 @@ struct AddPeopleSheet: View {
         if isOn {
           Image(icon: .checkmark)
             .font(.body.weight(.semibold))
-            .foregroundStyle(.tint)
+            .foregroundStyle(.primary)
         }
       }
       .contentShape(Rectangle())
