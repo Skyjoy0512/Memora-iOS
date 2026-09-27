@@ -1,0 +1,172 @@
+import Foundation
+
+extension MemoraModel {
+  /// True while the store is protected stops every change that would write over
+  /// data that could not be read — including deletes, restores, and the removal
+  /// of files, which would otherwise leave the store and the media disagreeing.
+  func blockProtectedChanges() {
+    persistenceFailureMessage = storeProtectedMessage
+  }
+
+  private func persistLifeLogTrash() {
+    persistInBackground(trashedLifeLogEntries, forKey: StorageKey.lifeLogTrash)
+  }
+
+  private func persistTrash() {
+    persistInBackground(trashedRecords, forKey: StorageKey.trash)
+  }
+
+  func persistPendingMediaDeletions() {
+    persistInBackground(pendingMediaDeletions, forKey: StorageKey.pendingMediaDeletions)
+  }
+
+  func persistAIHistory() {
+    persistInBackground(aiHistory, forKey: StorageKey.aiHistory)
+  }
+
+  func persistTasks() {
+    persistInBackground(tasks, forKey: StorageKey.tasks)
+  }
+
+  func persistLifeLog() {
+    persistInBackground(lifeLogEntries, forKey: StorageKey.lifeLogEntries)
+  }
+
+  func persistMeetings() {
+    let startedAt = Date()
+    defer {
+      performance.record(
+        "保存（会議の引き渡し）",
+        milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000,
+        count: meetings.count
+      )
+    }
+    persistInBackground(meetings, forKey: StorageKey.meetings)
+  }
+
+  func persistSpaces() {
+    persistInBackground(spaces, forKey: StorageKey.spaces)
+  }
+
+  func persistInBackground<T: Encodable & Sendable>(_ value: T, forKey key: String) {
+    // A store that could not be read must not be written over: the existing
+    // records may still be there, and replacing them would lose them.
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return
+    }
+    RecordStore.save(value, key: key) { [weak self] in
+      self?.persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
+    }
+  }
+
+  /// Waits for the write and reports whether it worked, for operations that must
+  /// know before doing anything else.
+  @discardableResult
+  func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return false
+    }
+    do {
+      try RecordStore.saveNow(value, key: key)
+      return true
+    } catch {
+      persistenceFailureMessage = "データを保存できませんでした。ストレージの空き容量を確認してください。"
+      return false
+    }
+  }
+
+  /// Waits for a write of several documents that belong to one operation, and
+  /// reports whether all of them landed. `removing` lets the same commit discard
+  /// the draft that belongs to the operation.
+  @discardableResult
+  func persistBatch(
+    _ build: () throws -> [(key: String, data: Data)],
+    removing: [String] = []
+  ) -> Bool {
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return false
+    }
+    do {
+      try RecordStore.commitNow(writes: try build(), removing: removing)
+      return true
+    } catch {
+      persistenceFailureMessage = saveFailureMessage
+      return false
+    }
+  }
+
+  /// The same commit, off the caller's turn, for a screen that must not wait on
+  /// disk while it finishes.
+  @discardableResult
+  func persistBatchAsync(
+    _ build: () throws -> [(key: String, data: Data)],
+    removing: [String] = []
+  ) async -> Bool {
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return false
+    }
+    do {
+      try await RecordStore.commitAsync(writes: try build(), removing: removing)
+      return true
+    } catch {
+      persistenceFailureMessage = saveFailureMessage
+      return false
+    }
+  }
+
+  /// Stores one document and waits for it, without blocking the caller while the
+  /// write is in flight.
+  @discardableResult
+  func persistNowAsync<T: Encodable>(_ value: T, forKey key: String) async -> Bool {
+    guard !isStoreProtected else {
+      persistenceFailureMessage = storeProtectedMessage
+      return false
+    }
+    do {
+      let data = try RecordStore.encoded(value)
+      try await RecordStore.commitAsync(writes: [(key: key, data: data)], removing: [])
+      return true
+    } catch {
+      persistenceFailureMessage = saveFailureMessage
+      return false
+    }
+  }
+
+  private var saveFailureMessage: String {
+    "データを保存できませんでした。ストレージの空き容量を確認してください。"
+  }
+
+  private var storeProtectedMessage: String {
+    "保存データを読み込めなかったため、上書きを止めています。アプリを再起動してください。"
+  }
+
+  enum StorageKey {
+    static let hasCompletedOnboarding = "hasSeenMemoraWelcome"
+    static let hasOfferedPlus = "hasOfferedMemoraPlus"
+    static let isSubscribed = "memoraPlusActive"
+    static let planTier = "memoraPlanTier"
+    static let account = "memoraAccount"
+    static let tasks = "memoraTasks"
+    static let lifeLogEntries = "memoraLifeLogEntries"
+    static let meetings = "memoraMeetings"
+    static let spaces = "memoraSpaces"
+    static let aiEngine = "memora.aiEngine"
+    static let aiProvider = "memora.aiProvider"
+    static func aiModel(_ provider: LLMProvider) -> String { "memora.aiModel.\(provider.rawValue)" }
+    static let people = "memoraPeople"
+    static let installedTemplates = "memoraInstalledTemplates"
+    static let cloudStorage = "memoraCloudStorage"
+    static let activeJobs = "memoraActiveJobs"
+    static let recordingDraft = "memoraRecordingDraft"
+    static let trash = "memoraTrash"
+    static let lifeLogTrash = "memoraLifeLogTrash"
+    static let aiHistory = "memoraAIHistory"
+    static let pendingMediaDeletions = "memoraPendingMediaDeletions"
+    static let hasOfferedSampleDeletion = "memora.hasOfferedSampleDeletion"
+    static let autoLifeLogInbox = "memoraAutoLifeLogInbox"
+  }
+}

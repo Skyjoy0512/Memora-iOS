@@ -2,6 +2,13 @@ import Foundation
 
 // People: creating, tagging, and looking up the people attached to records.
 extension MemoraModel {
+  func person(id: UUID) -> Person? {
+    personIndex.element(id, in: people)
+  }
+
+  func persistPeople() {
+    persistInBackground(people, forKey: StorageKey.people)
+  }
 
   @discardableResult
   func addPerson(name: String, contactIdentifier: String? = nil) -> Person? {
