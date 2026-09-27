@@ -237,8 +237,9 @@ WEIGHTS = [
 SCALES = {"S": (696, 625.541), "M": (1126, 1055.54), "L": (1556, 1485.54)}
 
 # Stratis is a single-weight set, so the weight groups differ only by stroke.
-# Regular matches the Figma file's 2.0 so the icons look as they do there.
-STROKE = {"light": 1.75, "regular": 2.0, "bold": 2.4}
+# The set ships 2.0, which reads as grey at icon sizes; the app draws a
+# heavier stroke so the glyphs read as solid black.
+STROKE = {"light": 2.6, "regular": 3.0, "bold": 3.6}
 DRAWING = {"path", "circle", "rect", "line", "polyline", "polygon", "ellipse"}
 
 

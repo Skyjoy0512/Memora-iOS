@@ -33,31 +33,31 @@
  </g>
  <g id="Symbols">
   <g id="Ultralight-M" transform="matrix(5.333333 0 0 5.333333 300.000 1026.770)">
-   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <g id="Thin-M" transform="matrix(5.333333 0 0 5.333333 600.000 1026.770)">
-   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <g id="Light-M" transform="matrix(5.333333 0 0 5.333333 900.000 1026.770)">
-   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <g id="Regular-M" transform="matrix(5.333333 0 0 5.333333 1200.000 1026.770)">
-   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <g id="Medium-M" transform="matrix(5.333333 0 0 5.333333 1500.000 1026.770)">
-   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <g id="Semibold-M" transform="matrix(5.333333 0 0 5.333333 1800.000 1026.770)">
-   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <g id="Bold-M" transform="matrix(5.333333 0 0 5.333333 2100.000 1026.770)">
-   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <g id="Heavy-M" transform="matrix(5.333333 0 0 5.333333 2400.000 1026.770)">
-   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <g id="Black-M" transform="matrix(5.333333 0 0 5.333333 2700.000 1026.770)">
-   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M4 15V9M12 20V4M8 17V7M20 9V15M16 7L16 17" fill="none" stroke="#000" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
  </g>
 </svg>
