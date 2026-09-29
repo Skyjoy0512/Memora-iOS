@@ -98,15 +98,17 @@ struct MeetingCard: View {
       parts.append("サンプル")
     }
     parts.append(recordingDate)
-    parts.append(MemoraFormat.duration(meeting.duration))
+    if meeting.hasLength {
+      parts.append(MemoraFormat.duration(meeting.duration))
+    }
     parts.append(meeting.status.shortLabel)
     return parts.joined(separator: "、")
   }
 
   private var badge: some View {
     HStack(spacing: 6) {
-      Image(icon: meeting.source == .recording ? .waveform : .squareAndArrowDown)
-      Text(MemoraFormat.duration(meeting.duration))
+      Image(icon: meeting.source.symbol)
+      Text(meeting.hasLength ? MemoraFormat.duration(meeting.duration) : meeting.source.label)
     }
     .font(.caption.weight(.semibold))
     .foregroundStyle(.primary)
