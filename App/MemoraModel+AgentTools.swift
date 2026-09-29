@@ -237,11 +237,13 @@ extension MemoraModel {
       return AgentToolOutcome(text: people.map { "- \($0.name)" }.joined(separator: "\n"))
     }
 
-    let stepID = beginAgentStep(AgentStep(icon: AgentTool.readPerson.icon, title: "\(name)さんの記録を確認"), on: messageID)
+    // The step names the person found, not the model's wording of the query.
     guard let person = person(named: name), let memory = memory(of: person.id) else {
+      let stepID = beginAgentStep(AgentStep(icon: AgentTool.readPerson.icon, title: "「\(name)」を人物から探す"), on: messageID)
       finishAgentStep(stepID, on: messageID, state: .done, detail: "登録がありません")
       return AgentToolOutcome(text: "「\(name)」という人は登録されていません。search_recordsで名前を検索してください。")
     }
+    let stepID = beginAgentStep(AgentStep(icon: AgentTool.readPerson.icon, title: "\(person.name)さんの記録を確認"), on: messageID)
     finishAgentStep(stepID, on: messageID, state: .done, detail: "会議\(memory.meetings.count)件")
 
     let meetingLimit = compact ? 4 : 12

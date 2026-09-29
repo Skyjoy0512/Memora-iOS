@@ -43,6 +43,7 @@ struct RootTabView: View {
       // Automatic records written while the app was away land when it returns.
       if phase == .active {
         model.importAutoLifeLogInbox()
+        model.prepareWeeklyReviewIfNeeded()
         model.scanInboxForAudio()
         AutoLocationLogger.shared.startIfEnabled()
         // A permission request left unanswered when the app went away is
@@ -54,7 +55,10 @@ struct RootTabView: View {
         AutoLocationLogger.shared.handleSceneInactive()
       }
     }
-    .onAppear { refreshSafeAreaInsets() }
+    .onAppear {
+      refreshSafeAreaInsets()
+      model.prepareWeeklyReviewIfNeeded()
+    }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
       isKeyboardVisible = true
     }

@@ -13,6 +13,11 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   var spaceID: UUID?
   var createdAt = Date.now
   var updatedAt = Date.now
+  /// Set on a weekly review: the first day of the week it covers.
+  var weekStart: Date?
+  /// When the document was first opened, so a new review can be pointed out
+  /// until it has been read.
+  var openedAt: Date?
 
   var displayTitle: String {
     title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の\(kind.label)" : title

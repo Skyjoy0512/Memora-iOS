@@ -4,6 +4,7 @@ import SwiftUI
 struct DocumentsView: View {
   @Environment(MemoraModel.self) private var model
   @State private var pendingDeletion: MemoraDocument?
+  @State private var isEmptyWeekNoticePresented = false
 
   var body: some View {
     let documents = model.documents
@@ -32,6 +33,23 @@ struct DocumentsView: View {
       }
     }
     .navigationTitle("資料")
+    .toolbar {
+      ToolbarItem(placement: .primaryAction) {
+        ToolbarIconButton("今週の週報を作る", icon: .calendarBadgeCheckmark) {
+          if let review = model.makeWeeklyReview(containing: .now) {
+            model.libraryPath.append(.document(review.id))
+          } else {
+            isEmptyWeekNoticePresented = true
+          }
+        }
+        .labelStyle(.iconOnly)
+      }
+    }
+    .alert("今週はまだ記録がありません", isPresented: $isEmptyWeekNoticePresented) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text("会議やジャーナルの記録、完了したタスクがあると、週報を作れます。")
+    }
     .confirmationDialog(
       "「\(pendingDeletion?.displayTitle ?? "")」を削除しますか？",
       isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } }),

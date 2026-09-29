@@ -24,6 +24,7 @@ struct DocumentDetailView: View {
       }
     }
     .navigationBarTitleDisplayMode(.inline)
+    .onAppear { model.markDocumentOpened(documentID) }
   }
 
   private func content(_ document: MemoraDocument) -> some View {
@@ -111,7 +112,7 @@ struct DocumentDetailView: View {
   }
 
   private func caption(_ document: MemoraDocument) -> String {
-    var parts = [document.kind.label, document.updatedAt.formatted(date: .abbreviated, time: .shortened)]
+    var parts = [document.weekStart == nil ? document.kind.label : "週報", document.updatedAt.formatted(date: .abbreviated, time: .shortened)]
     if let spaceID = document.spaceID, let space = model.space(id: spaceID) {
       parts.append(space.name)
     }

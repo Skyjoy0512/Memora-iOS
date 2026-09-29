@@ -50,6 +50,10 @@ struct HomeView: View {
               SampleNoticeRow()
             }
 
+            if let review = model.unreadWeeklyReview {
+              WeeklyReviewCard(review: review)
+            }
+
             JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
 
             if entries.isEmpty, calendarEvents.isEmpty {

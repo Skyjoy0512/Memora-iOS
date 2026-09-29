@@ -69,6 +69,8 @@ enum SelfChecks {
     group("Summary document blocks", checkSummaryDocumentBlocks)
     group("Slide outline round trip", checkSlideOutline)
     group("Presentation package", checkPresentationPackage)
+    group("Weekly review", checkWeeklyReview)
+    group("Person name matching", checkPersonNames)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
     // its result when it finishes.
@@ -240,6 +242,41 @@ enum SelfChecks {
 
   /// A photo's thumbnail is found from the stored name, and both files belong to
   /// the record so a backup carries them together.
+  /// A week with nothing in it gets no review; a week with a meeting and a
+  /// finished task names both, and a task due the following week is listed.
+  private static func checkWeeklyReview() {
+    let calendar = Calendar.current
+    guard let week = calendar.dateInterval(of: .weekOfYear, for: Date(timeIntervalSince1970: 1_790_000_000)) else { return }
+    let inWeek = week.start.addingTimeInterval(3600 * 30)
+    let empty = WeeklyReviewBuilder.Input(week: week, meetings: [], tasks: [], entries: [], spaceNames: [:])
+    if WeeklyReviewBuilder.markdown(empty) != nil {
+      report("weekly review of an empty week")
+    }
+
+    let meeting = Meeting(
+      id: UUID(), title: "定例会議", createdAt: inWeek, duration: 1800, source: .recording,
+      status: .ready, summary: "進捗を確認した。", keyPoints: [], decisions: ["来週リリース"],
+      openQuestions: [], transcript: [], spaceID: nil, audioURL: nil
+    )
+    let finished = MemoraTask(id: UUID(), title: "資料を送る", isCompleted: true, completedAt: inWeek)
+    let upcoming = MemoraTask(id: UUID(), title: "見積もりを出す", dueDate: week.end.addingTimeInterval(3600 * 30), isCompleted: false)
+    let input = WeeklyReviewBuilder.Input(week: week, meetings: [meeting], tasks: [finished, upcoming], entries: [], spaceNames: [:])
+    let text = WeeklyReviewBuilder.markdown(input) ?? ""
+    for expected in ["定例会議", "決定: 来週リリース", "資料を送る", "見積もりを出す"] where !text.contains(expected) {
+      report("weekly review is missing \(expected)")
+    }
+  }
+
+  /// 「田中さん」 should find 田中, without matching someone else.
+  private static func checkPersonNames() {
+    if !MemoraModel.isSameName("田中さん", "田中") || !MemoraModel.isSameName("山田 太郎", "山田太郎") {
+      report("person names with honorifics or spaces")
+    }
+    if MemoraModel.isSameName("田中", "中田") {
+      report("person names matched different people")
+    }
+  }
+
   /// Editing slides goes through their outline text, so reading it back must
   /// give the same headings, points and notes.
   private static func checkSlideOutline() {

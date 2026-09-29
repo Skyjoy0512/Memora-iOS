@@ -99,6 +99,15 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Notion pages, tasks and documents. Reading tools run straight away; every
   tool that changes data waits for the approval card, and a declined change is
   reported back to the model.
+- People: the side menu's 人物 (`PeopleView`, `PersonDetailView`) shows what
+  the records hold about someone (`MemoraModel.memory(of:)`): meetings they
+  were tagged on or spoke in under their name, open tasks assigned to them,
+  shared decisions, journal mentions. The agent reads it with `read_person`.
+- Weekly reviews: `WeeklyReviewBuilder` writes last week's review from the
+  records alone (no model) the first time the app opens in a new week
+  (`prepareWeeklyReviewIfNeeded`), stored as a `MemoraDocument` with
+  `weekStart`. An unopened one is pointed out on the Journal
+  (`WeeklyReviewCard`); 資料 can write this week's on demand.
   Documents (`MemoraDocument`, stored under `memoraDocuments` and in backups)
   are listed from the side menu's 資料 and export as PDF (`DocumentPDF`),
   PowerPoint (`PPTXWriter`, stored ZIP via `ZipArchive`) or text. The agent

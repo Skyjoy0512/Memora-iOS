@@ -28,7 +28,7 @@ struct DocumentRow: View {
   }
 
   private var caption: String {
-    var parts = [document.kind.label, document.createdAt.formatted(date: .abbreviated, time: .omitted)]
+    var parts = [document.weekStart == nil ? document.kind.label : "週報", document.createdAt.formatted(date: .abbreviated, time: .omitted)]
     if let spaceName {
       parts.append(spaceName)
     }
