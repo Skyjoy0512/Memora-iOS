@@ -27,6 +27,8 @@ extension MemoraModel {
       return listProjectsTool(messageID: messageID)
     case .listTasks:
       return listTasksTool(call, messageID: messageID, scope: scope)
+    case .readPerson:
+      return readPersonTool(call, messageID: messageID, compact: compact)
     case .createDocument, .createSlides:
       return await createDocumentTool(call, tool: tool, messageID: messageID)
     case .addTasks:
@@ -224,6 +226,54 @@ extension MemoraModel {
       }
       return line
     }.joined(separator: "\n"))
+  }
+
+  private func readPersonTool(_ call: AgentToolCall, messageID: UUID, compact: Bool) -> AgentToolOutcome {
+    let name = call.string("name")
+    guard !name.isEmpty else {
+      let stepID = beginAgentStep(AgentStep(icon: AgentTool.readPerson.icon, title: "登録済みの人を確認"), on: messageID)
+      finishAgentStep(stepID, on: messageID, state: .done, detail: "\(people.count)人")
+      guard !people.isEmpty else { return AgentToolOutcome(text: "登録済みの人はいません。") }
+      return AgentToolOutcome(text: people.map { "- \($0.name)" }.joined(separator: "\n"))
+    }
+
+    let stepID = beginAgentStep(AgentStep(icon: AgentTool.readPerson.icon, title: "\(name)さんの記録を確認"), on: messageID)
+    guard let person = person(named: name), let memory = memory(of: person.id) else {
+      finishAgentStep(stepID, on: messageID, state: .done, detail: "登録がありません")
+      return AgentToolOutcome(text: "「\(name)」という人は登録されていません。search_recordsで名前を検索してください。")
+    }
+    finishAgentStep(stepID, on: messageID, state: .done, detail: "会議\(memory.meetings.count)件")
+
+    let meetingLimit = compact ? 4 : 12
+    let taskLimit = compact ? 5 : 20
+    var parts = ["\(person.name)さん"]
+    if let note = person.note, !note.isEmpty { parts.append("メモ: \(note)") }
+    if let lastMet = memory.lastMet {
+      parts.append("最後に会った日: \(Self.agentDate(lastMet))、一緒の会議: \(memory.meetings.count)件")
+    }
+    if !memory.assignedTasks.isEmpty {
+      parts.append("## 本人が引き受けたこと（未完了）\n" + memory.assignedTasks.prefix(taskLimit).map(Self.agentTaskLine).joined(separator: "\n"))
+    }
+    if !memory.sharedTasks.isEmpty {
+      parts.append("## 一緒の会議で残っていること\n" + memory.sharedTasks.prefix(taskLimit).map(Self.agentTaskLine).joined(separator: "\n"))
+    }
+    if !memory.decisions.isEmpty {
+      parts.append("## 一緒に決めたこと\n" + memory.decisions.prefix(taskLimit).map {
+        "- \($0.text)（\($0.meetingTitle)、\(Self.agentDate($0.date))）"
+      }.joined(separator: "\n"))
+    }
+    if !memory.meetings.isEmpty {
+      parts.append("## 一緒の会議（新しい順）\n" + memory.meetings.prefix(meetingLimit).map { meeting in
+        let preview = meeting.summaryPreview.replacingOccurrences(of: "\n", with: " ").prefix(compact ? 60 : 160)
+        return "- id=\(meeting.id.uuidString) 「\(meeting.displayTitle)」 \(Self.agentDate(meeting.createdAt)) \(preview)"
+      }.joined(separator: "\n"))
+    }
+    if !memory.journalEntries.isEmpty {
+      parts.append("## ジャーナル\n" + memory.journalEntries.prefix(compact ? 3 : 8).map {
+        "- \($0.title)（\(Self.agentDate($0.createdAt))）"
+      }.joined(separator: "\n"))
+    }
+    return AgentToolOutcome(text: parts.joined(separator: "\n\n"))
   }
 
   // MARK: - Changing

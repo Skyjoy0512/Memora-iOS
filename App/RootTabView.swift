@@ -21,6 +21,7 @@ struct RootTabView: View {
         onSelectSpace: openSpace,
         onCreateSpace: createSpace,
         onOpenDocuments: openDocuments,
+        onOpenPeople: openPeople,
         onOpenSettings: openSettings,
         onClose: closeSidebar
       )
@@ -274,6 +275,12 @@ struct RootTabView: View {
     closeSidebar()
     model.selectedTab = .files
     model.libraryPath = [.documents]
+  }
+
+  private func openPeople() {
+    closeSidebar()
+    model.selectedTab = .files
+    model.libraryPath = [.people]
   }
 
   private func createSpace() {

@@ -136,6 +136,8 @@ struct HomeView: View {
         case .stateGallery: StateGalleryView()
         case .documents: DocumentsView()
         case .document(let id): DocumentDetailView(documentID: id)
+        case .people: PeopleView()
+        case .person(let id): PersonDetailView(personID: id)
         }
       }
     }

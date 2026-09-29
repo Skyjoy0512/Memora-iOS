@@ -9,4 +9,6 @@ enum LibraryRoute: Hashable {
   case stateGallery
   case documents
   case document(UUID)
+  case people
+  case person(UUID)
 }

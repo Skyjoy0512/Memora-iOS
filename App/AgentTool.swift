@@ -7,6 +7,7 @@ enum AgentTool: String, CaseIterable {
   case readRecord = "read_record"
   case listProjects = "list_projects"
   case listTasks = "list_tasks"
+  case readPerson = "read_person"
   case createDocument = "create_document"
   case createSlides = "create_slides"
   case addTasks = "add_tasks"
@@ -21,14 +22,14 @@ enum AgentTool: String, CaseIterable {
   /// long-form writers (slides) and the rarer organising tools stay with the
   /// cloud models.
   static let onDeviceTools: [AgentTool] = [
-    .searchRecords, .readRecord, .listTasks, .addTasks, .createDocument,
+    .searchRecords, .readRecord, .readPerson, .listTasks, .addTasks, .createDocument,
     .createProject, .addJournalMemo, .createCalendarEvent, .draftEmail
   ]
 
   /// True for tools that change the person's data.
   var needsApproval: Bool {
     switch self {
-    case .searchRecords, .readRecord, .listProjects, .listTasks: false
+    case .searchRecords, .readRecord, .readPerson, .listProjects, .listTasks: false
     default: true
     }
   }
@@ -40,6 +41,7 @@ enum AgentTool: String, CaseIterable {
     case .readRecord: .docText
     case .listProjects, .moveRecordsToProject: .folder
     case .listTasks, .addTasks: .checklist
+    case .readPerson: .person
     case .createDocument: .docRichtext
     case .createSlides: .rectangleOnRectangleAngled
     case .createProject: .folderBadgePlus
@@ -60,6 +62,8 @@ enum AgentTool: String, CaseIterable {
       "プロジェクトの一覧（id・名前・記録の数）を返す。"
     case .listTasks:
       "タスクの一覧（タイトル・担当・期限・元の会議）を返す。"
+    case .readPerson:
+      "人物について、一緒の会議・その人が引き受けたタスク・一緒に決めたこと・最後に会った日を返す。nameが空なら登録済みの人の一覧。「〇〇さんと何を話した？」「約束は？」に使う。"
     case .createDocument:
       "Markdownの資料を作成して保存する（利用者の承認後に実行）。見出し・箇条書き・表で構成する。"
     case .createSlides:
@@ -97,6 +101,8 @@ enum AgentTool: String, CaseIterable {
       return object([
         "include_completed": ["type": "boolean", "description": "完了済みも含めるか"]
       ], required: [])
+    case .readPerson:
+      return object(["name": string("人の名前（敬称なしでよい）。空なら一覧")], required: ["name"])
     case .createDocument:
       return object([
         "title": string("資料のタイトル"),

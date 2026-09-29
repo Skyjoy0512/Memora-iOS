@@ -9,6 +9,7 @@ struct FileSidebarView: View {
   var onSelectSpace: (MemoraSpace) -> Void
   var onCreateSpace: () -> Void
   var onOpenDocuments: () -> Void
+  var onOpenPeople: () -> Void
   var onOpenSettings: () -> Void
   var onClose: () -> Void
 
@@ -40,6 +41,15 @@ struct FileSidebarView: View {
               isSelected: isShowingDocuments
             ) {
               onOpenDocuments()
+            }
+
+            SidebarRow(
+              title: "人物",
+              symbol: .person2,
+              detail: model.people.isEmpty ? nil : "\(model.people.count)",
+              isSelected: model.selectedTab == .files && model.libraryPath.first == .people
+            ) {
+              onOpenPeople()
             }
           }
 
