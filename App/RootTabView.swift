@@ -32,6 +32,8 @@ struct RootTabView: View {
       // the next screen, and the capture popover belongs to the tab it opened on.
       model.setBottomBarHidden(false, for: model.selectedTab.rawValue)
       model.isCaptureSourcePresented = false
+      // A search belongs to the tab it was opened on.
+      model.isSearchActive = false
     }
     .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshSafeAreaInsets() }
     .onChange(of: scenePhase) { _, phase in
@@ -185,6 +187,17 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: shouldShowComposer)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isBottomBarHidden)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isCaptureSourcePresented)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: isSearchCovering)
+  }
+
+  /// An open search takes the screen, until a result is opened on top of it.
+  private var isSearchCovering: Bool {
+    guard model.isSearchActive else { return false }
+    return switch model.selectedTab {
+    case .home: model.homePath.isEmpty
+    case .files: model.libraryPath.isEmpty
+    default: false
+    }
   }
 
   /// The bar follows the tab on top, so another screen's scrolling cannot move it.
@@ -193,7 +206,7 @@ struct RootTabView: View {
   }
 
   private var showsBottomBar: Bool {
-    !isComposing && !isShowingMeetingDetail && !isBottomBarHidden
+    !isComposing && !isShowingMeetingDetail && !isBottomBarHidden && !isSearchCovering
   }
 
 
@@ -205,7 +218,7 @@ struct RootTabView: View {
   }
 
   private var canRevealSidebar: Bool {
-    guard !model.isCaptureSourcePresented else { return false }
+    guard !model.isCaptureSourcePresented, !model.isSearchActive else { return false }
     switch model.selectedTab {
     case .home:
       return model.homePath.isEmpty
@@ -282,7 +295,7 @@ struct RootTabView: View {
   }
 
   private var shouldShowComposer: Bool {
-    guard !model.isInlineEditing else { return false }
+    guard !model.isInlineEditing, !isSearchCovering else { return false }
     // The detail keeps its own contextual field; Ask AI has its own chat field,
     // so the shared "Ask Anything" bar is for the three list tabs.
     if isShowingMeetingDetail {

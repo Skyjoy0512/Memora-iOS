@@ -52,8 +52,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   stop scrolling. Only the tab bar hides; the Ask AI composer stays at the
   bottom of the screen.
 - **Search**: Files and Journal search from a toolbar magnifying-glass button
-  that opens `ToolbarSearchField` under the navigation bar. Do not bring back
-  an always-visible `.searchable` drawer. The ＋ menu holds capture actions
+  that opens `ToolbarSearchField` in place of the navigation bar. While it is
+  open (`isSearchActive`), the tab bar and Ask AI hide and the screen shows only
+  results, never the list behind them. Do not bring back an always-visible
+  `.searchable` drawer. The ＋ menu holds capture actions
   only (record, import, online meeting); memos are added from the Journal
   toolbar and projects from the side menu.
 - **Journal (Home)**: the tab's own `ScrollView`/`List` must stay the screen's

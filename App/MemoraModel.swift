@@ -127,6 +127,9 @@ final class MemoraModel {
   var isAIChatResponding = false
   var isCapturePresented = false
   var isCaptureSourcePresented = false
+  /// True while a tab's search is open. The tab bar and Ask AI step aside so
+  /// the search reads as its own screen.
+  var isSearchActive = false
   var isOnlineMeetingCapturePresented = false
   var isRecording = false
   var isRecordingPaused = false

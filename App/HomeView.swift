@@ -37,69 +37,26 @@ struct HomeView: View {
     NavigationStack(path: $model.homePath) {
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 18) {
-          if model.isRecording {
-            ActiveRecordingStrip()
-          }
-
-          if model.hasSampleContent, query.isEmpty {
-            SampleNoticeRow()
-          }
-
-          if query.isEmpty {
-            JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
-          }
-
-          if entries.isEmpty, query.isEmpty ? calendarEvents.isEmpty : true {
-            VStack(spacing: 16) {
-              Image(icon: .waveformPathEcg)
-                .font(.title2)
-                .foregroundStyle(.primary)
-
-              VStack(spacing: 6) {
-                Text(emptyTitle)
-                  .font(.headline)
-
-                Text(emptyDescription)
-                  .font(.subheadline)
-                  .foregroundStyle(.secondary)
-                  .multilineTextAlignment(.center)
-              }
-
-              if query.isEmpty {
-                Button("記録を追加") {
-                  model.isLifeLogCreationPresented = true
-                }
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .background(.tint, in: Capsule())
-                .contentShape(Capsule())
-                .buttonStyle(.plain)
-              }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(20)
-            .memoraCard()
-          } else if !query.isEmpty {
-            Text("検索結果")
-              .font(.title2.bold())
-              .memoraTextReveal()
-
-            ForEach(dayGroups(of: entries)) { group in
-              VStack(alignment: .leading, spacing: 10) {
-                Text(dayLabel(for: group.day))
-                  .font(.title2.bold())
-                  .memoraTextReveal()
-
-                LazyVStack(spacing: 0) {
-                  ForEach(group.entries) { entry in
-                    entryView(entry)
-                  }
-                }
-              }
-            }
+          // Searching replaces the journal with its results, so the calendar
+          // and the day's timeline step aside instead of sitting under them.
+          if isSearching {
+            searchResults(entries)
           } else {
-            timelineContent(entries)
+            if model.isRecording {
+              ActiveRecordingStrip()
+            }
+
+            if model.hasSampleContent {
+              SampleNoticeRow()
+            }
+
+            JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
+
+            if entries.isEmpty, calendarEvents.isEmpty {
+              emptyDay
+            } else {
+              timelineContent(entries)
+            }
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -182,6 +139,73 @@ struct HomeView: View {
     }
   }
 
+  /// The selected day has nothing on it yet.
+  private var emptyDay: some View {
+    VStack(spacing: 16) {
+      Image(icon: .waveformPathEcg)
+        .font(.title2)
+        .foregroundStyle(.primary)
+
+      VStack(spacing: 6) {
+        Text("\(selectedDayLabel)の記録はありません")
+          .font(.headline)
+
+        Text(emptyDescription)
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .multilineTextAlignment(.center)
+      }
+
+      Button("記録を追加") {
+        model.isLifeLogCreationPresented = true
+      }
+      .font(.headline)
+      .foregroundStyle(.white)
+      .frame(maxWidth: .infinity, minHeight: 52)
+      .background(.tint, in: Capsule())
+      .contentShape(Capsule())
+      .buttonStyle(.plain)
+    }
+    .frame(maxWidth: .infinity)
+    .padding(20)
+    .memoraCard()
+  }
+
+  /// Every day's matches, newest day first. Before anything is typed it says
+  /// what the search covers rather than showing the journal behind it.
+  @ViewBuilder
+  private func searchResults(_ entries: [LifeLogEntry]) -> some View {
+    if query.isEmpty {
+      ContentUnavailableView(
+        "記録を検索",
+        icon: .magnifyingglass,
+        description: Text("すべての日の記録から、タイトル・内容・記録元で探せます。")
+      )
+      .padding(.top, 48)
+    } else if entries.isEmpty {
+      ContentUnavailableView(
+        "見つかりませんでした",
+        icon: .magnifyingglass,
+        description: Text("「\(query)」に一致する記録はありません。予定は検索の対象外です。")
+      )
+      .padding(.top, 48)
+    } else {
+      ForEach(dayGroups(of: entries)) { group in
+        VStack(alignment: .leading, spacing: 10) {
+          Text(dayLabel(for: group.day))
+            .font(.title2.bold())
+            .memoraTextReveal()
+
+          LazyVStack(spacing: 0) {
+            ForEach(group.entries) { entry in
+              entryView(entry)
+            }
+          }
+        }
+      }
+    }
+  }
+
   /// The lifelog connection lives beside the menu so the journal itself keeps
   /// the full screen.
   private var sourceStatusButton: some View {
@@ -205,13 +229,6 @@ struct HomeView: View {
   /// True while the journal is showing the current day.
   private var isViewingToday: Bool {
     Calendar.current.isDateInToday(selectedDate)
-  }
-
-  private var emptyTitle: String {
-    if !query.isEmpty {
-      return "見つかりませんでした"
-    }
-    return "\(selectedDayLabel)の記録はありません"
   }
 
   private var selectedDayLabel: String {
@@ -265,9 +282,6 @@ struct HomeView: View {
   }
 
   private var emptyDescription: String {
-    if !query.isEmpty {
-      return "「\(query)」に一致する記録はありません。予定は検索の対象外です。"
-    }
     if isViewingToday {
       return "録音やOmiから届いた記録、手で足したメモが時間順に並びます。"
     }

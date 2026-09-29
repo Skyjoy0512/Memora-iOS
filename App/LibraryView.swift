@@ -186,17 +186,22 @@ struct LibraryView: View {
   }
 
   private var filesPage: some View {
-    let sections = fileSections
+    // Searching replaces the list with its results; before anything is typed
+    // there is nothing to match, so the files stay out of the way.
+    let isAwaitingQuery = isSearching && query.isEmpty
+    let sections = isAwaitingQuery ? [] : fileSections
     let count = sections.reduce(0) { $0 + $1.meetings.count }
 
     return List {
-      listHeaderRows
+      if !isSearching {
+        listHeaderRows
 
-      if model.hasSampleContent, query.isEmpty {
-        SampleNoticeRow()
-          .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 10, trailing: 18))
-          .listRowSeparator(.hidden)
-          .listRowBackground(Color.clear)
+        if model.hasSampleContent {
+          SampleNoticeRow()
+            .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 10, trailing: 18))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+        }
       }
 
       if statusFilter != .all {
@@ -205,7 +210,13 @@ struct LibraryView: View {
 
       if sections.isEmpty {
         Group {
-          if !query.isEmpty {
+          if isAwaitingQuery {
+            ContentUnavailableView(
+              "ファイルを検索",
+              icon: .magnifyingglass,
+              description: Text("タイトル、発言、決定、タスクから探せます。")
+            )
+          } else if !query.isEmpty {
             ContentUnavailableView.search(text: query)
           } else if statusFilter != .all {
             filteredEmpty
