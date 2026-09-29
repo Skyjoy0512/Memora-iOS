@@ -27,6 +27,7 @@ extension MemoraModel {
   var isEmpty: Bool {
     meetings.isEmpty
       && spaces.isEmpty
+      && documents.isEmpty
       && tasks.isEmpty
       && lifeLogEntries.isEmpty
       && people.isEmpty
@@ -49,6 +50,7 @@ extension MemoraModel {
     let lifeLogEntries = self.lifeLogEntries
     let people = self.people
     let aiHistory = self.aiHistory
+    let documents = self.documents
     return try await Task.detached(priority: .userInitiated) {
       try BackupPackage.write(
         meetings: meetings,
@@ -57,6 +59,7 @@ extension MemoraModel {
         lifeLogEntries: lifeLogEntries,
         people: people,
         aiHistory: aiHistory,
+        documents: documents,
         into: FileManager.default.temporaryDirectory
       )
     }.value
@@ -184,7 +187,8 @@ extension MemoraModel {
         (key: StorageKey.tasks, data: try RecordStore.encoded(manifest.tasks)),
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(manifest.lifeLogEntries)),
         (key: StorageKey.people, data: try RecordStore.encoded(manifest.people)),
-        (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory))
+        (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory)),
+        (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? []))
       ]
     }
     guard stored else {
@@ -198,5 +202,6 @@ extension MemoraModel {
     lifeLogEntries = manifest.lifeLogEntries
     people = manifest.people
     aiHistory = manifest.aiHistory
+    documents = manifest.documents ?? []
   }
 }

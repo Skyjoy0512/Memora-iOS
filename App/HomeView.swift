@@ -134,6 +134,8 @@ struct HomeView: View {
         case .allMeetings: AllMeetingsView()
         case .settings: SettingsView()
         case .stateGallery: StateGalleryView()
+        case .documents: DocumentsView()
+        case .document(let id): DocumentDetailView(documentID: id)
         }
       }
     }

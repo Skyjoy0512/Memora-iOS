@@ -54,6 +54,5 @@ struct AgentApprovalCard: View {
       RoundedRectangle(cornerRadius: 18, style: .continuous)
         .stroke(Color.accentColor.opacity(0.35), lineWidth: 1)
     }
-    .sensoryFeedback(.warning, trigger: approval.id)
   }
 }

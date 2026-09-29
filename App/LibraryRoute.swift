@@ -7,4 +7,6 @@ enum LibraryRoute: Hashable {
   case allMeetings
   case settings
   case stateGallery
+  case documents
+  case document(UUID)
 }

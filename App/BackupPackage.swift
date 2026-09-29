@@ -20,6 +20,9 @@ enum BackupPackage {
     var lifeLogEntries: [LifeLogEntry]
     var people: [Person]
     var aiHistory: [AIConversationEntry]
+    /// Documents and slides. Optional, so a package from before they existed
+    /// still restores.
+    var documents: [MemoraDocument]?
     /// Audio file names, stored under the media folder on restore.
     var audioFileNames: [String]
     /// Photo file names, stored under the media folder on restore.
@@ -96,6 +99,7 @@ enum BackupPackage {
     lifeLogEntries: [LifeLogEntry],
     people: [Person],
     aiHistory: [AIConversationEntry],
+    documents: [MemoraDocument] = [],
     into directory: URL
   ) throws -> URL {
     let plan = try collectMedia(meetings: meetings, lifeLogEntries: lifeLogEntries)
@@ -149,6 +153,7 @@ enum BackupPackage {
       lifeLogEntries: lifeLogEntries,
       people: people,
       aiHistory: aiHistory,
+      documents: documents,
       audioFileNames: audioNames,
       photoFileNames: photoNames
     )

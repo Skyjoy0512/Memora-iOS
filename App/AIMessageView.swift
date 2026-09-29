@@ -3,9 +3,11 @@ import SwiftUI
 /// One chat bubble: the person on the right, the assistant on the left with the
 /// reasoning tucked behind a disclosure.
 struct AIMessageView: View {
+  @Environment(MemoraModel.self) private var model
   var message: AIChatMessage
   /// Only the latest reply streams; older ones are already settled.
   var animates = true
+  @State private var openDocument: MemoraDocument?
 
   var body: some View {
     switch message.role {
@@ -38,15 +40,27 @@ struct AIMessageView: View {
   @ViewBuilder
   private var assistantReply: some View {
     VStack(alignment: .leading, spacing: 12) {
+      if !message.agentSteps.isEmpty {
+        AgentStepsView(steps: message.agentSteps)
+      }
+
+      if let approval = model.pendingAgentApproval, approval.messageID == message.id {
+        AgentApprovalCard(approval: approval)
+          .transition(.opacity.combined(with: .scale(scale: 0.97)))
+      }
+
       if message.isThinking {
-        HStack(spacing: 10) {
-          ThinkingOrbView(state: .searching, size: 20)
-          Text("考えています…")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
+        // While an approval card is up, the agent is waiting, not thinking.
+        if model.pendingAgentApproval?.messageID != message.id {
+          HStack(spacing: 10) {
+            ThinkingOrbView(state: .searching, size: 20)
+            Text(message.agentSteps.isEmpty ? "考えています…" : "作業しています…")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+          }
+          .accessibilityElement(children: .ignore)
+          .accessibilityLabel(message.agentSteps.isEmpty ? "考えています" : "作業しています")
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("考えています")
       } else {
         if let details = message.details {
           DisclosureGroup {
@@ -76,8 +90,19 @@ struct AIMessageView: View {
       if !message.isThinking, !message.sources.isEmpty {
         sourceList
       }
+
+      ForEach(message.documentIDs, id: \.self) { id in
+        if let document = model.document(id: id) {
+          AgentDocumentCard(document: document) { openDocument = document }
+        }
+      }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+    .sheet(item: $openDocument) { document in
+      NavigationStack {
+        DocumentDetailView(documentID: document.id, showsCloseButton: true)
+      }
+    }
   }
 
   private func accessibilityLabel(for source: AIChatSource) -> String {

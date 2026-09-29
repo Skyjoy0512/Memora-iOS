@@ -87,6 +87,18 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   conflict handling are not built. A manual package export
   (`makeTeamSharePackage`) also remains.
 - The Ask AI fallback never invents answers; when no engine can run it says so.
+- Ask AI has a 質問 / エージェント switch (`isAgentModeEnabled`). The agent
+  (`MemoraModel+Agent`, tools in `MemoraModel+AgentTools`, `AgentTool`) runs
+  on cloud models only, through `CloudAgentSession` (Anthropic tool use or
+  OpenAI-compatible function calling); on-device it says a cloud model is
+  needed. Reading tools run straight away; every tool that changes data
+  (documents, slides, tasks, projects, moving records, journal memos) waits
+  for the approval card, and a declined change is reported back to the model.
+  Documents (`MemoraDocument`, stored under `memoraDocuments` and in backups)
+  are listed from the side menu's 資料 and export as PDF (`DocumentPDF`),
+  PowerPoint (`PPTXWriter`, stored ZIP via `ZipArchive`) or text. The agent
+  cannot read attachments yet, and slide speaker notes are not written into
+  the .pptx.
 - The composer defaults to Auto, which follows the configured `AIEngine` and
   cloud selection. Manual choices are saved in `RegisteredLLMStore` and display
   the user's registered model name and provider logo. Both Ask AI paths capture

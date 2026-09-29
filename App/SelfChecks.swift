@@ -67,6 +67,8 @@ enum SelfChecks {
     group("Summary fallback extraction", checkSummaryFallbackExtraction)
     group("Summary action dates", checkSummaryActionDates)
     group("Summary document blocks", checkSummaryDocumentBlocks)
+    group("Slide outline round trip", checkSlideOutline)
+    group("Presentation package", checkPresentationPackage)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
     // its result when it finishes.
@@ -238,6 +240,35 @@ enum SelfChecks {
 
   /// A photo's thumbnail is found from the stored name, and both files belong to
   /// the record so a backup carries them together.
+  /// Editing slides goes through their outline text, so reading it back must
+  /// give the same headings, points and notes.
+  private static func checkSlideOutline() {
+    let slides = [
+      DocumentSlide(title: "表紙", bullets: []),
+      DocumentSlide(title: "決まったこと", bullets: ["来週リリース", "予算は据え置き"], notes: "補足\n二行目")
+    ]
+    let parsed = DocumentSlide.slides(fromOutline: DocumentSlide.outline(of: slides))
+    let same = parsed.map { [$0.title] + $0.bullets + [$0.notes] } == slides.map { [$0.title] + $0.bullets + [$0.notes] }
+    if !same {
+      report("slide outline round trip: \(parsed)")
+    }
+  }
+
+  /// A .pptx is a ZIP package; the checksum must match the standard one or
+  /// PowerPoint refuses the file, and every slide needs its own part.
+  private static func checkPresentationPackage() {
+    if ZipArchive.crc32(Data("123456789".utf8)) != 0xCBF4_3926 {
+      report("zip crc32")
+    }
+    var document = MemoraDocument(title: "A & B", kind: .slides)
+    document.slides = [DocumentSlide(title: "<一枚目>", bullets: ["x"]), DocumentSlide(title: "二枚目", bullets: [])]
+    let data = PPTXWriter.data(for: document)
+    let text = String(decoding: data, as: UTF8.self)
+    if !text.contains("ppt/slides/slide2.xml") || !text.contains("&lt;一枚目&gt;") || data.prefix(2) != Data("PK".utf8) {
+      report("presentation package parts")
+    }
+  }
+
   private static func checkPhotoThumbnailNaming() {
     let name = "ABC.jpg"
     if MediaFiles.photoFiles(for: [name]) != [name, "ABC.jpg.thumb.jpg"] {

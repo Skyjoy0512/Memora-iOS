@@ -17,6 +17,15 @@ struct SearchView: View {
 
     return NavigationStack {
       VStack(spacing: 0) {
+        // Asking answers once; the agent works through tools and asks before
+        // changing anything.
+        GlassSegmentedPicker(items: [false, true], selection: $model.isAgentModeEnabled) { isAgent in
+          isAgent ? "エージェント" : "質問"
+        }
+        .disabled(model.isAIChatResponding)
+        .padding(.horizontal, 18)
+        .padding(.bottom, 10)
+
         if model.isRecording {
           ActiveRecordingStrip()
             .padding(.horizontal, 18)
@@ -122,6 +131,12 @@ struct SearchView: View {
       .onChange(of: model.isAIChatResponding) { _, _ in
         followLatest(proxy)
       }
+      // An approval card needs to be seen to be answered.
+      .onChange(of: model.pendingAgentApproval?.id) { _, id in
+        guard id != nil else { return }
+        scrollToLatest(proxy)
+      }
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.pendingAgentApproval?.id)
       .onAppear {
         scrollToLatest(proxy)
       }
@@ -170,17 +185,20 @@ struct SearchView: View {
         Spacer(minLength: 48)
 
         VStack(alignment: .leading, spacing: 8) {
-          Text("何を知りたいですか？")
+          Text(model.isAgentModeEnabled ? "何を任せますか？" : "何を知りたいですか？")
             .font(.largeTitle.bold())
             .memoraTextReveal()
-          Text("会議の要約・発言・タスクから、関係する部分を探して答えます。")
+          Text(model.isAgentModeEnabled
+            ? "記録を調べて、資料やスライドの作成、タスクの追加、プロジェクトの整理まで行います。変更する前に必ず確認します。"
+            : "会議の要約・発言・タスクから、関係する部分を探して答えます。")
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .memoraTextReveal(delay: 0.08)
         }
+        .id(model.isAgentModeEnabled)
 
         VStack(spacing: 4) {
-          ForEach(Self.suggestions, id: \.title) { suggestion in
+          ForEach(model.isAgentModeEnabled ? Self.agentSuggestions : Self.suggestions, id: \.title) { suggestion in
             Button {
               model.sendAIChat(suggestion.title)
             } label: {
@@ -414,6 +432,13 @@ struct SearchView: View {
     .background(Color.primary.opacity(isActive ? 0.12 : 0.06), in: Capsule())
     .contentShape(Capsule())
   }
+
+  private static let agentSuggestions: [(title: String, symbol: MemoraIcon)] = [
+    ("今週の会議をまとめた報告資料を作って", .docRichtext),
+    ("最新の会議の内容をスライドにして", .rectangleOnRectangleAngled),
+    ("会議で決まった次の行動をタスクに追加して", .checklist),
+    ("関連する会議をプロジェクトにまとめて", .folder)
+  ]
 
   private static let suggestions: [(title: String, symbol: MemoraIcon)] = [
     ("今週決まったことは？", .checkmarkSeal),

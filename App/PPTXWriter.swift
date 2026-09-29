@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// Writes slides as a PowerPoint (.pptx) file that Keynote, PowerPoint and

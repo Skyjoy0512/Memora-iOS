@@ -8,6 +8,7 @@ struct FileSidebarView: View {
   var onSelectTab: (RootTab) -> Void
   var onSelectSpace: (MemoraSpace) -> Void
   var onCreateSpace: () -> Void
+  var onOpenDocuments: () -> Void
   var onOpenSettings: () -> Void
   var onClose: () -> Void
 
@@ -29,6 +30,17 @@ struct FileSidebarView: View {
               }
             }
 
+          }
+
+          sidebarSection("ライブラリ") {
+            SidebarRow(
+              title: "資料",
+              symbol: .docRichtext,
+              detail: model.documents.isEmpty ? nil : "\(model.documents.count)",
+              isSelected: isShowingDocuments
+            ) {
+              onOpenDocuments()
+            }
           }
 
           sidebarSection("プロジェクト") {
@@ -157,6 +169,10 @@ struct FileSidebarView: View {
 
       content()
     }
+  }
+
+  private var isShowingDocuments: Bool {
+    model.selectedTab == .files && model.libraryPath.first == .documents
   }
 
   /// The project on screen, so its row reads as the current place.
