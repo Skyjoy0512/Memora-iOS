@@ -50,45 +50,31 @@ private struct MemoraAppear: ViewModifier {
 private struct MemoraTextReveal: ViewModifier {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var delay: Double
-  @State private var revealProgress: CGFloat = 0
+  @State private var revealProgress: Double = 0
+  @State private var isShown = false
 
   func body(content: Content) -> some View {
     content
-      .opacity(revealProgress)
-      .blur(radius: revealProgress == 1 || reduceMotion ? 0 : 3)
-      .offset(y: revealProgress == 1 || reduceMotion ? 0 : 4)
-      .mask {
+      .textRenderer(TextRevealRenderer(progress: revealProgress))
+      // Symbols and shapes beside the text do not go through the renderer, so
+      // they fade in quickly on their own instead of popping in.
+      .opacity(isShown ? 1 : 0)
+      .onAppear {
+        guard revealProgress < 1 else { return }
         if reduceMotion {
-          Rectangle()
+          // Only the brief fade; the text itself is drawn complete.
+          revealProgress = 1
+          withAnimation(.easeOut(duration: 0.18)) {
+            isShown = true
+          }
         } else {
-          GeometryReader { proxy in
-            let softEdge: CGFloat = 24
-            let revealWidth = (proxy.size.width + softEdge) * revealProgress
-
-            HStack(spacing: 0) {
-              Rectangle()
-                .frame(width: max(0, revealWidth - softEdge))
-              LinearGradient(
-                colors: [.white, .clear],
-                startPoint: .leading,
-                endPoint: .trailing
-              )
-              .frame(width: min(softEdge, revealWidth))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+          withAnimation(.easeOut(duration: 0.24).delay(delay)) {
+            isShown = true
+          }
+          withAnimation(.linear(duration: 0.75).delay(delay)) {
+            revealProgress = 1
           }
         }
       }
-      .onAppear {
-        withAnimation(animation) {
-          revealProgress = 1
-        }
-      }
-  }
-
-  private var animation: Animation {
-    reduceMotion
-      ? .easeOut(duration: 0.18)
-      : .smooth(duration: 0.58).delay(delay)
   }
 }
