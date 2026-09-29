@@ -549,12 +549,7 @@ struct MeetingDetailView: View {
 
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Label("サマリー", icon: .textAlignleft)
-        .font(.title3.bold())
-        .foregroundStyle(.primary)
-        .memoraTextReveal()
-
+    CollapsibleInsightSection(.summary, showsDivider: false) {
       // A generated document reads and edits at body size; a short summary
       // keeps its large single-text look.
       let isDocument = MarkdownBlockParser.hasBlockStructure(meeting.summary)
@@ -569,54 +564,41 @@ struct MeetingDetailView: View {
       )
       .memoraTextReveal(delay: 0.04)
     }
-    .insightCard()
     .memoraAppear()
 
-    InlineEditableList(
-      title: "決まったこと",
-      symbol: .checkmarkSeal,
-      items: meeting.decisions,
-      emptyText: "明確な決定は見つかりませんでした",
-      onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) }
-    )
-    .insightCard()
+    CollapsibleInsightSection(.decisions) {
+      InlineEditableList(
+        items: meeting.decisions,
+        emptyText: "明確な決定は見つかりませんでした",
+        onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) }
+      )
+    }
     .memoraAppear(delay: 0.05)
 
-    MeetingTasksSection(meetingID: meeting.id)
-      .insightCard()
-      .memoraAppear(delay: 0.1)
+    CollapsibleInsightSection(.tasks) {
+      MeetingTasksSection(meetingID: meeting.id)
+    }
+    .memoraAppear(delay: 0.1)
 
-    InlineEditableList(
-      title: "まだ決まっていないこと",
-      symbol: .questionmarkBubble,
-      items: meeting.openQuestions,
-      emptyText: "未決事項はありません",
-      onCommit: { model.updateMeetingList(meeting.id, \.openQuestions, items: $0) }
-    )
-    .insightCard()
+    CollapsibleInsightSection(.openQuestions) {
+      InlineEditableList(
+        items: meeting.openQuestions,
+        emptyText: "未決事項はありません",
+        onCommit: { model.updateMeetingList(meeting.id, \.openQuestions, items: $0) }
+      )
+    }
     .memoraAppear(delay: 0.15)
 
-    InlineEditableList(
-      title: "重要なポイント",
-      symbol: .pin,
-      items: meeting.keyPoints,
-      emptyText: "ポイントを抽出中です",
-      onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }
-    )
-    .insightCard()
+    CollapsibleInsightSection(.keyPoints) {
+      InlineEditableList(
+        items: meeting.keyPoints,
+        emptyText: "ポイントを抽出中です",
+        onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }
+      )
+    }
     .memoraAppear(delay: 0.2)
   }
 
-}
-
-extension View {
-  /// Groups one summary section — heading and content — into a single block so
-  /// the sections do not blur into one another.
-  func insightCard() -> some View {
-    padding(16)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .memoraCard(radius: 20)
-  }
 }
 
 private enum MeetingDetailSection: String, CaseIterable, Identifiable {

@@ -9,10 +9,6 @@ struct MeetingTasksSection: View {
   var body: some View {
     let meetingTasks = model.tasks(forMeeting: meetingID)
     VStack(alignment: .leading, spacing: 12) {
-      Label("次にすること", icon: .arrowRightCircle)
-        .font(.title3.bold())
-        .foregroundStyle(.primary)
-
       if meetingTasks.isEmpty {
         Text("この会議からタスクは見つかりませんでした")
           .font(.subheadline)

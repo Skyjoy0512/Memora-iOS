@@ -1,11 +1,9 @@
 import SwiftUI
 
-/// Shows a bulleted list; tapping the section swaps in a one-per-line editor
-/// that keeps any formatting on the lines. There is no separate edit button —
-/// the content itself is the control.
+/// Shows a bulleted list; tapping it swaps in a one-per-line editor that keeps
+/// any formatting on the lines. There is no separate edit button — the content
+/// itself is the control. The heading belongs to the enclosing section.
 struct InlineEditableList: View {
-  var title: String
-  var symbol: MemoraIcon
   var items: [String]
   var emptyText: String
   var onCommit: ([String]) -> Void
@@ -18,17 +16,6 @@ struct InlineEditableList: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Label(title, icon: symbol)
-        .font(.title3.bold())
-        .foregroundStyle(.primary)
-        .memoraTextReveal()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture { beginEditing() }
-        .accessibilityAddTraits(.isButton)
-        .accessibilityHint("タップして編集")
-        .accessibilityAction(named: "編集") { beginEditing() }
-
       if isEditing {
         VStack(alignment: .leading, spacing: 8) {
           MarkdownEditorField(
