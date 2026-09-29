@@ -31,7 +31,12 @@ final class AudioPlayerService {
   /// The name shown in the system now-playing controls, set from the record.
   private var nowPlayingTitle = ""
 
-  private let engine = AVAudioEngine()
+  /// Built on the first play, not when the screen opens: setting up the
+  /// engine's output takes the audio session, which would stop the music
+  /// someone is listening to just by opening a record.
+  private var engine: AVAudioEngine?
+  /// The file format the graph is wired for, so it is only rewired on change.
+  private var connectedFormat: AVAudioFormat?
   private let player = AVAudioPlayerNode()
   private let timePitch = AVAudioUnitTimePitch()
   private var file: AVAudioFile?
@@ -47,10 +52,6 @@ final class AudioPlayerService {
   private var remoteCommandTargets: [(command: MPRemoteCommand, token: Any)] = []
 
   init() {
-    engine.attach(player)
-    engine.attach(timePitch)
-    engine.connect(player, to: timePitch, format: nil)
-    engine.connect(timePitch, to: engine.mainMixerNode, format: nil)
     timePitch.rate = rate
     // A stale handler only holds a weak player, so it does nothing once this one
     // is gone; it is registered once here rather than on every play.
@@ -81,10 +82,6 @@ final class AudioPlayerService {
       let file = try AVAudioFile(forReading: url)
       self.file = file
       duration = Double(file.length) / file.processingFormat.sampleRate
-
-      // The connection has to match the file's format before scheduling.
-      engine.connect(player, to: timePitch, format: file.processingFormat)
-      engine.connect(timePitch, to: engine.mainMixerNode, format: file.processingFormat)
     } catch {
       file = nil
       duration = 0
@@ -116,6 +113,7 @@ final class AudioPlayerService {
       try session.setActive(true)
       registerRemoteCommands()
 
+      let engine = preparedEngine(for: file)
       if !engine.isRunning {
         engine.prepare()
         try engine.start()
@@ -141,6 +139,26 @@ final class AudioPlayerService {
       sessionToken = nil
       errorMessage = "再生を開始できませんでした。"
     }
+  }
+
+  /// Wires the graph for the file's format, which has to match before
+  /// scheduling. Only called once the session is ours.
+  private func preparedEngine(for file: AVAudioFile) -> AVAudioEngine {
+    let engine: AVAudioEngine
+    if let existing = self.engine {
+      engine = existing
+    } else {
+      engine = AVAudioEngine()
+      engine.attach(player)
+      engine.attach(timePitch)
+      self.engine = engine
+    }
+    if connectedFormat != file.processingFormat {
+      engine.connect(player, to: timePitch, format: file.processingFormat)
+      engine.connect(timePitch, to: engine.mainMixerNode, format: file.processingFormat)
+      connectedFormat = file.processingFormat
+    }
+    return engine
   }
 
   func pause() {
@@ -185,6 +203,9 @@ final class AudioPlayerService {
     isPlaying = false
     currentTime = 0
     startFrame = 0
+    // A running engine keeps the output open; stopping it lets the music the
+    // session hands back play on.
+    engine?.stop()
     // Nothing is playing any more, so the system should not keep a now-playing
     // item that looks like it still is.
     MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
