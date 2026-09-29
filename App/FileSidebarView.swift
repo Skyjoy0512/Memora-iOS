@@ -101,37 +101,47 @@ struct FileSidebarView: View {
     .padding(.bottom, 14)
   }
 
+  /// The plan and settings float on Liquid Glass, like the app's other
+  /// controls, so they read as actions rather than more menu rows.
   private var footer: some View {
-    VStack(spacing: 0) {
-      Divider()
-
+    MemoraGlassContainer(spacing: 10) {
       HStack(spacing: 10) {
         Button {
           onClose()
           model.isPaywallPresented = true
         } label: {
           Label(model.isSubscribed ? "Memora Plus" : "Memora Plus にする", icon: .crown)
-            .font(.subheadline.weight(.medium))
+            .font(.subheadline.weight(.semibold))
             .foregroundStyle(.primary)
             .lineLimit(1)
+            .padding(.horizontal, 16)
+            .frame(minHeight: 44)
+            .contentShape(Capsule())
+            .memoraGlass(in: Capsule(), interactive: true)
         }
         .buttonStyle(.plain)
 
         Spacer(minLength: 8)
 
         // Settings has one entry point, here; the appearance lives inside it.
-        Button("設定", icon: .gearshape, action: onOpenSettings)
-          .labelStyle(.iconOnly)
-          .font(.body)
-          .foregroundStyle(.primary)
-          .frame(width: 44, height: 44)
-          .contentShape(Rectangle())
-          .accessibilityHint("プロフィールと設定を開きます")
+        Button {
+          onOpenSettings()
+        } label: {
+          Label("設定", icon: .gearshape)
+            .labelStyle(.iconOnly)
+            .font(.body.weight(.medium))
+            .foregroundStyle(.primary)
+            .frame(width: 44, height: 44)
+            .contentShape(Circle())
+            .memoraGlass(in: Circle(), interactive: true)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("プロフィールと設定を開きます")
       }
-      .padding(.leading, 18)
-      .padding(.trailing, 10)
-      .padding(.vertical, 6)
     }
+    .padding(.horizontal, 16)
+    .padding(.top, 8)
+    .padding(.bottom, 10)
   }
 
   private func sidebarSection<Content: View>(
