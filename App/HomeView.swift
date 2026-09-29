@@ -6,7 +6,9 @@ import SwiftUI
 struct HomeView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var query = ""
+  @State private var isSearching = false
   /// The journal entry opened from the timeline.
   @State private var openEntry: LifeLogEntry?
   /// The day the Journal is showing.
@@ -110,7 +112,7 @@ struct HomeView: View {
       .refreshable { await model.refresh() }
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ジャーナル")
-      .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "記録を検索")
+      .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "記録を検索")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           ToolbarIconButton("メニュー", icon: .line3Horizontal) {
@@ -125,6 +127,15 @@ struct HomeView: View {
           ToolbarItem(placement: .topBarLeading) {
             sourceStatusButton
           }
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+          ToolbarIconButton("検索", icon: .magnifyingglass) {
+            withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+              isSearching = true
+            }
+          }
+          .labelStyle(.iconOnly)
         }
 
         // The create action is the rightmost item, matching the other tabs.

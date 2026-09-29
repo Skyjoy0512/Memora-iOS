@@ -6,6 +6,7 @@ struct LibraryView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
   @State private var query = ""
+  @State private var isSearching = false
   @Namespace private var heroNamespace
   @State private var isSelectionMode = false
   @State private var selectedMeetingIDs: Set<UUID> = []
@@ -31,24 +32,12 @@ struct LibraryView: View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
-      // The section switch lives inside the scroll content so it moves out of
-      // the way as you read, and the list stays the screen's own scroll view so
-      // the title and search bar collapse the way the system expects.
-      Group {
-        switch model.fileSection {
-        case .meetingFiles:
-          filesPage
-        case .projects:
-          projectsPage
-        }
-      }
+      // Projects are opened from the side menu, so this list is files only and
+      // stays the screen's own scroll view for the large title to collapse.
+      filesPage
       .background(Color(uiColor: .systemBackground))
       .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ファイル")
-      .searchable(
-        text: $query,
-        placement: .navigationBarDrawer(displayMode: .automatic),
-        prompt: "ファイルやプロジェクトを検索"
-      )
+      .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ファイルを検索")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           if isSelectionMode {
@@ -63,7 +52,16 @@ struct LibraryView: View {
 
         // The `if` sits outside the item, so an empty item never leaves an
         // empty glass frame behind.
-        if model.fileSection == .meetingFiles, !isSelectionMode {
+        if !isSelectionMode {
+          ToolbarItem(placement: .topBarTrailing) {
+            ToolbarIconButton("検索", icon: .magnifyingglass) {
+              withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+                isSearching = true
+              }
+            }
+            .labelStyle(.iconOnly)
+          }
+
           ToolbarItem(placement: .topBarTrailing) {
             Menu {
               Picker("表示", selection: $layout) {
@@ -86,15 +84,6 @@ struct LibraryView: View {
           }
         }
 
-        // The create action is the rightmost item, matching the other tabs.
-        if model.fileSection == .projects, !isSelectionMode {
-          ToolbarItem(placement: .primaryAction) {
-            ToolbarIconButton("プロジェクトを作成", icon: .folderBadgePlus) {
-              model.isFileCreationPresented = true
-            }
-            .labelStyle(.iconOnly)
-          }
-        }
       }
       .safeAreaInset(edge: .bottom, spacing: 0) {
         if isSelectionMode {
@@ -107,9 +96,7 @@ struct LibraryView: View {
           MeetingDetailView(meetingID: id)
             .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
         case .transcript(let id): TranscriptView(meetingID: id)
-        case .space(let id):
-          SpaceDetailView(spaceID: id)
-            .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
+        case .space(let id): SpaceDetailView(spaceID: id)
         case .allMeetings: AllMeetingsView()
         case .settings: SettingsView()
         case .stateGallery: StateGalleryView()
@@ -154,7 +141,6 @@ struct LibraryView: View {
       } message: {
         Text(teamShareErrorMessage ?? "")
       }
-      .onChange(of: model.fileSection) { _, _ in endSelection() }
       .task { await upcoming.refresh() }
       .onChange(of: scenePhase) { _, phase in
         guard phase == .active else { return }
@@ -178,27 +164,10 @@ struct LibraryView: View {
     }
   }
 
-  /// The 「ファイル／プロジェクト」 switch, shared by both pages. It uses the
-  /// same Liquid Glass surface as the floating tab bar.
-  @ViewBuilder
-  private var sectionSwitch: some View {
-    let selection = Binding(
-      get: { model.fileSection },
-      set: { model.fileSection = $0 }
-    )
-    GlassSegmentedPicker(items: FileSection.allCases, selection: selection, title: { $0.title })
-  }
-
-  /// The section switch, the next meeting (only while one is coming up) and the
-  /// live recording strip, as the first rows of the list so they scroll away
-  /// with it.
+  /// The next meeting (only while one is coming up) and the live recording
+  /// strip, as the first rows of the list so they scroll away with it.
   @ViewBuilder
   private var listHeaderRows: some View {
-    sectionSwitch
-      .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 10, trailing: 18))
-      .listRowSeparator(.hidden)
-      .listRowBackground(Color.clear)
-
     if let meeting = upcoming.meeting {
       UpcomingMeetingLiveCard(meeting: meeting, isStarting: isStartingMeeting) {
         startRecording(for: meeting)
@@ -426,80 +395,6 @@ struct LibraryView: View {
     .accessibilityLabel(title)
   }
 
-  private var projectsPage: some View {
-    let spaces = matchingSpaces
-
-    return ScrollView {
-      LazyVStack(alignment: .leading, spacing: 22) {
-        sectionSwitch
-
-        if model.isRecording {
-          ActiveRecordingStrip()
-        }
-
-        if spaces.isEmpty {
-          Group {
-            if query.isEmpty {
-              createProjectPrompt
-            } else {
-              ContentUnavailableView.search(text: query)
-            }
-          }
-          .padding(.top, 40)
-        } else {
-          projectsGrid(spaces)
-        }
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, 18)
-      .padding(.top, 8)
-      .padding(.bottom, 32)
-    }
-    .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-    .refreshable { await model.refresh() }
-    .hideBottomBarOnScroll(RootTab.files.rawValue)
-  }
-
-  private func projectsGrid(_ spaces: [MemoraSpace]) -> some View {
-    LazyVGrid(
-      columns: [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-      ],
-      spacing: 22
-    ) {
-      ForEach(spaces) { space in
-        NavigationLink(value: LibraryRoute.space(space.id)) {
-          ProjectFolderTile(
-            space: space,
-            meetingCount: model.spaceAggregates[space.id]?.meetingCount ?? 0,
-            symbols: model.spaceAggregates[space.id]?.icons ?? []
-          )
-          .matchedTransitionSource(id: space.id, in: heroNamespace)
-        }
-        .buttonStyle(.plain)
-      }
-    }
-  }
-
-  private var createProjectPrompt: some View {
-    Button {
-      model.isFileCreationPresented = true
-    } label: {
-      HStack(spacing: 10) {
-        Image(icon: .plus)
-        Text("プロジェクトを作成")
-        Spacer()
-      }
-      .font(.subheadline.weight(.medium))
-      .foregroundStyle(.primary)
-      .padding(14)
-      .frame(maxWidth: .infinity)
-      .memoraCard(radius: 18)
-    }
-    .buttonStyle(.plain)
-  }
-
   private var emptyFilesPrompt: some View {
     VStack(spacing: 16) {
       Image(icon: .waveform)
@@ -661,12 +556,6 @@ struct LibraryView: View {
     if calendar.isDate(date, equalTo: .now, toGranularity: .weekOfYear) { return "今週" }
     if calendar.isDate(date, equalTo: .now, toGranularity: .month) { return "今月" }
     return date.formatted(.dateTime.year().month())
-  }
-
-  private var matchingSpaces: [MemoraSpace] {
-    query.isEmpty ? model.spaces : model.spaces.filter {
-      $0.name.localizedCaseInsensitiveContains(query)
-    }
   }
 
   private func matchesQuery(_ meeting: Meeting) -> Bool {

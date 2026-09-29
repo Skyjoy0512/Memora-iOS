@@ -41,17 +41,23 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - **Files screen top chrome**: do not drive the navigation bar's visibility from
   a scroll-offset flag. Hiding and showing the bar from that state re-runs
   layout, which is read back as more scrolling and freezes the screen. The
-  section switch belongs inside the scroll content so it scrolls away instead.
+  Files tab lists files only; projects are opened and created from the side
+  menu's プロジェクト section (`FileSidebarView`), not a switch on this screen.
 - **Bottom bar hide on scroll** (`App/BottomBarScrollBehavior.swift`): only a
   user-driven scroll phase may move the bar, and a callback where the content
   size changed is layout, not scrolling (lists correct row heights as rows
   appear). Near the end of a list and just after the bar moves, the state is
   held. Dropping any of these brings back the loop where the bar and the list
   push each other, the bar never returns on scrolling up, and long task lists
-  stop scrolling.
+  stop scrolling. Only the tab bar hides; the Ask AI composer stays at the
+  bottom of the screen.
+- **Search**: Files and Journal search from a toolbar magnifying-glass button
+  that opens `ToolbarSearchField` under the navigation bar. Do not bring back
+  an always-visible `.searchable` drawer. The ＋ menu holds capture actions
+  only (record, import, online meeting); memos are added from the Journal
+  toolbar and projects from the side menu.
 - **Journal (Home)**: the tab's own `ScrollView`/`List` must stay the screen's
-  primary scroll view, so the large title and search bar collapse the way the
-  system expects.
+  primary scroll view, so the large title collapses the way the system expects.
 
 ## Known gaps (not bugs to fix silently)
 
