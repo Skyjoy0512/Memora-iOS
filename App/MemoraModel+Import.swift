@@ -68,7 +68,6 @@ extension MemoraModel {
       importProgress = 1
       isImporting = false
       selectedTab = .files
-      fileSection = .meetingFiles
       libraryPath = [.meeting(meeting.id)]
     case .unreadable:
       isImporting = false
@@ -222,7 +221,6 @@ extension MemoraModel {
       // missing record is explained instead of opening an empty screen.
       if meeting(id: id) != nil {
         selectedTab = .files
-        fileSection = .meetingFiles
         libraryPath = [.meeting(id)]
       } else if trashedRecords.contains(where: { $0.meeting.id == id }) {
         missingRecordNotice = MissingRecordNotice(

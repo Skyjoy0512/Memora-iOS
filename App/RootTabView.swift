@@ -18,8 +18,8 @@ struct RootTabView: View {
     SidebarContainer(isOpen: $isSidebarOpen, isEnabled: canRevealSidebar) {
       FileSidebarView(
         onSelectTab: selectTab,
-        onSelectSection: selectFileSection,
         onSelectSpace: openSpace,
+        onCreateSpace: createSpace,
         onOpenSettings: openSettings,
         onClose: closeSidebar
       )
@@ -135,8 +135,9 @@ struct RootTabView: View {
           )
       }
 
-      // The composer retreats with the bar so the two never separate mid-scroll.
-      if shouldShowComposer, !isBottomBarHidden {
+      // Scrolling hides only the tab bar; Ask AI stays at the bottom so it is
+      // always one tap away.
+      if shouldShowComposer {
         QuickAIComposer(
           scope: composerScope,
           isComposing: $isComposing,
@@ -246,20 +247,15 @@ struct RootTabView: View {
     }
   }
 
-  private func selectFileSection(_ section: FileSection) {
-    closeSidebar()
-    withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-      model.selectedTab = .files
-      model.fileSection = section
-      model.libraryPath = []
-    }
-  }
-
   private func openSpace(_ space: MemoraSpace) {
     closeSidebar()
     model.selectedTab = .files
-    model.fileSection = .projects
     model.libraryPath = [.space(space.id)]
+  }
+
+  private func createSpace() {
+    closeSidebar()
+    model.isFileCreationPresented = true
   }
 
   private func openSettings() {

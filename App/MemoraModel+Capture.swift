@@ -186,7 +186,6 @@ extension MemoraModel {
     recordingNote = ""
     captureEvent = nil
     selectedTab = .files
-    fileSection = .meetingFiles
     pendingMeetingNavigationID = meetingID
     isCapturePresented = false
     beginProcessing(meetingID)

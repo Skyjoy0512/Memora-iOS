@@ -10,7 +10,6 @@ final class MemoraModel {
   var selectedTab = RootTab.files
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
-  var fileSection = FileSection.meetingFiles
   var isFileCreationPresented = false
   var isSettingsPresented = false
   /// Opened by the contextual create button on the tasks tab.

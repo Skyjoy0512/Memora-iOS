@@ -1,11 +1,15 @@
 import Foundation
 
 extension MemoraModel {
-  func addSpace(name: String) {
+  /// Returns the new project's id so the caller can open it.
+  @discardableResult
+  func addSpace(name: String) -> UUID? {
     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { return }
-    spaces.insert(MemoraSpace(id: UUID(), name: trimmed, symbol: "folder"), at: 0)
+    guard !trimmed.isEmpty else { return nil }
+    let space = MemoraSpace(id: UUID(), name: trimmed, symbol: "folder")
+    spaces.insert(space, at: 0)
     persistSpaces()
+    return space.id
   }
 
   func renameSpace(_ id: UUID, name: String) {

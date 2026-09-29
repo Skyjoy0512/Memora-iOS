@@ -1,14 +1,13 @@
 import SwiftUI
 
-/// Navigation for the files tab. The tab bar already carries the app's top
-/// level destinations, so this panel stays about one thing: which set of files
-/// you are looking at.
+/// The side menu. Besides the tabs, it is where projects live: they are opened
+/// and created here rather than from a section of the files tab.
 struct FileSidebarView: View {
   @Environment(MemoraModel.self) private var model
 
   var onSelectTab: (RootTab) -> Void
-  var onSelectSection: (FileSection) -> Void
   var onSelectSpace: (MemoraSpace) -> Void
+  var onCreateSpace: () -> Void
   var onOpenSettings: () -> Void
   var onClose: () -> Void
 
@@ -32,29 +31,20 @@ struct FileSidebarView: View {
 
           }
 
-          sidebarSection("ライブラリ") {
-            ForEach(FileSection.allCases) { section in
+          sidebarSection("プロジェクト") {
+            ForEach(model.spaces) { space in
               SidebarRow(
-                title: section.title,
-                symbol: section.symbol,
-                isSelected: model.selectedTab == .files && model.fileSection == section
+                title: space.name,
+                symbol: space.icon,
+                detail: "\(meetingCount(for: space.id))",
+                isSelected: openSpaceID == space.id
               ) {
-                onSelectSection(section)
+                onSelectSpace(space)
               }
             }
-          }
 
-          if !model.spaces.isEmpty {
-            sidebarSection("最近のプロジェクト") {
-              ForEach(model.spaces.prefix(6)) { space in
-                SidebarRow(
-                  title: space.name,
-                  symbol: space.icon,
-                  detail: "\(meetingCount(for: space.id))"
-                ) {
-                  onSelectSpace(space)
-                }
-              }
+            SidebarRow(title: "新しいプロジェクト", symbol: .folderBadgePlus) {
+              onCreateSpace()
             }
           }
 
@@ -157,6 +147,12 @@ struct FileSidebarView: View {
 
       content()
     }
+  }
+
+  /// The project on screen, so its row reads as the current place.
+  private var openSpaceID: UUID? {
+    guard model.selectedTab == .files, case .space(let id) = model.libraryPath.last else { return nil }
+    return id
   }
 
   private func meetingCount(for spaceID: UUID) -> Int {
