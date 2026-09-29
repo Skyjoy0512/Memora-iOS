@@ -71,13 +71,16 @@ struct RootTabView: View {
     .sheet(item: $model.pendingMailDraft) { draft in
       MailDraftSheet(draft: draft) { model.pendingMailDraft = nil }
     }
-    .sheet(isPresented: $model.isOnlineMeetingCapturePresented) {
+    .sheet(isPresented: $model.isOnlineMeetingCapturePresented, onDismiss: {
+      model.onlineMeetingCaptureEvent = nil
+    }) {
       NavigationStack {
         OnlineMeetingCaptureView {
+          let event = model.onlineMeetingCaptureEvent
           model.isOnlineMeetingCapturePresented = false
           Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(250))
-            await model.startCapture()
+            await model.startCapture(event: event)
           }
         }
         .toolbar {

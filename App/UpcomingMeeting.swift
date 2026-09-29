@@ -6,4 +6,7 @@ struct UpcomingMeeting: Identifiable, Hashable {
   var title: String
   var start: Date
   var end: Date
+  /// The invitation carries a Zoom, Meet, Teams or Webex link, so the web
+  /// meeting recording is offered first.
+  var isOnline = false
 }

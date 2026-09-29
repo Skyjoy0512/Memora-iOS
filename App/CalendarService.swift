@@ -61,9 +61,19 @@ enum CalendarService {
         id: event.eventIdentifier ?? UUID().uuidString,
         title: event.title ?? "会議",
         start: event.startDate,
-        end: event.endDate
+        end: event.endDate,
+        isOnline: hasMeetingLink(event)
       )
     }
+  }
+
+  private static let meetingHosts = ["zoom.us", "meet.google.com", "teams.microsoft.com", "teams.live.com", "webex.com"]
+
+  private static func hasMeetingLink(_ event: EKEvent) -> Bool {
+    let text = [event.url?.absoluteString, event.location, event.notes]
+      .compactMap { $0?.lowercased() }
+      .joined(separator: " ")
+    return meetingHosts.contains { text.contains($0) }
   }
 
   /// The events that overlap one day, for the journal. Read on every display, so

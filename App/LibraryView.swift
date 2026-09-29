@@ -17,9 +17,8 @@ struct LibraryView: View {
   @State private var temporaryShareURL: URL?
   @State private var isTeamShareNoticePresented = false
   @State private var teamShareErrorMessage: String?
-  /// The next calendar event, shown only while one is coming up.
+  /// The coming calendar events, shown only while some are coming up.
   @State private var upcoming = UpcomingMeetingStore()
-  @State private var isStartingMeeting = false
   @AppStorage("memora.files.layout") private var layout = FileListLayout.card
   @AppStorage("memora.files.sort") private var sort = FileListSort.newest
   @AppStorage("memora.files.filter") private var statusFilter = FileListFilter.all
@@ -160,23 +159,29 @@ struct LibraryView: View {
     }
   }
 
-  private func startRecording(for meeting: UpcomingMeeting) {
-    Task {
-      isStartingMeeting = true
-      await model.startCapture(event: meeting)
-      isStartingMeeting = false
-    }
+  private func recordOnline(_ meeting: UpcomingMeeting) {
+    model.onlineMeetingCaptureEvent = meeting
+    model.isOnlineMeetingCapturePresented = true
   }
 
-  /// The next meeting (only while one is coming up) and the live recording
+  /// The coming events (only while some are coming up) and the live recording
   /// strip, as the first rows of the list so they scroll away with it.
   @ViewBuilder
   private var listHeaderRows: some View {
-    if let meeting = upcoming.meeting {
-      UpcomingMeetingLiveCard(meeting: meeting, isStarting: isStartingMeeting) {
-        startRecording(for: meeting)
+    if !upcoming.meetings.isEmpty {
+      VStack(spacing: 18) {
+        UpcomingEventsRow(
+          meetings: upcoming.meetings,
+          onRecordInPerson: { meeting in
+            Task { await model.startCapture(event: meeting) }
+          },
+          onRecordOnline: recordOnline
+        )
+        Divider()
+          .padding(.horizontal, 18)
       }
-      .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 12, trailing: 18))
+      // The row pages edge to edge; its own margins line the cards up.
+      .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 12, trailing: 0))
       .listRowSeparator(.hidden)
       .listRowBackground(Color.clear)
     }
@@ -264,7 +269,7 @@ struct LibraryView: View {
       await model.refresh()
       await upcoming.refresh()
     }
-    .animation(reduceMotion ? nil : MemoraMotion.screen, value: upcoming.meeting?.id)
+    .animation(reduceMotion ? nil : MemoraMotion.screen, value: upcoming.meetings.map(\.id))
     .hideBottomBarOnScroll(RootTab.files.rawValue)
   }
 

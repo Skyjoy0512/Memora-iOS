@@ -142,6 +142,9 @@ final class MemoraModel {
   /// the search reads as its own screen.
   var isSearchActive = false
   var isOnlineMeetingCapturePresented = false
+  /// The calendar event a web meeting recording was started from, so the
+  /// record takes its title and link like an in-person one.
+  var onlineMeetingCaptureEvent: UpcomingMeeting?
   var isRecording = false
   var isRecordingPaused = false
   /// True while permission is being asked for and the recorder is starting, so
