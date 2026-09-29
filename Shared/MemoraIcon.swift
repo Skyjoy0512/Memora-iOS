@@ -26,6 +26,7 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case calendar = "calendar"
   case calendarBadgeCheckmark = "calendar.badge.checkmark"
   case calendarBadgeCheckmarkFill = "calendar.badge.checkmark.fill"
+  case calendarBadgePlus = "calendar.badge.plus"
   case calendarFill = "calendar.fill"
   case camera = "camera"
   case chartBar = "chart.bar"

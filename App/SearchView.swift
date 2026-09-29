@@ -131,9 +131,11 @@ struct SearchView: View {
       .onChange(of: model.isAIChatResponding) { _, _ in
         followLatest(proxy)
       }
-      // An approval card needs to be seen to be answered.
+      // An approval card needs to be seen to be answered, so the keyboard
+      // steps aside and the card scrolls into view.
       .onChange(of: model.pendingAgentApproval?.id) { _, id in
         guard id != nil else { return }
+        dismissKeyboard()
         scrollToLatest(proxy)
       }
       .animation(reduceMotion ? nil : MemoraMotion.control, value: model.pendingAgentApproval?.id)
@@ -189,7 +191,7 @@ struct SearchView: View {
             .font(.largeTitle.bold())
             .memoraTextReveal()
           Text(model.isAgentModeEnabled
-            ? "記録を調べて、資料やスライドの作成、タスクの追加、プロジェクトの整理まで行います。変更する前に必ず確認します。"
+            ? "会議のあとの作業を片付けます。メールの下書き、タスクや予定の登録、資料づくりまで。変更する前に必ず確認します。"
             : "会議の要約・発言・タスクから、関係する部分を探して答えます。")
             .font(.subheadline)
             .foregroundStyle(.secondary)
@@ -434,10 +436,11 @@ struct SearchView: View {
   }
 
   private static let agentSuggestions: [(title: String, symbol: MemoraIcon)] = [
-    ("今週の会議をまとめた報告資料を作って", .docRichtext),
-    ("最新の会議の内容をスライドにして", .rectangleOnRectangleAngled),
+    ("最新の会議のフォローアップメールを下書きして", .envelope),
     ("会議で決まった次の行動をタスクに追加して", .checklist),
-    ("関連する会議をプロジェクトにまとめて", .folder)
+    ("次回の会議をカレンダーに入れて", .calendarBadgePlus),
+    ("今週の会議をまとめた報告資料を作って", .docRichtext),
+    ("最新の会議の内容をスライドにして", .rectangleOnRectangleAngled)
   ]
 
   private static let suggestions: [(title: String, symbol: MemoraIcon)] = [

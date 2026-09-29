@@ -63,6 +63,9 @@ struct RootTabView: View {
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
     }
+    .sheet(item: $model.pendingMailDraft) { draft in
+      MailDraftSheet(draft: draft) { model.pendingMailDraft = nil }
+    }
     .sheet(isPresented: $model.isOnlineMeetingCapturePresented) {
       NavigationStack {
         OnlineMeetingCaptureView {

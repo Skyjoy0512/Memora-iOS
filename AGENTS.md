@@ -89,11 +89,16 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - The Ask AI fallback never invents answers; when no engine can run it says so.
 - Ask AI has a 質問 / エージェント switch (`isAgentModeEnabled`). The agent
   (`MemoraModel+Agent`, tools in `MemoraModel+AgentTools`, `AgentTool`) runs
-  on cloud models only, through `CloudAgentSession` (Anthropic tool use or
-  OpenAI-compatible function calling); on-device it says a cloud model is
-  needed. Reading tools run straight away; every tool that changes data
-  (documents, slides, tasks, projects, moving records, journal memos) waits
-  for the approval card, and a declined change is reported back to the model.
+  on the chosen cloud model through `CloudAgentSession` (Anthropic tool use or
+  OpenAI-compatible function calling), or with no key on Apple's on-device
+  model through `OnDeviceAgentTool` (schemas built from the same `AgentTool`
+  definitions, a smaller tool set in `AgentTool.onDeviceTools`, and compact
+  tool results). Its focus is the work after a meeting: follow-up email drafts
+  (`MailDraftSheet`; Mail's composer, or the share sheet without a Mail
+  account — it never sends), calendar events (`CalendarService.addEvent`),
+  Notion pages, tasks and documents. Reading tools run straight away; every
+  tool that changes data waits for the approval card, and a declined change is
+  reported back to the model.
   Documents (`MemoraDocument`, stored under `memoraDocuments` and in backups)
   are listed from the side menu's 資料 and export as PDF (`DocumentPDF`),
   PowerPoint (`PPTXWriter`, stored ZIP via `ZipArchive`) or text. The agent

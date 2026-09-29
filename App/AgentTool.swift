@@ -13,6 +13,17 @@ enum AgentTool: String, CaseIterable {
   case createProject = "create_project"
   case moveRecordsToProject = "move_records_to_project"
   case addJournalMemo = "add_journal_memo"
+  case createCalendarEvent = "create_calendar_event"
+  case draftEmail = "draft_email"
+  case saveToNotion = "save_to_notion"
+
+  /// The tools offered to the on-device model. Its context is small, so the
+  /// long-form writers (slides) and the rarer organising tools stay with the
+  /// cloud models.
+  static let onDeviceTools: [AgentTool] = [
+    .searchRecords, .readRecord, .listTasks, .addTasks, .createDocument,
+    .createProject, .addJournalMemo, .createCalendarEvent, .draftEmail
+  ]
 
   /// True for tools that change the person's data.
   var needsApproval: Bool {
@@ -33,6 +44,9 @@ enum AgentTool: String, CaseIterable {
     case .createSlides: .rectangleOnRectangleAngled
     case .createProject: .folderBadgePlus
     case .addJournalMemo: .squareAndPencil
+    case .createCalendarEvent: .calendarBadgePlus
+    case .draftEmail: .envelope
+    case .saveToNotion: .notionLogo
     }
   }
 
@@ -58,6 +72,12 @@ enum AgentTool: String, CaseIterable {
       "会議の記録をプロジェクトへ移動する（利用者の承認後に実行）。"
     case .addJournalMemo:
       "ジャーナルにメモを追加する（利用者の承認後に実行）。"
+    case .createCalendarEvent:
+      "カレンダーに予定を登録する（利用者の承認後に実行）。次回の会議や締め切りに使う。"
+    case .draftEmail:
+      "メールの下書きを作って開く（利用者の承認後）。宛先が分からなくても呼ぶ（宛先は利用者が入れる）。送信は利用者が行う。"
+    case .saveToNotion:
+      "会議の記録をNotionのページとして保存する（利用者の承認後に実行）。"
     }
   }
 
@@ -121,6 +141,22 @@ enum AgentTool: String, CaseIterable {
         "title": string("メモのタイトル"),
         "body": string("メモの本文")
       ], required: ["title", "body"])
+    case .createCalendarEvent:
+      return object([
+        "title": string("予定の名前"),
+        "start": string("開始 yyyy-MM-dd HH:mm"),
+        "duration_minutes": ["type": "integer", "description": "長さ（分）。既定60"],
+        "location": string("場所（任意）"),
+        "notes": string("メモ（任意）")
+      ], required: ["title", "start"])
+    case .draftEmail:
+      return object([
+        "subject": string("件名"),
+        "body": string("本文"),
+        "to": ["type": "array", "items": ["type": "string"], "description": "宛先のメールアドレス（分かる場合のみ）"]
+      ], required: ["subject", "body"])
+    case .saveToNotion:
+      return object(["meeting_id": string("会議の記録のid")], required: ["meeting_id"])
     }
   }
 

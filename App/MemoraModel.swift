@@ -133,6 +133,8 @@ final class MemoraModel {
   }
   /// The change the agent is waiting for the person to approve or decline.
   var pendingAgentApproval: AgentApproval?
+  /// An email the agent drafted, waiting to open in the composer.
+  var pendingMailDraft: MailDraft?
   var isAIChatResponding = false
   var isCapturePresented = false
   var isCaptureSourcePresented = false

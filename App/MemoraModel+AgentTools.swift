@@ -7,15 +7,22 @@ extension MemoraModel {
   /// so a long meeting still gives the model what matters.
   private static let agentTranscriptLimit = 24_000
 
-  func performAgentTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {
+  /// `compact` is for the on-device model, whose whole context is a few
+  /// thousand tokens: fewer results, shorter excerpts, no full transcripts.
+  func performAgentTool(
+    _ call: AgentToolCall,
+    messageID: UUID,
+    scope: AIChatScope,
+    compact: Bool = false
+  ) async -> AgentToolOutcome {
     guard let tool = call.tool else {
       return AgentToolOutcome(text: "未知の道具です: \(call.name)", isError: true)
     }
     switch tool {
     case .searchRecords:
-      return searchRecordsTool(call, messageID: messageID, scope: scope)
+      return searchRecordsTool(call, messageID: messageID, scope: scope, compact: compact)
     case .readRecord:
-      return readRecordTool(call, messageID: messageID, scope: scope)
+      return readRecordTool(call, messageID: messageID, scope: scope, compact: compact)
     case .listProjects:
       return listProjectsTool(messageID: messageID)
     case .listTasks:
@@ -30,14 +37,21 @@ extension MemoraModel {
       return await moveRecordsTool(call, messageID: messageID, scope: scope)
     case .addJournalMemo:
       return await addJournalMemoTool(call, messageID: messageID)
+    case .createCalendarEvent:
+      return await createCalendarEventTool(call, messageID: messageID)
+    case .draftEmail:
+      return await draftEmailTool(call, messageID: messageID)
+    case .saveToNotion:
+      return await saveToNotionTool(call, messageID: messageID, scope: scope)
     }
   }
 
   // MARK: - Reading
 
-  private func searchRecordsTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) -> AgentToolOutcome {
+  private func searchRecordsTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope, compact: Bool) -> AgentToolOutcome {
     let query = call.string("query")
-    let limit = min(max(call.int("limit") ?? 8, 1), 20)
+    let limit = compact ? 4 : min(max(call.int("limit") ?? 8, 1), 20)
+    let previewLength = compact ? 80 : 200
     let stepID = beginAgentStep(
       AgentStep(icon: AgentTool.searchRecords.icon, title: query.isEmpty ? "最近の記録を確認" : "「\(query)」を検索"),
       on: messageID
@@ -81,18 +95,18 @@ extension MemoraModel {
       }
       let preview = meeting.summaryPreview.replacingOccurrences(of: "\n", with: " ")
       if !preview.isEmpty {
-        line += " 概要: \(preview.prefix(200))"
+        line += " 概要: \(preview.prefix(previewLength))"
       }
       lines.append(line)
     }
     for entry in entries {
       let body = entry.summary.replacingOccurrences(of: "\n", with: " ")
-      lines.append("- ジャーナル id=\(entry.id.uuidString) 「\(entry.title)」 \(Self.agentDate(entry.createdAt)) \(body.prefix(200))")
+      lines.append("- ジャーナル id=\(entry.id.uuidString) 「\(entry.title)」 \(Self.agentDate(entry.createdAt)) \(body.prefix(previewLength))")
     }
     return AgentToolOutcome(text: lines.joined(separator: "\n"))
   }
 
-  private func readRecordTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) -> AgentToolOutcome {
+  private func readRecordTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope, compact: Bool) -> AgentToolOutcome {
     guard let id = UUID(uuidString: call.string("id")) else {
       return AgentToolOutcome(text: "idが正しくありません。search_recordsで得たidを使ってください。", isError: true)
     }
@@ -104,7 +118,7 @@ extension MemoraModel {
         on: messageID
       )
       finishAgentStep(stepID, on: messageID, state: .done)
-      return AgentToolOutcome(text: agentText(of: meeting))
+      return AgentToolOutcome(text: compact ? compactAgentText(of: meeting) : agentText(of: meeting))
     }
 
     if scope == .all, let entry = lifeLogEntries.first(where: { $0.id == id }) {
@@ -163,6 +177,26 @@ extension MemoraModel {
       parts.append("## 文字起こし\n\(transcript)")
     }
     return parts.joined(separator: "\n\n")
+  }
+
+  /// A record cut to what fits the on-device model: the summary, decisions and
+  /// tasks, and only a little of the transcript when there is no summary.
+  private func compactAgentText(of meeting: Meeting) -> String {
+    var parts = ["会議「\(meeting.displayTitle)」 \(Self.agentDate(meeting.createdAt))"]
+    if !meeting.summary.isEmpty {
+      parts.append("要約: \(meeting.summaryPreview.prefix(700))")
+    }
+    if !meeting.decisions.isEmpty {
+      parts.append("決定: " + meeting.decisions.prefix(5).joined(separator: " / "))
+    }
+    let meetingTasks = tasks(forMeeting: meeting.id).filter { !$0.isCompleted }
+    if !meetingTasks.isEmpty {
+      parts.append("タスク: " + meetingTasks.prefix(5).map(\.title).joined(separator: " / "))
+    }
+    if meeting.summary.isEmpty, !meeting.transcript.isEmpty {
+      parts.append("発言: " + meeting.transcript.map(\.text).joined(separator: " ").prefix(700))
+    }
+    return parts.joined(separator: "\n")
   }
 
   private func listProjectsTool(messageID: UUID) -> AgentToolOutcome {
@@ -374,6 +408,96 @@ extension MemoraModel {
       : AgentToolOutcome(text: "保存に失敗しました。", isError: true)
   }
 
+  private func createCalendarEventTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
+    let title = call.string("title")
+    guard !title.isEmpty, let start = Self.agentDateTime(call.string("start")) else {
+      return AgentToolOutcome(text: "titleとstart（yyyy-MM-dd HH:mm）が必要です。", isError: true)
+    }
+    let minutes = min(max(call.int("duration_minutes") ?? 60, 5), 24 * 60)
+    let end = start.addingTimeInterval(TimeInterval(minutes * 60))
+    let location = call.string("location")
+    let notes = call.string("notes")
+
+    var lines = [title, "\(start.formatted(date: .abbreviated, time: .shortened)) – \(end.formatted(date: .omitted, time: .shortened))"]
+    if !location.isEmpty { lines.append("場所: \(location)") }
+    guard let stepID = await approve(
+      tool: .createCalendarEvent,
+      title: "カレンダーに予定を追加",
+      lines: lines,
+      confirmTitle: "追加",
+      messageID: messageID
+    ) else { return Self.declinedOutcome }
+
+    do {
+      try await CalendarService.addEvent(
+        title: title,
+        start: start,
+        end: end,
+        location: location.isEmpty ? nil : location,
+        notes: notes.isEmpty ? nil : notes
+      )
+      finishAgentStep(stepID, on: messageID, state: .done, detail: title)
+      return AgentToolOutcome(text: "カレンダーに追加しました。")
+    } catch CalendarService.AddEventError.accessDenied {
+      finishAgentStep(stepID, on: messageID, state: .failed, detail: "カレンダーへのアクセスが許可されていません")
+      return AgentToolOutcome(text: "カレンダーへのアクセスが許可されていないため追加できませんでした。設定アプリで許可するよう伝えてください。", isError: true)
+    } catch {
+      finishAgentStep(stepID, on: messageID, state: .failed, detail: "追加できませんでした")
+      return AgentToolOutcome(text: "カレンダーに追加できませんでした。", isError: true)
+    }
+  }
+
+  private func draftEmailTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
+    let subject = call.string("subject")
+    let body = call.string("body")
+    guard !body.isEmpty else {
+      return AgentToolOutcome(text: "本文が空です。", isError: true)
+    }
+    // Only addresses are kept; a name alone cannot be sent to.
+    let recipients = call.strings("to").filter { $0.contains("@") }
+
+    var lines = ["件名: \(subject.isEmpty ? "（なし）" : subject)"]
+    if !recipients.isEmpty { lines.append("宛先: \(recipients.joined(separator: ", "))") }
+    lines.append(String(body.prefix(160)))
+    guard let stepID = await approve(
+      tool: .draftEmail,
+      title: "メールの下書きを開く",
+      lines: lines,
+      confirmTitle: "開く",
+      messageID: messageID
+    ) else { return Self.declinedOutcome }
+
+    pendingMailDraft = MailDraft(recipients: recipients, subject: subject, body: body)
+    finishAgentStep(stepID, on: messageID, state: .done, detail: subject)
+    return AgentToolOutcome(text: "下書きを開きました。送信するかどうかは利用者が決めます。")
+  }
+
+  private func saveToNotionTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {
+    guard NotionService.isConfigured else {
+      return AgentToolOutcome(text: "Notionが連携されていません。設定の「Notion」で連携するよう伝えてください。", isError: true)
+    }
+    let allowed = Self.meetings(in: scope, from: meetings)
+    guard let id = UUID(uuidString: call.string("meeting_id")), let meeting = allowed.first(where: { $0.id == id }) else {
+      return AgentToolOutcome(text: "会議の記録が見つかりません。search_recordsのidを使ってください。", isError: true)
+    }
+    guard let stepID = await approve(
+      tool: .saveToNotion,
+      title: "Notionに保存",
+      lines: [meeting.displayTitle],
+      confirmTitle: "保存",
+      messageID: messageID
+    ) else { return Self.declinedOutcome }
+
+    do {
+      let outcome = try await NotionService.save(meeting: meeting, tasks: tasks)
+      finishAgentStep(stepID, on: messageID, state: .done, detail: meeting.displayTitle)
+      return AgentToolOutcome(text: "Notionに保存しました。\(outcome.pageURL?.absoluteString ?? "")")
+    } catch {
+      finishAgentStep(stepID, on: messageID, state: .failed, detail: "保存できませんでした")
+      return AgentToolOutcome(text: "Notionに保存できませんでした。", isError: true)
+    }
+  }
+
   // MARK: - Helpers
 
   /// Shows the step and the approval card. Returns the step's id when approved,
@@ -414,6 +538,16 @@ extension MemoraModel {
 
   private static func agentDate(_ date: Date) -> String {
     date.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())
+  }
+
+  /// Reads `yyyy-MM-dd HH:mm` in the person's time zone.
+  private static func agentDateTime(_ text: String) -> Date? {
+    let parts = text.split(whereSeparator: { $0 == " " || $0 == "T" })
+    guard let dayPart = parts.first, let day = agentDay(String(dayPart)) else { return nil }
+    guard parts.count > 1 else { return Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: day) }
+    let time = parts[1].split(separator: ":").compactMap { Int($0) }
+    guard time.count >= 2 else { return nil }
+    return Calendar.current.date(bySettingHour: time[0], minute: time[1], second: 0, of: day)
   }
 
   /// Reads a `yyyy-MM-dd` day in the person's calendar.

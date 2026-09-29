@@ -23,6 +23,29 @@ enum CalendarService {
     }
   }
 
+  enum AddEventError: Error {
+    case accessDenied
+    case noCalendar
+  }
+
+  /// Adds an event to the default calendar, asking for access first when it
+  /// has not been decided yet.
+  static func addEvent(title: String, start: Date, end: Date, location: String?, notes: String?) async throws {
+    if access != .granted {
+      guard await requestAccess() else { throw AddEventError.accessDenied }
+    }
+    let store = EKEventStore()
+    guard let calendar = store.defaultCalendarForNewEvents else { throw AddEventError.noCalendar }
+    let event = EKEvent(eventStore: store)
+    event.title = title
+    event.startDate = start
+    event.endDate = end
+    event.location = location
+    event.notes = notes
+    event.calendar = calendar
+    try store.save(event, span: .thisEvent)
+  }
+
   static func upcoming(limit: Int = 3, withinDays days: Int = 7) async -> [UpcomingMeeting] {
     let store = EKEventStore()
     let now = Date()

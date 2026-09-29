@@ -1,7 +1,9 @@
 import Foundation
+import FoundationModels
 
-// The Ask AI agent: a cloud model that reads the records through tools and,
-// once the person approves, makes documents, tasks, projects and memos.
+// The Ask AI agent: a model that reads the records through tools and, once the
+// person approves, makes documents, tasks, projects, events and memos. It runs
+// on the chosen cloud model, or on Apple's on-device model with no key at all.
 extension MemoraModel {
   /// Enough rounds to search, read several records and write the result, but
   /// bounded so a confused model cannot loop forever.
@@ -19,17 +21,22 @@ extension MemoraModel {
     let history = aiConversationContext()
     aiMessages.append(AIChatMessage(role: .user, text: trimmed))
 
-    // Tools need a cloud model; the on-device one is not asked to pretend.
-    guard AIEngineService.effectiveEngine(configuration.engine) == .cloud else {
+    let llm = configuration.llm
+    let runner: AgentRunner
+    switch AIEngineService.effectiveEngine(configuration.engine) {
+    case .cloud:
+      guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope)) else {
+        aiMessages.append(AIChatMessage(role: .assistant, text: AIAnswerFailure.missingKey.message))
+        return true
+      }
+      runner = .cloud(session)
+    case .foundation where Self.isOnDeviceAgentAvailable:
+      runner = .onDevice
+    default:
       aiMessages.append(AIChatMessage(
         role: .assistant,
-        text: "エージェントはクラウドのモデルで動きます。設定の「AI整理」でクラウド（BYOK）を選ぶか、入力欄のモデル選択で登録済みのモデルを選んでください。"
+        text: "この端末ではエージェントを動かせるAIがありません。Apple Intelligenceを有効にするか、設定の「AI整理」でクラウド（BYOK）を選んでください。"
       ))
-      return true
-    }
-    let llm = configuration.llm
-    guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope)) else {
-      aiMessages.append(AIChatMessage(role: .assistant, text: AIAnswerFailure.missingKey.message))
       return true
     }
 
@@ -46,16 +53,28 @@ extension MemoraModel {
     aiMessages.append(placeholder)
     isAIChatResponding = true
 
+    // The on-device window is small, so it gets only the end of the thread.
+    let thread = runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : history
     var opening = trimmed
-    if !history.isEmpty {
-      opening = "これまでの会話:\n\(history)\n\n今回の依頼:\n\(trimmed)"
+    if !thread.isEmpty {
+      opening = "これまでの会話:\n\(thread)\n\n今回の依頼:\n\(trimmed)"
     }
-    session.addUserMessage(opening)
 
     aiChatTask?.cancel()
     aiChatTask = Task { [weak self] in
       guard let self else { return }
-      let result = await self.runAgent(session: session, messageID: placeholder.id, scope: scope)
+      let result: AIAnswerResult
+      switch runner {
+      case .cloud(let session):
+        session.addUserMessage(opening)
+        result = await self.runAgent(session: session, messageID: placeholder.id, scope: scope)
+      case .onDevice:
+        if #available(iOS 26.0, *) {
+          result = await self.runOnDeviceAgent(prompt: opening, messageID: placeholder.id, scope: scope)
+        } else {
+          result = .failure(.noEngine)
+        }
+      }
 
       guard self.aiChatRequestID == requestID else { return }
       defer {
@@ -67,8 +86,8 @@ extension MemoraModel {
 
       let details = AIAnswerDetails(
         scopeLabel: scope.scopeLabel,
-        engineLabel: "エージェント",
-        modelLabel: llm.modelLabel,
+        engineLabel: runner.isOnDevice ? "エージェント（端末内）" : "エージェント",
+        modelLabel: runner.isOnDevice ? nil : llm.modelLabel,
         // The records the agent opened are what its answer rests on.
         sourceCount: self.agentMessage(placeholder.id)?.agentSteps.filter { $0.icon == AgentTool.readRecord.icon }.count ?? 0,
         generatedAt: .now
@@ -143,6 +162,36 @@ extension MemoraModel {
     return .answer(lastText.isEmpty ? note : lastText + "\n\n" + note)
   }
 
+  /// Apple's model, when this device has it ready. It needs no key, so the
+  /// agent works for someone who has not set up a cloud model.
+  static var isOnDeviceAgentAvailable: Bool {
+    if #available(iOS 26.0, *) {
+      return SystemLanguageModel.default.isAvailable
+    }
+    return false
+  }
+
+  /// Runs the agent on the on-device model. The session calls the tools itself;
+  /// each call goes through the same code as the cloud agent, in compact form.
+  @available(iOS 26.0, *)
+  private func runOnDeviceAgent(prompt: String, messageID: UUID, scope: AIChatScope) async -> AIAnswerResult {
+    let tools = OnDeviceAgentTool.all { [weak self] name, argumentsJSON in
+      guard let self else { return "" }
+      let arguments = argumentsJSON.data(using: .utf8)
+        .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
+      let call = AgentToolCall(id: UUID().uuidString, name: name, arguments: arguments)
+      return await self.performAgentTool(call, messageID: messageID, scope: scope, compact: true).text
+    }
+    let session = LanguageModelSession(tools: tools, instructions: Self.onDeviceAgentInstructions(scope: scope))
+    do {
+      let response = try await session.respond(to: prompt)
+      let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+      return text.isEmpty ? .failure(.empty) : .answer(text)
+    } catch {
+      return .failure(Task.isCancelled ? .cancelled : FoundationModelFailure.reason(for: error))
+    }
+  }
+
   /// Shows the change on the reply and waits for the person to decide.
   func requestAgentApproval(_ approval: AgentApproval) async -> Bool {
     // Only one card at a time; an older one still showing counts as declined.
@@ -178,6 +227,19 @@ extension MemoraModel {
     }
   }
 
+  /// Shorter than the cloud instructions: every word counts against the
+  /// on-device model's small window.
+  static func onDeviceAgentInstructions(scope: AIChatScope) -> String {
+    let today = Date.now.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())
+    return """
+    あなたは記録アプリ「Memora」のエージェントです。道具で記録を調べ、依頼された作業をします。
+    記録にないことは作りません。まず search_records で探し、必要なら read_record で読みます。
+    変更する道具は利用者の承認後に実行されます。拒否されたら繰り返しません。
+    頼まれた作業は質問で返さず、道具を呼んで行います。メールは宛先が不明でも draft_email で下書きを開きます。
+    最後に、したことを日本語で短く伝えます。idは利用者に見せません。今日は\(today)。対象: \(scope.scopeLabel)。
+    """
+  }
+
   static func agentInstructions(scope: AIChatScope) -> String {
     let today = Date.now.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())
     return """
@@ -188,8 +250,9 @@ extension MemoraModel {
     - 資料は create_document に、見出し・箇条書き・必要なら表を使ったMarkdownで書きます。
     - スライドは create_slides で作ります。1枚目は箇条書きなしの表紙にし、各スライドの要点は3〜6個、短い言葉にします。
     - 担当者と期限は、記録で明言されたときだけ設定します。
+    - 会議のあとの作業（フォローアップメールの下書き、次回の予定登録、Notionへの保存）も、依頼されたら道具で行います。メールは draft_email で下書きを開くだけで、送信は利用者がします。
     - 変更を伴う道具は、利用者が承認したときだけ実行されます。拒否されたら同じ操作を繰り返しません。
-    - 最後に、何を調べて何をしたかを日本語で短くまとめます。作った資料の本文を回答に繰り返しません。
+    - 最後に、何を調べて何をしたかを日本語で短くまとめます。作った資料の本文を回答に繰り返しません。記録やプロジェクトのidは利用者に見せません。
 
     今日の日付: \(today)
     対象範囲: \(scope.scopeLabel)
