@@ -62,6 +62,8 @@ final class MemoraModel {
       refreshSampleContentFlag()
     }
   }
+  /// Documents and slides made from the records, newest first.
+  var documents: [MemoraDocument] = []
   var tasks: [MemoraTask] {
     didSet {
       tasksByMeeting = nil
@@ -124,6 +126,13 @@ final class MemoraModel {
   var aiMessages: [AIChatMessage] = []
   /// What new Ask AI questions look across.
   var aiScope: AIChatScope = .all
+  /// Ask AI works as an agent: it uses tools to read records and, with the
+  /// person's approval, make documents, tasks, projects and memos.
+  var isAgentModeEnabled = UserDefaults.standard.bool(forKey: StorageKey.agentMode) {
+    didSet { UserDefaults.standard.set(isAgentModeEnabled, forKey: StorageKey.agentMode) }
+  }
+  /// The change the agent is waiting for the person to approve or decline.
+  var pendingAgentApproval: AgentApproval?
   var isAIChatResponding = false
   var isCapturePresented = false
   var isCaptureSourcePresented = false
@@ -293,6 +302,8 @@ final class MemoraModel {
   /// The request currently being answered, so a newer one can drop it.
   @ObservationIgnored var aiChatRequestID: UUID?
   @ObservationIgnored var aiChatTask: Task<Void, Never>?
+  /// Resumes the agent once its pending change is approved or declined.
+  @ObservationIgnored var agentApprovalContinuation: CheckedContinuation<Bool, Never>?
 
   /// Onboarding runs once. Sign-in and Plus stay optional so people can judge
   /// the app before committing to either.
@@ -394,6 +405,7 @@ final class MemoraModel {
     // chooses it from onboarding, so their own records are never mixed with it.
     meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: [])
     spaces = load([MemoraSpace].self, forKey: StorageKey.spaces, fallback: [])
+    documents = load([MemoraDocument].self, forKey: StorageKey.documents, fallback: [])
     lifeLogEntries = load([LifeLogEntry].self, forKey: StorageKey.lifeLogEntries, fallback: [])
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: [])
     people = load([Person].self, forKey: StorageKey.people, fallback: [])
@@ -638,6 +650,9 @@ final class MemoraModel {
     }
     if let stored = Self.storedDocument([MemoraSpace].self, forKey: StorageKey.spaces) {
       spaces = stored
+    }
+    if let stored = Self.storedDocument([MemoraDocument].self, forKey: StorageKey.documents) {
+      documents = stored
     }
     if let stored = Self.storedDocument([LifeLogEntry].self, forKey: StorageKey.lifeLogEntries) {
       lifeLogEntries = stored

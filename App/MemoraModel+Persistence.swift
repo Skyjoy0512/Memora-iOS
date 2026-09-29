@@ -45,6 +45,10 @@ extension MemoraModel {
     persistInBackground(spaces, forKey: StorageKey.spaces)
   }
 
+  func persistDocuments() {
+    persistInBackground(documents, forKey: StorageKey.documents)
+  }
+
   func persistInBackground<T: Encodable & Sendable>(_ value: T, forKey key: String) {
     // A store that could not be read must not be written over: the existing
     // records may still be there, and replacing them would lose them.
@@ -148,6 +152,8 @@ extension MemoraModel {
     static let lifeLogTrash = "memoraLifeLogTrash"
     static let aiHistory = "memoraAIHistory"
     static let pendingMediaDeletions = "memoraPendingMediaDeletions"
+    static let documents = "memoraDocuments"
+    static let agentMode = "memora.askAI.agentMode"
     static let hasOfferedSampleDeletion = "memora.hasOfferedSampleDeletion"
     static let autoLifeLogInbox = "memoraAutoLifeLogInbox"
   }

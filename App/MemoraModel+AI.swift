@@ -6,6 +6,8 @@ extension MemoraModel {
   /// Starts a fresh chat. Whatever was being answered is cancelled, so its
   /// result can never land in the new conversation.
   func startNewAIChat() {
+    // An agent waiting on an approval card would never resume otherwise.
+    resolveAgentApproval(false)
     aiChatTask?.cancel()
     aiChatTask = nil
     aiChatRequestID = nil
@@ -26,6 +28,9 @@ extension MemoraModel {
   /// way, so the caller keeps the text instead of losing it to a refused send.
   @discardableResult
   func sendAIChat(_ question: String, attachment: AIAttachment? = nil) -> Bool {
+    if isAgentModeEnabled {
+      return sendAgentChat(question, attachment: attachment)
+    }
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
 

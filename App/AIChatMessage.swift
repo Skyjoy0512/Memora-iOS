@@ -16,6 +16,10 @@ struct AIChatMessage: Identifiable, Hashable {
   /// The records the answer was built from. Empty when nothing grounded it,
   /// such as the fallback shown when no engine can run.
   var sources: [AIChatSource] = []
+  /// What the agent did on the way to this reply, in order.
+  var agentSteps: [AgentStep] = []
+  /// Documents the agent made in this reply.
+  var documentIDs: [UUID] = []
   /// True while the reply is still being formed.
   var isThinking = false
   var createdAt = Date.now
