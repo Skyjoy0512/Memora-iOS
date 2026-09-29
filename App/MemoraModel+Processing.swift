@@ -187,11 +187,6 @@ extension MemoraModel {
         meeting.status = .waitingForSummary
       }
       announce("文字起こしができました。要約を作成しています。")
-      // A call was brought in to become a memo, so it does not wait for a
-      // template to be picked.
-      if meeting(id: id)?.source == .phoneCall {
-        summarizeCall(id)
-      }
     case .unavailable:
       updateMeeting(id) {
         $0.status = .failed("この端末では文字起こしを利用できません。音声は保存されています。設定で別のエンジンを選ぶか、別の端末でお試しください。")

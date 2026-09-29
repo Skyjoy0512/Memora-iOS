@@ -5,9 +5,7 @@ extension MemoraModel {
   /// Copies an audio file into the app, checks that it can actually be played,
   /// and records its real length. The file work runs off the main actor, and a
   /// failed import leaves nothing behind.
-  /// `source` marks what the audio is. A phone call is transcribed and turned
-  /// into a call memo straight away, since that is what bringing one in asks for.
-  func importAudio(from sourceURL: URL, source: MeetingSource = .importFile) async {
+  func importAudio(from sourceURL: URL) async {
     guard !isImporting else { return }
     isImporting = true
     importProgress = nil
@@ -47,13 +45,12 @@ extension MemoraModel {
     let title = sourceURL.deletingPathExtension().lastPathComponent
     switch outcome {
     case .imported(let destination, let duration):
-      let fallbackTitle = source == .phoneCall ? "通話" : "インポートした音声"
       let meeting = Meeting(
         id: UUID(),
-        title: title.isEmpty ? fallbackTitle : title,
+        title: title.isEmpty ? "インポートした音声" : title,
         createdAt: .now,
         duration: duration,
-        source: source,
+        source: .importFile,
         status: .waitingForTranscription,
         summary: "音声を保存しました。必要な時に文字起こしを開始できます。",
         keyPoints: [],
@@ -72,9 +69,6 @@ extension MemoraModel {
       isImporting = false
       selectedTab = .files
       libraryPath = [.meeting(meeting.id)]
-      if source == .phoneCall {
-        startTranscription(meeting.id)
-      }
     case .unreadable:
       isImporting = false
       importErrorMessage = "この音声は再生できないため取り込めませんでした。別のファイルをお試しください。"

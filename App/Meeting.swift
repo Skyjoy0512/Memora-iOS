@@ -175,12 +175,6 @@ extension Meeting {
   /// The summary as one plain passage for cards, rows and VoiceOver. A
   /// generated document gives its overview without markdown markers; a plain
   /// summary is returned as written.
-  /// False for a record made from text alone (a pasted call transcript),
-  /// which has no length to show.
-  var hasLength: Bool {
-    duration > 0 || audioURL != nil
-  }
-
   var summaryPreview: String {
     MarkdownBlockParser.hasBlockStructure(summary)
       ? MarkdownBlockParser.overview(of: summary)

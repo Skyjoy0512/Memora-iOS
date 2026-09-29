@@ -528,26 +528,17 @@ struct MeetingDetailView: View {
         .tracking(-0.6)
         .memoraTextReveal()
 
-      // A call made from a pasted transcript never had audio or a length, so
-      // it neither shows 00:00 nor says its audio was deleted.
-      let isTextOnly = !meeting.hasLength && meeting.source == .phoneCall
       HStack(spacing: 8) {
         Text(MemoraFormat.meetingDate(meeting.createdAt))
-        if !isTextOnly {
-          Text("·")
-          Text(MemoraFormat.duration(meeting.duration))
-        }
+        Text("·")
+        Text(MemoraFormat.duration(meeting.duration))
         Text("·")
         Text(meeting.source.label)
       }
       .font(.subheadline)
       .foregroundStyle(.secondary)
 
-      if isTextOnly {
-        Label("文字起こしから作成", icon: .docText)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-      } else if meeting.audioURL == nil, !SampleContent.isSample(meetingID: meeting.id) {
+      if meeting.audioURL == nil, !SampleContent.isSample(meetingID: meeting.id) {
         Label("音声は削除済み", icon: .waveformSlash)
           .font(.caption)
           .foregroundStyle(.secondary)

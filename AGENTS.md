@@ -108,13 +108,6 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   (`prepareWeeklyReviewIfNeeded`), stored as a `MemoraDocument` with
   `weekStart`. An unopened one is pointed out on the Journal
   (`WeeklyReviewCard`); 資料 can write this week's on demand.
-- Phone calls: iOS gives no app the audio of a call, so 通話を議事録にする
-  (＋ menu, `PhoneCallImportSheet`) starts from iPhone's own call recording:
-  its audio file (`importAudio(from:source: .phoneCall)`) or the transcript
-  pasted from Notes (`createCallRecord(fromTranscript:)`). A call record
-  (`MeetingSource.phoneCall`) is transcribed and summarised with the 通話メモ
-  template (`SummaryTemplate.phoneCall`) without waiting for a tap; other
-  imports keep the manual start.
   Documents (`MemoraDocument`, stored under `memoraDocuments` and in backups)
   are listed from the side menu's 資料 and export as PDF (`DocumentPDF`),
   PowerPoint (`PPTXWriter`, stored ZIP via `ZipArchive`) or text. The agent

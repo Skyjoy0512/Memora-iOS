@@ -68,9 +68,6 @@ struct RootTabView: View {
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
     }
-    .sheet(isPresented: $model.isPhoneCallImportPresented) {
-      PhoneCallImportSheet()
-    }
     .sheet(item: $model.pendingMailDraft) { draft in
       MailDraftSheet(draft: draft) { model.pendingMailDraft = nil }
     }

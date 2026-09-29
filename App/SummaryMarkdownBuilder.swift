@@ -80,21 +80,6 @@ enum SummaryMarkdownBuilder {
       lines.append("## 未決事項")
       lines += bullets(questions)
 
-    case .builtIn(.phoneCall):
-      lines = [
-        "# \(headline)",
-        "**日時**: \(input.dateText)  ",
-        "**用件**: \(overview)",
-        "## 話したこと"
-      ]
-      lines += topics.flatMap(\.points).map { "- \($0)" }
-      lines.append("## 約束したこと・決まったこと")
-      lines += bullets(decisions)
-      lines.append("## 次にやること")
-      lines += actionTable(actions)
-      lines.append("## 確認が必要なこと")
-      lines += bullets(questions)
-
     case .builtIn(.actionPlan):
       lines = [
         "# \(headline)",

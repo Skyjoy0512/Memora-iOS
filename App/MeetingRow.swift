@@ -8,7 +8,7 @@ struct MeetingRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      MemoraIconBadge(symbol: meeting.source.symbol)
+      MemoraIconBadge(symbol: meeting.source == .recording ? .waveform : .squareAndArrowDown)
 
       VStack(alignment: .leading, spacing: 6) {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -32,10 +32,8 @@ struct MeetingRow: View {
 
         HStack(spacing: 6) {
           Text(MemoraFormat.relativeDate(meeting.createdAt))
-          if meeting.hasLength {
-            Text("·")
-            Text(MemoraFormat.duration(meeting.duration))
-          }
+          Text("·")
+          Text(MemoraFormat.duration(meeting.duration))
           Text("·")
           MeetingStatusLabel(status: meeting.status)
         }
@@ -69,9 +67,7 @@ struct MeetingRow: View {
       parts.append(meeting.summaryPreview)
     }
     parts.append(MemoraFormat.relativeDate(meeting.createdAt))
-    if meeting.hasLength {
-      parts.append(MemoraFormat.duration(meeting.duration))
-    }
+    parts.append(MemoraFormat.duration(meeting.duration))
     parts.append(meeting.status.shortLabel)
     return parts.joined(separator: "、")
   }

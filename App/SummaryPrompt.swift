@@ -103,8 +103,6 @@ enum SummaryPrompt {
       detailedMinutes
     case .builtIn(.actionPlan):
       actionPlan(input)
-    case .builtIn(.phoneCall):
-      phoneCall(input)
     case .market(let market):
       marketFormat(market, input: input)
     }
@@ -199,29 +197,6 @@ enum SummaryPrompt {
     - {決定事項}
     ## 未決事項・確認が必要なこと
     - {結論が出なかった問い}
-    """
-  }
-
-  private static func phoneCall(_ input: MeetingSummaryInput) -> String {
-    """
-    これは電話の通話の文字起こし。次の構成のMarkdownで書く。
-
-    # {通話の用件が分かる見出し}
-    **日時**: \(input.dateText)
-    **相手**: {話者ラベル。名乗っていれば名前}
-    **用件**: {1〜2文}
-    ## 話したこと
-    - {要点。誰が何を述べたか}
-    ## 相手からの依頼・質問
-    - {依頼や質問。無ければ「なし」}
-    ## 約束したこと・決まったこと
-    - {お互いに約束したこと、決まったこと。無ければ「なし」}
-    ## 次にやること
-    | タイトル | 説明 | 責任者 | 期限 | 備考 |
-    |:---|:---|:---|:---|:---|
-    | {件名} | {何をするか} | {話者ラベルまたは未定} | {述べられた期限または未定} | {折り返しの連絡先など} |
-    ## 確認が必要なこと
-    - {結論が出なかったこと。無ければ「なし」}
     """
   }
 

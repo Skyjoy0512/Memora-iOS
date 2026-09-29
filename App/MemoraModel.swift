@@ -11,8 +11,6 @@ final class MemoraModel {
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
   var isFileCreationPresented = false
-  /// The guide for turning an iPhone call recording into a call memo.
-  var isPhoneCallImportPresented = false
   var isSettingsPresented = false
   /// Opened by the contextual create button on the tasks tab.
   var isAddTaskPresented = false
@@ -596,7 +594,7 @@ final class MemoraModel {
     let aggregates = bySpace.mapValues { group in
       SpaceAggregate(
         meetingCount: group.count,
-        icons: group.prefix(4).map(\.source.symbol),
+        icons: group.prefix(4).map { $0.source == .recording ? .waveform : .squareAndArrowDown },
         latestDate: group.first?.createdAt
       )
     }

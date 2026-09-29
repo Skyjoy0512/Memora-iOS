@@ -71,7 +71,6 @@ enum SelfChecks {
     group("Presentation package", checkPresentationPackage)
     group("Weekly review", checkWeeklyReview)
     group("Person name matching", checkPersonNames)
-    group("Pasted call transcript", checkCallSegments)
 
     // Ordering cannot be checked synchronously; it runs beside the app and adds
     // its result when it finishes.
@@ -265,16 +264,6 @@ enum SelfChecks {
     let text = WeeklyReviewBuilder.markdown(input) ?? ""
     for expected in ["定例会議", "決定: 来週リリース", "資料を送る", "見積もりを出す"] where !text.contains(expected) {
       report("weekly review is missing \(expected)")
-    }
-  }
-
-  /// A pasted call transcript keeps 「名前: 発言」 speakers, and a long line
-  /// that only happens to contain a colon stays one plain line.
-  private static func checkCallSegments() {
-    let segments = MemoraModel.callSegments(from: "田中：見積もりは金曜までに送ります\n\n了解です\n会議は10:30からで、場所は本社の会議室になりますのでよろしくお願いします")
-    let speakers = segments.map(\.speaker)
-    if segments.count != 3 || speakers != ["田中", "", ""] || segments.first?.text != "見積もりは金曜までに送ります" {
-      report("pasted call transcript: \(segments.map { "\($0.speaker)|\($0.text)" })")
     }
   }
 

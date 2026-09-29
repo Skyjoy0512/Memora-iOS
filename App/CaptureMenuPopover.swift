@@ -59,12 +59,6 @@ struct CaptureMenuPopover: View {
         try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
         model.isOnlineMeetingCapturePresented = true
       }
-    case .phoneCall:
-      collapse()
-      Task { @MainActor in
-        try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
-        model.isPhoneCallImportPresented = true
-      }
     }
   }
 

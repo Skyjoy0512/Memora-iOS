@@ -134,7 +134,6 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case personCropCircleBadgeXmark = "person.crop.circle.badge.xmark"
   case personCropCircleFill = "person.crop.circle.fill"
   case personFill = "person.fill"
-  case phone = "phone"
   case photo = "photo"
   case photoBadgePlus = "photo.badge.plus"
   case photoFill = "photo.fill"

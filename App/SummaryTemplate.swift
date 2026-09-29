@@ -7,7 +7,6 @@ enum SummaryTemplate: String, CaseIterable, Identifiable {
   case meetingMinutes
   case detailedMinutes
   case actionPlan
-  case phoneCall
 
   var id: Self { self }
 
@@ -17,7 +16,6 @@ enum SummaryTemplate: String, CaseIterable, Identifiable {
     case .meetingMinutes: "議事録"
     case .detailedMinutes: "時系列の議事録"
     case .actionPlan: "アクション中心"
-    case .phoneCall: "通話メモ"
     }
   }
 
@@ -27,7 +25,6 @@ enum SummaryTemplate: String, CaseIterable, Identifiable {
     case .meetingMinutes: "会議情報・話題ごとの議事メモ・アクションを簡潔に整理"
     case .detailedMinutes: "時間の区切りごとに話の流れと決定の理由を残す"
     case .actionPlan: "担当と期限のあるアクションを中心に抽出"
-    case .phoneCall: "用件・相手の依頼・約束したこと・次にやることを整理"
     }
   }
 
@@ -37,7 +34,6 @@ enum SummaryTemplate: String, CaseIterable, Identifiable {
     case .meetingMinutes: "議事録を生成中"
     case .detailedMinutes: "時系列の議事録を生成中"
     case .actionPlan: "次の行動を整理中"
-    case .phoneCall: "通話メモを作成中"
     }
   }
 
@@ -47,7 +43,6 @@ enum SummaryTemplate: String, CaseIterable, Identifiable {
     case .meetingMinutes: .textDocument
     case .detailedMinutes: .listBulletRectangle
     case .actionPlan: .checkmarkCircle
-    case .phoneCall: .phone
     }
   }
 }
