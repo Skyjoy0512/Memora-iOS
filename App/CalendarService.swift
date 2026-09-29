@@ -62,7 +62,8 @@ enum CalendarService {
         title: event.title ?? "会議",
         start: event.startDate,
         end: event.endDate,
-        isOnline: hasMeetingLink(event)
+        isOnline: hasMeetingLink(event),
+        calendarColor: event.calendar?.cgColor.map { Color(cgColor: $0) }
       )
     }
   }

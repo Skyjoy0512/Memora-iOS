@@ -39,29 +39,19 @@ struct UpcomingEventsRow: View {
       .scrollTargetBehavior(.viewAligned)
       .contentMargins(.horizontal, 18, for: .scrollContent)
     }
-    .confirmationDialog(
-      chosenMeeting?.title ?? "",
-      isPresented: isChoosing,
-      titleVisibility: .visible,
-      presenting: chosenMeeting
-    ) { meeting in
-      if meeting.isOnline {
-        Button("Web会議として録音") { onRecordOnline(meeting) }
-        Button("対面で録音") { onRecordInPerson(meeting) }
-      } else {
-        Button("対面で録音") { onRecordInPerson(meeting) }
-        Button("Web会議として録音") { onRecordOnline(meeting) }
+    .sheet(item: $chosenMeeting) { meeting in
+      RecordingMethodSheet(meeting: meeting) { method in
+        chosenMeeting = nil
+        // Recording presents its own screen, so it waits for this sheet to
+        // finish closing.
+        Task { @MainActor in
+          try? await Task.sleep(for: .milliseconds(350))
+          switch method {
+          case .inPerson: onRecordInPerson(meeting)
+          case .online: onRecordOnline(meeting)
+          }
+        }
       }
-    } message: { _ in
-      Text("録音方法を選んでください")
-    }
-  }
-
-  private var isChoosing: Binding<Bool> {
-    Binding {
-      chosenMeeting != nil
-    } set: { isPresented in
-      if !isPresented { chosenMeeting = nil }
     }
   }
 }

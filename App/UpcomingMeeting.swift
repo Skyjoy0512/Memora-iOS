@@ -9,4 +9,6 @@ struct UpcomingMeeting: Identifiable, Hashable {
   /// The invitation carries a Zoom, Meet, Teams or Webex link, so the web
   /// meeting recording is offered first.
   var isOnline = false
+  /// The colour of the calendar the event is in, as the Calendar app shows it.
+  var calendarColor: Color?
 }

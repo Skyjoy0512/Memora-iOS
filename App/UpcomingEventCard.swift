@@ -1,56 +1,51 @@
 import SwiftUI
 
-/// One coming calendar event in the Files screen's row: a date tile, when it
-/// starts, and its title.
+/// One coming calendar event in the Files screen's row, drawn the way the
+/// Calendar app marks an event: a bar in the calendar's colour beside when it
+/// is and what it is.
 struct UpcomingEventCard: View {
   var meeting: UpcomingMeeting
 
   var body: some View {
-    HStack(spacing: 14) {
-      dateTile
+    HStack(alignment: .top, spacing: 12) {
+      Capsule()
+        .fill(accent)
+        .frame(width: 4)
 
-      VStack(alignment: .leading, spacing: 3) {
+      VStack(alignment: .leading, spacing: 6) {
         HStack(spacing: 6) {
-          Text(meeting.start, format: .dateTime.month().day().weekday().hour().minute())
-            .font(.subheadline)
+          Text(UpcomingMeetingFormat.day(meeting.start))
+            .foregroundStyle(accent)
+          Text(UpcomingMeetingFormat.timeRange(meeting))
             .foregroundStyle(.secondary)
+            .monospacedDigit()
           if meeting.isOnline {
+            Spacer(minLength: 4)
             Label("Web会議", icon: .video)
               .labelStyle(.iconOnly)
-              .font(.caption.weight(.semibold))
               .foregroundStyle(.secondary)
           }
         }
+        .font(.subheadline.weight(.semibold))
+        .lineLimit(1)
+
         Text(meeting.title)
           .font(.headline)
           .foregroundStyle(.primary)
           .lineLimit(2)
+          .multilineTextAlignment(.leading)
       }
 
       Spacer(minLength: 0)
     }
-    .padding(14)
-    .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
+    .padding(16)
+    .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
     .memoraCard(radius: 22)
     .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    .accessibilityElement(children: .combine)
   }
 
-  private var dateTile: some View {
-    VStack(spacing: 0) {
-      Text(meeting.start, format: .dateTime.weekday(.abbreviated))
-        .font(.caption2.weight(.bold))
-        .foregroundStyle(.white)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 3)
-        .background(.tint)
-      Text(meeting.start, format: .dateTime.day())
-        .font(.title2.weight(.semibold).monospacedDigit())
-        .foregroundStyle(.primary)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    .frame(width: 52, height: 56)
-    .background(Color(uiColor: .systemBackground))
-    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    .accessibilityHidden(true)
+  private var accent: Color {
+    meeting.calendarColor ?? .accentColor
   }
 }
