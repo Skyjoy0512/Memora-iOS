@@ -562,7 +562,6 @@ struct MeetingDetailView: View {
         draftKey: "meeting.\(meeting.id).summary",
         onCommit: { await model.updateMeetingSummary(meeting.id, summary: $0) }
       )
-      .memoraTextReveal(delay: 0.04)
     }
     .memoraAppear()
 
