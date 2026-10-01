@@ -45,6 +45,7 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case chevronDown = "chevron.down"
   case chevronLeft = "chevron.left"
   case chevronRight = "chevron.right"
+  case chevronUpChevronDown = "chevron.up.chevron.down"
   case circle = "circle"
   case circleDotted = "circle.dotted"
   case circleLefthalfFilled = "circle.lefthalf.filled"

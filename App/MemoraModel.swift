@@ -11,6 +11,17 @@ final class MemoraModel {
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
   var isFileCreationPresented = false
+  /// Teams the person belongs to, as the cloud reports them.
+  var teamWorkspaces: [TeamWorkspace] = []
+  /// The open team, or nil for the personal workspace. A setting, so it is
+  /// kept in UserDefaults and restored next launch.
+  var currentTeamID: String? = UserDefaults.standard.string(forKey: StorageKey.currentTeamID) {
+    didSet { UserDefaults.standard.set(currentTeamID, forKey: StorageKey.currentTeamID) }
+  }
+  var isTeamCreationPresented = false
+  var isTeamJoinPresented = false
+  /// The cloud service behind teams. Swapped for the real one once connected.
+  @ObservationIgnored var teamBackend: any TeamBackend = UnconfiguredTeamBackend()
   var isSettingsPresented = false
   /// Opened by the contextual create button on the tasks tab.
   var isAddTaskPresented = false

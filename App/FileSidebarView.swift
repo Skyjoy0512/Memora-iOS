@@ -8,6 +8,8 @@ struct FileSidebarView: View {
   var onSelectTab: (RootTab) -> Void
   var onSelectSpace: (MemoraSpace) -> Void
   var onSelectSharedProject: (SharedProject) -> Void
+  var onCreateTeam: () -> Void
+  var onJoinTeam: () -> Void
   var onCreateSpace: () -> Void
   var onOpenDocuments: () -> Void
   var onOpenPeople: () -> Void
@@ -17,6 +19,10 @@ struct FileSidebarView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       profileHeader
+
+      WorkspaceSwitcher(onCreateTeam: onCreateTeam, onJoinTeam: onJoinTeam)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 6)
 
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {

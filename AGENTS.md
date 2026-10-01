@@ -78,6 +78,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   it says plainly that no billing happened: the tier is a local preference
   (`choosePlan`) that unlocks the team share. `MemoraAccount` stays in the model
   for a later phase.
+- Workspaces follow a personal / business split: the personal workspace stays
+  on the device (the SQLite store); a team workspace keeps its records in the
+  cloud for every member to see and edit. The switcher is at the top of the
+  side menu (`WorkspaceSwitcher`, `MemoraModel+Workspace`). The cloud is
+  reached only through `TeamBackend`; until Firebase is connected
+  `UnconfiguredTeamBackend` refuses team creation and joining with a reason.
+  Creating a team needs the team plan; joining with an invite code does not.
 - Team sharing publishes a project or a single record to CloudKit
   (`CloudSharingService`) and lists what teammates share back, for both units.
   It needs the iCloud capability and a container matching the bundle identifier;

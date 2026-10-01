@@ -131,6 +131,7 @@ extension MemoraModel {
   }
 
   enum StorageKey {
+    static let currentTeamID = "memora.workspace.currentTeam"
     static let hasCompletedOnboarding = "hasSeenMemoraWelcome"
     static let hasOfferedPlus = "hasOfferedMemoraPlus"
     static let isSubscribed = "memoraPlusActive"

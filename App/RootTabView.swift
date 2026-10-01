@@ -20,6 +20,14 @@ struct RootTabView: View {
         onSelectTab: selectTab,
         onSelectSpace: openSpace,
         onSelectSharedProject: openSharedProject,
+        onCreateTeam: {
+          closeSidebar()
+          model.isTeamCreationPresented = true
+        },
+        onJoinTeam: {
+          closeSidebar()
+          model.isTeamJoinPresented = true
+        },
         onCreateSpace: createSpace,
         onOpenDocuments: openDocuments,
         onOpenPeople: openPeople,
@@ -68,6 +76,12 @@ struct RootTabView: View {
     }
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
+    }
+    .sheet(isPresented: $model.isTeamCreationPresented) {
+      TeamCreateSheet()
+    }
+    .sheet(isPresented: $model.isTeamJoinPresented) {
+      TeamJoinSheet()
     }
     .sheet(item: $model.pendingMailDraft) { draft in
       MailDraftSheet(draft: draft) { model.pendingMailDraft = nil }
