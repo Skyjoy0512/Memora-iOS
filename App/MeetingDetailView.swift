@@ -34,6 +34,9 @@ struct MeetingDetailView: View {
   @State private var localPlaybackStarted = false
   /// The initial time is applied once; a later `onAppear` must not seek again.
   @State private var didApplyInitialPlayback = false
+  /// Set when the back button has already handed the bottom controls back, so
+  /// disappearing does not remove this screen's entry a second time.
+  @State private var hasLeft = false
 
   @State private var isSavingToNotion = false
   /// The PDF export in progress, with its progress, while it runs.
@@ -83,6 +86,7 @@ struct MeetingDetailView: View {
             }
           }
           .onAppear {
+            hasLeft = false
             model.pushActiveDetail(meeting.id)
             // Ask AI stays on screen however far the record is scrolled.
             model.isDetailComposerVisible = true
@@ -117,7 +121,9 @@ struct MeetingDetailView: View {
             model.detailPlaybackRequest = nil
           }
           .onDisappear {
-            model.popActiveDetail(meeting.id)
+            if !hasLeft {
+              model.popActiveDetail(meeting.id)
+            }
             model.isDetailComposerVisible = true
           }
           .scrollFocusedEditorAboveKeyboard(in: proxy)
@@ -127,6 +133,7 @@ struct MeetingDetailView: View {
         .toolbar {
           ToolbarItem(placement: .topBarLeading) {
             Button("前に戻る", icon: .chevronLeft) {
+              leave(meeting.id)
               dismiss()
             }
             .labelStyle(.iconOnly)
@@ -441,6 +448,16 @@ struct MeetingDetailView: View {
       withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
         proxy.scrollTo(segment.id, anchor: .center)
       }
+    }
+  }
+
+  /// Hands the tab bar back as the screen starts sliding away, so it rises
+  /// alongside the transition instead of popping in once the screen is gone.
+  private func leave(_ meetingID: UUID) {
+    guard !hasLeft else { return }
+    hasLeft = true
+    withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+      model.popActiveDetail(meetingID)
     }
   }
 

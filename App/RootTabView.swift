@@ -199,6 +199,9 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isInlineEditing)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isDetailComposerVisible)
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: shouldShowComposer)
+    // Leaving or opening a record moves the bar with the screen, rather than
+    // letting it snap in or out.
+    .animation(reduceMotion ? nil : MemoraMotion.screen, value: isShowingMeetingDetail)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isBottomBarHidden)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isCaptureSourcePresented)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isSearchCovering)
