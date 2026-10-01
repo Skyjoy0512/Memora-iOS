@@ -36,7 +36,7 @@ struct InlineEditableList: View {
               .font(.subheadline)
               .foregroundStyle(.secondary)
           } else {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: MarkdownBlockView.blockSpacing) {
               // Index identity: duplicate lines still get their own view.
               ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -45,6 +45,7 @@ struct InlineEditableList: View {
                     .frame(width: 5, height: 5)
                   Text(InlineMarkdownEditor.attributed(item))
                     .font(.body)
+                    .lineSpacing(MarkdownBlockView.lineSpacing)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
               }

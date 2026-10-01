@@ -154,6 +154,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   lays the document out. Actions become tasks (existing titles skipped); owners
   and due dates are only set when the meeting said them. Generated summaries
   render with `MarkdownDocumentView`; cards and rows use `summaryPreview`.
+  A summary is edited where it is read (`EditableMarkdownDocument`): one block
+  or table value at a time, drawn by the same `MarkdownBlockView`, written back
+  over only its own lines (`MarkdownBlockWriter`). Do not switch the whole
+  summary to its markdown source on tap; the source editor is only offered
+  from the long-press menu.
 - Icons are SF Symbols named through `MemoraIcon` (`Shared/MemoraIcon.swift`).
   Draw them with `Image(icon:)`, `Label(_:icon:)`, `Button(_:icon:)` and friends
   rather than a literal `systemName`/`systemImage`, so a stored icon resolves the

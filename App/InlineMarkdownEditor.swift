@@ -48,13 +48,20 @@ struct InlineMarkdownEditor: View {
             isFocused: $isFocused
           )
         }
+      } else if rendersBlocks, MarkdownBlockParser.hasBlockStructure(text) {
+        // A document is edited where it is read, block by block, so it keeps
+        // the look it had. The whole source stays reachable for bigger changes.
+        EditableMarkdownDocument(markdown: text, draftKey: draftKey, onCommit: onCommit)
+          .contextMenu {
+            Button("Markdownで編集", icon: .chevronLeftForwardslashChevronRight) {
+              beginEditing()
+            }
+          }
       } else {
         Group {
           if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             Text(placeholder)
               .foregroundStyle(.tertiary)
-          } else if rendersBlocks, MarkdownBlockParser.hasBlockStructure(text) {
-            MarkdownDocumentView(markdown: text, isLazy: true)
           } else {
             Text(Self.attributed(text))
           }

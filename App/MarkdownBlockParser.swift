@@ -104,13 +104,25 @@ enum MarkdownBlockParser {
   }
 
   private static func parse(_ markdown: String) -> [MarkdownBlock] {
-    var blocks: [MarkdownBlock] = []
+    sourcedBlocks(for: markdown).map(\.block)
+  }
+
+  /// Each block with the source lines it was read from, so an edit to one
+  /// block can be written back over exactly those lines.
+  static func sourcedBlocks(for markdown: String) -> [SourcedMarkdownBlock] {
+    var blocks: [SourcedMarkdownBlock] = []
     var paragraph: [String] = []
+    var paragraphStart = 0
     var tableLines: [String] = []
+    var tableStart = 0
+    var lineIndex = 0
 
     func flushParagraph() {
       guard !paragraph.isEmpty else { return }
-      blocks.append(.paragraph(paragraph.joined(separator: "\n")))
+      blocks.append(SourcedMarkdownBlock(
+        block: .paragraph(paragraph.joined(separator: "\n")),
+        lines: paragraphStart..<lineIndex
+      ))
       paragraph = []
     }
     func flushTable() {
@@ -119,18 +131,26 @@ enum MarkdownBlockParser {
         .map(cells)
         .filter { row in !row.allSatisfy { $0.allSatisfy { "-: ".contains($0) } } }
       if let header = rows.first {
-        blocks.append(.table(header: header, rows: Array(rows.dropFirst())))
+        blocks.append(SourcedMarkdownBlock(
+          block: .table(header: header, rows: Array(rows.dropFirst())),
+          lines: tableStart..<lineIndex
+        ))
       }
       tableLines = []
     }
+    func append(_ block: MarkdownBlock) {
+      blocks.append(SourcedMarkdownBlock(block: block, lines: lineIndex..<(lineIndex + 1)))
+    }
 
-    for rawLine in markdown.components(separatedBy: "\n") {
+    for (index, rawLine) in markdown.components(separatedBy: "\n").enumerated() {
+      lineIndex = index
       let indent = rawLine.prefix { $0 == " " || $0 == "\t" }
         .reduce(0) { $0 + ($1 == "\t" ? 4 : 1) }
       let line = rawLine.trimmingCharacters(in: .whitespaces)
 
       if line.hasPrefix("|") {
         flushParagraph()
+        if tableLines.isEmpty { tableStart = index }
         tableLines.append(line)
         continue
       }
@@ -142,26 +162,28 @@ enum MarkdownBlockParser {
       }
       if line == "---" || line == "***" || line == "___" {
         flushParagraph()
-        blocks.append(.rule)
+        append(.rule)
         continue
       }
       if let heading = heading(line) {
         flushParagraph()
-        blocks.append(heading)
+        append(heading)
         continue
       }
       if line.hasPrefix(">") {
         flushParagraph()
-        blocks.append(.quote(line.drop { $0 == ">" || $0 == " " }.description))
+        append(.quote(line.drop { $0 == ">" || $0 == " " }.description))
         continue
       }
       if let (marker, text) = listItem(line) {
         flushParagraph()
-        blocks.append(.bullet(level: indent / 2, marker: marker, text: text))
+        append(.bullet(level: indent / 2, marker: marker, text: text))
         continue
       }
+      if paragraph.isEmpty { paragraphStart = index }
       paragraph.append(line)
     }
+    lineIndex = markdown.components(separatedBy: "\n").count
     flushParagraph()
     flushTable()
     return blocks
@@ -174,6 +196,17 @@ enum MarkdownBlockParser {
   }
 
   private static func listItem(_ line: String) -> (MarkdownBlock.Marker, String)? {
+    // An item still being written has no text yet, and its trailing space
+    // is trimmed away with the line's.
+    switch line {
+    case "-", "*", "+": return (.dot, "")
+    case "- [ ]": return (.checkbox(isChecked: false), "")
+    case "- [x]", "- [X]": return (.checkbox(isChecked: true), "")
+    default: break
+    }
+    if line.hasSuffix("."), !line.dropLast().isEmpty, line.dropLast().allSatisfy({ $0.isASCII && $0.isNumber }) {
+      return (.number(String(line.dropLast())), "")
+    }
     for (prefix, checked) in [("- [ ] ", false), ("- [x] ", true), ("- [X] ", true)] where line.hasPrefix(prefix) {
       return (.checkbox(isChecked: checked), String(line.dropFirst(prefix.count)))
     }

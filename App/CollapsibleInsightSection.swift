@@ -23,7 +23,7 @@ struct CollapsibleInsightSection<Content: View>: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: 16) {
       if showsDivider {
         Divider()
           .padding(.bottom, 6)
