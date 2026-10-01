@@ -94,8 +94,6 @@ struct AIComposerBar: View {
           attachmentMenu
             .matchedGeometryEffect(id: "attach", in: controlsNamespace)
           Spacer(minLength: 8)
-          modelMenu
-            .frame(maxWidth: 150)
           actionButton
             .matchedGeometryEffect(id: "action", in: controlsNamespace)
         }
@@ -224,10 +222,6 @@ struct AIComposerBar: View {
     // label color like the rest of the composer.
     .tint(.primary)
     .accessibilityLabel("添付を追加")
-  }
-
-  private var modelMenu: some View {
-    AIModelPicker()
   }
 
   private var actionButton: some View {

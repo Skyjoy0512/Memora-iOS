@@ -136,9 +136,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   PowerPoint (`PPTXWriter`, stored ZIP via `ZipArchive`) or text. The agent
   cannot read attachments yet, and slide speaker notes are not written into
   the .pptx.
-- The composer defaults to Auto, which follows the configured `AIEngine` and
-  cloud selection. Manual choices are saved in `RegisteredLLMStore` and display
-  the user's registered model name and provider logo. Both Ask AI paths capture
+- Ask AI defaults to Auto, which follows the configured `AIEngine` and cloud
+  selection. A registered model is chosen in Settings › AI整理 (saved in
+  `RegisteredLLMStore`), not from the composer: a menu there dropped the
+  keyboard and cancelled the choice. Both Ask AI paths capture
   `askAIConfiguration` once per question. The summary sheet starts on the model
   Ask AI is using (`defaultSummaryEngineChoice`) and can switch to the settings
   engine, the on-device model, or any registered model for that summary.

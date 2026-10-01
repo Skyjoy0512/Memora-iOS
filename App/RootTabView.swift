@@ -172,8 +172,11 @@ struct RootTabView: View {
           isComposing: $isComposing,
           keepsFocusAfterSubmit: model.selectedTab == .askAI
         )
-        // Narrower than the bar below it, so it reads as a floating field.
-        .containerRelativeFrame(.horizontal) { width, _ in width * 0.8 }
+        // Narrower than the bar below it, so it reads as a floating field;
+        // while typing it widens to the screen for room to write.
+        .containerRelativeFrame(.horizontal) { width, _ in
+          isComposing ? width - 24 : width * 0.8
+        }
         // Note: no `.id(composerScope)` — recreating the field would throw away
         // what someone had already typed when the scope changed.
         // A glass-like entrance: it blurs and rises into place instead of

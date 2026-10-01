@@ -5,6 +5,7 @@ struct AISettingsView: View {
   @State private var isAPIKeySheetPresented = false
   @State private var availability = EngineAvailability.Status()
   @State private var hasKey = false
+  @State private var readyProviders: Set<LLMProvider> = []
 
   var body: some View {
     Form {
@@ -19,13 +20,29 @@ struct AISettingsView: View {
       }
 
       Section {
+        Picker(selection: Binding(
+          get: { model.registeredLLMs.selectedID },
+          set: { model.registeredLLMs.select($0) }
+        )) {
+          Text("Auto").tag(UUID?.none)
+          ForEach(model.registeredLLMs.models) { registered in
+            Text(readyProviders.contains(registered.provider)
+                 ? registered.name : "\(registered.name)（APIキー未設定）")
+              .tag(Optional(registered.id))
+              .disabled(!readyProviders.contains(registered.provider))
+          }
+        } label: {
+          SettingsLabel("Ask AIのモデル", icon: .sparkles, color: .purple)
+        }
+        .pickerStyle(.menu)
+
         NavigationLink {
           RegisteredLLMsView()
         } label: {
           SettingsLabel("登録済みモデル", icon: .cpu, color: .indigo)
         }
       } footer: {
-        Text("Ask AIはAutoが基本です。入力欄から登録済みモデルを手動選択できます。")
+        Text("Ask AIはAutoが基本で、上のAIエンジンに従います。登録済みモデルを選ぶと、Ask AIと要約の初期値にそのモデルを使います。")
       }
 
       if model.aiEngine.usesCloud {
@@ -123,6 +140,7 @@ struct AISettingsView: View {
   private func refresh() {
     hasKey = EngineAvailability.hasKey(model.aiProvider.keychainAccount)
     availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
+    readyProviders = Set(LLMProvider.allCases.filter { EngineAvailability.hasKey($0.keychainAccount) })
   }
 
   /// What will really run, including the model called for a cloud provider.
