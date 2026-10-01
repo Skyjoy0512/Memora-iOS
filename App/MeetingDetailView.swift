@@ -168,10 +168,13 @@ struct MeetingDetailView: View {
             }
           }
           ToolbarItem(placement: .topBarTrailing) {
-            ShareLink(item: MeetingShareText.make(meeting: meeting, tasks: model.tasks)) {
-              Label("共有", icon: .squareAndArrowUp)
-                .labelStyle(.iconOnly)
+            // The text is built on tap: as a ShareLink item it was rebuilt from
+            // the whole summary, and every task, on each redraw.
+            Button("共有", icon: .squareAndArrowUp) {
+              shareItems = [MeetingShareText.make(meeting: meeting, tasks: model.tasks)]
+              isSharing = true
             }
+            .labelStyle(.iconOnly)
           }
           ToolbarItem(placement: .topBarTrailing) {
             Menu("その他", icon: .ellipsis) {

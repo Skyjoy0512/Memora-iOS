@@ -34,7 +34,7 @@ struct DocumentDetailView: View {
 
         switch document.kind {
         case .document:
-          MarkdownDocumentView(markdown: document.markdown)
+          MarkdownDocumentView(markdown: document.markdown, isLazy: true)
             .textSelection(.enabled)
         case .slides:
           slideList(document)

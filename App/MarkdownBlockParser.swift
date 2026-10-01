@@ -6,12 +6,20 @@ import Foundation
 enum MarkdownBlockParser {
   /// True for a document with headings or tables, which is what a generated
   /// summary looks like. Plain notes keep their single-text look.
+  /// Remembered per text, since screens and list rows ask on every redraw and
+  /// a long summary would otherwise be split into lines each time.
   static func hasBlockStructure(_ markdown: String) -> Bool {
-    markdown.split(separator: "\n", omittingEmptySubsequences: true).contains { line in
+    let key = markdown as NSString
+    if let cached = structureCache.object(forKey: key) {
+      return cached.boolValue
+    }
+    let result = markdown.split(separator: "\n", omittingEmptySubsequences: true).contains { line in
       let trimmed = line.drop { $0 == " " }
       return trimmed.hasPrefix("# ") || trimmed.hasPrefix("## ") || trimmed.hasPrefix("### ")
         || trimmed.hasPrefix("|")
     }
+    structureCache.setObject(NSNumber(value: result), forKey: key)
+    return result
   }
 
   static func blocks(for markdown: String) -> [MarkdownBlock] {
@@ -175,6 +183,12 @@ enum MarkdownBlockParser {
 
   private static let overviewCache: NSCache<NSString, NSString> = {
     let cache = NSCache<NSString, NSString>()
+    cache.countLimit = 500
+    return cache
+  }()
+
+  private static let structureCache: NSCache<NSString, NSNumber> = {
+    let cache = NSCache<NSString, NSNumber>()
     cache.countLimit = 500
     return cache
   }()

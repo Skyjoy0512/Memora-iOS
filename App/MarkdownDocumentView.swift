@@ -5,16 +5,32 @@ import SwiftUI
 /// cards, since five columns do not fit an iPhone's width.
 struct MarkdownDocumentView: View {
   var markdown: String
+  /// On screen, only the blocks scrolled into view are built, so a long
+  /// summary does not lay out every paragraph at once. Rendering to a PDF
+  /// needs every block, so it stays eager there.
+  var isLazy = false
 
   var body: some View {
     let blocks = MarkdownBlockParser.blocks(for: markdown)
 
-    VStack(alignment: .leading, spacing: 8) {
-      ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-        view(for: block)
+    Group {
+      if isLazy {
+        LazyVStack(alignment: .leading, spacing: 8) {
+          rows(blocks)
+        }
+      } else {
+        VStack(alignment: .leading, spacing: 8) {
+          rows(blocks)
+        }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private func rows(_ blocks: [MarkdownBlock]) -> some View {
+    ForEach(blocks.indices, id: \.self) { index in
+      view(for: blocks[index])
+    }
   }
 
   @ViewBuilder

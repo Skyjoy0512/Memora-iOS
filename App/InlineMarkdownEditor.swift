@@ -54,7 +54,7 @@ struct InlineMarkdownEditor: View {
             Text(placeholder)
               .foregroundStyle(.tertiary)
           } else if rendersBlocks, MarkdownBlockParser.hasBlockStructure(text) {
-            MarkdownDocumentView(markdown: text)
+            MarkdownDocumentView(markdown: text, isLazy: true)
           } else {
             Text(Self.attributed(text))
           }
