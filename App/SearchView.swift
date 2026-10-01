@@ -16,29 +16,31 @@ struct SearchView: View {
     @Bindable var model = model
 
     return NavigationStack {
-      VStack(spacing: 0) {
-        // Asking answers once; the agent works through tools and asks before
-        // changing anything.
-        GlassSegmentedPicker(items: [false, true], selection: $model.isAgentModeEnabled) { isAgent in
-          isAgent ? "エージェント" : "質問"
+      // The conversation's scroll view is the screen's own, so the large
+      // title lines up and collapses as it does on the other tabs; the mode
+      // switch rides above it.
+      Group {
+        if model.aiMessages.isEmpty {
+          chatEmptyState
+        } else {
+          chatTranscript
         }
-        .disabled(model.isAIChatResponding)
-        .padding(.horizontal, 18)
-        .padding(.bottom, 10)
+      }
+      .safeAreaInset(edge: .top, spacing: 0) {
+        VStack(spacing: 10) {
+          // Asking answers once; the agent works through tools and asks before
+          // changing anything.
+          GlassSegmentedPicker(items: [false, true], selection: $model.isAgentModeEnabled) { isAgent in
+            isAgent ? "エージェント" : "質問"
+          }
+          .disabled(model.isAIChatResponding)
 
-        if model.isRecording {
-          ActiveRecordingStrip()
-            .padding(.horizontal, 18)
-            .padding(.bottom, 10)
-        }
-
-        Group {
-          if model.aiMessages.isEmpty {
-            chatEmptyState
-          } else {
-            chatTranscript
+          if model.isRecording {
+            ActiveRecordingStrip()
           }
         }
+        .padding(.horizontal, 18)
+        .padding(.bottom, 10)
       }
       // Tapping the conversation puts the keyboard away.
       .contentShape(Rectangle())
@@ -139,11 +141,25 @@ struct SearchView: View {
         scrollToLatest(proxy)
       }
       .animation(reduceMotion ? nil : MemoraMotion.control, value: model.pendingAgentApproval?.id)
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isAIChatResponding)
       .onAppear {
         scrollToLatest(proxy)
       }
       .overlay(alignment: .bottom) {
-        if hasUnseenAnswer {
+        if model.isAIChatResponding {
+          // Stopping is offered where the answer is being written.
+          Button("停止", icon: .stopFill) {
+            model.stopAIChat()
+          }
+          .font(.subheadline.weight(.semibold))
+          .foregroundStyle(.primary)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 9)
+          .memoraGlass(in: Capsule(), interactive: true)
+          .padding(.bottom, model.bottomContentClearance)
+          .transition(.opacity.combined(with: .scale(scale: 0.9)))
+          .accessibilityLabel("回答を停止")
+        } else if hasUnseenAnswer {
           Button("新しい回答", icon: .arrowDown) {
             hasUnseenAnswer = false
             scrollToLatest(proxy)
@@ -153,7 +169,7 @@ struct SearchView: View {
           .padding(.vertical, 9)
           .background(.thinMaterial, in: Capsule())
           .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
-          .padding(.bottom, 12)
+          .padding(.bottom, model.bottomContentClearance)
           .accessibilityLabel("新しい回答を表示")
         }
       }

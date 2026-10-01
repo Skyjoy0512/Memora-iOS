@@ -15,6 +15,41 @@ extension MemoraModel {
     isAIChatResponding = false
   }
 
+  /// Stops the answer being written. The request is let go first, so a result
+  /// that still arrives is treated as stale and never fills the message in.
+  func stopAIChat() {
+    guard isAIChatResponding else { return }
+    aiChatRequestID = nil
+    aiChatTask?.cancel()
+    aiChatTask = nil
+    // An agent paused on an approval card is declined, so it does not resume.
+    resolveAgentApproval(false)
+    if let index = aiMessages.lastIndex(where: { $0.role == .assistant && $0.isThinking }) {
+      aiMessages[index].isThinking = false
+      if aiMessages[index].text.isEmpty {
+        aiMessages[index].text = "回答を停止しました。"
+      }
+    }
+    isAIChatResponding = false
+  }
+
+  /// Whether the reply can be asked for again: the latest plain answer, since
+  /// re-running an agent could repeat changes it already made.
+  func canRetryAIAnswer(_ messageID: UUID) -> Bool {
+    guard !isAIChatResponding, !isAgentModeEnabled,
+          let last = aiMessages.last, last.id == messageID, last.role == .assistant,
+          last.agentSteps.isEmpty else { return false }
+    return aiMessages.dropLast().last?.role == .user
+  }
+
+  /// Asks the latest question again, replacing its answer.
+  func retryAIAnswer(_ messageID: UUID) {
+    guard canRetryAIAnswer(messageID) else { return }
+    let question = aiMessages[aiMessages.count - 2].text
+    aiMessages.removeLast(2)
+    sendAIChat(question)
+  }
+
   /// Changes what new questions look across, starting a fresh chat so an answer
   /// produced for the old range cannot sit beside a question asked of the new
   /// one. Saved history is left alone.

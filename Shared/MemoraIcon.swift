@@ -62,6 +62,7 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case desktopcomputer = "desktopcomputer"
   case doc = "doc"
   case docQuestionmark = "doc.questionmark"
+  case docOnDoc = "doc.on.doc"
   case docRichtext = "doc.richtext"
   case docText = "doc.text"
   case docTextFill = "doc.text.fill"

@@ -27,12 +27,20 @@ struct StreamingText: View {
   var body: some View {
     Group {
       if usesPlainText {
-        Text(text)
-          .font(font)
-          .lineSpacing(lineSpacing)
-          .multilineTextAlignment(.leading)
-          .textSelection(.enabled)
-          .frame(maxWidth: .infinity, alignment: .leading)
+        // Answers often come back as markdown lists, headings or bold; once
+        // settled they are drawn as a document instead of showing the markers.
+        if MarkdownBlockParser.hasInlineOrBlockMarkdown(text) {
+          MarkdownDocumentView(markdown: text)
+            .lineSpacing(lineSpacing)
+            .textSelection(.enabled)
+        } else {
+          Text(text)
+            .font(font)
+            .lineSpacing(lineSpacing)
+            .multilineTextAlignment(.leading)
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
       } else {
         FlowLayout(lineSpacing: lineSpacing) {
           ForEach(Array(words.enumerated()), id: \.offset) { index, word in

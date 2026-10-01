@@ -6,6 +6,19 @@ import Foundation
 enum MarkdownBlockParser {
   /// True for a document with headings or tables, which is what a generated
   /// summary looks like. Plain notes keep their single-text look.
+  /// True when text uses any markdown worth drawing: list markers, headings,
+  /// quotes, tables, or bold. Used for chat answers, which are often lists.
+  static func hasInlineOrBlockMarkdown(_ text: String) -> Bool {
+    if text.contains("**") || hasBlockStructure(text) { return true }
+    return text.split(separator: "\n").contains { line in
+      let trimmed = line.drop { $0 == " " }
+      if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("> ") { return true }
+      // A numbered item: digits, then ". ".
+      let digits = trimmed.prefix { $0.isASCII && $0.isNumber }
+      return !digits.isEmpty && trimmed.dropFirst(digits.count).hasPrefix(". ")
+    }
+  }
+
   /// Remembered per text, since screens and list rows ask on every redraw and
   /// a long summary would otherwise be split into lines each time.
   static func hasBlockStructure(_ markdown: String) -> Bool {

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// One chat bubble: the person on the right, the assistant on the left with the
 /// reasoning tucked behind a disclosure.
@@ -32,6 +33,14 @@ struct AIMessageView: View {
           Color(uiColor: .secondarySystemBackground),
           in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
+        .contextMenu {
+          Button("コピー", icon: .docOnDoc) {
+            UIPasteboard.general.string = message.text
+          }
+          Button("入力欄に戻す", icon: .arrowUturnBackward) {
+            model.composerDraft = message.text
+          }
+        }
     }
     .accessibilityElement(children: .combine)
     .accessibilityLabel("あなた: \(message.text)")
@@ -95,6 +104,10 @@ struct AIMessageView: View {
         if let document = model.document(id: id) {
           AgentDocumentCard(document: document) { openDocument = document }
         }
+      }
+
+      if !message.isThinking, !message.text.isEmpty {
+        AIAnswerActions(message: message)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
