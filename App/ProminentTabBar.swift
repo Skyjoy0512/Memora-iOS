@@ -6,11 +6,14 @@ extension RootTab: ProminentTabItem {}
 /// A floating tab bar whose destinations live in a segmented control, paired
 /// with a single prominent button that opens a popover.
 struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
-  /// The height of the bar's row and the diameter of the prominent button.
+  /// The height of the bar's row.
   static var barHeight: CGFloat { MemoraBarMetrics.height }
+  /// The prominent button is a little smaller than the bar is tall, so it
+  /// reads as a companion to the bar rather than a second bar.
+  private static var prominentDiameter: CGFloat { (barHeight * 0.9).rounded() }
   /// The `.glass` button style pads its label, so the symbol's frame is smaller
-  /// than the bar for the finished circle to match the bar's height.
-  private static var glassLabelSide: CGFloat { barHeight - 14 }
+  /// than the finished circle.
+  private static var glassLabelSide: CGFloat { prominentDiameter - 14 }
 
   @Binding var selection: Item
   /// Exposed so an empty state can open the popover without a tab tap.
@@ -107,7 +110,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
       } label: {
         glassChrome {
           prominentLabel
-            .frame(width: Self.barHeight, height: Self.barHeight)
+            .frame(width: Self.prominentDiameter, height: Self.prominentDiameter)
         }
       }
       .buttonStyle(.plain)
