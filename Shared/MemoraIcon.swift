@@ -107,6 +107,7 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case listBulletRectangle = "list.bullet.rectangle"
   case location = "location"
   case locationFill = "location.fill"
+  case lock = "lock"
   case lockShield = "lock.shield"
   case lockShieldFill = "lock.shield.fill"
   case magnifyingglass = "magnifyingglass"

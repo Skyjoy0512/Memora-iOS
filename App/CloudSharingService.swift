@@ -39,10 +39,25 @@ final class CloudSharingService {
     var kind: String
     var updatedAt: Date
     var payload: Data
+    /// Who shared it, so the item never reads as one of this person's own.
+    var ownerName: String
   }
 
-  private(set) var availability: Availability = .unknown
+  private(set) var availability: Availability = .unknown {
+    didSet {
+      // Remembered once CloudKit has answered, so later launches can read
+      // shared items on their own without first touching an unconfigured
+      // container, which would stop the app.
+      if availability == .available, !Self.hasConfirmedContainer {
+        UserDefaults.standard.set(true, forKey: Self.confirmedContainerKey)
+      }
+    }
+  }
   private(set) var receivedItems: [ReceivedItem] = []
+  /// Records shared one by one, and records inside shared projects, ready to
+  /// list. Built once per refresh, so screens do not decode on every redraw.
+  private(set) var sharedRecords: [SharedRecord] = []
+  private(set) var sharedProjects: [SharedProject] = []
   private(set) var isWorking = false
   var errorMessage: String?
 
@@ -54,6 +69,30 @@ final class CloudSharingService {
   /// bundle identifier so there is one place to keep them in step.
   static var containerID: String {
     "iCloud." + (Bundle.main.bundleIdentifier ?? "app.bitrig.new.memora")
+  }
+
+  private static let confirmedContainerKey = "memora.teamSharing.containerConfirmed"
+
+  static var hasConfirmedContainer: Bool {
+    UserDefaults.standard.bool(forKey: confirmedContainerKey)
+  }
+
+  /// Reads shared items in the background of a screen, but only on a device
+  /// where sharing has already worked; elsewhere it waits for the person to
+  /// open team sharing.
+  func refreshIfConfirmed() async {
+    guard Self.hasConfirmedContainer else { return }
+    await refreshAvailability()
+    await refreshReceived()
+  }
+
+  func sharedRecord(id: String) -> SharedRecord? {
+    sharedRecords.first { $0.id == id }
+      ?? sharedProjects.lazy.flatMap(\.records).first { $0.id == id }
+  }
+
+  func sharedProject(id: String) -> SharedProject? {
+    sharedProjects.first { $0.id == id }
   }
 
   @ObservationIgnored private var containerStorage: CKContainer?
@@ -95,7 +134,7 @@ final class CloudSharingService {
   /// Publishes a snapshot and returns a share to invite people with. Saving both
   /// the record and its share is atomic, so a share never exists without its
   /// content.
-  func makeShare(title: String, kind: String, payload: Data) async throws -> ShareRequest {
+  func makeShare(title: String, kind: String, payload: Data, ownerName: String) async throws -> ShareRequest {
     isWorking = true
     defer { isWorking = false }
 
@@ -108,6 +147,7 @@ final class CloudSharingService {
     record["kind"] = kind as CKRecordValue
     record["payload"] = payload as CKRecordValue
     record["updatedAt"] = Date() as CKRecordValue
+    record["ownerName"] = ownerName as CKRecordValue
 
     let share = CKShare(rootRecord: record)
     share[CKShare.SystemFieldKey.title] = title as CKRecordValue
@@ -145,29 +185,97 @@ final class CloudSharingService {
   }
 
   /// Reads the items shared with this person. Safe to call whenever the screen
-  /// appears or the app returns to the foreground.
+  /// appears or the app returns to the foreground. The shared database only
+  /// answers queries zone by zone, one zone per person sharing.
   func refreshReceived() async {
     guard availability == .available else { return }
     do {
-      let query = CKQuery(recordType: Self.recordType, predicate: NSPredicate(value: true))
-      let outcome = try await sharedDatabase.records(matching: query)
-      var items: [ReceivedItem] = []
-      for (_, result) in outcome.matchResults {
-        guard case .success(let record) = result else { continue }
-        items.append(
-          ReceivedItem(
-            id: record.recordID.recordName,
-            title: record["title"] as? String ?? "共有アイテム",
-            kind: record["kind"] as? String ?? "",
-            updatedAt: record["updatedAt"] as? Date ?? .now,
-            payload: record["payload"] as? Data ?? Data()
-          )
+      let zones = try await sharedDatabase.allRecordZones()
+      var records: [CKRecord] = []
+      for zone in zones {
+        let query = CKQuery(recordType: Self.recordType, predicate: NSPredicate(value: true))
+        let outcome = try await sharedDatabase.records(matching: query, inZoneWith: zone.zoneID)
+        for (_, result) in outcome.matchResults {
+          if case .success(let record) = result { records.append(record) }
+        }
+      }
+      let owners = await shareOwnerNames(for: records)
+
+      let items = records.map { record in
+        let written = (record["ownerName"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return ReceivedItem(
+          id: record.recordID.recordName,
+          title: record["title"] as? String ?? "共有アイテム",
+          kind: record["kind"] as? String ?? "",
+          updatedAt: record["updatedAt"] as? Date ?? .now,
+          payload: record["payload"] as? Data ?? Data(),
+          ownerName: owners[record.recordID] ?? (written.isEmpty ? "チームのメンバー" : written)
         )
       }
-      receivedItems = items.sorted { $0.updatedAt > $1.updatedAt }
+      .sorted { $0.updatedAt > $1.updatedAt }
+
+      guard items != receivedItems else { return }
+      receivedItems = items
+      rebuildShared()
     } catch {
       errorMessage = "共有された項目を読み込めませんでした。"
     }
+  }
+
+  /// The name iCloud gives the person who owns each share. It is preferred
+  /// over the name written into the record, which the owner chose in Memora.
+  private func shareOwnerNames(for records: [CKRecord]) async -> [CKRecord.ID: String] {
+    let shareIDs = records.compactMap { $0.share?.recordID }
+    guard !shareIDs.isEmpty,
+          let results = try? await sharedDatabase.records(for: shareIDs) else { return [:] }
+
+    var names: [CKRecord.ID: String] = [:]
+    for record in records {
+      guard let shareID = record.share?.recordID,
+            case .success(let fetched)? = results[shareID],
+            let share = fetched as? CKShare,
+            let components = share.owner.userIdentity.nameComponents else { continue }
+      let name = PersonNameComponentsFormatter.localizedString(from: components, style: .default)
+      if !name.isEmpty { names[record.recordID] = name }
+    }
+    return names
+  }
+
+  /// Opens each snapshot once, into the records and projects the screens list.
+  private func rebuildShared() {
+    let decoder = JSONDecoder()
+    var records: [SharedRecord] = []
+    var projects: [SharedProject] = []
+    for item in receivedItems {
+      guard let snapshot = try? decoder.decode(TeamShareSnapshot.self, from: item.payload) else { continue }
+      let shared = snapshot.meetings.map { meeting in
+        SharedRecord(
+          itemID: item.id,
+          meeting: meeting,
+          tasks: snapshot.tasks.filter { $0.meetingID == meeting.id },
+          ownerName: item.ownerName,
+          projectName: snapshot.space?.name,
+          updatedAt: item.updatedAt
+        )
+      }
+      switch snapshot.kind {
+      case .meeting:
+        records.append(contentsOf: shared)
+      case .project:
+        projects.append(
+          SharedProject(
+            id: item.id,
+            name: snapshot.space?.name ?? item.title,
+            icon: snapshot.space?.icon ?? .folder,
+            ownerName: item.ownerName,
+            updatedAt: item.updatedAt,
+            records: shared.sorted { $0.meeting.createdAt > $1.meeting.createdAt }
+          )
+        )
+      }
+    }
+    sharedRecords = records.sorted { $0.meeting.createdAt > $1.meeting.createdAt }
+    sharedProjects = projects
   }
 
   /// Subscribes once to changes in shared items, so a teammate's edit arrives as

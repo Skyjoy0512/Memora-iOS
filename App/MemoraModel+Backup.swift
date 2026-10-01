@@ -138,7 +138,8 @@ extension MemoraModel {
       pendingCloudShare = try await cloudSharing.makeShare(
         title: title,
         kind: snapshot.kind.rawValue,
-        payload: payload
+        payload: payload,
+        ownerName: profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
       )
     } catch {
       cloudShareMessage = "共有を開始できませんでした。\(error.localizedDescription)"

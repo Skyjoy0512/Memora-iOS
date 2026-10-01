@@ -31,9 +31,11 @@ struct TeamSharesView: View {
             Text(item.kind == "project" ? "プロジェクト" : "記録")
               .font(.caption)
               .foregroundStyle(.secondary)
+            SharedOwnerBadge(ownerName: item.ownerName)
+              .padding(.top, 2)
           }
           .accessibilityElement(children: .combine)
-          .accessibilityLabel("\(item.title)、\(item.kind == "project" ? "プロジェクト" : "記録")")
+          .accessibilityLabel("\(item.title)、\(item.kind == "project" ? "プロジェクト" : "記録")、\(item.ownerName)さんが共有")
         }
       }
     }

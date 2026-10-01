@@ -5,6 +5,8 @@ struct MeetingRow: View {
   /// `List` adds its own indicator for a `NavigationLink`, so rows inside one
   /// should turn this off.
   var showsDisclosure = true
+  /// A teammate's name when the record is theirs, shown under the title.
+  var sharedBy: String?
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
@@ -20,6 +22,10 @@ struct MeetingRow: View {
           if SampleContent.isSample(meetingID: meeting.id) {
             SampleTag()
           }
+        }
+
+        if let sharedBy {
+          SharedOwnerBadge(ownerName: sharedBy)
         }
 
         if showsSummary {
@@ -60,6 +66,9 @@ struct MeetingRow: View {
   /// One sentence for VoiceOver instead of the pieces read in view order.
   private var accessibilityLabel: String {
     var parts = [meeting.displayTitle]
+    if let sharedBy {
+      parts.append("\(sharedBy)さんが共有")
+    }
     if SampleContent.isSample(meetingID: meeting.id) {
       parts.append("サンプル")
     }

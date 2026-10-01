@@ -7,6 +7,7 @@ struct FileSidebarView: View {
 
   var onSelectTab: (RootTab) -> Void
   var onSelectSpace: (MemoraSpace) -> Void
+  var onSelectSharedProject: (SharedProject) -> Void
   var onCreateSpace: () -> Void
   var onOpenDocuments: () -> Void
   var onOpenPeople: () -> Void
@@ -67,6 +68,25 @@ struct FileSidebarView: View {
 
             SidebarRow(title: "新しいプロジェクト", symbol: .folderBadgePlus) {
               onCreateSpace()
+            }
+          }
+
+          // Teammates' projects are listed apart, each with its owner's name,
+          // so they never read as one of this person's own.
+          let sharedProjects = model.cloudSharing.sharedProjects
+          if !sharedProjects.isEmpty {
+            sidebarSection("チームから共有") {
+              ForEach(sharedProjects) { project in
+                SidebarRow(
+                  title: project.name,
+                  symbol: project.icon,
+                  detail: project.ownerName,
+                  isSelected: openSharedProjectID == project.id
+                ) {
+                  onSelectSharedProject(project)
+                }
+                .accessibilityLabel("\(project.name)、\(project.ownerName)さんが共有")
+              }
             }
           }
 
@@ -186,6 +206,11 @@ struct FileSidebarView: View {
   }
 
   /// The project on screen, so its row reads as the current place.
+  private var openSharedProjectID: String? {
+    guard model.selectedTab == .files, case .sharedProject(let id) = model.libraryPath.last else { return nil }
+    return id
+  }
+
   private var openSpaceID: UUID? {
     guard model.selectedTab == .files, case .space(let id) = model.libraryPath.last else { return nil }
     return id

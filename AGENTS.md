@@ -82,7 +82,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   (`CloudSharingService`) and lists what teammates share back, for both units.
   It needs the iCloud capability and a container matching the bundle identifier;
   without them, or without an iCloud account, the app says so instead of
-  pretending. Shared items are read-only snapshots on the receiver: merging into
+  pretending. Teammates' records appear on Files under チームから共有 and their
+  projects in the side menu's チームから共有 section, each marked with the
+  owner's name (`SharedOwnerBadge`) and opened read-only (`SharedRecordView`,
+  `SharedProjectView`). Shared items are only read in the background once
+  CloudKit has answered on this device (`refreshIfConfirmed`), since touching
+  an unconfigured container stops the app. Shared items are read-only snapshots on the receiver: merging into
   the local editable store, member management, media (audio/photo) sync, and
   conflict handling are not built. A manual package export
   (`makeTeamSharePackage`) also remains.

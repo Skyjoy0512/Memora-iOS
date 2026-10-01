@@ -8,6 +8,9 @@ struct MeetingCard: View {
   /// True while several cards are being chosen, so each shows a selection mark.
   var isSelecting = false
   var isSelected = false
+  /// A teammate's name when the record is theirs; it takes the status's place
+  /// so the card says at a glance whose it is.
+  var sharedBy: String?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -20,10 +23,14 @@ struct MeetingCard: View {
 
         Spacer(minLength: 8)
 
-        MeetingStatusLabel(status: meeting.status)
-          .padding(.horizontal, 10)
-          .padding(.vertical, 6)
-          .background(.thinMaterial, in: Capsule())
+        if let sharedBy {
+          SharedOwnerBadge(ownerName: sharedBy)
+        } else {
+          MeetingStatusLabel(status: meeting.status)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.thinMaterial, in: Capsule())
+        }
       }
 
       Spacer(minLength: 28)
@@ -94,6 +101,9 @@ struct MeetingCard: View {
 
   private var accessibilityLabel: String {
     var parts = [meeting.title]
+    if let sharedBy {
+      parts.append("\(sharedBy)さんが共有")
+    }
     if SampleContent.isSample(meetingID: meeting.id) {
       parts.append("サンプル")
     }

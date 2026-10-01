@@ -19,6 +19,7 @@ struct RootTabView: View {
       FileSidebarView(
         onSelectTab: selectTab,
         onSelectSpace: openSpace,
+        onSelectSharedProject: openSharedProject,
         onCreateSpace: createSpace,
         onOpenDocuments: openDocuments,
         onOpenPeople: openPeople,
@@ -281,6 +282,12 @@ struct RootTabView: View {
     closeSidebar()
     model.selectedTab = .files
     model.libraryPath = [.space(space.id)]
+  }
+
+  private func openSharedProject(_ project: SharedProject) {
+    closeSidebar()
+    model.selectedTab = .files
+    model.libraryPath = [.sharedProject(project.id)]
   }
 
   private func openDocuments() {

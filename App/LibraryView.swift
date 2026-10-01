@@ -103,6 +103,8 @@ struct LibraryView: View {
         case .document(let id): DocumentDetailView(documentID: id)
         case .people: PeopleView()
         case .person(let id): PersonDetailView(personID: id)
+        case .sharedRecord(let id): SharedRecordView(recordID: id)
+        case .sharedProject(let id): SharedProjectView(projectID: id)
         }
       }
       .confirmationDialog(
@@ -144,10 +146,16 @@ struct LibraryView: View {
       } message: {
         Text(teamShareErrorMessage ?? "")
       }
-      .task { await upcoming.refresh() }
+      .task {
+        await upcoming.refresh()
+        await model.cloudSharing.refreshIfConfirmed()
+      }
       .onChange(of: scenePhase) { _, phase in
         guard phase == .active else { return }
-        Task { await upcoming.refresh() }
+        Task {
+          await upcoming.refresh()
+          await model.cloudSharing.refreshIfConfirmed()
+        }
       }
       .onChange(of: model.selectedTab) { _, tab in
         guard tab == .files else { return }
@@ -200,6 +208,7 @@ struct LibraryView: View {
     let isAwaitingQuery = isSearching && query.isEmpty
     let sections = isAwaitingQuery ? [] : fileSections
     let count = sections.reduce(0) { $0 + $1.meetings.count }
+    let sharedRecords = model.cloudSharing.sharedRecords
 
     return List {
       if !isSearching {
@@ -215,6 +224,21 @@ struct LibraryView: View {
 
       if statusFilter != .all {
         filterChipRow
+      }
+
+      // Teammates' records sit in their own section, apart from this person's
+      // files, and only while nothing narrows the list.
+      if !isSearching, statusFilter == .all, !sharedRecords.isEmpty {
+        Section {
+          ForEach(sharedRecords) { record in
+            sharedRow(record)
+          }
+        } header: {
+          Label("チームから共有", icon: .person2)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .textCase(nil)
+        }
       }
 
       if sections.isEmpty {
@@ -268,6 +292,7 @@ struct LibraryView: View {
     .refreshable {
       await model.refresh()
       await upcoming.refresh()
+      await model.cloudSharing.refreshIfConfirmed()
     }
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: upcoming.meetings.map(\.id))
     .hideBottomBarOnScroll(RootTab.files.rawValue)
@@ -362,6 +387,31 @@ struct LibraryView: View {
     }
     .buttonStyle(.plain)
     .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 18))
+  }
+
+  /// A teammate's record: opens read-only, with none of the actions that
+  /// would change it.
+  @ViewBuilder
+  private func sharedRow(_ record: SharedRecord) -> some View {
+    if layout == .card {
+      Button {
+        model.libraryPath.append(.sharedRecord(record.id))
+      } label: {
+        MeetingCard(meeting: record.meeting, sharedBy: record.ownerName)
+      }
+      .buttonStyle(.plain)
+      .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18))
+      .listRowSeparator(.hidden)
+      .listRowBackground(Color.clear)
+    } else {
+      Button {
+        model.libraryPath.append(.sharedRecord(record.id))
+      } label: {
+        MeetingRow(meeting: record.meeting, showsDisclosure: false, sharedBy: record.ownerName)
+      }
+      .buttonStyle(.plain)
+      .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 18))
+    }
   }
 
   private func openOrSelect(_ meeting: Meeting) {
