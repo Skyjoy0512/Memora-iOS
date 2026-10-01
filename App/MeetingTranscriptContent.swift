@@ -8,13 +8,16 @@ struct MeetingTranscriptContent: View {
   /// A line to highlight even when nothing is playing, e.g. an AI source time.
   var focusedSegmentID: UUID?
   @State private var editingSpeakerSegment: TranscriptSegment?
+  /// The line being played. Kept here and set by `ActiveSegmentTracker`, so
+  /// the list redraws when playback moves to another line, not on every tick.
+  @State private var activeSegmentID: UUID?
 
   var body: some View {
     // Each of these scans the transcript. Read once here rather than per line,
     // which made a long transcript quadratic on every playback tick.
     let showsSpeaker = meeting.hasSpeakerSeparation
-    let activeSegmentID = self.activeSegmentID
-    let seekAction = self.seekAction
+    let hasTimeline = self.hasTimeline
+    let seekAction = hasTimeline ? self.seekAction : nil
 
     VStack(alignment: .leading, spacing: 22) {
       VStack(alignment: .leading, spacing: 6) {
@@ -60,15 +63,18 @@ struct MeetingTranscriptContent: View {
       }
     }
     .memoraAppear()
+    .background {
+      if hasTimeline, let player {
+        ActiveSegmentTracker(
+          player: player,
+          transcript: meeting.transcript,
+          activeSegmentID: $activeSegmentID
+        )
+      }
+    }
     .sheet(item: $editingSpeakerSegment) { segment in
       SpeakerEditSheet(meetingID: meeting.id, segment: segment)
     }
-  }
-
-  /// The line being played, so it can be highlighted.
-  private var activeSegmentID: UUID? {
-    guard hasTimeline, let player else { return nil }
-    return meeting.transcript.last { $0.timestamp <= player.currentTime }?.id
   }
 
   /// Seeking is only offered when the transcript actually carries times.
@@ -82,5 +88,21 @@ struct MeetingTranscriptContent: View {
 
   private var hasTimeline: Bool {
     meeting.transcript.contains { $0.timestamp > 0 }
+  }
+}
+
+/// Reads the fast-ticking playback position in a view of its own, and passes
+/// on only the line it falls in.
+private struct ActiveSegmentTracker: View {
+  var player: AudioPlayerService
+  var transcript: [TranscriptSegment]
+  @Binding var activeSegmentID: UUID?
+
+  var body: some View {
+    let current = transcript.last { $0.timestamp <= player.currentTime }?.id
+    Color.clear
+      .onChange(of: current, initial: true) { _, newValue in
+        activeSegmentID = newValue
+      }
   }
 }

@@ -34,6 +34,8 @@ struct MeetingDetailView: View {
   @State private var localPlaybackStarted = false
   /// The initial time is applied once; a later `onAppear` must not seek again.
   @State private var didApplyInitialPlayback = false
+  /// Whether the content is scrolled near its top, where the composer shows.
+  @State private var isNearTop = true
 
   @State private var isSavingToNotion = false
   /// The PDF export in progress, with its progress, while it runs.
@@ -82,14 +84,19 @@ struct MeetingDetailView: View {
               pdfExportCard(progress)
             }
           }
-          .onScrollGeometryChange(for: CGFloat.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top
-          } action: { _, newOffset in
-            updateScrollState(to: newOffset)
+          // Reduced to the one fact that matters, so the handler runs when the
+          // composer should change, not on every scrolled frame.
+          .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top < 64
+          } action: { _, isNearTop in
+            self.isNearTop = isNearTop
+            updateScrollState(isNearTop: isNearTop)
           }
           .onAppear {
             model.pushActiveDetail(meeting.id)
-            model.isDetailComposerVisible = true
+            // Coming back to a screen left scrolled down keeps the composer
+            // hidden, as the scroll position says it should be.
+            model.isDetailComposerVisible = isNearTop
             player.load(meeting.audioURL, title: meeting.displayTitle)
             if !didApplyInitialPlayback, let start = initialPlaybackStart {
               didApplyInitialPlayback = true
@@ -454,9 +461,7 @@ struct MeetingDetailView: View {
       : .opacity.combined(with: .scale(scale: 0.99, anchor: .top))
   }
 
-  private func updateScrollState(to newOffset: CGFloat) {
-    let shouldShowComposer = newOffset < 64
-
+  private func updateScrollState(isNearTop shouldShowComposer: Bool) {
     if model.isDetailComposerVisible != shouldShowComposer {
       withAnimation(reduceMotion ? nil : MemoraMotion.control) {
         model.isDetailComposerVisible = shouldShowComposer

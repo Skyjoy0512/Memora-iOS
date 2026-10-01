@@ -176,8 +176,17 @@ extension Meeting {
   /// generated document gives its overview without markdown markers; a plain
   /// summary is returned as written.
   var summaryPreview: String {
-    MarkdownBlockParser.hasBlockStructure(summary)
-      ? MarkdownBlockParser.overview(of: summary)
-      : summary
+    SummaryPreviewCache.preview(for: id, summary: summary) { summary in
+      MarkdownBlockParser.hasBlockStructure(summary)
+        ? MarkdownBlockParser.overview(of: summary)
+        : summary
+    }
+  }
+
+  /// The preview cut to what a card or row can show in its few lines, so a
+  /// long summary is not laid out in full only to be truncated.
+  var shortSummaryPreview: String {
+    let preview = summaryPreview
+    return preview.count > 240 ? String(preview.prefix(240)) : preview
   }
 }

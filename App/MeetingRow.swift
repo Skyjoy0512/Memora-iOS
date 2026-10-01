@@ -23,7 +23,7 @@ struct MeetingRow: View {
         }
 
         if showsSummary {
-          Text(meeting.summaryPreview)
+          Text(meeting.shortSummaryPreview)
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .lineLimit(3)
