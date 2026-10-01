@@ -21,6 +21,10 @@ extension MemoraModel {
     persistInBackground(aiHistory, forKey: StorageKey.aiHistory)
   }
 
+  func persistAIMemories() {
+    persistInBackground(aiMemories, forKey: StorageKey.aiMemories)
+  }
+
   func persistTasks() {
     persistInBackground(tasks, forKey: StorageKey.tasks)
   }
@@ -152,6 +156,9 @@ extension MemoraModel {
     static let trash = "memoraTrash"
     static let lifeLogTrash = "memoraLifeLogTrash"
     static let aiHistory = "memoraAIHistory"
+    static let aiMemories = "memoraAIMemories"
+    static let aiThread = "memoraAIThread"
+    static let aiMemoryEnabled = "memora.ai.memoryEnabled"
     static let pendingMediaDeletions = "memoraPendingMediaDeletions"
     static let documents = "memoraDocuments"
     static let agentMode = "memora.askAI.agentMode"

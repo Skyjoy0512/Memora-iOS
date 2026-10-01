@@ -7,6 +7,8 @@ struct AIHistoryDetailView: View {
   @Environment(\.dismiss) private var dismiss
   var entry: AIConversationEntry
   var ask: (String) -> Void
+  /// Opens this exchange as the conversation, to follow up on it.
+  var continueConversation: ((AIConversationEntry) -> Void)?
 
   var body: some View {
     ScrollView {
@@ -39,13 +41,27 @@ struct AIHistoryDetailView: View {
         .font(.subheadline)
         .foregroundStyle(.secondary)
 
-        Button("もう一度聞く", icon: .arrowClockwise) {
+        if let continueConversation {
+          Button {
+            dismiss()
+            continueConversation(entry)
+          } label: {
+            Label("この会話の続きから", icon: .bubbleLeftAndBubbleRight)
+              .font(.headline)
+              .frame(maxWidth: .infinity, minHeight: 48)
+          }
+          .buttonStyle(.borderedProminent)
+        }
+
+        Button {
           dismiss()
           ask(entry.question)
+        } label: {
+          Label("もう一度聞く", icon: .arrowClockwise)
+            .font(.headline)
+            .frame(maxWidth: .infinity, minHeight: 48)
         }
-        .font(.headline)
-        .frame(maxWidth: .infinity, minHeight: 48)
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(.bordered)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(18)

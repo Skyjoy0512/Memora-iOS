@@ -8,6 +8,8 @@ final class CloudAgentSession {
   private let llm: LLMSelection
   private let key: String
   private let system: String
+  /// Fixed for the session, so the model sees the same tools on every turn.
+  private let tools: [AgentTool] = AgentTool.offered
   private var messages: [[String: Any]] = []
 
   /// Returns nil when there is no key for the provider; the caller says so.
@@ -83,7 +85,7 @@ final class CloudAgentSession {
       // a long one after the model's thinking.
       "max_tokens": 32_000,
       "system": system,
-      "tools": AgentTool.allCases.map { tool in
+      "tools": tools.map { tool in
         ["name": tool.rawValue, "description": tool.summary, "input_schema": tool.inputSchema]
       },
       "messages": messages
@@ -138,7 +140,7 @@ final class CloudAgentSession {
     request.httpBody = try JSONSerialization.data(withJSONObject: [
       "model": llm.modelID,
       "messages": [["role": "system", "content": system]] + messages,
-      "tools": AgentTool.allCases.map { tool in
+      "tools": tools.map { tool in
         [
           "type": "function",
           "function": [

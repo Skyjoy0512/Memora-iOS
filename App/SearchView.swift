@@ -95,6 +95,10 @@ struct SearchView: View {
               model.sendAIChat(question)
             }
           },
+          continueConversation: { entry in
+            isHistoryPresented = false
+            model.continueAIConversation(from: entry)
+          },
           delete: { model.deleteAIHistoryEntry($0) }
         )
       }

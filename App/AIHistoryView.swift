@@ -5,6 +5,7 @@ struct AIHistoryView: View {
   var entries: [AIConversationEntry]
   /// Asks the stored question again, as a separate choice from reading it.
   var ask: (String) -> Void
+  var continueConversation: ((AIConversationEntry) -> Void)?
   var delete: (UUID) -> Void
 
   var body: some View {
@@ -16,7 +17,7 @@ struct AIHistoryView: View {
           List {
             ForEach(entries) { entry in
               NavigationLink {
-                AIHistoryDetailView(entry: entry, ask: ask)
+                AIHistoryDetailView(entry: entry, ask: ask, continueConversation: continueConversation)
               } label: {
                 VStack(alignment: .leading, spacing: 4) {
                   Text(entry.question)

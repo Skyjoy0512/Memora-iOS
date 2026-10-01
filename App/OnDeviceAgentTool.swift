@@ -24,8 +24,8 @@ struct OnDeviceAgentTool: Tool {
 
   /// The tools for the on-device model. A tool whose schema cannot be built is
   /// left out rather than stopping the others.
-  static func all(perform: @escaping Perform) -> [OnDeviceAgentTool] {
-    AgentTool.onDeviceTools.compactMap { tool in
+  static func all(_ tools: [AgentTool], perform: @escaping Perform) -> [OnDeviceAgentTool] {
+    tools.compactMap { tool in
       guard let schema = try? GenerationSchema(
         root: dynamicSchema(name: tool.rawValue, json: tool.inputSchema),
         dependencies: []

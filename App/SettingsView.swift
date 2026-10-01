@@ -138,6 +138,16 @@ struct SettingsView: View {
           }
 
           NavigationLink {
+            AIMemoryView()
+          } label: {
+            LabeledContent {
+              Text(model.isAIMemoryEnabled ? "\(model.aiMemories.count)件" : "オフ")
+            } label: {
+              SettingsLabel("メモリ", icon: .brainHeadProfile, color: Tint.processing)
+            }
+          }
+
+          NavigationLink {
             SummaryTemplateMarketplaceView()
           } label: {
             LabeledContent {
@@ -165,6 +175,16 @@ struct SettingsView: View {
         }
 
         Section("連携") {
+          NavigationLink {
+            GmailSettingsView()
+          } label: {
+            LabeledContent {
+              Text(GmailService.shared.isConnected ? "連携中" : "未連携")
+            } label: {
+              SettingsLabel("Gmail", icon: .envelopeOpen, color: Tint.integrations)
+            }
+          }
+
           NavigationLink {
             NotionSettingsView()
           } label: {

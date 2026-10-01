@@ -45,7 +45,78 @@ extension MemoraModel {
       return await draftEmailTool(call, messageID: messageID)
     case .saveToNotion:
       return await saveToNotionTool(call, messageID: messageID, scope: scope)
+    case .saveMemory:
+      return await saveMemoryTool(call, messageID: messageID)
+    case .searchEmail:
+      return await searchEmailTool(call, messageID: messageID, compact: compact)
+    case .readEmail:
+      return await readEmailTool(call, messageID: messageID, compact: compact)
     }
+  }
+
+  // MARK: - Mail
+
+  private func searchEmailTool(_ call: AgentToolCall, messageID: UUID, compact: Bool) async -> AgentToolOutcome {
+    let query = call.string("query")
+    let limit = min((call.arguments["limit"] as? Int) ?? 8, compact ? 5 : 15)
+    let stepID = beginAgentStep(
+      AgentStep(icon: AgentTool.searchEmail.icon, title: query.isEmpty ? "受信トレイを確認" : "メールを検索「\(query)」"),
+      on: messageID
+    )
+    do {
+      let messages = try await GmailService.shared.search(query, limit: limit)
+      finishAgentStep(stepID, on: messageID, state: .done, detail: "\(messages.count)件")
+      guard !messages.isEmpty else { return AgentToolOutcome(text: "該当するメールはありません。") }
+      return AgentToolOutcome(text: messages.map { message in
+        let date = message.date.map(Self.agentDate) ?? ""
+        return "- id=\(message.id) \(date) 差出人: \(message.from) 件名: \(message.subject) 冒頭: \(message.snippet.prefix(compact ? 60 : 160))"
+      }.joined(separator: "\n"))
+    } catch {
+      finishAgentStep(stepID, on: messageID, state: .failed, detail: "読み込めませんでした")
+      return AgentToolOutcome(text: error.localizedDescription, isError: true)
+    }
+  }
+
+  private func readEmailTool(_ call: AgentToolCall, messageID: UUID, compact: Bool) async -> AgentToolOutcome {
+    let id = call.string("id")
+    guard !id.isEmpty else { return AgentToolOutcome(text: "idがありません。", isError: true) }
+    let stepID = beginAgentStep(AgentStep(icon: AgentTool.readEmail.icon, title: "メールを読む"), on: messageID)
+    do {
+      let message = try await GmailService.shared.read(id)
+      finishAgentStep(stepID, on: messageID, state: .done, detail: message.subject)
+      let body = message.body.isEmpty ? message.snippet : message.body
+      return AgentToolOutcome(text: """
+      差出人: \(message.from)
+      宛先: \(message.to)
+      件名: \(message.subject)
+      日時: \(message.date.map(Self.agentDate) ?? "不明")
+
+      \(body.prefix(compact ? 1_500 : 12_000))
+      """)
+    } catch {
+      finishAgentStep(stepID, on: messageID, state: .failed, detail: "読み込めませんでした")
+      return AgentToolOutcome(text: error.localizedDescription, isError: true)
+    }
+  }
+
+  // MARK: - Memory
+
+  private func saveMemoryTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
+    let text = call.string("text")
+    guard !text.isEmpty else { return AgentToolOutcome(text: "覚える内容が空です。", isError: true) }
+    guard isAIMemoryEnabled else {
+      return AgentToolOutcome(text: "利用者はメモリをオフにしています。覚えずに続けてください。")
+    }
+    guard let stepID = await approve(
+      tool: .saveMemory,
+      title: "これを覚える",
+      lines: [String(text.prefix(Self.aiMemoryCharacterLimit))],
+      confirmTitle: "覚える",
+      messageID: messageID
+    ) else { return Self.declinedOutcome }
+    let stored = addAIMemory(text, origin: .agent)
+    finishAgentStep(stepID, on: messageID, state: .done, detail: stored ? nil : "すでに覚えています")
+    return AgentToolOutcome(text: stored ? "覚えました。" : "すでに覚えている内容です。")
   }
 
   // MARK: - Reading

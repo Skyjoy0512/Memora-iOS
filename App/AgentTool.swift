@@ -17,19 +17,38 @@ enum AgentTool: String, CaseIterable {
   case createCalendarEvent = "create_calendar_event"
   case draftEmail = "draft_email"
   case saveToNotion = "save_to_notion"
+  case saveMemory = "save_memory"
+  case searchEmail = "search_email"
+  case readEmail = "read_email"
+
+  /// The tools offered right now: mail only while Gmail is connected, so the
+  /// model is never handed a tool that cannot work.
+  @MainActor
+  static var offered: [AgentTool] {
+    allCases.filter { !$0.needsGmail || GmailService.shared.isConnected }
+  }
+
+  @MainActor
+  static var offeredOnDevice: [AgentTool] {
+    onDeviceTools.filter { !$0.needsGmail || GmailService.shared.isConnected }
+  }
+
+  var needsGmail: Bool {
+    self == .searchEmail || self == .readEmail
+  }
 
   /// The tools offered to the on-device model. Its context is small, so the
   /// long-form writers (slides) and the rarer organising tools stay with the
   /// cloud models.
   static let onDeviceTools: [AgentTool] = [
     .searchRecords, .readRecord, .readPerson, .listTasks, .addTasks, .createDocument,
-    .createProject, .addJournalMemo, .createCalendarEvent, .draftEmail
+    .createProject, .addJournalMemo, .createCalendarEvent, .draftEmail, .searchEmail, .readEmail
   ]
 
   /// True for tools that change the person's data.
   var needsApproval: Bool {
     switch self {
-    case .searchRecords, .readRecord, .readPerson, .listProjects, .listTasks: false
+    case .searchRecords, .readRecord, .readPerson, .listProjects, .listTasks, .searchEmail, .readEmail: false
     default: true
     }
   }
@@ -49,6 +68,8 @@ enum AgentTool: String, CaseIterable {
     case .createCalendarEvent: .calendarBadgePlus
     case .draftEmail: .envelope
     case .saveToNotion: .notionLogo
+    case .saveMemory: .brainHeadProfile
+    case .searchEmail, .readEmail: .envelopeOpen
     }
   }
 
@@ -82,6 +103,12 @@ enum AgentTool: String, CaseIterable {
       "メールの下書きを作って開く（利用者の承認後）。宛先が分からなくても呼ぶ（宛先は利用者が入れる）。送信は利用者が行う。"
     case .saveToNotion:
       "会議の記録をNotionのページとして保存する（利用者の承認後に実行）。"
+    case .saveMemory:
+      "利用者について今後の会話でも使うこと（役割・好み・関係者など）を覚える（利用者の承認後に実行）。利用者が伝えたことだけ。"
+    case .searchEmail:
+      "利用者のGmailをGmailの検索構文で検索し、id・差出人・件名・日時・冒頭を返す。例: from:tanaka newer_than:7d、subject:見積"
+    case .readEmail:
+      "search_emailで得たidのメールの本文を読む。"
     }
   }
 
@@ -163,6 +190,15 @@ enum AgentTool: String, CaseIterable {
       ], required: ["subject", "body"])
     case .saveToNotion:
       return object(["meeting_id": string("会議の記録のid")], required: ["meeting_id"])
+    case .saveMemory:
+      return object(["text": string("覚える内容。短い一文（例: 営業部のマネージャー）")], required: ["text"])
+    case .searchEmail:
+      return object([
+        "query": string("Gmailの検索語。空なら受信トレイの新しい順"),
+        "limit": ["type": "integer", "description": "最大件数（1〜15、既定8）"]
+      ], required: ["query"])
+    case .readEmail:
+      return object(["id": string("メールのid")], required: ["id"])
     }
   }
 

@@ -13,6 +13,7 @@ extension MemoraModel {
     aiChatRequestID = nil
     aiMessages = []
     isAIChatResponding = false
+    persistAIThread()
   }
 
   /// Stops the answer being written. The request is let go first, so a result
@@ -31,6 +32,7 @@ extension MemoraModel {
       }
     }
     isAIChatResponding = false
+    persistAIThread()
   }
 
   /// Whether the reply can be asked for again: the latest plain answer, since
@@ -63,11 +65,21 @@ extension MemoraModel {
   /// way, so the caller keeps the text instead of losing it to a refused send.
   @discardableResult
   func sendAIChat(_ question: String, attachment: AIAttachment? = nil) -> Bool {
-    if isAgentModeEnabled {
-      return sendAgentChat(question, attachment: attachment)
-    }
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
+
+    // Asked plainly to remember something: it is kept before answering, and
+    // the conversation says so, so it is never kept silently.
+    let remembered = isAIMemoryEnabled ? Self.explicitMemory(in: trimmed) : nil
+    let didRemember = remembered.map { addAIMemory($0, origin: .told) } ?? false
+
+    if isAgentModeEnabled {
+      let sent = sendAgentChat(question, attachment: attachment)
+      if sent, didRemember, let remembered {
+        insertMemoryNote(remembered)
+      }
+      return sent
+    }
 
     let configuration = askAIConfiguration
     let engine = configuration.engine
@@ -78,6 +90,13 @@ extension MemoraModel {
     aiChatRequestID = requestID
 
     aiMessages.append(AIChatMessage(role: .user, text: trimmed))
+    if didRemember, let remembered {
+      aiMessages.append(Self.memoryNote(remembered))
+    }
+    let personal = personalContext(
+      for: trimmed,
+      budget: AIEngineService.contextCharacterLimit(for: engine) / 6
+    )
     let placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
     aiMessages.append(placeholder)
     isAIChatResponding = true
@@ -92,6 +111,7 @@ extension MemoraModel {
         allowedMeetings: allowedMeetings,
         tasks: Self.openTasks(in: scope, from: self.tasks, meetings: allowedMeetings),
         history: history,
+        personal: personal,
         engine: engine,
         llm: llm
       )
@@ -159,6 +179,7 @@ extension MemoraModel {
     allowedMeetings: [Meeting],
     tasks scopedTasks: [MemoraTask],
     history: String,
+    personal: String = "",
     engine: AIEngine,
     llm: LLMSelection
   ) async -> AIAnswerOutcome {
@@ -168,6 +189,7 @@ extension MemoraModel {
       allowedMeetings: allowedMeetings,
       tasks: scopedTasks,
       history: history,
+      personal: personal,
       characterLimit: AIEngineService.contextCharacterLimit(for: engine)
     )
 
@@ -214,6 +236,7 @@ extension MemoraModel {
         allowedMeetings: allowedMeetings,
         tasks: scopedTasks,
         history: history,
+        personal: personal,
         characterLimit: reduced
       )
       result = await AIEngineService.answer(
@@ -259,6 +282,7 @@ extension MemoraModel {
     allowedMeetings: [Meeting],
     tasks: [MemoraTask],
     history: String = "",
+    personal: String = "",
     characterLimit: Int = AIEngineService.defaultContextCharacterLimit
   ) -> AIRequestContent {
     let question = request.effectiveQuestion
@@ -273,6 +297,11 @@ extension MemoraModel {
     let historyCap = budgetAfterQuestion / 5
     var remaining = budgetAfterQuestion
     var notes: [String] = []
+
+    // What Ask AI knows about the person comes first and takes at most a
+    // sixth, so the records still get most of the room.
+    let personalText = String(personal.prefix(budgetAfterQuestion / 6))
+    remaining = max(0, remaining - personalText.count)
 
     var attachmentText = ""
     var unsupportedNote: String?
@@ -317,6 +346,9 @@ extension MemoraModel {
     }
 
     var context = built.context
+    if !personalText.isEmpty {
+      context = personalText + "\n\n" + context
+    }
     if !attachmentText.isEmpty {
       context += "\n\n\(attachmentText)"
     }
@@ -819,6 +851,7 @@ extension MemoraModel {
       at: 0
     )
     persistAIHistory()
+    persistAIThread()
   }
 
   func deleteAIHistoryEntry(_ id: UUID) {

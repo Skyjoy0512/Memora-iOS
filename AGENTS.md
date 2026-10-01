@@ -111,6 +111,17 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Notion pages, tasks and documents. Reading tools run straight away; every
   tool that changes data waits for the approval card, and a declined change is
   reported back to the model.
+- Personal memory: Ask AI keeps what the person told it (「〇〇を覚えておいて」,
+  Settings › メモリ, or the agent's `save_memory` after approval) in
+  `aiMemories`, and sends it with every question together with related past
+  exchanges from `aiHistory` (`personalContext`, `MemoraModel+Memory`). Nothing
+  is inferred into memory. The open conversation is kept (`aiThread`) and
+  restored on launch unless idle for 12 hours; a history entry can be continued.
+- Gmail is connected read-only (`GmailService`, OAuth with PKCE, refresh token
+  in the keychain) and read by the agent through `search_email` / `read_email`,
+  offered only while connected. The build needs a Google iOS OAuth client ID
+  under the Info.plist key `MemoraGoogleClientID`; without it the settings
+  screen says so.
 - People: the side menu's 人物 (`PeopleView`, `PersonDetailView`) shows what
   the records hold about someone (`MemoraModel.memory(of:)`): meetings they
   were tagged on or spoke in under their name, open tasks assigned to them,

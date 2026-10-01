@@ -59,6 +59,11 @@ extension MemoraModel {
     if !thread.isEmpty {
       opening = "これまでの会話:\n\(thread)\n\n今回の依頼:\n\(trimmed)"
     }
+    // What the agent knows about the person, smaller on the device's window.
+    let personal = personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000)
+    if !personal.isEmpty {
+      opening = personal + "\n\n" + opening
+    }
 
     aiChatTask?.cancel()
     aiChatTask = Task { [weak self] in
@@ -175,7 +180,7 @@ extension MemoraModel {
   /// each call goes through the same code as the cloud agent, in compact form.
   @available(iOS 26.0, *)
   private func runOnDeviceAgent(prompt: String, messageID: UUID, scope: AIChatScope) async -> AIAnswerResult {
-    let tools = OnDeviceAgentTool.all { [weak self] name, argumentsJSON in
+    let tools = OnDeviceAgentTool.all(AgentTool.offeredOnDevice) { [weak self] name, argumentsJSON in
       guard let self else { return "" }
       let arguments = argumentsJSON.data(using: .utf8)
         .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
@@ -252,6 +257,8 @@ extension MemoraModel {
     - 担当者と期限は、記録で明言されたときだけ設定します。
     - 会議のあとの作業（フォローアップメールの下書き、次回の予定登録、Notionへの保存）も、依頼されたら道具で行います。メールは draft_email で下書きを開くだけで、送信は利用者がします。
     - 変更を伴う道具は、利用者が承認したときだけ実行されます。拒否されたら同じ操作を繰り返しません。
+    - 利用者について覚えていることが渡されたら、それを前提に答えます。利用者が自分の役割・好み・関係者などを今後も使える形で伝えたときは、save_memory で覚えることを提案します。推測したことは覚えません。
+    - Gmailがつながっていれば、search_email と read_email でメールを読めます。メールの内容は会議の記録と区別して伝えます。
     - 最後に、何を調べて何をしたかを日本語で短くまとめます。作った資料の本文を回答に繰り返しません。記録やプロジェクトのidは利用者に見せません。
 
     今日の日付: \(today)

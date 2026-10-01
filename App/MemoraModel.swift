@@ -135,6 +135,13 @@ final class MemoraModel {
   var trashedLifeLogEntries: [TrashedLifeLogEntry] = []
   /// The Ask AI chat transcript.
   var aiMessages: [AIChatMessage] = []
+  /// What Ask AI remembers about the person, newest first.
+  var aiMemories: [AIMemory] = []
+  /// Whether questions carry the memories and relevant past conversations.
+  /// A setting, so it lives in UserDefaults.
+  var isAIMemoryEnabled = UserDefaults.standard.object(forKey: StorageKey.aiMemoryEnabled) as? Bool ?? true {
+    didSet { UserDefaults.standard.set(isAIMemoryEnabled, forKey: StorageKey.aiMemoryEnabled) }
+  }
   /// What new Ask AI questions look across.
   var aiScope: AIChatScope = .all
   /// Ask AI works as an agent: it uses tools to read records and, with the
@@ -464,10 +471,14 @@ final class MemoraModel {
 
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [])
+    aiMemories = load([AIMemory].self, forKey: StorageKey.aiMemories, fallback: [])
+    let thread = load([AIThreadTurn].self, forKey: StorageKey.aiThread, fallback: [])
 
     // Protection is decided only once every document has been read, so a failure
     // in the last one (AI history, say) still stops the app from overwriting it.
     isStoreProtected = didFailToReadStore
+    // The conversation left open carries on, unless it has gone quiet.
+    aiMessages = Self.restoredThread(thread)
 
     // Photos that older records held inline are written to files here, after
     // loading, so decoding a document (a backup, say) never writes into the
