@@ -69,7 +69,8 @@ extension MemoraModel {
       duration: meeting.duration,
       participantNames: (meeting.participantIDs ?? []).compactMap { person(id: $0)?.name },
       transcript: meeting.transcript,
-      template: choice
+      template: choice,
+      glossary: transcriptionVocabulary
     )
     let engine = configuration?.engine ?? aiEngine
     let llm = configuration?.llm ?? aiSelection
@@ -172,7 +173,10 @@ extension MemoraModel {
 
       // Only a real engine's transcript is ever stored. When none can run, the
       // record says so and keeps the audio for a retry — never sample text.
-      return await TranscriptionService.transcribe(fileURL: self.meeting(id: id)?.audioURL)
+      return await TranscriptionService.transcribe(
+        fileURL: self.meeting(id: id)?.audioURL,
+        vocabulary: self.transcriptionVocabulary
+      )
     } apply: { [weak self] outcome in
       guard let self, !Task.isCancelled else { return }
       self.applyTranscription(outcome, to: id)

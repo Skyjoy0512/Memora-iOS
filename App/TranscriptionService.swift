@@ -6,7 +6,8 @@ import Speech
 /// Transcribes audio with the chosen engine and falls back when it cannot run
 /// here (missing assets, unsupported locale, or an engine that is not wired yet).
 enum TranscriptionService {
-  static func transcribe(fileURL: URL?) async -> TranscriptionOutcome {
+  /// `vocabulary` is the words to listen for: the glossary and known names.
+  static func transcribe(fileURL: URL?, vocabulary: [String] = []) async -> TranscriptionOutcome {
     guard let fileURL else { return .unavailable }
 
     let defaults = UserDefaults.standard
@@ -23,7 +24,8 @@ enum TranscriptionService {
         do {
           switch try await SpeechAnalyzerTranscriber.transcribe(
             fileURL: fileURL,
-            locale: language.locale
+            locale: language.locale,
+            vocabulary: vocabulary
           ) {
           case .segments(let segments):
             return .segments(segments)
@@ -50,7 +52,8 @@ enum TranscriptionService {
         let segments = try await CloudTranscriptionService.transcribe(
           fileURL: fileURL,
           locale: language.locale,
-          provider: provider
+          provider: provider,
+          vocabulary: vocabulary
         )
         return .segments(segments)
       } catch CloudTranscriptionService.Failure.missingKey {
@@ -89,7 +92,7 @@ private enum SpeechAnalyzerTranscriber {
     case failed(String)
   }
 
-  static func transcribe(fileURL: URL, locale: Locale) async throws -> Outcome {
+  static func transcribe(fileURL: URL, locale: Locale, vocabulary: [String]) async throws -> Outcome {
     guard SpeechTranscriber.isAvailable,
           let supportedLocale = await SpeechTranscriber.supportedLocale(equivalentTo: locale) else {
       throw Failure.unsupported
@@ -114,6 +117,12 @@ private enum SpeechAnalyzerTranscriber {
 
     let audioFile = try AVAudioFile(forReading: fileURL)
     let analyzer = SpeechAnalyzer(modules: [transcriber])
+    if !vocabulary.isEmpty {
+      // Names and terms the recogniser would otherwise not know.
+      let context = AnalysisContext()
+      context.contextualStrings[.general] = vocabulary
+      try? await analyzer.setContext(context)
+    }
 
     // Lines are appended as they settle. Nothing accumulates the raw results, so
     // a long recording does not hold every progress string it ever produced.

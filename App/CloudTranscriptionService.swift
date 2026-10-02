@@ -21,7 +21,8 @@ enum CloudTranscriptionService {
   static func transcribe(
     fileURL: URL,
     locale: Locale,
-    provider: CloudProvider
+    provider: CloudProvider,
+    vocabulary: [String] = []
   ) async throws -> [TranscriptSegment] {
     guard let key = KeychainStore.string(forKey: "transcription.\(provider.rawValue)"), !key.isEmpty else {
       throw Failure.missingKey
@@ -32,9 +33,9 @@ enum CloudTranscriptionService {
     let text: String
     switch provider {
     case .openAI:
-      text = try await openAI(fileURL: fileURL, language: language, key: key)
+      text = try await openAI(fileURL: fileURL, language: language, key: key, vocabulary: vocabulary)
     case .deepgram:
-      text = try await deepgram(fileURL: fileURL, language: language, key: key)
+      text = try await deepgram(fileURL: fileURL, language: language, key: key, vocabulary: vocabulary)
     case .anthropic, .google:
       throw Failure.unsupported
     }
@@ -53,7 +54,7 @@ enum CloudTranscriptionService {
     ]
   }
 
-  private static func openAI(fileURL: URL, language: String, key: String) async throws -> String {
+  private static func openAI(fileURL: URL, language: String, key: String, vocabulary: [String]) async throws -> String {
     try checkSize(fileURL, limit: openAILimit)
 
     let boundary = "Boundary-\(UUID().uuidString)"
@@ -88,6 +89,12 @@ enum CloudTranscriptionService {
     write("--\(boundary)\r\n")
     write("Content-Disposition: form-data; name=\"language\"\r\n\r\n")
     write("\(language)\r\n")
+    if !vocabulary.isEmpty {
+      // Whisper follows the spelling of words that appear in its prompt.
+      write("--\(boundary)\r\n")
+      write("Content-Disposition: form-data; name=\"prompt\"\r\n\r\n")
+      write("用語: \(vocabulary.joined(separator: "、"))\r\n")
+    }
     write("--\(boundary)\r\n")
     write("Content-Disposition: form-data; name=\"file\"; filename=\"audio.\(fileURL.pathExtension)\"\r\n")
     write("Content-Type: \(mime)\r\n\r\n")
@@ -109,14 +116,14 @@ enum CloudTranscriptionService {
     return decoded.text
   }
 
-  private static func deepgram(fileURL: URL, language: String, key: String) async throws -> String {
+  private static func deepgram(fileURL: URL, language: String, key: String, vocabulary: [String]) async throws -> String {
     try checkSize(fileURL, limit: deepgramLimit)
 
     var components = URLComponents(string: "https://api.deepgram.com/v1/listen")
     components?.queryItems = [
       URLQueryItem(name: "language", value: language),
       URLQueryItem(name: "punctuate", value: "true")
-    ]
+    ] + vocabulary.prefix(50).map { URLQueryItem(name: "keywords", value: $0) }
 
     guard let url = components?.url else { throw Failure.unsupported }
     var request = URLRequest(url: url)

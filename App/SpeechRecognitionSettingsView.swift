@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SpeechRecognitionSettingsView: View {
+  @Environment(MemoraModel.self) private var model
   @AppStorage("memora.transcriptionEngine") private var engine = TranscriptionEngine.automatic
   @AppStorage("memora.transcriptionLanguage") private var language = RecognitionLanguage.japanese
   @AppStorage("memora.transcriptionProvider") private var provider = CloudProvider.openAI
@@ -58,6 +59,20 @@ struct SpeechRecognitionSettingsView: View {
         Text("言語")
       } footer: {
         Text(language.detail)
+      }
+
+      Section {
+        NavigationLink {
+          GlossaryView()
+        } label: {
+          LabeledContent {
+            Text(model.glossaryTerms.isEmpty ? "未登録" : "\(model.glossaryTerms.count)語")
+          } label: {
+            SettingsLabel("用語集", icon: .characterBookClosed, color: .purple)
+          }
+        }
+      } footer: {
+        Text("社名や製品名を登録すると、文字起こしと要約で正しく書かれやすくなります。")
       }
 
       Section {

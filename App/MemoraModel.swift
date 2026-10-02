@@ -135,6 +135,11 @@ final class MemoraModel {
   var trashedLifeLogEntries: [TrashedLifeLogEntry] = []
   /// The Ask AI chat transcript.
   var aiMessages: [AIChatMessage] = []
+  /// Company, product and people's names the person wants written correctly.
+  /// A setting for the engines, so it is kept in UserDefaults.
+  var glossaryTerms: [String] = UserDefaults.standard.stringArray(forKey: StorageKey.glossary) ?? [] {
+    didSet { UserDefaults.standard.set(glossaryTerms, forKey: StorageKey.glossary) }
+  }
   /// What Ask AI remembers about the person, newest first.
   var aiMemories: [AIMemory] = []
   /// Whether questions carry the memories and relevant past conversations.

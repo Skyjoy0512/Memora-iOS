@@ -159,6 +159,7 @@ extension MemoraModel {
     static let aiMemories = "memoraAIMemories"
     static let aiThread = "memoraAIThread"
     static let aiMemoryEnabled = "memora.ai.memoryEnabled"
+    static let glossary = "memora.glossary"
     static let pendingMediaDeletions = "memoraPendingMediaDeletions"
     static let documents = "memoraDocuments"
     static let agentMode = "memora.askAI.agentMode"

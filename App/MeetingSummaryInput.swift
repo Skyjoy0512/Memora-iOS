@@ -9,6 +9,8 @@ struct MeetingSummaryInput {
   var participantNames: [String]
   var transcript: [TranscriptSegment]
   var template: SummaryTemplateChoice
+  /// Terms whose spelling the summary should follow.
+  var glossary: [String] = []
 
   /// Speaker labels in the order they first spoke.
   var speakers: [String] {
@@ -41,6 +43,11 @@ struct MeetingSummaryInput {
     ]
     if !participantNames.isEmpty {
       lines.append("タグ付けされた参加者: \(participantNames.joined(separator: ", "))")
+    }
+    if !glossary.isEmpty {
+      // The recogniser can still mishear these; the summary writes them as
+      // listed when the transcript clearly means one of them.
+      lines.append("用語集（文字起こしの誤認識がこれらを指すと明らかな場合は、この表記に直す）: \(glossary.joined(separator: "、"))")
     }
     return lines
   }
