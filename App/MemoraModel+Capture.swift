@@ -122,6 +122,11 @@ extension MemoraModel {
     )
     meeting.notes = recordingNote
     meeting.calendarEventID = captureEvent?.id
+    if let event = captureEvent {
+      // A recurring meeting is filed where its last occurrence was, so a
+      // weekly sync does not have to be moved into its project every time.
+      meeting.spaceID = recurringProjectID(forEventID: event.id)
+    }
     captureEvent = nil
     meetings.insert(meeting, at: 0)
     lifeLogEntries.insert(

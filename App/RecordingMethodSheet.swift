@@ -5,36 +5,48 @@ import SwiftUI
 struct RecordingMethodSheet: View {
   var meeting: UpcomingMeeting
   var onChoose: (RecordingMethod) -> Void
+  /// Opens an earlier record from the brief.
+  var onOpenRecord: (UUID) -> Void = { _ in }
 
+  @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
-    NavigationStack {
-      VStack(alignment: .leading, spacing: 20) {
-        VStack(alignment: .leading, spacing: 4) {
-          Text("\(UpcomingMeetingFormat.day(meeting.start)) \(UpcomingMeetingFormat.timeRange(meeting))")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(meeting.calendarColor ?? .accentColor)
-          Text(meeting.title)
-            .font(.title2.bold())
-            .lineLimit(2)
-        }
+    // What earlier meetings of this series left open, gathered once.
+    let brief = model.meetingBrief(for: meeting)
 
-        VStack(spacing: 10) {
-          ForEach(methods) { method in
-            Button {
-              onChoose(method)
-            } label: {
-              row(for: method)
+    NavigationStack {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 20) {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("\(UpcomingMeetingFormat.day(meeting.start)) \(UpcomingMeetingFormat.timeRange(meeting))")
+              .font(.subheadline.weight(.semibold))
+              .foregroundStyle(meeting.calendarColor ?? .accentColor)
+            Text(meeting.title)
+              .font(.title2.bold())
+              .lineLimit(2)
+          }
+
+          VStack(spacing: 10) {
+            ForEach(methods) { method in
+              Button {
+                onChoose(method)
+              } label: {
+                row(for: method)
+              }
+              .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+          }
+
+          if let brief {
+            MeetingBriefSection(brief: brief, onOpenRecord: onOpenRecord)
+              .padding(.top, 8)
           }
         }
-
-        Spacer(minLength: 0)
+        .padding(.horizontal, 20)
+        .padding(.top, 4)
+        .padding(.bottom, 20)
       }
-      .padding(.horizontal, 20)
-      .padding(.top, 4)
       .navigationTitle("録音方法")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -43,7 +55,8 @@ struct RecordingMethodSheet: View {
         }
       }
     }
-    .presentationDetents([.medium])
+    // With a brief to read, the sheet can be pulled up to full height.
+    .presentationDetents(brief == nil ? [.medium] : [.medium, .large])
     .presentationDragIndicator(.visible)
   }
 

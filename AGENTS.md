@@ -122,6 +122,16 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   offered only while connected. The build needs a Google iOS OAuth client ID
   under the Info.plist key `MemoraGoogleClientID`; without it the settings
   screen says so.
+- Business meetings: a glossary (Settings › 文字起こし › 用語集,
+  `glossaryTerms`) plus the people and project names (`transcriptionVocabulary`)
+  is given to every transcription engine (SpeechAnalyzer `AnalysisContext`,
+  Whisper `prompt`, Deepgram `keywords`) and to the summary prompt. Tapping an
+  upcoming event shows 前回から (`meetingBrief`, `MeetingBriefSection`): what
+  earlier records of the same calendar series, or the same title once dates and
+  numbers are set aside, left open. A recording started from a recurring event
+  is filed into the project its last occurrence of the same calendar series is
+  in (`recurringProjectID`); a title that only looks alike is never used for
+  filing.
 - People: the side menu's 人物 (`PeopleView`, `PersonDetailView`) shows what
   the records hold about someone (`MemoraModel.memory(of:)`): meetings they
   were tagged on or spoke in under their name, open tasks assigned to them,

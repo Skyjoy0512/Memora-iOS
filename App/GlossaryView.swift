@@ -25,8 +25,14 @@ struct GlossaryView: View {
 
         ForEach(model.glossaryTerms, id: \.self) { term in
           Text(term)
+            // A named action, so it reads 削除 rather than the system's
+            // untranslated label.
+            .swipeActions {
+              Button("削除", icon: .trash, role: .destructive) {
+                model.removeGlossaryTerm(term)
+              }
+            }
         }
-        .onDelete { model.removeGlossaryTerms(at: $0) }
       } header: {
         Text("用語")
       } footer: {
@@ -47,11 +53,6 @@ struct GlossaryView: View {
     }
     .navigationTitle("用語集")
     .navigationBarTitleDisplayMode(.inline)
-    .toolbar {
-      if !model.glossaryTerms.isEmpty {
-        EditButton()
-      }
-    }
   }
 
   private func add() {

@@ -7,6 +7,7 @@ struct UpcomingEventsRow: View {
   var onRecordInPerson: (UpcomingMeeting) -> Void
   var onRecordOnline: (UpcomingMeeting) -> Void
 
+  @Environment(MemoraModel.self) private var model
   @State private var chosenMeeting: UpcomingMeeting?
 
   var body: some View {
@@ -40,7 +41,7 @@ struct UpcomingEventsRow: View {
       .contentMargins(.horizontal, 18, for: .scrollContent)
     }
     .sheet(item: $chosenMeeting) { meeting in
-      RecordingMethodSheet(meeting: meeting) { method in
+      RecordingMethodSheet(meeting: meeting, onChoose: { method in
         chosenMeeting = nil
         // Recording presents its own screen, so it waits for this sheet to
         // finish closing.
@@ -51,7 +52,13 @@ struct UpcomingEventsRow: View {
           case .online: onRecordOnline(meeting)
           }
         }
-      }
+      }, onOpenRecord: { recordID in
+        chosenMeeting = nil
+        Task { @MainActor in
+          try? await Task.sleep(for: .milliseconds(350))
+          model.libraryPath.append(.meeting(recordID))
+        }
+      })
     }
   }
 }

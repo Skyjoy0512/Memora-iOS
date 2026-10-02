@@ -17,8 +17,8 @@ extension MemoraModel {
     return true
   }
 
-  func removeGlossaryTerms(at offsets: IndexSet) {
-    glossaryTerms.remove(atOffsets: offsets)
+  func removeGlossaryTerm(_ term: String) {
+    glossaryTerms.removeAll { $0 == term }
   }
 
   /// The glossary, then the people and projects the records already know,
