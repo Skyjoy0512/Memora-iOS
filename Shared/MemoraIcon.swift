@@ -12,6 +12,7 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case arrowRightCircle = "arrow.right.circle"
   case arrowTriangle2Circlepath = "arrow.triangle.2.circlepath"
   case arrowTriangleMerge = "arrow.triangle.merge"
+  case arrowTurnDownRight = "arrow.turn.down.right"
   case arrowUp = "arrow.up"
   case arrowUpDoc = "arrow.up.doc"
   case arrowUpLeft = "arrow.up.left"

@@ -9,6 +9,9 @@ struct AIMessageView: View {
   /// Only the latest reply streams; older ones are already settled.
   var animates = true
   @State private var openDocument: MemoraDocument?
+  /// A cited record opened from an inline citation.
+  @State private var citedRecord: AIChatSource?
+  @State private var isSourcesOpen = false
 
   var body: some View {
     switch message.role {
@@ -60,13 +63,7 @@ struct AIMessageView: View {
       }
 
       if !message.isThinking {
-        StreamingText(text: message.text, lineSpacing: 5, animates: animates)
-      }
-
-      // The records are listed in the trace; here only the lines worth
-      // playing back are kept.
-      if !message.isThinking, message.sources.contains(where: { !$0.excerpts.isEmpty }) {
-        sourceList
+        answerText
       }
 
       ForEach(message.documentIDs, id: \.self) { id in
@@ -76,15 +73,96 @@ struct AIMessageView: View {
       }
 
       if !message.isThinking, !message.text.isEmpty {
-        AIAnswerActions(message: message)
+        HStack(spacing: 8) {
+          AIAnswerActions(message: message)
+          if !spokenSources.isEmpty {
+            sourcesToggle
+          }
+        }
+        // The lines worth playing back, folded until asked for.
+        if isSourcesOpen, !spokenSources.isEmpty {
+          sourceList
+            .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+      }
+
+      let followUps = model.followUps(for: message)
+      if !followUps.isEmpty {
+        AIFollowUpList(prompts: followUps) { model.sendAIChat($0) }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+    .animation(MemoraMotion.control, value: isSourcesOpen)
     .sheet(item: $openDocument) { document in
       NavigationStack {
         DocumentDetailView(documentID: document.id, showsCloseButton: true)
       }
     }
+    .sheet(item: $citedRecord) { source in
+      NavigationStack {
+        MeetingDetailView(meetingID: source.meetingID, showsLocalPlaybackBar: true)
+          .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+              ToolbarIconButton("閉じる", icon: .xmark) { citedRecord = nil }
+            }
+          }
+      }
+    }
+  }
+
+  /// The answer, with the records it really cited as inline links.
+  @ViewBuilder
+  private var answerText: some View {
+    if !message.isAgentReply, AnswerCitations.hasCitations(message.text, sources: message.sources) {
+      StreamingText(
+        text: AnswerCitations.linked(message.text, sources: message.sources),
+        lineSpacing: 5,
+        animates: animates,
+        revealText: AnswerCitations.stripped(message.text)
+      )
+      .environment(\.openURL, OpenURLAction { url in
+        guard let source = AnswerCitations.source(for: url, in: message.sources) else { return .systemAction }
+        citedRecord = source
+        return .handled
+      })
+    } else {
+      StreamingText(text: AnswerCitations.stripped(message.text), lineSpacing: 5, animates: animates)
+    }
+  }
+
+  /// Records with lines that can be played back.
+  private var spokenSources: [AIChatSource] {
+    message.sources.filter { !$0.excerpts.isEmpty }
+  }
+
+  private var sourcesToggle: some View {
+    Button {
+      isSourcesOpen.toggle()
+    } label: {
+      HStack(spacing: 6) {
+        HStack(spacing: -4) {
+          ForEach(Array(spokenSources.prefix(3).enumerated()), id: \.offset) { index, _ in
+            Circle()
+              .fill([Color.accentColor, .orange, .green][index % 3])
+              .frame(width: 12, height: 12)
+              .overlay(Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 1.5))
+          }
+        }
+        Text("\(spokenSources.reduce(0) { $0 + $1.excerpts.count })か所の発言")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        Image(icon: .chevronDown)
+          .font(.caption2.weight(.semibold))
+          .foregroundStyle(.tertiary)
+          .rotationEffect(.degrees(isSourcesOpen ? 180 : 0))
+      }
+      .padding(.horizontal, 6)
+      .frame(minHeight: 36)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel("根拠になった発言")
+    .accessibilityValue(isSourcesOpen ? "開いています" : "閉じています")
   }
 
   private func accessibilityLabel(for source: AIChatSource) -> String {
@@ -97,11 +175,7 @@ struct AIMessageView: View {
   /// excerpt in it plays from its own time.
   private var sourceList: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("根拠になった発言")
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
-
-      ForEach(message.sources.filter { !$0.excerpts.isEmpty }) { source in
+      ForEach(spokenSources) { source in
         VStack(alignment: .leading, spacing: 6) {
           NavigationLink {
             MeetingDetailView(meetingID: source.meetingID)

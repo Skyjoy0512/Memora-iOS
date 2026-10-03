@@ -14,6 +14,9 @@ struct StreamingText: View {
   var font: Font = .body
   var lineSpacing: CGFloat = 5
   var animates = true
+  /// What the word-by-word reveal shows, when it differs from the settled
+  /// text (citations are links only once settled).
+  var revealText: String?
 
   @State private var words: [String] = []
   @State private var revealed = 0
@@ -29,7 +32,7 @@ struct StreamingText: View {
       if usesPlainText {
         // Answers often come back as markdown lists, headings or bold; once
         // settled they are drawn as a document instead of showing the markers.
-        if MarkdownBlockParser.hasInlineOrBlockMarkdown(text) {
+        if MarkdownBlockParser.hasInlineOrBlockMarkdown(text) || text.contains("](") {
           MarkdownDocumentView(markdown: text)
             .lineSpacing(lineSpacing)
             .textSelection(.enabled)
@@ -50,6 +53,11 @@ struct StreamingText: View {
               .blur(radius: index < revealed ? 0 : 1)
               .animation(fade, value: revealed)
           }
+          // The caret follows the words while they are still arriving.
+          Capsule()
+            .fill(.primary)
+            .frame(width: 2, height: 14)
+            .opacity(revealed < words.count ? 1 : 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
@@ -76,7 +84,7 @@ struct StreamingText: View {
       return
     }
 
-    words = Self.tokenize(text)
+    words = Self.tokenize(revealText ?? text)
     revealed = 0
     revealTask = Task { @MainActor in
       var count = 0

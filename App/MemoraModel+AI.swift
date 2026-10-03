@@ -468,7 +468,7 @@ extension MemoraModel {
     guard let meeting else { return ("", []) }
 
     var lines: [String] = [
-      "会議: \(meeting.displayTitle)",
+      "【資料1】会議: \(meeting.displayTitle)",
       "日付: \(meeting.createdAt.formatted(date: .numeric, time: .omitted))"
     ]
     if !meeting.summary.isEmpty {
@@ -525,7 +525,8 @@ extension MemoraModel {
 
     for meeting in ranked {
       var lines: [String] = [
-        "会議: \(meeting.displayTitle)",
+        // Numbered so an answer can cite it; only these numbers become chips.
+        "【資料\(sources.count + 1)】会議: \(meeting.displayTitle)",
         "日付: \(meeting.createdAt.formatted(date: .numeric, time: .omitted))"
       ]
       if !meeting.summary.isEmpty {

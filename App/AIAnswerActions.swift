@@ -17,7 +17,7 @@ struct AIAnswerActions: View {
       }
       .contentTransition(.symbolEffect(.replace))
 
-      ShareLink(item: message.text) {
+      ShareLink(item: AnswerCitations.stripped(message.text)) {
         Label("共有", icon: .squareAndArrowUp)
       }
 
@@ -37,7 +37,7 @@ struct AIAnswerActions: View {
   }
 
   private func copy() {
-    UIPasteboard.general.string = message.text
+    UIPasteboard.general.string = AnswerCitations.stripped(message.text)
     withAnimation(reduceMotion ? nil : MemoraMotion.control) { didCopy = true }
     copyResetTask?.cancel()
     copyResetTask = Task { @MainActor in
