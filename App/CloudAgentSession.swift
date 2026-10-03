@@ -119,13 +119,19 @@ final class CloudAgentSession {
       .compactMap { $0["text"] as? String }
       .joined()
       .trimmingCharacters(in: .whitespacesAndNewlines)
+    // Shown in the reply's trace only because the model really returned it.
+    let reasoning = content
+      .filter { $0["type"] as? String == "thinking" }
+      .compactMap { $0["thinking"] as? String }
+      .joined(separator: "\n")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
     let calls = content
       .filter { $0["type"] as? String == "tool_use" }
       .compactMap { block -> AgentToolCall? in
         guard let id = block["id"] as? String, let name = block["name"] as? String else { return nil }
         return AgentToolCall(id: id, name: name, arguments: block["input"] as? [String: Any] ?? [:])
       }
-    return AgentTurn(text: text, toolCalls: calls)
+    return AgentTurn(text: text, toolCalls: calls, reasoning: reasoning)
   }
 
   // MARK: - OpenAI-compatible
@@ -196,6 +202,8 @@ final class CloudAgentSession {
         .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
       return AgentToolCall(id: id, name: name, arguments: arguments)
     }
-    return AgentTurn(text: text, toolCalls: calls)
+    let reasoning = ((message["reasoning_content"] ?? message["reasoning"]) as? String ?? "")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    return AgentTurn(text: text, toolCalls: calls, reasoning: reasoning)
   }
 }

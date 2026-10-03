@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// What the AI did on the way to a reply, as an expandable trace: open while it
-/// works, settled to one line ("4秒で回答") when done, and tappable to look
-/// again. Every row is something that really happened — the search, the
-/// records read, each tool — never a made-up reasoning.
+/// What the AI really did on the way to a reply, as an expandable trace. Each
+/// pattern appears only when that work actually happened:
+/// - Search: a record or mail search ran — its terms and what it found.
+/// - Steps: the agent ran tools — one row per tool, spinner to check.
+/// - Reasoning: the model returned its reasoning text — shown as written.
+/// A reply with none of these shows no trace at all.
 struct ThinkingTraceView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -12,20 +14,32 @@ struct ThinkingTraceView: View {
   @State private var manualExpanded: Bool?
 
   private static let dotColors: [Color] = [.accentColor, .orange, .green]
+  /// How many search results are listed before "+N件".
+  private static let resultLimit = 5
+
+  /// Whether there is anything real to show, or something under way.
+  static func hasTrace(_ message: AIChatMessage) -> Bool {
+    message.isThinking
+      || !message.agentSteps.isEmpty
+      || !message.reasoning.isEmpty
+      || (!message.isAgentReply && message.searchFinished)
+  }
 
   var body: some View {
     let isWaitingForApproval = model.pendingAgentApproval?.messageID == message.id
     let working = message.isThinking && !isWaitingForApproval
-    let expanded = manualExpanded ?? (message.isThinking || isWaitingForApproval)
+    let canExpand = hasRows
+    let expanded = canExpand && (manualExpanded ?? (message.isThinking || isWaitingForApproval))
 
     VStack(alignment: .leading, spacing: 4) {
       Button {
+        guard canExpand else { return }
         withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
           manualExpanded = !expanded
         }
       } label: {
         HStack(spacing: 8) {
-          Image(icon: .sparkles)
+          Image(icon: headerIcon)
             .font(.footnote)
             .foregroundStyle(working ? .secondary : .tertiary)
           Group {
@@ -38,18 +52,20 @@ struct ThinkingTraceView: View {
             }
           }
           .font(.footnote.weight(.medium))
-          Image(icon: .chevronDown)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(.tertiary)
-            .rotationEffect(.degrees(expanded ? 180 : 0))
+          if canExpand {
+            Image(icon: .chevronDown)
+              .font(.caption2.weight(.semibold))
+              .foregroundStyle(.tertiary)
+              .rotationEffect(.degrees(expanded ? 180 : 0))
+          }
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
+      .disabled(!canExpand)
       .accessibilityLabel(working ? activeLabel : doneLabel)
-      .accessibilityValue(expanded ? "開いています" : "閉じています")
-      .accessibilityHint("タップで経過を\(expanded ? "閉じます" : "開きます")")
+      .accessibilityValue(canExpand ? (expanded ? "開いています" : "閉じています") : "")
 
       if expanded {
         trace
@@ -62,57 +78,86 @@ struct ThinkingTraceView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: message.sources.count)
   }
 
-  // MARK: - Labels
+  // MARK: - What there is to show
+
+  private var isSearchAnswer: Bool { !message.isAgentReply }
+
+  private var hasRows: Bool {
+    if isSearchAnswer { return message.traceQuery != nil || !message.sources.isEmpty }
+    return !message.agentSteps.isEmpty || !message.reasoning.isEmpty
+  }
+
+  private var headerIcon: MemoraIcon {
+    if isSearchAnswer { return .magnifyingglass }
+    return message.agentSteps.isEmpty ? .sparkles : .checklist
+  }
 
   private var activeLabel: String {
-    message.isAgentReply ? "作業しています" : "考えています"
+    if isSearchAnswer {
+      return message.searchFinished ? "回答を書いています" : "記録を探しています"
+    }
+    if let running = message.agentSteps.last(where: { $0.state == .running }) {
+      return running.title
+    }
+    return message.agentSteps.isEmpty ? "考えています" : "作業しています"
   }
 
   private var doneLabel: String {
     let seconds = message.elapsedSeconds.map { "\($0)秒" }
-    if message.isAgentReply {
-      let count = message.agentSteps.filter { $0.state == .done }.count
-      return [count > 0 ? "\(count)個の作業" : nil, seconds].compactMap { $0 }.joined(separator: "・")
+    if isSearchAnswer {
+      guard message.searchFinished else { return "回答できませんでした" }
+      let read = message.sources.isEmpty ? "該当する記録はありませんでした" : "\(message.sources.count)件の記録を参照"
+      return [read, seconds].compactMap { $0 }.joined(separator: "・")
     }
-    let read = message.sources.isEmpty ? nil : "\(message.sources.count)件の記録を参照"
-    return [seconds.map { "\($0)で回答" }, read].compactMap { $0 }.joined(separator: "・")
+    let done = message.agentSteps.filter { $0.state == .done }.count
+    if done > 0 {
+      return ["\(done)個の作業", seconds].compactMap { $0 }.joined(separator: "・")
+    }
+    return seconds.map { "\($0)考えました" } ?? "考えました"
   }
 
   // MARK: - Trace
 
   private var trace: some View {
     VStack(alignment: .leading, spacing: 2) {
-      if let query = message.traceQuery {
-        HStack(spacing: 8) {
-          Image(icon: .magnifyingglass)
-            .font(.caption)
+      if isSearchAnswer {
+        if let query = message.traceQuery {
+          queryRow(query)
+        }
+        resultRows(message.sources.map {
+          AgentStep.Result(title: $0.title, subtitle: $0.excerpts.isEmpty ? nil : "\($0.excerpts.count)か所", meetingID: $0.meetingID)
+        })
+        if !message.isThinking, let details = message.details {
+          Text([details.scopeLabel, details.modelLabel.map { "\(details.engineLabel) · \($0)" } ?? details.engineLabel].joined(separator: "・"))
+            .font(.caption2)
             .foregroundStyle(.tertiary)
-            .frame(width: 14)
-          Text(query)
+            .padding(.top, 4)
+            .padding(.leading, 22)
+        }
+      } else {
+        if !message.reasoning.isEmpty {
+          // The model's own words, only because it returned them.
+          Text(message.reasoning)
             .font(.caption)
             .foregroundStyle(.secondary)
-            .lineLimit(1)
+            .lineSpacing(3)
+            .lineLimit(12)
+            .padding(.vertical, 4)
+            .padding(.leading, 22)
+            .textSelection(.enabled)
+            .transition(.opacity)
         }
-        .frame(minHeight: 24)
-        .transition(.opacity.combined(with: .offset(y: 6)))
-      }
-
-      ForEach(Array(message.agentSteps.enumerated()), id: \.element.id) { index, step in
-        stepRow(step)
-        // In an answer, the records read follow the search that found them.
-        if !message.isAgentReply, index == 0 {
-          ForEach(Array(message.sources.enumerated()), id: \.element.id) { sourceIndex, source in
-            sourceRow(source, color: Self.dotColors[sourceIndex % Self.dotColors.count])
+        ForEach(message.agentSteps) { step in
+          stepRow(step)
+          if let query = step.query {
+            queryRow(query)
+              .padding(.leading, 22)
+          }
+          if !step.results.isEmpty {
+            resultRows(step.results)
+              .padding(.leading, 22)
           }
         }
-      }
-
-      if !message.isThinking, let details = message.details {
-        Text([details.scopeLabel, details.modelLabel.map { "\(details.engineLabel) · \($0)" } ?? details.engineLabel].joined(separator: "・"))
-          .font(.caption2)
-          .foregroundStyle(.tertiary)
-          .padding(.top, 4)
-          .padding(.leading, 22)
       }
     }
     .padding(.leading, 14)
@@ -123,6 +168,71 @@ struct ThinkingTraceView: View {
         .frame(width: 1)
         .padding(.leading, 6)
         .padding(.vertical, 4)
+    }
+  }
+
+  private func queryRow(_ query: String) -> some View {
+    HStack(spacing: 8) {
+      Image(icon: .magnifyingglass)
+        .font(.caption)
+        .foregroundStyle(.tertiary)
+        .frame(width: 14)
+      Text(query)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+    }
+    .frame(minHeight: 24)
+    .transition(.opacity.combined(with: .offset(y: 6)))
+  }
+
+  @ViewBuilder
+  private func resultRows(_ results: [AgentStep.Result]) -> some View {
+    ForEach(Array(results.prefix(Self.resultLimit).enumerated()), id: \.offset) { index, result in
+      resultRow(result, color: Self.dotColors[index % Self.dotColors.count])
+    }
+    if results.count > Self.resultLimit {
+      Text("ほか\(results.count - Self.resultLimit)件")
+        .font(.caption)
+        .foregroundStyle(.tertiary)
+        .padding(.leading, 22)
+        .frame(minHeight: 22)
+    }
+  }
+
+  @ViewBuilder
+  private func resultRow(_ result: AgentStep.Result, color: Color) -> some View {
+    let label = HStack(spacing: 8) {
+      Circle()
+        .fill(color)
+        .frame(width: 8, height: 8)
+        .frame(width: 14)
+      Text(result.title)
+        .font(.footnote)
+        .foregroundStyle(.primary)
+        .underline(result.meetingID != nil, color: .secondary.opacity(0.4))
+        .lineLimit(1)
+      if let subtitle = result.subtitle {
+        Text(subtitle)
+          .font(.caption)
+          .foregroundStyle(.tertiary)
+          .lineLimit(1)
+      }
+    }
+    .frame(minHeight: 26, alignment: .leading)
+    .contentShape(Rectangle())
+    .transition(.opacity.combined(with: .offset(y: 6)))
+
+    if let meetingID = result.meetingID {
+      NavigationLink {
+        MeetingDetailView(meetingID: meetingID)
+      } label: {
+        label
+      }
+      .buttonStyle(.plain)
+      .accessibilityHint("記録を開きます")
+    } else {
+      label
     }
   }
 
@@ -146,34 +256,6 @@ struct ThinkingTraceView: View {
     .transition(.opacity.combined(with: .offset(y: 6)))
     .accessibilityElement(children: .combine)
     .accessibilityValue(stateLabel(step.state))
-  }
-
-  private func sourceRow(_ source: AIChatSource, color: Color) -> some View {
-    NavigationLink {
-      MeetingDetailView(meetingID: source.meetingID)
-    } label: {
-      HStack(spacing: 8) {
-        Circle()
-          .fill(color)
-          .frame(width: 8, height: 8)
-          .frame(width: 14)
-        Text(source.title)
-          .font(.footnote)
-          .foregroundStyle(.primary)
-          .underline(color: .secondary.opacity(0.4))
-          .lineLimit(1)
-        if !source.excerpts.isEmpty {
-          Text("\(source.excerpts.count)か所")
-            .font(.caption)
-            .foregroundStyle(.tertiary)
-        }
-      }
-      .frame(minHeight: 26, alignment: .leading)
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .transition(.opacity.combined(with: .offset(y: 6)))
-    .accessibilityHint("記録を開きます")
   }
 
   @ViewBuilder

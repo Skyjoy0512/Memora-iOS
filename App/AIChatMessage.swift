@@ -29,6 +29,10 @@ struct AIChatMessage: Identifiable, Hashable {
   var traceQuery: String?
   /// True for a reply the agent wrote, whose steps can change data.
   var isAgentReply = false
+  /// The model's own reasoning, only when the provider returned it.
+  var reasoning = ""
+  /// True once the record search for an answer has finished.
+  var searchFinished = false
 
   /// How long the reply took, in whole seconds, once it has settled.
   var elapsedSeconds: Int? {

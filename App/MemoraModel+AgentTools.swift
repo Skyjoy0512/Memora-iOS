@@ -63,12 +63,22 @@ extension MemoraModel {
     let query = call.string("query")
     let limit = min((call.arguments["limit"] as? Int) ?? 8, compact ? 5 : 15)
     let stepID = beginAgentStep(
-      AgentStep(icon: AgentTool.searchEmail.icon, title: query.isEmpty ? "受信トレイを確認" : "メールを検索「\(query)」"),
+      AgentStep(
+        icon: AgentTool.searchEmail.icon,
+        title: query.isEmpty ? "受信トレイを確認" : "メールを検索",
+        query: query.isEmpty ? nil : query
+      ),
       on: messageID
     )
     do {
       let messages = try await GmailService.shared.search(query, limit: limit)
-      finishAgentStep(stepID, on: messageID, state: .done, detail: "\(messages.count)件")
+      finishAgentStep(
+        stepID,
+        on: messageID,
+        state: .done,
+        detail: "\(messages.count)件",
+        results: messages.map { AgentStep.Result(title: $0.subject, subtitle: $0.from) }
+      )
       guard !messages.isEmpty else { return AgentToolOutcome(text: "該当するメールはありません。") }
       return AgentToolOutcome(text: messages.map { message in
         let date = message.date.map(Self.agentDate) ?? ""
@@ -129,7 +139,11 @@ extension MemoraModel {
     let limit = compact ? 4 : min(max(call.int("limit") ?? 8, 1), 20)
     let previewLength = compact ? 80 : 200
     let stepID = beginAgentStep(
-      AgentStep(icon: AgentTool.searchRecords.icon, title: query.isEmpty ? "最近の記録を確認" : "「\(query)」を検索"),
+      AgentStep(
+        icon: AgentTool.searchRecords.icon,
+        title: query.isEmpty ? "最近の記録を確認" : "記録を検索",
+        query: query.isEmpty ? nil : query
+      ),
       on: messageID
     )
 
@@ -158,7 +172,14 @@ extension MemoraModel {
       entries = []
     }
 
-    finishAgentStep(stepID, on: messageID, state: .done, detail: "記録\(found.count)件・ジャーナル\(entries.count)件")
+    finishAgentStep(
+      stepID,
+      on: messageID,
+      state: .done,
+      detail: "記録\(found.count)件・ジャーナル\(entries.count)件",
+      results: found.map { AgentStep.Result(title: $0.displayTitle, subtitle: Self.agentDate($0.createdAt), meetingID: $0.id) }
+        + entries.map { AgentStep.Result(title: $0.title, subtitle: "ジャーナル") }
+    )
 
     guard !found.isEmpty || !entries.isEmpty else {
       return AgentToolOutcome(text: "一致する記録はありません。別の言葉で検索してください。")

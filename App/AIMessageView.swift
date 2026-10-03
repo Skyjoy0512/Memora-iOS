@@ -50,7 +50,7 @@ struct AIMessageView: View {
   private var assistantReply: some View {
     VStack(alignment: .leading, spacing: 12) {
       // The trace: open while the AI works, one settled line afterwards.
-      if message.isThinking || !message.agentSteps.isEmpty || message.details != nil {
+      if ThinkingTraceView.hasTrace(message) {
         ThinkingTraceView(message: message)
       }
 

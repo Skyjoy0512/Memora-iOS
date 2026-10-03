@@ -106,10 +106,8 @@ extension MemoraModel {
       for: trimmed,
       budget: AIEngineService.contextCharacterLimit(for: engine) / 6
     )
-    // The trace shows what really happens: the search, then the writing.
-    let searchStep = AgentStep(icon: .magnifyingglass, title: "関係する記録を探す")
+    // The trace shows the record search that really runs, and its results.
     var placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
-    placeholder.agentSteps = [searchStep]
     // The question as asked, on one line; the internal search words are
     // fragments that would read as noise.
     let oneLine = trimmed.replacingOccurrences(of: "\n", with: " ")
@@ -121,7 +119,6 @@ extension MemoraModel {
     aiChatTask = Task { [weak self] in
       guard let self else { return }
       let allowedMeetings = Self.meetings(in: scope, from: self.meetings)
-      let writeStep = AgentStep(icon: .squareAndPencil, title: "回答を書く")
       let outcome = await self.answer(
         request: AIQuestionRequest(question: trimmed, scope: .global, attachment: attachment),
         scopeLabel: scope.scopeLabel,
@@ -135,11 +132,7 @@ extension MemoraModel {
           guard let self, self.aiChatRequestID == requestID else { return }
           self.updateAgentMessage(placeholder.id) { message in
             message.sources = sources
-            if let index = message.agentSteps.firstIndex(where: { $0.id == searchStep.id }) {
-              message.agentSteps[index].state = .done
-              message.agentSteps[index].detail = sources.isEmpty ? "見つかりませんでした" : "\(sources.count)件"
-            }
-            message.agentSteps.append(writeStep)
+            message.searchFinished = true
           }
         }
       )
@@ -196,6 +189,7 @@ extension MemoraModel {
           self.aiMessages[index].finishedAt = .now
           // A failed answer rests on nothing, so it offers no records.
           self.aiMessages[index].sources = []
+          self.aiMessages[index].searchFinished = false
           self.settleTraceSteps(at: index, as: .failed)
         }
       }

@@ -5,4 +5,7 @@ import Foundation
 struct AgentTurn {
   var text: String
   var toolCalls: [AgentToolCall]
+  /// The reasoning the model returned with this turn, when the provider sends
+  /// it (Claude's thinking, DeepSeek's reasoning). Empty when it does not.
+  var reasoning = ""
 }

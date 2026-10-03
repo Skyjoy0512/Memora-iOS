@@ -125,12 +125,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Notion pages, tasks and documents. Reading tools run straight away; every
   tool that changes data waits for the approval card, and a declined change is
   reported back to the model.
-- Each reply shows its trace (`ThinkingTraceView`): open with a shimmering
-  考えています / 作業しています while working, settled to one line
-  (「2秒で回答・1件の記録を参照」) and tappable afterwards. Rows are only what
-  really happened: in 質問 the question, the record search (finished when
-  `answer(onContextReady:)` has chosen the records), the records read, and the
-  writing; for the agent, its tool steps. No invented reasoning.
+- A reply's trace (`ThinkingTraceView`) shows only work that really
+  happened, each in its own pattern: Search (the terms and what was found) for
+  the 質問 record search and the agent's record/mail searches; Steps (spinner
+  to check) for the agent's tools; Reasoning only when the model returned
+  reasoning text (Claude thinking, `reasoning_content`). A reply with none of
+  these shows no trace. Never add rows that did not happen.
 - Personal memory: Ask AI keeps what the person told it (「〇〇を覚えておいて」,
   Settings › メモリ, or the agent's `save_memory` after approval) in
   `aiMemories`, and sends it with every question together with related past

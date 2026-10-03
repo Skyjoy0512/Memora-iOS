@@ -153,6 +153,11 @@ extension MemoraModel {
       }
       guard !Task.isCancelled else { return .failure(.cancelled) }
 
+      if !turn.reasoning.isEmpty {
+        updateAgentMessage(messageID) { message in
+          message.reasoning = message.reasoning.isEmpty ? turn.reasoning : message.reasoning + "\n\n" + turn.reasoning
+        }
+      }
       if !turn.text.isEmpty {
         lastText = turn.text
       }
@@ -228,12 +233,21 @@ extension MemoraModel {
     return step.id
   }
 
-  func finishAgentStep(_ stepID: UUID, on messageID: UUID, state: AgentStep.State, detail: String? = nil) {
+  func finishAgentStep(
+    _ stepID: UUID,
+    on messageID: UUID,
+    state: AgentStep.State,
+    detail: String? = nil,
+    results: [AgentStep.Result]? = nil
+  ) {
     updateAgentMessage(messageID) { message in
       guard let index = message.agentSteps.firstIndex(where: { $0.id == stepID }) else { return }
       message.agentSteps[index].state = state
       if let detail {
         message.agentSteps[index].detail = detail
+      }
+      if let results {
+        message.agentSteps[index].results = results
       }
     }
   }

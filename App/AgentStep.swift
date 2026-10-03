@@ -16,4 +16,15 @@ struct AgentStep: Identifiable, Hashable {
   /// What came of it: how many records were found, or why it stopped.
   var detail: String?
   var state = State.running
+  /// For a search: what was searched for, and what it found.
+  var query: String?
+  var results: [Result] = []
+
+  /// One thing a search found: a record or a mail.
+  struct Result: Hashable {
+    var title: String
+    var subtitle: String?
+    /// Set for a record, so the trace can open it.
+    var meetingID: UUID?
+  }
 }
