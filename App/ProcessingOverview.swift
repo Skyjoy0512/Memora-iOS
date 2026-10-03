@@ -1,20 +1,16 @@
 import SwiftUI
 
 struct ProcessingOverview: View {
+  @Environment(MemoraModel.self) private var model
   var meeting: Meeting
 
   var body: some View {
     VStack(alignment: .leading, spacing: 18) {
-      HStack(spacing: 12) {
-        ProgressView()
-          .controlSize(.large)
-        VStack(alignment: .leading, spacing: 3) {
-          Text(primaryText)
-            .font(.headline)
-          Text("終わった内容から順に使えるようになります")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-        }
+      VStack(alignment: .leading, spacing: 6) {
+        WorkingStatus(label: primaryText, startedAt: model.processing.startedAt[meeting.id])
+        Text("終わった内容から順に使えるようになります")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
       }
 
       VStack(alignment: .leading, spacing: 12) {

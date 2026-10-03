@@ -21,6 +21,9 @@ final class ProcessingService {
   /// Records with a job running. The model persists this, so an interrupted job
   /// can be offered for retry after a restart.
   private(set) var activeIDs: Set<UUID> = []
+  /// When each running job began, so the screen can show how long it has run.
+  /// A job restored after a restart has no start time and shows none.
+  private(set) var startedAt: [UUID: Date] = [:]
   /// Called whenever `activeIDs` changes, so the model can persist it.
   var onActiveIDsChanged: (() -> Void)?
 
@@ -47,6 +50,7 @@ final class ProcessingService {
     runs[id]?.task.cancel()
     let token = UUID()
     setActive(id, active: true)
+    startedAt[id] = .now
 
     let task = Task { [weak self] in
       let outcome = await work()
@@ -64,6 +68,7 @@ final class ProcessingService {
   func cancel(_ id: UUID) {
     runs[id]?.task.cancel()
     runs[id] = nil
+    startedAt[id] = nil
     setActive(id, active: false)
   }
 
@@ -86,6 +91,7 @@ final class ProcessingService {
   private func end(_ id: UUID, token: UUID) {
     guard runs[id]?.id == token else { return }
     runs[id] = nil
+    startedAt[id] = nil
     setActive(id, active: false)
   }
 

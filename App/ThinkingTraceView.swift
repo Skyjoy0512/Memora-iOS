@@ -39,12 +39,22 @@ struct ThinkingTraceView: View {
         }
       } label: {
         HStack(spacing: 8) {
-          Image(icon: headerIcon)
-            .font(.footnote)
-            .foregroundStyle(working ? .secondary : .tertiary)
+          if working {
+            PixelLoader(pattern: message.isAgentReply ? .orbit : .drive)
+          } else {
+            Image(icon: headerIcon)
+              .font(.footnote)
+              .foregroundStyle(.tertiary)
+          }
           Group {
             if working {
-              ShimmerText(text: activeLabel)
+              HStack(spacing: 8) {
+                ShimmerText(text: activeLabel)
+                // The time since the question was sent, ticking for real.
+                ElapsedText(since: message.createdAt)
+                  .font(.caption.monospacedDigit())
+                  .foregroundStyle(.tertiary)
+              }
             } else {
               Text(isWaitingForApproval ? "確認を待っています" : doneLabel)
                 .foregroundStyle(.secondary)
