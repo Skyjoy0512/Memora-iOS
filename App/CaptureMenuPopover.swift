@@ -53,6 +53,12 @@ struct CaptureMenuPopover: View {
       }
     case .importAudio:
       isFileImporterPresented = true
+    case .phoneCall:
+      collapse()
+      Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+        model.openCalling()
+      }
     case .onlineMeeting:
       collapse()
       Task { @MainActor in

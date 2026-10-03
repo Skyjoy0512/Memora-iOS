@@ -161,6 +161,7 @@ extension MemoraModel {
     static let aiThread = "memoraAIThread"
     static let aiMemoryEnabled = "memora.ai.memoryEnabled"
     static let glossary = "memora.glossary"
+    static let verifiedCallerNumber = "memora.calling.verifiedNumber"
     static let customTemplates = "memoraCustomTemplates"
     static let webhooks = "memora.integrations.webhooks"
     static let mcpServers = "memora.integrations.mcpServers"

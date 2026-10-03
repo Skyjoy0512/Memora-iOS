@@ -3,6 +3,34 @@ import SwiftUI
 struct StateGalleryView: View {
   var body: some View {
     List {
+      Section {
+        NavigationLink("通話の設定（表示の確認）") {
+          CallIntroView {}
+        }
+        NavigationLink("通話の説明と録音の同意") {
+          CallExplanationView {}
+        }
+        NavigationLink("電話番号の登録") {
+          PhoneNumberEntryView { _ in }
+        }
+        NavigationLink("番号の確認") {
+          PhoneVerificationView(phoneNumber: "+819012345678") {}
+        }
+        NavigationLink("確認できました") {
+          CallVerifiedView {}
+        }
+        NavigationLink("連絡先をつなぐ") {
+          ConnectContactsView {}
+        }
+        NavigationLink("通話中の画面（デモ）") {
+          ActiveCallView(session: Self.demoCall) {}
+        }
+      } header: {
+        Text("通話")
+      } footer: {
+        Text("通話サービスが未接続でも画面を確認できます。通話中の画面はデモの表示で、電話はかかりません。")
+      }
+
       Section("権限と録音") {
         StateExampleRow(
           symbol: .micSlash,
@@ -122,4 +150,13 @@ private struct StateExampleRow: View {
     }
     .padding(.vertical, 5)
   }
+}
+
+extension StateGalleryView {
+  /// A call that is only drawn, never connected, for checking the screen.
+  @MainActor static let demoCall: PhoneCallSession = {
+    let session = PhoneCallSession(number: "+819012345678", contactName: "田中さん")
+    session.startedAt = .now
+    return session
+  }()
 }

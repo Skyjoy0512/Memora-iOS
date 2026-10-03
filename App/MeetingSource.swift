@@ -3,6 +3,8 @@ import Foundation
 enum MeetingSource: String, Hashable, Codable {
   case recording
   case importFile
+  /// A phone call placed from Memora.
+  case call
 
   var label: String {
     switch self {
@@ -10,6 +12,16 @@ enum MeetingSource: String, Hashable, Codable {
       "録音"
     case .importFile:
       "インポート"
+    case .call:
+      "通話"
+    }
+  }
+
+  var icon: MemoraIcon {
+    switch self {
+    case .recording: .waveform
+    case .importFile: .squareAndArrowDown
+    case .call: .phoneFill
     }
   }
 }

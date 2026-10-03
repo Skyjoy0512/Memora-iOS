@@ -77,6 +77,17 @@ struct RootTabView: View {
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
     }
+    .sheet(isPresented: $model.isCallSetupPresented) {
+      CallSetupFlow()
+    }
+    .sheet(isPresented: $model.isDialerPresented) {
+      DialerView()
+    }
+    .fullScreenCover(item: $model.activeCall) { session in
+      ActiveCallView(session: session) {
+        model.saveEndedCall(session)
+      }
+    }
     .sheet(isPresented: $model.isTeamCreationPresented) {
       TeamCreateSheet()
     }

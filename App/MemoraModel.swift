@@ -19,6 +19,12 @@ final class MemoraModel {
     didSet { UserDefaults.standard.set(currentTeamID, forKey: StorageKey.currentTeamID) }
   }
   var isTeamCreationPresented = false
+  var isCallSetupPresented = false
+  var isDialerPresented = false
+  /// The call on screen, while one is connected.
+  var activeCall: PhoneCallSession?
+  /// The telephony behind calls. Swapped for the real provider once connected.
+  @ObservationIgnored var callingService: any CallingService = UnconfiguredCallingService()
   var isTeamJoinPresented = false
   /// The cloud service behind teams. Swapped for the real one once connected.
   @ObservationIgnored var teamBackend: any TeamBackend = UnconfiguredTeamBackend()
@@ -653,7 +659,7 @@ final class MemoraModel {
     let aggregates = bySpace.mapValues { group in
       SpaceAggregate(
         meetingCount: group.count,
-        icons: group.prefix(4).map { $0.source == .recording ? .waveform : .squareAndArrowDown },
+        icons: group.prefix(4).map { $0.source.icon },
         latestDate: group.first?.createdAt
       )
     }

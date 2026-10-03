@@ -10,7 +10,7 @@ struct MeetingRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      MemoraIconBadge(symbol: meeting.source == .recording ? .waveform : .squareAndArrowDown)
+      MemoraIconBadge(symbol: meeting.source.icon)
 
       VStack(alignment: .leading, spacing: 6) {
         HStack(alignment: .firstTextBaseline, spacing: 8) {

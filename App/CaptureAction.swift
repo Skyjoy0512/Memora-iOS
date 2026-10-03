@@ -4,6 +4,7 @@ enum CaptureAction: CaseIterable, Identifiable {
   case recording
   case importAudio
   case onlineMeeting
+  case phoneCall
 
   var id: Self { self }
 
@@ -12,6 +13,7 @@ enum CaptureAction: CaseIterable, Identifiable {
     case .recording: "録音を開始"
     case .importAudio: "音声を取り込む"
     case .onlineMeeting: "オンライン会議"
+    case .phoneCall: "電話をかける"
     }
   }
 
@@ -20,6 +22,7 @@ enum CaptureAction: CaseIterable, Identifiable {
     case .recording: .waveform
     case .importAudio: .squareAndArrowDown
     case .onlineMeeting: .video
+    case .phoneCall: .phoneFill
     }
   }
 }

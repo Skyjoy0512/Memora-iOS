@@ -115,7 +115,7 @@ struct MeetingCard: View {
 
   private var badge: some View {
     HStack(spacing: 6) {
-      Image(icon: meeting.source == .recording ? .waveform : .squareAndArrowDown)
+      Image(icon: meeting.source.icon)
       Text(MemoraFormat.duration(meeting.duration))
     }
     .font(.caption.weight(.semibold))
