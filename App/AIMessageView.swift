@@ -49,8 +49,9 @@ struct AIMessageView: View {
   @ViewBuilder
   private var assistantReply: some View {
     VStack(alignment: .leading, spacing: 12) {
-      if !message.agentSteps.isEmpty {
-        AgentStepsView(steps: message.agentSteps)
+      // The trace: open while the AI works, one settled line afterwards.
+      if message.isThinking || !message.agentSteps.isEmpty || message.details != nil {
+        ThinkingTraceView(message: message)
       }
 
       if let approval = model.pendingAgentApproval, approval.messageID == message.id {
@@ -58,45 +59,13 @@ struct AIMessageView: View {
           .transition(.opacity.combined(with: .scale(scale: 0.97)))
       }
 
-      if message.isThinking {
-        // While an approval card is up, the agent is waiting, not thinking.
-        if model.pendingAgentApproval?.messageID != message.id {
-          HStack(spacing: 10) {
-            ThinkingOrbView(state: .searching, size: 20)
-            Text(message.agentSteps.isEmpty ? "考えています…" : "作業しています…")
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-          }
-          .accessibilityElement(children: .ignore)
-          .accessibilityLabel(message.agentSteps.isEmpty ? "考えています" : "作業しています")
-        }
-      } else {
-        if let details = message.details {
-          DisclosureGroup {
-            VStack(alignment: .leading, spacing: 6) {
-              detailRow("対象", details.scopeLabel)
-              detailRow(
-                "エンジン",
-                details.modelLabel.map { "\(details.engineLabel) · \($0)" } ?? details.engineLabel
-              )
-              detailRow("AIに渡した参考資料", "\(details.sourceCount)件")
-              detailRow("生成", details.generatedAt.formatted(date: .abbreviated, time: .shortened))
-            }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .padding(.top, 6)
-          } label: {
-            Label("AIに渡した参考資料・処理情報", icon: .infoCircle)
-              .font(.subheadline.weight(.medium))
-              .foregroundStyle(.secondary)
-          }
-          .tint(.secondary)
-        }
-
+      if !message.isThinking {
         StreamingText(text: message.text, lineSpacing: 5, animates: animates)
       }
 
-      if !message.isThinking, !message.sources.isEmpty {
+      // The records are listed in the trace; here only the lines worth
+      // playing back are kept.
+      if !message.isThinking, message.sources.contains(where: { !$0.excerpts.isEmpty }) {
         sourceList
       }
 
@@ -124,26 +93,15 @@ struct AIMessageView: View {
     return parts.joined(separator: "、")
   }
 
-  private func detailRow(_ title: String, _ value: String) -> some View {
-    HStack(alignment: .firstTextBaseline, spacing: 8) {
-      Text(title)
-        .foregroundStyle(.tertiary)
-      Text(value)
-      Spacer(minLength: 0)
-    }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel("\(title): \(value)")
-  }
-
   /// The records the answer was built from, each opening the record; each stored
   /// excerpt in it plays from its own time.
   private var sourceList: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("AIに渡した参考資料")
+      Text("根拠になった発言")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
 
-      ForEach(message.sources) { source in
+      ForEach(message.sources.filter { !$0.excerpts.isEmpty }) { source in
         VStack(alignment: .leading, spacing: 6) {
           NavigationLink {
             MeetingDetailView(meetingID: source.meetingID)

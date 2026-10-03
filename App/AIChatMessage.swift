@@ -23,4 +23,15 @@ struct AIChatMessage: Identifiable, Hashable {
   /// True while the reply is still being formed.
   var isThinking = false
   var createdAt = Date.now
+  /// When the reply settled, for "4秒で回答".
+  var finishedAt: Date?
+  /// The words the records were searched with, shown at the top of the trace.
+  var traceQuery: String?
+  /// True for a reply the agent wrote, whose steps can change data.
+  var isAgentReply = false
+
+  /// How long the reply took, in whole seconds, once it has settled.
+  var elapsedSeconds: Int? {
+    finishedAt.map { max(1, Int($0.timeIntervalSince(createdAt).rounded())) }
+  }
 }

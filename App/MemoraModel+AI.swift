@@ -26,7 +26,9 @@ extension MemoraModel {
     // An agent paused on an approval card is declined, so it does not resume.
     resolveAgentApproval(false)
     if let index = aiMessages.lastIndex(where: { $0.role == .assistant && $0.isThinking }) {
+      settleTraceSteps(at: index, as: .declined)
       aiMessages[index].isThinking = false
+      aiMessages[index].finishedAt = .now
       if aiMessages[index].text.isEmpty {
         aiMessages[index].text = "回答を停止しました。"
       }
@@ -35,12 +37,19 @@ extension MemoraModel {
     persistAIThread()
   }
 
+  /// Finishes whatever trace steps were still running when the reply settled.
+  func settleTraceSteps(at index: Int, as state: AgentStep.State) {
+    for step in aiMessages[index].agentSteps.indices where aiMessages[index].agentSteps[step].state == .running {
+      aiMessages[index].agentSteps[step].state = state
+    }
+  }
+
   /// Whether the reply can be asked for again: the latest plain answer, since
   /// re-running an agent could repeat changes it already made.
   func canRetryAIAnswer(_ messageID: UUID) -> Bool {
     guard !isAIChatResponding, !isAgentModeEnabled,
           let last = aiMessages.last, last.id == messageID, last.role == .assistant,
-          last.agentSteps.isEmpty else { return false }
+          !last.isAgentReply else { return false }
     return aiMessages.dropLast().last?.role == .user
   }
 
@@ -97,7 +106,14 @@ extension MemoraModel {
       for: trimmed,
       budget: AIEngineService.contextCharacterLimit(for: engine) / 6
     )
-    let placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
+    // The trace shows what really happens: the search, then the writing.
+    let searchStep = AgentStep(icon: .magnifyingglass, title: "関係する記録を探す")
+    var placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
+    placeholder.agentSteps = [searchStep]
+    // The question as asked, on one line; the internal search words are
+    // fragments that would read as noise.
+    let oneLine = trimmed.replacingOccurrences(of: "\n", with: " ")
+    placeholder.traceQuery = oneLine.isEmpty ? nil : String(oneLine.prefix(60))
     aiMessages.append(placeholder)
     isAIChatResponding = true
 
@@ -105,6 +121,7 @@ extension MemoraModel {
     aiChatTask = Task { [weak self] in
       guard let self else { return }
       let allowedMeetings = Self.meetings(in: scope, from: self.meetings)
+      let writeStep = AgentStep(icon: .squareAndPencil, title: "回答を書く")
       let outcome = await self.answer(
         request: AIQuestionRequest(question: trimmed, scope: .global, attachment: attachment),
         scopeLabel: scope.scopeLabel,
@@ -113,7 +130,18 @@ extension MemoraModel {
         history: history,
         personal: personal,
         engine: engine,
-        llm: llm
+        llm: llm,
+        onContextReady: { [weak self] sources in
+          guard let self, self.aiChatRequestID == requestID else { return }
+          self.updateAgentMessage(placeholder.id) { message in
+            message.sources = sources
+            if let index = message.agentSteps.firstIndex(where: { $0.id == searchStep.id }) {
+              message.agentSteps[index].state = .done
+              message.agentSteps[index].detail = sources.isEmpty ? "見つかりませんでした" : "\(sources.count)件"
+            }
+            message.agentSteps.append(writeStep)
+          }
+        }
       )
 
       // A newer chat or question owns the screen now; this result is stale, and
@@ -145,8 +173,10 @@ extension MemoraModel {
           self.aiMessages[index].text = text
           self.aiMessages[index].details = outcome.details
           self.aiMessages[index].isThinking = false
+          self.aiMessages[index].finishedAt = .now
           // Only records that were actually sent are offered as grounds.
           self.aiMessages[index].sources = outcome.sources
+          self.settleTraceSteps(at: index, as: .done)
         }
         self.saveAIExchange(
           question: outcome.question,
@@ -163,6 +193,10 @@ extension MemoraModel {
           self.aiMessages[index].text = failure.message
           self.aiMessages[index].details = outcome.details
           self.aiMessages[index].isThinking = false
+          self.aiMessages[index].finishedAt = .now
+          // A failed answer rests on nothing, so it offers no records.
+          self.aiMessages[index].sources = []
+          self.settleTraceSteps(at: index, as: .failed)
         }
       }
     }
@@ -181,7 +215,8 @@ extension MemoraModel {
     history: String,
     personal: String = "",
     engine: AIEngine,
-    llm: LLMSelection
+    llm: LLMSelection,
+    onContextReady: (([AIChatSource]) -> Void)? = nil
   ) async -> AIAnswerOutcome {
     var content = Self.requestContent(
       for: request,
@@ -215,6 +250,9 @@ extension MemoraModel {
         contextNote: content.contextNote
       )
     }
+
+    // The records are chosen; what remains is the engine writing the answer.
+    onContextReady?(content.sources)
 
     var result = await AIEngineService.answer(
       engine: engine,

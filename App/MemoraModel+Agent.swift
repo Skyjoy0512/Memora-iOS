@@ -50,7 +50,8 @@ extension MemoraModel {
 
     let requestID = UUID()
     aiChatRequestID = requestID
-    let placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
+    var placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
+    placeholder.isAgentReply = true
     aiMessages.append(placeholder)
     isAIChatResponding = true
 
@@ -106,6 +107,7 @@ extension MemoraModel {
           $0.text = text
           $0.details = details
           $0.isThinking = false
+          $0.finishedAt = .now
         }
         self.saveAIExchange(
           question: trimmed,
@@ -120,6 +122,7 @@ extension MemoraModel {
           $0.text = failure.message
           $0.details = details
           $0.isThinking = false
+          $0.finishedAt = .now
         }
       }
     }
