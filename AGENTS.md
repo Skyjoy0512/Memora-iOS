@@ -74,7 +74,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   as its own record and is never re-recorded automatically. Voice input is
   refused (with a reason) while a recording owns the audio session.
 - Sign-in and purchase are not connected: the screens say so, and no account is
-  created from them. Plans are ライト / Pro / アンリミテッド (`MemoraPlan`,
+  created from them. Plans are ライト / Pro / アンリミテッド / チーム (`MemoraPlan`,
   `choosePlan`, a local preference until StoreKit is connected); each caps its
   Memora Intelligence credits and cloud transcription so that, used to the
   full, it costs less than it earns — the numbers and the conditions that keep
@@ -82,7 +82,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   signed with Ed25519 (`LicenseCodeVerifier`, public key under the Info.plist
   key `MemoraLicensePublicKey`, codes issued with `tools/memora-license.swift`;
   the private key never enters the repository); it outranks the personal plan
-  (`effectivePlan`) and is what unlocks team features (`hasTeamPlan`).
+  (`effectivePlan`). Team features need the team plan or a license
+  (`hasTeamPlan`). Transcription is on-device only on every plan for now.
   `MemoraAccount` stays in the model for a later phase.
 - Memora Intelligence (`AIEngine.memora`, `MemoraIntelligence`) is the
   OpenAI-compatible cloud path pointed at Memora's own server

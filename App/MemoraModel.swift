@@ -362,8 +362,8 @@ final class MemoraModel {
   var plan: MemoraPlan?
   /// A company license activated with a code; it outranks the personal plan.
   var license: MemoraLicense?
-  /// Team features come with a company license.
-  var hasTeamPlan: Bool { activeLicense != nil }
+  /// Team features come with the team plan or a company license.
+  var hasTeamPlan: Bool { activeLicense != nil || plan?.includesTeam == true }
   var hasOfferedPlus: Bool
 
   @ObservationIgnored var recordingURL: URL?
@@ -408,10 +408,11 @@ final class MemoraModel {
 
     hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
-    // Earlier builds stored "personal" or "team"; both become Pro, since
-    // neither was billed and team features now come with a company license.
+    // Earlier builds stored "personal" or "team"; neither was billed, so they
+    // carry over as Pro and the team plan.
+    let legacyTier = defaults.string(forKey: StorageKey.planTier)
     let storedPlan = defaults.string(forKey: StorageKey.plan)
-      ?? (defaults.string(forKey: StorageKey.planTier) != nil ? MemoraPlan.pro.rawValue : nil)
+      ?? legacyTier.map { $0 == "team" ? MemoraPlan.team.rawValue : MemoraPlan.pro.rawValue }
     plan = storedPlan.flatMap(MemoraPlan.init(rawValue:))
     license = MemoraModel.storedLicense()
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)

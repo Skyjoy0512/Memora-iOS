@@ -113,7 +113,7 @@ struct SettingsView: View {
               model.isPaywallPresented = true
             } label: {
               LabeledContent {
-                Text("法人ライセンスで利用可")
+                Text("チームプランで利用可")
                   .foregroundStyle(.secondary)
               } label: {
                 SettingsLabel("チーム共有", icon: .person3Fill, color: Tint.plan, glyphScale: 0.72)
@@ -123,7 +123,7 @@ struct SettingsView: View {
         } header: {
           Text("プラン")
         } footer: {
-          Text("購入はまだ接続されていません。プランはこの端末の設定として保存します。チーム機能は法人ライセンスで利用できます。")
+          Text("購入はまだ接続されていません。プランはこの端末の設定として保存します。チーム機能はチームプランか法人ライセンスで利用できます。")
         }
 
         Section {

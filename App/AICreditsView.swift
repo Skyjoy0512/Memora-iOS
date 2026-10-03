@@ -18,9 +18,7 @@ struct AICreditsView: View {
             Text("まだ使っていません").foregroundStyle(.secondary)
           }
         }
-        if let plan = model.effectivePlan, plan.cloudTranscriptionHours > 0 {
-          LabeledContent("クラウド文字起こし", value: "\(plan.cloudTranscriptionHours)時間/月")
-        }
+        LabeledContent("文字起こし", value: "端末内（無制限）")
       } footer: {
         if let blocker = model.memoraIntelligenceBlocker {
           Text(blocker)

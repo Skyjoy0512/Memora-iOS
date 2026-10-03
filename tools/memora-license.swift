@@ -58,7 +58,7 @@ case "issue":
   }
   guard let company = value("--company", in: args) else { fail("--company が必要です") }
   let plan = value("--plan", in: args) ?? "unlimited"
-  guard ["light", "pro", "unlimited"].contains(plan) else { fail("--plan は light / pro / unlimited") }
+  guard ["light", "pro", "unlimited", "team"].contains(plan) else { fail("--plan は light / pro / unlimited / team") }
   let seats = Int(value("--seats", in: args) ?? "1") ?? 1
   let days = Double(value("--days", in: args) ?? "365") ?? 365
   let payload: [String: Any] = [
