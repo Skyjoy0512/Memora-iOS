@@ -43,32 +43,55 @@ struct SummaryTemplateDetailView: View {
         .padding(.vertical, 6)
       }
 
-      Section {
-        outlineRow("概要", detail: "この観点で重要なことを3〜5文")
-        ForEach(template.sections, id: \.self) { section in
-          outlineRow(section, detail: nil)
+      if template.usesPrompt {
+        Section {
+          Text(template.prompt)
+            .textSelection(.enabled)
+        } header: {
+          Text("プロンプト")
+        } footer: {
+          Text(template.includesActions ? "最後にアクションアイテムを付け、タスクに追加します。" : "")
         }
-        if template.includesActions {
-          outlineRow("アクションアイテム", detail: "担当と期限つき。タスクに追加されます")
-        }
-      } header: {
-        Text("できあがる要約の構成")
-      } footer: {
-        if !template.focus.isEmpty {
-          Text("注目すること: \(template.focus)")
+      } else {
+        Section {
+          outlineRow("概要", detail: "この観点で重要なことを3〜5文")
+          ForEach(template.sections, id: \.self) { section in
+            outlineRow(section, detail: nil)
+          }
+          if template.includesActions {
+            outlineRow("アクションアイテム", detail: "担当と期限つき。タスクに追加されます")
+          }
+        } header: {
+          Text("できあがる要約の構成")
+        } footer: {
+          if !template.focus.isEmpty {
+            Text("注目すること: \(template.focus)")
+          }
         }
       }
 
       Section {
         if template.isCustom {
           Button("編集", icon: .pencil) { editing = template }
-        } else if isAdded {
-          Button("要約の選択肢から外す", icon: .minusCircle, role: .destructive) {
-            model.uninstallTemplate(template.id)
-          }
         } else {
-          Button("追加", icon: .plusCircle) {
-            model.installTemplate(template.id)
+          Button("これをもとに自分用を作る", icon: .squareAndPencil) {
+            var copy = template
+            copy.id = "custom.\(UUID().uuidString)"
+            copy.title = "\(template.title)（自分用）"
+            copy.isCustom = true
+            editing = copy
+          }
+        }
+
+        if !template.isCustom {
+          if isAdded {
+            Button("要約の選択肢から外す", icon: .minusCircle, role: .destructive) {
+              model.uninstallTemplate(template.id)
+            }
+          } else {
+            Button("追加", icon: .plusCircle) {
+              model.installTemplate(template.id)
+            }
           }
         }
 

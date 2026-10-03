@@ -1,14 +1,21 @@
 import SwiftUI
 
-/// Writes or edits one of the person's own templates: a name, what to pay
-/// attention to, and the sections to write under.
+/// Writes or edits one of the person's own templates as a prompt: in their own
+/// words, how a summary should be written.
 struct SummaryTemplateEditor: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @State private var template: SummaryMarketTemplate
-  @State private var newSection = ""
+  @FocusState private var isPromptFocused: Bool
 
   init(template: SummaryMarketTemplate) {
+    var template = template
+    // A template saved with sections opens as the equivalent prompt.
+    if !template.usesPrompt, !template.sections.isEmpty {
+      var lines = ["次の見出しでまとめてください: " + template.sections.joined(separator: "、")]
+      if !template.focus.isEmpty { lines.append(template.focus) }
+      template.prompt = lines.joined(separator: "\n")
+    }
     _template = State(initialValue: template)
   }
 
@@ -16,12 +23,19 @@ struct SummaryTemplateEditor: View {
     .docText, .person2, .briefcase, .lightbulb, .checkmarkSeal, .flag, .chartBar, .graduationcap
   ]
 
+  /// Starting points, for a blank page.
+  private static let examples: [(title: String, prompt: String)] = [
+    ("上司への報告", "上司に報告するメールとして書いてください。結論を最初に3行で、そのあと経緯と次のアクションを箇条書きで。敬語で簡潔に。"),
+    ("商談メモ（CRM用）", "CRMに貼る商談メモにしてください。顧客の課題、予算、決裁者、導入時期、競合、温度感（高・中・低）、次のアクションの順に、各1〜2行で。分からない項目は「不明」と書いてください。"),
+    ("3行まとめ", "会議の内容を3行だけでまとめてください。1行目は結論、2行目は理由、3行目は次にやること。"),
+    ("議事録（社内提出用）", "社内提出用の議事録にしてください。日時・参加者・議題・決定事項・保留事項・次回までの宿題の見出しで、です・ます調で書いてください。")
+  ]
+
   var body: some View {
     NavigationStack {
       Form {
         Section {
-          TextField("名前（例: 週次営業会議）", text: $template.title)
-          TextField("説明（任意）", text: $template.detail)
+          TextField("名前（例: 上司への報告）", text: $template.title)
           Picker("アイコン", selection: $template.symbol) {
             ForEach(Self.symbols, id: \.self) { symbol in
               Image(icon: symbol).tag(symbol)
@@ -31,40 +45,36 @@ struct SummaryTemplateEditor: View {
         }
 
         Section {
-          TextField("例: 数値と担当者を必ず残す。雑談は省く", text: $template.focus, axis: .vertical)
-            .lineLimit(2...5)
-        } header: {
-          Text("注目すること")
-        } footer: {
-          Text("AIへの指示として使います。何を重視し、何を省くかを書きます。")
-        }
+          TextField(
+            "例: 営業の上司に報告する形で、顧客の温度感と次のアクションを中心に3行でまとめて",
+            text: $template.prompt,
+            axis: .vertical
+          )
+          .lineLimit(6...16)
+          .focused($isPromptFocused)
 
-        Section {
-          ForEach(template.sections, id: \.self) { section in
-            Text(section)
-              .swipeActions {
-                Button("削除", icon: .trash, role: .destructive) {
-                  template.sections.removeAll { $0 == section }
+          Menu {
+            ForEach(Self.examples, id: \.title) { example in
+              Button(example.title) {
+                template.prompt = example.prompt
+                if template.title.trimmingCharacters(in: .whitespaces).isEmpty {
+                  template.title = example.title
                 }
               }
-          }
-          .onMove { template.sections.move(fromOffsets: $0, toOffset: $1) }
-
-          HStack {
-            TextField("見出しを追加", text: $newSection)
-              .submitLabel(.done)
-              .onSubmit(addSection)
-            Button("追加", action: addSection)
-              .disabled(newSection.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+          } label: {
+            Label("例から始める", icon: .sparkles)
           }
         } header: {
-          Text("見出し")
+          Text("プロンプト")
         } footer: {
-          Text("要約はこの順番の見出しで書かれます。長押しで並べ替えられます。")
+          Text("どんな形で、何を中心に、どのくらいの長さでまとめるかを書きます。AIはこの指示どおりに要約します。文字起こしに無いことは書きません。")
         }
 
         Section {
           Toggle("アクションアイテム（タスク）を作る", isOn: $template.includesActions)
+        } footer: {
+          Text("オンにすると、要約の最後に担当と期限つきの行動を付け、タスクに追加します。")
         }
       }
       .navigationTitle(model.customTemplates.contains { $0.id == template.id } ? "テンプレートを編集" : "テンプレートを作成")
@@ -74,22 +84,28 @@ struct SummaryTemplateEditor: View {
           ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("保存") {
-            addSection()
-            template.title = template.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            model.saveCustomTemplate(template)
-            dismiss()
-          }
-          .disabled(template.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || template.sections.isEmpty && newSection.isEmpty)
+          Button("保存", action: save)
+            .disabled(!canSave)
         }
+      }
+      .onAppear {
+        if template.prompt.isEmpty { isPromptFocused = true }
       }
     }
   }
 
-  private func addSection() {
-    let trimmed = newSection.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty, !template.sections.contains(trimmed) else { return }
-    template.sections.append(trimmed)
-    newSection = ""
+  private var canSave: Bool {
+    !template.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && template.usesPrompt
+  }
+
+  private func save() {
+    template.title = template.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    template.prompt = template.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+    // The prompt now says how to write it; old sections would only confuse.
+    template.sections = []
+    template.focus = ""
+    template.detail = String(template.prompt.replacingOccurrences(of: "\n", with: " ").prefix(60))
+    model.saveCustomTemplate(template)
+    dismiss()
   }
 }

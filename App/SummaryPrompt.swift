@@ -201,6 +201,9 @@ enum SummaryPrompt {
   }
 
   private static func marketFormat(_ template: SummaryMarketTemplate, input: MeetingSummaryInput) -> String {
+    if template.usesPrompt {
+      return promptFormat(template, input: input)
+    }
     let focus = template.focus.trimmingCharacters(in: .whitespacesAndNewlines)
     let sections = template.sections.isEmpty
       ? "## {この観点に合った見出し}\n- {具体的な内容。誰が何を述べたか}\n（観点に合わせて ## の見出しを2〜4個立てる）"
@@ -226,4 +229,30 @@ enum SummaryPrompt {
     """
   }
 
+  /// A template written as the person's own prompt: their instructions lead,
+  /// and only what the app needs to read the result back is added.
+  private static func promptFormat(_ template: SummaryMarketTemplate, input: MeetingSummaryInput) -> String {
+    let actions = template.includesActions ? """
+
+    最後に、会議で決まった行動があれば次の表を付ける（無ければ表ごと省く）。
+    ## アクションアイテム
+    | タイトル | 説明 | 責任者 | 期限 | 備考 |
+    |:---|:---|:---|:---|:---|
+    | {件名} | {何をするか} | {話者ラベルまたは未定} | {述べられた期限または未定} | {備考} |
+    """ : ""
+
+    return """
+    利用者が指定したまとめ方です。この指示に従って書く。
+
+    ---
+    \(template.prompt.trimmingCharacters(in: .whitespacesAndNewlines))
+    ---
+
+    指示に書かれていない部分は次に従う。
+    - Markdownで書き、先頭に会議の内容が分かる「# 見出し」を1つ置く。
+    - 日時は \(input.dateText)。
+    - 指示が文字起こしに無い内容を求めても、事実を作らず「記録なし」と書く。\(actions)
+    """
+  }
 }
+

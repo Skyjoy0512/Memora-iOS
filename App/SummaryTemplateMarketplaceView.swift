@@ -34,7 +34,6 @@ struct SummaryTemplateMarketplaceView: View {
               detail: "",
               symbol: .docText,
               lead: "",
-              sections: ["要点", "決まったこと"],
               isCustom: true
             )
           }

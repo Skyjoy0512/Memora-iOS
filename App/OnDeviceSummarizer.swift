@@ -216,7 +216,9 @@ enum OnDeviceSummarizer {
       notes += block + "\n"
     }
 
-    let lens: String = if case .market(let template) = input.template {
+    let lens: String = if case .market(let template) = input.template, template.usesPrompt {
+      "次の指示に沿って（\(template.prompt.prefix(300))）"
+    } else if case .market(let template) = input.template {
       "「\(template.lead)」の観点で"
     } else {
       ""

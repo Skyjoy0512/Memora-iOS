@@ -172,7 +172,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - Summary templates: a marketplace of business templates by category
   (`SummaryTemplateCatalog`, `SummaryTemplateCategory`), each with its own
   `sections`, `focus` and whether it writes an action table; the person can
-  write their own (`customTemplates`, in the record store) and choose the
+  write their own as a free prompt (`prompt`, followed instead of sections;
+  `SummaryPrompt.promptFormat` only adds the heading and action table the app
+  reads back) and keep it in `customTemplates` (record store; older saved
+  templates decode with defaults) and choose the
   default 自動生成 uses (`defaultTemplateID`, `defaultSummaryChoice`). Catalog
   ids are kept so templates added in older builds stay added.
 - Integrations: webhooks (Settings › 連携 › Webhook, `WebhookEndpoint`,
