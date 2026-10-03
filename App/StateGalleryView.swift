@@ -34,6 +34,12 @@ struct StateGalleryView: View {
       }
 
       Section {
+        NavigationLink("プロジェクトの提案（表示の確認）") {
+          ScrollView {
+            ProjectSuggestionCard(meeting: Self.demoMeeting, suggestions: Self.demoSuggestions)
+              .padding(18)
+          }
+        }
         NavigationLink("エージェントからの質問（表示の確認）") {
           ScrollView {
             AgentQuestionCard(request: Self.demoQuestions)
@@ -186,5 +192,27 @@ extension StateGalleryView {
       AgentQuestion(text: "宛先はどなたですか？", allowsMultiple: false, options: ["Tanakaさん", "参加者全員"])
     ]
   )
+}
+
+extension StateGalleryView {
+  /// A record that is only drawn, for checking the suggestion card.
+  static let demoMeeting = Meeting(
+    id: UUID(), title: "週次定例", createdAt: .now, duration: 1_800, source: .recording,
+    status: .ready, summary: "", keyPoints: [], decisions: [], openQuestions: [],
+    transcript: [], spaceID: nil, audioURL: nil
+  )
+
+  static let demoSuggestions = [
+    ProjectSuggestion(
+      space: MemoraSpace(id: UUID(), name: "WeeklySync", symbol: "folder"),
+      signal: 3,
+      reasons: ["同じカレンダーの定例の記録が入っています", "Tanakaさんの記録が入っています"]
+    ),
+    ProjectSuggestion(
+      space: MemoraSpace(id: UUID(), name: "新規事業", symbol: "folder"),
+      signal: 2,
+      reasons: ["Satoさんの記録が入っています", "会議名にプロジェクト名が含まれています"]
+    )
+  ]
 }
 

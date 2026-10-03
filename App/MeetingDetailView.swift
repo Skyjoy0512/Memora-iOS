@@ -555,6 +555,13 @@ struct MeetingDetailView: View {
 
   @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
+    // Offered only when the records give a reason; otherwise nothing shows.
+    let suggestions = model.projectSuggestions(for: meeting)
+    if !suggestions.isEmpty {
+      ProjectSuggestionCard(meeting: meeting, suggestions: suggestions)
+        .transition(.opacity)
+    }
+
     CollapsibleInsightSection(.summary, showsDivider: false) {
       // A generated document reads and edits at body size; a short summary
       // keeps its large single-text look.

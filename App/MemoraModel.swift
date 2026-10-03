@@ -146,6 +146,8 @@ final class MemoraModel {
   var mcpServers: [MCPServerConfig] = MemoraModel.storedSetting([MCPServerConfig].self, forKey: StorageKey.mcpServers) ?? [] {
     didSet { MemoraModel.storeSetting(mcpServers, forKey: StorageKey.mcpServers) }
   }
+  /// Bumped when a project suggestion is dismissed, so screens re-read it.
+  var dismissedSuggestionRevision = 0
   /// The MCP tools offered to the running agent, by the name the model uses.
   @ObservationIgnored var activeMCPTools: [String: MCPTool] = [:]
   /// Templates the person wrote. User content, so kept in the record store.

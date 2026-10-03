@@ -131,6 +131,17 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   to check) for the agent's tools; Reasoning only when the model returned
   reasoning text (Claude thinking, `reasoning_content`). A reply with none of
   these shows no trace. Never add rows that did not happen.
+- The same rule (only what really happened) governs the other AI pieces:
+  `WorkingStatus`/`PixelLoader` time long work from its real start
+  (`ProcessingService.startedAt`, the question's send time); answers cite
+  records as 【資料n】 and only numbers matching a sent source become links
+  (`AnswerCitations`); follow-ups are built from decisions, tasks and open
+  questions the cited records hold (`followUps(for:)`); the agent asks the
+  person through `ask_user` (`AgentQuestionCard`) only when the records cannot
+  tell it; trace rows open to the lines the tool really returned
+  (`runAgentTool`); a project is suggested for an unfiled record only from
+  evidence — calendar series, meeting name, shared people
+  (`projectSuggestions(for:)`, `ProjectSuggestionCard`).
 - Personal memory: Ask AI keeps what the person told it (「〇〇を覚えておいて」,
   Settings › メモリ, or the agent's `save_memory` after approval) in
   `aiMemories`, and sends it with every question together with related past
