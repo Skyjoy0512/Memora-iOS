@@ -9,7 +9,7 @@ struct CaptureMenuPopover: View {
 
   var body: some View {
     VStack(spacing: 2) {
-      ForEach(CaptureAction.allCases) { action in
+      ForEach(CaptureAction.available) { action in
         Button {
           select(action)
         } label: {

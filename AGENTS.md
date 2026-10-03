@@ -56,7 +56,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   open (`isSearchActive`), the tab bar and Ask AI hide and the screen shows only
   results, never the list behind them. Do not bring back an always-visible
   `.searchable` drawer. The ＋ menu holds capture actions
-  only (record, import, online meeting, phone call); memos are added from the Journal
+  only (record, import, online meeting; phone call while its flag is on); memos are added from the Journal
   toolbar and projects from the side menu.
 - **Journal (Home)**: the tab's own `ScrollView`/`List` must stay the screen's
   primary scroll view, so the large title collapses the way the system expects.
@@ -149,7 +149,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   is filed into the project its last occurrence of the same calendar series is
   in (`recurringProjectID`); a title that only looks alike is never used for
   filing.
-- Calls: the ＋ menu's 電話をかける sets up calling the first time
+- Calls are hidden for now (`FeatureFlags.isCallingEnabled = false`): the
+  next step is calling between Memora users inside the app (WebRTC with
+  Firebase signalling, PushKit/CallKit, a free-tier TURN relay), not a phone
+  line. When enabled, the ＋ menu's 電話をかける sets up calling the first time
   (`CallSetupFlow`: intro, consent notice, own number, verification call,
   contacts) and then opens `DialerView`. A call is carried by a calling
   provider (Twilio Voice or similar) through `CallingService`, because iOS

@@ -8,6 +8,11 @@ enum CaptureAction: CaseIterable, Identifiable {
 
   var id: Self { self }
 
+  /// The actions the ＋ menu shows; calling waits behind its flag.
+  static var available: [CaptureAction] {
+    allCases.filter { $0 != .phoneCall || FeatureFlags.isCallingEnabled }
+  }
+
   var title: String {
     switch self {
     case .recording: "録音を開始"
