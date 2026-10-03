@@ -62,6 +62,12 @@ struct AIMessageView: View {
           .transition(.opacity.combined(with: .scale(scale: 0.97)))
       }
 
+      if let questions = model.pendingAgentQuestions, questions.messageID == message.id {
+        AgentQuestionCard(request: questions)
+          .id(questions.id)
+          .transition(.opacity.combined(with: .move(edge: .bottom)))
+      }
+
       if !message.isThinking {
         answerText
       }

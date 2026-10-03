@@ -27,6 +27,7 @@ struct ThinkingTraceView: View {
 
   var body: some View {
     let isWaitingForApproval = model.pendingAgentApproval?.messageID == message.id
+      || model.pendingAgentQuestions?.messageID == message.id
     let working = message.isThinking && !isWaitingForApproval
     let canExpand = hasRows
     let expanded = canExpand && (manualExpanded ?? (message.isThinking || isWaitingForApproval))

@@ -20,6 +20,7 @@ enum AgentTool: String, CaseIterable {
   case saveMemory = "save_memory"
   case searchEmail = "search_email"
   case readEmail = "read_email"
+  case askUser = "ask_user"
 
   /// The tools offered right now: mail only while Gmail is connected, so the
   /// model is never handed a tool that cannot work.
@@ -48,7 +49,7 @@ enum AgentTool: String, CaseIterable {
   /// True for tools that change the person's data.
   var needsApproval: Bool {
     switch self {
-    case .searchRecords, .readRecord, .readPerson, .listProjects, .listTasks, .searchEmail, .readEmail: false
+    case .searchRecords, .readRecord, .readPerson, .listProjects, .listTasks, .searchEmail, .readEmail, .askUser: false
     default: true
     }
   }
@@ -70,6 +71,7 @@ enum AgentTool: String, CaseIterable {
     case .saveToNotion: .notionLogo
     case .saveMemory: .brainHeadProfile
     case .searchEmail, .readEmail: .envelopeOpen
+    case .askUser: .questionmarkBubble
     }
   }
 
@@ -109,6 +111,8 @@ enum AgentTool: String, CaseIterable {
       "利用者のGmailをGmailの検索構文で検索し、id・差出人・件名・日時・冒頭を返す。例: from:tanaka newer_than:7d、subject:見積"
     case .readEmail:
       "search_emailで得たidのメールの本文を読む。"
+    case .askUser:
+      "作業に必要なことが記録から分からないときだけ、利用者に質問する（1〜3問、各2〜5個の選択肢）。利用者は自由に書いても答えられる。推測で進めると間違えるときに使う。"
     }
   }
 
@@ -199,6 +203,18 @@ enum AgentTool: String, CaseIterable {
       ], required: ["query"])
     case .readEmail:
       return object(["id": string("メールのid")], required: ["id"])
+    case .askUser:
+      return object([
+        "questions": [
+          "type": "array",
+          "description": "質問。1〜3問",
+          "items": object([
+            "question": string("質問文"),
+            "multiple": ["type": "boolean", "description": "複数選べるか"],
+            "options": ["type": "array", "items": ["type": "string"], "description": "選択肢（2〜5個）"]
+          ], required: ["question", "options"])
+        ]
+      ], required: ["questions"])
     }
   }
 

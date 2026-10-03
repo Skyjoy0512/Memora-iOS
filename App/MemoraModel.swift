@@ -182,6 +182,8 @@ final class MemoraModel {
   }
   /// The change the agent is waiting for the person to approve or decline.
   var pendingAgentApproval: AgentApproval?
+  /// Questions the agent asked and is waiting on.
+  var pendingAgentQuestions: AgentQuestionRequest?
   /// An email the agent drafted, waiting to open in the composer.
   var pendingMailDraft: MailDraft?
   var isAIChatResponding = false
@@ -358,6 +360,7 @@ final class MemoraModel {
   @ObservationIgnored var aiChatTask: Task<Void, Never>?
   /// Resumes the agent once its pending change is approved or declined.
   @ObservationIgnored var agentApprovalContinuation: CheckedContinuation<Bool, Never>?
+  @ObservationIgnored var agentQuestionsContinuation: CheckedContinuation<[String]?, Never>?
 
   /// Onboarding runs once. Sign-in and Plus stay optional so people can judge
   /// the app before committing to either.

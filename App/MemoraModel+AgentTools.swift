@@ -54,7 +54,35 @@ extension MemoraModel {
       return await searchEmailTool(call, messageID: messageID, compact: compact)
     case .readEmail:
       return await readEmailTool(call, messageID: messageID, compact: compact)
+    case .askUser:
+      return await askUserTool(call, messageID: messageID)
     }
+  }
+
+  // MARK: - Asking
+
+  private func askUserTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
+    let raw = call.arguments["questions"] as? [[String: Any]] ?? []
+    let questions = raw.prefix(3).compactMap { item -> AgentQuestion? in
+      let text = (item["question"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      let options = (item["options"] as? [Any] ?? []).compactMap { ($0 as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+      guard !text.isEmpty, !options.isEmpty else { return nil }
+      return AgentQuestion(text: text, allowsMultiple: item["multiple"] as? Bool ?? false, options: Array(options.prefix(5)))
+    }
+    guard !questions.isEmpty else { return AgentToolOutcome(text: "質問が空です。", isError: true) }
+
+    let stepID = beginAgentStep(AgentStep(icon: AgentTool.askUser.icon, title: "質問しました", detail: "回答待ち"), on: messageID)
+    let answers = await requestAgentQuestions(AgentQuestionRequest(messageID: messageID, questions: questions))
+    guard let answers, !Task.isCancelled else {
+      finishAgentStep(stepID, on: messageID, state: .declined, detail: "回答なし")
+      return AgentToolOutcome(text: "利用者は質問に答えずに閉じました。分かっている範囲で進めるか、何が必要か短く伝えてください。")
+    }
+    finishAgentStep(stepID, on: messageID, state: .done, detail: "\(answers.filter { !$0.isEmpty }.count)問に回答")
+    let lines = zip(questions, answers).map { question, answer in
+      "Q: \(question.text)\nA: \(answer.isEmpty ? "（回答なし）" : answer)"
+    }
+    return AgentToolOutcome(text: lines.joined(separator: "\n\n"))
   }
 
   // MARK: - Mail

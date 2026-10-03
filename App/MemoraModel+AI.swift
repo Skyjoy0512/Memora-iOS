@@ -8,6 +8,7 @@ extension MemoraModel {
   func startNewAIChat() {
     // An agent waiting on an approval card would never resume otherwise.
     resolveAgentApproval(false)
+    resolveAgentQuestions(nil)
     aiChatTask?.cancel()
     aiChatTask = nil
     aiChatRequestID = nil
@@ -25,6 +26,7 @@ extension MemoraModel {
     aiChatTask = nil
     // An agent paused on an approval card is declined, so it does not resume.
     resolveAgentApproval(false)
+    resolveAgentQuestions(nil)
     if let index = aiMessages.lastIndex(where: { $0.role == .assistant && $0.isThinking }) {
       settleTraceSteps(at: index, as: .declined)
       aiMessages[index].isThinking = false

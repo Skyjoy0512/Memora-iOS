@@ -33,6 +33,19 @@ struct StateGalleryView: View {
         }
       }
 
+      Section {
+        NavigationLink("エージェントからの質問（表示の確認）") {
+          ScrollView {
+            AgentQuestionCard(request: Self.demoQuestions)
+              .padding(18)
+          }
+        }
+      } header: {
+        Text("Ask AI")
+      } footer: {
+        Text("エージェントが本当に質問するのは、記録から分からないことがあるときだけです。ここは見た目の確認用で、答えはどこにも送られません。")
+      }
+
       Section("権限と録音") {
         StateExampleRow(
           symbol: .micSlash,
@@ -162,3 +175,16 @@ extension StateGalleryView {
     return session
   }()
 }
+
+extension StateGalleryView {
+  /// Questions that are only drawn, for checking the card.
+  static let demoQuestions = AgentQuestionRequest(
+    messageID: UUID(),
+    questions: [
+      AgentQuestion(text: "どの会議のフォローアップですか？", allowsMultiple: false, options: ["通話（9/30）", "WeeklySync（9/29）"]),
+      AgentQuestion(text: "メールに入れる内容は？", allowsMultiple: true, options: ["決まったこと", "次にすること", "未決事項"]),
+      AgentQuestion(text: "宛先はどなたですか？", allowsMultiple: false, options: ["Tanakaさん", "参加者全員"])
+    ]
+  )
+}
+
