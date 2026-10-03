@@ -12,6 +12,8 @@ struct ThinkingTraceView: View {
   var message: AIChatMessage
   /// Set by a tap; until then the trace opens while working and closes after.
   @State private var manualExpanded: Bool?
+  /// Steps opened to show what their tool returned.
+  @State private var openSteps: Set<UUID> = []
 
   private static let dotColors: [Color] = [.accentColor, .orange, .green]
   /// How many search results are listed before "+N件".
@@ -247,26 +249,73 @@ struct ThinkingTraceView: View {
     }
   }
 
+  /// One tool, as a row: what it did, its result as a chip, and — when opened
+  /// — the first lines the tool actually returned.
   private func stepRow(_ step: AgentStep) -> some View {
-    HStack(spacing: 8) {
-      stateMark(step.state)
-        .frame(width: 14)
-      Text(step.title)
-        .font(.footnote.weight(.medium))
-        .foregroundStyle(step.state == .declined ? .secondary : .primary)
-        .strikethrough(step.state == .declined)
-        .lineLimit(2)
-      if let detail = step.detail, !detail.isEmpty {
-        Text(detail)
-          .font(.caption)
-          .foregroundStyle(.tertiary)
-          .lineLimit(1)
+    let isOpen = openSteps.contains(step.id)
+    let canOpen = !step.output.isEmpty && step.state != .running
+
+    return VStack(alignment: .leading, spacing: 2) {
+      Button {
+        guard canOpen else { return }
+        withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+          if isOpen { openSteps.remove(step.id) } else { openSteps.insert(step.id) }
+        }
+      } label: {
+        HStack(spacing: 8) {
+          stateMark(step.state)
+            .frame(width: 14)
+          Text(step.title)
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(step.state == .declined ? .secondary : .primary)
+            .strikethrough(step.state == .declined)
+            .lineLimit(1)
+          if let detail = step.detail, !detail.isEmpty {
+            Text(detail)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 2)
+              .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+          }
+          Spacer(minLength: 0)
+          if canOpen {
+            Image(icon: .chevronDown)
+              .font(.caption2.weight(.semibold))
+              .foregroundStyle(.tertiary)
+              .rotationEffect(.degrees(isOpen ? 0 : -90))
+          }
+        }
+        .frame(minHeight: 28, alignment: .leading)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .disabled(!canOpen)
+      .accessibilityElement(children: .combine)
+      .accessibilityValue(stateLabel(step.state))
+      .accessibilityHint(canOpen ? "タップで結果を\(isOpen ? "閉じます" : "表示します")" : "")
+
+      if isOpen {
+        VStack(alignment: .leading, spacing: 2) {
+          ForEach(Array(step.output.enumerated()), id: \.offset) { _, line in
+            Text(line)
+              .font(.caption2.monospaced())
+              .foregroundStyle(.secondary)
+              .lineLimit(2)
+          }
+        }
+        .padding(.leading, 12)
+        .padding(.vertical, 4)
+        .overlay(alignment: .leading) {
+          Rectangle().fill(.quaternary).frame(width: 1)
+        }
+        .padding(.leading, 22)
+        .transition(.opacity.combined(with: .move(edge: .top)))
+        .textSelection(.enabled)
       }
     }
-    .frame(minHeight: 26, alignment: .leading)
     .transition(.opacity.combined(with: .offset(y: 6)))
-    .accessibilityElement(children: .combine)
-    .accessibilityValue(stateLabel(step.state))
   }
 
   @ViewBuilder

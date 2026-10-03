@@ -19,6 +19,8 @@ struct AgentStep: Identifiable, Hashable {
   /// For a search: what was searched for, and what it found.
   var query: String?
   var results: [Result] = []
+  /// The first lines the tool really returned, shown when its row is opened.
+  var output: [String] = []
 
   /// One thing a search found: a record or a mail.
   struct Result: Hashable {

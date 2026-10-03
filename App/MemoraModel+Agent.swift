@@ -167,7 +167,7 @@ extension MemoraModel {
 
       var results: [(call: AgentToolCall, outcome: AgentToolOutcome)] = []
       for call in turn.toolCalls {
-        let outcome = await performAgentTool(call, messageID: messageID, scope: scope)
+        let outcome = await runAgentTool(call, messageID: messageID, scope: scope)
         results.append((call, outcome))
         guard !Task.isCancelled else { return .failure(.cancelled) }
       }
@@ -196,7 +196,7 @@ extension MemoraModel {
       let arguments = argumentsJSON.data(using: .utf8)
         .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
       let call = AgentToolCall(id: UUID().uuidString, name: name, arguments: arguments)
-      return await self.performAgentTool(call, messageID: messageID, scope: scope, compact: true).text
+      return await self.runAgentTool(call, messageID: messageID, scope: scope, compact: true).text
     }
     let session = LanguageModelSession(tools: tools, instructions: Self.onDeviceAgentInstructions(scope: scope))
     do {
@@ -206,6 +206,22 @@ extension MemoraModel {
     } catch {
       return .failure(Task.isCancelled ? .cancelled : FoundationModelFailure.reason(for: error))
     }
+  }
+
+  /// Runs a tool and keeps what it returned on the step it made, so the trace
+  /// can show what the tool actually did when its row is opened.
+  func runAgentTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope, compact: Bool = false) async -> AgentToolOutcome {
+    let before = agentMessage(messageID)?.agentSteps.count ?? 0
+    let outcome = await performAgentTool(call, messageID: messageID, scope: scope, compact: compact)
+    let lines = outcome.text
+      .split(separator: "\n", omittingEmptySubsequences: true)
+      .prefix(8)
+      .map { String($0.prefix(160)) }
+    updateAgentMessage(messageID) { message in
+      guard message.agentSteps.count > before, !lines.isEmpty else { return }
+      message.agentSteps[message.agentSteps.count - 1].output = lines
+    }
+    return outcome
   }
 
   /// Shows the agent's questions on its reply and waits for the answers, one
