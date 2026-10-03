@@ -161,11 +161,24 @@ extension MemoraModel {
     static let aiMemoryEnabled = "memora.ai.memoryEnabled"
     static let glossary = "memora.glossary"
     static let customTemplates = "memoraCustomTemplates"
+    static let webhooks = "memora.integrations.webhooks"
+    static let mcpServers = "memora.integrations.mcpServers"
     static let defaultTemplate = "memora.summary.defaultTemplate"
     static let pendingMediaDeletions = "memoraPendingMediaDeletions"
     static let documents = "memoraDocuments"
     static let agentMode = "memora.askAI.agentMode"
     static let hasOfferedSampleDeletion = "memora.hasOfferedSampleDeletion"
     static let autoLifeLogInbox = "memoraAutoLifeLogInbox"
+  }
+}
+
+extension MemoraModel {
+  /// A small settings value kept as JSON in UserDefaults.
+  static func storedSetting<T: Decodable>(_ type: T.Type, forKey key: String) -> T? {
+    UserDefaults.standard.data(forKey: key).flatMap { try? JSONDecoder().decode(T.self, from: $0) }
+  }
+
+  static func storeSetting<T: Encodable>(_ value: T, forKey key: String) {
+    UserDefaults.standard.set(try? JSONEncoder().encode(value), forKey: key)
   }
 }

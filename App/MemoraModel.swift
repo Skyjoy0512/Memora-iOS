@@ -129,6 +129,19 @@ final class MemoraModel {
   @ObservationIgnored private var newestEntries: [LifeLogEntry]?
   /// Marketplace summary templates the person has added.
   var installedTemplateIDs: [String] = []
+  /// Where finished summaries are sent. Settings; their URLs are in the keychain.
+  var webhookEndpoints: [WebhookEndpoint] = MemoraModel.storedSetting([WebhookEndpoint].self, forKey: StorageKey.webhooks) ?? [] {
+    didSet { MemoraModel.storeSetting(webhookEndpoints, forKey: StorageKey.webhooks) }
+  }
+  /// How the last send to each endpoint went, for this session.
+  var webhookResults: [UUID: WebhookResult] = [:]
+  /// Remote MCP servers whose tools the agent may use. Settings; tokens are in
+  /// the keychain.
+  var mcpServers: [MCPServerConfig] = MemoraModel.storedSetting([MCPServerConfig].self, forKey: StorageKey.mcpServers) ?? [] {
+    didSet { MemoraModel.storeSetting(mcpServers, forKey: StorageKey.mcpServers) }
+  }
+  /// The MCP tools offered to the running agent, by the name the model uses.
+  @ObservationIgnored var activeMCPTools: [String: MCPTool] = [:]
   /// Templates the person wrote. User content, so kept in the record store.
   var customTemplates: [SummaryMarketTemplate] = []
   /// The template automatic summaries use; nil is the built-in 詳細な概要.

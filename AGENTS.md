@@ -63,8 +63,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 ## Known gaps (not bugs to fix silently)
 
-- Cloud storage, MCP, Google Drive, on-device Whisper and local LLM are
-  preferences only; the services behind them are not implemented. The app says
+- Cloud storage, the ChatGPT (MCP) server screen, Google Drive, on-device
+  Whisper and local LLM are preferences only; the services behind them are not implemented. The app says
   so rather than returning sample results.
 - Recording, transcription and summarization never fill in sample content: when
   no engine can run, the record keeps its audio and shows the failure with a
@@ -175,6 +175,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   write their own (`customTemplates`, in the record store) and choose the
   default 自動生成 uses (`defaultTemplateID`, `defaultSummaryChoice`). Catalog
   ids are kept so templates added in older builds stay added.
+- Integrations: webhooks (Settings › 連携 › Webhook, `WebhookEndpoint`,
+  `WebhookDelivery`, `MemoraModel+Webhooks`) send every finished summary as
+  JSON or a Slack message to https URLs kept in the keychain. Remote MCP
+  servers (`MCPServerConfig`, `MCPClient` over Streamable HTTP,
+  `MemoraModel+MCP`) lend their tools to the cloud agent as `mcp_…` tools;
+  only tools the server marks `readOnlyHint` run without the approval card.
+  The on-device agent does not get MCP tools.
 - Icons are SF Symbols named through `MemoraIcon` (`Shared/MemoraIcon.swift`).
   Draw them with `Image(icon:)`, `Label(_:icon:)`, `Button(_:icon:)` and friends
   rather than a literal `systemName`/`systemImage`, so a stored icon resolves the

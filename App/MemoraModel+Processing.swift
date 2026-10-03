@@ -115,6 +115,7 @@ extension MemoraModel {
           meeting.status = .ready
         }
         let added = self.addExtractedTasks(summary.actions, meetingID: id, meetingDate: current.createdAt)
+        self.deliverSummaryToWebhooks(id)
         self.offerPlusIfNeeded()
         self.announce(added > 0 ? "要約ができました。タスクを\(added)件追加しました。" : "要約ができました。")
       case .failure(.cancelled):

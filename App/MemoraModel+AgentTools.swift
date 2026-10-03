@@ -16,6 +16,9 @@ extension MemoraModel {
     compact: Bool = false
   ) async -> AgentToolOutcome {
     guard let tool = call.tool else {
+      if let external = activeMCPTools[call.name] {
+        return await performMCPTool(external, call: call, messageID: messageID)
+      }
       return AgentToolOutcome(text: "未知の道具です: \(call.name)", isError: true)
     }
     switch tool {

@@ -46,3 +46,14 @@ ChatGPT / Claude ──(MCP over HTTPS)──> Memora MCPサーバー ──(Mem
 
 - 設定 →「連携」→「ChatGPT (MCP)」の画面（接続先URL・トークン・公開範囲の保存と表示）。
 - サーバーは未実装のため、状態は「未設定 / 設定済み」のみ。実際の接続はサーバー実装後。
+
+## エージェントからの外部MCP利用（実装済み）
+
+上のサーバー（Memoraを外部に公開する側）とは逆向きに、Memoraのエージェントが外部のMCPサーバー
+（Notion・Linear・社内システムなど）の道具を使えるようにした。
+
+- 設定 →「連携」→「MCPサーバー（エージェント）」でURLと任意のBearerトークンを登録する。トークンはキーチェーン。
+- Streamable HTTP（JSON-RPC 2.0、JSON または SSE 応答、`Mcp-Session-Id`）に対応。OAuthでの認可は未対応。
+- `readOnlyHint` が付いた道具だけ確認なしで実行し、それ以外は承認カードを出す。
+- クラウドのAIでエージェントを使うときだけ。端末内AIには渡さない。
+

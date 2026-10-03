@@ -186,6 +186,26 @@ struct SettingsView: View {
           }
 
           NavigationLink {
+            WebhookSettingsView()
+          } label: {
+            LabeledContent {
+              Text(model.webhookEndpoints.isEmpty ? "未設定" : "\(model.webhookEndpoints.count)件")
+            } label: {
+              SettingsLabel("Webhook（Slack・Zapierなど）", icon: .paperplane, color: Tint.integrations)
+            }
+          }
+
+          NavigationLink {
+            MCPServersView()
+          } label: {
+            LabeledContent {
+              Text(model.mcpServers.isEmpty ? "未設定" : "\(model.mcpServers.count)件")
+            } label: {
+              SettingsLabel("MCPサーバー（エージェント）", icon: .plugsConnected, color: Tint.integrations)
+            }
+          }
+
+          NavigationLink {
             NotionSettingsView()
           } label: {
             LabeledContent {

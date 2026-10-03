@@ -10,6 +10,8 @@ final class CloudAgentSession {
   private let system: String
   /// Fixed for the session, so the model sees the same tools on every turn.
   private let tools: [AgentTool] = AgentTool.offered
+  /// Tools from connected MCP servers, loaded before the first turn.
+  var externalTools: [MCPTool] = []
   private var messages: [[String: Any]] = []
 
   /// Returns nil when there is no key for the provider; the caller says so.
@@ -87,6 +89,8 @@ final class CloudAgentSession {
       "system": system,
       "tools": tools.map { tool in
         ["name": tool.rawValue, "description": tool.summary, "input_schema": tool.inputSchema]
+      } + externalTools.map { tool in
+        ["name": tool.agentName, "description": "[\(tool.serverName)] \(tool.summary)", "input_schema": tool.schemaObject]
       },
       "messages": messages
     ]
@@ -147,6 +151,15 @@ final class CloudAgentSession {
             "name": tool.rawValue,
             "description": tool.summary,
             "parameters": tool.inputSchema
+          ] as [String: Any]
+        ] as [String: Any]
+      } + externalTools.map { tool in
+        [
+          "type": "function",
+          "function": [
+            "name": tool.agentName,
+            "description": "[\(tool.serverName)] \(tool.summary)",
+            "parameters": tool.schemaObject
           ] as [String: Any]
         ] as [String: Any]
       }

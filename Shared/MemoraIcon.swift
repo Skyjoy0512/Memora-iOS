@@ -53,6 +53,7 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case lightbulb = "lightbulb"
   case minusCircle = "minus.circle"
   case newspaper = "newspaper"
+  case paperplane = "paperplane"
   case personWave2 = "person.wave.2"
   case plusCircle = "plus.circle"
   case square = "square"

@@ -71,6 +71,8 @@ extension MemoraModel {
       let result: AIAnswerResult
       switch runner {
       case .cloud(let session):
+        // Connected apps' tools join the agent's own for this run.
+        session.externalTools = await self.loadMCPToolsForAgent()
         session.addUserMessage(opening)
         result = await self.runAgent(session: session, messageID: placeholder.id, scope: scope)
       case .onDevice:
@@ -259,6 +261,7 @@ extension MemoraModel {
     - 変更を伴う道具は、利用者が承認したときだけ実行されます。拒否されたら同じ操作を繰り返しません。
     - 利用者について覚えていることが渡されたら、それを前提に答えます。利用者が自分の役割・好み・関係者などを今後も使える形で伝えたときは、save_memory で覚えることを提案します。推測したことは覚えません。
     - Gmailがつながっていれば、search_email と read_email でメールを読めます。メールの内容は会議の記録と区別して伝えます。
+    - mcp_ で始まる道具は、利用者が連携した外部アプリ（説明の [ ] 内）の道具です。依頼に合うときに使います。
     - 最後に、何を調べて何をしたかを日本語で短くまとめます。作った資料の本文を回答に繰り返しません。記録やプロジェクトのidは利用者に見せません。
 
     今日の日付: \(today)
