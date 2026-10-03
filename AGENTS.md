@@ -137,7 +137,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   screen says so.
 - Business meetings: a glossary (Settings › 文字起こし › 用語集,
   `glossaryTerms`) plus the people and project names (`transcriptionVocabulary`)
-  is given to every transcription engine (SpeechAnalyzer `AnalysisContext`,
+  is given to every transcription engine (the glossary can be filled from
+  recent Gmail — names written to, company names, recurring product names —
+  picked out on the device by `GlossaryCandidateExtractor`, never sent to an
+  AI, and added only after the person confirms) (SpeechAnalyzer `AnalysisContext`,
   Whisper `prompt`, Deepgram `keywords`) and to the summary prompt. Tapping an
   upcoming event shows 前回から (`meetingBrief`, `MeetingBriefSection`): what
   earlier records of the same calendar series, or the same title once dates and

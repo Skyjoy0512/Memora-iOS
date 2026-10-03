@@ -139,7 +139,7 @@ final class GmailService {
   /// the opening words.
   func search(_ query: String, limit: Int) async throws -> [GmailMessage] {
     var components = URLComponents(url: Self.api.appendingPathComponent("messages"), resolvingAgainstBaseURL: false)!
-    var items = [URLQueryItem(name: "maxResults", value: "\(min(max(limit, 1), 15))")]
+    var items = [URLQueryItem(name: "maxResults", value: "\(min(max(limit, 1), 60))")]
     let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
     items.append(URLQueryItem(name: "q", value: trimmed.isEmpty ? "in:inbox" : trimmed))
     components.queryItems = items

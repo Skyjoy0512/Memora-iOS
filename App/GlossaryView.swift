@@ -5,6 +5,8 @@ import SwiftUI
 struct GlossaryView: View {
   @Environment(MemoraModel.self) private var model
   @State private var newTerm = ""
+  @State private var isMailSuggestionsPresented = false
+  @State private var gmail = GmailService.shared
   @FocusState private var isFieldFocused: Bool
 
   var body: some View {
@@ -39,6 +41,22 @@ struct GlossaryView: View {
         Text("社名・製品名・サービス名・専門用語など。文字起こしで聞き取りやすくなり、要約の表記もこれに合わせます。")
       }
 
+      Section {
+        if gmail.isConnected {
+          Button("メールから候補を集める", icon: .envelopeOpen) {
+            isMailSuggestionsPresented = true
+          }
+        } else {
+          NavigationLink {
+            GmailSettingsView()
+          } label: {
+            Label("Gmailを連携して候補を集める", icon: .envelopeOpen)
+          }
+        }
+      } footer: {
+        Text("やりとりしている相手の名前、会社名、よく出てくる製品・サービス名を、最近のメールから見つけます。")
+      }
+
       if !automatic.isEmpty {
         Section {
           Text(automatic.joined(separator: "、"))
@@ -53,6 +71,9 @@ struct GlossaryView: View {
     }
     .navigationTitle("用語集")
     .navigationBarTitleDisplayMode(.inline)
+    .sheet(isPresented: $isMailSuggestionsPresented) {
+      GlossaryMailSuggestionsView()
+    }
   }
 
   private func add() {

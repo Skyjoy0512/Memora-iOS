@@ -11,6 +11,11 @@ struct GmailSettingsView: View {
       Section {
         if gmail.isConnected {
           LabeledContent("連携中のアカウント", value: gmail.connectedEmail ?? "Gmail")
+          NavigationLink {
+            GlossaryView()
+          } label: {
+            Label("メールから用語集を作る", icon: .characterBookClosed)
+          }
           Button("連携を解除", role: .destructive) {
             isConfirmingDisconnect = true
           }
