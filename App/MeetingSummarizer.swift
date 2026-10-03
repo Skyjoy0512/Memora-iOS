@@ -25,7 +25,7 @@ enum MeetingSummarizer {
     case .local:
       // A local LLM still needs a bundled model; this build has none.
       return .failure(.notBundled)
-    case .cloud:
+    case .cloud, .memora:
       return await cloud(input, llm: llm, progress: progress)
     }
   }
@@ -33,7 +33,7 @@ enum MeetingSummarizer {
   /// What the chosen engine will do, for the sheet to say before generating.
   static func approach(for engine: AIEngine, llm: LLMSelection) -> String {
     switch AIEngineService.effectiveEngine(engine) {
-    case .cloud:
+    case .cloud, .memora:
       "\(llm.modelLabel)が文字起こし全体を読んで詳しく作成します。"
     case .foundation:
       "端末内AIが区間ごとに整理して組み立てます。クラウドより簡潔になり、長い会議は数分かかります。"

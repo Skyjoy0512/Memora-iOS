@@ -6,7 +6,8 @@ enum AIEngineService {
   /// The engine that will actually run: 自動 resolves to the on-device model
   /// when this device has one, so the app can name what really answered.
   static func effectiveEngine(_ engine: AIEngine) -> AIEngine {
-    guard engine == .automatic else { return engine }
+    // Memora Intelligence runs on the cloud path, aimed at Memora's server.
+    guard engine == .automatic else { return engine == .memora ? .cloud : engine }
     if #available(iOS 26.0, *), SystemLanguageModel.default.isAvailable {
       return .foundation
     }
@@ -56,7 +57,7 @@ enum AIEngineService {
       // A local LLM still needs a bundled model; this build has none.
       return .failure(.notBundled)
 
-    case .cloud:
+    case .cloud, .memora:
       return await CloudAIService.answer(
         question: question,
         scopeLabel: scopeLabel,

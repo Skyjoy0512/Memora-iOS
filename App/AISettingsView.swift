@@ -88,7 +88,11 @@ struct AISettingsView: View {
         LabeledContent { Text(availability.summary) } label: {
           SettingsLabel("この設定での状態", icon: .infoCircle, color: .gray)
         }
-        if let message = availability.message {
+        if model.aiEngine == .memora, let blocker = model.memoraIntelligenceBlocker {
+          Text(blocker)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        } else if let message = availability.message {
           Text(message)
             .font(.footnote)
             .foregroundStyle(.secondary)
@@ -147,6 +151,8 @@ struct AISettingsView: View {
   private var effectiveLabel: String {
     let engine = AIEngineService.effectiveEngine(model.aiEngine)
     switch engine {
+    case .cloud where model.aiEngine == .memora:
+      return "Memora Intelligence"
     case .cloud:
       return model.aiSelection.modelLabel
     case .automatic:

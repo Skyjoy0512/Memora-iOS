@@ -20,6 +20,8 @@ enum EngineAvailability {
     case notBundled
     /// The engine exists but this device cannot run it.
     case deviceNotSupported
+    /// Memora's own service has no server connected to this build yet.
+    case serviceNotConnected
 
     var shortLabel: String {
       switch self {
@@ -28,6 +30,7 @@ enum EngineAvailability {
       case .missingKey: "APIキー未設定"
       case .notBundled: "モデル未同梱"
       case .deviceNotSupported: "この端末では未対応"
+      case .serviceNotConnected: "未接続"
       }
     }
 
@@ -43,6 +46,8 @@ enum EngineAvailability {
         "このモデルはまだアプリに入っていません。設定で別のエンジンを選んでください。"
       case .deviceNotSupported:
         "この端末では利用できません。設定で別のエンジンを選んでください。"
+      case .serviceNotConnected:
+        AIAnswerFailure.serviceNotConnected.message
       }
     }
   }
@@ -144,6 +149,11 @@ enum EngineAvailability {
       return hasKey(provider.keychainAccount)
         ? Status()
         : Status(limits: [.missingKey("AI")])
+
+    case .memora:
+      return MemoraIntelligence.isConfigured && hasKey(MemoraIntelligence.tokenAccount)
+        ? Status()
+        : Status(limits: [.serviceNotConnected])
     }
   }
 }

@@ -74,10 +74,23 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   as its own record and is never re-recorded automatically. Voice input is
   refused (with a reason) while a recording owns the audio session.
 - Sign-in and purchase are not connected: the screens say so, and no account is
-  created from them. The plan screen can select a tier (personal or team), but
-  it says plainly that no billing happened: the tier is a local preference
-  (`choosePlan`) that unlocks the team share. `MemoraAccount` stays in the model
-  for a later phase.
+  created from them. Plans are ライト / Pro / アンリミテッド (`MemoraPlan`,
+  `choosePlan`, a local preference until StoreKit is connected); each caps its
+  Memora Intelligence credits and cloud transcription so that, used to the
+  full, it costs less than it earns — the numbers and the conditions that keep
+  it so are in `docs/PRICING.md`. A company license (`MemoraLicense`) is a code
+  signed with Ed25519 (`LicenseCodeVerifier`, public key under the Info.plist
+  key `MemoraLicensePublicKey`, codes issued with `tools/memora-license.swift`;
+  the private key never enters the repository); it outranks the personal plan
+  (`effectivePlan`) and is what unlocks team features (`hasTeamPlan`).
+  `MemoraAccount` stays in the model for a later phase.
+- Memora Intelligence (`AIEngine.memora`, `MemoraIntelligence`) is the
+  OpenAI-compatible cloud path pointed at Memora's own server
+  (`MemoraIntelligenceURL` in Info.plist) with a server-issued token; the server
+  holds the DeepSeek key and meters credits, the app only mirrors the balance
+  (`MemoraCreditMeter`) and reports 402 as `outOfCredits`. The server is not
+  built: until it is, the app says the service is not connected. Never put a
+  provider key in the app for it.
 - Workspaces follow a personal / business split: the personal workspace stays
   on the device (the SQLite store); a team workspace keeps its records in the
   cloud for every member to see and edit. The switcher is at the top of the

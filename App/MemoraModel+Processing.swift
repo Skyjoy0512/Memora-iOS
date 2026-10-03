@@ -72,8 +72,8 @@ extension MemoraModel {
       template: choice,
       glossary: transcriptionVocabulary
     )
-    let engine = configuration?.engine ?? aiEngine
-    let llm = configuration?.llm ?? aiSelection
+    let engine = configuration?.engine ?? settingsAIConfiguration.engine
+    let llm = configuration?.llm ?? settingsAIConfiguration.llm
 
     processing.run(id: id) { [weak self] in
       let background = BackgroundActivity(name: "要約を作成")

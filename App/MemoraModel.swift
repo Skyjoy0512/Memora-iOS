@@ -357,11 +357,13 @@ final class MemoraModel {
   /// the app before committing to either.
   var hasCompletedOnboarding: Bool
   var isSubscribed: Bool
-  /// The chosen tier. Billing is not connected yet, so this is a local choice
+  /// The chosen plan. Billing is not connected yet, so this is a local choice
   /// that decides which features are unlocked; nil means the free plan.
-  var planTier: PlanTier?
-  /// True when the team tier is chosen. This is what gates team-only features.
-  var hasTeamPlan: Bool { isSubscribed && planTier == .team }
+  var plan: MemoraPlan?
+  /// A company license activated with a code; it outranks the personal plan.
+  var license: MemoraLicense?
+  /// Team features come with a company license.
+  var hasTeamPlan: Bool { activeLicense != nil }
   var hasOfferedPlus: Bool
 
   @ObservationIgnored var recordingURL: URL?
@@ -406,7 +408,12 @@ final class MemoraModel {
 
     hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
     isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
-    planTier = PlanTier(rawValue: defaults.string(forKey: StorageKey.planTier) ?? "")
+    // Earlier builds stored "personal" or "team"; both become Pro, since
+    // neither was billed and team features now come with a company license.
+    let storedPlan = defaults.string(forKey: StorageKey.plan)
+      ?? (defaults.string(forKey: StorageKey.planTier) != nil ? MemoraPlan.pro.rawValue : nil)
+    plan = storedPlan.flatMap(MemoraPlan.init(rawValue:))
+    license = MemoraModel.storedLicense()
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
     aiEngine = AIEngine(rawValue: defaults.string(forKey: StorageKey.aiEngine) ?? "") ?? .automatic
     let storedProvider = LLMProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI

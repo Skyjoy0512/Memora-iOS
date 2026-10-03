@@ -71,10 +71,30 @@ struct SettingsView: View {
             model.isPaywallPresented = true
           } label: {
             LabeledContent {
-              Text(model.planTier?.label ?? "Free")
+              Text(model.planName)
                 .foregroundStyle(.secondary)
             } label: {
-              SettingsLabel("Memora Plus", icon: .crownFill, color: Tint.plan)
+              SettingsLabel("プラン", icon: .crownFill, color: Tint.plan)
+            }
+          }
+
+          NavigationLink {
+            AICreditsView()
+          } label: {
+            LabeledContent {
+              Text(creditSummary)
+            } label: {
+              SettingsLabel("AIクレジット", icon: .sparklesRectangleStack, color: Tint.plan)
+            }
+          }
+
+          NavigationLink {
+            LicenseActivationView()
+          } label: {
+            LabeledContent {
+              Text(model.activeLicense?.company ?? "未登録")
+            } label: {
+              SettingsLabel("法人ライセンス", icon: .building2Fill, color: Tint.plan)
             }
           }
 
@@ -93,7 +113,7 @@ struct SettingsView: View {
               model.isPaywallPresented = true
             } label: {
               LabeledContent {
-                Text("チームプランで利用可")
+                Text("法人ライセンスで利用可")
                   .foregroundStyle(.secondary)
               } label: {
                 SettingsLabel("チーム共有", icon: .person3Fill, color: Tint.plan, glyphScale: 0.72)
@@ -103,7 +123,7 @@ struct SettingsView: View {
         } header: {
           Text("プラン")
         } footer: {
-          Text("購入はまだ接続されていません。プランはこの端末の設定として保存し、チーム共有はチームプランで利用できます。")
+          Text("購入はまだ接続されていません。プランはこの端末の設定として保存します。チーム機能は法人ライセンスで利用できます。")
         }
 
         Section {
@@ -473,6 +493,14 @@ struct SettingsView: View {
       .accessibilityLabel("プロフィール \(profileName)")
       .accessibilityHint("ミー文字・写真・名前を編集します")
     }
+  }
+
+  /// The credits left this month, as the server last said, or what the plan
+  /// includes while no answer has come back yet.
+  private var creditSummary: String {
+    if let remaining = MemoraCreditMeter.shared.remaining { return "残り\(remaining)" }
+    if let plan = model.effectivePlan { return "\(plan.monthlyCredits)/月" }
+    return "なし"
   }
 
   private var profileName: String {

@@ -140,6 +140,7 @@ extension MemoraModel {
     static let hasOfferedPlus = "hasOfferedMemoraPlus"
     static let isSubscribed = "memoraPlusActive"
     static let planTier = "memoraPlanTier"
+    static let plan = "memora.plan"
     static let account = "memoraAccount"
     static let tasks = "memoraTasks"
     static let lifeLogEntries = "memoraLifeLogEntries"

@@ -7,7 +7,14 @@ extension MemoraModel {
     if let registered = registeredLLMs.selectedModel {
       return (.cloud, registered.selection)
     }
-    return (aiEngine, aiSelection)
+    return settingsAIConfiguration
+  }
+
+  /// The engine chosen in settings, as requests run it: Memora Intelligence
+  /// is the cloud path pointed at Memora's server with Memora's token, so the
+  /// engines downstream need no case of their own for it.
+  var settingsAIConfiguration: (engine: AIEngine, llm: LLMSelection) {
+    aiEngine == .memora ? (.cloud, MemoraIntelligence.selection) : (aiEngine, aiSelection)
   }
 
   var askAIModelName: String {
@@ -23,12 +30,12 @@ extension MemoraModel {
   func summaryConfiguration(for choice: SummaryEngineChoice) -> (engine: AIEngine, llm: LLMSelection) {
     switch choice {
     case .settings:
-      return (aiEngine, aiSelection)
+      return settingsAIConfiguration
     case .onDevice:
       return (.foundation, aiSelection)
     case .registered(let id):
       guard let model = registeredLLMs.models.first(where: { $0.id == id }) else {
-        return (aiEngine, aiSelection)
+        return settingsAIConfiguration
       }
       return (.cloud, model.selection)
     }

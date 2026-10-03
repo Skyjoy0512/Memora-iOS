@@ -42,22 +42,23 @@ extension MemoraModel {
 
   /// Purchases are tied to the Apple ID, so Plus does not require a Memora
   /// account. Signing in only adds sync.
-  func startSubscription(tier: PlanTier = .personal) {
-    choosePlan(tier)
+  func startSubscription(plan: MemoraPlan = .pro) {
+    choosePlan(plan)
   }
 
   /// Sets the plan this device runs on. StoreKit is not connected, so this is a
   /// local preference: the plan screen is explicit that no billing happened.
-  func choosePlan(_ tier: PlanTier?) {
-    planTier = tier
-    isSubscribed = tier != nil
+  func choosePlan(_ plan: MemoraPlan?) {
+    self.plan = plan
+    isSubscribed = plan != nil || activeLicense != nil
     let defaults = UserDefaults.standard
     defaults.set(isSubscribed, forKey: StorageKey.isSubscribed)
-    if let tier {
-      defaults.set(tier.rawValue, forKey: StorageKey.planTier)
+    defaults.removeObject(forKey: StorageKey.planTier)
+    if let plan {
+      defaults.set(plan.rawValue, forKey: StorageKey.plan)
     } else {
-      defaults.removeObject(forKey: StorageKey.planTier)
-      setCloudStorageEnabled(false)
+      defaults.removeObject(forKey: StorageKey.plan)
+      if !isSubscribed { setCloudStorageEnabled(false) }
     }
   }
 

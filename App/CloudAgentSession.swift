@@ -16,7 +16,7 @@ final class CloudAgentSession {
 
   /// Returns nil when there is no key for the provider; the caller says so.
   init?(llm: LLMSelection, system: String) {
-    guard let key = KeychainStore.string(forKey: llm.provider.keychainAccount), !key.isEmpty else {
+    guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return nil
     }
     self.llm = llm
@@ -131,7 +131,7 @@ final class CloudAgentSession {
   // MARK: - OpenAI-compatible
 
   private func chatCompletionsTurn() async throws -> AgentTurn {
-    var request = URLRequest(url: llm.provider.baseURL.appendingPathComponent("chat/completions"))
+    var request = URLRequest(url: llm.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
     // Not streamed, so nothing arrives until a whole turn is written; a long
     // document in one tool call can take minutes.

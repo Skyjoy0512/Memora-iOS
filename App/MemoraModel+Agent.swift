@@ -26,7 +26,8 @@ extension MemoraModel {
     switch AIEngineService.effectiveEngine(configuration.engine) {
     case .cloud:
       guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope)) else {
-        aiMessages.append(AIChatMessage(role: .assistant, text: AIAnswerFailure.missingKey.message))
+        let failure: AIAnswerFailure = llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey
+        aiMessages.append(AIChatMessage(role: .assistant, text: failure.message))
         return true
       }
       runner = .cloud(session)

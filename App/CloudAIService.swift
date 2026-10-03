@@ -22,8 +22,8 @@ enum CloudAIService {
   /// Sends one system and user prompt to the chosen provider. Ask AI and the
   /// summarizer share it, each with its own instructions.
   static func complete(system: String, user: String, llm: LLMSelection) async -> AIAnswerResult {
-    guard let key = KeychainStore.string(forKey: llm.provider.keychainAccount), !key.isEmpty else {
-      return .failure(.missingKey)
+    guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
+      return .failure(llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey)
     }
     guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
 
@@ -69,8 +69,8 @@ enum CloudAIService {
     guard !llm.provider.usesAnthropicAPI else {
       return await complete(system: system, user: user, llm: llm)
     }
-    guard let key = KeychainStore.string(forKey: llm.provider.keychainAccount), !key.isEmpty else {
-      return .failure(.missingKey)
+    guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
+      return .failure(llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey)
     }
     guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
 
@@ -111,7 +111,7 @@ enum CloudAIService {
     key: String,
     onProgress: @escaping @MainActor (Int) -> Void
   ) async throws -> (text: String, wasCutOff: Bool) {
-    var request = URLRequest(url: llm.provider.baseURL.appendingPathComponent("chat/completions"))
+    var request = URLRequest(url: llm.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
     // The gap allowed between two pieces of the stream, not the whole answer.
     // Reasoning models can think quietly for a while before the first word.
@@ -163,7 +163,7 @@ enum CloudAIService {
     llm: LLMSelection,
     key: String
   ) async throws -> String {
-    var request = URLRequest(url: llm.provider.baseURL.appendingPathComponent("chat/completions"))
+    var request = URLRequest(url: llm.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
     request.timeoutInterval = 180
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -231,6 +231,7 @@ enum CloudAIService {
   /// model that no longer exists, and a busy API are not reported alike.
   static func validate(_ response: URLResponse) throws {
     guard let http = response as? HTTPURLResponse else { throw AIAnswerFailure.network }
+    MemoraCreditMeter.observe(response)
     switch http.statusCode {
     case 200..<300:
       return
@@ -238,7 +239,9 @@ enum CloudAIService {
       throw AIAnswerFailure.unauthorized
     case 404:
       throw AIAnswerFailure.modelUnavailable
-    case 402, 429:
+    case 402:
+      throw AIAnswerFailure.outOfCredits
+    case 429:
       throw AIAnswerFailure.rateLimited
     default:
       throw AIAnswerFailure.server

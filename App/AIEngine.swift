@@ -3,6 +3,8 @@ import SwiftUI
 /// How summaries and Ask AI answers are produced.
 enum AIEngine: String, CaseIterable, Identifiable {
   case automatic
+  /// Memora's own cloud AI, paid with plan credits instead of a key.
+  case memora
   case foundation
   case local
   case cloud
@@ -12,6 +14,7 @@ enum AIEngine: String, CaseIterable, Identifiable {
   var label: String {
     switch self {
     case .automatic: "自動（おすすめ）"
+    case .memora: "Memora Intelligence"
     case .foundation: "Apple Foundation Models"
     case .local: "ローカルLLM"
     case .cloud: "クラウド（BYOK）"
@@ -22,6 +25,7 @@ enum AIEngine: String, CaseIterable, Identifiable {
   var shortLabel: String {
     switch self {
     case .automatic: "自動"
+    case .memora: "Memora"
     case .foundation: "端末内"
     case .local: "ローカル"
     case .cloud: "クラウド"
@@ -31,6 +35,7 @@ enum AIEngine: String, CaseIterable, Identifiable {
   var symbol: MemoraIcon {
     switch self {
     case .automatic: .sparkles
+    case .memora: .sparklesRectangleStack
     case .foundation: .appleLogo
     case .local: .cpu
     case .cloud: .cloud
@@ -41,6 +46,7 @@ enum AIEngine: String, CaseIterable, Identifiable {
   var tint: Color {
     switch self {
     case .automatic: .purple
+    case .memora: .indigo
     case .foundation: .gray
     case .local: .teal
     case .cloud: .blue
@@ -51,6 +57,8 @@ enum AIEngine: String, CaseIterable, Identifiable {
     switch self {
     case .automatic:
       "対応状況に合わせて、端末内を優先して選びます。"
+    case .memora:
+      "キーなしで使えるMemoraのクラウドAI。プランのAIクレジットを使います（ライト以上）。"
     case .foundation:
       "iOS 26以降のFoundation Modelsで、端末内で整理します。"
     case .local:

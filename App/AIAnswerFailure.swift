@@ -43,6 +43,10 @@ enum AIAnswerFailure: Error, Equatable {
   case unsupportedProvider
   /// The question was only an attachment no engine can read.
   case attachmentNotAnalysed
+  /// Memora Intelligence refused: the month's credits are used up.
+  case outOfCredits
+  /// Memora Intelligence is chosen but its server is not connected yet.
+  case serviceNotConnected
 
   /// What to tell the person. Cancellation says nothing because a newer
   /// request has already replaced this one.
@@ -64,6 +68,10 @@ enum AIAnswerFailure: Error, Equatable {
       "ローカルLLMはこのアプリにまだ入っていません。設定の「AI整理」で別のエンジンを選んでください。"
     case .missingKey:
       "APIキーが設定されていません。設定の「AI整理」でキーを保存してください。"
+    case .outOfCredits:
+      "今月のAIクレジットを使い切りました（APIの残高不足の場合もあります）。プランを変えるか、来月まで端末内AIをお使いください。"
+    case .serviceNotConnected:
+      "Memora Intelligenceはまだ接続されていません。設定の「AI整理」で端末内AIか自分のAPIキーを選んでください。"
     case .unauthorized:
       "APIキーが受け付けられませんでした。設定の「AI整理」でキーを確認してください。"
     case .modelUnavailable:

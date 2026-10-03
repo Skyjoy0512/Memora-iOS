@@ -26,6 +26,7 @@
         "path" : "App\/Info.plist",
         "properties" : {
           "CFBundleDisplayName" : "Memora",
+          "MemoraLicensePublicKey" : "IisSdDP4tKvk5/RRQGQ8e1mI/jbo/+4dPqedWShIzV4=",
           "CFBundleShortVersionString" : "1.0",
           "CFBundleURLTypes" : [
             {
