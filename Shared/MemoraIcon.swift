@@ -1,6 +1,6 @@
 /// Every icon the app draws, named by its SF Symbol. Raw values keep the older
 /// SF Symbols names so stored choices (a project's icon) still resolve.
-enum MemoraIcon: String, CaseIterable, Sendable {
+enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case antennaRadiowavesLeftAndRight = "antenna.radiowaves.left.and.right"
   case antennaRadiowavesLeftAndRightSlash = "antenna.radiowaves.left.and.right.slash"
   case appleLogo = "apple.logo"
@@ -8,6 +8,7 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case arrowCounterclockwise = "arrow.counterclockwise"
   case arrowDown = "arrow.down"
   case arrowDownDoc = "arrow.down.doc"
+  case arrowLeftArrowRight = "arrow.left.arrow.right"
   case arrowRightCircle = "arrow.right.circle"
   case arrowTriangle2Circlepath = "arrow.triangle.2.circlepath"
   case arrowTriangleMerge = "arrow.triangle.merge"
@@ -33,6 +34,7 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case camera = "camera"
   case chartBar = "chart.bar"
   case chartBarFill = "chart.bar.fill"
+  case chartLineUptrendXyaxis = "chart.line.uptrend.xyaxis"
   case chatBubble = "chat.bubble"
   case chatBubbleFill = "chat.bubble.fill"
   case characterBookClosed = "character.book.closed"
@@ -44,6 +46,15 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case checkmarkSeal = "checkmark.seal"
   case checkmarkSealFill = "checkmark.seal.fill"
   case checkmarkSquare = "checkmark.square"
+  case ear = "ear"
+  case exclamationmarkBubble = "exclamationmark.bubble"
+  case flag = "flag"
+  case graduationcap = "graduationcap"
+  case lightbulb = "lightbulb"
+  case minusCircle = "minus.circle"
+  case newspaper = "newspaper"
+  case personWave2 = "person.wave.2"
+  case plusCircle = "plus.circle"
   case square = "square"
   case chevronDown = "chevron.down"
   case chevronLeft = "chevron.left"
@@ -173,6 +184,8 @@ enum MemoraIcon: String, CaseIterable, Sendable {
   case squareAndPencil = "square.and.pencil"
   case squareGrid2x2 = "square.grid.2x2"
   case squareStack3dUp = "square.stack.3d.up"
+  case starBubble = "star.bubble"
+  case starFill = "star.fill"
   case stopFill = "stop.fill"
   case stopwatch = "stopwatch"
   case stopwatchFill = "stopwatch.fill"

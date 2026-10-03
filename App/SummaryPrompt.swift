@@ -201,21 +201,29 @@ enum SummaryPrompt {
   }
 
   private static func marketFormat(_ template: SummaryMarketTemplate, input: MeetingSummaryInput) -> String {
-    """
-    「\(template.lead)」の観点でまとめる。次の構成のMarkdownで書く。
+    let focus = template.focus.trimmingCharacters(in: .whitespacesAndNewlines)
+    let sections = template.sections.isEmpty
+      ? "## {この観点に合った見出し}\n- {具体的な内容。誰が何を述べたか}\n（観点に合わせて ## の見出しを2〜4個立てる）"
+      : template.sections.map { "## \($0)\n- {具体的な内容。誰が何を述べたか。述べられていなければ「該当なし」}" }
+        .joined(separator: "\n")
+    let actions = template.includesActions ? """
 
-    # {会議の内容が分かる見出し}
-    **日時**: \(input.dateText)
-    **概要**: {この観点で重要なことを3〜5文}
-    ## {この観点に合った見出し}
-    - {具体的な内容。誰が何を述べたか}
-    （観点に合わせて ## の見出しを2〜4個立てる）
     ## アクションアイテム
     | タイトル | 説明 | 責任者 | 期限 | 備考 |
     |:---|:---|:---|:---|:---|
     | {件名} | {何をするか} | {話者ラベルまたは未定} | {述べられた期限または未定} | {備考} |
-    ## 未決事項
-    - {結論が出なかった問い}
+    """ : ""
+    let hasOpenQuestions = template.sections.contains { $0.contains("未決") || $0.contains("持ち越") }
+
+    return """
+    「\(template.lead)」の観点でまとめる。\(focus.isEmpty ? "" : "\n観点の補足: \(focus)")
+    次の構成のMarkdownで書く。見出しの名前と順番は変えない。
+
+    # {会議の内容が分かる見出し}
+    **日時**: \(input.dateText)
+    **概要**: {この観点で重要なことを3〜5文}
+    \(sections)\(actions)\(hasOpenQuestions ? "" : "\n## 未決事項\n- {結論が出なかった問い}")
     """
   }
+
 }

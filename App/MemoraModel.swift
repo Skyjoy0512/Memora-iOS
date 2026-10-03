@@ -129,6 +129,13 @@ final class MemoraModel {
   @ObservationIgnored private var newestEntries: [LifeLogEntry]?
   /// Marketplace summary templates the person has added.
   var installedTemplateIDs: [String] = []
+  /// Templates the person wrote. User content, so kept in the record store.
+  var customTemplates: [SummaryMarketTemplate] = []
+  /// The template automatic summaries use; nil is the built-in 詳細な概要.
+  /// A setting, so it lives in UserDefaults.
+  var defaultTemplateID: String? = UserDefaults.standard.string(forKey: StorageKey.defaultTemplate) {
+    didSet { UserDefaults.standard.set(defaultTemplateID, forKey: StorageKey.defaultTemplate) }
+  }
   /// Records that were deleted and can still be brought back.
   var trashedRecords: [TrashedRecord] = []
   /// Journal entries that were deleted and can still be brought back.
@@ -477,6 +484,7 @@ final class MemoraModel {
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [])
     aiMemories = load([AIMemory].self, forKey: StorageKey.aiMemories, fallback: [])
+    customTemplates = load([SummaryMarketTemplate].self, forKey: StorageKey.customTemplates, fallback: [])
     let thread = load([AIThreadTurn].self, forKey: StorageKey.aiThread, fallback: [])
 
     // Protection is decided only once every document has been read, so a failure

@@ -1,59 +1,121 @@
 import SwiftUI
 
-/// Adds and removes the summary templates that go beyond the built-ins. Added
-/// templates join the picker in the summary sheet.
+/// The template marketplace: templates for everyday business conversations,
+/// grouped by kind, plus the person's own. Added templates join the choices
+/// when a summary is generated, and one can be the default.
 struct SummaryTemplateMarketplaceView: View {
   @Environment(MemoraModel.self) private var model
+  @State private var query = ""
+  @State private var editing: SummaryMarketTemplate?
 
   var body: some View {
+    let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    let matching = SummaryTemplateCatalog.market.filter { Self.matches($0, trimmed) }
+    let custom = model.customTemplates.filter { Self.matches($0, trimmed) }
+
     List {
+      if trimmed.isEmpty {
+        Section {
+          LabeledContent("自動生成で使う", value: model.defaultSummaryChoice.title)
+        } footer: {
+          Text("テンプレートを開いて「既定にする」を選ぶと、自動生成がそのまとめ方になります。")
+        }
+      }
+
       Section {
-        ForEach(SummaryTemplateCatalog.market) { template in
+        ForEach(custom) { template in
           row(template)
         }
+        if trimmed.isEmpty {
+          Button("テンプレートを作成", icon: .plus) {
+            editing = SummaryMarketTemplate(
+              id: "custom.\(UUID().uuidString)",
+              title: "",
+              detail: "",
+              symbol: .docText,
+              lead: "",
+              sections: ["要点", "決まったこと"],
+              isCustom: true
+            )
+          }
+        }
       } header: {
-        Text("追加できるテンプレート")
-      } footer: {
-        Text("追加したテンプレートは、要約を生成するときの選択肢に加わります。")
+        Text("マイテンプレート")
+      }
+
+      ForEach(SummaryTemplateCategory.allCases) { category in
+        let templates = matching.filter { $0.category == category }
+        if !templates.isEmpty {
+          Section(category.title) {
+            ForEach(templates) { template in
+              row(template)
+            }
+          }
+        }
       }
     }
     .navigationTitle("要約テンプレート")
     .memoraBackButton()
+    .searchable(text: $query, prompt: "テンプレートを検索")
+    .overlay {
+      if !trimmed.isEmpty, matching.isEmpty, custom.isEmpty {
+        ContentUnavailableView.search(text: trimmed)
+      }
+    }
+    .sheet(item: $editing) { template in
+      SummaryTemplateEditor(template: template)
+    }
+  }
+
+  private static func matches(_ template: SummaryMarketTemplate, _ query: String) -> Bool {
+    guard !query.isEmpty else { return true }
+    return [template.title, template.detail, template.category.title]
+      .contains { $0.localizedCaseInsensitiveContains(query) }
   }
 
   private func row(_ template: SummaryMarketTemplate) -> some View {
-    let isInstalled = model.installedTemplateIDs.contains(template.id)
+    let isAdded = model.isTemplateAvailable(template.id)
+    let isDefault = model.defaultTemplateID == template.id
 
-    return HStack(spacing: 14) {
-      Image(icon: template.symbol)
-        .font(.headline)
-        .frame(width: 38, height: 38)
-        .background(Color.primary.opacity(0.07), in: Circle())
-
-      VStack(alignment: .leading, spacing: 3) {
-        Text(template.title)
+    return NavigationLink {
+      SummaryTemplateDetailView(templateID: template.id)
+    } label: {
+      HStack(spacing: 14) {
+        Image(icon: template.symbol)
           .font(.headline)
-          .foregroundStyle(.primary)
+          .foregroundStyle(.tint)
+          .frame(width: 38, height: 38)
+          .background(Color.accentColor.opacity(0.1), in: Circle())
 
-        Text(template.detail)
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-          .lineLimit(2)
-      }
+        VStack(alignment: .leading, spacing: 3) {
+          HStack(spacing: 6) {
+            Text(template.title)
+              .font(.headline)
+              .foregroundStyle(.primary)
+            if isDefault {
+              Text("既定")
+                .font(.caption2.weight(.semibold))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.tint.opacity(0.15), in: Capsule())
+                .foregroundStyle(.tint)
+            }
+          }
+          Text(template.detail.isEmpty ? template.sections.joined(separator: "・") : template.detail)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+        }
 
-      Spacer(minLength: 8)
+        Spacer(minLength: 8)
 
-      Button(isInstalled ? "削除" : "追加") {
-        if isInstalled {
-          model.uninstallTemplate(template.id)
-        } else {
-          model.installTemplate(template.id)
+        if isAdded {
+          Image(icon: .checkmarkCircleFill)
+            .foregroundStyle(.tint)
+            .accessibilityLabel("追加済み")
         }
       }
-      .buttonStyle(.bordered)
-      .tint(isInstalled ? .gray : nil)
-      .accessibilityLabel(isInstalled ? "\(template.title)を削除" : "\(template.title)を追加")
+      .padding(.vertical, 2)
     }
-    .padding(.vertical, 4)
   }
 }

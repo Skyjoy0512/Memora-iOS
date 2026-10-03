@@ -20,7 +20,9 @@ struct SummaryGenerationSheet: View {
               generationChoice(
                 mode: .automatic,
                 title: "自動生成",
-                detail: "詳細な概要：トピックごとに要点・決定事項・アクション・未決事項を整理",
+                detail: model.defaultSummaryChoice == .standard
+                  ? "詳細な概要：トピックごとに要点・決定事項・アクション・未決事項を整理"
+                  : "既定のテンプレート「\(model.defaultSummaryChoice.title)」で整理",
                 symbol: .sparkles
               )
               generationChoice(
@@ -80,7 +82,7 @@ struct SummaryGenerationSheet: View {
       Button("生成") {
         model.generateSummary(
           meetingID,
-          choice: mode == .automatic ? .standard : template,
+          choice: mode == .automatic ? model.defaultSummaryChoice : template,
           configuration: model.summaryConfiguration(for: selectedEngine)
         )
         dismiss()

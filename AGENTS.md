@@ -169,6 +169,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   over only its own lines (`MarkdownBlockWriter`). Do not switch the whole
   summary to its markdown source on tap; the source editor is only offered
   from the long-press menu.
+- Summary templates: a marketplace of business templates by category
+  (`SummaryTemplateCatalog`, `SummaryTemplateCategory`), each with its own
+  `sections`, `focus` and whether it writes an action table; the person can
+  write their own (`customTemplates`, in the record store) and choose the
+  default 自動生成 uses (`defaultTemplateID`, `defaultSummaryChoice`). Catalog
+  ids are kept so templates added in older builds stay added.
 - Icons are SF Symbols named through `MemoraIcon` (`Shared/MemoraIcon.swift`).
   Draw them with `Image(icon:)`, `Label(_:icon:)`, `Button(_:icon:)` and friends
   rather than a literal `systemName`/`systemImage`, so a stored icon resolves the
