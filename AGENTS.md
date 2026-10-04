@@ -125,23 +125,20 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Notion pages, tasks and documents. Reading tools run straight away; every
   tool that changes data waits for the approval card, and a declined change is
   reported back to the model.
-- A reply's trace (`ThinkingTraceView`) shows only work that really
-  happened, each in its own pattern: Search (the terms and what was found) for
-  the 質問 record search and the agent's record/mail searches; Steps (spinner
-  to check) for the agent's tools; Reasoning only when the model returned
-  reasoning text (Claude thinking, `reasoning_content`). A reply with none of
-  these shows no trace. Never add rows that did not happen.
+- While a reply is being formed, `ThinkingTraceView` shows one status line
+  only (考えています / 記録を探しています / 回答を書いています / 作業しています /
+  確認を待っています) with the time since the question was sent; it disappears
+  once the answer is in. The steps, search results and reasoning are still kept
+  on the message (`agentSteps`, `sources`, `reasoning`) but, by the owner's
+  choice, not shown. The label must name the real stage; never invent one.
 - The same rule (only what really happened) governs the other AI pieces:
   `WorkingStatus`/`PixelLoader` time long processing from its real start
-  (`ProcessingService.startedAt`), and the trace header shows the time since
-  the question was sent beside one sparkle mark; it never repeats the running
-  step, which is already a row; answers cite
+  (`ProcessingService.startedAt`); answers cite
   records as 【資料n】 and only numbers matching a sent source become links
   (`AnswerCitations`); follow-ups are built from decisions, tasks and open
   questions the cited records hold (`followUps(for:)`); the agent asks the
   person through `ask_user` (`AgentQuestionCard`) only when the records cannot
-  tell it; trace rows open to the lines the tool really returned
-  (`runAgentTool`); a project is suggested for an unfiled record only from
+  tell it; a project is suggested for an unfiled record only from
   evidence — calendar series, meeting name, shared people
   (`projectSuggestions(for:)`, `ProjectSuggestionCard`).
 - Personal memory: Ask AI keeps what the person told it (「〇〇を覚えておいて」,
