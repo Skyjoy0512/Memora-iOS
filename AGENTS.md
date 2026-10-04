@@ -122,7 +122,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   `aiBubble`; `AskAIGreeting` before the first message; no large title).
   `AskAIGlow` draws a Gemini-like light behind it: a glow from the bottom when
   the tab opens, a moving mesh across the top only while an answer is being
-  formed, a fainter glow left at the bottom of the empty screen; still under Reduce Motion. The tab opens on a new chat
+  formed, a fainter glow left at the bottom of the empty screen; still under Reduce Motion. The other list tabs open under
+  `TabTopGlow`, a wash of the tab's own colour (files blue, journal red, tasks
+  yellow) across the top that drifts for five seconds and then holds; it is
+  gated by `activeRootTab` so it shows on a list root but not over an opened
+  record, and it is drawn in `RootTabView`, not inside each screen. The tab opens on a new chat
   every time (`didChangeTab`), keeping only an answer still being written and
   resident posts that arrived while away; past exchanges are in 履歴. Routing is the app's, not the
   person's (`shouldRunAsAgent`): a cloud model always runs as the agent and is

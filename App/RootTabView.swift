@@ -155,6 +155,14 @@ struct RootTabView: View {
         .hidesSystemTabBar()
         .tag(RootTab.askAI)
     }
+    .overlay(alignment: .top) {
+      // Each list tab opens under a wash of its own colour, which settles after
+      // a few seconds. Ask AI has its own glow inside its screen.
+      if let tab = activeRootTab {
+        TabTopGlow(color: tab.glowColor)
+          .id(tab)
+      }
+    }
     .safeAreaInset(edge: .bottom, spacing: 8) {
       bottomControls
     }
@@ -253,6 +261,17 @@ struct RootTabView: View {
   /// The bar follows the tab on top, so another screen's scrolling cannot move it.
   private var isBottomBarHidden: Bool {
     model.isBottomBarHidden(for: model.selectedTab.rawValue)
+  }
+
+  /// The list tab whose root is on screen, so its greeting light shows there but
+  /// not over a record opened on top of it.
+  private var activeRootTab: RootTab? {
+    switch model.selectedTab {
+    case .files: model.libraryPath.isEmpty ? .files : nil
+    case .home: model.homePath.isEmpty ? .home : nil
+    case .tasks: .tasks
+    case .askAI: nil
+    }
   }
 
   private var showsBottomBar: Bool {
