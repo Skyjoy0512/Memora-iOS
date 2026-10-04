@@ -89,6 +89,10 @@ struct LibraryView: View {
           selectionBar
         }
       }
+      .onChange(of: isSelectionMode) { _, selecting in
+        model.isFileSelectionActive = selecting
+      }
+      .onAppear { model.isFileSelectionActive = isSelectionMode }
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id):

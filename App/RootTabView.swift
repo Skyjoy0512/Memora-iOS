@@ -239,9 +239,10 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isSearchCovering)
   }
 
-  /// An open search takes the screen, until a result is opened on top of it.
+  /// An open search, or picking files, takes the screen until a record is
+  /// opened on top of it.
   private var isSearchCovering: Bool {
-    guard model.isSearchActive else { return false }
+    guard model.isSearchActive || (model.isFileSelectionActive && model.selectedTab == .files) else { return false }
     return switch model.selectedTab {
     case .home: model.homePath.isEmpty
     case .files: model.libraryPath.isEmpty

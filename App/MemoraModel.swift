@@ -198,6 +198,9 @@ final class MemoraModel {
   /// True while a tab's search is open. The tab bar and Ask AI step aside so
   /// the search reads as its own screen.
   var isSearchActive = false
+  /// True while files are being picked on the Files tab. The tab bar and Ask
+  /// AI step aside so the share, move and delete bar has the bottom edge.
+  var isFileSelectionActive = false
   var isOnlineMeetingCapturePresented = false
   /// The calendar event a web meeting recording was started from, so the
   /// record takes its title and link like an in-person one.

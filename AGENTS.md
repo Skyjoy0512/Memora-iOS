@@ -55,7 +55,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   that opens `ToolbarSearchField` in place of the navigation bar. While it is
   open (`isSearchActive`), the tab bar and Ask AI hide and the screen shows only
   results, never the list behind them. Do not bring back an always-visible
-  `.searchable` drawer. The ＋ menu holds capture actions
+  `.searchable` drawer. Picking files on Files (`isFileSelectionActive`) hides
+  the tab bar and Ask AI the same way, so the share / move / delete bar owns
+  the bottom edge. The ＋ menu holds capture actions
   only (record, import, online meeting; phone call while its flag is on); memos are added from the Journal
   toolbar and projects from the side menu.
 - **Journal (Home)**: the tab's own `ScrollView`/`List` must stay the screen's
