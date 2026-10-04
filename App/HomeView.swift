@@ -71,7 +71,6 @@ struct HomeView: View {
       }
       .hideBottomBarOnScroll(RootTab.home.rawValue)
       .refreshable { await model.refresh() }
-      .background(Color(uiColor: .systemBackground))
       .navigationTitle("ジャーナル")
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "記録を検索")
       .toolbar {

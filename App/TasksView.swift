@@ -51,6 +51,7 @@ struct TasksView: View {
           }
           .hideBottomBarOnScroll(RootTab.tasks.rawValue)
           .listStyle(.plain)
+          .scrollContentBackground(.hidden)
           .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
           .refreshable { await model.refresh() }
         }

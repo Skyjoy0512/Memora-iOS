@@ -34,7 +34,6 @@ struct LibraryView: View {
       // Projects are opened from the side menu, so this list is files only and
       // stays the screen's own scroll view for the large title to collapse.
       filesPage
-      .background(Color(uiColor: .systemBackground))
       .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ファイル")
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ファイルを検索")
       .toolbar {
