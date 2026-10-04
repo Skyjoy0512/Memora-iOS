@@ -14,6 +14,8 @@ enum SummaryPrompt {
   - 相槌・言い直し・雑談は省き、議論の中身・結論・その理由を残す。
   - 要点は「誰が何を述べ、どう結論したか」が分かる具体的な文で書く。「〜について話した」だけの文にしない。
   - 指定された形式のMarkdownだけを出力し、前置きや締めの言葉は書かない。
+
+  \(ReadabilityGuide.rules)
   """
 
   /// The request for one pass over the whole transcript.

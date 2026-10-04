@@ -90,6 +90,7 @@ enum OnDeviceSummarizer {
   人名・数値・日付・金額・固有名詞は文字起こしの表記のまま使い、話者はラベル（例: Speaker 1）で呼びます。
   相槌や言い直しは無視し、議論の中身を具体的に残します。担当者や期限が述べられていなければ「未定」とします。
   発言をそのまま書き写さず、「Speaker 1が〜と述べた」「〜で合意した」のような言い切りの文に要約します。
+  \(ReadabilityGuide.compactRules)
   """
 
   /// One section's topics. A section the model still finds too long is split
