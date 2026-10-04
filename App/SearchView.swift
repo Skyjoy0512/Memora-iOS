@@ -186,14 +186,17 @@ struct SearchView: View {
 
   private var chatEmptyState: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 18) {
+      VStack(spacing: 18) {
         Text(Date.now.formatted(date: .abbreviated, time: .shortened))
           .font(.caption)
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity)
+        Spacer(minLength: 0)
         AskAIGreeting()
+        Spacer(minLength: 0)
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .frame(maxWidth: .infinity)
+      .containerRelativeFrame(.vertical)
       .padding(.horizontal, 18)
       .padding(.vertical, 12)
     }
