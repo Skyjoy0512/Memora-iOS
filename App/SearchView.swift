@@ -192,7 +192,7 @@ struct SearchView: View {
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity)
         AskAIGreeting()
-          .padding(.top, 44)
+          .padding(.top, 184)
         Spacer(minLength: 0)
       }
       .frame(maxWidth: .infinity, alignment: .top)
