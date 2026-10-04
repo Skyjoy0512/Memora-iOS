@@ -120,9 +120,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   履歴 / 検索 / 新しいチャット on the right with the new chat at the far edge;
   replies as plain text with no bubble, only the person's messages in
   `aiBubble`; `AskAIGreeting` before the first message; no large title).
-  `AskAIGlow` draws a Gemini-like light behind it: a bloom when the tab opens,
-  a moving mesh while an answer is being formed, a faint glow at the bottom of
-  the empty screen; still under Reduce Motion. The tab opens on a new chat
+  `AskAIGlow` draws a Gemini-like light behind it: a glow from the bottom when
+  the tab opens, a moving mesh across the top only while an answer is being
+  formed, a fainter glow left at the bottom of the empty screen; still under Reduce Motion. The tab opens on a new chat
   every time (`didChangeTab`), keeping only an answer still being written and
   resident posts that arrived while away; past exchanges are in 履歴. Routing is the app's, not the
   person's (`shouldRunAsAgent`): a cloud model always runs as the agent and is
