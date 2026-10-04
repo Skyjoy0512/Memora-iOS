@@ -155,23 +155,19 @@ struct RootTabView: View {
         .hidesSystemTabBar()
         .tag(RootTab.askAI)
     }
+    .overlay(alignment: .top) {
+      // Each list tab opens under a wash of its own colour, which settles after
+      // a few seconds. Ask AI has its own glow inside its screen.
+      if let tab = activeRootTab {
+        TabTopGlow(color: tab.glowColor)
+          .id(tab)
+      }
+    }
     .safeAreaInset(edge: .bottom, spacing: 8) {
       bottomControls
     }
     .accessibilityHidden(model.isCaptureSourcePresented)
-    .background {
-      // Each list tab sits on a wash of its own colour, which drifts after the
-      // tab opens and then holds still. It stays behind the content, so text and
-      // controls are never tinted. Ask AI has its own glow inside its screen.
-      ZStack {
-        Color(uiColor: .systemBackground)
-        if let tab = activeRootTab {
-          TabTopGlow(color: tab.glowColor)
-            .id(tab)
-        }
-      }
-      .ignoresSafeArea()
-    }
+    .background(Color(uiColor: .systemBackground))
   }
 
   private var bottomControls: some View {

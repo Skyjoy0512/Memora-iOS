@@ -30,7 +30,7 @@ struct TabTopGlow: View {
         endPoint: .bottom
       )
     }
-    .opacity(colorScheme == .dark ? 0.28 : 0.38)
+    .opacity(colorScheme == .dark ? 0.5 : 0.85)
     .allowsHitTesting(false)
     .accessibilityHidden(true)
     .ignoresSafeArea()
