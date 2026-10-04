@@ -34,6 +34,15 @@ struct StateGalleryView: View {
       }
 
       Section {
+        NavigationLink("Ask AIの経過（表示の確認）") {
+          ScrollView {
+            VStack(alignment: .leading, spacing: 32) {
+              ThinkingTraceView(message: Self.demoTraceWorking)
+              ThinkingTraceView(message: Self.demoTraceSettled)
+            }
+            .padding(18)
+          }
+        }
         NavigationLink("プロジェクトの提案（表示の確認）") {
           ScrollView {
             ProjectSuggestionCard(meeting: Self.demoMeeting, suggestions: Self.demoSuggestions)
@@ -214,5 +223,41 @@ extension StateGalleryView {
       reasons: ["Satoさんの記録が入っています", "会議名にプロジェクト名が含まれています"]
     )
   ]
+}
+
+extension StateGalleryView {
+  /// Traces that are only drawn, for checking how steps and reasoning read.
+  static let demoTraceSettled: AIChatMessage = {
+    var message = AIChatMessage(role: .assistant, text: "", isThinking: false)
+    message.isAgentReply = true
+    message.createdAt = .now.addingTimeInterval(-12)
+    message.finishedAt = .now
+    message.reasoning = "見積もりの送付期限は通話の記録にある。まず記録を探して、決まったことと担当を確かめる。\n\n担当と期限が分かったので、フォローアップのメールを下書きする。"
+    message.agentSteps = [
+      AgentStep(
+        icon: .magnifyingglass, title: "記録を検索", detail: "記録2件・ジャーナル0件", state: .done,
+        query: "見積もり 送付",
+        results: [
+          AgentStep.Result(title: "通話", subtitle: "2026/09/30", meetingID: UUID()),
+          AgentStep.Result(title: "WeeklySync", subtitle: "2026/09/29", meetingID: UUID())
+        ]
+      ),
+      AgentStep(icon: .docText, title: "「通話」を読む", detail: "要約・決定2件", state: .done, output: ["会議: 通話（2026/09/30）", "決定: 次週火曜日の午後3時に会議", "タスク: 改訂見積書の送付（Me、金曜日）"]),
+      AgentStep(icon: .envelope, title: "メールの下書きを開く", detail: "取りやめました", state: .declined),
+      AgentStep(icon: .calendarBadgePlus, title: "予定を登録", detail: "カレンダーに書き込めませんでした", state: .failed)
+    ]
+    return message
+  }()
+
+  static let demoTraceWorking: AIChatMessage = {
+    var message = AIChatMessage(role: .assistant, text: "", isThinking: true)
+    message.isAgentReply = true
+    message.createdAt = .now.addingTimeInterval(-3)
+    message.agentSteps = [
+      AgentStep(icon: .magnifyingglass, title: "記録を検索", detail: "記録1件", state: .done, query: "定例"),
+      AgentStep(icon: .docText, title: "「WeeklySync」を読む")
+    ]
+    return message
+  }()
 }
 

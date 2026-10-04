@@ -42,13 +42,10 @@ struct ThinkingTraceView: View {
         }
       } label: {
         HStack(spacing: 8) {
-          if working {
-            PixelLoader(pattern: message.isAgentReply ? .orbit : .drive)
-          } else {
-            Image(icon: headerIcon)
-              .font(.footnote)
-              .foregroundStyle(.tertiary)
-          }
+          // One mark for the whole trace, brighter while it works.
+          Image(icon: .sparkle)
+            .font(.footnote)
+            .foregroundStyle(working ? .secondary : .tertiary)
           Group {
             if working {
               HStack(spacing: 8) {
@@ -95,23 +92,24 @@ struct ThinkingTraceView: View {
 
   private var isSearchAnswer: Bool { !message.isAgentReply }
 
+  private var reasoningParagraphs: [String] {
+    message.reasoning
+      .components(separatedBy: "\n\n")
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }
+  }
+
   private var hasRows: Bool {
     if isSearchAnswer { return message.traceQuery != nil || !message.sources.isEmpty }
     return !message.agentSteps.isEmpty || !message.reasoning.isEmpty
-  }
-
-  private var headerIcon: MemoraIcon {
-    if isSearchAnswer { return .magnifyingglass }
-    return message.agentSteps.isEmpty ? .sparkles : .checklist
   }
 
   private var activeLabel: String {
     if isSearchAnswer {
       return message.searchFinished ? "回答を書いています" : "記録を探しています"
     }
-    if let running = message.agentSteps.last(where: { $0.state == .running }) {
-      return running.title
-    }
+    // The running step is already a row below; the header says what kind of
+    // work it is rather than repeating it.
     return message.agentSteps.isEmpty ? "考えています" : "作業しています"
   }
 
@@ -148,24 +146,22 @@ struct ThinkingTraceView: View {
             .padding(.leading, 22)
         }
       } else {
-        if !message.reasoning.isEmpty {
-          // The model's own words, only because it returned them.
-          Text(message.reasoning)
-            .font(.caption)
+        // The model's own words, only because it returned them: one row per
+        // paragraph, as it wrote them.
+        ForEach(Array(reasoningParagraphs.enumerated()), id: \.offset) { _, paragraph in
+          Text(paragraph)
+            .font(.footnote)
             .foregroundStyle(.secondary)
             .lineSpacing(3)
-            .lineLimit(12)
-            .padding(.vertical, 4)
-            .padding(.leading, 22)
+            .lineLimit(6)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, 3)
+            .padding(.leading, 6)
             .textSelection(.enabled)
-            .transition(.opacity)
+            .transition(.opacity.combined(with: .offset(y: 6)))
         }
         ForEach(message.agentSteps) { step in
           stepRow(step)
-          if let query = step.query {
-            queryRow(query)
-              .padding(.leading, 22)
-          }
           if !step.results.isEmpty {
             resultRows(step.results)
               .padding(.leading, 22)
@@ -223,7 +219,6 @@ struct ThinkingTraceView: View {
       Text(result.title)
         .font(.footnote)
         .foregroundStyle(.primary)
-        .underline(result.meetingID != nil, color: .secondary.opacity(0.4))
         .lineLimit(1)
       if let subtitle = result.subtitle {
         Text(subtitle)
@@ -249,51 +244,54 @@ struct ThinkingTraceView: View {
     }
   }
 
-  /// One tool, as a row: what it did, its result as a chip, and — when opened
-  /// — the first lines the tool actually returned.
+  /// One tool, as a row: what it did and, quietly beside it, what it was
+  /// given or what came of it. A row with output opens to the first lines the
+  /// tool really returned.
   private func stepRow(_ step: AgentStep) -> some View {
     let isOpen = openSteps.contains(step.id)
     let canOpen = !step.output.isEmpty && step.state != .running
+    let secondary = [
+      step.query.map { "「\($0)」" },
+      step.query == nil || step.results.isEmpty ? step.detail : nil
+    ]
+    .compactMap { $0 }
+    .filter { !$0.isEmpty }
+    .joined(separator: "・")
 
     return VStack(alignment: .leading, spacing: 2) {
-      Button {
+      HStack(spacing: 8) {
+        stateMark(step.state)
+          .frame(width: 14)
+        Text(step.title)
+          .font(.footnote.weight(.medium))
+          .foregroundStyle(step.state == .declined ? .secondary : .primary)
+          .strikethrough(step.state == .declined)
+          .lineLimit(1)
+          .layoutPriority(1)
+        if !secondary.isEmpty {
+          Text(secondary)
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+            .lineLimit(1)
+        }
+        if canOpen {
+          Image(icon: .chevronDown)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.tertiary)
+            .rotationEffect(.degrees(isOpen ? 0 : -90))
+        }
+      }
+      .frame(minHeight: 28, alignment: .leading)
+      .contentShape(Rectangle())
+      .onTapGesture {
         guard canOpen else { return }
         withAnimation(reduceMotion ? nil : MemoraMotion.control) {
           if isOpen { openSteps.remove(step.id) } else { openSteps.insert(step.id) }
         }
-      } label: {
-        HStack(spacing: 8) {
-          stateMark(step.state)
-            .frame(width: 14)
-          Text(step.title)
-            .font(.footnote.weight(.medium))
-            .foregroundStyle(step.state == .declined ? .secondary : .primary)
-            .strikethrough(step.state == .declined)
-            .lineLimit(1)
-          if let detail = step.detail, !detail.isEmpty {
-            Text(detail)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .lineLimit(1)
-              .padding(.horizontal, 6)
-              .padding(.vertical, 2)
-              .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
-          }
-          Spacer(minLength: 0)
-          if canOpen {
-            Image(icon: .chevronDown)
-              .font(.caption2.weight(.semibold))
-              .foregroundStyle(.tertiary)
-              .rotationEffect(.degrees(isOpen ? 0 : -90))
-          }
-        }
-        .frame(minHeight: 28, alignment: .leading)
-        .contentShape(Rectangle())
       }
-      .buttonStyle(.plain)
-      .disabled(!canOpen)
       .accessibilityElement(children: .combine)
       .accessibilityValue(stateLabel(step.state))
+      .accessibilityAddTraits(canOpen ? .isButton : [])
       .accessibilityHint(canOpen ? "タップで結果を\(isOpen ? "閉じます" : "表示します")" : "")
 
       if isOpen {
@@ -322,8 +320,7 @@ struct ThinkingTraceView: View {
   private func stateMark(_ state: AgentStep.State) -> some View {
     switch state {
     case .running:
-      ProgressView()
-        .controlSize(.mini)
+      TraceSpinner()
     case .done:
       Image(icon: .checkmark)
         .font(.caption2.weight(.bold))

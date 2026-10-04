@@ -193,6 +193,7 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case rectangleStackFill = "rectangle.stack.fill"
   case rotateRight = "rotate.right"
   case sliderHorizontal3 = "slider.horizontal.3"
+  case sparkle = "sparkle"
   case sparkles = "sparkles"
   case sparklesFill = "sparkles.fill"
   case squareAndArrowDown = "square.and.arrow.down"

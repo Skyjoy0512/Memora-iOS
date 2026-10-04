@@ -132,8 +132,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   reasoning text (Claude thinking, `reasoning_content`). A reply with none of
   these shows no trace. Never add rows that did not happen.
 - The same rule (only what really happened) governs the other AI pieces:
-  `WorkingStatus`/`PixelLoader` time long work from its real start
-  (`ProcessingService.startedAt`, the question's send time); answers cite
+  `WorkingStatus`/`PixelLoader` time long processing from its real start
+  (`ProcessingService.startedAt`), and the trace header shows the time since
+  the question was sent beside one sparkle mark; it never repeats the running
+  step, which is already a row; answers cite
   records as 【資料n】 and only numbers matching a sent source become links
   (`AnswerCitations`); follow-ups are built from decisions, tasks and open
   questions the cited records hold (`followUps(for:)`); the agent asks the
