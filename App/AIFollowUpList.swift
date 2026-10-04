@@ -3,13 +3,14 @@ import SwiftUI
 /// Questions to ask next, under the latest answer. Tapping one asks it.
 struct AIFollowUpList: View {
   var prompts: [String]
+  var title = "続けて聞く"
   var onSelect: (String) -> Void
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isShown = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text("続けて聞く")
+      Text(title)
         .font(.caption.weight(.medium))
         .foregroundStyle(.secondary)
         .padding(.bottom, 2)

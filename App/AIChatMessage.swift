@@ -36,6 +36,12 @@ struct AIChatMessage: Identifiable, Hashable {
   /// True once the person approved a change in this reply, so asking again
   /// could repeat it.
   var didChangeData = false
+  /// The resident agent that posted this on its own, shown above the reply.
+  var residentName: String?
+  var residentSymbol: MemoraIcon?
+  /// Next steps the resident agent proposed; sending one runs it as a normal
+  /// request, with approval for any change.
+  var suggestions: [String] = []
 
   /// How long the reply took, in whole seconds, once it has settled.
   var elapsedSeconds: Int? {

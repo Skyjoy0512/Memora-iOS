@@ -158,6 +158,16 @@ struct SettingsView: View {
           }
 
           NavigationLink {
+            ResidentAgentsView()
+          } label: {
+            LabeledContent {
+              Text(model.residentLLM == nil ? "BYOKのみ" : "\(model.residentAgents.filter(\.isEnabled).count)件オン")
+            } label: {
+              SettingsLabel("常駐エージェント", icon: .clockArrowCirclepath, color: Tint.processing)
+            }
+          }
+
+          NavigationLink {
             AIMemoryView()
           } label: {
             LabeledContent {

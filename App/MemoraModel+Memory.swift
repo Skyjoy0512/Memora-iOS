@@ -147,13 +147,26 @@ extension MemoraModel {
     let turns = aiMessages
       .filter { !$0.isThinking && !$0.text.isEmpty }
       .suffix(Self.threadTurnLimit)
-      .map { AIThreadTurn(isUser: $0.role == .user, text: $0.text, date: .now) }
+      .map {
+        AIThreadTurn(
+          isUser: $0.role == .user,
+          text: $0.text,
+          date: .now,
+          residentName: $0.residentName,
+          residentSymbol: $0.residentSymbol
+        )
+      }
     persistInBackground(Array(turns), forKey: StorageKey.aiThread)
   }
 
   static func restoredThread(_ turns: [AIThreadTurn]) -> [AIChatMessage] {
     guard let last = turns.last, Date.now.timeIntervalSince(last.date) < threadLifetime else { return [] }
-    return turns.map { AIChatMessage(role: $0.isUser ? .user : .assistant, text: $0.text) }
+    return turns.map { turn in
+      var message = AIChatMessage(role: turn.isUser ? .user : .assistant, text: turn.text)
+      message.residentName = turn.residentName
+      message.residentSymbol = turn.residentSymbol
+      return message
+    }
   }
 
   /// Opens a saved exchange as the conversation, so a follow-up can be asked

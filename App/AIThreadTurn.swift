@@ -6,4 +6,7 @@ struct AIThreadTurn: Codable, Hashable {
   var isUser: Bool
   var text: String
   var date: Date
+  /// Set when a resident agent posted the turn; older saved turns have none.
+  var residentName: String?
+  var residentSymbol: MemoraIcon?
 }

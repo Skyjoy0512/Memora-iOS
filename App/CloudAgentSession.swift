@@ -9,19 +9,22 @@ final class CloudAgentSession {
   private let key: String
   private let system: String
   /// Fixed for the session, so the model sees the same tools on every turn.
-  private let tools: [AgentTool] = AgentTool.offered
+  private let tools: [AgentTool]
   /// Tools from connected MCP servers, loaded before the first turn.
   var externalTools: [MCPTool] = []
   private var messages: [[String: Any]] = []
 
   /// Returns nil when there is no key for the provider; the caller says so.
-  init?(llm: LLMSelection, system: String) {
+  /// `tools` narrows what the model is offered; resident agents get only the
+  /// reading tools.
+  init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil) {
     guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return nil
     }
     self.llm = llm
     self.key = key
     self.system = system
+    self.tools = tools ?? AgentTool.offered
   }
 
   func addUserMessage(_ text: String) {

@@ -1,11 +1,16 @@
+import BackgroundTasks
 import CloudKit
 import UIKit
 import UserNotifications
 
 /// Receives CloudKit shares opened from the system — a link in Messages or Mail,
 /// say — so a teammate's invitation lands in the app. Also receives taps on a
-/// task reminder.
+/// task reminder. It owns the model, so a background refresh that launches the
+/// app without a window still has the records to work on.
+@MainActor
 final class MemoraAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+  let model = MemoraModel()
+
   /// Starts the location logger outside the view tree, so a background relaunch
   /// still receives location events. It does nothing unless the setting is on.
   func application(
@@ -14,6 +19,11 @@ final class MemoraAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
   ) -> Bool {
     UNUserNotificationCenter.current().delegate = self
     AutoLocationLogger.shared.startIfEnabled()
+    // Must be registered before launch finishes, or the system drops the task.
+    BGTaskScheduler.shared.register(forTaskWithIdentifier: MemoraModel.residentRefreshTaskID, using: .main) { [model] task in
+      guard let task = task as? BGAppRefreshTask else { return }
+      MainActor.assumeIsolated { model.handleResidentRefresh(task) }
+    }
     return true
   }
 
@@ -32,6 +42,11 @@ final class MemoraAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
     didReceive response: UNNotificationResponse
   ) async {
     let info = response.notification.request.content.userInfo
+    // A resident agent's notice opens the conversation it posted to.
+    if info[MemoraModel.residentNotificationKey] != nil {
+      await MainActor.run { model.selectedTab = .askAI }
+      return
+    }
     guard let string = info[TaskReminderScheduler.taskIDKey] as? String,
           let id = UUID(uuidString: string) else { return }
     await MainActor.run {

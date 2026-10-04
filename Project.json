@@ -59,8 +59,12 @@
           "NSMicrophoneUsageDescription" : "会話の録音とAsk AIへの音声入力にマイクを使用します。",
           "NSSpeechRecognitionUsageDescription" : "Ask AIへ話しかけた内容を文字に変換するために音声認識を使用します。",
           "NSSupportsLiveActivities" : true,
+          "BGTaskSchedulerPermittedIdentifiers" : [
+            "app.memora.residents.refresh"
+          ],
           "UIBackgroundModes" : [
-            "audio"
+            "audio",
+            "fetch"
           ],
           "UILaunchScreen" : {
 

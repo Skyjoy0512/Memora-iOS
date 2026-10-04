@@ -46,6 +46,13 @@ struct AIMessageView: View {
   @ViewBuilder
   private var assistantReply: some View {
     VStack(alignment: .leading, spacing: 12) {
+      if let name = message.residentName {
+        Label(name, icon: message.residentSymbol ?? .sparkles)
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(.secondary)
+          .accessibilityLabel("常駐エージェント \(name)")
+      }
+
       // The trace: open while the AI works, one settled line afterwards.
       if ThinkingTraceView.hasTrace(message) {
         ThinkingTraceView(message: message)
@@ -90,7 +97,9 @@ struct AIMessageView: View {
 
       let followUps = model.followUps(for: message)
       if !followUps.isEmpty {
-        AIFollowUpList(prompts: followUps) { model.sendAIChat($0) }
+        AIFollowUpList(prompts: followUps, title: message.suggestions.isEmpty ? "続けて聞く" : "提案") {
+          model.sendAIChat($0)
+        }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

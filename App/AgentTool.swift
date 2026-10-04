@@ -34,6 +34,13 @@ enum AgentTool: String, CaseIterable {
     onDeviceTools.filter { !$0.needsGmail || GmailService.shared.isConnected }
   }
 
+  /// What a resident agent may use while it works unattended: reading only,
+  /// and no questions, since nobody may be there to answer.
+  @MainActor
+  static var residentTools: [AgentTool] {
+    offered.filter { !$0.needsApproval && $0 != .askUser }
+  }
+
   var needsGmail: Bool {
     self == .searchEmail || self == .readEmail
   }

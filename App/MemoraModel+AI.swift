@@ -51,7 +51,7 @@ extension MemoraModel {
   func canRetryAIAnswer(_ messageID: UUID) -> Bool {
     guard !isAIChatResponding,
           let last = aiMessages.last, last.id == messageID, last.role == .assistant,
-          !last.didChangeData else { return false }
+          !last.didChangeData, last.residentName == nil else { return false }
     return aiMessages.dropLast().last?.role == .user
   }
 

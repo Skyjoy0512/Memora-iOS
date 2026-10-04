@@ -146,6 +146,12 @@ final class MemoraModel {
   var mcpServers: [MCPServerConfig] = MemoraModel.storedSetting([MCPServerConfig].self, forKey: StorageKey.mcpServers) ?? [] {
     didSet { MemoraModel.storeSetting(mcpServers, forKey: StorageKey.mcpServers) }
   }
+  /// Resident agents and when each last finished. Settings, so UserDefaults.
+  var residentAgents: [ResidentAgent] = MemoraModel.storedSetting([ResidentAgent].self, forKey: StorageKey.residentAgents) ?? ResidentAgentCatalog.presets {
+    didSet { MemoraModel.storeSetting(residentAgents, forKey: StorageKey.residentAgents) }
+  }
+  /// Resident agents working right now, so one is never started twice.
+  var runningResidentIDs: Set<UUID> = []
   /// Bumped when a project suggestion is dismissed, so screens re-read it.
   var dismissedSuggestionRevision = 0
   /// The MCP tools offered to the running agent, by the name the model uses.

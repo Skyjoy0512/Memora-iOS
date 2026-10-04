@@ -53,6 +53,7 @@ struct RootTabView: View {
       if phase == .active {
         model.importAutoLifeLogInbox()
         model.prepareWeeklyReviewIfNeeded()
+        Task { await model.runDueResidents() }
         model.scanInboxForAudio()
         AutoLocationLogger.shared.startIfEnabled()
         // A permission request left unanswered when the app went away is
@@ -62,6 +63,8 @@ struct RootTabView: View {
         // Leaving the foreground while the "always" prompt is requested is what
         // shows the prompt really appeared.
         AutoLocationLogger.shared.handleSceneInactive()
+        // Wakes the app for the next resident run while it is away.
+        if phase == .background { model.scheduleResidentRefresh() }
       }
     }
     .onAppear {

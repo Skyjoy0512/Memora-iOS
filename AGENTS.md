@@ -197,6 +197,24 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   PowerPoint (`PPTXWriter`, stored ZIP via `ZipArchive`) or text. The agent
   cannot read attachments yet, and slide speaker notes are not written into
   the .pptx.
+- Readability: summaries, Ask AI answers and the agent write to
+  `ReadabilityGuide` (rules adapted from yomiyasu and k16shikano's guide,
+  credited in `docs/THIRD_PARTY.md`): `rules` for cloud prompts,
+  `compactRules` for the on-device window.
+- Resident agents (`ResidentAgent`, `ResidentTrigger`, `ResidentAgentCatalog`,
+  `MemoraModel+Residents`, Settings › 常駐エージェント), after OpenDots' Dots
+  (design only; its code is TypeScript): named agents that run every morning,
+  every Monday, or after a summary is made, and post to the Ask AI
+  conversation under their name. BYOK only (`residentLLM`): never Memora
+  Intelligence credits or the on-device model. They get only the reading tools
+  (`AgentTool.residentTools`, re-checked per call) and write changes as
+  「提案:」 lines that become buttons; sending one runs the normal agent with
+  approval. Runs come from `BGAppRefreshTask`
+  (`app.memora.residents.refresh`, registered in `MemoraAppDelegate`, which
+  owns the model) and from returning to the app; iOS picks the background
+  time. `lastRunAt` moves only on a finished run, a cut-short run leaves no
+  message, and a run missed by more than `lateWindow` is skipped. A
+  notification is posted only if already allowed.
 - Ask AI defaults to Auto, which follows the configured `AIEngine` and cloud
   selection. A registered model is chosen in Settings › AI整理 (saved in
   `RegisteredLLMStore`), not from the composer: a menu there dropped the

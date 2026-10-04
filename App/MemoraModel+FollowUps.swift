@@ -7,6 +7,8 @@ extension MemoraModel {
   func followUps(for message: AIChatMessage) -> [String] {
     guard message.role == .assistant, !message.isThinking,
           !isAIChatResponding, message.id == aiMessages.last?.id else { return [] }
+    // A resident agent's own proposals stand in for the generic follow-ups.
+    if !message.suggestions.isEmpty { return message.suggestions }
 
     var prompts: [String] = []
     for source in message.sources.prefix(3) {
