@@ -191,11 +191,11 @@ struct SearchView: View {
           .font(.caption)
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity)
-        Spacer(minLength: 0)
         AskAIGreeting()
+          .padding(.top, 44)
         Spacer(minLength: 0)
       }
-      .frame(maxWidth: .infinity)
+      .frame(maxWidth: .infinity, alignment: .top)
       .containerRelativeFrame(.vertical)
       .padding(.horizontal, 18)
       .padding(.vertical, 12)
