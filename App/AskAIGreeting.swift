@@ -1,11 +1,22 @@
 import SwiftUI
 
-/// What Ask AI opens with before anything is asked: a greeting, a few things
-/// to try (each one sends itself when tapped), and a tip about memory.
+/// What Ask AI opens with before anything is asked: a large welcoming title,
+/// a few things to try (each one sends itself when tapped), and a tip about
+/// memory.
 struct AskAIGreeting: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var shown = 0
+  /// Picked once per opening, so the title does not change as the screen redraws.
+  @State private var title = Self.titles.randomElement() ?? "何をお手伝いしましょう"
+
+  private static let titles = [
+    "何をお手伝いしましょう",
+    "今日は何をしましょうか",
+    "何かお手伝いできることは？",
+    "どこから始めましょうか",
+    "今日は何をお探しですか"
+  ]
 
   private static let prompts = [
     "わたしについて何を覚えている？",
@@ -16,9 +27,12 @@ struct AskAIGreeting: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
-      bubble(0) {
-        Text(greeting)
-      }
+      Text(title)
+        .font(.largeTitle.weight(.semibold))
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .opacity(shown > 0 ? 1 : 0)
+        .offset(y: shown > 0 || reduceMotion ? 0 : 8)
 
       bubble(1) {
         VStack(alignment: .leading, spacing: 8) {
@@ -44,11 +58,6 @@ struct AskAIGreeting: View {
     .onAppear { reveal() }
   }
 
-  private var greeting: String {
-    let name = model.profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
-    return name.isEmpty ? "こんにちは！" : "こんにちは、\(name)さん！"
-  }
-
   /// The lines arrive one after another, as messages do.
   private func bubble(_ index: Int, @ViewBuilder content: () -> some View) -> some View {
     content()
@@ -62,7 +71,7 @@ struct AskAIGreeting: View {
   private func reveal() {
     guard shown == 0 else { return }
     Task { @MainActor in
-      for index in 1...3 {
+      for index in 1...2 {
         withAnimation(reduceMotion ? nil : MemoraMotion.screen) { shown = index }
         try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 280))
       }
