@@ -10,6 +10,8 @@ struct SearchView: View {
   /// interrupted by a reply arriving.
   @State private var isNearBottom = true
   @State private var hasUnseenAnswer = false
+  /// Bumped each time the tab opens, to replay the glow's entrance.
+  @State private var glowEntrance = 0
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
@@ -17,13 +19,19 @@ struct SearchView: View {
 
     return NavigationStack {
       // One assistant, one conversation: Memora's mark at the top, the
-      // messages as bubbles below it.
+      // messages below it.
       Group {
         if model.aiMessages.isEmpty {
           chatEmptyState
         } else {
           chatTranscript
         }
+      }
+      .background {
+        AskAIGlow(isThinking: model.isAIChatResponding, isEmpty: model.aiMessages.isEmpty, entrance: glowEntrance)
+      }
+      .onChange(of: model.selectedTab) { _, tab in
+        if tab == .askAI { glowEntrance += 1 }
       }
       .safeAreaInset(edge: .top, spacing: 0) {
         VStack(spacing: 10) {
@@ -35,12 +43,16 @@ struct SearchView: View {
         }
         .padding(.bottom, 8)
         .background {
+          // Hides the conversation scrolling under the header, but steps
+          // aside while the thinking glow fills the screen.
           LinearGradient(
             colors: [Color(uiColor: .systemBackground), Color(uiColor: .systemBackground).opacity(0)],
             startPoint: .init(x: 0.5, y: 0.75),
             endPoint: .bottom
           )
           .ignoresSafeArea(edges: .top)
+          .opacity(model.isAIChatResponding ? 0 : 1)
+          .animation(.smooth(duration: 0.9), value: model.isAIChatResponding)
         }
       }
       // Tapping the conversation puts the keyboard away.

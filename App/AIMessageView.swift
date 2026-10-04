@@ -29,7 +29,7 @@ struct AIMessageView: View {
       Text(message.text)
         .font(.body)
         .textSelection(.enabled)
-        .aiBubble(isFromPerson: true)
+        .aiBubble()
         .contextMenu {
           Button("コピー", icon: .docOnDoc) {
             UIPasteboard.general.string = message.text
@@ -70,9 +70,9 @@ struct AIMessageView: View {
       }
 
       if !message.isThinking, !message.text.isEmpty {
+        // Memora's answer reads as plain text on the page, not a balloon.
         answerText
-          .aiBubble()
-          .frame(maxWidth: 360, alignment: .leading)
+          .frame(maxWidth: .infinity, alignment: .leading)
       }
 
       ForEach(message.documentIDs, id: \.self) { id in

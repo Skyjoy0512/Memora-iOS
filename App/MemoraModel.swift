@@ -7,7 +7,12 @@ import UniformTypeIdentifiers
 @MainActor
 @Observable
 final class MemoraModel {
-  var selectedTab = RootTab.files
+  var selectedTab = RootTab.files {
+    didSet { didChangeTab(from: oldValue) }
+  }
+  /// When the person last left Ask AI, so a resident agent's post that came
+  /// in while they were away is still there when they come back.
+  @ObservationIgnored var askAILeftAt = Date.now
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
   var isFileCreationPresented = false
@@ -524,13 +529,11 @@ final class MemoraModel {
     aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [])
     aiMemories = load([AIMemory].self, forKey: StorageKey.aiMemories, fallback: [])
     customTemplates = load([SummaryMarketTemplate].self, forKey: StorageKey.customTemplates, fallback: [])
-    let thread = load([AIThreadTurn].self, forKey: StorageKey.aiThread, fallback: [])
 
     // Protection is decided only once every document has been read, so a failure
     // in the last one (AI history, say) still stops the app from overwriting it.
     isStoreProtected = didFailToReadStore
-    // The conversation left open carries on, unless it has gone quiet.
-    aiMessages = Self.restoredThread(thread)
+    // Ask AI opens on a new chat; earlier conversations are in its history.
 
     // Photos that older records held inline are written to files here, after
     // loading, so decoding a document (a backup, say) never writes into the

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The top of Ask AI: Memora's mark and name in the middle, a new chat on the
-/// left, and the rest — history, search, what it looks across — behind ….
+/// The top of Ask AI: Memora's mark and name in the middle, what it looks
+/// across on the left, and history, search and a new chat on the right — the
+/// new chat at the far edge, where it is easiest to reach again.
 struct AskAIHeader: View {
   @Environment(MemoraModel.self) private var model
   var onNewChat: () -> Void
@@ -11,22 +12,7 @@ struct AskAIHeader: View {
   var body: some View {
     ZStack {
       HStack {
-        Button(action: onNewChat) {
-          Image(icon: .squareAndPencil)
-            .font(.body.weight(.medium))
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .memoraGlass(in: Circle(), interactive: true)
-        .disabled(model.aiMessages.isEmpty)
-        .accessibilityLabel("新しいチャット")
-
-        Spacer()
-
         Menu {
-          Button("履歴", icon: .clockArrowCirclepath, action: onHistory)
-          Button("検索", icon: .magnifyingglass, action: onSearch)
           Picker("対象", selection: Binding(
             get: { model.aiScope },
             set: { model.changeAIScope($0) }
@@ -35,16 +21,26 @@ struct AskAIHeader: View {
               Label(scope.title, icon: scope.symbol).tag(scope)
             }
           }
-          .pickerStyle(.menu)
         } label: {
-          Image(icon: .ellipsis)
-            .font(.body.weight(.semibold))
+          Image(icon: model.aiScope.symbol)
+            .font(.body.weight(.medium))
             .frame(width: 44, height: 44)
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .memoraGlass(in: Circle(), interactive: true)
-        .accessibilityLabel("その他")
+        .accessibilityLabel("対象: \(model.aiScope.title)")
+
+        Spacer()
+
+        HStack(spacing: 0) {
+          headerButton("履歴", icon: .clockArrowCirclepath, action: onHistory)
+          headerButton("検索", icon: .magnifyingglass, action: onSearch)
+          headerButton("新しいチャット", icon: .squareAndPencil, action: onNewChat)
+            .disabled(model.aiMessages.isEmpty)
+        }
+        .padding(.horizontal, 2)
+        .memoraGlass(in: Capsule(), interactive: true)
       }
       .padding(.horizontal, 18)
       .frame(maxHeight: .infinity, alignment: .top)
@@ -70,5 +66,16 @@ struct AskAIHeader: View {
     }
     .frame(height: 96)
     .padding(.top, 4)
+  }
+
+  private func headerButton(_ title: String, icon: MemoraIcon, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Image(icon: icon)
+        .font(.body.weight(.medium))
+        .frame(width: 40, height: 44)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(title)
   }
 }

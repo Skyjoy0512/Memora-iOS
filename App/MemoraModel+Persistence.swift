@@ -158,7 +158,6 @@ extension MemoraModel {
     static let lifeLogTrash = "memoraLifeLogTrash"
     static let aiHistory = "memoraAIHistory"
     static let aiMemories = "memoraAIMemories"
-    static let aiThread = "memoraAIThread"
     static let aiMemoryEnabled = "memora.ai.memoryEnabled"
     static let glossary = "memora.glossary"
     static let verifiedCallerNumber = "memora.calling.verifiedNumber"

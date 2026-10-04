@@ -15,7 +15,7 @@ struct AskAIGreeting: View {
   ]
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: 16) {
       bubble(0) {
         Text(greeting)
       }
@@ -49,13 +49,12 @@ struct AskAIGreeting: View {
     return name.isEmpty ? "こんにちは！" : "こんにちは、\(name)さん！"
   }
 
-  /// The bubbles arrive one after another, as messages do.
+  /// The lines arrive one after another, as messages do.
   private func bubble(_ index: Int, @ViewBuilder content: () -> some View) -> some View {
     content()
       .font(.body)
       .lineSpacing(3)
-      .aiBubble()
-      .frame(maxWidth: 340, alignment: .leading)
+      .frame(maxWidth: .infinity, alignment: .leading)
       .opacity(shown > index ? 1 : 0)
       .offset(y: shown > index || reduceMotion ? 0 : 8)
   }

@@ -116,8 +116,15 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   (`makeTeamSharePackage`) also remains.
 - The Ask AI fallback never invents answers; when no engine can run it says so.
 - Ask AI is one assistant with no mode switch, laid out as a conversation
-  (`AskAIHeader` with Memora's mark, grey `aiBubble` replies, `AskAIGreeting`
-  before the first message; no large title). Routing is the app's, not the
+  (`AskAIHeader` with Memora's mark, the scope menu on the left and
+  履歴 / 検索 / 新しいチャット on the right with the new chat at the far edge;
+  replies as plain text with no bubble, only the person's messages in
+  `aiBubble`; `AskAIGreeting` before the first message; no large title).
+  `AskAIGlow` draws a Gemini-like light behind it: a bloom when the tab opens,
+  a moving mesh while an answer is being formed, a faint glow at the bottom of
+  the empty screen; still under Reduce Motion. The tab opens on a new chat
+  every time (`didChangeTab`), keeping only an answer still being written and
+  resident posts that arrived while away; past exchanges are in 履歴. Routing is the app's, not the
   person's (`shouldRunAsAgent`): a cloud model always runs as the agent and is
   given the records found for the request up front; the on-device model, which
   is unreliable with tools, gets the agent only for requests to do something
@@ -153,8 +160,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Settings › メモリ, or the agent's `save_memory` after approval) in
   `aiMemories`, and sends it with every question together with related past
   exchanges from `aiHistory` (`personalContext`, `MemoraModel+Memory`). Nothing
-  is inferred into memory. The open conversation is kept (`aiThread`) and
-  restored on launch unless idle for 12 hours; a history entry can be continued.
+  is inferred into memory. A history entry can be continued.
 - Gmail is connected read-only (`GmailService`, OAuth with PKCE, refresh token
   in the keychain) and read by the agent through `search_email` / `read_email`,
   offered only while connected. The build needs a Google iOS OAuth client ID

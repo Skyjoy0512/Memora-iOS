@@ -1,15 +1,10 @@
 import Foundation
 
-// Ask AI as a personal assistant: what it remembers about the person, the
-// past conversations it can draw on, and the conversation that carries over
-// from one launch to the next.
+// Ask AI as a personal assistant: what it remembers about the person and the
+// past conversations it can draw on.
 extension MemoraModel {
   /// The longest a single memory may be, so one entry cannot crowd the rest.
   static let aiMemoryCharacterLimit = 200
-  /// A conversation idle longer than this starts fresh on the next launch.
-  private static let threadLifetime: TimeInterval = 12 * 60 * 60
-  /// The most turns kept from the open conversation.
-  private static let threadTurnLimit = 20
 
   // MARK: - Memories
 
@@ -139,35 +134,7 @@ extension MemoraModel {
     return lines.count > 1 ? lines.joined(separator: "\n") : ""
   }
 
-  // MARK: - The open conversation
-
-  /// Keeps the open conversation, so it is still there after the app is
-  /// closed. Only settled turns are kept.
-  func persistAIThread() {
-    let turns = aiMessages
-      .filter { !$0.isThinking && !$0.text.isEmpty }
-      .suffix(Self.threadTurnLimit)
-      .map {
-        AIThreadTurn(
-          isUser: $0.role == .user,
-          text: $0.text,
-          date: .now,
-          residentName: $0.residentName,
-          residentSymbol: $0.residentSymbol
-        )
-      }
-    persistInBackground(Array(turns), forKey: StorageKey.aiThread)
-  }
-
-  static func restoredThread(_ turns: [AIThreadTurn]) -> [AIChatMessage] {
-    guard let last = turns.last, Date.now.timeIntervalSince(last.date) < threadLifetime else { return [] }
-    return turns.map { turn in
-      var message = AIChatMessage(role: turn.isUser ? .user : .assistant, text: turn.text)
-      message.residentName = turn.residentName
-      message.residentSymbol = turn.residentSymbol
-      return message
-    }
-  }
+  // MARK: - Continuing
 
   /// Opens a saved exchange as the conversation, so a follow-up can be asked
   /// with it in view.
@@ -177,7 +144,6 @@ extension MemoraModel {
       AIChatMessage(role: .user, text: entry.question),
       AIChatMessage(role: .assistant, text: entry.answer)
     ]
-    persistAIThread()
   }
 }
 
