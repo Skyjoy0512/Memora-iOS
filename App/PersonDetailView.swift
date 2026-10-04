@@ -130,7 +130,6 @@ struct PersonDetailView: View {
 
   /// Hands the question to the agent, which can read the person's records.
   private func askAgent(about person: Person) {
-    model.isAgentModeEnabled = true
     model.selectedTab = .askAI
     model.sendAIChat("\(person.name)さんとのこれまでの話、決まったこと、お互いの約束をまとめて")
   }

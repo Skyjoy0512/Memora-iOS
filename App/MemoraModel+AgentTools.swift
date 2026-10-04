@@ -243,6 +243,13 @@ extension MemoraModel {
         on: messageID
       )
       finishAgentStep(stepID, on: messageID, state: .done)
+      // A record the agent read is what its answer rests on; follow-ups are
+      // built from it.
+      updateAgentMessage(messageID) { message in
+        if !message.sources.contains(where: { $0.meetingID == meeting.id }) {
+          message.sources.append(AIChatSource(meetingID: meeting.id, title: meeting.displayTitle))
+        }
+      }
       return AgentToolOutcome(text: compact ? compactAgentText(of: meeting) : agentText(of: meeting))
     }
 

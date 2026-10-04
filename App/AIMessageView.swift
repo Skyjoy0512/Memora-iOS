@@ -28,14 +28,8 @@ struct AIMessageView: View {
 
       Text(message.text)
         .font(.body)
-        .foregroundStyle(.primary)
         .textSelection(.enabled)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(
-          Color(uiColor: .secondarySystemBackground),
-          in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
+        .aiBubble(isFromPerson: true)
         .contextMenu {
           Button("コピー", icon: .docOnDoc) {
             UIPasteboard.general.string = message.text
@@ -68,8 +62,10 @@ struct AIMessageView: View {
           .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
 
-      if !message.isThinking {
+      if !message.isThinking, !message.text.isEmpty {
         answerText
+          .aiBubble()
+          .frame(maxWidth: 360, alignment: .leading)
       }
 
       ForEach(message.documentIDs, id: \.self) { id in

@@ -113,7 +113,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   conflict handling are not built. A manual package export
   (`makeTeamSharePackage`) also remains.
 - The Ask AI fallback never invents answers; when no engine can run it says so.
-- Ask AI has a 質問 / エージェント switch (`isAgentModeEnabled`). The agent
+- Ask AI is one assistant with no mode switch, laid out as a conversation
+  (`AskAIHeader` with Memora's mark, grey `aiBubble` replies, `AskAIGreeting`
+  before the first message; no large title). Routing is the app's, not the
+  person's (`shouldRunAsAgent`): a cloud model always runs as the agent and is
+  given the records found for the request up front; the on-device model, which
+  is unreliable with tools, gets the agent only for requests to do something
+  and otherwise answers through the grounded path (`sendGroundedAnswer`). The agent
   (`MemoraModel+Agent`, tools in `MemoraModel+AgentTools`, `AgentTool`) runs
   on the chosen cloud model through `CloudAgentSession` (Anthropic tool use or
   OpenAI-compatible function calling), or with no key on Apple's on-device

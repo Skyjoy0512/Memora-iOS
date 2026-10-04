@@ -61,6 +61,21 @@ extension MemoraModel {
     if !thread.isEmpty {
       opening = "これまでの会話:\n\(thread)\n\n今回の依頼:\n\(trimmed)"
     }
+    // The records that bear on the request, found before the model starts:
+    // a question can be answered from them straight away, and work starts
+    // from the right records. Smaller on the device's window.
+    let allowedMeetings = Self.meetings(in: scope, from: meetings)
+    let found = Self.requestContent(
+      for: AIQuestionRequest(question: trimmed, scope: .global, attachment: nil),
+      scopeLabel: scope.scopeLabel,
+      allowedMeetings: allowedMeetings,
+      tasks: Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings),
+      characterLimit: runner.isOnDevice ? 1_500 : 8_000
+    )
+    if !found.context.isEmpty {
+      opening = "関係しそうな記録（検索済み。idは search_records で得られます）:\n\(found.context)\n\n" + opening
+      updateAgentMessage(placeholder.id) { $0.sources = found.sources }
+    }
     // What the agent knows about the person, smaller on the device's window.
     let personal = personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000)
     if !personal.isEmpty {
@@ -245,10 +260,14 @@ extension MemoraModel {
   func requestAgentApproval(_ approval: AgentApproval) async -> Bool {
     // Only one card at a time; an older one still showing counts as declined.
     resolveAgentApproval(false)
-    return await withCheckedContinuation { continuation in
+    let approved = await withCheckedContinuation { continuation in
       agentApprovalContinuation = continuation
       pendingAgentApproval = approval
     }
+    if approved {
+      updateAgentMessage(approval.messageID) { $0.didChangeData = true }
+    }
+    return approved
   }
 
   func agentMessage(_ id: UUID) -> AIChatMessage? {
@@ -291,7 +310,8 @@ extension MemoraModel {
     let today = Date.now.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())
     return """
     あなたは記録アプリ「Memora」のエージェントです。道具で記録を調べ、依頼された作業をします。
-    記録にないことは作りません。まず search_records で探し、必要なら read_record で読みます。
+    記録にないことは作りません。渡された「関係しそうな記録」で答えられる質問にはそのまま答えます。足りなければ search_records で探し、read_record で読みます。
+    「これから検索します」のような予定だけを書いて終えず、答えか作業の結果を返します。
     変更する道具は利用者の承認後に実行されます。拒否されたら繰り返しません。
     頼まれた作業は質問で返さず、道具を呼んで行います。メールは宛先が不明でも draft_email で下書きを開きます。
     最後に、したことを日本語で短く伝えます。idは利用者に見せません。今日は\(today)。対象: \(scope.scopeLabel)。
@@ -303,7 +323,8 @@ extension MemoraModel {
     return """
     あなたは記録アプリ「Memora」のエージェントです。利用者の会議の記録・ジャーナル・タスク・プロジェクトを道具で調べ、依頼された作業を行います。
 
-    - 事実は道具で読んだ記録だけに基づきます。記録にない数字・発言・決定を作りません。分からないことは分からないと書きます。
+    - 依頼の前に「関係しそうな記録」が渡されます。それで答えられる質問には、道具を使わずにそのまま答えます。足りないときや作業を頼まれたときに道具を使います。
+    - 事実は渡された記録と道具で読んだ記録だけに基づきます。記録にない数字・発言・決定を作りません。分からないことは分からないと書きます。
     - 資料やスライドを作る前に、search_records で探し、read_record で中身を読みます。
     - 資料は create_document に、見出し・箇条書き・必要なら表を使ったMarkdownで書きます。
     - スライドは create_slides で作ります。1枚目は箇条書きなしの表紙にし、各スライドの要点は3〜6個、短い言葉にします。

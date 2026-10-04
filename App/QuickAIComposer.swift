@@ -47,7 +47,7 @@ struct QuickAIComposer: View {
     case .global:
       // On Ask AI itself the hint follows the mode the switch is set to.
       if model.selectedTab == .askAI {
-        model.isAgentModeEnabled ? "やってほしいことを入力" : "会議について質問"
+        "Memoraに話しかける"
       } else {
         "Ask Anything"
       }

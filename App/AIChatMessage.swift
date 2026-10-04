@@ -33,6 +33,9 @@ struct AIChatMessage: Identifiable, Hashable {
   var reasoning = ""
   /// True once the record search for an answer has finished.
   var searchFinished = false
+  /// True once the person approved a change in this reply, so asking again
+  /// could repeat it.
+  var didChangeData = false
 
   /// How long the reply took, in whole seconds, once it has settled.
   var elapsedSeconds: Int? {

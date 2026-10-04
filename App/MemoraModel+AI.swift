@@ -46,12 +46,12 @@ extension MemoraModel {
     }
   }
 
-  /// Whether the reply can be asked for again: the latest plain answer, since
-  /// re-running an agent could repeat changes it already made.
+  /// Whether the reply can be asked for again: the latest one, as long as it
+  /// changed nothing — re-running it could repeat a change already made.
   func canRetryAIAnswer(_ messageID: UUID) -> Bool {
-    guard !isAIChatResponding, !isAgentModeEnabled,
+    guard !isAIChatResponding,
           let last = aiMessages.last, last.id == messageID, last.role == .assistant,
-          !last.isAgentReply else { return false }
+          !last.didChangeData else { return false }
     return aiMessages.dropLast().last?.role == .user
   }
 
@@ -84,14 +84,37 @@ extension MemoraModel {
     let remembered = isAIMemoryEnabled ? Self.explicitMemory(in: trimmed) : nil
     let didRemember = remembered.map { addAIMemory($0, origin: .told) } ?? false
 
-    if isAgentModeEnabled {
+    // One assistant, no mode to choose. A cloud model runs as the agent and
+    // decides for itself whether to answer or to do the work. The on-device
+    // model is unreliable with tools, so it gets the agent only for a request
+    // to do something; a question goes through the grounded answer, which
+    // finds the records first and answers from them.
+    if Self.shouldRunAsAgent(trimmed, engine: askAIConfiguration.engine, hasAttachment: attachment != nil) {
       let sent = sendAgentChat(question, attachment: attachment)
       if sent, didRemember, let remembered {
         insertMemoryNote(remembered)
       }
       return sent
     }
+    return sendGroundedAnswer(trimmed, attachment: attachment, remembered: didRemember ? remembered : nil)
+  }
 
+  /// Whether a request goes to the agent: always on a cloud model; on the
+  /// device only when it asks for something to be done.
+  static func shouldRunAsAgent(_ request: String, engine: AIEngine, hasAttachment: Bool) -> Bool {
+    // The agent cannot read attachments yet; the grounded answer can.
+    guard !hasAttachment else { return false }
+    if AIEngineService.effectiveEngine(engine) == .cloud { return true }
+    let actions = [
+      "下書き", "作って", "作成", "追加", "登録", "入れて", "保存", "送って", "送信", "メール",
+      "予定", "カレンダー", "タスクに", "資料", "スライド", "覚えて", "移動", "Notion"
+    ]
+    return actions.contains { request.contains($0) }
+  }
+
+  /// A question answered from the records found for it, in one pass.
+  private func sendGroundedAnswer(_ trimmed: String, attachment: AIAttachment?, remembered: String?) -> Bool {
+    let didRemember = remembered != nil
     let configuration = askAIConfiguration
     let engine = configuration.engine
     let llm = configuration.llm
@@ -199,6 +222,7 @@ extension MemoraModel {
 
     return true
   }
+
 
   /// Answers a question with the chosen engine, using only the records the range
   /// allows. Both the chat and the focused question screen come through here, so

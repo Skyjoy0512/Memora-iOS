@@ -179,9 +179,7 @@ final class MemoraModel {
   var aiScope: AIChatScope = .all
   /// Ask AI works as an agent: it uses tools to read records and, with the
   /// person's approval, make documents, tasks, projects and memos.
-  var isAgentModeEnabled = UserDefaults.standard.bool(forKey: StorageKey.agentMode) {
-    didSet { UserDefaults.standard.set(isAgentModeEnabled, forKey: StorageKey.agentMode) }
-  }
+
   /// The change the agent is waiting for the person to approve or decline.
   var pendingAgentApproval: AgentApproval?
   /// Questions the agent asked and is waiting on.

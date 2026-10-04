@@ -5,7 +5,7 @@ import Foundation
 // questions — so each one has something behind it to answer from.
 extension MemoraModel {
   func followUps(for message: AIChatMessage) -> [String] {
-    guard message.role == .assistant, !message.isThinking, !message.isAgentReply,
+    guard message.role == .assistant, !message.isThinking,
           !isAIChatResponding, message.id == aiMessages.last?.id else { return [] }
 
     var prompts: [String] = []
