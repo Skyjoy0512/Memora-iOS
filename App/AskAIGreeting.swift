@@ -19,7 +19,8 @@ struct AskAIGreeting: View {
   var body: some View {
     Text(title)
       .font(.largeTitle.weight(.semibold))
-      .multilineTextAlignment(.center)
+      .lineLimit(1)
+      .minimumScaleFactor(0.6)
       .frame(maxWidth: .infinity)
       .opacity(shown ? 1 : 0)
       .offset(y: shown || reduceMotion ? 0 : 8)
