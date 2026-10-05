@@ -13,6 +13,7 @@ struct TasksView: View {
   var body: some View {
     @Bindable var model = model
     let visibleTasks = self.visibleTasks
+    let isFiltered = assigneeFilter != nil || todayOnly || waitingOnly
 
     return NavigationStack(path: $path) {
       VStack(spacing: 0) {
@@ -30,9 +31,17 @@ struct TasksView: View {
 
         if visibleTasks.isEmpty {
           ContentUnavailableView {
-            Label(showsCompleted ? "完了したタスクはありません" : "タスクはありません", icon: .checkmarkSquare)
+            Label(isFiltered ? "条件に合うタスクはありません" : (showsCompleted ? "完了したタスクはありません" : "タスクはありません"), icon: .checkmarkSquare)
           } description: {
-            Text(showsCompleted ? "完了にしたタスクがここに残ります。" : "会話から次の行動が見つかると、自動でここに集まります。")
+            Text(isFiltered ? "絞り込み条件を変えると、ほかのタスクを確認できます。" : (showsCompleted ? "完了にしたタスクがここに残ります。" : "会話から次の行動が見つかると、自動でここに集まります。"))
+          } actions: {
+            if isFiltered {
+              Button("絞り込みを解除") {
+                assigneeFilter = nil
+                todayOnly = false
+                waitingOnly = false
+              }
+            }
           }
           .frame(maxHeight: .infinity)
         } else {
@@ -71,7 +80,7 @@ struct TasksView: View {
               }
             }
           } label: {
-            Label("担当で絞り込み", icon: .line3HorizontalDecrease)
+            Label("タスクを絞り込み", icon: .line3HorizontalDecrease)
               .labelStyle(.iconOnly)
           }
         }

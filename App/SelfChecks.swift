@@ -45,6 +45,7 @@ enum SelfChecks {
 
     group("Journal timeline", checkJournalTimeline)
     group("Task and journal compatibility", checkTaskAndJournalCompatibility)
+    group("Review period boundaries", checkReviewPeriodBoundaries)
     group("Question terms", checkQuestionWords)
     group("AI context limits", checkAIContextLimits)
     group("Scope isolation", checkScopeIsolation)
@@ -295,6 +296,37 @@ enum SelfChecks {
     let timeline = JournalTimelineBuilder.build(day: occurred, entries: [entry], events: [], meetings: [], now: created)
     if timeline.items.isEmpty || entry.occurredAt != occurred {
       report("journal event date ignored")
+    }
+  }
+
+  private static func checkReviewPeriodBoundaries() {
+    guard let period = ReviewPeriod.parse(start: "2026-10-01", end: "2026-10-05") else {
+      report("valid period refused")
+      return
+    }
+    if !period.contains(period.start) || period.contains(period.end) {
+      report("review range is not half open")
+    }
+    if ReviewPeriod.parse(start: "2026-02-30", end: "2026-03-01") != nil
+      || ReviewPeriod.parse(start: "2026-10-05", end: "2026-10-01") != nil
+      || ReviewPeriod.parse(start: "2025-01-01", end: "2026-12-31") != nil {
+      report("invalid review range accepted")
+    }
+    let completed = MemoraTask(id: UUID(), title: "完了", isCompleted: true, completedAt: period.start)
+    let outside = MemoraTask(id: UUID(), title: "翌日", isCompleted: true, completedAt: period.end)
+    let unknown = MemoraTask(id: UUID(), title: "日時不明", isCompleted: true)
+    let statistics = ReviewStatistics.build(period: period, meetings: [], tasks: [completed, outside, unknown], entries: [])
+    if statistics.completedTaskCount != 1 { report("review completion date boundary changed") }
+    let intervals = [
+      DateInterval(start: period.start.addingTimeInterval(-100), end: period.start.addingTimeInterval(100)),
+      DateInterval(start: period.start.addingTimeInterval(50), end: period.start.addingTimeInterval(200)),
+      DateInterval(start: period.end.addingTimeInterval(-100), end: period.end.addingTimeInterval(100))
+    ]
+    if HealthReviewSnapshot.mergedDuration(intervals, within: period) != 300 {
+      report("health durations overlap or escape period")
+    }
+    if HealthReviewSnapshot.mergedDuration([], within: period) != 0 {
+      report("empty health duration is not zero")
     }
   }
 

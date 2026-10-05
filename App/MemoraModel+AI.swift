@@ -120,7 +120,8 @@ extension MemoraModel {
     if AIEngineService.effectiveEngine(engine) == .cloud { return true }
     let actions = [
       "下書き", "作って", "作成", "追加", "登録", "入れて", "保存", "送って", "送信", "メール",
-      "予定", "カレンダー", "タスクに", "資料", "スライド", "覚えて", "移動", "Notion"
+      "予定", "カレンダー", "タスクに", "資料", "スライド", "覚えて", "移動", "Notion",
+      "集計", "何件", "何時間", "振り返り", "振り返って"
     ]
     return actions.contains { request.contains($0) }
   }

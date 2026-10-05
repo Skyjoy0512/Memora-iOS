@@ -16,6 +16,12 @@
   },
   "targets" : {
     "Memora" : {
+      "entitlements" : {
+        "path" : "App/Memora.entitlements",
+        "properties" : {
+          "com.apple.developer.healthkit" : true
+        }
+      },
       "dependencies" : [
         {
           "embed" : true,
@@ -54,6 +60,7 @@
           "NSCalendarsFullAccessUsageDescription" : "予定をジャーナルに表示し、会議の録音をすぐ始められるようにカレンダーを使用します。",
           "NSContactsUsageDescription" : "会議に参加した人を連絡先から選んで記録とひもづけるため、またMemoraから連絡先の人に電話をかけるために連絡先を使用します。連絡先はこのiPhoneから送信しません。",
           "NSFaceIDUsageDescription" : "記録を他の人に見られないよう、Face IDでMemoraのロックを解除します。",
+          "NSHealthShareUsageDescription" : "歩数・睡眠・ワークアウトを読み取り、個人の振り返り画面で活動を確認するために使用します。健康データはAIや外部サービスへ送信せず、チームにも共有しません。",
           "NSLocationAlwaysAndWhenInUseUsageDescription" : "移動や滞在をジャーナルに自動で記録するために、アプリを使っていない間も位置情報を使用します。位置情報はこのiPhoneの外へ送信しません。",
           "NSLocationWhenInUseUsageDescription" : "ジャーナルに近くの駅や場所の名前を追加し、移動や滞在を記録するために位置情報を使用します。位置情報はこのiPhoneの外へ送信しません。",
           "NSMicrophoneUsageDescription" : "会話の録音とAsk AIへの音声入力にマイクを使用します。",

@@ -30,6 +30,10 @@ extension MemoraModel {
       return listProjectsTool(messageID: messageID)
     case .listTasks:
       return listTasksTool(call, messageID: messageID, scope: scope)
+    case .reviewPeriod:
+      return reviewPeriodTool(call, messageID: messageID, scope: scope)
+    case .updateTasks:
+      return await updateTasksTool(call, messageID: messageID, scope: scope)
     case .readPerson:
       return readPersonTool(call, messageID: messageID, compact: compact)
     case .createDocument, .createSlides:
@@ -226,7 +230,7 @@ extension MemoraModel {
     }
     for entry in entries {
       let body = entry.summary.replacingOccurrences(of: "\n", with: " ")
-      lines.append("- ジャーナル id=\(entry.id.uuidString) 「\(entry.title)」 \(Self.agentDate(entry.createdAt)) \(body.prefix(previewLength))")
+      lines.append("- ジャーナル id=\(entry.id.uuidString) 「\(entry.title)」 \(Self.agentDate(entry.occurredAt)) \(body.prefix(previewLength))")
     }
     return AgentToolOutcome(text: lines.joined(separator: "\n"))
   }
@@ -259,7 +263,7 @@ extension MemoraModel {
         on: messageID
       )
       finishAgentStep(stepID, on: messageID, state: .done)
-      var text = "ジャーナル「\(entry.title)」 \(Self.agentDate(entry.createdAt)) 種類: \(entry.kind.label)"
+      var text = "ジャーナル「\(entry.title)」 \(Self.agentDate(entry.occurredAt)) 種類: \(entry.kind.label)"
       if let location = entry.locationName, !location.isEmpty {
         text += " 場所: \(location)"
       }
@@ -712,7 +716,10 @@ extension MemoraModel {
   )
 
   private static func agentTaskLine(_ task: MemoraTask) -> String {
-    var line = "- \(task.isCompleted ? "[完了] " : "")\(task.title)"
+    var line = "- id=\(task.id.uuidString) \(task.isCompleted ? "[完了] " : "")\(task.title)"
+    if !task.detail.isEmpty { line += " 説明: \(task.detail.prefix(500))" }
+    if !task.isCompleted { line += " 状態: \(task.progress.label)" }
+    if let workDate = task.workDate { line += " 取り組む日: \(agentDate(workDate))" }
     if let assignee = task.assignee, !assignee.isEmpty { line += " 担当: \(assignee)" }
     if let due = task.dueDate { line += " 期限: \(agentDate(due))" }
     return line

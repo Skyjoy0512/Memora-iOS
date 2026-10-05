@@ -9,6 +9,8 @@ struct AIAnswerActions: View {
   var message: AIChatMessage
   @State private var didCopy = false
   @State private var copyResetTask: Task<Void, Never>?
+  @State private var savedDocument: MemoraDocument?
+  @State private var saveError = false
 
   var body: some View {
     HStack(spacing: 2) {
@@ -19,6 +21,12 @@ struct AIAnswerActions: View {
 
       ShareLink(item: AnswerCitations.stripped(message.text)) {
         Label("共有", icon: .squareAndArrowUp)
+      }
+
+      Button("回答を資料に保存", icon: .docText) {
+        let document = MemoraDocument(title: "Ask AIの回答", kind: .document, markdown: message.text)
+        if model.addDocument(document) { savedDocument = document }
+        else { saveError = true }
       }
 
       if model.canRetryAIAnswer(message.id) {
@@ -34,6 +42,21 @@ struct AIAnswerActions: View {
     .padding(.leading, -9)
     .sensoryFeedback(.success, trigger: didCopy) { _, copied in copied }
     .onDisappear { copyResetTask?.cancel() }
+    .sheet(item: $savedDocument) { document in
+      NavigationStack {
+        DocumentDetailView(documentID: document.id)
+          .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+              ToolbarIconButton("閉じる", icon: .xmark) { savedDocument = nil }
+            }
+          }
+      }
+    }
+    .alert("保存できませんでした", isPresented: $saveError) {
+      Button("閉じる", role: .cancel) {}
+    } message: {
+      Text("保存先を確認してから、もう一度お試しください。")
+    }
   }
 
   private func copy() {

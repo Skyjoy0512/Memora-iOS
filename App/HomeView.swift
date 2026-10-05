@@ -19,6 +19,7 @@ struct HomeView: View {
   @State private var openMovement: JournalMovement?
   /// The calendar event whose detail sheet is open.
   @State private var openCalendarEvent: JournalCalendarEvent?
+  @State private var showsReview = false
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @AppStorage("memora.journal.calendarIDs") private var journalCalendarIDsValue = ""
 
@@ -55,6 +56,11 @@ struct HomeView: View {
             }
 
             JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
+
+            Button("選んだ日を振り返る", icon: .docText) {
+              showsReview = true
+            }
+            .buttonStyle(.bordered)
 
             if entries.isEmpty, calendarEvents.isEmpty {
               emptyDay
@@ -109,6 +115,9 @@ struct HomeView: View {
       }
       .sheet(isPresented: $model.isLifeLogCreationPresented) {
         LifeLogCreationSheet()
+      }
+      .sheet(isPresented: $showsReview) {
+        JournalReviewView(date: selectedDate)
       }
       .sheet(item: $openEntry) { entry in
         LifeLogEntryDetailView(entryID: entry.id)

@@ -158,16 +158,20 @@ extension MemoraModel {
 
     var candidate = trashedLifeLogEntries
     let record = candidate.remove(at: index)
+    let deletions = pendingMediaDeletions + [PendingMediaDeletion(
+      id: UUID(), audioReference: nil, photoNames: record.entry.photoFileName.map { [$0] } ?? []
+    )]
     let stored = persistBatch {
-      [(key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidate))]
+      [
+        (key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidate)),
+        (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(deletions))
+      ]
     }
     guard stored else { return }
 
     trashedLifeLogEntries = candidate
-    deleteMedia(
-      audioURL: nil,
-      photoNames: record.entry.photoFileName.map { [$0] } ?? []
-    )
+    pendingMediaDeletions = deletions
+    retryPendingMediaDeletions()
   }
 
   /// Brings in journal records the automatic logger wrote while the model was

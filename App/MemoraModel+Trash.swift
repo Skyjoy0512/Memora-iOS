@@ -196,16 +196,21 @@ extension MemoraModel {
 
     var candidate = trashedRecords
     let record = candidate.remove(at: index)
+    let deletions = pendingMediaDeletions + [PendingMediaDeletion(
+      id: UUID(), audioReference: record.meeting.audioURL.flatMap { MediaFiles.reference(for: $0) },
+      photoNames: record.meeting.photoFileNames ?? []
+    )]
     let stored = persistBatch {
-      [(key: StorageKey.trash, data: try RecordStore.encoded(candidate))]
+      [
+        (key: StorageKey.trash, data: try RecordStore.encoded(candidate)),
+        (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(deletions))
+      ]
     }
     guard stored else { return }
 
     trashedRecords = candidate
-    deleteMedia(
-      audioURL: record.meeting.audioURL,
-      photoNames: record.meeting.photoFileNames ?? []
-    )
+    pendingMediaDeletions = deletions
+    retryPendingMediaDeletions()
   }
 
   /// Removes media for records that are already gone from the store. A file that
@@ -251,8 +256,11 @@ extension MemoraModel {
         remaining.append(PendingMediaDeletion(id: deletion.id, audioReference: audio, photoNames: photos))
       }
     }
+    guard persistNow(remaining, forKey: StorageKey.pendingMediaDeletions) else { return }
     pendingMediaDeletions = remaining
-    persistPendingMediaDeletions()
+    if !remaining.isEmpty {
+      deletionFailureMessage = "一部のメディアを削除できませんでした。次回の起動で再試行します。"
+    }
   }
 
   /// Drops trashed records once their recovery window has passed. The entries
@@ -269,6 +277,13 @@ extension MemoraModel {
 
     let candidateRecords = trashedRecords.filter { $0.deletedAt >= cutoff }
     let candidateEntries = trashedLifeLogEntries.filter { $0.deletedAt >= cutoff }
+    let deletions = pendingMediaDeletions
+      + expiredRecords.map { record in
+        PendingMediaDeletion(id: UUID(), audioReference: record.meeting.audioURL.flatMap { MediaFiles.reference(for: $0) }, photoNames: record.meeting.photoFileNames ?? [])
+      }
+      + expiredEntries.map { record in
+        PendingMediaDeletion(id: UUID(), audioReference: nil, photoNames: record.entry.photoFileName.map { [$0] } ?? [])
+      }
     let stored = persistBatch {
       var documents: [(key: String, data: Data)] = []
       if !expiredRecords.isEmpty {
@@ -277,6 +292,7 @@ extension MemoraModel {
       if !expiredEntries.isEmpty {
         documents.append((key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidateEntries)))
       }
+      documents.append((key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(deletions)))
       return documents
     }
     guard stored else { return }
@@ -288,17 +304,7 @@ extension MemoraModel {
       trashedLifeLogEntries = candidateEntries
     }
 
-    for record in expiredRecords {
-      deleteMedia(
-        audioURL: record.meeting.audioURL,
-        photoNames: record.meeting.photoFileNames ?? []
-      )
-    }
-    for record in expiredEntries {
-      deleteMedia(
-        audioURL: nil,
-        photoNames: record.entry.photoFileName.map { [$0] } ?? []
-      )
-    }
+    pendingMediaDeletions = deletions
+    retryPendingMediaDeletions()
   }
 }

@@ -7,6 +7,8 @@ enum AgentTool: String, CaseIterable {
   case readRecord = "read_record"
   case listProjects = "list_projects"
   case listTasks = "list_tasks"
+  case reviewPeriod = "review_period"
+  case updateTasks = "update_tasks"
   case readPerson = "read_person"
   case createDocument = "create_document"
   case createSlides = "create_slides"
@@ -49,14 +51,14 @@ enum AgentTool: String, CaseIterable {
   /// long-form writers (slides) and the rarer organising tools stay with the
   /// cloud models.
   static let onDeviceTools: [AgentTool] = [
-    .searchRecords, .readRecord, .readPerson, .listTasks, .addTasks, .createDocument,
+    .searchRecords, .readRecord, .readPerson, .listTasks, .reviewPeriod, .addTasks, .createDocument,
     .createProject, .addJournalMemo, .createCalendarEvent, .draftEmail, .searchEmail, .readEmail
   ]
 
   /// True for tools that change the person's data.
   var needsApproval: Bool {
     switch self {
-    case .searchRecords, .readRecord, .readPerson, .listProjects, .listTasks, .searchEmail, .readEmail, .askUser: false
+    case .searchRecords, .readRecord, .readPerson, .listProjects, .listTasks, .reviewPeriod, .searchEmail, .readEmail, .askUser: false
     default: true
     }
   }
@@ -67,7 +69,8 @@ enum AgentTool: String, CaseIterable {
     case .searchRecords: .magnifyingglass
     case .readRecord: .docText
     case .listProjects, .moveRecordsToProject: .folder
-    case .listTasks, .addTasks: .checklist
+    case .listTasks, .addTasks, .updateTasks: .checklist
+    case .reviewPeriod: .calendar
     case .readPerson: .person
     case .createDocument: .docRichtext
     case .createSlides: .rectangleOnRectangleAngled
@@ -92,6 +95,10 @@ enum AgentTool: String, CaseIterable {
       "プロジェクトの一覧（id・名前・記録の数）を返す。"
     case .listTasks:
       "タスクの一覧（タイトル・担当・期限・元の会議）を返す。"
+    case .reviewPeriod:
+      "期間内の会議件数・録音時間・完了タスク・メモ・写真を全件集計する。週や月の振り返り、件数・時間の質問には検索結果を数えずこの道具を使う。健康・位置情報は含まない。"
+    case .updateTasks:
+      "指定したタスクの取り組む日・進み具合・完了状態をまとめて変更する。変更前後を表示して承認を待つ。期限・担当・本文は変更しない。"
     case .readPerson:
       "人物について、一緒の会議・その人が引き受けたタスク・一緒に決めたこと・最後に会った日を返す。nameが空なら登録済みの人の一覧。「〇〇さんと何を話した？」「約束は？」に使う。"
     case .createDocument:
@@ -139,6 +146,20 @@ enum AgentTool: String, CaseIterable {
       return object([
         "include_completed": ["type": "boolean", "description": "完了済みも含めるか"]
       ], required: [])
+    case .reviewPeriod:
+      return object([
+        "start_date": string("開始日 yyyy-MM-dd（端末のタイムゾーン）"),
+        "end_date": string("終了日 yyyy-MM-dd。この日を含む。最大366日")
+      ], required: ["start_date", "end_date"])
+    case .updateTasks:
+      return object([
+        "updates": ["type": "array", "items": object([
+          "id": string("list_tasksで得たタスクid"),
+          "work_date": string("取り組む日 yyyy-MM-dd。空文字で解除。省略で維持"),
+          "progress": string("notStarted / inProgress / waiting。省略で維持"),
+          "is_completed": ["type": "boolean", "description": "完了状態。省略で維持"]
+        ], required: ["id"])]
+      ], required: ["updates"])
     case .readPerson:
       return object(["name": string("人の名前（敬称なしでよい）。空なら一覧")], required: ["name"])
     case .createDocument:
