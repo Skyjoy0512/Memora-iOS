@@ -634,7 +634,7 @@ enum SelfChecks {
     let allDay = JournalCalendarEvent(
       eventIdentifier: "evt-2",
       start: day,
-      end: day,
+      end: calendar.date(byAdding: .day, value: 1, to: day)!,
       title: "終日",
       isAllDay: true,
       calendarTitle: "仕事",
@@ -660,6 +660,17 @@ enum SelfChecks {
     }
     if matched.allDayEvents.map(\.title) != ["終日"] {
       report("all-day events were not kept apart: \(matched.allDayEvents.map(\.title))")
+    }
+    let nextDay = calendar.date(byAdding: .day, value: 1, to: day)!
+    let nextTimeline = JournalTimelineBuilder.build(day: nextDay, entries: [], events: [allDay], meetings: [], now: nextDay)
+    if !nextTimeline.allDayEvents.isEmpty {
+      report("all-day event appeared at its exclusive end")
+    }
+    var overnight = allDay
+    overnight.start = calendar.date(byAdding: .day, value: -1, to: day)!
+    let overnightTimeline = JournalTimelineBuilder.build(day: day, entries: [], events: [overnight], meetings: [])
+    if overnightTimeline.allDayEvents.count != 1 {
+      report("multi-day event lost its overlapping day")
     }
   }
 

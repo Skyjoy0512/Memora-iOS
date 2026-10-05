@@ -118,7 +118,7 @@ struct TaskEditView: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
-            model.updateTask(
+            let saved = model.updateTask(
               task.id,
               title: title,
               assignee: assignee,
@@ -130,15 +130,14 @@ struct TaskEditView: View {
               remindsAtDue: hasDueDate && remindsAtDue,
               reminderTime: hasDueDate && remindsAtDue ? reminderTime : nil
             )
-            dismiss()
+            if saved { dismiss() }
           }
           .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
       }
       .confirmationDialog("このタスクを削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
         Button("削除", role: .destructive) {
-          model.deleteTask(task.id)
-          dismiss()
+          if model.deleteTask(task.id) { dismiss() }
         }
         Button("キャンセル", role: .cancel) {}
       }

@@ -39,7 +39,7 @@ extension MemoraModel {
     case .createDocument, .createSlides:
       return await createDocumentTool(call, tool: tool, messageID: messageID)
     case .addTasks:
-      return await addTasksTool(call, messageID: messageID)
+      return await addTasksTool(call, messageID: messageID, scope: scope)
     case .createProject:
       return await createProjectTool(call, messageID: messageID)
     case .moveRecordsToProject:
@@ -473,28 +473,47 @@ extension MemoraModel {
     return AgentToolOutcome(text: "\(kindLabel)を保存しました。id=\(document.id.uuidString)")
   }
 
-  private func addTasksTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
+  private func addTasksTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {
     struct Draft {
       var title: String
       var assignee: String
       var dueDate: Date?
       var meetingID: UUID?
     }
-    let drafts = call.objects("tasks").compactMap { item -> Draft? in
-      let title = (item["title"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-      guard !title.isEmpty else { return nil }
-      let meetingID = (item["meeting_id"] as? String).flatMap(UUID.init(uuidString:)).flatMap { meeting(id: $0)?.id }
-      return Draft(
-        title: title,
-        assignee: item["assignee"] as? String ?? "",
-        dueDate: (item["due_date"] as? String).flatMap(Self.agentDay),
-        meetingID: meetingID
-      )
+    let requested = call.objects("tasks")
+    guard !requested.isEmpty, requested.count <= 30 else {
+      return AgentToolOutcome(text: "追加するタスクは1〜30件で指定してください。", isError: true)
     }
-    guard !drafts.isEmpty else {
-      return AgentToolOutcome(text: "追加するタスクがありません。", isError: true)
+    let scopedMeetingIDs = Set(Self.meetings(in: scope, from: meetings).map(\.id))
+    var drafts: [Draft] = []
+    for item in requested {
+      let title = (item["title"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+      guard !title.isEmpty else {
+        return AgentToolOutcome(text: "タイトルが空のタスクがあります。タスクは追加していません。", isError: true)
+      }
+      var meetingID: UUID?
+      if let rawID = item["meeting_id"] as? String, !rawID.isEmpty {
+        guard let id = UUID(uuidString: rawID), scopedMeetingIDs.contains(id) else {
+          return AgentToolOutcome(text: "対象外または存在しない会議が指定されています。タスクは追加していません。", isError: true)
+        }
+        meetingID = id
+      }
+      var dueDate: Date?
+      if let rawDate = item["due_date"] as? String, !rawDate.isEmpty {
+        guard let parsed = ReviewPeriod.parseDay(rawDate) else {
+          return AgentToolOutcome(text: "期限は実在する日付をyyyy-MM-ddで指定してください。タスクは追加していません。", isError: true)
+        }
+        dueDate = parsed
+      }
+      drafts.append(Draft(
+        title: title,
+        assignee: (item["assignee"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+        dueDate: dueDate,
+        meetingID: meetingID
+      ))
     }
 
+    let workspaceID = currentTeamID
     let lines = drafts.map { draft in
       var line = "・\(draft.title)"
       if !draft.assignee.isEmpty { line += "（\(draft.assignee)）" }
@@ -509,8 +528,19 @@ extension MemoraModel {
       messageID: messageID
     ) else { return Self.declinedOutcome }
 
-    for draft in drafts.reversed() {
-      addTask(title: draft.title, assignee: draft.assignee, dueDate: draft.dueDate, meetingID: draft.meetingID)
+    let allowedIDs = Set(Self.meetings(in: scope, from: meetings).map(\.id))
+    guard !Task.isCancelled, currentTeamID == workspaceID,
+          drafts.allSatisfy({ $0.meetingID.map(allowedIDs.contains) ?? true }) else {
+      finishAgentStep(stepID, on: messageID, state: .failed)
+      return AgentToolOutcome(text: "確認中に対象またはワークスペースが変わりました。タスクは追加していません。", isError: true)
+    }
+    let additions = drafts.map { draft in
+      MemoraTask(id: UUID(), title: draft.title, meetingID: draft.meetingID,
+        assignee: draft.assignee.isEmpty ? nil : draft.assignee, dueDate: draft.dueDate, isCompleted: false)
+    }
+    guard insertTasks(additions) else {
+      finishAgentStep(stepID, on: messageID, state: .failed)
+      return AgentToolOutcome(text: "保存できませんでした。タスクは追加していません。", isError: true)
     }
     finishAgentStep(stepID, on: messageID, state: .done, detail: "\(drafts.count)件")
     return AgentToolOutcome(text: "タスクを\(drafts.count)件追加しました。")

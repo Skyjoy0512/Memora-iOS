@@ -186,6 +186,8 @@ enum AgentTool: String, CaseIterable {
       return object([
         "tasks": [
           "type": "array",
+          "minItems": 1,
+          "maxItems": 30,
           "items": object([
             "title": string("タスクの内容"),
             "assignee": string("担当者（記録で明言された場合のみ）"),

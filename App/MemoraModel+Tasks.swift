@@ -3,12 +3,15 @@ import Foundation
 extension MemoraModel {
   func toggleTask(_ id: UUID) {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
-    tasks[index].isCompleted.toggle()
-    tasks[index].completedAt = tasks[index].isCompleted ? .now : nil
-    persistTasks()
+    var candidate = tasks
+    candidate[index].isCompleted.toggle()
+    candidate[index].completedAt = candidate[index].isCompleted ? .now : nil
+    guard persistNow(candidate, forKey: StorageKey.tasks) else { return }
+    tasks = candidate
     TaskReminderScheduler.refresh(tasks[index])
   }
 
+  @discardableResult
   func updateTask(
     _ id: UUID,
     title: String,
@@ -16,66 +19,81 @@ extension MemoraModel {
     dueDate: Date?,
     meetingID: UUID?,
     detail: String? = nil,
-    workDate: Date? = nil,
+    workDate: Date?,
     progress: TaskProgress? = nil,
     remindsAtDue: Bool? = nil,
     reminderTime: Date? = nil
-  ) {
-    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+  ) -> Bool {
+    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return false }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmedTitle.isEmpty else { return }
+    guard !trimmedTitle.isEmpty else { return false }
     let trimmedAssignee = assignee.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    tasks[index].title = trimmedTitle
-    tasks[index].assignee = trimmedAssignee.isEmpty ? nil : trimmedAssignee
-    tasks[index].dueDate = dueDate
-    tasks[index].meetingID = meetingID
-    if let detail { tasks[index].detail = detail.trimmingCharacters(in: .whitespacesAndNewlines) }
-    tasks[index].workDate = workDate
-    if let progress { tasks[index].progress = progress }
+    var candidate = tasks
+    candidate[index].title = trimmedTitle
+    candidate[index].assignee = trimmedAssignee.isEmpty ? nil : trimmedAssignee
+    candidate[index].dueDate = dueDate
+    candidate[index].meetingID = meetingID
+    if let detail { candidate[index].detail = detail.trimmingCharacters(in: .whitespacesAndNewlines) }
+    candidate[index].workDate = workDate.map { Calendar.current.startOfDay(for: $0) }
+    if let progress { candidate[index].progress = progress }
     if let remindsAtDue {
-      tasks[index].remindsAtDue = remindsAtDue
+      candidate[index].remindsAtDue = remindsAtDue
     }
-    tasks[index].reminderTime = reminderTime
-    persistTasks()
+    candidate[index].reminderTime = reminderTime
+    guard persistNow(candidate, forKey: StorageKey.tasks) else { return false }
+    tasks = candidate
     // A due-date change or a completion moves or clears the reminder.
     TaskReminderScheduler.refresh(tasks[index])
+    return true
   }
 
   /// Changes just the due date, from the task list's long-press menu.
   func setTaskDueDate(_ id: UUID, to date: Date?) {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
-    tasks[index].dueDate = date
-    persistTasks()
+    var candidate = tasks
+    candidate[index].dueDate = date
+    guard persistNow(candidate, forKey: StorageKey.tasks) else { return }
+    tasks = candidate
     TaskReminderScheduler.refresh(tasks[index])
   }
 
   func setTaskWorkDate(_ id: UUID, to date: Date?) {
     guard isStoreWritable(), let index = tasks.firstIndex(where: { $0.id == id }) else { return }
-    tasks[index].workDate = date.map { Calendar.current.startOfDay(for: $0) }
-    persistTasks()
+    var candidate = tasks
+    candidate[index].workDate = date.map { Calendar.current.startOfDay(for: $0) }
+    guard persistNow(candidate, forKey: StorageKey.tasks) else { return }
+    tasks = candidate
   }
 
-  func deleteTask(_ id: UUID) {
-    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
-    let removed = tasks.remove(at: index)
-    persistTasks()
+  @discardableResult
+  func deleteTask(_ id: UUID) -> Bool {
+    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return false }
+    var candidate = tasks
+    let removed = candidate.remove(at: index)
+    guard persistNow(candidate, forKey: StorageKey.tasks) else { return false }
+    tasks = candidate
     TaskReminderScheduler.cancel(taskID: id)
     scheduleUndo(
       UndoAction(message: "「\(removed.title)」を削除しました") { [weak self] in
         self?.restoreTask(removed, at: index)
       } finalize: {}
     )
+    return true
   }
 
   /// Puts a removed task back where it was, so an undo restores its order too.
   private func restoreTask(_ task: MemoraTask, at index: Int) {
     let position = min(index, tasks.count)
-    tasks.insert(task, at: position)
-    persistTasks()
+    guard !tasks.contains(where: { $0.id == task.id }) else { return }
+    var candidate = tasks
+    candidate.insert(task, at: position)
+    guard persistNow(candidate, forKey: StorageKey.tasks) else { return }
+    tasks = candidate
     TaskReminderScheduler.refresh(task)
   }
 
+  @discardableResult
   func addTask(
     title: String,
     assignee: String,
@@ -83,9 +101,9 @@ extension MemoraModel {
     meetingID: UUID? = nil,
     remindsAtDue: Bool = false,
     reminderTime: Date? = nil
-  ) {
+  ) -> Bool {
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmedTitle.isEmpty else { return }
+    guard !trimmedTitle.isEmpty else { return false }
     let trimmedAssignee = assignee.trimmingCharacters(in: .whitespacesAndNewlines)
     let task = MemoraTask(
       id: UUID(),
@@ -97,9 +115,20 @@ extension MemoraModel {
       remindsAtDue: remindsAtDue,
       reminderTime: reminderTime
     )
-    tasks.insert(task, at: 0)
-    persistTasks()
-    TaskReminderScheduler.refresh(task)
+    return insertTasks([task])
+  }
+
+  @discardableResult
+  func insertTasks(_ additions: [MemoraTask]) -> Bool {
+    let ids = Set(additions.map(\.id))
+    guard !additions.isEmpty, ids.count == additions.count,
+          ids.isDisjoint(with: tasks.map(\.id)) else { return false }
+    var candidate = tasks
+    candidate.insert(contentsOf: additions, at: 0)
+    guard persistNow(candidate, forKey: StorageKey.tasks) else { return false }
+    tasks = candidate
+    for task in additions { TaskReminderScheduler.refresh(task) }
+    return true
   }
 
   /// Files a summary's actions in the tasks tab, tied to their record. An
@@ -125,8 +154,6 @@ extension MemoraModel {
     }
     guard !added.isEmpty else { return 0 }
     // Newest first, like a task added by hand, keeping the meeting's order.
-    tasks.insert(contentsOf: added, at: 0)
-    persistTasks()
-    return added.count
+    return insertTasks(added) ? added.count : 0
   }
 }

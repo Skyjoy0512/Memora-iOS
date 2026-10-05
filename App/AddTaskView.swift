@@ -59,7 +59,7 @@ struct AddTaskView: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("追加", icon: .plus) {
-            model.addTask(
+            let saved = model.addTask(
               title: title,
               assignee: assignee,
               dueDate: includesDueDate ? dueDate : nil,
@@ -67,7 +67,7 @@ struct AddTaskView: View {
               remindsAtDue: includesDueDate && remindsAtDue,
               reminderTime: includesDueDate && remindsAtDue ? reminderTime : nil
             )
-            dismiss()
+            if saved { dismiss() }
           }
           .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
