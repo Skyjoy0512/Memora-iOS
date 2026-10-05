@@ -34,6 +34,7 @@ struct ContentView: View {
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.hasCompletedOnboarding)
+    .background { TapHapticsInstaller() }
     .sheet(isPresented: $model.isCapturePresented, onDismiss: {
       model.completeCaptureDismissal()
     }) {

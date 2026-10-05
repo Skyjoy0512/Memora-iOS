@@ -129,6 +129,10 @@ struct SearchView: View {
       }
       .animation(reduceMotion ? nil : MemoraMotion.control, value: model.pendingAgentApproval?.id)
       .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isAIChatResponding)
+      // A finished answer is felt, so a watch-away reply is noticed.
+      .sensoryFeedback(.success, trigger: model.isAIChatResponding) { was, isResponding in
+        was && !isResponding
+      }
       .onAppear {
         scrollToLatest(proxy)
       }

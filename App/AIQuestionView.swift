@@ -81,6 +81,7 @@ struct AIQuestionView: View {
         }
       }
       .onAppear(perform: askIfPrefilled)
+      .sensoryFeedback(.success, trigger: answer) { was, now in was == nil && now != nil }
       .onDisappear {
         // Leaving the screen stops the request; its result must not be applied.
         askTask?.cancel()
