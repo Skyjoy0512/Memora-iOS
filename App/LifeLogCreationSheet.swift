@@ -13,7 +13,7 @@ struct LifeLogCreationSheet: View {
   @State private var photoItem: PhotosPickerItem?
   @State private var photoData: Data?
   @State private var editingPhoto: PhotoEditRequest?
-  @State private var locationCapture = LocationCaptureService()
+  @State private var place: JournalPlace?
 
   var body: some View {
     NavigationStack {
@@ -37,36 +37,8 @@ struct LifeLogCreationSheet: View {
           }
         }
 
-        if kind == .location {
-          Section {
-            TextField("例：渋谷駅", text: $locationName)
-
-            Button {
-              locationCapture.requestCurrentPlace()
-            } label: {
-              switch locationCapture.state {
-              case .locating:
-                HStack(spacing: 10) {
-                  ProgressView()
-                  Text("現在地を確認中")
-                }
-              default:
-                Label("現在地から場所を取得", icon: .locationFill)
-              }
-            }
-            .disabled(locationCapture.state == .locating)
-          } header: {
-            Text("場所")
-          } footer: {
-            switch locationCapture.state {
-            case .found(let name):
-              Text("「\(name)」を候補にしました。必要なら編集できます。")
-            case .failed(let message):
-              Text(message)
-            default:
-              Text("近くの駅を候補にします。取得した場所名は保存前に編集できます。")
-            }
-          }
+        if kind == .location || kind == .event {
+          JournalPlaceField(name: $locationName, place: $place)
         }
 
         Section("写真") {
@@ -112,14 +84,6 @@ struct LifeLogCreationSheet: View {
           }
         }
       }
-      .onChange(of: locationCapture.state) { _, newState in
-        if case .found(let name) = newState {
-          locationName = name
-          if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            title = "\(name)に到着"
-          }
-        }
-      }
     }
     .presentationDetents([.large])
   }
@@ -144,15 +108,17 @@ struct LifeLogCreationSheet: View {
 
   private func save() {
     guard canSave else { return }
-    model.addLifeLogEntry(
+    let includesPlace = kind == .location || kind == .event
+    let saved = model.addLifeLogEntry(
       kind: kind,
       title: title,
       summary: detail,
       createdAt: createdAt,
       photoData: photoData,
       eventDate: kind == .event ? eventDate : nil,
-      locationName: kind == .location ? locationName : nil
+      locationName: includesPlace ? locationName : nil,
+      place: includesPlace ? place : nil
     )
-    dismiss()
+    if saved { dismiss() }
   }
 }

@@ -11,10 +11,11 @@ extension MemoraModel {
     photoData: Data?,
     eventDate: Date?,
     locationName: String?,
+    place: JournalPlace? = nil,
     removingDraft draftKey: String? = nil
   ) -> Bool {
     // A restore is putting records in place; adding one now could be replaced.
-    guard !isRestoring else { return false }
+    guard isStoreWritable() else { return false }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedLocation = locationName?.trimmingCharacters(in: .whitespacesAndNewlines)
     let resolvedTitle: String
@@ -29,7 +30,8 @@ extension MemoraModel {
     // Photos live in the media folder; the entry keeps the file name.
     let photoFileName = photoData.flatMap { MediaFiles.writePhoto($0, thumbnailMaxSide: 400) }
 
-    lifeLogEntries.insert(
+    var candidate = lifeLogEntries
+    candidate.insert(
       LifeLogEntry(
         id: id,
         createdAt: createdAt,
@@ -40,31 +42,52 @@ extension MemoraModel {
         kind: kind,
         photoFileName: photoFileName,
         eventDate: eventDate,
-        locationName: trimmedLocation
+        locationName: trimmedLocation,
+        latitude: place?.latitude,
+        longitude: place?.longitude
       ),
       at: 0
     )
     // The entry and the draft removal land together when the caller asked for
     // one, so leaving the draft behind cannot happen beside a stored memo.
-    return persistBatch({
-      [(key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(lifeLogEntries))]
+    let stored = persistBatch({
+      [(key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidate))]
     }, removing: draftKey.map { [$0] } ?? [])
+    guard stored else {
+      if let photoFileName { _ = MediaFiles.deletePhoto(photoFileName) }
+      return false
+    }
+    lifeLogEntries = candidate
+    return true
   }
 
-  func updateLifeLogEntry(_ id: UUID, title: String, summary: String, createdAt: Date) {
-    guard isStoreWritable() else { return }
-    guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
+  @discardableResult
+  func updateLifeLogEntry(_ id: UUID, title: String, summary: String, createdAt: Date,
+                         locationName: String?, place: JournalPlace?) -> Bool {
+    guard isStoreWritable() else { return false }
+    guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return false }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmedTitle.isEmpty else { return }
+    guard !trimmedTitle.isEmpty else { return false }
 
-    lifeLogEntries[index].title = trimmedTitle
-    lifeLogEntries[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
-    if lifeLogEntries[index].eventDate != nil {
-      lifeLogEntries[index].eventDate = createdAt
-    } else {
-      lifeLogEntries[index].createdAt = createdAt
+    var candidate = lifeLogEntries
+    candidate[index].title = trimmedTitle
+    candidate[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+    if candidate[index].kind == .location || candidate[index].kind == .event {
+      let name = locationName?.trimmingCharacters(in: .whitespacesAndNewlines)
+      candidate[index].locationName = name?.isEmpty == false ? name : nil
+      candidate[index].latitude = place?.latitude
+      candidate[index].longitude = place?.longitude
     }
-    persistLifeLog()
+    if candidate[index].eventDate != nil {
+      candidate[index].eventDate = createdAt
+    } else {
+      candidate[index].createdAt = createdAt
+    }
+    guard persistBatch({ [(key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidate))] }) else {
+      return false
+    }
+    lifeLogEntries = candidate
+    return true
   }
 
   /// Moves an entry to the trash, as one write, and only then changes the lists.

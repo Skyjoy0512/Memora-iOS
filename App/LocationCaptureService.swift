@@ -52,9 +52,11 @@ final class LocationCaptureService: NSObject, CLLocationManagerDelegate {
       manager.requestLocation()
     case .denied, .restricted:
       placeCompletion = nil
+      state = .failed("位置情報を許可するか、場所名を入力してください。")
       completion(.failed("位置情報を許可するか、場所名を入力してください。"))
     @unknown default:
       placeCompletion = nil
+      state = .failed("現在地を確認できませんでした。")
       completion(.failed("現在地を確認できませんでした。"))
     }
   }
@@ -66,10 +68,14 @@ final class LocationCaptureService: NSObject, CLLocationManagerDelegate {
       manager.requestLocation()
     case .denied, .restricted:
       state = .failed("位置情報を許可するか、場所名を入力してください。")
+      placeCompletion?(.failed("位置情報を許可するか、場所名を入力してください。"))
+      placeCompletion = nil
     case .notDetermined:
       break
     @unknown default:
       state = .failed("現在地を確認できませんでした。")
+      placeCompletion?(.failed("現在地を確認できませんでした。"))
+      placeCompletion = nil
     }
   }
 

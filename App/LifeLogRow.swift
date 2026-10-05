@@ -62,6 +62,11 @@ struct LifeLogRow: View {
             .font(.caption.weight(.medium))
             .foregroundStyle(.secondary)
         }
+        if (entry.kind == .location || entry.kind == .event),
+           let place = JournalPlace(name: entry.locationName ?? entry.title,
+             latitude: entry.latitude, longitude: entry.longitude) {
+          JournalMapPreview(place: place, date: entry.occurredAt)
+        }
 
         if let name = entry.photoFileName {
           Group {
@@ -89,8 +94,7 @@ struct LifeLogRow: View {
       .padding(.bottom, 8)
     }
     .contentShape(Rectangle())
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(accessibilityLabel)
+    .accessibilityElement(children: .contain)
   }
 
   /// A stay shows its whole span; anything else shows just its time.

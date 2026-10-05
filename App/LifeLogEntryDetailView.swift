@@ -141,6 +141,11 @@ struct LifeLogEntryDetailView: View {
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
+        if (entry.kind == .location || entry.kind == .event),
+           let place = JournalPlace(name: entry.locationName ?? entry.title,
+             latitude: entry.latitude, longitude: entry.longitude) {
+          JournalMapPreview(place: place, date: entry.occurredAt)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(20)
