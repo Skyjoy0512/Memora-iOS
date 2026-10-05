@@ -161,6 +161,16 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   `aiMemories`, and sends it with every question together with related past
   exchanges from `aiHistory` (`personalContext`, `MemoraModel+Memory`). Nothing
   is inferred into memory. A history entry can be continued.
+- Hindsight (`HindsightConfig`, `HindsightClient`, `MemoraModel+Hindsight`,
+  Settings › AI整理 › パーソナライズ（Hindsight）), after vectorize-io/hindsight:
+  a long-term memory server Ask AI draws on, off by default. When the person
+  configures a base URL and bank id (a self-hosted server or Hindsight Cloud;
+  the API key is in the keychain), a question recalls the memories that bear on
+  it (`POST …/memories/recall`) into the prompt, and a finished exchange is
+  retained (`POST …/memories`) in the background. It is its own switch, apart
+  from the on-device `aiMemories`; when the server is off or unreachable the
+  answer goes on without it, and nothing is invented. Resident agents do not
+  recall from it yet.
 - Gmail is connected read-only (`GmailService`, OAuth with PKCE, refresh token
   in the keychain) and read by the agent through `search_email` / `read_email`,
   offered only while connected. The build needs a Google iOS OAuth client ID

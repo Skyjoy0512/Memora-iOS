@@ -151,6 +151,11 @@ final class MemoraModel {
   var mcpServers: [MCPServerConfig] = MemoraModel.storedSetting([MCPServerConfig].self, forKey: StorageKey.mcpServers) ?? [] {
     didSet { MemoraModel.storeSetting(mcpServers, forKey: StorageKey.mcpServers) }
   }
+  /// The Hindsight memory server Ask AI recalls from and retains to. A setting,
+  /// so it lives in UserDefaults; its token is in the keychain.
+  var hindsightConfig: HindsightConfig = MemoraModel.storedSetting(HindsightConfig.self, forKey: StorageKey.hindsight) ?? HindsightConfig() {
+    didSet { MemoraModel.storeSetting(hindsightConfig, forKey: StorageKey.hindsight) }
+  }
   /// Resident agents and when each last finished. Settings, so UserDefaults.
   var residentAgents: [ResidentAgent] = MemoraModel.storedSetting([ResidentAgent].self, forKey: StorageKey.residentAgents) ?? ResidentAgentCatalog.presets {
     didSet { MemoraModel.storeSetting(residentAgents, forKey: StorageKey.residentAgents) }

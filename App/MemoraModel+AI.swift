@@ -156,6 +156,10 @@ extension MemoraModel {
     aiChatTask?.cancel()
     aiChatTask = Task { [weak self] in
       guard let self else { return }
+      // Long-term memory from Hindsight, when it is on, joins the on-device
+      // memories before the answer is written.
+      let hindsight = await self.hindsightContext(for: trimmed, budget: 1_200)
+      let personal = hindsight.isEmpty ? personal : hindsight + "\n\n" + personal
       let allowedMeetings = Self.meetings(in: scope, from: self.meetings)
       let outcome = await self.answer(
         request: AIQuestionRequest(question: trimmed, scope: .global, attachment: attachment),
@@ -923,6 +927,9 @@ extension MemoraModel {
       at: 0
     )
     persistAIHistory()
+    // Hindsight learns from the exchange in the background, so the next
+    // question can be personal to it.
+    retainHindsight(question: question, answer: answer)
   }
 
   func deleteAIHistoryEntry(_ id: UUID) {

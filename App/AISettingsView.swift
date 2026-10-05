@@ -45,6 +45,16 @@ struct AISettingsView: View {
         Text("Ask AIはAutoが基本で、上のAIエンジンに従います。登録済みモデルを選ぶと、Ask AIと要約の初期値にそのモデルを使います。")
       }
 
+      Section {
+        NavigationLink {
+          HindsightSettingsView()
+        } label: {
+          SettingsLabel("パーソナライズ（Hindsight）", icon: .brainHeadProfile, color: .pink)
+        }
+      } footer: {
+        Text("Hindsightの記憶サーバーを使うと、会話から記憶を蓄積し、質問に合わせて呼び出して回答を自分向けにします。設定するまでは使われません。")
+      }
+
       if model.aiEngine.usesCloud {
         Section {
           NavigationLink {

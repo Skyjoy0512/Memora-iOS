@@ -164,6 +164,7 @@ extension MemoraModel {
     static let customTemplates = "memoraCustomTemplates"
     static let webhooks = "memora.integrations.webhooks"
     static let mcpServers = "memora.integrations.mcpServers"
+    static let hindsight = "memora.integrations.hindsight"
     static let defaultTemplate = "memora.summary.defaultTemplate"
     static let pendingMediaDeletions = "memoraPendingMediaDeletions"
     static let documents = "memoraDocuments"

@@ -85,6 +85,9 @@ extension MemoraModel {
     aiChatTask?.cancel()
     aiChatTask = Task { [weak self] in
       guard let self else { return }
+      // Long-term memory from Hindsight, when it is on, leads the agent's brief.
+      let hindsight = await self.hindsightContext(for: trimmed, budget: runner.isOnDevice ? 600 : 1_800)
+      let opening = hindsight.isEmpty ? opening : hindsight + "\n\n" + opening
       let result: AIAnswerResult
       switch runner {
       case .cloud(let session):
