@@ -86,6 +86,10 @@ private final class RealtimeTranscriptionSession {
   private var engine: AVAudioEngine?
   private var task: Task<Void, Never>?
   private var continuation: AsyncStream<AnalyzerInput>.Continuation?
+  /// Whether this run installed the input tap, so it is removed exactly once:
+  /// `AVAudioEngine.removeTap` on a bus without one raises an exception that
+  /// cannot be caught.
+  private var hasInputTap = false
 
   init(
     onFinal: @escaping (String) -> Void,
@@ -108,10 +112,18 @@ private final class RealtimeTranscriptionSession {
     task = nil
     continuation?.finish()
     continuation = nil
-    engine?.inputNode.removeTap(onBus: 0)
+    removeInputTap()
     engine?.stop()
     engine = nil
     onRunning(false)
+  }
+
+  /// Removes the tap only if this run added it, so a stop and the run's own
+  /// cleanup never remove it twice.
+  private func removeInputTap() {
+    guard hasInputTap else { return }
+    hasInputTap = false
+    engine?.inputNode.removeTap(onBus: 0)
   }
 
   private func run() async {
@@ -139,6 +151,15 @@ private final class RealtimeTranscriptionSession {
     }
     if Task.isCancelled { return }
 
+    // The engine's input must exist and carry a valid format: installing a tap
+    // or starting the engine with a zero sample rate or no channels raises an
+    // exception that cannot be caught, which would take the app down when a
+    // recording starts.
+    guard AVAudioSession.sharedInstance().isInputAvailable else {
+      onUnavailable("録音中の文字起こしを開始できませんでした。")
+      return
+    }
+
     var continuation: AsyncStream<AnalyzerInput>.Continuation!
     let stream = AsyncStream<AnalyzerInput> { continuation = $0 }
     self.continuation = continuation
@@ -147,9 +168,16 @@ private final class RealtimeTranscriptionSession {
     let engine = AVAudioEngine()
     let input = engine.inputNode
     let format = input.outputFormat(forBus: 0)
+    guard format.sampleRate > 0, format.channelCount > 0 else {
+      continuation.finish()
+      self.continuation = nil
+      onUnavailable("録音中の文字起こしを開始できませんでした。")
+      return
+    }
     input.installTap(onBus: 0, bufferSize: 4_096, format: format) { buffer, _ in
       continuation.yield(AnalyzerInput(buffer: buffer))
     }
+    hasInputTap = true
     self.engine = engine
 
     let collect = Task { [weak self] in
@@ -183,7 +211,7 @@ private final class RealtimeTranscriptionSession {
     }
 
     collect.cancel()
-    input.removeTap(onBus: 0)
+    removeInputTap()
     engine.stop()
     continuation.finish()
     self.engine = nil
