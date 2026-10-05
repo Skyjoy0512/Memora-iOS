@@ -15,6 +15,9 @@ extension MemoraModel {
     assignee: String,
     dueDate: Date?,
     meetingID: UUID?,
+    detail: String? = nil,
+    workDate: Date? = nil,
+    progress: TaskProgress? = nil,
     remindsAtDue: Bool? = nil,
     reminderTime: Date? = nil
   ) {
@@ -27,6 +30,9 @@ extension MemoraModel {
     tasks[index].assignee = trimmedAssignee.isEmpty ? nil : trimmedAssignee
     tasks[index].dueDate = dueDate
     tasks[index].meetingID = meetingID
+    if let detail { tasks[index].detail = detail.trimmingCharacters(in: .whitespacesAndNewlines) }
+    tasks[index].workDate = workDate
+    if let progress { tasks[index].progress = progress }
     if let remindsAtDue {
       tasks[index].remindsAtDue = remindsAtDue
     }
@@ -42,6 +48,12 @@ extension MemoraModel {
     tasks[index].dueDate = date
     persistTasks()
     TaskReminderScheduler.refresh(tasks[index])
+  }
+
+  func setTaskWorkDate(_ id: UUID, to date: Date?) {
+    guard isStoreWritable(), let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+    tasks[index].workDate = date.map { Calendar.current.startOfDay(for: $0) }
+    persistTasks()
   }
 
   func deleteTask(_ id: UUID) {
@@ -107,7 +119,8 @@ extension MemoraModel {
         meetingID: meetingID,
         assignee: SummaryActionItem.normalized(action.owner),
         dueDate: action.dueDate(relativeTo: meetingDate),
-        isCompleted: false
+        isCompleted: false,
+        detail: action.detail
       ))
     }
     guard !added.isEmpty else { return 0 }

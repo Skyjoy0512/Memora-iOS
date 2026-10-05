@@ -33,18 +33,19 @@ enum WeeklyReviewBuilder {
   static func markdown(_ input: Input) -> String? {
     let week = input.week
     let meetings = input.meetings
-      .filter { week.contains($0.createdAt) }
+      .filter { $0.createdAt >= week.start && $0.createdAt < week.end }
       .sorted { $0.createdAt < $1.createdAt }
     let finished = input.tasks
-      .filter { $0.isCompleted && ($0.completedAt.map(week.contains) ?? false) }
-    let nextWeek = DateInterval(start: week.end, duration: week.duration)
+      .filter { $0.isCompleted && ($0.completedAt.map { $0 >= week.start && $0 < week.end } ?? false) }
+    let nextWeekEnd = Calendar.current.date(byAdding: .day, value: 7, to: week.end) ?? week.end
+    let nextWeek = DateInterval(start: week.end, end: nextWeekEnd)
     let comingDue = input.tasks
-      .filter { !$0.isCompleted && ($0.dueDate.map(nextWeek.contains) ?? false) }
+      .filter { !$0.isCompleted && ($0.dueDate.map { $0 >= nextWeek.start && $0 < nextWeek.end } ?? false) }
       .sorted { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
     let overdue = input.tasks
       .filter { !$0.isCompleted && ($0.dueDate.map { $0 < week.end } ?? false) }
       .sorted { ($0.dueDate ?? .distantPast) < ($1.dueDate ?? .distantPast) }
-    let entries = input.entries.filter { week.contains($0.createdAt) }
+    let entries = input.entries.filter { $0.occurredAt >= week.start && $0.occurredAt < week.end }
     let addedTasks = meetings.reduce(0) { count, meeting in
       count + input.tasks.filter { $0.meetingID == meeting.id }.count
     }
@@ -119,7 +120,10 @@ enum WeeklyReviewBuilder {
       }
       let memos = entries.filter { $0.kind == .memo }
       for memo in memos.prefix(8) {
-        lines.append("- \(shortDay(memo.createdAt)) \(memo.title)")
+        lines.append("- **\(shortDay(memo.occurredAt)) \(memo.title)**")
+        if !memo.summary.isEmpty {
+          lines.append("  \(memo.summary.prefix(240))")
+        }
       }
       let photos = entries.filter { $0.kind == .photo }.count
       if photos > 0 {

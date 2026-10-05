@@ -14,7 +14,7 @@ struct LifeLogEditSheet: View {
     self.entry = entry
     _title = State(initialValue: entry.title)
     _summary = State(initialValue: entry.summary)
-    _createdAt = State(initialValue: entry.createdAt)
+    _createdAt = State(initialValue: entry.occurredAt)
   }
 
   var body: some View {

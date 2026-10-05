@@ -44,6 +44,7 @@ enum SelfChecks {
     group("Store migration", checkStoreMigration)
 
     group("Journal timeline", checkJournalTimeline)
+    group("Task and journal compatibility", checkTaskAndJournalCompatibility)
     group("Question terms", checkQuestionWords)
     group("AI context limits", checkAIContextLimits)
     group("Scope isolation", checkScopeIsolation)
@@ -264,6 +265,36 @@ enum SelfChecks {
     let text = WeeklyReviewBuilder.markdown(input) ?? ""
     for expected in ["定例会議", "決定: 来週リリース", "資料を送る", "見積もりを出す"] where !text.contains(expected) {
       report("weekly review is missing \(expected)")
+    }
+  }
+
+  private static func checkTaskAndJournalCompatibility() {
+    let legacy = """
+    {"id":"00000000-0000-0000-0000-000000000001","title":"旧タスク","isCompleted":false}
+    """
+    guard let task = try? JSONDecoder().decode(MemoraTask.self, from: Data(legacy.utf8)) else {
+      report("legacy task failed to decode")
+      return
+    }
+    if !task.detail.isEmpty || task.workDate != nil || task.progress != .notStarted {
+      report("legacy task defaults changed")
+    }
+    var updated = task
+    updated.detail = "完了条件を確認"
+    updated.progress = .waiting
+    updated.workDate = Date(timeIntervalSince1970: 1_790_000_000)
+    if let data = try? JSONEncoder().encode(updated),
+       let restored = try? JSONDecoder().decode(MemoraTask.self, from: data) {
+      if restored != updated { report("task metadata did not round trip") }
+    } else {
+      report("task metadata failed to encode")
+    }
+    let created = Date(timeIntervalSince1970: 1_790_000_000)
+    let occurred = created.addingTimeInterval(-86_400)
+    let entry = LifeLogEntry(id: UUID(), createdAt: created, title: "昨日の出来事", summary: "", source: .iphone, eventDate: occurred)
+    let timeline = JournalTimelineBuilder.build(day: occurred, entries: [entry], events: [], meetings: [], now: created)
+    if timeline.items.isEmpty || entry.occurredAt != occurred {
+      report("journal event date ignored")
     }
   }
 

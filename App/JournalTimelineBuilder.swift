@@ -26,7 +26,7 @@ enum JournalTimelineBuilder {
     let dayStart = calendar.startOfDay(for: day)
     let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(24 * 60 * 60)
 
-    let dayEntries = entries.filter { calendar.isDate($0.createdAt, inSameDayAs: day) }
+    let dayEntries = entries.filter { calendar.isDate($0.occurredAt, inSameDayAs: day) }
     // An event belongs to the day if it overlaps it, so a stay that began the
     // night before still appears, and a multi-day all-day event shows each day.
     let overlapping = events.filter { $0.start < dayEnd && $0.end > dayStart }
@@ -57,7 +57,7 @@ enum JournalTimelineBuilder {
     let others = remaining.filter { $0.origin != .stationPass }
 
     var paired: [(date: Date, item: JournalTimelineItem)] =
-      others.map { ($0.createdAt, .entry($0)) }
+      others.map { ($0.occurredAt, .entry($0)) }
     paired.append(contentsOf: timedItems)
     paired.append(contentsOf: movements(from: passes).map { ($0.start, .movement($0)) })
 

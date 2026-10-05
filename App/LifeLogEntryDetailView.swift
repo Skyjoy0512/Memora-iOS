@@ -107,7 +107,7 @@ struct LifeLogEntryDetailView: View {
           Image(icon: entry.kind.symbol)
           Text(entry.kind.label)
           Text("·")
-          Text(entry.createdAt.formatted(date: .abbreviated, time: .shortened))
+          Text(entry.occurredAt.formatted(date: .abbreviated, time: .shortened))
         }
         .font(.subheadline)
         .foregroundStyle(.primary)

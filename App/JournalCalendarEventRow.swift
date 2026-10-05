@@ -40,6 +40,9 @@ struct JournalCalendarEventRow: View {
         Text(event.title)
           .font(.headline)
         HStack(spacing: 4) {
+          Text(event.meetingID == nil ? "予定" : "録音あり")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.secondary)
           if let color = event.calendarColor {
             Circle()
               .fill(color)

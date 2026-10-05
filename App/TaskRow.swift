@@ -37,6 +37,16 @@ struct TaskRow: View {
           .frame(maxWidth: .infinity, alignment: .leading)
 
         if showsMetadata {
+          if !task.isCompleted, task.progress != .notStarted {
+            Text(task.progress.label)
+              .font(.caption.weight(.medium))
+              .foregroundStyle(.secondary)
+          }
+          if !task.isCompleted, let workDate = task.workDate {
+            Text(Calendar.current.isDateInToday(workDate) ? "今日取り組む" : "取り組む日: \(MemoraFormat.dueDate(workDate))")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
           HStack(spacing: 8) {
             if let assignee = task.assignee {
               Text(assignee)
@@ -94,6 +104,8 @@ struct TaskRow: View {
       parts.append("完了")
     }
     if showsMetadata {
+      if !task.isCompleted { parts.append(task.progress.label) }
+      if let workDate = task.workDate { parts.append("取り組む日 \(MemoraFormat.dueDate(workDate))") }
       if let assignee = task.assignee {
         parts.append("担当 \(assignee)")
       }

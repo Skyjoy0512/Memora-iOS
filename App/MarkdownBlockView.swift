@@ -4,6 +4,7 @@ import SwiftUI
 /// and the editable one, so editing a block never changes how the others look.
 struct MarkdownBlockView: View {
   var block: MarkdownBlock
+  @ScaledMetric(relativeTo: .body) private var readingLineSpacing: CGFloat = 7
 
   var body: some View {
     switch block {
@@ -17,14 +18,14 @@ struct MarkdownBlockView: View {
     case .paragraph(let text):
       Self.inline(text)
         .font(.body)
-        .lineSpacing(Self.lineSpacing)
+        .lineSpacing(readingLineSpacing)
 
     case .bullet(let level, let marker, let text):
       HStack(alignment: .firstTextBaseline, spacing: 8) {
         MarkdownBulletMarker(marker: marker, level: level)
         Self.inline(text)
           .font(Self.bulletFont(level))
-          .lineSpacing(Self.lineSpacing)
+          .lineSpacing(readingLineSpacing)
       }
       .padding(.leading, CGFloat(level) * 18)
 
@@ -36,7 +37,7 @@ struct MarkdownBlockView: View {
         Self.inline(text)
           .font(.subheadline)
           .foregroundStyle(.secondary)
-          .lineSpacing(Self.lineSpacing)
+          .lineSpacing(readingLineSpacing)
       }
       .fixedSize(horizontal: false, vertical: true)
 
@@ -123,6 +124,7 @@ struct MarkdownTableCard: View {
               .frame(minWidth: 40, alignment: .leading)
             MarkdownBlockView.inline(value)
               .font(.subheadline)
+              .lineSpacing(MarkdownBlockView.lineSpacing)
           }
         }
       }

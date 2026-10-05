@@ -72,7 +72,8 @@ struct StreamingText: View {
   /// Long text, settled text, and text with motion turned off are drawn as one
   /// plain `Text`.
   private var usesPlainText: Bool {
-    !animates || reduceMotion || text.count > plainTextThreshold || revealed >= words.count
+    !animates || reduceMotion || text.contains("\n") || MarkdownBlockParser.hasInlineOrBlockMarkdown(text)
+      || text.count > plainTextThreshold || revealed >= words.count
   }
 
   private func prepare() {

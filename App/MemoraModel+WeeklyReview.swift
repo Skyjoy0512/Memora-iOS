@@ -44,10 +44,16 @@ extension MemoraModel {
     guard let markdown = WeeklyReviewBuilder.markdown(input) else { return nil }
 
     if let index = documents.firstIndex(where: { $0.weekStart == week.start }) {
+      guard let previous = documents[index].generatedReviewMarkdown,
+            documents[index].markdown.hasPrefix(previous) else {
+        return documents[index]
+      }
+      let personalNotes = String(documents[index].markdown.dropFirst(previous.count))
       // Rewriting the current week keeps the same document, so a link to it
       // still opens the newest version.
       documents[index].title = WeeklyReviewBuilder.title(for: week)
-      documents[index].markdown = markdown
+      documents[index].markdown = markdown + personalNotes
+      documents[index].generatedReviewMarkdown = markdown
       documents[index].updatedAt = .now
       persistDocuments()
       return documents[index]
@@ -56,8 +62,9 @@ extension MemoraModel {
     let review = MemoraDocument(
       title: WeeklyReviewBuilder.title(for: week),
       kind: .document,
-      markdown: markdown,
-      weekStart: week.start
+      markdown: markdown + "\n\n## 自分の振り返り\n\n## 来週へのメモ\n",
+      weekStart: week.start,
+      generatedReviewMarkdown: markdown
     )
     return addDocument(review) ? review : nil
   }

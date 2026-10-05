@@ -693,9 +693,9 @@ final class MemoraModel {
   /// Groups the journal by day once, newest first.
   private func rebuildLifeLogDays() {
     let calendar = Calendar.current
-    let grouped = Dictionary(grouping: lifeLogEntries) { calendar.startOfDay(for: $0.createdAt) }
+    let grouped = Dictionary(grouping: lifeLogEntries) { calendar.startOfDay(for: $0.occurredAt) }
     let days = grouped
-      .map { LifeLogDayGroup(day: $0.key, entries: $0.value.sorted { $0.createdAt > $1.createdAt }) }
+      .map { LifeLogDayGroup(day: $0.key, entries: $0.value.sorted { $0.occurredAt > $1.occurredAt }) }
       .sorted { $0.day > $1.day }
     // A day change that moves nothing leaves the journal as it was.
     assignIfChanged(\.lifeLogDays, days)
@@ -784,7 +784,7 @@ final class MemoraModel {
   /// The journal's records, newest first, sorted once per change.
   var newestLifeLogEntries: [LifeLogEntry] {
     if let newestEntries { return newestEntries }
-    let sorted = lifeLogEntries.sorted { $0.createdAt > $1.createdAt }
+    let sorted = lifeLogEntries.sorted { $0.occurredAt > $1.occurredAt }
     newestEntries = sorted
     return sorted
   }

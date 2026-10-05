@@ -18,6 +18,7 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   /// When the document was first opened, so a new review can be pointed out
   /// until it has been read.
   var openedAt: Date?
+  var generatedReviewMarkdown: String?
 
   var displayTitle: String {
     title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の\(kind.label)" : title

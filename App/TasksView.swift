@@ -7,6 +7,8 @@ struct TasksView: View {
   @State private var editingTask: MemoraTask?
   /// nil = everyone, "" = no assignee, otherwise the name.
   @State private var assigneeFilter: String?
+  @State private var todayOnly = false
+  @State private var waitingOnly = false
 
   var body: some View {
     @Bindable var model = model
@@ -59,6 +61,8 @@ struct TasksView: View {
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Menu {
+            Toggle("今日取り組む", isOn: $todayOnly)
+            Toggle("相手待ち", isOn: $waitingOnly)
             Picker("担当", selection: $assigneeFilter) {
               Text("全員").tag(String?.none)
               Text("担当なし").tag(String?.some(""))
@@ -132,6 +136,10 @@ struct TasksView: View {
     }
     .contextMenu {
       Button("編集", icon: .pencil) { editingTask = task }
+      Button("今日取り組む", icon: .sunMax) { model.setTaskWorkDate(task.id, to: .now) }
+      if task.workDate != nil {
+        Button("取り組む日を解除", icon: .xmark) { model.setTaskWorkDate(task.id, to: nil) }
+      }
       Button("期限を今日に", icon: .sunMax) { model.setTaskDueDate(task.id, to: .now) }
       Button("期限を明日に", icon: .sunrise) {
         model.setTaskDueDate(task.id, to: Calendar.current.date(byAdding: .day, value: 1, to: .now))
@@ -154,7 +162,11 @@ struct TasksView: View {
   }
 
   private var visibleTasks: [MemoraTask] {
-    model.tasks.filter { $0.isCompleted == showsCompleted && matchesAssignee($0) }
+    model.tasks.filter {
+      $0.isCompleted == showsCompleted && matchesAssignee($0)
+        && (!todayOnly || $0.workDate.map { Calendar.current.isDateInToday($0) } == true)
+        && (!waitingOnly || $0.progress == .waiting)
+    }
   }
 
   private func completedFirst(_ tasks: [MemoraTask]) -> [MemoraTask] {

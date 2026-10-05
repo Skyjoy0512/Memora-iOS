@@ -59,7 +59,11 @@ extension MemoraModel {
 
     lifeLogEntries[index].title = trimmedTitle
     lifeLogEntries[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
-    lifeLogEntries[index].createdAt = createdAt
+    if lifeLogEntries[index].eventDate != nil {
+      lifeLogEntries[index].eventDate = createdAt
+    } else {
+      lifeLogEntries[index].createdAt = createdAt
+    }
     persistLifeLog()
   }
 

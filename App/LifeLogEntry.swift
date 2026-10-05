@@ -19,6 +19,8 @@ struct LifeLogEntry: Identifiable, Hashable, Codable {
   /// Where the record was made, rounded, when it came from location.
   var latitude: Double?
   var longitude: Double?
+
+  var occurredAt: Date { eventDate ?? createdAt }
 }
 
 extension LifeLogEntry {

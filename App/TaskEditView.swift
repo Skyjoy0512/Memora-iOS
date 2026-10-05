@@ -10,6 +10,10 @@ struct TaskEditView: View {
   var task: MemoraTask
 
   @State private var title: String
+  @State private var detail: String
+  @State private var hasWorkDate: Bool
+  @State private var workDate: Date
+  @State private var progress: TaskProgress
   @State private var assignee: String
   @State private var hasDueDate: Bool
   @State private var dueDate: Date
@@ -22,6 +26,10 @@ struct TaskEditView: View {
   init(task: MemoraTask) {
     self.task = task
     _title = State(initialValue: task.title)
+    _detail = State(initialValue: task.detail)
+    _hasWorkDate = State(initialValue: task.workDate != nil)
+    _workDate = State(initialValue: task.workDate ?? .now)
+    _progress = State(initialValue: task.progress)
     _assignee = State(initialValue: task.assignee ?? "")
     _hasDueDate = State(initialValue: task.dueDate != nil)
     _dueDate = State(initialValue: task.dueDate ?? Date.now.addingTimeInterval(86_400))
@@ -35,7 +43,25 @@ struct TaskEditView: View {
       Form {
         Section("内容") {
           TextField("タイトル", text: $title, axis: .vertical)
+          TextField("やること・完了条件", text: $detail, axis: .vertical)
+            .lineLimit(3...8)
           TextField("担当", text: $assignee)
+          Picker("進み具合", selection: $progress) {
+            ForEach(TaskProgress.allCases) { state in
+              Text(state.label).tag(state)
+            }
+          }
+        }
+
+        Section {
+          Toggle("取り組む日を設定", isOn: $hasWorkDate)
+          if hasWorkDate {
+            DatePicker("取り組む日", selection: $workDate, displayedComponents: .date)
+          }
+        } header: {
+          Text("取り組む日")
+        } footer: {
+          Text("自分の作業予定です。約束した期限は変更しません。")
         }
 
         Section {
@@ -98,6 +124,9 @@ struct TaskEditView: View {
               assignee: assignee,
               dueDate: hasDueDate ? dueDate : nil,
               meetingID: meetingID,
+              detail: detail,
+              workDate: hasWorkDate ? Calendar.current.startOfDay(for: workDate) : nil,
+              progress: progress,
               remindsAtDue: hasDueDate && remindsAtDue,
               reminderTime: hasDueDate && remindsAtDue ? reminderTime : nil
             )

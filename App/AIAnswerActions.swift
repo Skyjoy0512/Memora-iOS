@@ -53,7 +53,7 @@ private struct AnswerActionStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
       .font(.body)
-      .frame(width: 36, height: 36)
+      .frame(width: 44, height: 44)
       .contentShape(Rectangle())
       .opacity(configuration.isPressed ? 0.5 : 1)
   }

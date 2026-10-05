@@ -52,7 +52,7 @@ struct WebhookEditor: View {
                 .foregroundStyle(.secondary)
             }
           } footer: {
-            Text("最新の要約をテストとして送ります。")
+            Text("接続確認用のダミーデータだけを送ります。会議の内容やタスクは送信しません。")
           }
         }
 

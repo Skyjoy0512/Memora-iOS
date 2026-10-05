@@ -35,12 +35,12 @@ extension MemoraModel {
 
   /// Sends the newest summarised record, or a placeholder, to check an endpoint.
   func testWebhook(_ endpoint: WebhookEndpoint) {
-    let sample = meetings.first { !$0.summary.isEmpty } ?? Meeting(
+    let sample = Meeting(
       id: UUID(), title: "テスト送信", createdAt: .now, duration: 0, source: .recording,
       status: .ready, summary: "Memoraからのテスト送信です。", keyPoints: [], decisions: [],
       openQuestions: [], transcript: [], spaceID: nil, audioURL: nil
     )
-    send(sample, tasks: tasks(forMeeting: sample.id), to: endpoint, isTest: true)
+    send(sample, tasks: [], to: endpoint, isTest: true)
   }
 
   private func send(_ meeting: Meeting, tasks: [MemoraTask], to endpoint: WebhookEndpoint, isTest: Bool) {

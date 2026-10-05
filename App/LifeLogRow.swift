@@ -95,7 +95,7 @@ struct LifeLogRow: View {
 
   /// A stay shows its whole span; anything else shows just its time.
   private var timeLabel: String {
-    let start = entry.createdAt.formatted(date: .omitted, time: .shortened)
+    let start = entry.occurredAt.formatted(date: .omitted, time: .shortened)
     guard let endDate = entry.endDate else { return start }
     return "\(start)〜\(endDate.formatted(date: .omitted, time: .shortened))"
   }
