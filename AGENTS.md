@@ -62,11 +62,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   toolbar and projects from the side menu.
 - **Journal (Home)**: the tab's own `ScrollView`/`List` must stay the screen's
   primary scroll view, so the large title collapses the way the system expects.
-- **Haptics** (`App/TapHaptics.swift`): every tap already gets one light impact
-  from a tap recognizer installed on the window (so it is felt in sheets and on
-  the tab bar too). Do not add another light-impact tap to a button; add
-  `.sensoryFeedback` only for a distinct outcome (success, warning, a heavier
-  impact), or the tap fires twice.
+- **Haptics** (`App/GestureHaptics.swift`): a tap and a horizontal swipe
+  already get a small impact from recognizers installed on the window (so they
+  are felt in sheets and on the tab bar too). Do not add another light-impact
+  tap to a button; add `.sensoryFeedback` only for a distinct outcome (success,
+  warning, a heavier impact), or the tap fires twice.
 
 ## Known gaps (not bugs to fix silently)
 
