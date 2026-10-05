@@ -1,10 +1,10 @@
 import SwiftUI
-import UIKit
 import NaturalLanguage
 
-/// Reveals an answer word by word: each new word fades in and rises a hair,
-/// with a pulsing capsule cursor at the end of the writing. Modelled on
-/// Transitions.dev's streaming text. Set `animates` to false for text that is
+/// Reveals an answer word by word: each new word fades in and rises a hair.
+/// Modelled on Transitions.dev's streaming text. The words carry their inline
+/// markdown (bold, italics, code), so a formatted answer reads the same while
+/// it arrives as it does once settled. Set `animates` to false for text that is
 /// already settled, so scrolling back does not replay it.
 ///
 /// Long answers and finished reveals fall back to one ordinary, selectable
@@ -63,20 +63,13 @@ struct StreamingText: View {
     !animates || reduceMotion || text.count > plainTextThreshold || revealed >= words.count
   }
 
-  /// Words light up as they arrive, the cursor pulsing at the end of the line.
-  /// `TimelineView` ticks only while there is still a word to show.
+  /// Words light up as they arrive. `TimelineView` drives the fade each frame
+  /// while there is still a word to show.
   private var streamingReveal: some View {
     TimelineView(.animation(paused: reduceMotion)) { context in
       let now = context.date.timeIntervalSince(start)
-      rendererText(showsCursor: revealed < words.count)
-        .textRenderer(
-          TokenFade(
-            now: now,
-            births: births,
-            fade: fade,
-            cursorOpacity: 0.55 + 0.45 * abs(sin(now * 3))
-          )
-        )
+      rendererText()
+        .textRenderer(TokenFade(now: now, births: births, fade: fade))
     }
     .font(font)
     .lineSpacing(lineSpacing)
@@ -88,25 +81,28 @@ struct StreamingText: View {
 
   /// Each word carries its own index, so the renderer can fade it in when its
   /// turn comes; the whitespace after a word rides with it, so runs stay
-  /// contiguous.
-  private func rendererText(showsCursor: Bool) -> Text {
-    let source = AttributedString(revealText ?? text)
+  /// contiguous. Inline markdown is parsed first, so a bold word arrives bold
+  /// instead of showing its `**`.
+  private func rendererText() -> Text {
+    let source = Self.inline(revealText ?? text)
     var result = Text(verbatim: "")
     for (index, range) in Self.tokenRanges(in: source).enumerated() {
       result = result + Text(AttributedString(source[range])).customAttribute(TokenIndex(index: index))
     }
-    return showsCursor ? result + cursor.customAttribute(CursorMark()) : result
+    return result
   }
 
-  /// A capsule the height of the body font's cap height, drawn inline so it
-  /// flows with the text, in the app's accent colour.
-  private var cursor: Text {
-    let font = UIFont.preferredFont(forTextStyle: .body)
-    let size = CGSize(width: font.capHeight * 0.6, height: font.capHeight * 1.1)
-    let image = UIGraphicsImageRenderer(size: CGSize(width: size.width + 4, height: size.height)).image { _ in
-      UIBezierPath(roundedRect: CGRect(x: 4, y: 0, width: size.width, height: size.height), cornerRadius: size.width / 2).fill()
+  /// The reveal text with its inline markdown applied. Whitespace, including
+  /// line breaks, is kept so the layout matches the settled document.
+  private static func inline(_ text: String) -> AttributedString {
+    var result = (try? AttributedString(
+      markdown: text,
+      options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+    )) ?? AttributedString(text)
+    for run in result.runs where run.inlinePresentationIntent?.contains(.code) == true {
+      result[run.range].backgroundColor = Color.primary.opacity(0.08)
     }
-    return Text(Image(uiImage: image.withRenderingMode(.alwaysTemplate))).foregroundColor(.accentColor)
+    return result
   }
 
   private func prepare() {
@@ -187,16 +183,11 @@ private struct TokenIndex: TextAttribute {
   let index: Int
 }
 
-/// Marks the cursor run, so the renderer can pulse it.
-private struct CursorMark: TextAttribute {}
-
-/// Draws each word at its fade-in opacity with a 2pt rise, and pulses the
-/// cursor run.
+/// Draws each word at its fade-in opacity with a 2pt rise.
 private struct TokenFade: TextRenderer {
   var now: Double
   var births: [Double]
   var fade: Double
-  var cursorOpacity: Double
 
   func draw(layout: Text.Layout, in context: inout GraphicsContext) {
     for line in layout {
@@ -204,9 +195,6 @@ private struct TokenFade: TextRenderer {
         var opacity = 1.0
         if let token = run[TokenIndex.self], births.indices.contains(token.index) {
           opacity = min(max((now - births[token.index]) / fade, 0), 1)
-        }
-        if run[CursorMark.self] != nil {
-          opacity = cursorOpacity
         }
         var local = context
         local.opacity = opacity

@@ -81,7 +81,7 @@ private enum FoundationModelAnswer {
     guard SystemLanguageModel.default.isAvailable else { return .failure(.noEngine) }
 
     let session = LanguageModelSession(
-      instructions: "あなたは記録アプリ「Memora」の会話アシスタントです。利用者の質問に、与えられた記録だけに沿って、自然な会話の日本語で答えます。"
+      instructions: "あなたは記録アプリ「Memora」の会話アシスタントです。利用者の質問に、与えられた記録だけに沿って、自然な会話の日本語で答えます。\n\(AIAnswerPrompt.formatting)"
     )
     let prompt = AIAnswerPrompt.text(
       question: question,

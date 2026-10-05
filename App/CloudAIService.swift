@@ -12,6 +12,7 @@ enum CloudAIService {
     let system = """
     あなたは記録アプリ「Memora」の会話アシスタントです。利用者の質問に、与えられた記録だけに沿って、自然な会話の日本語で答えます。
     記録をもとにした文の末尾には、その記録の番号を【資料1】の形で付けます。与えられた番号だけを使い、記録にない内容には付けません。
+    \(AIAnswerPrompt.formatting)
     """
     let user = AIAnswerPrompt.text(
       question: question,
