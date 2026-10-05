@@ -205,10 +205,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   PowerPoint (`PPTXWriter`, stored ZIP via `ZipArchive`) or text. The agent
   cannot read attachments yet, and slide speaker notes are not written into
   the .pptx.
-- Readability: summaries, Ask AI answers and the agent write to
-  `ReadabilityGuide` (rules adapted from yomiyasu and k16shikano's guide,
-  credited in `docs/THIRD_PARTY.md`): `rules` for cloud prompts,
-  `compactRules` for the on-device window.
+- Readability: only summaries write to `ReadabilityGuide` (rules adapted from
+  yomiyasu and k16shikano's guide, credited in `docs/THIRD_PARTY.md`): `rules`
+  for cloud prompts, `compactRules` for the on-device window. Ask AI answers
+  (the agent and resident posts included) do not use it: the rules made the
+  conversational replies read oddly, so they stay out of that path.
 - Resident agents (`ResidentAgent`, `ResidentTrigger`, `ResidentAgentCatalog`,
   `MemoraModel+Residents`, Settings › 常駐エージェント), after OpenDots' Dots
   (design only; its code is TypeScript): named agents that run every morning,

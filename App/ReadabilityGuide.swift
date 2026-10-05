@@ -1,10 +1,12 @@
 import Foundation
 
-/// How Memora's AI writes Japanese so it reads easily: meaning kept, who did
-/// what said plainly, one topic per paragraph, sentences a breath long, nothing
-/// padded. Current with yomiyasu v1.0.7 (github.com/nanaism/yomiyasu, MIT) and
-/// k16shikano's Japanese technical writing guide
-/// (gist.github.com/k16shikano, Unlicense); see docs/THIRD_PARTY.md.
+/// How Memora's summaries write Japanese so they read easily: meaning kept, who
+/// did what said plainly, one topic per paragraph, sentences a breath long,
+/// nothing padded. Summaries only; Ask AI answers keep their own voice, because
+/// these rules read oddly in a conversation. Current with yomiyasu v1.0.7
+/// (github.com/nanaism/yomiyasu, MIT) and k16shikano's Japanese technical
+/// writing guide (gist.github.com/k16shikano, Unlicense); see
+/// docs/THIRD_PARTY.md.
 enum ReadabilityGuide {
   /// For cloud models, which have room for the whole guide.
   static let rules = """
