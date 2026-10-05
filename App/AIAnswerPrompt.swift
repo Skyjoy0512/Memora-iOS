@@ -9,7 +9,7 @@ enum AIAnswerPrompt {
     \(history.isEmpty ? "" : "これまでのやりとり:\n\(history)\n")
     \(context.isEmpty ? "" : "記録:\n\(context)\n")
     質問: \(question)
-    記録に基づいて簡潔に答えてください。記録に無いことは推測せず、無いと伝えてください。
+    記録に基づいて、会話の相手に話すように自然に答えてください。記録に無いことは推測せず、無いと伝えてください。
     """
   }
 }
