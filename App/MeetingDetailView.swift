@@ -23,9 +23,6 @@ struct MeetingDetailView: View {
   @State private var isChoosingSpace = false
   @State private var isSharing = false
   @State private var shareItems: [Any] = []
-  /// The play button appears after the screen settles, so it reads as splitting
-  /// off the trailing controls rather than popping in.
-  @State private var isPlayButtonRevealed = false
   @State private var statusAlert: StatusAlert?
   @State private var player = AudioPlayerService()
   /// The line the initial time points at, highlighted even without audio.
@@ -50,6 +47,19 @@ struct MeetingDetailView: View {
     var message: String
     /// Where the message can be checked, such as a Notion page that was written.
     var linkURL: URL?
+  }
+
+  private func playbackAndShareActions(_ meeting: Meeting) -> some View {
+    MeetingDetailToolbarActions(
+      hasAudio: meeting.audioURL != nil,
+      isPlaying: player.isPlaying,
+      isRecording: model.isRecording,
+      play: { player.toggle() },
+      share: {
+        shareItems = [MeetingShareText.make(meeting: meeting, tasks: model.tasks)]
+        isSharing = true
+      }
+    )
   }
 
   var body: some View {
@@ -95,13 +105,7 @@ struct MeetingDetailView: View {
               didApplyInitialPlayback = true
               applyPlaybackRequest(start, meeting: meeting, proxy: proxy)
             }
-            withAnimation(
-              reduceMotion
-                ? nil
-                : .spring(response: 0.45, dampingFraction: 0.72).delay(0.08)
-            ) {
-              isPlayButtonRevealed = true
-            }
+
           }
           .onChange(of: model.isRecording) { _, recording in
             // A recording owns the audio session, so playback steps aside.
@@ -138,46 +142,21 @@ struct MeetingDetailView: View {
             }
             .labelStyle(.iconOnly)
           }
-          ToolbarItem(placement: .principal) {
-            if meeting.audioURL != nil, isPlayButtonRevealed {
-              Button {
-                player.toggle()
-              } label: {
-                Image(icon: player.isPlaying ? .pauseFill : .playFill)
-                  .font(.headline.weight(.bold))
-                  .frame(width: 40, height: 40)
-                  .contentShape(Circle())
-              }
-              .buttonStyle(.plain)
-              .memoraGlass(in: Circle(), interactive: true)
-              .disabled(model.isRecording)
-              .accessibilityLabel(player.isPlaying ? "一時停止" : "再生")
-              // Grows out of the trailing controls the way a Liquid Glass
-              // selection splits off its neighbour.
-              .transition(
-                .asymmetric(
-                  insertion: .scale(scale: 0.2, anchor: .trailing)
-                    .combined(with: .opacity)
-                    .combined(with: .offset(x: 120)),
-                  removal: .opacity
-                )
-              )
-            }
-          }
           if isSavingToNotion {
             ToolbarItem(placement: .topBarTrailing) {
               ProgressView()
                 .accessibilityLabel("Notionへ保存中")
             }
           }
-          ToolbarItem(placement: .topBarTrailing) {
-            // The text is built on tap: as a ShareLink item it was rebuilt from
-            // the whole summary, and every task, on each redraw.
-            Button("共有", icon: .squareAndArrowUp) {
-              shareItems = [MeetingShareText.make(meeting: meeting, tasks: model.tasks)]
-              isSharing = true
+          if #available(iOS 26.0, *) {
+            ToolbarItem(placement: .topBarTrailing) {
+              playbackAndShareActions(meeting)
             }
-            .labelStyle(.iconOnly)
+            .sharedBackgroundVisibility(.hidden)
+          } else {
+            ToolbarItem(placement: .topBarTrailing) {
+              playbackAndShareActions(meeting)
+            }
           }
           ToolbarItem(placement: .topBarTrailing) {
             Menu("その他", icon: .ellipsis) {
@@ -632,5 +611,4 @@ private enum MeetingDetailSection: String, CaseIterable, Identifiable {
   }
 
 }
-
 
