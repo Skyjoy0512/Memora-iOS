@@ -1,13 +1,10 @@
 import SwiftUI
 
 struct JournalDailyRecapCard: View {
-  @Environment(MemoraModel.self) private var model
-  var date: Date
+  var recap: JournalDailyRecap
   var onOpenDetails: () -> Void
 
   var body: some View {
-    let recap = JournalDailyRecap.build(date: date, meetings: model.meetings,
-      tasks: model.tasks, entries: model.lifeLogEntries)
     VStack(alignment: .leading, spacing: 14) {
       Text(recap.heading)
         .font(.headline)
@@ -25,9 +22,7 @@ struct JournalDailyRecapCard: View {
         }
       }
       if !recap.isFuture {
-        Text("保存された記録から作成。イベントの実施や気分は推測しません。")
-          .font(.caption).foregroundStyle(.secondary)
-        Button("詳しい振り返り・健康データ", action: onOpenDetails)
+        Button("振り返りを見る", action: onOpenDetails)
           .font(.subheadline)
           .frame(minHeight: 44)
       }

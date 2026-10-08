@@ -533,7 +533,7 @@ struct MeetingDetailView: View {
       .foregroundStyle(.secondary)
 
       if meeting.audioURL == nil, !SampleContent.isSample(meetingID: meeting.id) {
-        Label("音声は削除済み", icon: .waveformSlash)
+        Label("音声なし", icon: .waveformSlash)
           .font(.caption)
           .foregroundStyle(.secondary)
       }
@@ -592,7 +592,7 @@ struct MeetingDetailView: View {
     CollapsibleInsightSection(.keyPoints) {
       InlineEditableList(
         items: meeting.keyPoints,
-        emptyText: "ポイントを抽出中です",
+        emptyText: "重要なポイントはありません",
         onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }
       )
     }

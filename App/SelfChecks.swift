@@ -349,14 +349,14 @@ enum SelfChecks {
       source: .iphone, kind: .event, eventDate: now.addingTimeInterval(100))
     let recap = JournalDailyRecap.build(date: now, meetings: [], tasks: [task, unknown],
       entries: [upcoming], now: now, calendar: calendar)
-    if recap.heading != "今日はここまで" || !recap.narrative.contains("1件完了")
+    if !recap.hasActivity || recap.heading != "今日はここまで" || !recap.narrative.contains("1件完了")
       || recap.highlights != ["完了：提出"] { report("daily recap counts future or undated activity") }
     let future = JournalDailyRecap.build(date: day.addingTimeInterval(86_400), meetings: [],
       tasks: [task], entries: [], now: now, calendar: calendar)
-    if !future.isFuture || !future.highlights.isEmpty { report("future day presented as a recap") }
+    if future.hasActivity || !future.isFuture || !future.highlights.isEmpty { report("future day presented as a recap") }
     let empty = JournalDailyRecap.build(date: day.addingTimeInterval(-86_400), meetings: [],
       tasks: [], entries: [], now: now, calendar: calendar)
-    if empty.heading != "こんな1日でした" || !empty.narrative.contains("まだありません") {
+    if empty.hasActivity || empty.heading != "こんな1日でした" || !empty.narrative.contains("まだありません") {
       report("empty past day invents activity")
     }
   }

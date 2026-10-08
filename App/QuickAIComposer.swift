@@ -49,7 +49,7 @@ struct QuickAIComposer: View {
       if model.selectedTab == .askAI {
         "Memoraに話しかける"
       } else {
-        "Ask Anything"
+        "Memoraに質問"
       }
     }
   }

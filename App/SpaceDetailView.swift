@@ -7,6 +7,7 @@ struct SpaceDetailView: View {
   @State private var isAskingAI = false
   @State private var isRenaming = false
   @State private var isDeleting = false
+  @State private var editingTask: MemoraTask?
 
   var body: some View {
     if let space = model.space(id: spaceID) {
@@ -42,7 +43,7 @@ struct SpaceDetailView: View {
                 .foregroundStyle(.secondary)
             } else {
               ForEach(spaceTasks) { task in
-                TaskRow(task: task, showsSource: true)
+                TaskRow(task: task, showsSource: true) { editingTask = task }
               }
             }
           }
@@ -88,6 +89,9 @@ struct SpaceDetailView: View {
       }
       .sheet(isPresented: $isRenaming) {
         RenameSpaceSheet(space: space)
+      }
+      .sheet(item: $editingTask) { task in
+        TaskEditView(task: task)
       }
       .confirmationDialog(
         "このプロジェクトを削除しますか？",

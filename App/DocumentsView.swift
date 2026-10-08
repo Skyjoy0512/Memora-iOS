@@ -28,7 +28,7 @@ struct DocumentsView: View {
         ContentUnavailableView(
           "資料はまだありません",
           icon: .docRichtext,
-          description: Text("Ask AIをエージェントにして「会議から資料を作って」と頼むと、ここに保存されます。")
+          description: Text("Ask AIに「会議から資料を作って」と頼むと、ここに保存されます。")
         )
       }
     }

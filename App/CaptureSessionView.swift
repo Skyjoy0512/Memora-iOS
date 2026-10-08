@@ -108,7 +108,7 @@ struct CaptureSessionView: View {
           .frame(maxWidth: .infinity, minHeight: 56)
           .memoraGlass(in: Capsule(), interactive: true)
 
-          Button(model.isSavingCapture ? "保存しています…" : "終了", icon: .stopFill) {
+          Button(model.isSavingCapture ? "保存しています…" : "終了して保存", icon: .stopFill) {
             stopFeedback += 1
             Task { await model.stopCapture() }
           }

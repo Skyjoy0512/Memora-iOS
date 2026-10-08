@@ -20,7 +20,7 @@ struct ImportProgressOverlay: View {
         VStack(spacing: 4) {
           Text("音声を取り込んでいます")
             .font(.headline)
-          Text("完了すると文字起こしが自動で始まります")
+          Text("取り込み後、必要なときに文字起こしを開始できます")
             .font(.footnote)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)

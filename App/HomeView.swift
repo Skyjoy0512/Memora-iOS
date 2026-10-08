@@ -34,6 +34,8 @@ struct HomeView: View {
   var body: some View {
     @Bindable var model = model
     let entries = matchingEntries
+    let recap = JournalDailyRecap.build(date: selectedDate, meetings: model.meetings,
+      tasks: model.tasks, entries: model.lifeLogEntries)
 
     NavigationStack(path: $model.homePath) {
       ScrollView {
@@ -57,14 +59,21 @@ struct HomeView: View {
 
             JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
 
-            JournalDailyRecapCard(date: selectedDate) {
-              showsReview = true
+            if recap.hasActivity {
+              JournalDailyRecapCard(recap: recap) {
+                showsReview = true
+              }
             }
 
             if entries.isEmpty, calendarEvents.isEmpty {
-              emptyDay
+              if !recap.hasActivity { emptyDay }
             } else {
               timelineContent(entries)
+            }
+            if !recap.hasActivity, !recap.isFuture {
+              Button("振り返りを見る") { showsReview = true }
+                .font(.subheadline)
+                .frame(minHeight: 44)
             }
           }
         }

@@ -26,9 +26,6 @@ struct ContentView: View {
           model.loadSampleContent()
         } skip: {
           model.completeOnboarding()
-        } signIn: {
-          model.completeOnboarding()
-          model.isAuthPresented = true
         }
         .transition(.opacity)
       }

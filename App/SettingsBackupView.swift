@@ -38,11 +38,12 @@ struct SettingsBackupView: View {
         SettingsValue(title: "ジャーナル", value: "\(model.lifeLogEntries.count)件", icon: .calendar, color: .orange)
         SettingsValue(title: "人", value: "\(model.people.count)件", icon: .person2, color: .teal)
         SettingsValue(title: "AI履歴", value: "\(model.aiHistory.count)件", icon: .chatBubble, color: .purple)
+        SettingsValue(title: "資料", value: "\(model.documents.count)件", icon: .docText, color: .indigo)
         SettingsValue(title: "音声と写真", value: "媒体として同梱", icon: .photo)
       } header: {
         Text("含まれるもの")
       } footer: {
-        Text("APIキーや設定は含みません。")
+        Text("APIキーや設定、AIメモリ、自作テンプレートは含みません。")
       }
 
       Section {

@@ -6,7 +6,6 @@ struct OnboardingView: View {
   var startRecording: () -> Void
   var showSample: () -> Void
   var skip: () -> Void
-  var signIn: () -> Void
 
   @State private var page = OnboardingPage.record
 
@@ -70,7 +69,7 @@ struct OnboardingView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
 
-          Button("アカウントで続ける", action: signIn)
+          Button("このiPhoneで始める", action: skip)
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity)

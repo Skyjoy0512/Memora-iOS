@@ -23,7 +23,7 @@ struct PaywallView: View {
             Text(selectedPlan.tagline)
               .font(.largeTitle.bold())
               .tracking(-0.7)
-            Text("自分のAPIキーがなくても、Memora IntelligenceのAIで要約・質問・エージェントが使えます。自分のキー（BYOK）と端末内AIは、どのプランでも無料です。")
+            Text("現在は、対応端末の端末内AIと、自分のAPIキー（BYOK）を設定したクラウドAIを利用できます。Memora Intelligenceと購入は準備中です。BYOKの利用料は各プロバイダーから請求されます。")
               .font(.body)
               .foregroundStyle(.secondary)
               .lineSpacing(4)
@@ -101,7 +101,7 @@ struct PaywallView: View {
       }
       .buttonStyle(.plain)
 
-      Text("購入・復元はまだ接続されていません。AIクレジットは使った分だけ引かれ、月ごとに戻ります。")
+      Text("購入・復元は未接続です。表示価格とAIクレジットは提供予定のプラン内容で、端末でのプラン変更による課金は発生しません。")
         .font(.caption2)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)

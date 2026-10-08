@@ -6,6 +6,8 @@ struct JournalDailyRecap {
   var highlights: [String]
   var isFuture: Bool
 
+  var hasActivity: Bool { !isFuture && !highlights.isEmpty }
+
   static func build(date: Date, meetings: [Meeting], tasks: [MemoraTask],
                     entries: [LifeLogEntry], now: Date = .now,
                     calendar: Calendar = .current) -> JournalDailyRecap {
