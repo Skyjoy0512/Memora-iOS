@@ -28,21 +28,29 @@ struct DocumentDetailView: View {
   }
 
   private func content(_ document: MemoraDocument) -> some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 20) {
-        header(document)
+    ScrollViewReader { proxy in
+      ScrollView {
+        VStack(alignment: .leading, spacing: 20) {
+          header(document)
 
-        switch document.kind {
-        case .document:
-          MarkdownDocumentView(markdown: document.markdown, isLazy: true)
-            .textSelection(.enabled)
-        case .slides:
-          slideList(document)
+          switch document.kind {
+          case .document:
+            InlineMarkdownEditor(
+              text: document.markdown,
+              placeholder: "タップして入力",
+              rendersBlocks: true,
+              draftKey: "document.\(document.id).body",
+              onCommit: { model.updateDocument(document.id, title: document.title, body: $0) }
+            )
+          case .slides:
+            slideList(document)
+          }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, 18)
-      .padding(.vertical, 16)
+      .scrollFocusedEditorAboveKeyboard(in: proxy)
     }
     .contentMargins(.bottom, showsCloseButton ? 0 : model.bottomContentClearance, for: .scrollContent)
     .navigationTitle(document.displayTitle)

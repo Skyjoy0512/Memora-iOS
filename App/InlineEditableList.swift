@@ -22,7 +22,8 @@ struct InlineEditableList: View {
             markdown: $draft,
             font: .body,
             minHeight: 110,
-            isFocused: $isFocused
+            isFocused: $isFocused,
+            allowsStructure: false
           )
 
           Text("1行に1つずつ入力します")

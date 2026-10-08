@@ -39,6 +39,30 @@ enum SelfChecks {
       checkMarkdownRoundTrip("そのままの日本語テキスト", name: "plain text")
     }
 
+    group("Keyboard editing") {
+      for source in ["**太字**", "*斜体*", "`code`", "~~取り消し~~", "[リンク](https://example.com)", "日本語\n次の行"] {
+        if MarkdownEditingText.markdown(MarkdownEditingText.attributed(source)) != source {
+          report("keyboard formatting round trip: \(source)")
+        }
+      }
+      let converted = MarkdownEditingAction.applying(.checklist, to: "## 見出し", selection: NSRange(location: 0, length: 0))
+      if converted != "- [ ] 見出し" { report("paragraph conversion duplicated markers") }
+      if MarkdownEditingAction.applying(.toggleCheck, to: converted, selection: NSRange(location: 0, length: 0)) != "- [x] 見出し" {
+        report("checkbox toggle")
+      }
+      let table = MarkdownBlock.table(header: ["項目", "内容", "追加"], rows: [["A", "B", "C"]])
+      let lines = MarkdownBlockWriter.source(of: table, original: ["| 項目 | 内容 |", "| --- | --- |", "| A | B |"])
+      if lines[1].split(separator: "|").count != 3 { report("table column alignment") }
+      let inserted = MarkdownEditingAction.applying(.table, to: "本文\n\n次の段落", selection: NSRange(location: 0, length: 0))
+      let insertedBlocks = MarkdownBlockParser.blocks(for: inserted)
+      if insertedBlocks.count != 3 { report("table insertion changed adjacent paragraphs") }
+      let expanded = MarkdownEditingAction.applying(.addColumn, to: inserted, selection: NSRange(location: 5, length: 0))
+      if !MarkdownBlockParser.blocks(for: expanded).contains(where: { block in
+        if case .table(let header, _) = block { return header.count == 3 }
+        return false
+      }) { report("source table column insertion") }
+    }
+
     group("Draft store", checkDraftStore)
     group("Draft legacy format", checkDraftLegacyFormat)
     group("Store migration", checkStoreMigration)

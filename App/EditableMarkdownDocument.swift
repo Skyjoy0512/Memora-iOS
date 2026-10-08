@@ -97,7 +97,7 @@ struct EditableMarkdownDocument: View {
   private func field(for block: MarkdownBlock) -> some View {
     switch block {
     case .heading(let level, _):
-      textField("見出し")
+      textField("見出し", font: MarkdownBlockView.headingFont(level))
         .font(MarkdownBlockView.headingFont(level))
         .padding(.top, MarkdownBlockView.headingTopPadding(level))
     case .bullet(let level, let marker, _):
@@ -105,7 +105,7 @@ struct EditableMarkdownDocument: View {
       HStack(alignment: .top, spacing: 8) {
         MarkdownBulletMarker(marker: marker, level: level)
           .font(MarkdownBlockView.bulletFont(level))
-        textField("項目")
+        textField("項目", font: MarkdownBlockView.bulletFont(level))
           .font(MarkdownBlockView.bulletFont(level))
       }
       .padding(.leading, CGFloat(level) * 18)
@@ -114,7 +114,7 @@ struct EditableMarkdownDocument: View {
         RoundedRectangle(cornerRadius: 1.5)
           .fill(.quaternary)
           .frame(width: 3)
-        textField("引用")
+        textField("引用", font: .subheadline)
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
@@ -125,10 +125,9 @@ struct EditableMarkdownDocument: View {
     }
   }
 
-  private func textField(_ prompt: String) -> some View {
-    TextField(prompt, text: $draft, axis: .vertical)
-      .lineSpacing(MarkdownBlockView.lineSpacing)
-      .focused($isFocused)
+  private func textField(_ prompt: String, font: Font = .body) -> some View {
+    MarkdownEditorField(markdown: $draft, font: font, minHeight: 44,
+      isFocused: $isFocused, onStructure: applyStructure)
       .frame(maxWidth: .infinity, alignment: .leading)
   }
 
@@ -155,6 +154,19 @@ struct EditableMarkdownDocument: View {
     .padding(14)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    .contextMenu {
+      ForEach(header.indices, id: \.self) { column in
+        Button("列\(column + 1)の見出しを編集") {
+          begin(.cell(block: block, row: -1, column: column), text: header[column])
+        }
+      }
+      ForEach(header.indices, id: \.self) { column in
+        Button("\(header[column])を編集") {
+          begin(.cell(block: block, row: rowIndex, column: column),
+            text: row.indices.contains(column) ? row[column] : "")
+        }
+      }
+    }
   }
 
   @ViewBuilder
@@ -163,7 +175,7 @@ struct EditableMarkdownDocument: View {
       textField("")
         .id(editorID)
     } else {
-      MarkdownBlockView.inline(value)
+      MarkdownBlockView.inline(value.isEmpty ? "入力" : value)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { begin(cellTarget, text: value) }
@@ -173,6 +185,92 @@ struct EditableMarkdownDocument: View {
   }
 
   // MARK: - Editing
+
+  private func applyStructure(_ action: MarkdownEditingAction) {
+    guard let active = target else { return }
+    let current = working ?? markdown
+    let blocks = MarkdownBlockParser.sourcedBlocks(for: current)
+    guard let sourced = blocks[safe: active.blockIndex] else { return }
+    let editedBlock = edited(sourced.block, for: active) ?? .paragraph(draft)
+    var replacement: MarkdownBlock = editedBlock
+    if case .table(let header, var rows) = editedBlock {
+      var header = header
+      let selectedRow: Int
+      let selectedColumn: Int
+      if case .cell(_, let row, let column) = active {
+        selectedRow = row
+        selectedColumn = column
+      } else {
+        selectedRow = 0
+        selectedColumn = 0
+      }
+      switch action {
+      case .addRow: rows.append(Array(repeating: "", count: header.count))
+      case .addColumn:
+        header.append("見出し")
+        rows = rows.map { $0 + [""] }
+      case .deleteRow:
+        guard rows.count > 1, rows.indices.contains(selectedRow) else { return }
+        rows.remove(at: selectedRow)
+      case .deleteColumn:
+        guard header.count > 1, header.indices.contains(selectedColumn) else { return }
+        header.remove(at: selectedColumn)
+        rows = rows.map { row in
+          var row = row
+          if row.indices.contains(selectedColumn) { row.remove(at: selectedColumn) }
+          return row
+        }
+      default: return
+      }
+      replacement = .table(header: header, rows: rows)
+    } else {
+      let text = draft
+      switch action {
+      case .paragraph: replacement = .paragraph("\n" + text + "\n")
+      case .heading: replacement = .heading(level: 2, text: text.replacingOccurrences(of: "\n", with: " "))
+      case .bullet: replacement = .bullet(level: 0, marker: .dot, text: text)
+      case .numbered: replacement = .bullet(level: 0, marker: .number("1"), text: text)
+      case .checklist: replacement = .bullet(level: 0, marker: .checkbox(isChecked: false), text: text)
+      case .toggleCheck:
+        guard case .bullet(let level, .checkbox(let checked), let value) = editedBlock else { return }
+        replacement = .bullet(level: level, marker: .checkbox(isChecked: !checked), text: value)
+      case .table:
+        let updated = MarkdownBlockWriter.replacing(sourced, with: editedBlock, in: current)
+        guard let anchor = MarkdownBlockParser.sourcedBlocks(for: updated)[safe: active.blockIndex] else { return }
+        let table = MarkdownBlock.table(header: ["項目", "内容"], rows: [["項目1", "内容1"]])
+        working = MarkdownBlockWriter.inserting(table, after: anchor, in: updated)
+        save(working ?? updated)
+        target = .cell(block: active.blockIndex + 1, row: 0, column: 0)
+        draft = "項目1"
+        refocusEditor()
+        return
+      default: return
+      }
+    }
+    let updated = MarkdownBlockWriter.replacing(sourced, with: replacement, in: current)
+    working = updated
+    save(updated)
+    if case .table(_, let rows) = replacement {
+      target = .cell(block: active.blockIndex, row: 0, column: 0)
+      draft = rows.first?.first ?? ""
+    } else {
+      let refreshed = MarkdownBlockParser.sourcedBlocks(for: updated)
+      if let index = refreshed.firstIndex(where: { $0.lines.lowerBound >= sourced.lines.lowerBound }) {
+        target = .block(index)
+        draft = Self.text(of: refreshed[index].block)
+      }
+    }
+    refocusEditor()
+  }
+
+  private func refocusEditor() {
+    let intendedTarget = target
+    Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(60))
+      guard target == intendedTarget, target != nil else { return }
+      isFocused = true
+    }
+  }
 
   private func isEditable(_ block: MarkdownBlock) -> Bool {
     if case .rule = block { return false }
@@ -296,7 +394,12 @@ struct EditableMarkdownDocument: View {
       return text.isEmpty ? nil : .bullet(level: level, marker: marker, text: text)
     case (.quote, .block):
       return text.isEmpty ? nil : .quote(text)
-    case (.table(let header, var rows), .cell(_, let row, let column)):
+    case (.table(var header, var rows), .cell(_, let row, let column)):
+      if row == -1 {
+        guard header.indices.contains(column) else { return block }
+        header[column] = text
+        return .table(header: header, rows: rows)
+      }
       guard rows.indices.contains(row) else { return block }
       while rows[row].count <= column { rows[row].append("") }
       rows[row][column] = text

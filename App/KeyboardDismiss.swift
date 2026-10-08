@@ -55,7 +55,7 @@ private extension UIView {
   var isInsideTextInput: Bool {
     var node: UIView? = self
     while let current = node {
-      if current is UITextInput { return true }
+      if current is UITextInput || current is MarkdownEditingToolbar { return true }
       node = current.superview
     }
     return false

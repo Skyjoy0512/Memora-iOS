@@ -37,6 +37,7 @@ struct TranscriptSegmentText: View {
           placeholder: "タップして入力",
           font: .body,
           minHeight: 60,
+          allowsStructure: false,
           onCommit: { text in
             model.updateTranscriptSegment(meetingID: meetingID, segmentID: segment.id, text: text)
             return true

@@ -15,6 +15,7 @@ struct InlineMarkdownEditor: View {
   /// When set, what is being written is kept under this key, so leaving the
   /// screen or stopping the app does not lose the draft.
   var draftKey: String?
+  var allowsStructure = true
   /// Commits the text and reports whether it was stored. The draft is only
   /// cleared once this says the text is saved, so a failed write keeps what was
   /// being written.
@@ -45,10 +46,11 @@ struct InlineMarkdownEditor: View {
             markdown: $draft,
             font: font,
             minHeight: minHeight,
-            isFocused: $isFocused
+            isFocused: $isFocused,
+            allowsStructure: allowsStructure
           )
         }
-      } else if rendersBlocks, MarkdownBlockParser.hasBlockStructure(text) {
+      } else if rendersBlocks, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         // A document is edited where it is read, block by block, so it keeps
         // the look it had. The whole source stays reachable for bigger changes.
         EditableMarkdownDocument(markdown: text, draftKey: draftKey, onCommit: onCommit)

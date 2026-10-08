@@ -23,17 +23,21 @@ extension MemoraModel {
 
   /// Replaces a document's title and body. The body is markdown for a written
   /// document and the slide outline for slides.
-  func updateDocument(_ id: UUID, title: String, body: String) {
-    guard isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }) else { return }
-    documents[index].title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-    switch documents[index].kind {
+  @discardableResult
+  func updateDocument(_ id: UUID, title: String, body: String) -> Bool {
+    guard isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }) else { return false }
+    var candidate = documents
+    candidate[index].title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    switch candidate[index].kind {
     case .document:
-      documents[index].markdown = body
+      candidate[index].markdown = body
     case .slides:
-      documents[index].slides = DocumentSlide.slides(fromOutline: body)
+      candidate[index].slides = DocumentSlide.slides(fromOutline: body)
     }
-    documents[index].updatedAt = .now
-    persistDocuments()
+    candidate[index].updatedAt = .now
+    guard persistBatch({ [(key: StorageKey.documents, data: try RecordStore.encoded(candidate))] }) else { return false }
+    documents = candidate
+    return true
   }
 
   func deleteDocument(_ id: UUID) {

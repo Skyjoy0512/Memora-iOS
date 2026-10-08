@@ -210,6 +210,8 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case sunMax = "sun.max"
   case sunrise = "sunrise"
   case textAlignleft = "text.alignleft"
+  case textformat = "textformat"
+  case tablecells = "tablecells"
   case textBadgePlus = "text.badge.plus"
   case textBubble = "text.bubble"
   case textDocument = "text.document"

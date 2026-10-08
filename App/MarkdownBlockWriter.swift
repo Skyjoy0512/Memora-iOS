@@ -16,7 +16,9 @@ enum MarkdownBlockWriter {
   static func inserting(_ block: MarkdownBlock, after sourced: SourcedMarkdownBlock, in markdown: String) -> String {
     var lines = markdown.components(separatedBy: "\n")
     let index = min(sourced.lines.upperBound, lines.count)
-    lines.insert(contentsOf: source(of: block, original: []), at: index)
+    var inserted = source(of: block, original: [])
+    if case .table = block { inserted = [""] + inserted + [""] }
+    lines.insert(contentsOf: inserted, at: index)
     return lines.joined(separator: "\n")
   }
 
@@ -54,6 +56,7 @@ enum MarkdownBlockWriter {
       let separator = original.first { line in
         let trimmed = line.trimmingCharacters(in: .whitespaces)
         return trimmed.hasPrefix("|") && trimmed.allSatisfy { "|-: ".contains($0) }
+          && trimmed.split(separator: "|").count == header.count
       } ?? "|" + String(repeating: ":---|", count: header.count)
       return [row(header), separator] + rows.map(row)
     case .rule:
