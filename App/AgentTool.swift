@@ -23,6 +23,7 @@ enum AgentTool: String, CaseIterable {
   case searchEmail = "search_email"
   case readEmail = "read_email"
   case askUser = "ask_user"
+  case delegateResearch = "delegate_research"
 
   /// The tools offered right now: mail only while Gmail is connected, so the
   /// model is never handed a tool that cannot work.
@@ -40,7 +41,7 @@ enum AgentTool: String, CaseIterable {
   /// and no questions, since nobody may be there to answer.
   @MainActor
   static var residentTools: [AgentTool] {
-    offered.filter { !$0.needsApproval && $0 != .askUser }
+    offered.filter { !$0.needsApproval && $0 != .askUser && $0 != .delegateResearch }
   }
 
   var needsGmail: Bool {
@@ -82,11 +83,14 @@ enum AgentTool: String, CaseIterable {
     case .saveMemory: .brainHeadProfile
     case .searchEmail, .readEmail: .envelopeOpen
     case .askUser: .questionmarkBubble
+    case .delegateResearch: .sparkle
     }
   }
 
   var summary: String {
     switch self {
+    case .delegateResearch:
+      "複雑な依頼の調査を2〜3担当に分け、承認後に並列実行する。担当ごとの役割と具体的な調査依頼を指定する。子担当は読み取りのみ。結果を統合してから、必要な変更を通常の承認付き道具で行う。1依頼につき1回。追加API利用あり。"
     case .searchRecords:
       "会議の記録とジャーナルをキーワードで検索し、id・タイトル・日付・概要を返す。空のqueryなら新しい順。"
     case .readRecord:
@@ -133,6 +137,14 @@ enum AgentTool: String, CaseIterable {
   /// The JSON schema of the tool's input.
   var inputSchema: [String: Any] {
     switch self {
+    case .delegateResearch:
+      return object([
+        "assignments": ["type": "array", "minItems": 2, "maxItems": 3,
+          "items": object([
+            "role": string("担当名・役割（例: 会議整理、タスク確認、ジャーナル分析）"),
+            "request": string("この担当だけが調べる具体的な依頼。期間・対象・必要な根拠を含める")
+          ], required: ["role", "request"])]
+      ], required: ["assignments"])
     case .searchRecords:
       return object([
         "query": string("検索語。空白区切りで複数可"),

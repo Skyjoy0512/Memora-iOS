@@ -47,6 +47,20 @@ enum SelfChecks {
     group("Task and journal compatibility", checkTaskAndJournalCompatibility)
     group("Review period boundaries", checkReviewPeriodBoundaries)
     group("Journal daily recap", checkJournalDailyRecap)
+    group("Agent research isolation") {
+      if AgentTool.residentTools.contains(.delegateResearch)
+        || AgentTool.onDeviceTools.contains(.delegateResearch) {
+        report("delegation exposed to unattended or on-device agents")
+      }
+      let assignments: [[String: Any]] = [
+        ["role": "会議", "request": "決定を確認"],
+        ["role": "タスク", "request": "期限を確認"]
+      ]
+      if AgentResearchAssignment.parse(assignments)?.count != 2
+        || AgentResearchAssignment.parse([assignments[0], assignments[0]]) != nil {
+        report("research assignments validation failed")
+      }
+    }
     group("Question terms", checkQuestionWords)
     group("AI context limits", checkAIContextLimits)
     group("Scope isolation", checkScopeIsolation)
