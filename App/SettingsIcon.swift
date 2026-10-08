@@ -11,8 +11,10 @@ struct SettingsIcon: View {
   @ScaledMetric(relativeTo: .body) private var size: CGFloat = 29
 
   var body: some View {
-    Image(icon: icon, size: size)
-      .font(.system(size: size * 0.58 * glyphScale, weight: .medium))
+    let glyphSize = size * 0.58 * glyphScale
+
+    Image(icon: icon, size: glyphSize)
+      .font(.system(size: glyphSize, weight: .medium))
       .foregroundStyle(.white)
       .frame(width: size, height: size)
       .background(color.gradient, in: RoundedRectangle(cornerRadius: size * 0.26, style: .continuous))
