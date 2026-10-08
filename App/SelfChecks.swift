@@ -46,6 +46,7 @@ enum SelfChecks {
     group("Journal timeline", checkJournalTimeline)
     group("Task and journal compatibility", checkTaskAndJournalCompatibility)
     group("Review period boundaries", checkReviewPeriodBoundaries)
+    group("Journal daily recap", checkJournalDailyRecap)
     group("Question terms", checkQuestionWords)
     group("AI context limits", checkAIContextLimits)
     group("Scope isolation", checkScopeIsolation)
@@ -296,6 +297,29 @@ enum SelfChecks {
     let timeline = JournalTimelineBuilder.build(day: occurred, entries: [entry], events: [], meetings: [], now: created)
     if timeline.items.isEmpty || entry.occurredAt != occurred {
       report("journal event date ignored")
+    }
+  }
+
+  private static func checkJournalDailyRecap() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let now = Date(timeIntervalSince1970: 1_790_000_000)
+    let day = calendar.startOfDay(for: now)
+    let task = MemoraTask(id: UUID(), title: "提出", isCompleted: true, completedAt: now)
+    let unknown = MemoraTask(id: UUID(), title: "旧タスク", isCompleted: true)
+    let upcoming = LifeLogEntry(id: UUID(), createdAt: now, title: "予定", summary: "",
+      source: .iphone, kind: .event, eventDate: now.addingTimeInterval(100))
+    let recap = JournalDailyRecap.build(date: now, meetings: [], tasks: [task, unknown],
+      entries: [upcoming], now: now, calendar: calendar)
+    if recap.heading != "今日はここまで" || !recap.narrative.contains("1件完了")
+      || recap.highlights != ["完了：提出"] { report("daily recap counts future or undated activity") }
+    let future = JournalDailyRecap.build(date: day.addingTimeInterval(86_400), meetings: [],
+      tasks: [task], entries: [], now: now, calendar: calendar)
+    if !future.isFuture || !future.highlights.isEmpty { report("future day presented as a recap") }
+    let empty = JournalDailyRecap.build(date: day.addingTimeInterval(-86_400), meetings: [],
+      tasks: [], entries: [], now: now, calendar: calendar)
+    if empty.heading != "こんな1日でした" || !empty.narrative.contains("まだありません") {
+      report("empty past day invents activity")
     }
   }
 

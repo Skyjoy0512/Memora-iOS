@@ -57,10 +57,9 @@ struct HomeView: View {
 
             JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
 
-            Button("選んだ日を振り返る", icon: .docText) {
+            JournalDailyRecapCard(date: selectedDate) {
               showsReview = true
             }
-            .buttonStyle(.bordered)
 
             if entries.isEmpty, calendarEvents.isEmpty {
               emptyDay
