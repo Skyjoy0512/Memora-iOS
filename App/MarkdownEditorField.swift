@@ -90,49 +90,51 @@ private struct MarkdownTextSurface: UIViewRepresentable {
 
     func installToolbar(on view: UITextView) {
       textView = view
-      let toolbar = MarkdownEditingToolbar()
-      toolbar.sizeToFit()
-      let format = UIBarButtonItem(image: UIImage(systemName: MemoraIcon.textformat.rawValue), style: .plain, target: nil, action: nil)
-      format.accessibilityLabel = "書式"
-      var formatActions = [
-        action("太字") { self.toggle(.traitBold) },
-        action("斜体") { self.toggle(.traitItalic) }
-      ]
+      let bold = button("太字", icon: .bold) { self.toggle(.traitBold) }
+      let italic = button("斜体", icon: .italic) { self.toggle(.traitItalic) }
+      let done = button("完了", title: "完了") { self.finish() }
+      done.tintColor = .systemBlue
       if parent.allowsStructure {
-        formatActions += [
-          action("本文") { self.structure(.paragraph) },
-          action("見出し") { self.structure(.heading) }
+        let formatting = [
+          button("本文", icon: .textformat) { self.structure(.paragraph) },
+          button("見出し", title: "H") { self.structure(.heading) },
+          bold, italic,
+          button("箇条書き", icon: .listBulletRectangle) { self.structure(.bullet) },
+          button("番号付き", title: "1.") { self.structure(.numbered) },
+          button("チェックリスト", icon: .checklist) { self.structure(.checklist) }
         ]
+        let table = [
+          button("チェック状態を切り替える", icon: .checkmarkSquare) { self.structure(.toggleCheck) },
+          button("表を挿入", icon: .tablecells) { self.structure(.table) },
+          button("行を追加", title: "行＋") { self.structure(.addRow) },
+          button("列を追加", title: "列＋") { self.structure(.addColumn) },
+          button("この行を削除", title: "行−") { self.structure(.deleteRow) },
+          button(parent.onStructure == nil ? "最後の列を削除" : "この列を削除", title: "列−") { self.structure(.deleteColumn) },
+          done
+        ]
+        view.inputAccessoryView = MarkdownEditingToolbar(rows: [formatting, table])
+      } else {
+        view.inputAccessoryView = MarkdownEditingToolbar(rows: [[bold, italic, done]])
       }
-      format.menu = UIMenu(children: formatActions)
-      let list = UIBarButtonItem(image: UIImage(systemName: MemoraIcon.checklist.rawValue), style: .plain, target: nil, action: nil)
-      list.accessibilityLabel = "リスト"
-      list.menu = UIMenu(children: [
-        action("箇条書き") { self.structure(.bullet) },
-        action("番号付き") { self.structure(.numbered) },
-        action("チェックリスト") { self.structure(.checklist) },
-        action("チェック状態を切り替える") { self.structure(.toggleCheck) }
-      ])
-      let table = UIBarButtonItem(image: UIImage(systemName: MemoraIcon.tablecells.rawValue), style: .plain, target: nil, action: nil)
-      table.accessibilityLabel = "表"
-      table.menu = UIMenu(children: [
-        action("表を挿入") { self.structure(.table) },
-        action("行を追加") { self.structure(.addRow) },
-        action("列を追加") { self.structure(.addColumn) },
-        action("この行を削除") { self.structure(.deleteRow) },
-        action(parent.onStructure == nil ? "最後の列を削除" : "この列を削除") { self.structure(.deleteColumn) }
-      ])
-      list.isEnabled = parent.allowsStructure
-      table.isEnabled = parent.allowsStructure
-      let done = UIBarButtonItem(title: "完了", style: .done, target: self, action: #selector(finish))
-      toolbar.items = parent.allowsStructure
-        ? [format, .flexibleSpace(), list, .flexibleSpace(), table, .flexibleSpace(), done]
-        : [format, .flexibleSpace(), done]
-      view.inputAccessoryView = toolbar
     }
 
-    private func action(_ title: String, handler: @escaping () -> Void) -> UIAction {
-      UIAction(title: title) { _ in handler() }
+    private func button(_ label: String, icon: MemoraIcon? = nil, title: String? = nil,
+      handler: @escaping () -> Void) -> UIButton {
+      var configuration = UIButton.Configuration.plain()
+      configuration.title = title
+      configuration.image = icon.flatMap { UIImage(systemName: $0.rawValue) }
+      configuration.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+      configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attributes in
+        var attributes = attributes
+        attributes.font = UIFontMetrics(forTextStyle: .subheadline).scaledFont(
+          for: UIFont.systemFont(ofSize: 15, weight: .medium), maximumPointSize: 20)
+        return attributes
+      }
+      configuration.contentInsets = .zero
+      let button = UIButton(configuration: configuration, primaryAction: UIAction { _ in handler() })
+      button.accessibilityLabel = label
+      button.tintColor = .label
+      return button
     }
 
     @objc private func finish() {
