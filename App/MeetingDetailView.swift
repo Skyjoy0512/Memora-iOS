@@ -7,6 +7,8 @@ struct MeetingDetailView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var meetingID: UUID
+  var morphsFromLibraryToolbar = false
+  @State private var hasReplacedToolbarIcons = false
   /// When set, the transcript opens and plays from here — used when an AI answer's
   /// source line is tapped.
   var initialPlaybackStart: TimeInterval?
@@ -51,6 +53,8 @@ struct MeetingDetailView: View {
 
   private func playbackAndShareActions(_ meeting: Meeting) -> some View {
     MeetingDetailToolbarActions(
+      morphsFromLibrary: morphsFromLibraryToolbar,
+      onReplaceIcons: { hasReplacedToolbarIcons = true },
       hasAudio: meeting.audioURL != nil,
       isPlaying: player.isPlaying,
       isRecording: model.isRecording,
@@ -159,7 +163,7 @@ struct MeetingDetailView: View {
             }
           }
           ToolbarItem(placement: .topBarTrailing) {
-            Menu("その他", icon: .ellipsis) {
+            Menu {
               Button("チームで共有", icon: .personBadgePlus) {
                 Task { await model.shareMeetingWithTeam(meeting.id) }
               }
@@ -191,6 +195,11 @@ struct MeetingDetailView: View {
               Button("削除", icon: .trash, role: .destructive) {
                 isDeleting = true
               }
+            } label: {
+              Label("その他", icon: morphsFromLibraryToolbar && !hasReplacedToolbarIcons && !reduceMotion ? .line3HorizontalDecrease : .ellipsis)
+                .labelStyle(.iconOnly)
+                .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+                .frame(width: 36, height: 36)
             }
           }
         }
@@ -611,4 +620,3 @@ private enum MeetingDetailSection: String, CaseIterable, Identifiable {
   }
 
 }
-

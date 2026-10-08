@@ -1,6 +1,10 @@
 import SwiftUI
 
 struct MeetingDetailToolbarActions: View {
+  var primaryTitle: LocalizedStringKey = "共有"
+  var primaryIcon: MemoraIcon = .squareAndArrowUp
+  var morphsFromLibrary = false
+  var onReplaceIcons: () -> Void = {}
   var hasAudio: Bool
   var isPlaying: Bool
   var isRecording: Bool
@@ -9,6 +13,7 @@ struct MeetingDetailToolbarActions: View {
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Namespace private var namespace
+  @State private var hasReplacedIcons = false
   @State private var isPlayRevealed = false
   @State private var isSeparated = false
 
@@ -16,12 +21,18 @@ struct MeetingDetailToolbarActions: View {
     Group {
       if #available(iOS 26.0, *) {
         GlassEffectContainer(spacing: 10) {
-          HStack(spacing: isSeparated || reduceMotion ? 12 : 0) {
-            if hasAudio, isPlayRevealed || reduceMotion {
-              playButton
-                .glassEffect(.regular.interactive(), in: Circle())
-                .glassEffectID("play", in: namespace)
-                .glassEffectTransition(reduceMotion ? .identity : .matchedGeometry)
+          HStack(spacing: 12) {
+            if hasAudio {
+              Color.clear
+                .frame(width: 44, height: 44)
+                .overlay {
+                  if isPlayRevealed || reduceMotion {
+                    playButton
+                      .glassEffect(.regular.interactive(), in: Circle())
+                      .glassEffectID("play", in: namespace)
+                      .offset(x: isSeparated || reduceMotion ? 0 : 56)
+                  }
+                }
             }
             shareButton
               .glassEffect(.regular.interactive(), in: Circle())
@@ -37,22 +48,45 @@ struct MeetingDetailToolbarActions: View {
         }
       }
     }
+    .frame(width: hasAudio ? 100 : 44, height: 44)
     .task(id: hasAudio) {
-      isPlayRevealed = false
-      isSeparated = false
-      guard hasAudio, !reduceMotion else { return }
+      guard !reduceMotion else {
+        hasReplacedIcons = true
+        onReplaceIcons()
+        isPlayRevealed = hasAudio
+        isSeparated = true
+        return
+      }
       do {
-        try await Task.sleep(for: .milliseconds(180))
-        try Task.checkCancellation()
-        withAnimation(.smooth(duration: 0.25)) {
-          isPlayRevealed = true
+        if morphsFromLibrary, !hasReplacedIcons {
+          try await Task.sleep(for: .milliseconds(300))
+          try Task.checkCancellation()
+          withAnimation(.smooth(duration: 0.2)) {
+            hasReplacedIcons = true
+            onReplaceIcons()
+          }
+          try await Task.sleep(for: .milliseconds(220))
         }
-        try await Task.sleep(for: .milliseconds(150))
+        guard hasAudio else {
+          isPlayRevealed = false
+          isSeparated = false
+          return
+        }
+        guard !isPlayRevealed else { return }
+        if !morphsFromLibrary {
+          try await Task.sleep(for: .milliseconds(180))
+        }
         try Task.checkCancellation()
-        withAnimation(.spring(duration: 0.45, bounce: 0.12)) {
+        isPlayRevealed = true
+        try await Task.sleep(for: .milliseconds(32))
+        try Task.checkCancellation()
+        withAnimation(.spring(duration: 0.45, bounce: 0)) {
           isSeparated = true
         }
       } catch {
+        if !isSeparated {
+          isPlayRevealed = false
+        }
         return
       }
     }
@@ -69,17 +103,20 @@ struct MeetingDetailToolbarActions: View {
     .disabled(isRecording)
     .accessibilityLabel(isPlaying ? "一時停止" : "再生")
     .accessibilityIdentifier(isPlaying ? MemoraIcon.pauseFill.rawValue : MemoraIcon.playFill.rawValue)
+    .allowsHitTesting(isSeparated || reduceMotion)
+    .accessibilityHidden(!isSeparated && !reduceMotion)
   }
 
   private var shareButton: some View {
     Button(action: share) {
-      Image(icon: .squareAndArrowUp)
+      Image(icon: morphsFromLibrary && !hasReplacedIcons && !reduceMotion ? .magnifyingglass : primaryIcon)
+        .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
         .font(.headline)
         .frame(width: 44, height: 44)
         .contentShape(Circle())
     }
     .buttonStyle(.plain)
-    .accessibilityLabel("共有")
-    .accessibilityIdentifier(MemoraIcon.squareAndArrowUp.rawValue)
+    .accessibilityLabel(primaryTitle)
+    .accessibilityIdentifier(primaryIcon.rawValue)
   }
 }

@@ -27,6 +27,22 @@ struct LibraryView: View {
   @State private var shareTarget: Meeting?
   var onOpenSidebar: () -> Void
 
+  private var fileSearchAction: some View {
+    MeetingDetailToolbarActions(
+      primaryTitle: "検索",
+      primaryIcon: .magnifyingglass,
+      hasAudio: false,
+      isPlaying: false,
+      isRecording: false,
+      play: {},
+      share: {
+        withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+          isSearching = true
+        }
+      }
+    )
+  }
+
   var body: some View {
     @Bindable var model = model
 
@@ -52,13 +68,15 @@ struct LibraryView: View {
         // The `if` sits outside the item, so an empty item never leaves an
         // empty glass frame behind.
         if !isSelectionMode {
-          ToolbarItem(placement: .topBarTrailing) {
-            ToolbarIconButton("検索", icon: .magnifyingglass) {
-              withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-                isSearching = true
-              }
+          if #available(iOS 26.0, *) {
+            ToolbarItem(placement: .topBarTrailing) {
+              fileSearchAction
             }
-            .labelStyle(.iconOnly)
+            .sharedBackgroundVisibility(.hidden)
+          } else {
+            ToolbarItem(placement: .topBarTrailing) {
+              fileSearchAction
+            }
           }
 
           ToolbarItem(placement: .topBarTrailing) {
@@ -79,6 +97,7 @@ struct LibraryView: View {
             } label: {
               Label("表示と並べ替え", icon: .line3HorizontalDecrease)
                 .labelStyle(.iconOnly)
+                .frame(width: 36, height: 36)
             }
           }
         }
@@ -96,7 +115,7 @@ struct LibraryView: View {
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id):
-          MeetingDetailView(meetingID: id)
+          MeetingDetailView(meetingID: id, morphsFromLibraryToolbar: true)
             .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
         case .transcript(let id): TranscriptView(meetingID: id)
         case .space(let id): SpaceDetailView(spaceID: id)
