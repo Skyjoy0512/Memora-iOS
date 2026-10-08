@@ -109,12 +109,11 @@ private struct MarkdownTextSurface: UIViewRepresentable {
           button("行を追加", title: "行＋") { self.structure(.addRow) },
           button("列を追加", title: "列＋") { self.structure(.addColumn) },
           button("この行を削除", title: "行−") { self.structure(.deleteRow) },
-          button(parent.onStructure == nil ? "最後の列を削除" : "この列を削除", title: "列−") { self.structure(.deleteColumn) },
-          done
+          button(parent.onStructure == nil ? "最後の列を削除" : "この列を削除", title: "列−") { self.structure(.deleteColumn) }
         ]
-        view.inputAccessoryView = MarkdownEditingToolbar(rows: [formatting, table])
+        view.inputAccessoryView = MarkdownEditingToolbar(buttons: formatting + table, done: done)
       } else {
-        view.inputAccessoryView = MarkdownEditingToolbar(rows: [[bold, italic, done]])
+        view.inputAccessoryView = MarkdownEditingToolbar(buttons: [bold, italic], done: done)
       }
     }
 

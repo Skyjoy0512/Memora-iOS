@@ -1,8 +1,8 @@
 import UIKit
 
 final class MarkdownEditingToolbar: UIView {
-  init(rows: [[UIButton]]) {
-    super.init(frame: CGRect(x: 0, y: 0, width: 0, height: CGFloat(rows.count) * 44 + 16))
+  init(buttons: [UIButton], done: UIButton) {
+    super.init(frame: CGRect(x: 0, y: 0, width: 0, height: 60))
     autoresizingMask = [.flexibleWidth]
 
     let background = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
@@ -11,21 +11,21 @@ final class MarkdownEditingToolbar: UIView {
     background.translatesAutoresizingMaskIntoConstraints = false
     addSubview(background)
 
-    let content = UIStackView()
-    content.axis = .vertical
-    content.distribution = .fillEqually
-    content.translatesAutoresizingMaskIntoConstraints = false
-    background.contentView.addSubview(content)
+    let scrollView = UIScrollView()
+    scrollView.showsHorizontalScrollIndicator = false
+    scrollView.alwaysBounceHorizontal = true
+    scrollView.translatesAutoresizingMaskIntoConstraints = false
+    background.contentView.addSubview(scrollView)
 
-    for buttons in rows {
-      let row = UIStackView(arrangedSubviews: buttons)
-      row.distribution = .fillEqually
-      for button in buttons {
-        let minimumWidth = button.widthAnchor.constraint(greaterThanOrEqualToConstant: 44)
-        minimumWidth.priority = .defaultHigh
-        minimumWidth.isActive = true
-      }
-      content.addArrangedSubview(row)
+    let content = UIStackView(arrangedSubviews: buttons)
+    content.axis = .horizontal
+    content.translatesAutoresizingMaskIntoConstraints = false
+    scrollView.addSubview(content)
+    done.translatesAutoresizingMaskIntoConstraints = false
+    background.contentView.addSubview(done)
+
+    for button in buttons {
+      button.widthAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
     }
 
     NSLayoutConstraint.activate([
@@ -33,10 +33,19 @@ final class MarkdownEditingToolbar: UIView {
       background.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
       background.topAnchor.constraint(equalTo: topAnchor, constant: 4),
       background.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
-      content.leadingAnchor.constraint(equalTo: background.contentView.leadingAnchor, constant: 4),
-      content.trailingAnchor.constraint(equalTo: background.contentView.trailingAnchor, constant: -4),
-      content.topAnchor.constraint(equalTo: background.contentView.topAnchor, constant: 4),
-      content.bottomAnchor.constraint(equalTo: background.contentView.bottomAnchor, constant: -4)
+      scrollView.leadingAnchor.constraint(equalTo: background.contentView.leadingAnchor, constant: 4),
+      scrollView.trailingAnchor.constraint(equalTo: done.leadingAnchor),
+      scrollView.topAnchor.constraint(equalTo: background.contentView.topAnchor, constant: 4),
+      scrollView.bottomAnchor.constraint(equalTo: background.contentView.bottomAnchor, constant: -4),
+      content.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+      content.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+      content.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+      content.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+      content.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor),
+      done.trailingAnchor.constraint(equalTo: background.contentView.trailingAnchor, constant: -4),
+      done.topAnchor.constraint(equalTo: scrollView.topAnchor),
+      done.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+      done.widthAnchor.constraint(equalToConstant: 56)
     ])
   }
 
