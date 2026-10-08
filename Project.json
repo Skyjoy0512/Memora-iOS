@@ -14,6 +14,12 @@
   "settings" : {
     "CODE_SIGN_IDENTITY" : "-"
   },
+  "packages" : {
+    "LucideSwift" : {
+      "url" : "https://github.com/ajaxjiang96/lucide-swift.git",
+      "exactVersion" : "0.9.11"
+    }
+  },
   "targets" : {
     "Memora" : {
       "entitlements" : {
@@ -23,6 +29,10 @@
         }
       },
       "dependencies" : [
+        {
+          "package" : "LucideSwift",
+          "product" : "LucideSwift"
+        },
         {
           "embed" : true,
           "target" : "Memora Widget Extension"
@@ -99,6 +109,12 @@
       "type" : "application"
     },
     "Memora Widget Extension" : {
+      "dependencies" : [
+        {
+          "package" : "LucideSwift",
+          "product" : "LucideSwift"
+        }
+      ],
       "info" : {
         "path" : "Widget Extension\/Info.plist",
         "properties" : {

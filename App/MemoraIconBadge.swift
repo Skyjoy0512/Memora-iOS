@@ -7,7 +7,7 @@ struct MemoraIconBadge: View {
   var size: CGFloat = 36
 
   var body: some View {
-    Image(icon: symbol)
+    Image(icon: symbol, size: size)
       .font(.system(size: size * 0.42, weight: .medium))
       .symbolRenderingMode(.monochrome)
       .foregroundStyle(.primary)

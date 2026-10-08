@@ -104,7 +104,7 @@ private struct OnboardingPageView: View {
       Spacer(minLength: 0)
         .frame(maxHeight: 72)
 
-      Image(icon: page.symbol)
+      Image(icon: page.symbol, size: 38)
         .font(.system(size: 38, weight: .semibold))
         .foregroundStyle(.white)
         .frame(width: 78, height: 78)

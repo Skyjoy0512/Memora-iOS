@@ -7,7 +7,7 @@ struct CallVerifiedView: View {
   var body: some View {
     VStack(spacing: 18) {
       Spacer()
-      Image(icon: .checkmarkSealFill)
+      Image(icon: .checkmarkSealFill, size: 44)
         .font(.system(size: 44))
         .foregroundStyle(.white)
         .frame(width: 96, height: 96)

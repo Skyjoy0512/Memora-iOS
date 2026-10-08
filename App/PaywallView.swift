@@ -13,7 +13,7 @@ struct PaywallView: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 28) {
           VStack(alignment: .leading, spacing: 12) {
-            Image(icon: selectedPlan.symbol)
+            Image(icon: selectedPlan.symbol, size: 30)
               .font(.system(size: 30, weight: .semibold))
               .foregroundStyle(.primary)
               .frame(width: 60, height: 60)

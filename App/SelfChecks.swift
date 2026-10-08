@@ -217,7 +217,7 @@ enum SelfChecks {
   }
 
   private static func checkIconAssets() {
-    for icon in MemoraIcon.allCases where UIImage(systemName: icon.systemName) == nil {
+    for icon in MemoraIcon.allCases where icon.lucideName == nil && UIImage(systemName: icon.systemName) == nil {
       report("icon missing: \(icon.rawValue)")
     }
   }

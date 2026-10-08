@@ -1,14 +1,18 @@
 import SwiftUI
+import LucideSwift
 import UIKit
 
 // Mirrors the `systemImage:` initializers, so an icon reads the same at every
 // call site and keeps the behaviors that come with a Label (icon-only toolbar
-// items, menu rows, VoiceOver names). Every icon is an SF Symbol named by the
-// raw value.
+// items, menu rows, VoiceOver names). Stored names resolve through the icon map.
 
 extension Image {
-  init(icon: MemoraIcon) {
-    self.init(systemName: icon.systemName)
+  init(icon: MemoraIcon, size: CGFloat = 20) {
+    if let name = icon.lucideName {
+      self.init(lucide: name, size: CGSize(width: size, height: size))
+    } else {
+      self.init(systemName: icon.systemName)
+    }
   }
 }
 
@@ -76,6 +80,14 @@ extension Menu where Label == SwiftUI.Label<Text, Image> {
 
 extension ContentUnavailableView where Label == SwiftUI.Label<Text, Image>, Description == Text?, Actions == EmptyView {
   init(_ title: LocalizedStringKey, icon: MemoraIcon, description: Text? = nil) {
-    self.init(title, systemImage: icon.systemName, description: description)
+    self.init {
+      SwiftUI.Label {
+        Text(title)
+      } icon: {
+        Image(icon: icon, size: 48)
+      }
+    } description: {
+      description
+    }
   }
 }

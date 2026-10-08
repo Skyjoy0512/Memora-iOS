@@ -65,7 +65,7 @@ struct PhoneVerificationView: View {
   }
 
   private var badge: some View {
-    Image(icon: .checkmarkSealFill)
+    Image(icon: .checkmarkSealFill, size: 44)
       .font(.system(size: 44))
       .foregroundStyle(.white)
       .frame(width: 96, height: 96)

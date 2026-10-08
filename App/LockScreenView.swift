@@ -10,7 +10,7 @@ struct LockScreenView: View {
       Color(uiColor: .systemBackground).ignoresSafeArea()
 
       VStack(spacing: 20) {
-        Image(icon: .lockShieldFill)
+        Image(icon: .lockShieldFill, size: 44)
           .font(.system(size: 44, weight: .semibold))
           .foregroundStyle(.primary)
           .frame(width: 84, height: 84)

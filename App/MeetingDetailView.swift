@@ -198,7 +198,7 @@ struct MeetingDetailView: View {
             } label: {
               Label("その他", icon: morphsFromLibraryToolbar && !hasReplacedToolbarIcons && !reduceMotion ? .line3HorizontalDecrease : .ellipsis)
                 .labelStyle(.iconOnly)
-                .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+                .contentTransition(reduceMotion ? .identity : .opacity)
                 .frame(width: 36, height: 36)
             }
           }

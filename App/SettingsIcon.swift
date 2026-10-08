@@ -11,7 +11,7 @@ struct SettingsIcon: View {
   @ScaledMetric(relativeTo: .body) private var size: CGFloat = 29
 
   var body: some View {
-    Image(icon: icon)
+    Image(icon: icon, size: size)
       .font(.system(size: size * 0.58 * glyphScale, weight: .medium))
       .foregroundStyle(.white)
       .frame(width: size, height: size)

@@ -15,7 +15,7 @@ struct ToolbarIconButton: View {
 
   var body: some View {
     Button(action: action) {
-      Image(icon: icon)
+      Image(icon: icon, size: iconSize)
         .font(.system(size: iconSize))
         .frame(minWidth: 36, minHeight: 36)
         .contentShape(Rectangle())

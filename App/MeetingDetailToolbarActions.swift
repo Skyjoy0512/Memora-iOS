@@ -110,7 +110,7 @@ struct MeetingDetailToolbarActions: View {
   private var shareButton: some View {
     Button(action: share) {
       Image(icon: morphsFromLibrary && !hasReplacedIcons && !reduceMotion ? .magnifyingglass : primaryIcon)
-        .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+        .contentTransition(reduceMotion ? .identity : .opacity)
         .font(.headline)
         .frame(width: 44, height: 44)
         .contentShape(Circle())

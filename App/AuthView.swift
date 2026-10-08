@@ -10,7 +10,7 @@ struct AuthView: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 0) {
-          Image(icon: .personBadgeKey)
+          Image(icon: .personBadgeKey, size: 28)
             .font(.system(size: 28, weight: .semibold))
             .foregroundStyle(.white)
             .frame(width: 62, height: 62)

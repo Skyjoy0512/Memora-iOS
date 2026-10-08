@@ -121,7 +121,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   }
 
   private var prominentLabel: some View {
-    Image(icon: prominentSymbol)
+    Image(icon: prominentSymbol, size: 22)
       .font(.system(size: 22, weight: .medium))
       .rotationEffect(.degrees(isProminentPresented && prominentSymbol == .plus ? 45 : 0))
       .animation(reduceMotion ? nil : MemoraMotion.control, value: isProminentPresented)
@@ -272,7 +272,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     // The selected tab is drawn in the accent color, as the system tab bar
     // marks its current tab; the others stay in the label color.
     let label = VStack(spacing: 3) {
-      Image(icon: selected ? item.filledSymbol : item.symbol)
+      Image(icon: selected ? item.filledSymbol : item.symbol, size: 18)
         .font(.system(size: 18))
 
       if showsTitles {
