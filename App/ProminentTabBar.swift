@@ -272,8 +272,8 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     // The selected tab is drawn in the accent color, as the system tab bar
     // marks its current tab; the others stay in the label color.
     let label = VStack(spacing: 3) {
-      Image(icon: selected ? item.filledSymbol : item.symbol, size: 18)
-        .font(.system(size: 18))
+      Image(icon: selected ? item.filledSymbol : item.symbol, size: 22)
+        .font(.system(size: 22))
 
       if showsTitles {
         Text(item.title)
