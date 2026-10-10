@@ -51,7 +51,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
           .compositingGroup()
           .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
           .overlay {
-            if progress > 0 {
+            if isOpen || progress > 0 {
               // A light wash, not a blur: the pushed-aside screen stays readable
               // behind the drawer. It also catches the tap or drag that closes it.
               Rectangle()
@@ -65,7 +65,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
             }
           }
           .accessibilityHidden(isOpen)
-          .transformEffect(CGAffineTransform(translationX: offset, y: 0))
+          .modifier(SidebarSlideEffect(offset: offset))
           .shadow(color: .black.opacity(0.2 * progress), radius: 24, x: -6)
 
         if isEnabled && !isOpen {

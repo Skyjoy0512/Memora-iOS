@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import SwiftUI
 import UIKit
 
 /// Quick checks that run in debug builds only, until the project has a test
@@ -95,6 +96,17 @@ enum SelfChecks {
     group("Draft legacy format", checkDraftLegacyFormat)
     group("Store migration", checkStoreMigration)
 
+    group("Sidebar translation") {
+      var effect = SidebarSlideEffect(offset: 0)
+      for position: CGFloat in [0, 160, 320, 160, 0] {
+        effect.animatableData = position
+        let transform = effect.effectValue(size: CGSize(width: 440, height: 956))
+        if effect.offset != position || transform.m31 != position || transform.m32 != 0
+          || transform.m11 != 1 || transform.m22 != 1 {
+          report("sidebar translation must interpolate without resizing the content")
+        }
+      }
+    }
     group("Journal timeline", checkJournalTimeline)
     group("Task and journal compatibility", checkTaskAndJournalCompatibility)
     group("Task ownership and hierarchy") {
