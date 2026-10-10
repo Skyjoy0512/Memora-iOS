@@ -3,6 +3,11 @@ import Foundation
 
 @MainActor
 final class AudioRecorderService {
+  enum Purpose {
+    case recording
+    case voiceEnrollment
+  }
+
   /// Something the system did to the audio session while recording.
   enum Interruption {
     case began
@@ -41,18 +46,33 @@ final class AudioRecorderService {
     }
   }
 
-  func start() async throws -> URL {
+  func start(purpose: Purpose = .recording) async throws -> URL {
     // Recording waits for anything else using the session to stop, then takes it
     // and keeps it until it stops, so another feature cannot switch the audio off
     // underneath it. Every failure below hands the claim back.
-    sessionToken = await AudioSessionCoordinator.shared.beginRecording()
+    guard recorder == nil else { throw AudioRecorderError.couldNotStart }
+    switch purpose {
+    case .recording:
+      sessionToken = await AudioSessionCoordinator.shared.beginRecording()
+    case .voiceEnrollment:
+      guard let token = AudioSessionCoordinator.shared.claim(.voiceEnrollment) else {
+        throw AudioRecorderError.sessionBusy
+      }
+      sessionToken = token
+    }
+    var destination: URL?
     do {
       let session = AVAudioSession.sharedInstance()
-      try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetoothHFP])
+      try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP])
       try session.setActive(true)
+      guard session.isInputAvailable else { throw AudioRecorderError.couldNotStart }
 
-      let directory = try recordingsDirectory()
+      let directory = switch purpose {
+      case .recording: try recordingsDirectory()
+      case .voiceEnrollment: try VoiceProfileFiles.prepareDirectory()
+      }
       let url = directory.appendingPathComponent("Memora-\(UUID().uuidString).m4a")
+      destination = url
       let settings: [String: Any] = [
         AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
         AVSampleRateKey: 44_100,
@@ -61,14 +81,14 @@ final class AudioRecorderService {
       ]
       let recorder = try AVAudioRecorder(url: url, settings: settings)
       recorder.isMeteringEnabled = true
-      recorder.prepareToRecord()
-      guard recorder.record() else {
+      guard recorder.prepareToRecord(), recorder.record() else {
         throw AudioRecorderError.couldNotStart
       }
       self.recorder = recorder
       return url
     } catch {
       releaseSession()
+      if let destination { try? FileManager.default.removeItem(at: destination) }
       throw error
     }
   }
@@ -82,7 +102,11 @@ final class AudioRecorderService {
   /// Hands the session back for this run's claim alone.
   private func releaseSession() {
     guard let sessionToken else { return }
-    AudioSessionCoordinator.shared.endRecording(sessionToken)
+    if sessionToken.use == .recording {
+      AudioSessionCoordinator.shared.endRecording(sessionToken)
+    } else {
+      AudioSessionCoordinator.shared.release(sessionToken)
+    }
     self.sessionToken = nil
   }
 
@@ -94,6 +118,8 @@ final class AudioRecorderService {
     return max(0, min(1, (decibels + 50) / 50))
   }
 
+  var elapsed: TimeInterval { recorder?.currentTime ?? 0 }
+
   func pause() {
     recorder?.pause()
   }
@@ -103,7 +129,12 @@ final class AudioRecorderService {
     // claim so an older run's token cannot end the recording. This recorder
     // already owns it, so there is nothing to stop first.
     sessionToken = AudioSessionCoordinator.shared.takeRecordingSession()
-    try? AVAudioSession.sharedInstance().setActive(true)
+    do {
+      try AVAudioSession.sharedInstance().setActive(true)
+    } catch {
+      releaseSession()
+      return false
+    }
     let started = recorder?.record() ?? false
     if !started {
       releaseSession()
@@ -169,8 +200,14 @@ final class AudioRecorderService {
 
 private enum AudioRecorderError: LocalizedError {
   case couldNotStart
+  case sessionBusy
 
   var errorDescription: String? {
-    "録音を開始できませんでした。オーディオ入力を確認して、もう一度お試しください。"
+    switch self {
+    case .couldNotStart:
+      "録音を開始できませんでした。オーディオ入力を確認して、もう一度お試しください。"
+    case .sessionBusy:
+      "マイクを使用中です。録音・再生・音声入力を終えてから声を登録してください。"
+    }
   }
 }

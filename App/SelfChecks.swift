@@ -1,5 +1,7 @@
 #if DEBUG
 import Foundation
+import AVFAudio
+import Observation
 import SwiftUI
 import UIKit
 
@@ -176,6 +178,66 @@ enum SelfChecks {
     group("Photo thumbnail naming", checkPhotoThumbnailNaming)
     group("Status filter", checkStatusFilter)
     group("Audio session claims", checkAudioSessionClaims)
+    group("Audio session callback registration") {
+      let coordinator = AudioSessionCoordinator()
+      var invalidated = false
+      let stopper = withObservationTracking {
+        _ = coordinator.refusal(for: .playback)
+        return coordinator.registerStopper(.speechInput) {}
+      } onChange: {
+        MainActor.assumeIsolated { invalidated = true }
+      }
+      let secondStopper = coordinator.registerStopper(.speechInput) {}
+      let pauser = coordinator.registerPlaybackPauser {}
+      coordinator.unregisterStopper(stopper, for: .speechInput)
+      coordinator.unregisterStopper(secondStopper, for: .speechInput)
+      coordinator.unregisterPlaybackPauser(pauser)
+      if invalidated { report("callback bookkeeping invalidated the observing view") }
+    }
+    group("Live audio buffer ownership") {
+      guard let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1),
+            let input = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 64),
+            let converter = LiveAudioBufferConverter(source: format, target: format) else {
+        report("could not prepare buffer ownership check")
+        return
+      }
+      input.frameLength = 64
+      input.floatChannelData?[0][0] = 0.5
+      do {
+        let output = try converter.convert(input)
+        input.floatChannelData?[0][0] = 0
+        if output === input || output?.floatChannelData?[0][0] != 0.5 {
+          report("live analyzer borrowed the microphone buffer")
+        }
+      } catch { report("live audio copy failed") }
+      guard let target = AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1),
+            let resampler = LiveAudioBufferConverter(source: format, target: target) else {
+        report("could not prepare live audio resampling")
+        return
+      }
+      do {
+        var convertedFrames: AVAudioFrameCount = 0
+        for _ in 0..<12 {
+          if let output = try resampler.convert(input) {
+            if output.format != target { report("analyzer received the hardware format") }
+            convertedFrames += output.frameLength
+          }
+        }
+        if convertedFrames == 0 { report("live audio resampling produced no audio") }
+      } catch { report("live audio resampling failed") }
+    }
+    group("Voice profile storage") {
+      if VoiceProfileFiles.resolve("../sample.m4a") != nil
+        || VoiceProfileFiles.resolve("/tmp/Memora-sample.m4a") != nil
+        || VoiceProfileFiles.resolve("Memora-sample.wav") != nil {
+        report("voice sample accepted an unmanaged file")
+      }
+      let profile = VoiceProfile(fileName: "Memora-test.m4a", duration: 20, registeredAt: .now)
+      do {
+        let decoded = try JSONDecoder().decode(VoiceProfile.self, from: JSONEncoder().encode(profile))
+        if decoded != profile { report("voice profile did not survive decoding") }
+      } catch { report("voice profile coding failed") }
+    }
     group("Store failure injection", checkStoreFailureInjection)
     group("Atomic commit", checkAtomicCommit)
     group("Backup restore validation", checkBackupRestoreValidation)
@@ -1434,6 +1496,9 @@ enum SelfChecks {
     if coordinator.claim(.speechInput) != nil {
       report("voice input claimed the session during a recording")
     }
+    if coordinator.claim(.voiceEnrollment) != nil {
+      report("voice enrollment claimed the microphone during a recording")
+    }
     // The old voice-input token must not be able to end the recording.
     coordinator.release(speechToken)
     if !coordinator.isRecording {
@@ -1569,9 +1634,14 @@ enum SelfChecks {
     let coordinator = AudioSessionCoordinator()
     var stoppedBeforeClaim = false
     coordinator.registerStopper(.playback) { stoppedBeforeClaim = true }
+    var enrollmentStoppedBeforeClaim = false
+    coordinator.registerStopper(.voiceEnrollment) { enrollmentStoppedBeforeClaim = true }
     let token = await coordinator.beginRecording()
     if !stoppedBeforeClaim {
       report("recording took the session before stopping the other user")
+    }
+    if !enrollmentStoppedBeforeClaim {
+      report("recording took the session before stopping voice enrollment")
     }
     coordinator.endRecording(token)
     let passed = failures == failuresBefore

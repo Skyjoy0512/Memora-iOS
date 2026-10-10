@@ -43,7 +43,7 @@ struct SettingsBackupView: View {
       } header: {
         Text("含まれるもの")
       } footer: {
-        Text("APIキーや設定、AIメモリ、自作テンプレートは含みません。")
+        Text("APIキーや設定、AIメモリ、自作テンプレート、自分の声のサンプルは含みません。")
       }
 
       Section {

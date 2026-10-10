@@ -86,6 +86,7 @@ final class MemoraModel {
   }
   /// Documents and slides made from the records, newest first.
   var documents: [MemoraDocument] = []
+  var voiceProfile: VoiceProfile?
   var tasks: [MemoraTask] {
     didSet {
       tasksByMeeting = nil
@@ -486,6 +487,7 @@ final class MemoraModel {
     lifeLogEntries = load([LifeLogEntry].self, forKey: StorageKey.lifeLogEntries, fallback: [])
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: [])
     people = load([Person].self, forKey: StorageKey.people, fallback: [])
+    voiceProfile = load([VoiceProfile].self, forKey: StorageKey.voiceProfile, fallback: []).first
     let activeJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
     processing.restoreInterrupted(activeJobIDs)
     trashedRecords = load([TrashedRecord].self, forKey: StorageKey.trash, fallback: [])
@@ -571,6 +573,9 @@ final class MemoraModel {
 
     // A removal of media that failed last time is tried again.
     retryPendingMediaDeletions()
+    if !didFailToReadStore, !didFindUnreadableData {
+      removeUnregisteredVoiceSamples()
+    }
 
     // A recording that was cut off by a stop is recovered as its own record,
     // never re-recorded.

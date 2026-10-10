@@ -73,7 +73,7 @@
           "NSHealthShareUsageDescription" : "歩数・睡眠・ワークアウトを読み取り、個人の振り返り画面で活動を確認するために使用します。健康データはAIや外部サービスへ送信せず、チームにも共有しません。",
           "NSLocationAlwaysAndWhenInUseUsageDescription" : "移動や滞在をジャーナルに自動で記録するために、アプリを使っていない間も位置情報を使用します。位置情報はこのiPhoneの外へ送信しません。",
           "NSLocationWhenInUseUsageDescription" : "ジャーナルに近くの駅や場所の名前を追加し、移動や滞在を記録するために位置情報を使用します。位置情報はこのiPhoneの外へ送信しません。",
-          "NSMicrophoneUsageDescription" : "会話の録音とAsk AIへの音声入力にマイクを使用します。",
+          "NSMicrophoneUsageDescription" : "会話の録音、Ask AIへの音声入力、自分の声のサンプル登録にマイクを使用します。",
           "NSSpeechRecognitionUsageDescription" : "Ask AIへ話しかけた内容を文字に変換するために音声認識を使用します。",
           "NSSupportsLiveActivities" : true,
           "BGTaskSchedulerPermittedIdentifiers" : [

@@ -8,6 +8,7 @@ extension MemoraModel {
 
     switch event {
     case .began:
+      realtimeTranscriber.stop()
       isRecordingPaused = true
       recordingPausedAt = .now
       recordingInterruptionMessage = "着信などでマイクが使えなくなり、録音を一時停止しました。「再開」で続けられます。"
@@ -16,10 +17,12 @@ extension MemoraModel {
         recordingInterruptionMessage = "マイクが使えるようになりました。「再開」で録音を続けられます。"
       }
     case .inputLost(let reason):
+      realtimeTranscriber.stop()
       isRecordingPaused = true
       recordingPausedAt = .now
       recordingInterruptionMessage = reason
     case .reset:
+      realtimeTranscriber.stop()
       recordingInterruptionMessage = "オーディオがリセットされました。ここまでの録音を保存します。"
       Task { await stopCapture() }
     }
@@ -68,11 +71,6 @@ extension MemoraModel {
       isRecording = true
       isCapturePresented = true
       levelMeter.reset()
-      startRecordingTicker()
-      startLevelTicker()
-      startLiveActivity()
-      realtimeTranscriber.start()
-      announce("録音を開始しました")
       if let recordingURL, let fileName = MediaFiles.reference(for: recordingURL) {
         recordingDraft = RecordingDraft(
           id: UUID(),
@@ -81,8 +79,13 @@ extension MemoraModel {
           note: "",
           startedAt: .now
         )
-        persistRecordingDraft()
+        persistNow(recordingDraft, forKey: StorageKey.recordingDraft)
       }
+      startRecordingTicker()
+      startLevelTicker()
+      startLiveActivity()
+      realtimeTranscriber.start()
+      announce("録音を開始しました")
     } catch {
       recordingErrorMessage = error.localizedDescription
     }
@@ -236,8 +239,8 @@ extension MemoraModel {
   /// Stops the microphone, the live transcript and both tickers. Shared by
   /// saving and discarding, which differ only in what happens to the audio.
   private func stopRecorder() {
-    recorder.stop()
     realtimeTranscriber.stop()
+    recorder.stop()
     recordingTicker?.cancel()
     recordingTicker = nil
     levelTicker?.cancel()
@@ -270,8 +273,8 @@ extension MemoraModel {
       recordingInterruptionMessage = nil
       realtimeTranscriber.start()
     } else {
-      recorder.pause()
       realtimeTranscriber.stop()
+      recorder.pause()
       recordingPausedAt = .now
       isRecordingPaused = true
     }

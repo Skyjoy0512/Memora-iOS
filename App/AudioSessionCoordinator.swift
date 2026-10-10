@@ -15,12 +15,14 @@ final class AudioSessionCoordinator {
     case recording
     case playback
     case speechInput
+    case voiceEnrollment
 
     var label: String {
       switch self {
       case .recording: "録音"
       case .playback: "再生"
       case .speechInput: "音声入力"
+      case .voiceEnrollment: "声の登録"
       }
     }
   }
@@ -34,22 +36,21 @@ final class AudioSessionCoordinator {
 
   private(set) var owner: Use?
   private(set) var isRecording = false
-  private var ownerTokenID: UUID?
+  @ObservationIgnored private var ownerTokenID: UUID?
   /// Ways for a feature to be asked to stop before recording takes the session,
   /// each keyed by a token so a replaced service's handler can be removed.
-  private var stoppers: [Use: [UUID: @MainActor () async -> Void]] = [:]
+  @ObservationIgnored private var stoppers: [Use: [UUID: @MainActor () async -> Void]] = [:]
   /// Ways to pause a running playback, so a second player taking over silences
   /// the first instead of both sounding at once.
-  private var playbackPausers: [UUID: @MainActor () -> Void] = [:]
+  @ObservationIgnored private var playbackPausers: [UUID: @MainActor () -> Void] = [:]
 
   /// Asks anything else using the session to stop, waits for it to finish, and
   /// only then takes the session for recording, so a recorder never starts on top
   /// of running playback or voice input.
   func beginRecording() async -> Token {
-    for (use, handlers) in stoppers where use != .recording {
-      for handler in handlers.values {
-        await handler()
-      }
+    let handlers = stoppers.filter { $0.key != .recording }.flatMap { $0.value.values }
+    for handler in handlers {
+      await handler()
     }
     return takeRecordingSession()
   }

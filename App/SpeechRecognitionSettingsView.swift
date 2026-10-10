@@ -76,6 +76,20 @@ struct SpeechRecognitionSettingsView: View {
       }
 
       Section {
+        NavigationLink {
+          VoiceProfileView()
+        } label: {
+          LabeledContent {
+            Text(model.voiceProfile == nil ? "未登録" : "サンプル登録済み")
+          } label: {
+            SettingsLabel("自分の声", icon: .personWave2, color: .teal)
+          }
+        }
+      } footer: {
+        Text("自分の声を音声サンプルとして保存できます。発言者の自動識別はまだ利用できません。")
+      }
+
+      Section {
         Toggle(isOn: $liveTranscription) {
           SettingsLabel("録音中に文字起こしを表示", icon: .textDocument, color: .purple)
         }

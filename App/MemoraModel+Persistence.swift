@@ -154,6 +154,7 @@ extension MemoraModel {
     static let cloudStorage = "memoraCloudStorage"
     static let activeJobs = "memoraActiveJobs"
     static let recordingDraft = "memoraRecordingDraft"
+    static let voiceProfile = "memoraVoiceProfile"
     static let trash = "memoraTrash"
     static let lifeLogTrash = "memoraLifeLogTrash"
     static let aiHistory = "memoraAIHistory"
