@@ -8,6 +8,10 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
 
   var id: Self { self }
 
+  var artwork: MemoraArtwork? {
+    self == .askAI ? .askAITab : nil
+  }
+
   var title: String {
     switch self {
     case .home: "ジャーナル"

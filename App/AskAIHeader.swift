@@ -46,8 +46,7 @@ struct AskAIHeader: View {
       .frame(maxHeight: .infinity, alignment: .top)
 
       VStack(spacing: -10) {
-        Image(icon: .sparkle)
-          .font(.title2.weight(.semibold))
+        ArtworkIcon(artwork: .askAIHeader, size: 20)
           .foregroundStyle(.white)
           .frame(width: 56, height: 56)
           .background(

@@ -112,7 +112,14 @@ struct FileSidebarView: View {
         }
       } label: {
         HStack(spacing: 12) {
-          ProfileAvatar(profile: model.profile, size: 42)
+          if !model.isSignedIn && model.profile.avatarKind == .none {
+            ArtworkIcon(artwork: .signIn, size: 22)
+              .foregroundStyle(.primary)
+              .frame(width: 42, height: 42)
+              .background(Color.primary.opacity(0.08), in: Circle())
+          } else {
+            ProfileAvatar(profile: model.profile, size: 42)
+          }
 
           VStack(alignment: .leading, spacing: 3) {
             Text(displayName)
