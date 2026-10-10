@@ -21,6 +21,7 @@ struct HomeView: View {
   @State private var openCalendarEvent: JournalCalendarEvent?
   @State private var showsReview = false
   @State private var showsSummary = false
+  @State private var editingTask: MemoraTask?
   @State private var backdrops = JournalBackdropSelection()
   @Namespace private var summaryNamespace
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
@@ -69,8 +70,8 @@ struct HomeView: View {
               .matchedTransitionSource(id: "journalSummary", in: summaryNamespace)
             }
 
-            if entries.isEmpty, calendarEvents.isEmpty {
-              if !recap.hasActivity { emptyDay }
+            if entries.isEmpty, calendarEvents.isEmpty, !recap.hasActivity {
+              emptyDay
             } else {
               timelineContent(entries)
             }
@@ -134,6 +135,7 @@ struct HomeView: View {
       .sheet(isPresented: $showsReview) {
         JournalReviewView(date: selectedDate)
       }
+      .sheet(item: $editingTask) { task in TaskEditView(task: task) }
       .fullScreenCover(isPresented: $showsSummary) {
         if reduceMotion {
           JournalSummaryView(date: selectedDate, backdrops: $backdrops)
@@ -340,7 +342,8 @@ struct HomeView: View {
       day: selectedDate,
       entries: entries,
       events: calendarEvents,
-      meetings: model.meetings
+      meetings: model.meetings,
+      tasks: model.tasks
     )
 
     VStack(alignment: .leading, spacing: 10) {
@@ -355,36 +358,53 @@ struct HomeView: View {
       }
 
       LazyVStack(spacing: 0) {
-        ForEach(timeline.items) { item in
-          timelineRow(item)
+        ForEach(Array(timeline.items.enumerated()), id: \.element.id) { index, item in
+          timelineRow(item, connectsToNext: index < timeline.items.count - 1)
         }
       }
     }
   }
 
   @ViewBuilder
-  private func timelineRow(_ item: JournalTimelineItem) -> some View {
+  private func timelineRow(_ item: JournalTimelineItem, connectsToNext: Bool) -> some View {
     switch item {
     case .entry(let entry):
-      entryView(entry)
+      entryView(entry, connectsToNext: connectsToNext)
     case .calendarEvent(let event):
-      JournalCalendarEventRow(day: selectedDate, event: event) { openCalendarEvent = $0 }
+      JournalCalendarEventRow(day: selectedDate, event: event, onOpen: { openCalendarEvent = $0 }, connectsToNext: connectsToNext)
     case .movement(let movement):
-      JournalMovementRow(movement: movement) { openMovement = $0 }
+      JournalMovementRow(movement: movement, onOpen: { openMovement = $0 }, connectsToNext: connectsToNext)
     case .nowMarker:
       nowMarker
+    case .completedTask(let task):
+      Button {
+        InteractionFeedback.shared.send(.tap)
+        editingTask = task
+      } label: {
+        JournalTimelineRow(time: task.completedAt?.formatted(date: .omitted, time: .shortened) ?? "",
+          icon: .checkmark, tint: .green, railColor: .green, connectsToNext: connectsToNext) {
+          VStack(alignment: .leading, spacing: 8) {
+            Text(task.completedAt?.formatted(date: .omitted, time: .shortened) ?? "")
+              .font(.caption.monospacedDigit())
+            Text(task.title).font(.headline)
+            Text("タスクを完了").font(.subheadline).foregroundStyle(.secondary)
+          }
+        }
+      }
+      .buttonStyle(.plain)
+      .accessibilityHint("タスクの詳細を開きます")
     }
   }
 
   @ViewBuilder
-  private func entryView(_ entry: LifeLogEntry) -> some View {
+  private func entryView(_ entry: LifeLogEntry, connectsToNext: Bool = false) -> some View {
     if let meetingID = entry.meetingID {
       NavigationLink(value: LibraryRoute.meeting(meetingID)) {
-        LifeLogRow(entry: entry)
+        LifeLogRow(entry: entry, connectsToNext: connectsToNext)
       }
       .buttonStyle(.plain)
     } else {
-      LifeLogRow(entry: entry)
+      LifeLogRow(entry: entry, connectsToNext: connectsToNext)
         .contentShape(Rectangle())
         .onTapGesture {
           InteractionFeedback.shared.send(.tap)

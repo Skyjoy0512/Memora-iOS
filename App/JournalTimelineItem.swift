@@ -7,6 +7,7 @@ enum JournalTimelineItem: Identifiable {
   case calendarEvent(JournalCalendarEvent)
   case movement(JournalMovement)
   case nowMarker
+  case completedTask(MemoraTask)
 
   var id: String {
     switch self {
@@ -14,6 +15,7 @@ enum JournalTimelineItem: Identifiable {
     case .calendarEvent(let event): "event-\(event.id)"
     case .movement(let movement): "movement-\(movement.id)"
     case .nowMarker: "nowMarker"
+    case .completedTask(let task): "completedTask-\(task.id.uuidString)"
     }
   }
 }

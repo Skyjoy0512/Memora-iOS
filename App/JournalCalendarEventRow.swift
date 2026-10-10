@@ -8,7 +8,7 @@ struct JournalCalendarEventRow: View {
   var day: Date
   var event: JournalCalendarEvent
   var onOpen: (JournalCalendarEvent) -> Void
-  @ScaledMetric(relativeTo: .caption) private var timeWidth: CGFloat = 46
+  var connectsToNext = false
 
   var body: some View {
     Group {
@@ -19,6 +19,7 @@ struct JournalCalendarEventRow: View {
         .buttonStyle(.plain)
       } else {
         Button {
+          InteractionFeedback.shared.send(.tap)
           onOpen(event)
         } label: {
           label
@@ -30,11 +31,12 @@ struct JournalCalendarEventRow: View {
   }
 
   private var label: some View {
-    HStack(alignment: .top, spacing: 12) {
+    JournalTimelineRow(time: event.start < Calendar.current.startOfDay(for: day) ? "継続" : event.start.formatted(date: .omitted, time: .shortened),
+      icon: event.meetingID == nil ? .calendar : .waveform, tint: .orange, railColor: .orange,
+      connectsToNext: connectsToNext) {
+      VStack(alignment: .leading, spacing: 8) {
       Text(timeText)
-        .font(.caption.monospacedDigit().weight(.medium))
-        .foregroundStyle(.secondary)
-        .frame(width: timeWidth, alignment: .leading)
+        .font(.caption.monospacedDigit())
 
       VStack(alignment: .leading, spacing: 2) {
         Text(event.title)
@@ -54,11 +56,13 @@ struct JournalCalendarEventRow: View {
         }
       }
 
-      Spacer(minLength: 0)
+      if let location = event.location, !location.isEmpty {
+        Label(location, icon: .location).font(.subheadline).foregroundStyle(.secondary)
+      }
+      }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .contentShape(Rectangle())
-    .padding(.vertical, 4)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("\(timeText)、予定、\(event.title)、\(event.calendarTitle)")
   }

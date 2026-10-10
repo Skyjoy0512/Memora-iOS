@@ -6,6 +6,7 @@ struct JournalDailyRecap {
   var highlights: [String]
   var isFuture: Bool
   var items: [JournalRecapHighlight] = []
+  var preview = ""
 
   var hasActivity: Bool { !isFuture && !highlights.isEmpty }
   var activitySummary: String { JournalRecapWriter.activitySummary(items: items) }
@@ -52,6 +53,7 @@ struct JournalDailyRecap {
     let highlights = items.prefix(3).map(\.label)
     return JournalDailyRecap(heading: items.isEmpty ? heading : JournalRecapWriter.heading(items: items, isToday: isToday),
       narrative: items.isEmpty ? "この日の振り返りに使える記録はまだありません。記録が増えると、ここに1日の概要が表示されます。" : JournalRecapWriter.narrative(items: items, calendar: calendar),
-      highlights: highlights, isFuture: false, items: items)
+      highlights: highlights, isFuture: false, items: items,
+      preview: JournalRecapWriter.cardPreview(items: items, calendar: calendar))
   }
 }

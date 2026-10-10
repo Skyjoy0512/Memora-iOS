@@ -18,7 +18,7 @@ struct JournalDailyRecapCard: View {
         Text(recap.heading)
           .font(.title2.bold())
           .fixedSize(horizontal: false, vertical: true)
-        Text(recap.narrative.replacingOccurrences(of: "\n\n", with: " "))
+        Text(recap.preview.isEmpty ? recap.narrative.replacingOccurrences(of: "\n\n", with: " ") : recap.preview)
           .font(.subheadline)
           .lineSpacing(4)
           .lineLimit(3)

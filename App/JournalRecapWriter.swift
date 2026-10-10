@@ -2,6 +2,17 @@ import Foundation
 
 enum JournalRecapWriter {
   static func heading(items: [JournalRecapHighlight], isToday: Bool) -> String {
+    if items.count == 1, let item = items.first {
+      let title = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+      if !title.isEmpty, title.count <= 24 {
+        switch item.kind {
+        case .completedTask: return "「\(title)」を完了"
+        case .memo, .photo, .record: return "「\(title)」の記録"
+        case .event: return "「\(title)」の予定"
+        case .location: break
+        }
+      }
+    }
     let kinds = Set(items.map(\.kind))
     if kinds == [.completedTask] {
       return items.count == 1 ? "ひとつのタスクを完了" : "\(items.count)件のタスクを完了"
@@ -42,6 +53,27 @@ enum JournalRecapWriter {
       }
       return "\(label)\(count)件"
     }.joined(separator: " · ")
+  }
+
+  static func cardPreview(items: [JournalRecapHighlight], calendar: Calendar) -> String {
+    let windows = [(0..<6, "深夜・早朝"), (6..<12, "午前"), (12..<18, "午後"), (18..<24, "夜")]
+    let moments: [(String, JournalRecapHighlight)] = windows.compactMap { hours, label in
+      let records = items.filter { hours.contains(calendar.component(.hour, from: $0.date)) }
+      guard let item = records.first(where: { $0.kind != .location && $0.kind != .event }) ?? records.first else { return nil }
+      return (label, item)
+    }
+    if items.count == 1, let (time, item) = moments.first, !item.summary.isEmpty,
+       item.kind == .memo || item.kind == .record || item.kind == .photo {
+      return "\(time)の記録には「\(excerpt(item.summary, limit: 90))」とあります。"
+    }
+    if moments.count <= 1 {
+      return narrative(items: items, calendar: calendar).replacingOccurrences(of: "\n\n", with: " ")
+    }
+    return moments.map { time, item in
+      var concise = item
+      if concise.title.count > 18 { concise.title = String(concise.title.prefix(18)) + "…" }
+      return "\(time)は、" + sentence(for: concise)
+    }.joined(separator: " ")
   }
 
   static func excerpt(_ source: String, limit: Int = 300) -> String {

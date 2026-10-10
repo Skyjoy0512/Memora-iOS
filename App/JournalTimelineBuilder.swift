@@ -20,6 +20,7 @@ enum JournalTimelineBuilder {
     entries: [LifeLogEntry],
     events: [JournalCalendarEvent],
     meetings: [Meeting],
+    tasks: [MemoraTask] = [],
     now: Date = .now,
     calendar: Calendar = .current
   ) -> Result {
@@ -60,6 +61,12 @@ enum JournalTimelineBuilder {
       others.map { ($0.occurredAt, .entry($0)) }
     paired.append(contentsOf: timedItems)
     paired.append(contentsOf: movements(from: passes).map { ($0.start, .movement($0)) })
+    for task in tasks where task.isCompleted && !SampleContent.isSample(task: task) {
+      if let completedAt = task.completedAt, completedAt <= now,
+         calendar.isDate(completedAt, inSameDayAs: day) {
+        paired.append((completedAt, .completedTask(task)))
+      }
+    }
 
     if calendar.isDate(day, inSameDayAs: now) {
       paired.append((now, .nowMarker))

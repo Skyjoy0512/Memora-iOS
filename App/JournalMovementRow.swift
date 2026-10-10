@@ -5,34 +5,30 @@ import SwiftUI
 struct JournalMovementRow: View {
   var movement: JournalMovement
   var onOpen: (JournalMovement) -> Void
-  @ScaledMetric(relativeTo: .caption) private var timeWidth: CGFloat = 46
+  var connectsToNext = false
 
   var body: some View {
     Button {
+      InteractionFeedback.shared.send(.tap)
       onOpen(movement)
     } label: {
-      HStack(alignment: .top, spacing: 12) {
-        Text(movement.start.formatted(date: .omitted, time: .shortened))
-          .font(.caption.monospacedDigit().weight(.medium))
-          .foregroundStyle(.secondary)
-          .frame(width: timeWidth, alignment: .leading)
-
-        VStack(alignment: .leading, spacing: 2) {
-          Text(stations.joined(separator: " → "))
-            .font(.headline)
-            .lineLimit(2)
+      JournalTimelineRow(time: movement.start.formatted(date: .omitted, time: .shortened),
+        icon: .tramFill, tint: .indigo, connectsToNext: connectsToNext) {
+        VStack(alignment: .leading, spacing: 8) {
           Text(
             "\(movement.start.formatted(date: .omitted, time: .shortened))〜\(movement.end.formatted(date: .omitted, time: .shortened))"
           )
           .font(.caption)
           .foregroundStyle(.secondary)
+          Text("移動").font(.headline)
+          Text(stations.joined(separator: " → "))
+            .font(.subheadline)
+            .foregroundStyle(.primary)
+            .lineLimit(3)
         }
-
-        Spacer(minLength: 0)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .contentShape(Rectangle())
-      .padding(.vertical, 4)
     }
     .buttonStyle(.plain)
     .accessibilityElement(children: .ignore)

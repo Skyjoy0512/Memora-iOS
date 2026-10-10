@@ -533,7 +533,7 @@ enum SelfChecks {
       source: .iphone, kind: .event, eventDate: now.addingTimeInterval(100))
     let recap = JournalDailyRecap.build(date: now, meetings: [], tasks: [task, unknown],
       entries: [upcoming], now: now, calendar: calendar)
-    if !recap.hasActivity || recap.heading != "ひとつのタスクを完了" || !recap.narrative.contains("「提出」を完了")
+    if !recap.hasActivity || recap.heading != "「提出」を完了" || !recap.narrative.contains("「提出」を完了")
       || recap.highlights != ["完了：提出"] { report("daily recap counts future or undated activity") }
     if recap.items.count != 1 || recap.items.first?.date != now || recap.items.first?.title != "提出" {
       report("daily recap highlights are not grounded in completed activity")
@@ -569,6 +569,15 @@ enum SelfChecks {
       || !story.narrative.contains("予定が登録されています")
       || story.narrative.contains("参加しました") || story.narrative.contains("訪れました") {
       report("daily recap changes source meaning or leaks markdown")
+    }
+    if !story.preview.contains("午前") || !story.preview.contains("午後") || !story.preview.contains("夜")
+      || story.preview.contains("記録には") || story.preview.contains("参加しました") {
+      report("journal card preview loses time windows or invents attendance")
+    }
+    let memoDay = JournalDailyRecap.build(date: day, meetings: [], tasks: [],
+      entries: [morning], now: reviewNow, calendar: calendar)
+    if memoDay.heading != "「画面の改善」の記録" || !memoDay.preview.contains("検索画面の余白を整理した。") {
+      report("journal single-note card omits its subject or content")
     }
     let longExcerpt = JournalRecapWriter.excerpt(String(repeating: "長", count: 400), limit: 100)
     if longExcerpt.count != 101 || !longExcerpt.hasSuffix("…") {
@@ -991,6 +1000,24 @@ enum SelfChecks {
     }
     if titles != ["朝", "昼", "夜"] {
       report("journal timeline order: \(titles)")
+    }
+    let completed = MemoraTask(id: UUID(), title: "提出", isCompleted: true, completedAt: at(10))
+    let undated = MemoraTask(id: UUID(), title: "旧タスク", isCompleted: true)
+    let futureTask = MemoraTask(id: UUID(), title: "まだ先", isCompleted: true, completedAt: at(20))
+    let taskTimeline = JournalTimelineBuilder.build(day: day, entries: records, events: [], meetings: [],
+      tasks: [completed, undated, futureTask], now: at(19))
+    let completedItems = taskTimeline.items.compactMap { item -> MemoraTask? in
+      if case .completedTask(let task) = item { return task }
+      return nil
+    }
+    if completedItems.map(\.id) != [completed.id] {
+      report("journal timeline includes future or undated task completions")
+    }
+    let completionIndex = taskTimeline.items.firstIndex { $0.id == "completedTask-\(completed.id.uuidString)" }
+    let morningIndex = taskTimeline.items.firstIndex { if case .entry(let entry) = $0 { return entry.title == "朝" }; return false }
+    let afternoonIndex = taskTimeline.items.firstIndex { if case .entry(let entry) = $0 { return entry.title == "昼" }; return false }
+    if completionIndex == nil || completionIndex! <= (morningIndex ?? 0) || completionIndex! >= (afternoonIndex ?? 0) {
+      report("journal completed task is not ordered by its actual completion time")
     }
 
     // Station passes within an hour form one movement; a later one starts another.

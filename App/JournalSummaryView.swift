@@ -104,10 +104,7 @@ struct JournalSummaryView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbarBackground(.hidden, for: .navigationBar)
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("ジャーナルに戻る", icon: .chevronLeft) { dismiss() }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: .topBarLeading) {
           Menu {
             Button("背景を変更", icon: .arrowClockwise) {
               backdrops.shuffle(date)
@@ -120,6 +117,9 @@ struct JournalSummaryView: View {
           } label: {
             Label("その他", icon: .ellipsis).labelStyle(.iconOnly)
           }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
         }
       }
       .sheet(isPresented: $showsReview) { JournalReviewView(date: date) }

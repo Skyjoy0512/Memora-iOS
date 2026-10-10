@@ -2,25 +2,15 @@ import SwiftUI
 
 struct LifeLogRow: View {
   var entry: LifeLogEntry
+  var connectsToNext = false
   @State private var photo: UIImage?
 
   var body: some View {
-    HStack(alignment: .top, spacing: 12) {
-      VStack(spacing: 6) {
-        ZStack {
-          Circle()
-            .fill(Color(uiColor: .secondarySystemBackground))
-          Image(icon: entry.kind.symbol)
-            .font(.caption.weight(.semibold))
-        }
-        .frame(width: 34, height: 34)
-
-        Rectangle()
-          .fill(Color(uiColor: .separator).opacity(0.45))
-          .frame(width: 1)
-          .frame(maxHeight: .infinity)
-      }
-
+    JournalTimelineRow(time: entry.occurredAt.formatted(date: .omitted, time: .shortened),
+      icon: entry.title == "起床" && entry.kind == .memo ? .sunrise : entry.meetingID == nil ? entry.kind.symbol : .waveform,
+      tint: entry.title == "起床" && entry.kind == .memo ? .orange : .primary,
+      railColor: entry.title == "起床" && entry.kind == .memo ? .orange : .indigo,
+      connectsToNext: connectsToNext) {
       VStack(alignment: .leading, spacing: 10) {
         HStack(alignment: .firstTextBaseline) {
           Text(timeLabel)
@@ -44,10 +34,11 @@ struct LifeLogRow: View {
           .frame(maxWidth: .infinity, alignment: .leading)
 
         if !entry.summary.isEmpty {
-          Text(entry.summary)
+          Text(JournalRecapWriter.excerpt(entry.summary))
             .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .lineLimit(4)
+            .foregroundStyle(.primary)
+            .lineSpacing(3)
+            .lineLimit(3)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
 
@@ -89,9 +80,6 @@ struct LifeLogRow: View {
           }
         }
       }
-      .padding(16)
-      .memoraCard(radius: 20)
-      .padding(.bottom, 8)
     }
     .contentShape(Rectangle())
     .accessibilityElement(children: .contain)

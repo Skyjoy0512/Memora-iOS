@@ -216,6 +216,7 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case textBubble = "text.bubble"
   case textDocument = "text.document"
   case trash = "trash"
+  case tramFill = "tram.fill"
   case trashFill = "trash.fill"
   case trashSlash = "trash.slash"
   case tray = "tray"
