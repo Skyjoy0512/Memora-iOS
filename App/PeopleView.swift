@@ -42,7 +42,7 @@ struct PeopleView: View {
     }
     .navigationTitle("人物")
     .toolbar {
-      ToolbarItem(placement: .primaryAction) {
+      ToolbarActionItem {
         ToolbarIconButton("人を追加・編集", icon: .personBadgePlus) { isManaging = true }
           .labelStyle(.iconOnly)
       }

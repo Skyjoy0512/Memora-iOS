@@ -5,7 +5,6 @@ import SwiftUI
 /// new chat at the far edge, where it is easiest to reach again.
 struct AskAIHeader: View {
   @Environment(MemoraModel.self) private var model
-  @ScaledMetric(relativeTo: .body) private var searchIconSize: CGFloat = 26
   var onNewChat: () -> Void
   var onHistory: () -> Void
   var onSearch: () -> Void
@@ -14,19 +13,19 @@ struct AskAIHeader: View {
     ZStack {
       HStack {
         headerButton("履歴", icon: .clockArrowCirclepath, action: onHistory)
-          .memoraGlass(in: Circle(), interactive: true)
+          .memoraGlass(in: Circle(), interactive: true, backed: false)
 
         Spacer()
 
-        HStack(spacing: 0) {
+        HStack(spacing: 12) {
           headerButton("検索", icon: .magnifyingglass, action: onSearch)
+            .memoraGlass(in: Circle(), interactive: true, backed: false)
           headerButton("新しいチャット", icon: .squareAndPencil, action: onNewChat)
             .disabled(model.aiMessages.isEmpty)
+            .memoraGlass(in: Circle(), interactive: true, backed: false)
         }
-        .padding(.horizontal, 2)
-        .memoraGlass(in: Capsule(), interactive: true)
       }
-      .padding(.horizontal, 18)
+      .padding(.horizontal, 20)
       .frame(maxHeight: .infinity, alignment: .top)
 
       VStack(spacing: -10) {
@@ -43,17 +42,17 @@ struct AskAIHeader: View {
           .padding(.vertical, 6)
           .memoraGlass(in: Capsule())
       }
+      .padding(.top, 4)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel("Memora")
       .accessibilityAddTraits(.isHeader)
     }
     .frame(height: 96)
-    .padding(.top, 4)
   }
 
   private func headerButton(_ title: String, icon: MemoraIcon, action: @escaping () -> Void) -> some View {
     Button(action: action) {
-      Image(icon: icon, size: icon == .magnifyingglass ? searchIconSize : 20)
+      ToolbarIconGlyph(icon: icon)
         .font(.body.weight(.medium))
         .frame(width: 44, height: 44)
         .contentShape(Rectangle())

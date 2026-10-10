@@ -104,8 +104,8 @@ struct HomeView: View {
           }
         }
 
-        ToolbarItem(placement: .topBarTrailing) {
-          ToolbarIconButton("検索", icon: .magnifyingglass, artwork: .searchIntelligence, iconSize: 26) {
+        ToolbarActionItem {
+          ToolbarIconButton("検索", icon: .magnifyingglass) {
             withAnimation(reduceMotion ? nil : MemoraMotion.control) {
               isSearching = true
             }
@@ -114,7 +114,7 @@ struct HomeView: View {
         }
 
         // The create action is the rightmost item, matching the other tabs.
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarActionItem {
           ToolbarIconButton("記録を追加", icon: .squareAndPencil) {
             model.isLifeLogCreationPresented = true
           }

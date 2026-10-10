@@ -75,7 +75,7 @@ struct DocumentDetailView: View {
         }
       }
 
-      ToolbarItem(placement: .topBarTrailing) {
+      ToolbarActionItem(usesSystemBackground: true) {
         Menu {
           Button("PDFで共有", icon: .docRichtext) { share(document, as: .pdf) }
           if document.kind == .slides {
@@ -83,18 +83,17 @@ struct DocumentDetailView: View {
           }
           Button("テキストで共有", icon: .textAlignleft) { share(document, as: .text) }
         } label: {
-          Label("共有", icon: .squareAndArrowUp)
-            .labelStyle(.iconOnly)
+          ToolbarActionLabel("共有", icon: .squareAndArrowUp)
         }
       }
 
-      ToolbarItem(placement: .topBarTrailing) {
+      ToolbarActionGap()
+      ToolbarActionItem(usesSystemBackground: true) {
         Menu {
           Button("編集", icon: .pencil) { isEditing = true }
           Button("削除", icon: .trash, role: .destructive) { isDeleteConfirmationPresented = true }
         } label: {
-          Label("その他", icon: .ellipsis)
-            .labelStyle(.iconOnly)
+          ToolbarActionLabel("その他", icon: .ellipsis)
         }
       }
     }

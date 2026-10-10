@@ -27,8 +27,8 @@ struct LifeLogEntryDetailView: View {
         ToolbarItem(placement: .cancellationAction) {
           ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }
-        ToolbarItem(placement: .topBarTrailing) {
-          Menu("その他", icon: .ellipsis) {
+        ToolbarActionItem(usesSystemBackground: true) {
+          Menu {
             Button("編集", icon: .pencil) { isEditing = true }
             if let entry = currentEntry, entry.latitude != nil, entry.longitude != nil {
               Button("この場所を今後記録しない", icon: .mappinSlash) {
@@ -36,6 +36,8 @@ struct LifeLogEntryDetailView: View {
               }
             }
             Button("削除", icon: .trash, role: .destructive) { isDeleting = true }
+          } label: {
+            ToolbarActionLabel("その他", icon: .ellipsis)
           }
         }
       }

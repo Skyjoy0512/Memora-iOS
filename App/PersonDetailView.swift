@@ -91,7 +91,7 @@ struct PersonDetailView: View {
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     .navigationTitle(memory.person.name)
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
+      ToolbarActionItem {
         ToolbarIconButton("編集", icon: .pencil) { isEditing = true }
           .labelStyle(.iconOnly)
       }

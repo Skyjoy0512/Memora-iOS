@@ -74,27 +74,30 @@ struct TasksView: View {
       .navigationTitle("タスク")
       .toolbar {
         if model.hasTeamPlan {
-          ToolbarItem(placement: .topBarTrailing) {
-            Picker("表示", selection: $showsTeamBoard) {
+          ToolbarActionItem(usesSystemBackground: true) {
+            Picker(selection: $showsTeamBoard) {
               Text("自分のタスク").tag(false)
               Text("チームボード").tag(true)
+            } label: {
+              ToolbarActionLabel("表示", icon: .person2)
             }
             .pickerStyle(.menu)
+            .labelStyle(.iconOnly)
           }
+          ToolbarActionGap()
         }
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarActionItem(usesSystemBackground: true) {
           Menu {
             Toggle("今日取り組む", isOn: $todayOnly)
             Toggle("相手待ち", isOn: $waitingOnly)
           } label: {
-            Label("タスクを絞り込み", icon: .line3HorizontalDecrease)
-              .labelStyle(.iconOnly)
+            ToolbarActionLabel("タスクを絞り込み", icon: .line3HorizontalDecrease)
           }
           .disabled(showsTeamBoard)
         }
 
         // The create action is the rightmost item, matching the other tabs.
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarActionItem {
           ToolbarIconButton("タスクを追加", icon: .plus) {
             model.isAddTaskPresented = true
           }

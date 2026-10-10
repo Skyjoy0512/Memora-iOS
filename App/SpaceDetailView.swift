@@ -71,16 +71,18 @@ struct SpaceDetailView: View {
       .navigationTitle(space.name)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("チームで共有", icon: .personBadgePlus) {
+        ToolbarActionItem {
+          ToolbarIconButton("チームで共有", icon: .personBadgePlus) {
             Task { await model.shareSpaceWithTeam(space.id) }
           }
           .labelStyle(.iconOnly)
         }
-        ToolbarItem(placement: .topBarTrailing) {
-          Menu("その他", icon: .ellipsis) {
+        ToolbarActionItem(usesSystemBackground: true) {
+          Menu {
             Button("名前を変更", icon: .pencil) { isRenaming = true }
             Button("削除", icon: .trash, role: .destructive) { isDeleting = true }
+          } label: {
+            ToolbarActionLabel("その他", icon: .ellipsis)
           }
         }
       }

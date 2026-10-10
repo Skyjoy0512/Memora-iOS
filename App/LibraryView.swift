@@ -80,7 +80,7 @@ struct LibraryView: View {
             }
           }
 
-          ToolbarItem(placement: .topBarTrailing) {
+          ToolbarActionItem(usesSystemBackground: true) {
             Menu {
               Picker("表示", selection: $layout) {
                 ForEach(FileListLayout.allCases) { Text($0.label).tag($0) }
@@ -96,9 +96,7 @@ struct LibraryView: View {
                 beginSelectionMode()
               }
             } label: {
-              Label("表示と並べ替え", icon: .line3HorizontalDecrease)
-                .labelStyle(.iconOnly)
-                .frame(width: 36, height: 36)
+              ToolbarActionLabel("表示と並べ替え", icon: .line3HorizontalDecrease)
             }
           }
         }

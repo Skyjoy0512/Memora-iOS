@@ -68,13 +68,13 @@ struct AIQuestionView: View {
         ToolbarItem(placement: .cancellationAction) {
           ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarActionItem(usesSystemBackground: true) {
           Picker(selection: $selectedScope) {
             ForEach(scopeOptions, id: \.self) { scope in
               Text(label(for: scope)).tag(scope)
             }
           } label: {
-            Label("検索範囲", icon: .magnifyingglass)
+            ToolbarActionLabel("検索範囲", icon: .magnifyingglass)
           }
           .pickerStyle(.menu)
           .labelStyle(.iconOnly)

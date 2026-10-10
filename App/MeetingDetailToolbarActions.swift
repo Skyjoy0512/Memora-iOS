@@ -13,7 +13,6 @@ struct MeetingDetailToolbarActions: View {
   var share: () -> Void
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @ScaledMetric(relativeTo: .body) private var searchIconSize: CGFloat = 26
   @Namespace private var namespace
   @State private var hasReplacedIcons = false
   @State private var isPlayRevealed = false
@@ -96,8 +95,7 @@ struct MeetingDetailToolbarActions: View {
 
   private var playButton: some View {
     Button(action: play) {
-      Image(icon: isPlaying ? .pauseFill : .playFill)
-        .font(.headline.weight(.bold))
+      ToolbarIconGlyph(icon: isPlaying ? .pauseFill : .playFill)
         .frame(width: 44, height: 44)
         .contentShape(Circle())
     }
@@ -113,11 +111,9 @@ struct MeetingDetailToolbarActions: View {
     Button(action: share) {
       Group {
         if morphsFromLibrary && !hasReplacedIcons && !reduceMotion {
-          ArtworkIcon(artwork: .searchIntelligence, size: searchIconSize)
-        } else if let primaryArtwork {
-          ArtworkIcon(artwork: primaryArtwork, size: primaryArtwork == .searchIntelligence ? searchIconSize : 20)
+          ToolbarIconGlyph(icon: .magnifyingglass)
         } else {
-          Image(icon: primaryIcon)
+          ToolbarIconGlyph(icon: primaryIcon, artwork: primaryArtwork)
         }
       }
         .contentTransition(reduceMotion ? .identity : .opacity)

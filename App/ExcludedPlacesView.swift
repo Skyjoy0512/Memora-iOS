@@ -34,8 +34,8 @@ struct ExcludedPlacesView: View {
     .navigationTitle("記録しない場所")
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        Button("現在地を追加", icon: .locationFill) {
+      ToolbarActionItem {
+        ToolbarIconButton("現在地を追加", icon: .locationFill) {
           addCurrentPlace()
         }
         .labelStyle(.iconOnly)

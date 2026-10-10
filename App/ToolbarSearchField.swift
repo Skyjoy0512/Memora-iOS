@@ -14,7 +14,7 @@ struct ToolbarSearchField: View {
   var body: some View {
     HStack(spacing: 12) {
       HStack(spacing: 6) {
-        Image(icon: .magnifyingglass)
+        ArtworkIcon(artwork: .searchIntelligence, size: 20)
           .foregroundStyle(.secondary)
           .accessibilityHidden(true)
 

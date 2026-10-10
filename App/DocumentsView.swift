@@ -34,7 +34,7 @@ struct DocumentsView: View {
     }
     .navigationTitle("資料")
     .toolbar {
-      ToolbarItem(placement: .primaryAction) {
+      ToolbarActionItem {
         ToolbarIconButton("今週の週報を作る", icon: .calendarBadgeCheckmark) {
           if let review = model.makeWeeklyReview(containing: .now) {
             model.libraryPath.append(.document(review.id))

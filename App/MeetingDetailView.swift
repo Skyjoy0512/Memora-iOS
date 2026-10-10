@@ -162,7 +162,7 @@ struct MeetingDetailView: View {
               playbackAndShareActions(meeting)
             }
           }
-          ToolbarItem(placement: .topBarTrailing) {
+          ToolbarActionItem(usesSystemBackground: true) {
             Menu {
               Button("チームで共有", icon: .personBadgePlus) {
                 Task { await model.shareMeetingWithTeam(meeting.id) }
@@ -196,10 +196,8 @@ struct MeetingDetailView: View {
                 isDeleting = true
               }
             } label: {
-              Label("その他", icon: morphsFromLibraryToolbar && !hasReplacedToolbarIcons && !reduceMotion ? .line3HorizontalDecrease : .ellipsis)
-                .labelStyle(.iconOnly)
+              ToolbarActionLabel("その他", icon: morphsFromLibraryToolbar && !hasReplacedToolbarIcons && !reduceMotion ? .line3HorizontalDecrease : .ellipsis)
                 .contentTransition(reduceMotion ? .identity : .opacity)
-                .frame(width: 36, height: 36)
             }
           }
         }
