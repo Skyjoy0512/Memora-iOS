@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-<circle cx="12" cy="6.5" r="2.75" stroke="black" stroke-width="1.5" stroke-linecap="square"/>
-<path d="M12 9.25V16.125C12 18.4032 13.8468 20.25 16.125 20.25C18.4032 20.25 20.25 18.4032 20.25 16.125V13L18 15" stroke="black" stroke-width="1.5" stroke-linecap="square"/>
-<path d="M12 9.25V16.125C12 18.4032 10.1532 20.25 7.875 20.25C5.59683 20.25 3.75 18.4032 3.75 16.125V13L6 15" stroke="black" stroke-width="1.5" stroke-linecap="square"/>
+<circle cx="12" cy="6.5" r="2.75" stroke="black" stroke-width="2" stroke-linecap="square"/>
+<path d="M12 9.25V16.125C12 18.4032 13.8468 20.25 16.125 20.25C18.4032 20.25 20.25 18.4032 20.25 16.125V13L18 15" stroke="black" stroke-width="2" stroke-linecap="square"/>
+<path d="M12 9.25V16.125C12 18.4032 10.1532 20.25 7.875 20.25C5.59683 20.25 3.75 18.4032 3.75 16.125V13L6 15" stroke="black" stroke-width="2" stroke-linecap="square"/>
 </svg>
