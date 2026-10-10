@@ -36,42 +36,16 @@ struct TaskRow: View {
           .foregroundStyle(task.isCompleted ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
           .frame(maxWidth: .infinity, alignment: .leading)
 
-        if showsMetadata {
-          if !task.isCompleted, task.progress != .notStarted {
-            Text(task.progress.label)
-              .font(.caption.weight(.medium))
-              .foregroundStyle(.secondary)
-          }
-          if !task.isCompleted, let workDate = task.workDate {
-            Text(Calendar.current.isDateInToday(workDate) ? "今日取り組む" : "取り組む日: \(MemoraFormat.dueDate(workDate))")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
+        if showsMetadata, !task.isCompleted, let dueDate = task.dueDate {
+          let overdue = isOverdue(dueDate)
           HStack(spacing: 8) {
-            if let assignee = task.assignee {
-              Text(assignee)
+            if overdue {
+              Text("期限切れ")
             }
-            if let dueDate = task.dueDate {
-              let overdue = isOverdue(dueDate)
-              if task.assignee != nil {
-                Text("·")
-              }
-              if overdue {
-                Text("期限切れ")
-              }
-              Text(MemoraFormat.dueDate(dueDate))
-                .foregroundStyle(overdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
-            }
+            Text(MemoraFormat.dueDate(dueDate))
           }
           .font(.caption)
-          .foregroundStyle(.secondary)
-        }
-
-        if showsSource, let title = sourceTitle {
-          Text(title)
-            .font(.caption)
-            .foregroundStyle(.primary)
-            .lineLimit(1)
+          .foregroundStyle(overdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)

@@ -39,6 +39,34 @@ enum SelfChecks {
       checkMarkdownRoundTrip("そのままの日本語テキスト", name: "plain text")
     }
 
+    group("Saved AI answer") {
+      let source = AIChatSource(meetingID: UUID(), title: "見積 [改訂]")
+      let message = AIChatMessage(role: .assistant, text: "## 見積の確認\n送付します。【資料1】【資料2】", sources: [source])
+      let document = AIAnswerDocumentBuilder.make(message: message, question: "  次の対応は？\n ")
+      let url = MeetingLink.url(for: source.meetingID)!.absoluteString
+      if document.title != "次の対応は？"
+        || !document.markdown.contains("[資料1](\(url))")
+        || !document.markdown.contains("見積 \\[改訂\\]")
+        || document.markdown.contains("資料2") {
+        report("saved answer title or source mapping")
+      }
+      let ungrounded = AIChatMessage(role: .assistant, text: "## 振り返り\n本文【資料1】")
+      let fallback = AIAnswerDocumentBuilder.make(message: ungrounded, question: nil)
+      if fallback.title != "振り返り" || fallback.markdown.contains("資料1")
+        || fallback.markdown.contains("参照した記録") {
+        report("saved ungrounded answer fabricated references")
+      }
+      if AnswerCitations.hasCitations(ungrounded.text, sources: [])
+        || AnswerCitations.linked(ungrounded.text, sources: []).contains("資料1")
+        || AnswerCitations.saved("【資料0】", sources: [source]) != "" {
+        report("empty or zero-numbered source citation")
+      }
+      let longTitle = AIAnswerDocumentBuilder.make(message: message, question: String(repeating: "長", count: 60))
+      if longTitle.title.count != 49 || !longTitle.title.hasSuffix("…") {
+        report("saved answer title length")
+      }
+    }
+
     group("Keyboard editing") {
       for source in ["**太字**", "*斜体*", "`code`", "~~取り消し~~", "[リンク](https://example.com)", "日本語\n次の行"] {
         if MarkdownEditingText.markdown(MarkdownEditingText.attributed(source)) != source {

@@ -24,7 +24,7 @@ struct AIAnswerActions: View {
       }
 
       Button("回答を資料に保存", icon: .docText) {
-        let document = MemoraDocument(title: "Ask AIの回答", kind: .document, markdown: message.text)
+        let document = model.document(from: message)
         if model.addDocument(document) { savedDocument = document }
         else { saveError = true }
       }

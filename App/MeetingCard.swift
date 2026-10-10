@@ -40,11 +40,13 @@ struct MeetingCard: View {
         .foregroundStyle(.primary)
         .lineLimit(2)
 
-      Text(subtitle)
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-        .lineLimit(2)
-        .padding(.top, 4)
+      if !subtitle.isEmpty {
+        Text(subtitle)
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+          .padding(.top, 4)
+      }
 
       HStack(spacing: 5) {
         Image(icon: .calendar)
@@ -128,9 +130,9 @@ struct MeetingCard: View {
   private var subtitle: String {
     switch meeting.status {
     case .ready, .partialFailure:
-      meeting.summary.isEmpty ? meeting.status.shortLabel : meeting.shortSummaryPreview
+      meeting.shortSummaryPreview
     default:
-      meeting.status.shortLabel
+      ""
     }
   }
 

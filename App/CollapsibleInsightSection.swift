@@ -19,7 +19,7 @@ struct CollapsibleInsightSection<Content: View>: View {
     self.section = section
     self.showsDivider = showsDivider
     self.content = content()
-    _isCollapsed = AppStorage(wrappedValue: false, "meetingInsight.collapsed.\(section.rawValue)")
+    _isCollapsed = AppStorage(wrappedValue: section != .summary, "meetingInsight.collapsed.\(section.rawValue)")
   }
 
   var body: some View {

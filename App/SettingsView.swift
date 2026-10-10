@@ -63,7 +63,7 @@ struct SettingsView: View {
         } header: {
           Text("アカウント")
         } footer: {
-          Text("同期とアカウントはまだ接続されていません。録音と整理は、このiPhoneの中で使えます。")
+          Text("同期・アカウントは未接続です。このiPhoneだけで使えます。")
         }
 
         Section {
@@ -123,7 +123,7 @@ struct SettingsView: View {
         } header: {
           Text("プラン")
         } footer: {
-          Text("購入はまだ接続されていません。プランはこの端末の設定として保存します。チーム機能はチームプランか法人ライセンスで利用できます。")
+          Text("購入は未接続です。プランの変更は端末の設定のみで、課金されません。")
         }
 
         Section {
@@ -132,8 +132,6 @@ struct SettingsView: View {
           }
         } header: {
           Text("表示")
-        } footer: {
-          Text("オフのときは、iPhoneの外観の設定に合わせます。")
         }
 
         Section {
@@ -188,8 +186,6 @@ struct SettingsView: View {
           }
         } header: {
           Text("処理")
-        } footer: {
-          Text("通常は変更不要です。端末やOSに合う方法をMemoraが選びます。")
         }
 
         Section("デバイス") {
@@ -328,10 +324,15 @@ struct SettingsView: View {
         } header: {
           Text("プライバシーと保存")
         } footer: {
-          Text("Face IDでロックは、アプリを開いたときと、5分以上離れたあとに戻ったときに解除を求めます。録音中はロックしません。")
+          Text("録音中はロックしません。")
         }
 
         Section {
+          NavigationLink {
+            SettingsNotesView()
+          } label: {
+            SettingsLabel("設定について", icon: .infoCircleFill, color: Tint.support)
+          }
           LabeledContent {
             Text("準備中")
           } label: {
@@ -349,8 +350,6 @@ struct SettingsView: View {
           }
         } header: {
           Text("サポート")
-        } footer: {
-          Text("公開時に実際の窓口とポリシーのURLを登録します。それまでは準備中と表示し、存在しないリンクは開けません。")
         }
 
         Section("プロトタイプ") {

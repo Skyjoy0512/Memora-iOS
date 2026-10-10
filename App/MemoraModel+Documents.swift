@@ -2,6 +2,16 @@ import Foundation
 
 // Documents: written documents and slides made from the records.
 extension MemoraModel {
+  func document(from message: AIChatMessage) -> MemoraDocument {
+    let question: String?
+    if message.residentName == nil, let index = aiMessages.firstIndex(where: { $0.id == message.id }) {
+      question = aiMessages[..<index].last { $0.role == .user }?.text
+    } else {
+      question = nil
+    }
+    return AIAnswerDocumentBuilder.make(message: message, question: question)
+  }
+
   func document(id: UUID) -> MemoraDocument? {
     documents.first { $0.id == id }
   }

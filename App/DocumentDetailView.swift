@@ -14,6 +14,8 @@ struct DocumentDetailView: View {
   @State private var shareItems: [Any] = []
   @State private var isSharing = false
   @State private var exportErrorMessage: String?
+  @State private var citedRecord: AIChatSource?
+  @State private var sourceErrorMessage: String?
 
   var body: some View {
     Group {
@@ -42,6 +44,18 @@ struct DocumentDetailView: View {
               draftKey: "document.\(document.id).body",
               onCommit: { model.updateDocument(document.id, title: document.title, body: $0) }
             )
+            .environment(\.openURL, OpenURLAction { url in
+              guard url.scheme == "memora", url.host == "meeting",
+                    let meetingID = UUID(uuidString: url.lastPathComponent) else { return .systemAction }
+              if let meeting = model.meeting(id: meetingID) {
+                citedRecord = AIChatSource(meetingID: meeting.id, title: meeting.title)
+              } else {
+                sourceErrorMessage = model.trashedRecords.contains(where: { $0.meeting.id == meetingID })
+                  ? "この記録は「最近削除した項目」にあります。設定から元に戻すと開けます。"
+                  : "この端末に元の記録はありません。リンクは記録のある端末でのみ開けます。"
+              }
+              return .handled
+            })
           case .slides:
             slideList(document)
           }
@@ -89,6 +103,19 @@ struct DocumentDetailView: View {
     }
     .sheet(isPresented: $isSharing, onDismiss: cleanUpShare) {
       ActivityView(items: shareItems, onComplete: cleanUpShare)
+    }
+    .sheet(item: $citedRecord) { source in
+      NavigationStack {
+        MeetingDetailView(meetingID: source.meetingID, showsLocalPlaybackBar: true)
+      }
+    }
+    .alert("元の記録を開けません", isPresented: Binding(
+      get: { sourceErrorMessage != nil },
+      set: { if !$0 { sourceErrorMessage = nil } }
+    )) {
+      Button("閉じる", role: .cancel) {}
+    } message: {
+      Text(sourceErrorMessage ?? "")
     }
     .confirmationDialog("この\(document.kind.label)を削除しますか？", isPresented: $isDeleteConfirmationPresented, titleVisibility: .visible) {
       Button("削除", role: .destructive) {
