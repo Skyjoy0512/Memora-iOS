@@ -28,10 +28,11 @@ struct QuickAIComposer: View {
       placeholder: placeholder,
       keepsFocusAfterSubmit: keepsFocusAfterSubmit,
       autofocus: autofocus,
-      onSubmit: submit(attachment:)
-    ) { focused in
-      isComposing = focused
-    }
+      onSubmit: submit(attachment:),
+      expansionChanged: { expanded in
+        isComposing = expanded
+      }
+    )
     .sheet(item: $pendingQuestion) { request in
       AIQuestionView(request: request)
     }

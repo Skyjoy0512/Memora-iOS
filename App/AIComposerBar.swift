@@ -17,6 +17,7 @@ struct AIComposerBar: View {
   /// what was typed, so a refused send keeps the text and the attachment.
   var onSubmit: (AIAttachment?) -> Bool
   var focusChanged: ((Bool) -> Void)?
+  var expansionChanged: ((Bool) -> Void)?
 
   @State private var speechInput = SpeechInputService()
   @State private var isImporterPresented = false
@@ -33,7 +34,7 @@ struct AIComposerBar: View {
 
   /// Open while typing, or while there is text or an attachment to send.
   private var isExpanded: Bool {
-    isFieldFocused || hasContent
+    isFieldFocused || hasContent || speechInput.isListening
   }
 
   private var cornerRadius: CGFloat {
@@ -103,7 +104,7 @@ struct AIComposerBar: View {
       }
     }
     .background { listeningBackdrop }
-    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), interactive: true)
+    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), interactive: true, backed: false)
     .shadow(color: .black.opacity(speechInput.isListening ? 0.3 : 0.08), radius: 18, y: 8)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
@@ -112,6 +113,9 @@ struct AIComposerBar: View {
     .sensoryFeedback(.impact(weight: .light), trigger: speechInput.isListening)
     .onChange(of: isFieldFocused) { _, focused in
       focusChanged?(focused)
+    }
+    .onChange(of: isExpanded, initial: true) { _, expanded in
+      expansionChanged?(expanded)
     }
     .onChange(of: model.composerDismissRequests) { _, _ in
       isFieldFocused = false

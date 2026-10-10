@@ -5,6 +5,7 @@ import SwiftUI
 /// new chat at the far edge, where it is easiest to reach again.
 struct AskAIHeader: View {
   @Environment(MemoraModel.self) private var model
+  @ScaledMetric(relativeTo: .body) private var searchIconSize: CGFloat = 26
   var onNewChat: () -> Void
   var onHistory: () -> Void
   var onSearch: () -> Void
@@ -52,7 +53,7 @@ struct AskAIHeader: View {
 
   private func headerButton(_ title: String, icon: MemoraIcon, action: @escaping () -> Void) -> some View {
     Button(action: action) {
-      Image(icon: icon)
+      Image(icon: icon, size: icon == .magnifyingglass ? searchIconSize : 20)
         .font(.body.weight(.medium))
         .frame(width: 44, height: 44)
         .contentShape(Rectangle())

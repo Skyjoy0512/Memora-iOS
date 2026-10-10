@@ -105,7 +105,7 @@ struct HomeView: View {
         }
 
         ToolbarItem(placement: .topBarTrailing) {
-          ToolbarIconButton("検索", icon: .magnifyingglass, artwork: .searchIntelligence) {
+          ToolbarIconButton("検索", icon: .magnifyingglass, artwork: .searchIntelligence, iconSize: 26) {
             withAnimation(reduceMotion ? nil : MemoraMotion.control) {
               isSearching = true
             }

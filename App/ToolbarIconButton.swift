@@ -8,10 +8,11 @@ struct ToolbarIconButton: View {
   var action: () -> Void
   @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 20
 
-  init(_ title: LocalizedStringKey, icon: MemoraIcon, artwork: MemoraArtwork? = nil, action: @escaping () -> Void) {
+  init(_ title: LocalizedStringKey, icon: MemoraIcon, artwork: MemoraArtwork? = nil, iconSize: CGFloat = 20, action: @escaping () -> Void) {
     self.title = title
     self.icon = icon
     self.artwork = artwork
+    self._iconSize = ScaledMetric(wrappedValue: iconSize, relativeTo: .body)
     self.action = action
   }
 

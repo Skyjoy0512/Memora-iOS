@@ -25,14 +25,14 @@ extension View {
   /// Reserve this for navigation and controls that hover over content. The HIG
   /// asks that the content layer keep using standard materials instead.
   @ViewBuilder
-  func memoraGlass(in shape: some Shape, tint: Color? = nil, interactive: Bool = false) -> some View {
+  func memoraGlass(in shape: some Shape, tint: Color? = nil, interactive: Bool = false, backed: Bool = true) -> some View {
     if #available(iOS 26.0, *) {
       background {
         // Backs the glass so foreground labels stay legible over busy content.
         // A tint means the surface is meant to read as solid and prominent.
         if let tint {
           shape.fill(tint)
-        } else {
+        } else if backed {
           shape.fill(.ultraThinMaterial)
         }
       }

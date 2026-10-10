@@ -13,6 +13,7 @@ struct MeetingDetailToolbarActions: View {
   var share: () -> Void
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @ScaledMetric(relativeTo: .body) private var searchIconSize: CGFloat = 26
   @Namespace private var namespace
   @State private var hasReplacedIcons = false
   @State private var isPlayRevealed = false
@@ -112,9 +113,9 @@ struct MeetingDetailToolbarActions: View {
     Button(action: share) {
       Group {
         if morphsFromLibrary && !hasReplacedIcons && !reduceMotion {
-          ArtworkIcon(artwork: .searchIntelligence, size: 20)
+          ArtworkIcon(artwork: .searchIntelligence, size: searchIconSize)
         } else if let primaryArtwork {
-          ArtworkIcon(artwork: primaryArtwork, size: 20)
+          ArtworkIcon(artwork: primaryArtwork, size: primaryArtwork == .searchIntelligence ? searchIconSize : 20)
         } else {
           Image(icon: primaryIcon)
         }
