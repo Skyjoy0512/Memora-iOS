@@ -1,0 +1,66 @@
+import Foundation
+
+enum JournalRecapWriter {
+  static func heading(items: [JournalRecapHighlight], isToday: Bool) -> String {
+    let kinds = Set(items.map(\.kind))
+    if kinds == [.completedTask] {
+      return items.count == 1 ? "ひとつのタスクを完了" : "\(items.count)件のタスクを完了"
+    }
+    if kinds == [.record] { return "会議・録音を残した1日" }
+    if kinds == [.memo] { return "言葉で残した1日" }
+    if kinds == [.photo] { return "写真で残した1日" }
+    if kinds == [.memo, .photo] { return "言葉と写真で残した1日" }
+    if kinds == [.location] { return "場所の記録を振り返る" }
+    if kinds == [.event] { return "登録した予定を振り返る" }
+    return isToday ? "今日の記録をつなぐ" : "記録を重ねた1日"
+  }
+
+  static func narrative(items: [JournalRecapHighlight], calendar: Calendar) -> String {
+    let windows = [(0..<6, "深夜・早朝"), (6..<12, "午前"), (12..<18, "午後"), (18..<24, "夜")]
+    return windows.compactMap { hours, label -> String? in
+      let records = items.filter { hours.contains(calendar.component(.hour, from: $0.date)) }
+      guard !records.isEmpty else { return nil }
+      return records.prefix(2).enumerated().map { index, item in
+        let introduction = index == 0 ? "\(label)は、" : "また、"
+        let description = introduction + sentence(for: item)
+        guard !item.summary.isEmpty, item.kind != .completedTask else { return description }
+        return description + "記録には「\(excerpt(item.summary, limit: 100))」とあります。"
+      }.joined(separator: "")
+    }.joined(separator: "\n\n")
+  }
+
+  static func activitySummary(items: [JournalRecapHighlight]) -> String {
+    let counts = Dictionary(grouping: items, by: \.kind)
+    return JournalRecapHighlight.Kind.allCases.compactMap { kind -> String? in
+      guard let count = counts[kind]?.count, count > 0 else { return nil }
+      let label: String
+      switch kind {
+      case .completedTask: label = "完了タスク"
+      case .event: label = "登録した予定"
+      case .location: label = "場所の記録"
+      default: label = kind.label
+      }
+      return "\(label)\(count)件"
+    }.joined(separator: " · ")
+  }
+
+  static func excerpt(_ source: String, limit: Int = 300) -> String {
+    let overview = MarkdownBlockParser.overview(of: source)
+    let plain = overview.isEmpty ? MarkdownBlockParser.plainText(source) : overview
+    let compact = plain.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    return compact.count > limit ? String(compact.prefix(limit)) + "…" : compact
+  }
+
+  private static func sentence(for item: JournalRecapHighlight) -> String {
+    let title = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    let subject = title.isEmpty ? "無題の\(item.category)" : title
+    switch item.kind {
+    case .completedTask: return "「\(subject)」を完了しました。"
+    case .record: return "「\(subject)」の会議・録音を残しました。"
+    case .memo: return "「\(subject)」を書き残しました。"
+    case .photo: return "「\(subject)」の写真を残しました。"
+    case .location: return "「\(subject)」の場所の記録があります。"
+    case .event: return "「\(subject)」の予定が登録されています。"
+    }
+  }
+}

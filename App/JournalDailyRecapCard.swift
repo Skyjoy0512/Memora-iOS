@@ -13,15 +13,8 @@ struct JournalDailyRecapCard: View {
       onOpenDetails()
     } label: {
       VStack(alignment: .leading, spacing: 7) {
-        HStack(alignment: .top) {
-          Text(Calendar.current.component(.day, from: date).formatted())
-            .font(.system(size: daySize, weight: .regular, design: .serif))
-          Spacer()
-          Image(icon: .arrowUpRight)
-            .font(.subheadline.weight(.semibold))
-            .padding(10)
-            .background(.white.opacity(0.16), in: Circle())
-        }
+        Text(Calendar.current.component(.day, from: date).formatted())
+          .font(.system(size: daySize, weight: .regular, design: .serif))
         Text(recap.heading)
           .font(.title2.bold())
           .fixedSize(horizontal: false, vertical: true)

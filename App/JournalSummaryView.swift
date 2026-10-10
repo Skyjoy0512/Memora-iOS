@@ -15,7 +15,7 @@ struct JournalSummaryView: View {
     let recap = JournalDailyRecap.build(date: date, meetings: model.meetings,
       tasks: model.tasks, entries: model.lifeLogEntries)
     let shareText = ([date.formatted(date: .complete, time: .omitted), recap.heading,
-      recap.narrative] + recap.highlights).joined(separator: "\n\n")
+      recap.narrative, recap.activitySummary]).joined(separator: "\n\n")
 
     NavigationStack {
       ScrollView {
@@ -34,6 +34,12 @@ struct JournalSummaryView: View {
               .font(.body)
               .lineSpacing(8)
               .fixedSize(horizontal: false, vertical: true)
+            if !recap.activitySummary.isEmpty {
+              Text(recap.activitySummary)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+            }
           }
 
           actionBar(shareText: shareText)
@@ -66,7 +72,9 @@ struct JournalSummaryView: View {
             Text("記録から振り返る")
               .font(.title2.bold())
               .accessibilityAddTraits(.isHeader)
-            Text("記録と完了したタスクから、1日を振り返っています。気分や記録のない活動は推測しません。")
+            Text(Calendar.current.isDateInToday(date)
+              ? "今日はここまでの記録から、主な出来事をまとめています。記録が増えると、サマリーも更新されます。"
+              : "保存された記録から、主な出来事をまとめています。詳しい振り返りでは、前日との比較も確認できます。")
               .font(.subheadline)
               .lineSpacing(5)
             Button("日・週の振り返りを詳しく見る", icon: .chartBar) {

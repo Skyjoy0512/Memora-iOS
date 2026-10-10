@@ -533,10 +533,13 @@ enum SelfChecks {
       source: .iphone, kind: .event, eventDate: now.addingTimeInterval(100))
     let recap = JournalDailyRecap.build(date: now, meetings: [], tasks: [task, unknown],
       entries: [upcoming], now: now, calendar: calendar)
-    if !recap.hasActivity || recap.heading != "今日はここまで" || !recap.narrative.contains("1件完了")
+    if !recap.hasActivity || recap.heading != "ひとつのタスクを完了" || !recap.narrative.contains("「提出」を完了")
       || recap.highlights != ["完了：提出"] { report("daily recap counts future or undated activity") }
     if recap.items.count != 1 || recap.items.first?.date != now || recap.items.first?.title != "提出" {
       report("daily recap highlights are not grounded in completed activity")
+    }
+    if recap.activitySummary != "完了タスク1件" || recap.narrative.contains("予定") || recap.narrative.contains("旧タスク") {
+      report("daily recap includes future activity or undated completed tasks")
     }
     let future = JournalDailyRecap.build(date: day.addingTimeInterval(86_400), meetings: [],
       tasks: [task], entries: [], now: now, calendar: calendar)
@@ -545,6 +548,38 @@ enum SelfChecks {
       tasks: [], entries: [], now: now, calendar: calendar)
     if empty.hasActivity || empty.heading != "こんな1日でした" || !empty.narrative.contains("まだありません") {
       report("empty past day invents activity")
+    }
+
+    let reviewNow = day.addingTimeInterval(23 * 3_600)
+    let morning = LifeLogEntry(id: UUID(), createdAt: day.addingTimeInterval(9 * 3_600),
+      title: "画面の改善", summary: "## 概要\n\n**検索画面**の余白を整理した。", source: .iphone)
+    let afternoon = LifeLogEntry(id: UUID(), createdAt: day.addingTimeInterval(14 * 3_600),
+      title: "発表会", summary: "", source: .iphone, kind: .event)
+    let evening = LifeLogEntry(id: UUID(), createdAt: day.addingTimeInterval(19 * 3_600),
+      title: "駅", summary: "", source: .iphone, kind: .location)
+    let story = JournalDailyRecap.build(date: day, meetings: [], tasks: [],
+      entries: [evening, afternoon, morning], now: reviewNow, calendar: calendar)
+    let paragraphs = story.narrative.components(separatedBy: "\n\n")
+    if paragraphs.count != 3 || !paragraphs[0].hasPrefix("午前は、")
+      || !paragraphs[1].hasPrefix("午後は、") || !paragraphs[2].hasPrefix("夜は、") {
+      report("daily recap lost chronological time windows")
+    }
+    if !story.narrative.contains("検索画面の余白を整理した。")
+      || story.narrative.contains("**") || story.narrative.contains("##")
+      || !story.narrative.contains("予定が登録されています")
+      || story.narrative.contains("参加しました") || story.narrative.contains("訪れました") {
+      report("daily recap changes source meaning or leaks markdown")
+    }
+    let longExcerpt = JournalRecapWriter.excerpt(String(repeating: "長", count: 400), limit: 100)
+    if longExcerpt.count != 101 || !longExcerpt.hasSuffix("…") {
+      report("daily recap silently truncates a source excerpt")
+    }
+    let moreTasks = [task, MemoraTask(id: UUID(), title: "確認", isCompleted: true, completedAt: now)]
+    let completedDay = JournalDailyRecap.build(date: day, meetings: [], tasks: moreTasks,
+      entries: [], now: reviewNow, calendar: calendar)
+    if completedDay.heading != "2件のタスクを完了" || completedDay.activitySummary != "完了タスク2件"
+      || !completedDay.narrative.contains("「確認」を完了") {
+      report("daily recap omits the work actually completed")
     }
   }
 
