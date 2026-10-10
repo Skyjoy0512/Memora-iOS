@@ -22,6 +22,15 @@ struct TaskEditView: View {
   @State private var reminderTime: Date
   @State private var reminderDenied = false
   @State private var isDeleting = false
+  @State private var ownedByMe = false
+  @State private var parentID: UUID?
+  @State private var documentIDs: [UUID]
+  @State private var isAddingChild = false
+  @State private var editingChild: MemoraTask?
+  @State private var isPickingDocuments = false
+  @State private var openedDocument: MemoraDocument?
+  @State private var saveError = false
+  @State private var hasLoadedOwnership = false
 
   init(task: MemoraTask) {
     self.task = task
@@ -36,16 +45,21 @@ struct TaskEditView: View {
     _meetingID = State(initialValue: task.meetingID)
     _remindsAtDue = State(initialValue: task.remindsAtDue)
     _reminderTime = State(initialValue: task.reminderTime ?? TaskReminderScheduler.defaultTimeToday())
+    _parentID = State(initialValue: task.relationships.parentID)
+    _documentIDs = State(initialValue: task.relationships.documentIDs)
   }
 
   var body: some View {
+    let parents = TaskHierarchy.eligibleParents(for: task.id, in: model.tasks)
+    let children = model.tasks.filter { $0.relationships.parentID == task.id }
     NavigationStack {
       Form {
         Section("内容") {
           TextField("タイトル", text: $title, axis: .vertical)
-          TextField("やること・完了条件", text: $detail, axis: .vertical)
+          TextField("メモ・完了条件", text: $detail, axis: .vertical)
             .lineLimit(3...8)
           TextField("担当", text: $assignee)
+          Toggle("自分のタスク", isOn: $ownedByMe)
           Picker("進み具合", selection: $progress) {
             ForEach(TaskProgress.allCases) { state in
               Text(state.label).tag(state)
@@ -94,6 +108,31 @@ struct TaskEditView: View {
           Text(hasDueDate ? "期限を過ぎた未完了のタスクは期限切れとして表示します。通知は期限日の選んだ時刻に届きます。" : "期限なしのタスクとして扱います。")
         }
 
+        Section("課題の階層") {
+          Picker("親課題", selection: $parentID) {
+            Text("なし").tag(UUID?.none)
+            ForEach(parents) { parent in
+              Text(parent.title).tag(UUID?.some(parent.id))
+            }
+          }
+          ForEach(children) { child in
+            Button(child.title) { editingChild = child }
+          }
+          Button("子課題を追加", icon: .plus) { isAddingChild = true }
+        }
+
+        Section("資料") {
+          ForEach(documentIDs, id: \.self) { identifier in
+            let document = model.document(id: identifier)
+            Button(document?.displayTitle ?? "削除された資料") { openedDocument = document }
+              .disabled(document == nil)
+              .swipeActions {
+                Button("添付を外す", role: .destructive) { documentIDs.removeAll { $0 == identifier } }
+              }
+          }
+          Button("資料を添付", icon: .paperclip) { isPickingDocuments = true }
+        }
+
         Section("元の会議") {
           Picker("元の会議", selection: $meetingID) {
             Text("なし").tag(UUID?.none)
@@ -128,9 +167,12 @@ struct TaskEditView: View {
               workDate: hasWorkDate ? Calendar.current.startOfDay(for: workDate) : nil,
               progress: progress,
               remindsAtDue: hasDueDate && remindsAtDue,
-              reminderTime: hasDueDate && remindsAtDue ? reminderTime : nil
+              reminderTime: hasDueDate && remindsAtDue ? reminderTime : nil,
+              ownedByMe: ownedByMe,
+              relationships: TaskRelationships(parentID: parentID, documentIDs: documentIDs)
             )
             if saved { dismiss() }
+            else { saveError = true }
           }
           .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
@@ -143,6 +185,22 @@ struct TaskEditView: View {
       }
       .onChange(of: hasDueDate) { _, isOn in
         if !isOn { remindsAtDue = false }
+      }
+      .onAppear {
+        guard !hasLoadedOwnership else { return }
+        ownedByMe = model.isOwnTask(task)
+        hasLoadedOwnership = true
+      }
+      .sheet(isPresented: $isAddingChild) { AddTaskView(meetingID: meetingID, parentTaskID: task.id) }
+      .sheet(item: $editingChild) { child in TaskEditView(task: child) }
+      .sheet(isPresented: $isPickingDocuments) { TaskDocumentPicker(selection: $documentIDs) }
+      .sheet(item: $openedDocument) { document in
+        NavigationStack { DocumentDetailView(documentID: document.id, showsCloseButton: true) }
+      }
+      .alert("保存できませんでした", isPresented: $saveError) {
+        Button("閉じる", role: .cancel) {}
+      } message: {
+        Text("親課題の循環や、保存先の状態を確認してください。入力内容は画面に残っています。")
       }
     }
     .presentationDetents([.medium, .large])

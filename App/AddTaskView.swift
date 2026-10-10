@@ -7,8 +7,11 @@ struct AddTaskView: View {
   @Environment(\.openURL) private var openURL
   /// Set when the task is added from a meeting's "next actions".
   var meetingID: UUID?
+  var parentTaskID: UUID?
   @State private var title = ""
   @State private var assignee = ""
+  @State private var ownedByMe = true
+  @State private var detail = ""
   @State private var includesDueDate = false
   @State private var dueDate = Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now
   @State private var remindsAtDue = false
@@ -20,7 +23,12 @@ struct AddTaskView: View {
       Form {
         Section("タスク") {
           TextField("すること", text: $title)
-          TextField("担当（任意）", text: $assignee)
+          Toggle("自分のタスク", isOn: $ownedByMe)
+          if !ownedByMe {
+            TextField("担当（任意）", text: $assignee)
+          }
+          TextField("メモ・完了条件", text: $detail, axis: .vertical)
+            .lineLimit(3...8)
         }
 
         Section {
@@ -65,7 +73,10 @@ struct AddTaskView: View {
               dueDate: includesDueDate ? dueDate : nil,
               meetingID: meetingID,
               remindsAtDue: includesDueDate && remindsAtDue,
-              reminderTime: includesDueDate && remindsAtDue ? reminderTime : nil
+              reminderTime: includesDueDate && remindsAtDue ? reminderTime : nil,
+              ownedByMe: ownedByMe,
+              parentID: parentTaskID,
+              detail: detail
             )
             if saved { dismiss() }
           }

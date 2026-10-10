@@ -10,4 +10,15 @@ protocol TeamBackend: Sendable {
   func createTeam(named name: String) async throws -> TeamWorkspace
   /// Joins the team an invite code was issued for.
   func joinTeam(inviteCode: String) async throws -> TeamWorkspace
+  func taskBoard(teamID: String) async throws -> TeamTaskBoardSnapshot
+  func updateTask(_ task: MemoraTask, teamID: String, expectedRevision: String) async throws -> TeamTaskBoardSnapshot
+}
+
+extension TeamBackend {
+  func taskBoard(teamID: String) async throws -> TeamTaskBoardSnapshot {
+    throw TeamBackendError.notConfigured
+  }
+  func updateTask(_ task: MemoraTask, teamID: String, expectedRevision: String) async throws -> TeamTaskBoardSnapshot {
+    throw TeamBackendError.notConfigured
+  }
 }

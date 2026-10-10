@@ -1,6 +1,10 @@
 import Foundation
 
 extension MemoraModel {
+  func isOwnTask(_ task: MemoraTask) -> Bool {
+    TaskOwnership.isMine(task, names: [profile.name, account?.displayName ?? ""])
+  }
+
   func toggleTask(_ id: UUID) {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     var candidate = tasks
@@ -22,15 +26,25 @@ extension MemoraModel {
     workDate: Date?,
     progress: TaskProgress? = nil,
     remindsAtDue: Bool? = nil,
-    reminderTime: Date? = nil
+    reminderTime: Date? = nil,
+    ownedByMe: Bool? = nil,
+    relationships: TaskRelationships? = nil
   ) -> Bool {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return false }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return false }
     let trimmedAssignee = assignee.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let relationships,
+       !TaskHierarchy.canParent(id, under: relationships.parentID, tasks: tasks) { return false }
 
     var candidate = tasks
     candidate[index].title = trimmedTitle
+    if let ownedByMe {
+      candidate[index].ownedByMe = ownedByMe
+    } else if trimmedAssignee != (candidate[index].assignee ?? "") {
+      candidate[index].ownedByMe = nil
+    }
+    if let relationships { candidate[index].relationships = relationships }
     candidate[index].assignee = trimmedAssignee.isEmpty ? nil : trimmedAssignee
     candidate[index].dueDate = dueDate
     candidate[index].meetingID = meetingID
@@ -69,6 +83,10 @@ extension MemoraModel {
   @discardableResult
   func deleteTask(_ id: UUID) -> Bool {
     guard let index = tasks.firstIndex(where: { $0.id == id }) else { return false }
+    guard !tasks.contains(where: { $0.relationships.parentID == id }) else {
+      deletionFailureMessage = "子課題が残っています。子課題の親を変更するか、子課題を先に削除してください。"
+      return false
+    }
     var candidate = tasks
     let removed = candidate.remove(at: index)
     guard persistNow(candidate, forKey: StorageKey.tasks) else { return false }
@@ -100,22 +118,31 @@ extension MemoraModel {
     dueDate: Date?,
     meetingID: UUID? = nil,
     remindsAtDue: Bool = false,
-    reminderTime: Date? = nil
+    reminderTime: Date? = nil,
+    ownedByMe: Bool? = nil,
+    parentID: UUID? = nil,
+    detail: String = ""
   ) -> Bool {
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return false }
     let trimmedAssignee = assignee.trimmingCharacters(in: .whitespacesAndNewlines)
+    let identifier = UUID()
+    guard TaskHierarchy.canParent(identifier, under: parentID, tasks: tasks) else { return false }
     let task = MemoraTask(
-      id: UUID(),
+      id: identifier,
       title: trimmedTitle,
       meetingID: meetingID,
       assignee: trimmedAssignee.isEmpty ? nil : trimmedAssignee,
       dueDate: dueDate,
       isCompleted: false,
       remindsAtDue: remindsAtDue,
-      reminderTime: reminderTime
+      reminderTime: reminderTime,
+      ownedByMe: ownedByMe,
+      relationships: TaskRelationships(parentID: parentID)
     )
-    return insertTasks([task])
+    var taskWithNote = task
+    taskWithNote.detail = detail.trimmingCharacters(in: .whitespacesAndNewlines)
+    return insertTasks([taskWithNote])
   }
 
   @discardableResult

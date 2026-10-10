@@ -6,6 +6,7 @@ enum TeamBackendError: LocalizedError {
   /// Creating a team needs the team plan.
   case requiresTeamPlan
   case invalidInviteCode
+  case invalidTaskBoard
 
   var errorDescription: String? {
     switch self {
@@ -15,6 +16,8 @@ enum TeamBackendError: LocalizedError {
       "チームを作成するにはチームプランが必要です。"
     case .invalidInviteCode:
       "招待コードを確認してください。"
+    case .invalidTaskBoard:
+      "チーム課題の同期結果を確認できません。ワークスペースを確認して再読み込みしてください。変更は端末の個人タスクに保存していません。"
     }
   }
 }

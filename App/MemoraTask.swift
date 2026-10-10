@@ -3,6 +3,8 @@ import Foundation
 struct MemoraTask: Identifiable, Hashable, Codable {
   var id: UUID
   var title: String
+  var ownedByMe: Bool?
+  var relationships = TaskRelationships()
   var detail: String = ""
   var workDate: Date?
   var progress: TaskProgress = .notStarted
@@ -29,10 +31,14 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     progress: TaskProgress = .notStarted,
     completedAt: Date? = nil,
     remindsAtDue: Bool = false,
-    reminderTime: Date? = nil
+    reminderTime: Date? = nil,
+    ownedByMe: Bool? = nil,
+    relationships: TaskRelationships = TaskRelationships()
   ) {
     self.id = id
     self.title = title
+    self.ownedByMe = ownedByMe
+    self.relationships = relationships
     self.detail = detail
     self.workDate = workDate
     self.progress = progress
@@ -46,13 +52,15 @@ struct MemoraTask: Identifiable, Hashable, Codable {
   }
 
   private enum CodingKeys: String, CodingKey {
-    case id, title, detail, workDate, progress, meetingID, assignee, dueDate, isCompleted, completedAt, remindsAtDue, reminderTime
+    case id, title, detail, workDate, progress, meetingID, assignee, dueDate, isCompleted, completedAt, remindsAtDue, reminderTime, ownedByMe, relationships
   }
 
   init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     id = try container.decode(UUID.self, forKey: .id)
     title = try container.decode(String.self, forKey: .title)
+    ownedByMe = try container.decodeIfPresent(Bool.self, forKey: .ownedByMe)
+    relationships = try container.decodeIfPresent(TaskRelationships.self, forKey: .relationships) ?? TaskRelationships()
     detail = try container.decodeIfPresent(String.self, forKey: .detail) ?? ""
     workDate = try container.decodeIfPresent(Date.self, forKey: .workDate)
     progress = try container.decodeIfPresent(TaskProgress.self, forKey: .progress) ?? .notStarted
@@ -69,6 +77,8 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(id, forKey: .id)
     try container.encode(title, forKey: .title)
+    try container.encodeIfPresent(ownedByMe, forKey: .ownedByMe)
+    try container.encode(relationships, forKey: .relationships)
     try container.encode(detail, forKey: .detail)
     try container.encodeIfPresent(workDate, forKey: .workDate)
     try container.encode(progress, forKey: .progress)

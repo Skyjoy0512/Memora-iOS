@@ -47,6 +47,8 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
           .accessibilityHidden(!isOpen)
 
         content()
+          .frame(width: proxy.size.width, height: proxy.size.height)
+          .compositingGroup()
           .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
           .overlay {
             if progress > 0 {
@@ -63,7 +65,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
             }
           }
           .accessibilityHidden(isOpen)
-          .offset(x: offset)
+          .transformEffect(CGAffineTransform(translationX: offset, y: 0))
           .shadow(color: .black.opacity(0.2 * progress), radius: 24, x: -6)
 
         if isEnabled && !isOpen {

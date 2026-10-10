@@ -97,6 +97,47 @@ enum SelfChecks {
 
     group("Journal timeline", checkJournalTimeline)
     group("Task and journal compatibility", checkTaskAndJournalCompatibility)
+    group("Task ownership and hierarchy") {
+      let meetingID = UUID()
+      let parent = MemoraTask(id: UUID(), title: "親", meetingID: meetingID, assignee: "Me", isCompleted: false)
+      var child = MemoraTask(id: UUID(), title: "子", isCompleted: false, ownedByMe: true, relationships: TaskRelationships(parentID: parent.id))
+      let documentID = UUID()
+      child.relationships.documentIDs = [documentID]
+      let grandchild = MemoraTask(id: UUID(), title: "孫", isCompleted: false, ownedByMe: true, relationships: TaskRelationships(parentID: child.id))
+      let tasks = [grandchild, child, parent]
+      if TaskHierarchy.ordered(tasks).map(\.id) != [parent.id, child.id, grandchild.id]
+        || TaskHierarchy.depths(in: tasks)[grandchild.id] != 2
+        || TaskHierarchy.canParent(parent.id, under: grandchild.id, tasks: tasks)
+        || !TaskHierarchy.eligibleParents(for: parent.id, in: tasks).isEmpty {
+        report("task hierarchy ordering or cycle detection")
+      }
+      let other = MemoraTask(id: UUID(), title: "相手", meetingID: meetingID, assignee: "Tanaka", isCompleted: false)
+      let unknown = MemoraTask(id: UUID(), title: "担当未確認", meetingID: meetingID, isCompleted: false)
+      if !TaskOwnership.isMine(parent, names: []) || TaskOwnership.isMine(other, names: [])
+        || TaskOwnership.isMine(unknown, names: []) || !TaskOwnership.isMine(child, names: []) {
+        report("task ownership mixed other people into personal tasks")
+      }
+      do {
+        let data = try JSONEncoder().encode(child)
+        let restored = try JSONDecoder().decode(MemoraTask.self, from: data)
+        if restored != child { report("task relationships round trip") }
+        var legacy = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        legacy.removeValue(forKey: "relationships")
+        legacy.removeValue(forKey: "ownedByMe")
+        let legacyTask = try JSONDecoder().decode(MemoraTask.self, from: JSONSerialization.data(withJSONObject: legacy))
+        if legacyTask.ownedByMe != nil || legacyTask.relationships.parentID != nil || !legacyTask.relationships.documentIDs.isEmpty {
+          report("legacy task relationships defaults")
+        }
+      } catch { report("task relationships decoding: \(error)") }
+      let snapshot = TeamTaskBoardSnapshot(teamID: "team", revision: "1", tasks: tasks, ownTaskIDs: [child.id])
+      if !snapshot.isValid || TeamTaskBoardSnapshot(teamID: "team", revision: "1", tasks: [parent, parent], ownTaskIDs: []).isValid {
+        report("team board duplicate or hierarchy validation")
+      }
+      if !TaskBoardColumn.completed.applying(to: child).isCompleted
+        || TaskBoardColumn.inProgress.applying(to: child).progress != .inProgress {
+        report("team board column transitions")
+      }
+    }
     group("Review period boundaries", checkReviewPeriodBoundaries)
     group("Journal daily recap", checkJournalDailyRecap)
     group("Agent research isolation") {

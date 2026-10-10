@@ -8,6 +8,8 @@ struct OmiDeviceDetailView: View {
   var manager: OmiPairingManager
 
   @State private var isFirmwareNoticePresented = false
+  @State private var isPairingPresented = false
+  @State private var isUnpairingPresented = false
 
   private var details: OmiPairingManager.DeviceDetails? {
     manager.details
@@ -38,14 +40,25 @@ struct OmiDeviceDetailView: View {
       }
 
       Section {
-        Button("接続を解除", icon: .xmarkCircle, role: .destructive) {
-          manager.disconnect()
-          dismiss()
+        if !isConnected {
+          Button("再接続", icon: .link) { isPairingPresented = true }
+        }
+        Button("ペアリングを解除", icon: .xmarkCircle, role: .destructive) {
+          isUnpairingPresented = true
         }
       }
     }
     .navigationTitle("デバイスの詳細")
     .navigationBarTitleDisplayMode(.inline)
+    .sheet(isPresented: $isPairingPresented) { OmiPairingView(manager: manager) }
+    .confirmationDialog("ペアリングを解除しますか？", isPresented: $isUnpairingPresented, titleVisibility: .visible) {
+      Button("解除", role: .destructive) {
+        manager.disconnect()
+        dismiss()
+      }
+    } message: {
+      Text("保存した録音は残ります。再び使うときは接続し直してください。")
+    }
     .alert("ファームウェア", isPresented: $isFirmwareNoticePresented) {
       Button("OK", role: .cancel) {}
     } message: {
@@ -62,11 +75,11 @@ struct OmiDeviceDetailView: View {
         .background(Color(uiColor: .secondarySystemBackground), in: Circle())
 
       VStack(alignment: .leading, spacing: 3) {
-        Text(details?.name ?? "Omi")
+        Text(deviceName)
           .font(.headline)
-        Label("接続済み", icon: .checkmarkCircleFill)
+        Label(isConnected ? "接続済み" : "未接続", icon: isConnected ? .checkmarkCircleFill : .link)
           .font(.subheadline)
-          .foregroundStyle(.green)
+          .foregroundStyle(isConnected ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
       }
     }
     .padding(.vertical, 4)
@@ -83,5 +96,16 @@ struct OmiDeviceDetailView: View {
   private var shortIdentifier: String {
     guard let identifier = details?.identifier.uuidString else { return "不明" }
     return String(identifier.prefix(8)).uppercased()
+  }
+
+  private var isConnected: Bool {
+    if case .connected = manager.state { return true }
+    return false
+  }
+
+  private var deviceName: String {
+    if let details { return details.name }
+    if case .remembered(let name) = manager.state { return name }
+    return "Omi"
   }
 }

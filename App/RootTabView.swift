@@ -7,6 +7,7 @@ struct RootTabView: View {
   @Environment(\.scenePhase) private var scenePhase
   @State private var isComposing = false
   @State private var isSidebarOpen = false
+  @State private var isRecorderPresented = false
   @State private var isKeyboardVisible = false
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
   /// controls re-add the home indicator inset themselves.
@@ -17,7 +18,10 @@ struct RootTabView: View {
 
     SidebarContainer(isOpen: $isSidebarOpen, isEnabled: canRevealSidebar) {
       FileSidebarView(
-        onSelectTab: selectTab,
+        onOpenRecorder: {
+          closeSidebar()
+          isRecorderPresented = true
+        },
         onSelectSpace: openSpace,
         onSelectSharedProject: openSharedProject,
         onCreateTeam: {
@@ -79,6 +83,20 @@ struct RootTabView: View {
     }
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
+    }
+    .sheet(isPresented: $isRecorderPresented) {
+      if OmiPairingManager.hasRememberedDevice || model.omiPairingManager.details != nil {
+        NavigationStack {
+          OmiDeviceDetailView(manager: model.omiPairingManager)
+            .toolbar {
+              ToolbarItem(placement: .confirmationAction) {
+                ToolbarIconButton("完了", icon: .checkmark) { isRecorderPresented = false }
+              }
+            }
+        }
+      } else {
+        OmiPairingView(manager: model.omiPairingManager)
+      }
     }
     .sheet(isPresented: $model.isCallSetupPresented) {
       CallSetupFlow()

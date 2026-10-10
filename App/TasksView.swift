@@ -5,17 +5,21 @@ struct TasksView: View {
   @State private var showsCompleted = false
   @State private var path: [UUID] = []
   @State private var editingTask: MemoraTask?
-  /// nil = everyone, "" = no assignee, otherwise the name.
-  @State private var assigneeFilter: String?
   @State private var todayOnly = false
   @State private var waitingOnly = false
+  @State private var showsTeamBoard = false
 
   var body: some View {
     @Bindable var model = model
     let visibleTasks = self.visibleTasks
-    let isFiltered = assigneeFilter != nil || todayOnly || waitingOnly
+    let taskDepths = TaskHierarchy.depths(in: visibleTasks)
+    let isFiltered = todayOnly || waitingOnly
 
     return NavigationStack(path: $path) {
+      Group {
+        if showsTeamBoard && model.hasTeamPlan {
+          TeamTaskBoardView()
+        } else {
       VStack(spacing: 0) {
         GlassSegmentedPicker(items: [false, true], selection: $showsCompleted) { completed in
           completed ? "完了" : "未完了"
@@ -33,11 +37,10 @@ struct TasksView: View {
           ContentUnavailableView {
             Label(isFiltered ? "条件に合うタスクはありません" : (showsCompleted ? "完了したタスクはありません" : "タスクはありません"), icon: .checkmarkSquare)
           } description: {
-            Text(isFiltered ? "絞り込み条件を変えると、ほかのタスクを確認できます。" : (showsCompleted ? "完了にしたタスクがここに残ります。" : "会話から次の行動が見つかると、自動でここに集まります。"))
+            Text(isFiltered ? "絞り込み条件を変えると、自分のほかのタスクを確認できます。" : (showsCompleted ? "完了にした自分のタスクがここに残ります。" : "自分の担当と確認できた課題だけを表示します。担当未確認・ほかの人の課題は、元の会議から確認できます。"))
           } actions: {
             if isFiltered {
               Button("絞り込みを解除") {
-                assigneeFilter = nil
                 todayOnly = false
                 waitingOnly = false
               }
@@ -47,14 +50,14 @@ struct TasksView: View {
         } else {
           List {
             if showsCompleted {
-              ForEach(completedFirst(visibleTasks)) { task in
-                taskRow(task)
+              ForEach(TaskHierarchy.ordered(completedFirst(visibleTasks))) { task in
+                taskRow(task, depth: taskDepths[task.id] ?? 0)
               }
             } else {
               ForEach(dueSections(of: visibleTasks)) { section in
                 Section(section.title) {
                   ForEach(section.tasks) { task in
-                    taskRow(task)
+                    taskRow(task, depth: taskDepths[task.id] ?? 0)
                   }
                 }
               }
@@ -66,23 +69,28 @@ struct TasksView: View {
           .refreshable { await model.refresh() }
         }
       }
+        }
+      }
       .navigationTitle("タスク")
       .toolbar {
+        if model.hasTeamPlan {
+          ToolbarItem(placement: .topBarTrailing) {
+            Picker("表示", selection: $showsTeamBoard) {
+              Text("自分のタスク").tag(false)
+              Text("チームボード").tag(true)
+            }
+            .pickerStyle(.menu)
+          }
+        }
         ToolbarItem(placement: .topBarTrailing) {
           Menu {
             Toggle("今日取り組む", isOn: $todayOnly)
             Toggle("相手待ち", isOn: $waitingOnly)
-            Picker("担当", selection: $assigneeFilter) {
-              Text("全員").tag(String?.none)
-              Text("担当なし").tag(String?.some(""))
-              ForEach(assigneeNames, id: \.self) { name in
-                Text(name).tag(String?.some(name))
-              }
-            }
           } label: {
             Label("タスクを絞り込み", icon: .line3HorizontalDecrease)
               .labelStyle(.iconOnly)
           }
+          .disabled(showsTeamBoard)
         }
 
         // The create action is the rightmost item, matching the other tabs.
@@ -91,6 +99,7 @@ struct TasksView: View {
             model.isAddTaskPresented = true
           }
           .labelStyle(.iconOnly)
+          .disabled(showsTeamBoard)
         }
       }
       .navigationDestination(for: UUID.self) { meetingID in
@@ -107,7 +116,7 @@ struct TasksView: View {
     }
   }
 
-  private func taskRow(_ task: MemoraTask) -> some View {
+  private func taskRow(_ task: MemoraTask, depth: Int) -> some View {
     HStack(alignment: .top, spacing: 8) {
       TaskRow(task: task, showsSource: true) {
         editingTask = task
@@ -124,6 +133,7 @@ struct TasksView: View {
         .buttonStyle(.plain)
       }
     }
+    .padding(.leading, CGFloat(min(depth, 4)) * 12)
     .padding(.vertical, 5)
     .swipeActions(edge: .leading) {
       Button {
@@ -167,12 +177,13 @@ struct TasksView: View {
     guard let id = model.pendingTaskEditID, let task = model.tasks.first(where: { $0.id == id }) else { return }
     model.pendingTaskEditID = nil
     showsCompleted = task.isCompleted
+    showsTeamBoard = false
     editingTask = task
   }
 
   private var visibleTasks: [MemoraTask] {
     model.tasks.filter {
-      $0.isCompleted == showsCompleted && matchesAssignee($0)
+      model.isOwnTask($0) && $0.isCompleted == showsCompleted
         && (!todayOnly || $0.workDate.map { Calendar.current.isDateInToday($0) } == true)
         && (!waitingOnly || $0.progress == .waiting)
     }
@@ -205,25 +216,10 @@ struct TasksView: View {
     }
     // A fixed order, so 期限切れ stays on top even when sorting hid it.
     return TaskDueBucket.allCases.compactMap { bucket in
-      grouped[bucket].map { TaskDueSection(bucket: bucket, tasks: $0) }
+      grouped[bucket].map { TaskDueSection(bucket: bucket, tasks: TaskHierarchy.ordered($0)) }
     }
   }
 
-  private var assigneeNames: [String] {
-    let names = model.tasks.compactMap(\.assignee).filter { !$0.isEmpty }
-    return Array(Set(names)).sorted()
-  }
-
-  private func matchesAssignee(_ task: MemoraTask) -> Bool {
-    switch assigneeFilter {
-    case nil:
-      true
-    case .some(""):
-      (task.assignee ?? "").isEmpty
-    case .some(let name):
-      task.assignee == name
-    }
-  }
 }
 
 /// A due-date heading and the tasks under it, for the tasks list.

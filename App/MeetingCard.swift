@@ -49,7 +49,6 @@ struct MeetingCard: View {
       }
 
       HStack(spacing: 5) {
-        Image(icon: .calendar)
         Text(recordingDate)
       }
       .font(.caption.weight(.medium))

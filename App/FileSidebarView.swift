@@ -5,7 +5,7 @@ import SwiftUI
 struct FileSidebarView: View {
   @Environment(MemoraModel.self) private var model
 
-  var onSelectTab: (RootTab) -> Void
+  var onOpenRecorder: () -> Void
   var onSelectSpace: (MemoraSpace) -> Void
   var onSelectSharedProject: (SharedProject) -> Void
   var onCreateTeam: () -> Void
@@ -26,20 +26,6 @@ struct FileSidebarView: View {
 
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
-          sidebarSection("メニュー") {
-            ForEach(RootTab.allCases) { tab in
-              SidebarRow(
-                title: tab.title,
-                symbol: tab.symbol,
-                detail: detail(for: tab),
-                isSelected: model.selectedTab == tab
-              ) {
-                onSelectTab(tab)
-              }
-            }
-
-          }
-
           sidebarSection("ライブラリ") {
             SidebarRow(
               title: "資料",
@@ -102,7 +88,7 @@ struct FileSidebarView: View {
               symbol: isOmiConnected ? .dotRadiowavesLeftAndRight : .link,
               detail: isOmiConnected ? nil : "未接続"
             ) {
-              onOpenSettings()
+              onOpenRecorder()
             }
           }
         }
@@ -224,15 +210,6 @@ struct FileSidebarView: View {
 
   private func meetingCount(for spaceID: UUID) -> Int {
     model.spaceAggregates[spaceID]?.meetingCount ?? 0
-  }
-
-  private func detail(for tab: RootTab) -> String? {
-    guard tab == .tasks, openTaskCount > 0 else { return nil }
-    return "\(openTaskCount)"
-  }
-
-  private var openTaskCount: Int {
-    model.tasks.filter { !$0.isCompleted }.count
   }
 
   private var isOmiConnected: Bool {
