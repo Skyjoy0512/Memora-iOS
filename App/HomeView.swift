@@ -26,6 +26,9 @@ struct HomeView: View {
   @Namespace private var summaryNamespace
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @AppStorage("memora.journal.calendarIDs") private var journalCalendarIDsValue = ""
+  @AppStorage("memora.journal.healthReviewEnabled") private var healthEnabled = false
+  @State private var health: HealthReviewSnapshot?
+  @State private var healthPeriod: ReviewPeriod?
 
   private var journalCalendarIDs: [String] {
     journalCalendarIDsValue.isEmpty ? [] : journalCalendarIDsValue.components(separatedBy: "\n")
@@ -38,8 +41,12 @@ struct HomeView: View {
   var body: some View {
     @Bindable var model = model
     let entries = matchingEntries
+    let healthRequest = JournalHealthRequest(period: .day(selectedDate), enabled: healthEnabled,
+      teamID: model.currentTeamID, isActive: scenePhase == .active, isReviewPresented: showsReview)
+    let visibleHealth = healthRequest.canRead && healthPeriod == healthRequest.period ? health : nil
     let recap = JournalDailyRecap.build(date: selectedDate, meetings: model.meetings,
-      tasks: model.tasks, entries: model.lifeLogEntries)
+      tasks: model.tasks, entries: model.lifeLogEntries, spaces: model.spaces,
+      people: model.people, events: calendarEvents, health: visibleHealth)
 
     NavigationStack(path: $model.homePath) {
       ScrollView {
@@ -138,9 +145,9 @@ struct HomeView: View {
       .sheet(item: $editingTask) { task in TaskEditView(task: task) }
       .fullScreenCover(isPresented: $showsSummary) {
         if reduceMotion {
-          JournalSummaryView(date: selectedDate, backdrops: $backdrops)
+          JournalSummaryView(date: selectedDate, backdrops: $backdrops, events: calendarEvents, health: visibleHealth)
         } else {
-          JournalSummaryView(date: selectedDate, backdrops: $backdrops)
+          JournalSummaryView(date: selectedDate, backdrops: $backdrops, events: calendarEvents, health: visibleHealth)
             .navigationTransition(.zoom(sourceID: "journalSummary", in: summaryNamespace))
         }
       }
@@ -159,6 +166,17 @@ struct HomeView: View {
         Task { await loadEvents() }
       }
       .task(id: selectedDate) { await loadEvents() }
+      .task(id: healthRequest) {
+        health = nil
+        healthPeriod = nil
+        guard healthRequest.canRead, HealthReviewService.isAvailable else { return }
+        let period = ReviewPeriod(start: healthRequest.period.start, end: min(healthRequest.period.end, .now))
+        guard period.end > period.start else { return }
+        let snapshot = try? await HealthReviewService.read(period)
+        guard !Task.isCancelled else { return }
+        healthPeriod = healthRequest.period
+        health = snapshot
+      }
       .onChange(of: selectedDate) { _, date in backdrops.select(date) }
       .onChange(of: showCalendarEvents) { _, _ in Task { await loadEvents() } }
       .onChange(of: journalCalendarIDsValue) { _, _ in Task { await loadEvents() } }

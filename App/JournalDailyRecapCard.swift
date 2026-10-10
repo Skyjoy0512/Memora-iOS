@@ -23,6 +23,13 @@ struct JournalDailyRecapCard: View {
           .lineSpacing(4)
           .lineLimit(3)
           .multilineTextAlignment(.leading)
+        if !recap.context.metrics.isEmpty {
+          Text(recap.context.cardMetrics.joined(separator: " · "))
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.white.opacity(0.9))
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 5)
+        }
       }
       .foregroundStyle(.white)
       .frame(maxWidth: .infinity, minHeight: 178, alignment: .bottomLeading)
@@ -32,7 +39,7 @@ struct JournalDailyRecapCard: View {
       .contentShape(RoundedRectangle(cornerRadius: 22))
     }
     .buttonStyle(.plain)
-    .accessibilityLabel("\(date.formatted(date: .complete, time: .omitted))。\(recap.heading)。\(recap.narrative)")
+    .accessibilityLabel("\(date.formatted(date: .complete, time: .omitted))。\(recap.heading)。\(recap.narrative)。\(recap.context.metrics.joined(separator: "、"))")
     .accessibilityHint("1日のサマリーを開きます")
   }
 }

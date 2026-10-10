@@ -6,6 +6,7 @@ struct JournalRecapHighlight: Identifiable {
   var kind: Kind
   var title: String
   var summary: String
+  var priority = 0
 
   var label: String { "\(category)：\(title)" }
 

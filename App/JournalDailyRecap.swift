@@ -7,13 +7,16 @@ struct JournalDailyRecap {
   var isFuture: Bool
   var items: [JournalRecapHighlight] = []
   var preview = ""
+  var context = JournalRecapContext()
 
-  var hasActivity: Bool { !isFuture && !highlights.isEmpty }
+  var hasActivity: Bool { !isFuture && (!highlights.isEmpty || !context.healthFacts.isEmpty) }
   var activitySummary: String { JournalRecapWriter.activitySummary(items: items) }
 
   static func build(date: Date, meetings: [Meeting], tasks: [MemoraTask],
                     entries: [LifeLogEntry], now: Date = .now,
-                    calendar: Calendar = .current) -> JournalDailyRecap {
+                    calendar: Calendar = .current, spaces: [MemoraSpace] = [],
+                    people: [Person] = [], events: [JournalCalendarEvent] = [],
+                    health: HealthReviewSnapshot? = nil) -> JournalDailyRecap {
     let period = ReviewPeriod.day(date, calendar: calendar)
     let isFuture = period.start > now
     let isToday = period.contains(now)
@@ -36,7 +39,9 @@ struct JournalDailyRecap {
     let personalEntries = visibleEntries.filter { $0.meetingID == nil }
     var items: [JournalRecapHighlight] = visibleMeetings.map {
       JournalRecapHighlight(id: $0.id, date: $0.createdAt, kind: .record,
-        title: $0.displayTitle, summary: JournalRecapWriter.excerpt($0.summaryPreview))
+        title: $0.displayTitle, summary: JournalRecapWriter.excerpt(
+          $0.summaryPreview.isEmpty ? ($0.keyPoints + [$0.notes]).filter { !$0.isEmpty }.joined(separator: "。") : $0.summaryPreview),
+        priority: $0.decisions.isEmpty ? 0 : 2)
     }
     items += personalEntries.map {
       JournalRecapHighlight(id: $0.id, date: $0.occurredAt, kind: .init($0.kind),
@@ -51,9 +56,26 @@ struct JournalDailyRecap {
       $0.date == $1.date ? $0.id.uuidString < $1.id.uuidString : $0.date < $1.date
     }
     let highlights = items.prefix(3).map(\.label)
-    return JournalDailyRecap(heading: items.isEmpty ? heading : JournalRecapWriter.heading(items: items, isToday: isToday),
-      narrative: items.isEmpty ? "この日の振り返りに使える記録はまだありません。記録が増えると、ここに1日の概要が表示されます。" : JournalRecapWriter.narrative(items: items, calendar: calendar),
+    let context = JournalRecapContext.build(period: period, meetings: visibleMeetings,
+      completed: completed, entries: personalEntries, tasks: tasks, spaces: spaces,
+      people: people, events: events, health: health, now: now, calendar: calendar)
+    var narrative = items.isEmpty ? "この日の振り返りに使える記録はまだありません。記録が増えると、ここに1日の概要が表示されます。" : JournalRecapWriter.narrative(items: items, calendar: calendar)
+    var preview = JournalRecapWriter.cardPreview(items: items, calendar: calendar)
+    if !context.takeaway.isEmpty {
+      narrative = context.takeaway + "\n\n" + narrative
+      preview = context.takeaway + " " + preview
+    }
+    if !context.healthFacts.isEmpty {
+      let healthText = "ヘルスケアの記録：" + context.healthFacts.joined(separator: " · ") + "。"
+      narrative = items.isEmpty ? healthText : narrative + "\n\n" + healthText
+      if preview.isEmpty { preview = healthText }
+    }
+    let enrichedHeading = items.count > 1 && context.projects.count == 1
+      ? "「\(JournalRecapWriter.excerpt(context.projects[0], limit: 24))」の記録をつなぐ"
+      : JournalRecapWriter.heading(items: items, isToday: isToday)
+    return JournalDailyRecap(heading: items.isEmpty ? (context.healthFacts.isEmpty ? heading : "からだの記録を振り返る") : enrichedHeading,
+      narrative: narrative,
       highlights: highlights, isFuture: false, items: items,
-      preview: JournalRecapWriter.cardPreview(items: items, calendar: calendar))
+      preview: preview, context: context)
   }
 }

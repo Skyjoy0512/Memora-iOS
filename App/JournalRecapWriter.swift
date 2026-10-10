@@ -31,7 +31,7 @@ enum JournalRecapWriter {
     return windows.compactMap { hours, label -> String? in
       let records = items.filter { hours.contains(calendar.component(.hour, from: $0.date)) }
       guard !records.isEmpty else { return nil }
-      return records.prefix(2).enumerated().map { index, item in
+      return representativeItems(records, limit: 2).enumerated().map { index, item in
         let introduction = index == 0 ? "\(label)は、" : "また、"
         let description = introduction + sentence(for: item)
         guard !item.summary.isEmpty, item.kind != .completedTask else { return description }
@@ -59,7 +59,7 @@ enum JournalRecapWriter {
     let windows = [(0..<6, "深夜・早朝"), (6..<12, "午前"), (12..<18, "午後"), (18..<24, "夜")]
     let moments: [(String, JournalRecapHighlight)] = windows.compactMap { hours, label in
       let records = items.filter { hours.contains(calendar.component(.hour, from: $0.date)) }
-      guard let item = records.first(where: { $0.kind != .location && $0.kind != .event }) ?? records.first else { return nil }
+      guard let item = representativeItems(records, limit: 1).first else { return nil }
       return (label, item)
     }
     if items.count == 1, let (time, item) = moments.first, !item.summary.isEmpty,
@@ -81,6 +81,16 @@ enum JournalRecapWriter {
     let plain = overview.isEmpty ? MarkdownBlockParser.plainText(source) : overview
     let compact = plain.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     return compact.count > limit ? String(compact.prefix(limit)) + "…" : compact
+  }
+
+  private static func representativeItems(_ items: [JournalRecapHighlight], limit: Int) -> [JournalRecapHighlight] {
+    items.sorted {
+      let first = $0.priority + ($0.kind == .completedTask ? 2 : !$0.summary.isEmpty && $0.kind != .location && $0.kind != .event ? 1 : 0)
+      let second = $1.priority + ($1.kind == .completedTask ? 2 : !$1.summary.isEmpty && $1.kind != .location && $1.kind != .event ? 1 : 0)
+      if first != second { return first > second }
+      if $0.date != $1.date { return $0.date < $1.date }
+      return $0.id.uuidString < $1.id.uuidString
+    }.prefix(limit).sorted { $0.date < $1.date }
   }
 
   private static func sentence(for item: JournalRecapHighlight) -> String {

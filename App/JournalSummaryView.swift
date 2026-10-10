@@ -8,14 +8,21 @@ struct JournalSummaryView: View {
   @ScaledMetric(relativeTo: .largeTitle) private var daySize = 104.0
   var date: Date
   @Binding var backdrops: JournalBackdropSelection
+  var events: [JournalCalendarEvent] = []
+  var health: HealthReviewSnapshot?
+  @AppStorage("memora.journal.healthReviewEnabled") private var healthEnabled = false
   @State private var showsReview = false
   @State private var showsCreate = false
 
   var body: some View {
     let recap = JournalDailyRecap.build(date: date, meetings: model.meetings,
-      tasks: model.tasks, entries: model.lifeLogEntries)
+      tasks: model.tasks, entries: model.lifeLogEntries, spaces: model.spaces,
+      people: model.people, events: events, health: healthEnabled && model.currentTeamID == nil ? health : nil)
     let shareText = ([date.formatted(date: .complete, time: .omitted), recap.heading,
-      recap.narrative, recap.activitySummary]).joined(separator: "\n\n")
+      recap.narrative, recap.context.metrics.joined(separator: " · "),
+      recap.context.decisions.isEmpty ? "" : "決まったこと\n" + recap.context.decisions.joined(separator: "\n"),
+      recap.context.openQuestions.isEmpty ? "" : "引き継ぐ問い\n" + recap.context.openQuestions.joined(separator: "\n")])
+      .filter { !$0.isEmpty }.joined(separator: "\n\n")
 
     NavigationStack {
       ScrollView {
@@ -34,8 +41,8 @@ struct JournalSummaryView: View {
               .font(.body)
               .lineSpacing(8)
               .fixedSize(horizontal: false, vertical: true)
-            if !recap.activitySummary.isEmpty {
-              Text(recap.activitySummary)
+            if !recap.context.metrics.isEmpty {
+              Text(recap.context.metrics.joined(separator: " · "))
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.85))
                 .fixedSize(horizontal: false, vertical: true)
@@ -47,6 +54,13 @@ struct JournalSummaryView: View {
           .controlSize(.large)
 
           divider
+
+          contextSection("決まったこと", values: recap.context.decisions)
+          contextSection("引き継ぐ問い", values: recap.context.openQuestions)
+          contextSection("関連プロジェクト", values: recap.context.projects)
+          contextSection("記録にタグ付けされた人物", values: recap.context.people)
+          contextSection("記録された場所", values: recap.context.places)
+          contextSection("この後・明日に向けて", values: recap.context.nextSteps)
 
           if !recap.items.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
@@ -153,6 +167,20 @@ struct JournalSummaryView: View {
 
   private var panelBackground: Color {
     reduceTransparency ? Color(white: 0.12) : .white.opacity(0.12)
+  }
+
+  @ViewBuilder private func contextSection(_ title: String, values: [String]) -> some View {
+    if !values.isEmpty {
+      VStack(alignment: .leading, spacing: 12) {
+        Text(title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
+        ForEach(Array(values.enumerated()), id: \.offset) { _, value in
+          Text(value).font(.body).lineSpacing(5).fixedSize(horizontal: false, vertical: true)
+        }
+      }
+      .padding(20)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(panelBackground, in: RoundedRectangle(cornerRadius: 24))
+    }
   }
 
   private var divider: some View {

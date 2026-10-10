@@ -154,6 +154,7 @@ enum SelfChecks {
     }
     group("Review period boundaries", checkReviewPeriodBoundaries)
     group("Journal daily recap", checkJournalDailyRecap)
+    group("Journal recap context", checkJournalRecapContext)
     group("Journal photo presets") {
       let firstDay = Date(timeIntervalSince1970: 1_790_000_000)
       let secondDay = Calendar.current.date(byAdding: .day, value: 1, to: firstDay)!
@@ -589,6 +590,79 @@ enum SelfChecks {
     if completedDay.heading != "2件のタスクを完了" || completedDay.activitySummary != "完了タスク2件"
       || !completedDay.narrative.contains("「確認」を完了") {
       report("daily recap omits the work actually completed")
+    }
+  }
+
+  private static func checkJournalRecapContext() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let day = Date(timeIntervalSince1970: 1_790_035_200)
+    let period = ReviewPeriod.day(day, calendar: calendar)
+    let now = period.start.addingTimeInterval(18 * 3_600)
+    let project = MemoraSpace(id: UUID(), name: "検索改善", symbol: "folder")
+    let person = Person(id: UUID(), name: "田中")
+    let meeting = Meeting(id: UUID(), title: "画面レビュー", createdAt: period.start.addingTimeInterval(10 * 3_600),
+      duration: 1_800, source: .recording, status: .ready, summary: "", keyPoints: ["余白を整理する"],
+      decisions: ["**検索を上部に置く**", "検索を上部に置く", " "], openQuestions: ["公開日はいつか"],
+      transcript: [], spaceID: project.id, audioURL: nil, participantIDs: [person.id])
+    let completed = MemoraTask(id: UUID(), title: "設計を提出", meetingID: meeting.id,
+      isCompleted: true, completedAt: period.start.addingTimeInterval(15 * 3_600))
+    let tomorrow = MemoraTask(id: UUID(), title: "公開を確認", dueDate: period.end, isCompleted: false)
+    let oldMemo = LifeLogEntry(id: UUID(), createdAt: period.start.addingTimeInterval(8 * 3_600),
+      title: "朝のメモ", summary: "気づきを記録", source: .iphone)
+    let location = LifeLogEntry(id: UUID(), createdAt: period.start.addingTimeInterval(9 * 3_600),
+      title: "場所", summary: "", source: .iphone, kind: .location, locationName: "オフィス")
+    let duplicate = LifeLogEntry(id: UUID(), createdAt: period.start.addingTimeInterval(11 * 3_600),
+      title: "場所2", summary: "", source: .iphone, kind: .location, locationName: "オフィス")
+    let snapshot = HealthReviewSnapshot(steps: 4_200, sleepSeconds: 7 * 3_600, workoutSeconds: nil, workoutRecordCount: 0)
+    let recap = JournalDailyRecap.build(date: day, meetings: [meeting], tasks: [completed, tomorrow],
+      entries: [oldMemo, location, duplicate], now: now, calendar: calendar,
+      spaces: [project], people: [person], health: snapshot)
+    if recap.context.decisions != ["検索を上部に置く"] || !recap.preview.hasPrefix("会議の記録では")
+      || !recap.narrative.contains("余白を整理する") || recap.context.openQuestions != ["公開日はいつか"] {
+      report("journal context omits decisions, key points or open questions")
+    }
+    if recap.context.projects != ["検索改善"] || recap.context.people != ["田中"]
+      || recap.context.places != ["オフィス"] || !recap.heading.contains("検索改善") {
+      report("journal context loses explicit projects, tags or deduplicated places")
+    }
+    if recap.context.healthFacts.count != 2 || !recap.context.metrics.contains("歩数 \(4_200.formatted())歩")
+      || recap.context.healthFacts.contains(where: { $0.contains("ワークアウト") }) {
+      report("journal health invents missing values or drops known values")
+    }
+    if recap.context.nextSteps != ["明日が期限：公開を確認（現在未完了）"] {
+      report("journal context omits a real next-day deadline")
+    }
+    let historical = JournalDailyRecap.build(date: day, meetings: [meeting], tasks: [tomorrow],
+      entries: [], now: period.end.addingTimeInterval(3_600), calendar: calendar)
+    if !historical.context.nextSteps.isEmpty { report("journal projects current task state onto a past day") }
+    let future = JournalDailyRecap.build(date: period.end, meetings: [], tasks: [], entries: [],
+      now: now, calendar: calendar, health: snapshot)
+    if future.hasActivity || !future.context.healthFacts.isEmpty { report("journal health appears on a future day") }
+    let healthOnly = JournalDailyRecap.build(date: day, meetings: [], tasks: [], entries: [],
+      now: now, calendar: calendar, health: snapshot)
+    if !healthOnly.hasActivity || !healthOnly.preview.contains("ヘルスケア")
+      || healthOnly.narrative.contains("まだありません") { report("health-only journal invents activity or hides facts") }
+    var request = JournalHealthRequest(period: period, enabled: false, teamID: nil, isActive: true, isReviewPresented: false)
+    if request.canRead { report("journal health ignores opt-in") }
+    request.enabled = true
+    request.teamID = "test-team"
+    if request.canRead { report("journal exposes personal health in a team workspace") }
+    request.teamID = nil
+    request.isActive = false
+    if request.canRead { report("journal health reads while inactive") }
+    request.isActive = true
+    request.isReviewPresented = true
+    if request.canRead || !recap.context.cardMetrics.contains("歩数 \(4_200.formatted())歩") {
+      report("journal health permission flow or card selection changed")
+    }
+    var futureMeeting = meeting
+    futureMeeting.id = UUID()
+    futureMeeting.createdAt = period.end
+    futureMeeting.decisions = ["未来の決定"]
+    let filtered = JournalDailyRecap.build(date: day, meetings: [meeting, futureMeeting], tasks: [], entries: [], now: now, calendar: calendar)
+    if filtered.context.decisions.contains("未来の決定") || filtered.context.metrics.first?.contains("2件") == true {
+      report("journal context includes meetings outside its day")
     }
   }
 
