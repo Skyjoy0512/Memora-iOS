@@ -26,13 +26,12 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
     }
   }
 
-  /// Only the active destination uses the filled silhouette.
   var filledSymbol: MemoraIcon {
     switch self {
-    case .home: .calendarFill
+    case .home: .bookClosedFill
     case .files: .folderFill
     case .askAI: .chatBubbleFill
-    case .tasks: .checklistFill
+    case .tasks: .checkmarkSquareFill
     }
   }
 }

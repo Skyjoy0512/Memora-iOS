@@ -183,6 +183,13 @@ enum SelfChecks {
     group("Unassigned task scope", checkUnassignedTaskScope)
     group("Legacy photo retention", checkLegacyPhotoRetention)
     group("Speech final results", checkSpeechFinalResults)
+    group("Tab bar icons") {
+      for tab in RootTab.allCases {
+        if !tab.filledSymbol.systemName.hasSuffix(".fill") || UIImage(icon: tab.filledSymbol) == nil {
+          report("tab bar solid icon missing: \(tab.title)")
+        }
+      }
+    }
     group("Icon assets", checkIconAssets)
     group("LLM providers", checkLLMProviders)
     group("Summary reply parsing", checkSummaryReplyParsing)

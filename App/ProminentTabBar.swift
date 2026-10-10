@@ -157,6 +157,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     }
 
     control.selectedSegmentIndex = allTabs.firstIndex(of: selection) ?? 0
+    control.tintColor = .label
     control.selectedSegmentTintColor = UIColor.secondarySystemFill
     control.addTarget(context.coordinator, action: #selector(Coordinator.didChange(_:)), for: .valueChanged)
     context.coordinator.appliedColorScheme = colorScheme
@@ -269,19 +270,22 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   }
 
   private func generatedImage(for item: Item, selected: Bool) -> UIImage? {
-    // The selected tab is drawn in the accent color, as the system tab bar
-    // marks its current tab; the others stay in the label color.
     let label = VStack(spacing: 3) {
-      Image(icon: selected ? item.filledSymbol : item.symbol, size: 22)
-        .font(.system(size: 22))
+      if let symbol = UIImage(icon: item.filledSymbol, configuration: UIImage.SymbolConfiguration(pointSize: 22)) {
+        Image(uiImage: symbol)
+          .renderingMode(.template)
+          .resizable()
+          .scaledToFit()
+          .frame(width: 22, height: 22)
+      }
 
       if showsTitles {
         Text(item.title)
-          .font(.caption2)
+          .font(.caption2.weight(.semibold))
           .lineLimit(1)
       }
     }
-    .foregroundStyle(selected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
+    .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
     .environment(\.colorScheme, colorScheme)
     .environment(\.dynamicTypeSize, dynamicTypeSize)
 
