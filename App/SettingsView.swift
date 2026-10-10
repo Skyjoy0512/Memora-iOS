@@ -18,11 +18,22 @@ struct SettingsView: View {
   @State private var isSignOutConfirmationPresented = false
   @State private var isAccountDeletionPresented = false
   @State private var isProfileEditorPresented = false
+  @State private var isPlanPresented = false
+  @State private var isAuthPresented = false
 
   var body: some View {
     NavigationStack {
       Form {
         profileSection
+
+        Section {
+          SettingsPlanCard { isPlanPresented = true }
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        } footer: {
+          Text("購入は未接続です。プランの変更は端末の設定のみで、課金されません。")
+        }
 
         Section {
           if let account = model.account {
@@ -50,7 +61,7 @@ struct SettingsView: View {
             }
           } else {
             Button {
-              model.isAuthPresented = true
+              isAuthPresented = true
             } label: {
               LabeledContent {
                 Text("このiPhoneのみ")
@@ -68,7 +79,7 @@ struct SettingsView: View {
 
         Section {
           Button {
-            model.isPaywallPresented = true
+            isPlanPresented = true
           } label: {
             LabeledContent {
               Text(model.planName)
@@ -110,7 +121,7 @@ struct SettingsView: View {
             }
           } else {
             Button {
-              model.isPaywallPresented = true
+              isPlanPresented = true
             } label: {
               LabeledContent {
                 Text("チームプランで利用可")
@@ -122,8 +133,6 @@ struct SettingsView: View {
           }
         } header: {
           Text("プラン")
-        } footer: {
-          Text("購入は未接続です。プランの変更は端末の設定のみで、課金されません。")
         }
 
         Section {
@@ -395,6 +404,13 @@ struct SettingsView: View {
           }
         }
       }
+      .scrollContentBackground(.hidden)
+      .background(Color(uiColor: .systemGroupedBackground))
+      .contentMargins(.horizontal, 20, for: .scrollContent)
+      .contentMargins(.top, 6, for: .scrollContent)
+      .listSectionSpacing(24)
+      .environment(\.defaultMinListRowHeight, 56)
+      .textCase(nil)
       .hideBottomBarOnScroll("settings")
       .onAppear { excludedPlaceCount = AutoLocationLogger.excludedPlaces.count }
       .onDisappear {
@@ -405,16 +421,23 @@ struct SettingsView: View {
       .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
         excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
       }
-      .navigationTitle("設定")
+      .navigationTitle(showsCloseButton ? "" : "設定")
+      .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         if showsCloseButton {
           ToolbarItem(placement: .confirmationAction) {
-            ToolbarIconButton("完了", icon: .checkmark) { dismiss() }
+            ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
           }
         }
       }
       .sheet(isPresented: $isProfileEditorPresented) {
         ProfileEditorView()
+      }
+      .sheet(isPresented: $isPlanPresented) {
+        PaywallView()
+      }
+      .sheet(isPresented: $isAuthPresented) {
+        AuthView()
       }
       .confirmationDialog("サインアウトしますか？", isPresented: $isSignOutConfirmationPresented, titleVisibility: .visible) {
         Button("サインアウト", role: .destructive) {
@@ -464,41 +487,42 @@ struct SettingsView: View {
         Text("予定をジャーナルに表示するには、設定でカレンダーへのアクセスを許可してください。予定は表示のたびに読み込み、保存はしません。")
       }
     }
+    .environment(\.settingsIconStyle, .monochrome)
+    .tint(Color.primary)
+    .accessibilityIdentifier("settings")
   }
 
-  /// The person's picture and name at the top, as in the system Settings app.
-  /// Tapping it opens the editor for the Memoji, photo, and name.
   private var profileSection: some View {
     Section {
       Button {
         isProfileEditorPresented = true
       } label: {
         VStack(spacing: 10) {
-          ProfileAvatar(profile: model.profile, size: 96)
+          ProfileAvatar(profile: model.profile, size: 80)
             .overlay(alignment: .bottomTrailing) {
-              Image(icon: .pencil)
-                .font(.footnote.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(width: 30, height: 30)
-                .background(.tint, in: Circle())
-                .overlay { Circle().stroke(Color(uiColor: .systemGroupedBackground), lineWidth: 3) }
+              Image(icon: .pencil, size: 14)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(.primary)
+                .frame(width: 32, height: 32)
+                .background(Color(uiColor: .secondarySystemGroupedBackground), in: Circle())
+                .overlay { Circle().stroke(Color(uiColor: .systemGroupedBackground), lineWidth: 2) }
             }
 
           VStack(spacing: 3) {
             Text(profileName)
-              .font(.title3.weight(.semibold))
+              .font(.headline)
               .foregroundStyle(.primary)
-            Text("ミー文字・写真・名前を編集")
-              .font(.subheadline)
-              .foregroundStyle(.tint)
           }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 4)
+        .padding(.top, 20)
+        .padding(.bottom, 8)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
+      .listRowInsets(EdgeInsets())
       .listRowBackground(Color.clear)
+      .listRowSeparator(.hidden)
       .accessibilityLabel("プロフィール \(profileName)")
       .accessibilityHint("ミー文字・写真・名前を編集します")
     }
