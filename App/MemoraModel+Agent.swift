@@ -17,7 +17,7 @@ extension MemoraModel {
     guard !trimmed.isEmpty, !isAIChatResponding else { return false }
 
     let configuration = askAIConfiguration
-    let scope = aiScope
+    let scope = AIChatScope.all
     let history = aiConversationContext()
     aiMessages.append(AIChatMessage(role: .user, text: trimmed))
 

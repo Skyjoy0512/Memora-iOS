@@ -116,8 +116,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   (`makeTeamSharePackage`) also remains.
 - The Ask AI fallback never invents answers; when no engine can run it says so.
 - Ask AI is one assistant with no mode switch, laid out as a conversation
-  (`AskAIHeader` with Memora's mark, the scope menu on the left and
-  履歴 / 検索 / 新しいチャット on the right with the new chat at the far edge;
+  (`AskAIHeader` with Memora's mark, 履歴 on the left and
+  検索 / 新しいチャット on the right with the new chat at the far edge;
   replies as plain text with no bubble, only the person's messages in
   `aiBubble`; `AskAIGreeting` before the first message; no large title).
   `AskAIGlow` draws a Gemini-like light behind it: a glow from the bottom when

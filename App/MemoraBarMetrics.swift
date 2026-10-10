@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One place for the height shared by the tab row, the "＋" button, and the AI
-/// input, so the bottom controls line up.
+/// Shared dimensions for the tab row and its companion "＋" button.
 enum MemoraBarMetrics {
-  static let height: CGFloat = 68
+  static let scale: CGFloat = 0.9
+  static let height: CGFloat = 68 * scale
 }

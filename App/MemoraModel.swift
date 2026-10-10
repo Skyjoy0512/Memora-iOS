@@ -186,8 +186,6 @@ final class MemoraModel {
   var isAIMemoryEnabled = UserDefaults.standard.object(forKey: StorageKey.aiMemoryEnabled) as? Bool ?? true {
     didSet { UserDefaults.standard.set(isAIMemoryEnabled, forKey: StorageKey.aiMemoryEnabled) }
   }
-  /// What new Ask AI questions look across.
-  var aiScope: AIChatScope = .all
   /// Ask AI works as an agent: it uses tools to read records and, with the
   /// person's approval, make documents, tasks, projects and memos.
 

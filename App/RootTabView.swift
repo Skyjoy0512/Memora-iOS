@@ -230,6 +230,9 @@ struct RootTabView: View {
         ) {
           CaptureMenuPopover()
         }
+        .containerRelativeFrame(.horizontal) { width, _ in
+          (width - 24) * MemoraBarMetrics.scale
+        }
         .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
     }

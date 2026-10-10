@@ -1,6 +1,6 @@
 import Foundation
 
-// Ask AI: the chat transcript and the answers shaped by the chosen scope.
+// Ask AI: the chat transcript and answers grounded in relevant records.
 extension MemoraModel {
 
   /// Starts a fresh chat. Whatever was being answered is cancelled, so its
@@ -76,15 +76,6 @@ extension MemoraModel {
     sendAIChat(question)
   }
 
-  /// Changes what new questions look across, starting a fresh chat so an answer
-  /// produced for the old range cannot sit beside a question asked of the new
-  /// one. Saved history is left alone.
-  func changeAIScope(_ scope: AIChatScope) {
-    guard scope != aiScope else { return }
-    aiScope = scope
-    startNewAIChat()
-  }
-
   /// Asks the chat a question. Returns false while an answer is already on its
   /// way, so the caller keeps the text instead of losing it to a refused send.
   @discardableResult
@@ -132,7 +123,7 @@ extension MemoraModel {
     let configuration = askAIConfiguration
     let engine = configuration.engine
     let llm = configuration.llm
-    let scope = aiScope
+    let scope = AIChatScope.all
     let history = aiConversationContext()
     let requestID = UUID()
     aiChatRequestID = requestID

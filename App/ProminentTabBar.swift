@@ -30,11 +30,11 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     let tabCount = Item.allCases.count
     let isSmall = tabCount <= 2
 
-    MemoraGlassContainer(spacing: 10) {
-      HStack(spacing: 10) {
+    MemoraGlassContainer(spacing: 10 * MemoraBarMetrics.scale) {
+      HStack(spacing: 10 * MemoraBarMetrics.scale) {
         segmentedControl
-          .padding(2)
-          .frame(width: isSmall ? CGFloat(tabCount * 65) : nil)
+          .padding(2 * MemoraBarMetrics.scale)
+          .frame(width: isSmall ? CGFloat(tabCount * 65) * MemoraBarMetrics.scale : nil)
 
         prominentButton
       }
@@ -121,8 +121,8 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   }
 
   private var prominentLabel: some View {
-    Image(icon: prominentSymbol, size: 22)
-      .font(.system(size: 22, weight: .medium))
+    Image(icon: prominentSymbol, size: 22 * MemoraBarMetrics.scale)
+      .font(.system(size: 22 * MemoraBarMetrics.scale, weight: .medium))
       .rotationEffect(.degrees(isProminentPresented && prominentSymbol == .plus ? 45 : 0))
       .animation(reduceMotion ? nil : MemoraMotion.control, value: isProminentPresented)
       .accessibilityLabel("作成メニューを開く")
@@ -215,11 +215,11 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     uiView: UISegmentedControl,
     context: Context
   ) -> CGSize? {
-    // The row adds 2pt padding top and bottom around this control, so the
-    // control is 4pt shorter than the bar and the row lands at the bar's height.
+    // Subtract the row's scaled padding so the control and row keep the
+    // same overall height as the bar metrics.
     CGSize(
       width: proposal.replacingUnspecifiedDimensions().width,
-      height: MemoraBarMetrics.height - 4
+      height: MemoraBarMetrics.height - 4 * MemoraBarMetrics.scale
     )
   }
 
@@ -270,12 +270,12 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   }
 
   private func generatedImage(for item: Item, selected: Bool) -> UIImage? {
-    let label = VStack(spacing: 3) {
+    let label = VStack(spacing: 3 * MemoraBarMetrics.scale) {
       if let artwork = selected ? (item.filledArtwork ?? item.artwork) : item.artwork {
-        ArtworkIcon(artwork: artwork, size: 22)
+        ArtworkIcon(artwork: artwork, size: 22 * MemoraBarMetrics.scale)
       } else {
-        Image(icon: selected ? item.filledSymbol : item.symbol, size: 22)
-          .font(.system(size: 22))
+        Image(icon: selected ? item.filledSymbol : item.symbol, size: 22 * MemoraBarMetrics.scale)
+          .font(.system(size: 22 * MemoraBarMetrics.scale))
       }
 
       if showsTitles {
