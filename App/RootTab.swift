@@ -9,7 +9,20 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
   var id: Self { self }
 
   var artwork: MemoraArtwork? {
-    self == .askAI ? .askAITab : nil
+    switch self {
+    case .home: .journalTab
+    case .askAI: .askAITab
+    case .files, .tasks: nil
+    }
+  }
+
+  var filledArtwork: MemoraArtwork? {
+    switch self {
+    case .files: .folderSolid
+    case .home: .journalTabSolid
+    case .askAI: .askAITabSolid
+    case .tasks: nil
+    }
   }
 
   var title: String {

@@ -77,7 +77,7 @@ struct MCPSettingsView: View {
           .foregroundStyle(.secondary)
       }
     }
-    .navigationTitle("ChatGPT (MCP)")
+    .navigationTitle("Memoraへの接続")
     .memoraBackButton()
     .onAppear {
       hasToken = MCPIntegration.isConfigured

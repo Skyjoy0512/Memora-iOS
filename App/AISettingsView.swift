@@ -51,7 +51,7 @@ struct AISettingsView: View {
             LLMProviderPickerView()
           } label: {
             HStack(spacing: 12) {
-              ProviderLogo(provider: model.aiProvider, size: 29)
+              SettingsIcon(icon: .sparkles, color: .indigo, artwork: .settingsProvider)
               LabeledContent("プロバイダー", value: model.aiProvider.label)
             }
           }

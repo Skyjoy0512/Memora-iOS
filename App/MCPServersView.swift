@@ -44,12 +44,31 @@ struct MCPServersView: View {
         Button("接続先を追加", icon: .plus) {
           editing = MCPServerConfig(id: UUID(), name: "", url: "")
         }
+      } header: {
+        Text("Ask AIで使う外部ツール")
       } footer: {
         Text("MCP（Model Context Protocol）に対応したサーバーをつなぐと、Ask AIのエージェントがその道具を使えます。例: Notion・Linear・社内システム。読み取り専用の道具はすぐ実行し、それ以外は実行前に確認します。クラウドのAIを使うときだけ利用できます。")
       }
+
+      Section {
+        NavigationLink {
+          MCPSettingsView()
+        } label: {
+          LabeledContent {
+            Text(MCPIntegration.isConfigured ? "設定済み" : "未設定")
+          } label: {
+            SettingsLabel("Memoraへの接続", icon: .plugsConnected, color: .mint, artwork: .settingsMCP)
+          }
+        }
+      } header: {
+        Text("他のAIからMemoraを使う")
+      } footer: {
+        Text("ChatGPTやClaudeなどに公開する内容を設定します。公開用のMCPサーバーは未接続で、ここでは接続先と公開範囲を保存します。")
+      }
     }
-    .navigationTitle("MCPサーバー")
+    .navigationTitle("MCP")
     .navigationBarTitleDisplayMode(.inline)
+    .memoraBackButton()
     .sheet(item: $editing) { server in
       MCPServerEditor(server: server)
     }

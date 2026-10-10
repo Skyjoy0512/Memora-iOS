@@ -184,11 +184,13 @@ enum SelfChecks {
     group("Legacy photo retention", checkLegacyPhotoRetention)
     group("Speech final results", checkSpeechFinalResults)
     group("Tab bar icons") {
-      if RootTab.askAI.artwork != .askAITab || RootTab.allCases.filter({ $0 != .askAI }).contains(where: { $0.artwork != nil }) {
-        report("custom artwork must only replace the Ask AI tab")
-      }
+      let outlineArtwork: [RootTab: MemoraArtwork] = [.home: .journalTab, .askAI: .askAITab]
+      let filledArtwork: [RootTab: MemoraArtwork] = [.files: .folderSolid, .home: .journalTabSolid, .askAI: .askAITabSolid]
       let expected: [RootTab: MemoraIcon] = [.files: .folder, .home: .calendar, .tasks: .checklist, .askAI: .chatBubble]
       for tab in RootTab.allCases {
+        if tab.artwork != outlineArtwork[tab] || tab.filledArtwork != filledArtwork[tab] {
+          report("tab artwork does not match its selection state: \(tab.title)")
+        }
         if tab.symbol != expected[tab] || UIImage(icon: tab.symbol) == nil || UIImage(icon: tab.filledSymbol) == nil {
           report("original tab bar icon missing or replaced: \(tab.title)")
         }

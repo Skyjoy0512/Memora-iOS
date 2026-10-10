@@ -232,7 +232,13 @@ struct AIComposerBar: View {
         toggleSpeechInput()
       }
     } label: {
-      Image(icon: actionSymbol)
+      Group {
+        if !canSend, !isBusy, !speechInput.isListening {
+          ArtworkIcon(artwork: .voiceInput, size: 20)
+        } else {
+          Image(icon: actionSymbol)
+        }
+      }
         .font(.body.weight(.semibold))
         .foregroundStyle(.white)
         .symbolEffect(.pulse, isActive: !reduceMotion && (speechInput.isListening || isBusy))

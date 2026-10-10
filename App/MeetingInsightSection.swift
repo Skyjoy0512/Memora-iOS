@@ -11,6 +11,15 @@ enum MeetingInsightSection: String, CaseIterable, Identifiable {
 
   var id: Self { self }
 
+  var artwork: MemoraArtwork? {
+    switch self {
+    case .summary: .folderSolid
+    case .openQuestions: .insightQuestion
+    case .keyPoints: .insightTarget
+    case .decisions, .tasks: nil
+    }
+  }
+
   var title: String {
     switch self {
     case .summary: "サマリー"

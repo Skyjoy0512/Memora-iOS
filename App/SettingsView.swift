@@ -95,7 +95,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(creditSummary)
             } label: {
-              SettingsLabel("AIクレジット", icon: .sparklesRectangleStack, color: Tint.plan)
+              SettingsLabel("AIクレジット", icon: .sparklesRectangleStack, color: Tint.plan, artwork: .settingsCredits)
             }
           }
 
@@ -105,7 +105,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.activeLicense?.company ?? "未登録")
             } label: {
-              SettingsLabel("法人ライセンス", icon: .building2Fill, color: Tint.plan)
+              SettingsLabel("法人ライセンス", icon: .building2Fill, color: Tint.plan, artwork: .settingsLicense)
             }
           }
 
@@ -116,7 +116,7 @@ struct SettingsView: View {
               LabeledContent {
                 Text(model.cloudSharing.receivedItems.isEmpty ? "なし" : "\(model.cloudSharing.receivedItems.count)件")
               } label: {
-                SettingsLabel("チームで共有されたもの", icon: .person3Fill, color: Tint.plan, glyphScale: 0.72)
+                SettingsLabel("チームで共有されたもの", icon: .person3Fill, color: Tint.plan, artwork: .settingsTeam)
               }
             }
           } else {
@@ -127,7 +127,7 @@ struct SettingsView: View {
                 Text("チームプランで利用可")
                   .foregroundStyle(.secondary)
               } label: {
-                SettingsLabel("チーム共有", icon: .person3Fill, color: Tint.plan, glyphScale: 0.72)
+                SettingsLabel("チーム共有", icon: .person3Fill, color: Tint.plan, artwork: .settingsTeam)
               }
             }
           }
@@ -216,7 +216,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(GmailService.shared.isConnected ? "連携中" : "未連携")
             } label: {
-              SettingsLabel("Gmail", icon: .envelopeOpen, color: Tint.integrations)
+              SettingsLabel("Gmail", icon: .envelopeOpen, color: Tint.integrations, artwork: .settingsGmail)
             }
           }
 
@@ -234,9 +234,9 @@ struct SettingsView: View {
             MCPServersView()
           } label: {
             LabeledContent {
-              Text(model.mcpServers.isEmpty ? "未設定" : "\(model.mcpServers.count)件")
+              Text(model.mcpServers.isEmpty ? (MCPIntegration.isConfigured ? "設定済み" : "未設定") : "\(model.mcpServers.count)件")
             } label: {
-              SettingsLabel("MCPサーバー（エージェント）", icon: .plugsConnected, color: Tint.integrations, artwork: .settingsMCP)
+              SettingsLabel("MCP", icon: .plugsConnected, color: Tint.integrations, artwork: .settingsMCP)
             }
           }
 
@@ -246,19 +246,10 @@ struct SettingsView: View {
             LabeledContent {
               Text(NotionService.isConfigured ? "設定済み" : "未設定")
             } label: {
-              SettingsLabel("Notion", icon: .notionLogo, color: Tint.integrations, artwork: .settingsSummary)
+              SettingsLabel("Notion", icon: .notionLogo, color: Tint.integrations, artwork: .settingsNotion)
             }
           }
 
-          NavigationLink {
-            MCPSettingsView()
-          } label: {
-            LabeledContent {
-              Text(MCPIntegration.isConfigured ? "設定済み" : "未設定")
-            } label: {
-              SettingsLabel("ChatGPT (MCP)", icon: .plugsConnectedFill, color: Tint.integrations, artwork: .settingsMCP)
-            }
-          }
         }
 
         Section {

@@ -35,7 +35,15 @@ struct CollapsibleInsightSection<Content: View>: View {
         }
       } label: {
         HStack(spacing: 8) {
-          Label(section.title, icon: section.icon)
+          Label {
+            Text(section.title)
+          } icon: {
+            if let artwork = section.artwork {
+              ArtworkIcon(artwork: artwork, size: 20)
+            } else {
+              Image(icon: section.icon)
+            }
+          }
             .font(.title3.bold())
             .foregroundStyle(.primary)
             .memoraTextReveal()
