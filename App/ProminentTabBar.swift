@@ -280,7 +280,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
 
       if showsTitles {
         Text(item.title)
-          .font(.caption2.weight(.semibold))
+          .font(.caption2.weight(.bold))
           .lineLimit(1)
       }
     }
