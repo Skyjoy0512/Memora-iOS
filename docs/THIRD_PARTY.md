@@ -1,5 +1,18 @@
 # 取り入れたオープンソース
 
+## ジャーナルの背景写真
+
+背景用の写真4枚は[Unsplash License](https://unsplash.com/license)で配布される写真を同梱。背景は装飾であり、本人が訪れた場所や撮影した写真を示すものではない。ネット接続なしで表示する。添付のUnsplash+透かし入り画像は使用していない。
+
+| プリセット | 配布元の画像 |
+| --- | --- |
+| 森 | https://images.unsplash.com/photo-1441974231531-c6227db76b6e |
+| 湖 | https://images.unsplash.com/photo-1470770841072-f978cf4d019e |
+| 緑の葉 | https://images.unsplash.com/photo-1497250681960-ef046c08a56e |
+| 夕景 | https://images.unsplash.com/photo-1500534623283-312aade485b7 |
+
+## コードと設計
+
 | 名前 | 使い方 | ライセンス |
 | --- | --- | --- |
 | [LucideSwift 0.9.11](https://github.com/ajaxjiang96/lucide-swift/tree/0.9.11) | アプリ・ウィジェットの共通アイコン。対応表は `docs/LUCIDE_ICONS.md`。ライセンス全文はアプリ内リソースに同梱 | ISC |

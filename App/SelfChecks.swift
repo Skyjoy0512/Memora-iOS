@@ -154,6 +154,27 @@ enum SelfChecks {
     }
     group("Review period boundaries", checkReviewPeriodBoundaries)
     group("Journal daily recap", checkJournalDailyRecap)
+    group("Journal photo presets") {
+      let firstDay = Date(timeIntervalSince1970: 1_790_000_000)
+      let secondDay = Calendar.current.date(byAdding: .day, value: 1, to: firstDay)!
+      var selection = JournalBackdropSelection(date: firstDay)
+      let initial = selection.current
+      selection.select(firstDay.addingTimeInterval(1))
+      if selection.current != initial { report("journal backdrop changed while reading") }
+      selection.select(secondDay)
+      if selection.current == initial { report("consecutive days reused a backdrop") }
+      selection.select(firstDay)
+      if selection.current != initial { report("journal backdrop lost on returning to a day") }
+      selection.shuffle(firstDay)
+      let shuffled = selection.current
+      if shuffled == initial { report("journal background shuffle did not change the preset") }
+      selection.select(secondDay)
+      selection.select(firstDay)
+      if selection.current != shuffled { report("journal shuffle lost on returning to a day") }
+      for backdrop in JournalBackdrop.allCases {
+        if UIImage(named: backdrop.assetName) == nil { report("missing journal photo: \(backdrop.assetName)") }
+      }
+    }
     group("Agent research isolation") {
       if AgentTool.residentTools.contains(.delegateResearch)
         || AgentTool.onDeviceTools.contains(.delegateResearch) {
@@ -514,6 +535,9 @@ enum SelfChecks {
       entries: [upcoming], now: now, calendar: calendar)
     if !recap.hasActivity || recap.heading != "今日はここまで" || !recap.narrative.contains("1件完了")
       || recap.highlights != ["完了：提出"] { report("daily recap counts future or undated activity") }
+    if recap.items.count != 1 || recap.items.first?.date != now || recap.items.first?.title != "提出" {
+      report("daily recap highlights are not grounded in completed activity")
+    }
     let future = JournalDailyRecap.build(date: day.addingTimeInterval(86_400), meetings: [],
       tasks: [task], entries: [], now: now, calendar: calendar)
     if future.hasActivity || !future.isFuture || !future.highlights.isEmpty { report("future day presented as a recap") }

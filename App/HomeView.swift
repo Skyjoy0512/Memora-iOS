@@ -20,6 +20,9 @@ struct HomeView: View {
   /// The calendar event whose detail sheet is open.
   @State private var openCalendarEvent: JournalCalendarEvent?
   @State private var showsReview = false
+  @State private var showsSummary = false
+  @State private var backdrops = JournalBackdropSelection()
+  @Namespace private var summaryNamespace
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @AppStorage("memora.journal.calendarIDs") private var journalCalendarIDsValue = ""
 
@@ -60,9 +63,10 @@ struct HomeView: View {
             JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
 
             if recap.hasActivity {
-              JournalDailyRecapCard(recap: recap) {
-                showsReview = true
+              JournalDailyRecapCard(recap: recap, date: selectedDate, backdrop: backdrops.current) {
+                showsSummary = true
               }
+              .matchedTransitionSource(id: "journalSummary", in: summaryNamespace)
             }
 
             if entries.isEmpty, calendarEvents.isEmpty {
@@ -130,6 +134,14 @@ struct HomeView: View {
       .sheet(isPresented: $showsReview) {
         JournalReviewView(date: selectedDate)
       }
+      .fullScreenCover(isPresented: $showsSummary) {
+        if reduceMotion {
+          JournalSummaryView(date: selectedDate, backdrops: $backdrops)
+        } else {
+          JournalSummaryView(date: selectedDate, backdrops: $backdrops)
+            .navigationTransition(.zoom(sourceID: "journalSummary", in: summaryNamespace))
+        }
+      }
       .sheet(item: $openEntry) { entry in
         LifeLogEntryDetailView(entryID: entry.id)
       }
@@ -145,6 +157,7 @@ struct HomeView: View {
         Task { await loadEvents() }
       }
       .task(id: selectedDate) { await loadEvents() }
+      .onChange(of: selectedDate) { _, date in backdrops.select(date) }
       .onChange(of: showCalendarEvents) { _, _ in Task { await loadEvents() } }
       .onChange(of: journalCalendarIDsValue) { _, _ in Task { await loadEvents() } }
       .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in

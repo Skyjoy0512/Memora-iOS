@@ -5,6 +5,7 @@ struct JournalDailyRecap {
   var narrative: String
   var highlights: [String]
   var isFuture: Bool
+  var items: [JournalRecapHighlight] = []
 
   var hasActivity: Bool { !isFuture && !highlights.isEmpty }
 
@@ -44,13 +45,25 @@ struct JournalDailyRecap {
     if !places.isEmpty { sentences.append("場所の記録が\(places.count)件あります。") }
     let events = personalEntries.filter { $0.kind == .event }
     if !events.isEmpty { sentences.append("登録したイベントが\(events.count)件あります。") }
-    let highlights = (
-      visibleMeetings.map { ($0.createdAt, "会議・録音：\($0.displayTitle)") }
-      + personalEntries.map { ($0.occurredAt, "\($0.kind.label)：\($0.title)") }
-      + completed.compactMap { task in task.completedAt.map { ($0, "完了：\(task.title)") } }
-    ).sorted { $0.0 < $1.0 }.prefix(3).map { $0.1 }
+    var items: [JournalRecapHighlight] = visibleMeetings.map {
+      JournalRecapHighlight(id: $0.id, date: $0.createdAt, category: "会議・録音",
+        icon: .waveform, title: $0.displayTitle, summary: String($0.summaryPreview.prefix(300)))
+    }
+    items += personalEntries.map {
+      JournalRecapHighlight(id: $0.id, date: $0.occurredAt, category: $0.kind.label,
+        icon: $0.kind.symbol, title: $0.title, summary: String($0.summary.prefix(300)))
+    }
+    items += completed.compactMap { task -> JournalRecapHighlight? in
+      guard let completedAt = task.completedAt else { return nil }
+      return JournalRecapHighlight(id: task.id, date: completedAt, category: "完了",
+        icon: .checkmark, title: task.title, summary: "タスクを完了しました。")
+    }
+    items.sort {
+      $0.date == $1.date ? $0.id.uuidString < $1.id.uuidString : $0.date < $1.date
+    }
+    let highlights = items.prefix(3).map(\.label)
     return JournalDailyRecap(heading: heading,
       narrative: sentences.isEmpty ? "この日の振り返りに使える記録はまだありません。記録が増えると、ここに1日の概要が表示されます。" : sentences.joined(separator: "\n\n"),
-      highlights: highlights, isFuture: false)
+      highlights: highlights, isFuture: false, items: items)
   }
 }

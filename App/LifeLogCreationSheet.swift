@@ -15,6 +15,11 @@ struct LifeLogCreationSheet: View {
   @State private var editingPhoto: PhotoEditRequest?
   @State private var place: JournalPlace?
 
+  init(date: Date = .now) {
+    _createdAt = State(initialValue: date)
+    _eventDate = State(initialValue: date.addingTimeInterval(3_600))
+  }
+
   var body: some View {
     NavigationStack {
       Form {
