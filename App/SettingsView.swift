@@ -67,7 +67,7 @@ struct SettingsView: View {
                 Text("このiPhoneのみ")
                   .foregroundStyle(.secondary)
               } label: {
-                SettingsLabel("サインイン / 新規登録", icon: .personBadgeKey, color: Tint.account)
+                SettingsLabel("サインイン / 新規登録", icon: .personBadgeKey, color: Tint.account, artwork: .settingsSignUp)
               }
             }
           }
@@ -85,7 +85,7 @@ struct SettingsView: View {
               Text(model.planName)
                 .foregroundStyle(.secondary)
             } label: {
-              SettingsLabel("プラン", icon: .crownFill, color: Tint.plan)
+              SettingsLabel("プラン", icon: .crownFill, color: Tint.plan, artwork: .settingsPlan)
             }
           }
 

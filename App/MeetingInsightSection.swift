@@ -13,7 +13,7 @@ enum MeetingInsightSection: String, CaseIterable, Identifiable {
 
   var artwork: MemoraArtwork? {
     switch self {
-    case .summary: .folderSolid
+    case .summary: .insightSummary
     case .openQuestions: .insightQuestion
     case .keyPoints: .insightTarget
     case .decisions, .tasks: nil
