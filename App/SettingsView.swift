@@ -150,7 +150,7 @@ struct SettingsView: View {
             LabeledContent {
               Text("\(transcriptionEngine.label) · \(transcriptionLanguage.label)")
             } label: {
-              SettingsLabel("文字起こし", icon: .waveform, color: Tint.processing)
+              SettingsLabel("文字起こし", icon: .waveform, color: Tint.processing, artwork: .settingsTranscription)
             }
           }
 
@@ -160,7 +160,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.aiEngine == .cloud ? model.aiProvider.label : model.aiEngine.label)
             } label: {
-              SettingsLabel("AI整理", icon: .sparkles, color: Tint.processing, glyphScale: 0.85)
+              SettingsLabel("AI整理", icon: .sparkles, color: Tint.processing, artwork: .settingsIntelligence)
             }
           }
 
@@ -170,7 +170,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.residentLLM == nil ? "BYOKのみ" : "\(model.residentAgents.filter(\.isEnabled).count)件オン")
             } label: {
-              SettingsLabel("常駐エージェント", icon: .clockArrowCirclepath, color: Tint.processing)
+              SettingsLabel("常駐エージェント", icon: .clockArrowCirclepath, color: Tint.processing, artwork: .settingsResidentAgent)
             }
           }
 
@@ -180,7 +180,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.isAIMemoryEnabled ? "\(model.aiMemories.count)件" : "オフ")
             } label: {
-              SettingsLabel("メモリ", icon: .brainHeadProfile, color: Tint.processing)
+              SettingsLabel("メモリ", icon: .brainHeadProfile, color: Tint.processing, artwork: .settingsMemory)
             }
           }
 
@@ -190,7 +190,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.installedTemplateIDs.isEmpty ? "標準" : "\(model.installedTemplateIDs.count)個追加")
             } label: {
-              SettingsLabel("要約テンプレート", icon: .docTextFill, color: Tint.processing)
+              SettingsLabel("要約テンプレート", icon: .docTextFill, color: Tint.processing, artwork: .settingsSummary)
             }
           }
         } header: {
@@ -226,7 +226,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.webhookEndpoints.isEmpty ? "未設定" : "\(model.webhookEndpoints.count)件")
             } label: {
-              SettingsLabel("Webhook（Slack・Zapierなど）", icon: .paperplane, color: Tint.integrations)
+              SettingsLabel("Webhook（Slack・Zapierなど）", icon: .paperplane, color: Tint.integrations, artwork: .settingsWebhook)
             }
           }
 
@@ -236,7 +236,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(model.mcpServers.isEmpty ? "未設定" : "\(model.mcpServers.count)件")
             } label: {
-              SettingsLabel("MCPサーバー（エージェント）", icon: .plugsConnected, color: Tint.integrations)
+              SettingsLabel("MCPサーバー（エージェント）", icon: .plugsConnected, color: Tint.integrations, artwork: .settingsMCP)
             }
           }
 
@@ -246,7 +246,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(NotionService.isConfigured ? "設定済み" : "未設定")
             } label: {
-              SettingsLabel("Notion", icon: .notionLogo, color: Tint.integrations)
+              SettingsLabel("Notion", icon: .notionLogo, color: Tint.integrations, artwork: .settingsSummary)
             }
           }
 
@@ -256,7 +256,7 @@ struct SettingsView: View {
             LabeledContent {
               Text(MCPIntegration.isConfigured ? "設定済み" : "未設定")
             } label: {
-              SettingsLabel("ChatGPT (MCP)", icon: .plugsConnectedFill, color: Tint.integrations)
+              SettingsLabel("ChatGPT (MCP)", icon: .plugsConnectedFill, color: Tint.integrations, artwork: .settingsMCP)
             }
           }
         }
@@ -306,7 +306,7 @@ struct SettingsView: View {
           NavigationLink {
             StorageUsageView()
           } label: {
-            SettingsLabel("保存容量", icon: .internaldriveFill, color: Tint.privacy)
+            SettingsLabel("保存容量", icon: .internaldriveFill, color: Tint.privacy, artwork: .settingsStorage)
           }
 
           LabeledContent {
