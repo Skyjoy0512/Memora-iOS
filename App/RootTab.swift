@@ -28,10 +28,10 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
 
   var filledSymbol: MemoraIcon {
     switch self {
-    case .home: .bookClosedFill
+    case .home: .calendarFill
     case .files: .folderFill
     case .askAI: .chatBubbleFill
-    case .tasks: .checkmarkSquareFill
+    case .tasks: .checklistFill
     }
   }
 }

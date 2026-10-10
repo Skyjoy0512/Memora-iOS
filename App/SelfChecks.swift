@@ -184,9 +184,10 @@ enum SelfChecks {
     group("Legacy photo retention", checkLegacyPhotoRetention)
     group("Speech final results", checkSpeechFinalResults)
     group("Tab bar icons") {
+      let expected: [RootTab: MemoraIcon] = [.files: .folder, .home: .calendar, .tasks: .checklist, .askAI: .chatBubble]
       for tab in RootTab.allCases {
-        if !tab.filledSymbol.systemName.hasSuffix(".fill") || UIImage(icon: tab.filledSymbol) == nil {
-          report("tab bar solid icon missing: \(tab.title)")
+        if tab.symbol != expected[tab] || UIImage(icon: tab.symbol) == nil || UIImage(icon: tab.filledSymbol) == nil {
+          report("original tab bar icon missing or replaced: \(tab.title)")
         }
       }
     }

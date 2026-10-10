@@ -271,13 +271,8 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
 
   private func generatedImage(for item: Item, selected: Bool) -> UIImage? {
     let label = VStack(spacing: 3) {
-      if let symbol = UIImage(icon: item.filledSymbol, configuration: UIImage.SymbolConfiguration(pointSize: 22)) {
-        Image(uiImage: symbol)
-          .renderingMode(.template)
-          .resizable()
-          .scaledToFit()
-          .frame(width: 22, height: 22)
-      }
+      Image(icon: selected ? item.filledSymbol : item.symbol, size: 22)
+        .font(.system(size: 22))
 
       if showsTitles {
         Text(item.title)
