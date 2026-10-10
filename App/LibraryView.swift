@@ -494,23 +494,31 @@ struct LibraryView: View {
         .foregroundStyle(.primary)
 
       VStack(spacing: 6) {
-        Text("まだファイルがありません")
+        Text(model.meetings.isEmpty ? "まだファイルがありません" : "未分類のファイルはありません")
           .font(.headline)
 
-        Text("録音するか、音声ファイルを読み込むとここに整理されます。")
+        Text(model.meetings.isEmpty
+             ? "録音するか、音声ファイルを読み込むとここに整理されます。"
+             : "移動したファイルは、サイドメニューのプロジェクトから開けます。")
           .font(.subheadline)
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
       }
 
-      Button("録音または読み込み") {
-        model.isCaptureSourcePresented = true
+      Button {
+        if model.meetings.isEmpty {
+          model.isCaptureSourcePresented = true
+        } else {
+          onOpenSidebar()
+        }
+      } label: {
+        Text(model.meetings.isEmpty ? "録音または読み込み" : "プロジェクトを開く")
+          .font(.headline)
+          .foregroundStyle(.white)
+          .frame(maxWidth: .infinity, minHeight: 52)
+          .background(.tint, in: Capsule())
+          .contentShape(Capsule())
       }
-      .font(.headline)
-      .foregroundStyle(.white)
-      .frame(maxWidth: .infinity, minHeight: 52)
-      .background(.tint, in: Capsule())
-      .contentShape(Capsule())
       .buttonStyle(.plain)
     }
     .frame(maxWidth: .infinity)
@@ -600,7 +608,7 @@ struct LibraryView: View {
   /// Every match, filtered, sorted and grouped by date. The list shows all of
   /// them; `List` draws lazily, so nothing is cut off behind a cap.
   private var matchingMeetings: [Meeting] {
-    var result = model.meetings.filter { statusFilter.matches($0.status) }
+    var result = ProjectFiling.records(in: nil, from: model.meetings).filter { statusFilter.matches($0.status) }
     if !query.isEmpty {
       result = result.filter(matchesQuery)
     }

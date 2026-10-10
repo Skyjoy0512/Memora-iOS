@@ -5,11 +5,16 @@ extension MemoraModel {
   /// Copies an audio file into the app, checks that it can actually be played,
   /// and records its real length. The file work runs off the main actor, and a
   /// failed import leaves nothing behind.
-  func importAudio(from sourceURL: URL) async {
-    guard !isImporting else { return }
+  func importAudio(from sourceURL: URL, spaceID: UUID? = nil) async {
+    guard !isImporting, !isRestoring, isStoreWritable() else { return }
+    guard spaceID == nil || ProjectFiling.existingProject(spaceID, in: spaces) != nil else {
+      importErrorMessage = "保存先のプロジェクトが見つかりません。開き直してください。"
+      return
+    }
     isImporting = true
     importProgress = nil
     importErrorMessage = nil
+    defer { isImporting = false }
 
     let hasSecurityScope = sourceURL.startAccessingSecurityScopedResource()
     defer {
@@ -26,6 +31,7 @@ extension MemoraModel {
 
         // Work under a temporary name so a failure cannot leave a half file.
         let working = directory.appendingPathComponent("importing-\(UUID().uuidString).\(fileExtension)")
+        defer { try? FileManager.default.removeItem(at: working) }
         try FileManager.default.copyItem(at: sourceURL, to: working)
 
         guard let duration = await MediaFiles.duration(of: working) else {
@@ -57,18 +63,32 @@ extension MemoraModel {
         decisions: [],
         openQuestions: [],
         transcript: [],
-        spaceID: nil,
+        spaceID: ProjectFiling.existingProject(spaceID, in: spaces),
         audioURL: destination
       )
-      meetings.insert(meeting, at: 0)
-      persistMeetings()
+      let candidate = [meeting] + meetings
+      guard !isRestoring, persistNow(candidate, forKey: StorageKey.meetings) else {
+        if !MediaFiles.delete(destination) {
+          deletionFailureMessage = "保存できなかったインポート音声の削除に失敗しました。"
+        }
+        importErrorMessage = "音声を保存できませんでした。元のファイルは変更していません。空き容量を確認して、もう一度取り込んでください。"
+        return
+      }
+      meetings = candidate
+      if spaceID != nil, meeting.spaceID == nil {
+        projectFilingNotice = "取り込み中に保存先のプロジェクトが削除されたため、音声は未分類のファイルに保存しました。"
+      }
       // No sheet is closing here, so the offer can be shown right away.
       noteRealSaveForSampleCleanup()
       presentPendingSampleCleanupIfNeeded()
       importProgress = 1
       isImporting = false
       selectedTab = .files
-      libraryPath = [.meeting(meeting.id)]
+      if let destinationID = meeting.spaceID {
+        libraryPath = [.space(destinationID), .meeting(meeting.id)]
+      } else {
+        libraryPath = [.meeting(meeting.id)]
+      }
     case .unreadable:
       isImporting = false
       importErrorMessage = "この音声は再生できないため取り込めませんでした。別のファイルをお試しください。"

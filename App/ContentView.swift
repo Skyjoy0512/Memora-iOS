@@ -86,6 +86,14 @@ struct ContentView: View {
     } message: {
       Text(model.importErrorMessage ?? "別の音声ファイルをお試しください。")
     }
+    .alert("保存先が変更されました", isPresented: Binding(
+      get: { model.projectFilingNotice != nil },
+      set: { if !$0 { model.projectFilingNotice = nil } }
+    )) {
+      Button("OK", role: .cancel) { model.projectFilingNotice = nil }
+    } message: {
+      Text(model.projectFilingNotice ?? "")
+    }
     .alert("音声を取り込みます", isPresented: pendingImportNoticeBinding) {
       Button("OK", role: .cancel) {}
     } message: {

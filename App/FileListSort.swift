@@ -15,4 +15,14 @@ enum FileListSort: String, CaseIterable, Identifiable {
     case .longest: "長い順"
     }
   }
+
+  func ordered(_ meetings: [Meeting]) -> [Meeting] {
+    meetings.sorted { first, second in
+      switch self {
+      case .newest: first.createdAt > second.createdAt
+      case .oldest: first.createdAt < second.createdAt
+      case .longest: first.duration > second.duration
+      }
+    }
+  }
 }

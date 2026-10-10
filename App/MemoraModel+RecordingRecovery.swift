@@ -12,6 +12,7 @@ extension MemoraModel {
     var title: String
     var note: String
     var startedAt: Date
+    var spaceID: UUID? = nil
   }
 
   /// Writes what a running recording would need if the app stopped now.
@@ -79,7 +80,7 @@ extension MemoraModel {
       decisions: [],
       openQuestions: [],
       transcript: [],
-      spaceID: nil,
+      spaceID: ProjectFiling.existingProject(draft.spaceID, in: spaces),
       audioURL: audioURL
     )
     meeting.notes = note

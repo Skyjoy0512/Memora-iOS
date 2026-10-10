@@ -11,18 +11,24 @@ struct BulkSpacePickerSheet: View {
   var body: some View {
     NavigationStack {
       List {
+        if let message = model.persistenceFailureMessage {
+          Section {
+            Label(message, icon: .exclamationmarkTriangle)
+              .foregroundStyle(.red)
+          }
+        }
         Section {
-          row(title: "未分類", symbol: .tray, isSelected: sharedSpaceID == nil) {
+          row(title: "未分類", symbol: .tray, isSelected: isCurrentDestination(nil)) {
             move(to: nil)
           }
 
           ForEach(model.spaces) { space in
-            row(title: space.name, symbol: space.icon, isSelected: sharedSpaceID == space.id) {
+            row(title: space.name, symbol: space.icon, isSelected: isCurrentDestination(space.id)) {
               move(to: space.id)
             }
           }
         } footer: {
-          Text("\(meetingIDs.count)件のファイルをまとめて移動します。")
+          Text("\(meetingIDs.count)件を移動します。保存に成功すると、移動元の一覧から非表示になります。")
         }
       }
       .navigationTitle("プロジェクトへ移動")
@@ -38,14 +44,15 @@ struct BulkSpacePickerSheet: View {
 
   /// The project every selected record shares, so the current one is marked.
   /// Mixed selections show none as chosen, so a tap moves all of them.
-  private var sharedSpaceID: UUID? {
-    let spaces = meetingIDs.map { model.meeting(id: $0)?.spaceID }
-    guard let first = spaces.first, spaces.allSatisfy({ $0 == first }) else { return nil }
-    return first
+  private func isCurrentDestination(_ spaceID: UUID?) -> Bool {
+    !meetingIDs.isEmpty && meetingIDs.allSatisfy { id in
+      guard let meeting = model.meeting(id: id) else { return false }
+      return meeting.spaceID == spaceID
+    }
   }
 
   private func move(to spaceID: UUID?) {
-    model.moveMeetings(meetingIDs, to: spaceID)
+    guard model.moveMeetings(meetingIDs, to: spaceID) else { return }
     onMove()
     dismiss()
   }
@@ -72,6 +79,8 @@ struct BulkSpacePickerSheet: View {
             .foregroundStyle(.primary)
         }
       }
+      .frame(maxWidth: .infinity, minHeight: 44)
+      .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(isSelected ? [.isSelected] : [])

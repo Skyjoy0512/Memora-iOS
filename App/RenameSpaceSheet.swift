@@ -25,8 +25,7 @@ struct RenameSpaceSheet: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
-            model.renameSpace(space.id, name: name)
-            dismiss()
+            if model.renameSpace(space.id, name: name) { dismiss() }
           }
           .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }

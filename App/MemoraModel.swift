@@ -218,6 +218,9 @@ final class MemoraModel {
   /// as soon as the record is saved or discarded, so only that record keeps
   /// the link and no later recording is attached to the wrong event.
   var captureEvent: UpcomingMeeting?
+  var recordingSpaceID: UUID?
+  var projectFilingNotice: String?
+  var onlineMeetingCaptureSpaceID: UUID?
   /// True while a recording is being finished and stored.
   var isSavingCapture = false
   /// True when a finished recording could not be stored. Its audio, its record

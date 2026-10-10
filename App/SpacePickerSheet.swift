@@ -9,6 +9,12 @@ struct SpacePickerSheet: View {
   var body: some View {
     NavigationStack {
       List {
+        if let message = model.persistenceFailureMessage {
+          Section {
+            Label(message, icon: .exclamationmarkTriangle)
+              .foregroundStyle(.red)
+          }
+        }
         Section {
           row(title: "未分類", symbol: .tray, isSelected: currentSpaceID == nil) {
             set(nil)
@@ -20,7 +26,7 @@ struct SpacePickerSheet: View {
             }
           }
         } footer: {
-          Text("会議はどのプロジェクトにも入れないままにできます。")
+          Text("移動したファイルは移動先だけに表示されます。未分類を選ぶと、通常のファイル一覧に戻ります。")
         }
       }
       .navigationTitle("プロジェクト")
@@ -60,13 +66,14 @@ struct SpacePickerSheet: View {
             .foregroundStyle(.primary)
         }
       }
+      .frame(maxWidth: .infinity, minHeight: 44)
+      .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(isSelected ? [.isSelected] : [])
   }
 
   private func set(_ spaceID: UUID?) {
-    model.setSpace(spaceID, forMeeting: meetingID)
-    dismiss()
+    if model.setSpace(spaceID, forMeeting: meetingID) { dismiss() }
   }
 }

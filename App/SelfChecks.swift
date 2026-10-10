@@ -171,6 +171,7 @@ enum SelfChecks {
     group("Question terms", checkQuestionWords)
     group("AI context limits", checkAIContextLimits)
     group("Scope isolation", checkScopeIsolation)
+    group("Project filing", checkProjectFiling)
     group("Processing input revision", checkProcessingRevision)
     group("Media paths", checkMediaPaths)
     group("Photo file roles", checkPhotoFileRoles)
@@ -706,6 +707,89 @@ enum SelfChecks {
     }
     if !SearchFilters.Status.needsAttention.matches(.failed("x")) {
       report("status filter: failed is not needs attention")
+    }
+  }
+
+  private static func checkProjectFiling() {
+    let first = MemoraSpace(id: UUID(), name: "First", symbol: "folder")
+    let second = MemoraSpace(id: UUID(), name: "Second", symbol: "folder")
+    let spaces = [first, second]
+    let loose = Meeting(
+      id: UUID(), title: "Filing check", createdAt: .now, duration: 60,
+      source: .recording, status: .ready, summary: "", keyPoints: [],
+      decisions: [], openQuestions: [], transcript: []
+    )
+    var filed = loose
+    filed.id = UUID()
+    filed.spaceID = first.id
+    let original = [loose, filed]
+    guard let moved = ProjectFiling.moving([loose.id, filed.id], to: second.id, meetings: original, spaces: spaces) else {
+      report("project move rejected existing records")
+      return
+    }
+    if !ProjectFiling.records(in: nil, from: moved).isEmpty
+      || !ProjectFiling.records(in: first.id, from: moved).isEmpty
+      || ProjectFiling.records(in: second.id, from: moved).map(\.id) != original.map(\.id)
+      || loose.spaceID != nil || filed.spaceID != first.id {
+      report("project move duplicated records or retained them in the source")
+    }
+    guard let returned = ProjectFiling.moving([loose.id], to: nil, meetings: moved, spaces: spaces) else {
+      report("project move to unfiled failed")
+      return
+    }
+    if ProjectFiling.records(in: nil, from: returned).map(\.id) != [loose.id]
+      || ProjectFiling.records(in: second.id, from: returned).map(\.id) != [filed.id] {
+      report("moving one record changed other project records")
+    }
+    if ProjectFiling.moving([loose.id], to: UUID(), meetings: original, spaces: spaces) != nil
+      || ProjectFiling.moving([loose.id, UUID()], to: first.id, meetings: original, spaces: spaces) != nil
+      || ProjectFiling.moving([], to: first.id, meetings: original, spaces: spaces) != nil
+      || ProjectFiling.existingProject(first.id, in: []) != nil {
+      report("project filing accepted an invalid destination or selection")
+    }
+    let key = "selfCheck.projectFiling.\(UUID().uuidString)"
+    defer {
+      RecordStore.setFailureInjection(false)
+      try? RecordStore.remove(key)
+    }
+    do {
+      try RecordStore.saveBatch([(key: key, data: RecordStore.encoded(original))])
+      RecordStore.setFailureInjection(true)
+      do {
+        try RecordStore.saveBatch([(key: key, data: RecordStore.encoded(moved))])
+        report("project move write failure was not reported")
+      } catch {}
+      guard case .data(let data) = RecordStore.load(key) else {
+        report("project move failure lost the original records")
+        return
+      }
+      if try JSONDecoder().decode([Meeting].self, from: data) != original {
+        report("project move failure changed stored destinations")
+      }
+      try RecordStore.saveBatch([(key: key, data: RecordStore.encoded(moved))])
+      if case .data(let saved) = RecordStore.load(key) {
+        if try JSONDecoder().decode([Meeting].self, from: saved).map(\.spaceID) != [second.id, second.id] {
+          report("project move destination did not survive reload")
+        }
+      } else {
+        report("project move could not be reloaded")
+      }
+      let draft = MemoraModel.RecordingDraft(id: UUID(), fileName: "check.m4a", title: "Check", note: "", startedAt: .now, spaceID: first.id)
+      let encoded = try JSONEncoder().encode(draft)
+      if try JSONDecoder().decode(MemoraModel.RecordingDraft.self, from: encoded).spaceID != first.id {
+        report("recording recovery lost its starting project")
+      }
+      guard var legacy = try JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
+        report("recording draft encoding is not an object")
+        return
+      }
+      legacy.removeValue(forKey: "spaceID")
+      let legacyData = try JSONSerialization.data(withJSONObject: legacy)
+      if try JSONDecoder().decode(MemoraModel.RecordingDraft.self, from: legacyData).spaceID != nil {
+        report("old recording draft assigned an invented project")
+      }
+    } catch {
+      report("project filing persistence or recovery: \(error.localizedDescription)")
     }
   }
 

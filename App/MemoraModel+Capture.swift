@@ -30,7 +30,7 @@ extension MemoraModel {
     updateLiveActivity()
   }
 
-  func startCapture(event: UpcomingMeeting? = nil) async {
+  func startCapture(event: UpcomingMeeting? = nil, spaceID: UUID? = nil) async {
     // A finished recording still waiting to be stored comes first: starting a new
     // one now could replace it, so save that one before recording anything else.
     guard !isRestoring else { return }
@@ -47,6 +47,12 @@ extension MemoraModel {
     }
 
     isPreparingCapture = true
+    guard spaceID == nil || ProjectFiling.existingProject(spaceID, in: spaces) != nil else {
+      isPreparingCapture = false
+      recordingErrorMessage = "保存先のプロジェクトが見つかりません。開き直してください。"
+      return
+    }
+    let destinationID = spaceID ?? event.flatMap { recurringProjectID(forEventID: $0.id) }
     defer { isPreparingCapture = false }
 
     let allowed = await recorder.requestPermission()
@@ -57,6 +63,10 @@ extension MemoraModel {
     }
     // The permission sheet can take a moment; re-check before starting.
     guard !isRecording, !isSavingCapture else { return }
+    guard destinationID == nil || ProjectFiling.existingProject(destinationID, in: spaces) != nil else {
+      recordingErrorMessage = "保存先のプロジェクトが削除されました。録音を開始する場所を選び直してください。"
+      return
+    }
 
     do {
       recordingURL = try await recorder.start()
@@ -65,6 +75,7 @@ extension MemoraModel {
       recordingPausedDuration = 0
       recordingElapsed = 0
       captureEvent = event
+      recordingSpaceID = destinationID
       recordingTitle = event?.title ?? ""
       recordingNote = ""
       isRecordingPaused = false
@@ -77,7 +88,8 @@ extension MemoraModel {
           fileName: fileName,
           title: event?.title ?? "",
           note: "",
-          startedAt: .now
+          startedAt: .now,
+          spaceID: destinationID
         )
         persistNow(recordingDraft, forKey: StorageKey.recordingDraft)
       }
@@ -120,16 +132,11 @@ extension MemoraModel {
       decisions: [],
       openQuestions: [],
       transcript: [],
-      spaceID: nil,
+      spaceID: ProjectFiling.existingProject(recordingSpaceID, in: spaces),
       audioURL: recordingURL
     )
     meeting.notes = recordingNote
     meeting.calendarEventID = captureEvent?.id
-    if let event = captureEvent {
-      // A recurring meeting is filed where its last occurrence was, so a
-      // weekly sync does not have to be moved into its project every time.
-      meeting.spaceID = recurringProjectID(forEventID: event.id)
-    }
     captureEvent = nil
     meetings.insert(meeting, at: 0)
     lifeLogEntries.insert(
@@ -187,6 +194,9 @@ extension MemoraModel {
 
   /// The parts of finishing a capture that only run once the record is stored.
   private func finishCaptureSave(meetingID: UUID) {
+    if recordingSpaceID != nil, meeting(id: meetingID)?.spaceID == nil {
+      projectFilingNotice = "録音中に保存先のプロジェクトが削除されたため、音声は未分類のファイルに保存しました。"
+    }
     hasUnsavedRecording = false
     recordingInterruptionMessage = nil
     resetRecordingClock()
@@ -217,7 +227,11 @@ extension MemoraModel {
     }
     pendingMeetingNavigationID = nil
     selectedTab = .files
-    libraryPath = [.meeting(meetingID)]
+    if let spaceID = meeting(id: meetingID)?.spaceID, space(id: spaceID) != nil {
+      libraryPath = [.space(spaceID), .meeting(meetingID)]
+    } else {
+      libraryPath = [.meeting(meetingID)]
+    }
     presentPendingSampleCleanupIfNeeded()
   }
 
@@ -252,6 +266,7 @@ extension MemoraModel {
 
   /// Forgets the finished recording's file and timing.
   private func resetRecordingClock() {
+    recordingSpaceID = nil
     recordingURL = nil
     recordingStartedAt = nil
     recordingPausedAt = nil

@@ -39,6 +39,15 @@ struct CaptureSessionView: View {
       .padding(.horizontal, 20)
       .padding(.top, 22)
 
+      if let spaceID = model.recordingSpaceID, let space = model.space(id: spaceID) {
+        Label("保存先：\(space.name)", icon: .folder)
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 20)
+          .padding(.top, 8)
+      }
+
       if let message = model.recordingInterruptionMessage {
         Label(message, icon: .exclamationmarkTriangle)
           .font(.footnote)

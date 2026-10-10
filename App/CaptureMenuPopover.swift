@@ -3,12 +3,21 @@ import UniformTypeIdentifiers
 
 /// The capture choices shown from the tab bar's prominent button.
 struct CaptureMenuPopover: View {
+  var spaceID: UUID? = nil
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isFileImporterPresented = false
+  @State private var importSpaceID: UUID?
 
   var body: some View {
     VStack(spacing: 2) {
+      if let spaceID, let space = model.space(id: spaceID) {
+        Label("保存先：\(space.name)", icon: .folder)
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(8)
+      }
       ForEach(CaptureAction.available) { action in
         Button {
           select(action)
@@ -44,14 +53,16 @@ struct CaptureMenuPopover: View {
   }
 
   private func select(_ action: CaptureAction) {
+    let destinationID = spaceID
     switch action {
     case .recording:
       collapse()
       Task {
         try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
-        await model.startCapture()
+        await model.startCapture(spaceID: destinationID)
       }
     case .importAudio:
+      importSpaceID = destinationID
       isFileImporterPresented = true
     case .phoneCall:
       collapse()
@@ -60,6 +71,7 @@ struct CaptureMenuPopover: View {
         model.openCalling()
       }
     case .onlineMeeting:
+      model.onlineMeetingCaptureSpaceID = destinationID
       collapse()
       Task { @MainActor in
         try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
@@ -79,8 +91,9 @@ struct CaptureMenuPopover: View {
     switch result {
     case .success(let urls):
       guard let url = urls.first else { return }
+      let destinationID = importSpaceID
       Task {
-        await model.importAudio(from: url)
+        await model.importAudio(from: url, spaceID: destinationID)
       }
     case .failure:
       model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"

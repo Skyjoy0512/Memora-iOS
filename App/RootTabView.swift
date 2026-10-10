@@ -120,14 +120,16 @@ struct RootTabView: View {
     }
     .sheet(isPresented: $model.isOnlineMeetingCapturePresented, onDismiss: {
       model.onlineMeetingCaptureEvent = nil
+      model.onlineMeetingCaptureSpaceID = nil
     }) {
       NavigationStack {
         OnlineMeetingCaptureView {
           let event = model.onlineMeetingCaptureEvent
+          let spaceID = model.onlineMeetingCaptureSpaceID
           model.isOnlineMeetingCapturePresented = false
           Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(250))
-            await model.startCapture(event: event)
+            await model.startCapture(event: event, spaceID: spaceID)
           }
         }
         .toolbar {
@@ -228,7 +230,7 @@ struct RootTabView: View {
           isProminentPresented: $model.isCaptureSourcePresented,
           prominentSymbol: .plus
         ) {
-          CaptureMenuPopover()
+          CaptureMenuPopover(spaceID: model.visibleProjectID)
         }
         .containerRelativeFrame(.horizontal) { width, _ in
           (width - 24) * MemoraBarMetrics.scale

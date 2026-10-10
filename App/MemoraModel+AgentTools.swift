@@ -592,7 +592,10 @@ extension MemoraModel {
       messageID: messageID
     ) else { return Self.declinedOutcome }
 
-    moveMeetings(Set(records.map(\.id)), to: space.id)
+    guard moveMeetings(Set(records.map(\.id)), to: space.id) else {
+      finishAgentStep(stepID, on: messageID, state: .failed, detail: "移動を保存できませんでした")
+      return AgentToolOutcome(text: "移動を保存できませんでした。元のプロジェクトは変更していません。", isError: true)
+    }
     finishAgentStep(stepID, on: messageID, state: .done, detail: space.name)
     return AgentToolOutcome(text: "\(records.count)件を移動しました。")
   }
