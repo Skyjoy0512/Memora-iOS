@@ -127,6 +127,7 @@ struct TasksView: View {
 
       if let meetingID = task.meetingID {
         Button("元の会議を開く", icon: .chevronRight) {
+          InteractionFeedback.shared.send(.tap)
           path.append(meetingID)
         }
         .labelStyle(.iconOnly)
@@ -141,6 +142,8 @@ struct TasksView: View {
     .swipeActions(edge: .leading) {
       Button {
         model.toggleTask(task.id)
+        let updated = model.tasks.first { $0.id == task.id }
+        InteractionFeedback.shared.send(updated?.isCompleted == !task.isCompleted ? .selection : .error)
       } label: {
         Label(
           task.isCompleted ? "未完了に戻す" : "完了",
@@ -151,6 +154,7 @@ struct TasksView: View {
     }
     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
       Button(role: .destructive) {
+        InteractionFeedback.shared.send(.tap)
         model.deleteTask(task.id)
       } label: {
         Label("削除", icon: .trash)

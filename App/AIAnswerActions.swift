@@ -25,12 +25,18 @@ struct AIAnswerActions: View {
 
       Button("回答を資料に保存", icon: .docText) {
         let document = model.document(from: message)
-        if model.addDocument(document) { savedDocument = document }
-        else { saveError = true }
+        if model.addDocument(document) {
+          InteractionFeedback.shared.send(.success)
+          savedDocument = document
+        } else {
+          InteractionFeedback.shared.send(.error)
+          saveError = true
+        }
       }
 
       if model.canRetryAIAnswer(message.id) {
         Button("もう一度回答", icon: .arrowClockwise) {
+          InteractionFeedback.shared.send(.tap)
           model.retryAIAnswer(message.id)
         }
       }
@@ -40,7 +46,6 @@ struct AIAnswerActions: View {
     .foregroundStyle(.secondary)
     // The first icon lines up with the answer's text, not its tap area.
     .padding(.leading, -9)
-    .sensoryFeedback(.success, trigger: didCopy) { _, copied in copied }
     .onDisappear { copyResetTask?.cancel() }
     .sheet(item: $savedDocument) { document in
       NavigationStack {
@@ -61,6 +66,7 @@ struct AIAnswerActions: View {
 
   private func copy() {
     UIPasteboard.general.string = AnswerCitations.stripped(message.text)
+    InteractionFeedback.shared.send(.success)
     withAnimation(reduceMotion ? nil : MemoraMotion.control) { didCopy = true }
     copyResetTask?.cancel()
     copyResetTask = Task { @MainActor in

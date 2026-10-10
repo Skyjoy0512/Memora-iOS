@@ -53,6 +53,7 @@ struct CaptureMenuPopover: View {
   }
 
   private func select(_ action: CaptureAction) {
+    InteractionFeedback.shared.send(.tap)
     let destinationID = spaceID
     switch action {
     case .recording:

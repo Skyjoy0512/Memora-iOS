@@ -440,6 +440,7 @@ struct LibraryView: View {
     if isSelectionMode {
       toggleSelection(meeting.id)
     } else {
+      InteractionFeedback.shared.send(.tap)
       model.libraryPath.append(.meeting(meeting.id))
     }
   }
@@ -471,7 +472,10 @@ struct LibraryView: View {
     isDestructive: Bool = false,
     action: @escaping () -> Void
   ) -> some View {
-    Button(action: action) {
+    Button {
+      InteractionFeedback.shared.send(.tap)
+      action()
+    } label: {
       VStack(spacing: 3) {
         Image(icon: icon)
           .font(.title3)
@@ -529,6 +533,7 @@ struct LibraryView: View {
   // MARK: - Selection
 
   private func beginSelection(with id: UUID) {
+    InteractionFeedback.shared.send(.selection)
     isSelectionMode = true
     selectedMeetingIDs.insert(id)
   }
@@ -540,6 +545,7 @@ struct LibraryView: View {
   }
 
   private func toggleSelection(_ id: UUID) {
+    InteractionFeedback.shared.send(.selection)
     withAnimation(reduceMotion ? nil : MemoraMotion.control) {
       if selectedMeetingIDs.contains(id) {
         selectedMeetingIDs.remove(id)

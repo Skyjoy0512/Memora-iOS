@@ -74,6 +74,11 @@ struct SpacePickerSheet: View {
   }
 
   private func set(_ spaceID: UUID?) {
-    if model.setSpace(spaceID, forMeeting: meetingID) { dismiss() }
+    if model.setSpace(spaceID, forMeeting: meetingID) {
+      InteractionFeedback.shared.send(.success)
+      dismiss()
+    } else {
+      InteractionFeedback.shared.send(.error)
+    }
   }
 }

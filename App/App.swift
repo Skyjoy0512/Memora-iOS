@@ -7,6 +7,7 @@ struct MemoraApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView()
+        .background { InteractionFeedbackView() }
         .environment(appDelegate.model)
         .onAppear {
           #if DEBUG

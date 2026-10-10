@@ -110,7 +110,7 @@ struct AIComposerBar: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: speechInput.isListening)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isExpanded)
-    .sensoryFeedback(.impact(weight: .light), trigger: speechInput.isListening)
+    .interactionFeedback(.tap, trigger: speechInput.isListening)
     .onChange(of: isFieldFocused) { _, focused in
       focusChanged?(focused)
     }
@@ -194,6 +194,7 @@ struct AIComposerBar: View {
         .lineLimit(1)
       Spacer(minLength: 4)
       Button("添付を外す", icon: .xmark) {
+        InteractionFeedback.shared.send(.selection)
         attachment = nil
       }
       .labelStyle(.iconOnly)
@@ -206,12 +207,15 @@ struct AIComposerBar: View {
   private var attachmentMenu: some View {
     Menu {
       Button("写真を選択…", icon: .photo) {
+        InteractionFeedback.shared.send(.tap)
         isPhotoPickerPresented = true
       }
       Button("音声を選択…", icon: .waveform) {
+        InteractionFeedback.shared.send(.tap)
         isAudioImporterPresented = true
       }
       Button("ファイルを選択…", icon: .doc) {
+        InteractionFeedback.shared.send(.tap)
         isImporterPresented = true
       }
     } label: {
@@ -309,6 +313,7 @@ struct AIComposerBar: View {
     guard canSend else { return }
     speechInput.stop()
     guard onSubmit(attachment) else { return }
+    InteractionFeedback.shared.send(.tap)
     text = ""
     attachment = nil
     // The Ask AI chat keeps the keyboard up for the next turn; a sheet does not.

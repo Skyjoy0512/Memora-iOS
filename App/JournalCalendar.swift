@@ -79,6 +79,7 @@ struct JournalCalendar: View {
       : (isToday ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
 
     return Button {
+      if !isSelected { InteractionFeedback.shared.send(.selection) }
       withAnimation(reduceMotion ? nil : MemoraMotion.control) {
         selectedDate = calendar.startOfDay(for: day)
       }

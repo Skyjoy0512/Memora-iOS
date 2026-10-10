@@ -106,6 +106,7 @@ struct FileSidebarView: View {
   private var profileHeader: some View {
     HStack(spacing: 12) {
       Button {
+        InteractionFeedback.shared.send(.tap)
         onClose()
         if !model.isSignedIn {
           model.isAuthPresented = true
@@ -148,6 +149,7 @@ struct FileSidebarView: View {
     MemoraGlassContainer(spacing: 10) {
       HStack(spacing: 10) {
         Button {
+          InteractionFeedback.shared.send(.tap)
           onClose()
           model.isPaywallPresented = true
         } label: {
@@ -166,6 +168,7 @@ struct FileSidebarView: View {
 
         // Settings has one entry point, here; the appearance lives inside it.
         Button {
+          InteractionFeedback.shared.send(.tap)
           onOpenSettings()
         } label: {
           Label("設定", icon: .gearshape)
@@ -242,7 +245,10 @@ private struct SidebarRow: View {
   var action: () -> Void
 
   var body: some View {
-    Button(action: action) {
+    Button {
+      InteractionFeedback.shared.send(.tap)
+      action()
+    } label: {
       HStack(spacing: 14) {
         Image(icon: symbol)
           .font(.body)

@@ -248,7 +248,6 @@ struct MeetingDetailView: View {
         } message: {
           Text("「最近削除した項目」に移動します。30日間は元に戻せます。")
         }
-        .sensoryFeedback(.selection, trigger: selectedSection)
         .onChange(of: player.isPlaying) { _, playing in
           // The transport is handed to the floating controls once playback has
           // begun, and stays for the rest of the visit. Inside a sheet those

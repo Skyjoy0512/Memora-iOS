@@ -44,6 +44,7 @@ struct GlassSegmentedControl<Item: Hashable>: UIViewRepresentable {
     Coordinator(parent: self)
   }
 
+  @MainActor
   final class Coordinator: NSObject {
     var parent: GlassSegmentedControl
     init(parent: GlassSegmentedControl) {
@@ -53,6 +54,9 @@ struct GlassSegmentedControl<Item: Hashable>: UIViewRepresentable {
     @objc func changed(_ control: UISegmentedControl) {
       let items = parent.items
       guard items.indices.contains(control.selectedSegmentIndex) else { return }
+      if parent.selection != items[control.selectedSegmentIndex] {
+        InteractionFeedback.shared.send(.selection)
+      }
       parent.selection = items[control.selectedSegmentIndex]
     }
   }

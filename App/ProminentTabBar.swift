@@ -91,6 +91,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
       // The system glass button plus a zoom popover sourced from its symbol is
       // what lets the button's Liquid Glass morph into the menu.
       Button {
+        InteractionFeedback.shared.send(.tap)
         isProminentPresented = true
       } label: {
         prominentLabel
@@ -106,6 +107,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
       }
     } else {
       Button {
+        InteractionFeedback.shared.send(.tap)
         isProminentPresented = true
       } label: {
         glassChrome {
@@ -227,6 +229,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     Coordinator(parent: self)
   }
 
+  @MainActor
   final class Coordinator: NSObject {
     var parent: ProminentSegmentedControl
     var appliedColorScheme: ColorScheme?
@@ -264,6 +267,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
       let tabs = Array(Item.allCases)
       let index = control.selectedSegmentIndex
       guard tabs.indices.contains(index) else { return }
+      if parent.selection != tabs[index] { InteractionFeedback.shared.send(.selection) }
       parent.selection = tabs[index]
       applyImages(to: control)
     }

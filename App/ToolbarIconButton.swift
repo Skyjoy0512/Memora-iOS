@@ -16,7 +16,10 @@ struct ToolbarIconButton: View {
   }
 
   var body: some View {
-    Button(action: action) {
+    Button {
+      InteractionFeedback.shared.send(.tap)
+      action()
+    } label: {
       ToolbarIconGlyph(icon: icon, artwork: artwork)
         .frame(width: controlSize, height: controlSize)
         .contentShape(Rectangle())

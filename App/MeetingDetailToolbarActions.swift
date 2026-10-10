@@ -94,7 +94,10 @@ struct MeetingDetailToolbarActions: View {
   }
 
   private var playButton: some View {
-    Button(action: play) {
+    Button {
+      InteractionFeedback.shared.send(.tap)
+      play()
+    } label: {
       ToolbarIconGlyph(icon: isPlaying ? .pauseFill : .playFill)
         .frame(width: 44, height: 44)
         .contentShape(Circle())
@@ -108,7 +111,10 @@ struct MeetingDetailToolbarActions: View {
   }
 
   private var shareButton: some View {
-    Button(action: share) {
+    Button {
+      InteractionFeedback.shared.send(.tap)
+      share()
+    } label: {
       Group {
         if morphsFromLibrary && !hasReplacedIcons && !reduceMotion {
           ToolbarIconGlyph(icon: .magnifyingglass)

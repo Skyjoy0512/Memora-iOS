@@ -10,6 +10,7 @@ struct SettingsView: View {
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @AppStorage("memora.appLock") private var appLockEnabled = false
   @AppStorage("memora.prefersDarkAppearance") private var prefersDarkAppearance = false
+  @AppStorage("memora.haptics.enabled") private var hapticsEnabled = true
   @State private var isLocationPermissionAlertPresented = false
   @State private var isCalendarPermissionAlertPresented = false
   @State private var excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
@@ -139,8 +140,13 @@ struct SettingsView: View {
           Toggle(isOn: $prefersDarkAppearance) {
             SettingsLabel("ダークモード", icon: .moonFill, color: Tint.appearance)
           }
+          Toggle(isOn: $hapticsEnabled) {
+            SettingsLabel("触覚フィードバック", icon: .iphone, color: Tint.appearance)
+          }
         } header: {
-          Text("表示")
+          Text("表示と操作")
+        } footer: {
+          Text("タップ・選択・操作完了を振動で知らせます。録音・音声入力・声の登録中は、音声に振動が入らないよう抑えます。")
         }
 
         Section {

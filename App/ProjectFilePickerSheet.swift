@@ -26,6 +26,7 @@ struct ProjectFilePickerSheet: View {
         Section {
           ForEach(matching) { meeting in
             Button {
+              InteractionFeedback.shared.send(.selection)
               if !selectedIDs.insert(meeting.id).inserted { selectedIDs.remove(meeting.id) }
             } label: {
               HStack(spacing: 12) {
@@ -68,7 +69,12 @@ struct ProjectFilePickerSheet: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           Button("移動（\(selected.count)件）") {
-            if model.moveMeetings(selected, to: spaceID) { dismiss() }
+            if model.moveMeetings(selected, to: spaceID) {
+              InteractionFeedback.shared.send(.success)
+              dismiss()
+            } else {
+              InteractionFeedback.shared.send(.error)
+            }
           }
           .disabled(selected.isEmpty || model.space(id: spaceID) == nil || model.isRestoring)
         }

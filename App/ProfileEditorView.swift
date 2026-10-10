@@ -118,7 +118,7 @@ struct ProfileEditorView: View {
       } message: {
         Text("iPhoneの空き容量を確認して、もう一度お試しください。")
       }
-      .sensoryFeedback(.selection, trigger: profile.avatar)
+      .interactionFeedback(.selection, trigger: profile.avatar)
     }
   }
 

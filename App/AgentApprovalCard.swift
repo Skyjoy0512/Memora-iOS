@@ -22,6 +22,7 @@ struct AgentApprovalCard: View {
       HStack(spacing: 10) {
         Button {
           model.resolveAgentApproval(false)
+          InteractionFeedback.shared.send(.selection)
         } label: {
           Text("やめる")
             .font(.body.weight(.semibold))
@@ -33,6 +34,7 @@ struct AgentApprovalCard: View {
 
         Button {
           model.resolveAgentApproval(true)
+          InteractionFeedback.shared.send(.selection)
         } label: {
           Text(approval.confirmTitle)
             .font(.body.weight(.semibold))

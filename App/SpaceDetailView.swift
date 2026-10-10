@@ -26,6 +26,7 @@ struct SpaceDetailView: View {
         }
         Section {
           Button {
+            InteractionFeedback.shared.send(.tap)
             isAskingAI = true
           } label: {
             HStack(spacing: 12) {
@@ -110,6 +111,7 @@ struct SpaceDetailView: View {
         }
       }
       .sheet(isPresented: $isAddingFiles) { ProjectFilePickerSheet(spaceID: spaceID) }
+      .interactionFeedback(.tap, trigger: isAddingFiles) { _, presented in presented }
       .sheet(item: $movingMeeting) { meeting in
         BulkSpacePickerSheet(meetingIDs: [meeting.id], onMove: {})
       }
@@ -163,6 +165,7 @@ struct SpaceDetailView: View {
   @ViewBuilder
   private var captureActions: some View {
     Button {
+      InteractionFeedback.shared.send(.tap)
       if model.isRecording {
         model.isCapturePresented = true
       } else {
@@ -177,6 +180,7 @@ struct SpaceDetailView: View {
     .buttonStyle(.borderedProminent)
     .disabled(model.isPreparingCapture || model.isSavingCapture || model.isRestoring)
     Button {
+      InteractionFeedback.shared.send(.tap)
       isImporting = true
     } label: {
       Label(model.isImporting ? "読み込み中…" : "インポート", icon: .squareAndArrowDown)

@@ -71,7 +71,10 @@ struct HomeView: View {
               timelineContent(entries)
             }
             if !recap.hasActivity, !recap.isFuture {
-              Button("振り返りを見る") { showsReview = true }
+              Button("振り返りを見る") {
+                InteractionFeedback.shared.send(.tap)
+                showsReview = true
+              }
                 .font(.subheadline)
                 .frame(minHeight: 44)
             }
@@ -184,6 +187,7 @@ struct HomeView: View {
       }
 
       Button("記録を追加") {
+        InteractionFeedback.shared.send(.tap)
         model.isLifeLogCreationPresented = true
       }
       .font(.headline)
@@ -369,10 +373,16 @@ struct HomeView: View {
     } else {
       LifeLogRow(entry: entry)
         .contentShape(Rectangle())
-        .onTapGesture { openEntry = entry }
+        .onTapGesture {
+          InteractionFeedback.shared.send(.tap)
+          openEntry = entry
+        }
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("記録を開きます")
-        .accessibilityAction(named: "開く") { openEntry = entry }
+        .accessibilityAction(named: "開く") {
+          InteractionFeedback.shared.send(.tap)
+          openEntry = entry
+        }
     }
   }
 

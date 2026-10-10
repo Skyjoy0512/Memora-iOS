@@ -68,6 +68,7 @@ struct AgentQuestionCard: View {
           let isOn = picked[questionIndex, default: []].contains(optionIndex)
           Button {
             choose(optionIndex, in: question)
+            InteractionFeedback.shared.send(.selection)
           } label: {
             HStack(spacing: 10) {
               mark(isOn: isOn, multiple: question.allowsMultiple)
@@ -156,7 +157,10 @@ struct AgentQuestionCard: View {
       .padding(.horizontal, 10)
       .frame(minHeight: 36)
 
-      Button(action: advance) {
+      Button {
+        InteractionFeedback.shared.send(.tap)
+        advance()
+      } label: {
         Text(isLast ? "送信" : "次へ")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(Color(uiColor: .systemBackground))

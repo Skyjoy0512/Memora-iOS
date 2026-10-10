@@ -5,8 +5,6 @@ struct CaptureSessionView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @State private var section = CaptureSection.notes
-  @State private var stopFeedback = 0
-  @State private var pauseFeedback = 0
   @State private var isDiscardConfirmationPresented = false
   @State private var selectedDetent = PresentationDetent.fraction(0.5)
 
@@ -29,6 +27,7 @@ struct CaptureSessionView: View {
         .memoraGlass(in: Circle(), interactive: true)
 
         Button("録音画面を閉じる", icon: .xmark) {
+          InteractionFeedback.shared.send(.tap)
           model.isCapturePresented = false
         }
         .labelStyle(.iconOnly)
@@ -107,8 +106,8 @@ struct CaptureSessionView: View {
       MemoraGlassContainer(spacing: 12) {
         HStack(spacing: 12) {
           Button(model.isRecordingPaused ? "再開" : "一時停止", icon: model.isRecordingPaused ? .playFill : .pauseFill) {
-            pauseFeedback += 1
             model.toggleCapturePause()
+            InteractionFeedback.shared.send(.selection)
           }
           .labelStyle(.titleOnly)
           .font(.headline)
@@ -118,8 +117,11 @@ struct CaptureSessionView: View {
           .memoraGlass(in: Capsule(), interactive: true)
 
           Button(model.isSavingCapture ? "保存しています…" : "終了して保存", icon: .stopFill) {
-            stopFeedback += 1
-            Task { await model.stopCapture() }
+            Task {
+              guard model.isRecording, !model.isSavingCapture else { return }
+              await model.stopCapture()
+              InteractionFeedback.shared.send(model.hasUnsavedRecording ? .error : .success)
+            }
           }
           .disabled(model.isSavingCapture)
           .labelStyle(.titleOnly)
@@ -180,8 +182,6 @@ struct CaptureSessionView: View {
     } message: {
       Text("録音した音声は保存されず、文字起こしも作成しません。")
     }
-    .sensoryFeedback(.impact(weight: .medium), trigger: pauseFeedback)
-    .sensoryFeedback(.impact(weight: .heavy), trigger: stopFeedback)
   }
 
   /// A Liquid Glass surface with the live voice glow gathering at the bottom.

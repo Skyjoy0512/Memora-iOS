@@ -172,6 +172,7 @@ enum SelfChecks {
     group("AI context limits", checkAIContextLimits)
     group("Scope isolation", checkScopeIsolation)
     group("Project filing", checkProjectFiling)
+    group("Interaction feedback", checkInteractionFeedback)
     group("Processing input revision", checkProcessingRevision)
     group("Media paths", checkMediaPaths)
     group("Photo file roles", checkPhotoFileRoles)
@@ -708,6 +709,58 @@ enum SelfChecks {
     if !SearchFilters.Status.needsAttention.matches(.failed("x")) {
       report("status filter: failed is not needs attention")
     }
+  }
+
+  private static func checkInteractionFeedback() {
+    let suite = "selfCheck.haptics.\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suite) else {
+      report("haptics preferences could not be isolated")
+      return
+    }
+    defer { defaults.removePersistentDomain(forName: suite) }
+    var instant = ContinuousClock.now
+    var active = true
+    var capturingAudio = false
+    let feedback = InteractionFeedback(
+      defaults: defaults, isActive: { active },
+      isCapturingAudio: { capturingAudio }, now: { instant }
+    )
+    if feedback.event != nil || !feedback.canPlay { report("haptics fired on initialization or defaulted to disabled") }
+    feedback.send(.tap)
+    let first = feedback.event
+    if first?.kind != .tap { report("tap feedback was not accepted") }
+    feedback.send(.selection)
+    if feedback.event != first { report("one interaction produced duplicate haptics") }
+    instant = instant.advanced(by: .milliseconds(120))
+    feedback.send(.selection)
+    let selected = feedback.event
+    if selected == first || selected?.kind != .selection { report("selection feedback was not accepted after cooldown") }
+    defaults.set(false, forKey: InteractionFeedback.settingsKey)
+    instant = instant.advanced(by: .milliseconds(120))
+    feedback.send(.success)
+    if feedback.canPlay || feedback.event != selected { report("disabled haptics still emitted feedback") }
+    defaults.set(true, forKey: InteractionFeedback.settingsKey)
+    active = false
+    feedback.send(.tap)
+    if feedback.canPlay || feedback.event != selected { report("background haptics were not suppressed") }
+    active = true
+    capturingAudio = true
+    feedback.send(.tap)
+    if feedback.canPlay || feedback.event != selected { report("haptics were allowed during microphone capture") }
+    capturingAudio = false
+    feedback.send(.success)
+    let success = feedback.event
+    instant = instant.advanced(by: .milliseconds(120))
+    feedback.send(.success)
+    if success?.kind != .success || feedback.event == success {
+      report("repeated successful actions did not each get feedback")
+    }
+    capturingAudio = true
+    if feedback.canPlay { report("pending haptics were allowed after the microphone started") }
+    capturingAudio = false
+    instant = instant.advanced(by: .milliseconds(120))
+    feedback.send(.error)
+    if feedback.event?.kind != .error { report("failed action feedback was not distinguished") }
   }
 
   private static func checkProjectFiling() {

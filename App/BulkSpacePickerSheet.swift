@@ -52,7 +52,11 @@ struct BulkSpacePickerSheet: View {
   }
 
   private func move(to spaceID: UUID?) {
-    guard model.moveMeetings(meetingIDs, to: spaceID) else { return }
+    guard model.moveMeetings(meetingIDs, to: spaceID) else {
+      InteractionFeedback.shared.send(.error)
+      return
+    }
+    InteractionFeedback.shared.send(.success)
     onMove()
     dismiss()
   }

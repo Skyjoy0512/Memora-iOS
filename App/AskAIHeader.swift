@@ -51,7 +51,10 @@ struct AskAIHeader: View {
   }
 
   private func headerButton(_ title: String, icon: MemoraIcon, action: @escaping () -> Void) -> some View {
-    Button(action: action) {
+    Button {
+      InteractionFeedback.shared.send(.tap)
+      action()
+    } label: {
       ToolbarIconGlyph(icon: icon)
         .font(.body.weight(.medium))
         .frame(width: 44, height: 44)

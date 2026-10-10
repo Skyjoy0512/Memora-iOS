@@ -17,6 +17,8 @@ struct TaskRow: View {
         withAnimation(reduceMotion ? nil : .snappy) {
           model.toggleTask(task.id)
         }
+        let updated = model.tasks.first { $0.id == task.id }
+        InteractionFeedback.shared.send(updated?.isCompleted == !task.isCompleted ? .selection : .error)
       } label: {
         Image(icon: task.isCompleted ? .checkmarkCircleFill : .circle)
           .symbolEffect(.bounce, options: .speed(1.6), value: reduceMotion ? false : task.isCompleted)
@@ -24,7 +26,6 @@ struct TaskRow: View {
           .contentShape(Rectangle())
       }
       .accessibilityLabel(task.isCompleted ? "未完了に戻す" : "完了にする")
-      .sensoryFeedback(.selection, trigger: task.isCompleted)
       .labelStyle(.iconOnly)
       .font(.title3)
       .foregroundStyle(task.isCompleted ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
@@ -50,7 +51,11 @@ struct TaskRow: View {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .contentShape(Rectangle())
-      .onTapGesture { onOpen?() }
+      .onTapGesture {
+        guard let onOpen else { return }
+        InteractionFeedback.shared.send(.tap)
+        onOpen()
+      }
       .accessibilityElement(children: .combine)
       .accessibilityLabel(accessibilityLabel)
       .accessibilityHint(onOpen == nil ? Text("") : Text("タスクを編集します"))
