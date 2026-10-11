@@ -258,7 +258,7 @@ enum SummaryTemplateCatalog {
       focus: "引用は原文のまま、要約と分けて書く。",
       includesActions: false
     )
-  ]
+  ] + OccupationSummaryTemplates.all
 
   static func template(id: String) -> SummaryMarketTemplate? {
     market.first { $0.id == id }

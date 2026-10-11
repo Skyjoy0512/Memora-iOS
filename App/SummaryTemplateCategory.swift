@@ -7,6 +7,9 @@ enum SummaryTemplateCategory: String, CaseIterable, Identifiable, Codable {
   case people
   case projects
   case learning
+  case care
+  case field
+  case life
 
   var id: Self { self }
 
@@ -17,6 +20,9 @@ enum SummaryTemplateCategory: String, CaseIterable, Identifiable, Codable {
     case .people: "マネジメント・人事"
     case .projects: "企画・プロジェクト"
     case .learning: "学び・インタビュー"
+    case .care: "医療・介護・申し送り"
+    case .field: "現場・作業記録"
+    case .life: "日常生活"
     }
   }
 }

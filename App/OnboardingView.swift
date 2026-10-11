@@ -8,6 +8,7 @@ struct OnboardingView: View {
   var skip: () -> Void
 
   @State private var page = OnboardingPage.record
+  @State private var isOccupationSelectionPresented = false
 
   var body: some View {
     VStack(spacing: 0) {
@@ -45,6 +46,16 @@ struct OnboardingView: View {
     }
     .background(Color(uiColor: .systemBackground))
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: page)
+    .sheet(isPresented: $isOccupationSelectionPresented) {
+      NavigationStack {
+        OccupationSelectionView()
+          .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+              Button("完了") { isOccupationSelectionPresented = false }
+            }
+          }
+      }
+    }
   }
 
   @ViewBuilder
@@ -64,6 +75,8 @@ struct OnboardingView: View {
 
       if isLastPage {
         VStack(spacing: 2) {
+          Button("仕事・活動を選ぶ（任意）") { isOccupationSelectionPresented = true }
+            .font(.subheadline)
           Button("サンプルで見る", action: showSample)
             .font(.headline)
             .frame(maxWidth: .infinity)

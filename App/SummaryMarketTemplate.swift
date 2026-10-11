@@ -22,6 +22,11 @@ struct SummaryMarketTemplate: Identifiable, Hashable, Codable {
   var includesActions = true
   /// True for a template the person wrote.
   var isCustom = false
+  var occupationTags: [String] = []
+  var useCaseTags: [String] = []
+  var defaultDisplayOrder = 0
+  var sensitivityClassification: SummarySensitivity = .general
+  var supportedSummaryLengths: [SummaryLength] = SummaryLength.allCases
 
   var usesPrompt: Bool {
     !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -38,7 +43,12 @@ struct SummaryMarketTemplate: Identifiable, Hashable, Codable {
     focus: String = "",
     prompt: String = "",
     includesActions: Bool = true,
-    isCustom: Bool = false
+    isCustom: Bool = false,
+    occupationTags: [String] = [],
+    useCaseTags: [String] = [],
+    defaultDisplayOrder: Int = 0,
+    sensitivityClassification: SummarySensitivity = .general,
+    supportedSummaryLengths: [SummaryLength] = SummaryLength.allCases
   ) {
     self.id = id
     self.title = title
@@ -51,6 +61,11 @@ struct SummaryMarketTemplate: Identifiable, Hashable, Codable {
     self.prompt = prompt
     self.includesActions = includesActions
     self.isCustom = isCustom
+    self.occupationTags = occupationTags
+    self.useCaseTags = useCaseTags
+    self.defaultDisplayOrder = defaultDisplayOrder
+    self.sensitivityClassification = sensitivityClassification
+    self.supportedSummaryLengths = supportedSummaryLengths
   }
 
   /// Fields added in later builds are optional when reading, so templates
@@ -68,5 +83,10 @@ struct SummaryMarketTemplate: Identifiable, Hashable, Codable {
     prompt = try container.decodeIfPresent(String.self, forKey: .prompt) ?? ""
     includesActions = try container.decodeIfPresent(Bool.self, forKey: .includesActions) ?? true
     isCustom = try container.decodeIfPresent(Bool.self, forKey: .isCustom) ?? false
+    occupationTags = try container.decodeIfPresent([String].self, forKey: .occupationTags) ?? []
+    useCaseTags = try container.decodeIfPresent([String].self, forKey: .useCaseTags) ?? []
+    defaultDisplayOrder = try container.decodeIfPresent(Int.self, forKey: .defaultDisplayOrder) ?? 0
+    sensitivityClassification = try container.decodeIfPresent(SummarySensitivity.self, forKey: .sensitivityClassification) ?? .general
+    supportedSummaryLengths = try container.decodeIfPresent([SummaryLength].self, forKey: .supportedSummaryLengths) ?? SummaryLength.allCases
   }
 }

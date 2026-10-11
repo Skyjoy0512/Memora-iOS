@@ -150,6 +150,33 @@ struct SettingsView: View {
           Text("タップ・選択・操作完了を振動で知らせます。録音・音声入力・声の登録中は、音声に振動が入らないよう抑えます。")
         }
 
+        Section("パーソナライズ") {
+          NavigationLink {
+            OccupationSelectionView()
+          } label: {
+            LabeledContent {
+              Text(model.occupationSummary).lineLimit(1)
+            } label: {
+              SettingsLabel("仕事・活動", icon: .briefcase, color: Tint.processing)
+            }
+          }
+          NavigationLink {
+            SummaryStyleSettingsView()
+          } label: {
+            SettingsLabel("要約スタイル", icon: .docText, color: Tint.processing)
+          }
+          NavigationLink {
+            VoiceProfileView()
+          } label: {
+            SettingsLabel("自分の声を登録", icon: .personWave2, color: Tint.processing)
+          }
+          NavigationLink {
+            SpeakerIdentificationSettingsView()
+          } label: {
+            SettingsLabel("話者識別", icon: .person2, color: Tint.processing)
+          }
+        }
+
         Section {
           NavigationLink {
             SpeechRecognitionSettingsView()

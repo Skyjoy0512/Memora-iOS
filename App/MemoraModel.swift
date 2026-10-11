@@ -165,6 +165,12 @@ final class MemoraModel {
   @ObservationIgnored var activeMCPTools: [String: MCPTool] = [:]
   /// Templates the person wrote. User content, so kept in the record store.
   var customTemplates: [SummaryMarketTemplate] = []
+  var occupationProfile: UserOccupationProfile = MemoraModel.storedSetting(UserOccupationProfile.self, forKey: "memora.occupationProfile") ?? UserOccupationProfile() {
+    didSet { MemoraModel.storeSetting(occupationProfile, forKey: "memora.occupationProfile") }
+  }
+  var summaryPreferences: SummaryPreferences = MemoraModel.storedSetting(SummaryPreferences.self, forKey: "memora.summaryPreferences") ?? SummaryPreferences.initial() {
+    didSet { MemoraModel.storeSetting(summaryPreferences, forKey: "memora.summaryPreferences") }
+  }
   /// The template automatic summaries use; nil is the built-in 詳細な概要.
   /// A setting, so it lives in UserDefaults.
   var defaultTemplateID: String? = UserDefaults.standard.string(forKey: StorageKey.defaultTemplate) {

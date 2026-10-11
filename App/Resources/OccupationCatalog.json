@@ -1,0 +1,2245 @@
+{
+  "categories": [
+    {
+      "id": "category.office",
+      "title": "オフィス・ビジネス",
+      "icon": "briefcase",
+      "sortOrder": 0
+    },
+    {
+      "id": "category.it",
+      "title": "IT・エンジニアリング",
+      "icon": "sparkles",
+      "sortOrder": 1
+    },
+    {
+      "id": "category.beauty",
+      "title": "美容・理容",
+      "icon": "person.wave.2",
+      "sortOrder": 2
+    },
+    {
+      "id": "category.medical",
+      "title": "医療",
+      "icon": "person.2",
+      "sortOrder": 3
+    },
+    {
+      "id": "category.care",
+      "title": "介護・福祉",
+      "icon": "person.2",
+      "sortOrder": 4
+    },
+    {
+      "id": "category.construction",
+      "title": "建設・職人",
+      "icon": "building.2.fill",
+      "sortOrder": 5
+    },
+    {
+      "id": "category.manufacturing",
+      "title": "製造・工場",
+      "icon": "building.2.fill",
+      "sortOrder": 6
+    },
+    {
+      "id": "category.retail",
+      "title": "小売・販売",
+      "icon": "briefcase",
+      "sortOrder": 7
+    },
+    {
+      "id": "category.hospitality",
+      "title": "飲食・サービス",
+      "icon": "briefcase",
+      "sortOrder": 8
+    },
+    {
+      "id": "category.logistics",
+      "title": "運輸・物流",
+      "icon": "briefcase",
+      "sortOrder": 9
+    },
+    {
+      "id": "category.education",
+      "title": "教育・保育",
+      "icon": "graduationcap",
+      "sortOrder": 10
+    },
+    {
+      "id": "category.primary",
+      "title": "農業・一次産業",
+      "icon": "leaf.fill",
+      "sortOrder": 11
+    },
+    {
+      "id": "category.creative",
+      "title": "クリエイティブ",
+      "icon": "paintpalette",
+      "sortOrder": 12
+    },
+    {
+      "id": "category.professional",
+      "title": "公共・専門職",
+      "icon": "briefcase",
+      "sortOrder": 13
+    },
+    {
+      "id": "category.study",
+      "title": "学生・研究",
+      "icon": "graduationcap",
+      "sortOrder": 14
+    },
+    {
+      "id": "category.life",
+      "title": "日常生活・その他",
+      "icon": "leaf.fill",
+      "sortOrder": 15
+    }
+  ],
+  "occupations": [
+    {
+      "id": "occupation.office.planner",
+      "categoryID": "category.office",
+      "title": "企画職",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.office.strategy",
+      "categoryID": "category.office",
+      "title": "経営企画",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.office.clerk",
+      "categoryID": "category.office",
+      "title": "一般事務",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.office.sales",
+      "categoryID": "category.office",
+      "title": "営業職",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.office.consultant",
+      "categoryID": "category.office",
+      "title": "コンサルタント",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.office.project-manager",
+      "categoryID": "category.office",
+      "title": "プロジェクトマネージャー",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.office.hr",
+      "categoryID": "category.office",
+      "title": "人事",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.office.accountant",
+      "categoryID": "category.office",
+      "title": "経理",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.office.manager",
+      "categoryID": "category.office",
+      "title": "管理職",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.office.executive",
+      "categoryID": "category.office",
+      "title": "経営者",
+      "description": "オフィス・ビジネス",
+      "recommendedTemplateIDs": [
+        "builtin.meetingMinutes",
+        "builtin.detailedOverview",
+        "builtin.actionPlan",
+        "market.regular",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": []
+    },
+    {
+      "id": "occupation.it.system-engineer",
+      "categoryID": "category.it",
+      "title": "システムエンジニア",
+      "description": "IT・エンジニアリング",
+      "recommendedTemplateIDs": [
+        "market.requirements",
+        "work.technical",
+        "work.incident",
+        "market.progress",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.it.programmer",
+      "categoryID": "category.it",
+      "title": "プログラマー",
+      "description": "IT・エンジニアリング",
+      "recommendedTemplateIDs": [
+        "market.requirements",
+        "work.technical",
+        "work.incident",
+        "market.progress",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.it.consultant",
+      "categoryID": "category.it",
+      "title": "ITコンサルタント",
+      "description": "IT・エンジニアリング",
+      "recommendedTemplateIDs": [
+        "market.requirements",
+        "work.technical",
+        "work.incident",
+        "market.progress",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.it.infrastructure",
+      "categoryID": "category.it",
+      "title": "インフラエンジニア",
+      "description": "IT・エンジニアリング",
+      "recommendedTemplateIDs": [
+        "market.requirements",
+        "work.technical",
+        "work.incident",
+        "market.progress",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.it.operations",
+      "categoryID": "category.it",
+      "title": "IT運用担当",
+      "description": "IT・エンジニアリング",
+      "recommendedTemplateIDs": [
+        "market.requirements",
+        "work.technical",
+        "work.incident",
+        "market.progress",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.it.designer",
+      "categoryID": "category.it",
+      "title": "UI/UXデザイナー",
+      "description": "IT・エンジニアリング",
+      "recommendedTemplateIDs": [
+        "market.requirements",
+        "work.technical",
+        "work.incident",
+        "market.progress",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.it.product-manager",
+      "categoryID": "category.it",
+      "title": "プロダクトマネージャー",
+      "description": "IT・エンジニアリング",
+      "recommendedTemplateIDs": [
+        "market.requirements",
+        "work.technical",
+        "work.incident",
+        "market.progress",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.it.qa",
+      "categoryID": "category.it",
+      "title": "QAエンジニア",
+      "description": "IT・エンジニアリング",
+      "recommendedTemplateIDs": [
+        "market.requirements",
+        "work.technical",
+        "work.incident",
+        "market.progress",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.beauty.hairstylist",
+      "categoryID": "category.beauty",
+      "title": "美容師",
+      "description": "美容・理容",
+      "recommendedTemplateIDs": [
+        "work.customer-chart",
+        "work.treatment",
+        "work.customer-handover",
+        "market.regular",
+        "market.complaint"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-chart",
+        "usecase.treatment",
+        "usecase.customer-handover"
+      ]
+    },
+    {
+      "id": "occupation.beauty.barber",
+      "categoryID": "category.beauty",
+      "title": "理容師",
+      "description": "美容・理容",
+      "recommendedTemplateIDs": [
+        "work.customer-chart",
+        "work.treatment",
+        "work.customer-handover",
+        "market.regular",
+        "market.complaint"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-chart",
+        "usecase.treatment",
+        "usecase.customer-handover"
+      ]
+    },
+    {
+      "id": "occupation.beauty.nail-artist",
+      "categoryID": "category.beauty",
+      "title": "ネイリスト",
+      "description": "美容・理容",
+      "recommendedTemplateIDs": [
+        "work.customer-chart",
+        "work.treatment",
+        "work.customer-handover",
+        "market.regular",
+        "market.complaint"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-chart",
+        "usecase.treatment",
+        "usecase.customer-handover"
+      ]
+    },
+    {
+      "id": "occupation.beauty.eyelash-artist",
+      "categoryID": "category.beauty",
+      "title": "アイリスト",
+      "description": "美容・理容",
+      "recommendedTemplateIDs": [
+        "work.customer-chart",
+        "work.treatment",
+        "work.customer-handover",
+        "market.regular",
+        "market.complaint"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-chart",
+        "usecase.treatment",
+        "usecase.customer-handover"
+      ]
+    },
+    {
+      "id": "occupation.beauty.esthetician",
+      "categoryID": "category.beauty",
+      "title": "エステティシャン",
+      "description": "美容・理容",
+      "recommendedTemplateIDs": [
+        "work.customer-chart",
+        "work.treatment",
+        "work.customer-handover",
+        "market.regular",
+        "market.complaint"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-chart",
+        "usecase.treatment",
+        "usecase.customer-handover"
+      ]
+    },
+    {
+      "id": "occupation.beauty.therapist",
+      "categoryID": "category.beauty",
+      "title": "セラピスト",
+      "description": "美容・理容",
+      "recommendedTemplateIDs": [
+        "work.customer-chart",
+        "work.treatment",
+        "work.customer-handover",
+        "market.regular",
+        "market.complaint"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-chart",
+        "usecase.treatment",
+        "usecase.customer-handover"
+      ]
+    },
+    {
+      "id": "occupation.beauty.owner",
+      "categoryID": "category.beauty",
+      "title": "美容サロン経営者",
+      "description": "美容・理容",
+      "recommendedTemplateIDs": [
+        "work.customer-chart",
+        "work.treatment",
+        "work.customer-handover",
+        "market.regular",
+        "market.complaint"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-chart",
+        "usecase.treatment",
+        "usecase.customer-handover"
+      ]
+    },
+    {
+      "id": "occupation.medical.doctor",
+      "categoryID": "category.medical",
+      "title": "医師",
+      "description": "医療",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.daily",
+        "market.seminar",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.daily",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.medical.nurse",
+      "categoryID": "category.medical",
+      "title": "看護師",
+      "description": "医療",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.daily",
+        "market.seminar",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.daily",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.medical.pharmacist",
+      "categoryID": "category.medical",
+      "title": "薬剤師",
+      "description": "医療",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.daily",
+        "market.seminar",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.daily",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.medical.physical-therapist",
+      "categoryID": "category.medical",
+      "title": "理学療法士",
+      "description": "医療",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.daily",
+        "market.seminar",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.daily",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.medical.occupational-therapist",
+      "categoryID": "category.medical",
+      "title": "作業療法士",
+      "description": "医療",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.daily",
+        "market.seminar",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.daily",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.medical.radiographer",
+      "categoryID": "category.medical",
+      "title": "診療放射線技師",
+      "description": "医療",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.daily",
+        "market.seminar",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.daily",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.medical.lab-technician",
+      "categoryID": "category.medical",
+      "title": "臨床検査技師",
+      "description": "医療",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.daily",
+        "market.seminar",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.daily",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.medical.clerk",
+      "categoryID": "category.medical",
+      "title": "医療事務",
+      "description": "医療",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.daily",
+        "market.seminar",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.daily",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.care.caregiver",
+      "categoryID": "category.care",
+      "title": "介護士",
+      "description": "介護・福祉",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.care",
+        "work.customer-handover",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.care",
+        "usecase.customer-handover",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.care.care-manager",
+      "categoryID": "category.care",
+      "title": "ケアマネジャー",
+      "description": "介護・福祉",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.care",
+        "work.customer-handover",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.care",
+        "usecase.customer-handover",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.care.home-caregiver",
+      "categoryID": "category.care",
+      "title": "訪問介護員",
+      "description": "介護・福祉",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.care",
+        "work.customer-handover",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.care",
+        "usecase.customer-handover",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.care.counselor",
+      "categoryID": "category.care",
+      "title": "生活相談員",
+      "description": "介護・福祉",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.care",
+        "work.customer-handover",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.care",
+        "usecase.customer-handover",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.care.manager",
+      "categoryID": "category.care",
+      "title": "介護施設管理者",
+      "description": "介護・福祉",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.care",
+        "work.customer-handover",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.care",
+        "usecase.customer-handover",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.care.advisor",
+      "categoryID": "category.care",
+      "title": "福祉相談員",
+      "description": "介護・福祉",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.care",
+        "work.customer-handover",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.care",
+        "usecase.customer-handover",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.care.support-worker",
+      "categoryID": "category.care",
+      "title": "障害福祉支援員",
+      "description": "介護・福祉",
+      "recommendedTemplateIDs": [
+        "work.shift-handover",
+        "work.care",
+        "work.customer-handover",
+        "work.incident",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.shift-handover",
+        "usecase.care",
+        "usecase.customer-handover",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.construction.carpenter",
+      "categoryID": "category.construction",
+      "title": "大工",
+      "description": "建設・職人",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.site",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.site",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.construction.electrician",
+      "categoryID": "category.construction",
+      "title": "電気工事士",
+      "description": "建設・職人",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.site",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.site",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.construction.plumber",
+      "categoryID": "category.construction",
+      "title": "配管工",
+      "description": "建設・職人",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.site",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.site",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.construction.painter",
+      "categoryID": "category.construction",
+      "title": "塗装職人",
+      "description": "建設・職人",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.site",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.site",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.construction.plasterer",
+      "categoryID": "category.construction",
+      "title": "左官職人",
+      "description": "建設・職人",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.site",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.site",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.construction.interior",
+      "categoryID": "category.construction",
+      "title": "内装職人",
+      "description": "建設・職人",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.site",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.site",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.construction.equipment",
+      "categoryID": "category.construction",
+      "title": "設備工事担当",
+      "description": "建設・職人",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.site",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.site",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.construction.manager",
+      "categoryID": "category.construction",
+      "title": "施工管理者",
+      "description": "建設・職人",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.site",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.site",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.construction.supervisor",
+      "categoryID": "category.construction",
+      "title": "現場監督",
+      "description": "建設・職人",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.site",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.site",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.manufacturing.worker",
+      "categoryID": "category.manufacturing",
+      "title": "製造作業員",
+      "description": "製造・工場",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.inspection",
+        "work.incident",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.inspection",
+        "usecase.incident",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.manufacturing.manager",
+      "categoryID": "category.manufacturing",
+      "title": "工場管理者",
+      "description": "製造・工場",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.inspection",
+        "work.incident",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.inspection",
+        "usecase.incident",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.manufacturing.quality",
+      "categoryID": "category.manufacturing",
+      "title": "品質管理担当",
+      "description": "製造・工場",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.inspection",
+        "work.incident",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.inspection",
+        "usecase.incident",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.manufacturing.maintenance",
+      "categoryID": "category.manufacturing",
+      "title": "設備保全担当",
+      "description": "製造・工場",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.inspection",
+        "work.incident",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.inspection",
+        "usecase.incident",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.manufacturing.production",
+      "categoryID": "category.manufacturing",
+      "title": "生産管理担当",
+      "description": "製造・工場",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.inspection",
+        "work.incident",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.inspection",
+        "usecase.incident",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.manufacturing.mechanic",
+      "categoryID": "category.manufacturing",
+      "title": "整備士",
+      "description": "製造・工場",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.inspection",
+        "work.incident",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.inspection",
+        "usecase.incident",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.manufacturing.inspector",
+      "categoryID": "category.manufacturing",
+      "title": "検査担当者",
+      "description": "製造・工場",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.inspection",
+        "work.incident",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.inspection",
+        "usecase.incident",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.retail.fashion",
+      "categoryID": "category.retail",
+      "title": "アパレル販売員",
+      "description": "小売・販売",
+      "recommendedTemplateIDs": [
+        "work.customer-record",
+        "market.hearing",
+        "work.daily",
+        "market.complaint",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-record",
+        "usecase.daily",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.retail.mobile",
+      "categoryID": "category.retail",
+      "title": "携帯販売員",
+      "description": "小売・販売",
+      "recommendedTemplateIDs": [
+        "work.customer-record",
+        "market.hearing",
+        "work.daily",
+        "market.complaint",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-record",
+        "usecase.daily",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.retail.appliance",
+      "categoryID": "category.retail",
+      "title": "家電販売員",
+      "description": "小売・販売",
+      "recommendedTemplateIDs": [
+        "work.customer-record",
+        "market.hearing",
+        "work.daily",
+        "market.complaint",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-record",
+        "usecase.daily",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.retail.staff",
+      "categoryID": "category.retail",
+      "title": "小売店スタッフ",
+      "description": "小売・販売",
+      "recommendedTemplateIDs": [
+        "work.customer-record",
+        "market.hearing",
+        "work.daily",
+        "market.complaint",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-record",
+        "usecase.daily",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.retail.supervisor",
+      "categoryID": "category.retail",
+      "title": "店舗責任者",
+      "description": "小売・販売",
+      "recommendedTemplateIDs": [
+        "work.customer-record",
+        "market.hearing",
+        "work.daily",
+        "market.complaint",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-record",
+        "usecase.daily",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.retail.manager",
+      "categoryID": "category.retail",
+      "title": "店長",
+      "description": "小売・販売",
+      "recommendedTemplateIDs": [
+        "work.customer-record",
+        "market.hearing",
+        "work.daily",
+        "market.complaint",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-record",
+        "usecase.daily",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.retail.support",
+      "categoryID": "category.retail",
+      "title": "カスタマーサポート担当",
+      "description": "小売・販売",
+      "recommendedTemplateIDs": [
+        "work.customer-record",
+        "market.hearing",
+        "work.daily",
+        "market.complaint",
+        "work.shift-handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.customer-record",
+        "usecase.daily",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.hospitality.chef",
+      "categoryID": "category.hospitality",
+      "title": "料理人",
+      "description": "飲食・サービス",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.customer-record",
+        "work.shift-handover",
+        "market.complaint",
+        "market.regular"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.customer-record",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.hospitality.restaurant",
+      "categoryID": "category.hospitality",
+      "title": "飲食店スタッフ",
+      "description": "飲食・サービス",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.customer-record",
+        "work.shift-handover",
+        "market.complaint",
+        "market.regular"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.customer-record",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.hospitality.server",
+      "categoryID": "category.hospitality",
+      "title": "ホールスタッフ",
+      "description": "飲食・サービス",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.customer-record",
+        "work.shift-handover",
+        "market.complaint",
+        "market.regular"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.customer-record",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.hospitality.restaurant-manager",
+      "categoryID": "category.hospitality",
+      "title": "飲食店店長",
+      "description": "飲食・サービス",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.customer-record",
+        "work.shift-handover",
+        "market.complaint",
+        "market.regular"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.customer-record",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.hospitality.hotel",
+      "categoryID": "category.hospitality",
+      "title": "ホテルスタッフ",
+      "description": "飲食・サービス",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.customer-record",
+        "work.shift-handover",
+        "market.complaint",
+        "market.regular"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.customer-record",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.hospitality.front-desk",
+      "categoryID": "category.hospitality",
+      "title": "フロントスタッフ",
+      "description": "飲食・サービス",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.customer-record",
+        "work.shift-handover",
+        "market.complaint",
+        "market.regular"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.customer-record",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.hospitality.hotel-manager",
+      "categoryID": "category.hospitality",
+      "title": "宿泊施設管理者",
+      "description": "飲食・サービス",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.customer-record",
+        "work.shift-handover",
+        "market.complaint",
+        "market.regular"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.customer-record",
+        "usecase.shift-handover"
+      ]
+    },
+    {
+      "id": "occupation.logistics.truck-driver",
+      "categoryID": "category.logistics",
+      "title": "トラックドライバー",
+      "description": "運輸・物流",
+      "recommendedTemplateIDs": [
+        "work.delivery",
+        "work.daily",
+        "work.incident",
+        "work.shift-handover",
+        "work.inspection"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.delivery",
+        "usecase.daily",
+        "usecase.incident",
+        "usecase.shift-handover",
+        "usecase.inspection"
+      ]
+    },
+    {
+      "id": "occupation.logistics.delivery",
+      "categoryID": "category.logistics",
+      "title": "配送員",
+      "description": "運輸・物流",
+      "recommendedTemplateIDs": [
+        "work.delivery",
+        "work.daily",
+        "work.incident",
+        "work.shift-handover",
+        "work.inspection"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.delivery",
+        "usecase.daily",
+        "usecase.incident",
+        "usecase.shift-handover",
+        "usecase.inspection"
+      ]
+    },
+    {
+      "id": "occupation.logistics.taxi-driver",
+      "categoryID": "category.logistics",
+      "title": "タクシードライバー",
+      "description": "運輸・物流",
+      "recommendedTemplateIDs": [
+        "work.delivery",
+        "work.daily",
+        "work.incident",
+        "work.shift-handover",
+        "work.inspection"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.delivery",
+        "usecase.daily",
+        "usecase.incident",
+        "usecase.shift-handover",
+        "usecase.inspection"
+      ]
+    },
+    {
+      "id": "occupation.logistics.warehouse",
+      "categoryID": "category.logistics",
+      "title": "倉庫作業員",
+      "description": "運輸・物流",
+      "recommendedTemplateIDs": [
+        "work.delivery",
+        "work.daily",
+        "work.incident",
+        "work.shift-handover",
+        "work.inspection"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.delivery",
+        "usecase.daily",
+        "usecase.incident",
+        "usecase.shift-handover",
+        "usecase.inspection"
+      ]
+    },
+    {
+      "id": "occupation.logistics.manager",
+      "categoryID": "category.logistics",
+      "title": "物流管理担当",
+      "description": "運輸・物流",
+      "recommendedTemplateIDs": [
+        "work.delivery",
+        "work.daily",
+        "work.incident",
+        "work.shift-handover",
+        "work.inspection"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.delivery",
+        "usecase.daily",
+        "usecase.incident",
+        "usecase.shift-handover",
+        "usecase.inspection"
+      ]
+    },
+    {
+      "id": "occupation.logistics.dispatcher",
+      "categoryID": "category.logistics",
+      "title": "運行管理者",
+      "description": "運輸・物流",
+      "recommendedTemplateIDs": [
+        "work.delivery",
+        "work.daily",
+        "work.incident",
+        "work.shift-handover",
+        "work.inspection"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.delivery",
+        "usecase.daily",
+        "usecase.incident",
+        "usecase.shift-handover",
+        "usecase.inspection"
+      ]
+    },
+    {
+      "id": "occupation.education.elementary",
+      "categoryID": "category.education",
+      "title": "小学校教員",
+      "description": "教育・保育",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.education",
+        "work.consultation",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.education",
+        "usecase.consultation"
+      ]
+    },
+    {
+      "id": "occupation.education.junior-high",
+      "categoryID": "category.education",
+      "title": "中学校教員",
+      "description": "教育・保育",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.education",
+        "work.consultation",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.education",
+        "usecase.consultation"
+      ]
+    },
+    {
+      "id": "occupation.education.high-school",
+      "categoryID": "category.education",
+      "title": "高校教員",
+      "description": "教育・保育",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.education",
+        "work.consultation",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.education",
+        "usecase.consultation"
+      ]
+    },
+    {
+      "id": "occupation.education.university",
+      "categoryID": "category.education",
+      "title": "大学教員",
+      "description": "教育・保育",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.education",
+        "work.consultation",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.education",
+        "usecase.consultation"
+      ]
+    },
+    {
+      "id": "occupation.education.childcare",
+      "categoryID": "category.education",
+      "title": "保育士",
+      "description": "教育・保育",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.education",
+        "work.consultation",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.education",
+        "usecase.consultation"
+      ]
+    },
+    {
+      "id": "occupation.education.kindergarten",
+      "categoryID": "category.education",
+      "title": "幼稚園教諭",
+      "description": "教育・保育",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.education",
+        "work.consultation",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.education",
+        "usecase.consultation"
+      ]
+    },
+    {
+      "id": "occupation.education.tutor",
+      "categoryID": "category.education",
+      "title": "塾講師",
+      "description": "教育・保育",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.education",
+        "work.consultation",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.education",
+        "usecase.consultation"
+      ]
+    },
+    {
+      "id": "occupation.education.support",
+      "categoryID": "category.education",
+      "title": "教育支援員",
+      "description": "教育・保育",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.education",
+        "work.consultation",
+        "builtin.meetingMinutes"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.education",
+        "usecase.consultation"
+      ]
+    },
+    {
+      "id": "occupation.primary.farmer",
+      "categoryID": "category.primary",
+      "title": "農家",
+      "description": "農業・一次産業",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.growth",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.growth",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.primary.livestock",
+      "categoryID": "category.primary",
+      "title": "畜産業従事者",
+      "description": "農業・一次産業",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.growth",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.growth",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.primary.fisher",
+      "categoryID": "category.primary",
+      "title": "漁業従事者",
+      "description": "農業・一次産業",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.growth",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.growth",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.primary.forestry",
+      "categoryID": "category.primary",
+      "title": "林業従事者",
+      "description": "農業・一次産業",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.growth",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.growth",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.primary.manager",
+      "categoryID": "category.primary",
+      "title": "農業経営者",
+      "description": "農業・一次産業",
+      "recommendedTemplateIDs": [
+        "work.daily",
+        "work.growth",
+        "work.inspection",
+        "work.incident"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.daily",
+        "usecase.growth",
+        "usecase.inspection",
+        "usecase.incident"
+      ]
+    },
+    {
+      "id": "occupation.creative.photographer",
+      "categoryID": "category.creative",
+      "title": "カメラマン",
+      "description": "クリエイティブ",
+      "recommendedTemplateIDs": [
+        "market.press",
+        "work.technical",
+        "market.brainstorm",
+        "market.quickNote"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical"
+      ]
+    },
+    {
+      "id": "occupation.creative.video-creator",
+      "categoryID": "category.creative",
+      "title": "動画制作者",
+      "description": "クリエイティブ",
+      "recommendedTemplateIDs": [
+        "market.press",
+        "work.technical",
+        "market.brainstorm",
+        "market.quickNote"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical"
+      ]
+    },
+    {
+      "id": "occupation.creative.editor",
+      "categoryID": "category.creative",
+      "title": "映像編集者",
+      "description": "クリエイティブ",
+      "recommendedTemplateIDs": [
+        "market.press",
+        "work.technical",
+        "market.brainstorm",
+        "market.quickNote"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical"
+      ]
+    },
+    {
+      "id": "occupation.creative.writer",
+      "categoryID": "category.creative",
+      "title": "ライター",
+      "description": "クリエイティブ",
+      "recommendedTemplateIDs": [
+        "market.press",
+        "work.technical",
+        "market.brainstorm",
+        "market.quickNote"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical"
+      ]
+    },
+    {
+      "id": "occupation.creative.publisher",
+      "categoryID": "category.creative",
+      "title": "編集者",
+      "description": "クリエイティブ",
+      "recommendedTemplateIDs": [
+        "market.press",
+        "work.technical",
+        "market.brainstorm",
+        "market.quickNote"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical"
+      ]
+    },
+    {
+      "id": "occupation.creative.designer",
+      "categoryID": "category.creative",
+      "title": "グラフィックデザイナー",
+      "description": "クリエイティブ",
+      "recommendedTemplateIDs": [
+        "market.press",
+        "work.technical",
+        "market.brainstorm",
+        "market.quickNote"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical"
+      ]
+    },
+    {
+      "id": "occupation.creative.illustrator",
+      "categoryID": "category.creative",
+      "title": "イラストレーター",
+      "description": "クリエイティブ",
+      "recommendedTemplateIDs": [
+        "market.press",
+        "work.technical",
+        "market.brainstorm",
+        "market.quickNote"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical"
+      ]
+    },
+    {
+      "id": "occupation.creative.director",
+      "categoryID": "category.creative",
+      "title": "ディレクター",
+      "description": "クリエイティブ",
+      "recommendedTemplateIDs": [
+        "market.press",
+        "work.technical",
+        "market.brainstorm",
+        "market.quickNote"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.technical"
+      ]
+    },
+    {
+      "id": "occupation.professional.civil-servant",
+      "categoryID": "category.professional",
+      "title": "公務員",
+      "description": "公共・専門職",
+      "recommendedTemplateIDs": [
+        "work.consultation",
+        "work.daily",
+        "builtin.meetingMinutes",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.consultation",
+        "usecase.daily"
+      ]
+    },
+    {
+      "id": "occupation.professional.lawyer",
+      "categoryID": "category.professional",
+      "title": "弁護士",
+      "description": "公共・専門職",
+      "recommendedTemplateIDs": [
+        "work.consultation",
+        "work.daily",
+        "builtin.meetingMinutes",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.consultation",
+        "usecase.daily"
+      ]
+    },
+    {
+      "id": "occupation.professional.tax-accountant",
+      "categoryID": "category.professional",
+      "title": "税理士",
+      "description": "公共・専門職",
+      "recommendedTemplateIDs": [
+        "work.consultation",
+        "work.daily",
+        "builtin.meetingMinutes",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.consultation",
+        "usecase.daily"
+      ]
+    },
+    {
+      "id": "occupation.professional.administrative",
+      "categoryID": "category.professional",
+      "title": "行政書士",
+      "description": "公共・専門職",
+      "recommendedTemplateIDs": [
+        "work.consultation",
+        "work.daily",
+        "builtin.meetingMinutes",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.consultation",
+        "usecase.daily"
+      ]
+    },
+    {
+      "id": "occupation.professional.labor-consultant",
+      "categoryID": "category.professional",
+      "title": "社会保険労務士",
+      "description": "公共・専門職",
+      "recommendedTemplateIDs": [
+        "work.consultation",
+        "work.daily",
+        "builtin.meetingMinutes",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.consultation",
+        "usecase.daily"
+      ]
+    },
+    {
+      "id": "occupation.professional.judicial",
+      "categoryID": "category.professional",
+      "title": "司法書士",
+      "description": "公共・専門職",
+      "recommendedTemplateIDs": [
+        "work.consultation",
+        "work.daily",
+        "builtin.meetingMinutes",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.consultation",
+        "usecase.daily"
+      ]
+    },
+    {
+      "id": "occupation.professional.counselor",
+      "categoryID": "category.professional",
+      "title": "相談支援員",
+      "description": "公共・専門職",
+      "recommendedTemplateIDs": [
+        "work.consultation",
+        "work.daily",
+        "builtin.meetingMinutes",
+        "market.handover"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.consultation",
+        "usecase.daily"
+      ]
+    },
+    {
+      "id": "occupation.study.high-school",
+      "categoryID": "category.study",
+      "title": "高校生",
+      "description": "学生・研究",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.research",
+        "market.userInterview",
+        "market.lecture"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.research"
+      ]
+    },
+    {
+      "id": "occupation.study.university",
+      "categoryID": "category.study",
+      "title": "大学生",
+      "description": "学生・研究",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.research",
+        "market.userInterview",
+        "market.lecture"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.research"
+      ]
+    },
+    {
+      "id": "occupation.study.graduate",
+      "categoryID": "category.study",
+      "title": "大学院生",
+      "description": "学生・研究",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.research",
+        "market.userInterview",
+        "market.lecture"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.research"
+      ]
+    },
+    {
+      "id": "occupation.study.researcher",
+      "categoryID": "category.study",
+      "title": "研究者",
+      "description": "学生・研究",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.research",
+        "market.userInterview",
+        "market.lecture"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.research"
+      ]
+    },
+    {
+      "id": "occupation.study.vocational",
+      "categoryID": "category.study",
+      "title": "専門学校生",
+      "description": "学生・研究",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.research",
+        "market.userInterview",
+        "market.lecture"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.research"
+      ]
+    },
+    {
+      "id": "occupation.study.qualification",
+      "categoryID": "category.study",
+      "title": "資格学習者",
+      "description": "学生・研究",
+      "recommendedTemplateIDs": [
+        "work.learning",
+        "work.research",
+        "market.userInterview",
+        "market.lecture"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.learning",
+        "usecase.research"
+      ]
+    },
+    {
+      "id": "occupation.life.homemaker",
+      "categoryID": "category.life",
+      "title": "主婦・主夫",
+      "description": "日常生活・その他",
+      "recommendedTemplateIDs": [
+        "work.journal",
+        "work.shopping",
+        "market.brainstorm",
+        "builtin.detailedOverview"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.journal",
+        "usecase.shopping"
+      ]
+    },
+    {
+      "id": "occupation.life.job-seeker",
+      "categoryID": "category.life",
+      "title": "求職者",
+      "description": "日常生活・その他",
+      "recommendedTemplateIDs": [
+        "work.journal",
+        "work.shopping",
+        "market.brainstorm",
+        "builtin.detailedOverview"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.journal",
+        "usecase.shopping"
+      ]
+    },
+    {
+      "id": "occupation.life.retired",
+      "categoryID": "category.life",
+      "title": "退職者",
+      "description": "日常生活・その他",
+      "recommendedTemplateIDs": [
+        "work.journal",
+        "work.shopping",
+        "market.brainstorm",
+        "builtin.detailedOverview"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.journal",
+        "usecase.shopping"
+      ]
+    },
+    {
+      "id": "occupation.life.hobby",
+      "categoryID": "category.life",
+      "title": "趣味で利用する人",
+      "description": "日常生活・その他",
+      "recommendedTemplateIDs": [
+        "work.journal",
+        "work.shopping",
+        "market.brainstorm",
+        "builtin.detailedOverview"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.journal",
+        "usecase.shopping"
+      ]
+    },
+    {
+      "id": "occupation.life.journal",
+      "categoryID": "category.life",
+      "title": "日常生活の記録を残したい人",
+      "description": "日常生活・その他",
+      "recommendedTemplateIDs": [
+        "work.journal",
+        "work.shopping",
+        "market.brainstorm",
+        "builtin.detailedOverview"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.journal",
+        "usecase.shopping"
+      ]
+    },
+    {
+      "id": "occupation.life.other",
+      "categoryID": "category.life",
+      "title": "その他",
+      "description": "日常生活・その他",
+      "recommendedTemplateIDs": [
+        "work.journal",
+        "work.shopping",
+        "market.brainstorm",
+        "builtin.detailedOverview"
+      ],
+      "recommendedUseCaseIDs": [
+        "usecase.journal",
+        "usecase.shopping"
+      ]
+    }
+  ],
+  "useCases": [
+    {
+      "id": "usecase.customer-chart",
+      "title": "接客カルテ",
+      "description": "お客様の希望・今回の施術・対応・注意事項・次回の提案・引継ぎ事項",
+      "templateIDs": [
+        "work.customer-chart"
+      ]
+    },
+    {
+      "id": "usecase.treatment",
+      "title": "施術記録",
+      "description": "実施内容・お客様の要望・対応中の注意事項・結果・次回の確認事項",
+      "templateIDs": [
+        "work.treatment"
+      ]
+    },
+    {
+      "id": "usecase.customer-handover",
+      "title": "顧客引継ぎ",
+      "description": "顧客の要望・前回の対応・注意事項・未対応事項・次回の担当者への情報",
+      "templateIDs": [
+        "work.customer-handover"
+      ]
+    },
+    {
+      "id": "usecase.care",
+      "title": "介護記録",
+      "description": "利用者の状態・実施した対応・変化・気づき・注意事項・次の担当者への引継ぎ",
+      "templateIDs": [
+        "work.care"
+      ]
+    },
+    {
+      "id": "usecase.shift-handover",
+      "title": "申し送り",
+      "description": "現在の状況・実施済みの対応・注意点・未完了事項・次の担当者への引継ぎ",
+      "templateIDs": [
+        "work.shift-handover"
+      ]
+    },
+    {
+      "id": "usecase.incident",
+      "title": "事故・ヒヤリハット",
+      "description": "発生日時・発生した場所・発生した事実・対応内容・未確認事項・今後の対応",
+      "templateIDs": [
+        "work.incident"
+      ]
+    },
+    {
+      "id": "usecase.daily",
+      "title": "作業日報",
+      "description": "作業内容・進捗・使用部材・資材・発生した問題・翌日の予定",
+      "templateIDs": [
+        "work.daily"
+      ]
+    },
+    {
+      "id": "usecase.site",
+      "title": "現場報告",
+      "description": "現場の状況・実施作業・進捗・問題・リスク・対応事項",
+      "templateIDs": [
+        "work.site"
+      ]
+    },
+    {
+      "id": "usecase.inspection",
+      "title": "点検記録",
+      "description": "点検対象・確認した項目・異常の有無・実施した対応・次回点検事項",
+      "templateIDs": [
+        "work.inspection"
+      ]
+    },
+    {
+      "id": "usecase.customer-record",
+      "title": "接客記録",
+      "description": "顧客の要望・提案内容・顧客の反応・対応結果・次回の対応",
+      "templateIDs": [
+        "work.customer-record"
+      ]
+    },
+    {
+      "id": "usecase.learning",
+      "title": "講義・学習ノート",
+      "description": "テーマ・重要なポイント・用語・概念・具体例・復習事項",
+      "templateIDs": [
+        "work.learning"
+      ]
+    },
+    {
+      "id": "usecase.journal",
+      "title": "ジャーナル・ライフログ",
+      "description": "今日の出来事・主な活動・印象に残ったこと・記録したメモ・今後の予定",
+      "templateIDs": [
+        "work.journal"
+      ]
+    },
+    {
+      "id": "usecase.technical",
+      "title": "技術・制作メモ",
+      "description": "テーマ・確認した内容・設計・制作の判断・課題・次に確認すること",
+      "templateIDs": [
+        "work.technical"
+      ]
+    },
+    {
+      "id": "usecase.delivery",
+      "title": "配送記録",
+      "description": "配送・作業内容・確認事項・対応結果・トラブル・引継ぎ",
+      "templateIDs": [
+        "work.delivery"
+      ]
+    },
+    {
+      "id": "usecase.education",
+      "title": "授業・活動記録",
+      "description": "授業・活動内容・観察された事実・本人の発言・対応内容・次回の確認",
+      "templateIDs": [
+        "work.education"
+      ]
+    },
+    {
+      "id": "usecase.consultation",
+      "title": "面談・相談記録",
+      "description": "相談内容・相手の希望・確認した事実・提案した対応・未確認事項",
+      "templateIDs": [
+        "work.consultation"
+      ]
+    },
+    {
+      "id": "usecase.growth",
+      "title": "生育・飼育記録",
+      "description": "対象・観察した状態・実施作業・環境・天候・次回の確認",
+      "templateIDs": [
+        "work.growth"
+      ]
+    },
+    {
+      "id": "usecase.research",
+      "title": "研究・実験メモ",
+      "description": "目的・実施内容・観察・結果・考察と未確認事項・次の計画",
+      "templateIDs": [
+        "work.research"
+      ]
+    },
+    {
+      "id": "usecase.shopping",
+      "title": "買い物・予定メモ",
+      "description": "必要なもの・確認した条件・予定・未確認事項",
+      "templateIDs": [
+        "work.shopping"
+      ]
+    }
+  ]
+}

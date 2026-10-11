@@ -50,10 +50,10 @@ extension MemoraModel {
   /// available, otherwise the built-in 詳細な概要.
   var defaultSummaryChoice: SummaryTemplateChoice {
     guard let id = defaultTemplateID,
-          let template = installedMarketTemplates.first(where: { $0.id == id }) else {
+          let template = summaryChoice(id) else {
       return .standard
     }
-    return .market(template)
+    return template
   }
 
   private func persistInstalledTemplates() {

@@ -12,13 +12,22 @@ struct SummaryTemplateMarketplaceView: View {
     let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
     let matching = SummaryTemplateCatalog.market.filter { Self.matches($0, trimmed) }
     let custom = model.customTemplates.filter { Self.matches($0, trimmed) }
+    let recommendations = model.recommendedSummaryChoices.compactMap { choice -> SummaryMarketTemplate? in
+      if case .market(let template) = choice, Self.matches(template, trimmed) { return template }
+      return nil
+    }
 
     List {
+      if !recommendations.isEmpty {
+        Section("仕事・活動からのおすすめ") {
+          ForEach(recommendations) { row($0) }
+        }
+      }
       if trimmed.isEmpty {
         Section {
           LabeledContent("自動生成で使う", value: model.defaultSummaryChoice.title)
         } footer: {
-          Text("テンプレートを開いて「既定にする」を選ぶと、自動生成がそのまとめ方になります。")
+          Text("仕事・活動はおすすめの順序に使います。要約方法は「パーソナライズ」の要約スタイルで変更できます。すべてのテンプレートを選べます。")
         }
       }
 
