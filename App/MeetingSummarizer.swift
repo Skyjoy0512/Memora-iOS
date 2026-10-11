@@ -97,7 +97,20 @@ enum MeetingSummarizer {
     }
     switch reply {
     case .answer(let reply):
-      let summary = SummaryResponseParser.parse(reply)
+      var summary = SummaryResponseParser.parse(reply)
+      let selected: SummaryTemplateChoice
+      if input.automaticCandidates.isEmpty {
+        selected = input.template
+      } else {
+        guard let choice = input.automaticCandidates.first(where: { $0.id == summary.templateID }) else {
+          summary.templateID = nil
+          summary.actions = []
+          return summary.markdown.isEmpty ? .failure(.empty) : .success(summary)
+        }
+        selected = choice
+      }
+      summary.templateID = selected.id
+      if case .market(let template) = selected, !template.includesActions { summary.actions = [] }
       return summary.markdown.isEmpty ? .failure(.empty) : .success(summary)
     case .failure(let failure):
       return .failure(failure)

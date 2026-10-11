@@ -22,6 +22,7 @@ enum SummaryResponseParser {
     let markdown = cleanDocument(document)
     var summary = MeetingSummary(markdown: markdown)
     if let data {
+      summary.templateID = data.templateID
       summary.keyPoints = cleaned(data.keyPoints)
       summary.decisions = cleaned(data.decisions)
       summary.openQuestions = cleaned(data.openQuestions)
@@ -94,6 +95,7 @@ enum SummaryResponseParser {
   }
 
   private struct DataBlock: Decodable {
+    var templateID: String?
     var keyPoints: [String]?
     var decisions: [String]?
     var openQuestions: [String]?

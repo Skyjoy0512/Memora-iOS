@@ -32,6 +32,34 @@ enum SelfChecks {
     failures = 0
     lastDetail = nil
 
+    group("Personalized summary compatibility") {
+      if OccupationCatalog.categories.count != 16 || OccupationCatalog.occupations.count != 116 {
+        report("occupation catalog missing from app bundle")
+      }
+      do {
+        let id = UUID()
+        var meeting = Meeting(id: id, title: "保存テスト", createdAt: .now, duration: 60,
+          source: .recording, status: .ready, summary: "## 希望\n短くしたい", keyPoints: [],
+          decisions: [], openQuestions: [], transcript: [], spaceID: nil, audioURL: nil)
+        let version = TemplateSummary.snapshot(record: meeting, templateID: "work.customer-chart",
+          preferences: SummaryPreferences(length: .detailed), modelInfo: "test")
+        meeting.summaryVersions = [version]
+        meeting.activeSummaryVersionID = version.id
+        meeting.summaryUseCaseID = "usecase.customer-chart"
+        let data = try JSONEncoder().encode(meeting)
+        let restored = try JSONDecoder().decode(Meeting.self, from: data)
+        if restored.summaryVersions != [version] || restored.summaryUseCaseID != meeting.summaryUseCaseID {
+          report("summary history or use case round trip")
+        }
+        var legacy = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        for key in ["summaryVersions", "summaryUseCaseID", "activeSummaryVersionID"] { legacy.removeValue(forKey: key) }
+        let old = try JSONDecoder().decode(Meeting.self, from: JSONSerialization.data(withJSONObject: legacy))
+        if !old.summaryVersions.isEmpty || old.activeSummaryVersionID != nil || old.summary != meeting.summary {
+          report("legacy record summary migration")
+        }
+      } catch { report("personalized summary codec: \(error)") }
+    }
+
     group("Markdown round trip") {
       checkMarkdownRoundTrip("**太字**", name: "bold")
       checkMarkdownRoundTrip("*斜体*", name: "italic")

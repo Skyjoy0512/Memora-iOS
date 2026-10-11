@@ -55,7 +55,10 @@ extension MemoraModel {
   func generateSummary(
     _ id: UUID,
     choice: SummaryTemplateChoice,
-    configuration: (engine: AIEngine, llm: LLMSelection)? = nil
+    configuration: (engine: AIEngine, llm: LLMSelection)? = nil,
+    automaticallySelect: Bool = false,
+    useCaseID: String? = nil,
+    preferences: SummaryPreferences? = nil
   ) {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
 
@@ -70,7 +73,9 @@ extension MemoraModel {
       participantNames: (meeting.participantIDs ?? []).compactMap { person(id: $0)?.name },
       transcript: meeting.transcript,
       template: choice,
-      glossary: transcriptionVocabulary
+      glossary: transcriptionVocabulary,
+      preferences: preferences ?? summaryPreferences,
+      automaticCandidates: automaticallySelect ? automaticSummaryCandidates : []
     )
     let engine = configuration?.engine ?? settingsAIConfiguration.engine
     let llm = configuration?.llm ?? settingsAIConfiguration.llm
@@ -108,14 +113,29 @@ extension MemoraModel {
       switch result {
       case .success(let summary):
         self.updateMeeting(id) { meeting in
+          if !meeting.summary.isEmpty, !meeting.summaryVersions.contains(where: { $0.markdown == meeting.summary }) {
+            meeting.summaryVersions.append(.snapshot(record: meeting, templateID: nil,
+              preferences: input.preferences, modelInfo: "手動編集・旧形式"))
+          }
           meeting.summary = summary.markdown
           meeting.keyPoints = summary.keyPoints
           meeting.decisions = summary.decisions
           meeting.openQuestions = summary.openQuestions
           meeting.status = .ready
+          if let useCaseID { meeting.summaryUseCaseID = useCaseID.isEmpty ? nil : useCaseID }
+          let version = TemplateSummary.snapshot(record: meeting, templateID: summary.templateID,
+            preferences: input.preferences, modelInfo: engine == .cloud || engine == .memora ? llm.modelLabel : "端末内AI")
+          meeting.summaryVersions.append(version)
+          meeting.activeSummaryVersionID = version.id
         }
         let added = self.addExtractedTasks(summary.actions, meetingID: id, meetingDate: current.createdAt)
-        self.deliverSummaryToWebhooks(id)
+        let selectedTemplate = summary.templateID.flatMap(self.summaryChoice)
+        let permitsAutomaticDelivery: Bool = if case .market(let template) = selectedTemplate {
+          template.sensitivityClassification == .general
+        } else {
+          !automaticallySelect || selectedTemplate != nil
+        }
+        if permitsAutomaticDelivery { self.deliverSummaryToWebhooks(id) }
         self.runResidentsAfterMeeting(id)
         self.offerPlusIfNeeded()
         self.announce(added > 0 ? "要約ができました。タスクを\(added)件追加しました。" : "要約ができました。")

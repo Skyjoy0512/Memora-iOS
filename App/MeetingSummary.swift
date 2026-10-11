@@ -8,4 +8,5 @@ struct MeetingSummary {
   var decisions: [String] = []
   var openQuestions: [String] = []
   var actions: [SummaryActionItem] = []
+  var templateID: String? = nil
 }

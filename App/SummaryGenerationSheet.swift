@@ -9,6 +9,9 @@ struct SummaryGenerationSheet: View {
   /// The AI for this summary only. Unset starts on the one Ask AI uses.
   @State private var engineChoice: SummaryEngineChoice?
   @State private var selectedDetent = PresentationDetent.medium
+  @State private var length = SummaryLength.standard
+  @State private var useCaseID = ""
+  @State private var confirmsCloudDisclosure = false
   var meetingID: UUID
 
   var body: some View {
@@ -19,10 +22,8 @@ struct SummaryGenerationSheet: View {
             VStack(spacing: 8) {
               generationChoice(
                 mode: .automatic,
-                title: "自動生成",
-                detail: model.defaultSummaryChoice == .standard
-                  ? "詳細な概要：トピックごとに要点・決定事項・アクション・未決事項を整理"
-                  : "既定のテンプレート「\(model.defaultSummaryChoice.title)」で整理",
+                title: model.summaryPreferences.method.title,
+                detail: automaticDetail,
                 symbol: .sparkles
               )
               generationChoice(
@@ -47,7 +48,27 @@ struct SummaryGenerationSheet: View {
               .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
+            Picker("この記録の用途", selection: $useCaseID) {
+              Text("指定しない").tag("")
+              ForEach(OccupationCatalog.useCases) { useCase in
+                Text(useCase.title).tag(useCase.id)
+              }
+            }
+            .pickerStyle(.menu)
+            Picker("要約の詳しさ", selection: $length) {
+              ForEach(SummaryLength.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            if case .market(let selected) = resolvedChoice, let notice = selected.sensitivityClassification.notice {
+              Text(notice).font(.footnote).foregroundStyle(.secondary)
+            }
             engineSection
+            if usesCloud {
+              Toggle("文字起こしを選択したAIサービスへ送信する", isOn: $confirmsCloudDisclosure)
+                .font(.subheadline)
+              Text("顧客・利用者・未成年者などの情報が含まれる場合は、録音・外部送信の同意と所属先の方針を確認してください。声の特徴量は送信しません。")
+                .font(.footnote).foregroundStyle(.secondary)
+            }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.horizontal, 20)
@@ -68,6 +89,11 @@ struct SummaryGenerationSheet: View {
       .onChange(of: mode) { _, newValue in
         selectedDetent = newValue == .custom ? .large : .medium
       }
+      .onAppear {
+        length = model.summaryPreferences.length
+        useCaseID = model.meeting(id: meetingID)?.summaryUseCaseID ?? ""
+      }
+      .onChange(of: selectedEngine) { _, _ in confirmsCloudDisclosure = false }
     }
     .presentationDetents([.medium, .large], selection: $selectedDetent)
     .presentationDragIndicator(.visible)
@@ -79,20 +105,27 @@ struct SummaryGenerationSheet: View {
         .font(.caption)
         .foregroundStyle(.secondary)
 
-      Button("生成") {
+      Button {
+        var preferences = model.summaryPreferences
+        preferences.length = length
         model.generateSummary(
           meetingID,
-          choice: mode == .automatic ? model.defaultSummaryChoice : template,
-          configuration: model.summaryConfiguration(for: selectedEngine)
+          choice: resolvedChoice,
+          configuration: model.summaryConfiguration(for: selectedEngine),
+          automaticallySelect: mode == .automatic && model.summaryPreferences.method == .automatic && useCaseID.isEmpty,
+          useCaseID: useCaseID,
+          preferences: preferences
         )
         dismiss()
+      } label: {
+        Text("生成")
+          .font(.headline)
+          .foregroundStyle(.white)
+          .frame(maxWidth: .infinity, minHeight: 56)
+          .background(.tint, in: Capsule())
       }
-      .font(.headline)
-      .foregroundStyle(.white)
-      .frame(maxWidth: .infinity, minHeight: 56)
-      .background(.tint, in: Capsule())
-      .contentShape(Capsule())
       .buttonStyle(.plain)
+      .disabled((usesCloud && !confirmsCloudDisclosure) || model.processing.isActive(meetingID))
     }
     .padding(.horizontal, 20)
     .padding(.top, 10)
@@ -102,6 +135,26 @@ struct SummaryGenerationSheet: View {
 
   private var selectedEngine: SummaryEngineChoice {
     engineChoice ?? model.defaultSummaryEngineChoice
+  }
+
+  private var usesCloud: Bool {
+    let engine = AIEngineService.effectiveEngine(model.summaryConfiguration(for: selectedEngine).engine)
+    return engine == .cloud || engine == .memora
+  }
+
+  private var resolvedChoice: SummaryTemplateChoice {
+    guard mode == .automatic else { return template }
+    guard let meeting = model.meeting(id: meetingID) else { return model.defaultSummaryChoice }
+    return model.automaticSummaryChoice(for: meeting, useCaseID: useCaseID.isEmpty ? nil : useCaseID)
+  }
+
+  private var automaticDetail: String {
+    if !useCaseID.isEmpty || model.summaryPreferences.method == .fixed {
+      return "「\(resolvedChoice.title)」で整理"
+    }
+    return usesCloud
+      ? "内容からAIが形式を選択。追加の分類リクエストは行いません"
+      : "端末内の内容ルール・仕事の推薦から「\(resolvedChoice.title)」を選択。AI分類ではありません"
   }
 
   private var engineSection: some View {
@@ -140,7 +193,8 @@ struct SummaryGenerationSheet: View {
   }
 
   private var choices: [SummaryTemplateChoice] {
-    SummaryTemplateChoice.builtInChoices + model.installedMarketTemplates.map { .market($0) }
+    var seen: Set<String> = []
+    return (model.recommendedSummaryChoices + model.allSummaryChoices).filter { seen.insert($0.id).inserted }
   }
 
   private func generationChoice(

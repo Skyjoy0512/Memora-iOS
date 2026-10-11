@@ -11,6 +11,8 @@ struct MeetingSummaryInput {
   var template: SummaryTemplateChoice
   /// Terms whose spelling the summary should follow.
   var glossary: [String] = []
+  var preferences = SummaryPreferences()
+  var automaticCandidates: [SummaryTemplateChoice] = []
 
   /// Speaker labels in the order they first spoke.
   var speakers: [String] {

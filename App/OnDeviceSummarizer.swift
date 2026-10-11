@@ -42,20 +42,29 @@ enum OnDeviceSummarizer {
       return .failure(failure)
     }
 
-    let markdown = SummaryMarkdownBuilder.build(
+    var markdown = SummaryMarkdownBuilder.build(
       template: input.template,
       input: input,
       headline: overview.headline,
       overview: overview.overview,
       topics: topics
     )
+    if case .market(let template) = input.template {
+      switch await templateDocument(input, template: template, overview: overview, topics: topics,
+                                  characterLimit: sectionCharacterLimit(model)) {
+      case .success(let document): markdown = document
+      case .failure(let failure): return .failure(failure)
+      }
+    }
     let actions = SummaryResponseParser.deduplicated(topics.flatMap(\.actions))
+    let includesActions: Bool = if case .market(let template) = input.template { template.includesActions } else { true }
     return .success(MeetingSummary(
       markdown: markdown,
       keyPoints: overview.keyPoints,
       decisions: unique(topics.flatMap(\.decisions)),
       openQuestions: unique(topics.flatMap(\.questions)),
-      actions: actions
+      actions: includesActions ? actions : [],
+      templateID: input.template.id
     ))
   }
 
@@ -86,12 +95,80 @@ enum OnDeviceSummarizer {
   }
 
   private static let instructions = """
-  あなたは会議の文字起こしを整理するアシスタントです。文字起こしにあることだけを書きます。
+  あなたは会話・業務・学習・日常の文字起こしを整理するアシスタントです。文字起こしにあることだけを書きます。
+  日常の出来事も記録です。診断・病名・感情・発言者の実名や役割・ハラスメント認定を推測しません。
   人名・数値・日付・金額・固有名詞は文字起こしの表記のまま使い、話者はラベル（例: Speaker 1）で呼びます。
   相槌や言い直しは無視し、議論の中身を具体的に残します。担当者や期限が述べられていなければ「未定」とします。
   発言をそのまま書き写さず、「Speaker 1が〜と述べた」「〜で合意した」のような言い切りの文に要約します。
   \(ReadabilityGuide.compactRules)
   """
+
+  private static func templateDocument(
+    _ input: MeetingSummaryInput, template: SummaryMarketTemplate, overview: Overview,
+    topics: [SummaryTopic], characterLimit: Int
+  ) async -> Result<String, AIAnswerFailure> {
+    var sectionItems: [String: [String]] = [:]
+    var customParts: [String] = []
+    let headings = template.sections.isEmpty ? ["要点", "未確認事項"] : template.sections
+    for topic in topics {
+      let notes = topic.points + topic.decisions + topic.concerns + topic.questions
+        + topic.actions.map { "\($0.title) / 担当: \($0.owner ?? "未定") / 期限: \($0.due ?? "未定")" }
+      var chunks: [String] = []
+      var chunk = ""
+      for note in notes {
+        if chunk.count + note.count > characterLimit, !chunk.isEmpty {
+          chunks.append(chunk)
+          chunk = ""
+        }
+        chunk += note + "\n"
+      }
+      if !chunk.isEmpty { chunks.append(chunk) }
+      for chunk in chunks {
+        guard !Task.isCancelled else { return .failure(.cancelled) }
+        do {
+          let session = LanguageModelSession(instructions: instructions)
+          let prompt = """
+          記録の作業メモを「\(template.lead)」の観点で整理する。
+          観点: \(template.focus)
+          \(input.preferences.length.instruction)
+          各項目を対応する見出しだけに入れる。見出し: \(headings.joined(separator: " / "))
+          同じ文を全見出しへ繰り返さない。記録のない項目は空配列。不確かな話者を特定しない。
+          作業メモ（\(topic.title)）:
+          \(chunk)
+          """
+          if template.usesPrompt {
+            let response = try await session.respond(to: "\(prompt)\n利用者の形式指示:\n\(template.prompt)")
+            customParts.append(response.content)
+          } else {
+            let response = try await session.respond(to: prompt, generating: TemplateSectionDigest.self,
+                                                    options: GenerationOptions(temperature: 0.2))
+            for section in response.content.sections where headings.contains(section.title) {
+              sectionItems[section.title, default: []] += clean(section.items)
+            }
+          }
+        } catch {
+          return .failure(FoundationModelFailure.reason(for: error))
+        }
+      }
+    }
+    var lines = ["# \(overview.headline)", "**日時**: \(input.dateText)", "**概要**: \(overview.overview)"]
+    if template.usesPrompt {
+      lines += customParts
+    } else {
+      for heading in headings {
+        let items = unique(sectionItems[heading] ?? [])
+        lines += ["", "## \(heading)"]
+        lines += items.isEmpty ? ["記録なし"] : items.map { "- \($0)" }
+      }
+    }
+    if template.includesActions {
+      let actions = unique(topics.flatMap(\.actions).map {
+        "- [ ] \($0.title)（担当: \($0.owner ?? "未定") / 期限: \($0.due ?? "未定")）"
+      })
+      if !actions.isEmpty { lines += ["", "## アクションアイテム"] + actions }
+    }
+    return .success(lines.joined(separator: "\n"))
+  }
 
   /// One section's topics. A section the model still finds too long is split
   /// in half and read as two, once.
@@ -225,7 +302,8 @@ enum OnDeviceSummarizer {
       ""
     }
     let prompt = """
-    次は会議「\(input.title)」の話題ごとのメモです。\(lens)会議全体の見出し・概要・重要なポイントをまとめてください。
+    次は記録「\(input.title)」の話題ごとのメモです。\(lens)全体の見出し・概要・重要なポイントをまとめてください。
+    \(input.preferences.length.instruction)
 
     \(notes)
     """

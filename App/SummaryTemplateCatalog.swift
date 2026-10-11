@@ -111,9 +111,10 @@ enum SummaryTemplateCatalog {
       symbol: .exclamationmarkBubble,
       lead: "クレーム対応（事実と対応）",
       category: .customers,
-      sections: ["発生した事実", "お客様の要望", "こちらの対応・約束", "再発防止"],
-      focus: "事実と相手の感情・要望を分ける。約束した内容と期限は正確に残す。",
-      includesActions: true
+      sections: ["発生した事実", "相手の要望・発言", "実施した対応", "合意・約束した内容", "未解決事項", "再発防止に向けた検討事項"],
+      focus: "発言・観察事実と評価を分ける。相手の感情やハラスメント認定を推測しない。約束した内容と期限は正確に残す。原音声を確認し、人による確認を必要とする。",
+      includesActions: true,
+      sensitivityClassification: .sensitive
     ),
     SummaryMarketTemplate(
       id: "market.negotiation",

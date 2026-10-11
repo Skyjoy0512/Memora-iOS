@@ -52,6 +52,9 @@ struct OccupationSelectionView: View {
       }
     }
     .navigationTitle("仕事・活動")
+    .onChange(of: model.occupationProfile.primaryOccupationID) { _, _ in
+      model.occupationProfile.updatedAt = .now
+    }
     .memoraBackButton()
     .searchable(text: $query, prompt: "仕事を検索")
     .sensoryFeedback(.selection, trigger: model.occupationProfile.selectedOccupationIDs)

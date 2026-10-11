@@ -4,14 +4,16 @@ import Foundation
 /// Ask AI prompt, whose "answer briefly" framing cut minutes down to a few lines.
 enum SummaryPrompt {
   static let system = """
-  あなたは日本語の会議議事録を作成する専門家です。与えられた文字起こしだけを根拠に、正確で具体的な議事録を作ります。
+  あなたは会話・業務・学習・日常の記録を日本語で整理する専門家です。与えられた文字起こしだけを根拠に、指定した用途の記録を作ります。
 
   守ること:
   - 文字起こしに無い事実・数値・日付・担当者を作らない。分からない項目は「未定」と書く。期限も、会議で述べられていなければ必ず「未定」にする。
   - 固有名詞・数値・日付・金額・製品名・識別子は文字起こしの表記をそのまま保つ。
   - 音声認識の誤りと思われる語は、文脈から明らかな場合だけ正しい語に直す。判断できない語は、その語の後に「[要確認]」を付ける。
   - 話者は文字起こしのラベル（例: Speaker 1）で呼ぶ。発言内容から役割が明らかでも、名前を推測して付け替えない。
-  - 相槌・言い直し・雑談は省き、議論の中身・結論・その理由を残す。
+  - 相槌・言い直しは省く。日常の出来事はライフログでは重要な内容なので、会議ではないという理由で削らない。
+  - 顧客の希望とスタッフの提案、観察された事実と推測を区別する。病名・感情・診断・ハラスメント認定を推測しない。
+  - 不確かな話者ラベルから実名や職業・顧客の役割を推測しない。
   - 要点は「誰が何を述べ、どう結論したか」が分かる具体的な文で書く。「〜について話した」だけの文にしない。
   - 指定された形式のMarkdownだけを出力し、前置きや締めの言葉は書かない。
 
@@ -25,10 +27,11 @@ enum SummaryPrompt {
     \(input.headerLines.joined(separator: "\n"))
 
     # 出力形式
-    \(format(for: input.template, input: input))
+    \(generationFormat(input))
 
     # 抽出データ
     \(dataContract)
+    選択した形式のIDをJSONの templateID に書く。手動指定なら \(input.template.id) のまま。
 
     # 文字起こし
     \(transcript)
@@ -75,10 +78,11 @@ enum SummaryPrompt {
     以下は、長い会議の文字起こしを時間順に分けて作った作業メモです。同じ話題が部分をまたいでいる場合は1つにまとめ、全体の議事録を作ってください。
 
     # 出力形式
-    \(format(for: input.template, input: input))
+    \(generationFormat(input))
 
     # 抽出データ
     \(dataContract)
+    選択した形式のIDをJSONの templateID に書く。手動指定なら \(input.template.id) のまま。
 
     # 作業メモ
     \(notes)
@@ -108,6 +112,40 @@ enum SummaryPrompt {
     case .market(let market):
       marketFormat(market, input: input)
     }
+  }
+
+  static func generationFormat(_ input: MeetingSummaryInput) -> String {
+    let length = input.preferences.length.instruction
+    let order = input.preferences.displayOrder == .chronological
+      ? "同じセクション内の項目は時間順に並べる。日時が不明なら順序を捏造しない。"
+      : "同じセクション内では重要な確認済みの情報を先に書く。"
+    guard !input.automaticCandidates.isEmpty else {
+      return format(for: input.template, input: input) + "\n" + length + "\n" + order
+    }
+    let catalog = input.automaticCandidates.map { choice in
+      let sections: String
+      let focus: String
+      if case .market(let market) = choice {
+        sections = market.sections.joined(separator: " / ")
+        focus = market.focus + (market.includesActions ? "" : " 自動タスク抽出は禁止。actionsは空配列。")
+      } else {
+        sections = choice == .builtIn(.actionPlan)
+          ? "アクションアイテム / 決定事項 / 未決事項"
+          : "概要 / 要点 / 決定事項 / 未決事項"
+        focus = choice.detail
+      }
+      return "ID: \(choice.id) | \(choice.title) | 見出し: \(sections) | 観点: \(focus)"
+    }.joined(separator: "\n")
+    return """
+    以下の候補から文字起こしの内容に最も合う形式を1つ選び、同じ回答内で要約する。
+    形式分類だけの別回答は不要。職業を根拠に内容を決めつけない。
+    内容が曖昧なら候補「\(input.template.id)」を使用する。
+    # タイトル、日時、短い概要に続け、選んだ形式の見出しを ## で順番通りに書く。
+    各見出しにはその観点の根拠がある内容だけを書く。記録に無い場合は「記録なし」。
+    \(length)
+    \(order)
+    \(catalog)
+    """
   }
 
   private static func detailedOverview(_ input: MeetingSummaryInput) -> String {
@@ -214,7 +252,7 @@ enum SummaryPrompt {
     let focus = template.focus.trimmingCharacters(in: .whitespacesAndNewlines)
     let sections = template.sections.isEmpty
       ? "## {この観点に合った見出し}\n- {具体的な内容。誰が何を述べたか}\n（観点に合わせて ## の見出しを2〜4個立てる）"
-      : template.sections.map { "## \($0)\n- {具体的な内容。誰が何を述べたか。述べられていなければ「該当なし」}" }
+      : template.sections.map { "## \($0)\n- {この見出しに対応する事実だけ。誰が何を述べたか。述べられていなければ「記録なし」}" }
         .joined(separator: "\n")
     let actions = template.includesActions ? """
 
@@ -227,6 +265,7 @@ enum SummaryPrompt {
 
     return """
     「\(template.lead)」の観点でまとめる。\(focus.isEmpty ? "" : "\n観点の補足: \(focus)")
+    \(template.includesActions ? "" : "タスクの自動抽出はしない。JSONのactionsは空配列にする。")
     次の構成のMarkdownで書く。見出しの名前と順番は変えない。
 
     # {会議の内容が分かる見出し}

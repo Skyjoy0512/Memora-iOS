@@ -23,6 +23,9 @@ struct Meeting: Identifiable, Hashable, Codable {
   var audioURL: URL?
   var notes = ""
   var recordingMarkers: [RecordingMarker] = []
+  var summaryUseCaseID: String? = nil
+  var summaryVersions: [TemplateSummary] = []
+  var activeSummaryVersionID: UUID? = nil
   /// People tagged on this recording.
   var participantIDs: [UUID]? = nil
   /// File names of the photos attached to the record, inside the media folder.
@@ -56,6 +59,7 @@ extension Meeting {
     case audioURL
     case notes
     case recordingMarkers
+    case summaryUseCaseID, summaryVersions, activeSummaryVersionID
     case participantIDs
     case photoFileNames
     case calendarEventID
@@ -82,6 +86,9 @@ extension Meeting {
       try container.decodeIfPresent([RecordingMarker].self, forKey: .recordingMarkers) ?? [], duration: duration)
     participantIDs = try container.decodeIfPresent([UUID].self, forKey: .participantIDs)
     calendarEventID = try container.decodeIfPresent(String.self, forKey: .calendarEventID)
+    summaryUseCaseID = try container.decodeIfPresent(String.self, forKey: .summaryUseCaseID)
+    summaryVersions = try container.decodeIfPresent([TemplateSummary].self, forKey: .summaryVersions) ?? []
+    activeSummaryVersionID = try container.decodeIfPresent(UUID.self, forKey: .activeSummaryVersionID)
 
     // Photos moved out of the record and into the media folder. Older records
     // carry the bytes inline; they are kept for now and written out by
@@ -127,6 +134,9 @@ extension Meeting {
     if !recordingMarkers.isEmpty { try container.encode(recordingMarkers, forKey: .recordingMarkers) }
     try container.encodeIfPresent(participantIDs, forKey: .participantIDs)
     try container.encodeIfPresent(calendarEventID, forKey: .calendarEventID)
+    try container.encodeIfPresent(summaryUseCaseID, forKey: .summaryUseCaseID)
+    if !summaryVersions.isEmpty { try container.encode(summaryVersions, forKey: .summaryVersions) }
+    try container.encodeIfPresent(activeSummaryVersionID, forKey: .activeSummaryVersionID)
 
     // A record still waiting to have its inline photos written keeps the bytes,
     // so a save in between does not drop them. Once they are files, the names

@@ -567,6 +567,24 @@ struct MeetingDetailView: View {
     }
 
     CollapsibleInsightSection(.summary, showsDivider: false) {
+      if let version = meeting.summaryVersions.first(where: { $0.id == meeting.activeSummaryVersionID }),
+         let templateID = version.templateID, let choice = model.summaryChoice(templateID) {
+        Text("\(choice.title) · \(version.summaryLength.title)").font(.subheadline).foregroundStyle(.secondary)
+        if case .market(let template) = choice {
+          if let notice = template.sensitivityClassification.notice {
+            Text(notice).font(.footnote).foregroundStyle(.secondary)
+          }
+          SummarySectionIndex(meeting: meeting)
+        }
+      }
+      if !meeting.summaryVersions.isEmpty {
+        NavigationLink {
+          SummaryHistoryView(meetingID: meeting.id)
+        } label: {
+          Label("要約履歴（\(meeting.summaryVersions.count)）", icon: .clockArrowCirclepath)
+            .font(.subheadline)
+        }
+      }
       // A generated document reads and edits at body size; a short summary
       // keeps its large single-text look.
       let isDocument = MarkdownBlockParser.hasBlockStructure(meeting.summary)
