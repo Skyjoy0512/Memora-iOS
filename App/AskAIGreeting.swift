@@ -16,9 +16,9 @@ struct AskAIGreeting: View {
 
   var body: some View {
     Text(title)
-      .font(.title2.weight(.regular))
-      .lineLimit(1)
-      .minimumScaleFactor(0.6)
+      .font(.title.bold())
+      .multilineTextAlignment(.center)
+      .fixedSize(horizontal: false, vertical: true)
       .memoraTextReveal()
       .frame(maxWidth: .infinity)
   }

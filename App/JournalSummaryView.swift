@@ -101,10 +101,6 @@ struct JournalSummaryView: View {
           .padding(20)
           .frame(maxWidth: .infinity, alignment: .leading)
           .background(panelBackground, in: RoundedRectangle(cornerRadius: 24))
-
-          Text("背景写真はイメージです · \(backdrops.current.label)")
-            .font(.caption)
-            .foregroundStyle(.white.opacity(0.8))
         }
         .padding(.horizontal, 24)
         .padding(.top, 32)
@@ -118,7 +114,7 @@ struct JournalSummaryView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbarBackground(.hidden, for: .navigationBar)
       .toolbar {
-        ToolbarItem(placement: .topBarLeading) {
+        ToolbarItemGroup(placement: .topBarTrailing) {
           Menu {
             Button("背景を変更", icon: .arrowClockwise) {
               backdrops.shuffle(date)
@@ -131,8 +127,6 @@ struct JournalSummaryView: View {
           } label: {
             Label("その他", icon: .ellipsis).labelStyle(.iconOnly)
           }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
           ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
         }
       }

@@ -29,9 +29,9 @@ struct AskAIHeader: View {
       .frame(maxHeight: .infinity, alignment: .top)
 
       VStack(spacing: -10) {
-        ArtworkIcon(artwork: .askAIHeader, size: 26)
+        ArtworkIcon(artwork: .askAIHeader, size: 36)
           .foregroundStyle(.white)
-          .frame(width: 56, height: 56)
+          .frame(width: 64, height: 64)
           .background(
             LinearGradient(colors: [.accentColor, .accentColor.opacity(0.75)], startPoint: .top, endPoint: .bottom),
             in: Circle()
@@ -47,7 +47,7 @@ struct AskAIHeader: View {
       .accessibilityLabel("Memora")
       .accessibilityAddTraits(.isHeader)
     }
-    .frame(height: 96)
+    .frame(height: 104)
   }
 
   private func headerButton(_ title: String, icon: MemoraIcon, action: @escaping () -> Void) -> some View {
