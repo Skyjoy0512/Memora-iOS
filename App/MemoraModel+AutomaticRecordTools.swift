@@ -1,15 +1,20 @@
 import Foundation
 
 extension MemoraModel {
-  func automaticRecordTool(_ call: AgentToolCall, messageID: UUID) -> AgentToolOutcome? {
-    guard let tool = call.tool else { return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true) }
+  func automaticRecordTool(_ call: AgentToolCall, messageID: UUID,
+                           purpose: RecordAccessPolicy.Purpose = .automaticAgent,
+                           scope: AIChatScope = .all) -> AgentToolOutcome? {
+    guard let tool = call.tool else {
+      return purpose == .automaticAgent ? AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true) : nil
+    }
     guard [.searchRecords, .readRecord, .listProjects, .listTasks, .readPerson, .reviewPeriod].contains(tool) else {
       return nil
     }
     guard !isRestoring, !isStoreProtected else {
       return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
     }
-    let permitted = meetings.filter { RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .automaticAgent) }
+    let permitted = Self.meetings(in: scope, from: meetings)
+      .filter { RecordAccessPolicy.allows($0.effectivePrivacy, purpose: purpose) }
     let ids = Set(permitted.map(\.id))
     let permittedTasks = tasks.filter { $0.meetingID.map(ids.contains) == true }
     var lines: [String] = []
@@ -50,12 +55,15 @@ extension MemoraModel {
           .map { "id=\($0.id) 「\($0.displayTitle)」 \($0.shortSummaryPreview)" }
       }
     case .reviewPeriod:
-      let start = Self.automaticReviewDate(call.string("start_date"))
-      let end = Self.automaticReviewDate(call.string("end_date")).flatMap { Calendar.current.date(byAdding: .day, value: 1, to: $0) }
-      guard let start, let end, start < end else {
-        return AgentToolOutcome(text: "start_date/end_dateをYYYY-MM-DDで指定してください。", isError: true)
+      guard let period = ReviewPeriod.parse(start: call.string("start_date"), end: call.string("end_date")) else {
+        return AgentToolOutcome(text: "start_date/end_dateをYYYY-MM-DDで指定してください。期間は最大366日です。", isError: true)
       }
-      lines = permitted.filter { $0.createdAt >= start && $0.createdAt < end }.map {
+      let records = permitted.filter { period.contains($0.createdAt) }
+      let complete = permittedTasks.filter { $0.isCompleted && $0.completedAt.map(period.contains) == true }.count
+      lines = ["対象期間: \(period.label)", "外部利用を許可した記録: \(records.count)件",
+        "録音時間: \(MemoraFormat.duration(records.reduce(0) { $0 + ($1.duration.isFinite ? max(0, $1.duration) : 0) }))",
+        "期間内に完了した関連タスク: \(complete)件",
+        "未許可記録・独立タスク・ジャーナルは集計に含みません。"] + records.map {
         "「\($0.displayTitle)」 \($0.summaryPreview)\n\($0.decisions.joined(separator: "\n"))"
       }
     default: break
@@ -65,11 +73,4 @@ extension MemoraModel {
     return AgentToolOutcome(text: lines.isEmpty ? "外部送信が許可された該当記録はありません。未判定・未許可の記録は読みません。" : String(lines.joined(separator: "\n").prefix(32_000)))
   }
 
-  private static func automaticReviewDate(_ text: String) -> Date? {
-    let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "en_US_POSIX")
-    formatter.dateFormat = "yyyy-MM-dd"
-    formatter.isLenient = false
-    return formatter.date(from: text)
-  }
 }

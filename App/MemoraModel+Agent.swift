@@ -49,7 +49,7 @@ extension MemoraModel {
     isAIChatResponding = true
 
     // The on-device window is small, so it gets only the end of the thread.
-    let thread = runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : history
+    let thread = runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : ""
     var opening = trimmed
     if !thread.isEmpty {
       opening = "これまでの会話:\n\(thread)\n\n今回の依頼:\n\(trimmed)"
@@ -57,12 +57,20 @@ extension MemoraModel {
     // The records that bear on the request, found before the model starts:
     // a question can be answered from them straight away, and work starts
     // from the right records. Smaller on the device's window.
-    let allowedMeetings = Self.meetings(in: scope, from: meetings)
+    let allowedMeetings = Self.meetings(in: scope, from: meetings).filter {
+      runner.isOnDevice || RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI)
+    }
+    let allowedIDs = Set(allowedMeetings.map(\.id))
+    if !runner.isOnDevice {
+      opening = "クラウドAI利用を許可した記録だけを読みます。未判定・未許可の記録はプライバシー設定の確認が必要です。過去の会話は送信していません。\n\n" + opening
+    }
     let found = Self.requestContent(
       for: AIQuestionRequest(question: trimmed, scope: .global, attachment: nil),
       scopeLabel: scope.scopeLabel,
       allowedMeetings: allowedMeetings,
-      tasks: Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings),
+      tasks: Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings).filter {
+        runner.isOnDevice || $0.meetingID.map(allowedIDs.contains) == true
+      },
       characterLimit: runner.isOnDevice ? 1_500 : 8_000
     )
     if !found.context.isEmpty {
@@ -70,7 +78,7 @@ extension MemoraModel {
       updateAgentMessage(placeholder.id) { $0.sources = found.sources }
     }
     // What the agent knows about the person, smaller on the device's window.
-    let personal = personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000)
+    let personal = personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000, includesHistory: runner.isOnDevice)
     if !personal.isEmpty {
       opening = personal + "\n\n" + opening
     }

@@ -65,6 +65,39 @@ enum SelfChecks {
       } catch { report("personalized summary codec: \(error)") }
     }
 
+    group("Review privacy and evidence") {
+      do {
+        var record = Meeting(id: UUID(), title: "機密", createdAt: .now, duration: 60,
+          source: .recording, status: .ready, summary: "", keyPoints: [], decisions: [],
+          openQuestions: [], transcript: [], spaceID: nil, audioURL: nil)
+        record.privacy = RecordPrivacy(classification: .general, allowsCloudAI: true,
+          allowsAutomaticAgentAccess: true, allowsAutomaticWebhook: true, allowsTeamSharing: true)
+        if !RecordAccessPolicy.allows(record.effectivePrivacy, purpose: .automaticAgent) { report("explicit permission denied") }
+        record.summary = "## お客様の希望\nお客様は肩までのカットを希望"
+        let segment = TranscriptSegment(id: UUID(), speaker: "話者B", speakerIsCertain: false,
+          timestamp: 18, text: "肩くらいまで短く切ってください。", endTime: 24)
+        record.transcript = [segment]
+        let evidence = GeneratedSummaryEvidence(sectionTitle: "お客様の希望",
+          sourceSegmentID: segment.id.uuidString, quote: "肩くらいまで短く切ってください")
+        let version = TemplateSummary.snapshot(record: record, templateID: "work.customer-chart",
+          preferences: SummaryPreferences(), modelInfo: "test", evidence: [evidence])
+        record.summaryVersions = [version]
+        record.activeSummaryVersionID = version.id
+        if RecordAccessPolicy.allows(record.effectivePrivacy, purpose: .automaticAgent)
+          || RecordAccessPolicy.allows(record.effectivePrivacy, purpose: .automaticWebhook) { report("sensitive history leaked") }
+        let general = TemplateSummary.snapshot(record: record, templateID: SummaryTemplateChoice.standard.id,
+          preferences: SummaryPreferences(), modelInfo: "test")
+        record.summaryVersions.append(general)
+        if RecordAccessPolicy.allows(record.effectivePrivacy, purpose: .automaticWebhook) { report("general regeneration removed protection") }
+        if TemplateSummary.displaySections(record: record).first?.sourceReferences != [segment.id] { report("paraphrase evidence missing") }
+        let encoded = try JSONEncoder().encode(record)
+        let restored = try JSONDecoder().decode(Meeting.self, from: encoded)
+        if restored.effectivePrivacy != record.effectivePrivacy { report("privacy codec") }
+        record.transcript[0].text = "編集後の別の内容"
+        if TemplateSummary.displaySections(record: record).first?.sourceReferences.isEmpty != true { report("stale evidence accepted") }
+      } catch { report("review checks: \(error)") }
+    }
+
     group("Occupation-linked summary defaults") {
       let available = Set(SummaryTemplateCatalog.market.map(\.id)
         + SummaryTemplateChoice.builtInChoices.map(\.id))

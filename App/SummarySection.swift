@@ -6,6 +6,7 @@ struct SummarySection: Identifiable, Hashable, Codable {
   var content: String
   var order: Int
   var sourceReferences: [UUID] = []
+  var evidenceLinks: [SummaryEvidenceLink]?
 
   static func parse(_ markdown: String) -> [Self] {
     var result: [Self] = []

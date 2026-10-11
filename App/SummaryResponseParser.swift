@@ -23,6 +23,7 @@ enum SummaryResponseParser {
     var summary = MeetingSummary(markdown: markdown)
     if let data {
       summary.templateID = data.templateID
+      summary.evidence = Array((data.sourceReferences ?? []).prefix(64))
       summary.keyPoints = cleaned(data.keyPoints)
       summary.decisions = cleaned(data.decisions)
       summary.openQuestions = cleaned(data.openQuestions)
@@ -54,6 +55,7 @@ enum SummaryResponseParser {
     guard let id = summary.templateID, allowedIDs.contains(id) else {
       result.templateID = nil
       result.actions = []
+      result.evidence = []
       return result
     }
     if actionFreeIDs.contains(id) { result.actions = [] }
@@ -107,6 +109,7 @@ enum SummaryResponseParser {
 
   private struct DataBlock: Decodable {
     var templateID: String?
+    var sourceReferences: [GeneratedSummaryEvidence]?
     var keyPoints: [String]?
     var decisions: [String]?
     var openQuestions: [String]?

@@ -51,7 +51,7 @@ enum MeetingSummarizer {
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
     let lines = input.transcript
       .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-      .map(MeetingSummaryInput.line(for:))
+      .map(MeetingSummaryInput.cloudLine(for:))
     let transcript = lines.joined(separator: "\n")
 
     let request: String

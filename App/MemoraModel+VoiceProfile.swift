@@ -14,12 +14,16 @@ extension MemoraModel {
 
   func enrollCurrentSpeaker(fileURLs: [URL], consentAt: Date, keepsSample: Bool,
     onProgress: (Int, Int) -> Void) async throws {
+    guard !isEnrollingSpeaker, speakerAnalysisIDs.isEmpty else { throw SpeakerProcessingFailure.busy }
     guard !isRestoring, isStoreWritable(), !isRecording, !isPreparingCapture,
           (1...VoiceEnrollmentBuilder.maximumSamples).contains(fileURLs.count),
           Set(fileURLs.map(\.standardizedFileURL)).count == fileURLs.count,
           fileURLs.allSatisfy({ VoiceProfileFiles.resolve($0.lastPathComponent)?.standardizedFileURL == $0.standardizedFileURL }) else {
       throw SpeakerProcessingFailure.storageFailure
     }
+    isEnrollingSpeaker = true
+    defer { isEnrollingSpeaker = false }
+    let revision = speakerEnrollmentRevision
     let service: any SpeakerDiarizationService = FluidSpeakerDiarizationService.shared
     var results: [SpeakerAnalysisResult] = []
     var qualities: [VoiceQualityMetadata] = []
@@ -37,7 +41,7 @@ extension MemoraModel {
       }
     }
     try Task.checkCancellation()
-    guard !isRestoring, isStoreWritable(), !isRecording, !isPreparingCapture else {
+    guard revision == speakerEnrollmentRevision, !isRestoring, isStoreWritable(), !isRecording, !isPreparingCapture else {
       throw SpeakerProcessingFailure.storageFailure
     }
     let profile = try VoiceEnrollmentBuilder.profile(results: results, qualities: qualities, consentAt: consentAt)
@@ -77,6 +81,7 @@ extension MemoraModel {
       try SpeakerProfileStore.save(profile)
       let reference = SpeakerProfileReference(profile)
       guard persistNow([reference], forKey: StorageKey.speakerProfile) else { throw SpeakerProcessingFailure.storageFailure }
+      speakerEnrollmentRevision = UUID()
       speakerProfileReference = reference
       speakerProfile = profile
     } catch { announce("声の設定を保存できませんでした。") }
@@ -84,6 +89,7 @@ extension MemoraModel {
 
   func removeSpeakerEmbedding() -> Bool {
     guard !isRestoring, isStoreWritable() else { return false }
+    speakerEnrollmentRevision = UUID()
     speakerProfile = nil
     do {
       try SpeakerProfileStore.delete()

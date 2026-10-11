@@ -2,7 +2,7 @@ import Foundation
 
 extension MemoraModel {
   func analyzeSpeakers(_ id: UUID) async {
-    guard !speakerAnalysisIDs.contains(id), !processing.isActive(id), !isRestoring, isStoreWritable(),
+    guard !isEnrollingSpeaker, !speakerAnalysisIDs.contains(id), !processing.isActive(id), !isRestoring, isStoreWritable(),
           let record = meeting(id: id), let audioURL = record.audioURL, !record.transcript.isEmpty else { return }
     guard record.transcript.contains(where: { $0.endTime != nil }) else {
       speakerAnalysisMessages[id] = "この文字起こしには発言の終了時刻がありません。自動の話者割り当ては行いません。話者名は手動で編集できます。"

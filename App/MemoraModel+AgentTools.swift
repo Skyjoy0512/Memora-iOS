@@ -21,6 +21,8 @@ extension MemoraModel {
         return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
       }
       if let outcome = automaticRecordTool(call, messageID: messageID) { return outcome }
+    } else if !compact, let outcome = automaticRecordTool(call, messageID: messageID, purpose: .cloudAI, scope: scope) {
+      return outcome
     }
     guard let tool = call.tool else {
       if let external = activeMCPTools[call.name] {

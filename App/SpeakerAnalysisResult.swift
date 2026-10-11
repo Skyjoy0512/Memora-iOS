@@ -5,4 +5,5 @@ struct SpeakerAnalysisResult: Sendable {
   var embeddings: [String: [Float]]
   var modelID: String
   var modelVersion: String
+  var eligibleSpeechDurations: [String: TimeInterval] = [:]
 }

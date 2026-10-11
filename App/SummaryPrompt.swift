@@ -62,6 +62,7 @@ enum SummaryPrompt {
     - 要点: 誰が何を述べたか（数値・日付・固有名詞を正確に。複数行可）
     - 用途別の情報: 上記の見出し・観点に該当する事実を省略せず保存する。
     - 発言と対応: 誰の希望・提案・観察・実施内容かを区別する。
+    - 根拠: 元のsegmentIDと原文の短い逐語引用。後の統合でもIDと引用を保持する。
     会議用の決定事項・アクション・未決事項は、その用途と原文に該当する場合だけ記載する。
 
     # 文字起こし
@@ -94,10 +95,11 @@ enum SummaryPrompt {
   static let dataContract = """
   文書の最後に、次のタグで囲んだJSONを1つだけ付ける。文書本文と矛盾しない内容にする。
   <memora-data>
-  {"templateID": "指定または候補に存在するID", "keyPoints": ["記録全体で重要なポイント"], "decisions": [], "openQuestions": [], "actions": []}
+  {"templateID": "指定または候補に存在するID", "keyPoints": ["記録全体で重要なポイント"], "decisions": [], "openQuestions": [], "actions": [], "sourceReferences": []}
   </memora-data>
   templateIDは必須。候補に存在しないIDを作らない。該当が無い項目は空の配列にする。
   actionsを許可する形式では、原文にある行動だけを重複なく含め、各項目は {"title":"短い件名","detail":"何をするか","owner":"話者ラベルまたは未定","due":"述べられた期限または未定"} とする。
+  sourceReferencesは確認可能な根拠だけを最大64件まで返す。各項目は {"sectionTitle":"本文の##見出しと完全に同じ名前","sourceSegmentID":"文字起こしに存在するsegmentID","quote":"その発言から8文字以上を逐語引用"} とする。言い換えた要約にも、その根拠の発言IDと原文引用を使う。根拠が不明なら空配列。ID・引用を創作しない。
   """
 
   static func format(for template: SummaryTemplateChoice, input: MeetingSummaryInput) -> String {

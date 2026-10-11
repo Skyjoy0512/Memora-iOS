@@ -243,13 +243,18 @@ extension MemoraModel {
     llm: LLMSelection,
     onContextReady: (([AIChatSource]) -> Void)? = nil
   ) async -> AIAnswerOutcome {
+    let cloud = AIEngineService.effectiveEngine(engine) == .cloud
+    let permitted = allowedMeetings.filter { !cloud || RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI) }
+    let permittedIDs = Set(permitted.map(\.id))
+    let permittedTasks = scopedTasks.filter { !cloud || $0.meetingID.map(permittedIDs.contains) == true }
     var content = Self.requestContent(
       for: request,
       scopeLabel: scopeLabel,
-      allowedMeetings: allowedMeetings,
-      tasks: scopedTasks,
-      history: history,
-      personal: personal,
+      allowedMeetings: permitted,
+      tasks: permittedTasks,
+      history: cloud ? "" : history,
+      personal: cloud ? personalContext(for: request.effectiveQuestion,
+        budget: AIEngineService.contextCharacterLimit(for: engine) / 6, includesHistory: false) : personal,
       characterLimit: AIEngineService.contextCharacterLimit(for: engine)
     )
 

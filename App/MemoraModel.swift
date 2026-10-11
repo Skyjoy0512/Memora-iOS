@@ -90,6 +90,8 @@ final class MemoraModel {
   var speakerProfile: SpeakerProfile?
   var speakerProfileReference: SpeakerProfileReference?
   var speakerAnalysisIDs: Set<UUID> = []
+  var isEnrollingSpeaker = false
+  @ObservationIgnored var speakerEnrollmentRevision = UUID()
   var speakerAnalysisMessages: [UUID: String] = [:]
   var tasks: [MemoraTask] {
     didSet {

@@ -31,6 +31,16 @@ struct SummaryPromptChecks {
     custom.sections = ["私の見出し"]
     custom.prompt = ""
     precondition(!SummaryPrompt.format(for: .market(custom), input: minutes).contains("## 未決事項"))
+    let all = SummaryTemplateChoice.builtInChoices + SummaryTemplateCatalog.market.map { .market($0) }
+    let ids = SummaryTemplateSelector.candidateIDs(fallbackID: minutes.template.id, contentID: "work.customer-chart",
+      recommendedIDs: ["work.customer-chart", "work.treatment", "work.customer-handover"],
+      genericIDs: ["builtin.detailedOverview", "builtin.meetingMinutes", "work.journal", "builtin.actionPlan"],
+      availableIDs: Set(all.map(\.id)))
+    var broad = minutes
+    broad.automaticCandidates = all
+    var compact = minutes
+    compact.automaticCandidates = ids.compactMap { id in all.first { $0.id == id } }
+    print("Candidate format characters: \(all.count) choices / \(SummaryPrompt.generationFormat(broad).count) → \(ids.count) choices / \(SummaryPrompt.generationFormat(compact).count)")
     print("SummaryPromptChecks: passed (headings, order, intermediate focus, contract)")
   }
 }

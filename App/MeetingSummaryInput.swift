@@ -35,6 +35,12 @@ struct MeetingSummaryInput {
     return "[\(MemoraFormat.duration(segment.timestamp))] \(segment.speaker): \(text)"
   }
 
+  static func cloudLine(for segment: TranscriptSegment) -> String {
+    let time = segment.timestamp.isFinite && segment.timestamp >= 0 && segment.timestamp < Double(Int.max)
+      ? MemoraFormat.duration(segment.timestamp) : "時刻不明"
+    return "[\(time)] [segmentID=\(segment.id.uuidString)] \(segment.speaker): \(segment.text.trimmingCharacters(in: .whitespacesAndNewlines))"
+  }
+
   /// The header the engines are given about the meeting itself.
   var headerLines: [String] {
     var lines = [

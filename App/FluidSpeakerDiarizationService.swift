@@ -41,13 +41,22 @@ actor FluidSpeakerDiarizationService: SpeakerDiarizationService {
     }.filter(\.isValid)
     guard !intervals.isEmpty else { throw SpeakerProcessingFailure.noSpeech }
     var vectors: [String: [[Float]]] = [:]
+    var eligibleIntervals: [String: [SpeakerInterval]] = [:]
     for chunk in result.chunkEmbeddings ?? [] {
       guard chunk.embedding256.count == 256, chunk.embedding256.allSatisfy(\.isFinite) else { continue }
+      guard SpeakerEmbeddingQuality.eligible(speakerID: chunk.speakerId,
+        start: chunk.startTimeSeconds, end: chunk.endTimeSeconds, intervals: intervals,
+        minimumSpeechDuration: 1) else { continue }
       vectors[chunk.speakerId, default: []].append(chunk.embedding256)
+      eligibleIntervals[chunk.speakerId, default: []] += intervals.filter {
+        $0.speakerID == chunk.speakerId && $0.end > chunk.startTimeSeconds && $0.start < chunk.endTimeSeconds
+      }.map { SpeakerInterval(speakerID: chunk.speakerId, start: max($0.start, chunk.startTimeSeconds),
+        end: min($0.end, chunk.endTimeSeconds)) }
     }
     let embeddings = vectors.compactMapValues(SpeakerEmbeddingMath.mean)
     return SpeakerAnalysisResult(intervals: intervals, embeddings: embeddings,
-      modelID: SpeakerModelAssets.modelID, modelVersion: SpeakerModelAssets.revision)
+      modelID: SpeakerModelAssets.modelID, modelVersion: SpeakerModelAssets.revision,
+      eligibleSpeechDurations: eligibleIntervals.mapValues(SpeakerEmbeddingQuality.duration))
   }
 
   private func loadPsi(_ directory: URL) throws -> [Double] {

@@ -3,6 +3,7 @@ import Foundation
 enum SpeakerIdentificationService {
   static func similarities(profile: SpeakerProfile, result: SpeakerAnalysisResult) throws -> [String: Double] {
     guard profile.isEnabled else { return [:] }
+    guard profile.isValid else { throw SpeakerProcessingFailure.invalidEmbedding }
     guard profile.embeddingModelID == result.modelID, profile.embeddingModelVersion == result.modelVersion else {
       throw SpeakerProcessingFailure.modelMismatch
     }

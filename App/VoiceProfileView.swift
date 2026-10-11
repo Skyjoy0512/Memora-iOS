@@ -38,7 +38,7 @@ struct VoiceProfileView: View {
           Text("声の特徴量を読み込めません。ロック解除後に開き直すか、この端末で再登録してください。")
         }
       } footer: {
-        Text("声の特徴量はこの端末だけで生成・暗号化して保存します。自動で『自分』と確定する機能は実機検証待ちです。認証には使いません。")
+        Text("声の登録：\(model.speakerProfile == nil ? "未登録" : "完了")。話者分離：\(SpeakerModelAssets.isInstalled ? "モデル準備済み" : "モデル未取得")。自分の声の自動識別：精度検証中。特徴量は端末内で暗号化して保存し、認証には使いません。")
       }
 
       if !SpeakerModelAssets.isInstalled {

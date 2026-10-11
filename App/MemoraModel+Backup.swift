@@ -171,7 +171,8 @@ extension MemoraModel {
     guard !isRecording, !isSavingCapture, recordingDraft == nil else {
       throw BackupPackage.BackupError.busy
     }
-    guard !isRestoring else { throw BackupPackage.BackupError.busy }
+    guard !isRestoring, processing.activeIDs.isEmpty, speakerAnalysisIDs.isEmpty,
+          !isEnrollingSpeaker else { throw BackupPackage.BackupError.busy }
     guard isEmpty else { throw BackupPackage.BackupError.notEmpty }
 
     // Held for the whole restore, so the model refuses changes that could add a

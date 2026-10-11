@@ -1,6 +1,22 @@
 import Foundation
 
 enum SummaryEvidence {
+  static func validatedLinks(_ evidence: [GeneratedSummaryEvidence], sectionTitle: String,
+                             recordID: UUID, transcript: [TranscriptSegment], duration: TimeInterval) -> [SummaryEvidenceLink] {
+    guard duration.isFinite, duration >= 0, duration < Double(Int.max) else { return [] }
+    var seen: Set<UUID> = []
+    return evidence.prefix(64).compactMap { reference in
+      guard reference.sectionTitle == sectionTitle,
+            let id = UUID(uuidString: reference.sourceSegmentID),
+            transcript.filter({ $0.id == id }).count == 1,
+            let segment = transcript.first(where: { $0.id == id }),
+            segment.timestamp.isFinite, segment.timestamp >= 0, segment.timestamp <= duration,
+            reference.quote.count >= 8, reference.quote.count <= 2_000,
+            segment.text.contains(reference.quote), seen.insert(id).inserted else { return nil }
+      return SummaryEvidenceLink(sourceRecordID: recordID, sourceSegmentID: id, sourceText: segment.text)
+    }
+  }
+
   static func matches(items: [String], transcript: [TranscriptSegment], duration: TimeInterval) -> [String: TranscriptSegment] {
     guard duration.isFinite, duration >= 0, duration < Double(Int.max) else { return [:] }
     let segments = transcript.filter { $0.timestamp.isFinite && $0.timestamp >= 0 && $0.timestamp <= duration }

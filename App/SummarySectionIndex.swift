@@ -5,8 +5,7 @@ struct SummarySectionIndex: View {
   var meeting: Meeting
 
   var body: some View {
-    let sections = TemplateSummary.snapshot(record: meeting, templateID: nil,
-      preferences: SummaryPreferences(), modelInfo: "").sections
+    let sections = TemplateSummary.displaySections(record: meeting)
     if !sections.isEmpty {
       DisclosureGroup("要約の項目と原文") {
         ForEach(sections, id: \.order) { section in
@@ -17,7 +16,7 @@ struct SummarySectionIndex: View {
             }
             ForEach(section.sourceReferences, id: \.self) { reference in
               if let segment = meeting.transcript.first(where: { $0.id == reference }), meeting.audioURL != nil {
-                Button("一致する発言 \(MemoraFormat.duration(segment.timestamp))", icon: .playFill) {
+                Button("原文を確認 \(MemoraFormat.duration(segment.timestamp))", icon: .playFill) {
                   model.detailPlaybackRequest = DetailPlaybackRequest(meetingID: meeting.id, time: segment.timestamp)
                 }
                 .font(.caption)
@@ -28,7 +27,7 @@ struct SummarySectionIndex: View {
           .padding(12)
           .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
         }
-        Text("原文との一意な文字一致だけを表示します。一致は内容の正しさを保証しません。")
+        Text("検証できた発言ID・原文引用、または一意な文字一致を表示します。リンクは要約の正しさを保証しません。")
           .font(.caption).foregroundStyle(.secondary)
       }
     }

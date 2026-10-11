@@ -14,6 +14,7 @@ extension Meeting {
     for id in ids {
       if let template = SummaryTemplateCatalog.template(id: id) { result.protect(template.sensitivityClassification) }
     }
+    result.updatedAt = privacy.updatedAt
     return result
   }
 }

@@ -40,7 +40,7 @@ extension MemoraModel {
   func startTranscription(_ id: UUID) {
     guard let meeting = meeting(id: id),
           meeting.audioURL != nil,
-          !processing.isActive(id), !speakerAnalysisIDs.contains(id) else { return }
+          !processing.isActive(id), !speakerAnalysisIDs.contains(id), !isRestoring, isStoreWritable() else { return }
     updateMeeting(id) { $0.status = .transcribing(0.08) }
     runTranscription(id, preparation: .milliseconds(600), progress: 0.62, recordsTiming: false)
   }
@@ -141,10 +141,14 @@ extension MemoraModel {
           meeting.status = .ready
           if let useCaseID { meeting.summaryUseCaseID = useCaseID.isEmpty ? nil : useCaseID }
           let version = TemplateSummary.snapshot(record: meeting, templateID: summary.templateID,
-            preferences: input.preferences, modelInfo: engine == .cloud || engine == .memora ? llm.modelLabel : "端末内AI")
+            preferences: input.preferences, modelInfo: engine == .cloud || engine == .memora ? llm.modelLabel : "端末内AI",
+            evidence: summary.evidence)
           meeting.summaryVersions.append(version)
           meeting.activeSummaryVersionID = version.id
           meeting.privacy = meeting.effectivePrivacy
+          if input.automaticCandidates.isEmpty, case .market(let template) = input.template {
+            meeting.privacy.protect(template.sensitivityClassification)
+          }
           if let selected = summary.templateID.flatMap(self.summaryChoice), case .market(let template) = selected {
             meeting.privacy.protect(template.sensitivityClassification)
           }
@@ -184,6 +188,9 @@ extension MemoraModel {
     progress: Double,
     recordsTiming: Bool
   ) {
+    guard !isRestoring, isStoreWritable(), !speakerAnalysisIDs.contains(id),
+          let original = meeting(id: id) else { return }
+    let revision = ProcessingService.inputRevision(original.transcript)
     processing.run(id: id) { [weak self] in
       guard let self else { return TranscriptionOutcome.unavailable }
       // Checked before the job starts, so a missing key or an unsupported
@@ -212,11 +219,18 @@ extension MemoraModel {
       // Only a real engine's transcript is ever stored. When none can run, the
       // record says so and keeps the audio for a retry — never sample text.
       return await TranscriptionService.transcribe(
-        fileURL: self.meeting(id: id)?.audioURL,
+        fileURL: original.audioURL,
         vocabulary: self.transcriptionVocabulary
       )
     } apply: { [weak self] outcome in
-      guard let self, !Task.isCancelled else { return }
+      guard let self, !Task.isCancelled, !self.isRestoring, self.isStoreWritable(),
+            let current = self.meeting(id: id) else { return }
+      guard current.audioURL == original.audioURL,
+            ProcessingService.inputRevision(current.transcript) == revision else {
+        self.updateMeeting(id) { $0.status = $0.transcript.isEmpty ? .waitingForTranscription : .waitingForSummary }
+        self.announce("記録が編集されたため、古い文字起こしは反映しませんでした。原音声・原文は保持しています。")
+        return
+      }
       self.applyTranscription(outcome, to: id)
     }
   }
