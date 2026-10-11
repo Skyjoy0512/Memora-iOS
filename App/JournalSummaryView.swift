@@ -13,12 +13,14 @@ struct JournalSummaryView: View {
   @AppStorage("memora.journal.healthReviewEnabled") private var healthEnabled = false
   @State private var showsReview = false
   @State private var showsCreate = false
+  @State private var openSource: JournalDecisionSource?
 
   var body: some View {
     let ownTasks = model.tasks.filter { model.isOwnTask($0) }
     let recap = JournalDailyRecap.build(date: date, meetings: model.meetings,
       tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
       people: model.people, events: events, health: healthEnabled && model.currentTeamID == nil ? health : nil)
+    let decisionSources = Dictionary(grouping: recap.context.decisionSources, by: \.statement)
     let shareRecap = JournalDailyRecap.build(date: date, meetings: model.meetings,
       tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
       people: model.people, events: events)
@@ -59,7 +61,7 @@ struct JournalSummaryView: View {
 
           divider
 
-          contextSection("決まったこと", values: recap.context.decisions)
+          decisionSection(recap.context.decisions, sources: decisionSources)
           contextSection("引き継ぐ問い", values: recap.context.openQuestions)
           contextSection("関連プロジェクト", values: recap.context.projects)
           contextSection("記録にタグ付けされた人物", values: recap.context.people)
@@ -135,6 +137,12 @@ struct JournalSummaryView: View {
         }
       }
       .sheet(isPresented: $showsReview) { JournalReviewView(date: date) }
+      .sheet(item: $openSource) { source in
+        NavigationStack {
+          MeetingDetailView(meetingID: source.meetingID, initialPlaybackStart: source.timestamp,
+            showsLocalPlaybackBar: true)
+        }
+      }
       .sheet(isPresented: $showsCreate) { LifeLogCreationSheet(date: Calendar.current.isDateInToday(date) ? .now : date) }
     }
     .preferredColorScheme(.dark)
@@ -165,6 +173,33 @@ struct JournalSummaryView: View {
 
   private var panelBackground: Color {
     reduceTransparency ? Color(white: 0.12) : .white.opacity(0.12)
+  }
+
+  @ViewBuilder private func decisionSection(_ decisions: [String], sources: [String: [JournalDecisionSource]]) -> some View {
+    if !decisions.isEmpty {
+      VStack(alignment: .leading, spacing: 16) {
+        Text("決まったこと").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+        ForEach(Array(decisions.enumerated()), id: \.offset) { _, decision in
+          VStack(alignment: .leading, spacing: 6) {
+            Text(decision).font(.body).lineSpacing(5).fixedSize(horizontal: false, vertical: true)
+            ForEach(sources[decision] ?? []) { source in
+              Button("記録を確認：\(source.title)", icon: .textBubble) {
+                InteractionFeedback.shared.send(.tap)
+                openSource = source
+              }
+              .font(.subheadline)
+              .frame(minHeight: 44, alignment: .leading)
+              .accessibilityHint(source.timestamp == nil ? "元のサマリーを開きます" : "本文が一致する発言を開き、音声があれば再生します")
+            }
+          }
+        }
+        Text("決定事項は保存されたサマリーから抜き出しています。内容は元の記録で確認できます。")
+          .font(.footnote).foregroundStyle(.white.opacity(0.8))
+      }
+      .padding(20)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(panelBackground, in: RoundedRectangle(cornerRadius: 24))
+    }
   }
 
   @ViewBuilder private func contextSection(_ title: String, values: [String]) -> some View {

@@ -5,6 +5,7 @@ struct JournalRecapContext {
   var projects: [String] = []
   var people: [String] = []
   var decisions: [String] = []
+  var decisionSources: [JournalDecisionSource] = []
   var openQuestions: [String] = []
   var places: [String] = []
   var nextSteps: [String] = []
@@ -38,6 +39,7 @@ struct JournalRecapContext {
       if count > 0 { result.metrics.append("\(kind.label)\(count)件") }
     }
     result.decisions = unique(meetings.flatMap(\.decisions))
+    result.decisionSources = JournalDecisionSource.build(meetings: meetings)
     result.openQuestions = unique(meetings.flatMap(\.openQuestions))
     let projectIDs = Set(meetings.compactMap(\.spaceID))
     result.projects = unique(spaces.filter { projectIDs.contains($0.id) }.map(\.name))

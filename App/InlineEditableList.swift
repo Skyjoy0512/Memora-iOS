@@ -7,6 +7,8 @@ struct InlineEditableList: View {
   var items: [String]
   var emptyText: String
   var onCommit: ([String]) -> Void
+  var sourceLabels: [String: String] = [:]
+  var onShowSource: ((String) -> Void)? = nil
 
   @Environment(MemoraModel.self) private var model
   @State private var isEditing = false
@@ -31,34 +33,36 @@ struct InlineEditableList: View {
             .foregroundStyle(.secondary)
         }
       } else {
-        Group {
-          if items.isEmpty {
+        if items.isEmpty {
+          editingSurface(
             Text(emptyText)
               .font(.subheadline)
               .foregroundStyle(.secondary)
-          } else {
-            VStack(alignment: .leading, spacing: MarkdownBlockView.blockSpacing) {
-              // Index identity: duplicate lines still get their own view.
-              ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                  Circle()
-                    .fill(Color.primary)
-                    .frame(width: 5, height: 5)
-                  Text(InlineMarkdownEditor.attributed(item))
-                    .font(.body)
-                    .lineSpacing(MarkdownBlockView.lineSpacing)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+          )
+        } else {
+          VStack(alignment: .leading, spacing: MarkdownBlockView.blockSpacing) {
+            // Index identity: duplicate lines still get their own view.
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+              VStack(alignment: .leading, spacing: 4) {
+                editingSurface(
+                  HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Circle().fill(Color.primary).frame(width: 5, height: 5)
+                    Text(InlineMarkdownEditor.attributed(item))
+                      .font(.body)
+                      .lineSpacing(MarkdownBlockView.lineSpacing)
+                      .frame(maxWidth: .infinity, alignment: .leading)
+                  }
+                )
+                if let onShowSource {
+                  Button(sourceLabels[item] ?? "文字起こしを確認", icon: .textBubble) { onShowSource(item) }
+                    .font(.subheadline)
+                    .frame(minHeight: 44)
+                    .accessibilityHint("元の発言で内容を確認します")
                 }
               }
             }
           }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture { beginEditing() }
-        .accessibilityAddTraits(.isButton)
-        .accessibilityHint("タップして編集")
-        .accessibilityAction(named: "編集") { beginEditing() }
       }
     }
     .padding(.vertical, 4)
@@ -69,6 +73,15 @@ struct InlineEditableList: View {
       }
     }
     .onDisappear { endEditing() }
+  }
+
+  private func editingSurface<Content: View>(_ content: Content) -> some View {
+    content.frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(Rectangle())
+      .onTapGesture { beginEditing() }
+      .accessibilityAddTraits(.isButton)
+      .accessibilityHint("タップして編集")
+      .accessibilityAction(named: "編集") { beginEditing() }
   }
 
   private func beginEditing() {

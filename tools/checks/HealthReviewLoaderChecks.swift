@@ -34,6 +34,10 @@ struct HealthReviewLoaderChecks {
     for steps in [Double.nan, .infinity, -1, Double(Int.max)] {
       precondition(HealthReviewSnapshot(steps: steps, sleepSeconds: nil, workoutSeconds: nil, workoutRecordCount: 0).stepCount == nil)
     }
+    for seconds in [Double.nan, .infinity, -1, Double(Int.max)] {
+      let invalid = HealthReviewSnapshot(steps: 0, sleepSeconds: seconds, workoutSeconds: seconds, workoutRecordCount: 0)
+      precondition(invalid.sleepDuration == nil && invalid.workoutDuration == nil)
+    }
 
     var pending: CheckedContinuation<HealthReviewSnapshot, Never>?
     let racing = HealthReviewLoader(read: { period in

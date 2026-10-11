@@ -19,8 +19,8 @@ struct HealthReviewStatusView: View {
       if loader.period == period, let snapshot = loader.snapshot {
         if snapshot.hasData {
           Text("歩数: \(snapshot.stepCount.map { $0.formatted() + "歩" } ?? "取得できたデータなし")")
-          Text("睡眠記録の合計: \(snapshot.sleepSeconds.map { MemoraFormat.duration($0) } ?? "取得できたデータなし")")
-          Text("ワークアウトの記録時間: \(snapshot.workoutSeconds.map { MemoraFormat.duration($0) } ?? "取得できたデータなし")")
+          Text("睡眠記録の合計: \(snapshot.sleepDuration.map { MemoraFormat.duration($0) } ?? "取得できたデータなし")")
+          Text("ワークアウトの記録時間: \(snapshot.workoutDuration.map { MemoraFormat.duration($0) } ?? "取得できたデータなし")")
         } else {
           Text("取得できた健康データはありません。記録と読み取り許可をヘルスケアで確認してください。")
         }

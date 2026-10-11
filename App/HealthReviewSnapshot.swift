@@ -12,8 +12,15 @@ struct HealthReviewSnapshot {
   }
 
   var hasData: Bool {
-    stepCount != nil || sleepSeconds.map { $0.isFinite && $0 > 0 } == true
-      || workoutSeconds.map { $0.isFinite && $0 > 0 } == true
+    stepCount != nil || sleepDuration != nil || workoutDuration != nil
+  }
+
+  var sleepDuration: TimeInterval? { Self.validDuration(sleepSeconds) }
+  var workoutDuration: TimeInterval? { Self.validDuration(workoutSeconds) }
+
+  private static func validDuration(_ seconds: TimeInterval?) -> TimeInterval? {
+    guard let seconds, seconds.isFinite, seconds > 0, seconds < Double(Int.max) else { return nil }
+    return seconds
   }
 
   static func mergedDuration(_ intervals: [DateInterval], within period: ReviewPeriod) -> TimeInterval {

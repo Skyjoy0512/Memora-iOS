@@ -655,6 +655,15 @@ enum SelfChecks {
       || recap.context.places != ["オフィス"] || !recap.heading.contains("検索改善") {
       report("journal context loses explicit projects, tags or deduplicated places")
     }
+    if recap.context.decisionSources.map(\.meetingID) != [meeting.id]
+      || recap.context.decisionSources.map(\.statement) != recap.context.decisions {
+      report("journal decisions lose their original records")
+    }
+    let shareRecap = JournalDailyRecap.build(date: day, meetings: [meeting], tasks: [completed, tomorrow],
+      entries: [oldMemo], now: now, calendar: calendar, spaces: [project], people: [person])
+    if !shareRecap.context.healthFacts.isEmpty || shareRecap.narrative.contains("ヘルスケアの記録") {
+      report("journal sharing includes health data without an explicit input")
+    }
     if recap.context.healthFacts.count != 2 || !recap.context.metrics.contains("歩数 \(4_200.formatted())歩")
       || recap.context.healthFacts.contains(where: { $0.contains("ワークアウト") }) {
       report("journal health invents missing values or drops known values")
