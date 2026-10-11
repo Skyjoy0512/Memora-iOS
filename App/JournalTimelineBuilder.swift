@@ -61,6 +61,12 @@ enum JournalTimelineBuilder {
       others.map { ($0.occurredAt, .entry($0)) }
     paired.append(contentsOf: timedItems)
     paired.append(contentsOf: movements(from: passes).map { ($0.start, .movement($0)) })
+    let representedMeetingIDs = matchedMeetingIDs.union(dayEntries.compactMap(\.meetingID))
+    for meeting in meetings where meeting.createdAt <= now
+      && calendar.isDate(meeting.createdAt, inSameDayAs: day)
+      && !representedMeetingIDs.contains(meeting.id) {
+      paired.append((meeting.createdAt, .record(meeting)))
+    }
     for task in tasks where task.isCompleted && !SampleContent.isSample(task: task) {
       if let completedAt = task.completedAt, completedAt <= now,
          calendar.isDate(completedAt, inSameDayAs: day) {

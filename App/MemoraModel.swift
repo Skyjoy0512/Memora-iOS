@@ -105,6 +105,7 @@ final class MemoraModel {
   private(set) var lifeLogDays: [LifeLogDayGroup] = []
   /// Days that hold at least one record, for the calendar's dot.
   private(set) var markedLifeLogDays: Set<Date> = []
+  private(set) var markedMeetingDays: Set<Date> = []
   /// Per-project counts and previews, and per-person record counts.
   private(set) var spaceAggregates: [UUID: SpaceAggregate] = [:]
   private(set) var personMeetingCounts: [UUID: Int] = [:]
@@ -644,7 +645,10 @@ final class MemoraModel {
 
     // A day or time zone change moves records between journal days.
     let dayChange: @Sendable (Notification) -> Void = { [weak self] _ in
-      Task { @MainActor in self?.rebuildLifeLogDays() }
+      Task { @MainActor in
+        self?.rebuildLifeLogDays()
+        self?.rebuildMeetingAggregates()
+      }
     }
     dayChangeObservers = [
       NotificationCenter.default.addObserver(
@@ -664,6 +668,7 @@ final class MemoraModel {
   private func rebuildMeetingAggregates() {
     // Sorted once, so every group below is already newest first.
     let newestFirst = meetings.sorted { $0.createdAt > $1.createdAt }
+    assignIfChanged(\.markedMeetingDays, Set(newestFirst.map { Calendar.current.startOfDay(for: $0.createdAt) }))
     var bySpace: [UUID: [Meeting]] = [:]
     var byPerson: [UUID: [Meeting]] = [:]
     for meeting in newestFirst {

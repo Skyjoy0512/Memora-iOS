@@ -41,11 +41,15 @@ struct HomeView: View {
   var body: some View {
     @Bindable var model = model
     let entries = matchingEntries
+    let ownTasks = model.tasks.filter { model.isOwnTask($0) }
+    let markedDays = JournalActivityDays.build(
+      recordedDays: model.markedLifeLogDays.union(model.markedMeetingDays),
+      completedAt: ownTasks.filter { $0.isCompleted }.compactMap(\.completedAt))
     let healthRequest = JournalHealthRequest(period: .day(selectedDate), enabled: healthEnabled,
       teamID: model.currentTeamID, isActive: scenePhase == .active, isReviewPresented: showsReview)
     let visibleHealth = healthRequest.canRead && healthPeriod == healthRequest.period ? health : nil
     let recap = JournalDailyRecap.build(date: selectedDate, meetings: model.meetings,
-      tasks: model.tasks, entries: model.lifeLogEntries, spaces: model.spaces,
+      tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
       people: model.people, events: calendarEvents, health: visibleHealth)
 
     NavigationStack(path: $model.homePath) {
@@ -80,7 +84,7 @@ struct HomeView: View {
             if entries.isEmpty, calendarEvents.isEmpty, !recap.hasActivity {
               emptyDay
             } else {
-              timelineContent(entries)
+              timelineContent(entries, tasks: ownTasks)
             }
             if !recap.hasActivity, !recap.isFuture {
               Button("振り返りを見る") {
@@ -284,12 +288,6 @@ struct HomeView: View {
     .accessibilityHint("レコーダー設定を開きます")
   }
 
-  /// Days that hold at least one record, for the calendar's dot. Built with the
-  /// records rather than scanned on every redraw.
-  private var markedDays: Set<Date> {
-    model.markedLifeLogDays
-  }
-
   /// True while the journal is showing the current day.
   private var isViewingToday: Bool {
     Calendar.current.isDateInToday(selectedDate)
@@ -355,13 +353,13 @@ struct HomeView: View {
   /// The selected day's timeline: records, events and movements in morning to
   /// night order, with an "now" line when it is today.
   @ViewBuilder
-  private func timelineContent(_ entries: [LifeLogEntry]) -> some View {
+  private func timelineContent(_ entries: [LifeLogEntry], tasks: [MemoraTask]) -> some View {
     let timeline = JournalTimelineBuilder.build(
       day: selectedDate,
       entries: entries,
       events: calendarEvents,
       meetings: model.meetings,
-      tasks: model.tasks
+      tasks: tasks
     )
 
     VStack(alignment: .leading, spacing: 10) {
@@ -388,6 +386,23 @@ struct HomeView: View {
     switch item {
     case .entry(let entry):
       entryView(entry, connectsToNext: connectsToNext)
+    case .record(let meeting):
+      NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
+        JournalTimelineRow(time: meeting.createdAt.formatted(date: .omitted, time: .shortened),
+          icon: meeting.source.icon, tint: .purple, railColor: .purple, connectsToNext: connectsToNext) {
+          VStack(alignment: .leading, spacing: 8) {
+            Text(meeting.createdAt.formatted(date: .omitted, time: .shortened))
+              .font(.caption.monospacedDigit())
+            Text(meeting.displayTitle).font(.headline)
+            Text(meeting.summaryPreview.isEmpty ? "記録の詳細を確認" : meeting.summaryPreview)
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+              .lineLimit(3)
+          }
+        }
+      }
+      .buttonStyle(.plain)
+      .accessibilityHint("記録の詳細を開きます")
     case .calendarEvent(let event):
       JournalCalendarEventRow(day: selectedDate, event: event, onOpen: { openCalendarEvent = $0 }, connectsToNext: connectsToNext)
     case .movement(let movement):

@@ -17,9 +17,10 @@ struct JournalReviewView: View {
 
   var body: some View {
     let period = period
-    let statistics = ReviewStatistics.build(period: period, meetings: model.meetings, tasks: model.tasks, entries: model.lifeLogEntries)
+    let ownTasks = model.tasks.filter { model.isOwnTask($0) }
+    let statistics = ReviewStatistics.build(period: period, meetings: model.meetings, tasks: ownTasks, entries: model.lifeLogEntries)
     let previous = previousPeriod(period)
-    let previousStatistics = ReviewStatistics.build(period: previous, meetings: model.meetings, tasks: model.tasks, entries: model.lifeLogEntries)
+    let previousStatistics = ReviewStatistics.build(period: previous, meetings: model.meetings, tasks: ownTasks, entries: model.lifeLogEntries)
     let places = model.lifeLogEntries.filter {
       $0.kind == .location && period.contains($0.occurredAt) && !SampleContent.isSample(lifeLogEntry: $0)
     }.sorted { $0.occurredAt < $1.occurredAt }

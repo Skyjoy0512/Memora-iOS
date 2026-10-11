@@ -50,6 +50,7 @@ struct TaskEditView: View {
   }
 
   var body: some View {
+    let currentTask = model.tasks.first { $0.id == task.id } ?? task
     let parents = TaskHierarchy.eligibleParents(for: task.id, in: model.tasks)
     let children = model.tasks.filter { $0.relationships.parentID == task.id }
     NavigationStack {
@@ -60,9 +61,13 @@ struct TaskEditView: View {
             .lineLimit(3...8)
           TextField("担当", text: $assignee)
           Toggle("自分のタスク", isOn: $ownedByMe)
-          Picker("進み具合", selection: $progress) {
-            ForEach(TaskProgress.allCases) { state in
-              Text(state.label).tag(state)
+          if currentTask.isCompleted {
+            LabeledContent("状態", value: currentTask.statusLabel)
+          } else {
+            Picker("進み具合", selection: $progress) {
+              ForEach(TaskProgress.allCases) { state in
+                Text(state.label).tag(state)
+              }
             }
           }
         }

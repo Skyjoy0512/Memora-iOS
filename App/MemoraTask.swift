@@ -19,6 +19,8 @@ struct MemoraTask: Identifiable, Hashable, Codable {
   /// The time of day the reminder fires. nil means the default, 9:00.
   var reminderTime: Date?
 
+  var statusLabel: String { isCompleted ? "完了" : progress.label }
+
   init(
     id: UUID,
     title: String,

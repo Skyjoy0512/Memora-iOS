@@ -153,6 +153,35 @@ enum SelfChecks {
       }
     }
     group("Review period boundaries", checkReviewPeriodBoundaries)
+    group("AI journal privacy") {
+      for kind in LifeLogKind.allCases {
+        if AIJournalPrivacy.allowsReading(kind: kind, origin: .stationPass)
+          || AIJournalPrivacy.allowsReading(kind: kind, origin: .visit)
+          || AIJournalPrivacy.allowsReading(kind: kind, origin: .manual) != (kind != .location) {
+          report("AI journal privacy includes location records")
+        }
+      }
+      let attachment = AIAttachment(id: UUID(), name: "画像.png", url: URL(fileURLWithPath: "/unsupported.png"))
+      let content = MemoraModel.requestContent(
+        for: AIQuestionRequest(question: "添付の内容を教えて", scope: .global, attachment: attachment),
+        scopeLabel: "すべて", allowedMeetings: [], tasks: [])
+      if content.unsupportedAttachmentNote == nil
+        || MemoraModel.shouldRunAsAgent("タスクを追加して", engine: .cloud, hasAttachment: true) {
+        report("unread attachment was accepted or routed to the agent")
+      }
+    }
+    group("Journal activity days") {
+      let now = Date(timeIntervalSince1970: 1_790_000_000)
+      let calendar = Calendar.current
+      let completed = MemoraTask(id: UUID(), title: "自分", isCompleted: true, completedAt: now, ownedByMe: true)
+      let other = MemoraTask(id: UUID(), title: "相手", isCompleted: true,
+        completedAt: now.addingTimeInterval(-86_400), ownedByMe: false)
+      let unknown = MemoraTask(id: UUID(), title: "日時不明", isCompleted: true, ownedByMe: true)
+      let ownTasks = [completed, other, unknown].filter { TaskOwnership.isMine($0, names: []) }
+      let days = JournalActivityDays.build(recordedDays: [],
+        completedAt: ownTasks.filter { $0.isCompleted }.compactMap(\.completedAt), now: now, calendar: calendar)
+      if days != [calendar.startOfDay(for: now)] { report("journal dots include another person's task or omit completion") }
+    }
     group("Journal daily recap", checkJournalDailyRecap)
     group("Journal recap context", checkJournalRecapContext)
     group("Journal photo presets") {
@@ -1167,6 +1196,18 @@ enum SelfChecks {
       events: [event, allDay],
       meetings: [meeting]
     )
+    let standalone = JournalTimelineBuilder.build(day: day, entries: [], events: [], meetings: [meeting],
+      now: at(23), calendar: calendar)
+    if standalone.items.filter({ if case .record = $0 { return true }; return false }).count != 1 {
+      report("a recording without a journal entry is missing from the timeline")
+    }
+    let linked = JournalTimelineBuilder.build(day: day,
+      entries: [entry("録音", at(10, 5), meetingID: meetingID)], events: [], meetings: [meeting],
+      now: at(23), calendar: calendar)
+    if linked.items.contains(where: { if case .record = $0 { return true }; return false })
+      || matched.items.contains(where: { if case .record = $0 { return true }; return false }) {
+      report("a represented recording was duplicated in the timeline")
+    }
     let eventRows = matched.items.filter { if case .calendarEvent = $0 { return true }; return false }
     let recordingRows = matched.items.filter {
       if case .entry(let e) = $0 { return e.meetingID == meetingID }

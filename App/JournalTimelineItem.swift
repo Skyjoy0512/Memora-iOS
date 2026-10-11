@@ -4,6 +4,7 @@ import Foundation
 /// record, an event and the "now" line can never share one.
 enum JournalTimelineItem: Identifiable {
   case entry(LifeLogEntry)
+  case record(Meeting)
   case calendarEvent(JournalCalendarEvent)
   case movement(JournalMovement)
   case nowMarker
@@ -12,6 +13,7 @@ enum JournalTimelineItem: Identifiable {
   var id: String {
     switch self {
     case .entry(let entry): "entry-\(entry.id.uuidString)"
+    case .record(let meeting): "record-\(meeting.id.uuidString)"
     case .calendarEvent(let event): "event-\(event.id)"
     case .movement(let movement): "movement-\(movement.id)"
     case .nowMarker: "nowMarker"

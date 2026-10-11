@@ -15,8 +15,9 @@ struct JournalSummaryView: View {
   @State private var showsCreate = false
 
   var body: some View {
+    let ownTasks = model.tasks.filter { model.isOwnTask($0) }
     let recap = JournalDailyRecap.build(date: date, meetings: model.meetings,
-      tasks: model.tasks, entries: model.lifeLogEntries, spaces: model.spaces,
+      tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
       people: model.people, events: events, health: healthEnabled && model.currentTeamID == nil ? health : nil)
     let shareText = ([date.formatted(date: .complete, time: .omitted), recap.heading,
       recap.narrative, recap.context.metrics.joined(separator: " · "),
