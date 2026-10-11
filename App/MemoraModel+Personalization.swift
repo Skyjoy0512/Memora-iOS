@@ -10,11 +10,15 @@ extension MemoraModel {
     return defaultSummaryChoice
   }
 
-  var automaticSummaryCandidates: [SummaryTemplateChoice] {
-    allSummaryChoices.filter { choice in
-      if case .market(let market) = choice { return !market.isCustom }
-      return true
-    }
+  func automaticSummaryCandidates(for meeting: Meeting, fallback: SummaryTemplateChoice) -> [SummaryTemplateChoice] {
+    let available = allSummaryChoices
+    let ids = SummaryTemplateSelector.candidateIDs(fallbackID: fallback.id,
+      contentID: SummaryTemplateSelector.contentTemplateID(meeting.transcript.map(\.text).joined(separator: "\n")),
+      recommendedIDs: recommendedSummaryChoices.map(\.id),
+      genericIDs: [SummaryTemplateChoice.builtIn(.detailedOverview).id,
+        SummaryTemplateChoice.builtIn(.meetingMinutes).id, "work.journal", SummaryTemplateChoice.builtIn(.actionPlan).id],
+      availableIDs: Set(available.map(\.id)))
+    return ids.compactMap { id in available.first { $0.id == id } }
   }
 
   func restoreSummary(_ versionID: UUID, meetingID: UUID) {

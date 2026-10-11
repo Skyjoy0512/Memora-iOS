@@ -42,11 +42,22 @@ enum SummaryResponseParser {
 
     // Whatever the block did not carry is read from the document.
     let fallback = MarkdownSummaryExtractor.extract(from: markdown)
-    if summary.decisions.isEmpty { summary.decisions = fallback.decisions }
-    if summary.openQuestions.isEmpty { summary.openQuestions = fallback.openQuestions }
-    if summary.actions.isEmpty { summary.actions = fallback.actions }
+    if data?.decisions == nil { summary.decisions = fallback.decisions }
+    if data?.openQuestions == nil { summary.openQuestions = fallback.openQuestions }
+    if data?.actions == nil { summary.actions = fallback.actions }
     summary.actions = deduplicated(summary.actions)
     return summary
+  }
+
+  static func validateTemplate(_ summary: MeetingSummary, allowedIDs: Set<String>, actionFreeIDs: Set<String>) -> MeetingSummary {
+    var result = summary
+    guard let id = summary.templateID, allowedIDs.contains(id) else {
+      result.templateID = nil
+      result.actions = []
+      return result
+    }
+    if actionFreeIDs.contains(id) { result.actions = [] }
+    return result
   }
 
   /// Drops a ```markdown fence wrapped around the whole reply.

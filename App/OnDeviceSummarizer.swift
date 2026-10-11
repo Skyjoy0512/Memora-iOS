@@ -22,7 +22,7 @@ enum OnDeviceSummarizer {
     for (index, section) in sections.enumerated() {
       guard !Task.isCancelled else { return .failure(.cancelled) }
       await progress("区間を整理中（\(index + 1)/\(sections.count)）")
-      switch await digest(section, meetingEnd: input.duration, length: input.preferences.length) {
+      switch await digest(section, meetingEnd: input.duration, length: input.preferences.length, input: input) {
       case .success(let found):
         topics.append(contentsOf: found)
       case .failure(let failure):
@@ -177,6 +177,7 @@ enum OnDeviceSummarizer {
     _ section: [TranscriptSegment],
     meetingEnd: TimeInterval,
     length: SummaryLength,
+    input: MeetingSummaryInput,
     allowsSplit: Bool = true
   ) async -> Result<[SummaryTopic], AIAnswerFailure> {
     guard let first = section.first, let last = section.last else { return .success([]) }
@@ -184,6 +185,8 @@ enum OnDeviceSummarizer {
     let prompt = """
     次は記録の文字起こしの一部（\(range)）です。話題ごとに整理してください。
     \(length.instruction)
+    \(SummaryPrompt.intermediateFocus(input, includeCandidates: false))
+    用途別の事実はpointsに保持する。会議ではない場合、該当しないdecisions/actions/questionsは空配列にする。
 
     \(section.map(MeetingSummaryInput.line(for:)).joined(separator: "\n"))
     """
@@ -204,7 +207,7 @@ enum OnDeviceSummarizer {
       let middle = section.count / 2
       var topics: [SummaryTopic] = []
       for half in [Array(section[..<middle]), Array(section[middle...])] {
-        switch await digest(half, meetingEnd: meetingEnd, length: length, allowsSplit: false) {
+        switch await digest(half, meetingEnd: meetingEnd, length: length, input: input, allowsSplit: false) {
         case .success(let found): topics.append(contentsOf: found)
         case .failure(let failure): return .failure(failure)
         }

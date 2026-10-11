@@ -32,6 +32,11 @@ struct SummaryMarketTemplate: Identifiable, Hashable, Codable {
     !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
+  var appendsMeetingQuestions: Bool {
+    !isCustom && !id.hasPrefix("work.")
+      && !sections.contains { $0.contains("未決") || $0.contains("持ち越") }
+  }
+
   init(
     id: String,
     title: String,

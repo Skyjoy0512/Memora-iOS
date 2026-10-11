@@ -21,6 +21,21 @@ struct SummaryPersonalizationChecks {
     let parsed = SummaryResponseParser.parse("## 希望\n短くしたい\n<memora-data>{\"templateID\":\"work.customer-chart\",\"actions\":[]}</memora-data>")
     precondition(parsed.templateID == "work.customer-chart" && !parsed.markdown.contains("memora-data"))
     precondition(SummaryResponseParser.parse("旧形式の要約").templateID == nil)
+    let valid = SummaryResponseParser.validateTemplate(parsed, allowedIDs: ["work.customer-chart"], actionFreeIDs: ["work.customer-chart"])
+    precondition(valid.templateID == "work.customer-chart" && valid.actions.isEmpty)
+    let invalid = SummaryResponseParser.validateTemplate(parsed, allowedIDs: ["work.journal"], actionFreeIDs: [])
+    precondition(invalid.templateID == nil && invalid.actions.isEmpty)
+    let missing = SummaryResponseParser.validateTemplate(SummaryResponseParser.parse("旧形式の要約"),
+      allowedIDs: ["work.journal"], actionFreeIDs: [])
+    precondition(missing.templateID == nil)
+    let emptyActions = SummaryResponseParser.parse("## アクションアイテム\n- [ ] 実行する\n<memora-data>{\"actions\":[]}</memora-data>")
+    precondition(emptyActions.actions.isEmpty)
+    let generics = ["overview", "minutes", "journal", "actions"]
+    let candidates = SummaryTemplateSelector.candidateIDs(fallbackID: "manual", contentID: "private",
+      recommendedIDs: (0..<30).map { "work\($0)" }, genericIDs: generics,
+      availableIDs: Set(generics + ["manual", "private"] + (0..<30).map { "work\($0)" }))
+    precondition(candidates.count == 8 && Set(generics + ["manual", "private"]).isSubset(of: Set(candidates)))
+    precondition(Set(candidates).count == candidates.count)
     print("SummaryPersonalizationChecks: passed (content scenarios, sections, output compatibility)")
   }
 }

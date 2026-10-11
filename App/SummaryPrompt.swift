@@ -15,7 +15,7 @@ enum SummaryPrompt {
   - 顧客の希望とスタッフの提案、観察された事実と推測を区別する。病名・感情・診断・ハラスメント認定を推測しない。
   - 不確かな話者ラベルから実名や職業・顧客の役割を推測しない。
   - 要点は「誰が何を述べ、どう結論したか」が分かる具体的な文で書く。「〜について話した」だけの文にしない。
-  - 指定された形式のMarkdownだけを出力し、前置きや締めの言葉は書かない。
+  - 指定されたMarkdown本文と、要求された場合だけ末尾の抽出データJSONを出力する。前置きや締めの言葉は書かない。
 
   \(ReadabilityGuide.rules)
   """
@@ -51,18 +51,18 @@ enum SummaryPrompt {
     # 会議情報
     \(input.headerLines.joined(separator: "\n"))
 
-    これは長い会議の文字起こしを時間順に分けた \(part)/\(total) 番目の部分（\(range)）です。
-    後で全体の議事録にまとめるための作業メモを作ってください。
+    これは長い記録の文字起こしを時間順に分けた \(part)/\(total) 番目の部分（\(range)）です。
+    後で同じ用途の記録にまとめるための作業メモを作ってください。
+    \(intermediateFocus(input))
 
     # 出力形式
     話題が変わるごとに次の形で書く。
     ## [開始時刻-終了時刻] 話題名
     - 関与者: 話者ラベル
     - 要点: 誰が何を述べたか（数値・日付・固有名詞を正確に。複数行可）
-    - 決定事項: 決まったことと、その理由
-    - 課題・懸念:
-    - アクション: 内容 / 責任者（不明なら未定） / 期限（述べられていなければ未定）
-    - 未解決の問い:
+    - 用途別の情報: 上記の見出し・観点に該当する事実を省略せず保存する。
+    - 発言と対応: 誰の希望・提案・観察・実施内容かを区別する。
+    会議用の決定事項・アクション・未決事項は、その用途と原文に該当する場合だけ記載する。
 
     # 文字起こし
     \(transcript)
@@ -75,7 +75,7 @@ enum SummaryPrompt {
     # 会議情報
     \(input.headerLines.joined(separator: "\n"))
 
-    以下は、長い会議の文字起こしを時間順に分けて作った作業メモです。同じ話題が部分をまたいでいる場合は1つにまとめ、全体の議事録を作ってください。
+    以下は、長い記録の文字起こしを時間順に分けて作った作業メモです。同じ出来事が部分をまたいでいる場合は重複をまとめ、指定した用途の記録を作ってください。異なる日時・数量・人物の出来事は混ぜず、矛盾や未確認事項は補完しないでください。
 
     # 出力形式
     \(generationFormat(input))
@@ -94,9 +94,10 @@ enum SummaryPrompt {
   static let dataContract = """
   文書の最後に、次のタグで囲んだJSONを1つだけ付ける。文書本文と矛盾しない内容にする。
   <memora-data>
-  {"keyPoints": ["会議全体で重要なポイント（3〜7件）"], "decisions": ["会議全体の決定事項（理由があれば含める）"], "openQuestions": ["結論が出なかった問い"], "actions": [{"title": "短い件名", "detail": "何をするか", "owner": "話者ラベルまたは未定", "due": "会議で述べられた期限（YYYY-MM-DD か 述べられた表現）または未定"}]}
+  {"templateID": "指定または候補に存在するID", "keyPoints": ["記録全体で重要なポイント"], "decisions": [], "openQuestions": [], "actions": []}
   </memora-data>
-  該当が無い項目は空の配列にする。actions は文書内のアクションアイテムをすべて、重複なく含める。
+  templateIDは必須。候補に存在しないIDを作らない。該当が無い項目は空の配列にする。
+  actionsを許可する形式では、原文にある行動だけを重複なく含め、各項目は {"title":"短い件名","detail":"何をするか","owner":"話者ラベルまたは未定","due":"述べられた期限または未定"} とする。
   """
 
   static func format(for template: SummaryTemplateChoice, input: MeetingSummaryInput) -> String {
@@ -145,6 +146,22 @@ enum SummaryPrompt {
     \(length)
     \(order)
     \(catalog)
+    """
+  }
+
+  static func intermediateFocus(_ input: MeetingSummaryInput, includeCandidates: Bool = true) -> String {
+    let choices = !includeCandidates || input.automaticCandidates.isEmpty ? [input.template] : input.automaticCandidates
+    let focus = choices.map { choice in
+      if case .market(let template) = choice {
+        return "\(choice.title): \(template.sections.joined(separator: " / "))。\(template.focus) \(template.usesPrompt ? template.prompt : "")"
+      }
+      return "\(choice.title): \(choice.detail)"
+    }.joined(separator: "\n")
+    return """
+    抽出の観点（自動選択の場合は候補全体に必要な事実を保持し、会議に固定しない）:
+    \(focus)
+    固有名詞・日時・数量・部材・要望・注意事項を保持する。原文にない事実を追加しない。
+    会議でない記録では決定事項・未決事項を強制せず、用途別の事実を要点に残す。
     """
   }
 
@@ -261,7 +278,6 @@ enum SummaryPrompt {
     |:---|:---|:---|:---|:---|
     | {件名} | {何をするか} | {話者ラベルまたは未定} | {述べられた期限または未定} | {備考} |
     """ : ""
-    let hasOpenQuestions = template.sections.contains { $0.contains("未決") || $0.contains("持ち越") }
 
     return """
     「\(template.lead)」の観点でまとめる。\(focus.isEmpty ? "" : "\n観点の補足: \(focus)")
@@ -271,7 +287,8 @@ enum SummaryPrompt {
     # {会議の内容が分かる見出し}
     **日時**: \(input.dateText)
     **概要**: {この観点で重要なことを3〜5文}
-    \(sections)\(actions)\(hasOpenQuestions ? "" : "\n## 未決事項\n- {結論が出なかった問い}")
+    \(sections)\(actions)\(template.appendsMeetingQuestions ? "\n## 未決事項\n- {結論が出なかった問い}" : "")
+    定義されていない会議専用の見出しを追加しない。
     """
   }
 

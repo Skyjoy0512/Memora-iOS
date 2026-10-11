@@ -86,7 +86,7 @@ extension MemoraModel {
       template: choice,
       glossary: transcriptionVocabulary,
       preferences: preferences ?? summaryPreferences,
-      automaticCandidates: automaticallySelect ? automaticSummaryCandidates : []
+      automaticCandidates: automaticallySelect ? automaticSummaryCandidates(for: meeting, fallback: choice) : []
     )
     let engine = configuration?.engine ?? settingsAIConfiguration.engine
     let llm = configuration?.llm ?? settingsAIConfiguration.llm
