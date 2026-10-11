@@ -95,7 +95,7 @@ enum AIAnswerFailure: Error, Equatable {
     case .unsupportedProvider:
       "このプロバイダーは回答作成に対応していません。設定の「AI整理」で別のプロバイダーを選んでください。"
     case .attachmentNotAnalysed:
-      "この添付はAIが読める形式ではないため、回答できません。質問を入力するか、テキスト・文字入りPDFを添付してください。"
+      "添付を読めないため、回答を開始していません。テキスト・文字入りPDFに変更するか、添付を外してもう一度送信してください。"
     }
   }
 }

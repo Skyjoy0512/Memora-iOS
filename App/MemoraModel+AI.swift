@@ -253,11 +253,7 @@ extension MemoraModel {
       characterLimit: AIEngineService.contextCharacterLimit(for: engine)
     )
 
-    // A question that is only an attachment no engine can read has nothing to
-    // answer. Saying so is better than answering from unrelated recent records.
-    if request.question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-       request.attachment != nil,
-       content.unsupportedAttachmentNote != nil {
+    if content.unsupportedAttachmentNote != nil {
       let details = AIAnswerDetails(
         scopeLabel: scopeLabel,
         engineLabel: AIEngineService.effectiveEngine(engine).label,

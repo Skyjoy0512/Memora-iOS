@@ -15,7 +15,8 @@ struct AgentApprovalCard: View {
           Text(line)
             .font(.subheadline)
             .foregroundStyle(.secondary)
-            .lineLimit(3)
+            .fixedSize(horizontal: false, vertical: true)
+            .textSelection(.enabled)
         }
       }
 

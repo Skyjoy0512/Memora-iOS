@@ -4,6 +4,8 @@ import SwiftUI
 /// button that asks for Face ID (or the passcode).
 struct LockScreenView: View {
   var onUnlock: () -> Void
+  var authenticationMessage: String? = nil
+  var isAuthenticating = false
 
   var body: some View {
     ZStack {
@@ -20,18 +22,29 @@ struct LockScreenView: View {
         VStack(spacing: 6) {
           Text("Memoraはロックされています")
             .font(.headline)
-          Text("Face IDで解除します。")
+          Text("Face IDまたはパスコードで解除します。")
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }
 
-        Button("ロックを解除", icon: .faceid, action: onUnlock)
-          .font(.headline)
-          .foregroundStyle(.white)
-          .frame(maxWidth: .infinity, minHeight: 52)
-          .background(.tint, in: Capsule())
-          .contentShape(Capsule())
-          .buttonStyle(.plain)
+        if let authenticationMessage {
+          Text(authenticationMessage)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+
+        Button(action: onUnlock) {
+          Label(isAuthenticating ? "認証しています…" : "ロックを解除", icon: .faceid)
+            .font(.headline)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(.tint, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(isAuthenticating)
       }
       .padding(28)
       .frame(maxWidth: 360)

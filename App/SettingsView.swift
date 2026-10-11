@@ -13,6 +13,7 @@ struct SettingsView: View {
   @AppStorage("memora.haptics.enabled") private var hapticsEnabled = true
   @State private var isLocationPermissionAlertPresented = false
   @State private var isCalendarPermissionAlertPresented = false
+  @State private var appLockError: String?
   @State private var excludedPlaceCount = AutoLocationLogger.excludedPlaces.count
   @State private var isDeleteConfirmationPresented = false
   @Environment(\.openURL) private var openURL
@@ -286,11 +287,17 @@ struct SettingsView: View {
         } header: {
           Text("ジャーナル")
         } footer: {
-          Text("位置情報はこのiPhoneの中だけで使い、外部へ送信しません。電池への影響を抑えるため、駅の判定はおおよそです。カレンダーの予定は保存せず、表示のたびに読み込みます。")
+          Text("場所の自動記録と位置情報の項目はAIへ送信しません。電池への影響を抑えるため、駅の判定はおおよそです。カレンダーの予定は保存せず、表示のたびに読み込みます。")
         }
 
         Section {
-          Toggle(isOn: $appLockEnabled) {
+          Toggle(isOn: Binding(get: { appLockEnabled }, set: { enabled in
+            if enabled, let message = AppLockService.availabilityMessage() {
+              appLockError = message
+            } else {
+              appLockEnabled = enabled
+            }
+          })) {
             SettingsLabel("Face IDでロック", icon: .faceidFill, color: Tint.privacy)
           }
 
@@ -307,7 +314,7 @@ struct SettingsView: View {
           }
 
           LabeledContent {
-            Text(model.cloudStorageEnabled ? "オン" : "オフ")
+            Text(model.cloudStorageStatus)
           } label: {
             SettingsLabel("クラウド保管", icon: .cloudFill, color: Tint.privacy)
           }
@@ -462,6 +469,13 @@ struct SettingsView: View {
         Button("キャンセル", role: .cancel) {}
       } message: {
         Text("録音データではなく、このプロトタイプ内の表示用サンプルだけを消します。")
+      }
+      .alert("アプリロックを設定できません", isPresented: Binding(
+        get: { appLockError != nil }, set: { if !$0 { appLockError = nil } }
+      )) {
+        Button("OK", role: .cancel) { appLockError = nil }
+      } message: {
+        Text(appLockError ?? "")
       }
       .alert("位置情報を「常に」許可してください", isPresented: $isLocationPermissionAlertPresented) {
         Button("設定を開く") {

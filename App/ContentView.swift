@@ -248,9 +248,9 @@ struct ContentView: View {
   @ViewBuilder
   private var lockOverlay: some View {
     if appLock.isLocked {
-      LockScreenView {
+      LockScreenView(onUnlock: {
         Task { await appLock.unlock() }
-      }
+      }, authenticationMessage: appLock.authenticationMessage, isAuthenticating: appLock.isAuthenticating)
       .transition(.opacity)
     } else if appLock.isCovered {
       // A plain cover for the app switcher, without the unlock button.

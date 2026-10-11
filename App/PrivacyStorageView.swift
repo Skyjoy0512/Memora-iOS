@@ -25,34 +25,20 @@ struct PrivacyStorageView: View {
       }
 
       Section {
-        Toggle(isOn: Binding(
-            get: { model.cloudStorageEnabled },
-            set: { model.setCloudStorageEnabled($0) }
-          )) {
-            SettingsLabel("クラウドに保管", icon: .cloud, color: .blue)
-          }
-        .disabled(!model.isSubscribed)
-
-        if !model.isSubscribed {
-          Button("Memora Plus で利用する", icon: .crown) {
-            model.isPaywallPresented = true
-          }
-        }
+        SettingsValue(title: "クラウドに保管", value: model.cloudStorageStatus, icon: .cloud, color: .blue)
       } header: {
         Text("クラウド保管")
       } footer: {
-        Text(model.isSubscribed
-             ? "オンにすると、録音・文字起こし・議事録をクラウドにも保管します。端末からはいつでも削除できます。"
-             : "クラウド保管はMemora Plusの機能です。")
+        Text("クラウド保管はまだ接続されていません。記録はこのiPhoneに保存されます。機種変更や端末の紛失に備えて、設定の「バックアップ」から書き出してください。")
       }
 
       Section {
-        SettingsValue(title: "高度なAI整理", value: "実行前に表示", icon: .sparkles, color: .purple)
-        SettingsValue(title: "クラウド保管", value: model.cloudStorageEnabled ? "オン" : "オフ", icon: .cloud, color: .blue)
+        SettingsValue(title: "クラウドAI（BYOK）", value: "設定したサービス", icon: .sparkles, color: .purple)
+        SettingsValue(title: "クラウド保管", value: model.cloudStorageStatus, icon: .cloud, color: .blue)
       } header: {
         Text("外部へ送られる可能性があるもの")
       } footer: {
-        Text("処理先が変わる時だけ、操作の流れを止めない形で確認します。")
+        Text("クラウドAIを選ぶと、回答に必要な記録のテキストを設定したサービスへ送信します。場所の自動記録・位置情報の項目はAIへ渡しません。自分でメモに書いた場所名などは、本文の一部として送信されることがあります。")
       }
     }
     .navigationTitle("データの保存先")

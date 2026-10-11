@@ -7,7 +7,9 @@ extension MemoraModel {
     }
     let allowed = Self.meetings(in: scope, from: meetings)
     let scopedTasks = scope == .all ? tasks : Self.tasks(in: allowed, from: tasks)
-    let entries = scope == .all ? lifeLogEntries.filter { $0.kind != .location } : []
+    let entries = scope == .all ? lifeLogEntries.filter {
+      AIJournalPrivacy.allowsReading(kind: $0.kind, origin: $0.origin)
+    } : []
     let stepID = beginAgentStep(AgentStep(icon: .calendar, title: "期間の記録を集計しています"), on: messageID)
     let statistics = ReviewStatistics.build(period: period, meetings: allowed, tasks: scopedTasks, entries: entries)
     finishAgentStep(stepID, on: messageID, state: .done, detail: period.label)

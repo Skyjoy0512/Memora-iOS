@@ -198,7 +198,9 @@ extension MemoraModel {
     // The journal has no project, so only the whole-library range reaches it.
     let entries: [LifeLogEntry]
     if scope == .all {
-      let candidates = newestLifeLogEntries
+      let candidates = newestLifeLogEntries.filter {
+        AIJournalPrivacy.allowsReading(kind: $0.kind, origin: $0.origin)
+      }
       entries = Array((words.isEmpty ? candidates : candidates.filter { entry in
         words.contains { entry.title.localizedCaseInsensitiveContains($0) || entry.summary.localizedCaseInsensitiveContains($0) }
       }).prefix(limit))
@@ -259,16 +261,15 @@ extension MemoraModel {
       return AgentToolOutcome(text: compact ? compactAgentText(of: meeting) : agentText(of: meeting))
     }
 
-    if scope == .all, let entry = lifeLogEntries.first(where: { $0.id == id }) {
+    if scope == .all, let entry = lifeLogEntries.first(where: {
+      $0.id == id && AIJournalPrivacy.allowsReading(kind: $0.kind, origin: $0.origin)
+    }) {
       let stepID = beginAgentStep(
         AgentStep(icon: AgentTool.readRecord.icon, title: "「\(entry.title)」を読む"),
         on: messageID
       )
       finishAgentStep(stepID, on: messageID, state: .done)
-      var text = "ジャーナル「\(entry.title)」 \(Self.agentDate(entry.occurredAt)) 種類: \(entry.kind.label)"
-      if let location = entry.locationName, !location.isEmpty {
-        text += " 場所: \(location)"
-      }
+      let text = "ジャーナル「\(entry.title)」 \(Self.agentDate(entry.occurredAt)) 種類: \(entry.kind.label)"
       return AgentToolOutcome(text: text + "\n\(entry.summary)")
     }
     return AgentToolOutcome(text: "このidの記録は見つからないか、対象範囲の外です。", isError: true)
@@ -406,8 +407,11 @@ extension MemoraModel {
         return "- id=\(meeting.id.uuidString) 「\(meeting.displayTitle)」 \(Self.agentDate(meeting.createdAt)) \(preview)"
       }.joined(separator: "\n"))
     }
-    if !memory.journalEntries.isEmpty {
-      parts.append("## ジャーナル\n" + memory.journalEntries.prefix(compact ? 3 : 8).map {
+    let journalEntries = memory.journalEntries.filter {
+      AIJournalPrivacy.allowsReading(kind: $0.kind, origin: $0.origin)
+    }
+    if !journalEntries.isEmpty {
+      parts.append("## ジャーナル\n" + journalEntries.prefix(compact ? 3 : 8).map {
         "- \($0.title)（\(Self.agentDate($0.createdAt))）"
       }.joined(separator: "\n"))
     }

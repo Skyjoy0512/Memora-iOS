@@ -14,7 +14,7 @@ extension MemoraModel {
   @discardableResult
   func sendAgentChat(_ request: String, attachment: AIAttachment? = nil) -> Bool {
     let trimmed = request.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty, !isAIChatResponding else { return false }
+    guard !trimmed.isEmpty, !isAIChatResponding, attachment == nil else { return false }
 
     let configuration = askAIConfiguration
     let scope = AIChatScope.all
@@ -39,13 +39,6 @@ extension MemoraModel {
         text: "この端末ではエージェントを動かせるAIがありません。Apple Intelligenceを有効にするか、設定の「AI整理」でクラウド（BYOK）を選んでください。"
       ))
       return true
-    }
-
-    if attachment != nil {
-      aiMessages.append(AIChatMessage(
-        role: .assistant,
-        text: "エージェントは添付をまだ読めません。添付なしで作業します。"
-      ))
     }
 
     let requestID = UUID()

@@ -446,9 +446,7 @@ final class MemoraModel {
     aiProvider = storedProvider
     aiModelID = Self.storedModelID(for: storedProvider)
     composerDraft = DraftStore.load(Self.composerDraftKey) ?? ""
-    // Cloud storage is a paid option: without Plus the records stay on device.
-    cloudStorageEnabled = defaults.bool(forKey: StorageKey.isSubscribed)
-      && defaults.bool(forKey: StorageKey.cloudStorage)
+    cloudStorageEnabled = false
     if case .data(let data) = RecordStore.load(StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
     }

@@ -18,9 +18,18 @@ final class AppLockService {
   private(set) var isLocked = false
   /// Content is covered without a lock screen, e.g. in the app switcher.
   private(set) var isCovered = false
+  private(set) var authenticationMessage: String?
+  private(set) var isAuthenticating = false
 
   @ObservationIgnored private var backgroundedAt: Date?
-  @ObservationIgnored private var isAuthenticating = false
+  @ObservationIgnored private var authentication: @MainActor () async throws -> Bool
+  @ObservationIgnored private var lockEnabled: @MainActor () -> Bool
+
+  init(authentication: @escaping @MainActor () async throws -> Bool = AppLockService.authenticateOwner,
+       lockEnabled: @escaping @MainActor () -> Bool = { AppLockService.isEnabled }) {
+    self.authentication = authentication
+    self.lockEnabled = lockEnabled
+  }
 
   static var isEnabled: Bool {
     UserDefaults.standard.bool(forKey: enabledKey)
@@ -28,7 +37,7 @@ final class AppLockService {
 
   /// Locks at launch, when the setting is on.
   func lockIfEnabled() {
-    guard Self.isEnabled else { return }
+    guard lockEnabled() else { return }
     isLocked = true
   }
 
@@ -36,13 +45,13 @@ final class AppLockService {
     switch phase {
     case .inactive:
       // Mask immediately, so the app switcher never shows the content.
-      if Self.isEnabled || isLocked { isCovered = true }
+      if lockEnabled() || isLocked { isCovered = true }
     case .background:
       backgroundedAt = .now
-      if Self.isEnabled || isLocked { isCovered = true }
+      if lockEnabled() || isLocked { isCovered = true }
     case .active:
       isCovered = false
-      guard Self.isEnabled, !isRecording else {
+      guard lockEnabled(), !isRecording else {
         backgroundedAt = nil
         return
       }
@@ -62,23 +71,52 @@ final class AppLockService {
   func unlock() async {
     guard isLocked, !isAuthenticating else { return }
     isAuthenticating = true
+    authenticationMessage = nil
     defer { isAuthenticating = false }
 
+    do {
+      if try await authentication() {
+        isLocked = false
+      } else {
+        authenticationMessage = "認証できませんでした。もう一度お試しください。"
+      }
+    } catch {
+      authenticationMessage = Self.message(for: error)
+    }
+  }
+
+  static func availabilityMessage() -> String? {
+    let context = LAContext()
+    var error: NSError?
+    return context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error)
+      ? nil : message(for: error)
+  }
+
+  private static func authenticateOwner() async throws -> Bool {
     let context = LAContext()
     var error: NSError?
     guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
-      // No biometrics or passcode set: do not trap the person out of their app.
-      isLocked = false
-      return
+      throw error ?? NSError(domain: LAError.errorDomain, code: LAError.Code.authenticationFailed.rawValue)
     }
-    do {
-      let ok = try await context.evaluatePolicy(
-        .deviceOwnerAuthentication,
-        localizedReason: "Memoraのロックを解除します。"
-      )
-      if ok { isLocked = false }
-    } catch {
-      // A cancelled or failed attempt leaves the lock in place.
+    return try await context.evaluatePolicy(
+      .deviceOwnerAuthentication,
+      localizedReason: "Memoraのロックを解除します。"
+    )
+  }
+
+  private static func message(for error: Error?) -> String {
+    guard let error = error as? LAError else {
+      return "認証を開始できませんでした。ロックは解除していません。もう一度お試しください。"
+    }
+    switch error.code {
+    case .passcodeNotSet:
+      return "iPhoneの「設定」でパスコードを設定してから、もう一度お試しください。ロックは解除していません。"
+    case .biometryLockout:
+      return "生体認証を一時的に利用できません。パスコードで認証するか、時間をおいてもう一度お試しください。"
+    case .userCancel, .appCancel, .systemCancel:
+      return "認証を中止しました。ロックを解除するには、もう一度認証してください。"
+    default:
+      return "認証できませんでした。ロックは解除していません。もう一度お試しください。"
     }
   }
 }

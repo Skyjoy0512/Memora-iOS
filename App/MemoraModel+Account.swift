@@ -62,10 +62,10 @@ extension MemoraModel {
     }
   }
 
-  /// Turns cloud storage on or off. It stays off without Plus, so the records
-  /// remain local unless the paid option is active.
+  var cloudStorageStatus: String { "未接続" }
+
   func setCloudStorageEnabled(_ enabled: Bool) {
-    cloudStorageEnabled = isSubscribed && enabled
+    cloudStorageEnabled = false
   }
 
   /// Offers Plus once, and only after someone has seen a conversation get
