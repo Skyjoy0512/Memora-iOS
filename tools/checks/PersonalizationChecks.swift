@@ -43,6 +43,12 @@ struct PersonalizationChecks {
     precondition(SummaryPreferences.initial(defaults: defaults).method == .automatic)
     defaults.set("market.regular", forKey: "memora.summary.defaultTemplate")
     precondition(SummaryPreferences.initial(defaults: defaults).method == .fixed)
+    defaults.removeObject(forKey: "memora.summary.defaultTemplate")
+    precondition(SummaryPreferences.loadOrMigrate(defaults: defaults).method == .automatic)
+    defaults.set(true, forKey: "hasSeenMemoraWelcome")
+    precondition(SummaryPreferences.loadOrMigrate(defaults: defaults).method == .automatic)
+    defaults.removeObject(forKey: "memora.summaryPreferences")
+    precondition(SummaryPreferences.loadOrMigrate(defaults: defaults).method == .fixed)
     print("PersonalizationChecks: passed (16 categories, 116 occupations, recommendations, migration)")
   }
 }

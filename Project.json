@@ -15,6 +15,10 @@
     "CODE_SIGN_IDENTITY" : "-"
   },
   "packages" : {
+    "FluidAudio" : {
+      "url" : "https://github.com/FluidInference/FluidAudio.git",
+      "exactVersion" : "0.17.7"
+    },
     "LucideSwift" : {
       "url" : "https://github.com/ajaxjiang96/lucide-swift.git",
       "exactVersion" : "0.9.11"
@@ -29,6 +33,10 @@
         }
       },
       "dependencies" : [
+        {
+          "package" : "FluidAudio",
+          "product" : "FluidAudio"
+        },
         {
           "package" : "LucideSwift",
           "product" : "LucideSwift"

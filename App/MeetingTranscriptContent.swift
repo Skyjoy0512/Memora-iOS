@@ -15,7 +15,7 @@ struct MeetingTranscriptContent: View {
   var body: some View {
     // Each of these scans the transcript. Read once here rather than per line,
     // which made a long transcript quadratic on every playback tick.
-    let showsSpeaker = meeting.hasSpeakerSeparation
+    let showsSpeaker = !meeting.transcript.isEmpty
     let hasTimeline = self.hasTimeline
     let seekAction = hasTimeline ? self.seekAction : nil
 
@@ -27,12 +27,19 @@ struct MeetingTranscriptContent: View {
 
         if !meeting.transcript.isEmpty {
           Text(
-            showsSpeaker
-              ? "本文はタップすると修正できます。"
-              : "この文字起こしは話者を分けていません。本文はタップすると修正できます。"
+            "話者名をタップして確認・修正できます。本文はタップすると修正、時刻は原音声を再生します。"
           )
           .font(.subheadline)
           .foregroundStyle(.secondary)
+        }
+        if !meeting.transcript.isEmpty, meeting.audioURL != nil {
+          Button("話者を端末内で解析", icon: .personWave2) {
+            Task { await model.analyzeSpeakers(meeting.id) }
+          }
+          .disabled(model.speakerAnalysisIDs.contains(meeting.id) || model.processing.isActive(meeting.id))
+          if let message = model.speakerAnalysisMessages[meeting.id] {
+            Text(message).font(.footnote).foregroundStyle(.secondary)
+          }
         }
       }
 
@@ -87,7 +94,7 @@ struct MeetingTranscriptContent: View {
   }
 
   private var hasTimeline: Bool {
-    meeting.transcript.contains { $0.timestamp > 0 }
+    meeting.transcript.contains { $0.timestamp > 0 || ($0.endTime ?? 0) > $0.timestamp }
   }
 }
 

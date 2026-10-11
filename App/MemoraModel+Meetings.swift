@@ -26,30 +26,32 @@ extension MemoraModel {
   /// Corrects a speaker name. With `appliesToAllSegments` (the default from the
   /// edit sheet) every line still carrying the old name is corrected at once, so
   /// renaming a speaker does not take one tap per line.
+  @discardableResult
   func renameSpeaker(
     meetingID: UUID,
     segmentID: UUID,
     name: String,
     appliesToAllSegments: Bool = false
-  ) {
+  ) async -> Bool {
     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty,
+    guard !trimmed.isEmpty, !isRestoring, isStoreWritable(),
           let meetingIndex = meetings.firstIndex(where: { $0.id == meetingID }),
-          let segmentIndex = meetings[meetingIndex].transcript.firstIndex(where: { $0.id == segmentID }) else { return }
+          let segmentIndex = meetings[meetingIndex].transcript.firstIndex(where: { $0.id == segmentID }) else { return false }
 
     let original = meetings[meetingIndex].transcript[segmentIndex].speaker
-    if appliesToAllSegments {
-      for index in meetings[meetingIndex].transcript.indices
-      where meetings[meetingIndex].transcript[index].speaker == original {
-        meetings[meetingIndex].transcript[index].speaker = trimmed
-        meetings[meetingIndex].transcript[index].speakerIsCertain = true
+    let originalID = meetings[meetingIndex].transcript[segmentIndex].speakerID
+    let canGroup = originalID != nil || meetings[meetingIndex].transcript[segmentIndex].speakerIsCertain
+    return await commitMeetingChange(meetingID) { record in
+      for index in record.transcript.indices {
+        let sameSpeaker = originalID.map { record.transcript[index].speakerID == $0 }
+          ?? (record.transcript[index].speaker == original)
+        if record.transcript[index].id == segmentID || (appliesToAllSegments && canGroup && sameSpeaker) {
+          record.transcript[index].speaker = trimmed
+          record.transcript[index].speakerIsCertain = true
+          record.transcript[index].identificationStatus = .manual
+        }
       }
-    } else {
-      meetings[meetingIndex].transcript[segmentIndex].speaker = trimmed
-      meetings[meetingIndex].transcript[segmentIndex].speakerIsCertain = true
     }
-    meetingSearchTexts.removeValue(forKey: meetingID)
-    persistMeetings()
   }
 
   /// Corrects the body of one transcript segment, leaving the speaker as is.

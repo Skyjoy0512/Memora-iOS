@@ -13,6 +13,22 @@ struct SummaryPreferences: Codable, Equatable {
   var length: SummaryLength = .standard
   var displayOrder: DisplayOrder = .importance
 
+  static func loadOrMigrate(defaults: UserDefaults = .standard) -> Self {
+    let key = "memora.summaryPreferences"
+    if let saved = defaults.data(forKey: key) {
+      return (try? JSONDecoder().decode(Self.self, from: saved)) ?? initial(defaults: defaults)
+    }
+    let preferences = initial(defaults: defaults)
+    if let encoded = try? JSONEncoder().encode(preferences) { defaults.set(encoded, forKey: key) }
+    return preferences
+  }
+
+  var orderingInstruction: String {
+    displayOrder == .chronological
+      ? "見出しの順序は指定された形式を守り、各見出しの中は発言・出来事の時系列で整理する。"
+      : "見出しの順序は指定された形式を守り、各見出しの中は結論・注意点・約束を先に整理する。"
+  }
+
   static func initial(defaults: UserDefaults = .standard) -> Self {
     let existing = defaults.bool(forKey: "hasSeenMemoraWelcome")
       || defaults.string(forKey: "memora.summary.defaultTemplate") != nil

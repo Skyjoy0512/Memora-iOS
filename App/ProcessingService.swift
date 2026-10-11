@@ -83,6 +83,10 @@ final class ProcessingService {
       hasher.combine(segment.text)
       hasher.combine(segment.speaker)
       hasher.combine(segment.timestamp)
+      hasher.combine(segment.endTime)
+      hasher.combine(segment.speakerID)
+      hasher.combine(segment.identificationStatus)
+      hasher.combine(segment.speakerIsCertain)
     }
     return hasher.finalize()
   }

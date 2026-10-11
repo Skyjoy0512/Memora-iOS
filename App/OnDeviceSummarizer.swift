@@ -22,7 +22,7 @@ enum OnDeviceSummarizer {
     for (index, section) in sections.enumerated() {
       guard !Task.isCancelled else { return .failure(.cancelled) }
       await progress("区間を整理中（\(index + 1)/\(sections.count)）")
-      switch await digest(section, meetingEnd: input.duration) {
+      switch await digest(section, meetingEnd: input.duration, length: input.preferences.length) {
       case .success(let found):
         topics.append(contentsOf: found)
       case .failure(let failure):
@@ -131,6 +131,7 @@ enum OnDeviceSummarizer {
           記録の作業メモを「\(template.lead)」の観点で整理する。
           観点: \(template.focus)
           \(input.preferences.length.instruction)
+          \(input.preferences.orderingInstruction)
           各項目を対応する見出しだけに入れる。見出し: \(headings.joined(separator: " / "))
           同じ文を全見出しへ繰り返さない。記録のない項目は空配列。不確かな話者を特定しない。
           作業メモ（\(topic.title)）:
@@ -175,12 +176,14 @@ enum OnDeviceSummarizer {
   private static func digest(
     _ section: [TranscriptSegment],
     meetingEnd: TimeInterval,
+    length: SummaryLength,
     allowsSplit: Bool = true
   ) async -> Result<[SummaryTopic], AIAnswerFailure> {
     guard let first = section.first, let last = section.last else { return .success([]) }
     let range = "\(MemoraFormat.duration(first.timestamp))〜\(MemoraFormat.duration(last.timestamp))"
     let prompt = """
-    次は会議の文字起こしの一部（\(range)）です。話題ごとに整理してください。
+    次は記録の文字起こしの一部（\(range)）です。話題ごとに整理してください。
+    \(length.instruction)
 
     \(section.map(MeetingSummaryInput.line(for:)).joined(separator: "\n"))
     """
@@ -201,7 +204,7 @@ enum OnDeviceSummarizer {
       let middle = section.count / 2
       var topics: [SummaryTopic] = []
       for half in [Array(section[..<middle]), Array(section[middle...])] {
-        switch await digest(half, meetingEnd: meetingEnd, allowsSplit: false) {
+        switch await digest(half, meetingEnd: meetingEnd, length: length, allowsSplit: false) {
         case .success(let found): topics.append(contentsOf: found)
         case .failure(let failure): return .failure(failure)
         }
@@ -304,6 +307,7 @@ enum OnDeviceSummarizer {
     let prompt = """
     次は記録「\(input.title)」の話題ごとのメモです。\(lens)全体の見出し・概要・重要なポイントをまとめてください。
     \(input.preferences.length.instruction)
+    \(input.preferences.orderingInstruction)
 
     \(notes)
     """

@@ -9,4 +9,5 @@ struct SpeechTranscriptionUpdate: Equatable {
   var text: String
   var timestamp: TimeInterval
   var isFinal: Bool
+  var endTime: TimeInterval? = nil
 }

@@ -13,11 +13,13 @@ struct SpeakerEditSheet: View {
   /// The registered person chosen by name, added to the recording only when the
   /// change is saved, so cancelling leaves the participants as they were.
   @State private var selectedPersonID: UUID?
+  @State private var isSaving = false
 
   init(meetingID: UUID, segment: TranscriptSegment) {
     self.meetingID = meetingID
     self.segment = segment
     _name = State(initialValue: segment.speaker)
+    _appliesToAllSegments = State(initialValue: segment.speakerID != nil || segment.speakerIsCertain)
   }
 
   var body: some View {
@@ -26,10 +28,14 @@ struct SpeakerEditSheet: View {
         Section("話者") {
           TextField("名前", text: $name)
             .textInputAutocapitalization(.never)
+          Button("自分の発言として確認", icon: .person) { name = "自分" }
+          Text("手動のラベル変更です。声の特徴量は登録・更新しません。")
+            .font(.footnote).foregroundStyle(.secondary)
         }
 
         Section {
           Toggle("この話者のすべての発言に変更", isOn: $appliesToAllSegments)
+            .disabled(segment.speakerID == nil && !segment.speakerIsCertain)
         }
 
         if !model.people.isEmpty {
@@ -71,18 +77,18 @@ struct SpeakerEditSheet: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
-            model.renameSpeaker(
-              meetingID: meetingID,
-              segmentID: segment.id,
-              name: name,
-              appliesToAllSegments: appliesToAllSegments
-            )
-            if let personID = selectedPersonID {
-              addParticipant(personID)
+            isSaving = true
+            Task {
+              let saved = await model.renameSpeaker(
+                meetingID: meetingID, segmentID: segment.id, name: name,
+                appliesToAllSegments: appliesToAllSegments)
+              isSaving = false
+              guard saved else { return }
+              if let personID = selectedPersonID { addParticipant(personID) }
+              dismiss()
             }
-            dismiss()
           }
-          .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+          .disabled(isSaving || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
       }
     }

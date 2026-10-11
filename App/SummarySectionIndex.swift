@@ -9,9 +9,12 @@ struct SummarySectionIndex: View {
       preferences: SummaryPreferences(), modelInfo: "").sections
     if !sections.isEmpty {
       DisclosureGroup("要約の項目と原文") {
-        ForEach(sections) { section in
+        ForEach(sections, id: \.order) { section in
           VStack(alignment: .leading, spacing: 6) {
             Text(section.title).font(.subheadline.bold())
+            if !section.content.isEmpty {
+              MarkdownDocumentView(markdown: section.content)
+            }
             ForEach(section.sourceReferences, id: \.self) { reference in
               if let segment = meeting.transcript.first(where: { $0.id == reference }), meeting.audioURL != nil {
                 Button("一致する発言 \(MemoraFormat.duration(segment.timestamp))", icon: .playFill) {

@@ -5,7 +5,7 @@ import Observation
 @Observable
 final class VoiceEnrollmentService {
   static let minimumDuration: TimeInterval = 10
-  static let maximumDuration: TimeInterval = 30
+  static let maximumDuration: TimeInterval = 40
 
   private(set) var isPreparing = false
   private(set) var isRecording = false

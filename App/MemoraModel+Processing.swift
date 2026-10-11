@@ -40,7 +40,7 @@ extension MemoraModel {
   func startTranscription(_ id: UUID) {
     guard let meeting = meeting(id: id),
           meeting.audioURL != nil,
-          !processing.isActive(id) else { return }
+          !processing.isActive(id), !speakerAnalysisIDs.contains(id) else { return }
     updateMeeting(id) { $0.status = .transcribing(0.08) }
     runTranscription(id, preparation: .milliseconds(600), progress: 0.62, recordsTiming: false)
   }
@@ -60,7 +60,8 @@ extension MemoraModel {
     useCaseID: String? = nil,
     preferences: SummaryPreferences? = nil
   ) {
-    guard let meeting = meeting(id: id), !meeting.transcript.isEmpty else { return }
+    guard let meeting = meeting(id: id), !meeting.transcript.isEmpty,
+          !speakerAnalysisIDs.contains(id) else { return }
 
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     let inputRevision = ProcessingService.inputRevision(meeting.transcript)
@@ -213,6 +214,12 @@ extension MemoraModel {
         meeting.status = .waitingForSummary
       }
       announce("文字起こしができました。要約を作成しています。")
+      if automaticallyAnalyzesSpeakers, SpeakerModelAssets.isInstalled {
+        Task { [weak self] in
+          guard let self, self.automaticallyAnalyzesSpeakers else { return }
+          await self.analyzeSpeakers(id)
+        }
+      }
     case .unavailable:
       updateMeeting(id) {
         $0.status = .failed("この端末では文字起こしを利用できません。音声は保存されています。設定で別のエンジンを選ぶか、別の端末でお試しください。")

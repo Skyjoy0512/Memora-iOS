@@ -17,7 +17,8 @@ enum SpeechTranscriptionSegments {
       speaker: "話者",
       speakerIsCertain: false,
       timestamp: update.timestamp.isFinite ? update.timestamp : 0,
-      text: text
+      text: text,
+      endTime: update.endTime.flatMap { $0.isFinite && $0 > update.timestamp ? $0 : nil }
     )
   }
 }

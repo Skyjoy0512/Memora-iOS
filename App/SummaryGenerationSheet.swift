@@ -125,7 +125,8 @@ struct SummaryGenerationSheet: View {
           .background(.tint, in: Capsule())
       }
       .buttonStyle(.plain)
-      .disabled((usesCloud && !confirmsCloudDisclosure) || model.processing.isActive(meetingID))
+      .disabled((usesCloud && !confirmsCloudDisclosure) || model.processing.isActive(meetingID)
+        || model.speakerAnalysisIDs.contains(meetingID))
     }
     .padding(.horizontal, 20)
     .padding(.top, 10)

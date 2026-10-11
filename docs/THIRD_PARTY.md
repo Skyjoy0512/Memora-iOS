@@ -1,5 +1,12 @@
 # 取り入れたオープンソース
 
+## 話者分離と声の特徴量
+
+- [FluidAudio 0.17.7](https://github.com/FluidInference/FluidAudio/tree/v0.17.7): 録音後の話者分離と256次元embedding生成。SDKはApache-2.0。`FluidAudio-LICENSE.txt`、FastclusterのBSD-2-Clause、VBxおよびNeMo関連のライセンス/NOTICEを `App/Resources/` に同梱。TTSフロントエンドの第三者告知も保存する。
+- [Community-1 Core MLモデルのNOTICE](https://huggingface.co/FluidInference/speaker-diarization-coreml/blob/df2625ac79a7ac6b65ad868fee6d80f320da4232/NOTICE.md): pyannote、WeSpeaker、BUT Speech@FIT、Fluid Inference。Core ML変換による変更あり。対象モデルはCC BY 4.0。固定revisionの対象25ファイルだけを利用し、出典・LICENSE・NOTICE・PROVENANCEも取得/検証する。アプリには `Community1-LICENSE.txt` と `Community1-NOTICE.txt` を同梱し、設定の話者識別画面にも出典とリンクを表示。
+- 対象モデルはSegmentation/FBank/Embedding/PldaRhoとパラメータ。legacyのwespeakerや、ライセンス未確認の追加モデルを自動取得しない。SDK本体とモデルのライセンスは別に扱う。
+- 機能の制限・商用利用時の確認事項は `docs/PERSONALIZATION_IMPLEMENTATION.md` に記載。診療記録の適合性、本人識別精度、録音/共有の同意や法的有効性を保証しない。
+
 ## ジャーナルの背景写真
 
 背景用の写真4枚は[Unsplash License](https://unsplash.com/license)で配布される写真を同梱。背景は装飾であり、本人が訪れた場所や撮影した写真を示すものではない。ネット接続なしで表示する。添付のUnsplash+透かし入り画像は使用していない。

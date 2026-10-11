@@ -87,6 +87,10 @@ final class MemoraModel {
   /// Documents and slides made from the records, newest first.
   var documents: [MemoraDocument] = []
   var voiceProfile: VoiceProfile?
+  var speakerProfile: SpeakerProfile?
+  var speakerProfileReference: SpeakerProfileReference?
+  var speakerAnalysisIDs: Set<UUID> = []
+  var speakerAnalysisMessages: [UUID: String] = [:]
   var tasks: [MemoraTask] {
     didSet {
       tasksByMeeting = nil
@@ -168,8 +172,11 @@ final class MemoraModel {
   var occupationProfile: UserOccupationProfile = MemoraModel.storedSetting(UserOccupationProfile.self, forKey: "memora.occupationProfile") ?? UserOccupationProfile() {
     didSet { MemoraModel.storeSetting(occupationProfile, forKey: "memora.occupationProfile") }
   }
-  var summaryPreferences: SummaryPreferences = MemoraModel.storedSetting(SummaryPreferences.self, forKey: "memora.summaryPreferences") ?? SummaryPreferences.initial() {
+  var summaryPreferences: SummaryPreferences = SummaryPreferences.loadOrMigrate() {
     didSet { MemoraModel.storeSetting(summaryPreferences, forKey: "memora.summaryPreferences") }
+  }
+  var automaticallyAnalyzesSpeakers = UserDefaults.standard.bool(forKey: "memora.automaticallyAnalyzesSpeakers") {
+    didSet { UserDefaults.standard.set(automaticallyAnalyzesSpeakers, forKey: "memora.automaticallyAnalyzesSpeakers") }
   }
   /// The template automatic summaries use; nil is the built-in 詳細な概要.
   /// A setting, so it lives in UserDefaults.
@@ -497,6 +504,11 @@ final class MemoraModel {
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: [])
     people = load([Person].self, forKey: StorageKey.people, fallback: [])
     voiceProfile = load([VoiceProfile].self, forKey: StorageKey.voiceProfile, fallback: []).first
+    let loadedSpeakerReference = load([SpeakerProfileReference].self, forKey: StorageKey.speakerProfile, fallback: []).first
+    speakerProfileReference = loadedSpeakerReference
+    var loadedSpeakerProfile = loadedSpeakerReference.flatMap { try? SpeakerProfileStore.load($0.id) }
+    if let reference = loadedSpeakerReference { loadedSpeakerProfile?.isEnabled = reference.isEnabled }
+    speakerProfile = loadedSpeakerProfile
     let activeJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
     processing.restoreInterrupted(activeJobIDs)
     trashedRecords = load([TrashedRecord].self, forKey: StorageKey.trash, fallback: [])

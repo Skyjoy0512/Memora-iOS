@@ -132,7 +132,8 @@ private enum SpeechAnalyzerTranscriber {
         let update = SpeechTranscriptionUpdate(
           text: String(result.text.characters),
           timestamp: CMTimeGetSeconds(result.range.start),
-          isFinal: result.isFinal
+          isFinal: result.isFinal,
+          endTime: CMTimeGetSeconds(CMTimeRangeGetEnd(result.range))
         )
         if let segment = SpeechTranscriptionSegments.segment(from: update) {
           segments.append(segment)

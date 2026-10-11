@@ -10,6 +10,16 @@ enum SummaryMarkdownBuilder {
     overview: String,
     topics: [SummaryTopic]
   ) -> String {
+    let orderedTopics: [SummaryTopic]
+    if input.preferences.displayOrder == .importance, template != .builtIn(.detailedMinutes) {
+      orderedTopics = topics.enumerated().sorted { first, second in
+        let firstPriority = first.element.decisions.count + first.element.actions.count
+        let secondPriority = second.element.decisions.count + second.element.actions.count
+        return firstPriority == secondPriority ? first.offset < second.offset : firstPriority > secondPriority
+      }.map(\.element)
+    } else {
+      orderedTopics = topics.sorted { $0.startTime < $1.startTime }
+    }
     let speakers = input.speakers.isEmpty ? "不明" : input.speakers.joined(separator: ", ")
     let decisions = unique(topics.flatMap(\.decisions))
     let questions = unique(topics.flatMap(\.questions))
@@ -25,7 +35,7 @@ enum SummaryMarkdownBuilder {
         "**会議の概要**:  ",
         overview
       ]
-      for (index, topic) in topics.enumerated() {
+      for (index, topic) in orderedTopics.enumerated() {
         lines += ["", "---", "## トピック\(index + 1)：\(topic.title)", "### サマリー"]
         if !topic.speakers.isEmpty {
           lines.append("- **関与者**: \(topic.speakers.joined(separator: ", "))")
@@ -51,7 +61,7 @@ enum SummaryMarkdownBuilder {
         overview,
         "## 議事録"
       ]
-      for topic in topics {
+      for topic in orderedTopics {
         lines.append("### \(topic.title)")
         lines += topic.points.map { "- \($0)" }
       }
@@ -72,7 +82,7 @@ enum SummaryMarkdownBuilder {
         ? ["- なし"]
         : actions.map { "- @\($0.owner ?? "未定") - \($0.title) - 期限: \($0.due ?? "未定")" }
       lines.append("## 詳細議事録")
-      for topic in topics {
+      for topic in orderedTopics {
         let range = "\(MemoraFormat.duration(topic.startTime))-\(MemoraFormat.duration(topic.endTime))"
         lines.append("### [\(range)] \(topic.title)")
         lines += topic.points.map { "- \($0)" }

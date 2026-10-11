@@ -1,6 +1,92 @@
 import Foundation
 
 extension MemoraModel {
+  func reloadSpeakerProfile() {
+    do {
+      speakerProfile = try speakerProfileReference.flatMap { try SpeakerProfileStore.load($0.id) }
+      if let reference = speakerProfileReference { speakerProfile?.isEnabled = reference.isEnabled }
+    }
+    catch {
+      speakerProfile = nil
+      announce("声のプロフィールを読み込めません。ロック解除後に開き直すか、再登録してください。")
+    }
+  }
+
+  func enrollCurrentSpeaker(fileURL: URL, consentAt: Date, keepsSample: Bool) async throws {
+    guard !isRestoring, isStoreWritable(), !isRecording, !isPreparingCapture,
+          VoiceProfileFiles.resolve(fileURL.lastPathComponent)?.standardizedFileURL == fileURL.standardizedFileURL else {
+      throw SpeakerProcessingFailure.storageFailure
+    }
+    let service: any SpeakerDiarizationService = FluidSpeakerDiarizationService.shared
+    let result = try await service.analyze(fileURL)
+    let quality = try await VoiceSampleAnalyzer.shared.assess(fileURL, intervals: result.intervals)
+    guard let embedding = result.embeddings.values.first, result.embeddings.count == 1,
+          embedding.count == 256 else { throw SpeakerProcessingFailure.invalidEmbedding }
+    try Task.checkCancellation()
+    guard !isRestoring, isStoreWritable(), !isRecording, !isPreparingCapture else {
+      throw SpeakerProcessingFailure.storageFailure
+    }
+    let profile = SpeakerProfile(embeddingData: embedding, embeddingModelID: result.modelID,
+      embeddingModelVersion: result.modelVersion, embeddingDimension: embedding.count,
+      enrollmentDuration: quality.sampleDuration, consentAt: consentAt, qualityMetadata: quality)
+    try SpeakerProfileStore.save(profile)
+    let reference = SpeakerProfileReference(profile)
+    guard persistNow([reference], forKey: StorageKey.speakerProfile) else {
+      throw SpeakerProcessingFailure.storageFailure
+    }
+    SpeakerProfileStore.activate()
+    speakerProfileReference = reference
+    speakerProfile = profile
+    do {
+      try SpeakerProfileStore.removeUnused(keeping: profile.id)
+      if keepsSample {
+        guard saveVoiceProfile(fileURL: fileURL, duration: quality.sampleDuration) else {
+          throw SpeakerProcessingFailure.storageFailure
+        }
+      } else {
+        if voiceProfile?.fileName == fileURL.lastPathComponent {
+          guard removeVoiceProfile() else { throw SpeakerProcessingFailure.storageFailure }
+        } else {
+          try VoiceProfileFiles.remove(fileURL.lastPathComponent)
+        }
+        if voiceProfile != nil, !removeVoiceProfile() { throw SpeakerProcessingFailure.storageFailure }
+      }
+    } catch {
+      persistenceFailureMessage = "声の特徴量は登録しましたが、登録用音声の保存・削除または旧特徴量の削除を完了できませんでした。設定から削除・再登録してください。"
+      announce(persistenceFailureMessage ?? "声の保存状態を確認してください。")
+      return
+    }
+    announce("声の特徴量をこの端末に登録しました。自動の本人確定は実機検証待ちです。")
+  }
+
+  func setSpeakerProfileEnabled(_ enabled: Bool) {
+    guard !isRestoring, isStoreWritable(), var profile = speakerProfile else { return }
+    profile.isEnabled = enabled
+    profile.updatedAt = .now
+    do {
+      try SpeakerProfileStore.save(profile)
+      let reference = SpeakerProfileReference(profile)
+      guard persistNow([reference], forKey: StorageKey.speakerProfile) else { throw SpeakerProcessingFailure.storageFailure }
+      speakerProfileReference = reference
+      speakerProfile = profile
+    } catch { announce("声の設定を保存できませんでした。") }
+  }
+
+  func removeSpeakerEmbedding() -> Bool {
+    guard !isRestoring, isStoreWritable() else { return false }
+    speakerProfile = nil
+    do {
+      try SpeakerProfileStore.delete()
+      guard persistNow([SpeakerProfileReference](), forKey: StorageKey.speakerProfile) else {
+        throw SpeakerProcessingFailure.storageFailure
+      }
+      speakerProfileReference = nil
+      return true
+    } catch {
+      announce("声の照合を無効にしましたが、保存データの削除を完了できませんでした。もう一度削除してください。")
+      return false
+    }
+  }
   func removeUnregisteredVoiceSamples() {
     guard !isStoreProtected else { return }
     do {
