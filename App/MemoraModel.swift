@@ -243,6 +243,7 @@ final class MemoraModel {
   @ObservationIgnored let realtimeTranscriber = RealtimeTranscriptionService()
   var recordingTitle = ""
   var recordingNote = ""
+  var recordingMarkers: [RecordingMarker] = []
   var recordingErrorMessage: String?
   /// Explains why a recording paused itself (a call, a lost input), so the
   /// screen matches what actually happened.

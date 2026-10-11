@@ -21,6 +21,10 @@ final class AudioRecorderService {
   var onInterruption: ((Interruption) -> Void)?
 
   private var recorder: AVAudioRecorder?
+  var recordedDuration: TimeInterval? {
+    guard let seconds = recorder?.currentTime, seconds.isFinite, seconds >= 0 else { return nil }
+    return seconds
+  }
   private var observers: [NSObjectProtocol] = []
   /// The session claim this recorder holds, so only this run can give it up.
   private var sessionToken: AudioSessionCoordinator.Token?

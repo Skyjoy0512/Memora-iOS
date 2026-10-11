@@ -13,6 +13,7 @@ extension MemoraModel {
     var note: String
     var startedAt: Date
     var spaceID: UUID? = nil
+    var markers: [RecordingMarker]? = nil
   }
 
   /// Writes what a running recording would need if the app stopped now.
@@ -84,6 +85,7 @@ extension MemoraModel {
       audioURL: audioURL
     )
     meeting.notes = note
+    meeting.recordingMarkers = RecordingMarker.validated(draft.markers ?? [], duration: duration)
     meetings.insert(meeting, at: 0)
 
     lifeLogEntries.insert(

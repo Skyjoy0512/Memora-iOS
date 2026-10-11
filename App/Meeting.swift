@@ -22,6 +22,7 @@ struct Meeting: Identifiable, Hashable, Codable {
   var spaceID: UUID?
   var audioURL: URL?
   var notes = ""
+  var recordingMarkers: [RecordingMarker] = []
   /// People tagged on this recording.
   var participantIDs: [UUID]? = nil
   /// File names of the photos attached to the record, inside the media folder.
@@ -54,6 +55,7 @@ extension Meeting {
     case spaceID
     case audioURL
     case notes
+    case recordingMarkers
     case participantIDs
     case photoFileNames
     case calendarEventID
@@ -76,6 +78,8 @@ extension Meeting {
     transcript = try container.decode([TranscriptSegment].self, forKey: .transcript)
     spaceID = try container.decodeIfPresent(UUID.self, forKey: .spaceID)
     notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
+    recordingMarkers = RecordingMarker.validated(
+      try container.decodeIfPresent([RecordingMarker].self, forKey: .recordingMarkers) ?? [], duration: duration)
     participantIDs = try container.decodeIfPresent([UUID].self, forKey: .participantIDs)
     calendarEventID = try container.decodeIfPresent(String.self, forKey: .calendarEventID)
 
@@ -120,6 +124,7 @@ extension Meeting {
     try container.encode(transcript, forKey: .transcript)
     try container.encodeIfPresent(spaceID, forKey: .spaceID)
     try container.encode(notes, forKey: .notes)
+    if !recordingMarkers.isEmpty { try container.encode(recordingMarkers, forKey: .recordingMarkers) }
     try container.encodeIfPresent(participantIDs, forKey: .participantIDs)
     try container.encodeIfPresent(calendarEventID, forKey: .calendarEventID)
 

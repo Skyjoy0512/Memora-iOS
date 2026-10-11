@@ -78,6 +78,7 @@ extension MemoraModel {
       recordingSpaceID = destinationID
       recordingTitle = event?.title ?? ""
       recordingNote = ""
+      recordingMarkers = []
       isRecordingPaused = false
       isRecording = true
       isCapturePresented = true
@@ -115,6 +116,7 @@ extension MemoraModel {
       )
     }
 
+    let finalDuration = recorder.recordedDuration ?? recordingElapsed
     stopRecorder()
     await endLiveActivity()
 
@@ -124,7 +126,7 @@ extension MemoraModel {
         ? "新しい会話"
         : recordingTitle.trimmingCharacters(in: .whitespacesAndNewlines),
       createdAt: .now,
-      duration: max(recordingElapsed, 1),
+      duration: max(finalDuration, 1),
       source: .recording,
       status: .transcribing(0.12),
       summary: "録音を保存しました。文字起こしを準備しています。",
@@ -136,6 +138,7 @@ extension MemoraModel {
       audioURL: recordingURL
     )
     meeting.notes = recordingNote
+    meeting.recordingMarkers = RecordingMarker.validated(recordingMarkers, duration: meeting.duration)
     meeting.calendarEventID = captureEvent?.id
     captureEvent = nil
     meetings.insert(meeting, at: 0)
@@ -266,6 +269,7 @@ extension MemoraModel {
 
   /// Forgets the finished recording's file and timing.
   private func resetRecordingClock() {
+    recordingMarkers = []
     recordingSpaceID = nil
     recordingURL = nil
     recordingStartedAt = nil

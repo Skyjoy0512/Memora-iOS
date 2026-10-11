@@ -183,6 +183,29 @@ enum SelfChecks {
       if days != [calendar.startOfDay(for: now)] { report("journal dots include another person's task or omit completion") }
     }
     group("Journal daily recap", checkJournalDailyRecap)
+    group("Recording marker compatibility") {
+      let marker = RecordingMarker(timestamp: 12, title: "確認する場面")
+      var meeting = Meeting(id: UUID(), title: "録音", createdAt: .now, duration: 60,
+        source: .recording, status: .waitingForTranscription, summary: "", keyPoints: [],
+        decisions: [], openQuestions: [], transcript: [])
+      meeting.recordingMarkers = [marker]
+      do {
+        let data = try JSONEncoder().encode(meeting)
+        let restored = try JSONDecoder().decode(Meeting.self, from: data)
+        if restored.recordingMarkers != [marker] { report("saved recording loses its markers") }
+        var old = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        old.removeValue(forKey: "recordingMarkers")
+        let legacy = try JSONDecoder().decode(Meeting.self, from: JSONSerialization.data(withJSONObject: old))
+        if !legacy.recordingMarkers.isEmpty { report("legacy recording invents markers") }
+        let draft = MemoraModel.RecordingDraft(fileName: "check.m4a", title: "録音", note: "メモ",
+          startedAt: .now, markers: [marker])
+        let restoredDraft = try JSONDecoder().decode(MemoraModel.RecordingDraft.self, from: JSONEncoder().encode(draft))
+        if restoredDraft.markers != [marker] { report("interrupted recording loses its markers") }
+        let oldDraft = Data("{\"fileName\":\"check.m4a\",\"title\":\"録音\",\"note\":\"\",\"startedAt\":0}".utf8)
+        let legacyDraft = try JSONDecoder().decode(MemoraModel.RecordingDraft.self, from: oldDraft)
+        if legacyDraft.markers != nil { report("legacy draft invents markers") }
+      } catch { report("recording marker compatibility: \(error)") }
+    }
     group("Journal recap context", checkJournalRecapContext)
     group("Journal photo presets") {
       let firstDay = Date(timeIntervalSince1970: 1_790_000_000)

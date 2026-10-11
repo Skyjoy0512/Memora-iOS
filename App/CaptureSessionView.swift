@@ -17,6 +17,21 @@ struct CaptureSessionView: View {
 
         Spacer()
 
+        Button {
+          if model.addRecordingMarker() {
+            section = .markers
+          }
+        } label: {
+          Image(icon: .flag)
+            .font(.body.weight(.semibold))
+            .frame(width: 44, height: 44)
+            .memoraGlass(in: Circle(), interactive: true)
+        }
+        .disabled(!model.isRecording || model.isRecordingPaused || model.isSavingCapture)
+        .accessibilityLabel("重要マークを追加")
+        .accessibilityValue("\(model.recordingMarkers.count)件")
+        .accessibilityHint(model.isRecordingPaused ? "録音を再開してから追加できます" : "今の録音位置を保存します")
+
         Button("録音を破棄", icon: .trash) {
           isDiscardConfirmationPresented = true
         }
@@ -95,6 +110,15 @@ struct CaptureSessionView: View {
             }
         case .transcript:
           RealtimeTranscriptView(service: model.realtimeTranscriber)
+        case .markers:
+          ScrollView {
+            if model.recordingMarkers.isEmpty {
+              ContentUnavailableView("重要マークはありません", icon: .flag,
+                description: Text("大事だと思った瞬間に上の旗をタップすると、録音の位置を残せます。"))
+            } else {
+              RecordingMarkersView(markers: model.recordingMarkers, onDelete: model.removeRecordingMarker)
+            }
+          }
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -202,6 +226,7 @@ struct CaptureSessionView: View {
 private enum CaptureSection: String, CaseIterable, Identifiable {
   case notes
   case transcript
+  case markers
 
   var id: Self { self }
 
@@ -209,6 +234,7 @@ private enum CaptureSection: String, CaseIterable, Identifiable {
     switch self {
     case .notes: "ノート"
     case .transcript: "文字起こし"
+    case .markers: "重要マーク"
     }
   }
 
@@ -216,6 +242,7 @@ private enum CaptureSection: String, CaseIterable, Identifiable {
     switch self {
     case .notes: .noteText
     case .transcript: .waveform
+    case .markers: .flag
     }
   }
 }

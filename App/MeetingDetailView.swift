@@ -76,6 +76,15 @@ struct MeetingDetailView: View {
 
               participantsRow(meeting)
 
+              if !meeting.recordingMarkers.isEmpty {
+                RecordingMarkersView(markers: meeting.recordingMarkers,
+                  onSeek: meeting.audioURL == nil && meeting.transcript.isEmpty ? nil : { time in
+                    InteractionFeedback.shared.send(.tap)
+                    model.detailPlaybackRequest = DetailPlaybackRequest(meetingID: meeting.id, time: time)
+                  },
+                  onDelete: { model.removeMeetingRecordingMarker(meetingID: meeting.id, markerID: $0) })
+              }
+
               GlassSegmentedPicker(
                 items: MeetingDetailSection.allCases,
                 selection: $selectedSection,
@@ -428,7 +437,7 @@ struct MeetingDetailView: View {
   /// record has audio, and otherwise just highlights the line so the source is
   /// still identifiable.
   private func applyPlaybackRequest(_ time: TimeInterval?, meeting: Meeting, proxy: ScrollViewProxy) {
-    selectedSection = .transcript
+    selectedSection = meeting.transcript.isEmpty ? .summary : .transcript
     // A request with no time only opens the transcript; it does not play.
     guard let time else { return }
     if meeting.audioURL != nil {
