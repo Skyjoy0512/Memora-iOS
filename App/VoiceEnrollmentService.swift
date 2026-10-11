@@ -12,6 +12,7 @@ final class VoiceEnrollmentService {
   private(set) var duration: TimeInterval = 0
   private(set) var level: Double = 0
   private(set) var candidateURL: URL?
+  private(set) var pendingSamples: [VoiceEnrollmentSample] = []
   private(set) var errorMessage: String?
   @ObservationIgnored private let recorder = AudioRecorderService()
   @ObservationIgnored private var ticker: Task<Void, Never>?
@@ -94,8 +95,28 @@ final class VoiceEnrollmentService {
 
   func didSave() {
     candidateURL = nil
+    pendingSamples = []
     duration = 0
     errorMessage = nil
+  }
+
+  func queueCandidate() -> Bool {
+    guard !isRecording, !isPreparing, let candidateURL,
+          pendingSamples.count < VoiceEnrollmentBuilder.maximumSamples - 1 else { return false }
+    pendingSamples.append(VoiceEnrollmentSample(url: candidateURL, duration: duration))
+    self.candidateURL = nil
+    duration = 0
+    return true
+  }
+
+  func removeSample(_ sample: VoiceEnrollmentSample) {
+    guard !isRecording, !isPreparing else { return }
+    do {
+      try VoiceProfileFiles.remove(sample.url.lastPathComponent)
+      pendingSamples.removeAll { $0.id == sample.id }
+    } catch {
+      errorMessage = "音声サンプルを削除できませんでした。もう一度お試しください。"
+    }
   }
 
   func cancel() {
@@ -113,6 +134,7 @@ final class VoiceEnrollmentService {
 
   func close() {
     cancel()
+    for sample in pendingSamples { removeSample(sample) }
     if let stopperID {
       AudioSessionCoordinator.shared.unregisterStopper(stopperID, for: .voiceEnrollment)
       self.stopperID = nil

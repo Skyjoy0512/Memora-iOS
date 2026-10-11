@@ -14,4 +14,16 @@ struct SpeakerProfile: Codable, Identifiable, Hashable, Sendable {
   var consentAt: Date
   var qualityMetadata: VoiceQualityMetadata
   var isEnabled = true
+  var enrollmentSamples: [VoiceQualityMetadata]?
+
+  var sampleCount: Int { enrollmentSamples?.count ?? 1 }
+
+  var isValid: Bool {
+    isCurrentUser && embeddingDimension == 256 && embeddingData.count == embeddingDimension
+      && SpeakerEmbeddingMath.cosine(embeddingData, embeddingData) != nil
+      && !embeddingModelID.isEmpty && !embeddingModelVersion.isEmpty
+      && enrollmentDuration.isFinite && enrollmentDuration > 0
+      && qualityMetadata.isValid
+      && (enrollmentSamples.map { !$0.isEmpty && $0.allSatisfy(\.isValid) } ?? true)
+  }
 }

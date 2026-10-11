@@ -11,6 +11,8 @@ struct VoiceProfileView: View {
   @State private var keepsSample = false
   @State private var isGeneratingEmbedding = false
   @State private var registrationTask: Task<Void, Never>?
+  @State private var processingSampleNumber = 1
+  @State private var processingSampleCount = 1
 
   var body: some View {
     Form {
@@ -22,6 +24,7 @@ struct VoiceProfileView: View {
         if let profile = model.speakerProfile {
           LabeledContent("登録日", value: profile.createdAt.formatted(date: .abbreviated, time: .omitted))
           LabeledContent("発話を検出", value: "\(Int(profile.qualityMetadata.speechDuration))秒")
+          LabeledContent("登録サンプル", value: "\(profile.sampleCount)件")
           Toggle("登録した声の照合を有効にする", isOn: Binding {
             model.speakerProfile?.isEnabled == true
           } set: { model.setSpeakerProfileEnabled($0) })
@@ -45,8 +48,8 @@ struct VoiceProfileView: View {
       }
       Section("保存への同意") {
         Toggle("話者識別のため、声の特徴量をこの端末に保存することに同意する", isOn: $consentsToEmbedding)
-        Toggle("登録に使った音声も残す", isOn: $keepsSample)
-        Text("音声を残さない場合、特徴量の生成・保存後に登録用の音声を削除します。特徴量・登録用音声はバックアップやチーム共有の対象外です。")
+        Toggle("最後の登録用音声を残す", isOn: $keepsSample)
+        Text("音声は初期設定で、特徴量の保存後にすべて削除します。残す場合も最後の1件のみ保存します。特徴量・登録用音声はバックアップやチーム共有の対象外です。複数サンプルはすべて自分だけの声で録音してください。")
           .font(.footnote).foregroundStyle(.secondary)
       }
       .disabled(isGeneratingEmbedding)
@@ -57,12 +60,30 @@ struct VoiceProfileView: View {
           .textSelection(.enabled)
       }
 
+      if !enrollment.pendingSamples.isEmpty {
+        Section("登録するサンプル") {
+          ForEach(Array(enrollment.pendingSamples.enumerated()), id: \.element.id) { index, sample in
+            VStack(alignment: .leading, spacing: 8) {
+              LabeledContent("サンプル\(index + 1)", value: "\(Int(sample.duration))秒")
+              Button("サンプル\(index + 1)を確認", icon: .playFill) { play(sample.url) }
+              Button("サンプル\(index + 1)を削除", role: .destructive) {
+                player.stop()
+                enrollment.removeSample(sample)
+              }
+            }
+            .buttonStyle(.borderless)
+          }
+        }
+        .disabled(isGeneratingEmbedding || enrollment.isRecording || enrollment.isPreparing)
+      }
+
       Section {
         if enrollment.isRecording {
           VoiceEnrollmentProgress(enrollment: enrollment)
           Button("録音を終了", icon: .stopFill) { enrollment.finish() }
         } else if isGeneratingEmbedding {
-          ProgressView("発話・音質を確認し、声の特徴量を生成しています…")
+          ProgressView("サンプル\(processingSampleNumber) / \(processingSampleCount)：発話・音質を確認しています…")
+          Button("登録処理を中止", role: .cancel) { registrationTask?.cancel() }
         } else if enrollment.isPreparing {
           ProgressView("マイクを準備しています…")
         } else {
@@ -78,29 +99,28 @@ struct VoiceProfileView: View {
           Button(player.isPlaying ? "確認を停止" : "サンプルを確認", icon: player.isPlaying ? .stopFill : .playFill) {
             play(candidate)
           }
-          Button("この声を登録", icon: .checkmark) {
-            player.stop()
-            isGeneratingEmbedding = true
-            saveError = nil
-            let consentAt = Date.now
-            let shouldKeepSample = keepsSample
-            registrationTask = Task {
-              defer { isGeneratingEmbedding = false }
-              do {
-                try await model.enrollCurrentSpeaker(fileURL: candidate, consentAt: consentAt, keepsSample: shouldKeepSample)
-                enrollment.didSave()
-                consentsToEmbedding = false
-              } catch {
-                saveError = "声の登録を完了できませんでした。\(error.localizedDescription)"
-              }
+          .disabled(isGeneratingEmbedding)
+          if enrollment.pendingSamples.count < VoiceEnrollmentBuilder.maximumSamples - 1 {
+            Button("別のサンプルを追加", icon: .mic) {
+              player.stop()
+              saveError = nil
+              if enrollment.queueCandidate() { Task { await enrollment.start() } }
             }
+            .disabled(isGeneratingEmbedding || model.isRecording || model.isPreparingCapture || model.isRestoring || model.isStoreProtected)
           }
-          .disabled(!consentsToEmbedding || !SpeakerModelAssets.isInstalled || isGeneratingEmbedding || model.isRestoring || model.isStoreProtected)
-          Button("サンプルを破棄", role: .destructive) {
+          Button("このサンプルを破棄", role: .destructive) {
             player.stop()
             enrollment.cancel()
           }
           .disabled(isGeneratingEmbedding)
+        }
+
+        if !enrollment.pendingSamples.isEmpty || enrollment.candidateURL != nil,
+           !enrollment.isRecording, !enrollment.isPreparing {
+          Button("この声を登録", icon: .checkmark) {
+            registerSamples()
+          }
+          .disabled(!consentsToEmbedding || !SpeakerModelAssets.isInstalled || isGeneratingEmbedding || model.isRecording || model.isPreparingCapture || model.isRestoring || model.isStoreProtected)
         }
 
         if let reason = enrollment.errorMessage ?? saveError ?? player.errorMessage {
@@ -113,7 +133,7 @@ struct VoiceProfileView: View {
       } header: {
         Text("声の登録")
       } footer: {
-        Text("40秒で自動停止します。無音・音割れ・複数話者を検出すると登録しません。騒音や本人判定の精度は実機検証が必要です。")
+        Text("1件40秒で自動停止します。任意で最大3件をまとめて登録できます。各サンプルで無音・音割れ・複数話者を検出すると登録しません。複数サンプルの効果・騒音や本人判定の精度は実機検証が必要です。")
       }
 
       if let profile = model.voiceProfile {
@@ -122,7 +142,7 @@ struct VoiceProfileView: View {
             Button(player.isPlaying ? "再生を停止" : "登録した声を再生", icon: player.isPlaying ? .stopFill : .playFill) {
               play(url)
             }
-            .disabled(enrollment.isRecording || enrollment.isPreparing)
+            .disabled(enrollment.isRecording || enrollment.isPreparing || isGeneratingEmbedding)
           } else {
             Text("音声ファイルが見つかりません。もう一度録音して登録してください。")
               .foregroundStyle(.secondary)
@@ -175,6 +195,33 @@ struct VoiceProfileView: View {
     } else {
       player.load(url, title: "自分の声のサンプル")
       player.play()
+    }
+  }
+
+  private func registerSamples() {
+    player.stop()
+    isGeneratingEmbedding = true
+    saveError = nil
+    let consentAt = Date.now
+    let shouldKeepSample = keepsSample
+    var urls = enrollment.pendingSamples.map(\.url)
+    if let candidate = enrollment.candidateURL { urls.append(candidate) }
+    processingSampleNumber = 1
+    processingSampleCount = urls.count
+    registrationTask = Task {
+      defer { isGeneratingEmbedding = false }
+      do {
+        try await model.enrollCurrentSpeaker(fileURLs: urls, consentAt: consentAt, keepsSample: shouldKeepSample) { current, total in
+          processingSampleNumber = current
+          processingSampleCount = total
+        }
+        enrollment.didSave()
+        consentsToEmbedding = false
+      } catch is CancellationError {
+        saveError = "登録処理を中止しました。サンプルを確認して、もう一度登録できます。"
+      } catch {
+        saveError = "声の登録を完了できませんでした。\(error.localizedDescription)"
+      }
     }
   }
 }

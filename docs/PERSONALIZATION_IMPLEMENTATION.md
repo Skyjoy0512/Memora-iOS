@@ -75,7 +75,7 @@ Settings/Onboarding、VoiceProfileView、バックアップで共有される記
 | 10 音声SDK | FluidAudio 0.17.7（公開APIを解決済みパッケージのソースで確認）。Eagle/pyannoteAIは比較のみで未導入 |
 | 11 モデル/ライセンス | Community-1固定revision。対象モデルはCC BY 4.0、SDKはApache-2.0、FastclusterはBSD-2-Clause。出典・全文・第三者告知を同梱 |
 | 12 商用条件 | 確認したライセンスの表示・出典・変更告知を維持する方針。旧legacyモデルは対象ライセンス外なので未使用。正式な業務記録や法的適合性を保証しない |
-| 13 登録方式 | iPhoneマイクの既存VoiceEnrollmentServiceを再利用。自由発話または例文。録音終了後に実モデルでembedding生成 |
+| 13 登録方式 | iPhoneマイクの既存VoiceEnrollmentServiceを再利用。自由発話または例文。任意で1〜3件の録音をまとめて登録し、各音声で品質確認と実モデルのembedding生成 |
 | 14 特徴量保存 | 端末内AES-GCM + Keychain + File Protection、SQLite参照、バックアップ対象外、失効優先の削除 |
 | 15 話者分離 | OfflineDiarizerManagerの実際の区間とchunk embeddingsを使用。通常録音/インポートの共通音声URLを入力にする |
 | 16 本人照合 | 同じ256次元モデル空間でcosine計算。モデル不一致・無効プロフィールは利用しない |
@@ -86,7 +86,7 @@ Settings/Onboarding、VoiceProfileView、バックアップで共有される記
 | 21 API費用 | 分類専用APIなし。音声は端末内で従量課金APIなし。クラウドは利用者の既存設定と生成操作を尊重。ただし候補一覧で入力トークンが増え、長い記録の分割要約は既存経路の複数呼び出しを伴う |
 | 22 容量/メモリ | モデル約21.6MB、取得前に約65MB超の空きを確認。プロフィールのベクトル自体は256×Float32=1KB、実保存はJSON/暗号化分増える。SDK/NeMoバイナリもアプリ容量を増やす。実機ピークRAM/電池/長時間解析は未測定 |
 | 23 既存機能 | Journal/Files/Tasks/Ask AIのナビゲーションを変更しない。記録はSQLite、設定はDefaults、メディアはファイルのまま。旧要約/カスタムテンプレート/原文を保持 |
-| 24 未実装/未検証 | 自動本人確定、実音声の精度、ノイズ定量判定、複数回サンプル統合、Watchアプリ、チーム媒体同期、正式業務適合性、実プロバイダーの要約品質 |
+| 24 未実装/未検証 | 自動本人確定、実音声の精度、ノイズ定量判定、複数回サンプルの精度改善効果、Watchアプリ、チーム媒体同期、正式業務適合性、実プロバイダーの要約品質 |
 | 25 次の候補 | 同意取得した日本語評価データによるFAR/FRR、登録発話量/しきい値の調整、実機マイク/BT比較、モデル配布容量削減、原音声ハッシュと編集履歴 |
 
 ### カテゴリーと職種数
@@ -161,6 +161,24 @@ Settings/Onboarding、VoiceProfileView、バックアップで共有される記
 - WatchConnectivity/Watch長時間録音は未実装。音声解析サービスはファイルURLを受け取り、通常録音とインポートで共通化済みなので、将来の入力元を録音エンジンに密結合していない。Watch転送後の既存インポート処理再利用は今後の実装。
 
 ## 変更ファイル一覧
+
+### 追加工程：複数サンプル登録と保存の回帰検証
+- 1件あたり最大40秒、任意で最大3件。これは処理量を抑えるUX上の上限で、モデルの精度保証・必要発話量を示す値ではない。各サンプルを個別に解析し、単一話者・発話・音割れ・有限な特徴量を確認する。どれか1件が失敗したら、既存プロフィールを置き換えず番号と理由を表示する。
+- モデルID/revision/256次元が一致するベクトルだけを、サンプル単位でL2正規化して平均・再正規化する。音声の長さでは重み付けしない。RMSは音声時間に基づくエネルギーから集計し、各サンプルの品質値と登録件数も暗号化プロフィールに保持。旧形式はサンプル1件として表示する。
+- 各録音で話者1人を検出しても、録音間で同じ本人であると証明できるわけではない。すべて自分だけで録音するよう明示し、同一人物判定のしきい値は追加していない。複数サンプルの精度改善は未検証。
+- 一時サンプルの追加・個別確認・削除・録り直し、解析中の件数表示・中止に対応。画面を閉じたら未登録の音声を削除し、削除失敗分は既存の次回起動時の整理対象にする。
+- 初期設定では全登録音声を特徴量の保存後に削除する。音声保存の明示選択がある場合は最後の1件のみ保持することをUIで説明。既存VoiceProfileの単一ファイル参照・バックアップ方式は変更しない。
+- SpeakerProfileStorageは保存先・Keychainサービス・Defaultsを注入できる内部実装に分離。製品の保存パスと鍵名は維持する。DEBUGチェックはUUID付きの別フォルダー・別Keychainサービス・別Defaultsを使い、製品のプロフィールや鍵に触れない。
+- 純SwiftのSpeakerProcessingChecksに複数サンプル統合・数量上限・モデル不一致・旧プロフィール・無効な品質値・正規化によるサンプル等重みを追加して成功。既存の職業・要約・根拠・表示順チェックも回帰検証して成功。
+- 暗号化保存チェックではAES-GCM往復・再生成nonce・改ざん拒否・UUID不一致拒否・鍵消失・削除・失効後の明示有効化・File Protection・バックアップ除外を確認する。合成ベクトルを用いる保存の検証であり、本人識別精度の検証ではない。
+- 実行したBitrigシミュレーターでFileAttributeKey.protectionKeyはnilだった。この環境ではロック時のファイル保護を成功扱いせず、チェック名にも「lock protection untested」と明示する。実機DEBUGでは属性がcompleteであることを必須にする。実機のロック中の読み取り拒否・バックアップ実復元は別途検証が必要。暗号化・鍵の属性・改ざん・削除のチェックはシミュレーターでも省略しない。
+- 当工程のDebugビルド成功（既存警告5件）。シミュレーターで「Speaker profile storage (lock protection untested): 成功」と要約互換チェック成功を確認。AES-GCM・Keychain属性・鍵消失・失効・再有効化・削除・バックアップ除外の全チェックを実行した。登録画面の同意と音声保存の初期オフ、最大3件・最後の音声のみ保持の説明も確認。実際にマイクで録音し、登録・再登録・中止・削除を通すE2Eは未検証。
+- 登録中止はキャンセルを要求し、モデル処理の区切りで反映する。Core MLの推論自体が即時に停止することは保証しない。キャンセル確認後は新プロフィールを保存しない。
+- 新たなAPI呼び出しやモデル導入はない。2〜3件登録では既存モデルの解析回数と一時音声容量が増える。実機の時間・ピークメモリ・電池は未測定。実音声・日本語会話・iPhone実機の確認と自動本人確定は引き続き未完了。
+
+変更: `App/MemoraModel+VoiceProfile.swift`、`App/VoiceEnrollmentService.swift`、`App/VoiceProfileView.swift`、`App/SpeakerProfile.swift`、`App/VoiceQualityMetadata.swift`、`App/SpeakerProfileStore.swift`、`App/SelfChecks.swift`、`tools/checks/SpeakerProcessingChecks.swift`、本書、`docs/IMPROVEMENT_BACKLOG.md`。
+
+追加: `App/VoiceEnrollmentSample.swift`、`App/VoiceEnrollmentBuilder.swift`、`App/VoiceEnrollmentFailure.swift`、`App/SpeakerProfileStorage.swift`、`App/SpeakerProfileStorageChecks.swift`。
 
 ### 既存ファイルを更新
 - `App/Meeting.swift`

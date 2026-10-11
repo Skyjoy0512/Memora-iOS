@@ -70,6 +70,74 @@ struct SpeakerProcessingChecks {
     let encoded = try JSONEncoder().encode(profile)
     let decodedProfile = try JSONDecoder().decode(SpeakerProfile.self, from: encoded)
     precondition(decodedProfile == profile)
-    print("SpeakerProcessingChecks: passed (math, compatibility, interval ambiguity, manual edits, legacy codec)")
+    precondition(decodedProfile.sampleCount == 1 && decodedProfile.isValid)
+    let combined = try VoiceEnrollmentBuilder.profile(results: [result, result],
+      qualities: [profile.qualityMetadata, profile.qualityMetadata], consentAt: profile.consentAt)
+    precondition(combined.sampleCount == 2 && combined.enrollmentDuration == 40)
+    precondition(combined.qualityMetadata.speechDuration == 30 && combined.qualityMetadata.peak == 0.5)
+    precondition(abs(combined.qualityMetadata.rootMeanSquare - 0.1) < 0.000001)
+    precondition(SpeakerEmbeddingMath.cosine(combined.embeddingData, vector) == 1)
+    var firstAxis = [Float](repeating: 0, count: 256)
+    firstAxis[0] = 2
+    var secondAxis = [Float](repeating: 0, count: 256)
+    secondAxis[1] = 20
+    var firstResult = result
+    firstResult.embeddings = ["S1": firstAxis]
+    var secondResult = result
+    secondResult.embeddings = ["S9": secondAxis]
+    let equalSamples = try VoiceEnrollmentBuilder.profile(results: [firstResult, secondResult],
+      qualities: [profile.qualityMetadata, profile.qualityMetadata], consentAt: .now)
+    precondition(abs(equalSamples.embeddingData[0] - equalSamples.embeddingData[1]) < 0.000001)
+    precondition(abs(equalSamples.embeddingData[0] - Float(1 / sqrt(2.0))) < 0.000001)
+    let combinedData = try JSONEncoder().encode(combined)
+    let combinedRestored = try JSONDecoder().decode(SpeakerProfile.self, from: combinedData)
+    precondition(combinedRestored == combined && combinedRestored.sampleCount == 2)
+    var oldProfileJSON = try JSONSerialization.jsonObject(with: combinedData) as! [String: Any]
+    oldProfileJSON.removeValue(forKey: "enrollmentSamples")
+    let oldProfile = try JSONDecoder().decode(SpeakerProfile.self,
+      from: JSONSerialization.data(withJSONObject: oldProfileJSON))
+    precondition(oldProfile.sampleCount == 1 && oldProfile.isValid)
+    do {
+      _ = try VoiceEnrollmentBuilder.profile(results: [result, mismatched],
+        qualities: [profile.qualityMetadata, profile.qualityMetadata], consentAt: .now)
+      preconditionFailure("different sample models combined")
+    } catch SpeakerProcessingFailure.modelMismatch { }
+    do {
+      _ = try VoiceEnrollmentBuilder.profile(results: [result], qualities: [], consentAt: .now)
+      preconditionFailure("missing quality accepted")
+    } catch SpeakerProcessingFailure.invalidEmbedding { }
+    var invalidResult = result
+    invalidResult.embeddings = ["S1": vector, "S2": vector]
+    do {
+      _ = try VoiceEnrollmentBuilder.profile(results: [invalidResult], qualities: [profile.qualityMetadata], consentAt: .now)
+      preconditionFailure("multiple speaker embeddings accepted for enrollment")
+    } catch SpeakerProcessingFailure.invalidEmbedding { }
+    do {
+      _ = try VoiceEnrollmentBuilder.profile(results: [result, result, result, result],
+        qualities: Array(repeating: profile.qualityMetadata, count: 4), consentAt: .now)
+      preconditionFailure("unbounded enrollment accepted")
+    } catch SpeakerProcessingFailure.invalidEmbedding { }
+    var invalidQuality = profile.qualityMetadata
+    invalidQuality.speechDuration = .nan
+    precondition(!invalidQuality.isValid)
+    invalidQuality = profile.qualityMetadata
+    invalidQuality.speechDuration = 21
+    precondition(!invalidQuality.isValid)
+    invalidQuality = profile.qualityMetadata
+    invalidQuality.clippedSampleCount = 1
+    precondition(!invalidQuality.isValid)
+    invalidQuality = profile.qualityMetadata
+    invalidQuality.detectedSpeakerCount = 2
+    do {
+      _ = try VoiceEnrollmentBuilder.profile(results: [result], qualities: [invalidQuality], consentAt: .now)
+      preconditionFailure("invalid quality accepted")
+    } catch SpeakerProcessingFailure.invalidEmbedding { }
+    var invalidProfile = profile
+    invalidProfile.isCurrentUser = false
+    precondition(!invalidProfile.isValid)
+    invalidProfile = profile
+    invalidProfile.enrollmentSamples = []
+    precondition(!invalidProfile.isValid)
+    print("SpeakerProcessingChecks: passed (math, compatibility, intervals, manual edits, legacy codec, multi-sample enrollment)")
   }
 }

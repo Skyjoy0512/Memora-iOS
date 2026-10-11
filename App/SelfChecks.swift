@@ -60,6 +60,16 @@ enum SelfChecks {
       } catch { report("personalized summary codec: \(error)") }
     }
 
+    #if targetEnvironment(simulator)
+    let speakerStorageCheckName = "Speaker profile storage (lock protection untested)"
+    #else
+    let speakerStorageCheckName = "Speaker profile encrypted storage"
+    #endif
+    group(speakerStorageCheckName) {
+      do { try SpeakerProfileStorageChecks.run() }
+      catch { report("encrypted storage: \(error.localizedDescription)") }
+    }
+
     group("Markdown round trip") {
       checkMarkdownRoundTrip("**太字**", name: "bold")
       checkMarkdownRoundTrip("*斜体*", name: "italic")

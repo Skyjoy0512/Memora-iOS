@@ -12,23 +12,35 @@ extension MemoraModel {
     }
   }
 
-  func enrollCurrentSpeaker(fileURL: URL, consentAt: Date, keepsSample: Bool) async throws {
+  func enrollCurrentSpeaker(fileURLs: [URL], consentAt: Date, keepsSample: Bool,
+    onProgress: (Int, Int) -> Void) async throws {
     guard !isRestoring, isStoreWritable(), !isRecording, !isPreparingCapture,
-          VoiceProfileFiles.resolve(fileURL.lastPathComponent)?.standardizedFileURL == fileURL.standardizedFileURL else {
+          (1...VoiceEnrollmentBuilder.maximumSamples).contains(fileURLs.count),
+          Set(fileURLs.map(\.standardizedFileURL)).count == fileURLs.count,
+          fileURLs.allSatisfy({ VoiceProfileFiles.resolve($0.lastPathComponent)?.standardizedFileURL == $0.standardizedFileURL }) else {
       throw SpeakerProcessingFailure.storageFailure
     }
     let service: any SpeakerDiarizationService = FluidSpeakerDiarizationService.shared
-    let result = try await service.analyze(fileURL)
-    let quality = try await VoiceSampleAnalyzer.shared.assess(fileURL, intervals: result.intervals)
-    guard let embedding = result.embeddings.values.first, result.embeddings.count == 1,
-          embedding.count == 256 else { throw SpeakerProcessingFailure.invalidEmbedding }
+    var results: [SpeakerAnalysisResult] = []
+    var qualities: [VoiceQualityMetadata] = []
+    for (index, fileURL) in fileURLs.enumerated() {
+      try Task.checkCancellation()
+      onProgress(index + 1, fileURLs.count)
+      do {
+        let result = try await service.analyze(fileURL)
+        let quality = try await VoiceSampleAnalyzer.shared.assess(fileURL, intervals: result.intervals)
+        results.append(result)
+        qualities.append(quality)
+      } catch {
+        if Task.isCancelled { throw CancellationError() }
+        throw VoiceEnrollmentFailure(sampleNumber: index + 1, reason: error.localizedDescription)
+      }
+    }
     try Task.checkCancellation()
     guard !isRestoring, isStoreWritable(), !isRecording, !isPreparingCapture else {
       throw SpeakerProcessingFailure.storageFailure
     }
-    let profile = SpeakerProfile(embeddingData: embedding, embeddingModelID: result.modelID,
-      embeddingModelVersion: result.modelVersion, embeddingDimension: embedding.count,
-      enrollmentDuration: quality.sampleDuration, consentAt: consentAt, qualityMetadata: quality)
+    let profile = try VoiceEnrollmentBuilder.profile(results: results, qualities: qualities, consentAt: consentAt)
     try SpeakerProfileStore.save(profile)
     let reference = SpeakerProfileReference(profile)
     guard persistNow([reference], forKey: StorageKey.speakerProfile) else {
@@ -39,17 +51,15 @@ extension MemoraModel {
     speakerProfile = profile
     do {
       try SpeakerProfileStore.removeUnused(keeping: profile.id)
-      if keepsSample {
-        guard saveVoiceProfile(fileURL: fileURL, duration: quality.sampleDuration) else {
+      if keepsSample, let latest = fileURLs.last, let quality = qualities.last {
+        guard saveVoiceProfile(fileURL: latest, duration: quality.sampleDuration) else {
           throw SpeakerProcessingFailure.storageFailure
         }
-      } else {
-        if voiceProfile?.fileName == fileURL.lastPathComponent {
-          guard removeVoiceProfile() else { throw SpeakerProcessingFailure.storageFailure }
-        } else {
-          try VoiceProfileFiles.remove(fileURL.lastPathComponent)
-        }
-        if voiceProfile != nil, !removeVoiceProfile() { throw SpeakerProcessingFailure.storageFailure }
+      } else if voiceProfile != nil, !removeVoiceProfile() {
+        throw SpeakerProcessingFailure.storageFailure
+      }
+      for fileURL in fileURLs where !keepsSample || fileURL != fileURLs.last {
+        try VoiceProfileFiles.remove(fileURL.lastPathComponent)
       }
     } catch {
       persistenceFailureMessage = "声の特徴量は登録しましたが、登録用音声の保存・削除または旧特徴量の削除を完了できませんでした。設定から削除・再登録してください。"
