@@ -7,6 +7,10 @@ enum HealthReviewService {
 
   static var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
+  static func makeLoader() -> HealthReviewLoader {
+    HealthReviewLoader(read: { try await read($0) }, authorize: { try await requestAccess() })
+  }
+
   static func requestAccess() async throws {
     guard isAvailable else { throw HealthReviewError.unavailable }
     let types: Set<HKObjectType> = [

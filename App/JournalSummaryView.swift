@@ -19,10 +19,13 @@ struct JournalSummaryView: View {
     let recap = JournalDailyRecap.build(date: date, meetings: model.meetings,
       tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
       people: model.people, events: events, health: healthEnabled && model.currentTeamID == nil ? health : nil)
-    let shareText = ([date.formatted(date: .complete, time: .omitted), recap.heading,
-      recap.narrative, recap.context.metrics.joined(separator: " · "),
-      recap.context.decisions.isEmpty ? "" : "決まったこと\n" + recap.context.decisions.joined(separator: "\n"),
-      recap.context.openQuestions.isEmpty ? "" : "引き継ぐ問い\n" + recap.context.openQuestions.joined(separator: "\n")])
+    let shareRecap = JournalDailyRecap.build(date: date, meetings: model.meetings,
+      tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
+      people: model.people, events: events)
+    let shareText = ([date.formatted(date: .complete, time: .omitted), shareRecap.heading,
+      shareRecap.narrative, shareRecap.context.metrics.joined(separator: " · "),
+      shareRecap.context.decisions.isEmpty ? "" : "決まったこと\n" + shareRecap.context.decisions.joined(separator: "\n"),
+      shareRecap.context.openQuestions.isEmpty ? "" : "引き継ぐ問い\n" + shareRecap.context.openQuestions.joined(separator: "\n")])
       .filter { !$0.isEmpty }.joined(separator: "\n\n")
 
     NavigationStack {

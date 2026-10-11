@@ -27,8 +27,8 @@ struct HomeView: View {
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @AppStorage("memora.journal.calendarIDs") private var journalCalendarIDsValue = ""
   @AppStorage("memora.journal.healthReviewEnabled") private var healthEnabled = false
-  @State private var health: HealthReviewSnapshot?
-  @State private var healthPeriod: ReviewPeriod?
+  @State private var healthLoader = HealthReviewService.makeLoader()
+  @State private var healthRefreshID = 0
 
   private var journalCalendarIDs: [String] {
     journalCalendarIDsValue.isEmpty ? [] : journalCalendarIDsValue.components(separatedBy: "\n")
@@ -46,8 +46,9 @@ struct HomeView: View {
       recordedDays: model.markedLifeLogDays.union(model.markedMeetingDays),
       completedAt: ownTasks.filter { $0.isCompleted }.compactMap(\.completedAt))
     let healthRequest = JournalHealthRequest(period: .day(selectedDate), enabled: healthEnabled,
-      teamID: model.currentTeamID, isActive: scenePhase == .active, isReviewPresented: showsReview)
-    let visibleHealth = healthRequest.canRead && healthPeriod == healthRequest.period ? health : nil
+      teamID: model.currentTeamID, isActive: scenePhase == .active, isReviewPresented: showsReview,
+      refreshID: healthRefreshID)
+    let visibleHealth = healthRequest.canRead && healthLoader.period == healthRequest.period ? healthLoader.snapshot : nil
     let recap = JournalDailyRecap.build(date: selectedDate, meetings: model.meetings,
       tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
       people: model.people, events: calendarEvents, health: visibleHealth)
@@ -81,6 +82,12 @@ struct HomeView: View {
               .matchedTransitionSource(id: "journalSummary", in: summaryNamespace)
             }
 
+            if healthRequest.canRead, selectedDate <= .now {
+              HealthReviewStatusView(loader: healthLoader, period: healthRequest.period) { healthRefreshID += 1 }
+                .padding(16)
+                .memoraCard()
+            }
+
             if entries.isEmpty, calendarEvents.isEmpty, !recap.hasActivity {
               emptyDay
             } else {
@@ -103,7 +110,10 @@ struct HomeView: View {
         .padding(.bottom, model.bottomContentClearance)
       }
       .hideBottomBarOnScroll(RootTab.home.rawValue)
-      .refreshable { await model.refresh() }
+      .refreshable {
+        await model.refresh()
+        if healthRequest.canRead { await healthLoader.load(healthRequest.period) }
+      }
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("ジャーナル")
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "記録を検索")
@@ -171,16 +181,10 @@ struct HomeView: View {
       }
       .task(id: selectedDate) { await loadEvents() }
       .task(id: healthRequest) {
-        health = nil
-        healthPeriod = nil
-        guard healthRequest.canRead, HealthReviewService.isAvailable else { return }
-        let period = ReviewPeriod(start: healthRequest.period.start, end: min(healthRequest.period.end, .now))
-        guard period.end > period.start else { return }
-        let snapshot = try? await HealthReviewService.read(period)
-        guard !Task.isCancelled else { return }
-        healthPeriod = healthRequest.period
-        health = snapshot
+        guard healthRequest.canRead else { healthLoader.clear(); return }
+        await healthLoader.load(healthRequest.period, requestsAccess: healthRequest.refreshID > 0)
       }
+      .onDisappear { if !showsSummary { healthLoader.clear() } }
       .onChange(of: selectedDate) { _, date in backdrops.select(date) }
       .onChange(of: showCalendarEvents) { _, _ in Task { await loadEvents() } }
       .onChange(of: journalCalendarIDsValue) { _, _ in Task { await loadEvents() } }

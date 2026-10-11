@@ -6,6 +6,7 @@ struct JournalHealthRequest: Hashable {
   var teamID: String?
   var isActive: Bool
   var isReviewPresented: Bool
+  var refreshID = 0
 
   var canRead: Bool { enabled && teamID == nil && isActive && !isReviewPresented }
 }

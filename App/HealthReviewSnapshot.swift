@@ -6,6 +6,16 @@ struct HealthReviewSnapshot {
   var workoutSeconds: TimeInterval?
   var workoutRecordCount: Int
 
+  var stepCount: Int? {
+    guard let steps, steps.isFinite, steps >= 0, steps < Double(Int.max) else { return nil }
+    return Int(steps)
+  }
+
+  var hasData: Bool {
+    stepCount != nil || sleepSeconds.map { $0.isFinite && $0 > 0 } == true
+      || workoutSeconds.map { $0.isFinite && $0 > 0 } == true
+  }
+
   static func mergedDuration(_ intervals: [DateInterval], within period: ReviewPeriod) -> TimeInterval {
     let clipped = intervals.compactMap { interval -> DateInterval? in
       let start = max(interval.start, period.start)

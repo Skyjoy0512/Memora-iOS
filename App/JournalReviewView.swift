@@ -3,12 +3,11 @@ import SwiftUI
 struct JournalReviewView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.scenePhase) private var scenePhase
   var date: Date
   @State private var weekly = false
-  @State private var health: HealthReviewSnapshot?
-  @State private var healthError: String?
-  @State private var isLoadingHealth = false
-  @State private var healthTask: Task<Void, Never>?
+  @State private var healthLoader = HealthReviewService.makeLoader()
+  @State private var healthRefreshID = 0
   @State private var savedDocument: MemoraDocument?
   @State private var saveError: String?
   @AppStorage("memora.journal.healthReviewEnabled") private var healthEnabled = false
@@ -17,6 +16,9 @@ struct JournalReviewView: View {
 
   var body: some View {
     let period = period
+    let healthRequest = JournalHealthRequest(period: period, enabled: healthEnabled,
+      teamID: model.currentTeamID, isActive: scenePhase == .active, isReviewPresented: false,
+      refreshID: healthRefreshID)
     let ownTasks = model.tasks.filter { model.isOwnTask($0) }
     let statistics = ReviewStatistics.build(period: period, meetings: model.meetings, tasks: ownTasks, entries: model.lifeLogEntries)
     let previous = previousPeriod(period)
@@ -99,31 +101,21 @@ struct JournalReviewView: View {
         }
       }
     }
-    .onChange(of: weekly) { _, _ in clearHealth() }
-    .onChange(of: model.currentTeamID) { _, _ in clearHealth() }
-    .onChange(of: healthEnabled) { _, enabled in if !enabled { clearHealth() } }
-    .onDisappear { clearHealth() }
+    .task(id: healthRequest) {
+      guard healthRequest.canRead else { healthLoader.clear(); return }
+      await healthLoader.load(period, requestsAccess: true)
+    }
+    .onDisappear { healthLoader.clear() }
   }
 
   private var healthSection: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("健康と活動").font(.headline)
       Toggle("健康データを振り返りに使う", isOn: $healthEnabled)
       Text("歩数・睡眠・ワークアウトを読み取り専用で使います。この画面内だけで表示し、AI・チーム・Webhook・バックアップには渡しません。")
         .font(.footnote).foregroundStyle(.secondary)
       if healthEnabled {
-        Button("許可を確認して読み込む", icon: .arrowClockwise) { loadHealth() }
-          .disabled(isLoadingHealth)
-        if isLoadingHealth { ProgressView("健康データを読み込んでいます") }
-        if let health {
-          Text("歩数: \(health.steps.map { Int($0).formatted() + "歩" } ?? "取得できたデータなし")")
-          Text("睡眠記録の合計: \(health.sleepSeconds.map { MemoraFormat.duration($0) } ?? "取得できたデータなし")")
-          Text("ワークアウトの記録時間: \(health.workoutSeconds.map { MemoraFormat.duration($0) } ?? "取得できたデータなし")")
-          Text("睡眠・運動の重複した時間は1回として集計します。運動の記録時間は開始から終了までで、休止を含む場合があります。")
-            .font(.footnote).foregroundStyle(.secondary)
-        }
-        if let healthError { Text(healthError).font(.footnote).foregroundStyle(.secondary) }
-        Text("データなしと読み取り不許可は区別できません。健康状態の診断や原因の判定は行いません。")
+        HealthReviewStatusView(loader: healthLoader, period: period) { healthRefreshID += 1 }
+        Text("睡眠・運動の重複した時間は1回として集計します。運動の記録時間は休止を含む場合があります。健康状態の診断や原因の判定は行いません。")
           .font(.footnote).foregroundStyle(.secondary)
       }
     }
@@ -136,35 +128,6 @@ struct JournalReviewView: View {
       start: calendar.date(byAdding: .day, value: -days, to: period.start) ?? period.start,
       end: period.start
     )
-  }
-
-  private func loadHealth() {
-    guard model.currentTeamID == nil, healthEnabled else { return }
-    let requestedPeriod = period
-    healthTask?.cancel()
-    isLoadingHealth = true
-    healthError = nil
-    healthTask = Task { @MainActor in
-      do {
-        try await HealthReviewService.requestAccess()
-        let snapshot = try await HealthReviewService.read(requestedPeriod)
-        guard !Task.isCancelled, healthEnabled, model.currentTeamID == nil, period == requestedPeriod else { return }
-        health = snapshot
-        isLoadingHealth = false
-      } catch {
-        guard !Task.isCancelled else { return }
-        healthError = "読み込めませんでした。ヘルスケアの許可と端末を確認してください。"
-        isLoadingHealth = false
-      }
-    }
-  }
-
-  private func clearHealth() {
-    healthTask?.cancel()
-    healthTask = nil
-    health = nil
-    healthError = nil
-    isLoadingHealth = false
   }
 
   private func save(_ statistics: ReviewStatistics) {
