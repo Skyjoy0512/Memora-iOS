@@ -11,10 +11,12 @@ struct OccupationSelectionView: View {
 
     List {
       Section {
-        Text("仕事・活動はおすすめの順序にだけ使います。職業を選ばなくても、すべての記録・テンプレートを使えます。")
+        Text("主な仕事・活動に合う要約テンプレートを選びます。手動で指定した形式は優先し、AIにおまかせなら会議や休日の内容にも合わせます。")
           .foregroundStyle(.secondary)
         if !selected.isEmpty {
-          Picker("主な仕事・活動", selection: $model.occupationProfile.primaryOccupationID) {
+          Picker("主な仕事・活動", selection: Binding {
+            model.occupationProfile.primaryOccupationID
+          } set: { model.setPrimaryOccupation($0) }) {
             ForEach(selected) { occupation in
               Text(occupation.title).tag(Optional(occupation.id))
             }
@@ -31,6 +33,19 @@ struct OccupationSelectionView: View {
           }
         }
       } header: { Text("選択済み") }
+
+      Section {
+        LabeledContent(model.followsOccupationSummaryTemplates ? "基本のテンプレート" : "手動指定のテンプレート",
+                       value: model.defaultSummaryChoice.title)
+        if !model.followsOccupationSummaryTemplates {
+          Button("仕事・活動に合う形式に切り替える") { model.useOccupationSummaryTemplates() }
+        }
+        NavigationLink("要約スタイルを調整") { SummaryStyleSettingsView() }
+      } header: { Text("要約テンプレート") } footer: {
+        Text(model.followsOccupationSummaryTemplates
+          ? "職業を選ぶだけで基本の形式が変わります。用途・記録内容を優先し、過去の要約は変更しません。"
+          : "手動で選んだ形式を優先しています。職業を変えても、この指定は上書きしません。")
+      }
 
       ForEach(OccupationCatalog.categories) { category in
         let items = matching.filter { $0.categoryID == category.id }
@@ -52,9 +67,6 @@ struct OccupationSelectionView: View {
       }
     }
     .navigationTitle("仕事・活動")
-    .onChange(of: model.occupationProfile.primaryOccupationID) { _, _ in
-      model.occupationProfile.updatedAt = .now
-    }
     .memoraBackButton()
     .searchable(text: $query, prompt: "仕事を検索")
     .sensoryFeedback(.selection, trigger: model.occupationProfile.selectedOccupationIDs)

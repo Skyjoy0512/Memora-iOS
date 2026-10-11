@@ -23,6 +23,15 @@ Settings/Onboarding、VoiceProfileView、バックアップで共有される記
 - Watchアプリ・本人識別精度・業務上の法的適合性は別途検証する。
 
 ## 状態
+### 2026-10-11: 職業と要約テンプレートのUX連動
+- 以前は職業の推薦が一覧の順序にしか反映されず、固定方式の既定が「詳細な概要」のままだった。手動指定のない既定を、主職業の最上位推薦から解決するよう変更。複数職業は主職業を優先し、すべて外すと詳細な概要へ戻る。
+- 職業/主職業の明示変更時、手動指定がなければおまかせにする。手動テンプレートIDが保存されていれば保持する。「詳細な概要」を手動指定した場合もIDを保存して職業追従と区別する。未存在の手動IDは勝手に別職業形式へ変えず、詳細な概要にフォールバック。
+- 仕事・活動画面に現在の基本形式、手動指定の説明、職業連動に戻す操作、要約スタイルへの導線を追加。要約スタイルには「仕事・活動に合わせる」と基本形式、職業変更への導線を追加。テンプレート詳細の既定指定は固定方式を有効化し、解除は職業連動のおまかせへ戻す。
+- 要約シートのカスタム生成は、その記録の用途/内容/職業から解決された形式を選択済みにする。おまかせのクラウド生成には基本候補名を表示し、内容分類は従来と同じリクエストで行う。手動形式・明示用途を優先し、仕事以外の記録も形式を切り替えられる。
+- 新しい永続化スキーマは追加せず、既存の職業プロフィールと既定テンプレートIDを再利用。過去の記録・履歴・詳しさ・AIエンジン・声プロフィールは変更しない。追加API呼び出しなし。
+- 回帰項目: 美容師/介護士/電気工事士の既定、主職業変更、手動指定（詳細な概要含む）の保持、職業解除、再読込、欠落ID。実際のLLMによる形式選択品質は別途確認が必要。
+- 変更ファイル: `MemoraModel+Personalization.swift`、`MemoraModel+Templates.swift`、`OccupationSelectionView.swift`、`SummaryStyleSettingsView.swift`、`SummaryGenerationSheet.swift`、`SummaryTemplateDetailView.swift`、`SummaryTemplateMarketplaceView.swift`、`SummaryTemplateSelector.swift`、`SelfChecks.swift`、`tools/checks/PersonalizationChecks.swift`、本書、`IMPROVEMENT_BACKLOG.md`。
+
 第1段階: 16カテゴリー・116職種・19用途、複数選択/検索/主職業/自由入力、任意オンボーディング、推薦一覧と19テンプレートを追加。既存の23市場テンプレートIDを維持。旧ユーザーは固定方式、新規はおまかせを初期値とする。設定変更は過去の記録を変更しない。
 
 `bitrig build -destination selected`: 成功。既存のRecordStore/AutoLocationLogger/メタデータ抽出の警告5件は対象外。

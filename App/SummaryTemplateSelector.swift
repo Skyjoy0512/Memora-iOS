@@ -1,6 +1,14 @@
 import Foundation
 
 enum SummaryTemplateSelector {
+  static func preferredTemplateID(explicitID: String?, recommendedIDs: [String],
+                                  availableIDs: Set<String>, fallbackID: String) -> String {
+    if let explicitID {
+      return availableIDs.contains(explicitID) ? explicitID : fallbackID
+    }
+    return recommendedIDs.first(where: availableIDs.contains) ?? fallbackID
+  }
+
   static func contentTemplateID(_ text: String) -> String? {
     let rules: [(String, [String])] = [
       ("market.regular", ["スタッフ配置", "スタッフ会議", "定例会議", "議題", "体制に"]),

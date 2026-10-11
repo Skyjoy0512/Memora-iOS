@@ -25,9 +25,10 @@ struct SummaryTemplateMarketplaceView: View {
       }
       if trimmed.isEmpty {
         Section {
-          LabeledContent("自動生成で使う", value: model.defaultSummaryChoice.title)
+          LabeledContent("基本のテンプレート", value: model.defaultSummaryChoice.title)
+          NavigationLink("仕事・活動を変更") { OccupationSelectionView() }
         } footer: {
-          Text("仕事・活動はおすすめの順序に使います。要約方法は「パーソナライズ」の要約スタイルで変更できます。すべてのテンプレートを選べます。")
+          Text("仕事・活動に合う形式を自動で選びます。手動で既定を指定した場合は、その形式を優先します。すべてのテンプレートを選べます。")
         }
       }
 
@@ -83,7 +84,7 @@ struct SummaryTemplateMarketplaceView: View {
 
   private func row(_ template: SummaryMarketTemplate) -> some View {
     let isAdded = model.isTemplateAvailable(template.id)
-    let isDefault = model.defaultTemplateID == template.id
+    let isDefault = model.defaultSummaryChoice.id == template.id
 
     return NavigationLink {
       SummaryTemplateDetailView(templateID: template.id)

@@ -60,6 +60,36 @@ enum SelfChecks {
       } catch { report("personalized summary codec: \(error)") }
     }
 
+    group("Occupation-linked summary defaults") {
+      let available = Set(SummaryTemplateCatalog.market.map(\.id)
+        + SummaryTemplateChoice.builtInChoices.map(\.id))
+      let fallback = SummaryTemplateChoice.standard.id
+      var profile = UserOccupationProfile()
+      for (occupation, expected) in [
+        ("occupation.beauty.hairstylist", "work.customer-chart"),
+        ("occupation.care.caregiver", "work.shift-handover"),
+        ("occupation.construction.electrician", "work.daily")
+      ] {
+        profile.select(occupation, isSelected: true)
+        profile.primaryOccupationID = occupation
+        let recommended = OccupationCatalog.recommendedIDs(for: profile)
+        if SummaryTemplateSelector.preferredTemplateID(explicitID: nil, recommendedIDs: recommended,
+          availableIDs: available, fallbackID: fallback) != expected {
+          report("occupation did not select its default template")
+        }
+        for explicit in ["market.regular", fallback] {
+          if SummaryTemplateSelector.preferredTemplateID(explicitID: explicit, recommendedIDs: recommended,
+            availableIDs: available, fallbackID: fallback) != explicit {
+            report("occupation replaced a manual template")
+          }
+        }
+      }
+      if SummaryTemplateSelector.preferredTemplateID(explicitID: nil, recommendedIDs: [],
+        availableIDs: available, fallbackID: fallback) != fallback {
+        report("unconfigured occupation did not keep the baseline")
+      }
+    }
+
     #if targetEnvironment(simulator)
     let speakerStorageCheckName = "Speaker profile storage (lock protection untested)"
     #else

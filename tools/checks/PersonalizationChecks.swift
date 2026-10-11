@@ -31,8 +31,28 @@ struct PersonalizationChecks {
     let recommended = OccupationCatalog.recommendedIDs(for: profile)
     precondition(recommended.first == "work.shift-handover")
     precondition(Set(recommended).count == recommended.count)
+    let fallback = SummaryTemplateChoice.standard.id
+    func preferred(_ explicitID: String?, _ occupationProfile: UserOccupationProfile) -> String {
+      SummaryTemplateSelector.preferredTemplateID(explicitID: explicitID,
+        recommendedIDs: OccupationCatalog.recommendedIDs(for: occupationProfile),
+        availableIDs: templateIDs, fallbackID: fallback)
+    }
+    precondition(preferred(nil, profile) == "work.shift-handover")
+    precondition(preferred("market.regular", profile) == "market.regular")
+    precondition(preferred(fallback, profile) == fallback)
+    precondition(preferred("custom.deleted", profile) == fallback)
     profile.select("occupation.care.caregiver", isSelected: false)
     precondition(profile.primaryOccupationID == "occupation.beauty.hairstylist")
+    precondition(preferred(nil, profile) == "work.customer-chart")
+    precondition(preferred("market.regular", profile) == "market.regular")
+    profile.select("occupation.beauty.hairstylist", isSelected: false)
+    precondition(preferred(nil, profile) == fallback)
+    profile.select("occupation.construction.electrician", isSelected: true)
+    let reloaded = try JSONDecoder().decode(UserOccupationProfile.self, from: JSONEncoder().encode(profile))
+    precondition(preferred(nil, reloaded) == "work.daily")
+    precondition(SummaryTemplateSelector.preferredTemplateID(explicitID: nil,
+      recommendedIDs: ["work.removed", "work.daily"], availableIDs: templateIDs,
+      fallbackID: fallback) == "work.daily")
     let legacy = Data(#"{"id":"custom.old","title":"旧形式","detail":"説明","symbol":"doc.text","lead":"要約"}"#.utf8)
     let template = try JSONDecoder().decode(SummaryMarketTemplate.self, from: legacy)
     precondition(template.id == "custom.old" && template.sensitivityClassification == .general)
@@ -49,6 +69,6 @@ struct PersonalizationChecks {
     precondition(SummaryPreferences.loadOrMigrate(defaults: defaults).method == .automatic)
     defaults.removeObject(forKey: "memora.summaryPreferences")
     precondition(SummaryPreferences.loadOrMigrate(defaults: defaults).method == .fixed)
-    print("PersonalizationChecks: passed (16 categories, 116 occupations, recommendations, migration)")
+    print("PersonalizationChecks: passed (16 categories, 116 occupations, linked defaults, manual overrides, migration)")
   }
 }

@@ -20,7 +20,7 @@ struct SummaryTemplateDetailView: View {
 
   private func content(_ template: SummaryMarketTemplate) -> some View {
     let isAdded = model.isTemplateAvailable(template.id)
-    let isDefault = model.defaultTemplateID == template.id
+    let isDefault = !model.followsOccupationSummaryTemplates && model.defaultSummaryChoice.id == template.id
 
     return List {
       Section {
@@ -97,7 +97,8 @@ struct SummaryTemplateDetailView: View {
 
         if isAdded || template.isCustom {
           Button(isDefault ? "既定を解除" : "自動生成の既定にする", icon: .starFill) {
-            model.defaultTemplateID = isDefault ? nil : template.id
+            if isDefault { model.useOccupationSummaryTemplates() }
+            else { model.setDefaultSummaryTemplate(template.id) }
           }
         }
 

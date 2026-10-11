@@ -92,6 +92,7 @@ struct SummaryGenerationSheet: View {
       .onAppear {
         length = model.summaryPreferences.length
         useCaseID = model.meeting(id: meetingID)?.summaryUseCaseID ?? ""
+        template = resolvedChoice
       }
       .onChange(of: selectedEngine) { _, _ in confirmsCloudDisclosure = false }
     }
@@ -154,7 +155,7 @@ struct SummaryGenerationSheet: View {
       return "「\(resolvedChoice.title)」で整理"
     }
     return usesCloud
-      ? "内容からAIが形式を選択。追加の分類リクエストは行いません"
+      ? "基本は「\(resolvedChoice.title)」。AIが記録内容に合う形式を選びます"
       : "端末内の内容ルール・仕事の推薦から「\(resolvedChoice.title)」を選択。AI分類ではありません"
   }
 

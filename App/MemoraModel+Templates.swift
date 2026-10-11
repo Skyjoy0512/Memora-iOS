@@ -46,14 +46,24 @@ extension MemoraModel {
 
   // MARK: - Default
 
-  /// What 自動生成 writes with: the chosen default while it is still
-  /// available, otherwise the built-in 詳細な概要.
   var defaultSummaryChoice: SummaryTemplateChoice {
-    guard let id = defaultTemplateID,
-          let template = summaryChoice(id) else {
-      return .standard
-    }
-    return template
+    let id = SummaryTemplateSelector.preferredTemplateID(explicitID: defaultTemplateID,
+      recommendedIDs: OccupationCatalog.recommendedIDs(for: occupationProfile),
+      availableIDs: Set(allSummaryChoices.map(\.id)), fallbackID: SummaryTemplateChoice.standard.id)
+    return summaryChoice(id) ?? .standard
+  }
+
+  var followsOccupationSummaryTemplates: Bool { defaultTemplateID == nil }
+
+  func useOccupationSummaryTemplates() {
+    defaultTemplateID = nil
+    summaryPreferences.method = .automatic
+  }
+
+  func setDefaultSummaryTemplate(_ id: String) {
+    guard summaryChoice(id) != nil else { return }
+    defaultTemplateID = id
+    summaryPreferences.method = .fixed
   }
 
   private func persistInstalledTemplates() {

@@ -7,7 +7,7 @@ extension MemoraModel {
     if summaryPreferences.method == .fixed { return defaultSummaryChoice }
     if let id = SummaryTemplateSelector.contentTemplateID(meeting.transcript.map(\.text).joined(separator: "\n")),
        let choice = summaryChoice(id) { return choice }
-    return recommendedSummaryChoices.first ?? .standard
+    return defaultSummaryChoice
   }
 
   var automaticSummaryCandidates: [SummaryTemplateChoice] {
@@ -54,8 +54,19 @@ extension MemoraModel {
   }
 
   func setOccupation(_ id: String, selected: Bool) {
+    guard OccupationCatalog.occupation(id) != nil,
+          occupationProfile.selectedOccupationIDs.contains(id) != selected else { return }
     var profile = occupationProfile
     profile.select(id, isSelected: selected)
     occupationProfile = profile
+    if followsOccupationSummaryTemplates { summaryPreferences.method = .automatic }
+  }
+
+  func setPrimaryOccupation(_ id: String?) {
+    guard let id, occupationProfile.selectedOccupationIDs.contains(id),
+          occupationProfile.primaryOccupationID != id else { return }
+    occupationProfile.primaryOccupationID = id
+    occupationProfile.updatedAt = .now
+    if followsOccupationSummaryTemplates { summaryPreferences.method = .automatic }
   }
 }
