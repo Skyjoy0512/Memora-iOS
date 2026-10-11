@@ -71,7 +71,7 @@ extension MemoraModel {
 
   /// The memories and the past conversations that bear on a question, as one
   /// block for the prompt, within `budget` characters. Empty when memory is off.
-  func personalContext(for question: String, budget: Int) -> String {
+  func personalContext(for question: String, budget: Int, includesHistory: Bool = true) -> String {
     guard isAIMemoryEnabled, budget > 80 else { return "" }
     var parts: [String] = []
     var remaining = budget
@@ -92,7 +92,7 @@ extension MemoraModel {
       }
     }
 
-    let past = relevantPastExchanges(for: question, budget: remaining)
+    let past = includesHistory ? relevantPastExchanges(for: question, budget: remaining) : ""
     if !past.isEmpty {
       parts.append(past)
     }

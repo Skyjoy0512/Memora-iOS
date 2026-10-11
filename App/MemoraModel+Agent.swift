@@ -223,9 +223,11 @@ extension MemoraModel {
 
   /// Runs a tool and keeps what it returned on the step it made, so the trace
   /// can show what the tool actually did when its row is opened.
-  func runAgentTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope, compact: Bool = false) async -> AgentToolOutcome {
+  func runAgentTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope, compact: Bool = false,
+                    automaticAccess: Bool = false) async -> AgentToolOutcome {
     let before = agentMessage(messageID)?.agentSteps.count ?? 0
-    let outcome = await performAgentTool(call, messageID: messageID, scope: scope, compact: compact)
+    let outcome = await performAgentTool(call, messageID: messageID, scope: scope, compact: compact,
+                                         automaticAccess: automaticAccess)
     let lines = outcome.text
       .split(separator: "\n", omittingEmptySubsequences: true)
       .prefix(8)

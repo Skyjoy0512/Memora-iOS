@@ -52,10 +52,15 @@ enum SelfChecks {
           report("summary history or use case round trip")
         }
         var legacy = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        legacy.removeValue(forKey: "privacy")
         for key in ["summaryVersions", "summaryUseCaseID", "activeSummaryVersionID"] { legacy.removeValue(forKey: key) }
         let old = try JSONDecoder().decode(Meeting.self, from: JSONSerialization.data(withJSONObject: legacy))
         if !old.summaryVersions.isEmpty || old.activeSummaryVersionID != nil || old.summary != meeting.summary {
           report("legacy record summary migration")
+        }
+        if RecordAccessPolicy.allows(old.effectivePrivacy, purpose: .automaticAgent)
+          || RecordAccessPolicy.allows(old.effectivePrivacy, purpose: .automaticWebhook) {
+          report("legacy record allows automatic external access")
         }
       } catch { report("personalized summary codec: \(error)") }
     }

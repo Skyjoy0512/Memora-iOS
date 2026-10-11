@@ -42,7 +42,7 @@ extension MemoraModel {
   /// that was missed by more than its window is skipped rather than posted
   /// late: a morning brief at midnight helps no one.
   func runDueResidents() async {
-    guard residentLLM != nil else { return }
+    guard residentLLM != nil, !isRestoring, !isStoreProtected else { return }
     let now = Date.now
     for agent in residentAgents where agent.isEnabled {
       guard let due = agent.trigger.lastDue(before: now),
@@ -56,7 +56,7 @@ extension MemoraModel {
 
   /// Starts the agents that follow a finished meeting.
   func runResidentsAfterMeeting(_ meetingID: UUID) {
-    guard residentLLM != nil else { return }
+    guard residentLLM != nil, allowsRecordAccess(meetingID, purpose: .automaticAgent) else { return }
     let agents = residentAgents.filter { $0.isEnabled && $0.trigger == .afterMeeting }
     guard !agents.isEmpty else { return }
     Task {
@@ -71,6 +71,8 @@ extension MemoraModel {
   /// cut short by the system is tried again.
   @discardableResult
   func runResident(_ agent: ResidentAgent, meetingID: UUID? = nil) async -> Bool {
+    guard !isRestoring, !isStoreProtected,
+          meetingID.map({ allowsRecordAccess($0, purpose: .automaticAgent) }) ?? true else { return false }
     guard let llm = residentLLM, !runningResidentIDs.contains(agent.id),
           let session = CloudAgentSession(
             llm: llm,
@@ -126,10 +128,12 @@ extension MemoraModel {
   /// it was not given is refused here too, so an unattended run cannot change
   /// data even if the model asks.
   private func runResidentTurns(session: CloudAgentSession, messageID: UUID) async -> AIAnswerResult {
+    let accessRevision = residentAccessRevision
     let allowed = Set(AgentTool.residentTools.map(\.rawValue))
     var lastText = ""
     for _ in 0..<Self.residentMaxTurns {
-      guard !Task.isCancelled else { return .failure(.cancelled) }
+      guard !Task.isCancelled, !isRestoring, !isStoreProtected,
+            accessRevision == residentAccessRevision else { return .failure(.cancelled) }
       let turn: AgentTurn
       do {
         turn = try await session.next()
@@ -138,6 +142,7 @@ extension MemoraModel {
       } catch {
         return .failure(.server)
       }
+      guard accessRevision == residentAccessRevision else { return .failure(.cancelled) }
       if !turn.text.isEmpty { lastText = turn.text }
       guard !turn.toolCalls.isEmpty else {
         return lastText.isEmpty ? .failure(.empty) : .answer(lastText)
@@ -145,7 +150,7 @@ extension MemoraModel {
       var results: [(call: AgentToolCall, outcome: AgentToolOutcome)] = []
       for call in turn.toolCalls {
         let outcome = allowed.contains(call.name)
-          ? await runAgentTool(call, messageID: messageID, scope: .all)
+          ? await runAgentTool(call, messageID: messageID, scope: .all, automaticAccess: true)
           : AgentToolOutcome(text: "常駐中は記録を読むことだけができます。変更は「提案:」として書いてください。", isError: true)
         results.append((call, outcome))
       }
@@ -157,10 +162,10 @@ extension MemoraModel {
   private func residentOpening(_ agent: ResidentAgent, meetingID: UUID?) -> String {
     var parts: [String] = []
     if agent.usesMemory {
-      let personal = personalContext(for: agent.instructions, budget: 2_000)
+      let personal = personalContext(for: agent.instructions, budget: 2_000, includesHistory: false)
       if !personal.isEmpty { parts.append(personal) }
     }
-    if let meetingID, let meeting = meeting(id: meetingID) {
+    if let meetingID, allowsRecordAccess(meetingID, purpose: .automaticAgent), let meeting = meeting(id: meetingID) {
       parts.append("""
       終わった会議: 「\(meeting.displayTitle)」（id: \(meetingID.uuidString)）
       read_record でこの会議を読んでから作業してください。

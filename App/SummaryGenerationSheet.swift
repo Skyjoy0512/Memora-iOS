@@ -115,7 +115,8 @@ struct SummaryGenerationSheet: View {
           configuration: model.summaryConfiguration(for: selectedEngine),
           automaticallySelect: mode == .automatic && model.summaryPreferences.method == .automatic && useCaseID.isEmpty,
           useCaseID: useCaseID,
-          preferences: preferences
+          preferences: preferences,
+          cloudDisclosureConfirmed: confirmsCloudDisclosure
         )
         dismiss()
       } label: {

@@ -26,7 +26,8 @@ extension MemoraModel {
   /// Sends a finished summary to every enabled endpoint, in the background.
   func deliverSummaryToWebhooks(_ meetingID: UUID) {
     let enabled = webhookEndpoints.filter(\.isEnabled)
-    guard !enabled.isEmpty, let meeting = meeting(id: meetingID) else { return }
+    guard !enabled.isEmpty, allowsRecordAccess(meetingID, purpose: .automaticWebhook),
+          let meeting = meeting(id: meetingID) else { return }
     let meetingTasks = tasks(forMeeting: meetingID)
     for endpoint in enabled {
       send(meeting, tasks: meetingTasks, to: endpoint, isTest: false)
@@ -51,6 +52,7 @@ extension MemoraModel {
     }
     let payload = WebhookDelivery.payload(for: meeting, tasks: tasks, format: endpoint.format, isTest: isTest)
     Task { @MainActor [weak self] in
+      guard isTest || self?.allowsRecordAccess(meeting.id, purpose: .automaticWebhook) == true else { return }
       let result = await WebhookDelivery.send(payload, to: url)
       self?.webhookResults[endpoint.id] = result
     }

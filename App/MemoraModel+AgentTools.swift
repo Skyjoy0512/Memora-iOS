@@ -13,8 +13,15 @@ extension MemoraModel {
     _ call: AgentToolCall,
     messageID: UUID,
     scope: AIChatScope,
-    compact: Bool = false
+    compact: Bool = false,
+    automaticAccess: Bool = false
   ) async -> AgentToolOutcome {
+    if automaticAccess {
+      guard let tool = call.tool, AgentTool.residentTools.contains(tool) else {
+        return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
+      }
+      if let outcome = automaticRecordTool(call, messageID: messageID) { return outcome }
+    }
     guard let tool = call.tool else {
       if let external = activeMCPTools[call.name] {
         return await performMCPTool(external, call: call, messageID: messageID)

@@ -21,6 +21,7 @@ struct MeetingDetailView: View {
   @State private var isDeleting = false
   @State private var isRemovingAudio = false
   @State private var isSummaryGenerationPresented = false
+  @State private var isPrivacyPresented = false
   @State private var isAddingPeople = false
   @State private var isChoosingSpace = false
   @State private var isSharing = false
@@ -173,6 +174,7 @@ struct MeetingDetailView: View {
           }
           ToolbarActionItem(usesSystemBackground: true) {
             Menu {
+              Button("プライバシーと外部送信", icon: .lockShield) { isPrivacyPresented = true }
               Button("チームで共有", icon: .personBadgePlus) {
                 Task { await model.shareMeetingWithTeam(meeting.id) }
               }
@@ -215,6 +217,9 @@ struct MeetingDetailView: View {
         }
         .sheet(isPresented: $isSummaryGenerationPresented) {
           SummaryGenerationSheet(meetingID: meeting.id)
+        }
+        .sheet(isPresented: $isPrivacyPresented) {
+          RecordPrivacySettingsView(meetingID: meeting.id)
         }
         .sheet(isPresented: $isAddingPeople) {
           AddPeopleSheet(meetingID: meeting.id)

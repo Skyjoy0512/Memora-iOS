@@ -73,6 +73,9 @@ extension MemoraModel {
     guard hasTeamPlan else { throw TeamShareError.requiresTeamPlan }
     let selected = meetings.filter { meetingIDs.contains($0.id) }
     guard !selected.isEmpty else { throw TeamShareError.empty }
+    guard selected.allSatisfy({ allowsRecordAccess($0.id, purpose: .teamSharing) }) else {
+      throw TeamShareError.privacyRestricted
+    }
 
     // Try once more to write any inline photos, so the package carries files.
     materializePendingLegacyPhotos()
@@ -102,6 +105,10 @@ extension MemoraModel {
   func shareSpaceWithTeam(_ id: UUID) async {
     guard let space = space(id: id) else { return }
     let inProject = meetings.filter { $0.spaceID == id }
+    guard inProject.allSatisfy({ allowsRecordAccess($0.id, purpose: .teamSharing) }) else {
+      cloudShareMessage = RecordAccessPolicy.refusal
+      return
+    }
     let projectTasks = tasks.filter { task in inProject.contains { $0.id == task.meetingID } }
     let snapshot = TeamShareSnapshot(kind: .project, space: space, meetings: inProject, tasks: projectTasks)
     await beginCloudShare(title: space.name, snapshot: snapshot)
@@ -110,6 +117,10 @@ extension MemoraModel {
   /// Shares a single record with the team through CloudKit. Team plan only.
   func shareMeetingWithTeam(_ id: UUID) async {
     guard let meeting = meeting(id: id) else { return }
+    guard allowsRecordAccess(id, purpose: .teamSharing) else {
+      cloudShareMessage = RecordAccessPolicy.refusal
+      return
+    }
     let parentSpace = meeting.spaceID.flatMap { space(id: $0) }
     let meetingTasks = tasks.filter { $0.meetingID == id }
     let snapshot = TeamShareSnapshot(
@@ -134,6 +145,9 @@ extension MemoraModel {
       return
     }
     do {
+      guard snapshot.meetings.allSatisfy({ allowsRecordAccess($0.id, purpose: .teamSharing) }) else {
+        throw TeamShareError.privacyRestricted
+      }
       let payload = try RecordStore.encoded(snapshot)
       pendingCloudShare = try await cloudSharing.makeShare(
         title: title,

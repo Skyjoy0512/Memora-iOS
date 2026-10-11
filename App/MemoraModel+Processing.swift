@@ -58,10 +58,20 @@ extension MemoraModel {
     configuration: (engine: AIEngine, llm: LLMSelection)? = nil,
     automaticallySelect: Bool = false,
     useCaseID: String? = nil,
-    preferences: SummaryPreferences? = nil
+    preferences: SummaryPreferences? = nil,
+    cloudDisclosureConfirmed: Bool = false
   ) {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty,
-          !speakerAnalysisIDs.contains(id) else { return }
+          !speakerAnalysisIDs.contains(id), !processing.isActive(id), !isRestoring, isStoreWritable() else { return }
+    let selectedEngine = configuration?.engine ?? settingsAIConfiguration.engine
+    let effectiveEngine = AIEngineService.effectiveEngine(selectedEngine)
+    if effectiveEngine == .cloud || effectiveEngine == .memora {
+      guard RecordAccessPolicy.allows(meeting.effectivePrivacy, purpose: .cloudAI,
+        explicitCloudConsent: cloudDisclosureConfirmed) else {
+        announce(RecordAccessPolicy.refusal)
+        return
+      }
+    }
 
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     let inputRevision = ProcessingService.inputRevision(meeting.transcript)
@@ -103,6 +113,12 @@ extension MemoraModel {
       // while the answer was being written. A transcript that changed or a
       // summary that was edited by hand wins over the older result.
       guard let current = self.meeting(id: id) else { return }
+      guard !self.isRestoring, self.isStoreWritable() else { return }
+      guard current.privacy == meeting.privacy else {
+        self.updateMeeting(id) { $0.status = .waitingForSummary }
+        self.announce("外部送信の設定が変わったため、古い要約は反映しませんでした。")
+        return
+      }
       let transcriptChanged = ProcessingService.inputRevision(current.transcript) != inputRevision
       let summaryEdited = current.summary != summaryRevision
       guard !transcriptChanged, !summaryEdited else {
@@ -128,14 +144,13 @@ extension MemoraModel {
             preferences: input.preferences, modelInfo: engine == .cloud || engine == .memora ? llm.modelLabel : "端末内AI")
           meeting.summaryVersions.append(version)
           meeting.activeSummaryVersionID = version.id
+          meeting.privacy = meeting.effectivePrivacy
+          if let selected = summary.templateID.flatMap(self.summaryChoice), case .market(let template) = selected {
+            meeting.privacy.protect(template.sensitivityClassification)
+          }
         }
         let added = self.addExtractedTasks(summary.actions, meetingID: id, meetingDate: current.createdAt)
-        let selectedTemplate = summary.templateID.flatMap(self.summaryChoice)
-        let permitsAutomaticDelivery: Bool = if case .market(let template) = selectedTemplate {
-          template.sensitivityClassification == .general
-        } else {
-          !automaticallySelect || selectedTemplate != nil
-        }
+        let permitsAutomaticDelivery = self.allowsRecordAccess(id, purpose: .automaticWebhook)
         if permitsAutomaticDelivery { self.deliverSummaryToWebhooks(id) }
         self.runResidentsAfterMeeting(id)
         self.offerPlusIfNeeded()

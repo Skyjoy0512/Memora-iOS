@@ -26,6 +26,7 @@ struct Meeting: Identifiable, Hashable, Codable {
   var summaryUseCaseID: String? = nil
   var summaryVersions: [TemplateSummary] = []
   var activeSummaryVersionID: UUID? = nil
+  var privacy = RecordPrivacy()
   /// People tagged on this recording.
   var participantIDs: [UUID]? = nil
   /// File names of the photos attached to the record, inside the media folder.
@@ -60,6 +61,7 @@ extension Meeting {
     case notes
     case recordingMarkers
     case summaryUseCaseID, summaryVersions, activeSummaryVersionID
+    case privacy
     case participantIDs
     case photoFileNames
     case calendarEventID
@@ -89,6 +91,7 @@ extension Meeting {
     summaryUseCaseID = try container.decodeIfPresent(String.self, forKey: .summaryUseCaseID)
     summaryVersions = try container.decodeIfPresent([TemplateSummary].self, forKey: .summaryVersions) ?? []
     activeSummaryVersionID = try container.decodeIfPresent(UUID.self, forKey: .activeSummaryVersionID)
+    privacy = try container.decodeIfPresent(RecordPrivacy.self, forKey: .privacy) ?? RecordPrivacy()
 
     // Photos moved out of the record and into the media folder. Older records
     // carry the bytes inline; they are kept for now and written out by
@@ -137,6 +140,7 @@ extension Meeting {
     try container.encodeIfPresent(summaryUseCaseID, forKey: .summaryUseCaseID)
     if !summaryVersions.isEmpty { try container.encode(summaryVersions, forKey: .summaryVersions) }
     try container.encodeIfPresent(activeSummaryVersionID, forKey: .activeSummaryVersionID)
+    try container.encode(privacy, forKey: .privacy)
 
     // A record still waiting to have its inline photos written keeps the bytes,
     // so a save in between does not drop them. Once they are files, the names
