@@ -2,6 +2,8 @@ import SwiftUI
 
 struct AIHistoryView: View {
   @Environment(\.dismiss) private var dismiss
+  @State private var query = ""
+  @State private var isSearching = false
   var entries: [AIConversationEntry]
   /// Asks the stored question again, as a separate choice from reading it.
   var ask: (String) -> Void
@@ -9,13 +11,16 @@ struct AIHistoryView: View {
   var delete: (UUID) -> Void
 
   var body: some View {
+    let filteredEntries = AIHistorySearch.matching(entries, query: query)
     NavigationStack {
       Group {
         if entries.isEmpty {
           ContentUnavailableView("まだ履歴がありません", icon: .clockArrowCirclepath)
+        } else if filteredEntries.isEmpty {
+          ContentUnavailableView.search(text: query)
         } else {
           List {
-            ForEach(entries) { entry in
+            ForEach(filteredEntries) { entry in
               NavigationLink {
                 AIHistoryDetailView(entry: entry, ask: ask, continueConversation: continueConversation)
               } label: {
@@ -32,8 +37,8 @@ struct AIHistoryView: View {
               }
             }
             .onDelete { indexSet in
-              for index in indexSet {
-                delete(entries[index].id)
+              for index in indexSet where filteredEntries.indices.contains(index) {
+                delete(filteredEntries[index].id)
               }
             }
           }
@@ -41,7 +46,18 @@ struct AIHistoryView: View {
       }
       .navigationTitle("質問履歴")
       .navigationBarTitleDisplayMode(.inline)
+      .toolbar(isSearching ? .hidden : .visible, for: .navigationBar)
+      .safeAreaInset(edge: .top, spacing: 0) {
+        if isSearching {
+          ToolbarSearchField(text: $query, isPresented: $isSearching, prompt: "質問・回答を検索")
+        }
+      }
       .toolbar {
+        ToolbarActionItem {
+          ToolbarIconButton("履歴を検索", icon: .magnifyingglass, artwork: .searchIntelligence) {
+            isSearching = true
+          }
+        }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("完了", icon: .checkmark) { dismiss() }
         }

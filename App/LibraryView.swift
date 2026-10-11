@@ -7,6 +7,7 @@ struct LibraryView: View {
   @Environment(\.scenePhase) private var scenePhase
   @State private var query = ""
   @State private var isSearching = false
+  @AppStorage("memora.files.searchAllProjects") private var searchesAllProjects = true
   @Namespace private var heroNamespace
   @State private var isSelectionMode = false
   @State private var selectedMeetingIDs: Set<UUID> = []
@@ -233,6 +234,15 @@ struct LibraryView: View {
     let sharedRecords = model.cloudSharing.sharedRecords
 
     return List {
+      if isSearching {
+        Section {
+          Toggle("全プロジェクトから探す", isOn: $searchesAllProjects)
+        } footer: {
+          Text(searchesAllProjects
+            ? "未分類と、すべてのプロジェクト内のファイルが対象です。"
+            : "未分類のファイルだけが対象です。プロジェクトへ移動したファイルは対象外です。")
+        }
+      }
       if !isSearching {
         listHeaderRows
 
@@ -614,7 +624,8 @@ struct LibraryView: View {
   /// Every match, filtered, sorted and grouped by date. The list shows all of
   /// them; `List` draws lazily, so nothing is cut off behind a cap.
   private var matchingMeetings: [Meeting] {
-    var result = ProjectFiling.records(in: nil, from: model.meetings).filter { statusFilter.matches($0.status) }
+    let records = isSearching && searchesAllProjects ? model.meetings : ProjectFiling.records(in: nil, from: model.meetings)
+    var result = records.filter { statusFilter.matches($0.status) }
     if !query.isEmpty {
       result = result.filter(matchesQuery)
     }
