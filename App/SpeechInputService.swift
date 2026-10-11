@@ -1,7 +1,7 @@
 import AVFAudio
 import Foundation
 import Observation
-import Speech
+@preconcurrency import Speech
 
 @MainActor
 @Observable
@@ -124,7 +124,7 @@ final class SpeechInputService {
       guard format.sampleRate > 0 else {
         throw SpeechInputError.noAudioInput
       }
-      inputNode.installTap(onBus: 0, bufferSize: 1_024, format: format) { [weak self] buffer, _ in
+      inputNode.installTap(onBus: 0, bufferSize: 1_024, format: format) { @Sendable [weak self] buffer, _ in
         request.append(buffer)
         let level = Self.loudness(of: buffer)
         Task { @MainActor [weak self] in

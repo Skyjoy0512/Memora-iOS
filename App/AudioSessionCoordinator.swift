@@ -36,6 +36,7 @@ final class AudioSessionCoordinator {
 
   private(set) var owner: Use?
   private(set) var isRecording = false
+  private(set) var isPreparingRecording = false
   @ObservationIgnored private var ownerTokenID: UUID?
   /// Ways for a feature to be asked to stop before recording takes the session,
   /// each keyed by a token so a replaced service's handler can be removed.
@@ -43,16 +44,32 @@ final class AudioSessionCoordinator {
   /// Ways to pause a running playback, so a second player taking over silences
   /// the first instead of both sounding at once.
   @ObservationIgnored private var playbackPausers: [UUID: @MainActor () -> Void] = [:]
+  private let deactivateSession: @MainActor () -> Void
+
+  init(deactivateSession: (@MainActor () -> Void)? = nil) {
+    self.deactivateSession = deactivateSession ?? {
+      try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+  }
 
   /// Asks anything else using the session to stop, waits for it to finish, and
   /// only then takes the session for recording, so a recorder never starts on top
   /// of running playback or voice input.
-  func beginRecording() async -> Token {
+  func beginRecording() async -> Token? {
+    guard !isRecording, !isPreparingRecording, !Task.isCancelled else { return nil }
+    isPreparingRecording = true
+    defer { isPreparingRecording = false }
     let handlers = stoppers.filter { $0.key != .recording }.flatMap { $0.value.values }
     for handler in handlers {
       await handler()
+      guard !Task.isCancelled else { return nil }
     }
+    guard owner == nil, !isRecording else { return nil }
     return takeRecordingSession()
+  }
+
+  func owns(_ token: Token) -> Bool {
+    ownerTokenID == token.id && owner == token.use
   }
 
   /// Takes the session for recording without waiting on other users, for a resume
@@ -105,6 +122,7 @@ final class AudioSessionCoordinator {
   /// everything; otherwise the session may only be taken when it is free. A new
   /// claim for the same feature invalidates the previous one.
   func claim(_ use: Use) -> Token? {
+    guard !isPreparingRecording else { return nil }
     if use != .recording, isRecording || owner == .recording {
       return nil
     }
@@ -144,6 +162,9 @@ final class AudioSessionCoordinator {
 
   /// What to tell the person when `use` cannot run now.
   func refusal(for use: Use) -> String? {
+    if isPreparingRecording {
+      return "録音を準備しています。準備が終わるまで\(use.label)を使えません。"
+    }
     if isRecording || owner == .recording {
       return "録音中は\(use.label)を使えません。録音を終えてからお試しください。"
     }
@@ -156,6 +177,6 @@ final class AudioSessionCoordinator {
   /// Switching the session off is only safe when nobody is using it.
   private func deactivate() {
     guard owner == nil, !isRecording else { return }
-    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    deactivateSession()
   }
 }

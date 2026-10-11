@@ -10,7 +10,7 @@ extension MemoraModel {
     case .began:
       realtimeTranscriber.stop()
       isRecordingPaused = true
-      recordingPausedAt = .now
+      if recordingPausedAt == nil { recordingPausedAt = .now }
       recordingInterruptionMessage = "着信などでマイクが使えなくなり、録音を一時停止しました。「再開」で続けられます。"
     case .ended:
       if recordingInterruptionMessage == nil {
@@ -19,11 +19,15 @@ extension MemoraModel {
     case .inputLost(let reason):
       realtimeTranscriber.stop()
       isRecordingPaused = true
-      recordingPausedAt = .now
+      if recordingPausedAt == nil { recordingPausedAt = .now }
       recordingInterruptionMessage = reason
     case .reset:
       realtimeTranscriber.stop()
       recordingInterruptionMessage = "オーディオがリセットされました。ここまでの録音を保存します。"
+      Task { await stopCapture() }
+    case .failed(let reason):
+      realtimeTranscriber.stop()
+      recordingInterruptionMessage = reason
       Task { await stopCapture() }
     }
 
@@ -92,7 +96,15 @@ extension MemoraModel {
           startedAt: .now,
           spaceID: destinationID
         )
-        persistNow(recordingDraft, forKey: StorageKey.recordingDraft)
+        guard persistNow(recordingDraft, forKey: StorageKey.recordingDraft) else {
+          stopRecorder()
+          isCapturePresented = false
+          recordingDraft = nil
+          _ = MediaFiles.delete(recordingURL)
+          resetRecordingClock()
+          recordingErrorMessage = "録音の復旧情報を保存できないため、開始を中止しました。ストレージの空き容量を確認してください。"
+          return
+        }
       }
       startRecordingTicker()
       startLevelTicker()
@@ -116,16 +128,21 @@ extension MemoraModel {
       )
     }
 
-    let finalDuration = recorder.recordedDuration ?? recordingElapsed
+    let measuredDuration = recorder.recordedDuration ?? recordingElapsed
     stopRecorder()
     await endLiveActivity()
+    let finalDuration = if let recordingURL {
+      await MediaFiles.duration(of: recordingURL) ?? measuredDuration
+    } else {
+      measuredDuration
+    }
 
     var meeting = Meeting(
       id: recordingDraft?.id ?? UUID(),
       title: recordingTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         ? "新しい会話"
         : recordingTitle.trimmingCharacters(in: .whitespacesAndNewlines),
-      createdAt: .now,
+      createdAt: recordingStartedAt ?? .now,
       duration: max(finalDuration, 1),
       source: .recording,
       status: .transcribing(0.12),
@@ -305,9 +322,10 @@ extension MemoraModel {
     recordingTicker = Task { [weak self] in
       while !Task.isCancelled {
         try? await Task.sleep(for: .seconds(1))
-        guard let self, let startedAt = self.recordingStartedAt else { return }
-        let currentPause = self.recordingPausedAt.map { Date.now.timeIntervalSince($0) } ?? 0
-        self.recordingElapsed = max(0, Date.now.timeIntervalSince(startedAt) - self.recordingPausedDuration - currentPause)
+        guard !Task.isCancelled, let self, self.isRecording else { return }
+        if let duration = self.recorder.recordedDuration {
+          self.recordingElapsed = duration
+        }
       }
     }
   }

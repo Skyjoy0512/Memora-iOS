@@ -179,7 +179,7 @@ private final class RealtimeTranscriptionSession {
     }
     let (stream, continuation) = AsyncThrowingStream<AnalyzerInput, Error>.makeStream(bufferingPolicy: .bufferingNewest(16))
     self.continuation = continuation
-    input.installTap(onBus: 0, bufferSize: 4_096, format: nil) { buffer, _ in
+    input.installTap(onBus: 0, bufferSize: 4_096, format: nil) { @Sendable buffer, _ in
       do {
         guard let ownedBuffer = try converter.convert(buffer) else { return }
         if case .dropped = continuation.yield(AnalyzerInput(buffer: ownedBuffer)) {

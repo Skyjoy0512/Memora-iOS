@@ -255,7 +255,7 @@ enum SelfChecks {
     group("Status filter", checkStatusFilter)
     group("Audio session claims", checkAudioSessionClaims)
     group("Audio session callback registration") {
-      let coordinator = AudioSessionCoordinator()
+      let coordinator = AudioSessionCoordinator(deactivateSession: {})
       var invalidated = false
       let stopper = withObservationTracking {
         _ = coordinator.refusal(for: .playback)
@@ -1844,7 +1844,7 @@ enum SelfChecks {
   /// recording keeps it against everything else — including a release from a
   /// feature that does not own it.
   private static func checkAudioSessionClaims() {
-    let coordinator = AudioSessionCoordinator()
+    let coordinator = AudioSessionCoordinator(deactivateSession: {})
 
     guard let speechToken = coordinator.claim(.speechInput) else {
       report("voice input could not claim a free session")
@@ -2001,12 +2001,22 @@ enum SelfChecks {
   /// before it takes the session.
   private static func runRecordingStopOrderCheck() async {
     let failuresBefore = failures
-    let coordinator = AudioSessionCoordinator()
+    defer {
+      if let index = results.firstIndex(where: { $0.name == "Recording stop order" }) {
+        let passed = failures == failuresBefore
+        results[index].passed = passed
+        results[index].detail = passed ? nil : lastDetail
+      }
+    }
+    let coordinator = AudioSessionCoordinator(deactivateSession: {})
     var stoppedBeforeClaim = false
     coordinator.registerStopper(.playback) { stoppedBeforeClaim = true }
     var enrollmentStoppedBeforeClaim = false
     coordinator.registerStopper(.voiceEnrollment) { enrollmentStoppedBeforeClaim = true }
-    let token = await coordinator.beginRecording()
+    guard let token = await coordinator.beginRecording() else {
+      report("recording could not claim a free session")
+      return
+    }
     if !stoppedBeforeClaim {
       report("recording took the session before stopping the other user")
     }
@@ -2014,10 +2024,68 @@ enum SelfChecks {
       report("recording took the session before stopping voice enrollment")
     }
     coordinator.endRecording(token)
-    let passed = failures == failuresBefore
-    guard let index = results.firstIndex(where: { $0.name == "Recording stop order" }) else { return }
-    results[index].passed = passed
-    results[index].detail = passed ? nil : lastDetail
+
+    let entered = Gate()
+    let resume = Gate()
+    let stopper = coordinator.registerStopper(.speechInput) {
+      entered.open()
+      await resume.wait()
+    }
+    let pending = Task { await coordinator.beginRecording() }
+    await entered.wait()
+    if !coordinator.isPreparingRecording || coordinator.claim(.speechInput) != nil
+      || coordinator.claim(.voiceEnrollment) != nil || coordinator.claim(.playback) != nil {
+      report("another audio user claimed the session during recording preparation")
+    }
+    if await coordinator.beginRecording() != nil {
+      report("a second recording bypassed preparation")
+    }
+    pending.cancel()
+    resume.open()
+    if await pending.value != nil || coordinator.isPreparingRecording || coordinator.isRecording {
+      report("a cancelled recording left the audio session claimed")
+    }
+    coordinator.unregisterStopper(stopper, for: .speechInput)
+
+    let activeToken = coordinator.takeRecordingSession()
+    if await coordinator.beginRecording() != nil || !coordinator.owns(activeToken) {
+      report("a new recorder replaced an active recording")
+    }
+    coordinator.endRecording(activeToken)
+
+    let preparing = Gate()
+    let finishPreparation = Gate()
+    let serviceStopper = coordinator.registerStopper(.speechInput) {
+      preparing.open()
+      await finishPreparation.wait()
+    }
+    let recorder = AudioRecorderService(coordinator: coordinator)
+    if recorder.resume() || coordinator.owner != nil || coordinator.isRecording {
+      report("an empty recorder claimed the session on resume")
+    }
+    let stoppedStart = Task { () -> Bool in
+      do {
+        _ = try await recorder.start()
+        return false
+      } catch is CancellationError {
+        return true
+      } catch {
+        return false
+      }
+    }
+    await preparing.wait()
+    recorder.stop()
+    finishPreparation.open()
+    if !(await stoppedStart.value) || coordinator.owner != nil || coordinator.isRecording {
+      report("a recorder stopped during preparation started or kept the session")
+    }
+    coordinator.unregisterStopper(serviceStopper, for: .speechInput)
+
+    let busy = coordinator.claim(.speechInput)
+    if await coordinator.beginRecording() != nil {
+      report("recording took a session whose user had not stopped")
+    }
+    if let busy { coordinator.release(busy) }
   }
 }
 #endif
