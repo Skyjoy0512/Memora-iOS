@@ -103,3 +103,11 @@ YouTubeのタイトル・作者は固定の公式oEmbedエンドポイントか�
 未完了: 一般Webの安全な本文取得、YouTubeサムネイル、Share Extension／App Groups／取り込みキュー、PDFと音声の出典ジャンプ実画面QA、外部AIの実応答、実機・共有権限・バックアップ実復元の検証。
 
 今回のBitrig iOS Simulatorビルド成功、診断警告なし（2026-10-13T06-29-29-a5bce42b.log）。ProjectWorkspaceV2ChecksとProjectContextChecksの回帰再実行も成功。実画面のYouTube保存・表示は後続の確認記録を参照する。
+
+### 最新の実画面確認
+
+iPhone 18 Pro Maxで、WeeklySyncへ検証用公開YouTubeリンクを追加→保存完了→正式な動画タイトル取得→詳細で作者・元動画リンク・「内容未取得」表示→検証用ソース削除を確認した。WeeklySyncが元の空状態へ戻った。字幕や動画内容の解析、AI回答生成は行っていない。最新AGENTS.mdのタブ順（ジャーナル／ライブラリ／Ask AI）もアクセシビリティツリーで確認した。
+
+Bitrigのシミュレーターが古い状態として一時拒否したが、成功した再ビルド後にターゲットを接続し直して操作できた。直近のコードビルドは2026-10-13T06-34-43-2e1ce3bf.log、成功・診断警告なし。PDF／録音の引用位置への遷移は境界値とスコープの自動検証までで、実ファイルを使った画面確認は未実施。
+
+PDF閲覧のAPI参照: https://developer.apple.com/documentation/pdfkit/pdfview
