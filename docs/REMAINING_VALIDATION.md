@@ -28,4 +28,15 @@ Real-device recording/background audio, external recorders, configured external 
 - iPhone 18 Pro Max: accessibility_extra_large showed full selected weekday/date and kept the selected day centered. The normal-size calendar was checked after restoring `large`.
 - VoiceOver enabled: full selected-date label, three tab names/selection states, composer and FAB labels were present in the accessibility tree. VoiceOver was then disabled. This is label/state verification, not a complete spoken-feedback or gesture audit.
 - Changing to iPhone 17e made the built-in simulator inactive (its inventory became empty). That device's app layout could not be inspected; the target was changed back to iPhone 18 Pro Max. Small-device validation remains blocked by the simulator state.
-- OS notification delivery/tapping and external deep-link launch remain unverified. No live reminders or external requests were created by the automated checks.
+- The automated checks do not exercise OS notification delivery or external deep-link launch. The additional live checks below cover those entry points separately.
+
+## Live entry-point checks — 2026-10-12
+
+Tested on the built-in iPhone 18 Pro Max simulator with ordinary text size. No application UI, typography, navigation, persistence, or project configuration was changed for these checks.
+
+- External record Deep Link: copied the existing 通話 record's link from its detail menu, pasted it into Safari, accepted the system “open in Memora” prompt, and observed that exact record's detail. The composer showed `「通話」に質問`. Returning to the file list restored `Memoraに質問` and the original two records remained present. This checks an actual external launch, not just the pure route helper.
+- Local task notification: created a temporary own task `QAReminder２０２６１０１２`, due October 12, with a 17:40 reminder. Granted the native notification permission when requested. Left Memora displaying the Library file list and backgrounded it. The OS delivered the expected task title and `今日が期限です。` at 17:40.
+- Opening that delivered notification from Notification Center switched to Journal → Tasks and presented the existing TaskEditView with the exact temporary task title. The simulator's initial notification activation exposed the native “open” action; the standard full right swipe opened the notification. No notification callback was injected or faked.
+- Cancelled the editor and deleted only the temporary task through its existing context menu. The deletion confirmation and the original Meeting confirmation / 改訂見積書の送付 tasks were observed afterward. The new test task is no longer active; no original task was edited. Notification permission remains allowed on this simulator.
+
+Still unverified: external `memora://task/<UUID>` launch, notification navigation after a terminated-app launch, complete VoiceOver spoken/gesture behavior, and small-device layout (the previously reported simulator boot issue). Real-device background/lock-screen recording, actual audio-file import, external recorders, real online meeting recording, configured external AI answers and live team sharing also remain pending. A simulator notification result does not establish real-device delivery behavior.
