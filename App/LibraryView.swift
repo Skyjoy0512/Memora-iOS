@@ -75,8 +75,8 @@ struct LibraryView: View {
         }
       }
       .background(MemoraPalette.background)
-      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ライブラリ")
-      .navigationBarTitleDisplayMode(.large)
+      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "")
+      .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
@@ -108,7 +108,9 @@ struct LibraryView: View {
             ToolbarActionItem(usesSystemBackground: true) {
               Menu {
                 Picker("表示", selection: $layout) {
-                  ForEach(FileListLayout.allCases) { Text($0.label).tag($0) }
+                  ForEach(FileListLayout.allCases) {
+                    Text($0 == .card ? "プレビュー付き" : "コンパクト").tag($0)
+                  }
                 }
                 Picker("並べ替え", selection: $sort) {
                   ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
@@ -421,16 +423,18 @@ struct LibraryView: View {
     Button {
       openOrSelect(meeting)
     } label: {
-      MeetingCard(
+      LibraryRecordRow(
         meeting: meeting,
+        showsPreview: true,
         isSelecting: isSelectionMode,
         isSelected: selectedMeetingIDs.contains(meeting.id)
       )
       .matchedTransitionSource(id: meeting.id, in: heroNamespace)
     }
     .buttonStyle(.plain)
-    .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18))
-    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
+    .listRowSeparator(.visible, edges: .bottom)
+    .alignmentGuide(.listRowSeparatorLeading) { _ in ProjectLayout.iconSide + 12 }
     .listRowBackground(Color.clear)
   }
 
@@ -438,37 +442,30 @@ struct LibraryView: View {
     Button {
       openOrSelect(meeting)
     } label: {
-      MeetingRow(meeting: meeting, showsDisclosure: false)
+      LibraryRecordRow(meeting: meeting, showsPreview: false,
+        isSelecting: isSelectionMode, isSelected: selectedMeetingIDs.contains(meeting.id))
     }
     .buttonStyle(.plain)
-    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 18))
-    .listRowBackground(MemoraPalette.card)
+    .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
+    .listRowSeparator(.visible, edges: .bottom)
+    .alignmentGuide(.listRowSeparatorLeading) { _ in ProjectLayout.iconSide + 12 }
+    .listRowBackground(Color.clear)
   }
 
   /// A teammate's record: opens read-only, with none of the actions that
   /// would change it.
-  @ViewBuilder
   private func sharedRow(_ record: SharedRecord) -> some View {
-    if layout == .card {
-      Button {
-        model.libraryPath.append(.sharedRecord(record.id))
-      } label: {
-        MeetingCard(meeting: record.meeting, sharedBy: record.ownerName)
-      }
-      .buttonStyle(.plain)
-      .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18))
-      .listRowSeparator(.hidden)
-      .listRowBackground(Color.clear)
-    } else {
-      Button {
-        model.libraryPath.append(.sharedRecord(record.id))
-      } label: {
-        MeetingRow(meeting: record.meeting, showsDisclosure: false, sharedBy: record.ownerName)
-      }
-      .buttonStyle(.plain)
-      .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 18))
-      .listRowBackground(MemoraPalette.card)
+    Button {
+      model.libraryPath.append(.sharedRecord(record.id))
+    } label: {
+      LibraryRecordRow(meeting: record.meeting, showsPreview: layout == .card,
+        sharedBy: record.ownerName)
     }
+    .buttonStyle(.plain)
+    .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
+    .listRowSeparator(.visible, edges: .bottom)
+    .alignmentGuide(.listRowSeparatorLeading) { _ in ProjectLayout.iconSide + 12 }
+    .listRowBackground(Color.clear)
   }
 
   private func openOrSelect(_ meeting: Meeting) {

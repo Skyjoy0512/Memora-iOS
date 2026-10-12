@@ -3,7 +3,6 @@ import SwiftUI
 struct ProjectsView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.scenePhase) private var scenePhase
-  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @AppStorage("memora.projects.listOrder") private var order = ProjectListOrder.name
   @AppStorage("memora.projects.recentFirst") private var recentFirst = false
   var query: String
@@ -26,17 +25,13 @@ struct ProjectsView: View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
         if !projects.isEmpty {
-          if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: 0) {
-              heading(isSearching ? "検索結果" : "プロジェクト", count: projects.count)
-              orderMenu.frame(maxWidth: .infinity, alignment: .trailing)
-            }
-          } else {
-            HStack {
-              heading(isSearching ? "検索結果" : "プロジェクト", count: projects.count)
-              Spacer()
-              orderMenu
-            }
+          HStack {
+            Text(isSearching ? "検索結果 \(projects.count)件" : "\(projects.count)件")
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+              .accessibilityLabel("プロジェクト\(projects.count)件")
+            Spacer()
+            orderMenu
           }
         }
         if !recent.isEmpty {
