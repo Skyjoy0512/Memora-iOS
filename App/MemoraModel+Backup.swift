@@ -189,7 +189,7 @@ extension MemoraModel {
     guard !isRecording, !isSavingCapture, recordingDraft == nil else {
       throw BackupPackage.BackupError.busy
     }
-    guard !isRestoring, processing.activeIDs.isEmpty, speakerAnalysisIDs.isEmpty,
+    guard !isRestoring, !isImportingShareInbox, processing.activeIDs.isEmpty, speakerAnalysisIDs.isEmpty,
           !isEnrollingSpeaker else { throw BackupPackage.BackupError.busy }
     guard isEmpty else { throw BackupPackage.BackupError.notEmpty }
 

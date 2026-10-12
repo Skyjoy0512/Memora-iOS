@@ -97,6 +97,10 @@ final class MemoraModel {
   @ObservationIgnored var webResearchJobs: [UUID: Task<Void, Never>] = [:]
   var projectChatBusyIDs: Set<UUID> = []
   var projectSourceProcessingIDs: Set<UUID> = []
+  var shareInboxRequests: [ShareInboxRequest] = []
+  var shareInboxRejectedIDs: [UUID] = []
+  var shareInboxFailure: String?
+  var isImportingShareInbox = false
   var projectChatStages: [UUID: String] = [:]
   @ObservationIgnored var projectChatJobs: [UUID: Task<Void, Never>] = [:]
   var sourceAddProjectID: UUID?

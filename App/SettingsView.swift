@@ -353,6 +353,12 @@ struct SettingsView: View {
           }
 
           NavigationLink {
+            ShareInboxView()
+          } label: {
+            SettingsLabel("共有からの取り込み", icon: .tray, color: Tint.privacy)
+          }
+
+          NavigationLink {
             RecentlyDeletedView()
           } label: {
             LabeledContent {

@@ -58,6 +58,7 @@ struct RootTabView: View {
       if phase == .active {
         model.importAutoLifeLogInbox()
         model.prepareWeeklyReviewIfNeeded()
+        Task { await model.refreshShareInbox() }
         Task { await model.runDueResidents() }
         model.scanInboxForAudio()
         AutoLocationLogger.shared.startIfEnabled()
@@ -76,6 +77,9 @@ struct RootTabView: View {
       refreshSafeAreaInsets()
       model.prepareWeeklyReviewIfNeeded()
     }
+    .task { await model.refreshShareInbox() }
+    .onChange(of: model.spaces) { _, _ in Task { await model.refreshShareInbox() } }
+    .onChange(of: model.currentTeamID) { _, _ in Task { await model.refreshShareInbox() } }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
       isKeyboardVisible = true
     }

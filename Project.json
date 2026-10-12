@@ -38,6 +38,10 @@
         {
           "embed" : true,
           "target" : "Memora Widget Extension"
+        },
+        {
+          "embed" : true,
+          "target" : "Memora Share Extension"
         }
       ],
       "entitlements" : {
@@ -147,6 +151,44 @@
         }
       ],
       "type" : "app-extension"
+    },
+    "Memora Share Extension" : {
+      "type" : "app-extension",
+      "platform" : "iOS",
+      "sources" : [
+        {
+          "path" : "Share Extension"
+        },
+        {
+          "path" : "Shared/ShareInbox"
+        }
+      ],
+      "settings" : {
+        "PRODUCT_BUNDLE_IDENTIFIER" : "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4.share-extension",
+        "SKIP_INSTALL" : "YES",
+        "TARGETED_DEVICE_FAMILY" : "1",
+        "APPLICATION_EXTENSION_API_ONLY" : "YES"
+      },
+      "info" : {
+        "path" : "Share Extension/Info.plist",
+        "properties" : {
+          "CFBundleDisplayName" : "Memora",
+          "CFBundleShortVersionString" : "1.0",
+          "CFBundleVersion" : "1",
+          "NSExtension" : {
+            "NSExtensionPointIdentifier" : "com.apple.share-services",
+            "NSExtensionPrincipalClass" : "$(PRODUCT_MODULE_NAME).ShareViewController",
+            "NSExtensionAttributes" : {
+              "NSExtensionActivationRule" : {
+                "NSExtensionActivationSupportsWebURLWithMaxCount" : 10,
+                "NSExtensionActivationSupportsImageWithMaxCount" : 10,
+                "NSExtensionActivationSupportsFileWithMaxCount" : 10,
+                "NSExtensionActivationSupportsText" : true
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

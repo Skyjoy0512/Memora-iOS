@@ -9,6 +9,7 @@ struct ProjectsView: View {
   var isSearching: Bool
   @State private var renameTarget: MemoraSpace?
   @State private var deleteTarget: MemoraSpace?
+  @State private var isShareInboxPresented = false
 
   var body: some View {
     let latestDates = model.spaceAggregates.compactMapValues(\.latestDate)
@@ -24,6 +25,10 @@ struct ProjectsView: View {
 
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
+        if model.shareInboxFailure != nil {
+          Button("共有からの取り込みを確認") { isShareInboxPresented = true }
+            .font(.subheadline).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
+        }
         if !projects.isEmpty {
           HStack {
             Text(isSearching ? "検索結果 \(projects.count)件" : "\(projects.count)件")
@@ -92,6 +97,7 @@ struct ProjectsView: View {
     .background(MemoraPalette.background)
     .hideBottomBarOnScroll(RootTab.library.rawValue)
     .sheet(item: $renameTarget) { space in RenameSpaceSheet(space: space) }
+    .sheet(isPresented: $isShareInboxPresented) { NavigationStack { ShareInboxView().toolbar { ToolbarItem(placement: .cancellationAction) { Button("閉じる") { isShareInboxPresented = false } } } } }
     .confirmationDialog("このプロジェクトを削除しますか？", isPresented: Binding(
       get: { deleteTarget != nil }, set: { if !$0 { deleteTarget = nil } }), titleVisibility: .visible) {
       Button("削除", role: .destructive) {
