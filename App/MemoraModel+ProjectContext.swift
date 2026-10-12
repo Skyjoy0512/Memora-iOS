@@ -1,6 +1,10 @@
 import Foundation
 
 extension MemoraModel {
+  func invalidateProjectEvidence(_ targets: [ProjectCitation.Target]) {
+    Task { try? await ProjectSearchIndex.shared.remove(targets: targets) }
+  }
+
   func projectEvidenceAllowed(_ target: ProjectCitation.Target, projectID: UUID, cloud: Bool) -> Bool {
     guard space(id: projectID) != nil else { return false }
     switch target {
@@ -46,18 +50,15 @@ extension MemoraModel {
   }
 
   func projectContext(question: String, projectID: UUID, cloud: Bool, budget: Int) async -> ProjectContextBuilder.Context {
-    var inputs: [(text: String, target: ProjectCitation.Target, title: String, page: Int?, time: TimeInterval?)] = []
+    var inputs: [ProjectEvidenceInput] = []
     var allowed: Set<ProjectCitation.Target> = []
     let records = meetings.filter { $0.spaceID == projectID }
     for record in records where projectEvidenceAllowed(.meeting(record.id), projectID: projectID, cloud: cloud) {
       let target = ProjectCitation.Target.meeting(record.id)
       allowed.insert(target)
-      if !record.summary.isEmpty {
-        inputs.append((record.summary, target, record.displayTitle, nil, nil))
-      }
-      for segment in record.transcript {
-        inputs.append((segment.text, target, record.displayTitle, nil, segment.timestamp))
-      }
+      var blocks = [ProjectSourceText(text: record.summary)]
+      blocks += record.transcript.map { ProjectSourceText(text: $0.text, time: $0.timestamp) }
+      inputs.append(ProjectEvidenceInput(target: target, title: record.displayTitle, blocks: blocks))
     }
     let recordIDs = Set(records.map(\.id))
     for task in tasks where task.meetingID.map(recordIDs.contains) == true && !task.isCompleted {
@@ -65,13 +66,13 @@ extension MemoraModel {
       guard projectEvidenceAllowed(target, projectID: projectID, cloud: cloud) else { continue }
       allowed.insert(target)
       let text = [task.title, task.detail, task.assignee].compactMap { $0 }.joined(separator: "\n")
-      inputs.append((text, target, "タスク · \(task.title)", nil, nil))
+      inputs.append(ProjectEvidenceInput(target: target, title: "タスク · \(task.title)", blocks: [ProjectSourceText(text: text)]))
     }
     if !cloud {
       for document in documents where document.spaceID == projectID {
         let target = ProjectCitation.Target.document(document.id)
         allowed.insert(target)
-        inputs.append((document.plainText, target, document.displayTitle, nil, nil))
+        inputs.append(ProjectEvidenceInput(target: target, title: document.displayTitle, blocks: [ProjectSourceText(text: document.plainText)]))
       }
     }
     let sources = projectSources.filter { $0.projectID == projectID && $0.canProvideText }
@@ -82,15 +83,16 @@ extension MemoraModel {
             self.source(id: source.id)?.extractedTextReference == name else { continue }
       guard projectEvidenceAllowed(target, projectID: projectID, cloud: cloud) else { continue }
       allowed.insert(target)
-      for block in blocks {
-        inputs.append((block.text, target, source.title, block.page, block.time))
-      }
+      inputs.append(ProjectEvidenceInput(target: target, title: source.title, blocks: blocks))
     }
     let currentAllowed = allowed.filter { projectEvidenceAllowed($0, projectID: projectID, cloud: cloud) }
+    let indexed = try? await ProjectSearchIndex.shared.retrieve(question: question, projectID: projectID, inputs: inputs)
     return await Task.detached(priority: .userInitiated) {
-      let chunks = inputs.flatMap { input in
-        ProjectContextBuilder.split(input.text, projectID: projectID, target: input.target,
-          title: input.title, page: input.page, time: input.time)
+      let chunks = indexed ?? inputs.flatMap { input in
+        input.blocks.flatMap { block in
+          ProjectContextBuilder.split(block.text, projectID: projectID, target: input.target,
+            title: input.title, page: block.page, time: block.time)
+        }
       }
       return ProjectContextBuilder.build(question: question, projectID: projectID, chunks: chunks,
         allowed: Set(currentAllowed), characterBudget: budget)

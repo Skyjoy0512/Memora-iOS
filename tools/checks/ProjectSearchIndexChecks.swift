@@ -1,0 +1,56 @@
+import Foundation
+import SQLite3
+
+@main
+struct ProjectSearchIndexChecks {
+  static func main() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let url = directory.appendingPathComponent("search.sqlite")
+    let index = ProjectSearchIndex(fileURL: url)
+    let project = UUID(), other = UUID()
+    let source = ProjectCitation.Target.source(UUID())
+    let otherSource = ProjectCitation.Target.source(UUID())
+    let original = ProjectEvidenceInput(target: source, title: "箱根旅行", blocks: [ProjectSourceText(text: "箱根の移動時間を短くする", page: 2)])
+    let unrelated = ProjectEvidenceInput(target: otherSource, title: "別件", blocks: [ProjectSourceText(text: "別プロジェクトの機密")])
+    _ = try await index.retrieve(question: "機密", projectID: other, inputs: [unrelated])
+    let first = try await index.retrieve(question: "移動時間", projectID: project, inputs: [original])
+    precondition(!first.isEmpty && first.allSatisfy { $0.projectID == project && $0.target == source && $0.page == 2 })
+    let repeatSearch = try await index.retrieve(question: "移動時間", projectID: project, inputs: [original])
+    precondition(first == repeatSearch)
+    let reopened = ProjectSearchIndex(fileURL: url)
+    let restored = try await reopened.retrieve(question: "箱根", projectID: project, inputs: [original])
+    precondition(restored == first)
+    var updated = original
+    updated.blocks = [ProjectSourceText(text: "京都で宿泊", page: 3)]
+    let changed = try await index.retrieve(question: "京都", projectID: project, inputs: [updated])
+    precondition(changed.allSatisfy { $0.text == "京都で宿泊" && $0.page == 3 })
+    let removed = try await index.retrieve(question: "箱根", projectID: project, inputs: [])
+    precondition(removed.isEmpty)
+    let moved = try await index.retrieve(question: "京都", projectID: other, inputs: [updated])
+    precondition(moved.allSatisfy { $0.projectID == other && $0.target == source })
+    let strange = try await index.retrieve(question: "\" OR * ' ; DROP TABLE project_chunks; --", projectID: other, inputs: [updated])
+    precondition(strange.allSatisfy { $0.projectID == other })
+    let hundredProject = UUID()
+    let hundred = (0..<100).map { i in
+      ProjectEvidenceInput(target: .source(UUID()), title: String(repeating: "長い日本語プロジェクト名", count: 8) + "\(i)",
+        blocks: [ProjectSourceText(text: i == 99 ? "特殊証拠を検索する" : "通常の資料\(i)")])
+    }
+    let many = try await index.retrieve(question: "特殊証拠", projectID: hundredProject, inputs: hundred)
+    precondition(!many.isEmpty && many.contains { $0.target == hundred[99].target })
+    try await index.remove(projectID: hundredProject)
+    try await index.remove(targets: [source])
+    var handle: OpaquePointer?
+    precondition(sqlite3_open(url.path, &handle) == SQLITE_OK)
+    defer { sqlite3_close(handle) }
+    var statement: OpaquePointer?
+    precondition(sqlite3_prepare_v2(handle, "SELECT count(*) FROM project_chunks", -1, &statement, nil) == SQLITE_OK)
+    defer { sqlite3_finalize(statement) }
+    precondition(sqlite3_step(statement) == SQLITE_ROW && sqlite3_column_int(statement, 0) == 0)
+    _ = try await index.retrieve(question: "箱根", projectID: project, inputs: [original])
+    try await index.remove(projectID: project)
+    let empty = try await index.retrieve(question: "箱根", projectID: project, inputs: [])
+    precondition(empty.isEmpty)
+    print("ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)")
+  }
+}

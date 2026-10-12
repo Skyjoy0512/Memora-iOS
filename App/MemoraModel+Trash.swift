@@ -45,6 +45,7 @@ extension MemoraModel {
     }
     guard stored else { return }
 
+    invalidateProjectEvidence(removedTasks.map { .task($0.id) } + [.meeting(id)])
     meetings = candidateMeetings
     tasks = candidateTasks
     lifeLogEntries = candidateEntries
@@ -106,6 +107,7 @@ extension MemoraModel {
     }
     guard stored else { return }
 
+    invalidateProjectEvidence(removedTasks.map { .task($0.id) } + removed.map { .meeting($0.id) })
     meetings = candidateMeetings
     tasks = candidateTasks
     lifeLogEntries = candidateEntries

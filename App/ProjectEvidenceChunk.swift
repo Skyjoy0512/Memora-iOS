@@ -1,6 +1,6 @@
 import Foundation
 
-struct ProjectEvidenceChunk: Hashable, Sendable {
+struct ProjectEvidenceChunk: Hashable, Codable, Sendable {
   var projectID: UUID
   var target: ProjectCitation.Target
   var title: String

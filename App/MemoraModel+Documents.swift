@@ -53,6 +53,7 @@ extension MemoraModel {
   func deleteDocument(_ id: UUID) {
     guard isStoreWritable() else { return }
     documents.removeAll { $0.id == id }
+    invalidateProjectEvidence([.document(id)])
     persistDocuments()
   }
 }

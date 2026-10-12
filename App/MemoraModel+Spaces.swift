@@ -99,6 +99,7 @@ extension MemoraModel {
       ]
     }) else { return false }
     projectSources = candidateSources
+    Task { try? await ProjectSearchIndex.shared.remove(projectID: id) }
     for thread in projectChats where thread.projectID == id { projectChatJobs[thread.id]?.cancel() }
     projectChats = candidateChats
     spaces = candidateSpaces
@@ -129,6 +130,7 @@ extension MemoraModel {
     }
     guard stored else { return false }
     for id in ids { meetingSearchTexts.removeValue(forKey: id) }
+    invalidateProjectEvidence(ids.map(ProjectCitation.Target.meeting) + tasks.filter { $0.meetingID.map(ids.contains) == true }.map { .task($0.id) })
     meetings = candidate
     announce(spaceID.flatMap { space(id: $0)?.name }.map { "\($0)へ移動しました" } ?? "未分類へ移動しました")
     return true

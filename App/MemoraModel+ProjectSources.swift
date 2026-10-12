@@ -23,6 +23,7 @@ extension MemoraModel {
     else { candidate.insert(source, at: 0) }
     guard persistNow(candidate, forKey: StorageKey.projectSources) else { return false }
     projectSources = candidate
+    invalidateProjectEvidence([.source(source.id)])
     return true
   }
 
@@ -142,6 +143,7 @@ extension MemoraModel {
     let remaining = projectSources.filter { $0.id != id }
     guard persistNow(remaining, forKey: StorageKey.projectSources) else { return false }
     projectSources = remaining
+    invalidateProjectEvidence([.source(id)])
     let retained = Set(remaining.flatMap(\.fileReferences))
     Task { await ProjectSourceFiles.shared.remove(source.fileReferences.filter { !retained.contains($0) }) }
     return true
