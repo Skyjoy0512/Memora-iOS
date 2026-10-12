@@ -18,15 +18,6 @@ struct ProjectsView: View {
 
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
-        if !isSearching {
-          VStack(alignment: .leading, spacing: 6) {
-            Text("記録とタスクを、ひとつの場所に。")
-              .font(.subheadline).foregroundStyle(.secondary)
-          }
-          .padding(.top, 8)
-          .padding(.bottom, 2)
-        }
-
         // Small collections are faster to scan once, without duplicate cards.
         if !isSearching, model.spaces.count > 3, !recent.isEmpty {
           heading("最近使用", count: nil)
@@ -82,6 +73,7 @@ struct ProjectsView: View {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 18)
+      .padding(.top, 8)
       .padding(.bottom, model.bottomContentClearance)
     }
     .background(MemoraPalette.background)
@@ -108,11 +100,15 @@ struct ProjectsView: View {
   }
 
   private func heading(_ title: String, count: Int?) -> some View {
-    HStack(spacing: 8) {
+    HStack(spacing: 12) {
       Text(title).font(.subheadline.weight(.semibold))
-      if let count { Text("\(count)").font(.subheadline).monospacedDigit() }
+      if let count {
+        Spacer(minLength: 12)
+        Text("\(count)件").font(.subheadline).monospacedDigit()
+      }
     }
     .foregroundStyle(.secondary)
+    .accessibilityElement(children: .combine)
     .accessibilityAddTraits(.isHeader)
   }
 

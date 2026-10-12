@@ -13,7 +13,7 @@ struct ProjectCard: View {
     HStack(alignment: .top, spacing: 0) {
       NavigationLink(value: LibraryRoute.space(space.id)) {
         VStack(alignment: .leading, spacing: 16) {
-          HStack(alignment: .top, spacing: 12) {
+          HStack(alignment: .center, spacing: 12) {
             Image(icon: space.icon)
               .font(.title3.weight(.medium))
               .frame(width: 44, height: 44)
@@ -25,9 +25,6 @@ struct ProjectCard: View {
                 .fixedSize(horizontal: false, vertical: true)
               if let latestRecordDate {
                 Text("最新の記録 \(latestRecordDate.formatted(date: .abbreviated, time: .omitted))")
-                  .font(.caption).foregroundStyle(MemoraPalette.cardTextSecondary)
-              } else {
-                Text("最初の記録を追加しましょう")
                   .font(.caption).foregroundStyle(MemoraPalette.cardTextSecondary)
               }
             }
@@ -68,7 +65,7 @@ struct ProjectCard: View {
 
   @ViewBuilder private var counts: some View {
     Label("記録 \(recordCount)件", icon: .waveform)
-    Label("未完了 \(taskCount)件", icon: .checklist)
+    Label("未完了タスク \(taskCount)件", icon: .checklist)
   }
 
   @ViewBuilder private var actions: some View {
