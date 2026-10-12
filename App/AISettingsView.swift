@@ -9,6 +9,7 @@ struct AISettingsView: View {
 
   var body: some View {
     Form {
+      Section { NavigationLink("Web検索・調査") { WebResearchSettingsView() } }
       Section {
         ForEach(AIEngine.allCases) { option in
           engineRow(option)

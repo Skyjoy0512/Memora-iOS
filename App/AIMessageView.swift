@@ -75,6 +75,10 @@ struct AIMessageView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
       }
 
+      ForEach(message.webResearchReportIDs, id: \.self) { id in
+        NavigationLink("Web調査結果とソース") { WebResearchDetailView(reportID: id) }
+          .frame(minHeight: 44)
+      }
       ForEach(message.documentIDs, id: \.self) { id in
         if let document = model.document(id: id) {
           AgentDocumentCard(document: document) { openDocument = document }

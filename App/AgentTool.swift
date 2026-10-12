@@ -24,17 +24,19 @@ enum AgentTool: String, CaseIterable {
   case readEmail = "read_email"
   case askUser = "ask_user"
   case delegateResearch = "delegate_research"
+  case searchWeb = "search_web"
+  case deepResearch = "deep_research"
 
   /// The tools offered right now: mail only while Gmail is connected, so the
   /// model is never handed a tool that cannot work.
   @MainActor
   static var offered: [AgentTool] {
-    allCases.filter { !$0.needsGmail || GmailService.shared.isConnected }
+    allCases.filter { (!$0.needsGmail || GmailService.shared.isConnected) && (!($0 == .searchWeb || $0 == .deepResearch) || KeychainStore.has(WebResearchClient.keyName)) }
   }
 
   @MainActor
   static var offeredOnDevice: [AgentTool] {
-    onDeviceTools.filter { !$0.needsGmail || GmailService.shared.isConnected }
+    onDeviceTools.filter { (!$0.needsGmail || GmailService.shared.isConnected) && (!($0 == .searchWeb || $0 == .deepResearch) || KeychainStore.has(WebResearchClient.keyName)) }
   }
 
   /// What a resident agent may use while it works unattended: reading only,
@@ -53,7 +55,7 @@ enum AgentTool: String, CaseIterable {
   /// cloud models.
   static let onDeviceTools: [AgentTool] = [
     .searchRecords, .readRecord, .readPerson, .listTasks, .reviewPeriod, .addTasks, .createDocument,
-    .createProject, .addJournalMemo, .createCalendarEvent, .draftEmail, .searchEmail, .readEmail
+    .createProject, .addJournalMemo, .createCalendarEvent, .draftEmail, .searchEmail, .readEmail, .searchWeb, .deepResearch
   ]
 
   /// True for tools that change the person's data.
@@ -83,12 +85,15 @@ enum AgentTool: String, CaseIterable {
     case .saveMemory: .brainHeadProfile
     case .searchEmail, .readEmail: .envelopeOpen
     case .askUser: .questionmarkBubble
+    case .searchWeb, .deepResearch: .magnifyingglass
     case .delegateResearch: .sparkle
     }
   }
 
   var summary: String {
     switch self {
+    case .searchWeb: "利用者の承認後、BraveでWeb検索する。検索抜粋と出典URLを返し、調査履歴に保存する。端末の非公開情報を検索語へ勝手に入れない。追加料金が発生する。1依頼1回。"
+    case .deepResearch: "利用者の承認後、最大3つの具体的な検索語でWeb抽出本文を取得する。queryに調査テーマ、queriesに重複しない検索語を1〜3件指定。取得した根拠だけ比較する。全文読了や網羅性を保証しない。1依頼1回。"
     case .delegateResearch:
       "複雑な依頼の調査を2〜3担当に分け、承認後に並列実行する。担当ごとの役割と具体的な調査依頼を指定する。子担当は読み取りのみ。結果を統合してから、必要な変更を通常の承認付き道具で行う。1依頼につき1回。追加API利用あり。"
     case .searchRecords:
@@ -137,6 +142,11 @@ enum AgentTool: String, CaseIterable {
   /// The JSON schema of the tool's input.
   var inputSchema: [String: Any] {
     switch self {
+    case .searchWeb, .deepResearch:
+      return object([
+        "query": string("Webへ送る調査テーマ。600文字・75語以内"),
+        "queries": ["type": "array", "maxItems": 3, "items": string("Webへ送る検索語。600文字以内")]
+      ], required: self == .deepResearch ? ["query", "queries"] : ["query"])
     case .delegateResearch:
       return object([
         "assignments": ["type": "array", "minItems": 2, "maxItems": 3,

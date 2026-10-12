@@ -22,6 +22,7 @@ struct AIChatMessage: Identifiable, Hashable {
   var agentSteps: [AgentStep] = []
   /// Documents the agent made in this reply.
   var documentIDs: [UUID] = []
+  var webResearchReportIDs: [UUID] = []
   /// True while the reply is still being formed.
   var isThinking = false
   var createdAt = Date.now

@@ -5,6 +5,7 @@ struct SearchView: View {
   @State private var query = ""
   @State private var isSearchSheetPresented = false
   @State private var isHistoryPresented = false
+  @State private var isWebResearchPresented = false
   @State private var filters = SearchFilters()
   /// Whether the newest message is in view, so scrolling back to read is not
   /// interrupted by a reply arriving.
@@ -59,6 +60,7 @@ struct SearchView: View {
       .sheet(isPresented: $isSearchSheetPresented) {
         searchSheet
       }
+      .sheet(isPresented: $isWebResearchPresented) { WebResearchView() }
       .sheet(isPresented: $isHistoryPresented) {
         AIHistoryView(
           entries: model.aiHistory,
@@ -198,7 +200,8 @@ struct SearchView: View {
     AskAIHeader(
       onNewChat: { model.startNewAIChat() },
       onHistory: { isHistoryPresented = true },
-      onSearch: { isSearchSheetPresented = true }
+      onSearch: { isSearchSheetPresented = true },
+      onWebResearch: { isWebResearchPresented = true }
     )
   }
 

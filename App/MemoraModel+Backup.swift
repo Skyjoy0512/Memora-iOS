@@ -30,6 +30,7 @@ extension MemoraModel {
       && documents.isEmpty
       && projectSources.isEmpty
       && projectChats.isEmpty
+      && webResearchReports.isEmpty
       && tasks.isEmpty
       && lifeLogEntries.isEmpty
       && people.isEmpty
@@ -55,6 +56,7 @@ extension MemoraModel {
     let documents = self.documents
     let projectSources = self.projectSources
     let projectChats = self.projectChats
+    let webResearchReports = self.webResearchReports
     return try await Task.detached(priority: .userInitiated) {
       try BackupPackage.write(
         meetings: meetings,
@@ -66,6 +68,7 @@ extension MemoraModel {
         documents: documents,
         projectSources: projectSources,
         projectChats: projectChats,
+        webResearchReports: webResearchReports,
         into: FileManager.default.temporaryDirectory
       )
     }.value
@@ -228,7 +231,8 @@ extension MemoraModel {
         (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory)),
         (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? [])),
         (key: StorageKey.projectSources, data: try RecordStore.encoded(manifest.projectSources ?? [])),
-        (key: StorageKey.projectChats, data: try RecordStore.encoded(manifest.projectChats ?? []))
+        (key: StorageKey.projectChats, data: try RecordStore.encoded(manifest.projectChats ?? [])),
+        (key: "memora.webResearch.v1", data: try RecordStore.encoded(manifest.webResearchReports ?? []))
       ]
     }
     guard stored else {
@@ -246,5 +250,6 @@ extension MemoraModel {
     documents = manifest.documents ?? []
     projectSources = manifest.projectSources ?? []
     projectChats = manifest.projectChats ?? []
+    webResearchReports = manifest.webResearchReports ?? []
   }
 }

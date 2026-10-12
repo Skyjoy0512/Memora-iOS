@@ -25,6 +25,7 @@ enum BackupPackage {
     var documents: [MemoraDocument]?
     var projectSources: [ProjectSource]? = nil
     var projectChats: [ProjectChatThread]? = nil
+    var webResearchReports: [WebResearchReport]? = nil
     /// Audio file names, stored under the media folder on restore.
     var audioFileNames: [String]
     /// Photo file names, stored under the media folder on restore.
@@ -104,6 +105,7 @@ enum BackupPackage {
     documents: [MemoraDocument] = [],
     projectSources: [ProjectSource] = [],
     projectChats: [ProjectChatThread] = [],
+    webResearchReports: [WebResearchReport] = [],
     into directory: URL
   ) throws -> URL {
     let plan = try collectMedia(meetings: meetings, lifeLogEntries: lifeLogEntries)
@@ -167,6 +169,7 @@ enum BackupPackage {
       documents: documents,
       projectSources: projectSources,
       projectChats: projectChats,
+      webResearchReports: webResearchReports,
       audioFileNames: audioNames,
       photoFileNames: photoNames
     )
@@ -206,6 +209,16 @@ enum BackupPackage {
     let chats = manifest.projectChats ?? []
     guard Set(sources.map(\.id)).count == sources.count,
           Set(chats.map(\.id)).count == chats.count else { throw BackupError.duplicateIdentifiers }
+    let reports = manifest.webResearchReports ?? []
+    guard Set(reports.map(\.id)).count == reports.count else { throw BackupError.duplicateIdentifiers }
+    guard reports.allSatisfy({ report in
+      report.sources.count <= 16 && report.queries.count <= 3 && report.query.count <= 600 &&
+      Set(report.sources.map(\.id)).count == report.sources.count &&
+      report.sources.allSatisfy { source in
+        source.text.count <= 8_000 && source.title.count <= 200 &&
+        (try? ProjectSourceURL.normalized(source.url.absoluteString).url) == source.url
+      }
+    }) else { throw BackupError.unreadable }
     let projectIDs = Set(manifest.spaces.map(\.id))
     guard sources.allSatisfy({ $0.projectID.map(projectIDs.contains) ?? true }),
           chats.allSatisfy({ $0.projectID.map(projectIDs.contains) ?? true }) else { throw BackupError.unreadable }

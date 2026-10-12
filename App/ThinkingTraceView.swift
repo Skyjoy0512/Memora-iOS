@@ -42,6 +42,9 @@ struct ThinkingTraceView: View {
     if !message.isAgentReply {
       return message.searchFinished ? "回答を書いています" : "記録を探しています"
     }
+    if message.webResearchReportIDs.contains(where: { model.webResearchBusyIDs.contains($0) }) {
+      return "Webを検索しています"
+    }
     return message.agentSteps.isEmpty ? "考えています" : "作業しています"
   }
 }

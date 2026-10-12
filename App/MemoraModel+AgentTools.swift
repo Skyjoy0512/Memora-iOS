@@ -32,6 +32,8 @@ extension MemoraModel {
       return AgentToolOutcome(text: "未知の道具です: \(call.name)", isError: true)
     }
     switch tool {
+    case .searchWeb, .deepResearch:
+      return await webResearchTool(call, messageID: messageID, compact: compact)
     case .delegateResearch:
       return AgentToolOutcome(text: "分担調査はクラウドの主担当からだけ開始できます。", isError: true)
     case .searchRecords:

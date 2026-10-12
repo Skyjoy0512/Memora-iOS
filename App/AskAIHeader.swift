@@ -8,6 +8,7 @@ struct AskAIHeader: View {
   var onNewChat: () -> Void
   var onHistory: () -> Void
   var onSearch: () -> Void
+  var onWebResearch: () -> Void
 
   var body: some View {
     ZStack {
@@ -18,8 +19,14 @@ struct AskAIHeader: View {
         Spacer()
 
         HStack(spacing: 12) {
-          headerButton("検索", icon: .magnifyingglass, action: onSearch)
-            .memoraGlass(in: Circle(), interactive: true, backed: false)
+          Menu {
+            Button("記録を検索", action: onSearch)
+            Button("Web検索・Deep Research", action: onWebResearch)
+          } label: {
+            ToolbarIconGlyph(icon: .magnifyingglass).frame(width: 44, height: 44)
+          }
+          .accessibilityLabel("検索とWeb調査")
+          .memoraGlass(in: Circle(), interactive: true, backed: false)
           headerButton("新しいチャット", icon: .squareAndPencil, action: onNewChat)
             .disabled(model.aiMessages.isEmpty)
             .memoraGlass(in: Circle(), interactive: true, backed: false)

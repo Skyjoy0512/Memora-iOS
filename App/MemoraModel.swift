@@ -92,6 +92,9 @@ final class MemoraModel {
   var documents: [MemoraDocument] = []
   var projectSources: [ProjectSource] = []
   var projectChats: [ProjectChatThread] = []
+  var webResearchReports: [WebResearchReport] = []
+  var webResearchBusyIDs: Set<UUID> = []
+  @ObservationIgnored var webResearchJobs: [UUID: Task<Void, Never>] = [:]
   var projectChatBusyIDs: Set<UUID> = []
   var projectSourceProcessingIDs: Set<UUID> = []
   var projectChatStages: [UUID: String] = [:]
@@ -522,6 +525,7 @@ final class MemoraModel {
     documents = load([MemoraDocument].self, forKey: StorageKey.documents, fallback: [])
     projectSources = load([ProjectSource].self, forKey: StorageKey.projectSources, fallback: [])
     projectChats = load([ProjectChatThread].self, forKey: StorageKey.projectChats, fallback: [])
+    webResearchReports = load([WebResearchReport].self, forKey: "memora.webResearch.v1", fallback: [])
     lifeLogEntries = load([LifeLogEntry].self, forKey: StorageKey.lifeLogEntries, fallback: [])
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: [])
     people = load([Person].self, forKey: StorageKey.people, fallback: [])
