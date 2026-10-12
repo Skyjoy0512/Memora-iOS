@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Memora Phase 1 — 承認前の比較ワイヤーフレーム</title>
+<style>
+body{margin:0;padding:32px;font-family:system-ui,sans-serif;background:#fff;color:#0b0b0b;line-height:1.6}main{max-width:1100px;margin:auto}h1{font-size:24px;margin:0 0 8px}p{color:#737373}label{display:block;margin-top:24px}select{font:inherit;padding:8px;max-width:100%;margin:8px 0 16px}img{display:block;width:100%;height:auto}a{color:inherit}nav{display:flex;gap:24px;flex-wrap:wrap}small{display:block;margin:16px 0}button,select,a{min-height:44px} @media(prefers-color-scheme:dark){body{background:#0b0b0b;color:#fff}p{color:#a3a3a3}} @media(max-width:600px){body{padding:16px}h1{font-size:20px}}
+</style>
+<main>
+<h1>Memora — プロジェクトUX / Phase 1</h1>
+<p>本番UIは未変更。左は現行コードに基づく模式図、右は承認前の提案です。架空データを使用し、iOSのGlass描画・実機動作を再現した画像ではありません。</p>
+<nav><a href="../../PROJECT_UX_PHASE1_REVIEW.md">コードレビュー・実装計画</a><a id="original" href="list-10.png">選択した比較画像を原寸で開く</a></nav>
+<label for="board">比較する画面・状態</label>
+<select id="board">
+<option value="list-10.png">一覧：10件 / Light</option>
+<option value="list-0.png">一覧：0件 / Light</option>
+<option value="list-1.png">一覧：1件 / Light</option>
+<option value="list-100.png">一覧：100件 / Light</option>
+<option value="list-dark.png">一覧：10件 / Dark</option>
+<option value="detail-normal.png">詳細：通常状態 / Light</option>
+<option value="detail-empty.png">詳細：空状態 / Light</option>
+<option value="detail-many.png">詳細：100記録・24タスク / Light</option>
+<option value="detail-dark.png">詳細：通常状態 / Dark</option>
+<option value="detail-documents.png">詳細：スクロール後・関連資料の導線</option>
+</select>
+<img id="comparison" src="list-10.png" alt="プロジェクト一覧10件のBeforeとAfterの比較ワイヤーフレーム">
+<small>図の行高は提案値です。実装ではDynamic Type・長い日本語に合わせて伸長します。下部タブ、独立FAB、AI入力欄は位置を示すのみで、承認後も既存のネイティブ部品を再利用します。</small>
+<p>一覧：名前を主役に、補助情報は2行目。詳細：次にやること → 最近の記録 → 関連資料。全件は同じ詳細画面内で展開する案です。</p>
+<p>承認対象：①一覧のリスト化 ②詳細の情報順と操作整理 ③関連資料の閲覧導線（任意）。このページを開いてもアプリのデータやUIは変更されません。</p>
+</main>
+<script>
+const select=document.getElementById('board'), image=document.getElementById('comparison'), link=document.getElementById('original');
+select.addEventListener('change',()=>{image.src=select.value;image.alt=select.selectedOptions[0].textContent+'のBefore / After比較ワイヤーフレーム';link.href=select.value;});
+</script>
+</html>
