@@ -41,6 +41,6 @@ struct WeeklyReviewCard: View {
       .buttonStyle(.plain)
     }
     .padding(12)
-    .memoraCard(radius: 18)
+    .memoraCard(radius: 18, fill: Color(uiColor: .secondarySystemGroupedBackground))
   }
 }

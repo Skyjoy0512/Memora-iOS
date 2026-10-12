@@ -52,7 +52,7 @@ struct LibraryView: View {
       // Projects are opened from the side menu, so this list is files only and
       // stays the screen's own scroll view for the large title to collapse.
       filesPage
-      .background(Color(uiColor: .systemBackground))
+      .background(Color(uiColor: .systemGroupedBackground))
       .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ファイル")
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ファイルを検索")
       .toolbar {
@@ -419,6 +419,7 @@ struct LibraryView: View {
     }
     .buttonStyle(.plain)
     .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 18))
+    .listRowBackground(Color(uiColor: .secondarySystemGroupedBackground))
   }
 
   /// A teammate's record: opens read-only, with none of the actions that
@@ -443,6 +444,7 @@ struct LibraryView: View {
       }
       .buttonStyle(.plain)
       .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 18))
+      .listRowBackground(Color(uiColor: .secondarySystemGroupedBackground))
     }
   }
 
@@ -537,7 +539,7 @@ struct LibraryView: View {
     }
     .frame(maxWidth: .infinity)
     .padding(20)
-    .memoraCard()
+    .memoraCard(fill: Color(uiColor: .secondarySystemGroupedBackground))
   }
 
   // MARK: - Selection

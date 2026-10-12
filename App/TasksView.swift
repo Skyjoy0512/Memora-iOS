@@ -65,12 +65,14 @@ struct TasksView: View {
           }
           .hideBottomBarOnScroll(RootTab.tasks.rawValue)
           .listStyle(.plain)
+          .scrollContentBackground(.hidden)
           .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
           .refreshable { await model.refresh() }
         }
       }
         }
       }
+      .background(Color(uiColor: .systemGroupedBackground))
       .navigationTitle("タスク")
       .toolbar {
         if model.hasTeamPlan {
@@ -139,6 +141,7 @@ struct TasksView: View {
     }
     .padding(.leading, CGFloat(min(depth, 4)) * 12)
     .padding(.vertical, 5)
+    .listRowBackground(Color(uiColor: .secondarySystemGroupedBackground))
     .swipeActions(edge: .leading) {
       Button {
         model.toggleTask(task.id)

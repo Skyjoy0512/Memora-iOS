@@ -59,13 +59,7 @@ struct MeetingCard: View {
     .frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
     .background {
       RoundedRectangle(cornerRadius: 26, style: .continuous)
-        .fill(
-          LinearGradient(
-            colors: [Color.primary.opacity(0.075), Color.primary.opacity(0.025)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-          )
-        )
+        .fill(Color(uiColor: .secondarySystemGroupedBackground))
     }
     .overlay {
       RoundedRectangle(cornerRadius: 26, style: .continuous)

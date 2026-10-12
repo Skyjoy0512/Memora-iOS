@@ -33,7 +33,7 @@ struct JournalTimelineRow<Content: View>: View {
       content()
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
         .padding(.bottom, 8)
     }
     .background {

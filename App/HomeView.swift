@@ -85,7 +85,7 @@ struct HomeView: View {
             if healthRequest.canRead, selectedDate <= .now {
               HealthReviewStatusView(loader: healthLoader, period: healthRequest.period) { healthRefreshID += 1 }
                 .padding(16)
-                .memoraCard()
+                .memoraCard(fill: Color(uiColor: .secondarySystemGroupedBackground))
             }
 
             if entries.isEmpty, calendarEvents.isEmpty, !recap.hasActivity {
@@ -114,7 +114,7 @@ struct HomeView: View {
         await model.refresh()
         if healthRequest.canRead { await healthLoader.load(healthRequest.period) }
       }
-      .background(Color(uiColor: .systemBackground))
+      .background(Color(uiColor: .systemGroupedBackground))
       .navigationTitle("ジャーナル")
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "記録を検索")
       .toolbar {
@@ -240,7 +240,7 @@ struct HomeView: View {
     }
     .frame(maxWidth: .infinity)
     .padding(20)
-    .memoraCard()
+    .memoraCard(fill: Color(uiColor: .secondarySystemGroupedBackground))
   }
 
   /// Every day's matches, newest day first. Before anything is typed it says
