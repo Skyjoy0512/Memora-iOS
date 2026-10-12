@@ -4,12 +4,15 @@ import Foundation
 struct ProjectYouTubeMetadataChecks {
   static func main() throws {
     let url = URL(string: "https://youtu.be/dQw4w9WgXcQ?si=tracking")!
+    let thumbnail = try ProjectYouTubeThumbnail.request(for: url)
+    precondition(thumbnail.url?.host == "i.ytimg.com" && thumbnail.url?.path == "/vi/dQw4w9WgXcQ/default.jpg")
     let request = try ProjectYouTubeMetadata.request(for: url)
     precondition(request.url?.host == "www.youtube.com" && request.url?.path == "/oembed")
     let components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!
     precondition(components.queryItems?.first { $0.name == "url" }?.value == "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
     for bad in ["https://example.com", "https://youtube.com.evil.test/watch?v=dQw4w9WgXcQ", "https://127.0.0.1"] {
       do { _ = try ProjectYouTubeMetadata.request(for: URL(string: bad)!); preconditionFailure("untrusted endpoint") } catch {}
+      do { _ = try ProjectYouTubeThumbnail.request(for: URL(string: bad)!); preconditionFailure("untrusted thumbnail") } catch {}
     }
     let fixture = Data(#"{"type":"video","provider_name":"YouTube","title":"  箱根旅行  ","author_name":"作者"}"#.utf8)
     let value = try ProjectYouTubeMetadata.decode(fixture)

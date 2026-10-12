@@ -5,10 +5,7 @@ struct ProjectSourceRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      Image(icon: source.icon)
-        .font(.body).foregroundStyle(.secondary)
-        .frame(width: ProjectLayout.iconSide, height: 24)
-        .accessibilityHidden(true)
+      ProjectSourceThumbnail(source: source)
       VStack(alignment: .leading, spacing: 4) {
         Text(source.title).font(.body.weight(.semibold)).lineLimit(2)
           .fixedSize(horizontal: false, vertical: true)

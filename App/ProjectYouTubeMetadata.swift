@@ -33,24 +33,8 @@ enum ProjectYouTubeMetadata {
   }
 
   static func fetch(_ originalURL: URL) async throws -> Value {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.httpShouldSetCookies = false
-    configuration.httpCookieStorage = nil
-    configuration.urlCredentialStorage = nil
-    configuration.urlCache = nil
-    configuration.timeoutIntervalForResource = 20
-    let session = URLSession(configuration: configuration, delegate: ProjectMetadataRedirectPolicy(), delegateQueue: nil)
-    defer { session.invalidateAndCancel() }
-    let (bytes, response) = try await session.bytes(for: request(for: originalURL))
-    guard let http = response as? HTTPURLResponse, http.statusCode == 200,
-          http.url?.host == "www.youtube.com", http.mimeType == "application/json",
-          http.expectedContentLength <= 65_536 else { throw Failure.unavailable }
-    var data = Data()
-    for try await byte in bytes {
-      try Task.checkCancellation()
-      guard data.count < 65_536 else { throw Failure.unavailable }
-      data.append(byte)
-    }
+    let data = try await ProjectMetadataTransport.data(for: request(for: originalURL), host: "www.youtube.com",
+      mimeTypes: ["application/json"], maximumBytes: 65_536)
     return try decode(data)
   }
 }

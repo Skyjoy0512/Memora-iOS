@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import ImageIO
 
 /// Shrinks an image before storing it alongside a record or person.
 enum ImageDownscale {
@@ -22,6 +23,16 @@ enum ImageDownscale {
     let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
     guard let source = CGImageSourceCreateWithURL(url as CFURL, sourceOptions) else { return nil }
 
+    return thumbnail(from: source, maxPixelSize: maxPixelSize)
+  }
+
+  static func downsampled(data: Data, maxPixelSize: CGFloat) -> UIImage? {
+    guard let source = CGImageSourceCreateWithData(data as CFData,
+      [kCGImageSourceShouldCache: false] as CFDictionary) else { return nil }
+    return thumbnail(from: source, maxPixelSize: maxPixelSize)
+  }
+
+  private static func thumbnail(from source: CGImageSource, maxPixelSize: CGFloat) -> UIImage? {
     let options: [CFString: Any] = [
       kCGImageSourceCreateThumbnailFromImageAlways: true,
       kCGImageSourceCreateThumbnailWithTransform: true,

@@ -21,6 +21,9 @@ struct ProjectSourceDetailView: View {
           if let author = source.metadata?["youtubeAuthor"], !author.isEmpty {
             Text(author).font(.footnote).foregroundStyle(.secondary)
           }
+          if let failure = source.metadata?["thumbnailError"] {
+            Text(failure).font(.subheadline).foregroundStyle(.secondary)
+          }
           if let message = source.errorInformation {
             Text(message).font(.subheadline).foregroundStyle(.secondary)
           }
@@ -56,6 +59,10 @@ struct ProjectSourceDetailView: View {
                 Task { await model.prepareProjectSource(sourceID) }
               }.disabled(model.projectSourceProcessingIDs.contains(sourceID))
             }
+            if source.kind == .youtube, source.metadata?["youtubeTitle"] != nil, source.thumbnailReference == nil {
+              Button("サムネイルを取得", icon: .photo) { Task { await model.prepareProjectSource(sourceID) } }
+                .disabled(model.projectSourceProcessingIDs.contains(sourceID))
+            }
             Button("プライバシー", icon: .lock) { isEditingPrivacy = true }
             if source.projectID != nil {
               Button("プロジェクトから外す", icon: .folder) { isDetaching = true }
@@ -66,7 +73,8 @@ struct ProjectSourceDetailView: View {
       }
       .quickLookPreview($previewURL)
       .task(id: sourceID) {
-        if source.processingStatus == .pending || source.processingStatus == .processing {
+        if source.processingStatus == .pending || source.processingStatus == .processing ||
+           (source.kind == .youtube && source.thumbnailReference == nil) {
           await model.prepareProjectSource(sourceID)
         }
       }

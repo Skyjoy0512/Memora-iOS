@@ -33,6 +33,20 @@ enum MediaImageCache {
     return image
   }
 
+  static func sourceThumbnail(named name: String, maxPixelSize: CGFloat) async -> UIImage? {
+    let key = "workspace.\(name)@\(Int(maxPixelSize))"
+    if let cached = cache.object(forKey: key as NSString) { return cached }
+    guard let url = ProjectSourceFiles.resolve(name),
+          let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+          size <= 256 * 1024 else { return nil }
+    let image = await Task.detached(priority: .userInitiated) {
+      ImageDownscale.downsampled(at: url, maxPixelSize: maxPixelSize)
+    }.value
+    guard let image else { return nil }
+    cache.setObject(image, forKey: key as NSString)
+    return image
+  }
+
   /// The full-size photo, for the one being looked at.
   static func photo(named name: String, maxPixelSize: CGFloat = 2_000) async -> UIImage? {
     let key = "full.\(name)@\(Int(maxPixelSize))"

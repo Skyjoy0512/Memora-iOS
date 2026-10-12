@@ -137,23 +137,50 @@ extension MemoraModel {
 
   private func prepareProjectYouTube(_ id: UUID) async {
     guard var value = source(id: id), let url = value.originalURL,
-          value.metadata?["youtubeTitle"] == nil, !projectSourceProcessingIDs.contains(id) else { return }
+          value.metadata?["youtubeTitle"] == nil || value.thumbnailReference == nil,
+          !projectSourceProcessingIDs.contains(id) else { return }
     projectSourceProcessingIDs.insert(id)
     defer { projectSourceProcessingIDs.remove(id) }
-    value.processingStatus = .processing
-    guard storeProjectSource(value) else { return }
+    if value.metadata?["youtubeTitle"] == nil {
+      value.processingStatus = .processing
+      guard storeProjectSource(value) else { return }
+      do {
+        let metadata = try await ProjectYouTubeMetadata.fetch(url)
+        guard var current = source(id: id), current.originalURL == url else { return }
+        current.title = metadata.title
+        current.metadata = ["youtubeTitle": metadata.title, "youtubeAuthor": metadata.author]
+        current.processingStatus = .unavailable
+        current.errorInformation = "動画情報を取得しました。字幕や動画内容は取得していないため、AIの根拠には使用しません。"
+        guard storeProjectSource(current) else { return }
+      } catch {
+        guard var current = source(id: id), current.originalURL == url else { return }
+        current.processingStatus = .unavailable
+        current.errorInformation = "動画情報を取得できませんでした。リンクは保存されています。"
+        _ = storeProjectSource(current)
+        return
+      }
+    }
+    guard source(id: id)?.thumbnailReference == nil else { return }
+    var created: String?
     do {
-      let metadata = try await ProjectYouTubeMetadata.fetch(url)
-      guard var current = source(id: id), current.originalURL == url else { return }
-      current.title = metadata.title
-      current.metadata = ["youtubeTitle": metadata.title, "youtubeAuthor": metadata.author]
-      current.processingStatus = .unavailable
-      current.errorInformation = "動画情報を取得しました。字幕や動画内容は取得していないため、AIの根拠には使用しません。"
-      _ = storeProjectSource(current)
+      let data = try await ProjectYouTubeThumbnail.fetch(url)
+      let jpeg = await Task.detached(priority: .utility) {
+        ImageDownscale.downsampled(data: data, maxPixelSize: 160)?.jpegData(compressionQuality: 0.8)
+      }.value
+      guard let jpeg else { throw ProjectSourceFiles.Failure.invalidFile }
+      let name = try await ProjectSourceFiles.shared.write(jpeg, extension: "jpg")
+      created = name
+      guard var current = source(id: id), current.originalURL == url, current.thumbnailReference == nil else {
+        await ProjectSourceFiles.shared.remove([name]); return
+      }
+      current.thumbnailReference = name
+      current.metadata?.removeValue(forKey: "thumbnailError")
+      if !storeProjectSource(current) { await ProjectSourceFiles.shared.remove([name]) }
     } catch {
-      guard var current = source(id: id), current.originalURL == url else { return }
-      current.processingStatus = .unavailable
-      current.errorInformation = "動画情報を取得できませんでした。リンクは保存されています。"
+      if let created { await ProjectSourceFiles.shared.remove([created]) }
+      guard !Task.isCancelled, var current = source(id: id), current.originalURL == url else { return }
+      current.metadata?["thumbnailError"] = (error as? ProjectSourceFiles.Failure)?.errorDescription ??
+        "サムネイルを取得できませんでした。動画リンクと情報は保存されています。"
       _ = storeProjectSource(current)
     }
   }
