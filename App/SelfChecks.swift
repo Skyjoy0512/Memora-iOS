@@ -32,6 +32,30 @@ enum SelfChecks {
     failures = 0
     lastDetail = nil
 
+    group("Journal time-of-day gradient") {
+      var calendar = Calendar(identifier: .gregorian)
+      calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+      let date = calendar.date(from: DateComponents(year: 2026, month: 10, day: 12, hour: 9, minute: 30))!
+      if JournalTimelinePalette.hour(at: date, calendar: calendar) != 9.5 {
+        report("timeline colors must follow local event time")
+      }
+      for scheme in [ColorScheme.light, .dark] {
+        let gradient = JournalTimelinePalette.gradient(from: 6, to: 24, scheme: scheme)
+        if gradient.stops.count != 5 || gradient.stops.first?.location != 0 || gradient.stops.last?.location != 1 {
+          report("morning-to-night rails must retain daytime color stops")
+        }
+        let sameTime = JournalTimelinePalette.gradient(from: 12, to: 12, scheme: scheme)
+        if sameTime.stops.first?.color != sameTime.stops.last?.color {
+          report("simultaneous entries must have a stable rail color")
+        }
+        let next = JournalTimelinePalette.gradient(from: 12, to: 18, scheme: scheme)
+        if next.stops.first?.color != JournalTimelinePalette.color(at: 12, scheme: scheme)
+          || next.stops.last?.color != JournalTimelinePalette.color(at: 18, scheme: scheme) {
+          report("rail endpoints must match adjacent event colors")
+        }
+      }
+    }
+
     group("Personalized summary compatibility") {
       if OccupationCatalog.categories.count != 16 || OccupationCatalog.occupations.count != 116 {
         report("occupation catalog missing from app bundle")

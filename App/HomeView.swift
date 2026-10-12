@@ -379,21 +379,23 @@ struct HomeView: View {
 
       LazyVStack(spacing: 0) {
         ForEach(Array(timeline.items.enumerated()), id: \.element.id) { index, item in
-          timelineRow(item, connectsToNext: index < timeline.items.count - 1)
+          let nextDate = index + 1 < timeline.items.count
+            ? timeline.items[index + 1].date(on: selectedDate) : nil
+          timelineRow(item, connectsToNext: nextDate != nil, nextDate: nextDate)
         }
       }
     }
   }
 
   @ViewBuilder
-  private func timelineRow(_ item: JournalTimelineItem, connectsToNext: Bool) -> some View {
+  private func timelineRow(_ item: JournalTimelineItem, connectsToNext: Bool, nextDate: Date?) -> some View {
     switch item {
     case .entry(let entry):
-      entryView(entry, connectsToNext: connectsToNext)
+      entryView(entry, connectsToNext: connectsToNext, nextDate: nextDate)
     case .record(let meeting):
       NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
         JournalTimelineRow(time: meeting.createdAt.formatted(date: .omitted, time: .shortened),
-          icon: meeting.source.icon, tint: .purple, railColor: .purple, connectsToNext: connectsToNext) {
+          date: meeting.createdAt, icon: meeting.source.icon, connectsToNext: connectsToNext, nextDate: nextDate) {
           VStack(alignment: .leading, spacing: 8) {
             Text(meeting.createdAt.formatted(date: .omitted, time: .shortened))
               .font(.caption.monospacedDigit())
@@ -408,9 +410,9 @@ struct HomeView: View {
       .buttonStyle(.plain)
       .accessibilityHint("記録の詳細を開きます")
     case .calendarEvent(let event):
-      JournalCalendarEventRow(day: selectedDate, event: event, onOpen: { openCalendarEvent = $0 }, connectsToNext: connectsToNext)
+      JournalCalendarEventRow(day: selectedDate, event: event, onOpen: { openCalendarEvent = $0 }, connectsToNext: connectsToNext, nextDate: nextDate)
     case .movement(let movement):
-      JournalMovementRow(movement: movement, onOpen: { openMovement = $0 }, connectsToNext: connectsToNext)
+      JournalMovementRow(movement: movement, onOpen: { openMovement = $0 }, connectsToNext: connectsToNext, nextDate: nextDate)
     case .nowMarker:
       nowMarker
     case .completedTask(let task):
@@ -419,7 +421,7 @@ struct HomeView: View {
         editingTask = task
       } label: {
         JournalTimelineRow(time: task.completedAt?.formatted(date: .omitted, time: .shortened) ?? "",
-          icon: .checkmark, tint: .green, railColor: .green, connectsToNext: connectsToNext) {
+          date: task.completedAt ?? selectedDate, icon: .checkmark, connectsToNext: connectsToNext, nextDate: nextDate) {
           VStack(alignment: .leading, spacing: 8) {
             Text(task.completedAt?.formatted(date: .omitted, time: .shortened) ?? "")
               .font(.caption.monospacedDigit())
@@ -434,14 +436,14 @@ struct HomeView: View {
   }
 
   @ViewBuilder
-  private func entryView(_ entry: LifeLogEntry, connectsToNext: Bool = false) -> some View {
+  private func entryView(_ entry: LifeLogEntry, connectsToNext: Bool = false, nextDate: Date? = nil) -> some View {
     if let meetingID = entry.meetingID {
       NavigationLink(value: LibraryRoute.meeting(meetingID)) {
-        LifeLogRow(entry: entry, connectsToNext: connectsToNext)
+        LifeLogRow(entry: entry, connectsToNext: connectsToNext, nextDate: nextDate)
       }
       .buttonStyle(.plain)
     } else {
-      LifeLogRow(entry: entry, connectsToNext: connectsToNext)
+      LifeLogRow(entry: entry, connectsToNext: connectsToNext, nextDate: nextDate)
         .contentShape(Rectangle())
         .onTapGesture {
           InteractionFeedback.shared.send(.tap)

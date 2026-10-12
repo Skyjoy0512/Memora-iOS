@@ -3,14 +3,14 @@ import SwiftUI
 struct LifeLogRow: View {
   var entry: LifeLogEntry
   var connectsToNext = false
+  var nextDate: Date?
   @State private var photo: UIImage?
 
   var body: some View {
     JournalTimelineRow(time: entry.occurredAt.formatted(date: .omitted, time: .shortened),
+      date: entry.occurredAt,
       icon: entry.title == "起床" && entry.kind == .memo ? .sunrise : entry.meetingID == nil ? entry.kind.symbol : .waveform,
-      tint: entry.title == "起床" && entry.kind == .memo ? .orange : .primary,
-      railColor: entry.title == "起床" && entry.kind == .memo ? .orange : .indigo,
-      connectsToNext: connectsToNext) {
+      connectsToNext: connectsToNext, nextDate: nextDate) {
       VStack(alignment: .leading, spacing: 10) {
         HStack(alignment: .firstTextBaseline) {
           Text(timeLabel)

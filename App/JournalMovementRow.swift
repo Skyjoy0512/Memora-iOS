@@ -6,6 +6,7 @@ struct JournalMovementRow: View {
   var movement: JournalMovement
   var onOpen: (JournalMovement) -> Void
   var connectsToNext = false
+  var nextDate: Date?
 
   var body: some View {
     Button {
@@ -13,7 +14,7 @@ struct JournalMovementRow: View {
       onOpen(movement)
     } label: {
       JournalTimelineRow(time: movement.start.formatted(date: .omitted, time: .shortened),
-        icon: .tramFill, tint: .indigo, connectsToNext: connectsToNext) {
+        date: movement.start, icon: .tramFill, connectsToNext: connectsToNext, nextDate: nextDate) {
         VStack(alignment: .leading, spacing: 8) {
           Text(
             "\(movement.start.formatted(date: .omitted, time: .shortened))〜\(movement.end.formatted(date: .omitted, time: .shortened))"

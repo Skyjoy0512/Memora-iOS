@@ -9,6 +9,7 @@ struct JournalCalendarEventRow: View {
   var event: JournalCalendarEvent
   var onOpen: (JournalCalendarEvent) -> Void
   var connectsToNext = false
+  var nextDate: Date?
 
   var body: some View {
     Group {
@@ -32,8 +33,9 @@ struct JournalCalendarEventRow: View {
 
   private var label: some View {
     JournalTimelineRow(time: event.start < Calendar.current.startOfDay(for: day) ? "継続" : event.start.formatted(date: .omitted, time: .shortened),
-      icon: event.meetingID == nil ? .calendar : .waveform, tint: .orange, railColor: .orange,
-      connectsToNext: connectsToNext) {
+      date: max(event.start, Calendar.current.startOfDay(for: day)),
+      icon: event.meetingID == nil ? .calendar : .waveform,
+      connectsToNext: connectsToNext, nextDate: nextDate) {
       VStack(alignment: .leading, spacing: 8) {
       Text(timeText)
         .font(.caption.monospacedDigit())

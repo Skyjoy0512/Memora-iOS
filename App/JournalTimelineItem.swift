@@ -20,4 +20,15 @@ enum JournalTimelineItem: Identifiable {
     case .completedTask(let task): "completedTask-\(task.id.uuidString)"
     }
   }
+
+  func date(on day: Date, now: Date = .now) -> Date {
+    switch self {
+    case .entry(let entry): entry.occurredAt
+    case .record(let meeting): meeting.createdAt
+    case .calendarEvent(let event): max(event.start, Calendar.current.startOfDay(for: day))
+    case .movement(let movement): movement.start
+    case .nowMarker: now
+    case .completedTask(let task): task.completedAt ?? day
+    }
+  }
 }
