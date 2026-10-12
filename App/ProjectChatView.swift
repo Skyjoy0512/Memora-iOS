@@ -91,16 +91,27 @@ struct ProjectChatView: View {
   }
 
   private func citationLabel(_ citation: ProjectCitation) -> String {
-    guard let page = citation.page else { return citation.title }
-    return "\(citation.title) · ページ\(page)"
+    if let page = citation.page { return "\(citation.title) · ページ\(page)" }
+    if let time = ProjectCitationLocation.playbackTime(citation.time) {
+      return "\(citation.title) · \(MemoraFormat.duration(time))"
+    }
+    return citation.title
   }
 
   private func open(_ citation: ProjectCitation) {
     switch citation.target {
     case .source(let id):
-      if model.source(id: id) != nil { model.libraryPath.append(.projectSource(id)) } else { sourceMissing = true }
+      if let source = model.source(id: id) {
+        if source.kind == .pdf, let page = citation.page, page > 0 {
+          model.libraryPath.append(.projectPDF(id, page))
+        } else { model.libraryPath.append(.projectSource(id)) }
+      } else { sourceMissing = true }
     case .meeting(let id):
-      if model.meeting(id: id) != nil { model.libraryPath.append(.transcript(id)) } else { sourceMissing = true }
+      if model.meeting(id: id) != nil {
+        if let time = ProjectCitationLocation.playbackTime(citation.time) {
+          model.libraryPath.append(.meetingCitation(id, time))
+        } else { model.libraryPath.append(.transcript(id)) }
+      } else { sourceMissing = true }
     case .document(let id):
       if model.document(id: id) != nil { model.libraryPath.append(.document(id)) } else { sourceMissing = true }
     case .task(let id):

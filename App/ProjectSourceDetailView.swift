@@ -18,6 +18,9 @@ struct ProjectSourceDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
           Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
           Text("\(source.kindLabel) · \(source.statusLabel)").font(.footnote).foregroundStyle(.secondary)
+          if let author = source.metadata?["youtubeAuthor"], !author.isEmpty {
+            Text(author).font(.footnote).foregroundStyle(.secondary)
+          }
           if let message = source.errorInformation {
             Text(message).font(.subheadline).foregroundStyle(.secondary)
           }
@@ -30,7 +33,11 @@ struct ProjectSourceDetailView: View {
             Link("元のページを開く", destination: url).font(.body)
           }
           if let reference = source.localFileReference, let file = ProjectSourceFiles.resolve(reference) {
-            Button("ファイルを表示", icon: .doc) { previewURL = file }.frame(minHeight: 44)
+            if source.kind == .pdf {
+              NavigationLink("PDFを表示", value: LibraryRoute.projectPDF(sourceID, 1)).frame(minHeight: 44)
+            } else {
+              Button("ファイルを表示", icon: .doc) { previewURL = file }.frame(minHeight: 44)
+            }
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading).padding(ProjectLayout.horizontalInset)
@@ -44,7 +51,7 @@ struct ProjectSourceDetailView: View {
               Button("メモを編集", icon: .pencil) { isEditing = true }
                 .disabled(extracted.isEmpty || textFailure != nil)
             }
-            if source.localFileReference != nil && source.processingStatus != .ready {
+            if (source.localFileReference != nil || (source.kind == .youtube && source.metadata?["youtubeTitle"] == nil)) && source.processingStatus != .ready {
               Button("解析を再試行", icon: .arrowClockwise) {
                 Task { await model.prepareProjectSource(sourceID) }
               }.disabled(model.projectSourceProcessingIDs.contains(sourceID))

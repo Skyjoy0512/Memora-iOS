@@ -5,6 +5,8 @@ extension MemoraModel {
     let id: UUID?
     if case .projectSource(let sourceID) = activeNavigationPath.last {
       id = source(id: sourceID)?.projectID
+    } else if case .projectPDF(let sourceID, _) = activeNavigationPath.last {
+      id = source(id: sourceID)?.projectID
     } else if case .projectChat(let chatID) = activeNavigationPath.last {
       id = projectChat(id: chatID)?.projectID
     } else {

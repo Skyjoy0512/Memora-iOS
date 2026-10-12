@@ -12,7 +12,9 @@ extension MemoraModel {
     }
     let source = ProjectSource(projectID: projectID, kind: link.kind,
       title: link.youtubeID.map { "YouTube · \($0)" } ?? link.url.host ?? "Webリンク", originalURL: link.url)
-    return storeProjectSource(source) ? source.id : nil
+    guard storeProjectSource(source) else { return nil }
+    if source.kind == .youtube { Task { await prepareProjectSource(source.id) } }
+    return source.id
   }
 
   @discardableResult
@@ -96,6 +98,10 @@ extension MemoraModel {
   }
 
   func prepareProjectSource(_ id: UUID) async {
+    if let value = source(id: id), value.kind == .youtube {
+      await prepareProjectYouTube(id)
+      return
+    }
     guard let source = source(id: id), source.processingStatus != .ready,
           !projectSourceProcessingIDs.contains(id), let name = source.localFileReference,
           let file = ProjectSourceFiles.resolve(name) else { return }
@@ -125,6 +131,29 @@ extension MemoraModel {
       guard var current = self.source(id: id), current.localFileReference == name else { return }
       current.processingStatus = .failed
       current.errorInformation = "解析できませんでした。元ファイルは保存されています。"
+      _ = storeProjectSource(current)
+    }
+  }
+
+  private func prepareProjectYouTube(_ id: UUID) async {
+    guard var value = source(id: id), let url = value.originalURL,
+          value.metadata?["youtubeTitle"] == nil, !projectSourceProcessingIDs.contains(id) else { return }
+    projectSourceProcessingIDs.insert(id)
+    defer { projectSourceProcessingIDs.remove(id) }
+    value.processingStatus = .processing
+    guard storeProjectSource(value) else { return }
+    do {
+      let metadata = try await ProjectYouTubeMetadata.fetch(url)
+      guard var current = source(id: id), current.originalURL == url else { return }
+      current.title = metadata.title
+      current.metadata = ["youtubeTitle": metadata.title, "youtubeAuthor": metadata.author]
+      current.processingStatus = .unavailable
+      current.errorInformation = "動画情報を取得しました。字幕や動画内容は取得していないため、AIの根拠には使用しません。"
+      _ = storeProjectSource(current)
+    } catch {
+      guard var current = source(id: id), current.originalURL == url else { return }
+      current.processingStatus = .unavailable
+      current.errorInformation = "動画情報を取得できませんでした。リンクは保存されています。"
       _ = storeProjectSource(current)
     }
   }

@@ -446,7 +446,7 @@ struct MeetingDetailView: View {
     selectedSection = meeting.transcript.isEmpty ? .summary : .transcript
     // A request with no time only opens the transcript; it does not play.
     guard let time else { return }
-    if meeting.audioURL != nil {
+    if meeting.audioURL != nil && !model.isRecording {
       player.seek(to: time)
       player.play()
     }

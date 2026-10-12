@@ -355,6 +355,8 @@ struct RootTabView: View {
        model.space(id: projectID) != nil { return .space(projectID) }
     if case .projectSource(let id) = model.activeNavigationPath.last,
        let projectID = model.source(id: id)?.projectID, model.space(id: projectID) != nil { return .space(projectID) }
+    if case .projectPDF(let id, _) = model.activeNavigationPath.last,
+       let projectID = model.source(id: id)?.projectID, model.space(id: projectID) != nil { return .space(projectID) }
     return RootNavigation.scope(tab: model.selectedTab, path: model.activeNavigationPath,
       detailMeetingID: model.activeDetailMeetingID, detailTab: model.activeDetailTabs.last)
   }

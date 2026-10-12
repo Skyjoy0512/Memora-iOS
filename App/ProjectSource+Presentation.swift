@@ -26,10 +26,10 @@ extension ProjectSource {
 
   var statusLabel: String {
     switch processingStatus {
-    case .pending: "保存済み · 解析待ち"
-    case .processing: "解析中"
+    case .pending: kind == .youtube ? "動画リンク保存済み" : "保存済み · 解析待ち"
+    case .processing: kind == .youtube ? "動画情報を取得中" : "解析中"
     case .ready: "本文準備済み"
-    case .unavailable: "保存済み · 解析不可"
+    case .unavailable: kind == .youtube ? "動画リンク保存済み · 内容未取得" : "保存済み · 解析不可"
     case .failed: "保存済み · 解析失敗"
     }
   }

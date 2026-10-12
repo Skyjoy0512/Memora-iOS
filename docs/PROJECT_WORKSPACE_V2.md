@@ -87,3 +87,19 @@ ProjectSearchIndexはactor上のSQLite FTS5を利用する。日本語も検索�
 ProjectSearchIndexChecks成功: FTS5検索、DB再オープン、更新、除外、所属変更、特殊な検索文字列、明示削除。Web取得・YouTubeメタデータ・Share Extensionは未実装のまま。
 
 全文索引追加後の最終Bitrig iOS Simulatorビルド成功、診断警告なし（2026-10-13T00-15-36-79cecc86.log）。100ソース・長い日本語タイトルの検索テストも成功。索引変更後の実画面操作と実機の動作確認はまだ行っていない。
+
+## 2026-10-13 — 出典への遷移とYouTube情報
+
+PDFの出典は専用のPDFKit閲覧画面へ移動し、1始まりの引用ページを検証して開く。PDFファイルの読み込みはバックグラウンドで行い、標準の拡大・スクロール・テキスト選択を利用する。欠落ファイル、不正なページ番号、暗号化PDFは理由を表示する。通常のソース詳細からもPDF閲覧へ移動できる。
+
+録音の時刻付き出典は既存MeetingDetailViewのinitialPlaybackStartを使う。現在の文字起こしへ移動し、音声があればその時刻から再生する。録音中は自動再生せず、該当発言の表示だけに留める。無効な時刻は通常の文字起こし表示へ戻す。AIスコープは録音単位、PDFは現在の所属プロジェクトに限定する。
+
+YouTubeのタイトル・作者は固定の公式oEmbedエンドポイントから取得する。入力は正規化した動画IDだけで、リダイレクト・Cookie・保存済み認証情報を使わない。応答サイズ64KB、リクエスト15秒・リソース20秒上限。保存を先に確定し、取得失敗でもリンクを残す。字幕・動画本体・画像解析は取得しておらず、動画の本文をAI参照可能として扱わない。新規optional metadataを追加し、旧ソースJSONとバックアップの互換性を維持する。取得済みの動画情報は再取得しない。
+
+最新のAGENTS.mdに合わせ、タブ順をHome（表示名はジャーナル）／Library／Ask AIへ更新した。UISegmentedControl、選択アニメーション、rawValue、FAB、入力欄は維持する。
+
+自動テスト: ProjectCitationLocationChecks、RootNavigationChecks、ProjectYouTubeMetadataChecks成功。公開動画でのYouTube情報取得ネットワーク確認成功（タイトルが空でないことを確認）。これはアプリ内の保存・復元や字幕取得の動作確認ではない。
+
+未完了: 一般Webの安全な本文取得、YouTubeサムネイル、Share Extension／App Groups／取り込みキュー、PDFと音声の出典ジャンプ実画面QA、外部AIの実応答、実機・共有権限・バックアップ実復元の検証。
+
+今回のBitrig iOS Simulatorビルド成功、診断警告なし（2026-10-13T06-29-29-a5bce42b.log）。ProjectWorkspaceV2ChecksとProjectContextChecksの回帰再実行も成功。実画面のYouTube保存・表示は後続の確認記録を参照する。

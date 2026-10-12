@@ -2,10 +2,12 @@ import Foundation
 
 enum LibraryRoute: Hashable {
   case meeting(UUID)
+  case meetingCitation(UUID, TimeInterval)
   case transcript(UUID)
   case space(UUID)
   case projectSources(UUID?)
   case projectSource(UUID)
+  case projectPDF(UUID, Int)
   case projectChat(UUID)
   case projectChats(UUID?)
   case tasks

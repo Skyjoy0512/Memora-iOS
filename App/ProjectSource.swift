@@ -17,6 +17,7 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   var processingStatus = ProcessingStatus.pending
   var privacy = RecordPrivacy()
   var errorInformation: String?
+  var metadata: [String: String]?
 
   enum Kind: String, Codable, Sendable {
     case youtube, web, image, pdf, document, audio, note

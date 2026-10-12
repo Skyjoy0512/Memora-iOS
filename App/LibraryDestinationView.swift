@@ -6,10 +6,12 @@ struct LibraryDestinationView: View {
   var body: some View {
     switch route {
     case .meeting(let id): MeetingDetailView(meetingID: id)
+    case .meetingCitation(let id, let time): MeetingDetailView(meetingID: id, initialPlaybackStart: ProjectCitationLocation.playbackTime(time))
     case .transcript(let id): TranscriptView(meetingID: id)
     case .space(let id): SpaceDetailView(spaceID: id)
     case .projectSources(let id): ProjectSourcesView(projectID: id)
     case .projectSource(let id): ProjectSourceDetailView(sourceID: id)
+    case .projectPDF(let id, let page): ProjectPDFView(sourceID: id, page: page)
     case .projectChat(let id): ProjectChatView(threadID: id)
     case .projectChats(let id): ProjectChatsView(projectID: id)
     case .tasks: TasksView()

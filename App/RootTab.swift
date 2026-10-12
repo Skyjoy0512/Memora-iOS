@@ -1,6 +1,6 @@
 enum RootTab: String, Hashable, CaseIterable, Identifiable {
-  case library = "files"
   case home
+  case library = "files"
   case askAI
 
   var id: Self { self }

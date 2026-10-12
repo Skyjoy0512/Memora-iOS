@@ -23,7 +23,7 @@ enum RootNavigation {
     if let detailMeetingID, detailTab == tab { return .file(detailMeetingID) }
     guard tab != .askAI else { return .global }
     switch path.last {
-    case .meeting(let id), .transcript(let id): return .file(id)
+    case .meeting(let id), .transcript(let id), .meetingCitation(let id, _): return .file(id)
     case .space(let id): return .space(id)
     case .projectSources(let id), .projectChats(let id): return id.map(AIQueryScope.space) ?? .global
     default: return .global
