@@ -3,51 +3,60 @@ import SwiftUI
 struct ProjectsView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.scenePhase) private var scenePhase
+  @AppStorage("memora.projects.listOrder") private var order = ProjectListOrder.name
+  @AppStorage("memora.projects.recentFirst") private var recentFirst = false
   var query: String
   var isSearching: Bool
   @State private var renameTarget: MemoraSpace?
   @State private var deleteTarget: MemoraSpace?
 
   var body: some View {
-    let projects = model.spaces.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
-    let recent = model.recentProjects
-    let taskCounts = model.projectTaskCounts
+    let latestDates = model.spaceAggregates.compactMapValues(\.latestDate)
+    let projects = order.ordered(model.spaces.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }, latestDates: latestDates)
+    let matchingIDs = Set(projects.map(\.id))
+    let recent = !isSearching && recentFirst && projects.count > 3
+      ? Array(model.recentProjects.filter { matchingIDs.contains($0.id) }.prefix(3)) : []
+    let recentIDs = Set(recent.map(\.id))
+    let remaining = projects.filter { !recentIDs.contains($0.id) }
     let shared = model.cloudSharing.sharedProjects.filter {
       query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) || $0.ownerName.localizedCaseInsensitiveContains(query)
     }
 
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
-        // Small collections are faster to scan once, without duplicate cards.
-        if !isSearching, model.spaces.count > 3, !recent.isEmpty {
-          heading("最近使用", count: nil)
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-              ForEach(recent.prefix(3)) { space in recentLink(space) }
+        if !projects.isEmpty {
+          HStack {
+            heading(isSearching ? "検索結果" : "プロジェクト", count: projects.count)
+            Spacer()
+            Menu {
+              Picker("並べ替え", selection: $order) {
+                ForEach(ProjectListOrder.allCases) { Text($0.title).tag($0) }
+              }
+              Toggle("最近使用を先に", isOn: $recentFirst)
+            } label: {
+              Text("並べ替え").font(.subheadline).frame(minHeight: 44)
             }
+            .accessibilityValue(order.title)
           }
+        }
+        if !recent.isEmpty {
+          heading("最近使用", count: nil)
+          projectRows(recent)
         }
 
         if !projects.isEmpty {
-          heading(isSearching ? "検索結果" : "すべてのプロジェクト", count: projects.count)
-          LazyVStack(spacing: 12) {
-            ForEach(projects) { space in projectLink(space, taskCounts: taskCounts) }
-          }
+          if !recent.isEmpty, !remaining.isEmpty { heading("その他のプロジェクト", count: nil) }
+          projectRows(remaining)
         } else if shared.isEmpty {
           if isSearching {
             ContentUnavailableView.search(text: query)
           } else {
-            ContentUnavailableView {
-              Label("最初のプロジェクトを作成", icon: .rectangleStack)
-            } description: {
-              Text("仕事の案件や日々のテーマごとに、記録とタスクをまとめられます。")
-            } actions: {
-              Button("プロジェクトを作成", icon: .folderBadgePlus) { model.isFileCreationPresented = true }
-                .buttonStyle(.borderedProminent)
-                .tint(MemoraPalette.action)
-                .foregroundStyle(MemoraPalette.actionLabel)
-                .disabled(model.isRestoring)
+            VStack(alignment: .leading, spacing: 8) {
+              Text("プロジェクトはまだありません").font(.body.weight(.semibold))
+              Text("右上の「作成」から始められます。")
+                .font(.subheadline).foregroundStyle(.secondary)
             }
+            .padding(.vertical, 32)
           }
         }
 
@@ -55,24 +64,28 @@ struct ProjectsView: View {
           heading("チームから共有", count: shared.count)
           ForEach(shared) { project in
             NavigationLink(value: LibraryRoute.sharedProject(project.id)) {
-              VStack(alignment: .leading, spacing: 12) {
-                SharedOwnerBadge(ownerName: project.ownerName)
-                Label(project.name, icon: project.icon).font(.headline)
-                Text("記録 \(project.records.count)件 · 閲覧のみ")
-                  .font(.subheadline).foregroundStyle(.secondary)
+              HStack(spacing: 12) {
+                Image(icon: project.icon).frame(width: ProjectLayout.iconSide).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                  Text(project.name).font(.body.weight(.semibold)).lineLimit(2)
+                  SharedOwnerBadge(ownerName: project.ownerName)
+                  Text("記録 \(project.records.count)件 · 閲覧のみ")
+                    .font(.footnote).foregroundStyle(.secondary)
+                }
               }
               .foregroundStyle(.primary)
               .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(18)
-              .memoraCard(fill: MemoraPalette.card)
-              .contentShape(RoundedRectangle(cornerRadius: 20))
+              .frame(minHeight: ProjectLayout.minimumRowHeight)
+              .padding(.vertical, 8)
+              .contentShape(Rectangle())
+              .accessibilityElement(children: .combine)
             }
             .buttonStyle(.plain)
           }
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, 18)
+      .padding(.horizontal, ProjectLayout.horizontalInset)
       .padding(.top, 8)
       .padding(.bottom, model.bottomContentClearance)
     }
@@ -112,27 +125,16 @@ struct ProjectsView: View {
     .accessibilityAddTraits(.isHeader)
   }
 
-  private func recentLink(_ space: MemoraSpace) -> some View {
-    NavigationLink(value: LibraryRoute.space(space.id)) {
-      HStack(spacing: 10) {
-        Image(icon: space.icon).accessibilityHidden(true)
-        Text(space.name).font(.subheadline.weight(.medium))
-          .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-      }
-      .foregroundStyle(.primary)
-      .frame(width: 172, alignment: .leading)
-      .frame(minHeight: 44)
-      .padding(14)
-      .memoraCard(radius: 16, fill: MemoraPalette.card)
-      .contentShape(RoundedRectangle(cornerRadius: 16))
+  private func projectRows(_ projects: [MemoraSpace]) -> some View {
+    LazyVStack(spacing: 0) {
+      ForEach(projects) { space in projectLink(space) }
     }
-    .buttonStyle(.plain)
   }
 
-  private func projectLink(_ space: MemoraSpace, taskCounts: [UUID: Int]) -> some View {
+  private func projectLink(_ space: MemoraSpace) -> some View {
     let aggregate = model.spaceAggregates[space.id]
-    return ProjectCard(space: space, recordCount: aggregate?.meetingCount ?? 0,
-      taskCount: taskCounts[space.id] ?? 0, latestRecordDate: aggregate?.latestDate,
+    return ProjectListRow(space: space, recordCount: aggregate?.meetingCount ?? 0,
+      latestRecordDate: aggregate?.latestDate,
       rename: { renameTarget = space },
       share: { Task { await model.shareSpaceWithTeam(space.id) } },
       delete: { deleteTarget = space })
