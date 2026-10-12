@@ -100,13 +100,11 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   /// Turns the feature on, asking for "when in use" and then "always". The
   /// completion runs on the main thread with whether "always" was granted.
   func enable(completion: @escaping (Bool) -> Void) {
-    if manager.authorizationStatus == .authorizedAlways {
+    switch manager.authorizationStatus {
+    case .authorizedAlways:
       UserDefaults.standard.set(true, forKey: Self.enabledKey)
       startMonitoring()
       completion(true)
-      return
-    }
-    switch manager.authorizationStatus {
     case .notDetermined:
       enableCompletion = completion
       enablePhase = .askingWhenInUse
@@ -344,7 +342,7 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
        now.timeIntervalSince1970 - stamp < Self.stationRepeatWindow {
       return .station(base)
     }
-    if await inboxHasRecent(title: title, within: Self.stationRepeatWindow, now: now) {
+    if inboxHasRecent(title: title, within: Self.stationRepeatWindow, now: now) {
       return .station(base)
     }
     defaults.set(title, forKey: Self.lastStationTitleKey)
@@ -370,7 +368,7 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   private func recordVisit(at location: CLLocation, arrival: Date, departure: Date) async {
     let name = await PlaceNameResolver.nearestPlaceName(to: location)
     let title = "\(name)に滞在"
-    if await inboxHasRecent(title: title, within: Self.minimumStay, now: arrival) {
+    if inboxHasRecent(title: title, within: Self.minimumStay, now: arrival) {
       return
     }
     appendToInbox(

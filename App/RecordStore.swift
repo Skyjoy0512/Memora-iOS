@@ -1,4 +1,7 @@
 import Foundation
+#if DEBUG
+import Synchronization
+#endif
 
 /// Reads and writes the app's documents. Keeping this here means the model asks
 /// for records and never deals with the store, encoding, or the move off
@@ -27,16 +30,19 @@ enum RecordStore {
 #if DEBUG
   /// Lets a debug check make the next write fail, so the error paths are
   /// exercised rather than assumed. Never set in a shipped build.
-  @ObservationIgnored private static var failsNextWrite = false
+  nonisolated private static let failureInjection = Mutex(false)
 
   static func setFailureInjection(_ enabled: Bool) {
-    failsNextWrite = enabled
+    failureInjection.withLock { $0 = enabled }
   }
 
-  private static func consumeInjectedFailure() throws {
-    guard failsNextWrite else { return }
-    failsNextWrite = false
-    throw LocalStore.StoreError.statement(1)
+  nonisolated private static func consumeInjectedFailure() throws {
+    // Synchronous and async commits consume the same one-shot flag safely.
+    try failureInjection.withLock { failsNextWrite in
+      guard failsNextWrite else { return }
+      failsNextWrite = false
+      throw LocalStore.StoreError.statement(1)
+    }
   }
 #endif
 

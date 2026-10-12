@@ -17,6 +17,11 @@ enum TaskReminderScheduler {
     "memora.task.\(taskID.uuidString)"
   }
 
+  static func taskID(in userInfo: [AnyHashable: Any]) -> UUID? {
+    guard let value = userInfo[taskIDKey] as? String else { return nil }
+    return UUID(uuidString: value)
+  }
+
   /// Asks for permission, only when a reminder is first turned on.
   static func requestAuthorization() async -> Bool {
     let center = UNUserNotificationCenter.current()

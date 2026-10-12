@@ -6,6 +6,9 @@ import UIKit
 /// dot.
 struct JournalCalendar: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
+  @ScaledMetric(relativeTo: .title2) private var accessibleCellWidth = 52.0
+  @ScaledMetric(relativeTo: .title2) private var accessibleCellHeight = 80.0
   @Binding var selectedDate: Date
   /// Start-of-day dates that have at least one record.
   var markedDays: Set<Date>
@@ -21,6 +24,10 @@ struct JournalCalendar: View {
   private static let cellHeight: CGFloat = 80
   private static let cellSpacing: CGFloat = 2
   private static let verticalPadding: CGFloat = 12
+
+  // Ordinary text keeps the established seven-day rhythm and glass geometry.
+  private var cellWidth: CGFloat { typeSize.isAccessibilitySize ? accessibleCellWidth : Self.cellWidth }
+  private var cellHeight: CGFloat { typeSize.isAccessibilitySize ? accessibleCellHeight : Self.cellHeight }
 
   init(selectedDate: Binding<Date>, markedDays: Set<Date>) {
     _selectedDate = selectedDate
@@ -55,8 +62,11 @@ struct JournalCalendar: View {
       .onChange(of: selectedDate) { _, day in
         scroll(proxy, to: day, animated: true)
       }
+      .onChange(of: typeSize) { _, _ in
+        DispatchQueue.main.async { scroll(proxy, to: selectedDate, animated: false) }
+      }
     }
-    .frame(height: Self.cellHeight + Self.verticalPadding * 2)
+    .frame(height: cellHeight + Self.verticalPadding * 2)
   }
 
   private func scroll(_ proxy: ScrollViewProxy, to day: Date, animated: Bool) {
@@ -93,7 +103,7 @@ struct JournalCalendar: View {
           .font(.title2.weight(isSelected ? .semibold : .regular))
           .foregroundStyle(dayStyle)
       }
-      .frame(width: Self.cellWidth, height: Self.cellHeight)
+      .frame(width: cellWidth, height: cellHeight)
       // The record dot is an overlay so it never shifts the day off the
       // capsule's centre.
       .overlay(alignment: .bottom) {

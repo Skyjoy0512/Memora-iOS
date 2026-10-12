@@ -47,8 +47,7 @@ final class MemoraAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
       await MainActor.run { model.selectedTab = .askAI }
       return
     }
-    guard let string = info[TaskReminderScheduler.taskIDKey] as? String,
-          let id = UUID(uuidString: string) else { return }
+    guard let id = TaskReminderScheduler.taskID(in: info) else { return }
     await MainActor.run {
       NotificationCenter.default.post(name: .taskReminderTapped, object: nil, userInfo: ["taskID": id])
     }
