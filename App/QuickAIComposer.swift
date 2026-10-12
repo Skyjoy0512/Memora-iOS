@@ -20,7 +20,7 @@ struct QuickAIComposer: View {
   @State private var confirmsCloudRequest = false
   @State private var isPreparingAttachment = false
   @State private var projectError: String?
-  @State private var isResearchPresented = false
+  @State private var usesWebSearch = false
 
   var body: some View {
     // The draft lives in the model, so rebuilding this view or leaving the tab
@@ -38,11 +38,10 @@ struct QuickAIComposer: View {
       expansionChanged: { expanded in
         isComposing = expanded
       },
-      onResearch: model.selectedTab == .askAI && scope == .global ? { isResearchPresented = true } : nil
+      onResearch: model.selectedTab == .askAI && scope == .global ? { usesWebSearch.toggle() } : nil,
+      researchSelected: usesWebSearch
     )
-    .sheet(isPresented: $isResearchPresented) {
-      WebResearchView(initialQuery: model.composerDraft, initialMode: .deepResearch)
-    }
+    .onChange(of: model.selectedTab) { _, _ in usesWebSearch = false }
     .sheet(item: $pendingQuestion) { request in
       AIQuestionView(request: request)
     }
@@ -70,7 +69,7 @@ struct QuickAIComposer: View {
     case .global:
       // On Ask AI itself the hint follows the mode the switch is set to.
       if model.selectedTab == .askAI {
-        "Memoraに話しかける"
+        usesWebSearch ? "Webで調べたいこと" : "Memoraに話しかける"
       } else {
         "Memoraに質問"
       }
@@ -92,10 +91,17 @@ struct QuickAIComposer: View {
     if scope == .global {
       let trimmed = model.composerDraft.trimmingCharacters(in: .whitespacesAndNewlines)
       model.selectedTab = .askAI
-      return model.sendAIChat(
+      if usesWebSearch && submitted != nil {
+        projectError = "Web検索へ添付は自動送信しません。添付を外して、検索したい内容を入力してください。"
+        return false
+      }
+      let accepted = model.sendAIChat(
         trimmed.isEmpty ? "この添付を確認して" : trimmed,
-        attachment: submitted
+        attachment: submitted,
+        webSearchRequested: usesWebSearch
       )
+      if accepted { usesWebSearch = false }
+      return accepted
     }
 
     // The request is built from what is on screen now; the composer is only

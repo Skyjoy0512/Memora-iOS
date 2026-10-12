@@ -12,6 +12,7 @@ struct AIMessageView: View {
   /// A cited record opened from an inline citation.
   @State private var citedRecord: AIChatSource?
   @State private var isSourcesOpen = false
+  @State private var savingWebReportID: UUID?
 
   var body: some View {
     switch message.role {
@@ -76,8 +77,13 @@ struct AIMessageView: View {
       }
 
       ForEach(message.webResearchReportIDs, id: \.self) { id in
-        NavigationLink("Web調査結果とソース") { WebResearchDetailView(reportID: id) }
-          .frame(minHeight: 44)
+        if let report = model.webResearch(id: id), !report.sources.isEmpty {
+          NavigationLink("出典 \(report.sources.count)件") { WebResearchDetailView(reportID: id) }
+            .frame(minHeight: 44)
+          if !message.isThinking, report.savedProjectID == nil {
+            Button("プロジェクトにまとめる") { savingWebReportID = id }.frame(minHeight: 44)
+          }
+        }
       }
       ForEach(message.documentIDs, id: \.self) { id in
         if let document = model.document(id: id) {
@@ -108,6 +114,9 @@ struct AIMessageView: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .animation(MemoraMotion.control, value: isSourcesOpen)
+    .sheet(isPresented: Binding(get: { savingWebReportID != nil }, set: { if !$0 { savingWebReportID = nil } })) {
+      if let id = savingWebReportID { WebResearchSaveSheet(reportID: id) }
+    }
     .sheet(item: $openDocument) { document in
       NavigationStack {
         DocumentDetailView(documentID: document.id, showsCloseButton: true)
@@ -128,7 +137,16 @@ struct AIMessageView: View {
   /// The answer, with the records it really cited as inline links.
   @ViewBuilder
   private var answerText: some View {
-    if !message.isAgentReply, AnswerCitations.hasCitations(message.text, sources: message.sources) {
+    if let id = message.webResearchReportIDs.last, let report = model.webResearch(id: id), report.isChatSearch == true {
+      let sent = report.sources.filter { report.sentSourceIDs?.contains($0.id) == true }
+      StreamingText(text: WebResearchContext.markdownLinked(message.text, sent: sent), lineSpacing: 5, animates: animates,
+        revealText: String(WebResearchContext.linked(message.text, sent: sent).characters))
+        .environment(\.openURL, OpenURLAction { url in
+          guard url.scheme == WebResearchContext.citationScheme else { return .systemAction }
+          guard let source = WebResearchContext.source(for: url, sent: sent) else { return .discarded }
+          return .systemAction(source.url)
+        })
+    } else if !message.isAgentReply, AnswerCitations.hasCitations(message.text, sources: message.sources) {
       StreamingText(
         text: AnswerCitations.linked(message.text, sources: message.sources),
         lineSpacing: 5,

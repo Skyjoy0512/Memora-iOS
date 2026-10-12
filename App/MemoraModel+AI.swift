@@ -79,9 +79,17 @@ extension MemoraModel {
   /// Asks the chat a question. Returns false while an answer is already on its
   /// way, so the caller keeps the text instead of losing it to a refused send.
   @discardableResult
-  func sendAIChat(_ question: String, attachment: AIAttachment? = nil) -> Bool {
+  func sendAIChat(_ question: String, attachment: AIAttachment? = nil, webSearchRequested: Bool = false) -> Bool {
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
+
+    if attachment == nil {
+      switch AIWebSearchIntent.route(trimmed, requested: webSearchRequested, previousQuery: latestChatWebQuery) {
+      case .search(let query): return sendWebSearchChat(trimmed, query: query)
+      case .needsTopic: return sendWebSearchChat(trimmed, query: nil)
+      case .none: break
+      }
+    }
 
     // Asked plainly to remember something: it is kept before answering, and
     // the conversation says so, so it is never kept silently.
@@ -901,7 +909,8 @@ extension MemoraModel {
     scopeLabel: String,
     engineLabel: String,
     modelLabel: String?,
-    cloudProvenance: AIConversationProvenance? = nil
+    cloudProvenance: AIConversationProvenance? = nil,
+    webResearchReportID: UUID? = nil
   ) {
     aiHistory.insert(
       AIConversationEntry(
@@ -912,7 +921,8 @@ extension MemoraModel {
         engineLabel: engineLabel,
         modelLabel: modelLabel,
         createdAt: .now,
-        cloudProvenance: cloudProvenance
+        cloudProvenance: cloudProvenance,
+        webResearchReportID: webResearchReportID
       ),
       at: 0
     )

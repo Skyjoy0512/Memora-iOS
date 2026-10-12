@@ -39,11 +39,12 @@ struct ThinkingTraceView: View {
   }
 
   private var label: String {
+    if let id = message.webResearchReportIDs.last, model.webResearchBusyIDs.contains(id) {
+      return model.webResearch(id: id)?.status == .writing ? "回答を書いています" : "Webを検索しています"
+    }
+    if !message.webResearchReportIDs.isEmpty { return "Webを検索しています" }
     if !message.isAgentReply {
       return message.searchFinished ? "回答を書いています" : "記録を探しています"
-    }
-    if message.webResearchReportIDs.contains(where: { model.webResearchBusyIDs.contains($0) }) {
-      return "Webを検索しています"
     }
     return message.agentSteps.isEmpty ? "考えています" : "作業しています"
   }

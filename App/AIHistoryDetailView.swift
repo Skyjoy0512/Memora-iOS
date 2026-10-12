@@ -4,11 +4,13 @@ import SwiftUI
 /// produced it. Asking it again is a separate choice, so opening a history
 /// entry never sends anything.
 struct AIHistoryDetailView: View {
+  @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var entry: AIConversationEntry
   var ask: (String) -> Void
   /// Opens this exchange as the conversation, to follow up on it.
   var continueConversation: ((AIConversationEntry) -> Void)?
+  var openProjectAction: ((UUID) -> Void)?
 
   var body: some View {
     ScrollView {
@@ -41,6 +43,10 @@ struct AIHistoryDetailView: View {
         .font(.subheadline)
         .foregroundStyle(.secondary)
 
+        if let id = entry.webResearchReportID, model.webResearch(id: id) != nil {
+          NavigationLink("出典・プロジェクトへの保存") { WebResearchDetailView(reportID: id, openProjectAction: openProjectAction) }
+            .frame(minHeight: 44)
+        }
         if let continueConversation {
           Button {
             dismiss()

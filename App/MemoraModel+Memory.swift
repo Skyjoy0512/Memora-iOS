@@ -144,6 +144,10 @@ extension MemoraModel {
       AIChatMessage(role: .user, text: entry.question),
       AIChatMessage(role: .assistant, text: entry.answer, cloudProvenance: entry.cloudProvenance)
     ]
+    if let id = entry.webResearchReportID, webResearch(id: id)?.isChatSearch == true {
+      aiMessages[1].webResearchReportIDs = [id]
+      return
+    }
     if AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud,
        !canReuseCloudConversation(entry.cloudProvenance) {
       aiMessages.append(AIChatMessage(role: .assistant,

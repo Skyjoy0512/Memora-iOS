@@ -11,6 +11,7 @@ struct WebResearchReport: Identifiable, Codable, Hashable, Sendable {
   var answer = ""
   var citedSourceIDs: [UUID] = []
   var sentSourceIDs: [UUID]?
+  var isChatSearch: Bool?
   var engineLabel: String?
   var modelLabel: String?
   var status: Status = .searching

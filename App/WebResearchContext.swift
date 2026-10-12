@@ -1,6 +1,7 @@
 import Foundation
 
 enum WebResearchContext {
+  static let citationScheme = "memora-web-cite"
   struct Value: Sendable { var text: String; var sent: [WebResearchSource] }
   static func build(_ sources: [WebResearchSource], budget: Int) -> Value {
     var text = "", sent: [WebResearchSource] = []
@@ -43,5 +44,22 @@ enum WebResearchContext {
     }
     result.append(AttributedString(String(answer[cursor...])))
     return result
+  }
+
+  static func markdownLinked(_ answer: String, sent: [WebResearchSource]) -> String {
+    guard let regex = try? NSRegularExpression(pattern: "【Web([0-9]+)】") else { return answer }
+    var value = answer
+    for match in regex.matches(in: answer, range: NSRange(answer.startIndex..., in: answer)).reversed() {
+      guard let range = Range(match.range, in: value), let numberRange = Range(match.range(at: 1), in: answer),
+            let number = Int(answer[numberRange]) else { continue }
+      let marker = sent.indices.contains(number - 1) ? "[Web\(number)](\(citationScheme)://\(number))" : ""
+      value.replaceSubrange(range, with: marker)
+    }
+    return value
+  }
+
+  static func source(for url: URL, sent: [WebResearchSource]) -> WebResearchSource? {
+    guard url.scheme == citationScheme, let number = Int(url.host ?? ""), sent.indices.contains(number - 1) else { return nil }
+    return sent[number - 1]
   }
 }

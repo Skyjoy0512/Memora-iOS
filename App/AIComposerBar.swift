@@ -19,6 +19,7 @@ struct AIComposerBar: View {
   var focusChanged: ((Bool) -> Void)?
   var expansionChanged: ((Bool) -> Void)?
   var onResearch: (() -> Void)?
+  var researchSelected = false
 
   @State private var speechInput = SpeechInputService()
   @State private var isImporterPresented = false
@@ -241,18 +242,20 @@ struct AIComposerBar: View {
   }
 
   private var researchButton: some View {
-    Button {
-      isFieldFocused = false
+    Toggle(isOn: Binding(get: { researchSelected }, set: { _ in
       InteractionFeedback.shared.send(.tap)
       onResearch?()
-    } label: {
+    })) {
       ToolbarIconGlyph(icon: .magnifyingglass)
         .frame(width: 44, height: 44)
+        .background(.primary.opacity(researchSelected ? 0.08 : 0), in: Circle())
         .contentShape(Circle())
     }
+    .toggleStyle(.button)
     .buttonStyle(.plain)
-    .accessibilityLabel("Deep Research")
-    .accessibilityHint("Web検索・調査を開きます。入力中の文章は残ります。")
+    .accessibilityLabel("Webで検索")
+    .accessibilityValue(researchSelected ? "オン" : "オフ")
+    .accessibilityHint("オンにすると、次の質問をWebで検索します。")
     .disabled(isBusy || speechInput.isListening)
   }
 

@@ -11,6 +11,7 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
   var modelLabel: String?
   var createdAt: Date
   var cloudProvenance: AIConversationProvenance?
+  var webResearchReportID: UUID?
 
   init(
     id: UUID,
@@ -20,7 +21,8 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
     engineLabel: String? = nil,
     modelLabel: String? = nil,
     createdAt: Date,
-    cloudProvenance: AIConversationProvenance? = nil
+    cloudProvenance: AIConversationProvenance? = nil,
+    webResearchReportID: UUID? = nil
   ) {
     self.id = id
     self.question = question
@@ -30,6 +32,7 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
     self.modelLabel = modelLabel
     self.createdAt = createdAt
     self.cloudProvenance = cloudProvenance
+    self.webResearchReportID = webResearchReportID
   }
 
   /// Lenient so entries saved before the engine was recorded still decode.
@@ -43,5 +46,6 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
     modelLabel = try container.decodeIfPresent(String.self, forKey: .modelLabel)
     createdAt = try container.decode(Date.self, forKey: .createdAt)
     cloudProvenance = try? container.decode(AIConversationProvenance.self, forKey: .cloudProvenance)
+    webResearchReportID = try container.decodeIfPresent(UUID.self, forKey: .webResearchReportID)
   }
 }

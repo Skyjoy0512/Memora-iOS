@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AIHistoryView: View {
+  @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @State private var query = ""
   @State private var isSearching = false
@@ -12,17 +13,22 @@ struct AIHistoryView: View {
 
   var body: some View {
     let filteredEntries = AIHistorySearch.matching(entries, query: query)
+    let linkedIDs = Set(entries.compactMap(\.webResearchReportID))
+    let legacyReports = model.webResearchReports.filter {
+      !linkedIDs.contains($0.id) && (query.isEmpty || $0.query.localizedCaseInsensitiveContains(query) || $0.answer.localizedCaseInsensitiveContains(query))
+    }
     NavigationStack {
       Group {
-        if entries.isEmpty {
+        if entries.isEmpty && model.webResearchReports.isEmpty {
           ContentUnavailableView("まだ履歴がありません", icon: .clockArrowCirclepath)
-        } else if filteredEntries.isEmpty {
+        } else if filteredEntries.isEmpty && legacyReports.isEmpty {
           ContentUnavailableView.search(text: query)
         } else {
           List {
             ForEach(filteredEntries) { entry in
               NavigationLink {
-                AIHistoryDetailView(entry: entry, ask: ask, continueConversation: continueConversation)
+                AIHistoryDetailView(entry: entry, ask: ask, continueConversation: continueConversation,
+                  openProjectAction: { id in dismiss(); model.openProject(id) })
               } label: {
                 VStack(alignment: .leading, spacing: 4) {
                   Text(entry.question)
@@ -39,6 +45,21 @@ struct AIHistoryView: View {
             .onDelete { indexSet in
               for index in indexSet where filteredEntries.indices.contains(index) {
                 delete(filteredEntries[index].id)
+              }
+            }
+            if !legacyReports.isEmpty {
+              Section("Web検索") {
+                ForEach(legacyReports) { report in
+                  NavigationLink {
+                    WebResearchDetailView(reportID: report.id, openProjectAction: { id in dismiss(); model.openProject(id) })
+                  } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                      Text(report.query).font(.body.weight(.medium)).lineLimit(2)
+                      Text(report.createdAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                    }
+                  }
+                }
+                .onDelete { offsets in for index in offsets where legacyReports.indices.contains(index) { _ = model.deleteWebResearch(legacyReports[index].id) } }
               }
             }
           }
