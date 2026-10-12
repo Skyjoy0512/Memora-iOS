@@ -11,27 +11,21 @@
     "groupSortPosition" : "bottom",
     "transitivelyLinkDependencies" : false
   },
+  "packages" : {
+    "FluidAudio" : {
+      "exactVersion" : "0.17.7",
+      "url" : "https:\/\/github.com\/FluidInference\/FluidAudio.git"
+    },
+    "LucideSwift" : {
+      "exactVersion" : "0.9.11",
+      "url" : "https:\/\/github.com\/ajaxjiang96\/lucide-swift.git"
+    }
+  },
   "settings" : {
     "CODE_SIGN_IDENTITY" : "-"
   },
-  "packages" : {
-    "FluidAudio" : {
-      "url" : "https://github.com/FluidInference/FluidAudio.git",
-      "exactVersion" : "0.17.7"
-    },
-    "LucideSwift" : {
-      "url" : "https://github.com/ajaxjiang96/lucide-swift.git",
-      "exactVersion" : "0.9.11"
-    }
-  },
   "targets" : {
     "Memora" : {
-      "entitlements" : {
-        "path" : "App/Memora.entitlements",
-        "properties" : {
-          "com.apple.developer.healthkit" : true
-        }
-      },
       "dependencies" : [
         {
           "package" : "FluidAudio",
@@ -46,21 +40,19 @@
           "target" : "Memora Widget Extension"
         }
       ],
+      "entitlements" : {
+        "path" : "App\/Memora.entitlements",
+        "properties" : {
+          "com.apple.developer.healthkit" : true
+        }
+      },
       "info" : {
         "path" : "App\/Info.plist",
         "properties" : {
-          "CFBundleDisplayName" : "Memora",
-          "MemoraLicensePublicKey" : "IisSdDP4tKvk5/RRQGQ8e1mI/jbo/+4dPqedWShIzV4=",
-          "CFBundleShortVersionString" : "1.0",
-          "CFBundleURLTypes" : [
-            {
-              "CFBundleURLName" : "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4",
-              "CFBundleURLSchemes" : [
-                "memora"
-              ]
-            }
+          "BGTaskSchedulerPermittedIdentifiers" : [
+            "app.memora.residents.refresh"
           ],
-          "CFBundleVersion" : "1",
+          "CFBundleDisplayName" : "Memora",
           "CFBundleDocumentTypes" : [
             {
               "CFBundleTypeName" : "音声",
@@ -72,8 +64,19 @@
               ]
             }
           ],
+          "CFBundleShortVersionString" : "1.0",
+          "CFBundleURLTypes" : [
+            {
+              "CFBundleURLName" : "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4",
+              "CFBundleURLSchemes" : [
+                "memora"
+              ]
+            }
+          ],
+          "CFBundleVersion" : "1",
           "CKSharingSupported" : true,
           "LSSupportsOpeningDocumentsInPlace" : false,
+          "MemoraLicensePublicKey" : "IisSdDP4tKvk5\/RRQGQ8e1mI\/jbo\/+4dPqedWShIzV4=",
           "NSBluetoothAlwaysUsageDescription" : "近くのOmiレコーダーを見つけて、会話の音声をMemoraへ取り込むためにBluetoothを使用します。",
           "NSCalendarsFullAccessUsageDescription" : "予定をジャーナルに表示し、会議の録音をすぐ始められるようにカレンダーを使用します。",
           "NSContactsUsageDescription" : "会議に参加した人を連絡先から選んで記録とひもづけるため、またMemoraから連絡先の人に電話をかけるために連絡先を使用します。連絡先はこのiPhoneから送信しません。",
@@ -84,9 +87,6 @@
           "NSMicrophoneUsageDescription" : "会話の録音、Ask AIへの音声入力、自分の声のサンプル登録にマイクを使用します。",
           "NSSpeechRecognitionUsageDescription" : "Ask AIへ話しかけた内容を文字に変換するために音声認識を使用します。",
           "NSSupportsLiveActivities" : true,
-          "BGTaskSchedulerPermittedIdentifiers" : [
-            "app.memora.residents.refresh"
-          ],
           "UIBackgroundModes" : [
             "audio",
             "fetch"
