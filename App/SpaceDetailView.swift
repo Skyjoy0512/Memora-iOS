@@ -88,6 +88,8 @@ struct SpaceDetailView: View {
         }
       }
       .listStyle(.insetGrouped)
+      .scrollContentBackground(.hidden)
+      .background(MemoraPalette.background)
       .onAppear { model.noteProjectUsed(space.id) }
       .hideBottomBarOnScroll(model.selectedTab.rawValue)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
@@ -197,6 +199,8 @@ struct SpaceDetailView: View {
         .frame(maxWidth: .infinity, minHeight: 44)
     }
     .buttonStyle(.borderedProminent)
+    .tint(MemoraPalette.action)
+    .foregroundStyle(MemoraPalette.actionLabel)
     .disabled(model.isPreparingCapture || model.isSavingCapture || model.isRestoring)
     Button {
       InteractionFeedback.shared.send(.tap)
@@ -207,6 +211,7 @@ struct SpaceDetailView: View {
         .frame(maxWidth: .infinity, minHeight: 44)
     }
     .buttonStyle(.bordered)
+    .tint(MemoraPalette.textPrimary)
     .disabled(model.isImporting || model.isRestoring)
   }
 

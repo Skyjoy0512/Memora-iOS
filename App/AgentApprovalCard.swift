@@ -14,7 +14,7 @@ struct AgentApprovalCard: View {
         ForEach(Array(approval.lines.enumerated()), id: \.offset) { _, line in
           Text(line)
             .font(.subheadline)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(MemoraPalette.cardTextSecondary)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
         }
@@ -39,9 +39,9 @@ struct AgentApprovalCard: View {
         } label: {
           Text(approval.confirmTitle)
             .font(.body.weight(.semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(MemoraPalette.actionLabel)
             .frame(maxWidth: .infinity, minHeight: 44)
-            .background(.tint, in: Capsule())
+            .background(MemoraPalette.action, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -50,12 +50,12 @@ struct AgentApprovalCard: View {
     .padding(14)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(
-      Color(uiColor: .secondarySystemBackground),
+      MemoraPalette.card,
       in: RoundedRectangle(cornerRadius: 18, style: .continuous)
     )
     .overlay {
       RoundedRectangle(cornerRadius: 18, style: .continuous)
-        .stroke(Color.accentColor.opacity(0.35), lineWidth: 1)
+        .stroke(MemoraPalette.border, lineWidth: 1)
     }
   }
 }

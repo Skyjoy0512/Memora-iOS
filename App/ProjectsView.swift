@@ -53,6 +53,8 @@ struct ProjectsView: View {
             } actions: {
               Button("プロジェクトを作成", icon: .folderBadgePlus) { model.isFileCreationPresented = true }
                 .buttonStyle(.borderedProminent)
+                .tint(MemoraPalette.action)
+                .foregroundStyle(MemoraPalette.actionLabel)
                 .disabled(model.isRestoring)
             }
           }
@@ -71,7 +73,7 @@ struct ProjectsView: View {
               .foregroundStyle(.primary)
               .frame(maxWidth: .infinity, alignment: .leading)
               .padding(18)
-              .memoraCard(fill: Color(uiColor: .secondarySystemGroupedBackground))
+              .memoraCard(fill: MemoraPalette.card)
               .contentShape(RoundedRectangle(cornerRadius: 20))
             }
             .buttonStyle(.plain)
@@ -82,7 +84,7 @@ struct ProjectsView: View {
       .padding(.horizontal, 18)
       .padding(.bottom, model.bottomContentClearance)
     }
-    .background(Color(uiColor: .systemGroupedBackground))
+    .background(MemoraPalette.background)
     .hideBottomBarOnScroll(RootTab.library.rawValue)
     .sheet(item: $renameTarget) { space in RenameSpaceSheet(space: space) }
     .confirmationDialog("このプロジェクトを削除しますか？", isPresented: Binding(
@@ -125,7 +127,7 @@ struct ProjectsView: View {
       .frame(width: 172, alignment: .leading)
       .frame(minHeight: 44)
       .padding(14)
-      .memoraCard(radius: 16, fill: Color(uiColor: .secondarySystemGroupedBackground))
+      .memoraCard(radius: 16, fill: MemoraPalette.card)
       .contentShape(RoundedRectangle(cornerRadius: 16))
     }
     .buttonStyle(.plain)

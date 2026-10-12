@@ -104,7 +104,7 @@ struct MeetingDetailView: View {
             .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedSection)
             .animation(reduceMotion ? nil : MemoraMotion.screen, value: meeting.status)
           }
-          .background(Color(uiColor: .systemBackground))
+          .background(MemoraPalette.background)
           .overlay {
             if let progress = pdfExportProgress {
               pdfExportCard(progress)
@@ -391,7 +391,6 @@ struct MeetingDetailView: View {
     .padding(16)
     .frame(maxWidth: 320)
     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-    .shadow(color: .black.opacity(0.12), radius: 18, y: 8)
     .padding()
     .accessibilityElement(children: .combine)
     .accessibilityLabel("PDFを作成しています。\(Int(progress * 100))パーセント")

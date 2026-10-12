@@ -51,6 +51,8 @@ struct AIHistoryDetailView: View {
               .frame(maxWidth: .infinity, minHeight: 48)
           }
           .buttonStyle(.borderedProminent)
+          .tint(MemoraPalette.action)
+          .foregroundStyle(MemoraPalette.actionLabel)
         }
 
         Button {
@@ -62,10 +64,12 @@ struct AIHistoryDetailView: View {
             .frame(maxWidth: .infinity, minHeight: 48)
         }
         .buttonStyle(.bordered)
+        .tint(MemoraPalette.textPrimary)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(18)
     }
+    .background(MemoraPalette.background)
     .navigationTitle("質問履歴")
     .navigationBarTitleDisplayMode(.inline)
   }

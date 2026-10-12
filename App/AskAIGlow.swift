@@ -11,6 +11,7 @@ struct AskAIGlow: View {
   var entrance: Int
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @State private var isBlooming = false
 
   var body: some View {
@@ -38,6 +39,7 @@ struct AskAIGlow: View {
           .transition(.opacity)
       }
     }
+    .opacity(reduceTransparency ? 0 : 1)
     .allowsHitTesting(false)
     .accessibilityHidden(true)
     .ignoresSafeArea()
@@ -49,7 +51,7 @@ struct AskAIGlow: View {
 
   /// Dark mode needs less colour to read as the same glow.
   private var strength: Double {
-    colorScheme == .dark ? 0.55 : 1
+    colorScheme == .dark ? 0.12 : 0.1
   }
 
   private var flowingWash: some View {
@@ -85,8 +87,9 @@ struct AskAIGlow: View {
     }
   }
 
-  private static let blue = Color(red: 0.33, green: 0.55, blue: 0.98)
-  private static let teal = Color(red: 0.35, green: 0.8, blue: 0.85)
-  private static let yellow = Color(red: 0.98, green: 0.9, blue: 0.55)
-  private static let violet = Color(red: 0.62, green: 0.55, blue: 0.98)
+  // The agent keeps its existing motion; its light stays subordinate to text.
+  private static let blue = MemoraPalette.textSecondary
+  private static let teal = MemoraPalette.textSecondary
+  private static let yellow = MemoraPalette.textPrimary
+  private static let violet = MemoraPalette.textSecondary
 }

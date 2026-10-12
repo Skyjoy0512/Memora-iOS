@@ -63,7 +63,7 @@ struct LibraryView: View {
           }
         }
       }
-      .background(Color(uiColor: .systemGroupedBackground))
+      .background(MemoraPalette.background)
       .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ライブラリ")
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
       .toolbar {
@@ -391,7 +391,7 @@ struct LibraryView: View {
       } label: {
         Label("選択", icon: .checkmarkCircle)
       }
-      .tint(.blue)
+      .tint(MemoraPalette.textPrimary)
     }
     .contextMenu {
       Button("開く", icon: .arrowUpRightSquare) {
@@ -430,7 +430,7 @@ struct LibraryView: View {
     }
     .buttonStyle(.plain)
     .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 18))
-    .listRowBackground(Color(uiColor: .secondarySystemGroupedBackground))
+    .listRowBackground(MemoraPalette.card)
   }
 
   /// A teammate's record: opens read-only, with none of the actions that
@@ -455,7 +455,7 @@ struct LibraryView: View {
       }
       .buttonStyle(.plain)
       .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 18))
-      .listRowBackground(Color(uiColor: .secondarySystemGroupedBackground))
+      .listRowBackground(MemoraPalette.card)
     }
   }
 
@@ -550,7 +550,7 @@ struct LibraryView: View {
     }
     .frame(maxWidth: .infinity)
     .padding(20)
-    .memoraCard(fill: Color(uiColor: .secondarySystemGroupedBackground))
+    .memoraCard(fill: MemoraPalette.card)
   }
 
   // MARK: - Selection

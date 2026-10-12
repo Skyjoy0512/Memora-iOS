@@ -9,10 +9,10 @@ struct SharedOwnerBadge: View {
     Label(ownerName, icon: .personCropCircleFill)
       .font(.caption.weight(.semibold))
       .lineLimit(1)
-      .foregroundStyle(.indigo)
+      .foregroundStyle(MemoraPalette.textSecondary)
       .padding(.horizontal, 10)
       .padding(.vertical, 6)
-      .background(Color.indigo.opacity(0.12), in: Capsule())
+      .background(MemoraPalette.secondaryBackground, in: Capsule())
       .accessibilityElement(children: .ignore)
       .accessibilityLabel("\(ownerName)さんが共有")
   }

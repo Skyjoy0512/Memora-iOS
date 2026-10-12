@@ -73,9 +73,9 @@ struct JournalCalendar: View {
     let isSelected = calendar.isDate(day, inSameDayAs: selectedDate)
     let isToday = calendar.isDateInToday(day)
     let isMarked = markedDays.contains(calendar.startOfDay(for: day))
-    let weekdayStyle: AnyShapeStyle = isSelected ? AnyShapeStyle(Color.red) : AnyShapeStyle(.secondary)
+    let weekdayStyle: AnyShapeStyle = isSelected ? AnyShapeStyle(MemoraPalette.textPrimary) : AnyShapeStyle(.secondary)
     let dayStyle: AnyShapeStyle = isSelected
-      ? AnyShapeStyle(Color.red)
+      ? AnyShapeStyle(MemoraPalette.textPrimary)
       : (isToday ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
 
     return Button {

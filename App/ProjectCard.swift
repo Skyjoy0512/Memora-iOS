@@ -25,10 +25,10 @@ struct ProjectCard: View {
                 .fixedSize(horizontal: false, vertical: true)
               if let latestRecordDate {
                 Text("最新の記録 \(latestRecordDate.formatted(date: .abbreviated, time: .omitted))")
-                  .font(.caption).foregroundStyle(.secondary)
+                  .font(.caption).foregroundStyle(MemoraPalette.cardTextSecondary)
               } else {
                 Text("最初の記録を追加しましょう")
-                  .font(.caption).foregroundStyle(.secondary)
+                  .font(.caption).foregroundStyle(MemoraPalette.cardTextSecondary)
               }
             }
           }
@@ -37,7 +37,7 @@ struct ProjectCard: View {
             VStack(alignment: .leading, spacing: 8) { counts }
           }
           .font(.subheadline)
-          .foregroundStyle(.secondary)
+          .foregroundStyle(MemoraPalette.cardTextSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.leading, 18)
@@ -54,15 +54,16 @@ struct ProjectCard: View {
       Menu { actions } label: {
         Image(icon: .ellipsis)
           .font(.body.weight(.semibold))
-          .foregroundStyle(.secondary)
+          .foregroundStyle(MemoraPalette.cardTextSecondary)
           .frame(width: 44, height: 44)
           .contentShape(Rectangle())
       }
+      .tint(MemoraPalette.textPrimary)
       .accessibilityLabel("\(space.name)の操作")
       .padding(.top, 8)
       .padding(.trailing, 6)
     }
-    .memoraCard(fill: Color(uiColor: .secondarySystemGroupedBackground))
+    .memoraCard(fill: MemoraPalette.card)
   }
 
   @ViewBuilder private var counts: some View {

@@ -17,7 +17,7 @@ struct AgentDocumentCard: View {
       .padding(.horizontal, 12)
       .padding(.vertical, 6)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+      .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
       .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
     .buttonStyle(.plain)

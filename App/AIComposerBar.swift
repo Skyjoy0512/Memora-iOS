@@ -105,7 +105,6 @@ struct AIComposerBar: View {
     }
     .background { listeningBackdrop }
     .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), interactive: true, backed: false)
-    .shadow(color: .black.opacity(speechInput.isListening ? 0.3 : 0.08), radius: 18, y: 8)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: speechInput.isListening)
@@ -248,11 +247,11 @@ struct AIComposerBar: View {
         }
       }
         .font(.body.weight(.semibold))
-        .foregroundStyle(.white)
+        .foregroundStyle(MemoraPalette.actionLabel)
         .symbolEffect(.pulse, isActive: !reduceMotion && (speechInput.isListening || isBusy))
         .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
         .frame(width: 36, height: 36)
-        .background(Circle().fill(.tint))
+        .background(Circle().fill(MemoraPalette.action))
         // The circle stays small; the target around it does not.
         .frame(width: 44, height: 44)
         .contentShape(Circle())

@@ -37,7 +37,7 @@ struct HomeActivityLinks: View {
       }
     }
     .padding(18)
-    .memoraCard(fill: Color(uiColor: .secondarySystemGroupedBackground))
+    .memoraCard(fill: MemoraPalette.card)
     .sheet(item: $editingTask) { task in TaskEditView(task: task) }
 
     if !recent.isEmpty {
@@ -55,7 +55,7 @@ struct HomeActivityLinks: View {
           .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
           .padding(.horizontal, 18)
           .padding(.vertical, 8)
-          .memoraCard(fill: Color(uiColor: .secondarySystemGroupedBackground))
+          .memoraCard(fill: MemoraPalette.card)
           .contentShape(RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(.plain)

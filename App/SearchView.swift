@@ -30,6 +30,7 @@ struct SearchView: View {
       .background {
         AskAIGlow(isThinking: model.isAIChatResponding, isEmpty: model.aiMessages.isEmpty, entrance: glowEntrance)
       }
+      .background(MemoraPalette.background)
       .onChange(of: model.selectedTab) { _, tab in
         if tab == .askAI { glowEntrance += 1 }
       }
@@ -45,11 +46,7 @@ struct SearchView: View {
         .background {
           // Hides the conversation scrolling under the header, but steps
           // aside while the thinking glow fills the screen.
-          LinearGradient(
-            colors: [Color(uiColor: .systemBackground), Color(uiColor: .systemBackground).opacity(0)],
-            startPoint: .init(x: 0.5, y: 0.75),
-            endPoint: .bottom
-          )
+          MemoraPalette.background
           .ignoresSafeArea(edges: .top)
           .opacity(model.isAIChatResponding ? 0 : 1)
           .animation(.smooth(duration: 0.9), value: model.isAIChatResponding)
@@ -155,7 +152,6 @@ struct SearchView: View {
           .padding(.horizontal, 14)
           .padding(.vertical, 9)
           .background(.thinMaterial, in: Capsule())
-          .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
           .padding(.bottom, model.bottomContentClearance)
           .accessibilityLabel("新しい回答を表示")
         }

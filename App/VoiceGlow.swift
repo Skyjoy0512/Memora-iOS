@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A sound-reactive, colorful glow that gathers along the bottom edge of its
+/// A sound-reactive glow that gathers along the bottom edge of its
 /// container. Drive `level` with a 0...1 microphone amplitude.
 struct VoiceGlow: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -10,15 +10,12 @@ struct VoiceGlow: View {
   var level: Double
   var isActive = true
   /// Up to seven lobe colours, laid out left to right.
-  var colors: [Color] = VoiceGlow.rainbow
+  var colors: [Color] = VoiceGlow.monochrome
 
-  static let rainbow: [Color] = [
-    Color(red: 0.55, green: 0.30, blue: 0.96),
-    Color(red: 0.34, green: 0.52, blue: 0.99),
-    Color(red: 0.96, green: 0.42, blue: 0.72),
-    Color(red: 0.99, green: 0.66, blue: 0.30),
-    Color(red: 0.36, green: 0.86, blue: 0.74),
-    Color(red: 0.62, green: 0.38, blue: 0.98)
+  static let monochrome: [Color] = [
+    MemoraPalette.textSecondary, MemoraPalette.textPrimary,
+    MemoraPalette.textSecondary, MemoraPalette.textPrimary,
+    MemoraPalette.textSecondary, MemoraPalette.textPrimary
   ]
 
   var body: some View {

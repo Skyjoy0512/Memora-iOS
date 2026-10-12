@@ -154,9 +154,9 @@ struct AIMessageView: View {
         HStack(spacing: -4) {
           ForEach(Array(spokenSources.prefix(3).enumerated()), id: \.offset) { index, _ in
             Circle()
-              .fill([Color.accentColor, .orange, .green][index % 3])
+              .fill(MemoraPalette.textSecondary.opacity(1 - Double(index) * 0.2))
               .frame(width: 12, height: 12)
-              .overlay(Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 1.5))
+              .overlay(Circle().stroke(MemoraPalette.background, lineWidth: 1.5))
           }
         }
         Text("\(spokenSources.reduce(0) { $0 + $1.excerpts.count })か所の発言")

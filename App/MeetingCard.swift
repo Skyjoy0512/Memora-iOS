@@ -3,7 +3,6 @@ import SwiftUI
 /// A large gallery tile for one audio file. Tapping it opens
 /// the meeting with a zoom transition.
 struct MeetingCard: View {
-  @Environment(\.colorScheme) private var colorScheme
   var meeting: Meeting
   /// True while several cards are being chosen, so each shows a selection mark.
   var isSelecting = false
@@ -43,7 +42,7 @@ struct MeetingCard: View {
       if !subtitle.isEmpty {
         Text(subtitle)
           .font(.subheadline)
-          .foregroundStyle(.secondary)
+          .foregroundStyle(MemoraPalette.cardTextSecondary)
           .lineLimit(2)
           .padding(.top, 4)
       }
@@ -52,19 +51,19 @@ struct MeetingCard: View {
         Text(recordingDate)
       }
       .font(.caption.weight(.medium))
-      .foregroundStyle(.primary)
+      .foregroundStyle(MemoraPalette.cardTextSecondary)
       .padding(.top, 10)
     }
     .padding(18)
     .frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
     .background {
       RoundedRectangle(cornerRadius: 26, style: .continuous)
-        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+        .fill(MemoraPalette.card)
     }
     .overlay {
       RoundedRectangle(cornerRadius: 26, style: .continuous)
         .stroke(
-          isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(Color.primary.opacity(colorScheme == .dark ? 0.1 : 0.06)),
+          isSelected ? AnyShapeStyle(MemoraPalette.textPrimary) : AnyShapeStyle(MemoraPalette.border),
           lineWidth: isSelected ? 2 : 0.5
         )
     }

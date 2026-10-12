@@ -30,10 +30,10 @@ struct AskAIHeader: View {
 
       VStack(spacing: -10) {
         ArtworkIcon(artwork: .askAIHeader, size: 36)
-          .foregroundStyle(.white)
+          .foregroundStyle(MemoraPalette.actionLabel)
           .frame(width: 64, height: 64)
           .background(
-            LinearGradient(colors: [.accentColor, .accentColor.opacity(0.75)], startPoint: .top, endPoint: .bottom),
+            MemoraPalette.action,
             in: Circle()
           )
         Text("Memora")

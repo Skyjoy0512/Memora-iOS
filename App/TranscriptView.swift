@@ -58,6 +58,7 @@ struct TranscriptView: View {
           }
           .scrollFocusedEditorAboveKeyboard(in: proxy)
         }
+        .background(MemoraPalette.background)
         .navigationTitle("文字起こし")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

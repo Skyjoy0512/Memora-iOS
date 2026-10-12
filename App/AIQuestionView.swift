@@ -55,7 +55,7 @@ struct AIQuestionView: View {
         .animation(reduceMotion ? nil : MemoraMotion.screen, value: isAnswering)
         .animation(reduceMotion ? nil : MemoraMotion.screen, value: submitted)
       }
-      .background(Color(uiColor: .systemBackground))
+      .background(MemoraPalette.background)
       .scrollDismissesKeyboard(.immediately)
       .safeAreaInset(edge: .bottom, spacing: 8) {
         composer
