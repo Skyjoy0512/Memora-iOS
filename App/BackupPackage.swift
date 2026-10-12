@@ -9,7 +9,7 @@ import Foundation
 enum BackupPackage {
   static let manifestName = "manifest.json"
   static let mediaFolderName = "media"
-  static let currentVersion = 1
+  static let currentVersion = 2
 
   struct Manifest: Codable {
     var version: Int
@@ -23,6 +23,8 @@ enum BackupPackage {
     /// Documents and slides. Optional, so a package from before they existed
     /// still restores.
     var documents: [MemoraDocument]?
+    var projectSources: [ProjectSource]? = nil
+    var projectChats: [ProjectChatThread]? = nil
     /// Audio file names, stored under the media folder on restore.
     var audioFileNames: [String]
     /// Photo file names, stored under the media folder on restore.
@@ -100,6 +102,8 @@ enum BackupPackage {
     people: [Person],
     aiHistory: [AIConversationEntry],
     documents: [MemoraDocument] = [],
+    projectSources: [ProjectSource] = [],
+    projectChats: [ProjectChatThread] = [],
     into directory: URL
   ) throws -> URL {
     let plan = try collectMedia(meetings: meetings, lifeLogEntries: lifeLogEntries)
@@ -144,6 +148,13 @@ enum BackupPackage {
       )
     }
 
+    do {
+      try ProjectWorkspaceBackup.export(projectSources, into: packageURL)
+    } catch {
+      try? FileManager.default.removeItem(at: packageURL)
+      throw error
+    }
+
     let manifest = Manifest(
       version: currentVersion,
       exportedAt: .now,
@@ -154,6 +165,8 @@ enum BackupPackage {
       people: people,
       aiHistory: aiHistory,
       documents: documents,
+      projectSources: projectSources,
+      projectChats: projectChats,
       audioFileNames: audioNames,
       photoFileNames: photoNames
     )
@@ -184,11 +197,19 @@ enum BackupPackage {
     guard let manifest = try? JSONDecoder().decode(Manifest.self, from: data) else {
       throw BackupError.unreadable
     }
-    guard manifest.version == currentVersion else {
+    guard (1...currentVersion).contains(manifest.version) else {
       throw BackupError.unsupportedVersion(manifest.version)
     }
 
     try validateIdentifiers(manifest)
+    let sources = manifest.projectSources ?? []
+    let chats = manifest.projectChats ?? []
+    guard Set(sources.map(\.id)).count == sources.count,
+          Set(chats.map(\.id)).count == chats.count else { throw BackupError.duplicateIdentifiers }
+    let projectIDs = Set(manifest.spaces.map(\.id))
+    guard sources.allSatisfy({ $0.projectID.map(projectIDs.contains) ?? true }),
+          chats.allSatisfy({ $0.projectID.map(projectIDs.contains) ?? true }) else { throw BackupError.unreadable }
+    try ProjectWorkspaceBackup.validate(sources, in: packageURL)
 
     // A record that still holds its photos inline cannot be restored without
     // writing files during the read, so it is refused rather than half-restored.

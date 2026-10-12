@@ -90,6 +90,8 @@ final class MemoraModel {
   }
   /// Documents and slides made from the records, newest first.
   var documents: [MemoraDocument] = []
+  var projectSources: [ProjectSource] = []
+  var projectChats: [ProjectChatThread] = []
   var voiceProfile: VoiceProfile?
   var speakerProfile: SpeakerProfile?
   var speakerProfileReference: SpeakerProfileReference?
@@ -513,6 +515,8 @@ final class MemoraModel {
     meetings = load([Meeting].self, forKey: StorageKey.meetings, fallback: [])
     spaces = load([MemoraSpace].self, forKey: StorageKey.spaces, fallback: [])
     documents = load([MemoraDocument].self, forKey: StorageKey.documents, fallback: [])
+    projectSources = load([ProjectSource].self, forKey: StorageKey.projectSources, fallback: [])
+    projectChats = load([ProjectChatThread].self, forKey: StorageKey.projectChats, fallback: [])
     lifeLogEntries = load([LifeLogEntry].self, forKey: StorageKey.lifeLogEntries, fallback: [])
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: [])
     people = load([Person].self, forKey: StorageKey.people, fallback: [])

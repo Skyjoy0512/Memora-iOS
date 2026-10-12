@@ -68,13 +68,27 @@ extension MemoraModel {
     for index in candidateDocuments.indices where candidateDocuments[index].spaceID == id {
       candidateDocuments[index].spaceID = nil
     }
+    let candidateSources = projectSources.map { source in
+      var value = source
+      if value.projectID == id { value.projectID = nil }
+      return value
+    }
+    let candidateChats = projectChats.map { thread in
+      var value = thread
+      if value.projectID == id { value.projectID = nil }
+      return value
+    }
     guard persistBatch({
       [
+        (key: StorageKey.projectSources, data: try RecordStore.encoded(candidateSources)),
+        (key: StorageKey.projectChats, data: try RecordStore.encoded(candidateChats)),
         (key: StorageKey.spaces, data: try RecordStore.encoded(candidateSpaces)),
         (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
         (key: StorageKey.documents, data: try RecordStore.encoded(candidateDocuments))
       ]
     }) else { return false }
+    projectSources = candidateSources
+    projectChats = candidateChats
     spaces = candidateSpaces
     meetings = candidateMeetings
     documents = candidateDocuments

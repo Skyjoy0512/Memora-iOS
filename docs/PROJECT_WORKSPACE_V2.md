@@ -27,4 +27,8 @@ Share ExtensionはApp Groupの受信キューへ原子的にファイルとmanif
 - ProjectSource／ProjectChatThread／ProjectChatTurn／ProjectCitationの互換性を持つ追加値型を実装。
 - ProjectSourceURLのHTTPS正規化、YouTube URL統一、異常URL拒否を実装。これはDNS／リダイレクト安全性を保証するものではなく、ネットワーク取得側でも検証が必要。
 - ProjectWorkspaceV2Checks: 成功。URL正規化・重複キー・ローカルURL等拒否・モデル保存復元・送信権限の初期拒否・会話と出典保存復元。
-- 未完了: ワークスペースUI、永続ストア接続、汎用取り込み、検索／解析、継続AIチャット、バックアップ拡張、Share Extension、統合QA。
+- 新規ソース／スレッドのSQLiteキー、ファイル取り込み、相対参照、指紋による重複判定、所属解除／削除を追加。プロジェクト削除時は所属解除のみ。
+- バックアップv2はソース・会話・参照ファイルを保存。v1読み込みを維持し、復元時の媒体失敗／SQLite失敗をロールバック。実操作でのバックアップQAは後続で行う。
+- ProjectSourceFilesChecks: 成功。サイズ超過、同内容指紋、パス／symlink隔離、対象だけの削除を確認。
+- Bitrig iOS Simulatorビルド成功（既存AppIntents metadata警告1件）。
+- 未完了: ワークスペースUI、標準ピッカー接続、検索／解析、継続AIチャット、Share Extension、統合QA。

@@ -28,6 +28,8 @@ extension MemoraModel {
     meetings.isEmpty
       && spaces.isEmpty
       && documents.isEmpty
+      && projectSources.isEmpty
+      && projectChats.isEmpty
       && tasks.isEmpty
       && lifeLogEntries.isEmpty
       && people.isEmpty
@@ -51,6 +53,8 @@ extension MemoraModel {
     let people = self.people
     let aiHistory = self.aiHistory
     let documents = self.documents
+    let projectSources = self.projectSources
+    let projectChats = self.projectChats
     return try await Task.detached(priority: .userInitiated) {
       try BackupPackage.write(
         meetings: meetings,
@@ -60,6 +64,8 @@ extension MemoraModel {
         people: people,
         aiHistory: aiHistory,
         documents: documents,
+        projectSources: projectSources,
+        projectChats: projectChats,
         into: FileManager.default.temporaryDirectory
       )
     }.value
@@ -189,10 +195,16 @@ extension MemoraModel {
     isRestoring = true
     defer { isRestoring = false }
 
-    let (manifest, installed) = try await Task.detached(priority: .userInitiated) {
+    let (manifest, installed, workspaceInstalled) = try await Task.detached(priority: .userInitiated) {
       let manifest = try BackupPackage.read(from: packageURL)
       let installed = try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
-      return (manifest, installed)
+      do {
+        let workspaceInstalled = try ProjectWorkspaceBackup.install(manifest.projectSources ?? [], from: packageURL)
+        return (manifest, installed, workspaceInstalled)
+      } catch {
+        BackupPackage.removeInstalledMedia(installed)
+        throw error
+      }
     }.value
 
     // The wait above yielded; a record could have been added since. Check again
@@ -200,6 +212,7 @@ extension MemoraModel {
     // newly created files back rather than replacing anything.
     guard isEmpty else {
       BackupPackage.removeInstalledMedia(installed)
+      ProjectWorkspaceBackup.remove(workspaceInstalled)
       throw BackupPackage.BackupError.notEmpty
     }
 
@@ -213,11 +226,14 @@ extension MemoraModel {
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(manifest.lifeLogEntries)),
         (key: StorageKey.people, data: try RecordStore.encoded(manifest.people)),
         (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory)),
-        (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? []))
+        (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? [])),
+        (key: StorageKey.projectSources, data: try RecordStore.encoded(manifest.projectSources ?? [])),
+        (key: StorageKey.projectChats, data: try RecordStore.encoded(manifest.projectChats ?? []))
       ]
     }
     guard stored else {
       BackupPackage.removeInstalledMedia(installed)
+      ProjectWorkspaceBackup.remove(workspaceInstalled)
       throw BackupPackage.BackupError.mediaInstallFailed(installed.map(\.name))
     }
 
@@ -228,5 +244,7 @@ extension MemoraModel {
     people = manifest.people
     aiHistory = manifest.aiHistory
     documents = manifest.documents ?? []
+    projectSources = manifest.projectSources ?? []
+    projectChats = manifest.projectChats ?? []
   }
 }

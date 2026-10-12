@@ -169,6 +169,8 @@ extension MemoraModel {
     static let defaultTemplate = "memora.summary.defaultTemplate"
     static let pendingMediaDeletions = "memoraPendingMediaDeletions"
     static let documents = "memoraDocuments"
+    static let projectSources = "memoraProjectSources.v2"
+    static let projectChats = "memoraProjectChats.v2"
     static let residentAgents = "memora.residents"
     static let hasOfferedSampleDeletion = "memora.hasOfferedSampleDeletion"
     static let autoLifeLogInbox = "memoraAutoLifeLogInbox"
