@@ -39,6 +39,19 @@ extension MemoraModel {
 
     var candidate = tasks
     candidate[index].title = trimmedTitle
+    if candidate[index].meetingID != meetingID, candidate[index].meetingID != nil {
+      var privacy = candidate[index].privacy ?? RecordPrivacy()
+      if let parent = candidate[index].meetingID.flatMap({ self.meeting(id: $0) }) {
+        let sensitivity: SummarySensitivity = switch parent.effectivePrivacy.classification {
+        case .unknown, .general: .general
+        case .personal: .personal
+        case .sensitive: .sensitive
+        }
+        privacy.protect(sensitivity)
+      }
+      privacy.revokeExternalPermissions()
+      candidate[index].privacy = privacy
+    }
     if let ownedByMe {
       candidate[index].ownedByMe = ownedByMe
     } else if trimmedAssignee != (candidate[index].assignee ?? "") {

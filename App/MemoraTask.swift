@@ -18,6 +18,7 @@ struct MemoraTask: Identifiable, Hashable, Codable {
   var remindsAtDue: Bool
   /// The time of day the reminder fires. nil means the default, 9:00.
   var reminderTime: Date?
+  var privacy: RecordPrivacy?
 
   var statusLabel: String { isCompleted ? "完了" : progress.label }
 
@@ -35,7 +36,8 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     remindsAtDue: Bool = false,
     reminderTime: Date? = nil,
     ownedByMe: Bool? = nil,
-    relationships: TaskRelationships = TaskRelationships()
+    relationships: TaskRelationships = TaskRelationships(),
+    privacy: RecordPrivacy? = nil
   ) {
     self.id = id
     self.title = title
@@ -51,10 +53,11 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     self.completedAt = completedAt
     self.remindsAtDue = remindsAtDue
     self.reminderTime = reminderTime
+    self.privacy = privacy
   }
 
   private enum CodingKeys: String, CodingKey {
-    case id, title, detail, workDate, progress, meetingID, assignee, dueDate, isCompleted, completedAt, remindsAtDue, reminderTime, ownedByMe, relationships
+    case id, title, detail, workDate, progress, meetingID, assignee, dueDate, isCompleted, completedAt, remindsAtDue, reminderTime, ownedByMe, relationships, privacy
   }
 
   init(from decoder: Decoder) throws {
@@ -73,6 +76,7 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     completedAt = try container.decodeIfPresent(Date.self, forKey: .completedAt)
     remindsAtDue = try container.decodeIfPresent(Bool.self, forKey: .remindsAtDue) ?? false
     reminderTime = try container.decodeIfPresent(Date.self, forKey: .reminderTime)
+    privacy = try container.decodeIfPresent(RecordPrivacy.self, forKey: .privacy)
   }
 
   func encode(to encoder: Encoder) throws {
@@ -91,5 +95,6 @@ struct MemoraTask: Identifiable, Hashable, Codable {
     try container.encodeIfPresent(completedAt, forKey: .completedAt)
     try container.encode(remindsAtDue, forKey: .remindsAtDue)
     try container.encodeIfPresent(reminderTime, forKey: .reminderTime)
+    try container.encodeIfPresent(privacy, forKey: .privacy)
   }
 }

@@ -24,6 +24,7 @@ extension MemoraModel {
     } else if !compact, let outcome = automaticRecordTool(call, messageID: messageID, purpose: .cloudAI, scope: scope) {
       return outcome
     }
+    if !compact { markCloudProvenanceIncomplete(messageID) }
     guard let tool = call.tool else {
       if let external = activeMCPTools[call.name] {
         return await performMCPTool(external, call: call, messageID: messageID)
@@ -171,6 +172,8 @@ extension MemoraModel {
       messageID: messageID
     ) else { return Self.declinedOutcome }
     let stored = addAIMemory(text, origin: .agent)
+    let fingerprint = cloudMemoryFingerprint
+    updateAgentMessage(messageID) { $0.cloudProvenance?.memoryFingerprint = fingerprint }
     finishAgentStep(stepID, on: messageID, state: .done, detail: stored ? nil : "すでに覚えています")
     return AgentToolOutcome(text: stored ? "覚えました。" : "すでに覚えている内容です。")
   }

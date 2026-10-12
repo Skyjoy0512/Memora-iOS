@@ -19,6 +19,7 @@ struct LifeLogEntry: Identifiable, Hashable, Codable {
   /// Where the record was made, rounded, when it came from location.
   var latitude: Double?
   var longitude: Double?
+  var privacy = RecordPrivacy()
 
   var occurredAt: Date { eventDate ?? createdAt }
 }
@@ -41,6 +42,7 @@ extension LifeLogEntry {
     case endDate
     case latitude
     case longitude
+    case privacy
   }
 
   init(from decoder: Decoder) throws {
@@ -58,6 +60,7 @@ extension LifeLogEntry {
     endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
     latitude = try container.decodeIfPresent(Double.self, forKey: .latitude)
     longitude = try container.decodeIfPresent(Double.self, forKey: .longitude)
+    privacy = try container.decodeIfPresent(RecordPrivacy.self, forKey: .privacy) ?? RecordPrivacy()
 
     if let name = try container.decodeIfPresent(String.self, forKey: .photoFileName) {
       photoFileName = name
@@ -85,5 +88,6 @@ extension LifeLogEntry {
     try container.encodeIfPresent(endDate, forKey: .endDate)
     try container.encodeIfPresent(latitude, forKey: .latitude)
     try container.encodeIfPresent(longitude, forKey: .longitude)
+    try container.encode(privacy, forKey: .privacy)
   }
 }

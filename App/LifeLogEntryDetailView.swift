@@ -11,6 +11,7 @@ struct LifeLogEntryDetailView: View {
   @State private var isDeleting = false
   @State private var isExcludingPlace = false
   @State private var isViewingPhoto = false
+  @State private var isPrivacyPresented = false
 
   var body: some View {
     NavigationStack {
@@ -29,6 +30,7 @@ struct LifeLogEntryDetailView: View {
         }
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
+            Button("プライバシーと外部送信", icon: .lockShield) { isPrivacyPresented = true }
             Button("編集", icon: .pencil) { isEditing = true }
             if let entry = currentEntry, entry.latitude != nil, entry.longitude != nil {
               Button("この場所を今後記録しない", icon: .mappinSlash) {
@@ -45,6 +47,9 @@ struct LifeLogEntryDetailView: View {
         if let entry = currentEntry {
           LifeLogEditSheet(entry: entry)
         }
+      }
+      .sheet(isPresented: $isPrivacyPresented) {
+        RecordPrivacySettingsView(target: .journal(entryID))
       }
       .fullScreenCover(isPresented: $isViewingPhoto) {
         if let image = photo {

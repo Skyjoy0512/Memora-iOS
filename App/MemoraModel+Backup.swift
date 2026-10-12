@@ -83,8 +83,16 @@ extension MemoraModel {
     let spaces = self.spaces.filter { space in
       selected.contains { $0.spaceID == space.id }
     }
-    let tasks = self.tasks.filter { $0.meetingID.map(meetingIDs.contains) ?? false }
-    let lifeLogEntries = self.lifeLogEntries.filter { $0.meetingID.map(meetingIDs.contains) ?? false }
+    let tasks = self.tasks.filter { ($0.meetingID.map(meetingIDs.contains) ?? false) && allowsTaskAccess($0, purpose: .teamSharing) }
+    let lifeLogEntries = self.lifeLogEntries.filter {
+      ($0.meetingID.map(meetingIDs.contains) ?? false) && allowsJournalAccess($0, purpose: .teamSharing)
+    }.map { original in
+      var entry = original
+      entry.latitude = nil
+      entry.longitude = nil
+      entry.locationName = nil
+      return entry
+    }
     let participantIDs = Set(selected.compactMap(\.participantIDs).flatMap { $0 })
     let people = self.people.filter { participantIDs.contains($0.id) }
 
@@ -109,7 +117,7 @@ extension MemoraModel {
       cloudShareMessage = RecordAccessPolicy.refusal
       return
     }
-    let projectTasks = tasks.filter { task in inProject.contains { $0.id == task.meetingID } }
+    let projectTasks = tasks.filter { task in inProject.contains { $0.id == task.meetingID } && allowsTaskAccess(task, purpose: .teamSharing) }
     let snapshot = TeamShareSnapshot(kind: .project, space: space, meetings: inProject, tasks: projectTasks)
     await beginCloudShare(title: space.name, snapshot: snapshot)
   }
@@ -122,7 +130,7 @@ extension MemoraModel {
       return
     }
     let parentSpace = meeting.spaceID.flatMap { space(id: $0) }
-    let meetingTasks = tasks.filter { $0.meetingID == id }
+    let meetingTasks = tasks.filter { $0.meetingID == id && allowsTaskAccess($0, purpose: .teamSharing) }
     let snapshot = TeamShareSnapshot(
       kind: .meeting,
       space: parentSpace,
@@ -145,7 +153,8 @@ extension MemoraModel {
       return
     }
     do {
-      guard snapshot.meetings.allSatisfy({ allowsRecordAccess($0.id, purpose: .teamSharing) }) else {
+      guard snapshot.meetings.allSatisfy({ allowsRecordAccess($0.id, purpose: .teamSharing) }),
+            snapshot.tasks.allSatisfy({ allowsRecordAccess(.task($0.id), purpose: .teamSharing) }) else {
         throw TeamShareError.privacyRestricted
       }
       let payload = try RecordStore.encoded(snapshot)

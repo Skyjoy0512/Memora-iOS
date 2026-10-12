@@ -16,4 +16,27 @@ enum RecordAccessPolicy {
     case .teamSharing: return privacy.allowsTeamSharing
     }
   }
+
+  static func allowsRelated(_ privacy: RecordPrivacy?, parentID: UUID?, parentPrivacy: RecordPrivacy?, purpose: Purpose,
+                            inheritsParent: Bool = false) -> Bool {
+    if parentID != nil {
+      guard let parentPrivacy, allows(parentPrivacy, purpose: purpose) else { return false }
+      if privacy == nil, inheritsParent { return true }
+    }
+    return allows(effectiveRelatedPrivacy(privacy ?? RecordPrivacy(), parent: parentPrivacy), purpose: purpose)
+  }
+
+  static func effectiveRelatedPrivacy(_ privacy: RecordPrivacy, parent: RecordPrivacy?) -> RecordPrivacy {
+    var result = privacy
+    if let parent {
+      let sensitivity: SummarySensitivity = switch parent.classification {
+      case .unknown, .general: .general
+      case .personal: .personal
+      case .sensitive: .sensitive
+      }
+      result.protect(sensitivity)
+      result.updatedAt = privacy.updatedAt
+    }
+    return result
+  }
 }

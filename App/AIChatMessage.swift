@@ -10,6 +10,8 @@ struct AIChatMessage: Identifiable, Hashable {
   var id = UUID()
   var role: Role
   var text: String
+  var cloudProvenance: AIConversationProvenance?
+  var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?
   /// What produced the answer: the scope, engine, model, and time. Shown
   /// instead of an invented reasoning trace.
   var details: AIAnswerDetails?

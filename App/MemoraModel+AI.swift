@@ -245,8 +245,7 @@ extension MemoraModel {
   ) async -> AIAnswerOutcome {
     let cloud = AIEngineService.effectiveEngine(engine) == .cloud
     let permitted = allowedMeetings.filter { !cloud || RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI) }
-    let permittedIDs = Set(permitted.map(\.id))
-    let permittedTasks = scopedTasks.filter { !cloud || $0.meetingID.map(permittedIDs.contains) == true }
+    let permittedTasks = scopedTasks.filter { !cloud || allowsTaskAccess($0, purpose: .cloudAI) }
     var content = Self.requestContent(
       for: request,
       scopeLabel: scopeLabel,
@@ -901,7 +900,8 @@ extension MemoraModel {
     answer: String,
     scopeLabel: String,
     engineLabel: String,
-    modelLabel: String?
+    modelLabel: String?,
+    cloudProvenance: AIConversationProvenance? = nil
   ) {
     aiHistory.insert(
       AIConversationEntry(
@@ -911,7 +911,8 @@ extension MemoraModel {
         scopeLabel: scopeLabel,
         engineLabel: engineLabel,
         modelLabel: modelLabel,
-        createdAt: .now
+        createdAt: .now,
+        cloudProvenance: cloudProvenance
       ),
       at: 0
     )

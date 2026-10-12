@@ -42,14 +42,19 @@ extension MemoraModel {
     }
 
     let requestID = UUID()
+    let safeHistory = runner.isOnDevice ? (text: "", references: [AIRecordReference]()) : cloudConversationContext()
     aiChatRequestID = requestID
     var placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
     placeholder.isAgentReply = true
+    if !runner.isOnDevice {
+      placeholder.cloudProvenance = newCloudProvenance(references: safeHistory.references)
+      placeholder.cloudAuthorizationTargets = cloudAuthorizedTargets
+    }
     aiMessages.append(placeholder)
     isAIChatResponding = true
 
     // The on-device window is small, so it gets only the end of the thread.
-    let thread = runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : ""
+    let thread = runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : safeHistory.text
     var opening = trimmed
     if !thread.isEmpty {
       opening = "これまでの会話:\n\(thread)\n\n今回の依頼:\n\(trimmed)"
@@ -60,22 +65,24 @@ extension MemoraModel {
     let allowedMeetings = Self.meetings(in: scope, from: meetings).filter {
       runner.isOnDevice || RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI)
     }
-    let allowedIDs = Set(allowedMeetings.map(\.id))
     if !runner.isOnDevice {
-      opening = "クラウドAI利用を許可した記録だけを読みます。未判定・未許可の記録はプライバシー設定の確認が必要です。過去の会話は送信していません。\n\n" + opening
+      opening = "クラウドAI利用を許可した記録だけを読みます。未判定・未許可の記録はプライバシー設定の確認が必要です。過去の会話は出典・内容・現在の許可を検証できるものだけです。ジャーナルやタスクは読み取りツールでも確認できます。\n\n" + opening
     }
     let found = Self.requestContent(
       for: AIQuestionRequest(question: trimmed, scope: .global, attachment: nil),
       scopeLabel: scope.scopeLabel,
       allowedMeetings: allowedMeetings,
-      tasks: Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings).filter {
-        runner.isOnDevice || $0.meetingID.map(allowedIDs.contains) == true
-      },
+      tasks: runner.isOnDevice ? Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings)
+        : permittedTasks(for: .cloudAI, scope: scope).filter { !$0.isCompleted },
       characterLimit: runner.isOnDevice ? 1_500 : 8_000
     )
     if !found.context.isEmpty {
       opening = "関係しそうな記録（検索済み。idは search_records で得られます）:\n\(found.context)\n\n" + opening
       updateAgentMessage(placeholder.id) { $0.sources = found.sources }
+    }
+    if !runner.isOnDevice {
+      recordCloudReads(found.sources.map { .meeting($0.meetingID) }
+        + permittedTasks(for: .cloudAI, scope: scope).filter { !$0.isCompleted }.map { .task($0.id) }, messageID: placeholder.id)
     }
     // What the agent knows about the person, smaller on the device's window.
     let personal = personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000, includesHistory: runner.isOnDevice)
@@ -130,12 +137,14 @@ extension MemoraModel {
           answer: text,
           scopeLabel: scope.scopeLabel,
           engineLabel: details.engineLabel,
-          modelLabel: details.modelLabel
+          modelLabel: details.modelLabel,
+          cloudProvenance: self.agentMessage(placeholder.id)?.cloudProvenance
         )
       case .failure(let failure):
         guard failure != .cancelled else { return }
         self.updateAgentMessage(placeholder.id) {
           $0.text = failure.message
+          $0.cloudProvenance = nil
           $0.details = details
           $0.isThinking = false
           $0.finishedAt = .now
@@ -159,6 +168,10 @@ extension MemoraModel {
     var lastText = ""
     for _ in 0..<Self.agentMaxTurns {
       guard !Task.isCancelled else { return .failure(.cancelled) }
+      guard isCloudSessionAuthorized(messageID) else {
+        markCloudProvenanceIncomplete(messageID)
+        return .answer("記録の外部利用許可、メモリ、またはワークスペースが変わったため処理を止めました。必要な許可を確認して、もう一度依頼してください。")
+      }
       let turn: AgentTurn
       do {
         turn = try await session.next()
@@ -168,6 +181,11 @@ extension MemoraModel {
         return .failure(.server)
       }
       guard !Task.isCancelled else { return .failure(.cancelled) }
+
+      guard isCloudSessionAuthorized(messageID) else {
+        markCloudProvenanceIncomplete(messageID)
+        return .answer("外部利用の許可が変わったため、古い回答を反映せず処理を止めました。開始済みの送信を取り消すことはできません。")
+      }
 
       if !turn.reasoning.isEmpty {
         updateAgentMessage(messageID) { message in
@@ -268,10 +286,12 @@ extension MemoraModel {
   func requestAgentApproval(_ approval: AgentApproval, changesData: Bool = true) async -> Bool {
     // Only one card at a time; an older one still showing counts as declined.
     resolveAgentApproval(false)
+    if agentMessage(approval.messageID)?.cloudProvenance != nil, !isCloudSessionAuthorized(approval.messageID) { return false }
     let approved = await withCheckedContinuation { continuation in
       agentApprovalContinuation = continuation
       pendingAgentApproval = approval
     }
+    if agentMessage(approval.messageID)?.cloudProvenance != nil, !isCloudSessionAuthorized(approval.messageID) { return false }
     if approved && changesData {
       updateAgentMessage(approval.messageID) { $0.didChangeData = true }
     }

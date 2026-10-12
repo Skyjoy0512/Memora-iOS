@@ -28,7 +28,7 @@ extension MemoraModel {
     let enabled = webhookEndpoints.filter(\.isEnabled)
     guard !enabled.isEmpty, allowsRecordAccess(meetingID, purpose: .automaticWebhook),
           let meeting = meeting(id: meetingID) else { return }
-    let meetingTasks = tasks(forMeeting: meetingID)
+    let meetingTasks = tasks(forMeeting: meetingID).filter { allowsTaskAccess($0, purpose: .automaticWebhook) }
     for endpoint in enabled {
       send(meeting, tasks: meetingTasks, to: endpoint, isTest: false)
     }
@@ -53,6 +53,7 @@ extension MemoraModel {
     let payload = WebhookDelivery.payload(for: meeting, tasks: tasks, format: endpoint.format, isTest: isTest)
     Task { @MainActor [weak self] in
       guard isTest || self?.allowsRecordAccess(meeting.id, purpose: .automaticWebhook) == true else { return }
+      guard isTest || tasks.allSatisfy({ self?.allowsRecordAccess(.task($0.id), purpose: .automaticWebhook) == true }) else { return }
       let result = await WebhookDelivery.send(payload, to: url)
       self?.webhookResults[endpoint.id] = result
     }

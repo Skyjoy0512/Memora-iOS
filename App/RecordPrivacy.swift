@@ -20,6 +20,14 @@ struct RecordPrivacy: Codable, Hashable, Sendable {
   var allowsTeamSharing = false
   var updatedAt: Date = .now
 
+  mutating func revokeExternalPermissions() {
+    allowsCloudAI = false
+    allowsAutomaticAgentAccess = false
+    allowsAutomaticWebhook = false
+    allowsTeamSharing = false
+    updatedAt = .now
+  }
+
   mutating func protect(_ sensitivity: SummarySensitivity) {
     let minimum: Classification = switch sensitivity {
     case .general: .unknown

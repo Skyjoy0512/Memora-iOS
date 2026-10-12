@@ -31,6 +31,7 @@ struct TaskEditView: View {
   @State private var openedDocument: MemoraDocument?
   @State private var saveError = false
   @State private var hasLoadedOwnership = false
+  @State private var isPrivacyPresented = false
 
   init(task: MemoraTask) {
     self.task = task
@@ -138,6 +139,10 @@ struct TaskEditView: View {
           Button("資料を添付", icon: .paperclip) { isPickingDocuments = true }
         }
 
+        Section {
+          Button("プライバシーと外部送信", icon: .lockShield) { isPrivacyPresented = true }
+        }
+
         Section("元の会議") {
           Picker("元の会議", selection: $meetingID) {
             Text("なし").tag(UUID?.none)
@@ -197,6 +202,7 @@ struct TaskEditView: View {
         hasLoadedOwnership = true
       }
       .sheet(isPresented: $isAddingChild) { AddTaskView(meetingID: meetingID, parentTaskID: task.id) }
+      .sheet(isPresented: $isPrivacyPresented) { RecordPrivacySettingsView(target: .task(task.id)) }
       .sheet(item: $editingChild) { child in TaskEditView(task: child) }
       .sheet(isPresented: $isPickingDocuments) { TaskDocumentPicker(selection: $documentIDs) }
       .sheet(item: $openedDocument) { document in

@@ -142,8 +142,13 @@ extension MemoraModel {
     startNewAIChat()
     aiMessages = [
       AIChatMessage(role: .user, text: entry.question),
-      AIChatMessage(role: .assistant, text: entry.answer)
+      AIChatMessage(role: .assistant, text: entry.answer, cloudProvenance: entry.cloudProvenance)
     ]
+    if AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud,
+       !canReuseCloudConversation(entry.cloudProvenance) {
+      aiMessages.append(AIChatMessage(role: .assistant,
+        text: "この履歴は出典・内容・現在の許可を確認できないため、クラウドへ再送しません。表示はそのまま残します。続きに必要な情報は、新しい質問で指定してください。"))
+    }
   }
 }
 

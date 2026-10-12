@@ -98,6 +98,38 @@ enum SelfChecks {
       } catch { report("review checks: \(error)") }
     }
 
+    group("Cloud conversation provenance") {
+      do {
+        let target = RecordPrivacyTarget.journal(UUID())
+        let reference = AIRecordReference(target: target, fingerprint: "test")
+        let provenance = AIConversationProvenance(references: [reference], workspaceID: nil,
+          memoryFingerprint: "memory")
+        if !provenance.allowsReuse(workspaceID: nil, memoryFingerprint: "memory",
+          resolve: { _ in reference }, allows: { _ in true }) { report("allowed history refused") }
+        if provenance.allowsReuse(workspaceID: nil, memoryFingerprint: "memory",
+          resolve: { _ in reference }, allows: { _ in false }) { report("revoked history reused") }
+        let entry = AIConversationEntry(id: UUID(), question: "質問", answer: "回答", scopeLabel: "全体",
+          createdAt: .now, cloudProvenance: provenance)
+        let decoded = try JSONDecoder().decode(AIConversationEntry.self, from: JSONEncoder().encode(entry))
+        if decoded.cloudProvenance != provenance { report("history provenance codec") }
+      } catch { report("history provenance: \(error)") }
+    }
+
+    group("Standalone journal privacy codec") {
+      do {
+        let granted = RecordPrivacy(classification: .personal, allowsCloudAI: true)
+        let entry = LifeLogEntry(id: UUID(), createdAt: .now, title: "保存テスト", summary: "本文",
+          source: .iphone, meetingID: nil, privacy: granted)
+        let data = try JSONEncoder().encode(entry)
+        let restored = try JSONDecoder().decode(LifeLogEntry.self, from: data)
+        if restored.privacy != granted { report("journal privacy round trip") }
+        var legacy = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        legacy.removeValue(forKey: "privacy")
+        let old = try JSONDecoder().decode(LifeLogEntry.self, from: JSONSerialization.data(withJSONObject: legacy))
+        if RecordAccessPolicy.allows(old.privacy, purpose: .cloudAI) { report("legacy journal external access") }
+      } catch { report("journal privacy codec: \(error)") }
+    }
+
     group("Occupation-linked summary defaults") {
       let available = Set(SummaryTemplateCatalog.market.map(\.id)
         + SummaryTemplateChoice.builtInChoices.map(\.id))

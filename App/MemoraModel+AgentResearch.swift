@@ -78,13 +78,15 @@ extension MemoraModel {
     session.addUserMessage(assignment.request)
     let allowed = Set(tools.map(\.rawValue))
     for _ in 0..<6 {
-      guard !Task.isCancelled, requestID == aiChatRequestID, teamID == currentTeamID else {
+      guard !Task.isCancelled, requestID == aiChatRequestID, teamID == currentTeamID,
+            isCloudSessionAuthorized(messageID) else {
         return (index, "調査を中止しました。", false)
       }
       let turn: AgentTurn
       do { turn = try await session.next() }
       catch { return (index, "調査モデルへの接続に失敗しました。", false) }
-      guard !Task.isCancelled, requestID == aiChatRequestID, teamID == currentTeamID else {
+      guard !Task.isCancelled, requestID == aiChatRequestID, teamID == currentTeamID,
+            isCloudSessionAuthorized(messageID) else {
         return (index, "調査を中止しました。", false)
       }
       if turn.toolCalls.isEmpty {
