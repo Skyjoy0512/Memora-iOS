@@ -28,7 +28,7 @@ extension ProjectSource {
     switch processingStatus {
     case .pending: "保存済み · 解析待ち"
     case .processing: "解析中"
-    case .ready: "AI参照可能"
+    case .ready: "本文準備済み"
     case .unavailable: "保存済み · 解析不可"
     case .failed: "保存済み · 解析失敗"
     }
