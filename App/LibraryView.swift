@@ -5,6 +5,7 @@ struct LibraryView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @State private var query = ""
   @State private var isSearching = false
   @Namespace private var heroNamespace
@@ -44,13 +45,21 @@ struct LibraryView: View {
     )
   }
 
+  private var librarySectionPicker: some View {
+    @Bindable var model = model
+    return GlassSegmentedPicker(items: LibrarySection.allCases, selection: $model.librarySection, height: 44) {
+      $0.title
+    }
+    .accessibilityLabel("ライブラリの表示")
+  }
+
   var body: some View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
       VStack(spacing: 0) {
-        if !isSearching, !isSelectionMode {
-          GlassSegmentedPicker(items: LibrarySection.allCases, selection: $model.librarySection) { $0.title }
+        if dynamicTypeSize.isAccessibilitySize, !isSearching, !isSelectionMode {
+          librarySectionPicker
             .padding(.horizontal, 18)
             .padding(.bottom, 10)
             .accessibilityLabel("ライブラリの表示")
@@ -65,6 +74,7 @@ struct LibraryView: View {
       }
       .background(MemoraPalette.background)
       .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ライブラリ")
+      .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
@@ -81,6 +91,20 @@ struct LibraryView: View {
         // The `if` sits outside the item, so an empty item never leaves an
         // empty glass frame behind.
         if !isSelectionMode {
+          if !dynamicTypeSize.isAccessibilitySize, !isSearching {
+            if #available(iOS 26.0, *) {
+              ToolbarItem(placement: .principal) {
+                librarySectionPicker
+                  .frame(minWidth: 180, idealWidth: 208, maxWidth: 208)
+              }
+              .sharedBackgroundVisibility(.hidden)
+            } else {
+              ToolbarItem(placement: .principal) {
+                librarySectionPicker
+                  .frame(minWidth: 180, idealWidth: 208, maxWidth: 208)
+              }
+            }
+          }
           if #available(iOS 26.0, *) {
             ToolbarItem(placement: .topBarTrailing) {
               fileSearchAction

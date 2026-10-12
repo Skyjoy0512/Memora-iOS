@@ -6,10 +6,11 @@ import SwiftUI
 struct GlassSegmentedPicker<Item: Hashable>: View {
   var items: [Item]
   @Binding var selection: Item
+  var height: CGFloat = 36
   var title: (Item) -> String
 
   var body: some View {
-    let control = GlassSegmentedControl(items: items, selection: $selection, title: title)
+    let control = GlassSegmentedControl(items: items, selection: $selection, title: title, height: height)
     if #available(iOS 26.0, *) {
       control.glassEffect(.regular, in: .capsule)
     } else {
