@@ -34,6 +34,9 @@ struct RootNavigationChecks {
     precondition(RootNavigation.projectID(in: [.sharedProject("team")]) == nil)
     // Both library segments are global at their root; no previous project survives a pop.
     precondition(RootNavigation.projectID(in: []) == nil)
+    let documentPath = projectPath + [.document(UUID())]
+    precondition(RootNavigation.projectID(in: documentPath) == nil)
+    precondition(RootNavigation.scope(tab: .library, path: documentPath, detailMeetingID: nil) == .global)
     precondition(RootNavigation.scope(tab: .library, path: [], detailMeetingID: nil) == .global)
     precondition(RootNavigation.scope(tab: .library, path: [.meeting(meeting)], detailMeetingID: nil) == .file(meeting))
     precondition(RootNavigation.scope(tab: .askAI, path: projectPath, detailMeetingID: meeting) == .global)

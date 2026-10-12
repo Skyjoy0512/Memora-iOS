@@ -3,6 +3,7 @@ import SwiftUI
 struct ProjectsView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @AppStorage("memora.projects.listOrder") private var order = ProjectListOrder.name
   @AppStorage("memora.projects.recentFirst") private var recentFirst = false
   var query: String
@@ -25,18 +26,17 @@ struct ProjectsView: View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
         if !projects.isEmpty {
-          HStack {
-            heading(isSearching ? "検索結果" : "プロジェクト", count: projects.count)
-            Spacer()
-            Menu {
-              Picker("並べ替え", selection: $order) {
-                ForEach(ProjectListOrder.allCases) { Text($0.title).tag($0) }
-              }
-              Toggle("最近使用を先に", isOn: $recentFirst)
-            } label: {
-              Text("並べ替え").font(.subheadline).frame(minHeight: 44)
+          if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 0) {
+              heading(isSearching ? "検索結果" : "プロジェクト", count: projects.count)
+              orderMenu.frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .accessibilityValue(order.title)
+          } else {
+            HStack {
+              heading(isSearching ? "検索結果" : "プロジェクト", count: projects.count)
+              Spacer()
+              orderMenu
+            }
           }
         }
         if !recent.isEmpty {
@@ -110,6 +110,19 @@ struct ProjectsView: View {
       await model.refresh()
       await model.cloudSharing.refreshIfConfirmed()
     }
+  }
+
+  private var orderMenu: some View {
+    Menu {
+      Picker("並べ替え", selection: $order) {
+        ForEach(ProjectListOrder.allCases) { Text($0.title).tag($0) }
+      }
+      Toggle("最近使用を先に", isOn: $recentFirst)
+    } label: {
+      Text("並べ替え").font(.subheadline).frame(minHeight: 44)
+    }
+    .accessibilityValue(order.title)
+    .tint(MemoraPalette.textPrimary)
   }
 
   private func heading(_ title: String, count: Int?) -> some View {

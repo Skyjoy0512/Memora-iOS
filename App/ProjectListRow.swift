@@ -33,7 +33,7 @@ struct ProjectListRow: View {
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-      .accessibilityElement(children: .ignore)
+      .accessibilityElement(children: .combine)
       .accessibilityLabel("\(space.name)、\(metadata)")
       .accessibilityHint("プロジェクトを開きます")
       .contextMenu { actions }
@@ -45,6 +45,7 @@ struct ProjectListRow: View {
           .contentShape(Rectangle())
       }
       .accessibilityLabel("\(space.name)の操作")
+      .tint(MemoraPalette.textPrimary)
     }
     .overlay(alignment: .bottom) {
       Divider().padding(.leading, ProjectLayout.iconSide + 12).accessibilityHidden(true)

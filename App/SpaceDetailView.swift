@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct SpaceDetailView: View {
   @Environment(MemoraModel.self) private var model
@@ -10,106 +9,121 @@ struct SpaceDetailView: View {
   @State private var isAskingAI = false
   @State private var isRenaming = false
   @State private var isDeleting = false
-  @State private var isImporting = false
   @State private var isAddingFiles = false
   @State private var editingTask: MemoraTask?
   @State private var movingMeeting: Meeting?
+  @State private var showsAllTasks = false
+  @State private var showsAllRecords = false
+  @State private var showsAllDocuments = false
 
   var body: some View {
     if let space = model.space(id: spaceID) {
-      let spaceMeetings = sort.ordered(ProjectFiling.records(in: spaceID, from: model.meetings))
-      let spaceTasks = openTasks(in: spaceMeetings)
+      let records = ProjectFiling.records(in: spaceID, from: model.meetings)
+      let tasks = openTasks(in: records)
+      let documents = model.documents.filter { $0.spaceID == spaceID }.sorted { $0.updatedAt > $1.updatedAt }
+      let orderedRecords = (showsAllRecords ? sort : FileListSort.newest).ordered(records)
+      let visibleRecords = showsAllRecords ? orderedRecords : Array(orderedRecords.prefix(3))
+      let visibleTasks = showsAllTasks ? tasks : Array(tasks.prefix(3))
+      let visibleDocuments = showsAllDocuments ? documents : Array(documents.prefix(3))
+      let isEmpty = records.isEmpty && tasks.isEmpty && documents.isEmpty
 
       List {
         Section {
-          overview(space, meetingCount: spaceMeetings.count, taskCount: spaceTasks.count)
-        }
-        Section {
-          Button {
-            InteractionFeedback.shared.send(.tap)
-            isAskingAI = true
-          } label: {
-            HStack(spacing: 12) {
-              Image(icon: .sparkles)
-              VStack(alignment: .leading, spacing: 4) {
-                Text("プロジェクトに質問").font(.body.weight(.semibold))
-                Text("このプロジェクトの記録をもとに回答")
-                  .font(.caption).foregroundStyle(.secondary)
-              }
-              Spacer()
-              Image(icon: .arrowUpRight)
-                .foregroundStyle(.secondary)
-            }
-            .foregroundStyle(.primary)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-        }
-        Section {
-          if spaceMeetings.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-              Label("まだ記録がありません", icon: .folder)
-                .font(.headline)
-              Text("上のボタンから録音・インポートするか、ライブラリの記録を追加できます。")
-                .font(.subheadline).foregroundStyle(.secondary)
-              Button("ライブラリから記録を追加", icon: .folderBadgePlus) { isAddingFiles = true }
-                .frame(minHeight: 44)
-                .disabled(model.isRestoring)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+          Text("記録 \(records.count)件 · 未完了タスク \(tasks.count)件")
+            .font(.footnote).foregroundStyle(.secondary)
             .padding(.vertical, 8)
-          } else {
-            ForEach(spaceMeetings) { meeting in fileRow(meeting) }
-          }
-        } header: {
-          HStack {
-            Text("ファイル")
-            Spacer()
-            Text("\(spaceMeetings.count)件 · \(sort.label)")
-            if !spaceMeetings.isEmpty {
-              Button("追加", icon: .plus) { isAddingFiles = true }
+            .listRowSeparator(.hidden)
+        }
+        if isEmpty {
+          Section {
+            VStack(alignment: .leading, spacing: 12) {
+              Text("最初の記録を追加").font(.headline)
+              Text("右下の＋から録音・音声取り込みを始められます。保存済みの記録も移動できます。")
+                .font(.subheadline).foregroundStyle(.secondary)
+              Button("ライブラリから記録を移動") { isAddingFiles = true }
                 .frame(minHeight: 44)
-                .accessibilityLabel("ライブラリから記録を追加")
+                .tint(MemoraPalette.textPrimary)
                 .disabled(model.isRestoring)
             }
+            .padding(.vertical, 24)
+            .listRowSeparator(.hidden)
           }
-        }
-        Section("進行中のタスク · \(spaceTasks.count)件") {
-          if spaceTasks.isEmpty {
-            Label("未完了のタスクはありません", icon: .checkmark)
-              .foregroundStyle(.secondary)
-          } else {
-            ForEach(spaceTasks) { task in
-              TaskRow(task: task, showsSource: true) { editingTask = task }
+        } else {
+          Section {
+            if tasks.isEmpty {
+              Text("未完了タスクはありません").font(.footnote).foregroundStyle(.secondary)
+                .listRowSeparator(.hidden)
+            } else {
+              ForEach(visibleTasks) { task in
+                TaskRow(task: task, showsSource: true) { editingTask = task }
+                  .buttonStyle(.plain)
+              }
+            }
+          } header: {
+            sectionHeading("次にやること", count: tasks.count, expanded: $showsAllTasks)
+          }
+          Section {
+            if records.isEmpty {
+              Text("まだ記録はありません").font(.footnote).foregroundStyle(.secondary)
+                .listRowSeparator(.hidden)
+            } else {
+              ForEach(visibleRecords) { meeting in fileRow(meeting) }
+            }
+          } header: {
+            sectionHeading(showsAllRecords ? "記録 · \(sort.label)" : "最近の記録", count: records.count, expanded: $showsAllRecords)
+          }
+          if !documents.isEmpty {
+            Section {
+              ForEach(visibleDocuments) { document in
+                NavigationLink(value: LibraryRoute.document(document.id)) {
+                  ProjectDocumentRow(document: document)
+                }
                 .buttonStyle(.plain)
+              }
+            } header: {
+              sectionHeading("関連資料", count: documents.count, expanded: $showsAllDocuments)
+            } footer: {
+              Text("AI質問は録音・タスクが対象です。資料本文の検索には対応していません。")
+                .font(.footnote)
             }
           }
         }
       }
-      .listStyle(.insetGrouped)
+      .listStyle(.plain)
+      .listSectionSpacing(24)
+      .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
       .scrollContentBackground(.hidden)
       .background(MemoraPalette.background)
       .onAppear { model.noteProjectUsed(space.id) }
+      .onChange(of: spaceID) { _, _ in
+        showsAllTasks = false
+        showsAllRecords = false
+        showsAllDocuments = false
+      }
       .hideBottomBarOnScroll(model.selectedTab.rawValue)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
       .navigationTitle(space.name)
-      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.large)
       .toolbar {
-        ToolbarActionItem {
-          ToolbarIconButton("チームで共有", icon: .personBadgePlus) {
-            Task { await model.shareSpaceWithTeam(space.id) }
-          }
-          .labelStyle(.iconOnly)
-        }
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
-            Button("既存ファイルを移動", icon: .folder) { isAddingFiles = true }
-            Picker("表示", selection: $layout) {
-              ForEach(FileListLayout.allCases) { Text($0.label).tag($0) }
+            if !isEmpty {
+              Button("既存記録を移動", icon: .folder) { isAddingFiles = true }
             }
-            Picker("並べ替え", selection: $sort) {
-              ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
+            Button("未決事項を質問", icon: .sparkles) { isAskingAI = true }
+            Button("チームで共有", icon: .personBadgePlus) {
+              Task { await model.shareSpaceWithTeam(space.id) }
+            }
+            if !records.isEmpty {
+              if records.count <= 3, !showsAllRecords {
+                Button("すべての記録を表示") { showsAllRecords = true }
+              }
+              Picker("全件の表示", selection: $layout) {
+                ForEach(FileListLayout.allCases) { Text($0.label).tag($0) }
+              }
+              Picker("全件の並べ替え", selection: $sort) {
+                ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
+              }
             }
             Divider()
             Button("名前を変更", icon: .pencil) { isRenaming = true }
@@ -117,15 +131,6 @@ struct SpaceDetailView: View {
           } label: {
             ToolbarActionLabel("その他", icon: .ellipsis)
           }
-        }
-      }
-      .fileImporter(isPresented: $isImporting, allowedContentTypes: [.audio]) { result in
-        switch result {
-        case .success(let url):
-          let destinationID = spaceID
-          Task { await model.importAudio(from: url, spaceID: destinationID) }
-        case .failure(let error):
-          model.importErrorMessage = error.localizedDescription
         }
       }
       .sheet(isPresented: $isAddingFiles) { ProjectFilePickerSheet(spaceID: spaceID) }
@@ -151,76 +156,30 @@ struct SpaceDetailView: View {
     }
   }
 
-  private func overview(_ space: MemoraSpace, meetingCount: Int, taskCount: Int) -> some View {
-    VStack(alignment: .leading, spacing: 18) {
-      HStack(spacing: 14) {
-        Image(icon: space.icon)
-          .font(.title2.weight(.semibold))
-          .frame(width: 52, height: 52)
-          .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
-          .accessibilityHidden(true)
-        VStack(alignment: .leading, spacing: 5) {
-          Text(space.name).font(.title2.bold())
-          Text(meetingCount == 0 ? "記録を追加して始めましょう" : "このプロジェクトの記録とタスク")
-            .font(.subheadline).foregroundStyle(.secondary)
+  private func sectionHeading(_ title: String, count: Int, expanded: Binding<Bool>) -> some View {
+    HStack(alignment: .firstTextBaseline, spacing: 12) {
+      Text(title).font(.subheadline.weight(.semibold)).accessibilityAddTraits(.isHeader)
+      Spacer(minLength: 0)
+      if count > 3 || expanded.wrappedValue {
+        Button(expanded.wrappedValue ? "折りたたむ" : "すべて見る（\(count)）") {
+          expanded.wrappedValue.toggle()
         }
-      }
-      ViewThatFits(in: .horizontal) {
-        HStack(spacing: 18) { projectCounts(meetingCount: meetingCount, taskCount: taskCount) }
-        VStack(alignment: .leading, spacing: 8) { projectCounts(meetingCount: meetingCount, taskCount: taskCount) }
-      }
-      .font(.subheadline).foregroundStyle(.secondary)
-      ViewThatFits(in: .horizontal) {
-        HStack(spacing: 12) { captureActions }
-        VStack(spacing: 12) { captureActions }
+        .font(.subheadline)
+        .frame(minHeight: 44)
+        .tint(MemoraPalette.textPrimary)
+        .accessibilityLabel("\(title)を\(expanded.wrappedValue ? "折りたたむ" : "すべて見る")")
+        .accessibilityValue("\(count)件、\(expanded.wrappedValue ? "全件表示" : "一部表示")")
       }
     }
-    .padding(.vertical, 8)
-  }
-
-  @ViewBuilder private func projectCounts(meetingCount: Int, taskCount: Int) -> some View {
-    Label("記録 \(meetingCount)件", icon: .waveform)
-    Label("未完了タスク \(taskCount)件", icon: .checklist)
-  }
-
-  @ViewBuilder
-  private var captureActions: some View {
-    Button {
-      InteractionFeedback.shared.send(.tap)
-      if model.isRecording {
-        model.isCapturePresented = true
-      } else {
-        let destinationID = spaceID
-        Task { await model.startCapture(spaceID: destinationID) }
-      }
-    } label: {
-      Label(model.isRecording ? "録音画面を開く" : "録音を開始", icon: .mic)
-        .labelStyle(.titleAndIcon)
-        .frame(maxWidth: .infinity, minHeight: 44)
-    }
-    .buttonStyle(.borderedProminent)
-    .tint(MemoraPalette.action)
-    .foregroundStyle(MemoraPalette.actionLabel)
-    .disabled(model.isPreparingCapture || model.isSavingCapture || model.isRestoring)
-    Button {
-      InteractionFeedback.shared.send(.tap)
-      isImporting = true
-    } label: {
-      Label(model.isImporting ? "読み込み中…" : "インポート", icon: .squareAndArrowDown)
-        .labelStyle(.titleAndIcon)
-        .frame(maxWidth: .infinity, minHeight: 44)
-    }
-    .buttonStyle(.bordered)
-    .tint(MemoraPalette.textPrimary)
-    .disabled(model.isImporting || model.isRestoring)
+    .textCase(nil)
   }
 
   private func fileRow(_ meeting: Meeting) -> some View {
     NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
-      if layout == .card {
+      if showsAllRecords, layout == .card {
         MeetingCard(meeting: meeting)
       } else {
-        MeetingRow(meeting: meeting, showsDisclosure: false)
+        ProjectRecordRow(meeting: meeting)
       }
     }
     .buttonStyle(.plain)
