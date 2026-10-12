@@ -4,7 +4,9 @@
 
 ## 接続と実行
 
-設定 › AI整理 › Web検索にBrave Search APIキーを登録する。KeychainStoreへ保存し、UserDefaults・バックアップ・ログにはキーを含めない。APIキー未設定時には検索しない。Ask AIの検索ボタンからWeb調査を開く。通常のエージェントにもsearch_web／deep_researchを提供するが、検索語と問い合わせ上限を示した承認後だけ実行する。常駐エージェントと分担調査の子担当には提供しない。1つの回答につきWeb調査は1回、最大3検索。辞退・失敗・停止後の自動再送はしない。
+設定 › AI整理 › Web検索にBrave Search APIキーを登録する。KeychainStoreへ保存し、UserDefaults・バックアップ・ログにはキーを含めない。APIキー未設定時には検索しない。Ask AIの下部入力欄、音声／送信ボタンの左にあるDeep ResearchボタンからWeb調査を開く。初期選択はDeep Researchで、Web検索にも切り替えられる。入力中の文章を調査テーマへコピーし、元の下書きと添付は消さない。上部検索は従来の記録検索専用に戻した。録音／プロジェクト単位の入力欄にはこのグローバル調査ボタンを出さず、既存スコープを保つ。
+
+通常のエージェントにもsearch_web／deep_researchを提供するが、検索語と問い合わせ上限を示した承認後だけ実行する。常駐エージェントと分担調査の子担当には提供しない。1つの回答につきWeb調査は1回、最大3検索。辞退・失敗・停止後の自動再送はしない。
 
 Web検索は固定のBrave Web Searchエンドポイントで最大8件の検索抜粋を取得する。Deep Researchは指定した1〜3の検索語でBrave LLM Context APIの抽出本文を取得し、最大16のURLへ統合する。任意のページURLをアプリから自動取得する経路は追加しない。全ページの全文読了・網羅的調査とは区別する。
 
@@ -24,6 +26,8 @@ AI要約には選択中の既存モデルを使用し、1回だけ実行する�
 
 最終Bitrig iOS Simulatorビルド成功、診断なし（2026-10-13T07-35-20-501b2a4f.log）。ProjectWorkspaceV2ChecksとProjectContextChecksの回帰再実行も成功。
 
+入力欄への移設後のビルド成功（2026-10-13T07-53-39-9add9047.log、共有拡張のAppIntents未使用に関するメタデータ警告1件）。iPhone 18 Pro Maxでマイク左の配置、入力中の送信ボタン左の配置、タップ時のDeep Research初期選択、入力文の引き継ぎと元の下書き保持、上部検索から従来検索の起動を確認。検証用の下書きを消し、API呼び出しは行わなかった。WebResearchChecksの回帰再実行も成功。
+
 WebResearchChecks成功: 固定エンドポイント、入力上限、危険URL拒否、重複URL、抜粋と抽出本文の区別、文脈予算、架空の引用番号の排除、有効な引用だけのリンク化、JSON保存・復元。
 
 2026-10-13、Bitrig iPhone 18 Pro MaxでAsk AIの検索メニューから調査画面を開き、Deep Researchへの切り替えと2つの追加検索語欄、キー未設定時の説明／実行ボタン無効を確認。Light ModeとDark Mode＋アクセシビリティ特大文字でフォームの表示を確認し、表示設定を戻した。これは調査結果画面の大量データ・VoiceOver・実際の検索処理の確認ではない。
@@ -34,4 +38,4 @@ WebResearchChecks成功: 固定エンドポイント、入力上限、危険URL�
 - https://api-dashboard.search.brave.com/api-reference/web/search/get
 - https://api-dashboard.search.brave.com/api-reference/ai/llm_context/get
 
-通常のアプリ内URL追加についてのWeb全文取得、Share Extensionは、このWeb調査機能と別の未完了項目。
+通常のアプリ内URL追加についてのWeb全文取得は未完了。Share Extensionのコードと署名接続の状況はSHARE_INBOX.mdを参照。

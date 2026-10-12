@@ -18,6 +18,7 @@ struct AIComposerBar: View {
   var onSubmit: (AIAttachment?) -> Bool
   var focusChanged: ((Bool) -> Void)?
   var expansionChanged: ((Bool) -> Void)?
+  var onResearch: (() -> Void)?
 
   @State private var speechInput = SpeechInputService()
   @State private var isImporterPresented = false
@@ -81,6 +82,10 @@ struct AIComposerBar: View {
         textField
 
         if !isExpanded {
+          if onResearch != nil {
+            researchButton
+              .matchedGeometryEffect(id: "research", in: controlsNamespace)
+          }
           actionButton
             .matchedGeometryEffect(id: "action", in: controlsNamespace)
         }
@@ -95,6 +100,10 @@ struct AIComposerBar: View {
           attachmentMenu
             .matchedGeometryEffect(id: "attach", in: controlsNamespace)
           Spacer(minLength: 8)
+          if onResearch != nil {
+            researchButton
+              .matchedGeometryEffect(id: "research", in: controlsNamespace)
+          }
           actionButton
             .matchedGeometryEffect(id: "action", in: controlsNamespace)
         }
@@ -229,6 +238,22 @@ struct AIComposerBar: View {
     // label color like the rest of the composer.
     .tint(.primary)
     .accessibilityLabel("添付を追加")
+  }
+
+  private var researchButton: some View {
+    Button {
+      isFieldFocused = false
+      InteractionFeedback.shared.send(.tap)
+      onResearch?()
+    } label: {
+      ToolbarIconGlyph(icon: .magnifyingglass)
+        .frame(width: 44, height: 44)
+        .contentShape(Circle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel("Deep Research")
+    .accessibilityHint("Web検索・調査を開きます。入力中の文章は残ります。")
+    .disabled(isBusy || speechInput.isListening)
   }
 
   private var actionButton: some View {

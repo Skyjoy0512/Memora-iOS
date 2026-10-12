@@ -11,6 +11,10 @@ struct WebResearchView: View {
   @State private var confirms = false
   @State private var failure: String?
   @State private var deletingID: UUID?
+  init(initialQuery: String = "", initialMode: WebResearchReport.Mode = .search) {
+    _query = State(initialValue: initialQuery)
+    _mode = State(initialValue: initialMode)
+  }
   var body: some View {
     NavigationStack {
       Form {

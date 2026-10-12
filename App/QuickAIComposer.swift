@@ -20,6 +20,7 @@ struct QuickAIComposer: View {
   @State private var confirmsCloudRequest = false
   @State private var isPreparingAttachment = false
   @State private var projectError: String?
+  @State private var isResearchPresented = false
 
   var body: some View {
     // The draft lives in the model, so rebuilding this view or leaving the tab
@@ -36,8 +37,12 @@ struct QuickAIComposer: View {
       onSubmit: submit(attachment:),
       expansionChanged: { expanded in
         isComposing = expanded
-      }
+      },
+      onResearch: model.selectedTab == .askAI && scope == .global ? { isResearchPresented = true } : nil
     )
+    .sheet(isPresented: $isResearchPresented) {
+      WebResearchView(initialQuery: model.composerDraft, initialMode: .deepResearch)
+    }
     .sheet(item: $pendingQuestion) { request in
       AIQuestionView(request: request)
     }
