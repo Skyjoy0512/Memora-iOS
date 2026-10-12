@@ -1,6 +1,6 @@
 enum RootTab: String, Hashable, CaseIterable, Identifiable {
-  case home
   case library = "files"
+  case home
   case askAI
 
   var id: Self { self }
@@ -15,19 +15,25 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
     }
   }
 
-  var artwork: MemoraArtwork? { self == .askAI ? .askAITab : nil }
+  var artwork: MemoraArtwork? {
+    switch self {
+    case .home: .journalTab
+    case .askAI: .askAITab
+    case .library: nil
+    }
+  }
 
   var filledArtwork: MemoraArtwork? {
     switch self {
     case .library: .folderSolid
     case .askAI: .askAITabSolid
-    default: nil
+    case .home: .journalTabSolid
     }
   }
 
   var title: String {
     switch self {
-    case .home: "ホーム"
+    case .home: "ジャーナル"
     case .library: "ライブラリ"
     case .askAI: "Ask AI"
     }
@@ -35,7 +41,7 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
 
   var symbol: MemoraIcon {
     switch self {
-    case .home: .house
+    case .home: .calendar
     case .library: .folder
     case .askAI: .chatBubble
     }
@@ -43,7 +49,7 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
 
   var filledSymbol: MemoraIcon {
     switch self {
-    case .home: .houseFill
+    case .home: .calendarFill
     case .library: .folderFill
     case .askAI: .chatBubbleFill
     }

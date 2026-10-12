@@ -4,19 +4,21 @@ struct FileCreationSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @State private var projectName = ""
+  @FocusState private var isNameFocused: Bool
 
   var body: some View {
     NavigationStack {
       Form {
         Section("プロジェクト名") {
           TextField("例：新規アプリ", text: $projectName)
+            .focused($isNameFocused)
             .textInputAutocapitalization(.sentences)
             .submitLabel(.done)
             .onSubmit(createProject)
         }
 
         Section {
-          Label("関連する議事録は、プロジェクトを作成した後に追加できます。", icon: .folder)
+          Label("作成後に録音したり、ライブラリの記録を追加したりできます。", icon: .folder)
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }
@@ -33,7 +35,8 @@ struct FileCreationSheet: View {
         }
       }
     }
-    .presentationDetents([.medium])
+    .presentationDetents([.medium, .large])
+    .task { isNameFocused = true }
     .presentationDragIndicator(.visible)
   }
 

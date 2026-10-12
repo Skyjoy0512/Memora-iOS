@@ -117,7 +117,7 @@ struct HomeView: View {
         if healthRequest.canRead { await healthLoader.load(healthRequest.period) }
       }
       .background(Color(uiColor: .systemGroupedBackground))
-      .navigationTitle("ホーム")
+      .navigationTitle("ジャーナル")
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "記録を検索")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {

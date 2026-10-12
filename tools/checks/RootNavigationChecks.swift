@@ -8,7 +8,8 @@ struct RootNavigationChecks {
     let otherMeeting = UUID()
     let home: [LibraryRoute] = [.tasks]
     let projectPath: [LibraryRoute] = [.space(project)]
-    precondition(RootTab.allCases == [.home, .library, .askAI])
+    precondition(RootTab.allCases == [.library, .home, .askAI])
+    precondition(RootTab.allCases.map(\.title) == ["ライブラリ", "ジャーナル", "Ask AI"])
     precondition(RootTab.restored(from: "files") == .library)
     precondition(RootTab.restored(from: "library") == .library)
     precondition(RootTab.restored(from: "projects") == .library)

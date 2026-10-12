@@ -487,7 +487,7 @@ enum SelfChecks {
       let projectID = UUID()
       let meetingID = UUID()
       let projectPath: [LibraryRoute] = [.space(projectID)]
-      if RootTab.allCases != [.home, .library, .askAI]
+      if RootTab.allCases != [.library, .home, .askAI]
         || RootTab.restored(from: "files") != .library || RootTab.restored(from: "tasks") != .home {
         report("main tabs or legacy identifiers changed")
       }
@@ -513,9 +513,9 @@ enum SelfChecks {
       }
     }
     group("Tab bar icons") {
-      let outlineArtwork: [RootTab: MemoraArtwork] = [.askAI: .askAITab]
-      let filledArtwork: [RootTab: MemoraArtwork] = [.library: .folderSolid, .askAI: .askAITabSolid]
-      let expected: [RootTab: MemoraIcon] = [.library: .folder, .home: .house, .askAI: .chatBubble]
+      let outlineArtwork: [RootTab: MemoraArtwork] = [.home: .journalTab, .askAI: .askAITab]
+      let filledArtwork: [RootTab: MemoraArtwork] = [.library: .folderSolid, .home: .journalTabSolid, .askAI: .askAITabSolid]
+      let expected: [RootTab: MemoraIcon] = [.library: .folder, .home: .calendar, .askAI: .chatBubble]
       for tab in RootTab.allCases {
         if tab.artwork != outlineArtwork[tab] || tab.filledArtwork != filledArtwork[tab] {
           report("tab artwork does not match its selection state: \(tab.title)")

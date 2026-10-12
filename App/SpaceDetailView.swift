@@ -31,8 +31,11 @@ struct SpaceDetailView: View {
           } label: {
             HStack(spacing: 12) {
               Image(icon: .sparkles)
-              Text("このプロジェクトについて聞く")
-                .font(.body.weight(.semibold))
+              VStack(alignment: .leading, spacing: 4) {
+                Text("プロジェクトに質問").font(.body.weight(.semibold))
+                Text("このプロジェクトの記録をもとに回答")
+                  .font(.caption).foregroundStyle(.secondary)
+              }
               Spacer()
               Image(icon: .arrowUpRight)
                 .foregroundStyle(.secondary)
@@ -45,13 +48,17 @@ struct SpaceDetailView: View {
         }
         Section {
           if spaceMeetings.isEmpty {
-            ContentUnavailableView {
-              Label("まだファイルがありません", icon: .folder)
-            } description: {
-              Text("録音・インポートするか、既存のファイルを移動してまとめましょう。")
-            } actions: {
-              Button("既存ファイルを移動", icon: .folder) { isAddingFiles = true }
+            VStack(alignment: .leading, spacing: 12) {
+              Label("まだ記録がありません", icon: .folder)
+                .font(.headline)
+              Text("上のボタンから録音・インポートするか、ライブラリの記録を追加できます。")
+                .font(.subheadline).foregroundStyle(.secondary)
+              Button("ライブラリから記録を追加", icon: .folderBadgePlus) { isAddingFiles = true }
+                .frame(minHeight: 44)
+                .disabled(model.isRestoring)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 8)
           } else {
             ForEach(spaceMeetings) { meeting in fileRow(meeting) }
           }
@@ -60,6 +67,12 @@ struct SpaceDetailView: View {
             Text("ファイル")
             Spacer()
             Text("\(spaceMeetings.count)件 · \(sort.label)")
+            if !spaceMeetings.isEmpty {
+              Button("追加", icon: .plus) { isAddingFiles = true }
+                .frame(minHeight: 44)
+                .accessibilityLabel("ライブラリから記録を追加")
+                .disabled(model.isRestoring)
+            }
           }
         }
         Section("進行中のタスク · \(spaceTasks.count)件") {
@@ -146,23 +159,26 @@ struct SpaceDetailView: View {
           .accessibilityHidden(true)
         VStack(alignment: .leading, spacing: 5) {
           Text(space.name).font(.title2.bold())
-          Text("\(meetingCount)件のファイル · \(taskCount)件の未完了タスク")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+          Text(meetingCount == 0 ? "記録を追加して始めましょう" : "このプロジェクトの記録とタスク")
+            .font(.subheadline).foregroundStyle(.secondary)
         }
       }
+      ViewThatFits(in: .horizontal) {
+        HStack(spacing: 18) { projectCounts(meetingCount: meetingCount, taskCount: taskCount) }
+        VStack(alignment: .leading, spacing: 8) { projectCounts(meetingCount: meetingCount, taskCount: taskCount) }
+      }
+      .font(.subheadline).foregroundStyle(.secondary)
       ViewThatFits(in: .horizontal) {
         HStack(spacing: 12) { captureActions }
         VStack(spacing: 12) { captureActions }
       }
-      Text("ここで録音・インポートしたファイルは、このプロジェクトに保存されます。")
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-      Button("既存ファイルを移動", icon: .folder) { isAddingFiles = true }
-        .frame(minHeight: 44)
-        .disabled(model.isRestoring)
     }
     .padding(.vertical, 8)
+  }
+
+  @ViewBuilder private func projectCounts(meetingCount: Int, taskCount: Int) -> some View {
+    Label("記録 \(meetingCount)件", icon: .waveform)
+    Label("未完了タスク \(taskCount)件", icon: .checklist)
   }
 
   @ViewBuilder

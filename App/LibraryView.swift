@@ -113,9 +113,9 @@ struct LibraryView: View {
               }
             }
           } else {
-            ToolbarActionItem {
-              ToolbarIconButton("プロジェクトを作成", icon: .folderBadgePlus) { model.isFileCreationPresented = true }
-                .labelStyle(.iconOnly)
+            ToolbarItem(placement: .topBarTrailing) {
+              Button("作成") { model.isFileCreationPresented = true }
+                .accessibilityLabel("プロジェクトを作成")
                 .disabled(model.isRestoring)
             }
           }

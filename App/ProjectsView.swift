@@ -18,30 +18,48 @@ struct ProjectsView: View {
 
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
-        if !isSearching, !recent.isEmpty {
-          heading("最近使用したプロジェクト")
-          ForEach(recent.prefix(3)) { space in projectLink(space, taskCounts: taskCounts) }
+        if !isSearching {
+          VStack(alignment: .leading, spacing: 6) {
+            Text("記録とタスクを、ひとつの場所に。")
+              .font(.subheadline).foregroundStyle(.secondary)
+          }
+          .padding(.top, 8)
+          .padding(.bottom, 2)
         }
 
-        heading("すべてのプロジェクト")
-        if projects.isEmpty {
+        // Small collections are faster to scan once, without duplicate cards.
+        if !isSearching, model.spaces.count > 3, !recent.isEmpty {
+          heading("最近使用", count: nil)
+          ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+              ForEach(recent.prefix(3)) { space in recentLink(space) }
+            }
+          }
+        }
+
+        if !projects.isEmpty {
+          heading(isSearching ? "検索結果" : "すべてのプロジェクト", count: projects.count)
+          LazyVStack(spacing: 12) {
+            ForEach(projects) { space in projectLink(space, taskCounts: taskCounts) }
+          }
+        } else if shared.isEmpty {
           if isSearching {
             ContentUnavailableView.search(text: query)
           } else {
             ContentUnavailableView {
-              Label("プロジェクトはありません", icon: .rectangleStack)
+              Label("最初のプロジェクトを作成", icon: .rectangleStack)
             } description: {
-              Text("関連する記録とタスクを、テーマや案件ごとにまとめられます。")
+              Text("仕事の案件や日々のテーマごとに、記録とタスクをまとめられます。")
             } actions: {
               Button("プロジェクトを作成", icon: .folderBadgePlus) { model.isFileCreationPresented = true }
+                .buttonStyle(.borderedProminent)
+                .disabled(model.isRestoring)
             }
           }
-        } else {
-          ForEach(projects) { space in projectLink(space, taskCounts: taskCounts) }
         }
 
         if !shared.isEmpty {
-          heading("チームから共有")
+          heading("チームから共有", count: shared.count)
           ForEach(shared) { project in
             NavigationLink(value: LibraryRoute.sharedProject(project.id)) {
               VStack(alignment: .leading, spacing: 12) {
@@ -87,21 +105,38 @@ struct ProjectsView: View {
     }
   }
 
-  private func heading(_ title: String) -> some View {
-    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-      .accessibilityAddTraits(.isHeader)
+  private func heading(_ title: String, count: Int?) -> some View {
+    HStack(spacing: 8) {
+      Text(title).font(.subheadline.weight(.semibold))
+      if let count { Text("\(count)").font(.subheadline).monospacedDigit() }
+    }
+    .foregroundStyle(.secondary)
+    .accessibilityAddTraits(.isHeader)
+  }
+
+  private func recentLink(_ space: MemoraSpace) -> some View {
+    NavigationLink(value: LibraryRoute.space(space.id)) {
+      HStack(spacing: 10) {
+        Image(icon: space.icon).accessibilityHidden(true)
+        Text(space.name).font(.subheadline.weight(.medium))
+          .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+      }
+      .foregroundStyle(.primary)
+      .frame(width: 172, alignment: .leading)
+      .frame(minHeight: 44)
+      .padding(14)
+      .memoraCard(radius: 16, fill: Color(uiColor: .secondarySystemGroupedBackground))
+      .contentShape(RoundedRectangle(cornerRadius: 16))
+    }
+    .buttonStyle(.plain)
   }
 
   private func projectLink(_ space: MemoraSpace, taskCounts: [UUID: Int]) -> some View {
-    NavigationLink(value: LibraryRoute.space(space.id)) {
-      ProjectCard(space: space, recordCount: model.spaceAggregates[space.id]?.meetingCount ?? 0,
-        taskCount: taskCounts[space.id] ?? 0)
-    }
-    .buttonStyle(.plain)
-    .contextMenu {
-      Button("名前を変更", icon: .pencil) { renameTarget = space }
-      Button("チームで共有", icon: .personBadgePlus) { Task { await model.shareSpaceWithTeam(space.id) } }
-      Button("削除", icon: .trash, role: .destructive) { deleteTarget = space }
-    }
+    let aggregate = model.spaceAggregates[space.id]
+    return ProjectCard(space: space, recordCount: aggregate?.meetingCount ?? 0,
+      taskCount: taskCounts[space.id] ?? 0, latestRecordDate: aggregate?.latestDate,
+      rename: { renameTarget = space },
+      share: { Task { await model.shareSpaceWithTeam(space.id) } },
+      delete: { deleteTarget = space })
   }
 }
