@@ -483,10 +483,39 @@ enum SelfChecks {
     group("Unassigned task scope", checkUnassignedTaskScope)
     group("Legacy photo retention", checkLegacyPhotoRetention)
     group("Speech final results", checkSpeechFinalResults)
+    group("Main navigation") {
+      let projectID = UUID()
+      let meetingID = UUID()
+      let projectPath: [LibraryRoute] = [.space(projectID)]
+      if RootTab.allCases != [.home, .library, .askAI]
+        || RootTab.restored(from: "files") != .library || RootTab.restored(from: "tasks") != .home {
+        report("main tabs or legacy identifiers changed")
+      }
+      if LibrarySection.restored(from: nil) != .files || LibrarySection.restored(from: "projects") != .projects {
+        report("library segment did not restore safely")
+      }
+      let active = RootNavigation.path(tab: .library, home: [.tasks], library: projectPath)
+      if active != projectPath || RootNavigation.projectID(in: active) != projectID {
+        report("project navigation did not preserve the recording destination")
+      }
+      if RootNavigation.projectID(in: [.sharedProject("team")]) != nil
+        || RootNavigation.projectID(in: projectPath + [.meeting(meetingID)]) != nil {
+        report("capture destination leaked outside an editable project detail")
+      }
+      if RootNavigation.scope(tab: .library, path: active, detailMeetingID: meetingID) != .space(projectID)
+        || RootNavigation.scope(tab: .library, path: active + [.meeting(meetingID)], detailMeetingID: nil) != .file(meetingID)
+        || RootNavigation.scope(tab: .askAI, path: active, detailMeetingID: meetingID) != .global
+        || RootNavigation.scope(tab: .askAI, path: [], detailMeetingID: meetingID, detailTab: .askAI) != .file(meetingID) {
+        report("AI context leaked between global, project and record navigation")
+      }
+      if ProjectFiling.existingProject(projectID, in: []) != nil {
+        report("a deleted project remained a recording destination")
+      }
+    }
     group("Tab bar icons") {
-      let outlineArtwork: [RootTab: MemoraArtwork] = [.home: .journalTab, .askAI: .askAITab]
-      let filledArtwork: [RootTab: MemoraArtwork] = [.files: .folderSolid, .home: .journalTabSolid, .askAI: .askAITabSolid]
-      let expected: [RootTab: MemoraIcon] = [.files: .folder, .home: .calendar, .tasks: .checklist, .askAI: .chatBubble]
+      let outlineArtwork: [RootTab: MemoraArtwork] = [.askAI: .askAITab]
+      let filledArtwork: [RootTab: MemoraArtwork] = [.library: .folderSolid, .askAI: .askAITabSolid]
+      let expected: [RootTab: MemoraIcon] = [.library: .folder, .home: .house, .askAI: .chatBubble]
       for tab in RootTab.allCases {
         if tab.artwork != outlineArtwork[tab] || tab.filledArtwork != filledArtwork[tab] {
           report("tab artwork does not match its selection state: \(tab.title)")

@@ -88,6 +88,8 @@ struct HomeView: View {
                 .memoraCard(fill: Color(uiColor: .secondarySystemGroupedBackground))
             }
 
+            HomeActivityLinks()
+
             if entries.isEmpty, calendarEvents.isEmpty, !recap.hasActivity {
               emptyDay
             } else {
@@ -115,7 +117,7 @@ struct HomeView: View {
         if healthRequest.canRead { await healthLoader.load(healthRequest.period) }
       }
       .background(Color(uiColor: .systemGroupedBackground))
-      .navigationTitle("ジャーナル")
+      .navigationTitle("ホーム")
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "記録を検索")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
@@ -192,20 +194,7 @@ struct HomeView: View {
         Task { await loadEvents() }
       }
       .navigationDestination(for: LibraryRoute.self) { route in
-        switch route {
-        case .meeting(let id): MeetingDetailView(meetingID: id)
-        case .transcript(let id): TranscriptView(meetingID: id)
-        case .space(let id): SpaceDetailView(spaceID: id)
-        case .allMeetings: AllMeetingsView()
-        case .settings: SettingsView()
-        case .stateGallery: StateGalleryView()
-        case .documents: DocumentsView()
-        case .document(let id): DocumentDetailView(documentID: id)
-        case .people: PeopleView()
-        case .person(let id): PersonDetailView(personID: id)
-        case .sharedRecord(let id): SharedRecordView(recordID: id)
-        case .sharedProject(let id): SharedProjectView(projectID: id)
-        }
+        LibraryDestinationView(route: route)
       }
     }
   }

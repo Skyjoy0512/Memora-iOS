@@ -3,7 +3,6 @@ import SwiftUI
 struct TasksView: View {
   @Environment(MemoraModel.self) private var model
   @State private var showsCompleted = false
-  @State private var path: [UUID] = []
   @State private var editingTask: MemoraTask?
   @State private var todayOnly = false
   @State private var waitingOnly = false
@@ -15,63 +14,62 @@ struct TasksView: View {
     let taskDepths = TaskHierarchy.depths(in: visibleTasks)
     let isFiltered = todayOnly || waitingOnly
 
-    return NavigationStack(path: $path) {
-      Group {
-        if showsTeamBoard && model.hasTeamPlan {
-          TeamTaskBoardView()
-        } else {
-      VStack(spacing: 0) {
-        GlassSegmentedPicker(items: [false, true], selection: $showsCompleted) { completed in
-          completed ? "完了" : "未完了"
-        }
-        .padding(.horizontal, 18)
-        .padding(.bottom, 10)
+    return Group {
+      if showsTeamBoard && model.hasTeamPlan {
+        TeamTaskBoardView()
+      } else {
+        VStack(spacing: 0) {
+          GlassSegmentedPicker(items: [false, true], selection: $showsCompleted) { completed in
+            completed ? "完了" : "未完了"
+          }
+          .padding(.horizontal, 18)
+          .padding(.bottom, 10)
 
-        if model.isRecording {
-          ActiveRecordingStrip()
-            .padding(.horizontal, 18)
-            .padding(.bottom, 10)
-        }
+          if model.isRecording {
+            ActiveRecordingStrip()
+              .padding(.horizontal, 18)
+              .padding(.bottom, 10)
+          }
 
-        if visibleTasks.isEmpty {
-          ContentUnavailableView {
-            Label(isFiltered ? "条件に合うタスクはありません" : (showsCompleted ? "完了したタスクはありません" : "タスクはありません"), icon: .checkmarkSquare)
-          } description: {
-            Text(isFiltered ? "絞り込み条件を変えると、自分のほかのタスクを確認できます。" : (showsCompleted ? "完了にした自分のタスクがここに残ります。" : "自分の担当と確認できた課題だけを表示します。担当未確認・ほかの人の課題は、元の会議から確認できます。"))
-          } actions: {
-            if isFiltered {
-              Button("絞り込みを解除") {
-                todayOnly = false
-                waitingOnly = false
+          if visibleTasks.isEmpty {
+            ContentUnavailableView {
+              Label(isFiltered ? "条件に合うタスクはありません" : (showsCompleted ? "完了したタスクはありません" : "タスクはありません"), icon: .checkmarkSquare)
+            } description: {
+              Text(isFiltered ? "絞り込み条件を変えると、自分のほかのタスクを確認できます。" : (showsCompleted ? "完了にした自分のタスクがここに残ります。" : "自分の担当と確認できた課題だけを表示します。担当未確認・ほかの人の課題は、元の会議から確認できます。"))
+            } actions: {
+              if isFiltered {
+                Button("絞り込みを解除") {
+                  todayOnly = false
+                  waitingOnly = false
+                }
               }
             }
-          }
-          .frame(maxHeight: .infinity)
-        } else {
-          List {
-            if showsCompleted {
-              ForEach(TaskHierarchy.ordered(completedFirst(visibleTasks))) { task in
-                taskRow(task, depth: taskDepths[task.id] ?? 0)
-              }
-            } else {
-              ForEach(dueSections(of: visibleTasks)) { section in
-                Section(section.title) {
-                  ForEach(section.tasks) { task in
-                    taskRow(task, depth: taskDepths[task.id] ?? 0)
+            .frame(maxHeight: .infinity)
+          } else {
+            List {
+              if showsCompleted {
+                ForEach(TaskHierarchy.ordered(completedFirst(visibleTasks))) { task in
+                  taskRow(task, depth: taskDepths[task.id] ?? 0)
+                }
+              } else {
+                ForEach(dueSections(of: visibleTasks)) { section in
+                  Section(section.title) {
+                    ForEach(section.tasks) { task in
+                      taskRow(task, depth: taskDepths[task.id] ?? 0)
+                    }
                   }
                 }
               }
             }
+            .hideBottomBarOnScroll(RootTab.home.rawValue)
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
+            .refreshable { await model.refresh() }
           }
-          .hideBottomBarOnScroll(RootTab.tasks.rawValue)
-          .listStyle(.insetGrouped)
-          .scrollContentBackground(.hidden)
-          .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-          .refreshable { await model.refresh() }
         }
       }
-        }
-      }
+    }
       .background(Color(uiColor: .systemGroupedBackground))
       .navigationTitle("タスク")
       .toolbar {
@@ -107,9 +105,6 @@ struct TasksView: View {
           .disabled(showsTeamBoard)
         }
       }
-      .navigationDestination(for: UUID.self) { meetingID in
-        MeetingDetailView(meetingID: meetingID)
-      }
       .sheet(isPresented: $model.isAddTaskPresented) {
         AddTaskView()
       }
@@ -118,7 +113,6 @@ struct TasksView: View {
       }
       .onAppear { openPendingTaskIfNeeded() }
       .onChange(of: model.pendingTaskEditID) { _, _ in openPendingTaskIfNeeded() }
-    }
   }
 
   private func taskRow(_ task: MemoraTask, depth: Int) -> some View {
@@ -130,7 +124,7 @@ struct TasksView: View {
       if let meetingID = task.meetingID {
         Button("元の会議を開く", icon: .chevronRight) {
           InteractionFeedback.shared.send(.tap)
-          path.append(meetingID)
+          model.homePath.append(.meeting(meetingID))
         }
         .labelStyle(.iconOnly)
         .font(.caption.weight(.semibold))
@@ -177,7 +171,7 @@ struct TasksView: View {
         model.setTaskDueDate(task.id, to: Calendar.current.date(byAdding: .day, value: 7, to: .now))
       }
       if let meetingID = task.meetingID {
-        Button("元の会議を開く", icon: .docText) { path.append(meetingID) }
+        Button("元の会議を開く", icon: .docText) { model.homePath.append(.meeting(meetingID)) }
       }
       Button("削除", icon: .trash, role: .destructive) { model.deleteTask(task.id) }
     }

@@ -7,7 +7,6 @@ struct LibraryView: View {
   @Environment(\.scenePhase) private var scenePhase
   @State private var query = ""
   @State private var isSearching = false
-  @AppStorage("memora.files.searchAllProjects") private var searchesAllProjects = true
   @Namespace private var heroNamespace
   @State private var isSelectionMode = false
   @State private var selectedMeetingIDs: Set<UUID> = []
@@ -49,12 +48,24 @@ struct LibraryView: View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
-      // Projects are opened from the side menu, so this list is files only and
-      // stays the screen's own scroll view for the large title to collapse.
-      filesPage
+      VStack(spacing: 0) {
+        if !isSearching, !isSelectionMode {
+          GlassSegmentedPicker(items: LibrarySection.allCases, selection: $model.librarySection) { $0.title }
+            .padding(.horizontal, 18)
+            .padding(.bottom, 10)
+            .accessibilityLabel("ライブラリの表示")
+        }
+        Group {
+          if model.librarySection == .files {
+            filesPage
+          } else {
+            ProjectsView(query: query, isSearching: isSearching)
+          }
+        }
+      }
       .background(Color(uiColor: .systemGroupedBackground))
-      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ファイル")
-      .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ファイルを検索")
+      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ライブラリ")
+      .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           if isSelectionMode {
@@ -81,23 +92,31 @@ struct LibraryView: View {
             }
           }
 
-          ToolbarActionItem(usesSystemBackground: true) {
-            Menu {
-              Picker("表示", selection: $layout) {
-                ForEach(FileListLayout.allCases) { Text($0.label).tag($0) }
+          if model.librarySection == .files {
+            ToolbarActionItem(usesSystemBackground: true) {
+              Menu {
+                Picker("表示", selection: $layout) {
+                  ForEach(FileListLayout.allCases) { Text($0.label).tag($0) }
+                }
+                Picker("並べ替え", selection: $sort) {
+                  ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
+                }
+                Picker("絞り込み", selection: $statusFilter) {
+                  ForEach(FileListFilter.allCases) { Text($0.label).tag($0) }
+                }
+                Divider()
+                Button("選択", icon: .checkmarkCircle) {
+                  beginSelectionMode()
+                }
+              } label: {
+                ToolbarActionLabel("表示と並べ替え", icon: .line3HorizontalDecrease)
               }
-              Picker("並べ替え", selection: $sort) {
-                ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
-              }
-              Picker("絞り込み", selection: $statusFilter) {
-                ForEach(FileListFilter.allCases) { Text($0.label).tag($0) }
-              }
-              Divider()
-              Button("選択", icon: .checkmarkCircle) {
-                beginSelectionMode()
-              }
-            } label: {
-              ToolbarActionLabel("表示と並べ替え", icon: .line3HorizontalDecrease)
+            }
+          } else {
+            ToolbarActionItem {
+              ToolbarIconButton("プロジェクトを作成", icon: .folderBadgePlus) { model.isFileCreationPresented = true }
+                .labelStyle(.iconOnly)
+                .disabled(model.isRestoring)
             }
           }
         }
@@ -115,19 +134,13 @@ struct LibraryView: View {
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id):
-          MeetingDetailView(meetingID: id, morphsFromLibraryToolbar: true)
-            .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
-        case .transcript(let id): TranscriptView(meetingID: id)
-        case .space(let id): SpaceDetailView(spaceID: id)
-        case .allMeetings: AllMeetingsView()
-        case .settings: SettingsView()
-        case .stateGallery: StateGalleryView()
-        case .documents: DocumentsView()
-        case .document(let id): DocumentDetailView(documentID: id)
-        case .people: PeopleView()
-        case .person(let id): PersonDetailView(personID: id)
-        case .sharedRecord(let id): SharedRecordView(recordID: id)
-        case .sharedProject(let id): SharedProjectView(projectID: id)
+          if model.librarySection == .files {
+            MeetingDetailView(meetingID: id, morphsFromLibraryToolbar: true)
+              .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
+          } else {
+            MeetingDetailView(meetingID: id)
+          }
+        default: LibraryDestinationView(route: route)
         }
       }
       .confirmationDialog(
@@ -180,8 +193,15 @@ struct LibraryView: View {
           await model.cloudSharing.refreshIfConfirmed()
         }
       }
+      .onChange(of: model.librarySection) { _, _ in
+        query = ""
+        isSearching = false
+        model.isSearchActive = false
+        endSelection()
+        model.setBottomBarHidden(false, for: RootTab.library.rawValue)
+      }
       .onChange(of: model.selectedTab) { _, tab in
-        guard tab == .files else { return }
+        guard tab == .library else { return }
         Task { await upcoming.refresh() }
       }
       .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
@@ -234,15 +254,6 @@ struct LibraryView: View {
     let sharedRecords = model.cloudSharing.sharedRecords
 
     return List {
-      if isSearching {
-        Section {
-          Toggle("全プロジェクトから探す", isOn: $searchesAllProjects)
-        } footer: {
-          Text(searchesAllProjects
-            ? "未分類と、すべてのプロジェクト内のファイルが対象です。"
-            : "未分類のファイルだけが対象です。プロジェクトへ移動したファイルは対象外です。")
-        }
-      }
       if !isSearching {
         listHeaderRows
 
@@ -327,7 +338,7 @@ struct LibraryView: View {
       await model.cloudSharing.refreshIfConfirmed()
     }
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: upcoming.meetings.map(\.id))
-    .hideBottomBarOnScroll(RootTab.files.rawValue)
+    .hideBottomBarOnScroll(RootTab.library.rawValue)
   }
 
   private var filterChipRow: some View {
@@ -626,7 +637,7 @@ struct LibraryView: View {
   /// Every match, filtered, sorted and grouped by date. The list shows all of
   /// them; `List` draws lazily, so nothing is cut off behind a cap.
   private var matchingMeetings: [Meeting] {
-    let records = isSearching && searchesAllProjects ? model.meetings : ProjectFiling.records(in: nil, from: model.meetings)
+    let records = model.meetings
     var result = records.filter { statusFilter.matches($0.status) }
     if !query.isEmpty {
       result = result.filter(matchesQuery)

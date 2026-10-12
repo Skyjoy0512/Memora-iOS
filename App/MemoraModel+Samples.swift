@@ -21,9 +21,9 @@ extension MemoraModel {
     persistAIHistory()
     homePath = []
     libraryPath = []
-    // The samples are mostly recordings, and this matches the tab the app now
-    // opens on, so "サンプルで見る" lands where the samples are.
-    selectedTab = .files
+    // Sample recordings remain directly reachable in the library.
+    selectedTab = .library
+    librarySection = .files
   }
 
   /// Removes the display samples for good, without putting them in the trash.

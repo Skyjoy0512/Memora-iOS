@@ -22,8 +22,10 @@ struct RootTabView: View {
           closeSidebar()
           isRecorderPresented = true
         },
-        onSelectSpace: openSpace,
-        onSelectSharedProject: openSharedProject,
+        onOpenProjects: {
+          closeSidebar()
+          model.openProjects()
+        },
         onCreateTeam: {
           closeSidebar()
           model.isTeamCreationPresented = true
@@ -32,7 +34,6 @@ struct RootTabView: View {
           closeSidebar()
           model.isTeamJoinPresented = true
         },
-        onCreateSpace: createSpace,
         onOpenDocuments: openDocuments,
         onOpenPeople: openPeople,
         onOpenSettings: openSettings,
@@ -157,19 +158,15 @@ struct RootTabView: View {
     @Bindable var model = model
 
     return TabView(selection: $model.selectedTab) {
-      LibraryView(onOpenSidebar: openSidebar)
-        .hidesSystemTabBar()
-        .scrollDismissesKeyboard(.immediately)
-        .tag(RootTab.files)
-
       HomeView(onOpenSidebar: openSidebar)
         .hidesSystemTabBar()
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.home)
 
-      TasksView()
+      LibraryView(onOpenSidebar: openSidebar)
         .hidesSystemTabBar()
-        .tag(RootTab.tasks)
+        .scrollDismissesKeyboard(.immediately)
+        .tag(RootTab.library)
 
       SearchView()
         .hidesSystemTabBar()
@@ -272,10 +269,10 @@ struct RootTabView: View {
   /// An open search, or picking files, takes the screen until a record is
   /// opened on top of it.
   private var isSearchCovering: Bool {
-    guard model.isSearchActive || (model.isFileSelectionActive && model.selectedTab == .files) else { return false }
+    guard model.isSearchActive || (model.isFileSelectionActive && model.selectedTab == .library) else { return false }
     return switch model.selectedTab {
     case .home: model.homePath.isEmpty
-    case .files: model.libraryPath.isEmpty
+    case .library: model.libraryPath.isEmpty
     default: false
     }
   }
@@ -290,7 +287,6 @@ struct RootTabView: View {
   }
 
 
-
   /// The transport only appears while a detail is playing and no field (the
   /// composer or an inline editor) owns the keyboard.
   private var showsPlaybackBar: Bool {
@@ -302,7 +298,7 @@ struct RootTabView: View {
     switch model.selectedTab {
     case .home:
       return model.homePath.isEmpty
-    case .files:
+    case .library:
       return model.libraryPath.isEmpty
     default:
       return false
@@ -332,41 +328,18 @@ struct RootTabView: View {
     }
   }
 
-  private func selectTab(_ tab: RootTab) {
-    closeSidebar()
-    guard model.selectedTab != tab else { return }
-    withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-      model.selectedTab = tab
-    }
-  }
-
-  private func openSpace(_ space: MemoraSpace) {
-    closeSidebar()
-    model.selectedTab = .files
-    model.libraryPath = [.space(space.id)]
-  }
-
-  private func openSharedProject(_ project: SharedProject) {
-    closeSidebar()
-    model.selectedTab = .files
-    model.libraryPath = [.sharedProject(project.id)]
-  }
-
   private func openDocuments() {
     closeSidebar()
-    model.selectedTab = .files
+    model.selectedTab = .library
+    model.librarySection = .files
     model.libraryPath = [.documents]
   }
 
   private func openPeople() {
     closeSidebar()
-    model.selectedTab = .files
+    model.selectedTab = .library
+    model.librarySection = .files
     model.libraryPath = [.people]
-  }
-
-  private func createSpace() {
-    closeSidebar()
-    model.isFileCreationPresented = true
   }
 
   private func openSettings() {
@@ -374,22 +347,9 @@ struct RootTabView: View {
     model.isSettingsPresented = true
   }
 
-  /// Ask AI is available from every tab; only an open meeting narrows the scope.
   private var composerScope: AIQueryScope {
-    if let meetingID = model.activeDetailMeetingID {
-      return .file(meetingID)
-    }
-    guard model.selectedTab == .files, let route = model.libraryPath.last else {
-      return .global
-    }
-    switch route {
-    case .meeting(let meetingID), .transcript(let meetingID):
-      return .file(meetingID)
-    case .space(let spaceID):
-      return .space(spaceID)
-    default:
-      return .global
-    }
+    RootNavigation.scope(tab: model.selectedTab, path: model.activeNavigationPath,
+      detailMeetingID: model.activeDetailMeetingID, detailTab: model.activeDetailTabs.last)
   }
 
   private var shouldShowComposer: Bool {
@@ -404,16 +364,8 @@ struct RootTabView: View {
   }
 
   private var isShowingMeetingDetail: Bool {
-    if model.activeDetailMeetingID != nil {
-      return true
-    }
-    guard model.selectedTab == .files, let route = model.libraryPath.last else { return false }
-    return switch route {
-    case .meeting, .transcript:
-      true
-    default:
-      false
-    }
+    if case .file = composerScope { return true }
+    return false
   }
 }
 

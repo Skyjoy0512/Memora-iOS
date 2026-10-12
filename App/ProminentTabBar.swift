@@ -25,6 +25,7 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Namespace private var namespace
+  @State private var segmentLabelWidth: CGFloat = 54
 
   var body: some View {
     let tabCount = Item.allCases.count
@@ -33,6 +34,9 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
     MemoraGlassContainer(spacing: 10 * MemoraBarMetrics.scale) {
       HStack(spacing: 10 * MemoraBarMetrics.scale) {
         segmentedControl
+          .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+            segmentLabelWidth = max(24, width / CGFloat(tabCount) - 12)
+          }
           .padding(2 * MemoraBarMetrics.scale)
           .frame(width: isSmall ? CGFloat(tabCount * 65) * MemoraBarMetrics.scale : nil)
 
@@ -61,13 +65,14 @@ struct ProminentTabBar<Item: ProminentTabItem, PopoverContent: View>: View {
   private var segmentedControl: some View {
     // At the largest text sizes the segment labels no longer fit on one row, so
     // the tabs drop to their symbols; the names stay as accessibility labels.
-    let showsTitles = !dynamicTypeSize.isAccessibilitySize
+    let showsTitles = dynamicTypeSize < .xxLarge
     let control = ProminentSegmentedControl(
       selection: $selection,
       colorScheme: colorScheme,
       showsTitles: showsTitles,
       dynamicTypeSize: dynamicTypeSize,
-      reduceMotion: reduceMotion
+      reduceMotion: reduceMotion,
+      labelWidth: segmentLabelWidth
     )
 
     if #available(iOS 26.0, *) {
@@ -141,6 +146,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
   var showsTitles: Bool
   var dynamicTypeSize: DynamicTypeSize
   var reduceMotion: Bool
+  var labelWidth: CGFloat
   @Environment(\.displayScale) private var displayScale
 
   private var allTabs: [Item] { Array(Item.allCases) }
@@ -167,6 +173,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     context.coordinator.appliedDynamicTypeSize = dynamicTypeSize
     context.coordinator.appliedDisplayScale = displayScale
     context.coordinator.appliedSelection = selection
+    context.coordinator.appliedLabelWidth = labelWidth
     return control
   }
 
@@ -200,11 +207,13 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     if context.coordinator.appliedColorScheme != colorScheme
       || context.coordinator.appliedShowsTitles != showsTitles
       || context.coordinator.appliedDynamicTypeSize != dynamicTypeSize
-      || context.coordinator.appliedDisplayScale != displayScale {
+      || context.coordinator.appliedDisplayScale != displayScale
+      || context.coordinator.appliedLabelWidth != labelWidth {
       context.coordinator.appliedColorScheme = colorScheme
       context.coordinator.appliedShowsTitles = showsTitles
       context.coordinator.appliedDynamicTypeSize = dynamicTypeSize
       context.coordinator.appliedDisplayScale = displayScale
+      context.coordinator.appliedLabelWidth = labelWidth
       context.coordinator.prepareImages()
       context.coordinator.applyImages(to: uiView)
     } else if context.coordinator.appliedSelection != selection {
@@ -237,6 +246,7 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
     var appliedDynamicTypeSize: DynamicTypeSize?
     var appliedDisplayScale: CGFloat?
     var appliedSelection: Item?
+    var appliedLabelWidth: CGFloat?
     private var outlineImages: [UIImage?] = []
     private var filledImages: [UIImage?] = []
 
@@ -286,6 +296,8 @@ private struct ProminentSegmentedControl<Item: ProminentTabItem>: UIViewRepresen
         Text(item.title)
           .font(.caption2.weight(.bold))
           .lineLimit(1)
+          .minimumScaleFactor(0.65)
+          .frame(width: labelWidth)
       }
     }
     .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))

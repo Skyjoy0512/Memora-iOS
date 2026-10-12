@@ -3,6 +3,7 @@ import SwiftUI
 struct TranscriptView: View {
   @Environment(MemoraModel.self) private var model
   var meetingID: UUID
+  @State private var detailTab: RootTab?
   @State private var editingSegment: TranscriptSegment?
 
   var body: some View {
@@ -60,10 +61,11 @@ struct TranscriptView: View {
         .navigationTitle("文字起こし")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+          detailTab = model.selectedTab
           model.pushActiveDetail(meeting.id)
         }
         .onDisappear {
-          model.popActiveDetail(meeting.id)
+          model.popActiveDetail(meeting.id, tab: detailTab)
         }
         .sheet(item: $editingSegment) { segment in
           SpeakerEditSheet(meetingID: meeting.id, segment: segment)

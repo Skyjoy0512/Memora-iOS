@@ -41,9 +41,7 @@ struct FileCreationSheet: View {
     let trimmed = projectName.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return }
     guard let id = model.addSpace(name: trimmed) else { return }
-    // The new project opens straight away; the sidebar lists it from now on.
-    model.selectedTab = .files
-    model.libraryPath = [.space(id)]
+    model.openProject(id)
     dismiss()
   }
 }

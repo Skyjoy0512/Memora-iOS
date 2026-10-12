@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 @MainActor
 @Observable
 final class MemoraModel {
-  var selectedTab = RootTab.files {
+  var selectedTab = RootTab.home {
     didSet { didChangeTab(from: oldValue) }
   }
   /// When the person last left Ask AI, so a resident agent's post that came
@@ -15,6 +15,10 @@ final class MemoraModel {
   @ObservationIgnored var askAILeftAt = Date.now
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
+  var librarySection = LibrarySection.restored(from: UserDefaults.standard.string(forKey: "memora.library.section")) {
+    didSet { UserDefaults.standard.set(librarySection.rawValue, forKey: "memora.library.section") }
+  }
+  var recentProjectIDs: [UUID] = (UserDefaults.standard.stringArray(forKey: "memora.projects.recentIDs") ?? []).compactMap(UUID.init(uuidString:))
   var isFileCreationPresented = false
   /// Teams the person belongs to, as the cloud reports them.
   var teamWorkspaces: [TeamWorkspace] = []
@@ -96,6 +100,7 @@ final class MemoraModel {
   var tasks: [MemoraTask] {
     didSet {
       tasksByMeeting = nil
+      rebuildProjectTaskCounts()
       refreshSampleContentFlag()
     }
   }
@@ -114,6 +119,7 @@ final class MemoraModel {
   private(set) var markedMeetingDays: Set<Date> = []
   /// Per-project counts and previews, and per-person record counts.
   private(set) var spaceAggregates: [UUID: SpaceAggregate] = [:]
+  private(set) var projectTaskCounts: [UUID: Int] = [:]
   private(set) var personMeetingCounts: [UUID: Int] = [:]
   /// Records tagged with each person, newest first.
   private(set) var meetingsByPerson: [UUID: [Meeting]] = [:]
@@ -305,6 +311,7 @@ final class MemoraModel {
   /// The details currently on screen, oldest first. A stack, not one value, so a
   /// screen opened over another cannot clear the one below it when it closes.
   private(set) var activeDetailMeetingIDs: [UUID] = []
+  private(set) var activeDetailTabs: [RootTab] = []
   var activeDetailMeetingID: UUID? { activeDetailMeetingIDs.last }
   /// Asked by a source line to bring the open detail to its transcript at a
   /// time, instead of stacking a second copy of the same record.
@@ -315,12 +322,16 @@ final class MemoraModel {
 
   func pushActiveDetail(_ id: UUID) {
     activeDetailMeetingIDs.append(id)
+    activeDetailTabs.append(selectedTab)
   }
 
   /// Removes this screen's own entry, leaving any screen opened above it alone.
-  func popActiveDetail(_ id: UUID) {
-    if let index = activeDetailMeetingIDs.lastIndex(of: id) {
+  func popActiveDetail(_ id: UUID, tab: RootTab? = nil) {
+    if let index = activeDetailMeetingIDs.indices.last(where: {
+      activeDetailMeetingIDs[$0] == id && (tab == nil || activeDetailTabs[$0] == tab)
+    }) {
       activeDetailMeetingIDs.remove(at: index)
+      activeDetailTabs.remove(at: index)
     }
   }
 
@@ -659,8 +670,7 @@ final class MemoraModel {
     ) { [weak self] note in
       guard let id = note.userInfo?["taskID"] as? UUID else { return }
       Task { @MainActor in
-        self?.selectedTab = .tasks
-        self?.pendingTaskEditID = id
+        self?.openTask(id)
       }
     }
 
@@ -686,7 +696,12 @@ final class MemoraModel {
 
   /// One pass over the records for the per-project and per-person numbers the
   /// screens show, instead of a scan per tile per redraw.
+  private func rebuildProjectTaskCounts() {
+    assignIfChanged(\.projectTaskCounts, Self.countProjectTasks(meetings: meetings, tasks: tasks))
+  }
+
   private func rebuildMeetingAggregates() {
+    rebuildProjectTaskCounts()
     // Sorted once, so every group below is already newest first.
     let newestFirst = meetings.sorted { $0.createdAt > $1.createdAt }
     assignIfChanged(\.markedMeetingDays, Set(newestFirst.map { Calendar.current.startOfDay(for: $0.createdAt) }))

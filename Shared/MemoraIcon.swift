@@ -29,6 +29,8 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case briefcase = "briefcase"
   case bubbleLeftAndBubbleRight = "bubble.left.and.bubble.right"
   case building2Fill = "building.2.fill"
+  case house = "house"
+  case houseFill = "house.fill"
   case calendar = "calendar"
   case calendarBadgeCheckmark = "calendar.badge.checkmark"
   case calendarBadgeCheckmarkFill = "calendar.badge.checkmark.fill"

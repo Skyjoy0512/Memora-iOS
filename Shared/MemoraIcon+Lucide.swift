@@ -29,6 +29,7 @@ extension MemoraIcon {
     case .brainHeadProfile: .brain
     case .briefcase: .briefcase
     case .bubbleLeftAndBubbleRight: .messagesSquare
+    case .house, .houseFill: .house
     case .calendar: .calendar
     case .calendarBadgeCheckmark: .calendarCheck
     case .calendarBadgeCheckmarkFill: .calendarCheck

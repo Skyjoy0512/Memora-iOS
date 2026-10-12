@@ -75,6 +75,9 @@ struct SpaceDetailView: View {
         }
       }
       .listStyle(.insetGrouped)
+      .onAppear { model.noteProjectUsed(space.id) }
+      .hideBottomBarOnScroll(model.selectedTab.rawValue)
+      .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
       .navigationTitle(space.name)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

@@ -8,6 +8,7 @@ struct MeetingDetailView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var meetingID: UUID
   var morphsFromLibraryToolbar = false
+  @State private var detailTab: RootTab?
   @State private var hasReplacedToolbarIcons = false
   /// When set, the transcript opens and plays from here — used when an AI answer's
   /// source line is tapped.
@@ -111,6 +112,7 @@ struct MeetingDetailView: View {
           }
           .onAppear {
             hasLeft = false
+            detailTab = model.selectedTab
             model.pushActiveDetail(meeting.id)
             // Ask AI stays on screen however far the record is scrolled.
             model.isDetailComposerVisible = true
@@ -140,7 +142,7 @@ struct MeetingDetailView: View {
           }
           .onDisappear {
             if !hasLeft {
-              model.popActiveDetail(meeting.id)
+              model.popActiveDetail(meeting.id, tab: detailTab)
             }
             model.isDetailComposerVisible = true
           }
@@ -466,7 +468,7 @@ struct MeetingDetailView: View {
     guard !hasLeft else { return }
     hasLeft = true
     withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-      model.popActiveDetail(meetingID)
+      model.popActiveDetail(meetingID, tab: detailTab)
     }
   }
 

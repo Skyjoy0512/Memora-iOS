@@ -30,8 +30,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   `UISegmentedControl`. It is what draws and animates the system's Liquid Glass
   selection bubble. Do not swap it for a SwiftUI segmented control and do not set
   `allowsHitTesting(false)` on it — either change makes the selection jump to the
-  new tab instead of morphing across. Ask AI is the fourth tab (to the right of
-  Tasks); do not move it back to a full-screen presentation or a bar
+  new tab instead of morphing across. The order is Home, Library,
+  Ask AI; Ask AI is the third tab (to the right of Library); do not move it back to a full-screen presentation or a bar
   `secondaryAction`.
 - **Create (＋) button**: it is a `.buttonStyle(.glass)` button whose label is the
   `matchedTransitionSource`, opening `.popover` with
@@ -41,8 +41,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - **Files screen top chrome**: do not drive the navigation bar's visibility from
   a scroll-offset flag. Hiding and showing the bar from that state re-runs
   layout, which is read back as more scrolling and freezes the screen. The
-  Files tab lists files only; projects are opened and created from the side
-  menu's プロジェクト section (`FileSidebarView`), not a switch on this screen.
+  Library tab lists records across all projects; projects are opened and
+  created in the Library's Projects segment (`ProjectsView`); both segments
+  share one `libraryPath`. Persist the selected `LibrarySection` as a setting.
 - **Bottom bar hide on scroll** (`App/BottomBarScrollBehavior.swift`): only a
   user-driven scroll phase may move the bar, and a callback where the content
   size changed is layout, not scrolling (lists correct row heights as rows
@@ -59,7 +60,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   the tab bar and Ask AI the same way, so the share / move / delete bar owns
   the bottom edge. The ＋ menu holds capture actions
   only (record, import, online meeting; phone call while its flag is on); memos are added from the Journal
-  toolbar and projects from the side menu.
+  toolbar and projects from the Library's Projects toolbar.
+- **Tasks**: `TasksView` lives inside Home's NavigationStack (`.tasks` route),
+  including notification navigation. Keep creation, editing and source links reachable.
+- **Project context**: capture uses `visibleProjectID` from the active navigation
+  path. Ask AI uses global scope on its tab, project scope on a project detail,
+  and record scope on a meeting/transcript. Shared projects remain read-only.
 - **Journal (Home)**: the tab's own `ScrollView`/`List` must stay the screen's
   primary scroll view, so the large title collapses the way the system expects.
 

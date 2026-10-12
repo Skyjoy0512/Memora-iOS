@@ -1,16 +1,13 @@
 import SwiftUI
 
-/// The side menu. Besides the tabs, it is where projects live: they are opened
-/// and created here rather than from a section of the files tab.
+/// Workspace, library utilities and settings remain reachable from the drawer.
 struct FileSidebarView: View {
   @Environment(MemoraModel.self) private var model
 
   var onOpenRecorder: () -> Void
-  var onSelectSpace: (MemoraSpace) -> Void
-  var onSelectSharedProject: (SharedProject) -> Void
+  var onOpenProjects: () -> Void
   var onCreateTeam: () -> Void
   var onJoinTeam: () -> Void
-  var onCreateSpace: () -> Void
   var onOpenDocuments: () -> Void
   var onOpenPeople: () -> Void
   var onOpenSettings: () -> Void
@@ -40,46 +37,15 @@ struct FileSidebarView: View {
               title: "人物",
               symbol: .person2,
               detail: model.people.isEmpty ? nil : "\(model.people.count)",
-              isSelected: model.selectedTab == .files && model.libraryPath.first == .people
+              isSelected: model.selectedTab == .library && model.libraryPath.first == .people
             ) {
               onOpenPeople()
             }
           }
 
-          sidebarSection("プロジェクト") {
-            ForEach(model.spaces) { space in
-              SidebarRow(
-                title: space.name,
-                symbol: space.icon,
-                detail: "\(meetingCount(for: space.id))",
-                isSelected: openSpaceID == space.id
-              ) {
-                onSelectSpace(space)
-              }
-            }
-
-            SidebarRow(title: "新しいプロジェクト", symbol: .folderBadgePlus) {
-              onCreateSpace()
-            }
-          }
-
-          // Teammates' projects are listed apart, each with its owner's name,
-          // so they never read as one of this person's own.
-          let sharedProjects = model.cloudSharing.sharedProjects
-          if !sharedProjects.isEmpty {
-            sidebarSection("チームから共有") {
-              ForEach(sharedProjects) { project in
-                SidebarRow(
-                  title: project.name,
-                  symbol: project.icon,
-                  detail: project.ownerName,
-                  isSelected: openSharedProjectID == project.id
-                ) {
-                  onSelectSharedProject(project)
-                }
-                .accessibilityLabel("\(project.name)、\(project.ownerName)さんが共有")
-              }
-            }
+          SidebarRow(title: "プロジェクト", symbol: .rectangleStack,
+            isSelected: model.selectedTab == .library && model.librarySection == .projects) {
+            onOpenProjects()
           }
 
           sidebarSection("接続") {
@@ -204,22 +170,7 @@ struct FileSidebarView: View {
   }
 
   private var isShowingDocuments: Bool {
-    model.selectedTab == .files && model.libraryPath.first == .documents
-  }
-
-  /// The project on screen, so its row reads as the current place.
-  private var openSharedProjectID: String? {
-    guard model.selectedTab == .files, case .sharedProject(let id) = model.libraryPath.last else { return nil }
-    return id
-  }
-
-  private var openSpaceID: UUID? {
-    guard model.selectedTab == .files, case .space(let id) = model.libraryPath.last else { return nil }
-    return id
-  }
-
-  private func meetingCount(for spaceID: UUID) -> Int {
-    model.spaceAggregates[spaceID]?.meetingCount ?? 0
+    model.selectedTab == .library && model.libraryPath.first == .documents
   }
 
   private var isOmiConnected: Bool {

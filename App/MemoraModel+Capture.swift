@@ -223,7 +223,6 @@ extension MemoraModel {
     recordingTitle = ""
     recordingNote = ""
     captureEvent = nil
-    selectedTab = .files
     pendingMeetingNavigationID = meetingID
     isCapturePresented = false
     beginProcessing(meetingID)
@@ -246,12 +245,7 @@ extension MemoraModel {
       return
     }
     pendingMeetingNavigationID = nil
-    selectedTab = .files
-    if let spaceID = meeting(id: meetingID)?.spaceID, space(id: spaceID) != nil {
-      libraryPath = [.space(spaceID), .meeting(meetingID)]
-    } else {
-      libraryPath = [.meeting(meetingID)]
-    }
+    openSavedMeeting(meetingID)
     presentPendingSampleCleanupIfNeeded()
   }
 

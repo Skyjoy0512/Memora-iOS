@@ -83,12 +83,7 @@ extension MemoraModel {
       presentPendingSampleCleanupIfNeeded()
       importProgress = 1
       isImporting = false
-      selectedTab = .files
-      if let destinationID = meeting.spaceID {
-        libraryPath = [.space(destinationID), .meeting(meeting.id)]
-      } else {
-        libraryPath = [.meeting(meeting.id)]
-      }
+      openSavedMeeting(meeting.id)
     case .unreadable:
       isImporting = false
       importErrorMessage = "この音声は再生できないため取り込めませんでした。別のファイルをお試しください。"
@@ -235,12 +230,19 @@ extension MemoraModel {
 
     guard url.scheme == "memora" else { return }
 
+    if url.host == "task" {
+      guard let id = UUID(uuidString: url.lastPathComponent), tasks.contains(where: { $0.id == id }) else { return }
+      openTask(id)
+      return
+    }
+
     if url.host == "meeting" {
       guard let id = UUID(uuidString: url.lastPathComponent) else { return }
       // A link is to a record on this device; it resolves nowhere else, so a
       // missing record is explained instead of opening an empty screen.
       if meeting(id: id) != nil {
-        selectedTab = .files
+        selectedTab = .library
+        librarySection = .files
         libraryPath = [.meeting(id)]
       } else if trashedRecords.contains(where: { $0.meeting.id == id }) {
         missingRecordNotice = MissingRecordNotice(
@@ -256,7 +258,8 @@ extension MemoraModel {
       return
     }
 
-    selectedTab = .files
+    selectedTab = .library
+    librarySection = .files
     libraryPath = []
     if url.host == "capture" {
       await startCapture()
