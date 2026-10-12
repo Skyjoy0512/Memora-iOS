@@ -92,6 +92,7 @@ final class MemoraModel {
   var documents: [MemoraDocument] = []
   var projectSources: [ProjectSource] = []
   var projectChats: [ProjectChatThread] = []
+  var sourceAddProjectID: UUID?
   var voiceProfile: VoiceProfile?
   var speakerProfile: SpeakerProfile?
   var speakerProfileReference: SpeakerProfileReference?

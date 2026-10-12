@@ -95,7 +95,7 @@ struct ProjectsView: View {
       }
       Button("キャンセル", role: .cancel) { deleteTarget = nil }
     } message: {
-      Text("ファイルと資料は削除されず、未分類に移動します。")
+      Text("録音・資料・ソースとチャットは削除せず、所属を解除します。")
     }
     .task { await model.cloudSharing.refreshIfConfirmed() }
     .onChange(of: scenePhase) { _, phase in

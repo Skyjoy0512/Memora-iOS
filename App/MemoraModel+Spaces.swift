@@ -2,7 +2,13 @@ import Foundation
 
 extension MemoraModel {
   var visibleProjectID: UUID? {
-    ProjectFiling.existingProject(RootNavigation.projectID(in: activeNavigationPath), in: spaces)
+    let id: UUID?
+    if case .projectSource(let sourceID) = activeNavigationPath.last {
+      id = source(id: sourceID)?.projectID
+    } else {
+      id = RootNavigation.projectID(in: activeNavigationPath)
+    }
+    return ProjectFiling.existingProject(id, in: spaces)
   }
 
   var recentProjects: [MemoraSpace] {

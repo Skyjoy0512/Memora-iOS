@@ -82,6 +82,9 @@ struct RootTabView: View {
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
       isKeyboardVisible = false
     }
+    .sheet(isPresented: Binding(get: { model.sourceAddProjectID != nil }, set: { if !$0 { model.sourceAddProjectID = nil } })) {
+      if let id = model.sourceAddProjectID { ProjectSourceAddSheet(projectID: id) }
+    }
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
     }
@@ -348,7 +351,9 @@ struct RootTabView: View {
   }
 
   private var composerScope: AIQueryScope {
-    RootNavigation.scope(tab: model.selectedTab, path: model.activeNavigationPath,
+    if case .projectSource(let id) = model.activeNavigationPath.last,
+       let projectID = model.source(id: id)?.projectID, model.space(id: projectID) != nil { return .space(projectID) }
+    return RootNavigation.scope(tab: model.selectedTab, path: model.activeNavigationPath,
       detailMeetingID: model.activeDetailMeetingID, detailTab: model.activeDetailTabs.last)
   }
 

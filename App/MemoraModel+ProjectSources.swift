@@ -28,6 +28,7 @@ extension MemoraModel {
 
   func addProjectNote(title: String, text: String, projectID: UUID) async throws -> UUID? {
     guard !isRestoring, space(id: projectID) != nil, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+    guard text.utf8.count <= 512 * 1024 else { throw ProjectSourceFiles.Failure.noteTooLarge }
     let data = try JSONEncoder().encode([ProjectSourceText(text: text)])
     let name = try await ProjectSourceFiles.shared.write(data, extension: "json")
     var source = ProjectSource(projectID: projectID, kind: .note,
@@ -40,11 +41,35 @@ extension MemoraModel {
     return source.id
   }
 
+  func updateProjectNote(_ id: UUID, title: String, text: String) async throws -> Bool {
+    guard let previous = source(id: id), previous.kind == .note, !isRestoring,
+          !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+    guard text.utf8.count <= 512 * 1024 else { throw ProjectSourceFiles.Failure.noteTooLarge }
+    let data = try JSONEncoder().encode([ProjectSourceText(text: text)])
+    let name = try await ProjectSourceFiles.shared.write(data, extension: "json")
+    guard var current = source(id: id), current.extractedTextReference == previous.extractedTextReference else {
+      await ProjectSourceFiles.shared.remove([name]); return false
+    }
+    let old = current.extractedTextReference
+    current.title = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? String(text.prefix(40)) : title
+    current.extractedTextReference = name
+    current.updatedAt = .now
+    guard storeProjectSource(current) else { await ProjectSourceFiles.shared.remove([name]); return false }
+    if let old { await ProjectSourceFiles.shared.remove([old]) }
+    return true
+  }
+
   func importProjectFile(_ url: URL, projectID: UUID) async throws -> UUID? {
     guard !isRestoring, space(id: projectID) != nil else { return nil }
+    let scoped = url.startAccessingSecurityScopedResource()
+    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+    guard let bytes = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+          bytes <= ProjectSourceFiles.maximumFileBytes else { throw ProjectSourceFiles.Failure.tooLarge }
     if ["m4a", "mp3", "wav", "aiff", "aif", "caf", "flac", "ogg"].contains(url.pathExtension.lowercased()) {
+      guard !isImporting else { return nil }
+      let existing = Set(meetings.map(\.id))
       await importAudio(from: url, spaceID: projectID)
-      return nil
+      return meetings.first { !existing.contains($0.id) }?.id
     }
     let receipt = try await ProjectSourceFiles.shared.copy(url)
     return await addProjectFile(receipt: receipt, title: url.lastPathComponent, projectID: projectID)

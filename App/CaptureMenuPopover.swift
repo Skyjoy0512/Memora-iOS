@@ -18,6 +18,18 @@ struct CaptureMenuPopover: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(8)
       }
+      if let spaceID, model.space(id: spaceID) != nil {
+        Button("ソースを追加", icon: .paperclip) {
+          collapse()
+          Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+            model.sourceAddProjectID = spaceID
+          }
+        }
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .padding(.horizontal, 8)
+        .buttonStyle(.plain)
+      }
       ForEach(CaptureAction.available) { action in
         Button {
           select(action)

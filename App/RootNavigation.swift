@@ -10,8 +10,11 @@ enum RootNavigation {
   }
 
   static func projectID(in path: [LibraryRoute]) -> UUID? {
-    guard case .space(let id) = path.last else { return nil }
-    return id
+    switch path.last {
+    case .space(let id): id
+    case .projectSources(let id): id
+    default: nil
+    }
   }
 
   static func scope(tab: RootTab, path: [LibraryRoute], detailMeetingID: UUID?, detailTab: RootTab? = nil) -> AIQueryScope {
@@ -22,6 +25,7 @@ enum RootNavigation {
     switch path.last {
     case .meeting(let id), .transcript(let id): return .file(id)
     case .space(let id): return .space(id)
+    case .projectSources(let id): return id.map(AIQueryScope.space) ?? .global
     default: return .global
     }
   }
