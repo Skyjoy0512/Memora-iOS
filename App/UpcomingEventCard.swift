@@ -4,6 +4,8 @@ import SwiftUI
 /// starts, and its title.
 struct UpcomingEventCard: View {
   var meeting: UpcomingMeeting
+  @ScaledMetric(relativeTo: .title2) private var dateTileWidth = 52.0
+  @ScaledMetric(relativeTo: .title2) private var dateTileHeight = 56.0
 
   var body: some View {
     HStack(spacing: 14) {
@@ -31,25 +33,23 @@ struct UpcomingEventCard: View {
     }
     .padding(14)
     .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
-    .memoraCard(radius: 22)
+    .memoraCard(radius: 22, fill: Color(uiColor: .secondarySystemGroupedBackground))
     .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
   }
 
   private var dateTile: some View {
-    VStack(spacing: 0) {
+    VStack(spacing: 2) {
       Text(meeting.start, format: .dateTime.weekday(.abbreviated))
         .font(.caption2.weight(.bold))
-        .foregroundStyle(.white)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 3)
-        .background(.tint)
+        .foregroundStyle(.secondary)
       Text(meeting.start, format: .dateTime.day())
         .font(.title2.weight(.semibold).monospacedDigit())
         .foregroundStyle(.primary)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    .frame(width: 52, height: 56)
-    .background(Color(uiColor: .systemBackground))
+    .padding(.vertical, 6)
+    .frame(width: dateTileWidth)
+    .frame(minHeight: dateTileHeight)
+    .background(Color(uiColor: .systemGroupedBackground))
     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     .accessibilityHidden(true)
   }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A large, gradient-filled gallery tile for one audio file. Tapping it opens
+/// A large gallery tile for one audio file. Tapping it opens
 /// the meeting with a zoom transition.
 struct MeetingCard: View {
   @Environment(\.colorScheme) private var colorScheme
@@ -84,7 +84,6 @@ struct MeetingCard: View {
           .accessibilityHidden(true)
       }
     }
-    .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.06), radius: 16, y: 8)
     .accessibilityElement(children: .combine)
     .accessibilityLabel(accessibilityLabel)
     .accessibilityAddTraits(isSelected ? [.isSelected] : [])
