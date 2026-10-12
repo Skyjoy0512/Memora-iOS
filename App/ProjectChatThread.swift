@@ -9,4 +9,6 @@ struct ProjectChatThread: Identifiable, Hashable, Codable, Sendable {
   var createdAt = Date.now
   var updatedAt = Date.now
   var messages: [ProjectChatTurn] = []
+  var pendingMessageID: UUID?
+  var lastFailure: String?
 }

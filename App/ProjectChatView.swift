@@ -1,0 +1,111 @@
+import SwiftUI
+
+struct ProjectChatView: View {
+  @Environment(MemoraModel.self) private var model
+  @Environment(\.dismiss) private var dismiss
+  var threadID: UUID
+  @State private var isRenaming = false
+  @State private var isDeleting = false
+  @State private var editingTask: MemoraTask?
+  @State private var sourceMissing = false
+
+  var body: some View {
+    if let thread = model.projectChat(id: threadID) {
+      ScrollViewReader { proxy in
+        ScrollView {
+          LazyVStack(alignment: .leading, spacing: 24) {
+            if let projectID = thread.projectID, let project = model.space(id: projectID) {
+              Text(project.name).font(.footnote).foregroundStyle(.secondary)
+            } else {
+              Text("プロジェクトの所属を解除した会話です。履歴の閲覧はできます。")
+                .font(.subheadline).foregroundStyle(.secondary)
+            }
+            if thread.messages.isEmpty {
+              Text("このプロジェクトについて話しかけてください。")
+                .font(.body).foregroundStyle(.secondary).padding(.vertical, 24)
+            }
+            ForEach(thread.messages) { message in
+              VStack(alignment: .leading, spacing: 12) {
+                Text(message.text).font(.body).lineSpacing(4).textSelection(.enabled)
+                  .padding(message.role == .user ? 14 : 0)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .background(message.role == .user ? MemoraPalette.card : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 18))
+                if message.role == .assistant {
+                  ForEach(message.citations) { citation in
+                    Button { open(citation) } label: {
+                      Label(citationLabel(citation), icon: .docText)
+                        .font(.footnote).multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    }.tint(MemoraPalette.textPrimary)
+                  }
+                  if let engine = message.engineLabel { Text(engine).font(.caption).foregroundStyle(.secondary) }
+                }
+              }.id(message.id)
+            }
+            if let stage = model.projectChatStages[threadID] {
+              Text(stage).font(.subheadline).foregroundStyle(.secondary).accessibilityLabel(stage)
+              Button("回答を停止", icon: .stopFill) { model.cancelProjectChat(threadID) }
+                .frame(minHeight: 44).tint(MemoraPalette.textPrimary)
+            } else if let failure = thread.lastFailure {
+              Text(failure).font(.subheadline).foregroundStyle(.secondary)
+              Text("再試行する場合は、下の入力欄から改めて送信してください。")
+                .font(.footnote).foregroundStyle(.secondary)
+            } else if thread.pendingMessageID != nil {
+              Text("前の回答は中断されています。自動で再送はしません。")
+                .font(.subheadline).foregroundStyle(.secondary)
+            }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(ProjectLayout.horizontalInset)
+        }
+        .onChange(of: thread.messages.last?.id) { _, id in
+          if let id { proxy.scrollTo(id, anchor: .bottom) }
+        }
+      }
+      .background(MemoraPalette.background)
+      .navigationTitle(thread.title).navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarActionItem(usesSystemBackground: true) {
+          Menu {
+            if let projectID = thread.projectID, model.space(id: projectID) != nil {
+              Button("新しいチャット", icon: .squareAndPencil) {
+                if let id = model.createProjectChat(projectID: projectID) { model.openProjectChat(id) }
+              }
+              NavigationLink("チャット履歴", value: LibraryRoute.projectChats(projectID))
+            }
+            Button("名前を変更", icon: .pencil) { isRenaming = true }
+            Button("チャットを削除", icon: .trash, role: .destructive) { isDeleting = true }
+          } label: { ToolbarActionLabel("その他", icon: .ellipsis) }
+        }
+      }
+      .sheet(isPresented: $isRenaming) { ProjectChatRenameSheet(thread: thread) }
+      .sheet(item: $editingTask) { task in TaskEditView(task: task) }
+      .alert("元のソースが見つかりません", isPresented: $sourceMissing) { Button("閉じる", role: .cancel) {} }
+      .confirmationDialog("このチャットを削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
+        Button("削除", role: .destructive) { if model.deleteProjectChat(threadID) { dismiss() } }
+      } message: { Text("会話だけを削除します。ソースやプロジェクトは削除しません。") }
+      .hideBottomBarOnScroll(model.selectedTab.rawValue)
+      .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
+    } else { ContentUnavailableView("チャットが見つかりません", icon: .chatBubble) }
+  }
+
+  private func citationLabel(_ citation: ProjectCitation) -> String {
+    guard let page = citation.page else { return citation.title }
+    return "\(citation.title) · ページ\(page)"
+  }
+
+  private func open(_ citation: ProjectCitation) {
+    switch citation.target {
+    case .source(let id):
+      if model.source(id: id) != nil { model.libraryPath.append(.projectSource(id)) } else { sourceMissing = true }
+    case .meeting(let id):
+      if model.meeting(id: id) != nil { model.libraryPath.append(.transcript(id)) } else { sourceMissing = true }
+    case .document(let id):
+      if model.document(id: id) != nil { model.libraryPath.append(.document(id)) } else { sourceMissing = true }
+    case .task(let id):
+      editingTask = model.tasks.first { $0.id == id }
+      if editingTask == nil { sourceMissing = true }
+    }
+  }
+}

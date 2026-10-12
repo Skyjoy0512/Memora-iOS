@@ -92,6 +92,10 @@ final class MemoraModel {
   var documents: [MemoraDocument] = []
   var projectSources: [ProjectSource] = []
   var projectChats: [ProjectChatThread] = []
+  var projectChatBusyIDs: Set<UUID> = []
+  var projectSourceProcessingIDs: Set<UUID> = []
+  var projectChatStages: [UUID: String] = [:]
+  @ObservationIgnored var projectChatJobs: [UUID: Task<Void, Never>] = [:]
   var sourceAddProjectID: UUID?
   var voiceProfile: VoiceProfile?
   var speakerProfile: SpeakerProfile?

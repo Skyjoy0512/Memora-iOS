@@ -69,7 +69,7 @@ enum AIAttachmentText {
   }
 
   /// Decodes UTF-8, allowing for a multibyte character cut by the read limit.
-  private static func decodeUTF8(_ data: Data) -> String? {
+  static func decodeUTF8(_ data: Data) -> String? {
     if let text = String(data: data, encoding: .utf8) { return text }
     for dropped in 1...3 where data.count > dropped {
       if let text = String(data: data.dropLast(dropped), encoding: .utf8) { return text }

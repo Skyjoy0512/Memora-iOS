@@ -6,6 +6,8 @@ enum LibraryRoute: Hashable {
   case space(UUID)
   case projectSources(UUID?)
   case projectSource(UUID)
+  case projectChat(UUID)
+  case projectChats(UUID?)
   case tasks
   case allMeetings
   case settings

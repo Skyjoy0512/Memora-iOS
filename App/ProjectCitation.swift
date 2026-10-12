@@ -14,5 +14,6 @@ struct ProjectCitation: Identifiable, Hashable, Codable, Sendable {
     case source(UUID)
     case meeting(UUID)
     case document(UUID)
+    case task(UUID)
   }
 }

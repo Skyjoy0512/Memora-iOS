@@ -16,9 +16,23 @@ struct SpaceDetailView: View {
       let records = ProjectFiling.records(in: spaceID, from: model.meetings)
       let tasks = openTasks(in: records)
       let items = model.workspaceItems(projectID: spaceID)
+      let chats = model.projectChats.filter { $0.projectID == spaceID }.sorted { $0.updatedAt > $1.updatedAt }
       let isEmpty = items.isEmpty
 
       List {
+        Section {
+          ForEach(Array(chats.prefix(3))) { thread in ProjectChatRow(thread: thread) }
+        } header: {
+          HStack {
+            Text("チャット").font(.subheadline.weight(.semibold))
+            Spacer()
+            Button("新しいチャット", icon: .squareAndPencil) {
+              if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
+            }.font(.subheadline).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
+          }.textCase(nil)
+        } footer: {
+          if chats.count > 3 { NavigationLink("すべてのチャット", value: LibraryRoute.projectChats(spaceID)) }
+        }
         if isEmpty {
           Section {
             VStack(alignment: .leading, spacing: 12) {

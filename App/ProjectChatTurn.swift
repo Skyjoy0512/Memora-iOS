@@ -8,6 +8,7 @@ struct ProjectChatTurn: Identifiable, Hashable, Codable, Sendable {
   var engineLabel: String?
   var modelLabel: String?
   var citations: [ProjectCitation] = []
+  var contextReferences: [ProjectCitation]?
 
   enum Role: String, Codable, Sendable { case user, assistant }
 }

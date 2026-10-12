@@ -204,7 +204,7 @@ struct RootTabView: View {
         QuickAIComposer(
           scope: composerScope,
           isComposing: $isComposing,
-          keepsFocusAfterSubmit: model.selectedTab == .askAI
+          keepsFocusAfterSubmit: model.selectedTab == .askAI || model.activeProjectChatID != nil
         )
         // Narrower than the bar below it, so it reads as a floating field;
         // while typing it widens to the screen for room to write.
@@ -351,6 +351,8 @@ struct RootTabView: View {
   }
 
   private var composerScope: AIQueryScope {
+    if let id = model.activeProjectChatID, let projectID = model.projectChat(id: id)?.projectID,
+       model.space(id: projectID) != nil { return .space(projectID) }
     if case .projectSource(let id) = model.activeNavigationPath.last,
        let projectID = model.source(id: id)?.projectID, model.space(id: projectID) != nil { return .space(projectID) }
     return RootNavigation.scope(tab: model.selectedTab, path: model.activeNavigationPath,
@@ -359,6 +361,9 @@ struct RootTabView: View {
 
   private var shouldShowComposer: Bool {
     guard !model.isInlineEditing, !isSearchCovering else { return false }
+    if case .projectChat(let id) = model.activeNavigationPath.last {
+      guard let projectID = model.projectChat(id: id)?.projectID, model.space(id: projectID) != nil else { return false }
+    }
     // The detail keeps its own contextual field; Ask AI has its own chat field,
     // so the shared "Ask Anything" bar is for the three list tabs.
     if isShowingMeetingDetail {

@@ -55,6 +55,11 @@ struct ProjectsView: View {
           }
         }
 
+        if !model.projectChats.isEmpty {
+          NavigationLink("チャット履歴", value: LibraryRoute.projectChats(nil))
+            .font(.subheadline).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
+        }
+
         if !shared.isEmpty {
           heading("チームから共有", count: shared.count)
           ForEach(shared) { project in

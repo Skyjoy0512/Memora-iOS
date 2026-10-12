@@ -10,6 +10,8 @@ struct LibraryDestinationView: View {
     case .space(let id): SpaceDetailView(spaceID: id)
     case .projectSources(let id): ProjectSourcesView(projectID: id)
     case .projectSource(let id): ProjectSourceDetailView(sourceID: id)
+    case .projectChat(let id): ProjectChatView(threadID: id)
+    case .projectChats(let id): ProjectChatsView(projectID: id)
     case .tasks: TasksView()
     case .allMeetings: AllMeetingsView()
     case .settings: SettingsView()

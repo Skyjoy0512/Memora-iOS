@@ -44,6 +44,11 @@ struct ProjectSourceDetailView: View {
               Button("メモを編集", icon: .pencil) { isEditing = true }
                 .disabled(extracted.isEmpty || textFailure != nil)
             }
+            if source.localFileReference != nil && source.processingStatus != .ready {
+              Button("解析を再試行", icon: .arrowClockwise) {
+                Task { await model.prepareProjectSource(sourceID) }
+              }.disabled(model.projectSourceProcessingIDs.contains(sourceID))
+            }
             Button("プライバシー", icon: .lock) { isEditingPrivacy = true }
             if source.projectID != nil {
               Button("プロジェクトから外す", icon: .folder) { isDetaching = true }
@@ -53,6 +58,11 @@ struct ProjectSourceDetailView: View {
         }
       }
       .quickLookPreview($previewURL)
+      .task(id: sourceID) {
+        if source.processingStatus == .pending || source.processingStatus == .processing {
+          await model.prepareProjectSource(sourceID)
+        }
+      }
       .task(id: source.extractedTextReference) {
         extracted = []; textFailure = nil
         guard let name = source.extractedTextReference else { return }

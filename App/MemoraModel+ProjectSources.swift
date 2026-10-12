@@ -90,7 +90,42 @@ extension MemoraModel {
     guard storeProjectSource(source) else {
       await ProjectSourceFiles.shared.remove([receipt.reference]); return nil
     }
+    await prepareProjectSource(source.id)
     return source.id
+  }
+
+  func prepareProjectSource(_ id: UUID) async {
+    guard let source = source(id: id), source.processingStatus != .ready,
+          !projectSourceProcessingIDs.contains(id), let name = source.localFileReference,
+          let file = ProjectSourceFiles.resolve(name) else { return }
+    projectSourceProcessingIDs.insert(id)
+    defer { projectSourceProcessingIDs.remove(id) }
+    var processing = source
+    processing.processingStatus = .processing
+    guard storeProjectSource(processing) else { return }
+    var created: [String] = []
+    do {
+      let result = try await Task.detached(priority: .utility) { try ProjectSourceExtraction.read(file) }.value
+      let text = result.blocks.isEmpty ? nil : try await ProjectSourceFiles.shared.write(JSONEncoder().encode(result.blocks), extension: "json")
+      if let text { created.append(text) }
+      var thumb: String?
+      if let data = result.thumbnail { thumb = try await ProjectSourceFiles.shared.write(data, extension: "jpg") }
+      if let thumb { created.append(thumb) }
+      guard var current = self.source(id: id), current.localFileReference == name else {
+        await ProjectSourceFiles.shared.remove(created); return
+      }
+      current.extractedTextReference = text
+      current.thumbnailReference = thumb
+      current.processingStatus = text == nil ? .unavailable : .ready
+      current.errorInformation = result.notice
+      if !storeProjectSource(current) { await ProjectSourceFiles.shared.remove(created) }
+    } catch {
+      await ProjectSourceFiles.shared.remove(created)
+      guard var current = self.source(id: id), current.localFileReference == name else { return }
+      current.processingStatus = .failed
+      current.errorInformation = "解析できませんでした。元ファイルは保存されています。"
+      _ = storeProjectSource(current)
+    }
   }
 
   @discardableResult

@@ -1,7 +1,7 @@
 import Foundation
 
 enum ProjectSourceTextReader {
-  static let maximumBytes = 1024 * 1024
+  static let maximumBytes = 2 * 1024 * 1024
 
   static func read(_ reference: String) throws -> [ProjectSourceText] {
     guard let url = ProjectSourceFiles.resolve(reference),

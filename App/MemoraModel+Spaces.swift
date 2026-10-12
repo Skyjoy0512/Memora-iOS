@@ -5,6 +5,8 @@ extension MemoraModel {
     let id: UUID?
     if case .projectSource(let sourceID) = activeNavigationPath.last {
       id = source(id: sourceID)?.projectID
+    } else if case .projectChat(let chatID) = activeNavigationPath.last {
+      id = projectChat(id: chatID)?.projectID
     } else {
       id = RootNavigation.projectID(in: activeNavigationPath)
     }
@@ -81,7 +83,10 @@ extension MemoraModel {
     }
     let candidateChats = projectChats.map { thread in
       var value = thread
-      if value.projectID == id { value.projectID = nil }
+      if value.projectID == id {
+        value.projectID = nil
+        value.pendingMessageID = nil
+      }
       return value
     }
     guard persistBatch({
@@ -94,6 +99,7 @@ extension MemoraModel {
       ]
     }) else { return false }
     projectSources = candidateSources
+    for thread in projectChats where thread.projectID == id { projectChatJobs[thread.id]?.cancel() }
     projectChats = candidateChats
     spaces = candidateSpaces
     meetings = candidateMeetings
