@@ -175,7 +175,7 @@ struct RootTabView: View {
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.home)
 
-      SearchView()
+      SearchView(onOpenSidebar: openSidebar)
         .hidesSystemTabBar()
         .tag(RootTab.askAI)
     }
@@ -307,6 +307,8 @@ struct RootTabView: View {
       return model.homePath.isEmpty
     case .library:
       return model.libraryPath.isEmpty
+    case .askAI:
+      return true
     default:
       return false
     }

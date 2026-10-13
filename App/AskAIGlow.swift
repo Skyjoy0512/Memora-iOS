@@ -9,6 +9,7 @@ struct AskAIGlow: View {
   var isEmpty: Bool
   /// Changes each time the tab opens, to replay the entrance.
   var entrance: Int
+  var permitsIdleGlow = true
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -23,7 +24,7 @@ struct AskAIGlow: View {
         startPoint: .init(x: 0.5, y: 0.45),
         endPoint: .bottom
       )
-      .opacity(strength * (isBlooming ? 1 : (isEmpty ? 0.55 : 0)))
+      .opacity(permitsIdleGlow ? strength * (isBlooming ? 1 : (isEmpty ? 0.55 : 0)) : 0)
 
       // Thinking lights only the top, above the conversation.
       if isThinking {
@@ -45,8 +46,8 @@ struct AskAIGlow: View {
     .ignoresSafeArea()
     .animation(.smooth(duration: 0.9), value: isThinking)
     .animation(.smooth(duration: 0.6), value: isEmpty)
-    .onAppear(perform: bloom)
-    .onChange(of: entrance) { _, _ in bloom() }
+    .onAppear { if permitsIdleGlow { bloom() } }
+    .onChange(of: entrance) { _, _ in if permitsIdleGlow { bloom() } }
   }
 
   /// Dark mode needs less colour to read as the same glow.

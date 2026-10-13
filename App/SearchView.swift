@@ -10,8 +10,7 @@ struct SearchView: View {
   /// interrupted by a reply arriving.
   @State private var isNearBottom = true
   @State private var hasUnseenAnswer = false
-  /// Bumped each time the tab opens, to replay the glow's entrance.
-  @State private var glowEntrance = 0
+  var onOpenSidebar: () -> Void
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
@@ -28,12 +27,9 @@ struct SearchView: View {
         }
       }
       .background {
-        AskAIGlow(isThinking: model.isAIChatResponding, isEmpty: model.aiMessages.isEmpty, entrance: glowEntrance)
+        AskAIGlow(isThinking: model.isAIChatResponding, isEmpty: false, entrance: 0, permitsIdleGlow: false)
       }
       .background(MemoraPalette.background)
-      .onChange(of: model.selectedTab) { _, tab in
-        if tab == .askAI { glowEntrance += 1 }
-      }
       .safeAreaInset(edge: .top, spacing: 0) {
         VStack(spacing: 10) {
           assistantHeader
@@ -181,21 +177,13 @@ struct SearchView: View {
   }
 
   private var chatEmptyState: some View {
-    ScrollView {
-      VStack(spacing: 18) {
-        AskAIGreeting()
-          .padding(.top, 184)
-        Spacer(minLength: 0)
-      }
-      .frame(maxWidth: .infinity, alignment: .top)
-      .containerRelativeFrame(.vertical)
-      .padding(.horizontal, 18)
-      .padding(.vertical, 12)
-    }
+    Color.clear
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
   private var assistantHeader: some View {
     AskAIHeader(
+      onOpenSidebar: onOpenSidebar,
       onNewChat: { model.startNewAIChat() },
       onHistory: { isHistoryPresented = true },
       onSearch: { isSearchSheetPresented = true }
