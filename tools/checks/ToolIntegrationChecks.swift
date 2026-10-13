@@ -39,6 +39,19 @@ struct ToolIntegrationChecks {
     let restored = try JSONDecoder().decode(MCPServerConfig.self, from: old)
     precondition(restored.oauth == nil && restored.reviewedEndpoint == nil && restored.hasUsageCharges == nil && restored.approvedReadToolFingerprints == nil)
     let first = MCPTool(serverID: restored.id, serverName: "old", name: "a.b", summary: "read", inputSchema: Data("{}".utf8), isReadOnly: true)
+    var reviewed = restored
+    reviewed.reviewedEndpoint = reviewed.url
+    reviewed.hasUsageCharges = false
+    reviewed.approvedReadToolFingerprints = [first.name: first.fingerprint]
+    precondition(first.canExecuteAutomatically(on: reviewed, carriesPrivateReads: false))
+    precondition(!first.canExecuteAutomatically(on: reviewed, carriesPrivateReads: true))
+    reviewed.hasUsageCharges = nil
+    precondition(!first.canExecuteAutomatically(on: reviewed, carriesPrivateReads: false))
+    reviewed.hasUsageCharges = true
+    precondition(!first.canExecuteAutomatically(on: reviewed, carriesPrivateReads: false))
+    reviewed.hasUsageCharges = false
+    reviewed.approvedReadToolFingerprints = [first.name: "changed"]
+    precondition(!first.canExecuteAutomatically(on: reviewed, carriesPrivateReads: false))
     var second = first; second.name = "a_b"
     precondition(first.agentName != second.agentName && first.agentName.count <= 64)
     second = first; second.summary = "changed"

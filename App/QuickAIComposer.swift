@@ -48,20 +48,22 @@ struct QuickAIComposer: View {
     )
     .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
     .overlay(alignment: .top) {
-      if let token = activeMention, token != dismissedMention {
-        AIPluginMenu(candidates: model.mentionCandidates(query: token.query), maximumHeight: min(320, max(100, composerTop - WindowSafeArea.insets.top - 12)),
-          select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })
-          .alignmentGuide(.top) { $0[.bottom] + 8 }
-      } else if supportsMentions && !model.composerMentions.isEmpty {
-        ComposerMentionStrip(mentions: model.composerMentions) { mention in
-          guard mentionInput.snapshot()?.hasMarkedText != true, mention.isValid(in: model.composerDraft),
-                let range = Range(mention.range, in: model.composerDraft) else { return }
-          model.composerDraft.removeSubrange(range)
-          model.composerMentionCursorRequest = nil
-          model.composerMentionCursorRequest = ComposerCursorRequest(offset: mention.range.location)
+      VStack(spacing: 0) {
+        if let token = activeMention, token != dismissedMention {
+          AIPluginMenu(candidates: model.mentionCandidates(query: token.query), maximumHeight: min(320, max(100, composerTop - WindowSafeArea.insets.top - 12)),
+            select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })
+        } else if supportsMentions && !model.composerMentions.isEmpty {
+          ComposerMentionStrip(mentions: model.composerMentions) { mention in
+            guard mentionInput.snapshot()?.hasMarkedText != true, mention.isValid(in: model.composerDraft),
+                  let range = Range(mention.range, in: model.composerDraft) else { return }
+            model.composerDraft.removeSubrange(range)
+            model.composerMentionCursorRequest = nil
+            model.composerMentionCursorRequest = ComposerCursorRequest(offset: mention.range.location)
+          }
         }
-        .alignmentGuide(.top) { $0[.bottom] + 8 }
       }
+      .fixedSize(horizontal: false, vertical: true)
+      .alignmentGuide(.top) { $0[.bottom] + 8 }
     }
     .sheet(item: $selectedSetup) { plugin in
       NavigationStack {

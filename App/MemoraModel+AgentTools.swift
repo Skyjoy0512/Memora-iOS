@@ -27,9 +27,10 @@ extension MemoraModel {
       return AgentToolOutcome(text: "存在しない、無効、または入力形式に対応していない道具です。実行していません。", isError: true)
     }
     if call.tool == .searchEmail || call.tool == .readEmail {
-      guard await approveDirectPluginRead(call, messageID: messageID) else {
-        return AgentToolOutcome(text: "利用者が外部メールの取得を承認しませんでした。取得せず、同じ操作を再要求しません。", isError: true)
+      guard !automaticAccess else {
+        return AgentToolOutcome(text: "料金未確認のメール取得は自動処理では実行できません。チャットから明示的に依頼してください。", isError: true)
       }
+      if let refusal = await directPluginReadRefusal(call, messageID: messageID) { return refusal }
     }
     if automaticAccess {
       guard let tool = call.tool, AgentTool.residentTools.contains(tool) else {

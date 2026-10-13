@@ -33,6 +33,12 @@ struct MCPTool: Identifiable, Hashable, Sendable {
       risk: isReadOnly ? .read : .sensitive, isAvailable: true, isEnabled: true)
   }
 
+  func canExecuteAutomatically(on server: MCPServerConfig, carriesPrivateReads: Bool) -> Bool {
+    isReadOnly && server.isEnabled && server.reviewedEndpoint == server.url
+      && server.hasUsageCharges == false
+      && server.approvedReadToolFingerprints?[name] == fingerprint && !carriesPrivateReads
+  }
+
   var schemaObject: [String: Any] {
     (try? JSONSerialization.jsonObject(with: inputSchema)) as? [String: Any]
       ?? ["unsupportedSchema": true]

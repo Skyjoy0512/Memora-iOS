@@ -22,6 +22,10 @@ extension MemoraModel {
       return AgentToolOutcome(text: "カレンダーの取得を停止しました。", isError: true)
     }
     finishAgentStep(step, on: messageID, state: .done, detail: "\(events.count)件")
+    #if DEBUG
+    // An actual completed read can be verified without logging dates or event contents.
+    print("MemoraPlugin: read_calendar completed")
+    #endif
     let rows = events.prefix(30).map { event in
       let start = event.start.formatted(date: .omitted, time: .shortened)
       return "\(event.isAllDay ? "終日" : start) \(String(event.title.prefix(200)))"

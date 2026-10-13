@@ -309,8 +309,6 @@ struct RootTabView: View {
       return model.libraryPath.isEmpty
     case .askAI:
       return true
-    default:
-      return false
     }
   }
 

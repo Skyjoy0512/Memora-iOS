@@ -23,6 +23,7 @@ enum ExternalToolFailure: LocalizedError {
       case .server: return Self.failed.localizedDescription
       }
     }
+    if let failure = error as? MCPOAuthError { return failure.localizedDescription }
     if let failure = error as? GmailError {
       switch failure {
       case .notConnected, .notConfigured, .cancelled, .authorizationFailed: return failure.localizedDescription
