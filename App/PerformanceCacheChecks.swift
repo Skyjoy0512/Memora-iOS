@@ -21,6 +21,11 @@ enum PerformanceCacheChecks {
     }
     guard let first = decoded.first, decoded.allSatisfy({ $0 === first }),
           first.cgImage?.width == 120 else { return "duplicate decode or changed dimensions" }
+    NotificationCenter.default.post(name: UIApplication.didReceiveMemoryWarningNotification, object: nil)
+    guard let reloaded = await MediaImageCache.photo(named: name, maxPixelSize: 120),
+          reloaded !== first, reloaded.cgImage?.width == first.cgImage?.width else {
+      return "memory warning did not release cached image or changed dimensions"
+    }
     let cancelled = Task { await MediaImageCache.photo(named: name) }
     cancelled.cancel()
     if await cancelled.value != nil { return "cancelled request returned image" }

@@ -90,7 +90,9 @@ final class MemoraModel {
   }
   /// Documents and slides made from the records, newest first.
   var documents: [MemoraDocument] = []
-  var projectSources: [ProjectSource] = []
+  var projectSources: [ProjectSource] = [] {
+    didSet { projectSourceIndex.invalidate() }
+  }
   var projectChats: [ProjectChatThread] = []
   var webResearchReports: [WebResearchReport] = []
   var webResearchBusyIDs: Set<UUID> = []
@@ -116,6 +118,7 @@ final class MemoraModel {
   var speakerAnalysisMessages: [UUID: String] = [:]
   var tasks: [MemoraTask] {
     didSet {
+      taskIndex.invalidate()
       tasksByMeeting = nil
       rebuildProjectTaskCounts()
       refreshSampleContentFlag()
@@ -154,6 +157,8 @@ final class MemoraModel {
   }
   /// Positions for the array lookups the screens do constantly.
   @ObservationIgnored private var meetingIndex = IdentifiableIndex<Meeting>()
+  @ObservationIgnored var taskIndex = IdentifiableIndex<MemoraTask>()
+  @ObservationIgnored var projectSourceIndex = IdentifiableIndex<ProjectSource>()
   @ObservationIgnored var meetingSearchTexts: [UUID: String] = [:]
   @ObservationIgnored private var dayChangeObservers: [NSObjectProtocol] = []
   @ObservationIgnored private var inboxObserver: NSObjectProtocol?

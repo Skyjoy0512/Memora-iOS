@@ -675,13 +675,11 @@ struct LibraryView: View {
   private var fileSections: [FileDateSection] {
     let calendar = Calendar.current
     var sections: [FileDateSection] = []
-    var positions: [String: Int] = [:]
     for meeting in matchingMeetings {
       let key = sectionKey(for: meeting.createdAt, calendar: calendar)
-      if let index = positions[key] {
+      if let index = sections.firstIndex(where: { $0.id == key }) {
         sections[index].meetings.append(meeting)
       } else {
-        positions[key] = sections.count
         sections.append(
           FileDateSection(
             id: key,

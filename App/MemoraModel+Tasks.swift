@@ -1,6 +1,8 @@
 import Foundation
 
 extension MemoraModel {
+  func task(id: UUID) -> MemoraTask? { taskIndex.element(id, in: tasks) }
+
   var ownTasks: [MemoraTask] {
     TaskOwnership.ownedTasks(tasks, names: [profile.name, account?.displayName ?? ""])
   }

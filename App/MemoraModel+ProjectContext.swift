@@ -19,7 +19,7 @@ extension MemoraModel {
       // evidence until a document-specific permission is explicitly provided.
       return !cloud && document(id: id)?.spaceID == projectID
     case .task(let id):
-      guard let task = tasks.first(where: { $0.id == id }),
+      guard let task = self.task(id: id),
             let recordID = task.meetingID, meeting(id: recordID)?.spaceID == projectID else { return false }
       return !cloud || allowsTaskAccess(task, purpose: .cloudAI)
     }
@@ -40,7 +40,7 @@ extension MemoraModel {
         text = ([record.summary] + record.transcript.map(\.text)).joined(separator: "\n")
       case .document(let id): text = document(id: id)?.plainText ?? ""
       case .task(let id):
-        guard let task = tasks.first(where: { $0.id == id }) else { return false }
+        guard let task = self.task(id: id) else { return false }
         text = [task.title, task.detail, task.assignee].compactMap { $0 }.joined(separator: "\n")
       }
       guard !citation.excerpt.isEmpty, text.contains(citation.excerpt),

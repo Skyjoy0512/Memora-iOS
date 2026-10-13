@@ -17,13 +17,19 @@ final class LocalStore {
 
   private let lock = NSLock()
   private var db: OpaquePointer?
+  private var statements: [String: OpaquePointer] = [:]
   private let fileURL: URL
 
-  private init() {
+  init(fileURL: URL? = nil) {
     let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-    fileURL = base
+    self.fileURL = fileURL ?? base
       .appendingPathComponent("Memora", isDirectory: true)
       .appendingPathComponent("memora.sqlite")
+  }
+
+  deinit {
+    for statement in statements.values { sqlite3_finalize(statement) }
+    if let db { sqlite3_close(db) }
   }
 
   /// Opens (and creates) the database. Safe to call more than once.
@@ -46,14 +52,20 @@ final class LocalStore {
     }
     db = handle
 
-    try exec("PRAGMA journal_mode = WAL;")
-    try exec("""
+    do {
+      try exec("PRAGMA journal_mode = WAL;")
+      try exec("""
       CREATE TABLE IF NOT EXISTS documents (
         key TEXT PRIMARY KEY,
         data BLOB NOT NULL,
         updated_at REAL NOT NULL
       );
       """)
+    } catch {
+      sqlite3_close(handle)
+      db = nil
+      throw error
+    }
   }
 
   /// What a read found: the document, nothing stored, or a store that could not
@@ -68,13 +80,12 @@ final class LocalStore {
   func readOutcome(_ key: String) -> ReadOutcome {
     lock.lock()
     defer { lock.unlock() }
-    guard let db else { return .failed }
+    guard db != nil else { return .failed }
 
-    var statement: OpaquePointer?
-    guard sqlite3_prepare_v2(db, "SELECT data FROM documents WHERE key = ?;", -1, &statement, nil) == SQLITE_OK else {
-      return .failed
-    }
-    defer { sqlite3_finalize(statement) }
+    let statement: OpaquePointer
+    do { statement = try prepared("SELECT data FROM documents WHERE key = ?;") }
+    catch { return .failed }
+    defer { reset(statement) }
 
     sqlite3_bind_text(statement, 1, key, -1, Self.transient)
     switch sqlite3_step(statement) {
@@ -140,17 +151,8 @@ final class LocalStore {
   private func writeLocked(_ key: String, data: Data) throws {
     guard let db else { throw StoreError.open(0) }
 
-    var statement: OpaquePointer?
-    guard sqlite3_prepare_v2(
-      db,
-      "INSERT OR REPLACE INTO documents (key, data, updated_at) VALUES (?, ?, ?);",
-      -1,
-      &statement,
-      nil
-    ) == SQLITE_OK else {
-      throw StoreError.statement(sqlite3_errcode(db))
-    }
-    defer { sqlite3_finalize(statement) }
+    let statement = try prepared("INSERT OR REPLACE INTO documents (key, data, updated_at) VALUES (?, ?, ?);")
+    defer { reset(statement) }
 
     sqlite3_bind_text(statement, 1, key, -1, Self.transient)
     _ = data.withUnsafeBytes { buffer in
@@ -174,15 +176,30 @@ final class LocalStore {
   private func removeLocked(_ key: String) throws {
     guard let db else { throw StoreError.open(0) }
 
-    var statement: OpaquePointer?
-    guard sqlite3_prepare_v2(db, "DELETE FROM documents WHERE key = ?;", -1, &statement, nil) == SQLITE_OK else {
-      throw StoreError.statement(sqlite3_errcode(db))
-    }
-    defer { sqlite3_finalize(statement) }
+    let statement = try prepared("DELETE FROM documents WHERE key = ?;")
+    defer { reset(statement) }
     sqlite3_bind_text(statement, 1, key, -1, Self.transient)
     guard sqlite3_step(statement) == SQLITE_DONE else {
       throw StoreError.statement(sqlite3_errcode(db))
     }
+  }
+
+  /// Every use is inside the existing lock, including reset and clearing bound
+  /// blobs, so no active statement or bound payload escapes to another caller.
+  private func prepared(_ sql: String) throws -> OpaquePointer {
+    if let statement = statements[sql] { return statement }
+    guard let db else { throw StoreError.open(0) }
+    var statement: OpaquePointer?
+    guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
+      throw StoreError.statement(sqlite3_errcode(db))
+    }
+    statements[sql] = statement
+    return statement
+  }
+
+  private func reset(_ statement: OpaquePointer) {
+    sqlite3_reset(statement)
+    sqlite3_clear_bindings(statement)
   }
 
   private func exec(_ sql: String) throws {

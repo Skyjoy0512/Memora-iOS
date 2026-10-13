@@ -7,7 +7,7 @@
 | 対象 | 観察された処理 | 改善方針と安全条件 | 比較方法 |
 |---|---|---|---|
 | PerformanceLog | 1計測ごとに最大500件をJSON化・SQLiteへ保存 | 即時表示は維持し、診断ログだけ1秒の固定窓でまとめる。失敗時のrevisionを保持し、背景移行・リセットは同期確定。業務保存のキューと原子性は維持 | 本番logger/queue、隔離backend、500件保持中の100件burstを21回 |
-| LibraryView | 各レコードに対し既存セクションを線形検索 | キーから配列位置への辞書を併用。最初に現れたセクション順、分類・タイトル・レコード順はそのまま | 旧メソッドを基準から抽出し0/1/100/1000件、昇順・降順・タイトル順の完全一致 |
+| LibraryView | 各レコードに対し既存セクションを線形検索 | 辞書を併用する候補を検証したが、最終比較で1000件の差は0.066ms、100件は悪化。効果が小さいため元の実装へ戻した | 旧メソッドを基準から抽出し0/1/100/1000件、昇順・降順・タイトル順の完全一致 |
 | AI ranking | 会議ごとに全タスクをfilter | 質問ごとに一度だけ会議IDでgrouping。完了タスクも含む元の得点・同点順・fallbackを維持。質問をまたぐ権限キャッシュは作らない | 旧実装と順位の完全一致、100/1000件・各2タスク |
 | MediaImageCache | 同一キーのmissが並行デコード、個数制限のみ | 要求を共有、実デコードbytesで64MiB/80件に制限、memory warningで解放。サイズ・ImageIOオプション・画質は維持。削除済みファイル、取消・古い要求は表示しない | DEBUG私有画像で同一UIImage・解像度・取消・削除を検証 |
 | SummaryPreviewCache | UUID辞書が無制限にsummaryを保持 | thread-safe NSCacheを500件/8MiBで制限。summary完全一致条件を維持し、eviction後は再計算 | DEBUG同一IDの本文変更・clear後の結果一致 |
@@ -60,3 +60,82 @@ Phase 1の初回測定（並行ビルド中のばらつきがあるため最終�
 所有者判定1000件の初回比較: 2.507/2.678/2.697ms → 0.354/0.371/0.371ms（中央値/p95/最大）。最終表では静かな環境で再測定する。
 
 ProjectContextChecks・ProjectSearchIndexChecks・HealthReviewLoaderChecksが成功。索引の同一入力、再open、更新、permission相当の入力除外、削除後の再作成、cache clear、プロジェクト境界、ページ/時刻、Unicode境界を追加検証する。HomeのAsync処理を含むUI/DEBUG回帰はPhase 2ビルド後に確認する。
+
+Phase 2の最終DEBUGビルド成功（`2026-10-13T22-36-57-9a962f43.log`）。SelfCheck failedはなく、Performance caches成功。Home→Library、ファイル/プロジェクト切替、既存2記録の日付セクション、既存WeeklySync、FAB/composerの表示を確認。本文や原本の編集・削除は行っていない。
+
+## Phase 3
+
+- LocalStoreの3つのSQLを既存lock内で再利用。毎回reset/clear_bindingsし、読取のblobは従来通りDataへコピー。失敗後のstatementも再使用可能。deinitでfinalize/closeする。
+- ProjectSearchIndexのstatement再利用は初回構築1000資料で263.541→261.635ms、100資料で16.614→16.780msと実効差を確認できず、不採用に戻した。actorの不要なhandleをdeinitで閉じる処理だけ保持。
+- LocalStoreのopen初期化が失敗した場合にはhandleを閉じ、次のprepareで再試行できる。保存先・SQLite schema・WAL・同期レベル・JSON codec・transaction境界は変更しない。test用に保存先を注入できるが、通常のデフォルトパスは同じ。
+- 同期確定・削除・録音・復元の順序とエラー伝播は維持。業務documentのsaveをdebounce/非同期化/skipする変更は採用していない。
+- 実SQLiteへの旧schema/旧JSON bytes読取、triggerでの失敗注入による複数document rollback、draft保持、同じキーの順序、失敗後retry、再open、削除、50並行書込を検証。RecordStoreFailureChecksでproduction queueの失敗・順序も確認する。
+- 関連チェックの再実行入口: `MEMORA_CHECK_TMPDIR=<一時領域> TMPDIR=<一時領域> python3 tools/checks/run-optimization-checks.py`。外部通信・実ユーザーデータへの保存は行わない。
+
+初回batch比較（1000document各2KiB、21回、並行buildによるばらつきあり）: 21.123/33.008/35.316ms → 8.649/9.136/11.449ms。これは多数documentのSQL再使用を検証するfixtureであり、Memoraの「会議配列を1つのdocumentへ保存」の時間を表してはいない。
+
+## 保留する改善候補
+
+| 優先度 | 候補 | 保留理由・効果・リスク |
+|---|---|---|
+| 高 | 実機Releaseで起動/スクロール/メモリ/描画trace | xctraceで実機がoffline。処理単位の改善を実操作の効果へ結び付ける必要がある |
+| 中 | 大きい同期確定batchのJSON encodeをworkerへ移す | メインアクター待ちを減らせる可能性。Sendable snapshot、削除/復元/録音の順序、エラーと終了時耐久性を別途検証する必要がある |
+| 中 | 資料本文の質問をまたぐキャッシュ | I/O削減の可能性はあるが、backup復元・同名ファイル差し替え・permission変更時の鮮度証明が必要。mtime/sizeだけを信用する実装は採用しない |
+| 中 | 日別recap/全文検索結果の永続的な派生cache | 時刻/日付/健康/カレンダー/人名/チーム/編集をすべて無効化する複雑さに対して未計測。実際のHome全体traceを先に取る |
+| 低 | 全ストレージ移行、モデル全面分割 | 今回のscope外。互換性/耐久性のリスクに対して根拠がない |
+
+高頻度の録音レベル、タイマー、再生位置は既存のleaf Viewで読まれている。bottom bar、safeArea、Liquid Glass、zoom/matchedTransition、NavigationStackの実装は保持し、広範囲のview階層やbindingの変更は行わない。
+
+追加点検: ProjectContextのsource/task ID確認が各資料に対する線形検索だった。既存IdentifiableIndexをsource/taskにも再利用し、配列のdidSetで必ずinvalidateする。保存するのは位置だけで、本文/許可は現在の配列から読む。編集・許可取消・削除・並べ替え・重複IDの最初の項目を維持するSourceLookupChecksが成功。1000件を各1回検索するwarm比較は0.579→0.159ms。100件は0.012→0.016msで差が小さい。初回の索引構築はこのwarm比較に含まない。
+
+## 最終比較
+
+固定日時・固定ID・同一文字列で再測定。並行build中の初回値は参考値に留め、下表は各21回の中央値/p95/最大（ms）。OSのI/Oや別プロセスによるばらつきは残り、統計的な信頼区間は未算出。短縮率は中央値から計算した処理単位の値。
+
+| 処理 | 変更前 中央値/p95/最大 | 最終 中央値/p95/最大 | 中央値短縮 |
+|---|---:|---:|---:|
+| AI順位 100件 | 1.339 / 1.583 / 1.586 | 0.929 / 1.145 / 1.163 | 30.6% |
+| AI順位 1000件 | 39.690 / 43.483 / 44.211 | 5.844 / 5.984 / 5.990 | 85.3% |
+| 100ログburst（500件保持） | 70.932 / 72.001 / 73.932 | 1.341 / 1.736 / 1.869 | 98.1% |
+| burst 21回の保存数 | 2100 | 21 | 99.0%減 |
+| 索引反復 100資料 | 3.479 / 3.529 / 3.666 | 0.760 / 0.784 / 0.809 | 78.2% |
+| 索引反復 1000資料 | 30.945 / 31.944 / 31.988 | 3.397 / 3.471 / 3.496 | 89.0% |
+| 索引再構築 100資料 | 16.614 / 22.950 / 33.607 | 17.426 / 21.566 / 25.153 | -4.9%（短縮なし） |
+| 索引再構築 1000資料 | 263.541 / 270.762 / 286.963 | 265.636 / 270.662 / 287.344 | -0.8%（短縮なし） |
+| SQLite batch 100×2KiB | 1.301 / 3.175 / 4.383 | 1.053 / 3.112 / 4.102 | 19.1% |
+| SQLite batch 1000×2KiB | 9.223 / 11.626 / 16.168 | 8.994 / 10.571 / 14.948 | 2.5% |
+| 所有者判定 1000件 | 2.376 / 2.410 / 2.439 | 0.377 / 0.386 / 0.387 | 84.1% |
+| ID全件検索 1000件・warm | 0.579 / 0.833 / 0.851 | 0.159 / 0.185 / 0.186 | 72.5% |
+
+初回索引構築は改善していない。JSON/grams/FTS構築を伴うコールドパスをwarm hitの短縮率で評価しない。ファイル日付分類の候補は100件0.306→0.345ms、1000件2.554→2.488msで、最終コードでは不採用。LocalStoreのbatchは多数のdocumentを保存するfixtureであり、会議/タスクの配列全体を1documentにJSON化する時間の証明ではない。
+
+| 要求された実操作の項目 | 状況 |
+|---|---|
+| 起動〜操作可能、Home表示完了 | 未測定。PerformanceLogの既存起動値は同じappVersionの過去試行が混在するため比較値に使わない |
+| ファイル一覧100/1000・画面検索 | 処理単位の順位/分類を測定。実描画時間と画面検索全体のbefore/afterは未測定 |
+| プロジェクトAI | 索引同期＋検索は上表。ファイル実読取/JSON復号/モデル応答を含む全質問時間は未測定 |
+| 画像decode | 共有・寸法・取消・削除・memory warningを検証。decode時間のbefore/afterは未測定 |
+| 会議/タスク保存 | SQLite batchとqueue failureを検証。JSON encode込みの実機保存時間は未測定 |
+| CPU/メモリ | Debugシミュレータの単発RSS 417744KiB（約408MiB）、CPU 0.0%を観測。baselineなし。アイドル中央値、操作時・peak、実機Releaseは未測定 |
+| 描画フレーム/不要再描画 | 未測定。Time Profiler attachは`Cannot find process for provided pid`でtrace取得できず。実機もoffline |
+
+## 最終品質確認
+
+- 関連CLIチェック19 suiteが成功。追加のSourceLookupChecksを含めた最終再実行を行う。DEBUG起動ログにSelfCheck failedなし、Performance caches成功。memory warningによる解放も実際のNotification経路で検証。
+- Homeの変更前/変更後スクリーンショットを目視比較し、時計表示以外の配置・文字・色・glassが一致。pixel単位の自動比較/動画/フレーム計測はしていない。
+- iPhone 18 Pro MaxでHome、日付切替、日別サマリー開閉、Files検索（日本語はsetValueで入力）/消去/キャンセル、元の2記録、録音詳細、project一覧/詳細、record/project/globalのcomposer、Ask AI、FAB popoverのcapture actionsと閉じる動作、Settings/DEBUG画面、Light/DarkのHome/Settingsを確認。表示設定・選択日は元に戻した。
+- 元の録音2件、既存タスク、WeeklySync、ゴミ箱3件を保持。ユーザーデータの追加/変更/削除/復元は行っていない。DEBUGの私有画像fixtureとCLIの一時データだけを作成し、fixtureは終了時に削除。
+- 録音開始/停止/バックグラウンド復旧、実機audio割込、実カレンダーの遅い応答、ネットワーク障害、有料AI/CloudKit/外部サービス、widget実表示、実バックアップ復元は未実施。既存のaudio/保存/backup自己チェックとhostのfailure fixtureを実操作の証明とはしない。
+- Project.json、Info.plist、entitlements、保存/backup codec、tab/FAB/Glass/navigation/animationの実装は変更なし。各PhaseのDebugビルド成功。最終Releaseビルドの結果は追記する。
+
+## 変更ファイル
+
+App: HomeActivityLinks、HomeView、JournalSummaryView、JournalTimelineBuilder、LifeLogRow、LocalStore、MediaImageCache、MeetingRanking、MemoraModel、MemoraModel+AI、MemoraModel+ProjectContext、MemoraModel+ProjectSources、MemoraModel+Tasks、PerformanceCacheChecks、PerformanceLog、ProjectContextBuilder、ProjectEvidenceInput、ProjectSearchIndex、RecordStore、SelfChecks、SummaryPreviewCache、TaskOwnership（各.swift）。LibraryViewは候補の検証後に元のコードへ戻し、基準との差分はない。
+
+tools/checks: CollectionPerformanceChecks、JournalPerformanceChecks、LocalStoreChecks、PerformanceLogChecks、ProjectIndexBenchmark、ProjectSearchIndexChecks、SourceLookupChecks（各.swift）、run-performance-checks.py、run-local-store-checks.py、run-optimization-checks.py、run-project-index-benchmark.py。ドキュメントはこのファイルだけ。
+
+## Git
+
+- Phase 1: `5e7e5d8` — 診断ログ、AI順位、画像/preview cacheと回帰fixture。
+- Phase 2: `06f7570` — 確定済み索引入力の再利用、所有者判定、イベントの照合、古いcalendar応答の排除。
+- Phase 3と最終検証のコミットIDは完了報告に記載する。作業終了時に全変更をコミットする。GitHubへの追加pushはこの最適化依頼には含めない。

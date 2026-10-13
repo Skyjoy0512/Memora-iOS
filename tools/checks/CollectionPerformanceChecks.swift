@@ -5,7 +5,8 @@ struct CollectionPerformanceChecks {
   static func main() {
     for count in [0, 1, 100, 1_000] {
       let meetings = (0..<count).map { number in
-        Meeting(id: UUID(), title: "会議 \(number)", createdAt: .now.addingTimeInterval(-Double(number) * 86_400),
+        Meeting(id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", number + 1))!, title: "会議 \(number)",
+          createdAt: Date(timeIntervalSince1970: 1_791_892_800).addingTimeInterval(-Double(number) * 86_400),
           decisions: [number.isMultiple(of: 3) ? "予算を決定" : ""], openQuestions: ["納期"],
           notes: "確認", summary: "概要", transcript: [TranscriptSegment(text: "箱根旅行の移動時間")])
       }

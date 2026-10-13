@@ -1,7 +1,7 @@
 import Foundation
 
 extension MemoraModel {
-  func source(id: UUID) -> ProjectSource? { projectSources.first { $0.id == id } }
+  func source(id: UUID) -> ProjectSource? { projectSourceIndex.element(id, in: projectSources) }
 
   @discardableResult
   func addProjectLink(_ input: String, projectID: UUID) throws -> UUID? {

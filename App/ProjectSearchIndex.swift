@@ -24,6 +24,10 @@ actor ProjectSearchIndex {
       .appendingPathComponent("Memora/project-search-v2.sqlite")
   }
 
+  deinit {
+    if let db { sqlite3_close(db) }
+  }
+
   enum Failure: Error { case database }
 
   func retrieve(question: String, projectID: UUID, inputs: [ProjectEvidenceInput]) throws -> [ProjectEvidenceChunk] {
