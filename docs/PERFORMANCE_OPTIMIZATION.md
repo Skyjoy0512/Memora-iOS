@@ -45,3 +45,18 @@ Phase 1の初回測定（並行ビルド中のばらつきがあるため最終�
 - UI: 初期HomeのAX情報を取得。基準画面の操作中に再buildでAXが失効したため、画面全体の変更前後pixel比較は未実施。変更したViewはコレクション処理・取消guardのみ。Liquid Glass/FAB/遷移/Navigation/safeAreaのコードは変更しない。
 
 未測定: 起動〜実際に操作可能、Home表示完了、タブ遷移時間、iPhone ReleaseのCPU/アイドル/ピークメモリ、SwiftUI再描画回数、frame drop/Animation Hitches、画像decode時間の変更前後。これらを処理単位benchmarkの数値で代用しない。
+
+## Phase 2
+
+- TaskOwnershipはリストの本人名を1回だけ正規化。Home/日別サマリーのownTasksを再利用し、本人名変更・明示owner・未所属判定は従来通り。
+- JournalTimelineBuilderはイベントIDごとに会議を1回groupingする。各groupの元の順序と12時間の一致条件を維持し、日付外に開始した録音も従来通り照合する。タイムラインのIDやView階層は変えない。
+- Homeのカレンダー読取はリクエストID・日付・対象カレンダー・設定・取消を回答後に再確認する。古い日付の遅い応答が現在の日付へ上書きしない。表示するイベントが同じときには再代入しない。
+- ProjectSearchIndexは既存の200,000文字/block・2,000,000文字/projectの境界を維持し、同じプロジェクトの完全に同じ確定済み入力だけ同期を省く。変更資料だけsorted JSONとSHA-256を再計算。削除・所属解除・permissionでの入力減少・プロジェクト変更・memory clearで再同期する。transaction失敗時は新cacheを採用しない。重複targetは旧順次処理を維持する。
+- ProjectContextの現在の許可対象だけを索引/fallbackへ渡す。AI送信前・応答保存前のprojectEvidenceStillAvailableは変更せず、本文ファイルを引き続き実読取する。
+- ProjectContextBuilderは1リクエスト内だけ同じタイトルの2-gramを再利用。検索の得点・順位・ページ・時刻・引用番号は同じ。
+
+採用しなかった日付index: 1000件の元の日付filter中央値0.004msに対しwarm index0.001ms、100件は0.001→0.002ms。初期grouping・無効化・position管理を増やすほどの効果が無いため削除。JournalDailyRecap/RecapContextの文章・計算は変更しない。
+
+所有者判定1000件の初回比較: 2.507/2.678/2.697ms → 0.354/0.371/0.371ms（中央値/p95/最大）。最終表では静かな環境で再測定する。
+
+ProjectContextChecks・ProjectSearchIndexChecks・HealthReviewLoaderChecksが成功。索引の同一入力、再open、更新、permission相当の入力除外、削除後の再作成、cache clear、プロジェクト境界、ページ/時刻、Unicode境界を追加検証する。HomeのAsync処理を含むUI/DEBUG回帰はPhase 2ビルド後に確認する。

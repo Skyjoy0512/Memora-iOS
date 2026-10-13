@@ -1,6 +1,10 @@
 import Foundation
 
 extension MemoraModel {
+  var ownTasks: [MemoraTask] {
+    TaskOwnership.ownedTasks(tasks, names: [profile.name, account?.displayName ?? ""])
+  }
+
   func isOwnTask(_ task: MemoraTask) -> Bool {
     TaskOwnership.isMine(task, names: [profile.name, account?.displayName ?? ""])
   }

@@ -18,6 +18,12 @@ struct ProjectSearchIndexChecks {
     precondition(!first.isEmpty && first.allSatisfy { $0.projectID == project && $0.target == source && $0.page == 2 })
     let repeatSearch = try await index.retrieve(question: "移動時間", projectID: project, inputs: [original])
     precondition(first == repeatSearch)
+    try await index.remove(targets: [source])
+    let rebuilt = try await index.retrieve(question: "移動時間", projectID: project, inputs: [original])
+    precondition(rebuilt == first)
+    await index.clearMemoryCache()
+    let uncached = try await index.retrieve(question: "移動時間", projectID: project, inputs: [original])
+    precondition(uncached == first)
     let reopened = ProjectSearchIndex(fileURL: url)
     let restored = try await reopened.retrieve(question: "箱根", projectID: project, inputs: [original])
     precondition(restored == first)
@@ -25,6 +31,10 @@ struct ProjectSearchIndexChecks {
     updated.blocks = [ProjectSourceText(text: "京都で宿泊", page: 3)]
     let changed = try await index.retrieve(question: "京都", projectID: project, inputs: [updated])
     precondition(changed.allSatisfy { $0.text == "京都で宿泊" && $0.page == 3 })
+    let revoked = try await index.retrieve(question: "京都", projectID: project, inputs: [])
+    precondition(revoked.isEmpty)
+    let grantedAgain = try await index.retrieve(question: "京都", projectID: project, inputs: [updated])
+    precondition(grantedAgain == changed)
     let removed = try await index.retrieve(question: "箱根", projectID: project, inputs: [])
     precondition(removed.isEmpty)
     let moved = try await index.retrieve(question: "京都", projectID: other, inputs: [updated])
@@ -51,6 +61,14 @@ struct ProjectSearchIndexChecks {
     try await index.remove(projectID: project)
     let empty = try await index.retrieve(question: "箱根", projectID: project, inputs: [])
     precondition(empty.isEmpty)
+    let boundaryProject = UUID()
+    let boundary = ProjectEvidenceInput(target: .source(UUID()), title: "上限", blocks: [
+      ProjectSourceText(text: String(repeating: "🧑🏽‍💻箱根", count: 100_000), page: 9, time: 42)
+    ])
+    let large = try await index.retrieve(question: "箱根", projectID: boundaryProject, inputs: [boundary])
+    let again = try await index.retrieve(question: "箱根", projectID: boundaryProject, inputs: [boundary])
+    precondition(large == again && large.allSatisfy { $0.text.count <= 700 && $0.page == 9 && $0.time == 42 })
+    try await index.remove(projectID: boundaryProject)
     print("ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)")
   }
 }

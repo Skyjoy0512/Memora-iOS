@@ -86,9 +86,10 @@ extension MemoraModel {
       inputs.append(ProjectEvidenceInput(target: target, title: source.title, blocks: blocks))
     }
     let currentAllowed = allowed.filter { projectEvidenceAllowed($0, projectID: projectID, cloud: cloud) }
-    let indexed = try? await ProjectSearchIndex.shared.retrieve(question: question, projectID: projectID, inputs: inputs)
+    let permittedInputs = inputs.filter { currentAllowed.contains($0.target) }
+    let indexed = try? await ProjectSearchIndex.shared.retrieve(question: question, projectID: projectID, inputs: permittedInputs)
     return await Task.detached(priority: .userInitiated) {
-      let chunks = indexed ?? inputs.flatMap { input in
+      let chunks = indexed ?? permittedInputs.flatMap { input in
         input.blocks.flatMap { block in
           ProjectContextBuilder.split(block.text, projectID: projectID, target: input.target,
             title: input.title, page: block.page, time: block.time)

@@ -28,9 +28,12 @@ enum ProjectContextBuilder {
     let terms = grams(question)
     let scoped = chunks.filter { $0.projectID == projectID && allowed.contains($0.target) }
     var ranked: [(Int, ProjectEvidenceChunk, Int)] = []
+    var titleTerms: [String: Set<String>] = [:]
     for (index, chunk) in scoped.enumerated() {
       let bodyScore = grams(chunk.text).intersection(terms).count
-      let titleScore = grams(chunk.title).intersection(terms).count
+      let titleGrams = titleTerms[chunk.title] ?? grams(chunk.title)
+      titleTerms[chunk.title] = titleGrams
+      let titleScore = titleGrams.intersection(terms).count
       ranked.append((index, chunk, bodyScore + titleScore * 2))
     }
     ranked.sort { left, right in

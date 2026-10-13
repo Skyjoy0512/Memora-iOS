@@ -16,7 +16,7 @@ struct JournalSummaryView: View {
   @State private var openSource: JournalDecisionSource?
 
   var body: some View {
-    let ownTasks = model.tasks.filter { model.isOwnTask($0) }
+    let ownTasks = model.ownTasks
     let recap = JournalDailyRecap.build(date: date, meetings: model.meetings,
       tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
       people: model.people, events: events, health: healthEnabled && model.currentTeamID == nil ? health : nil)

@@ -39,9 +39,10 @@ enum JournalTimelineBuilder {
     // conversation is not listed twice.
     var matchedMeetingIDs: Set<UUID> = []
     var timedItems: [(date: Date, item: JournalTimelineItem)] = []
+    let recordingsByEvent = timedEvents.isEmpty ? [:] : Dictionary(grouping: meetings) { $0.calendarEventID }
     for event in timedEvents {
       var resolved = event
-      if let meeting = recording(for: event, in: meetings) {
+      if let meeting = recording(for: event, in: recordingsByEvent[event.eventIdentifier] ?? []) {
         resolved.meetingID = meeting.id
         matchedMeetingIDs.insert(meeting.id)
       }

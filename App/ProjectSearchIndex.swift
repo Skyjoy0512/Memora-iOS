@@ -8,6 +8,15 @@ actor ProjectSearchIndex {
   static let shared = ProjectSearchIndex()
   private var db: OpaquePointer?
   private var fileURL: URL
+  private var synchronizedProject: UUID?
+  private var synchronizedInputs: [ProjectEvidenceInput] = []
+  private var synchronizedHasUniqueTargets = false
+  private struct CachedInput {
+    var input: ProjectEvidenceInput
+    var target: String
+    var fingerprint: String
+  }
+  private var cachedInputs: [ProjectCitation.Target: CachedInput] = [:]
   private static let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
   init(fileURL: URL? = nil) {
@@ -35,6 +44,7 @@ actor ProjectSearchIndex {
   }
 
   func remove(targets: [ProjectCitation.Target]) throws {
+    clearMemoryCache()
     try open()
     try execute("BEGIN IMMEDIATE;")
     do {
@@ -50,6 +60,7 @@ actor ProjectSearchIndex {
   }
 
   func remove(projectID: UUID) throws {
+    clearMemoryCache()
     try open()
     try execute("BEGIN IMMEDIATE;")
     do {
@@ -77,6 +88,15 @@ actor ProjectSearchIndex {
   }
 
   private func synchronize(projectID: UUID, inputs: [ProjectEvidenceInput]) throws {
+    if synchronizedProject == projectID, synchronizedHasUniqueTargets, synchronizedInputs == inputs { return }
+    let boundedInputs = Self.bounded(inputs)
+    // Only an identical, already committed snapshot can bypass synchronization.
+    // A membership, permission-filtered input, title, page, time or body change
+    // fails equality. Duplicate targets keep the original sequential semantics.
+    let uniqueTargets = Set(boundedInputs.map(\.target)).count == boundedInputs.count
+    if synchronizedProject == projectID, uniqueTargets, synchronizedInputs == boundedInputs { return }
+    let previous = synchronizedProject == projectID ? cachedInputs : [:]
+    var next: [ProjectCitation.Target: CachedInput] = [:]
     let project = projectID.uuidString
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys]
@@ -92,21 +112,21 @@ actor ProjectSearchIndex {
         old[string(statement, column: 0)] = string(statement, column: 1)
       }
       var retained = Set<String>()
-      var remainingCharacters = 2_000_000
-      for input in inputs {
-        guard remainingCharacters > 0 else { break }
-        var bounded = input
-        bounded.blocks = []
-        for block in input.blocks {
-          guard remainingCharacters > 0 else { break }
-          let text = String(block.text.prefix(min(200_000, remainingCharacters)))
-          remainingCharacters -= text.count
-          bounded.blocks.append(ProjectSourceText(text: text, page: block.page, time: block.time))
+      for bounded in boundedInputs {
+        let input = bounded
+        let cached: CachedInput
+        if let existing = previous[input.target], existing.input == bounded {
+          cached = existing
+        } else {
+          let target = String(decoding: try encoder.encode(input.target), as: UTF8.self)
+          let data = try encoder.encode(bounded)
+          let fingerprint = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+          cached = CachedInput(input: bounded, target: target, fingerprint: fingerprint)
         }
-        let target = String(decoding: try encoder.encode(input.target), as: UTF8.self)
+        next[input.target] = cached
+        let target = cached.target
+        let fingerprint = cached.fingerprint
         retained.insert(target)
-        let data = try encoder.encode(bounded)
-        let fingerprint = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
         guard old[target] != fingerprint else { continue }
         try run("DELETE FROM project_chunks WHERE project = ? AND target = ?;", values: [project, target])
         for block in bounded.blocks {
@@ -124,7 +144,38 @@ actor ProjectSearchIndex {
         try run("DELETE FROM project_manifest WHERE project = ? AND target = ?;", values: [project, target])
       }
       try execute("COMMIT;")
+      synchronizedProject = projectID
+      synchronizedInputs = boundedInputs
+      synchronizedHasUniqueTargets = uniqueTargets
+      cachedInputs = next
     } catch { try? execute("ROLLBACK;"); throw error }
+  }
+
+  func clearMemoryCache() {
+    synchronizedProject = nil
+    synchronizedInputs = []
+    synchronizedHasUniqueTargets = false
+    cachedInputs = [:]
+  }
+
+  private static func bounded(_ inputs: [ProjectEvidenceInput]) -> [ProjectEvidenceInput] {
+    var result: [ProjectEvidenceInput] = []
+    var remaining = 2_000_000
+    for input in inputs {
+      guard remaining > 0 else { break }
+      var bounded = input
+      bounded.blocks = []
+      for block in input.blocks {
+        guard remaining > 0 else { break }
+        let limit = min(200_000, remaining)
+        let count = block.text.count
+        let text = count <= limit ? block.text : String(block.text.prefix(limit))
+        remaining -= min(count, limit)
+        bounded.blocks.append(ProjectSourceText(text: text, page: block.page, time: block.time))
+      }
+      result.append(bounded)
+    }
+    return result
   }
 
   private func query(_ sql: String, values: [String]) throws -> [ProjectEvidenceChunk] {
@@ -132,11 +183,12 @@ actor ProjectSearchIndex {
     defer { sqlite3_finalize(statement) }
     for (offset, value) in values.enumerated() { bind(value, to: statement, index: Int32(offset + 1)) }
     var result: [ProjectEvidenceChunk] = []
+    let decoder = JSONDecoder()
     while true {
       let status = sqlite3_step(statement)
       if status == SQLITE_DONE { return result }
       guard status == SQLITE_ROW else { throw Failure.database }
-      guard let chunk = try? JSONDecoder().decode(ProjectEvidenceChunk.self, from: Data(string(statement, column: 0).utf8)) else { throw Failure.database }
+      guard let chunk = try? decoder.decode(ProjectEvidenceChunk.self, from: Data(string(statement, column: 0).utf8)) else { throw Failure.database }
       result.append(chunk)
     }
   }

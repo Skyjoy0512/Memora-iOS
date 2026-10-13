@@ -29,6 +29,7 @@ struct HomeView: View {
   @AppStorage("memora.journal.healthReviewEnabled") private var healthEnabled = false
   @State private var healthLoader = HealthReviewService.makeLoader()
   @State private var healthRefreshID = 0
+  @State private var calendarRequestID = UUID()
 
   private var journalCalendarIDs: [String] {
     journalCalendarIDsValue.isEmpty ? [] : journalCalendarIDsValue.components(separatedBy: "\n")
@@ -41,7 +42,7 @@ struct HomeView: View {
   var body: some View {
     @Bindable var model = model
     let entries = matchingEntries
-    let ownTasks = model.tasks.filter { model.isOwnTask($0) }
+    let ownTasks = model.ownTasks
     let markedDays = JournalActivityDays.build(
       recordedDays: model.markedLifeLogDays.union(model.markedMeetingDays),
       completedAt: ownTasks.filter { $0.isCompleted }.compactMap(\.completedAt))
@@ -329,12 +330,19 @@ struct HomeView: View {
 
   /// Reads the selected day's events when the journal is set to show them.
   private func loadEvents() async {
+    let requestID = UUID()
+    calendarRequestID = requestID
     guard showCalendarEvents else {
       calendarEvents = []
       return
     }
-    let identifiers = journalCalendarIDs.isEmpty ? nil : journalCalendarIDs
-    calendarEvents = await CalendarService.events(on: selectedDate, calendarIdentifiers: identifiers)
+    let date = selectedDate
+    let calendarIDs = journalCalendarIDs
+    let identifiers = calendarIDs.isEmpty ? nil : calendarIDs
+    let events = await CalendarService.events(on: date, calendarIdentifiers: identifiers)
+    guard !Task.isCancelled, calendarRequestID == requestID, selectedDate == date,
+          showCalendarEvents, journalCalendarIDs == calendarIDs else { return }
+    if calendarEvents != events { calendarEvents = events }
   }
 
   private var emptyDescription: String {

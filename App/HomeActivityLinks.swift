@@ -7,7 +7,7 @@ struct HomeActivityLinks: View {
   var body: some View {
     let calendar = Calendar.current
     let endOfWeek = calendar.date(byAdding: .day, value: 7, to: calendar.startOfDay(for: .now)) ?? .now
-    let ownOpenTasks = model.tasks.filter { model.isOwnTask($0) && !$0.isCompleted }
+    let ownOpenTasks = model.ownTasks.filter { !$0.isCompleted }
     let today = ownOpenTasks.filter { $0.workDate.map(calendar.isDateInToday) == true }
     let todayIDs = Set(today.map(\.id))
     let dueSoon = ownOpenTasks.filter { !todayIDs.contains($0.id) && $0.dueDate.map { $0 < endOfWeek } == true }

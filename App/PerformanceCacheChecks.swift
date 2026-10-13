@@ -13,7 +13,7 @@ enum PerformanceCacheChecks {
     guard let data = image.jpegData(compressionQuality: 0.8),
           let name = MediaFiles.writePhoto(data, thumbnailMaxSide: 120) else { return "fixture image write" }
     defer { MediaFiles.deletePhoto(name) }
-    let requests = (0..<8).map { _ in Task { await MediaImageCache.image(named: name, maxPixelSize: 120) } }
+    let requests = (0..<8).map { _ in Task { await MediaImageCache.photo(named: name, maxPixelSize: 120) } }
     var decoded: [UIImage] = []
     for request in requests {
       guard let value = await request.value else { return "shared decode failed" }
@@ -25,7 +25,7 @@ enum PerformanceCacheChecks {
     cancelled.cancel()
     if await cancelled.value != nil { return "cancelled request returned image" }
     MediaFiles.deletePhoto(name)
-    if await MediaImageCache.image(named: name, maxPixelSize: 120) != nil { return "deleted image remained cached" }
+    if await MediaImageCache.photo(named: name, maxPixelSize: 120) != nil { return "deleted image remained cached" }
     let id = UUID()
     let a = SummaryPreviewCache.preview(for: id, summary: "a") { "preview:" + $0 }
     let b = SummaryPreviewCache.preview(for: id, summary: "b") { "preview:" + $0 }
