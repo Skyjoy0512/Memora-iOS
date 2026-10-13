@@ -8,6 +8,7 @@ import Security
 enum KeychainStore {
   private static let service = "app.memora.keys"
   private static let lock = NSLock()
+  private static let mutationLock = NSRecursiveLock()
   /// A key mapped to its value, or to `nil` when it is known to be absent.
   private static var cache: [String: String?] = [:]
 
@@ -15,6 +16,8 @@ enum KeychainStore {
   /// write succeeded, so a failed save never looks like a success.
   @discardableResult
   static func set(_ value: String?, forKey key: String) -> Bool {
+    mutationLock.lock()
+    defer { mutationLock.unlock() }
     let stored = (value?.isEmpty == false) ? value : nil
 
     let base: [String: Any] = [
@@ -54,6 +57,8 @@ enum KeychainStore {
   }
 
   static func string(forKey key: String) -> String? {
+    mutationLock.lock()
+    defer { mutationLock.unlock() }
     lock.lock()
     if let cached = cache[key] {
       lock.unlock()
@@ -68,6 +73,13 @@ enum KeychainStore {
     lock.unlock()
 
     return value
+  }
+
+  static func replaceIfUnchanged(_ value: String, expected: String, forKey key: String) -> Bool {
+    mutationLock.lock()
+    defer { mutationLock.unlock() }
+    guard string(forKey: key) == expected else { return false }
+    return set(value, forKey: key)
   }
 
   static func has(_ key: String) -> Bool {

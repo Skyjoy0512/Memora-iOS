@@ -98,6 +98,7 @@ final class MemoraModel {
   var projectChatBusyIDs: Set<UUID> = []
   var projectSourceProcessingIDs: Set<UUID> = []
   var integrationUsage: [IntegrationUsage] = []
+  @ObservationIgnored var mcpCredentialRevisions: [UUID: UUID] = [:]
   @ObservationIgnored var agentToolCallCounts: [UUID: Int] = [:]
   var shareInboxRequests: [ShareInboxRequest] = []
   var shareInboxRejectedIDs: [UUID] = []

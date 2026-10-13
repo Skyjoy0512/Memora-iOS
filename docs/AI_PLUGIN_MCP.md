@@ -20,7 +20,7 @@ Existing Ask AI, cloud provider sessions (Anthropic and OpenAI-compatible), on-d
 
 ## Existing service boundaries
 
-Gmail uses existing OAuth PKCE and Keychain tokens; requires `MemoraGoogleClientID`. Notion is manual integration-token/page configuration; only page creation is implemented, with approval. Device calendar uses EventKit permission. MCP currently supports supplied Bearer tokens/public servers only. It does **not** implement MCP OAuth discovery, ASWebAuthenticationSession, refresh or dynamic registration. SDK OAuth support alone is not app OAuth support.
+Gmail uses existing OAuth PKCE and Keychain tokens; requires `MemoraGoogleClientID`. Notion is manual integration-token/page configuration; only page creation is implemented, with approval. Device calendar uses EventKit permission. MCP supports supplied Bearer tokens/public servers and now manually preregistered public-client OAuth with PKCE, ASWebAuthenticationSession and Keychain refresh tokens. Automatic metadata discovery, dynamic client registration and scope step-up remain unavailable. See [MCP_OAUTH.md](MCP_OAUTH.md) for the supported subset and verification limits.
 
 Personal records remain in the existing store. Integration usage is additive at `memora.integrations.usage.v1`; no record migration/deletion. Connection and disable settings are preferences, secrets remain Keychain. Legacy MCP JSON decodes new optional policy fields as unknown/unreviewed, so explicit review is necessary after upgrading. Persisted usage is not yet exported in backup; it must not be relied on for commercial quotas.
 
@@ -43,7 +43,7 @@ Server authenticates the user independently of app-provided IDs; stores Composio
 
 ## Outstanding work
 
-1. MCP OAuth with explicit browser sign-in, PKCE, trusted metadata endpoints and Keychain refresh storage; provider/account integration tests.
+1. MCP OAuth automatic discovery/issuer verification and dynamic registration; provider/account integration tests. Manual preregistered PKCE OAuth is implemented; see [MCP_OAUTH.md](MCP_OAUTH.md).
 2. Implement/deploy the authenticated backend above, then Composio adapter E2E for one service. Drive/GitHub/Calendar OAuth remain unavailable until then.
 3. Generalize existing direct services behind `IntegrationProvider`, semantic tool selection, safe full-schema compatibility where needed, structured MCP results/resources and richer reconnect states.
 4. Curated remote catalog trust reviews; public MCP Registry search stays off. SDK 0.12.1 implements 2025-11-25 protocol; newer specification compatibility is not established by this build.

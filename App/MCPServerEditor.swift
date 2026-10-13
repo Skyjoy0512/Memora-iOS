@@ -9,6 +9,9 @@ struct MCPServerEditor: View {
   @State private var checkedTools: [MCPTool]?
   @State private var errorMessage: String?
   @State private var isChecking = false
+  @State private var checkingTask: Task<Void, Never>?
+  @State private var authorizationTask: Task<Void, Never>?
+  @State private var browser = MCPOAuthBrowser()
 
   init(server: MCPServerConfig) {
     _server = State(initialValue: server)
@@ -42,11 +45,39 @@ struct MCPServerEditor: View {
         }
 
         Section {
-          SecureField(isNew ? "アクセストークン（必要な場合）" : "変更するときだけ入力", text: $token)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
+          Toggle("ブラウザーでサインイン（OAuth）", isOn: Binding(
+            get: { server.oauth != nil },
+            set: { server.oauth = $0 ? MCPOAuthSettings() : nil; token = "" }))
+          if server.oauth != nil {
+            TextField("公開Client ID", text: oauthBinding(\.clientID))
+              .textInputAutocapitalization(.never).autocorrectionDisabled()
+            TextField("認可URL（https://…）", text: oauthBinding(\.authorizationURL))
+              .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
+            TextField("トークンURL（https://…）", text: oauthBinding(\.tokenURL))
+              .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
+            TextField("要求する権限（スペース区切り）", text: oauthBinding(\.scopes))
+              .textInputAutocapitalization(.never).autocorrectionDisabled()
+            LabeledContent("戻り先", value: MCPOAuthPolicy.redirectURI.absoluteString)
+              .font(.footnote).textSelection(.enabled)
+            Text(model.hasMCPOAuthCredential(server) ? "認証情報あり・接続確認は別途必要です" : "未認証")
+              .font(.footnote).foregroundStyle(.secondary)
+            Button("サインイン") { authorize() }
+              .disabled(!isValid || isChecking)
+            if model.hasMCPOAuthCredential(server) {
+              Button("この端末から接続を解除", role: .destructive) {
+                do {
+                  try model.disconnectMCPOAuth(server.id)
+                  server.reviewedEndpoint = nil; server.approvedReadToolFingerprints = nil
+                  checkedTools = nil
+                } catch { errorMessage = error.localizedDescription }
+              }
+            }
+          } else {
+            SecureField(isNew ? "アクセストークン（必要な場合）" : "変更するときだけ入力", text: $token)
+              .textInputAutocapitalization(.never).autocorrectionDisabled()
+          }
         } footer: {
-          Text("Bearerトークンとして送ります。キーチェーンに保存し、画面には再表示しません。")
+          Text(server.oauth == nil ? "Bearerトークンはキーチェーンに保存し、画面には再表示しません。" : "認可・トークンURLは同じホストの公開クライアント・PKCE対応の認証先に限定します。戻り先を事前登録してください。Client Secretは入力しません。権限と認証先を確認した後だけサインインします。解除は端末内の認証情報を削除します。サーバー側の許可取消はサービスの設定で行ってください。")
         }
 
         Section {
@@ -81,6 +112,8 @@ struct MCPServerEditor: View {
       }
       .disabled(isChecking)
       .onChange(of: server.url) { _, _ in checkedTools = nil; server.approvedReadToolFingerprints = nil }
+      .onDisappear { authorizationTask?.cancel(); checkingTask?.cancel(); browser.cancel() }
+      .onChange(of: server.oauth) { _, _ in checkedTools = nil; server.reviewedEndpoint = nil; server.approvedReadToolFingerprints = nil }
       .onChange(of: token) { _, _ in checkedTools = nil; server.approvedReadToolFingerprints = nil }
       .navigationTitle(isNew ? "接続先を追加" : "接続先を編集")
       .navigationBarTitleDisplayMode(.inline)
@@ -90,8 +123,7 @@ struct MCPServerEditor: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           Button("保存") {
-            save()
-            dismiss()
+            if save() { dismiss() }
           }
           .disabled(!isValid || isChecking)
         }
@@ -100,15 +132,47 @@ struct MCPServerEditor: View {
   }
 
   private var isValid: Bool {
-    (try? MCPConnectionPolicy.endpoint(server.url)) != nil
+    (try? MCPConnectionPolicy.endpoint(server.url)) != nil && (server.oauth == nil || (try? MCPOAuthPolicy.validated(server.oauth!)) != nil)
   }
 
-  private func save() {
+  @discardableResult
+  private func save() -> Bool {
     server.url = (try? MCPConnectionPolicy.endpoint(server.url).absoluteString) ?? server.url.trimmingCharacters(in: .whitespacesAndNewlines)
     if server.name.trimmingCharacters(in: .whitespaces).isEmpty {
       server.name = URL(string: server.url)?.host ?? "MCP"
     }
-    model.saveMCPServer(server, token: token.isEmpty ? nil : token)
+    guard model.saveMCPServer(server, token: server.oauth == nil && !token.isEmpty ? token : nil),
+          let saved = model.mcpServers.first(where: { $0.id == server.id }) else {
+      errorMessage = MCPOAuthError.storage.localizedDescription
+      return false
+    }
+    server = saved
+    return true
+  }
+
+  private func oauthBinding(_ key: WritableKeyPath<MCPOAuthSettings, String>) -> Binding<String> {
+    Binding(get: { server.oauth?[keyPath: key] ?? "" }, set: { value in
+      var settings = server.oauth ?? MCPOAuthSettings()
+      settings[keyPath: key] = value
+      server.oauth = settings
+    })
+  }
+
+  private func authorize() {
+    guard isValid, save() else { return }
+    checkedTools = nil; errorMessage = nil; isChecking = true
+    let snapshot = server
+    authorizationTask = Task {
+      defer { isChecking = false }
+      do {
+        try await model.authorizeMCPServer(snapshot, browser: browser)
+        if let saved = model.mcpServers.first(where: { $0.id == snapshot.id }) { server = saved }
+      } catch {
+        if !(error is CancellationError) {
+          errorMessage = (error as? MCPOAuthError)?.localizedDescription ?? (error as? MCPClientError)?.localizedDescription ?? MCPOAuthError.tokenResponse.localizedDescription
+        }
+      }
+    }
   }
 
   /// Saves first, so the check uses exactly what is entered.
@@ -118,17 +182,20 @@ struct MCPServerEditor: View {
       return
     }
     server.approvedReadToolFingerprints = nil
-    save()
+    guard save() else { return }
     token = ""
     isChecking = true
     errorMessage = nil
     checkedTools = nil
     let snapshot = server
-    Task {
+    let revision = model.mcpCredentialRevisions[server.id]
+    checkingTask = Task {
       do {
         let tools = try await model.checkMCPServer(snapshot)
+        try Task.checkCancellation()
         let endpoint = try MCPConnectionPolicy.endpoint(snapshot.url).absoluteString
-        guard (try? MCPConnectionPolicy.endpoint(server.url).absoluteString) == endpoint else {
+        guard revision == model.mcpCredentialRevisions[snapshot.id], model.mcpServers.contains(snapshot),
+              (try? MCPConnectionPolicy.endpoint(server.url).absoluteString) == endpoint else {
           isChecking = false
           return
         }

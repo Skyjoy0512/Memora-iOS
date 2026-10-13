@@ -5,7 +5,7 @@ check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-integration-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 
 swiftc App/ToolInputValidator.swift App/AIToolDefinition.swift App/AIToolRegistry.swift \
-  App/MCPEventStream.swift App/MCPServerConfig.swift App/MCPTool.swift \
+  App/MCPEventStream.swift App/MCPOAuthSettings.swift App/MCPServerConfig.swift App/MCPTool.swift \
   App/MCPPublicAddressPolicy.swift App/MCPDNSLookup.swift App/MCPClientError.swift App/MemoraSkill.swift \
   App/IntegrationProvider.swift App/IntegrationToolResult.swift App/IntegrationConnectionError.swift App/ComposioProvider.swift \
   tools/checks/ToolIntegrationChecks.swift -o "$check_dir/tools"
@@ -18,3 +18,9 @@ swiftc App/AIRecordFingerprint.swift App/AIRecordReference.swift App/RecordPriva
   App/AIConversationProvenance.swift App/AIConversationEntry.swift \
   tools/checks/AIConversationProvenanceChecks.swift -o "$check_dir/privacy"
 "$check_dir/privacy"
+
+# Pure fixtures only: this does not sign in or contact a token endpoint.
+swiftc App/MCPOAuthSettings.swift App/MCPOAuthError.swift App/MCPOAuthPolicy.swift App/MCPOAuthCredential.swift \
+  App/MCPConnectionPolicy.swift App/MCPClientError.swift App/ProjectSourceURL.swift App/ProjectSource.swift \
+  App/RecordPrivacy.swift App/SummarySensitivity.swift tools/checks/MCPOAuthChecks.swift -o "$check_dir/oauth"
+"$check_dir/oauth"

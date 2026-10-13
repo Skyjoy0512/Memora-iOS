@@ -5,6 +5,7 @@ import MCP
 actor MCPClient {
   static let shared = MCPClient()
   private var clients: [UUID: MCP.Client] = [:]
+  private var generations: [UUID: Int] = [:]
   private var identities: [UUID: String] = [:]
   private var cachedTools: [UUID: (Date, [MCPTool])] = [:]
 
@@ -54,22 +55,29 @@ actor MCPClient {
   }
 
   func forget(_ id: UUID) async {
+    generations[id, default: 0] += 1
     let client = clients.removeValue(forKey: id)
     identities[id] = nil; cachedTools[id] = nil
     await client?.disconnect()
   }
 
   private func connected(_ server: MCPServerConfig, token: String?) async throws -> MCP.Client {
+    let generationBefore = generations[server.id, default: 0]
     let endpoint = try MCPConnectionPolicy.endpoint(server.url)
+    let token = server.oauth == nil ? token : try await MCPOAuthClient.shared.accessToken(for: server)
+    guard generations[server.id, default: 0] == generationBefore else { throw MCPClientError.unauthorized }
     guard MCPConnectionPolicy.tokenIsValid(token) else { throw MCPClientError.unauthorized }
     let digest = SHA256.hash(data: Data((endpoint.absoluteString + "\n" + (token ?? "")).utf8)).map { String(format: "%02x", $0) }.joined()
     if identities[server.id] == digest, let client = clients[server.id] { return client }
     await forget(server.id)
+    let generation = generationBefore + 1
+    guard generations[server.id] == generation else { throw MCPClientError.unauthorized }
     let transport = MCPBoundedHTTPTransport(endpoint: endpoint, token: token)
     let client = MCP.Client(name: "Memora", version: "1.0")
     do {
       let result = try await bounded(client: client) { try await client.connect(transport: transport) }
       await transport.setVersion(result.protocolVersion)
+      guard generations[server.id] == generation else { throw MCPClientError.unauthorized }
       clients[server.id] = client; identities[server.id] = digest
       return client
     } catch { await client.disconnect(); throw safeError(error) }
@@ -78,7 +86,9 @@ actor MCPClient {
   private func safeError(_ error: Error) -> Error {
     if error is CancellationError { return CancellationError() }
     // Remote JSON-RPC errors may contain entire payloads or credentials.
-    return (error as? MCPClientError) ?? MCPClientError.malformed
+    if let failure = error as? MCPClientError { return failure }
+    if let failure = error as? MCPOAuthError { return failure }
+    return MCPClientError.malformed
   }
 
   private func bounded<T: Sendable>(client: MCP.Client, _ operation: @escaping @Sendable () async throws -> T) async throws -> T {

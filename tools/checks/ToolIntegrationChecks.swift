@@ -37,7 +37,7 @@ struct ToolIntegrationChecks {
     precondition(MCPEventStream.payload(Data(": heartbeat\n\n".utf8)) == nil)
     let old = Data(#"{"id":"00000000-0000-0000-0000-000000000001","name":"old","url":"https://example.com/mcp","isEnabled":true}"#.utf8)
     let restored = try JSONDecoder().decode(MCPServerConfig.self, from: old)
-    precondition(restored.reviewedEndpoint == nil && restored.hasUsageCharges == nil && restored.approvedReadToolFingerprints == nil)
+    precondition(restored.oauth == nil && restored.reviewedEndpoint == nil && restored.hasUsageCharges == nil && restored.approvedReadToolFingerprints == nil)
     let first = MCPTool(serverID: restored.id, serverName: "old", name: "a.b", summary: "read", inputSchema: Data("{}".utf8), isReadOnly: true)
     var second = first; second.name = "a_b"
     precondition(first.agentName != second.agentName && first.agentName.count <= 64)

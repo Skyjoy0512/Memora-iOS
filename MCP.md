@@ -53,7 +53,7 @@ ChatGPT / Claude ──(MCP over HTTPS)──> Memora MCPサーバー ──(Mem
 （Notion・Linear・社内システムなど）の道具を使えるようにした。
 
 - 設定 →「連携」→「MCPサーバー（エージェント）」でURLと任意のBearerトークンを登録する。トークンはキーチェーン。
-- Streamable HTTP（JSON-RPC 2.0、JSON または SSE 応答、`Mcp-Session-Id`）に対応。OAuthでの認可は未対応。
+- Streamable HTTP（JSON-RPC 2.0、JSON または SSE 応答、`Mcp-Session-Id`）に対応。事前登録した公開クライアントのOAuth認可（PKCE・ブラウザー認証・更新トークン）に対応。自動Discovery・動的Client登録・権限の自動追加は未対応。[設定と制約](docs/MCP_OAUTH.md)。
 - 確認した接続先の無料・読み取りツールを利用者が明示的に自動許可した場合のみ確認なしで実行。私的データを渡す可能性・料金不明・変更操作は承認カードを出す。
 - クラウドのAIでエージェントを使うときだけ。端末内AIには渡さない。
 - SDK移行・上限・権限制御・未実装のOAuth/Composioの範囲は [AI_PLUGIN_MCP.md](docs/AI_PLUGIN_MCP.md) を参照。
