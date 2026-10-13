@@ -50,7 +50,7 @@ struct QuickAIComposer: View {
     .overlay(alignment: .top) {
       VStack(spacing: 0) {
         if let token = activeMention, token != dismissedMention {
-          AIPluginMenu(candidates: model.mentionCandidates(query: token.query), maximumHeight: min(320, max(100, composerTop - WindowSafeArea.insets.top - 12)),
+          AIPluginMenu(candidates: model.mentionCandidates(query: token.query), selectedIDs: Set(model.composerMentions.map(\.pluginID)), maximumHeight: min(320, max(100, composerTop - WindowSafeArea.insets.top - 12)),
             select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })
         } else if supportsMentions && !model.composerMentions.isEmpty {
           ComposerMentionStrip(mentions: model.composerMentions) { mention in
@@ -96,7 +96,8 @@ struct QuickAIComposer: View {
   private var supportsMentions: Bool { model.selectedTab == .askAI && scope == .global }
 
   private var activeMention: ComposerMentionToken? {
-    guard supportsMentions, let snapshot = mentionInput.value, snapshot.text == model.composerDraft else { return nil }
+    guard supportsMentions, mentionInput.inputView?.isFirstResponder == true,
+          let snapshot = mentionInput.value, snapshot.text == model.composerDraft else { return nil }
     return ComposerMentionToken.parse(text: snapshot.text, selection: snapshot.selection, hasMarkedText: snapshot.hasMarkedText)
   }
 

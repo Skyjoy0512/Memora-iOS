@@ -6,6 +6,14 @@ struct AIPluginExecutionPolicy {
   var recordIDs: Set<UUID>
   var limitsRecordReads: Bool
 
+  static func selectionIDs(_ explicit: [String], webSearchRequested: Bool) -> [String] {
+    guard !explicit.isEmpty else { return [] }
+    var result = explicit
+    let webID = "tool:memora:search_web"
+    if webSearchRequested && !result.contains(webID) { result.append(webID) }
+    return result
+  }
+
   func permits(_ name: String, arguments: [String: Any]) -> Bool {
     let id = name.hasPrefix("mcp_") || name.hasPrefix("memora:") ? name : "memora:" + name
     guard toolIDs.contains(id) else { return false }

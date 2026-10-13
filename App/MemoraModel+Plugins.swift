@@ -4,11 +4,14 @@ extension MemoraModel {
   /// Both the attachment service list and mentions read the same catalog and live grants.
   func integrationState(_ service: IntegrationCatalog) -> AIPlugin.Connection {
     guard service.isImplemented else { return .unavailable("このサービスの認証済みバックエンドは未接続です。現在利用できません。") }
+    if service.id == "gmail", !GmailService.isConfigured {
+      return .unavailable("このビルドにはGoogleのOAuthクライアントIDが設定されていません。")
+    }
     guard integrationIsEnabled(service.id) else { return .setup("Ask AIでの利用が無効です。連携設定で有効にしてください。") }
     switch service.id {
     case "gmail":
       if GmailService.shared.isConnected { return .ready }
-      return GmailService.isConfigured ? .setup("Gmailの読み取り連携を設定してください。") : .unavailable("このビルドにはGoogleのOAuthクライアントIDが設定されていません。")
+      return .setup("Gmailの読み取り連携を設定してください。")
     case "notion": return NotionService.isConfigured ? .ready : .setup("Notionのトークンと保存先ページを設定してください。検索・閲覧は未対応です。")
     case "calendar": return CalendarService.access == .granted ? .ready : .setup("端末のカレンダーへのアクセスを許可してください。")
     case "mcp": return .setup("登録・接続確認・ツールと料金の確認を行ってください。")

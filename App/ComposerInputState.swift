@@ -14,7 +14,9 @@ final class ComposerInputState {
   }
 
   func snapshot() -> Snapshot? {
-    guard let view = inputView, view.isFirstResponder, let input = view as? any UITextInput,
+    guard let view = inputView, view.isFirstResponder,
+          (view as? UITextField)?.isSecureTextEntry != true, (view as? UITextView)?.isSecureTextEntry != true,
+          let input = view as? any UITextInput,
           let selected = input.selectedTextRange,
           let document = input.textRange(from: input.beginningOfDocument, to: input.endOfDocument),
           let text = input.text(in: document) else { return nil }

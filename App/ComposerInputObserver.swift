@@ -25,7 +25,14 @@ struct ComposerInputObserver: UIViewRepresentable {
     var timer: Timer?
     init(state: ComposerInputState) { self.state = state }
     func setActive(_ active: Bool) {
-      if !active { stop(); return }
+      if !active {
+        stop()
+        DispatchQueue.main.async { [weak self] in
+          guard let self, self.timer == nil else { return }
+          if self.state.value != nil { self.state.value = nil }
+        }
+        return
+      }
       guard timer == nil else { return }
       // Selection-only movement and IME marking do not always change the SwiftUI binding.
       let timer = Timer(timeInterval: 0.12, repeats: true) { [weak self] _ in
@@ -37,13 +44,25 @@ struct ComposerInputObserver: UIViewRepresentable {
     func stop() { timer?.invalidate(); timer = nil }
     func refresh() {
       if state.inputView?.isFirstResponder != true {
-        state.inputView = anchor?.window.flatMap { findInput($0) }
+        var ancestor = anchor?.superview
+        var input: UIView?
+        // A presented settings field belongs to another host, even in the same window.
+        while let current = ancestor, !(current is UIWindow) {
+          if let found = findInput(current) { input = found; break }
+          ancestor = current.superview
+        }
+        state.inputView = input
       }
       let snapshot = state.snapshot()
       if state.value != snapshot { state.value = snapshot }
     }
     private func findInput(_ view: UIView) -> UIView? {
-      if view.isFirstResponder, view is any UITextInput { return view }
+      if view.isFirstResponder, view is any UITextInput,
+         let anchor, let window = anchor.window, view.window === window,
+         view.convert(view.bounds, to: window).intersects(anchor.convert(anchor.bounds, to: window)),
+         (view as? UITextField)?.isSecureTextEntry != true, (view as? UITextView)?.isSecureTextEntry != true {
+        return view
+      }
       for child in view.subviews {
         if let found = findInput(child) { return found }
       }

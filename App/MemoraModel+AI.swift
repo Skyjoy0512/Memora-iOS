@@ -87,7 +87,10 @@ extension MemoraModel {
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
 
-    if !pluginIDs.isEmpty { return sendPluginChat(trimmed, pluginIDs: pluginIDs, attachment: attachment) }
+    if !pluginIDs.isEmpty {
+      let selected = AIPluginExecutionPolicy.selectionIDs(pluginIDs, webSearchRequested: webSearchRequested)
+      return sendPluginChat(trimmed, pluginIDs: selected, attachment: attachment)
+    }
 
     if attachment == nil {
       switch AIWebSearchIntent.route(trimmed, requested: webSearchRequested, previousQuery: latestChatWebQuery) {

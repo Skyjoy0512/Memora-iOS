@@ -56,16 +56,18 @@ extension MemoraModel {
       return AgentToolOutcome(text: "この依頼ではメール取得を再実行しません。", isError: true)
     }
     let account = GmailService.shared.connectedEmail
+    let revision = GmailService.shared.connectionRevision
     let approved = await requestAgentApproval(AgentApproval(messageID: messageID, icon: .envelopeOpen,
       title: "Gmailで\(call.tool == .searchEmail ? "メールを検索" : "メールを閲覧")",
-      lines: ["取得したメールは選択中のAIへ送られます。", "外部処理の料金は未確認です。今回の操作だけを許可します。", String(decoding: (try? JSONSerialization.data(withJSONObject: call.arguments, options: [.sortedKeys])) ?? Data(), as: UTF8.self)],
+      lines: [account.map { "アカウント: " + $0 } ?? "アカウント名を取得できていません。Gmailの接続設定を確認してください。", "取得したメールは選択中のAIへ送られます。", "外部処理の料金は未確認です。今回の操作だけを許可します。", String(decoding: (try? JSONSerialization.data(withJSONObject: call.arguments, options: [.sortedKeys])) ?? Data(), as: UTF8.self)],
       confirmTitle: "実行"), changesData: false)
     guard approved else {
       agentBlockedExternalTools[messageID, default: []].formUnion(["search_email", "read_email"])
       return AgentToolOutcome(text: "利用者が外部メールの取得を承認しませんでした。取得せず、同じ操作を再要求しません。")
     }
     guard !Task.isCancelled else { return AgentToolOutcome(text: "メール取得を停止しました。", isError: true) }
-    guard account == GmailService.shared.connectedEmail, integrationIsEnabled("gmail"), GmailService.shared.isConnected,
+    guard revision == GmailService.shared.connectionRevision,
+          account == GmailService.shared.connectedEmail, integrationIsEnabled("gmail"), GmailService.shared.isConnected,
           toolRegistry().permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID]) else {
       agentBlockedExternalTools[messageID, default: []].formUnion(["search_email", "read_email"])
       return AgentToolOutcome(text: "接続先アカウントまたは権限が変わったため、メールを取得していません。連携設定を確認してください。", isError: true)

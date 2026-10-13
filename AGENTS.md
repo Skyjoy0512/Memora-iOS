@@ -121,14 +121,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   conflict handling are not built. A manual package export
   (`makeTeamSharePackage`) also remains.
 - The Ask AI fallback never invents answers; when no engine can run it says so.
-- Ask AI is one assistant with no mode switch, laid out as a conversation
-  (`AskAIHeader` with Memora's mark, 履歴 on the left and
-  検索 / 新しいチャット on the right with the new chat at the far edge;
-  replies as plain text with no bubble, only the person's messages in
-  `aiBubble`; `AskAIGreeting` before the first message; no large title).
-  `AskAIGlow` draws a Gemini-like light behind it: a glow from the bottom when
-  the tab opens, a moving mesh across the top only while an answer is being
-  formed, a fainter glow left at the bottom of the empty screen; still under Reduce Motion. The tab opens on a new chat
+- Ask AI is one assistant with no mode switch. The new-chat center is blank,
+  with no greeting, logo or idle glow. `AskAIHeader` is one compact row:
+  sidebar / Memora (history and search menu) / new chat. Replies remain plain
+  text with no bubble, only the person's messages in `aiBubble`. `AskAIGlow`
+  keeps its processing mesh only while an answer is being formed, still under
+  Reduce Motion. The tab opens on a new chat
   every time (`didChangeTab`), keeping only an answer still being written and
   resident posts that arrived while away; past exchanges are in 履歴. Routing is the app's, not the
   person's (`shouldRunAsAgent`): a cloud model always runs as the agent and is
@@ -167,6 +165,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   `aiMemories`, and sends it with every question together with related past
   exchanges from `aiHistory` (`personalContext`, `MemoraModel+Memory`). Nothing
   is inferred into memory. A history entry can be continued.
+- Ask AI's `@` menu uses the existing registry, service catalog and skills
+  (`docs/ASK_AI_PLUGINS.md`). Keep its native TextField, cursor/IME protections,
+  SQLite draft IDs and tool restrictions. Ordinary questions retain automatic
+  tool selection. Unknown-cost external reads, including Gmail, need approval;
+  automatic jobs cannot fetch Gmail until their costs are established. Keep MCP
+  endpoint, fingerprint, account, permission and cost checks at execution time.
 - Gmail is connected read-only (`GmailService`, OAuth with PKCE, refresh token
   in the keychain) and read by the agent through `search_email` / `read_email`,
   offered only while connected. The build needs a Google iOS OAuth client ID

@@ -19,6 +19,7 @@ final class GmailService {
   private(set) var isConnected = KeychainStore.string(forKey: GmailService.refreshTokenKey) != nil
   private(set) var connectedEmail = UserDefaults.standard.string(forKey: GmailService.emailKey)
   private(set) var isWorking = false
+  @ObservationIgnored private(set) var connectionRevision = UUID()
 
   private static let refreshTokenKey = "gmail.refreshToken"
   private static let emailKey = "memora.gmail.email"
@@ -47,6 +48,8 @@ final class GmailService {
 
   func connect() async throws {
     guard let clientID = Self.clientID else { throw GmailError.notConfigured }
+    connectionRevision = UUID()
+    let revision = connectionRevision
     isWorking = true
     defer { isWorking = false }
 
@@ -70,6 +73,7 @@ final class GmailService {
     ]
 
     let callback = try await authorize(url: components.url!, scheme: scheme)
+    guard revision == connectionRevision else { throw GmailError.cancelled }
     let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
     guard items.first(where: { $0.name == "state" })?.value == state,
           let code = items.first(where: { $0.name == "code" })?.value else {
@@ -83,12 +87,15 @@ final class GmailService {
       "grant_type": "authorization_code",
       "redirect_uri": redirectURI
     ])
-    guard let refresh = token.refreshToken, KeychainStore.set(refresh, forKey: Self.refreshTokenKey) else {
+    guard revision == connectionRevision,
+          let refresh = token.refreshToken, KeychainStore.set(refresh, forKey: Self.refreshTokenKey) else {
       throw GmailError.authorizationFailed
     }
     accessToken = token.accessToken
     accessTokenExpiry = Date.now.addingTimeInterval(token.expiresIn - 60)
     isConnected = true
+    connectedEmail = nil
+    UserDefaults.standard.removeObject(forKey: Self.emailKey)
 
     if let profile = try? await get(Self.api.appendingPathComponent("profile")),
        let email = profile["emailAddress"] as? String {
@@ -99,6 +106,8 @@ final class GmailService {
 
   /// Forgets the connection and asks Google to revoke it.
   func disconnect() async {
+    connectionRevision = UUID()
+    let revision = connectionRevision
     if let refresh = KeychainStore.string(forKey: Self.refreshTokenKey) {
       var request = URLRequest(url: URL(string: "https://oauth2.googleapis.com/revoke")!)
       request.httpMethod = "POST"
@@ -106,6 +115,7 @@ final class GmailService {
       request.httpBody = Self.formBody(["token": refresh])
       _ = try? await URLSession.shared.data(for: request)
     }
+    guard revision == connectionRevision else { return }
     KeychainStore.set(nil, forKey: Self.refreshTokenKey)
     UserDefaults.standard.removeObject(forKey: Self.emailKey)
     accessToken = nil
@@ -138,6 +148,7 @@ final class GmailService {
   /// Mail matching a Gmail search, newest first, with sender, subject and
   /// the opening words.
   func search(_ query: String, limit: Int) async throws -> [GmailMessage] {
+    let revision = connectionRevision
     var components = URLComponents(url: Self.api.appendingPathComponent("messages"), resolvingAgainstBaseURL: false)!
     var items = [URLQueryItem(name: "maxResults", value: "\(min(max(limit, 1), 60))")]
     let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -145,6 +156,7 @@ final class GmailService {
     components.queryItems = items
 
     let list = try await get(components.url!)
+    guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
     let ids = (list["messages"] as? [[String: Any]] ?? []).compactMap { $0["id"] as? String }
     var messages: [GmailMessage] = []
     for id in ids {
@@ -152,6 +164,7 @@ final class GmailService {
       detail.queryItems = [URLQueryItem(name: "format", value: "metadata")]
         + ["From", "To", "Subject", "Date"].map { URLQueryItem(name: "metadataHeaders", value: $0) }
       let json = try await get(detail.url!)
+      guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
       messages.append(Self.message(from: json, includeBody: false))
     }
     return messages
@@ -165,9 +178,12 @@ final class GmailService {
   }
 
   private func get(_ url: URL) async throws -> [String: Any] {
+    let revision = connectionRevision
     var request = URLRequest(url: url)
     request.setValue("Bearer \(try await validAccessToken())", forHTTPHeaderField: "Authorization")
+    guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
     let (data, response) = try await URLSession.shared.data(for: request)
+    guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
     let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
     guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
       throw ExternalToolFailure.http((response as? HTTPURLResponse)?.statusCode ?? 500)
@@ -176,6 +192,7 @@ final class GmailService {
   }
 
   private func validAccessToken() async throws -> String {
+    let revision = connectionRevision
     if let accessToken, accessTokenExpiry > .now { return accessToken }
     guard let clientID = Self.clientID else { throw GmailError.notConfigured }
     guard let refresh = KeychainStore.string(forKey: Self.refreshTokenKey) else { throw GmailError.notConnected }
@@ -184,25 +201,38 @@ final class GmailService {
       "refresh_token": refresh,
       "grant_type": "refresh_token"
     ])
+    guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
     accessToken = token.accessToken
     accessTokenExpiry = Date.now.addingTimeInterval(token.expiresIn - 60)
     return token.accessToken
   }
 
   private func requestToken(_ fields: [String: String]) async throws -> (accessToken: String, refreshToken: String?, expiresIn: TimeInterval) {
+    let revision = connectionRevision
     var request = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
     request.httpMethod = "POST"
     request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
     request.httpBody = Self.formBody(fields)
     let (data, response) = try await URLSession.shared.data(for: request)
+    guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
+    let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
     guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-          let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
           let access = json["access_token"] as? String else {
-      // A revoked or expired refresh token cannot recover; the person
-      // connects again.
-      if fields["grant_type"] == "refresh_token" {
-        await disconnect()
-        throw GmailError.notConnected
+      // Transient service failures must not revoke a still-valid connection.
+      if fields["grant_type"] == "refresh_token", json["error"] as? String == "invalid_grant" {
+        if fields["refresh_token"] == KeychainStore.string(forKey: Self.refreshTokenKey) {
+          connectionRevision = UUID()
+          KeychainStore.set(nil, forKey: Self.refreshTokenKey)
+          UserDefaults.standard.removeObject(forKey: Self.emailKey)
+          accessToken = nil
+          accessTokenExpiry = .distantPast
+          connectedEmail = nil
+          isConnected = false
+        }
+        throw ExternalToolFailure.authenticationExpired
+      }
+      if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+        throw ExternalToolFailure.http(http.statusCode)
       }
       throw GmailError.authorizationFailed
     }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AIPluginMenu: View {
   var candidates: [AIPlugin]
+  var selectedIDs: Set<String> = []
   var maximumHeight: CGFloat
   var select: (AIPlugin) -> Void
   var cancel: () -> Void
@@ -18,7 +19,7 @@ struct AIPluginMenu: View {
           .font(.caption).foregroundStyle(.secondary)
         Spacer(minLength: 4)
         Button("候補を閉じる", icon: .xmark, action: cancel)
-          .labelStyle(.iconOnly).frame(width: 44, height: 44)
+          .labelStyle(.iconOnly).buttonStyle(.plain).frame(width: 44, height: 44)
       }
       .padding(.horizontal, 12)
       Divider()
@@ -47,11 +48,13 @@ struct AIPluginMenu: View {
                 }
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .background(MemoraPalette.secondaryBackground.opacity(selectedIDs.contains(plugin.id) ? 1 : 0))
                 .contentShape(Rectangle())
               }
               .buttonStyle(.plain)
               .accessibilityLabel("\(plugin.name)、\(plugin.state.label)")
               .accessibilityHint(plugin.state.reason ?? plugin.summary)
+              .accessibilityAddTraits(selectedIDs.contains(plugin.id) ? .isSelected : [])
             }
           }
         }

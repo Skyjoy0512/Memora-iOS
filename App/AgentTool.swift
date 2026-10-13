@@ -32,12 +32,12 @@ enum AgentTool: String, CaseIterable {
   /// model is never handed a tool that cannot work.
   @MainActor
   static var offered: [AgentTool] {
-    allCases.filter { (!$0.needsGmail || GmailService.shared.isConnected) && (!($0 == .searchWeb || $0 == .deepResearch) || KeychainStore.has(WebResearchClient.keyName)) }
+    allCases.filter { (!$0.needsGmail || (GmailService.shared.isConnected && GmailService.isConfigured)) && (!($0 == .searchWeb || $0 == .deepResearch) || KeychainStore.has(WebResearchClient.keyName)) }
   }
 
   @MainActor
   static var offeredOnDevice: [AgentTool] {
-    onDeviceTools.filter { (!$0.needsGmail || GmailService.shared.isConnected) && (!($0 == .searchWeb || $0 == .deepResearch) || KeychainStore.has(WebResearchClient.keyName)) }
+    onDeviceTools.filter { (!$0.needsGmail || (GmailService.shared.isConnected && GmailService.isConfigured)) && (!($0 == .searchWeb || $0 == .deepResearch) || KeychainStore.has(WebResearchClient.keyName)) }
   }
 
   /// What a resident agent may use while it works unattended: reading only,
