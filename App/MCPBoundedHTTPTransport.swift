@@ -40,8 +40,7 @@ actor MCPBoundedHTTPTransport: Transport {
     if let token, !token.isEmpty { request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }
     let (bytes, response) = try await session.bytes(for: request)
     guard let http = response as? HTTPURLResponse, http.url == endpoint else { throw MCPClientError.malformed }
-    guard http.statusCode != 401 && http.statusCode != 403 else { throw MCPClientError.unauthorized }
-    guard (200..<300).contains(http.statusCode) else { throw MCPClientError.server("HTTP \(http.statusCode)") }
+    guard (200..<300).contains(http.statusCode) else { throw ExternalToolFailure.http(http.statusCode) }
     if let id = http.value(forHTTPHeaderField: "Mcp-Session-Id") {
       guard id.utf8.count <= 512, !id.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else { throw MCPClientError.malformed }
       sessionID = id

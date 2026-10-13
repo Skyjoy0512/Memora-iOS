@@ -58,7 +58,7 @@ struct QuickAIComposer: View {
                 let range = Range(mention.range, in: model.composerDraft) else { return }
           model.composerDraft.removeSubrange(range)
           model.composerMentionCursorRequest = nil
-          model.composerMentionCursorRequest = mention.range.location
+          model.composerMentionCursorRequest = ComposerCursorRequest(offset: mention.range.location)
         }
         .alignmentGuide(.top) { $0[.bottom] + 8 }
       }
@@ -113,7 +113,7 @@ struct QuickAIComposer: View {
     model.composerDraft.replaceSubrange(range, with: mention.token + " ")
     model.composerMentions.append(mention)
     model.composerMentionCursorRequest = nil
-    model.composerMentionCursorRequest = NSMaxRange(mention.range) + 1
+    model.composerMentionCursorRequest = ComposerCursorRequest(offset: NSMaxRange(mention.range) + 1)
     dismissedMention = nil
   }
 
@@ -153,10 +153,16 @@ struct QuickAIComposer: View {
         projectError = "Web検索へ添付は自動送信しません。添付を外して、検索したい内容を入力してください。"
         return false
       }
+      let pluginIDs = model.composerMentions.filter { $0.isValid(in: model.composerDraft) }.map(\.pluginID)
+      if !pluginIDs.isEmpty && submitted != nil {
+        projectError = "プラグインは添付をまだ読めません。添付を外すか、プラグイン指定を外してください。入力と添付は保持しています。"
+        return false
+      }
       let accepted = model.sendAIChat(
         trimmed.isEmpty ? "この添付を確認して" : trimmed,
         attachment: submitted,
-        webSearchRequested: usesWebSearch
+        webSearchRequested: usesWebSearch,
+        pluginIDs: pluginIDs
       )
       if accepted { usesWebSearch = false }
       return accepted

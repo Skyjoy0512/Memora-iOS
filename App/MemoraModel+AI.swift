@@ -29,6 +29,8 @@ extension MemoraModel {
     aiChatRequestID = nil
     aiMessages = []
     agentToolCallCounts = [:]
+    agentPluginPolicies = [:]
+    agentBlockedExternalTools = [:]
     isAIChatResponding = false
   }
 
@@ -73,16 +75,19 @@ extension MemoraModel {
   func retryAIAnswer(_ messageID: UUID) {
     guard canRetryAIAnswer(messageID) else { return }
     let question = aiMessages[aiMessages.count - 2].text
+    let plugins = aiMessages[aiMessages.count - 2].pluginIDs
     aiMessages.removeLast(2)
-    sendAIChat(question)
+    sendAIChat(question, pluginIDs: plugins)
   }
 
   /// Asks the chat a question. Returns false while an answer is already on its
   /// way, so the caller keeps the text instead of losing it to a refused send.
   @discardableResult
-  func sendAIChat(_ question: String, attachment: AIAttachment? = nil, webSearchRequested: Bool = false) -> Bool {
+  func sendAIChat(_ question: String, attachment: AIAttachment? = nil, webSearchRequested: Bool = false, pluginIDs: [String] = []) -> Bool {
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
+
+    if !pluginIDs.isEmpty { return sendPluginChat(trimmed, pluginIDs: pluginIDs, attachment: attachment) }
 
     if attachment == nil {
       switch AIWebSearchIntent.route(trimmed, requested: webSearchRequested, previousQuery: latestChatWebQuery) {

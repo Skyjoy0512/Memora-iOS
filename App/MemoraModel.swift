@@ -388,7 +388,9 @@ final class MemoraModel {
       scheduleComposerDraftSave()
     }
   }
-  var composerMentionCursorRequest: Int?
+  var composerMentionCursorRequest: ComposerCursorRequest?
+  @ObservationIgnored var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
+  @ObservationIgnored var agentBlockedExternalTools: [UUID: Set<String>] = [:]
   var composerMentions: [ComposerMention] = [] {
     didSet { if composerMentions != oldValue { saveComposerMentions() } }
   }

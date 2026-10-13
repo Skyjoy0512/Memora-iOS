@@ -86,6 +86,7 @@ actor MCPClient {
   private func safeError(_ error: Error) -> Error {
     if error is CancellationError { return CancellationError() }
     // Remote JSON-RPC errors may contain entire payloads or credentials.
+    if let failure = error as? ExternalToolFailure { return failure }
     if let failure = error as? MCPClientError { return failure }
     if let failure = error as? MCPOAuthError { return failure }
     return MCPClientError.malformed

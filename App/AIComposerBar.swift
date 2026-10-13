@@ -63,8 +63,8 @@ struct AIComposerBar: View {
           ComposerInputObserver(state: mentionInput, isActive: isFieldFocused)
         }
       }
-      .onChange(of: model.composerMentionCursorRequest) { _, offset in
-        guard let offset, let range = Range(NSRange(location: offset, length: 0), in: text) else { return }
+      .onChange(of: model.composerMentionCursorRequest) { _, request in
+        guard let request, let range = Range(NSRange(location: request.offset, length: 0), in: text) else { return }
         textSelection = TextSelection(insertionPoint: range.lowerBound)
       }
   }

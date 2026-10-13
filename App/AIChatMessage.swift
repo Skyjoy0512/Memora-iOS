@@ -10,6 +10,8 @@ struct AIChatMessage: Identifiable, Hashable {
   var id = UUID()
   var role: Role
   var text: String
+  /// Per-turn explicit selection; the persisted chat-history format stays unchanged.
+  var pluginIDs: [String] = []
   var cloudProvenance: AIConversationProvenance?
   var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?
   /// What produced the answer: the scope, engine, model, and time. Shown

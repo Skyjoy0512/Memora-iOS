@@ -4,7 +4,7 @@ cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-integration-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 
-swiftc App/ToolInputValidator.swift App/AIToolDefinition.swift App/AIToolRegistry.swift \
+swiftc App/ToolInputValidator.swift App/AIToolDefinition.swift App/AIToolRegistry.swift App/AIPluginExecutionPolicy.swift \
   App/MCPEventStream.swift App/MCPOAuthSettings.swift App/MCPServerConfig.swift App/MCPTool.swift \
   App/MCPPublicAddressPolicy.swift App/MCPDNSLookup.swift App/MCPClientError.swift App/MemoraSkill.swift \
   App/IntegrationProvider.swift App/IntegrationToolResult.swift App/IntegrationConnectionError.swift App/ComposioProvider.swift \

@@ -7,7 +7,8 @@ struct AIToolRegistry {
     tools[tool.id] = tool
     return true
   }
-  func permits(_ id: String, arguments: [String: Any]) -> Bool {
+  func permits(_ id: String, arguments: [String: Any], policy: AIPluginExecutionPolicy? = nil) -> Bool {
+    guard policy?.permits(id, arguments: arguments) ?? true else { return false }
     guard let tool = tools[id] ?? tools["memora:" + id], tool.isEnabled, tool.isAvailable,
           let schema = (try? JSONSerialization.jsonObject(with: tool.inputSchema)) as? [String: Any] else { return false }
     return ToolInputValidator.accepts(arguments, schema: schema)

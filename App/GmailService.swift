@@ -170,8 +170,7 @@ final class GmailService {
     let (data, response) = try await URLSession.shared.data(for: request)
     let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
     guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-      let message = (json["error"] as? [String: Any])?["message"] as? String ?? ""
-      throw GmailError.server(message)
+      throw ExternalToolFailure.http((response as? HTTPURLResponse)?.statusCode ?? 500)
     }
     return json
   }

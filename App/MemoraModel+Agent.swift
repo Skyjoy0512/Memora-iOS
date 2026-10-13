@@ -12,20 +12,26 @@ extension MemoraModel {
   /// Hands a request to the agent. Returns false while another answer is on its
   /// way, so the composer keeps the text.
   @discardableResult
-  func sendAgentChat(_ request: String, attachment: AIAttachment? = nil) -> Bool {
+  func sendAgentChat(_ request: String, attachment: AIAttachment? = nil, pluginPolicy: AIPluginExecutionPolicy? = nil) -> Bool {
     let trimmed = request.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty, !isAIChatResponding, attachment == nil else { return false }
 
     let configuration = askAIConfiguration
     let scope = AIChatScope.all
     let history = aiConversationContext()
-    aiMessages.append(AIChatMessage(role: .user, text: trimmed))
+    var userMessage = AIChatMessage(role: .user, text: trimmed)
+    userMessage.pluginIDs = pluginPolicy?.pluginIDs ?? []
+    aiMessages.append(userMessage)
+    let offeredTools = enabledAgentTools.filter { pluginPolicy?.toolIDs.contains("memora:" + $0.rawValue) ?? true }
+    let explicitSkills = MemoraSkill.bundled.filter { pluginPolicy?.pluginIDs.contains("skill:" + $0.id) == true }
+    let skillContext = explicitSkills.isEmpty ? MemoraSkill.context(for: trimmed, disabled: disabledSkillIDs, budget: 1_500)
+      : "\n選択した補助手順（権限や承認を変更しません）:\n" + explicitSkills.map(\.instructions).joined(separator: "\n")
 
     let llm = configuration.llm
     let runner: AgentRunner
     switch AIEngineService.effectiveEngine(configuration.engine) {
     case .cloud:
-      guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope) + MemoraSkill.context(for: trimmed, disabled: disabledSkillIDs, budget: 1_500), tools: enabledAgentTools) else {
+      guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope) + skillContext, tools: offeredTools) else {
         let failure: AIAnswerFailure = llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey
         aiMessages.append(AIChatMessage(role: .assistant, text: failure.message))
         return true
@@ -51,19 +57,24 @@ extension MemoraModel {
       placeholder.cloudAuthorizationTargets = cloudAuthorizedTargets
     }
     aiMessages.append(placeholder)
+    if let pluginPolicy { agentPluginPolicies[placeholder.id] = pluginPolicy }
     isAIChatResponding = true
 
     // The on-device window is small, so it gets only the end of the thread.
     let thread = runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : safeHistory.text
     var opening = trimmed
+    if let policy = pluginPolicy, !policy.recordIDs.isEmpty {
+      opening += "\n明示的に指定した記録のid: " + policy.recordIDs.map(\.uuidString).sorted().joined(separator: ", ")
+    }
     if !thread.isEmpty {
-      opening = "これまでの会話:\n\(thread)\n\n今回の依頼:\n\(trimmed)"
+      opening = "これまでの会話:\n\(thread)\n\n今回の依頼:\n" + opening
     }
     // The records that bear on the request, found before the model starts:
     // a question can be answered from them straight away, and work starts
     // from the right records. Smaller on the device's window.
     let allowedMeetings = Self.meetings(in: scope, from: meetings).filter {
-      runner.isOnDevice || RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI)
+      (pluginPolicy == nil || pluginPolicy?.pluginIDs.contains(where: { $0.hasPrefix("skill:") || $0 == "tool:memora:search_records" }) == true || pluginPolicy?.recordIDs.contains($0.id) == true)
+        && (runner.isOnDevice || RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI))
     }
     if !runner.isOnDevice {
       opening = "クラウドAI利用を許可した記録だけを読みます。未判定・未許可の記録はプライバシー設定の確認が必要です。過去の会話は出典・内容・現在の許可を検証できるものだけです。ジャーナルやタスクは読み取りツールでも確認できます。\n\n" + opening
@@ -72,7 +83,7 @@ extension MemoraModel {
       for: AIQuestionRequest(question: trimmed, scope: .global, attachment: nil),
       scopeLabel: scope.scopeLabel,
       allowedMeetings: allowedMeetings,
-      tasks: runner.isOnDevice ? Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings)
+      tasks: pluginPolicy != nil ? [] : runner.isOnDevice ? Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings)
         : permittedTasks(for: .cloudAI, scope: scope).filter { !$0.isCompleted },
       characterLimit: runner.isOnDevice ? 1_500 : 8_000
     )
@@ -82,7 +93,7 @@ extension MemoraModel {
     }
     if !runner.isOnDevice {
       recordCloudReads(found.sources.map { .meeting($0.meetingID) }
-        + permittedTasks(for: .cloudAI, scope: scope).filter { !$0.isCompleted }.map { .task($0.id) }, messageID: placeholder.id)
+        + (pluginPolicy == nil ? permittedTasks(for: .cloudAI, scope: scope).filter { !$0.isCompleted }.map { .task($0.id) } : []), messageID: placeholder.id)
     }
     // What the agent knows about the person, smaller on the device's window.
     let personal = personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000, includesHistory: runner.isOnDevice)
@@ -97,7 +108,26 @@ extension MemoraModel {
       switch runner {
       case .cloud(let session):
         // Connected apps' tools join the agent's own for this run.
-        session.externalTools = await self.loadMCPToolsForAgent()
+        let serverIDs = pluginPolicy.map { policy in Set(policy.pluginIDs.compactMap { id -> UUID? in
+          id.hasPrefix("mcp:") ? UUID(uuidString: String(id.dropFirst(4))) : nil
+        }) }
+        let externalTools = await self.loadMCPToolsForAgent(onlyServerIDs: serverIDs)
+        guard !Task.isCancelled, self.aiChatRequestID == requestID else { return }
+        if var policy = self.agentPluginPolicies[placeholder.id] {
+          policy.toolIDs.formUnion(externalTools.map(\.id))
+          self.agentPluginPolicies[placeholder.id] = policy
+          session.externalTools = externalTools.filter { policy.toolIDs.contains($0.id) }
+        } else { session.externalTools = externalTools }
+        if pluginPolicy != nil, offeredTools.filter({ $0 != .askUser }).isEmpty, session.externalTools.isEmpty {
+          self.updateAgentMessage(placeholder.id) {
+            $0.text = "確認済みのツールを読み込めませんでした。MCP設定で接続確認・認証・ツールを再確認してください。外部操作は実行していません。"
+            $0.isThinking = false
+          }
+          self.isAIChatResponding = false
+          self.aiChatTask = nil
+          self.aiChatRequestID = nil
+          return
+        }
         session.addUserMessage(opening)
         result = await self.runAgent(session: session, messageID: placeholder.id, scope: scope, llm: llm)
       case .onDevice:
@@ -207,7 +237,7 @@ extension MemoraModel {
         }
         let outcome: AgentToolOutcome
         if call.tool == .delegateResearch {
-          if consumeAgentToolCall(messageID), toolRegistry().permits(call.name, arguments: call.arguments) {
+          if pluginCallIsPermitted(call, messageID: messageID), consumeAgentToolCall(messageID), toolRegistry().permits(call.name, arguments: call.arguments) {
             outcome = await delegateResearchTool(call, messageID: messageID, scope: scope, llm: llm)
           } else { outcome = AgentToolOutcome(text: "実行上限または入力検証により、分担調査を停止しました。", isError: true) }
         } else {
@@ -236,7 +266,7 @@ extension MemoraModel {
   /// each call goes through the same code as the cloud agent, in compact form.
   @available(iOS 26.0, *)
   private func runOnDeviceAgent(prompt: String, messageID: UUID, scope: AIChatScope) async -> AIAnswerResult {
-    let tools = OnDeviceAgentTool.all(AgentTool.offeredOnDevice.filter { enabledAgentTools.contains($0) }) { [weak self] name, argumentsJSON in
+    let tools = OnDeviceAgentTool.all(AgentTool.offeredOnDevice.filter { enabledAgentTools.contains($0) && (agentPluginPolicies[messageID]?.toolIDs.contains("memora:" + $0.rawValue) ?? true) }) { [weak self] name, argumentsJSON in
       guard let self else { return "" }
       let arguments = argumentsJSON.data(using: .utf8)
         .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]

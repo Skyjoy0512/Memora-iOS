@@ -17,8 +17,19 @@ extension MemoraModel {
     automaticAccess: Bool = false
   ) async -> AgentToolOutcome {
     guard consumeAgentToolCall(messageID) else { return AgentToolOutcome(text: "ツール実行上限（1回答24回）に達したため停止しました。", isError: true) }
-    guard toolRegistry().permits(call.name, arguments: call.arguments) else {
+    guard pluginCallIsPermitted(call, messageID: messageID) else {
+      return AgentToolOutcome(text: "@で指定した対象以外のツールや記録にはアクセスできません。必要な対象を明示的に追加してください。", isError: true)
+    }
+    guard !agentBlockedExternalTools[messageID, default: []].contains(call.name) else {
+      return AgentToolOutcome(text: "この依頼では実行を拒否されたか失敗したため、再実行しません。必要なら接続設定を確認して新しい依頼を送ってください。", isError: true)
+    }
+    guard toolRegistry().permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID]) else {
       return AgentToolOutcome(text: "存在しない、無効、または入力形式に対応していない道具です。実行していません。", isError: true)
+    }
+    if call.tool == .searchEmail || call.tool == .readEmail {
+      guard await approveDirectPluginRead(call, messageID: messageID) else {
+        return AgentToolOutcome(text: "利用者が外部メールの取得を承認しませんでした。取得せず、同じ操作を再要求しません。", isError: true)
+      }
     }
     if automaticAccess {
       guard let tool = call.tool, AgentTool.residentTools.contains(tool) else {
@@ -140,7 +151,8 @@ extension MemoraModel {
       }.joined(separator: "\n"))
     } catch {
       finishAgentStep(stepID, on: messageID, state: .failed, detail: "読み込めませんでした")
-      return AgentToolOutcome(text: error.localizedDescription, isError: true)
+      agentBlockedExternalTools[messageID, default: []].insert(call.name)
+      return AgentToolOutcome(text: ExternalToolFailure.message(for: error), isError: true)
     }
   }
 
@@ -162,7 +174,8 @@ extension MemoraModel {
       """)
     } catch {
       finishAgentStep(stepID, on: messageID, state: .failed, detail: "読み込めませんでした")
-      return AgentToolOutcome(text: error.localizedDescription, isError: true)
+      agentBlockedExternalTools[messageID, default: []].insert(call.name)
+      return AgentToolOutcome(text: ExternalToolFailure.message(for: error), isError: true)
     }
   }
 
@@ -727,21 +740,42 @@ extension MemoraModel {
     guard let id = UUID(uuidString: call.string("meeting_id")), let meeting = allowed.first(where: { $0.id == id }) else {
       return AgentToolOutcome(text: "会議の記録が見つかりません。search_recordsのidを使ってください。", isError: true)
     }
+    guard RecordAccessPolicy.allows(meeting.effectivePrivacy, purpose: .cloudAI),
+          agentPluginPolicies[messageID].map({ !$0.limitsRecordReads || $0.recordIDs.contains(id) }) ?? true else {
+      return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
+    }
+    let credential = KeychainStore.string(forKey: "integration.notion")
+    let pageID = UserDefaults.standard.string(forKey: "memora.notionPageID")
     guard let stepID = await approve(
       tool: .saveToNotion,
       title: "Notionに保存",
-      lines: [meeting.displayTitle],
+      lines: [meeting.displayTitle, "この記録と送信を許可した関連タスクをNotionへ送ります。", "外部処理の料金は未確認です。今回の保存だけを許可します。"],
       confirmTitle: "保存",
       messageID: messageID
-    ) else { return Self.declinedOutcome }
-
+    ) else {
+      agentBlockedExternalTools[messageID, default: []].insert(call.name)
+      return Self.declinedOutcome
+    }
+    guard integrationIsEnabled("notion"), self.meeting(id: meeting.id) == meeting,
+          credential == KeychainStore.string(forKey: "integration.notion"),
+          pageID == UserDefaults.standard.string(forKey: "memora.notionPageID") else {
+      return AgentToolOutcome(text: "記録または接続設定が変わったため、送信を止めました。内容を確認して再度依頼してください。", isError: true)
+    }
     do {
-      let outcome = try await NotionService.save(meeting: meeting, tasks: tasks)
+      let safeTasks = permittedTasks(for: .cloudAI, scope: scope).filter { $0.meetingID == meeting.id }
+      let outcome = try await NotionService.save(meeting: meeting, tasks: safeTasks)
       finishAgentStep(stepID, on: messageID, state: .done, detail: meeting.displayTitle)
       return AgentToolOutcome(text: "Notionに保存しました。\(outcome.pageURL?.absoluteString ?? "")")
     } catch {
       finishAgentStep(stepID, on: messageID, state: .failed, detail: "保存できませんでした")
-      return AgentToolOutcome(text: "Notionに保存できませんでした。", isError: true)
+      agentBlockedExternalTools[messageID, default: []].insert(call.name)
+      if let failure = error as? NotionService.Failure, case .http(let code) = failure {
+        return AgentToolOutcome(text: ExternalToolFailure.http(code).localizedDescription, isError: true)
+      }
+      if let partial = error as? NotionService.PartialPageFailure {
+        return AgentToolOutcome(text: "ページは作成されましたが、一部の内容を追加できませんでした。自動再作成はしません。" + (partial.pageURL.map { "ページ: " + $0.absoluteString } ?? ""), isError: true)
+      }
+      return AgentToolOutcome(text: "Notionへの保存結果を確認できませんでした。サービス側でページを確認してください。自動再作成はしません。", isError: true)
     }
   }
 
