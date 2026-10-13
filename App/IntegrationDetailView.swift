@@ -5,8 +5,11 @@ struct IntegrationDetailView: View {
   var service: IntegrationCatalog
 
   var body: some View {
+    let state = model.integrationState(service)
     Form {
       Section {
+        LabeledContent("状態", value: state.label)
+        if let reason = state.reason { Text(reason).foregroundStyle(.secondary) }
         Text(service.summary)
         Text(service.permissions).font(.subheadline).foregroundStyle(.secondary)
       }
@@ -19,6 +22,10 @@ struct IntegrationDetailView: View {
           case "gmail": NavigationLink("接続・認証設定") { GmailSettingsView() }
           case "notion": NavigationLink("接続・認証設定") { NotionSettingsView() }
           case "mcp": NavigationLink("接続先を管理") { MCPServersView() }
+          case "calendar":
+            if CalendarService.access != .granted {
+              Button("カレンダーへのアクセスを許可") { Task { _ = await CalendarService.requestAccess() } }
+            }
           default: EmptyView()
           }
         } footer: {

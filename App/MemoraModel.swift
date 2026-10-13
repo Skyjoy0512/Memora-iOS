@@ -384,8 +384,13 @@ final class MemoraModel {
   var composerDraft = "" {
     didSet {
       guard composerDraft != oldValue else { return }
+      updateComposerMentions(from: oldValue, to: composerDraft)
       scheduleComposerDraftSave()
     }
+  }
+  var composerMentionCursorRequest: Int?
+  var composerMentions: [ComposerMention] = [] {
+    didSet { if composerMentions != oldValue { saveComposerMentions() } }
   }
   @ObservationIgnored private var composerDraftSaveTask: Task<Void, Never>?
   /// Auto-dismiss for the undo toast. Cancelled when the offer is taken or
@@ -501,7 +506,10 @@ final class MemoraModel {
     let storedProvider = LLMProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
     aiProvider = storedProvider
     aiModelID = Self.storedModelID(for: storedProvider)
-    composerDraft = DraftStore.load(Self.composerDraftKey) ?? ""
+    let savedMentions = DraftStore.load("composer.mentions").flatMap { $0.data(using: .utf8) }.flatMap { try? JSONDecoder().decode([ComposerMention].self, from: $0) } ?? []
+    let savedDraft = DraftStore.load(Self.composerDraftKey) ?? ""
+    composerDraft = savedDraft
+    composerMentions = savedMentions.filter { $0.isValid(in: savedDraft) }
     cloudStorageEnabled = false
     if case .data(let data) = RecordStore.load(StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)

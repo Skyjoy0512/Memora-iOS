@@ -21,6 +21,10 @@ struct QuickAIComposer: View {
   @State private var isPreparingAttachment = false
   @State private var projectError: String?
   @State private var usesWebSearch = false
+  @State private var mentionInput = ComposerInputState()
+  @State private var dismissedMention: ComposerMentionToken?
+  @State private var selectedSetup: AIPlugin?
+  @State private var composerTop: CGFloat = 360
 
   var body: some View {
     // The draft lives in the model, so rebuilding this view or leaving the tab
@@ -39,8 +43,36 @@ struct QuickAIComposer: View {
         isComposing = expanded
       },
       onResearch: model.selectedTab == .askAI && scope == .global ? { usesWebSearch.toggle() } : nil,
-      researchSelected: usesWebSearch
+      researchSelected: usesWebSearch,
+      mentionInput: supportsMentions ? mentionInput : nil
     )
+    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
+    .overlay(alignment: .top) {
+      if let token = activeMention, token != dismissedMention {
+        AIPluginMenu(candidates: model.mentionCandidates(query: token.query), maximumHeight: min(320, max(100, composerTop - WindowSafeArea.insets.top - 12)),
+          select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })
+          .alignmentGuide(.top) { $0[.bottom] + 8 }
+      } else if supportsMentions && !model.composerMentions.isEmpty {
+        ComposerMentionStrip(mentions: model.composerMentions) { mention in
+          guard mentionInput.snapshot()?.hasMarkedText != true, mention.isValid(in: model.composerDraft),
+                let range = Range(mention.range, in: model.composerDraft) else { return }
+          model.composerDraft.removeSubrange(range)
+          model.composerMentionCursorRequest = nil
+          model.composerMentionCursorRequest = mention.range.location
+        }
+        .alignmentGuide(.top) { $0[.bottom] + 8 }
+      }
+    }
+    .sheet(item: $selectedSetup) { plugin in
+      NavigationStack {
+        AIPluginSetupView(plugin: plugin)
+          .toolbar { ToolbarItem(placement: .cancellationAction) {
+            ToolbarIconButton("閉じる", icon: .xmark) { selectedSetup = nil }
+          } }
+      }
+    }
+    .onChange(of: model.composerDraft) { _, _ in dismissedMention = nil }
+    .onChange(of: model.composerDismissRequests) { _, _ in dismissedMention = activeMention }
     .onChange(of: model.selectedTab) { _, _ in usesWebSearch = false }
     .sheet(item: $pendingQuestion) { request in
       AIQuestionView(request: request)
@@ -57,6 +89,32 @@ struct QuickAIComposer: View {
     .alert("送信できませんでした", isPresented: Binding(get: { projectError != nil }, set: { if !$0 { projectError = nil } })) {
       Button("OK", role: .cancel) { projectError = nil }
     } message: { Text(projectError ?? "") }
+  }
+
+  private var supportsMentions: Bool { model.selectedTab == .askAI && scope == .global }
+
+  private var activeMention: ComposerMentionToken? {
+    guard supportsMentions, let snapshot = mentionInput.value, snapshot.text == model.composerDraft else { return nil }
+    return ComposerMentionToken.parse(text: snapshot.text, selection: snapshot.selection, hasMarkedText: snapshot.hasMarkedText)
+  }
+
+  private func selectPlugin(_ plugin: AIPlugin, token: ComposerMentionToken) {
+    // Recheck the native marked range at the instant of the tap, not the last redraw.
+    guard let snapshot = mentionInput.snapshot(), snapshot.text == model.composerDraft,
+          ComposerMentionToken.parse(text: snapshot.text, selection: snapshot.selection, hasMarkedText: snapshot.hasMarkedText) == token else { return }
+    guard plugin.state.isReady else {
+      dismissedMention = token
+      selectedSetup = plugin
+      return
+    }
+    guard let range = Range(token.range, in: model.composerDraft) else { return }
+    let label = plugin.name.replacingOccurrences(of: "]", with: "）").replacingOccurrences(of: "[", with: "（")
+    let mention = ComposerMention(pluginID: plugin.id, label: label, range: NSRange(location: token.range.location, length: "[@\(label)]".utf16.count))
+    model.composerDraft.replaceSubrange(range, with: mention.token + " ")
+    model.composerMentions.append(mention)
+    model.composerMentionCursorRequest = nil
+    model.composerMentionCursorRequest = NSMaxRange(mention.range) + 1
+    dismissedMention = nil
   }
 
   /// Naming the scope saves a trip to the range picker in the common case.

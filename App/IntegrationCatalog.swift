@@ -7,6 +7,26 @@ struct IntegrationCatalog: Identifiable {
   var permissions: String
   var isImplemented: Bool
 
+  var aliases: [String] {
+    switch id {
+    case "gmail": ["Google Mail", "メール", "ジーメール"]
+    case "calendar": ["Calendar", "予定", "カレンダー"]
+    case "notion": ["ノーション", "ページ"]
+    case "mcp": ["プラグイン", "連携", "server"]
+    case "drive": ["ドライブ", "Google Drive"]
+    case "github": ["ギットハブ", "Issue", "Pull Request"]
+    default: []
+    }
+  }
+  var toolNames: [String] {
+    switch id {
+    case "gmail": ["search_email", "read_email"]
+    case "calendar": ["read_calendar", "create_calendar_event"]
+    case "notion": ["save_to_notion"]
+    default: []
+    }
+  }
+
   static var services: [IntegrationCatalog] {
     [
       .init(id: "gmail", name: "Gmail", summary: "メールを検索・閲覧します。送信はしません。", permissions: "読み取り専用。取得した内容は選択中のAIに渡されます。", isImplemented: true),

@@ -20,6 +20,8 @@ struct AIComposerBar: View {
   var expansionChanged: ((Bool) -> Void)?
   var onResearch: (() -> Void)?
   var researchSelected = false
+  var mentionInput: ComposerInputState?
+  @State private var textSelection: TextSelection?
 
   @State private var speechInput = SpeechInputService()
   @State private var isIntegrationsPresented = false
@@ -45,7 +47,7 @@ struct AIComposerBar: View {
   }
 
   private var textField: some View {
-    TextField(placeholder, text: $text, axis: .vertical)
+    TextField(placeholder, text: $text, selection: $textSelection, axis: .vertical)
       .font(.body)
       .lineLimit(isExpanded ? 1...6 : 1...1)
       .submitLabel(.send)
@@ -56,6 +58,15 @@ struct AIComposerBar: View {
       // controls keep their size instead of being pushed out by a long entry.
       .frame(maxWidth: .infinity, alignment: .leading)
       .layoutPriority(1)
+      .background {
+        if let mentionInput {
+          ComposerInputObserver(state: mentionInput, isActive: isFieldFocused)
+        }
+      }
+      .onChange(of: model.composerMentionCursorRequest) { _, offset in
+        guard let offset, let range = Range(NSRange(location: offset, length: 0), in: text) else { return }
+        textSelection = TextSelection(insertionPoint: range.lowerBound)
+      }
   }
 
   var body: some View {
@@ -350,7 +361,7 @@ struct AIComposerBar: View {
   }
 
   private func submit() {
-    guard canSend else { return }
+    guard canSend, mentionInput?.snapshot()?.hasMarkedText != true else { return }
     speechInput.stop()
     guard onSubmit(attachment) else { return }
     InteractionFeedback.shared.send(.tap)

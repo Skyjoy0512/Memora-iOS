@@ -7,6 +7,15 @@ struct MemoraSkill: Identifiable, Sendable {
   var instructions: String
   var keywords: [String]
 
+  var toolNames: [String] {
+    switch id {
+    case "journal-review": ["review_period", "search_records", "read_record", "list_tasks"]
+    case "project-organize": ["list_projects", "search_records", "read_record", "create_project", "move_records_to_project"]
+    case "travel-plan": ["search_records", "read_record", "create_document"]
+    default: []
+    }
+  }
+
   // Only the shipped catalog can supply procedures. This is not a code loader.
   var skillMarkdown: String {
     "---\nname: \(id)\ndescription: \(summary)\n---\n\n\(instructions)"

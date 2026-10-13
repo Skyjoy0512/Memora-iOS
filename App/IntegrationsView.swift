@@ -6,7 +6,7 @@ struct IntegrationsView: View {
 
   var body: some View {
     let services = IntegrationCatalog.services.filter {
-      query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) || $0.summary.localizedCaseInsensitiveContains(query)
+      query.isEmpty || ([$0.name, $0.summary] + $0.aliases + $0.toolNames).contains { $0.localizedStandardContains(query) }
     }
     List {
       Section {
@@ -35,12 +35,7 @@ struct IntegrationsView: View {
   }
 
   private func status(_ id: String) -> String {
-    if !model.integrationIsEnabled(id) { return "Ask AIでは無効" }
-    switch id {
-    case "gmail": return GmailService.shared.isConnected ? "認証情報あり" : "未接続"
-    case "notion": return NotionService.isConfigured ? "設定済み" : "未設定"
-    case "mcp": return model.mcpServers.isEmpty ? "未設定" : "接続先 \(model.mcpServers.count)件"
-    default: return "登録時にアクセス権を確認"
-    }
+    guard let service = IntegrationCatalog.services.first(where: { $0.id == id }) else { return "利用不可" }
+    return model.integrationState(service).label
   }
 }
