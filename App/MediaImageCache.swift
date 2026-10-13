@@ -13,9 +13,11 @@ enum MediaImageCache {
   }()
   private struct Request {
     var id = UUID()
+    var generation: Int
     var task: Task<UIImage?, Never>
   }
   private static var pending: [String: Request] = [:]
+  private static var generation = 0
   private static let memoryObserver = NotificationCenter.default.addObserver(
     forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main
   ) { _ in
@@ -26,10 +28,10 @@ enum MediaImageCache {
   }
 
   /// The photo for a list, decoded at `maxPixelSize`.
-  static func image(named name: String, maxPixelSize: CGFloat) async -> UIImage? {
+  static func image(named name: String, maxPixelSize: CGFloat, recordsPerformance: Bool = true) async -> UIImage? {
     let key = "\(name)@\(Int(maxPixelSize))"
     guard let url = thumbnailURL(for: name) else { return nil }
-    return await decoded(key: key, url: url, maxPixelSize: maxPixelSize, measured: true)
+    return await decoded(key: key, url: url, maxPixelSize: maxPixelSize, measured: recordsPerformance)
   }
 
   static func sourceThumbnail(named name: String, maxPixelSize: CGFloat) async -> UIImage? {
@@ -47,7 +49,11 @@ enum MediaImageCache {
     return await decoded(key: key, url: url, maxPixelSize: maxPixelSize)
   }
 
-  private static func decoded(key: String, url: URL, maxPixelSize: CGFloat, measured: Bool = false) async -> UIImage? {
+  private static func decoded(key rawKey: String, url: URL, maxPixelSize: CGFloat, measured: Bool = false) async -> UIImage? {
+    // A legacy photo name can start with "full." or "workspace.". Include the
+    // resource itself so different files never share a cached or in-flight load.
+    let resource = url.absoluteString
+    let key = "\(resource.utf8.count):\(resource)\(rawKey)"
     _ = memoryObserver
     guard !Task.isCancelled else { return nil }
     // A removed file must not be resurrected by an already decoded cache entry.
@@ -66,7 +72,7 @@ enum MediaImageCache {
         guard !Task.isCancelled else { return nil as UIImage? }
         return ImageDownscale.downsampled(at: url, maxPixelSize: maxPixelSize)
       }
-      request = Request(task: task)
+      request = Request(generation: generation, task: task)
       pending[key] = request
     }
     let image = await request.task.value
@@ -76,7 +82,8 @@ enum MediaImageCache {
     }
     if pending[key]?.id == request.id {
       pending.removeValue(forKey: key)
-      if let image, !request.task.isCancelled, FileManager.default.fileExists(atPath: url.path) {
+      if let image, request.generation == generation, !request.task.isCancelled,
+         FileManager.default.fileExists(atPath: url.path) {
         cache.setObject(image, forKey: key as NSString, cost: decodedCost(image))
       }
     }
@@ -92,8 +99,9 @@ enum MediaImageCache {
 
   static func clear() {
     cache.removeAllObjects()
-    for request in pending.values { request.task.cancel() }
-    pending.removeAll()
+    // Visible rows still need the decode they await. Memory pressure evicts
+    // cached images without leaving those rows stuck on a cancelled placeholder.
+    generation += 1
   }
 
   /// The small copy when it exists; otherwise the original, which is all there

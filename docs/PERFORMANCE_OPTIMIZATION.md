@@ -98,10 +98,10 @@ Phase 2の最終DEBUGビルド成功（`2026-10-13T22-36-57-9a962f43.log`）。S
 | AI順位 1000件 | 39.690 / 43.483 / 44.211 | 5.844 / 5.984 / 5.990 | 85.3% |
 | 100ログburst（500件保持） | 70.932 / 72.001 / 73.932 | 1.341 / 1.736 / 1.869 | 98.1% |
 | burst 21回の保存数 | 2100 | 21 | 99.0%減 |
-| 索引反復 100資料 | 3.479 / 3.529 / 3.666 | 0.760 / 0.784 / 0.809 | 78.2% |
-| 索引反復 1000資料 | 30.945 / 31.944 / 31.988 | 3.397 / 3.471 / 3.496 | 89.0% |
-| 索引再構築 100資料 | 16.614 / 22.950 / 33.607 | 17.426 / 21.566 / 25.153 | -4.9%（短縮なし） |
-| 索引再構築 1000資料 | 263.541 / 270.762 / 286.963 | 265.636 / 270.662 / 287.344 | -0.8%（短縮なし） |
+| 索引反復 100資料 | 3.479 / 3.529 / 3.666 | 0.745 / 0.781 / 0.796 | 78.6% |
+| 索引反復 1000資料 | 30.945 / 31.944 / 31.988 | 3.493 / 4.545 / 4.859 | 88.7% |
+| 索引再構築 100資料 | 16.614 / 22.950 / 33.607 | 16.773 / 23.232 / 39.904 | -1.0%（短縮なし） |
+| 索引再構築 1000資料 | 263.541 / 270.762 / 286.963 | 267.091 / 277.851 / 298.004 | -1.3%（短縮なし） |
 | SQLite batch 100×2KiB | 1.301 / 3.175 / 4.383 | 1.053 / 3.112 / 4.102 | 19.1% |
 | SQLite batch 1000×2KiB | 9.223 / 11.626 / 16.168 | 8.994 / 10.571 / 14.948 | 2.5% |
 | 所有者判定 1000件 | 2.376 / 2.410 / 2.439 | 0.377 / 0.386 / 0.387 | 84.1% |
@@ -121,12 +121,15 @@ Phase 2の最終DEBUGビルド成功（`2026-10-13T22-36-57-9a962f43.log`）。S
 
 ## 最終品質確認
 
-- 関連CLIチェック19 suiteが成功。追加のSourceLookupChecksを含めた最終再実行を行う。DEBUG起動ログにSelfCheck failedなし、Performance caches成功。memory warningによる解放も実際のNotification経路で検証。
+- 関連CLIチェック20 suiteが成功（SourceLookupChecksを含む）。DEBUG起動ログにSelfCheck failedなし、Performance caches成功。memory warningによる解放も実際のNotification経路で検証。
 - Homeの変更前/変更後スクリーンショットを目視比較し、時計表示以外の配置・文字・色・glassが一致。pixel単位の自動比較/動画/フレーム計測はしていない。
 - iPhone 18 Pro MaxでHome、日付切替、日別サマリー開閉、Files検索（日本語はsetValueで入力）/消去/キャンセル、元の2記録、録音詳細、project一覧/詳細、record/project/globalのcomposer、Ask AI、FAB popoverのcapture actionsと閉じる動作、Settings/DEBUG画面、Light/DarkのHome/Settingsを確認。表示設定・選択日は元に戻した。
 - 元の録音2件、既存タスク、WeeklySync、ゴミ箱3件を保持。ユーザーデータの追加/変更/削除/復元は行っていない。DEBUGの私有画像fixtureとCLIの一時データだけを作成し、fixtureは終了時に削除。
 - 録音開始/停止/バックグラウンド復旧、実機audio割込、実カレンダーの遅い応答、ネットワーク障害、有料AI/CloudKit/外部サービス、widget実表示、実バックアップ復元は未実施。既存のaudio/保存/backup自己チェックとhostのfailure fixtureを実操作の証明とはしない。
-- Project.json、Info.plist、entitlements、保存/backup codec、tab/FAB/Glass/navigation/animationの実装は変更なし。各PhaseのDebugビルド成功。最終Releaseビルドの結果は追記する。
+- Project.json、Info.plist、entitlements、保存/backup codec、tab/FAB/Glass/navigation/animationの実装は変更なし。各PhaseのDebugビルド成功。最終Releaseビルドも成功（`2026-10-13T23-52-50-f1702250.log`、Release/-O/whole-module optimizationをログで確認）。既存AppIntents metadata警告1件のみ。
+- 最終のProjectEvidenceInput比較はUTF-8バイトと時刻のbitPatternを確認する。Swift Stringの通常の同値判定ではUnicodeの表現差を見落とすため、同じ見た目でも保存JSONが変わった資料を必ず再同期する。Caféの合成/分解表現とsigned zeroの回帰チェック成功。上の索引値はこの検証を含む最終実装で再測定した。
+- memory warningはcacheを解放し、表示中のrowがawaitしているdecodeを取り消さない。generationを進めて古いdecodeのcache再投入だけを抑止する。読み込み途中で警告が来てもplaceholderのままになることを避け、取消済みのrowへの反映拒否は維持する。
+- 画像のcache/in-flight keyにはファイルURLも含める。旧photo名がfull./workspace.で始まっても別の媒体と要求を混同しない。DEBUG私有fixtureでは本物の計測ログへ画像タイミングを追加しない。
 
 ## 変更ファイル
 
@@ -138,4 +141,5 @@ tools/checks: CollectionPerformanceChecks、JournalPerformanceChecks、LocalStor
 
 - Phase 1: `5e7e5d8` — 診断ログ、AI順位、画像/preview cacheと回帰fixture。
 - Phase 2: `06f7570` — 確定済み索引入力の再利用、所有者判定、イベントの照合、古いcalendar応答の排除。
-- Phase 3と最終検証のコミットIDは完了報告に記載する。作業終了時に全変更をコミットする。GitHubへの追加pushはこの最適化依頼には含めない。
+- Phase 3: `57f5e0f` — SQLite statement、source/task ID lookup、rollback/並行書込、効果の薄い候補の撤回。
+- 最終検証のコミットIDは完了報告に記載する。作業終了時に全変更をコミットする。GitHubへの追加pushはこの最適化依頼には含めない。

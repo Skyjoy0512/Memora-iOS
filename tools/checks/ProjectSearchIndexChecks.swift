@@ -69,6 +69,18 @@ struct ProjectSearchIndexChecks {
     let again = try await index.retrieve(question: "箱根", projectID: boundaryProject, inputs: [boundary])
     precondition(large == again && large.allSatisfy { $0.text.count <= 700 && $0.page == 9 && $0.time == 42 })
     try await index.remove(projectID: boundaryProject)
+    let exactProject = UUID()
+    var composed = ProjectEvidenceInput(target: .source(UUID()), title: "Café", blocks: [ProjectSourceText(text: "Café", time: 0)])
+    _ = try await index.retrieve(question: "Café", projectID: exactProject, inputs: [composed])
+    var decomposed = composed
+    decomposed.title = "Cafe\u{301}"
+    decomposed.blocks[0].text = "Cafe\u{301}"
+    precondition(composed.title == decomposed.title && composed != decomposed)
+    let exact = try await index.retrieve(question: "Café", projectID: exactProject, inputs: [decomposed])
+    precondition(!exact.isEmpty && exact.allSatisfy { $0.text.utf8.elementsEqual(decomposed.blocks[0].text.utf8) && $0.title.utf8.elementsEqual(decomposed.title.utf8) })
+    composed.blocks[0].time = -0.0
+    precondition(composed.blocks[0].time == 0 && composed != ProjectEvidenceInput(target: composed.target, title: composed.title, blocks: [ProjectSourceText(text: "Café", time: 0)]))
+    try await index.remove(projectID: exactProject)
     print("ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)")
   }
 }

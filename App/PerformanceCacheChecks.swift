@@ -26,6 +26,21 @@ enum PerformanceCacheChecks {
           reloaded !== first, reloaded.cgImage?.width == first.cgImage?.width else {
       return "memory warning did not release cached image or changed dimensions"
     }
+    let visibleRequest = Task { await MediaImageCache.photo(named: name, maxPixelSize: 119) }
+    await Task.yield()
+    NotificationCenter.default.post(name: UIApplication.didReceiveMemoryWarningNotification, object: nil)
+    if await visibleRequest.value == nil { return "memory warning cancelled a visible image request" }
+    let legacyName = "full." + name
+    guard let legacyURL = MediaFiles.photoURL(legacyName),
+          let thumbnailURL = MediaFiles.photoURL(MediaFiles.thumbnailName(for: legacyName)) else { return "fixture path" }
+    defer { MediaFiles.deletePhoto(legacyName) }
+    do {
+      try data.write(to: legacyURL, options: .atomic)
+      try data.write(to: thumbnailURL, options: .atomic)
+    } catch { return "legacy fixture write" }
+    guard let full = await MediaImageCache.photo(named: name, maxPixelSize: 120),
+          let other = await MediaImageCache.image(named: legacyName, maxPixelSize: 120, recordsPerformance: false),
+          full !== other else { return "cache key mixed different files" }
     let cancelled = Task { await MediaImageCache.photo(named: name) }
     cancelled.cancel()
     if await cancelled.value != nil { return "cancelled request returned image" }
