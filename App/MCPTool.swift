@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 /// A tool a connected MCP server offers, as the agent sees it.
 struct MCPTool: Identifiable, Hashable, Sendable {
@@ -18,12 +19,22 @@ struct MCPTool: Identifiable, Hashable, Sendable {
   var agentName: String {
     let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
     let tool = String(name.map { allowed.contains($0) ? $0 : "_" })
-    let server = serverID.uuidString.prefix(6).lowercased()
-    return String("mcp_\(server)_\(tool)".prefix(64))
+    let digest = SHA256.hash(data: Data((serverID.uuidString + "\n" + name).utf8)).map { String(format: "%02x", $0) }.joined()
+    return "mcp_" + String(digest.prefix(24)) + "_" + String(tool.prefix(32))
+  }
+
+  var fingerprint: String {
+    SHA256.hash(data: inputSchema + Data((name + summary + String(isReadOnly)).utf8)).map { String(format: "%02x", $0) }.joined()
+  }
+
+  var definition: AIToolDefinition {
+    AIToolDefinition(id: agentName, name: name, summary: summary, inputSchema: inputSchema,
+      provider: .mcp, requiredPermissions: ["mcp:" + serverID.uuidString],
+      risk: isReadOnly ? .read : .sensitive, isAvailable: true, isEnabled: true)
   }
 
   var schemaObject: [String: Any] {
     (try? JSONSerialization.jsonObject(with: inputSchema)) as? [String: Any]
-      ?? ["type": "object", "properties": [String: Any]()]
+      ?? ["unsupportedSchema": true]
   }
 }

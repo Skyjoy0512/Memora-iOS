@@ -16,6 +16,10 @@ extension MemoraModel {
     compact: Bool = false,
     automaticAccess: Bool = false
   ) async -> AgentToolOutcome {
+    guard consumeAgentToolCall(messageID) else { return AgentToolOutcome(text: "ツール実行上限（1回答24回）に達したため停止しました。", isError: true) }
+    guard toolRegistry().permits(call.name, arguments: call.arguments) else {
+      return AgentToolOutcome(text: "存在しない、無効、または入力形式に対応していない道具です。実行していません。", isError: true)
+    }
     if automaticAccess {
       guard let tool = call.tool, AgentTool.residentTools.contains(tool) else {
         return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
@@ -24,13 +28,15 @@ extension MemoraModel {
     } else if !compact, let outcome = automaticRecordTool(call, messageID: messageID, purpose: .cloudAI, scope: scope) {
       return outcome
     }
-    if !compact { markCloudProvenanceIncomplete(messageID) }
     guard let tool = call.tool else {
       if let external = activeMCPTools[call.name] {
-        return await performMCPTool(external, call: call, messageID: messageID)
+        let outcome = await performMCPTool(external, call: call, messageID: messageID)
+        if !compact { markCloudProvenanceIncomplete(messageID) }
+        return outcome
       }
       return AgentToolOutcome(text: "未知の道具です: \(call.name)", isError: true)
     }
+    if !compact { markCloudProvenanceIncomplete(messageID) }
     switch tool {
     case .searchWeb, .deepResearch:
       return await webResearchTool(call, messageID: messageID, compact: compact)
@@ -60,6 +66,8 @@ extension MemoraModel {
       return await moveRecordsTool(call, messageID: messageID, scope: scope)
     case .addJournalMemo:
       return await addJournalMemoTool(call, messageID: messageID)
+    case .readCalendar:
+      return await readCalendarTool(call, messageID: messageID)
     case .createCalendarEvent:
       return await createCalendarEventTool(call, messageID: messageID)
     case .draftEmail:

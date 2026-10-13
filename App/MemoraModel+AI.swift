@@ -28,6 +28,7 @@ extension MemoraModel {
     aiChatTask = nil
     aiChatRequestID = nil
     aiMessages = []
+    agentToolCallCounts = [:]
     isAIChatResponding = false
   }
 
@@ -95,6 +96,15 @@ extension MemoraModel {
     // the conversation says so, so it is never kept silently.
     let remembered = isAIMemoryEnabled ? Self.explicitMemory(in: trimmed) : nil
     let didRemember = remembered.map { addAIMemory($0, origin: .told) } ?? false
+
+    if AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud, !askAIConfiguration.llm.supportsToolCalling {
+      if !didRemember, Self.shouldRunAsAgent(trimmed, engine: .foundation, hasAttachment: attachment != nil) {
+        aiMessages.append(AIChatMessage(role: .user, text: trimmed))
+        aiMessages.append(AIChatMessage(role: .assistant, text: "このモデルのツール呼び出しはオフです。対応モデルを設定 → AI整理で登録して有効にすると、連携サービスや書き込み操作を使えます。通常の質問には回答できます。"))
+        return true
+      }
+      return sendGroundedAnswer(trimmed, attachment: attachment, remembered: didRemember ? remembered : nil)
+    }
 
     // One assistant, no mode to choose. A cloud model runs as the agent and
     // decides for itself whether to answer or to do the work. The on-device

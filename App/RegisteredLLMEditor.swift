@@ -43,8 +43,9 @@ struct RegisteredLLMEditor: View {
           } label: {
             SettingsLabel("候補から入力", icon: .listBulletRectangle, color: .gray)
           }
+          Toggle("ツール呼び出しに対応", isOn: Binding(get: { draft.supportsToolCalling ?? true }, set: { draft.supportsToolCalling = $0 }))
         } footer: {
-          Text("表示名が入力欄の選択メニューに表示されます。APIにはモデルIDを送ります。")
+          Text("APIにはモデルIDを送ります。Function Calling対応モデルだけツール呼び出しをオンにしてください。オフでは外部ツールや書き込み操作を実行しません。")
         }
         Section {
           Button { showsKey = true } label: {

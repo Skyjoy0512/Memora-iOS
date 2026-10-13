@@ -22,6 +22,7 @@ struct AIComposerBar: View {
   var researchSelected = false
 
   @State private var speechInput = SpeechInputService()
+  @State private var isIntegrationsPresented = false
   @State private var isImporterPresented = false
   @State private var isAudioImporterPresented = false
   @State private var isPhotoPickerPresented = false
@@ -165,6 +166,16 @@ struct AIComposerBar: View {
         await importPhoto(newItem)
       }
     }
+    .sheet(isPresented: $isIntegrationsPresented) {
+      NavigationStack {
+        IntegrationsView()
+          .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+              ToolbarIconButton("閉じる", icon: .xmark) { isIntegrationsPresented = false }
+            }
+          }
+      }
+    }
     .sheet(item: $editingPhoto) { request in
       PhotoEditorView(source: request.data) { edited in
         do {
@@ -215,6 +226,8 @@ struct AIComposerBar: View {
 
   private var attachmentMenu: some View {
     Menu {
+      Button("連携サービス…", icon: .plugsConnected) { isIntegrationsPresented = true }
+      Divider()
       Button("写真を選択…", icon: .photo) {
         InteractionFeedback.shared.send(.tap)
         isPhotoPickerPresented = true

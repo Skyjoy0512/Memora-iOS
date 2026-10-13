@@ -28,8 +28,17 @@ struct MCPServerEditor: View {
             .autocorrectionDisabled()
             .keyboardType(.URL)
           Toggle("エージェントで使う", isOn: $server.isEnabled)
+        }
+        .disabled(isChecking)
+
+        Section {
+          Toggle("料金が発生する、または料金が不明", isOn: Binding(get: { server.hasUsageCharges ?? true }, set: { server.hasUsageCharges = $0 }))
+          Toggle("確認した読み取りツールを自動許可", isOn: Binding(
+            get: { !(server.approvedReadToolFingerprints ?? [:]).isEmpty },
+            set: { enabled in server.approvedReadToolFingerprints = enabled ? Dictionary((checkedTools ?? []).filter(\.isReadOnly).map { ($0.name, $0.fingerprint) }, uniquingKeysWith: { first, _ in first }) : nil }))
+            .disabled((checkedTools == nil || server.hasUsageCharges != false) && (server.approvedReadToolFingerprints ?? [:]).isEmpty)
         } footer: {
-          Text("Streamable HTTPのMCPサーバーのURLを入力します。")
+          Text("接続確認後にツールを確認してください。サーバーの読み取り申告だけでは自動許可しません。料金・変更・削除・端末の記録を外部へ渡す操作は実行前に確認します。")
         }
 
         Section {
@@ -53,7 +62,7 @@ struct MCPServerEditor: View {
           .disabled(isChecking || server.url.trimmingCharacters(in: .whitespaces).isEmpty)
 
           if let checkedTools {
-            Text(checkedTools.isEmpty ? "接続できましたが、道具がありません。" : "\(checkedTools.count)個の道具が使えます")
+            Text(checkedTools.isEmpty ? "接続できましたが、道具がありません。" : "\(checkedTools.count)個の道具が提供されています")
               .font(.subheadline.weight(.medium))
             ForEach(checkedTools.prefix(20)) { tool in
               VStack(alignment: .leading, spacing: 2) {
@@ -70,6 +79,9 @@ struct MCPServerEditor: View {
           }
         }
       }
+      .disabled(isChecking)
+      .onChange(of: server.url) { _, _ in checkedTools = nil; server.approvedReadToolFingerprints = nil }
+      .onChange(of: token) { _, _ in checkedTools = nil; server.approvedReadToolFingerprints = nil }
       .navigationTitle(isNew ? "接続先を追加" : "接続先を編集")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -81,19 +93,18 @@ struct MCPServerEditor: View {
             save()
             dismiss()
           }
-          .disabled(!isValid)
+          .disabled(!isValid || isChecking)
         }
       }
     }
   }
 
   private var isValid: Bool {
-    guard let url = URL(string: server.url.trimmingCharacters(in: .whitespaces)) else { return false }
-    return url.scheme?.lowercased() == "https" && url.host != nil
+    (try? MCPConnectionPolicy.endpoint(server.url)) != nil
   }
 
   private func save() {
-    server.url = server.url.trimmingCharacters(in: .whitespacesAndNewlines)
+    server.url = (try? MCPConnectionPolicy.endpoint(server.url).absoluteString) ?? server.url.trimmingCharacters(in: .whitespacesAndNewlines)
     if server.name.trimmingCharacters(in: .whitespaces).isEmpty {
       server.name = URL(string: server.url)?.host ?? "MCP"
     }
@@ -106,13 +117,25 @@ struct MCPServerEditor: View {
       errorMessage = MCPClientError.invalidURL.localizedDescription
       return
     }
+    server.approvedReadToolFingerprints = nil
     save()
+    token = ""
     isChecking = true
     errorMessage = nil
     checkedTools = nil
+    let snapshot = server
     Task {
       do {
-        checkedTools = try await model.checkMCPServer(server)
+        let tools = try await model.checkMCPServer(snapshot)
+        let endpoint = try MCPConnectionPolicy.endpoint(snapshot.url).absoluteString
+        guard (try? MCPConnectionPolicy.endpoint(server.url).absoluteString) == endpoint else {
+          isChecking = false
+          return
+        }
+        server.url = endpoint
+        checkedTools = tools
+        server.reviewedEndpoint = endpoint
+        model.saveMCPServer(server, token: nil)
       } catch {
         errorMessage = error.localizedDescription
       }

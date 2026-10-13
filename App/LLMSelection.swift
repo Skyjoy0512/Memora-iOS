@@ -10,6 +10,7 @@ struct LLMSelection: Hashable, Sendable {
   var endpoint: URL? = nil
   /// The keychain item holding the credential for `endpoint`.
   var credentialAccount: String? = nil
+  var supportsToolCalling = true
 
   var baseURL: URL { endpoint ?? provider.baseURL }
   var keychainAccount: String { credentialAccount ?? provider.keychainAccount }

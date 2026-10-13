@@ -7,6 +7,9 @@ struct MCPServerConfig: Identifiable, Hashable, Codable {
   var name: String
   var url: String
   var isEnabled = true
+  var reviewedEndpoint: String? = nil
+  var approvedReadToolFingerprints: [String: String]? = nil
+  var hasUsageCharges: Bool? = nil
 
   var tokenAccount: String { "mcp.\(id.uuidString)" }
 }

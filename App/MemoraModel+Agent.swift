@@ -25,7 +25,7 @@ extension MemoraModel {
     let runner: AgentRunner
     switch AIEngineService.effectiveEngine(configuration.engine) {
     case .cloud:
-      guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope)) else {
+      guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope) + MemoraSkill.context(for: trimmed, disabled: disabledSkillIDs, budget: 1_500), tools: enabledAgentTools) else {
         let failure: AIAnswerFailure = llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey
         aiMessages.append(AIChatMessage(role: .assistant, text: failure.message))
         return true
@@ -202,9 +202,14 @@ extension MemoraModel {
 
       var results: [(call: AgentToolCall, outcome: AgentToolOutcome)] = []
       for call in turn.toolCalls {
+        guard agentToolCallCounts[messageID, default: 0] < 24 else {
+          return .answer("ツール実行上限（1回答24回）に達したため停止しました。確認できた作業結果はチャットに残っています。必要な続きだけを新しい依頼で指定してください。")
+        }
         let outcome: AgentToolOutcome
         if call.tool == .delegateResearch {
-          outcome = await delegateResearchTool(call, messageID: messageID, scope: scope, llm: llm)
+          if consumeAgentToolCall(messageID), toolRegistry().permits(call.name, arguments: call.arguments) {
+            outcome = await delegateResearchTool(call, messageID: messageID, scope: scope, llm: llm)
+          } else { outcome = AgentToolOutcome(text: "実行上限または入力検証により、分担調査を停止しました。", isError: true) }
         } else {
           outcome = await runAgentTool(call, messageID: messageID, scope: scope)
         }
@@ -231,14 +236,14 @@ extension MemoraModel {
   /// each call goes through the same code as the cloud agent, in compact form.
   @available(iOS 26.0, *)
   private func runOnDeviceAgent(prompt: String, messageID: UUID, scope: AIChatScope) async -> AIAnswerResult {
-    let tools = OnDeviceAgentTool.all(AgentTool.offeredOnDevice) { [weak self] name, argumentsJSON in
+    let tools = OnDeviceAgentTool.all(AgentTool.offeredOnDevice.filter { enabledAgentTools.contains($0) }) { [weak self] name, argumentsJSON in
       guard let self else { return "" }
       let arguments = argumentsJSON.data(using: .utf8)
         .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
       let call = AgentToolCall(id: UUID().uuidString, name: name, arguments: arguments)
       return await self.runAgentTool(call, messageID: messageID, scope: scope, compact: true).text
     }
-    let session = LanguageModelSession(tools: tools, instructions: Self.onDeviceAgentInstructions(scope: scope))
+    let session = LanguageModelSession(tools: tools, instructions: Self.onDeviceAgentInstructions(scope: scope) + MemoraSkill.context(for: prompt, disabled: disabledSkillIDs, budget: 300))
     do {
       let response = try await session.respond(to: prompt)
       let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -97,6 +97,8 @@ final class MemoraModel {
   @ObservationIgnored var webResearchJobs: [UUID: Task<Void, Never>] = [:]
   var projectChatBusyIDs: Set<UUID> = []
   var projectSourceProcessingIDs: Set<UUID> = []
+  var integrationUsage: [IntegrationUsage] = []
+  @ObservationIgnored var agentToolCallCounts: [UUID: Int] = [:]
   var shareInboxRequests: [ShareInboxRequest] = []
   var shareInboxRejectedIDs: [UUID] = []
   var shareInboxFailure: String?
@@ -176,6 +178,12 @@ final class MemoraModel {
   var webhookResults: [UUID: WebhookResult] = [:]
   /// Remote MCP servers whose tools the agent may use. Settings; tokens are in
   /// the keychain.
+  var disabledSkillIDs: [String] = MemoraModel.storedSetting([String].self, forKey: "memora.skills.disabled") ?? [] {
+    didSet { MemoraModel.storeSetting(disabledSkillIDs, forKey: "memora.skills.disabled") }
+  }
+  var disabledIntegrationIDs: [String] = MemoraModel.storedSetting([String].self, forKey: "memora.integrations.disabled") ?? [] {
+    didSet { MemoraModel.storeSetting(disabledIntegrationIDs, forKey: "memora.integrations.disabled") }
+  }
   var mcpServers: [MCPServerConfig] = MemoraModel.storedSetting([MCPServerConfig].self, forKey: StorageKey.mcpServers) ?? [] {
     didSet { MemoraModel.storeSetting(mcpServers, forKey: StorageKey.mcpServers) }
   }
@@ -530,6 +538,7 @@ final class MemoraModel {
     projectSources = load([ProjectSource].self, forKey: StorageKey.projectSources, fallback: [])
     projectChats = load([ProjectChatThread].self, forKey: StorageKey.projectChats, fallback: [])
     webResearchReports = load([WebResearchReport].self, forKey: "memora.webResearch.v1", fallback: [])
+    integrationUsage = load([IntegrationUsage].self, forKey: "memora.integrations.usage.v1", fallback: [])
     lifeLogEntries = load([LifeLogEntry].self, forKey: StorageKey.lifeLogEntries, fallback: [])
     tasks = load([MemoraTask].self, forKey: StorageKey.tasks, fallback: [])
     people = load([Person].self, forKey: StorageKey.people, fallback: [])

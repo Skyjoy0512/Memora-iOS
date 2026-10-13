@@ -16,6 +16,7 @@ enum AgentTool: String, CaseIterable {
   case createProject = "create_project"
   case moveRecordsToProject = "move_records_to_project"
   case addJournalMemo = "add_journal_memo"
+  case readCalendar = "read_calendar"
   case createCalendarEvent = "create_calendar_event"
   case draftEmail = "draft_email"
   case saveToNotion = "save_to_notion"
@@ -43,7 +44,7 @@ enum AgentTool: String, CaseIterable {
   /// and no questions, since nobody may be there to answer.
   @MainActor
   static var residentTools: [AgentTool] {
-    offered.filter { !$0.needsApproval && $0 != .askUser && $0 != .delegateResearch }
+    offered.filter { !$0.needsApproval && $0 != .askUser && $0 != .delegateResearch && $0 != .readCalendar }
   }
 
   var needsGmail: Bool {
@@ -54,14 +55,14 @@ enum AgentTool: String, CaseIterable {
   /// long-form writers (slides) and the rarer organising tools stay with the
   /// cloud models.
   static let onDeviceTools: [AgentTool] = [
-    .searchRecords, .readRecord, .readPerson, .listTasks, .reviewPeriod, .addTasks, .createDocument,
+    .searchRecords, .readRecord, .readPerson, .listTasks, .reviewPeriod, .readCalendar, .addTasks, .createDocument,
     .createProject, .addJournalMemo, .createCalendarEvent, .draftEmail, .searchEmail, .readEmail, .searchWeb, .deepResearch
   ]
 
   /// True for tools that change the person's data.
   var needsApproval: Bool {
     switch self {
-    case .searchRecords, .readRecord, .readPerson, .listProjects, .listTasks, .reviewPeriod, .searchEmail, .readEmail, .askUser: false
+    case .searchRecords, .readRecord, .readPerson, .listProjects, .listTasks, .reviewPeriod, .searchEmail, .readEmail, .readCalendar, .askUser: false
     default: true
     }
   }
@@ -73,7 +74,7 @@ enum AgentTool: String, CaseIterable {
     case .readRecord: .docText
     case .listProjects, .moveRecordsToProject: .folder
     case .listTasks, .addTasks, .updateTasks: .checklist
-    case .reviewPeriod: .calendar
+    case .reviewPeriod, .readCalendar: .calendar
     case .readPerson: .person
     case .createDocument: .docRichtext
     case .createSlides: .rectangleOnRectangleAngled
@@ -122,6 +123,8 @@ enum AgentTool: String, CaseIterable {
       "会議の記録をプロジェクトへ移動する（利用者の承認後に実行）。"
     case .addJournalMemo:
       "ジャーナルにメモを追加する（利用者の承認後に実行）。"
+    case .readCalendar:
+      "端末のカレンダーで指定日 yyyy-MM-dd の予定を取得する。Google接続とは別で、許可がない場合は設定を案内する。"
     case .createCalendarEvent:
       "カレンダーに予定を登録する（利用者の承認後に実行）。次回の会議や締め切りに使う。"
     case .draftEmail:
@@ -162,6 +165,8 @@ enum AgentTool: String, CaseIterable {
       ], required: ["query"])
     case .readRecord:
       return object(["id": string("記録のid")], required: ["id"])
+    case .readCalendar:
+      return object(["date": string("指定日 yyyy-MM-dd（端末のタイムゾーン）")], required: ["date"])
     case .listProjects:
       return object([:], required: [])
     case .listTasks:

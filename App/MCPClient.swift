@@ -1,152 +1,102 @@
 import Foundation
+import CryptoKit
+import MCP
 
-/// Talks to remote MCP servers over Streamable HTTP: JSON-RPC requests posted
-/// to the server URL, answered as JSON or as a server-sent event stream.
-/// One session per server is opened on first use and reused.
 actor MCPClient {
   static let shared = MCPClient()
+  private var clients: [UUID: MCP.Client] = [:]
+  private var identities: [UUID: String] = [:]
+  private var cachedTools: [UUID: (Date, [MCPTool])] = [:]
 
-  private static let protocolVersion = "2025-06-18"
-  private var sessions: [UUID: String] = [:]
-  private var nextID = 1
-
-  /// The tools a server offers.
   func tools(on server: MCPServerConfig, token: String?) async throws -> [MCPTool] {
-    try await ensureSession(server, token: token)
-    let result = try await request("tools/list", params: [:], server: server, token: token)
-    let tools = result["tools"] as? [[String: Any]] ?? []
-    return tools.compactMap { tool in
-      guard let name = tool["name"] as? String else { return nil }
-      let schema = tool["inputSchema"] as? [String: Any] ?? ["type": "object", "properties": [String: Any]()]
-      let annotations = tool["annotations"] as? [String: Any]
-      return MCPTool(
-        serverID: server.id,
-        serverName: server.name,
-        name: name,
-        summary: (tool["description"] as? String) ?? (annotations?["title"] as? String) ?? name,
-        inputSchema: (try? JSONSerialization.data(withJSONObject: schema)) ?? Data(),
-        isReadOnly: annotations?["readOnlyHint"] as? Bool ?? false
-      )
-    }
+    let client = try await connected(server, token: token)
+    if let cached = cachedTools[server.id], Date.now.timeIntervalSince(cached.0) < 300 { return cached.1 }
+    do {
+      var offered: [MCPTool] = [], cursor: String?
+      var cursors = Set<String>()
+      for _ in 0..<4 {
+        let pageCursor = cursor
+        let result = try await bounded(client: client) { try await client.listTools(cursor: pageCursor) }
+        for tool in result.tools.prefix(40 - offered.count) {
+          let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
+          let schema = try encoder.encode(tool.inputSchema)
+          guard schema.count <= 32 * 1024, tool.name.utf8.count <= 128 else { continue }
+          offered.append(MCPTool(serverID: server.id, serverName: server.name, name: tool.name,
+            summary: String((tool.description ?? tool.name).prefix(1_000)), inputSchema: schema,
+            isReadOnly: tool.annotations.readOnlyHint == true))
+        }
+        cursor = result.nextCursor
+        guard offered.count < 40, let next = cursor, cursors.insert(next).inserted else { break }
+      }
+      cachedTools[server.id] = (.now, offered)
+      return offered
+    } catch { await forget(server.id); throw safeError(error) }
   }
 
-  /// Calls a tool and returns its text content.
   func call(_ tool: String, arguments: Data, on server: MCPServerConfig, token: String?) async throws -> (text: String, isError: Bool) {
-    try await ensureSession(server, token: token)
-    let args = (try? JSONSerialization.jsonObject(with: arguments)) as? [String: Any] ?? [:]
-    let result = try await request("tools/call", params: ["name": tool, "arguments": args], server: server, token: token)
-    let content = result["content"] as? [[String: Any]] ?? []
-    var text = content.compactMap { item -> String? in
-      switch item["type"] as? String {
-      case "text": item["text"] as? String
-      case "resource": ((item["resource"] as? [String: Any])?["text"] as? String)
-      default: nil
+    guard arguments.count <= 32 * 1024 else { throw MCPClientError.malformed }
+    let args = try JSONDecoder().decode([String: MCP.Value].self, from: arguments)
+    let client = try await connected(server, token: token)
+    do {
+      let result = try await bounded(client: client) { try await client.callTool(name: tool, arguments: args) }
+      var text = ""
+      for item in result.content {
+        if case .text(let value, _, _) = item { text += String(value.prefix(max(0, 20_000 - text.count))) + "\n" }
+        if text.count >= 20_000 { break }
       }
-    }.joined(separator: "\n")
-    if text.isEmpty, let structured = result["structuredContent"],
-       let data = try? JSONSerialization.data(withJSONObject: structured) {
-      text = String(decoding: data, as: UTF8.self)
-    }
-    return (text.isEmpty ? "（結果なし）" : text, result["isError"] as? Bool ?? false)
+      return (String(text.prefix(20_000)), result.isError ?? false)
+    } catch { await forget(server.id); throw safeError(error) }
   }
 
-  func forget(_ serverID: UUID) {
-    sessions[serverID] = nil
+  func reviewedCachedTools(on server: MCPServerConfig) -> [MCPTool] {
+    guard clients[server.id] != nil else { return [] }
+    return cachedTools[server.id]?.1 ?? []
   }
 
-  // MARK: - Protocol
-
-  private func ensureSession(_ server: MCPServerConfig, token: String?) async throws {
-    guard sessions[server.id] == nil else { return }
-    _ = try await request("initialize", params: [
-      "protocolVersion": Self.protocolVersion,
-      "capabilities": [String: Any](),
-      "clientInfo": ["name": "Memora", "version": "1.0"]
-    ], server: server, token: token, opening: true)
-    try await notify("notifications/initialized", server: server, token: token)
+  func forget(_ id: UUID) async {
+    let client = clients.removeValue(forKey: id)
+    identities[id] = nil; cachedTools[id] = nil
+    await client?.disconnect()
   }
 
-  private func request(
-    _ method: String,
-    params: [String: Any],
-    server: MCPServerConfig,
-    token: String?,
-    opening: Bool = false
-  ) async throws -> [String: Any] {
-    let id = nextID
-    nextID += 1
-    let body: [String: Any] = ["jsonrpc": "2.0", "id": id, "method": method, "params": params]
-    let (data, response) = try await post(body, server: server, token: token)
-
-    if opening, let session = response.value(forHTTPHeaderField: "Mcp-Session-Id") {
-      sessions[server.id] = session
-    } else if opening {
-      // A server without sessions still answers; remember that it is open.
-      sessions[server.id] = ""
-    }
-    if response.statusCode == 404, !opening, sessions[server.id] != nil {
-      // The server dropped the session; open a new one once and retry.
-      sessions[server.id] = nil
-      try await ensureSession(server, token: token)
-      return try await request(method, params: params, server: server, token: token)
-    }
-    if response.statusCode == 401 || response.statusCode == 403 { throw MCPClientError.unauthorized }
-    guard (200..<300).contains(response.statusCode) else {
-      throw MCPClientError.server("HTTP \(response.statusCode)")
-    }
-
-    let message = try Self.message(withID: id, in: data, contentType: response.value(forHTTPHeaderField: "Content-Type"))
-    if let error = message["error"] as? [String: Any] {
-      throw MCPClientError.server(error["message"] as? String ?? "不明なエラー")
-    }
-    guard let result = message["result"] as? [String: Any] else { throw MCPClientError.malformed }
-    return result
+  private func connected(_ server: MCPServerConfig, token: String?) async throws -> MCP.Client {
+    let endpoint = try MCPConnectionPolicy.endpoint(server.url)
+    guard MCPConnectionPolicy.tokenIsValid(token) else { throw MCPClientError.unauthorized }
+    let digest = SHA256.hash(data: Data((endpoint.absoluteString + "\n" + (token ?? "")).utf8)).map { String(format: "%02x", $0) }.joined()
+    if identities[server.id] == digest, let client = clients[server.id] { return client }
+    await forget(server.id)
+    let transport = MCPBoundedHTTPTransport(endpoint: endpoint, token: token)
+    let client = MCP.Client(name: "Memora", version: "1.0")
+    do {
+      let result = try await bounded(client: client) { try await client.connect(transport: transport) }
+      await transport.setVersion(result.protocolVersion)
+      clients[server.id] = client; identities[server.id] = digest
+      return client
+    } catch { await client.disconnect(); throw safeError(error) }
   }
 
-  private func notify(_ method: String, server: MCPServerConfig, token: String?) async throws {
-    _ = try await post(["jsonrpc": "2.0", "method": method], server: server, token: token)
+  private func safeError(_ error: Error) -> Error {
+    if error is CancellationError { return CancellationError() }
+    // Remote JSON-RPC errors may contain entire payloads or credentials.
+    return (error as? MCPClientError) ?? MCPClientError.malformed
   }
 
-  private func post(_ body: [String: Any], server: MCPServerConfig, token: String?) async throws -> (Data, HTTPURLResponse) {
-    guard let url = URL(string: server.url.trimmingCharacters(in: .whitespacesAndNewlines)),
-          url.scheme?.lowercased() == "https" else {
-      throw MCPClientError.invalidURL
-    }
-    var request = URLRequest(url: url, timeoutInterval: 60)
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("application/json, text/event-stream", forHTTPHeaderField: "Accept")
-    request.setValue(Self.protocolVersion, forHTTPHeaderField: "MCP-Protocol-Version")
-    if let session = sessions[server.id], !session.isEmpty {
-      request.setValue(session, forHTTPHeaderField: "Mcp-Session-Id")
-    }
-    if let token, !token.isEmpty {
-      request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-    }
-    request.httpBody = try JSONSerialization.data(withJSONObject: body)
-    let (data, response) = try await URLSession.shared.data(for: request)
-    guard let http = response as? HTTPURLResponse else { throw MCPClientError.malformed }
-    return (data, http)
-  }
-
-  /// The JSON-RPC reply to `id`, from a JSON body or an event stream.
-  private static func message(withID id: Int, in data: Data, contentType: String?) throws -> [String: Any] {
-    if contentType?.contains("text/event-stream") == true {
-      let text = String(decoding: data, as: UTF8.self)
-      for event in text.components(separatedBy: "\n\n") {
-        let payload = event
-          .components(separatedBy: "\n")
-          .filter { $0.hasPrefix("data:") }
-          .map { $0.dropFirst(5).trimmingCharacters(in: .whitespaces) }
-          .joined(separator: "\n")
-        guard let json = try? JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any] else { continue }
-        if (json["id"] as? Int) == id { return json }
+  private func bounded<T: Sendable>(client: MCP.Client, _ operation: @escaping @Sendable () async throws -> T) async throws -> T {
+    try await withTaskCancellationHandler {
+      try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask { try await operation() }
+        group.addTask {
+          try await Task.sleep(for: .seconds(35))
+          // SDK pending continuations also need disconnect, not just task cancellation.
+          await client.disconnect()
+          throw MCPClientError.timeout
+        }
+        defer { group.cancelAll() }
+        guard let value = try await group.next() else { throw MCPClientError.malformed }
+        return value
       }
-      throw MCPClientError.malformed
+    } onCancel: {
+      Task { await client.disconnect() }
     }
-    guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-      throw MCPClientError.malformed
-    }
-    return json
   }
 }

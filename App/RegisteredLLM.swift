@@ -6,8 +6,9 @@ struct RegisteredLLM: Identifiable, Codable, Hashable {
   var provider: LLMProvider
   var modelID: String
   var name: String
+  var supportsToolCalling: Bool? = false
 
   var selection: LLMSelection {
-    LLMSelection(provider: provider, modelID: modelID, displayName: name)
+    LLMSelection(provider: provider, modelID: modelID, displayName: name, supportsToolCalling: supportsToolCalling ?? true)
   }
 }

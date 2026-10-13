@@ -245,6 +245,11 @@ struct SettingsView: View {
 
         Section("連携") {
           NavigationLink {
+            IntegrationsView()
+          } label: {
+            SettingsLabel("連携サービス", icon: .plugsConnected, color: Tint.integrations)
+          }
+          NavigationLink {
             GmailSettingsView()
           } label: {
             LabeledContent {

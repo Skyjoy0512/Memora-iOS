@@ -47,7 +47,7 @@ struct MCPServersView: View {
       } header: {
         Text("Ask AIで使う外部ツール")
       } footer: {
-        Text("MCP（Model Context Protocol）に対応したサーバーをつなぐと、Ask AIのエージェントがその道具を使えます。例: Notion・Linear・社内システム。読み取り専用の道具はすぐ実行し、それ以外は実行前に確認します。クラウドのAIを使うときだけ利用できます。")
+        Text("MCP（Model Context Protocol）に対応したサーバーをつなぐと、Ask AIのエージェントがその道具を使えます。例: Notion・Linear・社内システム。確認した無料の読み取りツールのみ自動許可できます。料金が不明な操作・変更・外部への記録送信は実行前に確認します。クラウドのAIを使うときだけ利用できます。")
       }
 
       Section {

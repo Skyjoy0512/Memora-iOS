@@ -77,7 +77,7 @@ extension MemoraModel {
           let session = CloudAgentSession(
             llm: llm,
             system: Self.residentInstructions(agent),
-            tools: AgentTool.residentTools
+            tools: AgentTool.residentTools.filter { enabledAgentTools.contains($0) }
           ) else { return false }
     runningResidentIDs.insert(agent.id)
     defer { runningResidentIDs.remove(agent.id) }
@@ -129,7 +129,7 @@ extension MemoraModel {
   /// data even if the model asks.
   private func runResidentTurns(session: CloudAgentSession, messageID: UUID) async -> AIAnswerResult {
     let accessRevision = residentAccessRevision
-    let allowed = Set(AgentTool.residentTools.map(\.rawValue))
+    let allowed = Set(AgentTool.residentTools.filter { enabledAgentTools.contains($0) }.map(\.rawValue))
     var lastText = ""
     for _ in 0..<Self.residentMaxTurns {
       guard !Task.isCancelled, !isRestoring, !isStoreProtected,

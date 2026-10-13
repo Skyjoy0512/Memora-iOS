@@ -18,7 +18,7 @@ final class CloudAgentSession {
   /// `tools` narrows what the model is offered; resident agents get only the
   /// reading tools.
   init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil) {
-    guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
+    guard llm.supportsToolCalling, let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return nil
     }
     self.llm = llm
