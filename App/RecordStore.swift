@@ -135,6 +135,26 @@ enum RecordStore {
     }
   }
 
+  /// Completion acknowledges the snapshot that actually reached disk. A log
+  /// can retain its dirty revision on failure without delaying business saves.
+  static func saveReportingResult<T: Encodable & Sendable>(
+    _ value: T,
+    key: String,
+    completion: @escaping @MainActor (Bool) -> Void
+  ) {
+    queue.async {
+      let succeeded: Bool
+      do {
+        let data = try JSONEncoder().encode(value)
+        try LocalStore.shared.write(key, data: data)
+        succeeded = true
+      } catch {
+        succeeded = false
+      }
+      Task { @MainActor in completion(succeeded) }
+    }
+  }
+
   /// Saves already-encoded bytes off the main thread. For a document whose
   /// format is not JSON — a draft's plain text, say — so that its reader and
   /// writer agree on the bytes rather than on an encoding neither named.

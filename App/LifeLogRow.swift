@@ -76,7 +76,9 @@ struct LifeLogRow: View {
           .frame(height: 172)
           .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
           .task(id: name) {
-            photo = await MediaImageCache.image(named: name, maxPixelSize: 600)
+            let decoded = await MediaImageCache.image(named: name, maxPixelSize: 600)
+            guard !Task.isCancelled else { return }
+            photo = decoded
           }
         }
       }

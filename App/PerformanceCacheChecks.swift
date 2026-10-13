@@ -1,0 +1,38 @@
+#if DEBUG
+import UIKit
+
+/// Uses a private temporary image, never a person's media, to check request
+/// sharing and deletion while exercising the same ImageIO path as list rows.
+@MainActor
+enum PerformanceCacheChecks {
+  static func run() async -> String? {
+    let image = UIGraphicsImageRenderer(size: CGSize(width: 240, height: 120)).image { context in
+      UIColor.gray.setFill()
+      context.fill(CGRect(x: 0, y: 0, width: 240, height: 120))
+    }
+    guard let data = image.jpegData(compressionQuality: 0.8),
+          let name = MediaFiles.writePhoto(data, thumbnailMaxSide: 120) else { return "fixture image write" }
+    defer { MediaFiles.deletePhoto(name) }
+    let requests = (0..<8).map { _ in Task { await MediaImageCache.image(named: name, maxPixelSize: 120) } }
+    var decoded: [UIImage] = []
+    for request in requests {
+      guard let value = await request.value else { return "shared decode failed" }
+      decoded.append(value)
+    }
+    guard let first = decoded.first, decoded.allSatisfy({ $0 === first }),
+          first.cgImage?.width == 120 else { return "duplicate decode or changed dimensions" }
+    let cancelled = Task { await MediaImageCache.photo(named: name) }
+    cancelled.cancel()
+    if await cancelled.value != nil { return "cancelled request returned image" }
+    MediaFiles.deletePhoto(name)
+    if await MediaImageCache.image(named: name, maxPixelSize: 120) != nil { return "deleted image remained cached" }
+    let id = UUID()
+    let a = SummaryPreviewCache.preview(for: id, summary: "a") { "preview:" + $0 }
+    let b = SummaryPreviewCache.preview(for: id, summary: "b") { "preview:" + $0 }
+    SummaryPreviewCache.clear()
+    let restored = SummaryPreviewCache.preview(for: id, summary: "b") { "preview:" + $0 }
+    if a != "preview:a" || b != "preview:b" || restored != b { return "stale summary preview" }
+    return nil
+  }
+}
+#endif

@@ -1,5 +1,8 @@
 import Foundation
 import Observation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Timings for the paths that matter when comparing builds. An entry holds a
 /// name, a duration, how many items were involved, and the build it came from —
@@ -29,16 +32,39 @@ final class PerformanceLog {
   private(set) var entries: [Entry] = []
   @ObservationIgnored private let capacity = 500
   @ObservationIgnored private let storeKey = "memoraPerformanceLog"
+  @ObservationIgnored private var revision = 0
+  @ObservationIgnored private var persistedRevision = 0
+  @ObservationIgnored private var submittedRevision = 0
+  @ObservationIgnored private var saveTask: Task<Void, Never>?
+  @ObservationIgnored private var backgroundObserver: NSObjectProtocol?
+  @ObservationIgnored private static let build = Bundle.main.appVersion
+  @ObservationIgnored private static let device = deviceModel
 
   /// One log for the app, so a measurement taken in a service lands beside the
   /// ones the model takes and can be compared as a set.
   static let shared = PerformanceLog()
 
+  init() {
+#if canImport(UIKit)
+    backgroundObserver = NotificationCenter.default.addObserver(
+      forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
+    ) { [weak self] _ in
+      // A bounded log is flushed before suspension; no business save is delayed.
+      MainActor.assumeIsolated { self?.flushNow() }
+    }
+#endif
+  }
+
+  deinit {
+    if let backgroundObserver { NotificationCenter.default.removeObserver(backgroundObserver) }
+  }
+
   /// Reads what earlier runs recorded. Called once the store is ready.
   func loadStored() {
     guard case .data(let data) = RecordStore.load(storeKey),
           let stored = try? JSONDecoder().decode([Entry].self, from: data) else { return }
-    entries = stored
+    guard revision == 0 else { return }
+    entries = Array(stored.suffix(capacity))
   }
 
   /// Records one timing. `count` is a number, never content.
@@ -50,14 +76,15 @@ final class PerformanceLog {
         milliseconds: milliseconds,
         count: count,
         recordedAt: .now,
-        build: Bundle.main.appVersion,
-        device: Self.deviceModel
+        build: Self.build,
+        device: Self.device
       )
     )
     if entries.count > capacity {
       entries.removeFirst(entries.count - capacity)
     }
-    persist()
+    revision += 1
+    scheduleSave()
   }
 
   /// Times an async piece of work and records it, returning the result.
@@ -93,11 +120,50 @@ final class PerformanceLog {
 
   func reset() {
     entries = []
-    persist()
+    revision += 1
+    flushNow()
   }
 
-  private func persist() {
-    RecordStore.save(entries, key: storeKey)
+  /// A fixed window batches bursts without postponing a continuously active
+  /// log forever. Only diagnostic data uses this policy.
+  private func scheduleSave() {
+    guard saveTask == nil else { return }
+    saveTask = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(1))
+      guard !Task.isCancelled, let self else { return }
+      self.saveTask = nil
+      self.flush()
+    }
+  }
+
+  func flush() {
+    saveTask?.cancel()
+    saveTask = nil
+    guard revision > submittedRevision else { return }
+    let snapshotRevision = revision
+    submittedRevision = snapshotRevision
+    RecordStore.saveReportingResult(entries, key: storeKey) { [weak self] succeeded in
+      guard let self else { return }
+      if succeeded {
+        self.persistedRevision = max(self.persistedRevision, snapshotRevision)
+      } else if self.submittedRevision == snapshotRevision {
+        self.submittedRevision = self.persistedRevision
+      }
+    }
+  }
+
+  func flushNow() {
+    saveTask?.cancel()
+    saveTask = nil
+    guard revision > persistedRevision else { return }
+    do {
+      try RecordStore.saveNow(entries, key: storeKey)
+      persistedRevision = revision
+      submittedRevision = revision
+    } catch {
+      // Keep the in-memory snapshot available for the next flush or measurement.
+      submittedRevision = persistedRevision
+    }
   }
 
   private static var deviceModel: String {

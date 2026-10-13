@@ -487,7 +487,7 @@ enum SelfChecks {
       let projectID = UUID()
       let meetingID = UUID()
       let projectPath: [LibraryRoute] = [.space(projectID)]
-      if RootTab.allCases != [.library, .home, .askAI]
+      if RootTab.allCases != [.home, .library, .askAI]
         || RootTab.restored(from: "files") != .library || RootTab.restored(from: "tasks") != .home {
         report("main tabs or legacy identifiers changed")
       }
@@ -547,6 +547,12 @@ enum SelfChecks {
     Task { await runOwnershipCheck() }
     group("Recording stop order", isAsync: true) {}
     Task { await runRecordingStopOrderCheck() }
+    Task {
+      let failure = await PerformanceCacheChecks.run()
+      results.append(Result(name: "Performance caches", passed: failure == nil,
+        detail: failure, ranAt: .now, build: Bundle.main.appVersion))
+      print("Performance caches: \(failure ?? "passed")")
+    }
   }
 
   /// Runs one named check and records whether it passed, so the debug screen can
