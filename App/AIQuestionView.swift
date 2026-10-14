@@ -65,6 +65,15 @@ struct AIQuestionView: View {
       .navigationTitle("Memoraに聞く")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
+        if isAnswering {
+          ToolbarItem(placement: .primaryAction) {
+            ToolbarIconButton("回答を停止", icon: .stopFill) {
+              askTask?.cancel()
+              isAnswering = false
+              failureMessage = "回答を停止しました。自動で再送はしません。"
+            }
+          }
+        }
         ToolbarItem(placement: .cancellationAction) {
           ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }
@@ -153,7 +162,7 @@ struct AIQuestionView: View {
         .foregroundStyle(.primary)
         .memoraTextReveal()
 
-      StreamingText(text: answer, lineSpacing: 5)
+      AIResponseText(text: answer, isStreaming: isAnswering)
 
       if !sources.isEmpty {
         sourceList
@@ -388,7 +397,6 @@ struct AIQuestionView: View {
           isAnswering = false
         }
       }
-      try? await Task.sleep(for: .milliseconds(850))
       guard !Task.isCancelled else { return }
 
       let outcome = await model.answer(
@@ -398,7 +406,11 @@ struct AIQuestionView: View {
         tasks: scopedTasks,
         history: "",
         engine: engine,
-        llm: llm
+        llm: llm,
+        onText: { text in
+          guard !Task.isCancelled, submitted?.id == request.id else { return }
+          answer = text
+        }
       )
       guard !Task.isCancelled, submitted?.id == request.id else { return }
       unsupportedAttachmentNote = outcome.unsupportedAttachmentNote

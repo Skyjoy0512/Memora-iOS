@@ -20,17 +20,18 @@ struct ProjectChatView: View {
               Text("プロジェクトの所属を解除した会話です。履歴の閲覧はできます。")
                 .font(.subheadline).foregroundStyle(.secondary)
             }
-            if thread.messages.isEmpty {
-              Text("このプロジェクトについて話しかけてください。")
-                .font(.body).foregroundStyle(.secondary).padding(.vertical, 24)
-            }
             ForEach(thread.messages) { message in
               VStack(alignment: .leading, spacing: 12) {
-                Text(message.text).font(.body).lineSpacing(4).textSelection(.enabled)
-                  .padding(message.role == .user ? 14 : 0)
-                  .frame(maxWidth: .infinity, alignment: .leading)
-                  .background(message.role == .user ? MemoraPalette.card : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 18))
+                if message.role == .user {
+                  HStack {
+                    Spacer(minLength: 44)
+                    Text(message.text).font(.body).textSelection(.enabled).aiBubble()
+                  }
+                  .accessibilityElement(children: .combine)
+                  .accessibilityLabel("あなた: \(message.text)")
+                } else {
+                  AIResponseText(text: message.text)
+                }
                 if message.role == .assistant {
                   ForEach(message.citations) { citation in
                     Button { open(citation) } label: {
@@ -43,6 +44,7 @@ struct ProjectChatView: View {
                 }
               }.id(message.id)
             }
+            ProjectChatStreamingReply(threadID: threadID)
             if let stage = model.projectChatStages[threadID] {
               Text(stage).font(.subheadline).foregroundStyle(.secondary).accessibilityLabel(stage)
               Button("回答を停止", icon: .stopFill) { model.cancelProjectChat(threadID) }

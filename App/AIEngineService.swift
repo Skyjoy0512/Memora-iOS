@@ -41,7 +41,8 @@ enum AIEngineService {
     question: String,
     scopeLabel: String,
     context: String,
-    history: String
+    history: String,
+    onText: (@MainActor (String) -> Void)? = nil
   ) async -> AIAnswerResult {
     switch effectiveEngine(engine) {
     case .foundation, .automatic:
@@ -63,7 +64,8 @@ enum AIEngineService {
         scopeLabel: scopeLabel,
         context: context,
         history: history,
-        llm: llm
+        llm: llm,
+        onText: onText
       )
     }
   }

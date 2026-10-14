@@ -205,7 +205,11 @@ extension MemoraModel {
       }
       let turn: AgentTurn
       do {
-        turn = try await session.next()
+        turn = try await session.next { [weak self] text in
+          guard let self, !Task.isCancelled, self.aiChatRequestID != nil,
+                self.agentMessage(messageID)?.isThinking == true, self.isCloudSessionAuthorized(messageID) else { return }
+          self.updateAgentMessage(messageID) { $0.text = text }
+        }
       } catch let failure as AIAnswerFailure {
         return .failure(failure)
       } catch {
@@ -246,6 +250,7 @@ extension MemoraModel {
         results.append((call, outcome))
         guard !Task.isCancelled else { return .failure(.cancelled) }
       }
+      updateAgentMessage(messageID) { $0.text = "" }
       session.addToolResults(results)
     }
     // Stopped at the limit: report what was done rather than nothing.

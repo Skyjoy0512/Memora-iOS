@@ -46,6 +46,7 @@ struct ThinkingTraceView: View {
     if !message.isAgentReply {
       return message.searchFinished ? "回答を書いています" : "記録を探しています"
     }
+    if !message.text.isEmpty { return "回答を書いています" }
     return message.agentSteps.isEmpty ? "考えています" : "作業しています"
   }
 }

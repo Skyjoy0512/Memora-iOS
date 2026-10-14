@@ -107,6 +107,7 @@ final class MemoraModel {
   var shareInboxFailure: String?
   var isImportingShareInbox = false
   var projectChatStages: [UUID: String] = [:]
+  var projectChatPartialAnswers: [UUID: String] = [:]
   @ObservationIgnored var projectChatJobs: [UUID: Task<Void, Never>] = [:]
   var sourceAddProjectID: UUID?
   var voiceProfile: VoiceProfile?

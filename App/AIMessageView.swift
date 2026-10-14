@@ -70,7 +70,7 @@ struct AIMessageView: View {
           .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
 
-      if !message.isThinking, !message.text.isEmpty {
+      if !message.text.isEmpty {
         // Memora's answer reads as plain text on the page, not a balloon.
         answerText
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -137,9 +137,11 @@ struct AIMessageView: View {
   /// The answer, with the records it really cited as inline links.
   @ViewBuilder
   private var answerText: some View {
-    if let id = message.webResearchReportIDs.last, let report = model.webResearch(id: id), report.isChatSearch == true {
+    if message.isThinking {
+      AIResponseText(text: message.text, isStreaming: true)
+    } else if let id = message.webResearchReportIDs.last, let report = model.webResearch(id: id), report.isChatSearch == true {
       let sent = report.sources.filter { report.sentSourceIDs?.contains($0.id) == true }
-      StreamingText(text: WebResearchContext.markdownLinked(message.text, sent: sent), lineSpacing: 5, animates: animates,
+      StreamingText(text: WebResearchContext.markdownLinked(message.text, sent: sent), lineSpacing: 5, animates: false,
         revealText: String(WebResearchContext.linked(message.text, sent: sent).characters))
         .environment(\.openURL, OpenURLAction { url in
           guard url.scheme == WebResearchContext.citationScheme else { return .systemAction }
@@ -150,7 +152,7 @@ struct AIMessageView: View {
       StreamingText(
         text: AnswerCitations.linked(message.text, sources: message.sources),
         lineSpacing: 5,
-        animates: animates,
+        animates: false,
         revealText: AnswerCitations.stripped(message.text)
       )
       .environment(\.openURL, OpenURLAction { url in
@@ -159,7 +161,7 @@ struct AIMessageView: View {
         return .handled
       })
     } else {
-      StreamingText(text: AnswerCitations.stripped(message.text), lineSpacing: 5, animates: animates)
+      AIResponseText(text: AnswerCitations.stripped(message.text))
     }
   }
 

@@ -7,7 +7,8 @@ enum CloudAIService {
     scopeLabel: String,
     context: String,
     history: String,
-    llm: LLMSelection
+    llm: LLMSelection,
+    onText: (@MainActor (String) -> Void)? = nil
   ) async -> AIAnswerResult {
     let system = """
     あなたは会議の記録を要約して答えるアシスタントです。短い日本語で、与えられた記録だけに沿って答えます。
@@ -21,7 +22,53 @@ enum CloudAIService {
       context: context,
       history: history
     )
+    if let onText { return await streamedAnswer(system: system, user: user, llm: llm, onText: onText) }
     return await complete(system: system, user: user, llm: llm)
+  }
+
+  @MainActor
+  private static func streamedAnswer(system: String, user: String, llm: LLMSelection,
+                                     onText: @escaping @MainActor (String) -> Void) async -> AIAnswerResult {
+    guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
+      return .failure(llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey)
+    }
+    guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
+    let anthropicAPI = llm.provider.usesAnthropicAPI
+    var request = URLRequest(url: anthropicAPI ? LLMProvider.anthropic.baseURL.appendingPathComponent("messages") : llm.baseURL.appendingPathComponent("chat/completions"))
+    request.httpMethod = "POST"
+    request.timeoutInterval = 300
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    var body: [String: Any] = ["model": llm.modelID, "messages": [["role": "user", "content": user]]]
+    if anthropicAPI {
+      request.setValue(key, forHTTPHeaderField: "x-api-key")
+      request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+      body["system"] = system
+      body["max_tokens"] = 16_000
+      if llm.modelID == "claude-opus-5" || llm.modelID == "claude-fable-5-1" {
+        request.setValue("server-side-fallback-2026-07-01", forHTTPHeaderField: "anthropic-beta")
+        body["fallbacks"] = "default"
+      }
+    } else {
+      request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+      if llm.provider == .openRouter { request.setValue("Memora", forHTTPHeaderField: "X-Title") }
+      body["messages"] = [["role": "system", "content": system], ["role": "user", "content": user]]
+    }
+    do {
+      request.httpBody = try JSONSerialization.data(withJSONObject: body)
+      let response = try await CloudTurnStreaming.response(for: request, provider: anthropicAPI ? .anthropic : .chatCompletions, onText: onText)
+      let text: String
+      if anthropicAPI {
+        guard response["stop_reason"] as? String != "refusal" else { throw AIAnswerFailure.refused }
+        text = (response["content"] as? [[String: Any]] ?? []).filter { $0["type"] as? String == "text" }.compactMap { $0["text"] as? String }.joined()
+      } else {
+        text = ((response["choices"] as? [[String: Any]])?.first?["message"] as? [String: Any])?["content"] as? String ?? ""
+      }
+      let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+      return trimmed.isEmpty ? .failure(.empty) : .answer(trimmed)
+    } catch let reason as AIAnswerFailure { return .failure(reason) }
+    catch is CancellationError { return .failure(.cancelled) }
+    catch let error as URLError { return .failure(failure(for: error)) }
+    catch { return .failure(.network) }
   }
 
   /// Sends one system and user prompt to the chosen provider. Ask AI and the

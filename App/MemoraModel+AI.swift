@@ -50,6 +50,8 @@ extension MemoraModel {
       aiMessages[index].finishedAt = .now
       if aiMessages[index].text.isEmpty {
         aiMessages[index].text = "回答を停止しました。"
+      } else {
+        aiMessages[index].text += "\n\n回答を停止しました。ここまでの回答は未完了です。"
       }
     }
     isAIChatResponding = false
@@ -190,6 +192,10 @@ extension MemoraModel {
             message.sources = sources
             message.searchFinished = true
           }
+        },
+        onText: { [weak self] text in
+          guard let self, !Task.isCancelled, self.aiChatRequestID == requestID else { return }
+          self.updateAgentMessage(placeholder.id) { $0.text = text }
         }
       )
 
@@ -267,8 +273,10 @@ extension MemoraModel {
     personal: String = "",
     engine: AIEngine,
     llm: LLMSelection,
-    onContextReady: (([AIChatSource]) -> Void)? = nil
+    onContextReady: (([AIChatSource]) -> Void)? = nil,
+    onText: (@MainActor (String) -> Void)? = nil
   ) async -> AIAnswerOutcome {
+    let workspaceID = currentTeamID
     let cloud = AIEngineService.effectiveEngine(engine) == .cloud
     let permitted = allowedMeetings.filter { !cloud || RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI) }
     let permittedTasks = scopedTasks.filter { !cloud || allowsTaskAccess($0, purpose: .cloudAI) }
@@ -305,13 +313,20 @@ extension MemoraModel {
     // The records are chosen; what remains is the engine writing the answer.
     onContextReady?(content.sources)
 
+    let sentRecordIDs = Set(content.sources.map(\.meetingID))
     var result = await AIEngineService.answer(
       engine: engine,
       llm: llm,
       question: content.question,
       scopeLabel: scopeLabel,
       context: content.context,
-      history: content.history
+      history: content.history,
+      onText: onText.map { callback in { [weak self] text in
+        guard let self, !Task.isCancelled, self.currentTeamID == workspaceID,
+              sentRecordIDs.allSatisfy({ self.meeting(id: $0) != nil && (!cloud || self.allowsRecordAccess($0, purpose: .cloudAI)) }),
+              permittedTasks.allSatisfy({ !cloud || self.allowsTaskAccess($0, purpose: .cloudAI) }) else { return }
+        callback(text)
+      } }
     )
 
     // The on-device window is small. One retry at half the records gives a long
@@ -338,6 +353,10 @@ extension MemoraModel {
       )
     }
 
+    if currentTeamID != workspaceID || !permitted.allSatisfy({ meeting(id: $0.id) == $0 && (!cloud || allowsRecordAccess($0.id, purpose: .cloudAI)) })
+        || !permittedTasks.allSatisfy({ task(id: $0.id) == $0 && (!cloud || allowsTaskAccess($0, purpose: .cloudAI)) }) {
+      result = .failure(.connectionLost)
+    }
     let details = AIAnswerDetails(
       scopeLabel: scopeLabel,
       engineLabel: AIEngineService.effectiveEngine(engine).label,

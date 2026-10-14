@@ -57,10 +57,10 @@ final class CloudAgentSession {
   }
 
   /// Asks for the model's next turn.
-  func next() async throws -> AgentTurn {
+  func next(onText: (@MainActor (String) -> Void)? = nil) async throws -> AgentTurn {
     guard !llm.modelID.isEmpty else { throw AIAnswerFailure.modelUnavailable }
     do {
-      return llm.provider.usesAnthropicAPI ? try await anthropicTurn() : try await chatCompletionsTurn()
+      return llm.provider.usesAnthropicAPI ? try await anthropicTurn(onText: onText) : try await chatCompletionsTurn(onText: onText)
     } catch let failure as AIAnswerFailure {
       throw failure
     } catch is CancellationError {
@@ -74,7 +74,7 @@ final class CloudAgentSession {
 
   // MARK: - Anthropic
 
-  private func anthropicTurn() async throws -> AgentTurn {
+  private func anthropicTurn(onText: (@MainActor (String) -> Void)?) async throws -> AgentTurn {
     var request = URLRequest(url: LLMProvider.anthropic.baseURL.appendingPathComponent("messages"))
     request.httpMethod = "POST"
     // Not streamed, so nothing arrives until a whole turn is written; a long
@@ -105,9 +105,16 @@ final class CloudAgentSession {
     }
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-    let (data, response) = try await URLSession.shared.data(for: request)
-    try CloudAIService.validate(response)
-    guard let decoded = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+    let decoded: [String: Any]
+    if let onText {
+      decoded = try await CloudTurnStreaming.response(for: request, provider: .anthropic, onText: onText)
+    } else {
+      let (data, response) = try await URLSession.shared.data(for: request)
+      try CloudAIService.validate(response)
+      guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
+      decoded = object
+    }
+    guard
           let content = decoded["content"] as? [[String: Any]] else {
       throw AIAnswerFailure.server
     }
@@ -139,7 +146,7 @@ final class CloudAgentSession {
 
   // MARK: - OpenAI-compatible
 
-  private func chatCompletionsTurn() async throws -> AgentTurn {
+  private func chatCompletionsTurn(onText: (@MainActor (String) -> Void)?) async throws -> AgentTurn {
     var request = URLRequest(url: llm.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
     // Not streamed, so nothing arrives until a whole turn is written; a long
@@ -174,9 +181,16 @@ final class CloudAgentSession {
       }
     ] as [String: Any])
 
-    let (data, response) = try await URLSession.shared.data(for: request)
-    try CloudAIService.validate(response)
-    guard let decoded = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+    let decoded: [String: Any]
+    if let onText {
+      decoded = try await CloudTurnStreaming.response(for: request, provider: .chatCompletions, onText: onText)
+    } else {
+      let (data, response) = try await URLSession.shared.data(for: request)
+      try CloudAIService.validate(response)
+      guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
+      decoded = object
+    }
+    guard
           let choices = decoded["choices"] as? [[String: Any]],
           let message = choices.first?["message"] as? [String: Any] else {
       throw AIAnswerFailure.server
@@ -187,7 +201,8 @@ final class CloudAgentSession {
 
     // Tool calls go back as they came, so provider extras (such as a thought
     // signature) survive; so does reasoning some providers require back.
-    var assistant: [String: Any] = ["role": "assistant", "content": text]
+    var assistant = message
+    assistant["role"] = "assistant"
     if !rawCalls.isEmpty {
       assistant["tool_calls"] = rawCalls
     }
