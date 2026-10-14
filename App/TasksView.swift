@@ -113,6 +113,14 @@ struct TasksView: View {
       }
       .onAppear { openPendingTaskIfNeeded() }
       .onChange(of: model.pendingTaskEditID) { _, _ in openPendingTaskIfNeeded() }
+      .onChange(of: model.systemTaskFilterToday, initial: true) { _, request in
+        guard let request else { return }
+        todayOnly = request
+        waitingOnly = false
+        showsCompleted = false
+        showsTeamBoard = false
+        model.systemTaskFilterToday = nil
+      }
   }
 
   private func taskRow(_ task: MemoraTask, depth: Int) -> some View {

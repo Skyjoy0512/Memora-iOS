@@ -38,6 +38,7 @@ struct QuickAIComposer: View {
       isBusy: isPreparingAttachment || model.activeProjectChatID.map { model.projectChatBusyIDs.contains($0) } == true,
       keepsFocusAfterSubmit: keepsFocusAfterSubmit,
       autofocus: autofocus,
+      acceptsExternalFocusRequest: model.selectedTab == .askAI && scope == .global,
       onSubmit: submit(attachment:),
       expansionChanged: { expanded in
         isComposing = expanded

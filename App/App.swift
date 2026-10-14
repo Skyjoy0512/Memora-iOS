@@ -1,8 +1,14 @@
+import AppIntents
 import SwiftUI
 
 @main
 struct MemoraApp: App {
   @UIApplicationDelegateAdaptor(MemoraAppDelegate.self) private var appDelegate
+
+  init() {
+    let model = MemoraAppRuntime.shared.model
+    AppDependencyManager.shared.add(dependency: model)
+  }
 
   var body: some Scene {
     WindowGroup {

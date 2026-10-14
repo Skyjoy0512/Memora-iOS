@@ -107,6 +107,8 @@ final class MemoraModel {
   var shareInboxFailure: String?
   var isImportingShareInbox = false
   var projectChatStages: [UUID: String] = [:]
+  @ObservationIgnored var widgetSnapshotJob: Task<Void, Never>?
+  @ObservationIgnored var widgetSnapshotRequestID: UUID?
   var projectChatPartialAnswers: [UUID: String] = [:]
   @ObservationIgnored var projectChatJobs: [UUID: Task<Void, Never>] = [:]
   var sourceAddProjectID: UUID?
@@ -374,6 +376,8 @@ final class MemoraModel {
   /// Meeting details temporarily hide their contextual AI field once people
   /// move into the document.
   var isDetailComposerVisible = true
+  var composerFocusRequest: UUID?
+  var systemTaskFilterToday: Bool?
   /// Bumped by a screen to ask the focused composer to put the keyboard away.
   var composerDismissRequests = 0
   /// How many inline editors are open. The Ask AI field steps aside while the

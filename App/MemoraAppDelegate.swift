@@ -9,7 +9,7 @@ import UserNotifications
 /// app without a window still has the records to work on.
 @MainActor
 final class MemoraAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-  let model = MemoraModel()
+  let model = MemoraAppRuntime.shared.model
 
   /// Starts the location logger outside the view tree, so a background relaunch
   /// still receives location events. It does nothing unless the setting is on.

@@ -13,6 +13,8 @@ struct AIComposerBar: View {
   var keepsFocusAfterSubmit = false
   /// Focuses the field when it appears, used when Ask AI opens to an empty chat.
   var autofocus = false
+  var acceptsExternalFocusRequest = false
+  @State private var externalFocusTask: Task<Void, Never>?
   /// Returns true when the send was accepted. Only then does the composer clear
   /// what was typed, so a refused send keeps the text and the attachment.
   var onSubmit: (AIAttachment?) -> Bool
@@ -141,6 +143,16 @@ struct AIComposerBar: View {
     .onChange(of: model.composerDismissRequests) { _, _ in
       isFieldFocused = false
     }
+    .onChange(of: model.composerFocusRequest, initial: true) { _, request in
+      guard acceptsExternalFocusRequest, let request, model.selectedTab == .askAI else { return }
+      externalFocusTask?.cancel()
+      externalFocusTask = Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(150))
+        guard !Task.isCancelled, model.composerFocusRequest == request, model.selectedTab == .askAI else { return }
+        model.composerFocusRequest = nil
+        isFieldFocused = true
+      }
+    }
     .onAppear {
       guard autofocus else { return }
       Task { @MainActor in
@@ -150,6 +162,7 @@ struct AIComposerBar: View {
       }
     }
     .onDisappear {
+      externalFocusTask?.cancel()
       speechInput.stop()
     }
     .fileImporter(

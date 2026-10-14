@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
+check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
+trap 'rm -rf "$check_dir"' EXIT
+swiftc App/AIAnswerFailure.swift App/CloudStreamAccumulator.swift tools/checks/CloudStreamChecks.swift -o "$check_dir/stream"
+"$check_dir/stream"
+swiftc App/ToolInputValidator.swift App/NativeAIInterface.swift tools/checks/NativeAIInterfaceChecks.swift -o "$check_dir/ui"
+"$check_dir/ui"
+swiftc App/SemanticToolDiscovery.swift App/MemoraSkill.swift App/MemoraSkillMarkdown.swift tools/checks/DiscoverySkillChecks.swift -o "$check_dir/skills"
+"$check_dir/skills"
+swiftc Shared/MemoraIcon.swift App/ResidentAgent.swift App/ResidentTrigger.swift App/ResidentExecutionLimits.swift tools/checks/ResidentLimitsChecks.swift -o "$check_dir/residents"
+"$check_dir/residents"
+swiftc Shared/MemoraAppLink.swift Shared/MemoraWidgetSnapshot.swift Shared/MemoraWidgetSnapshotStore.swift tools/checks/SystemIntegrationChecks.swift -o "$check_dir/system"
+"$check_dir/system" "$check_dir"
+TMPDIR="$check_dir/" bash tools/checks/run-ask-ai-plugin-checks.sh

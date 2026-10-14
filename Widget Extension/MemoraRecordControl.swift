@@ -9,11 +9,11 @@ struct MemoraRecordControl: ControlWidget {
   var body: some ControlWidgetConfiguration {
     StaticControlConfiguration(kind: Self.kind) {
       ControlWidgetButton(action: OpenMemoraIntent()) {
-        Label("録音", icon: .waveform)
+        Label("Memoraを開く", icon: .waveform)
       }
     }
-    .displayName("Memoraで録音")
-    .description("Memoraを開いて会話の記録を始めます。")
+    .displayName("Memoraを開く")
+    .description("アプリを開きます。録音はアプリ内で開始してください。")
   }
 }
 

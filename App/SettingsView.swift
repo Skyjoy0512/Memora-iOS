@@ -249,6 +249,9 @@ struct SettingsView: View {
           } label: {
             SettingsLabel("連携サービス", icon: .plugsConnected, color: Tint.integrations)
           }
+          NavigationLink { IOSIntegrationSettingsView() } label: {
+            SettingsLabel("ウィジェットとショートカット", icon: .rectangleStackFill, color: Tint.integrations)
+          }
           NavigationLink {
             GmailSettingsView()
           } label: {

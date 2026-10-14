@@ -1,8 +1,17 @@
 import SwiftUI
 
 struct StateGalleryView: View {
+  @Environment(MemoraModel.self) private var model
   var body: some View {
     List {
+      #if DEBUG
+      Section("システム導線（遷移の確認）") {
+        Button("Ask AIのリンクを開く") { openLink(.askAI) }
+        Button("今日のタスクのリンクを開く") { openLink(.todayTasks) }
+        Button("ジャーナルのリンクを開く") { openLink(.journal) }
+        Button("メモ作成のリンクを開く") { openLink(.newMemo) }
+      }
+      #endif
       if FeatureFlags.isCallingEnabled {
         Section {
           NavigationLink("通話の設定（表示の確認）") {
@@ -153,6 +162,17 @@ struct StateGalleryView: View {
     .memoraBackButton()
     .navigationBarTitleDisplayMode(.inline)
   }
+
+  #if DEBUG
+  private func openLink(_ link: MemoraAppLink) {
+    model.isSettingsPresented = false
+    Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(350))
+      guard !Task.isCancelled else { return }
+      await model.handle(link.url)
+    }
+  }
+  #endif
 }
 
 private struct StateExampleRow: View {

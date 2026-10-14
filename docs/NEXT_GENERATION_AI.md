@@ -155,5 +155,108 @@ P2最終コードbuild: `2026-10-14T12-54-11-b8b5861c.log` 成功。
 Simulatorで手動作成、保存、詳細の手順表示、無効化、一覧の状態、編集後の
 名前と無効状態の維持を確認。直接setValueではネイティブ入力が確定せず
 保存に失敗したため、通常のキー入力に切り替えて確認した。
-検証用QAUpdatedだけを作成。次の起動で保存の復元を確認して削除する。
+検証用QAUpdatedだけを作成。P3の再起動後に名前と無効状態の復元を確認し、
+確認ダイアログを経てその1件だけを削除。一覧の内蔵3件の維持も確認した。
 既存の記録・同梱スキル・接続設定は変更していない。
+
+## P3: システム導線とウィジェット
+
+- MemoraAppLinkのローカルURLを共有。Ask AI、Journal、タスク、今日取り組む
+  タスク、メモ編集、プロジェクトへ既存NavigationStackで遷移する。既存の
+  task/meeting/capture/recordingリンクを保持。新しいURLはパス、UUID、
+  query/userinfo/port/fragmentを検証する。URLに質問・記録本文を載せない。
+- App IntentsはAsk AI／録音開始／メモを書く／今日のタスク／ジャーナル／
+  プロジェクトの6種。AppDelegateと同じ唯一のモデルをAppDependencyManager
+  で注入。録音はforegroundで既存startCapture・マイク許可・ドラフト保存を
+  通り、isRecordingかつ非一時停止を確認する。ロック／保存保護／復元中は開始しない。
+  メモは編集画面を開くだけで保存を自動実行しない。
+- プロジェクト名をSiri等の候補に出す設定は初期OFF。名前・IDだけを
+  current personal workspaceから最大100件。Face ID設定／保護／復元中は
+  候補を返さない。OSに提供した名称のキャッシュ完全消去は保証しない。
+- Ask AIウィジェットは小・中とロック画面の3サイズ。独自URLで新規会話を
+  開き、共有コンポーザーへ一度だけフォーカスを要求。QuickAIComposerの
+  変更はその引数1行だけ。Glass、IME、展開、タブとFABの実装は保持。
+- 今日のMemoraは日付／未完了件数、mediumでは記録件数／次の予定の時刻。
+  プロジェクトはoptional AppEntityで指定でき、名前／タスク件数／最近の
+  記録の作成日を表示。資料更新日を取得したかのようには表示しない。
+- Shared snapshotは64KiB、20プロジェクト、8時間・同日限り。SQLite、
+  音声、写真、本文、予定名をExtensionへ渡さない。件数／名前／予定時刻は
+  個別opt-in。チーム・App Lock・保護・復元では破棄、private項目には
+  privacySensitive、ファイルはcompleteFileProtection。350msでまとめ、
+  WidgetKit更新にLLMを使わない。未設定／古い／壊れたデータは未取得表示。
+- 既存クイック記録・録音Live Activityを保持。Controlの表示を「Memoraを
+  開く」に合わせ、録音開始と区別。録音終了は既存のimmediate終了、起動時
+  は既存endStaleLiveActivities。録音後の文字起こし状態は追加していない。
+
+### 現ビルドの設定境界
+
+Project.jsonとbundle IDは変更していない。現在のIDはscaffoldで、App Group
+とMemoraWidgetAppGroupは未設定。そのためデータウィジェットは実装・build
+済みだが件数やプロジェクトの情報共有は動かない。設定画面はその状態を
+説明し、共有スイッチを無効にする。Ask AI／既存クイック記録は共有不要。
+
+本番の識別子へ移すとアプリのsandboxが変わり、既存データの移行が必要。
+既存ユーザーのバックアップ・復元を先に実証し、公式の識別子割当、同じ
+group.<host-bundle-id>のentitlementとInfo値をApp／Widgetに設定する。
+SQLiteをApp Groupへ移す必要はない。公開に進める作業やAppleアカウント
+設定は今回行っていない。
+
+AIタスクLive Activityは今回は未実装。端末の会話がbackgroundで継続する
+保証がなく、実行基盤・停止・承認・期限切れを紐づけず進行中を表示しない。
+サーバージョブを導入する場合はActivityのstaleDateと終了を実状態に接続し、
+実行ID／再接続／idempotencyを先に検証する。新規サーバーは配備していない。
+
+[Apple OpenURLIntent](https://developer.apple.com/documentation/appintents/openurlintent)
+はcustom schemeに対応しない。今回はそのAPIへmemora://を渡さず、Widgetの
+widgetURLとforeground App Intentsのモデル操作に分けた。
+
+## 再現可能なチェックと残り
+
+`MEMORA_CHECK_ROOT=<一時出力の実ディレクトリ> bash tools/checks/run-next-generation-checks.sh`
+で新規5＋既存10スイートを実コードと隔離fixtureで実行する。外部API、
+ユーザーSQLite、実際の音声・写真は使わない。SystemIntegrationChecksは
+正常／不正リンク、日付／件数／ID／容量の上限、JSON往復、欠損／破損／
+期限切れファイルの拒否。これはWidgetの実機表示やSiri成功の証拠ではない。
+
+残りの優先順:
+1. BYOKの実ストリーム／ツール／停止／権限変更／引用とUI操作の承認E2E。
+2. project/recordを越えないAgentToolの統合、画像・資料の添付読取の共通化。
+3. 非破壊な識別子移行＋App Group、実機Widget／Siri／Control／録音Island。
+4. 既存ライブラリ・Project・JournalのLight/Dark/Dynamic TypeとGlassの
+   frame単位の回帰、起動／スクロール／メモリの同条件計測。
+5. Gmail/Notion/MCPの実認証E2E、追加サービスのOAuthバックエンド。
+6. 永続ジョブ・中断再開・調査分担・日次金額予算とサーバー強制。
+
+未接続機能を利用可能として表示しない。上記を残して全指示の完了とは扱わない。
+
+P3コード最終build: `2026-10-14T13-24-19-71bc316c.log` 成功。
+Memora／Widget ExtensionのAppIntents metadataを抽出。既存の非AppIntents
+targetの抽出skip警告1件、compile/link errorなし。15スイート成功。
+途中のhostチェックにthrowing autoclosureのcompile errorがあり、decodeを
+先に行うよう修正して再成功。既存DBや実際の認証サービスは使っていない。
+
+最後の生成UI補正: 参照型全てに現在のワークスペース・保存保護・cloud grant
+の再確認を適用。本文のない不正UIは空白にせず理由を表示。途中のJSONは
+decodeしない。NativeAIInterfaceChecksで途中／本文なしfallbackも追加検証。
+
+Simulator追加確認: iPhone 18 Pro Maxで、Deep Linkの今日フィルター（メニューの
+チェックを確認）、空白Ask AIと入力フォーカス、共有初期OFF／未設定の無効
+スイッチ、Dark + accessibility_extra_largeの表／グラフ／timelineを確認。
+WidgetKitギャラリーでクイック記録／Ask AI（小・中）／今日（未設定）を確認。
+Ask AI小Widgetを一時追加し、実タップで会話とキーボードまで遷移。検証用
+Widgetは削除し、既存のMap／Calendar Widgetは維持した。
+
+Project Widgetは初回にplaceholderが残ったため、設定Intentをfile-privateな
+Extension専用型からSharedの安定した型へ移し、defaultResultと初期化を追加。
+host／Extension両方でmetadataを持つ。
+`2026-10-14T13-41-05-367b47d5.log` build成功（既存警告1件）。補正後に
+ギャラリーと実ホーム画面のmediumで「情報共有は未設定」を確認し、実タップ
+でLibraryのProjectsセグメントへ遷移。検証用のProject Widgetも削除した。
+登録変更／既定値の追加を同時に行っているため、原因を片方に断定しない。
+optional entityの既定値方針は
+[Apple configurable widget](https://developer.apple.com/documentation/widgetkit/making-a-configurable-widget)
+を参照。共有なしでプロジェクト名や件数の架空値を使わない。
+
+共有設定を伴う実データ表示、プロジェクトのパラメーター選択、ロック画面の
+accessory各サイズ、実Siri／録音Intent／Control／Islandは未検証。端末内の
+Widget表示・リンク確認を実機確認や共有設定完了の代替にしない。

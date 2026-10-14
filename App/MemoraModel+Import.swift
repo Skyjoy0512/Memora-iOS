@@ -228,7 +228,11 @@ extension MemoraModel {
       return
     }
 
-    guard url.scheme == "memora" else { return }
+    guard url.scheme?.lowercased() == "memora" else { return }
+    if let link = MemoraAppLink(url: url) {
+      openSystemDestination(link)
+      return
+    }
 
     if url.host == "task" {
       guard let id = UUID(uuidString: url.lastPathComponent), tasks.contains(where: { $0.id == id }) else { return }
