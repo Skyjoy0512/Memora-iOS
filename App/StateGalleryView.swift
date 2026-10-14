@@ -45,6 +45,8 @@ struct StateGalleryView: View {
       Section {
         #if DEBUG
         NavigationLink("構造化回答（表示の確認）") { NativeAIInterfaceExampleView() }
+        NavigationLink("タスク候補（編集の確認）") { AgentTaskDraftExampleView() }
+        NavigationLink("タスク候補（承認と保存の検証）") { AgentTaskOperationCheckView() }
         #endif
         NavigationLink("Ask AIの経過（表示の確認）") {
           ScrollView {
@@ -69,7 +71,7 @@ struct StateGalleryView: View {
       } header: {
         Text("Ask AI")
       } footer: {
-        Text("エージェントが本当に質問するのは、記録から分からないことがあるときだけです。ここは見た目の確認用で、答えはどこにも送られません。")
+        Text("表示確認はデモです。承認と保存の検証はローカルの検証タスクだけを扱います。モデル・外部APIは使いません。")
       }
 
       Section("権限と録音") {

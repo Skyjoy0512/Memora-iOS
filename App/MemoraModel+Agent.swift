@@ -12,15 +12,25 @@ extension MemoraModel {
   /// Hands a request to the agent. Returns false while another answer is on its
   /// way, so the composer keeps the text.
   @discardableResult
-  func sendAgentChat(_ request: String, attachment: AIAttachment? = nil, pluginPolicy: AIPluginExecutionPolicy? = nil) -> Bool {
+  func sendAgentChat(_ request: String, attachment: AIAttachment? = nil, pluginPolicy: AIPluginExecutionPolicy? = nil, preparedAttachment: PreparedAIAttachment? = nil) -> Bool {
     let trimmed = request.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty, !isAIChatResponding, attachment == nil else { return false }
+    guard !trimmed.isEmpty, !isAIChatResponding else { return false }
 
     let configuration = askAIConfiguration
+    let attachmentContext: String?
+    if let attachment {
+      guard AIEngineService.effectiveEngine(configuration.engine) == .cloud,
+            configuration.llm.supportsToolCalling, !configuration.llm.isMemoraIntelligence,
+            let preparedAttachment,
+            let content = AgentAttachmentContext.content(attachment: attachment, prepared: preparedAttachment) else { return false }
+      attachmentContext = content
+    } else { attachmentContext = nil }
     let scope = AIChatScope.all
     let history = aiConversationContext()
     var userMessage = AIChatMessage(role: .user, text: trimmed)
     userMessage.pluginIDs = pluginPolicy?.pluginIDs ?? []
+    userMessage.attachment = attachment
+    userMessage.mentions = authoredMentions(for: trimmed, pluginIDs: userMessage.pluginIDs)
     aiMessages.append(userMessage)
     let offeredTools = enabledAgentTools.filter { pluginPolicy?.toolIDs.contains("memora:" + $0.rawValue) ?? true }
     let explicitSkills = skillCatalog.filter { pluginPolicy?.pluginIDs.contains("skill:" + $0.id) == true }
@@ -33,6 +43,11 @@ extension MemoraModel {
     case .cloud:
       guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope) + "\n" + NativeAIInterface.instructions + skillContext, tools: offeredTools) else {
         let failure: AIAnswerFailure = llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey
+        if attachment != nil {
+          aiMessages.removeAll { $0.id == userMessage.id }
+          aiRequestRefusalMessage = failure.message + " 入力と添付は保持しています。"
+          return false
+        }
         aiMessages.append(AIChatMessage(role: .assistant, text: failure.message))
         return true
       }
@@ -55,6 +70,9 @@ extension MemoraModel {
     placeholder.interfaceWorkspaceID = currentTeamID
     if !runner.isOnDevice {
       placeholder.cloudProvenance = newCloudProvenance(references: safeHistory.references)
+      // A transient attachment has no record grant/fingerprint. Do not reuse
+      // its answer as verified record history or send it to a free MCP read silently.
+      if attachmentContext != nil { placeholder.cloudProvenance?.isComplete = false }
       placeholder.cloudAuthorizationTargets = cloudAuthorizedTargets
     }
     aiMessages.append(placeholder)
@@ -64,6 +82,7 @@ extension MemoraModel {
     // The on-device window is small, so it gets only the end of the thread.
     let thread = runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : safeHistory.text
     var opening = trimmed
+    if let attachmentContext { opening += "\n\n" + attachmentContext }
     if let policy = pluginPolicy, !policy.recordIDs.isEmpty {
       opening += "\n明示的に指定した記録のid: " + policy.recordIDs.map(\.uuidString).sorted().joined(separator: ", ")
     }
@@ -176,6 +195,7 @@ extension MemoraModel {
         )
       case .failure(let failure):
         guard failure != .cancelled else { return }
+        self.recoverFailedAttachmentRequest(userMessage.id)
         self.updateAgentMessage(placeholder.id) {
           $0.text = failure.message
           $0.cloudProvenance = nil
@@ -191,10 +211,20 @@ extension MemoraModel {
   /// Settles the pending approval card. Declining tells the model the change
   /// was refused, so it does not quietly try again.
   func resolveAgentApproval(_ approved: Bool) {
+    if approved, let approval = pendingAgentApproval, let drafts = approval.taskDrafts {
+      approvedAgentTaskDrafts[approval.messageID] = drafts
+    }
     pendingAgentApproval = nil
     let continuation = agentApprovalContinuation
     agentApprovalContinuation = nil
     continuation?.resume(returning: approved)
+  }
+
+  func editAgentTaskDraft(_ draft: AgentTaskDraft, approvalID: UUID) {
+    guard draft.isValid, pendingAgentApproval?.id == approvalID,
+          let index = pendingAgentApproval?.taskDrafts?.firstIndex(where: { $0.id == draft.id }),
+          pendingAgentApproval?.taskDrafts?[index].meetingID == draft.meetingID else { return }
+    pendingAgentApproval?.taskDrafts?[index] = draft
   }
 
   /// Runs model turns and tools until the model answers without calling one.

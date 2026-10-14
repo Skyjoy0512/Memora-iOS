@@ -217,6 +217,7 @@ enum AgentTool: String, CaseIterable {
           "maxItems": 30,
           "items": object([
             "title": string("タスクの内容"),
+            "detail": string("根拠や詳細。資料に記載された内容のみ（任意、4,000字以内）"),
             "assignee": string("担当者（記録で明言された場合のみ）"),
             "due_date": string("期限 yyyy-MM-dd（記録で明言された場合のみ）"),
             "meeting_id": string("元になった会議のid（任意）")

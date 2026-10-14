@@ -15,6 +15,9 @@ struct AIQuestionView: View {
   @State private var sources: [AIChatSource] = []
   @State private var isAnswering = false
   @State private var askTask: Task<Void, Never>?
+  @State private var stage = "考えています"
+  @State private var startedAt: Date?
+  @State private var engineLabel = ""
 
   /// The request carries the question, the range it was asked over, and the
   /// attachment, so what is sent cannot change while the answer is written.
@@ -31,36 +34,40 @@ struct AIQuestionView: View {
 
   var body: some View {
     NavigationStack {
-      ScrollView {
-        VStack(alignment: .leading, spacing: 24) {
-          if let submitted {
-            askedQuestion(submitted)
-          } else {
-            intro
-          }
+      ScrollViewReader { proxy in
+        ScrollView {
+          VStack(alignment: .leading, spacing: 24) {
+            if let submitted {
+              askedQuestion(submitted)
+            } else {
+              intro
+            }
 
-          if let failureMessage {
-            failureContent(failureMessage)
-              .transition(.opacity.combined(with: .move(edge: .bottom)))
-          } else if let answer {
-            answerContent(answer)
-              .transition(.opacity.combined(with: .move(edge: .bottom)))
-          } else if submitted == nil {
-            suggestions
+            if let failureMessage {
+              failureContent(failureMessage)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            } else if let answer {
+              answerContent(answer)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            } else if submitted == nil {
+              suggestions
+            }
+            Color.clear.frame(height: 1).id(ConversationScrollFollowing.bottomID)
           }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(18)
+          .padding(.bottom, 24)
+          .animation(reduceMotion ? nil : MemoraMotion.screen, value: isAnswering)
+          .animation(reduceMotion ? nil : MemoraMotion.screen, value: submitted)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .padding(.bottom, 24)
-        .animation(reduceMotion ? nil : MemoraMotion.screen, value: isAnswering)
-        .animation(reduceMotion ? nil : MemoraMotion.screen, value: submitted)
-      }
-      .background(MemoraPalette.background)
-      .scrollDismissesKeyboard(.immediately)
-      .safeAreaInset(edge: .bottom, spacing: 8) {
-        composer
-          .padding(.horizontal, 12)
-          .padding(.top, 4)
+        .modifier(ConversationScrollFollowing(proxy: proxy, latestMessageID: submitted?.id, isBusy: isAnswering))
+        .background(MemoraPalette.background)
+        .scrollDismissesKeyboard(.immediately)
+        .safeAreaInset(edge: .bottom, spacing: 8) {
+          composer
+            .padding(.horizontal, 12)
+            .padding(.top, 4)
+        }
       }
       .navigationTitle("Memoraに聞く")
       .navigationBarTitleDisplayMode(.inline)
@@ -112,17 +119,12 @@ struct AIQuestionView: View {
 
   private func askedQuestion(_ request: AIQuestionRequest) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("\(model.askAIModelName) · \(label(for: request.scope))")
+      Text("\(engineLabel) · \(label(for: request.scope))")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
-      Text(request.effectiveQuestion)
-        .font(.body.weight(.medium))
-        .textSelection(.enabled)
-
-      if let attachment = request.attachment {
-        Label(attachment.name, icon: .paperclip)
-          .font(.caption)
-          .foregroundStyle(.secondary)
+      AIUserMessageView(text: request.effectiveQuestion, attachmentName: request.attachment?.name) {
+        question = request.question
+        attachment = request.attachment
       }
 
       if let unsupportedAttachmentNote {
@@ -138,30 +140,14 @@ struct AIQuestionView: View {
       }
 
       if isAnswering {
-        HStack(spacing: 8) {
-          ThinkingOrbView(state: .searching, size: 20)
-          Text("会議の中から参考資料を探しています")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
-        .padding(.top, 4)
-        .transition(.opacity)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("会議の中から参考資料を探しています")
+        ConversationStatusLine(label: stage, since: startedAt).transition(.opacity)
       }
     }
-    .padding(16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .memoraCard(radius: 18)
   }
 
   private func answerContent(_ answer: String) -> some View {
     VStack(alignment: .leading, spacing: 18) {
-      Label("回答", icon: .sparkles)
-        .font(.headline)
-        .foregroundStyle(.primary)
-        .memoraTextReveal()
-
       AIResponseText(text: answer, isStreaming: isAnswering)
 
       if !sources.isEmpty {
@@ -182,9 +168,7 @@ struct AIQuestionView: View {
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
     }
-    .padding(16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .memoraCard(radius: 18)
   }
 
   /// The records that were sent, each with the stored lines that matched. Nothing
@@ -378,6 +362,8 @@ struct AIQuestionView: View {
     let configuration = model.askAIConfiguration
     let engine = configuration.engine
     let llm = configuration.llm
+    startedAt = .now
+    engineLabel = AIEngineService.modelLabel(engine: engine, llm: llm) ?? AIEngineService.effectiveEngine(engine).label
     let allowed = MemoraModel.meetings(in: request.scope, from: model.meetings)
     // A whole-library question reaches tasks that are not tied to a record too;
     // a single record or project reaches only its own.
@@ -407,6 +393,10 @@ struct AIQuestionView: View {
         history: "",
         engine: engine,
         llm: llm,
+        onStage: { value in
+          guard !Task.isCancelled, submitted?.id == request.id else { return }
+          if stage != value { stage = value }
+        },
         onText: { text in
           guard !Task.isCancelled, submitted?.id == request.id else { return }
           answer = text
@@ -430,6 +420,7 @@ struct AIQuestionView: View {
       case .failure(let failure):
         guard failure != .cancelled else { return }
         failureMessage = failure.message
+        if question.isEmpty { question = request.question; attachment = request.attachment }
       }
     }
     return true

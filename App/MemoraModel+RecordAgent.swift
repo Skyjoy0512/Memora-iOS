@@ -9,7 +9,7 @@ extension MemoraModel {
 
   func answerRecordAgent(content: AIRequestContent, record: Meeting, scopedTasks: [MemoraTask], llm: LLMSelection,
                          isCurrent: @escaping @MainActor () -> Bool,
-                         onText: (@MainActor (String) -> Void)?) async -> (result: AIAnswerResult, sources: [AIChatSource]) {
+                         onText: (@MainActor (String) -> Void)?, onStage: (@MainActor (String) -> Void)? = nil) async -> (result: AIAnswerResult, sources: [AIChatSource]) {
     let tools: [AgentTool] = [.searchRecords, .readRecord, .listTasks].filter { enabledAgentTools.contains($0) }
     guard !tools.isEmpty, scopedTasks.allSatisfy({ $0.meetingID == record.id }), isCurrent() else {
       return (.failure(.contextChanged), [])
@@ -37,6 +37,7 @@ extension MemoraModel {
     let result = await AgentConversationLoop.run(limits: .init(turns: 3, toolCalls: 3, callsPerTurn: 2),
       isAuthorized: { isCurrent() && !Task.isCancelled },
       next: {
+        onStage?("考えています")
         let turn = try await session.next { text in
           guard isCurrent(), !Task.isCancelled else { return }
           onText?(text)
@@ -51,6 +52,7 @@ extension MemoraModel {
         }
         guard isCurrent(), !Task.isCancelled else { return AgentToolOutcome(text: AIAnswerFailure.contextChanged.message, isError: true) }
         guard remaining >= 100 else { return AgentToolOutcome(text: "この会話の資料文字数上限に達しました。", isError: true) }
+        onStage?("資料を確認しています")
         switch tool {
         case .searchRecords, .readRecord:
           if tool == .readRecord, UUID(uuidString: call.string("id")) != record.id {

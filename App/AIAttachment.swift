@@ -1,6 +1,6 @@
 import Foundation
 
-struct AIAttachment: Identifiable, Equatable, Sendable {
+struct AIAttachment: Identifiable, Hashable, Sendable {
   var id: UUID
   var name: String
   var url: URL

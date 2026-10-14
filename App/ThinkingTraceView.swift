@@ -18,24 +18,8 @@ struct ThinkingTraceView: View {
     let isWaiting = model.pendingAgentApproval?.messageID == message.id
       || model.pendingAgentQuestions?.messageID == message.id
 
-    HStack(spacing: 8) {
-      Image(icon: .sparkle)
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-      if isWaiting {
-        Text("確認を待っています")
-          .foregroundStyle(.secondary)
-      } else {
-        ShimmerText(text: label)
-        ElapsedText(since: message.createdAt)
-          .font(.caption.monospacedDigit())
-          .foregroundStyle(.tertiary)
-      }
-    }
-    .font(.footnote.weight(.medium))
-    .padding(.vertical, 4)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .accessibilityElement(children: .combine)
+    ConversationStatusLine(label: isWaiting ? "確認を待っています" : label,
+      since: message.createdAt, isWaiting: isWaiting)
   }
 
   private var label: String {

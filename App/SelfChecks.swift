@@ -328,8 +328,9 @@ enum SelfChecks {
         for: AIQuestionRequest(question: "添付の内容を教えて", scope: .global, attachment: attachment),
         scopeLabel: "すべて", allowedMeetings: [], tasks: [])
       if content.unsupportedAttachmentNote == nil
-        || MemoraModel.shouldRunAsAgent("タスクを追加して", engine: .cloud, hasAttachment: true) {
-        report("unread attachment was accepted or routed to the agent")
+        || !MemoraModel.shouldRunAsAgent("タスクを追加して", engine: .cloud, hasAttachment: true)
+        || MemoraModel.shouldRunAsAgent("タスクを追加して", engine: .foundation, hasAttachment: true) {
+        report("unread attachment was accepted or attachment routing changed")
       }
     }
     group("Journal activity days") {

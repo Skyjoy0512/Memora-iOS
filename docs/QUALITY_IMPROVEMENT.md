@@ -53,13 +53,59 @@ app switcherで終了→App Libraryから再起動→Ask AIで質問/回答/再�
 変更前/再開/復元/空白のスクリーンショットを観察。履歴・記録の追加削除、
 有料推論、実外部アカウントの取得は行っていない。
 
+## P0-2: 添付と操作・候補編集・共通表示（2026-10-15）
+
+- globalのツール対応BYOKへPreparedAIAttachmentを渡す。既存の
+  AIAttachmentText / ProjectSourceExtractionで一度解析し、同一ID/名前/URLの
+  結果だけ再利用する。先頭8,000文字の未信頼JSONとして提示し、全文解析と
+  誤認させない。ファイル本文はツール権限・承認・外部送信の許可にならない。
+- @と添付の併用を許可するが、明示指定のツール/記録制限と現在の接続・料金・
+  privacyは維持する。添付を含む回答のprovenanceは不完全とし、検証済みの
+  履歴として再利用しない。無料のMCP読み取りでも個人情報を含む場合の承認を省かない。
+- 解析の停止・失敗・モデル変更は未送信の入力と添付を保持。APIキー未設定も
+  受理せず保持する。通信後の失敗は新しい入力がない場合だけ下書きへ復元する。
+  ファイルはアプリ内の既存コピー、SQLiteにはファイル名だけを保存する。
+  コピーが消えた場合は復元しない。添付の操作は対応BYOK限定であり、端末内AIの
+  添付質問は従来のgrounded経路。外部操作の自動再送は追加していない。
+- add_tasksの候補はJSON入力から厳密に検証し、30件まで。既存approvalカードに
+  選択・タイトル・詳細・担当・期限の編集を接続。候補IDと記録IDを固定し、
+  承認後にworkspace、保存保護、実ツールschema、現在のprivacyを再確認する。
+  insertTasksのSQLite成功後だけ作成ID/実件数を表示する。完全一致の未完了タスクを
+  二重登録せず、同じ回答内でのadd_tasks再実行も拒否する。外部サービスの
+  idempotencyやserver課金保証ではない。
+- AIUserMessageView、ConversationStatusLine、ConversationScrollFollowingを共用。
+  Markdown / Intelligent UIは既存AIResponseTextを再利用。履歴・参照範囲・保存先は
+  global/project/recordで分離したまま。キーボード・lazy rowのlayout変更を
+  手動スクロールと区別し、過去を読む間は勝手に最下部へ戻さない。
+  記録AIの質問カードと回答見出しを削減。プロジェクトの停止操作をtoolbarにも置く。
+  コピー/共有/資料保存に生成UIのJSONを混ぜずMarkdownを用いる。
+- Glassのshape、タブ、FAB、hero、safe area、capture/Omi、既存mediaは変更していない。
+  QuickAIComposerの変更は添付の所有・準備・送信制御。旧resume snapshotへ追加する
+  attachment/mentions/createdTaskIDsはoptionalで、旧履歴とbackup形式は維持する。
+
+検証範囲:
+
+| 状態 | 結果 |
+| --- | --- |
+| 自動チェック | 25スイート成功。添付identity/JSON/上限、mock loopと拒否、候補ID/記録ID/日付、scroll resize/手動閲覧、既存privacy/stream/MCPを含む |
+| build | Bitrig `2026-10-15T07-29-50-dcc2965e.log`成功、後続のBitrig更新 `07-33-22-702cc526.log`も成功。既存AppIntents metadata警告。検証用コードのStorageKey参照エラーは修正済み |
+| Simulator実操作 | iPhone 18 Pro Max。通常の承認/insertTasksで編集済み1件を保存しSQLite再読込一致、同一依頼再実行の拒否、選択ゼロで追加無効、拒否/停止で保存なしを確認。検証タスクのみIDで削除 |
+| Simulator表示 | Light/Dark・accessibility_extra_largeで候補が折り返し、操作可能。選択のAX値on/offを確認。タイトルはTextField、詳細はTextEditorで入力確定後の値を実保存と照合 |
+| 会話UI | 既存Hello履歴を再送せず再開。Library/プロジェクト往復で保持。新規Ask AIは空白。資料ゼロのプロジェクトは本文なしの理由を示し、質問を共通user bubbleから下書きへ戻せる。変更前後のスクリーンショットを観察 |
+| 検証データ | 前回追加したQAbefore履歴1件と19:57作成の検証project threadを削除。元の記録/履歴/プロジェクトは保持。検証用draftをclear、外観Light/文字largeへ復帰 |
+| コード・mockのみ | 添付→BYOK実モデル→実ツール選択、通信断後の添付draft復元、添付+実Gmail/Notion/MCP。今回の操作検証のモデル応答はfixtureで、実LLM E2Eではない |
+| 未検証 | 実機、VoiceOverの読み上げ、Reduce Motionの実操作、長い実会話の負荷、backup実復元、全画面デザイン監査。性能改善率は計測していない |
+
+新たな契約・backend・料金は追加していない。プロジェクト/記録の変更ツール、
+添付由来の回答を次のcloud turnへ安全に継続するgrant、一般Web本文、Office本文、
+正解資料付きRAG評価、実外部認証E2E、App Group/実機Widgetは残る。
+
 ## 次の実装順
 
-1. 既存のuser messageとscroll追従を共通化。UIだけを共有して履歴/権限は分離。
-2. prepared attachmentを一度だけagentへ渡し、失敗時に入力と添付を維持。
-3. タスク候補の編集と既存approval/実登録経路を接続。保存結果を先に確認。
-4. ソース状態とOffice、一般Webの安全な取得、正解付きRAG評価。
-5. 連携/skillの評価、全画面のappearance/accessibility、backup実復元、
+1. 本文がない記録をAI理解済みと扱わない表示・実行制御。
+2. 添付からのBYOK実E2E（利用者の安全なテスト環境が必要）。
+3. ソース状態とOffice、一般Webの安全な取得、正解付きRAG評価。
+4. 連携/skillの評価、全画面のappearance/accessibility、backup実復元、
    Apple識別子/App Group準備、実機性能と実サービスE2E。
 
 現時点でプロジェクト全体の完成とは扱わない。

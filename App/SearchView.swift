@@ -6,10 +6,6 @@ struct SearchView: View {
   @State private var isSearchSheetPresented = false
   @State private var isHistoryPresented = false
   @State private var filters = SearchFilters()
-  /// Whether the newest message is in view, so scrolling back to read is not
-  /// interrupted by a reply arriving.
-  @State private var isNearBottom = true
-  @State private var hasUnseenAnswer = false
   var onOpenSidebar: () -> Void
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -89,6 +85,7 @@ struct SearchView: View {
             AIMessageView(message: message, animates: message.id == model.aiMessages.last?.id)
               .id(message.id)
           }
+          Color.clear.frame(height: 1).id(ConversationScrollFollowing.bottomID)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 18)
@@ -98,21 +95,8 @@ struct SearchView: View {
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
       .hideBottomBarOnScroll(RootTab.askAI.rawValue)
       .refreshable { await model.refresh() }
-      .onScrollGeometryChange(for: Bool.self) { geometry in
-        geometry.contentOffset.y + geometry.containerSize.height
-          >= geometry.contentSize.height - 80
-      } action: { _, nearBottom in
-        isNearBottom = nearBottom
-        if nearBottom {
-          hasUnseenAnswer = false
-        }
-      }
-      .onChange(of: model.aiMessages.count) { _, _ in
-        followLatest(proxy)
-      }
-      .onChange(of: model.isAIChatResponding) { _, _ in
-        followLatest(proxy)
-      }
+      .modifier(ConversationScrollFollowing(proxy: proxy, latestMessageID: model.aiMessages.last?.id,
+        isBusy: model.isAIChatResponding, bottomInset: model.bottomContentClearance))
       // An approval card needs to be seen to be answered, so the keyboard
       // steps aside and the card scrolls into view.
       .onChange(of: model.pendingAgentApproval?.id) { _, id in
@@ -122,9 +106,6 @@ struct SearchView: View {
       }
       .animation(reduceMotion ? nil : MemoraMotion.control, value: model.pendingAgentApproval?.id)
       .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isAIChatResponding)
-      .onAppear {
-        scrollToLatest(proxy)
-      }
       .overlay(alignment: .bottom) {
         if model.isAIChatResponding {
           // Stopping is offered where the answer is being written.
@@ -139,17 +120,6 @@ struct SearchView: View {
           .padding(.bottom, model.bottomContentClearance)
           .transition(.opacity.combined(with: .scale(scale: 0.9)))
           .accessibilityLabel("回答を停止")
-        } else if hasUnseenAnswer {
-          Button("新しい回答", icon: .arrowDown) {
-            hasUnseenAnswer = false
-            scrollToLatest(proxy)
-          }
-          .font(.subheadline.weight(.semibold))
-          .padding(.horizontal, 14)
-          .padding(.vertical, 9)
-          .background(.thinMaterial, in: Capsule())
-          .padding(.bottom, model.bottomContentClearance)
-          .accessibilityLabel("新しい回答を表示")
         }
       }
     }
@@ -159,20 +129,9 @@ struct SearchView: View {
     model.composerDismissRequests += 1
   }
 
-  /// Follows the newest message only when the bottom is already in view;
-  /// otherwise it offers a button, so reading earlier answers is not yanked away.
-  private func followLatest(_ proxy: ScrollViewProxy) {
-    guard isNearBottom else {
-      hasUnseenAnswer = true
-      return
-    }
-    scrollToLatest(proxy)
-  }
-
   private func scrollToLatest(_ proxy: ScrollViewProxy) {
-    guard let last = model.aiMessages.last else { return }
     withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) {
-      proxy.scrollTo(last.id, anchor: .bottom)
+      proxy.scrollTo(ConversationScrollFollowing.bottomID, anchor: .bottom)
     }
   }
 

@@ -216,8 +216,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Documents (`MemoraDocument`, stored under `memoraDocuments` and in backups)
   are listed from the side menu's 資料 and export as PDF (`DocumentPDF`),
   PowerPoint (`PPTXWriter`, stored ZIP via `ZipArchive`) or text. The agent
-  cannot read attachments yet, and slide speaker notes are not written into
-  the .pptx.
+  can receive bounded, locally prepared attachment excerpts on the global
+  BYOK tool-calling path. Attachment content never grants permissions; writes
+  still require approval. Project and record agents remain read-only. Slide
+  speaker notes are not written into the .pptx.
 - Readability: summaries, Ask AI answers and the agent write to
   `ReadabilityGuide` (rules adapted from yomiyasu and k16shikano's guide,
   credited in `docs/THIRD_PARTY.md`): `rules` for cloud prompts,

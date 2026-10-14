@@ -19,7 +19,7 @@ struct AIAnswerActions: View {
       }
       .contentTransition(.symbolEffect(.replace))
 
-      ShareLink(item: AnswerCitations.stripped(message.text)) {
+      ShareLink(item: AnswerCitations.stripped(NativeAIInterface.response(message.text).markdown)) {
         Label("共有", icon: .squareAndArrowUp)
       }
 
@@ -65,7 +65,7 @@ struct AIAnswerActions: View {
   }
 
   private func copy() {
-    UIPasteboard.general.string = AnswerCitations.stripped(message.text)
+    UIPasteboard.general.string = AnswerCitations.stripped(NativeAIInterface.response(message.text).markdown)
     InteractionFeedback.shared.send(.success)
     withAnimation(reduceMotion ? nil : MemoraMotion.control) { didCopy = true }
     copyResetTask?.cancel()

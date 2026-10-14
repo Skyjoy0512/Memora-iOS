@@ -2,14 +2,15 @@ import Foundation
 
 enum AIAnswerDocumentBuilder {
   static func make(message: AIChatMessage, question: String?) -> MemoraDocument {
+    let answer = NativeAIInterface.response(message.text).markdown
     let questionTitle = question?.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ") ?? ""
-    let answerTitle = AnswerCitations.stripped(message.text)
+    let answerTitle = AnswerCitations.stripped(answer)
       .components(separatedBy: .newlines)
       .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "#*> -").union(.whitespaces)) }
       .first { !$0.isEmpty } ?? "保存した回答"
     let candidate = questionTitle.isEmpty ? answerTitle : questionTitle
     let title = String(candidate.prefix(48)) + (candidate.count > 48 ? "…" : "")
-    var markdown = AnswerCitations.saved(message.text, sources: message.sources)
+    var markdown = AnswerCitations.saved(answer, sources: message.sources)
     let references = message.sources.enumerated().compactMap { index, source -> String? in
       guard let url = MeetingLink.url(for: source.meetingID) else { return nil }
       let name = source.title.trimmingCharacters(in: .whitespacesAndNewlines)

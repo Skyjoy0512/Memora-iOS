@@ -518,76 +518,63 @@ extension MemoraModel {
   }
 
   private func addTasksTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {
-    struct Draft {
-      var title: String
-      var assignee: String
-      var dueDate: Date?
-      var meetingID: UUID?
-    }
-    let requested = call.objects("tasks")
-    guard !requested.isEmpty, requested.count <= 30 else {
-      return AgentToolOutcome(text: "追加するタスクは1〜30件で指定してください。", isError: true)
-    }
+    guard !isRestoring, !isStoreProtected else { return AgentToolOutcome(text: "保存先を確認できないため追加できません。", isError: true) }
+    defer { approvedAgentTaskDrafts.removeValue(forKey: messageID) }
+    let drafts: [AgentTaskDraft]
+    do { drafts = try AgentTaskDraft.parse(call.objects("tasks")) }
+    catch { return AgentToolOutcome(text: "候補のタイトル・詳細・担当・期限を確認してください。タスクは追加していません。", isError: true) }
     let scopedMeetingIDs = Set(Self.meetings(in: scope, from: meetings).map(\.id))
-    var drafts: [Draft] = []
-    for item in requested {
-      let title = (item["title"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-      guard !title.isEmpty else {
-        return AgentToolOutcome(text: "タイトルが空のタスクがあります。タスクは追加していません。", isError: true)
-      }
-      var meetingID: UUID?
-      if let rawID = item["meeting_id"] as? String, !rawID.isEmpty {
-        guard let id = UUID(uuidString: rawID), scopedMeetingIDs.contains(id) else {
-          return AgentToolOutcome(text: "対象外または存在しない会議が指定されています。タスクは追加していません。", isError: true)
-        }
-        meetingID = id
-      }
-      var dueDate: Date?
-      if let rawDate = item["due_date"] as? String, !rawDate.isEmpty {
-        guard let parsed = ReviewPeriod.parseDay(rawDate) else {
-          return AgentToolOutcome(text: "期限は実在する日付をyyyy-MM-ddで指定してください。タスクは追加していません。", isError: true)
-        }
-        dueDate = parsed
-      }
-      drafts.append(Draft(
-        title: title,
-        assignee: (item["assignee"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
-        dueDate: dueDate,
-        meetingID: meetingID
-      ))
+    guard drafts.allSatisfy({ $0.meetingID.map(scopedMeetingIDs.contains) ?? true }) else {
+      return AgentToolOutcome(text: "対象外または存在しない会議が指定されています。タスクは追加していません。", isError: true)
     }
-
     let workspaceID = currentTeamID
-    let lines = drafts.map { draft in
-      var line = "・\(draft.title)"
-      if !draft.assignee.isEmpty { line += "（\(draft.assignee)）" }
-      if let due = draft.dueDate { line += " 期限 \(due.formatted(.dateTime.month().day()))" }
-      return line
+    let stepID = beginAgentStep(AgentStep(icon: .checklist, title: "タスク候補を確認しています", detail: "確認待ち"), on: messageID)
+    let approved = await requestAgentApproval(AgentApproval(messageID: messageID, icon: .checklist,
+      title: "タスクを\(drafts.count)件追加", lines: [], confirmTitle: "追加", taskDrafts: drafts))
+    guard approved, !Task.isCancelled else {
+      finishAgentStep(stepID, on: messageID, state: .declined)
+      agentBlockedExternalTools[messageID, default: []].insert(call.name)
+      return Self.declinedOutcome
     }
-    guard let stepID = await approve(
-      tool: .addTasks,
-      title: "タスクを\(drafts.count)件追加",
-      lines: lines,
-      confirmTitle: "追加",
-      messageID: messageID
-    ) else { return Self.declinedOutcome }
-
     let allowedIDs = Set(Self.meetings(in: scope, from: meetings).map(\.id))
-    guard !Task.isCancelled, currentTeamID == workspaceID,
-          drafts.allSatisfy({ $0.meetingID.map(allowedIDs.contains) ?? true }) else {
+    guard !isRestoring, !isStoreProtected, currentTeamID == workspaceID, agentMessage(messageID) != nil,
+          toolRegistry().permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID]),
+          let edited = approvedAgentTaskDrafts.removeValue(forKey: messageID),
+          let selected = AgentTaskDraft.validatedSelection(edited, originals: drafts, allowedMeetingIDs: allowedIDs),
+          selected.allSatisfy({ draft in
+            agentMessage(messageID)?.cloudProvenance == nil || (draft.meetingID.map { allowsRecordAccess($0, purpose: .cloudAI) } ?? true)
+          }) else {
       finishAgentStep(stepID, on: messageID, state: .failed)
-      return AgentToolOutcome(text: "確認中に対象またはワークスペースが変わりました。タスクは追加していません。", isError: true)
+      return AgentToolOutcome(text: "候補・権限・ワークスペースが変わりました。タスクは追加していません。", isError: true)
     }
-    let additions = drafts.map { draft in
-      MemoraTask(id: UUID(), title: draft.title, meetingID: draft.meetingID,
-        assignee: draft.assignee.isEmpty ? nil : draft.assignee, dueDate: draft.dueDate, isCompleted: false)
+    var existing = tasks.filter { !$0.isCompleted }
+    var additions: [MemoraTask] = []
+    var skipped = 0
+    for draft in selected {
+      let candidate = MemoraTask(id: draft.id, title: draft.title.trimmingCharacters(in: .whitespacesAndNewlines),
+        meetingID: draft.meetingID, assignee: draft.assignee.isEmpty ? nil : draft.assignee,
+        dueDate: draft.dueDate, isCompleted: false, detail: draft.detail)
+      if existing.contains(where: { Self.matchesTaskProposal($0, candidate) }) { skipped += 1; continue }
+      additions.append(candidate)
+      existing.append(candidate)
     }
-    guard insertTasks(additions) else {
+    if !additions.isEmpty, !insertTasks(additions) {
       finishAgentStep(stepID, on: messageID, state: .failed)
+      agentBlockedExternalTools[messageID, default: []].insert(call.name)
       return AgentToolOutcome(text: "保存できませんでした。タスクは追加していません。", isError: true)
     }
-    finishAgentStep(stepID, on: messageID, state: .done, detail: "\(drafts.count)件")
-    return AgentToolOutcome(text: "タスクを\(drafts.count)件追加しました。")
+    // One approved batch per reply prevents another model turn from repeating it.
+    agentBlockedExternalTools[messageID, default: []].insert(call.name)
+    updateAgentMessage(messageID) { $0.createdTaskIDs.append(contentsOf: additions.map(\.id)) }
+    finishAgentStep(stepID, on: messageID, state: .done, detail: "\(additions.count)件")
+    let duplicateNote = skipped > 0 ? " 同じ内容の未完了タスク\(skipped)件は追加していません。" : ""
+    return AgentToolOutcome(text: "承認された内容でタスクを\(additions.count)件追加しました。" + duplicateNote
+      + " 候補は利用者が編集している場合があります。完了報告はこの件数を使い、編集前のタイトル・担当・期限を保存済みと報告しないでください。")
+  }
+
+  private static func matchesTaskProposal(_ left: MemoraTask, _ right: MemoraTask) -> Bool {
+    left.title == right.title && left.detail == right.detail && left.assignee == right.assignee
+      && left.meetingID == right.meetingID && left.dueDate == right.dueDate
   }
 
   private func createProjectTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {

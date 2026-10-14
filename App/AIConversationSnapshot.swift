@@ -28,10 +28,12 @@ struct AIConversationSnapshot: Codable, Sendable {
         ["user", "assistant"].contains(turn.role) && turn.sources.count <= 256
           && turn.pluginIDs.count <= 32 && turn.suggestions.count <= 30
           && turn.documentIDs.count <= 256 && turn.webResearchReportIDs.count <= 256
+          && (turn.createdTaskIDs?.count ?? 0) <= 30
           && turn.sources.allSatisfy { $0.excerpts.count <= 20 }
           && (turn.cloudProvenance?.references.count ?? 0) <= 256
           && turn.createdAt.timeIntervalSince1970.isFinite
           && (turn.finishedAt?.timeIntervalSince1970.isFinite ?? true)
+          && (turn.attachment?.isValid ?? true) && (turn.mentions?.count ?? 0) <= 32
       }
   }
 
@@ -43,6 +45,8 @@ struct AIConversationSnapshot: Codable, Sendable {
     var id: UUID
     var role: String
     var text: String
+    var attachment: AIAttachmentFileReference?
+    var mentions: [ComposerMention]?
     var createdAt: Date
     var finishedAt: Date?
     var wasInterrupted: Bool
@@ -51,6 +55,7 @@ struct AIConversationSnapshot: Codable, Sendable {
     var details: AIAnswerDetails?
     var sources: [AIChatSource]
     var documentIDs: [UUID]
+    var createdTaskIDs: [UUID]?
     var webResearchReportIDs: [UUID]
     var cloudProvenance: AIConversationProvenance?
     var residentName: String?
@@ -61,20 +66,23 @@ struct AIConversationSnapshot: Codable, Sendable {
     /// JSON can escape a UTF-8 byte into six bytes. Count conservatively before
     /// handing the immutable value to the existing serial background writer.
     var maximumEncodedBytes: Int {
-      let metadata = [residentName, details?.scopeLabel, details?.engineLabel, details?.modelLabel,
+      let metadata = [residentName, attachment?.name, attachment?.fileName, details?.scopeLabel, details?.engineLabel, details?.modelLabel,
         cloudProvenance?.workspaceID, cloudProvenance?.memoryFingerprint].compactMap { $0 }
       let sourceStrings = sources.flatMap { [$0.title] + $0.excerpts.map(\.text) }
       let fingerprints = cloudProvenance?.references.map(\.fingerprint) ?? []
-      let bytes = ([text] + pluginIDs + suggestions + metadata + sourceStrings + fingerprints)
+      let mentionStrings = mentions?.flatMap { [$0.label, $0.pluginID] } ?? []
+      let bytes = ([text] + pluginIDs + suggestions + metadata + sourceStrings + fingerprints + mentionStrings)
         .reduce(0) { $0 + $1.utf8.count }
       return 2_048 + bytes * 6 + (sources.count + sources.reduce(0) { $0 + $1.excerpts.count }
-        + documentIDs.count + webResearchReportIDs.count + fingerprints.count) * 256
+        + documentIDs.count + (createdTaskIDs?.count ?? 0) + webResearchReportIDs.count + fingerprints.count + (mentions?.count ?? 0)) * 256
     }
 
     init(_ message: AIChatMessage) {
       id = message.id
       role = message.role == .user ? "user" : "assistant"
       text = message.text
+      attachment = message.attachment.flatMap(AIAttachmentFileReference.init)
+      mentions = message.mentions
       createdAt = message.createdAt
       finishedAt = message.finishedAt
       wasInterrupted = message.isThinking
@@ -83,6 +91,7 @@ struct AIConversationSnapshot: Codable, Sendable {
       details = message.details
       sources = message.sources
       documentIDs = message.documentIDs
+      createdTaskIDs = message.createdTaskIDs
       webResearchReportIDs = message.webResearchReportIDs
       cloudProvenance = message.cloudProvenance
       residentName = message.residentName
@@ -93,6 +102,8 @@ struct AIConversationSnapshot: Codable, Sendable {
 
     func restoredMessage() -> AIChatMessage {
       var message = AIChatMessage(role: role == "user" ? .user : .assistant, text: text)
+      message.attachment = attachment?.resolve()
+      message.mentions = (mentions ?? []).filter { $0.isValid(in: text) && pluginIDs.contains($0.pluginID) }
       message.id = id
       message.createdAt = createdAt
       message.finishedAt = finishedAt
@@ -100,6 +111,7 @@ struct AIConversationSnapshot: Codable, Sendable {
       message.details = details
       message.sources = sources
       message.documentIDs = documentIDs
+      message.createdTaskIDs = createdTaskIDs ?? []
       message.webResearchReportIDs = webResearchReportIDs
       message.cloudProvenance = cloudProvenance
       message.residentName = residentName

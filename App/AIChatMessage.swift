@@ -10,6 +10,8 @@ struct AIChatMessage: Identifiable, Hashable {
   var id = UUID()
   var role: Role
   var text: String
+  var attachment: AIAttachment?
+  var mentions: [ComposerMention] = []
   /// Per-turn explicit selection; the persisted chat-history format stays unchanged.
   var pluginIDs: [String] = []
   var interfaceTaskIDs: Set<UUID> = []
@@ -27,6 +29,7 @@ struct AIChatMessage: Identifiable, Hashable {
   var agentSteps: [AgentStep] = []
   /// Documents the agent made in this reply.
   var documentIDs: [UUID] = []
+  var createdTaskIDs: [UUID] = []
   var webResearchReportIDs: [UUID] = []
   /// True while the reply is still being formed.
   var isThinking = false

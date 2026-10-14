@@ -9,6 +9,7 @@ struct AIMessageView: View {
   /// Only the latest reply streams; older ones are already settled.
   var animates = true
   @State private var openDocument: MemoraDocument?
+  @State private var editingTask: MemoraTask?
   /// A cited record opened from an inline citation.
   @State private var citedRecord: AIChatSource?
   @State private var isSourcesOpen = false
@@ -24,24 +25,9 @@ struct AIMessageView: View {
   }
 
   private var userBubble: some View {
-    HStack {
-      Spacer(minLength: 44)
-
-      Text(message.text)
-        .font(.body)
-        .textSelection(.enabled)
-        .aiBubble()
-        .contextMenu {
-          Button("コピー", icon: .docOnDoc) {
-            UIPasteboard.general.string = message.text
-          }
-          Button("入力欄に戻す", icon: .arrowUturnBackward) {
-            model.composerDraft = message.text
-          }
-        }
+    AIUserMessageView(text: message.text, attachmentName: message.attachment?.name) {
+      model.restoreAIRequestToComposer(message)
     }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel("あなた: \(message.text)")
   }
 
   @ViewBuilder
@@ -93,6 +79,15 @@ struct AIMessageView: View {
           AgentDocumentCard(document: document) { openDocument = document }
         }
       }
+      ForEach(message.createdTaskIDs, id: \.self) { id in
+        if let task = model.task(id: id) {
+          Button { editingTask = model.task(id: id) } label: {
+            Label(task.title, icon: .checklist)
+              .font(.subheadline).multilineTextAlignment(.leading)
+              .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+          }.tint(MemoraPalette.textPrimary)
+        }
+      }
 
       if !message.isThinking, !message.text.isEmpty {
         HStack(spacing: 8) {
@@ -125,6 +120,7 @@ struct AIMessageView: View {
         DocumentDetailView(documentID: document.id, showsCloseButton: true)
       }
     }
+    .sheet(item: $editingTask) { task in TaskEditView(task: task) }
     .sheet(item: $citedRecord) { source in
       NavigationStack {
         MeetingDetailView(meetingID: source.meetingID, showsLocalPlaybackBar: true)

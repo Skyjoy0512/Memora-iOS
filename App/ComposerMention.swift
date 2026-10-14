@@ -1,6 +1,6 @@
 import Foundation
 
-struct ComposerMention: Identifiable, Codable, Equatable {
+struct ComposerMention: Identifiable, Codable, Hashable, Sendable {
   var id = UUID()
   var pluginID: String
   var label: String

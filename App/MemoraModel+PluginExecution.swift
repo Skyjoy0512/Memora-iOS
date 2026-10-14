@@ -2,17 +2,20 @@ import Foundation
 
 extension MemoraModel {
   @discardableResult
-  func sendPluginChat(_ question: String, pluginIDs: [String], attachment: AIAttachment?) -> Bool {
+  func sendPluginChat(_ question: String, pluginIDs: [String], attachment: AIAttachment?, preparedAttachment: PreparedAIAttachment? = nil) -> Bool {
     guard !isAIChatResponding else { return false }
     func refuse(_ reason: String) -> Bool {
+      if attachment != nil { aiRequestRefusalMessage = reason; return false }
       var user = AIChatMessage(role: .user, text: question)
       user.pluginIDs = pluginIDs
       aiMessages.append(user)
       aiMessages.append(AIChatMessage(role: .assistant, text: reason))
       return true
     }
-    guard attachment == nil else {
-      return refuse("プラグインのエージェントは添付をまだ読めません。添付を外すか、プラグイン指定を外して通常の質問で確認してください。添付は外部サービスへ送っていません。")
+    if let attachment {
+      guard let preparedAttachment, AgentAttachmentContext.content(attachment: attachment, prepared: preparedAttachment) != nil else {
+        return refuse(preparedAttachment?.failure ?? "添付を解析してから送信してください。入力と添付は保持しています。")
+      }
     }
     var plugins: [AIPlugin] = []
     let catalog = pluginCatalog()
@@ -38,6 +41,7 @@ extension MemoraModel {
       return refuse("このモデルのツール呼び出しはオフです。設定の「AI整理」でツール対応モデルを選び、有効にしてください。")
     }
     let onDevice = AIEngineService.effectiveEngine(configuration.engine) != .cloud
+    if onDevice, attachment != nil { return refuse("添付とプラグインの併用にはツール対応のクラウドAI（BYOK）が必要です。入力と添付は保持しています。") }
     if onDevice, plugins.contains(where: { $0.provider == .mcp || !($0.toolIDs.isSubset(of: Set(AgentTool.onDeviceTools.map { "memora:" + $0.rawValue }))) }) {
       return refuse("この指定にはツール対応のクラウドAI（BYOK）が必要です。設定の「AI整理」で登録済みモデルを選んでください。外部サービスは実行していません。")
     }
@@ -45,7 +49,7 @@ extension MemoraModel {
     if !onDevice { ids.insert("memora:ask_user") }
     let policy = AIPluginExecutionPolicy(pluginIDs: pluginIDs, toolIDs: ids,
       recordIDs: Set(plugins.compactMap(\.recordID)), limitsRecordReads: !plugins.contains { $0.kind == .builtin || $0.id == "service:notion" })
-    return sendAgentChat(question, pluginPolicy: policy)
+    return sendAgentChat(question, attachment: attachment, pluginPolicy: policy, preparedAttachment: preparedAttachment)
   }
 
   func pluginCallIsPermitted(_ call: AgentToolCall, messageID: UUID) -> Bool {

@@ -12,7 +12,8 @@ struct QuickAIComposer: View {
   var keepsFocusAfterSubmit = false
   /// Focuses the field when it appears, for the full-screen Ask AI opening.
   var autofocus = false
-  @State private var attachment: AIAttachment?
+  @State private var preparedAttachment: PreparedAIAttachment?
+  @State private var attachmentPreparationTask: Task<Void, Never>?
   /// The question handed to the focused screen. It is built when the sheet
   /// opens, so clearing the composer afterwards cannot empty what is being asked.
   @State private var pendingQuestion: AIQuestionRequest?
@@ -33,7 +34,7 @@ struct QuickAIComposer: View {
 
     return AIComposerBar(
       text: $model.composerDraft,
-      attachment: $attachment,
+      attachment: Binding(get: { model.composerAttachment }, set: { model.composerAttachment = $0 }),
       placeholder: placeholder,
       isBusy: isPreparingAttachment || model.activeProjectChatID.map { model.projectChatBusyIDs.contains($0) } == true,
       keepsFocusAfterSubmit: keepsFocusAfterSubmit,
@@ -50,7 +51,14 @@ struct QuickAIComposer: View {
     .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
     .overlay(alignment: .top) {
       VStack(spacing: 0) {
-        if let token = activeMention, token != dismissedMention {
+        if isPreparingAttachment, attachmentPreparationTask != nil {
+          HStack {
+            Text("添付を解析しています").font(.footnote).foregroundStyle(.secondary)
+            Spacer()
+            Button("停止", icon: .stopFill) { attachmentPreparationTask?.cancel() }
+              .font(.footnote).frame(minHeight: 44)
+          }.padding(.horizontal, 16)
+        } else if let token = activeMention, token != dismissedMention {
           AIPluginMenu(candidates: model.mentionCandidates(query: token.query), selectedIDs: Set(model.composerMentions.map(\.pluginID)), maximumHeight: min(320, max(100, composerTop - WindowSafeArea.insets.top - 12)),
             select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })
         } else if supportsMentions && !model.composerMentions.isEmpty {
@@ -77,6 +85,9 @@ struct QuickAIComposer: View {
     .onChange(of: model.composerDraft) { _, _ in dismissedMention = nil }
     .onChange(of: model.composerDismissRequests) { _, _ in dismissedMention = activeMention }
     .onChange(of: model.selectedTab) { _, _ in usesWebSearch = false }
+    .onChange(of: scope) { _, _ in attachmentPreparationTask?.cancel() }
+    .onChange(of: model.composerAttachment?.id) { _, _ in attachmentPreparationTask?.cancel() }
+    .onDisappear { attachmentPreparationTask?.cancel() }
     .sheet(item: $pendingQuestion) { request in
       AIQuestionView(request: request)
     }
@@ -95,6 +106,10 @@ struct QuickAIComposer: View {
   }
 
   private var supportsMentions: Bool { model.selectedTab == .askAI && scope == .global }
+  private var attachment: AIAttachment? {
+    get { model.composerAttachment }
+    nonmutating set { model.composerAttachment = newValue }
+  }
 
   private var activeMention: ComposerMentionToken? {
     guard supportsMentions, mentionInput.inputView?.isFirstResponder == true,
@@ -158,8 +173,9 @@ struct QuickAIComposer: View {
         return false
       }
       let pluginIDs = model.composerMentions.filter { $0.isValid(in: model.composerDraft) }.map(\.pluginID)
-      if !pluginIDs.isEmpty && submitted != nil {
-        projectError = "プラグインは添付をまだ読めません。添付を外すか、プラグイン指定を外してください。入力と添付は保持しています。"
+      if let submitted, AIEngineService.effectiveEngine(model.askAIConfiguration.engine) == .cloud,
+         model.askAIConfiguration.llm.supportsToolCalling, !model.askAIConfiguration.llm.isMemoraIntelligence {
+        startGlobalAttachmentRequest(submitted, question: trimmed.isEmpty ? "この添付を確認して" : trimmed, pluginIDs: pluginIDs)
         return false
       }
       let accepted = model.sendAIChat(
@@ -168,6 +184,7 @@ struct QuickAIComposer: View {
         webSearchRequested: usesWebSearch,
         pluginIDs: pluginIDs
       )
+      if !accepted, let reason = model.aiRequestRefusalMessage { projectError = reason }
       if accepted { usesWebSearch = false }
       return accepted
     }
@@ -187,6 +204,42 @@ struct QuickAIComposer: View {
     }
     pendingQuestion = request
     return true
+  }
+
+  private func startGlobalAttachmentRequest(_ attached: AIAttachment, question: String, pluginIDs: [String]) {
+    guard !isPreparingAttachment, !model.isAIChatResponding, !model.isRestoring, !model.isStoreProtected else { return }
+    let draft = model.composerDraft
+    let mentions = model.composerMentions
+    let configuration = model.askAIConfiguration
+    let workspaceID = model.currentTeamID
+    isPreparingAttachment = true
+    attachmentPreparationTask = Task { @MainActor in
+      defer { isPreparingAttachment = false; attachmentPreparationTask = nil }
+      let prepared: PreparedAIAttachment
+      if let cached = preparedAttachment, cached.matches(attached) { prepared = cached }
+      else { prepared = await AIAttachmentText.prepare(attached) }
+      guard !Task.isCancelled else { return }
+      preparedAttachment = prepared
+      guard AgentAttachmentContext.content(attachment: attached, prepared: prepared) != nil else {
+        projectError = prepared.failure ?? "添付の本文を取得できませんでした。入力と添付は保持しています。"
+        return
+      }
+      guard model.currentTeamID == workspaceID, model.selectedTab == .askAI, scope == .global,
+            !model.isRestoring, !model.isStoreProtected, model.composerDraft == draft,
+            model.composerMentions == mentions, model.composerAttachment == attached,
+            model.askAIConfiguration.engine == configuration.engine, model.askAIConfiguration.llm == configuration.llm else {
+        projectError = "入力・参照範囲・AI設定が変わったため送信していません。現在の設定で送信し直してください。"
+        return
+      }
+      if model.sendAIChat(question, attachment: attached, pluginIDs: pluginIDs, preparedAttachment: prepared) {
+        // This call is synchronous. A later edit is never cleared by file IO.
+        model.composerDraft = ""
+        model.composerAttachment = nil
+        preparedAttachment = nil
+      } else {
+        projectError = model.aiRequestRefusalMessage ?? "送信できませんでした。入力と添付は保持しています。"
+      }
+    }
   }
   private func startProjectRequest(_ request: AIQuestionRequest, allowsPaidRequest: Bool) {
     guard case .space(let projectID) = request.scope, !isPreparingAttachment else { return }

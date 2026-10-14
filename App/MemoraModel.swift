@@ -402,7 +402,12 @@ final class MemoraModel {
     }
   }
   var composerMentionCursorRequest: ComposerCursorRequest?
+  var composerAttachment: AIAttachment? {
+    didSet { saveComposerAttachment() }
+  }
+  var aiRequestRefusalMessage: String?
   @ObservationIgnored var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
+  @ObservationIgnored var approvedAgentTaskDrafts: [UUID: [AgentTaskDraft]] = [:]
   @ObservationIgnored var agentBlockedExternalTools: [UUID: Set<String>] = [:]
   var composerMentions: [ComposerMention] = [] {
     didSet { if composerMentions != oldValue { saveComposerMentions() } }
@@ -525,6 +530,9 @@ final class MemoraModel {
     let savedDraft = DraftStore.load(Self.composerDraftKey) ?? ""
     composerDraft = savedDraft
     composerMentions = savedMentions.filter { $0.isValid(in: savedDraft) }
+    composerAttachment = DraftStore.load("composer.attachment.v1")
+      .flatMap { $0.data(using: .utf8) }
+      .flatMap { try? JSONDecoder().decode(AIAttachmentFileReference.self, from: $0) }?.resolve()
     cloudStorageEnabled = false
     if case .data(let data) = RecordStore.load(StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)

@@ -1,6 +1,35 @@
 import Foundation
 
 extension MemoraModel {
+  func saveComposerAttachment() {
+    guard conversationPersistenceReady, !isRestoring, !isStoreProtected else { return }
+    guard let reference = composerAttachment.flatMap(AIAttachmentFileReference.init),
+          let data = try? JSONEncoder().encode(reference), let text = String(data: data, encoding: .utf8) else {
+      DraftStore.clear("composer.attachment.v1")
+      return
+    }
+    DraftStore.save(text, key: "composer.attachment.v1")
+  }
+
+  func restoreAIRequestToComposer(_ message: AIChatMessage, focusesInput: Bool = true) {
+    guard message.role == .user else { return }
+    composerDraft = message.text
+    composerMentions = message.mentions.filter { $0.isValid(in: message.text) && message.pluginIDs.contains($0.pluginID) }
+    composerAttachment = message.attachment
+    if focusesInput { composerFocusRequest = UUID() }
+  }
+
+  func recoverFailedAttachmentRequest(_ messageID: UUID) {
+    guard !isRestoring, !isStoreProtected, composerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+          composerAttachment == nil, let message = agentMessage(messageID), message.attachment != nil else { return }
+    // Recover a draft only; a failed or uncertain operation is never resubmitted.
+    restoreAIRequestToComposer(message, focusesInput: false)
+  }
+
+  func authoredMentions(for text: String, pluginIDs: [String]) -> [ComposerMention] {
+    ComposerMention.reconciled(composerMentions, from: composerDraft, to: text)
+      .filter { pluginIDs.contains($0.pluginID) }
+  }
   static func conversationStorageKey(workspaceID: String?) -> String {
     StorageKey.activeAIConversation + "." + (workspaceID.map { Data($0.utf8).base64EncodedString() } ?? "personal")
   }

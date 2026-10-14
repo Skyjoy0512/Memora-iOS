@@ -7,21 +7,26 @@ struct AgentApprovalCard: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Label(approval.title, icon: approval.icon)
+      Label(approval.taskDrafts.map { "タスクを\($0.filter(\.isSelected).count)件追加" } ?? approval.title, icon: approval.icon)
         .font(.headline)
 
-      VStack(alignment: .leading, spacing: 4) {
-        ForEach(Array(approval.lines.enumerated()), id: \.offset) { _, line in
-          Text(line)
-            .font(.subheadline)
-            .foregroundStyle(MemoraPalette.cardTextSecondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .textSelection(.enabled)
+      if let drafts = approval.taskDrafts {
+        AgentTaskDraftList(drafts: drafts) { draft in model.editAgentTaskDraft(draft, approvalID: approval.id) }
+      } else {
+        VStack(alignment: .leading, spacing: 4) {
+          ForEach(Array(approval.lines.enumerated()), id: \.offset) { _, line in
+            Text(line)
+              .font(.subheadline)
+              .foregroundStyle(MemoraPalette.cardTextSecondary)
+              .fixedSize(horizontal: false, vertical: true)
+              .textSelection(.enabled)
+          }
         }
       }
 
       HStack(spacing: 10) {
         Button {
+          guard model.pendingAgentApproval?.id == approval.id else { return }
           model.resolveAgentApproval(false)
           InteractionFeedback.shared.send(.selection)
         } label: {
@@ -34,6 +39,7 @@ struct AgentApprovalCard: View {
         .buttonStyle(.plain)
 
         Button {
+          guard model.pendingAgentApproval?.id == approval.id else { return }
           model.resolveAgentApproval(true)
           InteractionFeedback.shared.send(.selection)
         } label: {
@@ -45,8 +51,10 @@ struct AgentApprovalCard: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .disabled(approval.taskDrafts.map { !$0.contains(where: \.isSelected) || !$0.allSatisfy(\.isValid) } ?? false)
       }
     }
+    .disabled(model.pendingAgentApproval?.id != approval.id)
     .padding(14)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(

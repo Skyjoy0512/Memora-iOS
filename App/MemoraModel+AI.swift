@@ -20,6 +20,7 @@ extension MemoraModel {
     aiMessages = []
     agentToolCallCounts = [:]
     agentPluginPolicies = [:]
+    approvedAgentTaskDrafts = [:]
     agentBlockedExternalTools = [:]
     isAIChatResponding = false
     persistActiveAIConversation()
@@ -62,7 +63,7 @@ extension MemoraModel {
     guard !isAIChatResponding,
           let last = aiMessages.last, last.id == messageID, last.role == .assistant,
           !last.didChangeData, last.residentName == nil else { return false }
-    return aiMessages.dropLast().last?.role == .user
+    return aiMessages.dropLast().last?.role == .user && aiMessages.dropLast().last?.attachment == nil
   }
 
   /// Asks the latest question again, replacing its answer.
@@ -77,13 +78,14 @@ extension MemoraModel {
   /// Asks the chat a question. Returns false while an answer is already on its
   /// way, so the caller keeps the text instead of losing it to a refused send.
   @discardableResult
-  func sendAIChat(_ question: String, attachment: AIAttachment? = nil, webSearchRequested: Bool = false, pluginIDs: [String] = []) -> Bool {
+  func sendAIChat(_ question: String, attachment: AIAttachment? = nil, webSearchRequested: Bool = false, pluginIDs: [String] = [], preparedAttachment: PreparedAIAttachment? = nil) -> Bool {
+    aiRequestRefusalMessage = nil
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
 
     if !pluginIDs.isEmpty {
       let selected = AIPluginExecutionPolicy.selectionIDs(pluginIDs, webSearchRequested: webSearchRequested)
-      return sendPluginChat(trimmed, pluginIDs: selected, attachment: attachment)
+      return sendPluginChat(trimmed, pluginIDs: selected, attachment: attachment, preparedAttachment: preparedAttachment)
     }
 
     if attachment == nil {
@@ -94,10 +96,25 @@ extension MemoraModel {
       }
     }
 
+    if let attachment, AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud,
+       askAIConfiguration.llm.supportsToolCalling, !askAIConfiguration.llm.isMemoraIntelligence {
+      guard let preparedAttachment, AgentAttachmentContext.content(attachment: attachment, prepared: preparedAttachment) != nil else {
+        aiRequestRefusalMessage = preparedAttachment?.failure ?? "添付を解析してから送信してください。入力と添付は保持しています。"
+        return false
+      }
+    } else if attachment != nil, AgentAttachmentContext.requestsOperation(trimmed) {
+      aiRequestRefusalMessage = "添付からの操作にはツール対応のクラウドAI（BYOK）が必要です。設定の「AI整理」で選んでください。入力と添付は保持しています。"
+      return false
+    }
+
     // Asked plainly to remember something: it is kept before answering, and
     // the conversation says so, so it is never kept silently.
     let remembered = isAIMemoryEnabled ? Self.explicitMemory(in: trimmed) : nil
     let didRemember = remembered.map { addAIMemory($0, origin: .told) } ?? false
+
+    if attachment != nil, askAIConfiguration.llm.isMemoraIntelligence {
+      return sendGroundedAnswer(trimmed, attachment: attachment, remembered: didRemember ? remembered : nil)
+    }
 
     if AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud, !askAIConfiguration.llm.supportsToolCalling {
       if !didRemember, Self.shouldRunAsAgent(trimmed, engine: .foundation, hasAttachment: attachment != nil) {
@@ -114,7 +131,7 @@ extension MemoraModel {
     // to do something; a question goes through the grounded answer, which
     // finds the records first and answers from them.
     if Self.shouldRunAsAgent(trimmed, engine: askAIConfiguration.engine, hasAttachment: attachment != nil) {
-      let sent = sendAgentChat(question, attachment: attachment)
+      let sent = sendAgentChat(question, attachment: attachment, preparedAttachment: preparedAttachment)
       if sent, didRemember, let remembered {
         insertMemoryNote(remembered)
       }
@@ -126,8 +143,8 @@ extension MemoraModel {
   /// Whether a request goes to the agent: always on a cloud model; on the
   /// device only when it asks for something to be done.
   static func shouldRunAsAgent(_ request: String, engine: AIEngine, hasAttachment: Bool) -> Bool {
-    // The agent cannot read attachments yet; the grounded answer can.
-    guard !hasAttachment else { return false }
+    // On-device attachments retain the grounded path's small context budget.
+    if hasAttachment { return AIEngineService.effectiveEngine(engine) == .cloud }
     if AIEngineService.effectiveEngine(engine) == .cloud { return true }
     let actions = [
       "下書き", "作って", "作成", "追加", "登録", "入れて", "保存", "送って", "送信", "メール",
@@ -148,7 +165,8 @@ extension MemoraModel {
     let requestID = UUID()
     aiChatRequestID = requestID
 
-    aiMessages.append(AIChatMessage(role: .user, text: trimmed))
+    let userMessage = AIChatMessage(role: .user, text: trimmed, attachment: attachment)
+    aiMessages.append(userMessage)
     if didRemember, let remembered {
       aiMessages.append(Self.memoryNote(remembered))
     }
@@ -236,6 +254,7 @@ extension MemoraModel {
       case .failure(let failure):
         // Cancellation is not a failure to report; the newer request answers.
         guard failure != .cancelled else { return }
+        self.recoverFailedAttachmentRequest(userMessage.id)
         if let index = self.aiMessages.firstIndex(where: { $0.id == placeholder.id }) {
           self.aiMessages[index].text = failure.message
           self.aiMessages[index].details = outcome.details
@@ -266,6 +285,7 @@ extension MemoraModel {
     engine: AIEngine,
     llm: LLMSelection,
     onContextReady: (([AIChatSource]) -> Void)? = nil,
+    onStage: (@MainActor (String) -> Void)? = nil,
     onText: (@MainActor (String) -> Void)? = nil
   ) async -> AIAnswerOutcome {
     let workspaceID = currentTeamID
@@ -279,7 +299,10 @@ extension MemoraModel {
         && (!cloud || allowsTaskAccess($0, purpose: .cloudAI))
     }
     let attachmentContent: PreparedAIAttachment?
-    if let attachment = request.attachment { attachmentContent = await AIAttachmentText.prepare(attachment) }
+    if let attachment = request.attachment {
+      onStage?("添付を解析しています")
+      attachmentContent = await AIAttachmentText.prepare(attachment)
+    }
     else { attachmentContent = nil }
 
     func contextAvailable() -> Bool {
@@ -311,6 +334,7 @@ extension MemoraModel {
        permitted.count == 1, [.searchRecords, .readRecord, .listTasks].contains(where: { enabledAgentTools.contains($0) }) {
       scopedRecord = permitted.first
     } else { scopedRecord = nil }
+    onStage?("記録を探しています")
     var content = buildContent(limit: scopedRecord == nil ? AIEngineService.contextCharacterLimit(for: engine) : 28_000)
     func outcome(_ result: AIAnswerResult) -> AIAnswerOutcome {
       AIAnswerOutcome(question: content.question, scopeLabel: scopeLabel, result: result,
@@ -336,12 +360,14 @@ extension MemoraModel {
     }
     let safeText: (@MainActor (String) -> Void)? = onText.map { callback in { text in
         guard !Task.isCancelled, contextAvailable() else { return }
+        if !text.isEmpty { onStage?("回答を書いています") }
         callback(text)
       } }
     var result: AIAnswerResult
+    onStage?("考えています")
     if let scopedRecord {
       let answer = await answerRecordAgent(content: content, record: scopedRecord, scopedTasks: permittedTasks,
-        llm: llm, isCurrent: contextAvailable, onText: safeText)
+        llm: llm, isCurrent: contextAvailable, onText: safeText, onStage: onStage)
       result = answer.result
       content.sources = answer.sources
     } else {

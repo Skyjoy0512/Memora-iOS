@@ -23,12 +23,7 @@ struct ProjectChatView: View {
             ForEach(thread.messages) { message in
               VStack(alignment: .leading, spacing: 12) {
                 if message.role == .user {
-                  HStack {
-                    Spacer(minLength: 44)
-                    Text(message.text).font(.body).textSelection(.enabled).aiBubble()
-                  }
-                  .accessibilityElement(children: .combine)
-                  .accessibilityLabel("あなた: \(message.text)")
+                  AIUserMessageView(text: message.text) { model.composerDraft = message.text }
                 } else {
                   AIResponseText(text: message.text)
                 }
@@ -46,7 +41,7 @@ struct ProjectChatView: View {
             }
             ProjectChatStreamingReply(threadID: threadID)
             if let stage = model.projectChatStages[threadID] {
-              Text(stage).font(.subheadline).foregroundStyle(.secondary).accessibilityLabel(stage)
+              ConversationStatusLine(label: stage, since: thread.messages.last?.createdAt)
               Button("回答を停止", icon: .stopFill) { model.cancelProjectChat(threadID) }
                 .frame(minHeight: 44).tint(MemoraPalette.textPrimary)
             } else if let failure = thread.lastFailure {
@@ -57,17 +52,22 @@ struct ProjectChatView: View {
               Text("前の回答は中断されています。自動で再送はしません。")
                 .font(.subheadline).foregroundStyle(.secondary)
             }
+            Color.clear.frame(height: 1).id(ConversationScrollFollowing.bottomID)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(ProjectLayout.horizontalInset)
         }
-        .onChange(of: thread.messages.last?.id) { _, id in
-          if let id { proxy.scrollTo(id, anchor: .bottom) }
-        }
+        .modifier(ConversationScrollFollowing(proxy: proxy, latestMessageID: thread.messages.last?.id,
+          isBusy: model.projectChatBusyIDs.contains(threadID), bottomInset: model.bottomContentClearance))
       }
       .background(MemoraPalette.background)
       .navigationTitle(thread.title).navigationBarTitleDisplayMode(.inline)
       .toolbar {
+        if model.projectChatBusyIDs.contains(threadID) {
+          ToolbarItem(placement: .primaryAction) {
+            ToolbarIconButton("回答を停止", icon: .stopFill) { model.cancelProjectChat(threadID) }
+          }
+        }
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
             if let projectID = thread.projectID, model.space(id: projectID) != nil {

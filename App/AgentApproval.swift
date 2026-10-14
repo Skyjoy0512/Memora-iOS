@@ -10,4 +10,5 @@ struct AgentApproval: Identifiable, Hashable {
   /// What exactly will change, one line per item.
   var lines: [String]
   var confirmTitle: String
+  var taskDrafts: [AgentTaskDraft]?
 }

@@ -4,8 +4,14 @@ cd "$(dirname "$0")/../.."
 check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
 check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
-swiftc Shared/MemoraIcon.swift App/AgentStep.swift App/AIAnswerDetails.swift App/AIChatSource.swift App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/AIConversationProvenance.swift App/AIChatMessage.swift App/ToolInputValidator.swift App/NativeAIInterface.swift App/AIConversationSnapshot.swift tools/checks/AIConversationSnapshotChecks.swift -o "$check_dir/conversation"
+swiftc Shared/MemoraIcon.swift App/AgentStep.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/ComposerMention.swift App/AIAnswerDetails.swift App/AIChatSource.swift App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/AIConversationProvenance.swift App/AIChatMessage.swift App/ToolInputValidator.swift App/NativeAIInterface.swift App/AIConversationSnapshot.swift tools/checks/AIConversationSnapshotChecks.swift -o "$check_dir/conversation"
 "$check_dir/conversation"
+swiftc App/AIAttachment.swift App/AIAttachmentFileReference.swift App/PreparedAIAttachment.swift App/AgentAttachmentContext.swift App/AIPluginExecutionPolicy.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentConversationLoop.swift tools/checks/AgentAttachmentChecks.swift -o "$check_dir/agent-attachment"
+"$check_dir/agent-attachment"
+swiftc App/ReviewPeriod.swift App/AgentTaskDraft.swift tools/checks/AgentTaskDraftChecks.swift -o "$check_dir/task-drafts"
+"$check_dir/task-drafts"
+swiftc App/ConversationScrollState.swift tools/checks/ConversationScrollChecks.swift -o "$check_dir/conversation-scroll"
+"$check_dir/conversation-scroll"
 swiftc App/RelevantTextWindow.swift tools/checks/RelevantTextWindowChecks.swift -o "$check_dir/passage"
 "$check_dir/passage"
 swiftc App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentConversationLoop.swift tools/checks/AgentConversationLoopChecks.swift -o "$check_dir/agent-loop"
