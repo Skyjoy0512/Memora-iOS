@@ -49,7 +49,7 @@ struct ResidentAgentEditor: View {
         } header: {
           Text("指示")
         } footer: {
-          Text("記録・タスク・人物（Gmail連携中はメールも）を読んで作業します。変更は提案として出します。")
+          Text("利用できる読み取りツールで確認し、変更は提案として表示します。")
         }
 
         Section {
@@ -62,16 +62,44 @@ struct ResidentAgentEditor: View {
           Toggle("メモリを参考にする", isOn: $agent.usesMemory)
         }
 
+        Section {
+          DisclosureGroup("実行上限と通知") {
+            Stepper("AI呼び出し: \(agent.executionLimits?.modelTurnLimit ?? 8)回", value: Binding(
+              get: { agent.executionLimits?.modelTurnLimit ?? 8 },
+              set: { var limits = agent.executionLimits ?? ResidentExecutionLimits(); limits.maximumModelTurns = $0; agent.executionLimits = limits }), in: 1...8)
+            Stepper("ツール: \(agent.executionLimits?.toolCallLimit ?? 12)回", value: Binding(
+              get: { agent.executionLimits?.toolCallLimit ?? 12 },
+              set: { var limits = agent.executionLimits ?? ResidentExecutionLimits(); limits.maximumToolCalls = $0; agent.executionLimits = limits }), in: 0...24)
+            Toggle("完了を通知", isOn: Binding(get: { agent.executionLimits?.notifies ?? true }, set: {
+              var limits = agent.executionLimits ?? ResidentExecutionLimits(); limits.notifies = $0; agent.executionLimits = limits
+            }))
+            ForEach(AgentTool.residentTools.filter { model.enabledAgentTools.contains($0) }, id: \.self) { tool in
+              Toggle(tool.summary, isOn: Binding(
+                get: { agent.executionLimits?.allowedToolNames?.contains(tool.rawValue) ?? true },
+                set: { enabled in
+                  var limits = agent.executionLimits ?? ResidentExecutionLimits()
+                  var names = limits.allowedToolNames ?? AgentTool.residentTools.map(\.rawValue)
+                  names.removeAll { $0 == tool.rawValue }
+                  if enabled { names.append(tool.rawValue) }
+                  limits.allowedToolNames = names; agent.executionLimits = limits
+                }))
+            }
+          }
+        } footer: {
+          Text("上限は1回の実行に適用します。BYOKの料金はモデルと出力により異なります。iOSが実行時刻を決めるため、指定時刻の実行は保証されません。料金未確認のメール取得は自動実行できません。")
+        }
+
         if !isNew {
           Section {
-            Button(isRunning ? "実行中…" : "今すぐ実行", icon: .play) {
+            Button(isRunning ? "停止" : "今すぐ実行", icon: isRunning ? .stopFill : .play) {
+              if isRunning { model.cancelResident(agent.id); return }
               Task {
                 runResult = nil
                 let posted = await model.runResident(agent)
-                runResult = posted ? "Ask AIの会話に投稿しました。" : "実行できませんでした。キーとモデルの設定を確認してください。"
+                runResult = posted ? "Ask AIの会話に投稿しました。" : (model.residentRunFailures[agent.id] ?? "実行できませんでした。キーとモデルの設定を確認してください。")
               }
             }
-            .disabled(isRunning || model.residentLLM == nil)
+            .disabled(!isRunning && model.residentLLM == nil)
             if let runResult {
               Text(runResult)
                 .font(.footnote)
@@ -101,7 +129,7 @@ struct ResidentAgentEditor: View {
   private func save() {
     model.updateResident(agent)
     // Asked here, in the foreground, so a background run never has to.
-    if agent.isEnabled {
+    if agent.isEnabled && (agent.executionLimits?.notifies ?? true) {
       Task { _ = await TaskReminderScheduler.requestAuthorization() }
     }
     dismiss()

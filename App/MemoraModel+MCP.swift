@@ -56,11 +56,12 @@ extension MemoraModel {
 
   /// The tools of every enabled server, for one agent run. A server that does
   /// not answer is left out rather than stopping the agent.
-  func loadMCPToolsForAgent(onlyServerIDs: Set<UUID>? = nil) async -> [MCPTool] {
+  func loadMCPToolsForAgent(onlyServerIDs: Set<UUID>? = nil, request: String = "") async -> [MCPTool] {
     guard integrationIsEnabled("mcp") else { activeMCPTools.removeAll(); return [] }
     var tools: [MCPTool] = []
-    var schemaBytes = 0
-    for server in mcpServers where server.isEnabled && server.reviewedEndpoint == server.url && (onlyServerIDs?.contains(server.id) ?? true) {
+    let servers = mcpServers.filter { $0.isEnabled && $0.reviewedEndpoint == $0.url && (onlyServerIDs?.contains($0.id) ?? true) }
+    for server in servers.prefix(4) {
+      let revision = mcpCredentialRevisions[server.id]
       let token = KeychainStore.string(forKey: server.tokenAccount)
       // Unknown charges must not trigger even discovery without a person acting.
       let offered: [MCPTool]
@@ -69,12 +70,15 @@ extension MemoraModel {
       } else {
         offered = await MCPClient.shared.reviewedCachedTools(on: server)
       }
-      for tool in offered where tools.count < 16 && schemaBytes + tool.inputSchema.count <= 24 * 1024 {
-        tools.append(tool)
-        schemaBytes += tool.inputSchema.count
-      }
-      if tools.count >= 16 { break }
+      guard !Task.isCancelled else { activeMCPTools.removeAll(); return [] }
+      guard integrationIsEnabled("mcp"), revision == mcpCredentialRevisions[server.id], mcpServers.contains(server) else { continue }
+      tools.append(contentsOf: offered.prefix(40))
     }
+    let selected = SemanticToolDiscovery.select(tools.map {
+      .init(id: $0.id, name: $0.serverName + " " + $0.name, summary: $0.summary, schemaBytes: $0.inputSchema.count)
+    }, request: request, explicit: onlyServerIDs != nil)
+    let byID = Dictionary(tools.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+    tools = selected.compactMap { byID[$0] }
     activeMCPTools = Dictionary(tools.map { ($0.agentName, $0) }, uniquingKeysWith: { first, _ in first })
     return tools
   }

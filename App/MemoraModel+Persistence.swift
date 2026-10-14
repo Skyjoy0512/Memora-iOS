@@ -170,6 +170,8 @@ extension MemoraModel {
     static let pendingMediaDeletions = "memoraPendingMediaDeletions"
     static let documents = "memoraDocuments"
     static let projectSources = "memoraProjectSources.v2"
+    static let customSkills = "memora.customSkills.v1"
+    static let skillUsage = "memora.skillUsage.v1"
     static let projectChats = "memoraProjectChats.v2"
     static let residentAgents = "memora.residents"
     static let hasOfferedSampleDeletion = "memora.hasOfferedSampleDeletion"

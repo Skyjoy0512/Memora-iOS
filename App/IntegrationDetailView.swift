@@ -12,6 +12,13 @@ struct IntegrationDetailView: View {
         if let reason = state.reason { Text(reason).foregroundStyle(.secondary) }
         Text(service.summary)
         Text(service.permissions).font(.subheadline).foregroundStyle(.secondary)
+        LabeledContent("料金", value: service.id == "calendar" ? "端末内の操作" : "外部サービスの料金を確認・実行前に承認")
+        DisclosureGroup("利用できる操作") {
+          ForEach(service.toolNames, id: \.self) { name in
+            if let tool = AgentTool(rawValue: name) { Text(tool.summary).font(.subheadline) }
+          }
+          if service.id == "mcp" { Text("各サーバーの設定で、確認済みのツールと権限を確認できます。") }
+        }
       }
       if service.isImplemented {
         Section {

@@ -29,6 +29,7 @@ extension MemoraModel {
           toolIDs: ["memora:read_record"], permissions: [], cost: .local, provider: .memora, recordID: uuid))
       } else { return refuse("指定したプラグインまたは記録は削除されています。@から選び直してください。") }
     }
+    guard plugins.filter({ $0.id.hasPrefix("skill:") }).count <= 2 else { return refuse("1つの依頼で組み合わせるスキルは2つまでです。必要な手順を選び直してください。") }
     let configuration = askAIConfiguration
     guard !configuration.llm.isMemoraIntelligence else {
       return refuse("プラグインは端末内AIまたは利用者自身のキーを登録したクラウドAIで利用してください。設定の「AI整理」で切り替えられます。")

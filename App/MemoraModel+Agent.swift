@@ -23,9 +23,9 @@ extension MemoraModel {
     userMessage.pluginIDs = pluginPolicy?.pluginIDs ?? []
     aiMessages.append(userMessage)
     let offeredTools = enabledAgentTools.filter { pluginPolicy?.toolIDs.contains("memora:" + $0.rawValue) ?? true }
-    let explicitSkills = MemoraSkill.bundled.filter { pluginPolicy?.pluginIDs.contains("skill:" + $0.id) == true }
-    let skillContext = explicitSkills.isEmpty ? MemoraSkill.context(for: trimmed, disabled: disabledSkillIDs, budget: 1_500)
-      : "\n選択した補助手順（権限や承認を変更しません）:\n" + explicitSkills.map(\.instructions).joined(separator: "\n")
+    let explicitSkills = skillCatalog.filter { pluginPolicy?.pluginIDs.contains("skill:" + $0.id) == true }
+    let selectedSkills = explicitSkills.isEmpty ? Array(skillCatalog.filter { !disabledSkillIDs.contains($0.id) && $0.keywords.contains { trimmed.localizedCaseInsensitiveContains($0) } }.prefix(2)) : Array(explicitSkills.prefix(2))
+    let skillContext = MemoraSkill.guidance(selectedSkills, budget: 1_500)
 
     let llm = configuration.llm
     let runner: AgentRunner
@@ -112,7 +112,7 @@ extension MemoraModel {
         let serverIDs = pluginPolicy.map { policy in Set(policy.pluginIDs.compactMap { id -> UUID? in
           id.hasPrefix("mcp:") ? UUID(uuidString: String(id.dropFirst(4))) : nil
         }) }
-        let externalTools = await self.loadMCPToolsForAgent(onlyServerIDs: serverIDs)
+        let externalTools = await self.loadMCPToolsForAgent(onlyServerIDs: serverIDs, request: trimmed)
         guard !Task.isCancelled, self.aiChatRequestID == requestID else { return }
         if var policy = self.agentPluginPolicies[placeholder.id] {
           policy.toolIDs.formUnion(externalTools.map(\.id))
@@ -129,11 +129,13 @@ extension MemoraModel {
           self.aiChatRequestID = nil
           return
         }
+        self.recordSkillSelection(selectedSkills.map(\.id))
         session.addUserMessage(opening)
         result = await self.runAgent(session: session, messageID: placeholder.id, scope: scope, llm: llm)
       case .onDevice:
         if #available(iOS 26.0, *) {
-          result = await self.runOnDeviceAgent(prompt: opening, messageID: placeholder.id, scope: scope)
+          self.recordSkillSelection(selectedSkills.map(\.id))
+          result = await self.runOnDeviceAgent(prompt: opening, messageID: placeholder.id, scope: scope, skillContext: MemoraSkill.guidance(selectedSkills, budget: 300))
         } else {
           result = .failure(.noEngine)
         }
@@ -271,7 +273,7 @@ extension MemoraModel {
   /// Runs the agent on the on-device model. The session calls the tools itself;
   /// each call goes through the same code as the cloud agent, in compact form.
   @available(iOS 26.0, *)
-  private func runOnDeviceAgent(prompt: String, messageID: UUID, scope: AIChatScope) async -> AIAnswerResult {
+  private func runOnDeviceAgent(prompt: String, messageID: UUID, scope: AIChatScope, skillContext: String) async -> AIAnswerResult {
     let tools = OnDeviceAgentTool.all(AgentTool.offeredOnDevice.filter { enabledAgentTools.contains($0) && (agentPluginPolicies[messageID]?.toolIDs.contains("memora:" + $0.rawValue) ?? true) }) { [weak self] name, argumentsJSON in
       guard let self else { return "" }
       let arguments = argumentsJSON.data(using: .utf8)
@@ -279,7 +281,7 @@ extension MemoraModel {
       let call = AgentToolCall(id: UUID().uuidString, name: name, arguments: arguments)
       return await self.runAgentTool(call, messageID: messageID, scope: scope, compact: true).text
     }
-    let session = LanguageModelSession(tools: tools, instructions: Self.onDeviceAgentInstructions(scope: scope) + MemoraSkill.context(for: prompt, disabled: disabledSkillIDs, budget: 300))
+    let session = LanguageModelSession(tools: tools, instructions: Self.onDeviceAgentInstructions(scope: scope) + skillContext)
     do {
       let response = try await session.respond(to: prompt)
       let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)

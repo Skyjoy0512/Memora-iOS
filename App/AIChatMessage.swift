@@ -46,6 +46,7 @@ struct AIChatMessage: Identifiable, Hashable {
   var didChangeData = false
   /// The resident agent that posted this on its own, shown above the reply.
   var residentName: String?
+  var residentAgentID: UUID?
   var residentSymbol: MemoraIcon?
   /// Next steps the resident agent proposed; sending one runs it as a normal
   /// request, with approval for any change.

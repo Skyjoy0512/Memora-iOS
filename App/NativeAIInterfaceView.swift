@@ -92,6 +92,8 @@ struct NativeAIInterfaceView: View {
           .foregroundStyle(MemoraPalette.textPrimary)
           .accessibilityLabel(item.title ?? "").accessibilityValue((item.value ?? 0).formatted())
       }
+      .chartXAxis { AxisMarks { AxisValueLabel().foregroundStyle(MemoraPalette.textSecondary) } }
+      .chartYAxis { AxisMarks { AxisValueLabel().foregroundStyle(MemoraPalette.textSecondary) } }
       .frame(height: CGFloat(max(160, component.items.count * 36)))
       ForEach(component.items) { item in
         LabeledContent(item.title ?? "", value: (item.value ?? 0).formatted()).font(.caption)

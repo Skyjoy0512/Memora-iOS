@@ -52,6 +52,9 @@ struct AIMessageView: View {
           .font(.caption.weight(.semibold))
           .foregroundStyle(.secondary)
           .accessibilityLabel("常駐エージェント \(name)")
+        if message.isThinking, let id = message.residentAgentID {
+          Button("実行を停止", icon: .stopFill) { model.cancelResident(id) }.frame(minHeight: 44)
+        }
       }
 
       // The trace: open while the AI works, one settled line afterwards.

@@ -30,6 +30,7 @@ extension MemoraModel {
       && documents.isEmpty
       && projectSources.isEmpty
       && projectChats.isEmpty
+      && customSkills.isEmpty
       && webResearchReports.isEmpty
       && tasks.isEmpty
       && lifeLogEntries.isEmpty
@@ -57,6 +58,8 @@ extension MemoraModel {
     let projectSources = self.projectSources
     let projectChats = self.projectChats
     let webResearchReports = self.webResearchReports
+    let customSkills = self.customSkills
+    let skillSelections = skillLastSelectedAt.map { SkillSelection(skillID: $0.key, selectedAt: $0.value) }
     return try await Task.detached(priority: .userInitiated) {
       try BackupPackage.write(
         meetings: meetings,
@@ -69,6 +72,8 @@ extension MemoraModel {
         projectSources: projectSources,
         projectChats: projectChats,
         webResearchReports: webResearchReports,
+        customSkills: customSkills,
+        skillSelections: skillSelections,
         into: FileManager.default.temporaryDirectory
       )
     }.value
@@ -232,7 +237,9 @@ extension MemoraModel {
         (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? [])),
         (key: StorageKey.projectSources, data: try RecordStore.encoded(manifest.projectSources ?? [])),
         (key: StorageKey.projectChats, data: try RecordStore.encoded(manifest.projectChats ?? [])),
-        (key: "memora.webResearch.v1", data: try RecordStore.encoded(manifest.webResearchReports ?? []))
+        (key: "memora.webResearch.v1", data: try RecordStore.encoded(manifest.webResearchReports ?? [])),
+        (key: StorageKey.customSkills, data: try RecordStore.encoded(manifest.customSkills ?? [])),
+        (key: StorageKey.skillUsage, data: try RecordStore.encoded(manifest.skillSelections ?? []))
       ]
     }
     guard stored else {
@@ -251,5 +258,7 @@ extension MemoraModel {
     projectSources = manifest.projectSources ?? []
     projectChats = manifest.projectChats ?? []
     webResearchReports = manifest.webResearchReports ?? []
+    customSkills = manifest.customSkills ?? []
+    skillLastSelectedAt = Dictionary((manifest.skillSelections ?? []).map { ($0.skillID, $0.selectedAt) }, uniquingKeysWith: max)
   }
 }

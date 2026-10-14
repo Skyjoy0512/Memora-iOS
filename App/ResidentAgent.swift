@@ -16,4 +16,5 @@ struct ResidentAgent: Identifiable, Hashable, Codable {
   /// Whether it may read what Ask AI remembers about the person.
   var usesMemory = true
   var lastRunAt: Date?
+  var executionLimits: ResidentExecutionLimits?
 }

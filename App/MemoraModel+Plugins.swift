@@ -33,7 +33,7 @@ extension MemoraModel {
         state: state, toolIDs: Set(service.toolNames.map { "memora:" + $0 }), permissions: [service.permissions],
         cost: service.id == "calendar" ? .local : .unknown, provider: service.id == "mcp" ? .mcp : (service.isImplemented ? .directAPI : .composio), serviceID: service.id)
     }
-    for skill in MemoraSkill.bundled {
+    for skill in skillCatalog {
       let enabled = !disabledSkillIDs.contains(skill.id)
       entries.append(AIPlugin(id: "skill:" + skill.id, name: skill.name, summary: skill.summary, aliases: skill.keywords,
         kind: enabled ? .builtin : .unavailable, state: enabled ? .ready : .setup("スキル設定で有効にしてください。"),

@@ -185,6 +185,8 @@ final class MemoraModel {
   var webhookResults: [UUID: WebhookResult] = [:]
   /// Remote MCP servers whose tools the agent may use. Settings; tokens are in
   /// the keychain.
+  var customSkills: [MemoraSkill] = []
+  var skillLastSelectedAt: [String: Date] = [:]
   var disabledSkillIDs: [String] = MemoraModel.storedSetting([String].self, forKey: "memora.skills.disabled") ?? [] {
     didSet { MemoraModel.storeSetting(disabledSkillIDs, forKey: "memora.skills.disabled") }
   }
@@ -198,6 +200,8 @@ final class MemoraModel {
   var residentAgents: [ResidentAgent] = MemoraModel.storedSetting([ResidentAgent].self, forKey: StorageKey.residentAgents) ?? ResidentAgentCatalog.presets {
     didSet { MemoraModel.storeSetting(residentAgents, forKey: StorageKey.residentAgents) }
   }
+  @ObservationIgnored var residentJobs: [UUID: Task<Bool, Never>] = [:]
+  var residentRunFailures: [UUID: String] = [:]
   /// Resident agents working right now, so one is never started twice.
   var runningResidentIDs: Set<UUID> = []
   /// Bumped when a project suggestion is dismissed, so screens re-read it.
@@ -605,6 +609,9 @@ final class MemoraModel {
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
     aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [])
     aiMemories = load([AIMemory].self, forKey: StorageKey.aiMemories, fallback: [])
+    customSkills = Array(load([MemoraSkill].self, forKey: StorageKey.customSkills, fallback: []).filter(MemoraSkillMarkdown.valid).prefix(30))
+    let skillSelections = load([SkillSelection].self, forKey: StorageKey.skillUsage, fallback: [])
+    skillLastSelectedAt = Dictionary(skillSelections.prefix(100).map { ($0.skillID, $0.selectedAt) }, uniquingKeysWith: max)
     customTemplates = load([SummaryMarketTemplate].self, forKey: StorageKey.customTemplates, fallback: [])
 
     // Protection is decided only once every document has been read, so a failure

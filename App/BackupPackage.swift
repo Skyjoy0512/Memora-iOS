@@ -26,6 +26,8 @@ enum BackupPackage {
     var projectSources: [ProjectSource]? = nil
     var projectChats: [ProjectChatThread]? = nil
     var webResearchReports: [WebResearchReport]? = nil
+    var customSkills: [MemoraSkill]? = nil
+    var skillSelections: [SkillSelection]? = nil
     /// Audio file names, stored under the media folder on restore.
     var audioFileNames: [String]
     /// Photo file names, stored under the media folder on restore.
@@ -106,6 +108,8 @@ enum BackupPackage {
     projectSources: [ProjectSource] = [],
     projectChats: [ProjectChatThread] = [],
     webResearchReports: [WebResearchReport] = [],
+    customSkills: [MemoraSkill] = [],
+    skillSelections: [SkillSelection] = [],
     into directory: URL
   ) throws -> URL {
     let plan = try collectMedia(meetings: meetings, lifeLogEntries: lifeLogEntries)
@@ -170,6 +174,8 @@ enum BackupPackage {
       projectSources: projectSources,
       projectChats: projectChats,
       webResearchReports: webResearchReports,
+      customSkills: customSkills,
+      skillSelections: skillSelections,
       audioFileNames: audioNames,
       photoFileNames: photoNames
     )
@@ -205,6 +211,10 @@ enum BackupPackage {
     }
 
     try validateIdentifiers(manifest)
+    let skills = manifest.customSkills ?? []
+    guard skills.count <= 30, skills.allSatisfy(MemoraSkillMarkdown.valid),
+          Set(skills.map(\.id)).count == skills.count,
+          (manifest.skillSelections ?? []).count <= 100 else { throw BackupError.unreadable }
     let sources = manifest.projectSources ?? []
     let chats = manifest.projectChats ?? []
     guard Set(sources.map(\.id)).count == sources.count,

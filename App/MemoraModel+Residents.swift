@@ -71,13 +71,30 @@ extension MemoraModel {
   /// cut short by the system is tried again.
   @discardableResult
   func runResident(_ agent: ResidentAgent, meetingID: UUID? = nil) async -> Bool {
+    guard !Task.isCancelled, residentJobs[agent.id] == nil else { return false }
+    residentRunFailures.removeValue(forKey: agent.id)
+    let job = Task { await executeResident(agent, meetingID: meetingID) }
+    residentJobs[agent.id] = job
+    defer { residentJobs.removeValue(forKey: agent.id) }
+    return await withTaskCancellationHandler {
+      await job.value
+    } onCancel: { job.cancel() }
+  }
+
+  func cancelResident(_ id: UUID) { residentJobs[id]?.cancel() }
+
+  private func executeResident(_ agent: ResidentAgent, meetingID: UUID?) async -> Bool {
+    guard !Task.isCancelled else { return false }
     guard !isRestoring, !isStoreProtected,
           meetingID.map({ allowsRecordAccess($0, purpose: .automaticAgent) }) ?? true else { return false }
+    let limits = agent.executionLimits ?? ResidentExecutionLimits()
+    let readTools = AgentTool.residentTools.filter { enabledAgentTools.contains($0) }
+    let allowedNames = Set(readTools.map(\.rawValue))
     guard let llm = residentLLM, !runningResidentIDs.contains(agent.id),
           let session = CloudAgentSession(
             llm: llm,
             system: Self.residentInstructions(agent),
-            tools: AgentTool.residentTools.filter { enabledAgentTools.contains($0) }
+            tools: readTools.filter { limits.permits($0.rawValue, availableReadTools: allowedNames) }
           ) else { return false }
     runningResidentIDs.insert(agent.id)
     defer { runningResidentIDs.remove(agent.id) }
@@ -85,13 +102,17 @@ extension MemoraModel {
     var placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
     placeholder.isAgentReply = true
     placeholder.residentName = agent.name
+    placeholder.residentAgentID = agent.id
     placeholder.residentSymbol = agent.symbol
     aiMessages.append(placeholder)
 
     session.addUserMessage(residentOpening(agent, meetingID: meetingID))
-    let result = await runResidentTurns(session: session, messageID: placeholder.id)
+    let result = await runResidentTurns(session: session, messageID: placeholder.id, limits: limits)
 
-    guard case .answer(let raw) = result else {
+    guard case .answer(let raw) = result, !Task.isCancelled, agentMessage(placeholder.id) != nil else {
+      if case .failure(let failure) = result {
+        residentRunFailures[agent.id] = failure == .cancelled ? "実行を停止しました。" : (failure == .rateLimited ? "設定した実行上限で停止しました。" : failure.message)
+      }
       // Cut short or failed: nothing half-done stays in the conversation.
       aiMessages.removeAll { $0.id == placeholder.id }
       return false
@@ -127,11 +148,12 @@ extension MemoraModel {
   /// Model turns and reading tools until the agent answers. A call to any tool
   /// it was not given is refused here too, so an unattended run cannot change
   /// data even if the model asks.
-  private func runResidentTurns(session: CloudAgentSession, messageID: UUID) async -> AIAnswerResult {
+  private func runResidentTurns(session: CloudAgentSession, messageID: UUID, limits: ResidentExecutionLimits) async -> AIAnswerResult {
     let accessRevision = residentAccessRevision
     let allowed = Set(AgentTool.residentTools.filter { enabledAgentTools.contains($0) }.map(\.rawValue))
     var lastText = ""
-    for _ in 0..<Self.residentMaxTurns {
+    var calls = 0
+    for _ in 0..<limits.modelTurnLimit {
       guard !Task.isCancelled, !isRestoring, !isStoreProtected,
             accessRevision == residentAccessRevision else { return .failure(.cancelled) }
       let turn: AgentTurn
@@ -149,14 +171,16 @@ extension MemoraModel {
       }
       var results: [(call: AgentToolCall, outcome: AgentToolOutcome)] = []
       for call in turn.toolCalls {
-        let outcome = allowed.contains(call.name)
+        guard calls < limits.toolCallLimit else { return .failure(.rateLimited) }
+        calls += 1
+        let outcome = limits.permits(call.name, availableReadTools: allowed)
           ? await runAgentTool(call, messageID: messageID, scope: .all, automaticAccess: true)
           : AgentToolOutcome(text: "常駐中は記録を読むことだけができます。変更は「提案:」として書いてください。", isError: true)
         results.append((call, outcome))
       }
       session.addToolResults(results)
     }
-    return lastText.isEmpty ? .failure(.empty) : .answer(lastText)
+    return .failure(.rateLimited)
   }
 
   private func residentOpening(_ agent: ResidentAgent, meetingID: UUID?) -> String {
@@ -215,7 +239,7 @@ extension MemoraModel {
   /// A notice for a result that arrived while the app was away, only when the
   /// person already allowed notifications; a background run never asks.
   private func notifyResidentResult(_ agent: ResidentAgent, text: String) async {
-    guard UIApplication.shared.applicationState != .active else { return }
+    guard (agent.executionLimits?.notifies ?? true), UIApplication.shared.applicationState != .active else { return }
     let settings = await UNUserNotificationCenter.current().notificationSettings()
     guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
     let content = UNMutableNotificationContent()

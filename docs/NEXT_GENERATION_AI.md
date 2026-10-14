@@ -109,3 +109,51 @@ P1 build: `2026-10-14T11-58-19-6a5ff2fa.log` 成功、既存AppIntents抽出警�
 グラフ・タイムラインを確認。これは明示したfixtureであり実AI応答ではない。
 Dark + accessibility_extra_large で折り返し、横表、縦スクロール、グラフの
 代替数値ラベルを確認。実タスクの作成・変更は検証のためにも行っていない。
+
+## P2: ツール候補検索・手順型スキル・常駐上限
+
+- SemanticToolDiscoveryは名前・説明、日本語2-gramと用途語の端末内検索。
+  最大4確認済みサーバー／各40ツールから、関連度を優先して最大16件／24KiB。
+  無効・利用不可を除外し、明示指定では指定サーバー内の候補を優先する。
+  取得中に接続設定／認証世代が変われば採用しない。外部LLMは呼ばない。
+  自動の追加ツール探索・ベクトル検索は未実装。
+- 同梱3スキルを維持。カスタム手順はcustom-UUIDで最大30件。本文と選択
+  履歴はSQLiteの新しいキー、ON/OFFは既存設定。最大2手順、キーワードで
+  自動選択、@を優先。クラウド／端末内の両方へbounded contextを渡す。
+- Markdownは32KiB、UTF-8、単純なname/description/tools/keywords/permissions
+  frontmatterと本文だけ。完全なYAMLやAgent Skills package互換ではない。
+  FileHandleで上限を持ってsecurity scope内で読む。読み込み後に編集画面で
+  確認して保存。初期の宣言ツールはMemoraの内蔵AgentTool名に限定し、
+  未知ツール／script metadataを拒否する。permissionsは宣言
+  データとしてのみ扱う。Shell／Python／JavaScriptの実行経路は追加しない。
+- SkillsView、SkillDetailView、SkillEditorViewで用途、手順、利用ツール、
+  権限、ON/OFF、作成、編集、削除、共有、最終選択を管理。最終選択は手順
+  提供の記録であり実行完了の保証ではない。カスタムスキルと選択履歴も
+  バックアップのoptionalフィールドに含め、旧パッケージは空として復元。
+  復元前にID・件数・本文の上限を検証し、既存の原子的コミットで確定する。
+  記録が空でも既存のカスタムスキルがあれば復元で上書きしない。
+- 連携詳細に料金の扱いと利用操作を追加。既存Gmail/Notion/MCPの接続・
+  再認証・解除画面を再利用。Drive/GitHub/Google Calendar OAuthは未接続。
+- ResidentExecutionLimitsは1実行のAI呼出1〜8、ツール0〜24、読むツールの
+  whitelistと通知ON/OFF。旧データは既定値へ復元する。回数上限で途中の
+  説明を完成投稿として残さない。未知料金のメール取得は自動実行できない。
+  この上限は金額保証や日次課金強制ではなく、BYOKの端末内予防措置。
+  iOSの時刻保証なし。将来のサーバーにはResidentAgentの役割／指示／trigger
+  とexecutionLimitsを要求として渡し、認証・利用者別予算・idempotencyと
+  実状態をサーバーで強制する必要がある。サーバーは契約・配備していない。
+  常駐処理を所有するTaskを保持し、設定画面／実行中メッセージから停止できる。
+  BGTaskの取消を子Taskへ伝搬し、停止・失敗・途中の結果は完成投稿にしない。
+
+DiscoverySkillChecksとResidentLimitsChecks成功。旧データ復元、Markdown/JSON
+往復、未知ツール／script metadata拒否、候補の順序独立性、利用不可／無効／
+Schema超過の除外、whitelistで書込権限が増えないことを固定fixtureで検証。
+10既存スイートも再成功。初回の保存型／型推論エラーを修正し、
+`2026-10-14T12-09-30-7e387ff4.log` build成功（既存警告のみ）。
+Files providerでの実インポート、実MCP／BYOK／バックグラウンド通知は未検証。
+
+P2最終コードbuild: `2026-10-14T12-54-11-b8b5861c.log` 成功。
+Simulatorで手動作成、保存、詳細の手順表示、無効化、一覧の状態、編集後の
+名前と無効状態の維持を確認。直接setValueではネイティブ入力が確定せず
+保存に失敗したため、通常のキー入力に切り替えて確認した。
+検証用QAUpdatedだけを作成。次の起動で保存の復元を確認して削除する。
+既存の記録・同梱スキル・接続設定は変更していない。
