@@ -11,6 +11,15 @@ enum ProjectSourceExtraction {
     var notice: String?
   }
 
+  static func extract(_ url: URL) async throws -> Result {
+    let job = Task.detached(priority: .utility) { try read(url) }
+    return try await withTaskCancellationHandler {
+      try await job.value
+    } onCancel: {
+      job.cancel()
+    }
+  }
+
   static func read(_ url: URL, includesThumbnail: Bool = true) throws -> Result {
     guard url.isFileURL else { throw ProjectSourceFiles.Failure.invalidFile }
     let accessed = url.startAccessingSecurityScopedResource()

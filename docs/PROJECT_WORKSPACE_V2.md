@@ -131,3 +131,11 @@ ProjectYouTubeMetadataChecksにサムネイルの固定URL・動画ID正規化�
 Ask AIのWeb検索・Deep Research、取得ソースとレポートのプロジェクト保存を追加。オーナー指定により、Deep Researchの入口は下部入力欄のマイク／送信ボタン左へ移動した。上部検索、元の下書き、録音／プロジェクトのAIスコープは維持する。接続条件・コスト上限・検証結果は[WEB_RESEARCH.md](WEB_RESEARCH.md)参照。
 
 共有拡張ターゲット・原子的な受信キュー・本体の既存ソース保存への接続・再試行／保存先変更／破損共有の削除を追加。既存bundle IDは維持したため、App Groupsと署名は未接続。実共有で動作済みとは扱わない。[SHARE_INBOX.md](SHARE_INBOX.md)に接続手順と制約を記録した。一般Webの安全な全文取得、共有音声のMeeting変換、外部AIの実応答、実機・バックアップ実復元・統合QAは残る。
+## 2026-10-14 — 共通抽出と実行中の境界
+
+本文抽出をAsk AI／記録単位の質問と共用し、既存ソース保存・送信許可・引用を
+維持。コピー後／解析後のworkspace・projectID・保存保護を再確認する。
+解析と本文読取へキャンセルを伝え、停止時も元ファイルは残す。本文JSONは
+2MiB＋検出用1byteの読み取り上限を持つ。入力欄では取り込み中にAI設定が
+変わった場合に送信を中止する。18 hostスイートとBitrig build成功。
+実クラウド応答中の切替／権限変更は未検証。詳細は[NEXT_GENERATION_AI.md](NEXT_GENERATION_AI.md)。

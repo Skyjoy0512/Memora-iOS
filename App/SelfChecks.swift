@@ -1912,13 +1912,11 @@ enum SelfChecks {
       return
     }
     let attachment = AIAttachment(id: UUID(), name: url.lastPathComponent, url: url)
-    switch AIAttachmentText.read(attachment) {
-    case .text(let text):
-      if !text.hasSuffix("（長いため先頭のみ送信しました）") {
-        report("a long attachment was not shortened")
-      }
-    case .unsupported(let reason):
-      report("a large UTF-8 attachment was refused: \(reason)")
+    let content = AIAttachmentText.readContent(attachment)
+    if let text = content.text {
+      if text.count > 8_000 || content.notice?.contains("先頭") != true { report("a long attachment was not shortened") }
+    } else {
+      report("a large UTF-8 attachment was refused: \(content.failure ?? "unknown")")
     }
   }
 

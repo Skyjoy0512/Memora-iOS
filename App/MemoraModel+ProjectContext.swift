@@ -6,7 +6,7 @@ extension MemoraModel {
   }
 
   func projectEvidenceAllowed(_ target: ProjectCitation.Target, projectID: UUID, cloud: Bool) -> Bool {
-    guard space(id: projectID) != nil else { return false }
+    guard !isRestoring, !isStoreProtected, space(id: projectID) != nil else { return false }
     switch target {
     case .source(let id):
       guard let value = source(id: id), value.projectID == projectID, value.canProvideText else { return false }
@@ -26,13 +26,16 @@ extension MemoraModel {
   }
 
   func projectEvidenceStillAvailable(_ citations: [ProjectCitation], projectID: UUID, cloud: Bool) async -> Bool {
+    let workspaceID = currentTeamID
+    guard citations.count <= 128 else { return false }
     for citation in citations {
-      guard projectEvidenceAllowed(citation.target, projectID: projectID, cloud: cloud) else { return false }
+      guard !Task.isCancelled, currentTeamID == workspaceID,
+            projectEvidenceAllowed(citation.target, projectID: projectID, cloud: cloud) else { return false }
       let text: String
       switch citation.target {
       case .source(let id):
         guard let name = source(id: id)?.extractedTextReference,
-              let blocks = try? await Task.detached(priority: .utility, operation: { try ProjectSourceTextReader.read(name) }).value,
+              let blocks = try? await ProjectSourceTextReader.readAsync(name),
               source(id: id)?.extractedTextReference == name else { return false }
         text = blocks.filter { citation.page == nil || $0.page == citation.page }.map(\.text).joined(separator: "\n")
       case .meeting(let id):
@@ -43,13 +46,16 @@ extension MemoraModel {
         guard let task = self.task(id: id) else { return false }
         text = [task.title, task.detail, task.assignee].compactMap { $0 }.joined(separator: "\n")
       }
-      guard !citation.excerpt.isEmpty, text.contains(citation.excerpt),
+      guard !Task.isCancelled, currentTeamID == workspaceID, !citation.excerpt.isEmpty, text.contains(citation.excerpt),
             projectEvidenceAllowed(citation.target, projectID: projectID, cloud: cloud) else { return false }
     }
-    return true
+    return !Task.isCancelled && currentTeamID == workspaceID && !isRestoring && !isStoreProtected
   }
 
   func projectContext(question: String, projectID: UUID, cloud: Bool, budget: Int) async -> ProjectContextBuilder.Context {
+    let workspaceID = currentTeamID
+    let empty = ProjectContextBuilder.build(question: question, projectID: projectID, chunks: [], allowed: [], characterBudget: 0)
+    guard !Task.isCancelled, !isRestoring, !isStoreProtected, space(id: projectID) != nil else { return empty }
     var inputs: [ProjectEvidenceInput] = []
     var allowed: Set<ProjectCitation.Target> = []
     let records = meetings.filter { $0.spaceID == projectID }
@@ -79,8 +85,9 @@ extension MemoraModel {
     for source in sources {
       let target = ProjectCitation.Target.source(source.id)
       guard projectEvidenceAllowed(target, projectID: projectID, cloud: cloud), let name = source.extractedTextReference else { continue }
-      guard let blocks = try? await Task.detached(priority: .utility, operation: { try ProjectSourceTextReader.read(name) }).value,
+      guard let blocks = try? await ProjectSourceTextReader.readAsync(name),
             self.source(id: source.id)?.extractedTextReference == name else { continue }
+      guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return empty }
       guard projectEvidenceAllowed(target, projectID: projectID, cloud: cloud) else { continue }
       allowed.insert(target)
       inputs.append(ProjectEvidenceInput(target: target, title: source.title, blocks: blocks))
@@ -88,7 +95,8 @@ extension MemoraModel {
     let currentAllowed = allowed.filter { projectEvidenceAllowed($0, projectID: projectID, cloud: cloud) }
     let permittedInputs = inputs.filter { currentAllowed.contains($0.target) }
     let indexed = try? await ProjectSearchIndex.shared.retrieve(question: question, projectID: projectID, inputs: permittedInputs)
-    return await Task.detached(priority: .userInitiated) {
+    guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return empty }
+    let context = await Task.detached(priority: .userInitiated) {
       let chunks = indexed ?? permittedInputs.flatMap { input in
         input.blocks.flatMap { block in
           ProjectContextBuilder.split(block.text, projectID: projectID, target: input.target,
@@ -98,5 +106,7 @@ extension MemoraModel {
       return ProjectContextBuilder.build(question: question, projectID: projectID, chunks: chunks,
         allowed: Set(currentAllowed), characterBudget: budget)
     }.value
+    guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return empty }
+    return context
   }
 }

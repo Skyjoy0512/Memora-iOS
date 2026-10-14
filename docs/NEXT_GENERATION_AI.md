@@ -280,8 +280,8 @@ BoundedTextReaderは通常のローカルファイルだけを最大512KiB＋検
 従来の40%上限。OCR・ページ／文字の省略は既存の補足表示へ渡す。
 一時的な会話添付にはプロジェクト用サムネイルを生成しない。
 
-AIAttachmentText.prepareはキャンセルを伝搬するutility処理の外で抽出する
-（現在のpriorityはuserInitiated）。requestContentは完成した本文だけを受け、
+AIAttachmentText.prepareはキャンセルを伝搬するuserInitiatedのdetached taskで
+抽出する。requestContentは完成した本文だけを受け、
 ファイルを開かない。端末内の短縮再試行でも同じ本文を使い、再解析しない。
 prepared本文のID・名前・URLが質問の添付と一致しなければ送らない。
 Visionの同期OCRそのものを強制中断する保証はなく、処理境界で確認して結果を破棄する。
@@ -304,3 +304,24 @@ AI context limits、Request scope、Scope isolation、Attachment read limitの
 未検証: 実ファイルの選択からBYOK回答までのE2E、実機OCR品質とメモリ、
 応答中の実権限変更。添付付き依頼は引き続きgrounded回答で、エージェントの
 操作経路には統合していない。project/recordの変更ツール統合も未完了。
+
+### プロジェクト取り込み中の変更・停止
+
+プロジェクトのファイル取り込みは、コピーの後にワークスペース／保存保護／
+保存先の存在を再確認する。未登録のコピーだけを削除し、既存ソースや元の
+ファイルは削除しない。解析結果の保存前には元ファイル参照とprojectIDも
+再確認。キャンセルをdetached解析へ伝え、解析失敗／停止では元媒体を残す。
+同期Visionの処理中断を保証するものではない。
+
+QuickAIComposerは対象workspaceとAI設定を捕捉し、取り込み中に変わった場合は
+会話を送信しない。Glass・IME・レイアウトには変更なし。プロジェクトの根拠
+確認と回答開始も保存保護・workspace変更・キャンセルを確認する。
+ProjectSourceTextReaderは通常ファイルだけを最大2MiB＋検出用1byteで読む。
+事前のサイズ情報だけに頼ってファイル全体を読み込まない。
+
+検証: `2026-10-14T15-57-20-9ad201ef.log` Bitrig build成功、既存metadata警告1件。
+hostの18スイート成功。ProjectSourceReadChecksで実際のJSON読取、2MiB境界、
+壊れたJSON、path／symlink／directory、asyncキャンセルを確認。
+ProjectChatHistoryChecksで旧保存形式・所属解除・失効した根拠・会話の組み合わせ
+を回帰確認。シミュレーターで新規Ask AIの空白、Glass入力欄、3タブ、独立FAB
+を確認。workspace切替と実LLM応答を同時に動かすE2Eは未検証。

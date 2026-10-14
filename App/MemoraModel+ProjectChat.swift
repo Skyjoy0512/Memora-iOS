@@ -65,7 +65,7 @@ extension MemoraModel {
   @discardableResult
   func sendProjectChat(_ id: UUID, question: String, allowsPaidRequest: Bool = false) -> Bool {
     let question = question.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !question.isEmpty, question.count <= 4_000, !projectChatBusyIDs.contains(id),
+    guard !isRestoring, !isStoreProtected, !question.isEmpty, question.count <= 4_000, !projectChatBusyIDs.contains(id),
           var thread = projectChat(id: id), let projectID = thread.projectID,
           let project = space(id: projectID) else { return false }
     let workspaceID = currentTeamID
@@ -94,9 +94,14 @@ extension MemoraModel {
       let context = await projectContext(question: question, projectID: projectID, cloud: cloud, budget: max(0, limit * 2 / 3 - 200))
       guard !Task.isCancelled, projectChat(id: id)?.pendingMessageID == user.id,
             projectChat(id: id)?.projectID == projectID, space(id: projectID) != nil else { return }
+      guard currentTeamID == workspaceID, !isRestoring, !isStoreProtected else {
+        finishProjectChatFailure(id, requestID: user.id, message: AIAnswerFailure.contextChanged.message)
+        return
+      }
       var verifiedHistory: [ProjectChatTurn] = []
       // The history budget is bounded before re-reading old evidence.
       for message in historyMessages.suffix(8) {
+        guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return }
         if message.role == .user { verifiedHistory.append(message); continue }
         let references = message.contextReferences ?? message.citations
         if !references.isEmpty, await projectEvidenceStillAvailable(references, projectID: projectID, cloud: cloud) {

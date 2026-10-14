@@ -190,6 +190,8 @@ struct QuickAIComposer: View {
   }
   private func startProjectRequest(_ request: AIQuestionRequest, allowsPaidRequest: Bool) {
     guard case .space(let projectID) = request.scope, !isPreparingAttachment else { return }
+    let workspaceID = model.currentTeamID
+    let configuration = model.askAIConfiguration
     let existingChat = model.activeProjectChatID.flatMap { model.projectChat(id: $0) }
     guard existingChat?.projectID == projectID || existingChat == nil else { return }
     isPreparingAttachment = true
@@ -201,9 +203,14 @@ struct QuickAIComposer: View {
             projectError = "添付を保存できませんでした。質問は入力欄に残っています。"
             return
           }
+          guard !Task.isCancelled, model.currentTeamID == workspaceID,
+                !model.isRestoring, !model.isStoreProtected else {
+            projectError = "ワークスペースまたは保存状態が変わったため、質問を送信していません。"
+            return
+          }
           if model.source(id: id) != nil {
             await model.prepareProjectSource(id)
-            guard let saved = model.source(id: id), saved.canProvideText else {
+            guard let saved = model.source(id: id), saved.projectID == projectID, saved.canProvideText else {
               projectError = "添付は保存しましたが、参照できる本文がまだありません。ソース詳細で解析状態を確認してください。"
               return
             }
@@ -218,7 +225,13 @@ struct QuickAIComposer: View {
             return
           }
         }
-        guard model.space(id: projectID) != nil else { return }
+        guard !Task.isCancelled, !model.isRestoring, !model.isStoreProtected,
+              model.currentTeamID == workspaceID, model.space(id: projectID) != nil,
+              model.askAIConfiguration.engine == configuration.engine,
+              model.askAIConfiguration.llm == configuration.llm else {
+          projectError = "ワークスペース・保存先・AI設定が変わったため、質問を送信していません。現在の設定を確認してください。"
+          return
+        }
         guard let id = existingChat?.id ?? model.createProjectChat(projectID: projectID),
               model.sendProjectChat(id, question: request.question, allowsPaidRequest: allowsPaidRequest) else {
           projectError = "回答中でないことと質問が選択モデルの文字数上限以内であることを確認してください。"

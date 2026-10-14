@@ -63,7 +63,8 @@ extension MemoraModel {
   }
 
   func importProjectFile(_ url: URL, projectID: UUID) async throws -> UUID? {
-    guard !isRestoring, space(id: projectID) != nil else { return nil }
+    guard !Task.isCancelled, !isRestoring, !isStoreProtected, space(id: projectID) != nil else { return nil }
+    let workspaceID = currentTeamID
     let scoped = url.startAccessingSecurityScopedResource()
     defer { if scoped { url.stopAccessingSecurityScopedResource() } }
     guard let bytes = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
@@ -72,14 +73,19 @@ extension MemoraModel {
       guard !isImporting else { return nil }
       let existing = Set(meetings.map(\.id))
       await importAudio(from: url, spaceID: projectID)
-      return meetings.first { !existing.contains($0.id) }?.id
+      guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return nil }
+      return meetings.first { !existing.contains($0.id) && $0.spaceID == projectID }?.id
     }
     let receipt = try await ProjectSourceFiles.shared.copy(url)
+    guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected,
+          space(id: projectID) != nil else {
+      await ProjectSourceFiles.shared.remove([receipt.reference]); return nil
+    }
     return await addProjectFile(receipt: receipt, title: url.lastPathComponent, projectID: projectID)
   }
 
   func addProjectFile(receipt: ProjectSourceFiles.Receipt, title: String, projectID: UUID) async -> UUID? {
-    guard !isRestoring, space(id: projectID) != nil else {
+    guard !Task.isCancelled, !isRestoring, !isStoreProtected, space(id: projectID) != nil else {
       await ProjectSourceFiles.shared.remove([receipt.reference]); return nil
     }
     if let existing = projectSources.first(where: { $0.projectID == projectID && $0.contentFingerprint == receipt.fingerprint }) {
@@ -102,23 +108,31 @@ extension MemoraModel {
       await prepareProjectYouTube(id)
       return
     }
-    guard let source = source(id: id), source.processingStatus != .ready,
+    guard !Task.isCancelled, !isRestoring, !isStoreProtected,
+          let source = source(id: id), source.processingStatus != .ready,
           !projectSourceProcessingIDs.contains(id), let name = source.localFileReference,
           let file = ProjectSourceFiles.resolve(name) else { return }
     projectSourceProcessingIDs.insert(id)
+    let workspaceID = currentTeamID
     defer { projectSourceProcessingIDs.remove(id) }
     var processing = source
     processing.processingStatus = .processing
     guard storeProjectSource(processing) else { return }
     var created: [String] = []
     do {
-      let result = try await Task.detached(priority: .utility) { try ProjectSourceExtraction.read(file) }.value
+      let result = try await ProjectSourceExtraction.extract(file)
+      try Task.checkCancellation()
+      guard currentTeamID == workspaceID, !isRestoring, !isStoreProtected,
+            self.source(id: id)?.localFileReference == name,
+            self.source(id: id)?.projectID == source.projectID else { return }
       let text = result.blocks.isEmpty ? nil : try await ProjectSourceFiles.shared.write(JSONEncoder().encode(result.blocks), extension: "json")
       if let text { created.append(text) }
       var thumb: String?
       if let data = result.thumbnail { thumb = try await ProjectSourceFiles.shared.write(data, extension: "jpg") }
       if let thumb { created.append(thumb) }
-      guard var current = self.source(id: id), current.localFileReference == name else {
+      guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected,
+            var current = self.source(id: id), current.localFileReference == name,
+            current.projectID == source.projectID else {
         await ProjectSourceFiles.shared.remove(created); return
       }
       current.extractedTextReference = text
@@ -128,9 +142,13 @@ extension MemoraModel {
       if !storeProjectSource(current) { await ProjectSourceFiles.shared.remove(created) }
     } catch {
       await ProjectSourceFiles.shared.remove(created)
-      guard var current = self.source(id: id), current.localFileReference == name else { return }
+      guard currentTeamID == workspaceID, !isRestoring, !isStoreProtected,
+            var current = self.source(id: id), current.localFileReference == name,
+            current.projectID == source.projectID else { return }
       current.processingStatus = .failed
-      current.errorInformation = "解析できませんでした。元ファイルは保存されています。"
+      current.errorInformation = error is CancellationError
+        ? "解析を停止しました。元ファイルは保存されています。"
+        : "解析できませんでした。元ファイルは保存されています。"
       _ = storeProjectSource(current)
     }
   }

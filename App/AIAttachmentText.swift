@@ -1,11 +1,6 @@
 import Foundation
 
 enum AIAttachmentText {
-  enum Outcome {
-    case text(String)
-    case unsupported(String)
-  }
-
   private static let maximumCharacters = 8_000
 
   static func prepare(_ attachment: AIAttachment) async -> PreparedAIAttachment {
@@ -15,15 +10,6 @@ enum AIAttachmentText {
     } onCancel: {
       job.cancel()
     }
-  }
-
-  // Kept for the isolated debug checks; production requests prepare before building context.
-  static func read(_ attachment: AIAttachment) -> Outcome {
-    let content = readContent(attachment)
-    if let text = content.text {
-      return .text(text + (content.notice == nil ? "" : "\n（長いため先頭のみ送信しました）"))
-    }
-    return .unsupported(content.failure ?? "ファイルを読み込めませんでした。")
   }
 
   static func readContent(_ attachment: AIAttachment) -> PreparedAIAttachment {
@@ -57,7 +43,4 @@ enum AIAttachmentText {
     return content
   }
 
-  static func decodeUTF8(_ data: Data) -> String? {
-    BoundedTextReader.decodeUTF8(data, allowingIncompleteTail: true)
-  }
 }
