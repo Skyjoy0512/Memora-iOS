@@ -126,9 +126,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   sidebar / Memora (history and search menu) / new chat. Replies remain plain
   text with no bubble, only the person's messages in `aiBubble`. `AskAIGlow`
   keeps its processing mesh only while an answer is being formed, still under
-  Reduce Motion. The tab opens on a new chat
-  every time (`didChangeTab`), keeping only an answer still being written and
-  resident posts that arrived while away; past exchanges are in 履歴. Routing is the app's, not the
+  Reduce Motion. Tab navigation and system Ask AI links preserve the conversation;
+  only the explicit new-chat action clears it. A bounded SQLite resume document
+  (`AIConversationSnapshot`, `MemoraModel+Conversation`) restores settled messages
+  and delivered resident posts per workspace. Interrupted operations never resume
+  automatically, and UI write grants are never restored. Exchange history remains
+  separate. Routing is the app's, not the
   person's (`shouldRunAsAgent`): a cloud model always runs as the agent and is
   given the records found for the request up front; the on-device model, which
   is unreliable with tools, gets the agent only for requests to do something

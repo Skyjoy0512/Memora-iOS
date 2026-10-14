@@ -638,3 +638,11 @@
 - 共通クラウド会話ループをAsk AI／プロジェクト／記録へ接続。project/recordは検索・読取・関連タスク確認に限定し、変更・MCP・全体履歴へ広げない。
 - 安定した資料番号、送信済みの根拠、長い発言の検索を補強。21 hostスイート、Simulatorのコンテキスト／スコープ自己チェック、Bitrig build成功。
 - 実BYOKのツール往復と権限変更は未確認。スコープ内の承認付き変更、実行履歴・再開、グローバル添付の操作エージェントは未完了。
+
+## 2026-10-14 — 会話の継続と起動時の復元
+
+タブ復帰とsystem Ask AI linkで会話を消さず、明示的なnew chatだけで切替。
+workspace別の上限付きSQLite resume documentで引用・完了residentを復元し、
+未完了の操作は再送せず、書込権限を復元しない。22 hostスイートとBitrig build成功。
+Simulatorで履歴の再開、Library往復、終了後の再起動、明示new chatを確認。
+詳細・保存上限・他の未完了項目は[品質改善記録](QUALITY_IMPROVEMENT.md)。

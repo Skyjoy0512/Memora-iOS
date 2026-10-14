@@ -3,21 +3,11 @@ import Foundation
 // Ask AI: the chat transcript and answers grounded in relevant records.
 extension MemoraModel {
 
-  /// Starts a fresh chat. Whatever was being answered is cancelled, so its
-  /// result can never land in the new conversation.
-  /// Ask AI opens on a new chat every time, rather than the last conversation.
-  /// An answer still being written is kept, and so are resident agents' posts
-  /// that arrived while the person was away; earlier exchanges stay in history.
+  /// Navigation never starts a conversation. Only the explicit new-chat action does.
   func didChangeTab(from previous: RootTab) {
     if previous == .askAI, selectedTab != .askAI {
-      askAILeftAt = .now
+      persistActiveAIConversation()
     }
-    guard selectedTab == .askAI, previous != .askAI,
-          !isAIChatResponding, pendingAgentApproval == nil, pendingAgentQuestions == nil else { return }
-    let unseen = aiMessages.filter { $0.residentName != nil && $0.createdAt > askAILeftAt }
-    guard unseen.count != aiMessages.count else { return }
-    startNewAIChat()
-    aiMessages = unseen
   }
 
   func startNewAIChat() {
@@ -32,6 +22,7 @@ extension MemoraModel {
     agentPluginPolicies = [:]
     agentBlockedExternalTools = [:]
     isAIChatResponding = false
+    persistActiveAIConversation()
   }
 
   /// Stops the answer being written. The request is let go first, so a result

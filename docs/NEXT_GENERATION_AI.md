@@ -393,3 +393,11 @@ sourceの抜粋は実際に送ったものだけを追加し、最大6件。
 実権限変更のE2Eは未確認。スコープ内の承認付き変更、実行履歴の永続化と
 中断再開、グローバル添付の操作、AI Live Activity、server金額予算は未実装。
 これらを読み取り接続だけで完成扱いしない。
+
+## 2026-10-14 — 会話の継続と起動時の復元
+
+タブ復帰とsystem Ask AI linkで会話を消さず、明示的なnew chatだけで切替。
+workspace別の上限付きSQLite resume documentで引用・完了residentを復元し、
+未完了の操作は再送せず、書込権限を復元しない。22 hostスイートとBitrig build成功。
+Simulatorで履歴の再開、Library往復、終了後の再起動、明示new chatを確認。
+詳細・保存上限・他の未完了項目は[品質改善記録](QUALITY_IMPROVEMENT.md)。

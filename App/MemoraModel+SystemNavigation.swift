@@ -9,7 +9,6 @@ extension MemoraModel {
     isFileSelectionActive = false
     switch link {
     case .askAI:
-      if selectedTab == .askAI, !isAIChatResponding, pendingAgentApproval == nil, pendingAgentQuestions == nil { startNewAIChat() }
       selectedTab = .askAI
       composerFocusRequest = UUID()
     case .journal:

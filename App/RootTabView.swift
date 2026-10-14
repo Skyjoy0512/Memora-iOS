@@ -70,7 +70,10 @@ struct RootTabView: View {
         // shows the prompt really appeared.
         AutoLocationLogger.shared.handleSceneInactive()
         // Wakes the app for the next resident run while it is away.
-        if phase == .background { model.scheduleResidentRefresh() }
+        if phase == .background {
+          model.persistActiveAIConversation()
+          model.scheduleResidentRefresh()
+        }
       }
     }
     .onAppear {

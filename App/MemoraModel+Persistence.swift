@@ -130,7 +130,7 @@ extension MemoraModel {
     "データを保存できませんでした。ストレージの空き容量を確認してください。"
   }
 
-  private var storeProtectedMessage: String {
+  var storeProtectedMessage: String {
     "保存データを読み込めなかったため、上書きを止めています。アプリを再起動してください。"
   }
 
@@ -159,6 +159,7 @@ extension MemoraModel {
     static let trash = "memoraTrash"
     static let lifeLogTrash = "memoraLifeLogTrash"
     static let aiHistory = "memoraAIHistory"
+    static let activeAIConversation = "memora.activeAIConversation.v1"
     static let aiMemories = "memoraAIMemories"
     static let aiMemoryEnabled = "memora.ai.memoryEnabled"
     static let glossary = "memora.glossary"

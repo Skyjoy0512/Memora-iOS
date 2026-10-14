@@ -2,7 +2,7 @@ import Foundation
 
 /// What actually produced an answer. Shown instead of an invented reasoning
 /// trace, so the disclosure says where the answer came from.
-struct AIAnswerDetails: Hashable {
+struct AIAnswerDetails: Hashable, Codable, Sendable {
   /// The range the question was asked over, as the person sees it.
   var scopeLabel: String
   /// The engine that really ran.

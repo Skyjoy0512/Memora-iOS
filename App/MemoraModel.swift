@@ -10,9 +10,8 @@ final class MemoraModel {
   var selectedTab = RootTab.home {
     didSet { didChangeTab(from: oldValue) }
   }
-  /// When the person last left Ask AI, so a resident agent's post that came
-  /// in while they were away is still there when they come back.
-  @ObservationIgnored var askAILeftAt = Date.now
+  @ObservationIgnored var conversationPersistenceReady = false
+  @ObservationIgnored var conversationSaveTask: Task<Void, Never>?
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
   var librarySection = LibrarySection.restored(from: UserDefaults.standard.string(forKey: "memora.library.section")) {
@@ -25,7 +24,10 @@ final class MemoraModel {
   /// The open team, or nil for the personal workspace. A setting, so it is
   /// kept in UserDefaults and restored next launch.
   var currentTeamID: String? = UserDefaults.standard.string(forKey: StorageKey.currentTeamID) {
-    didSet { UserDefaults.standard.set(currentTeamID, forKey: StorageKey.currentTeamID) }
+    didSet {
+      UserDefaults.standard.set(currentTeamID, forKey: StorageKey.currentTeamID)
+      if oldValue != currentTeamID { didChangeConversationWorkspace(from: oldValue) }
+    }
   }
   var isTeamCreationPresented = false
   var isCallSetupPresented = false
@@ -231,7 +233,9 @@ final class MemoraModel {
   /// Journal entries that were deleted and can still be brought back.
   var trashedLifeLogEntries: [TrashedLifeLogEntry] = []
   /// The Ask AI chat transcript.
-  var aiMessages: [AIChatMessage] = []
+  var aiMessages: [AIChatMessage] = [] {
+    didSet { scheduleConversationSave() }
+  }
   /// Company, product and people's names the person wants written correctly.
   /// A setting for the engines, so it is kept in UserDefaults.
   var glossaryTerms: [String] = UserDefaults.standard.stringArray(forKey: StorageKey.glossary) ?? [] {
@@ -621,7 +625,6 @@ final class MemoraModel {
     // Protection is decided only once every document has been read, so a failure
     // in the last one (AI history, say) still stops the app from overwriting it.
     isStoreProtected = didFailToReadStore
-    // Ask AI opens on a new chat; earlier conversations are in its history.
 
     // Photos that older records held inline are written to files here, after
     // loading, so decoding a document (a backup, say) never writes into the
@@ -746,6 +749,8 @@ final class MemoraModel {
         forName: UIApplication.significantTimeChangeNotification, object: nil, queue: .main, using: dayChange
       )
     ]
+    restoreActiveAIConversation()
+    conversationPersistenceReady = true
   }
 
   /// One pass over the records for the per-project and per-person numbers the
