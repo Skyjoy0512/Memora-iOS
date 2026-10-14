@@ -160,3 +160,9 @@ tools/checks: CollectionPerformanceChecks、JournalPerformanceChecks、LocalStor
 - Phase 2: `06f7570` — 確定済み索引入力の再利用、所有者判定、イベントの照合、古いcalendar応答の排除。
 - Phase 3: `57f5e0f` — SQLite statement、source/task ID lookup、rollback/並行書込、効果の薄い候補の撤回。
 - 最終検証のコミットIDは完了報告に記載する。作業終了時に全変更をコミットする。GitHubへの追加pushはこの最適化依頼には含めない。
+# 共通添付抽出（2026-10-14）
+
+会話用のファイル読取・PDF・OCRはdetached taskで実行し、本文構築から
+同期I/Oを除外した。プロジェクトの既存抽出を再利用し、会話添付はサムネイル
+なし。最大50MiB・テキスト512KiB・PDF20ページ・画像2,000pxの上限を共有。
+端末内の短縮再試行では再解析しない。実機の時間／メモリは未計測。

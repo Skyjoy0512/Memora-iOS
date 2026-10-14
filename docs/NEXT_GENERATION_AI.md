@@ -220,7 +220,7 @@ widgetURLとforeground App Intentsのモデル操作に分けた。
 
 残りの優先順:
 1. BYOKの実ストリーム／ツール／停止／権限変更／引用とUI操作の承認E2E。
-2. project/recordを越えないAgentToolの統合、画像・資料の添付読取の共通化。
+2. project/recordを越えないAgentToolの統合、添付から操作するエージェント経路。
 3. 非破壊な識別子移行＋App Group、実機Widget／Siri／Control／録音Island。
 4. 既存ライブラリ・Project・JournalのLight/Dark/Dynamic TypeとGlassの
    frame単位の回帰、起動／スクロール／メモリの同条件計測。
@@ -265,3 +265,42 @@ P5補正: 生成UIの表示用contextをModelで1度に作る。各行で全記�
 やメモリ指紋を再計算しない。今回のUIが参照するタスクだけを確認し、出典は
 辞書化する。表示を越える権限キャッシュを残さず、操作時は現在の状態を再検証。
 通常回答・見た目・承認経路は保持。実機の描画時間は未測定。
+
+## 2026-10-14 — 共通添付抽出と会話の対象範囲
+
+Ask AI／記録の質問の添付は、既存ProjectSourceExtractionを再利用する。
+テキスト、PDF、画像の端末内OCRを共通化。画像から読むのは文字だけで、
+写真の意味理解・画像の外部送信・音声の直接解析は追加していない。
+プロジェクトの添付は従来のソース保存・解析・プライバシー許可の経路を維持。
+
+BoundedTextReaderは通常のローカルファイルだけを最大512KiB＋検出用1byte
+で読む。末尾の不正UTF-8を、読み取り上限で切れた文字と誤認して捨てない。
+抽出前に50MiB以下、PDF最大20ページ・各12,000文字、画像OCR最大2,000px、
+画像PDFのOCR最大3ページを確認。添付本文は最大8,000文字、送信予算は
+従来の40%上限。OCR・ページ／文字の省略は既存の補足表示へ渡す。
+一時的な会話添付にはプロジェクト用サムネイルを生成しない。
+
+AIAttachmentText.prepareはキャンセルを伝搬するutility処理の外で抽出する
+（現在のpriorityはuserInitiated）。requestContentは完成した本文だけを受け、
+ファイルを開かない。端末内の短縮再試行でも同じ本文を使い、再解析しない。
+prepared本文のID・名前・URLが質問の添付と一致しなければ送らない。
+Visionの同期OCRそのものを強制中断する保証はなく、処理境界で確認して結果を破棄する。
+
+AIQueryScopeを本文構築時にも適用し、渡された配列に別の記録が混じっても
+除外。記録／プロジェクト質問では他の記録のタスク・未所属タスク・全体の
+個人メモリを混ぜない。抽出後、送信直前、ストリーム更新、保存前に現在の
+内容・所属・許可・ワークスペース・保存保護を確認し、変更を通信障害とは
+区別して停止する。送信済みデータを取り消す機能ではない。
+
+検証: hostの16スイート成功。AttachmentScopeChecksで日本語／絵文字の
+途中切断、不正UTF-8、リンク／非ローカル／directory拒否、キャンセル、
+記録／プロジェクト／タスクの境界、prepared本文の一致を確認。
+Bitrig build `2026-10-14T15-49-48-a9072500.log` 成功、既存metadata警告1件。
+iPhone 18 Pro Maxの自己チェック画面でAI shared attachment extraction、
+AI context limits、Request scope、Scope isolation、Attachment read limitの
+成功を確認。テストPDF・OCR画像・壊れたPDF・音声・50MiB超のfixtureを
+使い、ユーザー資料・外部APIは使わない。
+
+未検証: 実ファイルの選択からBYOK回答までのE2E、実機OCR品質とメモリ、
+応答中の実権限変更。添付付き依頼は引き続きgrounded回答で、エージェントの
+操作経路には統合していない。project/recordの変更ツール統合も未完了。

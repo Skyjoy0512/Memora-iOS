@@ -36,6 +36,7 @@ enum AIAnswerFailure: Error, Equatable {
   /// The connection dropped mid-answer, usually because the app left the
   /// screen while a long answer was still being written.
   case connectionLost
+  case contextChanged
   /// The request was superseded, so there is nothing to show.
   case cancelled
   case empty
@@ -86,6 +87,8 @@ enum AIAnswerFailure: Error, Equatable {
       "AIの応答が時間内に返ってきませんでした。長い会議の要約は数分かかることがあります。もう一度お試しください。"
     case .connectionLost:
       "AIとの通信が途中で切れました。要約が終わるまで、アプリを開いたままにしてお試しください。"
+    case .contextChanged:
+      "参照する情報・所属・許可が変わったため、回答を停止しました。現在の内容を確認して、もう一度質問してください。"
     case .network:
       "ネットワークに接続できませんでした。接続を確認してください。"
     case .cancelled:
@@ -95,7 +98,7 @@ enum AIAnswerFailure: Error, Equatable {
     case .unsupportedProvider:
       "このプロバイダーは回答作成に対応していません。設定の「AI整理」で別のプロバイダーを選んでください。"
     case .attachmentNotAnalysed:
-      "添付を読めないため、回答を開始していません。テキスト・文字入りPDFに変更するか、添付を外してもう一度送信してください。"
+      "添付の文字を読めないため、回答を開始していません。テキスト・PDF・文字を含む画像に変更するか、添付を外してもう一度送信してください。"
     }
   }
 }

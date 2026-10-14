@@ -279,103 +279,84 @@ extension MemoraModel {
   ) async -> AIAnswerOutcome {
     let workspaceID = currentTeamID
     let cloud = AIEngineService.effectiveEngine(engine) == .cloud
-    let permitted = allowedMeetings.filter { !cloud || RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI) }
-    let permittedTasks = scopedTasks.filter { !cloud || allowsTaskAccess($0, purpose: .cloudAI) }
-    var content = Self.requestContent(
-      for: request,
-      scopeLabel: scopeLabel,
-      allowedMeetings: permitted,
-      tasks: permittedTasks,
-      history: cloud ? "" : history,
-      personal: cloud ? personalContext(for: request.effectiveQuestion,
-        budget: AIEngineService.contextCharacterLimit(for: engine) / 6, includesHistory: false) : personal,
-      characterLimit: AIEngineService.contextCharacterLimit(for: engine)
-    )
+    let memoryFingerprint = request.scope == .global ? cloudMemoryFingerprint : nil
+    let scopedMeetings = Self.meetings(in: request.scope, from: allowedMeetings)
+    let permitted = scopedMeetings.filter { !cloud || allowsRecordAccess($0.id, purpose: .cloudAI) }
+    let recordIDs = Set(permitted.map(\.id))
+    let permittedTasks = scopedTasks.filter {
+      request.scope.includesTask(parentRecordID: $0.meetingID, recordIDs: recordIDs)
+        && (!cloud || allowsTaskAccess($0, purpose: .cloudAI))
+    }
+    let attachmentContent: PreparedAIAttachment?
+    if let attachment = request.attachment { attachmentContent = await AIAttachmentText.prepare(attachment) }
+    else { attachmentContent = nil }
 
-    if content.unsupportedAttachmentNote != nil {
-      let details = AIAnswerDetails(
-        scopeLabel: scopeLabel,
-        engineLabel: AIEngineService.effectiveEngine(engine).label,
-        modelLabel: AIEngineService.modelLabel(engine: engine, llm: llm),
-        sourceCount: 0,
-        generatedAt: .now
-      )
-      return AIAnswerOutcome(
-        question: content.question,
-        scopeLabel: scopeLabel,
-        result: .failure(.attachmentNotAnalysed),
-        sources: [],
-        details: details,
-        unsupportedAttachmentNote: content.unsupportedAttachmentNote,
-        contextNote: content.contextNote
-      )
+    func contextAvailable() -> Bool {
+      guard !isRestoring, !isStoreProtected, currentTeamID == workspaceID else { return false }
+      if case .file(let id) = request.scope, meeting(id: id) == nil { return false }
+      if case .space(let id) = request.scope, space(id: id) == nil { return false }
+      return (memoryFingerprint == nil || memoryFingerprint == cloudMemoryFingerprint)
+        && permitted.allSatisfy { record in
+          meeting(id: record.id) == record
+            && request.scope.includes(recordID: record.id, projectID: record.spaceID)
+            && (!cloud || allowsRecordAccess(record.id, purpose: .cloudAI))
+        }
+        && permittedTasks.allSatisfy { task in
+          self.task(id: task.id) == task && (!cloud || allowsTaskAccess(task, purpose: .cloudAI))
+        }
     }
 
-    // The records are chosen; what remains is the engine writing the answer.
+    func buildContent(limit: Int) -> AIRequestContent {
+      Self.requestContent(for: request, scopeLabel: scopeLabel,
+        allowedMeetings: permitted, tasks: permittedTasks,
+        history: request.scope == .global && !cloud ? history : "",
+        personal: request.scope == .global ? (cloud ? personalContext(for: request.effectiveQuestion,
+          budget: limit / 6, includesHistory: false) : personal) : "",
+        characterLimit: limit, attachmentContent: attachmentContent)
+    }
+
+    var content = buildContent(limit: AIEngineService.contextCharacterLimit(for: engine))
+    func outcome(_ result: AIAnswerResult) -> AIAnswerOutcome {
+      AIAnswerOutcome(question: content.question, scopeLabel: scopeLabel, result: result,
+        sources: result.text == nil ? [] : content.sources,
+        details: AIAnswerDetails(scopeLabel: scopeLabel,
+          engineLabel: AIEngineService.effectiveEngine(engine).label,
+          modelLabel: AIEngineService.modelLabel(engine: engine, llm: llm),
+          sourceCount: result.text == nil ? 0 : content.sources.count, generatedAt: .now),
+        unsupportedAttachmentNote: content.unsupportedAttachmentNote, contextNote: content.contextNote)
+    }
+    guard !Task.isCancelled else { return outcome(.failure(.cancelled)) }
+    // File reading may yield to edits, workspace switching or privacy changes.
+    guard contextAvailable() else { return outcome(.failure(.contextChanged)) }
+    guard content.unsupportedAttachmentNote == nil else { return outcome(.failure(.attachmentNotAnalysed)) }
     onContextReady?(content.sources)
-
-    let sentRecordIDs = Set(content.sources.map(\.meetingID))
-    var result = await AIEngineService.answer(
-      engine: engine,
-      llm: llm,
-      question: content.question,
-      scopeLabel: scopeLabel,
-      context: content.context,
-      history: content.history,
-      onText: onText.map { callback in { [weak self] text in
-        guard let self, !Task.isCancelled, self.currentTeamID == workspaceID,
-              sentRecordIDs.allSatisfy({ self.meeting(id: $0) != nil && (!cloud || self.allowsRecordAccess($0, purpose: .cloudAI)) }),
-              permittedTasks.allSatisfy({ !cloud || self.allowsTaskAccess($0, purpose: .cloudAI) }) else { return }
+    // The context callback can also change the model before the first network request.
+    guard !Task.isCancelled, contextAvailable() else {
+      return outcome(.failure(Task.isCancelled ? .cancelled : .contextChanged))
+    }
+    var result = await AIEngineService.answer(engine: engine, llm: llm,
+      question: content.question, scopeLabel: scopeLabel, context: content.context,
+      history: content.history, onText: onText.map { callback in { text in
+        guard !Task.isCancelled, contextAvailable() else { return }
         callback(text)
-      } }
-    )
+      } })
 
-    // The on-device window is small. One retry at half the records gives a long
-    // meeting a chance before giving up.
-    if case .failure(.contextTooLarge) = result,
-       AIEngineService.effectiveEngine(engine) != .cloud {
-      let reduced = max(500, AIEngineService.contextCharacterLimit(for: engine) / 2)
-      content = Self.requestContent(
-        for: request,
-        scopeLabel: scopeLabel,
-        allowedMeetings: allowedMeetings,
-        tasks: scopedTasks,
-        history: history,
-        personal: personal,
-        characterLimit: reduced
-      )
-      result = await AIEngineService.answer(
-        engine: engine,
-        llm: llm,
-        question: content.question,
-        scopeLabel: scopeLabel,
-        context: content.context,
-        history: content.history
-      )
+    guard !Task.isCancelled else { return outcome(.failure(.cancelled)) }
+    guard contextAvailable() else { return outcome(.failure(.contextChanged)) }
+    // A local retry reuses the same extracted attachment and the same verified records.
+    if case .failure(.contextTooLarge) = result, !cloud {
+      content = buildContent(limit: max(500, AIEngineService.contextCharacterLimit(for: engine) / 2))
+      guard content.unsupportedAttachmentNote == nil else { return outcome(.failure(.attachmentNotAnalysed)) }
+      onContextReady?(content.sources)
+      guard !Task.isCancelled, contextAvailable() else {
+        return outcome(.failure(Task.isCancelled ? .cancelled : .contextChanged))
+      }
+      result = await AIEngineService.answer(engine: engine, llm: llm,
+        question: content.question, scopeLabel: scopeLabel, context: content.context, history: content.history)
     }
-
-    if currentTeamID != workspaceID || !permitted.allSatisfy({ meeting(id: $0.id) == $0 && (!cloud || allowsRecordAccess($0.id, purpose: .cloudAI)) })
-        || !permittedTasks.allSatisfy({ task(id: $0.id) == $0 && (!cloud || allowsTaskAccess($0, purpose: .cloudAI)) }) {
-      result = .failure(.connectionLost)
-    }
-    let details = AIAnswerDetails(
-      scopeLabel: scopeLabel,
-      engineLabel: AIEngineService.effectiveEngine(engine).label,
-      modelLabel: AIEngineService.modelLabel(engine: engine, llm: llm),
-      sourceCount: content.sources.count,
-      generatedAt: .now
-    )
-
-    return AIAnswerOutcome(
-      question: content.question,
-      scopeLabel: scopeLabel,
-      result: result,
-      // Only an answer is given grounds; a failure has none to show.
-      sources: result.text == nil ? [] : content.sources,
-      details: details,
-      unsupportedAttachmentNote: content.unsupportedAttachmentNote,
-      contextNote: content.contextNote
-    )
+    if Task.isCancelled { result = .failure(.cancelled) }
+    else if !contextAvailable() { result = .failure(.contextChanged) }
+    return outcome(result)
   }
 
   /// Assembles what a request would send. Pure, so a test can check that records
@@ -392,7 +373,8 @@ extension MemoraModel {
     tasks: [MemoraTask],
     history: String = "",
     personal: String = "",
-    characterLimit: Int = AIEngineService.defaultContextCharacterLimit
+    characterLimit: Int = AIEngineService.defaultContextCharacterLimit,
+    attachmentContent: PreparedAIAttachment? = nil
   ) -> AIRequestContent {
     let question = request.effectiveQuestion
     let words = questionWords(in: question)
@@ -415,8 +397,8 @@ extension MemoraModel {
     var attachmentText = ""
     var unsupportedNote: String?
     if let attachment = request.attachment {
-      switch AIAttachmentText.read(attachment) {
-      case .text(let text):
+      if let attachmentContent, attachmentContent.matches(attachment),
+         attachmentContent.failure == nil, let text = attachmentContent.text, !text.isEmpty {
         let label = "添付「\(attachment.name)」:\n"
         let allowance = max(0, min(remaining, attachmentCap) - label.count)
         let kept = String(text.prefix(allowance))
@@ -425,8 +407,11 @@ extension MemoraModel {
         }
         attachmentText = label + kept
         remaining = max(0, remaining - attachmentText.count)
-      case .unsupported(let reason):
-        unsupportedNote = "添付「\(attachment.name)」はAI解析に対応していないため、内容は送信していません。\(reason)"
+        if let notice = attachmentContent.notice { notes.append(notice) }
+        if kept.isEmpty { unsupportedNote = "添付の本文を送る余地がありません。質問を短くしてください。" }
+      } else {
+        let reason = attachmentContent?.matches(attachment) == true ? attachmentContent?.failure : nil
+        unsupportedNote = "添付「\(attachment.name)」の内容は送信していません。\(reason ?? "本文の読み込みを確認できませんでした。")"
       }
     }
 
@@ -442,13 +427,16 @@ extension MemoraModel {
     }
 
     let built: (context: String, sources: [AIChatSource])
+    let scopedMeetings = meetings(in: request.scope, from: allowedMeetings)
+    let recordIDs = Set(scopedMeetings.map(\.id))
+    let scopedTasks = tasks.filter { request.scope.includesTask(parentRecordID: $0.meetingID, recordIDs: recordIDs) }
     switch request.scope {
     case .file:
-      built = fileContext(meeting: allowedMeetings.first, words: words, characterLimit: remaining)
+      built = fileContext(meeting: scopedMeetings.first, words: words, characterLimit: remaining)
     case .space, .global:
       built = libraryContext(
-        meetings: allowedMeetings,
-        tasks: tasks,
+        meetings: scopedMeetings,
+        tasks: scopedTasks,
         words: words,
         characterLimit: remaining
       )
@@ -792,14 +780,7 @@ extension MemoraModel {
   /// question was asked over, so records outside it are never sent.
   /// The records an `AIQueryScope` allows, mirroring the chat's ranges.
   static func meetings(in scope: AIQueryScope, from meetings: [Meeting]) -> [Meeting] {
-    switch scope {
-    case .file(let id):
-      meetings.filter { $0.id == id }
-    case .space(let id):
-      meetings.filter { $0.spaceID == id }
-    case .global:
-      meetings
-    }
+    meetings.filter { scope.includes(recordID: $0.id, projectID: $0.spaceID) }
   }
 
   /// Which records a scope reaches. Kept apart from the search so the scope can

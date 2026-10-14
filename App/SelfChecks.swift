@@ -406,6 +406,10 @@ enum SelfChecks {
     }
     group("Question terms", checkQuestionWords)
     group("AI context limits", checkAIContextLimits)
+    group("AI shared attachment extraction") {
+      do { try AttachmentSelfChecks.run() }
+      catch { report(error.localizedDescription) }
+    }
     group("Scope isolation", checkScopeIsolation)
     group("Project filing", checkProjectFiling)
     group("Interaction feedback", checkInteractionFeedback)
@@ -1033,11 +1037,10 @@ enum SelfChecks {
     )
 
     let fileRequest = AIQuestionRequest(question: "見積もりは？", scope: .file(meetingA.id), attachment: nil)
-    let fileAllowed = MemoraModel.meetings(in: fileRequest.scope, from: [meetingA, meetingB])
     let fileContent = MemoraModel.requestContent(
       for: fileRequest,
       scopeLabel: "会議A",
-      allowedMeetings: fileAllowed,
+      allowedMeetings: [meetingB, meetingA],
       tasks: []
     )
     if !fileContent.context.contains("A社との見積もり") {
@@ -1054,11 +1057,10 @@ enum SelfChecks {
     var inProject = meetingA
     inProject.spaceID = spaceID
     let spaceRequest = AIQuestionRequest(question: "", scope: .space(spaceID), attachment: nil)
-    let spaceAllowed = MemoraModel.meetings(in: spaceRequest.scope, from: [inProject, meetingB])
     let spaceContent = MemoraModel.requestContent(
       for: spaceRequest,
       scopeLabel: "プロジェクト",
-      allowedMeetings: spaceAllowed,
+      allowedMeetings: [meetingB, inProject],
       tasks: []
     )
     if spaceContent.sources.map(\.meetingID).contains(meetingB.id) {
@@ -1631,7 +1633,8 @@ enum SelfChecks {
         scopeLabel: "長い会議",
         allowedMeetings: [long],
         tasks: [],
-        characterLimit: attachedLimit
+        characterLimit: attachedLimit,
+        attachmentContent: AIAttachmentText.readContent(attachment)
       )
       let recordsFloor = (attachedLimit - attachedRequest.effectiveQuestion.count) * 2 / 5
       if attachedContent.context.count < recordsFloor {

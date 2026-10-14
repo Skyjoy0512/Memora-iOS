@@ -11,19 +11,26 @@ enum ProjectSourceExtraction {
     var notice: String?
   }
 
-  static func read(_ url: URL) throws -> Result {
+  static func read(_ url: URL, includesThumbnail: Bool = true) throws -> Result {
+    guard url.isFileURL else { throw ProjectSourceFiles.Failure.invalidFile }
+    let accessed = url.startAccessingSecurityScopedResource()
+    defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+    let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
+    guard values.isRegularFile == true, values.isSymbolicLink != true,
+          let size = values.fileSize else { throw ProjectSourceFiles.Failure.invalidFile }
+    guard size <= ProjectSourceFiles.maximumFileBytes else { throw ProjectSourceFiles.Failure.tooLarge }
+    try Task.checkCancellation()
     switch url.pathExtension.lowercased() {
-    case "txt", "md", "markdown", "csv", "json", "log", "srt", "vtt":
-      let handle = try FileHandle(forReadingFrom: url)
-      defer { try? handle.close() }
-      let data = try handle.read(upToCount: 512 * 1024) ?? Data()
-      guard let text = AIAttachmentText.decodeUTF8(data), !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+    case "txt", "text", "md", "markdown", "csv", "json", "log", "srt", "vtt":
+      guard let result = try? BoundedTextReader.read(url, maximumBytes: 512 * 1024),
+            !result.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        try Task.checkCancellation()
         return Result(blocks: [], notice: "UTF-8の本文を読み取れませんでした。元ファイルは保存されています。")
       }
-      let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-      return Result(blocks: [ProjectSourceText(text: text)], notice: size > data.count ? "本文は先頭512KBを解析しました。" : nil)
+      return Result(blocks: [ProjectSourceText(text: result.text)], notice: result.wasTruncated ? "本文は先頭512KBを解析しました。" : nil)
     case "pdf":
       guard let document = PDFDocument(url: url) else { throw ProjectSourceFiles.Failure.invalidFile }
+      guard !document.isLocked else { return Result(blocks: [], notice: "パスワードで保護されたPDFは解析できません。") }
       var blocks: [ProjectSourceText] = []
       var scanned = 0
       var notices: [String] = []
@@ -37,11 +44,13 @@ enum ProjectSourceExtraction {
             text = try recognize(image)
           }
         } else if text.isEmpty { notices.append("画像PDFのOCRは最大3ページです。") }
+        if text.count > 12_000 { notices.append("長いページは先頭12,000文字を解析しました。") }
         if !text.isEmpty { blocks.append(ProjectSourceText(text: String(text.prefix(12_000)), page: index + 1)) }
       }
       if document.pageCount > 20 { notices.append("先頭20ページを解析しました。") }
-      notices.append("1ページあたり最大12,000文字を解析します。")
-      return Result(blocks: blocks, notice: Array(Set(notices)).sorted().joined(separator: " "))
+      if scanned > 0 { notices.append("画像ページは端末内OCRで読み取った文字を参照します。画像内容のAI解析は行っていません。") }
+      if blocks.isEmpty { notices.append("参照できる文字がありません。") }
+      return Result(blocks: blocks, notice: notices.isEmpty ? nil : Array(Set(notices)).sorted().joined(separator: " "))
     case "png", "jpg", "jpeg", "heic", "heif", "tiff", "gif", "webp":
       guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
             let image = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, [
@@ -50,11 +59,11 @@ enum ProjectSourceExtraction {
               kCGImageSourceCreateThumbnailWithTransform: true
             ] as CFDictionary) else { throw ProjectSourceFiles.Failure.invalidFile }
       let text = try recognize(image)
-      let thumb = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, [
+      let thumb = includesThumbnail ? CGImageSourceCreateThumbnailAtIndex(imageSource, 0, [
         kCGImageSourceCreateThumbnailFromImageAlways: true,
         kCGImageSourceThumbnailMaxPixelSize: 160,
         kCGImageSourceCreateThumbnailWithTransform: true
-      ] as CFDictionary).flatMap { UIImage(cgImage: $0).jpegData(compressionQuality: 0.75) }
+      ] as CFDictionary).flatMap { UIImage(cgImage: $0).jpegData(compressionQuality: 0.75) } : nil
       return Result(blocks: text.isEmpty ? [] : [ProjectSourceText(text: String(text.prefix(12_000)))],
         thumbnail: thumb, notice: "画像は先頭フレームのOCRで読み取った文字を参照します。画像内容のAI解析は行っていません。")
     default:
