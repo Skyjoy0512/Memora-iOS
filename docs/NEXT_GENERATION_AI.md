@@ -325,3 +325,17 @@ hostの18スイート成功。ProjectSourceReadChecksで実際のJSON読取、2M
 ProjectChatHistoryChecksで旧保存形式・所属解除・失効した根拠・会話の組み合わせ
 を回帰確認。シミュレーターで新規Ask AIの空白、Glass入力欄、3タブ、独立FAB
 を確認。workspace切替と実LLM応答を同時に動かすE2Eは未検証。
+## 2026-10-14 — 会話ループの共通化
+
+AgentConversationLoopにクラウド会話の往復・ツール結果返却・停止・上限を
+共通化した。グローバルAsk AIは既存CloudAgentSession／ツールレジストリ／
+承認・個別課金制限をそのまま通る。モデルへ送るprovider固有の履歴形式は
+変更しない。16往復・24操作を上限とし、各リクエストと個々の操作の前後で
+現在の許可を確認する。同じcall IDの再利用や不正なbatchは実行前に拒否。
+最後の空の回答を、ツール実行前に書かれた文章で成功扱いしない。
+
+AgentConversationLoopChecksはmockのモデルturnを実ループへ渡し、順番、
+許可の取り消し、キャンセル、重複ID、空回答、ネットワーク失敗、往復／操作
+上限を検証する。外部モデルの呼び出しや変更の実行E2Eではない。
+19 hostスイート成功、Bitrig build `2026-10-14T17-58-21-a72ff10b.log` 成功、
+既存metadata警告1件。プロジェクトへの接続は次の実装単位で進める。

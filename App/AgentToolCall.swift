@@ -6,10 +6,6 @@ struct AgentToolCall {
   var name: String
   var arguments: [String: Any]
 
-  var tool: AgentTool? {
-    AgentTool(rawValue: name)
-  }
-
   func string(_ key: String) -> String {
     (arguments[key] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
   }
@@ -30,7 +26,7 @@ struct AgentToolCall {
 
   func int(_ key: String) -> Int? {
     if let value = arguments[key] as? Int { return value }
-    if let value = arguments[key] as? Double { return Int(value) }
+    if let value = arguments[key] as? Double { return Int(exactly: value) }
     return nil
   }
 }

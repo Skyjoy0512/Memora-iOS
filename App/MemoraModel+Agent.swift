@@ -199,66 +199,43 @@ extension MemoraModel {
 
   /// Runs model turns and tools until the model answers without calling one.
   private func runAgent(session: CloudAgentSession, messageID: UUID, scope: AIChatScope, llm: LLMSelection) async -> AIAnswerResult {
-    var lastText = ""
-    for _ in 0..<Self.agentMaxTurns {
-      guard !Task.isCancelled else { return .failure(.cancelled) }
-      guard isCloudSessionAuthorized(messageID) else {
-        markCloudProvenanceIncomplete(messageID)
-        return .answer("記録の外部利用許可、メモリ、またはワークスペースが変わったため処理を止めました。必要な許可を確認して、もう一度依頼してください。")
-      }
-      let turn: AgentTurn
-      do {
-        turn = try await session.next { [weak self] text in
+    let result = await AgentConversationLoop.run(
+      limits: .init(turns: Self.agentMaxTurns),
+      isAuthorized: { isCloudSessionAuthorized(messageID) },
+      next: {
+        let turn = try await session.next { [weak self] text in
           guard let self, !Task.isCancelled, self.aiChatRequestID != nil,
                 self.agentMessage(messageID)?.isThinking == true, self.isCloudSessionAuthorized(messageID) else { return }
           self.updateAgentMessage(messageID) { $0.text = text }
         }
-      } catch let failure as AIAnswerFailure {
-        return .failure(failure)
-      } catch {
-        return .failure(.server)
-      }
-      guard !Task.isCancelled else { return .failure(.cancelled) }
-
-      guard isCloudSessionAuthorized(messageID) else {
-        markCloudProvenanceIncomplete(messageID)
-        return .answer("外部利用の許可が変わったため、古い回答を反映せず処理を止めました。開始済みの送信を取り消すことはできません。")
-      }
-
-      if !turn.reasoning.isEmpty {
-        updateAgentMessage(messageID) { message in
-          message.reasoning = message.reasoning.isEmpty ? turn.reasoning : message.reasoning + "\n\n" + turn.reasoning
+        if !turn.reasoning.isEmpty {
+          updateAgentMessage(messageID) { message in
+            message.reasoning = message.reasoning.isEmpty ? turn.reasoning : message.reasoning + "\n\n" + turn.reasoning
+          }
         }
-      }
-      if !turn.text.isEmpty {
-        lastText = turn.text
-      }
-      guard !turn.toolCalls.isEmpty else {
-        return lastText.isEmpty ? .failure(.empty) : .answer(lastText)
-      }
-
-      var results: [(call: AgentToolCall, outcome: AgentToolOutcome)] = []
-      for call in turn.toolCalls {
-        guard agentToolCallCounts[messageID, default: 0] < 24 else {
-          return .answer("ツール実行上限（1回答24回）に達したため停止しました。確認できた作業結果はチャットに残っています。必要な続きだけを新しい依頼で指定してください。")
-        }
-        let outcome: AgentToolOutcome
+        return turn
+      },
+      execute: { call in
         if call.tool == .delegateResearch {
           if pluginCallIsPermitted(call, messageID: messageID), consumeAgentToolCall(messageID), toolRegistry().permits(call.name, arguments: call.arguments) {
-            outcome = await delegateResearchTool(call, messageID: messageID, scope: scope, llm: llm)
-          } else { outcome = AgentToolOutcome(text: "実行上限または入力検証により、分担調査を停止しました。", isError: true) }
-        } else {
-          outcome = await runAgentTool(call, messageID: messageID, scope: scope)
+            return await delegateResearchTool(call, messageID: messageID, scope: scope, llm: llm)
+          }
+          return AgentToolOutcome(text: "実行上限または入力検証により、分担調査を停止しました。", isError: true)
         }
-        results.append((call, outcome))
-        guard !Task.isCancelled else { return .failure(.cancelled) }
-      }
-      updateAgentMessage(messageID) { $0.text = "" }
-      session.addToolResults(results)
+        return await runAgentTool(call, messageID: messageID, scope: scope)
+      },
+      canExecute: { agentToolCallCounts[messageID, default: 0] < 24 },
+      accept: { _, results in
+        if !results.isEmpty {
+          updateAgentMessage(messageID) { $0.text = "" }
+          session.addToolResults(results)
+        }
+      })
+    if case .failure(.contextChanged) = result {
+      markCloudProvenanceIncomplete(messageID)
+      return .answer(AIAnswerFailure.contextChanged.message + "開始済みの送信を取り消すことはできません。")
     }
-    // Stopped at the limit: report what was done rather than nothing.
-    let note = "作業が長くなったため、ここで止めました。続ける場合は「続けて」と送ってください。"
-    return .answer(lastText.isEmpty ? note : lastText + "\n\n" + note)
+    return result
   }
 
   /// Apple's model, when this device has it ready. It needs no key, so the

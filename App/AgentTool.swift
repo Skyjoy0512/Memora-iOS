@@ -283,3 +283,7 @@ enum AgentTool: String, CaseIterable {
     ["type": "string", "description": description]
   }
 }
+
+extension AgentToolCall {
+  var tool: AgentTool? { AgentTool(rawValue: name) }
+}
