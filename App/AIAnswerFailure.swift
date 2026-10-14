@@ -37,6 +37,7 @@ enum AIAnswerFailure: Error, Equatable {
   /// screen while a long answer was still being written.
   case connectionLost
   case contextChanged
+  case recordAccessDenied
   /// The request was superseded, so there is nothing to show.
   case cancelled
   case empty
@@ -89,6 +90,8 @@ enum AIAnswerFailure: Error, Equatable {
       "AIとの通信が途中で切れました。要約が終わるまで、アプリを開いたままにしてお試しください。"
     case .contextChanged:
       "参照する情報・所属・許可が変わったため、回答を停止しました。現在の内容を確認して、もう一度質問してください。"
+    case .recordAccessDenied:
+      "この記録は外部AIへの送信が許可されていません。記録のプライバシー設定で許可するか、端末内AIを選んでください。内容は送信していません。"
     case .network:
       "ネットワークに接続できませんでした。接続を確認してください。"
     case .cancelled:

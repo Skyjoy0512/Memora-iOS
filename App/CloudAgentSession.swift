@@ -10,6 +10,7 @@ final class CloudAgentSession {
   private let system: String
   /// Fixed for the session, so the model sees the same tools on every turn.
   private let tools: [AgentTool]
+  private let toolDescriptions: [AgentTool: String]
   /// Tools from connected MCP servers, loaded before the first turn.
   var externalTools: [MCPTool] = []
   private var messages: [[String: Any]] = []
@@ -17,7 +18,7 @@ final class CloudAgentSession {
   /// Returns nil when there is no key for the provider; the caller says so.
   /// `tools` narrows what the model is offered; resident agents get only the
   /// reading tools.
-  init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil) {
+  init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil, toolDescriptions: [AgentTool: String] = [:]) {
     guard llm.supportsToolCalling, let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return nil
     }
@@ -25,6 +26,7 @@ final class CloudAgentSession {
     self.key = key
     self.system = system
     self.tools = tools ?? AgentTool.offered
+    self.toolDescriptions = toolDescriptions
   }
 
   func addUserMessage(_ text: String) {
@@ -77,8 +79,7 @@ final class CloudAgentSession {
   private func anthropicTurn(onText: (@MainActor (String) -> Void)?) async throws -> AgentTurn {
     var request = URLRequest(url: LLMProvider.anthropic.baseURL.appendingPathComponent("messages"))
     request.httpMethod = "POST"
-    // Not streamed, so nothing arrives until a whole turn is written; a long
-    // document in one tool call can take minutes.
+    // Tool arguments may hold a long document, so the full turn gets the same deadline as streaming.
     request.timeoutInterval = 600
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue(key, forHTTPHeaderField: "x-api-key")
@@ -91,7 +92,7 @@ final class CloudAgentSession {
       "max_tokens": 32_000,
       "system": system,
       "tools": tools.map { tool in
-        ["name": tool.rawValue, "description": tool.summary, "input_schema": tool.inputSchema]
+        ["name": tool.rawValue, "description": toolDescriptions[tool] ?? tool.summary, "input_schema": tool.inputSchema]
       } + externalTools.map { tool in
         ["name": tool.agentName, "description": "[\(tool.serverName)] \(tool.summary)", "input_schema": tool.schemaObject]
       },
@@ -149,8 +150,7 @@ final class CloudAgentSession {
   private func chatCompletionsTurn(onText: (@MainActor (String) -> Void)?) async throws -> AgentTurn {
     var request = URLRequest(url: llm.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
-    // Not streamed, so nothing arrives until a whole turn is written; a long
-    // document in one tool call can take minutes.
+    // Tool arguments may hold a long document, so the full turn gets the same deadline as streaming.
     request.timeoutInterval = 600
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
@@ -165,7 +165,7 @@ final class CloudAgentSession {
           "type": "function",
           "function": [
             "name": tool.rawValue,
-            "description": tool.summary,
+            "description": toolDescriptions[tool] ?? tool.summary,
             "parameters": tool.inputSchema
           ] as [String: Any]
         ] as [String: Any]

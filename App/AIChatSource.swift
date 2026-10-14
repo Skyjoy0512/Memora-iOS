@@ -12,7 +12,7 @@ struct AIChatSource: Identifiable, Hashable {
 
   var meetingID: UUID
   var title: String
-  /// Up to three stored lines that matched the question, in time order.
+  /// Bounded stored excerpts that matched the question; an agent may add what it actually read.
   var excerpts: [Excerpt] = []
 
   var id: UUID { meetingID }

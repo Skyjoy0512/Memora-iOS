@@ -472,3 +472,10 @@
   停止ハンドラ登録（`registerStopper`）を追加。`beginRecording()` は再生・音声入力の
   停止を待ってから録音へセッションを渡す。`resume` は `takeRecordingSession()` を使う。
   自己チェック「Recording stop order」で停止が取得より先であることを検証。
+## 2026-10-14 次世代AI: スコープ付き読み取り
+
+クラウド会話ループを共通化し、project/recordの検索・資料読取・関連タスクを
+閉じた範囲で接続。既存履歴・引用・保存形式、GlassとFABは維持。長い記録の
+末尾検索で見つかった不具合を修正。21 hostスイート、Simulatorの自己チェック、
+Bitrig build成功。実BYOKの往復・権限変更・停止、承認付き変更、永続実行履歴／
+再開は未確認または未実装。現況・証拠・残課題は[NEXT_GENERATION_AI.md](NEXT_GENERATION_AI.md)。

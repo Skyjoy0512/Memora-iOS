@@ -220,7 +220,7 @@ widgetURLとforeground App Intentsのモデル操作に分けた。
 
 残りの優先順:
 1. BYOKの実ストリーム／ツール／停止／権限変更／引用とUI操作の承認E2E。
-2. project/recordを越えないAgentToolの統合、添付から操作するエージェント経路。
+2. project/record内の承認付き変更ツール、グローバル添付から操作するエージェント経路。
 3. 非破壊な識別子移行＋App Group、実機Widget／Siri／Control／録音Island。
 4. 既存ライブラリ・Project・JournalのLight/Dark/Dynamic TypeとGlassの
    frame単位の回帰、起動／スクロール／メモリの同条件計測。
@@ -305,6 +305,9 @@ AI context limits、Request scope、Scope isolation、Attachment read limitの
 応答中の実権限変更。添付付き依頼は引き続きgrounded回答で、エージェントの
 操作経路には統合していない。project/recordの変更ツール統合も未完了。
 
+上記は共通抽出段階の記録。現在の記録単位のBYOK質問は、以下の読み取り専用
+エージェントにも添付本文を渡す。グローバル添付の操作エージェント統合は未完了。
+
 ### プロジェクト取り込み中の変更・停止
 
 プロジェクトのファイル取り込みは、コピーの後にワークスペース／保存保護／
@@ -339,3 +342,54 @@ AgentConversationLoopChecksはmockのモデルturnを実ループへ渡し、順
 上限を検証する。外部モデルの呼び出しや変更の実行E2Eではない。
 19 hostスイート成功、Bitrig build `2026-10-14T17-58-21-a72ff10b.log` 成功、
 既存metadata警告1件。プロジェクトへの接続は次の実装単位で進める。
+
+## 2026-10-14 — プロジェクト／記録の読み取りエージェント
+
+ツール対応BYOKのプロジェクトチャットと記録単位の質問を、グローバルAsk AIと
+同じAgentConversationLoop／CloudAgentSessionへ接続した。個別履歴・保存・
+引用は維持し、共通エンジンを使っても会話を混ぜない。端末内AI、Tool Callingを
+無効にしたモデル、Memora Intelligenceは従来のgrounded経路を保持。
+
+この段階のスコープ付き会話は読み取り専用。search_records／read_record／
+list_tasksだけを候補にし、実行時にも現在のregistryとschemaを確認する。
+プロジェクトはその所属と送信許可、記録は固定のsnapshotと関連タスクの範囲を
+確認。MCP、メール、人物の全体メモリ、変更ツール、グローバル履歴へは渡さない。
+記録の送信未許可時はscopeLabel内のタイトルも送らず理由を示す。
+
+プロジェクトは最大6往復／8読み取り／1往復4操作、記録は3往復／3読み取り／
+1往復2操作。単純な質問は渡した根拠で回答し、不足するときだけ追加検索する。
+プロジェクトの既存送信確認に最大AI往復数を追記。これはclient側の上限で、
+金額予算・運営者課金・外部サービスのserver強制を保証するものではない。
+
+ScopedAgentEvidenceで今回の資料番号を安定させ、24抜粋と総文字数上限を持つ。
+検索・モデル再計画の後も元の資料番号を変えない。read_recordはモデルへ渡した
+対象IDだけを受け、未知・曖昧・範囲外のIDを拒否する。引用は最終回答で実在の
+番号だけを解決する。端末で読んだ結果と、成功したモデルの往復に渡した結果を
+分け、上限停止で未送信だった本文を会話のcontextReferencesへ含めない。
+PDFページ・録音秒数の参照は維持。単体読取はプロジェクト全体の派生索引を
+置き換えない。非同期確認後に最新threadを読み直し、名称変更や停止を上書きしない。
+
+記録は最初の本文28,000文字、追加の抜粋8,000文字以内。追加検索は固定の
+記録snapshotだけに既存のランキングを使う。関連度の高い抜粋を予算へ収めて
+から時刻順に戻し、1発言が長い場合はRelevantTextWindowで検索語周辺を残す。
+既存の通常検索・grounded回答の抜粋順序は変更しない。添付の再解析はしない。
+sourceの抜粋は実際に送ったものだけを追加し、最大6件。
+
+### 検証結果と境界
+
+- 最終Bitrig build: `2026-10-14T18-23-21-c8386416.log` 成功、既存metadata警告1件。
+- hostの21スイート成功。追加3スイートは実ループへのmock turn、fixtureの
+  スコープ／送信済みID／安定引用、長い日本語・絵文字の検索窓を確認する。
+- 途中のSimulator自己チェックで、末尾の抜粋が時刻順の短縮で落ちる不具合を
+  検出し修正。200発言の末尾と1発言10,000文字の検索を追加。
+- iPhone 18 Pro Maxの自己チェック画面でAI context limits、Request scope、
+  Scope isolation、AI shared attachment extractionの成功を確認。新規Ask AIの
+  空白、Glass入力欄、3タブ、独立FAB、Files／Projects切替、既存WeeklySyncの
+  空状態を確認。Library設定をFilesへ戻し、実ユーザー資料・外部APIは使わない。
+- 状態ラベルは変更時だけ更新し、ストリームの度に同じ状態を再代入しない。
+  実機の起動時間・frame・メモリの改善値は未計測。
+
+コード／build／隔離チェックは対応済みだが、実際のBYOKツール往復、通信断、
+実権限変更のE2Eは未確認。スコープ内の承認付き変更、実行履歴の永続化と
+中断再開、グローバル添付の操作、AI Live Activity、server金額予算は未実装。
+これらを読み取り接続だけで完成扱いしない。

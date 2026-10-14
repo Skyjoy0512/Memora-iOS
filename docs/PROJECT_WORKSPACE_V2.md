@@ -139,3 +139,12 @@ Ask AIのWeb検索・Deep Research、取得ソースとレポートのプロジ�
 2MiB＋検出用1byteの読み取り上限を持つ。入力欄では取り込み中にAI設定が
 変わった場合に送信を中止する。18 hostスイートとBitrig build成功。
 実クラウド応答中の切替／権限変更は未検証。詳細は[NEXT_GENERATION_AI.md](NEXT_GENERATION_AI.md)。
+## 2026-10-14 — 読み取り専用エージェントの接続
+
+ツール対応BYOKの会話では共通AgentConversationLoopを使い、プロジェクト内の
+検索・資料読取・関連タスク確認を最大6往復／8操作まで行う。現在の所属・許可・
+registry・schemaを操作ごとに確認。外部連携と変更ツールは公開しない。
+資料番号は会話中に固定し、モデルへ実際に渡した根拠だけを保存する。
+単体読取で全体索引を消さず、非同期確認後に最新会話を再取得する。
+履歴・保存形式・sourceページ／秒数は維持。実BYOKのE2Eは未確認。
+21 hostスイートと最終Bitrig build成功。詳細は[NEXT_GENERATION_AI.md](NEXT_GENERATION_AI.md)。

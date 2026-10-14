@@ -1562,6 +1562,17 @@ enum SelfChecks {
     if longContent.context.contains("発言199") {
       report("AI context kept the far end of a long transcript past the limit")
     }
+    let retrieved = MemoraModel.recordAgentContext(question: "発言199", meeting: long, characterLimit: 1_200)
+    if !retrieved.context.contains("発言199") || retrieved.sources.map(\.meetingID) != [long.id] {
+      report("record agent retrieval missed the requested passage or widened its record scope")
+    }
+    var singleLong = small
+    singleLong.transcript = [TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: true,
+      timestamp: 0, text: String(repeating: "あ", count: 10_000) + "末尾決定Token")]
+    let singleRetrieved = MemoraModel.recordAgentContext(question: "末尾決定Token", meeting: singleLong, characterLimit: 500)
+    if !singleRetrieved.context.contains("末尾決定Token") || singleRetrieved.context.count > 500 {
+      report("a long single utterance lost its matched passage or exceeded the budget")
+    }
 
     // The on-device limit covers the whole context, not just the transcript.
     let onDeviceLimit = AIEngineService.defaultContextCharacterLimit

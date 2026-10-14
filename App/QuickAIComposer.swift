@@ -87,7 +87,7 @@ struct QuickAIComposer: View {
       }
       Button("キャンセル", role: .cancel) { pendingProjectQuestion = nil }
     } message: {
-      Text("質問、送信が許可された資料、最近の会話を送ります。利用するプロバイダーの料金が発生する場合があります。")
+      Text("質問、送信が許可された資料、最近の会話を送ります。必要に応じて最大6回のAI応答で資料を調べます。利用するプロバイダーの料金が発生する場合があります。")
     }
     .alert("送信できませんでした", isPresented: Binding(get: { projectError != nil }, set: { if !$0 { projectError = nil } })) {
       Button("OK", role: .cancel) { projectError = nil }

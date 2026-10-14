@@ -315,7 +315,12 @@ extension MemoraModel {
         characterLimit: limit, attachmentContent: attachmentContent)
     }
 
-    var content = buildContent(limit: AIEngineService.contextCharacterLimit(for: engine))
+    let scopedRecord: Meeting?
+    if case .file = request.scope, cloud, llm.supportsToolCalling, !llm.isMemoraIntelligence,
+       permitted.count == 1, [.searchRecords, .readRecord, .listTasks].contains(where: { enabledAgentTools.contains($0) }) {
+      scopedRecord = permitted.first
+    } else { scopedRecord = nil }
+    var content = buildContent(limit: scopedRecord == nil ? AIEngineService.contextCharacterLimit(for: engine) : 28_000)
     func outcome(_ result: AIAnswerResult) -> AIAnswerOutcome {
       AIAnswerOutcome(question: content.question, scopeLabel: scopeLabel, result: result,
         sources: result.text == nil ? [] : content.sources,
@@ -326,6 +331,10 @@ extension MemoraModel {
         unsupportedAttachmentNote: content.unsupportedAttachmentNote, contextNote: content.contextNote)
     }
     guard !Task.isCancelled else { return outcome(.failure(.cancelled)) }
+    // A denied record's title in scopeLabel must not reach the provider either.
+    if cloud, case .file(let id) = request.scope, !allowsRecordAccess(id, purpose: .cloudAI) {
+      return outcome(.failure(.recordAccessDenied))
+    }
     // File reading may yield to edits, workspace switching or privacy changes.
     guard contextAvailable() else { return outcome(.failure(.contextChanged)) }
     guard content.unsupportedAttachmentNote == nil else { return outcome(.failure(.attachmentNotAnalysed)) }
@@ -334,12 +343,21 @@ extension MemoraModel {
     guard !Task.isCancelled, contextAvailable() else {
       return outcome(.failure(Task.isCancelled ? .cancelled : .contextChanged))
     }
-    var result = await AIEngineService.answer(engine: engine, llm: llm,
-      question: content.question, scopeLabel: scopeLabel, context: content.context,
-      history: content.history, onText: onText.map { callback in { text in
+    let safeText: (@MainActor (String) -> Void)? = onText.map { callback in { text in
         guard !Task.isCancelled, contextAvailable() else { return }
         callback(text)
-      } })
+      } }
+    var result: AIAnswerResult
+    if let scopedRecord {
+      let answer = await answerRecordAgent(content: content, record: scopedRecord, scopedTasks: permittedTasks,
+        llm: llm, isCurrent: contextAvailable, onText: safeText)
+      result = answer.result
+      content.sources = answer.sources
+    } else {
+      result = await AIEngineService.answer(engine: engine, llm: llm,
+        question: content.question, scopeLabel: scopeLabel, context: content.context,
+        history: content.history, onText: safeText)
+    }
 
     guard !Task.isCancelled else { return outcome(.failure(.cancelled)) }
     guard contextAvailable() else { return outcome(.failure(.contextChanged)) }
@@ -374,7 +392,8 @@ extension MemoraModel {
     history: String = "",
     personal: String = "",
     characterLimit: Int = AIEngineService.defaultContextCharacterLimit,
-    attachmentContent: PreparedAIAttachment? = nil
+    attachmentContent: PreparedAIAttachment? = nil,
+    prioritizesPassages: Bool = false
   ) -> AIRequestContent {
     let question = request.effectiveQuestion
     let words = questionWords(in: question)
@@ -438,7 +457,8 @@ extension MemoraModel {
         meetings: scopedMeetings,
         tasks: scopedTasks,
         words: words,
-        characterLimit: remaining
+        characterLimit: remaining,
+        prioritizesPassages: prioritizesPassages
       )
     }
 
@@ -569,7 +589,8 @@ extension MemoraModel {
     meetings: [Meeting],
     tasks: [MemoraTask],
     words: [String],
-    characterLimit: Int
+    characterLimit: Int,
+    prioritizesPassages: Bool = false
   ) -> (String, [AIChatSource]) {
     let ranked = rank(meetings: meetings, words: words, tasks: tasks).prefix(8)
     var blocks: [String] = []
@@ -595,7 +616,8 @@ extension MemoraModel {
         "日付: \(meeting.createdAt.formatted(date: .numeric, time: .omitted))"
       ]
       if !meeting.summary.isEmpty {
-        lines.append("要約: \(meeting.summary)")
+        let summary = prioritizesPassages ? String(meeting.summary.prefix(min(1_200, max(0, characterLimit / 3)))) : meeting.summary
+        lines.append("要約: \(summary)")
       }
       lines.append(contentsOf: meeting.decisions.prefix(5).map { "決定: \($0)" })
       lines.append(contentsOf: meeting.openQuestions.prefix(5).map { "未決: \($0)" })
@@ -605,11 +627,27 @@ extension MemoraModel {
         .map { "タスク: \($0.title)" })
 
       let spans = scoredSpans(of: meeting, words: words)
-      let best = spans
+      let rankedSpans = spans
         .filter { $0.score > 0 }
         .sorted { $0.score > $1.score }
         .prefix(3)
-        .sorted { $0.start < $1.start }
+      let best: [ScoredSpan]
+      if prioritizesPassages {
+        var available = max(0, characterLimit - used - lines.joined(separator: "\n").count - 2)
+        var selected: [ScoredSpan] = []
+        // Fit the strongest evidence first, then restore time order within what will actually be sent.
+        for span in rankedSpans {
+          let cost = span.text.count + 5
+          if cost <= available { selected.append(span); available -= cost }
+          else if selected.isEmpty, available > 35 {
+            var clipped = span
+            clipped.text = RelevantTextWindow.text(span.text, matching: words, maximumCharacters: available - 5)
+            selected.append(clipped)
+            available = 0
+          }
+        }
+        best = selected.sorted { $0.start < $1.start }
+      } else { best = rankedSpans.sorted { $0.start < $1.start } }
       for span in best {
         lines.append("発言:")
         lines.append(span.text)

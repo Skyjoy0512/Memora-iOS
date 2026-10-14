@@ -15,5 +15,11 @@ struct ProjectCitation: Identifiable, Hashable, Codable, Sendable {
     case meeting(UUID)
     case document(UUID)
     case task(UUID)
+
+    var identifier: UUID {
+      switch self {
+      case .source(let id), .meeting(let id), .document(let id), .task(let id): id
+      }
+    }
   }
 }

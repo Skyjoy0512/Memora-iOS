@@ -76,3 +76,11 @@ AIComposerBarはTextSelection、入力observer、IME未確定中の送信停止�
 - コア実装の最終ビルド: `2026-10-14T08-28-50-afabef84.log`、成功。既存App Intentsメタデータ抽出警告1件、コンパイル／リンクエラーなし。Gmailは認証情報が残っていてもOAuth Client ID未設定なら利用不可とし、モデルにもツールを提示しない。
 - Simulatorの端末内カレンダー実行は、同じチャットの回答と実処理完了ログ `MemoraPlugin: read_calendar completed` で確認。外部サービスを実行したように見せるモック結果はアプリに追加していない。
 - Webトグル併用の指定集合・重複防止を含む10スイートとビルドを再確認済み。最終Simulatorで選択済み行の淡い強調とAXのselected属性、フォーカス監視の修正後の候補表示、外側タップ後の候補とキーボードの閉鎖を確認した。ライブラリへの移動後も未送信の本文と指定が保持された。最後の検証用ドラフトは消去した。
+## スコープ付きの会話（2026-10-14）
+
+プロジェクト／記録のBYOK読み取り会話も共通AgentConversationLoopを使用する。
+公開するのは現在有効なsearch_records／read_record／list_tasksのみ。
+グローバルAsk AIの@指定・スキル・MCP・承認経路は維持し、スコープ付き会話へ
+外部プラグインや変更ツールを自動で持ち込まない。実registry・schema・現在の
+所属／送信許可を毎回確認する。実接続のE2Eは未確認。
+詳細と上限は[NEXT_GENERATION_AI.md](NEXT_GENERATION_AI.md)を参照。
