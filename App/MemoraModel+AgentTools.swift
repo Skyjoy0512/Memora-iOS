@@ -59,6 +59,7 @@ extension MemoraModel {
     case .readRecord:
       return readRecordTool(call, messageID: messageID, scope: scope, compact: compact)
     case .listProjects:
+      updateAgentMessage(messageID) { $0.interfaceProjectIDs.formUnion(spaces.map(\.id)); $0.interfaceWorkspaceID = currentTeamID }
       return listProjectsTool(messageID: messageID)
     case .listTasks:
       return listTasksTool(call, messageID: messageID, scope: scope)
@@ -390,6 +391,7 @@ extension MemoraModel {
       ? (scope == .all ? tasks : Self.tasks(in: allowed, from: tasks))
       : Self.openTasks(in: scope, from: tasks, meetings: allowed)
     visible = Array(visible.prefix(80))
+    updateAgentMessage(messageID) { $0.interfaceTaskIDs.formUnion(visible.map(\.id)); $0.interfaceWorkspaceID = currentTeamID }
     finishAgentStep(stepID, on: messageID, state: .done, detail: "\(visible.count)件")
     guard !visible.isEmpty else { return AgentToolOutcome(text: "タスクはありません。") }
     return AgentToolOutcome(text: visible.map { task in

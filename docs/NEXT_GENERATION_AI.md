@@ -71,3 +71,41 @@ iOS17以降対応で、v0.9/v0.9.1の実装とテストが公開されている�
 全ツールのproject/record対応が検証できるまでは書き込みエージェント化しない。
 中断した外部操作の自動再実行は追加しない。永続ジョブとサーバーの
 idempotency照合が必要。クライアント上限は本番の課金保証ではない。
+
+## P1: Intelligent UI の初期対応
+
+`NativeAIInterface` version 1 は A2UI の考え方に沿う独自の限定スキーマ。
+32KiB、最大8部品、各30項目、文字数／数値上限、安定IDの重複検査、
+UUID、表の列数を検証。未知の部品・キー・操作・URL・コードは拒否する。
+通常回答のMarkdownの後ろに任意の `memora-ui` JSONブロックを1つ置く。
+本文は既存の履歴文字列としてSQLiteに保存され、旧履歴は変更せず読める。
+途中のJSONは表示せず、失敗時は先に書かれたMarkdownへ戻る。
+
+- ネイティブ表示: TaskList、DocumentCard、ProjectCard、SourceList、
+  ComparisonTable、Timeline、Chart（Swift Charts）、ActionBar。
+- QuestionForm、ApprovalCard、ProgressCardは、既存のAgentQuestionCard、
+  AgentApprovalCard、ThinkingTraceViewを使う。AIが作った偽の承認や進行状態
+  は表示しない。実行中のリクエストの状態だけ表示する。
+- UI選択の指示はクラウドのグローバルエージェントに追加。端末内の小さい
+  コンテキストにこの追加Schemaを自動送信しない。プロジェクト／記録の
+  AI実行をグローバルの書き込みエージェントに変えない。
+- タスク・プロジェクトはその会話で実際に読んだIDだけ参照する。
+  資料はそのメッセージで作成したdocumentIDs、出典は既存sourcesに限定。
+  タスクの完了操作は原文のモデル再実行なしで既存update_tasksへ渡す。
+  元の@制限、現在のレジストリ、1回答24回、書込前承認、ワークスペースと
+  タスクの競合検査、SQLite保存失敗時の拒否を維持する。
+- UIの値変更とデータ更新は別。承認するまでタスクの表示状態は変えない。
+  保存履歴を開き直したときに、古いUIへ書込権限を自動復元しない。
+- 比較表とグラフの数値はAIの整理結果であり、Schema検証だけで事実性を
+  保証しない。プロンプトで実取得の根拠を要求し、既存本文・引用も残す。
+
+NativeAIInterfaceChecks: 3種の表示モデル、通常／不完全／不正UIのMarkdown
+フォールバック、未知の型・操作・キー、負数／Bool、ID不正、重複ID、表の
+列不足、32KiB上限を実コードで検証済み。外部クラウドのUI生成、実タスク
+変更の承認E2Eはまだ未検証。UIコードのbuild／画面確認は別途記録する。
+
+P1 build: `2026-10-14T11-58-19-6a5ff2fa.log` 成功、既存AppIntents抽出警告のみ。
+10既存スイート再成功。iPhone 18 Pro Max のDEBUG表示確認画面で表・横棒
+グラフ・タイムラインを確認。これは明示したfixtureであり実AI応答ではない。
+Dark + accessibility_extra_large で折り返し、横表、縦スクロール、グラフの
+代替数値ラベルを確認。実タスクの作成・変更は検証のためにも行っていない。

@@ -138,7 +138,7 @@ struct AIMessageView: View {
   @ViewBuilder
   private var answerText: some View {
     if message.isThinking {
-      AIResponseText(text: message.text, isStreaming: true)
+      AIResponseText(text: message.text, isStreaming: true, messageID: message.id)
     } else if let id = message.webResearchReportIDs.last, let report = model.webResearch(id: id), report.isChatSearch == true {
       let sent = report.sources.filter { report.sentSourceIDs?.contains($0.id) == true }
       StreamingText(text: WebResearchContext.markdownLinked(message.text, sent: sent), lineSpacing: 5, animates: false,
@@ -161,7 +161,7 @@ struct AIMessageView: View {
         return .handled
       })
     } else {
-      AIResponseText(text: AnswerCitations.stripped(message.text))
+      AIResponseText(text: AnswerCitations.stripped(message.text), messageID: message.id)
     }
   }
 

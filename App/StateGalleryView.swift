@@ -34,6 +34,9 @@ struct StateGalleryView: View {
       }
 
       Section {
+        #if DEBUG
+        NavigationLink("構造化回答（表示の確認）") { NativeAIInterfaceExampleView() }
+        #endif
         NavigationLink("Ask AIの経過（表示の確認）") {
           ScrollView {
             VStack(alignment: .leading, spacing: 32) {
@@ -237,4 +240,3 @@ extension StateGalleryView {
     return message
   }()
 }
-

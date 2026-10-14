@@ -5,13 +5,16 @@ import SwiftUI
 struct AIResponseText: View {
   var text: String
   var isStreaming = false
+  var messageID: UUID?
 
   var body: some View {
-    Group {
+    let response = NativeAIInterface.response(text)
+    VStack(alignment: .leading, spacing: 18) {
       if isStreaming {
-        Text(text).font(.body).lineSpacing(5).textSelection(.enabled)
+        Text(response.markdown).font(.body).lineSpacing(5).textSelection(.enabled)
       } else {
-        StreamingText(text: text, lineSpacing: 5, animates: false)
+        StreamingText(text: response.markdown, lineSpacing: 5, animates: false)
+        if let interface = response.interface { NativeAIInterfaceView(interface: interface, messageID: messageID) }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

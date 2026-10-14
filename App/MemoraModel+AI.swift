@@ -51,7 +51,8 @@ extension MemoraModel {
       if aiMessages[index].text.isEmpty {
         aiMessages[index].text = "回答を停止しました。"
       } else {
-        aiMessages[index].text += "\n\n回答を停止しました。ここまでの回答は未完了です。"
+        aiMessages[index].text = NativeAIInterface.response(aiMessages[index].text).markdown
+          + "\n\n回答を停止しました。ここまでの回答は未完了です。"
       }
     }
     isAIChatResponding = false

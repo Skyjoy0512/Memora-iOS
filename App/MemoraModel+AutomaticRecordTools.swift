@@ -60,8 +60,11 @@ extension MemoraModel {
     case .listProjects:
       markCloudProvenanceIncomplete(messageID)
       let projects = Set(permitted.compactMap(\.spaceID))
+      updateAgentMessage(messageID) { $0.interfaceProjectIDs.formUnion(projects); $0.interfaceWorkspaceID = currentTeamID }
       lines = spaces.filter { projects.contains($0.id) }.map { "id=\($0.id) 「\($0.name)」" }
     case .listTasks:
+      let visibleIDs = permittedTasks.filter { call.bool("include_completed") || !$0.isCompleted }.prefix(80).map(\.id)
+      updateAgentMessage(messageID) { $0.interfaceTaskIDs.formUnion(visibleIDs); $0.interfaceWorkspaceID = currentTeamID }
       references = permittedTasks.filter { call.bool("include_completed") || !$0.isCompleted }.prefix(80).map { .task($0.id) }
       lines = permittedTasks.filter { call.bool("include_completed") || !$0.isCompleted }.prefix(80)
         .map { "id=\($0.id) \($0.title) \($0.detail) / 担当: \($0.assignee ?? "未定") / 期限: \($0.dueDate?.formatted(date: .numeric, time: .omitted) ?? "未定") / \($0.statusLabel)" }
