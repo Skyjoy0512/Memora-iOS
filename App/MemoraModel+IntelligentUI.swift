@@ -1,6 +1,18 @@
 import Foundation
 
 extension MemoraModel {
+  func interfaceRenderContext(messageID: UUID?, taskIDs: Set<UUID>) -> (message: AIChatMessage?, taskIDs: Set<UUID>, sources: [UUID: AIChatSource]) {
+    guard let messageID, canUseInterfaceContext(messageID: messageID), let message = agentMessage(messageID) else {
+      return (nil, [], [:])
+    }
+    let allowedTasks = Set(taskIDs.intersection(message.interfaceTaskIDs).filter { id in
+      guard let task = task(id: id) else { return false }
+      return message.cloudProvenance == nil || allowsTaskAccess(task, purpose: .cloudAI)
+    })
+    let sources = Dictionary(message.sources.map { ($0.meetingID, $0) }, uniquingKeysWith: { first, _ in first })
+    return (message, allowedTasks, sources)
+  }
+
   func canUseInterfaceContext(messageID: UUID) -> Bool {
     guard !isRestoring, !isStoreProtected, let message = agentMessage(messageID),
           message.interfaceWorkspaceID == currentTeamID else { return false }
