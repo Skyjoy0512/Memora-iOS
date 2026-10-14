@@ -1,10 +1,16 @@
 import Foundation
 
 extension MemoraModel {
-  func canUseInterfaceTask(_ id: UUID, messageID: UUID) -> Bool {
+  func canUseInterfaceContext(messageID: UUID) -> Bool {
     guard !isRestoring, !isStoreProtected, let message = agentMessage(messageID),
-          message.interfaceWorkspaceID == currentTeamID, message.interfaceTaskIDs.contains(id), let task = task(id: id) else { return false }
-    if message.cloudProvenance != nil { return allowsTaskAccess(task, purpose: .cloudAI) && isCloudSessionAuthorized(messageID) }
+          message.interfaceWorkspaceID == currentTeamID else { return false }
+    return message.cloudProvenance == nil || isCloudSessionAuthorized(messageID)
+  }
+
+  func canUseInterfaceTask(_ id: UUID, messageID: UUID) -> Bool {
+    guard canUseInterfaceContext(messageID: messageID), let message = agentMessage(messageID),
+          message.interfaceTaskIDs.contains(id), let task = task(id: id) else { return false }
+    if message.cloudProvenance != nil { return allowsTaskAccess(task, purpose: .cloudAI) }
     return true
   }
 

@@ -61,13 +61,15 @@ struct NativeAIInterface: Codable, Equatable {
 
   /// One optional interface follows a complete Markdown answer. The text is
   /// still useful when the interface is invalid or the history is read elsewhere.
-  static func response(_ text: String) -> (markdown: String, interface: Self?) {
+  static func response(_ text: String, isStreaming: Bool = false) -> (markdown: String, interface: Self?) {
     let marker = "```memora-ui"
     guard let start = text.range(of: marker) else { return (text, nil) }
     let markdown = String(text[..<start.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
     let suffix = text[start.upperBound...]
-    guard let end = suffix.range(of: "```"), suffix[end.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return (markdown, nil) }
-    return (markdown, decode(String(suffix[..<end.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)))
+    let fallback = markdown.isEmpty && !isStreaming ? "構造化表示を読み込めませんでした。もう一度回答を依頼してください。" : markdown
+    guard !isStreaming, let end = suffix.range(of: "```"), suffix[end.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return (fallback, nil) }
+    guard let interface = decode(String(suffix[..<end.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)) else { return (fallback, nil) }
+    return (markdown, interface)
   }
 
   static var instructions: String {

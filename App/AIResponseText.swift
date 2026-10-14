@@ -8,7 +8,7 @@ struct AIResponseText: View {
   var messageID: UUID?
 
   var body: some View {
-    let response = NativeAIInterface.response(text)
+    let response = NativeAIInterface.response(text, isStreaming: isStreaming)
     VStack(alignment: .leading, spacing: 18) {
       if isStreaming {
         Text(response.markdown).font(.body).lineSpacing(5).textSelection(.enabled)

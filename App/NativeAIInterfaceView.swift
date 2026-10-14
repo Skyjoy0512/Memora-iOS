@@ -37,7 +37,7 @@ struct NativeAIInterfaceView: View {
       }
     case .documentCard:
       ForEach(component.items) { item in
-        if let id = item.referenceID, let messageID, model.agentMessage(messageID)?.documentIDs.contains(id) == true,
+        if let id = item.referenceID, let messageID, model.canUseInterfaceContext(messageID: messageID), model.agentMessage(messageID)?.documentIDs.contains(id) == true,
            let document = model.document(id: id) {
           NavigationLink { DocumentDetailView(documentID: id) } label: {
             Label(document.title, icon: .docText).multilineTextAlignment(.leading).frame(minHeight: 44)
@@ -46,7 +46,7 @@ struct NativeAIInterfaceView: View {
       }
     case .projectCard:
       ForEach(component.items) { item in
-        if let id = item.referenceID, let messageID, model.agentMessage(messageID)?.interfaceProjectIDs.contains(id) == true,
+        if let id = item.referenceID, let messageID, model.canUseInterfaceContext(messageID: messageID), model.agentMessage(messageID)?.interfaceProjectIDs.contains(id) == true,
            let project = model.space(id: id) {
           Button(project.name, icon: .folder) { model.openProject(id) }
             .frame(minHeight: 44).multilineTextAlignment(.leading)
@@ -54,7 +54,7 @@ struct NativeAIInterfaceView: View {
       }
     case .sourceList:
       ForEach(component.items) { item in
-        if let id = item.referenceID, let messageID,
+        if let id = item.referenceID, let messageID, model.canUseInterfaceContext(messageID: messageID),
            let source = model.agentMessage(messageID)?.sources.first(where: { $0.meetingID == id }), model.meeting(id: id) != nil {
           NavigationLink { MeetingDetailView(meetingID: id) } label: {
             Label(source.title, icon: .docText).multilineTextAlignment(.leading).frame(minHeight: 44)

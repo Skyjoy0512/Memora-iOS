@@ -8,6 +8,9 @@ struct NativeAIInterfaceChecks {
     let answer = "Markdownの回答\n\n```memora-ui\n" + json + "\n```"
     let parsed = NativeAIInterface.response(answer)
     precondition(parsed.markdown == "Markdownの回答" && parsed.interface != nil)
+    precondition(NativeAIInterface.response(answer, isStreaming: true).interface == nil)
+    precondition(NativeAIInterface.response("```memora-ui\n{", isStreaming: true).markdown.isEmpty)
+    precondition(!NativeAIInterface.response("```memora-ui\n{").markdown.isEmpty)
     precondition(NativeAIInterface.response("通常の回答").markdown == "通常の回答")
     precondition(NativeAIInterface.response("回答\n```memora-ui\n{" ).markdown == "回答")
     for unsafe in [
