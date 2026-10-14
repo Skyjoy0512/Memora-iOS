@@ -401,3 +401,18 @@ workspace別の上限付きSQLite resume documentで引用・完了residentを�
 未完了の操作は再送せず、書込権限を復元しない。22 hostスイートとBitrig build成功。
 Simulatorで履歴の再開、Library往復、終了後の再起動、明示new chatを確認。
 詳細・保存上限・他の未完了項目は[品質改善記録](QUALITY_IMPROVEMENT.md)。
+
+## 2026-10-15 — 添付操作・編集する承認・共通表示
+
+グローバルのツール対応BYOKは、既存の抽出結果を8,000文字までの未信頼資料として
+受け取り、@指定とも併用する。権限・接続・料金を緩めず、失敗時に下書きを保持する。
+add_tasksの候補を選択し、タイトル/詳細/担当/期限を編集して既存の承認・SQLite保存を
+通す。保存成功を確認するまで結果を表示せず、同一回答の繰り返し登録を拒否する。
+会話のuser bubble・実状態・scroll追従を共用し、履歴と権限の境界は分離したまま。
+本文のない記録と復旧案内だけのsummaryは回答を作らず、理由と入力を保持する。
+
+25 hostスイート、Bitrig build、Simulatorの実承認・編集・SQLite再読込・再実行拒否・
+停止/拒否・Light/Dark/大きい文字・本文未取得の表示を確認。検証モデルはfixtureで、
+実BYOKの添付からのツール選択/実外部サービスE2Eと実機性能は未確認。
+project/recordの変更ツール、Office/Web本文、RAG評価、App Groupは引き続き残る。
+詳細と第三者目線の再レビューは[品質改善記録](QUALITY_IMPROVEMENT.md)。

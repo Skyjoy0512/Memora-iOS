@@ -333,6 +333,31 @@ enum SelfChecks {
         report("unread attachment was accepted or attachment routing changed")
       }
     }
+    group("Record AI readable evidence") {
+      var record = Meeting(id: UUID(), title: "タイトルは本文ではありません", createdAt: .now,
+        duration: 90, source: .recording, status: .ready, summary: " \n", keyPoints: [" "],
+        decisions: [], openQuestions: [], transcript: [], spaceID: nil, audioURL: nil)
+      if record.hasReadableAIContent { report("metadata or whitespace counted as recording content") }
+      record.status = .failed("利用できません")
+      record.summary = "アプリが中断する前に録音していた音声を復旧しました。文字起こしを開始できます。"
+      record.keyPoints = ["録音の復旧"]
+      if record.hasReadableAIContent { report("recovery instructions counted as recording evidence") }
+      record.summary = ""; record.keyPoints = []
+      record.notes = "利用者が入力したメモ"
+      if !record.hasReadableAIContent { report("notes not readable") }
+      record.notes = ""; record.status = .ready; record.summary = "要約"
+      if !record.hasReadableAIContent { report("summary not readable") }
+      record.summary = ""; record.keyPoints = ["要点"]
+      if !record.hasReadableAIContent { report("key points not readable") }
+      record.keyPoints = []; record.decisions = ["決定"]
+      if !record.hasReadableAIContent { report("decisions not readable") }
+      record.decisions = []; record.openQuestions = ["未決事項"]
+      if !record.hasReadableAIContent { report("open questions not readable") }
+      record.openQuestions = []
+      record.transcript = [TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: false,
+        timestamp: 0, text: "発言", endTime: 5)]
+      if !record.hasReadableAIContent { report("transcript not readable") }
+    }
     group("Journal activity days") {
       let now = Date(timeIntervalSince1970: 1_790_000_000)
       let calendar = Calendar.current

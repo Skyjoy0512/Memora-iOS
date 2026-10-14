@@ -353,6 +353,10 @@ extension MemoraModel {
     // File reading may yield to edits, workspace switching or privacy changes.
     guard contextAvailable() else { return outcome(.failure(.contextChanged)) }
     guard content.unsupportedAttachmentNote == nil else { return outcome(.failure(.attachmentNotAnalysed)) }
+    if case .file = request.scope, !permitted.contains(where: \.hasReadableAIContent),
+       permittedTasks.isEmpty, attachmentContent?.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true {
+      return outcome(.failure(.recordContentUnavailable))
+    }
     onContextReady?(content.sources)
     // The context callback can also change the model before the first network request.
     guard !Task.isCancelled, contextAvailable() else {

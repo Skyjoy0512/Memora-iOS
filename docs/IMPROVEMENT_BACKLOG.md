@@ -646,3 +646,19 @@ workspace別の上限付きSQLite resume documentで引用・完了residentを�
 未完了の操作は再送せず、書込権限を復元しない。22 hostスイートとBitrig build成功。
 Simulatorで履歴の再開、Library往復、終了後の再起動、明示new chatを確認。
 詳細・保存上限・他の未完了項目は[品質改善記録](QUALITY_IMPROVEMENT.md)。
+
+## 2026-10-15 — P0クライアントの接続と品質確認
+
+- 実装: global添付→BYOK agent、対応する@との併用、失敗時の入力/添付保持。
+- Simulator実操作: タスク候補の選択/編集→既存承認→SQLite保存・再読込一致、
+  同一依頼の再実行拒否、拒否/停止で保存なし。モデル応答は検証用fixture。
+- 実装/表示確認: common user message / status / scroll、recordのカード削減、
+  projectのtoolbar停止。履歴/保存/許可はscopeごとに維持。
+- 修正/Simulator確認: 本文がない録音を復旧案内だけから回答しない。質問を保持。
+- 検証: 25 hostスイート成功、追加したアプリ内本文判定チェック成功、Bitrig成功。
+  Light/Dark/大きい文字、空白Ask AI、会話継続を観察。検証データのみ削除、設定復帰。
+- 未確認: 実BYOK添付/実外部認証E2E、実機/性能、backup実復元、VoiceOver/Reduce Motion。
+- 次: ソースの参照可否・解析状態、Officeと安全なWeb本文、正解付きRAG評価。
+  project/recordの書込、添付由来の継続grant、AI Activity、server予算保証は未完了。
+
+完成状態の内訳は[品質改善記録](QUALITY_IMPROVEMENT.md)を参照。

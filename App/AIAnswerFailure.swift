@@ -45,6 +45,7 @@ enum AIAnswerFailure: Error, Equatable {
   case unsupportedProvider
   /// The question was only an attachment no engine can read.
   case attachmentNotAnalysed
+  case recordContentUnavailable
   /// Memora Intelligence refused: the month's credits are used up.
   case outOfCredits
   /// Memora Intelligence is chosen but its server is not connected yet.
@@ -102,6 +103,8 @@ enum AIAnswerFailure: Error, Equatable {
       "このプロバイダーは回答作成に対応していません。設定の「AI整理」で別のプロバイダーを選んでください。"
     case .attachmentNotAnalysed:
       "添付の文字を読めないため、回答を開始していません。テキスト・PDF・文字を含む画像に変更するか、添付を外してもう一度送信してください。"
+    case .recordContentUnavailable:
+      "この記録にはAIが参照できる本文がありません。文字起こし・要約・メモを追加するか、読める資料を添付してください。記録と保存済みファイルはそのままです。"
     }
   }
 }
