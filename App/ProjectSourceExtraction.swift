@@ -9,6 +9,7 @@ enum ProjectSourceExtraction {
     var blocks: [ProjectSourceText]
     var thumbnail: Data?
     var notice: String?
+    var coverage = ProjectSource.TextCoverage.complete
   }
 
   static func extract(_ url: URL) async throws -> Result {
@@ -36,7 +37,8 @@ enum ProjectSourceExtraction {
         try Task.checkCancellation()
         return Result(blocks: [], notice: "UTF-8の本文を読み取れませんでした。元ファイルは保存されています。")
       }
-      return Result(blocks: [ProjectSourceText(text: result.text)], notice: result.wasTruncated ? "本文は先頭512KBを解析しました。" : nil)
+      return Result(blocks: [ProjectSourceText(text: result.text)], notice: result.wasTruncated ? "本文は先頭512KBを解析しました。" : nil,
+        coverage: result.wasTruncated ? .partial : .complete)
     case "pdf":
       guard let document = PDFDocument(url: url) else { throw ProjectSourceFiles.Failure.invalidFile }
       guard !document.isLocked else { return Result(blocks: [], notice: "パスワードで保護されたPDFは解析できません。") }
@@ -45,7 +47,7 @@ enum ProjectSourceExtraction {
       var notices: [String] = []
       for index in 0..<min(20, document.pageCount) {
         try Task.checkCancellation()
-        guard let page = document.page(at: index) else { continue }
+        guard let page = document.page(at: index) else { notices.append("読み取れないページがありました。"); continue }
         var text = page.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if text.isEmpty, scanned < 3 {
           scanned += 1
@@ -59,7 +61,8 @@ enum ProjectSourceExtraction {
       if document.pageCount > 20 { notices.append("先頭20ページを解析しました。") }
       if scanned > 0 { notices.append("画像ページは端末内OCRで読み取った文字を参照します。画像内容のAI解析は行っていません。") }
       if blocks.isEmpty { notices.append("参照できる文字がありません。") }
-      return Result(blocks: blocks, notice: notices.isEmpty ? nil : Array(Set(notices)).sorted().joined(separator: " "))
+      return Result(blocks: blocks, notice: notices.isEmpty ? nil : Array(Set(notices)).sorted().joined(separator: " "),
+        coverage: notices.isEmpty ? .complete : .partial)
     case "png", "jpg", "jpeg", "heic", "heif", "tiff", "gif", "webp":
       guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
             let image = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, [
@@ -74,7 +77,8 @@ enum ProjectSourceExtraction {
         kCGImageSourceCreateThumbnailWithTransform: true
       ] as CFDictionary).flatMap { UIImage(cgImage: $0).jpegData(compressionQuality: 0.75) } : nil
       return Result(blocks: text.isEmpty ? [] : [ProjectSourceText(text: String(text.prefix(12_000)))],
-        thumbnail: thumb, notice: "画像は先頭フレームのOCRで読み取った文字を参照します。画像内容のAI解析は行っていません。")
+        thumbnail: thumb, notice: "画像は先頭フレームのOCRで読み取った文字を参照します。画像内容のAI解析は行っていません。",
+        coverage: .partial)
     default:
       return Result(blocks: [], notice: "この形式は保存・プレビューのみ対応しています。本文解析には対応していません。")
     }

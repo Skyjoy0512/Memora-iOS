@@ -26,11 +26,32 @@ extension ProjectSource {
 
   var statusLabel: String {
     switch processingStatus {
-    case .pending: kind == .youtube ? "動画リンク保存済み" : "保存済み · 解析待ち"
+    case .pending:
+      if kind == .web { "リンク保存済み · 内容未取得" }
+      else { kind == .youtube ? "動画リンク保存済み" : "追加済み · 解析待ち" }
     case .processing: kind == .youtube ? "動画情報を取得中" : "解析中"
-    case .ready: "本文準備済み"
-    case .unavailable: kind == .youtube ? "動画リンク保存済み · 内容未取得" : "保存済み · 解析不可"
+    case .ready:
+      if !canProvideText { "内容未取得" }
+      else {
+        switch textCoverage {
+        case .complete: "AI参照可"
+        case .partial: "一部をAI参照可"
+        case nil: "AI参照可 · 解析範囲未確認"
+        }
+      }
+    case .unavailable: "保存済み · 内容未取得"
     case .failed: "保存済み · 解析失敗"
     }
+  }
+
+  var availabilityNotice: String? {
+    if let errorInformation { return errorInformation }
+    if kind == .web, !canProvideText {
+      return "URLのみ保存しています。Webページの本文は取得していません。"
+    }
+    if canProvideText, textCoverage == nil {
+      return "以前の解析結果です。全文を読み取れたかは確認できません。"
+    }
+    return nil
   }
 }

@@ -10,8 +10,9 @@ extension MemoraModel {
     if let existing = projectSources.first(where: { $0.projectID == projectID && $0.originalURL == link.url }) {
       return existing.id
     }
-    let source = ProjectSource(projectID: projectID, kind: link.kind,
+    var source = ProjectSource(projectID: projectID, kind: link.kind,
       title: link.youtubeID.map { "YouTube · \($0)" } ?? link.url.host ?? "Webリンク", originalURL: link.url)
+    if source.kind == .web { source.processingStatus = .unavailable }
     guard storeProjectSource(source) else { return nil }
     if source.kind == .youtube { Task { await prepareProjectSource(source.id) } }
     return source.id
@@ -38,6 +39,7 @@ extension MemoraModel {
       title: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? String(text.prefix(40)) : title)
     source.extractedTextReference = name
     source.processingStatus = .ready
+    source.textCoverage = .complete
     guard storeProjectSource(source) else {
       await ProjectSourceFiles.shared.remove([name]); return nil
     }
@@ -56,6 +58,7 @@ extension MemoraModel {
     let old = current.extractedTextReference
     current.title = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? String(text.prefix(40)) : title
     current.extractedTextReference = name
+    current.textCoverage = .complete
     current.updatedAt = .now
     guard storeProjectSource(current) else { await ProjectSourceFiles.shared.remove([name]); return false }
     if let old { await ProjectSourceFiles.shared.remove([old]) }
@@ -138,6 +141,7 @@ extension MemoraModel {
       current.extractedTextReference = text
       current.thumbnailReference = thumb
       current.processingStatus = text == nil ? .unavailable : .ready
+      current.textCoverage = text == nil ? nil : result.coverage
       current.errorInformation = result.notice
       if !storeProjectSource(current) { await ProjectSourceFiles.shared.remove(created) }
     } catch {

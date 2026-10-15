@@ -22,6 +22,7 @@ enum AttachmentSelfChecks {
     try pdfData.write(to: pdf)
     let projectPDF = try ProjectSourceExtraction.read(pdf)
     try require(projectPDF.blocks.count == 20 && projectPDF.blocks.last?.page == 20, "PDF page limit")
+    try require(projectPDF.coverage == .partial, "PDF limit must not claim complete extraction")
     let attachmentPDF = prepared(pdf)
     try require(attachmentPDF.text?.contains("PAGE 1 MEMORA FIXTURE") == true && attachmentPDF.notice?.contains("20") == true, "shared PDF extraction")
 
@@ -37,6 +38,11 @@ enum AttachmentSelfChecks {
     try require(ocr.text?.contains("MEMORA") == true && ocr.notice?.contains("OCR") == true, "local image OCR")
     let noThumbnail = try ProjectSourceExtraction.read(image, includesThumbnail: false)
     try require(noThumbnail.thumbnail == nil, "ephemeral attachment thumbnail allocation")
+    try require(noThumbnail.coverage == .partial, "OCR must not claim image understanding")
+
+    let plain = root.appendingPathComponent("complete.txt")
+    try Data("A complete local text fixture".utf8).write(to: plain)
+    try require(try ProjectSourceExtraction.read(plain).coverage == .complete, "complete UTF-8 text")
 
     let invalid = root.appendingPathComponent("invalid.pdf")
     try Data("not a PDF".utf8).write(to: invalid)

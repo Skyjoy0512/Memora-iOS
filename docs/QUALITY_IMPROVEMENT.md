@@ -122,6 +122,24 @@ Bitrig `2026-10-15T07-50-41-aca6e3e8.log`成功、既存metadata警告1件。
 検証後はクラウド（BYOK）/OpenAI/Auto、Light/large、LibraryのProjects選択に戻し、
 Ask AIを空白にして入力をクリアした。追加費用・外部送信・識別子変更はない。
 
+## P1-1: ソースの解析範囲（2026-10-15）
+
+`ProjectSource.textCoverage`はoptionalな追加フィールド。保存状態の既存enum、
+本文JSON、SQLiteキー、privacyを変更しない。解析後の本文がある場合だけ
+「AI参照可」を表示し、PDFの20ページ/12,000文字上限、OCR、UTF-8の512KB上限に
+当たった場合は「一部をAI参照可」と表示する。画像のOCRを画像内容の理解とは扱わない。
+旧データの解析範囲は推測せず未確認として表示し、再解析や外部送信は自動で行わない。
+新旧のWebリンクはURLのみ保存していることを明示し、未実装の本文取得を
+解析待ち・解析成功と表示しない。引用対象の選択と送信許可は従来の別検査を通す。
+
+`ProjectSourceAvailabilityChecks`で旧形式の復元、partialの往復、本文なしのready、
+privacyの非拡張を検証。アプリ内の既存添付チェックにもPDF/OCR/textの範囲判定を追加。
+ホスト26スイート成功。Bitrig preview `2026-10-15T13-39-01-9283a0bd.log`成功
+（既存AppIntents metadata警告1件）。Simulatorで既存WeeklySyncを開き、検証用の
+example.comリンクを保存して一覧/詳細の「内容未取得」と本文未取得の理由を確認。
+変更前後のスクリーンショットを観察し、リンクは開かず、検証用ソースだけを削除した。
+Office抽出、実モデルの利用、実機確認はこの単位に含めない。
+
 ## 第三者の目線での再レビュー
 
 - 新規Ask AIは空白でタブ往復後も会話を続けられる。入力と状態表示を共用したが、

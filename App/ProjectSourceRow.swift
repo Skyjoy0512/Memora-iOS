@@ -13,6 +13,7 @@ struct ProjectSourceRow: View {
           .font(.footnote).foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
         Text(source.statusLabel).font(.footnote).foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }

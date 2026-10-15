@@ -24,7 +24,7 @@ struct ProjectSourceDetailView: View {
           if let failure = source.metadata?["thumbnailError"] {
             Text(failure).font(.subheadline).foregroundStyle(.secondary)
           }
-          if let message = source.errorInformation {
+          if let message = source.availabilityNotice {
             Text(message).font(.subheadline).foregroundStyle(.secondary)
           }
           if let textFailure { Text(textFailure).font(.subheadline).foregroundStyle(.secondary) }

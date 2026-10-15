@@ -15,6 +15,8 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   var createdAt = Date.now
   var updatedAt = Date.now
   var processingStatus = ProcessingStatus.pending
+  // Optional so older sources remain readable without claiming full extraction.
+  var textCoverage: TextCoverage?
   var privacy = RecordPrivacy()
   var errorInformation: String?
   var metadata: [String: String]?
@@ -25,6 +27,10 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
 
   enum ProcessingStatus: String, Codable, Sendable {
     case pending, processing, ready, unavailable, failed
+  }
+
+  enum TextCoverage: String, Codable, Sendable {
+    case complete, partial
   }
 
   var fileReferences: [String] {
