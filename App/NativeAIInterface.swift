@@ -63,7 +63,16 @@ struct NativeAIInterface: Codable, Equatable {
   /// still useful when the interface is invalid or the history is read elsewhere.
   static func response(_ text: String, isStreaming: Bool = false) -> (markdown: String, interface: Self?) {
     let marker = "```memora-ui"
-    guard let start = text.range(of: marker) else { return (text, nil) }
+    guard let start = text.range(of: marker) else {
+      if isStreaming {
+        let start = text.lastIndex(of: "\n").map { text.index(after: $0) } ?? text.startIndex
+        let line = text[start...].trimmingCharacters(in: .whitespaces)
+        if line.hasPrefix("```"), marker.hasPrefix(line) {
+          return (String(text[..<start]).trimmingCharacters(in: .whitespacesAndNewlines), nil)
+        }
+      }
+      return (text, nil)
+    }
     let markdown = String(text[..<start.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
     let suffix = text[start.upperBound...]
     let fallback = markdown.isEmpty && !isStreaming ? "構造化表示を読み込めませんでした。もう一度回答を依頼してください。" : markdown

@@ -50,6 +50,7 @@ struct ProjectSourceDetailView: View {
             }
           }
           MemoraLoadingContainer(state: textState, label: "保存された本文を読み込んでいます…",
+            activityID: textLoad.activityID,
             failure: textLoad.key == sourceID ? textLoad.failure : nil,
             retry: { textRetry += 1 }, cancel: { textTask?.cancel() }) {
             ForEach(Array(extracted.enumerated()), id: \.offset) { _, block in

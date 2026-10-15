@@ -100,7 +100,7 @@ struct HomeView: View {
             HomeActivityLinks()
 
             if showCalendarEvents {
-              MemoraLoadingContainer(state: calendarLoad.state(for: calendarRequest.contentKey), label: "この日の予定を確認しています…") {
+              MemoraLoadingContainer(state: calendarLoad.state(for: calendarRequest.contentKey), label: "この日の予定を確認しています…", activityID: calendarLoad.activityID) {
                 EmptyView()
               }
             }

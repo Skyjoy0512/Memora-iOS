@@ -5,6 +5,9 @@ struct StateGalleryView: View {
   var body: some View {
     List {
       #if DEBUG
+      Section("表示（架空データ）") {
+        NavigationLink("Loading・本文表示を確認") { MotionLoadingGalleryView() }
+      }
       Section("システム導線（遷移の確認）") {
         Button("Ask AIのリンクを開く") { openLink(.askAI) }
         Button("今日のタスクのリンクを開く") { openLink(.todayTasks) }

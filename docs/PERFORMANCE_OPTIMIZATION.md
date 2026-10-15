@@ -173,3 +173,15 @@ MCPの不要なschemaを送らない。単体読取ではプロジェクト全�
 しない。処理状態は変更時だけ代入し、100msの本文更新で同じ状態を繰り返して
 親画面を再描画させない。検索窓は文字数を制限し、質問に一致する部分を残す。
 これらは実機の性能計測値や金額の強制上限ではない。
+
+## 2026-10-16 Motion / Loading / Streaming / Native Harness
+
+基準main `5dc9774`。保存済み情報の0.75秒text revealと段階的Appearを呼出し側から除去。操作用MemoraMotion、native Glass/FAB/Heroを保持。詳細と検証表は [MOTION_LOADING_HARNESS.md](MOTION_LOADING_HARNESS.md)、外部設計比較は [NATIVE_AGENT_HARNESS.md](NATIVE_AGENT_HARNESS.md)。Project.json、保存codec、録音処理、権限設定は変更なし。
+
+streamは最初の文字を即時、その後最短100msの既存公開制御を保持。新しい増分parserは確定段落を再解析せず、未完tailだけ更新。live/settledで同じblock rendererを利用する。構造化UIは従来どおり全受信・検証後だけ表示する。本文開始後のstatus shimmerは静止textへ替える。
+
+Host Swift -O、架空18,130 bytes/92更新、11回、ContinuousClock。毎更新の全文parse候補の合計中央値/p95は22.125/34.541ms、増分は2.546/3.036ms。解析入力848,098/20,993 bytes。これは同じMarkdown parserを使う方式比較で、旧live Textとのbefore/afterや実機frame改善率ではない。`tools/checks/MarkdownStreamingBenchmark.swift`がfixture。起動・Home・tab・detail・hitches・main thread占有・peak memory・network初回回答・skeleton頻度の実機Release値は未測定。
+
+Loadingの閾値は180ms/2秒/5秒を共通化。高速ローカル一覧は即時表示。日付とcalendar設定へ予定を束ね、古い日付のイベントをrecap/summaryへ渡さない。本文の非同期読取はsource/参照/retryとtokenで取消・古い応答を拒否。refreshは既存本文を保持する。
+
+Agentの新しい診断eventは要求/操作の事実と終了所要時間だけで、本文・引数・キーを記録しない。request/byte/時間の上限は有限のローカルguardであり、ドル金額やtoken課金の強制上限ではない。

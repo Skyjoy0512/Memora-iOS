@@ -3,6 +3,7 @@ import SwiftUI
 struct MemoraLoadingContainer<Content: View>: View {
   var state: MemoraLoadingState
   var label: String
+  var activityID: UUID?
   var failure: String?
   var retry: (() -> Void)?
   var cancel: (() -> Void)?
@@ -27,7 +28,7 @@ struct MemoraLoadingContainer<Content: View>: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .task(id: state) {
+    .task(id: Activity(state: state, id: activityID)) {
       stage = 0
       guard state.isWorking else { return }
       let clock = ContinuousClock()
@@ -40,5 +41,10 @@ struct MemoraLoadingContainer<Content: View>: View {
         }
       } catch { }
     }
+  }
+
+  private struct Activity: Equatable {
+    var state: MemoraLoadingState
+    var id: UUID?
   }
 }

@@ -7,12 +7,14 @@ struct MemoraLoadSnapshot<Key: Equatable, Value> {
   private(set) var state = MemoraLoadingState.idle
   private(set) var failure: String?
   private var requestID: UUID?
+  private var settledState = MemoraLoadingState.idle
+  var activityID: UUID? { requestID }
 
   func value(for key: Key) -> Value? { self.key == key ? value : nil }
   func state(for key: Key) -> MemoraLoadingState { self.key == key ? state : .idle }
 
   mutating func begin(_ key: Key) -> UUID {
-    if self.key != key { value = nil }
+    if self.key != key { value = nil; settledState = .idle }
     self.key = key
     failure = nil
     state = value == nil ? .loading : .refreshing
@@ -25,6 +27,7 @@ struct MemoraLoadSnapshot<Key: Equatable, Value> {
     guard requestID == token else { return }
     self.value = value
     state = isEmpty ? .empty : .loaded
+    settledState = state
     failure = nil
     requestID = nil
   }
@@ -40,6 +43,6 @@ struct MemoraLoadSnapshot<Key: Equatable, Value> {
     guard requestID == token else { return }
     requestID = nil
     failure = nil
-    state = value == nil ? .idle : .loaded
+    state = value == nil ? .idle : settledState
   }
 }

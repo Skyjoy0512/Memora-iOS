@@ -12,6 +12,11 @@ struct NativeAIInterfaceChecks {
     precondition(NativeAIInterface.response("```memora-ui\n{", isStreaming: true).markdown.isEmpty)
     precondition(!NativeAIInterface.response("```memora-ui\n{").markdown.isEmpty)
     precondition(NativeAIInterface.response("通常の回答").markdown == "通常の回答")
+    for prefix in ["```", "```m", "```memora-", "```memora-ui"] {
+      let pending = NativeAIInterface.response("回答\n\n" + prefix, isStreaming: true)
+      precondition(pending.markdown == "回答" && pending.interface == nil)
+    }
+    precondition(NativeAIInterface.response("```swift\nlet x = 1", isStreaming: true).markdown.contains("let x = 1"))
     precondition(NativeAIInterface.response("回答\n```memora-ui\n{" ).markdown == "回答")
     for unsafe in [
       json.replacingOccurrences(of: "\"version\":1", with: "\"version\":2"),

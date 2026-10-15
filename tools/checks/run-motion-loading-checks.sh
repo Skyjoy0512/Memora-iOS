@@ -10,3 +10,7 @@ swiftc App/ConversationScrollState.swift tools/checks/ConversationScrollChecks.s
 "$check_dir/scroll"
 swiftc App/MarkdownBlock.swift App/SourcedMarkdownBlock.swift App/MarkdownFence.swift App/MarkdownBlockParser.swift App/MarkdownBlockWriter.swift App/IncrementalMarkdown.swift tools/checks/IncrementalMarkdownChecks.swift -o "$check_dir/markdown"
 "$check_dir/markdown"
+swiftc App/IntegrationCatalog.swift App/LibrarySection.swift tools/checks/CatalogPresentationChecks.swift -o "$check_dir/catalog"
+"$check_dir/catalog"
+swiftc App/AIAnswerFailure.swift App/AgentSessionBudget.swift tools/checks/AgentBudgetChecks.swift -o "$check_dir/budget"
+"$check_dir/budget"
