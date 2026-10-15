@@ -662,3 +662,17 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
   project/recordの書込、添付由来の継続grant、AI Activity、server予算保証は未完了。
 
 完成状態の内訳は[品質改善記録](QUALITY_IMPROVEMENT.md)を参照。
+
+## 2026-10-15 — P1ソース状態とOffice
+
+- 実装/Simulator確認: 保存・内容未取得・AI参照可・一部参照を区別。既存ソースの解析範囲を推測しない。WebリンクはURLのみ保存と明示。
+- 実装/fixture確認: DOCX/PPTX/XLSXの端末内文字抽出をproject/Ask AI添付で共用。
+  store/DEFLATE/descriptor、上限、不正XML/ZIP・外部参照拒否を27 hostスイートで確認。
+- Simulator実保存: 3形式を通常importで取り込み、本文/添付/SQLite再読込一致、
+  Light/Dark/大きい文字で表示確認。検証データのみ削除。Bitrig preview成功。
+- 未対応: Officeの画像/グラフ/ノート/脚注/レイアウト、数式計算、バイナリ/暗号化Office。
+- 次: SSRF対策を満たすWeb本文取得、正解付きRAG評価とproject導線、
+  BYOK/外部認証の実E2E、全画面監査、実backup復元、実機/Widget/性能。
+
+対応範囲・安全上限・未検証項目は[Office抽出](OFFICE_SOURCE_EXTRACTION.md)と
+[品質改善記録](QUALITY_IMPROVEMENT.md)が最新。

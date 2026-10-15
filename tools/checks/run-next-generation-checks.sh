@@ -6,6 +6,9 @@ check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 swiftc Shared/MemoraIcon.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSource+Presentation.swift tools/checks/ProjectSourceAvailabilityChecks.swift -o "$check_dir/source-availability"
 "$check_dir/source-availability"
+python3 tools/checks/make-office-fixtures.py "$check_dir/office-fixtures"
+swiftc App/ZipArchive.swift App/ProjectSourceText.swift App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift tools/checks/OfficeDocumentChecks.swift -o "$check_dir/office"
+"$check_dir/office" "$check_dir/office-fixtures"
 swiftc Shared/MemoraIcon.swift App/AgentStep.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/ComposerMention.swift App/AIAnswerDetails.swift App/AIChatSource.swift App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/AIConversationProvenance.swift App/AIChatMessage.swift App/ToolInputValidator.swift App/NativeAIInterface.swift App/AIConversationSnapshot.swift tools/checks/AIConversationSnapshotChecks.swift -o "$check_dir/conversation"
 "$check_dir/conversation"
 swiftc App/AIAttachment.swift App/AIAttachmentFileReference.swift App/PreparedAIAttachment.swift App/AgentAttachmentContext.swift App/AIPluginExecutionPolicy.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentConversationLoop.swift tools/checks/AgentAttachmentChecks.swift -o "$check_dir/agent-attachment"

@@ -150,9 +150,13 @@ extension MemoraModel {
             var current = self.source(id: id), current.localFileReference == name,
             current.projectID == source.projectID else { return }
       current.processingStatus = .failed
-      current.errorInformation = error is CancellationError
-        ? "解析を停止しました。元ファイルは保存されています。"
-        : "解析できませんでした。元ファイルは保存されています。"
+      if let failure = error as? OfficeArchiveReader.Failure {
+        current.errorInformation = failure.errorDescription
+      } else {
+        current.errorInformation = error is CancellationError
+          ? "解析を停止しました。元ファイルは保存されています。"
+          : "解析できませんでした。元ファイルは保存されています。"
+      }
       _ = storeProjectSource(current)
     }
   }

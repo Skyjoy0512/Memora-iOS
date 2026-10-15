@@ -416,3 +416,16 @@ add_tasksの候補を選択し、タイトル/詳細/担当/期限を編集し�
 実BYOKの添付からのツール選択/実外部サービスE2Eと実機性能は未確認。
 project/recordの変更ツール、Office/Web本文、RAG評価、App Groupは引き続き残る。
 詳細と第三者目線の再レビューは[品質改善記録](QUALITY_IMPROVEMENT.md)。
+
+## 2026-10-15 — P1のソースとOffice
+
+ソースの保存/本文取得/一部解析を区別し、旧データは解析範囲未確認と表示する。
+DOCX/PPTX/XLSXの文字をboundedな端末内ZIP/XML readerで取り込み、既存の
+ProjectSourceExtraction / AIAttachmentTextへ接続した。Officeの文字以外の要素は
+未解析、数式は保存済み値だけを扱う。外部参照やコード実行は認めない。
+
+27 hostスイート、Bitrig preview成功。Simulatorの3形式取込・本文/添付・SQLite再読込、
+Light/Dark/大きい文字を確認。実LLM/実Office資料群/実機性能は未確認。
+一般Web本文、正解付きRAG評価、project/record書込、実外部認証E2E、App Groupは残る。
+制限と仕様参照は[Office抽出](OFFICE_SOURCE_EXTRACTION.md)、確認範囲は
+[品質改善記録](QUALITY_IMPROVEMENT.md)を参照。

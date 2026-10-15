@@ -44,6 +44,14 @@ enum AttachmentSelfChecks {
     try Data("A complete local text fixture".utf8).write(to: plain)
     try require(try ProjectSourceExtraction.read(plain).coverage == .complete, "complete UTF-8 text")
 
+    for office in try OfficeSourceFixtures.write(in: root) {
+      let result = try ProjectSourceExtraction.read(office)
+      let attachment = prepared(office)
+      try require(result.coverage == .partial && attachment.text?.contains("MEMORA OFFICE FIXTURE") == true,
+        "shared native Office extraction: \(office.pathExtension)")
+      try require(!result.blocks.contains(where: { $0.text.contains("NOT PARSED NOTES") }), "speaker notes not invented")
+    }
+
     let invalid = root.appendingPathComponent("invalid.pdf")
     try Data("not a PDF".utf8).write(to: invalid)
     try require(prepared(invalid).text == nil && prepared(invalid).failure != nil, "invalid PDF fallback")

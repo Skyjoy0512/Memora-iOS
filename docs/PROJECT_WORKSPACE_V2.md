@@ -1,5 +1,10 @@
 # Project Workspace V2 — 設計と実装記録
 
+> 2026-10-15更新: DOCX/PPTX/XLSXの文字抽出とソースの解析範囲表示を追加。
+> 過去節の「Office未対応」「本文準備済み」は当時の状態。
+> 現在の対応範囲と検証結果は[Office抽出](OFFICE_SOURCE_EXTRACTION.md)・
+> [品質改善記録](QUALITY_IMPROVEMENT.md#p1-2-officeの共通本文抽出2026-10-15)を参照。
+
 ステータス: 実装中。2026-10-12。V2全体の完成報告ではない。
 
 ## 方針

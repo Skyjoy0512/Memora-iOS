@@ -37,6 +37,8 @@ enum AIAttachmentText {
       content.failure = "添付の読み込みを停止しました。"
     } catch ProjectSourceFiles.Failure.tooLarge {
       content.failure = "ファイルは50MB以下にしてください。"
+    } catch let failure as OfficeArchiveReader.Failure {
+      content.failure = failure.errorDescription
     } catch {
       content.failure = "ファイルを読み込めませんでした。形式とアクセス権を確認してください。"
     }

@@ -79,6 +79,9 @@ enum ProjectSourceExtraction {
       return Result(blocks: text.isEmpty ? [] : [ProjectSourceText(text: String(text.prefix(12_000)))],
         thumbnail: thumb, notice: "画像は先頭フレームのOCRで読み取った文字を参照します。画像内容のAI解析は行っていません。",
         coverage: .partial)
+    case "docx", "pptx", "xlsx":
+      let result = try OfficeDocumentExtraction.read(url)
+      return Result(blocks: result.blocks, notice: result.notice, coverage: .partial)
     default:
       return Result(blocks: [], notice: "この形式は保存・プレビューのみ対応しています。本文解析には対応していません。")
     }

@@ -140,6 +140,45 @@ example.comリンクを保存して一覧/詳細の「内容未取得」と本�
 変更前後のスクリーンショットを観察し、リンクは開かず、検証用ソースだけを削除した。
 Office抽出、実モデルの利用、実機確認はこの単位に含めない。
 
+## P1-2: Officeの共通本文抽出（2026-10-15）
+
+GitHub mainを再fetchし、`a6deb20`から追加更新がないことを確認した。
+`OfficeArchiveReader` / `OfficeXMLDocument` / `OfficeDocumentExtraction`を追加。
+新しい依存ライブラリを導入せず、Apple Compression/XMLParserでDOCX / PPTX / XLSXの
+文字を端末内で抽出する。文字数に加えてUTF-8 256KiBも上限とし、結合文字を含む場合も
+既存の本文JSON上限内に保存・再読込できることを確認する。Wordの本文/表、実スライド順、シート順・セル番地・保存済みの
+値を扱う。数式やマクロを実行せず、外部参照を取得しない。詳細な制限・仕様参照は
+[Office抽出](OFFICE_SOURCE_EXTRACTION.md)に残した。
+
+既存のProjectSourceExtraction、ファイルコピー/容量/指紋、ZipArchive CRCとPPTXWriter、
+TextReader、本文JSON、索引・引用、AIAttachmentTextの準備済み資料を再利用する。
+新しいUIはDEBUG限定の取込検証画面だけで、通常画面は既存のソース行/詳細を使う。
+Officeの画像/グラフ/脚注/ノート/レイアウト等は未解析として明示し、文字を取得しても
+「一部をAI参照可」にする。旧Officeソースは詳細の再試行から明示的に解析できる。
+古いバイナリOffice、暗号化、マクロ拡張子、ZIP64などは未対応。失敗時も元コピーを残す。
+
+| 検証段階 | 今回確認した内容 |
+| --- | --- |
+| ホスト自動テスト | 27スイート成功。Python標準zipfileで生成したstore/DEFLATE/descriptor、strict namespace、日本語、表/順序/cached cell、80,000文字上限、停止を実Swift readerで検査。17種の不正ZIP/XML/外部参照/CRC/上限等のfixtureを拒否 |
+| ビルド/起動 | 最終Bitrig preview `2026-10-15T13-56-15-3e31cb64.log`成功、既存AppIntents metadata警告1件。iOS Simulatorで起動。最初のhostテストのasync autoclosure/actor呼出エラーを修正して成功 |
+| Simulator自己チェック | AI shared attachment extractionの「成功」を確認。PDF/OCR/textの範囲判定とOffice 3形式、既存Memora PPTX exportの読み戻しを含む。自己チェックは正式なXCTestターゲットではない |
+| Simulator実操作 | 新規の検証用projectへ通常importProjectFileで3形式を取り込み、本文ファイル・添付経路・SQLite再読込の3件一致、外部送信オフを確認。3形式の詳細で実際の抽出本文を表示。Excelは保存値42、PPTXはスライド1/2順を確認。最終buildでも3件の保存/読取とExcelの同行ブロック表示を再確認 |
+| UI | 変更前後のスクリーンショットを観察。Light/Dark、accessibility_extra_largeで長いWord名・状態・説明・本文が折り返され、行を選択可能。Listの長いタイトルは従来どおり2行と全文のAXラベル、詳細は全文を表示 |
+| 後始末 | 作成IDだけで3ソース/検証projectを削除。Libraryは既存WeeklySync 1件、既存録音/通話2件、元の空projectを確認。Light/largeとProjects選択へ復帰。外部API/契約/データ削除/識別子変更はない |
+| 未検証 | 実BYOKによるOffice→候補→toolのE2E、実Office製品の広い資料群、各Files provider、実機、VoiceOver読み上げ、実backup復元、Releaseのピークメモリ/実行時間。性能改善率は未計測 |
+
+SQLiteとbackupの既存形式を置き換えず、coverageのoptional追加だけを行った。
+media/会話形式、Liquid Glass、UISegmentedControl、FAB、hero/safe area、録音Live Activity、
+Widget、App Group設定は変更していない。Intelligent UI / plugin / skillの機能追加は
+この単位には含めず、既存の権限・承認・料金制限を維持する。
+
+最終レビューで結合文字500,000個のfixtureを追加し、文字数だけの上限では不十分な
+点を補強した。このテストで、DEFLATEが入力消費後も出力を段階的に返す正常な
+パッケージを拒否していた不具合も検出。進捗/処理回数/出力サイズを検証しながら
+最後まで受け取るよう修正し、27スイートを再実行して成功した。
+Excelはシート名と同行セルを同じ本文ブロックにし、検索の根拠が切り離されるのを
+抑えた。資料ごと/送信量の上限を緩めたわけではなく、検索精度の実測は次工程に残す。
+
 ## 第三者の目線での再レビュー
 
 - 新規Ask AIは空白でタブ往復後も会話を続けられる。入力と状態表示を共用したが、
@@ -147,8 +186,10 @@ Office抽出、実モデルの利用、実機確認はこの単位に含めな�
 - 候補をその場で編集・承認し保存済みの結果へつながる。UIの編集だけで保存成功と
   表示しない。実モデルによるPDFの候補抽出/ツール選択のE2Eは未確認であり、
   添付からの実用性全体は完成扱いしない。
-- プロジェクトはチャットと資料の関係がまだ弱く、本文未取得の理由は会話時に
-  初めて分かる。AI参照可否と資料追加後の解析状態が次の優先。
+- ソース一覧/詳細で保存と本文取得、全文と一部を区別できるようになった。
+  Officeの文字を既存のプロジェクト/添付経路で使えるが、一般WebはURLのみ、
+  YouTubeは動画情報のみ。正解資料付き検索評価とチャット/資料の導線改善は残る。
+  ソース削除後に空の詳細へ残る既存挙動も、次のUX調整候補。
 - 自動選択は現行ローカルランキングを維持。日本語の評価セットと実認証サービスを
   使った選択/実行の精度は未確認。
 - Intelligent UIの候補編集/登録は実保存経路で有用性を確認。比較/グラフの数値の
@@ -158,7 +199,7 @@ Office抽出、実モデルの利用、実機確認はこの単位に含めな�
 
 ## 次の実装順
 
-1. ソース状態とOffice、一般Webの安全な取得、正解付きRAG評価。
+1. 一般Webの安全な取得（DNS/redirect/SSRFを含む）、正解付きRAG評価、project導線。
 2. 添付からのBYOK実E2E（利用者の安全なテスト環境が必要）。
 3. 連携/skillの評価、全画面のappearance/accessibility、backup実復元、
    Apple識別子/App Group準備、実機性能と実サービスE2E。
