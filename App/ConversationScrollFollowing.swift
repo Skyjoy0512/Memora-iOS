@@ -26,9 +26,9 @@ struct ConversationScrollFollowing: ViewModifier {
       .onChange(of: isBusy) { _, _ in
         if position.contentArrived() { scroll(animated: false) }
       }
-      .onAppear { scroll(animated: false) }
+      .onAppear { if position.followsLatest { scroll(animated: false) } }
       .overlay(alignment: .bottom) {
-        if position.hasUnseenContent, !isBusy {
+        if position.hasUnseenContent {
           Button("新しい回答", icon: .arrowDown) { position.follow(); scroll(animated: true) }
             .font(.subheadline.weight(.semibold))
             .padding(.horizontal, 14).padding(.vertical, 9)

@@ -19,7 +19,7 @@ struct ThinkingTraceView: View {
       || model.pendingAgentQuestions?.messageID == message.id
 
     ConversationStatusLine(label: isWaiting ? "確認を待っています" : label,
-      since: message.createdAt, isWaiting: isWaiting)
+      since: message.createdAt, isWaiting: isWaiting, showsShimmer: message.text.isEmpty)
   }
 
   private var label: String {

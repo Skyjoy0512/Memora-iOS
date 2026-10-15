@@ -13,10 +13,14 @@ struct ConversationScrollState: Equatable {
 
   mutating func update(_ viewport: Viewport, isUserDriven: Bool) -> Bool {
     guard [viewport.offset, viewport.height, viewport.contentHeight].allSatisfy(\.isFinite) else { return false }
+    let contentGrew = previous.map { viewport.contentHeight > $0.contentHeight } ?? false
     let layoutChanged = previous?.contentHeight != viewport.contentHeight || previous?.height != viewport.height
     previous = viewport
     // Keyboard resizing and lazy row measurement must not change reading intent.
-    if !isUserDriven { return layoutChanged && followsLatest }
+    if !isUserDriven {
+      if contentGrew && !followsLatest { hasUnseenContent = true }
+      return layoutChanged && followsLatest
+    }
     followsLatest = viewport.offset + viewport.height >= viewport.contentHeight - 80
     if followsLatest { hasUnseenContent = false }
     return false

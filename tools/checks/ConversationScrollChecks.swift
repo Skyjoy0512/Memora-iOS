@@ -16,7 +16,7 @@ enum ConversationScrollChecks {
     _ = state.update(.init(offset: 250, height: 300, contentHeight: 1_000), isUserDriven: true)
     precondition(!state.followsLatest && !state.contentArrived() && state.hasUnseenContent)
     precondition(!state.update(.init(offset: 250, height: 300, contentHeight: 1_100), isUserDriven: false))
-    precondition(!state.followsLatest)
+    precondition(!state.followsLatest && state.hasUnseenContent)
     state.hasUnseenContent = false
     precondition(!state.update(.init(offset: 250, height: 180, contentHeight: 1_100), isUserDriven: false))
     precondition(!state.hasUnseenContent && !state.followsLatest)

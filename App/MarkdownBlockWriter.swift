@@ -61,6 +61,11 @@ enum MarkdownBlockWriter {
       return [row(header), separator] + rows.map(row)
     case .rule:
       return ["---"]
+    case .code(let language, let text):
+      // Use a longer delimiter if the content itself contains a fence.
+      let length = max(3, (text.components(separatedBy: "\n").map { $0.prefix { $0 == "`" }.count }.max() ?? 0) + 1)
+      let delimiter = String(repeating: "`", count: length)
+      return [delimiter + language] + text.components(separatedBy: "\n") + [delimiter]
     }
   }
 

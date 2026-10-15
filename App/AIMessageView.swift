@@ -134,34 +134,29 @@ struct AIMessageView: View {
   }
 
   /// The answer, with the records it really cited as inline links.
-  @ViewBuilder
   private var answerText: some View {
-    if message.isThinking {
-      AIResponseText(text: message.text, isStreaming: true, messageID: message.id)
-    } else if let id = message.webResearchReportIDs.last, let report = model.webResearch(id: id), report.isChatSearch == true {
-      let sent = report.sources.filter { report.sentSourceIDs?.contains($0.id) == true }
-      StreamingText(text: WebResearchContext.markdownLinked(message.text, sent: sent), lineSpacing: 5, animates: false,
-        revealText: String(WebResearchContext.linked(message.text, sent: sent).characters))
-        .environment(\.openURL, OpenURLAction { url in
-          guard url.scheme == WebResearchContext.citationScheme else { return .systemAction }
+    let report = message.webResearchReportIDs.last.flatMap { model.webResearch(id: $0) }
+    let sent = report?.isChatSearch == true
+      ? report?.sources.filter { report?.sentSourceIDs?.contains($0.id) == true } ?? [] : []
+    let text = !sent.isEmpty
+      ? WebResearchContext.markdownLinked(message.text, sent: sent)
+      : !message.isAgentReply
+        ? AnswerCitations.linked(message.text, sources: message.sources)
+        : AnswerCitations.stripped(message.text)
+
+    return AIResponseText(text: text, isStreaming: message.isThinking, messageID: message.id)
+      .environment(\.openURL, OpenURLAction { url in
+        if url.scheme == WebResearchContext.citationScheme {
           guard let source = WebResearchContext.source(for: url, sent: sent) else { return .discarded }
           return .systemAction(source.url)
-        })
-    } else if !message.isAgentReply, AnswerCitations.hasCitations(message.text, sources: message.sources) {
-      StreamingText(
-        text: AnswerCitations.linked(message.text, sources: message.sources),
-        lineSpacing: 5,
-        animates: false,
-        revealText: AnswerCitations.stripped(message.text)
-      )
-      .environment(\.openURL, OpenURLAction { url in
-        guard let source = AnswerCitations.source(for: url, in: message.sources) else { return .systemAction }
-        citedRecord = source
-        return .handled
+        }
+        if url.scheme == AnswerCitations.scheme {
+          guard let source = AnswerCitations.source(for: url, in: message.sources) else { return .discarded }
+          citedRecord = source
+          return .handled
+        }
+        return .systemAction
       })
-    } else {
-      AIResponseText(text: AnswerCitations.stripped(message.text), messageID: message.id)
-    }
   }
 
   /// Records with lines that can be played back.

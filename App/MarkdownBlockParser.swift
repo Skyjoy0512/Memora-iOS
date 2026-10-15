@@ -9,7 +9,7 @@ enum MarkdownBlockParser {
   /// True when text uses any markdown worth drawing: list markers, headings,
   /// quotes, tables, or bold. Used for chat answers, which are often lists.
   static func hasInlineOrBlockMarkdown(_ text: String) -> Bool {
-    if text.contains("**") || hasBlockStructure(text) { return true }
+    if text.contains("**") || text.contains("```") || text.contains("~~~") || hasBlockStructure(text) { return true }
     return text.split(separator: "\n").contains { line in
       let trimmed = line.drop { $0 == " " }
       if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("> ") { return true }
@@ -116,6 +116,9 @@ enum MarkdownBlockParser {
     var tableLines: [String] = []
     var tableStart = 0
     var lineIndex = 0
+    var fence: MarkdownFence?
+    var codeLines: [String] = []
+    var codeStart = 0
 
     func flushParagraph() {
       guard !paragraph.isEmpty else { return }
@@ -142,8 +145,24 @@ enum MarkdownBlockParser {
       blocks.append(SourcedMarkdownBlock(block: block, lines: lineIndex..<(lineIndex + 1)))
     }
 
-    for (index, rawLine) in markdown.components(separatedBy: "\n").enumerated() {
+    for (index, sourceLine) in markdown.components(separatedBy: "\n").enumerated() {
+      let rawLine = sourceLine.hasSuffix("\r") ? String(sourceLine.dropLast()) : sourceLine
       lineIndex = index
+      if let open = fence {
+        if open.closes(rawLine) {
+          blocks.append(SourcedMarkdownBlock(block: .code(language: open.language, text: codeLines.joined(separator: "\n")), lines: codeStart..<(index + 1)))
+          fence = nil
+          codeLines = []
+        } else { codeLines.append(rawLine) }
+        continue
+      }
+      if let open = MarkdownFence(rawLine) {
+        flushParagraph()
+        flushTable()
+        fence = open
+        codeStart = index
+        continue
+      }
       let indent = rawLine.prefix { $0 == " " || $0 == "\t" }
         .reduce(0) { $0 + ($1 == "\t" ? 4 : 1) }
       let line = rawLine.trimmingCharacters(in: .whitespaces)
@@ -184,6 +203,9 @@ enum MarkdownBlockParser {
       paragraph.append(line)
     }
     lineIndex = markdown.components(separatedBy: "\n").count
+    if let open = fence {
+      blocks.append(SourcedMarkdownBlock(block: .code(language: open.language, text: codeLines.joined(separator: "\n")), lines: codeStart..<lineIndex))
+    }
     flushParagraph()
     flushTable()
     return blocks

@@ -6,6 +6,7 @@ enum MarkdownBlock: Hashable {
   case paragraph(String)
   case bullet(level: Int, marker: Marker, text: String)
   case quote(String)
+  case code(language: String, text: String)
   case table(header: [String], rows: [[String]])
   case rule
 

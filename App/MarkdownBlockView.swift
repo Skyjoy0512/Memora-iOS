@@ -51,6 +51,12 @@ struct MarkdownBlockView: View {
     case .rule:
       Divider()
         .padding(.vertical, 8)
+
+    case .code(_, let text):
+      Text(verbatim: text)
+        .font(.system(.body, design: .monospaced))
+        .textSelection(.enabled)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
   }
 

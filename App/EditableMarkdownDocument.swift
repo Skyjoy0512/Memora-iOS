@@ -274,13 +274,14 @@ struct EditableMarkdownDocument: View {
 
   private func isEditable(_ block: MarkdownBlock) -> Bool {
     if case .rule = block { return false }
+    if case .code = block { return false }
     return true
   }
 
   private static func text(of block: MarkdownBlock) -> String {
     switch block {
     case .heading(_, let text), .paragraph(let text), .bullet(_, _, let text), .quote(let text): text
-    case .table, .rule: ""
+    case .table, .rule, .code: ""
     }
   }
 

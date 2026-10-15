@@ -43,3 +43,19 @@ Phase 1〜6の結果、比較表、残課題は各段階で追記する。
 Home: 予定を日付/カレンダー設定へ関連付け、recap/summary/timelineすべて同じ一致した予定を使用。taskの自動取消、要求token、反映前の再確認を併用。復帰/EventKit通知もtask IDで更新。ローカル記録は待たずに表示。CalendarServiceの既存APIは失敗と空を区別しないため、新しいエラー原因を推測して表示しない。
 
 検証: virtual clockの50/150/180/200/2000/5000ms、古い応答、重複要求、取消後応答、retry、refresh保持、日付key、empty/failedを`LoadingPolicyChecks`で成功。scroll既存チェック成功。iOS preview成功（08-31-41-be522b3b、最終差分を含む08-33-33-5396a777）。実時間の遅延を注入した画面検証は未実施。
+
+## Phase 3 — Streaming / Markdown / Scroll
+
+`StreamingMarkdownView`はlive/settledで同一のblock viewを使う。view-localの派生cacheで初回から同期表示し、Observableの余分な更新を発生させない。`IncrementalMarkdown`は新しい改行だけを走査し、fenceの外の空行でprefixを確定、未完段落だけを再解析。完成時は残ったtailだけ確定し、全文リビールしない。ストリームの一時本文をMarkdownBlockParserのsettled cacheへ投入しない。100msのネットワーク公開制御は変更なし。
+
+コードfence（backtick/tilde、長いdelimiter、未完了）はliteralなmonospaceとして共通parser/viewへ追加。コード内の見出し・表を解釈しない。編集は既存source editorで可能、コードblockのtapによる新しい編集機構は追加しない。コピー・選択とMarkdownBlockWriterのroundtripを維持。CRLFの空行も同一解釈に修正。
+
+AIMessageViewはstreaming/settledの分岐による本文viewの入替をやめ、引用リンクも同じ経路で描く。無効な資料番号は既存の検証で除去。NativeAIInterfaceのschema/権限/完了待ちを変更せず、完全受信時のUI追加だけ許す。表の未完行・inline構文が完成した時の**tail内**のサイズ変化、Native UIが新規追加された高さまでゼロにはできない。
+
+StreamingTextの固定60ms/word、FlowLayout、blur、NLTokenizer、timerを除去し、互換wrapperを保持。新しい文字は到着時に表示（追加fadeもなし）。本文開始後はstatusのshimmerを静止textへ替え、承認待ちは従来のisWaitingを維持。
+
+Scroll: 手動閲覧中のheight増加を未読として記録、生成中にも「新しい回答」を出す。再appear時は追従中だけ末尾へ移動。キーボード/measurementの変化で追従意図を変えない。タブでview自体が破棄される場合の任意位置復元までは追加していない。
+
+検証: motion/loading/scroll/増分Markdown fixture成功。next-generation全体再実行成功（snapshot、privacy、Native UI validation、stream終端/partial tool、plugin approval/costを含む）。iOS preview成功（08-35-19-69a4ef65）。有料ネットワーク・実機ストリーミングは未実施。
+
+Host Swift -O、架空18,130 bytes、92更新、11回: 全文を毎更新parseする候補の中央値22.125ms/p95 34.541ms、増分2.546ms/3.036ms（全92更新の合計）。解析入力848,098 → 20,993 bytes。`MarkdownStreamingBenchmark.swift`で再現可能。**旧live Textのbefore/after値ではなくparser戦略の比較**。旧liveはそもそもMarkdown未解析。実機のフレーム、初回到着時間、memory改善率へ外挿しない。

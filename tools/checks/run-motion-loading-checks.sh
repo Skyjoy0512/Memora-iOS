@@ -8,3 +8,5 @@ swiftc App/MemoraLoadingState.swift App/MemoraLoadingPolicy.swift App/MemoraLoad
 "$check_dir/loading"
 swiftc App/ConversationScrollState.swift tools/checks/ConversationScrollChecks.swift -o "$check_dir/scroll"
 "$check_dir/scroll"
+swiftc App/MarkdownBlock.swift App/SourcedMarkdownBlock.swift App/MarkdownFence.swift App/MarkdownBlockParser.swift App/MarkdownBlockWriter.swift App/IncrementalMarkdown.swift tools/checks/IncrementalMarkdownChecks.swift -o "$check_dir/markdown"
+"$check_dir/markdown"
