@@ -27,6 +27,35 @@ struct ProjectContextChecks {
     let revoked = ProjectContextBuilder.build(question: "旅行", projectID: project, chunks: chunks,
       allowed: [], characterBudget: 1_000)
     precondition(revoked.used.isEmpty && revoked.text.isEmpty)
-    print("ProjectContextChecks: passed (chunk/page fidelity, project/privacy isolation, budgets, follow-ups, citation validation)")
+    let kana = ProjectContextBuilder.split("さくらの資料", projectID: project, target: source, title: "さくら")
+    let kanaResult = ProjectContextBuilder.build(question: "さくら", projectID: project,
+      chunks: kana, allowed: [source], characterBudget: 1_000)
+    precondition(kanaResult.used.count == 1 && kanaResult.matchedCount == 1)
+    for question in ["木星の衛星軌道", "ぬねのめも", "unrelated telescope"] {
+      let unknown = ProjectContextBuilder.build(question: question, projectID: project,
+        chunks: kana, allowed: [source], characterBudget: 1_000)
+      precondition(unknown.used.isEmpty && unknown.matchedCount == 0)
+    }
+    let titleOnly = ProjectContextBuilder.split("本文は準備中", projectID: project, target: source, title: "保守契約")
+    let titleResult = ProjectContextBuilder.build(question: "保守契約", projectID: project,
+      chunks: titleOnly, allowed: [source], characterBudget: 1_000)
+    precondition(titleResult.used.count == 1)
+    let followUp = ProjectContextBuilder.build(question: "shorten that", projectID: project,
+      chunks: kana, allowed: [source], characterBudget: 1_000)
+    precondition(!followUp.used.isEmpty)
+    let deadlines = ProjectContextBuilder.split("提出期限は金曜日", projectID: project, target: source, title: "作業")
+    let paraphrase = ProjectContextBuilder.build(question: "納期は？", projectID: project,
+      chunks: deadlines, allowed: [source], characterBudget: 1_000)
+    precondition(paraphrase.used.count == 1)
+    let selectedRead = ProjectContextBuilder.build(question: "承認について詳しく", projectID: project,
+      chunks: kana + privateChunks + otherChunks, allowed: [source, secret], characterBudget: 1_000, selectedTarget: source)
+    precondition(!selectedRead.used.isEmpty && selectedRead.used.allSatisfy { $0.target == source && $0.title == "さくら" })
+    let revokedRead = ProjectContextBuilder.build(question: "承認について詳しく", projectID: project,
+      chunks: kana, allowed: [], characterBudget: 1_000, selectedTarget: source)
+    precondition(revokedRead.used.isEmpty)
+    let overview = ProjectContextBuilder.build(question: "このプロジェクトの進捗をまとめて", projectID: project,
+      chunks: kana + privateChunks + otherChunks, allowed: [source], characterBudget: 1_000)
+    precondition(!overview.used.isEmpty && overview.used.allSatisfy { $0.target == source && $0.title == "さくら" })
+    print("ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)")
   }
 }

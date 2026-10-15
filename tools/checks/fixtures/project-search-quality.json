@@ -1,0 +1,32 @@
+{
+  "asOf": "2026-10-15",
+  "documents": [
+    {"id":"release","project":"alpha","title":"さくら計画の公開日","blocks":[{"text":"さくら計画の本番リリース日は11月18日。公開前にプライバシーの確認を行います。公開判定の担当は佐藤です。"}]},
+    {"id":"open","project":"alpha","title":"さくら計画の未決事項","blocks":[{"text":"まだ決まっていないことは、プライバシー規約の承認と英語版の翻訳レビューです。規約は法務、翻訳は田中が確認中。デザインの確認は完了しました。"}]},
+    {"id":"actions","project":"alpha","title":"10月の定例会議","blocks":[{"text":"決定事項。Kenが見積書を確認する。期限は10月21日。田中が翻訳レビューをまとめる。期限は10月23日。見積書を送信する承認は得ていません。"}]},
+    {"id":"budget-old","project":"alpha","title":"初期の費用見積もり","blocks":[{"text":"9月時点の計画予算は120万円。クラウド利用料は月3万円、端末は60万円の見積もりでした。これは旧版です。"}]},
+    {"id":"budget-new","project":"alpha","title":"改訂した費用見積もり","blocks":[{"text":"10月改訂の計画予算は150万円。端末の追加により30万円増えました。クラウド利用料は月3万円のままです。見積もりの担当者はKenです。"}]},
+    {"id":"contract","project":"alpha","title":"保守契約PDF","blocks":[{"page":18,"repeatPrefix":1200,"text":"解約の予告は60日前までに書面で通知する。契約の更新日は2027年4月1日。自動更新を停止する場合も同じ予告期間を適用する。"}]},
+    {"id":"architecture","project":"alpha","title":"音声認識の設計","blocks":[{"text":"録音は端末内のファイルに保存します。文字起こしは端末内で実行する方針です。外部のAIに音声を送る実装は今回の対象外です。"}]},
+    {"id":"september","project":"alpha","title":"9月の活動記録","blocks":[{"text":"9月の活動。録音は8件、会議は5回、完了したタスクは12件でした。未完了のタスクは3件です。"}]},
+    {"id":"october","project":"alpha","title":"10月の活動記録","blocks":[{"text":"10月の活動。録音は14件、会議は9回、完了したタスクは18件でした。未完了のタスクは4件です。"}]},
+    {"id":"travel","project":"alpha","title":"出張の移動案","blocks":[{"text":"京都出張。11月5日午前に新幹線で移動し、午後は顧客を訪問します。交通費は3万円、宿泊費は2万円です。"}]},
+    {"id":"campaign","project":"alpha","title":"広報キャンペーン","blocks":[{"text":"広報キャンペーンの公開日は12月1日。広告の予算は20万円です。メールの配信日は11月28日を予定しています。"}]},
+    {"id":"revoked","project":"alpha","allowed":false,"title":"参照を取り消した資料","blocks":[{"text":"非公開の検証用口座番号は12345です。この資料を検索へ渡してはいけません。"}]},
+    {"id":"other","project":"beta","title":"別プロジェクトの公開計画","blocks":[{"text":"さくら計画の公開日は1月10日。別プロジェクトだけの秘密の説明です。この資料をalphaで参照してはいけません。"}]}
+  ],
+  "queries": [
+    {"id":"release-date","kind":"日本語の言い換え","question":"さくら計画はいつ公開する予定？","gold":["release"]},
+    {"id":"open-items","kind":"未決事項","question":"規約と翻訳で、まだ決まっていないことは？","gold":["open"]},
+    {"id":"owner-date","kind":"担当と期限","question":"見積書は誰がいつまでに確認する？","gold":["actions"]},
+    {"id":"budget-change","kind":"複数資料","question":"9月と10月の計画予算はいくら変わった？","gold":["budget-old","budget-new"]},
+    {"id":"long-pdf","kind":"長いPDFの抜粋","question":"保守契約を解約する予告期間は何日前？","gold":["contract"],"requiredExcerpt":"解約の予告は60日前","requiredPage":18},
+    {"id":"local-transcription","kind":"技術の言い換え","question":"文字起こしのために音声をクラウドへ送るの？","gold":["architecture"]},
+    {"id":"activity-compare","kind":"複数資料と相対日付","question":"先月と今月の活動を比べたい","gold":["september","october"]},
+    {"id":"recording-count","kind":"件数","question":"10月の録音は何件？","gold":["october"]},
+    {"id":"budget-paraphrase","kind":"語彙のずれ","question":"支出の上限が増えた理由を知りたい","gold":["budget-new"]},
+    {"id":"schedule-paraphrase","kind":"語彙のずれ","question":"納期と担当を一覧にして","gold":["actions"]},
+    {"id":"travel-date","kind":"日付と混入","question":"京都の顧客訪問はいつ？","gold":["travel"]},
+    {"id":"unanswerable","kind":"該当資料なし","question":"木星の衛星軌道を計算して","gold":[]}
+  ]
+}

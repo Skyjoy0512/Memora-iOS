@@ -687,3 +687,17 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 - 未対応: 自動agent tool化、認証ページ、非UTF-8/gzip/trailers等。
   次は検索品質、project導線、実機/実サービス/バックアップ/性能の検証。
 - 詳細は[Web取得](WEB_SOURCE_EXTRACTION.md)・[品質改善記録](QUALITY_IMPROVEMENT.md)。
+
+## 2026-10-15 — P1検索の品質基準
+
+- 実装/合成評価: 13資料/12問を実FTS5→送信抜粋へ通し、正解/混入/ページを評価。
+  queryの日本語語彙拡張と本文ranking、低関連/一致なしの送信抑制を追加。
+- 固定コーパス: 先頭正解9/11→11/11、Recall@3 0.864→1.000、非正解率0.755→0.500。
+  小さな開発セットであり、実ユーザー資料/実モデルの回答品質の成功率ではない。
+- 回帰検査: ひらがな/タイトル、日英follow-up、文字数/引用/permission境界、
+  実SQLiteの更新/削除/参照取消/再起動を確認。索引/データ形式は変えない。
+- 次: 未見データで混入と語彙不足を評価、project導線、実BYOK/外部認証E2E、
+  全画面監査、実backup復元、App Group/実機Widget/性能。
+- 再実行手順・品質ゲート・未検証は[検索評価](PROJECT_SEARCH_EVALUATION.md)。
+- 検証: 最終host31スイート/Bitrig preview成功。Simulatorで既存project/chatと
+  空白Ask AIを保持。実AIの検索結果からの回答E2E/実機は未確認。

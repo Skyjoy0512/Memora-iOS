@@ -4,6 +4,12 @@ cd "$(dirname "$0")/../.."
 check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
 check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
+swiftc App/ProjectCitation.swift App/ProjectEvidenceChunk.swift App/ProjectContextBuilder.swift tools/checks/ProjectContextChecks.swift -o "$check_dir/project-context"
+"$check_dir/project-context"
+swiftc App/ProjectCitation.swift App/ProjectEvidenceChunk.swift App/ProjectEvidenceInput.swift App/ProjectSourceText.swift App/ProjectContextBuilder.swift App/ProjectSearchIndex.swift tools/checks/ProjectSearchIndexChecks.swift -lsqlite3 -o "$check_dir/project-index"
+"$check_dir/project-index"
+swiftc App/ProjectCitation.swift App/ProjectEvidenceChunk.swift App/ProjectEvidenceInput.swift App/ProjectSourceText.swift App/ProjectContextBuilder.swift App/ProjectSearchIndex.swift tools/checks/ProjectSearchQualityChecks.swift -lsqlite3 -o "$check_dir/project-quality"
+"$check_dir/project-quality" tools/checks/fixtures/project-search-quality.json "$check_dir"
 swiftc Shared/MemoraIcon.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSource+Presentation.swift tools/checks/ProjectSourceAvailabilityChecks.swift -o "$check_dir/source-availability"
 "$check_dir/source-availability"
 swiftc App/MCPDNSLookup.swift App/MCPClientError.swift App/MCPPublicAddressPolicy.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSourceText.swift App/ProjectSourceURL.swift App/WebSourceFailure.swift App/WebSourceRequest.swift App/WebSourceHTTPDecoder.swift App/PinnedHTTPSConnection.swift App/WebSourceTextExtraction.swift App/WebSourceFetcher.swift tools/checks/WebSourceChecks.swift -o "$check_dir/web-source"

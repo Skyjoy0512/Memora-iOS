@@ -113,7 +113,7 @@ extension MemoraModel {
         }
       }
       return ProjectContextBuilder.build(question: question, projectID: projectID, chunks: chunks,
-        allowed: Set(currentAllowed), characterBudget: budget)
+        allowed: Set(currentAllowed), characterBudget: budget, selectedTarget: onlyTarget)
     }.value
     guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return empty }
     return context

@@ -33,7 +33,7 @@ actor ProjectSearchIndex {
   func retrieve(question: String, projectID: UUID, inputs: [ProjectEvidenceInput]) throws -> [ProjectEvidenceChunk] {
     try open()
     try synchronize(projectID: projectID, inputs: inputs)
-    let terms = ProjectContextBuilder.grams(question).sorted().prefix(32)
+    let terms = ProjectContextBuilder.queryGrams(question).sorted().prefix(32)
     let expression = terms.map { "\"" + $0.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }.joined(separator: " OR ")
     var result: [ProjectEvidenceChunk] = []
     if !expression.isEmpty {

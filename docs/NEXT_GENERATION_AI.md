@@ -438,3 +438,14 @@ IP固定TLS/ホスト名検証/各redirectの再検証と、boundedなHTTP/HTML�
 公開ページの実取得、Simulatorの保存/再表示、Light/Dark/大きい文字を確認。
 認証ページ、agentの自動fetch、実外部認証/実機/性能、異常サイトの実TLS拒否は未確認。
 制限と確認結果は[Web取得](WEB_SOURCE_EXTRACTION.md)・[品質改善記録](QUALITY_IMPROVEMENT.md)。
+
+## 2026-10-15 — 正解付き検索評価
+
+13資料・12問の合成コーパスで実FTS5→送信抜粋を測定。ローカルの限定的な語彙拡張、
+本文重視/繰返しの上限、低関連/一致なしの送信抑制を追加した。
+固定セットの先頭正解9/11→11/11、Recall@3 0.864→1.000。
+非正解資料の混入は0.500で残る。実LLM回答品質、未見の資料群/実機性能は未評価。
+index schema、2-gram、送信量、project/allowedの権限境界は変更しない。
+再現手順と指標は[検索評価](PROJECT_SEARCH_EVALUATION.md)を参照。
+最終host31スイートとBitrig preview成功。Simulatorの既存chat/空白Ask AIを確認。
+実AIへの送信と実機性能は検証していない。

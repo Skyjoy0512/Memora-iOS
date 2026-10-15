@@ -81,6 +81,12 @@ struct ProjectSearchIndexChecks {
     composed.blocks[0].time = -0.0
     precondition(composed.blocks[0].time == 0 && composed != ProjectEvidenceInput(target: composed.target, title: composed.title, blocks: [ProjectSourceText(text: "Café", time: 0)]))
     try await index.remove(projectID: exactProject)
+    let kanaProject = UUID()
+    let kana = ProjectEvidenceInput(target: .source(UUID()), title: "さくら", blocks: [ProjectSourceText(text: "さくらの資料")])
+    let kanaNoise = ProjectEvidenceInput(target: .source(UUID()), title: "別件", blocks: [ProjectSourceText(text: "京都の費用")])
+    let kanaMatches = try await index.retrieve(question: "さくら", projectID: kanaProject, inputs: [kana, kanaNoise])
+    precondition(kanaMatches.count == 1 && kanaMatches.first?.target == kana.target)
+    try await index.remove(projectID: kanaProject)
     print("ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)")
   }
 }
