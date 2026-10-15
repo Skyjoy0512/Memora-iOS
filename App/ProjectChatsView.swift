@@ -12,7 +12,7 @@ struct ProjectChatsView: View {
     }.sorted { $0.updatedAt > $1.updatedAt }
     List { ForEach(threads) { thread in ProjectChatRow(thread: thread) } }
       .listStyle(.plain).scrollContentBackground(.hidden).background(MemoraPalette.background)
-      .navigationTitle("").navigationBarTitleDisplayMode(.inline)
+      .navigationTitle("チャット").navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "チャットを検索")
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) { ToolbarIconButton("検索", icon: .magnifyingglass) { isSearching = true } }

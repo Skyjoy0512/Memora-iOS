@@ -10,6 +10,7 @@ enum LibraryRoute: Hashable {
   case projectPDF(UUID, Int)
   case projectChat(UUID)
   case projectChats(UUID?)
+  case projectTasks(UUID)
   case tasks
   case allMeetings
   case settings

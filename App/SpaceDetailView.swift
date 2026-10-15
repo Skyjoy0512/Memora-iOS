@@ -13,62 +13,55 @@ struct SpaceDetailView: View {
 
   var body: some View {
     if let space = model.space(id: spaceID) {
-      let records = ProjectFiling.records(in: spaceID, from: model.meetings)
-      let tasks = openTasks(in: records)
+      let tasks = model.projectTasks(projectID: spaceID)
       let items = model.workspaceItems(projectID: spaceID)
       let chats = model.projectChats.filter { $0.projectID == spaceID }.sorted { $0.updatedAt > $1.updatedAt }
       let isEmpty = items.isEmpty
 
       List {
         Section {
-          ForEach(Array(chats.prefix(3))) { thread in ProjectChatRow(thread: thread) }
+          ForEach(chats.prefix(3)) { thread in ProjectChatRow(thread: thread) }
+          if chats.isEmpty {
+            Text("チャットはまだありません").font(.subheadline).foregroundStyle(.secondary)
+              .listRowSeparator(.hidden)
+          }
+          if chats.count > 3 {
+            NavigationLink("すべてのチャットを見る", value: LibraryRoute.projectChats(spaceID))
+              .tint(MemoraPalette.textPrimary)
+          }
         } header: {
-          HStack {
-            Text("チャット").font(.subheadline.weight(.semibold))
-            Spacer()
+          ProjectSectionHeader("チャット", count: chats.count) {
             Button("新しいチャット", icon: .squareAndPencil) {
               if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
-            }.font(.subheadline).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
-          }.textCase(nil)
-        } footer: {
-          if chats.count > 3 { NavigationLink("すべてのチャット", value: LibraryRoute.projectChats(spaceID)) }
+            }.disabled(model.isRestoring || model.isStoreProtected)
+          }
         }
-        if isEmpty {
-          Section {
-            VStack(alignment: .leading, spacing: 12) {
-              Text("このプロジェクトに情報を集めましょう").font(.body.weight(.semibold))
-              Text("リンク、写真、ファイルなどを追加できます。")
-                .font(.subheadline).foregroundStyle(.secondary)
-              Button("ソースを追加", icon: .plus) { model.sourceAddProjectID = spaceID }
-                .frame(minHeight: 44).tint(MemoraPalette.textPrimary)
-                .disabled(model.isRestoring)
-            }
-            .padding(.vertical, 16)
-            .listRowSeparator(.hidden)
-          }
-        } else {
-          Section {
-            ForEach(Array(items.prefix(3))) { item in ProjectWorkspaceRow(item: item) }
-          } header: {
-            HStack {
-              Text("ソース").font(.subheadline.weight(.semibold))
-              Spacer()
-              NavigationLink(value: LibraryRoute.projectSources(spaceID)) {
-                Text("すべて見る（\(items.count)）").font(.subheadline)
-              }
-              .frame(minHeight: 44)
+        Section {
+          ForEach(items.prefix(3)) { item in ProjectWorkspaceRow(item: item) }
+          if isEmpty {
+            Text("ソースはまだありません").font(.subheadline).foregroundStyle(.secondary)
+              .listRowSeparator(.hidden)
+          } else {
+            NavigationLink("すべてのソースを見る", value: LibraryRoute.projectSources(spaceID))
               .tint(MemoraPalette.textPrimary)
-            }.textCase(nil)
           }
-          if !tasks.isEmpty {
-            Section {
-              ForEach(Array(tasks.prefix(3))) { task in
-                TaskRow(task: task, showsSource: true) { editingTask = task }.buttonStyle(.plain)
-              }
-              if tasks.count > 3 {
-                NavigationLink("すべてのタスク", value: LibraryRoute.tasks)
-              }
-            } header: { Text("関連タスク").font(.subheadline.weight(.semibold)).textCase(nil) }
+        } header: {
+          ProjectSectionHeader("ソース", count: items.count) {
+            Button("追加", icon: .plus) { model.sourceAddProjectID = spaceID }
+              .accessibilityLabel("ソースを追加")
+              .disabled(model.isRestoring || model.isStoreProtected)
+          }
+        }
+        if !tasks.isEmpty {
+          Section {
+            ForEach(tasks.prefix(3)) { task in
+              ProjectTaskRow(task: task) { editingTask = task }
+            }
+          } header: {
+            ProjectSectionHeader("関連タスク", count: tasks.count) {
+              NavigationLink("すべて", value: LibraryRoute.projectTasks(spaceID))
+                .accessibilityLabel("このプロジェクトの関連タスクをすべて見る")
+            }
           }
         }
       }
@@ -90,6 +83,7 @@ struct SpaceDetailView: View {
               Button("既存記録を移動", icon: .folder) { isAddingFiles = true }
             }
             Button("未決事項を質問", icon: .sparkles) { isAskingAI = true }
+            NavigationLink("関連タスク", value: LibraryRoute.projectTasks(spaceID))
             Button("チームで共有", icon: .personBadgePlus) {
               Task { await model.shareSpaceWithTeam(space.id) }
             }
@@ -121,10 +115,4 @@ struct SpaceDetailView: View {
     }
   }
 
-  private func openTasks(in spaceMeetings: [Meeting]) -> [MemoraTask] {
-    let meetingIDs = Set(spaceMeetings.map(\.id))
-    return model.tasks.filter { task in
-      task.meetingID.map(meetingIDs.contains) == true && !task.isCompleted
-    }
-  }
 }

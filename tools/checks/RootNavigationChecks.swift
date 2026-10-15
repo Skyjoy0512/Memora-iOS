@@ -41,6 +41,24 @@ struct RootNavigationChecks {
     precondition(RootNavigation.projectID(in: [.projectSources(nil)]) == nil)
     precondition(RootNavigation.scope(tab: .library, path: [.projectSources(project)], detailMeetingID: nil) == .space(project))
     precondition(RootNavigation.scope(tab: .library, path: [.projectSources(nil)], detailMeetingID: nil) == .global)
+    for tab in [RootTab.home, .library] {
+      let related: [LibraryRoute] = [.space(project), .projectTasks(project)]
+      precondition(RootNavigation.projectID(in: related) == project)
+      precondition(RootNavigation.scope(tab: tab, path: related, detailMeetingID: nil) == .space(project))
+      precondition(RootNavigation.scope(tab: .askAI, path: related, detailMeetingID: nil) == .global)
+      precondition(RootNavigation.scope(tab: tab, path: related + [.meeting(meeting)], detailMeetingID: nil) == .file(meeting))
+      precondition(RootNavigation.projectID(in: [.tasks]) == nil)
+      for path: [LibraryRoute] in [[], [.projectSources(project)], [.projectChats(project)]] {
+        precondition(RootNavigation.searchCoversScreen(tab: tab, path: path, isSearching: true, isSelectingFiles: false))
+        precondition(!RootNavigation.searchCoversScreen(tab: tab, path: path, isSearching: false, isSelectingFiles: false))
+      }
+      for path: [LibraryRoute] in [[.projectSources(project), .projectSource(UUID())], [.meeting(meeting)], [.projectTasks(project)]] {
+        precondition(!RootNavigation.searchCoversScreen(tab: tab, path: path, isSearching: true, isSelectingFiles: true))
+      }
+    }
+    precondition(RootNavigation.searchCoversScreen(tab: .library, path: [], isSearching: false, isSelectingFiles: true))
+    precondition(!RootNavigation.searchCoversScreen(tab: .home, path: [], isSearching: false, isSelectingFiles: true))
+    precondition(!RootNavigation.searchCoversScreen(tab: .askAI, path: [], isSearching: true, isSelectingFiles: true))
     let documentPath = projectPath + [.document(UUID())]
     precondition(RootNavigation.projectID(in: documentPath) == nil)
     precondition(RootNavigation.scope(tab: .library, path: documentPath, detailMeetingID: nil) == .global)

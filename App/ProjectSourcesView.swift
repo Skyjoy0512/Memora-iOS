@@ -13,7 +13,7 @@ struct ProjectSourcesView: View {
     }
     .listStyle(.plain).scrollContentBackground(.hidden)
     .background(MemoraPalette.background)
-    .navigationTitle("").navigationBarTitleDisplayMode(.inline)
+    .navigationTitle("ソース").navigationBarTitleDisplayMode(.inline)
     .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ソースを検索")
     .overlay {
       if items.isEmpty {

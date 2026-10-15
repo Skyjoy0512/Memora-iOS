@@ -4,6 +4,8 @@ cd "$(dirname "$0")/../.."
 check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
 check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
+swiftc App/ProjectTaskList.swift App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift App/RecordPrivacy.swift App/SummarySensitivity.swift tools/checks/ProjectTaskListChecks.swift -o "$check_dir/project-tasks"
+"$check_dir/project-tasks"
 swiftc App/ProjectCitation.swift App/ProjectEvidenceChunk.swift App/ProjectContextBuilder.swift tools/checks/ProjectContextChecks.swift -o "$check_dir/project-context"
 "$check_dir/project-context"
 swiftc App/ProjectCitation.swift App/ProjectEvidenceChunk.swift App/ProjectEvidenceInput.swift App/ProjectSourceText.swift App/ProjectContextBuilder.swift App/ProjectSearchIndex.swift tools/checks/ProjectSearchIndexChecks.swift -lsqlite3 -o "$check_dir/project-index"

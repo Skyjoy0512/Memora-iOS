@@ -279,12 +279,8 @@ struct RootTabView: View {
   /// An open search, or picking files, takes the screen until a record is
   /// opened on top of it.
   private var isSearchCovering: Bool {
-    guard model.isSearchActive || (model.isFileSelectionActive && model.selectedTab == .library) else { return false }
-    return switch model.selectedTab {
-    case .home: model.homePath.isEmpty
-    case .library: model.libraryPath.isEmpty
-    default: false
-    }
+    RootNavigation.searchCoversScreen(tab: model.selectedTab, path: model.activeNavigationPath,
+      isSearching: model.isSearchActive, isSelectingFiles: model.isFileSelectionActive)
   }
 
   /// The bar follows the tab on top, so another screen's scrolling cannot move it.

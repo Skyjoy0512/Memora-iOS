@@ -14,6 +14,7 @@ struct LibraryDestinationView: View {
     case .projectPDF(let id, let page): ProjectPDFView(sourceID: id, page: page)
     case .projectChat(let id): ProjectChatView(threadID: id)
     case .projectChats(let id): ProjectChatsView(projectID: id)
+    case .projectTasks(let id): ProjectTasksView(projectID: id)
     case .tasks: TasksView()
     case .allMeetings: AllMeetingsView()
     case .settings: SettingsView()
