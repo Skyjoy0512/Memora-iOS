@@ -69,6 +69,15 @@ struct AgentConversationLoopChecks {
     let failure = await AgentConversationLoop.run(isAuthorized: { true }, next: { throw AIAnswerFailure.network },
       execute: { _ in preconditionFailure() }, accept: { _, _ in })
     expect(failure, .network)
+    let start = ContinuousClock.now
+    var moment = start
+    var events: [AgentRunEvent] = []
+    let expired = await AgentConversationLoop.run(limits: .init(duration: .seconds(2)), isAuthorized: { true },
+      next: { moment = start.advanced(by: .seconds(2)); return AgentTurn(text: "", toolCalls: [call]) },
+      execute: { _ in preconditionFailure("Expired turn executed a tool") },
+      now: { moment }, onEvent: { events.append($0) }, accept: { _, _ in preconditionFailure() })
+    expect(expired, .executionLimit)
+    precondition(events == [.modelRequested(turn: 1), .finished(modelRequests: 1, toolCalls: 0, elapsedMilliseconds: 2_000)])
     precondition(AgentToolCall(id: "integer", name: "read", arguments: ["limit": Double.nan]).int("limit") == nil)
     precondition(AgentToolCall(id: "integer", name: "read", arguments: ["limit": Double.infinity]).int("limit") == nil)
     print("AgentConversationLoopChecks: passed (mock turns, ordered real loop dispatch, revoke/cancel/empty/failure, bounded calls, replay rejection; no network)")

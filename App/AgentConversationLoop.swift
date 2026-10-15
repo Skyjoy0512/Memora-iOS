@@ -6,6 +6,7 @@ enum AgentConversationLoop {
     var turns = 16
     var toolCalls = 24
     var callsPerTurn = 24
+    var duration: Duration = .seconds(600)
   }
 
   static func run(
@@ -14,24 +15,38 @@ enum AgentConversationLoop {
     next: () async throws -> AgentTurn,
     execute: (AgentToolCall) async -> AgentToolOutcome,
     canExecute: () -> Bool = { true },
+    now: () -> ContinuousClock.Instant = { .now },
+    onEvent: (AgentRunEvent) -> Void = { _ in },
     accept: (AgentTurn, [(call: AgentToolCall, outcome: AgentToolOutcome)]) -> Void
   ) async -> AIAnswerResult {
     let maximumTurns = min(max(limits.turns, 1), 16)
     let maximumCalls = min(max(limits.toolCalls, 0), 24)
     let maximumCallsPerTurn = min(max(limits.callsPerTurn, 1), 24)
     var calls = 0
+    var requests = 0
+    let start = now()
+    let duration = min(max(limits.duration, .seconds(1)), .seconds(600))
+    defer {
+      let elapsed = start.duration(to: now()).components
+      onEvent(.finished(modelRequests: requests, toolCalls: calls,
+        elapsedMilliseconds: Double(elapsed.seconds) * 1_000 + Double(elapsed.attoseconds) / 1e15))
+    }
     var usedCallIDs: Set<String> = []
     var lastText = ""
     for _ in 0..<maximumTurns {
       guard !Task.isCancelled else { return .failure(.cancelled) }
       guard isAuthorized() else { return .failure(.contextChanged) }
+      guard start.duration(to: now()) < duration else { return .failure(.executionLimit) }
       let turn: AgentTurn
+      requests += 1
+      onEvent(.modelRequested(turn: requests))
       do { turn = try await next() }
       catch is CancellationError { return .failure(.cancelled) }
       catch let failure as AIAnswerFailure { return .failure(failure) }
       catch { return .failure(.server) }
       guard !Task.isCancelled else { return .failure(.cancelled) }
       guard isAuthorized() else { return .failure(.contextChanged) }
+      guard start.duration(to: now()) < duration else { return .failure(.executionLimit) }
       let text = turn.text.trimmingCharacters(in: .whitespacesAndNewlines)
       if !text.isEmpty { lastText = text }
       guard !turn.toolCalls.isEmpty else {
@@ -50,11 +65,14 @@ enum AgentConversationLoop {
       for call in turn.toolCalls {
         guard !Task.isCancelled else { return .failure(.cancelled) }
         guard isAuthorized() else { return .failure(.contextChanged) }
+        guard start.duration(to: now()) < duration else { return .failure(.executionLimit) }
         guard calls < maximumCalls, canExecute() else {
           return .answer("ツール実行上限に達したため停止しました。作業は未完了です。確認できた結果を見て、必要な続きだけを依頼してください。")
         }
         calls += 1
+        onEvent(.toolStarted)
         let outcome = await execute(call)
+        onEvent(.toolFinished(isError: outcome.isError))
         guard !Task.isCancelled else { return .failure(.cancelled) }
         guard isAuthorized() else { return .failure(.contextChanged) }
         results.append((call, outcome))

@@ -14,6 +14,7 @@ final class CloudAgentSession {
   /// Tools from connected MCP servers, loaded before the first turn.
   var externalTools: [MCPTool] = []
   private var messages: [[String: Any]] = []
+  private var budget = AgentSessionBudget()
 
   /// Returns nil when there is no key for the provider; the caller says so.
   /// `tools` narrows what the model is offered; resident agents get only the
@@ -61,6 +62,8 @@ final class CloudAgentSession {
   /// Asks for the model's next turn.
   func next(onText: (@MainActor (String) -> Void)? = nil) async throws -> AgentTurn {
     guard !llm.modelID.isEmpty else { throw AIAnswerFailure.modelUnavailable }
+    try Task.checkCancellation()
+    guard budget.hasTime() else { throw AIAnswerFailure.executionLimit }
     do {
       return llm.provider.usesAnthropicAPI ? try await anthropicTurn(onText: onText) : try await chatCompletionsTurn(onText: onText)
     } catch let failure as AIAnswerFailure {
@@ -72,6 +75,23 @@ final class CloudAgentSession {
     } catch {
       throw AIAnswerFailure.server
     }
+  }
+
+  private func boundedResponse(for request: URLRequest) async throws -> [String: Any] {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.timeoutIntervalForResource = 600
+    let session = URLSession(configuration: configuration)
+    defer { session.invalidateAndCancel() }
+    let (bytes, response) = try await session.bytes(for: request)
+    try CloudAIService.validate(response)
+    var data = Data()
+    for try await byte in bytes {
+      try Task.checkCancellation()
+      guard data.count < AgentSessionBudget.maximumResponseBytes else { throw AIAnswerFailure.executionLimit }
+      data.append(byte)
+    }
+    guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
+    return object
   }
 
   // MARK: - Anthropic
@@ -106,15 +126,14 @@ final class CloudAgentSession {
     }
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
+    try budget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]
     if let onText {
       decoded = try await CloudTurnStreaming.response(for: request, provider: .anthropic, onText: onText)
     } else {
-      let (data, response) = try await URLSession.shared.data(for: request)
-      try CloudAIService.validate(response)
-      guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
-      decoded = object
+      decoded = try await boundedResponse(for: request)
     }
+    try budget.acceptResponse(bytes: JSONSerialization.data(withJSONObject: decoded).count)
     guard
           let content = decoded["content"] as? [[String: Any]] else {
       throw AIAnswerFailure.server
@@ -181,15 +200,14 @@ final class CloudAgentSession {
       }
     ] as [String: Any])
 
+    try budget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]
     if let onText {
       decoded = try await CloudTurnStreaming.response(for: request, provider: .chatCompletions, onText: onText)
     } else {
-      let (data, response) = try await URLSession.shared.data(for: request)
-      try CloudAIService.validate(response)
-      guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
-      decoded = object
+      decoded = try await boundedResponse(for: request)
     }
+    try budget.acceptResponse(bytes: JSONSerialization.data(withJSONObject: decoded).count)
     guard
           let choices = decoded["choices"] as? [[String: Any]],
           let message = choices.first?["message"] as? [String: Any] else {

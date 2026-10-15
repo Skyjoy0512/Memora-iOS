@@ -50,6 +50,7 @@ enum AIAnswerFailure: Error, Equatable {
   case outOfCredits
   /// Memora Intelligence is chosen but its server is not connected yet.
   case serviceNotConnected
+  case executionLimit
 
   /// What to tell the person. Cancellation says nothing because a newer
   /// request has already replaced this one.
@@ -105,6 +106,8 @@ enum AIAnswerFailure: Error, Equatable {
       "添付の文字を読めないため、回答を開始していません。テキスト・PDF・文字を含む画像に変更するか、添付を外してもう一度送信してください。"
     case .recordContentUnavailable:
       "この記録にはAIが参照できる本文がありません。文字起こし・要約・メモを追加するか、読める資料を添付してください。記録と保存済みファイルはそのままです。"
+    case .executionLimit:
+      "この依頼の実行時間またはデータ量の上限に達したため停止しました。作業は未完了です。実行済みの操作を確認し、必要な続きだけを依頼してください。"
     }
   }
 }

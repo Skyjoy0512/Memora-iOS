@@ -80,6 +80,11 @@ extension MemoraModel {
           return AgentToolOutcome(text: "この会話は今回の記録を読むことだけができます。", isError: true)
         }
       },
+      onEvent: { event in
+        if case .finished(_, let calls, let elapsed) = event {
+          self.performance.record("Agent run (native)", milliseconds: elapsed, count: calls)
+        }
+      },
       accept: { _, results in
         if !results.isEmpty { onText?(""); session.addToolResults(results) }
       })

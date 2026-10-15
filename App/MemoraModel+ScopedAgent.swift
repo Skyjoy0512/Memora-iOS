@@ -97,6 +97,11 @@ extension MemoraModel {
           return AgentToolOutcome(text: "この会話は資料の読み取り専用です。操作は実行していません。", isError: true)
         }
       },
+      onEvent: { event in
+        if case .finished(_, let calls, let elapsed) = event {
+          self.performance.record("Agent run (native)", milliseconds: elapsed, count: calls)
+        }
+      },
       accept: { _, results in
         if !results.isEmpty {
           onText("")

@@ -255,6 +255,11 @@ extension MemoraModel {
         return await runAgentTool(call, messageID: messageID, scope: scope)
       },
       canExecute: { agentToolCallCounts[messageID, default: 0] < 24 },
+      onEvent: { event in
+        if case .finished(_, let calls, let elapsed) = event {
+          self.performance.record("Agent run (native)", milliseconds: elapsed, count: calls)
+        }
+      },
       accept: { _, results in
         if !results.isEmpty {
           updateAgentMessage(messageID) { $0.text = "" }

@@ -77,3 +77,11 @@ Host Swift -O、架空18,130 bytes、92更新、11回: 全文を毎更新parse�
 ローカルで自分の記録を読む権限と、外部AIへ送信する許可は別。共有/他workspaceを横断する新しい索引は作らない。全文キーワード検索の統一・新たな大量データ索引は未実装（既存FTSの品質/速度検証を維持）。意味の異なるempty/failureを巨大共通ViewModelに統合しない。
 
 検証: CatalogPresentationChecks、ProjectSourceAvailabilityChecks、plugin/privacy/navigation一式成功。iOS preview成功（08-37-43-97dc2765）。チャット検索の最終prompt文字列は統合ビルドでも再検証する。保存・権限・課金処理に変更なし。
+
+## Phase 5 — Native Harness
+
+公式資料・revision・機能ごとの8観点比較・A/B/C評価は [NATIVE_AGENT_HARNESS.md](NATIVE_AGENT_HARNESS.md)。Aを採用。直接連携PoCは必要性を確認できず実施しない。任意コード/plugin loader、Web UI、Node runtime、外部serverは導入しない。
+
+AgentSessionBudget、AgentRunEvent、既存loopの時間境界確認、CloudAgentSessionの要求/累積bytes上限と非stream応答の受信上限を追加。実行履歴の形式、BYOKのKeychain、権限・承認経路、Skill/MCP/registryは維持。metadataだけを既存診断logへ追加。新たな自動LLM呼出しなし。
+
+AgentBudgetChecks（負数/overflow/期限境界/累積bytes/16要求）とAgentConversationLoopChecks（期限後のtool拒否/event事実/取消/revoke/replay）成功。iOS preview成功（08-40-19-7ebecd1d）。料金の厳密なドル上限、provider token使用量、実API互換性・請求額は未検証。ローカル上限を金額保証とは扱わない。
