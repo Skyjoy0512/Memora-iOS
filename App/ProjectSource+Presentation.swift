@@ -45,6 +45,12 @@ extension ProjectSource {
   }
 
   var availabilityNotice: String? {
+    if kind == .youtube, !canProvideText {
+      let notice = metadata?["youtubeTitle"] == nil
+        ? "動画リンクを保存しています。動画の音声・字幕は取得していません。"
+        : "タイトルなどの動画情報だけを取得しています。動画の音声・字幕は取得していません。"
+      return [errorInformation, notice].compactMap { $0 }.joined(separator: "\n")
+    }
     if let errorInformation { return errorInformation }
     if kind == .web, !canProvideText {
       return "URLのみ保存しています。Webページの本文は取得していません。"

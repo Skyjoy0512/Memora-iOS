@@ -51,6 +51,10 @@ struct SpaceDetailView: View {
               .accessibilityLabel("ソースを追加")
               .disabled(model.isRestoring || model.isStoreProtected)
           }
+        } footer: {
+          Text(isEmpty
+            ? "録音や資料を追加すると、このプロジェクトについて質問できます。"
+            : "取得・解析できた本文がAIの参照候補です。外部AIへの送信は各記録のプライバシー設定に従います。")
         }
         if !tasks.isEmpty {
           Section {

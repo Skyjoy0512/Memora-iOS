@@ -59,3 +59,21 @@ Scroll: 手動閲覧中のheight増加を未読として記録、生成中にも
 検証: motion/loading/scroll/増分Markdown fixture成功。next-generation全体再実行成功（snapshot、privacy、Native UI validation、stream終端/partial tool、plugin approval/costを含む）。iOS preview成功（08-35-19-69a4ef65）。有料ネットワーク・実機ストリーミングは未実施。
 
 Host Swift -O、架空18,130 bytes、92更新、11回: 全文を毎更新parseする候補の中央値22.125ms/p95 34.541ms、増分2.546ms/3.036ms（全92更新の合計）。解析入力848,098 → 20,993 bytes。`MarkdownStreamingBenchmark.swift`で再現可能。**旧live Textのbefore/after値ではなくparser戦略の比較**。旧liveはそもそもMarkdown未解析。実機のフレーム、初回到着時間、memory改善率へ外挿しない。
+
+## Phase 4 — 情報設計の最小修正
+
+検索のpromptをジャーナル/プロジェクト名/ソース名/チャット名へ明確化。キーワード検索は既存local処理、AI質問は明示ボタンのまま。プロジェクトのソースfooterで追加の次の操作と本文/送信許可の範囲を説明。YouTubeはmetadata取得と音声/字幕未取得を明示（失敗理由も残す）。Notionの操作一覧に混入していたMemora内検索ツールを除外し、実装済みのページ作成だけ表示。未実装Drive/GitHubの接続表示は増やさない。
+
+| 検索面 | 現行対象/方式 | 範囲・順位・遷移 |
+|---|---|---|
+| Home | 全日付のjournal、既存contains | 現workspaceのローカル閲覧。日付絞込と検索を区別、記録へ遷移 |
+| Library Files | 録音のsearchText、contains | 現workspace、並替/絞込を維持、record詳細 |
+| Library Projects | project名、contains | 自分と共有snapshotは別section、共有はread-only |
+| Ask AI内キーワード検索 | 会話の検索用text、task title | 会話/タスクにgroup、直接遷移と明示的な「Memoraに聞く」を分離 |
+| Project Sources / Chats | source/workspace item名 / chat名、localizedStandardContains | project IDで先に限定。本文全文検索とは表示しない |
+| ProjectのAI根拠検索 | SQLite FTS5と既存日本語ranking | ProjectContextBuilder/RecordAccessPolicyによる許可範囲だけを索引・取得、引用からpage/source/recordへ |
+| 過去AI履歴 | question/answer/scopeLabel、幅/大小正規化 | 保存済み履歴、継続操作。外部再送時はprovenanceを再確認 |
+
+ローカルで自分の記録を読む権限と、外部AIへ送信する許可は別。共有/他workspaceを横断する新しい索引は作らない。全文キーワード検索の統一・新たな大量データ索引は未実装（既存FTSの品質/速度検証を維持）。意味の異なるempty/failureを巨大共通ViewModelに統合しない。
+
+検証: CatalogPresentationChecks、ProjectSourceAvailabilityChecks、plugin/privacy/navigation一式成功。iOS preview成功（08-37-43-97dc2765）。チャット検索の最終prompt文字列は統合ビルドでも再検証する。保存・権限・課金処理に変更なし。

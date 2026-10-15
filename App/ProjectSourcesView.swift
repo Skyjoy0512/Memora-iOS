@@ -14,7 +14,7 @@ struct ProjectSourcesView: View {
     .listStyle(.plain).scrollContentBackground(.hidden)
     .background(MemoraPalette.background)
     .navigationTitle("ソース").navigationBarTitleDisplayMode(.inline)
-    .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ソースを検索")
+    .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ソース名を検索")
     .overlay {
       if items.isEmpty {
         ContentUnavailableView(query.isEmpty ? "ソースはまだありません" : "該当するソースはありません", icon: .doc)

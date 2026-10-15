@@ -22,7 +22,7 @@ struct IntegrationCatalog: Identifiable {
     switch id {
     case "gmail": ["search_email", "read_email"]
     case "calendar": ["read_calendar", "create_calendar_event"]
-    case "notion": ["save_to_notion", "search_records", "read_record"]
+    case "notion": ["save_to_notion"]
     default: []
     }
   }

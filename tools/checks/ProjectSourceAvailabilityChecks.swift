@@ -25,6 +25,12 @@ struct ProjectSourceAvailabilityChecks {
       source.processingStatus = status
       precondition(!source.canProvideText)
     }
+    source.kind = .youtube
+    source.metadata = ["youtubeTitle": "架空の動画"]
+    source.errorInformation = "サムネイルを取得できませんでした。"
+    precondition(source.availabilityNotice?.contains("音声・字幕は取得していません") == true)
+    precondition(source.availabilityNotice?.contains("サムネイル") == true)
+    precondition(!source.canProvideText)
     print("ProjectSourceAvailabilityChecks: passed (legacy codec, honest partial/missing states, unchanged privacy and evidence eligibility)")
   }
 }

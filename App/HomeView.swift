@@ -134,7 +134,7 @@ struct HomeView: View {
       .background(MemoraPalette.background)
       .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
-      .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "記録を検索")
+      .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ジャーナルを検索")
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           ToolbarIconButton("メニュー", icon: .line3Horizontal) {
