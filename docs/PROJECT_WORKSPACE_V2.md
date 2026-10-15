@@ -156,3 +156,19 @@ registry・schemaを操作ごとに確認。外部連携と変更ツールは公
 単体読取で全体索引を消さず、非同期確認後に最新会話を再取得する。
 履歴・保存形式・sourceページ／秒数は維持。実BYOKのE2Eは未確認。
 21 hostスイートと最終Bitrig build成功。詳細は[NEXT_GENERATION_AI.md](NEXT_GENERATION_AI.md)。
+
+## 2026-10-15 — プロジェクトの導線と関連タスク
+
+ソース追加を見出しに常設し、件数と短い空状態、accessibility文字サイズでの縦配置を追加。
+全ソース/チャット一覧へ画面名を表示する。関連タスクの全件はグローバルの自分用一覧へ
+送らず、現在のプロジェクトの記録に紐づく全担当を表示する専用のvalue routeへ接続。
+完了を含める表示、タスク編集と元記録へのリンクは既存のTaskRow/TaskEditViewを再利用。
+全件完了後もメニューから開ける。AI scope/captureのproject IDはRootNavigationで保持。
+
+ソース/チャット検索中に下部UIが残る既存の判定漏れを修正。詳細を開いた場合の
+コンポーザーと、Files/Journalの検索/選択の判定を維持する。RootTabViewは判定呼出し
+だけを変更し、Glass/UISegmentedControl/FAB/safe area/animationは変更しない。
+32 hostスイート/Bitrig preview成功。Simulatorで資料追加/検索、全担当タスクの
+編集/完了/保存・出典遷移、Light/Dark/大きい文字を確認。検証データのみ削除。
+実モデル/認証連携E2E、実機/性能/backup実復元は未確認。
+詳細・個別の未検証は[導線改善記録](PROJECT_WORKSPACE_UX.md)。

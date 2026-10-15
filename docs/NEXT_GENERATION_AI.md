@@ -449,3 +449,13 @@ index schema、2-gram、送信量、project/allowedの権限境界は変更し�
 再現手順と指標は[検索評価](PROJECT_SEARCH_EVALUATION.md)を参照。
 最終host31スイートとBitrig preview成功。Simulatorの既存chat/空白Ask AIを確認。
 実AIへの送信と実機性能は検証していない。
+
+## 2026-10-15 — プロジェクトの操作導線
+
+資料の追加を常設し、件数/空状態/大きい文字の配置を統一。
+関連タスクは現在のprojectの記録に属する全担当へ限定し、既存の編集・完了・出典を使う。
+新routeでもproject/record/Ask AIのscopeを維持。source/chat検索では下部UIを退避し、
+詳細では復帰する。RootTabViewはその判定のみ最小変更でGlass/FAB/tabを維持。
+32 hostスイート/Bitrig preview成功。Simulatorの実保存・編集・完了・再読込・出典、
+Light/Dark/大きい文字を確認。検証データのみ削除し、既存chatを保持。
+実AI/外部認証E2E・実機/性能は未確認。[導線改善記録](PROJECT_WORKSPACE_UX.md)参照。

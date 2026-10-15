@@ -701,3 +701,17 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 - 再実行手順・品質ゲート・未検証は[検索評価](PROJECT_SEARCH_EVALUATION.md)。
 - 検証: 最終host31スイート/Bitrig preview成功。Simulatorで既存project/chatと
   空白Ask AIを保持。実AIの検索結果からの回答E2E/実機は未確認。
+
+## 2026-10-15 — P1プロジェクトの操作導線
+
+- 実装: 常時ソース追加/件数/短い空状態/大きい文字の縦配置、一覧のタイトル。
+- 実装/実保存確認: 関連タスクをprojectの記録で限定し全担当を表示。既存編集/完了/
+  出典を再利用。全体の自分用タスクに飛ぶ問題と行内リンクの幅を修正。
+- 検索の判定漏れを修正し、source/chat検索時はコンポーザー/タブを退避。
+  詳細では復帰。RootTabViewは判定の呼出しだけの変更。
+- 検証: 32 hostスイート/Bitrig preview成功。Simulatorで4ソースと架空の2記録/6タスクを
+  使い追加・検索・編集・完了・再読込・出典を確認。Light/Dark/大きい文字/Reduce Motion。
+  検証データを削除し、既存chatと空白Ask AIを保持。
+- 残る: 個別の変更前画像、実VoiceOver/大量資料/長い会話/狭い端末、実BYOK/認証E2E、
+  backup実復元、App Group/実機Widget/Release性能。
+- 詳細は[導線改善記録](PROJECT_WORKSPACE_UX.md)・[品質改善記録](QUALITY_IMPROVEMENT.md)。
