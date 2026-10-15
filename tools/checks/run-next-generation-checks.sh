@@ -6,6 +6,9 @@ check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 swiftc Shared/MemoraIcon.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSource+Presentation.swift tools/checks/ProjectSourceAvailabilityChecks.swift -o "$check_dir/source-availability"
 "$check_dir/source-availability"
+swiftc App/MCPDNSLookup.swift App/MCPClientError.swift App/MCPPublicAddressPolicy.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSourceText.swift App/ProjectSourceURL.swift App/WebSourceFailure.swift App/WebSourceRequest.swift App/WebSourceHTTPDecoder.swift App/PinnedHTTPSConnection.swift App/WebSourceTextExtraction.swift App/WebSourceFetcher.swift tools/checks/WebSourceChecks.swift -o "$check_dir/web-source"
+python3 tools/checks/make-web-certificate-fixture.py "$check_dir/web.cer"
+"$check_dir/web-source" "$check_dir/web.cer"
 python3 tools/checks/make-office-fixtures.py "$check_dir/office-fixtures"
 swiftc App/ZipArchive.swift App/ProjectSourceText.swift App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift tools/checks/OfficeDocumentChecks.swift -o "$check_dir/office"
 "$check_dir/office" "$check_dir/office-fixtures"

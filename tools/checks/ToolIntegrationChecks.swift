@@ -67,12 +67,12 @@ struct ToolIntegrationChecks {
     catch IntegrationConnectionError.backendNotConfigured {}
     do { _ = try await unconfigured.execute(definition, arguments: Data("{}".utf8)); preconditionFailure("unconfigured backend executed") }
     catch IntegrationConnectionError.backendNotConfigured {}
-    let lookup = MCPDNSLookup()
+    let lookup = MCPDNSLookup<Bool>()
     lookup.finish(false)
     let cancelled = await withCheckedContinuation { lookup.install($0) }
     precondition(!cancelled)
     lookup.finish(true)
-    let completed = MCPDNSLookup()
+    let completed = MCPDNSLookup<Bool>()
     let success = await withCheckedContinuation { continuation in
       completed.install(continuation)
       completed.finish(true)
