@@ -1,5 +1,8 @@
 # Project Workspace V2 — 設計と実装記録
 
+> Webソースは2026-10-15から、詳細の明示操作で本文を取得できる。
+> URLの保存だけでは取得しない。対応範囲と制限は[Web取得](WEB_SOURCE_EXTRACTION.md)。
+
 > 2026-10-15更新: DOCX/PPTX/XLSXの文字抽出とソースの解析範囲表示を追加。
 > 過去節の「Office未対応」「本文準備済み」は当時の状態。
 > 現在の対応範囲と検証結果は[Office抽出](OFFICE_SOURCE_EXTRACTION.md)・

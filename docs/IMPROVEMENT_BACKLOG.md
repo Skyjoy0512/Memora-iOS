@@ -676,3 +676,14 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 
 対応範囲・安全上限・未検証項目は[Office抽出](OFFICE_SOURCE_EXTRACTION.md)と
 [品質改善記録](QUALITY_IMPROVEMENT.md)が最新。
+
+## 2026-10-15 — P1 Webの明示取得
+
+- 実装/公開ページ確認: IP固定TLS、各redirectのDNS/URL検証、bounded HTTP/HTMLから文字を取得。
+- Simulator確認: 明示取得/更新→本文ファイル/SQLite保存→再表示、日時と外部AIオフ、
+  Light/Dark/大きい文字。削除成功時に詳細から戻る。検証ソースのみ削除。
+- 自動チェック28スイート成功、Bitrig preview成功。証明書の未信頼/名前不一致は
+  ローカルfixtureで確認。外部異常サイトの実TLS拒否確認はtimeoutのため未確認。
+- 未対応: 自動agent tool化、認証ページ、非UTF-8/gzip/trailers等。
+  次は検索品質、project導線、実機/実サービス/バックアップ/性能の検証。
+- 詳細は[Web取得](WEB_SOURCE_EXTRACTION.md)・[品質改善記録](QUALITY_IMPROVEMENT.md)。

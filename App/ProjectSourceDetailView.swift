@@ -3,6 +3,7 @@ import QuickLook
 
 struct ProjectSourceDetailView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.dismiss) private var dismiss
   var sourceID: UUID
   @State private var previewURL: URL?
   @State private var isDeleting = false
@@ -11,6 +12,7 @@ struct ProjectSourceDetailView: View {
   @State private var isEditingPrivacy = false
   @State private var extracted: [ProjectSourceText] = []
   @State private var textFailure: String?
+  @State private var webFetchRequest: UUID?
 
   var body: some View {
     if let source = model.source(id: sourceID) {
@@ -18,6 +20,10 @@ struct ProjectSourceDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
           Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
           Text("\(source.kindLabel) · \(source.statusLabel)").font(.footnote).foregroundStyle(.secondary)
+          if let date = source.webFetchedAt {
+            Text("取得: \(date.formatted(date: .abbreviated, time: .shortened))")
+              .font(.footnote).foregroundStyle(.secondary)
+          }
           if let author = source.metadata?["youtubeAuthor"], !author.isEmpty {
             Text(author).font(.footnote).foregroundStyle(.secondary)
           }
@@ -28,6 +34,18 @@ struct ProjectSourceDetailView: View {
             Text(message).font(.subheadline).foregroundStyle(.secondary)
           }
           if let textFailure { Text(textFailure).font(.subheadline).foregroundStyle(.secondary) }
+          if source.kind == .web {
+            if webFetchRequest != nil {
+              ProgressView("本文を取得中…").font(.subheadline)
+              Button("取得を停止") { webFetchRequest = nil }.frame(minHeight: 44)
+                .tint(MemoraPalette.textPrimary)
+            } else {
+              Button(source.canProvideText ? "本文を更新" : "Web本文を取得") { webFetchRequest = UUID() }
+                .frame(minHeight: 44)
+                .tint(MemoraPalette.textPrimary)
+                .disabled(model.projectSourceProcessingIDs.contains(sourceID) || model.isRestoring || model.isStoreProtected)
+            }
+          }
           ForEach(Array(extracted.enumerated()), id: \.offset) { _, block in
             if let page = block.page { Text("ページ \(page)").font(.footnote).foregroundStyle(.secondary) }
             Text(block.text).font(.body).lineSpacing(4).textSelection(.enabled)
@@ -72,6 +90,11 @@ struct ProjectSourceDetailView: View {
         }
       }
       .quickLookPreview($previewURL)
+      .task(id: webFetchRequest) {
+        guard let request = webFetchRequest else { return }
+        await model.fetchProjectWebSource(sourceID)
+        if webFetchRequest == request { webFetchRequest = nil }
+      }
       .task(id: sourceID) {
         if source.processingStatus == .pending || source.processingStatus == .processing ||
            (source.kind == .youtube && source.thumbnailReference == nil) {
@@ -89,7 +112,9 @@ struct ProjectSourceDetailView: View {
       }
       .sheet(isPresented: $isEditingPrivacy) { ProjectSourcePrivacySheet(source: source) }
       .confirmationDialog("ソースを削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
-        Button("削除", role: .destructive) { model.deleteProjectSource(sourceID) }
+        Button("削除", role: .destructive) {
+          if model.deleteProjectSource(sourceID) { dismiss() }
+        }
       } message: { Text("保存したコピーと解析結果を削除します。元のファイルや他の録音・資料は削除しません。") }
       .confirmationDialog("プロジェクトから外しますか？", isPresented: $isDetaching, titleVisibility: .visible) {
         Button("外す") { model.detachProjectSource(sourceID) }

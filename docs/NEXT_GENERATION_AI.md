@@ -429,3 +429,12 @@ Light/Dark/大きい文字を確認。実LLM/実Office資料群/実機性能は�
 一般Web本文、正解付きRAG評価、project/record書込、実外部認証E2E、App Groupは残る。
 制限と仕様参照は[Office抽出](OFFICE_SOURCE_EXTRACTION.md)、確認範囲は
 [品質改善記録](QUALITY_IMPROVEMENT.md)を参照。
+
+## 2026-10-15 — Webソースの明示取得
+
+IP固定TLS/ホスト名検証/各redirectの再検証と、boundedなHTTP/HTMLの文字抽出を追加。
+詳細の取得/更新/停止からのみ実行し、保存や復帰だけでは再送しない。本文・取得日時・
+元URLを保存し、既存のprivacy/索引/引用を使う。28 hostスイートとBitrig preview成功。
+公開ページの実取得、Simulatorの保存/再表示、Light/Dark/大きい文字を確認。
+認証ページ、agentの自動fetch、実外部認証/実機/性能、異常サイトの実TLS拒否は未確認。
+制限と確認結果は[Web取得](WEB_SOURCE_EXTRACTION.md)・[品質改善記録](QUALITY_IMPROVEMENT.md)。

@@ -224,6 +224,10 @@ extension MemoraModel {
     guard !isRestoring, let source = source(id: id) else { return false }
     let remaining = projectSources.filter { $0.id != id }
     guard persistNow(remaining, forKey: StorageKey.projectSources) else { return false }
+    if let job = projectWebFetchJobs.removeValue(forKey: id) {
+      job.task.cancel()
+      projectSourceProcessingIDs.remove(id)
+    }
     projectSources = remaining
     invalidateProjectEvidence([.source(id)])
     let retained = Set(remaining.flatMap(\.fileReferences))

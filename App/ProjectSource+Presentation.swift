@@ -54,4 +54,9 @@ extension ProjectSource {
     }
     return nil
   }
+
+  var webFetchedAt: Date? {
+    guard kind == .web, let value = metadata?["webFetchedAt"] else { return nil }
+    return ISO8601DateFormatter().date(from: value)
+  }
 }

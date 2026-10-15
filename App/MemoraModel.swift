@@ -26,7 +26,10 @@ final class MemoraModel {
   var currentTeamID: String? = UserDefaults.standard.string(forKey: StorageKey.currentTeamID) {
     didSet {
       UserDefaults.standard.set(currentTeamID, forKey: StorageKey.currentTeamID)
-      if oldValue != currentTeamID { didChangeConversationWorkspace(from: oldValue) }
+      if oldValue != currentTeamID {
+        didChangeConversationWorkspace(from: oldValue)
+        cancelProjectWebFetches()
+      }
     }
   }
   var isTeamCreationPresented = false
@@ -101,6 +104,7 @@ final class MemoraModel {
   @ObservationIgnored var webResearchJobs: [UUID: Task<Void, Never>] = [:]
   var projectChatBusyIDs: Set<UUID> = []
   var projectSourceProcessingIDs: Set<UUID> = []
+  @ObservationIgnored var projectWebFetchJobs: [UUID: (id: UUID, task: Task<WebSourceFetcher.Result, Error>)] = [:]
   var integrationUsage: [IntegrationUsage] = []
   @ObservationIgnored var mcpCredentialRevisions: [UUID: UUID] = [:]
   @ObservationIgnored var agentToolCallCounts: [UUID: Int] = [:]
@@ -293,7 +297,9 @@ final class MemoraModel {
   var isUnsavedRecordingAlertPresented = false
   /// True while a backup restore is preparing files and before its records are
   /// written, so a record added meanwhile cannot be silently replaced.
-  var isRestoring = false
+  var isRestoring = false {
+    didSet { if isRestoring { cancelProjectWebFetches() } }
+  }
   var recordingElapsed: TimeInterval = 0
   /// Smoothed 0...1 loudness for the recording glow.
   /// The glow's microphone level, kept in its own observable object so the ~22
