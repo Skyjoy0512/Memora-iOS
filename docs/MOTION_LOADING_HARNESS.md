@@ -33,3 +33,13 @@ Phase 1〜6の結果、比較表、残課題は各段階で追記する。
 保存情報・静的案内のAppear/TextRevealの利用を全除去。MemoraMotionとTextRevealRendererの共有定義は保持。議事録セクションの強制id/transitionと親への状態animation、検索結果・ライブラリ予定の一括animationを除去。editor/playerの所有場所とdraft保存は変更しない（switch枝の既存ライフサイクル自体は維持）。Glass picker / Tab / FAB / Hero / composerには変更なし。
 
 検証: `check-motion-policy.py`成功、既存`run-next-generation-checks.sh`成功、iOS preview成功（08-29-44-9398b69f）。既存AppIntents metadata警告1件。Project.jsonにはXcodeテストターゲットがないことを`bitrig test -list`で確認。初回baseline buildはpreviewにより待機、結果は別記。
+
+## Phase 2 — 領域単位のLoading
+
+`MemoraLoadingState`はidle/loading/loaded/empty/failed/refreshing。`MemoraLoadSnapshot`はデータのキーと要求tokenを分け、同一対象の更新は本文を保持し、古い成功・失敗・取消を拒否。`MemoraLoadingContainer`は180msまで不可視の安定領域、180msから静的skeleton、2秒から説明、5秒から実装側が渡した取消操作。空/失敗にskeletonを残さず、本文を行単位でアニメーションしない。モノトーン・静的skeletonなのでReduce Motionでも同じ。ShimmerTextのみ既存の水平shimmerを1.6秒へ統一。
+
+ソース: title/format/取得日時は即時、本文だけ非同期。sourceID/参照/retryをtask IDにし、既存の取消対応readAsyncを再利用。本文更新中は保持、読込失敗/停止は再試行。別sourceの内容を描画しない。Web取得の既存明示操作・停止は維持。
+
+Home: 予定を日付/カレンダー設定へ関連付け、recap/summary/timelineすべて同じ一致した予定を使用。taskの自動取消、要求token、反映前の再確認を併用。復帰/EventKit通知もtask IDで更新。ローカル記録は待たずに表示。CalendarServiceの既存APIは失敗と空を区別しないため、新しいエラー原因を推測して表示しない。
+
+検証: virtual clockの50/150/180/200/2000/5000ms、古い応答、重複要求、取消後応答、retry、refresh保持、日付key、empty/failedを`LoadingPolicyChecks`で成功。scroll既存チェック成功。iOS preview成功（08-31-41-be522b3b、最終差分を含む08-33-33-5396a777）。実時間の遅延を注入した画面検証は未実施。

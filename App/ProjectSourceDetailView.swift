@@ -10,12 +10,16 @@ struct ProjectSourceDetailView: View {
   @State private var isDetaching = false
   @State private var isEditing = false
   @State private var isEditingPrivacy = false
-  @State private var extracted: [ProjectSourceText] = []
-  @State private var textFailure: String?
+  @State private var textLoad = MemoraLoadSnapshot<UUID, [ProjectSourceText]>()
+  @State private var textRetry = 0
+  @State private var textTask: Task<Void, Never>?
   @State private var webFetchRequest: UUID?
 
   var body: some View {
     if let source = model.source(id: sourceID) {
+      let extracted = textLoad.value(for: sourceID) ?? []
+      let textState = textLoad.state(for: sourceID)
+      let textRequest = ProjectSourceTextRequest(sourceID: sourceID, reference: source.extractedTextReference, retry: textRetry)
       ScrollView {
         VStack(alignment: .leading, spacing: 16) {
           Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
@@ -33,7 +37,6 @@ struct ProjectSourceDetailView: View {
           if let message = source.availabilityNotice {
             Text(message).font(.subheadline).foregroundStyle(.secondary)
           }
-          if let textFailure { Text(textFailure).font(.subheadline).foregroundStyle(.secondary) }
           if source.kind == .web {
             if webFetchRequest != nil {
               ProgressView("本文を取得中…").font(.subheadline)
@@ -46,9 +49,15 @@ struct ProjectSourceDetailView: View {
                 .disabled(model.projectSourceProcessingIDs.contains(sourceID) || model.isRestoring || model.isStoreProtected)
             }
           }
-          ForEach(Array(extracted.enumerated()), id: \.offset) { _, block in
-            if let page = block.page { Text("ページ \(page)").font(.footnote).foregroundStyle(.secondary) }
-            Text(block.text).font(.body).lineSpacing(4).textSelection(.enabled)
+          MemoraLoadingContainer(state: textState, label: "保存された本文を読み込んでいます…",
+            failure: textLoad.key == sourceID ? textLoad.failure : nil,
+            retry: { textRetry += 1 }, cancel: { textTask?.cancel() }) {
+            ForEach(Array(extracted.enumerated()), id: \.offset) { _, block in
+              VStack(alignment: .leading, spacing: 8) {
+                if let page = block.page { Text("ページ \(page)").font(.footnote).foregroundStyle(.secondary) }
+                Text(block.text).font(.body).lineSpacing(4).textSelection(.enabled)
+              }
+            }
           }
           if let url = source.originalURL {
             Link("元のページを開く", destination: url).font(.body)
@@ -70,7 +79,7 @@ struct ProjectSourceDetailView: View {
           Menu {
             if source.kind == .note {
               Button("メモを編集", icon: .pencil) { isEditing = true }
-                .disabled(extracted.isEmpty || textFailure != nil)
+                .disabled(extracted.isEmpty || textState.isWorking || textState == .failed)
             }
             if (source.localFileReference != nil || (source.kind == .youtube && source.metadata?["youtubeTitle"] == nil)) && source.processingStatus != .ready {
               Button("解析を再試行", icon: .arrowClockwise) {
@@ -101,11 +110,10 @@ struct ProjectSourceDetailView: View {
           await model.prepareProjectSource(sourceID)
         }
       }
-      .task(id: source.extractedTextReference) {
-        extracted = []; textFailure = nil
-        guard let name = source.extractedTextReference else { return }
-        do { extracted = try await Task.detached { try ProjectSourceTextReader.read(name) }.value }
-        catch { textFailure = "保存された本文を読み込めませんでした。" }
+      .task(id: textRequest) {
+        let task = Task { await loadText(textRequest) }
+        textTask = task
+        await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
       }
       .sheet(isPresented: $isEditing) {
         ProjectNoteEditSheet(source: source, text: extracted.map(\.text).joined(separator: "\n"))
@@ -122,6 +130,29 @@ struct ProjectSourceDetailView: View {
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     } else {
       ContentUnavailableView("ソースが見つかりません", icon: .docQuestionmark)
+    }
+  }
+
+  private func loadText(_ request: ProjectSourceTextRequest) async {
+    guard !Task.isCancelled else { return }
+    let token = textLoad.begin(request.sourceID)
+    guard let name = request.reference else {
+      textLoad.finish([], isEmpty: true, token: token)
+      return
+    }
+    do {
+      let blocks = try await ProjectSourceTextReader.readAsync(name)
+      try Task.checkCancellation()
+      guard sourceID == request.sourceID,
+            model.source(id: request.sourceID)?.extractedTextReference == name else {
+        textLoad.cancel(token)
+        return
+      }
+      textLoad.finish(blocks, isEmpty: blocks.isEmpty, token: token)
+    } catch is CancellationError { textLoad.fail("本文の読み込みを停止しました。", token: token) }
+    catch {
+      guard !Task.isCancelled else { textLoad.cancel(token); return }
+      textLoad.fail("保存された本文を読み込めませんでした。ファイルが見つからないか、読み取れない形式です。", token: token)
     }
   }
 }

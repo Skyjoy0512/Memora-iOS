@@ -14,7 +14,8 @@ struct HomeView: View {
   /// The day the Journal is showing.
   @State private var selectedDate = Calendar.current.startOfDay(for: .now)
   /// Calendar events for the selected day, read from EventKit when that is on.
-  @State private var calendarEvents: [JournalCalendarEvent] = []
+  @State private var calendarLoad = MemoraLoadSnapshot<JournalCalendarRequest, [JournalCalendarEvent]>()
+  @State private var calendarRefresh = 0
   /// The journey whose station list is open.
   @State private var openMovement: JournalMovement?
   /// The calendar event whose detail sheet is open.
@@ -29,11 +30,18 @@ struct HomeView: View {
   @AppStorage("memora.journal.healthReviewEnabled") private var healthEnabled = false
   @State private var healthLoader = HealthReviewService.makeLoader()
   @State private var healthRefreshID = 0
-  @State private var calendarRequestID = UUID()
 
   private var journalCalendarIDs: [String] {
     journalCalendarIDsValue.isEmpty ? [] : journalCalendarIDsValue.components(separatedBy: "\n")
   }
+  private var calendarRequest: JournalCalendarRequest {
+    .init(date: selectedDate, calendarIDs: journalCalendarIDs, enabled: showCalendarEvents, refresh: calendarRefresh)
+  }
+
+  private var calendarEvents: [JournalCalendarEvent] {
+    showCalendarEvents ? calendarLoad.value(for: calendarRequest.contentKey) ?? [] : []
+  }
+
   /// The day "today" meant when the screen was last seen, so a journal left
   /// open past midnight follows the new day.
   @State private var todayAnchor = Calendar.current.startOfDay(for: .now)
@@ -90,6 +98,12 @@ struct HomeView: View {
             }
 
             HomeActivityLinks()
+
+            if showCalendarEvents {
+              MemoraLoadingContainer(state: calendarLoad.state(for: calendarRequest.contentKey), label: "この日の予定を確認しています…") {
+                EmptyView()
+              }
+            }
 
             if entries.isEmpty, calendarEvents.isEmpty, !recap.hasActivity {
               emptyDay
@@ -181,19 +195,17 @@ struct HomeView: View {
       .onChange(of: scenePhase) { _, phase in
         guard phase == .active else { return }
         refreshTodayIfNeeded()
-        Task { await loadEvents() }
+        calendarRefresh += 1
       }
-      .task(id: selectedDate) { await loadEvents() }
+      .task(id: calendarRequest) { await loadEvents(calendarRequest) }
       .task(id: healthRequest) {
         guard healthRequest.canRead else { healthLoader.clear(); return }
         await healthLoader.load(healthRequest.period, requestsAccess: healthRequest.refreshID > 0)
       }
       .onDisappear { if !showsSummary { healthLoader.clear() } }
       .onChange(of: selectedDate) { _, date in backdrops.select(date) }
-      .onChange(of: showCalendarEvents) { _, _ in Task { await loadEvents() } }
-      .onChange(of: journalCalendarIDsValue) { _, _ in Task { await loadEvents() } }
       .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
-        Task { await loadEvents() }
+        calendarRefresh += 1
       }
       .navigationDestination(for: LibraryRoute.self) { route in
         LibraryDestinationView(route: route)
@@ -328,20 +340,17 @@ struct HomeView: View {
   }
 
   /// Reads the selected day's events when the journal is set to show them.
-  private func loadEvents() async {
-    let requestID = UUID()
-    calendarRequestID = requestID
-    guard showCalendarEvents else {
-      calendarEvents = []
+  private func loadEvents(_ request: JournalCalendarRequest) async {
+    guard !Task.isCancelled else { return }
+    let token = calendarLoad.begin(request.contentKey)
+    guard request.enabled else {
+      calendarLoad.finish([], isEmpty: true, token: token)
       return
     }
-    let date = selectedDate
-    let calendarIDs = journalCalendarIDs
-    let identifiers = calendarIDs.isEmpty ? nil : calendarIDs
-    let events = await CalendarService.events(on: date, calendarIdentifiers: identifiers)
-    guard !Task.isCancelled, calendarRequestID == requestID, selectedDate == date,
-          showCalendarEvents, journalCalendarIDs == calendarIDs else { return }
-    if calendarEvents != events { calendarEvents = events }
+    let events = await CalendarService.events(on: request.date,
+      calendarIdentifiers: request.calendarIDs.isEmpty ? nil : request.calendarIDs)
+    guard !Task.isCancelled, calendarRequest == request else { calendarLoad.cancel(token); return }
+    calendarLoad.finish(events, isEmpty: events.isEmpty, token: token)
   }
 
   private var emptyDescription: String {

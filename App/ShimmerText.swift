@@ -25,7 +25,7 @@ struct ShimmerText: View {
       }
       .onAppear {
         guard !reduceMotion else { return }
-        withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
+        withAnimation(.linear(duration: MemoraLoadingPolicy.shimmerSeconds).repeatForever(autoreverses: false)) {
           phase = 1
         }
       }
