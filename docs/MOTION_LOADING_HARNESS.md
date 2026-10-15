@@ -27,3 +27,9 @@
 実ユーザーデータ・キー・有料モデルを使用しない。既存host fixture（next-generation / plugin / persistence / optimization）と追加の純粋Swift fixtureを使用。Bitrig iOSプレビューで表示確認する。実機Releaseの起動・hitch・memory・外部接続は別検証とし、host CPU値から改善率を推定しない。
 
 Phase 1〜6の結果、比較表、残課題は各段階で追記する。
+
+## Phase 1 — 即時表示
+
+保存情報・静的案内のAppear/TextRevealの利用を全除去。MemoraMotionとTextRevealRendererの共有定義は保持。議事録セクションの強制id/transitionと親への状態animation、検索結果・ライブラリ予定の一括animationを除去。editor/playerの所有場所とdraft保存は変更しない（switch枝の既存ライフサイクル自体は維持）。Glass picker / Tab / FAB / Hero / composerには変更なし。
+
+検証: `check-motion-policy.py`成功、既存`run-next-generation-checks.sh`成功、iOS preview成功（08-29-44-9398b69f）。既存AppIntents metadata警告1件。Project.jsonにはXcodeテストターゲットがないことを`bitrig test -list`で確認。初回baseline buildはpreviewにより待機、結果は別記。

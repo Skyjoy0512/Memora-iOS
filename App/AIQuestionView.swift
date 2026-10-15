@@ -109,11 +109,9 @@ struct AIQuestionView: View {
     VStack(alignment: .leading, spacing: 8) {
       Text("会議をまたいで、答えを探します")
         .font(.title2.bold())
-        .memoraTextReveal()
       Text("会議の要約・発言・タスクから、関係する部分を探して答えます。")
         .font(.subheadline)
         .foregroundStyle(.secondary)
-        .memoraTextReveal(delay: 0.08)
     }
   }
 

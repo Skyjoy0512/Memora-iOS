@@ -23,7 +23,6 @@ struct MeetingTranscriptContent: View {
       VStack(alignment: .leading, spacing: 6) {
         Text("文字起こし")
           .font(.title2.bold())
-          .memoraTextReveal()
 
         if !meeting.transcript.isEmpty {
           Text(
@@ -69,7 +68,6 @@ struct MeetingTranscriptContent: View {
         }
       }
     }
-    .memoraAppear()
     .background {
       if hasTimeline, let player {
         ActiveSegmentTracker(

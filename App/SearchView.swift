@@ -104,8 +104,6 @@ struct SearchView: View {
         dismissKeyboard()
         scrollToLatest(proxy)
       }
-      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.pendingAgentApproval?.id)
-      .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isAIChatResponding)
       .overlay(alignment: .bottom) {
         if model.isAIChatResponding {
           // Stopping is offered where the answer is being written.
@@ -217,8 +215,6 @@ struct SearchView: View {
     }
     .listStyle(.insetGrouped)
     .safeAreaInset(edge: .top, spacing: 0) { filterBar }
-    .animation(reduceMotion ? nil : .smooth, value: matchingMeetings.map(\.id))
-    .animation(reduceMotion ? nil : .smooth, value: matchingTasks.map(\.id))
     .overlay {
       if matchingMeetings.isEmpty && matchingTasks.isEmpty {
         if filters.isActive {

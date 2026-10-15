@@ -46,7 +46,6 @@ struct CollapsibleInsightSection<Content: View>: View {
           }
             .font(.title3.bold())
             .foregroundStyle(.primary)
-            .memoraTextReveal()
           Spacer(minLength: 8)
           Image(icon: .chevronDown)
             .font(.subheadline.weight(.semibold))

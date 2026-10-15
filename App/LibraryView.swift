@@ -363,7 +363,6 @@ struct LibraryView: View {
       await upcoming.refresh()
       await model.cloudSharing.refreshIfConfirmed()
     }
-    .animation(reduceMotion ? nil : MemoraMotion.screen, value: upcoming.meetings.map(\.id))
     .hideBottomBarOnScroll(RootTab.library.rawValue)
   }
 

@@ -257,7 +257,6 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 10) {
           Text(dayLabel(for: group.day))
             .font(.title2.bold())
-            .memoraTextReveal()
 
           LazyVStack(spacing: 0) {
             ForEach(group.entries) { entry in
@@ -369,7 +368,6 @@ struct HomeView: View {
       // the all-day events right below it.
       Text(dayLabel(for: selectedDate))
         .font(.title2.bold())
-        .memoraTextReveal()
 
       if !timeline.allDayEvents.isEmpty {
         allDayEventChips(timeline.allDayEvents)

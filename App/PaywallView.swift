@@ -28,10 +28,8 @@ struct PaywallView: View {
               .foregroundStyle(.secondary)
               .lineSpacing(4)
           }
-          .memoraAppear()
 
           GlassSegmentedPicker(items: MemoraPlan.allCases, selection: $selectedPlan, title: \.label)
-          .memoraAppear(delay: 0.04)
 
           VStack(alignment: .leading, spacing: 4) {
             Text(selectedPlan.priceLabel)
@@ -47,14 +45,11 @@ struct PaywallView: View {
               BenefitRow(symbol: .checkmarkCircleFill, title: feature, detail: nil)
             }
           }
-          .memoraAppear(delay: 0.06)
 
           if model.plan == selectedPlan {
             currentPlanFooter
-              .memoraAppear(delay: 0.12)
           } else {
             purchaseControls
-              .memoraAppear(delay: 0.12)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

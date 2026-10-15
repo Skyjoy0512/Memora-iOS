@@ -17,7 +17,6 @@ struct MeetingNotesContent: View {
     VStack(alignment: .leading, spacing: 14) {
       Text("ノート")
         .font(.title2.bold())
-        .memoraTextReveal()
 
       InlineMarkdownEditor(
         text: noteText,
@@ -72,7 +71,6 @@ struct MeetingNotesContent: View {
       }
       .scrollIndicators(.hidden)
     }
-    .memoraAppear()
     .animation(reduceMotion ? nil : .smooth, value: photos.count)
     .onChange(of: photoItem) { _, item in
       Task { await addPhoto(item) }

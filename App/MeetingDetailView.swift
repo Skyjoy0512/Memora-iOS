@@ -94,15 +94,11 @@ struct MeetingDetailView: View {
               )
 
               sectionContent(meeting)
-                .id(selectedSection)
-                .transition(sectionTransition)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 18)
             // Room to scroll the last section clear of the floating AI composer.
             .padding(.bottom, model.bottomContentClearance)
-            .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedSection)
-            .animation(reduceMotion ? nil : MemoraMotion.screen, value: meeting.status)
           }
           .background(MemoraPalette.background)
           .overlay {
@@ -471,12 +467,6 @@ struct MeetingDetailView: View {
     }
   }
 
-  private var sectionTransition: AnyTransition {
-    reduceMotion
-      ? .opacity
-      : .opacity.combined(with: .scale(scale: 0.99, anchor: .top))
-  }
-
   @ViewBuilder
   private func sectionContent(_ meeting: Meeting) -> some View {
     switch selectedSection {
@@ -542,7 +532,6 @@ struct MeetingDetailView: View {
       Text(meeting.title)
         .font(.largeTitle.bold())
         .tracking(-0.6)
-        .memoraTextReveal()
 
       HStack(spacing: 8) {
         Text(MemoraFormat.meetingDate(meeting.createdAt))
@@ -604,7 +593,6 @@ struct MeetingDetailView: View {
         onCommit: { await model.updateMeetingSummary(meeting.id, summary: $0) }
       )
     }
-    .memoraAppear()
 
     CollapsibleInsightSection(.decisions) {
       let sources = SummaryEvidence.matches(items: meeting.decisions, transcript: meeting.transcript, duration: meeting.duration)
@@ -619,12 +607,10 @@ struct MeetingDetailView: View {
         }
       )
     }
-    .memoraAppear(delay: 0.05)
 
     CollapsibleInsightSection(.tasks) {
       MeetingTasksSection(meetingID: meeting.id)
     }
-    .memoraAppear(delay: 0.1)
 
     CollapsibleInsightSection(.openQuestions) {
       InlineEditableList(
@@ -633,7 +619,6 @@ struct MeetingDetailView: View {
         onCommit: { model.updateMeetingList(meeting.id, \.openQuestions, items: $0) }
       )
     }
-    .memoraAppear(delay: 0.15)
 
     CollapsibleInsightSection(.keyPoints) {
       InlineEditableList(
@@ -642,7 +627,6 @@ struct MeetingDetailView: View {
         onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }
       )
     }
-    .memoraAppear(delay: 0.2)
   }
 
 }

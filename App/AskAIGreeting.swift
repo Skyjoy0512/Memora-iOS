@@ -19,7 +19,6 @@ struct AskAIGreeting: View {
       .font(.title.bold())
       .multilineTextAlignment(.center)
       .fixedSize(horizontal: false, vertical: true)
-      .memoraTextReveal()
       .frame(maxWidth: .infinity)
   }
 }
