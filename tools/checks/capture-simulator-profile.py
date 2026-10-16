@@ -58,10 +58,17 @@ def main():
                 'executable_uuids': sorted(built_ids), 'requested_seconds': args.seconds}
     (output / 'capture.json').write_text(json.dumps(metadata, indent=2) + '\n')
     print(f'Recording {bundle} PID {pids[0]} on {simulator}; perform one synthetic flow now.\nOutput: {output}', flush=True)
-    result = subprocess.run(['xcrun', 'xctrace', 'record', '--template', 'Time Profiler', '--device', simulator,
-                             '--attach', pids[0], '--time-limit', f'{args.seconds}s', '--no-prompt',
-                             '--output', str(output / 'runtime.trace')], capture_output=True, text=True,
-                            timeout=args.seconds + 40)
+    try:
+        result = subprocess.run(['xcrun', 'xctrace', 'record', '--template', 'Time Profiler', '--device', simulator,
+                                 '--attach', pids[0], '--time-limit', f'{args.seconds}s', '--no-prompt',
+                                 '--output', str(output / 'runtime.trace')], capture_output=True, text=True,
+                                timeout=args.seconds + 40)
+    except subprocess.TimeoutExpired as error:
+        # Timeout output can be bytes even with text=True; retain the failure evidence outside git.
+        (output / 'record.log').write_text(''.join(
+            value.decode('utf-8', errors='replace') if isinstance(value, bytes) else value or ''
+            for value in (error.stdout, error.stderr)))
+        raise
     (output / 'record.log').write_text(result.stdout + result.stderr)
     if result.returncode:
         raise ValueError(f'Trace record failed ({result.returncode}); inspect record.log')

@@ -200,3 +200,5 @@ Agentの新しい診断eventは要求/操作の事実と終了所要時間だけ
 ### 標準CoreSimulatorでのTime Profiler取得（2026-10-16追加）
 
 Bitrig Release成果物を、Memora data containerがない標準iPhone 18 Pro Max / iOS 27.0で起動し、明示的なdevice ID + PIDでTime Profilerを取得できた。空状態のタブ操作2回で1,493/915 samples。UUID照合と部分的symbol/backtraceの検証を行う取得/解析toolを追加。静止画面の0行traceは評価対象から除外する。frame/遷移遅延/実機改善率ではない。再現手順・集計・制約は[SIMULATOR_PROFILING.md](SIMULATOR_PROFILING.md)。以前の内蔵simulatorでの接続失敗記録を、この標準simulatorの成功で書き換えない。
+
+追加確認では、同じ標準SimulatorのAnimation HitchesとSwiftUIテンプレートが`Hitches is not supported on this platform`で失敗した。Time ProfilerへSwiftUI instrumentだけ追加したrecordは終了したが、`Trace file had no SwiftUI data`のためbody/FPSの測定値にはできない。詳細と対照確認は上記文書の「描画計測の追加確認と環境の制約」参照。取得toolの失敗/timeout/対象取り違えをmockで検証し、timeoutの途中logを保持する。これらの失敗を0 hitchesや改善率に換算しない。実機Releaseの描画性能は引き続き未測定。

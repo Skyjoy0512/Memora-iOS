@@ -74,3 +74,40 @@ schema/列順、interned ID/ref、UUID、一意のapp process、非負で有効�
 `run-motion-loading-checks.sh`は新checkを含め成功。`bitrig preview -platform iOS`も成功し、現在のBitrigプレビューを更新した（log `2026-10-16T18-25-00-c50bdfc1.log`、既存Share Extensionのmetadata抽出省略warning 1件）。Releaseは上記の既存成果物を使用しており、新しいRelease buildの測定とは表示しない。`git diff --check`も成功。検証終了後、今回bootした標準simulatorを元のShutdownへ戻し、今回変更したXcodeBuildMCPの一時defaultsも元の未設定へ戻した。traceと隔離app containerは保持し、既存データを消去していない。
 
 主要画面の操作は空状態での到達を確認した範囲。大量ファイル、議事録詳細、生成回答、スクロール、キーボード、Dynamic Type等の網羅的なUI検証ではない。起動/Homeの操作可能になるまでの時間、個々のタブ遷移時間、Animation Hitches、FPS、SwiftUI body回数、メインスレッドの正確な占有時間、peak memory、iPhone実機Release、before/after改善率は引き続き未測定。次は同じ環境で、固定した架空データと明示的な操作区間を使う描画計測を優先する。
+
+## 描画計測の追加確認と環境の制約（2026-10-16）
+
+基準`cc595a1`、開始時main/クリーン。同じBitrig Release成果物（arm64 UUIDは上記と同じ）を、前回の隔離された空の標準iOS 27.0 Simulatorへ起動した。アプリのコード、Project.json、保存データ、権限、課金処理は変更していない。フレームの計測可否を先に確認し、以下を観測した。
+
+| 取得構成 | 実際の結果 | 性能評価への扱い |
+|---|---|---|
+| Animation Hitches、20秒指定、初回 | exit 21、`Cannot find process for provided pid` | 取得失敗 |
+| 同じdevice/PIDのTime Profiler、5秒 | exit 0、record完了。既存input-source warning | attach経路の対照確認だけ。静止画面で性能比較しない |
+| Animation Hitches、20秒指定、再試行 | exit 2、`Hitches is not supported on this platform.` | platform非対応。exportもrun data欠落で失敗 |
+| SwiftUIテンプレート、30秒指定 | exit 2、同じHitches非対応 | テンプレート内のHitchesで失敗。body計測成功ではない |
+| Time Profiler + `--instrument SwiftUI`、30秒 | exit 0、`Trace file had no SwiftUI data` | record終了をbody/FPS/Hitchesの有効な測定としない |
+
+最後の構成は、非対応のHitchesを含むテンプレートを避けてSwiftUI instrument単体を追加したもの。capture終了前に行った最初のexportは`Document Missing Template Error`で失敗した。recordプロセスの終了後にexportをやり直すとTOCは取得できたが、SwiftUI dataなしというwarningは解消しなかった。警告や空の表から「重いbodyなし」「フレーム落ちゼロ」とは結論しない。
+
+各操作では、AXの最新snapshotからタブを特定し、Home → Library → Ask AI → Homeを2巡した。各tapの戻り値で選択状態を確認した。これは空状態での画面到達の確認であり、操作toolの往復時間（AX取得と待機を含む）をアプリの遷移時間へ換算しない。中間フレームの連続観測も、固定した架空本文の描画測定も未完了のまま。
+
+ローカルで確認したInstruments 27.1の構成にはAnimation Hitches/SwiftUIテンプレートが列挙されていたが、列挙されることは選択したplatformでの動作保証ではなかった。Appleもhitchの現実的な評価には実機を推奨している（[Improving app responsiveness](https://developer.apple.com/documentation/xcode/improving-app-responsiveness)）。今回のエラーの原因を、すべてのSimulator/OSでの非対応へ一般化しない。
+
+raw log/trace/TOCはGit外の`/Volumes/WorkspaceSSD/Development/Temp/memora-animation-hitches-bnzy3ztg/`へ保持した。失敗したtraceを集計JSONへ追加していない。次の描画計測は、実機Releaseとテスト専用データを使い、固定した操作区間で行う必要がある。この作業ではユーザーのiPhoneへのインストールや、実サービス/実記録の利用を行っていない。
+
+### 取得toolの失敗時の検証
+
+`capture-simulator-profile.py`はTime Profiler専用のまま維持した。タイムアウト時も途中のstdout/stderrを`record.log`へ残し、export/再試行/summary生成へ進まないようにした。`subprocess`のtimeout出力がtext指定でもbytesになり得るため、UTF-8の不正byteを置換して診断を保存する。
+
+`test_simulator_profile_capture.py`の7 testで、実コマンドをすべてmockし、次を確認する。ユーザーのSimulatorやデータへ触れるテストではない。
+
+- shutdown/未利用可能/異なるdevice、未起動/重複/停止済み/別bundleのjobではattachしない。
+- 指定成果物とinstalled appのUUID不一致ではattachしない。
+- repo内の出力と既存folderを拒否し、既存の内容を保持する。
+- 明示的なdevice/PIDを使い、all-processesやlaunchへ拡大しない。
+- record失敗/timeoutではlogを保持し、export/自動再試行/summary生成をしない。
+- recordがexit 0でもexport失敗/空XMLなら測定成功にしない。
+
+既存summary検証5 testと合わせて12 test成功。motion-loading runnerへ両方を組み込んだ。アプリのUI/モデルへの追加の性能最適化は、この無効な描画測定を根拠に実施していない。
+
+最終検証: `run-motion-loading-checks.sh`全件成功（loader/scroll/Markdown/catalog/budget/承認取消/workspace世代を含む）。`bitrig preview -platform iOS`成功、log `2026-10-16T18-37-07-45157243.log`。既存Share ExtensionのAppIntents metadata extraction省略warning 1件。新しいRelease buildは作成せず、上記の既存Releaseで取得した。`git diff --check`成功。標準Simulatorは元のShutdownへ戻し、変更した一時defaultsを未設定へ戻した。隔離containerの削除や初期化はしていない。

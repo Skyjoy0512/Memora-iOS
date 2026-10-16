@@ -4,7 +4,7 @@ cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-motion-loading.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 python3 tools/checks/check-motion-policy.py
-python3 -B -m unittest discover -s tools/checks -p test_simulator_profile_summary.py
+python3 -B -m unittest discover -s tools/checks -p 'test_simulator_profile_*.py'
 swiftc App/MemoraLoadingState.swift App/MemoraLoadingPolicy.swift App/MemoraLoadSnapshot.swift App/JournalCalendarRequest.swift tools/checks/LoadingPolicyChecks.swift -o "$check_dir/loading"
 "$check_dir/loading"
 swiftc App/MemoraLoadingState.swift App/MemoraLoadSnapshot.swift App/ProjectSourceText.swift App/ProjectSourceFiles.swift App/ProjectSourceTextReader.swift App/ProjectSourceTextRequest.swift App/ProjectSourceTextLoader.swift tools/checks/ProjectSourceTextLoaderChecks.swift -o "$check_dir/source-loader"
