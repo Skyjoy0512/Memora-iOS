@@ -23,6 +23,13 @@ struct PersonMemory {
   var decisions: [Decision]
   var journalEntries: [LifeLogEntry]
 
+  var conversationSummary: PersonConversationSummary {
+    PersonConversationSummary(topics: meetings.prefix(30).map { meeting in
+      .init(id: meeting.id, title: meeting.displayTitle, date: meeting.createdAt,
+        summary: String(meeting.summaryPreview.prefix(500)), decisions: meeting.decisions, unresolved: meeting.openQuestions)
+    })
+  }
+
   var lastMet: Date? {
     meetings.first?.createdAt
   }

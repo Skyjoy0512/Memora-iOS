@@ -20,7 +20,8 @@ struct PersonDetailView: View {
   }
 
   private func content(_ memory: PersonMemory) -> some View {
-    List {
+    let summary = memory.conversationSummary
+    return List {
       Section {
         header(memory)
           .listRowBackground(Color.clear)
@@ -30,6 +31,44 @@ struct PersonDetailView: View {
       Section {
         Button("\(memory.person.name)さんとのことをAIに聞く", icon: .sparkles) {
           askAgent(about: memory.person)
+        }
+      }
+
+      if let latest = summary.topics.first {
+        Section("概要") {
+          NavigationLink(value: LibraryRoute.meeting(latest.id)) {
+            Text(summary.overview).font(.subheadline)
+          }
+        }
+        Section("話してきたこと") {
+          ForEach(summary.topics.prefix(8)) { topic in
+            NavigationLink(value: LibraryRoute.meeting(topic.id)) {
+              VStack(alignment: .leading, spacing: 4) {
+                Text(topic.title).font(.subheadline.weight(.medium))
+                if !topic.summary.isEmpty { Text(topic.summary).font(.subheadline).foregroundStyle(.secondary) }
+                Text(topic.date.formatted(date: .abbreviated, time: .omitted)).font(.caption).foregroundStyle(.secondary)
+              }
+            }
+          }
+        }
+        if !summary.recentDecisions.isEmpty {
+          Section("最近の記録に加わった決定") {
+            NavigationLink(value: LibraryRoute.meeting(latest.id)) {
+              Text(summary.recentDecisions.joined(separator: "\n")).font(.subheadline)
+            }
+          }
+        }
+      }
+      if !summary.unresolvedTopics.isEmpty {
+        Section("未解決の話題") {
+          ForEach(summary.unresolvedTopics.prefix(8)) { topic in
+            NavigationLink(value: LibraryRoute.meeting(topic.id)) {
+              VStack(alignment: .leading, spacing: 4) {
+                Text(topic.unresolved.joined(separator: "\n")).font(.subheadline)
+                Text(topic.title).font(.caption).foregroundStyle(.secondary)
+              }
+            }
+          }
         }
       }
 
@@ -50,7 +89,7 @@ struct PersonDetailView: View {
       }
 
       if !memory.decisions.isEmpty {
-        Section("一緒に決めたこと") {
+        Section("関連する会議の決定") {
           ForEach(memory.decisions, id: \.self) { decision in
             NavigationLink(value: LibraryRoute.meeting(decision.meetingID)) {
               VStack(alignment: .leading, spacing: 3) {
@@ -65,7 +104,7 @@ struct PersonDetailView: View {
         }
       }
 
-      Section("会議") {
+      Section("会話タイムライン・関連記録") {
         if memory.meetings.isEmpty {
           Text("まだ一緒の会議はありません。会議の参加者に追加すると、ここに並びます。")
             .font(.subheadline)
