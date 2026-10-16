@@ -39,7 +39,7 @@ struct AgentQuestionCard: View {
     .memoraCard(radius: 20)
     .overlay(alignment: .topTrailing) {
       Button {
-        model.resolveAgentQuestions(nil)
+        model.resolveAgentQuestions(nil, requestID: request.id)
       } label: {
         Image(icon: .xmark)
           .font(.caption.weight(.semibold))
@@ -215,6 +215,6 @@ struct AgentQuestionCard: View {
       let written = (custom[questionIndex] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
       return (choices + (written.isEmpty ? [] : [written])).joined(separator: "、")
     }
-    model.resolveAgentQuestions(answers)
+    model.resolveAgentQuestions(answers, requestID: request.id)
   }
 }

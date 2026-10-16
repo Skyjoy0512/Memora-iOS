@@ -210,14 +210,12 @@ extension MemoraModel {
 
   /// Settles the pending approval card. Declining tells the model the change
   /// was refused, so it does not quietly try again.
-  func resolveAgentApproval(_ approved: Bool) {
-    if approved, let approval = pendingAgentApproval, let drafts = approval.taskDrafts {
+  func resolveAgentApproval(_ approved: Bool, approvalID: UUID? = nil) {
+    let approval = pendingAgentApproval
+    guard agentApprovalWaiter.resolve(approved, id: approvalID) else { return }
+    if approved, let approval, let drafts = approval.taskDrafts {
       approvedAgentTaskDrafts[approval.messageID] = drafts
     }
-    pendingAgentApproval = nil
-    let continuation = agentApprovalContinuation
-    agentApprovalContinuation = nil
-    continuation?.resume(returning: approved)
   }
 
   func editAgentTaskDraft(_ draft: AgentTaskDraft, approvalID: UUID) {
@@ -326,34 +324,37 @@ extension MemoraModel {
   /// Shows the agent's questions on its reply and waits for the answers, one
   /// per question; nil when the person closed them without answering.
   func requestAgentQuestions(_ request: AgentQuestionRequest) async -> [String]? {
-    resolveAgentQuestions(nil)
-    return await withCheckedContinuation { continuation in
-      agentQuestionsContinuation = continuation
+    guard !Task.isCancelled, agentMessage(request.messageID) != nil else { return nil }
+    if agentMessage(request.messageID)?.cloudProvenance != nil, !isCloudSessionAuthorized(request.messageID) { return nil }
+    let answers = await agentQuestionsWaiter.wait(id: request.id) {
       pendingAgentQuestions = request
+    } dismiss: { [weak self] in
+      if self?.pendingAgentQuestions?.id == request.id { self?.pendingAgentQuestions = nil }
     }
+    guard !Task.isCancelled, agentMessage(request.messageID) != nil else { return nil }
+    if agentMessage(request.messageID)?.cloudProvenance != nil, !isCloudSessionAuthorized(request.messageID) { return nil }
+    return answers
   }
 
-  func resolveAgentQuestions(_ answers: [String]?) {
-    pendingAgentQuestions = nil
-    let continuation = agentQuestionsContinuation
-    agentQuestionsContinuation = nil
-    continuation?.resume(returning: answers)
+  func resolveAgentQuestions(_ answers: [String]?, requestID: UUID? = nil) {
+    agentQuestionsWaiter.resolve(answers, id: requestID)
   }
 
   /// Shows the change on the reply and waits for the person to decide.
   func requestAgentApproval(_ approval: AgentApproval, changesData: Bool = true) async -> Bool {
-    // Only one card at a time; an older one still showing counts as declined.
-    resolveAgentApproval(false)
+    guard !Task.isCancelled, agentMessage(approval.messageID) != nil else { return false }
     if agentMessage(approval.messageID)?.cloudProvenance != nil, !isCloudSessionAuthorized(approval.messageID) { return false }
-    let approved = await withCheckedContinuation { continuation in
-      agentApprovalContinuation = continuation
+    let approved = await agentApprovalWaiter.wait(id: approval.id) {
       pendingAgentApproval = approval
+    } dismiss: { [weak self] in
+      if self?.pendingAgentApproval?.id == approval.id { self?.pendingAgentApproval = nil }
     }
+    guard !Task.isCancelled, agentMessage(approval.messageID) != nil else { return false }
     if agentMessage(approval.messageID)?.cloudProvenance != nil, !isCloudSessionAuthorized(approval.messageID) { return false }
-    if approved && changesData {
+    if approved == true && changesData {
       updateAgentMessage(approval.messageID) { $0.didChangeData = true }
     }
-    return approved
+    return approved == true
   }
 
   func agentMessage(_ id: UUID) -> AIChatMessage? {

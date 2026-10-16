@@ -20,3 +20,5 @@ swiftc App/AIAnswerFailure.swift App/AgentSessionBudget.swift App/LLMModelOption
 "$check_dir/generation"
 swiftc App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentSessionBudget.swift App/AgentOutputBudget.swift App/AgentRunBudget.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/AgentRunBudgetChecks.swift -o "$check_dir/run-budget"
 "$check_dir/run-budget"
+swiftc -swift-version 6 App/AgentInteractionWaiter.swift tools/checks/AgentInteractionChecks.swift -o "$check_dir/interaction"
+"$check_dir/interaction"

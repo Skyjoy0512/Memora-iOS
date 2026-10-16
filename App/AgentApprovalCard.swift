@@ -27,7 +27,7 @@ struct AgentApprovalCard: View {
       HStack(spacing: 10) {
         Button {
           guard model.pendingAgentApproval?.id == approval.id else { return }
-          model.resolveAgentApproval(false)
+          model.resolveAgentApproval(false, approvalID: approval.id)
           InteractionFeedback.shared.send(.selection)
         } label: {
           Text("やめる")
@@ -40,7 +40,7 @@ struct AgentApprovalCard: View {
 
         Button {
           guard model.pendingAgentApproval?.id == approval.id else { return }
-          model.resolveAgentApproval(true)
+          model.resolveAgentApproval(true, approvalID: approval.id)
           InteractionFeedback.shared.send(.selection)
         } label: {
           Text(approval.confirmTitle)

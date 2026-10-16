@@ -78,3 +78,7 @@ CloudAgentSessionへ確認済みモデル限定の送信前output予約を追加
 [AGENT_RUN_BUDGET.md](AGENT_RUN_BUDGET.md)に、依頼単位の共有予算とstructured child lifecycleを実装した。既存AgentSessionBudget/AgentOutputBudget/AgentConversationLoopを再利用し、child作成で上限がリセットされる経路を閉じる。新しい外部Harness、Node依存、任意code、サービス契約を追加せず、承認と権限は既存gatewayで再確認する。
 
 この追加以降、上記「1 cloud session」の回数/byte/時間予算と生成予算は、主担当とその分担調査の子担当をまとめた依頼単位で共有する。独立した質問やresident jobを横断する金額予算は引き続き別課題。
+
+## 操作待ちの寿命（2026-10-16追加）
+
+[AGENT_INTERACTION_LIFECYCLE.md](AGENT_INTERACTION_LIFECYCLE.md)に、承認/質問の取消・後継保護を記録した。Task取消がcontinuationを確実に解放し、古いカードの回答が現行待機へ渡らないようにした。既存のnative承認カード、registry、cost/scope検証を保持する。新しい外部サービスや包括的権限は追加しない。

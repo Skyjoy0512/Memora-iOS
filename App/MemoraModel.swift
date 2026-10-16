@@ -461,9 +461,8 @@ final class MemoraModel {
   /// The request currently being answered, so a newer one can drop it.
   @ObservationIgnored var aiChatRequestID: UUID?
   @ObservationIgnored var aiChatTask: Task<Void, Never>?
-  /// Resumes the agent once its pending change is approved or declined.
-  @ObservationIgnored var agentApprovalContinuation: CheckedContinuation<Bool, Never>?
-  @ObservationIgnored var agentQuestionsContinuation: CheckedContinuation<[String]?, Never>?
+  @ObservationIgnored var agentApprovalWaiter = AgentInteractionWaiter<Bool>()
+  @ObservationIgnored var agentQuestionsWaiter = AgentInteractionWaiter<[String]>()
 
   /// Onboarding runs once. Sign-in and Plus stay optional so people can judge
   /// the app before committing to either.
