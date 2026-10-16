@@ -36,6 +36,7 @@ extension MemoraModel {
   @discardableResult
   func updateDocument(_ id: UUID, title: String, body: String) -> Bool {
     guard isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }) else { return false }
+    let oldArtifact = documents[index].artifactFileReference
     var candidate = documents
     candidate[index].title = title.trimmingCharacters(in: .whitespacesAndNewlines)
     switch candidate[index].kind {
@@ -44,16 +45,22 @@ extension MemoraModel {
     case .slides:
       candidate[index].slides = DocumentSlide.slides(fromOutline: body)
     }
+    candidate[index].artifactFileReference = nil
+    candidate[index].artifactFormat = nil
     candidate[index].updatedAt = .now
     guard persistBatch({ [(key: StorageKey.documents, data: try RecordStore.encoded(candidate))] }) else { return false }
     documents = candidate
+    if let oldArtifact { Task { await ProjectSourceFiles.shared.remove([oldArtifact]) } }
     return true
   }
 
   func deleteDocument(_ id: UUID) {
     guard isStoreWritable() else { return }
-    documents.removeAll { $0.id == id }
+    guard let document = document(id: id) else { return }
+    let candidate = documents.filter { $0.id != id }
+    guard persistNow(candidate, forKey: StorageKey.documents) else { return }
+    documents = candidate
     invalidateProjectEvidence([.document(id)])
-    persistDocuments()
+    if let name = document.artifactFileReference { Task { await ProjectSourceFiles.shared.remove([name]) } }
   }
 }

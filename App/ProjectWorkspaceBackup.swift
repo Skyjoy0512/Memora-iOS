@@ -3,8 +3,8 @@ import Foundation
 enum ProjectWorkspaceBackup {
   static let folderName = "workspace"
 
-  static func export(_ sources: [ProjectSource], into package: URL) throws {
-    let names = Set(sources.flatMap(\.fileReferences))
+  static func export(_ sources: [ProjectSource], into package: URL, additionalNames: [String] = []) throws {
+    let names = Set(sources.flatMap(\.fileReferences) + additionalNames)
     guard !names.isEmpty else { return }
     let folder = package.appendingPathComponent(folderName, isDirectory: true)
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -16,9 +16,9 @@ enum ProjectWorkspaceBackup {
     }
   }
 
-  static func validate(_ sources: [ProjectSource], in package: URL) throws {
+  static func validate(_ sources: [ProjectSource], in package: URL, additionalNames: [String] = []) throws {
     var total = 0
-    for name in Set(sources.flatMap(\.fileReferences)) {
+    for name in Set(sources.flatMap(\.fileReferences) + additionalNames) {
       guard ProjectSourceFiles.resolve(name) != nil else { throw BackupPackage.BackupError.unsafeReference(name) }
       let file = package.appendingPathComponent(folderName).appendingPathComponent(name)
       guard regular(file), let bytes = try file.resourceValues(forKeys: [.fileSizeKey]).fileSize,
@@ -28,9 +28,9 @@ enum ProjectWorkspaceBackup {
     }
   }
 
-  static func install(_ sources: [ProjectSource], from package: URL) throws -> [String] {
-    try validate(sources, in: package)
-    let names = Set(sources.flatMap(\.fileReferences)).sorted()
+  static func install(_ sources: [ProjectSource], from package: URL, additionalNames: [String] = []) throws -> [String] {
+    try validate(sources, in: package, additionalNames: additionalNames)
+    let names = Set(sources.flatMap(\.fileReferences) + additionalNames).sorted()
     try FileManager.default.createDirectory(at: ProjectSourceFiles.directory, withIntermediateDirectories: true)
     var installed: [String] = []
     do {

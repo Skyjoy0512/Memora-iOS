@@ -21,6 +21,8 @@ enum BackupPackage {
     var people: [Person]
     var aiHistory: [AIConversationEntry]
     var aiMemories: [AIMemory]? = nil
+    var companyTemplates: [CompanyTemplate]? = nil
+    var additionalWorkspaceFiles: [String] { (companyTemplates ?? []).map(\.fileReference) + (documents ?? []).compactMap(\.artifactFileReference) }
     /// Documents and slides. Optional, so a package from before they existed
     /// still restores.
     var documents: [MemoraDocument]?
@@ -106,6 +108,7 @@ enum BackupPackage {
     people: [Person],
     aiHistory: [AIConversationEntry],
     aiMemories: [AIMemory] = [],
+    companyTemplates: [CompanyTemplate] = [],
     documents: [MemoraDocument] = [],
     projectSources: [ProjectSource] = [],
     projectChats: [ProjectChatThread] = [],
@@ -157,7 +160,7 @@ enum BackupPackage {
     }
 
     do {
-      try ProjectWorkspaceBackup.export(projectSources, into: packageURL)
+      try ProjectWorkspaceBackup.export(projectSources, into: packageURL, additionalNames: companyTemplates.map(\.fileReference) + documents.compactMap(\.artifactFileReference))
     } catch {
       try? FileManager.default.removeItem(at: packageURL)
       throw error
@@ -173,6 +176,7 @@ enum BackupPackage {
       people: people,
       aiHistory: aiHistory,
       aiMemories: aiMemories,
+      companyTemplates: companyTemplates,
       documents: documents,
       projectSources: projectSources,
       projectChats: projectChats,
@@ -235,7 +239,7 @@ enum BackupPackage {
     let projectIDs = Set(manifest.spaces.map(\.id))
     guard sources.allSatisfy({ $0.projectID.map(projectIDs.contains) ?? true }),
           chats.allSatisfy({ $0.projectID.map(projectIDs.contains) ?? true }) else { throw BackupError.unreadable }
-    try ProjectWorkspaceBackup.validate(sources, in: packageURL)
+    try ProjectWorkspaceBackup.validate(sources, in: packageURL, additionalNames: manifest.additionalWorkspaceFiles)
 
     // A record that still holds its photos inline cannot be restored without
     // writing files during the read, so it is refused rather than half-restored.

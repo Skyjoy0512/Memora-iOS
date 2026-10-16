@@ -1,4 +1,5 @@
 import SwiftUI
+import QuickLook
 
 /// Reads a document or flips through its slides, and shares it as PDF,
 /// PowerPoint or text.
@@ -9,6 +10,7 @@ struct DocumentDetailView: View {
   /// Shown with a close button when it is opened as a sheet from Ask AI.
   var showsCloseButton = false
 
+  @State private var artifactPreview: URL?
   @State private var isEditing = false
   @State private var isDeleteConfirmationPresented = false
   @State private var shareItems: [Any] = []
@@ -34,6 +36,13 @@ struct DocumentDetailView: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 20) {
           header(document)
+          if let name = document.artifactFileReference, let url = ProjectSourceFiles.resolve(name) {
+            HStack {
+              Button("生成ファイルを確認", icon: .docText) { artifactPreview = url }
+              ShareLink(item: url) { Label("保存・共有", icon: .squareAndArrowUp) }
+            }
+            .buttonStyle(.borderless)
+          }
 
           switch document.kind {
           case .document:
@@ -77,6 +86,9 @@ struct DocumentDetailView: View {
 
       ToolbarActionItem(usesSystemBackground: true) {
         Menu {
+          if document.kind == .document {
+            Button("Wordで共有", icon: .docRichtext) { share(document, as: .word) }
+          }
           Button("PDFで共有", icon: .docRichtext) { share(document, as: .pdf) }
           if document.kind == .slides {
             Button("PowerPointで共有", icon: .rectangleOnRectangleAngled) { share(document, as: .powerPoint) }
@@ -97,6 +109,7 @@ struct DocumentDetailView: View {
         }
       }
     }
+    .quickLookPreview($artifactPreview)
     .sheet(isPresented: $isEditing) {
       DocumentEditSheet(document: document)
     }
@@ -182,6 +195,7 @@ struct DocumentDetailView: View {
 
   private enum ShareFormat {
     case pdf
+    case word
     case powerPoint
     case text
   }
@@ -189,6 +203,8 @@ struct DocumentDetailView: View {
   private func share(_ document: MemoraDocument, as format: ShareFormat) {
     do {
       switch format {
+      case .word:
+        shareItems = [try DOCXWriter.write(document)]
       case .pdf:
         shareItems = [try DocumentPDF.write(document)]
       case .powerPoint:

@@ -158,6 +158,7 @@ final class MemoraModel {
   /// task's). Reading this instead of the record keeps those rows from
   /// redrawing whenever any record changes, such as a progress update.
   private(set) var meetingTitles: [UUID: String] = [:]
+  var companyTemplates: [CompanyTemplate] = []
   var aiPersonScopeID: UUID?
   var aiConversationID = UUID()
   var aiHistory: [AIConversationEntry]
@@ -632,6 +633,7 @@ final class MemoraModel {
     }
 
     installedTemplateIDs = defaults.stringArray(forKey: StorageKey.installedTemplates) ?? []
+    companyTemplates = load([CompanyTemplate].self, forKey: "memora.companyTemplates.v1", fallback: [])
     aiHistory = load([AIConversationEntry].self, forKey: StorageKey.aiHistory, fallback: [])
     aiMemories = load([AIMemory].self, forKey: StorageKey.aiMemories, fallback: [])
     customSkills = Array(load([MemoraSkill].self, forKey: StorageKey.customSkills, fallback: []).filter(MemoraSkillMarkdown.valid).prefix(30))

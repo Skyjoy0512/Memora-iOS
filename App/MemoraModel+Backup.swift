@@ -29,6 +29,7 @@ extension MemoraModel {
       && spaces.isEmpty
       && documents.isEmpty
       && aiMemories.isEmpty
+      && companyTemplates.isEmpty
       && projectSources.isEmpty
       && projectChats.isEmpty
       && customSkills.isEmpty
@@ -56,6 +57,7 @@ extension MemoraModel {
     let people = self.people
     let aiHistory = self.aiHistory
     let aiMemories = self.aiMemories
+    let companyTemplates = self.companyTemplates
     let documents = self.documents
     let projectSources = self.projectSources
     let projectChats = self.projectChats
@@ -71,6 +73,7 @@ extension MemoraModel {
         people: people,
         aiHistory: aiHistory,
         aiMemories: aiMemories,
+        companyTemplates: companyTemplates,
         documents: documents,
         projectSources: projectSources,
         projectChats: projectChats,
@@ -210,7 +213,7 @@ extension MemoraModel {
       let manifest = try BackupPackage.read(from: packageURL)
       let installed = try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
       do {
-        let workspaceInstalled = try ProjectWorkspaceBackup.install(manifest.projectSources ?? [], from: packageURL)
+        let workspaceInstalled = try ProjectWorkspaceBackup.install(manifest.projectSources ?? [], from: packageURL, additionalNames: manifest.additionalWorkspaceFiles)
         return (manifest, installed, workspaceInstalled)
       } catch {
         BackupPackage.removeInstalledMedia(installed)
@@ -238,6 +241,7 @@ extension MemoraModel {
         (key: StorageKey.people, data: try RecordStore.encoded(manifest.people)),
         (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory)),
         (key: StorageKey.aiMemories, data: try RecordStore.encoded(manifest.aiMemories ?? aiMemories)),
+        (key: "memora.companyTemplates.v1", data: try RecordStore.encoded(manifest.companyTemplates ?? companyTemplates)),
         (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? [])),
         (key: StorageKey.projectSources, data: try RecordStore.encoded(manifest.projectSources ?? [])),
         (key: StorageKey.projectChats, data: try RecordStore.encoded(manifest.projectChats ?? [])),
@@ -259,6 +263,7 @@ extension MemoraModel {
     people = manifest.people
     aiHistory = manifest.aiHistory
     aiMemories = manifest.aiMemories ?? aiMemories
+    companyTemplates = manifest.companyTemplates ?? companyTemplates
     documents = manifest.documents ?? []
     projectSources = manifest.projectSources ?? []
     projectChats = manifest.projectChats ?? []

@@ -193,7 +193,11 @@ enum AgentTool: String, CaseIterable {
       return object([
         "title": string("資料のタイトル"),
         "markdown": string("本文（Markdown）。タイトルの見出しは含めない"),
-        "project_id": string("入れるプロジェクトのid（任意）")
+        "project_id": string("入れるプロジェクトのid（任意）"),
+        "template_id": string("利用者が選択した会社テンプレートのid（任意）"),
+        "template_fields": ["type": "array", "maxItems": 30, "items": object([
+          "name": string("差し込み項目名"), "value": string("差し込む文字列。PPTXは120文字以内")
+        ], required: ["name", "value"])]
       ], required: ["title", "markdown"])
     case .createSlides:
       return object([
@@ -207,7 +211,11 @@ enum AgentTool: String, CaseIterable {
             "notes": string("話す内容のメモ（任意）")
           ], required: ["title", "bullets"])
         ],
-        "project_id": string("入れるプロジェクトのid（任意）")
+        "project_id": string("入れるプロジェクトのid（任意）"),
+        "template_id": string("利用者が選択した会社テンプレートのid（任意）"),
+        "template_fields": ["type": "array", "maxItems": 30, "items": object([
+          "name": string("差し込み項目名"), "value": string("差し込む文字列。PPTXは120文字以内")
+        ], required: ["name", "value"])]
       ], required: ["title", "slides"])
     case .addTasks:
       return object([

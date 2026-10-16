@@ -537,13 +537,21 @@ extension MemoraModel {
     )
     guard let stepID = approved else { return Self.declinedOutcome }
 
-    guard addDocument(document) else {
+    do {
+      document = try await prepareDocumentArtifact(document, call: call)
+    } catch {
+      finishAgentStep(stepID, on: messageID, state: .failed, detail: "ファイルを作成できませんでした")
+      return AgentToolOutcome(text: error.localizedDescription, isError: true)
+    }
+    guard !Task.isCancelled, agentMessage(messageID) != nil, pluginCallIsPermitted(call, messageID: messageID),
+          (agentMessage(messageID)?.cloudProvenance == nil || isCloudSessionAuthorized(messageID)), addDocument(document) else {
+      if let name = document.artifactFileReference { await ProjectSourceFiles.shared.remove([name]) }
       finishAgentStep(stepID, on: messageID, state: .failed, detail: "保存できませんでした")
       return AgentToolOutcome(text: "保存に失敗しました。", isError: true)
     }
     updateAgentMessage(messageID) { $0.documentIDs.append(document.id) }
     finishAgentStep(stepID, on: messageID, state: .done, detail: document.displayTitle)
-    return AgentToolOutcome(text: "\(kindLabel)を保存しました。id=\(document.id.uuidString)")
+    return AgentToolOutcome(text: "\(document.artifactFormat ?? kindLabel)ファイルを生成・再読込検証し、資料として保存しました。id=\(document.id.uuidString)。最終フォント・改ページ・文字あふれはプレビューで確認してください。")
   }
 
   private func addTasksTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {

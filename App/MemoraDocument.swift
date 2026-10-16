@@ -19,6 +19,9 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   /// until it has been read.
   var openedAt: Date?
   var generatedReviewMarkdown: String?
+  var artifactFileReference: String?
+  var artifactFormat: String?
+  var companyTemplateID: UUID?
 
   var displayTitle: String {
     title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の\(kind.label)" : title

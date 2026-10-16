@@ -146,3 +146,33 @@ optionalで旧Skillを読める。bounded Markdown import/exportにも新metadat
 PluginIconChecks（6サービスの区別、fallback、15Skill、metadata往復）成功。
 next-generation既存suite成功。Debug preview:
 2026-10-16T19-30-09-6d4afb12.log 成功（既存警告1件）。
+
+## Phase 5 — 資料ファイルと企業書式
+
+DOCXWriterはA4/見出し/編集可能な段落と表/日本語フォント指定を持つ実ファイルを生成。
+既存PDF/PPTX/text共有にWordを追加。新規作成時もDOCX/PPTXを生成・ZIP/XML再読込
+してからSQLiteの資料モデルとファイル参照を保存する。本文だけで完成扱いしない。
+資料画面からQuick Look/保存/共有。Markdown編集後は古い生成ファイルを失効する。
+
+CompanyTemplateは原本の別コピー・format・project/workspace・時点・version・brand・
+解析情報・利用範囲を保持。資料のtoolbarから登録/構造確認/差し込み/preview/共有。
+@候補にも実際に使えるテンプレートだけ表示。選んだ場合だけ項目名をAIへ渡し、
+書式ファイル本体は端末内に保持。ツールのtemplate_id/fieldsを検証し承認後に適用。
+
+差分エンジンは既存マスター/theme/layout/画像/notes/header/footer等の未変更partの
+bytesを保ち、同じXML text要素内の{{name}}のみ置換。全欄の指定を要求し、分割欄・
+外部参照・署名・macro・OLEを拒否。PPTX1欄120字/Word10000字、archive readerの
+既存容量/CRC/path/XML上限を適用。ZIPは再構成するが未変更partは同一bytes。
+再レイアウトや任意の既存文書の高忠実度編集ではない。文字あふれ/正確なページ数/
+フォント代替の最終判定はQuick Look/Officeの確認が必要。完全再現とは表示しない。
+
+テンプレートと生成ファイルを既存workspace backupへ含め、旧manifestはoptionalで
+読み込む。資料更新/削除で不要な生成ファイルを除去。元テンプレートを上書きしない。
+Python/Node runtime・新規server/worker/有料サービスはiOSへ追加していない。
+
+検証: run-artifact-checks.shで実DOCX/PPTXを生成→再読込、表、日本語、長文、
+escape、未変更master/styles/theme、分割欄/長すぎるPPTX/破損拒否を確認。
+独立Python標準ライブラリOOXML差分PoCも両形式で成功。第三者エンジンをインストール
+せず、未変更part同一性とXML packageを検証。python-docx/python-pptxを使う高度な
+レンダリングPoC、Word/PowerPoint実アプリでの最終レイアウトは未検証。
+Debug preview: 2026-10-16T19-38-12-ad5adfbb.log成功（既存警告1件）。

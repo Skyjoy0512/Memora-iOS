@@ -48,7 +48,8 @@ extension MemoraModel {
     var ids = plugins.reduce(into: Set<String>()) { $0.formUnion($1.toolIDs) }
     if !onDevice { ids.insert("memora:ask_user") }
     let policy = AIPluginExecutionPolicy(pluginIDs: pluginIDs, toolIDs: ids,
-      recordIDs: Set(plugins.compactMap(\.recordID)), limitsRecordReads: !plugins.contains { $0.kind == .builtin || $0.kind == .skill || $0.id == "service:notion" })
+      recordIDs: Set(plugins.compactMap(\.recordID)), limitsRecordReads: !plugins.contains { $0.kind == .builtin || $0.kind == .skill || $0.id == "service:notion" },
+      templateIDs: Set(plugins.compactMap(\.templateID)))
     return sendAgentChat(question, attachment: attachment, pluginPolicy: policy, preparedAttachment: preparedAttachment)
   }
 

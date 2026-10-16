@@ -95,6 +95,8 @@ struct OfficeArchiveReader {
     }
   }
 
+  var partNames: [String] { entries.keys.sorted() }
+
   func contains(_ name: String) -> Bool { entries[name] != nil }
 
   mutating func read(_ name: String) throws -> Data {

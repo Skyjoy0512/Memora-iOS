@@ -82,6 +82,9 @@ extension MemoraModel {
     // The on-device window is small, so it gets only the end of the thread.
     let thread = runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : safeHistory.text
     var opening = trimmed
+    for template in companyTemplates where pluginPolicy?.templateIDs.contains(template.id) == true && template.workspaceID == currentTeamID {
+      opening += "\n選択した会社テンプレート: template_id=\(template.id)、形式=\(template.format.rawValue)、必須の差し込み項目=\(template.analysis.placeholders.joined(separator: ", "))。create_document/create_slidesのtemplate_fieldsに全項目の値を指定する。原本は端末内で処理する。"
+    }
     if let personID = pluginPolicy?.personID {
       opening += "\n人物限定の依頼: person_id=\(personID)。本人の発言と会議全体の決定を区別してください。参照範囲外の人物・記録は使えません。"
     }

@@ -13,11 +13,12 @@ struct AIPlugin: Identifiable {
   var provider: AIToolDefinition.Provider
   var serviceID: String?
   var recordID: UUID?
+  var templateID: UUID? = nil
   var iconIdentifier: String? = nil
 
   var icon: AIPluginIcon { AIPluginIcon.resolve(pluginID: id, name: name, iconIdentifier: iconIdentifier) }
 
-  enum Kind: String, CaseIterable { case connected = "接続済みアプリ", builtin = "Memoraのツール", skill = "スキル", file = "ファイル・記録", connectable = "接続が必要なサービス", unavailable = "現在利用できないサービス" }
+  enum Kind: String, CaseIterable { case connected = "接続済みアプリ", builtin = "Memoraのツール", skill = "スキル", template = "会社テンプレート", file = "ファイル・記録", connectable = "接続が必要なサービス", unavailable = "現在利用できないサービス" }
   enum Connection: Equatable {
     case ready, setup(String), unavailable(String)
     var label: String {
