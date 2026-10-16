@@ -49,3 +49,5 @@ Debug previewと指定のnext-generation/motion-loading/optimization各runnerは
 - 人物metadata自体の独立した送信許可/fingerprintは未実装。人物ツールを使った過去回答は永続的なcloud再利用について引き続き不完全と扱う。
 - Ask AIの引用UIと生成資料/メールの保存済み出典は主にmeeting単位。journalのtyped referenceは実行中の許可確認に使うが、全成果物へtyped sourceリンクを追加する作業は別途必要。
 - ゴミ箱内の旧人物IDを人物統合で書き換えない。復元後は削除済みIDとして残し、本人が選び直せる。元の本文を書き換えたり、名前だけの言及をまとめて確定したりしない。
+
+最終Releaseプレビュー（`6ec162f`）は成功。`2026-10-17T07-16-11-e9c33b26.log`。CoreのDebug/Releaseと、最終コードの指定3runnerも成功した。最終ビルドは既存AppIntents metadata抽出skip警告1件のみで、compile/link errorはない。

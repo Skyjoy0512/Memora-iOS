@@ -249,6 +249,95 @@
       "fixtures": "Production task/people/person-scope/read_person extensions and codecs with real isolated SQLite; model persistence entry points, reminders and legacy record shapes are fixtures. No external calls in fixture tests.",
       "performance_scope": "Host lookup only: 500 people, 2000 name-only open tasks, no meetings; not device or LLM quality evidence.",
       "report": "docs/ASK_AI_PERSON_TASKS.md"
+    },
+    {
+      "checked_at": "2026-10-16T22:21:38.939130+00:00",
+      "base_commit": "c42ab2a",
+      "implementation_commit": "6ec162f",
+      "scope": "Explicit journal person IDs, typed person-scoped journal reads and atomic merges",
+      "debug": {
+        "command": "bitrig preview -platform iOS",
+        "result": "success",
+        "log": "2026-10-17T07-10-03-9bd45c92.log",
+        "warnings": 1,
+        "scope": "Core implementation and form UI. Final merge-confirmation wording and source-row accessibility grouping compiled in final Release preview."
+      },
+      "release": {
+        "command": "bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release",
+        "result": "success",
+        "log": "2026-10-17T07-12-41-6b840b63.log",
+        "warnings": 1,
+        "scope": "Core implementation before final merge-confirmation wording and source-row accessibility grouping."
+      },
+      "final_release_preview": {
+        "command": "bitrig preview -platform iOS -configuration Release",
+        "result": "success",
+        "log": "2026-10-17T07-16-11-e9c33b26.log",
+        "source_commit": "6ec162f",
+        "warnings": 1
+      },
+      "checks": [
+        {
+          "command": "bash tools/checks/run-person-journal-checks.sh",
+          "result": "passed",
+          "evidence": "PersonJournalChecks: passed (production journal codec/mutations, person scope/read/search, privacy editor + real SQLite; legacy, same-name IDs, tombstones, grants, parent restrictions, revoke/edit/delete, typed UUID collision, merge rollback, reopen; isolated fixtures only)"
+        },
+        {
+          "command": "bash tools/checks/run-next-generation-checks.sh",
+          "result": "passed",
+          "source_commit": "6ec162f",
+          "evidence": "Final runner includes production person task/journal/record-privacy/scope tools with real isolated SQLite; backup/artifact/research/streaming/registry/legacy regression suites also passed."
+        },
+        {
+          "command": "bash tools/checks/run-motion-loading-checks.sh",
+          "result": "passed",
+          "source_commit": "6ec162f"
+        },
+        {
+          "command": "python3 tools/checks/run-optimization-checks.py",
+          "result": "passed",
+          "source_commit": "6ec162f"
+        },
+        {
+          "command": "git diff --check",
+          "result": "passed"
+        }
+      ],
+      "ui_verified": [
+        "Unsaved journal creation form: native person list, on/off switch, selected name and count, clear to no selection, cancel",
+        "Dark normal/large Form; light large person list; wrapping and scrolling",
+        "AX labels and selected states (not physical VoiceOver speech traversal)",
+        "Appearance/text size restored; no record saved, edited or deleted; composer draft preserved"
+      ],
+      "fixtures": "Production journal codec/mutations, people/task mutations, person policy/read_person, automatic record reads and record privacy editor plus real LocalStore SQLite. Shared model persistence entry points, notifications/media, legacy meeting shape and search helpers are fixtures. No user data/API/credentials used in host tests.",
+      "resolved_during_validation": [
+        "First Debug attempt failed on a missing explicit return after adding local view values; fixed and subsequent Debug/Release builds passed.",
+        "Updated host fixture shapes to production journal codec and corrected a throwing assertion before final successful runs."
+      ],
+      "not_verified": [
+        "Physical-device VoiceOver speech traversal, performance and memory",
+        "Real BYOK response quality or in-flight network revocation E2E",
+        "Same-name person selection/save/merge UI E2E (covered by isolated host fixtures)",
+        "Person-detail journal source sheet and journal edit/save UI E2E",
+        "Journal/task/person typed source links throughout generated artifacts (not implemented)",
+        "Actual user legacy backup archives or hardware file-provider restore"
+      ],
+      "remaining_priorities": {
+        "P0": [
+          "Explicit test-account BYOK/mock E2E across the original integrated scenarios and in-flight permission changes",
+          "TeamBackend record schema and authorization remain unconnected"
+        ],
+        "P1": [
+          "Typed journal/task/person sources across answers and artifacts",
+          "Independent person metadata permission and provenance",
+          "Complex Office template editing/rendering and Gmail Drafts OAuth"
+        ],
+        "P2": [
+          "Measured Japanese embedding/hybrid reranking and device performance"
+        ]
+      },
+      "report": "docs/ASK_AI_PERSON_JOURNAL.md",
+      "warning": "Existing AppIntents metadata extraction skipped; no compile/link errors in final builds."
     }
   ]
 }
