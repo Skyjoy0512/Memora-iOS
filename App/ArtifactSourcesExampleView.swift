@@ -16,6 +16,9 @@ struct ArtifactSourcesExampleView: View {
   var body: some View {
     let sources = rows
     List {
+      Section("本文の出典リンク") {
+        InlineCitationExampleView()
+      }
       Section {
         ForEach(sources) { row in
           ArtifactSourceLink(row: row) { showsExplanation = true }

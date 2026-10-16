@@ -229,6 +229,10 @@ extension MemoraModel {
     }
 
     guard url.scheme?.lowercased() == "memora" else { return }
+    if url.host?.lowercased() == "source" {
+      openExternalSourceCitation(url)
+      return
+    }
     if let link = MemoraAppLink(url: url) {
       openSystemDestination(link)
       return

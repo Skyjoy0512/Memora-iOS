@@ -16,7 +16,7 @@ struct DocumentDetailView: View {
   @State private var shareItems: [Any] = []
   @State private var isSharing = false
   @State private var exportErrorMessage: String?
-  @State private var citedRecord: AIChatSource?
+  @State private var citedSource: ArtifactSourceTarget?
   @State private var sourceErrorMessage: String?
 
   var body: some View {
@@ -56,19 +56,11 @@ struct DocumentDetailView: View {
               onCommit: { model.updateDocument(document.id, title: document.title, body: $0) }
             )
             .environment(\.openURL, OpenURLAction { url in
-              guard url.scheme == "memora", url.host == "meeting",
-                    let meetingID = UUID(uuidString: url.lastPathComponent) else { return .systemAction }
-              let target = ArtifactSourceTarget.record(.meeting(meetingID))
-              let rows = model.artifactSourceRows(provenance: document.provenance,
-                meetingIDs: document.sourceRecordIDs ?? [], projectFileIDs: document.sourceProjectFileIDs ?? [])
-              let isDeclared = document.provenance == nil || rows.contains { $0.target == target }
-              if isDeclared, model.canOpenArtifactSource(target, workspaceID: document.provenance?.workspaceID),
-                 let meeting = model.meeting(id: meetingID) {
-                citedRecord = AIChatSource(meetingID: meeting.id, title: meeting.title)
+              guard url.scheme?.lowercased() == "memora" else { return .systemAction }
+              if let target = model.documentCitationTarget(for: url, document: document) {
+                citedSource = target
               } else {
-                sourceErrorMessage = model.trashedRecords.contains(where: { $0.meeting.id == meetingID })
-                  ? "この記録は「最近削除した項目」にあります。設定から元に戻すと開けます。"
-                  : "この端末に元の記録はありません。リンクは記録のある端末でのみ開けます。"
+                sourceErrorMessage = "この資料の出典を確認できません。元の情報とワークスペースを確認してください。"
               }
               return .handled
             })
@@ -127,8 +119,8 @@ struct DocumentDetailView: View {
     .sheet(isPresented: $isSharing, onDismiss: cleanUpShare) {
       ActivityView(items: shareItems, onComplete: cleanUpShare)
     }
-    .sheet(item: $citedRecord) { source in
-      ArtifactSourceDetailView(target: .record(.meeting(source.meetingID)), workspaceID: document.provenance?.workspaceID)
+    .sheet(item: $citedSource) { target in
+      ArtifactSourceDetailView(target: target, workspaceID: document.provenance?.workspaceID)
     }
     .alert("元の記録を開けません", isPresented: Binding(
       get: { sourceErrorMessage != nil },

@@ -32,6 +32,8 @@ import Foundation
   var mailDrafts: [MailDraft] = []
   var projectSources: [ProjectSource] = []
   var pendingMailDraft: MailDraft?
+  var pendingSourceCitation: ArtifactSourceTarget?
+  var missingRecordNotice: MissingRecordNotice?
   var hasMessage = true
   var approvalAction: (() async -> Void)?
   var approves = true
@@ -69,7 +71,7 @@ import Foundation
   #endif
   func beginAgentStep(_ step: AgentStep, on id: UUID) -> UUID { step.id }
   func finishAgentStep(_ id: UUID, on messageID: UUID, state: AgentStep.State, detail: String?) {}
-  static func agentTaskLine(_ task: MemoraTask) -> String { "id=\(task.id) \(task.title)" }
+  static func agentTaskLine(_ task: MemoraTask) -> String { "id=\(task.id) \(task.title) " + AnswerSourceCitation.marker(for: .record(.task(task.id))) }
   static func agentDate(_ date: Date) -> String { date.description }
 }
 struct Meeting: Identifiable, Hashable, Codable {
@@ -135,11 +137,6 @@ extension MemoraModel {
 // These unrelated retrieval domains stay empty; the authority logic is production code.
 #if ARTIFACT_PROVENANCE_CHECKS
 typealias AIChatMessage = FixtureMessage
-enum AIAnswerDocumentBuilder {
-  static func make(message: AIChatMessage, question: String?) -> MemoraDocument {
-    MemoraDocument(title: question ?? "保存した回答", kind: .document, markdown: message.text)
-  }
-}
 enum DraftStore { static func clear(_ key: String) {} }
 struct ProjectSourceFiles { static let shared = ProjectSourceFiles(); func remove(_ names: [String]) async {} }
 extension MemoraModel {

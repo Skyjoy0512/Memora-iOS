@@ -42,7 +42,7 @@ extension MemoraModel {
       let results = found.map { ($0.createdAt, "id=\($0.id) 録音「\($0.displayTitle)」 \($0.shortSummaryPreview)", RecordPrivacyTarget.meeting($0.id)) }
         + journal.map { ($0.occurredAt, "id=\($0.id) ジャーナル「\($0.title)」 \(String($0.summary.prefix(300)))", RecordPrivacyTarget.journal($0.id)) }
       let selected = results.sorted { $0.0 > $1.0 }.prefix(limit)
-      lines = selected.map { $0.1 }
+      lines = selected.map { $0.1 + " " + AnswerSourceCitation.marker(for: .record($0.2)) }
       references = selected.map { $0.2 }
       if purpose == .cloudAI { lines += agentSourceMatches(query: call.string("query"), messageID: messageID) }
     case .readRecord:
@@ -51,14 +51,14 @@ extension MemoraModel {
       }
       if let entry = entries.first(where: { $0.id == id }) {
         references = [.journal(entry.id)]
-        lines = ["id=\(entry.id) ジャーナル「\(entry.title)」", "日時: \(entry.occurredAt.formatted())",
+        lines = ["id=\(entry.id) ジャーナル「\(entry.title)」 " + AnswerSourceCitation.marker(for: .record(.journal(entry.id))), "日時: \(entry.occurredAt.formatted())",
           String(entry.summary.prefix(24_000))]
         break
       }
       guard let record = permitted.first(where: { $0.id == id }) else {
         return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
       }
-      lines = ["id=\(record.id) 「\(record.displayTitle)」", record.summary,
+      lines = ["id=\(record.id) 「\(record.displayTitle)」 " + AnswerSourceCitation.marker(for: .record(.meeting(record.id))), record.summary,
         record.keyPoints.joined(separator: "\n"), record.decisions.joined(separator: "\n"),
         record.openQuestions.joined(separator: "\n"), record.notes,
         String(record.transcript.map(MeetingSummaryInput.line(for:)).joined(separator: "\n").prefix(24_000))]
@@ -78,7 +78,7 @@ extension MemoraModel {
       updateAgentMessage(messageID) { $0.interfaceTaskIDs.formUnion(visibleIDs); $0.interfaceWorkspaceID = currentTeamID }
       references = permittedTasks.filter { call.bool("include_completed") || !$0.isCompleted }.prefix(80).map { .task($0.id) }
       lines = permittedTasks.filter { call.bool("include_completed") || !$0.isCompleted }.prefix(80)
-        .map { "id=\($0.id) \($0.title) \($0.detail) / 担当: \($0.assignee ?? "未定") / 期限: \($0.dueDate?.formatted(date: .numeric, time: .omitted) ?? "未定") / \($0.statusLabel)" }
+        .map { "id=\($0.id) \($0.title) \($0.detail) / 担当: \($0.assignee ?? "未定") / 期限: \($0.dueDate?.formatted(date: .numeric, time: .omitted) ?? "未定") / \($0.statusLabel) " + AnswerSourceCitation.marker(for: .record(.task($0.id))) }
     case .readPerson:
       return readPersonTool(call, messageID: messageID, compact: false, purpose: purpose)
     case .reviewPeriod:
@@ -94,8 +94,8 @@ extension MemoraModel {
         "期間内に完了した関連タスク: \(complete)件",
         "ジャーナル: \(journal.count)件（メモ: \(journal.filter { $0.kind == .memo }.count)件 / 写真: \(journal.filter { $0.kind == .photo }.count)件）",
         "外部利用が許可された範囲の集計です。未許可記録・位置情報は含みません。"] + records.map {
-        "「\($0.displayTitle)」 \($0.summaryPreview)\n\($0.decisions.joined(separator: "\n"))"
-      } + journal.map { "ジャーナル「\($0.title)」 \(String($0.summary.prefix(600)))" }
+        "「\($0.displayTitle)」 \($0.summaryPreview)\n\($0.decisions.joined(separator: "\n")) " + AnswerSourceCitation.marker(for: .record(.meeting($0.id)))
+      } + journal.map { "ジャーナル「\($0.title)」 \(String($0.summary.prefix(600))) " + AnswerSourceCitation.marker(for: .record(.journal($0.id))) }
     default: break
     }
     if purpose == .onDeviceAI {

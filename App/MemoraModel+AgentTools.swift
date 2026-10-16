@@ -257,6 +257,8 @@ extension MemoraModel {
       entries = []
     }
 
+    recordArtifactReads(found.map { .meeting($0.id) } + entries.map { .journal($0.id) }, messageID: messageID)
+
     finishAgentStep(
       stepID,
       on: messageID,
@@ -308,7 +310,8 @@ extension MemoraModel {
         }
       }
       recordArtifactReads([.meeting(meeting.id)] + tasks(forMeeting: meeting.id).map { .task($0.id) }, messageID: messageID)
-      return AgentToolOutcome(text: compact ? compactAgentText(of: meeting) : agentText(of: meeting))
+      let text = compact ? compactAgentText(of: meeting) : agentText(of: meeting)
+      return AgentToolOutcome(text: text + "\n" + AnswerSourceCitation.marker(for: .record(.meeting(meeting.id))))
     }
 
     if scope == .all, let entry = lifeLogEntries.first(where: {
@@ -320,7 +323,8 @@ extension MemoraModel {
       )
       finishAgentStep(stepID, on: messageID, state: .done)
       let text = "ジャーナル「\(entry.title)」 \(Self.agentDate(entry.occurredAt)) 種類: \(entry.kind.label)"
-      return AgentToolOutcome(text: text + "\n\(entry.summary)")
+      recordArtifactReads([.journal(entry.id)], messageID: messageID)
+      return AgentToolOutcome(text: text + " " + AnswerSourceCitation.marker(for: .record(.journal(entry.id))) + "\n\(entry.summary)")
     }
     return AgentToolOutcome(text: "このidの記録は見つからないか、対象範囲の外です。", isError: true)
   }
@@ -466,10 +470,10 @@ extension MemoraModel {
     if let message = agentMessage(messageID) {
       document.sourceRecordIDs = message.sources.map(\.meetingID)
       document.sourceProjectFileIDs = message.projectSourceReferences.map(\.id)
-      if document.kind == .document, !message.sources.isEmpty {
+      if document.kind == .document {
         var citationMessage = message
         citationMessage.text = document.markdown
-        document.markdown = AIAnswerDocumentBuilder.make(message: citationMessage, question: document.title).markdown
+        document.markdown = AIAnswerDocumentBuilder.make(message: citationMessage, question: document.title, provenance: provenance).markdown
       }
     }
     let kindLabel = document.kind.label
@@ -763,7 +767,7 @@ extension MemoraModel {
   )
 
   static func agentTaskLine(_ task: MemoraTask) -> String {
-    var line = "- id=\(task.id.uuidString) \(task.isCompleted ? "[完了] " : "")\(task.title)"
+    var line = "- id=\(task.id.uuidString) \(task.isCompleted ? "[完了] " : "")\(task.title) \(AnswerSourceCitation.marker(for: .record(.task(task.id))))"
     if !task.detail.isEmpty { line += " 説明: \(task.detail.prefix(500))" }
     if !task.isCompleted { line += " 状態: \(task.progress.label)" }
     if let workDate = task.workDate { line += " 取り組む日: \(agentDate(workDate))" }

@@ -132,6 +132,9 @@ struct RootTabView: View {
     .sheet(item: $model.pendingMailDraft) { draft in
       MailDraftSheet(draft: draft) { model.pendingMailDraft = nil }
     }
+    .sheet(item: $model.pendingSourceCitation) { target in
+      ArtifactSourceDetailView(target: target, workspaceID: nil)
+    }
     .sheet(isPresented: $model.isOnlineMeetingCapturePresented, onDismiss: {
       model.onlineMeetingCaptureEvent = nil
       model.onlineMeetingCaptureSpaceID = nil

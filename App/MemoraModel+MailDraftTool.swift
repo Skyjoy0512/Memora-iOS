@@ -6,8 +6,8 @@ extension MemoraModel {
     let workspaceID = currentTeamID
     let provenance = artifactProvenance(for: message)
     let personIDs = aiPersonScopeID.map { [$0] } ?? []
-    let subject = call.string("subject")
-    let body = call.string("body")
+    let subject = AnswerCitations.stripped(call.string("subject")).trimmingCharacters(in: .whitespacesAndNewlines)
+    let body = AnswerCitations.stripped(call.string("body")).trimmingCharacters(in: .whitespacesAndNewlines)
     guard !body.isEmpty else {
       return AgentToolOutcome(text: "本文が空です。", isError: true)
     }

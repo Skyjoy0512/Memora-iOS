@@ -34,6 +34,28 @@ import Foundation
     model.message.projectSourceReferences = [.init(id: source.id, projectID: projectID, fingerprint: AIRecordFingerprint.make(source)!)]
     let provenance = model.artifactProvenance(for: model.message)
     precondition(provenance.isValid && !provenance.isComplete && provenance.records.count == 4 && provenance.projectSources.count == 1)
+    let citationTargets = model.answerCitationTargets(for: model.message)
+    precondition(citationTargets.count == 5)
+    for target in citationTargets {
+      precondition(model.answerCitationTarget(for: AnswerSourceCitation.url(for: target), message: model.message) == target)
+    }
+    let forged = AnswerSourceCitation.url(for: .record(.person(UUID())))
+    precondition(model.answerCitationTarget(for: forged, message: model.message) == nil)
+    precondition(model.answerCitationTarget(for: URL(string: "memora-cite://1")!, message: model.message) == .record(.meeting(sharedID)))
+    model.message.text = citationTargets.map { AnswerSourceCitation.marker(for: $0) }.joined(separator: "\n")
+    let citedDocument = model.document(from: model.message)
+    for target in citationTargets {
+      precondition(model.documentCitationTarget(for: AnswerSourceCitation.url(for: target), document: citedDocument) == target)
+    }
+    precondition(model.documentCitationTarget(for: forged, document: citedDocument) == nil)
+    var oldDocument = citedDocument
+    oldDocument.provenance = nil; oldDocument.sourceRecordIDs = nil; oldDocument.sourceProjectFileIDs = nil
+    precondition(model.documentCitationTarget(for: AnswerSourceCitation.url(for: .record(.person(sharedID))), document: oldDocument) == nil)
+    precondition(model.documentCitationTarget(for: MeetingLink.url(for: sharedID)!, document: oldDocument) == .record(.meeting(sharedID)))
+    let grants = model.message.cloudAuthorizationTargets
+    model.openExternalSourceCitation(AnswerSourceCitation.url(for: .record(.person(sharedID))))
+    precondition(model.pendingSourceCitation == .record(.person(sharedID)) && model.message.cloudAuthorizationTargets == grants)
+    model.pendingSourceCitation = nil
     let rows = model.artifactSourceRows(provenance: provenance, meetingIDs: [sharedID, sharedID])
     precondition(rows.count == 5 && Set(rows.map(\.id)).count == 5)
     precondition(rows.allSatisfy { $0.canOpen && $0.hasChanged == false && $0.allowsCloudAI })
@@ -50,6 +72,10 @@ import Foundation
     precondition(model.artifactSourceRows(provenance: nil, meetingIDs: [sharedID]).first?.hasChanged == nil)
     model.currentTeamID = "another-workspace"
     precondition(model.artifactSourceRows(provenance: provenance).isEmpty && !model.canOpenArtifactSource(.record(.meeting(sharedID)), workspaceID: nil))
+    precondition(model.answerCitationTargets(for: model.message).isEmpty)
+    precondition(model.documentCitationTarget(for: MeetingLink.url(for: sharedID)!, document: citedDocument) == nil)
+    model.openExternalSourceCitation(AnswerSourceCitation.url(for: .record(.task(sharedID))))
+    precondition(model.pendingSourceCitation == nil && model.missingRecordNotice != nil)
     model.currentTeamID = nil
     model.isStoreProtected = true; precondition(model.artifactSourceRows(provenance: provenance).isEmpty)
     model.isStoreProtected = false; model.isRestoring = true
@@ -132,6 +158,60 @@ import Foundation
     let cancelled = Task { @MainActor in await model.draftEmailTool(call, messageID: messageID) }
     let result = await cancelled.value
     precondition(result.isError && model.mailDrafts.isEmpty)
+    try await mockConversationScenario(root: root)
     print("ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)")
+  }
+
+  @MainActor static func mockConversationScenario(root: URL) async throws {
+    let storeURL = root.appendingPathComponent("mock-conversation.sqlite")
+    let model = try MemoraModel(storeURL: storeURL)
+    var grant = RecordPrivacy(classification: .personal); grant.allowsCloudAI = true
+    let person = Person(id: UUID(), name: "田中", note: "架空の提案相談", contactIdentifier: nil, privacy: grant)
+    model.people = [person, Person(id: UUID(), name: "田中", note: "別人の非公開情報", contactIdentifier: nil)]
+    let task = MemoraTask(id: UUID(), title: "見積もりを確認する", isCompleted: false,
+      relationships: TaskRelationships(assigneePersonID: person.id), privacy: grant)
+    let journal = LifeLogEntry(id: UUID(), createdAt: .now, title: "相談メモ", summary: "次回確認する", source: .iphone, privacy: grant, personIDs: [person.id])
+    model.tasks = [task]; model.lifeLogEntries = [journal]
+    model.message.cloudProvenance = model.newCloudProvenance(references: [])
+    model.message.cloudAuthorizationTargets = []
+    let messageID = model.message.id
+    let personMarker = AnswerSourceCitation.marker(for: .record(.person(person.id)))
+    let taskMarker = AnswerSourceCitation.marker(for: .record(.task(task.id)))
+    let journalMarker = AnswerSourceCitation.marker(for: .record(.journal(journal.id)))
+    let answer = "田中さんとの確認事項です。\(personMarker)\n\n見積もりを確認します。\(taskMarker)\n\n相談メモも参照しています。\(journalMarker)"
+    let read = AgentToolCall(id: "mock-read-person", name: "read_person", arguments: ["person_id": person.id.uuidString])
+    let draft = AgentToolCall(id: "mock-draft", name: "draft_email", arguments: ["to": [], "subject": "ご相談の確認", "body": "見積もりを確認します。" + taskMarker])
+    var turns = [AgentTurn(text: "", toolCalls: [read]), AgentTurn(text: "", toolCalls: [draft]), AgentTurn(text: answer, toolCalls: [])]
+    var outcomes: [AgentToolOutcome] = []
+    let result = await AgentConversationLoop.run(isAuthorized: { model.isCloudSessionAuthorized(messageID) },
+      next: { turns.removeFirst() }, execute: { call in
+        if call.name == "read_person" { return model.readPersonTool(call, messageID: messageID, compact: false, purpose: .cloudAI) }
+        return await model.draftEmailTool(call, messageID: messageID)
+      }, accept: { _, batch in outcomes += batch.map(\.outcome) })
+    precondition(result.text == answer && outcomes.count == 2 && outcomes.allSatisfy { !$0.isError })
+    precondition(outcomes[0].text.contains(personMarker) && outcomes[0].text.contains(taskMarker) && outcomes[0].text.contains(journalMarker))
+    precondition(!outcomes[0].text.contains("別人の非公開情報"))
+    model.message.text = answer
+    let document = model.document(from: model.message)
+    precondition(model.addDocument(document) && model.mailDrafts.count == 1 && model.mailDrafts[0].recipients.isEmpty)
+    precondition(!model.mailDrafts[0].body.contains("【タスク:"))
+    let reopened = LocalStore(fileURL: storeURL); try reopened.prepare()
+    guard case .data(let docData) = reopened.readOutcome("documents"), case .data(let draftData) = reopened.readOutcome("memora.mailDrafts.v1") else { preconditionFailure() }
+    let storedDocument = try JSONDecoder().decode([MemoraDocument].self, from: docData)[0]
+    let storedDraft = try JSONDecoder().decode([MailDraft].self, from: draftData)[0]
+    precondition(storedDraft.status == .draft && storedDraft.provenance?.records.count == 3)
+    for target in model.answerCitationTargets(for: model.message) {
+      let url = AnswerSourceCitation.url(for: target)
+      precondition(storedDocument.markdown.contains(url.absoluteString))
+      precondition(model.documentCitationTarget(for: url, document: storedDocument) == target)
+    }
+    let savedProvenance = model.message.cloudProvenance
+    let revoked = await AgentConversationLoop.run(isAuthorized: { model.isCloudSessionAuthorized(messageID) },
+      next: { model.people[0].privacy.allowsCloudAI = false; return AgentTurn(text: "失効後の回答", toolCalls: [draft]) },
+      execute: { _ in preconditionFailure("revoked draft executed") }, accept: { _, _ in preconditionFailure("revoked turn accepted") })
+    guard case .failure(.contextChanged) = revoked else { preconditionFailure("revocation ignored") }
+    precondition(!model.canReuseCloudConversation(savedProvenance) && model.mailDrafts.count == 1)
+    precondition(model.canOpenArtifactSource(.record(.person(person.id)), workspaceID: nil))
+    print("Mock person-to-answer/document/mail scenario: passed (production loop/domain/builder/SQLite, mocked provider and approval/registry entry points, explicit duplicate person ID, typed citations, retained draft, mid-turn revoke; no network)")
   }
 }

@@ -18,7 +18,7 @@ extension MemoraModel {
       guard !Task.isCancelled, currentTeamID == workspace, self.source(id: id) == source,
             canReadAgentSource(source, compact: compact, policy: agentPluginPolicies[messageID]),
             let fingerprint = AIRecordFingerprint.make(source) else { return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true) }
-      var lines = ["id=\(source.id) project_id=\(source.projectID?.uuidString ?? "未分類") 「\(source.title)」"]
+      var lines = ["id=\(source.id) project_id=\(source.projectID?.uuidString ?? "未分類") 「\(source.title)」 " + AnswerSourceCitation.marker(for: .projectFile(source.id))]
       var remaining = compact ? 1_000 : 16_000
       for block in blocks where remaining > 0 {
         let text = String(block.text.prefix(remaining))

@@ -82,6 +82,7 @@ extension MemoraModel {
   }
 
   func didChangeConversationWorkspace(from previous: String?) {
+    pendingSourceCitation = nil
     invalidateAIWorkspaceExecution()
     for job in webResearchJobs.values { job.cancel() }
     guard conversationPersistenceReady else { return }

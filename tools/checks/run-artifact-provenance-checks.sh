@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-artifact-provenance.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
-swiftc -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENANCE_CHECKS -enable-bare-slash-regex Shared/MemoraIcon.swift App/LocalStore.swift App/Person.swift App/PersonIdentity.swift \
+swiftc App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift App/AnswerSourceCitation.swift App/AnswerCitations.swift App/MeetingLink.swift App/AIAnswerDocumentBuilder.swift App/NativeAIInterface.swift App/ToolInputValidator.swift App/MissingRecordNotice.swift App/MemoraModel+AnswerCitations.swift -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENANCE_CHECKS -enable-bare-slash-regex Shared/MemoraIcon.swift App/LocalStore.swift App/Person.swift App/PersonIdentity.swift \
   App/PersonAIContext.swift App/MemoraModel+PersonPrivacy.swift App/PersonSelectionOption.swift App/PersonTaskAssociation.swift App/PersonMemory.swift App/PersonConversationSummary.swift \
   App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift App/TaskOwnership.swift App/TaskHierarchy.swift \
   App/RecordPrivacy.swift App/RecordAccessPolicy.swift App/SummarySensitivity.swift App/RecordPrivacyTarget.swift \

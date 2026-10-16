@@ -1,8 +1,9 @@
 import Foundation
 
-enum ArtifactSourceTarget: Hashable {
+enum ArtifactSourceTarget: Hashable, Identifiable {
   case record(RecordPrivacyTarget)
   case projectFile(UUID)
+  var id: Self { self }
 
   var label: String {
     switch self {

@@ -9,11 +9,7 @@ extension MemoraModel {
     } else {
       question = nil
     }
-    var document = AIAnswerDocumentBuilder.make(message: message, question: question)
-    document.provenance = artifactProvenance(for: message)
-    document.sourceRecordIDs = message.sources.map(\.meetingID)
-    document.sourceProjectFileIDs = message.projectSourceReferences.map(\.id)
-    return document
+    return AIAnswerDocumentBuilder.make(message: message, question: question, provenance: artifactProvenance(for: message))
   }
 
   func document(id: UUID) -> MemoraDocument? {

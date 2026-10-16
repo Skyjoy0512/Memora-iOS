@@ -11,7 +11,7 @@ struct AIMessageView: View {
   @State private var openDocument: MemoraDocument?
   @State private var editingTask: MemoraTask?
   /// A cited record opened from an inline citation.
-  @State private var citedRecord: AIChatSource?
+  @State private var citedSource: ArtifactSourceTarget?
   @State private var isSourcesOpen = false
   @State private var savingWebReportID: UUID?
 
@@ -121,15 +121,8 @@ struct AIMessageView: View {
       }
     }
     .sheet(item: $editingTask) { task in TaskEditView(task: task) }
-    .sheet(item: $citedRecord) { source in
-      NavigationStack {
-        MeetingDetailView(meetingID: source.meetingID, showsLocalPlaybackBar: true)
-          .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-              ToolbarIconButton("閉じる", icon: .xmark) { citedRecord = nil }
-            }
-          }
-      }
+    .sheet(item: $citedSource) { target in
+      ArtifactSourceDetailView(target: target, workspaceID: model.artifactProvenance(for: message).workspaceID)
     }
   }
 
@@ -138,11 +131,9 @@ struct AIMessageView: View {
     let report = message.webResearchReportIDs.last.flatMap { model.webResearch(id: $0) }
     let sent = report?.isChatSearch == true
       ? report?.sources.filter { report?.sentSourceIDs?.contains($0.id) == true } ?? [] : []
-    let text = !sent.isEmpty
-      ? WebResearchContext.markdownLinked(message.text, sent: sent)
-      : !message.isAgentReply
-        ? AnswerCitations.linked(message.text, sources: message.sources)
-        : AnswerCitations.stripped(message.text)
+    let researched = !sent.isEmpty ? WebResearchContext.markdownLinked(message.text, sent: sent) : message.text
+    let text = AnswerCitations.linked(researched, sources: message.sources,
+      allowedTargets: model.answerCitationTargets(for: message))
 
     return AIResponseText(text: text, isStreaming: message.isThinking, messageID: message.id)
       .environment(\.openURL, OpenURLAction { url in
@@ -150,9 +141,9 @@ struct AIMessageView: View {
           guard let source = WebResearchContext.source(for: url, sent: sent) else { return .discarded }
           return .systemAction(source.url)
         }
-        if url.scheme == AnswerCitations.scheme {
-          guard let source = AnswerCitations.source(for: url, in: message.sources) else { return .discarded }
-          citedRecord = source
+        if url.scheme == AnswerCitations.scheme || url.scheme?.lowercased() == "memora" {
+          guard let target = model.answerCitationTarget(for: url, message: message) else { return .discarded }
+          citedSource = target
           return .handled
         }
         return .systemAction

@@ -426,6 +426,7 @@ extension MemoraModel {
     変更する道具は利用者の承認後に実行されます。拒否されたら繰り返しません。
     頼まれた作業は質問で返さず、道具を呼んで行います。メールは宛先が不明でも draft_email で下書きを開きます。
     最後に、したことを日本語で短く伝えます。idは利用者に見せません。今日は\(today)。対象: \(scope.scopeLabel)。
+    \(AnswerSourceCitation.instructions)
     \(ReadabilityGuide.compactRules)
     """
   }
@@ -439,6 +440,7 @@ extension MemoraModel {
     - 週・月など期間の振り返りや件数・合計時間の質問にはreview_periodを使い、検索の上位結果を全件とみなさない。対象期間と範囲を答えに明記する。予定を実施済みとして扱わず、同時に起きた出来事を原因と断定しない。
     - タスクの整理はlist_tasksでidを確認してからupdate_tasksで変更前後を提示する。期限は利用者の指示なく変更しない。
     - 事実は渡された記録と道具で読んだ記録だけに基づきます。記録にない数字・発言・決定を作りません。分からないことは分からないと書きます。
+    \(AnswerSourceCitation.instructions)
     - 資料やスライドを作る前に、search_records で探し、read_record で中身を読みます。
     - 資料は create_document に、見出し・箇条書き・必要なら表を使ったMarkdownで書きます。
     - スライドは create_slides で作ります。1枚目は箇条書きなしの表紙にし、各スライドの要点は3〜6個、短い言葉にします。

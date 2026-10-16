@@ -267,6 +267,7 @@ final class MemoraModel {
   var pendingAgentQuestions: AgentQuestionRequest?
   /// An email the agent drafted, waiting to open in the composer.
   var pendingMailDraft: MailDraft?
+  var pendingSourceCitation: ArtifactSourceTarget?
   var isAIChatResponding = false
   var isCapturePresented = false
   var isCaptureSourcePresented = false

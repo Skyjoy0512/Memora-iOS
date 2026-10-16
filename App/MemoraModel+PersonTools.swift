@@ -62,7 +62,7 @@ extension MemoraModel {
     let meetingLimit = compact ? 4 : 12
     let taskLimit = compact ? 5 : 20
     let context = PersonAIContext(person)
-    var parts = ["\(context.name)さん"]
+    var parts = ["\(context.name)さん " + AnswerSourceCitation.marker(for: .record(.person(person.id)))]
     if let note = context.note, !note.isEmpty { parts.append("メモ: \(note)") }
     if let lastMet = memory.lastMet {
       parts.append("最後に会った日: \(Self.agentDate(lastMet))、一緒の会議: \(memory.meetings.count)件")
@@ -78,13 +78,13 @@ extension MemoraModel {
     }
     if !memory.decisions.isEmpty {
       parts.append("## 関連する会議の決定（本人の発言・合意とは断定しない）\n" + memory.decisions.prefix(taskLimit).map {
-        "- \($0.text)（\($0.meetingTitle)、\(Self.agentDate($0.date))）"
+        "- \($0.text)（\($0.meetingTitle)、\(Self.agentDate($0.date))） " + AnswerSourceCitation.marker(for: .record(.meeting($0.meetingID)))
       }.joined(separator: "\n"))
     }
     if !memory.meetings.isEmpty {
       parts.append("## 一緒の会議（新しい順）\n" + memory.meetings.prefix(meetingLimit).map { meeting in
         let preview = meeting.summaryPreview.replacingOccurrences(of: "\n", with: " ").prefix(compact ? 60 : 160)
-        return "- id=\(meeting.id.uuidString) 「\(meeting.displayTitle)」 \(Self.agentDate(meeting.createdAt)) \(preview)"
+        return "- id=\(meeting.id.uuidString) 「\(meeting.displayTitle)」 \(Self.agentDate(meeting.createdAt)) \(preview) " + AnswerSourceCitation.marker(for: .record(.meeting(meeting.id)))
       }.joined(separator: "\n"))
     }
     let journalEntries = memory.journalEntries.filter {
@@ -92,13 +92,13 @@ extension MemoraModel {
     }
     if !journalEntries.isEmpty {
       parts.append("## 人物IDで関連付けたジャーナル（本人の発言・参加の確定ではない）\n" + journalEntries.prefix(compact ? 3 : 8).map {
-        "- id=\($0.id) \($0.title)（\(Self.agentDate($0.occurredAt))） \(String($0.summary.prefix(compact ? 100 : 500)))"
+        "- id=\($0.id) \($0.title)（\(Self.agentDate($0.occurredAt))） \(String($0.summary.prefix(compact ? 100 : 500))) " + AnswerSourceCitation.marker(for: .record(.journal($0.id)))
       }.joined(separator: "\n"))
     }
     let mentions = memory.nameMatchedJournalEntries.filter { AIJournalPrivacy.allowsReading(kind: $0.kind, origin: $0.origin) }
     if !mentions.isEmpty {
       parts.append("## 名前の言及のみ・本人未確認のジャーナル\n" + mentions.prefix(compact ? 2 : 4).map {
-        "- id=\($0.id) \($0.title)（\(Self.agentDate($0.occurredAt))）"
+        "- id=\($0.id) \($0.title)（\(Self.agentDate($0.occurredAt))） " + AnswerSourceCitation.marker(for: .record(.journal($0.id)))
       }.joined(separator: "\n"))
     }
     return AgentToolOutcome(text: parts.joined(separator: "\n\n"))
