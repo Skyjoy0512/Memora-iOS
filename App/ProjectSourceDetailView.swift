@@ -10,13 +10,13 @@ struct ProjectSourceDetailView: View {
   @State private var isDetaching = false
   @State private var isEditing = false
   @State private var isEditingPrivacy = false
-  @State private var textLoad = MemoraLoadSnapshot<UUID, [ProjectSourceText]>()
+  @State private var textLoader = ProjectSourceTextLoader()
   @State private var textRetry = 0
-  @State private var textTask: Task<Void, Never>?
   @State private var webFetchRequest: UUID?
 
   var body: some View {
     if let source = model.source(id: sourceID) {
+      let textLoad = textLoader.snapshot
       let extracted = textLoad.value(for: sourceID) ?? []
       let textState = textLoad.state(for: sourceID)
       let textRequest = ProjectSourceTextRequest(sourceID: sourceID, reference: source.extractedTextReference, retry: textRetry)
@@ -52,7 +52,7 @@ struct ProjectSourceDetailView: View {
           MemoraLoadingContainer(state: textState, label: "保存された本文を読み込んでいます…",
             activityID: textLoad.activityID,
             failure: textLoad.key == sourceID ? textLoad.failure : nil,
-            retry: { textRetry += 1 }, cancel: { textTask?.cancel() }) {
+            retry: { textRetry += 1 }, cancel: { textLoader.stop() }) {
             ForEach(Array(extracted.enumerated()), id: \.offset) { _, block in
               VStack(alignment: .leading, spacing: 8) {
                 if let page = block.page { Text("ページ \(page)").font(.footnote).foregroundStyle(.secondary) }
@@ -112,9 +112,10 @@ struct ProjectSourceDetailView: View {
         }
       }
       .task(id: textRequest) {
-        let task = Task { await loadText(textRequest) }
-        textTask = task
-        await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
+        await textLoader.load(textRequest) {
+          sourceID == textRequest.sourceID &&
+            model.source(id: textRequest.sourceID)?.extractedTextReference == textRequest.reference
+        }
       }
       .sheet(isPresented: $isEditing) {
         ProjectNoteEditSheet(source: source, text: extracted.map(\.text).joined(separator: "\n"))
@@ -134,26 +135,4 @@ struct ProjectSourceDetailView: View {
     }
   }
 
-  private func loadText(_ request: ProjectSourceTextRequest) async {
-    guard !Task.isCancelled else { return }
-    let token = textLoad.begin(request.sourceID)
-    guard let name = request.reference else {
-      textLoad.finish([], isEmpty: true, token: token)
-      return
-    }
-    do {
-      let blocks = try await ProjectSourceTextReader.readAsync(name)
-      try Task.checkCancellation()
-      guard sourceID == request.sourceID,
-            model.source(id: request.sourceID)?.extractedTextReference == name else {
-        textLoad.cancel(token)
-        return
-      }
-      textLoad.finish(blocks, isEmpty: blocks.isEmpty, token: token)
-    } catch is CancellationError { textLoad.fail("本文の読み込みを停止しました。", token: token) }
-    catch {
-      guard !Task.isCancelled else { textLoad.cancel(token); return }
-      textLoad.fail("保存された本文を読み込めませんでした。ファイルが見つからないか、読み取れない形式です。", token: token)
-    }
-  }
 }

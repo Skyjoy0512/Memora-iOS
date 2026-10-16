@@ -4,13 +4,16 @@ import SwiftUI
 /// Isolated presentation fixtures: no model, files, credentials or external requests.
 struct MotionLoadingGalleryView: View {
   @State private var scenario = Scenario.fast
-  @State private var load = MemoraLoadSnapshot<String, String>()
+  @State private var sourceLoader = Self.makeLoader()
   @State private var requestID: UUID?
   @State private var streamID: UUID?
   @State private var text = ""
   @State private var isStreaming = false
+  @State private var keyboardDraft = ""
+  @FocusState private var isKeyboardFocused: Bool
 
   var body: some View {
+    let load = sourceLoader.snapshot
     ScrollViewReader { proxy in
       ScrollView {
         VStack(alignment: .leading, spacing: 20) {
@@ -22,18 +25,27 @@ struct MotionLoadingGalleryView: View {
           }.pickerStyle(.menu)
           HStack {
             Button("取得を開始") { requestID = UUID() }
-            Button("表示をリセット") { requestID = nil; load = .init() }
+            Button("表示をリセット") {
+              sourceLoader.stop()
+              requestID = nil
+              sourceLoader = Self.makeLoader()
+            }
           }
           MemoraLoadingContainer(state: load.state, label: "検証用の本文を読み込んでいます…",
             activityID: load.activityID,
-            failure: load.failure, retry: { requestID = UUID() }, cancel: { requestID = nil }) {
-            if let value = load.value { Text(value).textSelection(.enabled) }
+            failure: load.failure, retry: { requestID = UUID() }, cancel: { sourceLoader.stop(); requestID = nil }) {
+            if let value = load.value?.first { Text(value.text).textSelection(.enabled) }
           }
           Divider()
           HStack {
             Button("本文の生成を確認") { streamID = UUID() }
             if isStreaming { Button("生成を停止") { streamID = nil } }
           }
+          TextField("キーボード表示の検証（保存しません）", text: $keyboardDraft)
+            .focused($isKeyboardFocused)
+            .submitLabel(.done)
+            .onSubmit { isKeyboardFocused = false }
+            .accessibilityIdentifier("motion-loading-keyboard")
           AIResponseText(text: text, isStreaming: isStreaming)
           Color.clear.frame(height: 1).id(ConversationScrollFollowing.bottomID)
         }
@@ -43,16 +55,16 @@ struct MotionLoadingGalleryView: View {
     }
     .navigationTitle("表示の検証")
     .navigationBarTitleDisplayMode(.inline)
+    .scrollDismissesKeyboard(.interactively)
+    .toolbar {
+      ToolbarItemGroup(placement: .keyboard) {
+        Spacer()
+        Button("完了") { isKeyboardFocused = false }
+      }
+    }
     .task(id: requestID) {
       guard requestID != nil else { return }
-      let token = load.begin("fixture")
-      let selected = scenario
-      do {
-        try await Task.sleep(for: selected.delay)
-        try Task.checkCancellation()
-        if selected == .failed { load.fail("検証用の取得失敗です。再試行できます。", token: token) }
-        else { load.finish("保存済みの検証用本文です。更新中もこの本文は残ります。", isEmpty: false, token: token) }
-      } catch { load.cancel(token) }
+      await sourceLoader.load(.init(sourceID: Self.fixtureID, reference: scenario.rawValue, retry: 0))
     }
     .task(id: streamID) {
       guard let request = streamID, !Task.isCancelled else { return }
@@ -71,15 +83,26 @@ struct MotionLoadingGalleryView: View {
   }
 
   private enum Scenario: String, CaseIterable, Identifiable {
-    case fast = "50ms", normal = "200ms", explained = "2秒", cancellable = "6秒", failed = "失敗"
+    case fast = "50ms", normal = "200ms", explained = "2秒", cancellable = "手動で停止", failed = "失敗"
     var id: Self { self }
     var delay: Duration {
       switch self {
       case .fast: .milliseconds(50)
       case .normal: .milliseconds(200)
       case .explained, .failed: .seconds(2)
-      case .cancellable: .seconds(6)
+      case .cancellable: .seconds(60)
       }
+    }
+  }
+
+  private static let fixtureID = UUID()
+
+  private static func makeLoader() -> ProjectSourceTextLoader {
+    ProjectSourceTextLoader { reference in
+      let scenario = Scenario(rawValue: reference) ?? .fast
+      try await Task.sleep(for: scenario.delay)
+      if scenario == .failed { throw CocoaError(.fileReadUnknown) }
+      return [ProjectSourceText(text: "保存済みの検証用本文です。更新中もこの本文は残ります。")]
     }
   }
 

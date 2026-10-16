@@ -8,9 +8,11 @@ struct MemoraLoadingContainer<Content: View>: View {
   var retry: (() -> Void)?
   var cancel: (() -> Void)?
   @ViewBuilder var content: Content
-  @State private var stage = 0
+  @State private var presentation = Presentation()
 
   var body: some View {
+    let activity = Activity(state: state, id: activityID)
+    let stage = presentation.activity == activity ? presentation.stage : 0
     VStack(alignment: .leading, spacing: 12) {
       content
       if state == .loading {
@@ -28,8 +30,8 @@ struct MemoraLoadingContainer<Content: View>: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .task(id: Activity(state: state, id: activityID)) {
-      stage = 0
+    .task(id: activity) {
+      presentation = Presentation(activity: activity)
       guard state.isWorking else { return }
       let clock = ContinuousClock()
       let start = clock.now
@@ -37,7 +39,8 @@ struct MemoraLoadingContainer<Content: View>: View {
         for delay in [MemoraLoadingPolicy.skeletonDelay, MemoraLoadingPolicy.explanationDelay, MemoraLoadingPolicy.actionsDelay] {
           try await clock.sleep(until: start.advanced(by: delay))
           try Task.checkCancellation()
-          stage = MemoraLoadingPolicy.stage(after: start.duration(to: clock.now))
+          presentation = Presentation(activity: activity,
+            stage: MemoraLoadingPolicy.stage(after: start.duration(to: clock.now)))
         }
       } catch { }
     }
@@ -46,5 +49,10 @@ struct MemoraLoadingContainer<Content: View>: View {
   private struct Activity: Equatable {
     var state: MemoraLoadingState
     var id: UUID?
+  }
+
+  private struct Presentation {
+    var activity: Activity?
+    var stage = 0
   }
 }
