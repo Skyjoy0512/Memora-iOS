@@ -48,7 +48,7 @@ extension MemoraModel {
     guard conversationPersistenceReady, !isRestoring, !isStoreProtected else { return }
     conversationSaveTask?.cancel()
     conversationSaveTask = nil
-    let snapshot = AIConversationSnapshot(messages: aiMessages, workspaceID: currentTeamID)
+    let snapshot = AIConversationSnapshot(messages: aiMessages, workspaceID: currentTeamID, personID: aiPersonScopeID, conversationID: aiConversationID)
     saveConversationSnapshot(snapshot)
   }
 
@@ -71,6 +71,8 @@ extension MemoraModel {
       do {
         let snapshot = try AIConversationSnapshot.decode(data, workspaceID: currentTeamID)
         aiMessages = snapshot.restoredMessages()
+        aiPersonScopeID = snapshot.personID
+        aiConversationID = snapshot.conversationID ?? UUID()
       } catch {
         // A malformed resume document cannot erase history or records.
         loadFailureMessage = "前回の会話を復元できませんでした。保存済みの履歴から開いてください。"
@@ -83,7 +85,7 @@ extension MemoraModel {
     invalidateAIWorkspaceExecution()
     guard conversationPersistenceReady else { return }
     conversationSaveTask?.cancel()
-    let previousSnapshot = AIConversationSnapshot(messages: aiMessages, workspaceID: previous)
+    let previousSnapshot = AIConversationSnapshot(messages: aiMessages, workspaceID: previous, personID: aiPersonScopeID, conversationID: aiConversationID)
     if previousSnapshot.isValid {
       // This infrequent navigation boundary must land before an immediate switch back.
       persistNow(previousSnapshot, forKey: Self.conversationStorageKey(workspaceID: previous))

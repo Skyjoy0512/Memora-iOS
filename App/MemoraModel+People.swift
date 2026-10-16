@@ -39,7 +39,8 @@ extension MemoraModel {
     people[index].note = (trimmedNote?.isEmpty ?? true) ? nil : trimmedNote
     persistPeople()
 
-    guard oldName.compare(trimmed, options: .caseInsensitive) != .orderedSame else { return }
+    guard people.filter({ Self.isSameName($0.name, oldName) }).isEmpty,
+          oldName.compare(trimmed, options: .caseInsensitive) != .orderedSame else { return }
     var changed = false
     for taskIndex in tasks.indices {
       guard let assignee = tasks[taskIndex].assignee,
@@ -144,19 +145,19 @@ extension MemoraModel {
   func memory(of personID: UUID) -> PersonMemory? {
     guard let person = person(id: personID) else { return nil }
     let name = person.name
+    let uniqueName = people.filter { Self.isSameName($0.name, name) }.count == 1
 
     let tagged = Set(meetings(withPerson: personID).map(\.id))
     let related = meetings
       .filter { meeting in
         tagged.contains(meeting.id)
-          || meeting.transcript.contains { $0.speakerIsCertain && Self.isSameName($0.speaker, name) }
       }
       .sorted { $0.createdAt > $1.createdAt }
     let relatedIDs = Set(related.map(\.id))
 
     let open = tasks.filter { !$0.isCompleted }
     let assigned = open.filter { task in
-      task.assignee.map { Self.isSameName($0, name) } ?? false
+      uniqueName && (task.assignee.map { Self.isSameName($0, name) } ?? false)
     }
     let assignedIDs = Set(assigned.map(\.id))
     let shared = open.filter { task in
@@ -172,7 +173,7 @@ extension MemoraModel {
 
     // A short name matches too much of ordinary text, so the journal is only
     // searched for names of two characters or more.
-    let journal = name.count >= 2
+    let journal = uniqueName && name.count >= 2
       ? newestLifeLogEntries.filter { $0.title.contains(name) || $0.summary.contains(name) }
       : []
 
@@ -189,22 +190,10 @@ extension MemoraModel {
   /// Finds a person by name the way people refer to each other: 「田中さん」
   /// matches 田中, and a full name matches its family name.
   func person(named query: String) -> Person? {
-    let trimmed = Self.bareName(query)
-    guard !trimmed.isEmpty else { return nil }
-    return people.first { Self.isSameName($0.name, trimmed) }
-      ?? people.first { $0.name.contains(trimmed) || trimmed.contains(Self.bareName($0.name)) }
+    PersonIdentity.uniqueMatch(for: query, in: people)
   }
 
   static func isSameName(_ lhs: String, _ rhs: String) -> Bool {
-    bareName(lhs).compare(bareName(rhs), options: [.caseInsensitive, .widthInsensitive]) == .orderedSame
-  }
-
-  /// A name without honorifics or spaces.
-  private static func bareName(_ name: String) -> String {
-    var result = name.trimmingCharacters(in: .whitespacesAndNewlines)
-    for suffix in ["さん", "様", "さま", "くん", "君", "ちゃん", "氏"] where result.hasSuffix(suffix) {
-      result = String(result.dropLast(suffix.count))
-    }
-    return result.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "　", with: "")
+    PersonIdentity.normalized(lhs) == PersonIdentity.normalized(rhs)
   }
 }

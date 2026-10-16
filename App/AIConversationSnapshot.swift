@@ -5,9 +5,13 @@ struct AIConversationSnapshot: Codable, Sendable {
   static let maximumBytes = 8 * 1_024 * 1_024
   var version = 1
   var workspaceID: String?
+  var personID: UUID?
+  var conversationID: UUID?
   var turns: [Turn]
 
-  init(messages: [AIChatMessage], workspaceID: String?) {
+  init(messages: [AIChatMessage], workspaceID: String?, personID: UUID? = nil, conversationID: UUID? = nil) {
+    self.personID = personID
+    self.conversationID = conversationID
     self.workspaceID = workspaceID
     // An unfinished resident post has never been delivered. It is not a result.
     turns = messages.filter { $0.residentName == nil || !$0.isThinking }.map(Turn.init)

@@ -18,6 +18,8 @@ extension MemoraModel {
     aiChatTask = nil
     aiChatRequestID = nil
     aiMessages = []
+    aiPersonScopeID = nil
+    aiConversationID = UUID()
     agentToolCallCounts = [:]
     agentPluginPolicies = [:]
     approvedAgentTaskDrafts = [:]
@@ -82,6 +84,14 @@ extension MemoraModel {
     aiRequestRefusalMessage = nil
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
+
+    if let personID = aiPersonScopeID {
+      guard attachment == nil, pluginIDs.isEmpty else {
+        aiRequestRefusalMessage = "人物の会話では、その人の記録だけを使います。新しいチャットで添付やプラグインを指定してください。"
+        return false
+      }
+      return sendPersonChat(trimmed, personID: personID)
+    }
 
     if !pluginIDs.isEmpty {
       let selected = AIPluginExecutionPolicy.selectionIDs(pluginIDs, webSearchRequested: webSearchRequested)

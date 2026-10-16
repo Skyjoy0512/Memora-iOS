@@ -61,3 +61,28 @@ FTS5プロジェクト検索、日本語2-gram、PDF/PPTX、添付OOXML抽出を
 既存3チェックrunnerを再利用し架空fixtureを追加。build/previewはbitrigのみ。
 実アカウント、実記録、有料APIは使用しない。Debug/Release成功と実機性能は別。
 外部の実接続、iPhoneの実録音/背景実行/メモリ性能は未検証として残す。
+
+## Phase 1 — 人物・会話の境界
+
+PersonIdentityで完全一致を優先し、部分一致も1件だけの場合に解決する。
+同姓/同名はID付き候補を返して確認する。read_personにperson_idを追加し、
+cloud/常駐の両方で共通の人物読取へ統一。会議・タスク・ジャーナルの送信可否を
+別々に確認し、読んだrecord fingerprintを保持する。現在の実行中も内容編集/
+削除/権限失効で次のモデル呼出を止める。独立した送信許可がない人物メモは
+cloudへ自動送信しない。人物metadataを含む結果は再利用検証未完了として扱う。
+
+人物画面からはID固定の専用会話を開始。参照候補は参加者タグの記録に限定。
+文字起こしの名前だけでは同一人物と断定しない。タスクの名前照合は同名人物が
+いない時だけ使用（旧taskはpersonIDを持たない）。人物会話でGmail/MCP等は
+提供せず、資料/下書きだけ通常の承認を経て保存可能。ヘッダーメニューでglobalへ
+戻る。会話ID/人物IDをoptionalでsnapshotに追加し旧形式を維持。
+端末内の人物会話でも同じ安全側の送信許可フィルターを用いるため、未許可の
+ローカル記録を扱う拡張は残る。会議の決定は本人の合意と表現しない。
+
+検証: PersonIdentityChecks成功。run-next-generation-checks.sh全スイート成功。
+Debug preview成功: 2026-10-16T19-22-53-35668aa7.log (既存metadata警告1件)。
+実クラウド・実人物・実記録を使うE2Eは未実施。
+
+OSS補足: TencentのGitHub SPDXはNOASSERTIONだが取得したLICENSE本文ではMITを
+確認。Supermemoryのroot MITと、商用/配布制限のcomponentは同一視しない。
+公開LICENSE/依存manifestへのURLとハッシュもaudit JSONへ追加した。

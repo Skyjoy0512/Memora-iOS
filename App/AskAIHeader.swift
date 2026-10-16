@@ -13,10 +13,13 @@ struct AskAIHeader: View {
         .memoraGlass(in: Circle(), interactive: true, backed: false)
       Spacer()
       Menu {
+        if model.aiPersonScopeID != nil {
+          Button("すべての記録の新しいチャット", icon: .squareAndPencil) { model.startNewAIChat() }
+        }
         Button("履歴", icon: .clockArrowCirclepath, action: onHistory)
         Button("検索", icon: .magnifyingglass, action: onSearch)
       } label: {
-        Text("Memora")
+        Text(model.aiPersonScopeID.flatMap { model.person(id: $0)?.name } ?? "Memora")
           .font(.headline)
           .frame(minHeight: 44)
           .contentShape(Rectangle())

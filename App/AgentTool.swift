@@ -188,7 +188,7 @@ enum AgentTool: String, CaseIterable {
         ], required: ["id"])]
       ], required: ["updates"])
     case .readPerson:
-      return object(["name": string("人の名前（敬称なしでよい）。空なら一覧")], required: ["name"])
+      return object(["name": string("人の名前。曖昧な場合は候補を確認する。空なら一覧"), "person_id": string("確認済みの人物UUID。名前より優先")], required: ["name"])
     case .createDocument:
       return object([
         "title": string("資料のタイトル"),

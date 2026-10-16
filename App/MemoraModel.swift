@@ -158,6 +158,8 @@ final class MemoraModel {
   /// task's). Reading this instead of the record keeps those rows from
   /// redrawing whenever any record changes, such as a progress update.
   private(set) var meetingTitles: [UUID: String] = [:]
+  var aiPersonScopeID: UUID?
+  var aiConversationID = UUID()
   var aiHistory: [AIConversationEntry]
   /// People who can be tagged on recordings.
   var people: [Person] = [] {

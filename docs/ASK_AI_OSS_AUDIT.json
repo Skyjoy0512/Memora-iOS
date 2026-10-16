@@ -11,7 +11,21 @@
       "updated_at": "2026-10-16T10:16:30Z",
       "description": "The Memory Layer for AI Agents - Drop-in memory infrastructure for AI agents and apps. Context that persists. Built for production.",
       "language": "Python",
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/mem0ai/mem0/main/LICENSE",
+          "sha256": "0bbcbe931c353293a2fafce08326181dfeea0e568c566afd4ce8337a70f5e219",
+          "evidence": "                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/mem0ai/mem0/main/pyproject.toml",
+          "sha256": "d4bc078a05cc7b9d677bbf4d0b262cfc532495b5aadeded053ac84fd90b6e974",
+          "evidence": "[build-system]\nrequires = [\"hatchling\"]\nbuild-backend = \"hatchling.build\"\n\n[project]\nname = \"mem0ai\"\nversion = \"2.2.1\"\ndescription = \"Long-term memory for AI Agents\"\nauthors = [\n    { name = \"Mem0\", email = \"support@mem0.ai\" }\n]\nreadme = \"README.md\"\nlicense = \"Apache-2.0\"\nlicense-files = [\"LICENSE\"]\nrequires-python = \">=3.10,<4.0\"\ndependencies = [\n    \"qdrant-client>=1.12.0\",\n    \"pydantic>=2.7.3\",\n    \"openai>=1.90.0\",\n    \"httpx>=0.28.0\",\n    \"posthog>=7.14.0\",\n    \"pytz>=2024.1\",\n    \"sqlalchemy>=2.0.31\",\n    \"protobuf>=5.29.6,<7.0.0\",\n]\n\n[project.optional-dependencies]\nnlp = [\n    \"spacy>=3.7.0\",\n]\nvector-stores = [\n    \"vecs>=0.4.0\",\n    \"chromadb>=0.4.24\",\n    \"cassandra-driver>=3.29.0\",\n    \"weaviate-client>=4.15.4,<5.0.0\",\n    \"pinecone<=7.3.0\",\n    \"pinecone-text>=0.10.0\",\n    \"faiss-cpu>=1.7.4\",\n    \"upstash-vector>=0.6.0\",\n    \"azure-search-documents>=11.4.0b8\",\n    \"psycopg>=3.2.8\",\n    \"psycopg-pool>=3.2.6,<4.0.0\",\n    \"pymongo>=4.13.2\",\n    \"pymochow>=2.2.9\",\n    \"pymysql>=1.1.0\",\n    \"dbutils>=3.0.3\",\n    \"valkey>=6.0.0\",\n    \"databricks-sdk>=0.63.0\",\n    \"azure-identity>=1.24.0\",\n    \"redis>=5.0.0,<6.0.0\",\n    \"redisvl>=0.1.0,<1.0.0\",\n    \"elasticsearch>=8.0.0,<9.0.0\",\n    \"pymilvus>=2.4.0,<2.6.0\",\n    \"langchain-aws>=0.2.23,<0.3.0\",\n    \"oracledb>=2.2.0\",\n]\nllms = [\n    \"groq>=0.3.0\",\n    \"together>=0.2.10\",\n    \"litellm>=1.83.7,<1.98.0\",\n    \"openai>=1.90.0\",\n    \"ollama>=0.3.0\",\n    \"vertexai>=0.1.0\",\n    \"google-generativeai>=0.3.0\",\n    \"google-genai>=1.0.0\",\n]\nextras = [\n    \"boto3>=1.34.0\",\n    \"langchain>=0.3.30,<1.0.0\",\n    \"langchain-community>=0.3.27,<1.0.0\",\n    \"langchain-core>=0.3.85,<1.0.0\",\n    \"sentence-transformers>=5.2.0\",\n    \"transformers>=5.3.0\",\n    \"elasticsearch>=8.0.0,<9.0.0\",\n    \"opensearch-py>=2.0.0\",\n    \"fastembed>=0.3.1\",\n]\ntest = [\n    \"pytest>=8.2.2\",\n    \"pytest-mock>=3.14.0\",\n    \"pytest-asyncio>=0.23.7\",\n]\ndev = [\n    \"ruff==0.16.0\",\n    \"isort>=5.13.2\",\n    \"pre-commit>=3.5.0\",\n]\n\n[tool.pytest.ini_options]\npythonpath = [\".\"]\n\n[tool.hatch.build]\ninclude = [\n    \"mem0/**/*.py\",\n    \"mem0/memory/oss_notices_config.json\",\n]\nexclude = [\n    \"**/*\",\n    \"!mem0/**/*.py\",\n    \"!mem0/memory/oss_notices_config.json\",\n]\n\n[tool.hatch.build.targets.wheel]\npackages = [\"mem0\"]\nonly-include = [\"mem0\"]\n\n[tool.hatch.envs.dev_py_3_10]\npython = \"3.10\"\nfeatures = [\n  \"test\",\n  \"vector-stores\",\n  \"llms\",\n  \"extras\",\n  \"dev\",\n]\n\n[tool.hatch.envs.dev_py_3_11]\npython = \"3.11\"\nfeatures = [\n  \"test\",\n  \"vector-stores\",\n  \"llms\",\n  \"extras\",\n  \"dev\",\n]\n\n[tool.hatch.envs.dev_py_3_12]\npython = \"3.12\"\nfeatures = [\n  \"test\",\n  \"vector-stores\",\n  \"llms\",\n  \"extras\",\n  \"dev\",\n]\n\n[tool.hatch.envs.default]\nfeatures = [\n  \"dev\",\n]\n\n[tool.hatch.envs.default.scripts]\nformat = [\n    \"ruff format\",\n]\nformat-check = [\n    \"ruff format --check\",\n]\nlint = [\n    \"ruff check\",\n]\nlint-fix = [\n    \"ruff check --fix\",\n]\ntest = [\n    \"pytest tests/ {args}\",\n]\n\n[tool.ruff]\nline-length = 120\n\n[tool.ruff.lint]\nselect = [\"E4\", \"E7\", \"E9\", \"F\"]\n\n[tool.ruff.lint.isort]\nknown-first-party = [\"mem0\", \"mem0_cli\"]\n\n[tool.isort]\nprofile = \"black\"\nknown_first_party = [\"mem0\", \"mem0_cli\"]\n# isort scope kept aligned with [tool.ruff.lint.isort] above.\n# black-equivalent profile here matches the formatter behaviour ruff applies.\n# Plugin-version bumps need a touch here to fire required CI checks (path-filter trap).\n# Last touched: plugin v0.1.3\n"
+        }
+      ]
     },
     {
       "repository": "getzep/graphiti",
@@ -22,7 +36,21 @@
       "updated_at": "2026-10-16T09:27:43Z",
       "description": "Build Real-Time Knowledge Graphs for AI Agents",
       "language": "Python",
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/getzep/graphiti/main/LICENSE",
+          "sha256": "2825300b20d7b951209835a4a331f29e24725a39d65168e4b831df53aa372650",
+          "evidence": "                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/getzep/graphiti/main/pyproject.toml",
+          "sha256": "6125ce74f424c800b0f752e1039b9d490f9de446ee2a69576a76b1c2c65ef22c",
+          "evidence": "[project]\nname = \"graphiti-core\"\ndescription = \"A temporal graph building library\"\nversion = \"0.31.1\"\nauthors = [\n    { name = \"Paul Paliychuk\", email = \"paul@getzep.com\" },\n    { name = \"Preston Rasmussen\", email = \"preston@getzep.com\" },\n    { name = \"Daniel Chalef\", email = \"daniel@getzep.com\" },\n]\nreadme = \"README.md\"\nlicense = \"Apache-2.0\"\nrequires-python = \">=3.10,<4\"\ndependencies = [\n    \"pydantic>=2.11.5\",\n    \"neo4j>=5.26.0\",\n    \"openai>=1.91.0\",\n    \"tenacity>=9.0.0\",\n    \"numpy>=1.0.0\",\n    \"python-dotenv>=1.0.1\",\n    \"posthog>=3.0.0\"\n]\n\n[project.urls]\nHomepage = \"https://help.getzep.com/graphiti/graphiti/overview\"\nRepository = \"https://github.com/getzep/graphiti\"\n\n[project.optional-dependencies]\nanthropic = [\"anthropic>=0.49.0\"]\ngroq = [\"groq>=0.2.0\"]\ngoogle-genai = [\"google-genai>=1.62.0\"]\n# Deprecated: the upstream Kuzu project is unmaintained; this extra will be removed in a future release.\nkuzu = [\"kuzu>=0.11.3\"]\nfalkordb = [\"falkordb>=1.1.2,<2.0.0\"]\n# redis<9 pin: redis-py 8.x breaks falkordblite's embedded server startup\nfalkordblite = [\"falkordblite>=0.5.0; python_version>='3.12'\", \"redis<9; python_version>='3.12'\"]\nvoyageai = [\"voyageai>=0.2.3\"]\ngliner2 = [\"gliner2>=1.2.0; python_version>='3.11'\"]\nneo4j-opensearch = [\"boto3>=1.39.16\", \"opensearch-py>=3.0.0\"]\nsentence-transformers = [\"sentence-transformers>=3.2.1\"]\nneptune = [\"langchain-aws>=0.2.29\", \"opensearch-py>=3.0.0\", \"boto3>=1.39.16\"]\ntracing = [\"opentelemetry-api>=1.20.0\", \"opentelemetry-sdk>=1.20.0\"]\ndev = [\n    \"pyright>=1.1.404\",\n    \"groq>=0.2.0\",\n    \"anthropic>=0.49.0\",\n    \"google-genai>=1.8.0\",\n    \"falkordb>=1.1.2,<2.0.0\",\n    \"kuzu>=0.11.3\",\n    \"boto3>=1.39.16\",\n    \"opensearch-py>=3.0.0\",\n    \"langchain-aws>=0.2.29\",\n    \"ipykernel>=6.29.5\",\n    \"jupyterlab>=4.2.4\",\n    \"langgraph>=1.0.10\",\n    \"langchain-anthropic>=0.2.4\",\n    \"langsmith>=0.1.108\",\n    \"langchain-openai>=0.2.6\",\n    \"voyageai>=0.2.3\",\n    \"pytest>=8.3.3\",\n    \"pytest-asyncio>=0.24.0\",\n    \"pytest-xdist>=3.6.1\",\n    \"ruff>=0.7.1\",\n    \"opentelemetry-sdk>=1.20.0\",\n]\n\n[build-system]\nrequires = [\"hatchling\"]\nbuild-backend = \"hatchling.build\"\n\n[tool.pytest.ini_options]\npythonpath = [\".\"]\n\n[tool.ruff]\nline-length = 100\n\n[tool.ruff.lint]\nselect = [\n    # pycodestyle\n    \"E\",\n    # Pyflakes\n    \"F\",\n    # pyupgrade\n    \"UP\",\n    # flake8-bugbear\n    \"B\",\n    # flake8-simplify\n    \"SIM\",\n    # isort\n    \"I\",\n]\nignore = [\"E501\"]\n\n[tool.ruff.lint.flake8-tidy-imports.banned-api]\n# Required by Pydantic on Python < 3.12\n\"typing.TypedDict\".msg = \"Use typing_extensions.TypedDict instead.\"\n\n[tool.ruff.format]\nquote-style = \"single\"\nindent-style = \"space\"\ndocstring-code-format = true\n\n[tool.pyright]\ninclude = [\"graphiti_core\", \".github/intake\"]\npythonVersion = \"3.10\"\ntypeCheckingMode = \"basic\"\n"
+        }
+      ]
     },
     {
       "repository": "langchain-ai/langmem",
@@ -33,7 +61,21 @@
       "updated_at": "2026-10-16T02:31:00Z",
       "description": null,
       "language": "Python",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/langchain-ai/langmem/main/LICENSE",
+          "sha256": "98af1351ea856e008c835bc89a312905960a318072f950732bf346c741027c7d",
+          "evidence": "MIT License\n\nCopyright (c) 2025 LangChain\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/langchain-ai/langmem/main/pyproject.toml",
+          "sha256": "6a964d268d23b8860c848b7b23f2dc6998204eaa0eb28cfe2d404359eb51611a",
+          "evidence": "[project]\nname = \"langmem\"\nversion = \"0.0.30\"\ndescription = \"Prebuilt utilities for memory management and retrieval.\"\nreadme = \"README.md\"\nrequires-python = \">=3.10\"\nlicense = { file = \"LICENSE\" }\ndependencies = [\n    \"langchain>=0.3.15\",\n    \"langchain-core>=0.3.46\",\n    \"langchain-openai>=0.3.1\",\n    \"trustcall>=0.0.39\",\n    \"langgraph>=0.6.0,<2\",\n    \"langchain-anthropic>=0.3.3\",\n    \"langsmith>=0.3.8\",\n    \"langgraph-checkpoint>=2.0.12\",\n]\n\n[project.packages]\nfind = { where = [\"src\"] }\n\n[build-system]\nrequires = [\"hatchling\"]\nbuild-backend = \"hatchling.build\"\n\n[dependency-groups]\ndev = [\n    \"anyio>=4.8.0\",\n    \"langchain-anthropic>=0.3.3\",\n    \"langchain-openai>=0.3.1\",\n    \"langgraph-cli[inmem]>=0.1.70\",\n    \"pytest>=8.3.4\",\n    \"pytest-watch>=4.2.0\",\n    \"pytest-xdist>=3.6.1\",\n    \"langgraph-prebuilt>=0.1.1\",\n    \"ruff>=0.12.12\",\n]\ndocs = [\n    \"markdown-callouts>=0.4.0\",\n    \"markdown-include>=0.8.1\",\n    \"mkdocs>=1.6.1\",\n    \"mkdocs-autorefs>=1.3.0\",\n    \"mkdocs-exclude>=1.0.2\",\n    \"mkdocs-git-committers-plugin-2>=2.5.0\",\n    \"mkdocs-material>=9.6.1\",\n    \"mkdocs-minify-plugin>=0.8.0\",\n    \"mkdocs-redirects>=1.2.2\",\n    \"mkdocs-rss-plugin>=1.17.1\",\n    \"mkdocstrings>=0.27.0\",\n    \"mkdocstrings-python>=1.13.0\",\n    \"nbformat>=5.10.4\",\n    \"nbconvert>=7.16.6\",\n]\n\n[tool.uv.workspace]\nmembers = [\"evals/gen\"]\n\n[tool.ruff]\nlint.select = [\"E\", \"F\", \"I\", \"TID251\"]\nlint.ignore = [\"E501\"]\nline-length = 88\nindent-width = 4\nextend-include = [\"*.ipynb\"]\n\n[tool.ruff.format]\nquote-style = \"double\"\nindent-style = \"space\"\nskip-magic-trailing-comma = false\nline-ending = \"auto\"\ndocstring-code-format = true\ndocstring-code-line-length = \"dynamic\"\n\n[tool.ruff.lint.flake8-tidy-imports.banned-api]\n\"typing.TypedDict\".msg = \"Use typing_extensions.TypedDict instead.\"\n\n[tool.hatch.build]\nexclude = [\n    \"tests/\",\n    \"docs/\",\n    \".github/\",\n    \"examples.py\",\n    \"examples/\",\n    \".editorconfig\",\n    \"db/\",\n    \"evals/\",\n    \".langgraph_api\",\n    \"*.ipynb\",\n    \".python-version\",\n    \".editorconfig\",\n    \".venv*/**\",\n    \"pytest.ini\",\n]\n"
+        }
+      ]
     },
     {
       "repository": "letta-ai/letta",
@@ -44,7 +86,15 @@
       "updated_at": "2026-10-16T09:15:01Z",
       "description": "Platform for stateful agents: AI with advanced memory that can learn and self-improve over time.",
       "language": null,
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/letta-ai/letta/main/LICENSE",
+          "sha256": "984c6db99fc6609803108dfc196762118662cd94b82a456dd9217583f18f3612",
+          "evidence": "                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii"
+        }
+      ]
     },
     {
       "repository": "topoteretes/cognee",
@@ -55,7 +105,21 @@
       "updated_at": "2026-10-16T09:57:05Z",
       "description": "Cognee is the open-source AI memory platform for agents. Give your AI agents persistent long-term memory with small models for free",
       "language": "Python",
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/topoteretes/cognee/main/LICENSE",
+          "sha256": "a471e34908f50c3f120e9a56f3c30cb34e133e4ede01a9cbd5ce718fc358ecd4",
+          "evidence": "                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/topoteretes/cognee/main/pyproject.toml",
+          "sha256": "c7b9a1f3d9f85fc043cb9a25e09f83275109a750e441a8ecc09e29b80e4d25d7",
+          "evidence": "[project]\nname = \"cognee\"\n\nversion = \"1.6.4\"\ndescription = \"Cognee - is a library for enriching LLM context with a semantic layer for better understanding and reasoning.\"\nauthors = [\n    { name = \"Vasilije Markovic\" },\n    { name = \"Boris Arzentar\" },\n]\nrequires-python = \">=3.10,<3.15\"\nreadme = \"README.md\"\nlicense = \"Apache-2.0\"\nclassifiers = [\n    \"Development Status :: 4 - Beta\",\n    \"Intended Audience :: Developers\",\n    \"License :: OSI Approved :: Apache Software License\",\n    \"Topic :: Software Development :: Libraries\",\n    \"Operating System :: MacOS :: MacOS X\",\n    \"Operating System :: POSIX :: Linux\",\n    \"Operating System :: Microsoft :: Windows\",\n]\ndependencies = [\n    \"openai>=1.80.1\",\n    \"python-dotenv>=1.0.1,<2.0.0\",\n    \"pydantic>=2.10.5\",\n    # GHSA-4xgf-cpjx-pc3j: 2.12.0–2.14.1 vulnerable, fixed in 2.14.2. Exclude the\n    # vulnerable range rather than capping, so the patched 2.14.2+ is adopted once\n    # it clears the `exclude-newer` window (it was <2 days old at time of writing).\n    # >=2.7.0: NoDecode (cognee/modules/improve/config.py) first shipped there.\n    \"pydantic-settings>=2.7.0,!=2.12.*,!=2.13.*,!=2.14.0,!=2.14.1,<3\",\n    \"typing_extensions>=4.12.2,<5.0.0\",\n    \"numpy>=1.26.4, <=4.0.0\",\n    \"sqlalchemy>=2.0.39,<3.0.0\",\n    \"aiosqlite>=0.20.0,<1.0.0\",\n    \"filelock>=3.12.0,<4.0.0\",  # cross-process migration lock for SQLite (Linux/macOS/Windows)\n    \"packaging>=24.0\",  # requirement parsing for the GLiNER runtime install\n    # gliner2 needs transformers<5, and transformers 4.x needs these two ranges. Pinned\n    # in core (the lockfile already resolves inside them) so the GLiNER runtime installed\n    # at first use never has to change a package the running process has imported.\n    \"huggingface-hub>=0.34,<1\",\n    \"tokenizers>=0.22,<=0.23.0\",\n    \"tiktoken>=0.8.0,<1.0.0\",\n    # <1.97.0: 1.97.0 fails to build litellm.types.utils.Message on Python 3.10 (unresolved\n    # forward ref) and 1.98.0+ import typing.NotRequired (3.11+). See BerriAI/litellm#38202.\n    \"litellm>=1.83.7,<1.97.0\",\n    \"instructor>=1.9.1,<1.15.3\",\n    \"filetype>=1.2.0,<2.0.0\",\n    \"aiohttp>=3.13.5,<4.0.0\",\n    \"aiofiles>=23.2.1\",\n    # AES-256-GCM encryption for stored OAuth integration credentials\n    # (cognee/modules/integrations/crypto.py) — unconditionally imported via\n    # client.py's Slack router registration, so this is a core dependency,\n    # not an integration-specific extra.\n    # <51 (not <50): downstream consumers pin cryptography>=50.0.0 for\n    # PYSEC-2026-3552/3553/3554; our usage (Fernet, AESGCM) is stable across 50.x.\n    \"cryptography>=43.0.0,<51\",\n    \"rdflib>=7.1.4,<7.2.0\",\n    \"pypdf>=6.6.2,<7.0.0\",\n    \"jinja2>=3.1.3,<4\",\n    # lancedb bundles its own Lance core and pylance must ship the same one:\n    # the bounded compaction in cognee_db_workers.lancedb_compaction hands\n    # tables to pylance (``table.to_lance()``). lancedb 0.39.x bundles Lance\n    # 12.0, so pylance stays on 12.0.x and the two are bumped together with\n    # LANCE_CORE_BY_LANCEDB in cognee_db_workers/lancedb_compaction.py\n    # (``strings _lancedb*.so | grep lance-core`` shows the bundled core). If\n    # an override pairs them differently, compaction turns itself off with a\n    # warning instead of writing to the tables. pylance 12 requires\n    # lance-namespace<0.12, so the lockfile holds lance-namespace at 0.11.x.\n    \"lancedb>=0.39.0,<0.40.0\",\n    \"dateparser>=1.2,<2\",  # temporal hints and date normalization in default graph extraction\n    \"nbformat>=5.7.0,<6.0.0\",\n    \"alembic>=1.13.3,<2\",\n    \"limits>=4.4.1,<6\",\n    \"fastapi>=0.116.2,<1.0.0\",\n    \"starlette>=0.48\",\n    \"python-multipart>=0.0.22,<1.0.0\",\n    \"fastapi-users[sqlalchemy]>=15.0.2\",\n    # Local CPU embeddings (onnxruntime, ~65 MB): the embedder cognee runs on when no\n    # LLM key and no EMBEDDING_* settings are configured, so a bare install can ingest.\n    \"fastembed<=0.8.0\",\n    # onnxruntime 1.23.2 only ships wheels through cp313; cp314 wheels start\n    # at onnxruntime 1.24.1. Split by python_version so existing 3.10–3.13\n    # users keep the pinned version and 3.14 picks up the first cp314-capable\n    # release.\n    \"onnxruntime<=1.23.2 ; python_version < '3.14'\",\n    \"onnxruntime>=1.24.1 ; python_version >= '3.14'\",\n    \"structlog>=25.2.0,<26\",\n    \"pympler>=1.1,<2.0.0\",\n    \"pylance>=12.0.0,<12.1.0\",  # same Lance release line as lancedb, see above\n    # ladybug 0.18.x+ publishes only macosx_15_0 wheels (its sdist needs C++20\n    # std::atomic_ref, which Apple Clang's libc++ on macOS <= 14 lacks), so\n    # macOS 13/14 (Darwin 22/23) get 0.17.x — the last line with macosx_13_0\n    # wheels; storage code 41, which ladybug_migrate upgrades forward when the\n    # machine later moves to a newer line. Those platforms therefore stay\n    # exposed to the storage-corruption defects fixed in 0.18.2 and 0.19.1\n    # (COG-6185).\n    # Pinned at 0.19.0, not 0.19.1: extension.ladybugdb.com publishes no\n    # v0.19.1 JSON extension (404 on every platform), an"
+        }
+      ]
     },
     {
       "repository": "supermemoryai/supermemory",
@@ -66,7 +130,21 @@
       "updated_at": "2026-10-16T07:43:30Z",
       "description": "Memory and context engine + app that is extremely fast, scalable, and can be run fully locally. The Memory API for the AI era.",
       "language": "TypeScript",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/supermemoryai/supermemory/main/LICENSE",
+          "sha256": "9ce388a89cce6a2dc109579d044f7f16e1397d8ee6fdb1f3bd3b980d365a07ae",
+          "evidence": "MIT License\n\nCopyright (c) 2025 supermemory\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHE"
+        },
+        {
+          "path": "package.json",
+          "url": "https://raw.githubusercontent.com/supermemoryai/supermemory/main/package.json",
+          "sha256": "1828fa4e016b5b078b4cd9e1971f8a3c06192a7529b23cfde6cef4b7cc496276",
+          "evidence": "{\n  \"name\": \"supermemory\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"turbo run build\",\n    \"dev\": \"turbo run dev\",\n    \"dev:local\": \"turbo run dev:app\",\n    \"format-lint\": \"bunx biome check --write\",\n    \"check-types\": \"turbo run check-types\",\n    \"sentry:sourcemaps\": \"_SENTRY_RELEASE=$(sentry-cli releases propose-version) && sentry-cli releases new $_SENTRY_RELEASE --org=supermemory --project=consumer-app && sentry-cli sourcemaps upload --org=supermemory --project=consumer-app --release=$_SENTRY_RELEASE --strip-prefix 'dist/..' dist\",\n    \"postbuild\": \"bun run sentry:sourcemaps\"\n  },\n  \"engines\": {\n    \"node\": \">=20\"\n  },\n  \"packageManager\": \"bun@1.3.6\",\n  \"workspaces\": [\n    \"apps/*\",\n    \"!tools/test/chatapp\",\n    \"packages/*\"\n  ],\n  \"dependencies\": {\n    \"@ai-sdk/anthropic\": \"^1.2.12\",\n    \"@ai-sdk/cerebras\": \"^0.2.16\",\n    \"@ai-sdk/google\": \"^1.2.22\",\n    \"@ai-sdk/openai\": \"^2.0.42\",\n    \"@anthropic-ai/sdk\": \"^0.55.1\",\n    \"@google/genai\": \"^1.10.0\",\n    \"@google/generative-ai\": \"^0.24.1\",\n    \"@hono/zod-validator\": \"^0.7.1\",\n    \"@scalar/hono-api-reference\": \"^0.9.11\",\n    \"@types/flubber\": \"^0.4.0\",\n    \"@vanilla-extract/recipes\": \"^0.5.7\",\n    \"ai\": \"^5.0.59\",\n    \"alchemy\": \"^0.81.4\",\n    \"atmn\": \"^0.0.16\",\n    \"better-auth\": \"1.7.6\",\n    \"boxen\": \"^8.0.1\",\n    \"cloudflare\": \"^4.5.0\",\n    \"compromise\": \"^14.14.4\",\n    \"dedent\": \"^1.6.0\",\n    \"destr\": \"^2.0.5\",\n    \"drizzle-orm\": \"0.45.2\",\n    \"drizzle-zod\": \"~0.7.1\",\n    \"file-type\": \"^21.0.0\",\n    \"hono-openapi\": \"^0.4.8\",\n    \"nanoid\": \"^5.1.16\",\n    \"neverthrow\": \"^8.2.0\",\n    \"pg\": \"^8.16.3\",\n    \"pino\": \"^9.7.0\",\n    \"postgres\": \"^3.4.7\",\n    \"random-word-slugs\": \"^0.1.7\",\n    \"resend\": \"^4.7.0\",\n    \"zod\": \"^3.25.76\",\n    \"zod-openapi\": \"^4.2.4\"\n  },\n  \"devDependencies\": {\n    \"@biomejs/biome\": \"^2.2.0\",\n    \"@sentry/cli\": \"^2.52.0\",\n    \"@total-typescript/tsconfig\": \"^1.0.4\",\n    \"@types/pg\": \"^8.15.4\",\n    \"drizzle-kit\": \"^0.31.4\",\n    \"turbo\": \"^2.5.4\",\n    \"typescript\": \"5.8.3\",\n    \"wrangler\": \"^4.42.2\"\n  },\n  \"overrides\": {\n    \"@xmldom/xmldom\": \"0.8.15\",\n    \"@types/react\": \"^19.2.14\",\n    \"@types/react-dom\": \"^19.2.3\",\n    \"adm-zip\": \"0.6.1\",\n    \"axios\": \"1.20.0\",\n    \"basic-ftp\": \"6.2.1\",\n    \"browserslist\": \"4.28.7\",\n    \"defu\": \"6.1.5\",\n    \"engine.io\": \"6.6.11\",\n    \"fast-uri\": \"3.1.8\",\n    \"fast-xml-builder\": \"1.3.1\",\n    \"fast-xml-parser\": \"5.7.3\",\n    \"form-data\": \"4.0.6\",\n    \"hono\": \"4.13.12\",\n    \"ip-address\": \"10.7.3\",\n    \"jsondiffpatch\": \"0.7.6\",\n    \"lodash\": \"4.18.1\",\n    \"node-forge\": \"1.4.0\",\n    \"postcss\": \"8.5.23\",\n    \"protobufjs\": \"7.6.6\",\n    \"sharp\": \"0.35.4\",\n    \"socket.io-parser\": \"4.2.7\",\n    \"undici\": \"7.29.1\",\n    \"ws\": \"8.21.3\"\n  },\n  \"workerd\": {\n    \"import\": \"./esm/index.mjs\",\n    \"require\": \"./dist/index.js\"\n  }\n}\n"
+        }
+      ]
     },
     {
       "repository": "TencentCloud/TencentDB-Agent-Memory",
@@ -77,7 +155,15 @@
       "updated_at": "2026-10-16T10:04:32Z",
       "description": "TencentDB Agent Memory is a team-level memory hub for AI Agents — turning conversations, docs, and code into four reusable memory assets (Chat Memory, Skill, LLM-Wiki, Code-Graph) that are governed, shared, and equipped across agents and frameworks.",
       "language": "TypeScript",
-      "license": "NOASSERTION"
+      "license": "NOASSERTION",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/TencentCloud/TencentDB-Agent-Memory/feat/server_team/LICENSE",
+          "sha256": "bcaf06dea1a63d27aab5633035b620e0127295583456c2a9402565ef63ecb0b0",
+          "evidence": "Tencent is pleased to support the open source community by making TencentDB Agent Memory available. \n\nCopyright (C) 2026 Tencent.  All rights reserved. \n\nTencentDB Agent Memory is licensed under the MIT.\n\n\nTerms of the MIT:\n--------------------------------------------------------------------\nPermission is hereby granted, free of charge, to any person obtaining\na copy of this software and associated documentation files (the\n\"Software\"), to deal in the Software without restriction, including\nwithout limitation the rights to use, copy, modify, merge, publish,\ndistribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright notice and this permission notice shall be\nincluded in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WAR"
+        }
+      ]
     },
     {
       "repository": "scanny/python-pptx",
@@ -88,7 +174,27 @@
       "updated_at": "2026-10-12T22:51:30Z",
       "description": "Create Open XML PowerPoint documents in Python",
       "language": "Python",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/scanny/python-pptx/master/LICENSE",
+          "sha256": "7652f271e46d0d533e9dc463f3b5fcbdcacf4d6a9c8d6b554d15efd0f37f6132",
+          "evidence": "The MIT License (MIT)\nCopyright (c) 2013 Steve Canny, https://github.com/scanny\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE L"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/scanny/python-pptx/master/pyproject.toml",
+          "sha256": "dd189e7c040e479302c3f3ad8aa24094b0274f55bf2e7abc56c33902ae114508",
+          "evidence": "[build-system]\nrequires = [\"setuptools>=61.0.0\"]\nbuild-backend = \"setuptools.build_meta\"\n\n[project]\nname = \"python-pptx\"\nauthors = [{name = \"Steve Canny\", email = \"stcanny@gmail.com\"}]\nclassifiers = [\n    \"Development Status :: 5 - Production/Stable\",\n    \"Environment :: Console\",\n    \"Intended Audience :: Developers\",\n    \"License :: OSI Approved :: MIT License\",\n    \"Operating System :: OS Independent\",\n    \"Programming Language :: Python\",\n    \"Programming Language :: Python :: 3\",\n    \"Programming Language :: Python :: 3.8\",\n    \"Programming Language :: Python :: 3.9\",\n    \"Programming Language :: Python :: 3.10\",\n    \"Programming Language :: Python :: 3.11\",\n    \"Programming Language :: Python :: 3.12\",\n    \"Topic :: Office/Business :: Office Suites\",\n    \"Topic :: Software Development :: Libraries\",\n]\ndependencies = [\n    \"Pillow>=3.3.2\",\n    \"XlsxWriter>=0.5.7\",\n    \"lxml>=3.1.0\",\n    \"typing_extensions>=4.9.0\",\n]\ndescription = \"Create, read, and update PowerPoint 2007+ (.pptx) files.\"\ndynamic = [\"version\"]\nkeywords = [\"powerpoint\", \"ppt\", \"pptx\", \"openxml\", \"office\"]\nlicense = { text = \"MIT\" }\nreadme = \"README.rst\"\nrequires-python = \">=3.8\"\n\n[project.urls]\nChangelog = \"https://github.com/scanny/python-pptx/blob/master/HISTORY.rst\"\nDocumentation = \"https://python-pptx.readthedocs.io/en/latest/\"\nHomepage = \"https://github.com/scanny/python-pptx\"\nRepository = \"https://github.com/scanny/python-pptx\"\n\n[tool.black]\nline-length = 100\n\n[tool.pyright]\nexclude = [\n    \"**/__pycache__\",\n    \"**/.*\"\n]\ninclude = [\n    \"src/pptx\",\n    \"tests/\"\n]\nignore =  []\npythonPlatform = \"All\"\npythonVersion = \"3.9\"\nreportImportCycles = false\nreportUnnecessaryCast = true\nreportUnnecessaryTypeIgnoreComment = true\nstubPath = \"./typings\"\ntypeCheckingMode = \"strict\"\nverboseOutput = true\n\n[tool.pytest.ini_options]\nfilterwarnings = [\n    # -- exit on any warning not explicitly ignored here --\n    \"error\",\n    # -- pytest-xdist plugin may warn about `looponfailroots` deprecation --\n    \"ignore::DeprecationWarning:xdist\",\n    # -- pytest complains when pytest-xdist is not installed --\n    \"ignore:Unknown config option. looponfailroots:pytest.PytestConfigWarning\",\n]\n\nlooponfailroots = [\n    \"src\",\n    \"tests\",\n]\nnorecursedirs = [\n    \"docs\",\n    \"*.egg-info\",\n    \"features\",\n    \".git\",\n    \"src\",\n    \"spec\",\n    \".tox\",\n]\npython_classes = [\n    \"Test\",\n    \"Describe\",\n]\npython_functions = [\n    \"test_\",\n    \"it_\",\n    \"they_\",\n    \"but_\",\n    \"and_\",\n]\n\n[tool.ruff]\nline-length = 100\n\n# -- don't check these locations --\nexclude = [\n    # -- docs/ - documentation Python code is incidental --\n    \"docs\",\n    # -- lab/ has some experimental code that is not disciplined --\n    \"lab\",\n    # -- ref/ is not source-code --\n    \"ref\",\n    # -- spec/ has some ad-hoc discovery code that is not disciplined --\n    \"spec\",\n]\n\n[tool.ruff.lint]\nselect = [\n    \"C4\",       # -- flake8-comprehensions --\n    \"COM\",      # -- flake8-commas --\n    \"E\",        # -- pycodestyle errors --\n    \"F\",        # -- pyflakes --\n    \"I\",        # -- isort (imports) --\n    \"PLR0402\",  # -- Name compared with itself like `foo == foo` --\n    \"PT\",       # -- flake8-pytest-style --\n    \"SIM\",      # -- flake8-simplify --\n    \"TCH001\",   # -- detect typing-only imports not under `if TYPE_CHECKING` --\n    \"UP015\",    # -- redundant `open()` mode parameter (like \"r\" is default) --\n    \"UP018\",    # -- Unnecessary {literal_type} call like `str(\"abc\")`. (rewrite as a literal) --\n    \"UP032\",    # -- Use f-string instead of `.format()` call --\n    \"UP034\",    # -- Avoid extraneous parentheses --\n    \"W\",        # -- Warnings, including invalid escape-sequence --\n]\nignore = [\n    \"COM812\",   # -- over aggressively insists on trailing commas where not desireable --\n    \"PT001\",    # -- wants empty parens on @pytest.fixture where not used (essentially always) --\n    \"PT005\",    # -- flags mock fixtures with names intentionally matching private method name --\n    \"PT011\",    # -- pytest.raises({exc}) too broad, use match param or more specific exception --\n    \"PT012\",    # -- pytest.raises() block should contain a single simple statement --\n    \"SIM117\",   # -- merge `with` statements for context managers that have same scope --\n]\n\n[tool.ruff.lint.isort]\nknown-first-party = [\"pptx\"]\n\n[tool.setuptools.dynamic]\nversion = {attr = \"pptx.__version__\"}\n"
+        },
+        {
+          "path": "requirements.txt",
+          "url": "https://raw.githubusercontent.com/scanny/python-pptx/master/requirements.txt",
+          "sha256": "63b14eaae4a069bbb88892d48a7d2df9ad345fde3389b112173f62b62b62a598",
+          "evidence": "behave>=1.2.5\nflake8>=2.0\nlxml>=3.1.0\nmock>=1.0.1\nPillow>=3.3.2\npyparsing>=2.0.1\npytest>=2.5\nXlsxWriter>=0.5.7\n"
+        }
+      ]
     },
     {
       "repository": "python-openxml/python-docx",
@@ -99,7 +205,27 @@
       "updated_at": "2026-10-16T02:29:52Z",
       "description": "Create and modify Word documents with Python",
       "language": "Python",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/python-openxml/python-docx/master/LICENSE",
+          "sha256": "7652f271e46d0d533e9dc463f3b5fcbdcacf4d6a9c8d6b554d15efd0f37f6132",
+          "evidence": "The MIT License (MIT)\nCopyright (c) 2013 Steve Canny, https://github.com/scanny\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE L"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/python-openxml/python-docx/master/pyproject.toml",
+          "sha256": "e112290ddc85add6834c9cc5299c86e837b7b2e2e8b69e49784b4bfe6ea33625",
+          "evidence": "[build-system]\nrequires = [\"setuptools>=61.0.0\"]\nbuild-backend = \"setuptools.build_meta\"\n\n[project]\nname = \"python-docx\"\nauthors = [{name = \"Steve Canny\", email = \"stcanny@gmail.com\"}]\nclassifiers = [\n    \"Development Status :: 5 - Production/Stable\",\n    \"Environment :: Console\",\n    \"Intended Audience :: Developers\",\n    \"License :: OSI Approved :: MIT License\",\n    \"Operating System :: OS Independent\",\n    \"Programming Language :: Python\",\n    \"Programming Language :: Python :: 3\",\n    \"Programming Language :: Python :: 3.7\",\n    \"Programming Language :: Python :: 3.8\",\n    \"Programming Language :: Python :: 3.9\",\n    \"Programming Language :: Python :: 3.10\",\n    \"Programming Language :: Python :: 3.11\",\n    \"Topic :: Office/Business :: Office Suites\",\n    \"Topic :: Software Development :: Libraries\",\n]\ndependencies = [\n    \"lxml>=3.1.0\",\n    \"typing_extensions>=4.9.0\",\n]\ndescription = \"Create, read, and update Microsoft Word .docx files.\"\ndynamic = [\"version\"]\nkeywords = [\"docx\", \"office\", \"openxml\", \"word\"]\nlicense = { text = \"MIT\" }\nreadme = \"README.md\"\nrequires-python = \">=3.9\"\n\n[dependency-groups]\ndev = [\n    \"Jinja2==2.11.3\",\n    \"MarkupSafe==0.23\",\n    \"Sphinx==1.8.6\",\n    \"alabaster<0.7.14\",\n    \"behave>=1.2.6\",\n    \"pyparsing>=3.2.3\",\n    \"pyright>=1.1.401\",\n    \"pytest>=8.4.0\",\n    \"ruff>=0.11.13\",\n    \"tox>=4.26.0\",\n    \"twine>=6.1.0\",\n    \"types-lxml-multi-subclass>=2025.3.30\",\n]\n\n[project.urls]\nChangelog = \"https://github.com/python-openxml/python-docx/blob/master/HISTORY.rst\"\nDocumentation = \"https://python-docx.readthedocs.org/en/latest/\"\nHomepage = \"https://github.com/python-openxml/python-docx\"\nRepository = \"https://github.com/python-openxml/python-docx\"\n\n[tool.pyright]\ninclude = [\"src/docx\", \"tests\"]\npythonPlatform = \"All\"\npythonVersion = \"3.9\"\nreportImportCycles = false\nreportUnnecessaryCast = true\nreportUnnecessaryTypeIgnoreComment = true\nstubPath = \"./typings\"\ntypeCheckingMode = \"strict\"\nverboseOutput = true\nvenvPath = \".\"\nvenv = \".venv\"\n\n[tool.pytest.ini_options]\nfilterwarnings = [\n    # -- exit on any warning not explicitly ignored here --\n    \"error\",\n\n    # -- pytest-xdist plugin may warn about `looponfailroots` deprecation --\n    \"ignore::DeprecationWarning:xdist\",\n\n    # -- pytest complains when pytest-xdist is not installed --\n    \"ignore:Unknown config option. looponfailroots:pytest.PytestConfigWarning\",\n]\nlooponfailroots = [\"src\", \"tests\"]\nnorecursedirs = [\n    \"doc\",\n    \"docx\",\n    \"*.egg-info\",\n    \"features\",\n    \".git\",\n    \"ref\",\n    \"_scratch\",\n    \".tox\",\n]\npython_files = [\"test_*.py\"]\npython_classes = [\"Test\", \"Describe\"]\npython_functions = [\"it_\", \"its_\", \"they_\", \"and_\", \"but_\"]\n\n[tool.ruff]\nexclude = []\nline-length = 100\ntarget-version = \"py38\"\n\n[tool.ruff.lint]\nignore = [\n    \"COM812\",   # -- over-aggressively insists on trailing commas where not desired --\n    \"PT001\",    # -- wants @pytest.fixture() instead of @pytest.fixture --\n]\nselect = [\n    \"C4\",       # -- flake8-comprehensions --\n    \"COM\",      # -- flake8-commas --\n    \"E\",        # -- pycodestyle errors --\n    \"F\",        # -- pyflakes --\n    \"I\",        # -- isort (imports) --\n    \"PLR0402\",  # -- Name compared with itself like `foo == foo` --\n    \"PT\",       # -- flake8-pytest-style --\n    \"SIM\",      # -- flake8-simplify --\n    \"UP015\",    # -- redundant `open()` mode parameter (like \"r\" is default) --\n    \"UP018\",    # -- Unnecessary {literal_type} call like `str(\"abc\")`. (rewrite as a literal) --\n    \"UP032\",    # -- Use f-string instead of `.format()` call --\n    \"UP034\",    # -- Avoid extraneous parentheses --\n]\n\n[tool.ruff.lint.isort]\nknown-first-party = [\"docx\"]\nknown-local-folder = [\"helpers\"]\n\n[tool.setuptools.dynamic]\nversion = {attr = \"docx.__version__\"}\n\n"
+        },
+        {
+          "path": "requirements.txt",
+          "url": "https://raw.githubusercontent.com/python-openxml/python-docx/master/requirements.txt",
+          "sha256": "7c0617c0de42f0f1f3d31ca12914658c886a4c89931739e08ec389a56ae96b48",
+          "evidence": "lxml>=3.1.0\ntyping-extensions\n"
+        }
+      ]
     },
     {
       "repository": "kklimuk/docx-cli",
@@ -110,7 +236,21 @@
       "updated_at": "2026-10-16T07:29:40Z",
       "description": "Let AI agents edit Word documents without breaking them: fill in forms, update tables, restyle, write reports, and redline with tracked changes and comments.",
       "language": "TypeScript",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/kklimuk/docx-cli/main/LICENSE",
+          "sha256": "7fa7b3c657b4ac3370075c5404fa97ac2c38ea8631bae6f5938b5ec3aac40a75",
+          "evidence": "MIT License\n\nCopyright (c) 2026 Kirill Klimuk\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OT"
+        },
+        {
+          "path": "package.json",
+          "url": "https://raw.githubusercontent.com/kklimuk/docx-cli/main/package.json",
+          "sha256": "496e8682b924c3dbb2f5566ab98ba9185e3332c8d7e3f59c73ff36f367bc4c8e",
+          "evidence": "{\n\t\"name\": \"bun-docx\",\n\t\"version\": \"0.27.0\",\n\t\"description\": \"Let AI agents edit Word documents without breaking them: fill in forms, update tables, restyle, write reports, and redline with tracked changes and comments.\",\n\t\"keywords\": [\n\t\t\"docx\",\n\t\t\"openxml\",\n\t\t\"ooxml\",\n\t\t\"word\",\n\t\t\"cli\",\n\t\t\"ai\",\n\t\t\"claude\",\n\t\t\"codex\",\n\t\t\"agentic\",\n\t\t\"agent-skill\",\n\t\t\"agent-skills\",\n\t\t\"claude-code\",\n\t\t\"microsoft-word\",\n\t\t\"word-document\",\n\t\t\"tracked-changes\",\n\t\t\"track-changes\",\n\t\t\"redline\",\n\t\t\"comments\",\n\t\t\"contract-review\",\n\t\t\"docx-editor\",\n\t\t\"llm\",\n\t\t\"pi-package\"\n\t],\n\t\"pi\": {\n\t\t\"skills\": [\n\t\t\t\"./skills\"\n\t\t]\n\t},\n\t\"license\": \"MIT\",\n\t\"author\": \"Kirill Klimuk\",\n\t\"repository\": {\n\t\t\"type\": \"git\",\n\t\t\"url\": \"git+https://github.com/kklimuk/docx-cli.git\"\n\t},\n\t\"homepage\": \"https://github.com/kklimuk/docx-cli#readme\",\n\t\"bugs\": \"https://github.com/kklimuk/docx-cli/issues\",\n\t\"type\": \"module\",\n\t\"packageManager\": \"bun@1.3.13\",\n\t\"bin\": {\n\t\t\"docx\": \"./dist/index.js\"\n\t},\n\t\"files\": [\n\t\t\"dist/index.js\",\n\t\t\"dist/pdfium-*.wasm\",\n\t\t\"skills/\",\n\t\t\"README.md\",\n\t\t\"LICENSE\",\n\t\t\"LGPL-3.0.txt\",\n\t\t\"NOTICES\"\n\t],\n\t\"engines\": {\n\t\t\"bun\": \">=1.3.0\"\n\t},\n\t\"scripts\": {\n\t\t\"dev\": \"bun src/index.ts\",\n\t\t\"build\": \"bun build src/index.ts --outdir dist --entry-naming index.js --target bun\",\n\t\t\"build:binary\": \"bun build --compile --outfile=dist/docx src/index.ts\",\n\t\t\"check\": \"biome check . && knip-bun && bunx tsc --noEmit\",\n\t\t\"test\": \"bun test\",\n\t\t\"test:unit\": \"bun test tests/core tests/cli\",\n\t\t\"test:integration\": \"bun test tests/integration\",\n\t\t\"test:benchmark\": \"bun test benchmarks/officecli && bunx tsc --noEmit -p benchmarks/officecli/tsconfig.json\",\n\t\t\"prepack\": \"bun run build\",\n\t\t\"prepare\": \"husky\"\n\t},\n\t\"devDependencies\": {\n\t\t\"@biomejs/biome\": \"^2.4.10\",\n\t\t\"@types/bun\": \"^1.3.13\",\n\t\t\"@types/hast\": \"^3.0.4\",\n\t\t\"@types/heic-convert\": \"^2.1.0\",\n\t\t\"@types/jpeg-js\": \"^0.3.7\",\n\t\t\"@types/mdast\": \"^4.0.4\",\n\t\t\"@types/pngjs\": \"^6.0.5\",\n\t\t\"husky\": \"^9.1.7\",\n\t\t\"knip\": \"^6.3.0\",\n\t\t\"typescript\": \"^6.0.2\"\n\t},\n\t\"dependencies\": {\n\t\t\"@hyzyla/pdfium\": \"2.1.13\",\n\t\t\"diff\": \"^9.0.0\",\n\t\t\"fast-xml-builder\": \"^1.1.6\",\n\t\t\"fast-xml-parser\": \"^5.7.2\",\n\t\t\"heic-convert\": \"^2.1.0\",\n\t\t\"jpeg-js\": \"^0.4.4\",\n\t\t\"jszip\": \"^3.10.1\",\n\t\t\"libxml2-wasm\": \"^0.7.1\",\n\t\t\"lowlight\": \"^3.3.0\",\n\t\t\"mdast-util-math\": \"^3.0.0\",\n\t\t\"pngjs\": \"^7.0.0\",\n\t\t\"remark-gfm\": \"^4.0.1\",\n\t\t\"remark-math\": \"^6.0.0\",\n\t\t\"remark-parse\": \"^11.0.0\",\n\t\t\"temml\": \"^0.13.3\",\n\t\t\"unified\": \"^11.0.5\",\n\t\t\"unist-util-visit\": \"^5.1.0\"\n\t}\n}\n"
+        }
+      ]
     },
     {
       "repository": "eigenpal/docx-template-skill",
@@ -121,7 +261,21 @@
       "updated_at": "2026-10-11T05:36:57Z",
       "description": "Agentic generation of .docx templates from examples",
       "language": "TypeScript",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/eigenpal/docx-template-skill/main/LICENSE",
+          "sha256": "0dfd17f90967ad45dd6902922b01ec1640e0bfbdf4e125dd1bb52a337368f5ab",
+          "evidence": "MIT License\n\nCopyright (c) 2026 EigenPal\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nL"
+        },
+        {
+          "path": "package.json",
+          "url": "https://raw.githubusercontent.com/eigenpal/docx-template-skill/main/package.json",
+          "sha256": "8e66e9bd0784fa4987df78470eaaaaf2b6cf0970fae0c0d6be594e7ff8e47e3d",
+          "evidence": "{\n  \"name\": \"@eigenpal/docx-template-skill\",\n  \"version\": \"0.3.0\",\n  \"description\": \"Agentic generation of .docx templates from examples using docxtemplater\",\n  \"license\": \"MIT\",\n  \"scripts\": {\n    \"typecheck\": \"bun run tsc --noEmit\",\n    \"bundle\": \"bun build skills/docx-template/agent/analyze.ts --outfile skills/docx-template/agent/dist/analyze.js --target node && bun build skills/docx-template/agent/generate.ts --outfile skills/docx-template/agent/dist/generate.js --target node && bun build skills/docx-template/agent/refine.ts --outfile skills/docx-template/agent/dist/refine.js --target node\",\n    \"build\": \"bun run typecheck && bun run bundle\",\n    \"test\": \"bun run tsx test/verify-styling.ts\"\n  },\n  \"files\": [\n    \".claude-plugin/\",\n    \".cursor-plugin/\",\n    \"skills/\"\n  ],\n  \"dependencies\": {\n    \"pizzip\": \"^3.1.7\",\n    \"docxtemplater\": \"^3.50.0\",\n    \"@xmldom/xmldom\": \"^0.9.5\",\n    \"mammoth\": \"^1.8.0\"\n  },\n  \"devDependencies\": {\n    \"@types/node\": \"^22.0.0\",\n    \"tsx\": \"^4.21.0\",\n    \"typescript\": \"^5.5.0\"\n  }\n}\n"
+        }
+      ]
     },
     {
       "repository": "hugohe3/ppt-master",
@@ -132,7 +286,21 @@
       "updated_at": "2026-10-16T10:16:10Z",
       "description": "AI turns documents or topics into real, native PowerPoint decks—with native shapes, transitions and animations, data-backed charts and tables on demand, audio narration from speaker notes, and support for your own .pptx templates. · by Hugo He",
       "language": "Python",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/hugohe3/ppt-master/main/LICENSE",
+          "sha256": "80cefc234c1ec12a8cece4344f16300c634fa03df7891686fcf979e3828f0921",
+          "evidence": "MIT License\n\nCopyright (c) 2025-2026 Hugo He\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTH"
+        },
+        {
+          "path": "requirements.txt",
+          "url": "https://raw.githubusercontent.com/hugohe3/ppt-master/main/requirements.txt",
+          "sha256": "5b9c025632edafb19a53db251b3608b687b3c4387f55416f7f40ed4aa41b934e",
+          "evidence": "# PPT Master Dependencies / PPT Master 依赖\n# =============================================\n#\n# Full list lives inside the skill so installing the skill alone gives full capability.\n# update_repo.py fingerprints this file and its recursive -r/--requirement include tree.\n# 完整依赖列表已内置于 skill 内部，单独安装 skill 即可获得完整能力。\n# update_repo.py 会对本文件及递归 -r/--requirement 引用树计算指纹。\n#\n# Install / 安装方式：\n#   pip install -r requirements.txt                     # from repo root / 仓库根目录\n#   pip install -r skills/ppt-master/requirements.txt   # from anywhere / 任意位置\n#\n-r skills/ppt-master/requirements.txt\n"
+        }
+      ]
     },
     {
       "repository": "zhangyu836/pydocxtpl",
@@ -143,7 +311,15 @@
       "updated_at": "2026-06-18T01:40:14Z",
       "description": "A python module to generate docx files from a docx template",
       "language": "Python",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/zhangyu836/pydocxtpl/main/LICENSE",
+          "sha256": "f5ddb3e50df0ff74a190408521c5674edef692cef528ed56318e035c5fcdbd2e",
+          "evidence": "MIT License\n\nCopyright (c) 2020 Zhang Yu\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nL"
+        }
+      ]
     },
     {
       "repository": "elapouya/python-docx-template",
@@ -154,7 +330,27 @@
       "updated_at": "2026-10-16T00:56:46Z",
       "description": "Use a docx as a jinja2 template",
       "language": "Python",
-      "license": "LGPL-2.1"
+      "license": "LGPL-2.1",
+      "source_files": [
+        {
+          "path": "LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/elapouya/python-docx-template/master/LICENSE.txt",
+          "sha256": "9b872a8a070b8ad329c4bd380fb1bf0000f564c75023ec8e1e6803f15364b9e9",
+          "evidence": "                  GNU LESSER GENERAL PUBLIC LICENSE\n                       Version 2.1, February 1999\n\n Copyright (C) 1991, 1999 Free Software Foundation, Inc.\n 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA\n Everyone is permitted to copy and distribute verbatim copies\n of this license document, but changing it is not allowed.\n\n(This is the first released version of the Lesser GPL.  It also counts\n as the successor of the GNU Library Public License, version 2, hence\n the version number 2.1.)\n\n                            Preamble\n\n  The licenses for most software are designed to take away your\nfreedom to share and change it.  By contrast, the GNU General Public\nLicenses are intended to guarantee your freedom to share and change\nfree software--to make sure the software is free for all its users.\n\n  This license, the Lesser General Public License, applies to some\nspecially des"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/elapouya/python-docx-template/master/pyproject.toml",
+          "sha256": "c9b61e6f9752231da09782531e60937c02548fd345bb93028fd9bb8d22b05087",
+          "evidence": "[project]\nname = \"docxtpl\"\ndynamic = [\"version\"]\ndescription = \"Python docx template engine\"\nauthors = [{name=\"Eric Lapouyade\", email=\"elapouya@proton.me\"}]\nreadme = \"README.rst\"\nrequires-python = \">=3.7\"\nlicense = {text=\"LGPL-2.1-only\"}\nclassifiers=[\n    \"Intended Audience :: Developers\",\n    \"Development Status :: 4 - Beta\",\n    \"Programming Language :: Python :: 3\",\n    \"Programming Language :: Python :: 3.7\",\n    \"Programming Language :: Python :: 3.8\",\n    \"Programming Language :: Python :: 3.9\",\n    \"Programming Language :: Python :: 3.10\",\n    \"Programming Language :: Python :: 3.11\",\n    \"Programming Language :: Python :: 3.12\",\n    \"Programming Language :: Python :: 3.13\",\n    \"Programming Language :: Python :: 3.14\",\n]\nkeywords = [\"jinja2\"]\ndependencies = [\n    \"python-docx\",\n    \"jinja2\",\n    \"lxml\",\n]\n\n[project.optional-dependencies]\nsubdoc = [\"docxcompose\"]\ndocs = [\"Sphinx\", \"sphinxcontrib-napoleon\"]\n\n[dependency-groups]\ndev = [\n    \"mypy >=1.18.2; python_version >= '3.9'\",\n    \"lxml-stubs >=0.5.1; python_version >= '3.9'\",\n    \"flake8 >=7.3.0; python_version >= '3.9'\"\n]\n\n[project.urls]\nhomepage = \"https://github.com/elapouya/python-docx-template\"\nrepository = \"https://github.com/elapouya/python-docx-template.git\"\ndocument = \"https://docxtpl.readthedocs.org\"\n\n[tool.poetry]\nversion = \"0.0.0\"\n\n[tool.poetry.requires-plugins]\npoetry-dynamic-versioning = { version = \">=1.0.0,<2.0.0\", extras = [\"plugin\"] }\n\n[tool.poetry-dynamic-versioning]\nenable = true\n\n[tool.poetry-dynamic-versioning.from-file]\nsource = \"docxtpl/__init__.py\"\npattern = '__version__ = \"(.+)\"'\n\n[tool.mypy]\npretty = true\npython_version = \"3.9\"\ncheck_untyped_defs = true\nwarn_unused_ignores = true\nexclude = [\"docs\", \"build\", \"setup.py\"]\n\n[[tool.mypy.overrides]]\nmodule = [\"docxcompose.*\"]\nignore_missing_imports = true\n\n[tool.pdm]\nversion = {source=\"file\", path=\"docxtpl/__init__.py\"}\n\n[build-system]\nrequires = [\"pdm-backend\"]\nbuild-backend = \"pdm.backend\"\n"
+        },
+        {
+          "path": "requirements.txt",
+          "url": "https://raw.githubusercontent.com/elapouya/python-docx-template/master/requirements.txt",
+          "sha256": "6fbb8b8a37e2162bfb4607182aeac5d59c6ff8fb9ad9f23842fdd03e4b460572",
+          "evidence": "python-docx\ndocxcompose\njinja2\nlxml\nsphinx-book-theme\n"
+        }
+      ]
     },
     {
       "repository": "anthropics/skills",
@@ -165,7 +361,8 @@
       "updated_at": "2026-10-16T10:17:58Z",
       "description": "Public repository for Agent Skills",
       "language": "Python",
-      "license": "unconfirmed"
+      "license": "unconfirmed",
+      "source_files": []
     },
     {
       "repository": "obra/superpowers",
@@ -176,7 +373,21 @@
       "updated_at": "2026-10-16T10:18:33Z",
       "description": "An agentic skills framework & software development methodology that works.",
       "language": "Shell",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/obra/superpowers/main/LICENSE",
+          "sha256": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+          "evidence": "MIT License\n\nCopyright (c) 2025 Jesse Vincent\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OT"
+        },
+        {
+          "path": "package.json",
+          "url": "https://raw.githubusercontent.com/obra/superpowers/main/package.json",
+          "sha256": "cac93fa9fd478b35465e56b9df4fbf91909f78c8810070f23c202c7cb5474656",
+          "evidence": "{\n  \"name\": \"superpowers\",\n  \"version\": \"7.0.0\",\n  \"description\": \"Superpowers skills and runtime bootstrap for coding agents\",\n  \"type\": \"module\",\n  \"main\": \".opencode/plugins/superpowers.js\",\n  \"keywords\": [\n    \"pi-package\",\n    \"skills\",\n    \"tdd\",\n    \"debugging\",\n    \"collaboration\",\n    \"workflow\"\n  ],\n  \"pi\": {\n    \"extensions\": [\n      \"./.pi/extensions/superpowers.ts\"\n    ],\n    \"skills\": [\n      \"./skills\"\n    ]\n  }\n}\n"
+        }
+      ]
     },
     {
       "repository": "ComposioHQ/awesome-claude-skills",
@@ -187,7 +398,8 @@
       "updated_at": "2026-10-16T09:51:59Z",
       "description": "A curated list of awesome Claude Skills, resources, and tools for customizing Claude AI workflows",
       "language": "Python",
-      "license": "unconfirmed"
+      "license": "unconfirmed",
+      "source_files": []
     },
     {
       "repository": "dzhng/deep-research",
@@ -198,7 +410,21 @@
       "updated_at": "2026-10-16T07:24:32Z",
       "description": "An AI-powered research assistant that performs iterative, deep research on any topic by combining search engines, web scraping, and large language models.  The goal of this repo is to provide the simplest implementation of a deep research agent - e.g. an agent that can refine its research direction overtime and deep dive into a topic.",
       "language": "TypeScript",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/dzhng/deep-research/main/LICENSE",
+          "sha256": "81f62085ecd47a29852b2d214e690e880030058fd07514970d3ca96ccb595349",
+          "evidence": "MIT License\n\nCopyright (c) 2025 David Zhang\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHE"
+        },
+        {
+          "path": "package.json",
+          "url": "https://raw.githubusercontent.com/dzhng/deep-research/main/package.json",
+          "sha256": "d5974da05bc371d260d376f1fd118a87932da0ef2934bfd5d99f7820779597ef",
+          "evidence": "{\n  \"name\": \"open-deep-research\",\n  \"version\": \"0.0.1\",\n  \"main\": \"index.ts\",\n  \"scripts\": {\n    \"format\": \"prettier --write \\\"src/**/*.{ts,tsx}\\\"\",\n    \"tsx\": \"tsx --env-file=.env.local\",\n    \"start\": \"tsx --env-file=.env.local src/run.ts\",\n    \"api\": \"tsx --env-file=.env.local src/api.ts\",\n    \"docker\": \"tsx src/run.ts\",\n    \"test\": \"echo \\\"Error: no test specified\\\" && exit 1\"\n  },\n  \"author\": \"\",\n  \"license\": \"ISC\",\n  \"description\": \"\",\n  \"devDependencies\": {\n    \"@ianvs/prettier-plugin-sort-imports\": \"^4.4.1\",\n    \"@types/cors\": \"^2.8.17\",\n    \"@types/express\": \"^4.17.21\",\n    \"@types/lodash-es\": \"^4.17.12\",\n    \"@types/node\": \"^22.13.0\",\n    \"@types/uuid\": \"^9.0.8\",\n    \"prettier\": \"^3.4.2\",\n    \"tsx\": \"^4.19.2\",\n    \"typescript\": \"^5.7.3\"\n  },\n  \"dependencies\": {\n    \"@ai-sdk/fireworks\": \"^0.1.14\",\n    \"@ai-sdk/openai\": \"^1.1.9\",\n    \"@mendable/firecrawl-js\": \"^1.16.0\",\n    \"ai\": \"^4.1.17\",\n    \"cors\": \"^2.8.5\",\n    \"express\": \"^4.18.3\",\n    \"js-tiktoken\": \"^1.0.17\",\n    \"lodash-es\": \"^4.17.21\",\n    \"p-limit\": \"^6.2.0\",\n    \"uuid\": \"^9.0.1\",\n    \"zod\": \"^3.24.1\"\n  },\n  \"engines\": {\n    \"node\": \"22.x\"\n  }\n}\n"
+        }
+      ]
     },
     {
       "repository": "langchain-ai/open_deep_research",
@@ -209,7 +435,21 @@
       "updated_at": "2026-10-16T09:31:25Z",
       "description": null,
       "language": "Python",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/langchain-ai/open_deep_research/main/LICENSE",
+          "sha256": "3404cb66935968edefe1149c9bfcb44bd8532c437c01ac095ec53b6e195ce110",
+          "evidence": "MIT License\n\nCopyright (c) 2025 LangChain\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/langchain-ai/open_deep_research/main/pyproject.toml",
+          "sha256": "57454bd01a58641b931f6879aa13030e798cfcdffe06c46ea22d606d4b667f6a",
+          "evidence": "[project]\nname = \"open_deep_research\"\nversion = \"0.0.16\"\ndescription = \"Planning, research, and report generation.\"\nauthors = [\n    { name = \"Lance Martin\" }\n]\nreadme = \"README.md\"\nlicense = { text = \"MIT\" }\nrequires-python = \">=3.10\"\ndependencies = [\n    \"langgraph>=0.5.4\",\n    \"langchain-community>=0.3.9\",\n    \"langchain-openai>=0.3.28\",\n    \"langchain-anthropic>=0.3.15\",\n    \"langchain-mcp-adapters>=0.1.6\",\n    \"langchain-deepseek>=0.1.2\",\n    \"langchain-tavily\",\n    \"langchain-groq>=0.2.4\",\n    \"openai>=1.99.2\",\n    \"tavily-python>=0.5.0\",\n    \"arxiv>=2.1.3\",\n    \"pymupdf>=1.25.3\",\n    \"xmltodict>=0.14.2\",\n    \"linkup-sdk>=0.2.3\",\n    \"duckduckgo-search>=3.0.0\",\n    \"exa-py>=1.8.8\",\n    \"requests>=2.32.3\",\n    \"beautifulsoup4==4.14.3\",\n    \"python-dotenv>=1.0.1\",\n    \"pytest\",\n    \"httpx>=0.24.0\",\n    \"markdownify>=0.11.6\",\n    \"azure-identity>=1.21.0\",\n    \"azure-search>=1.0.0b2\",\n    \"azure-search-documents>=11.5.2\",\n    \"rich>=13.0.0\",\n    \"langgraph-cli[inmem]>=0.3.1\",\n    \"langsmith>=0.3.37\",\n    \"langchain-google-vertexai>=2.0.25\",\n    \"langchain-google-genai>=2.1.5\",\n    \"ipykernel>=6.29.5\",\n    \"supabase>=2.15.3\",\n    \"mcp>=1.9.4\",\n    \"langchain-aws>=0.2.28\",\n    \"pandas>=2.3.1\",\n]\n\n[project.optional-dependencies]\ndev = [\"mypy>=1.11.1\", \"ruff>=0.6.1\"]\n\n[build-system]\nrequires = [\"setuptools>=73.0.0\", \"wheel\"]\nbuild-backend = \"setuptools.build_meta\"\n\n[tool.setuptools]\npackages = [\"open_deep_research\", \"legacy\", \"tests\"]\n\n[tool.setuptools.package-dir]\n\"open_deep_research\" = \"src/open_deep_research\"\n\"legacy\" = \"src/legacy\"\n\"tests\" = \"tests\"\n\n[tool.setuptools.package-data]\n\"*\" = [\"py.typed\"]\n\n[tool.ruff]\nlint.select = [\n    \"E\",    # pycodestyle\n    \"F\",    # pyflakes\n    \"I\",    # isort\n    \"D\",    # pydocstyle\n    \"D401\", # First line should be in imperative mood\n    \"T201\",\n    \"UP\",\n]\nlint.ignore = [\n    \"UP006\",\n    \"UP007\",\n    \"UP035\",\n    \"D417\",\n    \"E501\",\n]\n\n[tool.ruff.lint.per-file-ignores]\n\"tests/*\" = [\"D\", \"UP\"]\n\n[tool.ruff.lint.pydocstyle]\nconvention = \"google\"\n"
+        }
+      ]
     },
     {
       "repository": "SkyworkAI/DeepResearchAgent",
@@ -220,7 +460,21 @@
       "updated_at": "2026-10-16T08:32:07Z",
       "description": "DeepResearchAgent is a hierarchical multi-agent system designed not only for deep research tasks but also for general-purpose task solving. The framework leverages a top-level planning agent to coordinate multiple specialized lower-level agents, enabling automated task decomposition and efficient execution across diverse and complex domains.",
       "language": "Python",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/SkyworkAI/DeepResearchAgent/main/LICENSE",
+          "sha256": "a4da7df69185cdebea1f55f7cfa91cb78acdf0673de38126357f54f3a2e9ab8d",
+          "evidence": "MIT License\n\nCopyright (c) 2025 AgentOrchestra\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR O"
+        },
+        {
+          "path": "requirements.txt",
+          "url": "https://raw.githubusercontent.com/SkyworkAI/DeepResearchAgent/main/requirements.txt",
+          "sha256": "e07285980c9f2000133309fc387a35765f362b329c6aa9eb6dc5a70c3695a124",
+          "evidence": "# Core dependencies\nlangchain>=0.3.75\nlangchain-openai>=1.0.3\nlangchain-anthropic>=1.1.0\nlangchain_google_genai>=3.0.3\nlangchain_mcp_adapters>=0.1.13\nlangchain_community>=0.4.1\nlanggraph>=0.0.20\nmmengine>=0.10.0\ngoogle-generativeai>=0.8.5\n\n# LLM providers\nopenai>=1.0.0\nanthropic>=0.69.0\n\n# Async utilities\naiohttp>=3.8.0\nasyncio-mqtt>=0.13.0\naiofiles>=23.0.0\nasyncio_atexit>=1.0.1\n\n# HTTP and networking\nrequests>=2.28.0\nhttpx>=0.24.0\n\n# Performance monitoring (optional)\npsutil>=5.9.0\n\n# Development dependencies\npytest>=7.0.0\npytest-asyncio>=0.21.0\nblack>=23.0.0\nflake8>=6.0.0\n\n# Search engines\nbaidusearch>=1.0.3\nddgs>=9.10.0\ngooglesearch-python>=1.3.0\ncrawl4ai>=0.7.4\nfirecrawl>=4.3.1\nmarkitdown[all]>=0.1.3\n\n# Trading and financial data\nalpaca-py>=0.43.0\npandas>=2.3.2\ndatasets>=4.0.0\njoblib>=1.5.2\nscikit-learn>=1.7.1\ntorch>=2.1.2\ntorchvision>=0.16.2\ntorchaudio>=2.1.2\ntorchmetrics>=1.2.1\ntransformers==4.36.2\npandas_market_calendars>=5.1.0\nakshare>=1.16.98\njson5>=0.12.1\npython-dotenv>=1.1.1\niopath>=0.1.10\ngymnasium>=1.2.0\nnumpy>=1.26.4\ncamelot-py>=1.0.0\nlibrosa>=0.11.0\ninflection>=0.5.1\nboltons>=25.0.0\nhtml2text\nfaiss-cpu>=1.12.0\nscrapy>=2.13.3\nbeautifulsoup4>=4.13.5\n\n# GitHub integration\nPyGithub>=2.8.1\nGitPython>=3.1.45\n\n# SVG processing\ncairosvg>=2.8.2\n\n# Video recording dependencies\nimageio>=2.37.0\nimageio-ffmpeg>=0.6.0\n\n# Mobile dependencies\nadbutils>=2.10.2\nav>=15.1.0\n\n# Binance dependencies\nbinance-sdk-derivatives-trading-usds-futures\nbinance-sdk-derivatives-trading-coin-futures\nbinance-sdk-spot\nbinance-connector\nwebsocket-client\n\n# tushare\ntushare>=1.4.24\n\n# alpaca\nalpaca-py>=0.43.0\n\n# akshare\nakshare>=1.17.44\n\n# Hyperliquid dependencies\nhyperliquid-python-sdk\n\n# Visualization dependencies\nflask>=3.0.0\nplotly>=5.18.0\n\nTA-lib>=0.6.8\ndiskcache>=5.6.3\nstreamlit>=1.51.0\njsonlines>=4.0.0\nseaborn>=0.13.2\nwatchdog>=6.0.0\npipmaster>=1.0.10\ngraspologic>=3.4.4\nnano-vectordb>=0.0.4.3\npylatexenc>=2.10\nmathruler>=0.1.0\ndirtyjson>=1.0.8\nbacktrader\nempyrical\npolars"
+        }
+      ]
     },
     {
       "repository": "Alibaba-NLP/DeepResearch",
@@ -231,7 +485,21 @@
       "updated_at": "2026-10-16T08:00:43Z",
       "description": "Tongyi Deep Research, the Leading Open-source Deep Research Agent",
       "language": "Python",
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/Alibaba-NLP/DeepResearch/main/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "evidence": "                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii"
+        },
+        {
+          "path": "requirements.txt",
+          "url": "https://raw.githubusercontent.com/Alibaba-NLP/DeepResearch/main/requirements.txt",
+          "sha256": "ca7259b194d9f6dab1c6ece5a9f17e9dc7ca4d6ad14cfe4fdfcfcfab1f4afcee",
+          "evidence": "aiofiles==24.1.0\naiohappyeyeballs==2.6.1\naiohttp==3.12.15\naiosignal==1.4.0\nalibabacloud-credentials==1.0.2\nalibabacloud-credentials-api==1.0.0\nalibabacloud-docmind-api20220711==1.4.11\nalibabacloud_gateway_spi==0.0.3\nalibabacloud-tea==0.4.3\nalibabacloud-tea-openapi==0.4.1\nalibabacloud_tea_util==0.3.13\naliyun-python-sdk-core==2.16.0\naliyun-python-sdk-kms==2.16.5\nannotated-types==0.7.0\nanyio==4.10.0\nAPScheduler==3.11.0\nastor==0.8.1\nasync-timeout==5.0.1\nattrs==25.3.0\nblake3==1.0.5\ncachetools==6.2.0\ncbor2==5.7.0\ncertifi==2025.8.3\ncffi==2.0.0\ncharset-normalizer==3.4.3\nclick==8.2.1\ncloudpickle==3.1.1\ncompressed-tensors==0.10.2\ncrcmod==1.7\ncryptography==44.0.3\ncupy-cuda12x==13.6.0\ndarabonba-core==1.0.3\ndashscope==1.24.4\ndepyf==0.19.0\ndill==0.4.0\ndiskcache==5.6.3\ndistro==1.9.0\ndnspython==2.8.0\neinops==0.8.1\nemail-validator==2.3.0\net_xmlfile==2.0.0\neval_type_backport==0.2.2\nexceptiongroup==1.3.0\nfastapi==0.116.1\nfastapi-cli==0.0.11\nfastapi-cloud-cli==0.1.5\nfastrlock==0.8.3\nfastuuid==0.12.0\nfilelock==3.19.1\nfrozendict==2.4.6\nfrozenlist==1.7.0\nfsspec==2025.9.0\ngguf==0.17.1\nh11==0.16.0\nhf-xet==1.1.10\nhttpcore==1.0.9\nhttptools==0.6.4\nhttpx==0.28.1\nhuggingface-hub==0.34.4\nidna==3.10\nimportlib_metadata==8.7.0\ninteregular==0.3.3\nJinja2==3.1.6\njiter==0.10.0\njmespath==0.10.0\njson5==0.12.1\njsonlines==4.0.0\njsonschema==4.25.1\njsonschema-specifications==2025.9.1\nlark==1.2.2\nlitellm==1.77.1\nllguidance==0.7.30\nllvmlite==0.44.0\nlm-format-enforcer==0.10.12\nlxml==6.0.1\nmarkdown-it-py==4.0.0\nMarkupSafe==3.0.2\nmdurl==0.1.2\nmistral_common==1.8.5\nmodelscope==1.30.0\nmpmath==1.3.0\nmsgpack==1.1.1\nmsgspec==0.19.0\nmultidict==6.6.4\nnetworkx==3.4.2\nninja==1.13.0\nnumba==0.61.2\nnumpy==2.2.6\nnvidia-cublas-cu12==12.6.4.1\nnvidia-cuda-cupti-cu12==12.6.80\nnvidia-cuda-nvrtc-cu12==12.6.77\nnvidia-cuda-runtime-cu12==12.6.77\nnvidia-cudnn-cu12==9.5.1.17\nnvidia-cufft-cu12==11.3.0.4\nnvidia-cufile-cu12==1.11.1.6\nnvidia-curand-cu12==10.3.7.77\nnvidia-cusolver-cu12==11.7.1.2\nnvidia-cusparse-cu12==12.5.4.2\nnvidia-cusparselt-cu12==0.6.3\nnvidia-nccl-cu12==2.26.2\nnvidia-nvjitlink-cu12==12.6.85\nnvidia-nvtx-cu12==12.6.77\nopenai==1.99.5\nopenai-harmony==0.0.4\nopencv-python-headless==4.12.0.88\nopenpyxl==3.1.5\noutlines_core==0.2.10\npackaging==25.0\npandas==2.3.2\npartial-json-parser==0.2.1.1.post6\npdfminer.six==20250506\npdfplumber==0.11.7\npillow==11.3.0\npip==25.2\nprometheus_client==0.22.1\nprometheus-fastapi-instrumentator==7.1.0\npropcache==0.3.2\nprotobuf==6.32.1\npsutil==7.0.0\npy-cpuinfo==9.0.0\npybase64==1.4.2\npycountry==24.6.1\npycparser==2.23\npycryptodome==3.23.0\npydantic==2.11.9\npydantic_core==2.33.2\npydantic-extra-types==2.10.5\nPygments==2.19.2\npypdfium2==4.30.0\npython-dateutil==2.9.0.post0\npython-dotenv==1.1.1\npython-json-logger==3.3.0\npython-multipart==0.0.20\npython-pptx==1.0.2\npytz==2025.2\nPyYAML==6.0.2\npyzmq==27.1.0\nqwen-agent==0.0.26\nray==2.49.1\nreferencing==0.36.2\nregex==2025.9.1\nrequests==2.32.5\nrich==14.1.0\nrich-toolkit==0.15.1\nrignore==0.6.4\nrpds-py==0.27.1\nsafetensors==0.6.2\nsandbox-fusion==0.3.7\nscipy==1.15.3\nsentencepiece==0.2.1\nsentry-sdk==2.37.1\nsetproctitle==1.3.7\nsetuptools==78.1.1\nshellingham==1.5.4\nsix==1.17.0\nsniffio==1.3.1\nsoundfile==0.13.1\nsoxr==1.0.0\nstarlette==0.47.3\nsympy==1.14.0\ntabulate==0.9.0\ntenacity==9.1.2\ntiktoken==0.11.0\ntokenizers==0.22.0\ntorch==2.7.1\ntorchaudio==2.7.1\ntorchvision==0.22.1\ntqdm==4.67.1\ntransformers==4.56.1\ntriton==3.3.1\ntyper==0.17.4\ntyping_extensions==4.15.0\ntyping-inspection==0.4.1\ntzdata==2025.2\ntzlocal==5.3.1\nurllib3==2.5.0\nuvicorn==0.35.0\nuvloop==0.21.0\nvllm==0.10.1\nwatchfiles==1.1.0\nwebsocket-client==1.8.0\nwebsockets==15.0.1\nwheel==0.45.1\nxformers==0.0.31\nxgrammar==0.1.21\nxlsxwriter==3.2.8\nyarl==1.20.1\nzipp==3.23.0\n"
+        }
+      ]
     },
     {
       "repository": "qx-labs/agents-deep-research",
@@ -242,7 +510,27 @@
       "updated_at": "2026-10-13T09:58:46Z",
       "description": "An implementation of iterative deep research using the OpenAI Agents SDK",
       "language": "Python",
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/qx-labs/agents-deep-research/main/LICENSE",
+          "sha256": "c878a40b761365aef6ebf2756b591c2648acc26c23bb648d4f5a22b5145016ff",
+          "evidence": "                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/qx-labs/agents-deep-research/main/pyproject.toml",
+          "sha256": "0a20cb8362d193b097d8a5d8e757f92c4b24f0f12a19bd4e24d8d1ae16f03226",
+          "evidence": "[build-system]\nrequires = [\"setuptools>=42\", \"wheel\"]\nbuild-backend = \"setuptools.build_meta\" \n\n[tool.pytest.ini_options]\nasyncio_mode = \"auto\"\nasyncio_default_fixture_loop_scope = \"function\""
+        },
+        {
+          "path": "requirements.txt",
+          "url": "https://raw.githubusercontent.com/qx-labs/agents-deep-research/main/requirements.txt",
+          "sha256": "15d24fdb2829fe5b7fd22a9a18ebc5d6402d830b91aca707c5bf6f5709654235",
+          "evidence": "openai\npython-dotenv\naiohttp\nasyncio\nbeautifulsoup4\nlxml\npydantic\nopenai-agents\nmd2pdf"
+        }
+      ]
     },
     {
       "repository": "Cranot/deep-research",
@@ -253,7 +541,21 @@
       "updated_at": "2026-10-07T07:29:14Z",
       "description": "Turn any question into multi-agent exploration. Recursive Claude agents that spawn sub-agents.",
       "language": "Python",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/Cranot/deep-research/main/LICENSE",
+          "sha256": "286580e0226814422b9d899c8e423ac0f23a4fe6d5435e4933fc88d870f52deb",
+          "evidence": "MIT License\n\nCopyright (c) 2025-2026 Dimitris Mitsos (Cranot) / AgentsKB\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE F"
+        },
+        {
+          "path": "pyproject.toml",
+          "url": "https://raw.githubusercontent.com/Cranot/deep-research/main/pyproject.toml",
+          "sha256": "6e050bc16c12bf5c619cf482e25d7fe409eca8b71879b21f040dd985fff7dadb",
+          "evidence": "[project]\nname = \"deep-research\"\nversion = \"0.1.0\"\ndescription = \"Fractal exploration of any question through recursive AI agents\"\nreadme = \"README.md\"\nrequires-python = \">=3.10\"\nlicense = \"MIT\"\nauthors = [\n    { name = \"Dimitris Mitsos (Cranot)\" }\n]\nkeywords = [\"ai\", \"research\", \"agents\", \"claude\", \"gemini\"]\n\ndependencies = [\n    \"claude-agent-sdk>=0.1.0\",\n    \"google-genai[aiohttp]>=1.0.0\",\n    \"openai>=1.0.0\",  # Azure OpenAI + OpenRouter\n    \"pydantic>=2.0.0\",\n    \"python-dotenv>=1.0.0\",  # cli.py calls load_dotenv() at import time\n    \"pyyaml>=6.0\",  # core/strategy.py parses YAML strategy definitions\n    \"rich>=13.0.0\",  # Beautiful terminal output\n    \"typer>=0.9.0\",  # CLI framework\n]\n\n[project.optional-dependencies]\ndev = [\n    \"pytest>=7.0.0\",\n    \"pytest-asyncio>=0.21.0\",\n    \"pytest-cov>=4.0.0\",\n    \"ruff>=0.6.0,<1.0\",\n    \"mypy>=1.0.0\",\n]\n\n[project.scripts]\ndeep-research = \"deep_research.cli:main\"\n\n[build-system]\nrequires = [\"hatchling\"]\nbuild-backend = \"hatchling.build\"\n\n[tool.hatch.build.targets.wheel]\npackages = [\"src/deep_research\"]\n\n[tool.ruff]\nline-length = 100\ntarget-version = \"py310\"\n\n[tool.ruff.lint]\n# Pinned explicitly so CI does not drift when ruff changes its defaults.\n# pycodestyle errors + pyflakes + isort.\nselect = [\"E4\", \"E7\", \"E9\", \"F\", \"I\"]\n\n[tool.ruff.lint.per-file-ignores]\n# load_dotenv() must run before the provider modules are imported, so the\n# remaining imports are deliberately below it.\n\"src/deep_research/cli.py\" = [\"E402\"]\n\n[tool.pytest.ini_options]\nasyncio_mode = \"auto\"\n"
+        }
+      ]
     },
     {
       "repository": "deepseek-ai/deepseek-harness",
@@ -264,7 +566,21 @@
       "updated_at": "2026-10-16T10:15:23Z",
       "description": "DeepSeek Harness: Everything is a Plugin.",
       "language": "TypeScript",
-      "license": "MIT"
+      "license": "MIT",
+      "source_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/master/LICENSE",
+          "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
+          "evidence": "MIT License\n\nCopyright (c) 2026 DeepSeek\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nL"
+        },
+        {
+          "path": "package.json",
+          "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/master/package.json",
+          "sha256": "8bb7e0f4693c9d68f0a3200e0503c03f25f30090bdfe373ccfc9a71b706158dc",
+          "evidence": "{\n  \"name\": \"@deepseek-ai/dsh-root\",\n  \"version\": \"0.2.1-alpha.4\",\n  \"license\": \"MIT\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"packageManager\": \"pnpm@11.28.5\",\n  \"engines\": {\n    \"node\": \"^22.19.0 || >=24.0.0\"\n  },\n  \"workspaces\": [\n    \"vendor/*\",\n    \"packages/*/*\",\n    \"native/system\",\n    \"native/system/packages/*\",\n    \"apps/*\",\n    \"website\"\n  ],\n  \"scripts\": {\n    \"prepare:primary-runtime\": \"tsx scripts/primary-runtime/prepare.ts\",\n    \"build\": \"tsx scripts/build.ts\",\n    \"build:artifacts\": \"tsx scripts/build.ts --scope artifacts\",\n    \"build:check\": \"tsx scripts/build.ts --scope check\",\n    \"build:bench\": \"npm run build:native-system && npm run build:lib && tsdown --config-loader native --config benchmarks/tsdown.config.ts\",\n    \"build:official\": \"tsx scripts/build.ts --profile official\",\n    \"build:lib\": \"pnpm run build:lib:host && pnpm run build:lib:client\",\n    \"build:lib:host\": \"node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc -b tsconfig.host.json && tsdown --config-loader native --env.DSH_BUILD_FACE host && pnpm --filter @deepseek-ai/dsh-desktop run bundle\",\n    \"build:lib:client\": \"tsc -b tsconfig.client.json && tsdown --config-loader native --env.DSH_BUILD_FACE client\",\n    \"build:web\": \"pnpm --filter @deepseek-ai/dsh-web-frontend run build\",\n    \"build:desktop\": \"pnpm --filter @deepseek-ai/dsh-desktop run build\",\n    \"dev:desktop\": \"pnpm --filter @deepseek-ai/dsh-desktop run dev\",\n    \"start:desktop\": \"pnpm --filter @deepseek-ai/dsh-desktop run start\",\n    \"prepare:desktop\": \"pnpm --filter @deepseek-ai/dsh-desktop run prepare:package\",\n    \"package:desktop\": \"pnpm --filter @deepseek-ai/dsh-desktop run package\",\n    \"package:desktop:dir\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:dir\",\n    \"package:desktop:mac:arm64\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:mac:arm64\",\n    \"package:desktop:mac:arm64:unsigned\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:mac:arm64:unsigned\",\n    \"package:desktop:mac:arm64:dir\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:mac:arm64:dir\",\n    \"package:desktop:mac:x64\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:mac:x64\",\n    \"package:desktop:mac:x64:unsigned\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:mac:x64:unsigned\",\n    \"package:desktop:mac:x64:dir\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:mac:x64:dir\",\n    \"package:desktop:win:x64\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:win:x64\",\n    \"package:desktop:win:x64:unsigned\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:win:x64:unsigned\",\n    \"package:desktop:win:x64:dir\": \"pnpm --filter @deepseek-ai/dsh-desktop run package:win:x64:dir\",\n    \"upload:mac:arm64\": \"pnpm --filter @deepseek-ai/dsh-desktop run upload:mac:arm64\",\n    \"upload:mac:x64\": \"pnpm --filter @deepseek-ai/dsh-desktop run upload:mac:x64\",\n    \"upload:win:x64\": \"pnpm --filter @deepseek-ai/dsh-desktop run upload:win:x64\",\n    \"upload:latest:mac:arm64\": \"pnpm --filter @deepseek-ai/dsh-desktop run upload:latest:mac:arm64\",\n    \"upload:latest:mac:x64\": \"pnpm --filter @deepseek-ai/dsh-desktop run upload:latest:mac:x64\",\n    \"upload:latest:win:x64\": \"pnpm --filter @deepseek-ai/dsh-desktop run upload:latest:win:x64\",\n    \"clean\": \"tsx scripts/clean.ts\",\n    \"change-scope\": \"tsx scripts/change-scope.ts\",\n    \"typecheck\": \"tsx scripts/build.ts --scope typecheck\",\n    \"typecheck:contracts-ready\": \"tsc -b tsconfig.client.json\",\n    \"lint\": \"tsx scripts/compile-referenced-projects.ts host-contracts && npm run lint:contracts-ready\",\n    \"lint:contracts-ready\": \"tsx scripts/run-oxlint.ts .\",\n    \"lint:fix\": \"tsx scripts/compile-referenced-projects.ts host-contracts && npm run lint:fix:contracts-ready\",\n    \"lint:fix:contracts-ready\": \"tsx scripts/run-oxlint.ts --config .oxlintrc.staged.json packages/typert/generator/tests/fixtures/type-model --fix && tsx scripts/run-oxlint.ts . --fix\",\n    \"duplication\": \"jscpd --config .jscpd.json packages scripts\",\n    \"test\": \"pnpm run build:native-system && vitest run\",\n    \"test:coverage\": \"pnpm run build:native-system && vitest run --coverage\",\n    \"build:native-system\": \"tsx native/system/scripts/build.ts --host-addon-only\",\n    \"test:coverage:partitioned\": \"tsx scripts/run-coverage-partitions.ts\",\n    \"test:e2e\": \"vitest run --config vitest.e2e.config.ts\",\n    \"test:bench\": \"npm run build:bench && npm run build:web && npm run test:bench:built\",\n    \"test:bench:built\": \"vitest run --config vitest.bench.config.ts\",\n    \"test:bench:memory\": \"tsx scripts/run-memory-pressure-bench.ts\",\n    \"test:expected\": \"vitest run --config vitest.expected.config.ts\",\n    \"test:expected:refresh\": \"DSH_SNAPSHOT=refresh vitest run --config vitest.expected.config.ts\",\n    \"test:approval-policy\": \"node --test .github/review-ownership/check-approval.test.mjs .github/review-ownership/blame-ownership.test.mjs .github/review-ownership/author-weight.test.mjs\",\n    \"test:issue-management\": \"node .github/issue-management/policy.test.mjs\",\n    \""
+        }
+      ]
     }
   ]
 }

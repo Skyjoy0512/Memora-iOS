@@ -13,10 +13,14 @@ extension MemoraModel {
     guard !isRestoring, !isStoreProtected else {
       return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
     }
+    let personPolicy = agentPluginPolicies[messageID].flatMap { $0.personID == nil ? nil : $0 }
     let permitted = Self.meetings(in: scope, from: meetings)
-      .filter { RecordAccessPolicy.allows($0.effectivePrivacy, purpose: purpose) }
-    let permittedTasks = self.permittedTasks(for: purpose, scope: scope)
-    let entries = scope == .all ? lifeLogEntries.filter { allowsJournalAccess($0, purpose: purpose) } : []
+      .filter { RecordAccessPolicy.allows($0.effectivePrivacy, purpose: purpose)
+        && (personPolicy == nil || personPolicy?.recordIDs.contains($0.id) == true) }
+    let permittedTasks = self.permittedTasks(for: purpose, scope: scope).filter { task in
+      personPolicy == nil || task.meetingID.map { personPolicy?.recordIDs.contains($0) == true } == true
+    }
+    let entries = scope == .all && personPolicy == nil ? lifeLogEntries.filter { allowsJournalAccess($0, purpose: purpose) } : []
     var lines: [String] = []
     var references: [RecordPrivacyTarget] = []
     switch tool {
@@ -69,15 +73,7 @@ extension MemoraModel {
       lines = permittedTasks.filter { call.bool("include_completed") || !$0.isCompleted }.prefix(80)
         .map { "id=\($0.id) \($0.title) \($0.detail) / 担当: \($0.assignee ?? "未定") / 期限: \($0.dueDate?.formatted(date: .numeric, time: .omitted) ?? "未定") / \($0.statusLabel)" }
     case .readPerson:
-      markCloudProvenanceIncomplete(messageID)
-      let name = call.string("name")
-      let peopleIDs = Set(permitted.compactMap(\.participantIDs).flatMap { $0 })
-      let visiblePeople = people.filter { peopleIDs.contains($0.id) }
-      if name.isEmpty { lines = visiblePeople.map(\.name) }
-      else if let person = visiblePeople.first(where: { $0.name.localizedStandardContains(name) }) {
-        lines = permitted.filter { $0.participantIDs?.contains(person.id) == true }
-          .map { "id=\($0.id) 「\($0.displayTitle)」 \($0.shortSummaryPreview)" }
-      }
+      return readPersonTool(call, messageID: messageID, compact: false, purpose: purpose)
     case .reviewPeriod:
       guard let period = ReviewPeriod.parse(start: call.string("start_date"), end: call.string("end_date")) else {
         return AgentToolOutcome(text: "start_date/end_dateをYYYY-MM-DDで指定してください。期間は最大366日です。", isError: true)

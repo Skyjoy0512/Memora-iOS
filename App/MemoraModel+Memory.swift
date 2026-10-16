@@ -107,7 +107,7 @@ extension MemoraModel {
     let open = Set(aiMessages.filter { $0.role == .user }.map(\.text))
 
     var scored: [(entry: AIConversationEntry, score: Int)] = []
-    for entry in aiHistory where !open.contains(entry.question) {
+    for entry in aiHistory where !open.contains(entry.question) && canReuseCloudConversation(entry.cloudProvenance) {
       let text = entry.question + "\n" + entry.answer
       let score = words.filter { text.localizedCaseInsensitiveContains($0) }.count
       if score > 0 {
