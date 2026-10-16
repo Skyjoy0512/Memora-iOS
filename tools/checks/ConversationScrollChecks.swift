@@ -7,6 +7,13 @@ enum ConversationScrollChecks {
     precondition(state.update(.init(offset: 0, height: 300, contentHeight: 300), isUserDriven: false))
     precondition(state.update(.init(offset: 0, height: 300, contentHeight: 1_000), isUserDriven: false))
     precondition(state.followsLatest)
+    // A held finger does not make a layout-only resize a scroll gesture.
+    var held = ConversationScrollState()
+    _ = held.update(.init(offset: 700, height: 300, contentHeight: 1_000), isUserDriven: false)
+    precondition(held.update(.init(offset: 700, height: 180, contentHeight: 1_000), isUserDriven: true))
+    precondition(held.followsLatest)
+    precondition(held.update(.init(offset: 700, height: 180, contentHeight: 1_200), isUserDriven: true))
+    precondition(held.followsLatest)
     // Opening the keyboard preserves following even before scrolling catches up.
     precondition(state.update(.init(offset: 700, height: 180, contentHeight: 1_000), isUserDriven: false))
     precondition(state.followsLatest)

@@ -194,3 +194,28 @@ Xcode test targetはProject.jsonに存在せず、`bitrig test -list`はexit 78�
 `tools/checks`の追加/拡張: Motion policy、LoadingPolicy、IncrementalMarkdown、ConversationScroll、NativeAIInterface、AgentBudget、AgentConversationLoop、CatalogPresentation、ProjectSourceAvailability各fixture、MarkdownStreamingBenchmark、motion-loading/next-generation runner。すべて合成データで、外部APIは呼ばない。
 
 ドキュメント: 本報告、NATIVE_AGENT_HARNESS.md、PERFORMANCE_OPTIMIZATION.md。最初のbaseline Debug build（08-28-27-f4f24c0b）も成功した。コミットはPhase 0〜5で33ef840 / 87e99b6 / 5636776 / ff39575 / 017b859 / 6e27053、Phase 6は完了報告参照。pushは実行していない。
+
+## 追加検証 — 取消と読込ライフサイクル（2026-10-16）
+
+基準 `203a3d0`、main、開始時クリーン。本文読込のTask所有と状態反映を`ProjectSourceTextLoader`へ分離し、ProjectSourceDetailViewとDEBUG fixtureの両方で使用する。stopは要求tokenを失効させて即座に停止理由/再試行を表示し、その後Taskを取消す。非協調的なreaderが遅れて成功/失敗しても表示を戻さない。参照名・sourceの再確認はviewから渡すクロージャと既存tokenの両方を維持。端末内ファイルの読取に変わりはなく、保存形式・権限・外部送信に変更なし。
+
+LoadingContainerは表示段階を要求ID/状態へ関連付ける。前の長い要求で到達した5秒段階を、次の高速要求の最初の描画に引き継がない。ConversationScrollStateは、ユーザー操作phaseでもoffsetが変わらずlayoutだけが変わった場合、追従意図を変更しない。指を置いたままのkeyboard resize/本文成長をfixtureで確認する。
+
+DEBUG画面は同じ本番loaderへsleepだけのreaderを注入する。手動停止用の最大60秒待機を追加し、短い停止可能期間に依存しない検証へ変更。保存しないTextFieldと完了操作でkeyboardを確認可能にした。実ユーザーデータ・キー・ネットワークは使用しない。
+
+追加host検証: `ProjectSourceTextLoaderChecks`成功。実際のloaderとsuspendしたmock readerを使い、A→Bの古い成功、同一sourceのrefresh保持、即時stop、stop後の成功、同じ参照のretry、参照失効、失敗、empty、parent Task取消、古い失敗、新しいTaskを古い完了が消さないこと、取消済み開始の拒否をsleepなしで検証。`run-motion-loading-checks.sh`に組込み。scrollのlayout-only regressionも追加して成功。既存`run-next-generation-checks.sh`全体成功。
+
+追加UI確認（iPhone 17e / iOS 27.1、空の別simulator環境）:
+
+- Homeの実際の下部composerで日本語keyboardの表示を確認。送信しない。小型画面でcomposer/toolbarの位置をscreenshotで確認。
+- メニューを開いてもkeyboardが残る問題を観察したため、RootTabViewのsidebar表示変更時に既存`composerDismissRequests`だけを送るよう修正。タップとedge gestureのどちらにも同じbindingから適用。入力field/選択/IME制御/保存形式は置換しない。
+- 修正後、メニュー表示でAXのkeyboardが消えることを確認。空の小型simulatorへ入力した合成draft（`fixturedraft`）はメニュー開閉後も残った。送信せず、native入力の全選択/削除で消去し、placeholderへ戻ったことを確認。実ユーザーのdraftは使用しない。
+- DEBUG fixtureで本番ProjectSourceTextLoaderを用い、静的skeleton、5秒後の停止、停止直後の理由/再試行表示、200ms再試行成功を操作して確認。停止表示のためにreader完了を待たない。前回の「UI取消操作成功は未確認」はこのfixture範囲で解消。実ファイルI/Oの取消操作成功とは区別する。
+- DEBUGのnative TextFieldでkeyboard表示と完了ボタンによる非表示を確認。検証fieldは保存されない。
+- 最大60秒の合成読込を開始してback、再度fixtureを開くとidle/50ms初期選択へ戻り、旧本文/停止表示/進行中表示がないことを確認。late resultの厳密な拒否は上記suspended-readerテストで確認。
+
+端末切替直後はactive simulator一覧が空/画面が白の期間があったが、後にiPhone 17eのonboarding/アプリを操作できた。取得範囲のrun logにfatal/crash記録なし。クラッシュ原因・起動時間とは断定しない。復帰後はBitrig CLIによる強制再起動を行う必要がなかった。
+
+最終Debug preview成功: `09-07-11-a0111906`。最終Release iOS Simulator build成功: `09-08-58-b2658749`。既存AppIntents metadata警告のみ。motion-loading runnerとnext-generation runnerの成功、`git diff --check`成功。実機の計測・実provider課金・VoiceOver音声読み上げ・実録音/Omiは引き続き未検証。
+
+追加変更ファイル: ProjectSourceTextLoader（新規、Taskとsnapshot所有）、ProjectSourceDetailView（読取をloaderへ委譲）、MemoraLoadingContainer（表示段階を要求へ束縛）、ConversationScrollState（layout-only時の追従意図保持）、RootTabView（sidebarでkeyboard解除）、MotionLoadingGalleryView（同じloaderでの取消とkeyboard検証）、ProjectSourceTextLoaderChecks（新規）、ConversationScrollChecks、run-motion-loading-checks.sh。本追加の本文読込コミットは`997e79f`。スクロール/メニュー修正のコミットは本追加の完了報告参照。

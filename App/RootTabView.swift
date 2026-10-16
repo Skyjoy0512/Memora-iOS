@@ -42,6 +42,9 @@ struct RootTabView: View {
     } content: {
       tabSurface
     }
+    .onChange(of: isSidebarOpen) { _, open in
+      if open { model.composerDismissRequests += 1 }
+    }
     .onChange(of: model.selectedTab) { _, _ in
       closeSidebar()
       // A screen that was scrolled when you left it should not hide the bar on
