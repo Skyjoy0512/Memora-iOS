@@ -12,7 +12,8 @@ struct AIHistoryView: View {
   var delete: (UUID) -> Void
 
   var body: some View {
-    let filteredEntries = AIHistorySearch.matching(entries, query: query)
+    let scopedEntries = entries.filter { $0.episode?.workspaceID == model.currentTeamID && $0.episode?.personIDs.first == model.aiPersonScopeID }
+    let filteredEntries = AIHistorySearch.matching(scopedEntries, query: query)
     let linkedIDs = Set(entries.compactMap(\.webResearchReportID))
     let legacyReports = model.webResearchReports.filter {
       !linkedIDs.contains($0.id) && (query.isEmpty || $0.query.localizedCaseInsensitiveContains(query) || $0.answer.localizedCaseInsensitiveContains(query))

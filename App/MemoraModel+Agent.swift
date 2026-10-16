@@ -63,7 +63,7 @@ extension MemoraModel {
     }
 
     let requestID = UUID()
-    let safeHistory = runner.isOnDevice ? (text: "", references: [AIRecordReference]()) : cloudConversationContext()
+    let safeHistory = runner.isOnDevice ? (text: "", references: [AIRecordReference]()) : cloudConversationContext(for: trimmed)
     aiChatRequestID = requestID
     var placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
     placeholder.isAgentReply = true

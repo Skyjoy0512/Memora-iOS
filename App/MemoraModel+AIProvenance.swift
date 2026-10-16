@@ -21,7 +21,7 @@ extension MemoraModel {
       resolve: recordReference, allows: { allowsRecordAccess($0, purpose: .cloudAI) })
   }
 
-  func cloudConversationContext() -> (text: String, references: [AIRecordReference]) {
+  func cloudConversationContext(for questionText: String = "") -> (text: String, references: [AIRecordReference]) {
     var question: String?
     var exchanges: [(String, [AIRecordReference])] = []
     for message in aiMessages {
@@ -30,7 +30,9 @@ extension MemoraModel {
             canReuseCloudConversation(message.cloudProvenance), let provenance = message.cloudProvenance else { continue }
       exchanges.append(("利用者: \(question)\n回答: \(message.text)", provenance.references))
     }
-    let recent = Array(exchanges.suffix(3))
+    let episode = relatedEpisodeContext(for: questionText, budget: 1_500, cloud: true)
+    if !episode.text.isEmpty { exchanges.insert((episode.text, episode.references), at: 0) }
+    let recent = Array(exchanges.suffix(4))
     let references = Array(Set(recent.flatMap { $0.1 }))
     guard references.count <= 256 else { return ("", []) }
     return (Self.trailingHistory(recent.map { $0.0 }.joined(separator: "\n"), budget: 3_000), references)

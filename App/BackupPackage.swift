@@ -20,6 +20,7 @@ enum BackupPackage {
     var lifeLogEntries: [LifeLogEntry]
     var people: [Person]
     var aiHistory: [AIConversationEntry]
+    var aiMemories: [AIMemory]? = nil
     /// Documents and slides. Optional, so a package from before they existed
     /// still restores.
     var documents: [MemoraDocument]?
@@ -104,6 +105,7 @@ enum BackupPackage {
     lifeLogEntries: [LifeLogEntry],
     people: [Person],
     aiHistory: [AIConversationEntry],
+    aiMemories: [AIMemory] = [],
     documents: [MemoraDocument] = [],
     projectSources: [ProjectSource] = [],
     projectChats: [ProjectChatThread] = [],
@@ -170,6 +172,7 @@ enum BackupPackage {
       lifeLogEntries: lifeLogEntries,
       people: people,
       aiHistory: aiHistory,
+      aiMemories: aiMemories,
       documents: documents,
       projectSources: projectSources,
       projectChats: projectChats,

@@ -28,6 +28,7 @@ extension MemoraModel {
     meetings.isEmpty
       && spaces.isEmpty
       && documents.isEmpty
+      && aiMemories.isEmpty
       && projectSources.isEmpty
       && projectChats.isEmpty
       && customSkills.isEmpty
@@ -54,6 +55,7 @@ extension MemoraModel {
     let lifeLogEntries = self.lifeLogEntries
     let people = self.people
     let aiHistory = self.aiHistory
+    let aiMemories = self.aiMemories
     let documents = self.documents
     let projectSources = self.projectSources
     let projectChats = self.projectChats
@@ -68,6 +70,7 @@ extension MemoraModel {
         lifeLogEntries: lifeLogEntries,
         people: people,
         aiHistory: aiHistory,
+        aiMemories: aiMemories,
         documents: documents,
         projectSources: projectSources,
         projectChats: projectChats,
@@ -234,6 +237,7 @@ extension MemoraModel {
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(manifest.lifeLogEntries)),
         (key: StorageKey.people, data: try RecordStore.encoded(manifest.people)),
         (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory)),
+        (key: StorageKey.aiMemories, data: try RecordStore.encoded(manifest.aiMemories ?? aiMemories)),
         (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? [])),
         (key: StorageKey.projectSources, data: try RecordStore.encoded(manifest.projectSources ?? [])),
         (key: StorageKey.projectChats, data: try RecordStore.encoded(manifest.projectChats ?? [])),
@@ -254,6 +258,7 @@ extension MemoraModel {
     lifeLogEntries = manifest.lifeLogEntries
     people = manifest.people
     aiHistory = manifest.aiHistory
+    aiMemories = manifest.aiMemories ?? aiMemories
     documents = manifest.documents ?? []
     projectSources = manifest.projectSources ?? []
     projectChats = manifest.projectChats ?? []

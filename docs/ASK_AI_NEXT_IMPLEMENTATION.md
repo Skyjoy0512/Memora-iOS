@@ -86,3 +86,31 @@ Debug preview成功: 2026-10-16T19-22-53-35668aa7.log (既存metadata警告1件)
 OSS補足: TencentのGitHub SPDXはNOASSERTIONだが取得したLICENSE本文ではMITを
 確認。Supermemoryのroot MITと、商用/配布制限のcomponentは同一視しない。
 公開LICENSE/依存manifestへのURLとハッシュもaudit JSONへ追加した。
+
+## Phase 2 — 長期記憶
+
+AIMemoryにoptional Semantic metadataと最大30世代の編集履歴を追加。旧データを
+書き換えず読める。種類・主語・項目・値・出典・観測/更新/有効期間・状態・確度・
+workspace・機微性・本人確認を保持。有効/更新候補/過去/矛盾/未確認/無効を区別。
+同じ明示項目の異なる有効値は双方を矛盾として残す。自然文から勝手に事実抽出や
+推測更新はしない。編集画面で項目と状態を確認する。機微指定は自動利用しない。
+追加/編集/削除はSQLite保存成功後にモデルを変え、保存失敗を成功扱いにしない。
+
+会話履歴にoptional AIEpisodeを保存。会話ID/日時/依頼/600字以内の抜粋要約/
+人物/記録/資料/元メッセージ/workspace/provenanceを保持。抜粋は事実抽出ではなく
+会話の引用。決定・未決フィールドは推測で埋めない。メモリOFFでは追加利用しない。
+MemoryRetrievalOrchestratorは使い捨てSQLite FTS5/BM25+日本語2-gram、関連上位
+最大5/8件、候補最大5000件。人物/workspaceを先に絞り、出典を再検証してから
+文脈へ入れる。毎回freshな許可済候補を索引化するため削除/編集/失効の古いcacheを
+再利用しない。RAGのProjectSearchIndexとは分離。明確な一致がなければ過去の件を
+断定しない。cloudの過去エピソードも参照fingerprintを実行中の再検証へ渡す。
+
+メモリ設定に検索・状態・種類・機微性・編集履歴・出典・更新日を追加。
+backupにoptional aiMemoriesを加え旧backupで既存memoryを消さない。
+
+検証: MemoryRetrievalChecks成功（旧codec、各状態、期限、機微、scope、日本語FTS5、
+削除、2000件）。ホスト2000件約0.06秒、端末計測ではない。
+既存next-generationチェック全成功。Debug preview成功:
+2026-10-16T19-28-25-4dd2b054.log。途中のForm initializerエラーは修正済み。
+旧履歴で検証可能な出典がないものはcloudへ再送しない。Embedding、抽象的な言い換えの
+精度評価、巨大DBでの実機memory計測は未完了。

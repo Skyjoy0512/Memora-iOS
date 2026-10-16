@@ -973,17 +973,27 @@ extension MemoraModel {
     cloudProvenance: AIConversationProvenance? = nil,
     webResearchReportID: UUID? = nil
   ) {
+    let entryID = UUID()
+    let last = aiMessages.last(where: { $0.role == .assistant })
+    let references = (last?.sources ?? []).compactMap { recordReference(for: .meeting($0.meetingID)) }
+    let provenance = cloudProvenance ?? (last?.isAgentReply == false ? newCloudProvenance(references: references) : nil)
+    let episode = isAIMemoryEnabled ? AIEpisode(id: entryID, sessionID: aiConversationID, date: .now,
+      topic: String(question.prefix(120)), objective: String(question.prefix(240)), summary: String(answer.prefix(600)),
+      personIDs: aiPersonScopeID.map { [$0] } ?? [], recordIDs: (last?.sources ?? []).map(\.meetingID),
+      documentIDs: last?.documentIDs ?? [], sourceMessageIDs: last.map { [$0.id] } ?? [], workspaceID: currentTeamID,
+      provenance: provenance) : nil
     aiHistory.insert(
       AIConversationEntry(
-        id: UUID(),
+        id: entryID,
         question: question,
         answer: answer,
         scopeLabel: scopeLabel,
         engineLabel: engineLabel,
         modelLabel: modelLabel,
         createdAt: .now,
-        cloudProvenance: cloudProvenance,
-        webResearchReportID: webResearchReportID
+        cloudProvenance: provenance,
+        webResearchReportID: webResearchReportID,
+        episode: episode
       ),
       at: 0
     )

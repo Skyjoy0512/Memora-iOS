@@ -7,11 +7,12 @@ struct AIMemoryView: View {
   @State private var isAdding = false
   @State private var newText = ""
   @State private var editing: AIMemory?
-  @State private var editText = ""
+  @State private var query = ""
   @State private var isConfirmingDeleteAll = false
 
   var body: some View {
     @Bindable var model = model
+    let memories = model.visibleAIMemories.filter { query.isEmpty || $0.text.localizedStandardContains(query) }
 
     List {
       Section {
@@ -21,19 +22,18 @@ struct AIMemoryView: View {
       }
 
       Section {
-        if model.aiMemories.isEmpty {
+        if memories.isEmpty {
           Text("まだ何も覚えていません")
             .foregroundStyle(.secondary)
         } else {
-          ForEach(model.aiMemories) { memory in
+          ForEach(memories) { memory in
             Button {
-              editText = memory.text
               editing = memory
             } label: {
               VStack(alignment: .leading, spacing: 4) {
                 Text(memory.text)
                   .foregroundStyle(.primary)
-                Text("\(memory.origin == .agent ? "エージェントが提案" : "あなたが伝えた") · \(memory.createdAt.formatted(date: .abbreviated, time: .omitted))")
+                Text("\(memory.status.label) · \(memory.updatedAt.formatted(date: .abbreviated, time: .omitted))")
                   .font(.caption)
                   .foregroundStyle(.secondary)
               }
@@ -44,7 +44,7 @@ struct AIMemoryView: View {
             .accessibilityHint("タップして編集")
           }
           .onDelete { offsets in
-            model.deleteAIMemories(Set(offsets.map { model.aiMemories[$0].id }))
+            model.deleteAIMemories(Set(offsets.map { memories[$0].id }))
           }
         }
 
@@ -58,7 +58,7 @@ struct AIMemoryView: View {
         Text("この端末だけに保存されます。質問するときに、選んでいるAIへ一緒に送られます。")
       }
 
-      if !model.aiMemories.isEmpty {
+      if !memories.isEmpty {
         Section {
           Button("すべて削除", role: .destructive) {
             isConfirmingDeleteAll = true
@@ -75,15 +75,8 @@ struct AIMemoryView: View {
     } message: {
       Text("役割、好み、よく出てくる人のことなどを短く書きます。")
     }
-    .alert("編集", isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) {
-      TextField("内容", text: $editText)
-      Button("保存") {
-        if let editing { model.updateAIMemory(editing.id, text: editText) }
-      }
-      Button("キャンセル", role: .cancel) {}
-    } message: {
-      Text("空にすると削除されます。")
-    }
+    .sheet(item: $editing) { memory in AIMemoryEditor(memory: memory) }
+    .searchable(text: $query, prompt: "記憶を検索")
     .confirmationDialog("覚えていることをすべて削除しますか？", isPresented: $isConfirmingDeleteAll, titleVisibility: .visible) {
       Button("すべて削除", role: .destructive) { model.deleteAllAIMemories() }
       Button("キャンセル", role: .cancel) {}
