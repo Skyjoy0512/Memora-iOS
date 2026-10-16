@@ -62,7 +62,7 @@ enum CloudAgentTurnDecoder {
   private static func validateFinish(_ reason: String?, allowed: Set<String>) throws {
     if reason == "refusal" || reason == "content_filter" { throw AIAnswerFailure.refused }
     if reason == "length" || reason == "max_tokens" || reason == "model_context_window_exceeded" || reason == "pause_turn" {
-      throw AIAnswerFailure.connectionLost
+      throw AIAnswerFailure.executionLimit
     }
     guard let reason, allowed.contains(reason) else { throw AIAnswerFailure.server }
   }

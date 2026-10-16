@@ -13,6 +13,7 @@ struct CloudStreamAccumulator {
   private var openBlocks: Set<Int> = []
   private var finishReason: String?
   private var receivedBytes = 0
+  private var usage: [String: Any]?
 
   mutating func consume(_ payload: String) throws {
     receivedBytes += payload.utf8.count
@@ -35,9 +36,15 @@ struct CloudStreamAccumulator {
         }
         if let reason = choice["finish_reason"] as? String { finishReason = reason }
       }
+      // A usage-only chunk may follow finish_reason; partial counters must not
+      // refund the session's reserved output budget.
+      if finishReason != nil, let finalUsage = object["usage"] as? [String: Any] { usage = finalUsage }
     case .anthropic:
       switch object["type"] as? String {
-      case "message_start", "ping": break
+      case "ping": break
+      case "message_start":
+        usage = (object["message"] as? [String: Any])?["usage"] as? [String: Any]
+        usage?.removeValue(forKey: "output_tokens")
       case "content_block_start":
         guard let index = object["index"] as? Int, (0..<64).contains(index), blocks[index] == nil,
               let block = object["content_block"] as? [String: Any] else { throw AIAnswerFailure.server }
@@ -61,7 +68,14 @@ struct CloudStreamAccumulator {
                 let input = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
           blocks[index]?["input"] = input
         }
-      case "message_delta": finishReason = (object["delta"] as? [String: Any])?["stop_reason"] as? String
+      case "message_delta":
+        if let reason = (object["delta"] as? [String: Any])?["stop_reason"] as? String {
+          finishReason = reason
+          // message_delta counts are cumulative, never increments.
+          if let finalUsage = object["usage"] as? [String: Any] {
+            usage = (usage ?? [:]).merging(finalUsage) { _, latest in latest }
+          }
+        }
       case "message_stop":
         guard openBlocks.isEmpty, finishReason != nil else { throw AIAnswerFailure.connectionLost }
         isFinished = true
@@ -74,7 +88,8 @@ struct CloudStreamAccumulator {
   func response() throws -> [String: Any] {
     guard isFinished else { throw AIAnswerFailure.connectionLost }
     if provider == .anthropic {
-      let response: [String: Any] = ["content": blocks.keys.sorted().compactMap { blocks[$0] }, "stop_reason": finishReason ?? ""]
+      var response: [String: Any] = ["content": blocks.keys.sorted().compactMap { blocks[$0] }, "stop_reason": finishReason ?? ""]
+      if let usage { response["usage"] = usage }
       _ = try CloudAgentTurnDecoder.anthropic(response)
       return response
     }
@@ -82,7 +97,8 @@ struct CloudStreamAccumulator {
     if let calls = message["tool_calls"] as? [[String: Any]] {
       message["tool_calls"] = calls.map { call in var call = call; call.removeValue(forKey: "index"); return call }
     }
-    let response: [String: Any] = ["choices": [["message": message, "finish_reason": finishReason ?? ""]]]
+    var response: [String: Any] = ["choices": [["message": message, "finish_reason": finishReason ?? ""]]]
+    if let usage { response["usage"] = usage }
     _ = try CloudAgentTurnDecoder.chatCompletions(response)
     return response
   }

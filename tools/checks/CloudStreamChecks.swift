@@ -36,6 +36,29 @@ struct CloudStreamChecks {
     precondition(blocks[0]["signature"] as? String == "sig" && claude.text == "確認します")
     precondition(blocks[1]["input"] is [String: Any])
 
+    var usageOnly = CloudStreamAccumulator(provider: .chatCompletions)
+    try usageOnly.consume(#"{"choices":[{"delta":{"content":"回答"},"finish_reason":"stop"}],"usage":null}"#)
+    try usageOnly.consume(#"{"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":57,"completion_tokens_details":{"reasoning_tokens":30},"total_tokens":157}}"#)
+    try usageOnly.consume("[DONE]")
+    let usageResponse = try usageOnly.response()
+    precondition((usageResponse["usage"] as? [String: Any])?["completion_tokens"] as? Int == 57)
+    precondition(usageOnly.text == "回答")
+
+    for finalUsage in ["", #", "usage":{"output_tokens":57}"#] {
+      var cumulative = CloudStreamAccumulator(provider: .anthropic)
+      try cumulative.consume(#"{"type":"message_start","message":{"usage":{"input_tokens":100,"output_tokens":3,"cache_read_input_tokens":20}}}"#)
+      try cumulative.consume(#"{"type":"content_block_start","index":0,"content_block":{"type":"text","text":"回答"}}"#)
+      try cumulative.consume(#"{"type":"content_block_stop","index":0}"#)
+      try cumulative.consume(#"{"type":"message_delta","delta":{},"usage":{"output_tokens":10}}"#)
+      try cumulative.consume(#"{"type":"message_delta","delta":{"stop_reason":"end_turn"}"# + finalUsage + "}")
+      try cumulative.consume(#"{"type":"message_stop"}"#)
+      let response = try cumulative.response()
+      let usage = response["usage"] as! [String: Any]
+      precondition(usage["input_tokens"] as? Int == 100 && usage["cache_read_input_tokens"] as? Int == 20)
+      if finalUsage.isEmpty { precondition(usage["output_tokens"] == nil) }
+      else { precondition(usage["output_tokens"] as? Int == 57) }
+    }
+
     for input: Any in ["{}", NSNull(), []] {
       var malformed = CloudStreamAccumulator(provider: .anthropic)
       let start: [String: Any] = ["type": "content_block_start", "index": 0,
@@ -55,7 +78,8 @@ struct CloudStreamChecks {
     var truncated = CloudStreamAccumulator(provider: .chatCompletions)
     try truncated.consume(#"{"choices":[{"delta":{"content":"途中"},"finish_reason":"length"}]}"#)
     try truncated.consume("[DONE]")
-    rejects { _ = try truncated.response() }
+    do { _ = try truncated.response(); preconditionFailure("Truncated turn accepted") }
+    catch AIAnswerFailure.executionLimit {}
     var invalid = CloudStreamAccumulator(provider: .chatCompletions)
     try invalid.consume(#"{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call","function":{"name":"create_task","arguments":"not-json"}}]},"finish_reason":"tool_calls"}]}"#)
     try invalid.consume("[DONE]")

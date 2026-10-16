@@ -66,3 +66,8 @@ B/Cに固有の必要性がないため直接連携PoCは実施しない。Node�
 判断根拠は[OpenAI Chat Completionsのfinish_reason](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[Anthropicのstop_reason](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons)、[部分的なtool引数の扱い](https://platform.claude.com/docs/en/docs/agents-and-tools/tool-use/fine-grained-tool-streaming)。打切り後に追加LLM要求を自動実行する方式は採用していない。互換APIでも完了理由や標準のfunction形式がない応答は失敗として扱うため、独自形式のみを返すサーバーは別途adapter対応が必要。
 
 `CloudAgentTurnChecks`は通常JSON相当の辞書を実decoderへ入力し、壊れた/欠落した引数、非object、重複/欠落/過長ID、完了理由、件数、正常な空objectを検証する。実際のAgentConversationLoopと組み合わせたmockでは、2件目が不正なら1件目を含めtool実行0件、accept0件、model要求1件で終了する。`CloudStreamChecks`にも不正Anthropic inputと途切れたinput_json_deltaを追加した。schema適合性/availability/cost/scopeは引き続き既存registry/実行時policyが確認する。モデル要求数・BYOK・Keychain・承認・保存codecを変更しない。有料の実provider E2Eは未検証。
+
+
+## 生成予算の段階的追加（2026-10-16）
+
+CloudAgentSessionへ確認済みモデル限定の送信前output予約を追加した。対象、使用量の保持、互換性、検証、非対象と残る金額/入力token/run全体の予算は[AGENT_GENERATION_BUDGET.md](AGENT_GENERATION_BUDGET.md)参照。既存のbyte/request/time guardを置き換えず、未確認APIへ同じfieldを押し付けない。
