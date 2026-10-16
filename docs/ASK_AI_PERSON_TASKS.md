@@ -60,3 +60,8 @@ Appのファイルはすべて`App/`配下。プロジェクト設定・新し�
 - 人物削除は元の会議やタスク本文を削除する操作ではない。元記録に書かれた名前は元記録側で管理する。
 
 ビルド・回帰スクリプトの結果は[検証記録](ASK_AI_NEXT_VALIDATION.json)の`followups`へ記録する。
+
+最終検証: coreのDebugビルドと、説明文を含む最終Releaseプレビューが成功した。
+既存のnext-generation/motion-loading/optimization各スクリプト、および人物タスクと
+tool-integrationの追加確認が成功した。AppIntents metadataの既存警告1件を除き、
+compile/link errorはない。詳細なログ名と検証範囲は機械可読記録に保持している。

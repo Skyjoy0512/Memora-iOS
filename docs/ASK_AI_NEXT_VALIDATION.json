@@ -185,6 +185,70 @@
         "Office final rendering"
       ],
       "report": "docs/ASK_AI_BACKUP_RESTORE.md"
+    },
+    {
+      "checked_at": "2026-10-16T17:13:17.734169+00:00",
+      "base_commit": "11e3d21",
+      "implementation_commit": "5aa18f3",
+      "scope": "Explicit person-linked tasks, scoped reads and atomic person changes",
+      "debug": {
+        "command": "bitrig preview -platform iOS",
+        "result": "success",
+        "log": "2026-10-17T02-00-42-7cf45d12.log",
+        "warnings": 1,
+        "scope": "Core model and UI including bulk-lookup fix; final guidance wording verified in Release preview."
+      },
+      "release": {
+        "command": "bitrig preview -platform iOS -configuration Release",
+        "result": "success",
+        "log": "2026-10-17T02-06-57-d779817d.log",
+        "warnings": 1,
+        "source_commit": "5aa18f3"
+      },
+      "warning": "Existing AppIntents metadata extraction skipped; no compile/link errors.",
+      "checks": [
+        {
+          "command": "bash tools/checks/run-person-task-checks.sh",
+          "result": "passed",
+          "evidence": "PersonTaskChecks host lookup: 500 people, 2000 tasks, 0.006605982780456543s (not physical-device performance)\nPersonTaskChecks: passed (production task/people/scope/read_person + real SQLite; same-name IDs, legacy unconfirmed, privacy/revoke, reassignment, rename/merge rollback, tombstones, workspace, reopen; isolated fixtures only)"
+        },
+        {
+          "command": "bash tools/checks/run-next-generation-checks.sh",
+          "result": "passed"
+        },
+        {
+          "command": "bash tools/checks/run-motion-loading-checks.sh",
+          "result": "passed"
+        },
+        {
+          "command": "python3 tools/checks/run-optimization-checks.py",
+          "result": "passed"
+        },
+        {
+          "command": "bash tools/checks/run-tool-integration-checks.sh",
+          "result": "passed"
+        },
+        {
+          "command": "git diff --check",
+          "result": "passed"
+        }
+      ],
+      "ui_verified": [
+        "Native person picker and return to task form",
+        "Self-task toggle clears explicit person selection",
+        "Dark appearance and accessibility_extra_large wrapping",
+        "AX labels and selection values",
+        "Unsaved form cancelled; text size restored; existing composer draft preserved"
+      ],
+      "not_verified": [
+        "Physical-device VoiceOver traversal and performance",
+        "Same-name person selection/save/merge UI E2E",
+        "Real BYOK request and permission-change E2E",
+        "New task picker in light appearance"
+      ],
+      "fixtures": "Production task/people/person-scope/read_person extensions and codecs with real isolated SQLite; model persistence entry points, reminders and legacy record shapes are fixtures. No external calls in fixture tests.",
+      "performance_scope": "Host lookup only: 500 people, 2000 name-only open tasks, no meetings; not device or LLM quality evidence.",
+      "report": "docs/ASK_AI_PERSON_TASKS.md"
     }
   ]
 }
