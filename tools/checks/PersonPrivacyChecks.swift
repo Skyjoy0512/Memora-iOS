@@ -143,12 +143,18 @@ import SQLite3
     precondition(!model.isCloudSessionAuthorized(messageID) && readPerson(other.id).isError)
     model.isRestoring = false; model.isStoreProtected = true
     precondition(!model.isCloudSessionAuthorized(messageID)); model.isStoreProtected = false
+    let history = AIConversationEntry(id: UUID(), question: "人物情報を確認", answer: "架空の会話結果", scopeLabel: "人物",
+      createdAt: .now, cloudProvenance: model.message.cloudProvenance)
+    precondition(model.persistNow([history], forKey: "fixture.person.history"))
     let reopen = LocalStore(fileURL: storeURL); try reopen.prepare()
     guard case .data(let saved) = reopen.readOutcome(MemoraModel.StorageKey.people) else { preconditionFailure("Missing people") }
+    guard case .data(let savedHistory) = reopen.readOutcome("fixture.person.history") else { preconditionFailure("Missing history") }
+    let restoredHistory = try JSONDecoder().decode([AIConversationEntry].self, from: savedHistory)
+    precondition(restoredHistory == [history])
     let restored = try JSONDecoder().decode([Person].self, from: saved)
     precondition(restored == model.people)
     let afterRestart = try MemoraModel(storeURL: storeURL); afterRestart.people = restored
-    precondition(afterRestart.canReuseCloudConversation(model.message.cloudProvenance))
+    precondition(afterRestart.canReuseCloudConversation(restoredHistory[0].cloudProvenance))
     precondition(model.deletePerson(other.id))
     precondition(!model.isCloudSessionAuthorized(messageID) && !model.canReuseCloudConversation(model.message.cloudProvenance))
     print("PersonPrivacyChecks: passed (production person codec/privacy/read_person/provenance/authorization + real SQLite; private-by-default, exported fields only, grants/revoke/edit/delete/merge, duplicate identity, related ACLs, typed IDs, legacy/reopen, workspace/protected/restore, atomic failure; isolated fixtures, no API)")

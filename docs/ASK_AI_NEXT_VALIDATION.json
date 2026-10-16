@@ -338,6 +338,96 @@
       },
       "report": "docs/ASK_AI_PERSON_JOURNAL.md",
       "warning": "Existing AppIntents metadata extraction skipped; no compile/link errors in final builds."
+    },
+    {
+      "checked_at": "2026-10-16T22:47:47.526467+00:00",
+      "base_commit": "e8a20aa",
+      "implementation_commit": "4ff1199",
+      "scope": "Person metadata consent, typed provenance, revalidation and local/cloud input separation",
+      "debug": {
+        "command": "bitrig preview -platform iOS",
+        "result": "success",
+        "log": "2026-10-17T07-41-17-23e0a7e4.log",
+        "source_commit": "4ff1199",
+        "warnings": 1
+      },
+      "release": {
+        "command": "bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release",
+        "result": "success",
+        "log": "2026-10-17T07-43-23-da63fd4b.log",
+        "source_commit": "4ff1199",
+        "warnings": 1
+      },
+      "warning": "Existing AppIntents metadata extraction skipped; no compile/link errors.",
+      "checks": [
+        {
+          "command": "bash tools/checks/run-person-privacy-checks.sh",
+          "result": "passed",
+          "evidence": "PersonPrivacyChecks: passed (production person codec/privacy/read_person/provenance/authorization + real SQLite; private-by-default, exported fields only, grants/revoke/edit/delete/merge, duplicate identity, related ACLs, typed IDs, legacy/reopen, workspace/protected/restore, atomic failure; isolated fixtures, no API)",
+          "scope": "Final isolated SQLite restart fixture also persists/reloads production AIConversationEntry provenance alongside Person and rechecks reuse."
+        },
+        {
+          "command": "bash tools/checks/run-next-generation-checks.sh",
+          "result": "passed",
+          "source_commit": "4ff1199",
+          "evidence": "Includes production person/task/journal/privacy/provenance fixture suites and existing backup/artifact/research/streaming/registry/legacy checks. Extra history SQLite restart assertion verified by final focused person-privacy runner."
+        },
+        {
+          "command": "bash tools/checks/run-motion-loading-checks.sh",
+          "result": "passed",
+          "source_commit": "4ff1199"
+        },
+        {
+          "command": "python3 tools/checks/run-optimization-checks.py",
+          "result": "passed",
+          "source_commit": "4ff1199"
+        },
+        {
+          "command": "git diff --check",
+          "result": "passed"
+        }
+      ],
+      "ui_verified": [
+        "Person detail menu and privacy settings entry",
+        "Cloud and automatic use default off; automatic access disabled until cloud switch enabled in unsaved draft",
+        "Cancelled without saving, reopened and confirmed cloud/automatic permission remained off",
+        "Dark normal/large text, light large text, scroll wrapping, AX names/values",
+        "Appearance/text size restored; no person/record/permission saved, no AI request sent; composer draft preserved"
+      ],
+      "fixtures": "Production Person codec, metadata projection, privacy editing, People/Task/Journal mutations, read_person/automatic record tools, AI provenance and session authorization, AIConversationEntry codec plus real isolated LocalStore SQLite. Model state/persistence entry points, notifications/media, meeting shape and unrelated empty retrieval domains are fixtures. No real credentials, network or user-record fixtures.",
+      "verified_boundaries": [
+        "Legacy people default to personal classification with all external grants off",
+        "Person, meeting, task and journal IDs remain distinct typed references",
+        "Candidate lists record person provenance and hidden duplicates do not silently become unique matches",
+        "Name/note edits, revoke/regrant, merge/delete and workspace/protected/restore changes prevent stale send/reuse",
+        "Photos/contact IDs are excluded from AI content and its fingerprint",
+        "On-device person reads do not require cloud grants and do not become complete cloud provenance",
+        "Cloud supplementary vocabulary excludes implicit person/project names; on-device vocabulary retained",
+        "Permission/new-person/photo persistence failures preserve model state; real SQLite merge rollback and reopen"
+      ],
+      "not_verified": [
+        "Actual provider network send/stream revocation E2E, paid API costs or OAuth",
+        "Physical-device VoiceOver, long conversations, large datasets, memory/energy performance",
+        "Permission save/edit/merge/revoke UI E2E with test accounts; host production-domain fixtures cover these mutations",
+        "Actual cloud summary/transcription wire payloads or engine-switch network E2E (selection code compiled; vocabulary helper checked locally)",
+        "Typed source links consistently shown in generated documents/mail and answer citation UI (remaining implementation)"
+      ],
+      "remaining_priorities": {
+        "P0": [
+          "Integrated scenarios A-E and in-flight permission changes with explicit test BYOK or mock connection",
+          "Physical-device, accessibility and legacy backup UI verification",
+          "Team record backend remains unconnected; personal data stays blocked from team agent paths"
+        ],
+        "P1": [
+          "Typed journal/task/person source links across answers and generated artifacts",
+          "Person topic/relationship summary quality and confirmed memory updates",
+          "Complex Office template editing/rendering and Gmail Drafts OAuth"
+        ],
+        "P2": [
+          "Measured Japanese embedding/hybrid ranking and scoped person/project mentions"
+        ]
+      },
+      "report": "docs/ASK_AI_PERSON_PRIVACY.md"
     }
   ]
 }

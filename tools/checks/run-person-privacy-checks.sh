@@ -12,5 +12,5 @@ swiftc -D PERSON_PROVENANCE_CHECKS -enable-bare-slash-regex Shared/MemoraIcon.sw
   App/MemoraModel+People.swift App/MemoraModel+Tasks.swift App/MemoraModel+PersonScope.swift App/MemoraModel+PersonTools.swift \
   App/LifeLogEntry.swift App/LifeLogSource.swift App/TrashedLifeLogEntry.swift App/AIChatSource.swift App/AIChatScope.swift App/ReviewPeriod.swift App/AIRecordFingerprint.swift \
   App/MemoraModel+Journal.swift App/MemoraModel+JournalPeople.swift App/MemoraModel+RecordPrivacy.swift App/MemoraModel+AutomaticRecordTools.swift \
-  tools/checks/PersonFixtureModel.swift App/AIRecordReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/MemoraModel+Glossary.swift App/MemoraModel+AIProvenance.swift tools/checks/PersonPrivacyChecks.swift -o "$check_dir/people"
+  tools/checks/PersonFixtureModel.swift App/AIConversationEntry.swift App/AIEpisode.swift App/AIRecordReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/MemoraModel+Glossary.swift App/MemoraModel+AIProvenance.swift tools/checks/PersonPrivacyChecks.swift -o "$check_dir/people"
 "$check_dir/people"
