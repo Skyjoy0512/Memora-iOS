@@ -35,11 +35,11 @@ struct AIPluginMenu: View {
             ForEach(rows) { plugin in
               Button { select(plugin) } label: {
                 HStack(spacing: 10) {
-                  Image(icon: plugin.kind == .file ? .docText : .plugsConnected)
+                  AIPluginIconView(icon: plugin.icon)
                     .frame(width: 24)
                   VStack(alignment: .leading, spacing: 3) {
                     Text(plugin.name).font(.body)
-                    Text(plugin.state.reason ?? plugin.summary)
+                    Text(plugin.state.reason ?? plugin.summary + " · " + plugin.cost.rawValue)
                       .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                   }
                   Spacer(minLength: 4)

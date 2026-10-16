@@ -126,3 +126,23 @@ PersonConversationSummaryで許可されたローカル記録の抜粋を即時�
 旧タスクは担当personIDを持たないため、本人/自分の約束を同名の場合に自動断定
 できない。関連タスクとして表示する。人物IDのないジャーナルは名前への言及であり
 本人確定情報ではない。資料は元の会議から開く。PersonSummaryChecks成功。
+
+## Phase 4 — Skills / Plugin UX
+
+12の業務手順を独自記述し既存3件に追加。提案/経営報告/会議報告/企画/PowerPoint/
+Word/会社書式/週月報/調査/メール/会議フォロー/人物要約。version/icon/scopes/costは
+optionalで旧Skillを読める。bounded Markdown import/exportにも新metadataを追加。
+宣言は実行権限を増やさず、registry/approval/record privacyを通る。
+
+共通AIPluginIconを導入しGmail/Notion/calendar/Drive/GitHub/MCP/内蔵/Skill/recordを
+区別。同じ定義を候補とチップに使用。ブランド素材はコピーせず既存MemoraIconの
+機能symbolを使用（SF catalogでiOS18の範囲を確認）。外部画像URL取得はない。
+候補を接続済み/内蔵/Skill/record/接続必要/未対応に分類。未接続もアイコンと理由を
+残す。料金はモデル料金を無料/端末内と誤認させない。チップは情報表示と44pt削除を
+分離しVoiceOverで状態/操作を明示。IME/native TextFieldとdraft ID処理は維持。
+実行直前も選択pluginIDの有効状態を再確認し、切断/無効化を拒否する。
+
+新規project/personの@候補はこの段階では表示しない。人物詳細のID固定経路を使う。
+PluginIconChecks（6サービスの区別、fallback、15Skill、metadata往復）成功。
+next-generation既存suite成功。Debug preview:
+2026-10-16T19-30-09-6d4afb12.log 成功（既存警告1件）。

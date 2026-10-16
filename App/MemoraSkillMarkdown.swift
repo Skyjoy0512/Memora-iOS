@@ -22,7 +22,7 @@ enum MemoraSkillMarkdown {
     let lines = markdown.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
     guard lines.first == "---", let end = lines.dropFirst().firstIndex(of: "---"), end <= 24 else { throw Failure.invalid }
     var metadata: [String: String] = [:]
-    let keys: Set<String> = ["name", "description", "tools", "keywords", "permissions"]
+    let keys: Set<String> = ["name", "description", "tools", "keywords", "permissions", "version", "icon", "scopes", "cost"]
     for line in lines[1..<end] where !line.trimmingCharacters(in: .whitespaces).isEmpty {
       guard let separator = line.firstIndex(of: ":") else { throw Failure.invalid }
       let key = String(line[..<separator]).trimmingCharacters(in: .whitespaces)
@@ -35,8 +35,13 @@ enum MemoraSkillMarkdown {
     }
     let skill = MemoraSkill(id: "custom-" + UUID().uuidString, name: metadata["name"] ?? "", summary: metadata["description"] ?? "",
       instructions: lines[(end + 1)...].joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines),
-      keywords: list("keywords"), declaredToolNames: list("tools"), declaredPermissions: list("permissions"))
-    guard valid(skill), skill.toolNames.allSatisfy(allowedTools.contains) else { throw Failure.invalid }
+      keywords: list("keywords"), declaredToolNames: list("tools"), declaredPermissions: list("permissions"), version: metadata["version"].flatMap(Int.init),
+      iconIdentifier: metadata["icon"], scopes: metadata["scopes"] == nil ? nil : list("scopes").compactMap(MemoraSkill.Scope.init(rawValue:)),
+      cost: metadata["cost"].flatMap(MemoraSkill.Cost.init(rawValue:)))
+    guard metadata["version"] == nil || (skill.version.map { (1...100).contains($0) } ?? false),
+          metadata["scopes"] == nil || list("scopes").count == skill.scopes?.count,
+          metadata["cost"] == nil || skill.cost != nil,
+          (skill.iconIdentifier?.count ?? 0) <= 80, valid(skill), skill.toolNames.allSatisfy(allowedTools.contains) else { throw Failure.invalid }
     return skill
   }
 

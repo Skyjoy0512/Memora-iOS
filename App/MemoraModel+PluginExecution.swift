@@ -48,12 +48,19 @@ extension MemoraModel {
     var ids = plugins.reduce(into: Set<String>()) { $0.formUnion($1.toolIDs) }
     if !onDevice { ids.insert("memora:ask_user") }
     let policy = AIPluginExecutionPolicy(pluginIDs: pluginIDs, toolIDs: ids,
-      recordIDs: Set(plugins.compactMap(\.recordID)), limitsRecordReads: !plugins.contains { $0.kind == .builtin || $0.id == "service:notion" })
+      recordIDs: Set(plugins.compactMap(\.recordID)), limitsRecordReads: !plugins.contains { $0.kind == .builtin || $0.kind == .skill || $0.id == "service:notion" })
     return sendAgentChat(question, attachment: attachment, pluginPolicy: policy, preparedAttachment: preparedAttachment)
   }
 
   func pluginCallIsPermitted(_ call: AgentToolCall, messageID: UUID) -> Bool {
-    agentPluginPolicies[messageID]?.permits(call.name, arguments: call.arguments) ?? true
+    guard let policy = agentPluginPolicies[messageID] else { return true }
+    let catalog = pluginCatalog()
+    guard policy.pluginIDs.allSatisfy({ id in
+      if id.hasPrefix("person:") { return policy.personID != nil }
+      if id.hasPrefix("record:"), let recordID = UUID(uuidString: String(id.dropFirst(7))) { return meeting(id: recordID) != nil }
+      return catalog.first(where: { $0.id == id })?.state.isReady == true
+    }) else { return false }
+    return policy.permits(call.name, arguments: call.arguments)
   }
 
   func directPluginReadRefusal(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome? {

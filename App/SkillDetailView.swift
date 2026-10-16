@@ -12,7 +12,9 @@ struct SkillDetailView: View {
     if let skill = model.skillCatalog.first(where: { $0.id == skillID }) {
       Form {
         Section {
-          Text(skill.summary)
+          Label(skill.summary, icon: MemoraIcon(rawValue: skill.iconIdentifier ?? "") ?? .docText)
+          LabeledContent("バージョン", value: String(skill.version ?? 1))
+          LabeledContent("料金", value: (skill.cost ?? .unknown).rawValue)
           Toggle("有効", isOn: Binding(get: { !model.disabledSkillIDs.contains(skillID) }, set: { model.setSkillEnabled(skillID, enabled: $0) }))
           if let date = model.skillLastSelectedAt[skillID] { LabeledContent("最終選択", value: date.formatted(date: .abbreviated, time: .shortened)) }
         }

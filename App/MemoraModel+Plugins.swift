@@ -36,8 +36,8 @@ extension MemoraModel {
     for skill in skillCatalog {
       let enabled = !disabledSkillIDs.contains(skill.id)
       entries.append(AIPlugin(id: "skill:" + skill.id, name: skill.name, summary: skill.summary, aliases: skill.keywords,
-        kind: enabled ? .builtin : .unavailable, state: enabled ? .ready : .setup("スキル設定で有効にしてください。"),
-        toolIDs: Set(skill.toolNames.map { "memora:" + $0 }), permissions: ["記録のプライバシー設定と変更前の承認を維持します。"], cost: .local, provider: .memora))
+        kind: .skill, state: enabled ? .ready : .setup("スキル設定で有効にしてください。"),
+        toolIDs: Set(skill.toolNames.map { "memora:" + $0 }), permissions: ["記録のプライバシー設定と変更前の承認を維持します。"], cost: .unknown, provider: .memora, iconIdentifier: skill.iconIdentifier))
     }
     for tool in [AgentTool.searchRecords, .searchWeb, .deepResearch] {
       let id = "memora:" + tool.rawValue
@@ -66,6 +66,16 @@ extension MemoraModel {
         kind: .file, state: .ready, toolIDs: ["memora:read_record"], permissions: ["記録の送信許可を確認します。"], cost: .local, provider: .memora, recordID: record.id)
     }
     return candidates
+  }
+
+  func pluginInfo(for mention: ComposerMention) -> AIPlugin {
+    if let plugin = pluginCatalog().first(where: { $0.id == mention.pluginID }) { return plugin }
+    if mention.pluginID.hasPrefix("record:"), let id = UUID(uuidString: String(mention.pluginID.dropFirst(7))), let record = meeting(id: id) {
+      return AIPlugin(id: mention.pluginID, name: record.displayTitle, summary: "指定した記録。送信時に現在の許可を確認します。", aliases: [],
+        kind: .file, state: .ready, toolIDs: ["memora:read_record"], permissions: ["記録の送信許可を適用します。"], cost: .local, provider: .memora, recordID: id)
+    }
+    return AIPlugin(id: mention.pluginID, name: mention.label, summary: "選択した対象を確認できません。@から選び直してください。", aliases: [],
+      kind: .unavailable, state: .unavailable("削除済みまたは利用できない対象です。"), toolIDs: [], permissions: [], cost: .unknown, provider: .memora)
   }
 
   func updateComposerMentions(from old: String, to new: String) {

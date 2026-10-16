@@ -4,6 +4,8 @@ cd "$(dirname "$0")/../.."
 check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
 check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
+swiftc App/AIMemory.swift App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift tools/checks/MemoryRetrievalChecks.swift -lsqlite3 -o "$check_dir/memory"
+"$check_dir/memory"
 swiftc App/Person.swift App/PersonIdentity.swift tools/checks/PersonIdentityChecks.swift -o "$check_dir/person-identity"
 "$check_dir/person-identity"
 swiftc App/ProjectTaskList.swift App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift App/RecordPrivacy.swift App/SummarySensitivity.swift tools/checks/ProjectTaskListChecks.swift -o "$check_dir/project-tasks"
@@ -50,7 +52,7 @@ swiftc -D DEBUG App/AIAnswerFailure.swift App/AgentSessionBudget.swift App/Agent
 "$check_dir/sse-transport"
 swiftc App/ToolInputValidator.swift App/NativeAIInterface.swift tools/checks/NativeAIInterfaceChecks.swift -o "$check_dir/ui"
 "$check_dir/ui"
-swiftc App/SemanticToolDiscovery.swift App/MemoraSkill.swift App/MemoraSkillMarkdown.swift tools/checks/DiscoverySkillChecks.swift -o "$check_dir/skills"
+swiftc App/SemanticToolDiscovery.swift App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkillMarkdown.swift tools/checks/DiscoverySkillChecks.swift -o "$check_dir/skills"
 "$check_dir/skills"
 swiftc Shared/MemoraIcon.swift App/ResidentAgent.swift App/ResidentTrigger.swift App/ResidentExecutionLimits.swift tools/checks/ResidentLimitsChecks.swift -o "$check_dir/residents"
 "$check_dir/residents"
