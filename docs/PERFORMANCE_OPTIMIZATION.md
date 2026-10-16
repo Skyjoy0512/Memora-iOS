@@ -196,3 +196,7 @@ Agentの新しい診断eventは要求/操作の事実と終了所要時間だけ
 ### Markdown更新の処理単位比較（2026-10-16追加）
 
 基準`1cb1d8d`の増分parserと最終コードを同じbinaryで交互に21回測定。行数確認のための2回目の全文splitを除去した。架空コードblock23,903 bytes/174更新の合計中央値は25.453→16.761ms、長い1段落29,400 bytes/123更新は8.965→6.076ms。短い段落caseのp95は改善しておらず、実機frame/UI改善率は未測定。文法/編集範囲とnative UIを維持する。条件・全case・再実行方法・最新Time Profiler接続失敗は[MARKDOWN_UPDATE_PERFORMANCE.md](MARKDOWN_UPDATE_PERFORMANCE.md)、生の集計は[MARKDOWN_UPDATE_BENCHMARK.json](MARKDOWN_UPDATE_BENCHMARK.json)を参照。
+
+### 標準CoreSimulatorでのTime Profiler取得（2026-10-16追加）
+
+Bitrig Release成果物を、Memora data containerがない標準iPhone 18 Pro Max / iOS 27.0で起動し、明示的なdevice ID + PIDでTime Profilerを取得できた。空状態のタブ操作2回で1,493/915 samples。UUID照合と部分的symbol/backtraceの検証を行う取得/解析toolを追加。静止画面の0行traceは評価対象から除外する。frame/遷移遅延/実機改善率ではない。再現手順・集計・制約は[SIMULATOR_PROFILING.md](SIMULATOR_PROFILING.md)。以前の内蔵simulatorでの接続失敗記録を、この標準simulatorの成功で書き換えない。

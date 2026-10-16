@@ -1,0 +1,142 @@
+{
+  "schema": "memora.time-profile-summary.v1",
+  "samples": 915,
+  "app_binary_uuids": [
+    "802E7CEB-5E51-39ED-9884-0DA761F6CC7F"
+  ],
+  "sample_span_seconds": 15.965997,
+  "total_sample_weight_ms": 915.0,
+  "main_thread_sample_weight_ms": 805.0,
+  "app_inclusive_sample_weight_ms": 807.0,
+  "ambiguous_app_sample_weight_ms": 3.0,
+  "missing_backtrace_sample_weight_ms": 1.0,
+  "app_symbolication": "partial",
+  "state_sample_weight_ms": {
+    "Running": 915.0
+  },
+  "top_leaves": [
+    {
+      "symbol": "mach_msg2_trap",
+      "sample_weight_ms": 125.0
+    },
+    {
+      "symbol": "invocation function for block in mach_o::UnsafeHeader::forEachSegment(void (mach_o::UnsafeHeader::SegmentInfo const&, bool&) block_pointer) const",
+      "sample_weight_ms": 33.0
+    },
+    {
+      "symbol": "__kdebug_trace64",
+      "sample_weight_ms": 30.0
+    },
+    {
+      "symbol": "mach_o::UnsafeHeader::forEachLoadCommand(void (load_command const*, bool&) block_pointer) const",
+      "sample_weight_ms": 27.0
+    },
+    {
+      "symbol": "objc_msgSend",
+      "sample_weight_ms": 20.0
+    },
+    {
+      "symbol": "pthread_setspecific",
+      "sample_weight_ms": 18.0
+    },
+    {
+      "symbol": "__bsdthread_ctl",
+      "sample_weight_ms": 13.0
+    },
+    {
+      "symbol": "<deduplicated_symbol>",
+      "sample_weight_ms": 12.0
+    },
+    {
+      "symbol": "DYLD-STUB$$pthread_getspecific",
+      "sample_weight_ms": 10.0
+    },
+    {
+      "symbol": "_kernelrpc_mach_port_deallocate_trap",
+      "sample_weight_ms": 9.0
+    },
+    {
+      "symbol": "start_wqthread",
+      "sample_weight_ms": 9.0
+    },
+    {
+      "symbol": "bool objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>, DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>::LookupBucketFor<DisguisedPtr<objc_object>>(DisguisedPtr<objc_object> const&, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>> const*&) const",
+      "sample_weight_ms": 8.0
+    },
+    {
+      "symbol": "dyld4::JustInTimeLoader::contains(dyld4::RuntimeState&, void const*, void const**, unsigned long long*, unsigned char*) const",
+      "sample_weight_ms": 8.0
+    },
+    {
+      "symbol": "pthread_getspecific",
+      "sample_weight_ms": 8.0
+    },
+    {
+      "symbol": "swift::MetadataCacheKey::operator==(swift::MetadataCacheKey const&) const",
+      "sample_weight_ms": 8.0
+    }
+  ],
+  "top_app_inclusive": [
+    {
+      "symbol": "main",
+      "sample_weight_ms": 805.0
+    },
+    {
+      "symbol": "static MemoraApp.$main()",
+      "sample_weight_ms": 805.0
+    },
+    {
+      "symbol": "Image.init(lucide:size:strokeWidth:style:)",
+      "sample_weight_ms": 4.0
+    },
+    {
+      "symbol": "specialized static Image.renderTemplate(shape:size:strokeWidth:style:)",
+      "sample_weight_ms": 4.0
+    },
+    {
+      "symbol": "Button<>.init(_:icon:role:action:)",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "Image.init(icon:size:)",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "UpcomingMeetingStore.refresh()",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "closure #1 in Button<>.init(_:icon:role:action:)",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "closure #18 in closure #1 in LibraryView.body.getter",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "closure #2 in Label<>.init(_:icon:)",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "partial apply for closure #2 in Label<>.init(_:icon:)",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "specialized HStack.init(alignment:spacing:content:)",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "specialized _VariadicView.Tree.init(_:content:)",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "specialized closure #1 in HStack.init(alignment:spacing:content:)",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "static CalendarService.access.getter",
+      "sample_weight_ms": 2.0
+    }
+  ],
+  "limitations": "Statistical sample weights; not wall latency, FPS, body counts, exact CPU occupancy, memory, or iPhone hardware performance. Inclusive weights overlap; deduplicated/unresolved app symbols are excluded from named totals."
+}
