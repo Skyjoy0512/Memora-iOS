@@ -219,3 +219,13 @@ DEBUG画面は同じ本番loaderへsleepだけのreaderを注入する。手動�
 最終Debug preview成功: `09-07-11-a0111906`。最終Release iOS Simulator build成功: `09-08-58-b2658749`。既存AppIntents metadata警告のみ。motion-loading runnerとnext-generation runnerの成功、`git diff --check`成功。実機の計測・実provider課金・VoiceOver音声読み上げ・実録音/Omiは引き続き未検証。
 
 追加変更ファイル: ProjectSourceTextLoader（新規、Taskとsnapshot所有）、ProjectSourceDetailView（読取をloaderへ委譲）、MemoraLoadingContainer（表示段階を要求へ束縛）、ConversationScrollState（layout-only時の追従意図保持）、RootTabView（sidebarでkeyboard解除）、MotionLoadingGalleryView（同じloaderでの取消とkeyboard検証）、ProjectSourceTextLoaderChecks（新規）、ConversationScrollChecks、run-motion-loading-checks.sh。本追加の本文読込コミットは`997e79f`。スクロール/メニュー修正のコミットは本追加の完了報告参照。
+
+
+## 追加検証: Markdownの途中状態とツール引数の確定境界（2026-10-16）
+
+- `CloudAgentTurnDecoder.swift`を追加し、`CloudAgentSession.swift`と`CloudStreamAccumulator.swift`の応答検証を揃えた。不正な引数を空objectとして実行可能にしない。完了理由/全callを検証してから履歴と既存承認経路へ渡す。実装と公式資料の根拠は[NATIVE_AGENT_HARNESS.md](NATIVE_AGENT_HARNESS.md)の追加監査参照。
+- `CloudAgentTurnChecks.swift`を新設し、`CloudStreamChecks.swift`と`run-next-generation-checks.sh`を拡張。正常な空引数と不完全な引数を区別し、mockの実loopで不正batchのtool実行0件・追加要求なしを確認した。
+- `IncrementalMarkdownChecks.swift`を拡張。全fixtureを1/7/37 Unicode scalar単位で分割し、各更新のblocksが実際の完成文書parserと一致すること、settled部分が変わらないこと、完了通知だけではblock構造が変わらないことを確認した。日本語、結合文字、家族emoji、CRLF、checkbox、表、リンク、backtick/tilde fence、未完了構文を含む。Markdown本体と100msの更新間隔は変更していない。
+- 成功: `run-motion-loading-checks.sh`全件、`run-next-generation-checks.sh`全件、追加stream/decoderチェック個別実行。初回のnext-generation実行は実行中のscript編集で末尾の構文読取が失敗したため、scriptを固定して全件再実行し終了コード0を確認した。テストの全入力は架空データ、実API/個人記録/キーは使用していない。
+- 成功: `bitrig preview -platform iOS`（Debug、iOS 27.1 simulator SDK、iOS 18 deployment target）。起動後のJournalと既存3タブ/下部composerのAXを確認。AppIntents依存のないextensionのmetadata extraction警告が1件あり、今回のSwiftコンパイルエラーはなし。
+- 未検証: 実providerへの接続、実iPhone、VoiceOver音声操作、本変更に対するフレーム時間/メモリ/金額の実測。UI配置・Liquid Glass・FAB・保存形式は変更していない。`bitrig build -destination generic/platform=iOS Simulator -configuration Release`も成功（同じextension警告1件）。実機Releaseの測定値ではない。

@@ -55,3 +55,14 @@ B/Cに固有の必要性がないため直接連携PoCは実施しない。Node�
 これらはローカルの有限予算であり、正確なtoken数やドル料金の強制上限ではない。Anthropicの既存max_tokens、streamの2MiB上限を保持。OpenAI-compatibleの全modelに新しい共通token fieldを無条件に追加しない（provider互換性を損なうため）。Providerごとのusage/price契約と送信前token見積り、ユーザー側API予算が次の課題。Memora Intelligenceの運営側予算強制は未実装backendで必須で、今回接続しない。
 
 時間制限は協調的な境界検証。URLSessionの1要求600秒と併用するが、すべてのtool/ユーザー承認待ちを強制killするdeadlineではない。承認済みで外部へ到達したwriteを取消で撤回できるとは表示しない。終了後に危険な操作を自動再開しない。
+
+
+## 追加監査: provider応答を実行可能なturnへ変換する境界
+
+2026-10-16。`CloudAgentSession`は従来、OpenAI-compatibleの欠落/不正なarguments、Anthropicの非object inputを空の辞書へ置き換え、壊れたcallをcompactMapで落としていた。JSON fallbackおよび非stream応答では完了理由の検査もstreamより弱かった。`f49af21`の実際のCloudStreamAccumulatorに、終了済みだがinputが文字列の合成Anthropic応答を渡すと受理された。同じ応答は今回のコードで拒否される（ホストSwift、一時ファイル、ネットワーク/キーなし）。既存の権限/承認を回避できたと実証したものではなく、その前段の不正入力受理を修正した。
+
+`CloudAgentTurnDecoder`が両providerの共通境界となる。正常な完了理由、全callの一意で空でないID/名前、object引数、最大24件を検査する。OpenAIのargumentsはJSON文字列のobjectでなければ拒否し、欠落を`{}`へ補完しない。Anthropicもinputをobjectに限定する。正常な空objectは許可する。toolを示す完了理由と実際のcallの有無が矛盾する場合、拒否/打切り/不明な完了理由、deprecated function_callは実行へ渡さない。応答全体が有効な場合だけprovider履歴へ追加する。streamにも同じ検証を適用し、JSON fallback/nonstreamと差をなくした。正常なprovider固有のreasoning/signatureは保持する。
+
+判断根拠は[OpenAI Chat Completionsのfinish_reason](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[Anthropicのstop_reason](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons)、[部分的なtool引数の扱い](https://platform.claude.com/docs/en/docs/agents-and-tools/tool-use/fine-grained-tool-streaming)。打切り後に追加LLM要求を自動実行する方式は採用していない。互換APIでも完了理由や標準のfunction形式がない応答は失敗として扱うため、独自形式のみを返すサーバーは別途adapter対応が必要。
+
+`CloudAgentTurnChecks`は通常JSON相当の辞書を実decoderへ入力し、壊れた/欠落した引数、非object、重複/欠落/過長ID、完了理由、件数、正常な空objectを検証する。実際のAgentConversationLoopと組み合わせたmockでは、2件目が不正なら1件目を含めtool実行0件、accept0件、model要求1件で終了する。`CloudStreamChecks`にも不正Anthropic inputと途切れたinput_json_deltaを追加した。schema適合性/availability/cost/scopeは引き続き既存registry/実行時policyが確認する。モデル要求数・BYOK・Keychain・承認・保存codecを変更しない。有料の実provider E2Eは未検証。

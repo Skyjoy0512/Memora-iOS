@@ -73,24 +73,18 @@ struct CloudStreamAccumulator {
 
   func response() throws -> [String: Any] {
     guard isFinished else { throw AIAnswerFailure.connectionLost }
-    guard finishReason != "length", finishReason != "max_tokens" else { throw AIAnswerFailure.connectionLost }
-    guard finishReason != "refusal", finishReason != "content_filter" else { throw AIAnswerFailure.refused }
     if provider == .anthropic {
-      return ["content": blocks.keys.sorted().compactMap { blocks[$0] }, "stop_reason": finishReason ?? ""]
+      let response: [String: Any] = ["content": blocks.keys.sorted().compactMap { blocks[$0] }, "stop_reason": finishReason ?? ""]
+      _ = try CloudAgentTurnDecoder.anthropic(response)
+      return response
     }
     var message = assistant
     if let calls = message["tool_calls"] as? [[String: Any]] {
-      guard calls.count <= 24 else { throw AIAnswerFailure.server }
-      var identifiers: Set<String> = []
-      for call in calls {
-        guard let id = call["id"] as? String, !id.isEmpty, identifiers.insert(id).inserted,
-              let function = call["function"] as? [String: Any], let name = function["name"] as? String, !name.isEmpty,
-              let arguments = function["arguments"] as? String, let data = arguments.data(using: .utf8),
-              (try? JSONSerialization.jsonObject(with: data)) is [String: Any] else { throw AIAnswerFailure.server }
-      }
       message["tool_calls"] = calls.map { call in var call = call; call.removeValue(forKey: "index"); return call }
     }
-    return ["choices": [["message": message]]]
+    let response: [String: Any] = ["choices": [["message": message, "finish_reason": finishReason ?? ""]]]
+    _ = try CloudAgentTurnDecoder.chatCompletions(response)
+    return response
   }
 
   /// Preserve provider-specific reasoning/signatures alongside indexed tool

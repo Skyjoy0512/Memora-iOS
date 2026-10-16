@@ -36,6 +36,22 @@ struct CloudStreamChecks {
     precondition(blocks[0]["signature"] as? String == "sig" && claude.text == "確認します")
     precondition(blocks[1]["input"] is [String: Any])
 
+    for input: Any in ["{}", NSNull(), []] {
+      var malformed = CloudStreamAccumulator(provider: .anthropic)
+      let start: [String: Any] = ["type": "content_block_start", "index": 0,
+        "content_block": ["type": "tool_use", "id": "call", "name": "list_tasks", "input": input]]
+      try malformed.consume(String(decoding: JSONSerialization.data(withJSONObject: start), as: UTF8.self))
+      try malformed.consume(#"{"type":"content_block_stop","index":0}"#)
+      try malformed.consume(#"{"type":"message_delta","delta":{"stop_reason":"tool_use"}}"#)
+      try malformed.consume(#"{"type":"message_stop"}"#)
+      rejects { _ = try malformed.response() }
+    }
+
+    var unfinishedInput = CloudStreamAccumulator(provider: .anthropic)
+    try unfinishedInput.consume(#"{"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call","name":"create_task","input":{}}}"#)
+    try unfinishedInput.consume(#"{"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"title\":"}}"#)
+    rejects { try unfinishedInput.consume(#"{"type":"content_block_stop","index":0}"#) }
+
     var truncated = CloudStreamAccumulator(provider: .chatCompletions)
     try truncated.consume(#"{"choices":[{"delta":{"content":"途中"},"finish_reason":"length"}]}"#)
     try truncated.consume("[DONE]")

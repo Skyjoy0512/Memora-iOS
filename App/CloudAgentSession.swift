@@ -134,34 +134,11 @@ final class CloudAgentSession {
       decoded = try await boundedResponse(for: request)
     }
     try budget.acceptResponse(bytes: JSONSerialization.data(withJSONObject: decoded).count)
-    guard
-          let content = decoded["content"] as? [[String: Any]] else {
-      throw AIAnswerFailure.server
-    }
-    if decoded["stop_reason"] as? String == "refusal" { throw AIAnswerFailure.refused }
-
-    // The whole turn goes back unchanged: thinking blocks must accompany the
-    // tool calls they led to.
+    guard let content = decoded["content"] as? [[String: Any]] else { throw AIAnswerFailure.server }
+    let turn = try CloudAgentTurnDecoder.anthropic(decoded)
+    // Preserve provider thinking/signatures only after the entire turn validates.
     messages.append(["role": "assistant", "content": content])
-
-    let text = content
-      .filter { $0["type"] as? String == "text" }
-      .compactMap { $0["text"] as? String }
-      .joined()
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-    // Shown in the reply's trace only because the model really returned it.
-    let reasoning = content
-      .filter { $0["type"] as? String == "thinking" }
-      .compactMap { $0["thinking"] as? String }
-      .joined(separator: "\n")
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-    let calls = content
-      .filter { $0["type"] as? String == "tool_use" }
-      .compactMap { block -> AgentToolCall? in
-        guard let id = block["id"] as? String, let name = block["name"] as? String else { return nil }
-        return AgentToolCall(id: id, name: name, arguments: block["input"] as? [String: Any] ?? [:])
-      }
-    return AgentTurn(text: text, toolCalls: calls, reasoning: reasoning)
+    return turn
   }
 
   // MARK: - OpenAI-compatible
@@ -208,38 +185,12 @@ final class CloudAgentSession {
       decoded = try await boundedResponse(for: request)
     }
     try budget.acceptResponse(bytes: JSONSerialization.data(withJSONObject: decoded).count)
-    guard
-          let choices = decoded["choices"] as? [[String: Any]],
-          let message = choices.first?["message"] as? [String: Any] else {
-      throw AIAnswerFailure.server
-    }
-
-    let text = (message["content"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    let rawCalls = message["tool_calls"] as? [[String: Any]] ?? []
-
-    // Tool calls go back as they came, so provider extras (such as a thought
-    // signature) survive; so does reasoning some providers require back.
-    var assistant = message
+    guard let choices = decoded["choices"] as? [[String: Any]],
+          var assistant = choices.first?["message"] as? [String: Any] else { throw AIAnswerFailure.server }
+    let turn = try CloudAgentTurnDecoder.chatCompletions(decoded)
+    // Keep provider extras (including reasoning/signatures) for the next request.
     assistant["role"] = "assistant"
-    if !rawCalls.isEmpty {
-      assistant["tool_calls"] = rawCalls
-    }
-    if let reasoning = message["reasoning_content"] {
-      assistant["reasoning_content"] = reasoning
-    }
     messages.append(assistant)
-
-    let calls = rawCalls.compactMap { call -> AgentToolCall? in
-      guard let id = call["id"] as? String,
-            let function = call["function"] as? [String: Any],
-            let name = function["name"] as? String else { return nil }
-      let argumentText = function["arguments"] as? String ?? "{}"
-      let arguments = argumentText.data(using: .utf8)
-        .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
-      return AgentToolCall(id: id, name: name, arguments: arguments)
-    }
-    let reasoning = ((message["reasoning_content"] ?? message["reasoning"]) as? String ?? "")
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-    return AgentTurn(text: text, toolCalls: calls, reasoning: reasoning)
+    return turn
   }
 }
