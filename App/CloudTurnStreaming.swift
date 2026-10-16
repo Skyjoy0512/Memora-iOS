@@ -22,39 +22,12 @@ enum CloudTurnStreaming {
       var data = Data()
       for try await byte in bytes {
         try Task.checkCancellation()
-        guard data.count < 2 * 1024 * 1024 else { throw AIAnswerFailure.server }
+        guard data.count < AgentSessionBudget.maximumResponseBytes else { throw AIAnswerFailure.executionLimit }
         data.append(byte)
       }
       guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
       return object
     }
-    var accumulator = CloudStreamAccumulator(provider: provider)
-    var eventLines: [String] = []
-    var totalBytes = 0
-    let clock = ContinuousClock()
-    var lastPublication = clock.now
-    var published = ""
-    for try await line in bytes.lines {
-      try Task.checkCancellation()
-      totalBytes += line.utf8.count + 1
-      guard totalBytes <= 2 * 1024 * 1024 else { throw AIAnswerFailure.server }
-      if line.hasPrefix("data:") { eventLines.append(String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces)) }
-      if line.isEmpty, !eventLines.isEmpty {
-        try accumulator.consume(eventLines.joined(separator: "\n"))
-        eventLines.removeAll(keepingCapacity: true)
-        let now = clock.now
-        if accumulator.text != published, published.isEmpty || lastPublication.duration(to: now) >= .milliseconds(100) || accumulator.isFinished {
-          published = accumulator.text
-          lastPublication = now
-          onText(published)
-        }
-        if accumulator.isFinished { break }
-      }
-    }
-    if !eventLines.isEmpty { try accumulator.consume(eventLines.joined(separator: "\n")) }
-    try Task.checkCancellation()
-    let result = try accumulator.response()
-    if accumulator.text != published { onText(accumulator.text) }
-    return result
+    return try await CloudTurnStreamReader.response(from: bytes, provider: provider, onText: onText)
   }
 }

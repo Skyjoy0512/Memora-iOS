@@ -71,14 +71,14 @@ struct MotionLoadingGalleryView: View {
       text = ""
       isStreaming = true
       defer { if streamID == request || streamID == nil { isStreaming = false } }
-      let scalars = Array(Self.sample.unicodeScalars)
       do {
-        for end in stride(from: 12, to: scalars.count + 12, by: 12) {
-          try Task.checkCancellation()
-          text = String(String.UnicodeScalarView(scalars.prefix(end)))
-          try await Task.sleep(for: .milliseconds(100))
+        let bytes = try SyntheticAIEventStream(text: Self.sample)
+        _ = try await CloudTurnStreamReader.response(from: bytes, provider: .chatCompletions) { value in
+          guard streamID == request, !Task.isCancelled else { return }
+          text = value
         }
-      } catch { }
+      } catch is CancellationError { }
+      catch { if streamID == request { text = "検証用ストリームを読み取れませんでした。もう一度お試しください。" } }
     }
   }
 

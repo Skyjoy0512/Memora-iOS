@@ -185,3 +185,10 @@ Host Swift -O、架空18,130 bytes/92更新、11回、ContinuousClock。毎更�
 Loadingの閾値は180ms/2秒/5秒を共通化。高速ローカル一覧は即時表示。日付とcalendar設定へ予定を束ね、古い日付のイベントをrecap/summaryへ渡さない。本文の非同期読取はsource/参照/retryとtokenで取消・古い応答を拒否。refreshは既存本文を保持する。
 
 Agentの新しい診断eventは要求/操作の事実と終了所要時間だけで、本文・引数・キーを記録しない。request/byte/時間の上限は有限のローカルguardであり、ドル金額やtoken課金の強制上限ではない。
+
+
+### SSE受信境界の追加検証（2026-10-16）
+
+`CloudByteFramingBenchmark.swift`をホストのswiftc `-O`で実行。架空の74,752 bytes / 1,024 SSE events、warmup 1回を除く11回で、最終版CloudSSEEventDecoderのフレーミングはp50 **0.66ms**、p95 **0.71ms**。バイト単位の入力、wire容量検査、UTF-8とSSEの区切り解析を含む。URLSession、モデル、JSON tool解析、Markdown、SwiftUI、スクロール、端末メモリは含まない。実iPhone Releaseの数値やUI改善率として扱わない。
+
+中間実験の非同期byte wrapperは同規模fixtureでp50 11.13ms（wrapperなし1.23ms）となり採用しなかった。最終版は受信loopの内側で同期的に容量を確認する。実装や測定範囲が異なるため、旧アプリからの高速化率を算出しない。従来の`.lines`によるSSEの空行消失は性能比較以前の正確性の問題として修正した。100msの公開間隔は維持し、virtual clockテストで最初のtextと最終flushも確認した。

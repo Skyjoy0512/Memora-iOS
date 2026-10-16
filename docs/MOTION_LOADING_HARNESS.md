@@ -229,3 +229,34 @@ DEBUG画面は同じ本番loaderへsleepだけのreaderを注入する。手動�
 - 成功: `run-motion-loading-checks.sh`全件、`run-next-generation-checks.sh`全件、追加stream/decoderチェック個別実行。初回のnext-generation実行は実行中のscript編集で末尾の構文読取が失敗したため、scriptを固定して全件再実行し終了コード0を確認した。テストの全入力は架空データ、実API/個人記録/キーは使用していない。
 - 成功: `bitrig preview -platform iOS`（Debug、iOS 27.1 simulator SDK、iOS 18 deployment target）。起動後のJournalと既存3タブ/下部composerのAXを確認。AppIntents依存のないextensionのmetadata extraction警告が1件あり、今回のSwiftコンパイルエラーはなし。
 - 未検証: 実providerへの接続、実iPhone、VoiceOver音声操作、本変更に対するフレーム時間/メモリ/金額の実測。UI配置・Liquid Glass・FAB・保存形式は変更していない。`bitrig build -destination generic/platform=iOS Simulator -configuration Release`も成功（同じextension警告1件）。実機Releaseの測定値ではない。
+
+
+## 追加修正: SSE受信のイベント境界と受信中の容量制限（2026-10-16）
+
+現行の`CloudTurnStreaming`は`URLSession.AsyncBytes.lines`から空行を待ち、空行でSSE eventを確定していた。しかしFoundationの`.lines`は空行を省く。ホストのSDK 27.1で`data: a\r\n\r\ndata: b\n\n`を入力すると、返るのは2本のdata行だけだった。この経路では複数eventが末尾まで結合され、逐次通知が発火せず、最後に複数JSONを一つとして解析して失敗し得る。従来のaccumulator単体テストでは受信境界を通さないため検出できなかった。ソース/streamのコールバックが存在することと、HTTP/SSE受信が正しく動くことを区別する。
+
+変更ファイル:
+
+| ファイル | 主な変更 |
+|---|---|
+| `App/CloudSSEEventDecoder.swift` | バイトから空行を保持してeventを確定。LF/CRLF/CR、初回BOM、コメント、複数data行、1個の先頭spaceを処理。バッファへ追加する前にwire bytesを2MiBで制限し、改行が届かなくても上限を適用 |
+| `App/CloudTurnStreamReader.swift` | 本番の受信loopをHTTP接続から分離。初回通知即時、100ms更新間隔、終了時flush、取消、終端/引数検証を維持。clock/byte sequenceを隔離テストへ注入可能 |
+| `App/CloudTurnStreaming.swift` | SSEは同readerへ委譲。JSON fallbackも共通の容量定数を使う。HTTP接続/認証/課金要求を増やさず、sessionは必ず解放 |
+| `App/SyntheticAIEventStream.swift` | DEBUG限定の架空SSE生成。既存の表示検証画面から実readerを通せる。キー/HTTP/保存を使わない |
+| `App/MotionLoadingGalleryView.swift` | 従来の直接text差替えを、同じ架空本文のSSE受信へ変更。配置/コントロール/生成速度を維持 |
+| `tools/checks/CloudSSETransportChecks.swift` | 生wire → 実reader → event/accumulator/turn decoderを通す回帰検証。通常JSON文字列ではなくSSEを入力 |
+| `tools/checks/CloudByteFramingBenchmark.swift` | wireフレーミングだけの独立host benchmark。ネットワーク/Markdown/SwiftUI/実機は含まない |
+| `tools/checks/run-next-generation-checks.sh` | transport検証とDEBUG fixture roundtripを追加 |
+
+テストはLF/CRLF/CR、UTF-8/emoji、BOM/コメント、複数data行、空data/space、provider終端、最終空行なしの互換応答、切断/不正UTF-8、改行なしの上限超過を扱う。virtual clockで初回即時、100ms未満の集約、100ms更新、完了時のflushと再通知なしを確認。取消がbyte待機中に発生した場合も受け取ったbyteを公開せず停止し、上流エラーを握り潰さない。DEBUG fixtureも同じreaderで原文へ復元する。外部API接続・有料要求は行っていない。
+
+SSEの最後に区切りの空行を省く互換endpointに対しては、EOFで残ったdataを1回解析する従来の意図を保持する。これはproviderの`[DONE]` / `message_stop`を補完しない。不完全なtool JSON、生成上限や不明な終了理由は前項の共通turn decoderで引き続き拒否する。
+
+
+追加修正の検証結果:
+
+- 成功: `run-motion-loading-checks.sh`全件、最終版`run-next-generation-checks.sh`全件（DEBUG SSE fixtureを含む）、`CloudSSETransportChecks`個別実行。実API/ユーザー記録/キーは使用しない。
+- 成功: 最終Debugの`bitrig preview -platform iOS`。iOS 27.1 SDKでビルドしたiPhone 18 Pro Maxシミュレーター上で、Settings → プロトタイプ → 状態と復旧 → Loading・本文表示から生成開始。実readerを通った架空回答の見出し・リスト・表・コード・検証段落12までの完成状態をAXで確認し、終端の本文をスクリーンショットでも確認。
+- 制約: 生成開始直後のAX取得は一度失敗した。再接続後には同じ画面で生成完了しており、取得できたrun logのFatal error/EXC_/SIGABRT/crash/termination検索は空だった。取得失敗の原因は未特定。中間フレームの連続観察やAnimation Hitchesの実測に成功したとは扱わない。
+- 修正済み: 初回ビルドのAsyncSequenceとglobal max/minの名前解決エラーは、不要な中間wrapperの除去と`Swift.min`の明示で解消。空行を保持するという当初のテスト期待とFoundationの実挙動の差を、今回のSSE修正へ反映した。
+- 未検証: 実HTTP接続、有料provider E2E、実iPhone、実際の課金額、ピークメモリ、録音/Omi/Widget等の実機回帰。既存の認証/承認/保存/UI配置を変更しない。Releaseの最終結果は次項。
