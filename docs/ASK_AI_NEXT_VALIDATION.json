@@ -135,5 +135,56 @@
     "Final Microsoft Word/PowerPoint rendering and template pagination",
     "Real legacy backup restore in simulator"
   ],
-  "external_service_calls_during_fixture_tests": false
+  "external_service_calls_during_fixture_tests": false,
+  "followups": [
+    {
+      "checked_at": "2026-10-16T11:35:21.404689+00:00",
+      "base_commit": "967c000",
+      "scope": "Ask AI data backup and atomic restore",
+      "debug": {
+        "command": "bitrig preview -platform iOS",
+        "result": "success",
+        "log": "2026-10-16T20-30-02-6eddf5f4.log",
+        "warnings": 1
+      },
+      "release": {
+        "command": "bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release",
+        "result": "success",
+        "log": "2026-10-16T20-31-19-cf76d9bc.log",
+        "warnings": 1
+      },
+      "warning": "Existing AppIntents metadata extraction skipped; no compile/link errors.",
+      "checks": [
+        {
+          "command": "bash tools/checks/run-backup-restore-checks.sh",
+          "result": "passed",
+          "evidence": "BackupRestoreChecks: passed (production package/restore + real SQLite, new metadata/files roundtrip, legacy restore, duplicate documents, recipient limits, truncated/missing/oversize, traversal/symlinks, DB rollback, cancellation/gate, conflict preserves bytes, reopen; isolated fixtures only)"
+        },
+        {
+          "command": "bash tools/checks/run-next-generation-checks.sh",
+          "result": "passed"
+        },
+        {
+          "command": "bash tools/checks/run-motion-loading-checks.sh",
+          "result": "passed"
+        },
+        {
+          "command": "python3 tools/checks/run-optimization-checks.py",
+          "result": "passed"
+        },
+        {
+          "command": "git diff --check",
+          "result": "passed"
+        }
+      ],
+      "fixtures": "Production package/file restore/new record codecs and real SQLite. Isolated file locations and minimal legacy record shapes. No real user data or service calls.",
+      "not_verified": [
+        "iOS Settings restore UI E2E",
+        "Actual user legacy archives",
+        "Real file provider or physical device low-storage behavior",
+        "Office final rendering"
+      ],
+      "report": "docs/ASK_AI_BACKUP_RESTORE.md"
+    }
+  ]
 }

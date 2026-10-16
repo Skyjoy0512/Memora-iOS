@@ -61,6 +61,8 @@ enum BackupPackage {
     case inlineMediaUnsupported
     /// The store could not be read, so nothing may be written over it.
     case storeProtected
+    case storeWriteFailed
+    case personalWorkspaceRequired
     /// A recording or an unfinished draft is still in the way.
     case busy
 
@@ -92,6 +94,10 @@ enum BackupPackage {
         "このバックアップは古い形式の写真を含むため、復元できません。"
       case .storeProtected:
         "保存データを読み込めなかったため、復元できません。アプリを再起動してください。"
+      case .storeWriteFailed:
+        "記録を保存できなかったため、復元を取り消しました。空き容量を確認して再試行してください。"
+      case .personalWorkspaceRequired:
+        "端末内のバックアップは、個人ワークスペースに切り替えてから行ってください。"
       case .busy:
         "録音・解析・声の登録・復元中、または未保存の下書きがあるため復元できません。処理を終了してから再試行してください。"
       }
@@ -206,9 +212,11 @@ enum BackupPackage {
   /// Reads and validates a package: identifiers, file names, and every file each
   /// record points at. Media is only put in place by `install(mediaFrom:)`.
   static func read(from packageURL: URL) throws -> Manifest {
+    try Task.checkCancellation()
     let data: Data
     do {
-      data = try Data(contentsOf: packageURL.appendingPathComponent(manifestName))
+      guard let file = BackupPackageFile.resolve(manifestName, in: packageURL) else { throw BackupError.unreadable }
+      data = try Data(contentsOf: file)
     } catch {
       throw BackupError.unreadable
     }
@@ -232,9 +240,10 @@ enum BackupPackage {
           memories.allSatisfy({ $0.text.count <= 200 && ($0.revisions?.count ?? 0) <= 30 }),
           drafts.count <= 1_000, Set(drafts.map(\.id)).count == drafts.count,
           drafts.allSatisfy({ $0.body.count <= 100_000 && $0.subject.count <= 500 &&
+            $0.recipients.count + $0.cc.count + $0.bcc.count <= 100 &&
             ($0.recipients + $0.cc + $0.bcc).allSatisfy(MailDraft.validAddress) }),
           templates.count <= 100, Set(templates.map(\.id)).count == templates.count,
-          templates.allSatisfy({ $0.analysis.placeholders.count <= 30 && ProjectSourceFiles.resolve($0.fileReference) != nil }) else { throw BackupError.unreadable }
+          templates.allSatisfy({ $0.analysis.placeholders.count <= 30 && MediaFiles.isPlainName($0.fileReference) }) else { throw BackupError.unreadable }
     let sources = manifest.projectSources ?? []
     let chats = manifest.projectChats ?? []
     guard Set(sources.map(\.id)).count == sources.count,
@@ -287,11 +296,10 @@ enum BackupPackage {
 
     // Every listed file must be there, and must be a regular file: a folder or a
     // symlink is not media this app will copy into place.
-    let mediaURL = packageURL.appendingPathComponent(mediaFolderName, isDirectory: true)
-    for name in listedAudio where !isRegularFile(mediaURL.appendingPathComponent(name)) {
+    for name in listedAudio where BackupPackageFile.resolve(name, folder: mediaFolderName, in: packageURL) == nil {
       missing.append(name)
     }
-    for name in listedPhotos where !isRegularFile(mediaURL.appendingPathComponent(name)) {
+    for name in listedPhotos where BackupPackageFile.resolve(name, folder: mediaFolderName, in: packageURL) == nil {
       missing.append(name)
     }
     guard missing.isEmpty else { throw BackupError.missingMedia(Array(Set(missing)).sorted()) }
@@ -319,8 +327,6 @@ enum BackupPackage {
       throw BackupError.mediaInstallFailed([staging.lastPathComponent])
     }
 
-    let mediaURL = packageURL.appendingPathComponent(mediaFolderName, isDirectory: true)
-
     // Named once per kind, so a repeated name cannot stage the same file twice.
     let audioNames = Set(manifest.audioFileNames)
     let photoNames = Set(manifest.photoFileNames)
@@ -332,13 +338,13 @@ enum BackupPackage {
     var staged: [(name: String, url: URL, isAudio: Bool)] = []
     for (names, isAudio) in [(audioNames.sorted(), true), (photoNames.sorted(), false)] {
       for name in names {
+        try Task.checkCancellation()
         guard MediaFiles.isPlainName(name) else { throw BackupError.unsafeReference(name) }
-        let source = mediaURL.appendingPathComponent(name)
-        guard isRegularFile(source) else {
+        guard let source = BackupPackageFile.resolve(name, folder: mediaFolderName, in: packageURL) else {
           throw BackupError.mediaInstallFailed([name])
         }
         let destination = staging.appendingPathComponent(name)
-        guard copy(from: source, to: destination) else {
+        guard copy(from: source, to: destination), BackupPackageFile.resolve(name, in: staging) != nil else {
           throw BackupError.mediaInstallFailed([name])
         }
         staged.append((name, destination, isAudio))
@@ -361,6 +367,7 @@ enum BackupPackage {
       }
     }
     for file in staged {
+      if Task.isCancelled { rollBack(); throw CancellationError() }
       let folder = file.isAudio ? MediaFiles.directory : MediaFiles.photosDirectory
       let destination = folder.appendingPathComponent(file.name)
       // A same-named file on the device is a conflict, not a replacement, so
@@ -502,15 +509,6 @@ enum BackupPackage {
     return (audio, photos)
   }
 
-  /// True for a real file, and false for a folder or a symlink. Media must be a
-  /// plain file, so a directory or a link in a package is refused.
-  private static func isRegularFile(_ url: URL) -> Bool {
-    guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]) else {
-      return false
-    }
-    return values.isRegularFile == true && values.isSymbolicLink != true
-  }
-
   @discardableResult
   private static func copy(from source: URL, to destination: URL) -> Bool {
     let fileManager = FileManager.default
@@ -530,6 +528,7 @@ enum BackupPackage {
           !hasDuplicates(manifest.tasks.map(\.id)),
           !hasDuplicates(manifest.lifeLogEntries.map(\.id)),
           !hasDuplicates(manifest.people.map(\.id)),
+          !hasDuplicates((manifest.documents ?? []).map(\.id)),
           !hasDuplicates(manifest.aiHistory.map(\.id)) else {
       throw BackupError.duplicateIdentifiers
     }

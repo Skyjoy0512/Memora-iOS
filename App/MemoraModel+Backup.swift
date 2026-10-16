@@ -48,6 +48,7 @@ extension MemoraModel {
   /// Writes a versioned package of the records and their media, off the main
   /// actor so the screen stays responsive while the files are copied.
   func makeBackupPackage() async throws -> URL {
+    guard currentTeamID == nil else { throw BackupPackage.BackupError.personalWorkspaceRequired }
     // Try once more to write any inline photos an older record still holds, so
     // the package carries files instead of bytes a restore would refuse.
     materializePendingLegacyPhotos()
@@ -197,13 +198,15 @@ extension MemoraModel {
   /// checked and its media put in place off the main actor; only the records are
   /// applied here, once every file is confirmed.
   func restoreBackup(from packageURL: URL) async throws {
+    guard currentTeamID == nil else { throw BackupPackage.BackupError.personalWorkspaceRequired }
     // A store that could not be read must not be written over, and nothing may
     // be in flight.
     guard !isStoreProtected else { throw BackupPackage.BackupError.storeProtected }
     guard !isRecording, !isSavingCapture, recordingDraft == nil else {
       throw BackupPackage.BackupError.busy
     }
-    guard !isRestoring, !isImportingShareInbox, processing.activeIDs.isEmpty, speakerAnalysisIDs.isEmpty,
+    guard !isRestoring, !isImportingShareInbox, !isAIChatResponding, residentJobs.isEmpty,
+          projectChatJobs.isEmpty, webResearchJobs.isEmpty, processing.activeIDs.isEmpty, speakerAnalysisIDs.isEmpty,
           !isEnrollingSpeaker else { throw BackupPackage.BackupError.busy }
     guard isEmpty else { throw BackupPackage.BackupError.notEmpty }
 
@@ -212,68 +215,55 @@ extension MemoraModel {
     isRestoring = true
     defer { isRestoring = false }
 
-    let (manifest, installed, workspaceInstalled) = try await Task.detached(priority: .userInitiated) {
-      let manifest = try BackupPackage.read(from: packageURL)
-      let installed = try BackupPackage.install(mediaFrom: packageURL, manifest: manifest)
-      do {
-        let workspaceInstalled = try ProjectWorkspaceBackup.install(manifest.projectSources ?? [], from: packageURL, additionalNames: manifest.additionalWorkspaceFiles)
-        return (manifest, installed, workspaceInstalled)
-      } catch {
-        BackupPackage.removeInstalledMedia(installed)
-        throw error
+    let generation = aiWorkspaceGeneration
+    let workspace = currentTeamID
+    try await BackupRestoreTransaction.restore(from: packageURL) { manifest in
+      guard self.aiWorkspaceGeneration == generation, self.currentTeamID == workspace else {
+        throw CancellationError()
       }
-    }.value
+      guard !self.isStoreProtected else { throw BackupPackage.BackupError.storeProtected }
+      guard self.isEmpty else { throw BackupPackage.BackupError.notEmpty }
 
-    // The wait above yielded; a record could have been added since. Check again
-    // right before the write (no await between here and the commit) and take the
-    // newly created files back rather than replacing anything.
-    guard isEmpty else {
-      BackupPackage.removeInstalledMedia(installed)
-      ProjectWorkspaceBackup.remove(workspaceInstalled)
-      throw BackupPackage.BackupError.notEmpty
-    }
+      // The records go in as one write. If it fails, only the files this restore
+      // just created are taken back, so the device is left as it was.
+      let stored = persistBatch {
+        [
+          (key: StorageKey.meetings, data: try RecordStore.encoded(manifest.meetings)),
+          (key: StorageKey.spaces, data: try RecordStore.encoded(manifest.spaces)),
+          (key: StorageKey.tasks, data: try RecordStore.encoded(manifest.tasks)),
+          (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(manifest.lifeLogEntries)),
+          (key: StorageKey.people, data: try RecordStore.encoded(manifest.people)),
+          (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory)),
+          (key: StorageKey.aiMemories, data: try RecordStore.encoded(manifest.aiMemories ?? aiMemories)),
+          (key: "memora.mailDrafts.v1", data: try RecordStore.encoded(manifest.mailDrafts ?? mailDrafts)),
+          (key: "memora.companyTemplates.v1", data: try RecordStore.encoded(manifest.companyTemplates ?? companyTemplates)),
+          (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? [])),
+          (key: StorageKey.projectSources, data: try RecordStore.encoded(manifest.projectSources ?? [])),
+          (key: StorageKey.projectChats, data: try RecordStore.encoded(manifest.projectChats ?? [])),
+          (key: "memora.webResearch.v1", data: try RecordStore.encoded(manifest.webResearchReports ?? [])),
+          (key: StorageKey.customSkills, data: try RecordStore.encoded(manifest.customSkills ?? [])),
+          (key: StorageKey.skillUsage, data: try RecordStore.encoded(manifest.skillSelections ?? []))
+        ]
+      }
+      guard stored else {
+        throw BackupPackage.BackupError.storeWriteFailed
+      }
 
-    // The records go in as one write. If it fails, only the files this restore
-    // just created are taken back, so the device is left as it was.
-    let stored = persistBatch {
-      [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(manifest.meetings)),
-        (key: StorageKey.spaces, data: try RecordStore.encoded(manifest.spaces)),
-        (key: StorageKey.tasks, data: try RecordStore.encoded(manifest.tasks)),
-        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(manifest.lifeLogEntries)),
-        (key: StorageKey.people, data: try RecordStore.encoded(manifest.people)),
-        (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory)),
-        (key: StorageKey.aiMemories, data: try RecordStore.encoded(manifest.aiMemories ?? aiMemories)),
-        (key: "memora.mailDrafts.v1", data: try RecordStore.encoded(manifest.mailDrafts ?? mailDrafts)),
-        (key: "memora.companyTemplates.v1", data: try RecordStore.encoded(manifest.companyTemplates ?? companyTemplates)),
-        (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? [])),
-        (key: StorageKey.projectSources, data: try RecordStore.encoded(manifest.projectSources ?? [])),
-        (key: StorageKey.projectChats, data: try RecordStore.encoded(manifest.projectChats ?? [])),
-        (key: "memora.webResearch.v1", data: try RecordStore.encoded(manifest.webResearchReports ?? [])),
-        (key: StorageKey.customSkills, data: try RecordStore.encoded(manifest.customSkills ?? [])),
-        (key: StorageKey.skillUsage, data: try RecordStore.encoded(manifest.skillSelections ?? []))
-      ]
+      meetings = manifest.meetings
+      spaces = manifest.spaces
+      tasks = manifest.tasks
+      lifeLogEntries = manifest.lifeLogEntries
+      people = manifest.people
+      aiHistory = manifest.aiHistory
+      aiMemories = manifest.aiMemories ?? aiMemories
+      companyTemplates = manifest.companyTemplates ?? companyTemplates
+      mailDrafts = manifest.mailDrafts ?? mailDrafts
+      documents = manifest.documents ?? []
+      projectSources = manifest.projectSources ?? []
+      projectChats = manifest.projectChats ?? []
+      webResearchReports = manifest.webResearchReports ?? []
+      customSkills = manifest.customSkills ?? []
+      skillLastSelectedAt = Dictionary((manifest.skillSelections ?? []).map { ($0.skillID, $0.selectedAt) }, uniquingKeysWith: max)
     }
-    guard stored else {
-      BackupPackage.removeInstalledMedia(installed)
-      ProjectWorkspaceBackup.remove(workspaceInstalled)
-      throw BackupPackage.BackupError.mediaInstallFailed(installed.map(\.name))
-    }
-
-    meetings = manifest.meetings
-    spaces = manifest.spaces
-    tasks = manifest.tasks
-    lifeLogEntries = manifest.lifeLogEntries
-    people = manifest.people
-    aiHistory = manifest.aiHistory
-    aiMemories = manifest.aiMemories ?? aiMemories
-    companyTemplates = manifest.companyTemplates ?? companyTemplates
-    mailDrafts = manifest.mailDrafts ?? mailDrafts
-    documents = manifest.documents ?? []
-    projectSources = manifest.projectSources ?? []
-    projectChats = manifest.projectChats ?? []
-    webResearchReports = manifest.webResearchReports ?? []
-    customSkills = manifest.customSkills ?? []
-    skillLastSelectedAt = Dictionary((manifest.skillSelections ?? []).map { ($0.skillID, $0.selectedAt) }, uniquingKeysWith: max)
   }
 }
