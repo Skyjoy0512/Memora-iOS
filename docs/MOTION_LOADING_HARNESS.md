@@ -243,7 +243,7 @@ DEBUG画面は同じ本番loaderへsleepだけのreaderを注入する。手動�
 | `App/CloudTurnStreamReader.swift` | 本番の受信loopをHTTP接続から分離。初回通知即時、100ms更新間隔、終了時flush、取消、終端/引数検証を維持。clock/byte sequenceを隔離テストへ注入可能 |
 | `App/CloudTurnStreaming.swift` | SSEは同readerへ委譲。JSON fallbackも共通の容量定数を使う。HTTP接続/認証/課金要求を増やさず、sessionは必ず解放 |
 | `App/SyntheticAIEventStream.swift` | DEBUG限定の架空SSE生成。既存の表示検証画面から実readerを通せる。キー/HTTP/保存を使わない |
-| `App/MotionLoadingGalleryView.swift` | 従来の直接text差替えを、同じ架空本文のSSE受信へ変更。配置/コントロール/生成速度を維持 |
+| `App/MotionLoadingGalleryView.swift` | 従来の直接text差替えを、同じ架空本文のSSE受信へ変更。配置/コントロール/100msのfixture送出間隔を維持 |
 | `tools/checks/CloudSSETransportChecks.swift` | 生wire → 実reader → event/accumulator/turn decoderを通す回帰検証。通常JSON文字列ではなくSSEを入力 |
 | `tools/checks/CloudByteFramingBenchmark.swift` | wireフレーミングだけの独立host benchmark。ネットワーク/Markdown/SwiftUI/実機は含まない |
 | `tools/checks/run-next-generation-checks.sh` | transport検証とDEBUG fixture roundtripを追加 |
@@ -259,4 +259,7 @@ SSEの最後に区切りの空行を省く互換endpointに対しては、EOFで
 - 成功: 最終Debugの`bitrig preview -platform iOS`。iOS 27.1 SDKでビルドしたiPhone 18 Pro Maxシミュレーター上で、Settings → プロトタイプ → 状態と復旧 → Loading・本文表示から生成開始。実readerを通った架空回答の見出し・リスト・表・コード・検証段落12までの完成状態をAXで確認し、終端の本文をスクリーンショットでも確認。
 - 制約: 生成開始直後のAX取得は一度失敗した。再接続後には同じ画面で生成完了しており、取得できたrun logのFatal error/EXC_/SIGABRT/crash/termination検索は空だった。取得失敗の原因は未特定。中間フレームの連続観察やAnimation Hitchesの実測に成功したとは扱わない。
 - 修正済み: 初回ビルドのAsyncSequenceとglobal max/minの名前解決エラーは、不要な中間wrapperの除去と`Swift.min`の明示で解消。空行を保持するという当初のテスト期待とFoundationの実挙動の差を、今回のSSE修正へ反映した。
-- 未検証: 実HTTP接続、有料provider E2E、実iPhone、実際の課金額、ピークメモリ、録音/Omi/Widget等の実機回帰。既存の認証/承認/保存/UI配置を変更しない。Releaseの最終結果は次項。
+- 未検証: 実HTTP接続、有料provider E2E、実iPhone、実際の課金額、ピークメモリ、録音/Omi/Widget等の実機回帰。既存の認証/承認/保存/UI配置を変更しない。
+
+- 成功: 最終版の`bitrig build -destination generic/platform=iOS Simulator -configuration Release`（ログ`2026-10-16T13-39-16-95a01760.log`、result success）。既存Share ExtensionのAppIntents.framework非依存に対するmetadata extraction警告1件、コンパイルエラーなし。iOS 27.1 SDK / iOS 18 deployment targetのsimulator buildであり、実機Release性能の検証ではない。
+- コミット: provider turnの検証強化は`3702d62`、SSE/受信上限/隔離UI fixtureと回帰テストは`2ae2344`。追加のサービス契約・本番デプロイ・APIキー操作は発生していない。
