@@ -41,7 +41,7 @@ extension MemoraModel {
       if let refusal = await directPluginReadRefusal(call, messageID: messageID) { return refusal }
     }
     if compact, agentPluginPolicies[messageID]?.personID != nil,
-       let outcome = automaticRecordTool(call, messageID: messageID, purpose: .cloudAI, scope: scope) { return outcome }
+       let outcome = automaticRecordTool(call, messageID: messageID, purpose: .onDeviceAI, scope: scope) { return outcome }
     if automaticAccess {
       guard let tool = call.tool, AgentTool.residentTools.contains(tool) else {
         return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)

@@ -65,6 +65,7 @@ extension MemoraModel {
           !speakerAnalysisIDs.contains(id), !processing.isActive(id), !isRestoring, isStoreWritable() else { return }
     let selectedEngine = configuration?.engine ?? settingsAIConfiguration.engine
     let effectiveEngine = AIEngineService.effectiveEngine(selectedEngine)
+    let usesCloud = effectiveEngine == .cloud || effectiveEngine == .memora
     if effectiveEngine == .cloud || effectiveEngine == .memora {
       guard RecordAccessPolicy.allows(meeting.effectivePrivacy, purpose: .cloudAI,
         explicitCloudConsent: cloudDisclosureConfirmed) else {
@@ -81,10 +82,10 @@ extension MemoraModel {
       title: meeting.displayTitle,
       date: meeting.createdAt,
       duration: meeting.duration,
-      participantNames: (meeting.participantIDs ?? []).compactMap { person(id: $0)?.name },
+      participantNames: usesCloud ? [] : (meeting.participantIDs ?? []).compactMap { person(id: $0)?.name },
       transcript: meeting.transcript,
       template: choice,
-      glossary: transcriptionVocabulary,
+      glossary: processingVocabulary(external: usesCloud),
       preferences: preferences ?? summaryPreferences,
       automaticCandidates: automaticallySelect ? automaticSummaryCandidates(for: meeting, fallback: choice) : []
     )
@@ -220,7 +221,8 @@ extension MemoraModel {
       // record says so and keeps the audio for a retry — never sample text.
       return await TranscriptionService.transcribe(
         fileURL: original.audioURL,
-        vocabulary: self.transcriptionVocabulary
+        vocabulary: self.transcriptionVocabulary,
+        cloudVocabulary: self.processingVocabulary(external: true)
       )
     } apply: { [weak self] outcome in
       guard let self, !Task.isCancelled, !self.isRestoring, self.isStoreWritable(),

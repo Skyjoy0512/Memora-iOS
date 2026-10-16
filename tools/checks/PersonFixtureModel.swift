@@ -12,6 +12,7 @@ import Foundation
   var trashedLifeLogEntries: [TrashedLifeLogEntry] = []
   var pendingMediaDeletions: [PendingMediaDeletion] = []
   var spaces: [FixtureSpace] = []
+  var glossaryTerms: [String] = []
   var message = FixtureMessage()
   var personIndex = IdentifiableIndex<Person>()
   var taskIndex = IdentifiableIndex<MemoraTask>()
@@ -26,7 +27,14 @@ import Foundation
   var account: FixtureProfile?
   var deletionFailureMessage: String?
   var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
+  #if PERSON_PROVENANCE_CHECKS
+  var isAIMemoryEnabled = true
+  var aiMemories: [String] = []
+  var aiMessages: [FixtureMessage] = []
+  var reads: [RecordPrivacyTarget] { message.cloudProvenance?.references.map(\.target) ?? [] }
+  #else
   var reads: [RecordPrivacyTarget] = []
+  #endif
   enum StorageKey { static let tasks = "tasks", people = "people", meetings = "meetings", lifeLogEntries = "journal", lifeLogTrash = "journalTrash", pendingMediaDeletions = "deletions", autoLifeLogInbox = "inbox" }
   init(storeURL: URL) throws { store = LocalStore(fileURL: storeURL); try store.prepare() }
   func isStoreWritable() -> Bool { !isRestoring && !isStoreProtected && !rejectWrites }
@@ -44,8 +52,10 @@ import Foundation
   func scheduleUndo(_ action: UndoAction) {}
   func tasks(forMeeting id: UUID) -> [MemoraTask] { tasks.filter { $0.meetingID == id } }
   func meeting(id: UUID) -> Meeting? { meetings.first { $0.id == id } }
+  #if !PERSON_PROVENANCE_CHECKS
   func recordCloudReads(_ references: [RecordPrivacyTarget], messageID: UUID) { reads = references }
   func markCloudProvenanceIncomplete(_ id: UUID) {}
+  #endif
   func beginAgentStep(_ step: AgentStep, on id: UUID) -> UUID { step.id }
   func finishAgentStep(_ id: UUID, on messageID: UUID, state: AgentStep.State, detail: String?) {}
   static func agentTaskLine(_ task: MemoraTask) -> String { "id=\(task.id) \(task.title)" }
@@ -71,6 +81,15 @@ enum AgentTool: String {
 }
 extension AgentToolCall { var tool: AgentTool? { AgentTool(rawValue: name) } }
 struct FixtureMessage {
+  #if PERSON_PROVENANCE_CHECKS
+  enum Role { case user, assistant }
+  var role = Role.assistant
+  var text = ""
+  var isThinking = false
+  var cloudProvenance: AIConversationProvenance?
+  var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?
+  var projectSourceReferences: [AgentSourceReference] = []
+  #endif
   var sources: [AIChatSource] = []; var interfaceTaskIDs: Set<UUID> = []; var interfaceProjectIDs: Set<UUID> = []; var interfaceWorkspaceID: String?
 }
 struct FixtureSpace { var id: UUID; var name: String }
@@ -95,3 +114,15 @@ extension MemoraModel {
   func searchText(for meeting: Meeting) -> String { meeting.title }
   func agentSourceMatches(query: String, messageID: UUID) -> [String] { [] }
 }
+
+#if PERSON_PROVENANCE_CHECKS
+// These unrelated retrieval domains stay empty; the authority logic is production code.
+struct FixtureProjectSource: Codable { var id: UUID; var projectID: UUID? }
+extension MemoraModel {
+  func source(id: UUID) -> FixtureProjectSource? { nil }
+  func canReadAgentSource(_ source: FixtureProjectSource, compact: Bool, policy: AIPluginExecutionPolicy?) -> Bool { false }
+  func agentMessage(_ id: UUID) -> FixtureMessage? { message }
+  func relatedEpisodeContext(for text: String, budget: Int, cloud: Bool) -> (text: String, references: [AIRecordReference]) { ("", []) }
+  static func trailingHistory(_ text: String, budget: Int) -> String { String(text.suffix(budget)) }
+}
+#endif

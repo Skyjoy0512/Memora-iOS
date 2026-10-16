@@ -20,13 +20,16 @@ extension MemoraModel {
       let privacy = task.privacy ?? task.meetingID.flatMap { meeting(id: $0)?.effectivePrivacy }
       return "task:\(task.id):\(privacy?.updatedAt.timeIntervalSince1970 ?? 0)"
     }
-    let value = (records + journal + taskRecords).sorted().joined(separator: ",")
+    let personRecords = people.filter { allowsPersonAccess($0.id, purpose: purpose) }
+      .map { "person:\($0.id):\($0.privacy.updatedAt.timeIntervalSince1970)" }
+    let value = (records + journal + taskRecords + personRecords).sorted().joined(separator: ",")
     return AIRecordFingerprint.make(value) ?? ""
   }
 
   func privacy(for target: RecordPrivacyTarget) -> RecordPrivacy? {
     switch target {
     case .meeting(let id): return meeting(id: id)?.effectivePrivacy
+    case .person(let id): return person(id: id)?.effectivePrivacy
     case .journal(let id):
       guard let entry = lifeLogEntries.first(where: { $0.id == id }) else { return nil }
       var result = RecordAccessPolicy.effectiveRelatedPrivacy(entry.privacy,
@@ -43,6 +46,7 @@ extension MemoraModel {
   func minimumPrivacyClassification(for target: RecordPrivacyTarget) -> RecordPrivacy.Classification {
     switch target {
     case .meeting(let id): return meeting(id: id)?.minimumPrivacyClassification ?? .unknown
+    case .person: return .personal
     case .journal(let id):
       guard let entry = lifeLogEntries.first(where: { $0.id == id }) else { return .unknown }
       let parent = entry.meetingID.flatMap { meeting(id: $0)?.effectivePrivacy.classification } ?? .unknown
@@ -58,6 +62,7 @@ extension MemoraModel {
     guard !isRestoring, !isStoreProtected else { return false }
     switch target {
     case .meeting(let id): return allowsRecordAccess(id, purpose: purpose)
+    case .person(let id): return allowsPersonAccess(id, purpose: purpose)
     case .journal(let id):
       guard let entry = lifeLogEntries.first(where: { $0.id == id }) else { return false }
       return allowsJournalAccess(entry, purpose: purpose)
@@ -76,6 +81,12 @@ extension MemoraModel {
     if !supportsTeamPermission(target) { updated.allowsTeamSharing = false }
     switch target {
     case .meeting: return false
+    case .person(let id):
+      guard currentTeamID == nil, let index = people.firstIndex(where: { $0.id == id }) else { return false }
+      var candidate = people
+      candidate[index].privacy = updated
+      guard persistNow(candidate, forKey: StorageKey.people) else { return false }
+      people = candidate
     case .journal(let id):
       guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }),
             AIJournalPrivacy.allowsReading(kind: lifeLogEntries[index].kind, origin: lifeLogEntries[index].origin) else { return false }
@@ -103,7 +114,7 @@ extension MemoraModel {
     switch target {
     case .meeting: return true
     case .task(let id): return tasks.first { $0.id == id }?.meetingID != nil
-    case .journal: return false
+    case .journal, .person: return false
     }
   }
 
@@ -112,6 +123,7 @@ extension MemoraModel {
     case .meeting: return true
     case .task(let id): return tasks.first { $0.id == id }?.meetingID != nil
     case .journal(let id): return lifeLogEntries.first { $0.id == id }?.meetingID != nil
+    case .person: return false
     }
   }
 

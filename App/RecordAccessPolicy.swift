@@ -2,11 +2,13 @@ import Foundation
 
 enum RecordAccessPolicy {
   enum Purpose {
-    case cloudAI, automaticAgent, automaticWebhook, teamSharing
+    case cloudAI, automaticAgent, automaticWebhook, teamSharing, onDeviceAI
   }
   static let refusal = "この記録は外部送信が許可されていません。記録の「プライバシーと外部送信」で確認してください。"
+  static let personRefusal = "人物情報を参照できません。人物詳細の「その他」→「プライバシーと外部送信」で対象と許可を確認してください。関連する会議・タスク・メモには別の許可が必要です。"
 
   static func allows(_ privacy: RecordPrivacy, purpose: Purpose, explicitCloudConsent: Bool = false) -> Bool {
+    if purpose == .onDeviceAI { return true }
     if purpose == .cloudAI, explicitCloudConsent { return true }
     guard privacy.classification != .unknown else { return false }
     switch purpose {
@@ -14,6 +16,7 @@ enum RecordAccessPolicy {
     case .automaticAgent: return privacy.allowsCloudAI && privacy.allowsAutomaticAgentAccess
     case .automaticWebhook: return privacy.allowsAutomaticWebhook
     case .teamSharing: return privacy.allowsTeamSharing
+    case .onDeviceAI: return true
     }
   }
 

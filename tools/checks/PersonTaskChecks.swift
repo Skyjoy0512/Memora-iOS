@@ -9,8 +9,9 @@ struct PersonTaskChecks {
     defer { try? fm.removeItem(at: root) }
     let storeURL = root.appendingPathComponent("records.sqlite")
     let model = try MemoraModel(storeURL: storeURL)
-    let first = Person(id: UUID(), name: "田中 太郎", note: "営業", contactIdentifier: nil)
+    var first = Person(id: UUID(), name: "田中 太郎", note: "営業", contactIdentifier: nil)
     let other = Person(id: UUID(), name: "田中 太郎", note: "開発", contactIdentifier: nil)
+    first.privacy = RecordPrivacy(classification: .personal, allowsCloudAI: true)
     model.people = [first, other]
     let options = PersonSelectionOption.options(model.people)
     precondition(Set(options.map(\.label)).count == 2 && options.allSatisfy { $0.label.contains($0.id.uuidString.prefix(8)) })
@@ -58,13 +59,13 @@ struct PersonTaskChecks {
     let nameOnly = AgentToolCall(id: "name-only", name: "read_person", arguments: ["name": first.name])
     precondition(model.readPersonTool(nameOnly, messageID: messageID, compact: false, purpose: .cloudAI).isError)
     let privateRead = model.readPersonTool(call, messageID: messageID, compact: false, purpose: .cloudAI)
-    precondition(!privateRead.text.contains(assigned.title) && model.reads.isEmpty)
+    precondition(!privateRead.text.contains(assigned.title) && model.reads == [.person(first.id)])
     var granted = assigned
     granted.privacy = RecordPrivacy(classification: .personal, allowsCloudAI: true, allowsAutomaticAgentAccess: true)
     model.tasks[model.tasks.firstIndex { $0.id == assigned.id }!] = granted
     let allowedRead = model.readPersonTool(call, messageID: messageID, compact: false, purpose: .cloudAI)
     precondition(allowedRead.text.contains(assigned.title) && !allowedRead.text.contains("他方の担当"))
-    precondition(model.reads == [.task(assigned.id)])
+    precondition(Set(model.reads) == [.person(first.id), .task(assigned.id)])
     let wrong = AgentToolCall(id: "wrong", name: "read_person", arguments: ["name": "", "person_id": other.id.uuidString])
     precondition(model.readPersonTool(wrong, messageID: messageID, compact: false, purpose: .cloudAI).isError)
 

@@ -280,8 +280,8 @@ FTS5/BM25/日本語2-gram、明示scope、時点、freshな権限/出典で候�
 
 参加者タグを根拠に即時の抜粋summaryを構成。会議の決定と本人の発言を混同しない。
 人物ID固定のAsk AI、記録IDの許可範囲、会議/元資料への導線を実装。
-同姓/同名は自動確定しない。旧task/journalはname-basedのため本人の確定情報とは
-扱わず、曖昧なら利用者の確認が必要。複数会議を跨ぐ意味的topic clusteringは未実装。
+同姓/同名は自動確定しない。task/journalは継続実装で人物IDを明示指定でき、旧name-only情報は
+未確認と区別する。人物情報の独立した許可とfingerprintも継続実装で追加。複数会議を跨ぐ意味的topic clusteringは未実装。
 
 ### F. 資料
 
@@ -324,6 +324,7 @@ real-cloudの統合シナリオA〜E、実Mail送信/認証、Word/PowerPoint最
   それまではteam会話へ個人recordを流さない。
 - P1: journal/task/personを含む成果物の出典、より自然なtopic要約、確認付きの構造化memory更新。task/journalの人物ID関連付けは継続実装済み。
   document/source/外部メールを跨ぐ永続provenanceを拡張し、安全な履歴再利用率を上げる。
+  人物metadataの独立した許可とfingerprintは継続実装済み。
 - P1: 会社書式のrun跨ぎmarker/表・画像差込、Office実レンダラーによるoverflow/ページ数確認。
   利用者管理のpython-docx/python-pptx workerで高度編集を別PoCとして検証する。
 - P1: Gmail Drafts用OAuth同意/許可分離/再認証/E2E。実送信は常に本人の明示確認。
@@ -569,3 +570,11 @@ PDF変換は未対応表示にし、標準資料の既存PDFは維持。本文�
 人物限定Ask AIは固定したjournal IDと個別の送信許可を使い、位置/自動記録は送信しない。
 関連の変更で許可を失効し、内容/範囲/削除を送信前に再検証する。人物統合のjournal移動も
 既存の一括保存に含め、旧形式/同名再登録/途中失敗/SQLite再読込を隔離fixtureで検査する。
+
+
+## 継続実装: 人物情報の許可と出典
+
+[変更と検証の詳細](ASK_AI_PERSON_PRIVACY.md)。人物名/人物メモに独立した許可を追加し、
+写真/連絡先IDを除く値を型付き出典へ保存する。変更/削除/許可失効を送信前と履歴再利用前に確認する。
+人物と元記録の許可、端末内とクラウドの目的を分け、補助語彙からの台帳情報の外部送信も抑制する。
+資料/メールへのtyped sourceの表示統合は引き続き残る。

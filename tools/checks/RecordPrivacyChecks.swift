@@ -4,6 +4,7 @@ import Foundation
 struct RecordPrivacyChecks {
   static func main() throws {
     var privacy = RecordPrivacy()
+    precondition(RecordAccessPolicy.allows(privacy, purpose: .onDeviceAI))
     for purpose in [RecordAccessPolicy.Purpose.cloudAI, .automaticAgent, .automaticWebhook, .teamSharing] {
       precondition(!RecordAccessPolicy.allows(privacy, purpose: purpose))
     }

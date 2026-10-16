@@ -42,11 +42,16 @@ struct RecordPrivacySettingsView: View {
         }
         .disabled(draft.classification == .unknown || !model.cloudReadingIsAvailable(for: target))
         Section {
-          Text("今回だけクラウド要約を実行する送信確認とは別の設定です。過去の機密形式・用途による保護は一般テンプレートへの変更でも解除しません。声の特徴量は送信しません。")
-            .foregroundStyle(.secondary)
+          if case .person = target {
+            Text("人物名と人物メモの利用を許可します。写真と連絡先IDは送信しません。関連する会議・タスク・メモの許可はそれぞれ別に確認します。人物名や人物メモの編集・統合で、この許可は解除されます。")
+              .foregroundStyle(.secondary)
+          } else {
+            Text("今回だけクラウド要約を実行する送信確認とは別の設定です。過去の機密形式・用途による保護は一般テンプレートへの変更でも解除しません。声の特徴量は送信しません。")
+              .foregroundStyle(.secondary)
+          }
           if !model.cloudReadingIsAvailable(for: target) {
             Text("位置情報・自動検出した移動や滞在は外部AIへ送信しません。")
-          } else if case .meeting = target {} else {
+          } else if case .person = target {} else if case .meeting = target {} else {
             Text("元の録音に関連する記録は、元の録音の許可も必要です。タスクの元の会議を変更すると、そのタスクの外部利用許可は解除されます。")
           }
           if let failure { Text(failure).foregroundStyle(.red) }

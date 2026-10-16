@@ -45,6 +45,7 @@ import SQLite3
     let grant = RecordPrivacy(classification: .personal, allowsCloudAI: true, allowsAutomaticAgentAccess: true)
     let validGrant = await model.setRecordPrivacy(grant, target: .journal(linked.id))
     precondition(validGrant)
+    let personGrant = await model.setRecordPrivacy(grant, target: .person(person.id)); precondition(personGrant)
     let messageID = UUID()
     model.aiPersonScopeID = person.id
     let policy = AIPluginExecutionPolicy(pluginIDs: ["person:\(person.id)"],
@@ -58,11 +59,11 @@ import SQLite3
     let read = model.readPersonTool(personCall, messageID: messageID, compact: false, purpose: .cloudAI)
     precondition(read.text.contains("編集した本文") && read.text.contains("本人の発言・参加の確定ではない"))
     precondition(!read.text.contains("同名の別の人物") && !read.text.contains(mention.title))
-    precondition(model.reads == [.journal(linked.id)])
+    precondition(Set(model.reads) == [.person(person.id), .journal(linked.id)])
     let deniedGrant = await model.setRecordPrivacy(RecordPrivacy(classification: .personal), target: .journal(linked.id))
     precondition(deniedGrant)
     let revokedRead = model.readPersonTool(personCall, messageID: messageID, compact: false, purpose: .cloudAI)
-    precondition(!revokedRead.text.contains("編集した本文") && model.reads.isEmpty)
+    precondition(!revokedRead.text.contains("編集した本文") && model.reads == [.person(person.id)])
     let restoredGrant = await model.setRecordPrivacy(grant, target: .journal(linked.id)); precondition(restoredGrant)
 
     // Colliding UUIDs from a different record type must not broaden a person grant.

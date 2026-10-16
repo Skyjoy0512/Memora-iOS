@@ -4,7 +4,7 @@ cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-person-tasks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 swiftc -enable-bare-slash-regex Shared/MemoraIcon.swift App/LocalStore.swift App/Person.swift App/PersonIdentity.swift \
-  App/PersonSelectionOption.swift App/PersonTaskAssociation.swift App/PersonMemory.swift App/PersonConversationSummary.swift \
+  App/PersonAIContext.swift App/MemoraModel+PersonPrivacy.swift App/PersonSelectionOption.swift App/PersonTaskAssociation.swift App/PersonMemory.swift App/PersonConversationSummary.swift \
   App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift App/TaskOwnership.swift App/TaskHierarchy.swift \
   App/RecordPrivacy.swift App/RecordAccessPolicy.swift App/SummarySensitivity.swift App/RecordPrivacyTarget.swift \
   App/IdentifiableIndex.swift App/UndoAction.swift App/SummaryActionItem.swift App/AIPluginExecutionPolicy.swift \

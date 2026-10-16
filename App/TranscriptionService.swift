@@ -6,8 +6,8 @@ import Speech
 /// Transcribes audio with the chosen engine and falls back when it cannot run
 /// here (missing assets, unsupported locale, or an engine that is not wired yet).
 enum TranscriptionService {
-  /// `vocabulary` is the words to listen for: the glossary and known names.
-  static func transcribe(fileURL: URL?, vocabulary: [String] = []) async -> TranscriptionOutcome {
+  /// Choose the vocabulary at dispatch, even when engine settings changed while queued.
+  static func transcribe(fileURL: URL?, vocabulary: [String] = [], cloudVocabulary: [String] = []) async -> TranscriptionOutcome {
     guard let fileURL else { return .unavailable }
 
     let defaults = UserDefaults.standard
@@ -53,7 +53,7 @@ enum TranscriptionService {
           fileURL: fileURL,
           locale: language.locale,
           provider: provider,
-          vocabulary: vocabulary
+          vocabulary: cloudVocabulary
         )
         return .segments(segments)
       } catch CloudTranscriptionService.Failure.missingKey {

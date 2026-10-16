@@ -6,6 +6,7 @@ struct PersonDetailView: View {
   @Environment(MemoraModel.self) private var model
   var personID: UUID
   @State private var isEditing = false
+  @State private var isPrivacyPresented = false
   @State private var editingTask: MemoraTask?
   @State private var selectedJournal: LifeLogEntry?
 
@@ -155,12 +156,19 @@ struct PersonDetailView: View {
     .navigationTitle(memory.person.name)
     .toolbar {
       ToolbarActionItem {
-        ToolbarIconButton("編集", icon: .pencil) { isEditing = true }
-          .labelStyle(.iconOnly)
+        Menu {
+          Button("編集", icon: .pencil) { isEditing = true }
+          Button("プライバシーと外部送信", icon: .lockShield) { isPrivacyPresented = true }
+        } label: {
+          ToolbarActionLabel("その他", icon: .ellipsis)
+        }
       }
     }
     .sheet(isPresented: $isEditing) {
       PersonEditSheet(personID: memory.person.id)
+    }
+    .sheet(isPresented: $isPrivacyPresented) {
+      RecordPrivacySettingsView(target: .person(personID))
     }
     .sheet(item: $editingTask) { task in
       TaskEditView(task: task)

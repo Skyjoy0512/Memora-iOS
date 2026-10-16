@@ -21,12 +21,18 @@ extension MemoraModel {
     glossaryTerms.removeAll { $0 == term }
   }
 
-  /// The glossary, then the people and projects the records already know,
-  /// without repeats. Names the person entered are as important as the
-  /// glossary itself, so they are included without asking twice.
+  /// Local recognition can use the address-book vocabulary without sending it.
   var transcriptionVocabulary: [String] {
+    Self.normalizedVocabulary(glossaryTerms + people.map(\.name) + spaces.map(\.name))
+  }
+
+  /// Explicitly registered terms have their own consent; person/project metadata does not.
+  func processingVocabulary(external: Bool) -> [String] {
+    external ? Self.normalizedVocabulary(glossaryTerms) : transcriptionVocabulary
+  }
+
+  private static func normalizedVocabulary(_ candidates: [String]) -> [String] {
     var seen: Set<String> = []
-    let candidates = glossaryTerms + people.map(\.name) + spaces.map(\.name)
     return candidates
       .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
       .filter { !$0.isEmpty && seen.insert($0.lowercased()).inserted }

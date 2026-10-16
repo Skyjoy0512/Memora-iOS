@@ -46,7 +46,7 @@ Debug previewと指定のnext-generation/motion-loading/optimization各runnerは
 ## 残る範囲
 
 - 実BYOKでの回答品質、端末上での通信中の許可変更、実機の性能/VoiceOver音声走査は未検証。
-- 人物metadata自体の独立した送信許可/fingerprintは未実装。人物ツールを使った過去回答は永続的なcloud再利用について引き続き不完全と扱う。
+- この段階では人物metadata自体の独立した送信許可/fingerprintは未実装だった。後続の[人物情報の許可と出典](ASK_AI_PERSON_PRIVACY.md)で追加。以前の不完全な回答を自動昇格させない。
 - Ask AIの引用UIと生成資料/メールの保存済み出典は主にmeeting単位。journalのtyped referenceは実行中の許可確認に使うが、全成果物へtyped sourceリンクを追加する作業は別途必要。
 - ゴミ箱内の旧人物IDを人物統合で書き換えない。復元後は削除済みIDとして残し、本人が選び直せる。元の本文を書き換えたり、名前だけの言及をまとめて確定したりしない。
 

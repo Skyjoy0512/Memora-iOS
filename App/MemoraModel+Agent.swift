@@ -21,6 +21,12 @@ extension MemoraModel {
     guard !trimmed.isEmpty, !isAIChatResponding else { return false }
 
     let configuration = askAIConfiguration
+    if let personID = pluginPolicy?.personID,
+       AIEngineService.effectiveEngine(configuration.engine) == .cloud,
+       !allowsPersonAccess(personID, purpose: .cloudAI) {
+      aiRequestRefusalMessage = RecordAccessPolicy.personRefusal
+      return false
+    }
     let attachmentContext: String?
     if let attachment {
       guard AIEngineService.effectiveEngine(configuration.engine) == .cloud,
@@ -81,6 +87,9 @@ extension MemoraModel {
     }
     aiMessages.append(placeholder)
     if let pluginPolicy { agentPluginPolicies[placeholder.id] = pluginPolicy }
+    if !runner.isOnDevice, let personID = pluginPolicy?.personID {
+      recordCloudReads([.person(personID)], messageID: placeholder.id)
+    }
     isAIChatResponding = true
 
     // The on-device window is small, so it gets only the end of the thread.

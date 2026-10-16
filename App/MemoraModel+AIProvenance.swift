@@ -11,6 +11,7 @@ extension MemoraModel {
     case .meeting(let id): fingerprint = meeting(id: id).flatMap(AIRecordFingerprint.make)
     case .journal(let id): fingerprint = lifeLogEntries.first { $0.id == id }.flatMap(AIRecordFingerprint.make)
     case .task(let id): fingerprint = tasks.first { $0.id == id }.flatMap(AIRecordFingerprint.make)
+    case .person(let id): fingerprint = person(id: id).map(PersonAIContext.init).flatMap(AIRecordFingerprint.make)
     }
     return fingerprint.map { AIRecordReference(target: target, fingerprint: $0) }
   }
@@ -47,7 +48,8 @@ extension MemoraModel {
     guard !isRestoring, !isStoreProtected else { return [] }
     return Set(meetings.filter { RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI) }.map { .meeting($0.id) }
       + lifeLogEntries.filter { allowsJournalAccess($0, purpose: .cloudAI) }.map { .journal($0.id) }
-      + tasks.filter { allowsTaskAccess($0, purpose: .cloudAI) }.map { .task($0.id) })
+      + tasks.filter { allowsTaskAccess($0, purpose: .cloudAI) }.map { .task($0.id) }
+      + people.filter { allowsPersonAccess($0.id, purpose: .cloudAI) }.map { .person($0.id) })
   }
 
   func recordCloudReads(_ targets: [RecordPrivacyTarget], messageID: UUID) {

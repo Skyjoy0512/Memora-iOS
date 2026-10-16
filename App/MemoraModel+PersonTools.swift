@@ -17,8 +17,13 @@ extension MemoraModel {
       }
       candidates = [person]
     } else { candidates = PersonIdentity.candidates(for: name, in: people) }
+    if let purpose, !candidates.allSatisfy({ allowsPersonAccess($0.id, purpose: purpose) }) {
+      return AgentToolOutcome(text: RecordAccessPolicy.personRefusal, isError: true)
+    }
     guard !name.isEmpty || !explicitID.isEmpty, candidates.count == 1, let person = candidates.first,
           var memory = memory(of: person.id) else {
+      if purpose != nil, purpose != .onDeviceAI { recordCloudReads(candidates.prefix(30).map { .person($0.id) }, messageID: messageID) }
+      if purpose == .onDeviceAI { markCloudProvenanceIncomplete(messageID) }
       return AgentToolOutcome(text: candidates.isEmpty ? "該当する人物はいません。" :
         "人物候補です。複数なら本人に確認し、person_idで指定してください。\n" + candidates.prefix(30).map { "id=\($0.id) \($0.name)" }.joined(separator: "\n"))
     }
@@ -40,19 +45,21 @@ extension MemoraModel {
       memory.nameMatchedJournalEntries = memory.nameMatchedJournalEntries.filter { allowsJournalAccess($0, purpose: purpose) }
       let ids = Set(memory.meetings.map(\.id))
       memory.decisions = memory.decisions.filter { ids.contains($0.meetingID) }
-      recordCloudReads(memory.meetings.map { .meeting($0.id) }
-        + (memory.assignedTasks + memory.sharedTasks + memory.nameMatchedTasks).map { .task($0.id) }
-        + (memory.journalEntries + memory.nameMatchedJournalEntries).map { .journal($0.id) }, messageID: messageID)
+      if purpose != .onDeviceAI {
+        recordCloudReads([.person(person.id)] + memory.meetings.map { .meeting($0.id) }
+          + (memory.assignedTasks + memory.sharedTasks + memory.nameMatchedTasks).map { .task($0.id) }
+          + (memory.journalEntries + memory.nameMatchedJournalEntries).map { .journal($0.id) }, messageID: messageID)
+      }
     }
-    // Person metadata has no independent cloud grant or fingerprint yet.
-    if !compact { markCloudProvenanceIncomplete(messageID) }
+    if purpose == .onDeviceAI || (purpose == nil && !compact) { markCloudProvenanceIncomplete(messageID) }
     let stepID = beginAgentStep(AgentStep(icon: AgentTool.readPerson.icon, title: "\(person.name)さんの記録を確認"), on: messageID)
     finishAgentStep(stepID, on: messageID, state: .done, detail: "会議\(memory.meetings.count)件")
 
     let meetingLimit = compact ? 4 : 12
     let taskLimit = compact ? 5 : 20
-    var parts = ["\(person.name)さん"]
-    if purpose == nil, let note = person.note, !note.isEmpty { parts.append("メモ: \(note)") }
+    let context = PersonAIContext(person)
+    var parts = ["\(context.name)さん"]
+    if let note = context.note, !note.isEmpty { parts.append("メモ: \(note)") }
     if let lastMet = memory.lastMet {
       parts.append("最後に会った日: \(Self.agentDate(lastMet))、一緒の会議: \(memory.meetings.count)件")
     }

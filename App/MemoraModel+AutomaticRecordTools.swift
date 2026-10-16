@@ -14,7 +14,8 @@ extension MemoraModel {
       return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
     }
     let personPolicy = agentPluginPolicies[messageID].flatMap { $0.personID == nil ? nil : $0 }
-    if let personPolicy, !personPolicyIsCurrent(personPolicy) {
+    if let personPolicy, !personPolicyIsCurrent(personPolicy)
+      || personPolicy.personID.map({ !allowsPersonAccess($0, purpose: purpose) }) == true {
       return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
     }
     let permitted = Self.meetings(in: scope, from: meetings)
@@ -97,10 +98,12 @@ extension MemoraModel {
       } + journal.map { "ジャーナル「\($0.title)」 \(String($0.summary.prefix(600)))" }
     default: break
     }
-    recordCloudReads(references, messageID: messageID)
+    if purpose == .onDeviceAI { markCloudProvenanceIncomplete(messageID) }
+    else { recordCloudReads(references, messageID: messageID) }
     let step = beginAgentStep(AgentStep(icon: tool.icon, title: "許可された記録を確認"), on: messageID)
-    finishAgentStep(step, on: messageID, state: .done, detail: "外部送信許可を適用")
-    return AgentToolOutcome(text: lines.isEmpty ? "外部送信が許可された該当記録はありません。未判定・未許可の記録は読みません。" : String(lines.joined(separator: "\n").prefix(32_000)))
+    finishAgentStep(step, on: messageID, state: .done, detail: purpose == .onDeviceAI ? "端末内の参照範囲を適用" : "外部送信許可を適用")
+    let empty = purpose == .onDeviceAI ? "この参照範囲に該当する記録はありません。" : "外部送信が許可された該当記録はありません。未判定・未許可の記録は読みません。"
+    return AgentToolOutcome(text: lines.isEmpty ? empty : String(lines.joined(separator: "\n").prefix(32_000)))
   }
 
 }

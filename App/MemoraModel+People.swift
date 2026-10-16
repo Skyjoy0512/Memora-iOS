@@ -12,6 +12,7 @@ extension MemoraModel {
 
   @discardableResult
   func addPerson(name: String, contactIdentifier: String? = nil) -> Person? {
+    guard currentTeamID == nil, !isRestoring, isStoreWritable() else { return nil }
     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return nil }
 
@@ -21,8 +22,10 @@ extension MemoraModel {
     }
 
     let person = Person(id: UUID(), name: trimmed, note: nil, contactIdentifier: contactIdentifier)
-    people.append(person)
-    persistPeople()
+    var candidate = people
+    candidate.append(person)
+    guard persistNow(candidate, forKey: StorageKey.people) else { return nil }
+    people = candidate
     return person
   }
 
@@ -35,10 +38,17 @@ extension MemoraModel {
     updatedPeople[index].name = trimmed
     let trimmedNote = note?.trimmingCharacters(in: .whitespacesAndNewlines)
     updatedPeople[index].note = (trimmedNote?.isEmpty ?? true) ? nil : trimmedNote
+    if updatedPeople[index].name != people[index].name || updatedPeople[index].note != people[index].note {
+      updatedPeople[index].privacy = people[index].effectivePrivacy
+      updatedPeople[index].privacy.revokeExternalPermissions()
+    }
     var updatedTasks = tasks
     for index in updatedTasks.indices {
       let task = updatedTasks[index]
-      if task.relationships.assigneePersonID == id { updatedTasks[index].assignee = trimmed }
+      if task.relationships.assigneePersonID == id, task.assignee != trimmed {
+        updatedTasks[index].assignee = trimmed
+        updatedTasks[index].privacy = taskPrivacyAfterPersonChange(task)
+      }
     }
     guard persistBatch({ [
       (key: StorageKey.people, data: try RecordStore.encoded(updatedPeople)),
@@ -57,6 +67,8 @@ extension MemoraModel {
     let targetName = people[targetIndex].name
     var updatedPeople = people
     if updatedPeople[targetIndex].photoData == nil { updatedPeople[targetIndex].photoData = updatedPeople[sourceIndex].photoData }
+    updatedPeople[targetIndex].privacy = people[targetIndex].effectivePrivacy
+    updatedPeople[targetIndex].privacy.revokeExternalPermissions()
     updatedPeople.removeAll { $0.id == source }
     var updatedMeetings = meetings
     for index in updatedMeetings.indices {
@@ -90,10 +102,15 @@ extension MemoraModel {
     return true
   }
 
-  func setPersonPhoto(_ id: UUID, data: Data?) {
-    guard let index = people.firstIndex(where: { $0.id == id }) else { return }
-    people[index].photoData = data
-    persistPeople()
+  @discardableResult
+  func setPersonPhoto(_ id: UUID, data: Data?) -> Bool {
+    guard currentTeamID == nil, !isRestoring, isStoreWritable(),
+          let index = people.firstIndex(where: { $0.id == id }) else { return false }
+    var candidate = people
+    candidate[index].photoData = data
+    guard persistNow(candidate, forKey: StorageKey.people) else { return false }
+    people = candidate
+    return true
   }
 
   @discardableResult
