@@ -110,7 +110,7 @@ enum AgentTool: String, CaseIterable {
     case .updateTasks:
       "指定したタスクの取り組む日・進み具合・完了状態をまとめて変更する。変更前後を表示して承認を待つ。期限・担当・本文は変更しない。"
     case .readPerson:
-      "人物について、一緒の会議・その人が引き受けたタスク・一緒に決めたこと・最後に会った日を返す。nameが空なら登録済みの人の一覧。「〇〇さんと何を話した？」「約束は？」に使う。"
+      "人物に関連する会議・人物を指定した担当タスク・名前のみ一致する未確認タスクを返す。担当の指定は発言や約束の確定ではない。会議全体の決定と本人の合意を区別する。確認済みperson_idを優先し、その場合nameは空文字でもよい。両方が空なら人物候補の一覧。"
     case .createDocument:
       "Markdownの資料を作成して保存する（利用者の承認後に実行）。見出し・箇条書き・表で構成する。"
     case .createSlides:
@@ -188,7 +188,7 @@ enum AgentTool: String, CaseIterable {
         ], required: ["id"])]
       ], required: ["updates"])
     case .readPerson:
-      return object(["name": string("人の名前。曖昧な場合は候補を確認する。空なら一覧"), "person_id": string("確認済みの人物UUID。名前より優先")], required: ["name"])
+      return object(["name": string("人の名前。曖昧なら候補を確認する。確認済みperson_idがあれば空文字でもよい。両方が空なら候補一覧"), "person_id": string("確認済みの人物UUID。名前より優先")], required: ["name"])
     case .createDocument:
       return object([
         "title": string("資料のタイトル"),

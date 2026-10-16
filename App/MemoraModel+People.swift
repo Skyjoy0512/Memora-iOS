@@ -26,78 +26,59 @@ extension MemoraModel {
     return person
   }
 
-  /// Renames a person and follows the change through to the tasks that used the
-  /// old name, so no task is left pointing at a name nobody has.
-  func updatePerson(_ id: UUID, name: String, note: String?) {
-    guard let index = people.firstIndex(where: { $0.id == id }) else { return }
+  @discardableResult
+  func updatePerson(_ id: UUID, name: String, note: String?) -> Bool {
+    guard !isRestoring, currentTeamID == nil, let index = people.firstIndex(where: { $0.id == id }) else { return false }
     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { return }
-
-    let oldName = people[index].name
+    guard !trimmed.isEmpty else { return false }
+    var updatedPeople = people
+    updatedPeople[index].name = trimmed
     let trimmedNote = note?.trimmingCharacters(in: .whitespacesAndNewlines)
-    people[index].name = trimmed
-    people[index].note = (trimmedNote?.isEmpty ?? true) ? nil : trimmedNote
-    persistPeople()
-
-    guard people.filter({ Self.isSameName($0.name, oldName) }).isEmpty,
-          oldName.compare(trimmed, options: .caseInsensitive) != .orderedSame else { return }
-    var changed = false
-    for taskIndex in tasks.indices {
-      guard let assignee = tasks[taskIndex].assignee,
-            assignee.compare(oldName, options: .caseInsensitive) == .orderedSame else { continue }
-      tasks[taskIndex].assignee = trimmed
-      changed = true
+    updatedPeople[index].note = (trimmedNote?.isEmpty ?? true) ? nil : trimmedNote
+    var updatedTasks = tasks
+    for index in updatedTasks.indices {
+      let task = updatedTasks[index]
+      if task.relationships.assigneePersonID == id { updatedTasks[index].assignee = trimmed }
     }
-    if changed {
-      persistTasks()
-    }
+    guard persistBatch({ [
+      (key: StorageKey.people, data: try RecordStore.encoded(updatedPeople)),
+      (key: StorageKey.tasks, data: try RecordStore.encoded(updatedTasks))
+    ] }) else { return false }
+    people = updatedPeople; tasks = updatedTasks
+    return true
   }
 
-  /// Merges a duplicate into the person to keep: their tags and task assignments
-  /// move over, then the duplicate is removed. Recordings are never deleted.
-  func mergePerson(_ source: UUID, into target: UUID) {
-    guard source != target,
+  /// User-confirmed merges move ID links together with tags in the same commit.
+  @discardableResult
+  func mergePerson(_ source: UUID, into target: UUID) -> Bool {
+    guard !isRestoring, currentTeamID == nil, source != target,
           let targetIndex = people.firstIndex(where: { $0.id == target }),
-          let sourceIndex = people.firstIndex(where: { $0.id == source }) else { return }
-
-    let sourceName = people[sourceIndex].name
+          let sourceIndex = people.firstIndex(where: { $0.id == source }) else { return false }
     let targetName = people[targetIndex].name
-
-    // Keep a photo rather than losing it to the duplicate.
-    if people[targetIndex].photoData == nil {
-      people[targetIndex].photoData = people[sourceIndex].photoData
+    var updatedPeople = people
+    if updatedPeople[targetIndex].photoData == nil { updatedPeople[targetIndex].photoData = updatedPeople[sourceIndex].photoData }
+    updatedPeople.removeAll { $0.id == source }
+    var updatedMeetings = meetings
+    for index in updatedMeetings.indices {
+      guard let ids = updatedMeetings[index].participantIDs, ids.contains(source) else { continue }
+      updatedMeetings[index].participantIDs = Array(Set(ids.map { $0 == source ? target : $0 })).sorted { $0.uuidString < $1.uuidString }
     }
-
-    var meetingsChanged = false
-    for index in meetings.indices {
-      guard var ids = meetings[index].participantIDs, ids.contains(source) else { continue }
-      ids.removeAll { $0 == source }
-      if !ids.contains(target) {
-        ids.append(target)
-      }
-      meetings[index].participantIDs = ids.isEmpty ? nil : ids
-      meetingsChanged = true
-    }
-    if meetingsChanged {
-      persistMeetings()
-    }
-
-    if people.filter({ Self.isSameName($0.name, sourceName) }).count == 1,
-       sourceName.compare(targetName, options: .caseInsensitive) != .orderedSame {
-      var tasksChanged = false
-      for index in tasks.indices {
-        guard let assignee = tasks[index].assignee,
-              assignee.compare(sourceName, options: .caseInsensitive) == .orderedSame else { continue }
-        tasks[index].assignee = targetName
-        tasksChanged = true
-      }
-      if tasksChanged {
-        persistTasks()
+    var updatedTasks = tasks
+    for index in updatedTasks.indices {
+      let task = updatedTasks[index]
+      if task.relationships.assigneePersonID == source {
+        updatedTasks[index].relationships.assigneePersonID = target
+        updatedTasks[index].privacy = taskPrivacyAfterPersonChange(task)
+        updatedTasks[index].assignee = targetName
       }
     }
-
-    people.removeAll { $0.id == source }
-    persistPeople()
+    guard persistBatch({ [
+      (key: StorageKey.people, data: try RecordStore.encoded(updatedPeople)),
+      (key: StorageKey.tasks, data: try RecordStore.encoded(updatedTasks)),
+      (key: StorageKey.meetings, data: try RecordStore.encoded(updatedMeetings))
+    ] }) else { return false }
+    people = updatedPeople; tasks = updatedTasks; meetings = updatedMeetings
+    return true
   }
 
   func setPersonPhoto(_ id: UUID, data: Data?) {
@@ -106,13 +87,19 @@ extension MemoraModel {
     persistPeople()
   }
 
-  func deletePerson(_ id: UUID) {
-    people.removeAll { $0.id == id }
-    persistPeople()
-    for index in meetings.indices {
-      meetings[index].participantIDs?.removeAll { $0 == id }
-    }
-    persistMeetings()
+  @discardableResult
+  func deletePerson(_ id: UUID) -> Bool {
+    guard !isRestoring, currentTeamID == nil, person(id: id) != nil else { return false }
+    let updatedPeople = people.filter { $0.id != id }
+    var updatedMeetings = meetings
+    for index in updatedMeetings.indices { updatedMeetings[index].participantIDs?.removeAll { $0 == id } }
+    guard persistBatch({ [
+      (key: StorageKey.people, data: try RecordStore.encoded(updatedPeople)),
+      (key: StorageKey.meetings, data: try RecordStore.encoded(updatedMeetings))
+    ] }) else { return false }
+    // Retain task IDs as tombstones so a new person with the same name cannot inherit them.
+    people = updatedPeople; meetings = updatedMeetings
+    return true
   }
 
   func toggleParticipant(personID: UUID, meeting meetingID: UUID) {
@@ -144,7 +131,8 @@ extension MemoraModel {
   func memory(of personID: UUID) -> PersonMemory? {
     guard let person = person(id: personID) else { return nil }
     let name = person.name
-    let uniqueName = people.filter { Self.isSameName($0.name, name) }.count == 1
+    let normalizedName = PersonIdentity.normalized(name)
+    let uniqueName = people.filter { PersonIdentity.normalized($0.name) == normalizedName }.count == 1
 
     let tagged = Set(meetings(withPerson: personID).map(\.id))
     let related = meetings
@@ -155,10 +143,9 @@ extension MemoraModel {
     let relatedIDs = Set(related.map(\.id))
 
     let open = tasks.filter { !$0.isCompleted }
-    let assigned = open.filter { task in
-      uniqueName && (task.assignee.map { Self.isSameName($0, name) } ?? false)
-    }
-    let assignedIDs = Set(assigned.map(\.id))
+    let assigned = open.filter { PersonTaskAssociation.isAssigned($0, to: personID) }
+    let nameMatched = open.filter { PersonTaskAssociation.nameMatches($0, normalizedName: normalizedName, isUnique: uniqueName) }
+    let assignedIDs = Set((assigned + nameMatched).map(\.id))
     let shared = open.filter { task in
       guard !assignedIDs.contains(task.id), let meetingID = task.meetingID else { return false }
       return relatedIDs.contains(meetingID)
@@ -182,7 +169,8 @@ extension MemoraModel {
       assignedTasks: assigned,
       sharedTasks: shared,
       decisions: Array(decisions),
-      journalEntries: Array(journal.prefix(20))
+      journalEntries: Array(journal.prefix(20)),
+      nameMatchedTasks: nameMatched
     )
   }
 

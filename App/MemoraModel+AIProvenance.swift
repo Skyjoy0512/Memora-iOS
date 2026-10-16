@@ -75,9 +75,8 @@ extension MemoraModel {
   func isCloudSessionAuthorized(_ messageID: UUID) -> Bool {
     guard !isRestoring, !isStoreProtected, let message = agentMessage(messageID),
           let provenance = message.cloudProvenance, let targets = message.cloudAuthorizationTargets else { return false }
-    if let policy = agentPluginPolicies[messageID], let personID = policy.personID {
-      guard aiPersonScopeID == personID, person(id: personID) != nil,
-            policy.recordIDs.isSubset(of: Set(meetings(withPerson: personID).map(\.id))) else { return false }
+    if let policy = agentPluginPolicies[messageID] {
+      guard personPolicyIsCurrent(policy) else { return false }
     }
     guard message.projectSourceReferences.allSatisfy({ reference in
       guard let source = source(id: reference.id), source.projectID == reference.projectID else { return false }

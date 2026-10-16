@@ -15,6 +15,7 @@ struct TaskEditView: View {
   @State private var workDate: Date
   @State private var progress: TaskProgress
   @State private var assignee: String
+  @State private var assigneePersonID: UUID?
   @State private var hasDueDate: Bool
   @State private var dueDate: Date
   @State private var meetingID: UUID?
@@ -41,6 +42,7 @@ struct TaskEditView: View {
     _workDate = State(initialValue: task.workDate ?? .now)
     _progress = State(initialValue: task.progress)
     _assignee = State(initialValue: task.assignee ?? "")
+    _assigneePersonID = State(initialValue: task.relationships.assigneePersonID)
     _hasDueDate = State(initialValue: task.dueDate != nil)
     _dueDate = State(initialValue: task.dueDate ?? Date.now.addingTimeInterval(86_400))
     _meetingID = State(initialValue: task.meetingID)
@@ -60,8 +62,7 @@ struct TaskEditView: View {
           TextField("タイトル", text: $title, axis: .vertical)
           TextField("メモ・完了条件", text: $detail, axis: .vertical)
             .lineLimit(3...8)
-          TextField("担当", text: $assignee)
-          Toggle("自分のタスク", isOn: $ownedByMe)
+          TaskAssigneeFields(people: model.people, name: $assignee, personID: $assigneePersonID, ownedByMe: $ownedByMe)
           if currentTask.isCompleted {
             LabeledContent("状態", value: currentTask.statusLabel)
           } else {
@@ -179,7 +180,7 @@ struct TaskEditView: View {
               remindsAtDue: hasDueDate && remindsAtDue,
               reminderTime: hasDueDate && remindsAtDue ? reminderTime : nil,
               ownedByMe: ownedByMe,
-              relationships: TaskRelationships(parentID: parentID, documentIDs: documentIDs)
+              relationships: TaskRelationships(parentID: parentID, documentIDs: documentIDs, assigneePersonID: ownedByMe ? nil : assigneePersonID)
             )
             if saved { dismiss() }
             else { saveError = true }
@@ -211,7 +212,7 @@ struct TaskEditView: View {
       .alert("保存できませんでした", isPresented: $saveError) {
         Button("閉じる", role: .cancel) {}
       } message: {
-        Text("親課題の循環や、保存先の状態を確認してください。入力内容は画面に残っています。")
+        Text("人物や親課題、保存先の状態を確認してください。入力内容は画面に残っています。")
       }
     }
     .presentationDetents([.medium, .large])

@@ -16,7 +16,7 @@ checks = [
     ('ProjectChatHistoryChecks', ['ProjectCitation', 'ProjectChatTurn', 'ProjectChatThread', 'ProjectChatHistory'], []),
     ('RecordStoreFailureChecks', ['RecordStore'], ['-DDEBUG']),
     ('HealthReviewLoaderChecks', ['HealthReviewSnapshot', 'HealthReviewLoader', 'ReviewPeriod'], []),
-    ('JournalPerformanceChecks', ['TaskOwnership'], ['-O']),
+    ('JournalPerformanceChecks', ['TaskOwnership', 'TaskRelationships'], ['-O']),
     ('JournalActivityDaysChecks', ['JournalActivityDays', 'TaskOwnership', 'MemoraTask', 'TaskRelationships', 'TaskProgress', 'RecordPrivacy', 'SummarySensitivity'], []),
     ('RecordPrivacyChecks', ['RecordPrivacy', 'RecordAccessPolicy', 'SummarySensitivity'], []),
     ('RootNavigationChecks', ['RootTab', 'RootNavigation', 'LibraryRoute', 'LibrarySection', 'AIQueryScope', 'MemoraArtwork'], []),

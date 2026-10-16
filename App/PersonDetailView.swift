@@ -73,11 +73,20 @@ struct PersonDetailView: View {
       }
 
       if !memory.assignedTasks.isEmpty {
-        Section("担当名が一致する未完了タスク") {
+        Section("担当する未完了タスク") {
           ForEach(memory.assignedTasks) { task in
             TaskRow(task: task, showsSource: true) { editingTask = task }
           }
         }
+      }
+
+      if !memory.nameMatchedTasks.isEmpty {
+        Section {
+          ForEach(memory.nameMatchedTasks) { task in
+            TaskRow(task: task, showsSource: true) { editingTask = task }
+          }
+        } header: { Text("担当名のみ一致・本人未確認") }
+        footer: { Text("タスクの編集で人物を選ぶと、この人の担当として関連付けられます。") }
       }
 
       if !memory.sharedTasks.isEmpty {

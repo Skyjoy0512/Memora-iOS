@@ -28,4 +28,4 @@ struct JournalPerformanceChecks {
   }
 }
 
-struct MemoraTask: Equatable { var ownedByMe: Bool?; var assignee: String?; var meetingID: UUID? }
+struct MemoraTask: Equatable { var ownedByMe: Bool?; var assignee: String?; var meetingID: UUID?; var relationships = TaskRelationships() }

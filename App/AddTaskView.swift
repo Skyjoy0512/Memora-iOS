@@ -10,6 +10,8 @@ struct AddTaskView: View {
   var parentTaskID: UUID?
   @State private var title = ""
   @State private var assignee = ""
+  @State private var assigneePersonID: UUID?
+  @State private var saveError = false
   @State private var ownedByMe = true
   @State private var detail = ""
   @State private var includesDueDate = false
@@ -23,10 +25,7 @@ struct AddTaskView: View {
       Form {
         Section("タスク") {
           TextField("すること", text: $title)
-          Toggle("自分のタスク", isOn: $ownedByMe)
-          if !ownedByMe {
-            TextField("担当（任意）", text: $assignee)
-          }
+          TaskAssigneeFields(people: model.people, name: $assignee, personID: $assigneePersonID, ownedByMe: $ownedByMe)
           TextField("メモ・完了条件", text: $detail, axis: .vertical)
             .lineLimit(3...8)
         }
@@ -69,19 +68,25 @@ struct AddTaskView: View {
           ToolbarIconButton("追加", icon: .plus) {
             let saved = model.addTask(
               title: title,
-              assignee: assignee,
+              assignee: ownedByMe ? "" : assignee,
               dueDate: includesDueDate ? dueDate : nil,
               meetingID: meetingID,
               remindsAtDue: includesDueDate && remindsAtDue,
               reminderTime: includesDueDate && remindsAtDue ? reminderTime : nil,
               ownedByMe: ownedByMe,
               parentID: parentTaskID,
-              detail: detail
+              detail: detail,
+              assigneePersonID: ownedByMe ? nil : assigneePersonID
             )
-            if saved { dismiss() }
+            if saved { dismiss() } else { saveError = true }
           }
           .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
+      }
+      .alert("保存できませんでした", isPresented: $saveError) {
+        Button("閉じる", role: .cancel) {}
+      } message: {
+        Text("人物や親課題、保存先の状態を確認してください。入力内容は画面に残っています。")
       }
       .onChange(of: includesDueDate) { _, isOn in
         if !isOn { remindsAtDue = false }

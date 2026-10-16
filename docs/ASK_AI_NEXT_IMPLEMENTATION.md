@@ -230,7 +230,7 @@ Debug preview: 2026-10-16T19-45-30-e7dc3e92.log成功（既存警告1件）。
 - 現在のTeamBackendは記録サービス未接続。チームの新しいAsk AI/常駐処理へ個人の
   SQLite recordsを渡さない。ワークスペース変更は進行中の処理を止める。
 - 人物taskの旧name照合は本人確定と表現しない。同名があるmergeで他人の担当を
-  まとめて書き換えない。新しいpersonID付きtask移行は未実装。
+  まとめて書き換えない。後続の[人物ID関連付け](ASK_AI_PERSON_TASKS.md)で、明示選択したtaskの人物IDを保存するよう拡張した。旧nameは自動変換しない。
 - CompanyTemplatesの実画面で登録導線と未接続の説明を確認。Dark +
   accessibility_extra_largeでも内容が折り返され、操作できる。新規画面のtintは
   モノトーンへ統一。toolbar導線のVoiceOver操作名を補正。既存draftへの検査用末尾入力は
@@ -322,7 +322,7 @@ real-cloudの統合シナリオA〜E、実Mail送信/認証、Word/PowerPoint最
   UI/E2E・新旧backupの端末UI実復元を確認（hostの実package+SQLite検証は継続作業で追加）。実機録音/Island/長い会話の性能を測定する。
 - P0: TeamBackendの実record schema/認可を接続し、個人storeと物理的に分離する。
   それまではteam会話へ個人recordを流さない。
-- P1: personID付きtask/journal関連、より自然なtopic要約、確認付きの構造化memory更新。
+- P1: personID付きjournal関連、task/personを含む成果物の出典、より自然なtopic要約、確認付きの構造化memory更新。taskの人物ID関連付けは継続実装済み。
   document/source/外部メールを跨ぐ永続provenanceを拡張し、安全な履歴再利用率を上げる。
 - P1: 会社書式のrun跨ぎmarker/表・画像差込、Office実レンダラーによるoverflow/ページ数確認。
   利用者管理のpython-docx/python-pptx workerで高度編集を別PoCとして検証する。
@@ -552,3 +552,12 @@ PDF変換は未対応表示にし、標準資料の既存PDFは維持。本文�
 保存失敗、停止、認可ゲート拒否、同名ファイル衝突では、配置したファイルと一括保存を
 取り消す。古い任意field省略版も復元経路を通す。実利用者のarchive/端末UIでの復元とは
 区別し、引き続き未検証としている。UIレイアウトの変更・外部API実行はない。
+
+
+## 継続実装: 人物IDとタスク
+
+[変更と検証の詳細](ASK_AI_PERSON_TASKS.md)。タスク作成・編集にネイティブの人物選択を追加。
+人物IDを使う担当と、名前だけ一致する本人未確認のタスクを分けて表示・取得する。
+人物の改名/統合は関連IDを保持し、一括保存が失敗したら画面状態も変更しない。
+人物削除後に同名の別人がタスクを引き継がないようにし、担当変更で外部送信許可を失効する。
+人物限定Ask AIは単独タスクにも対応し、ツール/送信前に範囲を再検証する。

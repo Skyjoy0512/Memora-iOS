@@ -36,7 +36,7 @@ extension MemoraModel {
     ownedByMe: Bool? = nil,
     relationships: TaskRelationships? = nil
   ) -> Bool {
-    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return false }
+    guard !isRestoring, currentTeamID == nil, let index = tasks.firstIndex(where: { $0.id == id }) else { return false }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return false }
     let trimmedAssignee = assignee.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -64,7 +64,16 @@ extension MemoraModel {
       candidate[index].ownedByMe = nil
     }
     if let relationships { candidate[index].relationships = relationships }
-    candidate[index].assignee = trimmedAssignee.isEmpty ? nil : trimmedAssignee
+    if relationships == nil, trimmedAssignee != (tasks[index].assignee ?? "") {
+      candidate[index].relationships.assigneePersonID = nil
+    }
+    if candidate[index].ownedByMe == true { candidate[index].relationships.assigneePersonID = nil }
+    let selectedID = candidate[index].relationships.assigneePersonID
+    if let selectedID, person(id: selectedID) == nil, selectedID != tasks[index].relationships.assigneePersonID { return false }
+    candidate[index].assignee = selectedID.flatMap { person(id: $0)?.name } ?? (trimmedAssignee.isEmpty ? nil : trimmedAssignee)
+    if selectedID != tasks[index].relationships.assigneePersonID {
+      candidate[index].privacy = taskPrivacyAfterPersonChange(tasks[index])
+    }
     candidate[index].dueDate = dueDate
     candidate[index].meetingID = meetingID
     if let detail { candidate[index].detail = detail.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -140,8 +149,11 @@ extension MemoraModel {
     reminderTime: Date? = nil,
     ownedByMe: Bool? = nil,
     parentID: UUID? = nil,
-    detail: String = ""
+    detail: String = "",
+    assigneePersonID: UUID? = nil
   ) -> Bool {
+    guard !isRestoring, currentTeamID == nil else { return false }
+    if let assigneePersonID { guard ownedByMe != true, person(id: assigneePersonID) != nil else { return false } }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return false }
     let trimmedAssignee = assignee.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -157,9 +169,14 @@ extension MemoraModel {
       remindsAtDue: remindsAtDue,
       reminderTime: reminderTime,
       ownedByMe: ownedByMe,
-      relationships: TaskRelationships(parentID: parentID)
+      relationships: TaskRelationships(parentID: parentID, assigneePersonID: assigneePersonID)
     )
     var taskWithNote = task
+    if let assigneePersonID {
+      taskWithNote.assignee = person(id: assigneePersonID)?.name
+      var privacy = RecordPrivacy(); privacy.protect(.personal)
+      taskWithNote.privacy = privacy
+    }
     taskWithNote.detail = detail.trimmingCharacters(in: .whitespacesAndNewlines)
     return insertTasks([taskWithNote])
   }
@@ -175,6 +192,13 @@ extension MemoraModel {
     tasks = candidate
     for task in additions { TaskReminderScheduler.refresh(task) }
     return true
+  }
+
+  func taskPrivacyAfterPersonChange(_ task: MemoraTask) -> RecordPrivacy {
+    var value = privacy(for: .task(task.id)) ?? task.privacy ?? RecordPrivacy()
+    value.protect(.personal)
+    value.revokeExternalPermissions()
+    return value
   }
 
   /// Files a summary's actions in the tasks tab, tied to their record. An

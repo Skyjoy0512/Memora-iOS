@@ -7,6 +7,11 @@ struct AIPluginExecutionPolicy {
   var limitsRecordReads: Bool
   var personID: UUID? = nil
   var templateIDs: Set<UUID> = []
+  var personTaskIDs: Set<UUID> = []
+
+  func includesTask(id: UUID, meetingID: UUID?) -> Bool {
+    !limitsRecordReads || personTaskIDs.contains(id) || meetingID.map(recordIDs.contains) == true
+  }
 
   static func selectionIDs(_ explicit: [String], webSearchRequested: Bool) -> [String] {
     guard !explicit.isEmpty else { return [] }

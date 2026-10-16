@@ -3,6 +3,7 @@ import Foundation
 enum TaskOwnership {
   static func isMine(_ task: MemoraTask, names: [String]) -> Bool {
     if let owned = task.ownedByMe { return owned }
+    if task.relationships.assigneePersonID != nil { return false }
     let owner = normalized(task.assignee ?? "")
     if owner.isEmpty { return task.meetingID == nil }
     let identities = names + ["Me", "自分", "私", "わたし"]
@@ -18,6 +19,7 @@ enum TaskOwnership {
 
   private static func isMine(_ task: MemoraTask, identities: Set<String>) -> Bool {
     if let owned = task.ownedByMe { return owned }
+    if task.relationships.assigneePersonID != nil { return false }
     let owner = normalized(task.assignee ?? "")
     if owner.isEmpty { return task.meetingID == nil }
     return identities.contains(owner)

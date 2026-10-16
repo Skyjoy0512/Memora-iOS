@@ -11,6 +11,7 @@ struct PersonEditSheet: View {
   @State private var mergeTarget: Person?
   @State private var isMergeConfirmationPresented = false
   @State private var didLoad = false
+  @State private var saveError = false
 
   private var person: Person? {
     model.person(id: personID)
@@ -25,6 +26,8 @@ struct PersonEditSheet: View {
   }
 
   var body: some View {
+    let allOptions = PersonSelectionOption.options(model.people)
+    let mergeOptions = allOptions.filter { $0.id != personID }
     NavigationStack {
       Form {
         Section("名前") {
@@ -42,9 +45,9 @@ struct PersonEditSheet: View {
 
         Section {
           Menu {
-            ForEach(otherPeople) { other in
-              Button(other.name) {
-                mergeTarget = other
+            ForEach(mergeOptions) { option in
+              Button(option.label) {
+                mergeTarget = otherPeople.first { $0.id == option.id }
                 isMergeConfirmationPresented = true
               }
             }
@@ -56,7 +59,7 @@ struct PersonEditSheet: View {
           if otherPeople.isEmpty {
             Text("統合できる相手がいません。")
           } else {
-            Text("参加している記録とタスクの担当は、選んだ相手の方へ移ります。記録は削除されません。")
+            Text("参加している記録と、人物を指定したタスクの担当は、選んだ相手へ移ります。担当名だけのタスクは変更しません。記録は削除されません。")
           }
         }
       }
@@ -68,8 +71,8 @@ struct PersonEditSheet: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
-            model.updatePerson(personID, name: trimmedName, note: note)
-            dismiss()
+            if model.updatePerson(personID, name: trimmedName, note: note) { dismiss() }
+            else { saveError = true }
           }
           .disabled(trimmedName.isEmpty)
         }
@@ -79,8 +82,15 @@ struct PersonEditSheet: View {
         Button("キャンセル", role: .cancel) { mergeTarget = nil }
       } message: {
         if let mergeTarget {
-          Text("「\(person?.name ?? "この人")」を「\(mergeTarget.name)」に統合します。参加している記録\(model.meetingCount(forPerson: personID))件とタスクの担当が「\(mergeTarget.name)」に移ります。")
+          let sourceLabel = allOptions.first { $0.id == personID }?.label ?? "この人"
+          let targetLabel = allOptions.first { $0.id == mergeTarget.id }?.label ?? mergeTarget.name
+          Text("「\(sourceLabel)」を「\(targetLabel)」に統合します。参加している記録\(model.meetingCount(forPerson: personID))件と、人物を指定したタスクの担当を移します。担当名だけのタスクは変更しません。")
         }
+      }
+      .alert("保存できませんでした", isPresented: $saveError) {
+        Button("閉じる", role: .cancel) {}
+      } message: {
+        Text("人物や保存先の状態を確認してください。入力内容は画面に残っています。")
       }
       .onAppear {
         guard !didLoad else { return }
@@ -93,8 +103,9 @@ struct PersonEditSheet: View {
 
   private func merge() {
     guard let mergeTarget else { return }
-    model.mergePerson(personID, into: mergeTarget.id)
-    self.mergeTarget = nil
-    dismiss()
+    if model.mergePerson(personID, into: mergeTarget.id) {
+      self.mergeTarget = nil
+      dismiss()
+    } else { saveError = true }
   }
 }

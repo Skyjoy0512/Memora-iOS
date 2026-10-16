@@ -14,7 +14,7 @@ struct PersonMemory {
   var person: Person
   /// Newest first.
   var meetings: [Meeting]
-  /// Open tasks assigned to them: what they promised.
+  /// A selected assignee is evidence of assignment, not proof of a spoken promise.
   var assignedTasks: [MemoraTask]
   /// Open tasks from meetings with them that are assigned to someone else or
   /// no one: what is still owed between you.
@@ -22,6 +22,7 @@ struct PersonMemory {
   /// Newest first, a few per meeting.
   var decisions: [Decision]
   var journalEntries: [LifeLogEntry]
+  var nameMatchedTasks: [MemoraTask] = []
 
   var conversationSummary: PersonConversationSummary {
     PersonConversationSummary(topics: meetings.prefix(30).map { meeting in

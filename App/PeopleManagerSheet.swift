@@ -81,9 +81,8 @@ struct PeopleManagerSheet: View {
               }
             }
             .onDelete { indexSet in
-              for index in indexSet {
-                model.deletePerson(model.people[index].id)
-              }
+              let ids = indexSet.compactMap { model.people.indices.contains($0) ? model.people[$0].id : nil }
+              for id in ids { model.deletePerson(id) }
             }
           }
         }

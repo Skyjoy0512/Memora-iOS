@@ -18,7 +18,7 @@ extension MemoraModel {
       .filter { RecordAccessPolicy.allows($0.effectivePrivacy, purpose: purpose)
         && (personPolicy == nil || personPolicy?.recordIDs.contains($0.id) == true) }
     let permittedTasks = self.permittedTasks(for: purpose, scope: scope).filter { task in
-      personPolicy == nil || task.meetingID.map { personPolicy?.recordIDs.contains($0) == true } == true
+      personPolicy?.includesTask(id: task.id, meetingID: task.meetingID) ?? true
     }
     let entries = scope == .all && personPolicy == nil ? lifeLogEntries.filter { allowsJournalAccess($0, purpose: purpose) } : []
     var lines: [String] = []
