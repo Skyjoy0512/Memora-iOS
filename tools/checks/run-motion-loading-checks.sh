@@ -16,5 +16,7 @@ swiftc App/IntegrationCatalog.swift App/LibrarySection.swift tools/checks/Catalo
 "$check_dir/catalog"
 swiftc App/AIAnswerFailure.swift App/AgentSessionBudget.swift tools/checks/AgentBudgetChecks.swift -o "$check_dir/budget"
 "$check_dir/budget"
-swiftc App/AIAnswerFailure.swift App/LLMModelOption.swift App/LLMProvider.swift App/AgentGenerationPolicy.swift App/AgentOutputBudget.swift App/CloudTokenUsage.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/AgentGenerationChecks.swift -o "$check_dir/generation"
+swiftc App/AIAnswerFailure.swift App/AgentSessionBudget.swift App/LLMModelOption.swift App/LLMProvider.swift App/AgentGenerationPolicy.swift App/AgentOutputBudget.swift App/CloudTokenUsage.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/AgentGenerationChecks.swift -o "$check_dir/generation"
 "$check_dir/generation"
+swiftc App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentSessionBudget.swift App/AgentOutputBudget.swift App/AgentRunBudget.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/AgentRunBudgetChecks.swift -o "$check_dir/run-budget"
+"$check_dir/run-budget"

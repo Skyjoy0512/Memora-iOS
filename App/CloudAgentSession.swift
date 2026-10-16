@@ -14,13 +14,12 @@ final class CloudAgentSession {
   /// Tools from connected MCP servers, loaded before the first turn.
   var externalTools: [MCPTool] = []
   private var messages: [[String: Any]] = []
-  private var budget = AgentSessionBudget()
-  private var outputBudget = AgentOutputBudget()
+  let runBudget: AgentRunBudget
 
   /// Returns nil when there is no key for the provider; the caller says so.
   /// `tools` narrows what the model is offered; resident agents get only the
   /// reading tools.
-  init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil, toolDescriptions: [AgentTool: String] = [:]) {
+  init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil, toolDescriptions: [AgentTool: String] = [:], runBudget: AgentRunBudget? = nil) {
     guard llm.supportsToolCalling, let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return nil
     }
@@ -29,6 +28,7 @@ final class CloudAgentSession {
     self.system = system
     self.tools = tools ?? AgentTool.offered
     self.toolDescriptions = toolDescriptions
+    self.runBudget = runBudget ?? AgentRunBudget()
   }
 
   func addUserMessage(_ text: String) {
@@ -64,7 +64,7 @@ final class CloudAgentSession {
   func next(onText: (@MainActor (String) -> Void)? = nil) async throws -> AgentTurn {
     guard !llm.modelID.isEmpty else { throw AIAnswerFailure.modelUnavailable }
     try Task.checkCancellation()
-    guard budget.hasTime() else { throw AIAnswerFailure.executionLimit }
+    try runBudget.check()
     do {
       return llm.provider.usesAnthropicAPI ? try await anthropicTurn(onText: onText) : try await chatCompletionsTurn(onText: onText)
     } catch let failure as AIAnswerFailure {
@@ -95,18 +95,18 @@ final class CloudAgentSession {
     return object
   }
 
-  private func reserveOutput(in body: inout [String: Any], isStreaming: Bool) throws -> Bool {
+  private func reserveOutput(in body: inout [String: Any], isStreaming: Bool) throws -> AgentOutputBudget.Reservation? {
     guard let policy = AgentGenerationPolicy.resolve(provider: llm.provider, modelID: llm.modelID,
-      hasCustomEndpoint: llm.endpoint != nil || llm.credentialAccount != nil) else { return false }
-    let allowance = try outputBudget.reserve(maximum: policy.maximumOutputTokens)
-    policy.apply(to: &body, allowance: allowance, isStreaming: isStreaming)
-    return true
+      hasCustomEndpoint: llm.endpoint != nil || llm.credentialAccount != nil) else { return nil }
+    let reservation = try runBudget.reserveOutput(maximum: policy.maximumOutputTokens)
+    policy.apply(to: &body, allowance: reservation.maximumTokens, isStreaming: isStreaming)
+    return reservation
   }
 
-  private func settleOutput(_ response: [String: Any], reserved: Bool) throws {
-    guard reserved else { return }
+  private func settleOutput(_ response: [String: Any], reserved: AgentOutputBudget.Reservation?) throws {
+    guard let reserved else { return }
     let usage = CloudTokenUsage(response: response, usesAnthropicAPI: llm.provider.usesAnthropicAPI)
-    try outputBudget.settle(reportedOutputTokens: usage.outputTokens)
+    try runBudget.settleOutput(reserved, reportedOutputTokens: usage.outputTokens)
   }
 
   // MARK: - Anthropic
@@ -142,7 +142,7 @@ final class CloudAgentSession {
     let outputIsReserved = try reserveOutput(in: &body, isStreaming: onText != nil)
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-    try budget.reserveRequest(bytes: request.httpBody?.count ?? 0)
+    try runBudget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]
     if let onText {
       decoded = try await CloudTurnStreaming.response(for: request, provider: .anthropic, onText: onText)
@@ -150,7 +150,7 @@ final class CloudAgentSession {
       decoded = try await boundedResponse(for: request)
     }
     try settleOutput(decoded, reserved: outputIsReserved)
-    try budget.acceptResponse(bytes: JSONSerialization.data(withJSONObject: decoded).count)
+    try runBudget.acceptResponse(bytes: JSONSerialization.data(withJSONObject: decoded).count)
     guard let content = decoded["content"] as? [[String: Any]] else { throw AIAnswerFailure.server }
     let turn = try CloudAgentTurnDecoder.anthropic(decoded)
     // Preserve provider thinking/signatures only after the entire turn validates.
@@ -196,7 +196,7 @@ final class CloudAgentSession {
     let outputIsReserved = try reserveOutput(in: &body, isStreaming: onText != nil)
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-    try budget.reserveRequest(bytes: request.httpBody?.count ?? 0)
+    try runBudget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]
     if let onText {
       decoded = try await CloudTurnStreaming.response(for: request, provider: .chatCompletions, onText: onText)
@@ -204,7 +204,7 @@ final class CloudAgentSession {
       decoded = try await boundedResponse(for: request)
     }
     try settleOutput(decoded, reserved: outputIsReserved)
-    try budget.acceptResponse(bytes: JSONSerialization.data(withJSONObject: decoded).count)
+    try runBudget.acceptResponse(bytes: JSONSerialization.data(withJSONObject: decoded).count)
     guard let choices = decoded["choices"] as? [[String: Any]],
           var assistant = choices.first?["message"] as? [String: Any] else { throw AIAnswerFailure.server }
     let turn = try CloudAgentTurnDecoder.chatCompletions(decoded)

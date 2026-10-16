@@ -2,7 +2,7 @@ import Foundation
 
 extension MemoraModel {
   func delegateResearchTool(_ call: AgentToolCall, messageID: UUID,
-                            scope: AIChatScope, llm: LLMSelection) async -> AgentToolOutcome {
+                            scope: AIChatScope, llm: LLMSelection, runBudget: AgentRunBudget) async -> AgentToolOutcome {
     guard let assignments = AgentResearchAssignment.parse(call.objects("assignments")) else {
       return AgentToolOutcome(text: "異なる役割と調査依頼を2〜3件指定してください。", isError: true)
     }
@@ -21,7 +21,7 @@ extension MemoraModel {
       lines: assignments.map { "\($0.role)：\($0.request)" } + [
         "対象：\(scope.scopeLabel)",
         "\(llm.modelLabel)で\(assignments.count)担当を並列実行します。追加のAPI利用料金が発生します。",
-        "各担当は最大6往復。読むことだけができ、変更には別途承認が必要です。"
+        "各担当は最大6往復で、依頼全体の利用上限も適用します。読むことだけができ、変更には別途承認が必要です。"
       ], confirmTitle: "分担調査を開始")
     guard await requestAgentApproval(approval, changesData: false) else {
       finishAgentStep(stepID, on: messageID, state: .declined)
@@ -31,18 +31,37 @@ extension MemoraModel {
       finishAgentStep(stepID, on: messageID, state: .failed)
       return AgentToolOutcome(text: "依頼またはワークスペースが変わったため停止しました。", isError: true)
     }
+    do { try runBudget.check() }
+    catch {
+      finishAgentStep(stepID, on: messageID, state: .failed)
+      return AgentToolOutcome(text: "この依頼の実行上限または停止により、分担調査を開始しませんでした。", isError: true)
+    }
     var tools: [AgentTool] = [.searchRecords, .readRecord, .listTasks, .reviewPeriod]
     if scope == .all, GmailService.shared.isConnected { tools += [.searchEmail, .readEmail] }
+    let enabled = Set(enabledAgentTools)
+    tools = tools.filter { enabled.contains($0) && (agentPluginPolicies[messageID]?.toolIDs.contains("memora:" + $0.rawValue) ?? true) }
+    guard !tools.isEmpty else {
+      finishAgentStep(stepID, on: messageID, state: .failed)
+      return AgentToolOutcome(text: "この依頼で利用できる読み取りツールがないため、分担調査を開始しませんでした。", isError: true)
+    }
     let reports = await withTaskGroup(of: (Int, String, Bool).self) { group in
       for (index, assignment) in assignments.enumerated() {
         group.addTask { @MainActor [weak self] in
           guard let self else { return (index, "調査を中止しました。", false) }
           return await self.runResearchAssignment(assignment, index: index, llm: llm,
-            tools: tools, messageID: messageID, scope: scope, requestID: requestID, teamID: teamID)
+            tools: tools, messageID: messageID, scope: scope, requestID: requestID, teamID: teamID, runBudget: runBudget)
         }
       }
       var results: [(Int, String, Bool)] = []
-      for await report in group { results.append(report) }
+      for await report in group {
+        results.append(report)
+        if runBudget.isStopped {
+          group.cancelAll()
+          // A cancelled task suspended on approval needs its continuation
+          // resolved before the structured group can finish.
+          if pendingAgentApproval?.messageID == messageID { resolveAgentApproval(false) }
+        }
+      }
       return results.sorted { $0.0 < $1.0 }
     }
     guard !Task.isCancelled, requestID == aiChatRequestID, teamID == currentTeamID else {
@@ -61,7 +80,7 @@ extension MemoraModel {
 
   private func runResearchAssignment(_ assignment: AgentResearchAssignment, index: Int,
                                      llm: LLMSelection, tools: [AgentTool], messageID: UUID,
-                                     scope: AIChatScope, requestID: UUID?, teamID: String?) async -> (Int, String, Bool) {
+                                     scope: AIChatScope, requestID: UUID?, teamID: String?, runBudget: AgentRunBudget) async -> (Int, String, Bool) {
     let stepID = beginAgentStep(AgentStep(icon: .sparkle, title: "\(assignment.role)が調査中"), on: messageID)
     var succeeded = false
     defer { finishAgentStep(stepID, on: messageID, state: succeeded ? .done : .failed) }
@@ -72,47 +91,33 @@ extension MemoraModel {
     主担当へ、要点・記録idとタイトル・未確認事項・次の作業の提案を短く報告してください。実行したと装わないでください。
     \(ReadabilityGuide.rules)
     """
-    guard let session = CloudAgentSession(llm: llm, system: system, tools: tools) else {
+    guard let session = CloudAgentSession(llm: llm, system: system, tools: tools, runBudget: runBudget) else {
       return (index, "クラウドモデルの接続設定がありません。", false)
     }
     session.addUserMessage(assignment.request)
     let allowed = Set(tools.map(\.rawValue))
-    for _ in 0..<6 {
-      guard !Task.isCancelled, requestID == aiChatRequestID, teamID == currentTeamID,
-            isCloudSessionAuthorized(messageID) else {
-        return (index, "調査を中止しました。", false)
-      }
-      let turn: AgentTurn
-      do { turn = try await session.next() }
-      catch { return (index, "調査モデルへの接続に失敗しました。", false) }
-      guard !Task.isCancelled, requestID == aiChatRequestID, teamID == currentTeamID,
-            isCloudSessionAuthorized(messageID) else {
-        return (index, "調査を中止しました。", false)
-      }
-      if turn.toolCalls.isEmpty {
-        let text = turn.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        succeeded = !text.isEmpty
-        return (index, text.isEmpty ? "報告を取得できませんでした。" : String(text.prefix(6_000)), succeeded)
-      }
-      guard turn.toolCalls.count <= 4 else {
-        return (index, "1回の調査で利用できる道具の数を超えました。", false)
-      }
-      var results: [(call: AgentToolCall, outcome: AgentToolOutcome)] = []
-      for call in turn.toolCalls {
-        guard !Task.isCancelled, requestID == aiChatRequestID, teamID == currentTeamID else {
-          return (index, "調査を中止しました。", false)
-        }
+    let result = await AgentConversationLoop.run(limits: .init(turns: 6, toolCalls: 24, callsPerTurn: 4, returnsLimitFailure: true),
+      isAuthorized: { requestID == self.aiChatRequestID && teamID == self.currentTeamID && self.isCloudSessionAuthorized(messageID) },
+      next: { try await session.next() },
+      checkExecution: { try runBudget.check() },
+      execute: { call in
         let mayRead = call.tool.map {
           allowed.contains($0.rawValue) && !$0.needsApproval && $0 != .askUser && $0 != .delegateResearch
         } ?? false
         var outcome = mayRead
-          ? await runAgentTool(call, messageID: messageID, scope: scope)
+          ? await self.runAgentTool(call, messageID: messageID, scope: scope)
           : AgentToolOutcome(text: "この担当には読み取り専用の道具だけが許可されています。", isError: true)
         outcome.text = String(outcome.text.prefix(8_000))
-        results.append((call, outcome))
-      }
-      session.addToolResults(results)
+        return outcome
+      },
+      canExecute: { self.agentToolCallCounts[messageID, default: 0] < 24 },
+      accept: { _, results in if !results.isEmpty { session.addToolResults(results) } })
+    switch result {
+    case .answer(let text):
+      succeeded = true
+      return (index, String(text.prefix(6_000)), true)
+    case .failure(let failure):
+      return (index, failure == .cancelled ? "調査を中止しました。" : failure.message, false)
     }
-    return (index, "調査の上限に達しました。完了した報告はありません。", false)
   }
 }

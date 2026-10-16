@@ -70,4 +70,11 @@ B/Cに固有の必要性がないため直接連携PoCは実施しない。Node�
 
 ## 生成予算の段階的追加（2026-10-16）
 
-CloudAgentSessionへ確認済みモデル限定の送信前output予約を追加した。対象、使用量の保持、互換性、検証、非対象と残る金額/入力token/run全体の予算は[AGENT_GENERATION_BUDGET.md](AGENT_GENERATION_BUDGET.md)参照。既存のbyte/request/time guardを置き換えず、未確認APIへ同じfieldを押し付けない。
+CloudAgentSessionへ確認済みモデル限定の送信前output予約を追加した。対象、使用量の保持、互換性、検証、非対象と残る金額/入力tokenの予算は[AGENT_GENERATION_BUDGET.md](AGENT_GENERATION_BUDGET.md)参照。既存のbyte/request/time guardを置き換えず、未確認APIへ同じfieldを押し付けない。
+
+
+## 親子の予算とscope所有（2026-10-16追加）
+
+[AGENT_RUN_BUDGET.md](AGENT_RUN_BUDGET.md)に、依頼単位の共有予算とstructured child lifecycleを実装した。既存AgentSessionBudget/AgentOutputBudget/AgentConversationLoopを再利用し、child作成で上限がリセットされる経路を閉じる。新しい外部Harness、Node依存、任意code、サービス契約を追加せず、承認と権限は既存gatewayで再確認する。
+
+この追加以降、上記「1 cloud session」の回数/byte/時間予算と生成予算は、主担当とその分担調査の子担当をまとめた依頼単位で共有する。独立した質問やresident jobを横断する金額予算は引き続き別課題。

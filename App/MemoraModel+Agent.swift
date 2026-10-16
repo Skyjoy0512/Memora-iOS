@@ -229,6 +229,7 @@ extension MemoraModel {
 
   /// Runs model turns and tools until the model answers without calling one.
   private func runAgent(session: CloudAgentSession, messageID: UUID, scope: AIChatScope, llm: LLMSelection) async -> AIAnswerResult {
+    defer { session.runBudget.cancel() }
     let result = await AgentConversationLoop.run(
       limits: .init(turns: Self.agentMaxTurns),
       isAuthorized: { isCloudSessionAuthorized(messageID) },
@@ -245,10 +246,11 @@ extension MemoraModel {
         }
         return turn
       },
+      checkExecution: { try session.runBudget.check() },
       execute: { call in
         if call.tool == .delegateResearch {
           if pluginCallIsPermitted(call, messageID: messageID), consumeAgentToolCall(messageID), toolRegistry().permits(call.name, arguments: call.arguments) {
-            return await delegateResearchTool(call, messageID: messageID, scope: scope, llm: llm)
+            return await delegateResearchTool(call, messageID: messageID, scope: scope, llm: llm, runBudget: session.runBudget)
           }
           return AgentToolOutcome(text: "実行上限または入力検証により、分担調査を停止しました。", isError: true)
         }

@@ -7,18 +7,26 @@ enum AgentConversationLoop {
     var toolCalls = 24
     var callsPerTurn = 24
     var duration: Duration = .seconds(600)
+    var returnsLimitFailure = false
   }
 
   static func run(
     limits: Limits = Limits(),
     isAuthorized: () -> Bool,
     next: () async throws -> AgentTurn,
+    checkExecution: () throws -> Void = {},
     execute: (AgentToolCall) async -> AgentToolOutcome,
     canExecute: () -> Bool = { true },
     now: () -> ContinuousClock.Instant = { .now },
     onEvent: (AgentRunEvent) -> Void = { _ in },
     accept: (AgentTurn, [(call: AgentToolCall, outcome: AgentToolOutcome)]) -> Void
   ) async -> AIAnswerResult {
+    func executionFailure() -> AIAnswerFailure? {
+      do { try checkExecution(); return nil }
+      catch is CancellationError { return .cancelled }
+      catch let failure as AIAnswerFailure { return failure }
+      catch { return .server }
+    }
     let maximumTurns = min(max(limits.turns, 1), 16)
     let maximumCalls = min(max(limits.toolCalls, 0), 24)
     let maximumCallsPerTurn = min(max(limits.callsPerTurn, 1), 24)
@@ -36,6 +44,7 @@ enum AgentConversationLoop {
     for _ in 0..<maximumTurns {
       guard !Task.isCancelled else { return .failure(.cancelled) }
       guard isAuthorized() else { return .failure(.contextChanged) }
+      if let failure = executionFailure() { return .failure(failure) }
       guard start.duration(to: now()) < duration else { return .failure(.executionLimit) }
       let turn: AgentTurn
       requests += 1
@@ -46,6 +55,7 @@ enum AgentConversationLoop {
       catch { return .failure(.server) }
       guard !Task.isCancelled else { return .failure(.cancelled) }
       guard isAuthorized() else { return .failure(.contextChanged) }
+      if let failure = executionFailure() { return .failure(failure) }
       guard start.duration(to: now()) < duration else { return .failure(.executionLimit) }
       let text = turn.text.trimmingCharacters(in: .whitespacesAndNewlines)
       if !text.isEmpty { lastText = text }
@@ -65,8 +75,10 @@ enum AgentConversationLoop {
       for call in turn.toolCalls {
         guard !Task.isCancelled else { return .failure(.cancelled) }
         guard isAuthorized() else { return .failure(.contextChanged) }
+        if let failure = executionFailure() { return .failure(failure) }
         guard start.duration(to: now()) < duration else { return .failure(.executionLimit) }
         guard calls < maximumCalls, canExecute() else {
+          if limits.returnsLimitFailure { return .failure(.executionLimit) }
           return .answer("ツール実行上限に達したため停止しました。作業は未完了です。確認できた結果を見て、必要な続きだけを依頼してください。")
         }
         calls += 1
@@ -75,10 +87,12 @@ enum AgentConversationLoop {
         onEvent(.toolFinished(isError: outcome.isError))
         guard !Task.isCancelled else { return .failure(.cancelled) }
         guard isAuthorized() else { return .failure(.contextChanged) }
+        if let failure = executionFailure() { return .failure(failure) }
         results.append((call, outcome))
       }
       accept(turn, results)
     }
+    if limits.returnsLimitFailure { return .failure(.executionLimit) }
     let note = "会話の実行上限に達したため停止しました。作業は未完了です。必要な続きだけを新しい依頼で指定してください。"
     return .answer(lastText.isEmpty ? note : lastText + "\n\n" + note)
   }
