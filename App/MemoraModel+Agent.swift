@@ -134,6 +134,9 @@ extension MemoraModel {
     if !runner.isOnDevice {
       recordCloudReads(found.sources.map { .meeting($0.meetingID) }
         + (pluginPolicy == nil ? permittedTasks(for: .cloudAI, scope: scope).filter { !$0.isCompleted }.map { .task($0.id) } : []), messageID: placeholder.id)
+    } else {
+      recordArtifactReads(found.sources.map { .meeting($0.meetingID) }
+        + (pluginPolicy == nil ? Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings).map { .task($0.id) } : []), messageID: placeholder.id)
     }
     // What the agent knows about the person, smaller on the device's window.
     let personal = pluginPolicy?.personID != nil ? "" : personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000, includesHistory: runner.isOnDevice)

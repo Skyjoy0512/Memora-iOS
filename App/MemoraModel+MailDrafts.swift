@@ -5,7 +5,9 @@ extension MemoraModel {
   func saveMailDraft(_ draft: MailDraft) -> Bool {
     guard !isRestoring, draft.workspaceID == currentTeamID, draft.body.count <= 100_000,
           draft.subject.count <= 500, draft.recipients.count + draft.cc.count + draft.bcc.count <= 100,
-          (draft.recipients + draft.cc + draft.bcc).allSatisfy(MailDraft.validAddress), isStoreWritable() else { return false }
+          (draft.recipients + draft.cc + draft.bcc).allSatisfy(MailDraft.validAddress),
+          draft.provenance?.isValid ?? true,
+          draft.provenance.map({ $0.workspaceID == draft.workspaceID }) ?? true, isStoreWritable() else { return false }
     var candidate = mailDrafts
     if let index = candidate.firstIndex(where: { $0.id == draft.id }) { candidate[index] = draft }
     else { guard candidate.count < 1_000 else { return false }; candidate.insert(draft, at: 0) }

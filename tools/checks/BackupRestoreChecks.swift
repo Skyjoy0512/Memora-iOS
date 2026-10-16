@@ -39,6 +39,12 @@ struct BackupRestoreChecks {
     document.artifactFileReference = "artifact.pptx"; document.artifactFormat = "PPTX"
     document.sourceRecordIDs = [meeting.id]
     let source = ProjectSource(projectID: project.id, kind: .note, title: "根拠", extractedTextReference: "source.txt")
+    let artifactProvenance = ArtifactProvenance(sourceMessageID: UUID(), records: [
+      .init(target: .person(person.id), fingerprint: String(repeating: "a", count: 64)),
+      .init(target: .journal(UUID()), fingerprint: String(repeating: "b", count: 64)),
+      .init(target: .task(UUID()), fingerprint: String(repeating: "c", count: 64))],
+      projectSources: [.init(id: source.id, projectID: project.id, fingerprint: String(repeating: "d", count: 64))])
+    document.provenance = artifactProvenance; draft.provenance = artifactProvenance
     let sessionID = UUID()
     let episode = AIEpisode(id: UUID(), sessionID: sessionID, date: now, topic: "提案書", objective: "資料作成", summary: "会社書式を確認した", personIDs: [person.id], projectIDs: [project.id], recordIDs: [meeting.id], documentIDs: [document.id])
     let history = AIConversationEntry(id: UUID(), question: "前回の提案書", answer: "保存しました", scopeLabel: "すべて", createdAt: now, episode: episode)
@@ -69,6 +75,10 @@ struct BackupRestoreChecks {
     invalid = manifest; invalid.mailDrafts?[0].recipients = Array(repeating: "fixture@example.com", count: 101)
     try reject(invalid, in: package)
     invalid = manifest; invalid.documents?[0].artifactFileReference = "../escape.pptx"
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.documents?[0].provenance?.records.append(artifactProvenance.records[0])
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.mailDrafts?[0].provenance?.workspaceID = "foreign"
     try reject(invalid, in: package)
     try originalJSON.write(to: manifestURL, options: .atomic)
 

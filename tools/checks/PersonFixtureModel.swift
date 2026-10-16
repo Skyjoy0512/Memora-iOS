@@ -27,6 +27,16 @@ import Foundation
   var account: FixtureProfile?
   var deletionFailureMessage: String?
   var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
+  #if ARTIFACT_PROVENANCE_CHECKS
+  var documents: [MemoraDocument] = []
+  var mailDrafts: [MailDraft] = []
+  var projectSources: [ProjectSource] = []
+  var pendingMailDraft: MailDraft?
+  var hasMessage = true
+  var approvalAction: (() async -> Void)?
+  var approves = true
+  var pluginPermitted = true
+  #endif
   #if PERSON_PROVENANCE_CHECKS
   var isAIMemoryEnabled = true
   var aiMemories: [String] = []
@@ -35,7 +45,7 @@ import Foundation
   #else
   var reads: [RecordPrivacyTarget] = []
   #endif
-  enum StorageKey { static let tasks = "tasks", people = "people", meetings = "meetings", lifeLogEntries = "journal", lifeLogTrash = "journalTrash", pendingMediaDeletions = "deletions", autoLifeLogInbox = "inbox" }
+  enum StorageKey { static let tasks = "tasks", people = "people", meetings = "meetings", lifeLogEntries = "journal", lifeLogTrash = "journalTrash", pendingMediaDeletions = "deletions", autoLifeLogInbox = "inbox", documents = "documents" }
   init(storeURL: URL) throws { store = LocalStore(fileURL: storeURL); try store.prepare() }
   func isStoreWritable() -> Bool { !isRestoring && !isStoreProtected && !rejectWrites }
   func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
@@ -54,6 +64,7 @@ import Foundation
   func meeting(id: UUID) -> Meeting? { meetings.first { $0.id == id } }
   #if !PERSON_PROVENANCE_CHECKS
   func recordCloudReads(_ references: [RecordPrivacyTarget], messageID: UUID) { reads = references }
+  func recordArtifactReads(_ references: [RecordPrivacyTarget], messageID: UUID) {}
   func markCloudProvenanceIncomplete(_ id: UUID) {}
   #endif
   func beginAgentStep(_ step: AgentStep, on id: UUID) -> UUID { step.id }
@@ -77,11 +88,15 @@ enum AgentTool: String {
   case readPerson = "read_person", searchRecords = "search_records", readRecord = "read_record"
   case listProjects = "list_projects", listTasks = "list_tasks", reviewPeriod = "review_period"
   case fixtureUnsupported
+  case draftEmail = "draft_email"
   var icon: MemoraIcon { .person2 }
 }
 extension AgentToolCall { var tool: AgentTool? { AgentTool(rawValue: name) } }
 struct FixtureMessage {
   #if PERSON_PROVENANCE_CHECKS
+  var id = UUID()
+  var createdAt = Date.now
+  var residentName: String?
   enum Role { case user, assistant }
   var role = Role.assistant
   var text = ""
@@ -89,6 +104,7 @@ struct FixtureMessage {
   var cloudProvenance: AIConversationProvenance?
   var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?
   var projectSourceReferences: [AgentSourceReference] = []
+  var artifactProvenance: ArtifactProvenance?
   #endif
   var sources: [AIChatSource] = []; var interfaceTaskIDs: Set<UUID> = []; var interfaceProjectIDs: Set<UUID> = []; var interfaceWorkspaceID: String?
 }
@@ -117,11 +133,48 @@ extension MemoraModel {
 
 #if PERSON_PROVENANCE_CHECKS
 // These unrelated retrieval domains stay empty; the authority logic is production code.
+#if ARTIFACT_PROVENANCE_CHECKS
+typealias AIChatMessage = FixtureMessage
+enum AIAnswerDocumentBuilder {
+  static func make(message: AIChatMessage, question: String?) -> MemoraDocument {
+    MemoraDocument(title: question ?? "保存した回答", kind: .document, markdown: message.text)
+  }
+}
+enum DraftStore { static func clear(_ key: String) {} }
+struct ProjectSourceFiles { static let shared = ProjectSourceFiles(); func remove(_ names: [String]) async {} }
+extension MemoraModel {
+  var bottomContentClearance: Double { 0 }
+  func space(id: UUID) -> FixtureSpace? { spaces.first { $0.id == id } }
+  func source(id: UUID) -> ProjectSource? { projectSources.first { $0.id == id } }
+  func canReadAgentSource(_ source: ProjectSource, compact: Bool, policy: AIPluginExecutionPolicy?) -> Bool {
+    currentTeamID == nil && !isRestoring && !isStoreProtected && source.canProvideText
+      && (source.projectID.map { space(id: $0) != nil } ?? true) && policy?.personID == nil
+      && (compact || RecordAccessPolicy.allows(source.privacy, purpose: .cloudAI))
+      && (policy == nil || policy?.limitsRecordReads == false)
+  }
+  enum FixtureEvidence { case document(UUID) }
+  func invalidateProjectEvidence(_ evidence: [FixtureEvidence]) {}
+  static let declinedOutcome = AgentToolOutcome(text: "declined")
+  func pluginCallIsPermitted(_ call: AgentToolCall, messageID: UUID) -> Bool { pluginPermitted }
+  func approve(tool: AgentTool, title: String, lines: [String], confirmTitle: String, messageID: UUID) async -> UUID? {
+    await approvalAction?()
+    return approves ? UUID() : nil
+  }
+}
+#else
 struct FixtureProjectSource: Codable { var id: UUID; var projectID: UUID? }
 extension MemoraModel {
   func source(id: UUID) -> FixtureProjectSource? { nil }
   func canReadAgentSource(_ source: FixtureProjectSource, compact: Bool, policy: AIPluginExecutionPolicy?) -> Bool { false }
-  func agentMessage(_ id: UUID) -> FixtureMessage? { message }
+}
+#endif
+extension MemoraModel {
+  func agentMessage(_ id: UUID) -> FixtureMessage? {
+    #if ARTIFACT_PROVENANCE_CHECKS
+    guard hasMessage else { return nil }
+    #endif
+    return message
+  }
   func relatedEpisodeContext(for text: String, budget: Int, cloud: Bool) -> (text: String, references: [AIRecordReference]) { ("", []) }
   static func trailingHistory(_ text: String, budget: Int) -> String { String(text.suffix(budget)) }
 }

@@ -307,6 +307,7 @@ extension MemoraModel {
           message.sources.append(AIChatSource(meetingID: meeting.id, title: meeting.displayTitle))
         }
       }
+      recordArtifactReads([.meeting(meeting.id)] + tasks(forMeeting: meeting.id).map { .task($0.id) }, messageID: messageID)
       return AgentToolOutcome(text: compact ? compactAgentText(of: meeting) : agentText(of: meeting))
     }
 
@@ -403,6 +404,7 @@ extension MemoraModel {
       ? (scope == .all ? tasks : Self.tasks(in: allowed, from: tasks))
       : Self.openTasks(in: scope, from: tasks, meetings: allowed)
     visible = Array(visible.prefix(80))
+    recordArtifactReads(visible.map { .task($0.id) }, messageID: messageID)
     updateAgentMessage(messageID) { $0.interfaceTaskIDs.formUnion(visible.map(\.id)); $0.interfaceWorkspaceID = currentTeamID }
     finishAgentStep(stepID, on: messageID, state: .done, detail: "\(visible.count)件")
     guard !visible.isEmpty else { return AgentToolOutcome(text: "タスクはありません。") }
@@ -418,6 +420,9 @@ extension MemoraModel {
   // MARK: - Changing
 
   private func createDocumentTool(_ call: AgentToolCall, tool: AgentTool, messageID: UUID) async -> AgentToolOutcome {
+    guard let message = agentMessage(messageID) else { return Self.declinedOutcome }
+    let workspaceID = currentTeamID
+    let provenance = artifactProvenance(for: message)
     let title = call.string("title")
     let projectID = UUID(uuidString: call.string("project_id")).flatMap { space(id: $0)?.id }
     var document = MemoraDocument(
@@ -425,6 +430,7 @@ extension MemoraModel {
       kind: tool == .createSlides ? .slides : .document,
       spaceID: projectID
     )
+    document.provenance = provenance
     var lines = [document.displayTitle]
     switch document.kind {
     case .document:
@@ -475,6 +481,11 @@ extension MemoraModel {
       messageID: messageID
     )
     guard let stepID = approved else { return Self.declinedOutcome }
+    guard artifactCreationIsCurrent(messageID: messageID, workspaceID: workspaceID, provenance: provenance),
+          pluginCallIsPermitted(call, messageID: messageID) else {
+      finishAgentStep(stepID, on: messageID, state: .failed, detail: "参照情報または権限が変更されました")
+      return AgentToolOutcome(text: "参照情報または権限が変わったため、資料作成を止めました。", isError: true)
+    }
 
     do {
       document = try await prepareDocumentArtifact(document, call: call)
@@ -482,8 +493,8 @@ extension MemoraModel {
       finishAgentStep(stepID, on: messageID, state: .failed, detail: "ファイルを作成できませんでした")
       return AgentToolOutcome(text: error.localizedDescription, isError: true)
     }
-    guard !Task.isCancelled, agentMessage(messageID) != nil, pluginCallIsPermitted(call, messageID: messageID),
-          (agentMessage(messageID)?.cloudProvenance == nil || isCloudSessionAuthorized(messageID)), addDocument(document) else {
+    guard artifactCreationIsCurrent(messageID: messageID, workspaceID: workspaceID, provenance: provenance),
+          pluginCallIsPermitted(call, messageID: messageID), addDocument(document) else {
       if let name = document.artifactFileReference { await ProjectSourceFiles.shared.remove([name]) }
       finishAgentStep(stepID, on: messageID, state: .failed, detail: "保存できませんでした")
       return AgentToolOutcome(text: "保存に失敗しました。", isError: true)
@@ -673,44 +684,6 @@ extension MemoraModel {
     }
   }
 
-  private func draftEmailTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
-    let subject = call.string("subject")
-    let body = call.string("body")
-    guard !body.isEmpty else {
-      return AgentToolOutcome(text: "本文が空です。", isError: true)
-    }
-    // Only addresses are kept; a name alone cannot be sent to.
-    let recipients = call.strings("to")
-    let cc = call.strings("cc"), bcc = call.strings("bcc")
-    guard (recipients + cc + bcc).allSatisfy(MailDraft.validAddress) else {
-      return AgentToolOutcome(text: "宛先は確認済みのメールアドレスだけにしてください。不明なら空欄にします。", isError: true)
-    }
-
-    var lines = ["件名: \(subject.isEmpty ? "（なし）" : subject)"]
-    if !recipients.isEmpty { lines.append("宛先: \(recipients.joined(separator: ", "))") }
-    lines.append(String(body.prefix(160)))
-    guard let stepID = await approve(
-      tool: .draftEmail,
-      title: "メールの下書きを端末に保存",
-      lines: lines,
-      confirmTitle: "開く",
-      messageID: messageID
-    ) else { return Self.declinedOutcome }
-
-    var draft = MailDraft(recipients: recipients, subject: subject, body: body, cc: cc, bcc: bcc)
-    draft.workspaceID = currentTeamID; draft.personIDs = aiPersonScopeID.map { [$0] } ?? []
-    draft.sourceMessageID = messageID; draft.recordIDs = agentMessage(messageID)?.sources.map(\.meetingID) ?? []
-    let projects = Set(draft.recordIDs.compactMap { meeting(id: $0)?.spaceID })
-    draft.projectID = projects.count == 1 ? projects.first : nil
-    guard saveMailDraft(draft) else {
-      finishAgentStep(stepID, on: messageID, state: .failed, detail: "下書きを保存できませんでした")
-      return AgentToolOutcome(text: "下書きの保存に失敗しました。送信していません。", isError: true)
-    }
-    pendingMailDraft = draft
-    finishAgentStep(stepID, on: messageID, state: .done, detail: subject)
-    return AgentToolOutcome(text: "下書きを開きました。送信するかどうかは利用者が決めます。")
-  }
-
   private func saveToNotionTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {
     guard NotionService.isConfigured else {
       return AgentToolOutcome(text: "Notionが連携されていません。設定の「Notion」で連携するよう伝えてください。", isError: true)
@@ -762,7 +735,7 @@ extension MemoraModel {
 
   /// Shows the step and the approval card. Returns the step's id when approved,
   /// so the caller can settle it, or nil when declined.
-  private func approve(
+  func approve(
     tool: AgentTool,
     title: String,
     lines: [String],
@@ -785,7 +758,7 @@ extension MemoraModel {
     return stepID
   }
 
-  private static let declinedOutcome = AgentToolOutcome(
+  static let declinedOutcome = AgentToolOutcome(
     text: "利用者がこの操作を承認しませんでした。同じ操作を繰り返さず、必要なら理由を尋ねてください。"
   )
 

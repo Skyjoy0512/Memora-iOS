@@ -24,6 +24,7 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   var companyTemplateID: UUID?
   var sourceProjectFileIDs: [UUID]?
   var sourceRecordIDs: [UUID]?
+  var provenance: ArtifactProvenance?
 
   var displayTitle: String {
     title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の\(kind.label)" : title

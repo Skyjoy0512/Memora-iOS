@@ -15,6 +15,7 @@ struct MailDraft: Identifiable, Hashable, Codable, Sendable {
   var recordIDs: [UUID] = []
   var sourceMessageID: UUID?
   var workspaceID: String?
+  var provenance: ArtifactProvenance?
   var status: Status = .draft
   enum Status: String, Codable, Sendable { case draft, archived }
 

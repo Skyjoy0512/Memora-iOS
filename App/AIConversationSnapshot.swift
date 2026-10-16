@@ -35,6 +35,8 @@ struct AIConversationSnapshot: Codable, Sendable {
           && (turn.createdTaskIDs?.count ?? 0) <= 30
           && turn.sources.allSatisfy { $0.excerpts.count <= 20 }
           && (turn.cloudProvenance?.references.count ?? 0) <= 256
+          && (turn.artifactProvenance?.isValid ?? true)
+          && (turn.artifactProvenance.map { $0.workspaceID == workspaceID } ?? true)
           && turn.createdAt.timeIntervalSince1970.isFinite
           && (turn.finishedAt?.timeIntervalSince1970.isFinite ?? true)
           && (turn.attachment?.isValid ?? true) && (turn.mentions?.count ?? 0) <= 32
@@ -62,6 +64,7 @@ struct AIConversationSnapshot: Codable, Sendable {
     var createdTaskIDs: [UUID]?
     var webResearchReportIDs: [UUID]
     var cloudProvenance: AIConversationProvenance?
+    var artifactProvenance: ArtifactProvenance?
     var residentName: String?
     var residentAgentID: UUID?
     var residentSymbol: MemoraIcon?
@@ -71,9 +74,10 @@ struct AIConversationSnapshot: Codable, Sendable {
     /// handing the immutable value to the existing serial background writer.
     var maximumEncodedBytes: Int {
       let metadata = [residentName, attachment?.name, attachment?.fileName, details?.scopeLabel, details?.engineLabel, details?.modelLabel,
-        cloudProvenance?.workspaceID, cloudProvenance?.memoryFingerprint].compactMap { $0 }
+        cloudProvenance?.workspaceID, cloudProvenance?.memoryFingerprint, artifactProvenance?.workspaceID].compactMap { $0 }
       let sourceStrings = sources.flatMap { [$0.title] + $0.excerpts.map(\.text) }
-      let fingerprints = cloudProvenance?.references.map(\.fingerprint) ?? []
+      let fingerprints = (cloudProvenance?.references.map(\.fingerprint) ?? [])
+        + (artifactProvenance?.records.map(\.fingerprint) ?? []) + (artifactProvenance?.projectSources.map(\.fingerprint) ?? [])
       let mentionStrings = mentions?.flatMap { [$0.label, $0.pluginID] } ?? []
       let bytes = ([text] + pluginIDs + suggestions + metadata + sourceStrings + fingerprints + mentionStrings)
         .reduce(0) { $0 + $1.utf8.count }
@@ -98,6 +102,7 @@ struct AIConversationSnapshot: Codable, Sendable {
       createdTaskIDs = message.createdTaskIDs
       webResearchReportIDs = message.webResearchReportIDs
       cloudProvenance = message.cloudProvenance
+      artifactProvenance = message.artifactProvenance
       residentName = message.residentName
       residentAgentID = message.residentAgentID
       residentSymbol = message.residentSymbol
@@ -118,6 +123,7 @@ struct AIConversationSnapshot: Codable, Sendable {
       message.createdTaskIDs = createdTaskIDs ?? []
       message.webResearchReportIDs = webResearchReportIDs
       message.cloudProvenance = cloudProvenance
+      message.artifactProvenance = artifactProvenance
       message.residentName = residentName
       message.residentAgentID = residentAgentID
       message.residentSymbol = residentSymbol

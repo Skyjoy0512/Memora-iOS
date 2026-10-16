@@ -44,16 +44,8 @@ struct DocumentDetailView: View {
             .buttonStyle(.borderless)
           }
 
-          if let ids = document.sourceProjectFileIDs, !ids.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-              Text("参照した資料").font(.headline)
-              ForEach(ids, id: \.self) { id in
-                if let source = model.source(id: id) {
-                  NavigationLink { ProjectSourceDetailView(sourceID: id) } label: { Label(source.title, icon: .docText) }
-                }
-              }
-            }
-          }
+          ArtifactSourcesView(provenance: document.provenance, meetingIDs: document.sourceRecordIDs ?? [],
+            projectFileIDs: document.sourceProjectFileIDs ?? [])
           switch document.kind {
           case .document:
             InlineMarkdownEditor(
@@ -66,7 +58,12 @@ struct DocumentDetailView: View {
             .environment(\.openURL, OpenURLAction { url in
               guard url.scheme == "memora", url.host == "meeting",
                     let meetingID = UUID(uuidString: url.lastPathComponent) else { return .systemAction }
-              if let meeting = model.meeting(id: meetingID) {
+              let target = ArtifactSourceTarget.record(.meeting(meetingID))
+              let rows = model.artifactSourceRows(provenance: document.provenance,
+                meetingIDs: document.sourceRecordIDs ?? [], projectFileIDs: document.sourceProjectFileIDs ?? [])
+              let isDeclared = document.provenance == nil || rows.contains { $0.target == target }
+              if isDeclared, model.canOpenArtifactSource(target, workspaceID: document.provenance?.workspaceID),
+                 let meeting = model.meeting(id: meetingID) {
                 citedRecord = AIChatSource(meetingID: meeting.id, title: meeting.title)
               } else {
                 sourceErrorMessage = model.trashedRecords.contains(where: { $0.meeting.id == meetingID })
@@ -131,9 +128,7 @@ struct DocumentDetailView: View {
       ActivityView(items: shareItems, onComplete: cleanUpShare)
     }
     .sheet(item: $citedRecord) { source in
-      NavigationStack {
-        MeetingDetailView(meetingID: source.meetingID, showsLocalPlaybackBar: true)
-      }
+      ArtifactSourceDetailView(target: .record(.meeting(source.meetingID)), workspaceID: document.provenance?.workspaceID)
     }
     .alert("元の記録を開けません", isPresented: Binding(
       get: { sourceErrorMessage != nil },

@@ -22,6 +22,7 @@ extension MemoraModel {
     }
     guard !name.isEmpty || !explicitID.isEmpty, candidates.count == 1, let person = candidates.first,
           var memory = memory(of: person.id) else {
+      recordArtifactReads(candidates.prefix(30).map { .person($0.id) }, messageID: messageID)
       if purpose != nil, purpose != .onDeviceAI { recordCloudReads(candidates.prefix(30).map { .person($0.id) }, messageID: messageID) }
       if purpose == .onDeviceAI { markCloudProvenanceIncomplete(messageID) }
       return AgentToolOutcome(text: candidates.isEmpty ? "該当する人物はいません。" :
@@ -51,6 +52,9 @@ extension MemoraModel {
           + (memory.journalEntries + memory.nameMatchedJournalEntries).map { .journal($0.id) }, messageID: messageID)
       }
     }
+    recordArtifactReads([.person(person.id)] + memory.meetings.map { .meeting($0.id) }
+      + (memory.assignedTasks + memory.sharedTasks + memory.nameMatchedTasks).map { .task($0.id) }
+      + (memory.journalEntries + memory.nameMatchedJournalEntries).map { .journal($0.id) }, messageID: messageID)
     if purpose == .onDeviceAI || (purpose == nil && !compact) { markCloudProvenanceIncomplete(messageID) }
     let stepID = beginAgentStep(AgentStep(icon: AgentTool.readPerson.icon, title: "\(person.name)さんの記録を確認"), on: messageID)
     finishAgentStep(stepID, on: messageID, state: .done, detail: "会議\(memory.meetings.count)件")

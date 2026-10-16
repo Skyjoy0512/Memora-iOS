@@ -217,6 +217,7 @@ extension MemoraModel {
             message.sources = sources
             message.searchFinished = true
           }
+          self.recordArtifactReads(sources.map { .meeting($0.meetingID) }, messageID: placeholder.id)
         },
         onText: { [weak self] text in
           guard let self, !Task.isCancelled, self.aiChatRequestID == requestID else { return }

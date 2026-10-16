@@ -98,7 +98,10 @@ extension MemoraModel {
       } + journal.map { "ジャーナル「\($0.title)」 \(String($0.summary.prefix(600)))" }
     default: break
     }
-    if purpose == .onDeviceAI { markCloudProvenanceIncomplete(messageID) }
+    if purpose == .onDeviceAI {
+      recordArtifactReads(references, messageID: messageID)
+      markCloudProvenanceIncomplete(messageID)
+    }
     else { recordCloudReads(references, messageID: messageID) }
     let step = beginAgentStep(AgentStep(icon: tool.icon, title: "許可された記録を確認"), on: messageID)
     finishAgentStep(step, on: messageID, state: .done, detail: purpose == .onDeviceAI ? "端末内の参照範囲を適用" : "外部送信許可を適用")

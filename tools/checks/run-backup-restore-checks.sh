@@ -4,7 +4,7 @@ cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-backup.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 swiftc Shared/MemoraIcon.swift App/LocalStore.swift App/AIMemory.swift App/AIMemory+Editing.swift \
-  App/AIConversationEntry.swift App/AIEpisode.swift App/AIConversationProvenance.swift App/AIRecordReference.swift App/RecordPrivacyTarget.swift \
+  App/AIConversationEntry.swift App/AIEpisode.swift App/AIConversationProvenance.swift App/AIRecordReference.swift App/ArtifactProvenance.swift App/ArtifactProjectSourceReference.swift App/RecordPrivacyTarget.swift \
   App/MailDraft.swift App/MemoraDocument.swift App/MemoraDocumentKind.swift App/DocumentSlide.swift \
   App/CompanyTemplate.swift App/CompanyTemplateEngine.swift App/DOCXWriter.swift App/ZipArchive.swift App/ProjectSourceText.swift \
   App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift \

@@ -11,6 +11,8 @@ enum AIConversationSnapshotChecks {
     answer.interfaceProjectIDs = [UUID()]
     answer.interfaceWorkspaceID = "private-team"
     answer.cloudAuthorizationTargets = [.meeting(recordID)]
+    answer.artifactProvenance = ArtifactProvenance(workspaceID: nil, sourceMessageID: answer.id,
+      records: [.init(target: .task(recordID), fingerprint: String(repeating: "a", count: 64))])
     var resident = AIChatMessage(role: .assistant, text: "朝のブリーフ")
     resident.residentName = "朝"
     resident.residentAgentID = UUID()
@@ -26,6 +28,13 @@ enum AIConversationSnapshotChecks {
     precondition(restored[1].sources == answer.sources && restored[1].details == answer.details)
     precondition(restored[1].interfaceTaskIDs.isEmpty && restored[1].interfaceProjectIDs.isEmpty)
     precondition(restored[1].cloudAuthorizationTargets == nil && restored[1].interfaceWorkspaceID == nil)
+    precondition(restored[1].artifactProvenance == answer.artifactProvenance)
+    var legacyJSON = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+    var oldTurns = legacyJSON["turns"] as! [[String: Any]]
+    for index in oldTurns.indices { oldTurns[index].removeValue(forKey: "artifactProvenance") }
+    legacyJSON["turns"] = oldTurns
+    let old = try AIConversationSnapshot.decode(JSONSerialization.data(withJSONObject: legacyJSON), workspaceID: nil)
+    precondition(old.restoredMessages()[1].artifactProvenance == nil)
     precondition(restored[2].residentName == "朝" && restored[2].suggestions == resident.suggestions)
     precondition(!restored.contains(where: \.isThinking))
     var interrupted = answer
@@ -46,6 +55,12 @@ enum AIConversationSnapshotChecks {
     try reject(JSONEncoder().encode(invalid))
     invalid = snapshot
     invalid.turns[0].role = "system"
+    try reject(JSONEncoder().encode(invalid))
+    invalid = snapshot
+    invalid.turns[1].artifactProvenance?.workspaceID = "other"
+    try reject(JSONEncoder().encode(invalid))
+    invalid = snapshot
+    invalid.turns[1].artifactProvenance?.records.append(answer.artifactProvenance!.records[0])
     try reject(JSONEncoder().encode(invalid))
     invalid = snapshot
     invalid.turns[0].text = String(repeating: "\\", count: AIConversationSnapshot.maximumBytes / 6)

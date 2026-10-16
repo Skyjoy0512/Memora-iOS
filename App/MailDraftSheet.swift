@@ -30,13 +30,10 @@ struct MailDraftSheet: View {
           TextField("BCC", text: $bcc).keyboardType(.emailAddress).textInputAutocapitalization(.never)
           TextField("件名", text: $edited.subject)
         } footer: { Text("Memora内の下書きです。送信はMailで本人が行います。宛先は推測で補いません。") }
-        if edited.workspaceID == model.currentTeamID, !edited.recordIDs.isEmpty {
-          Section("元の記録") {
-            ForEach(edited.recordIDs, id: \.self) { id in
-              if let meeting = model.meeting(id: id) {
-                NavigationLink { MeetingDetailView(meetingID: id, showsLocalPlaybackBar: true) } label: { Text(meeting.displayTitle) }
-              }
-            }
+        if edited.provenance != nil || !edited.recordIDs.isEmpty {
+          Section("参照した情報") {
+            ArtifactSourcesView(provenance: edited.provenance, meetingIDs: edited.recordIDs,
+              legacyWorkspaceID: edited.workspaceID, showsTitle: false)
           }
         }
         Section("本文") { TextEditor(text: $edited.body).frame(minHeight: 240).accessibilityLabel("メール本文") }

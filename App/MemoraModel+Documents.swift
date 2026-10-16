@@ -9,7 +9,11 @@ extension MemoraModel {
     } else {
       question = nil
     }
-    return AIAnswerDocumentBuilder.make(message: message, question: question)
+    var document = AIAnswerDocumentBuilder.make(message: message, question: question)
+    document.provenance = artifactProvenance(for: message)
+    document.sourceRecordIDs = message.sources.map(\.meetingID)
+    document.sourceProjectFileIDs = message.projectSourceReferences.map(\.id)
+    return document
   }
 
   func document(id: UUID) -> MemoraDocument? {
@@ -20,7 +24,8 @@ extension MemoraModel {
   /// a document as made once it is really saved.
   @discardableResult
   func addDocument(_ document: MemoraDocument) -> Bool {
-    guard isStoreWritable() else { return false }
+    guard !isRestoring, isStoreWritable(), document.provenance?.isValid ?? true,
+          document.provenance.map({ $0.workspaceID == currentTeamID }) ?? true else { return false }
     var candidate = documents
     candidate.insert(document, at: 0)
     let stored = persistBatch {

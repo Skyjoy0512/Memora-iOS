@@ -1,6 +1,6 @@
 import Foundation
 
-enum RecordPrivacyTarget: Codable, Hashable {
+enum RecordPrivacyTarget: Codable, Hashable, Sendable {
   case meeting(UUID)
   case journal(UUID)
   case task(UUID)

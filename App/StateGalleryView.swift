@@ -7,6 +7,7 @@ struct StateGalleryView: View {
       #if DEBUG
       Section("表示（架空データ）") {
         NavigationLink("Loading・本文表示を確認") { MotionLoadingGalleryView() }
+        NavigationLink("資料・メールの出典表示を確認") { ArtifactSourcesExampleView() }
       }
       Section("システム導線（遷移の確認）") {
         Button("Ask AIのリンクを開く") { openLink(.askAI) }

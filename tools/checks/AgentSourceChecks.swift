@@ -11,6 +11,7 @@ import Foundation
     ProjectSourceTextReader.read = { [.init(text: "架空の根拠", page: 2)] }
     let result = await model.readAgentProjectSource(id, messageID: messageID, compact: false, automatic: false)
     precondition(!result.isError && result.text.contains("ページ2") && model.message.projectSourceReferences.count == 1)
+    precondition(model.artifactReferences == model.message.projectSourceReferences)
     model.currentTeamID = "different-workspace"
     let team = await model.readAgentProjectSource(id, messageID: messageID, compact: false, automatic: false)
     precondition(team.isError)
@@ -64,9 +65,11 @@ struct MockSourceMessage { var projectSourceReferences: [AgentSourceReference] =
   var projects: Set<UUID> = []
   var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
   var message = MockSourceMessage()
+  var artifactReferences: [AgentSourceReference] = []
   func source(id: UUID) -> ProjectSource? { projectSources.first { $0.id == id } }
   func space(id: UUID) -> UUID? { projects.contains(id) ? id : nil }
   func updateAgentMessage(_ id: UUID, change: (inout MockSourceMessage) -> Void) { change(&message) }
   func markCloudProvenanceIncomplete(_ id: UUID) {}
+  func recordArtifactProjectSource(_ reference: AgentSourceReference, messageID: UUID) { artifactReferences.append(reference) }
   static func questionWords(in query: String) -> [String] { [query] }
 }

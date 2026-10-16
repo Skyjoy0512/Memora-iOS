@@ -53,6 +53,7 @@ extension MemoraModel {
   }
 
   func recordCloudReads(_ targets: [RecordPrivacyTarget], messageID: UUID) {
+    recordArtifactReads(targets, messageID: messageID)
     guard agentMessage(messageID)?.cloudProvenance != nil else { return }
     let unique = Set(targets)
     updateAgentMessage(messageID) { message in
@@ -67,6 +68,27 @@ extension MemoraModel {
       if all.count <= 256 { provenance.references = Array(all) }
       else { provenance.isComplete = false }
       message.cloudProvenance = provenance
+    }
+  }
+
+  func recordArtifactReads(_ targets: [RecordPrivacyTarget], messageID: UUID) {
+    let references = Set(targets).prefix(256).compactMap(recordReference)
+    updateAgentMessage(messageID) { message in
+      var provenance = message.artifactProvenance ?? ArtifactProvenance(workspaceID: currentTeamID, sourceMessageID: messageID)
+      // Keep the first observation; a later change must remain detectable.
+      let existing = Set(provenance.records.map(\.target))
+      provenance.records += references.filter { !existing.contains($0.target) }.prefix(max(0, 256 - provenance.records.count))
+      message.artifactProvenance = provenance
+    }
+  }
+
+  func recordArtifactProjectSource(_ reference: AgentSourceReference, messageID: UUID) {
+    updateAgentMessage(messageID) { message in
+      var provenance = message.artifactProvenance ?? ArtifactProvenance(workspaceID: currentTeamID, sourceMessageID: messageID)
+      if provenance.projectSources.count < 32, !provenance.projectSources.contains(where: { $0.id == reference.id }) {
+        provenance.projectSources.append(.init(id: reference.id, projectID: reference.projectID, fingerprint: reference.fingerprint))
+      }
+      message.artifactProvenance = provenance
     }
   }
 
