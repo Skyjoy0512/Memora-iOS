@@ -66,3 +66,5 @@ AgentGenerationChecksは実際のpolicy、usage decoder、予約budgetを合成�
 - 成功: `bash tools/checks/run-motion-loading-checks.sh`全件（追加のAgentGenerationChecksを含む）、`bash tools/checks/run-next-generation-checks.sh`全件（usage/中断/権限/保存互換性の既存チェックを含む）、`git diff --check`。
 - 成功: 最終Debug `bitrig preview -platform iOS`、ログ`2026-10-16T14-02-59-3171262a.log`、iOS 27.1 SDK / iOS 18 deployment target。Share ExtensionのAppIntents.framework非依存に伴うmetadata extraction警告1件、コンパイルエラーなし。
 - 未検証: 本変更に対する実機/UIの詳細回帰、実provider E2E、課金額、追加の性能比較。テストに使ったデータは架空のusage・モデル設定・mock tool結果だけであり、実キー/個人記録を使わない。UI変更はなく、既存のLiquid Glass/コンポーザー/NavigationStackを維持する。
+- 成功: 最終Release `bitrig build -destination generic/platform=iOS Simulator -configuration Release`、ログ`2026-10-16T14-04-10-a1e5d8f3.log`、result success。同じShare Extensionのmetadata extraction警告1件、コンパイルエラーなし。実機Release計測とは区別する。
+- 実装コミット: `c6aa157`。外部サービスの契約・本番デプロイ・実料金の発生を伴うAPIテストは行っていない。
