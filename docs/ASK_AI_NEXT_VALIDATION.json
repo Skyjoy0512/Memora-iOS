@@ -428,6 +428,95 @@
         ]
       },
       "report": "docs/ASK_AI_PERSON_PRIVACY.md"
+    },
+    {
+      "name": "typed_artifact_sources",
+      "checked_at": "2026-10-16T23:03:12.917715+00:00",
+      "baseline_commit": "3f71064",
+      "debug": {
+        "builds": [
+          {
+            "destination": "generic/platform=iOS Simulator",
+            "diagnostics": [
+              {
+                "classification": "warning",
+                "message": "2026-10-17 07:59:22.045 appintentsmetadataprocessor[37259:41417786] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+              }
+            ],
+            "result": "succeeded",
+            "scheme": "Memora"
+          }
+        ],
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T07-59-15-63c15b1f.log",
+        "result": "success"
+      },
+      "release": {
+        "result": "pending",
+        "command": "bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release"
+      },
+      "checks": [
+        {
+          "command": "bash tools/checks/run-next-generation-checks.sh",
+          "result": "passed",
+          "evidence": "All existing suites plus new ArtifactProvenanceChecks passed. Final snapshot metadata-budget adjustment separately recompiled and passed; final empty-source UI adjustment compiled in Debug."
+        },
+        {
+          "command": "bash tools/checks/run-motion-loading-checks.sh",
+          "result": "passed"
+        },
+        {
+          "command": "python3 tools/checks/run-optimization-checks.py",
+          "result": "passed"
+        },
+        {
+          "command": "bash tools/checks/run-artifact-provenance-checks.sh",
+          "result": "passed",
+          "evidence": "ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)"
+        },
+        {
+          "command": "git diff --check",
+          "result": "passed"
+        }
+      ],
+      "ui_verified": [
+        "Final Debug build: Settings > State gallery > artifact sources uses only fictional row values and the production source-row component",
+        "Dark large and largest accessibility text; light largest accessibility text, wrapping and scrolling to bottom",
+        "AX combined names, source type/status, open action; missing source row disabled",
+        "Tap opens fictional explanation only; closed without modifying real records",
+        "Appearance restored to dark and text size to large; original composer draft preserved; no AI request or email sent"
+      ],
+      "verified_boundaries": [
+        "Typed UUID collisions across person, meeting, task, journal and project file remain distinct",
+        "Generation-time fingerprints preserved across document/mail edits, isolated SQLite reopen and backup restore",
+        "Local project-source attribution persists separately from transient execution grants",
+        "Revoked external access remains visible and does not block owner local navigation; deleted sources show generic type only",
+        "Foreign workspace, protected/restore states and malformed provenance do not resolve current source titles",
+        "Production draft tool stops after suspended approval on source edit, workspace switch, missing message, plugin change, revoke, protected/restore state, cancellation or failed persistence",
+        "Legacy documents/mail/snapshots decode without attribution; old IDs remain unverified; restored attribution never creates execution grants"
+      ],
+      "not_verified": [
+        "Actual provider/OAuth/paid API E2E and complete scenarios A-E",
+        "Physical-device VoiceOver, performance, memory/energy, or large production datasets",
+        "End-to-end UI navigation from saved generated document/mail to all typed sources (host resolver and persistence tests plus compiled destinations; gallery verifies row component only)",
+        "Post-approval document file preparation with an actual suspended generator (shared gate compiled and unit exercised, not full tool E2E)",
+        "Sentence-level evidence/citation consistency, complete attribution of all external sources or all on-device context",
+        "Final Office rendering/high-fidelity complex templates and Gmail Drafts OAuth"
+      ],
+      "remaining_priorities": {
+        "P0": [
+          "Connected or mock-provider integrated scenarios A-E with in-flight revocation",
+          "Physical-device and legacy backup UI verification; team backend remains unconnected"
+        ],
+        "P1": [
+          "Typed inline answer citations and claim/evidence matching",
+          "Person summary quality and confirmed memory updates",
+          "Complex Office rendering/editing and Gmail Drafts OAuth"
+        ],
+        "P2": [
+          "Measured Japanese hybrid/embedding ranking and scoped person/project mentions"
+        ]
+      },
+      "report": "docs/ASK_AI_ARTIFACT_SOURCES.md"
     }
   ]
 }
