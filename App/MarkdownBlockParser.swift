@@ -116,6 +116,7 @@ enum MarkdownBlockParser {
     var tableLines: [String] = []
     var tableStart = 0
     var lineIndex = 0
+    var lineCount = 0
     var fence: MarkdownFence?
     var codeLines: [String] = []
     var codeStart = 0
@@ -148,6 +149,7 @@ enum MarkdownBlockParser {
     for (index, sourceLine) in markdown.components(separatedBy: "\n").enumerated() {
       let rawLine = sourceLine.hasSuffix("\r") ? String(sourceLine.dropLast()) : sourceLine
       lineIndex = index
+      lineCount = index + 1
       if let open = fence {
         if open.closes(rawLine) {
           blocks.append(SourcedMarkdownBlock(block: .code(language: open.language, text: codeLines.joined(separator: "\n")), lines: codeStart..<(index + 1)))
@@ -202,7 +204,7 @@ enum MarkdownBlockParser {
       if paragraph.isEmpty { paragraphStart = index }
       paragraph.append(line)
     }
-    lineIndex = markdown.components(separatedBy: "\n").count
+    lineIndex = lineCount
     if let open = fence {
       blocks.append(SourcedMarkdownBlock(block: .code(language: open.language, text: codeLines.joined(separator: "\n")), lines: codeStart..<lineIndex))
     }

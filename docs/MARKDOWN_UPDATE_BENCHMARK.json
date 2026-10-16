@@ -1,0 +1,278 @@
+{
+  "baseline_commit": "1cb1d8d62c33f997f380a5b99d34ed13b4fda3bb",
+  "current_source_sha256": {
+    "App/MarkdownBlockParser.swift": "d592f0e3e9143ef46014c4e1dddb182c38ad372324866e2ea727733fdf7c66cd",
+    "App/IncrementalMarkdown.swift": "d3d089da6ae7cd9fdc9259d712247799125503960ba1014954f089d8520d92fa",
+    "tools/checks/MarkdownUpdateBenchmark.swift": "015a174a55c138507b6cf68bf42b3a7c6b60ebe9cfc9d3e3dbbf880bcf47e1cc"
+  },
+  "architecture": "arm64",
+  "os": "27.0.1",
+  "compiler": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0",
+  "optimization": "-O",
+  "warmups": 2,
+  "samples": 21,
+  "order": "alternating",
+  "scope": "Synthetic host parser CPU only; excludes network, SwiftUI layout, frames, main actor and iPhone Release",
+  "results": [
+    {
+      "baseline": {
+        "completion": {
+          "maximum_ms": 0.0515,
+          "median_ms": 0.029959,
+          "p95_ms": 0.0435
+        },
+        "first": {
+          "maximum_ms": 0.014334,
+          "median_ms": 0.008125,
+          "p95_ms": 0.013458
+        },
+        "largest_update": {
+          "maximum_ms": 0.074417,
+          "median_ms": 0.047,
+          "p95_ms": 0.063958
+        },
+        "parsed_bytes": 20993,
+        "total": {
+          "maximum_ms": 4.076961000000001,
+          "median_ms": 2.385541,
+          "p95_ms": 3.4539099999999996
+        }
+      },
+      "bytes": 18130,
+      "current": {
+        "completion": {
+          "maximum_ms": 0.051458,
+          "median_ms": 0.029917,
+          "p95_ms": 0.046958
+        },
+        "first": {
+          "maximum_ms": 0.012917,
+          "median_ms": 0.007041,
+          "p95_ms": 0.01225
+        },
+        "largest_update": {
+          "maximum_ms": 0.069333,
+          "median_ms": 0.048167,
+          "p95_ms": 0.0685
+        },
+        "parsed_bytes": 20993,
+        "total": {
+          "maximum_ms": 3.8634599999999995,
+          "median_ms": 2.2807919999999995,
+          "p95_ms": 3.550165
+        }
+      },
+      "final_blocks": 480,
+      "fixture": "sections",
+      "updates": 92
+    },
+    {
+      "baseline": {
+        "completion": {
+          "maximum_ms": 0.569,
+          "median_ms": 0.521791,
+          "p95_ms": 0.555417
+        },
+        "first": {
+          "maximum_ms": 0.007708,
+          "median_ms": 0.005666,
+          "p95_ms": 0.006709
+        },
+        "largest_update": {
+          "maximum_ms": 0.561167,
+          "median_ms": 0.523541,
+          "p95_ms": 0.542583
+        },
+        "parsed_bytes": 2655250,
+        "total": {
+          "maximum_ms": 44.943166000000005,
+          "median_ms": 42.18354,
+          "p95_ms": 44.85220899999997
+        }
+      },
+      "bytes": 31890,
+      "current": {
+        "completion": {
+          "maximum_ms": 0.466375,
+          "median_ms": 0.423334,
+          "p95_ms": 0.464167
+        },
+        "first": {
+          "maximum_ms": 0.005792,
+          "median_ms": 0.00475,
+          "p95_ms": 0.005583
+        },
+        "largest_update": {
+          "maximum_ms": 0.46425,
+          "median_ms": 0.428334,
+          "p95_ms": 0.456375
+        },
+        "parsed_bytes": 2655250,
+        "total": {
+          "maximum_ms": 37.088207000000004,
+          "median_ms": 35.06912,
+          "p95_ms": 36.89762399999999
+        }
+      },
+      "final_blocks": 500,
+      "fixture": "dense-list",
+      "updates": 162
+    },
+    {
+      "baseline": {
+        "completion": {
+          "maximum_ms": 0.331958,
+          "median_ms": 0.282417,
+          "p95_ms": 0.311
+        },
+        "first": {
+          "maximum_ms": 0.004417,
+          "median_ms": 0.00375,
+          "p95_ms": 0.004333
+        },
+        "largest_update": {
+          "maximum_ms": 0.314417,
+          "median_ms": 0.297125,
+          "p95_ms": 0.31
+        },
+        "parsed_bytes": 2122406,
+        "total": {
+          "maximum_ms": 25.820577000000007,
+          "median_ms": 25.45297,
+          "p95_ms": 25.683995999999993
+        }
+      },
+      "bytes": 23903,
+      "current": {
+        "completion": {
+          "maximum_ms": 0.21375,
+          "median_ms": 0.190083,
+          "p95_ms": 0.20875
+        },
+        "first": {
+          "maximum_ms": 0.003416,
+          "median_ms": 0.002917,
+          "p95_ms": 0.003375
+        },
+        "largest_update": {
+          "maximum_ms": 0.220208,
+          "median_ms": 0.197167,
+          "p95_ms": 0.212166
+        },
+        "parsed_bytes": 2122406,
+        "total": {
+          "maximum_ms": 16.956713,
+          "median_ms": 16.761459999999992,
+          "p95_ms": 16.873113
+        }
+      },
+      "final_blocks": 1,
+      "fixture": "code",
+      "updates": 174
+    },
+    {
+      "baseline": {
+        "completion": {
+          "maximum_ms": 0.458875,
+          "median_ms": 0.436334,
+          "p95_ms": 0.453917
+        },
+        "first": {
+          "maximum_ms": 0.014333,
+          "median_ms": 0.008209,
+          "p95_ms": 0.009917
+        },
+        "largest_update": {
+          "maximum_ms": 0.46675,
+          "median_ms": 0.436958,
+          "p95_ms": 0.464458
+        },
+        "parsed_bytes": 499028,
+        "total": {
+          "maximum_ms": 18.377832,
+          "median_ms": 17.976998999999996,
+          "p95_ms": 18.343328999999997
+        }
+      },
+      "bytes": 12224,
+      "current": {
+        "completion": {
+          "maximum_ms": 0.4165,
+          "median_ms": 0.393375,
+          "p95_ms": 0.412792
+        },
+        "first": {
+          "maximum_ms": 0.008166,
+          "median_ms": 0.007375,
+          "p95_ms": 0.008
+        },
+        "largest_update": {
+          "maximum_ms": 0.42125,
+          "median_ms": 0.393208,
+          "p95_ms": 0.417
+        },
+        "parsed_bytes": 499028,
+        "total": {
+          "maximum_ms": 16.592132000000003,
+          "median_ms": 16.194287000000003,
+          "p95_ms": 16.567161000000002
+        }
+      },
+      "final_blocks": 1,
+      "fixture": "table",
+      "updates": 78
+    },
+    {
+      "baseline": {
+        "completion": {
+          "maximum_ms": 0.158584,
+          "median_ms": 0.141792,
+          "p95_ms": 0.155542
+        },
+        "first": {
+          "maximum_ms": 0.002708,
+          "median_ms": 0.002208,
+          "p95_ms": 0.002542
+        },
+        "largest_update": {
+          "maximum_ms": 0.159041,
+          "median_ms": 0.148917,
+          "p95_ms": 0.156375
+        },
+        "parsed_bytes": 1859520,
+        "total": {
+          "maximum_ms": 9.055044999999998,
+          "median_ms": 8.964838000000004,
+          "p95_ms": 9.054918999999998
+        }
+      },
+      "bytes": 29400,
+      "current": {
+        "completion": {
+          "maximum_ms": 0.111792,
+          "median_ms": 0.09625,
+          "p95_ms": 0.107292
+        },
+        "first": {
+          "maximum_ms": 0.001959,
+          "median_ms": 0.001709,
+          "p95_ms": 0.001958
+        },
+        "largest_update": {
+          "maximum_ms": 0.113375,
+          "median_ms": 0.100917,
+          "p95_ms": 0.1105
+        },
+        "parsed_bytes": 1859520,
+        "total": {
+          "maximum_ms": 6.157697000000002,
+          "median_ms": 6.076009999999999,
+          "p95_ms": 6.136083000000001
+        }
+      },
+      "final_blocks": 1,
+      "fixture": "paragraph",
+      "updates": 123
+    }
+  ]
+}

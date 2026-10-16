@@ -64,6 +64,20 @@ enum IncrementalMarkdownChecks {
     precondition(code == [.code(language: "", text: "# literal\n\n| no | table |")])
     let replacement = MarkdownBlockWriter.source(of: .code(language: "text", text: "```\ncontent"), original: [])
     precondition(MarkdownBlockParser.blocks(for: replacement.joined(separator: "\n")) == [.code(language: "text", text: "```\ncontent")])
+    // Editors write through these ranges; avoid a second line split without
+    // changing the EOF and trailing-newline boundaries.
+    let ranges: [(String, [Range<Int>])] = [
+      ("", []), ("\n\n", []), ("本文", [0..<1]), ("本文\n", [0..<1]),
+      ("一行目\n二行目", [0..<2]), ("# 見出し\n\n本文", [0..<1, 2..<3]),
+      ("一\r\n二\r\n", [0..<2]),
+      ("```swift\n未完のcode", [0..<2]), ("~~~\ncode\n~~~", [0..<3]),
+      ("```\ncode\n", [0..<3]),
+      ("| 項目 | 値 |\n| --- | --- |\n| 一 | 二 |", [0..<3]),
+      ("| 項目 | 値 |\n", [0..<1]), ("- 一\n- 二\n\n本文", [0..<1, 1..<2, 3..<4])
+    ]
+    for (source, expected) in ranges {
+      precondition(MarkdownBlockParser.sourcedBlocks(for: source).map(\.lines) == expected)
+    }
     print("IncrementalMarkdownChecks: passed (1/7/37-scalar chunks, every live prefix matches final parser, stable settled blocks, no completion structure change, Japanese/combining/emoji/CRLF, headings/lists/quotes/tables/fences/links, replacement, no replay parse)")
   }
 }

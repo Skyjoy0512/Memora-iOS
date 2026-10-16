@@ -192,3 +192,7 @@ Agentの新しい診断eventは要求/操作の事実と終了所要時間だけ
 `CloudByteFramingBenchmark.swift`をホストのswiftc `-O`で実行。架空の74,752 bytes / 1,024 SSE events、warmup 1回を除く11回で、最終版CloudSSEEventDecoderのフレーミングはp50 **0.66ms**、p95 **0.71ms**。バイト単位の入力、wire容量検査、UTF-8とSSEの区切り解析を含む。URLSession、モデル、JSON tool解析、Markdown、SwiftUI、スクロール、端末メモリは含まない。実iPhone Releaseの数値やUI改善率として扱わない。
 
 中間実験の非同期byte wrapperは同規模fixtureでp50 11.13ms（wrapperなし1.23ms）となり採用しなかった。最終版は受信loopの内側で同期的に容量を確認する。実装や測定範囲が異なるため、旧アプリからの高速化率を算出しない。従来の`.lines`によるSSEの空行消失は性能比較以前の正確性の問題として修正した。100msの公開間隔は維持し、virtual clockテストで最初のtextと最終flushも確認した。
+
+### Markdown更新の処理単位比較（2026-10-16追加）
+
+基準`1cb1d8d`の増分parserと最終コードを同じbinaryで交互に21回測定。行数確認のための2回目の全文splitを除去した。架空コードblock23,903 bytes/174更新の合計中央値は25.453→16.761ms、長い1段落29,400 bytes/123更新は8.965→6.076ms。短い段落caseのp95は改善しておらず、実機frame/UI改善率は未測定。文法/編集範囲とnative UIを維持する。条件・全case・再実行方法・最新Time Profiler接続失敗は[MARKDOWN_UPDATE_PERFORMANCE.md](MARKDOWN_UPDATE_PERFORMANCE.md)、生の集計は[MARKDOWN_UPDATE_BENCHMARK.json](MARKDOWN_UPDATE_BENCHMARK.json)を参照。
