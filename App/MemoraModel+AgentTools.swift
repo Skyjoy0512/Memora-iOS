@@ -741,20 +741,33 @@ extension MemoraModel {
       return AgentToolOutcome(text: "本文が空です。", isError: true)
     }
     // Only addresses are kept; a name alone cannot be sent to.
-    let recipients = call.strings("to").filter { $0.contains("@") }
+    let recipients = call.strings("to")
+    let cc = call.strings("cc"), bcc = call.strings("bcc")
+    guard (recipients + cc + bcc).allSatisfy(MailDraft.validAddress) else {
+      return AgentToolOutcome(text: "宛先は確認済みのメールアドレスだけにしてください。不明なら空欄にします。", isError: true)
+    }
 
     var lines = ["件名: \(subject.isEmpty ? "（なし）" : subject)"]
     if !recipients.isEmpty { lines.append("宛先: \(recipients.joined(separator: ", "))") }
     lines.append(String(body.prefix(160)))
     guard let stepID = await approve(
       tool: .draftEmail,
-      title: "メールの下書きを開く",
+      title: "メールの下書きを端末に保存",
       lines: lines,
       confirmTitle: "開く",
       messageID: messageID
     ) else { return Self.declinedOutcome }
 
-    pendingMailDraft = MailDraft(recipients: recipients, subject: subject, body: body)
+    var draft = MailDraft(recipients: recipients, subject: subject, body: body, cc: cc, bcc: bcc)
+    draft.workspaceID = currentTeamID; draft.personIDs = aiPersonScopeID.map { [$0] } ?? []
+    draft.sourceMessageID = messageID; draft.recordIDs = agentMessage(messageID)?.sources.map(\.meetingID) ?? []
+    let projects = Set(draft.recordIDs.compactMap { meeting(id: $0)?.spaceID })
+    draft.projectID = projects.count == 1 ? projects.first : nil
+    guard saveMailDraft(draft) else {
+      finishAgentStep(stepID, on: messageID, state: .failed, detail: "下書きを保存できませんでした")
+      return AgentToolOutcome(text: "下書きの保存に失敗しました。送信していません。", isError: true)
+    }
+    pendingMailDraft = draft
     finishAgentStep(stepID, on: messageID, state: .done, detail: subject)
     return AgentToolOutcome(text: "下書きを開きました。送信するかどうかは利用者が決めます。")
   }

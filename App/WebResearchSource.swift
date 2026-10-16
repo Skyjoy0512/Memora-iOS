@@ -7,6 +7,7 @@ struct WebResearchSource: Identifiable, Codable, Hashable, Sendable {
   var text: String
   var kind: Kind
   var retrievedAt = Date.now
+  var publishedAt: Date?
   enum Kind: String, Codable, Sendable {
     case searchExcerpt
     case extractedPassage

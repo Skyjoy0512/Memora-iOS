@@ -31,8 +31,8 @@ extension MemoraModel {
       exchanges.append(("利用者: \(question)\n回答: \(message.text)", provenance.references))
     }
     let episode = relatedEpisodeContext(for: questionText, budget: 1_500, cloud: true)
-    if !episode.text.isEmpty { exchanges.insert((episode.text, episode.references), at: 0) }
-    let recent = Array(exchanges.suffix(4))
+    var recent = Array(exchanges.suffix(3))
+    if !episode.text.isEmpty { recent.insert((episode.text, episode.references), at: 0) }
     let references = Array(Set(recent.flatMap { $0.1 }))
     guard references.count <= 256 else { return ("", []) }
     return (Self.trailingHistory(recent.map { $0.0 }.joined(separator: "\n"), budget: 3_000), references)

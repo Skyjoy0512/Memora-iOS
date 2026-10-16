@@ -83,6 +83,7 @@ extension MemoraModel {
 
   func didChangeConversationWorkspace(from previous: String?) {
     invalidateAIWorkspaceExecution()
+    for job in webResearchJobs.values { job.cancel() }
     guard conversationPersistenceReady else { return }
     conversationSaveTask?.cancel()
     let previousSnapshot = AIConversationSnapshot(messages: aiMessages, workspaceID: previous, personID: aiPersonScopeID, conversationID: aiConversationID)

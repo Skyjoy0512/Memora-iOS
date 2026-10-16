@@ -17,6 +17,10 @@ struct WebResearchReport: Identifiable, Codable, Hashable, Sendable {
   var status: Status = .searching
   var error: String?
   var createdAt = Date.now
+  var workspaceID: String?
+  var progressEvents: [String]?
+  var coverageGaps: [String]?
+  var modelCalls: Int?
   var savedProjectID: UUID?
   var savedNoteID: UUID?
   var savedSourceIDs: [UUID] = []

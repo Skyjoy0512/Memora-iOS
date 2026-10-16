@@ -21,6 +21,7 @@ enum BackupPackage {
     var people: [Person]
     var aiHistory: [AIConversationEntry]
     var aiMemories: [AIMemory]? = nil
+    var mailDrafts: [MailDraft]? = nil
     var companyTemplates: [CompanyTemplate]? = nil
     var additionalWorkspaceFiles: [String] { (companyTemplates ?? []).map(\.fileReference) + (documents ?? []).compactMap(\.artifactFileReference) }
     /// Documents and slides. Optional, so a package from before they existed
@@ -108,6 +109,7 @@ enum BackupPackage {
     people: [Person],
     aiHistory: [AIConversationEntry],
     aiMemories: [AIMemory] = [],
+    mailDrafts: [MailDraft] = [],
     companyTemplates: [CompanyTemplate] = [],
     documents: [MemoraDocument] = [],
     projectSources: [ProjectSource] = [],
@@ -176,6 +178,7 @@ enum BackupPackage {
       people: people,
       aiHistory: aiHistory,
       aiMemories: aiMemories,
+      mailDrafts: mailDrafts,
       companyTemplates: companyTemplates,
       documents: documents,
       projectSources: projectSources,

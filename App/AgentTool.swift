@@ -256,7 +256,9 @@ enum AgentTool: String, CaseIterable {
       return object([
         "subject": string("件名"),
         "body": string("本文"),
-        "to": ["type": "array", "items": ["type": "string"], "description": "宛先のメールアドレス（分かる場合のみ）"]
+        "to": ["type": "array", "items": ["type": "string"], "description": "確認済みの宛先。不明なら空配列。推測しない"],
+        "cc": ["type": "array", "items": ["type": "string"]],
+        "bcc": ["type": "array", "items": ["type": "string"]]
       ], required: ["subject", "body"])
     case .saveToNotion:
       return object(["meeting_id": string("会議の記録のid")], required: ["meeting_id"])

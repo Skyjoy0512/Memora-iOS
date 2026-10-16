@@ -73,7 +73,7 @@ enum CloudAIService {
 
   /// Sends one system and user prompt to the chosen provider. Ask AI and the
   /// summarizer share it, each with its own instructions.
-  static func complete(system: String, user: String, llm: LLMSelection) async -> AIAnswerResult {
+  static func complete(system: String, user: String, llm: LLMSelection, maximumOutputTokens: Int? = nil) async -> AIAnswerResult {
     guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return .failure(llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey)
     }
@@ -81,9 +81,9 @@ enum CloudAIService {
 
     do {
       let text = if llm.provider.usesAnthropicAPI {
-        try await anthropic(system: system, user: user, model: llm.modelID, key: key)
+        try await anthropic(system: system, user: user, model: llm.modelID, key: key, maximumOutputTokens: maximumOutputTokens)
       } else {
-        try await chatCompletions(system: system, user: user, llm: llm, key: key)
+        try await chatCompletions(system: system, user: user, llm: llm, key: key, maximumOutputTokens: maximumOutputTokens)
       }
       return .answer(text)
     } catch let failure as AIAnswerFailure {
@@ -213,7 +213,8 @@ enum CloudAIService {
     system: String,
     user: String,
     llm: LLMSelection,
-    key: String
+    key: String,
+    maximumOutputTokens: Int? = nil
   ) async throws -> String {
     var request = URLRequest(url: llm.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
@@ -223,24 +224,30 @@ enum CloudAIService {
     if llm.provider == .openRouter {
       request.setValue("Memora", forHTTPHeaderField: "X-Title")
     }
-    request.httpBody = try JSONSerialization.data(withJSONObject: [
+    var body: [String: Any] = [
       "model": llm.modelID,
       "messages": [
         ["role": "system", "content": system],
         ["role": "user", "content": user]
       ]
-    ])
+    ]
+    if let cap = maximumOutputTokens {
+      guard (1...16_000).contains(cap) else { throw AIAnswerFailure.executionLimit }
+      body[llm.provider == .openAI ? "max_completion_tokens" : "max_tokens"] = cap
+    }
+    request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
     let (data, response) = try await URLSession.shared.data(for: request)
     try validate(response)
     let decoded = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
+    if maximumOutputTokens != nil, decoded.choices.first?.finishReason == "length" { throw AIAnswerFailure.executionLimit }
     let text = decoded.choices.first?.message.content?
       .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     guard !text.isEmpty else { throw AIAnswerFailure.empty }
     return text
   }
 
-  private static func anthropic(system: String, user: String, model: String, key: String) async throws -> String {
+  private static func anthropic(system: String, user: String, model: String, key: String, maximumOutputTokens: Int? = nil) async throws -> String {
     var request = URLRequest(url: LLMProvider.anthropic.baseURL.appendingPathComponent("messages"))
     request.httpMethod = "POST"
     request.timeoutInterval = 300
@@ -252,7 +259,7 @@ enum CloudAIService {
       "model": model,
       // Current models think before answering, and thinking counts against
       // this cap, so a small cap cut summaries off mid-sentence.
-      "max_tokens": 16_000,
+      "max_tokens": maximumOutputTokens ?? 16_000,
       "system": system,
       "messages": [["role": "user", "content": user]]
     ]
@@ -267,6 +274,7 @@ enum CloudAIService {
     let (data, response) = try await URLSession.shared.data(for: request)
     try validate(response)
     let decoded = try JSONDecoder().decode(AnthropicResponse.self, from: data)
+    if maximumOutputTokens != nil, decoded.stopReason == "max_tokens" { throw AIAnswerFailure.executionLimit }
     if decoded.stopReason == "refusal" { throw AIAnswerFailure.refused }
     // Thinking blocks come first and carry no text; only text blocks are the
     // answer.
@@ -305,6 +313,8 @@ private struct ChatCompletionResponse: Decodable {
   struct Choice: Decodable {
     struct Message: Decodable { var content: String? }
     var message: Message
+    var finishReason: String?
+    enum CodingKeys: String, CodingKey { case message; case finishReason = "finish_reason" }
   }
   var choices: [Choice]
 }

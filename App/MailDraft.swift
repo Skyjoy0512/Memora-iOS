@@ -1,18 +1,33 @@
 import Foundation
 
-/// An email the agent wrote for the person to review and send themselves.
-struct MailDraft: Identifiable, Hashable {
+/// Saved locally. Opening Mail is not evidence that a message was sent or delivered.
+struct MailDraft: Identifiable, Hashable, Codable, Sendable {
   var id = UUID()
   var recipients: [String]
   var subject: String
   var body: String
+  var cc: [String] = []
+  var bcc: [String] = []
+  var createdAt = Date.now
+  var updatedAt = Date.now
+  var personIDs: [UUID] = []
+  var projectID: UUID?
+  var recordIDs: [UUID] = []
+  var sourceMessageID: UUID?
+  var workspaceID: String?
+  var status: Status = .draft
+  enum Status: String, Codable, Sendable { case draft, archived }
 
-  /// The draft as plain text, for sharing when Mail is not set up.
   var plainText: String {
-    var text = "件名: \(subject)\n\n\(body)"
-    if !recipients.isEmpty {
-      text = "宛先: \(recipients.joined(separator: ", "))\n" + text
-    }
-    return text
+    var lines: [String] = []
+    if !recipients.isEmpty { lines.append("宛先: " + recipients.joined(separator: ", ")) }
+    if !cc.isEmpty { lines.append("CC: " + cc.joined(separator: ", ")) }
+    if !bcc.isEmpty { lines.append("BCC: " + bcc.joined(separator: ", ")) }
+    lines.append("件名: " + subject)
+    return lines.joined(separator: "\n") + "\n\n" + body
+  }
+
+  static func validAddress(_ value: String) -> Bool {
+    value.count <= 254 && value.range(of: #"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,63}$"#, options: .regularExpression) != nil
   }
 }

@@ -176,3 +176,40 @@ escape、未変更master/styles/theme、分割欄/長すぎるPPTX/破損拒否�
 せず、未変更part同一性とXML packageを検証。python-docx/python-pptxを使う高度な
 レンダリングPoC、Word/PowerPoint実アプリでの最終レイアウトは未検証。
 Debug preview: 2026-10-16T19-38-12-ad5adfbb.log成功（既存警告1件）。
+
+## Phase 6 — Deep Research / メール
+
+ResearchLoopは本番とmockで同じ有限ループを使用。初期1〜3検索の結果から件数/
+発行元/一次資料候補/日時の不足を判定し、元の話題から公式資料・最新発表・異なる
+見解の検索を追加。Web本文の命令から検索語を作らない。最大6検索/16ソース/
+比較モデル1回/120秒、入力context8000字/出力4096token。agent内の最終回答は
+既存AgentRunBudgetの別上限も適用。これは請求額の強制上限ではない。
+
+実際の検索開始/取得/不足判定/追加計画/モデル生成だけを記録。API抽出と全文閲覧は
+区別。公開日が取得できないものは不明表示。公式ドメインは一次資料の「候補」で
+検証済みと断定しない。引用番号の範囲を検証し、取得できた根拠だけをリンクにする。
+不足が残れば未完了表示。失敗/中断の根拠を保持し自動再送しない。workspace変更/
+キー変更/時間/停止で以後の処理を拒否。資料へ保存すると未完了状態と根拠URLを持つ
+実DOCXを生成できる。数値の矛盾はモデルに比較を要求するが、機械的な事実検証や
+網羅性を保証するものではない。
+
+CloudAIServiceの比較生成だけopt-inの出力capを付け、途中のlength/max_tokensを
+完成扱いにしない。未対応providerは失敗し、追加課金の自動fallback要求をしない。
+[OpenAI公式API](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) のmax_completion_tokens仕様を確認。
+
+MailDraftをSQLiteへ保存（To/CC/BCC/件名/本文/時点/person/project/source/workspace/
+状態）。approve後の保存成功を確認してネイティブ編集画面を開く。資料のtoolbarに
+下書き一覧。編集/コピー/共有/Mailを明示操作で利用し、不明宛先は空欄。宛先の名前/
+改行によるheader injectionを拒否。Mailを開いたことを送信済みと扱わない。
+バックアップもoptionalで互換性を維持。
+
+Gmailは現行gmail.readonlyのみ。公式の[drafts.create](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.drafts/create) はcompose/modify等が必要でreadonlyでは不可。
+このビルドはOAuth Client ID未設定で、実接続を行っていない。追加scopeや送信APIは
+導入せず、Gmail下書き保存は未接続のまま。アカウント/審査/本人の新しいOAuth同意を
+含む別工程が必要。接続済みと表示しない。
+
+検証: ResearchLoopChecksで本番ループの上限、重複、空、API失敗、途中結果、失効、
+時間、保存失敗、replay、引用番号とMailDraft codec/不明宛先/改行拒否を確認。
+run-memory-artifact-checks / run-next-generation-checks / run-motion-loading-checks /
+run-optimization-checks は成功。実API/キー/実ユーザー記録はテストに使っていない。
+Debug preview: 2026-10-16T19-45-30-e7dc3e92.log成功（既存警告1件）。

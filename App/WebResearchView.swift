@@ -29,14 +29,14 @@ struct WebResearchView: View {
           Button("調査を開始") { confirms = true }
             .disabled(!KeychainStore.has(WebResearchClient.keyName) || query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         } footer: {
-          Text("検索語はBraveへ送信します。Deep Researchは指定した最大3検索の抽出結果を比較します。要約には現在のAsk AIモデルを使います。")
+          Text("検索語はBraveへ送信します。Deep Researchは取得結果の不足に応じて追加検索します。要約には現在のAsk AIモデルを使います。")
         }
         if !KeychainStore.has(WebResearchClient.keyName) {
           Section { Text("設定 › AI整理 › Web検索でAPIキーを登録してください。キー未設定時には検索を実行しません。").foregroundStyle(.secondary) }
         }
         if let failure { Text(failure).foregroundStyle(.secondary) }
         Section("調査履歴") {
-          ForEach(model.webResearchReports) { report in
+          ForEach(model.webResearchReports.filter { $0.workspaceID == model.currentTeamID }) { report in
             NavigationLink { WebResearchDetailView(reportID: report.id, openProjectAction: { id in dismiss(); model.openProject(id) }) } label: {
               VStack(alignment: .leading, spacing: 4) {
                 Text(report.query).lineLimit(2)
@@ -69,7 +69,7 @@ struct WebResearchView: View {
         }
         Button("キャンセル", role: .cancel) {}
       } message: {
-        Text("検索APIへ最大\(mode == .search ? 1 : [query, secondQuery, thirdQuery].filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count)回、AI要約へ\(summarizes ? 1 : 0)回問い合わせます。契約に応じた料金が発生します。検索語と取得ソースのみを送り、端末の記録や個人メモリは自動で混ぜません。")
+        Text((mode == .deepResearch ? ResearchPlan.costNotice : "検索APIへ1回、比較AIへ最大1回。契約に応じた料金が発生します。") + "検索語と取得ソースのみを送り、端末の記録や個人メモリは自動で混ぜません。")
       }
     }
   }

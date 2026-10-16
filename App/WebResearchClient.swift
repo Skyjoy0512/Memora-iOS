@@ -54,7 +54,8 @@ enum WebResearchClient {
         .trimmingCharacters(in: .whitespacesAndNewlines)
       guard !text.isEmpty else { continue }
       result.append(WebResearchSource(title: String((row["title"] as? String ?? normalized.url.host ?? "Web").prefix(200)),
-        url: normalized.url, text: text, kind: mode == .search ? .searchExcerpt : .extractedPassage))
+        url: normalized.url, text: text, kind: mode == .search ? .searchExcerpt : .extractedPassage,
+        publishedAt: (row["page_age"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) }))
       if result.count == 8 { break }
     }
     return result

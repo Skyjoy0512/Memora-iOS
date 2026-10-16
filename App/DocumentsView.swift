@@ -35,6 +35,9 @@ struct DocumentsView: View {
     .navigationTitle("資料")
     .toolbar {
       ToolbarActionItem {
+        NavigationLink { MailDraftsView() } label: { ToolbarActionLabel("メール下書き", icon: .envelope) }
+      }
+      ToolbarActionItem {
         NavigationLink { CompanyTemplatesView() } label: { ToolbarActionLabel("会社テンプレート", icon: .docOnDoc) }
       }
       ToolbarActionItem {

@@ -30,6 +30,7 @@ extension MemoraModel {
       && documents.isEmpty
       && aiMemories.isEmpty
       && companyTemplates.isEmpty
+      && mailDrafts.isEmpty
       && projectSources.isEmpty
       && projectChats.isEmpty
       && customSkills.isEmpty
@@ -56,6 +57,7 @@ extension MemoraModel {
     let lifeLogEntries = self.lifeLogEntries
     let people = self.people
     let aiHistory = self.aiHistory
+    let mailDrafts = self.mailDrafts
     let aiMemories = self.aiMemories
     let companyTemplates = self.companyTemplates
     let documents = self.documents
@@ -73,6 +75,7 @@ extension MemoraModel {
         people: people,
         aiHistory: aiHistory,
         aiMemories: aiMemories,
+        mailDrafts: mailDrafts,
         companyTemplates: companyTemplates,
         documents: documents,
         projectSources: projectSources,
@@ -241,6 +244,7 @@ extension MemoraModel {
         (key: StorageKey.people, data: try RecordStore.encoded(manifest.people)),
         (key: StorageKey.aiHistory, data: try RecordStore.encoded(manifest.aiHistory)),
         (key: StorageKey.aiMemories, data: try RecordStore.encoded(manifest.aiMemories ?? aiMemories)),
+        (key: "memora.mailDrafts.v1", data: try RecordStore.encoded(manifest.mailDrafts ?? mailDrafts)),
         (key: "memora.companyTemplates.v1", data: try RecordStore.encoded(manifest.companyTemplates ?? companyTemplates)),
         (key: StorageKey.documents, data: try RecordStore.encoded(manifest.documents ?? [])),
         (key: StorageKey.projectSources, data: try RecordStore.encoded(manifest.projectSources ?? [])),
@@ -264,6 +268,7 @@ extension MemoraModel {
     aiHistory = manifest.aiHistory
     aiMemories = manifest.aiMemories ?? aiMemories
     companyTemplates = manifest.companyTemplates ?? companyTemplates
+    mailDrafts = manifest.mailDrafts ?? mailDrafts
     documents = manifest.documents ?? []
     projectSources = manifest.projectSources ?? []
     projectChats = manifest.projectChats ?? []
