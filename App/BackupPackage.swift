@@ -225,6 +225,16 @@ enum BackupPackage {
     guard skills.count <= 30, skills.allSatisfy(MemoraSkillMarkdown.valid),
           Set(skills.map(\.id)).count == skills.count,
           (manifest.skillSelections ?? []).count <= 100 else { throw BackupError.unreadable }
+    let memories = manifest.aiMemories ?? []
+    let drafts = manifest.mailDrafts ?? []
+    let templates = manifest.companyTemplates ?? []
+    guard memories.count <= 5_000, Set(memories.map(\.id)).count == memories.count,
+          memories.allSatisfy({ $0.text.count <= 200 && ($0.revisions?.count ?? 0) <= 30 }),
+          drafts.count <= 1_000, Set(drafts.map(\.id)).count == drafts.count,
+          drafts.allSatisfy({ $0.body.count <= 100_000 && $0.subject.count <= 500 &&
+            ($0.recipients + $0.cc + $0.bcc).allSatisfy(MailDraft.validAddress) }),
+          templates.count <= 100, Set(templates.map(\.id)).count == templates.count,
+          templates.allSatisfy({ $0.analysis.placeholders.count <= 30 && ProjectSourceFiles.resolve($0.fileReference) != nil }) else { throw BackupError.unreadable }
     let sources = manifest.projectSources ?? []
     let chats = manifest.projectChats ?? []
     guard Set(sources.map(\.id)).count == sources.count,
@@ -232,7 +242,7 @@ enum BackupPackage {
     let reports = manifest.webResearchReports ?? []
     guard Set(reports.map(\.id)).count == reports.count else { throw BackupError.duplicateIdentifiers }
     guard reports.allSatisfy({ report in
-      report.sources.count <= 16 && report.queries.count <= 3 && report.query.count <= 600 &&
+      report.sources.count <= 16 && report.queries.count <= ResearchPlan.maximumSearches && report.query.count <= 600 &&
       Set(report.sources.map(\.id)).count == report.sources.count &&
       report.sources.allSatisfy { source in
         source.text.count <= 8_000 && source.title.count <= 200 &&

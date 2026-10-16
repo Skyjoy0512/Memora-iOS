@@ -18,6 +18,15 @@ import Foundation
     value.semantic?.sensitivity = .standard
     value.semantic?.validTo = date
     precondition(!value.canUse(workspaceID: nil))
+    let oldFact = legacy.edited(text: "営業担当", status: .current, kind: .role, sensitivity: .standard, predicate: "役割", workspaceID: nil)
+    var newFact = AIMemory(id: UUID(), text: "管理職", origin: .told, createdAt: date)
+    newFact = newFact.edited(text: "管理職", status: .current, kind: .role, sensitivity: .standard, predicate: "役割", workspaceID: nil)
+    let conflicts = AIMemory.reconciling([oldFact, newFact], editedID: newFact.id)
+    precondition(conflicts.allSatisfy { $0.status == .conflicted && !$0.canUse(workspaceID: nil) })
+    precondition(oldFact.revisions?.first?.text == legacy.text)
+    var repeated = oldFact
+    for index in 0..<40 { repeated = repeated.edited(text: "改訂\(index)", status: .current, kind: .fact, sensitivity: .standard, predicate: "note", workspaceID: nil) }
+    precondition(repeated.revisions?.count == 30)
     let wanted = MemoryRetrievalItem(id: UUID(), kind: .episode, text: "田中さんと新規事業の提案書の構成を検討した", updatedAt: date, sourceID: UUID())
     let other = MemoryRetrievalItem(id: UUID(), kind: .episode, text: "旅行の宿泊先を相談", updatedAt: date, workspaceID: "other", sourceID: UUID())
     let sameName = MemoryRetrievalItem(id: UUID(), kind: .episode, text: wanted.text, updatedAt: date, personID: UUID(), sourceID: UUID())

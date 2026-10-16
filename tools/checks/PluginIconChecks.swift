@@ -15,6 +15,11 @@ import Foundation
       let parsed = try MemoraSkillMarkdown.parse(skill.skillMarkdown, allowedTools: Set(skill.toolNames))
       precondition(parsed.iconIdentifier == skill.iconIdentifier && parsed.version == 1)
     }
+    let skill = builtin.first { $0.id == "powerpoint" }!
+    precondition(skill.unavailabilityReason(enabled: true, availableTools: Set(skill.toolNames), onDeviceTools: ["read_record"]) != nil)
+    precondition(skill.unavailabilityReason(enabled: false, availableTools: Set(skill.toolNames), onDeviceTools: nil) != nil)
+    precondition(skill.unavailabilityReason(enabled: true, availableTools: [], onDeviceTools: nil) != nil)
+    precondition(skill.unavailabilityReason(enabled: true, availableTools: Set(skill.toolNames), onDeviceTools: nil) == nil)
     print("PluginIconChecks: passed (distinct service symbols, fallback, 15 skills, stable icon/version roundtrip)")
   }
 }

@@ -8,7 +8,7 @@ AGENTS.md / DESIGN.md / MCP.md / docs/NEXT_GENERATION_AI.md / 現行コードを
 DESIGN.md後半には旧4タブ、サンプルfallback、モデル選択UIの記述が残る。
 現行AGENTS.mdと実装（Home / Library / Ask AI、実行不可は失敗表示）を優先する。
 
-要求された34ファイルは現在のApp内に存在。既存Swift agent harness、有限予算、
+要求された35ファイルは現在のApp内に存在。既存Swift agent harness、有限予算、
 ストリーム終端検証、承認、MCP endpoint/credential/cost確認、SQLite record store、
 FTS5プロジェクト検索、日本語2-gram、PDF/PPTX、添付OOXML抽出を再利用する。
 通常レコードはSQLiteのJSON文書、音声/写真/添付はコンテナ内ファイル参照。
@@ -213,3 +213,333 @@ Gmailは現行gmail.readonlyのみ。公式の[drafts.create](https://developers
 run-memory-artifact-checks / run-next-generation-checks / run-motion-loading-checks /
 run-optimization-checks は成功。実API/キー/実ユーザー記録はテストに使っていない。
 Debug preview: 2026-10-16T19-45-30-e7dc3e92.log成功（既存警告1件）。
+
+## Phase 7 — 統合・安全性の仕上げ
+
+- 明示的な許可を持つproject fileをグローバルAgentのsearch_records/read_recordへ接続。
+  project所属/選択ID/workspace/送信許可とmetadata fingerprintを読込後/次のmodel呼出前に
+  再検証。個人以外/人物限定/常駐の自動読取へ流用しない。専用送信許可のない既存
+  MemoraDocument本文は引き続きcloudへ自動送信しない。これらの会話は出典の全形式を
+  永続検証できるまではcloudでの履歴再利用を拒否する。
+- 作成資料に参照した会議/登録資料のIDと導線を残す。メール編集には既存DraftStoreを
+  接続し、未保存の本文/件名/To/CC/BCCを復元。削除時にその下書きだけ片付ける。
+- Semantic編集/矛盾判定を実テスト可能なAIMemory+Editingへ分離。最大30世代を保持。
+  元の会話が残ればメモリ編集画面から開ける。保存失敗時は編集画面を閉じない。
+- research queriesが6件になったbackupも復元可能にし、memory/draft/templateの
+  件数・ID重複・参照名・内容上限を復元前に検証。履歴削除も保存成功後に反映。
+- 現在のTeamBackendは記録サービス未接続。チームの新しいAsk AI/常駐処理へ個人の
+  SQLite recordsを渡さない。ワークスペース変更は進行中の処理を止める。
+- 人物taskの旧name照合は本人確定と表現しない。同名があるmergeで他人の担当を
+  まとめて書き換えない。新しいpersonID付きtask移行は未実装。
+- CompanyTemplatesの実画面で登録導線と未接続の説明を確認。Dark +
+  accessibility_extra_largeでも内容が折り返され、操作できる。新規画面のtintは
+  モノトーンへ統一。toolbar導線のVoiceOver操作名を補正。既存draftへの検査用末尾入力は
+  取り除き、実record/認証/ファイルimport/送信は操作していない。
+
+途中に追加したsource参照のprojectID optional対応漏れをDebug buildで検出し修正。
+AgentSourceChecksのmock型も実型に合わせた。旧コードを無理なforce unwrapへ変えない。
+現行の不明なsource所属を自動で別projectに割り当てない。
+
+## 最終レポート A〜J
+
+### A. 監査
+
+開始main SHAと既存実装・旧文書との差分はPhase 0に記載。指定35ファイルは存在。
+保存はSQLite、mediaはfile参照、資格情報はKeychainを維持。Cloud storage/MCP公開server/
+Memora Intelligence/Team record backend/StoreKit等の未接続境界をサービス稼働と扱わない。
+
+### B. 実装
+
+Phase 1: 人物ID/候補/送信許可/会話の出典確認。
+Phase 2: semantic/episode metadata・状態/履歴・FTS検索・編集/削除。
+Phase 3: 根拠付き人物概要/話題/未決/時系列。
+Phase 4: 12業務Skill・共通icon・チップ情報/削除の分離。
+Phase 5: DOCX/実artifact保存・企業書式登録/差分適用/preview/backup。
+Phase 6: 有限反復Research・引用/日時/不足・local mail drafts。
+Phase 7: project file読取の実行前検証・編集draft復元・backupの上限/互換・統合確認。
+各段階を別commitに分割。主要ファイル一覧は末尾。
+
+### C. OSS
+
+指定24repoのroot license/archived/push日時、LICENSE/依存manifest URLとhashをJSONへ記録。
+Swift/SQLiteの独自実装を採用し、外部memory engine/framework/runtimeは採用しない。
+MIT/Apache rootでも全component/推移依存を包括許諾とは扱わない。Anthropic等の素材を
+コピーせず、Skillは独自記述。Carbone CE/外部worker/新規常時serverは未採用。
+Aは実装、BはPython標準ライブラリでの独立差分PoC、Cは未導入。
+
+### D. Memory / RAG
+
+Working=snapshot、Episodic=履歴上のAIEpisode、Semantic=AIMemory metadata、
+Procedural=MemoraSkill。MemoryとProjectSearchIndex/RAGは分離する。
+FTS5/BM25/日本語2-gram、明示scope、時点、freshな権限/出典で候補を絞る。
+状態・矛盾は本人の編集/明示項目で管理し、AIが雑談から勝手に事実を確定しない。
+抽象的な言い換え、人物関係graph、on-device Embeddingは未評価/未実装。
+過去の生成回答は根拠・内容・許可を確認できるものだけcloudへ再利用する。
+
+### E. 人物
+
+参加者タグを根拠に即時の抜粋summaryを構成。会議の決定と本人の発言を混同しない。
+人物ID固定のAsk AI、記録IDの許可範囲、会議/元資料への導線を実装。
+同姓/同名は自動確定しない。旧task/journalはname-basedのため本人の確定情報とは
+扱わず、曖昧なら利用者の確認が必要。複数会議を跨ぐ意味的topic clusteringは未実装。
+
+### F. 資料
+
+標準PPTX/PDFを維持しDOCXを追加。実生成→ZIP/CRC/XML/Office本文の再読込→保存。
+テンプレートはscalar markerのみ。既存master/style/theme/image/notesを保持する。
+任意OOXMLの完全編集、複雑なrun分割、最終Officeレンダリングは対応保証しない。
+Wordは基本見出し/段落/表の対応で、Markdown全書式の完全変換ではない。
+生成PPTXは画像1枚ではなくtext box中心。標準PPTXのspeaker notes未出力は既存境界。
+
+### G. Research / Email
+
+有限反復の本番loopをmockで検証。API本文と抜粋、日付不明、未完了、引用番号を区別。
+計画は端末の決定的な不足判定で、LLMによる無制限な再計画ではない。一次資料候補や
+矛盾整理は独立した事実性保証ではない。費用上限はprovider側の請求設定とは別。
+MailDraftは端末内保存/編集/コピー/共有/Mail。宛先不明は空欄。Gmailはreadonlyで、
+Drafts APIは別OAuth同意・実アカウント検証を残す。送信APIは追加しない。
+
+### H. Plugin / Skill
+
+共通icon descriptorを候補/チップで共用。サービスごとの機能icon、未接続理由と料金、
+独立した削除操作/VoiceOver label。15同梱Skill。手順は権限・コード実行能力ではない。
+企業書式の@は実Toolへ接続。person/project @候補は未追加で、人物詳細/既存project経路を
+使用する。端末AIで未対応のtoolや無効な必須toolは候補でも理由を示す。文字列@だけでは権限を与えない。
+
+### I. 検証
+
+架空fixture/mocksのみでhost suiteを実行。有料LLM/Brave/Gmail/MCP/Notionを呼んでいない。
+MemoraはProject.json定義でXcode test targetを持たず、bitrig testの対象はないことを確認。
+指定3runnerと追加runnerを使用。実device性能、token請求額、録音/Live Activity/Omi、
+real-cloudの統合シナリオA〜E、実Mail送信/認証、Word/PowerPoint最終表示は未検証。
+長い会話の実メモリ計測は未実施。2000件検索のhost測定は実機性能を意味しない。
+@候補/チップの全操作と全画面のVoiceOver実機走査も未検証。根拠なしに全機能回帰完了と
+主張しない。
+
+### J. 残る改善点
+
+- P0: 利用者の明示的なテスト用BYOK/モック接続で、端末のA〜E通し検証・権限変更中の
+  UI/E2E・新旧backup実復元を確認。実機録音/Island/長い会話の性能を測定する。
+- P0: TeamBackendの実record schema/認可を接続し、個人storeと物理的に分離する。
+  それまではteam会話へ個人recordを流さない。
+- P1: personID付きtask/journal関連、より自然なtopic要約、確認付きの構造化memory更新。
+  document/source/外部メールを跨ぐ永続provenanceを拡張し、安全な履歴再利用率を上げる。
+- P1: 会社書式のrun跨ぎmarker/表・画像差込、Office実レンダラーによるoverflow/ページ数確認。
+  利用者管理のpython-docx/python-pptx workerで高度編集を別PoCとして検証する。
+- P1: Gmail Drafts用OAuth同意/許可分離/再認証/E2E。実送信は常に本人の明示確認。
+- P2: 日本語embedding/Hybrid rerankの測定、任意のproject/person @指定の権限連携、
+  外部workerの認証/費用/保管条件、provider側の金額強制上限。
+
+
+最終補正: 業務Skillのask_userはcloud側の共通harnessで提供し、端末内Skillの必須toolとは
+しない。必要tool/無効状態/端末内モデルとの互換性を候補でも確認する。PowerPoint
+テンプレートの@が端末AIで利用できない場合は、手動の端末内生成との違いを表示する。
+会社書式artifactのWord/PPTX共有は保存済みファイルを一時コピーして渡す。標準writerで
+原本の書式を作り直さない。コピーだけを片付け、保存済みファイルは残す。会社書式の
+PDF変換は未対応表示にし、標準資料の既存PDFは維持。本文編集後は会社書式適用済み
+という状態も失効させる。検証用の実生成ファイルを
+[docs/fixtures/ask-ai-artifacts](fixtures/ask-ai-artifacts/README.md) に保持。
+
+## 変更ファイル（レビュー用）
+
+### Phase 0 — 99fddc9
+- `docs/ASK_AI_NEXT_IMPLEMENTATION.md`
+- `docs/ASK_AI_OSS_AUDIT.json`
+
+### Phase 1 — 17a22bd
+- `App/AIConversationSnapshot.swift`
+- `App/AIPluginExecutionPolicy.swift`
+- `App/AgentTool.swift`
+- `App/AskAIHeader.swift`
+- `App/MemoraModel+AI.swift`
+- `App/MemoraModel+AIProvenance.swift`
+- `App/MemoraModel+Agent.swift`
+- `App/MemoraModel+AgentTools.swift`
+- `App/MemoraModel+AutomaticRecordTools.swift`
+- `App/MemoraModel+Conversation.swift`
+- `App/MemoraModel+Memory.swift`
+- `App/MemoraModel+People.swift`
+- `App/MemoraModel+PersonChat.swift`
+- `App/MemoraModel.swift`
+- `App/PersonDetailView.swift`
+- `App/PersonIdentity.swift`
+- `docs/ASK_AI_NEXT_IMPLEMENTATION.md`
+- `docs/ASK_AI_OSS_AUDIT.json`
+- `tools/checks/PersonIdentityChecks.swift`
+- `tools/checks/run-next-generation-checks.sh`
+
+### Phase 2 — f1f61ec
+- `App/AIConversationEntry.swift`
+- `App/AIEpisode.swift`
+- `App/AIHistoryView.swift`
+- `App/AIMemory.swift`
+- `App/AIMemoryEditor.swift`
+- `App/AIMemoryView.swift`
+- `App/BackupPackage.swift`
+- `App/MemoraModel+AI.swift`
+- `App/MemoraModel+AIProvenance.swift`
+- `App/MemoraModel+Agent.swift`
+- `App/MemoraModel+Backup.swift`
+- `App/MemoraModel+Memory.swift`
+- `App/MemoryRetrievalItem.swift`
+- `App/MemoryRetrievalOrchestrator.swift`
+- `docs/ASK_AI_NEXT_IMPLEMENTATION.md`
+- `tools/checks/MemoryRetrievalChecks.swift`
+- `tools/checks/run-ask-ai-plugin-checks.sh`
+- `tools/checks/run-tool-integration-checks.sh`
+
+### Phase 3 — 89806b4
+- `App/PersonConversationSummary.swift`
+- `App/PersonDetailView.swift`
+- `App/PersonMemory.swift`
+- `docs/ASK_AI_NEXT_IMPLEMENTATION.md`
+- `tools/checks/PersonSummaryChecks.swift`
+
+### Phase 4 — d89168c
+- `App/AIPlugin.swift`
+- `App/AIPluginIcon.swift`
+- `App/AIPluginIconView.swift`
+- `App/AIPluginMenu.swift`
+- `App/ComposerMentionStrip.swift`
+- `App/MemoraModel+PluginExecution.swift`
+- `App/MemoraModel+Plugins.swift`
+- `App/MemoraSkill+Business.swift`
+- `App/MemoraSkill.swift`
+- `App/MemoraSkillMarkdown.swift`
+- `App/SkillDetailView.swift`
+- `docs/ASK_AI_NEXT_IMPLEMENTATION.md`
+- `tools/checks/PluginIconChecks.swift`
+- `tools/checks/run-next-generation-checks.sh`
+
+### Phase 5 — 76e0fa6
+- `App/AIPlugin.swift`
+- `App/AIPluginExecutionPolicy.swift`
+- `App/AIPluginIcon.swift`
+- `App/AgentTool.swift`
+- `App/BackupPackage.swift`
+- `App/CompanyTemplate.swift`
+- `App/CompanyTemplateDetailView.swift`
+- `App/CompanyTemplateEngine.swift`
+- `App/CompanyTemplatesView.swift`
+- `App/DOCXWriter.swift`
+- `App/DocumentDetailView.swift`
+- `App/DocumentsView.swift`
+- `App/MemoraDocument.swift`
+- `App/MemoraModel+Agent.swift`
+- `App/MemoraModel+AgentTools.swift`
+- `App/MemoraModel+Backup.swift`
+- `App/MemoraModel+CompanyTemplates.swift`
+- `App/MemoraModel+DocumentArtifacts.swift`
+- `App/MemoraModel+Documents.swift`
+- `App/MemoraModel+PluginExecution.swift`
+- `App/MemoraModel+Plugins.swift`
+- `App/MemoraModel.swift`
+- `App/OfficeArchiveReader.swift`
+- `App/ProjectWorkspaceBackup.swift`
+- `docs/ASK_AI_NEXT_IMPLEMENTATION.md`
+- `tools/checks/DocumentArtifactChecks.swift`
+- `tools/checks/office-template-poc.py`
+- `tools/checks/run-artifact-checks.sh`
+
+### Phase 6 — 6464a4e
+- `App/AIHistoryView.swift`
+- `App/AIPluginIconView.swift`
+- `App/AgentTool.swift`
+- `App/BackupPackage.swift`
+- `App/CloudAIService.swift`
+- `App/DocumentsView.swift`
+- `App/MailDraft.swift`
+- `App/MailDraftSheet.swift`
+- `App/MailDraftsView.swift`
+- `App/MemoraModel+AIProvenance.swift`
+- `App/MemoraModel+AgentTools.swift`
+- `App/MemoraModel+AgentWebResearch.swift`
+- `App/MemoraModel+Backup.swift`
+- `App/MemoraModel+Conversation.swift`
+- `App/MemoraModel+MailDrafts.swift`
+- `App/MemoraModel+ResearchArtifacts.swift`
+- `App/MemoraModel+WebResearch.swift`
+- `App/MemoraModel.swift`
+- `App/ResearchLoop.swift`
+- `App/ResearchPlan.swift`
+- `App/WebResearchClient.swift`
+- `App/WebResearchDetailView.swift`
+- `App/WebResearchReport.swift`
+- `App/WebResearchSource.swift`
+- `App/WebResearchView.swift`
+- `docs/ASK_AI_NEXT_IMPLEMENTATION.md`
+- `tools/checks/ResearchLoopChecks.swift`
+- `tools/checks/run-memory-artifact-checks.sh`
+
+### Phase 7 — 統合補正・検証
+
+- `App/AIChatMessage.swift`
+- `App/AIMemory+Editing.swift`
+- `App/AIMemory.swift`
+- `App/AIMemoryEditor.swift`
+- `App/AgentSourceReference.swift`
+- `App/BackupPackage.swift`
+- `App/CloudAIService.swift`
+- `App/CompanyTemplateDetailView.swift`
+- `App/CompanyTemplateEngine.swift`
+- `App/CompanyTemplatesView.swift`
+- `App/DocumentDetailView.swift`
+- `App/DocumentsView.swift`
+- `App/MailDraftSheet.swift`
+- `App/MailDraftsView.swift`
+- `App/MemoraDocument.swift`
+- `App/MemoraModel+AI.swift`
+- `App/MemoraModel+AIProvenance.swift`
+- `App/MemoraModel+Agent.swift`
+- `App/MemoraModel+AgentSources.swift`
+- `App/MemoraModel+AgentTools.swift`
+- `App/MemoraModel+AgentWebResearch.swift`
+- `App/MemoraModel+AutomaticRecordTools.swift`
+- `App/MemoraModel+Documents.swift`
+- `App/MemoraModel+MailDrafts.swift`
+- `App/MemoraModel+Memory.swift`
+- `App/MemoraModel+People.swift`
+- `App/MemoraModel+Plugins.swift`
+- `App/MemoraModel+ProjectContext.swift`
+- `App/MemoraModel+Residents.swift`
+- `App/MemoraSkill+Business.swift`
+- `App/MemoraSkill.swift`
+- `App/PersonDetailView.swift`
+- `DESIGN.md`
+- `docs/ASK_AI_NEXT_IMPLEMENTATION.md`
+- `docs/ASK_AI_PLUGINS.md`
+- `docs/fixtures/ask-ai-artifacts/README.md`
+- `docs/fixtures/ask-ai-artifacts/SHA256SUMS`
+- `docs/fixtures/ask-ai-artifacts/generated.docx`
+- `docs/fixtures/ask-ai-artifacts/generated.pptx`
+- `docs/fixtures/ask-ai-artifacts/long.docx`
+- `docs/fixtures/ask-ai-artifacts/poc.docx`
+- `docs/fixtures/ask-ai-artifacts/poc.pptx`
+- `tools/checks/AgentSourceChecks.swift`
+- `tools/checks/MemoryRetrievalChecks.swift`
+- `tools/checks/PluginIconChecks.swift`
+- `tools/checks/run-memory-artifact-checks.sh`
+- `tools/checks/run-next-generation-checks.sh`
+
+
+## 最終検証結果
+
+- Debug: `bitrig preview -platform iOS` 成功。
+  `2026-10-16T20-09-12-062331f1.log`。
+- Release: `bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release` 成功。
+  `2026-10-16T20-09-07-f1325244.log`。
+- 両方とも既存AppIntents metadata抽出skip警告1件のみ。compile/link errorなし。
+- 指定3runner＋run-memory-artifact-checks.sh成功。後者は本番loop/extensionとmockを
+  使用し、same UUIDでも記録限定policyをproject fileへ流用できないことも確認。
+- `git diff --check` 成功。Xcode test targetはProject.jsonに存在しない。
+- 画面確認: 会社テンプレートの登録、モノトーン、Dark/巨大文字の折り返し、toolbar操作名、
+  メール下書きの空状態。元のcomposer draftを保持。実recordの削除/編集やAPI呼出はない。
+- [機械可読の検証記録](ASK_AI_NEXT_VALIDATION.json) に成功と未検証を分けて記録。
+- [生成DOCX](fixtures/ask-ai-artifacts/generated.docx) /
+  [生成PPTX](fixtures/ask-ai-artifacts/generated.pptx) と独立PoCの出力を保存。
+  すべて架空データ。Officeでの最終レンダリングは未検証。
+
+会社書式artifactのWord/PPTX共有は保存済みファイルの一時コピーを使い、標準writerで
+書式を作り直さない。会社書式のPDF変換は未対応と明示し、標準資料のPDFを維持する。
+新たなサーバー/課金設定/本番デプロイ/第三者コードのアプリ組込は行っていない。
+本レポートの「実装済み」は外部サービスの実接続や実機での統合証明を意味しない。

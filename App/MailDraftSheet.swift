@@ -30,6 +30,15 @@ struct MailDraftSheet: View {
           TextField("BCC", text: $bcc).keyboardType(.emailAddress).textInputAutocapitalization(.never)
           TextField("件名", text: $edited.subject)
         } footer: { Text("Memora内の下書きです。送信はMailで本人が行います。宛先は推測で補いません。") }
+        if edited.workspaceID == model.currentTeamID, !edited.recordIDs.isEmpty {
+          Section("元の記録") {
+            ForEach(edited.recordIDs, id: \.self) { id in
+              if let meeting = model.meeting(id: id) {
+                NavigationLink { MeetingDetailView(meetingID: id, showsLocalPlaybackBar: true) } label: { Text(meeting.displayTitle) }
+              }
+            }
+          }
+        }
         Section("本文") { TextEditor(text: $edited.body).frame(minHeight: 240).accessibilityLabel("メール本文") }
         Section {
           Button("本文をコピー", icon: .docOnDoc) { UIPasteboard.general.string = edited.body }
@@ -39,14 +48,33 @@ struct MailDraftSheet: View {
           if !MFMailComposeViewController.canSendMail() { Text("Mailのアカウントが未設定です。本文のコピー・共有を利用できます。").font(.footnote).foregroundStyle(.secondary) }
         }
       }
+      .tint(.primary)
       .navigationTitle("メール下書き").navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { ToolbarIconButton("閉じる", icon: .xmark, action: onFinish) }
         ToolbarItem(placement: .confirmationAction) { ToolbarIconButton("保存", icon: .checkmark) { if save() { onFinish() } } }
       }
+      .onAppear {
+        guard edited.workspaceID == model.currentTeamID else { return }
+        edited.body = DraftStore.load("mail.\(edited.id).body") ?? edited.body
+        edited.subject = DraftStore.load("mail.\(edited.id).subject") ?? edited.subject
+        to = DraftStore.load("mail.\(edited.id).to") ?? to
+        cc = DraftStore.load("mail.\(edited.id).cc") ?? cc
+        bcc = DraftStore.load("mail.\(edited.id).bcc") ?? bcc
+      }
+      .onChange(of: edited.body) { _, value in keepDraft(value, field: "body") }
+      .onChange(of: edited.subject) { _, value in keepDraft(value, field: "subject") }
+      .onChange(of: to) { _, value in keepDraft(value, field: "to") }
+      .onChange(of: cc) { _, value in keepDraft(value, field: "cc") }
+      .onChange(of: bcc) { _, value in keepDraft(value, field: "bcc") }
       .sheet(isPresented: $opensMail) { MailComposer(draft: edited) { opensMail = false }.ignoresSafeArea() }
       .alert("保存できませんでした", isPresented: $failure) { Button("閉じる", role: .cancel) {} } message: { Text("宛先にはメールアドレスをカンマで区切って入力してください。保存先やワークスペースも確認してください。") }
     }
+  }
+
+  private func keepDraft(_ value: String, field: String) {
+    guard edited.workspaceID == model.currentTeamID, !model.isStoreProtected, value.utf8.count <= 400_000 else { return }
+    DraftStore.save(value, key: "mail.\(edited.id).\(field)")
   }
 
   private func save() -> Bool {
@@ -54,6 +82,7 @@ struct MailDraftSheet: View {
     edited.recipients = addresses(to); edited.cc = addresses(cc); edited.bcc = addresses(bcc); edited.updatedAt = .now
     let stored = model.saveMailDraft(edited)
     failure = !stored
+    if stored { for field in ["body", "subject", "to", "cc", "bcc"] { DraftStore.clear("mail.\(edited.id).\(field)") } }
     return stored
   }
 }

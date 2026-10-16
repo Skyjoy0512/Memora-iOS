@@ -84,3 +84,21 @@ AIComposerBarはTextSelection、入力observer、IME未確定中の送信停止�
 外部プラグインや変更ツールを自動で持ち込まない。実registry・schema・現在の
 所属／送信許可を毎回確認する。実接続のE2Eは未確認。
 詳細と上限は[NEXT_GENERATION_AI.md](NEXT_GENERATION_AI.md)を参照。
+
+## 2026-10-16: 記憶・成果物の拡張
+
+Pluginは能力の単位、Toolは実行操作、Skillは手順、Memoryは継続情報、RAGは根拠検索、
+Artifactは保存した成果物。Skillの宣言をアクセス許可として扱わない。
+
+- 共通AIPluginIconを候補/チップで使う。ブランド画像の外部取得はない。
+- 12業務Skillを追加。version/icon/scopes/costはoptional。旧Markdown/JSONも読める。
+- 会社テンプレートは`template:<UUID>`。選択した項目名だけをAIへ渡し、ファイル本体は
+  端末で適用。create_document/create_slidesのtemplate_id/template_fieldsを実行時検証。
+- @の実ID・接続・無効化・料金・保存範囲を実行時に再検証。見た目の@文字は権限ではない。
+- 人物詳細はID固定の専用会話を開く。person/projectの@候補だけを先に公開しない。
+- Gmailはreadonlyのまま。Gmail Drafts APIは新しいOAuth同意を必要とし未接続。
+- Deep Researchは取得済み根拠に応じて追加検索するが、最大6検索/16ソース/比較1回/
+  120秒。回数・token上限は請求額保証ではない。中断/不足/不明日時を残す。
+- 長期記憶は明示/承認のみ。Semanticと会話引用のEpisodeを分離し、FTS5/2-gramで
+  関連候補を選ぶ。出典・許可・workspaceを再検証する。詳細は
+  [実装と検証記録](ASK_AI_NEXT_IMPLEMENTATION.md) を参照。

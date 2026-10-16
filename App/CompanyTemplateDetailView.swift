@@ -41,6 +41,7 @@ struct CompanyTemplateDetailView: View {
       }
       Section("解析した構造") { ForEach(Array(template.analysis.features.enumerated()), id: \.offset) { _, feature in Text(feature).font(.caption).textSelection(.enabled) } }
     }
+    .tint(.primary)
     .navigationTitle(template.name).navigationBarTitleDisplayMode(.inline)
     .quickLookPreview($preview)
 

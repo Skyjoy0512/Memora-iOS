@@ -82,7 +82,8 @@ extension MemoraModel {
       persistMeetings()
     }
 
-    if sourceName.compare(targetName, options: .caseInsensitive) != .orderedSame {
+    if people.filter({ Self.isSameName($0.name, sourceName) }).count == 1,
+       sourceName.compare(targetName, options: .caseInsensitive) != .orderedSame {
       var tasksChanged = false
       for index in tasks.indices {
         guard let assignee = tasks[index].assignee,
@@ -139,9 +140,7 @@ extension MemoraModel {
     meetingsByPerson[personID] ?? []
   }
 
-  /// Gathers what the records hold about a person. A meeting counts when they
-  /// were tagged on it or spoke in it under their name, so records made before
-  /// anyone was tagged still come up.
+  /// Participant tags establish a relationship; speaker-name similarity alone cannot.
   func memory(of personID: UUID) -> PersonMemory? {
     guard let person = person(id: personID) else { return nil }
     let name = person.name

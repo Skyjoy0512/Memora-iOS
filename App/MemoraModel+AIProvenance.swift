@@ -79,6 +79,10 @@ extension MemoraModel {
       guard aiPersonScopeID == personID, person(id: personID) != nil,
             policy.recordIDs.isSubset(of: Set(meetings(withPerson: personID).map(\.id))) else { return false }
     }
+    guard message.projectSourceReferences.allSatisfy({ reference in
+      guard let source = source(id: reference.id), source.projectID == reference.projectID else { return false }
+      return canReadAgentSource(source, compact: false, policy: agentPluginPolicies[messageID]) && AIRecordFingerprint.make(source) == reference.fingerprint
+    }) else { return false }
     return provenance.workspaceID == currentTeamID && provenance.memoryFingerprint == cloudMemoryFingerprint
       && cloudAuthorizedTargets.isSuperset(of: targets)
       && provenance.references.allSatisfy { recordReference(for: $0.target) == $0 && allowsRecordAccess($0.target, purpose: .cloudAI) }

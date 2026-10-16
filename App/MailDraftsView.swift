@@ -21,6 +21,7 @@ struct MailDraftsView: View {
       }
     }
     .overlay { if drafts.isEmpty { ContentUnavailableView("下書きはありません", icon: .envelope, description: Text("Ask AIへメールの下書きを依頼すると、ここに保存されます。")) } }
+    .tint(.primary)
     .navigationTitle("メール下書き").navigationBarTitleDisplayMode(.inline)
     .sheet(item: $editing) { draft in MailDraftSheet(draft: draft) { editing = nil } }
     .confirmationDialog("下書きを削除しますか？", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {

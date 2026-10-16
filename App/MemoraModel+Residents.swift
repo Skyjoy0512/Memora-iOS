@@ -42,7 +42,7 @@ extension MemoraModel {
   /// that was missed by more than its window is skipped rather than posted
   /// late: a morning brief at midnight helps no one.
   func runDueResidents() async {
-    guard residentLLM != nil, !isRestoring, !isStoreProtected else { return }
+    guard currentTeamID == nil, residentLLM != nil, !isRestoring, !isStoreProtected else { return }
     let now = Date.now
     for agent in residentAgents where agent.isEnabled {
       guard let due = agent.trigger.lastDue(before: now),
@@ -56,7 +56,7 @@ extension MemoraModel {
 
   /// Starts the agents that follow a finished meeting.
   func runResidentsAfterMeeting(_ meetingID: UUID) {
-    guard residentLLM != nil, allowsRecordAccess(meetingID, purpose: .automaticAgent) else { return }
+    guard currentTeamID == nil, residentLLM != nil, allowsRecordAccess(meetingID, purpose: .automaticAgent) else { return }
     let agents = residentAgents.filter { $0.isEnabled && $0.trigger == .afterMeeting }
     guard !agents.isEmpty else { return }
     Task {
@@ -85,7 +85,7 @@ extension MemoraModel {
 
   private func executeResident(_ agent: ResidentAgent, meetingID: UUID?) async -> Bool {
     guard !Task.isCancelled else { return false }
-    guard !isRestoring, !isStoreProtected,
+    guard currentTeamID == nil, !isRestoring, !isStoreProtected,
           meetingID.map({ allowsRecordAccess($0, purpose: .automaticAgent) }) ?? true else { return false }
     let limits = agent.executionLimits ?? ResidentExecutionLimits()
     let readTools = AgentTool.residentTools.filter { enabledAgentTools.contains($0) }

@@ -36,9 +36,11 @@ struct DocumentsView: View {
     .toolbar {
       ToolbarActionItem {
         NavigationLink { MailDraftsView() } label: { ToolbarActionLabel("メール下書き", icon: .envelope) }
+          .accessibilityLabel("メール下書き")
       }
       ToolbarActionItem {
         NavigationLink { CompanyTemplatesView() } label: { ToolbarActionLabel("会社テンプレート", icon: .docOnDoc) }
+          .accessibilityLabel("会社テンプレート")
       }
       ToolbarActionItem {
         ToolbarIconButton("今週の週報を作る", icon: .calendarBadgeCheckmark) {

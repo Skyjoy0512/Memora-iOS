@@ -47,6 +47,7 @@ extension MemoraModel {
     }
     candidate[index].artifactFileReference = nil
     candidate[index].artifactFormat = nil
+    candidate[index].companyTemplateID = nil
     candidate[index].updatedAt = .now
     guard persistBatch({ [(key: StorageKey.documents, data: try RecordStore.encoded(candidate))] }) else { return false }
     documents = candidate

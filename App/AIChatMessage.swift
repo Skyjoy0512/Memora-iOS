@@ -17,6 +17,7 @@ struct AIChatMessage: Identifiable, Hashable {
   var interfaceTaskIDs: Set<UUID> = []
   var interfaceProjectIDs: Set<UUID> = []
   var interfaceWorkspaceID: String?
+  var projectSourceReferences: [AgentSourceReference] = []
   var cloudProvenance: AIConversationProvenance?
   var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?
   /// What produced the answer: the scope, engine, model, and time. Shown

@@ -19,6 +19,7 @@ extension MemoraModel {
     let candidate = mailDrafts.filter { $0.id != id || $0.workspaceID != currentTeamID }
     guard !isRestoring, persistNow(candidate, forKey: "memora.mailDrafts.v1") else { return false }
     mailDrafts = candidate
+    for field in ["body", "subject", "to", "cc", "bcc"] { DraftStore.clear("mail.\(id).\(field)") }
     return true
   }
 }

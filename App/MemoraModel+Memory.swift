@@ -11,7 +11,7 @@ extension MemoraModel {
   /// Keeps something about the person. Returns false for an empty text or one
   /// already remembered.
   @discardableResult
-  func addAIMemory(_ text: String, origin: AIMemory.Origin) -> Bool {
+  func addAIMemory(_ text: String, origin: AIMemory.Origin, sourceReference: String = "settings") -> Bool {
     let trimmed = String(
       text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.aiMemoryCharacterLimit)
     )
@@ -22,7 +22,7 @@ extension MemoraModel {
     guard !isRestoring, isStoreWritable(), aiMemories.count < 5_000 else { return false }
     var candidate = aiMemories
     let now = Date.now
-    let semantic = AIMemory.Semantic(value: trimmed, sourceReference: "explicit:\(aiConversationID)",
+    let semantic = AIMemory.Semantic(value: trimmed, sourceReference: sourceReference,
       observedAt: now, updatedAt: now, validFrom: now, workspaceID: currentTeamID)
     candidate.insert(AIMemory(id: UUID(), text: trimmed, origin: origin, createdAt: now, semantic: semantic), at: 0)
     return storeAIMemories(candidate)
@@ -37,41 +37,22 @@ extension MemoraModel {
     return true
   }
 
+  @discardableResult
   func updateAIMemory(_ id: UUID, text: String, status: AIMemory.Status = .current,
                       kind: AIMemory.Kind = .fact, sensitivity: AIMemory.Sensitivity = .standard,
-                      predicate: String = "note") {
+                      predicate: String = "note") -> Bool {
     let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.aiMemoryCharacterLimit))
-    guard let index = aiMemories.firstIndex(where: { $0.id == id && $0.workspaceID == currentTeamID }) else { return }
-    if trimmed.isEmpty { deleteAIMemories([id]); return }
+    guard let index = aiMemories.firstIndex(where: { $0.id == id && $0.workspaceID == currentTeamID }) else { return false }
+    if trimmed.isEmpty { return deleteAIMemories([id]) }
     var candidate = aiMemories
-    let old = candidate[index]
-    var history = old.revisions ?? []
-    history.append(.init(text: old.text, semantic: old.semantic, supersededAt: .now))
-    candidate[index].revisions = Array(history.suffix(30))
-    candidate[index].text = trimmed
-    var semantic = old.semantic ?? .init(value: old.text, sourceReference: "legacy:\(old.id)",
-      observedAt: old.createdAt, updatedAt: old.createdAt, validFrom: old.createdAt)
-    semantic.value = trimmed; semantic.updatedAt = .now; semantic.validFrom = .now
-    semantic.validTo = status == .historical || status == .disabled ? .now : nil
-    semantic.status = status; semantic.type = kind; semantic.sensitivity = sensitivity
-    semantic.predicate = String(predicate.prefix(80)); semantic.userConfirmed = true
-    semantic.sourceReference = "user-edit:\(id)"; semantic.workspaceID = currentTeamID
-    candidate[index].semantic = semantic
-    // A structured fact with a different current value is a conflict, never a silent replacement.
-    if semantic.predicate != "note", status == .current {
-      for other in candidate.indices where other != index {
-        guard let value = candidate[other].semantic, value.workspaceID == currentTeamID,
-              value.subjectID == semantic.subjectID, value.predicate == semantic.predicate,
-              value.status == .current, value.value != trimmed else { continue }
-        candidate[other].semantic?.status = .conflicted
-        candidate[index].semantic?.status = .conflicted
-      }
-    }
-    _ = storeAIMemories(candidate)
+    candidate[index] = candidate[index].edited(text: trimmed, status: status, kind: kind,
+      sensitivity: sensitivity, predicate: predicate, workspaceID: currentTeamID)
+    return storeAIMemories(AIMemory.reconciling(candidate, editedID: id))
   }
 
-  func deleteAIMemories(_ ids: Set<UUID>) {
-    _ = storeAIMemories(aiMemories.filter { !ids.contains($0.id) || $0.workspaceID != currentTeamID })
+  @discardableResult
+  func deleteAIMemories(_ ids: Set<UUID>) -> Bool {
+    storeAIMemories(aiMemories.filter { !ids.contains($0.id) || $0.workspaceID != currentTeamID })
   }
 
   func deleteAllAIMemories() {

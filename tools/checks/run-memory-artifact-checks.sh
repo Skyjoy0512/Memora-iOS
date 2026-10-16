@@ -9,4 +9,6 @@ swiftc App/PersonConversationSummary.swift tools/checks/PersonSummaryChecks.swif
 "$check_dir/person"
 swiftc App/WebResearchSource.swift App/WebResearchReport.swift App/ResearchPlan.swift App/ResearchLoop.swift App/MailDraft.swift tools/checks/ResearchLoopChecks.swift -o "$check_dir/research"
 "$check_dir/research"
+swiftc App/RecordPrivacy.swift App/SummarySensitivity.swift App/RecordAccessPolicy.swift App/AIPluginExecutionPolicy.swift App/AIRecordFingerprint.swift App/AgentSourceReference.swift App/AgentToolOutcome.swift App/ProjectSourceText.swift App/MemoraModel+AgentSources.swift tools/checks/AgentSourceChecks.swift -o "$check_dir/sources"
+"$check_dir/sources"
 bash tools/checks/run-artifact-checks.sh

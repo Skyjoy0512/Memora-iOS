@@ -1,0 +1,139 @@
+{
+  "checked_at": "2026-10-16T11:15:25.914311+00:00",
+  "baseline_main": "af3007cbe73585e180c33982b206d1e9c846c408",
+  "platform": "iOS Simulator, iOS 27.1 SDK, iOS 18 deployment target",
+  "debug": {
+    "command": "bitrig preview -platform iOS",
+    "result": "success",
+    "log": "2026-10-16T20-09-12-062331f1.log",
+    "warnings": 1
+  },
+  "release": {
+    "command": "bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release",
+    "result": "success",
+    "log": "2026-10-16T20-09-07-f1325244.log",
+    "warnings": 1
+  },
+  "warnings": "Existing AppIntents metadata extraction skipped warning; no compile/link errors.",
+  "checks": {
+    "bash tools/checks/run-next-generation-checks.sh": {
+      "result": "passed",
+      "evidence": [
+        "MemoryRetrievalChecks: passed (legacy, validity, conflict states, sensitivity, Japanese FTS5, scope, delete, 2000 items 0.037010908126831055s; no LLM quality claim)",
+        "PersonIdentityChecks: passed (same family, identical names, honorific, spaces, missing)",
+        "ProjectTaskListChecks: passed (all assignees, completion, current membership/move/removal, no global/orphan fallback; local fixture)",
+        "ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)",
+        "ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)",
+        "ProjectSearchQualityChecks: passed (measured real FTS5 + context, long PDF/page evidence, scoped snapshots, update/delete/revoke invalidation; metrics are not LLM answer quality)",
+        "ProjectSourceAvailabilityChecks: passed (legacy codec, honest partial/missing states, unchanged privacy and evidence eligibility)",
+        "WebSourceChecks: passed (fixed public endpoint, redirect DNS, secret-free GET, split/chunked/bounded HTTP, nonexecuting HTML, entities, Unicode, cancellation; mock transport, no network)",
+        "OfficeDocumentChecks: passed (real stored/DEFLATE/descriptor OOXML, Japanese text, slide/sheet order, cached cells, strict namespace, bounds, cancellation, corrupt/hostile packages; no network)",
+        "AI conversation snapshot checks passed",
+        "AgentAttachmentChecks: passed (bounded prepared identity, untrusted JSON, operation intent, filename-only persistence, mock loop/declined approval; no network or records)",
+        "AgentTaskDraftChecks: passed (strict proposal parsing, editable fields, source/identity binding, selection, date/text/count bounds; no records)",
+        "ConversationScrollChecks: passed (stream growth, lazy layout, manual reading, simultaneous scroll/resize, new-answer reset, invalid geometry)",
+        "RelevantTextWindowChecks: passed (long Japanese/emoji passages, specific term selection, case-insensitive match, deterministic order, bounded/empty fallback)",
+        "AgentConversationLoopChecks: passed (mock turns, ordered real loop dispatch, revoke/cancel/empty/failure, bounded calls, replay rejection; no network)",
+        "ScopedAgentEvidenceChecks: passed (fixture scope/revoke rejection, stable citations, guessed/ambiguous IDs, source/text limits; no network)",
+        "AttachmentScopeChecks: passed (bounded UTF-8, malformed endings, local file isolation, cancellation, record/project/task boundaries, prepared identity)",
+        "ProjectSourceReadChecks: passed (real local evidence, async cancellation, byte limit, invalid/path/symlink/directory rejection)",
+        "ProjectChatHistoryChecks: passed (bounded complete turns, revoked evidence, legacy decoding, retained archive)",
+        "CloudStreamChecks: passed (split/interleaved tools, signatures, reasoning, termination, truncated/invalid/error/bounds rejection)",
+        "CloudAgentTurnChecks: passed (whole-batch validation, JSON fallback, completion reasons, malformed/missing arguments, IDs, bounds, valid empty object)",
+        "CloudSSETransportChecks: passed (actual bounded wire → event decoder → accumulator → turn decoder; incremental publication, LF/CRLF/CR, BOM/comments/multiline, EOF, truncated/invalid rejection; no network)",
+        "NativeAIInterfaceChecks: passed (typed components, Markdown fallback, incomplete input, unknown components/keys/actions, malformed IDs, bounds, table shape, duplicate identity)",
+        "DiscoverySkillChecks: passed (local relevance/order, availability/disable, schema budget, explicit selection, Markdown import/round-trip, disabled skills, untrusted/unknown/script metadata rejection)",
+        "ResidentLimitsChecks: passed (legacy decode, policy persistence, bounded requests/tools, whitelist cannot grant writes, notification setting)",
+        "SystemIntegrationChecks: passed (local destinations, malformed links, snapshot roundtrip, expiry, identity/date/count bounds, missing/corrupt/oversize files)",
+        "ComposerMentionChecks passed (parser, IME refusal, editing, draft IDs, tool/record restrictions)",
+        "PluginDispatchChecks passed (real registry dispatch, mock provider, scope/schema/identity/disable rejection; no network)",
+        "ToolIntegrationChecks: passed (schema, registry, disabled/unknown tools, SSE IDs/CRLF, legacy config, namespace/fingerprint)",
+        "AIWebSearchIntentChecks: passed (natural search, internal scope, negation, missing topic, follow-ups, explicit toggle)",
+        "AIConversationProvenanceChecks: passed (grant, revoke, edit, missing source, workspace, memory, limit, legacy)",
+        "MCPOAuthChecks: passed (endpoint/scope validation, identity binding, callback/CSRF duplicates, expiry, refresh rotation, privilege escalation, form encoding)",
+        "AI history search checks passed",
+        "AI journal privacy checks passed",
+        "RootNavigationChecks: passed (three tabs, legacy IDs, segment restoration, isolated stacks, recording destination, AI scopes)",
+        "RecordPrivacyChecks: passed (fail closed, one-shot consent, sticky classification, persistence)",
+        "PluginIconChecks: passed (distinct service symbols, fallback, 15 skills, stable icon/version roundtrip)",
+        "PersonSummaryChecks: passed (literal evidence changes, source IDs, unresolved, empty; no inference)",
+        "ResearchLoopChecks: passed (production iterative loop, bound/dedupe/error/partial/revoke/timeout/save failure/replay/empty/citations; draft persistence, unknown recipient, header injection; mocks only)",
+        "AgentSourceChecks: passed (production extension, individual grant, page/source provenance, selected IDs, workspace, revoke/edit during suspended read, automatic refusal; no files/network)",
+        "DocumentArtifactChecks: passed (real DOCX/PPTX, Japanese, tables, long flow, XML escaping, unchanged masters/styles/theme, split/overflow/corruption rejection, reload; final Office rendering unverified)",
+        "Local OOXML PoC docx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.",
+        "Local OOXML PoC pptx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified."
+      ]
+    },
+    "bash tools/checks/run-motion-loading-checks.sh": {
+      "result": "passed",
+      "evidence": [
+        "Motion policy passed: immediate saved content; native tab and journal Hero retained",
+        "LoadingPolicyChecks: passed (50/200/2000/5000ms virtual clock, stale/overlap/cancel/retry, refresh keeps content, empty/failure, calendar day/settings identity)",
+        "ProjectSourceTextLoaderChecks: passed (real loader with suspended mock reads: overlap, immediate stop, late success/failure, retry, refresh, reference change, parent cancellation, nil/empty; no files or network)",
+        "ConversationScrollChecks: passed (stream growth, lazy layout, manual reading, simultaneous scroll/resize, new-answer reset, invalid geometry)",
+        "IncrementalMarkdownChecks: passed (1/7/37-scalar chunks, every live prefix matches final parser, stable settled blocks, no completion structure change, Japanese/combining/emoji/CRLF, headings/lists/quotes/tables/fences/links, replacement, no replay parse)",
+        "CatalogPresentationChecks: passed (honest Notion capabilities, unavailable Drive/GitHub, named project search)",
+        "AgentBudgetChecks: passed (16 requests, per/total bytes, exact deadline, negative/overflow rejection, no network or keys)",
+        "AgentGenerationChecks: passed (reviewed models only, custom/unknown compatibility, Sol/Luna tool parameters, streaming usage opt-in, 128k reservations, missing usage, refunds, remaining clamp, overflow/malformed counters, real loop stops before fifth dispatch or over-limit tools; no API/keys)",
+        "AgentRunBudgetChecks: passed (parent + 3 children share 16 requests/bytes/time/output, concurrent reservation identity/refunds, no overcommit, cancellation/late reply/tool stop, strict child completion; mocks only)",
+        "Agent interaction passed: approval/questions, cancellation, replacement, stale IDs, no writes after cancellation",
+        "ProjectChatExecutionChecks: passed (real lifecycle extension, workspace generations, late cleanup, immediate retry, saved-history preservation, cancellation, failed persistence; memory fixtures only)",
+        "ProjectChatDispatchChecks: passed (production send/cancel/delete + memory storage/model mocks, suspended retrieval, immediate resend, A-B-A, late callbacks/final/cleanup; no API, keys or files)"
+      ]
+    },
+    "python3 tools/checks/run-optimization-checks.py": {
+      "result": "passed",
+      "evidence": [
+        "CollectionPerformanceChecks: passed (0/1/100/1000, ordering, no-match fallback, loose/multiple tasks)",
+        "PerformanceLogChecks: passed (capacity, stats, ordered reset, retry, snapshot round trip)",
+        "LocalStoreChecks: passed (legacy bytes, atomic rollback, statement reuse after failure, ordered duplicate keys, removals, reopen)",
+        "ToolIntegrationChecks: passed (schema, registry, disabled/unknown tools, SSE IDs/CRLF, legacy config, namespace/fingerprint)",
+        "AIWebSearchIntentChecks: passed (natural search, internal scope, negation, missing topic, follow-ups, explicit toggle)",
+        "AIConversationProvenanceChecks: passed (grant, revoke, edit, missing source, workspace, memory, limit, legacy)",
+        "MCPOAuthChecks: passed (endpoint/scope validation, identity binding, callback/CSRF duplicates, expiry, refresh rotation, privilege escalation, form encoding)",
+        "ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)",
+        "ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)",
+        "ProjectChatHistoryChecks: passed (bounded complete turns, revoked evidence, legacy decoding, retained archive)",
+        "RecordStoreFailureChecks: passed (async rollback, concurrent one-shot failure, sync recovery)",
+        "Health review loader checks passed",
+        "JournalPerformanceChecks: passed (ownership and profile name changes)",
+        "Journal activity days and task status checks passed",
+        "RecordPrivacyChecks: passed (fail closed, one-shot consent, sticky classification, persistence)",
+        "RootNavigationChecks: passed (three tabs, legacy IDs, segment restoration, isolated stacks, recording destination, AI scopes)",
+        "ProjectSourceFilesChecks: passed (bounded import, content fingerprint, path/symlink isolation, selective deletion)",
+        "SourceLookupChecks: passed (0/1/100/1000, current edited permissions, deletion, ordering, first duplicate)",
+        "StandaloneRecordPrivacyChecks: passed (legacy, grant, inheritance, orphan, parent floor, location denial)",
+        "ShareInboxChecks: passed (atomic publication, reopen, file bytes, interrupted drafts, unsafe paths, symlinks, scheme rejection, targeted cleanup)",
+        "Optimization checks: all passed"
+      ]
+    },
+    "bash tools/checks/run-memory-artifact-checks.sh": {
+      "result": "passed",
+      "evidence": [
+        "PluginIconChecks: passed (distinct service symbols, fallback, 15 skills, stable icon/version roundtrip)",
+        "PersonSummaryChecks: passed (literal evidence changes, source IDs, unresolved, empty; no inference)",
+        "ResearchLoopChecks: passed (production iterative loop, bound/dedupe/error/partial/revoke/timeout/save failure/replay/empty/citations; draft persistence, unknown recipient, header injection; mocks only)",
+        "AgentSourceChecks: passed (production extension, individual grant, page/source provenance, selected IDs, workspace, revoke/edit during suspended read, automatic refusal; no files/network)",
+        "DocumentArtifactChecks: passed (real DOCX/PPTX, Japanese, tables, long flow, XML escaping, unchanged masters/styles/theme, split/overflow/corruption rejection, reload; final Office rendering unverified)",
+        "Local OOXML PoC docx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.",
+        "Local OOXML PoC pptx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified."
+      ]
+    }
+  },
+  "xcode_tests": "Project.json has no test targets; host fixture runners were used.",
+  "ui_verified": [
+    "Company template navigation and monochrome registration screen",
+    "Dark appearance and accessibility_extra_large wrapping",
+    "Documents toolbar accessibility labels",
+    "Mail drafts empty state",
+    "Original composer draft preserved; test suffix removed"
+  ],
+  "not_verified": [
+    "Real BYOK/Brave/Gmail/MCP/Notion scenarios A-E",
+    "Physical iPhone performance, audio, background operation, Live Activity",
+    "Full VoiceOver traversal and plugin/mention interaction suite",
+    "Final Microsoft Word/PowerPoint rendering and template pagination",
+    "Real legacy backup restore in simulator"
+  ],
+  "external_service_calls_during_fixture_tests": false
+}

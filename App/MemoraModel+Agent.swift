@@ -13,6 +13,10 @@ extension MemoraModel {
   /// way, so the composer keeps the text.
   @discardableResult
   func sendAgentChat(_ request: String, attachment: AIAttachment? = nil, pluginPolicy: AIPluginExecutionPolicy? = nil, preparedAttachment: PreparedAIAttachment? = nil) -> Bool {
+    guard currentTeamID == nil else {
+      aiRequestRefusalMessage = "チームの記録サービスは未接続です。個人の記録をチームの会話へ渡しません。個人ワークスペースで質問してください。"
+      return false
+    }
     let trimmed = request.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty, !isAIChatResponding else { return false }
 

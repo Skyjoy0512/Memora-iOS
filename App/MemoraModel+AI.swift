@@ -82,6 +82,10 @@ extension MemoraModel {
   @discardableResult
   func sendAIChat(_ question: String, attachment: AIAttachment? = nil, webSearchRequested: Bool = false, pluginIDs: [String] = [], preparedAttachment: PreparedAIAttachment? = nil) -> Bool {
     aiRequestRefusalMessage = nil
+    guard currentTeamID == nil else {
+      aiRequestRefusalMessage = "チームの記録サービスは未接続です。個人の記録をチームの会話へ渡しません。個人ワークスペースで質問してください。"
+      return false
+    }
     let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty || attachment != nil, !isAIChatResponding else { return false }
 
@@ -120,7 +124,7 @@ extension MemoraModel {
     // Asked plainly to remember something: it is kept before answering, and
     // the conversation says so, so it is never kept silently.
     let remembered = isAIMemoryEnabled ? Self.explicitMemory(in: trimmed) : nil
-    let didRemember = remembered.map { addAIMemory($0, origin: .told) } ?? false
+    let didRemember = remembered.map { addAIMemory($0, origin: .told, sourceReference: "conversation:\(aiConversationID)") } ?? false
 
     if attachment != nil, askAIConfiguration.llm.isMemoraIntelligence {
       return sendGroundedAnswer(trimmed, attachment: attachment, remembered: didRemember ? remembered : nil)
@@ -299,6 +303,11 @@ extension MemoraModel {
     onStage: (@MainActor (String) -> Void)? = nil,
     onText: (@MainActor (String) -> Void)? = nil
   ) async -> AIAnswerOutcome {
+    guard currentTeamID == nil else {
+      return AIAnswerOutcome(question: request.effectiveQuestion, scopeLabel: scopeLabel,
+        result: .failure(.serviceNotConnected), sources: [],
+        details: AIAnswerDetails(scopeLabel: scopeLabel, engineLabel: "未実行", modelLabel: nil, sourceCount: 0, generatedAt: .now))
+    }
     let workspaceID = currentTeamID
     let generation = aiWorkspaceGeneration
     let safeStage: @MainActor (String) -> Void = { value in
@@ -1001,8 +1010,9 @@ extension MemoraModel {
   }
 
   func deleteAIHistoryEntry(_ id: UUID) {
-    aiHistory.removeAll { $0.id == id }
-    persistAIHistory()
+    let candidate = aiHistory.filter { $0.id != id }
+    guard !isRestoring, persistNow(candidate, forKey: StorageKey.aiHistory) else { return }
+    aiHistory = candidate
   }
 }
 

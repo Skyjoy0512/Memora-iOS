@@ -39,6 +39,14 @@ enum CompanyTemplateEngine {
       }
       if path.contains("/media/") { features.append("画像: " + path) }
       if path.contains("slideMasters/") || path.contains("slideLayouts/") || path.contains("/theme/") || path.contains("notesSlides/") || path.contains("/header") || path.contains("/footer") { features.append("保持: " + path) }
+      if path == "word/styles.xml" || path == "ppt/presentation.xml" || path.contains("/theme/") || path.contains("slideMasters/") || path.contains("slideLayouts/") {
+        if path.hasSuffix(".xml") {
+          let style = try OfficeXMLDocument(data: archive.read(path))
+          for node in style.nodes where ["style", "rFonts", "latin", "ea", "srgbClr", "sldSz", "ph"].contains(node.name) {
+            if features.count < 100 { features.append(node.name + ": " + node.attributes.sorted { $0.key < $1.key }.map { $0.key + "=" + $0.value }.joined(separator: " ")) }
+          }
+        }
+      }
       guard mutablePart(path, format: format) else { continue }
       let bytes = try archive.read(path)
       let xml = try OfficeXMLDocument(data: bytes)
@@ -48,7 +56,7 @@ enum CompanyTemplateEngine {
       let individual = textNodes.flatMap { matches($0.text) }
       if all.count != individual.count { split = true }
       names.formUnion(individual)
-      for node in xml.nodes where ["pgSz", "pgMar", "rFonts", "tbl", "sectPr", "sldSz", "sp", "graphicFrame", "pic"].contains(node.name) {
+      for node in xml.nodes where ["pgSz", "pgMar", "rFonts", "tbl", "sectPr", "sldSz", "sp", "graphicFrame", "pic", "off", "ext", "ph"].contains(node.name) {
         if features.count < 100 { features.append(node.name + ": " + node.attributes.sorted { $0.key < $1.key }.map { $0.key + "=" + $0.value }.joined(separator: " ")) }
       }
     }

@@ -56,6 +56,13 @@ struct AIMemory: Identifiable, Hashable, Codable {
   var revisions: [Revision]?
 
   var status: Status { semantic?.status ?? .current }
+  var sourceSessionIDs: Set<UUID> {
+    Set(([semantic?.sourceReference] + (revisions ?? []).map { $0.semantic?.sourceReference }).compactMap { reference in
+      guard let reference, reference.hasPrefix("conversation:") || reference.hasPrefix("explicit:") else { return nil }
+      return reference.split(separator: ":").last.flatMap { UUID(uuidString: String($0)) }
+    })
+  }
+
   var updatedAt: Date { semantic?.updatedAt ?? createdAt }
   var workspaceID: String? { semantic?.workspaceID }
 

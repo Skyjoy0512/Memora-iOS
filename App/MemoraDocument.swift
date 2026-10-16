@@ -22,6 +22,8 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   var artifactFileReference: String?
   var artifactFormat: String?
   var companyTemplateID: UUID?
+  var sourceProjectFileIDs: [UUID]?
+  var sourceRecordIDs: [UUID]?
 
   var displayTitle: String {
     title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の\(kind.label)" : title
@@ -39,7 +41,7 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
         .joined(separator: " ")
       return String(text.prefix(120))
     case .slides:
-      return "\(slides.count)枚のスライド"
+      return companyTemplateID != nil && slides.isEmpty ? "会社テンプレートのPowerPoint" : "\(slides.count)枚のスライド"
     }
   }
 

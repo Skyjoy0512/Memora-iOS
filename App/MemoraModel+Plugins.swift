@@ -33,10 +33,12 @@ extension MemoraModel {
         state: state, toolIDs: Set(service.toolNames.map { "memora:" + $0 }), permissions: [service.permissions],
         cost: service.id == "calendar" ? .local : .unknown, provider: service.id == "mcp" ? .mcp : (service.isImplemented ? .directAPI : .composio), serviceID: service.id)
     }
+    let availableToolNames = Set(registry.tools.values.filter { $0.isAvailable && $0.isEnabled }.map(\.name))
+    let onDeviceTools = AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud ? nil : Set(AgentTool.onDeviceTools.map(\.rawValue))
     for skill in skillCatalog {
-      let enabled = !disabledSkillIDs.contains(skill.id)
+      let reason = skill.unavailabilityReason(enabled: !disabledSkillIDs.contains(skill.id), availableTools: availableToolNames, onDeviceTools: onDeviceTools)
       entries.append(AIPlugin(id: "skill:" + skill.id, name: skill.name, summary: skill.summary, aliases: skill.keywords,
-        kind: .skill, state: enabled ? .ready : .setup("スキル設定で有効にしてください。"),
+        kind: .skill, state: reason.map(AIPlugin.Connection.setup) ?? .ready,
         toolIDs: Set(skill.toolNames.map { "memora:" + $0 }), permissions: ["記録のプライバシー設定と変更前の承認を維持します。"], cost: .unknown, provider: .memora, iconIdentifier: skill.iconIdentifier))
     }
     for tool in [AgentTool.searchRecords, .searchWeb, .deepResearch] {
@@ -48,10 +50,11 @@ extension MemoraModel {
         toolIDs: [id], permissions: [tool == .searchRecords ? "記録のプライバシー設定を適用します。" : "検索語と料金を実行前に確認します。"], cost: tool == .searchRecords ? .local : .paid, provider: .memora))
     }
     for template in companyTemplates where template.workspaceID == currentTeamID {
+      let modelSupportsTemplate = onDeviceTools == nil || template.format == .docx
       let ready = template.analysis.isAvailable && ProjectSourceFiles.resolve(template.fileReference).map { FileManager.default.fileExists(atPath: $0.path) } == true
       entries.append(AIPlugin(id: "template:" + template.id.uuidString, name: template.name,
         summary: "差し込み項目名をAIへ渡します。書式ファイルは端末内で適用します。", aliases: ["会社", template.format.rawValue],
-        kind: .template, state: ready ? .ready : .unavailable("対応する差し込み欄または原本がありません。資料の会社テンプレートから確認してください。"),
+        kind: .template, state: ready && !modelSupportsTemplate ? .setup("PowerPointテンプレートの@利用にはツール対応クラウドAIが必要です。資料のテンプレート画面では端末内で生成できます。") : ready ? .ready : .unavailable("対応する差し込み欄または原本がありません。資料の会社テンプレートから確認してください。"),
         toolIDs: [template.format == .docx ? "memora:create_document" : "memora:create_slides"], permissions: ["差し込み項目名のみAIへ送信。生成前に承認。"], cost: .unknown, provider: .memora, templateID: template.id))
     }
     for server in mcpServers {

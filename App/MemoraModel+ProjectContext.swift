@@ -6,7 +6,7 @@ extension MemoraModel {
   }
 
   func projectEvidenceAllowed(_ target: ProjectCitation.Target, projectID: UUID, cloud: Bool) -> Bool {
-    guard !isRestoring, !isStoreProtected, space(id: projectID) != nil else { return false }
+    guard currentTeamID == nil, !isRestoring, !isStoreProtected, space(id: projectID) != nil else { return false }
     switch target {
     case .source(let id):
       guard let value = source(id: id), value.projectID == projectID, value.canProvideText else { return false }

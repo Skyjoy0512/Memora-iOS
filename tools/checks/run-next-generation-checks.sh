@@ -4,7 +4,7 @@ cd "$(dirname "$0")/../.."
 check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
 check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
-swiftc App/AIMemory.swift App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift tools/checks/MemoryRetrievalChecks.swift -lsqlite3 -o "$check_dir/memory"
+swiftc App/AIMemory.swift App/AIMemory+Editing.swift App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift tools/checks/MemoryRetrievalChecks.swift -lsqlite3 -o "$check_dir/memory"
 "$check_dir/memory"
 swiftc App/Person.swift App/PersonIdentity.swift tools/checks/PersonIdentityChecks.swift -o "$check_dir/person-identity"
 "$check_dir/person-identity"
@@ -24,7 +24,7 @@ python3 tools/checks/make-web-certificate-fixture.py "$check_dir/web.cer"
 python3 tools/checks/make-office-fixtures.py "$check_dir/office-fixtures"
 swiftc App/ZipArchive.swift App/ProjectSourceText.swift App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift tools/checks/OfficeDocumentChecks.swift -o "$check_dir/office"
 "$check_dir/office" "$check_dir/office-fixtures"
-swiftc Shared/MemoraIcon.swift App/AgentStep.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/ComposerMention.swift App/AIAnswerDetails.swift App/AIChatSource.swift App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/AIConversationProvenance.swift App/AIChatMessage.swift App/ToolInputValidator.swift App/NativeAIInterface.swift App/AIConversationSnapshot.swift tools/checks/AIConversationSnapshotChecks.swift -o "$check_dir/conversation"
+swiftc Shared/MemoraIcon.swift App/AgentStep.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/ComposerMention.swift App/AIAnswerDetails.swift App/AIChatSource.swift App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/AIChatMessage.swift App/ToolInputValidator.swift App/NativeAIInterface.swift App/AIConversationSnapshot.swift tools/checks/AIConversationSnapshotChecks.swift -o "$check_dir/conversation"
 "$check_dir/conversation"
 swiftc App/AIAttachment.swift App/AIAttachmentFileReference.swift App/PreparedAIAttachment.swift App/AgentAttachmentContext.swift App/AIPluginExecutionPolicy.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/AgentAttachmentChecks.swift -o "$check_dir/agent-attachment"
 "$check_dir/agent-attachment"
@@ -59,3 +59,4 @@ swiftc Shared/MemoraIcon.swift App/ResidentAgent.swift App/ResidentTrigger.swift
 swiftc Shared/MemoraAppLink.swift Shared/MemoraWidgetSnapshot.swift Shared/MemoraWidgetSnapshotStore.swift tools/checks/SystemIntegrationChecks.swift -o "$check_dir/system"
 "$check_dir/system" "$check_dir"
 TMPDIR="$check_dir/" bash tools/checks/run-ask-ai-plugin-checks.sh
+bash tools/checks/run-memory-artifact-checks.sh

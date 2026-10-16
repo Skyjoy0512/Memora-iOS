@@ -10,7 +10,7 @@ extension MemoraModel {
     guard [.searchRecords, .readRecord, .listProjects, .listTasks, .readPerson, .reviewPeriod].contains(tool) else {
       return nil
     }
-    guard !isRestoring, !isStoreProtected else {
+    guard currentTeamID == nil, !isRestoring, !isStoreProtected else {
       return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
     }
     let personPolicy = agentPluginPolicies[messageID].flatMap { $0.personID == nil ? nil : $0 }
@@ -38,6 +38,7 @@ extension MemoraModel {
       let selected = results.sorted { $0.0 > $1.0 }.prefix(limit)
       lines = selected.map { $0.1 }
       references = selected.map { $0.2 }
+      if purpose == .cloudAI { lines += agentSourceMatches(query: call.string("query"), messageID: messageID) }
     case .readRecord:
       guard let id = UUID(uuidString: call.string("id")) else {
         return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)

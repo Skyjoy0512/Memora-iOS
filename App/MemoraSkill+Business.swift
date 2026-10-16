@@ -19,7 +19,7 @@ extension MemoraSkill {
     ]
     return specs.map { id, name, summary, keywords, icon in
       let mail = id == "email-draft" || id == "meeting-followup"
-      let tools = ["search_records", "read_record", "read_person", "list_tasks", "ask_user"] +
+      let tools = ["search_records", "read_record", "read_person", "list_tasks"] +
         (mail ? ["draft_email"] : [id == "powerpoint" ? "create_slides" : "create_document"])
       let procedure = "依頼の目的と読者を確認し、許可された記録を検索する。根拠のID・日時と現在の許可を確認する。人物はperson_idで識別し、本人の発言と会議全体の決定を分ける。構成を整理し、根拠のない数値・宛先・担当・期限を作らない。" +
         (mail ? "宛先不明は空欄にする。依頼の種類と相手に合わせた件名・本文をdraft_emailへ渡し、通常の承認後に下書き保存する。送信したと報告しない。" :

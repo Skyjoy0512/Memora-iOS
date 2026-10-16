@@ -44,6 +44,16 @@ struct DocumentDetailView: View {
             .buttonStyle(.borderless)
           }
 
+          if let ids = document.sourceProjectFileIDs, !ids.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+              Text("参照した資料").font(.headline)
+              ForEach(ids, id: \.self) { id in
+                if let source = model.source(id: id) {
+                  NavigationLink { ProjectSourceDetailView(sourceID: id) } label: { Label(source.title, icon: .docText) }
+                }
+              }
+            }
+          }
           switch document.kind {
           case .document:
             InlineMarkdownEditor(
@@ -89,7 +99,11 @@ struct DocumentDetailView: View {
           if document.kind == .document {
             Button("Wordで共有", icon: .docRichtext) { share(document, as: .word) }
           }
-          Button("PDFで共有", icon: .docRichtext) { share(document, as: .pdf) }
+          if document.companyTemplateID == nil {
+            Button("PDFで共有", icon: .docRichtext) { share(document, as: .pdf) }
+          } else {
+            Button("会社書式のPDF変換は未対応", icon: .docRichtext) {}.disabled(true)
+          }
           if document.kind == .slides {
             Button("PowerPointで共有", icon: .rectangleOnRectangleAngled) { share(document, as: .powerPoint) }
           }
@@ -204,11 +218,11 @@ struct DocumentDetailView: View {
     do {
       switch format {
       case .word:
-        shareItems = [try DOCXWriter.write(document)]
+        shareItems = [try originalArtifact(document, suffix: "docx") ?? DOCXWriter.write(document)]
       case .pdf:
         shareItems = [try DocumentPDF.write(document)]
       case .powerPoint:
-        shareItems = [try PPTXWriter.write(document)]
+        shareItems = [try originalArtifact(document, suffix: "pptx") ?? PPTXWriter.write(document)]
       case .text:
         shareItems = [document.plainText]
       }
@@ -216,6 +230,14 @@ struct DocumentDetailView: View {
     } catch {
       exportErrorMessage = "ファイルを作れませんでした。もう一度お試しください。"
     }
+  }
+
+  private func originalArtifact(_ document: MemoraDocument, suffix: String) throws -> URL? {
+    guard document.artifactFormat?.lowercased() == suffix, let name = document.artifactFileReference,
+          let source = ProjectSourceFiles.resolve(name) else { return nil }
+    let temporary = FileManager.default.temporaryDirectory.appendingPathComponent(document.exportFileName + "-" + UUID().uuidString + "." + suffix)
+    try FileManager.default.copyItem(at: source, to: temporary)
+    return temporary
   }
 
   /// Removes the temporary export once the share sheet is done with it.

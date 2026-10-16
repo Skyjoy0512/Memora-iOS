@@ -40,6 +40,15 @@ struct MemoraSkill: Identifiable, Codable, Sendable {
     ] + businessSkills
   }
 
+  func unavailabilityReason(enabled: Bool, availableTools: Set<String>, onDeviceTools: Set<String>?) -> String? {
+    guard enabled else { return "スキル設定で有効にしてください。" }
+    if let onDeviceTools, !Set(toolNames).isSubset(of: onDeviceTools) {
+      return "この手順にはツール対応のクラウドAI（BYOK）が必要です。AI整理で選んでください。"
+    }
+    guard Set(toolNames).isSubset(of: availableTools) else { return "必要なツールが無効または未接続です。連携・ツール設定を確認してください。" }
+    return nil
+  }
+
   static func context(for request: String, disabled: [String], budget: Int, catalog: [Self] = bundled) -> String {
     let selected = catalog.filter { !disabled.contains($0.id) && $0.keywords.contains { request.localizedCaseInsensitiveContains($0) } }.prefix(2)
     guard !selected.isEmpty, budget > 0 else { return "" }

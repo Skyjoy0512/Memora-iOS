@@ -49,6 +49,9 @@ extension MemoraModel {
       report.engineLabel = details.engineLabel
       report.modelLabel = details.modelLabel
       report.citedSourceIDs = WebResearchContext.cited(answer, sent: sent)
+      if ResearchPlan.hasInvalidCitations(answer, sourceCount: sent.count) || report.citedSourceIDs.isEmpty {
+        report.status = .failed; report.error = "引用を検証できませんでした。取得済み根拠と照合してください。"
+      }
       _ = storeWebResearch(report)
     }
   }

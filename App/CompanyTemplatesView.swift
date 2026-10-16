@@ -24,6 +24,7 @@ struct CompanyTemplatesView: View {
         if busy { ProgressView("端末内で解析しています") }
       } footer: { Text("原本を上書きせず、この端末に別のテンプレートとして保存します。外部サービスへは送信しません。") }
     }
+    .tint(.primary)
     .navigationTitle("会社テンプレート").navigationBarTitleDisplayMode(.inline)
     .fileImporter(isPresented: $importing, allowedContentTypes: [UTType(filenameExtension: "docx")!, UTType(filenameExtension: "pptx")!]) { result in
       if case .success(let url) = result {

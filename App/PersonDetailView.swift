@@ -73,7 +73,7 @@ struct PersonDetailView: View {
       }
 
       if !memory.assignedTasks.isEmpty {
-        Section("\(memory.person.name)さんが引き受けたこと") {
+        Section("担当名が一致する未完了タスク") {
           ForEach(memory.assignedTasks) { task in
             TaskRow(task: task, showsSource: true) { editingTask = task }
           }

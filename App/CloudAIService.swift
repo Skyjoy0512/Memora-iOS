@@ -207,8 +207,8 @@ enum CloudAIService {
   }
 
   /// The OpenAI chat-completions shape, which every non-Anthropic provider here
-  /// accepts. No temperature or token cap is sent: newer reasoning models
-  /// reject both, and the defaults suit summaries.
+  /// accepts. Output caps are opt-in for bounded research; unsupported providers
+  /// fail without a second chargeable request. Summary defaults remain unchanged.
   private static func chatCompletions(
     system: String,
     user: String,

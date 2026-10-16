@@ -32,6 +32,9 @@ extension MemoraModel {
     guard toolRegistry().permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID]) else {
       return AgentToolOutcome(text: "存在しない、無効、または入力形式に対応していない道具です。実行していません。", isError: true)
     }
+    if call.tool == .readRecord, let id = UUID(uuidString: call.string("id")), source(id: id) != nil {
+      return await readAgentProjectSource(id, messageID: messageID, compact: compact, automatic: automaticAccess)
+    }
     if call.tool == .searchEmail || call.tool == .readEmail {
       guard !automaticAccess else {
         return AgentToolOutcome(text: "料金未確認のメール取得は自動処理では実行できません。チャットから明示的に依頼してください。", isError: true)
@@ -204,10 +207,12 @@ extension MemoraModel {
       confirmTitle: "覚える",
       messageID: messageID
     ) else { return Self.declinedOutcome }
-    let stored = addAIMemory(text, origin: .agent)
+    let exists = visibleAIMemories.contains { $0.text.caseInsensitiveCompare(text) == .orderedSame }
+    let stored = addAIMemory(text, origin: .agent, sourceReference: "conversation:\(aiConversationID)")
     let fingerprint = cloudMemoryFingerprint
     updateAgentMessage(messageID) { $0.cloudProvenance?.memoryFingerprint = fingerprint }
-    finishAgentStep(stepID, on: messageID, state: .done, detail: stored ? nil : "すでに覚えています")
+    finishAgentStep(stepID, on: messageID, state: stored || exists ? .done : .failed, detail: stored ? nil : exists ? "すでに覚えています" : "保存できませんでした")
+    if !stored && !exists { return AgentToolOutcome(text: "記憶を保存できませんでした。保存先を確認してください。", isError: true) }
     return AgentToolOutcome(text: stored ? "覚えました。" : "すでに覚えている内容です。")
   }
 
@@ -458,7 +463,7 @@ extension MemoraModel {
       parts.append("最後に会った日: \(Self.agentDate(lastMet))、一緒の会議: \(memory.meetings.count)件")
     }
     if !memory.assignedTasks.isEmpty {
-      parts.append("## 本人が引き受けたこと（未完了）\n" + memory.assignedTasks.prefix(taskLimit).map(Self.agentTaskLine).joined(separator: "\n"))
+      parts.append("## 担当名が一致する未完了タスク（旧形式の名前照合）\n" + memory.assignedTasks.prefix(taskLimit).map(Self.agentTaskLine).joined(separator: "\n"))
     }
     if !memory.sharedTasks.isEmpty {
       parts.append("## 一緒の会議で残っていること\n" + memory.sharedTasks.prefix(taskLimit).map(Self.agentTaskLine).joined(separator: "\n"))
@@ -527,6 +532,15 @@ extension MemoraModel {
       lines.append("プロジェクト: \(space.name)")
     }
 
+    if let message = agentMessage(messageID) {
+      document.sourceRecordIDs = message.sources.map(\.meetingID)
+      document.sourceProjectFileIDs = message.projectSourceReferences.map(\.id)
+      if document.kind == .document, !message.sources.isEmpty {
+        var citationMessage = message
+        citationMessage.text = document.markdown
+        document.markdown = AIAnswerDocumentBuilder.make(message: citationMessage, question: document.title).markdown
+      }
+    }
     let kindLabel = document.kind.label
     let approved = await approve(
       tool: tool,

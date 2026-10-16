@@ -325,3 +325,12 @@ Widgetはアプリを開いた時とタイムライン更新時に更新する�
 ## Implementation boundary
 
 このBitrigプロジェクトは、設計を操作検証できるSwiftUIリファレンス実装である。録音・一時停止・ファイルコピー・Live Activity・Ask AIの音声認識とファイル添付に加え、Omiは公開BLEサービスを使った検出と接続、PLAUDはFiles経由の音声取り込みが実動する。ジャーナルのライフログは将来の音声同期を受け取る表示モデルとサンプルを持つが、Omiからの音声転送自体はまだ接続後の実装境界にある。PLAUD Embeddedによる直接接続は、開発者資格情報と実機専用SDKを組み込む段階まで「準備中」として区別する。文字起こしは、設定で選んだエンジンに応じてiOS 26以降のSpeechAnalyzer（端末内）を使い、利用できない場合はプレースホルダーの文字起こしへフォールバックする。AI回答も同様に、iOS 26以降のFoundation Modelsで端末内生成を試み、使えなければ定型回答へフォールバックする。クラウド（BYOK）は、キーチェーンに保存したAPIキーで、AI回答はOpenAI／Anthropic、文字起こしはOpenAI／Deepgramを実呼び出しする。端末内Whisper・ローカルLLMはモデルの同梱が必要なため未接続で、選ぶと端末内または定型へフォールバックする。会議のPDF出力と、Notionへのページ保存（インテグレーショントークンのBYOK）を実装する。GoogleドライブへのGoogleドキュメント作成はOAuthが必要なため、いまはPDFを共有シート経由でドライブへ保存する形にする。ChatGPTなど外部アシスタントから読ませるMCPは、アプリ側の接続先・トークン・公開範囲の画面と設計メモ（MCP.md）までを用意し、サーバーはこのリポジトリ外の実装境界とする。クラウド保管は設定とPlus判定までを実装し、保管先サービスは未接続とする。要約テンプレートのマーケットプレイスは次段階とする。公開共有リンクの発行は次段階とする。オンライン会議キャプチャは処理状態を含むプロトタイプ体験として再現する。React Native + Expo本体へ移植する場合も、NavigationStack相当、bottom navigation、file picker、native recording bridge、ActivityKit bridgeへ分割可能な構成にしている。
+
+## 2026-10-16 Ask AI Next Generation
+
+現行の長期記憶・人物ID限定の会話・Plugin/Skillのicon・会社テンプレート差分生成・
+下書き・有限Researchの設計と未対応範囲は
+[ASK_AI_NEXT_IMPLEMENTATION](docs/ASK_AI_NEXT_IMPLEMENTATION.md) を参照する。
+新規tabは追加せず、既存UISegmentedControl/Glass/FAB/composer/NavigationStackと
+保存済み情報の即時表示を維持する。Skillは手順であり権限ではない。資料は実ファイルの
+生成・検証・保存後に完成とし、テンプレートの完全再現や未接続サービスの利用を約束しない。
