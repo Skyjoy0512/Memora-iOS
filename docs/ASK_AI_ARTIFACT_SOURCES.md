@@ -79,3 +79,18 @@ Debugの既存「状態と復旧UI」には架空の出典行を追加。実ユ�
 - P2: 日本語Embedding/Hybrid検索の実測と人物・プロジェクトの@指定。
 
 第三者ライブラリ、常時サーバー、有料API、課金設定、本番デプロイ、認証設定の追加はない。
+
+## Final validation evidence
+
+Implementation commit: `8dbf6a8`.
+
+- Debug preview succeeded: `2026-10-17T07-59-15-63c15b1f.log`.
+- Release simulator build succeeded: `2026-10-17T07-59-17-f7c48e6d.log`.
+- Both builds have one existing AppIntents metadata-extraction warning; no compile/link errors.
+- All three required runners passed. The final snapshot size-budget adjustment was separately recompiled and passed.
+- Final Debug UI: production row component with fictional data; dark large/largest text, light largest text,
+  wrapping, scrolling, AX names/status/actions and disabled missing-source row verified.
+  Fictional row tap opens an explanation only. Original dark/large settings and composer draft preserved.
+- Saved-artifact-to-source navigation E2E, physical-device VoiceOver/performance, provider/OAuth/cost E2E,
+  sentence-level evidence validation and final Office rendering remain unverified.
+- No new server, billing setup, external API request or real email send.
