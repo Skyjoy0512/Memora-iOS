@@ -14,6 +14,8 @@ struct LifeLogCreationSheet: View {
   @State private var photoData: Data?
   @State private var editingPhoto: PhotoEditRequest?
   @State private var place: JournalPlace?
+  @State private var personIDs: Set<UUID> = []
+  @State private var saveError = false
 
   init(date: Date = .now) {
     _createdAt = State(initialValue: date)
@@ -44,6 +46,9 @@ struct LifeLogCreationSheet: View {
 
         if kind == .location || kind == .event {
           JournalPlaceField(name: $locationName, place: $place)
+        }
+        if kind != .location {
+          JournalPeopleFields(people: model.people, selection: $personIDs)
         }
 
         Section("写真") {
@@ -78,6 +83,11 @@ struct LifeLogCreationSheet: View {
           photoItem = nil
           editingPhoto = PhotoEditRequest(data: data)
         }
+      }
+      .alert("保存できませんでした", isPresented: $saveError) {
+        Button("OK", role: .cancel) {}
+      } message: {
+        Text("人物の登録状態や保存領域を確認して、もう一度お試しください。入力内容はこの画面に残っています。")
       }
       .sheet(item: $editingPhoto) { request in
         PhotoEditorView(source: request.data) { edited in
@@ -122,8 +132,9 @@ struct LifeLogCreationSheet: View {
       photoData: photoData,
       eventDate: kind == .event ? eventDate : nil,
       locationName: includesPlace ? locationName : nil,
-      place: includesPlace ? place : nil
+      place: includesPlace ? place : nil,
+      personIDs: kind == .location ? [] : personIDs
     )
-    if saved { dismiss() }
+    if saved { dismiss() } else { saveError = true }
   }
 }

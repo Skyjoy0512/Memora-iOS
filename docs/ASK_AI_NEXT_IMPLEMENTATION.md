@@ -322,7 +322,7 @@ real-cloudの統合シナリオA〜E、実Mail送信/認証、Word/PowerPoint最
   UI/E2E・新旧backupの端末UI実復元を確認（hostの実package+SQLite検証は継続作業で追加）。実機録音/Island/長い会話の性能を測定する。
 - P0: TeamBackendの実record schema/認可を接続し、個人storeと物理的に分離する。
   それまではteam会話へ個人recordを流さない。
-- P1: personID付きjournal関連、task/personを含む成果物の出典、より自然なtopic要約、確認付きの構造化memory更新。taskの人物ID関連付けは継続実装済み。
+- P1: journal/task/personを含む成果物の出典、より自然なtopic要約、確認付きの構造化memory更新。task/journalの人物ID関連付けは継続実装済み。
   document/source/外部メールを跨ぐ永続provenanceを拡張し、安全な履歴再利用率を上げる。
 - P1: 会社書式のrun跨ぎmarker/表・画像差込、Office実レンダラーによるoverflow/ページ数確認。
   利用者管理のpython-docx/python-pptx workerで高度編集を別PoCとして検証する。
@@ -561,3 +561,11 @@ PDF変換は未対応表示にし、標準資料の既存PDFは維持。本文�
 人物の改名/統合は関連IDを保持し、一括保存が失敗したら画面状態も変更しない。
 人物削除後に同名の別人がタスクを引き継がないようにし、担当変更で外部送信許可を失効する。
 人物限定Ask AIは単独タスクにも対応し、ツール/送信前に範囲を再検証する。
+
+## 継続実装: 人物IDとジャーナル
+
+[変更と検証の詳細](ASK_AI_PERSON_JOURNAL.md)。手動メモ/写真/イベントに複数の人物を明示指定できる。
+人物詳細はIDの関連と名前だけの未確認の言及を分け、元の記録を開く。
+人物限定Ask AIは固定したjournal IDと個別の送信許可を使い、位置/自動記録は送信しない。
+関連の変更で許可を失効し、内容/範囲/削除を送信前に再検証する。人物統合のjournal移動も
+既存の一括保存に含め、旧形式/同名再登録/途中失敗/SQLite再読込を隔離fixtureで検査する。

@@ -72,12 +72,21 @@ extension MemoraModel {
         updatedTasks[index].assignee = targetName
       }
     }
+    var updatedJournal = lifeLogEntries
+    for index in updatedJournal.indices {
+      let entry = updatedJournal[index]
+      guard entry.personIDs.contains(source) else { continue }
+      updatedJournal[index].personIDs = Array(Set(entry.personIDs.map { $0 == source ? target : $0 }))
+        .sorted { $0.uuidString < $1.uuidString }
+      updatedJournal[index].privacy = journalPrivacyAfterPersonChange(entry)
+    }
     guard persistBatch({ [
       (key: StorageKey.people, data: try RecordStore.encoded(updatedPeople)),
       (key: StorageKey.tasks, data: try RecordStore.encoded(updatedTasks)),
-      (key: StorageKey.meetings, data: try RecordStore.encoded(updatedMeetings))
+      (key: StorageKey.meetings, data: try RecordStore.encoded(updatedMeetings)),
+      (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(updatedJournal))
     ] }) else { return false }
-    people = updatedPeople; tasks = updatedTasks; meetings = updatedMeetings
+    people = updatedPeople; tasks = updatedTasks; meetings = updatedMeetings; lifeLogEntries = updatedJournal
     return true
   }
 
@@ -97,7 +106,7 @@ extension MemoraModel {
       (key: StorageKey.people, data: try RecordStore.encoded(updatedPeople)),
       (key: StorageKey.meetings, data: try RecordStore.encoded(updatedMeetings))
     ] }) else { return false }
-    // Retain task IDs as tombstones so a new person with the same name cannot inherit them.
+    // Retain task/journal IDs so a new person with the same name cannot inherit them.
     people = updatedPeople; meetings = updatedMeetings
     return true
   }
@@ -159,8 +168,10 @@ extension MemoraModel {
 
     // A short name matches too much of ordinary text, so the journal is only
     // searched for names of two characters or more.
-    let journal = uniqueName && name.count >= 2
-      ? newestLifeLogEntries.filter { $0.title.contains(name) || $0.summary.contains(name) }
+    let entries = newestLifeLogEntries
+    let journal = entries.filter { $0.personIDs.contains(personID) }
+    let nameMatchedJournal = uniqueName && normalizedName.count >= 2
+      ? entries.filter { $0.personIDs.isEmpty && PersonIdentity.normalized($0.title + " " + $0.summary).contains(normalizedName) }
       : []
 
     return PersonMemory(
@@ -170,7 +181,8 @@ extension MemoraModel {
       sharedTasks: shared,
       decisions: Array(decisions),
       journalEntries: Array(journal.prefix(20)),
-      nameMatchedTasks: nameMatched
+      nameMatchedTasks: nameMatched,
+      nameMatchedJournalEntries: Array(nameMatchedJournal.prefix(20))
     )
   }
 

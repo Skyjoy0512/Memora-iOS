@@ -12,10 +12,12 @@ extension MemoraModel {
     eventDate: Date?,
     locationName: String?,
     place: JournalPlace? = nil,
+    personIDs: Set<UUID> = [],
     removingDraft draftKey: String? = nil
   ) -> Bool {
     // A restore is putting records in place; adding one now could be replaced.
-    guard isStoreWritable() else { return false }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), journalPeopleAreValid(personIDs),
+          personIDs.isEmpty || kind != .location else { return false }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedLocation = locationName?.trimmingCharacters(in: .whitespacesAndNewlines)
     let resolvedTitle: String
@@ -30,6 +32,8 @@ extension MemoraModel {
     // Photos live in the media folder; the entry keeps the file name.
     let photoFileName = photoData.flatMap { MediaFiles.writePhoto($0, thumbnailMaxSide: 400) }
 
+    var privacy = RecordPrivacy()
+    if !personIDs.isEmpty { privacy.protect(.personal) }
     var candidate = lifeLogEntries
     candidate.insert(
       LifeLogEntry(
@@ -44,7 +48,9 @@ extension MemoraModel {
         eventDate: eventDate,
         locationName: trimmedLocation,
         latitude: place?.latitude,
-        longitude: place?.longitude
+        longitude: place?.longitude,
+        privacy: privacy,
+        personIDs: personIDs.sorted { $0.uuidString < $1.uuidString }
       ),
       at: 0
     )
@@ -63,15 +69,22 @@ extension MemoraModel {
 
   @discardableResult
   func updateLifeLogEntry(_ id: UUID, title: String, summary: String, createdAt: Date,
-                         locationName: String?, place: JournalPlace?) -> Bool {
-    guard isStoreWritable() else { return false }
+                         locationName: String?, place: JournalPlace?, personIDs: Set<UUID>? = nil) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return false }
     guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return false }
+    let original = lifeLogEntries[index]
+    let oldIDs = Set(original.personIDs)
+    let selected = personIDs ?? oldIDs
+    guard journalPeopleAreValid(selected, retaining: oldIDs),
+          selected.isSubset(of: oldIDs) || AIJournalPrivacy.allowsReading(kind: original.kind, origin: original.origin) else { return false }
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedTitle.isEmpty else { return false }
 
     var candidate = lifeLogEntries
     candidate[index].title = trimmedTitle
     candidate[index].summary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+    candidate[index].personIDs = selected.sorted { $0.uuidString < $1.uuidString }
+    if selected != oldIDs { candidate[index].privacy = journalPrivacyAfterPersonChange(original) }
     if candidate[index].kind == .location || candidate[index].kind == .event {
       let name = locationName?.trimmingCharacters(in: .whitespacesAndNewlines)
       candidate[index].locationName = name?.isEmpty == false ? name : nil

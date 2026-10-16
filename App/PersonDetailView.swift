@@ -7,6 +7,7 @@ struct PersonDetailView: View {
   var personID: UUID
   @State private var isEditing = false
   @State private var editingTask: MemoraTask?
+  @State private var selectedJournal: LifeLogEntry?
 
   var body: some View {
     Group {
@@ -128,11 +129,25 @@ struct PersonDetailView: View {
       }
 
       if !memory.journalEntries.isEmpty {
-        Section("ジャーナル") {
+        Section("関連付けたジャーナル") {
           ForEach(memory.journalEntries) { entry in
-            LifeLogRow(entry: entry)
+            Button { selectedJournal = entry } label: { LifeLogRow(entry: entry) }
+              .buttonStyle(.plain)
+              .accessibilityElement(children: .combine)
+              .accessibilityHint("元の記録を開きます")
           }
         }
+      }
+      if !memory.nameMatchedJournalEntries.isEmpty {
+        Section {
+          ForEach(memory.nameMatchedJournalEntries) { entry in
+            Button { selectedJournal = entry } label: { LifeLogRow(entry: entry) }
+              .buttonStyle(.plain)
+              .accessibilityElement(children: .combine)
+              .accessibilityHint("本人未確認の元の記録を開きます")
+          }
+        } header: { Text("名前の言及のみ・本人未確認") }
+        footer: { Text("記録の編集で人物を選ぶと、この人に関連付けられます。名前の一致だけでは本人と断定しません。") }
       }
     }
     .listStyle(.insetGrouped)
@@ -149,6 +164,9 @@ struct PersonDetailView: View {
     }
     .sheet(item: $editingTask) { task in
       TaskEditView(task: task)
+    }
+    .sheet(item: $selectedJournal) { entry in
+      LifeLogEntryDetailView(entryID: entry.id)
     }
   }
 

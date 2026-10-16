@@ -8,6 +8,7 @@ struct AIPluginExecutionPolicy {
   var personID: UUID? = nil
   var templateIDs: Set<UUID> = []
   var personTaskIDs: Set<UUID> = []
+  var personJournalIDs: Set<UUID> = []
 
   func includesTask(id: UUID, meetingID: UUID?) -> Bool {
     !limitsRecordReads || personTaskIDs.contains(id) || meetingID.map(recordIDs.contains) == true
@@ -31,7 +32,8 @@ struct AIPluginExecutionPolicy {
       return (arguments["person_id"] as? String).flatMap(UUID.init(uuidString:)) == personID
     }
     if limitsRecordReads && id == "memora:read_record" {
-      guard let text = arguments["id"] as? String, let id = UUID(uuidString: text), recordIDs.contains(id) else { return false }
+      guard let text = arguments["id"] as? String, let id = UUID(uuidString: text),
+            recordIDs.contains(id) || (personID != nil && personJournalIDs.contains(id)) else { return false }
     }
     return true
   }

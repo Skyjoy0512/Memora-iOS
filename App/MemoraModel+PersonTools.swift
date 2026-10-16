@@ -27,7 +27,8 @@ extension MemoraModel {
       memory.assignedTasks = memory.assignedTasks.filter { policy.includesTask(id: $0.id, meetingID: $0.meetingID) }
       memory.nameMatchedTasks = memory.nameMatchedTasks.filter { policy.includesTask(id: $0.id, meetingID: $0.meetingID) }
       memory.sharedTasks = memory.sharedTasks.filter { policy.includesTask(id: $0.id, meetingID: $0.meetingID) }
-      memory.journalEntries = []
+      memory.journalEntries = memory.journalEntries.filter { policy.personJournalIDs.contains($0.id) }
+      memory.nameMatchedJournalEntries = []
       memory.decisions = memory.decisions.filter { policy.recordIDs.contains($0.meetingID) }
     }
     if let purpose {
@@ -36,11 +37,12 @@ extension MemoraModel {
       memory.nameMatchedTasks = memory.nameMatchedTasks.filter { allowsTaskAccess($0, purpose: purpose) }
       memory.sharedTasks = memory.sharedTasks.filter { allowsTaskAccess($0, purpose: purpose) }
       memory.journalEntries = memory.journalEntries.filter { allowsJournalAccess($0, purpose: purpose) }
+      memory.nameMatchedJournalEntries = memory.nameMatchedJournalEntries.filter { allowsJournalAccess($0, purpose: purpose) }
       let ids = Set(memory.meetings.map(\.id))
       memory.decisions = memory.decisions.filter { ids.contains($0.meetingID) }
       recordCloudReads(memory.meetings.map { .meeting($0.id) }
         + (memory.assignedTasks + memory.sharedTasks + memory.nameMatchedTasks).map { .task($0.id) }
-        + memory.journalEntries.map { .journal($0.id) }, messageID: messageID)
+        + (memory.journalEntries + memory.nameMatchedJournalEntries).map { .journal($0.id) }, messageID: messageID)
     }
     // Person metadata has no independent cloud grant or fingerprint yet.
     if !compact { markCloudProvenanceIncomplete(messageID) }
@@ -78,8 +80,14 @@ extension MemoraModel {
       AIJournalPrivacy.allowsReading(kind: $0.kind, origin: $0.origin)
     }
     if !journalEntries.isEmpty {
-      parts.append("## ジャーナル\n" + journalEntries.prefix(compact ? 3 : 8).map {
-        "- \($0.title)（\(Self.agentDate($0.createdAt))）"
+      parts.append("## 人物IDで関連付けたジャーナル（本人の発言・参加の確定ではない）\n" + journalEntries.prefix(compact ? 3 : 8).map {
+        "- id=\($0.id) \($0.title)（\(Self.agentDate($0.occurredAt))） \(String($0.summary.prefix(compact ? 100 : 500)))"
+      }.joined(separator: "\n"))
+    }
+    let mentions = memory.nameMatchedJournalEntries.filter { AIJournalPrivacy.allowsReading(kind: $0.kind, origin: $0.origin) }
+    if !mentions.isEmpty {
+      parts.append("## 名前の言及のみ・本人未確認のジャーナル\n" + mentions.prefix(compact ? 2 : 4).map {
+        "- id=\($0.id) \($0.title)（\(Self.agentDate($0.occurredAt))）"
       }.joined(separator: "\n"))
     }
     return AgentToolOutcome(text: parts.joined(separator: "\n\n"))

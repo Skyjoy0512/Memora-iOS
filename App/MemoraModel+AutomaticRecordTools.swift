@@ -14,13 +14,18 @@ extension MemoraModel {
       return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
     }
     let personPolicy = agentPluginPolicies[messageID].flatMap { $0.personID == nil ? nil : $0 }
+    if let personPolicy, !personPolicyIsCurrent(personPolicy) {
+      return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
+    }
     let permitted = Self.meetings(in: scope, from: meetings)
       .filter { RecordAccessPolicy.allows($0.effectivePrivacy, purpose: purpose)
         && (personPolicy == nil || personPolicy?.recordIDs.contains($0.id) == true) }
     let permittedTasks = self.permittedTasks(for: purpose, scope: scope).filter { task in
       personPolicy?.includesTask(id: task.id, meetingID: task.meetingID) ?? true
     }
-    let entries = scope == .all && personPolicy == nil ? lifeLogEntries.filter { allowsJournalAccess($0, purpose: purpose) } : []
+    let entries = scope == .all ? lifeLogEntries.filter {
+      allowsJournalAccess($0, purpose: purpose) && (personPolicy == nil || personPolicy?.personJournalIDs.contains($0.id) == true)
+    } : []
     var lines: [String] = []
     var references: [RecordPrivacyTarget] = []
     switch tool {

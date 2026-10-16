@@ -20,6 +20,8 @@ struct LifeLogEntry: Identifiable, Hashable, Codable {
   var latitude: Double?
   var longitude: Double?
   var privacy = RecordPrivacy()
+  /// Only an explicit selection establishes a person relationship.
+  var personIDs: [UUID] = []
 
   var occurredAt: Date { eventDate ?? createdAt }
 }
@@ -43,6 +45,7 @@ extension LifeLogEntry {
     case latitude
     case longitude
     case privacy
+    case personIDs
   }
 
   init(from decoder: Decoder) throws {
@@ -61,6 +64,8 @@ extension LifeLogEntry {
     latitude = try container.decodeIfPresent(Double.self, forKey: .latitude)
     longitude = try container.decodeIfPresent(Double.self, forKey: .longitude)
     privacy = try container.decodeIfPresent(RecordPrivacy.self, forKey: .privacy) ?? RecordPrivacy()
+    personIDs = Array(Set(try container.decodeIfPresent([UUID].self, forKey: .personIDs) ?? []))
+      .sorted { $0.uuidString < $1.uuidString }
 
     if let name = try container.decodeIfPresent(String.self, forKey: .photoFileName) {
       photoFileName = name
@@ -89,5 +94,6 @@ extension LifeLogEntry {
     try container.encodeIfPresent(latitude, forKey: .latitude)
     try container.encodeIfPresent(longitude, forKey: .longitude)
     try container.encode(privacy, forKey: .privacy)
+    try container.encode(personIDs, forKey: .personIDs)
   }
 }

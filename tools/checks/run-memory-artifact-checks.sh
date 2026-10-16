@@ -14,3 +14,4 @@ swiftc App/RecordPrivacy.swift App/SummarySensitivity.swift App/RecordAccessPoli
 bash tools/checks/run-artifact-checks.sh
 bash tools/checks/run-backup-restore-checks.sh
 bash tools/checks/run-person-task-checks.sh
+bash tools/checks/run-person-journal-checks.sh

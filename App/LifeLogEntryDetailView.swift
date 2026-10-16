@@ -108,7 +108,9 @@ struct LifeLogEntryDetailView: View {
   }
 
   private func content(_ entry: LifeLogEntry) -> some View {
-    ScrollView {
+    let people = PersonSelectionOption.options(model.people).filter { entry.personIDs.contains($0.id) }
+    let missingCount = Set(entry.personIDs).subtracting(Set(people.map(\.id))).count
+    return ScrollView {
       VStack(alignment: .leading, spacing: 16) {
         HStack(spacing: 8) {
           Image(icon: entry.kind.symbol)
@@ -141,6 +143,15 @@ struct LifeLogEntryDetailView: View {
           Text(entry.summary)
             .font(.body)
             .lineSpacing(4)
+        }
+        if !entry.personIDs.isEmpty {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("関連する人物").font(.subheadline.weight(.medium))
+            ForEach(people) { option in Text(option.label).font(.subheadline) }
+            if missingCount > 0 { Text("削除済みの人物 \(missingCount)人").font(.subheadline) }
+          }
+          .foregroundStyle(.secondary)
+          .accessibilityElement(children: .combine)
         }
 
         if let locationName = entry.locationName, !locationName.isEmpty {

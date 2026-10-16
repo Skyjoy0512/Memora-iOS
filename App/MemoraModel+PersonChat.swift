@@ -21,7 +21,8 @@ extension MemoraModel {
     let policy = AIPluginExecutionPolicy(pluginIDs: ["person:" + personID.uuidString],
       toolIDs: Set(tools.map { "memora:" + $0.rawValue }), recordIDs: recordIDs,
       limitsRecordReads: true, personID: personID,
-      personTaskIDs: Set(tasks.filter { PersonTaskAssociation.isAssigned($0, to: personID) }.map(\.id)))
+      personTaskIDs: Set(tasks.filter { PersonTaskAssociation.isAssigned($0, to: personID) }.map(\.id)),
+      personJournalIDs: Set(lifeLogEntries.filter { $0.personIDs.contains(personID) }.map(\.id)))
     return sendAgentChat(question, pluginPolicy: policy)
   }
 }

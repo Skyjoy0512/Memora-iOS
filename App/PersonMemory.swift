@@ -23,6 +23,7 @@ struct PersonMemory {
   var decisions: [Decision]
   var journalEntries: [LifeLogEntry]
   var nameMatchedTasks: [MemoraTask] = []
+  var nameMatchedJournalEntries: [LifeLogEntry] = []
 
   var conversationSummary: PersonConversationSummary {
     PersonConversationSummary(topics: meetings.prefix(30).map { meeting in

@@ -29,8 +29,10 @@ extension MemoraModel {
     case .meeting(let id): return meeting(id: id)?.effectivePrivacy
     case .journal(let id):
       guard let entry = lifeLogEntries.first(where: { $0.id == id }) else { return nil }
-      return RecordAccessPolicy.effectiveRelatedPrivacy(entry.privacy,
+      var result = RecordAccessPolicy.effectiveRelatedPrivacy(entry.privacy,
         parent: entry.meetingID.flatMap { meeting(id: $0)?.effectivePrivacy })
+      if !entry.personIDs.isEmpty { result.protect(.personal) }
+      return result
     case .task(let id):
       guard let task = tasks.first(where: { $0.id == id }) else { return nil }
       let parent = task.meetingID.flatMap { meeting(id: $0)?.effectivePrivacy }
@@ -42,8 +44,10 @@ extension MemoraModel {
     switch target {
     case .meeting(let id): return meeting(id: id)?.minimumPrivacyClassification ?? .unknown
     case .journal(let id):
-      let classification = lifeLogEntries.first { $0.id == id }?.meetingID.flatMap { meeting(id: $0)?.effectivePrivacy.classification } ?? .unknown
-      return classification.rank > RecordPrivacy.Classification.general.rank ? classification : .unknown
+      guard let entry = lifeLogEntries.first(where: { $0.id == id }) else { return .unknown }
+      let parent = entry.meetingID.flatMap { meeting(id: $0)?.effectivePrivacy.classification } ?? .unknown
+      let minimum: RecordPrivacy.Classification = entry.personIDs.isEmpty ? .unknown : .personal
+      return parent.rank > RecordPrivacy.Classification.general.rank && parent.rank > minimum.rank ? parent : minimum
     case .task(let id):
       let classification = tasks.first { $0.id == id }?.meetingID.flatMap { meeting(id: $0)?.effectivePrivacy.classification } ?? .unknown
       return classification.rank > RecordPrivacy.Classification.general.rank ? classification : .unknown
@@ -128,7 +132,9 @@ extension MemoraModel {
 
   func allowsJournalAccess(_ entry: LifeLogEntry, purpose: RecordAccessPolicy.Purpose) -> Bool {
     guard !isRestoring, !isStoreProtected, AIJournalPrivacy.allowsReading(kind: entry.kind, origin: entry.origin) else { return false }
-    return RecordAccessPolicy.allowsRelated(entry.privacy, parentID: entry.meetingID,
+    var privacy = entry.privacy
+    if !entry.personIDs.isEmpty { privacy.protect(.personal) }
+    return RecordAccessPolicy.allowsRelated(privacy, parentID: entry.meetingID,
       parentPrivacy: entry.meetingID.flatMap { meeting(id: $0)?.effectivePrivacy }, purpose: purpose)
   }
 

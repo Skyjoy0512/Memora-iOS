@@ -59,7 +59,7 @@ struct PersonEditSheet: View {
           if otherPeople.isEmpty {
             Text("統合できる相手がいません。")
           } else {
-            Text("参加している記録と、人物を指定したタスクの担当は、選んだ相手へ移ります。担当名だけのタスクは変更しません。記録は削除されません。")
+            Text("参加している記録、人物を指定したタスクとジャーナルの関連は、選んだ相手へ移ります。名前だけの関連は変更しません。記録は削除されません。")
           }
         }
       }
@@ -84,7 +84,7 @@ struct PersonEditSheet: View {
         if let mergeTarget {
           let sourceLabel = allOptions.first { $0.id == personID }?.label ?? "この人"
           let targetLabel = allOptions.first { $0.id == mergeTarget.id }?.label ?? mergeTarget.name
-          Text("「\(sourceLabel)」を「\(targetLabel)」に統合します。参加している記録\(model.meetingCount(forPerson: personID))件と、人物を指定したタスクの担当を移します。担当名だけのタスクは変更しません。")
+          Text("「\(sourceLabel)」を「\(targetLabel)」に統合します。参加している会議\(model.meetingCount(forPerson: personID))件、人物を指定したタスクとジャーナルの関連を移します。名前だけの関連は変更しません。")
         }
       }
       .alert("保存できませんでした", isPresented: $saveError) {
