@@ -52,6 +52,8 @@
 - `bash tools/checks/run-motion-loading-checks.sh`: 成功。新しい2チェックと既存motion/loading/stream/予算/操作待機の回帰。
 - `bash tools/checks/run-next-generation-checks.sh`: 成功。scope/privacy/provenance、索引、会話codec、agent loop、registry、MCP等の既存回帰。
 - `bitrig preview -platform iOS`: 最終Debugビルド・プレビュー更新成功。log `2026-10-16T17-23-32-48f6b1cb.log`。初回のMainActor指定漏れは修正済み。
+- `bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release`: 最終差分で成功。log `2026-10-16T17-25-38-270646ab.log`。両ビルドの警告は既存Share ExtensionのAppIntents metadata抽出省略1件。logはBitrigの当該project Builds/logs内。
+- `git diff --check`: 成功。実装・隔離回帰は`30c615d`。
 
 ## 未検証・性能
 
