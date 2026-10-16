@@ -1,0 +1,270 @@
+{
+  "checked_at": "2026-10-16T10:18:52.782096+00:00",
+  "note": "Public GitHub metadata only. Root SPDX is not a transitive or per-file license audit. No third-party code imported.",
+  "repositories": [
+    {
+      "repository": "mem0ai/mem0",
+      "url": "https://github.com/mem0ai/mem0",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-10-16T09:44:31Z",
+      "updated_at": "2026-10-16T10:16:30Z",
+      "description": "The Memory Layer for AI Agents - Drop-in memory infrastructure for AI agents and apps. Context that persists. Built for production.",
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "repository": "getzep/graphiti",
+      "url": "https://github.com/getzep/graphiti",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-10-15T19:00:08Z",
+      "updated_at": "2026-10-16T09:27:43Z",
+      "description": "Build Real-Time Knowledge Graphs for AI Agents",
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "repository": "langchain-ai/langmem",
+      "url": "https://github.com/langchain-ai/langmem",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-10-02T19:35:27Z",
+      "updated_at": "2026-10-16T02:31:00Z",
+      "description": null,
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "repository": "letta-ai/letta",
+      "url": "https://github.com/letta-ai/letta",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-09-10T17:59:08Z",
+      "updated_at": "2026-10-16T09:15:01Z",
+      "description": "Platform for stateful agents: AI with advanced memory that can learn and self-improve over time.",
+      "language": null,
+      "license": "Apache-2.0"
+    },
+    {
+      "repository": "topoteretes/cognee",
+      "url": "https://github.com/topoteretes/cognee",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-10-16T08:55:37Z",
+      "updated_at": "2026-10-16T09:57:05Z",
+      "description": "Cognee is the open-source AI memory platform for agents. Give your AI agents persistent long-term memory with small models for free",
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "repository": "supermemoryai/supermemory",
+      "url": "https://github.com/supermemoryai/supermemory",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-10-16T06:16:57Z",
+      "updated_at": "2026-10-16T07:43:30Z",
+      "description": "Memory and context engine + app that is extremely fast, scalable, and can be run fully locally. The Memory API for the AI era.",
+      "language": "TypeScript",
+      "license": "MIT"
+    },
+    {
+      "repository": "TencentCloud/TencentDB-Agent-Memory",
+      "url": "https://github.com/TencentCloud/TencentDB-Agent-Memory",
+      "default_branch": "feat/server_team",
+      "archived": false,
+      "pushed_at": "2026-10-15T12:24:35Z",
+      "updated_at": "2026-10-16T10:04:32Z",
+      "description": "TencentDB Agent Memory is a team-level memory hub for AI Agents — turning conversations, docs, and code into four reusable memory assets (Chat Memory, Skill, LLM-Wiki, Code-Graph) that are governed, shared, and equipped across agents and frameworks.",
+      "language": "TypeScript",
+      "license": "NOASSERTION"
+    },
+    {
+      "repository": "scanny/python-pptx",
+      "url": "https://github.com/scanny/python-pptx",
+      "default_branch": "master",
+      "archived": false,
+      "pushed_at": "2024-08-07T17:36:44Z",
+      "updated_at": "2026-10-12T22:51:30Z",
+      "description": "Create Open XML PowerPoint documents in Python",
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "repository": "python-openxml/python-docx",
+      "url": "https://github.com/python-openxml/python-docx",
+      "default_branch": "master",
+      "archived": false,
+      "pushed_at": "2026-08-01T14:59:42Z",
+      "updated_at": "2026-10-16T02:29:52Z",
+      "description": "Create and modify Word documents with Python",
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "repository": "kklimuk/docx-cli",
+      "url": "https://github.com/kklimuk/docx-cli",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-10-15T18:11:13Z",
+      "updated_at": "2026-10-16T07:29:40Z",
+      "description": "Let AI agents edit Word documents without breaking them: fill in forms, update tables, restyle, write reports, and redline with tracked changes and comments.",
+      "language": "TypeScript",
+      "license": "MIT"
+    },
+    {
+      "repository": "eigenpal/docx-template-skill",
+      "url": "https://github.com/eigenpal/docx-template-skill",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-02-25T19:59:36Z",
+      "updated_at": "2026-10-11T05:36:57Z",
+      "description": "Agentic generation of .docx templates from examples",
+      "language": "TypeScript",
+      "license": "MIT"
+    },
+    {
+      "repository": "hugohe3/ppt-master",
+      "url": "https://github.com/hugohe3/ppt-master",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-10-14T04:20:34Z",
+      "updated_at": "2026-10-16T10:16:10Z",
+      "description": "AI turns documents or topics into real, native PowerPoint decks—with native shapes, transitions and animations, data-backed charts and tables on demand, audio narration from speaker notes, and support for your own .pptx templates. · by Hugo He",
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "repository": "zhangyu836/pydocxtpl",
+      "url": "https://github.com/zhangyu836/pydocxtpl",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2021-02-17T06:01:48Z",
+      "updated_at": "2026-06-18T01:40:14Z",
+      "description": "A python module to generate docx files from a docx template",
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "repository": "elapouya/python-docx-template",
+      "url": "https://github.com/elapouya/python-docx-template",
+      "default_branch": "master",
+      "archived": false,
+      "pushed_at": "2026-07-07T12:13:00Z",
+      "updated_at": "2026-10-16T00:56:46Z",
+      "description": "Use a docx as a jinja2 template",
+      "language": "Python",
+      "license": "LGPL-2.1"
+    },
+    {
+      "repository": "anthropics/skills",
+      "url": "https://github.com/anthropics/skills",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-10-09T18:45:52Z",
+      "updated_at": "2026-10-16T10:17:58Z",
+      "description": "Public repository for Agent Skills",
+      "language": "Python",
+      "license": "unconfirmed"
+    },
+    {
+      "repository": "obra/superpowers",
+      "url": "https://github.com/obra/superpowers",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-10-10T03:03:30Z",
+      "updated_at": "2026-10-16T10:18:33Z",
+      "description": "An agentic skills framework & software development methodology that works.",
+      "language": "Shell",
+      "license": "MIT"
+    },
+    {
+      "repository": "ComposioHQ/awesome-claude-skills",
+      "url": "https://github.com/ComposioHQ/awesome-claude-skills",
+      "default_branch": "master",
+      "archived": false,
+      "pushed_at": "2026-09-18T07:16:11Z",
+      "updated_at": "2026-10-16T09:51:59Z",
+      "description": "A curated list of awesome Claude Skills, resources, and tools for customizing Claude AI workflows",
+      "language": "Python",
+      "license": "unconfirmed"
+    },
+    {
+      "repository": "dzhng/deep-research",
+      "url": "https://github.com/dzhng/deep-research",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-04-11T23:58:25Z",
+      "updated_at": "2026-10-16T07:24:32Z",
+      "description": "An AI-powered research assistant that performs iterative, deep research on any topic by combining search engines, web scraping, and large language models.  The goal of this repo is to provide the simplest implementation of a deep research agent - e.g. an agent that can refine its research direction overtime and deep dive into a topic.",
+      "language": "TypeScript",
+      "license": "MIT"
+    },
+    {
+      "repository": "langchain-ai/open_deep_research",
+      "url": "https://github.com/langchain-ai/open_deep_research",
+      "default_branch": "main",
+      "archived": true,
+      "pushed_at": "2026-08-10T18:13:37Z",
+      "updated_at": "2026-10-16T09:31:25Z",
+      "description": null,
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "repository": "SkyworkAI/DeepResearchAgent",
+      "url": "https://github.com/SkyworkAI/DeepResearchAgent",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-05-04T09:15:39Z",
+      "updated_at": "2026-10-16T08:32:07Z",
+      "description": "DeepResearchAgent is a hierarchical multi-agent system designed not only for deep research tasks but also for general-purpose task solving. The framework leverages a top-level planning agent to coordinate multiple specialized lower-level agents, enabling automated task decomposition and efficient execution across diverse and complex domains.",
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "repository": "Alibaba-NLP/DeepResearch",
+      "url": "https://github.com/Alibaba-NLP/DeepResearch",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-02-27T13:12:11Z",
+      "updated_at": "2026-10-16T08:00:43Z",
+      "description": "Tongyi Deep Research, the Leading Open-source Deep Research Agent",
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "repository": "qx-labs/agents-deep-research",
+      "url": "https://github.com/qx-labs/agents-deep-research",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2025-12-27T02:02:57Z",
+      "updated_at": "2026-10-13T09:58:46Z",
+      "description": "An implementation of iterative deep research using the OpenAI Agents SDK",
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "repository": "Cranot/deep-research",
+      "url": "https://github.com/Cranot/deep-research",
+      "default_branch": "main",
+      "archived": false,
+      "pushed_at": "2026-07-27T17:52:23Z",
+      "updated_at": "2026-10-07T07:29:14Z",
+      "description": "Turn any question into multi-agent exploration. Recursive Claude agents that spawn sub-agents.",
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "repository": "deepseek-ai/deepseek-harness",
+      "url": "https://github.com/deepseek-ai/deepseek-harness",
+      "default_branch": "master",
+      "archived": false,
+      "pushed_at": "2026-10-15T13:39:04Z",
+      "updated_at": "2026-10-16T10:15:23Z",
+      "description": "DeepSeek Harness: Everything is a Plugin.",
+      "language": "TypeScript",
+      "license": "MIT"
+    }
+  ]
+}
