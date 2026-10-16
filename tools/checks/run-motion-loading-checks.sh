@@ -22,3 +22,7 @@ swiftc App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentSessionBudget
 "$check_dir/run-budget"
 swiftc -swift-version 6 App/AgentInteractionWaiter.swift tools/checks/AgentInteractionChecks.swift -o "$check_dir/interaction"
 "$check_dir/interaction"
+swiftc -swift-version 6 App/ProjectCitation.swift App/ProjectChatTurn.swift App/ProjectChatThread.swift App/MemoraModel+ProjectChatExecution.swift tools/checks/ProjectChatExecutionChecks.swift -o "$check_dir/project-execution"
+"$check_dir/project-execution"
+swiftc -swift-version 6 App/ProjectCitation.swift App/ProjectChatTurn.swift App/ProjectChatThread.swift App/ProjectChatHistory.swift App/AIAnswerResult.swift App/AIAnswerFailure.swift App/ScopedAgentAnswer.swift App/MemoraModel+ProjectChatExecution.swift App/MemoraModel+ProjectChat.swift tools/checks/ProjectChatDispatchChecks.swift -o "$check_dir/project-dispatch"
+"$check_dir/project-dispatch"

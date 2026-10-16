@@ -82,3 +82,7 @@ CloudAgentSessionへ確認済みモデル限定の送信前output予約を追加
 ## 操作待ちの寿命（2026-10-16追加）
 
 [AGENT_INTERACTION_LIFECYCLE.md](AGENT_INTERACTION_LIFECYCLE.md)に、承認/質問の取消・後継保護を記録した。Task取消がcontinuationを確実に解放し、古いカードの回答が現行待機へ渡らないようにした。既存のnative承認カード、registry、cost/scope検証を保持する。新しい外部サービスや包括的権限は追加しない。
+
+## ワークスペース世代と結果の所有（2026-10-16追加）
+
+[AI_WORKSPACE_EXECUTION.md](AI_WORKSPACE_EXECUTION.md)に、A → B → Aの切り替えでも旧実行を失効させる世代、project chat停止後の再送、依頼IDを確認したcleanup/stream/保存を記録した。既存の権限・根拠検証と会話codecを維持し、native session lifecycleの不足だけを改善する。

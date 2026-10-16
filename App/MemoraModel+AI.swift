@@ -186,6 +186,7 @@ extension MemoraModel {
     aiChatTask?.cancel()
     aiChatTask = Task { [weak self] in
       guard let self else { return }
+      guard !Task.isCancelled, self.aiChatRequestID == requestID else { return }
       let allowedMeetings = Self.meetings(in: scope, from: self.meetings)
       let outcome = await self.answer(
         request: AIQuestionRequest(question: trimmed, scope: .global, attachment: attachment),
@@ -197,7 +198,7 @@ extension MemoraModel {
         engine: engine,
         llm: llm,
         onContextReady: { [weak self] sources in
-          guard let self, self.aiChatRequestID == requestID else { return }
+          guard let self, !Task.isCancelled, self.aiChatRequestID == requestID else { return }
           self.updateAgentMessage(placeholder.id) { message in
             message.sources = sources
             message.searchFinished = true
@@ -289,6 +290,11 @@ extension MemoraModel {
     onText: (@MainActor (String) -> Void)? = nil
   ) async -> AIAnswerOutcome {
     let workspaceID = currentTeamID
+    let generation = aiWorkspaceGeneration
+    let safeStage: @MainActor (String) -> Void = { value in
+      guard !Task.isCancelled, self.aiWorkspaceGeneration == generation else { return }
+      onStage?(value)
+    }
     let cloud = AIEngineService.effectiveEngine(engine) == .cloud
     let memoryFingerprint = request.scope == .global ? cloudMemoryFingerprint : nil
     let scopedMeetings = Self.meetings(in: request.scope, from: allowedMeetings)
@@ -300,13 +306,14 @@ extension MemoraModel {
     }
     let attachmentContent: PreparedAIAttachment?
     if let attachment = request.attachment {
-      onStage?("添付を解析しています")
+      safeStage("添付を解析しています")
       attachmentContent = await AIAttachmentText.prepare(attachment)
     }
     else { attachmentContent = nil }
 
     func contextAvailable() -> Bool {
-      guard !isRestoring, !isStoreProtected, currentTeamID == workspaceID else { return false }
+      guard !isRestoring, !isStoreProtected, currentTeamID == workspaceID,
+            aiWorkspaceGeneration == generation else { return false }
       if case .file(let id) = request.scope, meeting(id: id) == nil { return false }
       if case .space(let id) = request.scope, space(id: id) == nil { return false }
       return (memoryFingerprint == nil || memoryFingerprint == cloudMemoryFingerprint)
@@ -334,7 +341,7 @@ extension MemoraModel {
        permitted.count == 1, [.searchRecords, .readRecord, .listTasks].contains(where: { enabledAgentTools.contains($0) }) {
       scopedRecord = permitted.first
     } else { scopedRecord = nil }
-    onStage?("記録を探しています")
+    safeStage("記録を探しています")
     var content = buildContent(limit: scopedRecord == nil ? AIEngineService.contextCharacterLimit(for: engine) : 28_000)
     func outcome(_ result: AIAnswerResult) -> AIAnswerOutcome {
       AIAnswerOutcome(question: content.question, scopeLabel: scopeLabel, result: result,
@@ -364,14 +371,14 @@ extension MemoraModel {
     }
     let safeText: (@MainActor (String) -> Void)? = onText.map { callback in { text in
         guard !Task.isCancelled, contextAvailable() else { return }
-        if !text.isEmpty { onStage?("回答を書いています") }
+        if !text.isEmpty { safeStage("回答を書いています") }
         callback(text)
       } }
     var result: AIAnswerResult
-    onStage?("考えています")
+    safeStage("考えています")
     if let scopedRecord {
       let answer = await answerRecordAgent(content: content, record: scopedRecord, scopedTasks: permittedTasks,
-        llm: llm, isCurrent: contextAvailable, onText: safeText, onStage: onStage)
+        llm: llm, isCurrent: contextAvailable, onText: safeText, onStage: safeStage)
       result = answer.result
       content.sources = answer.sources
     } else {

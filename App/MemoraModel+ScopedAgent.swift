@@ -10,9 +10,10 @@ extension MemoraModel {
     onStage: @escaping @MainActor (String) -> Void
   ) async -> ScopedAgentAnswer {
     let workspaceID = currentTeamID
+    let generation = aiWorkspaceGeneration
     var evidence = ScopedAgentEvidence(characterBudget: characterBudget)
     func authorized() -> Bool {
-      !Task.isCancelled && isCurrent() && currentTeamID == workspaceID && !isRestoring && !isStoreProtected
+      !Task.isCancelled && isCurrent() && currentTeamID == workspaceID && aiWorkspaceGeneration == generation && !isRestoring && !isStoreProtected
         && space(id: projectID) != nil
         && (historyEvidence + evidence.references).allSatisfy { projectEvidenceAllowed($0.target, projectID: projectID, cloud: true) }
     }

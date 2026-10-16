@@ -358,6 +358,7 @@ struct AIQuestionView: View {
     isAnswering = true
 
     let configuration = model.askAIConfiguration
+    let generation = model.aiWorkspaceGeneration
     let engine = configuration.engine
     let llm = configuration.llm
     startedAt = .now
@@ -379,9 +380,14 @@ struct AIQuestionView: View {
         // only the request that owns the screen clears the answering state.
         if submitted?.id == request.id {
           isAnswering = false
+          if model.aiWorkspaceGeneration != generation {
+            answer = nil
+            sources = []
+            failureMessage = AIAnswerFailure.contextChanged.message
+          }
         }
       }
-      guard !Task.isCancelled else { return }
+      guard !Task.isCancelled, model.aiWorkspaceGeneration == generation else { return }
 
       let outcome = await model.answer(
         request: request,
@@ -392,15 +398,15 @@ struct AIQuestionView: View {
         engine: engine,
         llm: llm,
         onStage: { value in
-          guard !Task.isCancelled, submitted?.id == request.id else { return }
+          guard !Task.isCancelled, submitted?.id == request.id, model.aiWorkspaceGeneration == generation else { return }
           if stage != value { stage = value }
         },
         onText: { text in
-          guard !Task.isCancelled, submitted?.id == request.id else { return }
+          guard !Task.isCancelled, submitted?.id == request.id, model.aiWorkspaceGeneration == generation else { return }
           answer = text
         }
       )
-      guard !Task.isCancelled, submitted?.id == request.id else { return }
+      guard !Task.isCancelled, submitted?.id == request.id, model.aiWorkspaceGeneration == generation else { return }
       unsupportedAttachmentNote = outcome.unsupportedAttachmentNote
       contextNote = outcome.contextNote
 

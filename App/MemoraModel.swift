@@ -12,6 +12,7 @@ final class MemoraModel {
   }
   @ObservationIgnored var conversationPersistenceReady = false
   @ObservationIgnored var conversationSaveTask: Task<Void, Never>?
+  @ObservationIgnored var aiWorkspaceGeneration = UUID()
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
   var librarySection = LibrarySection.restored(from: UserDefaults.standard.string(forKey: "memora.library.section")) {
@@ -117,6 +118,7 @@ final class MemoraModel {
   @ObservationIgnored var widgetSnapshotRequestID: UUID?
   var projectChatPartialAnswers: [UUID: String] = [:]
   @ObservationIgnored var projectChatJobs: [UUID: Task<Void, Never>] = [:]
+  @ObservationIgnored var projectChatRequestIDs: [UUID: UUID] = [:]
   var sourceAddProjectID: UUID?
   var voiceProfile: VoiceProfile?
   var speakerProfile: SpeakerProfile?
