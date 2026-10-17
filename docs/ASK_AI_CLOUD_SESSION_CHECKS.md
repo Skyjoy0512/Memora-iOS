@@ -70,3 +70,15 @@ Gmail/MCPの接続/費用承認の全経路を通したとは扱わない。
 ## 実行結果
 
 最終結果は `ASK_AI_NEXT_VALIDATION.json` の `cloud_session_transport` に記録する。
+
+実装コミット: `7510099`。
+
+- Debug preview成功: `2026-10-17T12-19-23-5ce30877.log`。
+- Release simulatorビルド成功: `2026-10-17T12-19-23-accd0090.log`。
+- 両ビルドとも既存のAppIntents metadata extraction skipped警告1件のみ。コンパイル/リンクエラーなし。
+- `run-cloud-session-checks.sh` のfocused検証と、追加runnerを含む指定の
+  `run-next-generation-checks.sh` / `run-motion-loading-checks.sh` /
+  `run-optimization-checks.py` がすべて成功。`git diff --check` / JSON検証も成功。
+- UI変更なし。previewのビルド/起動を実施したが、今回の実機/画面操作検証は追加していない。
+- GitHub mainは `git ls-remote` でも `13af297bb9e5f0f8257fce3125bee894750f0571` を確認。
+  今回の継続作業はこの公開済み地点の後のコミットとして区別する。

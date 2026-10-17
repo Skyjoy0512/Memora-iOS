@@ -664,6 +664,117 @@
         ]
       },
       "report": "docs/ASK_AI_INLINE_CITATIONS.md"
+    },
+    {
+      "name": "cloud_session_transport",
+      "checked_at": "2026-10-17T03:24:47.255209+00:00",
+      "baseline_commit": "13af297",
+      "source_commit": "7510099",
+      "github_push": {
+        "remote": "github",
+        "branch": "main",
+        "from": "af3007c",
+        "to": "13af297bb9e5f0f8257fce3125bee894750f0571",
+        "commits": 20,
+        "result": "success",
+        "verified_by": "git push output and git ls-remote"
+      },
+      "debug": {
+        "builds": [
+          {
+            "destination": "generic/platform=iOS Simulator",
+            "diagnostics": [
+              {
+                "classification": "warning",
+                "message": "2026-10-17 12:20:43.265 appintentsmetadataprocessor[84920:41832062] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+              }
+            ],
+            "result": "succeeded",
+            "scheme": "Memora"
+          }
+        ],
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T12-19-23-5ce30877.log",
+        "result": "success"
+      },
+      "release": {
+        "builds": [
+          {
+            "apps": [
+              "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/Apps/Release-iphonesimulator/Memora.app/1792207453398-51522F53/Memora.app"
+            ],
+            "destination": "generic/platform=iOS Simulator",
+            "diagnostics": [
+              {
+                "classification": "warning",
+                "message": "2026-10-17 12:21:19.910 appintentsmetadataprocessor[85665:41837822] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+              }
+            ],
+            "result": "succeeded",
+            "scheme": "Memora"
+          }
+        ],
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T12-19-23-accd0090.log",
+        "result": "success"
+      },
+      "checks": [
+        {
+          "command": "bash tools/checks/run-cloud-session-checks.sh",
+          "result": "passed",
+          "evidence": "CloudSessionChecks: passed (production CloudAgentSession + URLSession/JSON/SSE + registry/policy + conversation loop + person/mail/document/SQLite; both API formats, no network/keys/paid API)"
+        },
+        {
+          "command": "bash tools/checks/run-next-generation-checks.sh",
+          "result": "passed",
+          "evidence": [
+            "Mock person-to-answer/document/mail scenario: passed (production loop/domain/builder/SQLite, mocked provider and approval/registry entry points, explicit duplicate person ID, typed citations, retained draft, mid-turn revoke; no network)",
+            "ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)",
+            "InlineCitationChecks: passed (production parser/URL/legacy formatting/document builder/snapshot, typed UUID collisions, forged IDs and URL variants, unfinished stream markers, label escaping, saved links, bounded source sets, 5000 markers; no network)",
+            "CloudSessionChecks: passed (production CloudAgentSession + URLSession/JSON/SSE + registry/policy + conversation loop + person/mail/document/SQLite; both API formats, no network/keys/paid API)"
+          ]
+        },
+        {
+          "command": "bash tools/checks/run-motion-loading-checks.sh",
+          "result": "passed"
+        },
+        {
+          "command": "python3 tools/checks/run-optimization-checks.py",
+          "result": "passed"
+        },
+        {
+          "command": "git diff --check",
+          "result": "passed"
+        }
+      ],
+      "verified_boundaries": [
+        "Production CloudAgentSession request builder and URLSession JSON/SSE receive path, intercepted in-process for every URL; no real Keychain, credentials or network fallback",
+        "OpenAI-compatible and Anthropic API formats, nonstreaming and streaming person-to-draft flow, actual POST/auth/schema/generation fields, Japanese fragmented tool arguments",
+        "Tool results retain call identity, order, Anthropic signatures/is_error and compatible-provider reasoning fields on the next outbound request",
+        "Actual AIToolRegistry and AIPluginExecutionPolicy reject unselected/invalid/disconnected calls; selected declared schema is separate from returned model tool names",
+        "Production read_person, draft_email, document builder/save and isolated SQLite reopen; duplicate person ID, individually private meeting, draft recipient/status, typed source metadata and saved links",
+        "Suspended model response: person permission revocation/edit/delete, workspace change and restore prevent acceptance, tool execution and the next model request",
+        "Suspended draft approval: decline, disabled registry, deselected tool policy, workspace change, edited source or failed save produces no draft",
+        "Unterminated SSE and length-limited JSON tool calls are rejected before dispatch; replayed IDs execute once only",
+        "Streaming request with JSON response is accepted without another request; HTTP/API failures and transport timeout/disconnect never retry",
+        "Unknown usage keeps output reservations, 128000 local tokens exhausted after four requests and fifth request not dispatched; not a monetary provider cap",
+        "Task cancellation while URLSession is suspended suppresses response publication, acceptance and tool operations"
+      ],
+      "fixture_boundaries": [
+        "Model responses, Keychain/Gmail state and credit display, approval UI, MemoraModel stored state/notification/media dependencies are fixtures",
+        "Registry assembly and dispatch entry point are fixtures using the real schema/registry/policy; full production plugin catalog, Gmail/MCP connection/cost-approval paths are not exercised",
+        "Document is saved explicitly with the production answer builder; create_document/create_slides and Office file generation are not dispatched in this transport scenario",
+        "Host Swift runner is not physical-device performance evidence, UI E2E or an actual provider/OAuth connection"
+      ],
+      "not_verified": [
+        "Full A-E transport integration including episode retrieval/current task comparison, actual company-template document tool/Office export, bounded Research and real composer plugin catalog selection",
+        "Actual provider/Gmail/MCP/OAuth/paid API connection, Gmail Drafts and provider-side monetary billing caps",
+        "Real saved-artifact source navigation/OS source URL launch and backup restore UI E2E",
+        "Physical-device VoiceOver, long-conversation/large-dataset performance, memory and energy",
+        "Claim/quotation-to-evidence semantic consistency and complex Office/PDF rendering"
+      ],
+      "ui": "No UI/layout/copy changes; Debug preview rebuild/launch only, no new simulator interaction or device QA claimed.",
+      "external_service_calls_during_fixture_tests": 0,
+      "report": "docs/ASK_AI_CLOUD_SESSION_CHECKS.md",
+      "warnings": "Debug and Release each have one existing AppIntents metadata extraction skipped warning; no compile/link errors."
     }
   ]
 }
