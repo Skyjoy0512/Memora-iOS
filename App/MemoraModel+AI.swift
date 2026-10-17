@@ -7,6 +7,9 @@ extension MemoraModel {
   func didChangeTab(from previous: RootTab) {
     if previous == .askAI, selectedTab != .askAI {
       persistActiveAIConversation()
+      // A reading belongs to the screen it was started from, so leaving Ask AI
+      // does not leave a voice talking from a screen that is gone.
+      stopAnswerSpeech()
     }
   }
 
@@ -14,6 +17,7 @@ extension MemoraModel {
     // An agent waiting on an approval card would never resume otherwise.
     resolveAgentApproval(false)
     resolveAgentQuestions(nil)
+    stopAnswerSpeech()
     aiChatTask?.cancel()
     aiChatTask = nil
     aiChatRequestID = nil

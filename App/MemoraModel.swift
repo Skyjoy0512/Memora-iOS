@@ -518,6 +518,9 @@ final class MemoraModel {
   /// sheet has closed, so the alert is not raised while a sheet is dismissing.
   @ObservationIgnored var pendingSampleCleanupSuggestion = false
   @ObservationIgnored let recorder = AudioRecorderService()
+  /// Reads a finished answer aloud. Owned here so one reading runs at a time and
+  /// the audio session is coordinated with recording and playback.
+  @ObservationIgnored let answerSpeech = AnswerSpeechService()
 
   init() {
     let defaults = UserDefaults.standard

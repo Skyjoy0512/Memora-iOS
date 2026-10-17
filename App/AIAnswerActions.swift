@@ -23,6 +23,14 @@ struct AIAnswerActions: View {
         Label("共有", icon: .squareAndArrowUp)
       }
 
+      Button(
+        model.isSpeakingAnswer(message.id) ? "読み上げを停止" : "読み上げ",
+        icon: model.isSpeakingAnswer(message.id) ? .stopFill : .speakerWave2Fill
+      ) {
+        InteractionFeedback.shared.send(.tap)
+        model.toggleAnswerSpeech(message)
+      }
+
       Button("回答を資料に保存", icon: .docText) {
         let document = model.document(from: message)
         if model.addDocument(document) {
@@ -61,6 +69,14 @@ struct AIAnswerActions: View {
       Button("閉じる", role: .cancel) {}
     } message: {
       Text("保存先を確認してから、もう一度お試しください。")
+    }
+    .alert("読み上げできません", isPresented: Binding(
+      get: { model.answerSpeech.errorMessage != nil },
+      set: { if !$0 { model.answerSpeech.clearError() } }
+    )) {
+      Button("閉じる", role: .cancel) {}
+    } message: {
+      Text(model.answerSpeech.errorMessage ?? "")
     }
   }
 
