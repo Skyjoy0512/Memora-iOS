@@ -25,3 +25,12 @@ test('the agent opens the structured answer example', async ({ agent, app, devic
   await agent.act('open 構造化回答（表示の確認）');
   await agent.assert('a comparison table with the columns 候補, 移動, 過ごし方 is showing');
 });
+
+test('the agent opens the source list and progress fixture', async ({ agent, app, device, screen }) => {
+  await device.installApp();
+  await app.open();
+  await agent.act('open the side menu and open Settings');
+  await agent.act('scroll to the プロトタイプ section and open 状態と復旧UIを確認');
+  await agent.act('open 資料・進捗の表示確認');
+  await agent.assert('a source list shows 会議・引用 metadata and a task progress bar with 4件中1件が完了 is showing');
+});
