@@ -459,3 +459,12 @@ index schema、2-gram、送信量、project/allowedの権限境界は変更し�
 32 hostスイート/Bitrig preview成功。Simulatorの実保存・編集・完了・再読込・出典、
 Light/Dark/大きい文字を確認。検証データのみ削除し、既存chatを保持。
 実AI/外部認証E2E・実機/性能は未確認。[導線改善記録](PROJECT_WORKSPACE_UX.md)参照。
+
+## 2026-10-17 — iOS26 / Ask AI 2.0
+
+[最新実装と検証](ASK_AI_2_IMPLEMENTATION.md)、[OSS監査](ASK_AI_2_OSS_AUDIT.md)を参照。
+最低OSは26.0。v1の既存8部品を保ちTaskProgress/MailDraftCard/Disclosureを追加し、
+完成した部品のstream表示、実AgentStepの開閉、コードコピー/横スクロール表/コンポーザー停止を接続。
+「完了後だけ構造化表示」「stepを非表示」という上記の過去記述はこの継続変更で更新される。
+データ/権限/通信/承認の基盤と空白の新規chatを維持。実機・実サービス・全シナリオの
+E2EやSwift6.2 toolchainの実検証を完了したものとは扱わない。

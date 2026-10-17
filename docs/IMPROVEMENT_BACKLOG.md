@@ -727,3 +727,14 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
   A〜E全経路、出典/バックアップUI、実機VoiceOver/大量データ/メモリ・消費電力。
 - 実接続OAuth/Gmail Drafts、根拠との意味的一致、複雑なOffice描画は未検証/未接続のまま。
 - 本番コード/fixtureの区分とA〜Eの対応は[通信モック検証](ASK_AI_CLOUD_SESSION_CHECKS.md)。
+
+## 2026-10-17 — iOS26 / Ask AI 2.0
+
+- 実装: iOS26 minimum（アプリ/Widget/Share）、コードコピー/横スクロール表、
+  composer停止/Web状態、実AgentStepの開閉、完成部品の段階表示。
+- 追加: TaskProgress（実taskから計算）、MailDraftCard（回答/保存ID/workspace確認）、Disclosure。
+- 検証: Debug/Release、指定3runner、旧v1/新schema/stream prefix/registry・権限境界、
+  Light/Dark/最大文字/Reduce Motion。実機や実APIの成功率へ換算しない。
+- 残件: 最終AX再取得、実機VoiceOver、iOS26実行/Swift6.2 compiler、
+  実入力IME/停止E2E、大量会話のFPS/memory、実サービスA〜E、非推奨の認証/地図API移行。
+- 最新の実装・画像・性能の範囲は[Ask AI 2.0](ASK_AI_2_IMPLEMENTATION.md)。

@@ -13,6 +13,7 @@ struct ShimmerText: View {
       .overlay {
         if !reduceMotion {
           Text(text)
+            .accessibilityHidden(true)
             .foregroundStyle(.primary)
             .mask {
               GeometryReader { proxy in

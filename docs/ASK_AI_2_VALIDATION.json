@@ -178,5 +178,444 @@
     ],
     "warnings": "11 each: existing AppIntents metadata skip plus newly exposed iOS26 deprecations in GmailService/MCPOAuthBrowser auth browser and JournalMapSheet/JournalPlacePicker/PlaceNameResolver. No errors."
   },
-  "report": "docs/ASK_AI_2_OSS_AUDIT.md"
+  "report": "docs/ASK_AI_2_IMPLEMENTATION.md",
+  "checked_at": "2026-10-17T03:57:10.665824+00:00",
+  "commits": {
+    "phase1": "c3fdd84",
+    "phase2": "9a96098",
+    "phase3": "6dc0cd5",
+    "phase4_5": "4f1d9df",
+    "final_accessibility_fix": "committed with final validation report"
+  },
+  "ui_build": {
+    "debug": {
+      "builds": [
+        {
+          "destination": "generic/platform=iOS Simulator",
+          "diagnostics": [
+            {
+              "classification": "warning",
+              "message": "2026-10-17 12:45:00.380 appintentsmetadataprocessor[91744:41886451] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalMapSheet.swift",
+              "lineNumber": 25,
+              "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalMapSheet.swift",
+              "lineNumber": 25,
+              "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 54,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 55,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 59,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/MCPOAuthBrowser.swift",
+              "lineNumber": 71,
+              "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 12,
+              "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 12,
+              "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 33,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/GmailService.swift",
+              "lineNumber": 322,
+              "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+            }
+          ],
+          "result": "succeeded",
+          "scheme": "Memora"
+        }
+      ],
+      "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T12-44-53-e854d1e1.log",
+      "result": "success"
+    },
+    "release": {
+      "builds": [
+        {
+          "apps": [
+            "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/Apps/Release-iphonesimulator/Memora.app/1792208950955-E09F25CB/Memora.app"
+          ],
+          "destination": "generic/platform=iOS Simulator",
+          "diagnostics": [
+            {
+              "classification": "warning",
+              "message": "2026-10-17 12:46:10.965 appintentsmetadataprocessor[92861:41898529] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/GmailService.swift",
+              "lineNumber": 322,
+              "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalMapSheet.swift",
+              "lineNumber": 25,
+              "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalMapSheet.swift",
+              "lineNumber": 25,
+              "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 54,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 55,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 59,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/MCPOAuthBrowser.swift",
+              "lineNumber": 71,
+              "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 12,
+              "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 12,
+              "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 33,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            }
+          ],
+          "result": "succeeded",
+          "scheme": "Memora"
+        }
+      ],
+      "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T12-44-54-d1e317c2.log",
+      "result": "success"
+    }
+  },
+  "final_build": {
+    "debug": {
+      "builds": [
+        {
+          "destination": "generic/platform=iOS Simulator",
+          "diagnostics": [
+            {
+              "classification": "warning",
+              "message": "2026-10-17 12:51:46.210 appintentsmetadataprocessor[95435:41915130] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/GmailService.swift",
+              "lineNumber": 322,
+              "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalMapSheet.swift",
+              "lineNumber": 25,
+              "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalMapSheet.swift",
+              "lineNumber": 25,
+              "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 54,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 55,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 59,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/MCPOAuthBrowser.swift",
+              "lineNumber": 71,
+              "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 12,
+              "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 12,
+              "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 33,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            }
+          ],
+          "result": "succeeded",
+          "scheme": "Memora"
+        }
+      ],
+      "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T12-51-39-fb82ffc0.log",
+      "result": "success"
+    },
+    "release": {
+      "builds": [
+        {
+          "apps": [
+            "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/Apps/Release-iphonesimulator/Memora.app/1792209349282-9F08D97C/Memora.app"
+          ],
+          "destination": "generic/platform=iOS Simulator",
+          "diagnostics": [
+            {
+              "classification": "warning",
+              "message": "2026-10-17 12:52:56.291 appintentsmetadataprocessor[96275:41927123] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/GmailService.swift",
+              "lineNumber": 322,
+              "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalMapSheet.swift",
+              "lineNumber": 25,
+              "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalMapSheet.swift",
+              "lineNumber": 25,
+              "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 54,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 55,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/JournalPlacePicker.swift",
+              "lineNumber": 59,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/MCPOAuthBrowser.swift",
+              "lineNumber": 71,
+              "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 12,
+              "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 12,
+              "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+            },
+            {
+              "classification": "warning",
+              "filePath": "App/PlaceNameResolver.swift",
+              "lineNumber": 33,
+              "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+            }
+          ],
+          "result": "succeeded",
+          "scheme": "Memora"
+        }
+      ],
+      "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T12-51-40-4db70b10.log",
+      "result": "success"
+    }
+  },
+  "checks": [
+    {
+      "command": "bash tools/checks/run-next-generation-checks.sh",
+      "result": "passed",
+      "evidence": [
+        "ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)",
+        "InlineCitationChecks: passed (production parser/URL/legacy formatting/document builder/snapshot, typed UUID collisions, forged IDs and URL variants, unfinished stream markers, label escaping, saved links, bounded source sets, 5000 markers; no network)",
+        "CloudSessionChecks: passed (production CloudAgentSession + URLSession/JSON/SSE + registry/policy + conversation loop + person/mail/document/SQLite; both API formats, no network/keys/paid API)",
+        "IntelligentUIStreamingChecks: passed (complete component prefix, Japanese/escapes/nesting, stable IDs, append-only scan, replacement/final cache, unknown/duplicate/oversize rejection, live-ID progress/mail schemas, no arbitrary actions, old v1)",
+        "AgentActivitySummaryChecks: passed (actual event counts/state only, failure/decline/waiting, no reasoning input)",
+        "Host UI parse benchmark, 1000 identical settled renders: uncached=0.08880625 seconds, cached=9.5875e-05 seconds; 2 components, 371 UTF8 bytes; not device/FPS evidence"
+      ]
+    },
+    {
+      "command": "bash tools/checks/run-motion-loading-checks.sh",
+      "result": "passed"
+    },
+    {
+      "command": "python3 tools/checks/run-optimization-checks.py",
+      "result": "passed"
+    },
+    {
+      "command": "bash tools/checks/run-intelligent-ui-checks.sh",
+      "result": "passed",
+      "evidence": [
+        "IntelligentUIStreamingChecks: passed (complete component prefix, Japanese/escapes/nesting, stable IDs, append-only scan, replacement/final cache, unknown/duplicate/oversize rejection, live-ID progress/mail schemas, no arbitrary actions, old v1)",
+        "AgentActivitySummaryChecks: passed (actual event counts/state only, failure/decline/waiting, no reasoning input)",
+        "Host UI parse benchmark, 1000 identical settled renders: uncached=0.097638709 seconds, cached=0.0001015 seconds; 2 components, 371 UTF8 bytes; not device/FPS evidence"
+      ]
+    },
+    {
+      "command": "bash tools/checks/run-artifact-provenance-checks.sh",
+      "result": "passed",
+      "evidence": [
+        "Mock person-to-answer/document/mail scenario: passed (production loop/domain/builder/SQLite, mocked provider and approval/registry entry points, explicit duplicate person ID, typed citations, retained draft, mid-turn revoke; no network)",
+        "IntelligentUIContextChecks: passed (production context/mail gates and task dispatch entry, current workspace/restore/protected state, foreign draft/message/UUID rejection, transient task grants, revoked cloud context; dispatch spy never writes)",
+        "ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)"
+      ]
+    },
+    {
+      "command": "python3 tools/checks/check-motion-policy.py",
+      "result": "passed after final Shimmer accessibility-only and debug-fixture adjustments"
+    },
+    {
+      "command": "git diff --check and python3 -m json.tool",
+      "result": "passed"
+    }
+  ],
+  "check_scope": "Full runners include the final parser/cache/schema/domain code. Last changes only hide the shimmer overlay from accessibility and add a Debug fixed-prefix display button; rebuilt Debug/Release and reran motion policy afterward.",
+  "simulator": {
+    "device": "iPhone 18 Pro Max / iOS 27.1",
+    "before_after": "Existing render-only fixtures plus new Debug render-only experience gallery; no real record or account changes.",
+    "verified": [
+      "Activity disclosure and recorded query/results, running and waiting labels",
+      "Code copy feedback and selectable code/table presentation",
+      "Light/Dark screenshots",
+      "Largest accessibility text wrapping and Reduce Motion enabled",
+      "VoiceOver enabled AX inspection before final rebuild; duplicate decorative status text identified and hidden in code",
+      "Final build screenshot: complete Timeline displayed while unfinished second component and raw JSON stay hidden",
+      "Original composer draft retained; restored light appearance, large text, Reduce Motion/VoiceOver disabled"
+    ],
+    "ax_limitation": "After final preview relaunch, AX reads failed three times despite screenshots and tap/scroll continuing to work. Stopped AX retries and used image-based navigation. Final shimmer reading-order fix compiled, but its resulting AX tree was not re-verified.",
+    "screenshots": [
+      "docs/qa/askai2/activity-after-dark.png",
+      "docs/qa/askai2/activity-after-light.png",
+      "docs/qa/askai2/activity-before-light.png",
+      "docs/qa/askai2/experience-after-dark.png",
+      "docs/qa/askai2/experience-after-light.png",
+      "docs/qa/askai2/experience-large-text.png",
+      "docs/qa/askai2/interface-before-dark.png",
+      "docs/qa/askai2/interface-before-light.png",
+      "docs/qa/askai2/streaming-component-light.png"
+    ]
+  },
+  "performance": {
+    "scope": "Optimized Swift host, 371 UTF8 bytes / 2 components, 1000 identical settled response lookups; excludes SwiftUI, FPS, device and energy cost",
+    "uncached_ms": 88.80625,
+    "cached_ms": 0.095875,
+    "focused_uncached_ms": 97.638709,
+    "focused_cached_ms": 0.1015,
+    "scanner": "Asserted single new-byte scan, two components plus final envelope = 3 validations, stable IDs; bounded 32 KiB / 8 components"
+  },
+  "components": [
+    "TaskList",
+    "DocumentCard",
+    "ProjectCard",
+    "SourceList",
+    "ComparisonTable",
+    "Timeline",
+    "Chart",
+    "ActionBar",
+    "TaskProgress",
+    "MailDraftCard",
+    "Disclosure"
+  ],
+  "oss": {
+    "strategy": "Independent native implementation; no copied vendor code/assets and no new dependencies",
+    "chatgpt_ios_ui": "dc6e6a52b14a67051f6534cc674cc32ddd9cb9d1 / MIT code; separate assets and Apache/BSD Markdown dependencies; package not embedded",
+    "open_intelligent_ui": "6a4a0ba192ea285b3a5ed39dcc1295d7d4080d6f / no repository LICENSE or package license field found; no code copied",
+    "openui": "8d9c4c3b108a7b5352192a6a9d7327bdf7ea19b5 / MIT; React/JS runtime, installation telemetry and cloud not adopted"
+  },
+  "not_verified": [
+    "iOS26 runtime or physical device; exact Swift6.2 compiler; full app in strict Swift6 language mode",
+    "Final post-rebuild AX tree and physical VoiceOver focus/speech",
+    "Live provider/paid API/OAuth or complete integration scenarios A-E",
+    "Composer stop/IME/keyboard through a real active AI request",
+    "Long conversation/device FPS/memory/energy, physical microphone/background recording, device widgets/ActivityKit runtime",
+    "Complex Office rendering, generated numerical/claim-to-evidence semantic correctness",
+    "General layout tree, rich forms, calendar and media previews are future work"
+  ],
+  "warnings": "11 each: metadata extraction skipped and iOS26 deprecations in existing Gmail/MCP auth browser and map/geocoding code. No compile/link errors.",
+  "data_migrations": 0,
+  "external_ai_or_user_account_api_calls": 0
 }

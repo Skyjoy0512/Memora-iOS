@@ -603,3 +603,10 @@ URLSession/JSON/SSEを、実registry/policy・会話ループ・人物参照・�
 OpenAI互換/Anthropic、承認中の解除、通信待ちの権限失効/編集/workspace変更、
 不完全な呼出し/再実行/予算/HTTPエラーを外部通信なしで検査する。
 会社書式・Research・episode検索・実composerの選択を含む全A〜Eの完了とは区別する。
+
+## 継続実装: iOS26 / Ask AI 2.0
+
+[実装詳細](ASK_AI_2_IMPLEMENTATION.md)。最低OSを26.0へ変更し、会話のコード/表、
+コンポーザーの停止/Web状態、実tool履歴のDisclosure、完成部品の段階表示を追加。
+進捗は現在の許可済みtask IDから計算し、メール下書きは回答/保存済みID/workspaceを検証する。
+OSSは設計参考のみ。新規依存・会話状態の置換・外部API実行はない。

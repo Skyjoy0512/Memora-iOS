@@ -147,12 +147,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Notion pages, tasks and documents. Reading tools run straight away; every
   tool that changes data waits for the approval card, and a declined change is
   reported back to the model.
-- While a reply is being formed, `ThinkingTraceView` shows one status line
-  only (考えています / 記録を探しています / 回答を書いています / 作業しています /
-  確認を待っています) with the time since the question was sent; it disappears
-  once the answer is in. The steps, search results and reasoning are still kept
-  on the message (`agentSteps`, `sources`, `reasoning`) but, by the owner's
-  choice, not shown. The label must name the real stage; never invent one.
+- While a reply is being formed, `ThinkingTraceView` shows one live status line
+  (考えています / 記録を探しています / 回答を書いています / 作業しています /
+  確認を待っています) with elapsed time. Actual `agentSteps` are available in a
+  compact disclosure, retained after completion; ordinary answers need no fake
+  steps. Show recorded tool events/results only, never private `reasoning` or an
+  invented count/progress stage. Ask AI 2.0 follows `docs/ASK_AI_2_IMPLEMENTATION.md`.
 - The same rule (only what really happened) governs the other AI pieces:
   `WorkingStatus`/`PixelLoader` time long processing from its real start
   (`ProcessingService.startedAt`); answers cite
