@@ -747,3 +747,11 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
   拒否/停止はdraftと添付を保持、受付だけクリア。キーボード表示中の操作も画像確認。
 - P0残件は日本語IME未確定文字、AX取得の復旧とVoiceOver、実provider停止のUI E2E、
   実機性能、実接続A〜E。モック操作を実APIの成功として扱わない。
+
+### Ask AI 2.0 継続 — タスク操作の承認境界
+
+- UIからのTask開始時と保存直前の権限/対象/registry/policyを再確認。update_tasksの未知キーを拒否。
+- 本番UI action/承認waiter/更新domain/SQLiteを通すhost検証を追加し、通常runnerにも接続。
+  組立・dispatch入口・通知はfixture。[詳細](ASK_AI_INTERFACE_TASK_CHECKS.md)。
+- 残る: SwiftUIから承認カードを操作するUI E2E、実通知、cloud task更新後の再依頼を減らす安全な導線。
+  旧出典のfingerprintや失効grantは自動更新しない。日本語IME/VoiceOver/実機/実サービスの残件も継続。

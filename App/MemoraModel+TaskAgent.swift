@@ -2,14 +2,16 @@ import Foundation
 
 extension MemoraModel {
   func updateTasksTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {
-    guard isStoreWritable() else { return AgentToolOutcome(text: "保存先を確認できないため変更できません。", isError: true) }
+    guard taskUpdateContextIsCurrent(call, messageID: messageID) else {
+      return AgentToolOutcome(text: "タスクの変更権限または保存先を確認できません。変更していません。", isError: true)
+    }
     let workspaceID = currentTeamID
+    let policy = agentPluginPolicies[messageID]
     let updates = call.objects("updates")
     guard !updates.isEmpty, updates.count <= 30 else {
       return AgentToolOutcome(text: "変更対象は1〜30件で指定してください。", isError: true)
     }
-    let allowedMeetings = Self.meetings(in: scope, from: meetings)
-    let allowedTasks = scope == .all ? tasks : Self.tasks(in: allowedMeetings, from: tasks)
+    let allowedTasks = tasksAvailableForUpdate(messageID: messageID, scope: scope)
     var originals: [MemoraTask] = []
     var seenIDs = Set<UUID>()
     var changed: [MemoraTask] = []
@@ -54,10 +56,14 @@ extension MemoraModel {
       finishAgentStep(stepID, on: messageID, state: .declined)
       return AgentToolOutcome(text: "利用者が承認しなかったため変更しませんでした。同じ操作を繰り返さないでください。")
     }
-    guard currentTeamID == workspaceID,
+    // Approval authorizes the reviewed batch, not a changed policy or a new scope.
+    let currentAllowedIDs = Set(tasksAvailableForUpdate(messageID: messageID, scope: scope).map(\.id))
+    guard currentTeamID == workspaceID, agentPluginPolicies[messageID] == policy,
+          taskUpdateContextIsCurrent(call, messageID: messageID),
+          Set(originals.map(\.id)).isSubset(of: currentAllowedIDs),
           originals.allSatisfy({ original in tasks.first(where: { $0.id == original.id }) == original }) else {
       finishAgentStep(stepID, on: messageID, state: .failed)
-      return AgentToolOutcome(text: "確認中に対象またはワークスペースが変わりました。変更せず停止しました。", isError: true)
+      return AgentToolOutcome(text: "確認中に対象・参照範囲・権限またはワークスペースが変わりました。変更せず停止しました。", isError: true)
     }
     var candidateTasks = tasks
     for var task in changed {
@@ -75,6 +81,25 @@ extension MemoraModel {
     }
     finishAgentStep(stepID, on: messageID, state: .done, detail: "\(changed.count)件")
     return AgentToolOutcome(text: "承認された\(changed.count)件を変更しました。期限・担当・本文はそのままです。")
+  }
+
+  private func taskUpdateContextIsCurrent(_ call: AgentToolCall, messageID: UUID) -> Bool {
+    guard !Task.isCancelled, currentTeamID == nil, isStoreWritable(), let message = agentMessage(messageID),
+          pluginCallIsPermitted(call, messageID: messageID),
+          toolRegistry().permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID]) else { return false }
+    if let policy = agentPluginPolicies[messageID], !personPolicyIsCurrent(policy) { return false }
+    return message.cloudProvenance == nil || isCloudSessionAuthorized(messageID)
+  }
+
+  private func tasksAvailableForUpdate(messageID: UUID, scope: AIChatScope) -> [MemoraTask] {
+    let allowedMeetings = Self.meetings(in: scope, from: meetings)
+    let scoped = scope == .all ? tasks : Self.tasks(in: allowedMeetings, from: tasks)
+    let policy = agentPluginPolicies[messageID]
+    let purpose: RecordAccessPolicy.Purpose = agentMessage(messageID)?.cloudProvenance == nil ? .onDeviceAI : .cloudAI
+    return scoped.filter { task in
+      (policy?.includesTask(id: task.id, meetingID: task.meetingID) ?? true)
+        && allowsTaskAccess(task, purpose: purpose)
+    }
   }
 
   private static func taskAgentState(_ task: MemoraTask) -> String {

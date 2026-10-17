@@ -179,14 +179,18 @@ enum AgentTool: String, CaseIterable {
         "end_date": string("終了日 yyyy-MM-dd。この日を含む。最大366日")
       ], required: ["start_date", "end_date"])
     case .updateTasks:
-      return object([
-        "updates": ["type": "array", "items": object([
+      var update = object([
           "id": string("list_tasksで得たタスクid"),
           "work_date": string("取り組む日 yyyy-MM-dd。空文字で解除。省略で維持"),
           "progress": string("notStarted / inProgress / waiting。省略で維持"),
           "is_completed": ["type": "boolean", "description": "完了状態。省略で維持"]
-        ], required: ["id"])]
+        ], required: ["id"])
+      update["additionalProperties"] = false
+      var schema = object([
+        "updates": ["type": "array", "minItems": 1, "maxItems": 30, "items": update]
       ], required: ["updates"])
+      schema["additionalProperties"] = false
+      return schema
     case .readPerson:
       return object(["name": string("人の名前。曖昧なら候補を確認する。確認済みperson_idがあれば空文字でもよい。両方が空なら候補一覧"), "person_id": string("確認済みの人物UUID。名前より優先")], required: ["name"])
     case .createDocument:

@@ -1,6 +1,6 @@
 import Foundation
 
-struct AIPluginExecutionPolicy {
+struct AIPluginExecutionPolicy: Equatable {
   var pluginIDs: [String]
   var toolIDs: Set<String>
   var recordIDs: Set<UUID>

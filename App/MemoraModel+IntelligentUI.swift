@@ -57,9 +57,15 @@ extension MemoraModel {
     updateAgentMessage(messageID) { $0.isThinking = true; $0.createdAt = .now; $0.finishedAt = nil }
     aiChatTask = Task { [weak self] in
       guard let self else { return }
+      guard aiChatRequestID == requestID else { return }
       let call = AgentToolCall(id: UUID().uuidString, name: AgentTool.updateTasks.rawValue,
         arguments: ["updates": [["id": id.uuidString, "is_completed": true]]])
-      let outcome = await runAgentTool(call, messageID: messageID, scope: .all, compact: message.cloudProvenance == nil)
+      let outcome: AgentToolOutcome
+      if !Task.isCancelled, canUseInterfaceTask(id, messageID: messageID) {
+        outcome = await runAgentTool(call, messageID: messageID, scope: .all, compact: message.cloudProvenance == nil)
+      } else {
+        outcome = AgentToolOutcome(text: "タスクの参照範囲が変わったため変更していません。", isError: true)
+      }
       guard aiChatRequestID == requestID else { return }
       updateAgentMessage(messageID) { $0.isThinking = false; $0.finishedAt = .now }
       isAIChatResponding = false

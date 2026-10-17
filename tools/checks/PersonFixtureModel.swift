@@ -43,6 +43,10 @@ import Foundation
   var aiChatRequestID: UUID?
   var aiChatTask: Task<Void, Never>?
   var interfaceCalls: [AgentToolCall] = []
+  #if INTERFACE_TASK_EXECUTION_CHECKS
+  var pendingAgentApproval: AgentApproval?
+  var agentApprovalWaiter = AgentInteractionWaiter<Bool>()
+  #endif
   #endif
   #if CLOUD_SESSION_CHECKS
   var fixtureRegistry = AIToolRegistry()
@@ -78,8 +82,18 @@ import Foundation
   func recordArtifactReads(_ references: [RecordPrivacyTarget], messageID: UUID) {}
   func markCloudProvenanceIncomplete(_ id: UUID) {}
   #endif
-  func beginAgentStep(_ step: AgentStep, on id: UUID) -> UUID { step.id }
-  func finishAgentStep(_ id: UUID, on messageID: UUID, state: AgentStep.State, detail: String?) {}
+  func beginAgentStep(_ step: AgentStep, on id: UUID) -> UUID {
+    #if INTERFACE_TASK_EXECUTION_CHECKS
+    message.agentSteps.append(step)
+    #endif
+    return step.id
+  }
+  func finishAgentStep(_ id: UUID, on messageID: UUID, state: AgentStep.State, detail: String? = nil) {
+    #if INTERFACE_TASK_EXECUTION_CHECKS
+    guard let index = message.agentSteps.firstIndex(where: { $0.id == id }) else { return }
+    message.agentSteps[index].state = state; message.agentSteps[index].detail = detail
+    #endif
+  }
   static func agentTaskLine(_ task: MemoraTask) -> String { "id=\(task.id) \(task.title) " + AnswerSourceCitation.marker(for: .record(.task(task.id))) }
   static func agentDate(_ date: Date) -> String { date.description }
 }
@@ -93,7 +107,17 @@ struct FixtureProfile { var name: String; var displayName: String { name } }
   static func encoded<T: Encodable>(_ value: T) throws -> Data { try JSONEncoder().encode(value) }
   static func load(_ key: String) -> LocalStore.ReadOutcome { .missing }
 }
-@MainActor enum TaskReminderScheduler { static func refresh(_ task: MemoraTask) {}; static func cancel(taskID: UUID) {} }
+@MainActor enum TaskReminderScheduler {
+  #if INTERFACE_TASK_EXECUTION_CHECKS
+  static var refreshed: [UUID] = []
+  #endif
+  static func refresh(_ task: MemoraTask) {
+    #if INTERFACE_TASK_EXECUTION_CHECKS
+    refreshed.append(task.id)
+    #endif
+  }
+  static func cancel(taskID: UUID) {}
+}
 enum SummaryResponseParser { static func taskKey(_ value: String) -> String { value } }
 #if !CLOUD_SESSION_CHECKS
 enum AgentTool: String {
@@ -118,6 +142,10 @@ struct FixtureMessage {
   #if INTELLIGENT_UI_CHECKS
   var finishedAt: Date?
   var documentIDs: [UUID] = []
+  #if INTERFACE_TASK_EXECUTION_CHECKS
+  var agentSteps: [AgentStep] = []
+  var didChangeData = false
+  #endif
   #endif
   var cloudProvenance: AIConversationProvenance?
   var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?
@@ -143,7 +171,20 @@ extension MemoraModel {
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return false }; change(&meetings[index]); return true
   }
   func persistNowAsync<T: Encodable>(_ value: T, forKey key: String) async -> Bool { persistNow(value, forKey: key) }
-  static func meetings(in scope: AIChatScope, from meetings: [Meeting]) -> [Meeting] { meetings }
+  static func meetings(in scope: AIChatScope, from meetings: [Meeting]) -> [Meeting] {
+    #if INTERFACE_TASK_EXECUTION_CHECKS
+    return scope == .projects ? meetings.filter { $0.spaceID != nil } : meetings
+    #else
+    return meetings
+    #endif
+  }
+  #if INTERFACE_TASK_EXECUTION_CHECKS
+  static func tasks(in allowedMeetings: [Meeting], from tasks: [MemoraTask]) -> [MemoraTask] {
+    let ids = Set(allowedMeetings.map(\.id))
+    return tasks.filter { $0.meetingID.map(ids.contains) == true }
+  }
+  func toolRegistry() -> AIToolRegistry { fixtureRegistry }
+  #endif
   static func questionWords(in text: String) -> [String] { text.isEmpty ? [] : [text] }
   func searchText(for meeting: Meeting) -> String { meeting.title }
   func agentSourceMatches(query: String, messageID: UUID) -> [String] { [] }
@@ -208,7 +249,16 @@ extension MemoraModel {
   // approval and writes. This fixture cannot change any task or call an API.
   func runAgentTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope, compact: Bool) async -> AgentToolOutcome {
     interfaceCalls.append(call)
+    #if INTERFACE_TASK_EXECUTION_CHECKS
+    // Registry assembly and the all-tool dispatcher are fixtures. The schema,
+    // policy, approval waiter, task mutation and SQLite implementation are real.
+    guard call.tool == .updateTasks, fixtureRegistry.permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID]) else {
+      return AgentToolOutcome(text: "fixture dispatch rejected", isError: true)
+    }
+    return await updateTasksTool(call, messageID: messageID, scope: scope)
+    #else
     return AgentToolOutcome(text: "fixture dispatch")
+    #endif
   }
 }
 #endif

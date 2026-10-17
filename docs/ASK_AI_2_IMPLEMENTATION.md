@@ -171,3 +171,13 @@ assertionに成功。descriptorは32KiB、8部品まで。Markdownの既存incre
 - Debug preview / Release simulatorは両方成功。ログは `2026-10-17T13-06-58-511e0487.log` /
   `2026-10-17T13-06-59-5ce5dc8c.log`。各11件の既存警告、エラーなし。
   指定3runnerと拡張したartifact-provenance runner、JSON形式、diffの空白検査は成功。
+
+### 継続実装 — タスク操作の承認後チェック
+
+- 構造化UIからdispatchする時点でも参照範囲を再確認。
+- タスク更新は承認後にregistry/schema、plugin/person policyの一致、現在のtaskと会議/project範囲、
+  親会議を含むプライバシーを再検証する。未定義キーを含むupdate_tasksを拒否する。
+- 本番の承認待機・タスク更新・SQLiteを通すhost統合テストを追加。
+  拒否/キャンセル/二重タップ/権限失効/編集/削除/保存失敗/複数taskの原子性を確認する。
+- [経路とfixtureの範囲](ASK_AI_INTERFACE_TASK_CHECKS.md)。UIの見た目、データ形式、API料金は変更しない。
+  cloud出典のtask更新後は旧contextを失効させ、勝手なgrant更新はしない。再依頼が必要な制約は残る。
