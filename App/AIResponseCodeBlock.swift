@@ -1,6 +1,9 @@
 import SwiftUI
 import UIKit
 
+// Layout adapted from chatgpt-ios-ui ChatGPTCodeCard, MIT, dc6e6a52.
+// Copyright (c) 2026 Bryan Ramirez-Gonzalez and contributors.
+// See Resources/ChatGPTUI-LICENSE.txt. Copy actions remain local to Memora.
 struct AIResponseCodeBlock: View {
   var language: String?
   var code: String
@@ -9,10 +12,10 @@ struct AIResponseCodeBlock: View {
   @State private var resetTask: Task<Void, Never>?
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 0) {
+    VStack(alignment: .leading, spacing: 18) {
       HStack {
         Text(language.flatMap { $0.isEmpty ? nil : $0 } ?? "コード")
-          .font(.caption.monospaced()).foregroundStyle(.secondary)
+          .font(.subheadline).foregroundStyle(.secondary)
         Spacer(minLength: 12)
         Button(didCopy ? "コピーしました" : "コードをコピー", icon: didCopy ? .checkmark : .docOnDoc) {
           UIPasteboard.general.string = code
@@ -29,17 +32,21 @@ struct AIResponseCodeBlock: View {
         .frame(width: 44, height: 44)
         .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
       }
-      .padding(.leading, 14).padding(.trailing, 4)
-      Divider()
+
       ScrollView(.horizontal) {
         Text(verbatim: code)
           .font(.system(.subheadline, design: .monospaced))
           .textSelection(.enabled).fixedSize(horizontal: true, vertical: false)
-          .padding(14)
+
       }
+      .scrollIndicators(.hidden)
     }
+    .padding(16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(MemoraPalette.secondaryBackground, in: RoundedRectangle(cornerRadius: 12))
+    .background(MemoraPalette.secondaryBackground, in: RoundedRectangle(cornerRadius: 24))
+    .overlay {
+      RoundedRectangle(cornerRadius: 24).stroke(.secondary.opacity(0.1), lineWidth: 1)
+    }
     .onDisappear { resetTask?.cancel() }
   }
 }

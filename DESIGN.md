@@ -7,7 +7,8 @@
 ジャーナルのHero、下部コンポーザー、空白の新規チャットを維持する。
 Ask AI 2.0はコードコピー/横スクロール表、実AgentStepの開閉、完成した構造化部品の段階表示を
 既存の会話状態・権限・承認基盤へ接続する。モデルの推論や生成した進捗を実績として表示しない。
-UIは独自のネイティブ実装。詳細と検証の境界は[実装記録](docs/ASK_AI_2_IMPLEMENTATION.md)。
+UIはネイティブ実装。回答のコード・表・引用の描画はchatgpt-ios-uiのMITコードを部分移植し、
+Dynamic Typeと既存の出典・ストリーム処理へ適応する。ブランド素材・ChatStateは導入しない。詳細と検証の境界は[実装記録](docs/ASK_AI_2_IMPLEMENTATION.md)。
 
 ## A. Product understanding
 

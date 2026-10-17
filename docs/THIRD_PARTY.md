@@ -41,5 +41,12 @@
 
 [調査記録](ASK_AI_2_OSS_AUDIT.md)。bryanrg22/chatgpt-ios-ui（ソースMIT、素材は別条件）、
 thesysdev/openui（MIT）、thesysdev/open-intelligent-ui（demo自体のlicense未確認）を設計比較した。
-これらのコード、画像、ロゴ、プロンプト素材、runtimeはアプリへ取り込んでいない。
-独自SwiftUI実装であり、OpenUI LangやChatStateを依存として追加していない。
+初回調査時点では設計参考のみ。その後chatgpt-ios-uiの `ChatGPTMarkdownView.swift` から
+コード枠・tableWidths/行描画・引用枠/本文間隔を部分移植した（固定SHA `dc6e6a52b14a67051f6534cc674cc32ddd9cb9d1`）。
+対象: `AIResponseCodeBlock.swift`、`AIResponseTable.swift`、`AIResponseTableLayout.swift`、
+`AIResponseMarkdownBlock.swift`、`StreamingMarkdownView.swift`。
+Copyright (c) 2026 Bryan Ramirez-Gonzalez and contributors。MIT全文は
+`App/Resources/ChatGPTUI-LICENSE.txt` に同梱。変更: 日本語、Dynamic Type、44pt操作、
+モノトーン、コピーのキャンセル、既存incremental parser/出典リンク、列幅の上限補正。
+Package、swift-markdown/cmark、ブランド画像、ChatState、OpenUI runtimeは導入していない。
+OpenUIとopen-intelligent-uiのコード/画像/プロンプト素材は引き続き取り込んでいない。

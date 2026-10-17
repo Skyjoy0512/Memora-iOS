@@ -602,8 +602,8 @@
     "CalendarPreview"
   ],
   "oss": {
-    "strategy": "Independent native implementation; no copied vendor code/assets and no new dependencies",
-    "chatgpt_ios_ui": "dc6e6a52b14a67051f6534cc674cc32ddd9cb9d1 / MIT code; separate assets and Apache/BSD Markdown dependencies; package not embedded",
+    "strategy": "Native integration: selected MIT chatgpt-ios-ui Markdown layout code adapted; no new runtime/package dependencies or brand assets",
+    "chatgpt_ios_ui": "dc6e6a52b14a67051f6534cc674cc32ddd9cb9d1 / MIT; ChatGPTMarkdownView code-card, table and typography selectively adapted; notice bundled; parser/ChatState/package/assets not embedded",
     "open_intelligent_ui": "6a4a0ba192ea285b3a5ed39dcc1295d7d4080d6f / no repository LICENSE or package license field found; no code copied",
     "openui": "8d9c4c3b108a7b5352192a6a9d7327bdf7ea19b5 / MIT; React/JS runtime, installation telemetry and cloud not adopted"
   },
@@ -1484,5 +1484,49 @@
       "Automatic safe refresh of expired previews is not implemented; a new request is required"
     ],
     "cost_and_dependencies": "No new packages, copied OSS/assets, services, API keys, paid API tests or server; existing BYOK/budgets/permissions preserved"
+  },
+  "oss_markdown_port": {
+    "baseline": "7d9edb9",
+    "kind": "Selected MIT source adaptation, not full demo reproduction",
+    "source": "chatgpt-ios-ui/dc6e6a52b14a67051f6534cc674cc32ddd9cb9d1/Sources/ChatGPTUI/ChatGPTMarkdownView.swift",
+    "parts": [
+      "ChatGPTCodeCard layout",
+      "tableWidths/tableRow",
+      "theme block spacing/paragraph/quote"
+    ],
+    "license": "App/Resources/ChatGPTUI-LICENSE.txt (byte identical to upstream MIT)",
+    "new_package_dependencies": 0,
+    "builds": {
+      "debug": "2026-10-17T18-49-46-270fae8e.log: success, 11 existing warnings",
+      "release": "2026-10-17T18-49-48-f775eb65.log: success, 11 existing warnings"
+    },
+    "host_checks": {
+      "answer_presentation": "passed",
+      "intelligent_ui": "passed",
+      "motion_loading": "passed",
+      "optimization": "passed",
+      "next_generation": "passed (full rerun after runner registration; /tmp/memora-oss-polish-next-final.log)"
+    },
+    "simulator": [
+      "Same synthetic content before/after Light",
+      "After Dark",
+      "Code copy acknowledgement",
+      "Local streaming playback, not provider transport",
+      "Largest Dynamic Type table horizontal scroll",
+      "Reduce Motion enabled for inspection, then restored"
+    ],
+    "screenshots": [
+      "docs/qa/askai2/oss-polish/before-light.png",
+      "docs/qa/askai2/oss-polish/after-light.png",
+      "docs/qa/askai2/oss-polish/after-dark.png",
+      "docs/qa/askai2/oss-polish/large-text-horizontal.png"
+    ],
+    "not_verified": [
+      "Full OSS demo side-by-side",
+      "Physical VoiceOver/FPS/memory",
+      "Provider E2E",
+      "Cross-app clipboard value"
+    ],
+    "opencode": "Installed executable found, not launched; isolated worktree prompt prepared; auth/cost not verified"
   }
 }

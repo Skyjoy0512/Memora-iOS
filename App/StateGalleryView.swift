@@ -6,6 +6,7 @@ struct StateGalleryView: View {
     List {
       #if DEBUG
       Section("表示（架空データ）") {
+        NavigationLink("OSSの部分移植（表示比較）") { AIMarkdownPolishExampleView() }
         NavigationLink("Ask AI 2.0（表示の確認）") { AskAIExperienceExampleView() }
         NavigationLink("コンポーザー（操作の確認）") { AIComposerInteractionExampleView() }
         NavigationLink("記憶の更新（架空データ）") { AIMemoryEditingExampleView() }

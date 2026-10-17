@@ -6,7 +6,13 @@ AGENTS、DESIGN、Project.json、NEXT_GENERATION_AI、ASK_AI_NEXT_IMPLEMENTATION
 MONOCHROME_DESIGNと指定のSwiftファイルを確認した。DESIGNの古い4タブ記述より、
 ユーザーの最新指示と実装のHome/Library/Ask AIを優先する。
 
-## 現在の実装と検証の区分
+## 後続の部分移植（2026-10-17）
+
+以下の監査本文は初回時点の判断。その後、利用者の再現要望によりchatgpt-ios-uiのMITコードを
+選択的に取り込む方針へ変更した。[部分移植記録](ASK_AI_OSS_POLISH.md)を現在の状態として参照。
+OpenUI/demoのコード移植や全文フレームワークの置換は行っていない。
+
+## 初回監査時点の実装と検証の区分
 
 - 実装済み: ネイティブの3タブ/Glass/FAB、空白新規chat、ユーザーバブルと回答Markdown、
   @registry/Skills/IME保護/SQLite draft、添付解析と停止、録音/人物/プロジェクト範囲。

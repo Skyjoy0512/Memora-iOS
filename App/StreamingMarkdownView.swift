@@ -8,7 +8,7 @@ struct StreamingMarkdownView: View {
 
   var body: some View {
     let blocks = cache.blocks(for: text, isStreaming: isStreaming)
-    VStack(alignment: .leading, spacing: MarkdownBlockView.blockSpacing) {
+    VStack(alignment: .leading, spacing: 22) {
       ForEach(blocks.indices, id: \.self) { index in
         AIResponseMarkdownBlock(block: blocks[index])
       }
