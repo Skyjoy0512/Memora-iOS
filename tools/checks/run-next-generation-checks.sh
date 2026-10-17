@@ -24,7 +24,7 @@ python3 tools/checks/make-web-certificate-fixture.py "$check_dir/web.cer"
 python3 tools/checks/make-office-fixtures.py "$check_dir/office-fixtures"
 swiftc App/ZipArchive.swift App/ProjectSourceText.swift App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift tools/checks/OfficeDocumentChecks.swift -o "$check_dir/office"
 "$check_dir/office" "$check_dir/office-fixtures"
-swiftc Shared/MemoraIcon.swift App/AgentStep.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/ComposerMention.swift App/AIAnswerDetails.swift App/AIChatSource.swift App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/ArtifactProvenance.swift App/ArtifactProjectSourceReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/AIChatMessage.swift App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift App/AIConversationSnapshot.swift tools/checks/AIConversationSnapshotChecks.swift -o "$check_dir/conversation"
+swiftc Shared/MemoraIcon.swift App/AgentStep.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/ComposerMention.swift App/AIAnswerDetails.swift App/AIChatSource.swift App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/ArtifactProvenance.swift App/ArtifactProjectSourceReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/AICalendarEventReference.swift App/AICalendarReadSnapshot.swift App/AIChatMessage.swift App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift App/AIConversationSnapshot.swift tools/checks/AIConversationSnapshotChecks.swift -o "$check_dir/conversation"
 "$check_dir/conversation"
 swiftc App/AIAttachment.swift App/AIAttachmentFileReference.swift App/PreparedAIAttachment.swift App/AgentAttachmentContext.swift App/AIPluginExecutionPolicy.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/AgentAttachmentChecks.swift -o "$check_dir/agent-attachment"
 "$check_dir/agent-attachment"
@@ -63,3 +63,4 @@ bash tools/checks/run-memory-artifact-checks.sh
 bash tools/checks/run-cloud-session-checks.sh
 bash tools/checks/run-intelligent-ui-checks.sh
 bash tools/checks/run-artifact-provenance-checks.sh --interface-task-execution
+bash tools/checks/run-artifact-provenance-checks.sh --calendar-interface

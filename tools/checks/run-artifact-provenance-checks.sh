@@ -5,11 +5,12 @@ check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-artifact-provenance.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 entrypoint=tools/checks/ArtifactProvenanceChecks.swift
 extra_sources=(-D ARTIFACT_PROVENANCE_CHECKS)
-if [[ "${1:-}" == "--interface-task-execution" ]]; then
+if [[ "${1:-}" == "--interface-task-execution" || "${1:-}" == "--calendar-interface" ]]; then
   entrypoint=tools/checks/IntelligentUITaskExecutionChecks.swift
+  if [[ "${1:-}" == "--calendar-interface" ]]; then entrypoint=tools/checks/CalendarInterfaceChecks.swift; fi
   extra_sources+=(-D INTERFACE_TASK_EXECUTION_CHECKS -D CLOUD_SESSION_CHECKS
     App/AgentTool.swift App/AIToolRegistry.swift App/AIToolDefinition.swift App/IntegrationProvider.swift App/IntegrationToolResult.swift
-    App/AgentApproval.swift App/AgentTaskDraft.swift App/AgentInteractionWaiter.swift App/MemoraModel+AgentApproval.swift App/MemoraModel+TaskAgent.swift
+    App/AgentApproval.swift App/AgentTaskDraft.swift App/AgentInteractionWaiter.swift App/MemoraModel+AgentApproval.swift App/MemoraModel+TaskAgent.swift App/MemoraModel+CalendarTools.swift
     tools/checks/CloudSessionFixtureServices.swift)
 elif [[ -n "${1:-}" ]]; then
   exit 64
@@ -23,5 +24,5 @@ swiftc App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentTurn.swift Ap
   App/MemoraModel+People.swift App/MemoraModel+Tasks.swift App/MemoraModel+PersonScope.swift App/MemoraModel+PersonTools.swift \
   App/LifeLogEntry.swift App/LifeLogSource.swift App/TrashedLifeLogEntry.swift App/AIChatSource.swift App/AIChatScope.swift App/ReviewPeriod.swift App/AIRecordFingerprint.swift \
   App/MemoraModel+Journal.swift App/MemoraModel+JournalPeople.swift App/MemoraModel+RecordPrivacy.swift App/MemoraModel+AutomaticRecordTools.swift \
-  tools/checks/PersonFixtureModel.swift App/AIConversationEntry.swift App/AIEpisode.swift App/AIRecordReference.swift App/ArtifactProvenance.swift App/ArtifactProjectSourceReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/MemoraModel+Glossary.swift App/MemoraModel+AIProvenance.swift App/ProjectSource.swift App/MemoraDocumentKind.swift App/DocumentSlide.swift App/MemoraDocument.swift App/MailDraft.swift App/ArtifactSourceTarget.swift App/ArtifactSourceRow.swift App/MemoraModel+ArtifactProvenance.swift App/MemoraModel+Documents.swift App/MemoraModel+MailDrafts.swift App/MemoraModel+MailDraftTool.swift App/AIInterfaceReferenceTarget.swift App/MemoraModel+IntelligentUI.swift tools/checks/IntelligentUIContextChecks.swift "${extra_sources[@]}" "$entrypoint" -o "$check_dir/people"
+  tools/checks/PersonFixtureModel.swift App/AIConversationEntry.swift App/AIEpisode.swift App/AIRecordReference.swift App/ArtifactProvenance.swift App/ArtifactProjectSourceReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/MemoraModel+Glossary.swift App/AICalendarEventReference.swift App/AICalendarReadSnapshot.swift App/MemoraModel+CalendarContext.swift App/MemoraModel+AIProvenance.swift App/ProjectSource.swift App/MemoraDocumentKind.swift App/DocumentSlide.swift App/MemoraDocument.swift App/MailDraft.swift App/ArtifactSourceTarget.swift App/ArtifactSourceRow.swift App/MemoraModel+ArtifactProvenance.swift App/MemoraModel+Documents.swift App/MemoraModel+MailDrafts.swift App/MemoraModel+MailDraftTool.swift App/AIInterfaceReferenceTarget.swift App/MemoraModel+IntelligentUI.swift tools/checks/IntelligentUIContextChecks.swift "${extra_sources[@]}" "$entrypoint" -o "$check_dir/people"
 "$check_dir/people"

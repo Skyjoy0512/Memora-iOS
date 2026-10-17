@@ -77,6 +77,7 @@
 | TaskProgress (追加) | 許可済みの現task IDから完了数を計算。モデルvalue/action/重複referenceを拒否 |
 | MailDraftCard (追加) | 現在のworkspace・この回答のsourceMessageIDに属する実下書きだけ。既存MailDraftSheetで編集/コピー/共有 |
 | Disclosure (追加) | 補足title/detailのネイティブ開閉。一時状態だけをviewで保持 |
+| CalendarPreview (継続追加) | read_calendarの一時UUIDから実予定名・日時を表示。モデルの上書きや任意操作は拒否 |
 
 ## Phase 5 — 既存Memora機能との接続
 
@@ -125,7 +126,7 @@ assertionに成功。descriptorは32KiB、8部品まで。Markdownの既存incre
 
 - P0: 実iOS26端末/実機VoiceOverの読み順・発話、日本語IMEの未確定入力、実provider停止のUI E2E、
   長い会話/大量recordでのFPS・memory・energy、録音/背景復帰の実機、実接続を含む全A〜E。
-- P1: 実カレンダーIDで根拠付けたCalendarPreview、typed sourceの専用preview、保存済みメール/資料の
+- P1: 実EventKit通知/許可ダイアログの検証、typed sourceの専用preview、保存済みメール/資料の
   UIからの全経路、行ごとの根拠と生成数値の照合、確認付き長期memory更新、企業Officeの複雑な描画。
 - P1: iOS26で非推奨となった認証browser init、MKPlacemark/CLGeocoder等の専用移行と回帰確認。
 - P2: 安全なlayout/schema拡張、形式限定form、Line/Pie等、画像の遅延preview、未見コーパス検索評価。
@@ -181,3 +182,12 @@ assertionに成功。descriptorは32KiB、8部品まで。Markdownの既存incre
   拒否/キャンセル/二重タップ/権限失効/編集/削除/保存失敗/複数taskの原子性を確認する。
 - [経路とfixtureの範囲](ASK_AI_INTERFACE_TASK_CHECKS.md)。UIの見た目、データ形式、API料金は変更しない。
   cloud出典のtask更新後は旧contextを失効させ、勝手なgrant更新はしない。再依頼が必要な制約は残る。
+
+### 継続実装 — CalendarPreview
+
+- 12種類目として、実際に取得した予定だけを表示する日程プレビューを追加。
+  タイトル/日時を生成させず、同じ回答の一時UUIDを実予定へ照合する。終日/複数日/日をまたぐ時刻を表示。
+- cloud共有の承認とOS読取権限を分け、拒否した共有を同じ回答で再要求させない。
+  EventKit変更/アプリ復帰時に表示・cloud送信・artifact生成の参照を失効させる。
+- 一時参照を永続化せず、旧会話の読込形式を維持。Project.jsonのカレンダー利用目的にAsk AIも明記。
+- [データ・権限・mock境界](ASK_AI_CALENDAR_PREVIEW.md)。実EventKit/実providerのE2Eとは区別する。

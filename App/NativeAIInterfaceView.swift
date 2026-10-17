@@ -135,6 +135,11 @@ struct NativeAIInterfaceView: View {
           }.buttonStyle(.plain).disabled(!allowsInteractions)
         } else { unavailable }
       }
+    case .calendarPreview:
+      if let messageID, let events = model.interfaceCalendarEvents(component.items.compactMap(\.referenceID), messageID: messageID),
+         let readAt = message?.calendarReadSnapshot?.readAt {
+        AIInterfaceCalendarPreview(events: events, readAt: readAt)
+      } else { unavailable }
     case .disclosure:
       DisclosureGroup(component.title ?? "補足") {
         ForEach(component.items) { item in

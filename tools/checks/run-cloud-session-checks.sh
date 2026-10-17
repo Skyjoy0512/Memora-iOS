@@ -26,7 +26,7 @@ swiftc -enable-bare-slash-regex -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENAN
   App/MemoraModel+Journal.swift App/MemoraModel+JournalPeople.swift App/MemoraModel+RecordPrivacy.swift App/MemoraModel+AutomaticRecordTools.swift \
   tools/checks/PersonFixtureModel.swift App/AIConversationEntry.swift App/AIEpisode.swift App/AIRecordReference.swift App/ArtifactProvenance.swift \
   App/ArtifactProjectSourceReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/MemoraModel+Glossary.swift \
-  App/MemoraModel+AIProvenance.swift App/ProjectSource.swift App/MemoraDocumentKind.swift App/DocumentSlide.swift App/MemoraDocument.swift App/MailDraft.swift \
+  App/AICalendarEventReference.swift App/AICalendarReadSnapshot.swift App/MemoraModel+CalendarContext.swift App/MemoraModel+AIProvenance.swift App/ProjectSource.swift App/MemoraDocumentKind.swift App/DocumentSlide.swift App/MemoraDocument.swift App/MailDraft.swift \
   App/ArtifactSourceTarget.swift App/ArtifactSourceRow.swift App/MemoraModel+ArtifactProvenance.swift App/MemoraModel+Documents.swift \
   App/MemoraModel+MailDrafts.swift App/MemoraModel+MailDraftTool.swift \
   tools/checks/CloudSessionFixtureProtocol.swift tools/checks/CloudSessionFixtureResponse.swift tools/checks/CloudSessionFixtureServices.swift \

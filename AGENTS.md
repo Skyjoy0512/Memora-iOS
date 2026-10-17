@@ -179,6 +179,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   offered only while connected. The build needs a Google iOS OAuth client ID
   under the Info.plist key `MemoraGoogleClientID`; without it the settings
   screen says so.
+- CalendarPreview binds only transient UUIDs returned by read_calendar to actual
+  EventKit event fields. Cloud calendar reads require the approval card before
+  fetching; a declined read cannot be requested again in the same reply.
+  EventKit changes and app activation invalidate these grants, including before
+  cloud requests and artifact creation. Never restore calendar grants from history
+  or replace source dates/titles with model-supplied values. See
+  `docs/ASK_AI_CALENDAR_PREVIEW.md` for mock and real-device validation boundaries.
 - Business meetings: a glossary (Settings › 文字起こし › 用語集,
   `glossaryTerms`) plus the people and project names (`transcriptionVocabulary`)
   is given to every transcription engine (the glossary can be filled from

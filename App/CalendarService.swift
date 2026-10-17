@@ -4,6 +4,14 @@ import SwiftUI
 
 /// Reads the next events from the calendar so Home can offer to record them.
 enum CalendarService {
+  @MainActor private static var aiObservationStore: EKEventStore?
+
+  /// Keep a store alive so EventKit posts permission/database changes during an AI conversation.
+  @MainActor static func beginAIObservation() {
+    guard access == .granted, aiObservationStore == nil else { return }
+    aiObservationStore = EKEventStore()
+  }
+
   static var access: CalendarAccess {
     switch EKEventStore.authorizationStatus(for: .event) {
     case .fullAccess, .authorized:

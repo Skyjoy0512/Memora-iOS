@@ -598,7 +598,8 @@
     "ActionBar",
     "TaskProgress",
     "MailDraftCard",
-    "Disclosure"
+    "Disclosure",
+    "CalendarPreview"
   ],
   "oss": {
     "strategy": "Independent native implementation; no copied vendor code/assets and no new dependencies",
@@ -1177,5 +1178,311 @@
       "UX to safely continue a cloud task card after its source fingerprint changes; current behavior requires a fresh request"
     ],
     "data_and_cost": "No real records/accounts/API keys/network calls, new dependencies, server, project settings or storage migration"
+  },
+  "calendar_preview_followup": {
+    "baseline": "b4e99ff",
+    "report": "docs/ASK_AI_CALENDAR_PREVIEW.md",
+    "builds": {
+      "debug": {
+        "builds": [
+          {
+            "destination": "generic/platform=iOS Simulator",
+            "diagnostics": [
+              {
+                "classification": "warning",
+                "message": "2026-10-17 17:19:53.672 appintentsmetadataprocessor[48740:42376482] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/GmailService.swift",
+                "lineNumber": 322,
+                "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalMapSheet.swift",
+                "lineNumber": 25,
+                "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalMapSheet.swift",
+                "lineNumber": 25,
+                "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 54,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 55,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 59,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/MCPOAuthBrowser.swift",
+                "lineNumber": 71,
+                "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 12,
+                "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 12,
+                "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 33,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              }
+            ],
+            "result": "succeeded",
+            "scheme": "Memora"
+          }
+        ],
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T17-19-46-b3c86e07.log",
+        "result": "success"
+      },
+      "release": {
+        "builds": [
+          {
+            "apps": [
+              "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/Apps/Release-iphonesimulator/Memora.app/1792225459196-51ADCD60/Memora.app"
+            ],
+            "destination": "generic/platform=iOS Simulator",
+            "diagnostics": [
+              {
+                "classification": "warning",
+                "message": "2026-10-17 17:21:16.377 appintentsmetadataprocessor[50646:42393125] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/GmailService.swift",
+                "lineNumber": 322,
+                "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalMapSheet.swift",
+                "lineNumber": 25,
+                "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalMapSheet.swift",
+                "lineNumber": 25,
+                "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 54,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 55,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 59,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/MCPOAuthBrowser.swift",
+                "lineNumber": 71,
+                "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 12,
+                "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 12,
+                "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 33,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              }
+            ],
+            "result": "succeeded",
+            "scheme": "Memora"
+          }
+        ],
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T17-19-47-b6efdd3f.log",
+        "result": "success"
+      }
+    },
+    "components_added": [
+      "CalendarPreview"
+    ],
+    "checks": [
+      {
+        "command": "bash tools/checks/run-artifact-provenance-checks.sh --calendar-interface",
+        "result": "passed",
+        "exit_code": 0,
+        "evidence": [
+          "CalendarInterfaceChecks: passed (production read tool, approval/waiter, real schema/registry/policy, ephemeral UUID binding, actual-value rendering lookup, cloud pre-send authorization, invalidation/permissions/workspace, cancellation/deferred reads, stable recurrence IDs, empty/bounded sources; EventKit and registry assembly are mocks, no system calendar or network)"
+        ]
+      },
+      {
+        "command": "bash tools/checks/run-next-generation-checks.sh",
+        "result": "passed",
+        "exit_code": 0,
+        "evidence": [
+          "MemoryRetrievalChecks: passed (legacy, validity, conflict states, sensitivity, Japanese FTS5, scope, delete, 2000 items 0.036131978034973145s; no LLM quality claim)",
+          "PersonIdentityChecks: passed (same family, identical names, honorific, spaces, missing)",
+          "ProjectTaskListChecks: passed (all assignees, completion, current membership/move/removal, no global/orphan fallback; local fixture)",
+          "ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)",
+          "ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)",
+          "Project search fixture asOf=2026-10-15; IDs, text and gold labels are synthetic",
+          "release-date: top3=release gold=release sent=1",
+          "open-items: top3=open gold=open sent=1",
+          "owner-date: top3=actions,budget-old,budget-new gold=actions sent=4",
+          "budget-change: top3=budget-new,budget-old,actions gold=budget-old,budget-new sent=4",
+          "long-pdf: top3=contract gold=contract sent=1",
+          "local-transcription: top3=architecture,budget-old,budget-new gold=architecture sent=3",
+          "activity-compare: top3=september,october gold=september,october sent=2",
+          "recording-count: top3=october,actions,september gold=october sent=3",
+          "budget-paraphrase: top3=budget-new,budget-old,actions gold=budget-new sent=3",
+          "schedule-paraphrase: top3=actions,release,budget-new gold=actions sent=3",
+          "travel-date: top3=travel gold=travel sent=1",
+          "unanswerable: top3= gold= sent=0",
+          "MEASURE hit@1=11/11 recall@3=1.000 MRR=1.000 unrelated-sent=0.500 no-evidence-abstain=1/1 p50=1.05ms p95=14.87ms",
+          "ProjectSearchQualityChecks: passed (measured real FTS5 + context, long PDF/page evidence, scoped snapshots, update/delete/revoke invalidation; metrics are not LLM answer quality)",
+          "ProjectSourceAvailabilityChecks: passed (legacy codec, honest partial/missing states, unchanged privacy and evidence eligibility)",
+          "WebSourceChecks: passed (fixed public endpoint, redirect DNS, secret-free GET, split/chunked/bounded HTTP, nonexecuting HTML, entities, Unicode, cancellation; mock transport, no network)",
+          "OfficeDocumentChecks: passed (real stored/DEFLATE/descriptor OOXML, Japanese text, slide/sheet order, cached cells, strict namespace, bounds, cancellation, corrupt/hostile packages; no network)",
+          "AI conversation snapshot checks passed",
+          "AgentAttachmentChecks: passed (bounded prepared identity, untrusted JSON, operation intent, filename-only persistence, mock loop/declined approval; no network or records)",
+          "AgentTaskDraftChecks: passed (strict proposal parsing, editable fields, source/identity binding, selection, date/text/count bounds; no records)",
+          "ConversationScrollChecks: passed (stream growth, lazy layout, manual reading, simultaneous scroll/resize, new-answer reset, invalid geometry)",
+          "RelevantTextWindowChecks: passed (long Japanese/emoji passages, specific term selection, case-insensitive match, deterministic order, bounded/empty fallback)",
+          "AgentConversationLoopChecks: passed (mock turns, ordered real loop dispatch, revoke/cancel/empty/failure, bounded calls, replay rejection; no network)",
+          "ScopedAgentEvidenceChecks: passed (fixture scope/revoke rejection, stable citations, guessed/ambiguous IDs, source/text limits; no network)",
+          "AttachmentScopeChecks: passed (bounded UTF-8, malformed endings, local file isolation, cancellation, record/project/task boundaries, prepared identity)",
+          "ProjectSourceReadChecks: passed (real local evidence, async cancellation, byte limit, invalid/path/symlink/directory rejection)",
+          "ProjectChatHistoryChecks: passed (bounded complete turns, revoked evidence, legacy decoding, retained archive)",
+          "CloudStreamChecks: passed (split/interleaved tools, signatures, reasoning, termination, truncated/invalid/error/bounds rejection)",
+          "CloudAgentTurnChecks: passed (whole-batch validation, JSON fallback, completion reasons, malformed/missing arguments, IDs, bounds, valid empty object)",
+          "CloudSSETransportChecks: passed (actual bounded wire → event decoder → accumulator → turn decoder; incremental publication, LF/CRLF/CR, BOM/comments/multiline, EOF, truncated/invalid rejection; no network)",
+          "NativeAIInterfaceChecks: passed (typed components, Markdown fallback, incomplete input, unknown components/keys/actions, malformed IDs, bounds, table shape, duplicate identity)",
+          "DiscoverySkillChecks: passed (local relevance/order, availability/disable, schema budget, explicit selection, Markdown import/round-trip, disabled skills, untrusted/unknown/script metadata rejection)",
+          "ResidentLimitsChecks: passed (legacy decode, policy persistence, bounded requests/tools, whitelist cannot grant writes, notification setting)",
+          "SystemIntegrationChecks: passed (local destinations, malformed links, snapshot roundtrip, expiry, identity/date/count bounds, missing/corrupt/oversize files)",
+          "ComposerMentionChecks passed (parser, IME refusal, editing, draft IDs, tool/record restrictions)",
+          "PluginDispatchChecks passed (real registry dispatch, mock provider, scope/schema/identity/disable rejection; no network)",
+          "ToolIntegrationChecks: passed (schema, registry, disabled/unknown tools, SSE IDs/CRLF, legacy config, namespace/fingerprint)",
+          "AIWebSearchIntentChecks: passed (natural search, internal scope, negation, missing topic, follow-ups, explicit toggle)",
+          "AIConversationProvenanceChecks: passed (grant, revoke, edit, missing source, workspace, memory, limit, legacy)",
+          "MCPOAuthChecks: passed (endpoint/scope validation, identity binding, callback/CSRF duplicates, expiry, refresh rotation, privilege escalation, form encoding)",
+          "AI history search checks passed",
+          "AI journal privacy checks passed",
+          "RootNavigationChecks: passed (three tabs, legacy IDs, segment restoration, isolated stacks, recording destination, AI scopes)",
+          "RecordPrivacyChecks: passed (fail closed, one-shot consent, sticky classification, persistence)",
+          "PluginIconChecks: passed (distinct service symbols, fallback, 15 skills, stable icon/version roundtrip)",
+          "PersonSummaryChecks: passed (literal evidence changes, source IDs, unresolved, empty; no inference)",
+          "ResearchLoopChecks: passed (production iterative loop, bound/dedupe/error/partial/revoke/timeout/save failure/replay/empty/citations; draft persistence, unknown recipient, header injection; mocks only)",
+          "AgentSourceChecks: passed (production extension, individual grant, page/source provenance, selected IDs, workspace, revoke/edit during suspended read, automatic refusal; no files/network)",
+          "DocumentArtifactChecks: passed (real DOCX/PPTX, Japanese, tables, long flow, XML escaping, unchanged masters/styles/theme, split/overflow/corruption rejection, reload; final Office rendering unverified)",
+          "Local OOXML PoC docx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.",
+          "Local OOXML PoC pptx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.",
+          "BackupRestoreChecks: passed (production package/restore + real SQLite, new metadata/files roundtrip, legacy restore, duplicate documents, recipient limits, truncated/missing/oversize, traversal/symlinks, DB rollback, cancellation/gate, conflict preserves bytes, reopen; isolated fixtures only)",
+          "PersonTaskChecks host lookup: 500 people, 2000 tasks, 0.007511019706726074s (not physical-device performance)",
+          "PersonTaskChecks: passed (production task/people/scope/read_person + real SQLite; same-name IDs, legacy unconfirmed, privacy/revoke, reassignment, rename/merge rollback, tombstones, workspace, reopen; isolated fixtures only)",
+          "PersonJournalChecks: passed (production journal codec/mutations, person scope/read/search, privacy editor + real SQLite; legacy, same-name IDs, tombstones, grants, parent restrictions, revoke/edit/delete, typed UUID collision, merge rollback, reopen; isolated fixtures only)",
+          "PersonPrivacyChecks: passed (production person codec/privacy/read_person/provenance/authorization + real SQLite; private-by-default, exported fields only, grants/revoke/edit/delete/merge, duplicate identity, related ACLs, typed IDs, legacy/reopen, workspace/protected/restore, atomic failure; isolated fixtures, no API)",
+          "Mock person-to-answer/document/mail scenario: passed (production loop/domain/builder/SQLite, mocked provider and approval/registry entry points, explicit duplicate person ID, typed citations, retained draft, mid-turn revoke; no network)",
+          "IntelligentUIContextChecks: passed (production context/mail/navigation gates and task dispatch entry, live membership/deletion, current workspace/restore/protected state, team-store isolation, foreign draft/document/message/UUID rejection, transient grants, revoked cloud context; dispatch spy never writes)",
+          "ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)",
+          "InlineCitationChecks: passed (production parser/URL/legacy formatting/document builder/snapshot, typed UUID collisions, forged IDs and URL variants, unfinished stream markers, label escaping, saved links, bounded source sets, 5000 markers; no network)",
+          "CloudSessionChecks: passed (production CloudAgentSession + URLSession/JSON/SSE + registry/policy + conversation loop + person/mail/document/SQLite; both API formats, no network/keys/paid API)",
+          "IntelligentUIStreamingChecks: passed (complete component prefix, Japanese/escapes/nesting, stable IDs, append-only scan, replacement/final cache, unknown/duplicate/oversize rejection, live-ID progress/mail schemas, no arbitrary actions, old v1)",
+          "AgentActivitySummaryChecks: passed (actual event counts/state only, failure/decline/waiting, no reasoning input)",
+          "Host UI parse benchmark, 1000 identical settled renders: uncached=0.091413167 seconds, cached=9.7042e-05 seconds; 2 components, 371 UTF8 bytes; not device/FPS evidence",
+          "IntelligentUITaskExecutionChecks: passed (production UI action + registry/schema/policy + approval/waiter + task update + real SQLite reopen; decline/cancel/race/stale IDs, deferred dispatch, permission/selection/scope/revision changes, failed save, atomic batch and repeat tap; registry assembly/dispatcher/reminder services are fixtures, no network)",
+          "CalendarInterfaceChecks: passed (production read tool, approval/waiter, real schema/registry/policy, ephemeral UUID binding, actual-value rendering lookup, cloud pre-send authorization, invalidation/permissions/workspace, cancellation/deferred reads, stable recurrence IDs, empty/bounded sources; EventKit and registry assembly are mocks, no system calendar or network)"
+        ]
+      },
+      {
+        "command": "bash tools/checks/run-motion-loading-checks.sh",
+        "result": "passed",
+        "exit_code": 0
+      },
+      {
+        "command": "python3 tools/checks/run-optimization-checks.py",
+        "result": "passed",
+        "exit_code": 0
+      },
+      {
+        "command": "Project/validation JSON parse, git diff --check, PNG signatures",
+        "result": "passed"
+      }
+    ],
+    "privacy_and_lifecycle": [
+      "Cloud approval before local fetch, declined calendar reads blocked for the rest of the reply; changesData=false",
+      "Ephemeral random UUIDs bind event name/time/all-day fields to one message; no model-supplied values/actions",
+      "EventKit source identifiers remain local, 30 events per day / 120 per reply",
+      "Database/permission change notifications and scene activation invalidate the revision; no automatic refetch",
+      "Revision/permission/integration/workspace validation before cloud requests, previews and artifact creation",
+      "Calendar references are absent from Codable snapshots/backups and are never restored as grants",
+      "Calendar usage purpose updated without changing deployment target, capabilities or identifiers"
+    ],
+    "fixture_boundaries": [
+      "Production calendar tool, approval/waiter, schema/registry/policy, context lookup, cloud authorization, artifact gate and snapshot codec",
+      "EventKit access/events, registry assembly, approval input and model storage surfaces are fixtures using temporary SQLite",
+      "Simulator gallery uses the production read-only agenda view with fixed fictional dates/events; not real calendar or provider E2E"
+    ],
+    "simulator": {
+      "device": "iPhone 18 Pro Max / iOS 27.1",
+      "verified": [
+        "Final build Light/Dark row/date display",
+        "All-day/multiple-day and overnight formatting",
+        "Largest accessibility text wrapping and scrolling with Reduce Motion enabled",
+        "Original Home composer draft retained; dark appearance, large text and Reduce Motion disabled restored"
+      ],
+      "screenshots": [
+        "docs/qa/askai2/calendar-preview-dark.png",
+        "docs/qa/askai2/calendar-preview-large-text.png",
+        "docs/qa/askai2/calendar-preview-light.png"
+      ],
+      "ax": "Used screenshots/coordinates; earlier AX bridge problem remains unresolved and VoiceOver tree was not reverified"
+    },
+    "not_verified": [
+      "Real EventKit change/permission notifications and system permission dialog",
+      "Live cloud model and actual approval UI through read_calendar",
+      "Physical-device VoiceOver, Japanese IME and FPS/memory/energy",
+      "Per-calendar AI-sharing permissions are not implemented; current approval names the date and shared field types",
+      "Automatic safe refresh of expired previews is not implemented; a new request is required"
+    ],
+    "cost_and_dependencies": "No new packages, copied OSS/assets, services, API keys, paid API tests or server; existing BYOK/budgets/permissions preserved"
   }
 }

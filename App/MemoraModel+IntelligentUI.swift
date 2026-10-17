@@ -1,6 +1,16 @@
 import Foundation
 
 extension MemoraModel {
+  func interfaceCalendarEvents(_ ids: [UUID], messageID: UUID) -> [AICalendarEventReference]? {
+    guard canUseInterfaceContext(messageID: messageID), let message = agentMessage(messageID),
+          let snapshot = message.calendarReadSnapshot, calendarReadIsCurrent(message.calendarReadSnapshot),
+          !ids.isEmpty, ids.count <= 30, Set(ids).count == ids.count else { return nil }
+    let events = Dictionary(uniqueKeysWithValues: snapshot.events.map { ($0.id, $0) })
+    let selected = ids.compactMap { events[$0] }
+    guard selected.count == ids.count else { return nil }
+    return selected.sorted { $0.start == $1.start ? $0.id.uuidString < $1.id.uuidString : $0.start < $1.start }
+  }
+
   func canOpenInterfaceReference(_ target: AIInterfaceReferenceTarget, messageID: UUID) -> Bool {
     guard canUseInterfaceContext(messageID: messageID), let message = agentMessage(messageID) else { return false }
     switch target {
@@ -35,7 +45,7 @@ extension MemoraModel {
   func canUseInterfaceContext(messageID: UUID) -> Bool {
     // These IDs resolve in the personal SQLite store, never in an unconnected team backend.
     guard currentTeamID == nil, !isRestoring, !isStoreProtected, let message = agentMessage(messageID),
-          message.interfaceWorkspaceID == currentTeamID else { return false }
+          message.interfaceWorkspaceID == currentTeamID, calendarReadIsCurrent(message.calendarReadSnapshot) else { return false }
     return message.cloudProvenance == nil || isCloudSessionAuthorized(messageID)
   }
 

@@ -17,6 +17,7 @@ struct AIChatMessage: Identifiable, Hashable {
   var interfaceTaskIDs: Set<UUID> = []
   var interfaceProjectIDs: Set<UUID> = []
   var interfaceWorkspaceID: String?
+  var calendarReadSnapshot: AICalendarReadSnapshot?
   var projectSourceReferences: [AgentSourceReference] = []
   var artifactProvenance: ArtifactProvenance?
   var cloudProvenance: AIConversationProvenance?

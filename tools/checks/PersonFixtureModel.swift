@@ -20,6 +20,12 @@ import Foundation
   var meetingsByPerson: [UUID: [Meeting]] { Dictionary(uniqueKeysWithValues: people.map { person in (person.id, meetings.filter { $0.participantIDs?.contains(person.id) == true }) }) }
   var aiPersonScopeID: UUID?
   var currentTeamID: String?
+  #if PERSON_PROVENANCE_CHECKS
+  var calendarContextRevision = UUID()
+  var agentBlockedExternalTools: [UUID: Set<String>] = [:]
+  var isCalendarEnabled = true
+  func integrationIsEnabled(_ id: String) -> Bool { id != "calendar" || isCalendarEnabled }
+  #endif
   var isRestoring = false
   var isStoreProtected = false
   var rejectWrites = false
@@ -148,6 +154,7 @@ struct FixtureMessage {
   #endif
   #endif
   var cloudProvenance: AIConversationProvenance?
+  var calendarReadSnapshot: AICalendarReadSnapshot?
   var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?
   var projectSourceReferences: [AgentSourceReference] = []
   var artifactProvenance: ArtifactProvenance?
@@ -184,6 +191,11 @@ extension MemoraModel {
     return tasks.filter { $0.meetingID.map(ids.contains) == true }
   }
   func toolRegistry() -> AIToolRegistry { fixtureRegistry }
+  func stopAIChat() {
+    aiChatRequestID = nil; aiChatTask?.cancel(); aiChatTask = nil
+    agentApprovalWaiter.resolve(false)
+    isAIChatResponding = false
+  }
   #endif
   static func questionWords(in text: String) -> [String] { text.isEmpty ? [] : [text] }
   func searchText(for meeting: Meeting) -> String { meeting.title }
@@ -191,6 +203,28 @@ extension MemoraModel {
 }
 
 #if PERSON_PROVENANCE_CHECKS
+@MainActor enum CalendarService {
+  enum Access { case granted, denied, unknown }
+  static var access = Access.granted
+  static func beginAIObservation() {}
+  #if INTERFACE_TASK_EXECUTION_CHECKS
+  static var values: [FixtureCalendarEvent] = []
+  static var reads = 0
+  static var onRead: (() async -> Void)?
+  static func events(on date: Date) async -> [FixtureCalendarEvent] {
+    reads += 1; await onRead?(); return values
+  }
+  #endif
+}
+#if INTERFACE_TASK_EXECUTION_CHECKS
+struct FixtureCalendarEvent {
+  var id: String
+  var title: String
+  var start: Date
+  var end: Date
+  var isAllDay: Bool
+}
+#endif
 // These unrelated retrieval domains stay empty; the authority logic is production code.
 #if ARTIFACT_PROVENANCE_CHECKS
 typealias AIChatMessage = FixtureMessage

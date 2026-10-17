@@ -21,6 +21,10 @@ struct AskAIExperienceExampleView: View {
           Text("タスクの進捗（架空データ）").font(.headline)
           AIInterfaceTaskProgress(tasks: Self.tasks)
         }
+        VStack(alignment: .leading, spacing: 10) {
+          Text("予定（架空データ）").font(.headline)
+          AIInterfaceCalendarPreview(events: Self.calendarEvents, readAt: Date(timeIntervalSince1970: 1_792_353_600))
+        }
         Button(isStreaming ? "表示を停止" : "部品単位の表示を再生", icon: isStreaming ? .stopFill : .playFill) {
           if isStreaming { streamTask?.cancel(); isStreaming = false }
           else { play() }
@@ -64,6 +68,12 @@ struct AskAIExperienceExampleView: View {
      MemoraTask(id: UUID(), title: "架空の作業B", isCompleted: false),
      MemoraTask(id: UUID(), title: "架空の作業C", isCompleted: false)]
   }
+
+  private static let calendarEvents = [
+    AICalendarEventReference(sourceID: "fixture-all-day", title: "構成を確認する日", start: Date(timeIntervalSince1970: 1_792_339_200), end: Date(timeIntervalSince1970: 1_792_425_600), isAllDay: true),
+    AICalendarEventReference(sourceID: "fixture-meeting", title: "提案の内容と未確認事項について相談する", start: Date(timeIntervalSince1970: 1_792_378_800), end: Date(timeIntervalSince1970: 1_792_382_400), isAllDay: false),
+    AICalendarEventReference(sourceID: "fixture-overnight", title: "翌日までの予定", start: Date(timeIntervalSince1970: 1_792_418_400), end: Date(timeIntervalSince1970: 1_792_425_600), isAllDay: false)
+  ]
 
   private static let answer = """
   ## 今週の確認事項

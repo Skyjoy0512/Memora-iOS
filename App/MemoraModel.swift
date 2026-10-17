@@ -467,6 +467,7 @@ final class MemoraModel {
   }
   /// The request currently being answered, so a newer one can drop it.
   @ObservationIgnored var aiChatRequestID: UUID?
+  var calendarContextRevision = UUID()
   @ObservationIgnored var aiChatTask: Task<Void, Never>?
   @ObservationIgnored var agentApprovalWaiter = AgentInteractionWaiter<Bool>()
   @ObservationIgnored var agentQuestionsWaiter = AgentInteractionWaiter<[String]>()

@@ -10,6 +10,9 @@ enum AIConversationSnapshotChecks {
     answer.interfaceTaskIDs = [UUID()]
     answer.interfaceProjectIDs = [UUID()]
     answer.interfaceWorkspaceID = "private-team"
+    answer.calendarReadSnapshot = AICalendarReadSnapshot(revision: UUID(), readAt: .now, events: [
+      .init(sourceID: "never-persist-eventkit-id", title: "取得した予定", start: .now, end: .now, isAllDay: false)
+    ])
     answer.cloudAuthorizationTargets = [.meeting(recordID)]
     answer.artifactProvenance = ArtifactProvenance(workspaceID: nil, sourceMessageID: answer.id,
       records: [.init(target: .task(recordID), fingerprint: String(repeating: "a", count: 64))])
@@ -27,6 +30,8 @@ enum AIConversationSnapshotChecks {
     precondition(restored.count == 3 && restored[1].id == answer.id)
     precondition(restored[1].sources == answer.sources && restored[1].details == answer.details)
     precondition(restored[1].interfaceTaskIDs.isEmpty && restored[1].interfaceProjectIDs.isEmpty)
+    precondition(restored[1].calendarReadSnapshot == nil)
+    precondition(!String(decoding: data, as: UTF8.self).contains("never-persist-eventkit-id"))
     precondition(restored[1].cloudAuthorizationTargets == nil && restored[1].interfaceWorkspaceID == nil)
     precondition(restored[1].artifactProvenance == answer.artifactProvenance)
     var legacyJSON = try JSONSerialization.jsonObject(with: data) as! [String: Any]

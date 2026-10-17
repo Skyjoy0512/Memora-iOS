@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import EventKit
 
 struct RootTabView: View {
   @Environment(MemoraModel.self) private var model
@@ -59,6 +60,7 @@ struct RootTabView: View {
       refreshSafeAreaInsets()
       // Automatic records written while the app was away land when it returns.
       if phase == .active {
+        model.invalidateAICalendarContext()
         model.importAutoLifeLogInbox()
         model.prepareWeeklyReviewIfNeeded()
         Task { await model.refreshShareInbox() }
@@ -91,6 +93,9 @@ struct RootTabView: View {
     }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
       isKeyboardVisible = false
+    }
+    .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged).receive(on: RunLoop.main)) { _ in
+      model.invalidateAICalendarContext()
     }
     .sheet(isPresented: Binding(get: { model.sourceAddProjectID != nil }, set: { if !$0 { model.sourceAddProjectID = nil } })) {
       if let id = model.sourceAddProjectID { ProjectSourceAddSheet(projectID: id) }

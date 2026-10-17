@@ -755,3 +755,11 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
   組立・dispatch入口・通知はfixture。[詳細](ASK_AI_INTERFACE_TASK_CHECKS.md)。
 - 残る: SwiftUIから承認カードを操作するUI E2E、実通知、cloud task更新後の再依頼を減らす安全な導線。
   旧出典のfingerprintや失効grantは自動更新しない。日本語IME/VoiceOver/実機/実サービスの残件も継続。
+
+### Ask AI 2.0 継続 — 日程プレビュー
+
+- CalendarPreviewを実装。read_calendarの実予定名/日時を一時UUIDで参照し、生成値や未知IDを拒否。
+- cloud共有承認・拒否後の再要求防止、EventKit通知/復帰時の失効、送信/成果物生成直前の再検証。
+  snapshot/バックアップへcalendar grantを保存しない。最大30件/日・120件/回答。
+- mockは本番tool/approval/registry/schema/contextを通す。実EventKit通知・システム許可・実cloud通信、
+  calendar別共有設定と実機アクセシビリティは未検証または未実装。[詳細](ASK_AI_CALENDAR_PREVIEW.md)。
