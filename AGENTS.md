@@ -1,6 +1,6 @@
 # AGENTS.md — Memora
 
-SwiftUI app for iPhone (iOS 18 deployment target, built against the iOS 27 SDK).
+SwiftUI app for iPhone (iOS 26 deployment target, built against the iOS 27 SDK).
 App sources live in `App/`, configuration in `Project.json`, design notes in
 `DESIGN.md` and `MCP.md`.
 
