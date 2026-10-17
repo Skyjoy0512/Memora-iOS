@@ -1,29 +1,32 @@
 import Foundation
 
-/// Edits only scalar text markers in existing XML parts, preserving every other part's bytes.
+/// Replaces scalar markers within a paragraph, preserving every other part's bytes.
 enum CompanyTemplateEngine {
+  static let analysisVersion = 2
   struct Analysis: Codable, Hashable {
     var placeholders: [String]
     var features: [String]
     var unsupportedSplitMarkers: Bool
-    var isAvailable: Bool { !placeholders.isEmpty && !unsupportedSplitMarkers }
+    var engineVersion: Int? = nil
+    var isAvailable: Bool { !placeholders.isEmpty && placeholders.count <= 30 && !unsupportedSplitMarkers }
     var notice: String {
-      "同じテキスト要素内の{{name}}だけ差し込めます。マスター・画像・書式・ノートは保持します。改ページ、文字あふれ、最終フォントはOfficeで確認してください。" +
-        (unsupportedSplitMarkers ? "複数の文字要素に分割された差し込み欄は未対応です。" : "")
+      "同じ段落内の{{name}}に30種類まで差し込めます。分割された欄は先頭文字の書式を引き継ぎます。マスター・画像・ノートは保持します。改ページ、文字あふれ、最終フォントはOfficeで確認してください。" +
+        (engineVersion != CompanyTemplateEngine.analysisVersion ? "旧解析情報です。再解析で現在の対応範囲を確認してください。" : "") +
+        (unsupportedSplitMarkers ? "段落・改行・フィールド等をまたぐ欄、変更履歴内の欄、不完全な欄は利用できません。" : "")
     }
   }
   enum Failure: LocalizedError {
-    case unsupported, fields, tooLong
+    case unsupported, fields, tooLong, save, invalidText
     var errorDescription: String? {
       switch self {
-      case .unsupported: "このテンプレートの差し込み方式には未対応です。同じ文字要素内に{{title}}等を置いてください。署名・マクロ・埋め込み・外部参照には対応しません。"
-      case .fields: "差し込み欄と値が一致しません。すべての欄を確認してください。"
+      case .unsupported: "このテンプレートの差し込み方式には未対応です。同じ段落の通常の文字列に{{title}}等を置いてください。段落・改行・フィールド等をまたぐ欄、変更履歴、署名・マクロ・埋め込み・外部参照には対応しません。"
+      case .fields: "差し込み欄は30種類までです。すべての欄と値が一致するか確認してください。"
       case .tooLong: "差し込み内容が長すぎます。PowerPointは1欄120文字、Wordは1欄10,000文字までです。"
+      case .save: "解析結果を保存できませんでした。原本と登録情報は変更していません。"
+      case .invalidText: "差し込み値にOffice XMLで使えない制御文字が含まれています。取り除いて再試行してください。"
       }
     }
   }
-  private static let marker = try! NSRegularExpression(pattern: #"\{\{([A-Za-z][A-Za-z0-9_]{0,39})\}\}"#)
-  private static let textElement = try! NSRegularExpression(pattern: #"<([A-Za-z_][A-Za-z0-9_]*:)?t\b[^>]*>([^<]*)</([A-Za-z_][A-Za-z0-9_]*:)?t>"#)
 
   static func analyze(_ data: Data, format: CompanyTemplate.Format) throws -> Analysis {
     var archive = try OfficeArchiveReader(data: data)
@@ -49,18 +52,16 @@ enum CompanyTemplateEngine {
       }
       guard mutablePart(path, format: format) else { continue }
       let bytes = try archive.read(path)
-      let xml = try OfficeXMLDocument(data: bytes)
-      let textNodes = xml.nodes.filter { $0.name == "t" }
-      let together = textNodes.map(\.text).joined()
-      let all = matches(together)
-      let individual = textNodes.flatMap { matches($0.text) }
-      if all.count != individual.count { split = true }
-      names.formUnion(individual)
+      let part = try OfficeTemplateTextPart(data: bytes, format: format)
+      let xml = part.document
+      split = split || part.hasUnsupportedMarkers
+      names.formUnion(part.placeholders)
       for node in xml.nodes where ["pgSz", "pgMar", "rFonts", "tbl", "sectPr", "sldSz", "sp", "graphicFrame", "pic", "off", "ext", "ph"].contains(node.name) {
         if features.count < 100 { features.append(node.name + ": " + node.attributes.sorted { $0.key < $1.key }.map { $0.key + "=" + $0.value }.joined(separator: " ")) }
       }
     }
-    return Analysis(placeholders: names.sorted(), features: Array(features.prefix(100)), unsupportedSplitMarkers: split)
+    guard names.count <= 30 else { throw Failure.fields }
+    return Analysis(placeholders: names.sorted(), features: Array(features.prefix(100)), unsupportedSplitMarkers: split, engineVersion: analysisVersion)
   }
 
   static func fill(_ data: Data, format: CompanyTemplate.Format, values: [String: String]) throws -> Data {
@@ -69,18 +70,13 @@ enum CompanyTemplateEngine {
     guard Set(values.keys) == Set(analysis.placeholders), values.count <= 30 else { throw Failure.fields }
     guard values.values.allSatisfy({ $0.count <= (format == .pptx ? 120 : 10_000) && !$0.contains("{{") }) else { throw Failure.tooLong }
     var archive = try OfficeArchiveReader(data: data), output = ZipArchive()
+    var outputBytes = 0
     for path in archive.partNames where !path.hasSuffix("/") {
       let original = try archive.read(path)
-      guard mutablePart(path, format: format), var xml = String(data: original, encoding: .utf8) else { output.add(path, data: original); continue }
-      let textRanges = textElement.matches(in: xml, range: NSRange(xml.startIndex..., in: xml))
-      for element in textRanges.reversed() {
-        guard let bounds = Range(element.range(at: 2), in: xml) else { throw Failure.unsupported }
-        var text = String(xml[bounds])
-        for name in analysis.placeholders { text = text.replacingOccurrences(of: "{{" + name + "}}", with: DOCXWriter.escape(values[name]!)) }
-        xml.replaceSubrange(bounds, with: text)
-      }
-      _ = try OfficeXMLDocument(data: Data(xml.utf8))
-      output.add(path, text: xml)
+      let filled = try mutablePart(path, format: format) ? OfficeTemplateTextPart(data: original, format: format).filling(values) : original
+      guard filled.count <= OfficeArchiveReader.maximumReadBytes - outputBytes else { throw OfficeArchiveReader.Failure.limit }
+      outputBytes += filled.count
+      output.add(path, data: filled)
     }
     let result = output.data()
     var validate = try OfficeArchiveReader(data: result)
@@ -94,9 +90,4 @@ enum CompanyTemplateEngine {
     return path.range(of: #"^ppt/slides/slide\d+\.xml$"#, options: .regularExpression) != nil
   }
 
-  private static func matches(_ text: String) -> [String] {
-    marker.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap {
-      Range($0.range(at: 1), in: text).map { String(text[$0]) }
-    }
-  }
 }

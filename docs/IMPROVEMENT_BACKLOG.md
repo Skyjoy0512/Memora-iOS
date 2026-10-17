@@ -770,3 +770,11 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 - 同じ項目の候補表示と、選んだ値を現在にしてほかを過去にする操作を追加。出典・変更前の状態を保持する。
 - 古い編集/削除、workspace変更、保存失敗を本番plan/managementと隔離SQLiteで回帰検証する。
 - 詳細: [ASK_AI_MEMORY_UPDATES.md](ASK_AI_MEMORY_UPDATES.md)。自然言語での意味矛盾判定、実機QAは残る。
+
+
+## 2026-10-17: 企業DOCX/PPTXの分割差し込み
+
+- 同じ段落内の分割runに対応し、書式と非対象partを保持する。フィールド/変更履歴/段落境界等は拒否する。
+- 既存テンプレートへ明示的なローカル再解析を追加。旧形式・途中失効・保存失敗を本番extension/SQLiteで検証する。
+- 実ファイルとMac Quick Look先頭表示の結果: [ASK_AI_OFFICE_TEMPLATE_RUNS.md](ASK_AI_OFFICE_TEMPLATE_RUNS.md)。
+- P1: 実企業書式、Office全ページの改ページ/あふれ/フォント代替、繰り返し表/画像/グラフの差し込み。

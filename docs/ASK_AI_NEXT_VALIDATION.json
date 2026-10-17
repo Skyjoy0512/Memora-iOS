@@ -831,6 +831,75 @@
         "docs/qa/askai2/memory-updates/stale-edit-rejected.png"
       ],
       "external_service_calls_during_fixture_tests": 0
+    },
+    {
+      "phase": "office_split_run_templates",
+      "checked_at": "2026-10-17T09:17:08.133202+00:00",
+      "baseline": "602ebbe",
+      "report": "docs/ASK_AI_OFFICE_TEMPLATE_RUNS.md",
+      "implementation": [
+        "Swift native scalar replacement across contiguous text runs within one paragraph, retaining first-run styling and surrounding content",
+        "Source-range XML patching with namespace checks, UTF8 BOM and CR/CRLF preservation, XML escaping and invalid-character rejection",
+        "Paragraph/break/tab/field/link/tracked-change/content-control boundaries refused; non-UTF8 declarations unsupported",
+        "Maximum 30 field names at analysis/import, bounded values and pre-growth XML/aggregate output reservations",
+        "Optional analysis engineVersion preserves legacy decoding; explicit on-device refresh keeps original file/ID/version and persists only after live scope/generation/snapshot checks",
+        "Template detail observes live metadata, distinguishes actual analysis/generation progress and clears preview/output/input after workspace change"
+      ],
+      "debug": {
+        "result": "success",
+        "command": "bitrig preview -platform iOS",
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T18-12-18-4e9ae6d5.log",
+        "warnings": 11
+      },
+      "release": {
+        "result": "success",
+        "command": "bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release",
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T18-12-18-c88df5c0.log",
+        "warnings": 11
+      },
+      "checks": {
+        "focused_artifacts_analysis": "passed",
+        "next_generation": "passed",
+        "motion_loading": "passed",
+        "optimization": "passed",
+        "independent_python_zip_xml": "passed",
+        "mac_quicklook_first_page_slide": "passed"
+      },
+      "verified_boundaries": [
+        "Production engine generates DOCX/PPTX and reloads ZIP/XML/text; independent Python parser verifies element order/count/format attributes and unchanged non-target parts",
+        "Every internal split point of title marker, alternate/Strict namespaces, numeric entities, emoji/UTF16 offsets, BOM, CR/CRLF, repeated/adjacent/empty fields and whitespace",
+        "Unsafe boundaries, unsupported encodings and invalid control characters rejected; overlength values, 31 field names and repeated-expansion size limit rejected",
+        "Production local refresh extension + actual SQLite reopen, failed INSERT rollback, original file/ID/version preservation, target edits/deletion/allowedUsers change, workspace/generation/protection/restore/cancellation",
+        "Mac Quick Look thumbnails of generated fixture DOCX first page and PPTX first slide, visually inspected Japanese title/body/table"
+      ],
+      "fixture_boundaries": [
+        "Synthetic templates and documents only; no user files/SQLite/API credentials",
+        "Refresh stored state/file resolver/persistNow entry are fixtures; parser/editing/cancellation/publication gate and LocalStore writes are production",
+        "Independent Python uses standard-library ZIP/XML operations, not a Python document engine embedded in iOS",
+        "Quick Look thumbnails are Mac first-page previews, not Microsoft Office full-document or physical-iPhone layout verification"
+      ],
+      "artifacts": [
+        {
+          "path": "docs/fixtures/ask-ai-artifacts/split-runs.docx",
+          "sha256": "1bee466887e02fb2d36e3791aed1bf1fda8f844bd94cee1632458ec9b81d854f"
+        },
+        {
+          "path": "docs/fixtures/ask-ai-artifacts/split-runs.pptx",
+          "sha256": "37a90687bf04b79eec02a6f5741c07c09832d2cf3cdfe2279fb0937d036eafc7"
+        }
+      ],
+      "screenshots": [
+        "docs/qa/askai2/office-template-runs/docx-quicklook.png",
+        "docs/qa/askai2/office-template-runs/pptx-quicklook.png"
+      ],
+      "not_verified": [
+        "Real corporate templates, Microsoft Office full-page layout/overflow/font substitution and edit/re-save",
+        "New refresh button UI E2E against a registered user template; physical-device VoiceOver/performance",
+        "Conditional/repeating tables or slides, image/chart replacement, master/note placeholders and a high-fidelity external document engine",
+        "Full A-E real-service integration and provider billing limits"
+      ],
+      "external_service_calls_during_fixture_tests": 0,
+      "new_app_oss_dependencies": []
     }
   ]
 }
