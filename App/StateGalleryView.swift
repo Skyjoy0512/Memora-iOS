@@ -53,6 +53,7 @@ struct StateGalleryView: View {
       Section {
         #if DEBUG
         NavigationLink("構造化回答（表示の確認）") { NativeAIInterfaceExampleView() }
+        NavigationLink("資料・進捗の表示確認") { AIInterfaceStructuredExampleView() }
         NavigationLink("タスク候補（編集の確認）") { AgentTaskDraftExampleView() }
         NavigationLink("タスク候補（承認と保存の検証）") { AgentTaskOperationCheckView() }
         NavigationLink("Officeソース（取込と保存の検証）") { ProjectSourceOperationCheckView() }
