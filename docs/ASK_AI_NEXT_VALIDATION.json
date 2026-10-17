@@ -542,6 +542,128 @@
       "report": "docs/ASK_AI_ARTIFACT_SOURCES.md",
       "source_commit": "8dbf6a8",
       "warnings": "Debug and Release each have the existing AppIntents metadata-extraction skipped warning only; no compile/link errors."
+    },
+    {
+      "name": "typed_inline_citations",
+      "checked_at": "2026-10-17T03:09:20.733469+00:00",
+      "baseline_commit": "4d5732c",
+      "source_commit": "b4d22c0",
+      "debug": {
+        "builds": [
+          {
+            "destination": "generic/platform=iOS Simulator",
+            "diagnostics": [
+              {
+                "classification": "warning",
+                "message": "2026-10-17 08:31:09.920 appintentsmetadataprocessor[47026:41503379] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+              }
+            ],
+            "result": "succeeded",
+            "scheme": "Memora"
+          }
+        ],
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T08-31-02-bef662a4.log",
+        "result": "success"
+      },
+      "release": {
+        "builds": [
+          {
+            "apps": [
+              "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/Apps/Release-iphonesimulator/Memora.app/1792193712573-CB72939C/Memora.app"
+            ],
+            "destination": "generic/platform=iOS Simulator",
+            "diagnostics": [
+              {
+                "classification": "warning",
+                "message": "2026-10-17 08:32:19.656 appintentsmetadataprocessor[47882:41515143] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+              }
+            ],
+            "result": "succeeded",
+            "scheme": "Memora"
+          }
+        ],
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T08-31-03-1ea23d34.log",
+        "result": "success"
+      },
+      "warnings": "Debug and Release each have one existing AppIntents metadata-extraction skipped warning; no compile/link errors.",
+      "checks": [
+        {
+          "command": "bash tools/checks/run-next-generation-checks.sh",
+          "result": "passed",
+          "evidence": [
+            "PersonPrivacyChecks: passed (production person codec/privacy/read_person/provenance/authorization + real SQLite; private-by-default, exported fields only, grants/revoke/edit/delete/merge, duplicate identity, related ACLs, typed IDs, legacy/reopen, workspace/protected/restore, atomic failure; isolated fixtures, no API)",
+            "Mock person-to-answer/document/mail scenario: passed (production loop/domain/builder/SQLite, mocked provider and approval/registry entry points, explicit duplicate person ID, typed citations, retained draft, mid-turn revoke; no network)",
+            "ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)",
+            "InlineCitationChecks: passed (production parser/URL/legacy formatting/document builder/snapshot, typed UUID collisions, forged IDs and URL variants, unfinished stream markers, label escaping, saved links, bounded source sets, 5000 markers; no network)"
+          ],
+          "scope": "Full suite passed before final arrow-label and hasCitations allow-list adjustment; focused production citation suite recompiled and passed after those final changes."
+        },
+        {
+          "command": "bash tools/checks/run-inline-citation-checks.sh",
+          "result": "passed",
+          "source_commit": "b4d22c0",
+          "evidence": "InlineCitationChecks: passed (production parser/URL/legacy formatting/document builder/snapshot, typed UUID collisions, forged IDs and URL variants, unfinished stream markers, label escaping, saved links, bounded source sets, 5000 markers; no network)"
+        },
+        {
+          "command": "bash tools/checks/run-artifact-provenance-checks.sh",
+          "result": "passed",
+          "evidence": [
+            "Mock person-to-answer/document/mail scenario: passed (production loop/domain/builder/SQLite, mocked provider and approval/registry entry points, explicit duplicate person ID, typed citations, retained draft, mid-turn revoke; no network)",
+            "ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)"
+          ]
+        },
+        {
+          "command": "bash tools/checks/run-motion-loading-checks.sh",
+          "result": "passed"
+        },
+        {
+          "command": "python3 tools/checks/run-optimization-checks.py",
+          "result": "passed"
+        },
+        {
+          "command": "git diff --check",
+          "result": "passed"
+        }
+      ],
+      "ui_verified": [
+        "Production AIResponseText renderer with fictional person/task/journal markers in existing Debug gallery",
+        "AX link names and URLs distinguish source types even with the same UUID; final build includes the citation arrow indicator",
+        "Person and task links open the matching fictional explanation; wrapped journal link was verified by tapping its visible text",
+        "Dark large text and light largest accessibility text, wrapping and scrollable content checked; final build re-opened for AX and screenshot inspection",
+        "Restored dark/large settings and preserved original composer draft; no real record edits, AI requests, or email sends"
+      ],
+      "verified_boundaries": [
+        "Unknown or wrong-type IDs cannot become citations; identical UUIDs across source types remain distinct",
+        "Strict source URL canonicalization rejects queries, fragments, credentials, ports, extra paths and malformed IDs",
+        "Reply and document taps recheck the declared source set and current workspace/protected/restore state",
+        "Legacy meeting citation numbering and saved meeting URLs retained; untrusted labels escaped and incomplete stream markers hidden",
+        "Production document builder and snapshot preserve typed citation links without restoring execution grants",
+        "Internal citation markers stripped from email subject/body; draft provenance remains separate",
+        "Mock provider uses production AgentConversationLoop, read_person, draft_email, document builder/save and isolated SQLite; explicit duplicate person identity, saved links, unknown recipients and draft status checked",
+        "Revoking person cloud permission while a mock model turn is pending prevents accepting the reply or executing another draft; local owner navigation remains separate"
+      ],
+      "not_verified": [
+        "Actual provider/OAuth/paid API connection, costs and full scenarios A-E through production transport and registry",
+        "Saved real artifact-to-all-source navigation UI E2E and OS-level external source URL launch E2E",
+        "Physical-device VoiceOver, long-conversation or large-production-dataset performance and memory/energy",
+        "Sentence-level or quote-to-evidence consistency; links prove declared identity only",
+        "Office/PDF hyperlink rendering and click behavior, complex template fidelity, Gmail Drafts OAuth"
+      ],
+      "remaining_priorities": {
+        "P0": [
+          "Transport-level mock or explicitly configured BYOK integrated scenarios A-E with in-flight revocation",
+          "Physical-device accessibility/performance and backup UI verification"
+        ],
+        "P1": [
+          "Claim/evidence consistency and person summary quality",
+          "Confirmed long-term-memory updates",
+          "Complex Office rendering and Gmail Drafts permissions/connection"
+        ],
+        "P2": [
+          "Measured Japanese hybrid/embedding ranking and scoped person/project mentions"
+        ]
+      },
+      "report": "docs/ASK_AI_INLINE_CITATIONS.md"
     }
   ]
 }
