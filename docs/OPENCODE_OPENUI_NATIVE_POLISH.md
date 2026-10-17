@@ -131,6 +131,7 @@
 - [比較表 Dark](qa/opencode-openui/comparison-dark.png)
 - [比較表 Light](qa/opencode-openui/comparison-light.png)
 - [比較表 最大文字サイズ（横スクロール）](qa/opencode-openui/comparison-large-text.png)
+- [ストリーミング途中](qa/opencode-openui/structured-streaming.png)
 
 比較表の見出し（secondary・semibold・下罫線）、行ごとの区切り、最大文字サイズでの
 横スクロールを実機シミュレータ（iPhone 18 Pro Max / iOS 27.1）で確認した。
@@ -153,7 +154,9 @@ Row（`NativeAIInterfaceExampleView` の2つのグラフ横並び）も同画面
 進捗は一部完了（内訳あり）・全完了・1件のみを、Light / Dark / 最大文字サイズ /
 Reduce Motion で確認した。Reduce Motion の画面は静的な確認であり、バーの
 アニメーション停止はコード（`animation(reduceMotion ? nil : …)`）で担保している。
-ストリーミング途中（完成部品単位で表示されること）は静的画像では残せないため未撮影。
+ストリーミング途中は、`NativeAIInterfaceExampleView` に追加したローカル再生
+（「ストリーミングを確認」）で、完成した部品だけが順に表示されることを確認した
+（比較表・グラフが先に出て、日程・Row は後から出る）。
 
 ## 未実装・未検証事項
 
@@ -173,7 +176,8 @@ Reduce Motion で確認した。Reduce Motion の画面は静的な確認であ�
   SourceList・TaskProgress は統合後に追加した Debug 用の架空データ画面
   （`AIInterfaceStructuredExampleView`、資料・進捗の表示確認）で確認済み
   （根拠一覧 Light/Dark/最大文字サイズ、進捗 Light/Dark/最大文字サイズ/Reduce Motion/
-  内訳展開）。ストリーミング途中は未撮影。
+  内訳展開）。ストリーミング途中も `NativeAIInterfaceExampleView` のローカル再生で
+  確認済み（完成部品単位の表示）。
 - VoiceOver の読み上げ、日本語 IME、実プロバイダーのストリーミング E2E は未検証。
 - 比較表の行 `referenceID` は、モデルが実在 UUID を付けた場合のみリンクになる。
   実サービスでの生成品質（正しい UUID を付けるか）は未検証。

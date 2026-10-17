@@ -2,17 +2,44 @@
 import SwiftUI
 
 struct NativeAIInterfaceExampleView: View {
+  @State private var isStreaming = false
+  @State private var displayed = ""
+  @State private var streamTask: Task<Void, Never>?
+
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 24) {
         Text("表示検証用の例です。実際の記録・AI回答ではありません。")
           .font(.footnote).foregroundStyle(.secondary)
-        AIResponseText(text: Self.example)
+        Button(isStreaming ? "表示を停止" : "ストリーミングを確認", icon: isStreaming ? .stopFill : .playFill) {
+          if isStreaming { streamTask?.cancel(); isStreaming = false }
+          else { play() }
+        }
+        .frame(minHeight: 44)
+        AIResponseText(text: displayed.isEmpty ? Self.example : displayed, isStreaming: isStreaming)
       }
       .frame(maxWidth: .infinity, alignment: .leading).padding(18)
     }
     .background(MemoraPalette.background)
     .navigationTitle("構造化回答の表示確認").navigationBarTitleDisplayMode(.inline)
+    .onDisappear { streamTask?.cancel() }
+  }
+
+  /// Replays the answer as a local string, so a component is drawn only once its
+  /// JSON closes — the same path a real stream takes, with no model or network.
+  private func play() {
+    streamTask?.cancel()
+    displayed = ""
+    isStreaming = true
+    streamTask = Task { @MainActor in
+      for end in stride(from: 10, through: Self.example.count + 9, by: 10) {
+        guard !Task.isCancelled else { return }
+        displayed = String(Self.example.prefix(end))
+        try? await Task.sleep(for: .milliseconds(60))
+      }
+      guard !Task.isCancelled else { return }
+      isStreaming = false
+    }
   }
 
   private static var example: String {

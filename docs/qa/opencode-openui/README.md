@@ -10,6 +10,7 @@
 - `comparison-dark.png` — 比較表 Dark
 - `comparison-light.png` — 比較表 Light
 - `comparison-large-text.png` — 比較表 最大文字サイズ（横スクロール）
+- `structured-streaming.png` — ストリーミング途中（完成した部品だけが順に表示される）
 
 根拠一覧・進捗（`資料・進捗の表示確認`、`AIInterfaceStructuredExampleView`）:
 
@@ -26,8 +27,8 @@
 
 未撮影:
 
-- ストリーミング途中（完成部品単位で表示されること）。`AIResponseText` の
-  ローカル再生で確認できるが、静的な画面では部分表示を残せない。
+- なし（比較表・根拠一覧・進捗・Row・ストリーミング途中を取得済み）。
+  実機での VoiceOver・IME・FPS は画面画像の対象外。
 
 元OSSの画面を比較に使う場合は、出典（OpenUI `8d9c4c3b…` の該当ストーリー）と
 比較条件を併記すること。Memora の架空データ画面だけを「OSS と一致確認済み」と
