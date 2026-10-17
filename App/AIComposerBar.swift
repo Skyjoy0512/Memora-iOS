@@ -9,6 +9,7 @@ struct AIComposerBar: View {
   @Binding var attachment: AIAttachment?
   var placeholder: String
   var isBusy = false
+  var onStop: (() -> Void)?
   /// Keeps the keyboard up after sending, so a chat can continue.
   var keepsFocusAfterSubmit = false
   /// Focuses the field when it appears, used when Ask AI opens to an empty chat.
@@ -283,10 +284,14 @@ struct AIComposerBar: View {
       InteractionFeedback.shared.send(.tap)
       onResearch?()
     })) {
-      ToolbarIconGlyph(icon: .magnifyingglass)
-        .frame(width: 44, height: 44)
-        .background(.primary.opacity(researchSelected ? 0.08 : 0), in: Circle())
-        .contentShape(Circle())
+      HStack(spacing: 5) {
+        ToolbarIconGlyph(icon: .magnifyingglass)
+        if researchSelected { Text("Web").font(.caption.weight(.medium)) }
+      }
+      .padding(.horizontal, researchSelected ? 10 : 0)
+      .frame(minWidth: 44, minHeight: 44)
+      .background(.primary.opacity(researchSelected ? 0.08 : 0), in: Capsule())
+      .contentShape(Capsule())
     }
     .toggleStyle(.button)
     .buttonStyle(.plain)
@@ -298,14 +303,15 @@ struct AIComposerBar: View {
 
   private var actionButton: some View {
     Button {
-      if canSend {
+      if let onStop { onStop() }
+      else if canSend {
         submit()
       } else if !isBusy {
         toggleSpeechInput()
       }
     } label: {
       Group {
-        if !canSend, !isBusy, !speechInput.isListening {
+        if onStop == nil, !canSend, !isBusy, !speechInput.isListening {
           ArtworkIcon(artwork: .voiceInput, size: 20)
         } else {
           Image(icon: actionSymbol)
@@ -322,16 +328,18 @@ struct AIComposerBar: View {
         .contentShape(Circle())
     }
     .buttonStyle(.plain)
-    .disabled(isBusy || (!canSend && model.isRecording))
+    .disabled(onStop == nil && (isBusy || (!canSend && model.isRecording)))
     .accessibilityLabel(actionLabel)
   }
 
   private var actionSymbol: MemoraIcon {
+    if onStop != nil { return .stopFill }
     if isBusy { return .ellipsis }
     return canSend ? .arrowUp : .waveform
   }
 
   private var actionLabel: String {
+    if onStop != nil { return "回答を停止" }
     if canSend { return "送信" }
     if model.isRecording { return "録音中は音声入力を使用できません" }
     return speechInput.isListening ? "音声入力を停止" : "音声で入力"
@@ -342,7 +350,7 @@ struct AIComposerBar: View {
   }
 
   private var canSend: Bool {
-    hasContent && !isBusy
+    hasContent && !isBusy && onStop == nil
   }
 
   private var importErrorPresented: Binding<Bool> {

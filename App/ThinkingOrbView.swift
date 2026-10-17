@@ -23,7 +23,7 @@ struct ThinkingOrbView: View {
   private func orb(at time: TimeInterval) -> some View {
     Canvas { context, canvasSize in
       let center = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
-      let palette: [Color] = [.cyan, .blue, .indigo, .purple, .pink, .orange, .mint, .blue, .purple]
+      let palette: [Color] = [.primary, .secondary, .primary, .secondary, .primary, .secondary, .primary, .secondary, .primary]
 
       context.addFilter(.blur(radius: size * 0.055))
       for index in 0..<9 {

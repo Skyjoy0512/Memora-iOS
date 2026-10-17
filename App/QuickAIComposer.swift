@@ -37,6 +37,7 @@ struct QuickAIComposer: View {
       attachment: Binding(get: { model.composerAttachment }, set: { model.composerAttachment = $0 }),
       placeholder: placeholder,
       isBusy: isPreparingAttachment || model.activeProjectChatID.map { model.projectChatBusyIDs.contains($0) } == true,
+      onStop: scope == .global && model.isAIChatResponding ? { model.stopAIChat() } : nil,
       keepsFocusAfterSubmit: keepsFocusAfterSubmit,
       autofocus: autofocus,
       acceptsExternalFocusRequest: model.selectedTab == .askAI && scope == .global,

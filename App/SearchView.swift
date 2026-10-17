@@ -104,22 +104,6 @@ struct SearchView: View {
         dismissKeyboard()
         scrollToLatest(proxy)
       }
-      .overlay(alignment: .bottom) {
-        if model.isAIChatResponding {
-          // Stopping is offered where the answer is being written.
-          Button("停止", icon: .stopFill) {
-            model.stopAIChat()
-          }
-          .font(.subheadline.weight(.semibold))
-          .foregroundStyle(.primary)
-          .padding(.horizontal, 16)
-          .padding(.vertical, 9)
-          .memoraGlass(in: Capsule(), interactive: true)
-          .padding(.bottom, model.bottomContentClearance)
-          .transition(.opacity.combined(with: .scale(scale: 0.9)))
-          .accessibilityLabel("回答を停止")
-        }
-      }
     }
   }
 
