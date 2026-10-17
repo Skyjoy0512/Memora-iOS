@@ -9,6 +9,7 @@ struct OpenUINativePolishChecks {
     tableLayout()
     taskProgressSummary()
     sourceListRows()
+    evidenceResolution()
     schema()
     streaming()
     print("OpenUINativePolishChecks: passed (comparison-table widths incl. large text/long cells/invalid viewports, task progress counts from tasks only, source rows resolved from stored sources with availability, ComparisonTable evidence reference accepted and still bounded, live component streaming)")
@@ -90,6 +91,23 @@ struct OpenUINativePolishChecks {
     precondition(blank.isEmpty)
     let none = AIInterfaceSourceListModel.rows(items: items, sources: [:], isAvailable: { _ in true })
     precondition(none.isEmpty)
+  }
+
+  // MARK: Evidence resolution
+
+  static func evidenceResolution() {
+    let id = UUID()
+    precondition(AIInterfaceEvidence.target(for: id, isPermitted: { _ in true }) == .meeting(id),
+      "A meeting is the first choice")
+    precondition(AIInterfaceEvidence.target(for: id, isPermitted: { $0 == .document(id) }) == .document(id))
+    precondition(AIInterfaceEvidence.target(for: id, isPermitted: { $0 == .project(id) }) == .project(id))
+    // A deleted record, a revoked permission or a workspace switch permits none.
+    precondition(AIInterfaceEvidence.target(for: id, isPermitted: { _ in false }) == nil)
+    let other = UUID()
+    let targets = AIInterfaceEvidence.targets(for: [id, other, id],
+      isPermitted: { $0 == .meeting(id) })
+    precondition(targets.count == 1 && targets[id] == .meeting(id),
+      "Unknown IDs are dropped and duplicates collapse")
   }
 
   // MARK: Display schema

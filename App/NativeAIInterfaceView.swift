@@ -138,16 +138,9 @@ struct NativeAIInterfaceView: View {
   /// leaves the row without a link.
   private func evidenceTargets(_ component: NativeAIInterface.Component, messageID: UUID?) -> [UUID: AIInterfaceReferenceTarget] {
     guard let messageID else { return [:] }
-    var targets: [UUID: AIInterfaceReferenceTarget] = [:]
-    for id in Set(component.items.compactMap(\.referenceID)) {
-      for target: AIInterfaceReferenceTarget in [.meeting(id), .document(id), .project(id)] {
-        if model.canOpenInterfaceReference(target, messageID: messageID) {
-          targets[id] = target
-          break
-        }
-      }
+    return AIInterfaceEvidence.targets(for: component.items.compactMap(\.referenceID)) { target in
+      model.canOpenInterfaceReference(target, messageID: messageID)
     }
-    return targets
   }
 
   private var unavailable: some View {

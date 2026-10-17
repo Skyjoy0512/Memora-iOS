@@ -23,6 +23,7 @@
 - `App/AIInterfaceSourceList.swift` — 根拠一覧ビュー
 - `App/AIInterfaceSourceListModel.swift` — 根拠行の解決（純粋関数）
 - `App/AIInterfaceSourceRow.swift` — 根拠行の値型
+- `App/AIInterfaceEvidence.swift` — 比較表の行リンク先の解決（純粋関数）
 - `App/AIInterfaceTaskProgressSummary.swift` — 進捗集計（純粋関数）
 - `tools/checks/OpenUINativePolishChecks.swift`
 - `tools/checks/run-openui-native-polish-checks.sh`
@@ -44,6 +45,8 @@
 - 横スクロール・テキスト選択を維持。VoiceOver は「比較表。横にスクロールできます」。
 - 根拠がある行だけ `referenceID` を付けられ、現在も許可された記録にだけ
   「根拠を開く」リンクが出る。無い／失効した ID はリンクなしで本文だけ表示。
+  リンク先は会議→資料→案件の順に、モデルの `canOpenInterfaceReference` で
+  実行時に解決する（`AIInterfaceEvidence`）。
 
 ### SourceList
 
@@ -99,7 +102,8 @@
 - `bash tools/checks/run-openui-native-polish-checks.sh` → 成功。
   比較表の列幅（短文で全幅・長文で配分・拡大文字でスクロール・0/負/NaN/∞ の幅・
   巨大セルの上限・空見出し・多列）、TaskProgress 集計（空・一部・全部）、
-  根拠行の解決（実在／失効／欠落／空タイトル）、スキーマ（比較表の `referenceID` 許可、
+  根拠行の解決（実在／失効／欠落／空タイトル）、比較表の根拠リンク先の解決
+  （会議優先・資料・案件・すべて不許可・未知 ID の除外）、スキーマ（比較表の `referenceID` 許可、
   列数不一致・action・value・不正 UUID の拒否、TaskProgress の重複 ID 拒否）、
   完成部品単位のストリーミング。
 - `bash tools/checks/run-openui-native-polish-checks.sh` の第2段 → 成功。
@@ -130,6 +134,9 @@
 - 比較表の行 `referenceID` は、モデルが実在 UUID を付けた場合のみリンクになる。
   実サービスでの生成品質（正しい UUID を付けるか）は未検証。
 - SourceList の補足行（`item.detail`）はモデル記述であり、記録本文からの引用ではない。
+- 読み取り専用の Row/Column の追加配置は見送った。既存3部品の改善で要件を満たし、
+  「不要なカード・フォーム・装飾を増やさない」方針に沿うため（Disclosure は既存 kind
+  として存在し、そのまま使える）。必要になれば限定スキーマで追加できる。
 
 ## 統合担当が接続・確認すべき箇所
 

@@ -9,7 +9,8 @@ trap 'rm -rf "$check_dir"' EXIT
 #    streaming validator, compiled and run as a normal macOS executable.
 swiftc App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift \
   App/AIInterfaceTableLayout.swift App/AIInterfaceTaskProgressSummary.swift App/AIInterfaceSourceRow.swift \
-  App/AIInterfaceSourceListModel.swift App/AIChatSource.swift App/MemoraTask.swift App/TaskProgress.swift \
+  App/AIInterfaceSourceListModel.swift App/AIInterfaceEvidence.swift App/AIInterfaceReferenceTarget.swift \
+  App/AIChatSource.swift App/MemoraTask.swift App/TaskProgress.swift \
   App/TaskRelationships.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
   tools/checks/OpenUINativePolishChecks.swift -o "$check_dir/polish"
 "$check_dir/polish"
@@ -54,7 +55,7 @@ swiftc -typecheck -swift-version 6 -sdk "$sdk" -target arm64-apple-ios26.0-simul
   App/AIChatSource.swift App/MemoraTask.swift App/TaskProgress.swift App/TaskRelationships.swift \
   App/RecordPrivacy.swift App/SummarySensitivity.swift App/AIInterfaceTableLayout.swift \
   App/AIInterfaceTaskProgressSummary.swift App/AIInterfaceSourceRow.swift App/AIInterfaceSourceListModel.swift \
-  App/AIInterfaceReferenceTarget.swift App/MemoraPalette.swift \
+  App/AIInterfaceEvidence.swift App/AIInterfaceReferenceTarget.swift App/MemoraPalette.swift \
   App/AIInterfaceComparisonTable.swift App/AIInterfaceSourceList.swift App/AIInterfaceTaskProgress.swift \
   "$check_dir/OpenUINativePolishViewStubs.swift"
 echo "OpenUINativePolishViewTypeCheck: passed (views compile against the iOS SDK; icon/destination stubs only)"
