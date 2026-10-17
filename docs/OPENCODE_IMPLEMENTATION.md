@@ -479,3 +479,22 @@
 末尾検索で見つかった不具合を修正。21 hostスイート、Simulatorの自己チェック、
 Bitrig build成功。実BYOKの往復・権限変更・停止、承認付き変更、永続実行履歴／
 再開は未確認または未実装。現況・証拠・残課題は[NEXT_GENERATION_AI.md](NEXT_GENERATION_AI.md)。
+
+## 2026-10-17 e2e（シミュレータUIテスト）
+
+`tester-army/e2e`（Apache-2.0）を開発用ツールとして追加した。アプリ本体・
+Project.json は変更していない。設定は `e2e.config.ts`、テストは `tests/`。
+
+- 対象: iOS シミュレータ（`mobile({ platform: 'ios', device: 'iPhone 18 Pro Max' })`）。
+  `device` を指定しないと接続中の実機（Ken's iPhone）を掴むため、必ず指定する。
+- アプリ: `app.bundleId` は Bitrig 生成の `app.bitrig.new.811eee03-…`、`appPath` は
+  Debug の `Memora.app`。各テストの先頭で `device.installApp()` を呼ぶ。
+- モデル: agent ステップは `@ai-sdk/deepseek` の `deepseek-chat`。`DEEPSEEK_API_KEY` は
+  環境変数からのみ読み、リポジトリには保存しない。モデル不要のロケーター/アサーション
+  テストはキーなしで動く。
+- 実行: `E2E_TELEMETRY_DISABLED=1 npx e2e run`（テレメトリーは無効化）。
+- 検証済み: `tests/memora.e2e.ts` の3件（起動表示・サイドメニュー・agent による
+  構造化回答の表示確認）が iPhone 18 Pro Max シミュレータで成功。
+- 制約: VoiceOverの読み上げ・日本語IME・実機のFPS/メモリは対象外。実プロバイダーの
+  ストリーミングE2Eは別途実キーが必要。エージェントの行動はキャッシュされる。
+- 注意: `DEEPSEEK_API_KEY` はチャットで共有されたため、利用後に無効化・再発行すること。
