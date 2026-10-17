@@ -66,6 +66,13 @@ UI設計の参考として独自Swift実装を既存viewへ追加する。新規
 調査時点でリポジトリ内LICENSE/COPYINGファイルとpackage license fieldが見つからない。
 OpenUI本体のMITをこのdemoへ拡張しない。コード/画像/プロンプト例を転載しない。
 
+ライセンス再確認（2026-10-17、`main` 現行ソース）: `LICENSE` は404、`package.json` は
+`"private": true` で `license` フィールドなし、GitHubのファイル一覧にもライセンス表示なし。
+現行でも再利用許諾は確認できないため、コード・画像・プロンプトの取り込み対象にしない。
+同時に再確認した OpenUI 本体の `LICENSE`（MIT, `Copyright (c) 2011-2024 Thesys Inc.`）と
+chatgpt-ios-ui の `LICENSE`（MIT, `Copyright (c) 2026 Bryan Ramirez-Gonzalez and contributors`）
+は現行でも有効で、ソースコードの利用は可能（素材・フォントは別条件）。
+
 README、package.json、src/lib/library.ts、layout/controls/media/chart、actions.ts、chat-storage、
 api/chat、scripts/benchを確認。Node24/Next16/React19、OpenUI Lang1.0、Zod、KaTeX、
 Lucide React、MapLibre、PostHog、OpenAI SDKなどが依存。サーバーと外部APIが必要な機能を持つ。
