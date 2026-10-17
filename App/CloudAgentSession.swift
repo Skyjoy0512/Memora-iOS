@@ -11,6 +11,9 @@ final class CloudAgentSession {
   /// Fixed for the session, so the model sees the same tools on every turn.
   private let tools: [AgentTool]
   private let toolDescriptions: [AgentTool: String]
+  /// A copied configuration lets offline checks intercept every request without
+  /// replacing the production request builder, stream reader or turn decoder.
+  private let sessionConfiguration: URLSessionConfiguration
   /// Tools from connected MCP servers, loaded before the first turn.
   var externalTools: [MCPTool] = []
   private var messages: [[String: Any]] = []
@@ -19,7 +22,7 @@ final class CloudAgentSession {
   /// Returns nil when there is no key for the provider; the caller says so.
   /// `tools` narrows what the model is offered; resident agents get only the
   /// reading tools.
-  init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil, toolDescriptions: [AgentTool: String] = [:], runBudget: AgentRunBudget? = nil) {
+  init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil, toolDescriptions: [AgentTool: String] = [:], runBudget: AgentRunBudget? = nil, sessionConfiguration: URLSessionConfiguration = .ephemeral) {
     guard llm.supportsToolCalling, let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return nil
     }
@@ -28,6 +31,8 @@ final class CloudAgentSession {
     self.system = system
     self.tools = tools ?? AgentTool.offered
     self.toolDescriptions = toolDescriptions
+    self.sessionConfiguration = (sessionConfiguration.copy() as? URLSessionConfiguration) ?? .ephemeral
+    self.sessionConfiguration.timeoutIntervalForResource = 600
     self.runBudget = runBudget ?? AgentRunBudget()
   }
 
@@ -79,9 +84,7 @@ final class CloudAgentSession {
   }
 
   private func boundedResponse(for request: URLRequest) async throws -> [String: Any] {
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.timeoutIntervalForResource = 600
-    let session = URLSession(configuration: configuration)
+    let session = URLSession(configuration: sessionConfiguration)
     defer { session.invalidateAndCancel() }
     let (bytes, response) = try await session.bytes(for: request)
     try CloudAIService.validate(response)
@@ -145,7 +148,7 @@ final class CloudAgentSession {
     try runBudget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]
     if let onText {
-      decoded = try await CloudTurnStreaming.response(for: request, provider: .anthropic, onText: onText)
+      decoded = try await CloudTurnStreaming.response(for: request, provider: .anthropic, onText: onText, sessionConfiguration: sessionConfiguration)
     } else {
       decoded = try await boundedResponse(for: request)
     }
@@ -199,7 +202,7 @@ final class CloudAgentSession {
     try runBudget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]
     if let onText {
-      decoded = try await CloudTurnStreaming.response(for: request, provider: .chatCompletions, onText: onText)
+      decoded = try await CloudTurnStreaming.response(for: request, provider: .chatCompletions, onText: onText, sessionConfiguration: sessionConfiguration)
     } else {
       decoded = try await boundedResponse(for: request)
     }

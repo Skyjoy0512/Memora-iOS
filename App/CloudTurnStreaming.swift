@@ -3,16 +3,16 @@ import Foundation
 enum CloudTurnStreaming {
   @MainActor
   static func response(for original: URLRequest, provider: CloudStreamAccumulator.Provider,
-                       onText: @escaping @MainActor (String) -> Void) async throws -> [String: Any] {
+                       onText: @escaping @MainActor (String) -> Void,
+                       sessionConfiguration: URLSessionConfiguration = .ephemeral) async throws -> [String: Any] {
     var request = original
     guard let data = request.httpBody,
           var body = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
     body["stream"] = true
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.timeoutIntervalForResource = 600
-    let session = URLSession(configuration: configuration)
+    sessionConfiguration.timeoutIntervalForResource = 600
+    let session = URLSession(configuration: sessionConfiguration)
     defer { session.invalidateAndCancel() }
     let (bytes, response) = try await session.bytes(for: request)
     try CloudAIService.validate(response)

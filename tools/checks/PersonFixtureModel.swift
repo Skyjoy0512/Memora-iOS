@@ -38,6 +38,9 @@ import Foundation
   var approvalAction: (() async -> Void)?
   var approves = true
   var pluginPermitted = true
+  #if CLOUD_SESSION_CHECKS
+  var fixtureRegistry = AIToolRegistry()
+  #endif
   #endif
   #if PERSON_PROVENANCE_CHECKS
   var isAIMemoryEnabled = true
@@ -86,6 +89,7 @@ struct FixtureProfile { var name: String; var displayName: String { name } }
 }
 @MainActor enum TaskReminderScheduler { static func refresh(_ task: MemoraTask) {}; static func cancel(taskID: UUID) {} }
 enum SummaryResponseParser { static func taskKey(_ value: String) -> String { value } }
+#if !CLOUD_SESSION_CHECKS
 enum AgentTool: String {
   case readPerson = "read_person", searchRecords = "search_records", readRecord = "read_record"
   case listProjects = "list_projects", listTasks = "list_tasks", reviewPeriod = "review_period"
@@ -94,6 +98,7 @@ enum AgentTool: String {
   var icon: MemoraIcon { .person2 }
 }
 extension AgentToolCall { var tool: AgentTool? { AgentTool(rawValue: name) } }
+#endif
 struct FixtureMessage {
   #if PERSON_PROVENANCE_CHECKS
   var id = UUID()
@@ -152,7 +157,13 @@ extension MemoraModel {
   enum FixtureEvidence { case document(UUID) }
   func invalidateProjectEvidence(_ evidence: [FixtureEvidence]) {}
   static let declinedOutcome = AgentToolOutcome(text: "declined")
-  func pluginCallIsPermitted(_ call: AgentToolCall, messageID: UUID) -> Bool { pluginPermitted }
+  func pluginCallIsPermitted(_ call: AgentToolCall, messageID: UUID) -> Bool {
+    #if CLOUD_SESSION_CHECKS
+    return pluginPermitted && fixtureRegistry.permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID])
+    #else
+    return pluginPermitted
+    #endif
+  }
   func approve(tool: AgentTool, title: String, lines: [String], confirmTitle: String, messageID: UUID) async -> UUID? {
     await approvalAction?()
     return approves ? UUID() : nil

@@ -715,3 +715,15 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 - 残る: 個別の変更前画像、実VoiceOver/大量資料/長い会話/狭い端末、実BYOK/認証E2E、
   backup実復元、App Group/実機Widget/Release性能。
 - 詳細は[導線改善記録](PROJECT_WORKSPACE_UX.md)・[品質改善記録](QUALITY_IMPROVEMENT.md)。
+
+## 2026-10-17 — Ask AI通信モックの統合検証
+
+- GitHub mainへ `13af297` まで反映。以後の継続変更と公開済みの範囲を区別する。
+- 本番CloudAgentSession→URLSession/JSON/SSE→registry/policy→会話ループ→人物参照→
+  承認→下書き保存→SQLite再読込を、外部接続しないfixtureで検査する。
+- 承認待ち/モデル待ちの失効・選択解除・編集・workspace変更、不完全tool call、
+  replay、HTTPエラー、使用量不明時の予算を含む。
+- P0残件: episode/task照合、会社書式の実出力、Research、実composerの選択からの
+  A〜E全経路、出典/バックアップUI、実機VoiceOver/大量データ/メモリ・消費電力。
+- 実接続OAuth/Gmail Drafts、根拠との意味的一致、複雑なOffice描画は未検証/未接続のまま。
+- 本番コード/fixtureの区分とA〜Eの対応は[通信モック検証](ASK_AI_CLOUD_SESSION_CHECKS.md)。

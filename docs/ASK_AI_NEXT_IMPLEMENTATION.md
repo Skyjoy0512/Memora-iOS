@@ -595,3 +595,11 @@ PDF変換は未対応表示にし、標準資料の既存PDFは維持。本文�
 既存の会議番号引用とWeb引用を維持し、メール本文から内部マーカーを除く。
 本番会話ループ・人物読取・資料/下書き保存と隔離SQLiteで、モックの一連の流れと途中失効を検証する。
 全シナリオの外部接続E2E、記述と根拠の一致、実機確認は残る。
+
+## 継続実装: 通信形式を含むオフライン統合検証
+
+[検証の詳細とA〜Eの対応](ASK_AI_CLOUD_SESSION_CHECKS.md)。本番CloudAgentSessionと
+URLSession/JSON/SSEを、実registry/policy・会話ループ・人物参照・下書き保存・SQLite再読込へ接続する。
+OpenAI互換/Anthropic、承認中の解除、通信待ちの権限失効/編集/workspace変更、
+不完全な呼出し/再実行/予算/HTTPエラーを外部通信なしで検査する。
+会社書式・Research・episode検索・実composerの選択を含む全A〜Eの完了とは区別する。

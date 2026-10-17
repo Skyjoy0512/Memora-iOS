@@ -60,3 +60,4 @@ swiftc Shared/MemoraAppLink.swift Shared/MemoraWidgetSnapshot.swift Shared/Memor
 "$check_dir/system" "$check_dir"
 TMPDIR="$check_dir/" bash tools/checks/run-ask-ai-plugin-checks.sh
 bash tools/checks/run-memory-artifact-checks.sh
+bash tools/checks/run-cloud-session-checks.sh
