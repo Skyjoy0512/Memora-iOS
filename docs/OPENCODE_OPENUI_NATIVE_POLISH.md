@@ -134,8 +134,20 @@
 
 比較表の見出し（secondary・semibold・下罫線）、行ごとの区切り、最大文字サイズでの
 横スクロールを実機シミュレータ（iPhone 18 Pro Max / iOS 27.1）で確認した。
-`NativeAIInterfaceExampleView` は ComparisonTable・Chart・Timeline だけを持つため、
-SourceList・TaskProgress はこの画面では表示できない（下記「未実装・未検証事項」）。
+Row（`NativeAIInterfaceExampleView` の2つのグラフ横並び）も同画面で確認した。
+
+根拠一覧・進捗は、統合後に追加した Debug 用の架空データ画面
+（設定 › プロトタイプ › 状態と復旧UIを確認 › 資料・進捗の表示確認、
+`AIInterfaceStructuredExampleView`）で撮影した。
+
+- [根拠一覧 Dark](qa/opencode-openui/source-list-dark.png) /
+  [Light](qa/opencode-openui/source-list-light.png)
+- [進捗 Dark](qa/opencode-openui/task-progress-dark.png) /
+  [内訳を展開](qa/opencode-openui/task-progress-dark-expanded.png)
+
+根拠一覧は通常・失効/削除を含む（「ほかN件…」）・参照できる資料なし（空状態）、
+進捗は一部完了（内訳あり）・全完了・1件のみを確認した。
+進捗の Light・最大文字サイズ・Reduce Motion と、ストリーミング途中の画面は未撮影。
 
 ## 未実装・未検証事項
 
@@ -151,9 +163,11 @@ SourceList・TaskProgress はこの画面では表示できない（下記「未
   型検査は行っておらず、`swiftc -parse` のみ。統合後のビルドで確認する。
   → 統合後の `bitrig preview` ビルドで確認済み。
 - 実機・シミュレータでの画面確認（Light / Dark / 大きい文字 / Reduce Motion）は未実施。
-  → 比較表は Light / Dark / 最大文字サイズをシミュレータで確認済み（上記スクリーンショット）。
-  SourceList・TaskProgress は架空データ画面（`NativeAIInterfaceExampleView`）に
-  含まれないため、シミュレータでの画面確認は未実施。TaskProgress の Reduce Motion も未確認。
+  → 比較表は Light / Dark / 最大文字サイズ、Row は Dark をシミュレータで確認済み。
+  SourceList・TaskProgress は統合後に追加した Debug 用の架空データ画面
+  （`AIInterfaceStructuredExampleView`、資料・進捗の表示確認）で確認済み
+  （根拠一覧 Light/Dark、進捗 Dark と内訳展開）。進捗の Light・最大文字サイズ・
+  Reduce Motion とストリーミング途中は未撮影。
 - VoiceOver の読み上げ、日本語 IME、実プロバイダーのストリーミング E2E は未検証。
 - 比較表の行 `referenceID` は、モデルが実在 UUID を付けた場合のみリンクになる。
   実サービスでの生成品質（正しい UUID を付けるか）は未検証。
