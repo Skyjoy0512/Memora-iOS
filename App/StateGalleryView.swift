@@ -7,6 +7,7 @@ struct StateGalleryView: View {
       #if DEBUG
       Section("表示（架空データ）") {
         NavigationLink("Ask AI 2.0（表示の確認）") { AskAIExperienceExampleView() }
+        NavigationLink("コンポーザー（操作の確認）") { AIComposerInteractionExampleView() }
         NavigationLink("Loading・本文表示を確認") { MotionLoadingGalleryView() }
         NavigationLink("資料・メールの出典表示を確認") { ArtifactSourcesExampleView() }
       }

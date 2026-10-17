@@ -123,7 +123,7 @@ assertionに成功。descriptorは32KiB、8部品まで。Markdownの既存incre
 
 ## 残件 / 次の改善
 
-- P0: 実iOS26端末/実機VoiceOverの読み順・発話、コンポーザー停止/IME/keyboardの実入力E2E、
+- P0: 実iOS26端末/実機VoiceOverの読み順・発話、日本語IMEの未確定入力、実provider停止のUI E2E、
   長い会話/大量recordでのFPS・memory・energy、録音/背景復帰の実機、実接続を含む全A〜E。
 - P1: 実カレンダーIDで根拠付けたCalendarPreview、typed sourceの専用preview、保存済みメール/資料の
   UIからの全経路、行ごとの根拠と生成数値の照合、確認付き長期memory更新、企業Officeの複雑な描画。
@@ -144,3 +144,30 @@ assertionに成功。descriptorは32KiB、8部品まで。Markdownの既存incre
   最後の部分表示は画像で検証した。アプリのクラッシュを示す証拠は得ていない。
   Shimmerの重ね文字をAXから外す変更はビルド済みだが、修正後のAX tree/実読み上げは再検証できていない。
 - 実機/実サービス/大規模データ・費用の確認は未検証のまま。
+
+### 継続検証 — 参照先の再確認とコンポーザー
+
+基点 `779b2c4`。構造化UIの資料・会議の遷移先とプロジェクトを開く操作で、
+現在の回答に宣言されたID・実在・workspaceを再照合する。資料のprovenanceが別workspaceや不正なら
+表示と遷移を拒否する。未接続teamの会話と同じworkspace文字列でも、個人SQLiteを参照させない。
+個人用の非公開記録をローカルで読む権利と、クラウド送信の権利は分けたままにする。
+
+- 本番の `canOpenInterfaceReference` をhost検証へ組み込み、同じ回答でもIDを取り消した場合、
+  削除、未知ID、別回答、復元/保護中、team一致、資料の別workspace、cloud失効を検証する。
+- Debugの「コンポーザー（操作の確認）」は本番AIComposerBarとネイティブTextField/入力監視を使う。
+  draft・架空の添付参照・送信受付/拒否・停止のcallbackと件数はview内だけに保持する。
+  モデルの会話や実APIへ送信しない。架空の添付ボタンはファイルを作成/読み込みしない。
+- iPhone 18 Pro Max / iOS27.1で送信試行3回（拒否2・受付1）、停止2回を操作。
+  停止と拒否で入力・添付が残り、受付時だけ空になる。英字の追加入力、キーボード上の停止切替、
+  Return経由の拒否、受付後のフォーカス維持も画像で確認した。
+- [停止後](qa/askai2/composer-stopped-draft.png)、[送信拒否後](qa/askai2/composer-rejected-draft.png)、
+  [キーボード表示](qa/askai2/composer-keyboard-draft.png)、[受付後](qa/askai2/composer-accepted-draft.png)。
+  終了後は元のHomeと `[@ジャーナル分析]` のdraftへ戻した。確認用draftは永続保存しない。
+- AX取得は引き続き失敗したため画像/座標で操作。日本語typeTextはunsupported characterとなり、
+  英字入力に切り替えた。既存の日本語draft表示と入力保持は確認したが、IME未確定文字/選択範囲、
+  VoiceOverの修正後読み上げは未検証。fixtureの停止callbackは実通信の停止E2Eではない。
+- 新規のOSS依存・素材・外部サービス・設定変更はない。ビルドとrunner結果は検証JSONの
+  `navigation_composer_followup` に記録する。
+- Debug preview / Release simulatorは両方成功。ログは `2026-10-17T13-06-58-511e0487.log` /
+  `2026-10-17T13-06-59-5ce5dc8c.log`。各11件の既存警告、エラーなし。
+  指定3runnerと拡張したartifact-provenance runner、JSON形式、diffの空白検査は成功。

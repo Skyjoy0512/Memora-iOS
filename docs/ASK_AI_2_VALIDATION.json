@@ -617,5 +617,344 @@
   ],
   "warnings": "11 each: metadata extraction skipped and iOS26 deprecations in existing Gmail/MCP auth browser and map/geocoding code. No compile/link errors.",
   "data_migrations": 0,
-  "external_ai_or_user_account_api_calls": 0
+  "external_ai_or_user_account_api_calls": 0,
+  "navigation_composer_followup": {
+    "baseline": "779b2c4",
+    "builds": {
+      "debug": {
+        "builds": [
+          {
+            "destination": "generic/platform=iOS Simulator",
+            "diagnostics": [
+              {
+                "classification": "warning",
+                "message": "2026-10-17 13:07:05.121 appintentsmetadataprocessor[99364:41949331] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/GmailService.swift",
+                "lineNumber": 322,
+                "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalMapSheet.swift",
+                "lineNumber": 25,
+                "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalMapSheet.swift",
+                "lineNumber": 25,
+                "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 54,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 55,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 59,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 12,
+                "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 12,
+                "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 33,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/MCPOAuthBrowser.swift",
+                "lineNumber": 71,
+                "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+              }
+            ],
+            "result": "succeeded",
+            "scheme": "Memora"
+          }
+        ],
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T13-06-58-511e0487.log",
+        "result": "success"
+      },
+      "release": {
+        "builds": [
+          {
+            "apps": [
+              "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/Apps/Release-iphonesimulator/Memora.app/1792210275162-D7D8B54E/Memora.app"
+            ],
+            "destination": "generic/platform=iOS Simulator",
+            "diagnostics": [
+              {
+                "classification": "warning",
+                "message": "2026-10-17 13:08:21.093 appintentsmetadataprocessor[1771:41965206] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/GmailService.swift",
+                "lineNumber": 322,
+                "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalMapSheet.swift",
+                "lineNumber": 25,
+                "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalMapSheet.swift",
+                "lineNumber": 25,
+                "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 54,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 55,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/JournalPlacePicker.swift",
+                "lineNumber": 59,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/MCPOAuthBrowser.swift",
+                "lineNumber": 71,
+                "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 12,
+                "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 12,
+                "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+              },
+              {
+                "classification": "warning",
+                "filePath": "App/PlaceNameResolver.swift",
+                "lineNumber": 33,
+                "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+              }
+            ],
+            "result": "succeeded",
+            "scheme": "Memora"
+          }
+        ],
+        "log": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-17T13-06-59-5ce5dc8c.log",
+        "result": "success"
+      }
+    },
+    "changes": [
+      "Production navigation rechecks declared typed reference, existence, personal workspace and document provenance at destination/tap time",
+      "Matching team message workspace cannot authorize reads from personal SQLite",
+      "Debug-only real AIComposerBar uses view-local draft/attachment and submission/stop spies"
+    ],
+    "checks": [
+      {
+        "command": "bash tools/checks/run-artifact-provenance-checks.sh",
+        "result": "passed",
+        "evidence": [
+          "Mock person-to-answer/document/mail scenario: passed (production loop/domain/builder/SQLite, mocked provider and approval/registry entry points, explicit duplicate person ID, typed citations, retained draft, mid-turn revoke; no network)",
+          "IntelligentUIContextChecks: passed (production context/mail/navigation gates and task dispatch entry, live membership/deletion, current workspace/restore/protected state, team-store isolation, foreign draft/document/message/UUID rejection, transient grants, revoked cloud context; dispatch spy never writes)",
+          "ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)"
+        ]
+      },
+      {
+        "command": "bash tools/checks/run-next-generation-checks.sh",
+        "result": "passed",
+        "evidence": [
+          "MemoryRetrievalChecks: passed (legacy, validity, conflict states, sensitivity, Japanese FTS5, scope, delete, 2000 items 0.04613792896270752s; no LLM quality claim)",
+          "PersonIdentityChecks: passed (same family, identical names, honorific, spaces, missing)",
+          "ProjectTaskListChecks: passed (all assignees, completion, current membership/move/removal, no global/orphan fallback; local fixture)",
+          "ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)",
+          "ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)",
+          "Project search fixture asOf=2026-10-15; IDs, text and gold labels are synthetic",
+          "release-date: top3=release gold=release sent=1",
+          "open-items: top3=open gold=open sent=1",
+          "owner-date: top3=actions,budget-old,budget-new gold=actions sent=4",
+          "budget-change: top3=budget-new,budget-old,actions gold=budget-old,budget-new sent=4",
+          "long-pdf: top3=contract gold=contract sent=1",
+          "local-transcription: top3=architecture,budget-old,budget-new gold=architecture sent=3",
+          "activity-compare: top3=september,october gold=september,october sent=2",
+          "recording-count: top3=october,actions,september gold=october sent=3",
+          "budget-paraphrase: top3=budget-new,budget-old,actions gold=budget-new sent=3",
+          "schedule-paraphrase: top3=actions,release,budget-new gold=actions sent=3",
+          "travel-date: top3=travel gold=travel sent=1",
+          "unanswerable: top3= gold= sent=0",
+          "MEASURE hit@1=11/11 recall@3=1.000 MRR=1.000 unrelated-sent=0.500 no-evidence-abstain=1/1 p50=1.59ms p95=21.51ms",
+          "ProjectSearchQualityChecks: passed (measured real FTS5 + context, long PDF/page evidence, scoped snapshots, update/delete/revoke invalidation; metrics are not LLM answer quality)",
+          "ProjectSourceAvailabilityChecks: passed (legacy codec, honest partial/missing states, unchanged privacy and evidence eligibility)",
+          "WebSourceChecks: passed (fixed public endpoint, redirect DNS, secret-free GET, split/chunked/bounded HTTP, nonexecuting HTML, entities, Unicode, cancellation; mock transport, no network)",
+          "OfficeDocumentChecks: passed (real stored/DEFLATE/descriptor OOXML, Japanese text, slide/sheet order, cached cells, strict namespace, bounds, cancellation, corrupt/hostile packages; no network)",
+          "AI conversation snapshot checks passed",
+          "AgentAttachmentChecks: passed (bounded prepared identity, untrusted JSON, operation intent, filename-only persistence, mock loop/declined approval; no network or records)",
+          "AgentTaskDraftChecks: passed (strict proposal parsing, editable fields, source/identity binding, selection, date/text/count bounds; no records)",
+          "ConversationScrollChecks: passed (stream growth, lazy layout, manual reading, simultaneous scroll/resize, new-answer reset, invalid geometry)",
+          "RelevantTextWindowChecks: passed (long Japanese/emoji passages, specific term selection, case-insensitive match, deterministic order, bounded/empty fallback)",
+          "AgentConversationLoopChecks: passed (mock turns, ordered real loop dispatch, revoke/cancel/empty/failure, bounded calls, replay rejection; no network)",
+          "ScopedAgentEvidenceChecks: passed (fixture scope/revoke rejection, stable citations, guessed/ambiguous IDs, source/text limits; no network)",
+          "AttachmentScopeChecks: passed (bounded UTF-8, malformed endings, local file isolation, cancellation, record/project/task boundaries, prepared identity)",
+          "ProjectSourceReadChecks: passed (real local evidence, async cancellation, byte limit, invalid/path/symlink/directory rejection)",
+          "ProjectChatHistoryChecks: passed (bounded complete turns, revoked evidence, legacy decoding, retained archive)",
+          "CloudStreamChecks: passed (split/interleaved tools, signatures, reasoning, termination, truncated/invalid/error/bounds rejection)",
+          "CloudAgentTurnChecks: passed (whole-batch validation, JSON fallback, completion reasons, malformed/missing arguments, IDs, bounds, valid empty object)",
+          "CloudSSETransportChecks: passed (actual bounded wire → event decoder → accumulator → turn decoder; incremental publication, LF/CRLF/CR, BOM/comments/multiline, EOF, truncated/invalid rejection; no network)",
+          "NativeAIInterfaceChecks: passed (typed components, Markdown fallback, incomplete input, unknown components/keys/actions, malformed IDs, bounds, table shape, duplicate identity)",
+          "DiscoverySkillChecks: passed (local relevance/order, availability/disable, schema budget, explicit selection, Markdown import/round-trip, disabled skills, untrusted/unknown/script metadata rejection)",
+          "ResidentLimitsChecks: passed (legacy decode, policy persistence, bounded requests/tools, whitelist cannot grant writes, notification setting)",
+          "SystemIntegrationChecks: passed (local destinations, malformed links, snapshot roundtrip, expiry, identity/date/count bounds, missing/corrupt/oversize files)",
+          "ComposerMentionChecks passed (parser, IME refusal, editing, draft IDs, tool/record restrictions)",
+          "PluginDispatchChecks passed (real registry dispatch, mock provider, scope/schema/identity/disable rejection; no network)",
+          "ToolIntegrationChecks: passed (schema, registry, disabled/unknown tools, SSE IDs/CRLF, legacy config, namespace/fingerprint)",
+          "AIWebSearchIntentChecks: passed (natural search, internal scope, negation, missing topic, follow-ups, explicit toggle)",
+          "AIConversationProvenanceChecks: passed (grant, revoke, edit, missing source, workspace, memory, limit, legacy)",
+          "MCPOAuthChecks: passed (endpoint/scope validation, identity binding, callback/CSRF duplicates, expiry, refresh rotation, privilege escalation, form encoding)",
+          "AI history search checks passed",
+          "AI journal privacy checks passed",
+          "RootNavigationChecks: passed (three tabs, legacy IDs, segment restoration, isolated stacks, recording destination, AI scopes)",
+          "RecordPrivacyChecks: passed (fail closed, one-shot consent, sticky classification, persistence)",
+          "PluginIconChecks: passed (distinct service symbols, fallback, 15 skills, stable icon/version roundtrip)",
+          "PersonSummaryChecks: passed (literal evidence changes, source IDs, unresolved, empty; no inference)",
+          "ResearchLoopChecks: passed (production iterative loop, bound/dedupe/error/partial/revoke/timeout/save failure/replay/empty/citations; draft persistence, unknown recipient, header injection; mocks only)",
+          "AgentSourceChecks: passed (production extension, individual grant, page/source provenance, selected IDs, workspace, revoke/edit during suspended read, automatic refusal; no files/network)",
+          "DocumentArtifactChecks: passed (real DOCX/PPTX, Japanese, tables, long flow, XML escaping, unchanged masters/styles/theme, split/overflow/corruption rejection, reload; final Office rendering unverified)",
+          "Local OOXML PoC docx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.",
+          "Local OOXML PoC pptx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.",
+          "BackupRestoreChecks: passed (production package/restore + real SQLite, new metadata/files roundtrip, legacy restore, duplicate documents, recipient limits, truncated/missing/oversize, traversal/symlinks, DB rollback, cancellation/gate, conflict preserves bytes, reopen; isolated fixtures only)",
+          "PersonTaskChecks host lookup: 500 people, 2000 tasks, 0.007534027099609375s (not physical-device performance)",
+          "PersonTaskChecks: passed (production task/people/scope/read_person + real SQLite; same-name IDs, legacy unconfirmed, privacy/revoke, reassignment, rename/merge rollback, tombstones, workspace, reopen; isolated fixtures only)",
+          "PersonJournalChecks: passed (production journal codec/mutations, person scope/read/search, privacy editor + real SQLite; legacy, same-name IDs, tombstones, grants, parent restrictions, revoke/edit/delete, typed UUID collision, merge rollback, reopen; isolated fixtures only)",
+          "PersonPrivacyChecks: passed (production person codec/privacy/read_person/provenance/authorization + real SQLite; private-by-default, exported fields only, grants/revoke/edit/delete/merge, duplicate identity, related ACLs, typed IDs, legacy/reopen, workspace/protected/restore, atomic failure; isolated fixtures, no API)",
+          "Mock person-to-answer/document/mail scenario: passed (production loop/domain/builder/SQLite, mocked provider and approval/registry entry points, explicit duplicate person ID, typed citations, retained draft, mid-turn revoke; no network)",
+          "IntelligentUIContextChecks: passed (production context/mail/navigation gates and task dispatch entry, live membership/deletion, current workspace/restore/protected state, team-store isolation, foreign draft/document/message/UUID rejection, transient grants, revoked cloud context; dispatch spy never writes)",
+          "ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)",
+          "InlineCitationChecks: passed (production parser/URL/legacy formatting/document builder/snapshot, typed UUID collisions, forged IDs and URL variants, unfinished stream markers, label escaping, saved links, bounded source sets, 5000 markers; no network)",
+          "CloudSessionChecks: passed (production CloudAgentSession + URLSession/JSON/SSE + registry/policy + conversation loop + person/mail/document/SQLite; both API formats, no network/keys/paid API)",
+          "IntelligentUIStreamingChecks: passed (complete component prefix, Japanese/escapes/nesting, stable IDs, append-only scan, replacement/final cache, unknown/duplicate/oversize rejection, live-ID progress/mail schemas, no arbitrary actions, old v1)",
+          "AgentActivitySummaryChecks: passed (actual event counts/state only, failure/decline/waiting, no reasoning input)",
+          "Host UI parse benchmark, 1000 identical settled renders: uncached=0.087923958 seconds, cached=9.2875e-05 seconds; 2 components, 371 UTF8 bytes; not device/FPS evidence"
+        ]
+      },
+      {
+        "command": "bash tools/checks/run-motion-loading-checks.sh",
+        "result": "passed",
+        "evidence": [
+          "Motion policy passed: immediate saved content; native tab and journal Hero retained",
+          "............",
+          "----------------------------------------------------------------------",
+          "Ran 12 tests in 0.024s",
+          "",
+          "OK",
+          "LoadingPolicyChecks: passed (50/200/2000/5000ms virtual clock, stale/overlap/cancel/retry, refresh keeps content, empty/failure, calendar day/settings identity)",
+          "ProjectSourceTextLoaderChecks: passed (real loader with suspended mock reads: overlap, immediate stop, late success/failure, retry, refresh, reference change, parent cancellation, nil/empty; no files or network)",
+          "ConversationScrollChecks: passed (stream growth, lazy layout, manual reading, simultaneous scroll/resize, new-answer reset, invalid geometry)",
+          "IncrementalMarkdownChecks: passed (1/7/37-scalar chunks, every live prefix matches final parser, stable settled blocks, no completion structure change, Japanese/combining/emoji/CRLF, headings/lists/quotes/tables/fences/links, replacement, no replay parse)",
+          "CatalogPresentationChecks: passed (honest Notion capabilities, unavailable Drive/GitHub, named project search)",
+          "AgentBudgetChecks: passed (16 requests, per/total bytes, exact deadline, negative/overflow rejection, no network or keys)",
+          "AgentGenerationChecks: passed (reviewed models only, custom/unknown compatibility, Sol/Luna tool parameters, streaming usage opt-in, 128k reservations, missing usage, refunds, remaining clamp, overflow/malformed counters, real loop stops before fifth dispatch or over-limit tools; no API/keys)",
+          "AgentRunBudgetChecks: passed (parent + 3 children share 16 requests/bytes/time/output, concurrent reservation identity/refunds, no overcommit, cancellation/late reply/tool stop, strict child completion; mocks only)",
+          "Agent interaction passed: approval/questions, cancellation, replacement, stale IDs, no writes after cancellation",
+          "ProjectChatExecutionChecks: passed (real lifecycle extension, workspace generations, late cleanup, immediate retry, saved-history preservation, cancellation, failed persistence; memory fixtures only)",
+          "ProjectChatDispatchChecks: passed (production send/cancel/delete + memory storage/model mocks, suspended retrieval, immediate resend, A-B-A, late callbacks/final/cleanup; no API, keys or files)"
+        ]
+      },
+      {
+        "command": "python3 tools/checks/run-optimization-checks.py",
+        "result": "passed",
+        "evidence": [
+          "ranking,100,median=0.701,p95=0.719,max=0.739",
+          "sections,100,median=0.362,p95=0.367,max=0.400",
+          "ranking,1000,median=6.781,p95=8.249,max=8.292",
+          "sections,1000,median=2.695,p95=2.749,max=2.759",
+          "CollectionPerformanceChecks: passed (0/1/100/1000, ordering, no-match fallback, loose/multiple tasks)",
+          "log-burst-100,median=4.680,p95=62.316,max=81.690,writes=21",
+          "PerformanceLogChecks: passed (capacity, stats, ordered reset, retry, snapshot round trip)",
+          "sqlite-batch,100,median=0.619,p95=3.435,max=3.826",
+          "sqlite-batch,1000,median=16.133,p95=19.359,max=22.750",
+          "LocalStoreChecks: passed (legacy bytes, atomic rollback, statement reuse after failure, ordered duplicate keys, removals, reopen)",
+          "ToolIntegrationChecks: passed (schema, registry, disabled/unknown tools, SSE IDs/CRLF, legacy config, namespace/fingerprint)",
+          "AIWebSearchIntentChecks: passed (natural search, internal scope, negation, missing topic, follow-ups, explicit toggle)",
+          "AIConversationProvenanceChecks: passed (grant, revoke, edit, missing source, workspace, memory, limit, legacy)",
+          "MCPOAuthChecks: passed (endpoint/scope validation, identity binding, callback/CSRF duplicates, expiry, refresh rotation, privilege escalation, form encoding)",
+          "ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)",
+          "ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)",
+          "ProjectChatHistoryChecks: passed (bounded complete turns, revoked evidence, legacy decoding, retained archive)",
+          "RecordStoreFailureChecks: passed (async rollback, concurrent one-shot failure, sync recovery)",
+          "Health review loader checks passed",
+          "ownership-before,1000,median=2.501,p95=2.597,max=2.613",
+          "ownership-batched,1000,median=0.407,p95=0.426,max=0.448",
+          "JournalPerformanceChecks: passed (ownership and profile name changes)",
+          "Journal activity days and task status checks passed",
+          "RecordPrivacyChecks: passed (fail closed, one-shot consent, sticky classification, persistence)",
+          "RootNavigationChecks: passed (three tabs, legacy IDs, segment restoration, isolated stacks, recording destination, AI scopes)",
+          "ProjectSourceFilesChecks: passed (bounded import, content fingerprint, path/symlink isolation, selective deletion)",
+          "id-lookup-linear,100,median=0.016,p95=0.016,max=0.019",
+          "id-lookup-indexed,100,median=0.016,p95=0.017,max=0.017",
+          "id-lookup-linear,1000,median=0.577,p95=0.914,max=0.954",
+          "id-lookup-indexed,1000,median=0.165,p95=0.168,max=0.169",
+          "SourceLookupChecks: passed (0/1/100/1000, current edited permissions, deletion, ordering, first duplicate)",
+          "StandaloneRecordPrivacyChecks: passed (legacy, grant, inheritance, orphan, parent floor, location denial)",
+          "ShareInboxChecks: passed (atomic publication, reopen, file bytes, interrupted drafts, unsafe paths, symlinks, scheme rejection, targeted cleanup)",
+          "Optimization checks: all passed"
+        ]
+      }
+    ],
+    "simulator": {
+      "device": "iPhone 18 Pro Max / iOS 27.1",
+      "verified": [
+        "Three submission callbacks: two rejected, one accepted; two stop callbacks",
+        "Stop/rejection retain view-local draft and fake attachment; accepted submission clears both",
+        "ASCII insertion into Japanese initial draft, keyboard-visible composer, Return rejection, keyboard-visible stop, accepted submission retains field focus",
+        "Original Home composer draft preserved and visible after leaving fixture; appearance/settings unchanged"
+      ],
+      "screenshots": [
+        "docs/qa/askai2/composer-accepted-draft.png",
+        "docs/qa/askai2/composer-keyboard-draft.png",
+        "docs/qa/askai2/composer-rejected-draft.png",
+        "docs/qa/askai2/composer-stopped-draft.png"
+      ],
+      "limitations": [
+        "AX reads still failed; used screenshot/coordinate fallback and stopped AX retries",
+        "typeText rejected Japanese character; no IME marked-text/selection or final VoiceOver verification",
+        "Fixture callbacks do not exercise real provider cancellation, permission UI or live API",
+        "No new device/FPS/memory/energy measurements; no real data, API keys or external requests used"
+      ]
+    },
+    "dependencies": "No copied third-party code/assets, new packages, project configuration changes or service costs"
+  }
 }

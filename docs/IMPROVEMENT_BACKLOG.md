@@ -738,3 +738,12 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 - 残件: 最終AX再取得、実機VoiceOver、iOS26実行/Swift6.2 compiler、
   実入力IME/停止E2E、大量会話のFPS/memory、実サービスA〜E、非推奨の認証/地図API移行。
 - 最新の実装・画像・性能の範囲は[Ask AI 2.0](ASK_AI_2_IMPLEMENTATION.md)。
+
+### Ask AI 2.0 継続 — 参照遷移 / 入力保持
+
+- 構造化UIから開く直前に、回答の資料/会議/project IDと実在・workspaceを再検証。
+  未接続teamから個人SQLiteを利用しない。hostで取消・削除・別回答・失効を検証。
+- 本番composer + view内callbackのDebug画面で停止2回、拒否2回、受付1回を操作。
+  拒否/停止はdraftと添付を保持、受付だけクリア。キーボード表示中の操作も画像確認。
+- P0残件は日本語IME未確定文字、AX取得の復旧とVoiceOver、実provider停止のUI E2E、
+  実機性能、実接続A〜E。モック操作を実APIの成功として扱わない。

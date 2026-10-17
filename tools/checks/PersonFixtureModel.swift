@@ -117,6 +117,7 @@ struct FixtureMessage {
   var isThinking = false
   #if INTELLIGENT_UI_CHECKS
   var finishedAt: Date?
+  var documentIDs: [UUID] = []
   #endif
   var cloudProvenance: AIConversationProvenance?
   var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?

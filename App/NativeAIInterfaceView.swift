@@ -47,7 +47,8 @@ struct NativeAIInterfaceView: View {
     case .documentCard:
       ForEach(component.items) { item in
         if let id = item.referenceID, let messageID, message?.documentIDs.contains(id) == true,
-           let document = model.document(id: id) {
+           let document = model.document(id: id),
+           document.provenance.map({ $0.isValid && $0.workspaceID == message?.interfaceWorkspaceID }) ?? true {
           NavigationLink {
             AIInterfaceReferenceDestination(messageID: messageID, target: .document(id))
           } label: {
@@ -60,7 +61,7 @@ struct NativeAIInterfaceView: View {
         if let id = item.referenceID, let messageID, message?.interfaceProjectIDs.contains(id) == true,
            let project = model.space(id: id) {
           Button(project.name, icon: .folder) {
-            guard model.canUseInterfaceContext(messageID: messageID) else { return }
+            guard model.canOpenInterfaceReference(.project(id), messageID: messageID) else { return }
             model.openProject(id)
           }
             .frame(minHeight: 44).multilineTextAlignment(.leading)
@@ -158,19 +159,18 @@ struct NativeAIInterfaceView: View {
 private struct AIInterfaceReferenceDestination: View {
   @Environment(MemoraModel.self) private var model
   var messageID: UUID
-  var target: Target
+  var target: AIInterfaceReferenceTarget
 
   var body: some View {
-    if model.canUseInterfaceContext(messageID: messageID) {
+    if model.canOpenInterfaceReference(target, messageID: messageID) {
       switch target {
       case .document(let id): DocumentDetailView(documentID: id)
       case .meeting(let id): MeetingDetailView(meetingID: id)
+      case .project: EmptyView()
       }
     } else {
       Text("この項目は現在参照できません。必要な情報を改めて依頼してください。")
         .font(.footnote).foregroundStyle(.secondary)
     }
   }
-
-  enum Target { case document(UUID), meeting(UUID) }
 }

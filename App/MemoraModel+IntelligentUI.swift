@@ -1,6 +1,20 @@
 import Foundation
 
 extension MemoraModel {
+  func canOpenInterfaceReference(_ target: AIInterfaceReferenceTarget, messageID: UUID) -> Bool {
+    guard canUseInterfaceContext(messageID: messageID), let message = agentMessage(messageID) else { return false }
+    switch target {
+    case .document(let id):
+      guard message.documentIDs.contains(id), let document = document(id: id) else { return false }
+      return document.provenance.map { $0.isValid && $0.workspaceID == currentTeamID } ?? true
+    case .meeting(let id):
+      return message.sources.contains { $0.meetingID == id }
+        && canOpenArtifactSource(.record(.meeting(id)), workspaceID: message.interfaceWorkspaceID)
+    case .project(let id):
+      return message.interfaceProjectIDs.contains(id) && space(id: id) != nil
+    }
+  }
+
   func interfaceMailDraft(_ id: UUID, messageID: UUID) -> MailDraft? {
     guard canUseInterfaceContext(messageID: messageID) else { return nil }
     return mailDrafts.first { $0.id == id && $0.sourceMessageID == messageID && $0.workspaceID == currentTeamID }
@@ -19,7 +33,8 @@ extension MemoraModel {
   }
 
   func canUseInterfaceContext(messageID: UUID) -> Bool {
-    guard !isRestoring, !isStoreProtected, let message = agentMessage(messageID),
+    // These IDs resolve in the personal SQLite store, never in an unconnected team backend.
+    guard currentTeamID == nil, !isRestoring, !isStoreProtected, let message = agentMessage(messageID),
           message.interfaceWorkspaceID == currentTeamID else { return false }
     return message.cloudProvenance == nil || isCloudSessionAuthorized(messageID)
   }
