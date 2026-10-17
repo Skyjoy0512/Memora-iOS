@@ -102,6 +102,10 @@
   根拠行の解決（実在／失効／欠落／空タイトル）、スキーマ（比較表の `referenceID` 許可、
   列数不一致・action・value・不正 UUID の拒否、TaskProgress の重複 ID 拒否）、
   完成部品単位のストリーミング。
+- `bash tools/checks/run-openui-native-polish-checks.sh` の第2段 → 成功。
+  新規 SwiftUI ビュー（比較表・根拠一覧・進捗）を実 iOS 27.1 SDK に対して
+  `swiftc -typecheck`。アイコン補助と遷移先だけ最小スタブ。**ビューが型検査を通ることの
+  確認であり、アプリのフルビルドや描画の確認ではない**（統合担当のビルドが最終判断）。
 - `bash tools/checks/run-intelligent-ui-checks.sh` → 成功（既存の回帰なし）。
 - `swiftc -parse`（新規・変更の Swift ファイル） → 構文成功。
 
@@ -117,6 +121,10 @@
   基準にプロジェクトを解決するため、この SSD worktree では Debug/Release ビルドと
   プレビューができない。統合担当に Debug / Release ビルドを依頼する。
   共有ツリーで動作中のプレビューは上書きしていない。
+  代わりに `run-openui-native-polish-checks.sh` が新規ビューを実 SDK で型検査するが、
+  これはスタブ併用のスモークテストであり、アプリ全体のリンクや実行時挙動は未確認。
+- `NativeAIInterfaceView.swift`（変更）は MemoraModel など多数に依存するため単体の
+  型検査は行っておらず、`swiftc -parse` のみ。統合後のビルドで確認する。
 - 実機・シミュレータでの画面確認（Light / Dark / 大きい文字 / Reduce Motion）は未実施。
 - VoiceOver の読み上げ、日本語 IME、実プロバイダーのストリーミング E2E は未検証。
 - 比較表の行 `referenceID` は、モデルが実在 UUID を付けた場合のみリンクになる。
