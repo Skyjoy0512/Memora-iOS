@@ -5,20 +5,27 @@ struct NativeAIInterfaceView: View {
   @Environment(MemoraModel.self) private var model
   var interface: NativeAIInterface
   var messageID: UUID?
+  var allowsInteractions = true
+  @State private var mailDraft: MailDraft?
 
   var body: some View {
-    let taskReferences = Set(interface.components.filter { $0.kind == .taskList || $0.kind == .actionBar }.flatMap { $0.items.compactMap(\.referenceID) })
+    let taskReferences = Set(interface.components.filter { $0.kind == .taskList || $0.kind == .actionBar || $0.kind == .taskProgress }.flatMap { $0.items.compactMap(\.referenceID) })
     let context = model.interfaceRenderContext(messageID: messageID, taskIDs: taskReferences)
     VStack(alignment: .leading, spacing: 24) {
       ForEach(interface.components) { component in
         VStack(alignment: .leading, spacing: 12) {
-          if let title = component.title, !title.isEmpty { Text(title).font(.headline) }
+          if component.kind != .disclosure, let title = component.title, !title.isEmpty { Text(title).font(.headline) }
           content(component, message: context.message, taskIDs: context.taskIDs, sources: context.sources)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+    .sheet(item: $mailDraft) { draft in
+      if let messageID, let current = model.interfaceMailDraft(draft.id, messageID: messageID) {
+        MailDraftSheet(draft: current) { mailDraft = nil }
+      } else { unavailable }
+    }
   }
 
   @ViewBuilder
@@ -32,7 +39,7 @@ struct NativeAIInterfaceView: View {
             Text(task.statusLabel).font(.caption).foregroundStyle(.secondary)
             if item.action == .completeTask, !task.isCompleted {
               Button("完了にする", icon: .checkmark) { model.completeInterfaceTask(id, messageID: messageID) }
-                .frame(minHeight: 44).disabled(model.isAIChatResponding)
+                .frame(minHeight: 44).disabled(!allowsInteractions || model.isAIChatResponding)
             }
           }
         } else { unavailable }
@@ -106,6 +113,37 @@ struct NativeAIInterfaceView: View {
       ForEach(component.items) { item in
         LabeledContent(item.title ?? "", value: (item.value ?? 0).formatted()).font(.caption)
       }
+    case .taskProgress:
+      let references = component.items.compactMap(\.referenceID)
+      let tasks = references.compactMap { model.task(id: $0) }
+      if Set(references).isSubset(of: taskIDs), tasks.count == references.count {
+        AIInterfaceTaskProgress(tasks: tasks)
+      } else { unavailable }
+    case .mailDraftCard:
+      ForEach(component.items) { item in
+        if let id = item.referenceID, let messageID, let draft = model.interfaceMailDraft(id, messageID: messageID) {
+          Button {
+            guard allowsInteractions, let current = model.interfaceMailDraft(id, messageID: messageID) else { return }
+            mailDraft = current
+          } label: {
+            VStack(alignment: .leading, spacing: 6) {
+              Label(draft.subject.isEmpty ? "メール下書き" : draft.subject, icon: .envelope).font(.subheadline.weight(.medium))
+              Text(draft.body).font(.footnote).foregroundStyle(.secondary).lineLimit(3)
+              Text(draft.recipients.isEmpty ? "宛先未設定 · 下書き" : "下書き · 編集して確認").font(.caption).foregroundStyle(.secondary)
+            }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+          }.buttonStyle(.plain).disabled(!allowsInteractions)
+        } else { unavailable }
+      }
+    case .disclosure:
+      DisclosureGroup(component.title ?? "補足") {
+        ForEach(component.items) { item in
+          VStack(alignment: .leading, spacing: 4) {
+            Text(item.title ?? "").font(.subheadline.weight(.medium))
+            if let detail = item.detail { Text(detail).font(.body).foregroundStyle(.secondary) }
+          }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 6)
+            .accessibilityElement(children: .combine).textSelection(.enabled)
+        }
+      }.tint(.primary)
     }
   }
 

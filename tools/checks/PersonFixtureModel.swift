@@ -38,6 +38,12 @@ import Foundation
   var approvalAction: (() async -> Void)?
   var approves = true
   var pluginPermitted = true
+  #if INTELLIGENT_UI_CHECKS
+  var isAIChatResponding = false
+  var aiChatRequestID: UUID?
+  var aiChatTask: Task<Void, Never>?
+  var interfaceCalls: [AgentToolCall] = []
+  #endif
   #if CLOUD_SESSION_CHECKS
   var fixtureRegistry = AIToolRegistry()
   #endif
@@ -95,6 +101,7 @@ enum AgentTool: String {
   case listProjects = "list_projects", listTasks = "list_tasks", reviewPeriod = "review_period"
   case fixtureUnsupported
   case draftEmail = "draft_email"
+  case updateTasks = "update_tasks"
   var icon: MemoraIcon { .person2 }
 }
 extension AgentToolCall { var tool: AgentTool? { AgentTool(rawValue: name) } }
@@ -108,6 +115,9 @@ struct FixtureMessage {
   var role = Role.assistant
   var text = ""
   var isThinking = false
+  #if INTELLIGENT_UI_CHECKS
+  var finishedAt: Date?
+  #endif
   var cloudProvenance: AIConversationProvenance?
   var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?
   var projectSourceReferences: [AgentSourceReference] = []
@@ -178,6 +188,9 @@ extension MemoraModel {
 #endif
 extension MemoraModel {
   func agentMessage(_ id: UUID) -> FixtureMessage? {
+    #if INTELLIGENT_UI_CHECKS
+    guard message.id == id else { return nil }
+    #endif
     #if ARTIFACT_PROVENANCE_CHECKS
     guard hasMessage else { return nil }
     #endif
@@ -185,5 +198,16 @@ extension MemoraModel {
   }
   func relatedEpisodeContext(for text: String, budget: Int, cloud: Bool) -> (text: String, references: [AIRecordReference]) { ("", []) }
   static func trailingHistory(_ text: String, budget: Int) -> String { String(text.suffix(budget)) }
+}
+#endif
+
+#if INTELLIGENT_UI_CHECKS
+extension MemoraModel {
+  // Capture the dispatch boundary; the existing task/registry runners verify
+  // approval and writes. This fixture cannot change any task or call an API.
+  func runAgentTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope, compact: Bool) async -> AgentToolOutcome {
+    interfaceCalls.append(call)
+    return AgentToolOutcome(text: "fixture dispatch")
+  }
 }
 #endif

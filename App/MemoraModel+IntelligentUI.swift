@@ -1,6 +1,11 @@
 import Foundation
 
 extension MemoraModel {
+  func interfaceMailDraft(_ id: UUID, messageID: UUID) -> MailDraft? {
+    guard canUseInterfaceContext(messageID: messageID) else { return nil }
+    return mailDrafts.first { $0.id == id && $0.sourceMessageID == messageID && $0.workspaceID == currentTeamID }
+  }
+
   func interfaceRenderContext(messageID: UUID?, taskIDs: Set<UUID>) -> (message: AIChatMessage?, taskIDs: Set<UUID>, sources: [UUID: AIChatSource]) {
     guard let messageID, canUseInterfaceContext(messageID: messageID), let message = agentMessage(messageID) else {
       return (nil, [], [:])

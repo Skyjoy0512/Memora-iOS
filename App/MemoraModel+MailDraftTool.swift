@@ -47,6 +47,6 @@ extension MemoraModel {
     }
     pendingMailDraft = draft
     finishAgentStep(stepID, on: messageID, state: .done, detail: subject)
-    return AgentToolOutcome(text: "下書きを開きました。送信するかどうかは利用者が決めます。")
+    return AgentToolOutcome(text: "下書きを端末に保存して開きました。下書きid=\(draft.id.uuidString)。送信するかどうかは利用者が決めます。")
   }
 }

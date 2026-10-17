@@ -8,6 +8,7 @@ struct NativeAIInterface: Codable, Equatable {
     case taskList = "TaskList", documentCard = "DocumentCard", projectCard = "ProjectCard"
     case sourceList = "SourceList", comparisonTable = "ComparisonTable"
     case timeline = "Timeline", chart = "Chart", actionBar = "ActionBar"
+    case taskProgress = "TaskProgress", mailDraftCard = "MailDraftCard", disclosure = "Disclosure"
   }
 
   struct Component: Codable, Equatable, Identifiable {
@@ -40,7 +41,7 @@ struct NativeAIInterface: Codable, Equatable {
       guard Set(component.items.map(\.id)).count == component.items.count else { return nil }
       for item in component.items {
         switch component.kind {
-        case .taskList, .documentCard, .projectCard, .sourceList, .actionBar:
+        case .taskList, .documentCard, .projectCard, .sourceList, .actionBar, .taskProgress, .mailDraftCard:
           guard item.referenceID != nil, item.cells == nil, item.value == nil else { return nil }
           if component.kind == .actionBar, item.action != .completeTask { return nil }
         case .comparisonTable:
@@ -49,12 +50,15 @@ struct NativeAIInterface: Codable, Equatable {
         case .chart:
           guard let value = item.value, value.isFinite, item.title?.isEmpty == false,
                 item.action == nil, item.referenceID == nil, item.cells == nil else { return nil }
-        case .timeline:
+        case .timeline, .disclosure:
           guard item.title?.isEmpty == false, item.action == nil, item.referenceID == nil, item.value == nil, item.cells == nil else { return nil }
         }
         if item.action != nil, component.kind != .taskList && component.kind != .actionBar { return nil }
       }
       if component.kind != .comparisonTable, component.columns != nil { return nil }
+      if component.kind == .disclosure, component.title?.isEmpty != false { return nil }
+      if component.kind == .taskProgress || component.kind == .mailDraftCard,
+         Set(component.items.compactMap(\.referenceID)).count != component.items.count { return nil }
     }
     return ui
   }
@@ -62,6 +66,11 @@ struct NativeAIInterface: Codable, Equatable {
   /// One optional interface follows a complete Markdown answer. The text is
   /// still useful when the interface is invalid or the history is read elsewhere.
   static func response(_ text: String, isStreaming: Bool = false) -> (markdown: String, interface: Self?) {
+    var stream = NativeAIComponentStream()
+    return response(text, isStreaming: isStreaming, stream: &stream)
+  }
+
+  static func response(_ text: String, isStreaming: Bool, stream: inout NativeAIComponentStream) -> (markdown: String, interface: Self?) {
     let marker = "```memora-ui"
     guard let start = text.range(of: marker) else {
       if isStreaming {
@@ -76,7 +85,14 @@ struct NativeAIInterface: Codable, Equatable {
     let markdown = String(text[..<start.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
     let suffix = text[start.upperBound...]
     let fallback = markdown.isEmpty && !isStreaming ? "構造化表示を読み込めませんでした。もう一度回答を依頼してください。" : markdown
-    guard !isStreaming, let end = suffix.range(of: "```"), suffix[end.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return (fallback, nil) }
+    if isStreaming {
+      if let end = suffix.range(of: "```") {
+        guard suffix[end.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return (fallback, nil) }
+        return (markdown, stream.update(String(suffix[..<end.lowerBound])))
+      }
+      return (markdown, stream.update(String(suffix)))
+    }
+    guard let end = suffix.range(of: "```"), suffix[end.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return (fallback, nil) }
     guard let interface = decode(String(suffix[..<end.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)) else { return (fallback, nil) }
     return (markdown, interface)
   }
@@ -85,7 +101,8 @@ struct NativeAIInterface: Codable, Equatable {
     """
     通常はMarkdownだけで答える。操作・比較・日程の表示が明確に役立つ場合だけ、完全なMarkdown回答の末尾に1つの```memora-ui JSONブロックを付けてよい。
     形式: {"version":1,"components":[{"id":"unique","kind":"TaskList","title":"今週のタスク","items":[{"id":"unique-item","referenceID":"list_tasksで実際に得たUUID","action":"completeTask"}]}]}。
-    kindはTaskList/DocumentCard/ProjectCard/SourceList/ComparisonTable/Timeline/Chart/ActionBarだけ。最大8部品・各30項目。URL・コード・任意のツール名は渡さない。
+    kindはTaskList/DocumentCard/ProjectCard/SourceList/ComparisonTable/Timeline/Chart/ActionBar/TaskProgress/MailDraftCard/Disclosureだけ。最大8部品・各30項目。URL・コード・任意のツール名は渡さない。
+    TaskProgressはlist_tasksで実際に得たタスクのreferenceIDを重複なく並べる。進捗の数値はアプリが現在のタスクから計算するのでvalueは指定しない。MailDraftCardはこの回答のdraft_emailで保存された下書きIDだけをreferenceIDにする。Disclosureは短いtitleを必須とし、各itemsのtitle/detailを折りたためる補足に使う。操作や進捗の捏造には使わない。
     参照型は実際に読んだUUIDだけ。ComparisonTableはcolumnsと各項目cells（同じ列数）、Timelineはtitle/detail、Chartはtitle/valueを使う。数字は実際のツール結果に基づき単位をtitleに示す。取得していない統計を作らない。承認・質問・進行状態はアプリの実際のカードに任せる。UIがなくても意味の通る回答を先に書く。
     """
   }

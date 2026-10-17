@@ -6,13 +6,14 @@ struct AIResponseText: View {
   var text: String
   var isStreaming = false
   var messageID: UUID?
+  @State private var cache = NativeAIResponseCache()
 
   var body: some View {
-    let response = NativeAIInterface.response(text, isStreaming: isStreaming)
+    let response = cache.response(for: text, isStreaming: isStreaming)
     VStack(alignment: .leading, spacing: 18) {
       StreamingMarkdownView(text: response.markdown, isStreaming: isStreaming)
-      if !isStreaming {
-        if let interface = response.interface { NativeAIInterfaceView(interface: interface, messageID: messageID) }
+      if let interface = response.interface {
+        NativeAIInterfaceView(interface: interface, messageID: messageID, allowsInteractions: !isStreaming)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

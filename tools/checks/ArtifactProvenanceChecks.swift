@@ -159,6 +159,9 @@ import Foundation
     let result = await cancelled.value
     precondition(result.isError && model.mailDrafts.isEmpty)
     try await mockConversationScenario(root: root)
+    #if INTELLIGENT_UI_CHECKS
+    try await IntelligentUIContextChecks.run(root: root)
+    #endif
     print("ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)")
   }
 
