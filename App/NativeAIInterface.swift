@@ -47,8 +47,10 @@ struct NativeAIInterface: Codable, Equatable {
           if component.kind == .actionBar, item.action != .completeTask { return nil }
           if component.kind == .calendarPreview, item.title != nil || item.detail != nil { return nil }
         case .comparisonTable:
+          // A row may name the record it compares, but only a real, currently
+          // permitted one becomes a link; the cell text stands on its own.
           guard let columns = component.columns, (2...6).contains(columns.count),
-                item.cells?.count == columns.count, item.action == nil, item.referenceID == nil, item.value == nil else { return nil }
+                item.cells?.count == columns.count, item.action == nil, item.value == nil else { return nil }
         case .chart:
           guard let value = item.value, value.isFinite, item.title?.isEmpty == false,
                 item.action == nil, item.referenceID == nil, item.cells == nil else { return nil }
@@ -106,7 +108,7 @@ struct NativeAIInterface: Codable, Equatable {
     kindはTaskList/DocumentCard/ProjectCard/SourceList/ComparisonTable/Timeline/Chart/ActionBar/TaskProgress/MailDraftCard/Disclosure/CalendarPreviewだけ。最大8部品・各30項目。URL・コード・任意のツール名は渡さない。
     CalendarPreviewはread_calendarが返したreferenceIDだけをitemsに並べる。各itemのtitle/detail/value/actionは指定しない。実際の予定名と日時をアプリが表示する。未取得の予定、空の検索結果、失効した予定を作って補わない。
     TaskProgressはlist_tasksで実際に得たタスクのreferenceIDを重複なく並べる。進捗の数値はアプリが現在のタスクから計算するのでvalueは指定しない。MailDraftCardはこの回答のdraft_emailで保存された下書きIDだけをreferenceIDにする。Disclosureは短いtitleを必須とし、各itemsのtitle/detailを折りたためる補足に使う。操作や進捗の捏造には使わない。
-    参照型は実際に読んだUUIDだけ。ComparisonTableはcolumnsと各項目cells（同じ列数）、Timelineはtitle/detail、Chartはtitle/valueを使う。数字は実際のツール結果に基づき単位をtitleに示す。取得していない統計を作らない。承認・質問・進行状態はアプリの実際のカードに任せる。UIがなくても意味の通る回答を先に書く。
+    参照型は実際に読んだUUIDだけ。ComparisonTableはcolumnsと各項目cells（同じ列数）、Timelineはtitle/detail、Chartはtitle/valueを使う。ComparisonTableの各項目は、その行の根拠になった記録が実際にある場合だけreferenceIDを付け、無ければ付けない。数字は実際のツール結果に基づき単位をtitleに示す。取得していない統計を作らない。承認・質問・進行状態はアプリの実際のカードに任せる。UIがなくても意味の通る回答を先に書く。
     """
   }
 

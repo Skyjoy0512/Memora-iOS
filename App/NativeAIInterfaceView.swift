@@ -68,33 +68,12 @@ struct NativeAIInterfaceView: View {
         } else { unavailable }
       }
     case .sourceList:
-      ForEach(component.items) { item in
-        if let id = item.referenceID, let messageID, let source = sources[id], model.meeting(id: id) != nil {
-          NavigationLink {
-            AIInterfaceReferenceDestination(messageID: messageID, target: .meeting(id))
-          } label: {
-            Label(source.title, icon: .docText).multilineTextAlignment(.leading).frame(minHeight: 44)
-          }
-        } else { unavailable }
-      }
+      AIInterfaceSourceList(items: component.items, sources: sources, messageID: messageID,
+        canOpen: { id in messageID.map { model.canOpenInterfaceReference(.meeting(id), messageID: $0) } ?? false })
     case .comparisonTable:
       // A wide table owns its horizontal scroll; surrounding chat stays flexible.
-      ScrollView(.horizontal) {
-        Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 12) {
-          GridRow {
-            ForEach(Array((component.columns ?? []).enumerated()), id: \.offset) { _, column in
-              Text(column).font(.subheadline.weight(.semibold)).frame(minWidth: 100, maxWidth: 180, alignment: .leading)
-            }
-          }
-          ForEach(component.items) { item in
-            GridRow {
-              ForEach(Array((item.cells ?? []).enumerated()), id: \.offset) { _, cell in
-                Text(cell).font(.subheadline).frame(minWidth: 100, maxWidth: 180, alignment: .leading)
-              }
-            }.accessibilityElement(children: .combine)
-          }
-        }.textSelection(.enabled)
-      }
+      AIInterfaceComparisonTable(columns: component.columns ?? [], items: component.items,
+        messageID: messageID, evidenceTargets: evidenceTargets(component, messageID: messageID))
     case .timeline:
       ForEach(component.items) { item in
         VStack(alignment: .leading, spacing: 4) {
@@ -153,6 +132,24 @@ struct NativeAIInterfaceView: View {
     }
   }
 
+  /// Resolves a comparison row's optional evidence ID to a target the message
+  /// still permits right now. Only a meeting, document or project the message
+  /// actually holds can be returned, so a hallucinated or revoked ID simply
+  /// leaves the row without a link.
+  private func evidenceTargets(_ component: NativeAIInterface.Component, messageID: UUID?) -> [UUID: AIInterfaceReferenceTarget] {
+    guard let messageID else { return [:] }
+    var targets: [UUID: AIInterfaceReferenceTarget] = [:]
+    for id in Set(component.items.compactMap(\.referenceID)) {
+      for target: AIInterfaceReferenceTarget in [.meeting(id), .document(id), .project(id)] {
+        if model.canOpenInterfaceReference(target, messageID: messageID) {
+          targets[id] = target
+          break
+        }
+      }
+    }
+    return targets
+  }
+
   private var unavailable: some View {
     Text("この項目は現在参照できません。必要な情報を改めて依頼してください。")
       .font(.footnote).foregroundStyle(.secondary)
@@ -161,7 +158,7 @@ struct NativeAIInterfaceView: View {
 
 /// NavigationLink can construct destinations before a tap. The check belongs
 /// in the destination's body so a list row never recomputes the global grants.
-private struct AIInterfaceReferenceDestination: View {
+struct AIInterfaceReferenceDestination: View {
   @Environment(MemoraModel.self) private var model
   var messageID: UUID
   var target: AIInterfaceReferenceTarget
