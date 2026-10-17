@@ -113,23 +113,47 @@
 - `bash tools/checks/run-intelligent-ui-checks.sh` → 成功（既存の回帰なし）。
 - `swiftc -parse`（新規・変更の Swift ファイル） → 構文成功。
 
+## 統合（2026-10-17）
+
+- 統合担当（共有ツリー、`main`）で `feat/openui-native-polish` を `d028a07` から
+  fast-forward で取り込み（`e0b992c` まで）。元の worktree / `memora` は変更していない。
+- `tools/checks/run-next-generation-checks.sh` に
+  `bash tools/checks/run-openui-native-polish-checks.sh` を追加。
+- 統合後の `bash tools/checks/run-next-generation-checks.sh` は終了コード0で成功。
+- `bitrig preview -platform iOS` は成功（既存の警告11件、新規警告なし）。
+  ログ `2026-10-17T19-21-39-59d3e1bd.log`。
+
 ## スクリーンショット
 
-未取得。理由は「未実装・未検証事項」の Bitrig 制約を参照。
-`docs/qa/opencode-openui/` に取得手順を残す。
+統合後の共有ツリーで、設定 › プロトタイプ › 状態と復旧UIを確認 › 構造化回答
+（`NativeAIInterfaceExampleView`、架空データ）を撮影した。
+
+- [比較表 Dark](qa/opencode-openui/comparison-dark.png)
+- [比較表 Light](qa/opencode-openui/comparison-light.png)
+- [比較表 最大文字サイズ（横スクロール）](qa/opencode-openui/comparison-large-text.png)
+
+比較表の見出し（secondary・semibold・下罫線）、行ごとの区切り、最大文字サイズでの
+横スクロールを実機シミュレータ（iPhone 18 Pro Max / iOS 27.1）で確認した。
+`NativeAIInterfaceExampleView` は ComparisonTable・Chart・Timeline だけを持つため、
+SourceList・TaskProgress はこの画面では表示できない（下記「未実装・未検証事項」）。
 
 ## 未実装・未検証事項
 
-- **Bitrig でビルドできない**: `bitrig build -list` は worktree を
+- **Bitrig でビルドできない（worktree 時点の制約）**: `bitrig build -list` は worktree を
   「Bitrig プロジェクトではない」と判定する。Bitrig は共有ツリーの Project.json を
   基準にプロジェクトを解決するため、この SSD worktree では Debug/Release ビルドと
   プレビューができない。統合担当に Debug / Release ビルドを依頼する。
   共有ツリーで動作中のプレビューは上書きしていない。
   代わりに `run-openui-native-polish-checks.sh` が新規ビューを実 SDK で型検査するが、
   これはスタブ併用のスモークテストであり、アプリ全体のリンクや実行時挙動は未確認。
+  → 統合後、共有ツリーで `bitrig preview -platform iOS` が成功（上記「統合」）。
 - `NativeAIInterfaceView.swift`（変更）は MemoraModel など多数に依存するため単体の
   型検査は行っておらず、`swiftc -parse` のみ。統合後のビルドで確認する。
+  → 統合後の `bitrig preview` ビルドで確認済み。
 - 実機・シミュレータでの画面確認（Light / Dark / 大きい文字 / Reduce Motion）は未実施。
+  → 比較表は Light / Dark / 最大文字サイズをシミュレータで確認済み（上記スクリーンショット）。
+  SourceList・TaskProgress は架空データ画面（`NativeAIInterfaceExampleView`）に
+  含まれないため、シミュレータでの画面確認は未実施。TaskProgress の Reduce Motion も未確認。
 - VoiceOver の読み上げ、日本語 IME、実プロバイダーのストリーミング E2E は未検証。
 - 比較表の行 `referenceID` は、モデルが実在 UUID を付けた場合のみリンクになる。
   実サービスでの生成品質（正しい UUID を付けるか）は未検証。
@@ -140,11 +164,14 @@
 
 ## 統合担当が接続・確認すべき箇所
 
-- `tools/checks/run-next-generation-checks.sh` に
-  `bash tools/checks/run-openui-native-polish-checks.sh` を追加する。
+- ~~`tools/checks/run-next-generation-checks.sh` に
+  `bash tools/checks/run-openui-native-polish-checks.sh` を追加する。~~ 追加済み。
 - 統合後のツリーで `bitrig preview -platform iOS` と Debug / Release ビルドを実行し、
   比較表・根拠一覧・進捗の画面を Light / Dark / 大きい文字 / Reduce Motion で確認する。
+  → `bitrig preview` は成功。比較表の Light / Dark / 大きい文字は確認済み。
+  根拠一覧・進捗は架空データ画面に無く未確認（必要なら Debug 用の表示経路を追加）。
 - `AIInterfaceReferenceDestination` を `private` から internal へ変更した
   （新部品から遷移先を参照するため）。チャット本文側の同名参照と衝突しないこと。
+  → 統合後、同名型はこの1つだけ（`App/NativeAIInterfaceView.swift`）。
 - `NativeAIInterface.instructions` に ComparisonTable 行の任意 `referenceID` を追記した。
   既存の承認・権限・失効・実行予算は変更していない。

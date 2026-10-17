@@ -2,13 +2,19 @@
 
 このディレクトリは `docs/OPENCODE_OPENUI_NATIVE_POLISH.md` の画面確認用。
 
-現時点で画像は無い。別 worktree（実体 `/Volumes/WorkspaceSSD/Development/Temp/memora-openui-native-polish-20261017`）
-を Bitrig がプロジェクトとして認識しないため、Debug / Release ビルドとプレビューを
-この worktree では実行できない。統合担当が統合後のツリーで撮影する。
+現時点で画像は次の3枚（統合後の共有ツリー、iPhone 18 Pro Max / iOS 27.1、
+設定 › プロトタイプ › 状態と復旧UIを確認 › 構造化回答、架空データ）:
 
-撮影してほしい比較（同じ架空データ。元OSSデモの起動比較ではない）:
+- `comparison-dark.png` — 比較表 Dark
+- `comparison-light.png` — 比較表 Light
+- `comparison-large-text.png` — 比較表 最大文字サイズ（横スクロール）
 
-- 比較表: 通常 / 長文セル / 大きい文字（横スクロール）/ Light / Dark
+統合前は worktree（実体 `/Volumes/WorkspaceSSD/Development/Temp/memora-openui-native-polish-20261017`）
+を Bitrig がプロジェクトとして認識しないため Debug / Release ビルドとプレビューを
+実行できなかった。統合後の共有ツリーで `bitrig preview -platform iOS` が成功している。
+
+未撮影（`NativeAIInterfaceExampleView` に含まれないため）:
+
 - 根拠一覧: 通常 / 長い資料名 / 失効・削除された資料 / 空状態 / Light / Dark
 - 進捗: 一部完了 / 全完了 / 内訳の展開 / 1件のみ / Reduce Motion
 - ストリーミング途中（完成部品単位で表示されること）
