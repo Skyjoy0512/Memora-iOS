@@ -141,13 +141,19 @@ Row（`NativeAIInterfaceExampleView` の2つのグラフ横並び）も同画面
 `AIInterfaceStructuredExampleView`）で撮影した。
 
 - [根拠一覧 Dark](qa/opencode-openui/source-list-dark.png) /
-  [Light](qa/opencode-openui/source-list-light.png)
+  [Light](qa/opencode-openui/source-list-light.png) /
+  [最大文字サイズ](qa/opencode-openui/source-list-large-text.png)
 - [進捗 Dark](qa/opencode-openui/task-progress-dark.png) /
-  [内訳を展開](qa/opencode-openui/task-progress-dark-expanded.png)
+  [Light](qa/opencode-openui/task-progress-light.png) /
+  [内訳を展開](qa/opencode-openui/task-progress-dark-expanded.png) /
+  [最大文字サイズ](qa/opencode-openui/task-progress-large-text.png) /
+  [Reduce Motion](qa/opencode-openui/task-progress-reduce-motion.png)
 
 根拠一覧は通常・失効/削除を含む（「ほかN件…」）・参照できる資料なし（空状態）、
-進捗は一部完了（内訳あり）・全完了・1件のみを確認した。
-進捗の Light・最大文字サイズ・Reduce Motion と、ストリーミング途中の画面は未撮影。
+進捗は一部完了（内訳あり）・全完了・1件のみを、Light / Dark / 最大文字サイズ /
+Reduce Motion で確認した。Reduce Motion の画面は静的な確認であり、バーの
+アニメーション停止はコード（`animation(reduceMotion ? nil : …)`）で担保している。
+ストリーミング途中（完成部品単位で表示されること）は静的画像では残せないため未撮影。
 
 ## 未実装・未検証事項
 
@@ -166,8 +172,8 @@ Row（`NativeAIInterfaceExampleView` の2つのグラフ横並び）も同画面
   → 比較表は Light / Dark / 最大文字サイズ、Row は Dark をシミュレータで確認済み。
   SourceList・TaskProgress は統合後に追加した Debug 用の架空データ画面
   （`AIInterfaceStructuredExampleView`、資料・進捗の表示確認）で確認済み
-  （根拠一覧 Light/Dark、進捗 Dark と内訳展開）。進捗の Light・最大文字サイズ・
-  Reduce Motion とストリーミング途中は未撮影。
+  （根拠一覧 Light/Dark/最大文字サイズ、進捗 Light/Dark/最大文字サイズ/Reduce Motion/
+  内訳展開）。ストリーミング途中は未撮影。
 - VoiceOver の読み上げ、日本語 IME、実プロバイダーのストリーミング E2E は未検証。
 - 比較表の行 `referenceID` は、モデルが実在 UUID を付けた場合のみリンクになる。
   実サービスでの生成品質（正しい UUID を付けるか）は未検証。
