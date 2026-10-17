@@ -19,7 +19,18 @@ extension AIMemory {
     return result
   }
 
-  static func reconciling(_ memories: [Self], editedID: UUID) -> [Self] {
+  func changingStatus(to status: Status, now: Date) -> Self {
+    guard self.status != status, var value = semantic else { return self }
+    var result = self
+    result.revisions = Array(((revisions ?? []) + [.init(text: text, semantic: semantic, supersededAt: now)]).suffix(30))
+    value.status = status
+    value.updatedAt = now
+    value.validTo = status == .historical || status == .disabled ? now : nil
+    result.semantic = value
+    return result
+  }
+
+  static func reconciling(_ memories: [Self], editedID: UUID, now: Date = .now) -> [Self] {
     guard let index = memories.firstIndex(where: { $0.id == editedID }),
           let value = memories[index].semantic, value.predicate != "note", value.status == .current else { return memories }
     var result = memories
@@ -27,8 +38,8 @@ extension AIMemory {
       guard let old = result[other].semantic, old.workspaceID == value.workspaceID,
             old.subjectID == value.subjectID, old.predicate == value.predicate,
             [.current, .conflicted].contains(old.status), old.value != value.value else { continue }
-      result[other].semantic?.status = .conflicted
-      result[index].semantic?.status = .conflicted
+      result[other] = result[other].changingStatus(to: .conflicted, now: now)
+      result[index] = result[index].changingStatus(to: .conflicted, now: now)
     }
     return result
   }

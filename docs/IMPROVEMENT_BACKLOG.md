@@ -763,3 +763,10 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
   snapshot/バックアップへcalendar grantを保存しない。最大30件/日・120件/回答。
 - mockは本番tool/approval/registry/schema/contextを通す。実EventKit通知・システム許可・実cloud通信、
   calendar別共有設定と実機アクセシビリティは未検証または未実装。[詳細](ASK_AI_CALENDAR_PREVIEW.md)。
+
+
+## 2026-10-17: 長期メモリの明示更新
+
+- 同じ項目の候補表示と、選んだ値を現在にしてほかを過去にする操作を追加。出典・変更前の状態を保持する。
+- 古い編集/削除、workspace変更、保存失敗を本番plan/managementと隔離SQLiteで回帰検証する。
+- 詳細: [ASK_AI_MEMORY_UPDATES.md](ASK_AI_MEMORY_UPDATES.md)。自然言語での意味矛盾判定、実機QAは残る。
