@@ -158,9 +158,21 @@ SourceList・TaskProgress はこの画面では表示できない（下記「未
 - 比較表の行 `referenceID` は、モデルが実在 UUID を付けた場合のみリンクになる。
   実サービスでの生成品質（正しい UUID を付けるか）は未検証。
 - SourceList の補足行（`item.detail`）はモデル記述であり、記録本文からの引用ではない。
-- 読み取り専用の Row/Column の追加配置は見送った。既存3部品の改善で要件を満たし、
-  「不要なカード・フォーム・装飾を増やさない」方針に沿うため（Disclosure は既存 kind
-  として存在し、そのまま使える）。必要になれば限定スキーマで追加できる。
+
+## Row / Column（統合後、2026-10-17）
+
+見送っていた読み取り専用の Row/Column 配置を、限定スキーマで追加した。
+
+- `NativeAIInterface.Kind` に `Row` / `Column` を追加。`Component` に任意の
+  `components: [Component]?` を持つ。コンテナは `items` を持たず、子は 1〜4 個。
+- 入れ子は1段まで（Row/Column の子に Row/Column は置けない）。子は既存の部品だけで、
+  実在・現在許可されたIDからのみ表示する点はトップレベルと同じ。
+- 表示は `NativeAIInterfaceView` の `block`/`content`。`AnyView` で再帰の不透明型を断つ。
+- 検証は `run-openui-native-polish-checks.sh` に追加（有効な Row/Column、items 付き・
+  title 付き・columns 付き・入れ子・5個以上の子を拒否）。`NativeAIInterface.instructions`
+  にも Row/Column の使い方を1行追記。
+- 実装で見つかった回帰: `CalendarPreview` の item に `action` を付けた場合の拒否が
+  抜けていたため、`isValid` で明示的に拒否するよう修正（`CalendarInterfaceChecks` が検出）。
 
 ## 統合担当が接続・確認すべき箇所
 

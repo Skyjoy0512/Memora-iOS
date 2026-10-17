@@ -12,7 +12,7 @@ struct OpenUINativePolishChecks {
     evidenceResolution()
     schema()
     streaming()
-    print("OpenUINativePolishChecks: passed (comparison-table widths incl. large text/long cells/invalid viewports, task progress counts from tasks only, source rows resolved from stored sources with availability, ComparisonTable evidence reference accepted and still bounded, live component streaming)")
+    print("OpenUINativePolishChecks: passed (comparison-table widths incl. large text/long cells/invalid viewports, task progress counts from tasks only, source rows resolved from stored sources with availability, ComparisonTable evidence reference accepted and still bounded, read-only Row/Column layout bounded to one shallow level, live component streaming)")
   }
 
   // MARK: ComparisonTable widths
@@ -130,6 +130,21 @@ struct OpenUINativePolishChecks {
     precondition(NativeAIInterface.decode(source) != nil)
     let duplicate = #"{"version":1,"components":[{"id":"p","kind":"TaskProgress","items":[{"id":"a","referenceID":""# + id + #""},{"id":"b","referenceID":""# + id + #""}]}]}"#
     precondition(NativeAIInterface.decode(duplicate) == nil)
+
+    let row = #"{"version":1,"components":[{"id":"r","kind":"Row","components":[{"id":"a","kind":"Chart","items":[{"id":"x","title":"A","value":1}]},{"id":"b","kind":"Timeline","items":[{"id":"y","title":"午前","detail":"移動"}]}]}]}"#
+    precondition(NativeAIInterface.decode(row) != nil, "A Row may lay out two parts side by side")
+    let column = #"{"version":1,"components":[{"id":"c","kind":"Column","components":[{"id":"a","kind":"Timeline","items":[{"id":"y","title":"午前","detail":"移動"}]}]}]}"#
+    precondition(NativeAIInterface.decode(column) != nil)
+    for unsafe in [
+      row.replacingOccurrences(of: #""id":"r","kind":"Row""#, with: #""id":"r","kind":"Row","items":[{"id":"z","title":"A","value":1}]"#),
+      row.replacingOccurrences(of: #""id":"r","kind":"Row""#, with: #""id":"r","kind":"Row","title":"見出し""#),
+      row.replacingOccurrences(of: #""id":"r","kind":"Row""#, with: #""id":"r","kind":"Row","columns":["a","b"]"#),
+      row.replacingOccurrences(of: #""kind":"Timeline""#, with: #""kind":"Row""#)
+    ] {
+      precondition(NativeAIInterface.decode(unsafe) == nil, "Row/Column stays a shallow, item-free layout")
+    }
+    let wide = #"{"version":1,"components":[{"id":"r","kind":"Row","components":[{"id":"a","kind":"Timeline","items":[{"id":"1","title":"1"}]},{"id":"b","kind":"Timeline","items":[{"id":"2","title":"2"}]},{"id":"c","kind":"Timeline","items":[{"id":"3","title":"3"}]},{"id":"d","kind":"Timeline","items":[{"id":"4","title":"4"}]},{"id":"e","kind":"Timeline","items":[{"id":"5","title":"5"}]}]}]}"#
+    precondition(NativeAIInterface.decode(wide) == nil, "A Row holds at most four children")
   }
 
   // MARK: Streaming

@@ -13,11 +13,7 @@ struct NativeAIInterfaceView: View {
     let context = model.interfaceRenderContext(messageID: messageID, taskIDs: taskReferences)
     VStack(alignment: .leading, spacing: 24) {
       ForEach(interface.components) { component in
-        VStack(alignment: .leading, spacing: 12) {
-          if component.kind != .disclosure, let title = component.title, !title.isEmpty { Text(title).font(.headline) }
-          content(component, message: context.message, taskIDs: context.taskIDs, sources: context.sources)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        block(component, message: context.message, taskIDs: context.taskIDs, sources: context.sources)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -28,9 +24,34 @@ struct NativeAIInterfaceView: View {
     }
   }
 
+  /// One titled block of the answer. Used for the top-level components and for
+  /// the children of a Row/Column, so a nested part keeps its own heading.
+  @ViewBuilder
+  private func block(_ component: NativeAIInterface.Component, message: AIChatMessage?, taskIDs: Set<UUID>, sources: [UUID: AIChatSource]) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      if component.kind != .disclosure, let title = component.title, !title.isEmpty { Text(title).font(.headline) }
+      content(component, message: message, taskIDs: taskIDs, sources: sources)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
   @ViewBuilder
   private func content(_ component: NativeAIInterface.Component, message: AIChatMessage?, taskIDs: Set<UUID>, sources: [UUID: AIChatSource]) -> some View {
     switch component.kind {
+    case .row, .column:
+      // A read-only layout of the parts beside or above one another. Only real,
+      // permitted records reach the children, exactly as at the top level.
+      let children = component.components ?? []
+      let layout = component.kind == .row
+        ? AnyLayout(HStackLayout(alignment: .top, spacing: 16))
+        : AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+      layout {
+        ForEach(children) { child in
+          // AnyView erases the type here so the recursive block/content pair is
+          // not an opaque type defined in terms of itself.
+          AnyView(block(child, message: message, taskIDs: taskIDs, sources: sources))
+        }
+      }
     case .taskList, .actionBar:
       ForEach(component.items) { item in
         if let id = item.referenceID, let messageID, taskIDs.contains(id), let task = model.task(id: id) {
