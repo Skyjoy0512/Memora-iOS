@@ -19,6 +19,9 @@ struct AIComposerInteractionExampleView: View {
           .font(.footnote).foregroundStyle(.secondary)
         Toggle("回答中として表示", isOn: $isRunning)
         Toggle("送信を受け付ける", isOn: $acceptsSubmission)
+        Button("長文の架空ドラフトを入れる") {
+          text = (1...10).map { "確認事項\($0): 読者、構成、費用、次回の相談で確認したい内容を整理します。" }.joined(separator: "\n")
+        }
         Button("架空の添付を追加") {
           attachment = AIAttachment(id: UUID(), name: "表示確認.md", url: URL(fileURLWithPath: "/unused-composer-fixture.md"))
         }

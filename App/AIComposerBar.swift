@@ -25,6 +25,9 @@ struct AIComposerBar: View {
   var researchSelected = false
   var mentionInput: ComposerInputState?
   @State private var textSelection: TextSelection?
+  @State private var fallbackInput = ComposerInputState()
+  @State private var isEditorTall = false
+  @ScaledMetric(relativeTo: .body) private var editorLineHeight: CGFloat = 24
 
   @State private var speechInput = SpeechInputService()
   @State private var isIntegrationsPresented = false
@@ -52,7 +55,8 @@ struct AIComposerBar: View {
   private var textField: some View {
     TextField(placeholder, text: $text, selection: $textSelection, axis: .vertical)
       .font(.body)
-      .lineLimit(isExpanded ? 1...6 : 1...1)
+      .lineLimit(AIComposerLayoutPolicy.lines(isExpanded: isExpanded, isTall: isEditorTall,
+        lineHeight: editorLineHeight))
       .submitLabel(.send)
       .onSubmit(submit)
       .focused($isFieldFocused)
@@ -62,9 +66,7 @@ struct AIComposerBar: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .layoutPriority(1)
       .background {
-        if let mentionInput {
-          ComposerInputObserver(state: mentionInput, isActive: isFieldFocused)
-        }
+        ComposerInputObserver(state: mentionInput ?? fallbackInput, isActive: isFieldFocused)
       }
       .onChange(of: model.composerMentionCursorRequest) { _, request in
         guard let request, let range = Range(NSRange(location: request.offset, length: 0), in: text) else { return }
@@ -115,6 +117,15 @@ struct AIComposerBar: View {
         HStack(spacing: 6) {
           attachmentMenu
             .matchedGeometryEffect(id: "attach", in: controlsNamespace)
+          if isEditorTall || AIComposerLayoutPolicy.offersExpansion(for: text) {
+            Button(isEditorTall ? "入力欄を小さくする" : "入力欄を広げる",
+              icon: isEditorTall ? .chevronDown : .chevronUp) {
+              isEditorTall.toggle()
+            }
+            .labelStyle(.iconOnly).buttonStyle(.plain)
+            .frame(width: 44, height: 44)
+            .accessibilityValue(isEditorTall ? "拡大" : "通常")
+          }
           Spacer(minLength: 8)
           if onResearch != nil {
             researchButton
@@ -134,7 +145,11 @@ struct AIComposerBar: View {
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: speechInput.isListening)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isExpanded)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: isEditorTall)
     .interactionFeedback(.tap, trigger: speechInput.isListening)
+    .onChange(of: hasContent) { _, hasContent in
+      if !hasContent { isEditorTall = false }
+    }
     .onChange(of: isFieldFocused) { _, focused in
       focusChanged?(focused)
     }
@@ -382,7 +397,7 @@ struct AIComposerBar: View {
   }
 
   private func submit() {
-    guard canSend, mentionInput?.snapshot()?.hasMarkedText != true else { return }
+    guard canSend, (mentionInput ?? fallbackInput).snapshot()?.hasMarkedText != true else { return }
     speechInput.stop()
     guard onSubmit(attachment) else { return }
     InteractionFeedback.shared.send(.tap)

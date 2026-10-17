@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-18",
+  "baseline": "fd7bbc0",
+  "phase": "Before intrinsic-height follow-up; final focused rerun recorded separately",
+  "id": "01a14c40-d343-7cc7-a26a-b166a527fdfa",
+  "status": "passed",
+  "summary": {
+    "discovered": 11,
+    "selected": 11,
+    "executed": 11,
+    "passed": 11,
+    "failed": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "skipped": 0
+  },
+  "usage": {
+    "discoveredResults": 11,
+    "maxAgentContextBytes": 0,
+    "maxLedgerBytes": 0,
+    "maxObservationBytes": 0,
+    "artifactBytes": 0,
+    "downloads": 0,
+    "events": 81,
+    "modelTokens": 0,
+    "maxModelCallsInStep": 0,
+    "maxActionStepsInStep": 0
+  },
+  "agents_in_tests": false,
+  "api_key_environment": "DEEPSEEK_API_KEY/OPENAI_API_KEY/ANTHROPIC_API_KEY unset",
+  "telemetry": "E2E_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1",
+  "report_archive": "/tmp/memora-actions-composer-final-01a14c40-d343-7cc7-a26a-b166a527fdfa/report.json"
+}

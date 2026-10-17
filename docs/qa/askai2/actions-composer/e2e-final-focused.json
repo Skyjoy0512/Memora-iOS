@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-18",
+  "baseline": "fd7bbc0",
+  "phase": "Final intrinsic-height correction, final Debug build",
+  "id": "01a14c44-6225-754f-80ae-28d50a2e1972",
+  "status": "passed",
+  "summary": {
+    "discovered": 11,
+    "selected": 2,
+    "executed": 2,
+    "passed": 2,
+    "failed": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "skipped": 0
+  },
+  "usage": {
+    "discoveredResults": 11,
+    "maxAgentContextBytes": 0,
+    "maxLedgerBytes": 0,
+    "maxObservationBytes": 0,
+    "artifactBytes": 0,
+    "downloads": 0,
+    "events": 32,
+    "modelTokens": 0,
+    "maxModelCallsInStep": 0,
+    "maxActionStepsInStep": 0
+  },
+  "cache": "disabled",
+  "api_key_environment": "DEEPSEEK_API_KEY/OPENAI_API_KEY/ANTHROPIC_API_KEY unset",
+  "telemetry": "disabled",
+  "verified": [
+    "selectable text sheet",
+    "unavailable retry omitted",
+    "long draft expand and collapse",
+    "exact draft retained after rejected submit"
+  ],
+  "not_verified": [
+    "IME marked text via Japanese keyboard",
+    "physical VoiceOver",
+    "real provider requests",
+    "real document save/share destination"
+  ]
+}

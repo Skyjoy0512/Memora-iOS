@@ -1,0 +1,188 @@
+{
+  "date": "2026-10-18",
+  "baseline": "fd7bbc0",
+  "status": "implemented and verified within stated bounds",
+  "scope": [
+    "answer action menu and native text selection",
+    "existing read-aloud retained",
+    "inline long composer expansion with Dynamic Type line budget",
+    "IME snapshot fallback for non-mention scopes"
+  ],
+  "builds": {
+    "debug": {
+      "result": "success",
+      "log": "2026-10-18T08-46-35-830982f9.log",
+      "diagnostics": [
+        {
+          "classification": "warning",
+          "message": "2026-10-18 08:46:44.141 appintentsmetadataprocessor[4668:43628794] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalMapSheet.swift",
+          "lineNumber": 25,
+          "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalMapSheet.swift",
+          "lineNumber": 25,
+          "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalPlacePicker.swift",
+          "lineNumber": 54,
+          "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalPlacePicker.swift",
+          "lineNumber": 55,
+          "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalPlacePicker.swift",
+          "lineNumber": 59,
+          "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/GmailService.swift",
+          "lineNumber": 322,
+          "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/MCPOAuthBrowser.swift",
+          "lineNumber": 71,
+          "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/PlaceNameResolver.swift",
+          "lineNumber": 12,
+          "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/PlaceNameResolver.swift",
+          "lineNumber": 12,
+          "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/PlaceNameResolver.swift",
+          "lineNumber": 33,
+          "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+        }
+      ]
+    },
+    "release": {
+      "result": "success",
+      "log": "2026-10-18T08-46-36-4f44c7a6.log",
+      "diagnostics": [
+        {
+          "classification": "warning",
+          "message": "2026-10-18 08:48:03.529 appintentsmetadataprocessor[9562:43645474] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/GmailService.swift",
+          "lineNumber": 322,
+          "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalMapSheet.swift",
+          "lineNumber": 25,
+          "message": "'init(placemark:)' was deprecated in iOS 26.0: Use init(location:address:) [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalMapSheet.swift",
+          "lineNumber": 25,
+          "message": "'MKPlacemark' was deprecated in iOS 26.0: Use MKMapItem's location, address and addressRepresentations properties instead. Use MKAddressRepresentations for formatted address strings for MapKit provided MKMapItems [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalPlacePicker.swift",
+          "lineNumber": 54,
+          "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalPlacePicker.swift",
+          "lineNumber": 55,
+          "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/JournalPlacePicker.swift",
+          "lineNumber": 59,
+          "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/MCPOAuthBrowser.swift",
+          "lineNumber": 71,
+          "message": "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/PlaceNameResolver.swift",
+          "lineNumber": 12,
+          "message": "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/PlaceNameResolver.swift",
+          "lineNumber": 12,
+          "message": "'reverseGeocodeLocation' was deprecated in iOS 26.0: Use MKReverseGeocodingRequest [#DeprecatedDeclaration]"
+        },
+        {
+          "classification": "warning",
+          "filePath": "App/PlaceNameResolver.swift",
+          "lineNumber": 33,
+          "message": "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+        }
+      ]
+    }
+  },
+  "checks": {
+    "next_generation": "passed before final height-only correction",
+    "motion_loading": "passed",
+    "optimization": "passed",
+    "answer_presentation_and_composer_layout": "passed after final correction"
+  },
+  "e2e": {
+    "regression": "11 passed, modelTokens=0; e2e-regression.json",
+    "final_focused": "2 passed, no cache, modelTokens=0; e2e-final-focused.json"
+  },
+  "screenshots": [
+    "actions-dark.png",
+    "actions-menu-dark.png",
+    "composer-expanded-keyboard-light.png",
+    "composer-large-text-keyboard-dark.png",
+    "composer-long-expanded-light.png",
+    "composer-long-regular-light.png",
+    "composer-short-light.png",
+    "native-text-selection.png",
+    "retry-unavailable-light.png",
+    "selection-light.png"
+  ],
+  "limitations": [
+    "Native selection handles observed; no cross-app clipboard comparison",
+    "Fixture save/retry/speech are local callbacks; no real provider or user record mutation",
+    "Japanese IME conversion and physical VoiceOver unverified",
+    "No performance/FPS/energy claim"
+  ],
+  "oss": {
+    "source": "chatgpt-ios-ui/dc6e6a52b14a67051f6534cc674cc32ddd9cb9d1/Sources/ChatGPTUI/ChatGPTView.swift",
+    "license": "MIT; existing bundled ChatGPTUI-LICENSE.txt retained",
+    "adapted": "response action row and selection presentation",
+    "independent": "inline composer line-budget policy inspired by long-draft disclosure",
+    "new_dependencies": 0
+  }
+}
