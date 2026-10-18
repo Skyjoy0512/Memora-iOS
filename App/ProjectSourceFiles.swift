@@ -10,7 +10,10 @@ actor ProjectSourceFiles {
   static let maximumFileBytes = 50 * 1024 * 1024
   static let maximumStorageBytes = 500 * 1024 * 1024
   static var directory: URL {
-    FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    if let override = ProcessInfo.processInfo.environment["MEMORA_WORKSPACE_FILES_DIRECTORY"], !override.isEmpty {
+      return URL(fileURLWithPath: override, isDirectory: true)
+    }
+    return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
       .appendingPathComponent("Memora/WorkspaceFiles", isDirectory: true)
   }
 

@@ -61,6 +61,7 @@ swiftc Shared/MemoraIcon.swift App/ResidentAgent.swift App/ResidentTrigger.swift
 swiftc Shared/MemoraAppLink.swift Shared/MemoraWidgetSnapshot.swift Shared/MemoraWidgetSnapshotStore.swift tools/checks/SystemIntegrationChecks.swift -o "$check_dir/system"
 "$check_dir/system" "$check_dir"
 TMPDIR="$check_dir/" bash tools/checks/run-ask-ai-plugin-checks.sh
+bash tools/checks/run-ask-ai-scenario-checks.sh
 bash tools/checks/run-memory-artifact-checks.sh
 bash tools/checks/run-cloud-session-checks.sh
 bash tools/checks/run-intelligent-ui-checks.sh
