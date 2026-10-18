@@ -53,9 +53,10 @@
     },
     "D_meeting_mail_draft": {
       "result": "passed",
-      "production": ["draftEmailTool", "ArtifactProvenance", "saveMailDraft", "MailDraft", "LocalStore/SQLite", "approval revalidation"],
+      "production": ["readPersonTool", "PersonMemory decisions/tasks", "draftEmailTool", "ArtifactProvenance", "saveMailDraft", "MailDraft", "LocalStore/SQLite", "approval revalidation"],
       "fixture": ["model fixture", "approval input", "fictional meeting/person/task"],
       "covered": [
+        "meeting decisions and assigned tasks read through read_person without a same-name leak",
         "meeting/person/task typed provenance",
         "unknown recipient refused without approval",
         "draft saved after approval",

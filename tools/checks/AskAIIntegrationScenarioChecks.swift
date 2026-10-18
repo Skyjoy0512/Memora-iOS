@@ -225,7 +225,8 @@ struct AskAIIntegrationScenarioChecks {
       decisions: ["次回の日程を調整する"], openQuestions: ["見積もりの期限"])
     let task = MemoraTask(id: UUID(), title: "見積もりを送る", isCompleted: false,
       relationships: TaskRelationships(assigneePersonID: person.id), privacy: grantedPrivacy())
-    model.people = [person]
+    model.people = [person, Person(id: UUID(), name: person.name, note: "同名の別人の非公開メモ",
+      contactIdentifier: nil, privacy: grantedPrivacy())]
     model.meetings = [meeting]
     model.tasks = [task]
     let messageID = model.message.id
@@ -233,6 +234,11 @@ struct AskAIIntegrationScenarioChecks {
     model.message.cloudAuthorizationTargets = []
     model.message.sources = [AIChatSource(meetingID: meeting.id, title: meeting.title)]
     model.recordCloudReads([.meeting(meeting.id), .person(person.id), .task(task.id)], messageID: messageID)
+    let read = model.readPersonTool(AgentToolCall(id: "meeting-person", name: "read_person",
+      arguments: ["person_id": person.id.uuidString]), messageID: messageID, compact: false, purpose: .cloudAI)
+    precondition(!read.isError && read.text.contains("次回の日程を調整する"))
+    precondition(read.text.contains("見積もりを送る") && read.text.contains("関連する会議の決定"))
+    precondition(!read.text.contains("同名の別人の非公開メモ"))
     var approvals = 0
     model.approvalAction = { approvals += 1; await Task.yield() }
     model.approves = true
