@@ -38,6 +38,10 @@ class WorkflowTests(unittest.TestCase):
 
         def command(args, cwd, log=None, **kwargs):
             if args[0] == runner.WORKER:
+                self.assertEqual(kwargs['env']['PWD'], str(cwd))
+                config = json.loads(kwargs['env']['OPENCODE_CONFIG_CONTENT'])
+                self.assertEqual(config['permission']['edit']['docs/change.md'], 'allow')
+                self.assertEqual(config['permission']['*'], 'deny')
                 self.calls += 1
                 (cwd / 'docs/change.md').write_text(f'change {self.calls}\n')
                 if outside:

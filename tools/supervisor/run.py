@@ -130,7 +130,8 @@ def main():
         raise RuntimeError('Supervisor returned an empty plan')
     permissions = {'*': 'deny', 'read': {'*': 'allow', '*.env*': 'deny', '*.pem': 'deny',
                     '*.key': 'deny', '*auth.json': 'deny'}, 'glob': 'allow', 'grep': 'allow',
-                   'edit': {'*': 'deny', **{str(tree / p): 'allow' for p in args.allow_file}},
+                   'edit': {'*': 'deny', **{p: 'allow' for p in args.allow_file},
+                            **{str(tree / p): 'allow' for p in args.allow_file}},
                    'external_directory': 'deny'}
     env = os.environ.copy()
     # OpenCode 2 resolves its workspace through PWD as well as the process cwd.
