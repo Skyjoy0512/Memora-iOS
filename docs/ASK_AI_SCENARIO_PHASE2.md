@@ -54,7 +54,7 @@ fixture:
   非同期の一時ファイル片付けを待って削除を確認。
 - メール下書きの保存・編集・再読込。`status == .draft`、宛先空欄を維持。
 - SQLiteの `BEFORE INSERT` triggerで資料/下書き保存を実際にABORT。
-  戻り値は失敗、modelは変更前のまま、保存成功の表示経路へ進まないことを確認。
+  戻り値は失敗、modelは変更前のままで、呼び出し側が保存成功として扱える値にならないことを確認（画面の成功表示自体は未検証）。
 - `ArtifactExportFile` を追加し、共有用の一時コピーと後片付けを本番画面から分離。
   元ファイルを残したままコピーを作成し、シート終了後にコピーだけを削除する。
   存在しない元ファイルは書き出さない。
@@ -75,6 +75,9 @@ fixture:
 - `python3 tools/checks/run-optimization-checks.py`: 全12テスト成功。
 - `xcrun swiftc -typecheck`（iOS 27.1 SDK / iOS 26ターゲット、App/Shared全ソース）: Debug・Release構成とも
   エラー0、既存の非推奨警告20件。`tools/checks/typecheck-ios-app.sh` で再実行できる。
+- `xcrun swiftc -c -whole-module-optimization`（App/Sharedを1モジュールとしてオブジェクト生成）:
+  Debug・Release構成とも成功。`tools/checks/compile-ios-app.sh` で再実行できる。
+  リンク、Info.plist、リソース、署名、アプリ起動は含まない。
 - `swiftc -parse App/DocumentDetailView.swift App/ArtifactExportFile.swift App/ProjectSourceFiles.swift`: 成功。
 
 ビルド制約: Bitrigは登録済みプロジェクト直下のパスだけを認識し、SSD上のlinked

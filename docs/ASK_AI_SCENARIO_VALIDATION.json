@@ -86,7 +86,7 @@
       "real DOCX/PPTX save, SQLite reopen, edit, reopen",
       "old generated file invalidated and cleaned",
       "mail draft edit and reload",
-      "SQLite ABORT leaves model and store unchanged with no success",
+      "SQLite ABORT leaves model and store unchanged; the caller receives false (screen success display not exercised)",
       "share copy keeps source and removes only the temporary copy",
       "deleted/revoked/other-workspace source rows cannot open"
     ],
@@ -107,6 +107,12 @@
   "build": {
     "bitrig_result": "not_run",
     "reason": "Bitrig rejects linked worktrees outside the registered project; main was not switched and other worktrees were not modified",
+    "whole_module_compile": {
+      "command": "tools/checks/compile-ios-app.sh <products-dir> debug|release",
+      "debug": {"result": "passed", "errors": 0, "warnings": 20, "object_bytes": 74000000},
+      "release": {"result": "passed", "errors": 0, "warnings": 20, "object_bytes": 47000000},
+      "scope": "App/ and Shared/ compiled as one module; no link, Info.plist, resources, signing or launch"
+    },
     "typecheck": {
       "command": "tools/checks/typecheck-ios-app.sh <products-dir> debug|release",
       "sdk": "iOS 27.1 Simulator",
@@ -116,8 +122,8 @@
       "scope": "App/ and Shared/ sources only; no link, resources, signing or app launch"
     },
     "app_files_parsed": ["App/DocumentDetailView.swift", "App/ArtifactExportFile.swift", "App/ProjectSourceFiles.swift", "App/ProjectMetadataTransport.swift", "App/WebResearchClient.swift"],
-    "debug": "typecheck passed; Bitrig build not run",
-    "release": "typecheck passed; Bitrig build not run",
+    "debug": "typecheck and whole-module object compile passed; Bitrig build/link not run",
+    "release": "typecheck and whole-module object compile passed; Bitrig build/link not run",
     "ui_e2e": "not_run"
   },
   "external_service_calls_during_fixture_tests": 0,
