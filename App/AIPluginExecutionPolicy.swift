@@ -14,6 +14,17 @@ struct AIPluginExecutionPolicy: Equatable {
     !limitsRecordReads || personTaskIDs.contains(id) || meetingID.map(recordIDs.contains) == true
   }
 
+  /// Builds the one policy a selected @ mention set runs under. The caller has
+  /// already checked that each plugin is ready for the current engine.
+  static func forSelection(pluginIDs: [String], plugins: [AIPlugin], onDevice: Bool) -> AIPluginExecutionPolicy {
+    var ids = plugins.reduce(into: Set<String>()) { $0.formUnion($1.toolIDs) }
+    if !onDevice { ids.insert("memora:ask_user") }
+    return AIPluginExecutionPolicy(pluginIDs: pluginIDs, toolIDs: ids,
+      recordIDs: Set(plugins.compactMap(\.recordID)),
+      limitsRecordReads: !plugins.contains { $0.kind == .builtin || $0.kind == .skill || $0.id == "service:notion" },
+      templateIDs: Set(plugins.compactMap(\.templateID)))
+  }
+
   static func selectionIDs(_ explicit: [String], webSearchRequested: Bool) -> [String] {
     guard !explicit.isEmpty else { return [] }
     var result = explicit

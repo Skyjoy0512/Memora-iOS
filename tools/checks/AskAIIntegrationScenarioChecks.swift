@@ -282,8 +282,17 @@ struct AskAIIntegrationScenarioChecks {
     for item in [gmail, mcp, document] { precondition(registry.register(item)) }
     let gmailProvider = FixtureToolProvider(identifier: "gmail:fixture", text: "架空のメール")
     let mcpProvider = FixtureToolProvider(identifier: "mcp:fixture", text: "架空のMCP結果")
-    var policy = AIPluginExecutionPolicy(pluginIDs: ["service:gmail"], toolIDs: [gmail.id], recordIDs: [],
-      limitsRecordReads: false)
+    let gmailPlugin = AIPlugin(id: "service:gmail", name: "Gmail", summary: "架空", aliases: [], kind: .connected,
+      state: .ready, toolIDs: [gmail.id], permissions: ["gmail:fixture"], cost: .unknown, provider: .directAPI, serviceID: "gmail")
+    let templateID = UUID()
+    let templatePlugin = AIPlugin(id: "template:\(templateID)", name: "架空の会社書式", summary: "架空", aliases: [],
+      kind: .template, state: .ready, toolIDs: [document.id], permissions: [], cost: .unknown, provider: .memora,
+      serviceID: nil, templateID: templateID)
+    var policy = AIPluginExecutionPolicy.forSelection(pluginIDs: [gmailPlugin.id, templatePlugin.id],
+      plugins: [gmailPlugin, templatePlugin], onDevice: false)
+    precondition(policy.toolIDs == [gmail.id, document.id, "memora:ask_user"])
+    precondition(policy.templateIDs == [templateID] && policy.pluginIDs == [gmailPlugin.id, templatePlugin.id])
+    precondition(policy.permits("search_email", arguments: ["query": "架空"]))
     let gmailResult = try await registry.execute(gmail.id, arguments: Data(#"{"query":"架空"}"#.utf8),
       through: gmailProvider, policy: policy)
     precondition(gmailResult.text == "架空のメール")
@@ -311,12 +320,11 @@ struct AskAIIntegrationScenarioChecks {
       preconditionFailure("E: disconnected MCP ran")
     } catch AIToolRegistry.DispatchFailure.unavailable {}
 
-    let templateID = UUID()
-    let templatePolicy = AIPluginExecutionPolicy(pluginIDs: ["template:\(templateID)"],
-      toolIDs: [document.id], recordIDs: [], limitsRecordReads: false, templateIDs: [templateID])
-    precondition(templatePolicy.permits("create_document", arguments: ["template_id": templateID.uuidString]))
-    precondition(!templatePolicy.permits("create_document", arguments: ["template_id": UUID().uuidString]))
-    precondition(!templatePolicy.permits("draft_email", arguments: [:]))
+    precondition(policy.permits("create_document", arguments: ["template_id": templateID.uuidString]))
+    precondition(!policy.permits("create_document", arguments: ["template_id": UUID().uuidString]))
+    precondition(!policy.permits("draft_email", arguments: [:]))
+    let onDevicePolicy = AIPluginExecutionPolicy.forSelection(pluginIDs: [gmailPlugin.id], plugins: [gmailPlugin], onDevice: true)
+    precondition(onDevicePolicy.toolIDs == [gmail.id])
     let templateCall = await gmailProvider.calls
     precondition(templateCall == 1)
   }

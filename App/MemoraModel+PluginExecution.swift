@@ -45,11 +45,7 @@ extension MemoraModel {
     if onDevice, plugins.contains(where: { $0.provider == .mcp || !($0.toolIDs.isSubset(of: Set(AgentTool.onDeviceTools.map { "memora:" + $0.rawValue }))) }) {
       return refuse("この指定にはツール対応のクラウドAI（BYOK）が必要です。設定の「AI整理」で登録済みモデルを選んでください。外部サービスは実行していません。")
     }
-    var ids = plugins.reduce(into: Set<String>()) { $0.formUnion($1.toolIDs) }
-    if !onDevice { ids.insert("memora:ask_user") }
-    let policy = AIPluginExecutionPolicy(pluginIDs: pluginIDs, toolIDs: ids,
-      recordIDs: Set(plugins.compactMap(\.recordID)), limitsRecordReads: !plugins.contains { $0.kind == .builtin || $0.kind == .skill || $0.id == "service:notion" },
-      templateIDs: Set(plugins.compactMap(\.templateID)))
+    let policy = AIPluginExecutionPolicy.forSelection(pluginIDs: pluginIDs, plugins: plugins, onDevice: onDevice)
     return sendAgentChat(question, attachment: attachment, pluginPolicy: policy, preparedAttachment: preparedAttachment)
   }
 

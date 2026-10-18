@@ -67,9 +67,11 @@
     },
     "E_selected_tools_only": {
       "result": "passed",
-      "production": ["AIPluginExecutionPolicy", "AIToolRegistry", "AIToolDefinition", "IntegrationProvider"],
+      "production": ["AIPluginExecutionPolicy.forSelection", "AIToolRegistry", "AIToolDefinition", "IntegrationProvider"],
       "fixture": ["Gmail and MCP transport providers", "network-free execution"],
       "covered": [
+        "selected plugin IDs build the production policy toolIDs/recordIDs/templateIDs",
+        "cloud selection adds ask_user while on-device selection does not",
         "only selected tool executes",
         "unselected MCP tool rejected before provider call",
         "deselection rejected",
