@@ -167,6 +167,10 @@ def main():
     validation_env = {k: v for k, v in env.items() if k in (
         'PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TMPDIR',
         'CLANG_MODULE_CACHE_PATH', 'SWIFT_MODULECACHE_PATH', 'MEMORA_CHECK_ROOT')}
+    validation_work = run / 'validation-work'
+    validation_work.mkdir()
+    validation_env['TMPDIR'] = str(validation_work)
+    validation_env['MEMORA_CHECK_ROOT'] = str(validation_work)
     compiler_bin = run / 'validation-bin'
     compiler_bin.mkdir()
     compiler = compiler_bin / 'swiftc'
@@ -175,7 +179,7 @@ def main():
     compiler.chmod(0o700)
     validation_env['PATH'] = str(compiler_bin) + ':' + validation_env.get('PATH', '/usr/bin:/bin')
     sandbox = run / 'validation.sb'
-    write_paths = [run, SSD / 'clang-module-cache', SSD / 'swift-module-cache']
+    write_paths = [validation_work, SSD / 'clang-module-cache', SSD / 'swift-module-cache']
     for path in write_paths:
         path.mkdir(parents=True, exist_ok=True)
     sandbox.write_text('(version 1)\n(allow default)\n(deny network*)\n'

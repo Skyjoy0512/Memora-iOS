@@ -26,6 +26,7 @@ class WorkflowTests(unittest.TestCase):
         subprocess.run(['git', 'commit', '-qm', 'base'], cwd=self.root, check=True)
         self.real_command = runner.command
         self.calls = 0
+        self.sandbox_checked = False
 
     def tearDown(self):
         self.temp.cleanup()
@@ -52,6 +53,26 @@ class WorkflowTests(unittest.TestCase):
                 return ''
             if args[0] == 'git':
                 return self.real_command(args, cwd, log, **kwargs)
+            if args[0] == '/usr/bin/sandbox-exec' and not self.sandbox_checked:
+                probe = '''
+import os, socket
+try:
+    open('docs/change.md', 'w')
+except PermissionError:
+    pass
+else:
+    raise SystemExit('sandbox allowed modifying candidate source')
+try:
+    socket.create_connection(('127.0.0.1', 9), timeout=1)
+except PermissionError:
+    pass
+else:
+    raise SystemExit('sandbox allowed network access')
+with open(os.path.join(os.environ['TMPDIR'], 'allowed-output'), 'w') as out:
+    out.write('allowed')
+'''
+                self.real_command([*args[:3], sys.executable, '-B', '-c', probe], cwd, log, env=kwargs['env'])
+                self.sandbox_checked = True
             if log:
                 log.write_text('simulated validation\n')
             if build_fail and 'build.py' in ' '.join(args):
