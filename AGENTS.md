@@ -6,6 +6,14 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 ## Working agreement
 
+- When asked to delegate implementation to OpenCode Go, act as the supervisor:
+  inspect scope and read `docs/CODEX_OPENCODE_WORKFLOW.md`, then invoke
+  `/opt/homebrew/bin/python3.12 tools/supervisor/run.py` with a bounded task
+  and exact `--allow-file` paths. Use `--apply` when integrating the passing
+  candidate is requested. Review the resulting diff, run task-specific checks,
+  and commit only the intended files. Never claim visual/device validation from
+  compilation alone. Do not bypass failed gates or exceed two repair attempts.
+
 - Change the UI, layout, or copy only when the request asks for it. Otherwise
   optimise and refactor code without altering what is on screen.
 - Build after every change and keep the working tree committed.
