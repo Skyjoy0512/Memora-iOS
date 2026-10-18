@@ -168,3 +168,24 @@ test('editing a record saves it to the new date', async ({ app, device, screen }
   const targetLabel = `${target.toLocaleString('en-US', { month: 'short' })} ${target.getDate()}, ${target.getFullYear()}`;
   await expect(screen.getByText(new RegExp(targetLabel)).first()).toBeVisible();
 });
+
+test('a source added in the workspace stays in the sources tab', async ({ app, device, screen }) => {
+  await device.installApp();
+  await app.open();
+  await createProject(screen);
+
+  await tapStable(screen.getByRole('button', { name: 'ソース' }));
+  await tapStable(screen.getByLabel('ソースを追加').first());
+  await screen.getByPlaceholder('YouTube・WebのURL').fill('https://example.com/e2e-source');
+  const save = screen.getByRole('button', { name: 'リンクを保存' });
+  await expect(save).toBeEnabled();
+  await tapStable(save);
+  await tapStable(screen.getByLabel('閉じる'));
+
+  const row = screen.getByText('example.com').first();
+  await expect(row).toBeVisible();
+
+  await tapStable(screen.getByRole('button', { name: 'チャット' }));
+  await tapStable(screen.getByRole('button', { name: 'ソース' }));
+  await expect(screen.getByText('example.com').first()).toBeVisible();
+});
