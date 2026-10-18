@@ -486,9 +486,11 @@ struct MeetingDetailView: View {
       case .waitingForSummary:
         ManualAIProcessingCard(
           symbol: .sparkles,
-          title: "文字起こしが完成しました",
-          detail: "要約方法を選ぶまで、追加のAI処理は行いません。",
-          actionTitle: "要約を生成"
+          title: model.hasPendingSummary(meeting.id) ? "要約をバックグラウンドで続けています" : "文字起こしが完成しました",
+          detail: model.hasPendingSummary(meeting.id)
+            ? "アプリを閉じても、iOSが許可したタイミングで続きます。戻ってきたときにも再開します。"
+            : "要約方法を選ぶまで、追加のAI処理は行いません。",
+          actionTitle: model.hasPendingSummary(meeting.id) ? "いま要約する" : "要約を生成"
         ) {
           isSummaryGenerationPresented = true
         }

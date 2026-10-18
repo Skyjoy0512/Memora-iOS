@@ -15,6 +15,20 @@ extension MemoraModel {
     scheduleBackgroundSummary()
   }
 
+  func hasPendingSummary(_ meetingID: UUID) -> Bool {
+    pendingSummaryJobs.contains { $0.meetingID == meetingID }
+  }
+
+  /// Finishes a queued summary when the app comes back to the foreground, in
+  /// case iOS did not run the processing window. The same job is used, so the
+  /// result and its checks match a background run.
+  func resumePendingSummariesIfNeeded() {
+    guard !pendingSummaryJobs.isEmpty, currentTeamID == nil,
+          !isRestoring, !isStoreProtected else { return }
+    guard !pendingSummaryJobs.contains(where: { processing.isActive($0.meetingID) }) else { return }
+    Task { _ = await runPendingBackgroundSummaries() }
+  }
+
   func removeBackgroundSummary(meetingID: UUID) {
     let jobs = pendingSummaryJobs.filter { $0.meetingID != meetingID }
     guard jobs.count != pendingSummaryJobs.count else { return }
@@ -53,7 +67,7 @@ extension MemoraModel {
   /// Runs the queued summaries one by one. A job is dropped only when its run
   /// reaches a terminal state, so a window cut short leaves the work for the
   /// next one instead of losing it.
-  private func runPendingBackgroundSummaries() async -> Bool {
+  func runPendingBackgroundSummaries() async -> Bool {
     guard currentTeamID == nil, !isRestoring, !isStoreProtected else { return false }
     for job in pendingSummaryJobs {
       guard !Task.isCancelled else { return false }

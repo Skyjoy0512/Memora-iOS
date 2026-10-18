@@ -24,7 +24,7 @@ struct JournalTimelineAddRow: View {
         HStack(spacing: 6) {
           Image(icon: .plus)
             .font(.caption.weight(.bold))
-          Text(label)
+          Text(displayLabel)
             .font(.caption.weight(.medium))
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
@@ -58,5 +58,12 @@ struct JournalTimelineAddRow: View {
 
   private var iconColumnLeading: CGFloat {
     typeSize.isAccessibilitySize ? 0 : timeWidth + Self.columnSpacing
+  }
+
+  /// The full sentence helps at ordinary sizes; at accessibility sizes the
+  /// shorter form keeps the whole pill inside the row.
+  private var displayLabel: String {
+    guard typeSize.isAccessibilitySize else { return label }
+    return isLast ? "記録を追加" : "この間に追加"
   }
 }

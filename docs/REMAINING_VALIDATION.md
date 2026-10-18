@@ -67,3 +67,8 @@ Real-device background/lock-screen recording, actual audio-file import, external
 - `tools/checks/run-background-summary-job-checks.sh` verifies the project's
   permitted identifier / `processing` background mode and the job's Codable
   round-trip.
+
+Foreground return is a second safety net: if iOS did not run the processing window,
+`resumePendingSummariesIfNeeded()` continues the same queued job when the app becomes
+active. The record's summary card says that the work is continuing in the background
+and offers "いま要約する" to run the normal foreground sheet instead.
