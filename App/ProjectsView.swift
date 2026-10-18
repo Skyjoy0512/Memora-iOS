@@ -10,33 +10,38 @@ struct ProjectsView: View {
   @State private var renameTarget: MemoraSpace?
   @State private var deleteTarget: MemoraSpace?
   @State private var isShareInboxPresented = false
+  @State private var filter = ProjectListFilter.all
 
   var body: some View {
     let latestDates = model.spaceAggregates.compactMapValues(\.latestDate)
     let projects = order.ordered(model.spaces.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }, latestDates: latestDates)
     let matchingIDs = Set(projects.map(\.id))
-    let recent = !isSearching && recentFirst && projects.count > 3
-      ? Array(model.recentProjects.filter { matchingIDs.contains($0.id) }.prefix(3)) : []
-    let recentIDs = Set(recent.map(\.id))
-    let remaining = projects.filter { !recentIDs.contains($0.id) }
     let shared = model.cloudSharing.sharedProjects.filter {
       query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) || $0.ownerName.localizedCaseInsensitiveContains(query)
     }
+    let visibleProjects = filter == .shared ? [] : projects
+    let visibleShared = filter == .mine ? [] : shared
+    let total = visibleProjects.count + visibleShared.count
+    let recent = !isSearching && recentFirst && visibleProjects.count > 3
+      ? Array(model.recentProjects.filter { matchingIDs.contains($0.id) }.prefix(3)) : []
+    let recentIDs = Set(recent.map(\.id))
+    let remaining = visibleProjects.filter { !recentIDs.contains($0.id) }
 
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
+        ProjectListFilterBar(selection: $filter)
         if model.shareInboxFailure != nil {
           Button("共有からの取り込みを確認") { isShareInboxPresented = true }
             .font(.subheadline).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
         }
-        if !projects.isEmpty {
+        if total > 0 {
           HStack {
-            Text(isSearching ? "検索結果 \(projects.count)件" : "\(projects.count)件")
+            Text(isSearching ? "検索結果 \(total)件" : "\(total)件")
               .font(.subheadline)
               .foregroundStyle(.secondary)
-              .accessibilityLabel("プロジェクト\(projects.count)件")
+              .accessibilityLabel("プロジェクト\(total)件")
             Spacer()
-            orderMenu
+            if filter != .shared { orderMenu }
           }
         }
         if !recent.isEmpty {
@@ -44,16 +49,16 @@ struct ProjectsView: View {
           projectRows(recent)
         }
 
-        if !projects.isEmpty {
+        if !visibleProjects.isEmpty {
           if !recent.isEmpty, !remaining.isEmpty { heading("その他のプロジェクト", count: nil) }
           projectRows(remaining)
-        } else if shared.isEmpty {
+        } else if visibleShared.isEmpty {
           if isSearching {
             ContentUnavailableView.search(text: query)
           } else {
             VStack(alignment: .leading, spacing: 8) {
-              Text("プロジェクトはまだありません").font(.body.weight(.semibold))
-              Text("右上の「作成」から始められます。")
+              Text(filter.emptyTitle).font(.body.weight(.semibold))
+              Text(filter.emptyDetail)
                 .font(.subheadline).foregroundStyle(.secondary)
             }
             .padding(.vertical, 32)
@@ -65,9 +70,9 @@ struct ProjectsView: View {
             .font(.subheadline).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
         }
 
-        if !shared.isEmpty {
-          heading("チームから共有", count: shared.count)
-          ForEach(shared) { project in
+        if !visibleShared.isEmpty {
+          heading("チームから共有", count: visibleShared.count)
+          ForEach(visibleShared) { project in
             NavigationLink(value: LibraryRoute.sharedProject(project.id)) {
               HStack(spacing: 12) {
                 Image(icon: project.icon).frame(width: ProjectLayout.iconSide).accessibilityHidden(true)

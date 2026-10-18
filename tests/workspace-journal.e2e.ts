@@ -189,3 +189,19 @@ test('a source added in the workspace stays in the sources tab', async ({ app, d
   await tapStable(screen.getByRole('button', { name: 'ソース' }));
   await expect(screen.getByText('example.com').first()).toBeVisible();
 });
+
+test('the project list filters all, mine and shared', async ({ app, device, screen }) => {
+  await device.installApp();
+  await app.open();
+  await screen.getByText('ライブラリ').tap();
+  await screen.getByText('プロジェクト').tap();
+
+  await expect(screen.getByRole('button', { name: 'すべて', selected: true })).toBeVisible();
+  await tapStable(screen.getByRole('button', { name: '自分' }));
+  await expect(screen.getByRole('button', { name: '自分', selected: true })).toBeVisible();
+  await tapStable(screen.getByRole('button', { name: '共有' }));
+  await expect(screen.getByRole('button', { name: '共有', selected: true })).toBeVisible();
+  await expect(screen.getByText('共有されたプロジェクトはありません')).toBeVisible();
+  await tapStable(screen.getByRole('button', { name: 'すべて' }));
+  await expect(screen.getByRole('button', { name: 'すべて', selected: true })).toBeVisible();
+});
