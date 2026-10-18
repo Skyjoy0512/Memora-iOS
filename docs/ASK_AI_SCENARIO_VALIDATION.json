@@ -126,6 +126,11 @@
     "release": "typecheck and whole-module object compile passed; Bitrig build/link not run",
     "ui_e2e": "not_run"
   },
+  "final_runs": {
+    "run-next-generation-checks.sh": "passed",
+    "run-motion-loading-checks.sh": "passed",
+    "run-optimization-checks.py": "passed (12 tests)"
+  },
   "external_service_calls_during_fixture_tests": 0,
   "new_paid_services": [],
   "new_app_oss_dependencies": []

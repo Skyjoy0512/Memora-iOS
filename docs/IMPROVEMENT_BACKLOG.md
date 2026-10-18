@@ -778,3 +778,13 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 - 既存テンプレートへ明示的なローカル再解析を追加。旧形式・途中失効・保存失敗を本番extension/SQLiteで検証する。
 - 実ファイルとMac Quick Look先頭表示の結果: [ASK_AI_OFFICE_TEMPLATE_RUNS.md](ASK_AI_OFFICE_TEMPLATE_RUNS.md)。
 - P1: 実企業書式、Office全ページの改ページ/あふれ/フォント代替、繰り返し表/画像/グラフの差し込み。
+
+
+## 2026-10-18: Ask AI A〜E統合シナリオと成果物操作
+
+- A〜Eを本番のResearch/registry/policy/document/mail/provenance/SQLiteへ接続したhost検証を追加。
+  会社テンプレートからの実DOCX/PPTX、会議の決定/タスク取得、不明宛先拒否、Shared HTTP境界を含む。
+- 成果物の保存・編集・再読込、共有用一時コピーの片付け、保存ABORT、削除/非公開/別workspaceの出典を検証。
+- 詳細: [ASK_AI_SCENARIO_PHASE2.md](ASK_AI_SCENARIO_PHASE2.md)。
+- P0: linked worktreeをBitrigが認識しないため、Debug/Releaseのリンク・アプリ起動・シミュレータUI/e2eは未実行。
+  型検査とwhole-moduleオブジェクトコンパイルはDebug/Releaseとも成功。main統合後にBitrigで再実行する。
