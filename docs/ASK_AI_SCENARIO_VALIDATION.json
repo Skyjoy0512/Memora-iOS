@@ -1,0 +1,116 @@
+{
+  "checked_at": "2026-10-18",
+  "baseline_main": "df9fa1f",
+  "branch": "feat/askai-integrated-scenarios",
+  "scenarios": {
+    "A_person_company_proposal": {
+      "result": "passed",
+      "production": [
+        "prepareDocumentArtifact",
+        "CompanyTemplateEngine",
+        "DOCXWriter/PPTXWriter",
+        "OfficeArchiveReader/OfficeDocumentExtraction",
+        "MemoraModel+Documents",
+        "LocalStore/SQLite",
+        "ArtifactProvenance"
+      ],
+      "fixture": ["model fixture", "approval input", "fictional person/meeting/task", "temporary workspace files directory"],
+      "covered": [
+        "explicit person and per-record reads",
+        "company template selected by id",
+        "real DOCX and PPTX generated and reloaded",
+        "document saved and reopened from SQLite",
+        "template from another workspace refused"
+      ],
+      "not_verified": ["real cloud provider", "Microsoft Word/PowerPoint final rendering"]
+    },
+    "B_past_conversation_open_items": {
+      "result": "passed",
+      "production": ["AIConversationProvenance.allowsReuse", "AIRecordFingerprint", "MemoryRetrievalOrchestrator", "AIEpisode"],
+      "fixture": ["episode and task fixtures"],
+      "covered": [
+        "task status change revokes reuse",
+        "deleted source revokes reuse",
+        "workspace change revokes reuse",
+        "unrelated or ambiguous question does not assert a past item",
+        "episode roundtrip keeps unresolved without inventing decisions"
+      ],
+      "not_verified": ["semantic agreement between the model answer and the episode", "real history creation through a provider"]
+    },
+    "C_research_company_slides": {
+      "result": "passed",
+      "production": ["ResearchLoop", "ResearchPlan", "WebResearchReport/Source", "CompanyTemplateEngine", "PPTXWriter", "OfficeArchiveReader/OfficeDocumentExtraction", "prepareDocumentArtifact", "LocalStore/SQLite"],
+      "fixture": ["scripted search results", "temporary workspace files directory"],
+      "covered": [
+        "bounded iterative search with unique queries",
+        "duplicate URL merged and excerpt/extracted kinds kept distinct",
+        "citation range validated",
+        "company PPTX template filled, generated, reloaded and stored",
+        "interrupted research remains incomplete"
+      ],
+      "not_verified": ["live Brave HTTP response decoding in this scenario", "full-page PowerPoint rendering"]
+    },
+    "D_meeting_mail_draft": {
+      "result": "passed",
+      "production": ["draftEmailTool", "ArtifactProvenance", "saveMailDraft", "MailDraft", "LocalStore/SQLite", "approval revalidation"],
+      "fixture": ["model fixture", "approval input", "fictional meeting/person/task"],
+      "covered": [
+        "meeting/person/task typed provenance",
+        "unknown recipient refused without approval",
+        "draft saved after approval",
+        "edited subject/body saved and reopened",
+        "status remains draft, never sent"
+      ],
+      "not_verified": ["actual Mail composer or send", "Gmail Drafts API"]
+    },
+    "E_selected_tools_only": {
+      "result": "passed",
+      "production": ["AIPluginExecutionPolicy", "AIToolRegistry", "AIToolDefinition", "IntegrationProvider"],
+      "fixture": ["Gmail and MCP transport providers", "network-free execution"],
+      "covered": [
+        "only selected tool executes",
+        "unselected MCP tool rejected before provider call",
+        "deselection rejected",
+        "disabled MCP rejected",
+        "template id must match selected template",
+        "no network calls"
+      ],
+      "not_verified": ["production pluginCatalog/connection/cost UI E2E", "real Gmail OAuth and MCP server"]
+    }
+  },
+  "phase2_artifacts": {
+    "result": "passed",
+    "covered": [
+      "real DOCX/PPTX save, SQLite reopen, edit, reopen",
+      "old generated file invalidated and cleaned",
+      "mail draft edit and reload",
+      "SQLite ABORT leaves model and store unchanged with no success",
+      "share copy keeps source and removes only the temporary copy",
+      "deleted/revoked/other-workspace source rows cannot open"
+    ],
+    "not_verified": [
+      "share sheet opening in iOS",
+      "destination app opening the shared file",
+      "Office full-page fidelity",
+      "backup restore UI"
+    ]
+  },
+  "checks": {
+    "run-ask-ai-scenario-checks.sh": "passed",
+    "run-artifact-operation-checks.sh": "passed",
+    "run-next-generation-checks.sh": "passed",
+    "run-motion-loading-checks.sh": "passed",
+    "run-optimization-checks.py": "passed (12 tests)"
+  },
+  "build": {
+    "result": "not_run",
+    "reason": "Bitrig rejects linked worktrees outside the registered project; main was not switched and other worktrees were not modified",
+    "app_files_parsed": ["App/DocumentDetailView.swift", "App/ArtifactExportFile.swift", "App/ProjectSourceFiles.swift"],
+    "debug": "not_run",
+    "release": "not_run",
+    "ui_e2e": "not_run"
+  },
+  "external_service_calls_during_fixture_tests": 0,
+  "new_paid_services": [],
+  "new_app_oss_dependencies": []
+}
