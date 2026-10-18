@@ -11,23 +11,21 @@ struct JournalTimelineRow<Content: View>: View {
   @ScaledMetric(relativeTo: .caption) private var timeWidth = 38.0
 
   var body: some View {
-    HStack(alignment: .top, spacing: 10) {
+    HStack(alignment: .top, spacing: JournalTimelineMetrics.columnSpacing) {
       if !typeSize.isAccessibilitySize {
         Text(time)
           .font(.caption.monospacedDigit())
           .foregroundStyle(.primary)
           .multilineTextAlignment(.leading)
-          .frame(width: timeWidth, alignment: .leading)
-          .padding(.top, 4)
+          .frame(width: timeWidth, height: JournalTimelineMetrics.iconSide, alignment: .leading)
           .accessibilityHidden(true)
       }
 
       Image(icon: icon)
         .font(.title3)
         .foregroundStyle(MemoraPalette.textSecondary)
-        .frame(width: 44, height: 44)
-        .background(MemoraPalette.background, in: Circle())
-        .memoraGlass(in: Circle())
+        .frame(width: JournalTimelineMetrics.iconSide, height: JournalTimelineMetrics.iconSide)
+        .background(Color(uiColor: .tertiarySystemFill), in: Circle())
         .accessibilityHidden(true)
 
       content()
@@ -40,9 +38,9 @@ struct JournalTimelineRow<Content: View>: View {
       if connectsToNext {
         GeometryReader { geometry in
           Rectangle()
-            .fill(MemoraPalette.border)
-            .frame(width: 5, height: max(0, geometry.size.height - 22))
-            .offset(x: (typeSize.isAccessibilitySize ? 0 : timeWidth + 10) + 19.5, y: 22)
+            .fill(Color.primary.opacity(0.12))
+            .frame(width: JournalTimelineMetrics.lineWidth, height: max(0, geometry.size.height - JournalTimelineMetrics.iconSide / 2))
+            .offset(x: iconColumnLeading + (JournalTimelineMetrics.iconSide - JournalTimelineMetrics.lineWidth) / 2, y: JournalTimelineMetrics.iconSide / 2)
         }
         .accessibilityHidden(true)
       }
@@ -50,4 +48,15 @@ struct JournalTimelineRow<Content: View>: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .contentShape(Rectangle())
   }
+
+  /// The icon column's leading edge, so the hairline runs through its centre.
+  private var iconColumnLeading: CGFloat {
+    typeSize.isAccessibilitySize ? 0 : timeWidth + JournalTimelineMetrics.columnSpacing
+  }
+}
+
+private enum JournalTimelineMetrics {
+  static let iconSide: CGFloat = 44
+  static let lineWidth: CGFloat = 1.5
+  static let columnSpacing: CGFloat = 10
 }

@@ -12,8 +12,6 @@ struct JournalCalendar: View {
   @Binding var selectedDate: Date
   /// Start-of-day dates that have at least one record.
   var markedDays: Set<Date>
-  /// Ties the day capsules together so the selection morphs between days.
-  @Namespace private var glassNamespace
 
   private let calendar = Calendar.current
   /// The days the strip can scroll through, anchored on today so the set keeps
@@ -25,7 +23,7 @@ struct JournalCalendar: View {
   private static let cellSpacing: CGFloat = 2
   private static let verticalPadding: CGFloat = 12
 
-  // Ordinary text keeps the established seven-day rhythm and glass geometry.
+  // Ordinary text keeps the established seven-day rhythm.
   private var cellWidth: CGFloat { typeSize.isAccessibilitySize ? accessibleCellWidth : Self.cellWidth }
   private var cellHeight: CGFloat { typeSize.isAccessibilitySize ? accessibleCellHeight : Self.cellHeight }
 
@@ -38,20 +36,13 @@ struct JournalCalendar: View {
   var body: some View {
     ScrollViewReader { proxy in
       ScrollView(.horizontal) {
-        // The container lets the selected day's capsule grow under the finger
-        // and morph into the next day's as the selection moves. The system
-        // draws the press, so the day's text stays centred — scaling the cell
-        // ourselves pulled the text off centre because the container renders
-        // the glass separately from the scaled content.
-        MemoraGlassContainer(spacing: 4) {
-          LazyHStack(spacing: Self.cellSpacing) {
-            ForEach(stripDays, id: \.self) { day in
-              dayCell(day).id(day)
-            }
+        LazyHStack(spacing: Self.cellSpacing) {
+          ForEach(stripDays, id: \.self) { day in
+            dayCell(day).id(day)
           }
-          .scrollTargetLayout()
-          .padding(.vertical, Self.verticalPadding)
         }
+        .scrollTargetLayout()
+        .padding(.vertical, Self.verticalPadding)
       }
       .scrollTargetBehavior(.viewAligned)
       .scrollIndicators(.hidden)
@@ -83,10 +74,9 @@ struct JournalCalendar: View {
     let isSelected = calendar.isDate(day, inSameDayAs: selectedDate)
     let isToday = calendar.isDateInToday(day)
     let isMarked = markedDays.contains(calendar.startOfDay(for: day))
-    let weekdayStyle: AnyShapeStyle = isSelected ? AnyShapeStyle(MemoraPalette.textPrimary) : AnyShapeStyle(.secondary)
-    let dayStyle: AnyShapeStyle = isSelected
+    let weekdayStyle: AnyShapeStyle = isSelected || isToday
       ? AnyShapeStyle(MemoraPalette.textPrimary)
-      : (isToday ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+      : AnyShapeStyle(.secondary)
 
     return Button {
       if !isSelected { InteractionFeedback.shared.send(.selection) }
@@ -96,14 +86,20 @@ struct JournalCalendar: View {
     } label: {
       VStack(spacing: 6) {
         Text(weekdaySymbol(for: day))
-          .font(.subheadline)
+          .font(.subheadline.weight(isToday ? .medium : .regular))
           .foregroundStyle(weekdayStyle)
 
         Text(day.formatted(.dateTime.day()))
-          .font(.title2.weight(isSelected ? .semibold : .regular))
-          .foregroundStyle(dayStyle)
+          .font(.title2.weight(isSelected || isToday ? .semibold : .regular))
+          .foregroundStyle(MemoraPalette.textPrimary)
       }
       .frame(width: cellWidth, height: cellHeight)
+      .background {
+        if isSelected {
+          RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(Color(uiColor: .tertiarySystemFill))
+        }
+      }
       // The record dot is an overlay so it never shifts the day off the
       // capsule's centre.
       .overlay(alignment: .bottom) {
@@ -112,10 +108,7 @@ struct JournalCalendar: View {
           .frame(width: 4, height: 4)
           .padding(.bottom, 8)
       }
-      .modifier(
-        DaySelectionGlass(isSelected: isSelected, day: day, namespace: glassNamespace)
-      )
-      .contentShape(Rectangle())
+      .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityLabel(accessibilityLabel(for: day, isMarked: isMarked))
@@ -154,31 +147,5 @@ struct JournalCalendar: View {
       day = next
     }
     return days
-  }
-}
-
-/// Gives the selected day an interactive Liquid Glass capsule. Each day carries
-/// its own identifier so the capsule morphs into the next day's as the
-/// selection moves, and the system draws the press reaction.
-private struct DaySelectionGlass: ViewModifier {
-  var isSelected: Bool
-  var day: Date
-  var namespace: Namespace.ID
-
-  func body(content: Content) -> some View {
-    if #available(iOS 26.0, *) {
-      if isSelected {
-        content
-          .glassEffect(.regular.interactive(), in: Capsule())
-          .glassEffectID(day, in: namespace)
-          .glassEffectTransition(.matchedGeometry)
-      } else {
-        content
-      }
-    } else {
-      content.background {
-        if isSelected { Capsule().fill(Color(uiColor: .tertiarySystemFill)) }
-      }
-    }
   }
 }

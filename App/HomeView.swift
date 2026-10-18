@@ -386,7 +386,17 @@ struct HomeView: View {
         ForEach(Array(timeline.items.enumerated()), id: \.element.id) { index, item in
           let nextDate = index + 1 < timeline.items.count
             ? timeline.items[index + 1].date(on: selectedDate) : nil
-          timelineRow(item, connectsToNext: nextDate != nil, nextDate: nextDate)
+          timelineRow(item, connectsToNext: true, nextDate: nextDate)
+          if index < timeline.items.count - 1 {
+            JournalTimelineAddRow(label: "この間に記録を追加", isLast: false) {
+              InteractionFeedback.shared.send(.tap)
+              model.isLifeLogCreationPresented = true
+            }
+          }
+        }
+        JournalTimelineAddRow(label: "記録を追加", isLast: true) {
+          InteractionFeedback.shared.send(.tap)
+          model.isLifeLogCreationPresented = true
         }
       }
     }
