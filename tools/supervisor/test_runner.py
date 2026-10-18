@@ -34,7 +34,7 @@ class WorkflowTests(unittest.TestCase):
     def execute(self, reviews, *, apply=False, outside=False, worker_error=False, build_fail=False):
         def model(prompt, shape, cwd, run, label):
             if label == 'plan':
-                return {'tasks': ['Write bounded documentation'], 'acceptance': ['Document exists']}
+                return {'implementation_tasks': ['Write bounded documentation'], 'acceptance': ['Document exists']}
             return reviews.pop(0)
 
         def command(args, cwd, log=None, **kwargs):
@@ -123,6 +123,18 @@ with open(os.path.join(os.environ['TMPDIR'], 'allowed-output'), 'w') as out:
         for name in ('../outside', 'AGENTS.md', 'App/ProminentTabBar.swift', 'tools/supervisor/run.py', 'docs/*.md'):
             with self.assertRaises(RuntimeError):
                 runner.valid_paths([name], False)
+
+    def test_reported_binary_read_is_warning_but_edit_error_is_fatal(self):
+        log = Path(self.temp.name) / 'events.jsonl'
+        binary = {'type': 'tool_use', 'part': {'tool': 'read', 'state': {
+            'status': 'error', 'error': 'Cannot read binary file: .git/index'}}}
+        done = {'type': 'text', 'part': {'text': 'implemented'}}
+        log.write_text('\n'.join(json.dumps(e) for e in [binary, done]))
+        self.assertEqual(len(runner.worker_events(log)), 1)
+        binary['part']['tool'] = 'edit'
+        log.write_text('\n'.join(json.dumps(e) for e in [binary, done]))
+        with self.assertRaisesRegex(RuntimeError, 'Worker returned an error'):
+            runner.worker_events(log)
 
 
 if __name__ == '__main__':

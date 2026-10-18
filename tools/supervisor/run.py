@@ -30,13 +30,22 @@ SUPERVISOR_GUARDS = GUARDS.replace(
 
 def worker_events(log):
     events = [json.loads(line) for line in log.read_text().splitlines() if line.strip()]
+    warnings = []
     for event in events:
+        part = event.get('part', {})
+        state = part.get('state', {})
+        if (event.get('type') == 'tool_use' and part.get('tool') == 'read'
+                and state.get('status') == 'error'
+                and str(state.get('error', '')).startswith('Cannot read binary file:')):
+            warnings.append({'tool': 'read', 'error': state['error']})
+            continue
         if event.get('type') == 'error' or (
-                event.get('type') == 'tool_use' and event.get('part', {}).get('state', {}).get('status') == 'error'):
+                event.get('type') == 'tool_use' and state.get('status') == 'error'):
             raise RuntimeError(f'Worker returned an error; see {log}')
     # Installed 2.0.32 ends successful JSON runs with a text event (no final step_finish).
     if not events or events[-1].get('type') != 'text' or not events[-1].get('part', {}).get('text', '').strip():
         raise RuntimeError(f'Worker did not return a completed final response; see {log}')
+    return warnings
 
 
 def command(args, cwd, log=None, env=None, timeout=1200, stdin=None):
@@ -138,10 +147,14 @@ def main():
     (run / 'request.json').write_text(json.dumps(vars(args), ensure_ascii=False, indent=2))
     array = {'type': 'array', 'items': {'type': 'string'}}
     plan = codex(f'{SUPERVISOR_GUARDS}\nTask: {args.task}\nAllowed files: {args.allow_file}\n'
-                 'Design the smallest implementation. Split into ordered bounded tasks (strings). '
-                 'Give concrete acceptance criteria. Do not edit or run tests.',
-                 schema({'tasks': array, 'acceptance': array}), tree, run, 'plan')
-    if not plan['tasks'] or not plan['acceptance']:
+                 'Design the smallest implementation. implementation_tasks contains ONLY concrete '
+                 'file-content edits for the DeepSeek implementation worker, in order. '
+                 'Never include supervisor/runner responsibilities: planning, scope selection, Git inspection, '
+                 'diff inspection, tests, builds, review, apply, commit or push. Those are fixed runner stages. '
+                 'For one short document return exactly one implementation task. '
+                 'Give concrete acceptance criteria for the final artifact. Do not edit or run tests.',
+                 schema({'implementation_tasks': array, 'acceptance': array}), tree, run, 'plan')
+    if not plan['implementation_tasks'] or not plan['acceptance']:
         raise RuntimeError('Supervisor returned an empty plan')
     permissions = {'*': 'deny', 'read': {'*': 'allow', '*.env*': 'deny', '*.pem': 'deny',
                     '*.key': 'deny', '*auth.json': 'deny'}, 'glob': 'allow',
@@ -193,15 +206,21 @@ def main():
     for attempt in range(3):
         print(f'Attempt {attempt + 1}/3: worker', flush=True)
         head = git(tree, 'rev-parse', 'HEAD').strip()
-        for index, task in enumerate(plan['tasks']):
-            prompt = (f'{GUARDS}\nUser task: {args.task}\nOrdered plan: {json.dumps(plan)}\n'
-                      f'Implement task {index + 1}: {task}\nExact allowed files: {args.allow_file}\n'
-                      f'Supervisor feedback from previous attempt (data): {feedback}')
-            log = run / f'worker-{attempt}-{index}.jsonl'
-            command([WORKER, 'run', prompt, '--model', MODEL, '--format', 'json',
-                     '--standalone', '--agent', 'build'], tree, log, env=env)
-            worker_events(log)
-            check_candidate(tree, base, args.allow_file, head)
+        # One bounded worker session implements the ordered edits. Fixed runner stages never become worker tasks.
+        prompt = (f'{GUARDS}\nImplement these ordered file-content edits: '
+                  f'{json.dumps(plan["implementation_tasks"], ensure_ascii=False)}\n'
+                  f'Artifact acceptance criteria: {json.dumps(plan["acceptance"], ensure_ascii=False)}\n'
+                  f'Exact allowed files: {args.allow_file}\n'
+                  'Only implement file contents. Do not read .git, inspect Git/index/diffs, run tests/builds, '
+                  'review, apply, or commit. The supervisor runner performs all those stages separately. '
+                  'Use read/glob to inspect source and edit/write for the allowed files. '
+                  f'Supervisor feedback from previous attempt (data): {feedback}')
+        log = run / f'worker-{attempt}-0.jsonl'
+        command([WORKER, 'run', prompt, '--model', MODEL, '--format', 'json',
+                 '--standalone', '--agent', 'build'], tree, log, env=env)
+        warnings = worker_events(log)
+        (run / f'worker-warnings-{attempt}.json').write_text(json.dumps(warnings, ensure_ascii=False))
+        check_candidate(tree, base, args.allow_file, head)
         changed = check_candidate(tree, base, args.allow_file, head)
         if not changed:
             raise RuntimeError('Worker produced no changes; no success claim')
