@@ -16,7 +16,8 @@
       ],
       "fixture": ["model fixture", "approval input", "fictional person/meeting/task", "temporary workspace files directory"],
       "covered": [
-        "explicit person and per-record reads",
+        "explicit person and per-record reads through read_person",
+        "private task and meeting are excluded from the read and the saved provenance",
         "company template selected by id",
         "real DOCX and PPTX generated and reloaded",
         "document saved and reopened from SQLite",

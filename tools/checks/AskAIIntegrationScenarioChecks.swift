@@ -33,15 +33,27 @@ struct AskAIIntegrationScenarioChecks {
       decisions: ["次回までに概算を出す"], openQuestions: ["予算の上限は未確認"])
     let task = MemoraTask(id: UUID(), title: "概算を作る", isCompleted: false,
       relationships: TaskRelationships(assigneePersonID: person.id), privacy: grantedPrivacy())
+    var closedPrivacy = RecordPrivacy(classification: .personal)
+    closedPrivacy.allowsCloudAI = false
+    let secretTask = MemoraTask(id: UUID(), title: "非公開タスク", isCompleted: false,
+      relationships: TaskRelationships(assigneePersonID: person.id), privacy: closedPrivacy)
+    let secretMeeting = Meeting(title: "非公開会議", participantIDs: [person.id], privacy: closedPrivacy)
     model.people = [person, Person(id: UUID(), name: person.name, note: "别人の非公開メモ",
       contactIdentifier: nil, privacy: grantedPrivacy())]
-    model.meetings = [meeting]
-    model.tasks = [task]
+    model.meetings = [meeting, secretMeeting]
+    model.tasks = [task, secretTask]
     let messageID = model.message.id
     model.message.cloudProvenance = model.newCloudProvenance(references: [])
     model.message.cloudAuthorizationTargets = []
     model.message.sources = [AIChatSource(meetingID: meeting.id, title: meeting.title)]
-    model.recordCloudReads([.person(person.id), .meeting(meeting.id), .task(task.id)], messageID: messageID)
+    let read = model.readPersonTool(AgentToolCall(id: "proposal-person", name: "read_person",
+      arguments: ["person_id": person.id.uuidString]), messageID: messageID, compact: false, purpose: .cloudAI)
+    precondition(!read.isError && read.text.contains("概算を作る"))
+    precondition(!read.text.contains("非公開タスク") && !read.text.contains("非公開会議"))
+    let provenance = model.artifactProvenance(for: model.message)
+    precondition(provenance.records.contains { $0.target == .task(task.id) })
+    precondition(!provenance.records.contains { $0.target == .task(secretTask.id) })
+    precondition(!provenance.records.contains { $0.target == .meeting(secretMeeting.id) })
 
     let body = "# 提案\n\n## 決定事項\n- 次回までに概算を出す\n\n## 未確認\n- 予算の上限"
     for (kind, suffix) in [(MemoraDocumentKind.document, "docx"), (.slides, "pptx")] {
@@ -63,7 +75,7 @@ struct AskAIIntegrationScenarioChecks {
       var document = MemoraDocument(title: "顧客提案", kind: kind, spaceID: nil)
       document.markdown = body
       document.slides = kind == .slides ? [DocumentSlide(title: "顧客提案", bullets: ["次回までに概算を出す"])] : []
-      document.provenance = model.artifactProvenance(for: model.message)
+      document.provenance = provenance
       let call = AgentToolCall(id: UUID().uuidString, name: kind == .document ? "create_document" : "create_slides",
         arguments: ["template_id": template.id.uuidString, "template_fields": [
           ["name": "title", "value": "架空商事 ご提案"],
@@ -89,6 +101,7 @@ struct AskAIIntegrationScenarioChecks {
       let stored = try JSONDecoder().decode([MemoraDocument].self, from: data)
       precondition(stored.first?.artifactFileReference == name && stored.first?.provenance?.isValid == true)
       precondition(stored.first?.provenance?.records.contains { $0.target == .task(task.id) } == true)
+      precondition(stored.first?.provenance?.records.contains { $0.target == .task(secretTask.id) } == false)
     }
     model.currentTeamID = "different-workspace"
     do {
