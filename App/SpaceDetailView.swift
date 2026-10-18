@@ -3,89 +3,69 @@ import SwiftUI
 struct SpaceDetailView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var spaceID: UUID
+  @State private var selectedTab = ProjectWorkspaceTab.chat
   @State private var isAskingAI = false
   @State private var isRenaming = false
   @State private var isDeleting = false
   @State private var isAddingFiles = false
-  @State private var editingTask: MemoraTask?
-
 
   var body: some View {
     if let space = model.space(id: spaceID) {
-      let tasks = model.projectTasks(projectID: spaceID)
-      let items = model.workspaceItems(projectID: spaceID)
-      let chats = model.projectChats.filter { $0.projectID == spaceID }.sorted { $0.updatedAt > $1.updatedAt }
-      let isEmpty = items.isEmpty
+      let chats = model.projectChats
+        .filter { $0.projectID == spaceID }
+        .sorted { $0.updatedAt > $1.updatedAt }
+      let files = model.workspaceFiles(projectID: spaceID)
+      let sources = model.workspaceSources(projectID: spaceID)
 
-      List {
-        Section {
-          ForEach(chats.prefix(3)) { thread in ProjectChatRow(thread: thread) }
-          if chats.isEmpty {
-            Text("チャットはまだありません").font(.subheadline).foregroundStyle(.secondary)
-              .listRowSeparator(.hidden)
-          }
-          if chats.count > 3 {
-            NavigationLink("すべてのチャットを見る", value: LibraryRoute.projectChats(spaceID))
-              .tint(MemoraPalette.textPrimary)
-          }
-        } header: {
-          ProjectSectionHeader("チャット", count: chats.count) {
-            Button("新しいチャット", icon: .squareAndPencil) {
-              if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
-            }.disabled(model.isRestoring || model.isStoreProtected)
-          }
-        }
-        Section {
-          ForEach(items.prefix(3)) { item in ProjectWorkspaceRow(item: item) }
-          if isEmpty {
-            Text("ソースはまだありません").font(.subheadline).foregroundStyle(.secondary)
-              .listRowSeparator(.hidden)
-          } else {
-            NavigationLink("すべてのソースを見る", value: LibraryRoute.projectSources(spaceID))
-              .tint(MemoraPalette.textPrimary)
-          }
-        } header: {
-          ProjectSectionHeader("ソース", count: items.count) {
-            Button("追加", icon: .plus) { model.sourceAddProjectID = spaceID }
-              .accessibilityLabel("ソースを追加")
-              .disabled(model.isRestoring || model.isStoreProtected)
-          }
-        } footer: {
-          Text(isEmpty
-            ? "録音や資料を追加すると、このプロジェクトについて質問できます。"
-            : "取得・解析できた本文がAIの参照候補です。外部AIへの送信は各記録のプライバシー設定に従います。")
-        }
-        if !tasks.isEmpty {
-          Section {
-            ForEach(tasks.prefix(3)) { task in
-              ProjectTaskRow(task: task) { editingTask = task }
+      VStack(spacing: 0) {
+        ProjectWorkspaceTabBar(selection: $selectedTab)
+          .padding(.horizontal, ProjectLayout.horizontalInset)
+          .padding(.bottom, 6)
+
+        Group {
+          switch selectedTab {
+          case .chat:
+            workspaceList(isEmpty: chats.isEmpty) {
+              ForEach(chats) { thread in
+                ProjectChatRow(thread: thread)
+              }
+            } empty: {
+              emptyState(for: .chat)
             }
-          } header: {
-            ProjectSectionHeader("関連タスク", count: tasks.count) {
-              NavigationLink("すべて", value: LibraryRoute.projectTasks(spaceID))
-                .accessibilityLabel("このプロジェクトの関連タスクをすべて見る")
+          case .files:
+            workspaceList(isEmpty: files.isEmpty) {
+              ForEach(files) { item in
+                ProjectWorkspaceRow(item: item)
+              }
+            } empty: {
+              emptyState(for: .files)
+            }
+          case .sources:
+            workspaceList(isEmpty: sources.isEmpty) {
+              ForEach(sources) { item in
+                ProjectWorkspaceRow(item: item)
+              }
+            } empty: {
+              emptyState(for: .sources)
             }
           }
         }
+        .id(selectedTab)
+        .transition(.opacity)
       }
-      .listStyle(.plain)
-      .listSectionSpacing(24)
-      .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
-      .scrollContentBackground(.hidden)
+      .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedTab)
       .background(MemoraPalette.background)
       .onAppear { model.noteProjectUsed(space.id) }
-      .hideBottomBarOnScroll(model.selectedTab.rawValue)
-      .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
       .navigationTitle(space.name)
       .navigationBarTitleDisplayMode(.large)
       .toolbar {
+        addToolbarItem(spaceID: spaceID)
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
-            if !isEmpty {
-              Button("ソースを追加", icon: .plus) { model.sourceAddProjectID = spaceID }
-              Button("既存記録を移動", icon: .folder) { isAddingFiles = true }
-            }
+            Button("ソースを追加", icon: .plus) { model.sourceAddProjectID = spaceID }
+            Button("既存記録を移動", icon: .folder) { isAddingFiles = true }
             Button("未決事項を質問", icon: .sparkles) { isAskingAI = true }
             NavigationLink("関連タスク", value: LibraryRoute.projectTasks(spaceID))
             Button("チームで共有", icon: .personBadgePlus) {
@@ -105,7 +85,6 @@ struct SpaceDetailView: View {
         AIQuestionView(scope: .space(space.id), askingQuestion: "このプロジェクトでまだ決まっていないことは？")
       }
       .sheet(isPresented: $isRenaming) { RenameSpaceSheet(space: space) }
-      .sheet(item: $editingTask) { task in TaskEditView(task: task) }
       .confirmationDialog("このプロジェクトを削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
         Button("削除", role: .destructive) {
           if model.deleteSpace(space.id) { dismiss() }
@@ -119,4 +98,63 @@ struct SpaceDetailView: View {
     }
   }
 
+  /// One scrolling surface per tab, with the same search-free rhythm as the
+  /// project list. Records are read from the model, never copied between tabs.
+  private func workspaceList<Rows: View, Empty: View>(
+    isEmpty: Bool,
+    @ViewBuilder rows: () -> Rows,
+    @ViewBuilder empty: () -> Empty
+  ) -> some View {
+    List {
+      rows()
+    }
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
+    .background(MemoraPalette.background)
+    .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
+    .overlay {
+      if isEmpty { empty() }
+    }
+    .hideBottomBarOnScroll(model.selectedTab.rawValue)
+    .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
+  }
+
+  private func emptyState(for tab: ProjectWorkspaceTab) -> some View {
+    ContentUnavailableView(
+      tab.emptyTitle,
+      icon: tab.emptyIcon,
+      description: Text(tab.emptyDescription)
+    )
+  }
+
+  @ToolbarContentBuilder
+  private func addToolbarItem(spaceID: UUID) -> some ToolbarContent {
+    switch selectedTab {
+    case .chat:
+      ToolbarItem(placement: .topBarTrailing) {
+        ToolbarIconButton("新しいチャット", icon: .squareAndPencil) {
+          if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
+        }
+        .disabled(model.isRestoring || model.isStoreProtected)
+      }
+    case .files:
+      ToolbarActionItem(usesSystemBackground: true) {
+        Menu {
+          Button("録音を追加", icon: .waveform) {
+            Task { await model.startCapture(spaceID: spaceID) }
+          }
+          Button("既存ファイルを移動", icon: .folder) { isAddingFiles = true }
+        } label: {
+          ToolbarActionLabel("ファイルを追加", icon: .plus)
+        }
+      }
+    case .sources:
+      ToolbarItem(placement: .topBarTrailing) {
+        ToolbarIconButton("ソースを追加", icon: .plus) {
+          model.sourceAddProjectID = spaceID
+        }
+        .disabled(model.isRestoring || model.isStoreProtected)
+      }
+    }
+  }
 }
