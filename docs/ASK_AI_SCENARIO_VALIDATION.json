@@ -104,11 +104,19 @@
     "run-optimization-checks.py": "passed (12 tests)"
   },
   "build": {
-    "result": "not_run",
+    "bitrig_result": "not_run",
     "reason": "Bitrig rejects linked worktrees outside the registered project; main was not switched and other worktrees were not modified",
+    "typecheck": {
+      "command": "tools/checks/typecheck-ios-app.sh <products-dir> debug|release",
+      "sdk": "iOS 27.1 Simulator",
+      "target": "arm64-apple-ios26.0-simulator",
+      "debug": {"result": "passed", "errors": 0, "warnings": 20},
+      "release": {"result": "passed", "errors": 0, "warnings": 20},
+      "scope": "App/ and Shared/ sources only; no link, resources, signing or app launch"
+    },
     "app_files_parsed": ["App/DocumentDetailView.swift", "App/ArtifactExportFile.swift", "App/ProjectSourceFiles.swift", "App/ProjectMetadataTransport.swift", "App/WebResearchClient.swift"],
-    "debug": "not_run",
-    "release": "not_run",
+    "debug": "typecheck passed; Bitrig build not run",
+    "release": "typecheck passed; Bitrig build not run",
     "ui_e2e": "not_run"
   },
   "external_service_calls_during_fixture_tests": 0,

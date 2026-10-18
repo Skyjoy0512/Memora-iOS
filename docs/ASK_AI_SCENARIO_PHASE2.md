@@ -73,15 +73,17 @@ fixture:
 - `bash tools/checks/run-next-generation-checks.sh`: 全スイート成功（新規2つを含む）。
 - `bash tools/checks/run-motion-loading-checks.sh`: 成功。
 - `python3 tools/checks/run-optimization-checks.py`: 全12テスト成功。
+- `xcrun swiftc -typecheck`（iOS 27.1 SDK / iOS 26ターゲット、App/Shared全ソース）: Debug・Release構成とも
+  エラー0、既存の非推奨警告20件。`tools/checks/typecheck-ios-app.sh` で再実行できる。
 - `swiftc -parse App/DocumentDetailView.swift App/ArtifactExportFile.swift App/ProjectSourceFiles.swift`: 成功。
 
 ビルド制約: Bitrigは登録済みプロジェクト直下のパスだけを認識し、SSD上のlinked
 worktreeでは `isn't inside a Bitrig project` で拒否した。mainを切り替えず、
 他worktreeへ変更を混ぜない条件を守るため、このworktreeでは
-`bitrig preview` / Releaseビルドを実行していない。アプリ本体の変更は
-`DocumentDetailView` の共有コピー処理の置換と、`ProjectSourceFiles` の
-テスト用保存先overrideのみ。どちらも `swiftc -parse` まで。Debug/Releaseの
-コンパイル・リンク、シミュレータUI、e2eは未実行であり、成功とは扱わない。
+`bitrig preview` / Releaseビルドを実行していない。代わりにiOS SDKに対する
+全ソースの型検査をDebug/Release構成で行い、エラー0を確認した。ただしこれは
+コンパイル・リンク・リソース処理・アプリ起動を伴うBitrigビルドではない。
+シミュレータUIとe2eは未実行であり、成功とは扱わない。
 
 ## 未検証・残件
 
@@ -117,5 +119,6 @@ P2:
 - `tools/checks/run-ask-ai-scenario-checks.sh`
 - `tools/checks/run-artifact-operation-checks.sh`
 - `tools/checks/run-next-generation-checks.sh`
+- `tools/checks/typecheck-ios-app.sh`
 - `docs/ASK_AI_SCENARIO_PHASE2.md`
 - `docs/ASK_AI_SCENARIO_VALIDATION.json`
