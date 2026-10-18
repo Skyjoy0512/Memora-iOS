@@ -5,8 +5,13 @@ import Foundation
 enum ArtifactExportFile {
   static func copy(_ source: URL, preferredName: String, suffix: String,
                    directory: URL = FileManager.default.temporaryDirectory) throws -> URL {
-    let name = preferredName.isEmpty ? "資料" : preferredName
-    let destination = directory.appendingPathComponent(name + "-" + UUID().uuidString + "." + suffix)
+    let cleaned = preferredName
+      .components(separatedBy: CharacterSet(charactersIn: "/\\:?%*|\"<>"))
+      .joined(separator: "-")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let name = cleaned.isEmpty ? "資料" : String(cleaned.prefix(80))
+    let safeSuffix = suffix.filter { $0.isASCII && ($0.isLetter || $0.isNumber) }
+    let destination = directory.appendingPathComponent(name + "-" + UUID().uuidString + "." + safeSuffix)
     try FileManager.default.copyItem(at: source, to: destination)
     return destination
   }

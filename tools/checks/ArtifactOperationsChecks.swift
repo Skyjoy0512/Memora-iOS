@@ -125,6 +125,10 @@ struct ArtifactOperationsChecks {
     ArtifactExportFile.removeTemporary([copy])
     precondition(!FileManager.default.fileExists(atPath: copy.path))
     precondition(FileManager.default.fileExists(atPath: source.path))
+    let unsafe = try ArtifactExportFile.copy(source, preferredName: "../../別/提案", suffix: "docx")
+    precondition(unsafe.deletingLastPathComponent().standardizedFileURL == FileManager.default.temporaryDirectory.standardizedFileURL)
+    precondition(!unsafe.lastPathComponent.contains("/") && unsafe.lastPathComponent.hasSuffix(".docx"))
+    ArtifactExportFile.removeTemporary([unsafe])
     do {
       _ = try ArtifactExportFile.copy(root.appendingPathComponent("missing.docx"), preferredName: "欠落", suffix: "docx")
       preconditionFailure("missing artifact exported")

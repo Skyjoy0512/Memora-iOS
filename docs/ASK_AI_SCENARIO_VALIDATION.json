@@ -87,7 +87,7 @@
       "old generated file invalidated and cleaned",
       "mail draft edit and reload",
       "SQLite ABORT leaves model and store unchanged; the caller receives false (screen success display not exercised)",
-      "share copy keeps source and removes only the temporary copy",
+      "share copy keeps source, removes only the temporary copy, and sanitizes the preferred name",
       "deleted/revoked/other-workspace source rows cannot open"
     ],
     "not_verified": [
