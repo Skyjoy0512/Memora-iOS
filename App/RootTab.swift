@@ -1,6 +1,8 @@
 enum RootTab: String, Hashable, CaseIterable, Identifiable {
-  case home
+  // Library leads and the journal follows it; Ask AI stays third. The raw
+  // values are unchanged, so saved selections still resolve.
   case library = "files"
+  case home
   case askAI
 
   var id: Self { self }

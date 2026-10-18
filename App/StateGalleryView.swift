@@ -64,6 +64,7 @@ struct StateGalleryView: View {
           ScrollView {
             VStack(alignment: .leading, spacing: 32) {
               ThinkingTraceView(message: Self.demoTraceWorking)
+              ConversationStatusLine(label: "確認を待っています（表示例）", isWaiting: true)
             }
             .padding(18)
           }

@@ -2,7 +2,7 @@
 
 ## 2026-10-17の適用事項
 
-最低対応OSはiOS 26。現在のタブはHome / Library / Ask AIの3つで、下記の古い4タブ案より
+最低対応OSはiOS 26。現在のタブはLibrary / Home / Ask AIの順の3つで、下記の古い4タブ案より
 ユーザーの最新指示と現行コードを優先する。UISegmentedControlのLiquid Glass、右FAB、
 ジャーナルのHero、下部コンポーザー、空白の新規チャットを維持する。
 Ask AI 2.0はコードコピー/横スクロール表、実AgentStepの開閉、完成した構造化部品の段階表示を

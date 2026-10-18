@@ -11,8 +11,8 @@ struct RootNavigationChecks {
     let citationPath: [LibraryRoute] = [.space(project), .meetingCitation(meeting, 123)]
     precondition(RootNavigation.scope(tab: .library, path: citationPath, detailMeetingID: nil) == .file(meeting))
     precondition(RootNavigation.projectID(in: citationPath) == nil)
-    precondition(RootTab.allCases == [.home, .library, .askAI])
-    precondition(RootTab.allCases.map(\.title) == ["ジャーナル", "ライブラリ", "Ask AI"])
+    precondition(RootTab.allCases == [.library, .home, .askAI])
+    precondition(RootTab.allCases.map(\.title) == ["ライブラリ", "ジャーナル", "Ask AI"])
     precondition(RootTab.restored(from: "files") == .library)
     precondition(RootTab.restored(from: "library") == .library)
     precondition(RootTab.restored(from: "projects") == .library)

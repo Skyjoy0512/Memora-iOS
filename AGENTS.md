@@ -30,8 +30,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   `UISegmentedControl`. It is what draws and animates the system's Liquid Glass
   selection bubble. Do not swap it for a SwiftUI segmented control and do not set
   `allowsHitTesting(false)` on it — either change makes the selection jump to the
-  new tab instead of morphing across. The order is Home, Library,
-  Ask AI; Ask AI is the third tab (to the right of Library); do not move it back to a full-screen presentation or a bar
+  new tab instead of morphing across. The order is Library, Home,
+  Ask AI; Ask AI is the third tab (to the right of Journal); do not move it back to a full-screen presentation or a bar
   `secondaryAction`.
 - **Create (＋) button**: it is a `.buttonStyle(.glass)` button whose label is the
   `matchedTransitionSource`, opening `.popover` with
