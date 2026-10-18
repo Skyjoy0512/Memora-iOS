@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SummaryStyleSettingsView: View {
   @Environment(MemoraModel.self) private var model
+  @AppStorage(MemoraModel.autoSummaryAfterTranscriptionKey) private var autoSummaryAfterTranscription = false
 
   var body: some View {
     @Bindable var model = model
@@ -35,6 +36,11 @@ struct SummaryStyleSettingsView: View {
         }
       } footer: {
         Text("テンプレートを手動で選ぶと、その形式を優先します。設定を変えても過去の要約は変わりません。")
+      }
+      Section {
+        Toggle("文字起こし後に要約を自動作成", isOn: $autoSummaryAfterTranscription)
+      } footer: {
+        Text("オンにすると、文字起こしが終わった記録の要約をバックグラウンドで作成します。クラウドAIは、その記録に外部送信の許可がある場合だけ使います。")
       }
       Section {
         Picker("要約の詳しさ", selection: $model.summaryPreferences.length) {

@@ -260,6 +260,7 @@ extension MemoraModel {
         meeting.status = .waitingForSummary
       }
       announce("文字起こしができました。要約を作成しています。")
+      enqueueAutomaticSummaryIfNeeded(for: id)
       if automaticallyAnalyzesSpeakers, SpeakerModelAssets.isInstalled {
         Task { [weak self] in
           guard let self, self.automaticallyAnalyzesSpeakers else { return }

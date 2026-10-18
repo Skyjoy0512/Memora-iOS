@@ -27,10 +27,13 @@ async function addMemo(screen: any, title: string) {
 /// sheet was still dismissing, then waits for the add sheet.
 async function openAddSheet(screen: any, locator: any) {
   await tapStable(locator);
-  if (!(await screen.getByText('ライフログを追加').isVisible())) {
+  try {
+    await expect(screen.getByText('ライフログを追加')).toBeVisible({ timeout: 3000 });
+  } catch {
+    // The first touch landed while the previous sheet was still dismissing.
     await tapStable(locator);
+    await expect(screen.getByText('ライフログを追加')).toBeVisible();
   }
-  await expect(screen.getByText('ライフログを追加')).toBeVisible();
 }
 
 /// Creates a fresh project and lands on its workspace.

@@ -15,6 +15,48 @@ extension MemoraModel {
     scheduleBackgroundSummary()
   }
 
+  static let autoSummaryAfterTranscriptionKey = "memora.summary.autoAfterTranscription"
+
+  var automaticallySummarizesTranscriptions: Bool {
+    UserDefaults.standard.bool(forKey: Self.autoSummaryAfterTranscriptionKey)
+  }
+
+  /// Queues the default summary after a transcript lands, when the person
+  /// opted in. A record without cloud permission stays waiting instead of
+  /// being sent to an external model.
+  func enqueueAutomaticSummaryIfNeeded(for id: UUID) {
+    guard automaticallySummarizesTranscriptions,
+          let meeting = meeting(id: id), !meeting.transcript.isEmpty,
+          !hasPendingSummary(id) else { return }
+    let configuration = settingsAIConfiguration
+    let effective = AIEngineService.effectiveEngine(configuration.engine)
+    let usesCloud = effective == .cloud || effective == .memora
+    if usesCloud,
+       !RecordAccessPolicy.allows(meeting.effectivePrivacy, purpose: .cloudAI, explicitCloudConsent: false) {
+      return
+    }
+    let useCaseID = meeting.summaryUseCaseID
+    enqueueBackgroundSummary(
+      PendingSummaryJob(
+        meetingID: id,
+        choice: automaticSummaryChoice(for: meeting, useCaseID: useCaseID),
+        engineRawValue: configuration.engine.rawValue,
+        llm: configuration.llm,
+        automaticallySelect: summaryPreferences.method == .automatic && (useCaseID ?? "").isEmpty,
+        useCaseID: useCaseID,
+        preferences: summaryPreferences,
+        cloudDisclosureConfirmed: false,
+        usesCloud: usesCloud
+      )
+    )
+    // The transcription job is still finishing when this is called; let it
+    // release the record before the summary takes the same slot.
+    Task { [weak self] in
+      try? await Task.sleep(for: .milliseconds(500))
+      self?.resumePendingSummariesIfNeeded()
+    }
+  }
+
   func hasPendingSummary(_ meetingID: UUID) -> Bool {
     pendingSummaryJobs.contains { $0.meetingID == meetingID }
   }

@@ -72,3 +72,17 @@ Foreground return is a second safety net: if iOS did not run the processing wind
 `resumePendingSummariesIfNeeded()` continues the same queued job when the app becomes
 active. The record's summary card says that the work is continuing in the background
 and offers "いま要約する" to run the normal foreground sheet instead.
+
+## Automatic summaries — 2026-10-18
+
+- Settings › 要約スタイル now has an opt-in "文字起こし後に要約を自動作成" toggle,
+  off by default. When on, a finished transcript queues the same background job
+  with the automatic template and settings engine; a cloud model is used only
+  when the record's privacy already allows cloud AI.
+- The job is queued while the transcription still owns the processing slot, so
+  the foreground resume starts after that slot clears. If the app stays
+  foreground, the summary starts there; if it leaves, the processing window
+  continues it.
+- Turning the toggle off does not cancel summaries already queued.
+- Automatic execution with a real cloud key, notification of completion while
+  the app is closed, and battery/thermal behaviour still need device validation.
