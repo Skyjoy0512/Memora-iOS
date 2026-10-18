@@ -12,7 +12,7 @@
 | シナリオ | 以前の到達点 | 今回追加した到達点 |
 | --- | --- | --- |
 | A 人物→会社提案書 | 明示personID、個別許可、`draft_email`/資料保存、SQLite再読込（`CloudSessionChecks`、`ArtifactProvenanceChecks`） | 会社テンプレート選択 → `prepareDocumentArtifact` → 実DOCX/PPTX生成 → Office再読込 → SQLite保存。別workspaceのテンプレート拒否 |
-| B 過去会話→未完了事項 | FTS5/BM25検索、状態・scope・削除（`MemoryRetrievalChecks`）、応答待ちの失効（`CloudSessionChecks`） | `AIConversationProvenance.allowsReuse` と現在のタスク指紋・削除・workspace変更を同じ検査に接続。曖昧な質問は過去を断定しない |
+| B 過去会話→未完了事項 | FTS5/BM25検索、状態・scope・削除（`MemoryRetrievalChecks`）、応答待ちの失効（`CloudSessionChecks`） | `AIConversationProvenance.allowsReuse` と現在のタスク指紋・削除・workspace変更・memory指紋・不完全な出典を同じ検査に接続。曖昧な質問は過去を断定しない |
 | C Research→会社PPTX | 有限ループ、重複排除、引用範囲（`ResearchLoopChecks`）、テンプレート差込（`DocumentArtifactChecks`） | 本番`WebResearchClient`/`ProjectMetadataTransport`をscripted HTTPで通し、URL正規化・重複排除・HTML除去・抜粋/抽出本文の区別を確認。その後、反復検索 → 引用検証 → 会社PPTXテンプレート → 実ファイル → 再読込 → SQLite保存。中断時は未完了のまま |
 | D 会議→メール下書き | 人物起点の下書き、承認後再検証、SQLite再読込（`CloudSessionChecks`、`ArtifactProvenanceChecks`） | 本番`read_person`で会議の決定と担当タスクを取得（同名の別人は含めない）。会議・参加者・タスクの型付き出典、不明宛先の拒否、承認後の保存、編集→再読込、`status == .draft`の維持、承認待ちの変更で保存しない |
 | E @選択→許可Toolのみ | 本番registry/policyのscope・schema・無効化（`PluginDispatchChecks`）、候補/チップUI（`ComposerMentionChecks`） | 本番`AIPluginExecutionPolicy.forSelection`で選択plugin IDからtoolIDs/recordIDs/templateIDsを構築。選択toolだけを実行し、未選択MCPを実行しない。選択解除・MCP無効化・テンプレートID不一致を拒否。Gmail境界はfixture transportで呼出回数を検査 |

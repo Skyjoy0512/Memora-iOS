@@ -32,6 +32,7 @@
         "task status change revokes reuse",
         "deleted source revokes reuse",
         "workspace change revokes reuse",
+        "memory fingerprint change or incomplete provenance revokes reuse",
         "unrelated or ambiguous question does not assert a past item",
         "episode roundtrip keeps unresolved without inventing decisions"
       ],

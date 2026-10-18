@@ -116,6 +116,12 @@ struct AskAIIntegrationScenarioChecks {
     precondition(!reuse { _ in current })
     precondition(!reuse { _ in nil })
     precondition(!reuse(resolve: { _ in oldReference }, workspace: "other"))
+    precondition(!provenance.allowsReuse(workspaceID: nil, memoryFingerprint: "changed",
+      resolve: { _ in oldReference }, allows: { _ in true }))
+    var incomplete = provenance
+    incomplete.isComplete = false
+    precondition(!incomplete.allowsReuse(workspaceID: nil, memoryFingerprint: "memory",
+      resolve: { _ in oldReference }, allows: { _ in true }))
 
     let wanted = MemoryRetrievalItem(id: UUID(), kind: .episode,
       text: "見積もりを確認する作業が未完了", updatedAt: .now, sourceID: UUID())
