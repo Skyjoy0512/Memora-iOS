@@ -20,25 +20,41 @@ enum ProjectWorkspaceTab: String, CaseIterable, Identifiable {
 
   var emptyTitle: LocalizedStringKey {
     switch self {
-    case .chat: "チャットはまだありません"
-    case .files: "ファイルはまだありません"
-    case .sources: "ソースはまだありません"
+    case .chat: "チャットを始める"
+    case .files: "ファイルを追加"
+    case .sources: "ソースを追加"
     }
   }
 
   var emptyDescription: LocalizedStringKey {
     switch self {
-    case .chat: "このプロジェクトについて質問すると、会話がここに残ります。"
-    case .files: "録音や資料をこのプロジェクトへ追加すると、ここに並びます。"
+    case .chat: "このプロジェクトの記録について質問できます。会話はここに残ります。"
+    case .files: "録音や資料をこのプロジェクトにまとめると、ここから開けます。"
     case .sources: "リンク・ファイル・メモを追加すると、AIの参照候補になります。"
     }
   }
 
-  var emptyIcon: MemoraIcon {
+  var emptyIcons: [MemoraIcon] {
     switch self {
-    case .chat: .chatBubble
-    case .files: .folder
-    case .sources: .doc
+    case .chat: [.chatBubble, .sparkles, .doc]
+    case .files: [.waveform, .doc, .folder]
+    case .sources: [.link, .doc, .photo]
+    }
+  }
+
+  var emptyActionTitle: LocalizedStringKey {
+    switch self {
+    case .chat: "新しいチャット"
+    case .files: "録音を追加"
+    case .sources: "ソースを追加"
+    }
+  }
+
+  var emptyActionIcon: MemoraIcon {
+    switch self {
+    case .chat: .squareAndPencil
+    case .files: .waveform
+    case .sources: .plus
     }
   }
 }

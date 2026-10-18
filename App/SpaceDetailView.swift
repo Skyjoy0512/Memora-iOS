@@ -21,46 +21,68 @@ struct SpaceDetailView: View {
 
       VStack(spacing: 0) {
         ProjectWorkspaceTabBar(selection: $selectedTab)
-          .padding(.horizontal, ProjectLayout.horizontalInset)
-          .padding(.bottom, 6)
 
         Group {
           switch selectedTab {
           case .chat:
-            workspaceList(isEmpty: chats.isEmpty) {
-              ForEach(chats) { thread in
-                ProjectChatRow(thread: thread)
+            if chats.isEmpty {
+              workspaceEmpty(.chat) {
+                if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
               }
-            } empty: {
-              emptyState(for: .chat)
+            } else {
+              workspaceScroll {
+                ForEach(chats) { thread in
+                  ProjectChatRow(thread: thread)
+                    .padding(.vertical, 6)
+                }
+              }
             }
           case .files:
-            workspaceList(isEmpty: files.isEmpty) {
-              ForEach(files) { item in
-                ProjectWorkspaceRow(item: item)
+            if files.isEmpty {
+              workspaceEmpty(.files) {
+                Task { await model.startCapture(spaceID: spaceID) }
               }
-            } empty: {
-              emptyState(for: .files)
+            } else {
+              workspaceScroll {
+                ForEach(files) { item in
+                  ProjectWorkspaceRow(item: item)
+                    .padding(.vertical, 4)
+                }
+              }
             }
           case .sources:
-            workspaceList(isEmpty: sources.isEmpty) {
-              ForEach(sources) { item in
-                ProjectWorkspaceRow(item: item)
+            if sources.isEmpty {
+              workspaceEmpty(.sources) { model.sourceAddProjectID = spaceID }
+            } else {
+              workspaceScroll {
+                ForEach(sources) { item in
+                  ProjectWorkspaceRow(item: item)
+                    .padding(.vertical, 4)
+                }
               }
-            } empty: {
-              emptyState(for: .sources)
             }
           }
         }
-        .id(selectedTab)
-        .transition(.opacity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
       .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedTab)
       .background(MemoraPalette.background)
       .onAppear { model.noteProjectUsed(space.id) }
-      .navigationTitle(space.name)
-      .navigationBarTitleDisplayMode(.large)
+      .navigationTitle("")
+      .navigationBarTitleDisplayMode(.inline)
       .toolbar {
+        ToolbarItem(placement: .principal) {
+          HStack(spacing: 7) {
+            Image(icon: .folder)
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+            Text(space.name)
+              .font(.headline)
+              .lineLimit(1)
+          }
+          .accessibilityElement(children: .combine)
+          .accessibilityAddTraits(.isHeader)
+        }
         addToolbarItem(spaceID: spaceID)
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
@@ -98,33 +120,35 @@ struct SpaceDetailView: View {
     }
   }
 
-  /// One scrolling surface per tab, with the same search-free rhythm as the
-  /// project list. Records are read from the model, never copied between tabs.
-  private func workspaceList<Rows: View, Empty: View>(
-    isEmpty: Bool,
-    @ViewBuilder rows: () -> Rows,
-    @ViewBuilder empty: () -> Empty
-  ) -> some View {
-    List {
-      rows()
+  /// One scrolling surface per tab. Rows are read from the model, never copied
+  /// between tabs, and keep the open rhythm of a chat list rather than a table.
+  private func workspaceScroll<Rows: View>(@ViewBuilder rows: () -> Rows) -> some View {
+    ScrollView {
+      LazyVStack(alignment: .leading, spacing: 0) {
+        rows()
+      }
+      .padding(.horizontal, 20)
+      .padding(.top, 10)
+      .padding(.bottom, model.bottomContentClearance)
     }
-    .listStyle(.plain)
-    .scrollContentBackground(.hidden)
-    .background(MemoraPalette.background)
-    .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
-    .overlay {
-      if isEmpty { empty() }
-    }
+    .scrollIndicators(.hidden)
     .hideBottomBarOnScroll(model.selectedTab.rawValue)
-    .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
   }
 
-  private func emptyState(for tab: ProjectWorkspaceTab) -> some View {
-    ContentUnavailableView(
-      tab.emptyTitle,
-      icon: tab.emptyIcon,
-      description: Text(tab.emptyDescription)
-    )
+  private func workspaceEmpty(_ tab: ProjectWorkspaceTab, action: @escaping () -> Void) -> some View {
+    VStack(spacing: 0) {
+      Spacer(minLength: 32)
+      ProjectWorkspaceEmptyState(
+        icons: tab.emptyIcons,
+        title: tab.emptyTitle,
+        message: tab.emptyDescription,
+        actionTitle: tab.emptyActionTitle,
+        actionIcon: tab.emptyActionIcon,
+        action: action
+      )
+      Spacer(minLength: 36)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
   @ToolbarContentBuilder

@@ -15,7 +15,7 @@ struct ProjectDocumentRow: View {
           .font(.body.weight(.semibold))
           .lineLimit(2)
           .fixedSize(horizontal: false, vertical: true)
-        Text("\(document.kind.label) · 更新 \(document.updatedAt.formatted(date: .abbreviated, time: .omitted))")
+        Text("\(document.kind.label) · \(MemoraFormat.relativeDate(document.updatedAt))")
           .font(.footnote).foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
       }

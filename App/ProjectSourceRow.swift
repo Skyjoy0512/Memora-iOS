@@ -9,7 +9,7 @@ struct ProjectSourceRow: View {
       VStack(alignment: .leading, spacing: 4) {
         Text(source.title).font(.body.weight(.semibold)).lineLimit(2)
           .fixedSize(horizontal: false, vertical: true)
-        Text("\(source.kindLabel) · \(source.createdAt.formatted(date: .abbreviated, time: .omitted))")
+        Text("\(source.kindLabel) · \(MemoraFormat.relativeDate(source.createdAt))")
           .font(.footnote).foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
         Text(source.statusLabel).font(.footnote).foregroundStyle(.secondary)

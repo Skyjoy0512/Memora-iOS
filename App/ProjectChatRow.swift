@@ -5,16 +5,29 @@ struct ProjectChatRow: View {
 
   var body: some View {
     NavigationLink(value: LibraryRoute.projectChat(thread.id)) {
-      VStack(alignment: .leading, spacing: 4) {
-        Text(thread.title).font(.body.weight(.semibold)).lineLimit(2)
-          .fixedSize(horizontal: false, vertical: true)
-        Text(thread.updatedAt.formatted(date: .abbreviated, time: .shortened))
-          .font(.footnote).foregroundStyle(.secondary)
-        if thread.projectID == nil { Text("保管した会話").font(.footnote).foregroundStyle(.secondary) }
+      VStack(alignment: .leading, spacing: 5) {
+        Text(thread.title)
+          .font(.body.weight(.semibold))
+          .lineLimit(1)
+        Text(preview)
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
       }
-      .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+      .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
       .contentShape(Rectangle())
       .accessibilityElement(children: .combine)
-    }.buttonStyle(.plain)
+    }
+    .buttonStyle(.plain)
+  }
+
+  /// The last thing said in the thread, as ChatGPT-style project lists do; a
+  /// thread with no turns still says what it is.
+  private var preview: String {
+    if let text = thread.messages.last?.text.trimmingCharacters(in: .whitespacesAndNewlines),
+       !text.isEmpty {
+      return text.replacingOccurrences(of: "\n", with: " ")
+    }
+    return thread.projectID == nil ? "保管した会話" : "まだメッセージはありません"
   }
 }

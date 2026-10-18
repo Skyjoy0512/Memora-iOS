@@ -53,9 +53,9 @@ struct ProjectListRow: View {
   }
 
   private var metadata: String {
-    let count = "記録 \(recordCount)件"
-    guard let latestRecordDate else { return count }
-    return "\(count) · 最新記録 \(latestRecordDate.formatted(date: .abbreviated, time: .omitted))"
+    guard recordCount > 0 else { return "まだ記録がありません" }
+    guard let latestRecordDate else { return "\(recordCount)件" }
+    return "\(recordCount)件 · \(MemoraFormat.relativeDate(latestRecordDate))"
   }
 
   @ViewBuilder private var actions: some View {
