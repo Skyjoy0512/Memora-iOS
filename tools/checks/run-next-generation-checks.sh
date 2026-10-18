@@ -67,3 +67,5 @@ bash tools/checks/run-intelligent-ui-checks.sh
 bash tools/checks/run-openui-native-polish-checks.sh
 bash tools/checks/run-artifact-provenance-checks.sh --interface-task-execution
 bash tools/checks/run-artifact-provenance-checks.sh --calendar-interface
+
+bash tools/checks/run-branch-integration-checks.sh

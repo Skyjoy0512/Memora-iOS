@@ -1,0 +1,10 @@
+{
+  "source": "memora/36c97e1",
+  "app_runtime_enabled": false,
+  "sha256": {
+    "HindsightSettingsView.swift": "332cba5a45d20b20c4acbaf21ec4fbe27383fb49a2250fd092575ca49c296690",
+    "HindsightClient.swift": "fa6de0dd4d39cda3df2e26cccba26b3ba495ef5c5e159b1b7d431c669ba2f397",
+    "HindsightConfig.swift": "5a7ee374879cb404ace0449f0cea4c342a9ee0676f472d3643ebfe5fff224260",
+    "MemoraModel+Hindsight.swift": "f203ca5ac2e4e606f1d76f030358eda1919c6a4c9ebcf7f80d9fd1e479d26600"
+  }
+}

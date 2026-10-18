@@ -1,0 +1,17 @@
+{
+  "baseline": "1f9e6f2",
+  "unchanged_sha256": {
+    "App/RealtimeTranscriptionService.swift": "439a37c4506fbd34794926a98bf221b62906ef487a2ddeac0e27f16888187ce2",
+    "App/StreamingMarkdownView.swift": "f15931d6ff777ff510a672f8af35a645f2841f19309012662464374e65245dbe",
+    "App/AIComposerBar.swift": "07f6a03e2ad642db55fec2f04102d31ed27b5acc31d9e2e8ba6cbeabeab2bdb8",
+    "App/AIResponseActionBar.swift": "66e747baefb5e4eea69ea82d59022888a5c3bf2a11bb98e48849cc1e2f14ed12",
+    "App/NativeAIInterface.swift": "79d45ff7f4e61dc1ef559ea345840c9a4bda2adce120dfd1fffd61195fd414b7",
+    "App/NativeAIInterfaceView.swift": "1e36e43df7a8e60731bbf08ee85f1dc728be3572bf1f8ed7b8dc226a06a58973",
+    "App/RecordAccessPolicy.swift": "7bd9eead88e7a188c5d02b55832aa251bc130028881eba658bc43d2c7ee4f3fc",
+    "App/LocalStore.swift": "f066f8baeacff522d3486c794889f2adb57235a0f6e04161a8556a7a26a2afc7",
+    "App/AIConversationSnapshot.swift": "b0f1fc3ae9bf5bd5847416060095e95381fff197b6c6624624fc79384f6d8d77",
+    "App/MemoraModel+Memory.swift": "e765db9862f5b1c7a8415c2ac38814c53add61a70922420b66cde2cbd1e51730",
+    "App/CloudAgentSession.swift": "94e244ed4af6e85bd1bb7a39cbb2f531248dba1b8615e94ac4e4e3efa08eabb7",
+    "Project.json": "47eff3df6099c83797d0fa567c2d818e71c0af92037ebc6b1b856bf0ae0c0798"
+  }
+}

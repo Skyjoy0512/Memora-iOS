@@ -31,6 +31,7 @@ struct ContentView: View {
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.hasCompletedOnboarding)
+    .background { GestureHapticsInstaller() }
     .sheet(isPresented: $model.isCapturePresented, onDismiss: {
       model.completeCaptureDismissal()
     }) {

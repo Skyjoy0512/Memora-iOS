@@ -1,0 +1,57 @@
+{
+  "builds": {
+    "debug": {
+      "result": "success",
+      "log": "2026-10-18T09-04-24-6e08e55e.log",
+      "builds": [
+        {
+          "destination": "generic/platform=iOS Simulator",
+          "result": "succeeded",
+          "warnings": 11
+        }
+      ]
+    },
+    "release": {
+      "result": "success",
+      "log": "2026-10-18T09-04-25-209014a4.log",
+      "builds": [
+        {
+          "destination": "generic/platform=iOS Simulator",
+          "result": "succeeded",
+          "warnings": 11
+        }
+      ]
+    }
+  },
+  "checks": {
+    "next": {
+      "result": "passed",
+      "log": "memora-legacy-integration-next.log"
+    },
+    "motion": {
+      "result": "passed",
+      "log": "memora-legacy-integration-motion.log"
+    },
+    "optimization": {
+      "result": "passed",
+      "log": "memora-legacy-integration-optimization.log"
+    }
+  },
+  "ui_tests": {
+    "discovered": 11,
+    "selected": 11,
+    "executed": 11,
+    "passed": 11,
+    "failed": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "skipped": 0
+  },
+  "unverified": [
+    "physical haptic feel",
+    "recording and microphone contention on a physical device",
+    "real-model writing A/B",
+    "physical-device VoiceOver",
+    "device FPS and memory comparison"
+  ]
+}

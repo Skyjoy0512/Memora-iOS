@@ -1,0 +1,102 @@
+{
+  "id": "01a14c54-9158-792b-bc0e-2375eecff9b9",
+  "status": "passed",
+  "exitCode": 0,
+  "startedAt": "2026-10-18T00:06:40.687Z",
+  "finishedAt": "2026-10-18T00:09:19.489Z",
+  "summary": {
+    "discovered": 11,
+    "selected": 11,
+    "executed": 11,
+    "passed": 11,
+    "failed": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "skipped": 0
+  },
+  "usage": {
+    "discoveredResults": 11,
+    "maxAgentContextBytes": 0,
+    "maxLedgerBytes": 0,
+    "maxObservationBytes": 0,
+    "artifactBytes": 0,
+    "downloads": 0,
+    "events": 81,
+    "modelTokens": 0,
+    "maxModelCallsInStep": 0,
+    "maxActionStepsInStep": 0
+  },
+  "tests": [
+    {
+      "name": [
+        "answer actions open selectable text and hide an unavailable retry"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "a long composer draft can expand and collapse without submitting"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "the app opens on the journal"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "the tabs switch between journal, library and Ask AI"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "the side menu lists the main destinations"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "Settings opens from the side menu"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "the journal add-record action opens the capture sheet"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "the tasks list opens from the journal"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "the structured answer example renders the comparison table and Row"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "the structured answer example replays its streaming state"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": [
+        "the source list and progress fixture renders"
+      ],
+      "status": "passed"
+    }
+  ],
+  "conditions": [
+    "11 deterministic simulator tests; no agent/model steps",
+    "API key environment removed; telemetry disabled",
+    "physical haptics, microphone recording and VoiceOver not covered"
+  ]
+}

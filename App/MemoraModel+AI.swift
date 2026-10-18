@@ -1012,6 +1012,7 @@ extension MemoraModel {
       at: 0
     )
     persistAIHistory()
+    InteractionFeedback.shared.send(.success)
   }
 
   func deleteAIHistoryEntry(_ id: UUID) {
