@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Build a disposable export, leaving candidate sources and Bitrig state untouched."""
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -15,7 +14,7 @@ archive_path = output / 'source.tar'
 archive_path.write_bytes(archive)
 with tarfile.open(archive_path) as tf:
     tf.extractall(tree, filter='data')
-xcodegen = os.environ.get('MEMORA_XCODEGEN', '/Volumes/WorkspaceSSD/Development/Tools/memora-supervisor/xcodegen/2.46.0/bin/xcodegen')
+xcodegen = '/Volumes/WorkspaceSSD/Development/Tools/memora-supervisor/xcodegen/2.46.0/bin/xcodegen'
 subprocess.run([xcodegen, 'generate', '--spec', 'Project.json'], cwd=tree, check=True)
 subprocess.run(['/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild', '-project', str(tree / 'Memora.xcodeproj'), '-scheme', 'Memora',
                 '-configuration', 'Debug', '-destination', 'generic/platform=iOS Simulator',

@@ -42,11 +42,13 @@ class WorkflowTests(unittest.TestCase):
                 config = json.loads(kwargs['env']['OPENCODE_CONFIG_CONTENT'])
                 self.assertEqual(config['permission']['edit']['docs/change.md'], 'allow')
                 self.assertEqual(config['permission']['*'], 'deny')
+                self.assertNotIn('grep', config['permission'])
                 self.calls += 1
                 (cwd / 'docs/change.md').write_text(f'change {self.calls}\n')
                 if outside:
                     (cwd / 'docs/unrelated.md').write_text('forbidden\n')
-                log.write_text(json.dumps({'type': 'error' if worker_error else 'text'}) + '\n')
+                log.write_text(json.dumps({'type': 'tool_use', 'part': {'state': {'status': 'error'}}} if worker_error
+                    else {'type': 'text', 'part': {'text': 'done'}}) + '\n')
                 return ''
             if args[0] == 'git':
                 return self.real_command(args, cwd, log, **kwargs)
