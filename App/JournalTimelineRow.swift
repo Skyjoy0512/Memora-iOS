@@ -25,7 +25,7 @@ struct JournalTimelineRow<Content: View>: View {
         .font(.title3)
         .foregroundStyle(MemoraPalette.textSecondary)
         .frame(width: JournalTimelineMetrics.iconSide, height: JournalTimelineMetrics.iconSide)
-        .background(Color(uiColor: .tertiarySystemFill), in: Circle())
+        .background(MemoraPalette.card, in: Circle())
         .accessibilityHidden(true)
 
       content()

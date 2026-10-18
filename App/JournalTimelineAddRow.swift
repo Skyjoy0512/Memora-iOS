@@ -21,12 +21,23 @@ struct JournalTimelineAddRow: View {
       }
 
       Button(action: action) {
-        Image(icon: .plus)
-          .font(.subheadline.weight(.semibold))
-          .foregroundStyle(MemoraPalette.textSecondary)
-          .frame(width: Self.side, height: Self.side)
-          .background(Color(uiColor: .tertiarySystemFill), in: Circle())
-          .contentShape(Circle())
+        HStack(spacing: 6) {
+          Image(icon: .plus)
+            .font(.caption.weight(.bold))
+          Text(label)
+            .font(.caption.weight(.medium))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+        }
+        .foregroundStyle(MemoraPalette.textSecondary)
+        .padding(.horizontal, 12)
+        .frame(height: Self.side)
+        .background(MemoraPalette.card, in: Capsule())
+        .overlay {
+          Capsule()
+            .stroke(MemoraPalette.border.opacity(0.8), lineWidth: 0.5)
+        }
+        .contentShape(Capsule())
       }
       .buttonStyle(.plain)
       .accessibilityLabel(Text(label))
