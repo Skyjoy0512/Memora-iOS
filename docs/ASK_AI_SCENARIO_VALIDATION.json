@@ -39,16 +39,17 @@
     },
     "C_research_company_slides": {
       "result": "passed",
-      "production": ["ResearchLoop", "ResearchPlan", "WebResearchReport/Source", "CompanyTemplateEngine", "PPTXWriter", "OfficeArchiveReader/OfficeDocumentExtraction", "prepareDocumentArtifact", "LocalStore/SQLite"],
-      "fixture": ["scripted search results", "temporary workspace files directory"],
+      "production": ["WebResearchClient", "ProjectMetadataTransport", "ResearchLoop", "ResearchPlan", "WebResearchReport/Source", "CompanyTemplateEngine", "PPTXWriter", "OfficeArchiveReader/OfficeDocumentExtraction", "prepareDocumentArtifact", "LocalStore/SQLite"],
+      "fixture": ["scripted Brave HTTP responses through URLProtocol", "temporary workspace files directory"],
       "covered": [
+        "real request generation, auth header, URL normalization and HTML stripping through WebResearchClient",
         "bounded iterative search with unique queries",
         "duplicate URL merged and excerpt/extracted kinds kept distinct",
         "citation range validated",
         "company PPTX template filled, generated, reloaded and stored",
         "interrupted research remains incomplete"
       ],
-      "not_verified": ["live Brave HTTP response decoding in this scenario", "full-page PowerPoint rendering"]
+      "not_verified": ["live Brave account and billing", "full-page PowerPoint rendering"]
     },
     "D_meeting_mail_draft": {
       "result": "passed",
@@ -105,7 +106,7 @@
   "build": {
     "result": "not_run",
     "reason": "Bitrig rejects linked worktrees outside the registered project; main was not switched and other worktrees were not modified",
-    "app_files_parsed": ["App/DocumentDetailView.swift", "App/ArtifactExportFile.swift", "App/ProjectSourceFiles.swift"],
+    "app_files_parsed": ["App/DocumentDetailView.swift", "App/ArtifactExportFile.swift", "App/ProjectSourceFiles.swift", "App/ProjectMetadataTransport.swift", "App/WebResearchClient.swift"],
     "debug": "not_run",
     "release": "not_run",
     "ui_e2e": "not_run"

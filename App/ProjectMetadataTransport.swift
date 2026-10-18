@@ -1,12 +1,13 @@
 import Foundation
 
 enum ProjectMetadataTransport {
-  static func data(for request: URLRequest, host: String, mimeTypes: Set<String>, maximumBytes: Int) async throws -> Data {
+  static func data(for request: URLRequest, host: String, mimeTypes: Set<String>, maximumBytes: Int,
+                   sessionConfiguration: URLSessionConfiguration = .ephemeral) async throws -> Data {
     guard ["www.youtube.com", "i.ytimg.com", "api.search.brave.com"].contains(host),
           request.url?.host == host, request.url?.scheme == "https", maximumBytes > 0 else {
       throw ProjectYouTubeMetadata.Failure.unavailable
     }
-    let configuration = URLSessionConfiguration.ephemeral
+    let configuration = (sessionConfiguration.copy() as? URLSessionConfiguration) ?? .ephemeral
     configuration.httpShouldSetCookies = false
     configuration.httpCookieStorage = nil
     configuration.urlCredentialStorage = nil

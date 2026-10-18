@@ -23,6 +23,7 @@ swiftc -enable-bare-slash-regex -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENAN
   App/ZipArchive.swift App/ProjectSourceText.swift App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift App/DOCXWriter.swift App/PPTXWriter.swift \
   App/CompanyTemplate.swift App/CompanyTemplateEngine.swift App/OfficeTemplateTextPart.swift App/ProjectSourceFiles.swift \
   App/WebResearchSource.swift App/WebResearchReport.swift App/ResearchPlan.swift App/ResearchLoop.swift \
+  App/ProjectSourceURL.swift App/ProjectYouTubeMetadata.swift App/ProjectMetadataTransport.swift App/ProjectMetadataRedirectPolicy.swift App/WebResearchClient.swift \
   App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift \
   App/AIToolRegistry.swift App/AIToolDefinition.swift App/IntegrationProvider.swift App/IntegrationToolResult.swift \
   tools/checks/AskAIIntegrationScenarioChecks.swift -lsqlite3 -framework CryptoKit -o "$check_dir/scenarios"

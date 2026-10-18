@@ -15,6 +15,7 @@ struct AskAIIntegrationScenarioChecks {
 
     try await personToCompanyProposal(root: root)
     try pastConversationToOpenItems()
+    try await researchHTTPBoundary()
     try await researchToCompanySlides(root: root)
     try await meetingToMailDraft(root: root)
     try await mentionSelectsOnlyPermittedTools(root: root)
@@ -133,6 +134,30 @@ struct AskAIIntegrationScenarioChecks {
     let encoded = try JSONEncoder().encode(episode)
     let decoded = try JSONDecoder().decode(AIEpisode.self, from: encoded)
     precondition(decoded.unresolved == ["見積もりを確認する"] && decoded.decisions.isEmpty)
+  }
+
+  @MainActor static func researchHTTPBoundary() async throws {
+    let searchJSON = Data(#"{"web":{"results":[{"url":"https://example.invalid/a?utm_source=x","title":"架空A","description":"<b>概要A</b>"},{"url":"https://example.invalid/a","title":"重複A","description":"別の概要"},{"url":"https://example.invalid/b","title":"架空B","description":"概要B"}]}}"#.utf8)
+    let deepJSON = Data(#"{"grounding":{"generic":[{"url":"https://example.invalid/c","title":"架空C","snippets":["抽出本文C1","抽出本文C2"],"page_age":"2026-10-01T00:00:00Z"}]}}"#.utf8)
+    BraveFixtureProtocol.responses = [(200, searchJSON), (200, deepJSON)]
+    BraveFixtureProtocol.requests = []
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [BraveFixtureProtocol.self]
+    let search = try await WebResearchClient.search(query: "架空 市場", mode: .search, key: "offline-fixture-brave",
+      sessionConfiguration: configuration)
+    precondition(search.count == 2 && search.allSatisfy { $0.kind == .searchExcerpt })
+    precondition(search[0].url.absoluteString == "https://example.invalid/a")
+    precondition(!search[0].text.contains("<b>") && search[0].text.contains("概要A"))
+    let deep = try await WebResearchClient.search(query: "架空 市場", mode: .deepResearch, key: "offline-fixture-brave",
+      sessionConfiguration: configuration)
+    precondition(deep.count == 1 && deep[0].kind == .extractedPassage)
+    precondition(deep[0].text.contains("抽出本文C1") && deep[0].publishedAt != nil)
+    let requests = BraveFixtureProtocol.requests
+    precondition(requests.count == 2)
+    precondition(requests[0].url?.host == "api.search.brave.com" && requests[0].url?.path == "/res/v1/web/search")
+    precondition(requests[0].value(forHTTPHeaderField: "X-Subscription-Token") == "offline-fixture-brave")
+    precondition(requests[1].url?.path == "/res/v1/llm/context")
+    precondition(requests[1].url?.query?.contains("maximum_number_of_urls=6") == true)
   }
 
   // MARK: - C. Research → 会社PPTX
@@ -320,4 +345,26 @@ private actor FixtureToolProvider: IntegrationProvider {
     calls += 1
     return IntegrationToolResult(text: text, isError: false)
   }
+}
+
+
+/// Serves only scripted Brave responses; any other request is an error.
+final class BraveFixtureProtocol: URLProtocol {
+  nonisolated(unsafe) static var responses: [(Int, Data)] = []
+  nonisolated(unsafe) static var requests: [URLRequest] = []
+  override class func canInit(with request: URLRequest) -> Bool { true }
+  override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+  override func startLoading() {
+    Self.requests.append(request)
+    guard !Self.responses.isEmpty else {
+      client?.urlProtocol(self, didFailWithError: URLError(.cannotConnectToHost)); return
+    }
+    let (status, data) = Self.responses.removeFirst()
+    let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1",
+      headerFields: ["Content-Type": "application/json", "Content-Length": "\(data.count)"])!
+    client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+    client?.urlProtocol(self, didLoad: data)
+    client?.urlProtocolDidFinishLoading(self)
+  }
+  override func stopLoading() {}
 }

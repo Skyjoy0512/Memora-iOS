@@ -60,9 +60,11 @@ enum WebResearchClient {
     }
     return result
   }
-  static func search(query: String, mode: WebResearchReport.Mode, key: String) async throws -> [WebResearchSource] {
+  static func search(query: String, mode: WebResearchReport.Mode, key: String,
+                     sessionConfiguration: URLSessionConfiguration = .ephemeral) async throws -> [WebResearchSource] {
     let data = try await ProjectMetadataTransport.data(for: request(query: query, mode: mode, key: key),
-      host: "api.search.brave.com", mimeTypes: ["application/json"], maximumBytes: 2 * 1024 * 1024)
+      host: "api.search.brave.com", mimeTypes: ["application/json"], maximumBytes: 2 * 1024 * 1024,
+      sessionConfiguration: sessionConfiguration)
     return try decode(data, mode: mode)
   }
 }
