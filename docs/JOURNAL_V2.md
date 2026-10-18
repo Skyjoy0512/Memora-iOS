@@ -187,3 +187,8 @@ Light/Dark、Dynamic Type、VoiceOver、Reduce Motionに対応する。
 
 タブバー・＋ボタン・composer・ナビゲーションバーなど、他のLiquid Glassは変更しない。
 `memoraGlass`と`MemoraGlassContainer`の共通実装も維持する。
+
+E2E（`tests/workspace-journal.e2e.ts`）で、週ストリップの選択と日付変更後の一覧、
+記録間・末尾の＋からの追加、日時変更の保存、Dark外観を確認した。アクセシビリティ
+文字サイズはシミュレーターでカレンダー・タイムラインの折り返しと44ptのタップ領域を
+目視確認した。

@@ -14,6 +14,25 @@ async function tapStable(locator: any) {
   }
 }
 
+/// Adds one memo from the journal's add sheet.
+async function addMemo(screen: any, title: string) {
+  await screen.getByText('記録を追加').first().tap();
+  await screen.getByPlaceholder('メモのタイトル').fill(title);
+  const add = screen.getByRole('button', { name: '追加' });
+  await expect(add).toBeEnabled();
+  await tapStable(add);
+}
+
+/// Taps an add control again if the first touch landed while the previous
+/// sheet was still dismissing, then waits for the add sheet.
+async function openAddSheet(screen: any, locator: any) {
+  await tapStable(locator);
+  if (!(await screen.getByText('ライフログを追加').isVisible())) {
+    await tapStable(locator);
+  }
+  await expect(screen.getByText('ライフログを追加')).toBeVisible();
+}
+
 /// Creates a fresh project and lands on its workspace.
 async function createProject(screen: any, device: any) {
   await screen.getByText('ライブラリ').tap();
@@ -65,20 +84,23 @@ test('the week strip selects a day and updates the timeline', async ({ app, devi
   await device.installApp();
   await app.open();
 
+  const title = `E2E day ${Date.now()}`;
+  await addMemo(screen, title);
+
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const month = yesterday.toLocaleString('en-US', { month: 'long' });
-  const dayButton = screen.getByRole('button', {
-    name: new RegExp(`${month} ${yesterday.getDate()}, ${yesterday.getFullYear()}`),
-  });
-  await expect(dayButton).toBeVisible();
-  await dayButton.tap();
+  const yesterdayName = `${yesterday.toLocaleString('en-US', { month: 'long' })} ${yesterday.getDate()}, ${yesterday.getFullYear()}`;
+  await tapStable(screen.getByRole('button', { name: new RegExp(yesterdayName) }));
 
-  await expect(screen.getByText(/の記録はありません/)).toBeVisible();
-  await expect(screen.getByRole('button', {
-    name: new RegExp(`${month} ${yesterday.getDate()}, ${yesterday.getFullYear()}`),
-    selected: true,
-  })).toBeVisible();
+  await expect(screen.getByRole('button', { name: new RegExp(yesterdayName), selected: true })).toBeVisible();
+  await expect(screen.getByText(title)).not.toBeVisible();
+
+  const today = new Date();
+  const todayName = `${today.toLocaleString('en-US', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
+  await tapStable(screen.getByRole('button', { name: new RegExp(todayName) }));
+  const record = screen.getByText(title).first();
+  await scrollTo(screen, record);
+  await expect(record).toBeVisible();
 });
 
 test('the inline plus buttons add a record', async ({ app, device, screen }) => {
@@ -91,16 +113,14 @@ test('the inline plus buttons add a record', async ({ app, device, screen }) => 
   await expect(add).toBeEnabled();
   await tapStable(add);
 
-  const between = screen.getByLabel('この間に記録を追加');
+  const between = screen.getByLabel('この間に記録を追加').first();
   await scrollTo(screen, between);
-  await between.tap();
-  await expect(screen.getByText('ライフログを追加')).toBeVisible();
+  await openAddSheet(screen, between);
   await screen.getByText('キャンセル').tap();
 
   const end = screen.getByRole('button', { name: '記録を追加' }).last();
   await scrollTo(screen, end);
-  await end.tap();
-  await expect(screen.getByText('ライフログを追加')).toBeVisible();
+  await openAddSheet(screen, end);
   await screen.getByText('キャンセル').tap();
 });
 
@@ -115,4 +135,36 @@ test('the journal and workspace stay legible in dark appearance', async ({ app, 
   } finally {
     await device.setAppearance('light');
   }
+});
+
+test('editing a record saves it to the new date', async ({ app, device, screen }) => {
+  await device.installApp();
+  await app.open();
+  const title = `E2E edit ${Date.now()}`;
+  await addMemo(screen, title);
+
+  await tapStable(screen.getByLabel('検索'));
+  await screen.getByPlaceholder('ジャーナルを検索').fill(title);
+  const preview = screen.getByText(title).first();
+  await expect(preview).toBeVisible();
+  await tapStable(preview);
+  await expect(screen.getByLabel('その他')).toBeVisible();
+
+  await tapStable(screen.getByLabel('その他'));
+  await tapStable(screen.getByText('編集'));
+
+  await tapStable(screen.getByRole('button', { name: 'Sheet Grabber' }));
+  const today = new Date();
+  const todayLabel = `${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()}, ${today.getFullYear()}`;
+  await tapStable(screen.getByRole('button', { name: todayLabel }));
+
+  const target = new Date();
+  target.setDate(target.getDate() - 1);
+  if (target.getMonth() !== today.getMonth()) target.setDate(today.getDate() + 1);
+  const targetName = `${target.toLocaleString('en-US', { month: 'long' })} ${target.getDate()}`;
+  await tapStable(screen.getByRole('listitem', { name: new RegExp(targetName) }));
+
+  await tapStable(screen.getByRole('button', { name: '保存' }));
+  const targetLabel = `${target.toLocaleString('en-US', { month: 'short' })} ${target.getDate()}, ${target.getFullYear()}`;
+  await expect(screen.getByText(new RegExp(targetLabel)).first()).toBeVisible();
 });
