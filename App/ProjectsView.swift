@@ -29,7 +29,7 @@ struct ProjectsView: View {
 
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
-        ProjectListFilterBar(selection: $filter)
+        MemoraTextTabBar(items: ProjectListFilter.allCases, selection: $filter, horizontalPadding: 0) { $0.title }
         if model.shareInboxFailure != nil {
           Button("共有からの取り込みを確認") { isShareInboxPresented = true }
             .font(.subheadline).frame(minHeight: 44).tint(MemoraPalette.textPrimary)

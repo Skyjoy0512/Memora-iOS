@@ -9,7 +9,7 @@ enum ProjectListFilter: String, CaseIterable, Identifiable {
 
   var id: String { rawValue }
 
-  var title: LocalizedStringKey {
+  var title: String {
     switch self {
     case .all: "すべて"
     case .mine: "自分"

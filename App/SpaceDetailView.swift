@@ -20,7 +20,9 @@ struct SpaceDetailView: View {
       let sources = model.workspaceSources(projectID: spaceID)
 
       VStack(spacing: 0) {
-        ProjectWorkspaceTabBar(selection: $selectedTab)
+        MemoraTextTabBar(items: ProjectWorkspaceTab.allCases, selection: $selectedTab) { $0.title }
+          .padding(.top, 2)
+          .padding(.bottom, 10)
 
         Group {
           switch selectedTab {

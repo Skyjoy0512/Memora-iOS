@@ -5,7 +5,6 @@ struct LibraryView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
-  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @State private var query = ""
   @State private var isSearching = false
   @Namespace private var heroNamespace
@@ -47,7 +46,7 @@ struct LibraryView: View {
 
   private var librarySectionPicker: some View {
     @Bindable var model = model
-    return GlassSegmentedPicker(items: LibrarySection.allCases, selection: $model.librarySection, height: 44) {
+    return MemoraTextTabBar(items: LibrarySection.allCases, selection: $model.librarySection, horizontalPadding: 18) {
       $0.title
     }
     .accessibilityLabel("ライブラリの表示")
@@ -60,10 +59,8 @@ struct LibraryView: View {
       VStack(spacing: 0) {
         if !isSearching, !isSelectionMode {
           librarySectionPicker
-            .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 208)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 18)
-            .padding(.bottom, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 6)
             .accessibilityLabel("ライブラリの表示")
         }
         Group {
