@@ -205,3 +205,19 @@ test('the project list filters all, mine and shared', async ({ app, device, scre
   await tapStable(screen.getByRole('button', { name: 'すべて' }));
   await expect(screen.getByRole('button', { name: 'すべて', selected: true })).toBeVisible();
 });
+
+test('the files tab offers recording and existing-file actions', async ({ app, device, screen }) => {
+  await device.installApp();
+  await app.open();
+  await createProject(screen);
+
+  await tapStable(screen.getByRole('button', { name: 'ファイル' }));
+  await tapStable(screen.getByRole('button', { name: 'ファイルを追加' }).first());
+  await expect(screen.getByRole('button', { name: '録音を追加' }).first()).toBeVisible();
+  await expect(screen.getByRole('button', { name: '既存ファイルを移動' }).first()).toBeVisible();
+  await tapStable(screen.getByText('既存ファイルを移動'));
+
+  await expect(screen.getByText('既存ファイルを移動').first()).toBeVisible();
+  await tapStable(screen.getByText('キャンセル'));
+  await expect(screen.getByRole('button', { name: 'ファイル', selected: true })).toBeVisible();
+});
