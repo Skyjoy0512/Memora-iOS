@@ -13,6 +13,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   candidate is requested. Review the resulting diff, run task-specific checks,
   and commit only the intended files. Never claim visual/device validation from
   compilation alone. Do not bypass failed gates or exceed two repair attempts.
+  After applying changes that affect the app, run `bitrig preview -platform iOS`
+  from the Bitrig agent session to update the user's preview.
 
 - Change the UI, layout, or copy only when the request asks for it. Otherwise
   optimise and refactor code without altering what is on screen.

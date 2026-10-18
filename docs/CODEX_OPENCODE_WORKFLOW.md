@@ -20,6 +20,8 @@ BitrigのCodexに「この変更をOpenCode Goワーカーへ委任して」と�
 
 UI対象は明示的なUI変更依頼のときだけ`--allow-ui`を追加する。これは画面確認の代わりにはならない。Liquid Glass、キーボード、アクセシビリティ、実機の録音などはBitrigのプレビュー/実機で別途確認し、未検証を報告する。
 
+アプリに影響する変更を取り込んだ後は、Bitrig内の監督Codexが`bitrig preview -platform iOS`を実行し、ユーザーが見ているプレビューを更新する。今回は外部Codexセッションからの`bitrig build -list -json`が終了69（Bitrigが開始したセッションでのみ動作）を返したため、隔離コピーの検証はXcodeビルドを使う。Bitrig内からの起動とプレビュー操作は別の確認項目。
+
 ## 固定した接続
 
 - 監督: `/Volumes/WorkspaceSSD/Development/Tools/npm-global/bin/codex`、ChatGPT認証、`gpt-5.6-sol`。ユーザーのグローバル設定を読み込まず、read-onlyで設計とレビュー。
@@ -33,7 +35,7 @@ UI対象は明示的なUI変更依頼のときだけ`--allow-ui`を追加する�
 - AGENTS.md / DESIGN.mdを引き継ぐ。UISegmentedControl、glassボタンとpopover/zoom、スクロール、Reduce Motion、IME、録音/STTと承認境界を保持。
 - 対象外差分、symlink、Git履歴変更、設定/認証変更、CLIエラー、空の差分、形式不正レビューは停止。レビューの指摘が残っていれば不合格。
 - `git diff --check`、motion policy、既存motion/loading回帰テスト、署名なしiOS Simulator全体ビルドを毎回実行。タスク固有の機能テストは監督Codexが追加で実行する。
-- 回帰テストはmacOS sandbox内で実行し、実行用SSDディレクトリ以外への書き込み・ネットワーク・認証ディレクトリの読み取りを拒否する。Swiftマクロも同じ外側の制約下で実行する。ビルドは固定したProject.jsonから生成し、認証用環境変数を渡さない。ワーカーによるProject.jsonやビルド手順の変更は認めない。
+- 回帰テストはmacOS sandbox内で実行し、専用の検証出力先とモジュールキャッシュ以外への書き込み・ネットワーク・認証ディレクトリの読み取りを拒否する。候補コードと監督のパッチ/ログは書き換えられない。Swiftマクロも同じ外側の制約下で実行する。ビルドは固定したProject.jsonから生成し、認証用環境変数を渡さない。ワーカーによるProject.jsonやビルド手順の変更は認めない。
 - 最大2回の差し戻し後は停止し、候補と根拠を残す。タイムアウトは子プロセスも終了する。自動モデル切替はしない。
 - OpenCodeのpermissionはツール制限でありOSサンドボックスではない。同じユーザーで実行するCLIを信頼する最小構成。未知のプラグイン等を追加した場合は再監査する。
 
