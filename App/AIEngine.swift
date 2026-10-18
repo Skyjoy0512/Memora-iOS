@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// How summaries and Ask AI answers are produced.
-enum AIEngine: String, CaseIterable, Identifiable {
+enum AIEngine: String, CaseIterable, Identifiable, Codable {
   case automatic
   /// Memora's own cloud AI, paid with plan credits instead of a key.
   case memora

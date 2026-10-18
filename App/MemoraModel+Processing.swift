@@ -92,6 +92,20 @@ extension MemoraModel {
     let engine = configuration?.engine ?? settingsAIConfiguration.engine
     let llm = configuration?.llm ?? settingsAIConfiguration.llm
 
+    enqueueBackgroundSummary(
+      PendingSummaryJob(
+        meetingID: id,
+        choice: choice,
+        engineRawValue: engine.rawValue,
+        llm: llm,
+        automaticallySelect: automaticallySelect,
+        useCaseID: useCaseID,
+        preferences: input.preferences,
+        cloudDisclosureConfirmed: cloudDisclosureConfirmed,
+        usesCloud: usesCloud
+      )
+    )
+
     processing.run(id: id) { [weak self] in
       let background = BackgroundActivity(name: "要約を作成")
       defer { background.end() }
@@ -173,6 +187,7 @@ extension MemoraModel {
         self.updateMeeting(id) { $0.status = .failed(message) }
         self.announce("要約を作成できませんでした。\(message)")
       }
+      self.removeBackgroundSummary(meetingID: id)
     }
   }
 

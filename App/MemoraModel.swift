@@ -494,6 +494,8 @@ final class MemoraModel {
   /// Transcription and summary jobs, with the rules that decide whether a
   /// result still applies.
   @ObservationIgnored let processing = ProcessingService()
+  /// Summaries that may still need a background processing window.
+  var pendingSummaryJobs: [PendingSummaryJob] = []
   /// Timings for the paths that matter when comparing builds. Holds numbers and
   /// names only, never content.
   @ObservationIgnored let performance = PerformanceLog.shared
@@ -603,6 +605,7 @@ final class MemoraModel {
     speakerProfile = loadedSpeakerProfile
     let activeJobIDs = load([String].self, forKey: StorageKey.activeJobs, fallback: [])
     processing.restoreInterrupted(activeJobIDs)
+    pendingSummaryJobs = load([PendingSummaryJob].self, forKey: StorageKey.pendingSummaryJobs, fallback: [])
     trashedRecords = load([TrashedRecord].self, forKey: StorageKey.trash, fallback: [])
     trashedLifeLogEntries = load(
       [TrashedLifeLogEntry].self,

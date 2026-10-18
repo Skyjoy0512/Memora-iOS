@@ -2,7 +2,7 @@ import Foundation
 
 /// Either a built-in or a marketplace template, so the picker and the generator
 /// can treat them the same.
-enum SummaryTemplateChoice: Hashable, Identifiable {
+enum SummaryTemplateChoice: Hashable, Identifiable, Codable {
   case builtIn(SummaryTemplate)
   case market(SummaryMarketTemplate)
 

@@ -49,3 +49,21 @@ Tested on the built-in iPhone 18 Pro Max simulator with ordinary text size. No a
 Still unverified: external `memora://task/<UUID>` launch, complete VoiceOver spoken/gesture behavior, and small-device layout (the simulator boot issue above). The current task UI exposes no task-ID/link-copy action; code inspection confirms the existing URL handler validates a stored task ID and calls the same `openTask` route, but this is not an external-launch result. No diagnostic UI or logging of private task IDs was added just to enable this check.
 
 Real-device background/lock-screen recording, actual audio-file import, external recorders, real online meeting recording, configured external AI answers and live team sharing also remain pending. A simulator notification result does not establish real-device delivery behavior.
+
+## Background summaries — 2026-10-18
+
+- A summary started in the summary sheet now writes a `PendingSummaryJob` with its
+  template, engine, model, preferences and consent to SQLite. `BGProcessingTask`
+  (`app.memora.summaries.processing`) is registered at launch, queued when the app
+  goes to the background, and re-queued at launch if a job survived a stop.
+- A cloud job requests network connectivity; an on-device job does not. An
+  expired window cancels the run, returns the record to `waitingForSummary`, and
+  keeps the job for the next window. The record and its fingerprint checks are
+  the same ones the foreground path uses.
+- iOS chooses when a processing window runs, and a force-quit app is not
+  relaunched. The simulator does not force a `BGProcessingTask`, so actual
+  scheduling, termination, battery and network conditions still need a device
+  check. No external AI call was made for this validation.
+- `tools/checks/run-background-summary-job-checks.sh` verifies the project's
+  permitted identifier / `processing` background mode and the job's Codable
+  round-trip.

@@ -58,6 +58,7 @@ struct ContentView: View {
     .task { await model.refreshWidgetSnapshot() }
     .onChange(of: scenePhase) { _, phase in
       if phase == .active { model.scheduleWidgetSnapshot() }
+      if phase == .background { model.scheduleBackgroundSummary() }
       appLock.handleScenePhase(phase, isRecording: model.isRecording)
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isImporting)

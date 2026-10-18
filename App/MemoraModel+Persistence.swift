@@ -153,6 +153,7 @@ extension MemoraModel {
     static let installedTemplates = "memoraInstalledTemplates"
     static let cloudStorage = "memoraCloudStorage"
     static let activeJobs = "memoraActiveJobs"
+    static let pendingSummaryJobs = "memoraPendingSummaryJobs"
     static let recordingDraft = "memoraRecordingDraft"
     static let voiceProfile = "memoraVoiceProfile"
     static let speakerProfile = "memoraSpeakerProfileReference"

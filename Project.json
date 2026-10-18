@@ -62,7 +62,8 @@
         "path" : "App\/Info.plist",
         "properties" : {
           "BGTaskSchedulerPermittedIdentifiers" : [
-            "app.memora.residents.refresh"
+            "app.memora.residents.refresh",
+            "app.memora.summaries.processing"
           ],
           "CFBundleDisplayName" : "Memora",
           "CFBundleDocumentTypes" : [
@@ -101,7 +102,8 @@
           "NSSupportsLiveActivities" : true,
           "UIBackgroundModes" : [
             "audio",
-            "fetch"
+            "fetch",
+            "processing"
           ],
           "UILaunchScreen" : {
 

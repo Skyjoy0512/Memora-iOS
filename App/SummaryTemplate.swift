@@ -2,7 +2,7 @@ import Foundation
 
 /// The built-in shapes a summary can take. 詳細な概要 is the base every
 /// automatic summary uses; the others are picked from the custom list.
-enum SummaryTemplate: String, CaseIterable, Identifiable {
+enum SummaryTemplate: String, CaseIterable, Identifiable, Codable {
   case detailedOverview
   case meetingMinutes
   case detailedMinutes

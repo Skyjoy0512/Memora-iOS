@@ -2,7 +2,7 @@ import Foundation
 
 /// The provider and model a cloud request goes to. Read once when a request
 /// starts, so a settings change mid-answer cannot mix two providers.
-struct LLMSelection: Hashable, Sendable {
+struct LLMSelection: Hashable, Sendable, Codable {
   var provider: LLMProvider
   var modelID: String
   var displayName: String? = nil

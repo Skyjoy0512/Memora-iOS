@@ -24,6 +24,12 @@ final class MemoraAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
       guard let task = task as? BGAppRefreshTask else { return }
       MainActor.assumeIsolated { model.handleResidentRefresh(task) }
     }
+    BGTaskScheduler.shared.register(forTaskWithIdentifier: MemoraModel.backgroundSummaryTaskID, using: .main) { [model] task in
+      guard let task = task as? BGProcessingTask else { return }
+      MainActor.assumeIsolated { model.handleBackgroundSummary(task) }
+    }
+    // A job that survived a stop is queued again as soon as the app launches.
+    model.scheduleBackgroundSummary()
     return true
   }
 
