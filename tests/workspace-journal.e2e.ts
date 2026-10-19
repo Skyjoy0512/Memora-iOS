@@ -40,7 +40,7 @@ async function openAddSheet(screen: any, locator: any) {
 async function createProject(screen: any, device: any) {
   await screen.getByText('ライブラリ').tap();
   await screen.getByText('プロジェクト').tap();
-  await screen.getByRole('button', { name: 'プロジェクトを作成' }).tap();
+  await tapStable(screen.getByRole('button', { name: 'プロジェクトを作成' }).first());
   await screen.getByPlaceholder('例：新規アプリ').fill('E2E Workspace');
   await tapStable(screen.getByRole('button', { name: '作成' }));
   await expect(screen.getByRole('button', { name: 'チャット', selected: true })).toBeVisible();

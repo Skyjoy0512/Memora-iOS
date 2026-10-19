@@ -55,13 +55,24 @@ struct ProjectsView: View {
         } else if visibleShared.isEmpty {
           if isSearching {
             ContentUnavailableView.search(text: query)
-          } else {
+          } else if filter == .shared {
             VStack(alignment: .leading, spacing: 8) {
               Text(filter.emptyTitle).font(.body.weight(.semibold))
               Text(filter.emptyDetail)
                 .font(.subheadline).foregroundStyle(.secondary)
             }
             .padding(.vertical, 32)
+          } else {
+            ProjectWorkspaceEmptyState(
+              icons: [.folder, .doc, .person2],
+              title: filter.emptyTitle,
+              message: "録音や資料をプロジェクトにまとめると、ここから開けます。",
+              actionTitle: "プロジェクトを作成",
+              actionIcon: .plus
+            ) {
+              model.isFileCreationPresented = true
+            }
+            .padding(.vertical, 40)
           }
         }
 
