@@ -32,7 +32,7 @@ struct TeamSharesView: View {
               .font(.caption)
               .foregroundStyle(.secondary)
             SharedOwnerBadge(ownerName: item.ownerName)
-              .padding(.top, 2)
+              .padding(.top, MemoraSpacing.xxs)
           }
           .accessibilityElement(children: .combine)
           .accessibilityLabel("\(item.title)、\(item.kind == "project" ? "プロジェクト" : "記録")、\(item.ownerName)さんが共有")

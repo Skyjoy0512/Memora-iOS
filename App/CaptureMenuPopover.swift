@@ -16,7 +16,7 @@ struct CaptureMenuPopover: View {
           .font(.footnote)
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(8)
+          .padding(MemoraSpacing.sm)
       }
       if let spaceID, model.space(id: spaceID) != nil {
         Button("ソースを追加", icon: .paperclip) {
@@ -27,7 +27,7 @@ struct CaptureMenuPopover: View {
           }
         }
         .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, MemoraSpacing.sm)
         .buttonStyle(.plain)
       }
       ForEach(CaptureAction.available) { action in
@@ -47,14 +47,14 @@ struct CaptureMenuPopover: View {
 
             Spacer(minLength: 12)
           }
-          .padding(.horizontal, 8)
+          .padding(.horizontal, MemoraSpacing.sm)
           .frame(maxWidth: .infinity, minHeight: 52)
-          .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+          .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
         }
         .buttonStyle(.plain)
       }
     }
-    .padding(10)
+    .padding(MemoraSpacing.md)
     .frame(width: 300)
     .fileImporter(
       isPresented: $isFileImporterPresented,

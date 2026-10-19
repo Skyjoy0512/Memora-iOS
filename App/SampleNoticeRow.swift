@@ -23,7 +23,7 @@ struct SampleNoticeRow: View {
       }
       .font(.subheadline.weight(.semibold))
     }
-    .padding(14)
+    .padding(MemoraSpacing.lg)
     .memoraCard()
     .confirmationDialog("サンプルを削除しますか？", isPresented: $isConfirming, titleVisibility: .visible) {
       Button("削除", role: .destructive) {

@@ -176,7 +176,7 @@ struct AIMessageView: View {
           .foregroundStyle(.tertiary)
           .rotationEffect(.degrees(isSourcesOpen ? 180 : 0))
       }
-      .padding(.horizontal, 6)
+      .padding(.horizontal, MemoraSpacing.sm)
       .frame(minHeight: 36)
       .contentShape(Rectangle())
     }
@@ -218,13 +218,13 @@ struct AIMessageView: View {
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, MemoraSpacing.md)
         .padding(.vertical, 9)
         .background(
           Color.primary.opacity(0.06),
-          in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+          in: RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
       }
     }
   }

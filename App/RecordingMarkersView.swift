@@ -38,9 +38,9 @@ struct RecordingMarkersView: View {
       Text(marker.displayTitle).frame(maxWidth: .infinity, alignment: .leading)
     }
     .font(.subheadline)
-    .padding(12)
+    .padding(MemoraSpacing.md)
     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
-    .contentShape(RoundedRectangle(cornerRadius: 14))
+    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: MemoraRadius.card))
+    .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card))
   }
 }

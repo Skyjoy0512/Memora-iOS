@@ -8,15 +8,14 @@ struct PartialFailureBanner: View {
     VStack(alignment: .leading, spacing: 10) {
       Label("文字起こしは使えます", icon: .exclamationmarkTriangleFill)
         .font(.headline)
-        .foregroundStyle(.orange)
+        .foregroundStyle(MemoraPalette.warning)
       Text(message)
         .font(.subheadline)
         .foregroundStyle(.secondary)
       Button("AI整理だけ再試行", icon: .arrowClockwise, action: retry)
         .font(.subheadline.weight(.semibold))
     }
-    .padding(16)
-    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .padding(MemoraSpacing.lg)
+    .memoraCard()
   }
 }
-

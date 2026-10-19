@@ -60,7 +60,7 @@ struct LibraryView: View {
         if !isSearching, !isSelectionMode {
           librarySectionPicker
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, 6)
+            .padding(.bottom, MemoraSpacing.sm)
             .accessibilityLabel("ライブラリの表示")
         }
         Group {
@@ -499,10 +499,10 @@ struct LibraryView: View {
         isBulkDeleteConfirmPresented = true
       }
     }
-    .padding(6)
-    .memoraGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-    .padding(.horizontal, 12)
-    .padding(.bottom, 8)
+    .padding(MemoraSpacing.sm)
+    .memoraGlass(in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+    .padding(.horizontal, MemoraSpacing.md)
+    .padding(.bottom, MemoraSpacing.sm)
     .transition(.move(edge: .bottom).combined(with: .opacity))
   }
 
@@ -547,7 +547,7 @@ struct LibraryView: View {
         onOpenSidebar()
       }
     }
-    .padding(.vertical, 40)
+    .padding(.vertical, MemoraSpacing.group)
   }
 
   // MARK: - Selection

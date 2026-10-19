@@ -21,17 +21,17 @@ struct AIPluginMenu: View {
         Button("候補を閉じる", icon: .xmark, action: cancel)
           .labelStyle(.iconOnly).buttonStyle(.plain).frame(width: 44, height: 44)
       }
-      .padding(.horizontal, 12)
+      .padding(.horizontal, MemoraSpacing.md)
       Divider()
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 0) {
           if candidates.isEmpty {
             Text("候補がありません")
-              .font(.subheadline).foregroundStyle(.secondary).padding(16)
+              .font(.subheadline).foregroundStyle(.secondary).padding(MemoraSpacing.lg)
           }
           ForEach(groups, id: \.0) { kind, rows in
             Text(kind.rawValue).font(.caption).foregroundStyle(.secondary)
-              .padding(.horizontal, 14).padding(.top, 10)
+              .padding(.horizontal, MemoraSpacing.lg).padding(.top, MemoraSpacing.md)
             ForEach(rows) { plugin in
               Button { select(plugin) } label: {
                 HStack(spacing: 10) {
@@ -46,7 +46,7 @@ struct AIPluginMenu: View {
                   Text(selectedIDs.contains(plugin.id) ? "選択済み" : plugin.state.isReady ? "追加" : plugin.state.label)
                     .font(.caption).foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 14).padding(.vertical, 10)
+                .padding(.horizontal, MemoraSpacing.lg).padding(.vertical, MemoraSpacing.md)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .background(MemoraPalette.secondaryBackground.opacity(selectedIDs.contains(plugin.id) ? 1 : 0))
                 .contentShape(Rectangle())

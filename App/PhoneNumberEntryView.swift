@@ -25,10 +25,10 @@ struct PhoneNumberEntryView: View {
           .focused($isFocused)
       }
       .font(.title3)
-      .padding(.horizontal, 20)
+      .padding(.horizontal, MemoraSpacing.xl)
       .frame(minHeight: 56)
       .background(Color(uiColor: .secondarySystemGroupedBackground), in: Capsule())
-      .padding(.top, 12)
+      .padding(.top, MemoraSpacing.md)
 
       Text("確認のため、この番号に電話がかかってきます。")
         .font(.footnote)
@@ -37,11 +37,11 @@ struct PhoneNumberEntryView: View {
       CallPrimaryButton(title: "電話番号を追加", isEnabled: e164 != nil) {
         if let e164 { onSubmit(e164) }
       }
-      .padding(.top, 12)
+      .padding(.top, MemoraSpacing.md)
 
       Spacer()
     }
-    .padding(24)
+    .padding(MemoraSpacing.xxl)
     .background(Color(uiColor: .systemGroupedBackground))
     .navigationBarTitleDisplayMode(.inline)
     .onAppear { isFocused = true }

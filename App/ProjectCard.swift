@@ -37,8 +37,8 @@ struct ProjectCard: View {
           .foregroundStyle(MemoraPalette.cardTextSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, 18)
-        .padding(.vertical, 18)
+        .padding(.leading, MemoraSpacing.lg)
+        .padding(.vertical, MemoraSpacing.lg)
         .foregroundStyle(.primary)
         .contentShape(Rectangle())
       }
@@ -57,8 +57,8 @@ struct ProjectCard: View {
       }
       .tint(MemoraPalette.textPrimary)
       .accessibilityLabel("\(space.name)の操作")
-      .padding(.top, 8)
-      .padding(.trailing, 6)
+      .padding(.top, MemoraSpacing.sm)
+      .padding(.trailing, MemoraSpacing.sm)
     }
     .memoraCard(fill: MemoraPalette.card)
   }

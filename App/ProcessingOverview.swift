@@ -19,7 +19,7 @@ struct ProcessingOverview: View {
         ProcessStep(title: "要点と行動を整理", isComplete: false, isCurrent: isOrganizing)
       }
     }
-    .padding(18)
+    .padding(MemoraSpacing.lg)
     .memoraCard()
   }
 

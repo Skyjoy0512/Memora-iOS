@@ -30,14 +30,14 @@ struct ToolbarSearchField: View {
             .buttonStyle(.plain)
         }
       }
-      .padding(.horizontal, 12)
+      .padding(.horizontal, MemoraSpacing.md)
       .frame(minHeight: 40)
       .background(MemoraPalette.selection, in: Capsule())
 
       Button("キャンセル", action: close)
     }
     .padding(.horizontal, MemoraSpacing.screen)
-    .padding(.vertical, 8)
+    .padding(.vertical, MemoraSpacing.sm)
     .background(MemoraPalette.background)
     .onAppear { isFocused = true }
   }

@@ -16,7 +16,7 @@ struct LockScreenView: View {
           .font(.system(size: 44, weight: .semibold))
           .foregroundStyle(.primary)
           .frame(width: 84, height: 84)
-          .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+          .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
           .accessibilityHidden(true)
 
         VStack(spacing: 6) {
@@ -46,7 +46,7 @@ struct LockScreenView: View {
         .buttonStyle(.plain)
         .disabled(isAuthenticating)
       }
-      .padding(28)
+      .padding(MemoraSpacing.section)
       .frame(maxWidth: 360)
     }
     .accessibilityElement(children: .contain)

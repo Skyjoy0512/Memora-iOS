@@ -13,7 +13,7 @@ struct AIFollowUpList: View {
       Text(title)
         .font(.caption.weight(.medium))
         .foregroundStyle(.secondary)
-        .padding(.bottom, 2)
+        .padding(.bottom, MemoraSpacing.xxs)
       ForEach(Array(prompts.enumerated()), id: \.element) { index, prompt in
         Button {
           onSelect(prompt)
@@ -28,7 +28,7 @@ struct AIFollowUpList: View {
               .multilineTextAlignment(.leading)
             Spacer(minLength: 0)
           }
-          .padding(.vertical, 8)
+          .padding(.vertical, MemoraSpacing.sm)
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -40,7 +40,7 @@ struct AIFollowUpList: View {
         }
       }
     }
-    .padding(.top, 4)
+    .padding(.top, MemoraSpacing.xs)
     .onAppear { isShown = true }
   }
 }

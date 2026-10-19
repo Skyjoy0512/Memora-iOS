@@ -55,7 +55,7 @@ struct MarkdownBlockView: View {
 
     case .rule:
       Divider()
-        .padding(.vertical, 8)
+        .padding(.vertical, MemoraSpacing.sm)
 
     case .code(_, let text):
       Text(verbatim: text)

@@ -31,10 +31,10 @@ struct UpcomingEventCard: View {
 
       Spacer(minLength: 0)
     }
-    .padding(14)
+    .padding(MemoraSpacing.lg)
     .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
     .memoraCard()
-    .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
   }
 
   private var dateTile: some View {
@@ -46,11 +46,11 @@ struct UpcomingEventCard: View {
         .font(.title2.weight(.semibold).monospacedDigit())
         .foregroundStyle(.primary)
     }
-    .padding(.vertical, 6)
+    .padding(.vertical, MemoraSpacing.sm)
     .frame(width: dateTileWidth)
     .frame(minHeight: dateTileHeight)
     .background(Color(uiColor: .systemGroupedBackground))
-    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
     .accessibilityHidden(true)
   }
 }

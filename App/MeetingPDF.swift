@@ -158,7 +158,7 @@ private struct MeetingPDFContent: View {
 
       Spacer(minLength: 0)
     }
-    .padding(40)
+    .padding(MemoraSpacing.group)
     .frame(width: 595, alignment: .leading)
     .background(Color.white)
     .foregroundStyle(Color.black)

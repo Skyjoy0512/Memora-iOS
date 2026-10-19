@@ -8,8 +8,8 @@ struct CallIntroView: View {
   var body: some View {
     VStack(spacing: 0) {
       CallIllustration()
-        .padding(.horizontal, 48)
-        .padding(.top, 12)
+        .padding(.horizontal, MemoraSpacing.page)
+        .padding(.top, MemoraSpacing.md)
         .frame(maxHeight: .infinity)
 
       VStack(spacing: 14) {
@@ -21,12 +21,12 @@ struct CallIntroView: View {
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
       }
-      .padding(.horizontal, 28)
-      .padding(.vertical, 24)
+      .padding(.horizontal, MemoraSpacing.section)
+      .padding(.vertical, MemoraSpacing.xxl)
 
       CallPrimaryButton(title: "はじめる", action: onStart)
-        .padding(.horizontal, 24)
-        .padding(.bottom, 16)
+        .padding(.horizontal, MemoraSpacing.xxl)
+        .padding(.bottom, MemoraSpacing.lg)
     }
     .background(Color(uiColor: .systemGroupedBackground))
     .navigationBarTitleDisplayMode(.inline)
@@ -48,11 +48,11 @@ private struct CallIllustration: View {
         Text("通話の録音には、相手への告知と同意が必要な場合があります。")
           .font(.caption2)
           .foregroundStyle(.secondary)
-          .padding(10)
+          .padding(MemoraSpacing.md)
           .frame(maxWidth: .infinity, alignment: .leading)
-          .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+          .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
       }
-      .padding(16)
+      .padding(MemoraSpacing.lg)
 
       VStack(spacing: 12) {
         HStack {
@@ -85,12 +85,12 @@ private struct CallIllustration: View {
         }
       }
       .foregroundStyle(.white)
-      .padding(14)
-      .background(Color(white: 0.14), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-      .padding(6)
+      .padding(MemoraSpacing.lg)
+      .background(Color(white: 0.14), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+      .padding(MemoraSpacing.sm)
     }
     .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 34, style: .continuous))
-    .padding(8)
+    .padding(MemoraSpacing.sm)
     .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 42, style: .continuous))
     .accessibilityHidden(true)
   }

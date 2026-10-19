@@ -17,20 +17,20 @@ struct ActiveCallView: View {
           .focused($isNotesFocused)
           .frame(maxHeight: .infinity, alignment: .topLeading)
       }
-      .padding(20)
+      .padding(MemoraSpacing.xl)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
       Label("通話の録音には、相手への告知と同意が必要な場合があります。録音は一時停止できます。", icon: .bellFill)
         .font(.caption)
         .foregroundStyle(.secondary)
-        .padding(12)
+        .padding(MemoraSpacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .padding(.horizontal, 12)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+        .padding(.horizontal, MemoraSpacing.md)
 
       controls
-        .padding(.horizontal, 8)
-        .padding(.bottom, 8)
+        .padding(.horizontal, MemoraSpacing.sm)
+        .padding(.bottom, MemoraSpacing.sm)
     }
     .background(Color(uiColor: .systemGroupedBackground))
     .sheet(isPresented: $isKeypadShown) {
@@ -91,8 +91,8 @@ struct ActiveCallView: View {
     }
     .buttonStyle(.plain)
     .foregroundStyle(.white)
-    .padding(16)
-    .background(Color(white: 0.14), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+    .padding(MemoraSpacing.lg)
+    .background(Color(white: 0.14), in: RoundedRectangle(cornerRadius: MemoraRadius.bubble, style: .continuous))
   }
 
   private func roundButton(_ icon: MemoraIcon, label: String, isOn: Bool, action: @escaping () -> Void) -> some View {

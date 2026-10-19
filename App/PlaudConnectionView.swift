@@ -20,7 +20,7 @@ struct PlaudConnectionView: View {
             }
             .buttonStyle(.borderedProminent)
           }
-          .padding(.vertical, 8)
+          .padding(.vertical, MemoraSpacing.sm)
         }
 
         Section {

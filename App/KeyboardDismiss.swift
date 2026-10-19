@@ -48,6 +48,9 @@ private struct KeyboardDismissInstaller: UIViewRepresentable {
       // every other tap — buttons, cards, empty space — dismisses it.
       !(touch.view?.isInsideTextInput ?? false) && !ComposerFocusRegion.contains(touch)
     }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+      shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool { true }
   }
 }
 
@@ -55,7 +58,10 @@ private extension UIView {
   var isInsideTextInput: Bool {
     var node: UIView? = self
     while let current = node {
-      if current is UITextInput || current is MarkdownEditingToolbar { return true }
+      if current is UITextInput || current is MarkdownEditingToolbar || current is UIControl { return true }
+      // Native context-menu rows can live in a presentation host outside the
+      // composer's focus region. Ending editing here cancels their action.
+      if String(describing: type(of: current)).contains("ContextMenu") { return true }
       node = current.superview
     }
     return false

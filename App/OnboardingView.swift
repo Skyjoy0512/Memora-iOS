@@ -20,8 +20,8 @@ struct OnboardingView: View {
           .opacity(isLastPage ? 0 : 1)
           .accessibilityHidden(isLastPage)
       }
-      .padding(.horizontal, 22)
-      .padding(.top, 8)
+      .padding(.horizontal, MemoraSpacing.xxl)
+      .padding(.top, MemoraSpacing.sm)
 
       TabView(selection: $page) {
         ForEach(OnboardingPage.allCases) { item in
@@ -32,17 +32,17 @@ struct OnboardingView: View {
       .tabViewStyle(.page(indexDisplayMode: .never))
 
       PageIndicator(current: page)
-        .padding(.bottom, 24)
+        .padding(.bottom, MemoraSpacing.xxl)
 
       actions
-        .padding(.horizontal, 22)
+        .padding(.horizontal, MemoraSpacing.xxl)
         .frame(minHeight: 132, alignment: .top)
 
       Label("録音はまず、このiPhoneに保存されます", icon: .lockShield)
         .font(.footnote)
         .foregroundStyle(.secondary)
-        .padding(.top, 16)
-        .padding(.bottom, 10)
+        .padding(.top, MemoraSpacing.lg)
+        .padding(.bottom, MemoraSpacing.md)
     }
     .background(Color(uiColor: .systemBackground))
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: page)
@@ -66,10 +66,10 @@ struct OnboardingView: View {
           .font(.headline)
           .contentTransition(.opacity)
           .frame(maxWidth: .infinity)
-          .padding(.vertical, 16)
+          .padding(.vertical, MemoraSpacing.lg)
           .foregroundStyle(.white)
-          .background(.tint, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-          .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+          .background(.tint, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+          .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
       }
       .buttonStyle(.plain)
 
@@ -80,13 +80,13 @@ struct OnboardingView: View {
           Button("サンプルで見る", action: showSample)
             .font(.headline)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .padding(.vertical, MemoraSpacing.sm)
 
           Button("このiPhoneで始める", action: skip)
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 4)
+            .padding(.vertical, MemoraSpacing.xs)
         }
         .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
@@ -120,7 +120,7 @@ private struct OnboardingPageView: View {
         .font(.system(size: 38, weight: .semibold))
         .foregroundStyle(.white)
         .frame(width: 78, height: 78)
-        .background(.tint, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(.tint, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
         .scaleEffect(isCurrent || reduceMotion ? 1 : 0.86)
         .animation(reduceMotion ? nil : MemoraMotion.emphasis, value: isCurrent)
         .accessibilityHidden(true)
@@ -128,13 +128,13 @@ private struct OnboardingPageView: View {
       Text(page.title)
         .font(.largeTitle.bold())
         .tracking(-0.8)
-        .padding(.top, 28)
+        .padding(.top, MemoraSpacing.section)
 
       Text(page.detail)
         .font(.title3)
         .foregroundStyle(.secondary)
         .lineSpacing(3)
-        .padding(.top, 14)
+        .padding(.top, MemoraSpacing.lg)
 
       OnboardingPreview(page: page, isCurrent: isCurrent)
         .padding(.top, 26)
@@ -142,7 +142,7 @@ private struct OnboardingPageView: View {
       Spacer(minLength: 0)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.horizontal, 22)
+    .padding(.horizontal, MemoraSpacing.xxl)
   }
 }
 

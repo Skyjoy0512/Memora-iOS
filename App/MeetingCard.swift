@@ -26,8 +26,8 @@ struct MeetingCard: View {
           SharedOwnerBadge(ownerName: sharedBy)
         } else {
           MeetingStatusLabel(status: meeting.status)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, MemoraSpacing.md)
+            .padding(.vertical, MemoraSpacing.sm)
             .background(.thinMaterial, in: Capsule())
         }
       }
@@ -44,7 +44,7 @@ struct MeetingCard: View {
           .font(.subheadline)
           .foregroundStyle(MemoraPalette.cardTextSecondary)
           .lineLimit(2)
-          .padding(.top, 4)
+          .padding(.top, MemoraSpacing.xs)
       }
 
       HStack(spacing: 5) {
@@ -52,7 +52,7 @@ struct MeetingCard: View {
       }
       .font(.caption.weight(.medium))
       .foregroundStyle(MemoraPalette.cardTextSecondary)
-      .padding(.top, 10)
+      .padding(.top, MemoraSpacing.md)
     }
     .padding(MemoraSpacing.card)
     .frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
@@ -76,10 +76,10 @@ struct MeetingCard: View {
           .foregroundStyle(.primary)
           .background {
             if isSelected {
-              Circle().fill(.white).padding(4)
+              Circle().fill(.white).padding(MemoraSpacing.xs)
             }
           }
-          .padding(16)
+          .padding(MemoraSpacing.lg)
           .accessibilityHidden(true)
       }
     }
@@ -113,8 +113,8 @@ struct MeetingCard: View {
     }
     .font(.caption.weight(.semibold))
     .foregroundStyle(.primary)
-    .padding(.horizontal, 10)
-    .padding(.vertical, 6)
+    .padding(.horizontal, MemoraSpacing.md)
+    .padding(.vertical, MemoraSpacing.sm)
     .background(.thinMaterial, in: Capsule())
   }
 

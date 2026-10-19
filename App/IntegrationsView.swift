@@ -19,7 +19,7 @@ struct IntegrationsView: View {
               Text(service.isImplemented ? status(service.id) : "未対応")
                 .font(.caption).foregroundStyle(.secondary)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, MemoraSpacing.xs)
           }
         }
       } footer: {

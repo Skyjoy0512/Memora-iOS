@@ -18,8 +18,8 @@ struct FileSidebarView: View {
       profileHeader
 
       WorkspaceSwitcher(onCreateTeam: onCreateTeam, onJoinTeam: onJoinTeam)
-        .padding(.horizontal, 14)
-        .padding(.bottom, 6)
+        .padding(.horizontal, MemoraSpacing.lg)
+        .padding(.bottom, MemoraSpacing.sm)
 
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
@@ -58,8 +58,8 @@ struct FileSidebarView: View {
             }
           }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, MemoraSpacing.lg)
+        .padding(.vertical, MemoraSpacing.md)
       }
       .scrollIndicators(.hidden)
 
@@ -104,9 +104,9 @@ struct FileSidebarView: View {
       .buttonStyle(.plain)
       .accessibilityLabel(model.isSignedIn ? "アカウント \(displayName)" : "サインイン")
     }
-    .padding(.horizontal, 18)
-    .padding(.top, 10)
-    .padding(.bottom, 14)
+    .padding(.horizontal, MemoraSpacing.lg)
+    .padding(.top, MemoraSpacing.md)
+    .padding(.bottom, MemoraSpacing.lg)
   }
 
   /// The plan and settings float on Liquid Glass, like the app's other
@@ -123,7 +123,7 @@ struct FileSidebarView: View {
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.primary)
             .lineLimit(1)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, MemoraSpacing.lg)
             .frame(minHeight: 44)
             .contentShape(Capsule())
             .memoraGlass(in: Capsule(), interactive: true)
@@ -149,9 +149,9 @@ struct FileSidebarView: View {
         .accessibilityHint("プロフィールと設定を開きます")
       }
     }
-    .padding(.horizontal, 16)
-    .padding(.top, 8)
-    .padding(.bottom, 10)
+    .padding(.horizontal, MemoraSpacing.lg)
+    .padding(.top, MemoraSpacing.sm)
+    .padding(.bottom, MemoraSpacing.md)
   }
 
   private func sidebarSection<Content: View>(
@@ -162,8 +162,8 @@ struct FileSidebarView: View {
       Text(title)
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
-        .padding(.horizontal, 14)
-        .padding(.bottom, 2)
+        .padding(.horizontal, MemoraSpacing.lg)
+        .padding(.bottom, MemoraSpacing.xxs)
 
       content()
     }
@@ -221,14 +221,14 @@ private struct SidebarRow: View {
       }
       .foregroundStyle(.primary)
       .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
-      .padding(.horizontal, 14)
+      .padding(.horizontal, MemoraSpacing.lg)
       .background {
         if isSelected {
-          RoundedRectangle(cornerRadius: 12, style: .continuous)
+          RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous)
             .fill(Color.primary.opacity(0.08))
         }
       }
-      .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+      .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(isSelected ? .isSelected : [])

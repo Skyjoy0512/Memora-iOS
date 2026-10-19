@@ -40,7 +40,7 @@ struct AIHistoryView: View {
                     .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 4)
+                .padding(.vertical, MemoraSpacing.xs)
               }
             }
             .onDelete { indexSet in

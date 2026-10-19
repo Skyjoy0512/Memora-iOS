@@ -40,12 +40,12 @@ struct AgentActivityView: View {
                   ForEach(Array(step.output.prefix(8).enumerated()), id: \.offset) { _, line in
                     Text(verbatim: line).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                   }
-                }.frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6)
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.top, MemoraSpacing.sm)
               }.font(.footnote)
             }
           }
         }
-      }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 10)
+      }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, MemoraSpacing.md)
     } label: {
       Text(summary.label).font(.footnote).foregroundStyle(.secondary).frame(minHeight: 44)
     }

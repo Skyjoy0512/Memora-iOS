@@ -22,7 +22,7 @@ struct PeopleView: View {
                 .foregroundStyle(.secondary)
             }
           }
-          .padding(.vertical, 2)
+          .padding(.vertical, MemoraSpacing.xxs)
           .accessibilityElement(children: .combine)
         }
       }

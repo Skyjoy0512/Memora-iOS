@@ -14,11 +14,11 @@ struct AgentDocumentCard: View {
           .font(.caption.weight(.semibold))
           .foregroundStyle(.tertiary)
       }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 6)
+      .padding(.horizontal, MemoraSpacing.md)
+      .padding(.vertical, MemoraSpacing.sm)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-      .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+      .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+      .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityHint("\(document.kind.label)を開きます")

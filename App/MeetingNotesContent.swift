@@ -16,7 +16,7 @@ struct MeetingNotesContent: View {
 
     VStack(alignment: .leading, spacing: 14) {
       Text("ノート")
-        .font(.title2.bold())
+        .font(MemoraTypography.sectionHeading)
 
       InlineMarkdownEditor(
         text: noteText,
@@ -35,7 +35,7 @@ struct MeetingNotesContent: View {
                 .resizable()
                 .scaledToFill()
                 .frame(width: 160, height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
                 .overlay(alignment: .topTrailing) {
                   Button {
                     model.removeMeetingPhoto(meetingID, index: index)
@@ -45,7 +45,7 @@ struct MeetingNotesContent: View {
                       .foregroundStyle(.white)
                       .frame(width: 26, height: 26)
                       .background(.black.opacity(0.45), in: Circle())
-                      .padding(6)
+                      .padding(MemoraSpacing.sm)
                   }
                   .buttonStyle(.plain)
                   .accessibilityLabel("写真を削除")
@@ -62,8 +62,8 @@ struct MeetingNotesContent: View {
             }
             .foregroundStyle(.primary)
             .frame(width: 160, height: 160)
-            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
           }
           .buttonStyle(.plain)
           .accessibilityLabel("写真を追加")

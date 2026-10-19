@@ -28,8 +28,8 @@ struct TranscriptView: View {
                   .foregroundStyle(.secondary)
                 }
               }
-              .padding(.top, 8)
-              .padding(.bottom, 12)
+              .padding(.top, MemoraSpacing.sm)
+              .padding(.bottom, MemoraSpacing.md)
 
               if meeting.transcript.isEmpty {
                 ContentUnavailableView {
@@ -38,7 +38,7 @@ struct TranscriptView: View {
                   Text("完成した発言から、ここに表示されます。")
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 40)
+                .padding(.vertical, MemoraSpacing.group)
               } else {
                 ForEach(meeting.transcript) { segment in
                   TranscriptSegmentText(
@@ -48,13 +48,13 @@ struct TranscriptView: View {
                     timeWidth: 62,
                     onEditSpeaker: { editingSegment = segment }
                   )
-                  .padding(.vertical, 2)
+                  .padding(.vertical, MemoraSpacing.xxs)
                 }
               }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 18)
-            .padding(.bottom, 20)
+            .padding(.horizontal, MemoraSpacing.lg)
+            .padding(.bottom, MemoraSpacing.xl)
           }
           .scrollFocusedEditorAboveKeyboard(in: proxy)
         }

@@ -26,6 +26,7 @@ struct AIComposerBar: View {
   var mentionInput: ComposerInputState?
   var onMentionMenu: (() -> Void)?
   var removeMention: ((ComposerMention) -> Void)?
+  var mentionScope: AIQueryScope = .global
   @State private var textSelection: TextSelection?
   @State private var fallbackInput = ComposerInputState()
   @State private var isEditorTall = false
@@ -33,6 +34,8 @@ struct AIComposerBar: View {
 
   @State private var speechInput = SpeechInputService()
   @State private var isIntegrationsPresented = false
+  @State private var showsAttachmentActions = false
+  @State private var composerTop: CGFloat = 360
   @State private var isImporterPresented = false
   @State private var isAudioImporterPresented = false
   @State private var isPhotoPickerPresented = false
@@ -62,8 +65,9 @@ struct AIComposerBar: View {
       .submitLabel(.send)
       .onSubmit(submit)
       .focused($isFieldFocused)
+      .accessibilityLabel("メッセージ")
       .accessibilityIdentifier("ai.composer.input")
-      .padding(.vertical, 8)
+      .padding(.vertical, MemoraSpacing.sm)
       // The field takes the width it needs and grows as text is added; the
       // controls keep their size instead of being pushed out by a long entry.
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -80,18 +84,18 @@ struct AIComposerBar: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       if let removeMention, !model.composerMentions.isEmpty {
-        ComposerMentionStrip(mentions: model.composerMentions, remove: removeMention)
+        ComposerMentionStrip(mentions: model.composerMentions, scope: mentionScope, remove: removeMention)
           .padding(.horizontal, MemoraSpacing.md)
           .padding(.top, MemoraSpacing.sm)
       }
       if attachment != nil {
         attachmentStrip
-          .padding(.horizontal, 14)
-          .padding(.top, 8)
+          .padding(.horizontal, MemoraSpacing.lg)
+          .padding(.top, MemoraSpacing.sm)
 
         Divider()
-          .padding(.horizontal, 14)
-          .padding(.top, 6)
+          .padding(.horizontal, MemoraSpacing.lg)
+          .padding(.top, MemoraSpacing.sm)
       }
 
       // Collapsed, the composer is one slim capsule: attach, the prompt and the
@@ -142,14 +146,24 @@ struct AIComposerBar: View {
           actionButton
             .matchedGeometryEffect(id: "action", in: controlsNamespace)
         }
-        .padding(.horizontal, 6)
-        .padding(.bottom, 6)
+        .padding(.horizontal, MemoraSpacing.sm)
+        .padding(.bottom, MemoraSpacing.sm)
         .transition(.opacity)
       }
     }
     .background { listeningBackdrop }
     .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), interactive: true, backed: false)
     .preservesComposerFocus()
+    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
+    .overlay(alignment: .topLeading) {
+      if showsAttachmentActions {
+        ComposerActionMenu(close: { showsAttachmentActions = false },
+          maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - MemoraSpacing.md))) {
+          attachmentActions
+        }
+        .alignmentGuide(.top) { $0[.bottom] + MemoraSpacing.sm }
+      }
+    }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: speechInput.isListening)
@@ -159,6 +173,7 @@ struct AIComposerBar: View {
     .onChange(of: hasContent) { _, hasContent in
       if !hasContent { isEditorTall = false }
     }
+    .onChange(of: text) { _, _ in showsAttachmentActions = false }
     .onChange(of: isFieldFocused) { _, focused in
       focusChanged?(focused)
     }
@@ -166,6 +181,7 @@ struct AIComposerBar: View {
       expansionChanged?(expanded)
     }
     .onChange(of: model.composerDismissRequests) { _, _ in
+      showsAttachmentActions = false
       isFieldFocused = false
     }
     .onChange(of: model.composerFocusRequest, initial: true) { _, request in
@@ -187,6 +203,7 @@ struct AIComposerBar: View {
       }
     }
     .onDisappear {
+      showsAttachmentActions = false
       externalFocusTask?.cancel()
       speechInput.stop()
     }
@@ -273,30 +290,39 @@ struct AIComposerBar: View {
     .foregroundStyle(.secondary)
   }
 
-  private var attachmentMenu: some View {
-    Menu {
+  @ViewBuilder private var attachmentActions: some View {
       if let onMentionMenu {
         Button("プラグイン・スキル・ソース", icon: .plus) {
+          showsAttachmentActions = false
           isFieldFocused = true
           onMentionMenu()
         }
         Divider()
       }
-      Button("連携サービス…", icon: .plugsConnected) { isIntegrationsPresented = true }
+      Button("連携サービス…", icon: .plugsConnected) {
+        showsAttachmentActions = false
+        isIntegrationsPresented = true
+      }
       Divider()
       Button("写真を選択…", icon: .photo) {
+        showsAttachmentActions = false
         InteractionFeedback.shared.send(.tap)
         isPhotoPickerPresented = true
       }
       Button("音声を選択…", icon: .waveform) {
+        showsAttachmentActions = false
         InteractionFeedback.shared.send(.tap)
         isAudioImporterPresented = true
       }
       Button("ファイルを選択…", icon: .doc) {
+        showsAttachmentActions = false
         InteractionFeedback.shared.send(.tap)
         isImporterPresented = true
       }
-    } label: {
+  }
+
+  private var attachmentMenu: some View {
+    Button { showsAttachmentActions.toggle() } label: {
       Image(icon: .plus)
         .font(.body.weight(.medium))
         .foregroundStyle(.primary)

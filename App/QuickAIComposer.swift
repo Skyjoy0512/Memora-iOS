@@ -50,7 +50,8 @@ struct QuickAIComposer: View {
       researchSelected: usesWebSearch,
       mentionInput: supportsMentions ? mentionInput : nil,
       onMentionMenu: supportsMentions ? { requestsMentionMenu = true; openMentionMenuIfReady() } : nil,
-      removeMention: removeMention
+      removeMention: removeMention,
+      mentionScope: scope
     )
     .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
     .overlay(alignment: .top) {
@@ -61,7 +62,7 @@ struct QuickAIComposer: View {
             Spacer()
             Button("停止", icon: .stopFill) { attachmentPreparationTask?.cancel() }
               .font(.footnote).frame(minHeight: 44)
-          }.padding(.horizontal, 16)
+          }.padding(.horizontal, MemoraSpacing.lg)
         } else if let token = activeMention, token != dismissedMention {
           AIPluginMenu(candidates: model.mentionCandidates(query: token.query, scope: scope), selectedIDs: Set(model.composerMentions.map(\.pluginID)), maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - MemoraSpacing.md)),
             select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })

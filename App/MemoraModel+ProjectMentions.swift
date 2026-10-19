@@ -34,6 +34,7 @@ extension MemoraModel {
       let scoped = skill.map { ($0.scopes ?? [.global]).contains(.project) } ?? (plugin.kind == .builtin)
       if !scoped || plugin.toolIDs.isEmpty || !plugin.toolIDs.isSubset(of: allowed) {
         plugin.state = .unavailable("プロジェクト内は資料の読み取り専用です。この連携・変更操作は全体のAsk AIで利用してください。")
+        plugin.kind = .unavailable
       }
       return plugin
     }

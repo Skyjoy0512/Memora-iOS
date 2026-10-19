@@ -18,7 +18,7 @@ struct SharedProjectView: View {
               .font(.footnote)
               .foregroundStyle(.secondary)
           }
-          .padding(.vertical, 6)
+          .padding(.vertical, MemoraSpacing.sm)
           .listRowSeparator(.hidden)
         }
 

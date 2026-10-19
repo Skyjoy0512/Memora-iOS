@@ -41,7 +41,7 @@ struct AIInterfaceTaskProgress: View {
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.top, 4)
+          .padding(.top, MemoraSpacing.xs)
         }
         .font(.subheadline)
         .tint(.primary)

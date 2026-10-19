@@ -29,7 +29,7 @@ struct WorkspaceSwitcher: View {
           .font(.body.weight(.semibold))
           .foregroundStyle(.tint)
           .frame(width: 36, height: 36)
-          .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+          .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
 
         VStack(alignment: .leading, spacing: 2) {
           Text(current.title)
@@ -48,10 +48,10 @@ struct WorkspaceSwitcher: View {
           .font(.footnote.weight(.semibold))
           .foregroundStyle(.secondary)
       }
-      .padding(10)
+      .padding(MemoraSpacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
       .memoraCard()
-      .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+      .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityLabel("ワークスペース")

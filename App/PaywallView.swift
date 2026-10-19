@@ -17,7 +17,7 @@ struct PaywallView: View {
               .font(.system(size: 30, weight: .semibold))
               .foregroundStyle(.primary)
               .frame(width: 60, height: 60)
-              .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+              .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
               .accessibilityHidden(true)
               .contentTransition(.symbolEffect(.replace))
             Text(selectedPlan.tagline)
@@ -53,8 +53,8 @@ struct PaywallView: View {
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .padding(.bottom, 12)
+        .padding(MemoraSpacing.xl)
+        .padding(.bottom, MemoraSpacing.md)
       }
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("プラン")
@@ -89,10 +89,10 @@ struct PaywallView: View {
             .opacity(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
+        .padding(.vertical, MemoraSpacing.lg)
         .foregroundStyle(.white)
-        .background(.tint, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(.tint, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
       }
       .buttonStyle(.plain)
 
@@ -129,8 +129,8 @@ struct PaywallView: View {
       Label("\(selectedPlan.label)を利用中", icon: .checkmarkSealFill)
         .font(.headline)
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.vertical, MemoraSpacing.lg)
+        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
 
       Text("購入は未接続のため、この端末での設定です。課金の接続後は、App Storeのサブスクリプション設定から変更・解約できるようにします。")
         .font(.caption)
@@ -141,7 +141,7 @@ struct PaywallView: View {
       Button("続ける") { dismiss() }
         .font(.headline)
         .frame(maxWidth: .infinity)
-        .padding(.top, 4)
+        .padding(.top, MemoraSpacing.xs)
     }
     .transition(.opacity)
   }

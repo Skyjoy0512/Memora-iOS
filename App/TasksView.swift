@@ -22,13 +22,13 @@ struct TasksView: View {
           MemoraSectionPicker(items: [false, true], selection: $showsCompleted) { completed in
             completed ? "完了" : "未完了"
           }
-          .padding(.horizontal, 18)
-          .padding(.bottom, 10)
+          .padding(.horizontal, MemoraSpacing.lg)
+          .padding(.bottom, MemoraSpacing.md)
 
           if model.isRecording {
             ActiveRecordingStrip()
-              .padding(.horizontal, 18)
-              .padding(.bottom, 10)
+              .padding(.horizontal, MemoraSpacing.lg)
+              .padding(.bottom, MemoraSpacing.md)
           }
 
           if visibleTasks.isEmpty {

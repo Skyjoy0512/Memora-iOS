@@ -16,7 +16,7 @@ struct SuggestionButton: View {
           .foregroundStyle(.primary)
       }
       .contentShape(Rectangle())
-      .padding(.vertical, 10)
+      .padding(.vertical, MemoraSpacing.md)
     }
     .buttonStyle(.plain)
   }

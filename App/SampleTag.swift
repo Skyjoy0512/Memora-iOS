@@ -7,7 +7,7 @@ struct SampleTag: View {
     Text("サンプル")
       .font(.caption2.weight(.semibold))
       .foregroundStyle(.secondary)
-      .padding(.horizontal, 8)
+      .padding(.horizontal, MemoraSpacing.sm)
       .padding(.vertical, 3)
       .background(.quaternary, in: Capsule())
       .accessibilityLabel("サンプル")

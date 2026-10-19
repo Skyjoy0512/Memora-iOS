@@ -35,7 +35,7 @@ struct TranscriptSegmentText: View {
         InlineMarkdownEditor(
           text: segment.text,
           placeholder: "タップして入力",
-          font: .body,
+          font: MemoraTypography.readingBody,
           minHeight: 60,
           allowsStructure: false,
           onCommit: { text in
@@ -45,12 +45,12 @@ struct TranscriptSegmentText: View {
         )
       }
     }
-    .padding(.vertical, 4)
-    .padding(.horizontal, 8)
+    .padding(.vertical, MemoraSpacing.xs)
+    .padding(.horizontal, MemoraSpacing.sm)
     .background {
       if isActive {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-          .fill(Color.primary.opacity(0.06))
+        RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous)
+          .fill(MemoraPalette.selection)
       }
     }
     .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: isActive)

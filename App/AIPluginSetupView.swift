@@ -15,8 +15,12 @@ struct AIPluginSetupView: View {
         }
         if plugin.id.hasPrefix("skill:") {
           NavigationLink("スキルを設定") { SkillsView() }
-        } else if plugin.id.hasPrefix("tool:") {
+        } else if plugin.id.contains("search_web") || plugin.id.contains("deep_research") {
           NavigationLink("Web検索を設定") { WebResearchSettingsView() }
+        } else if let id = plugin.sourceID {
+          NavigationLink("ソースを確認") { ProjectSourceDetailView(sourceID: id) }
+        } else {
+          NavigationLink("AI設定を確認") { AISettingsView() }
         }
       }
       .navigationTitle(plugin.name)

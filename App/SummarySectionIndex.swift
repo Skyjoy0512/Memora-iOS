@@ -24,8 +24,8 @@ struct SummarySectionIndex: View {
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(12)
-          .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+          .padding(MemoraSpacing.md)
+          .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: MemoraRadius.field))
         }
         Text("検証できた発言ID・原文引用、または一意な文字一致を表示します。リンクは要約の正しさを保証しません。")
           .font(.caption).foregroundStyle(.secondary)

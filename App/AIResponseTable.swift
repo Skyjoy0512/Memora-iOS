@@ -38,7 +38,7 @@ struct AIResponseTable: View {
           .font(isHeader ? .body.weight(.semibold) : .body)
           .lineSpacing(5)
           .frame(width: widths[column], alignment: .leading)
-          .padding(.vertical, 12)
+          .padding(.vertical, MemoraSpacing.md)
           .accessibilityAddTraits(isHeader ? .isHeader : [])
       }
     }

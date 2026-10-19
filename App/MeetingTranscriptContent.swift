@@ -22,7 +22,7 @@ struct MeetingTranscriptContent: View {
     VStack(alignment: .leading, spacing: 22) {
       VStack(alignment: .leading, spacing: 6) {
         Text("文字起こし")
-          .font(.title2.bold())
+          .font(MemoraTypography.sectionHeading)
 
         if !meeting.transcript.isEmpty {
           Text(

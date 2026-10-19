@@ -29,7 +29,7 @@ struct SummaryTemplateDetailView: View {
             .font(.title2)
             .foregroundStyle(.tint)
             .frame(width: 52, height: 52)
-            .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
           Text(template.title)
             .font(.title2.bold())
           if !template.detail.isEmpty {
@@ -40,7 +40,7 @@ struct SummaryTemplateDetailView: View {
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, MemoraSpacing.sm)
       }
 
       if template.usesPrompt {

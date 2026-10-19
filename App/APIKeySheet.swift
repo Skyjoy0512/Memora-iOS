@@ -45,7 +45,7 @@ struct APIKeySheet: View {
                   .foregroundStyle(.secondary)
               }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, MemoraSpacing.xs)
           }
         }
 

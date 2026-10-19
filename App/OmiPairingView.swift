@@ -68,7 +68,7 @@ struct OmiPairingView: View {
         }
         .buttonStyle(.borderedProminent)
       }
-      .padding(.vertical, 8)
+      .padding(.vertical, MemoraSpacing.sm)
     case .preparing, .scanning:
       HStack(spacing: 12) {
         ProgressView()
@@ -80,14 +80,14 @@ struct OmiPairingView: View {
             .foregroundStyle(.secondary)
         }
       }
-      .padding(.vertical, 8)
+      .padding(.vertical, MemoraSpacing.sm)
     case .connecting(let name):
       HStack(spacing: 12) {
         ProgressView()
         Text("\(name)へ接続しています")
           .font(.headline)
       }
-      .padding(.vertical, 8)
+      .padding(.vertical, MemoraSpacing.sm)
     case .connected(let name):
       VStack(alignment: .leading, spacing: 12) {
         Label("\(name)に接続しました", icon: .checkmarkCircleFill)
@@ -104,7 +104,7 @@ struct OmiPairingView: View {
           manager.disconnect()
         }
       }
-      .padding(.vertical, 8)
+      .padding(.vertical, MemoraSpacing.sm)
     case .bluetoothOff:
       ContentUnavailableView(
         "Bluetoothがオフです",
@@ -124,7 +124,7 @@ struct OmiPairingView: View {
           }
         }
       }
-      .padding(.vertical, 8)
+      .padding(.vertical, MemoraSpacing.sm)
     case .unsupported:
       ContentUnavailableView(
         "iPhone実機で接続できます",
@@ -142,7 +142,7 @@ struct OmiPairingView: View {
           manager.startScanning()
         }
       }
-      .padding(.vertical, 8)
+      .padding(.vertical, MemoraSpacing.sm)
     }
   }
 

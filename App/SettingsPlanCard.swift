@@ -13,7 +13,7 @@ struct SettingsPlanCard: View {
         .fixedSize(horizontal: false, vertical: true)
       Button("プランを見る", action: onOpenPlan)
       .buttonStyle(MemoraButtonStyle())
-      .padding(.top, 4)
+      .padding(.top, MemoraSpacing.xs)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(MemoraSpacing.card)

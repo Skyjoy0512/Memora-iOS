@@ -275,8 +275,8 @@ struct MeetingDetailView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
           if showsLocalPlaybackBar, meeting.audioURL != nil, localPlaybackStarted, !model.isInlineEditing {
             MeetingPlaybackBar(player: player)
-              .padding(.horizontal, 12)
-              .padding(.bottom, 8)
+              .padding(.horizontal, MemoraSpacing.md)
+              .padding(.bottom, MemoraSpacing.sm)
               .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
           }
         }
@@ -329,8 +329,8 @@ struct MeetingDetailView: View {
           .buttonStyle(.plain)
           .accessibilityLabel("参加者を追加")
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 2)
+        .padding(.horizontal, MemoraSpacing.lg)
+        .padding(.vertical, MemoraSpacing.xxs)
       }
       .scrollIndicators(.hidden)
       .padding(.horizontal, -18)
@@ -385,9 +385,9 @@ struct MeetingDetailView: View {
           .font(.subheadline.weight(.semibold))
       }
     }
-    .padding(16)
+    .padding(MemoraSpacing.lg)
     .frame(maxWidth: 320)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     .padding()
     .accessibilityElement(children: .combine)
     .accessibilityLabel("PDFを作成しています。\(Int(progress * 100))パーセント")
@@ -533,7 +533,7 @@ struct MeetingDetailView: View {
   private func meetingHeader(_ meeting: Meeting) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text(meeting.title)
-        .font(.largeTitle.bold())
+        .font(MemoraTypography.screenTitle)
         .tracking(-0.6)
 
       HStack(spacing: 8) {
@@ -552,7 +552,7 @@ struct MeetingDetailView: View {
           .foregroundStyle(.secondary)
       }
     }
-    .padding(.top, 8)
+    .padding(.top, MemoraSpacing.sm)
   }
 
   @ViewBuilder
@@ -589,7 +589,7 @@ struct MeetingDetailView: View {
       InlineMarkdownEditor(
         text: meeting.summary,
         placeholder: "要約を追加",
-        font: isDocument ? .body : .title3.weight(.medium),
+        font: MemoraTypography.readingBody,
         minHeight: isDocument ? 320 : 120,
         rendersBlocks: true,
         draftKey: "meeting.\(meeting.id).summary",

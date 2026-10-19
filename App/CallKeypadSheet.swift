@@ -11,7 +11,7 @@ struct CallKeypadSheet: View {
     VStack(spacing: 14) {
       Text(typed.isEmpty ? " " : typed)
         .font(.title.monospacedDigit())
-        .padding(.top, 20)
+        .padding(.top, MemoraSpacing.xl)
       LazyVGrid(columns: Array(repeating: GridItem(.fixed(70), spacing: 20), count: 3), spacing: 12) {
         ForEach(Self.digits, id: \.self) { digit in
           Button {

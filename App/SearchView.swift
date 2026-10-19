@@ -31,10 +31,10 @@ struct SearchView: View {
           assistantHeader
           if model.isRecording {
             ActiveRecordingStrip()
-              .padding(.horizontal, 18)
+              .padding(.horizontal, MemoraSpacing.lg)
           }
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, MemoraSpacing.sm)
         .background {
           // Hides the conversation scrolling under the header, but steps
           // aside while the thinking glow fills the screen.
@@ -231,14 +231,14 @@ struct SearchView: View {
             filters.reset()
           }
           .font(.subheadline.weight(.medium))
-          .padding(.horizontal, 12)
+          .padding(.horizontal, MemoraSpacing.md)
           .padding(.vertical, 7)
           .background(Color.primary.opacity(0.06), in: Capsule())
           .contentShape(Capsule())
         }
       }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 8)
+      .padding(.horizontal, MemoraSpacing.lg)
+      .padding(.vertical, MemoraSpacing.sm)
     }
     .scrollIndicators(.hidden)
     .background(.bar)
@@ -324,7 +324,7 @@ struct SearchView: View {
     }
     .font(.subheadline.weight(.medium))
     .foregroundStyle(.primary)
-    .padding(.horizontal, 12)
+    .padding(.horizontal, MemoraSpacing.md)
     .padding(.vertical, 7)
     .background(Color.primary.opacity(isActive ? 0.12 : 0.06), in: Capsule())
     .contentShape(Capsule())

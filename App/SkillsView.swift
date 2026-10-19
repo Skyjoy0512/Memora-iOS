@@ -20,7 +20,7 @@ struct SkillsView: View {
               Text(skill.name)
               Text(skill.summary).font(.caption).foregroundStyle(.secondary)
               Text(model.disabledSkillIDs.contains(skill.id) ? "無効" : "有効").font(.caption).foregroundStyle(.secondary)
-            }.padding(.vertical, 4)
+            }.padding(.vertical, MemoraSpacing.xs)
           }
         }
       } footer: {

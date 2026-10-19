@@ -12,7 +12,7 @@ struct AIAnswerTextSelectionView: View {
       ScrollView {
         Text(verbatim: text)
           .font(.body).lineSpacing(lineSpacing).textSelection(.enabled)
-          .frame(maxWidth: .infinity, alignment: .leading).padding(20)
+          .frame(maxWidth: .infinity, alignment: .leading).padding(MemoraSpacing.xl)
       }
       .navigationTitle("テキストを選択")
       .navigationBarTitleDisplayMode(.inline)

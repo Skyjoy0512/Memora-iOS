@@ -29,8 +29,8 @@ struct PhoneVerificationView: View {
           Label(errorMessage, icon: .exclamationmarkTriangle)
             .font(.footnote)
             .foregroundStyle(.secondary)
-            .padding(14)
-            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(MemoraSpacing.lg)
+            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
         }
 
         Text(PhoneNumberFormat.display(phoneNumber))
@@ -55,10 +55,10 @@ struct PhoneVerificationView: View {
         .buttonStyle(.plain)
         .disabled(isStarting)
         .accessibilityLabel("確認の電話を受ける")
-        .padding(.bottom, 16)
+        .padding(.bottom, MemoraSpacing.lg)
       }
     }
-    .padding(24)
+    .padding(MemoraSpacing.xxl)
     .frame(maxWidth: .infinity)
     .background(Color(uiColor: .systemGroupedBackground))
     .navigationBarTitleDisplayMode(.inline)
@@ -79,8 +79,8 @@ struct PhoneVerificationView: View {
         .font(.title2.bold())
       Label("電話をかけています…", icon: .phone)
         .font(.subheadline)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.horizontal, MemoraSpacing.lg)
+        .padding(.vertical, MemoraSpacing.sm)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: Capsule())
 
       VStack(spacing: 0) {
@@ -92,7 +92,7 @@ struct PhoneVerificationView: View {
         Divider()
         stepRow(4, "次の6桁を入力します", detail: verification.code, isCode: true)
       }
-      .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+      .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
 
       Spacer()
     }
@@ -116,7 +116,7 @@ struct PhoneVerificationView: View {
       }
       Spacer(minLength: 0)
     }
-    .padding(16)
+    .padding(MemoraSpacing.lg)
   }
 
   private func start() {

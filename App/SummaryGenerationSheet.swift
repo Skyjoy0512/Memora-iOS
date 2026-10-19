@@ -71,9 +71,9 @@ struct SummaryGenerationSheet: View {
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 20)
-          .padding(.top, 18)
-          .padding(.bottom, 14)
+          .padding(.horizontal, MemoraSpacing.xl)
+          .padding(.top, MemoraSpacing.lg)
+          .padding(.bottom, MemoraSpacing.lg)
         }
 
         generateAction
@@ -130,9 +130,9 @@ struct SummaryGenerationSheet: View {
       .disabled((usesCloud && !confirmsCloudDisclosure) || model.processing.isActive(meetingID)
         || model.speakerAnalysisIDs.contains(meetingID))
     }
-    .padding(.horizontal, 20)
-    .padding(.top, 10)
-    .padding(.bottom, 12)
+    .padding(.horizontal, MemoraSpacing.xl)
+    .padding(.top, MemoraSpacing.md)
+    .padding(.bottom, MemoraSpacing.md)
     .background(.bar)
   }
 
@@ -188,10 +188,10 @@ struct SummaryGenerationSheet: View {
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
     }
-    .padding(14)
+    .padding(MemoraSpacing.lg)
     .background(
       Color(uiColor: .secondarySystemBackground),
-      in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+      in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
     )
   }
 
@@ -225,14 +225,14 @@ struct SummaryGenerationSheet: View {
         Image(icon: mode == candidate ? .checkmarkCircleFill : .circle)
           .foregroundStyle(.primary)
       }
-      .padding(14)
+      .padding(MemoraSpacing.lg)
       .background(
         mode == candidate
           ? Color.primary.opacity(0.07)
           : Color(uiColor: .secondarySystemBackground),
-        in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+        in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
       )
-      .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(mode == candidate ? .isSelected : [])
@@ -267,19 +267,19 @@ struct SummaryGenerationSheet: View {
         Image(icon: isSelected ? .checkmarkCircleFill : .circle)
           .foregroundStyle(.primary)
       }
-      .padding(14)
+      .padding(MemoraSpacing.lg)
       .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
       .background(
         isSelected
           ? Color.primary.opacity(0.07)
           : Color(uiColor: .secondarySystemBackground),
-        in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+        in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
       )
       .overlay {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
+        RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
           .stroke(isSelected ? Color.primary.opacity(0.5) : Color.clear, lineWidth: 1.5)
       }
-      .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(isSelected ? .isSelected : [])

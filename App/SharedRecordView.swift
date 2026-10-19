@@ -59,8 +59,8 @@ struct SharedRecordView: View {
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .padding(.bottom, 32)
+        .padding(.horizontal, MemoraSpacing.lg)
+        .padding(.bottom, MemoraSpacing.section)
       }
       .navigationTitle(meeting.displayTitle)
       .navigationBarTitleDisplayMode(.inline)
@@ -97,7 +97,7 @@ struct SharedRecordView: View {
         .font(.footnote)
         .foregroundStyle(.secondary)
     }
-    .padding(.top, 8)
+    .padding(.top, MemoraSpacing.sm)
   }
 
   @ViewBuilder
@@ -143,7 +143,7 @@ struct SharedRecordView: View {
   private func transcript(_ meeting: Meeting) -> some View {
     VStack(alignment: .leading, spacing: 14) {
       Divider()
-        .padding(.bottom, 6)
+        .padding(.bottom, MemoraSpacing.sm)
       Label("文字起こし", icon: .textBubble)
         .font(.title3.bold())
 

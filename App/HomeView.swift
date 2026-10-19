@@ -93,7 +93,7 @@ struct HomeView: View {
 
             if healthRequest.canRead, selectedDate <= .now {
               HealthReviewStatusView(loader: healthLoader, period: healthRequest.period) { healthRefreshID += 1 }
-                .padding(16)
+                .padding(MemoraSpacing.lg)
                 .memoraCard(fill: MemoraPalette.card)
             }
 
@@ -251,14 +251,14 @@ struct HomeView: View {
         icon: .magnifyingglass,
         description: Text("すべての日の記録から、タイトル・内容・記録元で探せます。")
       )
-      .padding(.top, 48)
+      .padding(.top, MemoraSpacing.page)
     } else if entries.isEmpty {
       ContentUnavailableView(
         "見つかりませんでした",
         icon: .magnifyingglass,
         description: Text("「\(query)」に一致する記録はありません。予定は検索の対象外です。")
       )
-      .padding(.top, 48)
+      .padding(.top, MemoraSpacing.page)
     } else {
       ForEach(dayGroups(of: entries)) { group in
         VStack(alignment: .leading, spacing: 10) {
@@ -478,7 +478,7 @@ struct HomeView: View {
         .fill(Color.primary.opacity(0.25))
         .frame(height: 1)
     }
-    .padding(.vertical, 6)
+    .padding(.vertical, MemoraSpacing.sm)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("いま")
   }
@@ -518,8 +518,8 @@ struct HomeView: View {
         .font(.caption.weight(.medium))
         .foregroundStyle(.primary)
     }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 6)
+    .padding(.horizontal, MemoraSpacing.md)
+    .padding(.vertical, MemoraSpacing.sm)
     .background(Color.primary.opacity(0.06), in: Capsule())
     .contentShape(Capsule())
     .accessibilityElement(children: .ignore)

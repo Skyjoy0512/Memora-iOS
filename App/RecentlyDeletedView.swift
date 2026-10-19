@@ -107,7 +107,7 @@ struct RecentlyDeletedView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
     }
-    .padding(.vertical, 4)
+    .padding(.vertical, MemoraSpacing.xs)
     .accessibilityElement(children: .combine)
   }
 
@@ -131,7 +131,7 @@ struct RecentlyDeletedView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
     }
-    .padding(.vertical, 4)
+    .padding(.vertical, MemoraSpacing.xs)
     .accessibilityElement(children: .combine)
   }
 

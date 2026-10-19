@@ -36,7 +36,7 @@ struct HomeActivityLinks: View {
         }
       }
     }
-    .padding(18)
+    .padding(MemoraSpacing.lg)
     .memoraCard(fill: MemoraPalette.card)
     .sheet(item: $editingTask) { task in TaskEditView(task: task) }
 
@@ -54,9 +54,9 @@ struct HomeActivityLinks: View {
           .foregroundStyle(.primary)
           .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
           .padding(.horizontal, MemoraSpacing.screen)
-          .padding(.vertical, 8)
+          .padding(.vertical, MemoraSpacing.sm)
           .memoraCard(fill: MemoraPalette.card)
-          .contentShape(RoundedRectangle(cornerRadius: 20))
+          .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card))
         }
         .buttonStyle(.plain)
       }

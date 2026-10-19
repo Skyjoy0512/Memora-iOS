@@ -11,7 +11,7 @@ struct DocumentRow: View {
         .font(.title3)
         .foregroundStyle(.tint)
         .frame(width: 40, height: 40)
-        .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
 
       VStack(alignment: .leading, spacing: 3) {
         Text(document.displayTitle)
@@ -23,7 +23,7 @@ struct DocumentRow: View {
           .lineLimit(1)
       }
     }
-    .padding(.vertical, 4)
+    .padding(.vertical, MemoraSpacing.xs)
     .accessibilityElement(children: .combine)
   }
 

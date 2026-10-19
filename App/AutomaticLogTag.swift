@@ -7,7 +7,7 @@ struct AutomaticLogTag: View {
     Text("自動")
       .font(.caption2.weight(.semibold))
       .foregroundStyle(.secondary)
-      .padding(.horizontal, 8)
+      .padding(.horizontal, MemoraSpacing.sm)
       .padding(.vertical, 3)
       .background(.quaternary, in: Capsule())
       .accessibilityLabel("自動で記録")

@@ -96,7 +96,7 @@ struct JournalCalendar: View {
       .frame(width: cellWidth, height: cellHeight)
       .background {
         if isSelected {
-          RoundedRectangle(cornerRadius: 16, style: .continuous)
+          RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
             .fill(MemoraPalette.selection)
         }
       }
@@ -106,9 +106,9 @@ struct JournalCalendar: View {
         Circle()
           .fill(isMarked ? weekdayStyle : AnyShapeStyle(.clear))
           .frame(width: 4, height: 4)
-          .padding(.bottom, 8)
+          .padding(.bottom, MemoraSpacing.sm)
       }
-      .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+      .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityLabel(accessibilityLabel(for: day, isMarked: isMarked))

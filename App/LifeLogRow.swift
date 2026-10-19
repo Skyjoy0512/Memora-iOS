@@ -74,7 +74,7 @@ struct LifeLogRow: View {
           }
           .frame(maxWidth: .infinity)
           .frame(height: 172)
-          .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+          .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
           .task(id: name) {
             let decoded = await MediaImageCache.image(named: name, maxPixelSize: 600)
             guard !Task.isCancelled else { return }

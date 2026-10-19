@@ -80,7 +80,7 @@ struct JournalReviewView: View {
             if let saveError { Text(saveError).foregroundStyle(.secondary) }
           }
         }
-        .padding(20)
+        .padding(MemoraSpacing.xl)
         .frame(maxWidth: .infinity, alignment: .leading)
       }
       .navigationTitle("振り返り")

@@ -21,8 +21,8 @@ struct SpaceDetailView: View {
 
       VStack(spacing: 0) {
         MemoraTextTabBar(items: ProjectWorkspaceTab.allCases, selection: $selectedTab) { $0.title }
-          .padding(.top, 2)
-          .padding(.bottom, 10)
+          .padding(.top, MemoraSpacing.xxs)
+          .padding(.bottom, MemoraSpacing.md)
 
         Group {
           switch selectedTab {
@@ -35,7 +35,7 @@ struct SpaceDetailView: View {
               workspaceScroll {
                 ForEach(chats) { thread in
                   ProjectChatRow(thread: thread)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, MemoraSpacing.sm)
                 }
               }
             }
@@ -48,7 +48,7 @@ struct SpaceDetailView: View {
               workspaceScroll {
                 ForEach(files) { item in
                   ProjectWorkspaceRow(item: item)
-                    .padding(.vertical, 4)
+                    .padding(.vertical, MemoraSpacing.xs)
                 }
               }
             }
@@ -59,7 +59,7 @@ struct SpaceDetailView: View {
               workspaceScroll {
                 ForEach(sources) { item in
                   ProjectWorkspaceRow(item: item)
-                    .padding(.vertical, 4)
+                    .padding(.vertical, MemoraSpacing.xs)
                 }
               }
             }
@@ -130,7 +130,7 @@ struct SpaceDetailView: View {
         rows()
       }
       .padding(.horizontal, MemoraSpacing.screen)
-      .padding(.top, 10)
+      .padding(.top, MemoraSpacing.md)
       .padding(.bottom, model.bottomContentClearance)
     }
     .scrollIndicators(.hidden)

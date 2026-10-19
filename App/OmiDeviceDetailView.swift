@@ -82,7 +82,7 @@ struct OmiDeviceDetailView: View {
           .foregroundStyle(isConnected ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
       }
     }
-    .padding(.vertical, 4)
+    .padding(.vertical, MemoraSpacing.xs)
   }
 
   private func infoRow(_ title: String, _ value: String) -> some View {

@@ -26,9 +26,9 @@ struct ImportProgressOverlay: View {
             .multilineTextAlignment(.center)
         }
       }
-      .padding(24)
+      .padding(MemoraSpacing.xxl)
       .frame(maxWidth: 310)
-      .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+      .background(.regularMaterial, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
       .shadow(color: .black.opacity(0.12), radius: 24, y: 10)
     }
     .accessibilityElement(children: .combine)

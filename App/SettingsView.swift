@@ -567,8 +567,8 @@ struct SettingsView: View {
           }
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 20)
-        .padding(.bottom, 8)
+        .padding(.top, MemoraSpacing.xl)
+        .padding(.bottom, MemoraSpacing.sm)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)

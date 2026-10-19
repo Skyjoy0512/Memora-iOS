@@ -78,7 +78,18 @@ extension MemoraModel {
     projectChatBusyIDs.insert(id)
     projectChatStages[id] = "資料を探しています"
     projectChatJobs[id] = Task { @MainActor in
-      defer { finishProjectChatExecution(id, requestID: user.id) }
+      defer {
+        // A revoked selection must settle the saved pending turn as well as the spinner.
+        if !pluginIDs.isEmpty, projectChatRequestIDs[id] == user.id,
+           currentTeamID == workspaceID, aiWorkspaceGeneration == generation,
+           projectMentionSelection(pluginIDs, projectID: projectID) != selection,
+           var current = projectChat(id: id), current.pendingMessageID == user.id {
+          current.pendingMessageID = nil
+          current.lastFailure = "指定したツール・資料の所属や許可が変わったため停止しました。指定を確認して送信し直してください。"
+          _ = storeProjectChat(current)
+        }
+        finishProjectChatExecution(id, requestID: user.id)
+      }
       @MainActor func isCurrentExecution() -> Bool {
         projectChatExecutionIsCurrent(id, requestID: user.id, generation: generation)
           && currentTeamID == workspaceID && !isRestoring && !isStoreProtected

@@ -20,13 +20,13 @@ struct AuthView: View {
           Text("サインインはまだ\n接続されていません。")
             .font(.largeTitle.bold())
             .tracking(-0.7)
-            .padding(.top, 22)
+            .padding(.top, MemoraSpacing.xxl)
 
           Text("アカウント連携と複数端末の同期は、まだ実装されていません。録音・文字起こし・整理は、このiPhoneの中だけで使えます。")
             .font(.body)
             .foregroundStyle(.secondary)
             .lineSpacing(4)
-            .padding(.top, 12)
+            .padding(.top, MemoraSpacing.md)
 
           VStack(spacing: 10) {
             AuthProviderButton(provider: .apple, isProminent: true) { showUnavailable() }
@@ -41,8 +41,8 @@ struct AuthView: View {
             .padding(.top, 26)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 22)
-        .padding(.bottom, 28)
+        .padding(.horizontal, MemoraSpacing.xxl)
+        .padding(.bottom, MemoraSpacing.section)
       }
       .background(Color(uiColor: .systemBackground))
       .navigationTitle("アカウント")

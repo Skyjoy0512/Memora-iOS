@@ -55,14 +55,14 @@ struct AgentApprovalCard: View {
       }
     }
     .disabled(model.pendingAgentApproval?.id != approval.id)
-    .padding(14)
+    .padding(MemoraSpacing.lg)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(
       MemoraPalette.card,
-      in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+      in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
     )
     .overlay {
-      RoundedRectangle(cornerRadius: 18, style: .continuous)
+      RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
         .stroke(MemoraPalette.border, lineWidth: 1)
     }
   }

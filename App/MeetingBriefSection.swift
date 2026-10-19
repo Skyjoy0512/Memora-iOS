@@ -36,10 +36,10 @@ struct MeetingBriefSection: View {
             .font(.footnote.weight(.semibold))
             .foregroundStyle(.tertiary)
         }
-        .padding(14)
+        .padding(MemoraSpacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .memoraCard()
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
       }
       .buttonStyle(.plain)
       .accessibilityHint("前回の記録を開きます")

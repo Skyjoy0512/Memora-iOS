@@ -133,7 +133,7 @@ struct ProfileEditorView: View {
           Circle()
             .fill(option.gradient)
             .frame(width: 32, height: 32)
-            .padding(4)
+            .padding(MemoraSpacing.xs)
             .overlay {
               if selection.wrappedValue == option {
                 Circle().strokeBorder(.tint, lineWidth: 2.5)

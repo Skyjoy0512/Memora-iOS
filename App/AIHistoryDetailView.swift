@@ -73,7 +73,7 @@ struct AIHistoryDetailView: View {
         .tint(MemoraPalette.textPrimary)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(18)
+      .padding(MemoraSpacing.lg)
     }
     .background(MemoraPalette.background)
     .navigationTitle("質問履歴")

@@ -146,7 +146,7 @@ struct NativeAIInterfaceView: View {
           VStack(alignment: .leading, spacing: 4) {
             Text(item.title ?? "").font(.subheadline.weight(.medium))
             if let detail = item.detail { Text(detail).font(.body).foregroundStyle(.secondary) }
-          }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 6)
+          }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, MemoraSpacing.sm)
             .accessibilityElement(children: .combine).textSelection(.enabled)
         }
       }.tint(.primary)

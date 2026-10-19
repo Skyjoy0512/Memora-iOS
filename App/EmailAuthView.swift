@@ -76,10 +76,10 @@ struct EmailAuthView: View {
               .font(.headline)
           }
           .frame(maxWidth: .infinity)
-          .padding(.vertical, 12)
+          .padding(.vertical, MemoraSpacing.md)
           .foregroundStyle(.white)
-          .background(.tint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-          .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+          .background(.tint, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+          .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
           .opacity(canSubmit ? 1 : 0.4)
         }
         .buttonStyle(.plain)

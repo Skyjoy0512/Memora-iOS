@@ -11,8 +11,7 @@ struct FailureOverview: View {
       Text(message)
     } actions: {
       Button("もう一度試す", icon: .arrowClockwise, action: retry)
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(MemoraButtonStyle())
     }
   }
 }
-

@@ -14,7 +14,7 @@ struct WeeklyReviewCard: View {
             .font(.title3)
             .foregroundStyle(.tint)
             .frame(width: 40, height: 40)
-            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
 
           VStack(alignment: .leading, spacing: 2) {
             Text("振り返りができました")
@@ -40,7 +40,7 @@ struct WeeklyReviewCard: View {
       .contentShape(Rectangle())
       .buttonStyle(.plain)
     }
-    .padding(12)
+    .padding(MemoraSpacing.md)
     .memoraCard()
   }
 }

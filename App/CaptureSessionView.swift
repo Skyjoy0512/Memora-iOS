@@ -50,16 +50,16 @@ struct CaptureSessionView: View {
         .frame(width: 44, height: 44)
         .memoraGlass(in: Circle(), interactive: true)
       }
-      .padding(.horizontal, 20)
-      .padding(.top, 22)
+      .padding(.horizontal, MemoraSpacing.xl)
+      .padding(.top, MemoraSpacing.xxl)
 
       if let spaceID = model.recordingSpaceID, let space = model.space(id: spaceID) {
         Label("保存先：\(space.name)", icon: .folder)
           .font(.footnote)
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 20)
-          .padding(.top, 8)
+          .padding(.horizontal, MemoraSpacing.xl)
+          .padding(.top, MemoraSpacing.sm)
       }
 
       if let message = model.recordingInterruptionMessage {
@@ -67,29 +67,29 @@ struct CaptureSessionView: View {
           .font(.footnote)
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 20)
-          .padding(.top, 10)
+          .padding(.horizontal, MemoraSpacing.xl)
+          .padding(.top, MemoraSpacing.md)
           .accessibilityLabel(message)
       }
 
       MemoraSectionPicker(items: CaptureSection.allCases, selection: $section, title: \.title)
-      .padding(.horizontal, 20)
-      .padding(.top, 18)
+      .padding(.horizontal, MemoraSpacing.xl)
+      .padding(.top, MemoraSpacing.lg)
 
       TextField("タイトルを追加", text: $model.recordingTitle, axis: .vertical)
         .font(.title2.weight(.semibold))
         .lineLimit(1...2)
         .submitLabel(.done)
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
+        .padding(.horizontal, MemoraSpacing.xl)
+        .padding(.top, MemoraSpacing.lg)
 
       if let event = model.captureEvent {
         Label("\(event.title)の予定から録音しています", icon: .calendar)
           .font(.caption)
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 20)
-          .padding(.top, 6)
+          .padding(.horizontal, MemoraSpacing.xl)
+          .padding(.top, MemoraSpacing.sm)
           .accessibilityLabel("予定\(event.title)から録音しています。タイトルは変更できます")
       }
 
@@ -104,7 +104,7 @@ struct CaptureSessionView: View {
                 Text("メモを追加")
                   .foregroundStyle(.tertiary)
                   .padding(.horizontal, 5)
-                  .padding(.vertical, 8)
+                  .padding(.vertical, MemoraSpacing.sm)
                   .allowsHitTesting(false)
               }
             }
@@ -122,7 +122,7 @@ struct CaptureSessionView: View {
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .padding(.horizontal, 20)
+      .padding(.horizontal, MemoraSpacing.xl)
       .id(section)
       .transition(.opacity)
       .animation(reduceMotion ? nil : MemoraMotion.control, value: section)
@@ -157,8 +157,8 @@ struct CaptureSessionView: View {
           .memoraGlass(in: Capsule(), tint: .accentColor, interactive: true)
         }
       }
-      .padding(.horizontal, 16)
-      .padding(.bottom, 16)
+      .padding(.horizontal, MemoraSpacing.lg)
+      .padding(.bottom, MemoraSpacing.lg)
     }
     .presentationBackground {
       sheetBackground

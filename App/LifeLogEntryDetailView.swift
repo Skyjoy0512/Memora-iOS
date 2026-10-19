@@ -130,7 +130,7 @@ struct LifeLogEntryDetailView: View {
               .scaledToFill()
               .frame(maxWidth: .infinity)
               .frame(height: 260)
-              .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+              .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
           }
           .buttonStyle(.plain)
           .accessibilityLabel("写真を拡大")
@@ -166,7 +166,7 @@ struct LifeLogEntryDetailView: View {
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(20)
+      .padding(MemoraSpacing.xl)
     }
     .background(Color(uiColor: .systemBackground))
   }
@@ -211,8 +211,8 @@ private struct LifeLogPhotoViewer: View {
           .frame(width: 44, height: 44)
           .background(.white.opacity(0.12), in: Circle())
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 12)
+        .padding(.horizontal, MemoraSpacing.xl)
+        .padding(.top, MemoraSpacing.md)
 
         Spacer()
       }

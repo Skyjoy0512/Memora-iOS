@@ -3,11 +3,19 @@ import SwiftUI
 struct ComposerMentionStrip: View {
   @Environment(MemoraModel.self) private var model
   var mentions: [ComposerMention]
+  var scope: AIQueryScope = .global
   var remove: (ComposerMention) -> Void
   @State private var inspectedPlugin: AIPlugin?
 
   var body: some View {
-    let plugins = mentions.map { model.pluginInfo(for: $0) }
+    let plugins = mentions.map { mention in
+      var plugin = model.pluginInfo(for: mention)
+      if case .space(let projectID) = scope,
+         model.projectMentionSelection([mention.pluginID], projectID: projectID) == nil {
+        plugin.state = .unavailable("現在のプロジェクトでは利用できない指定です。所属・送信許可・対応ツールを確認してください。")
+      }
+      return plugin
+    }
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
         ForEach(mentions) { mention in
@@ -19,7 +27,7 @@ struct ComposerMentionStrip: View {
                 AIPluginIconView(icon: icon)
                 Text(mention.label).lineLimit(1)
               }
-              .padding(.leading, 12).padding(.trailing, 4).frame(minHeight: 44)
+              .padding(.leading, MemoraSpacing.md).padding(.trailing, MemoraSpacing.xs).frame(minHeight: 44)
               .contentShape(Rectangle())
             }
             .accessibilityLabel("\(mention.label)、\(plugin?.state.label ?? "指定した記録")、情報を表示")

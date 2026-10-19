@@ -19,7 +19,7 @@ struct SummaryHistoryView: View {
                 .disabled(model.processing.isActive(meetingID))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
+            .padding(MemoraSpacing.xl)
           }
           .navigationTitle("保存した要約")
           .navigationBarTitleDisplayMode(.inline)

@@ -61,7 +61,7 @@ struct ProjectsView: View {
               Text(filter.emptyDetail)
                 .font(MemoraTypography.secondary).foregroundStyle(.secondary)
             }
-            .padding(.vertical, 32)
+            .padding(.vertical, MemoraSpacing.section)
           } else {
             ProjectWorkspaceEmptyState(
               icons: [.folder, .doc, .person2],
@@ -72,7 +72,7 @@ struct ProjectsView: View {
             ) {
               model.isFileCreationPresented = true
             }
-            .padding(.vertical, 40)
+            .padding(.vertical, MemoraSpacing.group)
           }
         }
 
@@ -97,7 +97,7 @@ struct ProjectsView: View {
               .foregroundStyle(.primary)
               .frame(maxWidth: .infinity, alignment: .leading)
               .frame(minHeight: ProjectLayout.minimumRowHeight)
-              .padding(.vertical, 8)
+              .padding(.vertical, MemoraSpacing.sm)
               .contentShape(Rectangle())
               .accessibilityElement(children: .combine)
             }
@@ -107,7 +107,7 @@ struct ProjectsView: View {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, ProjectLayout.horizontalInset)
-      .padding(.top, 8)
+      .padding(.top, MemoraSpacing.sm)
       .padding(.bottom, model.bottomContentClearance)
     }
     .background(MemoraPalette.background)

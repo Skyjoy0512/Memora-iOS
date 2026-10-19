@@ -28,8 +28,8 @@ struct PeopleStrip: View {
 
         item(title: "管理", symbol: .plus, imageData: nil, isSelected: false, action: onManage)
       }
-      .padding(.horizontal, 18)
-      .padding(.vertical, 2)
+      .padding(.horizontal, MemoraSpacing.lg)
+      .padding(.vertical, MemoraSpacing.xxs)
     }
     .scrollIndicators(.hidden)
   }

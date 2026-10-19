@@ -29,8 +29,8 @@ struct DialerView: View {
         .frame(maxHeight: .infinity)
 
         MemoraSectionPicker(items: Tab.allCases, selection: $tab, title: \.title)
-          .padding(.horizontal, 20)
-          .padding(.vertical, 10)
+          .padding(.horizontal, MemoraSpacing.xl)
+          .padding(.vertical, MemoraSpacing.md)
       }
       .background(Color(uiColor: .systemGroupedBackground))
       .navigationTitle(tab == .contacts ? "連絡先" : "")
@@ -63,7 +63,7 @@ struct DialerView: View {
         .font(.system(size: 36, weight: .regular).monospacedDigit())
         .lineLimit(1)
         .minimumScaleFactor(0.5)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, MemoraSpacing.xxl)
         .accessibilityLabel(number.isEmpty ? "番号未入力" : number)
 
       LazyVGrid(columns: Array(repeating: GridItem(.fixed(84), spacing: 22), count: 3), spacing: 16) {

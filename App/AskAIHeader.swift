@@ -31,7 +31,7 @@ struct AskAIHeader: View {
         .disabled(model.aiMessages.isEmpty)
         .memoraGlass(in: Circle(), interactive: true, backed: false)
     }
-    .padding(.horizontal, 20)
+    .padding(.horizontal, MemoraSpacing.xl)
     .frame(height: 48)
   }
 

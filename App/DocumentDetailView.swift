@@ -69,8 +69,8 @@ struct DocumentDetailView: View {
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
+        .padding(.horizontal, MemoraSpacing.lg)
+        .padding(.vertical, MemoraSpacing.lg)
       }
       .scrollFocusedEditorAboveKeyboard(in: proxy)
     }
@@ -172,9 +172,9 @@ struct DocumentDetailView: View {
       ForEach(Array(document.slides.enumerated()), id: \.element.id) { index, slide in
         VStack(alignment: .leading, spacing: 8) {
           SlideView(slide: slide)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
             .overlay {
-              RoundedRectangle(cornerRadius: 10, style: .continuous)
+              RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous)
                 .stroke(Color(uiColor: .separator), lineWidth: 0.5)
             }
             .shadow(color: .black.opacity(0.08), radius: 8, y: 3)

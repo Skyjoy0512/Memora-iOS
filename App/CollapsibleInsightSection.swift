@@ -26,7 +26,7 @@ struct CollapsibleInsightSection<Content: View>: View {
     VStack(alignment: .leading, spacing: 16) {
       if showsDivider {
         Divider()
-          .padding(.bottom, 6)
+          .padding(.bottom, MemoraSpacing.sm)
       }
 
       Button {

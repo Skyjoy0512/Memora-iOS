@@ -55,8 +55,8 @@ struct AIQuestionView: View {
             Color.clear.frame(height: 1).id(ConversationScrollFollowing.bottomID)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(18)
-          .padding(.bottom, 24)
+          .padding(MemoraSpacing.lg)
+          .padding(.bottom, MemoraSpacing.xxl)
           .animation(reduceMotion ? nil : MemoraMotion.screen, value: isAnswering)
           .animation(reduceMotion ? nil : MemoraMotion.screen, value: submitted)
         }
@@ -65,8 +65,8 @@ struct AIQuestionView: View {
         .scrollDismissesKeyboard(.immediately)
         .safeAreaInset(edge: .bottom, spacing: 8) {
           composer
-            .padding(.horizontal, 12)
-            .padding(.top, 4)
+            .padding(.horizontal, MemoraSpacing.md)
+            .padding(.top, MemoraSpacing.xs)
         }
       }
       .navigationTitle("Memoraに聞く")
@@ -225,8 +225,8 @@ struct AIQuestionView: View {
             }
           }
         }
-        .padding(12)
-        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(MemoraSpacing.md)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
       }
     }
   }

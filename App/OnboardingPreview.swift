@@ -19,7 +19,7 @@ struct OnboardingPreview: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(16)
+    .padding(MemoraSpacing.lg)
     .memoraCard()
     .accessibilityHidden(true)
   }

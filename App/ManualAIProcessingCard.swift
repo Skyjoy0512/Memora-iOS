@@ -29,7 +29,7 @@ struct ManualAIProcessingCard: View {
         .controlSize(.large)
         .frame(maxWidth: .infinity)
     }
-    .padding(20)
+    .padding(MemoraSpacing.xl)
     .frame(maxWidth: .infinity, alignment: .leading)
     .memoraCard()
   }

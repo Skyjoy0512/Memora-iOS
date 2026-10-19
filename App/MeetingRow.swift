@@ -53,7 +53,7 @@ struct MeetingRow: View {
         Image(icon: .chevronRight)
           .font(.caption.weight(.semibold))
           .foregroundStyle(.primary)
-          .padding(.top, 4)
+          .padding(.top, MemoraSpacing.xs)
           .accessibilityHidden(true)
       }
     }

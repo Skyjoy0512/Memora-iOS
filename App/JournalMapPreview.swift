@@ -33,13 +33,13 @@ struct JournalMapPreview: View {
           Spacer()
           Label("地図を拡大", icon: .locationFill)
             .font(.caption.weight(.semibold))
-            .padding(8).background(.regularMaterial, in: Capsule())
-            .padding(8)
+            .padding(MemoraSpacing.sm).background(.regularMaterial, in: Capsule())
+            .padding(MemoraSpacing.sm)
           }
         }
       }
       .frame(maxWidth: .infinity).frame(height: 140)
-      .clipShape(RoundedRectangle(cornerRadius: 14))
+      .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.card))
     }
     .buttonStyle(.plain)
     .accessibilityLabel(failed ? "\(place.name)の地図を再読み込み" : "\(place.name)の地図を拡大")

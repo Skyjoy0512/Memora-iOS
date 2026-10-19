@@ -62,7 +62,7 @@ struct LifeLogCreationSheet: View {
               .scaledToFill()
               .frame(maxWidth: .infinity)
               .frame(height: 190)
-              .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+              .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
           }
         }
       }

@@ -26,7 +26,7 @@ struct ProjectSuggestionCard: View {
             .foregroundStyle(.secondary)
         }
       }
-      .padding(16)
+      .padding(MemoraSpacing.lg)
       .id(active.id)
       .transition(.opacity)
 
@@ -35,8 +35,8 @@ struct ProjectSuggestionCard: View {
           Text("ほかの候補")
             .font(.caption.weight(.medium))
             .foregroundStyle(.tertiary)
-            .padding(.horizontal, 6)
-            .padding(.bottom, 2)
+            .padding(.horizontal, MemoraSpacing.sm)
+            .padding(.bottom, MemoraSpacing.xxs)
           ForEach(Array(suggestions.enumerated()), id: \.element.id) { index, suggestion in
             if index != selected {
               Button {
@@ -53,7 +53,7 @@ struct ProjectSuggestionCard: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                 }
-                .padding(.horizontal, 6)
+                .padding(.horizontal, MemoraSpacing.sm)
                 .frame(minHeight: 40)
                 .contentShape(Rectangle())
               }
@@ -69,13 +69,13 @@ struct ProjectSuggestionCard: View {
                 .font(.subheadline)
               Spacer()
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, MemoraSpacing.sm)
             .frame(minHeight: 40)
             .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
         }
-        .padding(10)
+        .padding(MemoraSpacing.md)
         .overlay(alignment: .top) { Divider() }
         .transition(.opacity.combined(with: .move(edge: .top)))
       }
@@ -92,7 +92,7 @@ struct ProjectSuggestionCard: View {
           isDrawerOpen.toggle()
         }
         .font(.footnote.weight(.medium))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, MemoraSpacing.md)
         .frame(minHeight: 34)
         .background(Color.primary.opacity(0.06), in: Capsule())
         .buttonStyle(.plain)
@@ -103,14 +103,14 @@ struct ProjectSuggestionCard: View {
           Text("入れる")
             .font(.footnote.weight(.semibold))
             .foregroundStyle(Color(uiColor: .systemBackground))
-            .padding(.horizontal, 14)
+            .padding(.horizontal, MemoraSpacing.lg)
             .frame(minHeight: 34)
             .background(Color.primary, in: Capsule())
         }
         .buttonStyle(.plain)
       }
-      .padding(.horizontal, 14)
-      .padding(.vertical, 10)
+      .padding(.horizontal, MemoraSpacing.lg)
+      .padding(.vertical, MemoraSpacing.md)
     }
     .memoraCard()
     .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: isDrawerOpen)

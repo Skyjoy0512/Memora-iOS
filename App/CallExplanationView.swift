@@ -24,9 +24,9 @@ struct CallExplanationView: View {
             step(.phone, "電話をかけて、あなたの番号を確認します")
             step(.personCropCircleBadgePlus, "そのあと、連絡先をつなげます")
           }
-          .padding(18)
+          .padding(MemoraSpacing.lg)
           .frame(maxWidth: .infinity, alignment: .leading)
-          .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+          .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
 
           VStack(alignment: .leading, spacing: 12) {
             Label("通話の録音には、相手への告知と同意が必要な場合があります。", icon: .bellFill)
@@ -38,12 +38,12 @@ struct CallExplanationView: View {
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(24)
+        .padding(MemoraSpacing.xxl)
       }
 
       CallPrimaryButton(title: "はじめる", action: onContinue)
-        .padding(.horizontal, 24)
-        .padding(.bottom, 16)
+        .padding(.horizontal, MemoraSpacing.xxl)
+        .padding(.bottom, MemoraSpacing.lg)
     }
     .background(Color(uiColor: .systemGroupedBackground))
     .navigationBarTitleDisplayMode(.inline)

@@ -43,7 +43,7 @@ extension MemoraModel {
     }
     for tool in [AgentTool.searchRecords, .searchWeb, .deepResearch] {
       let id = "memora:" + tool.rawValue
-      let available = registry.tools[id]?.isAvailable == true
+      let available = registry.tools[id].map { $0.isAvailable && $0.isEnabled } == true
       entries.append(AIPlugin(id: "tool:" + id, name: tool == .searchRecords ? "ファイル・記録の検索" : (tool == .searchWeb ? "Web検索" : "Deep Research"),
         summary: tool.summary, aliases: tool == .searchRecords ? ["file", "record", "検索"] : ["web", "ウェブ", "リサーチ"],
         kind: available ? .builtin : .unavailable, state: available ? .ready : .unavailable("設定のWeb検索で利用者自身のBrave APIキーを登録してください。"),
@@ -58,13 +58,21 @@ extension MemoraModel {
         toolIDs: [template.format == .docx ? "memora:create_document" : "memora:create_slides"], permissions: ["差し込み項目名のみAIへ送信。生成前に承認。"], cost: .unknown, provider: .memora, templateID: template.id))
     }
     for server in mcpServers {
-      let ready = server.isEnabled && integrationIsEnabled("mcp") && server.reviewedEndpoint == server.url
       let tools = registry.tools.values.filter { $0.requiredPermissions == ["mcp:" + server.id.uuidString] }
+      let ready = server.isEnabled && integrationIsEnabled("mcp") && server.reviewedEndpoint == server.url
+        && !tools.isEmpty && tools.allSatisfy { $0.isAvailable && $0.isEnabled }
       entries.append(AIPlugin(id: "mcp:" + server.id.uuidString, name: server.name, summary: "登録済みMCPサーバー", aliases: tools.flatMap { [$0.name, $0.summary] },
         kind: ready ? .connected : .connectable, state: ready ? .ready : .setup("MCP設定で接続先・認証・ツール・料金を確認してください。"),
         toolIDs: Set(tools.map(\.id)), permissions: ["mcp:" + server.id.uuidString], cost: server.hasUsageCharges.map { $0 ? .paid : .verifiedFree } ?? .unknown, provider: .mcp, serviceID: "mcp"))
     }
-    return entries
+    return entries.map { entry in
+      var entry = entry
+      if entry.state.isReady, let onDeviceTools,
+         !entry.toolIDs.isSubset(of: Set(onDeviceTools.map { "memora:" + $0 })) {
+        entry.state = .setup("この指定にはツール対応のクラウドAI（BYOK）が必要です。AI整理で選んでください。")
+      }
+      return entry
+    }
   }
 
   func mentionCandidates(query: String, scope: AIQueryScope = .global) -> [AIPlugin] {

@@ -3,7 +3,6 @@ import SwiftUI
 struct JournalSummaryView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
-  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @Environment(\.dynamicTypeSize) private var typeSize
   @ScaledMetric(relativeTo: .body) private var readingLineSpacing = MemoraTypography.readingLineSpacing
   var date: Date
@@ -71,7 +70,7 @@ struct JournalSummaryView: View {
           if !recap.items.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
               Text(Calendar.current.isDateInToday(date) ? "今日のハイライト" : "この日のハイライト")
-                .font(.title2.bold())
+                .font(MemoraTypography.sectionHeading)
                 .accessibilityAddTraits(.isHeader)
               ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: 12) {
@@ -90,7 +89,7 @@ struct JournalSummaryView: View {
 
           VStack(alignment: .leading, spacing: 14) {
             Text("記録から振り返る")
-              .font(.title2.bold())
+              .font(MemoraTypography.sectionHeading)
               .accessibilityAddTraits(.isHeader)
             Text(Calendar.current.isDateInToday(date)
               ? "今日はここまでの記録から、主な出来事をまとめています。記録が増えると、サマリーも更新されます。"
@@ -167,7 +166,7 @@ struct JournalSummaryView: View {
   @ViewBuilder private func decisionSection(_ decisions: [String], sources: [String: [JournalDecisionSource]]) -> some View {
     if !decisions.isEmpty {
       VStack(alignment: .leading, spacing: 16) {
-        Text("決まったこと").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+        Text("決まったこと").font(MemoraTypography.sectionHeading).accessibilityAddTraits(.isHeader)
         ForEach(Array(decisions.enumerated()), id: \.offset) { _, decision in
           VStack(alignment: .leading, spacing: 6) {
             Text(decision).font(MemoraTypography.readingBody).lineSpacing(readingLineSpacing).fixedSize(horizontal: false, vertical: true)
@@ -192,7 +191,7 @@ struct JournalSummaryView: View {
   @ViewBuilder private func contextSection(_ title: String, values: [String]) -> some View {
     if !values.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
-        Text(title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
+        Text(title).font(MemoraTypography.sectionHeading).accessibilityAddTraits(.isHeader)
         ForEach(Array(values.enumerated()), id: \.offset) { _, value in
           Text(value).font(MemoraTypography.readingBody).lineSpacing(readingLineSpacing).fixedSize(horizontal: false, vertical: true)
         }

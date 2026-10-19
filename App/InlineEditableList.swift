@@ -15,6 +15,7 @@ struct InlineEditableList: View {
   @State private var draft = ""
   @State private var editorID = UUID()
   @FocusState private var isFocused: Bool
+  @ScaledMetric(relativeTo: .body) private var readingLineSpacing = MemoraTypography.readingLineSpacing
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -48,8 +49,8 @@ struct InlineEditableList: View {
                   HStack(alignment: .firstTextBaseline, spacing: 10) {
                     Circle().fill(Color.primary).frame(width: 5, height: 5)
                     Text(InlineMarkdownEditor.attributed(item))
-                      .font(.body)
-                      .lineSpacing(MarkdownBlockView.lineSpacing)
+                      .font(MemoraTypography.readingBody)
+                      .lineSpacing(readingLineSpacing)
                       .frame(maxWidth: .infinity, alignment: .leading)
                   }
                 )
@@ -65,7 +66,7 @@ struct InlineEditableList: View {
         }
       }
     }
-    .padding(.vertical, 4)
+    .padding(.vertical, MemoraSpacing.xs)
     .id(editorID)
     .onChange(of: isFocused) { _, focused in
       if !focused {

@@ -29,8 +29,8 @@ struct ActiveRecordingStrip: View {
           .font(.subheadline.monospacedDigit().weight(.medium))
           .foregroundStyle(.primary)
       }
-      .padding(14)
-      .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+      .padding(MemoraSpacing.lg)
+      .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     }
     .buttonStyle(.plain)
     .accessibilityHint("録音画面を表示します")

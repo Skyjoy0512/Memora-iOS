@@ -19,7 +19,7 @@ struct ConversationStatusLine: View {
       }
     }
     .font(.footnote.weight(.medium))
-    .padding(.vertical, 4)
+    .padding(.vertical, MemoraSpacing.xs)
     .frame(maxWidth: .infinity, alignment: .leading)
     .accessibilityElement(children: .combine)
   }

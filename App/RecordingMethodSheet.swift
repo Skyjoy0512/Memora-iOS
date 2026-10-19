@@ -40,12 +40,12 @@ struct RecordingMethodSheet: View {
 
           if let brief {
             MeetingBriefSection(brief: brief, onOpenRecord: onOpenRecord)
-              .padding(.top, 8)
+              .padding(.top, MemoraSpacing.sm)
           }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 4)
-        .padding(.bottom, 20)
+        .padding(.horizontal, MemoraSpacing.xl)
+        .padding(.top, MemoraSpacing.xs)
+        .padding(.bottom, MemoraSpacing.xl)
       }
       .navigationTitle("録音方法")
       .navigationBarTitleDisplayMode(.inline)
@@ -87,9 +87,9 @@ struct RecordingMethodSheet: View {
         .font(.footnote.weight(.semibold))
         .foregroundStyle(.tertiary)
     }
-    .padding(14)
+    .padding(MemoraSpacing.lg)
     .frame(maxWidth: .infinity, alignment: .leading)
     .memoraCard()
-    .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
   }
 }

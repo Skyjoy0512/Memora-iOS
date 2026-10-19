@@ -14,7 +14,7 @@ struct UpcomingEventsRow: View {
     VStack(alignment: .leading, spacing: 10) {
       Text("次のイベント")
         .font(.title3.bold())
-        .padding(.horizontal, 18)
+        .padding(.horizontal, MemoraSpacing.lg)
         .accessibilityAddTraits(.isHeader)
 
       ScrollView(.horizontal) {

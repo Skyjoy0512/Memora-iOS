@@ -18,7 +18,7 @@ struct RealtimeTranscriptView: View {
           .multilineTextAlignment(.center)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .padding(.horizontal, 20)
+      .padding(.horizontal, MemoraSpacing.xl)
     } else {
       ScrollViewReader { proxy in
         ScrollView {

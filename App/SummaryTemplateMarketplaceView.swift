@@ -104,8 +104,8 @@ struct SummaryTemplateMarketplaceView: View {
             if isDefault {
               Text("既定")
                 .font(.caption2.weight(.semibold))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
+                .padding(.horizontal, MemoraSpacing.sm)
+                .padding(.vertical, MemoraSpacing.xxs)
                 .background(.tint.opacity(0.15), in: Capsule())
                 .foregroundStyle(.tint)
             }
@@ -124,7 +124,7 @@ struct SummaryTemplateMarketplaceView: View {
             .accessibilityLabel("追加済み")
         }
       }
-      .padding(.vertical, 2)
+      .padding(.vertical, MemoraSpacing.xxs)
     }
   }
 }

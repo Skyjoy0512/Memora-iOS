@@ -28,7 +28,7 @@ struct TeamTaskBoardView: View {
           Spacer()
           if isLoading { ProgressView() }
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, MemoraSpacing.lg)
         ScrollView(.horizontal) {
           HStack(alignment: .top, spacing: 14) {
             ForEach(TaskBoardColumn.allCases) { column in
@@ -49,9 +49,9 @@ struct TeamTaskBoardView: View {
                     .font(.caption)
                     .disabled(isLoading)
                   }
-                  .padding(14)
+                  .padding(MemoraSpacing.lg)
                   .frame(maxWidth: .infinity, alignment: .leading)
-                  .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+                  .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: MemoraRadius.card))
                 }
                 if items.isEmpty { Text("課題なし").font(.subheadline).foregroundStyle(.secondary) }
               }
@@ -60,7 +60,7 @@ struct TeamTaskBoardView: View {
               .frame(width: 260, alignment: .leading)
             }
           }
-          .padding(.horizontal, 18)
+          .padding(.horizontal, MemoraSpacing.lg)
         }
         .frame(maxWidth: .infinity)
         .refreshable { await reload() }
@@ -71,7 +71,7 @@ struct TeamTaskBoardView: View {
         ContentUnavailableView("チーム課題は未接続です", icon: .person2, description: Text(errorMessage ?? "サイドメニューでチームを選択してください。チームのクラウドが接続されるまで課題は同期できません。個人のタスクは共有しません。"))
       }
       if snapshot != nil, let errorMessage {
-        Text(errorMessage).font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 18)
+        Text(errorMessage).font(.footnote).foregroundStyle(.secondary).padding(.horizontal, MemoraSpacing.lg)
       }
       Button("再読み込み") { Task { await reload() } }.disabled(isLoading)
     }

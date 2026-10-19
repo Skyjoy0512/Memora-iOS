@@ -25,9 +25,9 @@ struct MeetingPlaybackBar: View {
           .foregroundStyle(.secondary)
       }
     }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 12)
-    .memoraGlass(in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    .padding(.horizontal, MemoraSpacing.lg)
+    .padding(.vertical, MemoraSpacing.md)
+    .memoraGlass(in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     .accessibilityElement(children: .contain)
   }
 

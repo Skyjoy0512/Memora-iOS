@@ -32,7 +32,7 @@ struct AIInterfaceSourceList: View {
         if unavailableCount > 0 {
           Text("ほか\(unavailableCount)件の資料は現在参照できません。")
             .font(.caption).foregroundStyle(MemoraPalette.textSecondary)
-            .padding(.top, 8)
+            .padding(.top, MemoraSpacing.sm)
         }
       }
     }
@@ -81,10 +81,10 @@ struct AIInterfaceSourceList: View {
       Image(icon: .chevronRight)
         .font(.footnote)
         .foregroundStyle(MemoraPalette.textSecondary)
-        .padding(.top, 2)
+        .padding(.top, MemoraSpacing.xxs)
         .accessibilityHidden(true)
     }
-    .padding(.vertical, 10)
+    .padding(.vertical, MemoraSpacing.md)
     .frame(minHeight: 44)
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)

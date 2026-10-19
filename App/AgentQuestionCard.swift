@@ -28,13 +28,13 @@ struct AgentQuestionCard: View {
           ))
       }
       .clipped()
-      .padding(16)
+      .padding(MemoraSpacing.lg)
 
       Divider()
 
       footer
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, MemoraSpacing.md)
+        .padding(.vertical, MemoraSpacing.md)
     }
     .memoraCard()
     .overlay(alignment: .topTrailing) {
@@ -60,7 +60,7 @@ struct AgentQuestionCard: View {
     VStack(alignment: .leading, spacing: 10) {
       Text(question.text)
         .font(.subheadline.weight(.semibold))
-        .padding(.trailing, 28)
+        .padding(.trailing, MemoraSpacing.section)
         .fixedSize(horizontal: false, vertical: true)
 
       VStack(alignment: .leading, spacing: 2) {
@@ -94,7 +94,7 @@ struct AgentQuestionCard: View {
           }
         ))
         .font(.subheadline)
-        .padding(.leading, 28)
+        .padding(.leading, MemoraSpacing.section)
         .padding(.vertical, 7)
         .submitLabel(isLast ? .send : .next)
         .onSubmit { if hasAnswer { advance() } }
@@ -154,7 +154,7 @@ struct AgentQuestionCard: View {
       }
       .font(.subheadline)
       .foregroundStyle(.secondary)
-      .padding(.horizontal, 10)
+      .padding(.horizontal, MemoraSpacing.md)
       .frame(minHeight: 36)
 
       Button {
@@ -164,7 +164,7 @@ struct AgentQuestionCard: View {
         Text(isLast ? "送信" : "次へ")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(Color(uiColor: .systemBackground))
-          .padding(.horizontal, 16)
+          .padding(.horizontal, MemoraSpacing.lg)
           .frame(minHeight: 36)
           .background(hasAnswer ? Color.primary : Color.secondary.opacity(0.4), in: Capsule())
       }

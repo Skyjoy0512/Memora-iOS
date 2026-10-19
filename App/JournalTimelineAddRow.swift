@@ -30,7 +30,7 @@ struct JournalTimelineAddRow: View {
             .fixedSize(horizontal: true, vertical: false)
         }
         .foregroundStyle(MemoraPalette.textSecondary)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, MemoraSpacing.md)
         .frame(height: Self.side)
         .background(MemoraPalette.card, in: Capsule())
         .overlay {

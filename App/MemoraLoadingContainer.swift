@@ -22,8 +22,9 @@ struct MemoraLoadingContainer<Content: View>: View {
         ProgressView(label).font(.footnote)
       }
       if state == .failed, let failure {
-        Text(failure).font(.subheadline).foregroundStyle(.secondary)
-        if let retry { Button("再試行", action: retry).frame(minHeight: 44) }
+        Label(failure, icon: .exclamationmarkTriangle)
+          .font(MemoraTypography.secondary).foregroundStyle(MemoraPalette.danger)
+        if let retry { Button("再試行", action: retry).buttonStyle(MemoraButtonStyle(emphasis: .secondary)) }
       }
       if state.isWorking, stage >= 3, let cancel {
         Button("読み込みを停止", action: cancel).frame(minHeight: 44)

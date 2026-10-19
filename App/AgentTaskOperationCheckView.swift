@@ -28,7 +28,7 @@ struct AgentTaskOperationCheckView: View {
           Button("承認と保存を検証", icon: .checklist) { check.start(in: model) }
             .disabled(model.isAIChatResponding || model.pendingAgentApproval != nil || model.currentTeamID != nil)
         }
-      }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
+      }.frame(maxWidth: .infinity, alignment: .leading).padding(MemoraSpacing.lg)
     }
     .tint(MemoraPalette.textPrimary)
     .background(MemoraPalette.background)

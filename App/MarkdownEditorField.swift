@@ -21,6 +21,7 @@ struct MarkdownEditorField: View {
     if font == .title2 || font == .title2.bold() || font == MemoraTypography.heading(1) { return .title2 }
     if font == .title3 || font == .title3.bold() || font == MemoraTypography.heading(2) { return .title3 }
     if font == .headline { return .headline }
+    if font == MemoraTypography.body.weight(.semibold) { return .headline }
     if font == .subheadline { return .subheadline }
     return .body
   }

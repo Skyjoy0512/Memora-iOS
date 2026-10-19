@@ -31,7 +31,7 @@ struct ConversationScrollFollowing: ViewModifier {
         if position.hasUnseenContent {
           Button("新しい回答", icon: .arrowDown) { position.follow(); scroll(animated: true) }
             .font(.subheadline.weight(.semibold))
-            .padding(.horizontal, 14).padding(.vertical, 9)
+            .padding(.horizontal, MemoraSpacing.lg).padding(.vertical, 9)
             .background(.thinMaterial, in: Capsule())
             .padding(.bottom, bottomInset)
             .accessibilityLabel("新しい回答を表示")
