@@ -14,7 +14,7 @@ struct MCPSettingsView: View {
   var body: some View {
     Form {
       Section {
-        SettingsValue(title: "状態", value: hasToken ? "設定済み" : "未設定", icon: .plugsConnected, color: .mint)
+        SettingsValue(title: "状態", value: hasToken ? "設定済み" : "未設定", icon: .plugsConnected)
       } header: {
         Text("接続")
       } footer: {
@@ -23,7 +23,7 @@ struct MCPSettingsView: View {
 
       Section {
         HStack(spacing: 12) {
-          SettingsIcon(icon: .link, color: .blue)
+          SettingsIcon(icon: .link)
           TextField("サーバーURL", text: $serverURL)
           .textInputAutocapitalization(.never)
           .autocorrectionDisabled()
@@ -31,7 +31,7 @@ struct MCPSettingsView: View {
         }
 
         HStack(spacing: 12) {
-          SettingsIcon(icon: .key, color: .orange)
+          SettingsIcon(icon: .key)
           SecureField("アクセストークン", text: $token)
             .textContentType(.password)
         }
@@ -57,13 +57,13 @@ struct MCPSettingsView: View {
 
       Section {
         Toggle(isOn: $sharesSummaries) {
-          SettingsLabel("会議の要約", icon: .docText, color: .indigo)
+          SettingsLabel("会議の要約", icon: .docText)
         }
         Toggle(isOn: $sharesTranscripts) {
-          SettingsLabel("文字起こし", icon: .waveform, color: .red)
+          SettingsLabel("文字起こし", icon: .waveform)
         }
         Toggle(isOn: $sharesJournal) {
-          SettingsLabel("ジャーナル", icon: .calendar, color: .orange)
+          SettingsLabel("ジャーナル", icon: .calendar)
         }
       } header: {
         Text("公開する内容")

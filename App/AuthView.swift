@@ -12,14 +12,13 @@ struct AuthView: View {
         VStack(alignment: .leading, spacing: 0) {
           Image(icon: .personBadgeKey, size: 28)
             .font(.system(size: 28, weight: .semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(MemoraPalette.actionLabel)
             .frame(width: 62, height: 62)
-            .background(.tint, in: RoundedRectangle(cornerRadius: 19, style: .continuous))
+            .background(MemoraPalette.action, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
             .accessibilityHidden(true)
 
           Text("サインインはまだ\n接続されていません。")
-            .font(.largeTitle.bold())
-            .tracking(-0.7)
+            .font(MemoraTypography.display)
             .padding(.top, MemoraSpacing.xxl)
 
           Text("アカウント連携と複数端末の同期は、まだ実装されていません。録音・文字起こし・整理は、このiPhoneの中だけで使えます。")
@@ -33,18 +32,18 @@ struct AuthView: View {
             AuthProviderButton(provider: .google) { showUnavailable() }
             AuthProviderButton(provider: .email) { showUnavailable() }
           }
-          .padding(.top, 30)
+          .padding(.top, MemoraSpacing.section)
 
           Label("録音そのものは、サインインの有無にかかわらずこのiPhoneに保存されます。", icon: .lockShield)
             .font(.footnote)
             .foregroundStyle(.secondary)
-            .padding(.top, 26)
+            .padding(.top, MemoraSpacing.xxl)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, MemoraSpacing.xxl)
         .padding(.bottom, MemoraSpacing.section)
       }
-      .background(Color(uiColor: .systemBackground))
+      .background(MemoraPalette.background)
       .navigationTitle("アカウント")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

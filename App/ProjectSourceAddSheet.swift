@@ -15,6 +15,8 @@ struct ProjectSourceAddSheet: View {
   @State private var isSaving = false
   @State private var message: String?
   @State private var failed = false
+  @FocusState private var focusedField: Field?
+  private enum Field: Hashable { case link, title, body }
 
   var body: some View {
     NavigationStack {
@@ -28,6 +30,7 @@ struct ProjectSourceAddSheet: View {
         }
         Section("リンク") {
           TextField("YouTube・WebのURL", text: $link)
+            .focused($focusedField, equals: .link)
             .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
           Button("リンクを保存", icon: .link) {
             perform {
@@ -48,7 +51,9 @@ struct ProjectSourceAddSheet: View {
         }
         Section("テキストメモ") {
           TextField("タイトル", text: $noteTitle)
+            .focused($focusedField, equals: .title)
           TextEditor(text: $noteText).frame(minHeight: 120).accessibilityLabel("メモ本文")
+            .focused($focusedField, equals: .body)
           Button("メモを保存", icon: .noteText) {
             perform {
               guard try await model.addProjectNote(title: noteTitle, text: noteText, projectID: projectID) != nil else { return false }
@@ -59,6 +64,7 @@ struct ProjectSourceAddSheet: View {
           }.disabled(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
       }
+      .scrollDismissesKeyboard(.interactively)
       .disabled(isSaving || model.isRestoring || model.space(id: projectID) == nil)
       .onAppear { noteText = DraftStore.load("workspace.newNote.\(projectID)") ?? "" }
       .onChange(of: noteText) { _, value in
@@ -68,6 +74,11 @@ struct ProjectSourceAddSheet: View {
       .navigationTitle("ソースを追加")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
+        ToolbarItemGroup(placement: .keyboard) {
+          Spacer()
+          Button("キーボードを閉じる", icon: .chevronDown) { focusedField = nil }
+            .labelStyle(.iconOnly)
+        }
         ToolbarItem(placement: .cancellationAction) {
           ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }

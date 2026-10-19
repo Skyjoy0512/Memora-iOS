@@ -51,7 +51,8 @@ struct QuickAIComposer: View {
       mentionInput: supportsMentions ? mentionInput : nil,
       onMentionMenu: supportsMentions ? { requestsMentionMenu = true; openMentionMenuIfReady() } : nil,
       removeMention: removeMention,
-      mentionScope: scope
+      mentionScope: scope,
+      dismissMentionMenu: { dismissedMention = activeMention }
     )
     .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
     .overlay(alignment: .top) {
@@ -116,6 +117,10 @@ struct QuickAIComposer: View {
           snapshot.text == model.composerDraft, !snapshot.hasMarkedText,
           let range = Range(snapshot.selection, in: model.composerDraft) else { return }
     requestsMentionMenu = false
+    if ComposerMentionToken.parse(text: snapshot.text, selection: snapshot.selection, hasMarkedText: false) != nil {
+      dismissedMention = nil
+      return
+    }
     let prefix = model.composerDraft[..<range.lowerBound]
     let trigger = prefix.last.map { $0.isWhitespace ? "@" : " @" } ?? "@"
     model.composerDraft.replaceSubrange(range, with: trigger)

@@ -17,7 +17,7 @@ struct SpeechRecognitionSettingsView: View {
             Text(option.label).tag(option)
           }
         } label: {
-          SettingsLabel("方法", icon: .waveform, color: .red)
+          SettingsLabel("方法", icon: .waveform)
         }
         Text(engine.detail)
           .font(.footnote)
@@ -35,7 +35,7 @@ struct SpeechRecognitionSettingsView: View {
               Text(option.label).tag(option)
             }
           } label: {
-            SettingsLabel("プロバイダー", icon: .cloud, color: .blue)
+            SettingsLabel("プロバイダー", icon: .cloud)
           }
           Button("APIキーを設定", icon: .key) {
             isKeySheetPresented = true
@@ -53,7 +53,7 @@ struct SpeechRecognitionSettingsView: View {
             Text(option.label).tag(option)
           }
         } label: {
-          SettingsLabel("主な言語", icon: .textBubble, color: .indigo)
+          SettingsLabel("主な言語", icon: .textBubble)
         }
       } header: {
         Text("言語")
@@ -68,7 +68,7 @@ struct SpeechRecognitionSettingsView: View {
           LabeledContent {
             Text(model.glossaryTerms.isEmpty ? "未登録" : "\(model.glossaryTerms.count)語")
           } label: {
-            SettingsLabel("用語集", icon: .characterBookClosed, color: .purple)
+            SettingsLabel("用語集", icon: .characterBookClosed)
           }
         }
       } footer: {
@@ -82,7 +82,7 @@ struct SpeechRecognitionSettingsView: View {
           LabeledContent {
             Text(model.voiceProfile == nil ? "未登録" : "サンプル登録済み")
           } label: {
-            SettingsLabel("自分の声", icon: .personWave2, color: .teal)
+            SettingsLabel("自分の声", icon: .personWave2)
           }
         }
       } footer: {
@@ -91,7 +91,7 @@ struct SpeechRecognitionSettingsView: View {
 
       Section {
         Toggle(isOn: $liveTranscription) {
-          SettingsLabel("録音中に文字起こしを表示", icon: .textDocument, color: .purple)
+          SettingsLabel("録音中に文字起こしを表示", icon: .textDocument)
         }
       } header: {
         Text("録音中")

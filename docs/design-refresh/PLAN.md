@@ -43,7 +43,7 @@ the CSS rather than inferred iOS screenshots.
 | Type | system sans; 400/500/600/700; text 12/14/16/18px | SF + Japanese system fallback, Dynamic Type text styles; reading body 17pt default |
 | Leading | text-md 24/16, text-lg 29/18 | scaled Japanese reading leading, natural tracking; no fixed web px mapping |
 | Spacing | 4px base | 4pt scale; 20pt compact screen inset, 680pt reading width |
-| Radius | 2,4,6,8,10,12,16,20,24,full | 8 field / 12 small / 16 content / 24 bubble-composer, capsule actions |
+| Radius | 2,4,6,8,10,12,16,20,24,full | 8 small / 12 field / 16 content / 24 bubble-composer, capsule actions |
 | Elevation | restrained 1/2/4/8px shadows | no content shadows; native sheets/menus/Glass controls |
 | Buttons/input/menu | semantic variants, state colors, focus ring, disabled state | native Button/Toggle/Picker/TextField/Menu; 44pt minimum touch size |
 | Status | danger red, warning orange, success green, blue focus | semantic adaptive colors plus text/symbol, never color alone |

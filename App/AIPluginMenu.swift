@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AIPluginMenu: View {
+  @Environment(\.dynamicTypeSize) private var typeSize
   var candidates: [AIPlugin]
   var selectedIDs: Set<String> = []
   var maximumHeight: CGFloat
@@ -19,7 +20,8 @@ struct AIPluginMenu: View {
           .font(MemoraTypography.metadata).foregroundStyle(MemoraPalette.textSecondary)
         Spacer(minLength: 4)
         Button("候補を閉じる", icon: .xmark, action: cancel)
-          .labelStyle(.iconOnly).buttonStyle(.plain).frame(width: 44, height: 44)
+          .labelStyle(.iconOnly).buttonStyle(.plain)
+          .font(.system(size: 20)).frame(width: 44, height: 44)
       }
       .padding(.horizontal, MemoraSpacing.md)
       Divider()
@@ -34,17 +36,22 @@ struct AIPluginMenu: View {
               .padding(.horizontal, MemoraSpacing.lg).padding(.top, MemoraSpacing.md)
             ForEach(rows) { plugin in
               Button { select(plugin) } label: {
-                HStack(spacing: 10) {
+                HStack(alignment: .top, spacing: MemoraSpacing.md) {
                   AIPluginIconView(icon: plugin.icon)
                     .frame(width: 24)
                   VStack(alignment: .leading, spacing: 3) {
                     Text(plugin.name).font(.body)
+                    if typeSize.isAccessibilitySize {
+                      selectionLabel(plugin)
+                    }
                     Text(plugin.state.reason ?? plugin.summary + " · " + plugin.cost.rawValue)
-                      .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                      .font(.caption).foregroundStyle(.secondary)
+                      .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
                   }
-                  Spacer(minLength: 4)
-                  Text(selectedIDs.contains(plugin.id) ? "選択済み" : plugin.state.isReady ? "追加" : plugin.state.label)
-                    .font(.caption).foregroundStyle(.secondary)
+                  if !typeSize.isAccessibilitySize {
+                    Spacer(minLength: 4)
+                    selectionLabel(plugin)
+                  }
                 }
                 .padding(.horizontal, MemoraSpacing.lg).padding(.vertical, MemoraSpacing.md)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -60,13 +67,20 @@ struct AIPluginMenu: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
       }
-      .frame(height: min(maximumHeight - 45, max(54, CGFloat(candidates.count) * rowHeight + CGFloat(groups.count) * 28)))
+      .frame(maxHeight: .infinity)
       .scrollDismissesKeyboard(.never)
     }
+    // Bound the whole menu, not just its list: its header also grows with text.
+    .frame(height: min(maximumHeight, max(100, CGFloat(candidates.count) * rowHeight + CGFloat(groups.count) * 28 + 45)))
     .background(MemoraPalette.elevated, in: RoundedRectangle(cornerRadius: MemoraRadius.card))
     .overlay { RoundedRectangle(cornerRadius: MemoraRadius.card).strokeBorder(MemoraPalette.border, lineWidth: 1) }
     .preservesComposerFocus()
     .accessibilityIdentifier("ai.mention.candidates")
     .accessibilityElement(children: .contain)
+  }
+
+  private func selectionLabel(_ plugin: AIPlugin) -> some View {
+    Text(selectedIDs.contains(plugin.id) ? "選択済み" : plugin.state.isReady ? "追加" : plugin.state.label)
+      .font(.caption).foregroundStyle(.secondary)
   }
 }

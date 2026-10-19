@@ -17,13 +17,13 @@ struct RegisteredLLMEditor: View {
               Label(provider.label, image: provider.logoAssetName).tag(provider)
             }
           } label: {
-            SettingsLabel("プロバイダー", icon: .cloud, color: .blue)
+            SettingsLabel("プロバイダー", icon: .cloud)
           }
           LabeledContent {
             TextField("例: 仕事用モデル", text: $draft.name)
               .multilineTextAlignment(.trailing)
           } label: {
-            SettingsLabel("表示名", icon: .pencil, color: .purple)
+            SettingsLabel("表示名", icon: .pencil)
           }
           LabeledContent {
             TextField("モデルID", text: $draft.modelID)
@@ -31,7 +31,7 @@ struct RegisteredLLMEditor: View {
               .autocorrectionDisabled()
               .multilineTextAlignment(.trailing)
           } label: {
-            SettingsLabel("モデルID", icon: .cpu, color: .indigo)
+            SettingsLabel("モデルID", icon: .cpu)
           }
           Menu {
             ForEach(draft.provider.suggestedModels) { option in
@@ -41,7 +41,7 @@ struct RegisteredLLMEditor: View {
               }
             }
           } label: {
-            SettingsLabel("候補から入力", icon: .listBulletRectangle, color: .gray)
+            SettingsLabel("候補から入力", icon: .listBulletRectangle)
           }
           Toggle("ツール呼び出しに対応", isOn: Binding(get: { draft.supportsToolCalling ?? true }, set: { draft.supportsToolCalling = $0 }))
         } footer: {
@@ -49,7 +49,7 @@ struct RegisteredLLMEditor: View {
         }
         Section {
           Button { showsKey = true } label: {
-            SettingsLabel(hasKey ? "APIキーを変更" : "APIキーを設定", icon: .key, color: .orange)
+            SettingsLabel(hasKey ? "APIキーを変更" : "APIキーを設定", icon: .key)
           }
         } footer: {
           Text("キーはプロバイダーごとにKeychainへ保存します。手動でこのモデルを選ぶと、質問と対象の記録をこのプロバイダーへ送ります。")

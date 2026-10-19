@@ -97,9 +97,12 @@ System sheets/menus own their contours. Group related content sparingly.
 | AIResponseMarkdownBlock / StreamingMarkdownView | same type, incremental rendering, code copy, comparison tables |
 | EditableMarkdownDocument / InlineMarkdownEditor | in-place block/cell edit and durable drafts |
 | AIPluginMenu / ComposerMentionStrip | common @/+ candidates and removable selections |
+| ComposerActionMenu | keyboard-preserving attachment actions on the same bounded neutral menu surface |
 | Native Form / Menu / sheet / alert | settings, integrations, skill setup, editors and confirmation |
 
 GlassSegmentedPicker/Control and arbitrary memoraCard(radius:) are retired.
+The old colored SettingsIconStyle tiles and per-section Tint palette are retired;
+settings and integration screens share one monochrome glyph implementation.
 The protected bottom tab's UISegmentedControl is a separate implementation.
 
 ## Screen composition

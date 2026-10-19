@@ -33,14 +33,14 @@ struct AISettingsView: View {
               .disabled(!readyProviders.contains(registered.provider))
           }
         } label: {
-          SettingsLabel("Ask AIのモデル", icon: .sparkles, color: .purple, artwork: .settingsIntelligence)
+          SettingsLabel("Ask AIのモデル", icon: .sparkles, artwork: .settingsIntelligence)
         }
         .pickerStyle(.menu)
 
         NavigationLink {
           RegisteredLLMsView()
         } label: {
-          SettingsLabel("登録済みモデル", icon: .cpu, color: .indigo, artwork: .settingsRegisteredModels)
+          SettingsLabel("登録済みモデル", icon: .cpu, artwork: .settingsRegisteredModels)
         }
       } footer: {
         Text("Ask AIはAutoが基本で、上のAIエンジンに従います。登録済みモデルを選ぶと、Ask AIと要約の初期値にそのモデルを使います。")
@@ -52,7 +52,7 @@ struct AISettingsView: View {
             LLMProviderPickerView()
           } label: {
             HStack(spacing: 12) {
-              SettingsIcon(icon: .sparkles, color: .indigo, artwork: .settingsProvider)
+              SettingsIcon(icon: .sparkles, artwork: .settingsProvider)
               LabeledContent("プロバイダー", value: model.aiProvider.label)
             }
           }
@@ -61,7 +61,7 @@ struct AISettingsView: View {
             LLMModelPickerView()
           } label: {
             HStack(spacing: 12) {
-              SettingsIcon(icon: .cpu, color: .indigo, artwork: .settingsIntelligence)
+              SettingsIcon(icon: .cpu, artwork: .settingsIntelligence)
               LabeledContent("モデル", value: modelName)
             }
           }
@@ -70,7 +70,7 @@ struct AISettingsView: View {
             isAPIKeySheetPresented = true
           } label: {
             HStack(spacing: 12) {
-              SettingsIcon(icon: .keyFill, color: hasKey ? .green : .orange, artwork: .settingsAPIKey)
+              SettingsIcon(icon: .keyFill, artwork: .settingsAPIKey)
               LabeledContent("APIキー", value: hasKey ? "保存済み" : "未設定")
                 .foregroundStyle(.primary)
             }
@@ -84,10 +84,10 @@ struct AISettingsView: View {
 
       Section {
         LabeledContent { Text(effectiveLabel) } label: {
-          SettingsLabel("実際に使う", icon: .sparkles, color: .purple, artwork: .settingsIntelligence)
+          SettingsLabel("実際に使う", icon: .sparkles, artwork: .settingsIntelligence)
         }
         LabeledContent { Text(availability.summary) } label: {
-          SettingsLabel("この設定での状態", icon: .infoCircle, color: .gray)
+          SettingsLabel("この設定での状態", icon: .infoCircle)
         }
         if model.aiEngine == .memora, let blocker = model.memoraIntelligenceBlocker {
           Text(blocker)
@@ -117,7 +117,7 @@ struct AISettingsView: View {
       model.aiEngine = option
     } label: {
       HStack(spacing: 12) {
-        SettingsIcon(icon: option.symbol, color: option.tint, artwork: engineArtwork(option))
+        SettingsIcon(icon: option.symbol, artwork: engineArtwork(option))
         VStack(alignment: .leading, spacing: 2) {
           Text(option.label)
             .foregroundStyle(option.isSelectable ? .primary : .secondary)

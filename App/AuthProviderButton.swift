@@ -10,17 +10,17 @@ struct AuthProviderButton: View {
       Label(provider.signInTitle, icon: provider.symbol)
         .font(.headline)
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 15)
-        .foregroundStyle(isProminent ? AnyShapeStyle(Color(uiColor: .systemBackground)) : AnyShapeStyle(.primary))
+        .padding(.vertical, MemoraSpacing.lg)
+        .foregroundStyle(isProminent ? MemoraPalette.actionLabel : MemoraPalette.textPrimary)
         .background {
-          let shape = RoundedRectangle(cornerRadius: 15, style: .continuous)
+          let shape = RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
           if isProminent {
-            shape.fill(.primary)
+            shape.fill(MemoraPalette.action)
           } else {
-            shape.fill(Color(uiColor: .secondarySystemBackground))
+            shape.fill(MemoraPalette.card)
           }
         }
-        .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     }
     .buttonStyle(.plain)
   }

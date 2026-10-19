@@ -27,6 +27,7 @@ struct AIComposerBar: View {
   var onMentionMenu: (() -> Void)?
   var removeMention: ((ComposerMention) -> Void)?
   var mentionScope: AIQueryScope = .global
+  var dismissMentionMenu: (() -> Void)?
   @State private var textSelection: TextSelection?
   @State private var fallbackInput = ComposerInputState()
   @State private var isEditorTall = false
@@ -322,9 +323,12 @@ struct AIComposerBar: View {
   }
 
   private var attachmentMenu: some View {
-    Button { showsAttachmentActions.toggle() } label: {
+    Button {
+      dismissMentionMenu?()
+      showsAttachmentActions.toggle()
+    } label: {
       Image(icon: .plus)
-        .font(.body.weight(.medium))
+        .font(.system(size: 20, weight: .medium))
         .foregroundStyle(.primary)
         .frame(width: 44, height: 44)
         .contentShape(Circle())
@@ -375,7 +379,7 @@ struct AIComposerBar: View {
           Image(icon: actionSymbol)
         }
       }
-        .font(.body.weight(.semibold))
+        .font(.system(size: 20, weight: .semibold))
         .foregroundStyle(MemoraPalette.actionLabel)
         .symbolEffect(.pulse, isActive: !reduceMotion && (speechInput.isListening || isBusy))
         .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))

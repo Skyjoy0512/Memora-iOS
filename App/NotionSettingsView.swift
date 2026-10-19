@@ -9,7 +9,7 @@ struct NotionSettingsView: View {
     Form {
       Section {
         HStack(spacing: 12) {
-          SettingsIcon(icon: .key, color: .orange)
+          SettingsIcon(icon: .key)
           SecureField("インテグレーショントークン", text: $token)
             .textContentType(.password)
         }
@@ -35,7 +35,7 @@ struct NotionSettingsView: View {
 
       Section {
         HStack(spacing: 12) {
-          SettingsIcon(icon: .docText, color: .indigo)
+          SettingsIcon(icon: .docText)
           TextField("ページID または データベースID", text: $pageID)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
@@ -47,7 +47,7 @@ struct NotionSettingsView: View {
       }
 
       Section {
-        SettingsValue(title: "状態", value: hasToken && !pageID.isEmpty ? "設定済み" : "未設定", icon: .plugsConnected, color: .mint)
+        SettingsValue(title: "状態", value: hasToken && !pageID.isEmpty ? "設定済み" : "未設定", icon: .plugsConnected)
       }
     }
     .navigationTitle("Notion")

@@ -14,6 +14,7 @@ struct ComposerActionMenu<Content: View>: View {
         Spacer()
         Button("追加メニューを閉じる", icon: .xmark, action: close)
           .labelStyle(.iconOnly).buttonStyle(.plain)
+          .font(.system(size: 20))
           .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
       }
       .padding(.leading, MemoraSpacing.lg)
