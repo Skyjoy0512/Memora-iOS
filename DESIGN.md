@@ -1,6 +1,6 @@
 # Memora — Native reading and conversation
 
-Updated 2026-10-19. This is the current design specification. Product behavior
+Updated 2026-10-20. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
@@ -88,7 +88,6 @@ System sheets/menus own their contours. Group related content sparingly.
 | ToolbarSearchField | Native focused search; 44pt clear/cancel controls; vertical layout at accessibility text sizes |
 | ToolbarIconButton / ToolbarActionLabel | native toolbar labels and accessible actions |
 | AIComposerBar / QuickAIComposer | native input, attachments, speech, submit/stop, scoped selection |
-| ToolbarSearchField | contextual native search and IME/cursor behavior |
 | MemoraTextTabBar / MemoraSectionPicker | flat scrollable content tabs and selection traits |
 | ProminentTabBar | protected UISegmentedControl navigation and system selection morph |
 | ProjectRecordRow / ProjectSourceRow / ProjectDocumentRow | common Library/workspace title and metadata hierarchy |
@@ -151,8 +150,9 @@ cursor, selection, VoiceOver and Japanese marked-text composition take priority.
 
 ## Verification
 
-[Research and migration plan](docs/design-refresh/PLAN.md), before/after PNGs
-and validation results live under docs/design-refresh/. Tests cover mention
+[Research and migration plan](docs/design-refresh/PLAN.md),
+[before/after review](docs/design-refresh/REVIEW.md), and
+[validation results](docs/design-refresh/VALIDATION.md) live under docs/design-refresh/. Tests cover mention
 range edits, scoped evidence/tools, persistence, navigation, Markdown and edit
 round trips. Compilation is not visual/device proof. Live provider execution,
 microphone, CloudKit and hardware require their actual configuration.

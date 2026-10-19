@@ -48,3 +48,4 @@ build-*/
 .e2e/videos/
 .e2e/design-refresh/
 .e2e/regression/
+.e2e/accessibility/

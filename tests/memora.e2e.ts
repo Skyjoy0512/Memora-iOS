@@ -99,7 +99,7 @@ test('the source list and progress fixture renders', async ({ app, device, scree
   await scrollToText(screen, '状態と復旧UIを確認');
   await tapControl(screen, screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }));
   await scrollToText(screen, '資料・進捗の表示確認');
-  await screen.getByText('資料・進捗の表示確認').first().tap();
+  await tapControl(screen, screen.getByRole('button', { name: '資料・進捗の表示確認', exact: true }));
   await expect(screen.getByText('根拠一覧（通常）')).toBeVisible();
   await expect(screen.getByText('WeeklySync 定例（9/29）').first()).toBeVisible();
   await scrollToText(screen, '進捗（一部完了・内訳あり）');

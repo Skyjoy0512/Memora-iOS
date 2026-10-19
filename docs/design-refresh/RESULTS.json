@@ -1,0 +1,346 @@
+{
+  "auditDate": "2026-10-20",
+  "appCodeCommit": "299aa2b",
+  "build": {
+    "command": "bitrig preview -platform iOS",
+    "result": "succeeded",
+    "log": "2026-10-20T08-04-43-bd7e35a5.log",
+    "deploymentTarget": "iOS 26",
+    "sdk": "iOS 27.1",
+    "existingWarnings": 11
+  },
+  "hostChecks": [
+    {
+      "command": "bash tools/checks/run-design-refresh-checks.sh",
+      "status": "passed"
+    },
+    {
+      "command": "bash tools/checks/run-ask-ai-plugin-checks.sh",
+      "status": "passed"
+    },
+    {
+      "command": "python3 tools/checks/run-optimization-checks.py",
+      "status": "passed"
+    }
+  ],
+  "device": {
+    "name": "iPhone 18 Pro Max",
+    "runtime": "iOS 27.0",
+    "isolatedFromBitrigPreview": true
+  },
+  "aggregate": {
+    "mode": "Union of whole suite and later rerun; not one clean whole-suite run",
+    "uniqueCases": 28,
+    "passed": 28,
+    "failed": 0
+  },
+  "runs": [
+    {
+      "kind": "whole-suite",
+      "id": "01a1566a-c032-764f-bd47-c8e3065cd4d5",
+      "status": "failed",
+      "startedAt": "2026-10-19T23:06:46.860Z",
+      "finishedAt": "2026-10-19T23:16:59.072Z",
+      "cases": [
+        {
+          "id": "tests/answer-actions.e2e.ts::answer%20actions%20open%20selectable%20text%20and%20hide%20an%20unavailable%20retry",
+          "file": "tests/answer-actions.e2e.ts",
+          "title": "answer actions open selectable text and hide an unavailable retry",
+          "status": "passed",
+          "durationMs": 32403
+        },
+        {
+          "id": "tests/answer-actions.e2e.ts::a%20long%20composer%20draft%20can%20expand%20and%20collapse%20without%20submitting",
+          "file": "tests/answer-actions.e2e.ts",
+          "title": "a long composer draft can expand and collapse without submitting",
+          "status": "passed",
+          "durationMs": 25871
+        },
+        {
+          "id": "tests/design-accessibility.e2e.ts::design%3A%20mention%20controls%20remain%20below%20navigation%20and%20above%20native%20input",
+          "file": "tests/design-accessibility.e2e.ts",
+          "title": "design: mention controls remain below navigation and above native input",
+          "status": "passed",
+          "durationMs": 14826
+        },
+        {
+          "id": "tests/design-accessibility.e2e.ts::design%3A%20toolbar%20search%20clears%20without%20dismissing%20input%20and%20cancels%20back%20to%20tabs",
+          "file": "tests/design-accessibility.e2e.ts",
+          "title": "design: toolbar search clears without dismissing input and cancels back to tabs",
+          "status": "passed",
+          "durationMs": 18033
+        },
+        {
+          "id": "tests/design-refresh.e2e.ts::design%3A%20navigation%20and%20settings%20in%20light%20and%20dark",
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: navigation and settings in light and dark",
+          "status": "passed",
+          "durationMs": 30990
+        },
+        {
+          "id": "tests/design-refresh.e2e.ts::design%3A%20mentions%20search%2C%20select%20twice%2C%20preserve%20focus%2C%20remove%20and%20use%20plus",
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: mentions search, select twice, preserve focus, remove and use plus",
+          "status": "passed",
+          "durationMs": 21278
+        },
+        {
+          "id": "tests/design-refresh.e2e.ts::design%3A%20unavailable%20integrations%20explain%20their%20state",
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: unavailable integrations explain their state",
+          "status": "passed",
+          "durationMs": 11291
+        },
+        {
+          "id": "tests/design-refresh.e2e.ts::design%3A%20project%20mentions%20preserve%20scope%20and%20the%20workspace%20three%20tabs",
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: project mentions preserve scope and the workspace three tabs",
+          "status": "passed",
+          "durationMs": 65275
+        },
+        {
+          "id": "tests/design-refresh.e2e.ts::design%3A%20long%20Markdown%20edits%20use%20real%20SQLite%20persistence%20across%20restart",
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: long Markdown edits use real SQLite persistence across restart",
+          "status": "passed",
+          "durationMs": 58689
+        },
+        {
+          "id": "tests/design-refresh.e2e.ts::design%3A%20conversation%20typography%20renders%20Japanese%20prose%20in%20both%20appearances",
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: conversation typography renders Japanese prose in both appearances",
+          "status": "passed",
+          "durationMs": 25680
+        },
+        {
+          "id": "tests/memora.e2e.ts::onboarding%20completion%20survives%20a%20normal%20restart",
+          "file": "tests/memora.e2e.ts",
+          "title": "onboarding completion survives a normal restart",
+          "status": "passed",
+          "durationMs": 12051
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20app%20opens%20on%20the%20journal",
+          "file": "tests/memora.e2e.ts",
+          "title": "the app opens on the journal",
+          "status": "passed",
+          "durationMs": 7037
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20tabs%20switch%20between%20journal%2C%20library%20and%20Ask%20AI",
+          "file": "tests/memora.e2e.ts",
+          "title": "the tabs switch between journal, library and Ask AI",
+          "status": "passed",
+          "durationMs": 11256
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20side%20menu%20lists%20the%20main%20destinations",
+          "file": "tests/memora.e2e.ts",
+          "title": "the side menu lists the main destinations",
+          "status": "passed",
+          "durationMs": 8325
+        },
+        {
+          "id": "tests/memora.e2e.ts::Settings%20opens%20from%20the%20side%20menu",
+          "file": "tests/memora.e2e.ts",
+          "title": "Settings opens from the side menu",
+          "status": "passed",
+          "durationMs": 9586
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20journal%20add-record%20action%20opens%20the%20capture%20sheet",
+          "file": "tests/memora.e2e.ts",
+          "title": "the journal add-record action opens the capture sheet",
+          "status": "passed",
+          "durationMs": 11039
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20tasks%20list%20opens%20from%20the%20journal",
+          "file": "tests/memora.e2e.ts",
+          "title": "the tasks list opens from the journal",
+          "status": "passed",
+          "durationMs": 8051
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20structured%20answer%20example%20renders%20the%20comparison%20table%20and%20Row",
+          "file": "tests/memora.e2e.ts",
+          "title": "the structured answer example renders the comparison table and Row",
+          "status": "passed",
+          "durationMs": 19991
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20structured%20answer%20example%20replays%20its%20streaming%20state",
+          "file": "tests/memora.e2e.ts",
+          "title": "the structured answer example replays its streaming state",
+          "status": "passed",
+          "durationMs": 21055
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20source%20list%20and%20progress%20fixture%20renders",
+          "file": "tests/memora.e2e.ts",
+          "title": "the source list and progress fixture renders",
+          "status": "failed",
+          "durationMs": 31864
+        },
+        {
+          "id": "tests/workspace-journal.e2e.ts::the%20workspace%20tabs%20read%20chat%2C%20files%2C%20sources%20and%20switch%20in%20place",
+          "file": "tests/workspace-journal.e2e.ts",
+          "title": "the workspace tabs read chat, files, sources and switch in place",
+          "status": "passed",
+          "durationMs": 23468
+        },
+        {
+          "id": "tests/workspace-journal.e2e.ts::the%20week%20strip%20selects%20a%20day%20and%20updates%20the%20timeline",
+          "file": "tests/workspace-journal.e2e.ts",
+          "title": "the week strip selects a day and updates the timeline",
+          "status": "passed",
+          "durationMs": 17353
+        },
+        {
+          "id": "tests/workspace-journal.e2e.ts::the%20inline%20plus%20buttons%20add%20a%20record",
+          "file": "tests/workspace-journal.e2e.ts",
+          "title": "the inline plus buttons add a record",
+          "status": "passed",
+          "durationMs": 20038
+        },
+        {
+          "id": "tests/workspace-journal.e2e.ts::the%20journal%20and%20workspace%20stay%20legible%20in%20dark%20appearance",
+          "file": "tests/workspace-journal.e2e.ts",
+          "title": "the journal and workspace stay legible in dark appearance",
+          "status": "passed",
+          "durationMs": 16128
+        },
+        {
+          "id": "tests/workspace-journal.e2e.ts::editing%20a%20record%20saves%20it%20to%20the%20new%20date",
+          "file": "tests/workspace-journal.e2e.ts",
+          "title": "editing a record saves it to the new date",
+          "status": "passed",
+          "durationMs": 28691
+        },
+        {
+          "id": "tests/workspace-journal.e2e.ts::a%20source%20added%20in%20the%20workspace%20stays%20in%20the%20sources%20tab",
+          "file": "tests/workspace-journal.e2e.ts",
+          "title": "a source added in the workspace stays in the sources tab",
+          "status": "passed",
+          "durationMs": 27471
+        },
+        {
+          "id": "tests/workspace-journal.e2e.ts::the%20project%20list%20filters%20all%2C%20mine%20and%20shared",
+          "file": "tests/workspace-journal.e2e.ts",
+          "title": "the project list filters all, mine and shared",
+          "status": "passed",
+          "durationMs": 12784
+        },
+        {
+          "id": "tests/workspace-journal.e2e.ts::the%20files%20tab%20offers%20recording%20and%20existing-file%20actions",
+          "file": "tests/workspace-journal.e2e.ts",
+          "title": "the files tab offers recording and existing-file actions",
+          "status": "passed",
+          "durationMs": 21265
+        }
+      ]
+    },
+    {
+      "kind": "memora-rerun",
+      "id": "01a15674-f9f3-712e-9cfd-ce850c1cfa59",
+      "status": "passed",
+      "startedAt": "2026-10-19T23:17:53.768Z",
+      "finishedAt": "2026-10-19T23:20:11.996Z",
+      "cases": [
+        {
+          "id": "tests/memora.e2e.ts::onboarding%20completion%20survives%20a%20normal%20restart",
+          "file": "tests/memora.e2e.ts",
+          "title": "onboarding completion survives a normal restart",
+          "status": "passed",
+          "durationMs": 16335
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20app%20opens%20on%20the%20journal",
+          "file": "tests/memora.e2e.ts",
+          "title": "the app opens on the journal",
+          "status": "passed",
+          "durationMs": 7004
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20tabs%20switch%20between%20journal%2C%20library%20and%20Ask%20AI",
+          "file": "tests/memora.e2e.ts",
+          "title": "the tabs switch between journal, library and Ask AI",
+          "status": "passed",
+          "durationMs": 11506
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20side%20menu%20lists%20the%20main%20destinations",
+          "file": "tests/memora.e2e.ts",
+          "title": "the side menu lists the main destinations",
+          "status": "passed",
+          "durationMs": 8345
+        },
+        {
+          "id": "tests/memora.e2e.ts::Settings%20opens%20from%20the%20side%20menu",
+          "file": "tests/memora.e2e.ts",
+          "title": "Settings opens from the side menu",
+          "status": "passed",
+          "durationMs": 9615
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20journal%20add-record%20action%20opens%20the%20capture%20sheet",
+          "file": "tests/memora.e2e.ts",
+          "title": "the journal add-record action opens the capture sheet",
+          "status": "passed",
+          "durationMs": 11179
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20tasks%20list%20opens%20from%20the%20journal",
+          "file": "tests/memora.e2e.ts",
+          "title": "the tasks list opens from the journal",
+          "status": "passed",
+          "durationMs": 8173
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20structured%20answer%20example%20renders%20the%20comparison%20table%20and%20Row",
+          "file": "tests/memora.e2e.ts",
+          "title": "the structured answer example renders the comparison table and Row",
+          "status": "passed",
+          "durationMs": 20415
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20structured%20answer%20example%20replays%20its%20streaming%20state",
+          "file": "tests/memora.e2e.ts",
+          "title": "the structured answer example replays its streaming state",
+          "status": "passed",
+          "durationMs": 21441
+        },
+        {
+          "id": "tests/memora.e2e.ts::the%20source%20list%20and%20progress%20fixture%20renders",
+          "file": "tests/memora.e2e.ts",
+          "title": "the source list and progress fixture renders",
+          "status": "passed",
+          "durationMs": 24007
+        }
+      ]
+    },
+    {
+      "kind": "maximum-dynamic-type",
+      "id": "01a15669-de2a-796c-9634-b205418b9820",
+      "status": "passed",
+      "startedAt": "2026-10-19T23:05:45.789Z",
+      "finishedAt": "2026-10-19T23:06:23.185Z",
+      "cases": [
+        {
+          "id": "tests/design-accessibility.e2e.ts::design%3A%20mention%20controls%20remain%20below%20navigation%20and%20above%20native%20input",
+          "file": "tests/design-accessibility.e2e.ts",
+          "title": "design: mention controls remain below navigation and above native input",
+          "status": "passed",
+          "durationMs": 19229
+        },
+        {
+          "id": "tests/design-accessibility.e2e.ts::design%3A%20toolbar%20search%20clears%20without%20dismissing%20input%20and%20cancels%20back%20to%20tabs",
+          "file": "tests/design-accessibility.e2e.ts",
+          "title": "design: toolbar search clears without dismissing input and cancels back to tabs",
+          "status": "passed",
+          "durationMs": 17955
+        }
+      ]
+    }
+  ]
+}
