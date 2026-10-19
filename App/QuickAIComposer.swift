@@ -202,12 +202,16 @@ struct QuickAIComposer: View {
     // stay in one thread. A record or project question opens the answer sheet.
     if scope == .global {
       let trimmed = model.composerDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+      let pluginIDs = model.composerMentions.filter { $0.isValid(in: model.composerDraft) }.map(\.pluginID)
+      guard !pluginIDs.contains(where: { $0.hasPrefix("source:") }) else {
+        projectError = "このソースは所属プロジェクト内のAsk AIで指定してください。入力と指定は保持しています。"
+        return false
+      }
       model.selectedTab = .askAI
       if usesWebSearch && submitted != nil {
         projectError = "Web検索へ添付は自動送信しません。添付を外して、検索したい内容を入力してください。"
         return false
       }
-      let pluginIDs = model.composerMentions.filter { $0.isValid(in: model.composerDraft) }.map(\.pluginID)
       if let submitted, AIEngineService.effectiveEngine(model.askAIConfiguration.engine) == .cloud,
          model.askAIConfiguration.llm.supportsToolCalling, !model.askAIConfiguration.llm.isMemoraIntelligence {
         startGlobalAttachmentRequest(submitted, question: trimmed.isEmpty ? "この添付を確認して" : trimmed, pluginIDs: pluginIDs)

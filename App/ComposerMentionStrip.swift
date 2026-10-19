@@ -10,9 +10,16 @@ struct ComposerMentionStrip: View {
   var body: some View {
     let plugins = mentions.map { mention in
       var plugin = model.pluginInfo(for: mention)
-      if case .space(let projectID) = scope,
-         model.projectMentionSelection([mention.pluginID], projectID: projectID) == nil {
-        plugin.state = .unavailable("現在のプロジェクトでは利用できない指定です。所属・送信許可・対応ツールを確認してください。")
+      switch scope {
+      case .global where mention.pluginID.hasPrefix("source:"):
+        plugin.state = .unavailable("このソースは所属プロジェクト内のAsk AIで指定してください。")
+      case .space(let projectID):
+        if model.projectMentionSelection([mention.pluginID], projectID: projectID) == nil {
+          plugin.state = .unavailable("現在のプロジェクトでは利用できない指定です。所属・送信許可・対応ツールを確認してください。")
+        }
+      case .file:
+        plugin.state = .unavailable("記録単体の会話では@指定は利用できません。全体のAsk AIかプロジェクト内で指定してください。")
+      default: break
       }
       return plugin
     }
