@@ -19,9 +19,7 @@ struct AIPluginMenu: View {
         Text("ツール・スキル・ソース")
           .font(MemoraTypography.metadata).foregroundStyle(MemoraPalette.textSecondary)
         Spacer(minLength: 4)
-        Button("候補を閉じる", icon: .xmark, action: cancel)
-          .labelStyle(.iconOnly).buttonStyle(.plain)
-          .font(.system(size: 20)).frame(width: 44, height: 44)
+        MemoraIconButton("候補を閉じる", icon: .xmark, action: cancel)
       }
       .padding(.horizontal, MemoraSpacing.md)
       Divider()

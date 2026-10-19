@@ -132,12 +132,10 @@ struct AIComposerBar: View {
           attachmentMenu
             .matchedGeometryEffect(id: "attach", in: controlsNamespace)
           if isEditorTall || AIComposerLayoutPolicy.offersExpansion(for: text) {
-            Button(isEditorTall ? "入力欄を小さくする" : "入力欄を広げる",
+            MemoraIconButton(isEditorTall ? "入力欄を小さくする" : "入力欄を広げる",
               icon: isEditorTall ? .chevronDown : .chevronUp) {
               isEditorTall.toggle()
             }
-            .labelStyle(.iconOnly).buttonStyle(.plain)
-            .frame(width: 44, height: 44)
             .accessibilityValue(isEditorTall ? "拡大" : "通常")
           }
           Spacer(minLength: 8)
@@ -281,12 +279,10 @@ struct AIComposerBar: View {
       Text(attachment?.name ?? "")
         .lineLimit(1)
       Spacer(minLength: 4)
-      Button("添付を外す", icon: .xmark) {
+      MemoraIconButton("添付を外す", icon: .xmark) {
         InteractionFeedback.shared.send(.selection)
         attachment = nil
       }
-      .labelStyle(.iconOnly)
-      .frame(width: 44, height: 44)
     }
     .font(.caption)
     .foregroundStyle(.secondary)

@@ -12,10 +12,7 @@ struct ComposerActionMenu<Content: View>: View {
       HStack {
         Text("追加").font(MemoraTypography.metadata).foregroundStyle(MemoraPalette.textSecondary)
         Spacer()
-        Button("追加メニューを閉じる", icon: .xmark, action: close)
-          .labelStyle(.iconOnly).buttonStyle(.plain)
-          .font(.system(size: 20))
-          .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
+        MemoraIconButton("追加メニューを閉じる", icon: .xmark, action: close)
       }
       .padding(.leading, MemoraSpacing.lg)
       Divider()

@@ -38,8 +38,7 @@ struct ComposerMentionStrip: View {
               .contentShape(Rectangle())
             }
             .accessibilityLabel("\(mention.label)、\(plugin?.state.label ?? "指定した記録")、情報を表示")
-            Button("\(mention.label)の指定を削除", icon: .xmark) { remove(mention) }
-              .labelStyle(.iconOnly).frame(width: 44, height: 44).contentShape(Rectangle())
+            MemoraIconButton("\(mention.label)の指定を削除", icon: .xmark) { remove(mention) }
           }
           .font(.caption)
           .buttonStyle(.plain)
