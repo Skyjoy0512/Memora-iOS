@@ -5,7 +5,7 @@ struct JournalSummaryView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @Environment(\.dynamicTypeSize) private var typeSize
-  @ScaledMetric(relativeTo: .largeTitle) private var daySize = 104.0
+  @ScaledMetric(relativeTo: .body) private var readingLineSpacing = MemoraTypography.readingLineSpacing
   var date: Date
   @Binding var backdrops: JournalBackdropSelection
   var events: [JournalCalendarEvent] = []
@@ -32,25 +32,25 @@ struct JournalSummaryView: View {
 
     NavigationStack {
       ScrollView {
-        VStack(alignment: .leading, spacing: 28) {
+        VStack(alignment: .leading, spacing: MemoraSpacing.section) {
           VStack(alignment: .leading, spacing: 16) {
             Text(date.formatted(.dateTime.year().month().day().weekday(.wide)))
               .font(.subheadline.weight(.medium))
-            Text(Calendar.current.component(.day, from: date).formatted())
-              .font(.system(size: daySize, weight: .regular, design: .serif))
-              .accessibilityHidden(true)
+            JournalBackdropView(backdrop: backdrops.current)
+              .frame(height: 112)
+              .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.card))
             Text(recap.heading)
-              .font(.largeTitle.bold())
+              .font(MemoraTypography.screenTitle)
               .accessibilityAddTraits(.isHeader)
               .fixedSize(horizontal: false, vertical: true)
             Text(recap.narrative)
               .font(.body)
-              .lineSpacing(8)
+              .lineSpacing(readingLineSpacing)
               .fixedSize(horizontal: false, vertical: true)
             if !recap.context.metrics.isEmpty {
               Text(recap.context.metrics.joined(separator: " · "))
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.85))
+                .font(MemoraTypography.secondary)
+                .foregroundStyle(MemoraPalette.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             }
           }
@@ -95,7 +95,7 @@ struct JournalSummaryView: View {
             Text(Calendar.current.isDateInToday(date)
               ? "今日はここまでの記録から、主な出来事をまとめています。記録が増えると、サマリーも更新されます。"
               : "保存された記録から、主な出来事をまとめています。詳しい振り返りでは、前日との比較も確認できます。")
-              .font(.subheadline)
+              .font(MemoraTypography.secondary)
               .lineSpacing(5)
             Button("日・週の振り返りを詳しく見る", icon: .chartBar) {
               InteractionFeedback.shared.send(.tap)
@@ -104,19 +104,17 @@ struct JournalSummaryView: View {
             .frame(minHeight: 44)
             .buttonStyle(.bordered)
           }
-          .padding(20)
           .frame(maxWidth: .infinity, alignment: .leading)
-          .background(panelBackground, in: RoundedRectangle(cornerRadius: 24))
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 32)
-        .padding(.bottom, 40)
-        .frame(maxWidth: 760, alignment: .leading)
+        .padding(.horizontal, MemoraSpacing.screen)
+        .padding(.top, MemoraSpacing.xxl)
+        .padding(.bottom, MemoraSpacing.group)
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
         .frame(maxWidth: .infinity)
       }
-      .background { JournalBackdropView(backdrop: backdrops.current, immersive: true).ignoresSafeArea() }
-      .foregroundStyle(.white)
-      .tint(.white)
+      .background(MemoraPalette.background)
+      .foregroundStyle(MemoraPalette.textPrimary)
+      .tint(MemoraPalette.action)
       .navigationBarTitleDisplayMode(.inline)
       .toolbarBackground(.hidden, for: .navigationBar)
       .toolbar {
@@ -145,15 +143,10 @@ struct JournalSummaryView: View {
       }
       .sheet(isPresented: $showsCreate) { LifeLogCreationSheet(date: Calendar.current.isDateInToday(date) ? .now : date) }
     }
-    .preferredColorScheme(.dark)
   }
 
   @ViewBuilder private func actionBar(shareText: String) -> some View {
-    if #available(iOS 26.0, *), !reduceTransparency {
-      actionLayout(shareText: shareText).buttonStyle(.glass)
-    } else {
-      actionLayout(shareText: shareText).buttonStyle(.bordered)
-    }
+    actionLayout(shareText: shareText).buttonStyle(MemoraButtonStyle(emphasis: .secondary))
   }
 
   private func actionLayout(shareText: String) -> some View {
@@ -171,34 +164,28 @@ struct JournalSummaryView: View {
     }
   }
 
-  private var panelBackground: Color {
-    reduceTransparency ? Color(white: 0.12) : .white.opacity(0.12)
-  }
-
   @ViewBuilder private func decisionSection(_ decisions: [String], sources: [String: [JournalDecisionSource]]) -> some View {
     if !decisions.isEmpty {
       VStack(alignment: .leading, spacing: 16) {
         Text("決まったこと").font(.title2.bold()).accessibilityAddTraits(.isHeader)
         ForEach(Array(decisions.enumerated()), id: \.offset) { _, decision in
           VStack(alignment: .leading, spacing: 6) {
-            Text(decision).font(.body).lineSpacing(5).fixedSize(horizontal: false, vertical: true)
+            Text(decision).font(MemoraTypography.readingBody).lineSpacing(readingLineSpacing).fixedSize(horizontal: false, vertical: true)
             ForEach(sources[decision] ?? []) { source in
               Button("記録を確認：\(source.title)", icon: .textBubble) {
                 InteractionFeedback.shared.send(.tap)
                 openSource = source
               }
-              .font(.subheadline)
+              .font(MemoraTypography.secondary)
               .frame(minHeight: 44, alignment: .leading)
               .accessibilityHint(source.timestamp == nil ? "元のサマリーを開きます" : "本文が一致する発言を開き、音声があれば再生します")
             }
           }
         }
         Text("決定事項は保存されたサマリーから抜き出しています。内容は元の記録で確認できます。")
-          .font(.footnote).foregroundStyle(.white.opacity(0.8))
+          .font(MemoraTypography.metadata).foregroundStyle(MemoraPalette.textSecondary)
       }
-      .padding(20)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(panelBackground, in: RoundedRectangle(cornerRadius: 24))
     }
   }
 
@@ -207,23 +194,15 @@ struct JournalSummaryView: View {
       VStack(alignment: .leading, spacing: 12) {
         Text(title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
         ForEach(Array(values.enumerated()), id: \.offset) { _, value in
-          Text(value).font(.body).lineSpacing(5).fixedSize(horizontal: false, vertical: true)
+          Text(value).font(MemoraTypography.readingBody).lineSpacing(readingLineSpacing).fixedSize(horizontal: false, vertical: true)
         }
       }
-      .padding(20)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(panelBackground, in: RoundedRectangle(cornerRadius: 24))
     }
   }
 
   private var divider: some View {
-    HStack(spacing: 16) {
-      Rectangle().frame(height: 1)
-      Image(icon: .sparkles).font(.subheadline)
-      Rectangle().frame(height: 1)
-    }
-    .foregroundStyle(.white.opacity(0.3))
-    .accessibilityHidden(true)
+    Divider().accessibilityHidden(true)
   }
 
   private func highlight(_ item: JournalRecapHighlight) -> some View {
@@ -232,16 +211,13 @@ struct JournalSummaryView: View {
         .font(.subheadline.weight(.medium))
       Text(item.title).font(.headline).lineLimit(3)
       Text(item.summary.isEmpty ? item.category : item.summary)
-        .font(.subheadline)
+        .font(MemoraTypography.secondary)
         .lineSpacing(4)
         .lineLimit(4)
     }
     .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
-    .padding(18)
-    .background(panelBackground, in: RoundedRectangle(cornerRadius: 22))
-    .overlay {
-      RoundedRectangle(cornerRadius: 22).strokeBorder(.white.opacity(0.14), lineWidth: 1)
-    }
+    .padding(MemoraSpacing.card)
+    .memoraCard()
     .accessibilityElement(children: .combine)
   }
 }

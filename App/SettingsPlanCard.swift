@@ -11,20 +11,12 @@ struct SettingsPlanCard: View {
         .font(.subheadline)
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
-      Button(action: onOpenPlan) {
-        Text("プランを見る")
-          .font(.subheadline.weight(.semibold))
-          .foregroundStyle(Color(uiColor: .systemBackground))
-          .padding(.horizontal, 18)
-          .frame(minHeight: 44)
-          .background(Color.primary, in: Capsule())
-      }
-      .buttonStyle(.plain)
+      Button("プランを見る", action: onOpenPlan)
+      .buttonStyle(MemoraButtonStyle())
       .padding(.top, 4)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(20)
-    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-    .shadow(color: .black.opacity(0.04), radius: 12, y: 4)
+    .padding(MemoraSpacing.card)
+    .memoraCard()
   }
 }

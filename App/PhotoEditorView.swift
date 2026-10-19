@@ -108,7 +108,7 @@ struct PhotoEditorView: View {
   private var controls: some View {
     VStack(spacing: 14) {
       if lockedAspect == nil {
-        GlassSegmentedPicker(items: PhotoAspect.allCases, selection: $aspect, title: \.label)
+        MemoraSectionPicker(items: PhotoAspect.allCases, selection: $aspect, title: \.label)
       }
 
       HStack(spacing: 12) {

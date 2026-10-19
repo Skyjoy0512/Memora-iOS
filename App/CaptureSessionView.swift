@@ -72,7 +72,7 @@ struct CaptureSessionView: View {
           .accessibilityLabel(message)
       }
 
-      GlassSegmentedPicker(items: CaptureSection.allCases, selection: $section, title: \.title)
+      MemoraSectionPicker(items: CaptureSection.allCases, selection: $section, title: \.title)
       .padding(.horizontal, 20)
       .padding(.top, 18)
 

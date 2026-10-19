@@ -41,11 +41,11 @@ struct AIResponseCodeBlock: View {
       }
       .scrollIndicators(.hidden)
     }
-    .padding(16)
+    .padding(MemoraSpacing.card)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(MemoraPalette.secondaryBackground, in: RoundedRectangle(cornerRadius: 24))
+    .background(MemoraPalette.secondaryBackground, in: RoundedRectangle(cornerRadius: MemoraRadius.card))
     .overlay {
-      RoundedRectangle(cornerRadius: 24).stroke(.secondary.opacity(0.1), lineWidth: 1)
+      RoundedRectangle(cornerRadius: MemoraRadius.card).stroke(MemoraPalette.border, lineWidth: 0.5)
     }
     .onDisappear { resetTask?.cancel() }
   }

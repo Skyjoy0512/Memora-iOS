@@ -15,6 +15,7 @@ struct AIPlugin: Identifiable {
   var recordID: UUID?
   var templateID: UUID? = nil
   var iconIdentifier: String? = nil
+  var sourceID: UUID? = nil
 
   var icon: AIPluginIcon { AIPluginIcon.resolve(pluginID: id, name: name, iconIdentifier: iconIdentifier) }
 

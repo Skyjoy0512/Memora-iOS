@@ -89,7 +89,7 @@ struct RecordingMethodSheet: View {
     }
     .padding(14)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .memoraCard(radius: 18)
+    .memoraCard()
     .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
   }
 }

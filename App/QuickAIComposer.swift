@@ -26,6 +26,7 @@ struct QuickAIComposer: View {
   @State private var dismissedMention: ComposerMentionToken?
   @State private var selectedSetup: AIPlugin?
   @State private var composerTop: CGFloat = 360
+  @State private var requestsMentionMenu = false
 
   var body: some View {
     // The draft lives in the model, so rebuilding this view or leaving the tab
@@ -47,7 +48,9 @@ struct QuickAIComposer: View {
       },
       onResearch: model.selectedTab == .askAI && scope == .global ? { usesWebSearch.toggle() } : nil,
       researchSelected: usesWebSearch,
-      mentionInput: supportsMentions ? mentionInput : nil
+      mentionInput: supportsMentions ? mentionInput : nil,
+      onMentionMenu: supportsMentions ? { requestsMentionMenu = true; openMentionMenuIfReady() } : nil,
+      removeMention: removeMention
     )
     .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
     .overlay(alignment: .top) {
@@ -60,16 +63,8 @@ struct QuickAIComposer: View {
               .font(.footnote).frame(minHeight: 44)
           }.padding(.horizontal, 16)
         } else if let token = activeMention, token != dismissedMention {
-          AIPluginMenu(candidates: model.mentionCandidates(query: token.query), selectedIDs: Set(model.composerMentions.map(\.pluginID)), maximumHeight: min(320, max(100, composerTop - WindowSafeArea.insets.top - 12)),
+          AIPluginMenu(candidates: model.mentionCandidates(query: token.query, scope: scope), selectedIDs: Set(model.composerMentions.map(\.pluginID)), maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - MemoraSpacing.md)),
             select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })
-        } else if supportsMentions && !model.composerMentions.isEmpty {
-          ComposerMentionStrip(mentions: model.composerMentions) { mention in
-            guard mentionInput.snapshot()?.hasMarkedText != true, mention.isValid(in: model.composerDraft),
-                  let range = Range(mention.range, in: model.composerDraft) else { return }
-            model.composerDraft.removeSubrange(range)
-            model.composerMentionCursorRequest = nil
-            model.composerMentionCursorRequest = ComposerCursorRequest(offset: mention.range.location)
-          }
         }
       }
       .fixedSize(horizontal: false, vertical: true)
@@ -84,9 +79,10 @@ struct QuickAIComposer: View {
       }
     }
     .onChange(of: model.composerDraft) { _, _ in dismissedMention = nil }
+    .onChange(of: mentionInput.value) { _, _ in openMentionMenuIfReady() }
     .onChange(of: model.composerDismissRequests) { _, _ in dismissedMention = activeMention }
     .onChange(of: model.selectedTab) { _, _ in usesWebSearch = false }
-    .onChange(of: scope) { _, _ in attachmentPreparationTask?.cancel() }
+    .onChange(of: scope) { _, _ in attachmentPreparationTask?.cancel(); requestsMentionMenu = false; dismissedMention = nil }
     .onChange(of: model.composerAttachment?.id) { _, _ in attachmentPreparationTask?.cancel() }
     .onDisappear { attachmentPreparationTask?.cancel() }
     .sheet(item: $pendingQuestion) { request in
@@ -106,7 +102,32 @@ struct QuickAIComposer: View {
     } message: { Text(projectError ?? "") }
   }
 
-  private var supportsMentions: Bool { model.selectedTab == .askAI && scope == .global }
+  private var supportsMentions: Bool {
+    switch scope {
+    case .global: true
+    case .space(let id): model.space(id: id) != nil && model.currentTeamID == nil
+    case .file: false
+    }
+  }
+
+  private func openMentionMenuIfReady() {
+    guard requestsMentionMenu, supportsMentions, let snapshot = mentionInput.snapshot(),
+          snapshot.text == model.composerDraft, !snapshot.hasMarkedText,
+          let range = Range(snapshot.selection, in: model.composerDraft) else { return }
+    requestsMentionMenu = false
+    let prefix = model.composerDraft[..<range.lowerBound]
+    let trigger = prefix.last.map { $0.isWhitespace ? "@" : " @" } ?? "@"
+    model.composerDraft.replaceSubrange(range, with: trigger)
+    model.composerMentionCursorRequest = ComposerCursorRequest(offset: snapshot.selection.location + trigger.utf16.count)
+    dismissedMention = nil
+  }
+
+  private func removeMention(_ mention: ComposerMention) {
+    guard mentionInput.snapshot()?.hasMarkedText != true, mention.isValid(in: model.composerDraft),
+          let range = Range(mention.range, in: model.composerDraft) else { return }
+    model.composerDraft.removeSubrange(range)
+    model.composerMentionCursorRequest = ComposerCursorRequest(offset: mention.range.location)
+  }
   private var attachment: AIAttachment? {
     get { model.composerAttachment }
     nonmutating set { model.composerAttachment = newValue }
@@ -128,6 +149,11 @@ struct QuickAIComposer: View {
       return
     }
     guard let range = Range(token.range, in: model.composerDraft) else { return }
+    if model.composerMentions.contains(where: { $0.pluginID == plugin.id }) {
+      model.composerDraft.removeSubrange(range)
+      model.composerMentionCursorRequest = ComposerCursorRequest(offset: token.range.location)
+      return
+    }
     let label = plugin.name.replacingOccurrences(of: "]", with: "）").replacingOccurrences(of: "[", with: "（")
     let mention = ComposerMention(pluginID: plugin.id, label: label, range: NSRange(location: token.range.location, length: "[@\(label)]".utf16.count))
     model.composerDraft.replaceSubrange(range, with: mention.token + " ")
@@ -193,8 +219,17 @@ struct QuickAIComposer: View {
     // The request is built from what is on screen now; the composer is only
     // cleared by the bar once this returns true.
     let trimmed = model.composerDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-    let request = AIQuestionRequest(question: trimmed.isEmpty ? "このソースを確認して" : trimmed, scope: scope, attachment: submitted)
+    let request = AIQuestionRequest(question: trimmed.isEmpty ? "このソースを確認して" : trimmed, scope: scope, attachment: submitted,
+      pluginIDs: model.composerMentions.filter { $0.isValid(in: model.composerDraft) }.map(\.pluginID))
+    if case .file = scope, !request.pluginIDs.isEmpty {
+      projectError = "この記録画面は@指定に対応していません。指定を外すか、全体またはプロジェクトのAsk AIで送信してください。"
+      return false
+    }
     if case .space = scope {
+      if case .space(let id) = scope, model.projectMentionSelection(request.pluginIDs, projectID: id) == nil {
+        projectError = "この範囲では実行できない指定があります。プロジェクト内の読み取りツール・スキル・許可されたソースを選び直してください。"
+        return false
+      }
       if AIEngineService.effectiveEngine(model.askAIConfiguration.engine) == .cloud {
         pendingProjectQuestion = request
         confirmsCloudRequest = true
@@ -287,7 +322,7 @@ struct QuickAIComposer: View {
           return
         }
         guard let id = existingChat?.id ?? model.createProjectChat(projectID: projectID),
-              model.sendProjectChat(id, question: request.question, allowsPaidRequest: allowsPaidRequest) else {
+              model.sendProjectChat(id, question: request.question, allowsPaidRequest: allowsPaidRequest, pluginIDs: request.pluginIDs) else {
           projectError = "回答中でないことと質問が選択モデルの文字数上限以内であることを確認してください。"
           return
         }

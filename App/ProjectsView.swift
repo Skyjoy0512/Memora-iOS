@@ -32,12 +32,12 @@ struct ProjectsView: View {
         MemoraTextTabBar(items: ProjectListFilter.allCases, selection: $filter, horizontalPadding: 0) { $0.title }
         if model.shareInboxFailure != nil {
           Button("共有からの取り込みを確認") { isShareInboxPresented = true }
-            .font(.subheadline).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
+            .font(MemoraTypography.secondary).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
         }
         if total > 0 {
           HStack {
             Text(isSearching ? "検索結果 \(total)件" : "\(total)件")
-              .font(.subheadline)
+              .font(MemoraTypography.secondary)
               .foregroundStyle(.secondary)
               .accessibilityLabel("プロジェクト\(total)件")
             Spacer()
@@ -57,9 +57,9 @@ struct ProjectsView: View {
             ContentUnavailableView.search(text: query)
           } else if filter == .shared {
             VStack(alignment: .leading, spacing: 8) {
-              Text(filter.emptyTitle).font(.body.weight(.semibold))
+              Text(filter.emptyTitle).font(MemoraTypography.body.weight(.medium))
               Text(filter.emptyDetail)
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(MemoraTypography.secondary).foregroundStyle(.secondary)
             }
             .padding(.vertical, 32)
           } else {
@@ -78,7 +78,7 @@ struct ProjectsView: View {
 
         if !model.projectChats.isEmpty {
           NavigationLink("チャット履歴", value: LibraryRoute.projectChats(nil))
-            .font(.subheadline).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
+            .font(MemoraTypography.secondary).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
         }
 
         if !visibleShared.isEmpty {
@@ -88,10 +88,10 @@ struct ProjectsView: View {
               HStack(spacing: 12) {
                 Image(icon: project.icon).frame(width: ProjectLayout.iconSide).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
-                  Text(project.name).font(.body.weight(.semibold)).lineLimit(2)
+                  Text(project.name).font(MemoraTypography.body.weight(.medium)).lineLimit(2)
                   SharedOwnerBadge(ownerName: project.ownerName)
                   Text("記録 \(project.records.count)件 · 閲覧のみ")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(MemoraTypography.metadata).foregroundStyle(.secondary)
                 }
               }
               .foregroundStyle(.primary)
@@ -141,7 +141,7 @@ struct ProjectsView: View {
       }
       Toggle("最近使用を先に", isOn: $recentFirst)
     } label: {
-      Text("並べ替え").font(.subheadline).frame(minHeight: 44)
+      Text("並べ替え").font(MemoraTypography.secondary).frame(minHeight: 44)
     }
     .accessibilityValue(order.title)
     .tint(MemoraPalette.textPrimary)
@@ -152,7 +152,7 @@ struct ProjectsView: View {
       Text(title).font(.subheadline.weight(.semibold))
       if let count {
         Spacer(minLength: 12)
-        Text("\(count)件").font(.subheadline).monospacedDigit()
+        Text("\(count)件").font(MemoraTypography.secondary).monospacedDigit()
       }
     }
     .foregroundStyle(.secondary)

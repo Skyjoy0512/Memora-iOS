@@ -1,357 +1,153 @@
-# Memora — Zero-based Product & UI Design
-
-## 2026-10-17の適用事項
-
-最低対応OSはiOS 26。現在のタブはLibrary / Home / Ask AIの順の3つで、下記の古い4タブ案より
-ユーザーの最新指示と現行コードを優先する。UISegmentedControlのLiquid Glass、右FAB、
-ジャーナルのHero、下部コンポーザー、空白の新規チャットを維持する。
-Ask AI 2.0はコードコピー/横スクロール表、実AgentStepの開閉、完成した構造化部品の段階表示を
-既存の会話状態・権限・承認基盤へ接続する。モデルの推論や生成した進捗を実績として表示しない。
-UIはネイティブ実装。回答のコード・表・引用の描画はchatgpt-ios-uiのMITコードを部分移植し、
-Dynamic Typeと既存の出典・ストリーム処理へ適応する。ブランド素材・ChatStateは導入しない。詳細と検証の境界は[実装記録](docs/ASK_AI_2_IMPLEMENTATION.md)。
-
-## A. Product understanding
-
-Memoraは、音声を保管するアプリではなく、会話を「あとから使える知識」に変えるアプリである。中心価値は、ユーザーが録音以外をほぼ操作しなくても、会話が要約・決定・タスク・未決事項へ変換され、元の発言まで戻れることにある。
-
-設計上の短い定義は、**Record once. Move forward.**。録音後の整理を仕事としてユーザーへ返さない。
-
-## B. Primary jobs
-
-頻度と緊急性から、Jobを次の順に置く。
-
-1. 会議が始まった瞬間に迷わず録音する
-2. 会議後すぐ、結論と次の行動だけを把握する
-3. 必要な時に、過去の発言や決定を根拠付きで探す
-4. 複数の会議から生まれたタスクをまとめて進める
-5. 継続テーマの会議を束ね、全体の流れを理解する
-6. 保存先と外部処理の有無を把握し、安心して使う
-
-## C. Information architecture
-
-トップレベルはライブラリ・ジャーナル・Ask AIの3タブ。ライブラリ上部の「ファイル／プロジェクト」で一覧を切り替える。右端の独立した＋と、その上の「Memoraに質問」入力欄は維持する。同じ記録を異なる場所から表示し、複製保存しない。
-
-### ジャーナル（ジャーナルを中心に表示）
-
-- 週次カレンダーを上部に置き、開くと月表示へ広がる。左右のスワイプで前後の週（開いているときは前後の月）へ移動できる。記録のある日には点を打ち、選んだ日の記録と予定を下に並べる
-- 選んだ日の一覧は朝から夜の順（昇順）に並べる。今日を開いたときは「いま」の位置に区切り線を入れる。検索結果だけは従来どおり新しい順にする
-- Omiなどの短い記録を時間順に読むライフログのタイムライン。記録をタップすると全文と写真を開き、タイトル・本文・日時を編集でき、削除は「最近削除した項目」へ移る
-- 日常の記録だけを対象にした検索
-- カレンダーから次の会議を表示し、その場で録音を開始（許可した場合のみ）
-- 人をストーリー風の横スクロールで並べ、選ぶとその人にひもづく記録だけに絞り込める。写真も登録できる
-- 外部レコーダーの状態は、一度でもペアリングした人か接続中のときだけナビゲーションバーの左に置き、押すと設定のレコーダーへ移動する。ペアリングしていない人には出さず、サイドバーの外部レコーダー行から設定へ行ける
-- 設定の「カレンダーの予定を表示」をオンにすると、選んだ日の予定をタイムラインに表示する。予定は保存せず、表示のたびにカレンダーから読む
-- 設定の「移動と滞在を自動で記録」をオンにすると、位置情報から駅の通過と滞在を自動で記録する。位置情報はこのiPhoneの中だけで使い、外部へは送らない
-- 自宅や職場など記録したくない場所は「記録しない場所」に登録でき、その周辺では記録しない
-- 会議に昇格した記録から元の議事録への導線
-- 記録の手動追加は、ジャーナルの右上の作成ボタンから開く。メモ・写真・イベント・場所を足せ、場所は明示的な許可後に現在地付近の駅を候補化し、保存前に編集可能
-- 設定はサイドバー下部の歯車から開く
-- 左上のメニューボタンと画面左端のスワイプから、共通のサイドバーを開く
-- カレンダーと日別サマリーの下に「今日のタスク」と「すべて見る」、最近使用したプロジェクトへの導線を置く
-- 記録がないときは、見出し・説明・「記録を追加」を1枚の中立グレーのカードにまとめる。追加ボタンはカード幅いっぱいの大きなボタンにし、アイコンは付けない
-- 記録の一覧は、下部のcomposerとタブバーに隠れないよう、最後の記録まで読める余白を確保する
-
-ライフログは独立したタブを持たず、一日の流れを読む場所としてジャーナルに統合する。会議の件数を示す今日のダイジェストは置かない。
-
-### プロジェクト（ライブラリ内のセグメント）
-
-- 最近使用したプロジェクトと、すべてのプロジェクトを既存のカードスタイルで表示
-- 一覧は「すべて／自分／共有」の文字フィルタで切り替える。ライブラリとワークスペースの文字タブと同じ形（外側のトラックなし、選択中だけ淡いグレーのカプセル）にそろえる。共有が空なら、その理由を静かに表示する
-- プロジェクトが空なら、関連する3つの記号・説明・「プロジェクトを作成」の黒いカプセルを中央に置く。共有だけの表示では作成導線を出さない
-- 名前検索、作成、名称変更、削除、チーム共有。共有されたプロジェクトは所有者名を表示して閲覧専用で開く
-- `MemoraSpace` と `SpaceDetailView` を再利用し、ライブラリの単一 `libraryPath` で記録・タスクへ移動
-- 詳細の録音・音声取り込みと右端FABは、表示中のプロジェクトへ保存。削除済みの保存先は既存の未分類フォールバックを使う
-
-### プロジェクトワークスペース
-
-- プロジェクト詳細は ChatGPT のプロジェクト画面に近い、静かなチャット一覧の見た目にする。ヘッダーはフォルダ記号とプロジェクト名を中央に置き、大きなタイトルは使わない
-- タブは「チャット → ファイル → ソース」の文字タブ。外側のトラックやガラスは置かず、選択中だけ淡いグレーのカプセルで示す。大きな文字では折り返さず横スクロールにする
-- 行はカードや区切り線で囲まず、タイトルと1行の補足（チャットは最後の発言、ファイルとソースは種類と相対日時）を左揃えで並べる
-- 空のタブは、関連する3つの記号、短い説明、黒（ダークでは白）のカプセルボタンを中央付近に置く。ボタンはそのタブの追加操作へつなぐ
-- 変更系は右上の「その他」に集約し、タブごとの作成は右上の＋から行う。既存のLiquid Glassのツールバー・FAB・composerは変更しない
-
-### ライブラリ
-
-- ファイル／プロジェクトは文字タブで切り替える。外側のトラックは置かず、選択中だけ淡いグレーのカプセルで示す。初回はファイル、以後は最後の選択を再起動後も復元。プロジェクトへの直接遷移では自動的にプロジェクトを選ぶ
-- ファイルが空のときは、プロジェクト一覧と同じ空状態（関連アイコン・説明・黒いカプセル）で録音／読み込みへ導く。未分類が空でプロジェクトにだけファイルがある場合は「プロジェクトを開く」を出す
-
-- 未分類を含むすべてのプロジェクトの記録を一覧・検索する
-- 既存の並べ替え、カード／一覧切替、複数選択、移動、削除、共有を維持
-- 資料、人物、外部レコーダー、ワークスペース、設定はサイドバーから開く
-- 新しいファイル型の統合検索やRAGは今回の対象外
-
-### Ask AI（ライブラリの右の3つ目のタブ）
-
-- タイトル・発言・決定・タスクを横断する通常検索
-- 自然文によるAI検索
-- File / Project / Globalの検索範囲（左上のメニューで選ぶ）
-- 回答の根拠となった会議と、時刻つきの発言（会議ごとに最大3行。各行からその位置を再生できる）
-- 質問履歴
-
-AIは独立したチャットアプリにせず、Ask AIタブによる横断検索と、ジャーナル・ライブラリ・プロジェクト詳細・会議詳細の下部composerによる文脈アクションとして配置する。一覧タブの入力欄は全体（Global）向けで、送るとAsk AIタブの会話に入る。プロジェクト詳細ではそのプロジェクト（Space）、会議詳細ではその会議（File）を対象にする。RecordAccessPolicyによる判定は既存のAI経路が引き続き行う。
-
-### タスク（ジャーナルから開く）
-
-- 複数会議から抽出された未完了タスク
-- 会議に依存しない手入力タスク
-- 担当者、期限、元の会議
-- 完了済みの確認
-- ジャーナルの「すべて見る」から既存TasksViewを開く。通知は同じ経路で編集画面を開く
-
-### 設定（タブではなくモーダル）
-
-設定は日々移動する場所ではないため、タブから外して共通サイドバー下部の歯車から開くモーダルにする。設定の先頭には本人のミー文字（または写真）と名前を置き、タップで編集する。ミー文字は絵文字キーボードのステッカーから取り込み、背景色を選べる。写真は正方形に切り抜いて明るさ・回転を調整できる。各項目には、システムの設定と同じ形のカラーアイコンを付け、色と形で見つけられるようにする。
-
-- アカウントとSubscription
-- 文字起こしエンジン（自動／Apple SpeechAnalyzer／端末内Whisper／クラウドBYOK）と言語
-- AIエンジン（自動／Apple Foundation Models／ローカルLLM／クラウドBYOK）。クラウドはClaude・OpenAI・Gemini・DeepSeek・Kimi・Grok・Mistral・Qwen・OpenRouterから各社のロゴ付きで選び、モデルはおすすめ・キーで取得した一覧・ID直接入力から選ぶ。キーは各社ごとにKeychainへ保存
-- 要約テンプレートのマーケットプレイス。組み込みのテンプレートに加え、追加分を足す／外すと、要約生成時の選択肢へ反映する
-- Omi・PLAUDなど外部レコーダーとの接続と音声取り込み
-- 連携: Notion、およびChatGPTなど外部アシスタントから読ませるMCPの接続先・トークン・公開範囲
-- 削除と復元: 削除した記録は「最近削除した項目」に30日間残り、その間は元に戻せる。期間を過ぎたものは音声ごと自動で片付ける
-- 保存方針: 既定は端末内のみ。録音・文字起こし・議事録は端末に保存し、クラウド保管はMemora Plusの有料オプションとしてオフから始める（未加入では切り替えられず、加入導線を出す）
-- ローカル保存とプライバシー
-- ヘルプとデータ管理
-
-タブはUISegmentedControlで描いたセグメントとしてガラスのカプセルに収め、その右にタブと同じ高さで視覚的に分離した「＋」を置く。押すと録音開始・音声インポート・オンライン会議キャプチャがポップオーバーで現れ、選ぶとその場で閉じて対応する処理へ進む。画面全体を覆うフロストは使わず、下の文脈とタブバーを見せたままにする。
-
-## D. Main user flow
-
-1. 初回起動で3ページの短いオンボーディングを見る。いつでもスキップでき、二度目以降は出ない
-2. 「最初の会話を録音」を押した時にだけマイク権限を要求する。サインインも購入も要求しない
-3. 録音中は下部シートへタイトル、ノート／文字起こし、一時停止、終了をまとめ、経過時間は上部へ、タイトルは切り替えタブの下へ置く。左上の破棄からは保存せずに録音を捨てられる（確認のうえ）。声に合わせて下端のグラデーションが反応し、記録が続いていることをさりげなく伝える
-4. 画面を閉じても録音を継続し、Live Activityで状態を確認できる
-5. 停止直後に音声をFileとして保存し、一覧と会議詳細へ即反映する
-6. 外部音声のインポートは保存だけで止め、「文字起こしを開始」→「要約方法を選んで生成」を明示操作にする
-7. 「音声を保存 → 文字にする → 要点と行動を整理」の進行を人間向けの言葉で表示する
-8. 完成済みの文字起こしは、AI整理が未完了でも先に利用可能にする
-9. 完了後は、サマリー → 決定 → 次の行動 → 未決事項 → 重要点の順に読む
-10. 要約・文字起こし・ノートを同じ詳細画面で切り替え、必要なら下部からAIへ質問する
-11. タスクは元の会議と結び付いたまま、横断タスク画面にも集約する
-12. 最初の会話が整理されたあとに一度だけPlusを提案する。価値を見る前に価格を見せない
-13. サインインは同期が欲しくなった時に、設定またはオンボーディング末尾から任意で行う
-
-## E. Navigation
-
-標準のTabViewを状態管理に使いながら、下部の明確なナビゲーションで左から「ファイル／ジャーナル／タスク／Ask AI」の4つを切り替える。起動時は左端のファイルを開く。タブはシステム標準のセグメントコントロールとしてLiquid Glassのカプセルに収まり、選択中の面は標準のピルとして移動する。タブは場所の移動だけに使い、追加操作は右端の独立した「＋」へ分離する。「＋」はどの領域でも同じ場所にあり、録音開始・音声インポート・オンライン会議キャプチャ・メモ・写真・場所・プロジェクト作成の起点になる。画面ごとによく使う作成は、その画面のナビゲーションバーの右上にアイコンで置き、「＋」の上には何も置かない。下部のタブ行・「＋」・入力欄は同じ高さ（56pt）にそろえる。大きな文字サイズではタブを記号だけに切り替える。
-
-会議詳細はNavigationStackで深掘りし、録音セッション・追加方法の選択・サインイン・Paywall・AI回答は一時的で自己完結するためモーダル表示にする。ファイル・ジャーナル・タスクの各タブと会議の詳細の下部に同じAI composerを置き、質問範囲をGlobal / Fileへ自動で合わせる。会議詳細に入ったら進入元にかかわらず通常のタブバーを隠してcomposerだけを残し、戻る操作は常にNavigationStack上の1つ前へ戻す。Ask AIタブは専用のチャットとして、同じ入力欄から会話を続けられる。
-
-ジャーナルとファイルのプロフィールボタンと画面左端のスワイプは、画面幅の約82%を使うサイドバーを開く。開き具合はひとつの値だけで表し、ドラッグ・タップ・プログラムからの操作が同じ値を動かすので、途中で止まったり食い違ったりしない。サイドバーは本文よりわずかに遅れて追従し、手前の本文は等倍のまま右へスライドする。本文はブラーをかけず、薄く白を重ねて沈めるだけにして、背後の内容が読める状態を保つ。透明なタップ面または逆方向のドラッグで閉じる。詳細を開いている間はサイドバーを無効にし、画面左端はNavigationStackの戻る操作へ譲る。タブバーが素早い切り替えを担う一方で、サイドバーは全体を見渡す場所として、アカウント、トップレベルの移動、ライブラリの各セクションへの移動、最近のプロジェクトへの直接移動、外部レコーダーの接続状態を同じ一覧に収める。外部レコーダーの行は設定モーダルへつながる。
-
-下部のタブバー・「＋」・composerはLiquid Glassの機能レイヤーとして扱い、コンテンツはその下を流れる。HIGに従いガラスはこの3つだけに限り、コンテンツ層は標準マテリアルのままにする。タブは統一したアイコン（SF Symbols）と短い名称を併記し、見ただけで移動先が分かるようにする。下へ読み進めるとバーと「＋」を退避させ、上へ戻すと先頭に着く前に復帰する。キーボードが出ている間はバーを退避させ、composerだけがキーボードの上に残る。
-
-## F. Screen list
-
-### Core flow
-
-1. First launch / Value statement
-2. Files / Meeting files
-3. Recording session
-4. Import picker and import progress
-5. Processing meeting detail
-6. Completed meeting detail
-7. Partial-success meeting detail
-8. Full transcript
-9. Speaker correction
-10. Contextual AI composer
-11. AI answer with sources
-
-### Retrieval and organization
-
-12. Sidebar
-13. Project list and creation
-14. Life log timeline
-15. All meetings
-16. Unified search results
-17. Project detail
-18. Cross-meeting tasks
-
-### Account and business
-
-19. Settings
-20. Speech recognition settings
-21. AI settings / API key entry
-22. Privacy and storage
-23. Subscription / Paywall
-24. Sign-in options
-25. Email sign-up / log-in
-
-### State coverage
-
-26. Empty meeting files / projects / life log
-27. Files and projects search with no results
-28. Recording / paused / stopping
-29. Life log disconnected / connected / waiting / sync error
-30. Empty tasks
-31. Empty AI history
-32. Microphone denied / recording error
-33. Import error
-34. STT error and retry
-35. AI-only failure with transcript preserved
-36. Missing API key / network error
-37. Signed-out / signed-in account
-38. Free / subscribed plan
-
-## G. High-fidelity UI
-
-### First launch
-
-記録・理解・行動の3ページに絞り、各ページへ成果を示す小さなプレビューを添える。スキップは常に出し、最終ページで「最初の会話を録音」「サンプルで見る」「アカウントで続ける」を提示する。ページ間で見出しやCTAの位置が動かないよう、レイアウトを固定する。
-
-### Account
-
-サインインは任意で、遅らせられる限り遅らせる。Apple / Google / メールアドレスの3方式を出し、メールは新規登録とログインを同じ画面でセグメント切り替えする。同期以外の機能はサインインなしで使えることを、サインイン画面自身に明記する。作成したアカウントは設定から削除できる。
-
-### Paywall
-
-最初の会話が整理された直後に一度だけ提示し、以降は設定から開く。年額・月額を切り替え、無料トライアルの条件を控えめな文字で明示する。購入後は同じ画面が利用中の状態へ切り替わる。
-
-### Files
-
-ヒーローカードやナビゲーションタイトルと重複する一覧見出しは置かず、左のサイドバーからファイルとプロジェクトを切り替える。ファイル画面は上部のセグメントで「ファイル／プロジェクト」を切り替える。セグメントは一覧の先頭に置き、下へスクロールすると内容と一緒に流れて退く。タイトルと検索バーはシステム標準どおり、下へスクロールすると縮んで一覧へ高さを渡す（独自の状態で出し入れしない。出し入れが原因の再レイアウトで固まらないため）。人は連絡先から選ぶか新規作成し、会議詳細の「参加者」から記録にひもづける。ファイルは大きなカードで並べ、カードにはタイトル・要約・録音日時・長さ・処理状態を示す。カードは中立のグレー面に統一し、色で状態を語らない。表示用のサンプルには「サンプル」の小さなラベルを付け、一覧の先頭から確認つきでまとめて消せる（実データには触れない）。押すとそのカードから詳細へズームでつながり、左へスワイプすると削除が現れる。削除は「最近削除した項目」への移動で、30日間は復元でき、完全削除は別途確認する。プロジェクトは2列のフォルダ状タイルで並べ、直近の議事録アイコンと件数を示し、こちらもズームで詳細へつながる。プロジェクトは名前変更と削除ができ、削除しても会話は消えず未分類へ移る。会議の所属は、詳細の「プロジェクト」から変えられる。サイドバーのライブラリ行は対応するセグメントへの移動として働く。追加は共通の「＋」へ集約し、ナビゲーションバーに重複する＋を置かない。
-
-### Life log
-
-会議やプロジェクトとは別の時間軸として、Omiなどから届く短い日常記録を並べる。最上段は件数・時間範囲・記録位置を示す一日のタイムラインとし、その下に種類別カードを置く。メモ・写真・イベント・場所を同じ時間軸へ追加できる。場所は利用者が操作した時だけ現在地を取得し、近くの駅または場所名を編集可能な候補として扱う。自動で入った記録（駅の通過・滞在）には「自動」の小さなラベルを付け、通常の記録と同じように削除・取り消しができ、「最近削除した項目」にも入る。移動は続いた駅を1行にまとめ、タップすると各駅の時刻を開く。表示用のサンプルの記録には「サンプル」の小さなラベルを付け、一覧の先頭から確認つきでまとめて消せる。外部レコーダーの状態は一行へ静かに表示し、設定へ移動できる。接続は記録の転送完了を意味しないため、「接続中」と「新しい記録を待っています」を分けて伝える。
-
-### Imported audio and AI cost
-
-音声インポートはファイルコピー完了時点で「未処理」とし、文字起こしを自動開始しない。詳細画面で利用者が開始した時だけ文字起こしを行い、完成後も「要約待ち」で停止する。要約は自動構成または議事録・詳細議事録・アクション中心のテンプレートを選び、画面下部の「生成」を確定した時だけ実行する。各待機状態には「実行するまでAI利用は発生しません」と明示する。
-
-### Recording session
-
-録音は全画面の専用モードではなく、元の文脈が背後に残る高さ約50%のLiquid Glassシートにする。上部に経過時間と閉じるボタン、その下にノート／文字起こしの切り替え、切り替えの下にタイトル入力を置く。タイトルは録音中に変更でき、ノートへメモを残せる。文字起こしは録音後に入るため録音中は余白のままにし、代わりに下端のグラデーションが声に合わせて反応する。一時停止／再開と終了を最下段の同じ操作群へまとめ、Liquid Glassはこの操作群と閉じるボタンだけに使う。外観はアプリのライト／ダークに従う。
-
-### Meeting detail
-
-右上の共有から、要約・決定・次の行動をテキストにまとめてシステムの共有シートへ渡せる。MessagesやMail、Google Driveなど、端末に入っているアプリへそのまま共有できる。PDFでも書き出せ、Notionはインテグレーショントークン（BYOK）と保存先を設定するとページとして直接保存できる。共有リンク（memora://meeting/…）をコピーでき、受け取った人がMemoraを入れていればその会議を開ける。共有するテキストにもこのリンクを含める。
-
-詳細は「サマリー／文字起こし／ノート」の3領域をセグメントで切り替える。見出しの下には記録にひもづく人を、Homeの並びと同じ丸いアバター（写真または頭文字＋名前）で横に並べ、末尾の丸い「追加」から足せる。サマリーは他のブロックと同じ「サマリー」の見出しを持ち、横幅を広く使い、左揃えの結論から「決まったこと」「次にすること」「まだ決まっていないこと」「重要なポイント」へ読み進める。各ブロックは中立グレーのカードで囲み、要約カードと同じ面で区切って、隣り合う内容が混ざらないようにする。右上のメニューからいつでも要約をやり直せ、そのときにテンプレートを選べる。切り替えは横滑りさせず、位置を保った短いフェードとスケールで連続性を守る。Reduce Motionではフェードだけにする。スクロール後はファイル名を上部へ引き継ぎ、文脈を失わせない。ノートは説明カードを置かない白いキャンバスとし、タップ入力と写真添付（保存され、あとから削除もできる）だけを提示する。写真は本文の下に横並びで置き、右端の「写真を追加」タイルから足す（ヘッダーに重複するボタンを置かない）。取り込んだ写真は保存前に編集画面でトリミング（ドラッグ・ピンチ・比率）と加工（回転・明るさ・コントラスト）ができる。生成された内容は、要約をタップするとその場で編集でき（Markdownを解釈した状態のまま、太字や斜体などの書式を保って直せる）、決まったこと・未決事項・重要なポイントも見出しまたは本文をタップして1行ずつのテキストへ直せる。「編集」ボタンは置かず、内容そのものを操作対象にする。モーダルの編集シートも置かず、読む画面のまま直せる。確定ボタンも置かず、別の場所をタップすると確定して閉じる。編集が始まるとAsk AIの入力欄は隠れ、キーボードと本文が重ならない。詳細のヘッダーには保存先の説明を重ねず、日時・長さ・録音元だけを示す。次にすることの各行は、要約として読む場面では担当と期限を省き、タイトルだけを置く。タイトルは別途、会議名の変更から直せる。録音があるときは、見出しの下に再生バーを置く。再生／一時停止、位置スライダー、15秒戻し・送り、速度（0.5〜2倍）。録音中は再生を開始せず、その旨を示す。文字起こしの発言時刻をタップするとその位置から再生し、再生中の発言は淡い背景で強調する。時刻を持たない文字起こしでは時刻を押せる見た目にしない。
-
-### Transcript
-
-各発言にタイムスタンプを残す。確度の低い話者には色だけでなく「？」を併記し、タップで修正できる。話者名は、同じ話者のすべての発言へまとめて反映でき、登録済みの人は候補から選ぶとその記録の参加者にもなる。本文はタップするとその場で編集できる。話者分離に対応しないエンジンの文字起こしは、話者名を並べず本文だけを連続して見せ、その旨を一行で伝える。将来音声再生を戻す時に、タイムスタンプを音声位置へ結び付けられる情報構造を維持する。
-
-### Ask
-
-下部composerは、高さを抑えた一行のガラス面に、添付（クリップ）・「Ask Anything」の入力面・使用するAIのチップ・音声／送信の丸ボタンをまとめる。テキストが空のときは丸ボタンが音声入力になり、入力があると送信へ切り替わる。クリップは写真・音声・一般ファイルを選ぶ短いメニューを開き、AIチップは使用するモデルを切り替える。音声入力中は入力面を暗転させず、下端のグラデーションが声に合わせて反応する。入力面はファイル・ジャーナル・タスク・Ask AI の各タブと会議の詳細の下部に、画面幅いっぱいで置き、一覧タブでは全体（Global）向け、詳細ではその会議向けにする。入力面は勝手にフォーカスせず、タブを移っただけではキーボードを出さない。質問の対象が変わっても入力中のテキストは保持する。Ask AI画面はチャット形式にする。人の発言は右の吹き出し、回答は左に置き、回答の根拠（思考）は「思考を表示」で折りたたむ。回答は単語ごとに小さなぼかしから現れるStreaming Textで表示する（Reduce Motionでは即時に表示）。回答中は考えていることを示し、空のときはサンプル質問を並べて下部のcomposerからそのまま会話を始められる。対象（すべて／ファイル／プロジェクト）は左上のメニューで選び、新しいチャットは右上のいちばん右で会話をやり直せる。通常検索と履歴も右上へ退避する。空白をタップするとキーボードを閉じる。会議の詳細から開く場合は従来どおりcomposerから回答シートを出し、根拠会議と時刻へ移動できる。
-### Ask AIのモデル登録と選択
-
-入力欄の初期選択は `Auto`。Autoは「AI整理」のエンジン設定とクラウドモデル設定に従う（自動エンジンでは対応端末のApple Foundation Modelsを使用）。手動選択の候補は `RegisteredLLMStore` に登録したモデルだけとし、各社ロゴとユーザーの表示名を示す。登録にはプロバイダー・モデルID・表示名を保存し、APIキーは既存のプロバイダー別Keychainを使用する。同じ会社のモデルを複数登録できる。候補の追加・表示名の編集・削除は入力欄の「モデルを登録・編集」または設定の「AI整理 → 登録済みモデル」から行う。
-
-手動選択はAsk AIのチャットと会議に対する質問の両方へ反映し、要約のエンジン設定とは独立させる。質問の開始時に送信先を固定する。選択は次回起動時にも復元し、選択中の登録を削除するとAutoへ戻す。APIキー未設定の候補は理由を表示して選択不可にする。各画面の上部にある閉じる・キャンセル・保存・完了はアイコン表示に統一し、読み上げ用の操作名は保持する。
-
-
-## H. Interaction
-
-- 録音開始: 1タップ。権限要求は初回の文脈内だけ
-- 録音停止: 大きな停止ボタン、ハプティック、即時保存
-- 録音継続: 画面を閉じても継続し、全主要タブ上部のストリップとLive Activityから復帰する
-- 処理: 内容を即時作成し、段階表示。終わった成果物から開放
-- インポート: Files picker → 端末保存 → 未処理 → 手動文字起こし → 手動要約
-- 外部レコーダー: 設定の「デバイス」から接続し、利用可能な経路だけを明示して音声を取り込む
-- タスク追加: タスク画面の右上の作成ボタンからタイトル・担当・期限を入力し、会議に紐付かない行動も保存する
-- AI入力: 写真・音声・Filesの添付とSpeechによる音声入力を同じcomposerから開始する
-- 写真: 選んだ写真は保存・添付の前に編集画面を通し、トリミング（ドラッグ・ピンチ・比率）と加工（回転・明るさ・コントラスト）をしてから使う
-- キーボード: 編集中の入力欄以外をタップすると閉じる。シートやポップオーバーの中でも同じように働き、入力欄自身のタップでは閉じない。編集を始めた入力欄はキーボードが上がりきったあとに画面中央へ自動でスクロールし、本文が隠れない
-- タスク完了: スプリングアニメーションで状態変更、元会議への導線を維持
-- 削除: 直後は下部（タブバーとcomposerの上）に「〜を削除しました／取り消す」を出し、5秒で確定する。新しい削除が始まれば前の提案は確定する。確定すると会議・ライフログは「最近削除した項目」へ入り、タスクと写真は完全に削除される
-- AI composer: 会議の詳細ではFile、ファイル・ジャーナル・タスクの各タブではGlobalへ質問範囲を合わせ、利用者には切り替えを意識させない。一覧タブから送った質問はAsk AIタブの会話に入る
-- AI: 質問送信中は状態に応じて呼吸するThinking Orbで根拠探索中を表現し、回答後にSourceを表示
-- モーション: 画面遷移・コントロール・強調の3種類のスプリングに統一する。主要な見出し・サマリーは短いText Revealで読み始めを導き、AI回答は単語ごとにぼかしから現れるStreaming Textで読み始めを導く。一覧の各行や頻繁な操作には使わない。Reduce Motionでは移動・マスク・ぼかしを止めて即時に表示する
-- 戻る: 押し込んだ画面の戻る操作は、親画面の名前を出さず「1つ前に戻る」の意味だけを示す共通の戻るボタンに統一する
-- Reduce MotionやDynamic Typeを壊さない標準コンテナとテキストスタイルを優先
-
-## UI state stack
-
-画面を「状態ごとの別デザイン」に分裂させず、次のレイヤーを同じ順序で重ねる。
-
-1. **Canvas**: ファイル一覧、ライフログ、詳細本文など長く残る内容
-2. **Context state**: 空、検索結果なし、処理中、部分成功、接続待ち
-3. **Floating controls**: タブバーと「＋」、画面ごとの作成ボタン、AI composer、録音中ストリップ
-4. **Transient task**: ファイル追加、録音シート、認証、Paywall
-5. **System interruption**: 権限、録音失敗、インポート失敗
-
-Filesは「空／内容あり／検索中／結果なし」、Projectsは「空／内容あり／作成中」、Life logは「空／内容あり／未接続／接続中／同期待ち／失敗／手動追加」、Recordingは「開始準備／録音中／一時停止／終了処理／失敗」、Meetingは「読み込み／文字起こし待ち／文字起こし中／要約待ち／整理中／部分成功／完了」を最低限の状態集合とする。上のレイヤーが現れても下の文脈を破棄せず、閉じた時に元の位置へ戻れることを共通契約にする。
-
-## I. Design system
-
-### Typography
-
-- Display: system Large Title Bold
-- Screen title: system Large Title / Title Bold
-- Section: Title 2 / Title 3 Bold
-- Body: Body with increased line spacing for summaries and transcripts
-- Metadata: Subheadline / Caption
-- Duration: rounded, monospaced digits
-- すべてDynamic Type対応。固定サイズは録音タイマーとブランドシンボルに限定
-
-### Spacing
-
-- Base unit: 4pt
-- Inline: 6–12pt
-- Component: 14–20pt
-- Section: 28–30pt
-- Screen horizontal inset: 18–24pt
-- Primary corner radius: 16–26pt, hierarchyに応じて使用
-
-### Material
-
-- Functional layer（tab bar / 「＋」 / composer）: Liquid Glass regular。iOS 26未満は同形状のマテリアルへフォールバック
-- Content layer: 標準マテリアルとsemantic backgroundのみ。ガラスは使わない
-- 強調したい面（「＋」・送信）はガラスにtintを重ね、不透明な面として読ませる
-
-### Color
-
-- Canvas / grouped surfaces: iOS semantic system colors
-- Primary action / intelligence: semantic Black（Dark ModeではWhiteへ反転）
-- Recording / critical interruption: system Red
-- Ambiguity / recoverable warning: system Orange
-- 完了・決定・AIは色分けせず、黒・白・グレーとsymbolで意味を伝える
-- 状態は色だけに依存せず、一覧では明瞭なtext、操作ではsymbolとアクセシビリティ名を使う
-
-### Components
-
-- Liquid Glass segmented tab bar, prominent capture button, and its popover
-- Context-aware AI composer
-- Native voice glow and Thinking Orb
-- Siri-inspired recording wave and recording-edge beam
-- File sidebar and project row
-- Meeting row
-- Processing steps
-- Partial-success banner
-- Insight section
-- Provenance-aware task row
-- Source link
-- ContentUnavailableView-based empty state
-- Form-based settings
-- Onboarding page with outcome preview
-- Provider and email authentication forms
-
-### Iconography
-
-意味を担うアイコンはSF Symbolsへ統一し、`MemoraIcon`（`Shared/MemoraIcon.swift`）の名前を通して描く。タブはファイル＝フォルダ、ジャーナル＝カレンダー、タスク＝チェックリスト、Ask AI＝吹き出し。選択中はtintとLiquid Glassの選択バブルで示し、選択アニメーションを保つ。コンテンツの先頭アイコンは同じ角丸バッジへ揃え、ラベルとアクセシビリティ名を付ける。録音=`waveform`、AI機能=`sparkles`、決定=`checkmark.seal`、信頼=`lock.shield`を主語彙とする。
-
-アイコンの動きは操作・状態のフィードバックに限定する。追加メニューは＋の短い回転、タスク完了は短いバウンス、音声入力・AI処理中は穏やかな明滅で示す。「視差効果を減らす」では独自の回転・バウンス・明滅を止め、状態は静止した形とアクセシビリティ名でも伝える。
-
-## Extension roles
-
-- Widget: Home ScreenからMemoraの記録入口を思い出せる静的ショートカット
-- Control: Control CenterからMemoraを即座に開く
-- Live Activity: 録音中の経過時間と端末保存状態をLock Screen / Dynamic Islandで表示
-
-Widgetはアプリを開いた時とタイムライン更新時に更新する。録音状態はLive Activityが担い、Widgetへ擬似リアルタイム状態を持たせない。
-
-## Implementation boundary
-
-このBitrigプロジェクトは、設計を操作検証できるSwiftUIリファレンス実装である。録音・一時停止・ファイルコピー・Live Activity・Ask AIの音声認識とファイル添付に加え、Omiは公開BLEサービスを使った検出と接続、PLAUDはFiles経由の音声取り込みが実動する。ジャーナルのライフログは将来の音声同期を受け取る表示モデルとサンプルを持つが、Omiからの音声転送自体はまだ接続後の実装境界にある。PLAUD Embeddedによる直接接続は、開発者資格情報と実機専用SDKを組み込む段階まで「準備中」として区別する。文字起こしは、設定で選んだエンジンに応じてiOS 26以降のSpeechAnalyzer（端末内）を使い、利用できない場合はプレースホルダーの文字起こしへフォールバックする。AI回答も同様に、iOS 26以降のFoundation Modelsで端末内生成を試み、使えなければ定型回答へフォールバックする。クラウド（BYOK）は、キーチェーンに保存したAPIキーで、AI回答はOpenAI／Anthropic、文字起こしはOpenAI／Deepgramを実呼び出しする。端末内Whisper・ローカルLLMはモデルの同梱が必要なため未接続で、選ぶと端末内または定型へフォールバックする。会議のPDF出力と、Notionへのページ保存（インテグレーショントークンのBYOK）を実装する。GoogleドライブへのGoogleドキュメント作成はOAuthが必要なため、いまはPDFを共有シート経由でドライブへ保存する形にする。ChatGPTなど外部アシスタントから読ませるMCPは、アプリ側の接続先・トークン・公開範囲の画面と設計メモ（MCP.md）までを用意し、サーバーはこのリポジトリ外の実装境界とする。クラウド保管は設定とPlus判定までを実装し、保管先サービスは未接続とする。要約テンプレートのマーケットプレイスは次段階とする。公開共有リンクの発行は次段階とする。オンライン会議キャプチャは処理状態を含むプロトタイプ体験として再現する。React Native + Expo本体へ移植する場合も、NavigationStack相当、bottom navigation、file picker、native recording bridge、ActivityKit bridgeへ分割可能な構成にしている。
-
-## 2026-10-16 Ask AI Next Generation
-
-現行の長期記憶・人物ID限定の会話・Plugin/Skillのicon・会社テンプレート差分生成・
-下書き・有限Researchの設計と未対応範囲は
-[ASK_AI_NEXT_IMPLEMENTATION](docs/ASK_AI_NEXT_IMPLEMENTATION.md) を参照する。
-新規tabは追加せず、既存UISegmentedControl/Glass/FAB/composer/NavigationStackと
-保存済み情報の即時表示を維持する。Skillは手順であり権限ではない。資料は実ファイルの
-生成・検証・保存後に完成とし、テンプレートの完全再現や未接続サービスの利用を約束しない。
+# Memora — Native reading and conversation
+
+Updated 2026-10-19. This is the current design specification. Product behavior
+and access constraints remain in AGENTS.md and domain documents under docs/.
+Historical visual experiments are superseded.
+
+## Direction and provenance
+
+Put reading, finding and acting on recorded knowledge first: neutral surfaces,
+system typography, predictable spacing and familiar native controls. Replies are
+documents on the page; only the person's messages have bubbles. Empty Ask AI is blank.
+
+Official sources consulted:
+[Apps SDK UI](https://github.com/openai/apps-sdk-ui),
+[UI guidelines](https://developers.openai.com/plugins/concepts/ui-guidelines),
+[primitive tokens](https://github.com/openai/apps-sdk-ui/blob/0f00143c7a639906f1621fe58e1b6be7b5bea46d/src/styles/variables-primitive.css),
+[semantic tokens](https://github.com/openai/apps-sdk-ui/blob/0f00143c7a639906f1621fe58e1b6be7b5bea46d/src/styles/variables-semantic.css).
+See [source analysis](docs/design-refresh/PLAN.md). These are web tokens, not
+unpublished ChatGPT iOS measurements. The native sizes, reading width, springs
+and Japanese text rhythm below are Memora decisions. No React or WebView is used.
+
+Apple foundations: [Typography](https://developer.apple.com/design/human-interface-guidelines/typography),
+[Materials](https://developer.apple.com/design/human-interface-guidelines/materials),
+[Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility).
+
+## Design tokens
+
+Single implementation: MemoraPalette, MemoraTypography, MemoraSpacing,
+MemoraRadius and MemoraMotion in App/. Native Form, List, Menu, toolbar, sheet
+and alert retain system sizing and focus behavior.
+
+| Color role | Light | Dark | Use |
+|---|---|---|---|
+| background | FFFFFF | 212121 | reading/chat canvas |
+| secondaryBackground | F9F9F9 | 181818 | inset content/code |
+| card / elevated | F3F3F3 / FFFFFF | 303030 | content groups / candidate menu |
+| textPrimary / action | 0D0D0D | FFFFFF | primary text and solid actions |
+| textSecondary | 5D5D5D | AFAFAF | supporting text and metadata |
+| actionLabel | FFFFFF | 0D0D0D | text on solid action |
+| selection | EDEDED | 414141 | selected tab/row/field |
+| border | E5E5E5 | 353535 | subtle separators |
+| focus | 0169CC | 339CFF | native focus/link semantics |
+| danger | BA2623 | FF8583 | errors with explanatory text |
+| warning | 923B0F | FF9E6C | warnings with symbol and text |
+| success | 00692A | 66D492 | verified completion |
+
+Supporting text and borders strengthen in Increase Contrast. Essential
+explanations are never disabled text. Provider logos, calendar categories,
+profile images and photos keep their content colors. Destructive actions retain
+their system role. No decorative content gradient or manual elevation shadow.
+
+| Type role | Native style | Default iOS size / weight |
+|---|---|---|
+| Display | largeTitle | 34 / semibold |
+| Screen Title | title | 28 / semibold |
+| Section Heading | title3 | 20 / semibold |
+| Body | body | 17 / regular |
+| Reading Body | body | 17 / regular |
+| Secondary | subheadline | 15 / regular |
+| Caption | caption | 12 / regular |
+| Metadata | footnote | 13 / regular |
+
+Every role follows Dynamic Type. SF uses the native Japanese fallback. Reading
+adds 6pt scaled line spacing and natural tracking. Paragraphs are 16pt apart.
+Major headings have 16pt additional space above; minor headings 8pt. Bullets use
+a scaled 20pt marker column and hanging indentation; deep nesting is bounded on
+narrow screens. Reading and UIKit attributed editing share fonts and leading.
+Chat/document columns cap at 680pt. Fixed glyph sizes represent artwork, not prose.
+
+| Spacing token | pt | Role |
+|---|---|---|
+| xxs / xs / sm | 2 / 4 / 8 | fine alignment / related labels |
+| md / lg / xl / xxl | 12 / 16 / 20 / 24 | rows / padding / inset / groups |
+| section / group / page | 32 / 40 / 48 | sections / larger groups / page rhythm |
+| screen / card / row | 20 / 16 / 12 | semantic aliases |
+| touchTarget | 44 minimum | controls grow with larger text |
+| readingWidth | 680 maximum | long-form content |
+
+Radius: small 8, field 12, card 16, bubble/composer 24pt; actions are capsules.
+System sheets/menus own their contours. Group related content sparingly.
+
+## Shared components
+
+| Component | Responsibility |
+|---|---|
+| MemoraButtonStyle | solid primary / neutral secondary actions, pressed and disabled states |
+| ToolbarIconButton / ToolbarActionLabel | native toolbar labels and accessible actions |
+| AIComposerBar / QuickAIComposer | native input, attachments, speech, submit/stop, scoped selection |
+| ToolbarSearchField | contextual native search and IME/cursor behavior |
+| MemoraTextTabBar / MemoraSectionPicker | flat scrollable content tabs and selection traits |
+| ProminentTabBar | protected UISegmentedControl navigation and system selection morph |
+| ProjectRecordRow / ProjectSourceRow / ProjectDocumentRow | common Library/workspace title and metadata hierarchy |
+| memoraCard / MemoraIconBadge | restrained grouping and content glyphs |
+| ProjectWorkspaceEmptyState | shared empty explanation and useful next action |
+| MemoraLoadingContainer / MemoraSkeleton / WorkingStatus | real loading, static skeleton, cancellation, recovery, elapsed time |
+| MarkdownBlockView / MarkdownTableRow | common prose, heading, list, quote and stacked table values |
+| AIResponseMarkdownBlock / StreamingMarkdownView | same type, incremental rendering, code copy, comparison tables |
+| EditableMarkdownDocument / InlineMarkdownEditor | in-place block/cell edit and durable drafts |
+| AIPluginMenu / ComposerMentionStrip | common @/+ candidates and removable selections |
+| Native Form / Menu / sheet / alert | settings, integrations, skill setup, editors and confirmation |
+
+GlassSegmentedPicker/Control and arbitrary memoraCard(radius:) are retired.
+The protected bottom tab's UISegmentedControl is a separate implementation.
+
+## Screen composition
+
+Ask AI: compact sidebar/history/new-chat header; no idle decoration. A 32pt
+message rhythm and selectable Markdown on the canvas. Keep stable TextField
+identity, native composer Glass and 44pt controls. Candidates appear above the
+composer and respect keyboard height.
+
+Journal: primary ScrollView, flat week selector, minimal timeline glyphs and
+hairlines. Neutral recap; expanded summary follows appearance and uses sections,
+not nested translucent cards. The selected scenic image remains a small header
+and the background-change action remains. Dates, health privacy, source links
+and event editing keep their behavior.
+
+Library: Files/Projects, sort/filter, selection/share/move/delete and gallery mode
+remain. Titles lead, then kind/date/status and optional preview. Gallery groups
+use 16pt neutral contours. Search and selection own the bottom edge when active.
+
+Workspace: Chat / Files / Sources in that order, shared flat tabs, rows, empty
+states and toolbar actions. Scoped Ask AI reads active-project evidence only;
+privacy and membership are checked at execution and completion.
+
+Record detail: common reading width/type for summary, transcript, decisions,
+tasks and notes. Flat section tabs. Edit one block/cell in place; Markdown source
+editing stays a deliberate context-menu action. Tables retain every value.
+Audio, timestamps, source navigation and saving retain their existing paths.
+
+Settings/sheets: native grouped Form, neutral glyphs, system presentation and
+common action hierarchy. Preserve profile editing, permission explanations,
+integration setup and the single sidebar settings entry. No fabricated service state.
+
+## Interaction and accessibility
+
+Liquid Glass belongs to navigation, bottom tabs, floating create and composer.
+Keep the create label's matchedTransitionSource, compact popover and zoom.
+Purposeful spring motion remains; Reduce Motion suppresses nonessential movement.
+Loading reflects real operations; never invent progress or expose private reasoning.
+
+Icon-only controls have accessible names. State uses text/traits/symbols as well
+as color. Targets are at least 44pt, with background inside the label. Larger
+text wraps/reflows; section tabs scroll. Use leading/trailing layout. Native
+cursor, selection, VoiceOver and Japanese marked-text composition take priority.
+
+## Verification
+
+[Research and migration plan](docs/design-refresh/PLAN.md), before/after PNGs
+and validation results live under docs/design-refresh/. Tests cover mention
+range edits, scoped evidence/tools, persistence, navigation, Markdown and edit
+round trips. Compilation is not visual/device proof. Live provider execution,
+microphone, CloudKit and hardware require their actual configuration.

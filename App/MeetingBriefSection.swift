@@ -38,7 +38,7 @@ struct MeetingBriefSection: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .memoraCard(radius: 16)
+        .memoraCard()
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
       }
       .buttonStyle(.plain)

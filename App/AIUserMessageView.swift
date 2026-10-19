@@ -10,7 +10,7 @@ struct AIUserMessageView: View {
     HStack {
       Spacer(minLength: 44)
       VStack(alignment: .leading, spacing: 8) {
-        Text(text).font(.body).textSelection(.enabled)
+        Text(text).font(MemoraTypography.body).textSelection(.enabled)
         if let attachmentName {
           Label(attachmentName, icon: .paperclip)
             .font(.caption).foregroundStyle(.secondary)

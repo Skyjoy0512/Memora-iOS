@@ -26,12 +26,12 @@ struct LibraryRecordRow: View {
         }
         if meeting.status == .ready {
           MeetingStatusLabel(status: meeting.status)
-            .font(.footnote)
+            .font(MemoraTypography.metadata)
             .padding(.leading, ProjectLayout.iconSide + 12)
         }
         if showsPreview, hasPreview {
           Text(meeting.shortSummaryPreview)
-            .font(.subheadline)
+            .font(MemoraTypography.secondary)
             .foregroundStyle(.secondary)
             .lineLimit(2)
             .padding(.leading, ProjectLayout.iconSide + 12)

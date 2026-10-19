@@ -15,8 +15,8 @@ struct AIPluginMenu: View {
     }
     VStack(spacing: 0) {
       HStack {
-        Text("プラグインやファイルを検索")
-          .font(.caption).foregroundStyle(.secondary)
+        Text("ツール・スキル・ソース")
+          .font(MemoraTypography.metadata).foregroundStyle(MemoraPalette.textSecondary)
         Spacer(minLength: 4)
         Button("候補を閉じる", icon: .xmark, action: cancel)
           .labelStyle(.iconOnly).buttonStyle(.plain).frame(width: 44, height: 44)
@@ -43,7 +43,7 @@ struct AIPluginMenu: View {
                       .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                   }
                   Spacer(minLength: 4)
-                  Text(plugin.state.isReady ? (plugin.kind == .file ? "ファイル" : "選択") : plugin.state.label)
+                  Text(selectedIDs.contains(plugin.id) ? "選択済み" : plugin.state.isReady ? "追加" : plugin.state.label)
                     .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 14).padding(.vertical, 10)
@@ -63,8 +63,10 @@ struct AIPluginMenu: View {
       .frame(height: min(maximumHeight - 45, max(54, CGFloat(candidates.count) * rowHeight + CGFloat(groups.count) * 28)))
       .scrollDismissesKeyboard(.never)
     }
-    .background(MemoraPalette.background, in: RoundedRectangle(cornerRadius: 16))
-    .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(MemoraPalette.border, lineWidth: 1) }
+    .background(MemoraPalette.elevated, in: RoundedRectangle(cornerRadius: MemoraRadius.card))
+    .overlay { RoundedRectangle(cornerRadius: MemoraRadius.card).strokeBorder(MemoraPalette.border, lineWidth: 1) }
+    .preservesComposerFocus()
+    .accessibilityIdentifier("ai.mention.candidates")
     .accessibilityElement(children: .contain)
   }
 }

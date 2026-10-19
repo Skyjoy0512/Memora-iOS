@@ -76,7 +76,7 @@ struct SpaceDetailView: View {
         ToolbarItem(placement: .principal) {
           HStack(spacing: 7) {
             Image(icon: .folder)
-              .font(.subheadline)
+              .font(MemoraTypography.secondary)
               .foregroundStyle(.secondary)
             Text(space.name)
               .font(.headline)
@@ -129,7 +129,7 @@ struct SpaceDetailView: View {
       LazyVStack(alignment: .leading, spacing: 0) {
         rows()
       }
-      .padding(.horizontal, 20)
+      .padding(.horizontal, MemoraSpacing.screen)
       .padding(.top, 10)
       .padding(.bottom, model.bottomContentClearance)
     }

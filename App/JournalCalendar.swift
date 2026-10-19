@@ -97,7 +97,7 @@ struct JournalCalendar: View {
       .background {
         if isSelected {
           RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(Color(uiColor: .tertiarySystemFill))
+            .fill(MemoraPalette.selection)
         }
       }
       // The record dot is an overlay so it never shifts the day off the

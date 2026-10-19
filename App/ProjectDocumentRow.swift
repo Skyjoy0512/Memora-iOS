@@ -12,11 +12,11 @@ struct ProjectDocumentRow: View {
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 4) {
         Text(document.displayTitle)
-          .font(.body.weight(.semibold))
+          .font(MemoraTypography.body.weight(.medium))
           .lineLimit(2)
           .fixedSize(horizontal: false, vertical: true)
         Text("\(document.kind.label) · \(MemoraFormat.relativeDate(document.updatedAt))")
-          .font(.footnote).foregroundStyle(.secondary)
+          .font(MemoraTypography.metadata).foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
       }
       .frame(maxWidth: .infinity, alignment: .leading)

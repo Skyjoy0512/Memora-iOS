@@ -12,7 +12,7 @@ struct MemoraIconBadge: View {
       .symbolRenderingMode(.monochrome)
       .foregroundStyle(.primary)
       .frame(width: size, height: size)
-      .background(Color.primary.opacity(0.065), in: RoundedRectangle(cornerRadius: size * 0.28, style: .continuous))
+      .background(MemoraPalette.selection, in: RoundedRectangle(cornerRadius: MemoraRadius.small, style: .continuous))
       .accessibilityHidden(true)
   }
 }

@@ -24,6 +24,8 @@ struct AIComposerBar: View {
   var onResearch: (() -> Void)?
   var researchSelected = false
   var mentionInput: ComposerInputState?
+  var onMentionMenu: (() -> Void)?
+  var removeMention: ((ComposerMention) -> Void)?
   @State private var textSelection: TextSelection?
   @State private var fallbackInput = ComposerInputState()
   @State private var isEditorTall = false
@@ -49,7 +51,7 @@ struct AIComposerBar: View {
   }
 
   private var cornerRadius: CGFloat {
-    isExpanded ? 24 : Self.collapsedHeight / 2
+    isExpanded ? MemoraRadius.composer : Self.collapsedHeight / 2
   }
 
   private var textField: some View {
@@ -60,6 +62,7 @@ struct AIComposerBar: View {
       .submitLabel(.send)
       .onSubmit(submit)
       .focused($isFieldFocused)
+      .accessibilityIdentifier("ai.composer.input")
       .padding(.vertical, 8)
       // The field takes the width it needs and grows as text is added; the
       // controls keep their size instead of being pushed out by a long entry.
@@ -76,6 +79,11 @@ struct AIComposerBar: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
+      if let removeMention, !model.composerMentions.isEmpty {
+        ComposerMentionStrip(mentions: model.composerMentions, remove: removeMention)
+          .padding(.horizontal, MemoraSpacing.md)
+          .padding(.top, MemoraSpacing.sm)
+      }
       if attachment != nil {
         attachmentStrip
           .padding(.horizontal, 14)
@@ -141,6 +149,7 @@ struct AIComposerBar: View {
     }
     .background { listeningBackdrop }
     .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), interactive: true, backed: false)
+    .preservesComposerFocus()
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: speechInput.isListening)
@@ -266,6 +275,13 @@ struct AIComposerBar: View {
 
   private var attachmentMenu: some View {
     Menu {
+      if let onMentionMenu {
+        Button("プラグイン・スキル・ソース", icon: .plus) {
+          isFieldFocused = true
+          onMentionMenu()
+        }
+        Divider()
+      }
       Button("連携サービス…", icon: .plugsConnected) { isIntegrationsPresented = true }
       Divider()
       Button("写真を選択…", icon: .photo) {
@@ -281,7 +297,7 @@ struct AIComposerBar: View {
         isImporterPresented = true
       }
     } label: {
-      Image(icon: .paperclip)
+      Image(icon: .plus)
         .font(.body.weight(.medium))
         .foregroundStyle(.primary)
         .frame(width: 44, height: 44)
@@ -292,6 +308,7 @@ struct AIComposerBar: View {
     // label color like the rest of the composer.
     .tint(.primary)
     .accessibilityLabel("添付を追加")
+    .accessibilityHint("ファイルの添付やプラグイン・スキル・ソースの指定")
   }
 
   private var researchButton: some View {

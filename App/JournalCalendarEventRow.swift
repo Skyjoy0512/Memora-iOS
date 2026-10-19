@@ -59,7 +59,7 @@ struct JournalCalendarEventRow: View {
       }
 
       if let location = event.location, !location.isEmpty {
-        Label(location, icon: .location).font(.subheadline).foregroundStyle(.secondary)
+        Label(location, icon: .location).font(MemoraTypography.secondary).foregroundStyle(.secondary)
       }
       }
     }

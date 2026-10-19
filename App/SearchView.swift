@@ -74,7 +74,7 @@ struct SearchView: View {
   private var chatTranscript: some View {
     ScrollViewReader { proxy in
       ScrollView {
-        LazyVStack(alignment: .leading, spacing: 14) {
+        LazyVStack(alignment: .leading, spacing: MemoraSpacing.section) {
           if let first = model.aiMessages.first {
             Text(first.createdAt.formatted(date: .abbreviated, time: .shortened))
               .font(.caption)
@@ -87,9 +87,10 @@ struct SearchView: View {
           }
           Color.clear.frame(height: 1).id(ConversationScrollFollowing.bottomID)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+        .padding(.horizontal, MemoraSpacing.screen)
+        .padding(.vertical, MemoraSpacing.xxl)
+        .frame(maxWidth: .infinity)
       }
       .scrollDismissesKeyboard(.interactively)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)

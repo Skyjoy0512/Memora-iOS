@@ -19,7 +19,7 @@ struct TasksView: View {
         TeamTaskBoardView()
       } else {
         VStack(spacing: 0) {
-          GlassSegmentedPicker(items: [false, true], selection: $showsCompleted) { completed in
+          MemoraSectionPicker(items: [false, true], selection: $showsCompleted) { completed in
             completed ? "完了" : "未完了"
           }
           .padding(.horizontal, 18)

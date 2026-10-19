@@ -1,5 +1,4 @@
 import SwiftUI
-import LucideSwift
 import UIKit
 
 // Mirrors the `systemImage:` initializers, so an icon reads the same at every
@@ -8,11 +7,7 @@ import UIKit
 
 extension Image {
   init(icon: MemoraIcon, size: CGFloat = 20) {
-    if let name = icon.lucideName {
-      self.init(lucide: name, size: CGSize(width: size, height: size))
-    } else {
-      self.init(systemName: icon.systemName)
-    }
+    self.init(systemName: icon.systemName)
   }
 }
 

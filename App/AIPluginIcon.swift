@@ -16,7 +16,7 @@ struct AIPluginIcon {
     if let iconIdentifier, let stored = MemoraIcon(rawValue: iconIdentifier) { symbol = stored }
     else if pluginID.hasPrefix("service:") { symbol = services[String(pluginID.dropFirst(8))] ?? .plugsConnected }
     else if pluginID.hasPrefix("template:") { symbol = .docOnDoc }
-    else if pluginID.hasPrefix("record:") { symbol = .docText }
+    else if pluginID.hasPrefix("record:") || pluginID.hasPrefix("source:") { symbol = .docText }
     else if pluginID.hasPrefix("person:") { symbol = .person }
     else if pluginID.hasPrefix("project:") { symbol = .folder }
     else if pluginID.hasPrefix("skill:") { symbol = .docRichtext }

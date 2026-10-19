@@ -64,7 +64,7 @@ struct HomeView: View {
 
     NavigationStack(path: $model.homePath) {
       ScrollView {
-        LazyVStack(alignment: .leading, spacing: 18) {
+        LazyVStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
           // Searching replaces the journal with its results, so the calendar
           // and the day's timeline step aside instead of sitting under them.
           if isSearching {
@@ -121,7 +121,7 @@ struct HomeView: View {
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
+        .padding(.horizontal, MemoraSpacing.screen)
         // The floating composer and tab bar do not inset this scroll view, so
         // leave room for the last records to clear them.
         .padding(.bottom, model.bottomContentClearance)
@@ -234,15 +234,10 @@ struct HomeView: View {
         InteractionFeedback.shared.send(.tap)
         model.isLifeLogCreationPresented = true
       }
-      .font(.headline)
-      .foregroundStyle(.white)
-      .frame(maxWidth: .infinity, minHeight: 52)
-      .background(.tint, in: Capsule())
-      .contentShape(Capsule())
-      .buttonStyle(.plain)
+      .buttonStyle(MemoraButtonStyle())
     }
     .frame(maxWidth: .infinity)
-    .padding(20)
+    .padding(MemoraSpacing.card)
     .memoraCard(fill: MemoraPalette.card)
   }
 

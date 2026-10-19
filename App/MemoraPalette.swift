@@ -3,19 +3,23 @@ import UIKit
 
 /// Content colors adapt independently of the system's floating glass layer.
 enum MemoraPalette {
-  static let background = adaptive(light: 0xFFFFFF, dark: 0x0B0B0B)
-  static let secondaryBackground = adaptive(light: 0xF7F7F7, dark: 0x171717)
-  static let card = adaptive(light: 0xF5F5F5, dark: 0x202020)
-  static let textPrimary = adaptive(light: 0x0B0B0B, dark: 0xFFFFFF)
-  static let textSecondary = adaptive(light: 0x737373, dark: 0xA3A3A3,
+  static let background = adaptive(light: 0xFFFFFF, dark: 0x212121)
+  static let secondaryBackground = adaptive(light: 0xF9F9F9, dark: 0x181818)
+  static let card = adaptive(light: 0xF3F3F3, dark: 0x303030)
+  static let elevated = adaptive(light: 0xFFFFFF, dark: 0x303030)
+  static let textPrimary = adaptive(light: 0x0D0D0D, dark: 0xFFFFFF)
+  static let textSecondary = adaptive(light: 0x5D5D5D, dark: 0xAFAFAF,
     increasedLight: 0x525252, increasedDark: 0xD4D4D4)
-  // Slightly stronger on F5 cards so small metadata clears 4.5:1 contrast.
-  static let cardTextSecondary = adaptive(light: 0x707070, dark: 0xA3A3A3,
-    increasedLight: 0x525252, increasedDark: 0xD4D4D4)
+  static let cardTextSecondary = textSecondary
   static let border = adaptive(light: 0xE5E5E5, dark: 0x353535,
     increasedLight: 0xA3A3A3, increasedDark: 0x737373)
   static let action = textPrimary
-  static let actionLabel = adaptive(light: 0xFFFFFF, dark: 0x0B0B0B)
+  static let actionLabel = adaptive(light: 0xFFFFFF, dark: 0x0D0D0D)
+  static let selection = adaptive(light: 0xEDEDED, dark: 0x414141)
+  static let focus = adaptive(light: 0x0169CC, dark: 0x339CFF)
+  static let danger = adaptive(light: 0xBA2623, dark: 0xFF8583)
+  static let warning = adaptive(light: 0x923B0F, dark: 0xFF9E6C)
+  static let success = adaptive(light: 0x00692A, dark: 0x66D492)
 
   private static func adaptive(light: UInt32, dark: UInt32,
     increasedLight: UInt32? = nil, increasedDark: UInt32? = nil) -> Color {

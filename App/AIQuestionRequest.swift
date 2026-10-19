@@ -8,6 +8,7 @@ struct AIQuestionRequest: Identifiable, Equatable {
   var question: String
   var scope: AIQueryScope
   var attachment: AIAttachment?
+  var pluginIDs: [String] = []
 
   /// The question as it is sent: an attachment on its own still needs asking.
   var effectiveQuestion: String {

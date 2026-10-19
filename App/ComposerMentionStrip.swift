@@ -34,6 +34,7 @@ struct ComposerMentionStrip: View {
     }
     .scrollIndicators(.hidden)
     .scrollDismissesKeyboard(.never)
+    .preservesComposerFocus()
     .sheet(item: $inspectedPlugin) { plugin in
       NavigationStack {
         Form {

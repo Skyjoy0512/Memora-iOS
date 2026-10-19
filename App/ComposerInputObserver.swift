@@ -14,6 +14,7 @@ struct ComposerInputObserver: UIViewRepresentable {
     return view
   }
   func updateUIView(_ view: UIView, context: Context) {
+    context.coordinator.state = state
     context.coordinator.setActive(isActive)
   }
   static func dismantleUIView(_ view: UIView, coordinator: Coordinator) { coordinator.stop() }
@@ -59,7 +60,8 @@ struct ComposerInputObserver: UIViewRepresentable {
     private func findInput(_ view: UIView) -> UIView? {
       if view.isFirstResponder, view is any UITextInput,
          let anchor, let window = anchor.window, view.window === window,
-         view.convert(view.bounds, to: window).intersects(anchor.convert(anchor.bounds, to: window)),
+         view.convert(view.bounds, to: window).insetBy(dx: -2, dy: -2)
+           .intersects(anchor.convert(anchor.bounds, to: window).insetBy(dx: -2, dy: -2)),
          (view as? UITextField)?.isSecureTextEntry != true, (view as? UITextView)?.isSecureTextEntry != true {
         return view
       }

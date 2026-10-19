@@ -18,8 +18,8 @@ struct MarkdownEditorField: View {
 
   private var textStyle: UIFont.TextStyle {
     if font == .title || font == .title.bold() { return .title1 }
-    if font == .title2 || font == .title2.bold() { return .title2 }
-    if font == .title3 || font == .title3.bold() { return .title3 }
+    if font == .title2 || font == .title2.bold() || font == MemoraTypography.heading(1) { return .title2 }
+    if font == .title3 || font == .title3.bold() || font == MemoraTypography.heading(2) { return .title3 }
     if font == .headline { return .headline }
     if font == .subheadline { return .subheadline }
     return .body
@@ -50,10 +50,14 @@ private struct MarkdownTextSurface: UIViewRepresentable {
 
   func updateUIView(_ view: UITextView, context: Context) {
     context.coordinator.parent = self
-    if context.coordinator.lastMarkdown != markdown, view.markedTextRange == nil {
+    let category = view.traitCollection.preferredContentSizeCategory
+    if (context.coordinator.lastMarkdown != markdown || context.coordinator.category != category), view.markedTextRange == nil {
+      let selection = view.selectedRange
       view.attributedText = MarkdownEditingText.attributed(markdown, textStyle: textStyle)
+      view.selectedRange = NSRange(location: min(selection.location, view.attributedText.length), length: 0)
       context.coordinator.lastMarkdown = markdown
-      view.typingAttributes = [.font: UIFont.preferredFont(forTextStyle: textStyle), .foregroundColor: UIColor.label]
+      context.coordinator.category = category
+      view.typingAttributes = MarkdownEditingText.typingAttributes(textStyle: textStyle)
     }
     if isFocused.wrappedValue, !view.isFirstResponder {
       DispatchQueue.main.async {
@@ -73,6 +77,7 @@ private struct MarkdownTextSurface: UIViewRepresentable {
   final class Coordinator: NSObject, UITextViewDelegate {
     var parent: MarkdownTextSurface
     var lastMarkdown: String?
+    var category: UIContentSizeCategory?
     weak var textView: UITextView?
 
     init(_ parent: MarkdownTextSurface) { self.parent = parent }

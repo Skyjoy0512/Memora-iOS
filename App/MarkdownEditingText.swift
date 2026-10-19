@@ -1,6 +1,16 @@
 import UIKit
 
 enum MarkdownEditingText {
+  static func typingAttributes(textStyle: UIFont.TextStyle) -> [NSAttributedString.Key: Any] {
+    let paragraph = NSMutableParagraphStyle()
+    paragraph.lineSpacing = UIFontMetrics(forTextStyle: .body).scaledValue(for: MemoraTypography.readingLineSpacing)
+    var font = UIFont.preferredFont(forTextStyle: textStyle)
+    if textStyle == .title2 || textStyle == .title3 {
+      font = UIFont.systemFont(ofSize: font.pointSize, weight: .semibold)
+    }
+    return [.font: font, .foregroundColor: UIColor.label, .paragraphStyle: paragraph]
+  }
+
   static func attributed(_ markdown: String, textStyle: UIFont.TextStyle = .body) -> NSAttributedString {
     let parsed = InlineMarkdownEditor.attributed(markdown)
     let result = NSMutableAttributedString(string: "")
@@ -9,9 +19,11 @@ enum MarkdownEditingText {
       var traits: UIFontDescriptor.SymbolicTraits = []
       if intent.contains(.stronglyEmphasized) { traits.insert(.traitBold) }
       if intent.contains(.emphasized) { traits.insert(.traitItalic) }
-      let base = intent.contains(.code) ? UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: textStyle).pointSize, weight: .regular) : UIFont.preferredFont(forTextStyle: textStyle)
+      let baseAttributes = typingAttributes(textStyle: textStyle)
+      let base = intent.contains(.code) ? UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: textStyle).pointSize, weight: .regular) : (baseAttributes[.font] as? UIFont ?? UIFont.preferredFont(forTextStyle: textStyle))
       let font = UIFont(descriptor: base.fontDescriptor.withSymbolicTraits(traits) ?? base.fontDescriptor, size: base.pointSize)
-      var attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor.label]
+      var attributes = baseAttributes
+      attributes[.font] = font
       if let link = run.link { attributes[.link] = link }
       if intent.contains(.strikethrough) { attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
       result.append(NSAttributedString(string: String(parsed[run.range].characters), attributes: attributes))

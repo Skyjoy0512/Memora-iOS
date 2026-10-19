@@ -5,10 +5,10 @@ import SwiftUI
 struct AIBubble: ViewModifier {
   func body(content: Content) -> some View {
     content
-      .padding(.horizontal, 14)
-      .padding(.vertical, 10)
+      .padding(.horizontal, MemoraSpacing.lg)
+      .padding(.vertical, MemoraSpacing.md)
       .foregroundStyle(MemoraPalette.textPrimary)
-      .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+      .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: MemoraRadius.bubble, style: .continuous))
   }
 }
 

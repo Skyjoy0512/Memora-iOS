@@ -20,6 +20,7 @@ struct EditableMarkdownDocument: View {
   @State private var editorID = UUID()
   @State private var draftSaveTask: Task<Void, Never>?
   @FocusState private var isFocused: Bool
+  @ScaledMetric(relativeTo: .body) private var listIndent = MemoraTypography.listIndent
 
   private enum EditTarget: Hashable {
     case block(Int)
@@ -77,7 +78,7 @@ struct EditableMarkdownDocument: View {
       field(for: block)
         .id(editorID)
     } else if case .table(let header, let rows) = block {
-      VStack(alignment: .leading, spacing: 10) {
+      VStack(alignment: .leading, spacing: 0) {
         ForEach(rows.indices, id: \.self) { rowIndex in
           tableCard(header: header, row: rows[rowIndex], block: index, rowIndex: rowIndex)
         }
@@ -89,6 +90,10 @@ struct EditableMarkdownDocument: View {
         .onTapGesture { begin(.block(index), text: Self.text(of: block)) }
         .accessibilityAddTraits(isEditable(block) ? .isButton : [])
         .accessibilityHint(isEditable(block) ? "タップして編集" : "")
+        .accessibilityAction(named: "編集") { begin(.block(index), text: Self.text(of: block)) }
+        .contextMenu {
+          Button("コピー", icon: .docOnDoc) { UIPasteboard.general.string = Self.text(of: block) }
+        }
     }
   }
 
@@ -105,17 +110,18 @@ struct EditableMarkdownDocument: View {
       HStack(alignment: .top, spacing: 8) {
         MarkdownBulletMarker(marker: marker, level: level)
           .font(MarkdownBlockView.bulletFont(level))
+          .frame(minWidth: listIndent, alignment: .trailing)
         textField("項目", font: MarkdownBlockView.bulletFont(level))
           .font(MarkdownBlockView.bulletFont(level))
       }
-      .padding(.leading, CGFloat(level) * 18)
+      .padding(.leading, CGFloat(min(level, 4)) * listIndent)
     case .quote:
-      HStack(alignment: .top, spacing: 10) {
+      HStack(alignment: .top, spacing: MemoraSpacing.md) {
         RoundedRectangle(cornerRadius: 1.5)
-          .fill(.quaternary)
+          .fill(MemoraPalette.border)
           .frame(width: 3)
-        textField("引用", font: .subheadline)
-          .font(.subheadline)
+        textField("引用", font: MemoraTypography.readingBody)
+          .font(MemoraTypography.readingBody)
           .foregroundStyle(.secondary)
       }
       .fixedSize(horizontal: false, vertical: true)
@@ -133,27 +139,10 @@ struct EditableMarkdownDocument: View {
 
   /// A table row's card, with each value editable on its own.
   private func tableCard(header: [String], row: [String], block: Int, rowIndex: Int) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      cell(row.first ?? "", target: .cell(block: block, row: rowIndex, column: 0))
-        .font(.subheadline.weight(.semibold))
-
-      ForEach(Array(row.enumerated().dropFirst()), id: \.offset) { column, value in
-        let cellTarget = EditTarget.cell(block: block, row: rowIndex, column: column)
-        if !value.isEmpty || target == cellTarget {
-          HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(header.indices.contains(column) ? header[column] : "")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .frame(minWidth: 40, alignment: .leading)
-            cell(value, target: cellTarget)
-              .font(.subheadline)
-          }
-        }
-      }
+    MarkdownTableRow(header: header, row: row) { column, value, font in
+      cell(value, target: .cell(block: block, row: rowIndex, column: column), font: font)
+        .font(font)
     }
-    .padding(14)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     .contextMenu {
       ForEach(header.indices, id: \.self) { column in
         Button("列\(column + 1)の見出しを編集") {
@@ -170,9 +159,9 @@ struct EditableMarkdownDocument: View {
   }
 
   @ViewBuilder
-  private func cell(_ value: String, target cellTarget: EditTarget) -> some View {
+  private func cell(_ value: String, target cellTarget: EditTarget, font: Font) -> some View {
     if target == cellTarget {
-      textField("")
+      textField("", font: font)
         .id(editorID)
     } else {
       MarkdownBlockView.inline(value.isEmpty ? "入力" : value)

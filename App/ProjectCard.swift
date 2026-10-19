@@ -17,7 +17,7 @@ struct ProjectCard: View {
             Image(icon: space.icon)
               .font(.title3.weight(.medium))
               .frame(width: 44, height: 44)
-              .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+              .background(MemoraPalette.selection, in: RoundedRectangle(cornerRadius: MemoraRadius.field))
               .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
               Text(space.name)
@@ -33,7 +33,7 @@ struct ProjectCard: View {
             HStack(spacing: 14) { counts }
             VStack(alignment: .leading, spacing: 8) { counts }
           }
-          .font(.subheadline)
+          .font(MemoraTypography.secondary)
           .foregroundStyle(MemoraPalette.cardTextSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -50,7 +50,7 @@ struct ProjectCard: View {
       // A sibling menu keeps its taps separate from the navigation link.
       Menu { actions } label: {
         Image(icon: .ellipsis)
-          .font(.body.weight(.semibold))
+          .font(MemoraTypography.body.weight(.medium))
           .foregroundStyle(MemoraPalette.cardTextSecondary)
           .frame(width: 44, height: 44)
           .contentShape(Rectangle())

@@ -5,7 +5,6 @@ struct JournalDailyRecapCard: View {
   var date: Date
   var backdrop: JournalBackdrop
   var onOpenDetails: () -> Void
-  @ScaledMetric(relativeTo: .largeTitle) private var daySize = 66.0
 
   var body: some View {
     Button {
@@ -13,10 +12,11 @@ struct JournalDailyRecapCard: View {
       onOpenDetails()
     } label: {
       VStack(alignment: .leading, spacing: 7) {
-        Text(Calendar.current.component(.day, from: date).formatted())
-          .font(.system(size: daySize, weight: .regular, design: .serif))
+        Text(date.formatted(.dateTime.month().day().weekday()))
+          .font(MemoraTypography.metadata)
+          .foregroundStyle(MemoraPalette.textSecondary)
         Text(recap.heading)
-          .font(.title2.bold())
+          .font(MemoraTypography.sectionHeading)
           .fixedSize(horizontal: false, vertical: true)
         Text(recap.preview.isEmpty ? recap.narrative.replacingOccurrences(of: "\n\n", with: " ") : recap.preview)
           .font(.subheadline)
@@ -26,17 +26,16 @@ struct JournalDailyRecapCard: View {
         if !recap.context.metrics.isEmpty {
           Text(recap.context.cardMetrics.joined(separator: " · "))
             .font(.caption.weight(.medium))
-            .foregroundStyle(.white.opacity(0.9))
+            .foregroundStyle(MemoraPalette.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 5)
         }
       }
-      .foregroundStyle(.white)
-      .frame(maxWidth: .infinity, minHeight: 178, alignment: .bottomLeading)
-      .padding(20)
-      .background { JournalBackdropView(backdrop: backdrop) }
-      .clipShape(RoundedRectangle(cornerRadius: 22))
-      .contentShape(RoundedRectangle(cornerRadius: 22))
+      .foregroundStyle(MemoraPalette.textPrimary)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(MemoraSpacing.card)
+      .memoraCard()
+      .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card))
     }
     .buttonStyle(.plain)
     .accessibilityLabel("\(date.formatted(date: .complete, time: .omitted))。\(recap.heading)。\(recap.narrative)。\(recap.context.metrics.joined(separator: "、"))")

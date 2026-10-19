@@ -33,7 +33,7 @@ struct UpcomingEventCard: View {
     }
     .padding(14)
     .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
-    .memoraCard(radius: 22, fill: Color(uiColor: .secondarySystemGroupedBackground))
+    .memoraCard()
     .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
   }
 

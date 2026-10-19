@@ -6,5 +6,5 @@ enum SettingsIconStyle {
 }
 
 extension EnvironmentValues {
-  @Entry var settingsIconStyle: SettingsIconStyle = .tile
+  @Entry var settingsIconStyle: SettingsIconStyle = .monochrome
 }

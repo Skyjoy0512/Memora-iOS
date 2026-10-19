@@ -25,6 +25,7 @@ struct MarkdownDocumentView: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+    .textSelection(.enabled)
   }
 
   private func rows(_ blocks: [MarkdownBlock]) -> some View {

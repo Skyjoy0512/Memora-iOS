@@ -12,11 +12,11 @@ struct ProjectRecordRow: View {
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 4) {
         Text(meeting.displayTitle)
-          .font(.body.weight(.semibold))
+          .font(MemoraTypography.body.weight(.medium))
           .lineLimit(2)
           .fixedSize(horizontal: false, vertical: true)
         Text("\(MemoraFormat.relativeDate(meeting.createdAt)) · \(meeting.source.label) · \(MemoraFormat.duration(meeting.duration))")
-          .font(.footnote)
+          .font(MemoraTypography.metadata)
           .foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
         if meeting.status != .ready { MeetingStatusLabel(status: meeting.status) }

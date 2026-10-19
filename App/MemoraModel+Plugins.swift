@@ -67,7 +67,10 @@ extension MemoraModel {
     return entries
   }
 
-  func mentionCandidates(query: String) -> [AIPlugin] {
+  func mentionCandidates(query: String, scope: AIQueryScope = .global) -> [AIPlugin] {
+    if case .space(let projectID) = scope {
+      return projectMentionCandidates(query: query, projectID: projectID)
+    }
     var candidates = pluginCatalog().filter { $0.matches(query) }
     // Files stay local until sending, when the usual RecordAccessPolicy applies.
     let files = meetings.filter { query.isEmpty || $0.title.localizedStandardContains(query) }.prefix(20)
@@ -83,6 +86,9 @@ extension MemoraModel {
     if mention.pluginID.hasPrefix("record:"), let id = UUID(uuidString: String(mention.pluginID.dropFirst(7))), let record = meeting(id: id) {
       return AIPlugin(id: mention.pluginID, name: record.displayTitle, summary: "指定した記録。送信時に現在の許可を確認します。", aliases: [],
         kind: .file, state: .ready, toolIDs: ["memora:read_record"], permissions: ["記録の送信許可を適用します。"], cost: .local, provider: .memora, recordID: id)
+    }
+    if mention.pluginID.hasPrefix("source:"), let id = UUID(uuidString: String(mention.pluginID.dropFirst(7))), let source = source(id: id) {
+      return projectSourcePlugin(source)
     }
     return AIPlugin(id: mention.pluginID, name: mention.label, summary: "選択した対象を確認できません。@から選び直してください。", aliases: [],
       kind: .unavailable, state: .unavailable("削除済みまたは利用できない対象です。"), toolIDs: [], permissions: [], cost: .unknown, provider: .memora)

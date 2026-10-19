@@ -73,7 +73,7 @@ struct MeetingDetailView: View {
       if let meeting = model.meeting(id: meetingID) {
         ScrollViewReader { proxy in
           ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
               meetingHeader(meeting)
 
               participantsRow(meeting)
@@ -87,7 +87,7 @@ struct MeetingDetailView: View {
                   onDelete: { model.removeMeetingRecordingMarker(meetingID: meeting.id, markerID: $0) })
               }
 
-              GlassSegmentedPicker(
+              MemoraSectionPicker(
                 items: MeetingDetailSection.allCases,
                 selection: $selectedSection,
                 title: \.label
@@ -95,8 +95,9 @@ struct MeetingDetailView: View {
 
               sectionContent(meeting)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 18)
+            .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+            .padding(.horizontal, MemoraSpacing.screen)
+            .frame(maxWidth: .infinity)
             // Room to scroll the last section clear of the floating AI composer.
             .padding(.bottom, model.bottomContentClearance)
           }

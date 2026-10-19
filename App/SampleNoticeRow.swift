@@ -24,7 +24,7 @@ struct SampleNoticeRow: View {
       .font(.subheadline.weight(.semibold))
     }
     .padding(14)
-    .memoraCard(radius: 16)
+    .memoraCard()
     .confirmationDialog("サンプルを削除しますか？", isPresented: $isConfirming, titleVisibility: .visible) {
       Button("削除", role: .destructive) {
         model.deleteSampleContent()

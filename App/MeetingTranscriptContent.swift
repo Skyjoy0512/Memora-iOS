@@ -28,7 +28,7 @@ struct MeetingTranscriptContent: View {
           Text(
             "話者名をタップして確認・修正できます。本文はタップすると修正、時刻は原音声を再生します。"
           )
-          .font(.subheadline)
+          .font(MemoraTypography.secondary)
           .foregroundStyle(.secondary)
         }
         if !meeting.transcript.isEmpty, meeting.audioURL != nil {
@@ -37,7 +37,7 @@ struct MeetingTranscriptContent: View {
           }
           .disabled(model.speakerAnalysisIDs.contains(meeting.id) || model.processing.isActive(meeting.id))
           if let message = model.speakerAnalysisMessages[meeting.id] {
-            Text(message).font(.footnote).foregroundStyle(.secondary)
+            Text(message).font(MemoraTypography.metadata).foregroundStyle(.secondary)
           }
         }
       }

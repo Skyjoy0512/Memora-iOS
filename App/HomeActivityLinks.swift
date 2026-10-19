@@ -19,12 +19,12 @@ struct HomeActivityLinks: View {
         Text("今日のタスク").font(.headline)
         Spacer()
         NavigationLink("すべて見る", value: LibraryRoute.tasks)
-          .font(.subheadline).frame(minHeight: 44)
+          .font(MemoraTypography.secondary).frame(minHeight: 44)
           .accessibilityLabel("すべてのタスクを見る")
       }
       if today.isEmpty, dueSoon.isEmpty {
         Text("今日取り組むタスクや期限の近いタスクはありません。")
-          .font(.subheadline).foregroundStyle(.secondary)
+          .font(MemoraTypography.secondary).foregroundStyle(.secondary)
       } else {
         if !today.isEmpty {
           Text("今日取り組む").font(.caption).foregroundStyle(.secondary)
@@ -53,7 +53,7 @@ struct HomeActivityLinks: View {
           }
           .foregroundStyle(.primary)
           .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-          .padding(.horizontal, 18)
+          .padding(.horizontal, MemoraSpacing.screen)
           .padding(.vertical, 8)
           .memoraCard(fill: MemoraPalette.card)
           .contentShape(RoundedRectangle(cornerRadius: 20))

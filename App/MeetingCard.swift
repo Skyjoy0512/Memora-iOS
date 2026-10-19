@@ -32,10 +32,10 @@ struct MeetingCard: View {
         }
       }
 
-      Spacer(minLength: 28)
+      Spacer(minLength: MemoraSpacing.xl)
 
       Text(meeting.title)
-        .font(.title2.bold())
+        .font(MemoraTypography.sectionHeading)
         .foregroundStyle(.primary)
         .lineLimit(2)
 
@@ -54,14 +54,14 @@ struct MeetingCard: View {
       .foregroundStyle(MemoraPalette.cardTextSecondary)
       .padding(.top, 10)
     }
-    .padding(18)
-    .frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
+    .padding(MemoraSpacing.card)
+    .frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
     .background {
-      RoundedRectangle(cornerRadius: 26, style: .continuous)
+      RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
         .fill(MemoraPalette.card)
     }
     .overlay {
-      RoundedRectangle(cornerRadius: 26, style: .continuous)
+      RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous)
         .stroke(
           isSelected ? AnyShapeStyle(MemoraPalette.textPrimary) : AnyShapeStyle(MemoraPalette.border),
           lineWidth: isSelected ? 2 : 0.5

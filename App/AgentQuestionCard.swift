@@ -36,7 +36,7 @@ struct AgentQuestionCard: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
     }
-    .memoraCard(radius: 20)
+    .memoraCard()
     .overlay(alignment: .topTrailing) {
       Button {
         model.resolveAgentQuestions(nil, requestID: request.id)

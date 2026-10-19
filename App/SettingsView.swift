@@ -553,7 +553,7 @@ struct SettingsView: View {
           ProfileAvatar(profile: model.profile, size: 80)
             .overlay(alignment: .bottomTrailing) {
               Image(icon: .pencil, size: 14)
-                .font(.system(size: 14, weight: .regular))
+                .font(MemoraTypography.secondary)
                 .foregroundStyle(.primary)
                 .frame(width: 32, height: 32)
                 .background(Color(uiColor: .secondarySystemGroupedBackground), in: Circle())

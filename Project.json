@@ -19,10 +19,6 @@
     "FluidAudio" : {
       "exactVersion" : "0.17.7",
       "url" : "https:\/\/github.com\/FluidInference\/FluidAudio.git"
-    },
-    "LucideSwift" : {
-      "exactVersion" : "0.9.11",
-      "url" : "https:\/\/github.com\/ajaxjiang96\/lucide-swift.git"
     }
   },
   "settings" : {
@@ -38,10 +34,6 @@
         {
           "package" : "FluidAudio",
           "product" : "FluidAudio"
-        },
-        {
-          "package" : "LucideSwift",
-          "product" : "LucideSwift"
         },
         {
           "embed" : true,
@@ -131,12 +123,7 @@
       "type" : "application"
     },
     "Memora Widget Extension" : {
-      "dependencies" : [
-        {
-          "package" : "LucideSwift",
-          "product" : "LucideSwift"
-        }
-      ],
+      "dependencies" : [],
       "info" : {
         "path" : "Widget Extension\/Info.plist",
         "properties" : {

@@ -46,7 +46,7 @@ private struct KeyboardDismissInstaller: UIViewRepresentable {
     ) -> Bool {
       // Keep the keyboard while the person taps the field they are editing;
       // every other tap — buttons, cards, empty space — dismisses it.
-      !(touch.view?.isInsideTextInput ?? false)
+      !(touch.view?.isInsideTextInput ?? false) && !ComposerFocusRegion.contains(touch)
     }
   }
 }

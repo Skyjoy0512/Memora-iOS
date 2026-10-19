@@ -29,7 +29,7 @@ struct PaywallView: View {
               .lineSpacing(4)
           }
 
-          GlassSegmentedPicker(items: MemoraPlan.allCases, selection: $selectedPlan, title: \.label)
+          MemoraSectionPicker(items: MemoraPlan.allCases, selection: $selectedPlan, title: \.label)
 
           VStack(alignment: .leading, spacing: 4) {
             Text(selectedPlan.priceLabel)

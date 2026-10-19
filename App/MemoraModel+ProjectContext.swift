@@ -53,7 +53,8 @@ extension MemoraModel {
   }
 
   func projectContext(question: String, projectID: UUID, cloud: Bool, budget: Int,
-                      onlyTarget: ProjectCitation.Target? = nil) async -> ProjectContextBuilder.Context {
+                      onlyTarget: ProjectCitation.Target? = nil,
+                      selectedTargets: Set<ProjectCitation.Target>? = nil) async -> ProjectContextBuilder.Context {
     let workspaceID = currentTeamID
     let empty = ProjectContextBuilder.build(question: question, projectID: projectID, chunks: [], allowed: [], characterBudget: 0)
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, space(id: projectID) != nil else { return empty }
@@ -61,6 +62,7 @@ extension MemoraModel {
     var allowed: Set<ProjectCitation.Target> = []
     let records = meetings.filter { $0.spaceID == projectID }
     for record in records where (onlyTarget == nil || onlyTarget == .meeting(record.id))
+      && (selectedTargets?.contains(.meeting(record.id)) ?? true)
       && projectEvidenceAllowed(.meeting(record.id), projectID: projectID, cloud: cloud) {
       let target = ProjectCitation.Target.meeting(record.id)
       allowed.insert(target)
@@ -72,6 +74,7 @@ extension MemoraModel {
     for task in tasks where task.meetingID.map(recordIDs.contains) == true && !task.isCompleted {
       let target = ProjectCitation.Target.task(task.id)
       guard onlyTarget == nil || onlyTarget == target else { continue }
+      guard selectedTargets?.contains(target) ?? true else { continue }
       guard projectEvidenceAllowed(target, projectID: projectID, cloud: cloud) else { continue }
       allowed.insert(target)
       let text = [task.title, task.detail, task.assignee].compactMap { $0 }.joined(separator: "\n")
@@ -81,6 +84,7 @@ extension MemoraModel {
       for document in documents where document.spaceID == projectID {
         let target = ProjectCitation.Target.document(document.id)
         guard onlyTarget == nil || onlyTarget == target else { continue }
+        guard selectedTargets?.contains(target) ?? true else { continue }
         allowed.insert(target)
         inputs.append(ProjectEvidenceInput(target: target, title: document.displayTitle, blocks: [ProjectSourceText(text: document.plainText)]))
       }
@@ -89,6 +93,7 @@ extension MemoraModel {
     for source in sources {
       let target = ProjectCitation.Target.source(source.id)
       guard onlyTarget == nil || onlyTarget == target else { continue }
+      guard selectedTargets?.contains(target) ?? true else { continue }
       guard projectEvidenceAllowed(target, projectID: projectID, cloud: cloud), let name = source.extractedTextReference else { continue }
       guard let blocks = try? await ProjectSourceTextReader.readAsync(name),
             self.source(id: source.id)?.extractedTextReference == name else { continue }
@@ -101,7 +106,7 @@ extension MemoraModel {
     let permittedInputs = inputs.filter { currentAllowed.contains($0.target) }
     // A single-target read must not replace the full project's disposable index.
     let indexed: [ProjectEvidenceChunk]?
-    if onlyTarget == nil {
+    if onlyTarget == nil, selectedTargets == nil {
       indexed = try? await ProjectSearchIndex.shared.retrieve(question: question, projectID: projectID, inputs: permittedInputs)
     } else { indexed = nil }
     guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected else { return empty }

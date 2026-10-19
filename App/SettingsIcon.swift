@@ -25,7 +25,7 @@ struct SettingsIcon: View {
         .font(.system(size: glyphSize, weight: .medium))
         .foregroundStyle(.white)
         .frame(width: size, height: size)
-        .background(color.gradient, in: RoundedRectangle(cornerRadius: size * 0.26, style: .continuous))
+        .background(color, in: RoundedRectangle(cornerRadius: MemoraRadius.small, style: .continuous))
         .accessibilityHidden(true)
     }
   }

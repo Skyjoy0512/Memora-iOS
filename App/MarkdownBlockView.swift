@@ -4,7 +4,8 @@ import SwiftUI
 /// and the editable one, so editing a block never changes how the others look.
 struct MarkdownBlockView: View {
   var block: MarkdownBlock
-  @ScaledMetric(relativeTo: .body) private var readingLineSpacing: CGFloat = 7
+  @ScaledMetric(relativeTo: .body) private var readingLineSpacing = MemoraTypography.readingLineSpacing
+  @ScaledMetric(relativeTo: .body) private var listIndent = MemoraTypography.listIndent
 
   var body: some View {
     switch block {
@@ -17,34 +18,38 @@ struct MarkdownBlockView: View {
 
     case .paragraph(let text):
       Self.inline(text)
-        .font(.body)
+        .font(MemoraTypography.readingBody)
+        .fixedSize(horizontal: false, vertical: true)
         .lineSpacing(readingLineSpacing)
 
     case .bullet(let level, let marker, let text):
-      HStack(alignment: .firstTextBaseline, spacing: 8) {
+      HStack(alignment: .firstTextBaseline, spacing: MemoraSpacing.sm) {
         MarkdownBulletMarker(marker: marker, level: level)
+          .frame(minWidth: listIndent, alignment: .trailing)
         Self.inline(text)
           .font(Self.bulletFont(level))
           .lineSpacing(readingLineSpacing)
       }
-      .padding(.leading, CGFloat(level) * 18)
+      .padding(.leading, CGFloat(min(level, 4)) * listIndent)
 
     case .quote(let text):
-      HStack(alignment: .top, spacing: 10) {
+      HStack(alignment: .top, spacing: MemoraSpacing.md) {
         RoundedRectangle(cornerRadius: 1.5)
-          .fill(.quaternary)
+          .fill(MemoraPalette.border)
           .frame(width: 3)
         Self.inline(text)
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
+          .font(MemoraTypography.readingBody)
+          .foregroundStyle(MemoraPalette.textSecondary)
           .lineSpacing(readingLineSpacing)
       }
       .fixedSize(horizontal: false, vertical: true)
 
     case .table(let header, let rows):
-      VStack(alignment: .leading, spacing: 10) {
+      VStack(alignment: .leading, spacing: 0) {
         ForEach(rows.indices, id: \.self) { index in
-          MarkdownTableCard(header: header, row: rows[index])
+          MarkdownTableRow(header: header, row: rows[index]) { _, value, font in
+            Self.inline(value).font(font)
+          }
         }
       }
 
@@ -61,26 +66,22 @@ struct MarkdownBlockView: View {
   }
 
   /// Room between lines, so a long summary does not read as one dense block.
-  static let lineSpacing: CGFloat = 6
+  static let lineSpacing = MemoraTypography.readingLineSpacing
   /// Room between blocks.
-  static let blockSpacing: CGFloat = 12
+  static let blockSpacing = MemoraTypography.paragraphSpacing
 
   static func headingFont(_ level: Int) -> Font {
-    switch level {
-    case 1: .title2.bold()
-    case 2: .title3.bold()
-    default: .headline
-    }
+    MemoraTypography.heading(level)
   }
 
   /// A heading sits closer to what follows it than to what came before, so
   /// each section reads as one group.
   static func headingTopPadding(_ level: Int) -> CGFloat {
-    level <= 2 ? 16 : 8
+    level <= 2 ? MemoraSpacing.lg : MemoraSpacing.sm
   }
 
   static func bulletFont(_ level: Int) -> Font {
-    level == 0 ? .body : .subheadline
+    MemoraTypography.readingBody
   }
 
   static func inline(_ text: String) -> Text {
@@ -107,37 +108,5 @@ struct MarkdownBulletMarker: View {
         .foregroundStyle(.secondary)
         .accessibilityLabel(isChecked ? "完了" : "未完了")
     }
-  }
-}
-
-/// A table row as a card: the first column is its title, the others labelled
-/// lines, and empty cells are left out. Five columns do not fit an iPhone.
-struct MarkdownTableCard: View {
-  var header: [String]
-  var row: [String]
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      MarkdownBlockView.inline(row.first ?? "")
-        .font(.subheadline.weight(.semibold))
-
-      ForEach(Array(row.enumerated().dropFirst()), id: \.offset) { index, value in
-        if !value.isEmpty {
-          HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(header.indices.contains(index) ? header[index] : "")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .frame(minWidth: 40, alignment: .leading)
-            MarkdownBlockView.inline(value)
-              .font(.subheadline)
-              .lineSpacing(MarkdownBlockView.lineSpacing)
-          }
-        }
-      }
-    }
-    .padding(14)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    .accessibilityElement(children: .combine)
   }
 }

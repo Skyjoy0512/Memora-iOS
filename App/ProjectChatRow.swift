@@ -7,10 +7,10 @@ struct ProjectChatRow: View {
     NavigationLink(value: LibraryRoute.projectChat(thread.id)) {
       VStack(alignment: .leading, spacing: 5) {
         Text(thread.title)
-          .font(.body.weight(.semibold))
-          .lineLimit(1)
+          .font(MemoraTypography.body.weight(.medium))
+          .lineLimit(2)
         Text(preview)
-          .font(.subheadline)
+          .font(MemoraTypography.secondary)
           .foregroundStyle(.secondary)
           .lineLimit(1)
       }

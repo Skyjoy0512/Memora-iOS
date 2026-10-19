@@ -15,7 +15,7 @@ struct MeetingRow: View {
       VStack(alignment: .leading, spacing: 6) {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
           Text(meeting.title)
-            .font(.body.weight(.semibold))
+            .font(MemoraTypography.body.weight(.medium))
             .foregroundStyle(.primary)
             .lineLimit(2)
 
@@ -30,7 +30,7 @@ struct MeetingRow: View {
 
         if showsSummary {
           Text(meeting.shortSummaryPreview)
-            .font(.subheadline)
+            .font(MemoraTypography.secondary)
             .foregroundStyle(.secondary)
             .lineLimit(3)
             .lineSpacing(2)
@@ -57,7 +57,7 @@ struct MeetingRow: View {
           .accessibilityHidden(true)
       }
     }
-    .padding(.vertical, 12)
+    .padding(.vertical, MemoraSpacing.row)
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
     .accessibilityLabel(accessibilityLabel)

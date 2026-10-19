@@ -31,7 +31,7 @@ struct ManualAIProcessingCard: View {
     }
     .padding(20)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .memoraCard(radius: 20)
+    .memoraCard()
   }
 }
 

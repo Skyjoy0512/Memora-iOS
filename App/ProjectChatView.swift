@@ -15,10 +15,10 @@ struct ProjectChatView: View {
         ScrollView {
           LazyVStack(alignment: .leading, spacing: 24) {
             if let projectID = thread.projectID, let project = model.space(id: projectID) {
-              Text(project.name).font(.footnote).foregroundStyle(.secondary)
+              Text(project.name).font(MemoraTypography.metadata).foregroundStyle(.secondary)
             } else {
               Text("プロジェクトの所属を解除した会話です。履歴の閲覧はできます。")
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(MemoraTypography.secondary).foregroundStyle(.secondary)
             }
             ForEach(thread.messages) { message in
               VStack(alignment: .leading, spacing: 12) {
@@ -31,7 +31,7 @@ struct ProjectChatView: View {
                   ForEach(message.citations) { citation in
                     Button { open(citation) } label: {
                       Label(citationLabel(citation), icon: .docText)
-                        .font(.footnote).multilineTextAlignment(.leading)
+                        .font(MemoraTypography.metadata).multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     }.tint(MemoraPalette.textPrimary)
                   }
@@ -45,12 +45,12 @@ struct ProjectChatView: View {
               Button("回答を停止", icon: .stopFill) { model.cancelProjectChat(threadID) }
                 .frame(minHeight: 44).tint(MemoraPalette.textPrimary)
             } else if let failure = thread.lastFailure {
-              Text(failure).font(.subheadline).foregroundStyle(.secondary)
+              Text(failure).font(MemoraTypography.secondary).foregroundStyle(.secondary)
               Text("再試行する場合は、下の入力欄から改めて送信してください。")
-                .font(.footnote).foregroundStyle(.secondary)
+                .font(MemoraTypography.metadata).foregroundStyle(.secondary)
             } else if thread.pendingMessageID != nil {
               Text("前の回答は中断されています。自動で再送はしません。")
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(MemoraTypography.secondary).foregroundStyle(.secondary)
             }
             Color.clear.frame(height: 1).id(ConversationScrollFollowing.bottomID)
           }

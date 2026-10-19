@@ -112,7 +112,7 @@ struct ProjectSuggestionCard: View {
       .padding(.horizontal, 14)
       .padding(.vertical, 10)
     }
-    .memoraCard(radius: 18)
+    .memoraCard()
     .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: isDrawerOpen)
     .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: selected)
   }

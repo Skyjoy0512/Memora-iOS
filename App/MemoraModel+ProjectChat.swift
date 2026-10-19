@@ -54,7 +54,7 @@ extension MemoraModel {
   }
 
   @discardableResult
-  func sendProjectChat(_ id: UUID, question: String, allowsPaidRequest: Bool = false) -> Bool {
+  func sendProjectChat(_ id: UUID, question: String, allowsPaidRequest: Bool = false, pluginIDs: [String] = []) -> Bool {
     let question = question.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !isRestoring, !isStoreProtected, !question.isEmpty, question.count <= 4_000, !projectChatBusyIDs.contains(id),
           var thread = projectChat(id: id), let projectID = thread.projectID,
@@ -62,6 +62,7 @@ extension MemoraModel {
     let workspaceID = currentTeamID
     let generation = aiWorkspaceGeneration
     let configuration = askAIConfiguration
+    guard let selection = projectMentionSelection(pluginIDs, projectID: projectID) else { return false }
     let cloud = AIEngineService.effectiveEngine(configuration.engine) == .cloud
     guard question.count <= min(4_000, AIEngineService.contextCharacterLimit(for: configuration.engine) / 2),
           !cloud || allowsPaidRequest else { return false }
@@ -83,10 +84,12 @@ extension MemoraModel {
           && currentTeamID == workspaceID && !isRestoring && !isStoreProtected
           && projectChat(id: id)?.pendingMessageID == user.id
           && projectChat(id: id)?.projectID == projectID && space(id: projectID) != nil
+          && (pluginIDs.isEmpty || projectMentionSelection(pluginIDs, projectID: projectID) == selection)
       }
       guard isCurrentExecution() else { return }
       let limit = max(400, AIEngineService.contextCharacterLimit(for: configuration.engine) - question.count)
-      let context = await projectContext(question: question, projectID: projectID, cloud: cloud, budget: max(0, limit * 2 / 3 - 200))
+      let context = await projectContext(question: question, projectID: projectID, cloud: cloud,
+        budget: max(0, limit * 2 / 3 - 200 - selection.guidance.count), selectedTargets: selection.targets)
       guard isCurrentExecution() else { return }
       var verifiedHistory: [ProjectChatTurn] = []
       // The history budget is bounded before re-reading old evidence.
@@ -94,7 +97,8 @@ extension MemoraModel {
         guard isCurrentExecution() else { return }
         if message.role == .user { verifiedHistory.append(message); continue }
         let references = message.contextReferences ?? message.citations
-        if !references.isEmpty, await projectEvidenceStillAvailable(references, projectID: projectID, cloud: cloud) {
+        if !references.isEmpty, references.allSatisfy({ selection.permits($0.target) }),
+           await projectEvidenceStillAvailable(references, projectID: projectID, cloud: cloud) {
           verifiedHistory.append(message)
         } else {
           // Retain an empty rejected assistant turn so pairs cannot cross.
@@ -125,9 +129,10 @@ extension MemoraModel {
       }
       let result: AIAnswerResult
       if cloud, configuration.llm.supportsToolCalling, !configuration.llm.isMemoraIntelligence,
-         [.searchRecords, .readRecord, .listTasks].contains(where: { enabledAgentTools.contains($0) }) {
+         [.searchRecords, .readRecord, .listTasks].contains(where: { enabledAgentTools.contains($0) && selection.toolNames.contains($0.rawValue) }) {
         let outcome = await answerProjectAgent(question: question, projectID: projectID, llm: configuration.llm,
           initialContext: context, history: history,
+          selection: selection,
           historyEvidence: verifiedHistory.flatMap { $0.contextReferences ?? $0.citations },
           characterBudget: min(16_000, limit * 2 / 3),
           isCurrent: isCurrentExecution,
@@ -139,7 +144,7 @@ extension MemoraModel {
         sentReferences = outcome.references
       } else {
         result = await AIEngineService.answer(engine: configuration.engine, llm: configuration.llm,
-          question: question, scopeLabel: project.name, context: instruction + context.text, history: history, onText: onText)
+          question: question, scopeLabel: project.name, context: instruction + context.text + selection.guidance, history: history, onText: onText)
       }
       guard isCurrentExecution(),
             await projectEvidenceStillAvailable(allEvidence + sentReferences, projectID: projectID, cloud: cloud), isCurrentExecution() else {

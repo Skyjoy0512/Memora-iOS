@@ -240,7 +240,7 @@ struct LibraryView: View {
           onRecordOnline: recordOnline
         )
         Divider()
-          .padding(.horizontal, 18)
+          .padding(.horizontal, MemoraSpacing.screen)
       }
       // The row pages edge to edge; its own margins line the cards up.
       .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 12, trailing: 0))
@@ -344,7 +344,7 @@ struct LibraryView: View {
 
         if !query.isEmpty {
           Text("\(count)件")
-            .font(.subheadline)
+            .font(MemoraTypography.secondary)
             .foregroundStyle(.secondary)
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)

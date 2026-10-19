@@ -20,7 +20,7 @@ struct ProcessingOverview: View {
       }
     }
     .padding(18)
-    .memoraCard(radius: 20)
+    .memoraCard()
   }
 
   private var primaryText: String {

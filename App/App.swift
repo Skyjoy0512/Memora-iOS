@@ -13,6 +13,8 @@ struct MemoraApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView()
+        .font(MemoraTypography.body)
+        .tint(MemoraPalette.action)
         .background { InteractionFeedbackView() }
         .environment(appDelegate.model)
         .onAppear {

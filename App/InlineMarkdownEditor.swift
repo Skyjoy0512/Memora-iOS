@@ -31,6 +31,7 @@ struct InlineMarkdownEditor: View {
   @State private var didRestoreDraft = false
   @State private var draftSaveTask: Task<Void, Never>?
   @FocusState private var isFocused: Bool
+  @ScaledMetric(relativeTo: .body) private var readingLineSpacing = MemoraTypography.readingLineSpacing
 
   var body: some View {
     Group {
@@ -69,7 +70,7 @@ struct InlineMarkdownEditor: View {
           }
         }
         .font(font)
-        .lineSpacing(6)
+        .lineSpacing(readingLineSpacing)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { beginEditing() }

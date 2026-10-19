@@ -25,14 +25,12 @@ struct JournalTimelineRow<Content: View>: View {
         .font(.title3)
         .foregroundStyle(MemoraPalette.textSecondary)
         .frame(width: JournalTimelineMetrics.iconSide, height: JournalTimelineMetrics.iconSide)
-        .background(MemoraPalette.card, in: Circle())
         .accessibilityHidden(true)
 
       content()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: 18))
-        .padding(.bottom, 8)
+        .padding(.vertical, MemoraSpacing.sm)
+        .padding(.bottom, MemoraSpacing.lg)
     }
     .background {
       if connectsToNext {

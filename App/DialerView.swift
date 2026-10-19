@@ -28,7 +28,7 @@ struct DialerView: View {
         }
         .frame(maxHeight: .infinity)
 
-        GlassSegmentedPicker(items: Tab.allCases, selection: $tab, title: \.title)
+        MemoraSectionPicker(items: Tab.allCases, selection: $tab, title: \.title)
           .padding(.horizontal, 20)
           .padding(.vertical, 10)
       }

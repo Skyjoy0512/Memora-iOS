@@ -2,8 +2,7 @@ import SwiftUI
 
 /// Groups Liquid Glass surfaces so they blend and morph together.
 ///
-/// Falls back to a plain layout before Liquid Glass existed, because the
-/// project still deploys to iOS 18.
+/// Content surfaces stay opaque; only floating controls use this layer.
 struct MemoraGlassContainer<Content: View>: View {
   var spacing: CGFloat = 12
   @ViewBuilder var content: () -> Content

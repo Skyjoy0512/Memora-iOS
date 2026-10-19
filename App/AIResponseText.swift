@@ -10,7 +10,7 @@ struct AIResponseText: View {
 
   var body: some View {
     let response = cache.response(for: text, isStreaming: isStreaming)
-    VStack(alignment: .leading, spacing: 18) {
+    VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
       StreamingMarkdownView(text: response.markdown, isStreaming: isStreaming)
       if let interface = response.interface {
         NativeAIInterfaceView(interface: interface, messageID: messageID, allowsInteractions: !isStreaming)

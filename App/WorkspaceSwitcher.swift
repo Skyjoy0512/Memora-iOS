@@ -50,7 +50,7 @@ struct WorkspaceSwitcher: View {
       }
       .padding(10)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .memoraCard(radius: 14)
+      .memoraCard()
       .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
     .buttonStyle(.plain)

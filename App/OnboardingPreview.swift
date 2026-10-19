@@ -20,7 +20,7 @@ struct OnboardingPreview: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(16)
-    .memoraCard(radius: 20)
+    .memoraCard()
     .accessibilityHidden(true)
   }
 

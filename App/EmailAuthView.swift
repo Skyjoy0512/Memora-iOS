@@ -25,7 +25,7 @@ struct EmailAuthView: View {
   var body: some View {
     Form {
       Section {
-        GlassSegmentedPicker(items: Mode.allCases, selection: $selectedMode, title: \.label)
+        MemoraSectionPicker(items: Mode.allCases, selection: $selectedMode, title: \.label)
         .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 10, trailing: 0))
         .listRowBackground(Color.clear)
       }

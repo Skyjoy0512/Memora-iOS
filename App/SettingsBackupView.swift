@@ -96,8 +96,8 @@ struct SettingsBackupView: View {
         .font(.subheadline)
         .foregroundStyle(.secondary)
     }
-    .padding(24)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    .padding(MemoraSpacing.card)
+    .memoraCard()
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(.ultraThinMaterial)
     .allowsHitTesting(true)
