@@ -104,7 +104,8 @@ final class MemoraModel {
 
   func persistNow(_ value: [ProjectChatThread], forKey: String) -> Bool { true }
   func space(id: UUID) -> MockProject? { MockProject(name: "架空プロジェクト") }
-  func projectContext(question: String, projectID: UUID, cloud: Bool, budget: Int) async -> ProjectContextBuilder.Context {
+  func projectContext(question: String, projectID: UUID, cloud: Bool, budget: Int,
+    selectedTargets: Set<ProjectCitation.Target>? = nil) async -> ProjectContextBuilder.Context {
     if suspendNextContext {
       suspendNextContext = false
       await withCheckedContinuation { contextContinuation = $0 }
@@ -113,8 +114,13 @@ final class MemoraModel {
   }
   func projectEvidenceStillAvailable(_ references: [ProjectCitation], projectID: UUID, cloud: Bool) async -> Bool { true }
   func projectEvidenceAllowed(_ target: ProjectCitation.Target, projectID: UUID, cloud: Bool) -> Bool { true }
+  func projectMentionSelection(_ ids: [String], projectID: UUID) -> ProjectMentionSelection? {
+    guard ids.isEmpty else { return nil }
+    return ProjectMentionSelection(pluginIDs: [], toolNames: ProjectMentionSelection.readingTools, guidance: "")
+  }
   func answerProjectAgent(question: String, projectID: UUID, llm: MockLLM,
-    initialContext: ProjectContextBuilder.Context, history: String, historyEvidence: [ProjectCitation], characterBudget: Int,
+    initialContext: ProjectContextBuilder.Context, history: String, selection: ProjectMentionSelection,
+    historyEvidence: [ProjectCitation], characterBudget: Int,
     isCurrent: @escaping @MainActor () -> Bool, onText: @escaping @MainActor (String) -> Void,
     onStage: @escaping @MainActor (String) -> Void) async -> ScopedAgentAnswer {
     preconditionFailure("This fixture must not invoke a tool-calling model")
@@ -123,7 +129,7 @@ final class MemoraModel {
 
 enum RootTab { case library }
 enum LibraryRoute: Equatable { case projectChat(UUID) }
-enum AgentTool { case searchRecords, readRecord, listTasks }
+enum AgentTool: String { case searchRecords = "search_records", readRecord = "read_record", listTasks = "list_tasks" }
 struct MockProject { var name: String }
 struct MockLLM { var supportsToolCalling = false; var isMemoraIntelligence = false }
 struct MockConfiguration { var engine = MockEngine.local; var llm = MockLLM() }

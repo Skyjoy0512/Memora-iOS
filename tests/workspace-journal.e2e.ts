@@ -1,5 +1,6 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
+import { launchMemora, tapControl, tapTab } from './ui-helpers';
 
 /// Taps once, retrying a control that was still moving after the previous
 /// action, which the mobile engine refuses rather than misplacing the touch.
@@ -32,8 +33,10 @@ async function openAddSheet(screen: any, locator: any) {
 
 /// Creates a fresh project and lands on its workspace.
 async function createProject(screen: any, device: any) {
-  await screen.getByText('ライブラリ').tap();
-  await screen.getByText('プロジェクト').tap();
+  await tapTab(screen, 'ライブラリ');
+  const back = screen.getByTestId('BackButton');
+  if (await back.isVisible()) await tapControl(screen, back);
+  await tapControl(screen, screen.getByRole('button', { name: 'プロジェクト', exact: true }));
   await tapStable(screen.getByRole('button', { name: 'プロジェクトを作成' }).first());
   await screen.getByPlaceholder('例：新規アプリ').fill('E2E Workspace');
   await tapStable(screen.getByRole('button', { name: '作成' }));
@@ -44,14 +47,13 @@ async function createProject(screen: any, device: any) {
 async function scrollTo(screen: any, locator: any) {
   for (let i = 0; i < 8; i++) {
     if (await locator.isVisible()) return;
-    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 250 } });
+    await screen.swipe({ direction: 'down', momentum: 'none' });
   }
   throw new Error('could not scroll to the target');
 }
 
 test('the workspace tabs read chat, files, sources and switch in place', async ({ app, device, screen }) => {
-  await device.installApp();
-  await app.open();
+  await launchMemora(app, device, screen);
   await createProject(screen, device);
 
   const chat = screen.getByRole('button', { name: 'チャット', selected: true });
@@ -78,8 +80,7 @@ test('the workspace tabs read chat, files, sources and switch in place', async (
 });
 
 test('the week strip selects a day and updates the timeline', async ({ app, device, screen }) => {
-  await device.installApp();
-  await app.open();
+  await launchMemora(app, device, screen);
 
   const title = `E2E day ${Date.now()}`;
   await addMemo(screen, title);
@@ -101,8 +102,7 @@ test('the week strip selects a day and updates the timeline', async ({ app, devi
 });
 
 test('the inline plus buttons add a record', async ({ app, device, screen }) => {
-  await device.installApp();
-  await app.open();
+  await launchMemora(app, device, screen);
 
   await screen.getByText('記録を追加').first().tap();
   await screen.getByPlaceholder('メモのタイトル').fill('E2E inline');
@@ -122,10 +122,9 @@ test('the inline plus buttons add a record', async ({ app, device, screen }) => 
 });
 
 test('the journal and workspace stay legible in dark appearance', async ({ app, device, screen }) => {
-  await device.installApp();
+  await launchMemora(app, device, screen);
   await device.setAppearance('dark');
   try {
-    await app.open();
     await expect(screen.getByText('今日のタスク')).toBeVisible();
     await createProject(screen, device);
     await expect(screen.getByRole('button', { name: 'ソース' })).toBeVisible();
@@ -135,8 +134,7 @@ test('the journal and workspace stay legible in dark appearance', async ({ app, 
 });
 
 test('editing a record saves it to the new date', async ({ app, device, screen }) => {
-  await device.installApp();
-  await app.open();
+  await launchMemora(app, device, screen);
   const title = `E2E edit ${Date.now()}`;
   await addMemo(screen, title);
 
@@ -167,8 +165,7 @@ test('editing a record saves it to the new date', async ({ app, device, screen }
 });
 
 test('a source added in the workspace stays in the sources tab', async ({ app, device, screen }) => {
-  await device.installApp();
-  await app.open();
+  await launchMemora(app, device, screen);
   await createProject(screen);
 
   await tapStable(screen.getByRole('button', { name: 'ソース' }));
@@ -188,10 +185,9 @@ test('a source added in the workspace stays in the sources tab', async ({ app, d
 });
 
 test('the project list filters all, mine and shared', async ({ app, device, screen }) => {
-  await device.installApp();
-  await app.open();
-  await screen.getByText('ライブラリ').tap();
-  await screen.getByText('プロジェクト').tap();
+  await launchMemora(app, device, screen);
+  await tapTab(screen, 'ライブラリ');
+  await tapControl(screen, screen.getByRole('button', { name: 'プロジェクト', exact: true }));
 
   await expect(screen.getByRole('button', { name: 'すべて', selected: true })).toBeVisible();
   await tapStable(screen.getByRole('button', { name: '自分' }));
@@ -204,8 +200,7 @@ test('the project list filters all, mine and shared', async ({ app, device, scre
 });
 
 test('the files tab offers recording and existing-file actions', async ({ app, device, screen }) => {
-  await device.installApp();
-  await app.open();
+  await launchMemora(app, device, screen);
   await createProject(screen);
 
   await tapStable(screen.getByRole('button', { name: 'ファイル' }));

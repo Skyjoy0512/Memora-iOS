@@ -46,3 +46,5 @@ build-*/
 .e2e/summary.md
 .e2e/logs/
 .e2e/videos/
+.e2e/design-refresh/
+.e2e/regression/

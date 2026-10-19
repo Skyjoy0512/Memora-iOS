@@ -15,7 +15,7 @@ export default {
   targets: [
     {
       name: 'ios',
-      engine: mobile({ platform: 'ios', device: 'iPhone 18 Pro Max' }),
+      engine: mobile({ platform: 'ios', device: 'iPhone 18 Pro Max', settle: 300, transition: 700 }),
       app: {
         bundleId: 'app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4',
         appPath:
@@ -24,4 +24,6 @@ export default {
     },
   ],
   workers: 1,
+  actionTimeout: 10_000,
+  assertionTimeout: 10_000,
 } satisfies E2EConfig;

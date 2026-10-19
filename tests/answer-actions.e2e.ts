@@ -1,22 +1,23 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
+import { launchMemora, tapControl } from './ui-helpers';
 
 // Local fixtures and deterministic locators only: no agent/model or provider calls.
 async function scrollToText(screen: any, text: string) {
   for (let attempt = 0; attempt < 12; attempt++) {
     if (await screen.getByText(text).first().isVisible()) return;
-    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 250 } });
+    await screen.swipe({ direction: 'down', momentum: 'none' });
   }
   throw new Error(`could not scroll to ${text}`);
 }
 
 async function openGallery(app: any, device: any, screen: any) {
-  await device.installApp();
-  await app.open();
+  await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
   await screen.getByText('設定').tap();
   await scrollToText(screen, '状態と復旧UIを確認');
-  await screen.getByText('状態と復旧UIを確認').first().tap();
+  await screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }).tap();
+  await expect(screen.getByText('デザインと保存の検証')).toBeVisible();
 }
 
 test('answer actions open selectable text and hide an unavailable retry', async ({ app, device, screen }) => {
