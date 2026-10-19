@@ -532,42 +532,22 @@ struct LibraryView: View {
   }
 
   private var emptyFilesPrompt: some View {
-    VStack(spacing: 16) {
-      Image(icon: .waveform)
-        .font(.title2)
-        .foregroundStyle(.primary)
-
-      VStack(spacing: 6) {
-        Text(model.meetings.isEmpty ? "まだファイルがありません" : "未分類のファイルはありません")
-          .font(.headline)
-
-        Text(model.meetings.isEmpty
-             ? "録音するか、音声ファイルを読み込むとここに整理されます。"
-             : "移動したファイルは、サイドメニューのプロジェクトから開けます。")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-          .multilineTextAlignment(.center)
+    ProjectWorkspaceEmptyState(
+      icons: [.waveform, .doc, .folder],
+      title: model.meetings.isEmpty ? "録音または読み込み" : "未分類のファイルはありません",
+      message: model.meetings.isEmpty
+        ? "録音するか、音声ファイルを読み込むと、ここに整理されます。"
+        : "移動したファイルは、サイドメニューのプロジェクトから開けます。",
+      actionTitle: model.meetings.isEmpty ? "録音または読み込み" : "プロジェクトを開く",
+      actionIcon: model.meetings.isEmpty ? .plus : .folder
+    ) {
+      if model.meetings.isEmpty {
+        model.isCaptureSourcePresented = true
+      } else {
+        onOpenSidebar()
       }
-
-      Button {
-        if model.meetings.isEmpty {
-          model.isCaptureSourcePresented = true
-        } else {
-          onOpenSidebar()
-        }
-      } label: {
-        Text(model.meetings.isEmpty ? "録音または読み込み" : "プロジェクトを開く")
-          .font(.headline)
-          .foregroundStyle(.white)
-          .frame(maxWidth: .infinity, minHeight: 52)
-          .background(.tint, in: Capsule())
-          .contentShape(Capsule())
-      }
-      .buttonStyle(.plain)
     }
-    .frame(maxWidth: .infinity)
-    .padding(20)
-    .memoraCard(fill: MemoraPalette.card)
+    .padding(.vertical, 40)
   }
 
   // MARK: - Selection
