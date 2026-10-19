@@ -32,7 +32,7 @@ struct AskAIHeader: View {
         .memoraGlass(in: Circle(), interactive: true, backed: false)
     }
     .padding(.horizontal, MemoraSpacing.xl)
-    .frame(height: 48)
+    .frame(minHeight: 48)
   }
 
   private func headerButton(_ title: String, icon: MemoraIcon, action: @escaping () -> Void) -> some View {

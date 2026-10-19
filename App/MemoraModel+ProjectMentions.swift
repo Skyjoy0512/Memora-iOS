@@ -5,10 +5,11 @@ extension MemoraModel {
     guard currentTeamID == nil, space(id: projectID) != nil else { return [] }
     var candidates = projectReadingPlugins().filter { $0.matches(query) }
     let cloud = AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud
+    let canRead = projectReadingToolAvailable("read_record")
     candidates += meetings.filter { $0.spaceID == projectID && (query.isEmpty || $0.displayTitle.localizedStandardContains(query)) }
       .prefix(20).map { record in
         AIPlugin(id: "record:" + record.id.uuidString, name: record.displayTitle, summary: "このプロジェクトの記録", aliases: [], kind: .file,
-          state: projectEvidenceAllowed(.meeting(record.id), projectID: projectID, cloud: cloud) ? .ready : .unavailable("この記録の送信許可を確認してください。"),
+          state: canRead && projectEvidenceAllowed(.meeting(record.id), projectID: projectID, cloud: cloud) ? .ready : .unavailable("資料の読み取りツールと、この記録の送信許可を確認してください。"),
           toolIDs: ["memora:read_record"], permissions: ["所属と送信許可を実行時に再確認します。"], cost: .local, provider: .memora, recordID: record.id)
       }
     candidates += projectSources.filter { $0.projectID == projectID && (query.isEmpty || $0.title.localizedStandardContains(query)) }
@@ -18,10 +19,10 @@ extension MemoraModel {
 
   func projectSourcePlugin(_ source: ProjectSource) -> AIPlugin {
     let cloud = AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud
-    let ready = source.projectID.map { projectEvidenceAllowed(.source(source.id), projectID: $0, cloud: cloud) } == true
+    let ready = projectReadingToolAvailable("read_record") && source.projectID.map { projectEvidenceAllowed(.source(source.id), projectID: $0, cloud: cloud) } == true
     return AIPlugin(id: "source:" + source.id.uuidString, name: source.title,
       summary: source.kindLabel + " · " + source.statusLabel, aliases: [], kind: .file,
-      state: ready ? .ready : .unavailable("本文の解析状態と外部AIへの送信許可をソース詳細で確認してください。"),
+      state: ready ? .ready : .unavailable("読み取りツール、本文の解析状態と外部AIへの送信許可を確認してください。"),
       toolIDs: ["memora:read_record"], permissions: ["現在の所属・本文・送信許可を確認します。"], cost: .local,
       provider: .memora, sourceID: source.id)
   }
@@ -75,6 +76,7 @@ extension MemoraModel {
       }
     }
     guard skills.count <= 2, tools.isSubset(of: ProjectMentionSelection.readingTools) else { return nil }
+    guard ids.isEmpty || tools.allSatisfy(projectReadingToolAvailable) else { return nil }
     if ids.isEmpty { tools = ProjectMentionSelection.readingTools }
     if !ids.isEmpty, targets.isEmpty, tools == ["list_tasks"] {
       targets = Set(tasks.filter { task in
@@ -86,5 +88,9 @@ extension MemoraModel {
     return ProjectMentionSelection(pluginIDs: ids, toolNames: tools,
       targets: ids.isEmpty || (targets.isEmpty && searchesProject) ? nil : targets,
       guidance: MemoraSkill.guidance(skills, budget: 1_600))
+  }
+
+  private func projectReadingToolAvailable(_ name: String) -> Bool {
+    toolRegistry().tools["memora:" + name].map { $0.isAvailable && $0.isEnabled } == true
   }
 }

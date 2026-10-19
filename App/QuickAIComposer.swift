@@ -28,6 +28,8 @@ struct QuickAIComposer: View {
   @State private var composerTop: CGFloat = 360
   @State private var requestsMentionMenu = false
 
+  @ScaledMetric(relativeTo: .headline) private var menuTopClearance = MemoraSpacing.touchTarget
+
   var body: some View {
     // The draft lives in the model, so rebuilding this view or leaving the tab
     // does not lose what was being typed.
@@ -65,7 +67,7 @@ struct QuickAIComposer: View {
               .font(.footnote).frame(minHeight: 44)
           }.padding(.horizontal, MemoraSpacing.lg)
         } else if let token = activeMention, token != dismissedMention {
-          AIPluginMenu(candidates: model.mentionCandidates(query: token.query, scope: scope), selectedIDs: Set(model.composerMentions.map(\.pluginID)), maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - MemoraSpacing.md)),
+          AIPluginMenu(candidates: model.mentionCandidates(query: token.query, scope: scope), selectedIDs: Set(model.composerMentions.map(\.pluginID)), maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - menuTopClearance - MemoraSpacing.md)),
             select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })
         }
       }

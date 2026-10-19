@@ -20,6 +20,7 @@ struct ProjectSourceAddSheet: View {
 
   var body: some View {
     NavigationStack {
+      ScrollViewReader { scroll in
       Form {
         if let message {
           Section {
@@ -54,6 +55,7 @@ struct ProjectSourceAddSheet: View {
             .focused($focusedField, equals: .title)
           TextEditor(text: $noteText).frame(minHeight: 120).accessibilityLabel("メモ本文")
             .focused($focusedField, equals: .body)
+            .id(Field.body)
           Button("メモを保存", icon: .noteText) {
             perform {
               guard try await model.addProjectNote(title: noteTitle, text: noteText, projectID: projectID) != nil else { return false }
@@ -65,6 +67,15 @@ struct ProjectSourceAddSheet: View {
         }
       }
       .scrollDismissesKeyboard(.interactively)
+      .onChange(of: focusedField) { _, field in
+        if field == .body { scroll.scrollTo(Field.body, anchor: .center) }
+      }
+      .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { _ in
+        // The keyboard resizes the form after focus changes. Follow that layout
+        // change once, so the native editor stays above it without a timer.
+        if focusedField == .body { scroll.scrollTo(Field.body, anchor: .center) }
+      }
+      }
       .disabled(isSaving || model.isRestoring || model.space(id: projectID) == nil)
       .onAppear { noteText = DraftStore.load("workspace.newNote.\(projectID)") ?? "" }
       .onChange(of: noteText) { _, value in

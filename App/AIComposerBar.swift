@@ -37,6 +37,7 @@ struct AIComposerBar: View {
   @State private var isIntegrationsPresented = false
   @State private var showsAttachmentActions = false
   @State private var composerTop: CGFloat = 360
+  @ScaledMetric(relativeTo: .headline) private var menuTopClearance = MemoraSpacing.touchTarget
   @State private var isImporterPresented = false
   @State private var isAudioImporterPresented = false
   @State private var isPhotoPickerPresented = false
@@ -159,7 +160,7 @@ struct AIComposerBar: View {
     .overlay(alignment: .topLeading) {
       if showsAttachmentActions {
         ComposerActionMenu(close: { showsAttachmentActions = false },
-          maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - MemoraSpacing.md))) {
+          maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - menuTopClearance - MemoraSpacing.md))) {
           attachmentActions
         }
         .alignmentGuide(.top) { $0[.bottom] + MemoraSpacing.sm }
