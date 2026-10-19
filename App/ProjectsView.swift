@@ -64,7 +64,7 @@ struct ProjectsView: View {
             .padding(.vertical, MemoraSpacing.section)
           } else {
             ProjectWorkspaceEmptyState(
-              icons: [.folder, .doc, .person2],
+              icon: .folder,
               title: filter.emptyTitle,
               message: "録音や資料をプロジェクトにまとめると、ここから開けます。",
               actionTitle: "プロジェクトを作成",

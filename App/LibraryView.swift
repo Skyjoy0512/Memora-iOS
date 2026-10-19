@@ -46,7 +46,7 @@ struct LibraryView: View {
 
   private var librarySectionPicker: some View {
     @Bindable var model = model
-    return MemoraTextTabBar(items: LibrarySection.allCases, selection: $model.librarySection, horizontalPadding: 18) {
+    return MemoraTextTabBar(items: LibrarySection.allCases, selection: $model.librarySection, horizontalPadding: MemoraSpacing.screen) {
       $0.title
     }
     .accessibilityLabel("ライブラリの表示")
@@ -336,8 +336,8 @@ struct LibraryView: View {
             }
           } header: {
             Text(section.title)
-              .font(.subheadline.weight(.semibold))
-              .foregroundStyle(.secondary)
+              .font(MemoraTypography.secondary.weight(.medium))
+              .foregroundStyle(MemoraPalette.textSecondary)
               .textCase(nil)
           }
         }
@@ -533,7 +533,7 @@ struct LibraryView: View {
 
   private var emptyFilesPrompt: some View {
     ProjectWorkspaceEmptyState(
-      icons: [.waveform, .doc, .folder],
+      icon: .waveform,
       title: model.meetings.isEmpty ? "録音または読み込み" : "未分類のファイルはありません",
       message: model.meetings.isEmpty
         ? "録音するか、音声ファイルを読み込むと、ここに整理されます。"

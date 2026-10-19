@@ -1,0 +1,119 @@
+{
+  "auditDate": "2026-10-20",
+  "build": {
+    "command": "bitrig preview -platform iOS",
+    "result": "succeeded",
+    "log": "2026-10-20T08-46-16-145da166.log",
+    "existingWarnings": 11
+  },
+  "hostCheck": {
+    "command": "bash tools/checks/run-design-refresh-checks.sh",
+    "result": "passed"
+  },
+  "device": "Dedicated iPhone 18 Pro Max / iOS 27.0 simulator, separate from Bitrig preview",
+  "runs": [
+    {
+      "phase": "before-final-spacing",
+      "id": "01a1568a-67cb-7a34-a248-f27c7d673f60",
+      "status": "failed",
+      "startedAt": "2026-10-19T23:41:18.170Z",
+      "finishedAt": "2026-10-19T23:45:47.715Z",
+      "passed": 8,
+      "failed": 1,
+      "cases": [
+        {
+          "title": "design: mention controls remain below navigation and above native input",
+          "file": "tests/design-accessibility.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "design: mentions search, select twice, preserve focus, remove and use plus",
+          "file": "tests/design-refresh.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "design: unavailable integrations explain their state",
+          "file": "tests/design-refresh.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "design: project mentions preserve scope and the workspace three tabs",
+          "file": "tests/design-refresh.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "polish: candidate names, selected state and keyboard survive appearance changes",
+          "file": "tests/ui-polish.e2e.ts",
+          "status": "failed"
+        },
+        {
+          "title": "polish: library metadata and status remain readable in both appearances",
+          "file": "tests/ui-polish.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "the workspace tabs read chat, files, sources and switch in place",
+          "file": "tests/workspace-journal.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "a source added in the workspace stays in the sources tab",
+          "file": "tests/workspace-journal.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "the files tab offers recording and existing-file actions",
+          "file": "tests/workspace-journal.e2e.ts",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "phase": "final-standard-large",
+      "id": "01a15691-288b-7b9a-af5b-f4a820debdc4",
+      "status": "passed",
+      "startedAt": "2026-10-19T23:48:44.093Z",
+      "finishedAt": "2026-10-19T23:50:13.786Z",
+      "passed": 3,
+      "failed": 0,
+      "cases": [
+        {
+          "title": "polish: candidate names, selected state and keyboard survive appearance changes",
+          "file": "tests/ui-polish.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "polish: library metadata and status remain readable in both appearances",
+          "file": "tests/ui-polish.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "the workspace tabs read chat, files, sources and switch in place",
+          "file": "tests/workspace-journal.e2e.ts",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "phase": "final-accessibility-xxxl",
+      "id": "01a15690-4d4d-71f7-8d5c-b86e7a29398d",
+      "status": "passed",
+      "startedAt": "2026-10-19T23:47:47.978Z",
+      "finishedAt": "2026-10-19T23:48:27.563Z",
+      "passed": 2,
+      "failed": 0,
+      "cases": [
+        {
+          "title": "design: mention controls remain below navigation and above native input",
+          "file": "tests/design-accessibility.e2e.ts",
+          "status": "passed"
+        },
+        {
+          "title": "design: toolbar search clears without dismissing input and cancels back to tabs",
+          "file": "tests/design-accessibility.e2e.ts",
+          "status": "passed"
+        }
+      ]
+    }
+  ]
+}

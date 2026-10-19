@@ -7,7 +7,7 @@ struct MeetingStatusLabel: View {
   var body: some View {
     Text(status.shortLabel)
       .contentTransition(.opacity)
-    .font(.caption2.weight(.medium))
+    .font(MemoraTypography.metadata.weight(.medium))
     .foregroundStyle(style)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: status)
     .accessibilityElement(children: .ignore)
@@ -17,11 +17,13 @@ struct MeetingStatusLabel: View {
   private var style: AnyShapeStyle {
     switch status {
     case .ready:
-      AnyShapeStyle(.primary)
-    case .partialFailure, .failed:
-      AnyShapeStyle(.orange)
+      AnyShapeStyle(MemoraPalette.textSecondary)
+    case .partialFailure:
+      AnyShapeStyle(MemoraPalette.warning)
+    case .failed:
+      AnyShapeStyle(MemoraPalette.danger)
     default:
-      AnyShapeStyle(.secondary)
+      AnyShapeStyle(MemoraPalette.textSecondary)
     }
   }
 }

@@ -72,8 +72,10 @@ test('the workspace tabs read chat, files, sources and switch in place', async (
 
   await files.tap();
   await expect(screen.getByLabel('ファイルを追加').first()).toBeVisible();
+  await app.screenshot('workspace-empty-files');
   await sources.tap();
   await expect(screen.getByLabel('ソースを追加').first()).toBeVisible();
+  await app.screenshot('workspace-empty-sources');
   await tapStable(screen.getByRole('button', { name: 'チャット' }));
   await expect(screen.getByRole('button', { name: 'チャット', selected: true })).toBeVisible();
   await expect(screen.getByLabel('新しいチャット').first()).toBeVisible();

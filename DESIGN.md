@@ -98,6 +98,7 @@ System sheets/menus own their contours. Group related content sparingly.
 | AIResponseMarkdownBlock / StreamingMarkdownView | same type, incremental rendering, code copy, comparison tables |
 | EditableMarkdownDocument / InlineMarkdownEditor | in-place block/cell edit and durable drafts |
 | AIPluginMenu / ComposerMentionStrip | common @/+ candidates and removable selections |
+| AIPluginMenuRow / AIPluginMenuCopy | succinct display-only builtin explanations; separate availability/cost, selected and pressed feedback |
 | ComposerActionMenu | keyboard-preserving attachment actions on the same bounded neutral menu surface |
 | Native Form / Menu / sheet / alert | settings, integrations, skill setup, editors and confirmation |
 
@@ -156,3 +157,6 @@ cursor, selection, VoiceOver and Japanese marked-text composition take priority.
 range edits, scoped evidence/tools, persistence, navigation, Markdown and edit
 round trips. Compilation is not visual/device proof. Live provider execution,
 microphone, CloudKit and hardware require their actual configuration.
+
+[UI polish review](docs/design-refresh/POLISH.md) records the subsequent candidate-menu,
+list hierarchy and empty-state refinements without replacing the original audit.

@@ -34,11 +34,11 @@ enum ProjectWorkspaceTab: String, CaseIterable, Identifiable {
     }
   }
 
-  var emptyIcons: [MemoraIcon] {
+  var emptyIcon: MemoraIcon {
     switch self {
-    case .chat: [.chatBubble, .sparkles, .doc]
-    case .files: [.waveform, .doc, .folder]
-    case .sources: [.link, .doc, .photo]
+    case .chat: .chatBubble
+    case .files: .waveform
+    case .sources: .link
     }
   }
 

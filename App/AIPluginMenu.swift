@@ -1,13 +1,13 @@
 import SwiftUI
 
 struct AIPluginMenu: View {
-  @Environment(\.dynamicTypeSize) private var typeSize
   var candidates: [AIPlugin]
   var selectedIDs: Set<String> = []
   var maximumHeight: CGFloat
   var select: (AIPlugin) -> Void
   var cancel: () -> Void
-  @ScaledMetric(relativeTo: .body) private var rowHeight = 64
+  @State private var contentHeight: CGFloat = 0
+  @State private var headerHeight: CGFloat = MemoraSpacing.touchTarget
 
   var body: some View {
     let groups = AIPlugin.Kind.allCases.compactMap { kind -> (AIPlugin.Kind, [AIPlugin])? in
@@ -25,6 +25,7 @@ struct AIPluginMenu: View {
         MemoraIconButton("候補を閉じる", icon: .xmark, action: cancel)
       }
       .padding(.horizontal, MemoraSpacing.md)
+      .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
       Divider()
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 0) {
@@ -33,46 +34,28 @@ struct AIPluginMenu: View {
               .font(.subheadline).foregroundStyle(.secondary).padding(MemoraSpacing.lg)
           }
           ForEach(groups, id: \.0) { kind, rows in
-            Text(kind.rawValue).font(.caption).foregroundStyle(.secondary)
-              .padding(.horizontal, MemoraSpacing.lg).padding(.top, MemoraSpacing.md)
+            Text(kind.rawValue)
+              .font(MemoraTypography.metadata.weight(.medium))
+              .foregroundStyle(MemoraPalette.textSecondary)
+              .padding(.horizontal, MemoraSpacing.lg)
+              .padding(.top, MemoraSpacing.lg)
+              .padding(.bottom, MemoraSpacing.xs)
             ForEach(rows) { plugin in
-              Button { select(plugin) } label: {
-                HStack(alignment: .top, spacing: MemoraSpacing.md) {
-                  AIPluginIconView(icon: plugin.icon)
-                    .frame(width: 24)
-                  VStack(alignment: .leading, spacing: 3) {
-                    Text(plugin.name).font(.body)
-                    if typeSize.isAccessibilitySize {
-                      selectionLabel(plugin)
-                    }
-                    Text(plugin.state.reason ?? plugin.summary + " · " + plugin.cost.rawValue)
-                      .font(.caption).foregroundStyle(.secondary)
-                      .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
-                  }
-                  if !typeSize.isAccessibilitySize {
-                    Spacer(minLength: 4)
-                    selectionLabel(plugin)
-                  }
-                }
-                .padding(.horizontal, MemoraSpacing.lg).padding(.vertical, MemoraSpacing.md)
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .background(MemoraPalette.secondaryBackground.opacity(selectedIDs.contains(plugin.id) ? 1 : 0))
-                .contentShape(Rectangle())
+              AIPluginMenuRow(plugin: plugin, isSelected: selectedIDs.contains(plugin.id)) {
+                select(plugin)
               }
-              .buttonStyle(.plain)
-              .accessibilityLabel("\(plugin.name)、\(plugin.state.label)")
-              .accessibilityHint(plugin.state.reason ?? plugin.summary)
-              .accessibilityAddTraits(selectedIDs.contains(plugin.id) ? .isSelected : [])
             }
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
       }
       .frame(maxHeight: .infinity)
       .scrollDismissesKeyboard(.never)
+      .scrollBounceBehavior(.basedOnSize)
     }
     // Bound the whole menu, not just its list: its header also grows with text.
-    .frame(height: min(maximumHeight, max(100, CGFloat(candidates.count) * rowHeight + CGFloat(groups.count) * 28 + 45)))
+    .frame(height: min(maximumHeight, max(100, headerHeight + contentHeight + 1)))
     .background(MemoraPalette.elevated, in: RoundedRectangle(cornerRadius: MemoraRadius.card))
     .overlay { RoundedRectangle(cornerRadius: MemoraRadius.card).strokeBorder(MemoraPalette.border, lineWidth: 1) }
     .preservesComposerFocus()
@@ -80,8 +63,4 @@ struct AIPluginMenu: View {
     .accessibilityElement(children: .contain)
   }
 
-  private func selectionLabel(_ plugin: AIPlugin) -> some View {
-    Text(selectedIDs.contains(plugin.id) ? "選択済み" : plugin.state.isReady ? "追加" : plugin.state.label)
-      .font(.caption).foregroundStyle(.secondary)
-  }
 }

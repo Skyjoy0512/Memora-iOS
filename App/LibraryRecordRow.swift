@@ -8,33 +8,28 @@ struct LibraryRecordRow: View {
   var sharedBy: String?
 
   var body: some View {
-    HStack(alignment: .center, spacing: 12) {
+    HStack(alignment: .top, spacing: MemoraSpacing.md) {
       if isSelecting {
         Image(icon: isSelected ? .checkmarkCircleFill : .circle)
           .font(.body)
           .frame(width: ProjectLayout.iconSide)
           .accessibilityHidden(true)
       }
-      VStack(alignment: .leading, spacing: 4) {
-        ProjectRecordRow(meeting: meeting)
+      VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+        ProjectRecordRow(meeting: meeting, showsReadyStatus: true)
         if let sharedBy {
           SharedOwnerBadge(ownerName: sharedBy)
-            .padding(.leading, ProjectLayout.iconSide + 12)
+            .padding(.leading, ProjectLayout.iconSide + MemoraSpacing.md)
         }
         if SampleContent.isSample(meetingID: meeting.id) {
-          SampleTag().padding(.leading, ProjectLayout.iconSide + 12)
-        }
-        if meeting.status == .ready {
-          MeetingStatusLabel(status: meeting.status)
-            .font(MemoraTypography.metadata)
-            .padding(.leading, ProjectLayout.iconSide + 12)
+          SampleTag().padding(.leading, ProjectLayout.iconSide + MemoraSpacing.md)
         }
         if showsPreview, hasPreview {
           Text(meeting.shortSummaryPreview)
             .font(MemoraTypography.secondary)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(MemoraPalette.textSecondary)
             .lineLimit(2)
-            .padding(.leading, ProjectLayout.iconSide + 12)
+            .padding(.leading, ProjectLayout.iconSide + MemoraSpacing.md)
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)

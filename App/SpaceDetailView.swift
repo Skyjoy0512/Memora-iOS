@@ -141,7 +141,7 @@ struct SpaceDetailView: View {
     VStack(spacing: 0) {
       Spacer(minLength: 32)
       ProjectWorkspaceEmptyState(
-        icons: tab.emptyIcons,
+        icon: tab.emptyIcon,
         title: tab.emptyTitle,
         message: tab.emptyDescription,
         actionTitle: tab.emptyActionTitle,
