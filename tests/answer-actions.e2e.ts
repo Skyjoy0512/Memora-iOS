@@ -6,7 +6,7 @@ import { launchMemora, tapControl } from './ui-helpers';
 async function scrollToText(screen: any, text: string) {
   for (let attempt = 0; attempt < 12; attempt++) {
     if (await screen.getByText(text).first().isVisible()) return;
-    await screen.swipe({ direction: 'down', momentum: 'none' });
+    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 300 }, duration: 500 });
   }
   throw new Error(`could not scroll to ${text}`);
 }

@@ -18,7 +18,7 @@ async function fillComposer(screen: any, text: string) {
 async function scrollTo(screen: any, locator: any) {
   for (let i = 0; i < 9; i++) {
     if (await locator.isVisible()) return;
-    await screen.swipe({ direction: 'down', momentum: 'none' });
+    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 300 }, duration: 500 });
   }
   throw new Error('target not reached');
 }
@@ -27,18 +27,14 @@ async function review(screen: any, device: any) {
   await openLink(device, screen, 'memora://journal');
   await tap(screen, screen.getByLabel('メニュー'));
   await tap(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
+  await expect(screen.getByText('アカウント')).toBeVisible();
   const gallery = screen.getByText('状態と復旧UIを確認');
   await scrollTo(screen, gallery);
   await tap(screen, screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }));
   await tap(screen, screen.getByText('デザインと保存の検証'));
 }
 
-afterEach(async ({ app, device, screen }) => {
-  await app.open();
-  if (await screen.getByTestId('ai.composer.input').isVisible()) {
-    await fillComposer(screen, '');
-    await device.dismissKeyboard();
-  }
+afterEach(async ({ device }) => {
   await device.setAppearance('light');
 });
 
@@ -143,7 +139,7 @@ test('design: project mentions preserve scope and the workspace three tabs', asy
   await tap(screen, screen.getByRole('button', { name: 'ScopeEvidence、利用可能', exact: true }));
   await openLink(device, screen, 'memora://ask-ai');
   await expect(screen.getByLabel('ScopeEvidence、利用不可、情報を表示')).toBeVisible();
-  await tap(screen, screen.getByLabel('送信'));
+  await tap(screen, screen.getByRole('button', { name: '送信', exact: true }));
   await expect(screen.getByText(/このソースは所属プロジェクト内のAsk AI/)).toBeVisible();
   await tap(screen, screen.getByRole('button', { name: 'OK', exact: true }));
   await expect(input).toHaveValue(/ScopeEvidence/);

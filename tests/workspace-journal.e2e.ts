@@ -47,7 +47,7 @@ async function createProject(screen: any, device: any) {
 async function scrollTo(screen: any, locator: any) {
   for (let i = 0; i < 8; i++) {
     if (await locator.isVisible()) return;
-    await screen.swipe({ direction: 'down', momentum: 'none' });
+    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 300 }, duration: 500 });
   }
   throw new Error('could not scroll to the target');
 }

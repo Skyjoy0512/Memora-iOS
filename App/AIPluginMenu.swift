@@ -16,8 +16,11 @@ struct AIPluginMenu: View {
     }
     VStack(spacing: 0) {
       HStack {
-        Text("ツール・スキル・ソース")
-          .font(MemoraTypography.metadata).foregroundStyle(MemoraPalette.textSecondary)
+        ViewThatFits(in: .horizontal) {
+          Text("ツール・スキル・ソース").fixedSize(horizontal: true, vertical: true)
+          Text("候補").accessibilityLabel("ツール・スキル・ソース")
+        }
+        .font(MemoraTypography.metadata).foregroundStyle(MemoraPalette.textSecondary)
         Spacer(minLength: 4)
         MemoraIconButton("候補を閉じる", icon: .xmark, action: cancel)
       }

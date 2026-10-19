@@ -9,11 +9,15 @@ struct ToolbarSearchField: View {
   var prompt: String
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
   @FocusState private var isFocused: Bool
 
   var body: some View {
-    HStack(spacing: 12) {
-      HStack(spacing: 6) {
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .trailing, spacing: MemoraSpacing.sm))
+      : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
+    layout {
+      HStack(spacing: MemoraSpacing.sm) {
         ArtworkIcon(artwork: .searchIntelligence, size: 20)
           .foregroundStyle(.secondary)
           .accessibilityHidden(true)
@@ -24,21 +28,23 @@ struct ToolbarSearchField: View {
           .autocorrectionDisabled()
 
         if !text.isEmpty {
-          Button("検索語を消去", icon: .xmarkCircleFill) { text = "" }
-            .labelStyle(.iconOnly)
-            .foregroundStyle(.tertiary)
-            .buttonStyle(.plain)
+          MemoraIconButton("検索語を消去", icon: .xmarkCircleFill) { text = "" }
         }
       }
       .padding(.horizontal, MemoraSpacing.md)
-      .frame(minHeight: 40)
+      .frame(minHeight: MemoraSpacing.touchTarget)
       .background(MemoraPalette.selection, in: Capsule())
 
-      Button("キャンセル", action: close)
+      Button(action: close) {
+        Text("キャンセル")
+          .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+          .contentShape(Rectangle())
+      }
     }
     .padding(.horizontal, MemoraSpacing.screen)
     .padding(.vertical, MemoraSpacing.sm)
     .background(MemoraPalette.background)
+    .preservesComposerFocus()
     .onAppear { isFocused = true }
   }
 

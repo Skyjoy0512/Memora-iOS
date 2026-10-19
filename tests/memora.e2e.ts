@@ -19,7 +19,7 @@ test('the app opens on the journal', async ({ app, device, screen }) => {
 test('the tabs switch between journal, library and Ask AI', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapTab(screen, 'ライブラリ');
-  await expect(screen.getByText('ライブラリ').first()).toBeVisible();
+  await expect(screen.getByRole('button', { name: 'ファイル', exact: true, selected: true })).toBeVisible();
   await tapTab(screen, 'Ask AI');
   await expect(screen.getByLabel('新しいチャット')).toBeVisible();
   await tapTab(screen, 'ジャーナル');
@@ -63,7 +63,7 @@ test('the tasks list opens from the journal', async ({ app, device, screen }) =>
 async function scrollToText(screen: any, text: string) {
   for (let i = 0; i < 10; i++) {
     if (await screen.getByText(text).first().isVisible()) return;
-    await screen.swipe({ direction: 'down', momentum: 'none' });
+    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 300 }, duration: 500 });
   }
   throw new Error(`could not scroll to ${text}`);
 }

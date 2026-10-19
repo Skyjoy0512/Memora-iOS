@@ -85,6 +85,7 @@ System sheets/menus own their contours. Group related content sparingly.
 |---|---|
 | MemoraButtonStyle | solid primary / neutral secondary actions, pressed and disabled states |
 | MemoraIconButton | 20pt SF glyph with an actual 44pt accessible/tappable label, not outer spacing |
+| ToolbarSearchField | Native focused search; 44pt clear/cancel controls; vertical layout at accessibility text sizes |
 | ToolbarIconButton / ToolbarActionLabel | native toolbar labels and accessible actions |
 | AIComposerBar / QuickAIComposer | native input, attachments, speech, submit/stop, scoped selection |
 | ToolbarSearchField | contextual native search and IME/cursor behavior |

@@ -6,12 +6,26 @@ export async function tapControl(screen: any, locator: any) {
   await locator.tap();
 }
 
+async function stableBounds(control: any) {
+  let box: any;
+  let previous = '';
+  let stableReads = 0;
+  await expect.poll(async () => {
+    box = await control.boundingBox();
+    if (!box) { stableReads = 0; return false; }
+    const signature = [box.x, box.y, box.width, box.height].map(value => value.toFixed(2)).join(',');
+    stableReads = signature === previous ? stableReads + 1 : 0;
+    previous = signature;
+    return stableReads >= 2;
+  }).toBe(true);
+  return box;
+}
+
 export async function tapTab(screen: any, name: string) {
   // The native Glass selection morph never becomes a static segmented image.
   const control = screen.getByRole('tab', { name, exact: true });
   await expect(control).toBeVisible();
-  const box = await control.boundingBox();
-  if (!box) throw new Error('tab has no frame');
+  const box = await stableBounds(control);
   await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
   await expect(screen.getByRole('tab', { name, exact: true, selected: true })).toBeVisible();
 }
@@ -19,12 +33,17 @@ export async function tapTab(screen: any, name: string) {
 export async function focusComposer(screen: any) {
   const input = screen.getByTestId('ai.composer.input');
   await expect(input).toBeVisible();
-  // Deep-link autofocus changes this field's frame. Read it after the initial
-  // observation, rather than asking XCTest to tap a cached collapsed frame.
-  const box = await input.boundingBox();
-  if (!box) throw new Error('composer has no frame');
-  await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
+  const keyboard = screen.getByRole('keyboard');
+  // Deep links already autofocus. A second tap on a moving field can hit the
+  // background and dismiss the keyboard instead of focusing the composer.
+  if (!(await keyboard.isVisible())) {
+    const box = await stableBounds(input);
+    if (!(await keyboard.isVisible())) {
+      await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    }
+  }
   await expect(screen.getByRole('keyboard')).toBeVisible();
+  await expect(input).toBeFocused();
   return input;
 }
 
@@ -43,4 +62,5 @@ export async function launchMemora(app: any, device: any, screen: any) {
     await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
   }
   await expect(journal).toBeVisible();
+  await expect(screen.getByLabel('メニュー')).toBeVisible();
 }
