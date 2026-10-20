@@ -25,6 +25,7 @@ struct RootTabView: View {
         },
         onOpenProjects: {
           closeSidebar()
+          model.isToolsPresented = false
           model.openProjects()
         },
         onCreateTeam: {
@@ -39,6 +40,7 @@ struct RootTabView: View {
         onOpenPeople: openPeople,
         onSelectTab: { tab in
           closeSidebar()
+          model.isToolsPresented = false
           model.selectedTab = tab
         },
         onOpenTools: {
@@ -49,7 +51,19 @@ struct RootTabView: View {
         onClose: closeSidebar
       )
     } content: {
-      tabSurface
+      ZStack {
+        if model.isToolsPresented {
+          NavigationStack { ToolsView(onOpenSidebar: openSidebar) }
+            .transition(reduceMotion ? .opacity : .move(edge: .leading))
+            .zIndex(1)
+        } else {
+          tabSurface
+        }
+      }
+      .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isToolsPresented)
+    }
+    .onChange(of: model.isToolsPresented) { _, isOpen in
+      if isOpen { model.composerDismissRequests += 1 }
     }
     .onChange(of: isSidebarOpen) { _, open in
       if open { model.composerDismissRequests += 1 }
@@ -236,7 +250,7 @@ struct RootTabView: View {
         )
         // The Ask AI component keeps a small side margin on every page.
         .containerRelativeFrame(.horizontal) { width, _ in
-          min(width * 0.9, MemoraSpacing.readingWidth)
+          min(width * 0.945, MemoraSpacing.readingWidth)
         }
         // Note: no `.id(composerScope)` — recreating the field would throw away
         // what someone had already typed when the scope changed.
@@ -295,7 +309,7 @@ struct RootTabView: View {
   }
 
   private var canRevealSidebar: Bool {
-    guard !model.isCaptureSourcePresented, !model.isSearchActive else { return false }
+    guard !model.isToolsPresented, !model.isCaptureSourcePresented, !model.isSearchActive else { return false }
     switch model.selectedTab {
     case .home:
       return model.homePath.isEmpty
@@ -307,7 +321,7 @@ struct RootTabView: View {
   }
 
   private func openSidebar() {
-    guard canRevealSidebar else { return }
+    guard canRevealSidebar || model.isToolsPresented else { return }
     setSidebar(open: true)
   }
 
@@ -331,6 +345,7 @@ struct RootTabView: View {
 
   private func openDocuments() {
     closeSidebar()
+    model.isToolsPresented = false
     model.selectedTab = .library
     model.librarySection = .files
     model.libraryPath = [.documents]
@@ -338,6 +353,7 @@ struct RootTabView: View {
 
   private func openPeople() {
     closeSidebar()
+    model.isToolsPresented = false
     model.selectedTab = .library
     model.librarySection = .files
     model.libraryPath = [.people]
@@ -365,7 +381,7 @@ struct RootTabView: View {
   }
 
   private var shouldShowComposer: Bool {
-    guard !model.isInlineEditing, !isSearchCovering else { return false }
+    guard !model.isToolsPresented, !model.isInlineEditing, !isSearchCovering else { return false }
     if case .projectChat(let id) = model.activeNavigationPath.last {
       guard let projectID = model.projectChat(id: id)?.projectID, model.space(id: projectID) != nil else { return false }
     }

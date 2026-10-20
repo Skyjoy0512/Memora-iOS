@@ -40,9 +40,6 @@ struct ContentView: View {
     .sheet(isPresented: $model.isSettingsPresented) {
       SettingsView()
     }
-    .sheet(isPresented: $model.isToolsPresented) {
-      NavigationStack { ToolsView() }
-    }
     .sheet(isPresented: $model.isAuthPresented) {
       AuthView()
     }

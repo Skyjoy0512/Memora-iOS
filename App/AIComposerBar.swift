@@ -36,9 +36,6 @@ struct AIComposerBar: View {
 
   @State private var speechInput = SpeechInputService()
   @State private var isIntegrationsPresented = false
-  @State private var showsAttachmentActions = false
-  @State private var composerTop: CGFloat = 360
-  @ScaledMetric(relativeTo: .headline) private var menuTopClearance = MemoraSpacing.touchTarget
   @State private var isImporterPresented = false
   @State private var isAudioImporterPresented = false
   @State private var isPhotoPickerPresented = false
@@ -158,16 +155,6 @@ struct AIComposerBar: View {
     .background { listeningBackdrop }
     .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), interactive: true, backed: false)
     .preservesComposerFocus()
-    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
-    .overlay(alignment: .topLeading) {
-      if showsAttachmentActions {
-        ComposerActionMenu(close: { showsAttachmentActions = false },
-          maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - menuTopClearance - MemoraSpacing.md))) {
-          attachmentActions
-        }
-        .alignmentGuide(.top) { $0[.bottom] + MemoraSpacing.sm }
-      }
-    }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: speechInput.isListening)
@@ -177,7 +164,6 @@ struct AIComposerBar: View {
     .onChange(of: hasContent) { _, hasContent in
       if !hasContent { isEditorTall = false }
     }
-    .onChange(of: text) { _, _ in showsAttachmentActions = false }
     .onChange(of: isFieldFocused) { _, focused in
       focusChanged?(focused)
     }
@@ -185,7 +171,6 @@ struct AIComposerBar: View {
       interactionChanged?(interacting)
     }
     .onChange(of: model.composerDismissRequests) { _, _ in
-      showsAttachmentActions = false
       isFieldFocused = false
     }
     .onChange(of: model.composerFocusRequest, initial: true) { _, request in
@@ -207,7 +192,6 @@ struct AIComposerBar: View {
       }
     }
     .onDisappear {
-      showsAttachmentActions = false
       externalFocusTask?.cancel()
       speechInput.stop()
     }
@@ -295,38 +279,32 @@ struct AIComposerBar: View {
   @ViewBuilder private var attachmentActions: some View {
       if let onMentionMenu {
         Button("プラグイン・スキル・ソース", icon: .plus) {
-          showsAttachmentActions = false
           isFieldFocused = true
           onMentionMenu()
         }
         Divider()
       }
       Button("連携サービス…", icon: .plugsConnected) {
-        showsAttachmentActions = false
         isIntegrationsPresented = true
       }
       Divider()
       Button("写真を選択…", icon: .photo) {
-        showsAttachmentActions = false
         InteractionFeedback.shared.send(.tap)
         isPhotoPickerPresented = true
       }
       Button("音声を選択…", icon: .waveform) {
-        showsAttachmentActions = false
         InteractionFeedback.shared.send(.tap)
         isAudioImporterPresented = true
       }
       Button("ファイルを選択…", icon: .doc) {
-        showsAttachmentActions = false
         InteractionFeedback.shared.send(.tap)
         isImporterPresented = true
       }
   }
 
   private var attachmentMenu: some View {
-    Button {
-      dismissMentionMenu?()
-      showsAttachmentActions.toggle()
+    Menu {
+      attachmentActions
     } label: {
       Image(icon: .plus)
         .font(.system(size: 20, weight: .medium))
@@ -335,6 +313,8 @@ struct AIComposerBar: View {
         .contentShape(Circle())
     }
     .labelStyle(.iconOnly)
+    .buttonStyle(.plain)
+    .simultaneousGesture(TapGesture().onEnded { dismissMentionMenu?() })
     // A menu tints its label with the accent; the attach glyph stays in the
     // label color like the rest of the composer.
     .tint(.primary)

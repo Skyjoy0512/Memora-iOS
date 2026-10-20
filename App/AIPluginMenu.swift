@@ -56,8 +56,7 @@ struct AIPluginMenu: View {
     }
     // Bound the whole menu, not just its list: its header also grows with text.
     .frame(height: min(maximumHeight, max(100, headerHeight + contentHeight + 1)))
-    .background(MemoraPalette.elevated, in: RoundedRectangle(cornerRadius: MemoraRadius.card))
-    .overlay { RoundedRectangle(cornerRadius: MemoraRadius.card).strokeBorder(MemoraPalette.border, lineWidth: 1) }
+    .memoraGlass(in: RoundedRectangle(cornerRadius: MemoraRadius.card), backed: false)
     .preservesComposerFocus()
     .accessibilityIdentifier("ai.mention.candidates")
     .accessibilityElement(children: .contain)

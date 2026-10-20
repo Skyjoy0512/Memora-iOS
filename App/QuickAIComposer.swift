@@ -35,45 +35,43 @@ struct QuickAIComposer: View {
     // does not lose what was being typed.
     @Bindable var model = model
 
-    return AIComposerBar(
-      text: $model.composerDraft,
-      attachment: Binding(get: { model.composerAttachment }, set: { model.composerAttachment = $0 }),
-      placeholder: placeholder,
-      isConversation: model.selectedTab == .askAI && scope == .global,
-      isBusy: isPreparingAttachment || model.activeProjectChatID.map { model.projectChatBusyIDs.contains($0) } == true,
-      onStop: scope == .global && model.isAIChatResponding ? { model.stopAIChat() } : nil,
-      keepsFocusAfterSubmit: keepsFocusAfterSubmit,
-      autofocus: autofocus,
-      acceptsExternalFocusRequest: model.selectedTab == .askAI && scope == .global,
-      onSubmit: submit(attachment:),
-      interactionChanged: { interacting in
-        isComposing = interacting
-      },
-      onResearch: model.selectedTab == .askAI && scope == .global ? { usesWebSearch.toggle() } : nil,
-      researchSelected: usesWebSearch,
-      mentionInput: supportsMentions ? mentionInput : nil,
-      onMentionMenu: supportsMentions ? { requestsMentionMenu = true; openMentionMenuIfReady() } : nil,
-      removeMention: removeMention,
-      mentionScope: scope,
-      dismissMentionMenu: { dismissedMention = activeMention }
-    )
-    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
-    .overlay(alignment: .top) {
-      VStack(spacing: 0) {
-        if isPreparingAttachment, attachmentPreparationTask != nil {
-          HStack {
-            Text("添付を解析しています").font(.footnote).foregroundStyle(.secondary)
-            Spacer()
-            Button("停止", icon: .stopFill) { attachmentPreparationTask?.cancel() }
-              .font(.footnote).frame(minHeight: 44)
-          }.padding(.horizontal, MemoraSpacing.lg)
-        } else if let token = activeMention, token != dismissedMention {
-          AIPluginMenu(candidates: model.mentionCandidates(query: token.query, scope: scope), selectedIDs: Set(model.composerMentions.map(\.pluginID)), maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - menuTopClearance - MemoraSpacing.md)),
-            select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })
-        }
+    return VStack(spacing: MemoraSpacing.sm) {
+      if isPreparingAttachment, attachmentPreparationTask != nil {
+        HStack {
+          Text("添付を解析しています").font(.footnote).foregroundStyle(.secondary)
+          Spacer()
+          Button("停止", icon: .stopFill) { attachmentPreparationTask?.cancel() }
+            .font(.footnote).frame(minHeight: 44)
+        }.padding(.horizontal, MemoraSpacing.lg)
+      } else if let token = activeMention, token != dismissedMention {
+        AIPluginMenu(candidates: model.mentionCandidates(query: token.query, scope: scope),
+          selectedIDs: Set(model.composerMentions.map(\.pluginID)),
+          maximumHeight: min(360, max(100, composerTop - WindowSafeArea.insets.top - menuTopClearance - MemoraSpacing.md)),
+          select: { selectPlugin($0, token: token) }, cancel: { dismissedMention = token })
       }
-      .fixedSize(horizontal: false, vertical: true)
-      .alignmentGuide(.top) { $0[.bottom] + 8 }
+      AIComposerBar(
+        text: $model.composerDraft,
+        attachment: Binding(get: { model.composerAttachment }, set: { model.composerAttachment = $0 }),
+        placeholder: placeholder,
+        isConversation: model.selectedTab == .askAI && scope == .global,
+        isBusy: isPreparingAttachment || model.activeProjectChatID.map { model.projectChatBusyIDs.contains($0) } == true,
+        onStop: scope == .global && model.isAIChatResponding ? { model.stopAIChat() } : nil,
+        keepsFocusAfterSubmit: keepsFocusAfterSubmit,
+        autofocus: autofocus,
+        acceptsExternalFocusRequest: model.selectedTab == .askAI && scope == .global,
+        onSubmit: submit(attachment:),
+        interactionChanged: { interacting in
+          isComposing = interacting
+        },
+        onResearch: model.selectedTab == .askAI && scope == .global ? { usesWebSearch.toggle() } : nil,
+        researchSelected: usesWebSearch,
+        mentionInput: supportsMentions ? mentionInput : nil,
+        onMentionMenu: supportsMentions ? { requestsMentionMenu = true; openMentionMenuIfReady() } : nil,
+        removeMention: removeMention,
+        mentionScope: scope,
+        dismissMentionMenu: { dismissedMention = activeMention }
+      )
+      .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
     }
     .sheet(item: $selectedSetup) { plugin in
       NavigationStack {

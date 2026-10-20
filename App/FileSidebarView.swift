@@ -27,18 +27,18 @@ struct FileSidebarView: View {
           VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
             VStack(spacing: 0) {
               SidebarRow(title: "ジャーナル", symbol: .calendar,
-                isSelected: model.selectedTab == .home) {
+                isSelected: !model.isToolsPresented && model.selectedTab == .home) {
                 onSelectTab(.home)
               }
               SidebarRow(title: "ライブラリ", symbol: .folder,
-                isSelected: model.selectedTab == .library) {
+                isSelected: !model.isToolsPresented && model.selectedTab == .library) {
                 onSelectTab(.library)
               }
               SidebarRow(title: "Ask AI", symbol: .sparkles,
-                isSelected: model.selectedTab == .askAI) {
+                isSelected: !model.isToolsPresented && model.selectedTab == .askAI) {
                 onSelectTab(.askAI)
               }
-              SidebarRow(title: "ツール", symbol: .puzzle) {
+              SidebarRow(title: "ツール", symbol: .puzzle, isSelected: model.isToolsPresented) {
                 onOpenTools()
               }
               SidebarRow(title: "設定", symbol: .gearshape) {
@@ -48,14 +48,14 @@ struct FileSidebarView: View {
 
             sidebarSection("コレクション") {
               SidebarRow(title: "プロジェクト", symbol: .rectangleStack,
-                isSelected: model.selectedTab == .library && model.librarySection == .projects) {
+                isSelected: !model.isToolsPresented && model.selectedTab == .library && model.librarySection == .projects) {
                 onOpenProjects()
               }
               SidebarRow(
                 title: "資料",
                 symbol: .docRichtext,
                 detail: model.documents.isEmpty ? nil : "\(model.documents.count)",
-                isSelected: isShowingDocuments
+                isSelected: !model.isToolsPresented && isShowingDocuments
               ) {
                 onOpenDocuments()
               }
@@ -64,7 +64,7 @@ struct FileSidebarView: View {
                 title: "人物",
                 symbol: .person2,
                 detail: model.people.isEmpty ? nil : "\(model.people.count)",
-                isSelected: model.selectedTab == .library && model.libraryPath.first == .people
+                isSelected: !model.isToolsPresented && model.selectedTab == .library && model.libraryPath.first == .people
               ) {
                 onOpenPeople()
               }

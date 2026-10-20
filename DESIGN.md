@@ -181,9 +181,25 @@ belong under AI and summaries. Preserve profile editing, permission explanations
 connection setup and the single sidebar settings entry. No fabricated service state.
 
 Tools: the side menu's `ToolsView` is a Plaud-style hub for skills, summary
-templates and connectors. It uses native grouped rows, reports real counts, and
-opens the same registration editors as Settings. Creation stays reachable from
-the hub; no fabricated connector or skill state.
+templates and connectors. A top segmented picker switches between マイスキル,
+テンプレート and コネクタ, retaining the selection. Plain native lists group
+skills by source, templates by category, and connectors by purpose. Article-style
+details use a common reading width and a bottom primary action. Skill use stages
+a mention in the existing Ask AI draft without sending it; template use sets the
+existing automatic-summary preference. The top-right plus opens the same editors
+as Settings and preserves Markdown import and MCP registration. Service state
+comes from the existing catalog; no fabricated connections or authors.
+Service identities use the unmodified official logos through `AIPluginIcon`;
+sources are recorded in `docs/CONNECTOR_LOGOS.md`. Ordinary interface controls
+continue to use Lucide. The device calendar retains its native calendar glyph.
+
+The composer plus uses the system Menu for anchored, accessible Liquid Glass
+presentation. Mention candidates occupy layout space above the native input,
+so the complete candidate surface is inside its hit-test bounds. The field stays
+mounted for cursor/IME continuity, and candidate controls use the shared glass.
+The composer occupies 94.5% of the available width, capped at the reading width.
+Tools is a full-page destination entering from the leading edge, with a sidebar
+button; its details use native navigation. It is not presented as a bottom sheet.
 
 Sidebar: workspace switcher; the main destinations (Journal / Library / Ask AI /
 Tools) first, then collections (Projects / Documents / People), Devices, and

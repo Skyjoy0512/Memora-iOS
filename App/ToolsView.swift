@@ -1,104 +1,77 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
-/// The Plaud-style tools hub: what Ask AI can use, what it writes with, and the
-/// services it may read. Registration stays in the screens themselves, so a
-/// skill, template or connector is created by the same code everywhere.
 struct ToolsView: View {
-  @Environment(MemoraModel.self) private var model
-  @Environment(\.dismiss) private var dismiss
+  var onOpenSidebar: () -> Void
+  @AppStorage("memora.tools.section") private var section = ToolsSection.skills
   @State private var newSkill: MemoraSkill?
   @State private var newTemplate: SummaryMarketTemplate?
+  @State private var importingSkill = false
+  @State private var importFailure = false
 
   var body: some View {
-    List {
-      Section {
-        NavigationLink {
-          SkillsView()
-        } label: {
-          SettingsValue(
-            title: "マイスキル",
-            value: "\(model.skillCatalog.count)個",
-            icon: .sparkles
-          )
-        }
-
-        Button {
-          newSkill = MemoraSkill(
-            id: "custom-" + UUID().uuidString,
-            name: "",
-            summary: "",
-            instructions: "",
-            keywords: [],
-            declaredToolNames: []
-          )
-        } label: {
-          SettingsLabel("スキルを作成", icon: .plus)
-        }
-      } header: {
-        Text("スキル")
-      } footer: {
-        Text("依頼に合う手順をAsk AIが選びます。スキルは外部サービスへの接続や権限を追加しません。")
+    VStack(spacing: 0) {
+      Picker("ツールの表示", selection: $section) {
+        ForEach(ToolsSection.allCases) { section in Text(section.rawValue).tag(section) }
       }
+      .pickerStyle(.segmented)
+      .padding(.horizontal, MemoraSpacing.xxl)
+      .padding(.top, MemoraSpacing.sm)
+      .padding(.bottom, MemoraSpacing.xl)
 
-      Section {
-        NavigationLink {
-          SummaryTemplateMarketplaceView()
-        } label: {
-          SettingsValue(
-            title: "テンプレート",
-            value: "\(model.customTemplates.count)個作成",
-            icon: .docText
-          )
+      Group {
+        switch section {
+        case .skills: ToolsSkillsList()
+        case .templates: ToolsTemplatesList()
+        case .connectors: ToolsConnectorsList()
         }
-
-        Button {
-          newTemplate = SummaryMarketTemplate(
-            id: "custom.\(UUID().uuidString)",
-            title: "",
-            detail: "",
-            symbol: .docText,
-            lead: "",
-            isCustom: true
-          )
-        } label: {
-          SettingsLabel("テンプレートを作成", icon: .plus)
-        }
-      } header: {
-        Text("テンプレート")
-      } footer: {
-        Text("要約の構成を決めます。作成したテンプレートは自動生成の既定にも選べます。")
       }
-
-      Section {
-        NavigationLink {
-          IntegrationsView()
-        } label: {
-          SettingsValue(
-            title: "コネクタ",
-            value: connectorSummary,
-            icon: .plugsConnected
-          )
-        }
-      } header: {
-        Text("コネクタ")
-      } footer: {
-        Text("Gmail、カレンダー、Notionなどの外部サービスを接続します。接続は利用者が明示的に行います。")
-      }
+      .listStyle(.plain)
+      .scrollContentBackground(.hidden)
+      .listSectionSpacing(MemoraSpacing.section)
+      .environment(\.defaultMinListRowHeight, 72)
+      .listRowInsets(EdgeInsets(top: MemoraSpacing.lg, leading: MemoraSpacing.xxl,
+        bottom: MemoraSpacing.lg, trailing: MemoraSpacing.xxl))
     }
-    .memoraSettingsPage("ツール")
+    .background(MemoraPalette.background)
+    .tint(MemoraPalette.textPrimary)
+    .navigationTitle("ツール")
+    .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      ToolbarItem(placement: .cancellationAction) {
-        ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
+      ToolbarItem(placement: .topBarLeading) {
+        ToolbarIconButton("メニュー", icon: .line3Horizontal) { onOpenSidebar() }
+      }
+      ToolbarItem(placement: .primaryAction) {
+        Menu {
+          Button("スキルを作成", icon: .squareAndPencil) {
+            newSkill = MemoraSkill(id: "custom-" + UUID().uuidString,
+              name: "", summary: "", instructions: "", keywords: [], declaredToolNames: [])
+          }
+          Button("スキルのMarkdownを読み込む", icon: .docText) { importingSkill = true }
+          Button("テンプレートを作成", icon: .docOnDoc) {
+            newTemplate = SummaryMarketTemplate(id: "custom.\(UUID().uuidString)",
+              title: "", detail: "", symbol: .docText, lead: "", isCustom: true)
+          }
+          NavigationLink { MCPServersView() } label: { Label("MCPサーバーを登録", icon: .plugsConnected) }
+        } label: { ToolbarActionLabel("ツールを追加", icon: .plus) }
       }
     }
     .sheet(item: $newSkill) { SkillEditorView(skill: $0) }
     .sheet(item: $newTemplate) { SummaryTemplateEditor(template: $0) }
-  }
-
-  private var connectorSummary: String {
-    let implemented = IntegrationCatalog.services.filter(\.isImplemented)
-    let ready = implemented.filter { model.integrationState($0).isReady }
-    guard !implemented.isEmpty else { return "接続先なし" }
-    return "\(ready.count)/\(implemented.count)件接続中"
+    .fileImporter(isPresented: $importingSkill, allowedContentTypes: [.plainText, .text], allowsMultipleSelection: false) { result in
+      guard case .success(let urls) = result, let url = urls.first else { return }
+      let allowed = Set(AgentTool.allCases.map(\.rawValue))
+      Task {
+        do {
+          let text = try await Task.detached(priority: .userInitiated) { try MemoraSkillMarkdown.read(url) }.value
+          newSkill = try MemoraSkillMarkdown.parse(text, allowedTools: allowed)
+        } catch { importFailure = true }
+      }
+    }
+    .alert("スキルを読み込めません", isPresented: $importFailure) {
+      Button("閉じる", role: .cancel) {}
+    } message: {
+      Text("名前・用途・手順を含むUTF-8のMarkdownを選んでください。最大32KBで、未登録のツールは追加できません。")
+    }
   }
 }

@@ -3,6 +3,26 @@ import Foundation
 extension MemoraModel {
   var skillCatalog: [MemoraSkill] { MemoraSkill.bundled + customSkills }
 
+  /// Stage a selection for review; opening a skill never sends a question.
+  func prepareSkillInComposer(_ id: String) {
+    guard let skill = skillCatalog.first(where: { $0.id == id }),
+          !disabledSkillIDs.contains(id) else { return }
+    if !composerMentions.contains(where: { $0.pluginID == "skill:" + id && $0.isValid(in: composerDraft) }) {
+      if !composerDraft.isEmpty, composerDraft.last?.isWhitespace != true { composerDraft += " " }
+      let label = skill.name.replacingOccurrences(of: "]", with: "）").replacingOccurrences(of: "[", with: "（")
+      let token = "[@\(label)]"
+      let mention = ComposerMention(pluginID: "skill:" + id, label: label,
+        range: NSRange(location: composerDraft.utf16.count, length: token.utf16.count))
+      composerDraft += token + " "
+      composerMentions.append(mention)
+    }
+    isToolsPresented = false
+    isSettingsPresented = false
+    isSearchActive = false
+    selectedTab = .askAI
+    composerFocusRequest = UUID()
+  }
+
   func saveCustomSkill(_ skill: MemoraSkill) -> Bool {
     let knownTools = Set(AgentTool.allCases.map(\.rawValue))
     guard !isRestoring, MemoraSkillMarkdown.valid(skill), skill.toolNames.allSatisfy(knownTools.contains) else { return false }

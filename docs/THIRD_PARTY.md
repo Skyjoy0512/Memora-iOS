@@ -20,6 +20,9 @@
 
 ## コードと設計
 
+コネクタの公式ブランド画像と配布元は[コネクタの公式ロゴ](CONNECTOR_LOGOS.md)に記載。
+各ロゴは各権利者の商標であり、接続先の識別に使用する。
+
 | 名前 | 使い方 | ライセンス |
 | --- | --- | --- |
 | [MCP Swift SDK 0.12.1](https://github.com/modelcontextprotocol/swift-sdk/tree/0.12.1) | リモートMCPのクライアント。ライセンス全文をアプリ内リソースに同梱 | MIT |
