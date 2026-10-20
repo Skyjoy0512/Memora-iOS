@@ -37,11 +37,12 @@ struct ToolsView: View {
     .tint(MemoraPalette.textPrimary)
     .navigationTitle("ツール")
     .navigationBarTitleDisplayMode(.inline)
+    .toolbarBackground(MemoraPalette.background, for: .navigationBar)
     .toolbar {
-      ToolbarItem(placement: .topBarLeading) {
+      ToolbarActionItem(placement: .topBarLeading) {
         ToolbarIconButton("メニュー", icon: .line3Horizontal) { onOpenSidebar() }
       }
-      ToolbarItem(placement: .primaryAction) {
+      ToolbarActionItem {
         Menu {
           Button("スキルを作成", icon: .squareAndPencil) {
             newSkill = MemoraSkill(id: "custom-" + UUID().uuidString,

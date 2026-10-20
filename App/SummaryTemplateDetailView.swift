@@ -28,7 +28,8 @@ struct SummaryTemplateDetailView: View {
       .navigationTitle("テンプレート")
       .navigationBarTitleDisplayMode(.inline)
       .tint(MemoraPalette.textPrimary)
-      .memoraBackButton()
+      .navigationBarBackButtonHidden(true)
+      .toolbarBackground(MemoraPalette.background, for: .navigationBar)
       .safeAreaInset(edge: .bottom, spacing: 0) {
         VStack(spacing: MemoraSpacing.sm) {
           ToolsPrimaryAction(title: isDefault ? "自動生成の既定を解除" : "自動生成に使用") {
@@ -44,10 +45,13 @@ struct SummaryTemplateDetailView: View {
         }
         .padding(.horizontal, MemoraSpacing.xxl)
         .padding(.vertical, MemoraSpacing.md)
-        .background(.bar)
+        .background(MemoraPalette.background)
       }
       .toolbar {
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarActionItem(placement: .topBarLeading) {
+          ToolbarIconButton("1つ前に戻る", icon: .chevronLeft) { dismiss() }
+        }
+        ToolbarActionItem {
           Menu {
             if template.isCustom {
               Button("編集", icon: .pencil) { editing = template }

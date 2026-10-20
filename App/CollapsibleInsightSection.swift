@@ -35,15 +35,7 @@ struct CollapsibleInsightSection<Content: View>: View {
         }
       } label: {
         HStack(spacing: 8) {
-          Label {
-            Text(section.title)
-          } icon: {
-            if let artwork = section.artwork {
-              ArtworkIcon(artwork: artwork, size: 20)
-            } else {
-              Image(icon: section.icon, size: 20)
-            }
-          }
+          Text(section.title)
             .font(.title3.bold())
             .foregroundStyle(.primary)
           Spacer(minLength: 8)
@@ -52,6 +44,7 @@ struct CollapsibleInsightSection<Content: View>: View {
             .foregroundStyle(.secondary)
             .rotationEffect(.degrees(isCollapsed ? -90 : 0))
         }
+        .frame(minHeight: MemoraSpacing.touchTarget)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)

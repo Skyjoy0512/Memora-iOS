@@ -73,6 +73,7 @@ struct SettingsView: View {
   private func value(for category: SettingsCategory) -> String? {
     switch category {
     case .account: model.isSignedIn ? "サインイン済み" : "このiPhoneのみ"
+    case .workspace: model.currentWorkspace.title
     case .plan: model.planName
     default: nil
     }

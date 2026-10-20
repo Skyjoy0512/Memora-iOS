@@ -26,7 +26,9 @@ struct SettingsCategoryView: View {
 
   var body: some View {
     Group {
-      if category == .integrations {
+      if category == .workspace {
+        WorkspaceSettingsView()
+      } else if category == .integrations {
         IntegrationsView()
       } else {
         Form {
@@ -41,7 +43,7 @@ struct SettingsCategoryView: View {
           case .data: dataSections
           case .about: aboutSections
           case .diagnostics: diagnosticsSections
-          case .integrations: EmptyView()
+          case .integrations, .workspace: EmptyView()
           }
         }
         .memoraSettingsPage(category.title)

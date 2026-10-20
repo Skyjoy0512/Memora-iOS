@@ -28,14 +28,6 @@ struct RootTabView: View {
           model.isToolsPresented = false
           model.openProjects()
         },
-        onCreateTeam: {
-          closeSidebar()
-          model.isTeamCreationPresented = true
-        },
-        onJoinTeam: {
-          closeSidebar()
-          model.isTeamJoinPresented = true
-        },
         onOpenDocuments: openDocuments,
         onOpenPeople: openPeople,
         onSelectTab: { tab in
@@ -109,6 +101,7 @@ struct RootTabView: View {
       model.prepareWeeklyReviewIfNeeded()
     }
     .task { await model.refreshShareInbox() }
+    .task { await model.refreshTeams() }
     .onChange(of: model.spaces) { _, _ in Task { await model.refreshShareInbox() } }
     .onChange(of: model.currentTeamID) { _, _ in Task { await model.refreshShareInbox() } }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in

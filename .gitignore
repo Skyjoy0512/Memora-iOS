@@ -49,3 +49,4 @@ build-*/
 .e2e/design-refresh/
 .e2e/regression/
 .e2e/accessibility/
+.e2e/selection-polish-workspace/

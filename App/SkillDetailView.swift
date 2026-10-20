@@ -27,7 +27,8 @@ struct SkillDetailView: View {
       .navigationTitle("スキル")
       .navigationBarTitleDisplayMode(.inline)
       .tint(MemoraPalette.textPrimary)
-      .memoraBackButton()
+      .navigationBarBackButtonHidden(true)
+      .toolbarBackground(MemoraPalette.background, for: .navigationBar)
       .safeAreaInset(edge: .bottom, spacing: 0) {
         ToolsPrimaryAction(title: enabled ? "チャットで使用" : "スキルを有効にする") {
           if enabled {
@@ -38,10 +39,13 @@ struct SkillDetailView: View {
         }
         .padding(.horizontal, MemoraSpacing.xxl)
         .padding(.vertical, MemoraSpacing.md)
-        .background(.bar)
+        .background(MemoraPalette.background)
       }
       .toolbar {
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarActionItem(placement: .topBarLeading) {
+          ToolbarIconButton("1つ前に戻る", icon: .chevronLeft) { dismiss() }
+        }
+        ToolbarActionItem {
           Menu {
             ShareLink(item: skill.skillMarkdown) { Label("Markdownを共有", icon: .squareAndArrowUp) }
             if skill.id.hasPrefix("custom-") {

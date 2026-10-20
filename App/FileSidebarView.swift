@@ -6,8 +6,6 @@ struct FileSidebarView: View {
 
   var onOpenRecorder: () -> Void
   var onOpenProjects: () -> Void
-  var onCreateTeam: () -> Void
-  var onJoinTeam: () -> Void
   var onOpenDocuments: () -> Void
   var onOpenPeople: () -> Void
   var onSelectTab: (RootTab) -> Void
@@ -19,11 +17,6 @@ struct FileSidebarView: View {
     VStack(alignment: .leading, spacing: 0) {
       ScrollView {
         VStack(alignment: .leading, spacing: 0) {
-          WorkspaceSwitcher(onCreateTeam: onCreateTeam, onJoinTeam: onJoinTeam)
-            .padding(.horizontal, MemoraSpacing.lg)
-            .padding(.top, MemoraSpacing.md)
-            .padding(.bottom, MemoraSpacing.sm)
-
           VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
             VStack(spacing: 0) {
               SidebarRow(title: "ジャーナル", symbol: .calendar,

@@ -94,6 +94,8 @@ struct LibraryView: View {
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.top, MemoraSpacing.md)
+          .padding(.trailing, MemoraSpacing.screen)
           .padding(.bottom, MemoraSpacing.sm)
         }
         Group {
@@ -700,7 +702,7 @@ struct LibraryView: View {
     if calendar.isDateInYesterday(date) { return "昨日" }
     if calendar.isDate(date, equalTo: .now, toGranularity: .weekOfYear) { return "今週" }
     if calendar.isDate(date, equalTo: .now, toGranularity: .month) { return "今月" }
-    return date.formatted(.dateTime.year().month())
+    return MemoraFormat.monthTitle(date)
   }
 
   private func matchesQuery(_ meeting: Meeting) -> Bool {

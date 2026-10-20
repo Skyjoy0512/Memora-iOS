@@ -1,13 +1,13 @@
 /// Top-level destinations are topics; individual switches live one level below.
 enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
-  case account, plan, recording, ai, journal, integrations, appearance, privacy, data, about, diagnostics
+  case account, workspace, plan, recording, ai, journal, integrations, appearance, privacy, data, about, diagnostics
 
   var id: String { rawValue }
   static var groups: [String] { ["アカウント", "アプリ", "データ", "その他"] }
 
   var group: String {
     switch self {
-    case .account, .plan: "アカウント"
+    case .account, .workspace, .plan: "アカウント"
     case .recording, .ai, .journal, .integrations, .appearance: "アプリ"
     case .privacy, .data: "データ"
     case .about, .diagnostics: "その他"
@@ -17,6 +17,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
   var title: String {
     switch self {
     case .account: "アカウント"
+    case .workspace: "ワークスペース"
     case .plan: "プランと利用状況"
     case .recording: "録音と文字起こし"
     case .ai: "AIと要約"
@@ -33,6 +34,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable, Hashable {
   var icon: MemoraIcon {
     switch self {
     case .account: .personCropCircle
+    case .workspace: .person2
     case .plan: .creditcard
     case .recording: .waveform
     case .ai: .sparkles

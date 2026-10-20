@@ -8,16 +8,17 @@ struct CaptureMenuPopover: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isFileImporterPresented = false
   @State private var importSpaceID: UUID?
-  @State private var contentHeight: CGFloat = 300
+  @State private var contentHeight: CGFloat = 260
+  @ScaledMetric(relativeTo: .body) private var menuWidth: CGFloat = 260
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+      VStack(alignment: .leading, spacing: 0) {
         Text("新しい記録")
           .font(MemoraTypography.metadata.weight(.medium))
           .foregroundStyle(MemoraPalette.textSecondary)
           .padding(.horizontal, MemoraSpacing.sm)
-          .padding(.vertical, MemoraSpacing.sm)
+          .padding(.vertical, MemoraSpacing.xs)
         if let spaceID, let space = model.space(id: spaceID) {
           Label("保存先：\(space.name)", icon: .folder)
             .font(.footnote)
@@ -41,20 +42,20 @@ struct CaptureMenuPopover: View {
           Button {
             select(action)
           } label: {
-            MemoraActionLabel(title: action.title, detail: action.detail, icon: action.symbol)
+            MemoraActionLabel(title: action.title, icon: action.symbol)
           }
           .accessibilityLabel(action.title)
           .accessibilityHint(action.detail)
         }
       }
-      .padding(MemoraSpacing.md)
+      .padding(MemoraSpacing.sm)
       .buttonStyle(MemoraMenuButtonStyle())
       .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
         if abs(contentHeight - height) > 0.5 { contentHeight = height }
       }
     }
     .scrollBounceBehavior(.basedOnSize)
-    .frame(idealWidth: 320, maxWidth: 360)
+    .frame(idealWidth: min(menuWidth, 320), maxWidth: min(menuWidth, 320))
     .frame(idealHeight: min(contentHeight, 480), maxHeight: min(contentHeight, 480))
     .fileImporter(
       isPresented: $isFileImporterPresented,

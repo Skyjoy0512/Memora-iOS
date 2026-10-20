@@ -170,15 +170,20 @@ tasks and notes. Flat section tabs. Edit one block/cell in place; Markdown sourc
 editing stays a deliberate context-menu action. Tables retain every value.
 Audio, timestamps, source navigation and saving retain their existing paths.
 The record header uses its display-title fallback and one wrapping metadata line.
+Summary section headings are text-only, retaining the disclosure chevron and
+44pt touch target. The Library's section selector sits 12pt below the toolbar;
+its sort control uses the same trailing margin as the create button. Month
+headings use the shared Japanese formatter.
 
 Settings/sheets: native grouped Form, neutral glyphs, system presentation and
-common action hierarchy. The root is profile editing plus 11 topic links in four
+common action hierarchy. The root is profile editing plus 12 topic links in four
 groups: account, app, data and other. Individual switches, AI models, service
 connections, storage and diagnostics live inside the relevant topic. Keep
 promotional plan cards out of this index; plan and credit operations remain in
 their category. Services have one canonical list under Integrations; skills
 belong under AI and summaries. Preserve profile editing, permission explanations,
 connection setup and the single sidebar settings entry. No fabricated service state.
+Workspace selection, team creation and joining live under Settings › ワークスペース.
 
 Tools: the side menu's `ToolsView` is a Plaud-style hub for skills, summary
 templates and connectors. A top segmented picker switches between マイスキル,
@@ -200,17 +205,20 @@ mounted for cursor/IME continuity, and candidate controls use the shared glass.
 The composer occupies 94.5% of the available width, capped at the reading width.
 Tools is a full-page destination entering from the leading edge, with a sidebar
 button; its details use native navigation. It is not presented as a bottom sheet.
+Tools and their details share the canvas background and 44pt circular toolbar
+controls. Bottom primary actions use native Liquid Glass capsules.
+The capture menu shows action names and icons in 44pt rows with a 260pt width
+that grows with Dynamic Type up to 320pt; explanations remain VoiceOver hints.
 
-Sidebar: workspace switcher; the main destinations (Journal / Library / Ask AI /
+Sidebar: the main destinations (Journal / Library / Ask AI /
 Tools) first, then collections (Projects / Documents / People), Devices, and
 plan/settings controls. There is no bottom tab bar. A destination name stays constant; connection
 state is a separate secondary value. Rows use the shared 28pt icon column and
-52pt minimum height, growing with text. The workspace switcher is the first
-scrollable item, without a nested card. Account information and the plan/settings
+52pt minimum height, growing with text. Account information and the plan/settings
 actions are anchored below the destinations. They wrap without truncation; the
 profile avatar is a separate 32pt content role, not an interface glyph. At
 accessibility sizes the plan action reads “プラン” and the guest's secondary label
-reads “サインイン”; storage context remains in the workspace switcher above. The
+reads “サインイン”; workspace and storage context live in Settings. The
 spoken plan name still identifies Memora Plus. The settings gear stays at the
 bottom right, with its entire 44pt glass circle inside the tappable label.
 The drawer uses secondaryBackground, subtly separated from the conversation canvas.

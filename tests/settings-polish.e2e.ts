@@ -29,11 +29,7 @@ test('settings polish: topic hierarchy, profile editing and shared sidebar icons
   for (const appearance of ['light', 'dark'] as const) {
     await device.setAppearance(appearance);
     await tapControl(screen, screen.getByLabel('メニュー'));
-    const workspace = screen.getByLabel('ワークスペース', { exact: true });
-    for (let i = 0; i < 6 && !(await workspace.isVisible()); i++) {
-      await screen.swipe({ from: { x: 180, y: 300 }, to: { x: 180, y: 730 }, duration: 500 });
-    }
-    await expect(screen.getByLabel('ワークスペース', { exact: true })).toBeVisible();
+    await expect(screen.getByLabel('ワークスペース', { exact: true })).not.toBeVisible();
     await app.screenshot(`sidebar-top-${appearance}`);
     await scrollToControl(screen, screen.getByRole('button', { name: 'プロジェクト', exact: true }));
     await expect(screen.getByText('プロジェクト', { exact: true })).toBeVisible();
@@ -53,7 +49,7 @@ test('settings polish: topic hierarchy, profile editing and shared sidebar icons
     await expect(screen.getByText('Gmail', { exact: true })).not.toBeVisible();
     await expect(screen.getByText('AIモデル', { exact: true })).not.toBeVisible();
     await app.screenshot(`settings-topics-${appearance}`);
-    for (const id of ['account', 'plan', 'recording', 'ai', 'journal', 'integrations', 'appearance', 'privacy', 'data', 'about', 'diagnostics']) {
+    for (const id of ['account', 'workspace', 'plan', 'recording', 'ai', 'journal', 'integrations', 'appearance', 'privacy', 'data', 'about', 'diagnostics']) {
       const row = screen.getByTestId(`settings.category.${id}`).first();
       await scrollToControl(screen, row);
       const box = await row.boundingBox();
@@ -67,6 +63,25 @@ test('settings polish: topic hierarchy, profile editing and shared sidebar icons
   await tapControl(screen, screen.getByTestId('settings.profile').first());
   await expect(screen.getByPlaceholder('表示する名前')).toBeVisible();
   await expect(screen.getByRole('button', { name: 'ミー文字・絵文字を選ぶ', exact: true }).first()).toBeVisible();
+});
+
+test('settings polish: workspace switching and team registration remain reachable in Settings', async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await tapControl(screen, screen.getByLabel('メニュー'));
+  await expect(screen.getByRole('button', { name: 'ライブラリ', exact: true })).toBeVisible();
+  await expect(screen.getByLabel('ワークスペース', { exact: true })).not.toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
+  await expect(screen.getByTestId('settings.profile').first()).toBeVisible();
+  await category(screen, 'workspace');
+  const workspace = screen.getByLabel('ワークスペース', { exact: true }).last();
+  await expect(workspace).toBeVisible();
+  await tapControl(screen, workspace.getByRole('button').first());
+  await expect(screen.getByRole('button', { name: 'チームを作成', exact: true })).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: 'チームに参加', exact: true }));
+  await expect(screen.getByPlaceholder('招待コード')).toBeVisible();
+  await app.screenshot('workspace-team-join');
+  await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
+  await expect(workspace).toBeVisible();
 });
 
 test('settings polish: appearance preferences survive restart without changing records', async ({ app, device, screen }) => {

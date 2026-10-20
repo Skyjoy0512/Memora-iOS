@@ -10,6 +10,7 @@ struct AskAIHeader: View {
   var body: some View {
     HStack(spacing: MemoraSpacing.sm) {
       headerButton("メニュー", icon: .line3Horizontal, action: onOpenSidebar)
+        .memoraGlass(in: Circle(), interactive: true, backed: false)
       Menu {
         if model.aiPersonScopeID != nil {
           Button("すべての記録の新しいチャット", icon: .squareAndPencil) { model.startNewAIChat() }

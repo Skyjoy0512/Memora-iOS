@@ -33,7 +33,7 @@ test('chat surface: capture composer and sidebar in both appearances', async ({ 
     await expect(screen.getByRole('button', { name: '音声で入力', exact: true })).toBeVisible();
     await dismissFromEmptyCanvas(screen);
     await tapControl(screen, screen.getByLabel('メニュー'));
-    await expect(screen.getByLabel('ワークスペース', { exact: true })).toBeVisible();
+    await expect(screen.getByLabel('ワークスペース', { exact: true })).not.toBeVisible();
     await expect(screen.getByRole('button', { name: 'Memora Plus、プランと利用状況', exact: true })).toBeVisible();
     await app.screenshot(`chat-sidebar-${appearance}`);
     const settings = screen.getByRole('button', { name: '設定', exact: true }).last();
