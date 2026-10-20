@@ -14,13 +14,12 @@ struct MemoraIconButton: View {
 
   var body: some View {
     Button(action: action) {
-      Image(icon: icon)
-        .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
+      Image(icon: icon, size: MemoraIconMetrics.glyph)
         .foregroundStyle(MemoraPalette.textPrimary)
         .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
         .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(MemoraQuietButtonStyle())
     .accessibilityLabel(title)
   }
 }

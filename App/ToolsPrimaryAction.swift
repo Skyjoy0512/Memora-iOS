@@ -8,12 +8,13 @@ struct ToolsPrimaryAction: View {
     let button = Button(action: action) {
       Text(title)
         .font(.body.weight(.semibold))
-        .frame(maxWidth: .infinity, minHeight: 52)
+        .frame(maxWidth: .infinity)
         .contentShape(Capsule())
     }
     .tint(MemoraPalette.action)
     .foregroundStyle(MemoraPalette.actionLabel)
     .buttonBorderShape(.capsule)
+    .controlSize(.large)
 
     if #available(iOS 26.0, *) {
       button.buttonStyle(.glassProminent)

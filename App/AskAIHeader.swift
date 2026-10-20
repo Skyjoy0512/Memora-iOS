@@ -30,7 +30,7 @@ struct AskAIHeader: View {
           .frame(minHeight: 44)
           .contentShape(Rectangle())
       }
-      .buttonStyle(.plain)
+      .buttonStyle(MemoraQuietButtonStyle())
       .accessibilityLabel("Memora、履歴と検索")
       Spacer(minLength: MemoraSpacing.sm)
       headerButton("新しいチャット", icon: .squareAndPencil, action: onNewChat)
@@ -49,7 +49,7 @@ struct AskAIHeader: View {
         .frame(width: 44, height: 44)
         .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(MemoraQuietButtonStyle())
     .accessibilityLabel(title)
   }
 }

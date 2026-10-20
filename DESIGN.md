@@ -96,7 +96,9 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | Component | Responsibility |
 |---|---|
 | MemoraButtonStyle | solid primary / neutral secondary actions, pressed and disabled states |
-| MemoraIconButton | 20pt SF glyph with an actual 44pt accessible/tappable label, not outer spacing |
+| MemoraIconButton | explicit 20pt Lucide glyph with an actual 44pt accessible/tappable label, not outer spacing |
+| MemoraQuietButtonStyle | brief opacity feedback without another background or decorative movement |
+| memoraReadingText | prose uses the same body size and 6pt extra leading as Markdown |
 | ToolbarSearchField | Native focused search; 44pt clear/cancel controls; vertical layout at accessibility text sizes |
 | ToolbarIconButton / ToolbarActionLabel | native toolbar labels and accessible actions |
 | MemoraInterfaceIcon / MemoraIconMetrics | common menu/settings glyph, alignment slot and touch metric |
@@ -116,7 +118,7 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | EditableMarkdownDocument / InlineMarkdownEditor | in-place block/cell edit and durable drafts |
 | AIPluginMenu / ComposerMentionStrip | common @/+ candidates and removable selections |
 | AIPluginMenuRow / AIPluginMenuCopy | succinct display-only builtin explanations; separate availability/cost, selected and pressed feedback |
-| ComposerActionMenu | keyboard-preserving attachment actions on the same bounded neutral menu surface |
+| Composer attachment Menu | native anchored attachment actions; mention selection preserves the native input |
 | AIReplyActionsRow | common response controls and a real excerpt count; vertical at accessibility sizes |
 | SidebarAccountFooter | anchored account/plan/settings controls, separated from scrollable destinations |
 | Native Form / Menu / sheet / alert | settings, integrations, skill setup, editors and confirmation |
@@ -206,7 +208,12 @@ The composer occupies 94.5% of the available width, capped at the reading width.
 Tools is a full-page destination entering from the leading edge, with a sidebar
 button; its details use native navigation. It is not presented as a bottom sheet.
 Tools and their details share the canvas background and 44pt circular toolbar
-controls. Bottom primary actions use native Liquid Glass capsules.
+controls, including Menu labels. Tool lists use 16pt section spacing, 12pt/8pt
+heading insets and medium-weight titles; summaries use 3pt extra leading.
+Management rows share the canvas rather than switching to grouped black cards.
+Bottom primary actions use large native Liquid Glass capsules, without adding
+another minimum height on top of the native style's padding. Article actions
+align with the 20pt content margin and reading-width limit.
 The capture menu shows action names and icons in 44pt rows with a 260pt width
 that grows with Dynamic Type up to 320pt; explanations remain VoiceOver hints.
 
@@ -221,6 +228,8 @@ accessibility sizes the plan action reads “プラン” and the guest's second
 reads “サインイン”; workspace and storage context live in Settings. The
 spoken plan name still identifies Memora Plus. The settings gear stays at the
 bottom right, with its entire 44pt glass circle inside the tappable label.
+It is the only Settings entry in the drawer; the top group contains destinations
+only, not a second copy of the same action.
 The drawer uses secondaryBackground, subtly separated from the conversation canvas.
 At accessibility sizes, secondary row values move below the title rather than
 competing for a narrow horizontal column.
@@ -230,10 +239,14 @@ competing for a narrow horizontal column.
 Liquid Glass belongs to navigation, the side menu, the top-right create control
 and the composer. There are no bottom tabs. Keep the create popover compact and
 the composer on the bottom edge.
-Create-menu actions explain their input method beneath a stable action name.
+Create-menu actions show a stable action name; input explanations are spoken hints.
 The native popover sizes to measured content, caps its ideal height and scrolls;
 the recording/import/project destination callbacks are unchanged.
 Purposeful spring motion remains; Reduce Motion suppresses nonessential movement.
+Shared timings are 0.32s for screens, 0.30s for the drawer, 0.22s for controls
+and 0.14s for press feedback. First-appearance movement is limited to 8pt;
+no staggered entrances are added to ordinary lists or reading pages. The drawer
+uses a narrow, low-opacity shadow rather than a heavy floating-panel effect.
 Loading reflects real operations; never invent progress or expose private reasoning.
 
 Icon-only controls have accessible names. State uses text/traits/symbols as well

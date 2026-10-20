@@ -23,8 +23,9 @@ struct ToolsTemplatesList: View {
       }
       Section {
         NavigationLink { SummaryTemplateMarketplaceView() } label: {
-          Label("テンプレートを検索・管理", icon: .magnifyingglass)
+          SettingsLabel("テンプレートを検索・管理", icon: .magnifyingglass)
         }
+        .listRowBackground(MemoraPalette.background)
       }
     }
   }

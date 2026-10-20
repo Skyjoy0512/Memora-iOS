@@ -5,5 +5,6 @@ struct MemoraMenuButtonStyle: ButtonStyle {
     configuration.label
       .background(configuration.isPressed ? MemoraPalette.selection : .clear,
         in: RoundedRectangle(cornerRadius: MemoraRadius.small))
+      .animation(MemoraMotion.press, value: configuration.isPressed)
   }
 }

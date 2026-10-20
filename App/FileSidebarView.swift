@@ -34,9 +34,6 @@ struct FileSidebarView: View {
               SidebarRow(title: "ツール", symbol: .puzzle, isSelected: model.isToolsPresented) {
                 onOpenTools()
               }
-              SidebarRow(title: "設定", symbol: .gearshape) {
-                onOpenSettings()
-              }
             }
 
             sidebarSection("コレクション") {
@@ -178,7 +175,7 @@ private struct SidebarRow: View {
       }
       .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
     }
-    .buttonStyle(.plain)
+    .buttonStyle(MemoraQuietButtonStyle())
     .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
 }

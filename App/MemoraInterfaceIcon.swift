@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// SF Symbols keep their optical proportions inside a shared alignment slot.
+/// Regular outline glyphs share a consistent size and alignment slot.
 struct MemoraInterfaceIcon: View {
   var icon: MemoraIcon
 
   var body: some View {
-    Image(icon: outline)
-      .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
+    Image(icon: outline, size: MemoraIconMetrics.glyph)
       .symbolRenderingMode(.monochrome)
       .foregroundStyle(MemoraPalette.textPrimary)
       .frame(width: MemoraIconMetrics.slot, height: MemoraIconMetrics.slot)

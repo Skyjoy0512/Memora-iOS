@@ -15,9 +15,9 @@ struct ToolsView: View {
         ForEach(ToolsSection.allCases) { section in Text(section.rawValue).tag(section) }
       }
       .pickerStyle(.segmented)
-      .padding(.horizontal, MemoraSpacing.xxl)
+      .padding(.horizontal, MemoraSpacing.screen)
       .padding(.top, MemoraSpacing.sm)
-      .padding(.bottom, MemoraSpacing.xl)
+      .padding(.bottom, MemoraSpacing.xs)
 
       Group {
         switch section {
@@ -28,10 +28,10 @@ struct ToolsView: View {
       }
       .listStyle(.plain)
       .scrollContentBackground(.hidden)
-      .listSectionSpacing(MemoraSpacing.section)
+      .listSectionSpacing(MemoraSpacing.lg)
       .environment(\.defaultMinListRowHeight, 72)
-      .listRowInsets(EdgeInsets(top: MemoraSpacing.lg, leading: MemoraSpacing.xxl,
-        bottom: MemoraSpacing.lg, trailing: MemoraSpacing.xxl))
+      .listRowInsets(EdgeInsets(top: MemoraSpacing.lg, leading: MemoraSpacing.screen,
+        bottom: MemoraSpacing.lg, trailing: MemoraSpacing.screen))
     }
     .background(MemoraPalette.background)
     .tint(MemoraPalette.textPrimary)
@@ -42,7 +42,7 @@ struct ToolsView: View {
       ToolbarActionItem(placement: .topBarLeading) {
         ToolbarIconButton("メニュー", icon: .line3Horizontal) { onOpenSidebar() }
       }
-      ToolbarActionItem {
+      ToolbarActionItem(usesSystemBackground: true) {
         Menu {
           Button("スキルを作成", icon: .squareAndPencil) {
             newSkill = MemoraSkill(id: "custom-" + UUID().uuidString,

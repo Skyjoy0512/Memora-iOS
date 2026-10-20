@@ -66,7 +66,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
           }
           .accessibilityHidden(isOpen)
           .modifier(SidebarSlideEffect(offset: offset))
-          .shadow(color: .black.opacity(0.2 * progress), radius: 24, x: -6)
+          .shadow(color: .black.opacity(0.10 * progress), radius: 12, x: -3)
 
         if isEnabled && !isOpen {
           // Narrow enough to stay out of the way of content taps, matching the
@@ -149,7 +149,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
   }
 
   private func slide(to open: Bool) {
-    withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) {
+    withAnimation(reduceMotion ? nil : MemoraMotion.drawer) {
       dragTranslation = 0
       isOpen = open
     }

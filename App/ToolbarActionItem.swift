@@ -10,14 +10,16 @@ struct ToolbarActionItem<Content: View>: ToolbarContent {
       ToolbarItem(placement: placement) {
         content()
           .buttonStyle(.plain)
-          .environment(\.memoraToolbarControlSize, 44)
-          .frame(width: 44, height: 44)
+          .environment(\.memoraToolbarControlSize, MemoraIconMetrics.touchTarget)
+          .frame(width: MemoraIconMetrics.touchTarget, height: MemoraIconMetrics.touchTarget)
           .memoraGlass(in: Circle(), interactive: true, backed: false)
       }
       .sharedBackgroundVisibility(.hidden)
     } else {
       ToolbarItem(placement: placement) {
         content()
+          // The system adds the surrounding padding for its native platter.
+          .environment(\.memoraToolbarControlSize, MemoraIconMetrics.slot)
       }
     }
   }

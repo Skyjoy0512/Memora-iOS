@@ -19,7 +19,7 @@ struct SummaryTemplateDetailView: View {
           TemplateArticleContent(template: template)
         }
         .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
-        .padding(.horizontal, MemoraSpacing.xxl)
+        .padding(.horizontal, MemoraSpacing.screen)
         .padding(.top, MemoraSpacing.section)
         .padding(.bottom, MemoraSpacing.section)
         .frame(maxWidth: .infinity, alignment: .center)
@@ -43,7 +43,9 @@ struct SummaryTemplateDetailView: View {
           Text(isDefault ? "自動生成はこのテンプレートで要約します。" : "要約時の選択肢にも追加されます。")
             .font(.caption).foregroundStyle(.secondary)
         }
-        .padding(.horizontal, MemoraSpacing.xxl)
+        .padding(.horizontal, MemoraSpacing.screen)
+        .frame(maxWidth: MemoraSpacing.readingWidth + MemoraSpacing.screen * 2)
+        .frame(maxWidth: .infinity)
         .padding(.vertical, MemoraSpacing.md)
         .background(MemoraPalette.background)
       }
@@ -51,7 +53,7 @@ struct SummaryTemplateDetailView: View {
         ToolbarActionItem(placement: .topBarLeading) {
           ToolbarIconButton("1つ前に戻る", icon: .chevronLeft) { dismiss() }
         }
-        ToolbarActionItem {
+        ToolbarActionItem(usesSystemBackground: true) {
           Menu {
             if template.isCustom {
               Button("編集", icon: .pencil) { editing = template }
@@ -96,6 +98,8 @@ private struct TemplateArticleHeader: View {
     VStack(spacing: MemoraSpacing.md) {
       Image(icon: template.symbol, size: 28).accessibilityHidden(true)
       Text(template.title).font(.title.weight(.semibold)).multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityAddTraits(.isHeader)
       Text(template.isCustom ? "マイテンプレート" : template.category.title)
         .font(.subheadline).foregroundStyle(.secondary)
     }
@@ -112,17 +116,16 @@ private struct TemplateArticleContent: View {
       if !template.detail.isEmpty {
         VStack(alignment: .leading, spacing: MemoraSpacing.md) {
           Text("説明").font(.title3.weight(.semibold))
-          Text(template.detail).lineSpacing(MemoraTypography.readingLineSpacing)
+          Text(template.detail).memoraReadingText()
         }
       }
       VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
         Text(template.usesPrompt ? "プロンプト" : "チャプター").font(.title3.weight(.semibold))
         if template.usesPrompt {
-          Text(template.prompt)
-            .lineSpacing(MemoraTypography.readingLineSpacing)
+          Text(template.prompt).memoraReadingText()
         } else {
           Text("概要").font(.title2.weight(.semibold))
-          Text("この観点で重要なことを3〜5文でまとめます。")
+          Text("この観点で重要なことを3〜5文でまとめます。").memoraReadingText()
           ForEach(template.sections, id: \.self) { section in
             Text(section).font(.headline)
           }
@@ -130,13 +133,14 @@ private struct TemplateArticleContent: View {
         if template.includesActions {
           Text("アクションアイテム").font(.headline)
           Text("会議で示された担当と期限を整理し、タスクに追加します。")
+            .memoraReadingText()
             .foregroundStyle(.secondary)
         }
       }
       if !template.focus.isEmpty {
         VStack(alignment: .leading, spacing: MemoraSpacing.md) {
           Text("注目すること").font(.title3.weight(.semibold))
-          Text(template.focus).lineSpacing(MemoraTypography.readingLineSpacing)
+          Text(template.focus).memoraReadingText()
         }
       }
     }

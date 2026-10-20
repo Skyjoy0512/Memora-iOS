@@ -4,9 +4,11 @@ import SwiftUI
 /// Reduce Motion in a single place.
 enum MemoraMotion {
   /// Whole screens and sheets changing.
-  static let screen = Animation.smooth(duration: 0.38)
+  static let screen = Animation.smooth(duration: 0.32)
+  static let drawer = Animation.smooth(duration: 0.3)
   /// Controls responding to a tap.
-  static let control = Animation.snappy(duration: 0.26)
+  static let control = Animation.snappy(duration: 0.22)
+  static let press = Animation.smooth(duration: 0.14)
   /// Moments worth celebrating, such as finishing a recording.
   static let emphasis = Animation.bouncy(duration: 0.46, extraBounce: 0.08)
 }
@@ -32,7 +34,7 @@ private struct MemoraAppear: ViewModifier {
   func body(content: Content) -> some View {
     content
       .opacity(hasAppeared ? 1 : 0)
-      .offset(y: hasAppeared || reduceMotion ? 0 : 16)
+      .offset(y: hasAppeared || reduceMotion ? 0 : 8)
       .onAppear {
         withAnimation(animation) {
           hasAppeared = true

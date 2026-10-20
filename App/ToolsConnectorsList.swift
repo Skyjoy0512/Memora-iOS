@@ -17,10 +17,14 @@ struct ToolsConnectorsList: View {
         } header: { ToolsSectionHeading(title: title) }
       }
       Section {
-        NavigationLink { WebhookSettingsView() } label: { Label("Webhook", icon: .paperplane) }
-        NavigationLink { IOSIntegrationSettingsView() } label: {
-          Label("ウィジェットとショートカット", icon: .rectangleStack)
+        NavigationLink { WebhookSettingsView() } label: {
+          SettingsLabel("Webhook", icon: .paperplane)
         }
+        .listRowBackground(MemoraPalette.background)
+        NavigationLink { IOSIntegrationSettingsView() } label: {
+          SettingsLabel("ウィジェットとショートカット", icon: .rectangleStack)
+        }
+        .listRowBackground(MemoraPalette.background)
       } header: { ToolsSectionHeading(title: "自動化とシステム") }
     }
   }

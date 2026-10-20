@@ -5,6 +5,7 @@ struct MemoraButtonStyle: ButtonStyle {
   enum Emphasis { case primary, secondary }
   var emphasis: Emphasis = .primary
   @Environment(\.isEnabled) private var isEnabled
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
@@ -17,5 +18,7 @@ struct MemoraButtonStyle: ButtonStyle {
       .background(emphasis == .primary ? MemoraPalette.action : MemoraPalette.selection, in: Capsule())
       .contentShape(Capsule())
       .opacity(!isEnabled ? 0.4 : configuration.isPressed ? 0.72 : 1)
+      .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+      .animation(MemoraMotion.press, value: configuration.isPressed)
   }
 }

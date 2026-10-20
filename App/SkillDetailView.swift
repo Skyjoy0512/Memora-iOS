@@ -18,7 +18,7 @@ struct SkillDetailView: View {
           SkillArticleSettings(skill: skill)
         }
         .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
-        .padding(.horizontal, MemoraSpacing.xxl)
+        .padding(.horizontal, MemoraSpacing.screen)
         .padding(.top, MemoraSpacing.xxl)
         .padding(.bottom, MemoraSpacing.section)
         .frame(maxWidth: .infinity, alignment: .center)
@@ -37,7 +37,9 @@ struct SkillDetailView: View {
             model.setSkillEnabled(skillID, enabled: true)
           }
         }
-        .padding(.horizontal, MemoraSpacing.xxl)
+        .padding(.horizontal, MemoraSpacing.screen)
+        .frame(maxWidth: MemoraSpacing.readingWidth + MemoraSpacing.screen * 2)
+        .frame(maxWidth: .infinity)
         .padding(.vertical, MemoraSpacing.md)
         .background(MemoraPalette.background)
       }
@@ -45,7 +47,7 @@ struct SkillDetailView: View {
         ToolbarActionItem(placement: .topBarLeading) {
           ToolbarIconButton("1つ前に戻る", icon: .chevronLeft) { dismiss() }
         }
-        ToolbarActionItem {
+        ToolbarActionItem(usesSystemBackground: true) {
           Menu {
             ShareLink(item: skill.skillMarkdown) { Label("Markdownを共有", icon: .squareAndArrowUp) }
             if skill.id.hasPrefix("custom-") {
@@ -73,12 +75,15 @@ private struct SkillArticleHeader: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
-      Text(skill.name).font(.title.weight(.semibold))
+      Text(skill.name).font(MemoraTypography.screenTitle)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityAddTraits(.isHeader)
       VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
         LabeledContent("提供", value: skill.id.hasPrefix("custom-") ? "自分で作成" : "Memora")
         LabeledContent("バージョン", value: String(skill.version ?? 1))
       }
       .font(.subheadline)
+      .foregroundStyle(MemoraPalette.textSecondary)
       .padding(.leading, MemoraSpacing.md)
       .overlay(alignment: .leading) { Rectangle().fill(MemoraPalette.border).frame(width: 2) }
     }
@@ -92,11 +97,11 @@ private struct SkillArticleInstructions: View {
   var body: some View {
     VStack(alignment: .leading, spacing: MemoraSpacing.section) {
       VStack(alignment: .leading, spacing: MemoraSpacing.md) {
-        Text("目的とシナリオ").font(.title2.weight(.semibold))
-        Text(summary).font(.body).lineSpacing(MemoraTypography.readingLineSpacing)
+        Text("目的とシナリオ").font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
+        Text(summary).memoraReadingText()
       }
       VStack(alignment: .leading, spacing: MemoraSpacing.md) {
-        Text("仕組み").font(.title2.weight(.semibold))
+        Text("仕組み").font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
         MarkdownDocumentView(markdown: instructions)
       }
     }

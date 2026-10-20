@@ -22,7 +22,10 @@ struct ToolsSkillsList: View {
         }
       }
       Section {
-        NavigationLink { SkillsView() } label: { Label("スキルを管理", icon: .sliderHorizontal3) }
+        NavigationLink { SkillsView() } label: {
+          SettingsLabel("スキルを管理", icon: .sliderHorizontal3)
+        }
+        .listRowBackground(MemoraPalette.background)
       } footer: {
         Text("依頼に合う手順をAsk AIが選びます。右上の＋から自分のスキルを作成できます。")
       }

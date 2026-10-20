@@ -5,11 +5,11 @@ struct ToolsSectionHeading: View {
 
   var body: some View {
     Text(title)
-      .font(.title3.weight(.semibold))
+      .font(MemoraTypography.sectionHeading)
       .foregroundStyle(MemoraPalette.textPrimary)
       .textCase(nil)
-      .padding(.top, MemoraSpacing.xxl)
-      .padding(.bottom, MemoraSpacing.md)
+      .padding(.top, MemoraSpacing.md)
+      .padding(.bottom, MemoraSpacing.sm)
       .accessibilityAddTraits(.isHeader)
   }
 }

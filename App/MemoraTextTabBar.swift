@@ -38,7 +38,7 @@ struct MemoraTextTabBar<Item: Hashable>: View {
               }
               .contentShape(Capsule())
           }
-          .buttonStyle(.plain)
+          .buttonStyle(MemoraQuietButtonStyle())
           .accessibilityAddTraits(selection == item ? .isSelected : [])
         }
       }

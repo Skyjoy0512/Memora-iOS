@@ -324,7 +324,7 @@ struct RootTabView: View {
   }
 
   private func setSidebar(open: Bool) {
-    withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) {
+    withAnimation(reduceMotion ? nil : MemoraMotion.drawer) {
       isSidebarOpen = open
     }
   }

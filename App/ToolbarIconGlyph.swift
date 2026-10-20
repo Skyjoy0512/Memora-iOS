@@ -4,8 +4,7 @@ struct ToolbarIconGlyph: View {
   var icon: MemoraIcon
 
   var body: some View {
-    Image(icon: icon)
-      .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
+    Image(icon: icon, size: MemoraIconMetrics.glyph)
       .symbolRenderingMode(.monochrome)
       .foregroundStyle(MemoraPalette.textPrimary)
       .accessibilityHidden(true)
