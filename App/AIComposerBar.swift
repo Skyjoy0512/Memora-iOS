@@ -8,6 +8,7 @@ struct AIComposerBar: View {
   @Binding var text: String
   @Binding var attachment: AIAttachment?
   var placeholder: String
+  var isConversation = false
   var isBusy = false
   var onStop: (() -> Void)?
   /// Keeps the keyboard up after sending, so a chat can continue.
@@ -20,7 +21,7 @@ struct AIComposerBar: View {
   /// what was typed, so a refused send keeps the text and the attachment.
   var onSubmit: (AIAttachment?) -> Bool
   var focusChanged: ((Bool) -> Void)?
-  var expansionChanged: ((Bool) -> Void)?
+  var interactionChanged: ((Bool) -> Void)?
   var onResearch: (() -> Void)?
   var researchSelected = false
   var mentionInput: ComposerInputState?
@@ -55,8 +56,12 @@ struct AIComposerBar: View {
     isFieldFocused || hasContent || speechInput.isListening
   }
 
+  // A waiting draft is not active editing: keep navigation available after blur.
+  private var isInteracting: Bool { isFieldFocused || speechInput.isListening }
+  private var usesStackedLayout: Bool { isConversation || isExpanded }
+
   private var cornerRadius: CGFloat {
-    isExpanded ? MemoraRadius.composer : Self.collapsedHeight / 2
+    usesStackedLayout ? MemoraRadius.composer : Self.collapsedHeight / 2
   }
 
   private var textField: some View {
@@ -100,20 +105,17 @@ struct AIComposerBar: View {
           .padding(.top, MemoraSpacing.sm)
       }
 
-      // Collapsed, the composer is one slim capsule: attach, the prompt and the
-      // voice button. Focused or holding something, it opens into a card with
-      // the text across the top and the controls on a row beneath. The text
-      // field keeps its place in the tree in both, so focusing it does not
-      // rebuild it and drop the keyboard; only the buttons move between rows.
+      // Conversation controls stay below the field even without focus. The
+      // native field keeps its identity while compact contextual controls move.
       HStack(alignment: .center, spacing: 4) {
-        if !isExpanded {
+        if !usesStackedLayout {
           attachmentMenu
             .matchedGeometryEffect(id: "attach", in: controlsNamespace)
         }
 
         textField
 
-        if !isExpanded {
+        if !usesStackedLayout {
           if onResearch != nil {
             researchButton
               .matchedGeometryEffect(id: "research", in: controlsNamespace)
@@ -122,12 +124,11 @@ struct AIComposerBar: View {
             .matchedGeometryEffect(id: "action", in: controlsNamespace)
         }
       }
-      .padding(.leading, isExpanded ? 16 : 4)
-      .padding(.trailing, isExpanded ? 16 : 4)
-      .padding(.top, isExpanded ? 10 : 0)
-      .frame(minHeight: isExpanded ? 44 : Self.collapsedHeight)
+      .padding(.horizontal, usesStackedLayout ? MemoraSpacing.lg : MemoraSpacing.xs)
+      .padding(.top, usesStackedLayout ? MemoraSpacing.sm : 0)
+      .frame(minHeight: usesStackedLayout ? MemoraSpacing.touchTarget : Self.collapsedHeight)
 
-      if isExpanded {
+      if usesStackedLayout {
         HStack(spacing: 6) {
           attachmentMenu
             .matchedGeometryEffect(id: "attach", in: controlsNamespace)
@@ -177,8 +178,8 @@ struct AIComposerBar: View {
     .onChange(of: isFieldFocused) { _, focused in
       focusChanged?(focused)
     }
-    .onChange(of: isExpanded, initial: true) { _, expanded in
-      expansionChanged?(expanded)
+    .onChange(of: isInteracting, initial: true) { _, interacting in
+      interactionChanged?(interacting)
     }
     .onChange(of: model.composerDismissRequests) { _, _ in
       showsAttachmentActions = false
@@ -378,11 +379,13 @@ struct AIComposerBar: View {
         }
       }
         .font(.system(size: 20, weight: .semibold))
-        .foregroundStyle(MemoraPalette.actionLabel)
+        .foregroundStyle(onStop != nil || canSend || isBusy || speechInput.isListening
+          ? MemoraPalette.actionLabel : MemoraPalette.textPrimary)
         .symbolEffect(.pulse, isActive: !reduceMotion && (speechInput.isListening || isBusy))
         .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
         .frame(width: 36, height: 36)
-        .background(Circle().fill(MemoraPalette.action))
+        .background(Circle().fill(onStop != nil || canSend || isBusy || speechInput.isListening
+          ? MemoraPalette.action : .clear))
         // The circle stays small; the target around it does not.
         .frame(width: 44, height: 44)
         .contentShape(Circle())

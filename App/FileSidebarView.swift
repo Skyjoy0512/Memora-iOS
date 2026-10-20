@@ -3,7 +3,6 @@ import SwiftUI
 /// Workspace, library utilities and settings remain reachable from the drawer.
 struct FileSidebarView: View {
   @Environment(MemoraModel.self) private var model
-  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
   var onOpenRecorder: () -> Void
   var onOpenProjects: () -> Void
@@ -18,10 +17,9 @@ struct FileSidebarView: View {
     VStack(alignment: .leading, spacing: 0) {
       ScrollView {
         VStack(alignment: .leading, spacing: 0) {
-          profileHeader
-
           WorkspaceSwitcher(onCreateTeam: onCreateTeam, onJoinTeam: onJoinTeam)
             .padding(.horizontal, MemoraSpacing.lg)
+            .padding(.top, MemoraSpacing.md)
             .padding(.bottom, MemoraSpacing.sm)
 
           VStack(alignment: .leading, spacing: 24) {
@@ -66,91 +64,22 @@ struct FileSidebarView: View {
       }
       .scrollIndicators(.hidden)
 
-      footer
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    .background(Color(uiColor: .systemBackground).ignoresSafeArea())
-  }
-
-  private var profileHeader: some View {
-    HStack(spacing: 12) {
-      Button {
-        InteractionFeedback.shared.send(.tap)
-        onClose()
-        if !model.isSignedIn {
-          model.isAuthPresented = true
-        }
-      } label: {
-        HStack(spacing: 12) {
-          ProfileAvatar(profile: model.profile, size: 48)
-
-          VStack(alignment: .leading, spacing: 3) {
-            Text(displayName)
-              .font(.headline)
-              .foregroundStyle(.primary)
-            Text(accountStatus)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel(model.isSignedIn ? "アカウント \(displayName)" : "サインイン")
-    }
-    .padding(.horizontal, MemoraSpacing.lg)
-    .padding(.top, MemoraSpacing.md)
-    .padding(.bottom, MemoraSpacing.lg)
-  }
-
-  /// The plan and settings float on Liquid Glass, like the app's other
-  /// controls, so they read as actions rather than more menu rows.
-  private var footer: some View {
-    MemoraGlassContainer(spacing: 10) {
-      HStack(spacing: 10) {
-        Button {
+      SidebarAccountFooter(profile: model.profile, displayName: displayName,
+        accountStatus: accountStatus, isSignedIn: model.isSignedIn) {
+          InteractionFeedback.shared.send(.tap)
+          onClose()
+          if !model.isSignedIn { model.isAuthPresented = true }
+        } onPlan: {
           InteractionFeedback.shared.send(.tap)
           onClose()
           model.isPaywallPresented = true
-        } label: {
-          Label { Text(dynamicTypeSize.isAccessibilitySize ? "プラン" : "Memora Plus") } icon: {
-            MemoraInterfaceIcon(icon: .crown)
-          }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.primary)
-            .lineLimit(1)
-            .padding(.horizontal, MemoraSpacing.lg)
-            .frame(minHeight: 44)
-            .contentShape(Capsule())
-            .memoraGlass(in: Capsule(), interactive: true)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Memora Plus、プランと利用状況")
-
-        Spacer(minLength: 8)
-
-        // Settings has one entry point, here; the appearance lives inside it.
-        Button {
+        } onSettings: {
           InteractionFeedback.shared.send(.tap)
           onOpenSettings()
-        } label: {
-          Label("設定", icon: .gearshape)
-            .labelStyle(.iconOnly)
-            .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
-            .foregroundStyle(.primary)
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
-            .memoraGlass(in: Circle(), interactive: true)
         }
-        .buttonStyle(.plain)
-        .accessibilityHint("プロフィールと設定を開きます")
-      }
     }
-    .padding(.horizontal, MemoraSpacing.lg)
-    .padding(.top, MemoraSpacing.sm)
-    .padding(.bottom, MemoraSpacing.md)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    .background(MemoraPalette.secondaryBackground.ignoresSafeArea())
   }
 
   private func sidebarSection<Content: View>(

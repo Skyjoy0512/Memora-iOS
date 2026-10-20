@@ -224,10 +224,11 @@ struct RootTabView: View {
           isComposing: $isComposing,
           keepsFocusAfterSubmit: model.selectedTab == .askAI || model.activeProjectChatID != nil
         )
-        // Narrower than the bar below it, so it reads as a floating field;
-        // while typing it widens to the screen for room to write.
+        // Conversation width stays stable across focus changes; contextual
+        // prompts remain compact until someone starts editing.
         .containerRelativeFrame(.horizontal) { width, _ in
-          isComposing ? width - 24 : width * 0.8
+          min(isComposing || model.selectedTab == .askAI ? width - MemoraSpacing.xxl : width * 0.8,
+            MemoraSpacing.readingWidth)
         }
         // Note: no `.id(composerScope)` — recreating the field would throw away
         // what someone had already typed when the scope changed.

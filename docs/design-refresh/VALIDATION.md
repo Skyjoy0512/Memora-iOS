@@ -4,7 +4,8 @@
 仕様は [DESIGN.md](../../DESIGN.md)、画像と撮影条件は [REVIEW.md](REVIEW.md)。
 この文書は全体刷新時の検証記録。後続の設定・メニュー・アイコン変更は
 [SETTINGS.md](SETTINGS.md)、さらに後の画面横断の磨き込みと最終ビルドは
-[EXPERIENCE.md](EXPERIENCE.md) に分けて記録する。
+[EXPERIENCE.md](EXPERIENCE.md) に分けて記録する。その後の会話中心のUI調整と
+最新の検証は [CHAT_SURFACE.md](CHAT_SURFACE.md) を参照。
 
 ## ビルド
 

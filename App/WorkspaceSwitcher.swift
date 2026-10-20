@@ -46,7 +46,6 @@ struct WorkspaceSwitcher: View {
       }
       .padding(MemoraSpacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(MemoraPalette.secondaryBackground, in: RoundedRectangle(cornerRadius: MemoraRadius.field))
       .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     }
     .buttonStyle(.plain)

@@ -1,0 +1,371 @@
+{
+  "date": "2026-10-20",
+  "scope": "Conversation-first Ask AI header/composer, draft navigation, response actions and sidebar",
+  "baselineCommit": "34608b8",
+  "sourceResearch": {
+    "officialGuidelines": "https://developers.openai.com/plugins/concepts/ui-guidelines",
+    "privateChatGPTIOSMeasurementsClaimed": false,
+    "usesReactOrWebView": false
+  },
+  "build": {
+    "command": "bitrig preview -platform iOS",
+    "status": "success",
+    "sdk": "iOS 27.1",
+    "deploymentTarget": "iOS 26",
+    "initialLog": "2026-10-20T18-15-22-2dc4e7a4.log",
+    "finalLog": "2026-10-20T18-27-38-9b38deb2.log",
+    "previewUpdated": true,
+    "existingWarnings": 11
+  },
+  "hostChecks": [
+    {
+      "command": "bash tools/checks/run-design-refresh-checks.sh",
+      "status": "passed",
+      "newChatSurfaceStructureTests": 5,
+      "finalFooterIncluded": true
+    },
+    {
+      "command": "bash tools/checks/run-ask-ai-plugin-checks.sh",
+      "status": "passed",
+      "finalFooterIncluded": true
+    },
+    {
+      "command": "python3 tools/checks/run-optimization-checks.py",
+      "status": "passed",
+      "phase": "Initial UI implementation; later changes are confined to footer presentation and test clearing."
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    }
+  ],
+  "xcodeTests": {
+    "command": "bitrig test",
+    "exitCode": 78,
+    "status": "unsupported",
+    "reason": "Project.json has no Xcode test targets; not an XCTest pass."
+  },
+  "e2e": {
+    "runner": "e2e 0.21.2",
+    "engine": "mobile 0.12.3",
+    "device": "iPhone 18 Pro Max",
+    "runtime": "iOS 27.0",
+    "dedicatedDevice": true,
+    "userPreviewReset": false,
+    "paidModelOrAuthenticatedServiceExecution": false,
+    "discovered": 45,
+    "singleFullSuiteRun": false,
+    "initialImplementation": {
+      "buildLog": "2026-10-20T18-15-22-2dc4e7a4.log",
+      "id": "01a1589a-014c-7243-8311-ef649e5cfccf",
+      "status": "passed",
+      "summary": {
+        "discovered": 45,
+        "selected": 11,
+        "executed": 11,
+        "passed": 11,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "cases": [
+        {
+          "file": "tests/answer-actions.e2e.ts",
+          "title": "answer actions open selectable text and hide an unavailable retry",
+          "status": "passed"
+        },
+        {
+          "file": "tests/answer-actions.e2e.ts",
+          "title": "a long composer draft can expand and collapse without submitting",
+          "status": "passed"
+        },
+        {
+          "file": "tests/chat-surface.e2e.ts",
+          "title": "chat surface: capture composer and sidebar in both appearances",
+          "status": "passed"
+        },
+        {
+          "file": "tests/chat-surface.e2e.ts",
+          "title": "chat surface: stacked controls keep draft navigation available after dismissing the keyboard",
+          "status": "passed"
+        },
+        {
+          "file": "tests/chat-surface.e2e.ts",
+          "title": "chat surface: flat title menu still opens history and search",
+          "status": "passed"
+        },
+        {
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: mentions search, select twice, preserve focus, remove and use plus",
+          "status": "passed"
+        },
+        {
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: project mentions preserve scope and the workspace three tabs",
+          "status": "passed"
+        },
+        {
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: conversation typography renders Japanese prose in both appearances",
+          "status": "passed"
+        },
+        {
+          "file": "tests/settings-polish.e2e.ts",
+          "title": "settings polish: topic hierarchy, profile editing and shared sidebar icons",
+          "status": "passed"
+        },
+        {
+          "file": "tests/settings-polish.e2e.ts",
+          "title": "settings polish: appearance preferences survive restart without changing records",
+          "status": "passed"
+        },
+        {
+          "file": "tests/settings-polish.e2e.ts",
+          "title": "settings polish: relocated AI, recording, plan and connection controls remain reachable",
+          "status": "passed"
+        }
+      ]
+    },
+    "finalBuildRuns": [
+      {
+        "phase": "final-standard",
+        "textSize": "Large",
+        "id": "01a158a4-5e66-7c47-bb82-76e35a583f02",
+        "status": "passed",
+        "summary": {
+          "discovered": 45,
+          "selected": 6,
+          "executed": 6,
+          "passed": 6,
+          "failed": 0,
+          "interrupted": 0,
+          "flaky": 0,
+          "skipped": 0
+        },
+        "cases": [
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: capture composer and sidebar in both appearances",
+            "status": "passed"
+          },
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: stacked controls keep draft navigation available after dismissing the keyboard",
+            "status": "passed"
+          },
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: flat title menu still opens history and search",
+            "status": "passed"
+          },
+          {
+            "file": "tests/settings-polish.e2e.ts",
+            "title": "settings polish: topic hierarchy, profile editing and shared sidebar icons",
+            "status": "passed"
+          },
+          {
+            "file": "tests/settings-polish.e2e.ts",
+            "title": "settings polish: appearance preferences survive restart without changing records",
+            "status": "passed"
+          },
+          {
+            "file": "tests/settings-polish.e2e.ts",
+            "title": "settings polish: relocated AI, recording, plan and connection controls remain reachable",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "phase": "final-accessibility",
+        "textSize": "Accessibility XXXL",
+        "id": "01a158ac-9a86-7874-ab03-d419eedbd9c7",
+        "status": "passed",
+        "summary": {
+          "discovered": 45,
+          "selected": 4,
+          "executed": 4,
+          "passed": 4,
+          "failed": 0,
+          "interrupted": 0,
+          "flaky": 0,
+          "skipped": 0
+        },
+        "cases": [
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: capture composer and sidebar in both appearances",
+            "status": "passed"
+          },
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: stacked controls keep draft navigation available after dismissing the keyboard",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-accessibility.e2e.ts",
+            "title": "design: mention controls remain below navigation and above native input",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-accessibility.e2e.ts",
+            "title": "design: toolbar search clears without dismissing input and cancels back to tabs",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "phase": "final-native-key-capture",
+        "textSize": "Large",
+        "id": "01a158af-a0b8-7716-92f7-f2e775c7b85e",
+        "status": "passed",
+        "summary": {
+          "discovered": 45,
+          "selected": 1,
+          "executed": 1,
+          "passed": 1,
+          "failed": 0,
+          "interrupted": 0,
+          "flaky": 0,
+          "skipped": 0
+        },
+        "cases": [
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: capture composer and sidebar in both appearances",
+            "status": "passed"
+          }
+        ]
+      }
+    ],
+    "uniqueCasesOnFinalBuild": 8,
+    "executionsOnFinalBuild": 11,
+    "uniqueCasesAcrossImplementationAndFinal": 13,
+    "baselineCapture": {
+      "id": "01a15895-eb60-7910-884f-14dd5d5c146c",
+      "status": "passed",
+      "summary": {
+        "discovered": 45,
+        "selected": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "cases": [
+        {
+          "file": "tests/chat-surface.e2e.ts",
+          "title": "chat surface: capture composer and sidebar in both appearances",
+          "status": "passed"
+        }
+      ]
+    }
+  },
+  "reviewFindings": [
+    {
+      "kind": "Visual review despite passing tests",
+      "run": {
+        "id": "01a158a0-3633-75a2-ab24-f773eddb451b",
+        "status": "passed",
+        "summary": {
+          "discovered": 45,
+          "selected": 4,
+          "executed": 4,
+          "passed": 4,
+          "failed": 0,
+          "interrupted": 0,
+          "flaky": 0,
+          "skipped": 0
+        },
+        "cases": [
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: capture composer and sidebar in both appearances",
+            "status": "passed"
+          },
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: stacked controls keep draft navigation available after dismissing the keyboard",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-accessibility.e2e.ts",
+            "title": "design: mention controls remain below navigation and above native input",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-accessibility.e2e.ts",
+            "title": "design: toolbar search clears without dismissing input and cancels back to tabs",
+            "status": "passed"
+          }
+        ]
+      },
+      "observed": "At maximum text size Memora Plus wrapped awkwardly, and repeated guest storage context consumed footer height.",
+      "resolution": "Short visual plan label and guest sign-in hint at accessibility sizes; preserve the full spoken plan name and workspace storage context. Put the complete 44pt settings circle inside its button label and test an off-glyph tap."
+    },
+    {
+      "kind": "Bulk-clear automation read-back mismatch",
+      "run": {
+        "id": "01a158a8-d886-7596-bb5f-68ae6ae16ce6",
+        "status": "error",
+        "summary": {
+          "discovered": 45,
+          "selected": 4,
+          "executed": 4,
+          "passed": 3,
+          "failed": 1,
+          "interrupted": 0,
+          "flaky": 0,
+          "skipped": 0
+        },
+        "cases": [
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: capture composer and sidebar in both appearances",
+            "status": "failed"
+          },
+          {
+            "file": "tests/chat-surface.e2e.ts",
+            "title": "chat surface: stacked controls keep draft navigation available after dismissing the keyboard",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-accessibility.e2e.ts",
+            "title": "design: mention controls remain below navigation and above native input",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-accessibility.e2e.ts",
+            "title": "design: toolbar search clears without dismissing input and cancels back to tabs",
+            "status": "passed"
+          }
+        ]
+      },
+      "observed": "fill('') left a Japanese suffix and reported ENGINE_FAILURE; the other three cases passed.",
+      "resolution": "Do not attribute the cause to app or runner without proof. Verify exact draft text, delete through the actual soft-keyboard key, check send disappearance/voice return and the empty placeholder. The final four accessibility cases and standard capture pass with no app input/IME changes."
+    }
+  ],
+  "screenshots": {
+    "directory": "docs/design-refresh/chat-surface",
+    "beforeRun": "01a15895-eb60-7910-884f-14dd5d5c146c",
+    "standardAfterRun": "01a158af-a0b8-7716-92f7-f2e775c7b85e",
+    "accessibilityAfterRun": "01a158ac-9a86-7874-ab03-d419eedbd9c7",
+    "relatedMentionAndRenderOnlyImagesRun": "01a1589a-014c-7243-8311-ef649e5cfccf",
+    "relatedImageNote": "Captured before the footer follow-up; these mention and text-rendering views were unchanged by it.",
+    "generatedOrComposited": false
+  },
+  "restoredTestDevice": {
+    "appearance": "Light",
+    "textSize": "Large"
+  },
+  "unverified": [
+    "Physical-device VoiceOver listening",
+    "Manual Japanese IME conversion",
+    "iOS 26 runtime",
+    "Authenticated provider/tool execution, live microphone/transcription/summarization/billing",
+    "All live source-disclosure authorization conditions",
+    "The entire 45-case E2E suite"
+  ]
+}

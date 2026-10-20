@@ -5,12 +5,13 @@ struct AIUserMessageView: View {
   var text: String
   var attachmentName: String?
   var restoreInput: (() -> Void)?
+  @ScaledMetric(relativeTo: .body) private var lineSpacing: CGFloat = 3
 
   var body: some View {
     HStack {
       Spacer(minLength: 44)
       VStack(alignment: .leading, spacing: 8) {
-        Text(text).font(MemoraTypography.body).textSelection(.enabled)
+        Text(text).font(MemoraTypography.body).lineSpacing(lineSpacing).textSelection(.enabled)
         if let attachmentName {
           Label(attachmentName, icon: .paperclip)
             .font(.caption).foregroundStyle(.secondary)

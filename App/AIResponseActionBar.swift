@@ -75,7 +75,7 @@ struct AIResponseActionBar: View {
 
 private struct AIResponseActionStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
-    configuration.label.font(.body)
+    configuration.label.font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
       .frame(width: 44, height: 44).contentShape(Rectangle())
       .opacity(configuration.isPressed ? 0.5 : 1)
   }

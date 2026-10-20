@@ -8,10 +8,8 @@ struct AskAIHeader: View {
   var onSearch: () -> Void
 
   var body: some View {
-    HStack {
+    HStack(spacing: MemoraSpacing.sm) {
       headerButton("メニュー", icon: .line3Horizontal, action: onOpenSidebar)
-        .memoraGlass(in: Circle(), interactive: true, backed: false)
-      Spacer()
       Menu {
         if model.aiPersonScopeID != nil {
           Button("すべての記録の新しいチャット", icon: .squareAndPencil) { model.startNewAIChat() }
@@ -19,19 +17,25 @@ struct AskAIHeader: View {
         Button("履歴", icon: .clockArrowCirclepath, action: onHistory)
         Button("検索", icon: .magnifyingglass, action: onSearch)
       } label: {
-        Text(model.aiPersonScopeID.flatMap { model.person(id: $0)?.name } ?? "Memora")
-          .font(.headline)
+        HStack(spacing: MemoraSpacing.xs) {
+          Text(model.aiPersonScopeID.flatMap { model.person(id: $0)?.name } ?? "Memora")
+            .font(MemoraTypography.body.weight(.semibold))
+            .lineLimit(1)
+          Image(icon: .chevronDown)
+            .font(.system(size: MemoraIconMetrics.accessory, weight: .medium))
+            .foregroundStyle(MemoraPalette.textSecondary)
+            .accessibilityHidden(true)
+        }
           .frame(minHeight: 44)
           .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel("Memora、履歴と検索")
-      Spacer()
+      Spacer(minLength: MemoraSpacing.sm)
       headerButton("新しいチャット", icon: .squareAndPencil, action: onNewChat)
         .disabled(model.aiMessages.isEmpty)
-        .memoraGlass(in: Circle(), interactive: true, backed: false)
     }
-    .padding(.horizontal, MemoraSpacing.xl)
+    .padding(.horizontal, MemoraSpacing.md)
     .frame(minHeight: 48)
   }
 
@@ -41,7 +45,6 @@ struct AskAIHeader: View {
       action()
     } label: {
       ToolbarIconGlyph(icon: icon)
-        .font(.body.weight(.medium))
         .frame(width: 44, height: 44)
         .contentShape(Rectangle())
     }

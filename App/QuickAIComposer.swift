@@ -39,14 +39,15 @@ struct QuickAIComposer: View {
       text: $model.composerDraft,
       attachment: Binding(get: { model.composerAttachment }, set: { model.composerAttachment = $0 }),
       placeholder: placeholder,
+      isConversation: model.selectedTab == .askAI && scope == .global,
       isBusy: isPreparingAttachment || model.activeProjectChatID.map { model.projectChatBusyIDs.contains($0) } == true,
       onStop: scope == .global && model.isAIChatResponding ? { model.stopAIChat() } : nil,
       keepsFocusAfterSubmit: keepsFocusAfterSubmit,
       autofocus: autofocus,
       acceptsExternalFocusRequest: model.selectedTab == .askAI && scope == .global,
       onSubmit: submit(attachment:),
-      expansionChanged: { expanded in
-        isComposing = expanded
+      interactionChanged: { interacting in
+        isComposing = interacting
       },
       onResearch: model.selectedTab == .askAI && scope == .global ? { usesWebSearch.toggle() } : nil,
       researchSelected: usesWebSearch,

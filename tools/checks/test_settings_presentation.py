@@ -54,9 +54,12 @@ class SettingsPresentationChecks(unittest.TestCase):
         workspace = (APP / "WorkspaceSwitcher.swift").read_text()
         self.assertNotIn("lineLimit(1)", workspace)
         sidebar = (APP / "FileSidebarView.swift").read_text()
-        self.assertLess(sidebar.index("ScrollView {"), sidebar.index("          profileHeader"))
-        self.assertIn('dynamicTypeSize.isAccessibilitySize ? "プラン" : "Memora Plus"', sidebar)
-        self.assertIn('accessibilityLabel("Memora Plus、プランと利用状況")', sidebar)
+        self.assertLess(sidebar.index("WorkspaceSwitcher("), sidebar.index('sidebarSection("ライブラリ")'))
+        self.assertIn("SidebarAccountFooter(profile: model.profile", sidebar)
+        footer = (APP / "SidebarAccountFooter.swift").read_text()
+        self.assertIn('accessibilityLabel("Memora Plus、プランと利用状況")', footer)
+        self.assertIn(".fixedSize(horizontal: false, vertical: true)", footer)
+        self.assertIn("minHeight: MemoraSpacing.touchTarget", footer)
         self.assertIn("AnyLayout(VStackLayout(alignment: .leading", sidebar)
 
 

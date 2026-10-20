@@ -5,6 +5,7 @@ import UIKit
 /// reasoning tucked behind a disclosure.
 struct AIMessageView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var message: AIChatMessage
   /// Only the latest reply streams; older ones are already settled.
   var animates = true
@@ -90,12 +91,9 @@ struct AIMessageView: View {
       }
 
       if !message.isThinking, !message.text.isEmpty {
-        HStack(spacing: 8) {
-          AIAnswerActions(message: message)
-          if !spokenSources.isEmpty {
-            sourcesToggle
-          }
-        }
+        AIReplyActionsRow(message: message,
+          excerptCount: spokenSources.reduce(0) { $0 + $1.excerpts.count },
+          isSourcesOpen: isSourcesOpen) { isSourcesOpen.toggle() }
         // The lines worth playing back, folded until asked for.
         if isSourcesOpen, !spokenSources.isEmpty {
           sourceList
@@ -111,7 +109,7 @@ struct AIMessageView: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .animation(MemoraMotion.control, value: isSourcesOpen)
+    .animation(reduceMotion ? nil : MemoraMotion.control, value: isSourcesOpen)
     .sheet(isPresented: Binding(get: { savingWebReportID != nil }, set: { if !$0 { savingWebReportID = nil } })) {
       if let id = savingWebReportID { WebResearchSaveSheet(reportID: id) }
     }
@@ -153,36 +151,6 @@ struct AIMessageView: View {
   /// Records with lines that can be played back.
   private var spokenSources: [AIChatSource] {
     message.sources.filter { !$0.excerpts.isEmpty }
-  }
-
-  private var sourcesToggle: some View {
-    Button {
-      isSourcesOpen.toggle()
-    } label: {
-      HStack(spacing: 6) {
-        HStack(spacing: -4) {
-          ForEach(Array(spokenSources.prefix(3).enumerated()), id: \.offset) { index, _ in
-            Circle()
-              .fill(MemoraPalette.textSecondary.opacity(1 - Double(index) * 0.2))
-              .frame(width: 12, height: 12)
-              .overlay(Circle().stroke(MemoraPalette.background, lineWidth: 1.5))
-          }
-        }
-        Text("\(spokenSources.reduce(0) { $0 + $1.excerpts.count })か所の発言")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-        Image(icon: .chevronDown)
-          .font(.caption2.weight(.semibold))
-          .foregroundStyle(.tertiary)
-          .rotationEffect(.degrees(isSourcesOpen ? 180 : 0))
-      }
-      .padding(.horizontal, MemoraSpacing.sm)
-      .frame(minHeight: 36)
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .accessibilityLabel("根拠になった発言")
-    .accessibilityValue(isSourcesOpen ? "開いています" : "閉じています")
   }
 
   private func accessibilityLabel(for source: AIChatSource) -> String {

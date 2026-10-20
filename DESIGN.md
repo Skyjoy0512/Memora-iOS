@@ -117,6 +117,8 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | AIPluginMenu / ComposerMentionStrip | common @/+ candidates and removable selections |
 | AIPluginMenuRow / AIPluginMenuCopy | succinct display-only builtin explanations; separate availability/cost, selected and pressed feedback |
 | ComposerActionMenu | keyboard-preserving attachment actions on the same bounded neutral menu surface |
+| AIReplyActionsRow | common response controls and a real excerpt count; vertical at accessibility sizes |
+| SidebarAccountFooter | anchored account/plan/settings controls, separated from scrollable destinations |
 | Native Form / Menu / sheet / alert | settings, integrations, skill setup, editors and confirmation |
 
 GlassSegmentedPicker/Control and arbitrary memoraCard(radius:) are retired.
@@ -130,6 +132,14 @@ Ask AI: compact sidebar/history/new-chat header; no idle decoration. A 32pt
 message rhythm and selectable Markdown on the canvas. Keep stable TextField
 identity, native composer Glass and 44pt controls. Candidates appear above the
 composer and respect keyboard height.
+The header is flat, with the title beside the sidebar icon and a visible menu
+chevron. On the Ask AI tab, the composer stays two-row and keeps its width when
+focus changes; only contextual prompts use the compact capsule. Idle voice input
+is an outline glyph; send, stop and active voice states earn the inverse circle.
+Active focus/listening hides the tab bar, not the mere presence of a saved draft.
+After dismissing the keyboard, a draft can remain while tabs become available.
+Response controls share the 20pt interface glyph; source disclosure has a 44pt
+target and moves below the actions at accessibility sizes.
 
 Journal: primary ScrollView, flat week selector, minimal timeline glyphs and
 hairlines. Neutral recap; expanded summary follows appearance and uses sections,
@@ -173,10 +183,15 @@ connection setup and the single sidebar settings entry. No fabricated service st
 Sidebar: workspace switcher, Library destinations (Projects / Documents / People),
 Devices, then plan/settings controls. A destination name stays constant; connection
 state is a separate secondary value. Rows use the shared 28pt icon column and
-52pt minimum height, growing with text. Profile and workspace information scroll
-with destinations and wrap without truncation. At accessibility text sizes the
-plan action reads “プラン”; its spoken name still identifies Memora Plus. The
-settings gear stays beside it at the bottom right.
+52pt minimum height, growing with text. The workspace switcher is the first
+scrollable item, without a nested card. Account information and the plan/settings
+actions are anchored below the destinations. They wrap without truncation; the
+profile avatar is a separate 32pt content role, not an interface glyph. At
+accessibility sizes the plan action reads “プラン” and the guest's secondary label
+reads “サインイン”; storage context remains in the workspace switcher above. The
+spoken plan name still identifies Memora Plus. The settings gear stays at the
+bottom right, with its entire 44pt glass circle inside the tappable label.
+The drawer uses secondaryBackground, subtly separated from the conversation canvas.
 At accessibility sizes, secondary row values move below the title rather than
 competing for a narrow horizontal column.
 
@@ -210,3 +225,5 @@ list hierarchy and empty-state refinements without replacing the original audit.
 hierarchy, relocated controls, icon metrics and follow-up verification.
 [Cross-screen experience review](docs/design-refresh/EXPERIENCE.md) records the
 subsequent Journal, Library, workspace, task, people, document and capture refinements.
+[Chat surface review](docs/design-refresh/CHAT_SURFACE.md) records the later
+conversation-first header, stable composer, draft navigation and sidebar refinement.
