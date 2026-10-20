@@ -9,7 +9,7 @@ struct OccupationSelectionView: View {
     let matching = OccupationCatalog.matching(query)
     let selected = model.occupationProfile.orderedIDs.compactMap { OccupationCatalog.occupation($0) }
 
-    List {
+    MemoraForm {
       Section {
         Text("主な仕事・活動に合う要約テンプレートを選びます。手動で指定した形式は優先し、AIにおまかせなら会議や休日の内容にも合わせます。")
           .foregroundStyle(.secondary)

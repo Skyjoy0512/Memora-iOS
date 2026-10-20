@@ -20,39 +20,52 @@ struct RootTabView: View {
     SidebarContainer(isOpen: $isSidebarOpen, isEnabled: canRevealSidebar) {
       FileSidebarView(
         onOpenRecorder: {
-          closeSidebar()
-          isRecorderPresented = true
+          closeSidebar { isRecorderPresented = true }
         },
         onOpenProjects: {
-          closeSidebar()
-          model.isToolsPresented = false
-          model.openProjects()
+          selectFromSidebar {
+            model.isToolsPresented = false
+            model.openProjects()
+          }
         },
         onOpenDocuments: openDocuments,
         onOpenPeople: openPeople,
         onSelectTab: { tab in
-          closeSidebar()
-          model.isToolsPresented = false
-          model.selectedTab = tab
+          selectFromSidebar {
+            model.isToolsPresented = false
+            model.selectedTab = tab
+          }
         },
         onOpenTools: {
-          closeSidebar()
-          model.isToolsPresented = true
+          selectFromSidebar { model.isToolsPresented = true }
         },
         onOpenSettings: openSettings,
-        onClose: closeSidebar
+        onOpenAccount: {
+          closeSidebar {
+            if !model.isSignedIn { model.isAuthPresented = true }
+          }
+        },
+        onOpenPlan: {
+          closeSidebar { model.isPaywallPresented = true }
+        }
       )
     } content: {
-      ZStack {
-        if model.isToolsPresented {
-          NavigationStack { ToolsView(onOpenSidebar: openSidebar) }
-            .transition(reduceMotion ? .opacity : .move(edge: .leading))
-            .zIndex(1)
-        } else {
+      GeometryReader { geometry in
+        ZStack {
+          // Keep navigation mounted, but move its UIKit-backed views outside
+          // the viewport so they cannot cover or expose controls under Tools.
           tabSurface
+            .offset(x: model.isToolsPresented ? -geometry.size.width : 0)
+            .opacity(model.isToolsPresented ? 0 : 1)
+            .allowsHitTesting(!model.isToolsPresented)
+            .accessibilityHidden(model.isToolsPresented)
+          if model.isToolsPresented {
+            NavigationStack { ToolsView(onOpenSidebar: openSidebar) }
+              .transition(.identity)
+              .zIndex(1)
+          }
         }
       }
-      .animation(reduceMotion ? nil : MemoraMotion.screen, value: model.isToolsPresented)
     }
     .onChange(of: model.isToolsPresented) { _, isOpen in
       if isOpen { model.composerDismissRequests += 1 }
@@ -196,16 +209,19 @@ struct RootTabView: View {
 
     return TabView(selection: $model.selectedTab) {
       LibraryView(onOpenSidebar: openSidebar)
+        .accessibilityHidden(model.isToolsPresented)
         .hidesSystemTabBar()
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.library)
 
       HomeView(onOpenSidebar: openSidebar)
+        .accessibilityHidden(model.isToolsPresented)
         .hidesSystemTabBar()
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.home)
 
       SearchView(onOpenSidebar: openSidebar)
+        .accessibilityHidden(model.isToolsPresented)
         .hidesSystemTabBar()
         .tag(RootTab.askAI)
     }
@@ -323,6 +339,24 @@ struct RootTabView: View {
     setSidebar(open: false)
   }
 
+  private func closeSidebar(completion: @escaping () -> Void) {
+    guard isSidebarOpen else { completion(); return }
+    withAnimation(reduceMotion ? nil : MemoraMotion.drawer, completionCriteria: .logicallyComplete) {
+      isSidebarOpen = false
+    } completion: {
+      if !isSidebarOpen { completion() }
+    }
+  }
+
+  private func selectFromSidebar(_ update: () -> Void) {
+    // Do not let a pushed route or the composer's own animations compete with
+    // the full-screen drawer closing over the newly selected destination.
+    var transaction = Transaction(animation: nil)
+    transaction.disablesAnimations = true
+    withTransaction(transaction, update)
+    closeSidebar()
+  }
+
   private func setSidebar(open: Bool) {
     withAnimation(reduceMotion ? nil : MemoraMotion.drawer) {
       isSidebarOpen = open
@@ -337,29 +371,25 @@ struct RootTabView: View {
   }
 
   private func openDocuments() {
-    closeSidebar()
-    model.isToolsPresented = false
-    model.selectedTab = .library
-    model.librarySection = .files
-    model.libraryPath = [.documents]
+    selectFromSidebar {
+      model.isToolsPresented = false
+      model.selectedTab = .library
+      model.librarySection = .files
+      model.libraryPath = [.documents]
+    }
   }
 
   private func openPeople() {
-    closeSidebar()
-    model.isToolsPresented = false
-    model.selectedTab = .library
-    model.librarySection = .files
-    model.libraryPath = [.people]
+    selectFromSidebar {
+      model.isToolsPresented = false
+      model.selectedTab = .library
+      model.librarySection = .files
+      model.libraryPath = [.people]
+    }
   }
 
   private func openSettings() {
-    closeSidebar()
-    // Let the drawer finish closing before presenting; presenting during the
-    // dismissal animation can swallow the sheet on device.
-    Task { @MainActor in
-      try? await Task.sleep(for: .milliseconds(280))
-      model.isSettingsPresented = true
-    }
+    closeSidebar { model.isSettingsPresented = true }
   }
 
   private var composerScope: AIQueryScope {

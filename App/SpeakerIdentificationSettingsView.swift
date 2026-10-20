@@ -13,7 +13,7 @@ struct SpeakerIdentificationSettingsView: View {
 
   var body: some View {
     @Bindable var model = model
-    Form {
+    MemoraForm {
       Section("端末内の音声モデル") {
         Label(SpeakerModelAssets.isInstalled ? "モデルを保存済み" : "モデル未ダウンロード", icon: .waveform)
         Text("FluidAudio / Community-1。声の登録と録音後の話者分離に同じモデルを使います。音声や特徴量は外部に送信しません。")

@@ -33,7 +33,7 @@ struct SummaryTemplateEditor: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           TextField("名前（例: 上司への報告）", text: $template.title)
           Picker("アイコン", selection: $template.symbol) {

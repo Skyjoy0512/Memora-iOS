@@ -7,7 +7,7 @@ struct AICreditsView: View {
   @State private var meter = MemoraCreditMeter.shared
 
   var body: some View {
-    List {
+    MemoraForm {
       Section {
         LabeledContent("プラン", value: model.planName)
         LabeledContent("今月のクレジット", value: model.effectivePlan.map { "\($0.monthlyCredits.formatted())" } ?? "なし")

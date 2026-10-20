@@ -24,7 +24,7 @@ struct LLMModelPickerView: View {
   }
 
   var body: some View {
-    List {
+    MemoraForm {
       Section {
         ForEach(provider.suggestedModels) { option in
           row(id: option.id, title: option.name, detail: option.detail.map { "\($0) · \(option.id)" } ?? option.id)

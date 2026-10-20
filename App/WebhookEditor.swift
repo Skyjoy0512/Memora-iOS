@@ -19,7 +19,7 @@ struct WebhookEditor: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           TextField("名前（例: 営業チームのSlack）", text: $endpoint.name)
           Picker("形式", selection: $endpoint.format) {

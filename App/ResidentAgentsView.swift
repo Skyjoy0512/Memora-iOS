@@ -9,7 +9,7 @@ struct ResidentAgentsView: View {
   var body: some View {
     let isAvailable = model.residentLLM != nil
 
-    List {
+    MemoraForm {
       if !isAvailable {
         Section {
           Label("常駐エージェントは、ご自身のAPIキー（BYOK）でクラウドのモデルを使うときだけ動きます。設定の「AI整理」でキーとモデルを登録してください。Memora Intelligenceや端末内のAIでは動きません。", icon: .infoCircle)

@@ -18,7 +18,7 @@ struct AIMemoryEditor: View {
     let related = AIMemoryEditPlan.relatedMemories(in: model.aiMemories, to: memory, predicate: draft.predicate)
     let sources = model.aiHistory.filter { $0.episode?.workspaceID == model.currentTeamID && $0.episode.map { memory.sourceSessionIDs.contains($0.sessionID) } == true }.prefix(5)
     return NavigationStack {
-      Form {
+      MemoraForm {
         if !canEdit {
           Section {
             Text("この記憶または保存先の状態が変わりました。閉じてから、現在の記憶を開き直してください。")

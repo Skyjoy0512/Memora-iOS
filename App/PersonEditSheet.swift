@@ -29,7 +29,7 @@ struct PersonEditSheet: View {
     let allOptions = PersonSelectionOption.options(model.people)
     let mergeOptions = allOptions.filter { $0.id != personID }
     NavigationStack {
-      Form {
+      MemoraForm {
         Section("名前") {
           TextField("名前", text: $name)
         }

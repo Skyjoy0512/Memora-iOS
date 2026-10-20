@@ -19,7 +19,7 @@ struct DocumentEditSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section("タイトル") {
           TextField("タイトル", text: $title)
         }

@@ -197,7 +197,7 @@ struct SearchView: View {
         }
       }
     }
-    .listStyle(.insetGrouped)
+    .memoraPlainList()
     .safeAreaInset(edge: .top, spacing: 0) { filterBar }
     .overlay {
       if matchingMeetings.isEmpty && matchingTasks.isEmpty {

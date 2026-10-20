@@ -151,7 +151,7 @@ struct PersonDetailView: View {
         footer: { Text("記録の編集で人物を選ぶと、この人に関連付けられます。名前の一致だけでは本人と断定しません。") }
       }
     }
-    .listStyle(.insetGrouped)
+    .memoraPlainList()
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     .navigationTitle(memory.person.name)
     .toolbar {

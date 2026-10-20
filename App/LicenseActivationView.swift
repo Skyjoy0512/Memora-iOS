@@ -10,7 +10,7 @@ struct LicenseActivationView: View {
   @FocusState private var isFieldFocused: Bool
 
   var body: some View {
-    Form {
+    MemoraForm {
       if let license = model.activeLicense {
         Section {
           LabeledContent("会社", value: license.company)

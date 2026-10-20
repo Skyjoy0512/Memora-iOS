@@ -10,7 +10,7 @@ struct AIMemoryEditingExampleView: View {
 
   var body: some View {
     let related = AIMemoryEditPlan.relatedMemories(in: memories, to: original, predicate: draft.predicate)
-    Form {
+    MemoraForm {
       Section {
         Text("すべて架空の記憶です。この画面内だけで変更し、保存済みメモリやAIには接続しません。")
           .font(.footnote).foregroundStyle(.secondary)

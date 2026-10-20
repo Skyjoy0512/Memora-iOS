@@ -24,7 +24,7 @@ struct SpeakerEditSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section("話者") {
           TextField("名前", text: $name)
             .textInputAutocapitalization(.never)

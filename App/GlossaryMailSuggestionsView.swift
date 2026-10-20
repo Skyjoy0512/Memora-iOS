@@ -59,7 +59,7 @@ struct GlossaryMailSuggestionsView: View {
   }
 
   private func list(_ candidates: [GlossaryCandidate]) -> some View {
-    List {
+    MemoraForm {
       Section {
         ForEach(candidates) { candidate in
           Button {

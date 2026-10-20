@@ -16,7 +16,7 @@ struct AIMemoryView: View {
     @Bindable var model = model
     let memories = model.visibleAIMemories.filter { query.isEmpty || $0.text.localizedStandardContains(query) }
 
-    List {
+    MemoraForm {
       Section {
         Toggle("メモリを使う", isOn: $model.isAIMemoryEnabled)
       } footer: {

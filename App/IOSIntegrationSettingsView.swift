@@ -9,7 +9,7 @@ struct IOSIntegrationSettingsView: View {
   @AppStorage("memora.shortcuts.projectNames") private var shortcutProjectNames = false
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section("ウィジェット") {
         Text("ホーム画面を長押し → 編集 → ウィジェットを追加 → Memora")
           .font(.subheadline).foregroundStyle(.secondary)

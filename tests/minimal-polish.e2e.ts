@@ -1,6 +1,29 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl, tapTab } from './ui-helpers';
+import { focusComposer, launchMemora, tapControl, tapTab } from './ui-helpers';
+
+test('minimal polish: sidebar switching keeps the conversation and settles on one canvas', async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await tapTab(screen, 'Ask AI');
+  const input = await focusComposer(screen);
+  const draft = 'Keep this draft while switching between Tools and the other destinations';
+  await input.fill(draft);
+  await screen.tapAt({ x: 220, y: 260 });
+  await expect(screen.getByRole('keyboard')).not.toBeVisible();
+  for (const destination of ['ツール', 'ライブラリ', 'ジャーナル', 'ツール', 'Ask AI']) {
+    await tapTab(screen, destination);
+    await expect.poll(async () => {
+      const box = await screen.getByLabel('メニュー').first().boundingBox();
+      return !!box && box.x < 60 && box.width >= 44;
+    }).toBe(true);
+    if (destination === 'ツール') {
+      await expect(screen.getByTestId('ai.composer.input')).not.toBeVisible();
+    }
+  }
+  await expect(input).toHaveValue(draft);
+  await expect(screen.getByRole('keyboard')).not.toBeVisible();
+  await app.screenshot('sidebar-switch-draft-retained');
+});
 
 test('minimal polish: Tools menus, article actions and connectors stay usable', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);

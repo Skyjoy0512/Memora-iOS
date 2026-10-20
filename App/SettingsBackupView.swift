@@ -30,7 +30,7 @@ struct SettingsBackupView: View {
   }
 
   var body: some View {
-    List {
+    MemoraForm {
       Section {
         SettingsValue(title: "会議", value: "\(model.meetings.count)件", icon: .docText)
         SettingsValue(title: "プロジェクト", value: "\(model.spaces.count)件", icon: .folder)

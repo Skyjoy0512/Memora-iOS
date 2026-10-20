@@ -6,7 +6,7 @@ struct NotionSettingsView: View {
   @State private var hasToken = false
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         HStack(spacing: 12) {
           SettingsIcon(icon: .key)

@@ -17,7 +17,7 @@ struct WebResearchView: View {
   }
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           TextField("調べたいこと", text: $query)
           Picker("調査方法", selection: $mode) { ForEach(WebResearchReport.Mode.allCases, id: \.self) { Text($0.label).tag($0) } }

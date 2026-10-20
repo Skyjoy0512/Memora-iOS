@@ -8,7 +8,7 @@ struct AIPluginSetupView: View {
     if let service = IntegrationCatalog.services.first(where: { $0.id == plugin.serviceID }) {
       IntegrationDetailView(service: service)
     } else {
-      Form {
+      MemoraForm {
         Section {
           Text(plugin.summary)
           Text(plugin.state.reason ?? "利用可能です。")

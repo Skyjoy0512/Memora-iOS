@@ -13,7 +13,7 @@ struct ProjectChatRenameSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form { TextField("チャット名", text: $title) }
+      MemoraForm { TextField("チャット名", text: $title) }
         .navigationTitle("名前を変更").navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItem(placement: .cancellationAction) { ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() } }

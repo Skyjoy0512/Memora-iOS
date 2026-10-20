@@ -10,7 +10,7 @@ struct RegisteredLLMEditor: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           Picker(selection: $draft.provider) {
             ForEach(LLMProvider.allCases) { provider in

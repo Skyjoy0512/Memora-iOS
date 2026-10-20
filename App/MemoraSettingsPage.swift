@@ -5,13 +5,7 @@ struct MemoraSettingsPage: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .scrollContentBackground(.hidden)
-      .background(Color(uiColor: .systemGroupedBackground))
-      .contentMargins(.horizontal, MemoraSpacing.screen, for: .scrollContent)
-      .listSectionSpacing(MemoraSpacing.xxl)
-      .environment(\.defaultMinListRowHeight, 56)
-      .textCase(nil)
-      .tint(MemoraPalette.textPrimary)
+      .memoraPlainList()
       .navigationTitle(title)
       .navigationBarTitleDisplayMode(.inline)
   }

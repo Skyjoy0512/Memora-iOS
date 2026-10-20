@@ -12,7 +12,7 @@ struct SkillsView: View {
     let skills = model.skillCatalog.filter {
       query.isEmpty || ([$0.name, $0.summary] + $0.keywords).contains { $0.localizedStandardContains(query) }
     }
-    List {
+    MemoraForm {
       Section {
         ForEach(skills) { skill in
           NavigationLink { SkillDetailView(skillID: skill.id) } label: {

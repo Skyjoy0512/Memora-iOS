@@ -17,7 +17,7 @@ struct CalendarSelectionView: View {
   }
 
   var body: some View {
-    List {
+    MemoraForm {
       Section {
         if calendars.isEmpty {
           Text("カレンダーが見つかりません。")

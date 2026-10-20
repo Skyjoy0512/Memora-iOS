@@ -14,7 +14,7 @@ struct GlossaryView: View {
       !model.glossaryTerms.contains { $0.caseInsensitiveCompare(term) == .orderedSame }
     }
 
-    List {
+    MemoraForm {
       Section {
         HStack {
           TextField("例: 株式会社メモラ、Memora Plus", text: $newTerm)

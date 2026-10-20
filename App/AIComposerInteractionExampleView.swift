@@ -13,7 +13,7 @@ struct AIComposerInteractionExampleView: View {
   @State private var lastAction = "未操作"
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         Text("送信・停止はこの画面内の確認だけです。AIや外部APIを呼び出さず、会話のドラフトも変更しません。")
           .font(.footnote).foregroundStyle(.secondary)

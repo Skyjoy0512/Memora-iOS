@@ -8,7 +8,7 @@ struct ExcludedPlacesView: View {
   @State private var service = LocationCaptureService()
 
   var body: some View {
-    List {
+    MemoraForm {
       if let message {
         Text(message)
           .font(.footnote)

@@ -4,7 +4,7 @@ struct PrivacyStorageView: View {
   @Environment(MemoraModel.self) private var model
 
   var body: some View {
-    List {
+    MemoraForm {
       Section {
         Label {
           VStack(alignment: .leading, spacing: 4) {

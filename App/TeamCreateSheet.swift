@@ -12,7 +12,7 @@ struct TeamCreateSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           TextField("チーム名", text: $name)
             .focused($isNameFocused)

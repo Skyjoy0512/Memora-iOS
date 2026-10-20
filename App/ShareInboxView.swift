@@ -5,7 +5,7 @@ struct ShareInboxView: View {
   @State private var projectID: UUID?
   @State private var deleting: UUID?
   var body: some View {
-    Form {
+    MemoraForm {
       if ShareInboxConfiguration.root == nil {
         Section {
           Text("共有拡張はまだ接続されていません。App Groupsと署名の設定が必要です。")

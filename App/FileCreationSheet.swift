@@ -8,7 +8,7 @@ struct FileCreationSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section("プロジェクト名") {
           TextField("例：新規アプリ", text: $projectName)
             .focused($isNameFocused)

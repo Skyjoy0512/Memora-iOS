@@ -13,7 +13,7 @@ struct RenameMeetingSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         TextField("会議名", text: $title)
       }
       .navigationTitle("名前を変更")

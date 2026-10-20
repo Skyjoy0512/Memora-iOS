@@ -13,7 +13,7 @@ struct ProjectSourcePrivacySheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           Picker("区分", selection: $privacy.classification) {
             ForEach(RecordPrivacy.Classification.allCases, id: \.self) { Text($0.title).tag($0) }

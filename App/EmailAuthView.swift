@@ -23,7 +23,7 @@ struct EmailAuthView: View {
   }
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         MemoraSectionPicker(items: Mode.allCases, selection: $selectedMode, title: \.label)
         .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 10, trailing: 0))

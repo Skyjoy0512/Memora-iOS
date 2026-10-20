@@ -7,7 +7,7 @@ struct LLMProviderPickerView: View {
   @State private var savedKeys: Set<LLMProvider> = []
 
   var body: some View {
-    List {
+    MemoraForm {
       Section {
         ForEach(LLMProvider.allCases) { provider in
           Button {

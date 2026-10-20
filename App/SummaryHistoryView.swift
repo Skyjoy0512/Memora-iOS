@@ -8,7 +8,7 @@ struct SummaryHistoryView: View {
   var body: some View {
     let meeting = model.meeting(id: meetingID)
     let versions = meeting?.summaryVersions.reversed() ?? [].reversed()
-    List {
+    MemoraForm {
       ForEach(Array(versions)) { version in
         NavigationLink {
           ScrollView {

@@ -14,10 +14,17 @@ struct IntegrationsView: View {
           NavigationLink {
             IntegrationDetailView(service: service)
           } label: {
-            SettingsValue(title: service.name,
-              value: service.isImplemented ? status(service.id) : "未対応",
-              icon: AIPluginIcon.resolve(pluginID: "service:" + service.id, name: service.name).systemSymbol)
+            HStack(spacing: MemoraSpacing.md) {
+              AIPluginIconView(icon: .resolve(pluginID: "service:" + service.id, name: service.name), size: 24)
+                .frame(width: MemoraIconMetrics.slot)
+              Text(service.name).foregroundStyle(MemoraPalette.textPrimary)
+              Spacer(minLength: MemoraSpacing.sm)
+              Text(service.isImplemented ? status(service.id) : "未対応")
+                .font(.subheadline).foregroundStyle(MemoraPalette.textSecondary)
+            }
+            .frame(minHeight: MemoraIconMetrics.touchTarget)
           }
+          .listRowBackground(MemoraPalette.background)
         }
       } header: {
         Text("サービス")

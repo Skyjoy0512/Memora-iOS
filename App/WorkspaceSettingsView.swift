@@ -5,7 +5,7 @@ struct WorkspaceSettingsView: View {
   @State private var isJoiningTeam = false
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         WorkspaceSwitcher(onCreateTeam: { isCreatingTeam = true }, onJoinTeam: { isJoiningTeam = true })
       } footer: {

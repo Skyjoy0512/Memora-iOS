@@ -17,7 +17,7 @@ struct SummaryTemplateMarketplaceView: View {
       return nil
     }
 
-    List {
+    MemoraForm {
       if !recommendations.isEmpty {
         Section("仕事・活動からのおすすめ") {
           ForEach(recommendations) { row($0) }

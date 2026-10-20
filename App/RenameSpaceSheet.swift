@@ -14,7 +14,7 @@ struct RenameSpaceSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         TextField("プロジェクト名", text: $name)
       }
       .navigationTitle("名前を変更")

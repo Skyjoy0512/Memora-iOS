@@ -5,7 +5,7 @@ struct RegisteredLLMsView: View {
   @State private var editing: RegisteredLLM?
 
   var body: some View {
-    List {
+    MemoraForm {
       Section {
         ForEach(model.registeredLLMs.models) { registered in
           Button { editing = registered } label: {

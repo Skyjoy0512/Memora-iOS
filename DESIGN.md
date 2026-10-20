@@ -102,7 +102,8 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | ToolbarSearchField | Native focused search; 44pt clear/cancel controls; vertical layout at accessibility text sizes |
 | ToolbarIconButton / ToolbarActionLabel | native toolbar labels and accessible actions |
 | MemoraInterfaceIcon / MemoraIconMetrics | common menu/settings glyph, alignment slot and touch metric |
-| SettingsLabel / SettingsValue / MemoraSettingsPage | wrapping row title, secondary value and shared native grouped page |
+| SettingsLabel / SettingsValue / MemoraSettingsPage | wrapping row title, secondary value and shared flat page |
+| MemoraForm / memoraPlainList | native controls and lists on the common canvas, without inset grouped cards |
 | SettingsCategory / SettingsCategoryView | typed topic navigation; original leaf bindings and permission confirmations |
 | AIComposerBar / QuickAIComposer | native input, attachments, speech, submit/stop, scoped selection |
 | MemoraTextTabBar / MemoraSectionPicker | flat scrollable content tabs and selection traits |
@@ -121,7 +122,7 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | Composer attachment Menu | native anchored attachment actions; mention selection preserves the native input |
 | AIReplyActionsRow | common response controls and a real excerpt count; vertical at accessibility sizes |
 | SidebarAccountFooter | anchored account/plan/settings controls, separated from scrollable destinations |
-| Native Form / Menu / sheet / alert | settings, integrations, skill setup, editors and confirmation |
+| MemoraForm / native Menu / sheet / alert | settings, integrations, skill setup, editors and confirmation |
 
 GlassSegmentedPicker/Control and arbitrary memoraCard(radius:) are retired.
 The old colored SettingsIconStyle tiles and per-section Tint palette are retired;
@@ -177,8 +178,13 @@ Summary section headings are text-only, retaining the disclosure chevron and
 its sort control uses the same trailing margin as the create button. Month
 headings use the shared Japanese formatter.
 
-Settings/sheets: native grouped Form, neutral glyphs, system presentation and
-common action hierarchy. The root is profile editing plus 12 topic links in four
+Settings/sheets: `MemoraForm` keeps native fields, pickers and switches in a
+plain List on the same canvas as Library, Ask AI and Tools. No inset grouped
+cards or system-grouped page backgrounds. Sections use text headings, quiet
+separators, 20pt row margins and 24pt spacing. The shared `memoraPlainList`
+also styles secondary collection pages. Editors retain their existing drafts,
+save/cancel actions, bindings and permission confirmations.
+The root is profile editing plus 12 topic links in four
 groups: account, app, data and other. Individual switches, AI models, service
 connections, storage and diagnostics live inside the relevant topic. Keep
 promotional plan cards out of this index; plan and credit operations remain in
@@ -199,14 +205,23 @@ comes from the existing catalog; no fabricated connections or authors.
 Service identities use the unmodified official logos through `AIPluginIcon`;
 sources are recorded in `docs/CONNECTOR_LOGOS.md`. Ordinary interface controls
 continue to use Lucide. The device calendar retains its native calendar glyph.
+Connector details use an article layout: official identity and real state,
+summary, access/cost explanation, then enable/setup controls. Explanatory
+paragraphs are not separate table rows; dividers separate controls only.
 
 The composer plus uses the system Menu for anchored, accessible Liquid Glass
 presentation. Mention candidates occupy layout space above the native input,
 so the complete candidate surface is inside its hit-test bounds. The field stays
 mounted for cursor/IME continuity, and candidate controls use the shared glass.
 The composer occupies 94.5% of the available width, capped at the reading width.
-Tools is a full-page destination entering from the leading edge, with a sidebar
-button; its details use native navigation. It is not presented as a bottom sheet.
+Tools is a full-page destination with a sidebar button, not a bottom sheet.
+Sidebar selections replace content without a second page-slide animation;
+only the drawer closes. Details still use native push/back navigation.
+The underlying tab surface stays mounted while Tools is visible, preserving
+navigation and conversation state. Its UIKit-backed views sit outside the
+viewport and are hidden from interaction while covered by Tools. Settings,
+recorder, account and plan sheets
+wait for actual drawer-animation completion, not an arbitrary delayed task.
 Tools and their details share the canvas background and 44pt circular toolbar
 controls, including Menu labels. Tool lists use 16pt section spacing, 12pt/8pt
 heading insets and medium-weight titles; summaries use 3pt extra leading.

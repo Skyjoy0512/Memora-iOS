@@ -51,7 +51,7 @@ struct ComposerMentionStrip: View {
     .preservesComposerFocus()
     .sheet(item: $inspectedPlugin) { plugin in
       NavigationStack {
-        Form {
+        MemoraForm {
           Section {
             Label(plugin.name, icon: plugin.icon.systemSymbol)
             Text(plugin.summary)

@@ -57,7 +57,7 @@ struct TaskEditView: View {
     let parents = TaskHierarchy.eligibleParents(for: task.id, in: model.tasks)
     let children = model.tasks.filter { $0.relationships.parentID == task.id }
     NavigationStack {
-      Form {
+      MemoraForm {
         Section("内容") {
           TextField("タイトル", text: $title, axis: .vertical)
           TextField("メモ・完了条件", text: $detail, axis: .vertical)

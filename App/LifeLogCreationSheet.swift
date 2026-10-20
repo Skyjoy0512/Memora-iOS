@@ -24,7 +24,7 @@ struct LifeLogCreationSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           MemoraSectionPicker(items: LifeLogKind.allCases, selection: $kind, title: \.label)
             .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))

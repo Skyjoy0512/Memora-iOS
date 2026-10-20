@@ -13,7 +13,7 @@ struct CompanyTemplateDetailView: View {
 
   var body: some View {
     let current = model.companyTemplates.first { $0.id == template.id && $0.workspaceID == model.currentTeamID }
-    Form {
+    MemoraForm {
       if let template = current {
         Section {
           Text(template.analysis.notice).font(.footnote)

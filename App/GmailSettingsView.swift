@@ -7,7 +7,7 @@ struct GmailSettingsView: View {
   @State private var isConfirmingDisconnect = false
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         if gmail.isConnected {
           LabeledContent("連携中のアカウント", value: gmail.connectedEmail ?? "Gmail")

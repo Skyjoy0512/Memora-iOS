@@ -27,7 +27,7 @@ struct LifeLogEditSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section("内容") {
           TextField("タイトル", text: $title, axis: .vertical)
           TextField("本文", text: $summary, axis: .vertical)

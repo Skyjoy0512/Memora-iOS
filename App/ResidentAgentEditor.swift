@@ -22,7 +22,7 @@ struct ResidentAgentEditor: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         let presets = ResidentAgentCatalog.presets.filter { preset in
           !model.residentAgents.contains { $0.id == preset.id }
         }

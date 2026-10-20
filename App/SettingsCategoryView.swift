@@ -31,7 +31,7 @@ struct SettingsCategoryView: View {
       } else if category == .integrations {
         IntegrationsView()
       } else {
-        Form {
+        MemoraForm {
           switch category {
           case .account: accountSections
           case .plan: planSections

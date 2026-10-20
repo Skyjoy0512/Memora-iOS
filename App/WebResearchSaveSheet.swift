@@ -10,7 +10,7 @@ struct WebResearchSaveSheet: View {
   @State private var failure: String?
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section("保存先") {
           Picker("プロジェクト", selection: $selected) {
             Text("新しいプロジェクト").tag(nil as UUID?)

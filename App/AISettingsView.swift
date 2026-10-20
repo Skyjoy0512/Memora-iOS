@@ -8,7 +8,7 @@ struct AISettingsView: View {
   @State private var readyProviders: Set<LLMProvider> = []
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section { NavigationLink("Web検索・調査") { WebResearchSettingsView() } }
       Section {
         ForEach(AIEngine.allCases) { option in

@@ -32,7 +32,7 @@ struct APIKeySheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         if let llmProvider {
           Section {
             HStack(spacing: 14) {

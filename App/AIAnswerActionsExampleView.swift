@@ -10,7 +10,7 @@ struct AIAnswerActionsExampleView: View {
   @State private var speaking = false
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         Text("架空の回答です。保存・再試行・読み上げは件数の確認だけで、実データや外部APIを使いません。")
           .font(.footnote).foregroundStyle(.secondary)

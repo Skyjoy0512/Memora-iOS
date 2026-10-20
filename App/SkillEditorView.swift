@@ -10,7 +10,7 @@ struct SkillEditorView: View {
   var body: some View {
     let tools = model.toolRegistry().tools.values.filter { AgentTool(rawValue: $0.name) != nil }.sorted { $0.name < $1.name }
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           TextField("スキル名", text: $skill.name)
           TextField("用途", text: $skill.summary, axis: .vertical)

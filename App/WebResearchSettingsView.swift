@@ -5,7 +5,7 @@ struct WebResearchSettingsView: View {
   @State private var hasKey = KeychainStore.has(WebResearchClient.keyName)
   @State private var failure = false
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         Text(hasKey ? "APIキー登録済み" : "APIキー未登録").foregroundStyle(.secondary)
         SecureField("APIキー", text: $key).textInputAutocapitalization(.never).autocorrectionDisabled()

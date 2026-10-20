@@ -10,7 +10,7 @@ struct SpeechRecognitionSettingsView: View {
   @State private var availability = EngineAvailability.Status()
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         Picker(selection: $engine) {
           ForEach(TranscriptionEngine.allCases) { option in

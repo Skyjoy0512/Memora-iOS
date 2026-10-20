@@ -11,7 +11,7 @@ struct SettingsView: View {
       (group, SettingsCategory.allCases.filter { $0.group == group })
     }
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           Button { isProfileEditorPresented = true } label: {
             HStack(spacing: MemoraSpacing.lg) {

@@ -16,7 +16,7 @@ struct AgentTaskDraftEditor: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           TextField("タイトル", text: $draft.title)
           VStack(alignment: .leading, spacing: 6) {

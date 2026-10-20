@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SettingsNotesView: View {
   var body: some View {
-    List {
+    MemoraForm {
       Section("アカウント") {
         Text("同期とアカウントはまだ接続されていません。録音と整理は、このiPhoneの中で使えます。")
       }

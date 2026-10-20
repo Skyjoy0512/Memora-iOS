@@ -23,7 +23,7 @@ struct MailDraftSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           TextField("宛先（不明なら空欄）", text: $to).keyboardType(.emailAddress).textInputAutocapitalization(.never)
           TextField("CC", text: $cc).keyboardType(.emailAddress).textInputAutocapitalization(.never)

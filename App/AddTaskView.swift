@@ -22,7 +22,7 @@ struct AddTaskView: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section("タスク") {
           TextField("すること", text: $title)
           TaskAssigneeFields(people: model.people, name: $assignee, personID: $assigneePersonID, ownedByMe: $ownedByMe)

@@ -11,7 +11,7 @@ struct TeamJoinSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           TextField("招待コード", text: $code)
             .textInputAutocapitalization(.characters)

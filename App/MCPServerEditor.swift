@@ -23,7 +23,7 @@ struct MCPServerEditor: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           TextField("名前（例: Notion）", text: $server.name)
           TextField("https://…/mcp", text: $server.url)

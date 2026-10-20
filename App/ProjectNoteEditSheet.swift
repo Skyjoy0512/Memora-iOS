@@ -17,7 +17,7 @@ struct ProjectNoteEditSheet: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
         TextField("タイトル", text: $title)
         TextEditor(text: $text).frame(minHeight: 240).accessibilityLabel("メモ本文")

@@ -15,7 +15,7 @@ struct VoiceProfileView: View {
   @State private var processingSampleCount = 1
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         Label(model.speakerProfile == nil ? "自分の声を登録" : "声の特徴量を登録済み", icon: .personWave2)
           .font(.headline)

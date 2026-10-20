@@ -7,7 +7,7 @@ struct ExternalRecorderSettingsView: View {
   @State private var isPlaudPresented = false
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         Button {
           isOmiPresented = true
@@ -57,4 +57,3 @@ struct ExternalRecorderSettingsView: View {
     .contentShape(Rectangle())
   }
 }
-

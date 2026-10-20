@@ -12,7 +12,7 @@ struct MCPSettingsView: View {
   @AppStorage("memora.mcpShareJournal") private var sharesJournal = true
 
   var body: some View {
-    Form {
+    MemoraForm {
       Section {
         SettingsValue(title: "状態", value: hasToken ? "設定済み" : "未設定", icon: .plugsConnected)
       } header: {

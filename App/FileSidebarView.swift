@@ -11,7 +11,8 @@ struct FileSidebarView: View {
   var onSelectTab: (RootTab) -> Void
   var onOpenTools: () -> Void
   var onOpenSettings: () -> Void
-  var onClose: () -> Void
+  var onOpenAccount: () -> Void
+  var onOpenPlan: () -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -81,12 +82,10 @@ struct FileSidebarView: View {
       SidebarAccountFooter(profile: model.profile, displayName: displayName,
         accountStatus: accountStatus, isSignedIn: model.isSignedIn) {
           InteractionFeedback.shared.send(.tap)
-          onClose()
-          if !model.isSignedIn { model.isAuthPresented = true }
+          onOpenAccount()
         } onPlan: {
           InteractionFeedback.shared.send(.tap)
-          onClose()
-          model.isPaywallPresented = true
+          onOpenPlan()
         } onSettings: {
           InteractionFeedback.shared.send(.tap)
           onOpenSettings()

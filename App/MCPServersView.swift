@@ -6,7 +6,7 @@ struct MCPServersView: View {
   @State private var editing: MCPServerConfig?
 
   var body: some View {
-    List {
+    MemoraForm {
       Section {
         if model.mcpServers.isEmpty {
           Text("まだ接続先がありません")

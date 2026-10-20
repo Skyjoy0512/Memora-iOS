@@ -7,7 +7,7 @@ struct WebhookSettingsView: View {
   @State private var editing: WebhookEndpoint?
 
   var body: some View {
-    List {
+    MemoraForm {
       Section {
         if model.webhookEndpoints.isEmpty {
           Text("まだ送り先がありません")

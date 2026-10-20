@@ -18,7 +18,7 @@ struct ProfileEditorView: View {
     @Bindable var profile = profile
 
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           VStack(spacing: 12) {
             Button {

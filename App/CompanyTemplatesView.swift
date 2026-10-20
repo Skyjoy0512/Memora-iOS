@@ -9,7 +9,7 @@ struct CompanyTemplatesView: View {
 
   var body: some View {
     let templates = model.companyTemplates.filter { $0.workspaceID == model.currentTeamID }
-    List {
+    MemoraForm {
       Section {
         ForEach(templates) { template in
           NavigationLink { CompanyTemplateDetailView(template: template) } label: {

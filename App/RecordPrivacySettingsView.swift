@@ -13,7 +13,7 @@ struct RecordPrivacySettingsView: View {
 
   var body: some View {
     NavigationStack {
-      Form {
+      MemoraForm {
         Section {
           Picker("機密区分", selection: Binding {
             draft.classification

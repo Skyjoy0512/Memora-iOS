@@ -6,7 +6,7 @@ struct SummaryStyleSettingsView: View {
 
   var body: some View {
     @Bindable var model = model
-    Form {
+    MemoraForm {
       Section {
         Toggle("仕事・活動に合わせる", isOn: Binding {
           model.followsOccupationSummaryTemplates

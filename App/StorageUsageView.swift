@@ -10,7 +10,7 @@ struct StorageUsageView: View {
   var body: some View {
     let audio = AudioUsage(meetings: model.meetings)
 
-    List {
+    MemoraForm {
       Section("使用量") {
         usageRow("音声", breakdown.audio)
         usageRow("写真", breakdown.photos)
