@@ -1,0 +1,231 @@
+{
+  "date": "2026-10-20",
+  "code": "UI changes in the same commit as this report; parent 2af2359",
+  "build": {
+    "command": "bitrig preview -platform iOS",
+    "result": "succeeded",
+    "log": "2026-10-20T14-40-31-837801c0.log",
+    "sdk": "iOS 27.1",
+    "deploymentTarget": "iOS 26",
+    "existingWarnings": 11
+  },
+  "xcodeTests": {
+    "command": "bitrig test",
+    "exitCode": 78,
+    "result": "Unsupported: Project.json has no Xcode test targets"
+  },
+  "hostChecks": [
+    {
+      "command": "bash tools/checks/run-design-refresh-checks.sh",
+      "result": "passed"
+    },
+    {
+      "command": "bash tools/checks/run-ask-ai-plugin-checks.sh",
+      "result": "passed"
+    },
+    {
+      "command": "python3 tools/checks/run-optimization-checks.py",
+      "result": "passed"
+    }
+  ],
+  "device": {
+    "name": "iPhone 18 Pro Max",
+    "runtime": "iOS 27.0",
+    "isolatedFromBitrigPreview": true,
+    "textSizeRestoredTo": "Large"
+  },
+  "coverage": {
+    "uniquePassingCases": 15,
+    "checksAcrossRuns": 16,
+    "wholeSuiteRerun": false,
+    "note": "33 cases discovered; scoped regression. The 10-case regression preceded the final sidebar-only accessibility refinements; final settings cases and maximum-text checks followed them."
+  },
+  "developmentFindings": [
+    {
+      "run": "01a157c5-1081-744a-87d6-9b8265df4116",
+      "finding": "Native Form row had a smaller AX button label than its visible row",
+      "fix": "SettingsLabel itself has at least 44pt height; measured by UI tests"
+    },
+    {
+      "id": "01a157cd-8ba0-735b-970a-e027e80ceddf",
+      "status": "passed",
+      "summary": {
+        "discovered": 33,
+        "selected": 3,
+        "executed": 3,
+        "passed": 3,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "manualReview": "Sidebar text truncation found despite passing assertions; follow-up scroll and wrapping fix required",
+      "fix": "Scroll profile/workspace, wrap descriptions, use a short visible plan title at accessibility sizes"
+    },
+    {
+      "run": "01a157d1-5734-7ce3-aa01-68102a10ab0d",
+      "finding": "Retained sidebar scroll position made the test's workspace locator offscreen; visual review also found one-character title columns beside status",
+      "fix": "Test scrolls to the workspace before checking it. Accessibility rows place status below title; title aspect-ratio regression added"
+    }
+  ],
+  "runs": [
+    {
+      "kind": "related-regression-before-final-sidebar-AX-refinement",
+      "id": "01a157c9-1365-7a86-8881-9032bdb78fe4",
+      "status": "passed",
+      "startedAt": "2026-10-20T05:29:22.524Z",
+      "finishedAt": "2026-10-20T05:33:52.536Z",
+      "summary": {
+        "discovered": 33,
+        "selected": 10,
+        "executed": 10,
+        "passed": 10,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "cases": [
+        {
+          "file": "tests/answer-actions.e2e.ts",
+          "title": "answer actions open selectable text and hide an unavailable retry",
+          "status": "passed",
+          "durationMs": 29706
+        },
+        {
+          "file": "tests/answer-actions.e2e.ts",
+          "title": "a long composer draft can expand and collapse without submitting",
+          "status": "passed",
+          "durationMs": 23200
+        },
+        {
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: navigation and settings in light and dark",
+          "status": "passed",
+          "durationMs": 33356
+        },
+        {
+          "file": "tests/design-refresh.e2e.ts",
+          "title": "design: long Markdown edits use real SQLite persistence across restart",
+          "status": "passed",
+          "durationMs": 60120
+        },
+        {
+          "file": "tests/memora.e2e.ts",
+          "title": "Settings opens from the side menu",
+          "status": "passed",
+          "durationMs": 9872
+        },
+        {
+          "file": "tests/memora.e2e.ts",
+          "title": "the structured answer example renders the comparison table and Row",
+          "status": "passed",
+          "durationMs": 17407
+        },
+        {
+          "file": "tests/memora.e2e.ts",
+          "title": "the structured answer example replays its streaming state",
+          "status": "passed",
+          "durationMs": 18006
+        },
+        {
+          "file": "tests/memora.e2e.ts",
+          "title": "the source list and progress fixture renders",
+          "status": "passed",
+          "durationMs": 20655
+        },
+        {
+          "file": "tests/ui-polish.e2e.ts",
+          "title": "polish: candidate names, selected state and keyboard survive appearance changes",
+          "status": "passed",
+          "durationMs": 17768
+        },
+        {
+          "file": "tests/ui-polish.e2e.ts",
+          "title": "polish: library metadata and status remain readable in both appearances",
+          "status": "passed",
+          "durationMs": 39693
+        }
+      ]
+    },
+    {
+      "kind": "final-standard-Large",
+      "id": "01a157d6-1cd0-7432-a96f-941653447dc9",
+      "status": "passed",
+      "startedAt": "2026-10-20T05:43:40.299Z",
+      "finishedAt": "2026-10-20T05:45:49.189Z",
+      "summary": {
+        "discovered": 33,
+        "selected": 3,
+        "executed": 3,
+        "passed": 3,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "cases": [
+        {
+          "file": "tests/settings-polish.e2e.ts",
+          "title": "settings polish: topic hierarchy, profile editing and shared sidebar icons",
+          "status": "passed",
+          "durationMs": 54425
+        },
+        {
+          "file": "tests/settings-polish.e2e.ts",
+          "title": "settings polish: appearance preferences survive restart without changing records",
+          "status": "passed",
+          "durationMs": 33762
+        },
+        {
+          "file": "tests/settings-polish.e2e.ts",
+          "title": "settings polish: relocated AI, recording, plan and connection controls remain reachable",
+          "status": "passed",
+          "durationMs": 40490
+        }
+      ]
+    },
+    {
+      "kind": "final-Accessibility-XXXL",
+      "id": "01a157d4-4840-73a0-a84a-112210e823e3",
+      "status": "passed",
+      "startedAt": "2026-10-20T05:41:37.025Z",
+      "finishedAt": "2026-10-20T05:43:07.717Z",
+      "summary": {
+        "discovered": 33,
+        "selected": 3,
+        "executed": 3,
+        "passed": 3,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "cases": [
+        {
+          "file": "tests/design-accessibility.e2e.ts",
+          "title": "design: mention controls remain below navigation and above native input",
+          "status": "passed",
+          "durationMs": 19585
+        },
+        {
+          "file": "tests/design-accessibility.e2e.ts",
+          "title": "design: toolbar search clears without dismissing input and cancels back to tabs",
+          "status": "passed",
+          "durationMs": 19422
+        },
+        {
+          "file": "tests/settings-polish.e2e.ts",
+          "title": "settings polish: topic hierarchy, profile editing and shared sidebar icons",
+          "status": "passed",
+          "durationMs": 51469
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Real provider OAuth, purchases, recording/location/Face ID hardware flows not verified in this UI phase",
+    "VoiceOver labels/states/frames checked, not a complete spoken-order audit",
+    "E2E on iOS 27.0, not an iOS 26 runtime"
+  ]
+}

@@ -65,3 +65,19 @@ export async function launchMemora(app: any, device: any, screen: any) {
   await expect(journal).toBeVisible();
   await expect(screen.getByLabel('メニュー')).toBeVisible();
 }
+
+export async function scrollToControl(screen: any, control: any) {
+  for (let attempt = 0; attempt < 9; attempt++) {
+    if (await control.isVisible()) return;
+    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 300 }, duration: 500 });
+  }
+  await expect(control).toBeVisible();
+}
+
+// The gallery lives under the diagnostics topic, not among ordinary preferences.
+export async function openSettingsGallery(screen: any) {
+  const diagnostics = screen.getByTestId('settings.category.diagnostics').first();
+  await scrollToControl(screen, diagnostics);
+  await tapControl(screen, diagnostics);
+  await tapControl(screen, screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }));
+}

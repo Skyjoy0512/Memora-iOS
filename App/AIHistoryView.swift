@@ -76,7 +76,7 @@ struct AIHistoryView: View {
       }
       .toolbar {
         ToolbarActionItem {
-          ToolbarIconButton("履歴を検索", icon: .magnifyingglass, artwork: .searchIntelligence) {
+          ToolbarIconButton("履歴を検索", icon: .magnifyingglass) {
             isSearching = true
           }
         }

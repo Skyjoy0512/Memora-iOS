@@ -23,5 +23,5 @@ struct ToolbarActionItem<Content: View>: ToolbarContent {
 }
 
 extension EnvironmentValues {
-  @Entry var memoraToolbarControlSize: CGFloat = 36
+  @Entry var memoraToolbarControlSize: CGFloat = MemoraIconMetrics.touchTarget
 }

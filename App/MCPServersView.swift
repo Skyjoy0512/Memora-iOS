@@ -57,7 +57,7 @@ struct MCPServersView: View {
           LabeledContent {
             Text(MCPIntegration.isConfigured ? "設定済み" : "未設定")
           } label: {
-            SettingsLabel("Memoraへの接続", icon: .plugsConnected, artwork: .settingsMCP)
+            SettingsLabel("Memoraへの接続", icon: .plugsConnected)
           }
         }
       } header: {

@@ -4,14 +4,12 @@ import SwiftUI
 struct ToolbarIconButton: View {
   var title: LocalizedStringKey
   var icon: MemoraIcon
-  var artwork: MemoraArtwork?
   var action: () -> Void
   @Environment(\.memoraToolbarControlSize) private var controlSize
 
-  init(_ title: LocalizedStringKey, icon: MemoraIcon, artwork: MemoraArtwork? = nil, action: @escaping () -> Void) {
+  init(_ title: LocalizedStringKey, icon: MemoraIcon, action: @escaping () -> Void) {
     self.title = title
     self.icon = icon
-    self.artwork = artwork
     self.action = action
   }
 
@@ -20,7 +18,7 @@ struct ToolbarIconButton: View {
       InteractionFeedback.shared.send(.tap)
       action()
     } label: {
-      ToolbarIconGlyph(icon: icon, artwork: artwork)
+      ToolbarIconGlyph(icon: icon)
         .frame(width: controlSize, height: controlSize)
         .contentShape(Rectangle())
     }

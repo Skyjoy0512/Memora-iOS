@@ -1,6 +1,6 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { focusComposer, launchMemora, tapControl as tap, tapTab as tab } from './ui-helpers';
+import { focusComposer, launchMemora, tapControl as tap, tapTab as tab, openSettingsGallery } from './ui-helpers';
 
 async function openLink(device: any, screen: any, url: string) {
   await device.openLink(url);
@@ -27,10 +27,8 @@ async function review(screen: any, device: any) {
   await openLink(device, screen, 'memora://journal');
   await tap(screen, screen.getByLabel('メニュー'));
   await tap(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
-  await expect(screen.getByText('アカウント')).toBeVisible();
-  const gallery = screen.getByText('状態と復旧UIを確認');
-  await scrollTo(screen, gallery);
-  await tap(screen, screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }));
+  await expect(screen.getByText('アカウント').first()).toBeVisible();
+  await openSettingsGallery(screen);
   await tap(screen, screen.getByText('デザインと保存の検証'));
 }
 
@@ -56,7 +54,7 @@ test('design: navigation and settings in light and dark', async ({ app, device, 
     await app.screenshot(`ask-${appearance}`);
     await tap(screen, screen.getByLabel('メニュー'));
     await tap(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
-    await expect(screen.getByText('アカウント')).toBeVisible();
+    await expect(screen.getByText('アカウント').first()).toBeVisible();
     await app.screenshot(`settings-${appearance}`);
   }
   await device.setAppearance('light');

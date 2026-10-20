@@ -371,7 +371,8 @@ struct AIComposerBar: View {
     } label: {
       Group {
         if onStop == nil, !canSend, !isBusy, !speechInput.isListening {
-          ArtworkIcon(artwork: .voiceInput, size: 20)
+          Image(icon: .mic)
+            .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
         } else {
           Image(icon: actionSymbol)
         }

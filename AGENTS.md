@@ -174,7 +174,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   evidence — calendar series, meeting name, shared people
   (`projectSuggestions(for:)`, `ProjectSuggestionCard`).
 - Personal memory: Ask AI keeps what the person told it (「〇〇を覚えておいて」,
-  Settings › メモリ, or the agent's `save_memory` after approval) in
+  Settings › AIと要約 › メモリ, or the agent's `save_memory` after approval) in
   `aiMemories`, and sends it with every question together with related past
   exchanges from `aiHistory` (`personalContext`, `MemoraModel+Memory`). Nothing
   is inferred into memory. A history entry can be continued.
@@ -196,7 +196,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   cloud requests and artifact creation. Never restore calendar grants from history
   or replace source dates/titles with model-supplied values. See
   `docs/ASK_AI_CALENDAR_PREVIEW.md` for mock and real-device validation boundaries.
-- Business meetings: a glossary (Settings › 文字起こし › 用語集,
+- Business meetings: a glossary (Settings › 録音と文字起こし › 文字起こし › 用語集,
   `glossaryTerms`) plus the people and project names (`transcriptionVocabulary`)
   is given to every transcription engine (the glossary can be filled from
   recent Gmail — names written to, company names, recurring product names —
@@ -220,7 +220,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   is transcribed on the device as a 通話 record (`MeetingSource.call`,
   `saveEndedCall`). Until a provider and its token server are connected,
   `UnconfiguredCallingService` refuses with a reason. The screens can be
-  previewed from Settings › プロトタイプ › 状態と復旧UIを確認.
+  previewed from Settings › 診断とプレビュー › 状態と復旧UIを確認.
 - People: the side menu's 人物 (`PeopleView`, `PersonDetailView`) shows what
   the records hold about someone (`MemoraModel.memory(of:)`): meetings they
   were tagged on or spoke in under their name, open tasks assigned to them,
@@ -242,7 +242,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   credited in `docs/THIRD_PARTY.md`): `rules` for cloud prompts,
   `compactRules` for the on-device window.
 - Resident agents (`ResidentAgent`, `ResidentTrigger`, `ResidentAgentCatalog`,
-  `MemoraModel+Residents`, Settings › 常駐エージェント), after OpenDots' Dots
+  `MemoraModel+Residents`, Settings › AIと要約 › 常駐エージェント), after OpenDots' Dots
   (design only; its code is TypeScript): named agents that run every morning,
   every Monday, or after a summary is made, and post to the Ask AI
   conversation under their name. BYOK only (`residentLLM`): never Memora
@@ -256,7 +256,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   message, and a run missed by more than `lateWindow` is skipped. A
   notification is posted only if already allowed.
 - Ask AI defaults to Auto, which follows the configured `AIEngine` and cloud
-  selection. A registered model is chosen in Settings › AI整理 (saved in
+  selection. A registered model is chosen in Settings › AIと要約 › AIモデル (saved in
   `RegisteredLLMStore`), not from the composer: a menu there dropped the
   keyboard and cancelled the choice. Both Ask AI paths capture
   `askAIConfiguration` once per question. The summary sheet starts on the model
@@ -300,8 +300,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   same everywhere. Raw values keep the names older builds stored.
 - Settings has one entry point: the gear at the bottom right of the side menu
   (`FileSidebarView` footer, beside Memora Plus). Tabs carry no settings button.
-  Dark mode is a toggle in Settings › 表示, not in the side menu. The editable
-  profile picture remains at the top of Settings, and each Settings section
-  uses one tile color (`Tint` in `SettingsView.swift`).
+  Dark mode is a toggle in Settings › 表示と操作, not in the side menu. The editable
+  profile picture remains at the top of Settings. The root has topic links only
+  (`SettingsCategory`); switches and service connections live inside each topic.
+  Settings and sidebar icons use `MemoraInterfaceIcon`: a 20pt regular SF Symbol
+  in a 28pt slot; interactive labels remain at least 44pt. Do not restore colored
+  tiles, per-item artwork or separate enlarged search icons.
 - Backlog and phase status live in `docs/IMPROVEMENT_BACKLOG.md` and
   `docs/OPENCODE_IMPLEMENTATION.md`.

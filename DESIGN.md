@@ -65,7 +65,9 @@ adds 6pt scaled line spacing and natural tracking. Paragraphs are 16pt apart.
 Major headings have 16pt additional space above; minor headings 8pt. Bullets use
 a scaled 20pt marker column and hanging indentation; deep nesting is bounded on
 narrow screens. Reading and UIKit attributed editing share fonts and leading.
-Chat/document columns cap at 680pt. Fixed glyph sizes represent artwork, not prose.
+Chat/document columns cap at 680pt. Interface glyphs keep a consistent optical
+size while their labels follow Dynamic Type; avatars and content artwork are
+separate roles.
 
 | Spacing token | pt | Role |
 |---|---|---|
@@ -79,6 +81,15 @@ Chat/document columns cap at 680pt. Fixed glyph sizes represent artwork, not pro
 Radius: small 8, field 12, card 16, bubble/composer 24pt; actions are capsules.
 System sheets/menus own their contours. Group related content sparingly.
 
+Interface icon tokens (`MemoraIconMetrics`): 20pt regular SF Symbol, 28pt
+alignment slot in menu/settings rows, at least 44pt actual control label.
+Custom disclosure accessories use the separate 12pt accessory role.
+`MemoraInterfaceIcon` normalizes paired filled symbols to their existing outline
+variant for navigation only; stored `MemoraIcon` values never change. Toolbars,
+search and speech controls use the same glyph size. Native system menus own
+their symbol layout. Profile avatars are 48pt in navigation, not menu glyphs.
+Do not reintroduce per-item artwork, scale multipliers or oversized search icons.
+
 ## Shared components
 
 | Component | Responsibility |
@@ -87,6 +98,9 @@ System sheets/menus own their contours. Group related content sparingly.
 | MemoraIconButton | 20pt SF glyph with an actual 44pt accessible/tappable label, not outer spacing |
 | ToolbarSearchField | Native focused search; 44pt clear/cancel controls; vertical layout at accessibility text sizes |
 | ToolbarIconButton / ToolbarActionLabel | native toolbar labels and accessible actions |
+| MemoraInterfaceIcon / MemoraIconMetrics | common menu/settings glyph, alignment slot and touch metric |
+| SettingsLabel / SettingsValue / MemoraSettingsPage | wrapping row title, secondary value and shared native grouped page |
+| SettingsCategory / SettingsCategoryView | typed topic navigation; original leaf bindings and permission confirmations |
 | AIComposerBar / QuickAIComposer | native input, attachments, speech, submit/stop, scoped selection |
 | MemoraTextTabBar / MemoraSectionPicker | flat scrollable content tabs and selection traits |
 | ProminentTabBar | protected UISegmentedControl navigation and system selection morph |
@@ -134,8 +148,23 @@ editing stays a deliberate context-menu action. Tables retain every value.
 Audio, timestamps, source navigation and saving retain their existing paths.
 
 Settings/sheets: native grouped Form, neutral glyphs, system presentation and
-common action hierarchy. Preserve profile editing, permission explanations,
-integration setup and the single sidebar settings entry. No fabricated service state.
+common action hierarchy. The root is profile editing plus 11 topic links in four
+groups: account, app, data and other. Individual switches, AI models, service
+connections, storage and diagnostics live inside the relevant topic. Keep
+promotional plan cards out of this index; plan and credit operations remain in
+their category. Services have one canonical list under Integrations; skills
+belong under AI and summaries. Preserve profile editing, permission explanations,
+connection setup and the single sidebar settings entry. No fabricated service state.
+
+Sidebar: workspace switcher, Library destinations (Projects / Documents / People),
+Devices, then plan/settings controls. A destination name stays constant; connection
+state is a separate secondary value. Rows use the shared 28pt icon column and
+52pt minimum height, growing with text. Profile and workspace information scroll
+with destinations and wrap without truncation. At accessibility text sizes the
+plan action reads “プラン”; its spoken name still identifies Memora Plus. The
+settings gear stays beside it at the bottom right.
+At accessibility sizes, secondary row values move below the title rather than
+competing for a narrow horizontal column.
 
 ## Interaction and accessibility
 
@@ -160,3 +189,5 @@ microphone, CloudKit and hardware require their actual configuration.
 
 [UI polish review](docs/design-refresh/POLISH.md) records the subsequent candidate-menu,
 list hierarchy and empty-state refinements without replacing the original audit.
+[Settings and icon review](docs/design-refresh/SETTINGS.md) records the topic
+hierarchy, relocated controls, icon metrics and follow-up verification.

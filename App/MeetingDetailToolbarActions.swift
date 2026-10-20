@@ -3,7 +3,6 @@ import SwiftUI
 struct MeetingDetailToolbarActions: View {
   var primaryTitle: LocalizedStringKey = "共有"
   var primaryIcon: MemoraIcon = .squareAndArrowUp
-  var primaryArtwork: MemoraArtwork? = nil
   var morphsFromLibrary = false
   var onReplaceIcons: () -> Void = {}
   var hasAudio: Bool
@@ -119,7 +118,7 @@ struct MeetingDetailToolbarActions: View {
         if morphsFromLibrary && !hasReplacedIcons && !reduceMotion {
           ToolbarIconGlyph(icon: .magnifyingglass)
         } else {
-          ToolbarIconGlyph(icon: primaryIcon, artwork: primaryArtwork)
+          ToolbarIconGlyph(icon: primaryIcon)
         }
       }
         .contentTransition(reduceMotion ? .identity : .opacity)

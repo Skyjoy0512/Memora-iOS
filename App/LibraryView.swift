@@ -31,7 +31,6 @@ struct LibraryView: View {
     MeetingDetailToolbarActions(
       primaryTitle: "検索",
       primaryIcon: .magnifyingglass,
-      primaryArtwork: .searchIntelligence,
       hasAudio: false,
       isPlaying: false,
       isRecording: false,

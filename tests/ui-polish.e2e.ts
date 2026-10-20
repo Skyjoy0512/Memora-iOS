@@ -1,6 +1,6 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { focusComposer, launchMemora, tapControl } from './ui-helpers';
+import { focusComposer, launchMemora, tapControl, openSettingsGallery } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -8,12 +8,8 @@ async function openReview(device: any, screen: any) {
   await device.openLink('memora://journal');
   await tapControl(screen, screen.getByLabel('メニュー'));
   await tapControl(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
-  await expect(screen.getByText('アカウント')).toBeVisible();
-  const gallery = screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true });
-  for (let attempt = 0; attempt < 9 && !(await gallery.isVisible()); attempt++) {
-    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 300 }, duration: 500 });
-  }
-  await tapControl(screen, gallery);
+  await expect(screen.getByText('アカウント').first()).toBeVisible();
+  await openSettingsGallery(screen);
   await tapControl(screen, screen.getByText('デザインと保存の検証'));
 }
 

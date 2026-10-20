@@ -3,6 +3,7 @@ import SwiftUI
 /// Workspace, library utilities and settings remain reachable from the drawer.
 struct FileSidebarView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
   var onOpenRecorder: () -> Void
   var onOpenProjects: () -> Void
@@ -15,51 +16,53 @@ struct FileSidebarView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      profileHeader
-
-      WorkspaceSwitcher(onCreateTeam: onCreateTeam, onJoinTeam: onJoinTeam)
-        .padding(.horizontal, MemoraSpacing.lg)
-        .padding(.bottom, MemoraSpacing.sm)
-
       ScrollView {
-        VStack(alignment: .leading, spacing: 24) {
-          sidebarSection("ライブラリ") {
-            SidebarRow(
-              title: "資料",
-              symbol: .docRichtext,
-              detail: model.documents.isEmpty ? nil : "\(model.documents.count)",
-              isSelected: isShowingDocuments
-            ) {
-              onOpenDocuments()
+        VStack(alignment: .leading, spacing: 0) {
+          profileHeader
+
+          WorkspaceSwitcher(onCreateTeam: onCreateTeam, onJoinTeam: onJoinTeam)
+            .padding(.horizontal, MemoraSpacing.lg)
+            .padding(.bottom, MemoraSpacing.sm)
+
+          VStack(alignment: .leading, spacing: 24) {
+            sidebarSection("ライブラリ") {
+              SidebarRow(title: "プロジェクト", symbol: .rectangleStack,
+                isSelected: model.selectedTab == .library && model.librarySection == .projects) {
+                onOpenProjects()
+              }
+              SidebarRow(
+                title: "資料",
+                symbol: .docRichtext,
+                detail: model.documents.isEmpty ? nil : "\(model.documents.count)",
+                isSelected: isShowingDocuments
+              ) {
+                onOpenDocuments()
+              }
+
+              SidebarRow(
+                title: "人物",
+                symbol: .person2,
+                detail: model.people.isEmpty ? nil : "\(model.people.count)",
+                isSelected: model.selectedTab == .library && model.libraryPath.first == .people
+              ) {
+                onOpenPeople()
+              }
             }
 
-            SidebarRow(
-              title: "人物",
-              symbol: .person2,
-              detail: model.people.isEmpty ? nil : "\(model.people.count)",
-              isSelected: model.selectedTab == .library && model.libraryPath.first == .people
-            ) {
-              onOpenPeople()
+            sidebarSection("デバイス") {
+              SidebarRow(
+                title: "外部レコーダー",
+                symbol: .dotRadiowavesLeftAndRight,
+                detail: isOmiConnected ? "接続中" : "未接続"
+              ) {
+                onOpenRecorder()
+              }
             }
           }
-
-          SidebarRow(title: "プロジェクト", symbol: .rectangleStack,
-            isSelected: model.selectedTab == .library && model.librarySection == .projects) {
-            onOpenProjects()
-          }
-
-          sidebarSection("接続") {
-            SidebarRow(
-              title: isOmiConnected ? "Omi 接続中" : "外部レコーダー",
-              symbol: isOmiConnected ? .dotRadiowavesLeftAndRight : .link,
-              detail: isOmiConnected ? nil : "未接続"
-            ) {
-              onOpenRecorder()
-            }
-          }
+          .padding(.horizontal, MemoraSpacing.lg)
+          .padding(.vertical, MemoraSpacing.md)
         }
-        .padding(.horizontal, MemoraSpacing.lg)
-        .padding(.vertical, MemoraSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
       .scrollIndicators(.hidden)
 
@@ -79,14 +82,7 @@ struct FileSidebarView: View {
         }
       } label: {
         HStack(spacing: 12) {
-          if !model.isSignedIn && model.profile.avatarKind == .none {
-            ArtworkIcon(artwork: .signIn, size: 22)
-              .foregroundStyle(.primary)
-              .frame(width: 42, height: 42)
-              .background(Color.primary.opacity(0.08), in: Circle())
-          } else {
-            ProfileAvatar(profile: model.profile, size: 42)
-          }
+          ProfileAvatar(profile: model.profile, size: 48)
 
           VStack(alignment: .leading, spacing: 3) {
             Text(displayName)
@@ -95,7 +91,7 @@ struct FileSidebarView: View {
             Text(accountStatus)
               .font(.caption)
               .foregroundStyle(.secondary)
-              .lineLimit(1)
+              .fixedSize(horizontal: false, vertical: true)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -119,7 +115,9 @@ struct FileSidebarView: View {
           onClose()
           model.isPaywallPresented = true
         } label: {
-          Label(model.isSubscribed ? "Memora Plus" : "Memora Plus にする", icon: .crown)
+          Label { Text(dynamicTypeSize.isAccessibilitySize ? "プラン" : "Memora Plus") } icon: {
+            MemoraInterfaceIcon(icon: .crown)
+          }
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.primary)
             .lineLimit(1)
@@ -129,6 +127,7 @@ struct FileSidebarView: View {
             .memoraGlass(in: Capsule(), interactive: true)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Memora Plus、プランと利用状況")
 
         Spacer(minLength: 8)
 
@@ -139,7 +138,7 @@ struct FileSidebarView: View {
         } label: {
           Label("設定", icon: .gearshape)
             .labelStyle(.iconOnly)
-            .font(.body.weight(.medium))
+            .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
             .foregroundStyle(.primary)
             .frame(width: 44, height: 44)
             .contentShape(Circle())
@@ -160,8 +159,8 @@ struct FileSidebarView: View {
   ) -> some View {
     VStack(alignment: .leading, spacing: 4) {
       Text(title)
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
+        .font(MemoraTypography.metadata.weight(.medium))
+        .foregroundStyle(MemoraPalette.textSecondary)
         .padding(.horizontal, MemoraSpacing.lg)
         .padding(.bottom, MemoraSpacing.xxs)
 
@@ -189,6 +188,7 @@ struct FileSidebarView: View {
 }
 
 private struct SidebarRow: View {
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   var title: String
   var symbol: MemoraIcon
   var detail: String?
@@ -196,36 +196,38 @@ private struct SidebarRow: View {
   var action: () -> Void
 
   var body: some View {
+    let labelLayout = dynamicTypeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+      : AnyLayout(HStackLayout(spacing: MemoraSpacing.sm))
     Button {
       InteractionFeedback.shared.send(.tap)
       action()
     } label: {
-      HStack(spacing: 14) {
-        Image(icon: symbol)
-          .font(.body)
-          .symbolRenderingMode(.monochrome)
-          .frame(width: 24)
+      HStack(spacing: MemoraSpacing.md) {
+        MemoraInterfaceIcon(icon: symbol)
 
-        Text(title)
-          .font(.body.weight(isSelected ? .semibold : .regular))
-          .lineLimit(1)
-
-        Spacer(minLength: 8)
-
-        if let detail {
-          Text(detail)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .monospacedDigit()
+        labelLayout {
+          Text(title)
+            .font(.body.weight(isSelected ? .semibold : .regular))
+            .fixedSize(horizontal: false, vertical: true)
+          if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: MemoraSpacing.sm) }
+          if let detail {
+            Text(detail)
+              .font(.subheadline)
+              .foregroundStyle(MemoraPalette.textSecondary)
+              .monospacedDigit()
+              .fixedSize(horizontal: false, vertical: true)
+          }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
       .foregroundStyle(.primary)
-      .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+      .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
       .padding(.horizontal, MemoraSpacing.lg)
       .background {
         if isSelected {
           RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous)
-            .fill(Color.primary.opacity(0.08))
+            .fill(MemoraPalette.selection)
         }
       }
       .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))

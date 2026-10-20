@@ -1,6 +1,6 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl } from './ui-helpers';
+import { launchMemora, tapControl, openSettingsGallery } from './ui-helpers';
 
 // Local fixtures and deterministic locators only: no agent/model or provider calls.
 async function scrollToText(screen: any, text: string) {
@@ -15,8 +15,7 @@ async function openGallery(app: any, device: any, screen: any) {
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
   await screen.getByText('設定').tap();
-  await scrollToText(screen, '状態と復旧UIを確認');
-  await screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }).tap();
+  await openSettingsGallery(screen);
   await expect(screen.getByText('デザインと保存の検証')).toBeVisible();
 }
 

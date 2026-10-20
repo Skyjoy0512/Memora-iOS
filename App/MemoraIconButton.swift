@@ -15,7 +15,7 @@ struct MemoraIconButton: View {
   var body: some View {
     Button(action: action) {
       Image(icon: icon)
-        .font(.system(size: 20))
+        .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
         .foregroundStyle(MemoraPalette.textPrimary)
         .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
         .contentShape(Rectangle())

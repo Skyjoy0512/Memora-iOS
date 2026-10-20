@@ -25,32 +25,28 @@ struct WorkspaceSwitcher: View {
       }
     } label: {
       HStack(spacing: 12) {
-        Image(icon: current.icon)
-          .font(.body.weight(.semibold))
-          .foregroundStyle(.tint)
-          .frame(width: 36, height: 36)
-          .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
+        MemoraInterfaceIcon(icon: current.icon)
 
         VStack(alignment: .leading, spacing: 2) {
           Text(current.title)
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.primary)
-            .lineLimit(1)
+            .fixedSize(horizontal: false, vertical: true)
           Text(current.storageDescription)
             .font(.caption)
             .foregroundStyle(.secondary)
-            .lineLimit(1)
+            .fixedSize(horizontal: false, vertical: true)
         }
 
         Spacer(minLength: 8)
 
         Image(icon: .chevronUpChevronDown)
-          .font(.footnote.weight(.semibold))
+          .font(.system(size: MemoraIconMetrics.accessory, weight: .semibold))
           .foregroundStyle(.secondary)
       }
       .padding(MemoraSpacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .memoraCard()
+      .background(MemoraPalette.secondaryBackground, in: RoundedRectangle(cornerRadius: MemoraRadius.field))
       .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
     }
     .buttonStyle(.plain)

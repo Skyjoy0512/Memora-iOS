@@ -18,7 +18,8 @@ struct ToolbarSearchField: View {
       : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
     layout {
       HStack(spacing: MemoraSpacing.sm) {
-        ArtworkIcon(artwork: .searchIntelligence, size: 20)
+        Image(icon: .magnifyingglass)
+          .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
           .foregroundStyle(.secondary)
           .accessibilityHidden(true)
 

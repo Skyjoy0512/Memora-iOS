@@ -8,6 +8,8 @@ struct SettingsValue: View {
   var body: some View {
     LabeledContent {
       Text(value)
+        .font(MemoraTypography.secondary)
+        .foregroundStyle(MemoraPalette.textSecondary)
     } label: {
       SettingsLabel(title, icon: icon)
     }

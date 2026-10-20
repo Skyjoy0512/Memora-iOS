@@ -1,6 +1,6 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, tapControl, tapTab, openSettingsGallery } from './ui-helpers';
 
 // Fast checks that launch the app and read the screen. No model calls.
 test('onboarding completion survives a normal restart', async ({ app, device, screen }) => {
@@ -39,8 +39,8 @@ test('Settings opens from the side menu', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
   await screen.getByText('設定').tap();
-  await expect(screen.getByText('アカウント')).toBeVisible();
-  await expect(screen.getByText('プラン').first()).toBeVisible();
+  await expect(screen.getByText('アカウント').first()).toBeVisible();
+  await expect(screen.getByText('プランと利用状況').first()).toBeVisible();
 });
 
 test('the journal add-record action opens the capture sheet', async ({ app, device, screen }) => {
@@ -72,8 +72,7 @@ test('the structured answer example renders the comparison table and Row', async
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
   await screen.getByText('設定').tap();
-  await scrollToText(screen, '状態と復旧UIを確認');
-  await tapControl(screen, screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }));
+  await openSettingsGallery(screen);
   await screen.getByText('構造化回答（表示の確認）').tap();
   await expect(screen.getByText('選択肢の比較')).toBeVisible();
   await expect(screen.getByText('候補').first()).toBeVisible();
@@ -85,8 +84,7 @@ test('the structured answer example replays its streaming state', async ({ app, 
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
   await screen.getByText('設定').tap();
-  await scrollToText(screen, '状態と復旧UIを確認');
-  await tapControl(screen, screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }));
+  await openSettingsGallery(screen);
   await screen.getByText('構造化回答（表示の確認）').tap();
   await screen.getByText('ストリーミングを確認').tap();
   await expect(screen.getByText('表示を停止')).toBeVisible();
@@ -96,8 +94,7 @@ test('the source list and progress fixture renders', async ({ app, device, scree
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
   await screen.getByText('設定').tap();
-  await scrollToText(screen, '状態と復旧UIを確認');
-  await tapControl(screen, screen.getByRole('button', { name: '状態と復旧UIを確認', exact: true }));
+  await openSettingsGallery(screen);
   await scrollToText(screen, '資料・進捗の表示確認');
   await tapControl(screen, screen.getByRole('button', { name: '資料・進捗の表示確認', exact: true }));
   await expect(screen.getByText('根拠一覧（通常）')).toBeVisible();

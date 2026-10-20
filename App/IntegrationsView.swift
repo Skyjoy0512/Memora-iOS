@@ -14,24 +14,25 @@ struct IntegrationsView: View {
           NavigationLink {
             IntegrationDetailView(service: service)
           } label: {
-            VStack(alignment: .leading, spacing: 4) {
-              Text(service.name)
-              Text(service.isImplemented ? status(service.id) : "未対応")
-                .font(.caption).foregroundStyle(.secondary)
-            }
-            .padding(.vertical, MemoraSpacing.xs)
+            SettingsValue(title: service.name,
+              value: service.isImplemented ? status(service.id) : "未対応",
+              icon: AIPluginIcon.resolve(pluginID: "service:" + service.id, name: service.name).systemSymbol)
           }
         }
+      } header: {
+        Text("サービス")
       } footer: {
         Text("外部の情報も、現在選択しているAIで処理します。新しい接続先には自動接続しません。")
       }
-      Section {
-        NavigationLink("スキル") { SkillsView() }
+      Section("自動化とシステム") {
+        NavigationLink { WebhookSettingsView() } label: { SettingsLabel("Webhook", icon: .paperplane) }
+        NavigationLink { IOSIntegrationSettingsView() } label: {
+          SettingsLabel("ウィジェットとショートカット", icon: .rectangleStack)
+        }
       }
     }
     .searchable(text: $query, prompt: "サービスを検索")
-    .navigationTitle("連携サービス")
-    .navigationBarTitleDisplayMode(.inline)
+    .memoraSettingsPage("連携")
   }
 
   private func status(_ id: String) -> String {
