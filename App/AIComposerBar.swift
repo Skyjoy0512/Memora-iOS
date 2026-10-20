@@ -49,10 +49,10 @@ struct AIComposerBar: View {
   @Namespace private var controlsNamespace
 
   /// The capsule's height while collapsed; its corners make it fully round.
-  private static let collapsedHeight: CGFloat = 100
+  private static let collapsedHeight: CGFloat = 65
   /// The Ask AI layout keeps two rows; the field row grows with the taller
   /// composer instead of leaving the extra height to the controls.
-  private static let stackedFieldHeight: CGFloat = 76
+  private static let stackedFieldHeight: CGFloat = 32
 
   /// Open while typing, or while there is text or an attachment to send.
   private var isExpanded: Bool {

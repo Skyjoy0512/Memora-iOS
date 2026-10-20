@@ -234,9 +234,9 @@ struct RootTabView: View {
           isComposing: $isComposing,
           keepsFocusAfterSubmit: model.selectedTab == .askAI || model.activeProjectChatID != nil
         )
-        // The Ask AI component uses the full screen width on every page.
+        // The Ask AI component keeps a small side margin on every page.
         .containerRelativeFrame(.horizontal) { width, _ in
-          min(width, MemoraSpacing.readingWidth)
+          min(width * 0.9, MemoraSpacing.readingWidth)
         }
         // Note: no `.id(composerScope)` — recreating the field would throw away
         // what someone had already typed when the scope changed.
