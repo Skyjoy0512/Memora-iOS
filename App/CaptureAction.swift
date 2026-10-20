@@ -30,4 +30,13 @@ enum CaptureAction: CaseIterable, Identifiable {
     case .phoneCall: .phoneFill
     }
   }
+
+  var detail: String {
+    switch self {
+    case .recording: "このiPhoneのマイクで録音します。"
+    case .importAudio: "保存済みの音声ファイルを読み込みます。"
+    case .onlineMeeting: "スピーカーで再生する会議の音声を録音します。"
+    case .phoneCall: "通話の設定と接続を確認します。"
+    }
+  }
 }

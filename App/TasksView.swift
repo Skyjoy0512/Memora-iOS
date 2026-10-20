@@ -32,17 +32,21 @@ struct TasksView: View {
           }
 
           if visibleTasks.isEmpty {
-            ContentUnavailableView {
-              Label(isFiltered ? "条件に合うタスクはありません" : (showsCompleted ? "完了したタスクはありません" : "タスクはありません"), icon: .checkmarkSquare)
-            } description: {
-              Text(isFiltered ? "絞り込み条件を変えると、自分のほかのタスクを確認できます。" : (showsCompleted ? "完了にした自分のタスクがここに残ります。" : "自分の担当と確認できた課題だけを表示します。担当未確認・ほかの人の課題は、元の会議から確認できます。"))
-            } actions: {
-              if isFiltered {
-                Button("絞り込みを解除") {
+            ScrollView {
+              MemoraEmptyState(icon: .checkmarkSquare,
+                title: LocalizedStringKey(isFiltered ? "条件に合うタスクはありません" : (showsCompleted ? "完了したタスクはありません" : "タスクはありません")),
+                message: LocalizedStringKey(isFiltered ? "条件を解除すると、ほかのタスクを確認できます。" : (showsCompleted ? "完了にした自分のタスクがここに残ります。" : "自分のタスクを追加できます。会議から見つかった課題は、担当を確認できたものだけがここに並びます。")),
+                actionTitle: isFiltered ? "絞り込みを解除" : (showsCompleted ? nil : "タスクを追加"),
+                actionIcon: isFiltered ? .xmark : .plus) {
+                if isFiltered {
                   todayOnly = false
                   waitingOnly = false
+                } else {
+                  model.isAddTaskPresented = true
                 }
               }
+              .padding(.top, MemoraSpacing.section)
+              .padding(.bottom, model.bottomContentClearance)
             }
             .frame(maxHeight: .infinity)
           } else {
@@ -62,7 +66,8 @@ struct TasksView: View {
               }
             }
             .hideBottomBarOnScroll(RootTab.home.rawValue)
-            .listStyle(.insetGrouped)
+            .listStyle(.plain)
+            .textCase(nil)
             .scrollContentBackground(.hidden)
             .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
             .refreshable { await model.refresh() }
@@ -70,7 +75,7 @@ struct TasksView: View {
         }
       }
     }
-      .background(Color(uiColor: .systemGroupedBackground))
+      .background(MemoraPalette.background)
       .navigationTitle("タスク")
       .toolbar {
         if model.hasTeamPlan {
@@ -130,20 +135,15 @@ struct TasksView: View {
       }
 
       if let meetingID = task.meetingID {
-        Button("元の会議を開く", icon: .chevronRight) {
-          InteractionFeedback.shared.send(.tap)
+        ToolbarIconButton("元の会議を開く", icon: .chevronRight) {
           model.homePath.append(.meeting(meetingID))
         }
-        .labelStyle(.iconOnly)
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.tertiary)
-        .frame(width: 32, height: 44)
         .buttonStyle(.plain)
       }
     }
     .padding(.leading, CGFloat(min(depth, 4)) * 12)
     .padding(.vertical, 5)
-    .listRowBackground(Color(uiColor: .secondarySystemGroupedBackground))
+    .listRowBackground(Color.clear)
     .swipeActions(edge: .leading) {
       Button {
         model.toggleTask(task.id)

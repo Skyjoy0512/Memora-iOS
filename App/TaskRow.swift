@@ -21,11 +21,14 @@ struct TaskRow: View {
         InteractionFeedback.shared.send(updated?.isCompleted == !task.isCompleted ? .selection : .error)
       } label: {
         Image(icon: task.isCompleted ? .checkmarkCircleFill : .circle)
+          .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
           .symbolEffect(.bounce, options: .speed(1.6), value: reduceMotion ? false : task.isCompleted)
           .frame(width: 44, height: 44)
           .contentShape(Rectangle())
       }
       .accessibilityLabel(task.isCompleted ? "未完了に戻す" : "完了にする")
+      .accessibilityValue(task.isCompleted ? "完了" : "未完了")
+      .buttonStyle(.plain)
       .labelStyle(.iconOnly)
       .font(.title3)
       .foregroundStyle(task.isCompleted ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
@@ -45,11 +48,17 @@ struct TaskRow: View {
             }
             Text(MemoraFormat.dueDate(dueDate))
           }
-          .font(.caption)
-          .foregroundStyle(overdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+          .font(MemoraTypography.metadata)
+          .foregroundStyle(overdue ? MemoraPalette.danger : MemoraPalette.textSecondary)
+        }
+        if showsSource, let sourceTitle {
+          Text(sourceTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の記録" : sourceTitle)
+            .font(MemoraTypography.metadata)
+            .foregroundStyle(MemoraPalette.textSecondary)
+            .lineLimit(2)
         }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
       .contentShape(Rectangle())
       .onTapGesture {
         guard let onOpen else { return }

@@ -128,8 +128,15 @@ test('the journal and workspace stay legible in dark appearance', async ({ app, 
   await device.setAppearance('dark');
   try {
     await expect(screen.getByText('今日のタスク')).toBeVisible();
+    await app.screenshot('journal-dark');
     await createProject(screen, device);
     await expect(screen.getByRole('button', { name: 'ソース' })).toBeVisible();
+    await tapControl(screen, screen.getByRole('button', { name: 'ファイル', exact: true }).first());
+    await expect(screen.getByRole('button', { name: 'ファイル', exact: true, selected: true })).toBeVisible();
+    await app.screenshot('workspace-empty-files-dark');
+    await tapControl(screen, screen.getByRole('button', { name: 'ソース', exact: true }).first());
+    await expect(screen.getByRole('button', { name: 'ソース', exact: true, selected: true })).toBeVisible();
+    await app.screenshot('workspace-empty-sources-dark');
   } finally {
     await device.setAppearance('light');
   }

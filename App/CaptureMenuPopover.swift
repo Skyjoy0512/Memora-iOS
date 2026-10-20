@@ -8,54 +8,54 @@ struct CaptureMenuPopover: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isFileImporterPresented = false
   @State private var importSpaceID: UUID?
+  @State private var contentHeight: CGFloat = 300
 
   var body: some View {
-    VStack(spacing: 2) {
-      if let spaceID, let space = model.space(id: spaceID) {
-        Label("保存先：\(space.name)", icon: .folder)
-          .font(.footnote)
-          .foregroundStyle(.secondary)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(MemoraSpacing.sm)
-      }
-      if let spaceID, model.space(id: spaceID) != nil {
-        Button("ソースを追加", icon: .paperclip) {
-          collapse()
-          Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
-            model.sourceAddProjectID = spaceID
-          }
-        }
-        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-        .padding(.horizontal, MemoraSpacing.sm)
-        .buttonStyle(.plain)
-      }
-      ForEach(CaptureAction.available) { action in
-        Button {
-          select(action)
-        } label: {
-          HStack(spacing: 14) {
-            Image(icon: action.symbol)
-              .font(.title3.weight(.semibold))
-              .symbolRenderingMode(.monochrome)
-              .frame(width: 44, height: 44)
-              .background(Color.primary.opacity(0.07), in: Circle())
-
-            Text(action.title)
-              .font(.body.weight(.semibold))
-              .foregroundStyle(.primary)
-
-            Spacer(minLength: 12)
-          }
+    ScrollView {
+      VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+        Text("新しい記録")
+          .font(MemoraTypography.metadata.weight(.medium))
+          .foregroundStyle(MemoraPalette.textSecondary)
           .padding(.horizontal, MemoraSpacing.sm)
-          .frame(maxWidth: .infinity, minHeight: 52)
-          .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+          .padding(.vertical, MemoraSpacing.sm)
+        if let spaceID, let space = model.space(id: spaceID) {
+          Label("保存先：\(space.name)", icon: .folder)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(MemoraSpacing.sm)
         }
-        .buttonStyle(.plain)
+        if let spaceID, model.space(id: spaceID) != nil {
+          Button {
+            collapse()
+            Task { @MainActor in
+              try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+              model.sourceAddProjectID = spaceID
+            }
+          } label: {
+            MemoraActionLabel(title: "ソースを追加", detail: "リンク・ファイル・メモを参照資料にします。", icon: .paperclip)
+          }
+          .accessibilityLabel("ソースを追加")
+        }
+        ForEach(CaptureAction.available) { action in
+          Button {
+            select(action)
+          } label: {
+            MemoraActionLabel(title: action.title, detail: action.detail, icon: action.symbol)
+          }
+          .accessibilityLabel(action.title)
+          .accessibilityHint(action.detail)
+        }
+      }
+      .padding(MemoraSpacing.md)
+      .buttonStyle(MemoraMenuButtonStyle())
+      .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+        if abs(contentHeight - height) > 0.5 { contentHeight = height }
       }
     }
-    .padding(MemoraSpacing.md)
-    .frame(width: 300)
+    .scrollBounceBehavior(.basedOnSize)
+    .frame(idealWidth: 320, maxWidth: 360)
+    .frame(idealHeight: min(contentHeight, 480), maxHeight: min(contentHeight, 480))
     .fileImporter(
       isPresented: $isFileImporterPresented,
       allowedContentTypes: [.audio],

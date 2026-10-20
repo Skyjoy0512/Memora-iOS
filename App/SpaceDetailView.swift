@@ -138,9 +138,8 @@ struct SpaceDetailView: View {
   }
 
   private func workspaceEmpty(_ tab: ProjectWorkspaceTab, action: @escaping () -> Void) -> some View {
-    VStack(spacing: 0) {
-      Spacer(minLength: 32)
-      ProjectWorkspaceEmptyState(
+    ScrollView {
+      MemoraEmptyState(
         icon: tab.emptyIcon,
         title: tab.emptyTitle,
         message: tab.emptyDescription,
@@ -148,7 +147,8 @@ struct SpaceDetailView: View {
         actionIcon: tab.emptyActionIcon,
         action: action
       )
-      Spacer(minLength: 36)
+      .padding(.top, MemoraSpacing.section)
+      .padding(.bottom, model.bottomContentClearance)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }

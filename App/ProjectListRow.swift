@@ -12,10 +12,7 @@ struct ProjectListRow: View {
     HStack(spacing: 0) {
       NavigationLink(value: LibraryRoute.space(space.id)) {
         HStack(spacing: 12) {
-          Image(icon: space.icon)
-            .font(.body)
-            .frame(width: ProjectLayout.iconSide)
-            .accessibilityHidden(true)
+          MemoraInterfaceIcon(icon: space.icon)
           VStack(alignment: .leading, spacing: 4) {
             Text(space.name)
               .font(.body.weight(.semibold))

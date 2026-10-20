@@ -5,7 +5,7 @@ struct ProjectsView: View {
   @Environment(\.scenePhase) private var scenePhase
   @AppStorage("memora.projects.listOrder") private var order = ProjectListOrder.name
   @AppStorage("memora.projects.recentFirst") private var recentFirst = false
-  var query: String
+  @Binding var query: String
   var isSearching: Bool
   @State private var renameTarget: MemoraSpace?
   @State private var deleteTarget: MemoraSpace?
@@ -16,11 +16,12 @@ struct ProjectsView: View {
     let latestDates = model.spaceAggregates.compactMapValues(\.latestDate)
     let projects = order.ordered(model.spaces.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }, latestDates: latestDates)
     let matchingIDs = Set(projects.map(\.id))
+    let isAwaitingQuery = isSearching && query.isEmpty
     let shared = model.cloudSharing.sharedProjects.filter {
       query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) || $0.ownerName.localizedCaseInsensitiveContains(query)
     }
-    let visibleProjects = filter == .shared ? [] : projects
-    let visibleShared = filter == .mine ? [] : shared
+    let visibleProjects = isAwaitingQuery || filter == .shared ? [] : projects
+    let visibleShared = isAwaitingQuery || filter == .mine ? [] : shared
     let total = visibleProjects.count + visibleShared.count
     let recent = !isSearching && recentFirst && visibleProjects.count > 3
       ? Array(model.recentProjects.filter { matchingIDs.contains($0.id) }.prefix(3)) : []
@@ -53,8 +54,13 @@ struct ProjectsView: View {
           if !recent.isEmpty, !remaining.isEmpty { heading("その他のプロジェクト", count: nil) }
           projectRows(remaining)
         } else if visibleShared.isEmpty {
-          if isSearching {
-            ContentUnavailableView.search(text: query)
+          if isAwaitingQuery {
+            MemoraEmptyState(icon: .magnifyingglass, title: "プロジェクトを検索",
+              message: "プロジェクト名や、共有した人の名前から探せます。")
+          } else if isSearching {
+            MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
+              message: "「\(query)」に一致するプロジェクトはありません。",
+              actionTitle: "検索をやり直す", actionIcon: .xmark) { query = "" }
           } else if filter == .shared {
             VStack(alignment: .leading, spacing: 8) {
               Text(filter.emptyTitle).font(MemoraTypography.body.weight(.medium))
@@ -63,7 +69,7 @@ struct ProjectsView: View {
             }
             .padding(.vertical, MemoraSpacing.section)
           } else {
-            ProjectWorkspaceEmptyState(
+            MemoraEmptyState(
               icon: .folder,
               title: filter.emptyTitle,
               message: "録音や資料をプロジェクトにまとめると、ここから開けます。",
@@ -76,7 +82,7 @@ struct ProjectsView: View {
           }
         }
 
-        if !model.projectChats.isEmpty {
+        if !isSearching, !model.projectChats.isEmpty {
           NavigationLink("チャット履歴", value: LibraryRoute.projectChats(nil))
             .font(MemoraTypography.secondary).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
         }
@@ -86,7 +92,7 @@ struct ProjectsView: View {
           ForEach(visibleShared) { project in
             NavigationLink(value: LibraryRoute.sharedProject(project.id)) {
               HStack(spacing: 12) {
-                Image(icon: project.icon).frame(width: ProjectLayout.iconSide).accessibilityHidden(true)
+                MemoraInterfaceIcon(icon: project.icon)
                 VStack(alignment: .leading, spacing: 4) {
                   Text(project.name).font(MemoraTypography.body.weight(.medium)).lineLimit(2)
                   SharedOwnerBadge(ownerName: project.ownerName)
@@ -148,16 +154,7 @@ struct ProjectsView: View {
   }
 
   private func heading(_ title: String, count: Int?) -> some View {
-    HStack(spacing: 12) {
-      Text(title).font(.subheadline.weight(.semibold))
-      if let count {
-        Spacer(minLength: 12)
-        Text("\(count)件").font(MemoraTypography.secondary).monospacedDigit()
-      }
-    }
-    .foregroundStyle(.secondary)
-    .accessibilityElement(children: .combine)
-    .accessibilityAddTraits(.isHeader)
+    MemoraSectionHeading(title: title, detail: count.map { "\($0)件" })
   }
 
   private func projectRows(_ projects: [MemoraSpace]) -> some View {

@@ -66,12 +66,12 @@ struct LibraryView: View {
           if model.librarySection == .files {
             filesPage
           } else {
-            ProjectsView(query: query, isSearching: isSearching)
+            ProjectsView(query: $query, isSearching: isSearching)
           }
         }
       }
       .background(MemoraPalette.background)
-      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "")
+      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : (isSearching ? "" : "ライブラリ"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
       .toolbar {
@@ -262,6 +262,8 @@ struct LibraryView: View {
     let sections = isAwaitingQuery ? [] : fileSections
     let count = sections.reduce(0) { $0 + $1.meetings.count }
     let sharedRecords = model.cloudSharing.sharedRecords
+    let savedSources = isAwaitingQuery ? [] : model.projectSources.filter { query.isEmpty || $0.title.localizedStandardContains(query) }
+    let resultCount = count + savedSources.count
 
     return List {
       if !isSearching {
@@ -294,7 +296,6 @@ struct LibraryView: View {
         }
       }
 
-      let savedSources = model.projectSources.filter { query.isEmpty || $0.title.localizedStandardContains(query) }
       if !savedSources.isEmpty, !isAwaitingQuery {
         Section {
           ForEach(Array(savedSources.prefix(3))) { source in
@@ -309,13 +310,12 @@ struct LibraryView: View {
       if sections.isEmpty && savedSources.isEmpty {
         Group {
           if isAwaitingQuery {
-            ContentUnavailableView(
-              "ファイルを検索",
-              icon: .magnifyingglass,
-              description: Text("タイトル、発言、決定、タスクから探せます。")
-            )
+            MemoraEmptyState(icon: .magnifyingglass, title: "ファイルを検索",
+              message: "タイトル、発言、決定、タスクと保存したソースから探せます。")
           } else if !query.isEmpty {
-            ContentUnavailableView.search(text: query)
+            MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
+              message: "「\(query)」に一致するファイル・ソースはありません。短い言葉や別の表現で試してください。",
+              actionTitle: "検索をやり直す", actionIcon: .xmark) { query = "" }
           } else if statusFilter != .all {
             filteredEmpty
           } else {
@@ -342,12 +342,12 @@ struct LibraryView: View {
         }
 
         if !query.isEmpty {
-          Text("\(count)件")
+          Text("\(resultCount)件")
             .font(MemoraTypography.secondary)
             .foregroundStyle(.secondary)
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
-            .accessibilityLabel("\(count)件の検索結果")
+            .accessibilityLabel("\(resultCount)件の検索結果")
         }
       }
     }
@@ -367,22 +367,23 @@ struct LibraryView: View {
       Label(statusFilter.label, icon: .line3HorizontalDecrease)
         .font(.subheadline.weight(.medium))
       Spacer(minLength: 8)
-      Button("解除") { statusFilter = .all }
-        .font(.subheadline.weight(.semibold))
+      Button { statusFilter = .all } label: {
+        Text("解除")
+          .font(MemoraTypography.secondary.weight(.medium))
+          .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+      }
     }
     .listRowInsets(EdgeInsets(top: 0, leading: 18, bottom: 8, trailing: 18))
     .listRowSeparator(.hidden)
     .listRowBackground(Color.clear)
-    .accessibilityElement(children: .combine)
+    .accessibilityElement(children: .contain)
     .accessibilityLabel("絞り込み中: \(statusFilter.label)")
   }
 
   private var filteredEmpty: some View {
-    ContentUnavailableView {
-      Label("該当する記録はありません", icon: .line3HorizontalDecrease)
-    } actions: {
-      Button("絞り込みを解除") { statusFilter = .all }
-    }
+    MemoraEmptyState(icon: .line3HorizontalDecrease, title: "該当する記録はありません",
+      message: "絞り込みを解除すると、ほかの記録を確認できます。",
+      actionTitle: "絞り込みを解除", actionIcon: .xmark) { statusFilter = .all }
   }
 
   /// One file row. Tapping opens it, or selects it while a selection is being
@@ -531,20 +532,14 @@ struct LibraryView: View {
   }
 
   private var emptyFilesPrompt: some View {
-    ProjectWorkspaceEmptyState(
+    MemoraEmptyState(
       icon: .waveform,
-      title: model.meetings.isEmpty ? "録音または読み込み" : "未分類のファイルはありません",
-      message: model.meetings.isEmpty
-        ? "録音するか、音声ファイルを読み込むと、ここに整理されます。"
-        : "移動したファイルは、サイドメニューのプロジェクトから開けます。",
-      actionTitle: model.meetings.isEmpty ? "録音または読み込み" : "プロジェクトを開く",
-      actionIcon: model.meetings.isEmpty ? .plus : .folder
+      title: "ファイルはまだありません",
+      message: "録音や読み込んだ音声を、プロジェクトをまたいで一覧できます。",
+      actionTitle: "録音または読み込み",
+      actionIcon: .plus
     ) {
-      if model.meetings.isEmpty {
-        model.isCaptureSourcePresented = true
-      } else {
-        onOpenSidebar()
-      }
+      model.isCaptureSourcePresented = true
     }
     .padding(.vertical, MemoraSpacing.group)
   }

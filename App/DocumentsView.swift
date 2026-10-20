@@ -25,11 +25,13 @@ struct DocumentsView: View {
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     .overlay {
       if documents.isEmpty {
-        ContentUnavailableView(
-          "資料はまだありません",
-          icon: .docRichtext,
-          description: Text("Ask AIに「会議から資料を作って」と頼むと、ここに保存されます。")
-        )
+        ScrollView {
+          MemoraEmptyState(icon: .docRichtext, title: "資料はまだありません",
+            message: "Ask AIに作成を頼んだ資料や、記録からまとめた週報がここに保存されます。",
+            actionTitle: "Ask AIを開く", actionIcon: .sparkles) { model.openSystemDestination(.askAI) }
+            .padding(.top, MemoraSpacing.section)
+            .padding(.bottom, model.bottomContentClearance)
+        }
       }
     }
     .navigationTitle("資料")

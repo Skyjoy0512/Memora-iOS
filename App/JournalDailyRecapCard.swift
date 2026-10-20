@@ -12,9 +12,15 @@ struct JournalDailyRecapCard: View {
       onOpenDetails()
     } label: {
       VStack(alignment: .leading, spacing: 7) {
-        Text(date.formatted(.dateTime.month().day().weekday()))
-          .font(MemoraTypography.metadata)
-          .foregroundStyle(MemoraPalette.textSecondary)
+        HStack {
+          Text("1日のサマリー")
+            .font(MemoraTypography.metadata.weight(.medium))
+          Spacer(minLength: MemoraSpacing.sm)
+          Image(icon: .chevronRight)
+            .font(.system(size: MemoraIconMetrics.accessory, weight: .semibold))
+            .accessibilityHidden(true)
+        }
+        .foregroundStyle(MemoraPalette.textSecondary)
         Text(recap.heading)
           .font(MemoraTypography.sectionHeading)
           .fixedSize(horizontal: false, vertical: true)

@@ -7,23 +7,20 @@ struct DocumentRow: View {
 
   var body: some View {
     HStack(spacing: 14) {
-      Image(icon: document.kind.symbol)
-        .font(.title3)
-        .foregroundStyle(.tint)
-        .frame(width: 40, height: 40)
-        .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
+      MemoraInterfaceIcon(icon: document.kind.symbol)
 
       VStack(alignment: .leading, spacing: 3) {
         Text(document.displayTitle)
           .font(.body.weight(.semibold))
           .lineLimit(2)
         Text(caption)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .lineLimit(1)
+          .font(MemoraTypography.metadata)
+          .foregroundStyle(MemoraPalette.textSecondary)
+          .fixedSize(horizontal: false, vertical: true)
       }
     }
     .padding(.vertical, MemoraSpacing.xs)
+    .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)
     .accessibilityElement(children: .combine)
   }
 

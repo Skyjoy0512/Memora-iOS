@@ -76,6 +76,7 @@ separate roles.
 | section / group / page | 32 / 40 / 48 | sections / larger groups / page rhythm |
 | screen / card / row | 20 / 16 / 12 | semantic aliases |
 | touchTarget | 44 minimum | controls grow with larger text |
+| messageWidth | 420 maximum | concise empty/search explanations |
 | readingWidth | 680 maximum | long-form content |
 
 Radius: small 8, field 12, card 16, bubble/composer 24pt; actions are capsules.
@@ -105,8 +106,10 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | MemoraTextTabBar / MemoraSectionPicker | flat scrollable content tabs and selection traits |
 | ProminentTabBar | protected UISegmentedControl navigation and system selection morph |
 | ProjectRecordRow / ProjectSourceRow / ProjectDocumentRow | common Library/workspace title and metadata hierarchy |
+| MemoraSectionHeading | shared section title and supporting context; stacked at accessibility sizes |
+| MemoraActionLabel / MemoraMenuButtonStyle | explanatory action rows, common glyph and pressed feedback |
 | memoraCard / MemoraIconBadge | restrained grouping and content glyphs |
-| ProjectWorkspaceEmptyState | shared empty explanation and useful next action |
+| MemoraEmptyState | shared empty/search/filter explanation and an optional real recovery action |
 | MemoraLoadingContainer / MemoraSkeleton / WorkingStatus | real loading, static skeleton, cancellation, recovery, elapsed time |
 | MarkdownBlockView / MarkdownTableRow | common prose, heading, list, quote and stacked table values |
 | AIResponseMarkdownBlock / StreamingMarkdownView | same type, incremental rendering, code copy, comparison tables |
@@ -133,19 +136,30 @@ hairlines. Neutral recap; expanded summary follows appearance and uses sections,
 not nested translucent cards. The selected scenic image remains a small header
 and the background-change action remains. Dates, health privacy, source links
 and event editing keep their behavior.
+The month/year and a real “今日に戻る” action establish date context. Tasks, recent
+projects and the empty day are flat sections; the daily recap alone earns a
+content group and explicitly says it opens the daily summary.
 
 Library: Files/Projects, sort/filter, selection/share/move/delete and gallery mode
 remain. Titles lead, then kind/date/status and optional preview. Gallery groups
 use 16pt neutral contours. Search and selection own the bottom edge when active.
+Empty-query search shows its scope instead of the list behind it. Search counts
+include matching saved sources as well as records. Retry actions clear the same
+query binding, not a display-only copy.
 
 Workspace: Chat / Files / Sources in that order, shared flat tabs, rows, empty
 states and toolbar actions. Scoped Ask AI reads active-project evidence only;
 privacy and membership are checked at execution and completion.
+Empty tabs scroll so the action remains reachable with larger text. Tasks,
+People and Documents use the same empty-state component, with real add/open
+actions. Document and project rows use neutral interface glyphs rather than
+decorative tiles; metadata wraps instead of disappearing.
 
 Record detail: common reading width/type for summary, transcript, decisions,
 tasks and notes. Flat section tabs. Edit one block/cell in place; Markdown source
 editing stays a deliberate context-menu action. Tables retain every value.
 Audio, timestamps, source navigation and saving retain their existing paths.
+The record header uses its display-title fallback and one wrapping metadata line.
 
 Settings/sheets: native grouped Form, neutral glyphs, system presentation and
 common action hierarchy. The root is profile editing plus 11 topic links in four
@@ -170,6 +184,9 @@ competing for a narrow horizontal column.
 
 Liquid Glass belongs to navigation, bottom tabs, floating create and composer.
 Keep the create label's matchedTransitionSource, compact popover and zoom.
+Create-menu actions explain their input method beneath a stable action name.
+The native popover sizes to measured content, caps its ideal height and scrolls;
+the recording/import/project destination callbacks are unchanged.
 Purposeful spring motion remains; Reduce Motion suppresses nonessential movement.
 Loading reflects real operations; never invent progress or expose private reasoning.
 
@@ -191,3 +208,5 @@ microphone, CloudKit and hardware require their actual configuration.
 list hierarchy and empty-state refinements without replacing the original audit.
 [Settings and icon review](docs/design-refresh/SETTINGS.md) records the topic
 hierarchy, relocated controls, icon metrics and follow-up verification.
+[Cross-screen experience review](docs/design-refresh/EXPERIENCE.md) records the
+subsequent Journal, Library, workspace, task, people, document and capture refinements.

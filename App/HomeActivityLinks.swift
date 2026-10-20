@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeActivityLinks: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.dynamicTypeSize) private var typeSize
   @State private var editingTask: MemoraTask?
 
   var body: some View {
@@ -13,13 +14,21 @@ struct HomeActivityLinks: View {
     let dueSoon = ownOpenTasks.filter { !todayIDs.contains($0.id) && $0.dueDate.map { $0 < endOfWeek } == true }
       .sorted { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
     let recent = Array(model.recentProjects.prefix(2))
+    let headingLayout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+      : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
 
-    VStack(alignment: .leading, spacing: 14) {
-      HStack {
-        Text("今日のタスク").font(.headline)
-        Spacer()
-        NavigationLink("すべて見る", value: LibraryRoute.tasks)
-          .font(MemoraTypography.secondary).frame(minHeight: 44)
+    VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
+      headingLayout {
+        Text("今日のタスク").font(MemoraTypography.body.weight(.semibold))
+          .accessibilityAddTraits(.isHeader)
+        if !typeSize.isAccessibilitySize { Spacer() }
+        NavigationLink(value: LibraryRoute.tasks) {
+          Text("すべて見る")
+            .font(MemoraTypography.secondary)
+            .frame(minHeight: MemoraSpacing.touchTarget)
+            .contentShape(Rectangle())
+        }
           .accessibilityLabel("すべてのタスクを見る")
       }
       if today.isEmpty, dueSoon.isEmpty {
@@ -36,27 +45,25 @@ struct HomeActivityLinks: View {
         }
       }
     }
-    .padding(MemoraSpacing.lg)
-    .memoraCard(fill: MemoraPalette.card)
     .sheet(item: $editingTask) { task in TaskEditView(task: task) }
 
     if !recent.isEmpty {
-      Text("最近使用したプロジェクト").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-        .accessibilityAddTraits(.isHeader)
+      MemoraSectionHeading(title: "最近使用したプロジェクト")
       ForEach(recent) { space in
         Button { model.openProject(space.id) } label: {
           HStack(spacing: 12) {
-            Label(space.name, icon: space.icon).font(.subheadline.weight(.semibold))
+            MemoraInterfaceIcon(icon: space.icon)
+            Text(space.name).font(MemoraTypography.body.weight(.medium))
               .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
-            Image(icon: .chevronRight).foregroundStyle(.secondary).accessibilityHidden(true)
+            Image(icon: .chevronRight)
+              .font(.system(size: MemoraIconMetrics.accessory, weight: .semibold))
+              .foregroundStyle(.secondary).accessibilityHidden(true)
           }
           .foregroundStyle(.primary)
           .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-          .padding(.horizontal, MemoraSpacing.screen)
           .padding(.vertical, MemoraSpacing.sm)
-          .memoraCard(fill: MemoraPalette.card)
-          .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card))
+          .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
       }

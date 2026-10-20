@@ -18,11 +18,13 @@ struct PeopleView: View {
               Text(person.name)
                 .font(.body.weight(.semibold))
               Text(caption(for: person))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(MemoraTypography.metadata)
+                .foregroundStyle(MemoraPalette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
           }
           .padding(.vertical, MemoraSpacing.xxs)
+          .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)
           .accessibilityElement(children: .combine)
         }
       }
@@ -31,12 +33,12 @@ struct PeopleView: View {
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     .overlay {
       if people.isEmpty {
-        ContentUnavailableView {
-          Label("まだ人がいません", icon: .person2)
-        } description: {
-          Text("会議に参加した人を登録すると、その人と話したことや約束がここにまとまります。")
-        } actions: {
-          Button("人を追加") { isManaging = true }
+        ScrollView {
+          MemoraEmptyState(icon: .person2, title: "まだ人がいません",
+            message: "会議に参加した人を登録すると、話したことや約束がここにまとまります。",
+            actionTitle: "人を追加", actionIcon: .personBadgePlus) { isManaging = true }
+            .padding(.top, MemoraSpacing.section)
+            .padding(.bottom, model.bottomContentClearance)
         }
       }
     }

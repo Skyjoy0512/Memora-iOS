@@ -17,4 +17,5 @@ enum MemoraSpacing {
   static let row = md
   static let touchTarget: CGFloat = 44
   static let readingWidth: CGFloat = 680
+  static let messageWidth: CGFloat = 420
 }

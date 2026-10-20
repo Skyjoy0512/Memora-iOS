@@ -532,19 +532,15 @@ struct MeetingDetailView: View {
 
   private func meetingHeader(_ meeting: Meeting) -> some View {
     VStack(alignment: .leading, spacing: 10) {
-      Text(meeting.title)
+      Text(meeting.displayTitle)
         .font(MemoraTypography.screenTitle)
-        .tracking(-0.6)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityAddTraits(.isHeader)
 
-      HStack(spacing: 8) {
-        Text(MemoraFormat.meetingDate(meeting.createdAt))
-        Text("·")
-        Text(MemoraFormat.duration(meeting.duration))
-        Text("·")
-        Text(meeting.source.label)
-      }
-      .font(.subheadline)
-      .foregroundStyle(.secondary)
+      Text([MemoraFormat.meetingDate(meeting.createdAt), MemoraFormat.duration(meeting.duration), meeting.source.label].joined(separator: " · "))
+        .font(MemoraTypography.secondary)
+        .foregroundStyle(MemoraPalette.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
 
       if meeting.audioURL == nil, !SampleContent.isSample(meetingID: meeting.id) {
         Label("音声なし", icon: .waveformSlash)

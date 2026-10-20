@@ -1,0 +1,315 @@
+{
+  "date": "2026-10-20",
+  "scope": "Cross-screen Memora UI/UX polish after settings/icon refinement",
+  "baselineCommit": "c4760dece83d2da654195b9a4f6a345f9fcba19b",
+  "build": {
+    "command": "bitrig preview -platform iOS",
+    "status": "success",
+    "deploymentTarget": "iOS 26",
+    "sdk": "iOS 27.1",
+    "log": "2026-10-20T16-29-23-ea513ff4.log",
+    "previewUpdated": true,
+    "existingWarningCount": 11,
+    "existingWarnings": [
+      "MapKit deprecations",
+      "OAuth presentation-anchor deprecations",
+      "App Intents metadata extraction"
+    ]
+  },
+  "hostChecks": [
+    {
+      "command": "bash tools/checks/run-design-refresh-checks.sh",
+      "status": "passed"
+    },
+    {
+      "command": "bash tools/checks/run-ask-ai-plugin-checks.sh",
+      "status": "passed"
+    },
+    {
+      "command": "python3 tools/checks/run-optimization-checks.py",
+      "status": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    }
+  ],
+  "xcodeTests": {
+    "command": "bitrig test",
+    "exitCode": 78,
+    "status": "unsupported",
+    "reason": "Project.json has no Xcode test targets; not reported as an XCTest pass."
+  },
+  "e2e": {
+    "device": "iPhone 18 Pro Max",
+    "runtime": "iOS 27.0",
+    "dedicatedDevice": true,
+    "userPreviewDataReset": false,
+    "runner": "e2e 0.21.2",
+    "engine": "mobile 0.12.3",
+    "singleFullSuiteRun": false,
+    "discoveredCases": 42,
+    "uniqueFinalCases": 21,
+    "executedAcrossFinalRuns": 24,
+    "realNetworkOrProviderCalls": false,
+    "newExperienceCases": 9,
+    "finalRuns": [
+      {
+        "phase": "standard",
+        "textSize": "Large",
+        "id": "01a15837-e44a-7a5f-ae5e-6df26f1b2b85",
+        "status": "passed",
+        "summary": {
+          "discovered": 42,
+          "selected": 9,
+          "executed": 9,
+          "passed": 9,
+          "failed": 0,
+          "interrupted": 0,
+          "flaky": 0,
+          "skipped": 0
+        },
+        "cases": [
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: journal, library and create menu remain coherent in both appearances",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: empty task action creates a task, completes it and keeps it after restart",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: search states clear their real query and hide the underlying project list",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: document action returns to Ask AI without clearing the draft",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: source-only search reports a real match instead of zero",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: selected day returns to today through a real 44-point action",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: capture actions scroll at large text and open the real preparation screen",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: task, people and document screens retain their working actions",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: journal creation keeps the selected date across restart while external new memo uses today",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "phase": "related-regression",
+        "textSize": "Large",
+        "id": "01a1583b-f134-7ef0-9ba4-8dbb8d5dfa69",
+        "status": "passed",
+        "summary": {
+          "discovered": 42,
+          "selected": 9,
+          "executed": 9,
+          "passed": 9,
+          "failed": 0,
+          "interrupted": 0,
+          "flaky": 0,
+          "skipped": 0
+        },
+        "cases": [
+          {
+            "file": "tests/design-refresh.e2e.ts",
+            "title": "design: mentions search, select twice, preserve focus, remove and use plus",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-refresh.e2e.ts",
+            "title": "design: project mentions preserve scope and the workspace three tabs",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-refresh.e2e.ts",
+            "title": "design: long Markdown edits use real SQLite persistence across restart",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-refresh.e2e.ts",
+            "title": "design: conversation typography renders Japanese prose in both appearances",
+            "status": "passed"
+          },
+          {
+            "file": "tests/workspace-journal.e2e.ts",
+            "title": "the workspace tabs read chat, files, sources and switch in place",
+            "status": "passed"
+          },
+          {
+            "file": "tests/workspace-journal.e2e.ts",
+            "title": "the week strip selects a day and updates the timeline",
+            "status": "passed"
+          },
+          {
+            "file": "tests/workspace-journal.e2e.ts",
+            "title": "the inline plus buttons add a record",
+            "status": "passed"
+          },
+          {
+            "file": "tests/workspace-journal.e2e.ts",
+            "title": "editing a record saves it to the new date",
+            "status": "passed"
+          },
+          {
+            "file": "tests/workspace-journal.e2e.ts",
+            "title": "the project list filters all, mine and shared",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "phase": "accessibility-xxxl",
+        "textSize": "Accessibility XXXL",
+        "id": "01a15840-a2cc-7fc2-a654-f03e454904ae",
+        "status": "passed",
+        "summary": {
+          "discovered": 42,
+          "selected": 4,
+          "executed": 4,
+          "passed": 4,
+          "failed": 0,
+          "interrupted": 0,
+          "flaky": 0,
+          "skipped": 0
+        },
+        "cases": [
+          {
+            "file": "tests/design-accessibility.e2e.ts",
+            "title": "design: mention controls remain below navigation and above native input",
+            "status": "passed"
+          },
+          {
+            "file": "tests/design-accessibility.e2e.ts",
+            "title": "design: toolbar search clears without dismissing input and cancels back to tabs",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: selected day returns to today through a real 44-point action",
+            "status": "passed"
+          },
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: capture actions scroll at large text and open the real preparation screen",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "phase": "dark-supplement",
+        "textSize": "Large",
+        "id": "01a15842-3772-782d-bbfb-80ec0dc7c7a3",
+        "status": "passed",
+        "summary": {
+          "discovered": 42,
+          "selected": 2,
+          "executed": 2,
+          "passed": 2,
+          "failed": 0,
+          "interrupted": 0,
+          "flaky": 0,
+          "skipped": 0
+        },
+        "cases": [
+          {
+            "file": "tests/experience-polish.e2e.ts",
+            "title": "experience: task, people and document screens retain their working actions",
+            "status": "passed"
+          },
+          {
+            "file": "tests/workspace-journal.e2e.ts",
+            "title": "the journal and workspace stay legible in dark appearance",
+            "status": "passed"
+          }
+        ]
+      }
+    ],
+    "baselineCapture": {
+      "id": "01a15816-5f97-7ece-ab20-3ca5dddf3d02",
+      "status": "passed",
+      "startedAt": "2026-10-20T06:53:52.409Z",
+      "finishedAt": "2026-10-20T06:54:44.541Z",
+      "summary": {
+        "discovered": 35,
+        "selected": 2,
+        "executed": 2,
+        "passed": 2,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "cases": [
+        {
+          "file": "tests/experience-polish.e2e.ts",
+          "title": "experience: journal, library and create menu remain coherent in both appearances",
+          "status": "passed",
+          "durationMs": 28883
+        },
+        {
+          "file": "tests/experience-polish.e2e.ts",
+          "title": "experience: task, people and document screens retain their working actions",
+          "status": "passed",
+          "durationMs": 23032
+        }
+      ]
+    }
+  },
+  "screenshots": {
+    "directory": "docs/design-refresh/experience",
+    "before": "Actual c4760de app; Light/Dark Journal, Library, create menu; Light Tasks, People, Documents.",
+    "after": "Actual final 16:29 build; standard, related regression, Accessibility XXXL and Dark supplement runs.",
+    "generatedOrComposited": false
+  },
+  "developmentFindings": [
+    {
+      "run": "01a1581e-fbff-7644-a7d8-68e242f2d346",
+      "passed": 4,
+      "failed": 2,
+      "resolution": "Use the actual combined task AX button label; distinguish search recovery from the toolbar clear action."
+    },
+    {
+      "run": "01a1582d-e7d2-7f08-9c63-f9d067af8eab",
+      "passed": 16,
+      "failed": 1,
+      "resolution": "A 43.91-point transitional frame was measured immediately after onboarding. Poll for the actual >=44-point dimensions; no sub-44 tolerance was added. Final standard run passes."
+    },
+    {
+      "run": "01a15827-530e-70f0-94e2-15bae01524e9",
+      "passed": 4,
+      "failed": 0,
+      "resolution": "Visual review still found cramped horizontal month/action and task-heading/action layouts at maximum text size. Stack them at accessibility sizes and retain the disabled Today action for stable positioning; rerun all four cases on the final build."
+    }
+  ],
+  "unverified": [
+    "iOS 26 runtime",
+    "Physical-device VoiceOver listening",
+    "Manual Japanese IME conversion",
+    "Authenticated external services and live tool execution",
+    "Real microphone recording and provider transcription/summarization/billing",
+    "Every settings/editor/service state outside this scoped UI pass"
+  ]
+}

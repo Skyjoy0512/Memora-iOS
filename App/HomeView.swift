@@ -7,10 +7,12 @@ struct HomeView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.scenePhase) private var scenePhase
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
   @State private var query = ""
   @State private var isSearching = false
   /// The journal entry opened from the timeline.
   @State private var openEntry: LifeLogEntry?
+  @State private var entryCreationDate: Date?
   /// The day the Journal is showing.
   @State private var selectedDate = Calendar.current.startOfDay(for: .now)
   /// Calendar events for the selected day, read from EventKit when that is on.
@@ -50,6 +52,9 @@ struct HomeView: View {
   var body: some View {
     @Bindable var model = model
     let entries = matchingEntries
+    let dateLayout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+      : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
     let ownTasks = model.ownTasks
     let markedDays = JournalActivityDays.build(
       recordedDays: model.markedLifeLogDays.union(model.markedMeetingDays),
@@ -82,7 +87,30 @@ struct HomeView: View {
               WeeklyReviewCard(review: review)
             }
 
-            JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
+            VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+              dateLayout {
+                Text(selectedDate.formatted(.dateTime.year().month(.wide)))
+                  .font(MemoraTypography.sectionHeading)
+                  .fixedSize(horizontal: false, vertical: true)
+                  .accessibilityAddTraits(.isHeader)
+                if !typeSize.isAccessibilitySize { Spacer(minLength: MemoraSpacing.sm) }
+                Button {
+                  InteractionFeedback.shared.send(.selection)
+                  withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+                    selectedDate = Calendar.current.startOfDay(for: .now)
+                  }
+                } label: {
+                  Text("今日")
+                    .font(MemoraTypography.secondary.weight(.medium))
+                    .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+                    .contentShape(Rectangle())
+                }
+                .accessibilityLabel("今日に戻る")
+                .disabled(isViewingToday)
+              }
+              .frame(minHeight: MemoraSpacing.touchTarget)
+              JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
+            }
 
             if recap.hasActivity {
               JournalDailyRecapCard(recap: recap, date: selectedDate, backdrop: backdrops.current) {
@@ -120,8 +148,9 @@ struct HomeView: View {
             }
           }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
         .padding(.horizontal, MemoraSpacing.screen)
+        .frame(maxWidth: .infinity)
         // The floating composer and tab bar do not inset this scroll view, so
         // leave room for the last records to clear them.
         .padding(.bottom, model.bottomContentClearance)
@@ -132,7 +161,7 @@ struct HomeView: View {
         if healthRequest.canRead { await healthLoader.load(healthRequest.period) }
       }
       .background(MemoraPalette.background)
-      .navigationTitle("")
+      .navigationTitle(isSearching ? "" : "ジャーナル")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ジャーナルを検索")
       .toolbar {
@@ -163,13 +192,13 @@ struct HomeView: View {
         // The create action is the rightmost item, matching the other tabs.
         ToolbarActionItem {
           ToolbarIconButton("記録を追加", icon: .squareAndPencil) {
-            model.isLifeLogCreationPresented = true
+            beginJournalEntry()
           }
           .labelStyle(.iconOnly)
         }
       }
-      .sheet(isPresented: $model.isLifeLogCreationPresented) {
-        LifeLogCreationSheet()
+      .sheet(isPresented: $model.isLifeLogCreationPresented, onDismiss: { entryCreationDate = nil }) {
+        LifeLogCreationSheet(date: entryCreationDate ?? .now)
       }
       .sheet(isPresented: $showsReview) {
         JournalReviewView(date: selectedDate)
@@ -213,32 +242,20 @@ struct HomeView: View {
     }
   }
 
+  /// UI additions follow the day being read; external new-memo actions keep now.
+  private func beginJournalEntry() {
+    entryCreationDate = isViewingToday ? .now : selectedDate
+    model.isLifeLogCreationPresented = true
+  }
+
   /// The selected day has nothing on it yet.
   private var emptyDay: some View {
-    VStack(spacing: 16) {
-      Image(icon: .waveformPathEcg)
-        .font(.title2)
-        .foregroundStyle(.primary)
-
-      VStack(spacing: 6) {
-        Text("\(selectedDayLabel)の記録はありません")
-          .font(.headline)
-
-        Text(emptyDescription)
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-          .multilineTextAlignment(.center)
-      }
-
-      Button("記録を追加") {
-        InteractionFeedback.shared.send(.tap)
-        model.isLifeLogCreationPresented = true
-      }
-      .buttonStyle(MemoraButtonStyle())
+    MemoraEmptyState(icon: .waveformPathEcg,
+      title: "\(selectedDayLabel)の記録はありません",
+      message: LocalizedStringKey(emptyDescription), actionTitle: "記録を追加", actionIcon: .squareAndPencil) {
+      InteractionFeedback.shared.send(.tap)
+      beginJournalEntry()
     }
-    .frame(maxWidth: .infinity)
-    .padding(MemoraSpacing.card)
-    .memoraCard(fill: MemoraPalette.card)
   }
 
   /// Every day's matches, newest day first. Before anything is typed it says
@@ -246,19 +263,14 @@ struct HomeView: View {
   @ViewBuilder
   private func searchResults(_ entries: [LifeLogEntry]) -> some View {
     if query.isEmpty {
-      ContentUnavailableView(
-        "記録を検索",
-        icon: .magnifyingglass,
-        description: Text("すべての日の記録から、タイトル・内容・記録元で探せます。")
-      )
-      .padding(.top, MemoraSpacing.page)
+      MemoraEmptyState(icon: .magnifyingglass, title: "記録を検索",
+        message: "すべての日の記録から、タイトル・内容・記録元で探せます。予定は検索対象に含みません。")
+        .padding(.top, MemoraSpacing.xxl)
     } else if entries.isEmpty {
-      ContentUnavailableView(
-        "見つかりませんでした",
-        icon: .magnifyingglass,
-        description: Text("「\(query)」に一致する記録はありません。予定は検索の対象外です。")
-      )
-      .padding(.top, MemoraSpacing.page)
+      MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
+        message: "「\(query)」に一致する記録はありません。短い言葉や別の表現で試してください。",
+        actionTitle: "検索をやり直す", actionIcon: .xmark) { query = "" }
+        .padding(.top, MemoraSpacing.xxl)
     } else {
       ForEach(dayGroups(of: entries)) { group in
         VStack(alignment: .leading, spacing: 10) {
@@ -350,9 +362,9 @@ struct HomeView: View {
 
   private var emptyDescription: String {
     if isViewingToday {
-      return "録音やOmiから届いた記録、手で足したメモが時間順に並びます。"
+      return "録音やメモを追加すると、1日の出来事を時間順に振り返れます。"
     }
-    return "この日の記録はまだありません。別の日を選ぶか、カレンダーの「今日」で今日に戻れます。"
+    return "この日の出来事をメモできます。現在の記録は上部の「今日」から確認できます。"
   }
 
   /// The selected day's timeline: records, events and movements in morning to
@@ -370,8 +382,7 @@ struct HomeView: View {
     VStack(alignment: .leading, spacing: 10) {
       // The day heading the list had before, with the rows grouped under it and
       // the all-day events right below it.
-      Text(dayLabel(for: selectedDate))
-        .font(.title2.bold())
+      MemoraSectionHeading(title: "タイムライン", detail: dayLabel(for: selectedDate))
 
       if !timeline.allDayEvents.isEmpty {
         allDayEventChips(timeline.allDayEvents)
@@ -385,13 +396,13 @@ struct HomeView: View {
           if index < timeline.items.count - 1 {
             JournalTimelineAddRow(label: "この間に記録を追加", isLast: false) {
               InteractionFeedback.shared.send(.tap)
-              model.isLifeLogCreationPresented = true
+              beginJournalEntry()
             }
           }
         }
         JournalTimelineAddRow(label: "記録を追加", isLast: true) {
           InteractionFeedback.shared.send(.tap)
-          model.isLifeLogCreationPresented = true
+          beginJournalEntry()
         }
       }
     }
