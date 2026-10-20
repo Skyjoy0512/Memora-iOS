@@ -210,7 +210,7 @@ struct SummaryGenerationSheet: View {
       mode = candidate
     } label: {
       HStack(spacing: 14) {
-        Image(icon: symbol)
+        Image(icon: symbol, size: 20)
           .font(.title3.weight(.semibold))
           .frame(width: 30)
         VStack(alignment: .leading, spacing: 3) {
@@ -222,7 +222,7 @@ struct SummaryGenerationSheet: View {
             .foregroundStyle(.secondary)
         }
         Spacer()
-        Image(icon: mode == candidate ? .checkmarkCircleFill : .circle)
+        Image(icon: mode == candidate ? .checkmarkCircleFill : .circle, size: 17)
           .foregroundStyle(.primary)
       }
       .padding(MemoraSpacing.lg)
@@ -245,7 +245,7 @@ struct SummaryGenerationSheet: View {
       template = item
     } label: {
       HStack(spacing: 14) {
-        Image(icon: item.symbol)
+        Image(icon: item.symbol, size: 17)
           .font(.headline)
           .frame(width: 38, height: 38)
           .background(Color.primary.opacity(0.07), in: Circle())
@@ -264,7 +264,7 @@ struct SummaryGenerationSheet: View {
 
         Spacer(minLength: 8)
 
-        Image(icon: isSelected ? .checkmarkCircleFill : .circle)
+        Image(icon: isSelected ? .checkmarkCircleFill : .circle, size: 17)
           .foregroundStyle(.primary)
       }
       .padding(MemoraSpacing.lg)

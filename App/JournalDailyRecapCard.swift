@@ -16,7 +16,7 @@ struct JournalDailyRecapCard: View {
           Text("1日のサマリー")
             .font(MemoraTypography.metadata.weight(.medium))
           Spacer(minLength: MemoraSpacing.sm)
-          Image(icon: .chevronRight)
+          Image(icon: .chevronRight, size: MemoraIconMetrics.accessory)
             .font(.system(size: MemoraIconMetrics.accessory, weight: .semibold))
             .accessibilityHidden(true)
         }

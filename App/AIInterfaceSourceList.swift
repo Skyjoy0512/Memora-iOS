@@ -55,7 +55,7 @@ struct AIInterfaceSourceList: View {
 
   private func label(_ row: AIInterfaceSourceRow) -> some View {
     HStack(alignment: .top, spacing: 12) {
-      Image(icon: .docText)
+      Image(icon: .docText, size: 17)
         .font(.body)
         .foregroundStyle(MemoraPalette.textSecondary)
         .frame(width: 22)
@@ -78,7 +78,7 @@ struct AIInterfaceSourceList: View {
           .foregroundStyle(MemoraPalette.textSecondary)
       }
       Spacer(minLength: 0)
-      Image(icon: .chevronRight)
+      Image(icon: .chevronRight, size: 13)
         .font(.footnote)
         .foregroundStyle(MemoraPalette.textSecondary)
         .padding(.top, MemoraSpacing.xxs)

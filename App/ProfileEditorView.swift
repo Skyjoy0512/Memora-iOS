@@ -26,7 +26,7 @@ struct ProfileEditorView: View {
             } label: {
               ProfileAvatar(profile: profile, size: 132)
                 .overlay(alignment: .bottomTrailing) {
-                  Image(icon: .faceSmilingFill)
+                  Image(icon: .faceSmilingFill, size: 20)
                     .font(.title3)
                     .foregroundStyle(.white)
                     .frame(width: 38, height: 38)

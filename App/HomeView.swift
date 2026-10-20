@@ -89,7 +89,7 @@ struct HomeView: View {
 
             VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
               dateLayout {
-                Text(selectedDate.formatted(.dateTime.year().month(.wide)))
+                Text(MemoraFormat.monthTitle(selectedDate))
                   .font(MemoraTypography.sectionHeading)
                   .fixedSize(horizontal: false, vertical: true)
                   .accessibilityAddTraits(.isHeader)
@@ -308,7 +308,7 @@ struct HomeView: View {
 
   private var selectedDayLabel: String {
     if isViewingToday { return "今日" }
-    return selectedDate.formatted(.dateTime.month().day())
+    return MemoraFormat.shortDate(selectedDate)
   }
 
   /// A journal left open past midnight should move to the new day, unless the
@@ -549,6 +549,6 @@ struct HomeView: View {
   private func dayLabel(for day: Date) -> String {
     if Calendar.current.isDateInToday(day) { return "今日" }
     if Calendar.current.isDateInYesterday(day) { return "昨日" }
-    return day.formatted(date: .abbreviated, time: .omitted)
+    return MemoraFormat.shortDate(day)
   }
 }

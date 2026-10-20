@@ -54,7 +54,7 @@ struct AIInterfaceComparisonTable: View {
         NavigationLink {
           AIInterfaceReferenceDestination(messageID: messageID, target: target)
         } label: {
-          Image(icon: .link)
+          Image(icon: .link, size: 13)
             .font(.footnote)
             .foregroundStyle(MemoraPalette.textSecondary)
             .frame(width: 44, height: 44)

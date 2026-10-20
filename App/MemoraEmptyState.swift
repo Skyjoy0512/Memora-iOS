@@ -10,8 +10,8 @@ struct MemoraEmptyState: View {
   var action: (() -> Void)? = nil
 
   var body: some View {
-    VStack(spacing: MemoraSpacing.xxl) {
-      Image(icon: icon)
+    VStack(spacing: MemoraSpacing.lg) {
+      Image(icon: icon, size: 28)
         .font(.system(size: 28, weight: .regular))
         .foregroundStyle(MemoraPalette.textSecondary)
         .frame(height: MemoraSpacing.touchTarget)
@@ -38,6 +38,6 @@ struct MemoraEmptyState: View {
     .frame(maxWidth: MemoraSpacing.messageWidth)
     .padding(.horizontal, MemoraSpacing.screen)
     .frame(maxWidth: .infinity)
-    .padding(.vertical, MemoraSpacing.xxl)
+    .padding(.vertical, MemoraSpacing.lg)
   }
 }

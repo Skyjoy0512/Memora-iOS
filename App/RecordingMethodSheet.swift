@@ -83,7 +83,7 @@ struct RecordingMethodSheet: View {
 
       Spacer(minLength: 8)
 
-      Image(icon: .chevronRight)
+      Image(icon: .chevronRight, size: 13)
         .font(.footnote.weight(.semibold))
         .foregroundStyle(.tertiary)
     }

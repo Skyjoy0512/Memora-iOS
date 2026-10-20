@@ -24,6 +24,23 @@ enum MemoraFormat {
     meetingDateFormatter.string(from: date)
   }
 
+  /// The Journal's month heading, in the same Japanese the interface speaks.
+  static func monthTitle(_ date: Date) -> String {
+    monthTitleFormatter.string(from: date)
+  }
+
+  static func shortDate(_ date: Date) -> String {
+    shortDateFormatter.string(from: date)
+  }
+
+  static func longDate(_ date: Date) -> String {
+    longDateFormatter.string(from: date)
+  }
+
+  static func weekdaySymbol(_ date: Date) -> String {
+    weekdayFormatter.string(from: date)
+  }
+
   private static let locale = Locale(identifier: "ja_JP")
 
   private static let relativeFormatter: RelativeDateTimeFormatter = {
@@ -35,6 +52,10 @@ enum MemoraFormat {
 
   private static let dueDateFormatter = dateFormatter(template: "M月d日(E)")
   private static let meetingDateFormatter = dateFormatter(template: "M月d日(E) H:mm")
+  private static let monthTitleFormatter = dateFormatter(template: "yMMMM")
+  private static let shortDateFormatter = dateFormatter(template: "M月d日")
+  private static let longDateFormatter = dateFormatter(template: "y年M月d日EEEE")
+  private static let weekdayFormatter = dateFormatter(template: "EEE")
 
   private static func dateFormatter(template: String) -> DateFormatter {
     let formatter = DateFormatter()

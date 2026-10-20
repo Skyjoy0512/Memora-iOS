@@ -199,13 +199,13 @@ struct AIMessageView: View {
 
   private func sourceHeader(_ source: AIChatSource) -> some View {
     HStack(spacing: 8) {
-      Image(icon: .docText)
+      Image(icon: .docText, size: 12)
         .font(.caption)
       Text(source.title)
         .font(.subheadline)
         .lineLimit(1)
       Spacer(minLength: 4)
-      Image(icon: .chevronRight)
+      Image(icon: .chevronRight, size: 11)
         .font(.caption2.weight(.semibold))
         .foregroundStyle(.primary)
     }

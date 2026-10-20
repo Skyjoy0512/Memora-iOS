@@ -25,7 +25,7 @@ struct SummaryTemplateDetailView: View {
     return List {
       Section {
         VStack(alignment: .leading, spacing: 12) {
-          Image(icon: template.symbol)
+          Image(icon: template.symbol, size: 22)
             .font(.title2)
             .foregroundStyle(.tint)
             .frame(width: 52, height: 52)

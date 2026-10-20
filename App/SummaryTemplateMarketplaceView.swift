@@ -90,7 +90,7 @@ struct SummaryTemplateMarketplaceView: View {
       SummaryTemplateDetailView(templateID: template.id)
     } label: {
       HStack(spacing: 14) {
-        Image(icon: template.symbol)
+        Image(icon: template.symbol, size: 17)
           .font(.headline)
           .foregroundStyle(.tint)
           .frame(width: 38, height: 38)
@@ -119,7 +119,7 @@ struct SummaryTemplateMarketplaceView: View {
         Spacer(minLength: 8)
 
         if isAdded {
-          Image(icon: .checkmarkCircleFill)
+          Image(icon: .checkmarkCircleFill, size: 17)
             .foregroundStyle(.tint)
             .accessibilityLabel("追加済み")
         }

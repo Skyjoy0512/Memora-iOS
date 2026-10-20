@@ -317,9 +317,9 @@ struct SearchView: View {
 
   private func filterChip(title: String, symbol: MemoraIcon, isActive: Bool) -> some View {
     HStack(spacing: 4) {
-      Image(icon: symbol)
+      Image(icon: symbol, size: 11)
       Text(title)
-      Image(icon: .chevronDown)
+      Image(icon: .chevronDown, size: 11)
         .font(.caption2.weight(.semibold))
     }
     .font(.subheadline.weight(.medium))

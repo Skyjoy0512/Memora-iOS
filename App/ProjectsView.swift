@@ -78,7 +78,7 @@ struct ProjectsView: View {
             ) {
               model.isFileCreationPresented = true
             }
-            .padding(.vertical, MemoraSpacing.group)
+            .padding(.top, MemoraSpacing.xl)
           }
         }
 

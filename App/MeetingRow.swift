@@ -50,7 +50,7 @@ struct MeetingRow: View {
       Spacer(minLength: 8)
 
       if showsDisclosure {
-        Image(icon: .chevronRight)
+        Image(icon: .chevronRight, size: 13)
           .font(.caption.weight(.semibold))
           .foregroundStyle(.primary)
           .padding(.top, MemoraSpacing.xs)

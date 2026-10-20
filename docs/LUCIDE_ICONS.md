@@ -2,7 +2,7 @@
 
 LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:icon:)`, and button/menu helpers resolve through `MemoraIcon.lucideName`. Stored SF names stay unchanged. Lucide uses template outline images; fill variants resolve to the same outline. Native SF fallback remains for unmatched symbols and UIKit symbol configuration.
 
-`Image(icon:size:)` sets the raster image point size (default 20); `.font` does not resize a Lucide image. Use an explicit size for specialized controls. The tab bar keeps its native segmented control and 18-point icons. Glass morphing is unchanged; custom icon replacement uses an opacity transition.
+`Image(icon:size:)` sets the raster image point size (default 20); `.font` does not resize a Lucide image. Use an explicit size for specialized controls. The tab bar keeps its native segmented control and its stored tab artwork. Glass morphing is unchanged; custom icon replacement uses an opacity transition.
 
 | Stored icon | Lucide name / fallback |
 | --- | --- |
@@ -33,7 +33,9 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `brain.head.profile` | `brain` |
 | `briefcase` | `briefcase` |
 | `bubble.left.and.bubble.right` | `messagesSquare` |
-| `building.2.fill` | SF Symbols fallback |
+| `building.2.fill` | `building` |
+| `house` | `house` |
+| `house.fill` | `house` |
 | `calendar` | `calendar` |
 | `calendar.badge.checkmark` | `calendarCheck` |
 | `calendar.badge.checkmark.fill` | `calendarCheck` |
@@ -55,7 +57,7 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `checkmark.seal.fill` | `badgeCheck` |
 | `checkmark.square` | `squareCheck` |
 | `chevron.up` | `chevronUp` |
-| `circle.grid.3x3.fill` | SF Symbols fallback |
+| `circle.grid.3x3.fill` | `grid3X3` |
 | `creditcard` | `creditCard` |
 | `delete.left` | `delete` |
 | `ear` | `ear` |
@@ -74,7 +76,7 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `phone.down.fill` | `phoneOff` |
 | `phone.fill` | `phone` |
 | `plus.circle` | `circlePlus` |
-| `sparkles.rectangle.stack` | SF Symbols fallback |
+| `sparkles.rectangle.stack` | `sparkles` |
 | `speaker.wave.2.fill` | `volume2` |
 | `square` | `square` |
 | `chevron.down` | `chevronDown` |
@@ -84,9 +86,9 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `chevron.up.chevron.down` | `chevronsUpDown` |
 | `circle` | `circle` |
 | `circle.dotted` | `circleDashed` |
-| `circle.lefthalf.filled` | SF Symbols fallback |
+| `circle.lefthalf.filled` | `contrast` |
 | `clock` | `clock` |
-| `clock.arrow.circlepath` | SF Symbols fallback |
+| `clock.arrow.circlepath` | `clockArrowRight` |
 | `clock.fill` | `clock` |
 | `cloud` | `cloud` |
 | `cloud.fill` | `cloud` |
@@ -112,10 +114,10 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `exclamationmark.triangle.fill` | `triangleAlert` |
 | `externaldrive` | `hardDrive` |
 | `externaldrive.fill` | `hardDrive` |
-| `face.smiling` | SF Symbols fallback |
-| `face.smiling.fill` | SF Symbols fallback |
-| `faceid` | SF Symbols fallback |
-| `faceid.fill` | SF Symbols fallback |
+| `face.smiling` | `faceSlightlySmiling` |
+| `face.smiling.fill` | `faceSlightlySmiling` |
+| `faceid` | `scanFace` |
+| `faceid.fill` | `scanFace` |
 | `folder` | `folder` |
 | `folder.badge.plus` | `folderPlus` |
 | `folder.badge.questionmark` | `folderSearch` |
@@ -125,16 +127,16 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `gearshape.fill` | `settings` |
 | `gobackward.15` | SF Symbols fallback |
 | `goforward.15` | SF Symbols fallback |
-| `hand.raised` | SF Symbols fallback |
-| `hand.raised.fill` | SF Symbols fallback |
-| `icloud.slash` | SF Symbols fallback |
+| `hand.raised` | `hand` |
+| `hand.raised.fill` | `hand` |
+| `icloud.slash` | `cloudOff` |
 | `info` | `info` |
-| `info.circle` | SF Symbols fallback |
-| `info.circle.fill` | SF Symbols fallback |
-| `internaldrive` | SF Symbols fallback |
-| `internaldrive.fill` | SF Symbols fallback |
+| `info.circle` | `info` |
+| `info.circle.fill` | `info` |
+| `internaldrive` | `hardDrive` |
+| `internaldrive.fill` | `hardDrive` |
 | `iphone` | `smartphone` |
-| `iphone.and.arrow.forward` | SF Symbols fallback |
+| `iphone.and.arrow.forward` | `smartphone` |
 | `iphone.fill` | `smartphone` |
 | `italic` | `italic` |
 | `key` | `key` |
@@ -168,7 +170,7 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `person.2` | `users` |
 | `person.3` | `usersRound` |
 | `person.3.fill` | `usersRound` |
-| `person.badge.key` | SF Symbols fallback |
+| `person.badge.key` | `userRoundKey` |
 | `person.badge.plus` | `userPlus` |
 | `person.crop.circle` | `circleUserRound` |
 | `person.crop.circle.badge.xmark` | `userRoundX` |
@@ -184,17 +186,17 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `plugs.connected` | `plug` |
 | `plugs.connected.fill` | `plug` |
 | `plus` | `plus` |
-| `questionmark` | SF Symbols fallback |
-| `questionmark.bubble` | SF Symbols fallback |
-| `questionmark.circle` | SF Symbols fallback |
-| `questionmark.circle.fill` | SF Symbols fallback |
+| `questionmark` | `circleQuestionMark` |
+| `questionmark.bubble` | `messageCircleQuestionMark` |
+| `questionmark.circle` | `circleQuestionMark` |
+| `questionmark.circle.fill` | `circleQuestionMark` |
 | `quote.bubble` | `messageSquareQuote` |
 | `rectangle.grid.2x2` | `layoutGrid` |
 | `rectangle.grid.2x2.fill` | `layoutGrid` |
 | `rectangle.on.rectangle.angled` | `layers` |
 | `rectangle.portrait.and.arrow.right` | `logOut` |
 | `rectangle.stack` | `layers` |
-| `rectangle.stack.badge.play` | SF Symbols fallback |
+| `rectangle.stack.badge.play` | `film` |
 | `rectangle.stack.fill` | `layers` |
 | `rotate.right` | `rotateCw` |
 | `slider.horizontal.3` | `slidersHorizontal` |
@@ -204,7 +206,7 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `square.and.arrow.down` | `download` |
 | `square.and.arrow.up` | `share` |
 | `square.and.pencil` | `squarePen` |
-| `square.grid.2x2` | SF Symbols fallback |
+| `square.grid.2x2` | `grid2X2` |
 | `square.stack.3d.up` | `layers` |
 | `star.bubble` | SF Symbols fallback |
 | `star.fill` | `star` |
@@ -215,22 +217,25 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `sun.max` | `sun` |
 | `sunrise` | `sunrise` |
 | `text.alignleft` | `textAlignStart` |
+| `textformat` | `type` |
+| `tablecells` | `table` |
 | `text.badge.plus` | SF Symbols fallback |
 | `text.bubble` | `messageSquareText` |
 | `text.document` | `fileText` |
 | `trash` | `trash` |
+| `tram.fill` | `tramFront` |
 | `trash.fill` | `trash` |
 | `trash.slash` | SF Symbols fallback |
-| `tray` | SF Symbols fallback |
+| `tray` | `inbox` |
 | `video` | `video` |
 | `wand.and.stars` | `wandSparkles` |
 | `waveform` | `audioLines` |
-| `waveform.badge.mic` | SF Symbols fallback |
-| `waveform.badge.minus` | SF Symbols fallback |
-| `waveform.badge.plus` | SF Symbols fallback |
+| `waveform.badge.mic` | `audioWaveform` |
+| `waveform.badge.minus` | `audioWaveform` |
+| `waveform.badge.plus` | `audioWaveform` |
 | `waveform.fill` | `audioLines` |
 | `waveform.path.ecg` | `activity` |
-| `waveform.slash` | SF Symbols fallback |
+| `waveform.slash` | `audioLinesOff` |
 | `wifi.slash` | `wifiOff` |
 | `xmark` | `x` |
 | `xmark.circle` | `circleX` |

@@ -41,13 +41,13 @@ struct CollapsibleInsightSection<Content: View>: View {
             if let artwork = section.artwork {
               ArtworkIcon(artwork: artwork, size: 20)
             } else {
-              Image(icon: section.icon)
+              Image(icon: section.icon, size: 20)
             }
           }
             .font(.title3.bold())
             .foregroundStyle(.primary)
           Spacer(minLength: 8)
-          Image(icon: .chevronDown)
+          Image(icon: .chevronDown, size: 15)
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.secondary)
             .rotationEffect(.degrees(isCollapsed ? -90 : 0))

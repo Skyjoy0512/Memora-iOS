@@ -118,15 +118,13 @@ struct JournalCalendar: View {
   /// Reads the date and whether that day holds a record, which the dot shows
   /// only visually.
   private func accessibilityLabel(for day: Date, isMarked: Bool) -> String {
-    let date = day.formatted(date: .long, time: .omitted)
+    let date = MemoraFormat.longDate(day)
     return isMarked ? "\(date)、記録あり" : "\(date)、記録なし"
   }
 
-  /// The weekday name shown above a day, in the calendar's own symbols.
+  /// The weekday name shown above a day, in the interface's Japanese symbols.
   private func weekdaySymbol(for day: Date) -> String {
-    let symbols = calendar.shortWeekdaySymbols
-    let index = calendar.component(.weekday, from: day) - 1
-    return symbols[(index % symbols.count + symbols.count) % symbols.count]
+    MemoraFormat.weekdaySymbol(day)
   }
 
   /// Roughly two years of days, centred on today, so the strip can be flicked

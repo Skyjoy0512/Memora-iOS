@@ -233,13 +233,13 @@ struct AIQuestionView: View {
 
   private func sourceHeader(_ source: AIChatSource) -> some View {
     HStack(spacing: 10) {
-      Image(icon: .quoteBubble)
+      Image(icon: .quoteBubble, size: 17)
         .foregroundStyle(.primary)
       Text(source.title)
         .font(.subheadline.weight(.semibold))
         .foregroundStyle(.primary)
       Spacer()
-      Image(icon: .arrowUpRight)
+      Image(icon: .arrowUpRight, size: 12)
         .font(.caption.weight(.semibold))
         .foregroundStyle(.primary)
     }

@@ -82,7 +82,7 @@ separate roles.
 Radius: small 8, field 12, card 16, bubble/composer 24pt; actions are capsules.
 System sheets/menus own their contours. Group related content sparingly.
 
-Interface icon tokens (`MemoraIconMetrics`): 20pt regular SF Symbol, 28pt
+Interface icon tokens (`MemoraIconMetrics`): 20pt regular Lucide outline, 28pt
 alignment slot in menu/settings rows, at least 44pt actual control label.
 Custom disclosure accessories use the separate 12pt accessory role.
 `MemoraInterfaceIcon` normalizes paired filled symbols to their existing outline

@@ -44,7 +44,7 @@ struct PhoneVerificationView: View {
             if isStarting {
               ProgressView().tint(.black)
             } else {
-              Image(icon: .phoneFill).font(.title2)
+              Image(icon: .phoneFill, size: 22).font(.title2)
             }
           }
           .foregroundStyle(.black)

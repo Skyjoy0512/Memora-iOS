@@ -294,17 +294,20 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   `MemoraModel+MCP`) lend their tools to the cloud agent as `mcp_…` tools;
   only tools the server marks `readOnlyHint` run without the approval card.
   The on-device agent does not get MCP tools.
-- Icons are SF Symbols named through `MemoraIcon` (`Shared/MemoraIcon.swift`).
-  Draw them with `Image(icon:)`, `Label(_:icon:)`, `Button(_:icon:)` and friends
-  rather than a literal `systemName`/`systemImage`, so a stored icon resolves the
-  same everywhere. Raw values keep the names older builds stored.
+- Icons are Lucide (`Shared/MemoraIcon+Lucide.swift`) behind stored names in
+  `MemoraIcon` (`Shared/MemoraIcon.swift`); unmatched names fall back to their
+  SF Symbol. Draw them with `Image(icon:size:)`, `Label(_:icon:)`,
+  `Button(_:icon:)` and friends rather than a literal `systemName`/`systemImage`,
+  so a stored icon resolves the same everywhere. Pass the point size Lucide
+  should rasterize at; `.font` does not resize it. Raw values keep the names
+  older builds stored. The mapping is listed in `docs/LUCIDE_ICONS.md`.
 - Settings has one entry point: the gear at the bottom right of the side menu
   (`FileSidebarView` footer, beside Memora Plus). Tabs carry no settings button.
   Dark mode is a toggle in Settings › 表示と操作, not in the side menu. The editable
   profile picture remains at the top of Settings. The root has topic links only
   (`SettingsCategory`); switches and service connections live inside each topic.
-  Settings and sidebar icons use `MemoraInterfaceIcon`: a 20pt regular SF Symbol
-  in a 28pt slot; interactive labels remain at least 44pt. Do not restore colored
+  Settings and sidebar icons use `MemoraInterfaceIcon`: a 20pt regular Lucide
+  outline in a 28pt slot; interactive labels remain at least 44pt. Do not restore colored
   tiles, per-item artwork or separate enlarged search icons.
 - Backlog and phase status live in `docs/IMPROVEMENT_BACKLOG.md` and
   `docs/OPENCODE_IMPLEMENTATION.md`.

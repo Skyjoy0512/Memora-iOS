@@ -48,6 +48,9 @@ struct RootTabView: View {
     }
     .onChange(of: model.selectedTab) { _, _ in
       closeSidebar()
+      // The composer belongs to the screen that was left; a new tab starts with
+      // its content visible rather than behind a keyboard carried over.
+      model.composerDismissRequests += 1
       // A screen that was scrolled when you left it should not hide the bar on
       // the next screen, and the capture popover belongs to the tab it opened on.
       model.setBottomBarHidden(false, for: model.selectedTab.rawValue)

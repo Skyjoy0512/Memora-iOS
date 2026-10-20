@@ -71,7 +71,7 @@ struct MeetingCard: View {
       if isSelecting {
         // The icons are single-layer, so the white behind the check is drawn
         // separately rather than as a second palette color.
-        Image(icon: isSelected ? .checkmarkCircleFill : .circle)
+        Image(icon: isSelected ? .checkmarkCircleFill : .circle, size: 22)
           .font(.title2)
           .foregroundStyle(.primary)
           .background {

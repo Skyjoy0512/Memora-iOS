@@ -21,7 +21,7 @@ struct AskAIHeader: View {
           Text(model.aiPersonScopeID.flatMap { model.person(id: $0)?.name } ?? "Memora")
             .font(MemoraTypography.body.weight(.semibold))
             .lineLimit(1)
-          Image(icon: .chevronDown)
+          Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)
             .font(.system(size: MemoraIconMetrics.accessory, weight: .medium))
             .foregroundStyle(MemoraPalette.textSecondary)
             .accessibilityHidden(true)
