@@ -65,7 +65,6 @@ struct TasksView: View {
                 }
               }
             }
-            .hideBottomBarOnScroll(RootTab.home.rawValue)
             .listStyle(.plain)
             .textCase(nil)
             .scrollContentBackground(.hidden)

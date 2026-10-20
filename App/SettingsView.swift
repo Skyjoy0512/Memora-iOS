@@ -53,7 +53,6 @@ struct SettingsView: View {
         }
       }
       .memoraSettingsPage("設定")
-      .hideBottomBarOnScroll("settings")
       .navigationDestination(for: SettingsCategory.self) { category in
         SettingsCategoryView(category: category) {
           if showsCloseButton { dismiss() }

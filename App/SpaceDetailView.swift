@@ -134,7 +134,6 @@ struct SpaceDetailView: View {
       .padding(.bottom, model.bottomContentClearance)
     }
     .scrollIndicators(.hidden)
-    .hideBottomBarOnScroll(model.selectedTab.rawValue)
   }
 
   private func workspaceEmpty(_ tab: ProjectWorkspaceTab, action: @escaping () -> Void) -> some View {

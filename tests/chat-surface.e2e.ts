@@ -63,7 +63,7 @@ test('chat surface: stacked controls keep draft navigation available after dismi
   const focused = await focusComposer(screen);
   await focused.fill('画面を行き来しても残しておく相談の下書き');
   await dismissFromEmptyCanvas(screen);
-  await expect(screen.getByRole('tab', { name: 'ジャーナル', exact: true })).toBeVisible();
+  await expect(screen.getByLabel('メニュー').first()).toBeVisible();
   await app.screenshot('chat-draft-keyboard-dismissed');
   await tapTab(screen, 'ジャーナル');
   await tapTab(screen, 'Ask AI');

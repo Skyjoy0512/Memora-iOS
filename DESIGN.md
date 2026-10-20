@@ -124,7 +124,6 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 GlassSegmentedPicker/Control and arbitrary memoraCard(radius:) are retired.
 The old colored SettingsIconStyle tiles and per-section Tint palette are retired;
 settings and integration screens share one monochrome glyph implementation.
-The protected bottom tab's UISegmentedControl is a separate implementation.
 
 ## Screen composition
 
@@ -136,8 +135,9 @@ The header is flat, with the title beside the sidebar icon and a visible menu
 chevron. On the Ask AI tab, the composer stays two-row and keeps its width when
 focus changes; only contextual prompts use the compact capsule. Idle voice input
 is an outline glyph; send, stop and active voice states earn the inverse circle.
-Active focus/listening hides the tab bar, not the mere presence of a saved draft.
-After dismissing the keyboard, a draft can remain while tabs become available.
+Active focus/listening belongs to the composer; a saved draft alone neither focuses
+the field nor opens the keyboard. After dismissing the keyboard, a draft can remain
+while the side menu becomes available.
 Response controls share the 20pt interface glyph; source disclosure has a 44pt
 target and moves below the actions at accessibility sizes.
 
@@ -180,8 +180,14 @@ their category. Services have one canonical list under Integrations; skills
 belong under AI and summaries. Preserve profile editing, permission explanations,
 connection setup and the single sidebar settings entry. No fabricated service state.
 
-Sidebar: workspace switcher, Library destinations (Projects / Documents / People),
-Devices, then plan/settings controls. A destination name stays constant; connection
+Tools: the side menu's `ToolsView` is a Plaud-style hub for skills, summary
+templates and connectors. It uses native grouped rows, reports real counts, and
+opens the same registration editors as Settings. Creation stays reachable from
+the hub; no fabricated connector or skill state.
+
+Sidebar: workspace switcher; the main destinations (Home / Library / Ask AI /
+Tools) first, then collections (Projects / Documents / People), Devices, and
+plan/settings controls. There is no bottom tab bar. A destination name stays constant; connection
 state is a separate secondary value. Rows use the shared 28pt icon column and
 52pt minimum height, growing with text. The workspace switcher is the first
 scrollable item, without a nested card. Account information and the plan/settings
@@ -197,8 +203,9 @@ competing for a narrow horizontal column.
 
 ## Interaction and accessibility
 
-Liquid Glass belongs to navigation, bottom tabs, floating create and composer.
-Keep the create label's matchedTransitionSource, compact popover and zoom.
+Liquid Glass belongs to navigation, the side menu, the top-right create control
+and the composer. There are no bottom tabs. Keep the create popover compact and
+the composer on the bottom edge.
 Create-menu actions explain their input method beneath a stable action name.
 The native popover sizes to measured content, caps its ideal height and scrolls;
 the recording/import/project destination callbacks are unchanged.

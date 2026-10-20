@@ -37,6 +37,14 @@ struct RootTabView: View {
         },
         onOpenDocuments: openDocuments,
         onOpenPeople: openPeople,
+        onSelectTab: { tab in
+          closeSidebar()
+          model.selectedTab = tab
+        },
+        onOpenTools: {
+          closeSidebar()
+          model.isToolsPresented = true
+        },
         onOpenSettings: openSettings,
         onClose: closeSidebar
       )
@@ -51,9 +59,7 @@ struct RootTabView: View {
       // The composer belongs to the screen that was left; a new tab starts with
       // its content visible rather than behind a keyboard carried over.
       model.composerDismissRequests += 1
-      // A screen that was scrolled when you left it should not hide the bar on
-      // the next screen, and the capture popover belongs to the tab it opened on.
-      model.setBottomBarHidden(false, for: model.selectedTab.rawValue)
+      // The capture popover belongs to the screen it opened on.
       model.isCaptureSourcePresented = false
       // A search belongs to the tab it was opened on.
       model.isSearchActive = false
@@ -246,19 +252,6 @@ struct RootTabView: View {
         )
       }
 
-      if showsBottomBar {
-        ProminentTabBar(
-          selection: $model.selectedTab,
-          isProminentPresented: $model.isCaptureSourcePresented,
-          prominentSymbol: .plus
-        ) {
-          CaptureMenuPopover(spaceID: model.visibleProjectID)
-        }
-        .containerRelativeFrame(.horizontal) { width, _ in
-          (width - 24) * MemoraBarMetrics.scale
-        }
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
-      }
     }
     .padding(.horizontal, 12)
     .padding(.top, 4)
@@ -286,7 +279,6 @@ struct RootTabView: View {
     // Leaving or opening a record moves the bar with the screen, rather than
     // letting it snap in or out.
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: isShowingMeetingDetail)
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: isBottomBarHidden)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isCaptureSourcePresented)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isSearchCovering)
   }
@@ -297,16 +289,6 @@ struct RootTabView: View {
     RootNavigation.searchCoversScreen(tab: model.selectedTab, path: model.activeNavigationPath,
       isSearching: model.isSearchActive, isSelectingFiles: model.isFileSelectionActive)
   }
-
-  /// The bar follows the tab on top, so another screen's scrolling cannot move it.
-  private var isBottomBarHidden: Bool {
-    model.isBottomBarHidden(for: model.selectedTab.rawValue)
-  }
-
-  private var showsBottomBar: Bool {
-    !isComposing && !isShowingMeetingDetail && !isBottomBarHidden && !isSearchCovering
-  }
-
 
   /// The transport only appears while a detail is playing and no field (the
   /// composer or an inline editor) owns the keyboard.
@@ -400,7 +382,8 @@ struct RootTabView: View {
 }
 
 private extension View {
-  /// Removes the system tab bar so `ProminentTabBar` is the only bottom navigation.
+  /// Removes the system tab bar: navigation lives in the side menu, and the
+  /// bottom edge belongs to the Ask AI composer.
   /// The modifier has to be applied inside a tab, not on the `TabView` itself.
   @ViewBuilder
   func hidesSystemTabBar() -> some View {

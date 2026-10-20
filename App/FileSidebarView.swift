@@ -10,6 +10,8 @@ struct FileSidebarView: View {
   var onJoinTeam: () -> Void
   var onOpenDocuments: () -> Void
   var onOpenPeople: () -> Void
+  var onSelectTab: (RootTab) -> Void
+  var onOpenTools: () -> Void
   var onOpenSettings: () -> Void
   var onClose: () -> Void
 
@@ -22,8 +24,26 @@ struct FileSidebarView: View {
             .padding(.top, MemoraSpacing.md)
             .padding(.bottom, MemoraSpacing.sm)
 
-          VStack(alignment: .leading, spacing: 24) {
-            sidebarSection("ライブラリ") {
+          VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
+            VStack(spacing: 0) {
+              SidebarRow(title: "ホーム", symbol: .house,
+                isSelected: model.selectedTab == .home) {
+                onSelectTab(.home)
+              }
+              SidebarRow(title: "ライブラリ", symbol: .folder,
+                isSelected: model.selectedTab == .library) {
+                onSelectTab(.library)
+              }
+              SidebarRow(title: "Ask AI", symbol: .sparkles,
+                isSelected: model.selectedTab == .askAI) {
+                onSelectTab(.askAI)
+              }
+              SidebarRow(title: "ツール", symbol: .puzzle) {
+                onOpenTools()
+              }
+            }
+
+            sidebarSection("コレクション") {
               SidebarRow(title: "プロジェクト", symbol: .rectangleStack,
                 isSelected: model.selectedTab == .library && model.librarySection == .projects) {
                 onOpenProjects()
@@ -59,6 +79,7 @@ struct FileSidebarView: View {
           }
           .padding(.horizontal, MemoraSpacing.lg)
           .padding(.vertical, MemoraSpacing.md)
+          .accessibilityIdentifier("sidebar.navigation")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
       }

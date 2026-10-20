@@ -36,7 +36,6 @@ struct ProjectTasksView: View {
         }
       }
       .sheet(item: $editingTask) { task in TaskEditView(task: task) }
-      .hideBottomBarOnScroll(model.selectedTab.rawValue)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
       .tint(MemoraPalette.textPrimary)
     } else {

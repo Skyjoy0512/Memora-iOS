@@ -155,7 +155,6 @@ struct HomeView: View {
         // leave room for the last records to clear them.
         .padding(.bottom, model.bottomContentClearance)
       }
-      .hideBottomBarOnScroll(RootTab.home.rawValue)
       .refreshable {
         await model.refresh()
         if healthRequest.canRead { await healthLoader.load(healthRequest.period) }
@@ -189,12 +188,9 @@ struct HomeView: View {
           .labelStyle(.iconOnly)
         }
 
-        // The create action is the rightmost item, matching the other tabs.
-        ToolbarActionItem {
-          ToolbarIconButton("記録を追加", icon: .squareAndPencil) {
-            beginJournalEntry()
-          }
-          .labelStyle(.iconOnly)
+        // The create action is the top-right control on every main screen.
+        ToolbarItem(placement: .topBarTrailing) {
+          CaptureToolbarButton(spaceID: model.visibleProjectID)
         }
       }
       .sheet(isPresented: $model.isLifeLogCreationPresented, onDismiss: { entryCreationDate = nil }) {

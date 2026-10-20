@@ -30,7 +30,6 @@ struct ProjectSourcesView: View {
         }
       }
     }
-    .hideBottomBarOnScroll(model.selectedTab.rawValue)
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
   }
 }

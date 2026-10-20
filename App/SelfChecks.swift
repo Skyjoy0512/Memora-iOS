@@ -542,16 +542,11 @@ enum SelfChecks {
         report("a deleted project remained a recording destination")
       }
     }
-    group("Tab bar icons") {
-      let outlineArtwork: [RootTab: MemoraArtwork] = [.home: .journalTab, .askAI: .askAITab]
-      let filledArtwork: [RootTab: MemoraArtwork] = [.library: .folderSolid, .home: .journalTabSolid, .askAI: .askAITabSolid]
+    group("Destination icons") {
       let expected: [RootTab: MemoraIcon] = [.library: .folder, .home: .calendar, .askAI: .chatBubble]
       for tab in RootTab.allCases {
-        if tab.artwork != outlineArtwork[tab] || tab.filledArtwork != filledArtwork[tab] {
-          report("tab artwork does not match its selection state: \(tab.title)")
-        }
         if tab.symbol != expected[tab] || UIImage(icon: tab.symbol) == nil || UIImage(icon: tab.filledSymbol) == nil {
-          report("original tab bar icon missing or replaced: \(tab.title)")
+          report("destination icon missing or replaced: \(tab.title)")
         }
       }
     }

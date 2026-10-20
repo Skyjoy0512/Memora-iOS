@@ -117,7 +117,6 @@ struct ProjectsView: View {
       .padding(.bottom, model.bottomContentClearance)
     }
     .background(MemoraPalette.background)
-    .hideBottomBarOnScroll(RootTab.library.rawValue)
     .sheet(item: $renameTarget) { space in RenameSpaceSheet(space: space) }
     .sheet(isPresented: $isShareInboxPresented) { NavigationStack { ShareInboxView().toolbar { ToolbarItem(placement: .cancellationAction) { Button("閉じる") { isShareInboxPresented = false } } } } }
     .confirmationDialog("このプロジェクトを削除しますか？", isPresented: Binding(

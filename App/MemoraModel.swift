@@ -44,6 +44,8 @@ final class MemoraModel {
   /// The cloud service behind teams. Swapped for the real one once connected.
   @ObservationIgnored var teamBackend: any TeamBackend = UnconfiguredTeamBackend()
   var isSettingsPresented = false
+  /// The Plaud-style tools hub: skills, templates and connectors.
+  var isToolsPresented = false
   /// Opened by the contextual create button on the tasks tab.
   var isAddTaskPresented = false
   /// A task to open for editing after its reminder was tapped.
@@ -55,22 +57,6 @@ final class MemoraModel {
   var missingRecordNotice: MissingRecordNotice?
   var isRecentlyDeletedPresented = false
 
-  /// Screens that asked for the bottom bar to step aside. The bar hides only
-  /// when the screen being read is one of them, so a background screen cannot
-  /// move the bar out from under the screen someone is actually using.
-  var bottomBarHiddenScreens: Set<String> = []
-
-  func isBottomBarHidden(for screenID: String) -> Bool {
-    bottomBarHiddenScreens.contains(screenID)
-  }
-
-  func setBottomBarHidden(_ hidden: Bool, for screenID: String) {
-    if hidden {
-      bottomBarHiddenScreens.insert(screenID)
-    } else {
-      bottomBarHiddenScreens.remove(screenID)
-    }
-  }
   /// Records stay on the device unless Plus turns cloud storage on.
   var cloudStorageEnabled = false {
     didSet { UserDefaults.standard.set(cloudStorageEnabled, forKey: StorageKey.cloudStorage) }

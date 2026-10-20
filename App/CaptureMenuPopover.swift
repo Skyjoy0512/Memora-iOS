@@ -77,6 +77,16 @@ struct CaptureMenuPopover: View {
     case .importAudio:
       importSpaceID = destinationID
       isFileImporterPresented = true
+    case .newMemo:
+      collapse()
+      Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+        model.isLifeLogCreationPresented = true
+      }
+    case .newChat:
+      collapse()
+      model.selectedTab = .askAI
+      model.startNewAIChat()
     case .phoneCall:
       collapse()
       Task { @MainActor in

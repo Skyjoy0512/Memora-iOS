@@ -87,7 +87,6 @@ struct ProjectChatView: View {
       .confirmationDialog("このチャットを削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
         Button("削除", role: .destructive) { if model.deleteProjectChat(threadID) { dismiss() } }
       } message: { Text("会話だけを削除します。ソースやプロジェクトは削除しません。") }
-      .hideBottomBarOnScroll(model.selectedTab.rawValue)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     } else { ContentUnavailableView("チャットが見つかりません", icon: .chatBubble) }
   }

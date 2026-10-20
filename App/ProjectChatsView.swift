@@ -25,7 +25,6 @@ struct ProjectChatsView: View {
         }
       }
       .overlay { if threads.isEmpty { ContentUnavailableView("チャットはまだありません", icon: .chatBubble) } }
-      .hideBottomBarOnScroll(model.selectedTab.rawValue)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
   }
 }

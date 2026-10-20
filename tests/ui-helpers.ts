@@ -23,12 +23,17 @@ async function stableBounds(control: any) {
 }
 
 export async function tapTab(screen: any, name: string) {
-  // The native Glass selection morph never becomes a static segmented image.
-  const control = screen.getByRole('tab', { name, exact: true });
-  await expect(control).toBeVisible();
-  const box = await stableBounds(control);
-  await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
-  await expect(screen.getByRole('tab', { name, exact: true, selected: true })).toBeVisible();
+  // Navigation lives in the side menu; the old bottom tab names still work so
+  // older scenarios stay readable.
+  const destinations: Record<string, string> = {
+    'ジャーナル': 'ホーム',
+    'ホーム': 'ホーム',
+    'ライブラリ': 'ライブラリ',
+  };
+  const destination = destinations[name] ?? name;
+  await tapControl(screen, screen.getByLabel('メニュー').first());
+  await tapControl(screen, screen.getByRole('button', { name: destination, exact: true }));
+  await expect(screen.getByLabel('メニュー').first()).toBeVisible();
 }
 
 export async function focusComposer(screen: any) {
@@ -54,16 +59,15 @@ export async function launchMemora(app: any, device: any, screen: any) {
   await device.installApp(undefined, { reinstall: true });
   await app.restart();
   const skip = screen.getByRole('button', { name: 'スキップ', exact: true });
-  const journal = screen.getByRole('tab', { name: 'ジャーナル', exact: true });
-  await expect.poll(async () => (await skip.isVisible()) || (await journal.isVisible())).toBe(true);
+  const menu = screen.getByLabel('メニュー').first();
+  await expect.poll(async () => (await skip.isVisible()) || (await menu.isVisible())).toBe(true);
   if (await skip.isVisible()) {
     // Skip stays still while the onboarding waveform animates.
     const box = await skip.boundingBox();
     if (!box) throw new Error('onboarding skip has no frame');
     await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
   }
-  await expect(journal).toBeVisible();
-  await expect(screen.getByLabel('メニュー')).toBeVisible();
+  await expect(menu).toBeVisible();
 }
 
 export async function scrollToControl(screen: any, control: any) {

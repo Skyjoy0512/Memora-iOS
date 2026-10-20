@@ -182,6 +182,8 @@ extension MemoraIcon {
     case .photoFill: .image
     case .photoOnRectangle: .images
     case .pin: .pin
+    case .puzzle: .puzzle
+    case .wrench: .wrench
     case .play: .play
     case .playFill: .play
     case .plugsConnected: .plug

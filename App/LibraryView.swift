@@ -51,16 +51,50 @@ struct LibraryView: View {
     .accessibilityLabel("ライブラリの表示")
   }
 
+  /// Sort, filter and selection sit beside the tabs, keeping the navigation bar
+  /// to the title and two actions.
+  private var fileViewOptions: some View {
+    Menu {
+      Picker("表示", selection: $layout) {
+        ForEach(FileListLayout.allCases) {
+          Text($0 == .card ? "プレビュー付き" : "コンパクト").tag($0)
+        }
+      }
+      Picker("並べ替え", selection: $sort) {
+        ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
+      }
+      Picker("絞り込み", selection: $statusFilter) {
+        ForEach(FileListFilter.allCases) { Text($0.label).tag($0) }
+      }
+      Divider()
+      Button("選択", icon: .checkmarkCircle) {
+        beginSelectionMode()
+      }
+    } label: {
+      Image(icon: .line3HorizontalDecrease, size: MemoraIconMetrics.glyph)
+        .foregroundStyle(MemoraPalette.textPrimary)
+        .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
+        .contentShape(Rectangle())
+    }
+    .accessibilityLabel("表示と並べ替え")
+    .tint(MemoraPalette.textPrimary)
+  }
+
   var body: some View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
       VStack(spacing: 0) {
         if !isSearching, !isSelectionMode {
-          librarySectionPicker
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, MemoraSpacing.sm)
-            .accessibilityLabel("ライブラリの表示")
+          HStack(spacing: MemoraSpacing.sm) {
+            librarySectionPicker
+            Spacer(minLength: 0)
+            if model.librarySection == .files {
+              fileViewOptions
+            }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.bottom, MemoraSpacing.sm)
         }
         Group {
           if model.librarySection == .files {
@@ -75,6 +109,14 @@ struct LibraryView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
       .toolbar {
+        if !isSearching {
+          ToolbarItem(placement: .principal) {
+            Text(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ライブラリ")
+              .font(.headline)
+              .lineLimit(1)
+          }
+        }
+
         ToolbarItem(placement: .topBarLeading) {
           if isSelectionMode {
             ToolbarIconButton("キャンセル", icon: .xmark) { endSelection() }
@@ -101,32 +143,15 @@ struct LibraryView: View {
           }
 
           if model.librarySection == .files {
-            ToolbarActionItem(usesSystemBackground: true) {
-              Menu {
-                Picker("表示", selection: $layout) {
-                  ForEach(FileListLayout.allCases) {
-                    Text($0 == .card ? "プレビュー付き" : "コンパクト").tag($0)
-                  }
-                }
-                Picker("並べ替え", selection: $sort) {
-                  ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
-                }
-                Picker("絞り込み", selection: $statusFilter) {
-                  ForEach(FileListFilter.allCases) { Text($0.label).tag($0) }
-                }
-                Divider()
-                Button("選択", icon: .checkmarkCircle) {
-                  beginSelectionMode()
-                }
-              } label: {
-                ToolbarActionLabel("表示と並べ替え", icon: .line3HorizontalDecrease)
-              }
+            ToolbarItem(placement: .topBarTrailing) {
+              CaptureToolbarButton(spaceID: model.visibleProjectID)
             }
           } else {
             ToolbarItem(placement: .topBarTrailing) {
-              Button("作成") { model.isFileCreationPresented = true }
-                .accessibilityLabel("プロジェクトを作成")
-                .disabled(model.isRestoring)
+              ToolbarIconButton("プロジェクトを作成", icon: .plus) {
+                model.isFileCreationPresented = true
+              }
+              .disabled(model.isRestoring)
             }
           }
         }
@@ -208,7 +233,6 @@ struct LibraryView: View {
         isSearching = false
         model.isSearchActive = false
         endSelection()
-        model.setBottomBarHidden(false, for: RootTab.library.rawValue)
       }
       .onChange(of: model.selectedTab) { _, tab in
         guard tab == .library else { return }
@@ -359,7 +383,6 @@ struct LibraryView: View {
       await upcoming.refresh()
       await model.cloudSharing.refreshIfConfirmed()
     }
-    .hideBottomBarOnScroll(RootTab.library.rawValue)
   }
 
   private var filterChipRow: some View {

@@ -94,7 +94,6 @@ struct SearchView: View {
       }
       .scrollDismissesKeyboard(.interactively)
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-      .hideBottomBarOnScroll(RootTab.askAI.rawValue)
       .refreshable { await model.refresh() }
       .modifier(ConversationScrollFollowing(proxy: proxy, latestMessageID: model.aiMessages.last?.id,
         isBusy: model.isAIChatResponding, bottomInset: model.bottomContentClearance))

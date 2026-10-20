@@ -16,7 +16,7 @@ test('the app opens on the journal', async ({ app, device, screen }) => {
   await expect(screen.getByText('記録を追加').first()).toBeVisible();
 });
 
-test('the tabs switch between journal, library and Ask AI', async ({ app, device, screen }) => {
+test('the side menu switches between home, library and Ask AI', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapTab(screen, 'ライブラリ');
   await expect(screen.getByRole('button', { name: 'ファイル', exact: true, selected: true })).toBeVisible();
@@ -29,10 +29,33 @@ test('the tabs switch between journal, library and Ask AI', async ({ app, device
 test('the side menu lists the main destinations', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
+  await expect(screen.getByText('ホーム')).toBeVisible();
+  await expect(screen.getByText('ライブラリ')).toBeVisible();
+  await expect(screen.getByText('Ask AI')).toBeVisible();
+  await expect(screen.getByText('ツール')).toBeVisible();
   await expect(screen.getByText('資料')).toBeVisible();
   await expect(screen.getByText('人物')).toBeVisible();
   await expect(screen.getByText('プロジェクト')).toBeVisible();
   await expect(screen.getByText('設定')).toBeVisible();
+});
+
+test('the top-right create control opens capture actions', async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await tapControl(screen, screen.getByLabel('新規作成').first());
+  await expect(screen.getByText('録音を開始', { exact: true })).toBeVisible();
+  await expect(screen.getByText('ファイルをインポート', { exact: true })).toBeVisible();
+  await expect(screen.getByText('新規チャット', { exact: true })).toBeVisible();
+  await app.screenshot('capture-popover');
+});
+
+test('the tools hub reaches skills, templates and connectors', async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await tapControl(screen, screen.getByLabel('メニュー').first());
+  await tapControl(screen, screen.getByRole('button', { name: 'ツール', exact: true }));
+  await expect(screen.getByText('マイスキル', { exact: true }).first()).toBeVisible();
+  await expect(screen.getByText('テンプレート', { exact: true }).first()).toBeVisible();
+  await expect(screen.getByText('コネクタ', { exact: true }).first()).toBeVisible();
+  await app.screenshot('tools-hub');
 });
 
 test('Settings opens from the side menu', async ({ app, device, screen }) => {

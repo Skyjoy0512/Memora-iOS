@@ -2,7 +2,7 @@
 
 LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:icon:)`, and button/menu helpers resolve through `MemoraIcon.lucideName`. Stored SF names stay unchanged. Lucide uses template outline images; fill variants resolve to the same outline. Native SF fallback remains for unmatched symbols and UIKit symbol configuration.
 
-`Image(icon:size:)` sets the raster image point size (default 20); `.font` does not resize a Lucide image. Use an explicit size for specialized controls. The tab bar keeps its native segmented control and its stored tab artwork. Glass morphing is unchanged; custom icon replacement uses an opacity transition.
+`Image(icon:size:)` sets the raster image point size (default 20); `.font` does not resize a Lucide image. Use an explicit size for specialized controls. Navigation lives in the side menu, which uses `MemoraInterfaceIcon`; there is no bottom tab bar.
 
 | Stored icon | Lucide name / fallback |
 | --- | --- |
@@ -181,6 +181,8 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `photo.fill` | `image` |
 | `photo.on.rectangle` | `images` |
 | `pin` | `pin` |
+| `puzzlepiece` | `puzzle` |
+| `wrench.and.screwdriver` | `wrench` |
 | `play` | `play` |
 | `play.fill` | `play` |
 | `plugs.connected` | `plug` |

@@ -36,47 +36,39 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 ## Known regressions to avoid
 
-- **Tab bar** (`App/ProminentTabBar.swift`): the bottom tabs must stay a
-  `UISegmentedControl`. It is what draws and animates the system's Liquid Glass
-  selection bubble. Do not swap it for a SwiftUI segmented control and do not set
-  `allowsHitTesting(false)` on it — either change makes the selection jump to the
-  new tab instead of morphing across. The order is Library, Home,
-  Ask AI; Ask AI is the third tab (to the right of Journal); do not move it back to a full-screen presentation or a bar
-  `secondaryAction`.
-- **Create (＋) button**: it is a `.buttonStyle(.glass)` button whose label is the
-  `matchedTransitionSource`, opening `.popover` with
-  `.presentationCompactAdaptation(.popover)` and
-  `.navigationTransition(.zoom(sourceID:in:))`. That is the Liquid Glass morph
-  the owner asked for; do not replace it with an inline `glassEffectID` panel.
+- **Navigation**: there is no bottom tab bar. The destinations (Home, Library,
+  Ask AI, Tools) live at the top of the side menu (`FileSidebarView`), and
+  the bottom edge belongs to the Ask AI composer alone. `RootTab` still names
+  the destination and keeps the old saved identifiers, but nothing draws tabs.
+- **Create (＋) button**: every main screen puts the create control at the top
+  right (`CaptureToolbarButton`), opening `CaptureMenuPopover`. It holds record,
+  import, memo, online meeting, new chat and the flagged phone-call action. Do
+  not move it back to a floating bottom button.
 - **Files screen top chrome**: do not drive the navigation bar's visibility from
   a scroll-offset flag. Hiding and showing the bar from that state re-runs
   layout, which is read back as more scrolling and freezes the screen. The
   Library tab lists records across all projects; projects are opened and
   created in the Library's Projects segment (`ProjectsView`); both segments
   share one `libraryPath`. Persist the selected `LibrarySection` as a setting.
-- **Bottom bar hide on scroll** (`App/BottomBarScrollBehavior.swift`): only a
-  user-driven scroll phase may move the bar, and a callback where the content
-  size changed is layout, not scrolling (lists correct row heights as rows
-  appear). Near the end of a list and just after the bar moves, the state is
-  held. Dropping any of these brings back the loop where the bar and the list
-  push each other, the bar never returns on scrolling up, and long task lists
-  stop scrolling. Only the tab bar hides; the Ask AI composer stays at the
-  bottom of the screen.
+- **Bottom edge**: the Ask AI composer stays at the bottom; scrolling moves no
+  navigation bar because there is none. Search and file selection still hide
+  the composer so results or the share / move / delete bar own the bottom edge.
 - **Search**: Files and Journal search from a toolbar magnifying-glass button
   that opens `ToolbarSearchField` in place of the navigation bar. While it is
-  open (`isSearchActive`), the tab bar and Ask AI hide and the screen shows only
-  results, never the list behind them. Do not bring back an always-visible
-  `.searchable` drawer. Picking files on Files (`isFileSelectionActive`) hides
-  the tab bar and Ask AI the same way, so the share / move / delete bar owns
-  the bottom edge. The ＋ menu holds capture actions
-  only (record, import, online meeting; phone call while its flag is on); memos are added from the Journal
-  toolbar and projects from the Library's Projects toolbar.
+  open (`isSearchActive`), the composer hides and the screen shows only results,
+  never the list behind them. Do not bring back an always-visible `.searchable`
+  drawer. Picking files on Files (`isFileSelectionActive`) hides the composer
+  the same way, so the share / move / delete bar owns the bottom edge.
+- **Tools**: `ToolsView` is the Plaud-style hub from the side menu. It links to
+  skills, summary templates and connectors, and creates new skills/templates
+  from the same editors used in Settings. Keep registration reachable; do not
+  turn it into display-only cards.
 - **Tasks**: `TasksView` lives inside Home's NavigationStack (`.tasks` route),
   including notification navigation. Keep creation, editing and source links reachable.
 - **Project context**: capture uses `visibleProjectID` from the active navigation
   path. Ask AI uses global scope on its tab, project scope on a project detail,
   and record scope on a meeting/transcript. Shared projects remain read-only.
-- **Journal (Home)**: the tab's own `ScrollView`/`List` must stay the screen's
+- **Journal (Home)**: the screen's own `ScrollView`/`List` must stay its
   primary scroll view, so the large title collapses the way the system expects.
 
 ## Known gaps (not bugs to fix silently)

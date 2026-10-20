@@ -176,6 +176,8 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case photoFill = "photo.fill"
   case photoOnRectangle = "photo.on.rectangle"
   case pin = "pin"
+  case puzzle = "puzzlepiece"
+  case wrench = "wrench.and.screwdriver"
   case play = "play"
   case playFill = "play.fill"
   case plugsConnected = "plugs.connected"
