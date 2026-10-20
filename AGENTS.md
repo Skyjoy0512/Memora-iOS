@@ -36,9 +36,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 ## Known regressions to avoid
 
-- **Navigation**: there is no bottom tab bar. The destinations (Home, Library,
-  Ask AI, Tools) live at the top of the side menu (`FileSidebarView`), and
-  the bottom edge belongs to the Ask AI composer alone. `RootTab` still names
+- **Navigation**: there is no bottom tab bar. The app opens on Library, and the
+  destinations (Journal, Library, Ask AI, Tools) live at the top of the side menu
+  (`FileSidebarView`). The bottom edge belongs to the Ask AI composer alone. `RootTab` still names
   the destination and keeps the old saved identifiers, but nothing draws tabs.
 - **Create (＋) button**: every main screen puts the create control at the top
   right (`CaptureToolbarButton`), opening `CaptureMenuPopover`. It holds record,

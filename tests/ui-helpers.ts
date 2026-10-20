@@ -26,8 +26,8 @@ export async function tapTab(screen: any, name: string) {
   // Navigation lives in the side menu; the old bottom tab names still work so
   // older scenarios stay readable.
   const destinations: Record<string, string> = {
-    'ジャーナル': 'ホーム',
-    'ホーム': 'ホーム',
+    'ジャーナル': 'ジャーナル',
+    'ホーム': 'ジャーナル',
     'ライブラリ': 'ライブラリ',
   };
   const destination = destinations[name] ?? name;

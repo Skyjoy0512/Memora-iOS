@@ -26,7 +26,7 @@ struct FileSidebarView: View {
 
           VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
             VStack(spacing: 0) {
-              SidebarRow(title: "ホーム", symbol: .house,
+              SidebarRow(title: "ジャーナル", symbol: .calendar,
                 isSelected: model.selectedTab == .home) {
                 onSelectTab(.home)
               }
@@ -40,6 +40,9 @@ struct FileSidebarView: View {
               }
               SidebarRow(title: "ツール", symbol: .puzzle) {
                 onOpenTools()
+              }
+              SidebarRow(title: "設定", symbol: .gearshape) {
+                onOpenSettings()
               }
             }
 

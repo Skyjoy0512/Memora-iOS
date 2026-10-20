@@ -117,14 +117,15 @@ struct LibraryView: View {
           }
         }
 
-        ToolbarItem(placement: .topBarLeading) {
-          if isSelectionMode {
+        if isSelectionMode {
+          ToolbarItem(placement: .topBarLeading) {
             ToolbarIconButton("キャンセル", icon: .xmark) { endSelection() }
-          } else {
+          }
+        } else {
+          ToolbarActionItem(placement: .topBarLeading) {
             ToolbarIconButton("メニュー", icon: .line3Horizontal) {
               onOpenSidebar()
             }
-            .labelStyle(.iconOnly)
           }
         }
 
@@ -143,11 +144,11 @@ struct LibraryView: View {
           }
 
           if model.librarySection == .files {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarActionItem {
               CaptureToolbarButton(spaceID: model.visibleProjectID)
             }
           } else {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarActionItem {
               ToolbarIconButton("プロジェクトを作成", icon: .plus) {
                 model.isFileCreationPresented = true
               }

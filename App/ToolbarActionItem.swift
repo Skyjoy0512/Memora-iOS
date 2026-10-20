@@ -2,11 +2,12 @@ import SwiftUI
 
 struct ToolbarActionItem<Content: View>: ToolbarContent {
   var usesSystemBackground = false
+  var placement: ToolbarItemPlacement = .topBarTrailing
   @ViewBuilder var content: () -> Content
 
   var body: some ToolbarContent {
     if #available(iOS 26.0, *), !usesSystemBackground {
-      ToolbarItem(placement: .topBarTrailing) {
+      ToolbarItem(placement: placement) {
         content()
           .buttonStyle(.plain)
           .environment(\.memoraToolbarControlSize, 44)
@@ -15,7 +16,7 @@ struct ToolbarActionItem<Content: View>: ToolbarContent {
       }
       .sharedBackgroundVisibility(.hidden)
     } else {
-      ToolbarItem(placement: .topBarTrailing) {
+      ToolbarItem(placement: placement) {
         content()
       }
     }

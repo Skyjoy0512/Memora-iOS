@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 @MainActor
 @Observable
 final class MemoraModel {
-  var selectedTab = RootTab.home {
+  var selectedTab = RootTab.library {
     didSet { didChangeTab(from: oldValue) }
   }
   @ObservationIgnored var conversationPersistenceReady = false

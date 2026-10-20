@@ -218,6 +218,7 @@ struct RootTabView: View {
       // layer, so it never overlaps the composer or the home indicator.
       if showsPlaybackBar, let player = model.activePlayback {
         MeetingPlaybackBar(player: player)
+          .padding(.horizontal, 12)
           .transition(
             reduceMotion
               ? .opacity
@@ -233,11 +234,9 @@ struct RootTabView: View {
           isComposing: $isComposing,
           keepsFocusAfterSubmit: model.selectedTab == .askAI || model.activeProjectChatID != nil
         )
-        // Conversation width stays stable across focus changes; contextual
-        // prompts remain compact until someone starts editing.
+        // The Ask AI component uses the full screen width on every page.
         .containerRelativeFrame(.horizontal) { width, _ in
-          min(isComposing || model.selectedTab == .askAI ? width - MemoraSpacing.xxl : width * 0.8,
-            MemoraSpacing.readingWidth)
+          min(width, MemoraSpacing.readingWidth)
         }
         // Note: no `.id(composerScope)` — recreating the field would throw away
         // what someone had already typed when the scope changed.
@@ -253,7 +252,6 @@ struct RootTabView: View {
       }
 
     }
-    .padding(.horizontal, 12)
     .padding(.top, 4)
     // `safeAreaInset` no longer contributes the home indicator inset inside the
     // full-bleed drawer, so add it back here — except while the keyboard is up,
@@ -347,7 +345,12 @@ struct RootTabView: View {
 
   private func openSettings() {
     closeSidebar()
-    model.isSettingsPresented = true
+    // Let the drawer finish closing before presenting; presenting during the
+    // dismissal animation can swallow the sheet on device.
+    Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(280))
+      model.isSettingsPresented = true
+    }
   }
 
   private var composerScope: AIQueryScope {

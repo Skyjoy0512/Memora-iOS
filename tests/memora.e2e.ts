@@ -6,14 +6,14 @@ import { launchMemora, tapControl, tapTab, openSettingsGallery } from './ui-help
 test('onboarding completion survives a normal restart', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await app.restart();
-  await expect(screen.getByText('今日のタスク')).toBeVisible();
+  await expect(screen.getByRole('button', { name: 'ファイル', exact: true, selected: true })).toBeVisible();
   await expect(screen.getByRole('button', { name: 'スキップ', exact: true })).not.toBeVisible();
 });
 
-test('the app opens on the journal', async ({ app, device, screen }) => {
+test('the app opens on the library', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await expect(screen.getByText('今日のタスク')).toBeVisible();
-  await expect(screen.getByText('記録を追加').first()).toBeVisible();
+  await expect(screen.getByRole('button', { name: 'ファイル', exact: true, selected: true })).toBeVisible();
+  await expect(screen.getByLabel('新規作成').first()).toBeVisible();
 });
 
 test('the side menu switches between home, library and Ask AI', async ({ app, device, screen }) => {
@@ -29,7 +29,7 @@ test('the side menu switches between home, library and Ask AI', async ({ app, de
 test('the side menu lists the main destinations', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
-  await expect(screen.getByText('ホーム')).toBeVisible();
+  await expect(screen.getByText('ジャーナル')).toBeVisible();
   await expect(screen.getByText('ライブラリ')).toBeVisible();
   await expect(screen.getByText('Ask AI')).toBeVisible();
   await expect(screen.getByText('ツール')).toBeVisible();
@@ -37,6 +37,15 @@ test('the side menu lists the main destinations', async ({ app, device, screen }
   await expect(screen.getByText('人物')).toBeVisible();
   await expect(screen.getByText('プロジェクト')).toBeVisible();
   await expect(screen.getByText('設定')).toBeVisible();
+});
+
+test('the top navigation controls are round', async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  for (const label of ['メニュー', '新規作成']) {
+    const box = await screen.getByLabel(label).first().boundingBox();
+    if (!box) throw new Error(`${label} has no frame`);
+    expect(Math.abs(box.width - box.height)).toBeLessThanOrEqual(2);
+  }
 });
 
 test('the top-right create control opens capture actions', async ({ app, device, screen }) => {
@@ -61,13 +70,21 @@ test('the tools hub reaches skills, templates and connectors', async ({ app, dev
 test('Settings opens from the side menu', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
-  await screen.getByText('設定').tap();
+  await screen.getByText('設定').last().tap();
   await expect(screen.getByText('アカウント').first()).toBeVisible();
   await expect(screen.getByText('プランと利用状況').first()).toBeVisible();
 });
 
+test('the footer settings control opens settings', async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await screen.getByLabel('メニュー').tap();
+  await screen.getByTestId('sidebar.settings').tap();
+  await expect(screen.getByText('アカウント').first()).toBeVisible();
+});
+
 test('the journal add-record action opens the capture sheet', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
+  await tapTab(screen, 'ジャーナル');
   await screen.getByText('記録を追加').first().tap();
   await expect(screen.getByText('ライフログを追加')).toBeVisible();
   await device.back();

@@ -164,11 +164,10 @@ struct HomeView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ジャーナルを検索")
       .toolbar {
-        ToolbarItem(placement: .topBarLeading) {
+        ToolbarActionItem(placement: .topBarLeading) {
           ToolbarIconButton("メニュー", icon: .line3Horizontal) {
             onOpenSidebar()
           }
-          .labelStyle(.iconOnly)
         }
 
         // The external recorder's state only earns a place here for people who
@@ -189,7 +188,7 @@ struct HomeView: View {
         }
 
         // The create action is the top-right control on every main screen.
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarActionItem {
           CaptureToolbarButton(spaceID: model.visibleProjectID)
         }
       }

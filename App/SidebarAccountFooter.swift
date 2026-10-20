@@ -65,6 +65,7 @@ struct SidebarAccountFooter: View {
             .memoraGlass(in: Circle(), interactive: true)
         }
         .accessibilityHint("プロフィールと設定を開きます")
+        .accessibilityIdentifier("sidebar.settings")
       }
     }
     .buttonStyle(.plain)

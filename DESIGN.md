@@ -150,7 +150,7 @@ The month/year and a real “今日に戻る” action establish date context. T
 projects and the empty day are flat sections; the daily recap alone earns a
 content group and explicitly says it opens the daily summary.
 
-Library: Files/Projects, sort/filter, selection/share/move/delete and gallery mode
+Library is the opening screen. Files/Projects, sort/filter, selection/share/move/delete and gallery mode
 remain. Titles lead, then kind/date/status and optional preview. Gallery groups
 use 16pt neutral contours. Search and selection own the bottom edge when active.
 Empty-query search shows its scope instead of the list behind it. Search counts
@@ -185,7 +185,7 @@ templates and connectors. It uses native grouped rows, reports real counts, and
 opens the same registration editors as Settings. Creation stays reachable from
 the hub; no fabricated connector or skill state.
 
-Sidebar: workspace switcher; the main destinations (Home / Library / Ask AI /
+Sidebar: workspace switcher; the main destinations (Journal / Library / Ask AI /
 Tools) first, then collections (Projects / Documents / People), Devices, and
 plan/settings controls. There is no bottom tab bar. A destination name stays constant; connection
 state is a separate secondary value. Rows use the shared 28pt icon column and
