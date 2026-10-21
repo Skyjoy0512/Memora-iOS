@@ -170,6 +170,7 @@ test('experience: capture actions scroll at large text and open the real prepara
 
 test('experience: task, people and document screens retain their working actions', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
+  await journal(device, screen);
   await tapControl(screen, screen.getByLabel('すべてのタスクを見る'));
   await expect(screen.getByText('タスクはありません')).toBeVisible();
   await app.screenshot('tasks-empty');
@@ -183,6 +184,7 @@ test('experience: task, people and document screens retain their working actions
   await tapControl(screen, screen.getByRole('button', { name: '資料', exact: true }));
   await expect(screen.getByText('資料はまだありません')).toBeVisible();
   await app.screenshot('documents-empty');
+  await tapControl(screen, screen.getByLabel('資料の操作'));
   await tapControl(screen, screen.getByRole('button', { name: '今週の週報を作る', exact: true }));
   await expect(screen.getByText('今週はまだ記録がありません')).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: 'OK', exact: true }));

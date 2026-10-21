@@ -5,7 +5,7 @@ enum RootNavigation {
     guard tab != .askAI else { return false }
     if isSearching {
       switch path.last {
-      case nil, .projectSources, .projectChats: return true
+      case nil, .projectSources, .projectChats, .people, .documents: return true
       default: break
       }
     }

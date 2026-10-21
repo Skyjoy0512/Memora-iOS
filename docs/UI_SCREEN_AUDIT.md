@@ -4,7 +4,7 @@
 
 ソース走査と実画面の確認は別です。この記録は「全画面を実機で目視済み」という意味ではありません。
 
-- Swiftソース 912 件を走査し、Viewを含む 326 ファイルを抽出。
+- Swiftソース 914 件を走査し、Viewを含む 327 ファイルを抽出。
 - ファイル名から画面・シート・エディター候補 180 件を一覧化。補助View・診断用UIも含みます。
 - 共通ルールの静的検査：旧グループ背景、未統一の標準List、白文字と可変tintの組み合わせ。現在の検出は0件。
 - 静的検査はレイアウト、色のコントラスト、全ての操作が正しいことを証明するものではありません。
@@ -63,6 +63,28 @@ npx e2e run tests/screen-polish.e2e.ts tests/settings-polish.e2e.ts tests/chat-s
 
 ```sh
 npx e2e run tests/skill-polish.e2e.ts tests/answer-actions.e2e.ts tests/minimal-polish.e2e.ts --grep 'skill polish:|reusable skills:|[Tt]ools menus' --output .e2e/regression/skill-editing-polish-verified --workers 1 --retries 0
+```
+
+## 人物・資料のコレクション（追加点検）
+
+- 人物・資料を共通のフラットな一覧へ揃え、検索ボタンからツールバー検索を開く。空の検索語では対象の案内だけを表示し、元の一覧を背後に残さない。
+- 人物は名前とメモ、資料はタイトル・保存済みMarkdown・スライド本文／ノート・プロジェクト名・種類で検索。複数語はAND条件、英字の大小・全半角・発音区別記号を吸収。外部ファイルのダウンロード、クラウド検索、追加のAI送信は行わない。
+- 資料の上部は「検索」と「資料の操作」に整理。週報・メール下書き・会社テンプレートの既存導線は後者へまとめる。本文プレビューは2行までに留める。
+- 資料編集にキーボードの「完了」、未保存変更の継続／破棄確認を追加。無変更の保存を無効にし、生成ファイルの参照や更新日時を不要に変えない。保存が失敗した場合は閉じずに入力を残す。
+- 検索中は下部のAsk AI入力欄を隠す。検索結果から人物／資料の詳細へ進むと入力欄を戻し、一覧へ戻ると再び検索結果だけを表示する。人物の追加や、記録に基づく週報の作成・保存処理は既存モデルを利用する。
+- `CollectionSearchChecks`・`SkillEditingPolishChecks`・`RootNavigationChecks` が通過。後者には人物／資料の検索と、その詳細での下部入力欄の表示境界を追加。
+- 初回4ケースは3件通過。資料編集の準備で、週報の項目名に付く日付をテストが考慮しておらず照合に失敗し、画面の実際の名前に修正。また画像確認で人物検索中に下部入力欄が残る点を発見し、表示条件と検証項目を修正。
+- 修正版アプリの6ケース実行は4件通過。人物編集シートの終了前に戻る操作を送っていたテストと、保存後に「資料、1」となるサイドバー名の照合を修正。アプリを変えずに当該2件を再実行し、2件とも通過（リトライなし）。最終アプリで異なる6ケースの通過を確認し、6件一括の全通過とは区別する。
+- 追加のメニュー遷移1件も通過。メール下書き・会社テンプレートをメニューから開き、資料へ戻ることを確認した。以上、最終アプリで異なる7ケースが通過。追加成果物は `.e2e/regression/collection-menu-links/`。
+- 人物の追加・メモ編集・複数語検索・詳細から戻る操作・検索キャンセル、資料の編集継続／破棄・保存・再起動後の本文一致・タイトルと本文を組み合わせた検索、検索中と詳細での入力欄の表示境界を確認。既存の空タスク／人物／資料、Ask AIの下書き保持、ツール検索も確認。
+- ライト／ダークの人物検索、キーボード表示中の空結果、資料の編集確認と検索結果を画像で確認。E2Eは専用シミュレーターのテストデータのみを操作し、外部AI・録音・メール送信は実行していない。
+- `bitrig preview -platform iOS` 最終成功・プレビュー更新済み。ログ `2026-10-21T20-24-34-674860e2.log`、既存警告11件。成果物は `.e2e/regression/collection-polish-verified/` と `.e2e/regression/collection-polish-recheck/`（Git管理外）。
+- 保存エラーの強制注入・スライド編集・実サービスとの連携は、この追加点検では実操作していない。追加の文字サイズ／VoiceOver点検は引き続き保留。
+
+再実行：
+
+```sh
+npx e2e run tests/collection-polish.e2e.ts tests/skill-polish.e2e.ts tests/experience-polish.e2e.ts --grep 'collection polish:|search Tools|task, people and document screens|document action returns' --output .e2e/regression/collection-polish-all --workers 1 --retries 0
 ```
 
 ## 検証していない条件

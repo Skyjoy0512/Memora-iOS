@@ -49,11 +49,12 @@ struct RootNavigationChecks {
       precondition(RootNavigation.scope(tab: .askAI, path: related, detailMeetingID: nil) == .global)
       precondition(RootNavigation.scope(tab: tab, path: related + [.meeting(meeting)], detailMeetingID: nil) == .file(meeting))
       precondition(RootNavigation.projectID(in: [.tasks]) == nil)
-      for path: [LibraryRoute] in [[], [.projectSources(project)], [.projectChats(project)]] {
+      for path: [LibraryRoute] in [[], [.projectSources(project)], [.projectChats(project)], [.people], [.documents]] {
         precondition(RootNavigation.searchCoversScreen(tab: tab, path: path, isSearching: true, isSelectingFiles: false))
         precondition(!RootNavigation.searchCoversScreen(tab: tab, path: path, isSearching: false, isSelectingFiles: false))
       }
-      for path: [LibraryRoute] in [[.projectSources(project), .projectSource(UUID())], [.meeting(meeting)], [.projectTasks(project)]] {
+      for path: [LibraryRoute] in [[.projectSources(project), .projectSource(UUID())], [.meeting(meeting)], [.projectTasks(project)],
+        [.people, .person(UUID())], [.documents, .document(UUID())]] {
         precondition(!RootNavigation.searchCoversScreen(tab: tab, path: path, isSearching: true, isSelectingFiles: true))
       }
     }

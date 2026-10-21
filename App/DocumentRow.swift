@@ -6,13 +6,20 @@ struct DocumentRow: View {
   var spaceName: String?
 
   var body: some View {
+    let preview = document.preview
     HStack(spacing: 14) {
       MemoraInterfaceIcon(icon: document.kind.symbol)
 
       VStack(alignment: .leading, spacing: 3) {
         Text(document.displayTitle)
-          .font(.body.weight(.semibold))
+          .font(.body.weight(.medium))
           .lineLimit(2)
+        if document.kind == .document && !preview.isEmpty {
+          Text(preview)
+            .font(MemoraTypography.secondary)
+            .foregroundStyle(MemoraPalette.textSecondary)
+            .lineLimit(2)
+        }
         Text(caption)
           .font(MemoraTypography.metadata)
           .foregroundStyle(MemoraPalette.textSecondary)

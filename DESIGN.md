@@ -167,6 +167,15 @@ Empty tabs scroll so the action remains reachable with larger text. Tasks,
 People and Documents use the same empty-state component, with real add/open
 actions. Document and project rows use neutral interface glyphs rather than
 decorative tiles; metadata wraps instead of disappearing.
+People and Documents open the shared toolbar search rather than a persistent
+search drawer. An empty query explains its scope without showing the underlying
+list. People match names and notes; documents match locally stored titles,
+Markdown, slide text and project names. No file download or external search is
+implied. Document rows show a short two-line preview; the toolbar keeps search
+and one menu for weekly review, mail drafts and company templates.
+The document source editor confirms meaningful unsaved changes, provides a
+keyboard Done action and only dismisses after a successful save. An unchanged
+save is disabled so it cannot clear a generated file or change its timestamp.
 
 Record detail: common reading width/type for summary, transcript, decisions,
 tasks and notes. Flat section tabs. Edit one block/cell in place; Markdown source

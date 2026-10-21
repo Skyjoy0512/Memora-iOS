@@ -8,6 +8,9 @@ struct DocumentEditSheet: View {
   var document: MemoraDocument
   @State private var title: String
   @State private var bodyText: String
+  @State private var confirmsDiscard = false
+  @State private var saveError = false
+  @FocusState private var focusedField: Field?
 
   init(document: MemoraDocument) {
     self.document = document
@@ -22,9 +25,14 @@ struct DocumentEditSheet: View {
       MemoraForm {
         Section("タイトル") {
           TextField("タイトル", text: $title)
+            .focused($focusedField, equals: .title)
+            .submitLabel(.next)
+            .onSubmit { focusedField = .body }
         }
         Section {
           TextEditor(text: $bodyText)
+            .accessibilityLabel(document.kind == .slides ? "スライドのアウトライン" : "資料の本文")
+            .focused($focusedField, equals: .body)
             .font(.body.monospaced())
             .frame(minHeight: 360)
         } header: {
@@ -39,15 +47,43 @@ struct DocumentEditSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) {
+            focusedField = nil
+            if hasChanges { confirmsDiscard = true } else { dismiss() }
+          }
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
-            model.updateDocument(document.id, title: title, body: bodyText)
-            dismiss()
+            focusedField = nil
+            if model.updateDocument(document.id, title: title, body: bodyText) { dismiss() }
+            else { saveError = true }
           }
+          .disabled(!hasChanges)
         }
+        ToolbarItemGroup(placement: .keyboard) {
+          Spacer()
+          Button("完了") { focusedField = nil }
+        }
+      }
+      .interactiveDismissDisabled(hasChanges)
+      .alert("変更を破棄しますか？", isPresented: $confirmsDiscard) {
+        Button("編集を続ける", role: .cancel) {}
+        Button("変更を破棄", role: .destructive) { dismiss() }
+      } message: {
+        Text("保存前の変更だけを破棄します。保存済みの資料は変更しません。")
+      }
+      .alert("保存できませんでした", isPresented: $saveError) {
+        Button("閉じる", role: .cancel) {}
+      } message: {
+        Text("資料や保存先の状態を確認してください。入力内容はこの画面に残っています。")
       }
     }
   }
+
+  private var hasChanges: Bool {
+    title.trimmingCharacters(in: .whitespacesAndNewlines) != document.title.trimmingCharacters(in: .whitespacesAndNewlines)
+      || bodyText != (document.kind == .slides ? DocumentSlide.outline(of: document.slides) : document.markdown)
+  }
+
+  private enum Field: Hashable { case title, body }
 }
