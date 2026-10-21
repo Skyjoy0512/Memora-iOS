@@ -215,7 +215,7 @@ struct TaskEditView: View {
         Text("人物や親課題、保存先の状態を確認してください。入力内容は画面に残っています。")
       }
     }
-    .presentationDetents([.medium, .large])
+    .presentationDetents([.large])
   }
 
   private var isReminderTimePassed: Bool {

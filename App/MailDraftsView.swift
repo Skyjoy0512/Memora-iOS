@@ -10,17 +10,31 @@ struct MailDraftsView: View {
       ForEach(drafts) { draft in
         Button { editing = draft } label: {
           VStack(alignment: .leading, spacing: 4) {
-            Text(draft.subject.isEmpty ? "件名なし" : draft.subject).foregroundStyle(.primary)
+            Text(draft.subject.isEmpty ? "件名なし" : draft.subject)
+              .font(.body.weight(.medium)).foregroundStyle(.primary).lineLimit(2)
             Text((draft.recipients.isEmpty ? "宛先未指定" : draft.recipients.joined(separator: ", ")) + " · 下書き")
-              .font(.caption).foregroundStyle(.secondary)
-            Text(draft.updatedAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+              .font(MemoraTypography.metadata).foregroundStyle(.secondary).lineLimit(2)
+            Text(MemoraFormat.meetingDate(draft.updatedAt))
+              .font(MemoraTypography.metadata).foregroundStyle(.secondary)
           }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
         .swipeActions { Button("削除", icon: .trash, role: .destructive) { deleting = draft } }
       }
     }
-    .overlay { if drafts.isEmpty { ContentUnavailableView("下書きはありません", icon: .envelope, description: Text("Ask AIへメールの下書きを依頼すると、ここに保存されます。")) } }
+    .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
+    .overlay(alignment: .top) {
+      if drafts.isEmpty {
+        ScrollView {
+          MemoraEmptyState(icon: .envelope, title: "下書きはありません",
+            message: "Ask AIへメールの下書きを依頼すると、ここに保存されます。送信は本人がMailで行います。",
+            actionTitle: "Ask AIを開く", actionIcon: .sparkles) { model.openSystemDestination(.askAI) }
+            .padding(.top, MemoraSpacing.section)
+            .padding(.bottom, model.bottomContentClearance)
+        }
+      }
+    }
     .tint(.primary)
     .navigationTitle("メール下書き").navigationBarTitleDisplayMode(.inline)
     .sheet(item: $editing) { draft in MailDraftSheet(draft: draft) { editing = nil } }

@@ -22,8 +22,25 @@ struct TasksView: View {
           MemoraSectionPicker(items: [false, true], selection: $showsCompleted) { completed in
             completed ? "完了" : "未完了"
           }
-          .padding(.horizontal, MemoraSpacing.lg)
+          .padding(.horizontal, MemoraSpacing.screen)
+          .padding(.top, MemoraSpacing.sm)
           .padding(.bottom, MemoraSpacing.md)
+
+          if isFiltered && !visibleTasks.isEmpty {
+            HStack(alignment: .firstTextBaseline, spacing: MemoraSpacing.md) {
+              Text(activeFilterText)
+                .font(MemoraTypography.metadata)
+                .foregroundStyle(MemoraPalette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+              Spacer(minLength: 0)
+              Button("解除") { todayOnly = false; waitingOnly = false }
+                .font(MemoraTypography.secondary)
+                .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+                .accessibilityLabel("絞り込みを解除")
+            }
+            .padding(.horizontal, MemoraSpacing.screen)
+            .accessibilityIdentifier("tasks.activeFilters")
+          }
 
           if model.isRecording {
             ActiveRecordingStrip()
@@ -50,7 +67,7 @@ struct TasksView: View {
             }
             .frame(maxHeight: .infinity)
           } else {
-            List {
+            MemoraList {
               if showsCompleted {
                 ForEach(TaskHierarchy.ordered(completedFirst(visibleTasks))) { task in
                   taskRow(task, depth: taskDepths[task.id] ?? 0)
@@ -65,9 +82,6 @@ struct TasksView: View {
                 }
               }
             }
-            .listStyle(.plain)
-            .textCase(nil)
-            .scrollContentBackground(.hidden)
             .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
             .refreshable { await model.refresh() }
           }
@@ -97,6 +111,7 @@ struct TasksView: View {
           } label: {
             ToolbarActionLabel("タスクを絞り込み", icon: .line3HorizontalDecrease)
           }
+          .accessibilityValue(isFiltered ? activeFilterText : "絞り込みなし")
           .disabled(showsTeamBoard)
         }
 
@@ -200,6 +215,11 @@ struct TasksView: View {
     }
   }
 
+  private var activeFilterText: String {
+    [todayOnly ? "今日取り組む" : nil, waitingOnly ? "相手待ち" : nil]
+      .compactMap { $0 }.joined(separator: "・")
+  }
+
   private func completedFirst(_ tasks: [MemoraTask]) -> [MemoraTask] {
     tasks.sorted { lhs, rhs in
       switch (lhs.completedAt, rhs.completedAt) {
@@ -271,7 +291,7 @@ private enum TaskDueBucket: CaseIterable {
     case .overdue: "期限切れ"
     case .today: "今日"
     case .tomorrow: "明日"
-    case .week: "今週"
+    case .week: "7日以内"
     case .later: "それ以降"
     case .undated: "期限なし"
     }

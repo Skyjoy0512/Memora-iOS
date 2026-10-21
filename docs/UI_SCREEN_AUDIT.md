@@ -4,7 +4,7 @@
 
 ソース走査と実画面の確認は別です。この記録は「全画面を実機で目視済み」という意味ではありません。
 
-- Swiftソース 914 件を走査し、Viewを含む 327 ファイルを抽出。
+- Swiftソース 915 件を走査し、Viewを含む 327 ファイルを抽出。
 - ファイル名から画面・シート・エディター候補 180 件を一覧化。補助View・診断用UIも含みます。
 - 共通ルールの静的検査：旧グループ背景、未統一の標準List、白文字と可変tintの組み合わせ。現在の検出は0件。
 - 静的検査はレイアウト、色のコントラスト、全ての操作が正しいことを証明するものではありません。
@@ -85,6 +85,29 @@ npx e2e run tests/skill-polish.e2e.ts tests/answer-actions.e2e.ts tests/minimal-
 
 ```sh
 npx e2e run tests/collection-polish.e2e.ts tests/skill-polish.e2e.ts tests/experience-polish.e2e.ts --grep 'collection polish:|search Tools|task, people and document screens|document action returns' --output .e2e/regression/collection-polish-all --workers 1 --retries 0
+```
+
+## タスク・名前変更・メール下書き（追加点検）
+
+- タスク一覧を共通の `MemoraList` に揃え、上部の左右余白も20ptに統一。結果があるときも絞り込み条件と解除操作を表示し、結果なしの既存解除ボタンも維持。
+- 進行中／相手待ちと「取り組む日」を行の補足として表示。着手前・予定日なしの通常行と、完了した行には新しい補足を出さない。期限日とは別の情報であることを明示。
+- 今週ではなく今日から7日未満をまとめていた期限見出しを「7日以内」へ変更。分類の境界やタスクの予定・期限・担当・通知処理は変更していない。
+- 項目の多いタスク編集は大きいシートから開く。保存・通知・人物・親子課題・資料添付・元の会議への導線を維持。
+- プロジェクト名の変更はオートフォーカス・キーボードの完了で保存・空欄／無変更の保存抑止・変更破棄確認に対応。保存失敗時は理由の案内を出して入力を残す。
+- メール下書きの空画面は共通の空状態とAsk AIへ戻る操作に統一。リスト最下部の余白、件名と宛先の文字階層、日本語の更新日表記も揃える。メールの作成・送信・認証経路や編集ドラフトの保存は変更していない。
+- `TaskContextLineChecks` は通常状態・進行状態・予定日・完了時の補足非表示・期限との区別について通過。静的点検の検出0件、`git diff --check` 成功。
+- `bitrig preview -platform iOS` 成功、プレビュー更新済み。ログ `2026-10-21T21-20-36-e7656923.log`。既存警告11件は残る。
+- 初回の5ケースは3件通過。タスクのスイッチ操作は遷移終了を確認できずテスト側が操作を送らなかったため、既存の位置安定チェック付きタップに修正。名前変更のキーボードキーも実際の `Done` に修正した。
+- 再確認で名前変更は通過。タスクの補足は、先に返る読み上げ用の行全体ラベルと画面上のTextで区切り文字が違ったため、実際の補足Textを指定して再確認し通過。アプリの差分を追加せず、最終アプリで異なる5件の通過を確認した。一括の5件全通過と同義ではない。
+- 操作確認：タスクの相手待ち・予定日保存、2条件の絞り込みと解除、空結果からの解除、完了と再起動後の保持。プロジェクト名の空欄／無変更の保存抑止、編集継続／破棄、キーボード完了からの保存と再起動後の名前。メール下書きの空画面からAsk AIへ戻った際の入力保持。既存のタスク保存と資料メニュー遷移も通過。
+- ライト／ダークのタスク・名前変更後の一覧・メール下書きの画像を確認。専用E2Eシミュレーターだけにテストデータを作成し、Bitrigプレビューの記録を消去していない。外部AI・Mailの送信・通知許可の変更は行っていない。
+- 成果物は `.e2e/regression/workflow-polish/`、`workflow-polish-recheck/`、`workflow-task-verified/`（後二者も同じ `.e2e/regression/` 配下、Git管理外）。
+- チームボード、期限通知の実配信、保存エラーの強制注入、メールがある状態の実操作／送信はこの追加点検では検証しない。追加の文字サイズ／VoiceOver点検も引き続き保留。
+
+再実行：
+
+```sh
+npx e2e run tests/workflow-polish.e2e.ts tests/screen-polish.e2e.ts tests/collection-polish.e2e.ts --grep 'workflow polish:|the task editor still|compact document menu' --output .e2e/regression/workflow-polish-all --workers 1 --retries 0
 ```
 
 ## 検証していない条件

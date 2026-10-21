@@ -176,6 +176,15 @@ and one menu for weekly review, mail drafts and company templates.
 The document source editor confirms meaningful unsaved changes, provides a
 keyboard Done action and only dismisses after a successful save. An unchanged
 save is disabled so it cannot clear a generated file or change its timestamp.
+Tasks share the flat list's row margins. Active filters have a short visible
+summary and one clear action; empty results retain their existing reset action.
+Task progress and planned work dates appear as secondary text only when present,
+separate from the due date. Completed rows stay quiet. The long task editor opens
+at the large detent so its fields are not hidden in a short initial sheet.
+Project renaming focuses the native field, accepts keyboard Done, prevents an
+unchanged save and confirms discarding edits. A failed save keeps the entered
+name. Empty mail drafts use the shared empty state and a real Ask AI return
+action that preserves the conversation draft; Mail remains the sending surface.
 
 Record detail: common reading width/type for summary, transcript, decisions,
 tasks and notes. Flat section tabs. Edit one block/cell in place; Markdown source

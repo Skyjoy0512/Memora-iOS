@@ -12,6 +12,8 @@ struct TaskRow: View {
   var onOpen: (() -> Void)?
 
   var body: some View {
+    let context = showsMetadata ? TaskContextLine.text(progress: task.progress,
+      workDate: task.workDate, isCompleted: task.isCompleted) : nil
     HStack(alignment: .top, spacing: 12) {
       Button {
         withAnimation(reduceMotion ? nil : .snappy) {
@@ -39,6 +41,14 @@ struct TaskRow: View {
           .strikethrough(task.isCompleted)
           .foregroundStyle(task.isCompleted ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
           .frame(maxWidth: .infinity, alignment: .leading)
+
+        if let context {
+          Text(context)
+            .font(MemoraTypography.metadata)
+            .foregroundStyle(MemoraPalette.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("task.context.\(task.id)")
+        }
 
         if showsMetadata, !task.isCompleted, let dueDate = task.dueDate {
           let overdue = isOverdue(dueDate)
