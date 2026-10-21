@@ -26,5 +26,6 @@ struct ToolbarActionItem<Content: View>: ToolbarContent {
 }
 
 extension EnvironmentValues {
-  @Entry var memoraToolbarControlSize: CGFloat = MemoraIconMetrics.touchTarget
+  // Native toolbars supply the remaining padding; custom platters set 44pt.
+  @Entry var memoraToolbarControlSize: CGFloat = MemoraIconMetrics.slot
 }

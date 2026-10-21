@@ -1,6 +1,6 @@
 # Memora — Native reading and conversation
 
-Updated 2026-10-20. This is the current design specification. Product behavior
+Updated 2026-10-21. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
@@ -103,7 +103,7 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | ToolbarIconButton / ToolbarActionLabel | native toolbar labels and accessible actions |
 | MemoraInterfaceIcon / MemoraIconMetrics | common menu/settings glyph, alignment slot and touch metric |
 | SettingsLabel / SettingsValue / MemoraSettingsPage | wrapping row title, secondary value and shared flat page |
-| MemoraForm / memoraPlainList | native controls and lists on the common canvas, without inset grouped cards |
+| MemoraList / MemoraForm / memoraPlainList | collections, selectors and native editing controls on one flat canvas |
 | SettingsCategory / SettingsCategoryView | typed topic navigation; original leaf bindings and permission confirmations |
 | AIComposerBar / QuickAIComposer | native input, attachments, speech, submit/stop, scoped selection |
 | MemoraTextTabBar / MemoraSectionPicker | flat scrollable content tabs and selection traits |
@@ -270,6 +270,14 @@ text wraps/reflows; section tabs scroll. Use leading/trailing layout. Native
 cursor, selection, VoiceOver and Japanese marked-text composition take priority.
 
 ## Verification
+
+The cross-screen source inventory and its distinction from runtime coverage are
+in [UI_SCREEN_AUDIT](docs/UI_SCREEN_AUDIT.md). The sweep includes secondary
+lists, editor sheets, account/plan/onboarding, reading pages and presentation
+fixtures. Primary actions use action/actionLabel rather than white on adaptive
+tint; native toolbar labels use 28pt inside the system's 44pt platter, while
+custom glass controls keep their own 44pt label. Media canvases retain native
+gestures, and unconnected services continue to say they are unconnected.
 
 [Research and migration plan](docs/design-refresh/PLAN.md),
 [before/after review](docs/design-refresh/REVIEW.md), and

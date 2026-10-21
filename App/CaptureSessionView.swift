@@ -152,9 +152,9 @@ struct CaptureSessionView: View {
           .font(.headline)
           .lineLimit(1)
           .minimumScaleFactor(0.85)
-          .foregroundStyle(.white)
+          .foregroundStyle(MemoraPalette.actionLabel)
           .frame(maxWidth: .infinity, minHeight: 56)
-          .memoraGlass(in: Capsule(), tint: .accentColor, interactive: true)
+          .memoraGlass(in: Capsule(), tint: MemoraPalette.action, interactive: true)
         }
       }
       .padding(.horizontal, MemoraSpacing.lg)

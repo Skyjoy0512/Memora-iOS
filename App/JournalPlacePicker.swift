@@ -14,7 +14,7 @@ struct JournalPlacePicker: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         Section {
           TextField("施設名・住所を検索", text: $query)
             .submitLabel(.search)

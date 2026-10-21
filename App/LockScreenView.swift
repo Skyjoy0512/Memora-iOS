@@ -37,13 +37,9 @@ struct LockScreenView: View {
 
         Button(action: onUnlock) {
           Label(isAuthenticating ? "認証しています…" : "ロックを解除", icon: .faceid)
-            .font(.headline)
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, minHeight: 52)
-            .background(.tint, in: Capsule())
-            .contentShape(Capsule())
+            .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MemoraButtonStyle())
         .disabled(isAuthenticating)
       }
       .padding(MemoraSpacing.section)

@@ -11,10 +11,7 @@ struct AuthView: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 0) {
           Image(icon: .personBadgeKey, size: 28)
-            .font(.system(size: 28, weight: .semibold))
-            .foregroundStyle(MemoraPalette.actionLabel)
-            .frame(width: 62, height: 62)
-            .background(MemoraPalette.action, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+            .foregroundStyle(MemoraPalette.textPrimary)
             .accessibilityHidden(true)
 
           Text("サインインはまだ\n接続されていません。")
@@ -39,9 +36,11 @@ struct AuthView: View {
             .foregroundStyle(.secondary)
             .padding(.top, MemoraSpacing.xxl)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, MemoraSpacing.xxl)
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+        .padding(.horizontal, MemoraSpacing.screen)
+        .padding(.top, MemoraSpacing.xxl)
         .padding(.bottom, MemoraSpacing.section)
+        .frame(maxWidth: .infinity, alignment: .center)
       }
       .background(MemoraPalette.background)
       .navigationTitle("アカウント")

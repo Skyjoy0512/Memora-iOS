@@ -80,9 +80,11 @@ struct JournalReviewView: View {
             if let saveError { Text(saveError).foregroundStyle(.secondary) }
           }
         }
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
         .padding(MemoraSpacing.xl)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
       }
+      .background(MemoraPalette.background)
       .navigationTitle("振り返り")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

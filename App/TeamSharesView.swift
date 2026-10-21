@@ -8,7 +8,7 @@ struct TeamSharesView: View {
   @Environment(\.scenePhase) private var scenePhase
 
   var body: some View {
-    List {
+    MemoraList {
       if let message = model.cloudSharing.availabilityMessage {
         Section {
           Label(message, icon: .icloudSlash)

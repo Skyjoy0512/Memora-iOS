@@ -17,6 +17,7 @@ struct OnboardingView: View {
         Button("スキップ", action: skip)
           .font(.subheadline.weight(.medium))
           .foregroundStyle(.secondary)
+          .frame(minHeight: MemoraSpacing.touchTarget)
           .opacity(isLastPage ? 0 : 1)
           .accessibilityHidden(isLastPage)
       }
@@ -44,7 +45,7 @@ struct OnboardingView: View {
         .padding(.top, MemoraSpacing.lg)
         .padding(.bottom, MemoraSpacing.md)
     }
-    .background(Color(uiColor: .systemBackground))
+    .background(MemoraPalette.background)
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: page)
     .sheet(isPresented: $isOccupationSelectionPresented) {
       NavigationStack {
@@ -66,27 +67,22 @@ struct OnboardingView: View {
           .font(.headline)
           .contentTransition(.opacity)
           .frame(maxWidth: .infinity)
-          .padding(.vertical, MemoraSpacing.lg)
-          .foregroundStyle(.white)
-          .background(.tint, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
-          .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
       }
-      .buttonStyle(.plain)
+      .buttonStyle(MemoraButtonStyle())
 
       if isLastPage {
         VStack(spacing: 2) {
           Button("仕事・活動を選ぶ（任意）") { isOccupationSelectionPresented = true }
             .font(.subheadline)
+            .frame(minHeight: MemoraSpacing.touchTarget)
           Button("サンプルで見る", action: showSample)
             .font(.headline)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, MemoraSpacing.sm)
+            .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
 
           Button("このiPhoneで始める", action: skip)
             .font(.subheadline)
             .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, MemoraSpacing.xs)
+            .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
         }
         .transition(.opacity.combined(with: .move(edge: .bottom)))
       }
@@ -118,11 +114,10 @@ private struct OnboardingPageView: View {
 
       Image(icon: page.symbol, size: 38)
         .font(.system(size: 38, weight: .semibold))
-        .foregroundStyle(.white)
-        .frame(width: 78, height: 78)
-        .background(.tint, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+        .foregroundStyle(MemoraPalette.textPrimary)
+        .frame(width: 56, height: 56, alignment: .leading)
         .scaleEffect(isCurrent || reduceMotion ? 1 : 0.86)
-        .animation(reduceMotion ? nil : MemoraMotion.emphasis, value: isCurrent)
+        .animation(reduceMotion ? nil : MemoraMotion.control, value: isCurrent)
         .accessibilityHidden(true)
 
       Text(page.title)

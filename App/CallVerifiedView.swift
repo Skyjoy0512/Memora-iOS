@@ -22,7 +22,7 @@ struct CallVerifiedView: View {
       CallPrimaryButton(title: "続ける", action: onContinue)
     }
     .padding(MemoraSpacing.xxl)
-    .background(Color(uiColor: .systemGroupedBackground))
+    .background(MemoraPalette.background)
     .navigationBarBackButtonHidden(true)
     .navigationBarTitleDisplayMode(.inline)
   }

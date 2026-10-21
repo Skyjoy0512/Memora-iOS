@@ -31,8 +31,9 @@ test('settings polish: topic hierarchy, profile editing and shared sidebar icons
     await tapControl(screen, screen.getByLabel('メニュー'));
     await expect(screen.getByLabel('ワークスペース', { exact: true })).not.toBeVisible();
     await app.screenshot(`sidebar-top-${appearance}`);
-    await scrollToControl(screen, screen.getByRole('button', { name: 'プロジェクト', exact: true }));
-    await expect(screen.getByText('プロジェクト', { exact: true })).toBeVisible();
+    // The drawer's destination follows the same-named Library segment in AX.
+    await scrollToControl(screen, screen.getByRole('button', { name: 'プロジェクト', exact: true }).last());
+    await expect(screen.getByText('プロジェクト', { exact: true }).last()).toBeVisible();
     await scrollToControl(screen, screen.getByRole('button', { name: '人物', exact: true }));
     await expect(screen.getByText('人物', { exact: true })).toBeVisible();
     await expect(screen.getByRole('button', { name: 'Memora Plus、プランと利用状況', exact: true })).toBeVisible();

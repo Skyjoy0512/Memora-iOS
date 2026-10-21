@@ -4,7 +4,7 @@ struct OnlineMeetingCaptureView: View {
   var beginRecording: () -> Void
 
   var body: some View {
-    List {
+    MemoraList {
       Section {
         Label("Zoom", icon: .video)
         Label("Google Meet", icon: .video)

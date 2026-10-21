@@ -8,7 +8,7 @@ struct ProjectSourceOperationCheckView: View {
 
   var body: some View {
     let sources = model.projectSources.filter { check.sourceIDs.contains($0.id) }
-    List {
+    MemoraList {
       Section {
         Text("モデル・外部APIは使いません。検証用プロジェクトにWord・PowerPoint・Excelを実際に取り込みます。閉じる際に今回の検証データだけを削除します。")
           .font(.footnote).foregroundStyle(.secondary)

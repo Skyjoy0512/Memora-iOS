@@ -7,7 +7,7 @@ struct TaskDocumentPicker: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         ForEach(model.documents) { document in
           Toggle(document.displayTitle, isOn: Binding {
             selection.contains(document.id)

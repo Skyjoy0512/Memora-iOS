@@ -7,7 +7,7 @@ struct DesignSystemReviewView: View {
   @State private var result = "未検証"
 
   var body: some View {
-    List {
+    MemoraList {
       Section {
         Text("表示確認専用の架空の記録を作ります。AI・外部API・録音は使いません。検証後はこの画面から削除できます。")
           .font(MemoraTypography.metadata)

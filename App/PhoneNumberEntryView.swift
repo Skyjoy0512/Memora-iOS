@@ -42,7 +42,7 @@ struct PhoneNumberEntryView: View {
       Spacer()
     }
     .padding(MemoraSpacing.xxl)
-    .background(Color(uiColor: .systemGroupedBackground))
+    .background(MemoraPalette.background)
     .navigationBarTitleDisplayMode(.inline)
     .onAppear { isFocused = true }
   }

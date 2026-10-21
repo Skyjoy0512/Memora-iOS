@@ -90,29 +90,26 @@ struct SummaryTemplateMarketplaceView: View {
       SummaryTemplateDetailView(templateID: template.id)
     } label: {
       HStack(spacing: 14) {
-        Image(icon: template.symbol, size: 17)
-          .font(.headline)
-          .foregroundStyle(.tint)
-          .frame(width: 38, height: 38)
-          .background(Color.accentColor.opacity(0.1), in: Circle())
+        MemoraInterfaceIcon(icon: template.symbol)
 
         VStack(alignment: .leading, spacing: 3) {
           HStack(spacing: 6) {
             Text(template.title)
-              .font(.headline)
+              .font(.body.weight(.medium))
               .foregroundStyle(.primary)
             if isDefault {
               Text("既定")
                 .font(.caption2.weight(.semibold))
                 .padding(.horizontal, MemoraSpacing.sm)
                 .padding(.vertical, MemoraSpacing.xxs)
-                .background(.tint.opacity(0.15), in: Capsule())
-                .foregroundStyle(.tint)
+                .background(MemoraPalette.selection, in: Capsule())
+                .foregroundStyle(MemoraPalette.textPrimary)
             }
           }
           Text(template.detail.isEmpty ? template.sections.joined(separator: "・") : template.detail)
             .font(.subheadline)
             .foregroundStyle(.secondary)
+            .lineSpacing(3)
             .lineLimit(2)
         }
 

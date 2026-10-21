@@ -14,7 +14,7 @@ struct AddPeopleSheet: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         Section {
           HStack {
             TextField("名前を入力", text: $newName)

@@ -23,7 +23,7 @@ struct PeopleManagerSheet: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         Section("新規作成") {
           HStack(spacing: 12) {
             Button {

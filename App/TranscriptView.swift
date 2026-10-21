@@ -16,8 +16,8 @@ struct TranscriptView: View {
           ScrollView {
             LazyVStack(alignment: .leading, spacing: 6) {
               VStack(alignment: .leading, spacing: 8) {
-                Text(meeting.title)
-                  .font(.title.bold())
+                Text(meeting.displayTitle)
+                  .font(MemoraTypography.screenTitle)
                 if !meeting.transcript.isEmpty {
                   Text(
                     showsSpeaker
@@ -52,9 +52,10 @@ struct TranscriptView: View {
                 }
               }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, MemoraSpacing.lg)
+            .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+            .padding(.horizontal, MemoraSpacing.screen)
             .padding(.bottom, MemoraSpacing.xl)
+            .frame(maxWidth: .infinity, alignment: .center)
           }
           .scrollFocusedEditorAboveKeyboard(in: proxy)
         }
@@ -77,5 +78,4 @@ struct TranscriptView: View {
     }
   }
 }
-
 

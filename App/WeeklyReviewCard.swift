@@ -10,11 +10,7 @@ struct WeeklyReviewCard: View {
     HStack(spacing: 12) {
       NavigationLink(value: LibraryRoute.document(review.id)) {
         HStack(spacing: 12) {
-          Image(icon: .calendarBadgeCheckmark)
-            .font(.title3)
-            .foregroundStyle(.tint)
-            .frame(width: 40, height: 40)
-            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
+          MemoraInterfaceIcon(icon: .calendarBadgeCheckmark)
 
           VStack(alignment: .leading, spacing: 2) {
             Text("振り返りができました")
@@ -36,7 +32,7 @@ struct WeeklyReviewCard: View {
       .labelStyle(.iconOnly)
       .font(.caption.weight(.semibold))
       .foregroundStyle(.secondary)
-      .frame(width: 32, height: 32)
+      .frame(width: 44, height: 44)
       .contentShape(Rectangle())
       .buttonStyle(.plain)
     }

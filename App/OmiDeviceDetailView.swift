@@ -16,7 +16,7 @@ struct OmiDeviceDetailView: View {
   }
 
   var body: some View {
-    List {
+    MemoraList {
       Section {
         header
       }

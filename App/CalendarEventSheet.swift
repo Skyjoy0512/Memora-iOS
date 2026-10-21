@@ -11,7 +11,7 @@ struct CalendarEventSheet: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         Section {
           Text(event.title)
             .font(.title3.bold())

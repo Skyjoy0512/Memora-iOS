@@ -29,8 +29,7 @@ struct AIHistoryDetailView: View {
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
           Text(entry.answer)
-            .font(.body)
-            .lineSpacing(4)
+            .memoraReadingText()
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
         }

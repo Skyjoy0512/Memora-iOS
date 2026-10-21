@@ -70,27 +70,25 @@ struct EmailAuthView: View {
             if isWorking {
               ProgressView()
                 .controlSize(.small)
-                .tint(Color(uiColor: .systemBackground))
+                .tint(MemoraPalette.actionLabel)
             }
             Text(selectedMode.actionTitle)
               .font(.headline)
           }
           .frame(maxWidth: .infinity)
-          .padding(.vertical, MemoraSpacing.md)
-          .foregroundStyle(.white)
-          .background(.tint, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
-          .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
-          .opacity(canSubmit ? 1 : 0.4)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MemoraButtonStyle())
         .disabled(!canSubmit)
         .listRowInsets(EdgeInsets())
         .listRowBackground(Color.clear)
 
         if selectedMode == .logIn {
-          Button("パスワードをお忘れですか？") {}
+          Button("パスワードをお忘れですか？") {
+            focusedField = nil
+            isUnavailableNoticePresented = true
+          }
             .font(.subheadline)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
             .listRowBackground(Color.clear)
         }
       }

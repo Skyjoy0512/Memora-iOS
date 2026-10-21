@@ -10,7 +10,7 @@ struct BulkSpacePickerSheet: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         if let message = model.persistenceFailureMessage {
           Section {
             Label(message, icon: .exclamationmarkTriangle)

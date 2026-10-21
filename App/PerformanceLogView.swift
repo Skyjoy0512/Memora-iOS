@@ -13,7 +13,7 @@ struct PerformanceLogView: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         Section {
           if SelfChecks.results.isEmpty {
             Text("自己チェックはまだ実行されていません。")

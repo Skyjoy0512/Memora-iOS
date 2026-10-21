@@ -60,7 +60,7 @@ struct PhoneVerificationView: View {
     }
     .padding(MemoraSpacing.xxl)
     .frame(maxWidth: .infinity)
-    .background(Color(uiColor: .systemGroupedBackground))
+    .background(MemoraPalette.background)
     .navigationBarTitleDisplayMode(.inline)
   }
 

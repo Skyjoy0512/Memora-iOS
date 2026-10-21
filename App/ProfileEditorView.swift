@@ -28,10 +28,10 @@ struct ProfileEditorView: View {
                 .overlay(alignment: .bottomTrailing) {
                   Image(icon: .faceSmilingFill, size: 20)
                     .font(.title3)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(MemoraPalette.actionLabel)
                     .frame(width: 38, height: 38)
-                    .background(.tint, in: Circle())
-                    .overlay { Circle().stroke(Color(uiColor: .systemGroupedBackground), lineWidth: 3) }
+                    .background(MemoraPalette.action, in: Circle())
+                    .overlay { Circle().stroke(MemoraPalette.background, lineWidth: 3) }
                 }
             }
             .buttonStyle(.plain)

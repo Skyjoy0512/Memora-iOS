@@ -16,7 +16,7 @@ struct ProjectFilePickerSheet: View {
     let projectNames = Dictionary(uniqueKeysWithValues: model.spaces.map { ($0.id, $0.name) })
 
     NavigationStack {
-      List {
+      MemoraList {
         if let message = model.persistenceFailureMessage {
           Section {
             Label(message, icon: .exclamationmarkTriangle)

@@ -7,7 +7,7 @@ struct ProjectTaskOperationCheckView: View {
   @State private var isShowingTasks = false
 
   var body: some View {
-    List {
+    MemoraList {
       Text("モデル・外部APIは使いません。架空の記録2件とタスク6件を実際に保存します。検証画面を閉じると今回のデータだけを削除します。")
         .font(.footnote).foregroundStyle(.secondary)
       Button("関連タスクの検証データを作成") { check.start(in: model) }

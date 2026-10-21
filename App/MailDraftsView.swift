@@ -6,7 +6,7 @@ struct MailDraftsView: View {
   @State private var deleting: MailDraft?
   var body: some View {
     let drafts = model.mailDrafts.filter { $0.workspaceID == model.currentTeamID }
-    List {
+    MemoraList {
       ForEach(drafts) { draft in
         Button { editing = draft } label: {
           VStack(alignment: .leading, spacing: 4) {

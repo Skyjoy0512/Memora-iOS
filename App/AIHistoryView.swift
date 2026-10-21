@@ -25,7 +25,7 @@ struct AIHistoryView: View {
         } else if filteredEntries.isEmpty && legacyReports.isEmpty {
           ContentUnavailableView.search(text: query)
         } else {
-          List {
+          MemoraList {
             ForEach(filteredEntries) { entry in
               NavigationLink {
                 AIHistoryDetailView(entry: entry, ask: ask, continueConversation: continueConversation,

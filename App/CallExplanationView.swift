@@ -45,7 +45,7 @@ struct CallExplanationView: View {
         .padding(.horizontal, MemoraSpacing.xxl)
         .padding(.bottom, MemoraSpacing.lg)
     }
-    .background(Color(uiColor: .systemGroupedBackground))
+    .background(MemoraPalette.background)
     .navigationBarTitleDisplayMode(.inline)
   }
 

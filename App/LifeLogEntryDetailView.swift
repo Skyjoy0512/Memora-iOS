@@ -141,8 +141,7 @@ struct LifeLogEntryDetailView: View {
 
         if !entry.summary.isEmpty {
           Text(entry.summary)
-            .font(.body)
-            .lineSpacing(4)
+            .memoraReadingText()
         }
         if !entry.personIDs.isEmpty {
           VStack(alignment: .leading, spacing: 4) {
@@ -165,10 +164,11 @@ struct LifeLogEntryDetailView: View {
           JournalMapPreview(place: place, date: entry.occurredAt)
         }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
       .padding(MemoraSpacing.xl)
+      .frame(maxWidth: .infinity, alignment: .center)
     }
-    .background(Color(uiColor: .systemBackground))
+    .background(MemoraPalette.background)
   }
 }
 

@@ -10,7 +10,7 @@ struct JournalPeopleFields: View {
     let missing = selection.union(retainedIDs).subtracting(Set(options.map(\.id))).sorted { $0.uuidString < $1.uuidString }
     Section {
       NavigationLink {
-        List {
+        MemoraList {
           ForEach(options) { option in
             Toggle(option.label, isOn: binding(for: option.id))
           }

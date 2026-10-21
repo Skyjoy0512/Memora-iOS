@@ -10,7 +10,7 @@ struct OmiPairingView: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         Section {
           statusContent
         }

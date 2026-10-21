@@ -3,7 +3,7 @@ import SwiftUI
 struct StateGalleryView: View {
   @Environment(MemoraModel.self) private var model
   var body: some View {
-    List {
+    MemoraList {
       #if DEBUG
       Section("表示（架空データ）") {
         NavigationLink("デザインと保存の検証") { DesignSystemReviewView() }

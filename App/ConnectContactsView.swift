@@ -44,7 +44,7 @@ struct ConnectContactsView: View {
         .frame(maxWidth: .infinity, minHeight: 44)
     }
     .padding(MemoraSpacing.xxl)
-    .background(Color(uiColor: .systemGroupedBackground))
+    .background(MemoraPalette.background)
     .navigationBarTitleDisplayMode(.inline)
   }
 

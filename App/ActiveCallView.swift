@@ -32,7 +32,7 @@ struct ActiveCallView: View {
         .padding(.horizontal, MemoraSpacing.sm)
         .padding(.bottom, MemoraSpacing.sm)
     }
-    .background(Color(uiColor: .systemGroupedBackground))
+    .background(MemoraPalette.background)
     .sheet(isPresented: $isKeypadShown) {
       CallKeypadSheet { digit in session.onDigit(digit) }
         .presentationDetents([.medium])

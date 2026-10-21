@@ -68,13 +68,15 @@ struct DocumentDetailView: View {
             slideList(document)
           }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, MemoraSpacing.lg)
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+        .padding(.horizontal, MemoraSpacing.screen)
         .padding(.vertical, MemoraSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .center)
       }
       .scrollFocusedEditorAboveKeyboard(in: proxy)
     }
     .contentMargins(.bottom, showsCloseButton ? 0 : model.bottomContentClearance, for: .scrollContent)
+    .background(MemoraPalette.background)
     .navigationTitle(document.displayTitle)
     .toolbar {
       if showsCloseButton {

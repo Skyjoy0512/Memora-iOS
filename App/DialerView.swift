@@ -32,7 +32,7 @@ struct DialerView: View {
           .padding(.horizontal, MemoraSpacing.xl)
           .padding(.vertical, MemoraSpacing.md)
       }
-      .background(Color(uiColor: .systemGroupedBackground))
+      .background(MemoraPalette.background)
       .navigationTitle(tab == .contacts ? "連絡先" : "")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

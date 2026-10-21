@@ -23,7 +23,7 @@ struct SharedRecordView: View {
                 .textSelection(.enabled)
             } else {
               Text(InlineMarkdownEditor.attributed(meeting.summary))
-                .lineSpacing(6)
+                .memoraReadingText()
                 .textSelection(.enabled)
             }
           }
@@ -58,9 +58,10 @@ struct SharedRecordView: View {
             transcript(meeting)
           }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, MemoraSpacing.lg)
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+        .padding(.horizontal, MemoraSpacing.screen)
         .padding(.bottom, MemoraSpacing.section)
+        .frame(maxWidth: .infinity, alignment: .center)
       }
       .navigationTitle(meeting.displayTitle)
       .navigationBarTitleDisplayMode(.inline)
@@ -78,8 +79,7 @@ struct SharedRecordView: View {
       SharedOwnerBadge(ownerName: record.ownerName)
 
       Text(record.meeting.displayTitle)
-        .font(.largeTitle.bold())
-        .tracking(-0.6)
+        .font(MemoraTypography.screenTitle)
 
       HStack(spacing: 8) {
         Text(MemoraFormat.meetingDate(record.meeting.createdAt))

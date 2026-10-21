@@ -15,7 +15,7 @@ struct ArtifactSourcesExampleView: View {
   }
   var body: some View {
     let sources = rows
-    List {
+    MemoraList {
       Section("本文の出典リンク") {
         InlineCitationExampleView()
       }

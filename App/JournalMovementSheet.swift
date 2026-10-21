@@ -12,7 +12,7 @@ struct JournalMovementSheet: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         ForEach(movement.entries) { entry in
           Button {
             openEntry = entry

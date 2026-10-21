@@ -8,6 +8,7 @@ struct RootTabView: View {
   @Environment(\.scenePhase) private var scenePhase
   @State private var isComposing = false
   @State private var isSidebarOpen = false
+  @State private var pendingSidebarAction: (() -> Void)?
   @State private var isRecorderPresented = false
   @State private var isKeyboardVisible = false
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
@@ -17,7 +18,8 @@ struct RootTabView: View {
   var body: some View {
     @Bindable var model = model
 
-    SidebarContainer(isOpen: $isSidebarOpen, isEnabled: canRevealSidebar) {
+    SidebarContainer(isOpen: $isSidebarOpen, isEnabled: canRevealSidebar,
+      onCloseAnimationCompleted: completeSidebarAction) {
       FileSidebarView(
         onOpenRecorder: {
           closeSidebar { isRecorderPresented = true }
@@ -209,19 +211,19 @@ struct RootTabView: View {
 
     return TabView(selection: $model.selectedTab) {
       LibraryView(onOpenSidebar: openSidebar)
-        .accessibilityHidden(model.isToolsPresented)
+        .accessibilityHidden(model.isToolsPresented || isSidebarOpen)
         .hidesSystemTabBar()
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.library)
 
       HomeView(onOpenSidebar: openSidebar)
-        .accessibilityHidden(model.isToolsPresented)
+        .accessibilityHidden(model.isToolsPresented || isSidebarOpen)
         .hidesSystemTabBar()
         .scrollDismissesKeyboard(.immediately)
         .tag(RootTab.home)
 
       SearchView(onOpenSidebar: openSidebar)
-        .accessibilityHidden(model.isToolsPresented)
+        .accessibilityHidden(model.isToolsPresented || isSidebarOpen)
         .hidesSystemTabBar()
         .tag(RootTab.askAI)
     }
@@ -331,6 +333,7 @@ struct RootTabView: View {
 
   private func openSidebar() {
     guard canRevealSidebar || model.isToolsPresented else { return }
+    pendingSidebarAction = nil
     setSidebar(open: true)
   }
 
@@ -341,11 +344,16 @@ struct RootTabView: View {
 
   private func closeSidebar(completion: @escaping () -> Void) {
     guard isSidebarOpen else { completion(); return }
-    withAnimation(reduceMotion ? nil : MemoraMotion.drawer, completionCriteria: .logicallyComplete) {
-      isSidebarOpen = false
-    } completion: {
-      if !isSidebarOpen { completion() }
-    }
+    // The tab surface contains unrelated animations. Wait only for the drawer's
+    // own transform, not for every animation in a presentation transaction.
+    pendingSidebarAction = completion
+    setSidebar(open: false)
+  }
+
+  private func completeSidebarAction() {
+    guard !isSidebarOpen, let action = pendingSidebarAction else { return }
+    pendingSidebarAction = nil
+    action()
   }
 
   private func selectFromSidebar(_ update: () -> Void) {

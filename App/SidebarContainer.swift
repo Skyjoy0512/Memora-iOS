@@ -12,6 +12,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
   /// Screens that own the leading edge — a pushed detail, another tab — opt out
   /// so the drawer never competes with their own back gesture.
   var isEnabled: Bool
+  var onCloseAnimationCompleted: () -> Void = {}
   @ViewBuilder var sidebar: () -> Sidebar
   @ViewBuilder var content: () -> Content
 
@@ -65,7 +66,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
             }
           }
           .accessibilityHidden(isOpen)
-          .modifier(SidebarSlideEffect(offset: offset))
+          .modifier(SidebarSlideEffect(offset: offset, onClosed: onCloseAnimationCompleted))
           .shadow(color: .black.opacity(0.10 * progress), radius: 12, x: -3)
 
         if isEnabled && !isOpen {
@@ -88,6 +89,9 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
     .onChange(of: isEnabled) { _, enabled in
       guard !enabled, isOpen else { return }
       setOpen(false)
+    }
+    .onChange(of: isOpen) { _, open in
+      if !open && reduceMotion { onCloseAnimationCompleted() }
     }
     .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshWindowInsets() }
     .onChange(of: scenePhase) { _, _ in refreshWindowInsets() }

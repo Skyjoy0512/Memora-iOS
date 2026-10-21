@@ -16,8 +16,7 @@ struct PaywallView: View {
             Image(icon: selectedPlan.symbol, size: 30)
               .font(.system(size: 30, weight: .semibold))
               .foregroundStyle(.primary)
-              .frame(width: 60, height: 60)
-              .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+              .frame(width: 44, height: 44, alignment: .leading)
               .accessibilityHidden(true)
               .contentTransition(.symbolEffect(.replace))
             Text(selectedPlan.tagline)
@@ -51,11 +50,12 @@ struct PaywallView: View {
             purchaseControls
           }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
         .padding(MemoraSpacing.xl)
         .padding(.bottom, MemoraSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .center)
       }
-      .background(Color(uiColor: .systemBackground))
+      .background(MemoraPalette.background)
       .navigationTitle("プラン")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -88,15 +88,11 @@ struct PaywallView: View {
             .opacity(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, MemoraSpacing.lg)
-        .foregroundStyle(.white)
-        .background(.tint, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
       }
-      .buttonStyle(.plain)
+      .buttonStyle(MemoraButtonStyle())
 
       Text("購入・復元は未接続です。表示価格とAIクレジットは提供予定のプラン内容で、端末でのプラン変更による課金は発生しません。")
-        .font(.caption2)
+        .font(.footnote)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
@@ -105,13 +101,13 @@ struct PaywallView: View {
         isUnavailableNoticePresented = true
       }
       .font(.footnote)
-      .frame(maxWidth: .infinity)
+      .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
 
       Button("法人のライセンスコードをお持ちの方", icon: .building2Fill) {
         isLicensePresented = true
       }
       .font(.footnote)
-      .frame(maxWidth: .infinity)
+      .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
 
       #if DEBUG
       Button("無料プランに戻す", role: .destructive) {
@@ -138,9 +134,8 @@ struct PaywallView: View {
         .frame(maxWidth: .infinity)
 
       Button("続ける") { dismiss() }
-        .font(.headline)
         .frame(maxWidth: .infinity)
-        .padding(.top, MemoraSpacing.xs)
+        .buttonStyle(MemoraButtonStyle(emphasis: .secondary))
     }
     .transition(.opacity)
   }

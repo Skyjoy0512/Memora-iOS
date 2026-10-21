@@ -121,12 +121,9 @@ struct SummaryGenerationSheet: View {
         dismiss()
       } label: {
         Text("生成")
-          .font(.headline)
-          .foregroundStyle(.white)
-          .frame(maxWidth: .infinity, minHeight: 56)
-          .background(.tint, in: Capsule())
+          .frame(maxWidth: .infinity)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(MemoraButtonStyle())
       .disabled((usesCloud && !confirmsCloudDisclosure) || model.processing.isActive(meetingID)
         || model.speakerAnalysisIDs.contains(meetingID))
     }

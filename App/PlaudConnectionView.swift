@@ -7,7 +7,7 @@ struct PlaudConnectionView: View {
 
   var body: some View {
     NavigationStack {
-      List {
+      MemoraList {
         Section {
           VStack(alignment: .leading, spacing: 12) {
             Label("PLAUDの記録をMemoraへ", icon: .waveformBadgeMic)

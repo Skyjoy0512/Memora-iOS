@@ -49,7 +49,7 @@ struct UpcomingEventCard: View {
     .padding(.vertical, MemoraSpacing.sm)
     .frame(width: dateTileWidth)
     .frame(minHeight: dateTileHeight)
-    .background(Color(uiColor: .systemGroupedBackground))
+    .background(MemoraPalette.card)
     .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
     .accessibilityHidden(true)
   }

@@ -47,6 +47,7 @@ struct RecordingMethodSheet: View {
         .padding(.top, MemoraSpacing.xs)
         .padding(.bottom, MemoraSpacing.xl)
       }
+      .background(MemoraPalette.background)
       .navigationTitle("録音方法")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -66,11 +67,7 @@ struct RecordingMethodSheet: View {
 
   private func row(for method: RecordingMethod) -> some View {
     HStack(spacing: 14) {
-      Image(icon: method.icon)
-        .font(.title3.weight(.semibold))
-        .foregroundStyle(.tint)
-        .frame(width: 44, height: 44)
-        .background(Color.accentColor.opacity(0.12), in: Circle())
+      MemoraInterfaceIcon(icon: method.icon)
 
       VStack(alignment: .leading, spacing: 2) {
         Text(method.title)
@@ -87,9 +84,8 @@ struct RecordingMethodSheet: View {
         .font(.footnote.weight(.semibold))
         .foregroundStyle(.tertiary)
     }
-    .padding(MemoraSpacing.lg)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .memoraCard()
-    .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+    .padding(.vertical, MemoraSpacing.md)
+    .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+    .contentShape(Rectangle())
   }
 }

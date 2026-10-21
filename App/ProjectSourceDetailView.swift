@@ -56,7 +56,7 @@ struct ProjectSourceDetailView: View {
             ForEach(Array(extracted.enumerated()), id: \.offset) { _, block in
               VStack(alignment: .leading, spacing: 8) {
                 if let page = block.page { Text("ページ \(page)").font(.footnote).foregroundStyle(.secondary) }
-                Text(block.text).font(.body).lineSpacing(4).textSelection(.enabled)
+                Text(block.text).memoraReadingText().textSelection(.enabled)
               }
             }
           }
@@ -71,7 +71,9 @@ struct ProjectSourceDetailView: View {
             }
           }
         }
-        .frame(maxWidth: .infinity, alignment: .leading).padding(ProjectLayout.horizontalInset)
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+        .padding(ProjectLayout.horizontalInset)
+        .frame(maxWidth: .infinity, alignment: .center)
       }
       .background(MemoraPalette.background)
       .navigationTitle("").navigationBarTitleDisplayMode(.inline)
