@@ -109,8 +109,8 @@ struct AIComposerBar: View {
       // native field keeps its identity while compact contextual controls move.
       HStack(alignment: .center, spacing: 4) {
         if !usesStackedLayout {
-          attachmentMenu
-            .matchedGeometryEffect(id: "attach", in: controlsNamespace)
+          Color.clear.frame(width: 44, height: 44)
+            .accessibilityHidden(true)
         }
 
         textField
@@ -130,8 +130,8 @@ struct AIComposerBar: View {
 
       if usesStackedLayout {
         HStack(spacing: 6) {
-          attachmentMenu
-            .matchedGeometryEffect(id: "attach", in: controlsNamespace)
+          Color.clear.frame(width: 44, height: 44)
+            .accessibilityHidden(true)
           if isEditorTall || AIComposerLayoutPolicy.offersExpansion(for: text) {
             MemoraIconButton(isEditorTall ? "入力欄を小さくする" : "入力欄を広げる",
               icon: isEditorTall ? .chevronDown : .chevronUp) {
@@ -154,6 +154,13 @@ struct AIComposerBar: View {
     }
     .background { listeningBackdrop }
     .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), interactive: true, backed: false)
+    // Keep the presentation source outside the input's glass rendering group.
+    // Otherwise the system zoom snapshots and hides the whole composer.
+    .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {
+      attachmentMenu
+        .padding(.leading, usesStackedLayout ? MemoraSpacing.sm : MemoraSpacing.xs)
+        .padding(.bottom, usesStackedLayout ? MemoraSpacing.sm : 0)
+    }
     .preservesComposerFocus()
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)
@@ -276,50 +283,25 @@ struct AIComposerBar: View {
     .foregroundStyle(.secondary)
   }
 
-  @ViewBuilder private var attachmentActions: some View {
-      if let onMentionMenu {
-        Button("プラグイン・スキル・ソース", icon: .plus) {
-          isFieldFocused = true
-          onMentionMenu()
-        }
-        Divider()
-      }
-      Button("連携サービス…", icon: .plugsConnected) {
-        isIntegrationsPresented = true
-      }
-      Divider()
-      Button("写真を選択…", icon: .photo) {
-        InteractionFeedback.shared.send(.tap)
-        isPhotoPickerPresented = true
-      }
-      Button("音声を選択…", icon: .waveform) {
-        InteractionFeedback.shared.send(.tap)
-        isAudioImporterPresented = true
-      }
-      Button("ファイルを選択…", icon: .doc) {
-        InteractionFeedback.shared.send(.tap)
-        isImporterPresented = true
-      }
+  private var attachmentMenu: some View {
+    AIComposerAttachmentButton(offersMentions: onMentionMenu != nil) {
+      dismissMentionMenu?()
+    } onSelect: { action in
+      performAttachmentAction(action)
+    }
   }
 
-  private var attachmentMenu: some View {
-    Menu {
-      attachmentActions
-    } label: {
-      Image(icon: .plus)
-        .font(.system(size: 20, weight: .medium))
-        .foregroundStyle(.primary)
-        .frame(width: 44, height: 44)
-        .contentShape(Circle())
+  private func performAttachmentAction(_ action: AIComposerAttachmentAction) {
+    InteractionFeedback.shared.send(.tap)
+    switch action {
+    case .mention:
+      isFieldFocused = true
+      onMentionMenu?()
+    case .integrations: isIntegrationsPresented = true
+    case .photo: isPhotoPickerPresented = true
+    case .audio: isAudioImporterPresented = true
+    case .file: isImporterPresented = true
     }
-    .labelStyle(.iconOnly)
-    .buttonStyle(.plain)
-    .simultaneousGesture(TapGesture().onEnded { dismissMentionMenu?() })
-    // A menu tints its label with the accent; the attach glyph stays in the
-    // label color like the rest of the composer.
-    .tint(.primary)
-    .accessibilityLabel("添付を追加")
-    .accessibilityHint("ファイルの添付やプラグイン・スキル・ソースの指定")
   }
 
   private var researchButton: some View {

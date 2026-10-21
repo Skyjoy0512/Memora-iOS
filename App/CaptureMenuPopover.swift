@@ -8,6 +8,8 @@ struct CaptureMenuPopover: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isFileImporterPresented = false
   @State private var importSpaceID: UUID?
+  @State private var pendingAction: CaptureAction?
+  @State private var pendingSourceSpaceID: UUID?
   @State private var contentHeight: CGFloat = 260
   @ScaledMetric(relativeTo: .body) private var menuWidth: CGFloat = 260
 
@@ -28,11 +30,8 @@ struct CaptureMenuPopover: View {
         }
         if let spaceID, model.space(id: spaceID) != nil {
           Button {
+            pendingSourceSpaceID = spaceID
             collapse()
-            Task { @MainActor in
-              try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
-              model.sourceAddProjectID = spaceID
-            }
           } label: {
             MemoraActionLabel(title: "ソースを追加", detail: "リンク・ファイル・メモを参照資料にします。", icon: .paperclip)
           }
@@ -57,6 +56,7 @@ struct CaptureMenuPopover: View {
     .scrollBounceBehavior(.basedOnSize)
     .frame(idealWidth: min(menuWidth, 320), maxWidth: min(menuWidth, 320))
     .frame(idealHeight: min(contentHeight, 480), maxHeight: min(contentHeight, 480))
+    .onDisappear(perform: completeSelection)
     .fileImporter(
       isPresented: $isFileImporterPresented,
       allowedContentTypes: [.audio],
@@ -67,39 +67,44 @@ struct CaptureMenuPopover: View {
 
   private func select(_ action: CaptureAction) {
     InteractionFeedback.shared.send(.tap)
-    let destinationID = spaceID
-    switch action {
-    case .recording:
-      collapse()
-      Task {
-        try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
-        await model.startCapture(spaceID: destinationID)
-      }
-    case .importAudio:
-      importSpaceID = destinationID
+    if action == .importAudio {
+      importSpaceID = spaceID
       isFileImporterPresented = true
-    case .newMemo:
+    } else {
+      pendingAction = action
       collapse()
-      Task { @MainActor in
-        try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+    }
+  }
+
+  private func completeSelection() {
+    let action = pendingAction
+    let sourceSpaceID = pendingSourceSpaceID
+    let destinationID = spaceID
+    pendingAction = nil
+    pendingSourceSpaceID = nil
+    guard action != nil || sourceSpaceID != nil else { return }
+    Task { @MainActor in
+      // The zoom presentation must finish before another sheet can be shown.
+      try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+      if let sourceSpaceID {
+        model.sourceAddProjectID = sourceSpaceID
+        return
+      }
+      switch action {
+      case .recording:
+        await model.startCapture(spaceID: destinationID)
+      case .newMemo:
         model.isLifeLogCreationPresented = true
-      }
-    case .newChat:
-      collapse()
-      model.selectedTab = .askAI
-      model.startNewAIChat()
-    case .phoneCall:
-      collapse()
-      Task { @MainActor in
-        try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+      case .newChat:
+        model.selectedTab = .askAI
+        model.startNewAIChat()
+      case .phoneCall:
         model.openCalling()
-      }
-    case .onlineMeeting:
-      model.onlineMeetingCaptureSpaceID = destinationID
-      collapse()
-      Task { @MainActor in
-        try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
+      case .onlineMeeting:
+        model.onlineMeetingCaptureSpaceID = destinationID
         model.isOnlineMeetingCapturePresented = true
+      case .importAudio, nil:
+        break
       }
     }
   }

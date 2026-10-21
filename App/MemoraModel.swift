@@ -50,8 +50,9 @@ final class MemoraModel {
   var isAddTaskPresented = false
   /// A task to open for editing after its reminder was tapped.
   var pendingTaskEditID: UUID?
-  /// Opened by the contextual create button on the journal tab.
+  /// Shared by every create menu; Journal can supply the day being viewed.
   var isLifeLogCreationPresented = false
+  var lifeLogCreationDate: Date?
   /// Shown when a `memora://` link points at a record this device does not
   /// have. It says what the link is and how to get the record back.
   var missingRecordNotice: MissingRecordNotice?

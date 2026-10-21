@@ -264,6 +264,9 @@ bottom right, with its entire 44pt glass circle inside the tappable label.
 It is the only Settings entry in the drawer; the top group contains destinations
 only, not a second copy of the same action.
 The drawer uses secondaryBackground, subtly separated from the conversation canvas.
+The supplied 132×27 vector brand mark sits above Library, aligned with the row
+icons. Its original light and dark artwork is selected by the asset catalog;
+do not tint or redraw the geometry.
 At accessibility sizes, secondary row values move below the title rather than
 competing for a narrow horizontal column.
 
@@ -273,6 +276,18 @@ Liquid Glass belongs to navigation, the side menu, the top-right create control
 and the composer. There are no bottom tabs. Keep the create popover compact and
 the composer on the bottom edge.
 Create-menu actions show a stable action name; input explanations are spoken hints.
+The create control is the source of the system zoom/morph presentation. The
+composer attachment control has its own presentation source, so opening it never
+replaces the whole input surface. Its compact 292pt glass panel uses 68pt rows,
+44pt circular icon backplates and short labels, following the supplied ChatGPT
+reference. Preserve existing media, mention and integration actions; the reference
+does not add an unimplemented camera or a new assistant mode.
+Memo creation is presented by the root, not the Journal tab, so a create menu
+on Library can open it too. Journal supplies its selected day through transient
+model state; dismissal clears that date. Capture destinations are dispatched
+after the popover disappears, keeping the system morph and the next sheet apart.
+Each toolbar owns its popover state; only the active destination responds to the
+shared capture request. Inactive TabView toolbars must never present alongside it.
 Tools search uses the same toolbar field as Library and Journal, keeping the
 skills/templates/connectors segments in place. It filters local catalog metadata,
 not record contents or connected services. Empty results sit above the keyboard

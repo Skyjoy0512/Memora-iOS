@@ -147,7 +147,7 @@ struct LibraryView: View {
 
           if model.librarySection == .files {
             ToolbarActionItem {
-              CaptureToolbarButton(spaceID: model.visibleProjectID)
+              CaptureToolbarButton(spaceID: model.visibleProjectID, tab: .library)
             }
           } else {
             ToolbarActionItem {

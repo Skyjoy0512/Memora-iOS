@@ -12,7 +12,6 @@ struct HomeView: View {
   @State private var isSearching = false
   /// The journal entry opened from the timeline.
   @State private var openEntry: LifeLogEntry?
-  @State private var entryCreationDate: Date?
   /// The day the Journal is showing.
   @State private var selectedDate = Calendar.current.startOfDay(for: .now)
   /// Calendar events for the selected day, read from EventKit when that is on.
@@ -189,11 +188,8 @@ struct HomeView: View {
 
         // The create action is the top-right control on every main screen.
         ToolbarActionItem {
-          CaptureToolbarButton(spaceID: model.visibleProjectID)
+          CaptureToolbarButton(spaceID: model.visibleProjectID, tab: .home)
         }
-      }
-      .sheet(isPresented: $model.isLifeLogCreationPresented, onDismiss: { entryCreationDate = nil }) {
-        LifeLogCreationSheet(date: entryCreationDate ?? .now)
       }
       .sheet(isPresented: $showsReview) {
         JournalReviewView(date: selectedDate)
@@ -239,7 +235,7 @@ struct HomeView: View {
 
   /// UI additions follow the day being read; external new-memo actions keep now.
   private func beginJournalEntry() {
-    entryCreationDate = isViewingToday ? .now : selectedDate
+    model.lifeLogCreationDate = isViewingToday ? .now : selectedDate
     model.isLifeLogCreationPresented = true
   }
 

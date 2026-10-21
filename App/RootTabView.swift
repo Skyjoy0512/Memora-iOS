@@ -134,6 +134,9 @@ struct RootTabView: View {
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
     }
+    .sheet(isPresented: $model.isLifeLogCreationPresented, onDismiss: { model.lifeLogCreationDate = nil }) {
+      LifeLogCreationSheet(date: model.lifeLogCreationDate ?? .now)
+    }
     .sheet(isPresented: $isRecorderPresented) {
       if OmiPairingManager.hasRememberedDevice || model.omiPairingManager.details != nil {
         NavigationStack {

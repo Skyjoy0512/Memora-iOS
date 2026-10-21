@@ -16,6 +16,10 @@ struct FileSidebarView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
+      SidebarBrandMark()
+        .padding(.horizontal, MemoraSpacing.section)
+        .padding(.top, MemoraSpacing.md)
+        .padding(.bottom, MemoraSpacing.sm)
       ScrollView {
         VStack(alignment: .leading, spacing: 0) {
           VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
