@@ -232,7 +232,7 @@ align with the 20pt content margin and reading-width limit.
 The capture menu shows action names and icons in 44pt rows with a 260pt width
 that grows with Dynamic Type up to 320pt; explanations remain VoiceOver hints.
 
-Sidebar: the main destinations (Journal / Library / Ask AI /
+Sidebar: the main destinations (Library / Journal / Ask AI /
 Tools) first, then collections (Projects / Documents / People), Devices, and
 plan/settings controls. There is no bottom tab bar. A destination name stays constant; connection
 state is a separate secondary value. Rows use the shared 28pt icon column and

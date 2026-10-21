@@ -33,7 +33,7 @@ struct SkillsView: View {
       ToolbarItem(placement: .primaryAction) {
         Menu {
           Button("手動で作成", icon: .squareAndPencil) {
-            editing = MemoraSkill(id: "custom-" + UUID().uuidString, name: "", summary: "", instructions: "", keywords: [], declaredToolNames: [])
+            editing = .draft()
           }
           Button("Markdownを読み込む", icon: .docText) { importing = true }
         } label: { ToolbarActionLabel("スキルを追加", icon: .plus) }

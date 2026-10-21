@@ -27,7 +27,7 @@ struct ToolsSkillsList: View {
         }
         .listRowBackground(MemoraPalette.background)
       } footer: {
-        Text("依頼に合う手順をAsk AIが選びます。右上の＋から自分のスキルを作成できます。")
+        Text("繰り返す作業の手順を保存し、@や「チャットで使用」で呼び出せます。依頼に名前やキーワードが含まれると自動選択します。右上の＋から作成できます。")
       }
     }
   }

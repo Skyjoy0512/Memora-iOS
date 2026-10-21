@@ -518,7 +518,8 @@ enum SelfChecks {
       let meetingID = UUID()
       let projectPath: [LibraryRoute] = [.space(projectID)]
       if RootTab.allCases != [.library, .home, .askAI]
-        || RootTab.restored(from: "files") != .library || RootTab.restored(from: "tasks") != .home {
+        || RootTab.restored(from: "files") != .library || RootTab.restored(from: "tasks") != .home
+        || RootTab.restored(from: "") != .library || RootTab.restored(from: "unknown") != .library {
         report("main tabs or legacy identifiers changed")
       }
       if LibrarySection.restored(from: nil) != .files || LibrarySection.restored(from: "projects") != .projects {

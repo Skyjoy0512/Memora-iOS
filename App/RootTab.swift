@@ -13,7 +13,7 @@ enum RootTab: String, Hashable, CaseIterable, Identifiable {
     switch value {
     case "tasks", "journal": .home
     case "library", "projects": .library
-    default: Self(rawValue: value) ?? .home
+    default: Self(rawValue: value) ?? .library
     }
   }
 

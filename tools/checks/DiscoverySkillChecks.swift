@@ -28,6 +28,22 @@ struct DiscoverySkillChecks {
     let context = MemoraSkill.context(for: "会議のフォロー", disabled: [], budget: 300, catalog: [skill])
     precondition(context.contains("未信頼") && context.contains("実際の記録"))
     precondition(MemoraSkill.context(for: "会議", disabled: [skill.id], budget: 300, catalog: [skill]).isEmpty)
+    var reusable = MemoraSkill.draft(instructions: "目的と読者を確認し、決定事項・未確認事項・次の作業を分けてまとめる。")
+    reusable.name = "議事録レビュー"
+    reusable.summary = "会議の記録を確認するときに使う"
+    precondition(MemoraSkillMarkdown.valid(reusable))
+    precondition(reusable.toolNames.isEmpty && reusable.cost == .model)
+    precondition(MemoraSkill.automaticSelection(for: "議事録レビューで整理して", disabled: [], catalog: [reusable]).map(\.id) == [reusable.id])
+    precondition(MemoraSkill.automaticSelection(for: "議事録レビュー", disabled: [reusable.id], catalog: [reusable]).isEmpty)
+    precondition(MemoraSkill.automaticSelection(for: "関係のない質問", disabled: [], catalog: [reusable]).isEmpty)
+    precondition(MemoraSkill.automaticSelection(for: "  ", disabled: [], catalog: [reusable]).isEmpty)
+    let priority = MemoraSkill.automaticSelection(for: "会議のフォローを議事録レビューで", disabled: [], catalog: [skill, reusable])
+    precondition(priority.first?.id == reusable.id && priority.count == 2)
+    let longDraft = MemoraSkill.draft(instructions: String(repeating: "手", count: 6_001))
+    precondition(longDraft.instructions.count == 6_001 && !MemoraSkillMarkdown.valid(longDraft))
+    var completeProcedure = reusable
+    completeProcedure.instructions = String(repeating: "手", count: 5_990) + "最終確認を省略しない"
+    precondition(MemoraSkill.guidance([completeProcedure, skill], budget: 14_000).contains("最終確認を省略しない"))
     for invalid in [
       source.replacingOccurrences(of: "tools: list_tasks, read_record", with: "tools: shell"),
       source.replacingOccurrences(of: "permissions: memora.read", with: "run: python secret.py"),
@@ -37,6 +53,6 @@ struct DiscoverySkillChecks {
     ] {
       do { _ = try MemoraSkillMarkdown.parse(invalid, allowedTools: known); preconditionFailure("Invalid skill accepted") } catch {}
     }
-    print("DiscoverySkillChecks: passed (local relevance/order, availability/disable, schema budget, explicit selection, Markdown import/round-trip, disabled skills, untrusted/unknown/script metadata rejection)")
+    print("DiscoverySkillChecks: passed (local relevance/order, reusable drafts, name/keyword selection, disable, size validation without truncation, Markdown round-trip, untrusted/unknown/script metadata rejection)")
   }
 }

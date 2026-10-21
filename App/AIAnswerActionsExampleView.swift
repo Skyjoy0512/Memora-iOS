@@ -8,11 +8,12 @@ struct AIAnswerActionsExampleView: View {
   @State private var retries = 0
   @State private var reads = 0
   @State private var speaking = false
+  @State private var skillDraft: MemoraSkill?
 
   var body: some View {
     MemoraForm {
       Section {
-        Text("架空の回答です。保存・再試行・読み上げは件数の確認だけで、実データや外部APIを使いません。")
+        Text("架空の回答です。資料保存・再試行・読み上げは件数の確認だけです。スキル作成は実際の編集画面を開き、「保存」を押すと端末に手順を保存します。外部APIは使いません。")
           .font(.footnote).foregroundStyle(.secondary)
         Toggle("再試行可能として表示", isOn: $allowsRetry)
       }
@@ -20,7 +21,8 @@ struct AIAnswerActionsExampleView: View {
         Text(Self.answer).textSelection(.enabled)
         AIResponseActionBar(text: Self.answer, canRetry: allowsRetry,
           isSpeaking: speaking, readAloud: { reads += 1; speaking.toggle() },
-          save: { saves += 1 }, retry: { retries += 1 })
+          save: { saves += 1 }, retry: { retries += 1 },
+          saveSkill: { skillDraft = .draft(instructions: Self.answer) })
       }
       Section("確認結果") {
         LabeledContent("保存の操作", value: saves.formatted())
@@ -29,6 +31,7 @@ struct AIAnswerActionsExampleView: View {
       }
     }
     .navigationTitle("回答アクションの確認").navigationBarTitleDisplayMode(.inline)
+    .sheet(item: $skillDraft) { SkillEditorView(skill: $0, reviewsAnswer: true) }
   }
 
   private static let answer = """

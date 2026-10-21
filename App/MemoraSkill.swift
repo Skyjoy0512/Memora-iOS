@@ -27,7 +27,13 @@ struct MemoraSkill: Identifiable, Codable, Sendable {
     }
   }
 
-  // Only the shipped catalog can supply procedures. This is not a code loader.
+  static func draft(instructions: String = "") -> Self {
+    Self(id: "custom-" + UUID().uuidString, name: "", summary: "",
+      instructions: instructions, keywords: [], declaredToolNames: [],
+      scopes: [.global], cost: .model)
+  }
+
+  // Procedures are instruction text, never executable code or permission grants.
   var skillMarkdown: String {
     "---\nname: \(name)\ndescription: \(summary)\ntools: \(toolNames.joined(separator: ", "))\nkeywords: \(keywords.joined(separator: ", "))\npermissions: \((declaredPermissions ?? []).joined(separator: ", "))\nversion: \(version ?? 1)\nicon: \(iconIdentifier ?? "doc.text")\nscopes: \((scopes ?? [.global]).map(\.rawValue).joined(separator: ", "))\ncost: \((cost ?? .unknown).rawValue)\n---\n\n\(instructions)"
   }
@@ -51,9 +57,23 @@ struct MemoraSkill: Identifiable, Codable, Sendable {
   }
 
   static func context(for request: String, disabled: [String], budget: Int, catalog: [Self] = bundled) -> String {
-    let selected = catalog.filter { !disabled.contains($0.id) && $0.keywords.contains { request.localizedCaseInsensitiveContains($0) } }.prefix(2)
+    let selected = automaticSelection(for: request, disabled: disabled, catalog: catalog)
     guard !selected.isEmpty, budget > 0 else { return "" }
     return guidance(Array(selected), budget: budget)
+  }
+
+  static func automaticSelection(for request: String, disabled: [String], catalog: [Self] = bundled) -> [Self] {
+    guard !request.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
+    let enabled = catalog.filter { !disabled.contains($0.id) }
+    let named = enabled.filter { !$0.name.isEmpty && request.localizedCaseInsensitiveContains($0.name) }
+    let namedIDs = Set(named.map(\.id))
+    let matched = enabled.filter { skill in
+      !namedIDs.contains(skill.id) && skill.keywords.contains {
+        !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && request.localizedCaseInsensitiveContains($0)
+      }
+    }
+    // An explicitly named workflow takes priority over a broad keyword match.
+    return Array((named + matched).prefix(2))
   }
 
   static func guidance(_ selected: [Self], budget: Int) -> String {

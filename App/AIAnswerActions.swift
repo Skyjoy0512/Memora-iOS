@@ -7,6 +7,7 @@ struct AIAnswerActions: View {
   var message: AIChatMessage
   @State private var savedDocument: MemoraDocument?
   @State private var saveError = false
+  @State private var skillDraft: MemoraSkill?
 
   var body: some View {
     let exportText = AnswerCitations.stripped(NativeAIInterface.response(message.text).markdown)
@@ -17,7 +18,8 @@ struct AIAnswerActions: View {
       }, save: saveDocument, retry: {
         InteractionFeedback.shared.send(.tap)
         model.retryAIAnswer(message.id)
-      })
+      }, saveSkill: { skillDraft = .draft(instructions: exportText) })
+    .sheet(item: $skillDraft) { SkillEditorView(skill: $0, reviewsAnswer: true) }
     .sheet(item: $savedDocument) { document in
       NavigationStack {
         DocumentDetailView(documentID: document.id)

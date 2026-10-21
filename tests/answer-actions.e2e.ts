@@ -50,3 +50,34 @@ test('a long composer draft can expand and collapse without submitting', async (
   await screen.getByLabel('送信').tap();
   await expect(screen.getByRole('textbox').first()).toHaveValue(draft);
 });
+
+test('reusable skills: review an answer, save the procedure and reuse it after restart', { timeout: 180_000 }, async ({ app, device, screen }) => {
+  await openGallery(app, device, screen);
+  await scrollToText(screen, '回答アクション（操作の確認）');
+  await tapControl(screen, screen.getByText('回答アクション（操作の確認）'));
+  await tapControl(screen, screen.getByLabel('回答のその他の操作'));
+  await tapControl(screen, screen.getByRole('button', { name: '回答からスキルを作成', exact: true }));
+  const procedure = '次回の相談では、提案の読者と判断してほしい点を確認します。\n\n費用と担当は未確認です。合意した内容と分けて記載してください。';
+  await expect(screen.getByLabel('スキルの手順')).toHaveValue(procedure);
+  await expect(screen.getByRole('button', { name: '保存', exact: true })).toBeDisabled();
+  await screen.getByPlaceholder('スキル名').fill('Reusable meeting brief');
+  await screen.getByPlaceholder('いつ使うか・何をするか').fill('Use when preparing a meeting brief.');
+  await app.screenshot('reusable-skill-reviewed');
+  await tapControl(screen, screen.getByRole('button', { name: '保存', exact: true }));
+  await expect(screen.getByText('回答アクションの確認', { exact: true }).first()).toBeVisible();
+  await app.restart();
+  await tapControl(screen, screen.getByLabel('メニュー').first());
+  await tapControl(screen, screen.getByRole('button', { name: 'ツール', exact: true }));
+  await tapControl(screen, screen.getByText('Reusable meeting brief', { exact: true }));
+  // The pushed article follows the still-mounted list row in the native tree.
+  await expect(screen.getByText('Use when preparing a meeting brief.', { exact: true }).last()).toBeVisible();
+  await app.screenshot('reusable-skill-persisted');
+  await tapControl(screen, screen.getByLabel('スキルの操作'));
+  await tapControl(screen, screen.getByRole('button', { name: '編集', exact: true }));
+  await expect(screen.getByLabel('スキルの手順')).toHaveValue(procedure);
+  await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
+  await tapControl(screen, screen.getByRole('button', { name: 'チャットで使用', exact: true }));
+  await expect(screen.getByTestId('ai.composer.input')).toHaveValue(/\[@Reusable meeting brief\]/);
+  await expect(screen.getByRole('button', { name: '送信', exact: true })).toBeVisible();
+  // Selection is staged only; do not send to an AI provider or execute tools.
+});

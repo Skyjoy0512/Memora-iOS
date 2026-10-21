@@ -44,8 +44,12 @@ extension MemoraModel {
     aiMessages.append(userMessage)
     let offeredTools = enabledAgentTools.filter { pluginPolicy?.toolIDs.contains("memora:" + $0.rawValue) ?? true }
     let explicitSkills = skillCatalog.filter { pluginPolicy?.pluginIDs.contains("skill:" + $0.id) == true }
-    let selectedSkills = explicitSkills.isEmpty ? Array(skillCatalog.filter { !disabledSkillIDs.contains($0.id) && $0.keywords.contains { trimmed.localizedCaseInsensitiveContains($0) } }.prefix(2)) : Array(explicitSkills.prefix(2))
-    let skillContext = MemoraSkill.guidance(selectedSkills, budget: 1_500)
+    let selectedSkills = explicitSkills.isEmpty
+      ? MemoraSkill.automaticSelection(for: trimmed, disabled: disabledSkillIDs, catalog: skillCatalog)
+      : Array(explicitSkills.prefix(2))
+    // Two validated custom procedures can each contain 6,000 characters.
+    // Keep their final review steps intact on the cloud path.
+    let skillContext = MemoraSkill.guidance(selectedSkills, budget: 14_000)
 
     let llm = configuration.llm
     let runner: AgentRunner

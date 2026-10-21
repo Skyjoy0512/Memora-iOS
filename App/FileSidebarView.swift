@@ -20,13 +20,13 @@ struct FileSidebarView: View {
         VStack(alignment: .leading, spacing: 0) {
           VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
             VStack(spacing: 0) {
-              SidebarRow(title: "ジャーナル", symbol: .calendar,
-                isSelected: !model.isToolsPresented && model.selectedTab == .home) {
-                onSelectTab(.home)
-              }
               SidebarRow(title: "ライブラリ", symbol: .folder,
                 isSelected: !model.isToolsPresented && model.selectedTab == .library) {
                 onSelectTab(.library)
+              }
+              SidebarRow(title: "ジャーナル", symbol: .calendar,
+                isSelected: !model.isToolsPresented && model.selectedTab == .home) {
+                onSelectTab(.home)
               }
               SidebarRow(title: "Ask AI", symbol: .sparkles,
                 isSelected: !model.isToolsPresented && model.selectedTab == .askAI) {

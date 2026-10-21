@@ -45,8 +45,7 @@ struct ToolsView: View {
       ToolbarActionItem(usesSystemBackground: true) {
         Menu {
           Button("スキルを作成", icon: .squareAndPencil) {
-            newSkill = MemoraSkill(id: "custom-" + UUID().uuidString,
-              name: "", summary: "", instructions: "", keywords: [], declaredToolNames: [])
+            newSkill = .draft()
           }
           Button("スキルのMarkdownを読み込む", icon: .docText) { importingSkill = true }
           Button("テンプレートを作成", icon: .docOnDoc) {
