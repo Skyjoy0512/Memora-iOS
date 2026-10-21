@@ -255,6 +255,13 @@ Liquid Glass belongs to navigation, the side menu, the top-right create control
 and the composer. There are no bottom tabs. Keep the create popover compact and
 the composer on the bottom edge.
 Create-menu actions show a stable action name; input explanations are spoken hints.
+Tools search uses the same toolbar field as Library and Journal, keeping the
+skills/templates/connectors segments in place. It filters local catalog metadata,
+not record contents or connected services. Empty results sit above the keyboard
+with a short text hint rather than a large decorative icon.
+Skill editing explains missing or over-limit fields inline, keeps procedure text
+intact and provides a keyboard Done action. Cancel confirms only meaningful
+unsaved changes; no confirmation is needed for an unchanged editor.
 The native popover sizes to measured content, caps its ideal height and scrolls;
 the recording/import/project destination callbacks are unchanged.
 Purposeful spring motion remains; Reduce Motion suppresses nonessential movement.

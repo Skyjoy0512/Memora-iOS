@@ -2,12 +2,14 @@ import SwiftUI
 
 struct ToolsTemplatesList: View {
   @Environment(MemoraModel.self) private var model
+  var query = ""
 
   var body: some View {
-    let custom = model.customTemplates
-    let installed = SummaryTemplateCatalog.market.filter { model.installedTemplateIDs.contains($0.id) }
+    let market = SummaryTemplateCatalog.market.filter(matches)
+    let custom = model.customTemplates.filter(matches)
+    let installed = market.filter { model.installedTemplateIDs.contains($0.id) }
     let categories = SummaryTemplateCategory.allCases.compactMap { category -> (SummaryTemplateCategory, [SummaryMarketTemplate])? in
-      let templates = SummaryTemplateCatalog.market.filter { $0.category == category }
+      let templates = market.filter { $0.category == category }
       return templates.isEmpty ? nil : (category, templates)
     }
     List {
@@ -21,13 +23,25 @@ struct ToolsTemplatesList: View {
           ForEach(templates) { template in ToolsTemplateRow(template: template) }
         } header: { ToolsSectionHeading(title: category.title) }
       }
-      Section {
-        NavigationLink { SummaryTemplateMarketplaceView() } label: {
-          SettingsLabel("テンプレートを検索・管理", icon: .magnifyingglass)
+      if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        Section {
+          NavigationLink { SummaryTemplateMarketplaceView() } label: {
+            SettingsLabel("テンプレートを検索・管理", icon: .magnifyingglass)
+          }
+          .listRowBackground(MemoraPalette.background)
         }
-        .listRowBackground(MemoraPalette.background)
       }
     }
+    .overlay(alignment: .top) {
+      if custom.isEmpty && installed.isEmpty && categories.isEmpty {
+        ToolsSearchEmptyState()
+      }
+    }
+  }
+
+  private func matches(_ template: SummaryMarketTemplate) -> Bool {
+    ToolsCatalogSearch.matches(query, fields: [template.title, template.detail, template.category.title, template.focus]
+      + template.sections + template.occupationTags + template.useCaseTags)
   }
 }
 

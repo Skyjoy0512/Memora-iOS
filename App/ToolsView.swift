@@ -8,6 +8,8 @@ struct ToolsView: View {
   @State private var newTemplate: SummaryMarketTemplate?
   @State private var importingSkill = false
   @State private var importFailure = false
+  @State private var query = ""
+  @State private var isSearching = false
 
   var body: some View {
     VStack(spacing: 0) {
@@ -21,9 +23,9 @@ struct ToolsView: View {
 
       Group {
         switch section {
-        case .skills: ToolsSkillsList()
-        case .templates: ToolsTemplatesList()
-        case .connectors: ToolsConnectorsList()
+        case .skills: ToolsSkillsList(query: query)
+        case .templates: ToolsTemplatesList(query: query)
+        case .connectors: ToolsConnectorsList(query: query)
         }
       }
       .listStyle(.plain)
@@ -38,10 +40,15 @@ struct ToolsView: View {
     .navigationTitle("ツール")
     .navigationBarTitleDisplayMode(.inline)
     .toolbarBackground(MemoraPalette.background, for: .navigationBar)
+    .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ツールを検索")
     .toolbar {
       ToolbarActionItem(placement: .topBarLeading) {
         ToolbarIconButton("メニュー", icon: .line3Horizontal) { onOpenSidebar() }
       }
+      ToolbarActionItem {
+        ToolbarIconButton("ツールを検索", icon: .magnifyingglass) { isSearching = true }
+      }
+      ToolbarActionGap()
       ToolbarActionItem(usesSystemBackground: true) {
         Menu {
           Button("スキルを作成", icon: .squareAndPencil) {

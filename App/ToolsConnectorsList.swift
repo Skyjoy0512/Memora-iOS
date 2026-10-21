@@ -1,8 +1,13 @@
 import SwiftUI
 
 struct ToolsConnectorsList: View {
+  var query = ""
   var body: some View {
-    let services = IntegrationCatalog.services
+    let services = IntegrationCatalog.services.filter {
+      ToolsCatalogSearch.matches(query, fields: [$0.name, $0.summary] + $0.aliases)
+    }
+    let showsWebhook = ToolsCatalogSearch.matches(query, fields: ["Webhook", "通知", "自動化"])
+    let showsSystem = ToolsCatalogSearch.matches(query, fields: ["ウィジェットとショートカット", "システム", "Widget", "Shortcuts"])
     let groups: [(String, [IntegrationCatalog])] = [
       ("コミュニケーション", services.filter { $0.id == "gmail" }),
       ("カレンダー", services.filter { $0.id == "calendar" }),
@@ -12,20 +17,33 @@ struct ToolsConnectorsList: View {
     ]
     List {
       ForEach(groups, id: \.0) { title, services in
-        Section {
-          ForEach(services) { service in ToolsConnectorRow(service: service) }
-        } header: { ToolsSectionHeading(title: title) }
+        if !services.isEmpty {
+          Section {
+            ForEach(services) { service in ToolsConnectorRow(service: service) }
+          } header: { ToolsSectionHeading(title: title) }
+        }
       }
-      Section {
-        NavigationLink { WebhookSettingsView() } label: {
-          SettingsLabel("Webhook", icon: .paperplane)
-        }
-        .listRowBackground(MemoraPalette.background)
-        NavigationLink { IOSIntegrationSettingsView() } label: {
-          SettingsLabel("ウィジェットとショートカット", icon: .rectangleStack)
-        }
-        .listRowBackground(MemoraPalette.background)
-      } header: { ToolsSectionHeading(title: "自動化とシステム") }
+      if showsWebhook || showsSystem {
+        Section {
+          if showsWebhook {
+            NavigationLink { WebhookSettingsView() } label: {
+              SettingsLabel("Webhook", icon: .paperplane)
+            }
+            .listRowBackground(MemoraPalette.background)
+          }
+          if showsSystem {
+            NavigationLink { IOSIntegrationSettingsView() } label: {
+              SettingsLabel("ウィジェットとショートカット", icon: .rectangleStack)
+            }
+            .listRowBackground(MemoraPalette.background)
+          }
+        } header: { ToolsSectionHeading(title: "自動化とシステム") }
+      }
+    }
+    .overlay(alignment: .top) {
+      if services.isEmpty && !showsWebhook && !showsSystem {
+        ToolsSearchEmptyState()
+      }
     }
   }
 }

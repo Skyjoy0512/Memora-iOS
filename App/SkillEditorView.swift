@@ -7,21 +7,41 @@ struct SkillEditorView: View {
   var reviewsAnswer = false
   @State private var keywords = ""
   @State private var failure = false
+  @State private var originalSkill: MemoraSkill?
+  @State private var confirmsDiscard = false
+  @FocusState private var focusedField: Field?
 
   var body: some View {
     let tools = model.toolRegistry().tools.values.filter { AgentTool(rawValue: $0.name) != nil }.sorted { $0.name < $1.name }
     let isNew = !model.customSkills.contains { $0.id == skill.id }
+    let input = SkillEditorInput(skill: skill, keywords: keywords)
+    let hasChanges = input.hasChanges(from: originalSkill ?? skill)
     NavigationStack {
       MemoraForm {
         Section {
           TextField("スキル名", text: $skill.name)
+            .focused($focusedField, equals: .name)
+            .submitLabel(.next)
+            .onSubmit { focusedField = .summary }
           TextField("いつ使うか・何をするか", text: $skill.summary, axis: .vertical)
+            .lineLimit(1...4)
+            .focused($focusedField, equals: .summary)
         } footer: {
-          Text("名前と用途、繰り返し使う作業手順を保存します。要約の書式だけを指定する場合はテンプレートを使います。")
+          Text(input.validationMessage ?? "保存した手順は、@やスキルの詳細から呼び出せます。")
             .font(.footnote).foregroundStyle(.secondary)
+            .accessibilityIdentifier("skill.validation")
         }
         Section {
           TextEditor(text: $skill.instructions).frame(minHeight: 180).accessibilityLabel("スキルの手順")
+            .focused($focusedField, equals: .instructions)
+            .overlay(alignment: .topLeading) {
+              if skill.instructions.isEmpty {
+                Text("目的・作業の進め方・出力形式・確認事項を書きます。")
+                  .foregroundStyle(.tertiary)
+                  .padding(.horizontal, 5).padding(.vertical, 8)
+                  .allowsHitTesting(false).accessibilityHidden(true)
+              }
+            }
         } header: {
           Text("手順")
         } footer: {
@@ -30,12 +50,14 @@ struct SkillEditorView: View {
               Text("回答を下書きとして取り込みました。今回だけの結果や個人情報を除き、次回も使える作業手順に編集してください。自動変換は行っていません。")
             }
             Text("目的の確認 → 作業の進め方 → 出力形式 → 確認事項の順に書くと再利用しやすくなります。")
-            Text("\(skill.instructions.count) / 6,000文字")
+            Text("\(skill.instructions.count) / 6,000文字").monospacedDigit()
           }
           .font(.footnote).foregroundStyle(.secondary)
         }
         Section {
           TextField("キーワード（カンマ区切り・任意）", text: $keywords)
+            .focused($focusedField, equals: .keywords)
+            .submitLabel(.done).onSubmit { focusedField = nil }
         } header: {
           Text("自動適用")
         } footer: {
@@ -65,28 +87,42 @@ struct SkillEditorView: View {
       }
       .navigationTitle(isNew ? "スキルを作成" : "スキルを編集").navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) { Button("キャンセル", role: .cancel) { dismiss() } }
+        ToolbarItem(placement: .cancellationAction) {
+          // Let the editor decide whether cancellation needs confirmation.
+          Button("キャンセル") {
+            focusedField = nil
+            if hasChanges { confirmsDiscard = true } else { dismiss() }
+          }
+        }
         ToolbarItem(placement: .confirmationAction) {
           Button("保存") {
-            if model.saveCustomSkill(normalizedSkill) { dismiss() } else { failure = true }
+            focusedField = nil
+            if model.saveCustomSkill(input.normalizedSkill) { dismiss() } else { failure = true }
           }
-          .disabled(!MemoraSkillMarkdown.valid(normalizedSkill))
+          .disabled(input.validationMessage != nil)
+        }
+        ToolbarItemGroup(placement: .keyboard) {
+          Spacer()
+          Button("完了") { focusedField = nil }
         }
       }
-      .onAppear { keywords = skill.keywords.joined(separator: ", ") }
+      .interactiveDismissDisabled(hasChanges)
+      .onAppear {
+        guard originalSkill == nil else { return }
+        originalSkill = skill
+        keywords = skill.keywords.joined(separator: ", ")
+      }
+      .alert("変更を破棄しますか？", isPresented: $confirmsDiscard) {
+        Button("編集を続ける", role: .cancel) {}
+        Button("変更を破棄", role: .destructive) { dismiss() }
+      } message: {
+        Text("まだ保存されていない変更だけを破棄します。保存済みのスキルは変更しません。")
+      }
       .alert("スキルを保存できません", isPresented: $failure) { Button("閉じる", role: .cancel) {} } message: {
         Text("名前・用途・手順、最大16ツール・8キーワードを確認してください。カスタムスキルは最大30件です。保存先に問題がある場合も変更は確定しません。")
       }
     }
   }
 
-  private var normalizedSkill: MemoraSkill {
-    var candidate = skill
-    candidate.name = candidate.name.trimmingCharacters(in: .whitespacesAndNewlines)
-    candidate.summary = candidate.summary.trimmingCharacters(in: .whitespacesAndNewlines)
-    candidate.instructions = candidate.instructions.trimmingCharacters(in: .whitespacesAndNewlines)
-    candidate.keywords = keywords.components(separatedBy: ",")
-      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-    return candidate
-  }
+  private enum Field: Hashable { case name, summary, instructions, keywords }
 }
