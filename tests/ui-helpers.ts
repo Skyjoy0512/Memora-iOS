@@ -70,10 +70,17 @@ export async function launchMemora(app: any, device: any, screen: any) {
   await expect(menu).toBeVisible();
 }
 
-export async function scrollToControl(screen: any, control: any) {
-  for (let attempt = 0; attempt < 9; attempt++) {
-    if (await control.isVisible()) return;
-    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 300 }, duration: 500 });
+export async function scrollToControl(screen: any, control: any, frame?: { minimumY: number; maximumY: number }) {
+  for (const down of frame ? [true, false] : [true]) {
+    for (let attempt = 0; attempt < 9; attempt++) {
+      if (await control.isVisible()) {
+        if (!frame) return;
+        const box = await control.boundingBox();
+        if (box && box.y >= frame.minimumY && box.y + box.height <= frame.maximumY) return;
+        if (box && box.y < frame.minimumY && down) break;
+      }
+      await screen.swipe({ from: { x: 215, y: down ? 700 : 300 }, to: { x: 215, y: down ? 300 : 700 }, duration: 500 });
+    }
   }
   await expect(control).toBeVisible();
 }

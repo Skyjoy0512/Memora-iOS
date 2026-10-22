@@ -326,10 +326,17 @@ test('a source added in the workspace stays in the sources tab', async ({ app, d
   const save = screen.getByRole('button', { name: 'リンクを保存' });
   await expect(save).toBeEnabled();
   await tapStable(save);
+  const link = screen.getByRole('textbox', { name: 'YouTube・WebのURL', exact: true });
+  // XCTest exposes an empty native TextField's placeholder as its AX value.
+  await expect(link).toHaveValue(/^(YouTube・WebのURL)?$/);
+  await link.fill('https://example.com/e2e-source');
+  await tapStable(save);
+  await expect(link).toHaveValue(/^(YouTube・WebのURL)?$/);
   await tapStable(screen.getByLabel('閉じる'));
 
   const row = screen.getByText('example.com').first();
   await expect(row).toBeVisible();
+  await expect(screen.getByText('example.com', { exact: true })).toHaveCount(1);
 
   await tapStable(screen.getByRole('button', { name: 'チャット' }));
   await tapStable(screen.getByRole('button', { name: 'ソース' }));

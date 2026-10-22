@@ -163,6 +163,11 @@ query binding, not a display-only copy.
 Workspace: Chat / Files / Sources in that order, shared flat tabs, rows, empty
 states and toolbar actions. Scoped Ask AI reads active-project evidence only;
 privacy and membership are checked at execution and completion.
+Source status describes extraction, not permission: 本文解析済み / 一部解析済み /
+本文抽出済み · 解析範囲未確認. YouTube title-only results say メタデータのみ;
+they do not imply access to audio, subtitles or the complete video. External-AI
+permission remains separate. Source memo editors retain both title and body drafts
+after failed saves and reopening; failures do not dismiss the editor.
 Empty tabs scroll so the action remains reachable with larger text. Tasks,
 People and Documents use the same empty-state component, with real add/open
 actions. Document and project rows use neutral interface glyphs rather than

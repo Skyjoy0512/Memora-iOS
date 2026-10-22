@@ -11,11 +11,11 @@ struct ProjectSourceAvailabilityChecks {
     source.extractedTextReference = "bounded.json"
     precondition(source.canProvideText && source.statusLabel.contains("解析範囲未確認"))
     source.textCoverage = .partial
-    precondition(source.canProvideText && source.statusLabel == "一部をAI参照可")
+    precondition(source.canProvideText && source.statusLabel == "一部解析済み")
     let partial = try JSONDecoder().decode(ProjectSource.self, from: JSONEncoder().encode(source))
     precondition(partial == source && !partial.privacy.allowsCloudAI)
     source.textCoverage = .complete
-    precondition(source.statusLabel == "AI参照可")
+    precondition(source.statusLabel == "本文解析済み")
     var legacy = try JSONSerialization.jsonObject(with: JSONEncoder().encode(source)) as! [String: Any]
     legacy.removeValue(forKey: "textCoverage")
     let restored = try JSONDecoder().decode(ProjectSource.self, from: JSONSerialization.data(withJSONObject: legacy))
@@ -27,10 +27,19 @@ struct ProjectSourceAvailabilityChecks {
     }
     source.kind = .youtube
     source.metadata = ["youtubeTitle": "架空の動画"]
+    source.processingStatus = .unavailable
     source.errorInformation = "サムネイルを取得できませんでした。"
     precondition(source.availabilityNotice?.contains("音声・字幕は取得していません") == true)
     precondition(source.availabilityNotice?.contains("サムネイル") == true)
     precondition(!source.canProvideText)
+    precondition(source.statusLabel == "メタデータのみ" && !source.privacy.allowsCloudAI)
+    for kind in [ProjectSource.Kind.pdf, .image, .document, .web, .note] {
+      source.kind = kind
+      for status in [ProjectSource.ProcessingStatus.pending, .processing, .unavailable, .failed] {
+        source.processingStatus = status
+        precondition(!source.canProvideText && !source.statusLabel.contains("解析済み"))
+      }
+    }
     print("ProjectSourceAvailabilityChecks: passed (legacy codec, honest partial/missing states, unchanged privacy and evidence eligibility)")
   }
 }

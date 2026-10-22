@@ -34,12 +34,14 @@ extension ProjectSource {
       if !canProvideText { "内容未取得" }
       else {
         switch textCoverage {
-        case .complete: "AI参照可"
-        case .partial: "一部をAI参照可"
-        case nil: "AI参照可 · 解析範囲未確認"
+        case .complete: String(localized: "本文解析済み")
+        case .partial: String(localized: "一部解析済み")
+        case nil: String(localized: "本文抽出済み · 解析範囲未確認")
         }
       }
-    case .unavailable: "保存済み · 内容未取得"
+    case .unavailable:
+      if kind == .youtube, metadata?["youtubeTitle"] != nil { String(localized: "メタデータのみ") }
+      else { "保存済み · 内容未取得" }
     case .failed: "保存済み · 解析失敗"
     }
   }

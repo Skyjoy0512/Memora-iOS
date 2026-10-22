@@ -1,38 +1,8 @@
-import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, realpathSync } from 'node:fs';
-import { join, sep } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { launchMemora, tapControl, tapTab } from './ui-helpers';
-
-function sql(database: string, statement: string) {
-  return execFileSync('/usr/bin/sqlite3', ['-cmd', '.timeout 5000', database, statement],
-    { encoding: 'utf8', timeout: 10_000, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-}
-
-// Fail closed unless this test's unique UI-created record identifies exactly
-// one booted CoreSimulator container. Never open Bitrig preview or device data.
-function isolatedDatabase(marker: string, bundleID: string) {
-  const listing = JSON.parse(execFileSync('xcrun', ['simctl', 'list', 'devices', 'available', '--json'], { encoding: 'utf8' }));
-  const matches: string[] = [];
-  for (const devices of Object.values(listing.devices) as any[][]) {
-    for (const simulator of devices) {
-      if (simulator.name !== 'iPhone 18 Pro Max' || simulator.state !== 'Booted') continue;
-      try {
-        const container = realpathSync(execFileSync('xcrun', ['simctl', 'get_app_container', simulator.udid, bundleID, 'data'],
-          { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim());
-        const path = join(container, 'Library', 'Application Support', 'Memora', 'memora.sqlite');
-        if (!existsSync(path)) continue;
-        const database = realpathSync(path);
-        if (!database.startsWith(container + sep)) continue;
-        if (sql(database, `SELECT instr(CAST(data AS TEXT), '${marker}') > 0 FROM documents WHERE key='memoraLifeLogEntries';`) === '1') matches.push(database);
-      } catch { /* An unrelated simulator without the test app is not a target. */ }
-    }
-  }
-  if (matches.length !== 1) throw new Error('Cannot uniquely identify the isolated journal test database');
-  return matches[0];
-}
+import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
 
 test('journal SQLite failures retain drafts and records, then recover through the UI', { timeout: 360_000 }, async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);

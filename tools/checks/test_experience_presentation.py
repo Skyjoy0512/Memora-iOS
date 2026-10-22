@@ -67,6 +67,19 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn("Text(meeting.displayTitle)", meeting)
         self.assertIn('joined(separator: " · ")', meeting)
 
+    def test_source_editors_keep_drafts_and_own_their_save_errors(self):
+        add = (APP / "ProjectSourceAddSheet.swift").read_text()
+        edit = (APP / "ProjectNoteEditSheet.swift").read_text()
+        self.assertIn("右上の＋", add)
+        self.assertNotIn("右下の＋", add)
+        for source in (add, edit):
+            self.assertIn("presentsErrorsLocally: true", source)
+            self.assertIn('.accessibilityLabel("タイトル")', source)
+            self.assertIn(".title", source)
+            self.assertIn("DraftStore.load", source)
+            self.assertIn("DraftStore.clear", source)
+        self.assertIn(".interactiveDismissDisabled(isSaving)", edit)
+
 
 if __name__ == "__main__":
     unittest.main()

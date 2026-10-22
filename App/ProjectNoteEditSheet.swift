@@ -11,7 +11,7 @@ struct ProjectNoteEditSheet: View {
 
   init(source: ProjectSource, text: String) {
     self.source = source
-    _title = State(initialValue: source.title)
+    _title = State(initialValue: DraftStore.load("workspace.note.\(source.id).title") ?? source.title)
     _text = State(initialValue: DraftStore.load("workspace.note.\(source.id)") ?? text)
   }
 
@@ -19,14 +19,16 @@ struct ProjectNoteEditSheet: View {
     NavigationStack {
       MemoraForm {
         if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
-        TextField("タイトル", text: $title)
+        TextField("タイトル", text: $title).accessibilityLabel("タイトル")
         TextEditor(text: $text).frame(minHeight: 240).accessibilityLabel("メモ本文")
       }
+      .disabled(isSaving)
+      .onChange(of: title) { _, value in DraftStore.save(value, key: "workspace.note.\(source.id).title") }
       .onChange(of: text) { _, value in DraftStore.save(value, key: "workspace.note.\(source.id)") }
       .navigationTitle("メモを編集").navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }.disabled(isSaving)
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
@@ -34,8 +36,10 @@ struct ProjectNoteEditSheet: View {
             Task {
               defer { isSaving = false }
               do {
-                if try await model.updateProjectNote(source.id, title: title, text: text) {
-                  DraftStore.clear("workspace.note.\(source.id)"); dismiss()
+                if try await model.updateProjectNote(source.id, title: title, text: text, presentsErrorsLocally: true) {
+                  DraftStore.clear("workspace.note.\(source.id)")
+                  DraftStore.clear("workspace.note.\(source.id).title")
+                  dismiss()
                 }
                 else { errorMessage = "保存できませんでした。開き直して確認してください。" }
               } catch { errorMessage = error.localizedDescription }
@@ -43,6 +47,7 @@ struct ProjectNoteEditSheet: View {
           }.disabled(isSaving || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
       }
+      .interactiveDismissDisabled(isSaving)
     }
   }
 }

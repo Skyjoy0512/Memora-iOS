@@ -338,8 +338,47 @@ pushは実施していない。
   失敗したrunを成功として数えない。
 - 最新Debug preview成功: `2026-10-22T23-22-59-b0ff304c.log`、既存警告11件。
 
-解析状態の表示、古い案内、メモ画面の失敗復旧、YouTube/一般取込の非同期境界の
-最終確認はまだ完了していない。Phase 5全体の完了とはしない。
+### 解析状態とメモ画面
+
+- 状態表示を`本文解析済み / 一部解析済み / 本文抽出済み · 解析範囲未確認`へ整理。
+  抽出状態と外部AIの参照許可を混同させない。YouTubeのタイトルだけなら
+  `メタデータのみ`と表示し、音声/字幕未取得の既存説明を維持する。
+  canProvideTextやprivacyの判定、保存codecは変更していない。
+- Source追加の「右下の＋」を現行の「右上の＋」へ修正。
+  App内の右下/下部＋/旧タブ案内の文字列を検索し、他の該当案内は見つからなかった。
+- メモ追加/編集の同期commitだけをローカル失敗表示へ接続し、重複root alertで
+  フォームが閉じないようにした。追加時の失敗メッセージは画面内へスクロールする。
+- 既存の本文draft IDを維持し、同じDraftStore/SQLiteにタイトル用のIDを追加。
+  成功時だけ両方をクリアし、失敗後の閉じる/再起動/再編集でも復元する。
+  編集保存中の入力/取消/スワイプ閉じを止め、新しい入力を保存結果で消さない。
+- 入力済みのTextFieldにも明示的なアクセシビリティ名を付けた。
+  Chat/Files/Sources、フラットな行、native sheet/field、Glassは維持している。
+
+検証:
+
+- ホスト5スイート成功:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-source-ui-quality/`。
+  各形式の未取得/解析中/失敗、旧codec、partial/complete、YouTube metadata、
+  private-by-defaultと本文利用判定を含む。新しい画面の構造契約も成功。
+- Debug preview成功: `2026-10-22T23-32-21-d5fdb573.log`、既存警告11件。
+- UI E2E初回4件は3成功/1失敗:
+  `phase5-source-ui/report.json`。project mention、Journal失敗復旧、sourceメモ失敗復旧は成功。
+  リンクの空欄をXCTestがplaceholderとして返すことによる期待値の失敗は保持する。
+  空文字か正確なplaceholderだけを認める判定へ修正し、重複防止の検査は維持した。
+- 再実行+追加Office E2Eは2成功/失敗・skip・中断0:
+  `phase5-source-ui-repaired/report.json`。同じURLを2回保存して行は1件。
+  Officeは既存Debug診断から本番import/extraction/file/SQLite/添付解析を通し、
+  3形式の保存再読込一致とWord本文の再表示、`一部解析済み`の説明、専用データの削除を検証。
+  Officeアプリ/QuickLookの最終レイアウトや外部認証を確認した意味ではない。
+- 選択したUI5ケースはそれぞれ最終成功。全runのmodel token/downloadは0。
+  sourceの新規メモ失敗→タイトル/本文の保持→閉じる→再起動→再保存、
+  編集失敗→保持→取消→再起動→再編集→保存→再起動後の本文を確認した。
+  共通化したSQLite fixture特定ヘルパーはJournalの実失敗復旧でも再実行して成功。
+- Lightの追加失敗、Darkの編集失敗と復元、Office partial説明の4画像を保存・目視した:
+  `docs/qa/memora-1.0/phase5/`。新デザインのBefore/After比較や未観測画面の証明とはしない。
+
+残り: YouTube metadata/thumbnail、一般ファイル・写真取込/解析の非同期境界と、
+PDF/OCR/画像の実端末での範囲表示・失敗再試行の最終確認。Phase 5全体の完了とはしない。
 
 ## Phase 6〜7
 

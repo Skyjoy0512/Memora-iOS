@@ -27,15 +27,17 @@ struct ProjectSourceAddSheet: View {
               Text(message).font(.subheadline)
                 .foregroundStyle(failed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
                 .accessibilityLabel(message)
+                .id("source-save-status")
             }
           }
           Section("リンク") {
             TextField("YouTube・WebのURL", text: $link)
+              .accessibilityLabel("YouTube・WebのURL")
               .focused($focusedField, equals: .link)
               .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
             Button("リンクを保存", icon: .link) {
               perform {
-                guard let id = try model.addProjectLink(link, projectID: projectID) else {
+                guard let id = try model.handlingPersistenceFailureLocally({ try model.addProjectLink(link, projectID: projectID) }) else {
                   return false
                 }
                 link = ""
@@ -50,10 +52,11 @@ struct ProjectSourceAddSheet: View {
             Button("ファイルを選択", icon: .doc) { isImportingFiles = true }
             Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
           } footer: {
-            Text("ファイルは50MBまで。録音・音声取り込みは右下の＋からも始められます。")
+            Text("ファイルは50MBまで。録音・音声取り込みは右上の＋からも始められます。")
           }
           Section("テキストメモ") {
             TextField("タイトル", text: $noteTitle)
+              .accessibilityLabel("タイトル")
               .focused($focusedField, equals: .title)
             TextEditor(text: $noteText).frame(minHeight: 120).accessibilityLabel("メモ本文")
               .focused($focusedField, equals: .body)
@@ -62,9 +65,10 @@ struct ProjectSourceAddSheet: View {
               perform {
                 guard
                   try await model.addProjectNote(
-                    title: noteTitle, text: noteText, projectID: projectID) != nil
+                    title: noteTitle, text: noteText, projectID: projectID, presentsErrorsLocally: true) != nil
                 else { return false }
                 DraftStore.clear("workspace.newNote.\(projectID)")
+                DraftStore.clear("workspace.newNote.\(projectID).title")
                 noteTitle = ""
                 noteText = ""
                 return true
@@ -73,6 +77,9 @@ struct ProjectSourceAddSheet: View {
           }
         }
         .scrollDismissesKeyboard(.interactively)
+        .onChange(of: message) { _, value in
+          if failed, value != nil { scroll.scrollTo("source-save-status", anchor: .top) }
+        }
         .onChange(of: focusedField) { _, field in
           if field == .body { scroll.scrollTo(Field.body, anchor: .center) }
         }
@@ -85,7 +92,13 @@ struct ProjectSourceAddSheet: View {
         }
       }
       .disabled(isSaving || model.isRestoring || model.space(id: projectID) == nil)
-      .onAppear { noteText = DraftStore.load("workspace.newNote.\(projectID)") ?? "" }
+      .onAppear {
+        noteTitle = DraftStore.load("workspace.newNote.\(projectID).title") ?? ""
+        noteText = DraftStore.load("workspace.newNote.\(projectID)") ?? ""
+      }
+      .onChange(of: noteTitle) { _, value in
+        DraftStore.save(value, key: "workspace.newNote.\(projectID).title")
+      }
       .onChange(of: noteText) { _, value in
         if value.isEmpty {
           DraftStore.clear("workspace.newNote.\(projectID)")
