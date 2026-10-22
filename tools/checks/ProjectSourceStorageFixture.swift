@@ -12,7 +12,49 @@ final class MemoraModel {
   #if MEMORA_WEB_SOURCE_CHECKS
   var projectWebFetchJobs: [UUID: (id: UUID, task: Task<WebSourceFetcher.Result, Error>)] = [:]
   #endif
+  #if MEMORA_SOURCE_IMPORT_CHECKS
+  var preparedSourceIDs: [UUID] = []
+  var preparationHook: ((UUID) async -> Void)?
+  var audioImportCalls = 0
+  func prepareProjectSource(_ id: UUID) async {
+    preparedSourceIDs.append(id)
+    await preparationHook?(id)
+  }
+  func importAudio(from url: URL, spaceID: UUID?, importContext: LocalImportContext?) async -> UUID? {
+    audioImportCalls += 1
+    return nil
+  }
+  #endif
   var spaces: [MemoraSpace] = []
+  #if MEMORA_AUDIO_IMPORT_CHECKS
+  var meetings: [Meeting] = []
+  var tasks: [AudioImportTask] = []
+  var isImporting = false
+  var importProgress: Double?
+  var importErrorMessage: String?
+  var deletionFailureMessage: String?
+  var projectFilingNotice: String?
+  var openedMeetingID: UUID?
+  var isRecording = false
+  var pendingImportURLs: [URL] = []
+  var inFlightImportURLs: Set<URL> = []
+  var pendingImportNotice: String?
+  var pendingInboxCount: Int?
+  var trashedRecords: [AudioImportTrashedRecord] = []
+  var missingRecordNotice: MissingRecordNotice?
+  var selectedTab = AudioImportDestination.library
+  var librarySection = AudioImportSection.files
+  var libraryPath: [AudioImportRoute] = []
+  var isCapturePresented = false
+  func meeting(id: UUID) -> Meeting? { meetings.first { $0.id == id } }
+  func noteRealSaveForSampleCleanup() {}
+  func presentPendingSampleCleanupIfNeeded() {}
+  func openSavedMeeting(_ id: UUID) { openedMeetingID = id }
+  func openExternalSourceCitation(_ url: URL) {}
+  func openSystemDestination(_ link: MemoraAppLink) {}
+  func openTask(_ id: UUID) {}
+  func startCapture() async {}
+  #endif
   var currentTeamID: String? {
     didSet { if oldValue != currentTeamID { aiWorkspaceGeneration = UUID() } }
   }
@@ -22,7 +64,12 @@ final class MemoraModel {
   var invalidated: [ProjectCitation.Target] = []
   var persistenceFailureMessage: String?
   var failurePresentation = PersistenceFailurePresentation()
-  enum StorageKey { static let projectSources = "memoraProjectSources" }
+  enum StorageKey {
+    static let projectSources = "memoraProjectSources"
+    #if MEMORA_AUDIO_IMPORT_CHECKS
+    static let meetings = "memoraAudioImportMeetings"
+    #endif
+  }
 
   init(storeURL: URL) throws {
     self.storeURL = storeURL

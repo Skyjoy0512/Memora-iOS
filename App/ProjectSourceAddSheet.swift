@@ -10,6 +10,9 @@ struct ProjectSourceAddSheet: View {
   @State private var noteTitle = ""
   @State private var noteText = ""
   @State private var photos: [PhotosPickerItem] = []
+  @State private var isSelectingPhotos = false
+  @State private var photoImportContext: LocalImportContext?
+  @State private var fileImportContext: LocalImportContext?
   @State private var isImportingFiles = false
   @State private var isMovingRecords = false
   @State private var isSaving = false
@@ -46,10 +49,18 @@ struct ProjectSourceAddSheet: View {
             }.disabled(link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
           }
           Section {
-            PhotosPicker(selection: $photos, maxSelectionCount: 6, matching: .images) {
+            Button {
+              photoImportContext = LocalImportContext(projectID: projectID, in: model)
+              guard photoImportContext != nil else { perform { false }; return }
+              isSelectingPhotos = true
+            } label: {
               Label("写真を選択", icon: .photo)
             }
-            Button("ファイルを選択", icon: .doc) { isImportingFiles = true }
+            Button("ファイルを選択", icon: .doc) {
+              fileImportContext = LocalImportContext(projectID: projectID, in: model)
+              guard fileImportContext != nil else { perform { false }; return }
+              isImportingFiles = true
+            }
             Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
           } footer: {
             Text("ファイルは50MBまで。録音・音声取り込みは右上の＋からも始められます。")
@@ -123,10 +134,13 @@ struct ProjectSourceAddSheet: View {
       ) { result in
         switch result {
         case .success(let urls):
+          let context = fileImportContext
           perform {
+            guard let context, context.isCurrent(in: model) else { return false }
             var count = 0
             for url in urls.prefix(10) {
-              if try await model.importProjectFile(url, projectID: projectID) != nil { count += 1 }
+              guard context.isCurrent(in: model) else { break }
+              if try await model.importProjectFile(url, projectID: projectID, importContext: context) != nil { count += 1 }
             }
             if count > 0 { message = "\(count)件を保存しました。" }
             return count > 0
@@ -136,19 +150,23 @@ struct ProjectSourceAddSheet: View {
           failed = true
         }
       }
+      .photosPicker(isPresented: $isSelectingPhotos, selection: $photos, maxSelectionCount: 6, matching: .images)
       .onChange(of: photos) { _, items in
         guard !items.isEmpty else { return }
+        let context = photoImportContext
         perform {
+          // Reset even after a failed transfer so the same photo can be retried.
+          defer { photos = [] }
+          guard let context, context.isCurrent(in: model) else { return false }
           var count = 0
           for item in items {
-            if let photo = try await item.loadTransferable(type: ProjectPhotoTransfer.self),
-              await model.addProjectFile(receipt: photo.receipt, title: "写真", projectID: projectID)
-                != nil
-            {
+            guard context.isCurrent(in: model) else { break }
+            if try await model.importProjectSource(title: "写真", context: context, load: {
+              try await item.loadTransferable(type: ProjectPhotoTransfer.self)?.receipt
+            }) != nil {
               count += 1
             }
           }
-          photos = []
           if count > 0 { message = "\(count)件を保存しました。" }
           return count > 0
         }

@@ -80,6 +80,20 @@ class ExperiencePresentationChecks(unittest.TestCase):
             self.assertIn("DraftStore.clear", source)
         self.assertIn(".interactiveDismissDisabled(isSaving)", edit)
 
+    def test_source_import_captures_context_before_native_pickers(self):
+        add = (APP / "ProjectSourceAddSheet.swift").read_text()
+        self.assertIn("fileImportContext = LocalImportContext", add)
+        self.assertIn("photoImportContext = LocalImportContext", add)
+        self.assertIn(".photosPicker(isPresented: $isSelectingPhotos", add)
+        self.assertIn("importContext: context", add)
+        self.assertIn("importProjectSource(title:", add)
+        self.assertIn("defer { photos = [] }", add)
+        self.assertNotIn(".onTapGesture", add)
+        audio = (APP / "MemoraModel+Import.swift").read_text()
+        self.assertIn("context.isCurrent(in: self, allowsRemovedProject: true)", audio)
+        self.assertIn("return meeting.id", audio)
+        self.assertEqual(audio.count("if await importAudio(from: url) != nil { removeInboxCopyIfNeeded(url) }"), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

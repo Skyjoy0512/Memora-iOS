@@ -5,12 +5,15 @@ extension MemoraModel {
   /// Copies an audio file into the app, checks that it can actually be played,
   /// and records its real length. The file work runs off the main actor, and a
   /// failed import leaves nothing behind.
-  func importAudio(from sourceURL: URL, spaceID: UUID? = nil) async {
-    guard !isImporting, !isRestoring, isStoreWritable() else { return }
+  @discardableResult
+  func importAudio(from sourceURL: URL, spaceID: UUID? = nil, importContext: LocalImportContext? = nil) async -> UUID? {
+    guard !isImporting, !isRestoring, isStoreWritable() else { return nil }
     guard spaceID == nil || ProjectFiling.existingProject(spaceID, in: spaces) != nil else {
       importErrorMessage = "保存先のプロジェクトが見つかりません。開き直してください。"
-      return
+      return nil
     }
+    guard let context = importContext ?? LocalImportContext(projectID: spaceID, in: self),
+          context.projectID == spaceID, context.isCurrent(in: self) else { return nil }
     isImporting = true
     importProgress = nil
     importErrorMessage = nil
@@ -67,12 +70,13 @@ extension MemoraModel {
         audioURL: destination
       )
       let candidate = [meeting] + meetings
-      guard !isRestoring, persistNow(candidate, forKey: StorageKey.meetings) else {
+      guard context.isCurrent(in: self, allowsRemovedProject: true),
+            persistNow(candidate, forKey: StorageKey.meetings) else {
         if !MediaFiles.delete(destination) {
           deletionFailureMessage = "保存できなかったインポート音声の削除に失敗しました。"
         }
         importErrorMessage = "音声を保存できませんでした。元のファイルは変更していません。空き容量を確認して、もう一度取り込んでください。"
-        return
+        return nil
       }
       meetings = candidate
       if spaceID != nil, meeting.spaceID == nil {
@@ -84,12 +88,15 @@ extension MemoraModel {
       importProgress = 1
       isImporting = false
       openSavedMeeting(meeting.id)
+      return meeting.id
     case .unreadable:
       isImporting = false
       importErrorMessage = "この音声は再生できないため取り込めませんでした。別のファイルをお試しください。"
+      return nil
     case .failed:
       isImporting = false
       importErrorMessage = "音声を読み込めませんでした。ファイル形式と空き容量を確認してください。"
+      return nil
     }
   }
 
@@ -156,15 +163,12 @@ extension MemoraModel {
   /// A file the person picked themselves does not sit there and is left alone.
   private func importAndCleanUp(_ url: URL) async {
     inFlightImportURLs.insert(url)
-    await importAudio(from: url)
-    removeInboxCopyIfNeeded(url)
+    if await importAudio(from: url) != nil { removeInboxCopyIfNeeded(url) }
     inFlightImportURLs.remove(url)
   }
 
   private func removeInboxCopyIfNeeded(_ url: URL) {
-    let inbox = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent("Inbox", isDirectory: true)
-      .standardizedFileURL.path
+    let inbox = AudioInbox.directory.standardizedFileURL.path
     let path = url.standardizedFileURL.path
     guard path.hasPrefix(inbox + "/") else { return }
     try? FileManager.default.removeItem(at: url)
@@ -173,8 +177,7 @@ extension MemoraModel {
   /// The audio files sitting in the Inbox, e.g. an import cut short by the app
   /// being closed.
   private func inboxAudioURLs() -> [URL] {
-    let inbox = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent("Inbox", isDirectory: true)
+    let inbox = AudioInbox.directory
     let contents = (try? FileManager.default.contentsOfDirectory(
       at: inbox,
       includingPropertiesForKeys: [.contentModificationDateKey]
@@ -203,8 +206,7 @@ extension MemoraModel {
     let urls = inboxAudioURLs()
     pendingInboxCount = nil
     for url in urls {
-      await importAudio(from: url)
-      removeInboxCopyIfNeeded(url)
+      if await importAudio(from: url) != nil { removeInboxCopyIfNeeded(url) }
     }
   }
 
