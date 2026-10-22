@@ -287,11 +287,15 @@ branchへ移し、検索入力ごとのbody更新では表示しない集計を�
 見た目の変更ではないので、これを新デザインのBefore/After比較とはしない。
 
 最新Debug preview成功: `2026-10-22T22-33-37-1322e0fa.log`、既存警告11件。
+ReleaseのiOS Simulatorビルドも成功:
+`2026-10-22T22-37-50-0b5b4814.log`、既存警告11件。SDKは27.1。
+これは実機での動作確認・Releaseの端末性能計測ではない。
 最終ホスト5スイートもすべて終了0:
 `/Volumes/WorkspaceSSD/Development/Temp/memora-phase4-quality-complete/`。
 この最終runには種別指定失効の新規検証と、Journal検索branchの静的回帰も含む。
 GitHubのmain/対象branchを再fetchし、開始時のHEADから変更がないことも確認した。
 pushは実施していない。
+結果と失敗/再実行の区別は`docs/qa/memora-1.0/phase4/validation-summary.json`に保存。
 
 ### 残る性能確認
 

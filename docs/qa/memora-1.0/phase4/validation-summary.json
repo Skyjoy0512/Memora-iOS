@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-22",
+  "branch": "main",
+  "appCodeRevision": "4e77062",
+  "sdk": "iPhoneSimulator27.1.sdk",
+  "debugPreview": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-22T22-33-37-1322e0fa.log"
+  },
+  "releaseSimulatorBuild": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-22T22-37-50-0b5b4814.log",
+    "physicalDeviceValidation": false
+  },
+  "hostChecks": {
+    "output": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase4-quality-complete",
+    "suites": [
+      {"name":"next-generation","status":"passed","exitCode":0},
+      {"name":"design-refresh","status":"passed","exitCode":0},
+      {"name":"background-summary","status":"passed","exitCode":0},
+      {"name":"composer-layout","status":"passed","exitCode":0},
+      {"name":"optimization","status":"passed","exitCode":0}
+    ],
+    "xcodeTestTargets": "not configured in this Project.json; not counted as XCTest success"
+  },
+  "uiChecks": [
+    {
+      "report":".e2e/regression/phase4-memory/report.json",
+      "selected":4,"executed":4,"passed":3,"failed":1,"skipped":0,"interrupted":0,"modelTokens":0,"downloads":0,
+      "failure":"same-labelled child Text was measured instead of 44pt insertion Button"
+    },
+    {
+      "report":".e2e/regression/phase4-memory-insertion-repair/report.json",
+      "selected":1,"executed":1,"passed":0,"failed":1,"skipped":0,"interrupted":0,"modelTokens":0,"downloads":0,
+      "failure":"waiting alone did not fix the wrong locator; retained as a failure"
+    },
+    {
+      "report":".e2e/regression/phase4-memory-insertion-role/report.json",
+      "selected":1,"executed":1,"passed":1,"failed":0,"skipped":0,"interrupted":0,"modelTokens":0,"downloads":0,
+      "fix":"explicit button role; unchanged 44pt contract"
+    },
+    {
+      "report":".e2e/regression/phase4-journal-search/report.json",
+      "selected":3,"executed":3,"passed":3,"failed":0,"skipped":0,"interrupted":0,"modelTokens":0,"downloads":0,
+      "cases":["insertion time and restart","edit/delete and restart","search/clear/cancel and restored timeline"]
+    }
+  ],
+  "screenshots": [
+    {"file":"journal-search-results.png","visuallyInspected":true},
+    {"file":"journal-search-returned-timeline.png","visuallyInspected":true}
+  ],
+  "performance": {
+    "report":"memory-benchmark.json",
+    "hostWarmPairMedianReductionPercent":95.16,
+    "hostMaximumRSSMedianIncreaseBytes":1032192,
+    "journalInputLatencyFPSAndEnergyMeasured":false,
+    "iosPerformanceMeasured":false
+  },
+  "github": {
+    "fetchedAgain":true,
+    "main":"f41fd399e8bcc7d655b08526010935f7a2f7a046",
+    "feature":"599ff5e05ff22b7b3395b6ae61f3e2a20f7d1568",
+    "pushPerformed":false,
+    "actionsRunVerified":false
+  },
+  "remaining": [
+    "Phase 4 physical-device and end-to-end performance measurements",
+    "Phase 5 source experience and asynchronous save-boundary review",
+    "Phase 6 external integration recovery without unauthorized real-account operations",
+    "Phase 7 final visual/accessibility/IME review",
+    "Physical recording/recovery/transcription and authenticated-service release regressions"
+  ]
+}
