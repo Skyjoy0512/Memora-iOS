@@ -477,12 +477,72 @@ pushは実施していない。
 - 実装コミット`bb138ea`。結果はPhase 5の`web-recovery-validation-summary.json`。
   mainのまま、pushや外部サービスの新しい認証/権限拡大は実施していない。
 
+### 登録前の取込境界と音声原本の保持（2026-10-23）
+
+- `LocalImportContext`で個人workspace generationと親project全体を保持する。
+  ProjectSourceAddSheetはnative写真/ファイルPickerを開く**前**に取得し、
+  loadTransferable/copyの前後、登録後にも照合する。team・復元中・store保護・
+  project編集/削除・A→B→A・cancel後の古い結果を保存/成功表示しない。
+- 既存file actor・SHA重複排除・SQLite schema・解析ルーターを再利用。
+  未登録の新規コピーは失効/保存失敗時に回収するが、登録済み原本は保持する。
+  同じreceiptを再使用した場合も、他のsourceが参照するファイルを削除しない。
+  保存後の解析失効は保存自体のrollbackとはせず、旧workspaceの保存済み原本を残す。
+- 音声取込は保存したMeetingのIDを直接返す。コピー/長さ読取中のscope変更を拒否し、
+  新規コピーだけ回収する。従来の「取込中にproject削除→未分類へ保存」は維持する。
+  InboxのURL受付/録音中待機/手動取込は、**保存成功時だけ**iOSのInbox原本を削除する。
+  以前は失敗時も無条件に削除していたため、SQL失敗や読取不能時のデータ消失を修正した。
+- 同期source削除もteam・復元・store保護を拒否し、SQLite成功前にmodel/fileを変えない。
+  detachは既存storage guardを利用する。内部importとmutationを別extensionへ移し、
+  UI変更と保存処理を分離した。既存の表示/選択枚数/ファイルサイズ上限は変更しない。
+- 写真の選択状態は転送失敗時もリセットし、同じ写真を選び直せるようにした。
+  native Picker自体は維持し、権限は選択した写真のみ。新しいOAuth/写真library権限はない。
+
+検証:
+
+- ホスト5スイートすべて成功（終了0）:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-import-final-quality/`。
+  next-generationへ新規runnerを2本登録した。
+- SourceImportの32 raceは取込前・実copy待ち・転送済み・登録後の4境界×8状態。
+  generation/parent変更、team/復元/store保護/cancelに加え、実fileのSHA重複排除、
+  SQLite ABORT/reopen/retry、登録済み共有ファイル保持、detach/delete拒否を確認。
+  解析・音声とmodel stateはfixtureで、OSのPhotosPicker転送そのものではない。
+- AudioImportは本番Import extension全体を実行し、8つの長さ読取待機race、
+  削除projectの未分類保存、実SQL ABORT後のInbox保持/再試行、読取不能時の保持、
+  録音中の待機queueを確認。本番Meeting codecでSQLite再読込一致。
+  duration/media service・navigation/model stateはfixture。音声payloadも検証用で、
+  実AV読取・再生・マイク・実録音の検証ではない。
+- 新規fixtureの初期実行ではcancel例外の期待値、依存state不足、Meetingの
+  rawAudioReference復元属性の比較で失敗した。期待値/fixtureを修正後に再実行し成功。
+  不具合を隠すためにproductのcodecを変更していない。初期失敗を成功に合算しない。
+  全体runnerの初回は出力オプション誤指定で終了2。正しい`--output-dir`で実行し直した。
+- UI初回の2件は成功したが、再実行では写真Pickerの取消後に入力欄が見つからず1件失敗。
+  trace/画面でLoading用のCancel操作中に実Pickerへ切り替わったことを確認した。
+  写真タブと実ファイルnavigationの表示待ちを追加し、retry 0で再検証した。
+  当該失敗ログは`.e2e/regression/phase5-import-final/`に残す。
+- 最終Debug preview成功: `2026-10-23T08-42-09-c203c0d2.log`、既存警告11件。
+  Release Simulatorビルドも成功: `2026-10-23T08-40-45-5535c1a7.log`、SDK 27.1、
+  既存警告11件。ReleaseはDebug previewを待って再開し、最終appコードを含む。
+- 修正後のUI E2Eは2シナリオを各2回、4実行/4成功。失敗/skip/中断/flaky 0、
+  retry 0、model token/download 0。`.e2e/regression/phase5-import-post-review/report.json`。
+  repeatを含む検出結果83件のうち、他79件はfilteredで未実行、成功には数えない。
+  専用CoreSimulatorだけで、ユーザーのBitrig previewや実アカウントデータは使わない。
+- 写真Picker、ファイルPicker、取消後の入力保持、Officeの一部解析済み表示を目視し、
+  `import-native-photo-picker.png`、`import-native-file-picker.png`、
+  `import-picker-cancel-retains-input.png`、`import-office-source-partial-coverage.png`へ保存。
+  UI再設計のBefore/Afterではなく、最終コードの回帰画面であり他画面確認の代用ではない。
+- 実装コミット`5718761`。詳細はPhase 5の`import-validation-summary.json`。
+  mainのまま、push/上流の再取得/新しい実認証/外部送信は実施していない。
+  性能の変更前後の新しい計測はなく、速度や電池改善の数値を主張しない。
+
+実機確認やPhase 5全体の完了を意味しない。
+
 残り（Phase 5全体の完了とはしない）:
 
-- 一般ファイルのcopy前後、PhotosPickerのloadTransferable、音声取込の開始前からの
-  workspace generationを維持する境界。今回のcontextは登録済みsourceの解析が対象。
-- sourceの登録/削除など、同期操作を含む未接続team workspace境界の追加確認。
+- 右上作成メニューの音声Pickerも、表示開始前からcontextを保持する追加確認。
+  今回はprojectのsource追加Pickerと、音声importAudio開始後の境界を検証した。
+- 選択写真の実loadTransferable・OCR・失敗後の同一写真再選択、実AV音声読取/再生。
 - PDF/OCR/画像の実端末での範囲表示・失敗再試行、実YouTube通信と縮小画像の品質。
+- 実バックアップ復元途中の中断UI E2E。hookのhost検証だけでは代替しない。
 
 ## Phase 6〜7
 

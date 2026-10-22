@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "appCodeRevision": "5718761",
+  "phaseStatus": "Phase 5 in progress; pre-registration source imports and audio Inbox retention hardened",
+  "sdk": "iPhoneSimulator27.1.sdk",
+  "deploymentTarget": "iOS 26.0",
+  "debugPreview": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-23T08-42-09-c203c0d2.log"
+  },
+  "releaseSimulatorBuild": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-23T08-40-45-5535c1a7.log",
+    "boundary": "Release resumed after the Debug preview and compiled final app sources; not physical-device validation"
+  },
+  "hostChecks": {
+    "output": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-import-final-quality",
+    "suites": [
+      {"name": "next-generation", "status": "passed", "exitCode": 0},
+      {"name": "design-refresh", "status": "passed", "exitCode": 0},
+      {"name": "background-summary", "status": "passed", "exitCode": 0},
+      {"name": "composer-layout", "status": "passed", "exitCode": 0},
+      {"name": "optimization", "status": "passed", "exitCode": 0}
+    ],
+    "productionPaths": ["LocalImportContext", "importProjectFile", "importProjectSource", "addProjectFile", "storeProjectSource", "detachProjectSource", "deleteProjectSource", "ProjectSourceFiles", "LocalStore", "importAudio", "handle", "processPendingImports", "importInboxAudio", "AudioInbox", "Meeting codec"],
+    "sourceImportRaces": {
+      "cases": 32,
+      "stages": ["captured context before load", "actual file actor copy suspended", "transfer completed before registration", "already registered before preparation completes"],
+      "changesPerStage": ["team switch", "A-to-B-to-A workspace generation", "restoring", "protected store", "project deleted", "project renamed", "cancel", "generation replaced"],
+      "additionalChecks": ["real SHA deduplication and reopen", "committed receipt file retained on reuse", "wrong-project context rejected", "SQLite ABORT cleanup and retry", "already registered original retained on later invalidation", "detach/delete team, restoring and protected refusal", "delete failure retains model, SQLite and files", "shared file reference retained"]
+    },
+    "audioImportRaces": {
+      "cases": 8,
+      "stage": "actual copy completed, duration callback suspended before save",
+      "changes": ["team switch", "A-to-B-to-A workspace generation", "restoring", "protected store", "project deleted", "project renamed", "cancel", "generation replaced"],
+      "policy": "project deletion alone preserves existing unfiled-audio fallback; other seven cases reject the save and remove only the new copy",
+      "additionalChecks": ["real handle-to-import-to-SQLite path", "SQL ABORT retains Inbox original", "successful retry reopens production Meeting codec and only then removes Inbox original", "unreadable import retains original", "import while recording queues without interrupting recording state", "failed queue import retains Inbox files for manual retry"]
+    },
+    "fixtureBoundary": "Model state, navigation and evidence notifications are fixtures. Source preparation/audio routing in source tests are fixtures. Audio duration/media service is a fixture with synthetic payload bytes; production import/Inbox logic, file I/O, Meeting codec and SQLite failures/reopen are exercised, not AVFoundation playback, microphone, PhotosPicker transfer or OCR.",
+    "initialFailures": [
+      "Source fixture did not initially allow the expected CancellationError from real copy; expectation corrected and runner passed",
+      "Audio fixture initially lacked tasks state and did not account for the production codec rawAudioReference provenance field; fixture corrected without changing product codec, then runner passed",
+      "One aggregate invocation used --output instead of --output-dir and exited 2 before any suite; final aggregate used the documented option and passed all five suites"
+    ],
+    "xcodeTestTargets": "not configured in Project.json; not counted as XCTest success"
+  },
+  "uiChecks": {
+    "report": ".e2e/regression/phase5-import-post-review/report.json",
+    "discoveredResultsIncludingRepeats": 83,
+    "selected": 4,
+    "executed": 4,
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "retries": 0,
+    "repeatsPerScenario": 2,
+    "modelTokens": 0,
+    "downloads": 0,
+    "cases": ["Native photo and file pickers open, cancel and retain unsaved URL input", "Office source import, extraction, partial-coverage presentation, SQLite reread and fixture cleanup"],
+    "environment": "fresh app per scenario on dedicated iPhone 18 Pro Max CoreSimulator, not Bitrig user preview or a real account",
+    "priorRuns": [
+      {"report": ".e2e/regression/phase5-import/report.json", "passed": 2, "failed": 0, "boundary": "earlier app revision; not final verification"},
+      {"report": ".e2e/regression/phase5-import-final/report.json", "passed": 1, "failed": 1, "cause": "Cancel on temporary Loading photo sheet was tapped while transitioning into actual picker; trace and failure screenshot show actual picker still open", "fix": "Wait for actual Photos tab and document-manager navigation before interacting; do not mask with retries"}
+    ],
+    "boundary": "79 filtered results were not executed; no selected-photo transfer, real audio decoding, OCR, VoiceOver or device performance verification"
+  },
+  "screenshots": [
+    {"file": "import-native-photo-picker.png", "appearance": "light", "visuallyInspected": true},
+    {"file": "import-native-file-picker.png", "appearance": "light", "visuallyInspected": true},
+    {"file": "import-picker-cancel-retains-input.png", "appearance": "light", "visuallyInspected": true},
+    {"file": "import-office-source-partial-coverage.png", "appearance": "light", "visuallyInspected": true}
+  ],
+  "screenshotBoundary": "Observed final regression screens, not a redesign before/after pair or evidence for other screens",
+  "performance": {"newBeforeAfterMeasurements": false, "claim": "correctness and data retention change; no device performance improvement claimed"},
+  "github": {"pushPerformed": false, "upstreamRefreshedThisUnit": false, "actionsRunVerified": false},
+  "remaining": [
+    "Top-right capture-menu audio picker context before presentation; this unit covers project source pickers and the importAudio operation from entry onward",
+    "Selected-photo transfer/OCR and same-photo retry after failure on a real picker",
+    "Physical audio duration/playback, recording interruption/recovery and audio-session behavior",
+    "Physical PDF/OCR/image coverage and retry, real YouTube and thumbnail quality",
+    "Simulator interruption during actual backup restore; existing hook host checks are not that full flow",
+    "Phase 4 physical performance measurements and Phase 6-7 work in MEMORA_1_0_PROGRESS.md"
+  ]
+}

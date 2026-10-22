@@ -45,11 +45,25 @@ Project.jsonにはXcodeのテストターゲットがなく、`bitrig test`成�
 DNS/HTTPはfixtureで、起動/再起動hook自体は別のUI E2E
 `project-source-interruption.e2e.ts`で専用SQLiteへ中断状態を置いて確認する。
 
+`run-project-source-import-checks.sh`は登録前のcontextを保持し、取込前・実copy待ち・
+転送完了後・登録後の32 race、重複排除、登録済みファイル保持、同期操作の拒否と
+実SQLite失敗/再読込/再試行を検証する。解析・音声・model stateはfixture。
+PhotosPicker自体をホストで動かした検証ではない。
+
+`run-audio-import-checks.sh`は本番の音声取込・URL受付・録音中の取込待機・Inboxを
+実行する。8 raceとプロジェクト削除時の未分類保存、SQL失敗/再試行、読取不能時の
+原本保持を実ファイルと本番Meeting codec/SQLiteで確認する。duration/media service、
+navigation/model stateはfixtureで、実AV読取・再生・マイク・録音復旧を代替しない。
+ホストのInboxは必須の隔離パスへ向け、製品のDocuments/Inboxは変更しない。
+
 UI E2Eは既存`e2e`スキルの手順で実行する。テスト専用Simulatorへ
 再インストールするので、Bitrigのユーザープレビューや実端末では実行しない。
 `tests/ui-helpers.ts`の再起動は同一シナリオ内の永続化確認に使う。
 APIキーを環境から外し、モデル呼出を含まないテストを選択する。
 テレメトリーも無効にする。失敗・skip・未実行は成功に合算しない。
+`project-source-pickers.e2e.ts`はnative写真/ファイルPickerの起動・取消と入力保持を
+確認する。写真Pickerの一時的なLoading画面ではなく、実際の写真タブを待って操作する。
+選択写真の転送やOCR成功を確認したという意味ではない。
 
 ## GitHub Actions
 
