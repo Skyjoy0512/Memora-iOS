@@ -47,10 +47,18 @@ class DesignTokenChecks(unittest.TestCase):
         for retired in ("GlassSegmentedPicker.swift", "GlassSegmentedControl.swift", "SettingsIconStyle.swift"):
             self.assertFalse((APP / retired).exists(), retired)
         config = json.loads((ROOT / "Project.json").read_text())
-        self.assertNotIn("LucideSwift", json.dumps(config))
+        self.assertEqual(config["packages"]["LucideSwift"]["exactVersion"], "0.9.11")
+        self.assertIn('Image(icon:', (APP / "MemoraInterfaceIcon.swift").read_text())
 
     def test_navigation_and_capture_contracts_remain_native(self):
-        self.assertIn("UISegmentedControl", (APP / "ProminentTabBar.swift").read_text())
+        root = (APP / "RootTabView.swift").read_text()
+        self.assertIn('toolbar(.hidden, for: .tabBar)', root)
+        sidebar = (APP / "FileSidebarView.swift").read_text()
+        for title in ("ライブラリ", "ジャーナル", "Ask AI", "ツール"):
+            self.assertIn(f'SidebarRow(title: "{title}"', sidebar)
+        capture = (APP / "CaptureToolbarButton.swift").read_text()
+        for contract in ("ToolbarIconButton", "matchedTransitionSource", "presentationCompactAdaptation(.popover)"):
+            self.assertIn(contract, capture)
         source = (APP / "QuickAIComposer.swift").read_text()
         self.assertIn("ComposerMentionToken.parse", source)
         self.assertIn("!snapshot.hasMarkedText", source)

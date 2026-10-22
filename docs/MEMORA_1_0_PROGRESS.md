@@ -49,6 +49,31 @@ E2EではLibrary起動・歯車のみの設定ボタン・サイドメニュー�
 古いJournal起動前提と曖昧なテキストlocatorを修正する。
 総合検証の最終結果は完了後に追記する。
 
+### 品質基盤の再実行
+
+- `run-quality-checks.sh`: next-generation / design-refresh / background-summary /
+  composer-layout / optimization の5スイートがすべて終了0。
+  ログは `/Volumes/WorkspaceSSD/Development/Temp/memora-phase1-quality-verified/`。
+- 実行入口の回帰4テスト成功。失敗後の独立スイート継続、非0コードの保存、
+  リポジトリ内・既存・symlink出力先の拒否、相対一時保存先の絶対化を検証。
+- Releaseプレビュー成功: `2026-10-22T10-08-36-542fe9ec.log`、既存警告11件。
+- 最新Debugプレビュー成功: `2026-10-22T10-14-39-bb7e1097.log`、既存警告11件。
+- E2E初回17件は16成功/1失敗。同名プロジェクトlocator修正後の対象1件は成功。
+  サイドバーのライト/ダークロゴ、作成morph、添付とdraftの3件は成功。
+- 拡大E2E28件は26成功/2失敗、skip・中断0。
+  失敗は週カレンダーと編集DatePickerを英語日付で探す旧locator。
+  現行の日本語ラベルへ修正して対象を再実行中。
+  `.e2e/regression/phase1-final/report.json`に失敗を含む元結果を保持。
+- `.github/workflows/quality.yml`を追加。GitHub上での実行は未確認。
+  完全なBitrigアプリビルドとUI E2Eはローカルの別検証であり、CIに含めたとは報告しない。
+
+Supervisor/OpenCode Goは既存workflowで限定2ファイルを委任したが、
+元のmotionゲートが削除済みProminentTabBarを参照して失敗し、候補の
+相対一時保存先とsymlinkログ処理にもreview指摘があった。修正試行中に停止し、
+候補は未適用で保存した。上限超過や失敗ゲートの迂回は行っていない。
+元のゲートを現行仕様へ修正したうえで、集約入口を別途実装し、上記テストを通した。
+委任ログ: `/Volumes/WorkspaceSSD/Development/Agents/MemoraSupervisor/run-0yb0y6eu/`。
+
 画面記録: `docs/qa/memora-1.0/phase1/`。before/afterは同じ端末の観測。
 保存した画像を目視した範囲だけを視覚確認済みとする。
 

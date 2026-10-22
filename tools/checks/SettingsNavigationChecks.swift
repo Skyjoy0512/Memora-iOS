@@ -2,7 +2,8 @@
 struct SettingsNavigationChecks {
   static func main() {
     let categories = SettingsCategory.allCases
-    precondition(categories.count == 11)
+    precondition(Set(categories) == [.account, .workspace, .plan, .recording, .ai, .journal,
+      .integrations, .appearance, .privacy, .data, .about, .diagnostics])
     precondition(Set(categories.map(\.id)).count == categories.count)
     precondition(Set(categories.map(\.title)).count == categories.count)
     precondition(SettingsCategory.groups.count == 4)
@@ -14,6 +15,6 @@ struct SettingsNavigationChecks {
     precondition(MemoraIconMetrics.glyph == 20)
     precondition(MemoraIconMetrics.slot >= MemoraIconMetrics.glyph)
     precondition(MemoraIconMetrics.touchTarget >= 44)
-    print("SettingsNavigationChecks passed: 11 distinct topics, four groups, common icon and touch metrics")
+    print("SettingsNavigationChecks passed: 12 distinct topics including workspace, four groups, common icon and touch metrics")
   }
 }

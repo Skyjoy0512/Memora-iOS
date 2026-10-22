@@ -35,8 +35,8 @@ test('the side menu lists the main destinations', async ({ app, device, screen }
   await expect(screen.getByText('ツール')).toBeVisible();
   await expect(screen.getByText('資料')).toBeVisible();
   await expect(screen.getByText('人物')).toBeVisible();
-  await expect(screen.getByText('プロジェクト')).toBeVisible();
-  await expect(screen.getByText('設定')).toBeVisible();
+  await expect(screen.getByTestId('sidebar.navigation').filter({ hasText: 'プロジェクト' })).toBeVisible();
+  await expect(screen.getByTestId('sidebar.settings')).toBeVisible();
 });
 
 test('the top navigation controls are round', async ({ app, device, screen }) => {
@@ -70,7 +70,7 @@ test('the tools hub reaches skills, templates and connectors', async ({ app, dev
 test('Settings opens from the side menu', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
-  await screen.getByText('設定').last().tap();
+  await screen.getByTestId('sidebar.settings').tap();
   await expect(screen.getByText('アカウント').first()).toBeVisible();
   await expect(screen.getByText('プランと利用状況').first()).toBeVisible();
 });
@@ -93,6 +93,7 @@ test('the journal add-record action opens the capture sheet', async ({ app, devi
 
 test('the tasks list opens from the journal', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
+  await tapTab(screen, 'ジャーナル');
   await screen.getByLabel('すべてのタスクを見る').first().tap();
   await expect(screen.getByText('タスクはありません')).toBeVisible();
   await expect(screen.getByText('未完了')).toBeVisible();
@@ -111,7 +112,7 @@ async function scrollToText(screen: any, text: string) {
 test('the structured answer example renders the comparison table and Row', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
-  await screen.getByText('設定').tap();
+  await screen.getByTestId('sidebar.settings').tap();
   await openSettingsGallery(screen);
   await screen.getByText('構造化回答（表示の確認）').tap();
   await expect(screen.getByText('選択肢の比較')).toBeVisible();
@@ -123,7 +124,7 @@ test('the structured answer example renders the comparison table and Row', async
 test('the structured answer example replays its streaming state', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
-  await screen.getByText('設定').tap();
+  await screen.getByTestId('sidebar.settings').tap();
   await openSettingsGallery(screen);
   await screen.getByText('構造化回答（表示の確認）').tap();
   await screen.getByText('ストリーミングを確認').tap();
@@ -133,7 +134,7 @@ test('the structured answer example replays its streaming state', async ({ app, 
 test('the source list and progress fixture renders', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await screen.getByLabel('メニュー').tap();
-  await screen.getByText('設定').tap();
+  await screen.getByTestId('sidebar.settings').tap();
   await openSettingsGallery(screen);
   await scrollToText(screen, '資料・進捗の表示確認');
   await tapControl(screen, screen.getByRole('button', { name: '資料・進捗の表示確認', exact: true }));

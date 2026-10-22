@@ -1,0 +1,50 @@
+name: Host quality checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: host-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  host-checks:
+    # https://github.blog/changelog/2026-10-15-xcode-27-runner-image-generally-available/
+    runs-on: xcode-27
+    timeout-minutes: 45
+    env:
+      MEMORA_CHECK_ROOT: ${{ runner.temp }}/memora-checks
+      MEMORA_CHECK_TMPDIR: ${{ runner.temp }}
+      TMPDIR: ${{ runner.temp }}/
+      CLANG_MODULE_CACHE_PATH: ${{ runner.temp }}/clang-module-cache
+      SWIFT_MODULECACHE_PATH: ${{ runner.temp }}/swift-module-cache
+      SWIFT_BACKTRACE: enable=no
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Report toolchain and require an iOS Simulator SDK
+        run: |
+          swiftc --version
+          xcrun --sdk iphonesimulator --show-sdk-version
+          python3 --version
+          mkdir -p "$MEMORA_CHECK_ROOT" "$CLANG_MODULE_CACHE_PATH" "$SWIFT_MODULECACHE_PATH"
+      - name: Run production host checks
+        run: |
+          python3 -B tools/checks/test_quality_runner.py
+          bash tools/checks/run-quality-checks.sh --output-dir "$RUNNER_TEMP/memora-quality-results"
+      - name: Upload actual suite logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: host-quality-results
+          path: ${{ runner.temp }}/memora-quality-results
+          if-no-files-found: error
+          retention-days: 14

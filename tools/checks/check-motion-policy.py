@@ -9,8 +9,15 @@ for path in app.glob("*.swift"):
 detail = (app / "MeetingDetailView.swift").read_text()
 assert ".id(selectedSection)" not in detail
 assert "sectionTransition" not in detail
-tabs = (app / "ProminentTabBar.swift").read_text()
-assert "UISegmentedControl" in tabs
+root = (app / "RootTabView.swift").read_text()
+assert 'toolbar(.hidden, for: .tabBar)' in root
+assert 'onCloseAnimationCompleted: completeSidebarAction' in root
+assert 'model.composerDismissRequests += 1' in root
+capture = (app / "CaptureToolbarButton.swift").read_text()
+assert 'matchedTransitionSource' in capture
+assert 'presentationCompactAdaptation(.popover)' in capture
+assert 'navigationTransition(.zoom' in capture
+assert 'model.selectedTab == tab && !model.isToolsPresented' in capture
 assert "navigationTransition" in (app / "HomeView.swift").read_text()
 assert "matchedTransitionSource" in (app / "HomeView.swift").read_text()
-print("Motion policy passed: immediate saved content; native tab and journal Hero retained")
+print("Motion policy passed: immediate saved content; sidebar completion, scoped native capture morph and journal Hero retained; bottom tabs hidden")

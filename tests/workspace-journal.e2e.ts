@@ -83,20 +83,21 @@ test('the workspace tabs read chat, files, sources and switch in place', async (
 
 test('the week strip selects a day and updates the timeline', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
+  await tapTab(screen, 'ジャーナル');
 
   const title = `E2E day ${Date.now()}`;
   await addMemo(screen, title);
 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayName = `${yesterday.toLocaleString('en-US', { month: 'long' })} ${yesterday.getDate()}, ${yesterday.getFullYear()}`;
+  const yesterdayName = `^${yesterday.getFullYear()}/${yesterday.getMonth() + 1}/${yesterday.getDate()}[日月火水木金土]曜日、`;
   await tapStable(screen.getByRole('button', { name: new RegExp(yesterdayName) }));
 
   await expect(screen.getByRole('button', { name: new RegExp(yesterdayName), selected: true })).toBeVisible();
   await expect(screen.getByText(title)).not.toBeVisible();
 
   const today = new Date();
-  const todayName = `${today.toLocaleString('en-US', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`;
+  const todayName = `^${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}[日月火水木金土]曜日、`;
   await tapStable(screen.getByRole('button', { name: new RegExp(todayName) }));
   const record = screen.getByText(title).first();
   await scrollTo(screen, record);
@@ -105,6 +106,7 @@ test('the week strip selects a day and updates the timeline', async ({ app, devi
 
 test('the inline plus buttons add a record', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
+  await tapTab(screen, 'ジャーナル');
 
   await screen.getByText('記録を追加').first().tap();
   await screen.getByPlaceholder('メモのタイトル').fill('E2E inline');
@@ -125,6 +127,7 @@ test('the inline plus buttons add a record', async ({ app, device, screen }) => 
 
 test('the journal and workspace stay legible in dark appearance', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
+  await tapTab(screen, 'ジャーナル');
   await device.setAppearance('dark');
   try {
     await expect(screen.getByText('今日のタスク')).toBeVisible();
@@ -144,6 +147,7 @@ test('the journal and workspace stay legible in dark appearance', async ({ app, 
 
 test('editing a record saves it to the new date', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
+  await tapTab(screen, 'ジャーナル');
   const title = `E2E edit ${Date.now()}`;
   await addMemo(screen, title);
 
@@ -159,13 +163,13 @@ test('editing a record saves it to the new date', async ({ app, device, screen }
 
   await tapStable(screen.getByRole('button', { name: 'Sheet Grabber' }));
   const today = new Date();
-  const todayLabel = `${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()}, ${today.getFullYear()}`;
+  const todayLabel = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
   await tapStable(screen.getByRole('button', { name: todayLabel }));
 
   const target = new Date();
   target.setDate(target.getDate() - 1);
   if (target.getMonth() !== today.getMonth()) target.setDate(today.getDate() + 1);
-  const targetName = `${target.toLocaleString('en-US', { month: 'long' })} ${target.getDate()}`;
+  const targetName = `(?:${target.toLocaleString('en-US', { month: 'long' })} ${target.getDate()}|${target.getMonth() + 1}月${target.getDate()}日)`;
   await tapStable(screen.getByRole('listitem', { name: new RegExp(targetName) }));
 
   await tapStable(screen.getByRole('button', { name: '保存' }));

@@ -22,10 +22,10 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
 
     def test_header_is_flat_without_removing_actions(self):
         header = (APP / "AskAIHeader.swift").read_text()
-        self.assertNotIn("memoraGlass", header)
+        self.assertEqual(header.count(".memoraGlass("), 1)
         for action in ("onOpenSidebar", "onNewChat", "onHistory", "onSearch"):
             self.assertIn(action, header)
-        self.assertIn("Image(icon: .chevronDown)", header)
+        self.assertIn("Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)", header)
         self.assertIn(".disabled(model.aiMessages.isEmpty)", header)
 
     def test_response_actions_have_consistent_glyphs_and_reflow(self):
@@ -40,11 +40,10 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
 
     def test_conversation_width_does_not_collapse_when_keyboard_closes(self):
         root = (APP / "RootTabView.swift").read_text()
-        self.assertIn("isComposing || model.selectedTab == .askAI ? width - MemoraSpacing.xxl", root)
-        self.assertIn("MemoraSpacing.readingWidth)", root)
+        self.assertIn("min(width * 0.945, MemoraSpacing.readingWidth)", root)
         self.assertNotIn(".id(composerScope)\n", root)
-        native = (APP / "ProminentTabBar.swift").read_text()
-        for contract in ("UISegmentedControl", ".buttonStyle(.glass)", "matchedTransitionSource", "navigationTransition(.zoom"):
+        native = (APP / "CaptureToolbarButton.swift").read_text()
+        for contract in ("ToolbarIconButton", "matchedTransitionSource", "navigationTransition(.zoom"):
             self.assertIn(contract, native)
 
     def test_sidebar_footer_shortens_secondary_copy_not_tap_targets(self):

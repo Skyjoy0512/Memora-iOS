@@ -36,7 +36,7 @@ with tempfile.TemporaryDirectory(prefix='memora-perf-', dir=os.environ.get('MEMO
         ranking = folder/'Ranking.swift'
         ranking.write_text('import Foundation\nenum MeetingRanking {\n' + source[begin:end] + '}\n')
     binary = folder/'collections'
-    subprocess.run(['swiftc', '-O', str(ranking), str(legacy), str(current), 'tools/checks/CollectionPerformanceChecks.swift', '-o', str(binary)], check=True)
+    subprocess.run(['swiftc', '-O', str(ranking), str(legacy), str(current), 'App/MemoraFormat.swift', 'tools/checks/CollectionPerformanceChecks.swift', '-o', str(binary)], check=True)
     subprocess.run([str(binary)], check=True)
     paths = []
     for name in ['PerformanceLog.swift', 'RecordStore.swift']:

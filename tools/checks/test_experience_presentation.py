@@ -21,9 +21,10 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn("selectedDate = Calendar.current.startOfDay(for: .now)", home)
         self.assertIn(".disabled(isViewingToday)", home)
         self.assertIn("AnyLayout(VStackLayout", (APP / "HomeActivityLinks.swift").read_text())
-        self.assertIn("entryCreationDate = isViewingToday ? .now : selectedDate", home)
-        self.assertIn("LifeLogCreationSheet(date: entryCreationDate ?? .now)", home)
-        self.assertIn("onDismiss: { entryCreationDate = nil }", home)
+        self.assertIn("model.lifeLogCreationDate = isViewingToday ? .now : selectedDate", home)
+        root = (APP / "RootTabView.swift").read_text()
+        self.assertIn("LifeLogCreationSheet(date: model.lifeLogCreationDate ?? .now)", root)
+        self.assertIn("onDismiss: { model.lifeLogCreationDate = nil }", root)
         empty = home.split("private var emptyDay:")[1].split("///")[0]
         self.assertNotIn("memoraCard", empty)
         self.assertNotIn("memoraCard", (APP / "HomeActivityLinks.swift").read_text())
@@ -40,13 +41,13 @@ class ExperiencePresentationChecks(unittest.TestCase):
 
     def test_capture_keeps_execution_and_native_morph(self):
         menu = (APP / "CaptureMenuPopover.swift").read_text()
-        for call in ("select(action)", "model.startCapture(spaceID: destinationID)", "importSpaceID = destinationID", "handleAudioImport", "model.onlineMeetingCaptureSpaceID = destinationID"):
+        for call in ("select(action)", "model.startCapture(spaceID: destinationID)", "importSpaceID = spaceID", "handleAudioImport", "model.onlineMeetingCaptureSpaceID = destinationID"):
             self.assertIn(call, menu)
         self.assertIn("MemoraActionLabel", menu)
         self.assertIn(".accessibilityHint(action.detail)", menu)
         self.assertIn("min(contentHeight, 480)", menu)
-        native = (APP / "ProminentTabBar.swift").read_text()
-        for contract in ("UISegmentedControl", ".buttonStyle(.glass)", "matchedTransitionSource", "presentationCompactAdaptation(.popover)", "navigationTransition(.zoom"):
+        native = (APP / "CaptureToolbarButton.swift").read_text()
+        for contract in ("ToolbarIconButton", "matchedTransitionSource", "presentationCompactAdaptation(.popover)", "navigationTransition(.zoom"):
             self.assertIn(contract, native)
 
     def test_task_and_document_actions_are_real(self):
