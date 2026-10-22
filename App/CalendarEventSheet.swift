@@ -1,3 +1,4 @@
+import EventKit
 import SwiftUI
 import UIKit
 
@@ -7,9 +8,41 @@ struct CalendarEventSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL
+  @Environment(\.scenePhase) private var scenePhase
   var event: JournalCalendarEvent
+  @State private var editing: CalendarEventEditContext?
+  @State private var editUnavailable = false
+  @State private var showsEditError = false
 
   var body: some View {
+    Group {
+      if let editing {
+        CalendarEventEditor(editing: editing) {
+          model.invalidateAICalendarContext()
+          dismiss()
+        } onUnavailable: {
+          editingBecameUnavailable()
+        }
+      } else {
+        details
+      }
+    }
+    .presentationDetents(editing == nil ? [.medium, .large] : [.large])
+    .interactiveDismissDisabled(editing != nil)
+    .alert("編集できません", isPresented: $showsEditError) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text("予定が変更・削除されたか、編集権限が変わりました。カレンダーで現在の状態を確認してください。")
+    }
+    .onChange(of: scenePhase) { _, phase in
+      if phase == .active { recheckEditingPermission() }
+    }
+    .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged).receive(on: RunLoop.main)) { _ in
+      recheckEditingPermission()
+    }
+  }
+
+  private var details: some View {
     NavigationStack {
       MemoraList {
         Section {
@@ -26,6 +59,14 @@ struct CalendarEventSheet: View {
         }
 
         Section {
+          if offersEditing {
+            Button("編集", icon: .pencil) {
+              guard let context = CalendarEventEditContext(snapshot: event) else {
+                editingBecameUnavailable(); return
+              }
+              editing = context
+            }
+          }
           if canStartRecording {
             Button("録音を開始", icon: .waveform) {
               startRecording()
@@ -33,6 +74,10 @@ struct CalendarEventSheet: View {
           }
           Button("カレンダーで開く", icon: .calendar) {
             openInCalendar()
+          }
+        } footer: {
+          if !offersEditing {
+            Text("この予定はMemoraでは編集できません。カレンダーアプリで確認できます。")
           }
         }
       }
@@ -44,7 +89,22 @@ struct CalendarEventSheet: View {
         }
       }
     }
-    .presentationDetents([.medium])
+  }
+
+  private var offersEditing: Bool {
+    event.allowsEditing && !editUnavailable && CalendarService.access == .granted
+  }
+
+  private func editingBecameUnavailable() {
+    editing = nil
+    editUnavailable = true
+    showsEditError = true
+    model.invalidateAICalendarContext()
+  }
+
+  private func recheckEditingPermission() {
+    if let editing, !editing.isEditable { editingBecameUnavailable() }
+    else if CalendarService.access != .granted { editUnavailable = true }
   }
 
   private var timeText: String {

@@ -31,6 +31,12 @@ enum CalendarService {
     }
   }
 
+  static func allowsEditing(_ event: EKEvent) -> Bool {
+    CalendarEventEditPolicy.allowsEditing(hasFullAccess: access == .granted,
+      calendarAllowsChanges: event.calendar?.allowsContentModifications == true,
+      isCancelled: event.status == .canceled, isOwnedByCurrentUser: event.organizer?.isCurrentUser ?? true)
+  }
+
   enum AddEventError: Error {
     case accessDenied
     case noCalendar
@@ -114,16 +120,18 @@ enum CalendarService {
       .filter { $0.startDate < dayEnd && $0.endDate > dayStart }
       .sorted { $0.startDate < $1.startDate }
       .compactMap { event in
-        guard let identifier = event.eventIdentifier else { return nil }
+        guard let identifier = event.eventIdentifier, let sourceCalendar = event.calendar else { return nil }
         return JournalCalendarEvent(
           eventIdentifier: identifier,
           start: event.startDate,
           end: event.endDate,
           title: event.title ?? "予定",
           isAllDay: event.isAllDay,
-          calendarTitle: event.calendar.title,
-          calendarColor: event.calendar.cgColor.flatMap { Color(cgColor: $0) },
-          location: event.location
+          calendarTitle: sourceCalendar.title,
+          calendarColor: sourceCalendar.cgColor.flatMap { Color(cgColor: $0) },
+          location: event.location,
+          allowsEditing: allowsEditing(event),
+          calendarIdentifier: sourceCalendar.calendarIdentifier
         )
       }
   }

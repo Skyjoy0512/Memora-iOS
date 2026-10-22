@@ -14,6 +14,9 @@ struct JournalCalendarEvent: Identifiable, Hashable {
   var location: String?
   /// Set when a recording is tied to this event, so one row can open it.
   var meetingID: UUID?
+  /// A presentation hint only. The event is looked up and checked again on edit.
+  var allowsEditing = false
+  var calendarIdentifier: String?
 
   /// Identifier plus start, so each repeat of a recurring event is its own item.
   var id: String { "\(eventIdentifier)@\(start.timeIntervalSince1970)" }
