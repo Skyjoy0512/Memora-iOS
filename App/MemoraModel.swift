@@ -343,6 +343,7 @@ final class MemoraModel {
   var deletionFailureMessage: String?
   /// Set when a change could not be written to the local store.
   var persistenceFailureMessage: String?
+  @ObservationIgnored var persistenceFailurePresentation = PersistenceFailurePresentation()
   var account: MemoraAccount?
   var isAuthPresented = false
   var isPaywallPresented = false

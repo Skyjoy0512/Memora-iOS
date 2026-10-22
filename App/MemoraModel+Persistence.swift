@@ -7,7 +7,7 @@ extension MemoraModel {
   /// Returns false, and says why, when the change must not happen.
   func isStoreWritable() -> Bool {
     guard !isStoreProtected else {
-      persistenceFailureMessage = storeProtectedMessage
+      reportPersistenceFailure(storeProtectedMessage)
       return false
     }
     return true
@@ -58,7 +58,8 @@ extension MemoraModel {
     // records may still be there, and replacing them would lose them.
     guard isStoreWritable() else { return }
     RecordStore.save(value, key: key) { [weak self] in
-      self?.persistenceFailureMessage = self?.saveFailureMessage
+      guard let self else { return }
+      self.reportPersistenceFailure(self.saveFailureMessage)
     }
   }
 
@@ -71,7 +72,7 @@ extension MemoraModel {
       try RecordStore.saveNow(value, key: key)
       return true
     } catch {
-      persistenceFailureMessage = saveFailureMessage
+      reportPersistenceFailure(saveFailureMessage)
       return false
     }
   }
@@ -89,7 +90,7 @@ extension MemoraModel {
       try RecordStore.commitNow(writes: try build(), removing: removing)
       return true
     } catch {
-      persistenceFailureMessage = saveFailureMessage
+      reportPersistenceFailure(saveFailureMessage)
       return false
     }
   }
@@ -106,7 +107,7 @@ extension MemoraModel {
       try await RecordStore.commitAsync(writes: try build(), removing: removing)
       return true
     } catch {
-      persistenceFailureMessage = saveFailureMessage
+      reportPersistenceFailure(saveFailureMessage)
       return false
     }
   }
@@ -121,9 +122,17 @@ extension MemoraModel {
       try await RecordStore.commitAsync(writes: [(key: key, data: data)], removing: [])
       return true
     } catch {
-      persistenceFailureMessage = saveFailureMessage
+      reportPersistenceFailure(saveFailureMessage)
       return false
     }
+  }
+
+  func handlingPersistenceFailureLocally<Value>(_ operation: () throws -> Value) rethrows -> Value {
+    try persistenceFailurePresentation.locallyHandled(operation)
+  }
+
+  private func reportPersistenceFailure(_ message: String) {
+    if persistenceFailurePresentation.shouldPresentGlobally { persistenceFailureMessage = message }
   }
 
   private var saveFailureMessage: String {
