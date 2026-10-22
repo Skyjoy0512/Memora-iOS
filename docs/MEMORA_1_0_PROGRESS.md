@@ -427,14 +427,61 @@ pushは実施していない。
 - 実装コミット`e11d151`。詳細結果はPhase 5の`preparation-validation-summary.json`。
   mainのまま、pushや新しい実認証/外部送信は実施していない。
 
+### 中断状態の復旧と明示的Web取得（2026-10-23）
+
+- 本番のWeb取得も既存`ProjectSourcePreparationContext`へ接続。
+  応答後と本文ファイル書込後にsource全体、親projectの版、workspace generation、
+  operation所有IDを確認する。privacy/タイトル/metadata/URL/所属/削除やA→B→A後の
+  古い結果・失敗理由を現在のsourceへ反映しない。旧処理は新しい処理のbusy表示も消さない。
+- WebSourceFetcherの公開HTTPS/DNS/TLS/redirect/MIME/size/time/cookie制限は変更しない。
+  書込関数の差し込みは本番orchestrationの保存後境界を確実に検証するためのもので、
+  通常は従来のfile actorへ直接保存する。新しい権限や自動取得は追加していない。
+- `recoverInterruptedProjectSources`は古いcontextではなく**現在の配列**を使い、
+  実行中IDを持たないprocessing項目のstatus/noticeだけを同期保存する。
+  タイトル、日時、URL、本文/元ファイル/thumbnail参照、metadata、privacyは保持。
+  YouTubeはmetadata-only/unavailable、他形式は失敗・手動再試行可能な状態にする。
+- 起動時、処理終了時、Webジョブ失効時、復元完了時に上記の整理を行う。
+  実行中のsource、team workspace、復元中、保護されたstoreへは書き込まない。
+  SQLiteが失敗した場合はmodelだけ先行させず、ファイルも削除しない。
+  これで前節に残したP1の「解析中」残存を修正。自動再開/再取得はしない。
+
+検証:
+
+- 専用ホスト検証成功。本番fetch orchestration/Fetcher/HTML抽出/file actor/LocalStoreを通す。
+  HTTP応答待ちと実際の本文ファイル書込完了後の2境界×14状態変更＝28通りで、
+  遅れた結果を拒否し新規ファイルを回収。キャンセル/新旧operation所有権、
+  SQL ABORT後のrollback/reopen/retry、旧本文と共有ファイル保持も確認。
+- 復旧は7形式×5状態の35項目で実行中IDの除外と、status/notice以外の厳密な一致、
+  元ファイル/本文/thumbnail保持、再読込、二重実行でSQLを書かないことを確認。
+  復旧保存のSQL ABORT時はmodel/SQLite/ファイルを維持し、再試行で成功する。
+- 前回の解析60 raceも、中断状態の整理だけを認める期待値へ更新して成功。
+  抽出内容やprivacy等を古い結果で置換していないことを引き続き厳密比較する。
+- HTTP/DNS payloadとmodel state/evidence通知はfixture。実TLS通信の新規実行、
+  実YouTube、写真/OCR、実バックアップ復元中断のSimulator動作を確認した意味ではない。
+- 初期のDI既定closureに不要await警告が1件出たため修正。最終Debug previewは成功、
+  `2026-10-23T08-12-56-59a59a6c.log`、既存警告11件に戻った。
+- 最終ホスト5スイートもすべて終了0:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-web-recovery-final-quality/`。
+  初期runも5スイート成功だが、警告修正と実ファイル保持検証追加後に全体を再実行した。
+- Release Simulatorビルド成功: `2026-10-23T08-15-03-6d8f2f54.log`、SDK 27.1、
+  既存警告11件。実機確認・性能計測を行った意味ではない。
+- UI E2Eは3実行/3成功、失敗・skip・中断0:
+  `.e2e/regression/phase5-web-recovery/report.json`。検出80件のうち77件は対象外で未実行。
+  起動時復旧、Office取込/抽出/SQLite再読込、Journalの追加/編集/削除のSQL失敗復旧。
+  model token/downloadは0、実アカウントやLLMを使わない専用CoreSimulator。
+- 起動時復旧E2Eは、UIで作った唯一のWeb sourceに専用SQLite内でprocessingを設定。
+  再起動後の中断理由・手動取得ボタン、status/notice以外の保存値の一致、
+  本文参照未生成、再々起動後の一致を確認。実HTTP送受信を端末で計測した検証ではない。
+  当該画面を`source-interruption-recovered-without-fetch.png`へ保存し目視した。
+  これは復旧後の1画面で、Before/After比較や他画面の視覚確認の代わりとはしない。
+- 実装コミット`bb138ea`。結果はPhase 5の`web-recovery-validation-summary.json`。
+  mainのまま、pushや外部サービスの新しい認証/権限拡大は実施していない。
+
 残り（Phase 5全体の完了とはしない）:
 
 - 一般ファイルのcopy前後、PhotosPickerのloadTransferable、音声取込の開始前からの
   workspace generationを維持する境界。今回のcontextは登録済みsourceの解析が対象。
-- 明示的Web本文取得にも共通のfull snapshot/generation条件を適用すること。
-- P1: 失効後は安全のためsourceへ書き戻さないので、保存済みprocessing状態が残る場合が
-  ある。再起動/失効後の状態正規化を別単位で検証する必要がある。自動再取得はしない。
-  現在の手動再試行導線は、進行中IDが外れたあと利用できる。
+- sourceの登録/削除など、同期操作を含む未接続team workspace境界の追加確認。
 - PDF/OCR/画像の実端末での範囲表示・失敗再試行、実YouTube通信と縮小画像の品質。
 
 ## Phase 6〜7

@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "appCodeRevision": "bb138ea",
+  "phaseStatus": "Phase 5 in progress; registered-source recovery and explicit Web fetch save boundaries validated",
+  "sdk": "iPhoneSimulator27.1.sdk",
+  "deploymentTarget": "iOS 26.0",
+  "debugPreview": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-23T08-12-56-59a59a6c.log"
+  },
+  "releaseSimulatorBuild": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-23T08-15-03-6d8f2f54.log",
+    "physicalDeviceValidation": false
+  },
+  "hostChecks": {
+    "output": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-web-recovery-final-quality",
+    "suites": [
+      {"name": "next-generation", "status": "passed", "exitCode": 0},
+      {"name": "design-refresh", "status": "passed", "exitCode": 0},
+      {"name": "background-summary", "status": "passed", "exitCode": 0},
+      {"name": "composer-layout", "status": "passed", "exitCode": 0},
+      {"name": "optimization", "status": "passed", "exitCode": 0}
+    ],
+    "productionPaths": ["ProjectSourcePreparationContext", "fetchProjectWebSource", "WebSourceFetcher", "WebSourceTextExtraction", "recoverInterruptedProjectSources", "storeProjectSource", "LocalStore", "ProjectSourceFiles", "ProjectSourceTextReader"],
+    "newChecks": {
+      "webSuspendedResultRaces": 28,
+      "stages": ["HTTP response suspended", "real extracted-text file already written before final save"],
+      "changesPerStage": 14,
+      "recoveryMatrixRows": 35,
+      "recoveryKinds": 7,
+      "recoveryStates": 5,
+      "additionalChecks": ["active IDs excluded", "all non-status/notice fields retained", "original/text/thumbnail file retention", "idempotence without SQL writes", "actual SQL failure rollback/reopen/retry", "replacement operation ownership", "cancelled read notice", "old body retained on failed refresh", "shared old file retained", "team/restoring/protected/missing-project refusal"],
+      "previousPreparationRaceCasesRerun": 60
+    },
+    "fixtureBoundary": "model state/evidence notification and DNS/HTTP payloads are fixtures; client orchestration, HTML extraction, file I/O, SQLite failures/reopen are production paths",
+    "initialRun": "all five suites passed in memora-phase5-web-recovery-quality; a new unnecessary-await warning was corrected and the full suite was repeated with the final source and extra real-file retention checks",
+    "xcodeTestTargets": "not configured in Project.json; not counted as XCTest success"
+  },
+  "uiChecks": {
+    "report": ".e2e/regression/phase5-web-recovery/report.json",
+    "discovered": 80,
+    "selected": 3,
+    "executed": 3,
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "modelTokens": 0,
+    "downloads": 0,
+    "cases": ["Interrupted source launch recovery and second restart", "Office source import/extraction/attachment analysis/SQLite reread/fixture cleanup", "Journal create/edit/delete SQLite failure retention and retry"],
+    "environment": "dedicated fresh iPhone 18 Pro Max CoreSimulator app, not Bitrig user preview or real-account data",
+    "interruptionFixture": "only a uniquely identified UI-created Web source is seeded as processing in the isolated SQLite; real launch hook must change only status/notice, keep the source, expose manual fetch and create no text reference",
+    "boundary": "77 filtered tests were not executed; UI source-state assertions are not device HTTP traffic instrumentation"
+  },
+  "screenshots": [
+    {"file": "source-interruption-recovered-without-fetch.png", "appearance": "light", "visuallyInspected": true}
+  ],
+  "screenshotBoundary": "one observed post-recovery screen, not a matched before/after pair or proof of all screens",
+  "performance": {"newBeforeAfterMeasurements": false, "claim": "correctness change; no device performance improvement claimed"},
+  "github": {"pushPerformed": false, "upstreamRefreshedThisUnit": false, "actionsRunVerified": false},
+  "remaining": [
+    "Pre-registration file copy, PhotosPicker transfer and audio-import generation boundaries",
+    "Additional synchronous source registration/deletion checks for unconfigured team workspace",
+    "Physical PDF/OCR/image coverage and retry, real YouTube and thumbnail quality",
+    "Simulator interruption during actual backup restore; hook implemented but that full flow not executed",
+    "Phase 4 physical performance measurements and Phase 6-7 work in MEMORA_1_0_PROGRESS.md"
+  ]
+}

@@ -39,6 +39,12 @@ Project.jsonにはXcodeのテストターゲットがなく、`bitrig test`成�
 通信・抽出・downsampleのpayloadとmodel stateはfixtureであり、
 実YouTube応答や端末PDF/OCR/画像品質を確認したものではない。
 
+`run-project-source-web-recovery-checks.sh`はWeb取得の本番保存/再読込と、
+実行者のいないprocessing状態の整理を検証する。実ファイル書込直後にも待機し、
+失効後のファイル回収とoperation所有権、SQL失敗時の整合性を確認する。
+DNS/HTTPはfixtureで、起動/再起動hook自体は別のUI E2E
+`project-source-interruption.e2e.ts`で専用SQLiteへ中断状態を置いて確認する。
+
 UI E2Eは既存`e2e`スキルの手順で実行する。テスト専用Simulatorへ
 再インストールするので、Bitrigのユーザープレビューや実端末では実行しない。
 `tests/ui-helpers.ts`の再起動は同一シナリオ内の永続化確認に使う。
