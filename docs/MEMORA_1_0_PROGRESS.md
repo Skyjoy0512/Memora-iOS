@@ -86,11 +86,73 @@ Library / Journal / Ask AI / サイドメニュー / Toolsのafter画像を目�
 Phase 1の選択統合・ローカル品質基盤は完了。実機録音・実サービス・GitHub上の
 CI実行は未検証のままであり、全機能の公開判定を済ませた意味ではない。
 
-## Phase 2〜7
+## Phase 2: Ask AIの統合と実行時の再検証
 
-Phase 1の最終検証後に順番に着手する。以下は未完了であり成功扱いしない。
+### 実装
 
-- Phase 2: 会議→タスクの統合経路、Research出典の永続化・プロジェクト追加、構造化UI、プラグイン復旧。
+- `addTasksTool`を本番dispatcherから呼ぶdomain extensionへ分離し、重複実装せず
+  ホスト検証できるようにした。候補の編集UIやデザインは変更していない。
+- 承認前後で選択policyの同一性、スキルの現時点の利用可否、人物scope、
+  ワークスペース、復元/保護/中止状態、会議の存在・所属・権限・内容を再確認する。
+  policyを削除して無制限に戻す変更も、古い承認では実行しない。
+- タスク更新でも復元中を明示的に拒否する。
+- 調査のSQLite保存・出典のプロジェクト追加を`+WebResearchStorage`へ分離。
+  ファイルI/Oの前後でworkspace、reportの版、source一覧、保存先、処理中状態を確認。
+  出典とreportは同じSQLite transactionで保存し、失敗時は新規ファイルだけを除去する。
+- 取得抜粋は`.partial`、生成したローカル調査メモは`.complete`と記録する。
+  未完了の調査を完了扱いせず、URL/取得日時/抜粋種別を保持する。
+- スキルの自動選択は既存の純粋な`MemoraSkill.automaticSelection`、MCP候補は
+  `SemanticToolDiscovery.select`を再利用。名前・キーワード方式のまま、追加LLMや
+  料金の増加はない。将来の意味的選択はこの選択境界から差し替えられる。
+
+### 検証
+
+- `TaskProposalExecutionChecks`成功。本番read_record相当のdomain処理で保存済み会議の
+  要約・決定・文字起こしを取得→AgentConversationLoop→タスク候補→本番approval waiter→
+  利用者による候補編集/選択→実SQLite保存/再読込→本番list_tasksでの反映を検証。
+  未確定の担当・期限はnil。拒否/中止、18種の承認中変更を端末内/クラウド両方で検証。
+- 調査シナリオを拡張し、本番ResearchLoop→抜粋/reportの保存→project追加→再読込→
+  DOCX/PPTX実生成/抽出→レポート再編集を確認。出典URL・取得日時・partial範囲・
+  未完了状態・資料のproject/provenanceを再読込でも確認。
+- 実ファイルactorをテスト側だけで一時停止し、I/O中にworkspace/report/保存先等を
+  変更する9ケースを決定的に検証。SQLite ABORT時も2種類の保存documentがrollbackし、
+  新規ファイルが残らない。テストの停止処理はアプリには含めない。
+- UI E2E: 承認候補の編集/選択とSQLite再読込、拒否/停止、タスク編集/完了/再起動の3件成功。
+  `.e2e/regression/phase2-task-approval/report.json`。
+- UI E2E: スキルの保存/復元/再編集/指定、未保存編集保護、Tools検索、@候補の4件成功。
+  `.e2e/regression/phase2-skills/report.json`。選択7件の失敗/skip/中断は0。
+- Debugプレビュー成功: `2026-10-22T16-42-47-da46d626.log`、既存警告11件。
+- Releaseプレビュー成功: `2026-10-22T16-53-08-6fcae4be.log`、既存警告11件。
+- 途中の集約検証は、コンパイル中のfixture変更と、共用fixtureへのResearch型依存漏れで
+  next-generationが失敗した。成功扱いせず元ログを保持し、専用コンパイルflagで依存を分離。
+  すべてのSwift/fixture変更を止めた最終集約検証は5系統すべて終了0。
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase2-quality-complete/summary.json`。
+  最終結果の要約を`docs/qa/memora-1.0/phase2/validation-summary.json`にも保存した。
+
+モデルによる抽出/要約応答、registry組立、承認入力、HTTP/OSサービスはfixture。
+本番CloudAgentSessionのHTTP/SSEは既存の別ホスト検証で確認する。録音ハードウェアから
+実LLMまでの接続や実アカウントを通した一連動作、Officeアプリの最終描画は未検証。
+構造化UIの比較表/グラフ/カレンダー参照は既存hostのschema・参照権限・型検査を維持。
+これを全カードの実機視覚確認とは扱わず、Phase 7の未検証対象に残す。
+
+画面記録: `docs/qa/memora-1.0/phase2/`。本番承認コンポーネントを使うDebug診断の
+候補編集後/保存後の2枚を目視確認。表示の再設計はしていない。
+
+### 現時点の公開前の残課題
+
+- P0: 実機での録音継続/中断復旧/音声取り込み/STT再試行、全主要動線、実際の
+  VoiceOver/IMEを含む公開前回帰。実認証が必要なGmail/Calendar/Notion/MCPは
+  認証なしのfixture検証と区別し、許可を得た試験環境で別途確認する。CIの実行も未確認。
+- P1: Phase 3〜6のJournal初期時刻と編集、実測付き性能改善、source UX、外部連携復旧。
+- P2: Phase 7の最終視覚確認と、安全に分離できる思考ロゴ案、将来の意味的skill選択。
+
+Phase 4の最適化は未着手。この段階のホストbenchmarkは既存コードの回帰確認であり、
+今回の新しい性能改善率とは扱わない。端末入力遅延/FPS/メモリ/電池は未測定。
+
+## Phase 3〜7
+
+Phase 2の最終検証後に順番に着手する。以下は未完了であり成功扱いしない。
+
 - Phase 3: Journal挿入時刻・編集・保存失敗時の入力保持・外部カレンダー権限。
 - Phase 4: 同じfixtureによる変更前後の実測と、安全な検索・集計最適化。
 - Phase 5: ソース解析状態、重複・再試行、古い案内文の修正。

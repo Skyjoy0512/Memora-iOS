@@ -17,10 +17,11 @@ struct AskAIIntegrationScenarioChecks {
     try pastConversationToOpenItems()
     try await researchHTTPBoundary()
     try await researchToCompanySlides(root: root)
+    try await researchProjectRollback(root: root)
     try await meetingToMailDraft(root: root)
     try await mentionSelectsOnlyPermittedTools(root: root)
 
-    print("AskAIIntegrationScenarioChecks: passed (A template DOCX/PPTX -> real file -> SQLite; B episode reuse revoked by task/workspace/deletion; C bounded research -> template PPTX -> reload; D meeting draft approval/save/edit/reload, unknown recipient refused; E production registry/policy selection; no network/keys/user data)")
+    print("AskAIIntegrationScenarioChecks: passed (A template DOCX/PPTX -> real file -> SQLite; B episode reuse revoked by task/workspace/deletion; C bounded research -> sources/report atomic SQLite save/reopen -> project DOCX/PPTX/edit, partial coverage, 9 suspended-write rollback races; D meeting draft approval/save/edit/reload, unknown recipient refused; E production registry/policy selection; model/HTTP/OS/approval fixtures, no network/keys/user data)")
   }
 
   // MARK: - A. 人物 → 会社提案書
@@ -189,7 +190,7 @@ struct AskAIIntegrationScenarioChecks {
       text: "課題は人材確保", kind: .extractedPassage)
     var calls: [String] = []
     let plan = WebResearchReport(query: "架空市場", mode: .deepResearch, queries: ["架空市場", "市場 統計", "市場 比較"])
-    let report = await ResearchLoop.run(plan, isAuthorized: { true }, search: { query in
+    var report = await ResearchLoop.run(plan, isAuthorized: { true }, search: { query in
       calls.append(query)
       return [first, sameURL, second]
     }, publish: { _ in true })
@@ -204,6 +205,33 @@ struct AskAIIntegrationScenarioChecks {
     precondition(failed.status != .complete)
 
     let model = try MemoraModel(storeURL: root.appendingPathComponent("research.sqlite"))
+    let projectID = UUID()
+    model.spaces = [FixtureSpace(id: projectID, name: "架空の調査プロジェクト")]
+    report.status = .interrupted
+    report.answer = "市場は拡大【Web1】、人材確保が課題【Web2】。未確認項目あり。"
+    report.citedSourceIDs = report.sources.map(\.id)
+    precondition(model.storeWebResearch(report))
+    let projectSaved = try await model.saveWebResearch(report.id, to: projectID)
+    precondition(projectSaved && model.projectSources.count == 3)
+    let storedReport = model.webResearch(id: report.id)!
+    precondition(storedReport.status == .interrupted && storedReport.savedProjectID == projectID)
+    precondition(storedReport.savedSourceIDs.count == 2 && storedReport.savedNoteID != nil)
+    for source in model.projectSources {
+      guard let name = source.extractedTextReference, let url = ProjectSourceFiles.resolve(name) else { preconditionFailure("Missing research excerpt") }
+      let blocks = try JSONDecoder().decode([ProjectSourceText].self, from: Data(contentsOf: url))
+      precondition(!blocks.isEmpty && source.projectID == projectID)
+      if source.kind == .web {
+        precondition(source.textCoverage == .partial && source.metadata?["retrievedAt"] != nil)
+        precondition(report.sources.contains { $0.url == source.originalURL && $0.text == blocks[0].text })
+      } else {
+        precondition(source.textCoverage == .complete && blocks[0].text.contains("調査は未完了です"))
+        precondition(report.sources.allSatisfy { blocks[0].text.contains($0.url.absoluteString) })
+      }
+      model.recordArtifactProjectSource(AgentSourceReference(id: source.id, projectID: projectID,
+        fingerprint: AIRecordFingerprint.make(source)!), messageID: model.message.id)
+    }
+    let repeatedSave = try await model.saveWebResearch(report.id, to: projectID)
+    precondition(!repeatedSave && model.projectSources.count == 3)
     let templateDocument = MemoraDocument(title: "{{title}}", kind: .slides,
       slides: [DocumentSlide(title: "{{title}}", bullets: ["{{body}}"])])
     let templateBytes = PPTXWriter.data(for: templateDocument)
@@ -214,6 +242,7 @@ struct AskAIIntegrationScenarioChecks {
     model.companyTemplates = [template]
     var document = MemoraDocument(title: "架空市場の調査", kind: .slides,
       slides: [DocumentSlide(title: "架空市場の調査", bullets: ["根拠は【Web1】【Web2】", "未完了の項目あり"])])
+    document.spaceID = projectID
     document.provenance = model.artifactProvenance(for: model.message)
     let call = AgentToolCall(id: UUID().uuidString, name: "create_slides", arguments: [
       "template_id": template.id.uuidString,
@@ -231,7 +260,87 @@ struct AskAIIntegrationScenarioChecks {
     let reopened = LocalStore(fileURL: root.appendingPathComponent("research.sqlite")); try reopened.prepare()
     guard case .data(let data) = reopened.readOutcome(MemoraModel.StorageKey.documents) else { preconditionFailure("C: slides not stored") }
     let storedSlides = try JSONDecoder().decode([MemoraDocument].self, from: data)
-    precondition(storedSlides.first?.artifactFileReference == name)
+    precondition(storedSlides.first?.artifactFileReference == name && storedSlides.first?.spaceID == projectID)
+    precondition(storedSlides.first?.provenance?.projectSources.count == 3)
+    let savedSources: [ProjectSource] = try reload(MemoraModel.StorageKey.projectSources, store: reopened)
+    let savedReports: [WebResearchReport] = try reload("memora.webResearch.v1", store: reopened)
+    precondition(savedSources == model.projectSources && savedReports == model.webResearchReports)
+
+    var written = MemoraDocument(title: "調査レポート", kind: .document,
+      markdown: report.answer + "\n\n" + report.sources.map { $0.url.absoluteString }.joined(separator: "\n"), spaceID: projectID)
+    written.provenance = model.artifactProvenance(for: model.message)
+    written = try await model.prepareDocumentArtifact(written, call: AgentToolCall(id: "report", name: "create_document", arguments: [:]))
+    precondition(model.addDocument(written))
+    var docx = try OfficeArchiveReader(data: Data(contentsOf: ProjectSourceFiles.resolve(written.artifactFileReference!)!))
+    let docxText = try OfficeDocumentExtraction.read(archive: &docx, extension: "docx").blocks.map(\.text).joined()
+    precondition(docxText.contains(report.answer) && report.sources.allSatisfy { docxText.contains($0.url.absoluteString) })
+    precondition(model.updateDocument(written.id, title: "再編集した調査レポート", body: "根拠を再確認する。"))
+    let edited: [MemoraDocument] = try reload(MemoraModel.StorageKey.documents, store: reopened)
+    precondition(edited.first?.title == "再編集した調査レポート" && edited.first?.artifactFileReference == nil)
+    precondition(edited.first?.spaceID == projectID && edited.first?.provenance?.projectSources.count == 3)
+    let discarded = ProjectSourceFiles.resolve(written.artifactFileReference!)!
+    for _ in 0..<10_000 {
+      if !FileManager.default.fileExists(atPath: discarded.path) { break }
+      await Task.yield()
+    }
+    precondition(!FileManager.default.fileExists(atPath: discarded.path), "Edited artifact cleanup did not finish")
+  }
+
+  @MainActor static func researchProjectRollback(root: URL) async throws {
+    for mode in 0..<9 {
+      let url = root.appendingPathComponent("research-race-\(mode).sqlite")
+      let model = try MemoraModel(storeURL: url)
+      let projectID = UUID()
+      model.spaces = [FixtureSpace(id: projectID, name: "架空の保存先")]
+      var report = WebResearchReport(query: "架空の比較", mode: .deepResearch, queries: ["架空の比較"])
+      report.sources = [WebResearchSource(title: "架空の抜粋", url: URL(string: "https://example.invalid/source")!, text: "全文ではない抜粋", kind: .searchExcerpt)]
+      precondition(model.storeWebResearch(report))
+      precondition(model.persistNow(model.projectSources, forKey: MemoraModel.StorageKey.projectSources))
+      let before = try Set(FileManager.default.contentsOfDirectory(atPath: ProjectSourceFiles.directory.path))
+      let entered = DispatchSemaphore(value: 0)
+      let release = DispatchSemaphore(value: 0)
+      // Hold the real file actor, not a mocked write. The model suspends after
+      // capturing its revisions, so execution-time mutations are deterministic.
+      let hold = Task.detached { await ProjectSourceFiles.shared.holdForResearchCheck(entered: entered, release: release) }
+      defer { release.signal() }
+      precondition(entered.wait(timeout: .now() + 10) == .success)
+      var started = false
+      let operation = Task { @MainActor in
+        started = true
+        return try await model.saveWebResearch(report.id, to: projectID)
+      }
+      while !started { await Task.yield() }
+      switch mode {
+      case 0: model.currentTeamID = "other"
+      case 1: model.webResearchReports[0].query = "確認中に変更した質問"
+      case 2: model.webResearchReports = []
+      case 3: model.spaces = []
+      case 4: model.isRestoring = true
+      case 5: model.isStoreProtected = true
+      case 6: operation.cancel()
+      case 7: model.webResearchBusyIDs.insert(report.id)
+      default:
+        var connection: OpaquePointer?
+        precondition(sqlite3_open_v2(url.path, &connection, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK)
+        defer { sqlite3_close(connection) }
+        precondition(sqlite3_exec(connection, "CREATE TRIGGER fail_research BEFORE INSERT ON documents WHEN NEW.key='memora.webResearch.v1' BEGIN SELECT RAISE(ABORT, 'research save failure'); END;", nil, nil, nil) == SQLITE_OK)
+      }
+      release.signal()
+      let held = await hold.value
+      let saved = try await operation.value
+      precondition(held && !saved && model.projectSources.isEmpty)
+      let after = try Set(FileManager.default.contentsOfDirectory(atPath: ProjectSourceFiles.directory.path))
+      precondition(after == before, "Research save changed files, case \(mode): added=\(after.subtracting(before)), removed=\(before.subtracting(after))")
+      let reopened = LocalStore(fileURL: url); try reopened.prepare()
+      let sources: [ProjectSource] = try reload(MemoraModel.StorageKey.projectSources, store: reopened)
+      let reports: [WebResearchReport] = try reload("memora.webResearch.v1", store: reopened)
+      precondition(sources.isEmpty && reports == [report], "Atomic research save failed, case \(mode)")
+    }
+  }
+
+  static func reload<Value: Decodable>(_ key: String, store: LocalStore) throws -> Value {
+    guard case .data(let data) = store.readOutcome(key) else { preconditionFailure("Missing stored \(key)") }
+    return try JSONDecoder().decode(Value.self, from: data)
   }
 
   // MARK: - D. 会議 → メール下書き
@@ -365,6 +474,13 @@ struct AskAIIntegrationScenarioChecks {
     var privacy = RecordPrivacy(classification: .personal)
     privacy.allowsCloudAI = true
     return privacy
+  }
+}
+
+extension ProjectSourceFiles {
+  func holdForResearchCheck(entered: DispatchSemaphore, release: DispatchSemaphore) -> Bool {
+    entered.signal()
+    return release.wait(timeout: .now() + 10) == .success
   }
 }
 

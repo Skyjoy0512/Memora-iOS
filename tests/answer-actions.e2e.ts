@@ -13,8 +13,8 @@ async function scrollToText(screen: any, text: string) {
 
 async function openGallery(app: any, device: any, screen: any) {
   await launchMemora(app, device, screen);
-  await screen.getByLabel('メニュー').tap();
-  await screen.getByText('設定').tap();
+  await tapControl(screen, screen.getByLabel('メニュー').first());
+  await tapControl(screen, screen.getByTestId('sidebar.settings'));
   await openSettingsGallery(screen);
   await expect(screen.getByText('デザインと保存の検証')).toBeVisible();
 }

@@ -40,6 +40,10 @@ import Foundation
   #if ASK_AI_SCENARIO_CHECKS
   var companyTemplates: [CompanyTemplate] = []
   #endif
+  #if RESEARCH_PROJECT_STORAGE_CHECKS
+  var webResearchReports: [WebResearchReport] = []
+  var webResearchBusyIDs: Set<UUID> = []
+  #endif
   var pendingMailDraft: MailDraft?
   var pendingSourceCitation: ArtifactSourceTarget?
   var missingRecordNotice: MissingRecordNotice?
@@ -55,6 +59,7 @@ import Foundation
   #if INTERFACE_TASK_EXECUTION_CHECKS
   var pendingAgentApproval: AgentApproval?
   var agentApprovalWaiter = AgentInteractionWaiter<Bool>()
+  var approvedAgentTaskDrafts: [UUID: [AgentTaskDraft]] = [:]
   #endif
   #endif
   #if CLOUD_SESSION_CHECKS
@@ -69,7 +74,7 @@ import Foundation
   #else
   var reads: [RecordPrivacyTarget] = []
   #endif
-  enum StorageKey { static let tasks = "tasks", people = "people", meetings = "meetings", lifeLogEntries = "journal", lifeLogTrash = "journalTrash", pendingMediaDeletions = "deletions", autoLifeLogInbox = "inbox", documents = "documents" }
+  enum StorageKey { static let tasks = "tasks", people = "people", meetings = "meetings", lifeLogEntries = "journal", lifeLogTrash = "journalTrash", pendingMediaDeletions = "deletions", autoLifeLogInbox = "inbox", documents = "documents", projectSources = "projectSources" }
   init(storeURL: URL) throws { store = LocalStore(fileURL: storeURL); try store.prepare() }
   func isStoreWritable() -> Bool { !isRestoring && !isStoreProtected && !rejectWrites }
   func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
@@ -154,6 +159,7 @@ struct FixtureMessage {
   #if INTERFACE_TASK_EXECUTION_CHECKS
   var agentSteps: [AgentStep] = []
   var didChangeData = false
+  var createdTaskIDs: [UUID] = []
   #endif
   #endif
   var cloudProvenance: AIConversationProvenance?
@@ -245,8 +251,9 @@ extension MemoraModel {
       && (compact || RecordAccessPolicy.allows(source.privacy, purpose: .cloudAI))
       && (policy == nil || policy?.limitsRecordReads == false)
   }
-  enum FixtureEvidence { case document(UUID) }
+  enum FixtureEvidence { case document(UUID), source(UUID) }
   func invalidateProjectEvidence(_ evidence: [FixtureEvidence]) {}
+  func noteProjectUsed(_ id: UUID) {}
   static let declinedOutcome = AgentToolOutcome(text: "declined")
   func pluginCallIsPermitted(_ call: AgentToolCall, messageID: UUID) -> Bool {
     #if CLOUD_SESSION_CHECKS

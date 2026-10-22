@@ -84,7 +84,7 @@ extension MemoraModel {
   }
 
   private func taskUpdateContextIsCurrent(_ call: AgentToolCall, messageID: UUID) -> Bool {
-    guard !Task.isCancelled, currentTeamID == nil, isStoreWritable(), let message = agentMessage(messageID),
+    guard !Task.isCancelled, !isRestoring, currentTeamID == nil, isStoreWritable(), let message = agentMessage(messageID),
           pluginCallIsPermitted(call, messageID: messageID),
           toolRegistry().permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID]) else { return false }
     if let policy = agentPluginPolicies[messageID], !personPolicyIsCurrent(policy) { return false }

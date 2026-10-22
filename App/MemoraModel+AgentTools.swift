@@ -507,67 +507,6 @@ extension MemoraModel {
     finishAgentStep(stepID, on: messageID, state: .done, detail: document.displayTitle)
     return AgentToolOutcome(text: "\(document.artifactFormat ?? kindLabel)ファイルを生成・再読込検証し、資料として保存しました。id=\(document.id.uuidString)。最終フォント・改ページ・文字あふれはプレビューで確認してください。")
   }
-
-  private func addTasksTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {
-    guard !isRestoring, !isStoreProtected else { return AgentToolOutcome(text: "保存先を確認できないため追加できません。", isError: true) }
-    defer { approvedAgentTaskDrafts.removeValue(forKey: messageID) }
-    let drafts: [AgentTaskDraft]
-    do { drafts = try AgentTaskDraft.parse(call.objects("tasks")) }
-    catch { return AgentToolOutcome(text: "候補のタイトル・詳細・担当・期限を確認してください。タスクは追加していません。", isError: true) }
-    let scopedMeetingIDs = Set(Self.meetings(in: scope, from: meetings).map(\.id))
-    guard drafts.allSatisfy({ $0.meetingID.map(scopedMeetingIDs.contains) ?? true }) else {
-      return AgentToolOutcome(text: "対象外または存在しない会議が指定されています。タスクは追加していません。", isError: true)
-    }
-    let workspaceID = currentTeamID
-    let stepID = beginAgentStep(AgentStep(icon: .checklist, title: "タスク候補を確認しています", detail: "確認待ち"), on: messageID)
-    let approved = await requestAgentApproval(AgentApproval(messageID: messageID, icon: .checklist,
-      title: "タスクを\(drafts.count)件追加", lines: [], confirmTitle: "追加", taskDrafts: drafts))
-    guard approved, !Task.isCancelled else {
-      finishAgentStep(stepID, on: messageID, state: .declined)
-      agentBlockedExternalTools[messageID, default: []].insert(call.name)
-      return Self.declinedOutcome
-    }
-    let allowedIDs = Set(Self.meetings(in: scope, from: meetings).map(\.id))
-    guard !isRestoring, !isStoreProtected, currentTeamID == workspaceID, agentMessage(messageID) != nil,
-          toolRegistry().permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID]),
-          let edited = approvedAgentTaskDrafts.removeValue(forKey: messageID),
-          let selected = AgentTaskDraft.validatedSelection(edited, originals: drafts, allowedMeetingIDs: allowedIDs),
-          selected.allSatisfy({ draft in
-            agentMessage(messageID)?.cloudProvenance == nil || (draft.meetingID.map { allowsRecordAccess($0, purpose: .cloudAI) } ?? true)
-          }) else {
-      finishAgentStep(stepID, on: messageID, state: .failed)
-      return AgentToolOutcome(text: "候補・権限・ワークスペースが変わりました。タスクは追加していません。", isError: true)
-    }
-    var existing = tasks.filter { !$0.isCompleted }
-    var additions: [MemoraTask] = []
-    var skipped = 0
-    for draft in selected {
-      let candidate = MemoraTask(id: draft.id, title: draft.title.trimmingCharacters(in: .whitespacesAndNewlines),
-        meetingID: draft.meetingID, assignee: draft.assignee.isEmpty ? nil : draft.assignee,
-        dueDate: draft.dueDate, isCompleted: false, detail: draft.detail)
-      if existing.contains(where: { Self.matchesTaskProposal($0, candidate) }) { skipped += 1; continue }
-      additions.append(candidate)
-      existing.append(candidate)
-    }
-    if !additions.isEmpty, !insertTasks(additions) {
-      finishAgentStep(stepID, on: messageID, state: .failed)
-      agentBlockedExternalTools[messageID, default: []].insert(call.name)
-      return AgentToolOutcome(text: "保存できませんでした。タスクは追加していません。", isError: true)
-    }
-    // One approved batch per reply prevents another model turn from repeating it.
-    agentBlockedExternalTools[messageID, default: []].insert(call.name)
-    updateAgentMessage(messageID) { $0.createdTaskIDs.append(contentsOf: additions.map(\.id)) }
-    finishAgentStep(stepID, on: messageID, state: .done, detail: "\(additions.count)件")
-    let duplicateNote = skipped > 0 ? " 同じ内容の未完了タスク\(skipped)件は追加していません。" : ""
-    return AgentToolOutcome(text: "承認された内容でタスクを\(additions.count)件追加しました。" + duplicateNote
-      + " 候補は利用者が編集している場合があります。完了報告はこの件数を使い、編集前のタイトル・担当・期限を保存済みと報告しないでください。")
-  }
-
-  private static func matchesTaskProposal(_ left: MemoraTask, _ right: MemoraTask) -> Bool {
-    left.title == right.title && left.detail == right.detail && left.assignee == right.assignee
-      && left.meetingID == right.meetingID && left.dueDate == right.dueDate
-  }
-
   private func createProjectTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
     let name = call.string("name")
     guard !name.isEmpty else {

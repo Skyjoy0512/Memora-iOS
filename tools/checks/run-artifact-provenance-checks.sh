@@ -5,12 +5,13 @@ check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-artifact-provenance.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 entrypoint=tools/checks/ArtifactProvenanceChecks.swift
 extra_sources=(-D ARTIFACT_PROVENANCE_CHECKS)
-if [[ "${1:-}" == "--interface-task-execution" || "${1:-}" == "--calendar-interface" ]]; then
+if [[ "${1:-}" == "--interface-task-execution" || "${1:-}" == "--calendar-interface" || "${1:-}" == "--task-proposals" ]]; then
   entrypoint=tools/checks/IntelligentUITaskExecutionChecks.swift
   if [[ "${1:-}" == "--calendar-interface" ]]; then entrypoint=tools/checks/CalendarInterfaceChecks.swift; fi
+  if [[ "${1:-}" == "--task-proposals" ]]; then entrypoint=tools/checks/TaskProposalExecutionChecks.swift; fi
   extra_sources+=(-D INTERFACE_TASK_EXECUTION_CHECKS -D CLOUD_SESSION_CHECKS
     App/AgentTool.swift App/AIToolRegistry.swift App/AIToolDefinition.swift App/IntegrationProvider.swift App/IntegrationToolResult.swift
-    App/AgentApproval.swift App/AgentTaskDraft.swift App/AgentInteractionWaiter.swift App/MemoraModel+AgentApproval.swift App/MemoraModel+TaskAgent.swift App/MemoraModel+CalendarTools.swift
+    App/AgentApproval.swift App/AgentTaskDraft.swift App/AgentInteractionWaiter.swift App/MemoraModel+AgentApproval.swift App/MemoraModel+TaskAgent.swift App/MemoraModel+TaskProposals.swift App/MemoraModel+CalendarTools.swift
     tools/checks/CloudSessionFixtureServices.swift)
 elif [[ -n "${1:-}" ]]; then
   exit 64
