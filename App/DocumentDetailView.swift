@@ -224,16 +224,12 @@ struct DocumentDetailView: View {
   private func originalArtifact(_ document: MemoraDocument, suffix: String) throws -> URL? {
     guard document.artifactFormat?.lowercased() == suffix, let name = document.artifactFileReference,
           let source = ProjectSourceFiles.resolve(name) else { return nil }
-    let temporary = FileManager.default.temporaryDirectory.appendingPathComponent(document.exportFileName + "-" + UUID().uuidString + "." + suffix)
-    try FileManager.default.copyItem(at: source, to: temporary)
-    return temporary
+    return try ArtifactExportFile.copy(source, preferredName: document.exportFileName, suffix: suffix)
   }
 
   /// Removes the temporary export once the share sheet is done with it.
   private func cleanUpShare() {
-    for case let url as URL in shareItems where url.isFileURL {
-      try? FileManager.default.removeItem(at: url)
-    }
+    ArtifactExportFile.removeTemporary(shareItems)
     shareItems = []
   }
 }

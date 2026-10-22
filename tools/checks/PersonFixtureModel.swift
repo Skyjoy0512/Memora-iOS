@@ -37,6 +37,9 @@ import Foundation
   var documents: [MemoraDocument] = []
   var mailDrafts: [MailDraft] = []
   var projectSources: [ProjectSource] = []
+  #if ASK_AI_SCENARIO_CHECKS
+  var companyTemplates: [CompanyTemplate] = []
+  #endif
   var pendingMailDraft: MailDraft?
   var pendingSourceCitation: ArtifactSourceTarget?
   var missingRecordNotice: MissingRecordNotice?
@@ -229,7 +232,9 @@ struct FixtureCalendarEvent {
 #if ARTIFACT_PROVENANCE_CHECKS
 typealias AIChatMessage = FixtureMessage
 enum DraftStore { static func clear(_ key: String) {} }
+#if !ASK_AI_SCENARIO_CHECKS
 struct ProjectSourceFiles { static let shared = ProjectSourceFiles(); func remove(_ names: [String]) async {} }
+#endif
 extension MemoraModel {
   var bottomContentClearance: Double { 0 }
   func space(id: UUID) -> FixtureSpace? { spaces.first { $0.id == id } }

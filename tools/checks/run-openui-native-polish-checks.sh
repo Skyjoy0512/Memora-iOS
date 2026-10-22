@@ -55,7 +55,7 @@ swiftc -typecheck -swift-version 6 -sdk "$sdk" -target arm64-apple-ios26.0-simul
   App/AIChatSource.swift App/MemoraTask.swift App/TaskProgress.swift App/TaskRelationships.swift \
   App/RecordPrivacy.swift App/SummarySensitivity.swift App/AIInterfaceTableLayout.swift \
   App/AIInterfaceTaskProgressSummary.swift App/AIInterfaceSourceRow.swift App/AIInterfaceSourceListModel.swift \
-  App/AIInterfaceEvidence.swift App/AIInterfaceReferenceTarget.swift App/MemoraPalette.swift \
+  App/AIInterfaceEvidence.swift App/AIInterfaceReferenceTarget.swift App/MemoraPalette.swift App/MemoraSpacing.swift \
   App/AIInterfaceComparisonTable.swift App/AIInterfaceSourceList.swift App/AIInterfaceTaskProgress.swift \
   "$check_dir/OpenUINativePolishViewStubs.swift"
 echo "OpenUINativePolishViewTypeCheck: passed (views compile against the iOS SDK; icon/destination stubs only)"

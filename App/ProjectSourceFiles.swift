@@ -10,8 +10,15 @@ actor ProjectSourceFiles {
   static let maximumFileBytes = 50 * 1024 * 1024
   static let maximumStorageBytes = 500 * 1024 * 1024
   static var directory: URL {
-    FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    #if MEMORA_HOST_CHECKS
+    // Host fixtures must never write into the person's application data.
+    guard let override = ProcessInfo.processInfo.environment["MEMORA_WORKSPACE_FILES_DIRECTORY"],
+          override.hasPrefix("/") else { preconditionFailure("Host workspace directory is required") }
+    return URL(fileURLWithPath: override, isDirectory: true)
+    #else
+    return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
       .appendingPathComponent("Memora/WorkspaceFiles", isDirectory: true)
+    #endif
   }
 
   struct Receipt: Sendable {
