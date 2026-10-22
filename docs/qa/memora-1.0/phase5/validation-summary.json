@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-22",
+  "branch": "main",
+  "appCodeRevision": "110ef01",
+  "implementationCommits": ["31981d4", "110ef01"],
+  "phaseStatus": "in progress; note persistence and source coverage presentation validated",
+  "sdk": "iPhoneSimulator27.1.sdk",
+  "deploymentTarget": "iOS 26.0",
+  "debugPreview": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-22T23-32-21-d5fdb573.log"
+  },
+  "releaseSimulatorBuild": {
+    "result": "succeeded",
+    "warnings": 11,
+    "warningBreakdown": {"existingSwiftDeprecations": 10, "extensionMetadataExtractionNotApplicable": 1},
+    "log": "2026-10-22T23-44-25-ab00f9d4.log",
+    "physicalDeviceValidation": false
+  },
+  "hostChecks": {
+    "output": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-source-ui-quality",
+    "suites": [
+      {"name": "next-generation", "status": "passed", "exitCode": 0},
+      {"name": "design-refresh", "status": "passed", "exitCode": 0},
+      {"name": "background-summary", "status": "passed", "exitCode": 0},
+      {"name": "composer-layout", "status": "passed", "exitCode": 0},
+      {"name": "optimization", "status": "passed", "exitCode": 0}
+    ],
+    "newSourceStorageChecks": {
+      "productionPaths": ["ProjectSourceStorage", "LocalStore", "ProjectSourceFiles", "ProjectSourceTextReader"],
+      "suspendedWriteRaceCases": 24,
+      "sqliteAbortPresentationCases": 4,
+      "additionalChecks": ["reopen and retry", "concurrent additions", "shared file retention", "workspace guards", "raw and encoded size limits"],
+      "boundary": "state and evidence notification are host fixtures, not full-model or OS validation"
+    },
+    "xcodeTestTargets": "not configured in Project.json; not counted as XCTest success",
+    "initialFailures": [
+      "fixture referenced private LocalStore path; fixture now owns its URL",
+      "UPDATE trigger did not cover INSERT OR REPLACE; corrected to INSERT trigger"
+    ]
+  },
+  "uiChecks": [
+    {
+      "report": ".e2e/regression/phase5-source-storage/report.json",
+      "discovered": 77, "selected": 3, "executed": 3, "passed": 3, "failed": 0, "skipped": 0, "interrupted": 0,
+      "modelTokens": 0, "downloads": 0,
+      "cases": ["project Chat/Files/Sources", "link persistence", "project mention scope and invalidation"]
+    },
+    {
+      "report": ".e2e/regression/phase5-source-ui/report.json",
+      "discovered": 78, "selected": 4, "executed": 4, "passed": 3, "failed": 1, "skipped": 0, "interrupted": 0,
+      "modelTokens": 0, "downloads": 0,
+      "passedCases": ["project mention scope", "Journal SQLite failure recovery", "source note SQLite failure, drafts and restart recovery"],
+      "failure": "XCTest reports the cleared link field placeholder as its value, not an empty string; retained as a failed run"
+    },
+    {
+      "report": ".e2e/regression/phase5-source-ui-repaired/report.json",
+      "discovered": 79, "selected": 2, "executed": 2, "passed": 2, "failed": 0, "skipped": 0, "interrupted": 0,
+      "modelTokens": 0, "downloads": 0,
+      "cases": ["duplicate URL and persistence", "DOCX/PPTX/XLSX import, extraction, attachment analysis, SQLite reread and dedicated fixture cleanup"],
+      "repair": "accept only empty string or the exact native placeholder; duplicate-row contract remains unchanged"
+    }
+  ],
+  "uiCountingBoundary": "five distinct selected UI cases passed in their final runs after UI changes; filtered tests are not counted as executed or passed",
+  "uiEnvironment": "dedicated fresh CoreSimulator fixture apps; no user preview data or real service accounts",
+  "screenshots": [
+    {"file": "source-create-failure-retains-draft.png", "appearance": "light", "visuallyInspected": true},
+    {"file": "source-edit-failure-retains-draft.png", "appearance": "dark", "visuallyInspected": true},
+    {"file": "source-edited-note-restored.png", "appearance": "dark", "visuallyInspected": true},
+    {"file": "office-source-partial-coverage.png", "appearance": "light", "visuallyInspected": true}
+  ],
+  "screenshotBoundary": "observed flow evidence only; not matched before/after design comparisons or proof of unobserved screens",
+  "performance": {"newBeforeAfterMeasurements": false, "reason": "correctness and recovery changes; no performance improvement claimed"},
+  "github": {"pushPerformed": false, "actionsRunVerified": false},
+  "remaining": [
+    "YouTube metadata and thumbnail asynchronous workspace/source revision boundaries",
+    "General file and photo import/extraction asynchronous boundaries",
+    "Physical PDF/OCR/image coverage and failure/retry validation",
+    "Office application and QuickLook final layout rendering",
+    "Phase 4 iOS input latency, frame pacing, memory and energy measurements",
+    "Phase 6 integration recovery and Phase 7 visual/accessibility/IME review",
+    "Physical recording/recovery/transcription and authenticated-service regressions"
+  ]
+}

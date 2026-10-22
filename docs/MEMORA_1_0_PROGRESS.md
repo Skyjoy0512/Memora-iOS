@@ -320,7 +320,7 @@ pushは実施していない。
 - 生本文512KBに加え、JSON化したbytesが既存readerの2MB上限以内かも検証。
   超えた場合は専用理由で拒否し、読めない本文を解析済みとして保存しない。
 - UIが自分で失敗を表示する場合だけ、同期commitの重複したroot alertを抑止できる。
-  awaitの間はこのscopeを保持しない。UIへの適用は次の変更単位で行う。
+  awaitの間はこのscopeを保持しない。画面への適用は以下の独立したUI変更で行った。
 
 検証:
 
@@ -376,6 +376,12 @@ pushは実施していない。
   共通化したSQLite fixture特定ヘルパーはJournalの実失敗復旧でも再実行して成功。
 - Lightの追加失敗、Darkの編集失敗と復元、Office partial説明の4画像を保存・目視した:
   `docs/qa/memora-1.0/phase5/`。新デザインのBefore/After比較や未観測画面の証明とはしない。
+- 最終Release Simulatorビルドも成功:
+  `2026-10-22T23-44-25-ab00f9d4.log`、SDK 27.1、既存警告11件
+  （Swift非推奨10箇所とextensionのmetadata抽出対象なし1件）。実機検証ではない。
+- 実装コミットは`31981d4`（保存境界）と`110ef01`（画面・文言・E2E）。
+  検証結果は`docs/qa/memora-1.0/phase5/validation-summary.json`にも保存。
+  branchはmainのまま、pushは実施していない。性能改善値はこの変更では計測していない。
 
 残り: YouTube metadata/thumbnail、一般ファイル・写真取込/解析の非同期境界と、
 PDF/OCR/画像の実端末での範囲表示・失敗再試行の最終確認。Phase 5全体の完了とはしない。
