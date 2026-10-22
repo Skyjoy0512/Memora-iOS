@@ -305,10 +305,45 @@ pushは実施していない。
 - P2: 上記計測で根拠が得られた場合だけ、日次集計の追加派生index/cacheや
   非同期検索へ進む。既存の画面/アニメーションは維持する。
 
-## Phase 5〜7
+## Phase 5: ソース体験（実施中）
+
+### メモの保存境界
+
+- 本番のsource lookup/storeとメモ追加/更新を`+ProjectSourceStorage`へ分離。
+  UIは従来と同じAPIを使い、SQLite schemaや既存ファイル形式は変えていない。
+- TeamBackend未接続のteam workspaceから、個人用source documentへ書き込まない。
+- ファイル書込awaitの前後でworkspace generation、復元/保護/中止、projectの
+  存在/版を確認。編集ではsource全体（本文参照・所属・privacy・更新日等）も比較する。
+  A→B→Aのworkspace切替、遅れた編集による上書きを拒否する。
+- 失敗時は今回生成したファイルだけを除去。成功時も他sourceが参照する古い
+  ファイルは削除しない。並行した別メモの追加は両方保存できる。
+- 生本文512KBに加え、JSON化したbytesが既存readerの2MB上限以内かも検証。
+  超えた場合は専用理由で拒否し、読めない本文を解析済みとして保存しない。
+- UIが自分で失敗を表示する場合だけ、同期commitの重複したroot alertを抑止できる。
+  awaitの間はこのscopeを保持しない。UIへの適用は次の変更単位で行う。
+
+検証:
+
+- 本番store/note/LocalStore/ProjectSourceFiles/ProjectSourceTextReaderのホスト検証成功。
+  24通りの待機中race、SQL ABORTによるrollback/reopen/retry、並行追加、共有参照保持、
+  workspace拒否、raw/encodedサイズ境界。状態とevidence通知だけがfixtureで、通信なし。
+- 追加runnerはnext-generationに登録。ホスト5スイート成功:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-source-storage-quality/`。
+  その後追加したencodedサイズ検証を含む専用runnerも再実行して成功。
+- UI E2Eは3成功/失敗・skip・中断0:
+  `phase5-source-storage/report.json`。Chat/Files/Sources、Webリンク保存後の再表示、
+  project mentionのscope/失効/外部write拒否を確認。model token/downloadは0。
+- 初期の新規ホスト検証はfixtureのprivate path参照と誤ったUPDATE triggerで失敗した。
+  pathをfixture自身で保持し、実INSERT OR REPLACEに対応するINSERT triggerへ修正。
+  失敗したrunを成功として数えない。
+- 最新Debug preview成功: `2026-10-22T23-22-59-b0ff304c.log`、既存警告11件。
+
+解析状態の表示、古い案内、メモ画面の失敗復旧、YouTube/一般取込の非同期境界の
+最終確認はまだ完了していない。Phase 5全体の完了とはしない。
+
+## Phase 6〜7
 
 以下は未完了であり成功扱いしない。
 
-- Phase 5: ソース解析状態、重複・再試行、古い案内文の修正。
 - Phase 6: 外部連携のエラー・権限変更のfixture検証。実認証やOAuth scope拡大は実施しない。
 - Phase 7: 視覚・アクセシビリティ・IME・Reduce Motionの最終確認、思考ロゴの調査。

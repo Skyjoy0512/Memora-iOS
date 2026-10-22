@@ -13,6 +13,7 @@ swiftc App/PersistenceFailurePresentation.swift tools/checks/PersistenceFailureP
 swiftc -D MEMORA_HOST_CHECKS App/AIMemory.swift App/AIMemory+Editing.swift App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift tools/checks/MemoryRetrievalChecks.swift -lsqlite3 -o "$check_dir/memory"
 "$check_dir/memory"
 bash tools/checks/run-memory-editing-checks.sh
+bash tools/checks/run-project-source-storage-checks.sh
 bash tools/checks/run-answer-presentation-checks.sh
 swiftc App/Person.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/PersonIdentity.swift tools/checks/PersonIdentityChecks.swift -o "$check_dir/person-identity"
 "$check_dir/person-identity"

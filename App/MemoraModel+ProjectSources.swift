@@ -1,11 +1,10 @@
 import Foundation
 
 extension MemoraModel {
-  func source(id: UUID) -> ProjectSource? { projectSourceIndex.element(id, in: projectSources) }
-
   @discardableResult
   func addProjectLink(_ input: String, projectID: UUID) throws -> UUID? {
-    guard !isRestoring, space(id: projectID) != nil else { return nil }
+    guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
+          space(id: projectID) != nil else { return nil }
     let link = try ProjectSourceURL.normalized(input)
     if let existing = projectSources.first(where: { $0.projectID == projectID && $0.originalURL == link.url }) {
       return existing.id
@@ -14,55 +13,14 @@ extension MemoraModel {
       title: link.youtubeID.map { "YouTube · \($0)" } ?? link.url.host ?? "Webリンク", originalURL: link.url)
     if source.kind == .web { source.processingStatus = .unavailable }
     guard storeProjectSource(source) else { return nil }
-    if source.kind == .youtube { Task { await prepareProjectSource(source.id) } }
-    return source.id
-  }
-
-  @discardableResult
-  func storeProjectSource(_ source: ProjectSource) -> Bool {
-    guard !isRestoring, source.projectID.map({ space(id: $0) != nil }) ?? true else { return false }
-    var candidate = projectSources
-    if let index = candidate.firstIndex(where: { $0.id == source.id }) { candidate[index] = source }
-    else { candidate.insert(source, at: 0) }
-    guard persistNow(candidate, forKey: StorageKey.projectSources) else { return false }
-    projectSources = candidate
-    invalidateProjectEvidence([.source(source.id)])
-    return true
-  }
-
-  func addProjectNote(title: String, text: String, projectID: UUID) async throws -> UUID? {
-    guard !isRestoring, space(id: projectID) != nil, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-    guard text.utf8.count <= 512 * 1024 else { throw ProjectSourceFiles.Failure.noteTooLarge }
-    let data = try JSONEncoder().encode([ProjectSourceText(text: text)])
-    let name = try await ProjectSourceFiles.shared.write(data, extension: "json")
-    var source = ProjectSource(projectID: projectID, kind: .note,
-      title: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? String(text.prefix(40)) : title)
-    source.extractedTextReference = name
-    source.processingStatus = .ready
-    source.textCoverage = .complete
-    guard storeProjectSource(source) else {
-      await ProjectSourceFiles.shared.remove([name]); return nil
+    let generation = aiWorkspaceGeneration
+    if source.kind == .youtube {
+      Task {
+        guard aiWorkspaceGeneration == generation else { return }
+        await prepareProjectSource(source.id)
+      }
     }
     return source.id
-  }
-
-  func updateProjectNote(_ id: UUID, title: String, text: String) async throws -> Bool {
-    guard let previous = source(id: id), previous.kind == .note, !isRestoring,
-          !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-    guard text.utf8.count <= 512 * 1024 else { throw ProjectSourceFiles.Failure.noteTooLarge }
-    let data = try JSONEncoder().encode([ProjectSourceText(text: text)])
-    let name = try await ProjectSourceFiles.shared.write(data, extension: "json")
-    guard var current = source(id: id), current.extractedTextReference == previous.extractedTextReference else {
-      await ProjectSourceFiles.shared.remove([name]); return false
-    }
-    let old = current.extractedTextReference
-    current.title = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? String(text.prefix(40)) : title
-    current.extractedTextReference = name
-    current.textCoverage = .complete
-    current.updatedAt = .now
-    guard storeProjectSource(current) else { await ProjectSourceFiles.shared.remove([name]); return false }
-    if let old { await ProjectSourceFiles.shared.remove([old]) }
-    return true
   }
 
   func importProjectFile(_ url: URL, projectID: UUID) async throws -> UUID? {
