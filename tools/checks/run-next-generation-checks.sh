@@ -10,7 +10,7 @@ swiftc App/CalendarEventEditPolicy.swift tools/checks/CalendarEventEditPolicyChe
 "$check_dir/calendar-edit-policy"
 swiftc App/PersistenceFailurePresentation.swift tools/checks/PersistenceFailurePresentationChecks.swift -o "$check_dir/persistence-presentation"
 "$check_dir/persistence-presentation"
-swiftc App/AIMemory.swift App/AIMemory+Editing.swift App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift tools/checks/MemoryRetrievalChecks.swift -lsqlite3 -o "$check_dir/memory"
+swiftc -D MEMORA_HOST_CHECKS App/AIMemory.swift App/AIMemory+Editing.swift App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift tools/checks/MemoryRetrievalChecks.swift -lsqlite3 -o "$check_dir/memory"
 "$check_dir/memory"
 bash tools/checks/run-memory-editing-checks.sh
 bash tools/checks/run-answer-presentation-checks.sh

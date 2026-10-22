@@ -2,6 +2,10 @@
 
 開始日: 2026-10-22。現在の作業ブランチ: `main`。
 
+進捗: Phase 1〜3のローカル検証済み実装をコミット済み。
+Phase 4を実施中。Phase 5〜7はまだ完了していない。
+実機・実アカウント・GitHub CIの実行は、以下のローカル成功結果とは別扱い。
+
 ## Phase 1: 選択統合と品質基盤
 
 GitHubから取得した開始時点のHEAD:
@@ -213,11 +217,52 @@ Phase 4の最適化は未着手。この段階のホストbenchmarkは既存コ�
 EventKitUIでの実予定の保存・削除、実アカウント/権限変更、VoiceOverの実音声操作は
 未検証。ビルド・純粋policy・JournalのE2Eを、その証明とはしない。
 
-## Phase 4〜7
+## Phase 4: 内部性能改善（実施中）
 
-Phase 3の最終検証後に順番に着手する。以下は未完了であり成功扱いしない。
+### 長期記憶検索
 
-- Phase 4: 同じfixtureによる変更前後の実測と、安全な検索・集計最適化。
+検索のたびに作っていたFTS5を、現在許可された候補の完全一致snapshotで再利用する。
+IDだけでなく本文・種別・更新日・出典・人物/workspace・順序を比較し、
+候補が変わったら古い索引を捨ててから構築する。失敗時の古い索引へのfallbackはない。
+最大2索引、source UTF-8 2MiB/索引、合計16MiBの推定保持コスト、
+次回検索時に判定する60秒の非活動期限を導入した。
+容量超過でも検索機能は切らず、一時索引として検索後に破棄する。
+モデルの記憶・履歴・record/privacy・workspace/person変更時も失効する。
+履歴の更新だけならepisode索引のみを破棄し、変わらないsemantic索引を維持する。
+同じqueryの重複トークン化も削減。追加LLM・通信・SQLite永続schema変更はない。
+
+実測は[詳細手順](MEMORY_RETRIEVAL_PERFORMANCE.md)と
+`docs/qa/memora-1.0/phase4/memory-benchmark.json`に保存。
+M4 Max / macOS 27.0.1 / Swift 6.4、`-O -swift-version 5`、
+各2,000候補（許可1,600）× semantic/episodeの同一fixtureで3往復比較した。
+各21 warm sampleのround中央値を比較すると、2検索の中央値は
+40.646ms → 1.966ms（95.16%短縮）。全runで検索結果checksum・scope検証一致。
+最大RSSのround中央値は12,386,304 → 13,418,496 bytes（約0.98MiB増加）。
+初回は43.608 → 42.897msだが3 sampleだけなので改善を確定しない。
+モデルの候補作成/provenanceとiOS UI遅延・FPS・実機電池を測定した数字ではない。
+初回構築は引き続き同期処理であり、MainActorのcold-pathは残課題。
+
+### 検証
+
+- `MemoryRetrievalChecks`: 本文/更新日/出典/順序変更、削除、人物・workspace、
+  2種の交互利用、種別指定失効、期限、保持上限、容量超過、並行検索が成功。
+  最終コードをSwift 6モードでもコンパイル・実行して成功（アプリはSwift 5を維持）。
+- ホスト5スイート成功: `/Volumes/WorkspaceSSD/Development/Temp/memora-phase4-memory-quality/`。
+- 最新Debug preview成功: `2026-10-22T18-36-54-03d62589.log`、既存警告11件。
+- UI E2E初回4件: 3成功/1失敗。履歴menu、会話維持、Journal編集/削除/復元は成功。
+  追加ボタンの44pt検査は同名の子Text（14.33pt）を拾うlocatorの不具合。
+  待機の追加だけでは解消せず、その失敗も保持。専用Simulatorの実AX treeで
+  ボタン本体151.33×44ptと子Text101.33×14.33ptを別々に確認し、roleを明示した。
+  失敗結果は`phase4-memory/`、`phase4-memory-insertion-repair/`に保持する。
+  role修正後の`phase4-memory-insertion-role/report.json`は1成功/失敗・skip・中断0。
+  選択したUI4ケースは最終結果ですべて成功、いずれもmodel token/download 0。
+
+Journal集計とAskAIの画面処理は、この後に続ける。新しい見た目は導入していない。
+
+## Phase 5〜7
+
+以下は未完了であり成功扱いしない。
+
 - Phase 5: ソース解析状態、重複・再試行、古い案内文の修正。
 - Phase 6: 外部連携のエラー・権限変更のfixture検証。実認証やOAuth scope拡大は実施しない。
 - Phase 7: 視覚・アクセシビリティ・IME・Reduce Motionの最終確認、思考ロゴの調査。

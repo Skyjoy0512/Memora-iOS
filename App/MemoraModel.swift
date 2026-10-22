@@ -28,6 +28,7 @@ final class MemoraModel {
     didSet {
       UserDefaults.standard.set(currentTeamID, forKey: StorageKey.currentTeamID)
       if oldValue != currentTeamID {
+        MemoryRetrievalOrchestrator.invalidate()
         didChangeConversationWorkspace(from: oldValue)
         cancelProjectWebFetches()
       }
@@ -64,6 +65,7 @@ final class MemoraModel {
   }
   var meetings: [Meeting] {
     didSet {
+      MemoryRetrievalOrchestrator.invalidate()
       meetingIndex.invalidate()
       // Only entries for records that are gone are dropped here; a record that
       // changed is invalidated at the update site, so one edit no longer throws
@@ -84,7 +86,10 @@ final class MemoraModel {
   /// Documents and slides made from the records, newest first.
   var documents: [MemoraDocument] = []
   var projectSources: [ProjectSource] = [] {
-    didSet { projectSourceIndex.invalidate() }
+    didSet {
+      MemoryRetrievalOrchestrator.invalidate()
+      projectSourceIndex.invalidate()
+    }
   }
   var projectChats: [ProjectChatThread] = []
   var webResearchReports: [WebResearchReport] = []
@@ -116,6 +121,7 @@ final class MemoraModel {
   var speakerAnalysisMessages: [UUID: String] = [:]
   var tasks: [MemoraTask] {
     didSet {
+      MemoryRetrievalOrchestrator.invalidate()
       taskIndex.invalidate()
       tasksByMeeting = nil
       rebuildProjectTaskCounts()
@@ -124,6 +130,7 @@ final class MemoraModel {
   }
   var lifeLogEntries: [LifeLogEntry] {
     didSet {
+      MemoryRetrievalOrchestrator.invalidate()
       newestEntries = nil
       rebuildLifeLogDays()
       refreshSampleContentFlag()
@@ -147,12 +154,17 @@ final class MemoraModel {
   private(set) var meetingTitles: [UUID: String] = [:]
   var mailDrafts: [MailDraft] = []
   var companyTemplates: [CompanyTemplate] = []
-  var aiPersonScopeID: UUID?
+  var aiPersonScopeID: UUID? {
+    didSet { if oldValue != aiPersonScopeID { MemoryRetrievalOrchestrator.invalidate() } }
+  }
   var aiConversationID = UUID()
-  var aiHistory: [AIConversationEntry]
+  var aiHistory: [AIConversationEntry] {
+    didSet { MemoryRetrievalOrchestrator.invalidate(kind: .episode) }
+  }
   /// People who can be tagged on recordings.
   var people: [Person] = [] {
     didSet {
+      MemoryRetrievalOrchestrator.invalidate()
       personIndex.invalidate()
       refreshSampleContentFlag()
     }
@@ -239,11 +251,16 @@ final class MemoraModel {
     didSet { UserDefaults.standard.set(glossaryTerms, forKey: StorageKey.glossary) }
   }
   /// What Ask AI remembers about the person, newest first.
-  var aiMemories: [AIMemory] = []
+  var aiMemories: [AIMemory] = [] {
+    didSet { MemoryRetrievalOrchestrator.invalidate() }
+  }
   /// Whether questions carry the memories and relevant past conversations.
   /// A setting, so it lives in UserDefaults.
   var isAIMemoryEnabled = UserDefaults.standard.object(forKey: StorageKey.aiMemoryEnabled) as? Bool ?? true {
-    didSet { UserDefaults.standard.set(isAIMemoryEnabled, forKey: StorageKey.aiMemoryEnabled) }
+    didSet {
+      if !isAIMemoryEnabled { MemoryRetrievalOrchestrator.invalidate() }
+      UserDefaults.standard.set(isAIMemoryEnabled, forKey: StorageKey.aiMemoryEnabled)
+    }
   }
   /// Ask AI works as an agent: it uses tools to read records and, with the
   /// person's approval, make documents, tasks, projects and memos.

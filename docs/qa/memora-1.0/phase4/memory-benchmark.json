@@ -1,0 +1,46 @@
+{
+  "measuredDate": "2026-10-22",
+  "baselineRevision": "8699e76",
+  "environment": {
+    "hardware": "Mac16,9 / Apple M4 Max / 36 GiB",
+    "os": "macOS 27.0.1 (26A434)",
+    "compiler": "Apple Swift 6.4 (swiftlang-6.4.0.34.1)",
+    "flags": "-O -swift-version 5 -parse-as-library -lsqlite3",
+    "measurement": "ContinuousClock; /usr/bin/time -l maximum resident set size"
+  },
+  "fixture": {
+    "generator": "tools/checks/MemoryRetrievalBenchmark.swift",
+    "candidatesPerKind": 2000,
+    "authorizedPerKind": 1600,
+    "kinds": ["semantic", "episode"],
+    "queries": "three query pairs in rotation",
+    "warmSamplesPerRound": 21,
+    "roundOrder": ["baseline, optimized", "optimized, baseline", "baseline, optimized"],
+    "resultChecksumEveryRun": "6576110712353893853",
+    "scopeAssertionsEveryRun": true,
+    "realDataNetworkOrLLM": false
+  },
+  "samples": [
+    {"variant":"baseline","round":1,"coldPairMilliseconds":62.655125,"warmPairMedianMilliseconds":40.646375,"warmPairP95Milliseconds":44.937833,"hostMaximumRSSBytes":12386304},
+    {"variant":"optimized","round":1,"coldPairMilliseconds":55.591584,"warmPairMedianMilliseconds":2.298667,"warmPairP95Milliseconds":2.752833,"hostMaximumRSSBytes":13926400},
+    {"variant":"optimized","round":2,"coldPairMilliseconds":42.896584,"warmPairMedianMilliseconds":1.965666,"warmPairP95Milliseconds":2.315083,"hostMaximumRSSBytes":13418496},
+    {"variant":"baseline","round":2,"coldPairMilliseconds":43.241417,"warmPairMedianMilliseconds":40.206625,"warmPairP95Milliseconds":44.581042,"hostMaximumRSSBytes":12337152},
+    {"variant":"baseline","round":3,"coldPairMilliseconds":43.607541,"warmPairMedianMilliseconds":41.487125,"warmPairP95Milliseconds":42.1105,"hostMaximumRSSBytes":12779520},
+    {"variant":"optimized","round":3,"coldPairMilliseconds":42.782583,"warmPairMedianMilliseconds":1.94225,"warmPairP95Milliseconds":2.313667,"hostMaximumRSSBytes":13418496}
+  ],
+  "comparison": {
+    "statistic": "median of the three round-level statistics; pair = semantic plus episode lookup",
+    "warmMedianMilliseconds": {"before":40.646375,"after":1.965666,"reductionPercent":95.16},
+    "warmP95Milliseconds": {"before":44.581042,"after":2.315083,"reductionPercent":94.81},
+    "coldMilliseconds": {"before":43.607541,"after":42.896584,"conclusion":"only three first-use samples; no established cold-path improvement"},
+    "hostMaximumRSSBytes": {"before":12386304,"after":13418496,"increaseBytes":1032192}
+  },
+  "limits": [
+    "Host microbenchmark, not iOS end-to-end latency or frame rate",
+    "Candidate generation and provenance checks in MemoraModel are outside the timed region",
+    "Static authorized snapshots benefit; actual data/privacy/history edits invalidate the cache",
+    "Cold index rebuild remains synchronous; no asynchronous-search claim",
+    "iOS RSS, input latency, scroll frame pacing, energy and battery were not measured",
+    "FTS relevance quality is not LLM-answer quality"
+  ]
+}

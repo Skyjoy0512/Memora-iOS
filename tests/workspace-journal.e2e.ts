@@ -158,8 +158,14 @@ test('journal insertion proposes the selected day and the time between events', 
   await scrollTo(screen, screen.getByPlaceholder('イベント名'));
   await screen.getByPlaceholder('イベント名').fill('Insertion 09:30');
   await tapStable(screen.getByRole('button', { name: '追加', exact: true }));
-  const middle = screen.getByLabel('この間に記録を追加').first();
+  const middle = screen.getByRole('button', { name: 'この間に記録を追加', exact: true }).first();
   await scrollTo(screen, middle);
+  // Inspect the button, not its same-labelled child Text (14pt at normal size).
+  // Keep the 44pt contract while the native sheet finishes dismissing.
+  await expect.poll(async () => {
+    const box = await middle.boundingBox();
+    return !!box && box.width >= 44 && box.height >= 44;
+  }).toBe(true);
   const middleBox = await middle.boundingBox();
   if (!middleBox) throw new Error('journal insertion has no frame');
   expect(middleBox.width).toBeGreaterThanOrEqual(44);
