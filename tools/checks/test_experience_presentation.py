@@ -32,6 +32,11 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn('MemoraSectionHeading(title: "タイムライン"', home)
 
     def test_search_states_are_scoped_and_clear_real_bindings(self):
+        home = (APP / "HomeView.swift").read_text()
+        search_branch = home.index("if isSearching {\n            searchResults(entries)\n          } else {")
+        for operation in ("let ownTasks = model.ownTasks", "let markedDays = JournalActivityDays.build(", "let recap = JournalDailyRecap.build("):
+            self.assertEqual(home.count(operation), 1)
+            self.assertGreater(home.index(operation), search_branch)
         library = (APP / "LibraryView.swift").read_text()
         projects = (APP / "ProjectsView.swift").read_text()
         self.assertIn("isAwaitingQuery ? [] : model.projectSources", library)

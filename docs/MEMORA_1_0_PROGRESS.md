@@ -3,7 +3,8 @@
 開始日: 2026-10-22。現在の作業ブランチ: `main`。
 
 進捗: Phase 1〜3のローカル検証済み実装をコミット済み。
-Phase 4を実施中。Phase 5〜7はまだ完了していない。
+Phase 4の安全なコード改善・ホスト計測とJournal回帰を実施。
+端末性能の実測を含むPhase 4の全項目、およびPhase 5〜7はまだ完了していない。
 実機・実アカウント・GitHub CIの実行は、以下のローカル成功結果とは別扱い。
 
 ## Phase 1: 選択統合と品質基盤
@@ -150,8 +151,9 @@ CI実行は未検証のままであり、全機能の公開判定を済ませた
 - P1: Phase 4〜6の実測付き性能改善、source UX、外部連携復旧。
 - P2: Phase 7の最終視覚確認と、安全に分離できる思考ロゴ案、将来の意味的skill選択。
 
-Phase 4の最適化は未着手。この段階のホストbenchmarkは既存コードの回帰確認であり、
-今回の新しい性能改善率とは扱わない。端末入力遅延/FPS/メモリ/電池は未測定。
+Phase 2終了時点ではPhase 4の最適化は未着手。この段階のホストbenchmarkは
+既存コードの回帰確認であり、今回の新しい性能改善率とは扱わない。
+その後の新規実測はPhase 4の節に記録する。端末入力遅延/FPS/メモリ/電池は未測定。
 
 ## Phase 3: Journalの追加・編集・保存復旧
 
@@ -257,7 +259,47 @@ M4 Max / macOS 27.0.1 / Swift 6.4、`-O -swift-version 5`、
   role修正後の`phase4-memory-insertion-role/report.json`は1成功/失敗・skip・中断0。
   選択したUI4ケースは最終結果ですべて成功、いずれもmodel token/download 0。
 
-Journal集計とAskAIの画面処理は、この後に続ける。新しい見た目は導入していない。
+### Journal集計とAskAIの画面処理
+
+`HomeView`のタスク所有判定・活動日・日次サマリー構築を通常Journal表示の
+branchへ移し、検索入力ごとのbody更新では表示しない集計を実行しなくした。
+検索条件・結果・日付・行・カレンダー・レイアウト・アニメーションは変更していない。
+既存の`lifeLogDays`/`markedLifeLogDays`/`markedMeetingDays`と変更時だけの代入を維持。
+通常表示でのrecap構築・TimelineBuilderの処理そのものは変更していない。
+この変更の入力遅延/FPSの差は未計測。測定なしに時間依存の新しいrecapキャッシュを
+増やさず、日付/health/calendar/権限の失効漏れによる複雑化を避けた。
+
+現行AskAIは以下の既存処理を再利用する。今回追加した改善として計上しない。
+
+| 対象 | コードで確認した既存の対策 | 今回の検証と未検証 |
+| --- | --- | --- |
+| 長文Markdown | StreamingMarkdownView / IncrementalMarkdownCache、確定済みblock再利用 | ホストの全prefix同値/確定block再利用の検証は成功。端末FPS/入力遅延は未計測 |
+| 大量会話 | SearchViewのLazyVStackとUUID、AIConversationSnapshotの2,000turn/8MiB境界 | 会話保存/復元・scroll policyのホスト検証は成功。2,000turnの端末scroll/RSSは未計測 |
+| 添付 | AIAttachmentTextがTask.detachedで解析、8,000文字までを明示 | 添付scope/拒否と保存のホスト検証は成功。大画像の端末peak memory/電池は未計測 |
+| プロジェクト検索 | actor ProjectSearchIndexのexact snapshot再利用と差分同期 | 実FTS/出典/削除/権限変更のホスト検証は成功。端末総応答時間は未計測 |
+| AgentActivity | 折りたたみ、直近24step/結果20件/出力8件、elapsedはleaf | ホストの状態・停止・予算検証は成功。活動表示の端末CPU/電池は未計測 |
+| 構造化UI | NativeAIResponseCacheとincremental component scan、stream中の操作無効 | schema/参照/承認/失効/streamのホスト検証は成功。全cardの実機描画は未検証 |
+
+追加のJournal E2Eは3件すべて成功、失敗/skip/中断0、model token/download 0。
+`phase4-journal-search/report.json`: イベント間時刻と再起動、編集/削除と再起動、
+検索結果のみの表示・空結果・クリア・keyboard維持・取消後のタイムライン復帰。
+検索中と復帰後の画像を`docs/qa/memora-1.0/phase4/`へ保存して目視した。
+見た目の変更ではないので、これを新デザインのBefore/After比較とはしない。
+
+最新Debug preview成功: `2026-10-22T22-33-37-1322e0fa.log`、既存警告11件。
+最終ホスト5スイートもすべて終了0:
+`/Volumes/WorkspaceSSD/Development/Temp/memora-phase4-quality-complete/`。
+この最終runには種別指定失効の新規検証と、Journal検索branchの静的回帰も含む。
+GitHubのmain/対象branchを再fetchし、開始時のHEADから変更がないことも確認した。
+pushは実施していない。
+
+### 残る性能確認
+
+- P1: 初回FTSのMainActor同期構築とmodel側provenance/候補作成の実UI計測。
+- P1: 通常Journalの日付切替・集計/scroll、長い会話・添付・構造化UIの
+  iOS Release上の入力遅延、frame pacing、peak memory、電池。推測値は記載しない。
+- P2: 上記計測で根拠が得られた場合だけ、日次集計の追加派生index/cacheや
+  非同期検索へ進む。既存の画面/アニメーションは維持する。
 
 ## Phase 5〜7
 

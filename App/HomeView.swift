@@ -51,20 +51,10 @@ struct HomeView: View {
   var body: some View {
     @Bindable var model = model
     let entries = matchingEntries
-    let dateLayout = typeSize.isAccessibilitySize
-      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
-      : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
-    let ownTasks = model.ownTasks
-    let markedDays = JournalActivityDays.build(
-      recordedDays: model.markedLifeLogDays.union(model.markedMeetingDays),
-      completedAt: ownTasks.filter { $0.isCompleted }.compactMap(\.completedAt))
     let healthRequest = JournalHealthRequest(period: .day(selectedDate), enabled: healthEnabled,
       teamID: model.currentTeamID, isActive: scenePhase == .active, isReviewPresented: showsReview,
       refreshID: healthRefreshID)
     let visibleHealth = healthRequest.canRead && healthLoader.period == healthRequest.period ? healthLoader.snapshot : nil
-    let recap = JournalDailyRecap.build(date: selectedDate, meetings: model.meetings,
-      tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
-      people: model.people, events: calendarEvents, health: visibleHealth)
 
     NavigationStack(path: $model.homePath) {
       ScrollView {
@@ -74,6 +64,18 @@ struct HomeView: View {
           if isSearching {
             searchResults(entries)
           } else {
+            // Search only renders matches; do not scan every task and record
+            // for a recap that is not on screen on each input update.
+            let ownTasks = model.ownTasks
+            let markedDays = JournalActivityDays.build(
+              recordedDays: model.markedLifeLogDays.union(model.markedMeetingDays),
+              completedAt: ownTasks.filter { $0.isCompleted }.compactMap(\.completedAt))
+            let recap = JournalDailyRecap.build(date: selectedDate, meetings: model.meetings,
+              tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
+              people: model.people, events: calendarEvents, health: visibleHealth)
+            let dateLayout = typeSize.isAccessibilitySize
+              ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+              : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
             if model.isRecording {
               ActiveRecordingStrip()
             }

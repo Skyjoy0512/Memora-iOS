@@ -235,6 +235,32 @@ test('journal editing and confirmed deletion persist after restart', { timeout: 
   await app.screenshot('journal-confirmed-delete-restored');
 });
 
+test('journal search replaces the recap and restores the timeline without losing records', async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await tapTab(screen, 'ジャーナル');
+  await addMemo(screen, 'JournalSearchEvidence');
+  await tapControl(screen.getByRole('button', { name: '検索', exact: true }));
+  const query = screen.getByRole('textbox').first();
+  await query.fill('JournalSearchEvidence');
+  await expect(screen.getByText('JournalSearchEvidence', { exact: true }).first()).toBeVisible();
+  await expect(screen.getByRole('button', { name: '今日に戻る', exact: true })).not.toBeVisible();
+  await expect(screen.getByTestId('ai.composer.input')).not.toBeVisible();
+  await app.screenshot('journal-search-results');
+  await query.fill('NoJournalSearchMatch');
+  await expect(screen.getByText('見つかりませんでした', { exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '検索語を消去', exact: true }));
+  await expect(query).not.toHaveValue('NoJournalSearchMatch');
+  await expect(screen.getByText('記録を検索', { exact: true })).toBeVisible();
+  await expect(screen.getByRole('keyboard')).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
+  await expect(screen.getByRole('keyboard')).not.toBeVisible();
+  await expect(screen.getByRole('button', { name: '今日に戻る', exact: true })).toBeVisible();
+  const restored = screen.getByText('JournalSearchEvidence', { exact: true }).first();
+  await scrollTo(screen, restored);
+  await expect(restored).toBeVisible();
+  await app.screenshot('journal-search-returned-timeline');
+});
+
 test('the journal and workspace stay legible in dark appearance', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapTab(screen, 'ジャーナル');
