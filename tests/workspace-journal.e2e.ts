@@ -171,7 +171,10 @@ test('editing a record saves it to the new date', async ({ app, device, screen }
   if (target.getMonth() !== today.getMonth()) target.setDate(today.getDate() + 1);
   const targetName = `(?:${target.toLocaleString('en-US', { month: 'long' })} ${target.getDate()}|${target.getMonth() + 1}月${target.getDate()}日)`;
   await tapStable(screen.getByRole('listitem', { name: new RegExp(targetName) }));
-
+  // The compact system picker remains open after a date selection. Dismiss it
+  // explicitly; a touch on Save while it is open only closes the popover.
+  await tapStable(screen.getByText('記録を編集', { exact: true }));
+  await expect(screen.getByRole('listitem', { name: new RegExp(targetName) })).not.toBeVisible();
   await tapStable(screen.getByRole('button', { name: '保存' }));
   const targetLabel = `${target.toLocaleString('en-US', { month: 'short' })} ${target.getDate()}, ${target.getFullYear()}`;
   await expect(screen.getByText(new RegExp(targetLabel)).first()).toBeVisible();

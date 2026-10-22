@@ -47,7 +47,7 @@ Debug/Releaseビルドを別の結果として報告する。
 SwiftUI部分型検査のMemoraSpacing依存漏れを検出して修正。
 E2EではLibrary起動・歯車のみの設定ボタン・サイドメニューに合わせ、
 古いJournal起動前提と曖昧なテキストlocatorを修正する。
-総合検証の最終結果は完了後に追記する。
+総合検証の最終結果は以下のとおり。
 
 ### 品質基盤の再実行
 
@@ -62,8 +62,14 @@ E2EではLibrary起動・歯車のみの設定ボタン・サイドメニュー�
   サイドバーのライト/ダークロゴ、作成morph、添付とdraftの3件は成功。
 - 拡大E2E28件は26成功/2失敗、skip・中断0。
   失敗は週カレンダーと編集DatePickerを英語日付で探す旧locator。
-  現行の日本語ラベルへ修正して対象を再実行中。
+  現行の日本語ラベルへ修正。週カレンダーの再実行1件は成功。
+  日付選択後も開くシステムpickerを明示的に閉じてから保存するよう修正し、
+  日時編集の再実行1件も成功。
   `.e2e/regression/phase1-final/report.json`に失敗を含む元結果を保持。
+- 既存Debug操作検証画面を通すE2Eを2件追加。候補の編集・選択→実承認→
+  本番dispatcher→SQLite再読込一致と再実行拒否、承認拒否と停止時の非保存が成功。
+  `phase1-repaired-controls/report.json`は日時編集を含む3件成功/失敗0/skip0。
+  先行の失敗結果は`phase1-repair/`に残し、最終成功と区別する。
 - `.github/workflows/quality.yml`を追加。GitHub上での実行は未確認。
   完全なBitrigアプリビルドとUI E2Eはローカルの別検証であり、CIに含めたとは報告しない。
 
@@ -76,6 +82,9 @@ Supervisor/OpenCode Goは既存workflowで限定2ファイルを委任したが�
 
 画面記録: `docs/qa/memora-1.0/phase1/`。before/afterは同じ端末の観測。
 保存した画像を目視した範囲だけを視覚確認済みとする。
+Library / Journal / Ask AI / サイドメニュー / Toolsのafter画像を目視した。
+Phase 1の選択統合・ローカル品質基盤は完了。実機録音・実サービス・GitHub上の
+CI実行は未検証のままであり、全機能の公開判定を済ませた意味ではない。
 
 ## Phase 2〜7
 

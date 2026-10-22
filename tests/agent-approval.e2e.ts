@@ -22,7 +22,10 @@ test('local agent approval edits and selects a candidate before a real SQLite sa
   await screen.getByPlaceholder('タイトル').fill('Reviewed local task');
   await tapControl(screen, screen.getByLabel('候補に反映', { exact: true }));
   // Selection is persistent state, represented by the existing button Toggle.
-  await tapControl(screen, screen.getByRole('button', { name: /QA .* 次回の未決事項を整理$/, exact: true }));
+  const omitted = screen.getByRole('switch', { name: /QA .* 次回の未決事項を整理$/, exact: true });
+  await expect(omitted).toBeChecked();
+  await omitted.uncheck();
+  await expect(omitted).toBeChecked({ checked: false });
   await expect(screen.getByText('タスクを1件追加', { exact: true })).toBeVisible();
   await app.screenshot('agent-before-approval');
   await tapControl(screen, screen.getByRole('button', { name: '追加', exact: true }));
@@ -35,7 +38,7 @@ test('local agent approval edits and selects a candidate before a real SQLite sa
 test('local agent decline and stop resolve the approval without saving', async ({ app, device, screen }) => {
   await openOperationCheck(app, device, screen);
   await tapControl(screen, screen.getByRole('button', { name: 'やめる', exact: true }));
-  await expect(screen.getByText(/利用者が承認しなかったため/)).toBeVisible();
+  await expect(screen.getByText(/利用者がこの操作を承認しませんでした/)).toBeVisible();
   await expect(screen.getByRole('button', { name: '承認と保存を検証', exact: true })).toBeEnabled();
   await expect(screen.getByText(/SQLite再読込一致/)).not.toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: '承認と保存を検証', exact: true }));
