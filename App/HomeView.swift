@@ -209,7 +209,7 @@ struct HomeView: View {
       .sheet(item: $openMovement) { movement in
         JournalMovementSheet(movement: movement)
       }
-      .sheet(item: $openCalendarEvent) { event in
+      .sheet(item: $openCalendarEvent, onDismiss: { calendarRefresh += 1 }) { event in
         CalendarEventSheet(event: event)
       }
       .onChange(of: scenePhase) { _, phase in
@@ -235,7 +235,17 @@ struct HomeView: View {
 
   /// UI additions follow the day being read; external new-memo actions keep now.
   private func beginJournalEntry() {
-    model.lifeLogCreationDate = isViewingToday ? .now : selectedDate
+    model.lifeLogCreationDate = JournalInsertionTime.suggestion(on: selectedDate)
+    model.isLifeLogCreationPresented = true
+  }
+
+  private func beginJournalEntry(after index: Int, in items: [JournalTimelineItem]) {
+    let now = Date.now
+    let dates = items.map { item -> Date? in
+      if case .nowMarker = item { return nil }
+      return item.date(on: selectedDate, now: now)
+    }
+    model.lifeLogCreationDate = JournalInsertionTime.suggestion(on: selectedDate, after: index, dates: dates, now: now)
     model.isLifeLogCreationPresented = true
   }
 
@@ -387,13 +397,13 @@ struct HomeView: View {
           if index < timeline.items.count - 1 {
             JournalTimelineAddRow(label: "この間に記録を追加", isLast: false) {
               InteractionFeedback.shared.send(.tap)
-              beginJournalEntry()
+              beginJournalEntry(after: index, in: timeline.items)
             }
           }
         }
         JournalTimelineAddRow(label: "記録を追加", isLast: true) {
           InteractionFeedback.shared.send(.tap)
-          beginJournalEntry()
+          beginJournalEntry(after: timeline.items.count - 1, in: timeline.items)
         }
       }
     }

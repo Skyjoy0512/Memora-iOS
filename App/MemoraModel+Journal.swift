@@ -31,6 +31,7 @@ extension MemoraModel {
 
     // Photos live in the media folder; the entry keeps the file name.
     let photoFileName = photoData.flatMap { MediaFiles.writePhoto($0, thumbnailMaxSide: 400) }
+    guard photoData == nil || photoFileName != nil else { return false }
 
     var privacy = RecordPrivacy()
     if !personIDs.isEmpty { privacy.protect(.personal) }
@@ -104,9 +105,10 @@ extension MemoraModel {
   }
 
   /// Moves an entry to the trash, as one write, and only then changes the lists.
-  func deleteLifeLogEntry(_ id: UUID) {
-    guard isStoreWritable() else { return }
-    guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
+  @discardableResult
+  func deleteLifeLogEntry(_ id: UUID) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return false }
+    guard let index = lifeLogEntries.firstIndex(where: { $0.id == id }) else { return false }
 
     var candidateEntries = lifeLogEntries
     var candidateTrash = trashedLifeLogEntries
@@ -119,7 +121,7 @@ extension MemoraModel {
         (key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidateTrash))
       ]
     }
-    guard stored else { return }
+    guard stored else { return false }
 
     lifeLogEntries = candidateEntries
     trashedLifeLogEntries = candidateTrash
@@ -130,16 +132,17 @@ extension MemoraModel {
         self?.restoreTrashedLifeLogEntry(trashID)
       } finalize: {}
     )
+    return true
   }
 
   /// Moves several journal entries to the trash in one write, with one undo, so
   /// deleting a whole journey can be taken back as a whole.
-  func deleteLifeLogEntries(_ ids: Set<UUID>) {
-    guard isStoreWritable() else { return }
-    guard !ids.isEmpty else { return }
+  @discardableResult
+  func deleteLifeLogEntries(_ ids: Set<UUID>) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), !ids.isEmpty else { return false }
 
     let removed = lifeLogEntries.filter { ids.contains($0.id) }
-    guard !removed.isEmpty else { return }
+    guard !removed.isEmpty else { return false }
 
     var candidateEntries = lifeLogEntries
     var candidateTrash = trashedLifeLogEntries
@@ -152,7 +155,7 @@ extension MemoraModel {
         (key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidateTrash))
       ]
     }
-    guard stored else { return }
+    guard stored else { return false }
 
     lifeLogEntries = candidateEntries
     trashedLifeLogEntries = candidateTrash
@@ -165,6 +168,7 @@ extension MemoraModel {
         }
       } finalize: {}
     )
+    return true
   }
 
   func restoreTrashedLifeLogEntry(_ id: UUID) {

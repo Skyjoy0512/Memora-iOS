@@ -2,26 +2,23 @@ import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { launchMemora, tapControl, tapTab } from './ui-helpers';
 
-/// Taps once, retrying a control that was still moving after the previous
-/// action, which the mobile engine refuses rather than misplacing the touch.
+/// Wait for the shared native-frame readiness gate before touching a control.
 async function tapStable(locator: any) {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      await locator.tap();
-      return;
-    } catch (error) {
-      if (attempt === 2) throw error;
-    }
-  }
+  await tapControl(locator);
 }
 
 /// Adds one memo from the journal's add sheet.
 async function addMemo(screen: any, title: string) {
-  await screen.getByText('記録を追加').first().tap();
+  const create = screen.getByRole('button', { name: '記録を追加', exact: true }).first();
+  await scrollTo(screen, create);
+  await tapStable(create);
+  await expect(screen.getByText('ライフログを追加', { exact: true })).toBeVisible();
   await screen.getByPlaceholder('メモのタイトル').fill(title);
   const add = screen.getByRole('button', { name: '追加' });
   await expect(add).toBeEnabled();
   await tapStable(add);
+  await expect(screen.getByText('ライフログを追加', { exact: true })).not.toBeVisible();
+  await expect(screen.getByRole('keyboard')).not.toBeVisible();
 }
 
 /// Taps an add control again if the first touch landed while the previous
@@ -43,11 +40,23 @@ async function createProject(screen: any, device: any) {
   await expect(screen.getByRole('button', { name: 'チャット', selected: true })).toBeVisible();
 }
 
-/// Scrolls the current screen up until the locator is on it.
+/// Searches both scroll directions so large text and restored offsets work.
 async function scrollTo(screen: any, locator: any) {
-  for (let i = 0; i < 8; i++) {
-    if (await locator.isVisible()) return;
-    await screen.swipe({ from: { x: 215, y: 700 }, to: { x: 215, y: 300 }, duration: 500 });
+  for (const towardBottom of [true, false]) {
+    for (let i = 0; i < 12; i++) {
+      if (await locator.isVisible()) {
+        const box = await locator.boundingBox();
+        const composer = screen.getByTestId('ai.composer.input');
+        const isForm = await screen.getByText('ライフログを追加', { exact: true }).isVisible();
+        const composerBox = !isForm && await composer.isVisible() ? await composer.boundingBox() : null;
+        // Native AX visibility includes rows underneath the floating composer.
+        // A real touch must be above it and below the navigation bar.
+        const bottom = composerBox ? composerBox.y - 24 : Number.POSITIVE_INFINITY;
+        if (box && box.y >= 140 && box.y + box.height <= bottom) return;
+        if (box && box.y < 140 && towardBottom) break;
+      }
+      await screen.swipe({ from: { x: 215, y: towardBottom ? 700 : 300 }, to: { x: 215, y: towardBottom ? 300 : 700 }, duration: 500 });
+    }
   }
   throw new Error('could not scroll to the target');
 }
@@ -123,6 +132,101 @@ test('the inline plus buttons add a record', async ({ app, device, screen }) => 
   await scrollTo(screen, end);
   await openAddSheet(screen, end);
   await screen.getByText('キャンセル').tap();
+});
+
+test('journal insertion proposes the selected day and the time between events', { timeout: 180_000 }, async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await tapTab(screen, 'ジャーナル');
+  const day = new Date();
+  day.setDate(day.getDate() - 1);
+  const dayName = new RegExp(`^${day.getFullYear()}/${day.getMonth() + 1}/${day.getDate()}[日月火水木金土]曜日、`);
+  const value = (time: string) => new RegExp(`^${time}, ${day.getFullYear()}/${day.getMonth() + 1}/${day.getDate()}$`);
+  await tapStable(screen.getByRole('button', { name: dayName }));
+  await addMemo(screen, 'Insertion 09:00');
+  const tail = screen.getByRole('button', { name: '記録を追加', exact: true }).last();
+  await scrollTo(screen, tail);
+  await openAddSheet(screen, tail);
+  const recordedPicker = screen.getByRole('listitem').filter({ hasText: '記録した時刻' }).getByRole('button', { name: 'Date and Time Picker', exact: true });
+  const eventPicker = screen.getByRole('listitem').filter({ hasText: '開始' }).getByRole('button', { name: 'Date and Time Picker', exact: true });
+  const eventKind = screen.getByRole('button', { name: 'イベント', exact: true });
+  await scrollTo(screen, recordedPicker);
+  await expect(recordedPicker).toHaveValue(value('0?9:30'));
+  await scrollTo(screen, eventKind);
+  await tapStable(eventKind);
+  await scrollTo(screen, eventPicker);
+  await expect(eventPicker).toHaveValue(value('0?9:30'));
+  await scrollTo(screen, screen.getByPlaceholder('イベント名'));
+  await screen.getByPlaceholder('イベント名').fill('Insertion 09:30');
+  await tapStable(screen.getByRole('button', { name: '追加', exact: true }));
+  const middle = screen.getByLabel('この間に記録を追加').first();
+  await scrollTo(screen, middle);
+  const middleBox = await middle.boundingBox();
+  if (!middleBox) throw new Error('journal insertion has no frame');
+  expect(middleBox.width).toBeGreaterThanOrEqual(44);
+  expect(middleBox.height).toBeGreaterThanOrEqual(44);
+  await openAddSheet(screen, middle);
+  await scrollTo(screen, recordedPicker);
+  await expect(recordedPicker).toHaveValue(value('0?9:15'));
+  await scrollTo(screen, eventKind);
+  await tapStable(eventKind);
+  await scrollTo(screen, eventPicker);
+  await expect(eventPicker).toHaveValue(value('0?9:15'));
+  await app.screenshot('journal-proposed-between-events');
+  await scrollTo(screen, screen.getByPlaceholder('イベント名'));
+  await screen.getByPlaceholder('イベント名').fill('Insertion 09:15');
+  await tapStable(screen.getByRole('button', { name: '追加', exact: true }));
+  await scrollTo(screen, screen.getByRole('button', { name: dayName, selected: true }));
+  await expect(screen.getByRole('button', { name: dayName, selected: true })).toBeVisible();
+  await app.restart();
+  await tapTab(screen, 'ジャーナル');
+  await tapStable(screen.getByRole('button', { name: dayName }));
+  const restored = screen.getByText('Insertion 09:15', { exact: true }).first();
+  await scrollTo(screen, restored);
+  await expect(restored).toBeVisible();
+  await app.screenshot('journal-inserted-event-restored');
+});
+
+test('journal editing and confirmed deletion persist after restart', { timeout: 180_000 }, async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  await tapTab(screen, 'ジャーナル');
+  await addMemo(screen, 'Journal CRUD');
+  await tapStable(screen.getByLabel('検索'));
+  await screen.getByPlaceholder('ジャーナルを検索').fill('Journal CRUD');
+  await tapStable(screen.getByText('Journal CRUD', { exact: true }).first());
+  await tapStable(screen.getByLabel('その他'));
+  await tapStable(screen.getByText('編集', { exact: true }));
+  await screen.getByRole('textbox').first().fill('Journal CRUD edited');
+  await screen.getByPlaceholder('本文').fill('Edited journal detail');
+  await tapStable(screen.getByRole('button', { name: '保存', exact: true }));
+  await expect(screen.getByText('Edited journal detail', { exact: true }).last()).toBeVisible();
+  await app.restart();
+  await tapTab(screen, 'ジャーナル');
+  await tapStable(screen.getByLabel('検索'));
+  await screen.getByPlaceholder('ジャーナルを検索').fill('Journal CRUD edited');
+  await tapStable(screen.getByText('Journal CRUD edited', { exact: true }).first());
+  await expect(screen.getByText('Edited journal detail', { exact: true }).last()).toBeVisible();
+  await tapStable(screen.getByLabel('その他'));
+  await tapStable(screen.getByRole('button', { name: '削除', exact: true }));
+  const confirmation = screen.getByRole('group', { name: 'この記録を削除しますか？', exact: true });
+  await expect(confirmation).toBeVisible();
+  // A compact confirmation popover cancels through its outside dismiss region,
+  // not the covered search toolbar's unrelated Cancel button.
+  const confirmationBox = await confirmation.boundingBox();
+  if (!confirmationBox) throw new Error('delete confirmation has no frame');
+  await screen.tapAt({ x: 20, y: confirmationBox.y - 20 });
+  await expect(confirmation).not.toBeVisible();
+  await expect(screen.getByText('Edited journal detail', { exact: true }).last()).toBeVisible();
+  await tapStable(screen.getByLabel('その他'));
+  await tapStable(screen.getByRole('button', { name: '削除', exact: true }));
+  await expect(confirmation).toBeVisible();
+  await tapStable(screen.getByRole('button', { name: '削除', exact: true }));
+  await expect(screen.getByText('見つかりませんでした', { exact: true })).toBeVisible();
+  await app.restart();
+  await tapTab(screen, 'ジャーナル');
+  await tapStable(screen.getByLabel('検索'));
+  await screen.getByPlaceholder('ジャーナルを検索').fill('Journal CRUD edited');
+  await expect(screen.getByText('見つかりませんでした', { exact: true })).toBeVisible();
+  await app.screenshot('journal-confirmed-delete-restored');
 });
 
 test('the journal and workspace stay legible in dark appearance', async ({ app, device, screen }) => {

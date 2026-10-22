@@ -1,7 +1,7 @@
 import { expect } from 'e2e';
 
 // Native actions wait for the destination to finish moving before touching it.
-export async function tapControl(screen: any, locator: any) {
+export async function tapControl(screenOrLocator: any, locator: any = screenOrLocator) {
   await expect(locator).toBeVisible();
   await stableBounds(locator);
   await locator.tap();

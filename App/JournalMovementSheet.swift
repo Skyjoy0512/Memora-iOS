@@ -9,6 +9,7 @@ struct JournalMovementSheet: View {
   var movement: JournalMovement
   @State private var openEntry: LifeLogEntry?
   @State private var isConfirmingDelete = false
+  @State private var deletionFailed = false
 
   var body: some View {
     NavigationStack {
@@ -35,8 +36,9 @@ struct JournalMovementSheet: View {
           .accessibilityHint("記録を開きます")
           .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
-              model.deleteLifeLogEntry(entry.id)
-              dismiss()
+              let deleted = model.handlingPersistenceFailureLocally { model.deleteLifeLogEntry(entry.id) }
+              if deleted { dismiss() }
+              else { deletionFailed = true }
             } label: {
               Label("削除", icon: .trash)
             }
@@ -58,12 +60,18 @@ struct JournalMovementSheet: View {
       }
       .confirmationDialog("この移動を削除しますか？", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
         Button("削除", role: .destructive) {
-          model.deleteLifeLogEntries(Set(movement.entries.map(\.id)))
-          dismiss()
+          let deleted = model.handlingPersistenceFailureLocally { model.deleteLifeLogEntries(Set(movement.entries.map(\.id))) }
+          if deleted { dismiss() }
+          else { deletionFailed = true }
         }
         Button("キャンセル", role: .cancel) {}
       } message: {
         Text("\(movement.entries.count)件を「最近削除した項目」に移動します。取り消せます。")
+      }
+      .alert("削除できませんでした", isPresented: $deletionFailed) {
+        Button("OK", role: .cancel) {}
+      } message: {
+        Text("記録は削除していません。保存領域を確認して、もう一度お試しください。")
       }
       .sheet(item: $openEntry) { entry in
         LifeLogEntryDetailView(entryID: entry.id)

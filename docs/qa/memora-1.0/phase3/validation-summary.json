@@ -1,0 +1,91 @@
+{
+  "hostSuites": [
+    {
+      "suite": "next-generation",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "next-generation.log"
+    },
+    {
+      "suite": "design-refresh",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "design-refresh.log"
+    },
+    {
+      "suite": "background-summary",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "background-summary.log"
+    },
+    {
+      "suite": "composer-layout",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "composer-layout.log"
+    },
+    {
+      "suite": "optimization",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "optimization.log"
+    }
+  ],
+  "hostLogs": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase3-quality-complete",
+  "e2e": [
+    {
+      "report": ".e2e/regression/phase3-journal-final/report.json",
+      "startedAt": "2026-10-22T08:20:42.869Z",
+      "status": "passed",
+      "exitCode": 0,
+      "summary": {
+        "discovered": 75,
+        "selected": 3,
+        "executed": 3,
+        "passed": 3,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "modelTokens": 0,
+      "downloads": 0
+    },
+    {
+      "report": ".e2e/regression/phase3-journal-accessibility-xxxl-visible/report.json",
+      "startedAt": "2026-10-22T08:35:35.514Z",
+      "status": "passed",
+      "exitCode": 0,
+      "summary": {
+        "discovered": 75,
+        "selected": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "modelTokens": 0,
+      "downloads": 0
+    },
+    {
+      "report": ".e2e/regression/phase3-journal-failure-final/report.json",
+      "startedAt": "2026-10-22T09:05:27.401Z",
+      "status": "passed",
+      "exitCode": 0,
+      "summary": {
+        "discovered": 76,
+        "selected": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "modelTokens": 0,
+      "downloads": 0
+    }
+  ]
+}

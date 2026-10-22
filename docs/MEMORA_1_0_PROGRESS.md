@@ -143,17 +143,80 @@ CI実行は未検証のままであり、全機能の公開判定を済ませた
 - P0: 実機での録音継続/中断復旧/音声取り込み/STT再試行、全主要動線、実際の
   VoiceOver/IMEを含む公開前回帰。実認証が必要なGmail/Calendar/Notion/MCPは
   認証なしのfixture検証と区別し、許可を得た試験環境で別途確認する。CIの実行も未確認。
-- P1: Phase 3〜6のJournal初期時刻と編集、実測付き性能改善、source UX、外部連携復旧。
+- P1: Phase 4〜6の実測付き性能改善、source UX、外部連携復旧。
 - P2: Phase 7の最終視覚確認と、安全に分離できる思考ロゴ案、将来の意味的skill選択。
 
 Phase 4の最適化は未着手。この段階のホストbenchmarkは既存コードの回帰確認であり、
 今回の新しい性能改善率とは扱わない。端末入力遅延/FPS/メモリ/電池は未測定。
 
-## Phase 3〜7
+## Phase 3: Journalの追加・編集・保存復旧
 
-Phase 2の最終検証後に順番に着手する。以下は未完了であり成功扱いしない。
+### 実装
 
-- Phase 3: Journal挿入時刻・編集・保存失敗時の入力保持・外部カレンダー権限。
+- 前後のイベントから中間時刻を提案し、末尾は30分後（今日なら現在時刻以降）にする。
+  空の過去/未来日は9時。現在時刻の線はイベントに数えず、日付境界とDSTを守る。
+  提案は通常のDatePickerで変更できる。イベントへ切り替えても1時間ずらさない。
+- 削除はSQLiteの記録/ごみ箱のtransactionが成功したときだけ画面を閉じる。
+  復元中・別workspace・保存保護中は単一/一括削除を拒否し、失敗時は記録を保持する。
+  写真ファイルの書き込み失敗も、写真なしの保存成功として扱わない。
+- 実UIのSQLite失敗試験で、フォーム側とルート側の保存エラー表示が競合し、
+  入力フォームが閉じる不具合を検出。同期操作のローカルエラー表示を明示する共通policyを
+  追加し、Journalの追加/編集/削除へ適用。非0の保存結果を隠したり、他の非同期エラーを
+  一括抑制したりしない。内部基盤は`2ac7650`としてUI変更と分けてコミット。
+- 入力済みのタイトル・本文にも明示的なアクセシビリティ名を付けた。
+- 外部予定の編集は既存のフルアクセス、書き込み可能calendar、本人所有、非取消が条件。
+  編集直前にcalendar IDを指定した±1秒の検索で、event ID/start/endを再照合する。
+  別の繰り返し回、削除済み、権限変更、calendar不在なら編集しない。
+- 標準EventKitUIの編集画面を同じsheet内で表示し、新しいsheetを重ねない。
+  保存/繰り返し選択/エラーは標準UIに委ね、終了後にJournalを再取得する。
+  読み取り専用の予定は説明と「カレンダーで開く」を維持する。
+  native-app-design / protected-resourcesの指針に沿い、操作と権限を明示した。
+  [Appleのsheet指針](https://developer.apple.com/design/human-interface-guidelines/sheets)も参照。
+- Project.jsonは既存のcalendar利用目的に「編集」を明記した1行だけ。
+  TCC/OAuth scope、capability、deployment target、bundle IDは追加・変更していない。
+  フラットな週カレンダー、イベントアイコン、細線、既存Glass/アニメーションは維持。
+
+### 検証
+
+- JournalInsertionTimeChecks成功。中間、同時刻/逆転、選択日、現在線、末尾、
+  overflow、DST/日付境界を検証。
+- PersonJournalChecks成功。本番追加/日時編集/削除/復元とSQLite再読込、
+  最初/最後の書き込みをABORTするrollback、写真失敗、workspace/復元/保護を検証。
+- CalendarEventEditPolicyChecks成功。権限・書込可否・所有者・取消と繰り返し回の照合。
+  PersistenceFailurePresentationChecks成功。既定のグローバル表示、ローカル/入れ子/throw後の復旧。
+- 全ホスト5系統成功: `/Volumes/WorkspaceSSD/Development/Temp/memora-phase3-quality-complete/`。
+- Debugプレビュー成功: `2026-10-22T17-57-34-f2a58b95.log`、既存警告11件。
+  設定変更後の`bitrig build`とpreviewも実行済み。
+- 通常サイズUI E2E3件成功: `phase3-journal-final/report.json`。
+  9:00/9:30の間は9:15、eventへの切替、保存/再起動、本文/タイトル/日付編集、
+  削除確認の取消/確定と再起動後の非表示を検証。
+- 最大アクセシビリティ文字サイズのUI E2E1件成功:
+  `phase3-journal-accessibility-xxxl-visible/report.json`。44pt以上の追加ボタン、
+  初期時刻/開始時刻、入力欄へのスクロール、選択日と再起動後の復元を確認。
+  テスト専用Simulatorは実行後に`large`へ復帰。
+- SQLite失敗の実UI E2E1件成功: `phase3-journal-failure-final/report.json`。
+  追加/編集の実ABORT後のタイトル・本文保持→解除/再保存→再起動復元、
+  ごみ箱側書込ABORT後の詳細保持→解除/再削除→再起動後の非表示を検証。
+  独自UUIDを持つUI作成記録から特定できた
+  CoreSimulatorのDBだけに一時triggerを作り、finallyでそのtriggerだけを除去する。
+  BitrigのプレビューDB・実端末・実アカウントには触れない。
+- 今回の選択UIケースは通常3+最大文字1+失敗復旧1の5件。各最終runは失敗/skip/中断0、
+  model token/downloadは0。選択していない他ケースは成功に数えない。
+  最終結果の要約を`docs/qa/memora-1.0/phase3/validation-summary.json`に保存。
+- 初期のE2E失敗はログを保持。通常サイズでは背後の検索結果との重複と、
+  popover外をタップする取消動作へ修正。最大文字サイズではAX可視性だけでなく、
+  navigation/composerに隠れない座標までスクロールしてから操作する。
+  保存失敗時のフォーム消失は実アプリの不具合として上記policyで修正した。
+
+画面: `docs/qa/memora-1.0/phase3/`。通常/最大文字サイズの時刻と復元、
+保存失敗で閉じたBeforeと入力が残るAfterを保存・目視確認した。
+EventKitUIでの実予定の保存・削除、実アカウント/権限変更、VoiceOverの実音声操作は
+未検証。ビルド・純粋policy・JournalのE2Eを、その証明とはしない。
+
+## Phase 4〜7
+
+Phase 3の最終検証後に順番に着手する。以下は未完了であり成功扱いしない。
+
 - Phase 4: 同じfixtureによる変更前後の実測と、安全な検索・集計最適化。
 - Phase 5: ソース解析状態、重複・再試行、古い案内文の修正。
 - Phase 6: 外部連携のエラー・権限変更のfixture検証。実認証やOAuth scope拡大は実施しない。

@@ -21,9 +21,10 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn("selectedDate = Calendar.current.startOfDay(for: .now)", home)
         self.assertIn(".disabled(isViewingToday)", home)
         self.assertIn("AnyLayout(VStackLayout", (APP / "HomeActivityLinks.swift").read_text())
-        self.assertIn("model.lifeLogCreationDate = isViewingToday ? .now : selectedDate", home)
+        self.assertIn("JournalInsertionTime.suggestion(on: selectedDate)", home)
+        self.assertIn("beginJournalEntry(after: index, in: timeline.items)", home)
         root = (APP / "RootTabView.swift").read_text()
-        self.assertIn("LifeLogCreationSheet(date: model.lifeLogCreationDate ?? .now)", root)
+        self.assertIn("LifeLogCreationSheet(date: model.lifeLogCreationDate ?? .now, eventDate: model.lifeLogCreationDate)", root)
         self.assertIn("onDismiss: { model.lifeLogCreationDate = nil }", root)
         empty = home.split("private var emptyDay:")[1].split("///")[0]
         self.assertNotIn("memoraCard", empty)

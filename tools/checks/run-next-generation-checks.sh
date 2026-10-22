@@ -4,6 +4,12 @@ cd "$(dirname "$0")/../.."
 check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
 check_dir=$(mktemp -d "$check_root/memora-nextgen-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
+swiftc App/JournalInsertionTime.swift tools/checks/JournalInsertionTimeChecks.swift -o "$check_dir/journal-insertion"
+"$check_dir/journal-insertion"
+swiftc App/CalendarEventEditPolicy.swift tools/checks/CalendarEventEditPolicyChecks.swift -o "$check_dir/calendar-edit-policy"
+"$check_dir/calendar-edit-policy"
+swiftc App/PersistenceFailurePresentation.swift tools/checks/PersistenceFailurePresentationChecks.swift -o "$check_dir/persistence-presentation"
+"$check_dir/persistence-presentation"
 swiftc App/AIMemory.swift App/AIMemory+Editing.swift App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift tools/checks/MemoryRetrievalChecks.swift -lsqlite3 -o "$check_dir/memory"
 "$check_dir/memory"
 bash tools/checks/run-memory-editing-checks.sh

@@ -6,6 +6,7 @@ import SQLite3
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("MemoraPersonJournal-\(UUID())")
     defer { try? FileManager.default.removeItem(at: root) }
     let storeURL = root.appendingPathComponent("records.sqlite")
+    try editingAndDeletionRollback(at: root.appendingPathComponent("journal-crud.sqlite"))
     let model = try MemoraModel(storeURL: storeURL)
     let person = Person(id: UUID(), name: "田中 太郎", note: nil, contactIdentifier: nil)
     let other = Person(id: UUID(), name: person.name, note: nil, contactIdentifier: nil)
@@ -161,7 +162,55 @@ import SQLite3
     let reopened = LocalStore(fileURL: storeURL); try reopened.prepare()
     let restored = try JSONDecoder().decode([LifeLogEntry].self, from: PersonTaskChecksRead.read(reopened, "journal"))
     precondition(restored == model.lifeLogEntries)
-    print("PersonJournalChecks: passed (production journal codec/mutations, person scope/read/search, privacy editor + real SQLite; legacy, same-name IDs, tombstones, grants, parent restrictions, revoke/edit/delete, typed UUID collision, merge rollback, reopen; isolated fixtures only)")
+    print("PersonJournalChecks: passed (production journal CRUD/event-date editing/trash + real SQLite rollback/reopen; photo-write refusal, restoration/workspace guards, person scope/read/search/privacy, legacy, same-name IDs, tombstones, grants, revoke/edit/delete, typed UUID collision and merge rollback; OS/media services are fixtures)")
+  }
+
+  @MainActor static func editingAndDeletionRollback(at url: URL) throws {
+    let model = try MemoraModel(storeURL: url)
+    let recorded = Date(timeIntervalSince1970: 1_800_000_000)
+    let event = recorded.addingTimeInterval(1_800)
+    precondition(model.addLifeLogEntry(kind: .event, title: "架空の予定", summary: "詳細", createdAt: recorded,
+      photoData: nil, eventDate: event, locationName: nil))
+    let id = model.lifeLogEntries[0].id
+    let editedTime = event.addingTimeInterval(3_600)
+    precondition(model.updateLifeLogEntry(id, title: "編集した予定", summary: "編集した詳細", createdAt: editedTime, locationName: nil, place: nil))
+    let original = model.lifeLogEntries
+    precondition(original[0].createdAt == recorded && original[0].eventDate == editedTime && original[0].occurredAt == editedTime)
+    precondition(!model.addLifeLogEntry(kind: .photo, title: "保存できない写真", summary: "", createdAt: recorded,
+      photoData: Data([0xff]), eventDate: nil, locationName: nil))
+    precondition(model.lifeLogEntries == original)
+    for mode in 0..<3 {
+      model.isRestoring = mode == 0
+      model.currentTeamID = mode == 1 ? "other-workspace" : nil
+      model.isStoreProtected = mode == 2
+      precondition(!model.deleteLifeLogEntry(id) && !model.deleteLifeLogEntries([id]))
+      precondition(!model.updateLifeLogEntry(id, title: "権限外の編集", summary: "", createdAt: recorded, locationName: nil, place: nil))
+      precondition(model.lifeLogEntries == original && model.trashedLifeLogEntries.isEmpty)
+    }
+    model.isRestoring = false; model.currentTeamID = nil; model.isStoreProtected = false
+    var connection: OpaquePointer?
+    precondition(sqlite3_open_v2(url.path, &connection, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK)
+    defer { sqlite3_close(connection) }
+    for key in ["journal", "journalTrash"] {
+      precondition(sqlite3_exec(connection, "CREATE TRIGGER fail_crud BEFORE INSERT ON documents WHEN NEW.key='\(key)' BEGIN SELECT RAISE(ABORT, 'journal failure'); END;", nil, nil, nil) == SQLITE_OK)
+      if key == "journal" {
+        precondition(!model.updateLifeLogEntry(id, title: "失敗した編集", summary: "失敗", createdAt: recorded, locationName: nil, place: nil))
+      }
+      precondition(!model.deleteLifeLogEntry(id) && !model.deleteLifeLogEntries([id]))
+      precondition(model.lifeLogEntries == original && model.trashedLifeLogEntries.isEmpty)
+      let reopened = LocalStore(fileURL: url); try reopened.prepare()
+      let saved = try JSONDecoder().decode([LifeLogEntry].self, from: PersonTaskChecksRead.read(reopened, "journal"))
+      precondition(saved == original)
+      precondition({ if case .missing = reopened.readOutcome("journalTrash") { return true }; return false }())
+      precondition(sqlite3_exec(connection, "DROP TRIGGER fail_crud;", nil, nil, nil) == SQLITE_OK)
+    }
+    precondition(model.deleteLifeLogEntry(id) && model.lifeLogEntries.isEmpty && model.trashedLifeLogEntries.count == 1)
+    model.restoreTrashedLifeLogEntry(id)
+    precondition(model.lifeLogEntries == original && model.trashedLifeLogEntries.isEmpty)
+    precondition(model.deleteLifeLogEntries([id]) && model.lifeLogEntries.isEmpty)
+    let reopened = LocalStore(fileURL: url); try reopened.prepare()
+    let trash = try JSONDecoder().decode([TrashedLifeLogEntry].self, from: PersonTaskChecksRead.read(reopened, "journalTrash"))
+    precondition(trash.map(\.entry) == original)
   }
 }
 

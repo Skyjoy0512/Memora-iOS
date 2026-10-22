@@ -17,9 +17,9 @@ struct LifeLogCreationSheet: View {
   @State private var personIDs: Set<UUID> = []
   @State private var saveError = false
 
-  init(date: Date = .now) {
+  init(date: Date = .now, eventDate: Date? = nil) {
     _createdAt = State(initialValue: date)
-    _eventDate = State(initialValue: date.addingTimeInterval(3_600))
+    _eventDate = State(initialValue: eventDate ?? date.addingTimeInterval(3_600))
   }
 
   var body: some View {
@@ -33,8 +33,10 @@ struct LifeLogCreationSheet: View {
 
         Section("内容") {
           TextField(titlePrompt, text: $title)
+            .accessibilityLabel(Text(titlePrompt))
           TextField("ひとことや背景", text: $detail, axis: .vertical)
             .lineLimit(3...6)
+            .accessibilityLabel("ひとことや背景")
           DatePicker("記録した時刻", selection: $createdAt)
         }
 
@@ -124,7 +126,7 @@ struct LifeLogCreationSheet: View {
   private func save() {
     guard canSave else { return }
     let includesPlace = kind == .location || kind == .event
-    let saved = model.addLifeLogEntry(
+    let saved = model.handlingPersistenceFailureLocally { model.addLifeLogEntry(
       kind: kind,
       title: title,
       summary: detail,
@@ -134,7 +136,7 @@ struct LifeLogCreationSheet: View {
       locationName: includesPlace ? locationName : nil,
       place: includesPlace ? place : nil,
       personIDs: kind == .location ? [] : personIDs
-    )
+    ) }
     if saved { dismiss() } else { saveError = true }
   }
 }

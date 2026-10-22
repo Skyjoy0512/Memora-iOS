@@ -30,8 +30,10 @@ struct LifeLogEditSheet: View {
       MemoraForm {
         Section("内容") {
           TextField("タイトル", text: $title, axis: .vertical)
+            .accessibilityLabel("タイトル")
           TextField("本文", text: $summary, axis: .vertical)
             .lineLimit(3...8)
+            .accessibilityLabel("本文")
         }
 
         Section {
@@ -56,7 +58,7 @@ struct LifeLogEditSheet: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
-            let saved = model.updateLifeLogEntry(
+            let saved = model.handlingPersistenceFailureLocally { model.updateLifeLogEntry(
               entry.id,
               title: title,
               summary: summary,
@@ -64,7 +66,7 @@ struct LifeLogEditSheet: View {
               locationName: locationName,
               place: place,
               personIDs: personIDs
-            )
+            ) }
             if saved { dismiss() } else { saveError = true }
           }
           .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

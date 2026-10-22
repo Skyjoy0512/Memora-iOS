@@ -12,6 +12,7 @@ struct LifeLogEntryDetailView: View {
   @State private var isExcludingPlace = false
   @State private var isViewingPhoto = false
   @State private var isPrivacyPresented = false
+  @State private var deletionFailed = false
 
   var body: some View {
     NavigationStack {
@@ -58,8 +59,7 @@ struct LifeLogEntryDetailView: View {
       }
       .confirmationDialog("この記録を削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
         Button("削除", role: .destructive) {
-          model.deleteLifeLogEntry(entryID)
-          dismiss()
+          deleteEntry()
         }
         Button("キャンセル", role: .cancel) {}
       } message: {
@@ -68,8 +68,7 @@ struct LifeLogEntryDetailView: View {
       .confirmationDialog("この場所を今後記録しない", isPresented: $isExcludingPlace, titleVisibility: .visible) {
         Button("記録しない（この記録も削除）", role: .destructive) {
           excludeCurrentPlace()
-          model.deleteLifeLogEntry(entryID)
-          dismiss()
+          deleteEntry()
         }
         Button("記録しない（記録は残す）") {
           excludeCurrentPlace()
@@ -77,6 +76,11 @@ struct LifeLogEntryDetailView: View {
         Button("キャンセル", role: .cancel) {}
       } message: {
         Text("この場所の周辺では自動の記録を行いません。")
+      }
+      .alert("削除できませんでした", isPresented: $deletionFailed) {
+        Button("OK", role: .cancel) {}
+      } message: {
+        Text("記録は削除していません。保存領域を確認して、もう一度お試しください。")
       }
       .task(id: currentEntry?.photoFileName) {
         await loadPhoto()
@@ -86,6 +90,12 @@ struct LifeLogEntryDetailView: View {
 
   private var currentEntry: LifeLogEntry? {
     model.lifeLogEntries.first { $0.id == entryID }
+  }
+
+  private func deleteEntry() {
+    let deleted = model.handlingPersistenceFailureLocally { model.deleteLifeLogEntry(entryID) }
+    if deleted { dismiss() }
+    else { deletionFailed = true }
   }
 
   /// Adds this record's place to the excluded list, so the logger skips it.
