@@ -66,107 +66,19 @@ extension MemoraModel {
 
   func prepareProjectSource(_ id: UUID) async {
     if let value = source(id: id), value.kind == .youtube {
-      await prepareProjectYouTube(id)
+      await prepareProjectYouTube(id, fetchMetadata: ProjectYouTubeMetadata.fetch, fetchThumbnail: { url in
+        let data = try await ProjectYouTubeThumbnail.fetch(url)
+        try Task.checkCancellation()
+        let jpeg = await Task.detached(priority: .utility) {
+          ImageDownscale.downsampled(data: data, maxPixelSize: 160)?.jpegData(compressionQuality: 0.8)
+        }.value
+        try Task.checkCancellation()
+        guard let jpeg else { throw ProjectSourceFiles.Failure.invalidFile }
+        return jpeg
+      })
       return
     }
-    guard !Task.isCancelled, !isRestoring, !isStoreProtected,
-          let source = source(id: id), source.processingStatus != .ready,
-          !projectSourceProcessingIDs.contains(id), let name = source.localFileReference,
-          let file = ProjectSourceFiles.resolve(name) else { return }
-    projectSourceProcessingIDs.insert(id)
-    let workspaceID = currentTeamID
-    defer { projectSourceProcessingIDs.remove(id) }
-    var processing = source
-    processing.processingStatus = .processing
-    guard storeProjectSource(processing) else { return }
-    var created: [String] = []
-    do {
-      let result = try await ProjectSourceExtraction.extract(file)
-      try Task.checkCancellation()
-      guard currentTeamID == workspaceID, !isRestoring, !isStoreProtected,
-            self.source(id: id)?.localFileReference == name,
-            self.source(id: id)?.projectID == source.projectID else { return }
-      let text = result.blocks.isEmpty ? nil : try await ProjectSourceFiles.shared.write(JSONEncoder().encode(result.blocks), extension: "json")
-      if let text { created.append(text) }
-      var thumb: String?
-      if let data = result.thumbnail { thumb = try await ProjectSourceFiles.shared.write(data, extension: "jpg") }
-      if let thumb { created.append(thumb) }
-      guard !Task.isCancelled, currentTeamID == workspaceID, !isRestoring, !isStoreProtected,
-            var current = self.source(id: id), current.localFileReference == name,
-            current.projectID == source.projectID else {
-        await ProjectSourceFiles.shared.remove(created); return
-      }
-      current.extractedTextReference = text
-      current.thumbnailReference = thumb
-      current.processingStatus = text == nil ? .unavailable : .ready
-      current.textCoverage = text == nil ? nil : result.coverage
-      current.errorInformation = result.notice
-      if !storeProjectSource(current) { await ProjectSourceFiles.shared.remove(created) }
-    } catch {
-      await ProjectSourceFiles.shared.remove(created)
-      guard currentTeamID == workspaceID, !isRestoring, !isStoreProtected,
-            var current = self.source(id: id), current.localFileReference == name,
-            current.projectID == source.projectID else { return }
-      current.processingStatus = .failed
-      if let failure = error as? OfficeArchiveReader.Failure {
-        current.errorInformation = failure.errorDescription
-      } else {
-        current.errorInformation = error is CancellationError
-          ? "解析を停止しました。元ファイルは保存されています。"
-          : "解析できませんでした。元ファイルは保存されています。"
-      }
-      _ = storeProjectSource(current)
-    }
-  }
-
-  private func prepareProjectYouTube(_ id: UUID) async {
-    guard var value = source(id: id), let url = value.originalURL,
-          value.metadata?["youtubeTitle"] == nil || value.thumbnailReference == nil,
-          !projectSourceProcessingIDs.contains(id) else { return }
-    projectSourceProcessingIDs.insert(id)
-    defer { projectSourceProcessingIDs.remove(id) }
-    if value.metadata?["youtubeTitle"] == nil {
-      value.processingStatus = .processing
-      guard storeProjectSource(value) else { return }
-      do {
-        let metadata = try await ProjectYouTubeMetadata.fetch(url)
-        guard var current = source(id: id), current.originalURL == url else { return }
-        current.title = metadata.title
-        current.metadata = ["youtubeTitle": metadata.title, "youtubeAuthor": metadata.author]
-        current.processingStatus = .unavailable
-        current.errorInformation = "動画情報を取得しました。字幕や動画内容は取得していないため、AIの根拠には使用しません。"
-        guard storeProjectSource(current) else { return }
-      } catch {
-        guard var current = source(id: id), current.originalURL == url else { return }
-        current.processingStatus = .unavailable
-        current.errorInformation = "動画情報を取得できませんでした。リンクは保存されています。"
-        _ = storeProjectSource(current)
-        return
-      }
-    }
-    guard source(id: id)?.thumbnailReference == nil else { return }
-    var created: String?
-    do {
-      let data = try await ProjectYouTubeThumbnail.fetch(url)
-      let jpeg = await Task.detached(priority: .utility) {
-        ImageDownscale.downsampled(data: data, maxPixelSize: 160)?.jpegData(compressionQuality: 0.8)
-      }.value
-      guard let jpeg else { throw ProjectSourceFiles.Failure.invalidFile }
-      let name = try await ProjectSourceFiles.shared.write(jpeg, extension: "jpg")
-      created = name
-      guard var current = source(id: id), current.originalURL == url, current.thumbnailReference == nil else {
-        await ProjectSourceFiles.shared.remove([name]); return
-      }
-      current.thumbnailReference = name
-      current.metadata?.removeValue(forKey: "thumbnailError")
-      if !storeProjectSource(current) { await ProjectSourceFiles.shared.remove([name]) }
-    } catch {
-      if let created { await ProjectSourceFiles.shared.remove([created]) }
-      guard !Task.isCancelled, var current = source(id: id), current.originalURL == url else { return }
-      current.metadata?["thumbnailError"] = (error as? ProjectSourceFiles.Failure)?.errorDescription ??
-        "サムネイルを取得できませんでした。動画リンクと情報は保存されています。"
-      _ = storeProjectSource(current)
-    }
+    await prepareProjectLocalSource(id, extract: ProjectSourceExtraction.extract)
   }
 
   @discardableResult

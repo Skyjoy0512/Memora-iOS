@@ -8,6 +8,7 @@ final class MemoraModel {
   var storeURL: URL
   var projectSources: [ProjectSource] = [] { didSet { projectSourceIndex.invalidate() } }
   var projectSourceIndex = IdentifiableIndex<ProjectSource>()
+  var projectSourceProcessingIDs: Set<UUID> = []
   var spaces: [MemoraSpace] = []
   var currentTeamID: String? {
     didSet { if oldValue != currentTeamID { aiWorkspaceGeneration = UUID() } }

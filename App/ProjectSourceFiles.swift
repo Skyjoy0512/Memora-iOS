@@ -27,11 +27,12 @@ actor ProjectSourceFiles {
   }
 
   enum Failure: LocalizedError {
-    case tooLarge, capacity, invalidFile, noteTooLarge, noteEncodingTooLarge
+    case tooLarge, capacity, invalidFile, noteTooLarge, noteEncodingTooLarge, extractedTextTooLarge
     var errorDescription: String? {
       switch self {
       case .noteTooLarge: "メモは512KB以下にしてください。"
       case .noteEncodingTooLarge: "メモの保存形式が上限を超えています。制御文字を減らすか、内容を分けて保存してください。"
+      case .extractedTextTooLarge: "解析結果が本文の保存上限（2MB）を超えています。元ファイルは保存されています。"
       case .tooLarge: "ファイルは50MB以下にしてください。"
       case .capacity: "ソース保存容量の上限（500MB）に達しました。"
       case .invalidFile: "このファイルを読み込めませんでした。"

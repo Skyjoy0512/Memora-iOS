@@ -5,12 +5,7 @@ import ImageIO
 import UIKit
 
 enum ProjectSourceExtraction {
-  struct Result: Sendable {
-    var blocks: [ProjectSourceText]
-    var thumbnail: Data?
-    var notice: String?
-    var coverage = ProjectSource.TextCoverage.complete
-  }
+  typealias Result = ProjectSourceExtractionResult
 
   static func extract(_ url: URL) async throws -> Result {
     let job = Task.detached(priority: .utility) { try read(url) }
