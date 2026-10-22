@@ -149,8 +149,15 @@ struct ProjectSourcePreparationChecks {
     if stage < 3 { gate.resume(()) } else { release.signal() }
     await operation.value
     if let hold { expect(await hold.value) }
-    precondition(model.projectSources == snapshot && model.projectSourceProcessingIDs.isEmpty)
-    expect(try reload(model) == durable && files() == before)
+    var expected = snapshot
+    if model.currentTeamID == nil && !model.isRestoring && !model.isStoreProtected {
+      for index in expected.indices where expected[index].processingStatus == .processing {
+        expected[index].processingStatus = expected[index].kind == .youtube ? .unavailable : .failed
+        expected[index].errorInformation = "処理は中断されました。ソースは保持しています。必要に応じて再試行してください。自動では再開しません。"
+      }
+    }
+    precondition(model.projectSources == expected && model.projectSourceProcessingIDs.isEmpty)
+    expect(try reload(model) == (expected == snapshot ? durable : expected) && files() == before)
   }
 
   @MainActor static func cancellation(_ root: URL, youtube: Bool) async throws {

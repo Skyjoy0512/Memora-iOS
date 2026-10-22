@@ -309,7 +309,10 @@ final class MemoraModel {
   /// True while a backup restore is preparing files and before its records are
   /// written, so a record added meanwhile cannot be silently replaced.
   var isRestoring = false {
-    didSet { if isRestoring { cancelProjectWebFetches() } }
+    didSet {
+      if isRestoring { cancelProjectWebFetches() }
+      else { recoverInterruptedProjectSources() }
+    }
   }
   var recordingElapsed: TimeInterval = 0
   /// Smoothed 0...1 loudness for the recording glow.
@@ -692,6 +695,7 @@ final class MemoraModel {
     // Anything that was mid-processing when the app stopped is offered for
     // retry instead of looking stuck forever.
     recoverInterruptedJobs()
+    recoverInterruptedProjectSources()
 
     // Records kept past their recovery window are removed for good.
     purgeExpiredTrash()

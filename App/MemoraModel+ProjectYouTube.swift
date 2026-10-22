@@ -10,7 +10,10 @@ extension MemoraModel {
           context.source.metadata?["youtubeTitle"] == nil || context.source.thumbnailReference == nil,
           !projectSourceProcessingIDs.contains(id) else { return }
     projectSourceProcessingIDs.insert(id)
-    defer { projectSourceProcessingIDs.remove(id) }
+    defer {
+      projectSourceProcessingIDs.remove(id)
+      recoverInterruptedProjectSources()
+    }
     if context.source.metadata?["youtubeTitle"] == nil {
       context.source.processingStatus = .processing
       guard storeProjectSource(context.source) else { return }

@@ -9,6 +9,9 @@ final class MemoraModel {
   var projectSources: [ProjectSource] = [] { didSet { projectSourceIndex.invalidate() } }
   var projectSourceIndex = IdentifiableIndex<ProjectSource>()
   var projectSourceProcessingIDs: Set<UUID> = []
+  #if MEMORA_WEB_SOURCE_CHECKS
+  var projectWebFetchJobs: [UUID: (id: UUID, task: Task<WebSourceFetcher.Result, Error>)] = [:]
+  #endif
   var spaces: [MemoraSpace] = []
   var currentTeamID: String? {
     didSet { if oldValue != currentTeamID { aiWorkspaceGeneration = UUID() } }

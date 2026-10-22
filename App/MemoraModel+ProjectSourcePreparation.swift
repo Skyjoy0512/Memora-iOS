@@ -9,7 +9,10 @@ extension MemoraModel {
           !projectSourceProcessingIDs.contains(id), let name = context.source.localFileReference,
           let file = ProjectSourceFiles.resolve(name) else { return }
     projectSourceProcessingIDs.insert(id)
-    defer { projectSourceProcessingIDs.remove(id) }
+    defer {
+      projectSourceProcessingIDs.remove(id)
+      recoverInterruptedProjectSources()
+    }
     context.source.processingStatus = .processing
     guard storeProjectSource(context.source) else { return }
     var created: [String] = []

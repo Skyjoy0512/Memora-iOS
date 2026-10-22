@@ -11,7 +11,7 @@ swiftc -D MEMORA_HOST_CHECKS Shared/MemoraIcon.swift App/LocalStore.swift App/Me
   App/ProjectCitation.swift App/PersistenceFailurePresentation.swift App/MemoraModel+ProjectSourceStorage.swift \
   App/ProjectSourcePreparationContext.swift App/ProjectSourceExtractionResult.swift \
   App/ProjectSourceURL.swift App/ProjectYouTubeMetadata.swift App/ProjectMetadataTransport.swift App/ProjectMetadataRedirectPolicy.swift \
-  App/MemoraModel+ProjectSourcePreparation.swift App/MemoraModel+ProjectYouTube.swift \
+  App/MemoraModel+ProjectSourcePreparation.swift App/MemoraModel+ProjectYouTube.swift App/MemoraModel+ProjectSourceRecovery.swift \
   tools/checks/ProjectSourceStorageFixture.swift tools/checks/ProjectSourcePreparationChecks.swift \
   -lsqlite3 -o "$check_dir/checks"
 "$check_dir/checks" "$check_dir"
