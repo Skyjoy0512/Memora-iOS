@@ -383,8 +383,59 @@ pushは実施していない。
   検証結果は`docs/qa/memora-1.0/phase5/validation-summary.json`にも保存。
   branchはmainのまま、pushは実施していない。性能改善値はこの変更では計測していない。
 
-残り: YouTube metadata/thumbnail、一般ファイル・写真取込/解析の非同期境界と、
-PDF/OCR/画像の実端末での範囲表示・失敗再試行の最終確認。Phase 5全体の完了とはしない。
+### 取得・解析結果の非同期境界（2026-10-23）
+
+- YouTube metadata/thumbnailと登録済みローカルsourceの解析を、既存サービスを
+  呼ぶ本番のorchestrationとして分離。結果型は共通ファイルに移し、既存の
+  `ProjectSourceExtraction.Result`名はtypealiasで維持した。UIや保存schemaは変更しない。
+- 共通contextでsource全体、親projectの版、workspace generationを保持。
+  await後と保存直前に比較し、privacy/タイトル/所属/種類/削除、A→B→A、復元/保護、
+  中止による古い結果の反映を拒否する。失効後は次のthumbnail取得へ進まない。
+- メタデータ保存時は既存のmetadataキーを保持。thumbnailだけ失敗した場合は
+  保存済みタイトルを保持し、明示的再試行でmetadataを重複取得しない。
+  YouTube本文・字幕の取得やAI参照許可を追加したわけではない。
+- 失敗/失効時は今回作成した結果ファイルだけを除去。元ファイルは保持する。
+  成功時の旧結果ファイルも、別sourceが参照していれば削除しない。
+- 解析結果のJSONが既存readerの2MBを超える場合は専用理由で失敗にする。
+  読めない結果をreadyとして保存しない。rawファイルの50MB上限とは区別する。
+
+検証:
+
+- 新規runnerの本番orchestration・LocalStore・file actor・readerによる検証成功。
+  metadata応答、thumbnail応答、抽出応答、thumbnail書込、本文書込の5境界×
+  12状態変更＝60通りで、遅れた結果と新規ファイルを残さないことを確認。
+  中止2系統、二重実行の拒否、SQL ABORT後のrollback/reopen/retryも含む。
+  model state/evidence通知と通信/抽出/downsampleのpayloadはfixtureであり、
+  実YouTube通信・Vision/PDFKit・画像品質を検証した意味ではない。
+- ホスト5スイートすべて成功（終了0）:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-preparation-quality/`。
+  その後、開始保存失敗2系統とmetadata保存失敗後の次段取得拒否を追加し、
+  専用runnerを再実行して成功。SQL失敗の検証は合計5ケース。
+- 初回の新規fixtureコンパイルはthrow/awaitをpreconditionのautoclosureへ渡して
+  失敗した。通常のBoolを受け取る検証helperへ修正し、以後の実行は成功。
+  この初回失敗は成功に数えない。
+- 最新Debug preview成功: `2026-10-23T07-56-37-9cd56d6d.log`、既存警告11件。
+- Release Simulatorビルドも成功: `2026-10-23T07-58-23-eac86cc6.log`、SDK 27.1、
+  既存警告11件。実機の動作/性能を確認した意味ではない。
+- UI E2Eは2実行/2成功、失敗・skip・中断0:
+  `.e2e/regression/phase5-preparation/report.json`、model token/download 0。
+  Officeの本番取込/抽出/SQLite再読込と、メモのSQL失敗/下書き/再起動/再保存を再検証。
+  検出79件のうち選択した2件だけであり、他77件は実行/成功に数えない。
+- OfficeのLight表示と再起動後のメモのDark表示を保存し、目視した。
+  `preparation-office-source-partial-coverage.png`と`preparation-note-restored.png`。
+  画面を再設計したBefore/After比較ではなく、内部変更後の回帰確認画像。
+- 実装コミット`e11d151`。詳細結果はPhase 5の`preparation-validation-summary.json`。
+  mainのまま、pushや新しい実認証/外部送信は実施していない。
+
+残り（Phase 5全体の完了とはしない）:
+
+- 一般ファイルのcopy前後、PhotosPickerのloadTransferable、音声取込の開始前からの
+  workspace generationを維持する境界。今回のcontextは登録済みsourceの解析が対象。
+- 明示的Web本文取得にも共通のfull snapshot/generation条件を適用すること。
+- P1: 失効後は安全のためsourceへ書き戻さないので、保存済みprocessing状態が残る場合が
+  ある。再起動/失効後の状態正規化を別単位で検証する必要がある。自動再取得はしない。
+  現在の手動再試行導線は、進行中IDが外れたあと利用できる。
+- PDF/OCR/画像の実端末での範囲表示・失敗再試行、実YouTube通信と縮小画像の品質。
 
 ## Phase 6〜7
 

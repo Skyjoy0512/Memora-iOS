@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "appCodeRevision": "e11d151",
+  "phaseStatus": "Phase 5 in progress; registered-source preparation boundary hardened",
+  "sdk": "iPhoneSimulator27.1.sdk",
+  "deploymentTarget": "iOS 26.0",
+  "debugPreview": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-23T07-56-37-9cd56d6d.log"
+  },
+  "releaseSimulatorBuild": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-23T07-58-23-eac86cc6.log",
+    "physicalDeviceValidation": false
+  },
+  "hostChecks": {
+    "output": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-preparation-quality",
+    "suites": [
+      {"name": "next-generation", "status": "passed", "exitCode": 0},
+      {"name": "design-refresh", "status": "passed", "exitCode": 0},
+      {"name": "background-summary", "status": "passed", "exitCode": 0},
+      {"name": "composer-layout", "status": "passed", "exitCode": 0},
+      {"name": "optimization", "status": "passed", "exitCode": 0}
+    ],
+    "productionPaths": ["ProjectSourcePreparationContext", "prepareProjectYouTube", "prepareProjectLocalSource", "storeProjectSource", "LocalStore", "ProjectSourceFiles", "ProjectSourceTextReader"],
+    "newChecks": {
+      "suspendedResponseOrFileWriteRaces": 60,
+      "stages": ["metadata response", "thumbnail response", "extraction response", "thumbnail file write", "text file write"],
+      "changesPerStage": 12,
+      "cancellationPaths": 2,
+      "sqliteFailureCases": 5,
+      "additionalStandaloneRun": "passed after adding three SQL start/metadata failure checks; these three were added after the aggregate run compiled the runner",
+      "additionalChecks": ["duplicate execution refused", "thumbnail-only retry", "metadata key retention", "private-by-default", "actual SQLite reopen", "new-file cleanup", "encoded reader size bound"]
+    },
+    "fixtureBoundary": "model state/evidence notification and HTTP/extraction/downsample payloads are fixtures; host tests do not run UIKit, PDFKit or Vision",
+    "initialFailure": "new test fixture used throwing/async expressions in precondition autoclosures; corrected to an ordinary Bool helper before successful runs",
+    "xcodeTestTargets": "not configured in Project.json; not counted as XCTest success"
+  },
+  "uiChecks": {
+    "report": ".e2e/regression/phase5-preparation/report.json",
+    "discovered": 79,
+    "selected": 2,
+    "executed": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "modelTokens": 0,
+    "downloads": 0,
+    "cases": [
+      "Office DOCX/PPTX/XLSX production import/extraction/attachment analysis/SQLite reread and dedicated fixture cleanup",
+      "Source note real SQLite failure, title/body draft retention, restart, retry and edited-content reread"
+    ],
+    "boundary": "dedicated fresh CoreSimulator test app; not Bitrig user preview data or a physical device; 77 filtered cases were not executed"
+  },
+  "screenshots": [
+    {"file": "preparation-office-source-partial-coverage.png", "appearance": "light", "visuallyInspected": true},
+    {"file": "preparation-note-restored.png", "appearance": "dark", "visuallyInspected": true}
+  ],
+  "screenshotBoundary": "observed post-refactor flow evidence, not matched design before/after comparisons or proof of unobserved screens",
+  "performance": {"newBeforeAfterMeasurements": false, "claim": "no performance improvement claimed for this correctness change"},
+  "github": {"pushPerformed": false, "actionsRunVerified": false},
+  "remaining": [
+    "Pre-registration file copy, PhotosPicker transfer and audio-import generation boundaries",
+    "Explicit Web fetch full snapshot and generation checks",
+    "P1: persisted processing status normalization after invalidation/relaunch; stale results are discarded without writing back into changed sources, manual retry remains available",
+    "Real YouTube transport and downsampled-image quality",
+    "Physical PDF/OCR/image limits and failure/retry validation",
+    "Phase 4 iOS performance measurements and Phase 6-7 work recorded in MEMORA_1_0_PROGRESS.md"
+  ]
+}

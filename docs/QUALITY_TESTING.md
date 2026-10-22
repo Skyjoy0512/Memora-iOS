@@ -33,6 +33,12 @@ next-generationから既に呼ぶbackup/person等を重複して列挙しない�
 リンク・拡張・リソースはBitrig Debug/Releaseビルドで別途確認する。
 Project.jsonにはXcodeのテストターゲットがなく、`bitrig test`成功とは報告しない。
 
+`run-project-source-preparation-checks.sh`はnext-generationから実行する。
+本番のYouTube/ローカル解析orchestrationを待機させ、source・privacy・workspaceの
+変更後の保存拒否、実file/SQLiteの後始末・再読込・再試行を確認する。
+通信・抽出・downsampleのpayloadとmodel stateはfixtureであり、
+実YouTube応答や端末PDF/OCR/画像品質を確認したものではない。
+
 UI E2Eは既存`e2e`スキルの手順で実行する。テスト専用Simulatorへ
 再インストールするので、Bitrigのユーザープレビューや実端末では実行しない。
 `tests/ui-helpers.ts`の再起動は同一シナリオ内の永続化確認に使う。
