@@ -113,6 +113,24 @@ Toolsから実Gmail設定を開き、理由表示・接続ボタン無効・連�
 確認する。認証操作や偽tokenの投入は行わない。将来client IDを設定した場合は、
 この未設定ビルド用期待値を別環境へ分離し、誤った期待に合わせてアプリを戻さない。
 
+`run-gmail-agent-checks.sh`は本番Gmail取得extension、共有会話binding、Gmail結果grant、
+GmailService、Registry/会話ループ、連携ON/OFF操作を実行する。
+承認/refresh/一覧/先頭metadata/full本文の各待機点で、cloud 14変更・compact 13変更、
+計135 raceを検証。先頭metadataで失効した場合は2件目を取得せず、古い件名/本文を
+traceへ入れない。取得後31ケース（grant消失/未知IDを含む）、24件上限、後続呼出し拒否、
+batch/応答待機中の失効、承認拒否・cancel・HTTPエラーも確認する。
+401/403のメール取得拒否は保持済み結果の接続世代を失効させ、429/5xxとは区別する。
+サインインの任意profile取得が401/403でもisWorkingを残さないことも確認する。
+
+会話状態・Registry組立・plugin可用性・承認UI・設定/Keychain/browser/時計/HTTPはfixture。
+本番plugin catalogの動的変化や実Google/Keychain/ASWebAuthenticationSession、
+Apple LanguageModelSessionはruntime実行していない。compactは本番の取得/結果gateを
+実行し、端末内AI callback/最終応答の接続は静的配線検査とBitrigビルドで確認する。
+`PersonPrivacyChecks`は本番cloud出典gate、`ArtifactProvenanceChecks`と
+`CalendarInterfaceChecks`は本番の資料生成/承認前後gateが、fixtureのGmail拒否を
+cloud/端末内の両方で尊重することを別途検証する。
+会話snapshotは一時Gmail grant IDを保存・復元しない。これらを認証済みE2Eと混同しない。
+
 `run-mcp-agent-checks.sh`は本番の一覧取得/実行extension、MCPAgentExecutionContext、
 Registry/Provider、設定保存/ON-OFF更新、利用回数制限を通す。承認待ち/SDK準備待ち/
 結果待ちの63 race、一覧取得中の20変更、後続サーバー待機中の先行サーバー失効、

@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "implementationCommit": "0d69fbf",
+  "phaseStatus": "Phase 6 in progress; bounded Gmail agent read/result authorization validated locally",
+  "builds": {
+    "debugPreview": { "status": "passed", "log": "2026-10-23T21-46-30-24b60ca2.log", "warnings": 11 },
+    "releaseSimulator": { "status": "passed", "log": "2026-10-23T21-46-52-021c927c.log", "warnings": 11 },
+    "sourceBoundary": "Both include final app sources. No subsequent app-source changes.",
+    "iosSDK": "27.1",
+    "deploymentTarget": "iOS 26",
+    "physicalDeviceVerified": false,
+    "preservedLogs": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-gmail-context-final-quality/",
+    "initialWarningResolved": "Actor-isolated shared service in default argument replaced with explicit service injection. Final builds have only existing 11 warnings."
+  },
+  "host": {
+    "summary": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-gmail-context-final-quality/summary.json",
+    "suites": {
+      "next-generation": { "status": "passed", "exitCode": 0 },
+      "design-refresh": { "status": "passed", "exitCode": 0 },
+      "background-summary": { "status": "passed", "exitCode": 0 },
+      "composer-layout": { "status": "passed", "exitCode": 0 },
+      "optimization": { "status": "passed", "exitCode": 0 }
+    },
+    "finalSourceSupplement": "GmailService and GmailAgent runners passed again after the final optional-profile exclusion guard. Artifact/Calendar runners separately passed final authorization gates.",
+    "initialAgentAttempt": {
+      "status": "interrupted",
+      "exitCode": 143,
+      "cause": "Fixture suspended reauthentication at an already occupied continuation gate",
+      "resolution": "Terminated exact host child, changed fixture to suspend only once, reran successfully. Initial incomplete cases not counted as passed."
+    },
+    "suspendedReadRaces": 135,
+    "retainedResultCases": 31,
+    "coverage": [
+      "Five suspension points: approval, token refresh, list, first metadata, full message; cloud 14 mutations and compact 13",
+      "Workspace/generation/request/message existence/settlement, restore/protection, policy/plugin availability, Gmail OFF and OFF-to-ON, disconnect, same-email reauthorization, cloud source gate",
+      "No later metadata request after revocation; no stale private subject/body in returned outcome or trace",
+      "Retained grants fail closed after invalidation, deletion or unknown IDs; another call cannot refresh the revoked observation; maximum 24 grants",
+      "Production loop rejects a tool batch or model response after revocation; both cloud and compact predicate variants",
+      "Read-only approval, denial, cancellation, sanitized 401/403/429/5xx errors",
+      "401/403 email rejection invalidates held results while keeping connection for explicit retry; 429/5xx retain grants",
+      "Optional sign-in profile 401/403 cannot strand isWorking cleanup",
+      "Actual cloud provenance, artifact creation and approval pre/post gates respect fixture Gmail refusal; snapshot codec excludes transient Gmail grant IDs",
+      "Existing MCP context/discovery/result races and source/privacy/SQLite/artifact/recording recovery checks rerun"
+    ],
+    "boundaries": [
+      "Production Gmail service, orchestration, execution context/result predicates, registry/conversation loop and integration setting mutation execute",
+      "Conversation state, registry assembly, plugin availability, approval UI, browser/storage/Keychain/clock/HTTP are fixtures",
+      "Cloud provenance and approval/artifact integration tested separately with fixture Gmail predicate, not an authenticated end-to-end transport",
+      "Apple LanguageModelSession not run in host. Compact read gates run; callback/final-response wiring statically checked and compiled by Bitrig",
+      "No real Google/MCP SDK/Keychain/browser/accounts/provider calls in new checks",
+      "No Xcode test targets configured; no XCTest or bitrig test success claimed"
+    ]
+  },
+  "ui": {
+    "report": ".e2e/regression/phase6-gmail-context-final/report.json",
+    "runID": "01a168ce-ad74-768a-9e1a-bb3c5b017399",
+    "device": "Dedicated iPhone 18 Pro Max CoreSimulator; fresh app install per scenario, not user preview",
+    "discovered": 85,
+    "selected": 5,
+    "executed": 5,
+    "passed": 5,
+    "failed": 0,
+    "skippedSelected": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "filteredUnexecuted": 80,
+    "retries": 0,
+    "modelTokens": 0,
+    "downloads": 0,
+    "coverage": ["Onboarding/restart", "Library/Journal/Ask AI side-menu navigation", "Tools sections", "Unconfigured Gmail Light/Dark", "Unconnected MCP and unsaved editor cancellation Light/Dark"],
+    "visuallyReviewedScreenshots": ["gmail-agent-unconfigured-light.png", "gmail-agent-unconfigured-dark.png"],
+    "screenshotBoundary": "Regression screenshots, no visual redesign. Connected/approval/execution/error screens not visually exercised.",
+    "intermediateRunNotAddedToFinalCounts": ".e2e/regression/phase6-gmail-context/report.json"
+  },
+  "performance": { "newBeforeAfterMeasurement": false, "improvementClaim": null, "unmeasured": ["Grant/plugin/registry validation overhead", "Physical input latency", "Scroll FPS", "Memory", "Battery"] },
+  "remaining": {
+    "P0": ["Notion external-write workspace/privacy/plugin boundaries and settings ABA", "Physical recording/interruption/restore data protection"],
+    "P1": ["Calendar state transitions", "Real Gmail OAuth/expiry/reauthorization and MCP SDK runtime", "Plugin catalog edit-and-revert epochs and non-agent Gmail workspace audit", "Phase 7 accessibility and physical performance"],
+    "P2": ["Notion API migration/long text", "Semantic skills", "Reusable thinking-logo component"]
+  },
+  "limitations": ["Already dispatched external operations/model requests cannot be undone", "Rechecks do not atomically synchronize network bytes", "On-device model content cannot be retroactively erased", "Not a comprehensive guarantee for all plugin catalog ABA changes, all Gmail entry points or all Phase 6 services"],
+  "externalActions": { "push": false, "upstreamRefetchThisUnit": false, "realAccountAccess": false, "scopeExpansion": false, "realEmailReadsOrSends": false, "realBilling": false }
+}

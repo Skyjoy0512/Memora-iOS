@@ -831,6 +831,80 @@ pushは実施していない。
 - 実機の録音保持/中断復旧/復元、Phase 7、端末性能計測も未検証のまま。
   このMCP単位のローカル成功を全サービス/全Phase完了とはしない。
 
+### Gmailの承認・取得・後続利用を同じ会話に限定する（2026-10-23）
+
+- Gmailの承認/検索/本文取得を`MemoraModel+GmailTools`へ集約。
+  MCPと共通の`AgentConversationExecutionContext`でworkspace/世代/request/message/policyを
+  確認し、Gmail固有のON/OFF世代と接続世代/アカウント/現在のtool・plugin許可を重ねる。
+  一時grantには認証tokenやメール本文を保持せず、最大24件、次のagent依頼で破棄する。
+  連携設定の更新処理も共有extensionへ移し、既存MCPの世代更新を維持した。
+- GmailServiceへ許可callbackを渡し、取得開始、refresh完了後のメール送信前、
+  各HTTP応答後に検証する。先頭metadata取得中の失効で2件目以降を取得しない。
+  古い会話の結果/件名をtraceへ反映しない。承認拒否・取得失敗時は同じ依頼のメール再実行を拒否する。
+  承認文言、料金未確認の毎回承認、自動jobのGmail拒否、read-only OAuth scopeは維持。
+- 取得成功後もgrantをcloud出典gateに結び付け、後続のモデル要求/表示/資料生成を検証する。
+  端末内AIではtool callback前後/最終回答と、共通の承認前後/資料生成にもgateを追加。
+  会話codecは一時IDを保存・復元せず、cloud結果のprovenanceを不完全として履歴の自動再送を防ぐ。
+- メール取得の401/403は保持済み結果の接続世代を失効させる。接続設定は残し、
+  新しい依頼での明示的なrefresh/再取得を可能にする。429/5xxとは区別する。
+  サインイン中の任意profile取得は対象外とし、profileの401/403が接続完了時の
+  `isWorking` cleanupを妨げないことも検証した。
+- UI/ナビゲーション/Liquid Glass/SQLite形式・既存データは変更なし。
+  OAuth scope拡大、実認証、実メール取得/送信、課金、push、上流再取得は行っていない。
+
+Host検証の範囲:
+
+- 承認/refresh/一覧/先頭metadata/full本文の5待機点でcloud 14変更・compact 13変更、
+  合計135 raceが成功。workspace/世代/request/存在/終了/復元/保護/policy/plugin可用性/
+  Gmail OFF・OFF→ON/切断/同じメール名での再認証、cloud既存出典gate拒否を含む。
+- 取得後31ケース（grant消失/未知IDを含む）と再呼出し拒否、24件上限、
+  別tool待ち中のbatch拒否/次のモデル応答待ち中の停止、承認拒否/cancel/HTTPエラー、
+  401/403による結果失効と429/5xxの区別、profile拒否時の接続完了を確認した。
+- 本番GmailService/取得extension/結果context/Registry/会話ループ/連携ON-OFF更新を実行する。
+  会話状態/Registry組立/plugin可用性/承認UI/設定・Keychain/browser/時計/HTTPはfixture。
+  compactは本番取得gateを通すが、Apple LanguageModelSessionはhost実行しておらず、
+  callback/最終回答への配線は静的検査とビルドで確認する。
+- 本番cloud出典gateがGmail拒否を尊重すること、cloud/端末内の資料生成と承認前後の拒否は、
+  既存のPerson/Artifact/Calendar runnerからGmail bool fixtureを使って別途検証した。
+  全送信経路/実Google/実Keychain/browser/認証済みUIの一体E2Eではない。
+- 初回Gmail agent runnerは、再認証の模擬通信も同じgateで待たせたためcontinuation警告で停止。
+  対象のhost子プロセスをSIGTERMで終了143とし、gateを1回だけ待たせるfixtureへ修正。
+  初期未完走は成功に数えていない。初期Debugで生じた`.shared` default引数のactor警告も、
+  serviceを呼出元から明示的に渡すことで解消した。
+
+最終検証:
+
+- 最終アプリソースを含むDebug preview成功: `2026-10-23T21-46-30-24b60ca2.log`。
+  Release Simulatorも成功: `2026-10-23T21-46-52-021c927c.log`。
+  iOS SDK 27.1、各11件の既存警告。以後アプリソースは変更していない。
+- ホスト5スイートすべて終了0:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-gmail-context-final-quality/summary.json`。
+  最後のprofile除外guard追加後、GmailService/GmailAgent runnerも別途再実行して終了0。
+  cloud/端末内の資料生成/承認gateはArtifact/Calendar runnerでも個別に検証済み。
+  Xcode test target未設定のため、XCTest/`bitrig test`成功とは報告しない。
+- 最終DebugでUI E2Eを5実行/5成功、失敗/skip/中断/flaky 0、retry 0。
+  `.e2e/regression/phase6-gmail-context-final/report.json`、
+  run `01a168ce-ad74-768a-9e1a-bb3c5b017399`。85検出中80はfilteredで未実行。
+  model token/download 0、専用CoreSimulatorのみ。起動/再起動、Library/Journal/Ask AI切替、
+  Tools、Gmail未設定、MCP未接続/未保存取消を確認した。
+  中間ソースのE2E5成功はこの最終5件に加算しない。
+- `gmail-agent-unconfigured-light.png`/`gmail-agent-unconfigured-dark.png`を保存・目視済み。
+  UI変更のBefore/Afterではなく回帰画像。実接続/承認中/実エラーの画面確認ではない。
+- 実装コミット`0d69fbf`、main維持、pushなし。
+  詳細は`docs/qa/memora-1.0/phase6/gmail-agent-validation-summary.json`。
+
+残り:
+
+- Phase 6は継続中。Notionの外部保存をまたぐworkspace/privacy/plugin境界と設定ABA、
+  Calendarの追加状態監査、実Gmail OAuth/失効/再認証、実MCP SDK/transportは未完了。
+- 今回は比較時点での状態とGmail ON/OFF・接続世代を検証しており、全plugin catalog編集が
+  検証点の間に一時変更→元へ戻るケースを包括的な世代監視で覆ったものではない。
+  手動の用語集取り込みなど、agent以外のGmail利用経路のworkspace境界も別途確認が必要。
+- 既に開始した外部操作/モデル送信の取消や、送信との原子的同期は保証しない。
+  端末内モデルが既に受け取った内容を後から消すこともできない。
+- 性能改善の実測は追加していない。保持済みgrant確認に伴うplugin/registry検証の負荷、
+  実機の入力遅延/スクロール/メモリ/電池、録音保持/中断復旧、Phase 7は未検証。
+
 ## Phase 7
 
 視覚・アクセシビリティ・IME・Reduce Motionの最終確認、思考ロゴの調査は未完了。
