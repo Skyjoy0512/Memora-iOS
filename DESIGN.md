@@ -1,6 +1,6 @@
 # Memora — Native reading and conversation
 
-Updated 2026-10-21. This is the current design specification. Product behavior
+Updated 2026-10-23. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
@@ -8,7 +8,8 @@ Historical visual experiments are superseded.
 
 Put reading, finding and acting on recorded knowledge first: neutral surfaces,
 system typography, predictable spacing and familiar native controls. Replies are
-documents on the page; only the person's messages have bubbles. Empty Ask AI is blank.
+documents on the page; only the person's messages have bubbles. New Ask AI chats
+show quiet action suggestions above the composer, without an idle logo or glow.
 
 Official sources consulted:
 [Apps SDK UI](https://github.com/openai/apps-sdk-ui),
@@ -143,6 +144,13 @@ the field nor opens the keyboard. After dismissing the keyboard, a draft can rem
 while the side menu becomes available.
 Response controls share the 20pt interface glyph; source disclosure has a 44pt
 target and moves below the actions at accessibility sizes.
+New chats show three flat agent-action suggestions: tasks, follow-up mail and
+documents, with an unfinished-task suggestion when an eligible task exists.
+Titles come only from real, cloud-permitted personal records/tasks, never sample
+content or inferred memory. Without eligible evidence the labels describe generic
+starting actions, not personalized results. Selection revalidates the source and
+stages an editable draft; it does not send, call a model or approve a tool. An
+existing draft/attachment disables the suggestions rather than replacing input.
 
 Journal: primary ScrollView, flat week selector, minimal timeline glyphs and
 hairlines. Neutral recap; expanded summary follows appearance and uses sections,
@@ -215,6 +223,13 @@ their category. Services have one canonical list under Integrations; skills
 belong under AI and summaries. Preserve profile editing, permission explanations,
 connection setup and the single sidebar settings entry. No fabricated service state.
 Workspace selection, team creation and joining live under Settings › ワークスペース.
+Workspace options are visible rows with one checkmark, not a pull-down menu.
+They retain storage descriptions, selected accessibility traits and the existing
+workspace switch path. An unconfigured backend does not fabricate team options.
+The sidebar's recorder entry opens the same recorder hub as Settings: Omi direct
+pairing/details, PLAUD audio import and generic recorder/voice-memo audio import.
+File import is explicitly distinct from Bluetooth pairing and uses the existing
+workspace-bound, validated audio/SQLite path. Other vendor protocols are unsupported.
 
 Tools: the side menu's `ToolsView` is a Plaud-style hub for skills, summary
 templates and connectors. A top segmented picker switches between マイスキル,
@@ -232,8 +247,9 @@ Connector details use an article layout: official identity and real state,
 summary, access/cost explanation, then enable/setup controls. Explanatory
 paragraphs are not separate table rows; dividers separate controls only.
 
-The composer plus uses the system Menu for anchored, accessible Liquid Glass
-presentation. Mention candidates occupy layout space above the native input,
+The composer plus is an unadorned 44pt target. Its system Menu owns anchored
+Liquid Glass opening/closing, without a custom popover, navigation zoom, matched
+transition namespace or fixed dismissal delay. Mention candidates occupy layout space above the native input,
 so the complete candidate surface is inside its hit-test bounds. The field stays
 mounted for cursor/IME continuity, and candidate controls use the shared glass.
 The composer occupies 94.5% of the available width, capped at the reading width.
@@ -259,11 +275,11 @@ Sidebar: the main destinations (Library / Journal / Ask AI /
 Tools) first, then collections (Projects / Documents / People), Devices, and
 plan/settings controls. There is no bottom tab bar. A destination name stays constant; connection
 state is a separate secondary value. Rows use the shared 28pt icon column and
-52pt minimum height, growing with text. Account information and the plan/settings
-actions are anchored below the destinations. They wrap without truncation; the
+52pt minimum height, growing with text. Signed-in account information and the plan/settings
+actions are anchored below the destinations. Guest sign-in is not shown; account
+setup remains in Settings. They wrap without truncation; the
 profile avatar is a separate 32pt content role, not an interface glyph. At
-accessibility sizes the plan action reads “プラン” and the guest's secondary label
-reads “サインイン”; workspace and storage context live in Settings. The
+accessibility sizes the plan action reads “プラン”; workspace and storage context live in Settings. The
 spoken plan name still identifies Memora Plus. The settings gear stays at the
 bottom right, with its entire 44pt glass circle inside the tappable label.
 It is the only Settings entry in the drawer; the top group contains destinations
@@ -282,11 +298,9 @@ and the composer. There are no bottom tabs. Keep the create popover compact and
 the composer on the bottom edge.
 Create-menu actions show a stable action name; input explanations are spoken hints.
 The create control is the source of the system zoom/morph presentation. The
-composer attachment control has its own presentation source, so opening it never
-replaces the whole input surface. Its compact 292pt glass panel uses 68pt rows,
-44pt circular icon backplates and short labels, following the supplied ChatGPT
-reference. Preserve existing media, mention and integration actions; the reference
-does not add an unimplemented camera or a new assistant mode.
+composer attachment control delegates presentation to the native Menu, so opening
+it never replaces the input surface. Native rows preserve all photo, audio, file,
+mention and integration actions; no unimplemented camera or new assistant mode is implied.
 Memo creation is presented by the root, not the Journal tab, so a create menu
 on Library can open it too. Journal supplies its selected day through transient
 model state; dismissal clears that date. Capture destinations are dispatched

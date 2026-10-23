@@ -49,11 +49,44 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
     def test_sidebar_footer_shortens_secondary_copy_not_tap_targets(self):
         footer = (APP / "SidebarAccountFooter.swift").read_text()
         self.assertIn('Text("プラン")', footer)
-        self.assertIn('Text("サインイン")', footer)
+        self.assertNotIn('サインイン', footer)
+        self.assertIn('if isSignedIn {', footer)
         self.assertIn('accessibilityLabel("Memora Plus、プランと利用状況")', footer)
         settings = footer.split("Button(action: onSettings) {")[1]
         self.assertIn(".frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)", settings)
         self.assertIn(".contentShape(Circle())", settings)
+
+    def test_attachment_plus_is_plain_without_changing_its_presentation(self):
+        attachment = (APP / "AIComposerAttachmentButton.swift").read_text()
+        self.assertNotIn(".glass", attachment)
+        self.assertIn(".buttonStyle(.plain)", attachment)
+        for contract in ("MemoraSpacing.touchTarget", "Menu {", "onSelect(action)"):
+            self.assertIn(contract, attachment)
+        for obsolete in ("navigationTransition", "matchedTransitionSource", "Task.sleep", ".popover("):
+            self.assertNotIn(obsolete, attachment)
+
+    def test_agent_suggestions_stage_only_revalidated_requests(self):
+        source = (APP / "MemoraModel+AgentSuggestions.swift").read_text()
+        for contract in ("currentTeamID == nil", "aiPersonScopeID == nil", "!isRestoring", "!isStoreProtected",
+                         "allowsRecordAccess($0.id, purpose: .cloudAI)", "allowsTaskAccess($0, purpose: .cloudAI)",
+                         "!SampleContent.isSample", "agentPromptSuggestions.contains(suggestion)", "composerDraft.isEmpty",
+                         "composerAttachment == nil", "composerFocusRequest = UUID()"):
+            self.assertIn(contract, source)
+        self.assertNotIn("sendAIChat(", source)
+        self.assertNotIn("Task {", source)
+
+    def test_workspace_selection_and_recorder_paths_are_direct_and_honest(self):
+        workspace = (APP / "WorkspaceSwitcher.swift").read_text()
+        self.assertNotIn("Menu {", workspace)
+        self.assertIn("model.selectWorkspace(workspace)", workspace)
+        row = (APP / "WorkspaceSelectionRow.swift").read_text()
+        for contract in (".checkmark", ".isSelected", "MemoraSpacing.touchTarget"):
+            self.assertIn(contract, row)
+        self.assertIn("ExternalRecorderSettingsView()", (APP / "RootTabView.swift").read_text())
+        importer = (APP / "RecorderAudioImportView.swift").read_text()
+        for contract in ("LocalImportContext(in: model)", "importPickedAudio(from: url, context: context)",
+                         "context.isCurrent(in: model)", 'value: "未対応"', "showsFailure = true"):
+            self.assertIn(contract, importer)
 
 
 if __name__ == "__main__":

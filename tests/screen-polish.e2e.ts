@@ -60,10 +60,15 @@ test('screen polish: account and plan retain honest states and usable controls',
   for (const appearance of ['light', 'dark'] as const) {
     await device.setAppearance(appearance);
     await tapControl(screen, screen.getByLabel('メニュー').first());
-    await tapControl(screen, screen.getByRole('button', { name: 'サインイン', exact: true }));
+    await expect(screen.getByRole('button', { name: 'サインイン', exact: true })).not.toBeVisible();
+    await tapControl(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
+    await tapControl(screen, screen.getByTestId('settings.category.account').first());
+    await tapControl(screen, screen.getByRole('button', { name: /^サインイン \/ 新規登録/ }));
     await expect(screen.getByText(/サインインはまだ/)).toBeVisible();
     await app.screenshot(`account-${appearance}`);
     await tapControl(screen, screen.getByLabel('あとで').first());
+    await tapControl(screen, screen.getByTestId('BackButton'));
+    await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }).last());
     await tapControl(screen, screen.getByLabel('メニュー').first());
     await tapControl(screen, screen.getByRole('button', { name: 'Memora Plus、プランと利用状況', exact: true }));
     await expect(screen.getByText('プラン', { exact: true }).first()).toBeVisible();

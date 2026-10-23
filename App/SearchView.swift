@@ -118,8 +118,7 @@ struct SearchView: View {
   }
 
   private var chatEmptyState: some View {
-    Color.clear
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
+    AgentPromptSuggestionsView()
   }
 
   private var assistantHeader: some View {

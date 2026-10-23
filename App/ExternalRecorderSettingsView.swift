@@ -18,22 +18,42 @@ struct ExternalRecorderSettingsView: View {
             symbol: .dotRadiowavesLeftAndRight
           )
         }
+        .accessibilityIdentifier("recorder.omi")
 
         Button {
           isPlaudPresented = true
         } label: {
-          recorderRow(title: "PLAUD", detail: "取り込み可能", symbol: .waveformBadgeMic)
+          recorderRow(title: "PLAUD", detail: "音声取り込み", symbol: .waveformBadgeMic)
         }
+        .accessibilityIdentifier("recorder.plaud")
+
+        NavigationLink {
+          RecorderAudioImportView(title: "他のレコーダー・ボイスメモ", isPlaud: false)
+        } label: {
+          recorderRow(title: "他のレコーダー・ボイスメモ", detail: "音声取り込み", symbol: .squareAndArrowDown)
+        }
+        .accessibilityIdentifier("recorder.other")
       } header: {
         Text("レコーダー")
       } footer: {
-        Text("Bluetoothへのアクセスは、Omiを接続する操作をした時だけ求めます。")
+        Text("OmiはBluetoothで直接接続できます。PLAUD、ICレコーダー、ボイスメモなどは書き出した音声を取り込めます。他社機器のBluetooth直接接続には対応していません。")
       }
     }
     .navigationTitle("外部レコーダー")
     .memoraBackButton()
     .sheet(isPresented: $isOmiPresented) {
-      OmiPairingView(manager: model.omiPairingManager)
+      if OmiPairingManager.hasRememberedDevice || model.omiPairingManager.details != nil {
+        NavigationStack {
+          OmiDeviceDetailView(manager: model.omiPairingManager)
+            .toolbar {
+              ToolbarItem(placement: .confirmationAction) {
+                ToolbarIconButton("完了", icon: .checkmark) { isOmiPresented = false }
+              }
+            }
+        }
+      } else {
+        OmiPairingView(manager: model.omiPairingManager)
+      }
     }
     .sheet(isPresented: $isPlaudPresented) {
       PlaudConnectionView()
@@ -42,18 +62,15 @@ struct ExternalRecorderSettingsView: View {
 
   private func recorderRow(title: String, detail: String, symbol: MemoraIcon) -> some View {
     HStack(spacing: 12) {
-      MemoraIconBadge(symbol: symbol, size: 34)
-      Text(title)
-        .foregroundStyle(.primary)
-      Spacer()
-      Text(detail)
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-      Image(icon: .chevronRight)
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.primary)
-        .accessibilityHidden(true)
+      MemoraInterfaceIcon(icon: symbol)
+      VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+        Text(title).foregroundStyle(.primary)
+        Text(detail).font(.footnote).foregroundStyle(.secondary)
+      }
+      .fixedSize(horizontal: false, vertical: true)
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
+    .frame(minHeight: MemoraSpacing.touchTarget)
     .contentShape(Rectangle())
   }
 }

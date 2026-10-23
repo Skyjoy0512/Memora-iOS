@@ -74,9 +74,11 @@ test('settings polish: workspace switching and team registration remain reachabl
   await tapControl(screen, screen.getByRole('button', { name: '設定', exact: true }).last());
   await expect(screen.getByTestId('settings.profile').first()).toBeVisible();
   await category(screen, 'workspace');
-  const workspace = screen.getByLabel('ワークスペース', { exact: true }).last();
+  const workspace = screen.getByTestId('workspace.option.personal');
   await expect(workspace).toBeVisible();
-  await tapControl(screen, workspace.getByRole('button').first());
+  await expect(workspace).toBeSelected();
+  await tapControl(screen, workspace);
+  await expect(workspace).toBeSelected();
   await expect(screen.getByRole('button', { name: 'チームを作成', exact: true })).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: 'チームに参加', exact: true }));
   await expect(screen.getByPlaceholder('招待コード')).toBeVisible();

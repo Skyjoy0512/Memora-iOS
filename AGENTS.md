@@ -123,8 +123,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   conflict handling are not built. A manual package export
   (`makeTeamSharePackage`) also remains.
 - The Ask AI fallback never invents answers; when no engine can run it says so.
-- Ask AI is one assistant with no mode switch. The new-chat center is blank,
-  with no greeting, logo or idle glow. `AskAIHeader` is one compact row:
+- Ask AI is one assistant with no mode switch. New chats show locally prepared
+  agent-action suggestions, personalized only from real cloud-permitted personal
+  records/tasks and never from sample content. A selection revalidates sources
+  and stages an editable draft without sending; existing drafts/attachments win.
+  Keep no random greeting, logo or idle glow. `AskAIHeader` is one compact row:
   sidebar / Memora (history and search menu) / new chat. Replies remain plain
   text with no bubble, only the person's messages in `aiBubble`. `AskAIGlow`
   keeps its processing mesh only while an answer is being formed, still under

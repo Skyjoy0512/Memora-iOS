@@ -138,17 +138,13 @@ struct RootTabView: View {
       LifeLogCreationSheet(date: model.lifeLogCreationDate ?? .now, eventDate: model.lifeLogCreationDate)
     }
     .sheet(isPresented: $isRecorderPresented) {
-      if OmiPairingManager.hasRememberedDevice || model.omiPairingManager.details != nil {
-        NavigationStack {
-          OmiDeviceDetailView(manager: model.omiPairingManager)
-            .toolbar {
-              ToolbarItem(placement: .confirmationAction) {
-                ToolbarIconButton("完了", icon: .checkmark) { isRecorderPresented = false }
-              }
+      NavigationStack {
+        ExternalRecorderSettingsView()
+          .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+              ToolbarIconButton("完了", icon: .checkmark) { isRecorderPresented = false }
             }
-        }
-      } else {
-        OmiPairingView(manager: model.omiPairingManager)
+          }
       }
     }
     .sheet(isPresented: $model.isCallSetupPresented) {

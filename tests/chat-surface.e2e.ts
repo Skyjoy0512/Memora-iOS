@@ -5,8 +5,8 @@ import { focusComposer, launchMemora, tapControl, tapTab } from './ui-helpers';
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
 async function dismissFromEmptyCanvas(screen: any) {
-  // A fresh chat's blank canvas is deliberately not an accessibility control.
-  await screen.tapAt({ x: 220, y: 260 });
+  // Tap the quiet gap above the new action suggestions, not an action row.
+  await screen.tapAt({ x: 220, y: 130 });
   await expect(screen.getByRole('keyboard')).not.toBeVisible();
 }
 

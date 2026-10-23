@@ -14,28 +14,24 @@ struct SidebarAccountFooter: View {
   var body: some View {
     VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
       Divider().accessibilityHidden(true)
-      Button(action: onAccount) {
-        HStack(spacing: MemoraSpacing.md) {
-          ProfileAvatar(profile: profile, size: 32)
-          VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
-            Text(displayName).font(MemoraTypography.body.weight(.medium))
-            Group {
-              if typeSize.isAccessibilitySize, !isSignedIn {
-                Text("サインイン")
-              } else {
-                Text(accountStatus)
-              }
+      if isSignedIn {
+        Button(action: onAccount) {
+          HStack(spacing: MemoraSpacing.md) {
+            ProfileAvatar(profile: profile, size: 32)
+            VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+              Text(displayName).font(MemoraTypography.body.weight(.medium))
+              Text(accountStatus)
+                .font(MemoraTypography.metadata)
+                .foregroundStyle(MemoraPalette.textSecondary)
             }
-            .font(MemoraTypography.metadata)
-            .foregroundStyle(MemoraPalette.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
           }
-          .fixedSize(horizontal: false, vertical: true)
-          .frame(maxWidth: .infinity, alignment: .leading)
+          .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+          .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
-        .contentShape(Rectangle())
+        .accessibilityLabel("アカウント \(displayName)")
       }
-      .accessibilityLabel(isSignedIn ? "アカウント \(displayName)" : "サインイン")
 
       HStack(spacing: MemoraSpacing.md) {
         Button(action: onPlan) {

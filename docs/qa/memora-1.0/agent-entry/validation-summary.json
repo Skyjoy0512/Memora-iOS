@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "deploymentTarget": "iOS 26",
+  "simulatorSDK": "27.1",
+  "debugPreview": "success",
+  "releaseSimulatorBuild": "success",
+  "existingBuildWarnings": 11,
+  "hostSuites": {
+    "next-generation": "passed",
+    "design-refresh": "passed",
+    "background-summary": "passed",
+    "composer-layout": "passed",
+    "optimization": "passed"
+  },
+  "ui": {
+    "runID": "01a16926-fbc9-76ab-9520-8d88c21048a5",
+    "report": ".e2e/regression/agent-entry-final/report.json",
+    "discovered": 89,
+    "selected": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "interrupted": 0,
+    "retries": 0,
+    "filteredOutNotExecuted": 81
+  },
+  "realHardwareConnectionsVerified": false,
+  "newGenericPickerRealFileImportUIVerified": false,
+  "spokenVoiceOverVerified": false,
+  "japaneseMarkedTextCompositionVerified": false,
+  "frameTimingOrDevicePerformanceMeasured": false,
+  "allMemoraPhasesComplete": false
+}
