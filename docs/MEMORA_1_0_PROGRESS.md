@@ -661,9 +661,63 @@ pushは実施していない。
   新規の性能比較・実端末の入力遅延/スクロール/メモリ/電池測定は行っていない。
   詳細は`docs/qa/memora-1.0/phase6/notion-restore-validation-summary.json`。
 
+### Gmailの即時解除・応答世代・失敗復旧（2026-10-23）
+
+- 既存のGmailServiceではGoogleの失効応答を待ってからローカル状態を消していた。
+  解除開始時に接続世代、キャッシュ、アカウント表示とローカル認証状態を先に破棄し、
+  応答待ち中に新しいメール読取を始めない。解除中の重複解除/再接続も抑止する。
+- Keychain削除失敗で残ったtokenを次の起動で使わないため、設定として解除markerを
+  UserDefaultsへ保存する。新しいtokenのKeychain保存が成功するまで解除markerを戻さない。
+  token自体やメールの本文をUserDefaultsへ保存しない。SQLite/既存記録の形式は変更しない。
+- 接続開始時だけでなく新しいtokenを採用するときも世代を更新する。古いtoken更新/検索/
+  本文/profile応答は新しい接続へ取り込まない。古いinvalid_grantは新しいtokenを削除しない。
+  401では拒否されたaccess tokenだけを捨て、今回の操作はエラーで止める。
+  次の明示的な読取でrefreshでき、一時的な5xx/通信失敗で連携を削除しない。
+- callbackのscheme/path/state/code重複と空値、返却されたscope/有効期限/token、
+  メールIDの単一パス要素と応答ID一致を確認。不正JSONや壊れた検索一覧を成功/空件にしない。
+  明示limitを超えるmetadata取得も行わない。PKCEと既存read-only scopeは維持する。
+- ブラウザとlive設定/通信だけを分離し、Gmail本体をhostで実行可能にした。
+  native認証sheetはASWebAuthenticationSessionを維持し、取消時にcontinuationを1回だけ閉じ、
+  古いcallback/取消が新しいsessionを終了しないようIDで束縛する。
+  このnative sheetの実表示/取消は実OAuth未接続のため未検証で、ビルド成功で代替しない。
+- [GoogleのOAuth案内](https://developers.google.com/identity/protocols/oauth2/native-app#tokenrevoke)
+  で失効とinvalid_grantの扱いを確認。ローカル解除とGoogle側の失効完了は同じではない。
+  送信/削除/下書き保存のscopeは追加しない。外部認証・実アカウント操作は行わない。
+
+検証:
+
+- 最終Debug preview成功: `2026-10-23T17-03-39-b1e0d3a3.log`、既存警告11件。
+  アプリソース確定後のRelease Simulator成功:
+  `2026-10-23T17-05-18-8171854a.log`、iOS SDK 27.1、既存警告11件。
+  旧GmailServiceのanchor警告は分離したファイルへ移っただけで解消したとは報告しない。
+- ホスト5スイートすべて終了0:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-gmail-quality/`。
+  最後に追加した「接続sheet待ち中に開始した旧アカウント読取」のraceは、同じ本番コードで
+  単独runnerも再実行し終了0（`gmail-final.log`）。Notionの共通gateへの移行も再実行成功。
+  初回Gmail hostはテストの`precondition(await operation.value …)`がコンパイル不可で終了1。
+  awaitをassert前へ分離して修正したもので、この未実行を成功に数えない。
+- Gmailの認証/設定/保存/時計/HTTPはfixture。本番の接続/解除/refresh/read/parseは実行するが、
+  実Keychain/UserDefaultsの耐久性、実プロセス再起動、実ネットワーク/Google応答ではない。
+  解除markerがサービス再生成後も拒否されることはfixtureの保存状態を使う検証である。
+  ASWebAuthenticationSessionのcallback/cancel自体はhostで動かしていない。
+- UI E2Eは5実行/5成功、失敗/skip/中断/flaky 0、retry 0。
+  `.e2e/regression/phase6-gmail/report.json`。検出84件のうち79件はfilteredで未実行。
+  model token/download 0、専用CoreSimulatorのみ。Gmail未設定の理由/接続無効/アカウント不在の
+  Light/Dark、Library起動/再起動、Library/Journal/Ask AI切替、Tools、音声Picker取消を確認。
+  この未設定ビルド用テストは将来OAuthを設定する環境では分離が必要。
+- `gmail-unconfigured-light.png`と`gmail-unconfigured-dark.png`を保存し目視済み。
+  回帰画像でありUI再構築のBefore/Afterではない。実OAuthや各エラー状態を見た意味ではない。
+- 実装コミット`fc1075a`。mainを維持、push/上流再取得/OAuth scope拡大/メール送信なし。
+  新規の性能比較・端末の入力遅延/スクロール/メモリ/電池の計測はなし。
+  詳細は`docs/qa/memora-1.0/phase6/gmail-validation-summary.json`。
+
 残り（Phase 6全体の完了とはしない）:
 
-- Gmail/Calendar/MCPを含む状態遷移の追加検証。実認証/OAuth scope拡大や実送信は実施しない。
+- Calendar/MCPの状態遷移の追加監査・fixture検証。Gmailの実OAuth/sheet取消/Google失効完了と
+  実メールの表示/解析も未検証。ローカル解除だけで外部側の失効を確認済みとしない。
+  実認証/OAuth scope拡大や実メール送信は実施しない。
+- 今回のGmail検証は接続/account世代の境界であり、agentのworkspace/privacy/plugin OFF変更を
+  await中にすべて検証した意味ではない。外部取得からAI送信までの追加監査は継続する。
 - Notionの実token失効/権限変更/通信/作成済みページ内容/エラー表示は実サービス未検証。
   設定が検証点の間にA→B→Aと戻る変更は、世代付き設定ではないため検出できない。
   この修正は接続token/parentの境界であり、agentのworkspace/record/plugin設定について
@@ -678,7 +732,7 @@ pushは実施していない。
 
 - P0（公開前）: 実機の録音保持/中断復旧/音声取込と、復元中断のデータ保護。
   外部保存をまたぐworkspace/privacy/権限変更の追加監査・回帰。
-- P1: Gmail/Calendar/MCPの接続状態・期限切れ・解除・timeoutの追加fixture検証、
+- P1: Calendar/MCPの接続状態・期限切れ・解除・timeoutの追加fixture検証、Gmailの実OAuth境界、
   Phase 7のVoiceOver/Dynamic Type/IME/Reduce Motion/実画面確認、端末性能計測。
 - P2: Notion API version移行と長文block分割、意味的スキル選択、独立した思考ロゴ部品。
   いずれも実接続や追加料金が必要な部分を無断で有効化しない。

@@ -96,6 +96,23 @@ Keychain・実UserDefaults・実URLSession/ネットワーク・実Notionには�
 HTTP 401/403/404/429/500/502は各段階の模擬応答であり、実認証/料金上限の証明ではない。
 既存呼出先のエラー表示は維持するが、Notionエラー画面の実サービス視覚確認は含まない。
 
+`run-gmail-service-checks.sh`は本番GmailServiceを、設定/Keychain/browser/時計/HTTPの
+差し替え境界で実行する。解除リクエスト待機中の新規読取拒否、削除失敗時の解除markerと
+サービス再生成、再接続後の古いtoken/list/detail応答・invalid_grantの破棄、接続中に開始した
+旧アカウント読取の失効、古い認証callbackと新しい処理の所有権を確認する。
+callback/PKCE、返却scope、ID/JSON、401/403/404/429/5xx、期限切れ/timeout/cancelも検証する。
+Notionと同じ`HTTPResponseGate`を使い、sleepなしで非同期の応答を保持する。
+本番の記憶/状態遷移/HTTP構築/解析は通すが、実Keychain/UserDefaultsやプロセス再起動、
+実URLSession/Google、ASWebAuthenticationSessionの表示/取消は通さない。
+fixtureの解除marker保持は実ディスク保存の耐久性検証を意味しない。
+HTTP 401でaccess tokenだけを捨て、次の明示的な読取でrefresh可能なことも確認する。
+Googleへの失効要求に失敗しても端末側は解除済みのままで、Google側の失効完了とは区別する。
+
+`gmail-connection.e2e.ts`はOAuth client ID未設定のこのビルド用。
+Toolsから実Gmail設定を開き、理由表示・接続ボタン無効・連携アカウント不在をLight/Darkで
+確認する。認証操作や偽tokenの投入は行わない。将来client IDを設定した場合は、
+この未設定ビルド用期待値を別環境へ分離し、誤った期待に合わせてアプリを戻さない。
+
 ## GitHub Actions
 
 `.github/workflows/quality.yml`はread-only権限で同じホスト検証を実行し、

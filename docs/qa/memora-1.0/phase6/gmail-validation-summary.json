@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "implementationCommit": "fc1075a",
+  "phaseStatus": "Phase 6 remains in progress; bounded Gmail reliability implementation and local validation complete",
+  "builds": {
+    "debugPreview": { "result": "passed", "log": "2026-10-23T17-03-39-b1e0d3a3.log", "warnings": 11 },
+    "releaseSimulator": { "result": "passed", "log": "2026-10-23T17-05-18-8171854a.log", "warnings": 11 },
+    "sourceBoundary": "No app-source changes after final Debug preview request; Release requested afterward",
+    "iosSDK": "27.1",
+    "deploymentTarget": "iOS 26",
+    "physicalDeviceBuildOrRun": false,
+    "preservedLogDirectory": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-gmail-quality/"
+  },
+  "host": {
+    "summary": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-gmail-quality/summary.json",
+    "suites": {
+      "next-generation": { "status": "passed", "exitCode": 0 },
+      "design-refresh": { "status": "passed", "exitCode": 0 },
+      "background-summary": { "status": "passed", "exitCode": 0 },
+      "composer-layout": { "status": "passed", "exitCode": 0 },
+      "optimization": { "status": "passed", "exitCode": 0 }
+    },
+    "additionalGmailRun": {
+      "status": "passed",
+      "exitCode": 0,
+      "log": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-gmail-quality/gmail-final.log",
+      "reason": "Includes a final added race: an old-account read started during authorization is rejected after new token commit. App sources unchanged from suite run."
+    },
+    "initialAttempt": {
+      "status": "compileFailed",
+      "exitCode": 1,
+      "error": "GmailServiceChecks.swift: async property access in precondition autoclosure",
+      "resolution": "Await task value before assertion. Test-only correction; initial attempt did not execute the checks and is not counted as passed."
+    },
+    "coverage": [
+      "Disconnected/unconfigured refusal before any transport",
+      "Production OAuth URL, state, S256 challenge/verifier, read-only scopes, token/profile commit and email state",
+      "Cached access token and fake-clock expiry refresh; search limit/query, metadata only and full-body parsing",
+      "HTTP 401/403/404/429/500/502 at refresh/read; no automatic error retries",
+      "API 401 evicts rejected access token, keeping refresh token for a later explicit read",
+      "4xx invalid_grant clears local connection; 5xx invalid_grant payload does not delete connection",
+      "Timeout/offline/cancellation and malformed JSON/list/ID or mismatched response ID rejection",
+      "Invalid callback state/path/duplicate state/code and invalid returned token/scope/expiry rejection",
+      "Keychain write/delete failure fixtures; disconnect marker survives service reinitialization in fixture state",
+      "Revocation held pending: immediate disconnected state, no new cached reads, duplicate disconnect or reconnect",
+      "Old refresh/list/detail responses and invalid_grant after reconnect cannot replace or erase new account state",
+      "Old authorization callback cannot clear new login's working state; account commit invalidates in-flight previous account reads",
+      "Notion checks still pass with the shared HTTPResponseGate"
+    ],
+    "boundaries": [
+      "Production GmailService orchestration, state, request construction, PKCE generation and message parser run",
+      "Browser, clock, credential/settings storage and HTTP transport/responses are fixtures",
+      "No real credentials, Keychain, UserDefaults, URLSession, Google or OAuth account access in host checks",
+      "Fixture reinitialization is not actual process restart or disk persistence durability proof",
+      "Native ASWebAuthenticationSession display/cancel/callback is compiled but not exercised",
+      "Xcode test targets remain unconfigured; no XCTest or bitrig test success claimed"
+    ]
+  },
+  "ui": {
+    "report": ".e2e/regression/phase6-gmail/report.json",
+    "runID": "01a167cc-3d68-7194-9089-b94693941939",
+    "device": "Dedicated iPhone 18 Pro Max CoreSimulator; fresh test installation per scenario, not user preview",
+    "discovered": 84,
+    "selected": 5,
+    "executed": 5,
+    "passed": 5,
+    "failed": 0,
+    "skippedSelected": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "filteredUnexecuted": 79,
+    "retries": 0,
+    "modelTokens": 0,
+    "downloads": 0,
+    "coverage": [
+      "Unconfigured Gmail in Light/Dark: reason visible, connect disabled, connected account/disconnect action absent",
+      "Normal restart retains onboarding completion and Library start",
+      "Library/Ask AI/Journal side-menu transitions and Tools sections",
+      "Top-right audio picker cancellation and memo create/cancel in Light/Dark"
+    ],
+    "visuallyReviewedScreenshots": ["gmail-unconfigured-light.png", "gmail-unconfigured-dark.png"],
+    "screenshotBoundary": "Final regression screens, not a redesign Before/After. No OAuth sheet or connected/error states visually tested.",
+    "testEnvironmentConstraint": "gmail-connection.e2e.ts requires this unconfigured build; separate it when a legitimate OAuth client ID is configured. Do not revert product configuration to satisfy this test."
+  },
+  "performance": {
+    "newBeforeAfterMeasurement": false,
+    "improvementClaim": null,
+    "unmeasured": ["input latency", "scroll FPS", "device memory", "battery", "actual Google network timing"]
+  },
+  "remaining": {
+    "P0": ["Workspace/privacy/plugin changes across external read and subsequent AI transmission require further audit", "Physical-device recording/interruption recovery and interrupted restore data protection"],
+    "P1": ["Calendar/MCP connection state and revocation fixtures", "Actual Gmail OAuth sheet/cancellation, token expiry/revocation and message parsing with authorized test account", "Phase 7 accessibility and physical-device performance"],
+    "P2": ["Notion API migration/long rich-text handling", "Semantic skill selection and independent thinking-logo component"]
+  },
+  "limitations": [
+    "Local disconnect and a best-effort revoke request do not prove Google completed revocation",
+    "Already dispatched requests cannot be undone; late results are discarded",
+    "Keychain and persistent settings adapter runtime failures remain device-validation work",
+    "Existing shared URLSession transport policy retained; mock timeout tests are not network timeout/redirect/TLS certification",
+    "No broader agent workspace/privacy/plugin permission guarantee inferred from account-revision tests"
+  ],
+  "externalActions": {
+    "push": false,
+    "upstreamRefetchThisUnit": false,
+    "realAccountAccess": false,
+    "googleTokenExchangeOrRevocation": false,
+    "mailSendOrMutation": false,
+    "oauthScopeExpansion": false,
+    "paidModelCalls": false,
+    "githubCIRunVerified": false
+  }
+}
