@@ -4,6 +4,7 @@ extension MemoraModel {
   func integrationIsEnabled(_ id: String) -> Bool { !disabledIntegrationIDs.contains(id) }
 
   func setIntegrationEnabled(_ id: String, enabled: Bool) {
+    if id == "calendar", enabled != integrationIsEnabled(id) { invalidateAICalendarContext() }
     if id == "mcp", enabled != integrationIsEnabled(id) { mcpPermissionRevision = UUID() }
     if id == "gmail", enabled != integrationIsEnabled(id) { gmailPermissionRevision = UUID() }
     if id == "notion", enabled != integrationIsEnabled(id) { notionPermissionRevision = UUID() }

@@ -25,6 +25,8 @@ final class MemoraModel {
   var approves = true
   var onApproval: (() async -> Void)?
 
+  func invalidateAICalendarContext() { preconditionFailure("Calendar is covered by CalendarInterfaceChecks") }
+
   func agentMessage(_ id: UUID) -> GmailFixtureMessage? { hasMessage && message.id == id ? message : nil }
   func isCloudSessionAuthorized(_ id: UUID) -> Bool { cloudAuthorized && gmailResultsAreCurrent(id) }
   func updateAgentMessage(_ id: UUID, _ update: (inout GmailFixtureMessage) -> Void) {

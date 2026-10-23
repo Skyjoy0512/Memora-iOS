@@ -192,6 +192,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - CalendarPreview binds only transient UUIDs returned by read_calendar to actual
   EventKit event fields. Cloud calendar reads require the approval card before
   fetching; a declined read cannot be requested again in the same reply.
+  `CalendarAgentReadContext` binds approval and fetch to the live request,
+  workspace generation, thinking message, policy and calendar revision. An
+  integration OFF/ON transition invalidates the revision synchronously; it does
+  not revive an old read. Old callbacks never settle a replacement's trace.
   EventKit changes and app activation invalidate these grants, including before
   cloud requests and artifact creation. Never restore calendar grants from history
   or replace source dates/titles with model-supplied values. See

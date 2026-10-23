@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-24",
+  "branch": "main",
+  "scope": "Calendar read approval/fetch lifecycle and integration OFF/ON invalidation",
+  "debugPreview": {
+    "result": "success",
+    "log": "2026-10-24T08-10-30-b3bfa0b3.log",
+    "existingWarnings": 11
+  },
+  "releaseSimulatorBuild": {
+    "result": "success",
+    "log": "2026-10-24T08-11-29-081557d1.log",
+    "existingWarnings": 11
+  },
+  "sdk": "iPhoneSimulator27.1.sdk",
+  "deploymentTarget": "iOS 26",
+  "host": {
+    "artifacts": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-calendar-context-20261024-final-quality",
+    "next-generation": "passed",
+    "design-refresh": "passed",
+    "background-summary": "passed",
+    "composer-layout": "passed",
+    "optimization": "passed",
+    "calendarStateChanges": 54,
+    "recoveryModes": ["cloud", "on-device"],
+    "productionCalendarToolContextWaiterRegistryAndIntegrationSettings": true,
+    "eventKitConversationStateAndRegistryAssemblyAreFixtures": true,
+    "newCalendarSQLitePersistenceAdded": false
+  },
+  "ui": {
+    "runID": "01a16b0a-6847-765e-99c0-346e2c08345c",
+    "report": ".e2e/regression/phase6-calendar-context-final/report.json",
+    "discovered": 94,
+    "selected": 5,
+    "executed": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "interrupted": 0,
+    "retries": 0,
+    "filteredOutNotExecuted": 89,
+    "modelTokens": 0,
+    "downloads": 0,
+    "finalApplicationSource": true
+  },
+  "priorRuns": {
+    "redRegression": "failed: stale result accepted after request replacement",
+    "recoveryHelper": "failed: global read-count assumption; fixed to capture count before approval",
+    "initialFullHost": "4 passed / 1 failed because a source changed during Swift compilation",
+    "earlierUI": "5 passed on the earlier build; not substituted for final-source UI evidence"
+  },
+  "visuallyReviewedScreenshots": [
+    "calendar-unconfigured-light.png",
+    "calendar-reenabled-unconfigured-dark.png"
+  ],
+  "configurationOrPermissionScopeChanged": false,
+  "actualCalendarEventsFetchedOrWritten": false,
+  "physicalEventKitNotificationsOrOSPermissionTransitionsVerified": false,
+  "calendarWritePermissionAwaitBoundaryAudited": false,
+  "liveModelOrAccountVerified": false,
+  "spokenVoiceOverVerified": false,
+  "japaneseMarkedTextVerified": false,
+  "devicePerformanceMeasured": false,
+  "allMemoraPhasesComplete": false
+}

@@ -60,3 +60,27 @@ Debug表示確認画面の予定は架空データであり、本番の表示部
 最大文字ではReduce Motionも有効にして確認。終了後はDark/large/Reduce Motion無効に戻し、
 元のHomeと `[@ジャーナル分析]` のdraftを保持した。以前からのAX取得問題は未解決として扱い、
 今回は画像/座標で確認した。実VoiceOverの読み上げを確認したとは扱わない。
+
+## 2026-10-24: 読取の会話世代と承認中の失効
+
+上記の2026-10-17結果は履歴であり、今回の検証とは区別する。
+
+- 本番`readCalendarTool`を通す回帰テストで、取得待ちの途中にrequest IDが
+  置換されても、旧結果を受理する不具合を再現した。
+- 既存`AgentConversationExecutionContext`を再利用する`CalendarAgentReadContext`で、
+  request/message/ワークスペース世代/policyと、承認前に固定したcalendar revisionを検証する。
+  承認後・取得後に失効していたら内容を返さず、一時snapshotも作らない。
+- EventKitの変更監視は承認待ちに入る前に開始する。監視の開始だけでは予定本文を取得せず、
+  cloudの取得には従来どおり個別の承認が必要。
+- カレンダー連携のON/OFFが実際に変わった時は、既存revisionを同期的に失効させる。
+  OFF→ONで過去のプレビュー/後続cloud送信/資料作成を復活させない。
+  同じ値の設定では不要に失効させず、新しい依頼と承認で正常に取得し直せる。
+- 旧request・settled/別message・別workspace世代のコールバックは、今のtraceやblocked toolsを
+  更新しない。既存のschema/registry/person policy、Gmail/MCP由来の許可も再確認する。
+- 54の状態変更ケースと新しい依頼での復旧を、架空EventKit/会話状態と本番domain・approval
+  waiter・registry・権限処理で確認。実予定や実ネットワークを利用した検証ではない。
+
+新しいUI部品や権限scope、カレンダーの書込経路は変更していない。
+`create_calendar_event`のOS権限待ちをまたぐ保存境界、実EventKit通知の到達/取消、実機UI、
+カレンダー単位のAI共有設定は別の未完了項目として残る。
+今回のビルド・UIテスト結果は`qa/memora-1.0/phase6/calendar-context-validation-summary.json`を参照。

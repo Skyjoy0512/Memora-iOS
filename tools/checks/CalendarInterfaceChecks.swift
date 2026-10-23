@@ -8,6 +8,7 @@ struct CalendarInterfaceChecks {
   static func main() async throws {
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("memora-calendar-interface-" + UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: root) }
+    try await checkLifecycle(root)
     for cloud in [false, true] {
       let model = try fixture(root, cloud: cloud)
       let result = await read(model, cloud: cloud)
@@ -105,7 +106,10 @@ struct CalendarInterfaceChecks {
 
   static func fixture(_ root: URL, cloud: Bool) throws -> MemoraModel {
     let model = try MemoraModel(storeURL: root.appendingPathComponent(UUID().uuidString + ".sqlite"))
+    model.aiChatRequestID = UUID()
+    model.message.isThinking = true
     CalendarService.access = .granted; CalendarService.reads = 0; CalendarService.onRead = nil
+    CalendarService.observationStarts = 0
     let start = Date(timeIntervalSince1970: 1_792_353_600)
     CalendarService.values = [
       .init(id: "private-event-1@occurrence", title: "終日の予定", start: start, end: start.addingTimeInterval(86_400), isAllDay: true),
@@ -123,10 +127,12 @@ struct CalendarInterfaceChecks {
   }
 
   static func read(_ model: MemoraModel, cloud: Bool) async -> AgentToolOutcome {
+    let readsBeforeApproval = CalendarService.reads
     let operation = Task { await model.readCalendarTool(call, messageID: model.message.id) }
     if cloud {
       let approval = await awaiting(model)
-      precondition(CalendarService.reads == 0 || model.message.calendarReadSnapshot != nil)
+      precondition(CalendarService.reads == readsBeforeApproval, "Calendar read started before approval")
+      precondition(CalendarService.observationStarts > 0, "Calendar changes were not observed during approval")
       model.agentApprovalWaiter.resolve(true, id: approval.id)
     }
     return await operation.value
@@ -160,5 +166,85 @@ struct CalendarInterfaceChecks {
     for addition in [",\"title\":\"fake event\"", ",\"detail\":\"fake time\"", ",\"action\":\"completeTask\"", ",\"value\":50"] {
       precondition(NativeAIInterface.decode(valid.replacingOccurrences(of: "\"referenceID\":\"\(id)\"", with: "\"referenceID\":\"\(id)\"" + addition)) == nil)
     }
+  }
+
+  static func checkLifecycle(_ root: URL) async throws {
+    let changes: [(String, (MemoraModel) -> Void)] = [
+      ("new request", { $0.aiChatRequestID = UUID() }),
+      ("stopped request", { $0.aiChatRequestID = nil }),
+      ("workspace ABA", { $0.currentTeamID = "other"; $0.aiWorkspaceGeneration = UUID(); $0.currentTeamID = nil }),
+      ("replaced message", { $0.message.id = UUID() }),
+      ("settled message", { $0.message.isThinking = false }),
+      ("missing message", { $0.hasMessage = false }),
+      ("restoring", { $0.isRestoring = true }),
+      ("protected store", { $0.isStoreProtected = true }),
+      ("calendar changed", { $0.invalidateAICalendarContext() }),
+      ("integration disabled", { $0.setIntegrationEnabled("calendar", enabled: false) }),
+      ("integration ABA", { $0.setIntegrationEnabled("calendar", enabled: false); $0.setIntegrationEnabled("calendar", enabled: true) }),
+      ("permission denied", { _ in CalendarService.access = .denied }),
+      ("permission unknown", { _ in CalendarService.access = .unknown }),
+      ("policy removed", { $0.agentPluginPolicies.removeValue(forKey: $0.message.id) }),
+      ("registry disabled", { $0.fixtureRegistry.tools["memora:read_calendar"]?.isEnabled = false }),
+      ("plugin refused", { $0.pluginPermitted = false }),
+      ("Gmail result revoked", { $0.gmailResultsCurrent = false }),
+      ("MCP result revoked", { $0.mcpResultsCurrent = false })
+    ]
+    var checked = 0
+    for cloud in [false, true] {
+      for phase in cloud ? ["approval", "read"] : ["read"] {
+        for (name, change) in changes {
+          let model = try fixture(root, cloud: cloud)
+          let originalID = model.message.id
+          if phase == "read" { CalendarService.onRead = { change(model) } }
+          let operation = Task { await model.readCalendarTool(call, messageID: originalID) }
+          if cloud {
+            let pending = await awaiting(model)
+            if phase == "approval" { change(model) }
+            model.agentApprovalWaiter.resolve(true, id: pending.id)
+          }
+          let result = await operation.value
+          precondition(result.isError && model.message.calendarReadSnapshot == nil,
+            "Stale calendar result accepted: \(cloud ? "cloud" : "device") / \(phase) / \(name)")
+          precondition(!result.text.contains("終日の予定") && !result.text.contains("翌日までの予定"))
+          precondition(CalendarService.reads == (phase == "approval" ? 0 : 1))
+          precondition(!model.message.didChangeData)
+          if ["new request", "stopped request", "workspace ABA", "replaced message", "settled message", "missing message"].contains(name) {
+            precondition(model.message.agentSteps.allSatisfy { $0.state == .running }, "Old callback modified a settled/replacement trace")
+            precondition(model.agentBlockedExternalTools[originalID, default: []].isEmpty, "Old callback modified a replacement's blocked tools")
+          }
+          checked += 1
+        }
+      }
+    }
+    print("Calendar lifecycle checks passed: \(checked) ownership/permission changes across approval and suspended reads, cloud and device")
+    for cloud in [false, true] {
+      let model = try fixture(root, cloud: cloud)
+      let initial = await read(model, cloud: cloud)
+      precondition(!initial.isError)
+      let snapshot = model.message.calendarReadSnapshot!
+      model.setIntegrationEnabled("calendar", enabled: true)
+      precondition(model.calendarReadIsCurrent(snapshot), "An unchanged setting invalidated a valid read")
+      model.setIntegrationEnabled("calendar", enabled: false)
+      model.setIntegrationEnabled("calendar", enabled: true)
+      precondition(!model.calendarReadIsCurrent(snapshot))
+      precondition(model.interfaceCalendarEvents(snapshot.events.map(\.id), messageID: model.message.id) == nil)
+      precondition(!model.artifactCreationIsCurrent(messageID: model.message.id, workspaceID: nil,
+        provenance: model.artifactProvenance(for: model.message)))
+      if cloud { precondition(!model.isCloudSessionAuthorized(model.message.id)) }
+      let previousPolicy = model.agentPluginPolicies[model.message.id]
+      model.message = FixtureMessage()
+      model.message.isThinking = true
+      model.aiChatRequestID = UUID()
+      model.agentPluginPolicies[model.message.id] = previousPolicy
+      if cloud {
+        model.message.cloudProvenance = model.newCloudProvenance(references: [])
+        model.message.cloudAuthorizationTargets = []
+      }
+      let fresh = await read(model, cloud: cloud)
+      precondition(!fresh.isError && CalendarService.reads == 2)
+      precondition(model.message.calendarReadSnapshot?.revision == model.calendarContextRevision)
+      precondition(model.message.calendarReadSnapshot?.events.map(\.id) != snapshot.events.map(\.id))
+    }
+    print("Calendar lifecycle recovery passed: no-op setting retains grant; OFF/ON revokes preview/cloud/artifact use; a new approved request recovers with fresh IDs")
   }
 }

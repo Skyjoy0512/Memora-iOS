@@ -981,6 +981,32 @@ Host検証の範囲:
 - 新しい性能比較は行っていない。多数のタスクを持つsnapshot検証の負荷、
   実機の入力遅延/スクロール/メモリ/電池は未計測で、改善率は報告しない。
 
+### Calendar読取の会話世代・承認中の失効（2026-10-24）
+
+- 追加テストで、本番`readCalendarTool`が取得中のrequest ID変更後にも旧結果を受理する
+  ケースを再現した。これはtool境界の再現であり、実クラウドへの漏えいを観測した結果ではない。
+- 既存`AgentConversationExecutionContext`を再利用し、カレンダー固有contextで承認前の
+  revisionと現在のrequest/message/ワークスペース世代/policyを固定・再検証する。
+  schema/registry/person policy、Gmail/MCP由来の許可も維持し、失効後はsnapshotや内容を返さない。
+  別/終了済みの会話のtrace・blocked toolsは古いcallbackから変更しない。
+- EventKit監視は承認待ちの前から開始するが、cloud取得は従来どおり承認後。
+  カレンダー利用設定の実変更で既存revisionを同期失効し、OFF→ONで旧許可を復活させない。
+  同じ値の設定は不要な失効をせず、新しい依頼/承認で再取得できる。
+- 単独hostはcloud承認中18・cloud取得中18・端末内取得中18の54変更、OFF/ON後の
+  preview/cloud/artifact失効、新規依頼での復旧が成功。EventKit/会話状態等はfixture、
+  domain/approval waiter/registry/許可処理は本番コード。実予定・モデル・通信は使わない。
+- 現在のUI/メニュー/保存形式・既存データ・権限scope・書込経路は変更しない。
+  最終build/総合host/UIの結果と先行の失敗は
+  [Calendar検証記録](qa/memora-1.0/phase6/calendar-context-review.md)と同ディレクトリの
+  `calendar-context-validation-summary.json`に分けて記録する。
+- 最終Debug preview/Release Simulator成功（iOS 27.1 SDK、既存警告11件）、
+  固定ソースでホスト5スイート終了0、最終Debug UIは5/5成功、失敗/skip/flaky/中断0、retry 0。
+  94検出中89件はfilteredで未実行。model token/download 0。
+  Calendar設定のOFF保持/再起動/再ONと未許可表示、承認・編集・保存・拒否/停止、
+  nativeヘッダー/Journal検索を専用Simulatorで確認。設定Light/Dark画像を保存・目視した。
+- Calendar書込のOS権限待ち/保存直前の追加監査、実EventKitの通知/権限変更、
+  実機・実LLM、カレンダー別共有設定は未完了。Phase 6全体の完了とはしない。
+
 ## Phase 7
 
 視覚・アクセシビリティ・IME・Reduce Motionの最終確認、思考ロゴの調査は未完了。
@@ -1031,6 +1057,7 @@ Host検証の範囲:
 
 - P0（公開前）: 実機の録音保持/中断復旧/音声取込と、復元中断のデータ保護。
   外部保存をまたぐworkspace/privacy/権限変更の追加監査・回帰。
+  Calendar書込のOS権限待ち・保存直前・停止/新規会話の追加監査と回帰。
 - P1: Calendarの追加fixture検証、MCP SDK/transportのruntime検証、Gmailの実OAuth境界、
   Phase 7のVoiceOver/Dynamic Type/IME/Reduce Motion/実画面確認、端末性能計測。
 - P2: Notion API version移行と長文block分割、意味的スキル選択、独立した思考ロゴ部品。

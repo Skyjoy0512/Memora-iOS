@@ -23,8 +23,20 @@ import Foundation
   #if PERSON_PROVENANCE_CHECKS
   var calendarContextRevision = UUID()
   var agentBlockedExternalTools: [UUID: Set<String>] = [:]
+  #if INTERFACE_TASK_EXECUTION_CHECKS
+  var disabledIntegrationIDs: [String] = []
+  var mcpPermissionRevision = UUID()
+  var gmailPermissionRevision = UUID()
+  var notionPermissionRevision = UUID()
+  var activeMCPTools: [String: Bool] = [:]
+  var isCalendarEnabled: Bool {
+    get { integrationIsEnabled("calendar") }
+    set { setIntegrationEnabled("calendar", enabled: newValue) }
+  }
+  #else
   var isCalendarEnabled = true
   func integrationIsEnabled(_ id: String) -> Bool { id != "calendar" || isCalendarEnabled }
+  #endif
   #endif
   var isRestoring = false
   var isStoreProtected = false
@@ -58,6 +70,7 @@ import Foundation
   #if INTELLIGENT_UI_CHECKS
   var isAIChatResponding = false
   var aiChatRequestID: UUID?
+  var aiWorkspaceGeneration = UUID()
   var aiChatTask: Task<Void, Never>?
   var interfaceCalls: [AgentToolCall] = []
   #if INTERFACE_TASK_EXECUTION_CHECKS
@@ -219,14 +232,17 @@ extension MemoraModel {
 @MainActor enum CalendarService {
   enum Access { case granted, denied, unknown }
   static var access = Access.granted
-  static func beginAIObservation() {}
   #if INTERFACE_TASK_EXECUTION_CHECKS
+  static var observationStarts = 0
+  static func beginAIObservation() { observationStarts += 1 }
   static var values: [FixtureCalendarEvent] = []
   static var reads = 0
   static var onRead: (() async -> Void)?
   static func events(on date: Date) async -> [FixtureCalendarEvent] {
     reads += 1; await onRead?(); return values
   }
+  #else
+  static func beginAIObservation() {}
   #endif
 }
 #if INTERFACE_TASK_EXECUTION_CHECKS

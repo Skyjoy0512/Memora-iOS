@@ -30,6 +30,8 @@ final class MemoraModel {
   var approvals = 0
   var approves = true
   var onApproval: (() async -> Void)?
+
+  func invalidateAICalendarContext() { preconditionFailure("Calendar is covered by CalendarInterfaceChecks") }
   let store: LocalStore
   let storeURL: URL
 
