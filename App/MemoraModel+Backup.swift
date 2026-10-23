@@ -198,21 +198,7 @@ extension MemoraModel {
   /// checked and its media put in place off the main actor; only the records are
   /// applied here, once every file is confirmed.
   func restoreBackup(from packageURL: URL) async throws {
-    guard currentTeamID == nil else { throw BackupPackage.BackupError.personalWorkspaceRequired }
-    // A store that could not be read must not be written over, and nothing may
-    // be in flight.
-    guard !isStoreProtected else { throw BackupPackage.BackupError.storeProtected }
-    guard !isRecording, !isSavingCapture, recordingDraft == nil else {
-      throw BackupPackage.BackupError.busy
-    }
-    guard !isRestoring, !isImportingShareInbox, !isAIChatResponding, residentJobs.isEmpty,
-          projectChatJobs.isEmpty, webResearchJobs.isEmpty, processing.activeIDs.isEmpty, speakerAnalysisIDs.isEmpty,
-          !isEnrollingSpeaker else { throw BackupPackage.BackupError.busy }
-    guard isEmpty else { throw BackupPackage.BackupError.notEmpty }
-
-    // Held for the whole restore, so the model refuses changes that could add a
-    // record while the package is being prepared off the main actor.
-    isRestoring = true
+    try beginBackupRestore()
     defer { isRestoring = false }
 
     let generation = aiWorkspaceGeneration

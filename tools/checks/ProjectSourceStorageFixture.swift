@@ -36,6 +36,17 @@ final class MemoraModel {
   var projectFilingNotice: String?
   var openedMeetingID: UUID?
   var isRecording = false
+  var isSavingCapture = false
+  var recordingDraft: UUID?
+  var isImportingShareInbox = false
+  var isAIChatResponding = false
+  var residentJobs: [UUID: Bool] = [:]
+  var projectChatJobs: [UUID: Bool] = [:]
+  var webResearchJobs: [UUID: Bool] = [:]
+  var processing = AudioImportProcessing()
+  var speakerAnalysisIDs: Set<UUID> = []
+  var isEnrollingSpeaker = false
+  var isEmpty = true
   var pendingImportURLs: [URL] = []
   var inFlightImportURLs: Set<URL> = []
   var pendingImportNotice: String?

@@ -36,3 +36,11 @@ struct AudioImportTask { var id: UUID }
 enum AudioImportDestination { case library }
 enum AudioImportSection { case files }
 enum AudioImportRoute { case meeting(UUID) }
+struct AudioImportProcessing { var activeIDs: Set<UUID> = [] }
+// The admission test does not parse a backup. The separate BackupRestoreChecks
+// runner uses the real package/error types and install/rollback transaction.
+enum BackupPackage {
+  enum BackupError: Error, Equatable {
+    case personalWorkspaceRequired, storeProtected, busy, notEmpty
+  }
+}
