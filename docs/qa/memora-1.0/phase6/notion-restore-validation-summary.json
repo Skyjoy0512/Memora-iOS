@@ -1,0 +1,130 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "implementationCommits": {
+    "restoreAdmission": "b9e9ec6",
+    "notionPartialSave": "f609ced"
+  },
+  "phaseStatus": {
+    "phase5": "Implemented additional import/restore admission safeguards; hardware and actual interrupted restore UI remain unverified",
+    "phase6": "In progress; bounded Notion reliability unit implemented and locally validated",
+    "phase7": "Not complete"
+  },
+  "environment": {
+    "host": "macOS 27.0.1, arm64",
+    "swift": "Apple Swift 6.4 (swiftlang-6.4.0.34.1)",
+    "iosSDK": "27.1",
+    "deploymentTarget": "iOS 26",
+    "uiDevice": "Dedicated iPhone 18 Pro Max CoreSimulator, fresh test installation per scenario; not the user's Bitrig preview"
+  },
+  "builds": {
+    "debugPreview": {
+      "result": "passed",
+      "log": "2026-10-23T12-52-12-700a0dc2.log",
+      "warnings": 11
+    },
+    "releaseSimulator": {
+      "result": "passed",
+      "log": "2026-10-23T12-57-30-0209f8ac.log",
+      "warnings": 11,
+      "sourceBoundary": "Requested after final app sources; no app-source changes afterward"
+    },
+    "earlierReleaseAttempt": {
+      "result": "notBuilt",
+      "exitCode": 64,
+      "reason": "CLI usage error: -platform belongs to preview. Corrected to -destination for build. Not counted as a successful build."
+    },
+    "preservedLogDirectory": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-notion-restore-quality/"
+  },
+  "host": {
+    "runner": "bash tools/checks/run-quality-checks.sh --output-dir /Volumes/WorkspaceSSD/Development/Temp/memora-phase6-notion-restore-quality",
+    "summary": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-notion-restore-quality/summary.json",
+    "suites": {
+      "next-generation": { "status": "passed", "exitCode": 0 },
+      "design-refresh": { "status": "passed", "exitCode": 0 },
+      "background-summary": { "status": "passed", "exitCode": 0 },
+      "composer-layout": { "status": "passed", "exitCode": 0 },
+      "optimization": { "status": "passed", "exitCode": 0 }
+    },
+    "restoreAdmissionCoverage": [
+      "Production admission extension: 16 busy states and team/protected/nonempty refusal; rejection preserves generation/state",
+      "Cancelled admission refused before mutation",
+      "Actual file-copy import suspended at fixture duration read excludes restore; import then saves and reopens through production Meeting codec and SQLite",
+      "Accepted restore rotates generation; old picker stays invalid after modeled restore flag clears; new picker succeeds",
+      "Separate production BackupPackage/BackupRestoreTransaction checks pass actual file/SQLite install, rollback and reopen"
+    ],
+    "notionCoverage": [
+      "Production POST/PATCH JSON, stable captured credentials/parent, 100-block batches, only matching meeting tasks",
+      "Missing configuration and pre-cancellation send nothing; configuration change before transport sends nothing",
+      "HTTP 401/403/404/429/500/502 before and after creation; no automatic retries or page recreation",
+      "Timeout, offline, cancellation, invalid HTTP response before/after creation; known created page retained on later failure",
+      "Malformed JSON and non-UUID page IDs do not become append paths; non-HTTPS/userinfo URLs not exposed as page links",
+      "Token/parent changes or removal before/after each batch; explicit new save after reconnect",
+      "Four deterministic suspended-response races: create/append awaiting response during disconnect/cancellation"
+    ],
+    "fixtureBoundaries": [
+      "Restore admission: backup error types, empty-state classification, model/navigation state, duration/media are fixtures; completion is modeled by clearing the restore flag",
+      "Notion: Meeting/formatting inputs, configuration provider and HTTP transport/responses are fixtures; production task types, service orchestration and request construction run",
+      "No host test reads actual Notion credentials/settings or uses URLSession/network; not an account/TLS/API integration test",
+      "Xcode test targets remain unconfigured; no XCTest or bitrig test success claimed"
+    ]
+  },
+  "ui": {
+    "reports": [
+      ".e2e/regression/phase6-notion-restore/report.json",
+      ".e2e/regression/phase6-notion-restore-navigation/report.json"
+    ],
+    "runs": [
+      { "id": "01a166e8-26e4-73ed-9c96-0c087e0fea74", "discovered": 83, "selected": 3, "executed": 3, "passed": 3, "filtered": 80 },
+      { "id": "01a166ec-26d9-7bb0-bd53-d7e896fb43c5", "discovered": 83, "selected": 3, "executed": 3, "passed": 3, "filtered": 80 }
+    ],
+    "totalExecuted": 6,
+    "passed": 6,
+    "failed": 0,
+    "skippedSelected": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "retries": 0,
+    "modelTokens": 0,
+    "downloads": 0,
+    "coverage": [
+      "Normal launch/restart retains onboarding completion and Library start",
+      "Side menu Library / Ask AI / Journal transitions; Tools hub reaches existing sections",
+      "Top-right capture popover, audio picker cancellation and memo creation/cancellation in Light/Dark",
+      "Native photo/file picker cancellation retains project-source input",
+      "Actual local Office fixture import/reload and partial-coverage disclosure"
+    ],
+    "visuallyReviewedScreenshots": [
+      "capture-regression-light.png",
+      "capture-regression-dark.png",
+      "source-office-regression.png",
+      "tools-regression.png"
+    ],
+    "screenshotBoundary": "Final regression screens, not Before/After redesign comparisons. Notion error UI not visually tested. Only listed images visually reviewed."
+  },
+  "performance": {
+    "newBeforeAfterMeasurement": false,
+    "improvementClaim": null,
+    "unmeasured": ["input latency", "scroll FPS", "physical-device memory", "battery", "actual Notion network latency"]
+  },
+  "remaining": {
+    "P0": ["Physical-device recording/interruption recovery/audio imports and interrupted restore data protection", "Additional audit/regression of workspace/privacy/permission changes across external writes"],
+    "P1": ["Gmail/Calendar/MCP connection/error/revocation fixtures", "Phase 7 accessibility/IME/Reduce Motion/visual verification", "Physical-device performance profiling"],
+    "P2": ["Notion version migration and single rich-text size handling", "Semantic skill selection without unapproved extra cost", "Reusable thinking-logo component"]
+  },
+  "notionLimitations": [
+    "Already dispatched external requests cannot be undone by a local configuration check",
+    "Token/parent A-to-B-to-A changes entirely between validation points are not detected without a revision counter",
+    "Connection snapshot does not claim comprehensive workspace/record/plugin validation across every await",
+    "Existing API version 2022-06-28 retained; no migration, OAuth scope expansion or automatic retry added"
+  ],
+  "externalActions": {
+    "push": false,
+    "upstreamRefetchThisUnit": false,
+    "realAccountAccess": false,
+    "notionWrites": false,
+    "oauthScopeExpansion": false,
+    "paidModelCalls": false,
+    "githubCIRunVerified": false
+  }
+}

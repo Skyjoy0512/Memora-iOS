@@ -593,12 +593,92 @@ pushは実施していない。
   native写真の実転送/保存失敗/同一写真再選択はSimulatorで検証したが、実機確認ではない。
 - PDF/OCR/画像の実端末での範囲表示・失敗再試行、実YouTube通信と縮小画像の品質。
 - 実バックアップ復元途中の中断UI E2E。hookのhost検証だけでは代替しない。
-- global音声取込と復元の同時実行、および復元完了後の世代境界の追加確認。
-  今回のrestore検証は処理中の拒否であり、完了をまたぐ全シナリオの証明ではない。
+- 実native音声取込と復元の同時UI E2E、および復元完了をまたぐ実画面の確認。
+  次節でhostの受付/世代境界を追加したが、実復元とnative音声の全組合せを証明しない。
 
-## Phase 6〜7
+### 復元と取込の排他・Picker世代境界（2026-10-23）
 
-以下は未完了であり成功扱いしない。
+- `restoreBackup`の既存受付条件を本番`beginBackupRestore`へ切り出し、
+  global音声取込、URL待機queue、取込URL、Inbox取込、ソース解析中の拒否を追加。
+  元の録音/保存/AI job/保護/workspace/空判定の条件は維持し、キャンセル済みも拒否する。
+  データがまだ配列へ追加されていないawait中にも、復元で保存先を入れ替えない。
+- 全受付条件を通った時点だけで世代を更新し、復元前に開いたPickerを失効させる。
+  復元が終了/失敗して`isRestoring`がfalseへ戻っても、旧Pickerは有効にならない。
+  既存のBackupRestoreTransaction、SQLite構造、原本、UI、権限は変更しない。
+- AudioImportChecksで16のbusy条件、team/protected/nonempty、キャンセル、
+  実音声copy後の待機中の拒否/取込継続/SQLite reopen、旧Picker拒否と新Picker成功を確認。
+  受付は本番extensionだが、空判定/model/navigation/media/backup error型はfixture。
+  復元終了はフラグ解除でモデル化しており、ここで実restoreを完走したとは報告しない。
+  別のBackupRestoreChecksでは本番package/transactionと実SQLiteの保存/rollback/再読込が成功。
+- 実装コミット`b9e9ec6`。Debug preview成功:
+  `2026-10-23T12-46-21-0feb9c11.log`、既存警告11件。
+  実復元中断のUI確認は依然未完了。
 
-- Phase 6: 外部連携のエラー・権限変更のfixture検証。実認証やOAuth scope拡大は実施しない。
-- Phase 7: 視覚・アクセシビリティ・IME・Reduce Motionの最終確認、思考ロゴの調査。
+## Phase 6: 外部連携（実施中）
+
+### Notionの部分保存・接続変更（2026-10-23）
+
+- 既存NotionServiceを再利用し、保存開始時のtoken/parentを一度だけ保持する。
+  各transport直前と成功応答後に設定とキャンセルを確認し、途中で接続解除/変更された場合は
+  新しいtoken/保存先へ置き換えたり、後続batchを送ったりしない。
+  既に開始した外部リクエストを撤回できるという保証ではない。
+- HTTP失敗だけでなく、作成後のtimeout/通信失敗/cancel/設定変更でも
+  PartialPageFailureに作成済みpage IDとURLを残す。既存の手動保存/Ask AIの表示経路が
+  ページへの導線と自動再作成しない説明を使えるようにする。新しい画面は作らない。
+- 応答のpage IDをUUIDとして検証し、不正なIDをappendのパスに使わない。
+  URLはHTTPS・hostあり・userinfoなしだけを案内に使う（Notion domainの認証ではない）。
+  ID形式は[Notion公式Page参照](https://developers.notion.com/reference/retrieve-a-page)を確認。
+  既存のAPI version `2022-06-28`、100 block分割、承認/料金説明、保存対象は変更しない。
+- 設定供給/HTTP transportを差し替え、本番サービスのPOST/PATCH構築と
+  失敗処理をホストテストへ登録。実タスク型を使い、別会議タスクは送らないことも確認。
+  401/403/404/429/500/502、timeout/offline/cancel、不正JSON/ID/URL、接続変更/解除、
+  明示的再接続を検証。create/appendを待機させて解除/キャンセルする4 raceも成功。
+  Meeting/format、設定、HTTP応答はfixtureで、実Keychain/実設定/実URLSession/実Notionは使わない。
+
+検証（復元受付とNotionの最終コードに共通）:
+
+- Debug preview成功: `2026-10-23T12-52-12-700a0dc2.log`、既存警告11件。
+  アプリソース確定後のRelease Simulator成功:
+  `2026-10-23T12-57-30-0209f8ac.log`、iOS SDK 27.1、既存警告11件。
+  最初のRelease要求は誤って`-platform`を渡し終了64（未ビルド）。
+  `-destination 'generic/platform=iOS Simulator'`へ訂正して実行し直した。
+- ホスト5スイートすべて終了0:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-notion-restore-quality/`。
+  Notion/AudioImport/BackupRestoreを含む。Debug/Releaseログも同保存先へ保全した。
+  Xcode test targetは未設定のままであり、XCTest/`bitrig test`成功とは報告しない。
+- UI E2Eは3件ずつの2 run、合計6実行/6成功、失敗/skip/中断/flaky 0、retry 0。
+  `.e2e/regression/phase6-notion-restore/report.json`と
+  `.e2e/regression/phase6-notion-restore-navigation/report.json`。
+  各runの検出83件のうち80件はfiltered。全83件を実行したという意味ではない。
+  model token/downloadは両方0、実アカウントを使わない専用CoreSimulatorのみ。
+  起動/再起動、Library/Journal/Ask AI切替、Tools、音声Picker取消とメモ作成取消の
+  Light/Dark、写真/ファイルPicker取消と入力保持、Office取込/解析範囲表示を確認した。
+- 目視済み回帰画像はPhase 6の`capture-regression-light.png`、
+  `capture-regression-dark.png`、`source-office-regression.png`、`tools-regression.png`。
+  UIを再構築していないためBefore/After比較ではない。Notionエラー画面は未目視であり、
+  これらの画面で代替したとは報告しない。
+- Notion実装コミット`f609ced`。mainを維持、push/上流再取得/OAuth scope拡大/実送信なし。
+  新規の性能比較・実端末の入力遅延/スクロール/メモリ/電池測定は行っていない。
+  詳細は`docs/qa/memora-1.0/phase6/notion-restore-validation-summary.json`。
+
+残り（Phase 6全体の完了とはしない）:
+
+- Gmail/Calendar/MCPを含む状態遷移の追加検証。実認証/OAuth scope拡大や実送信は実施しない。
+- Notionの実token失効/権限変更/通信/作成済みページ内容/エラー表示は実サービス未検証。
+  設定が検証点の間にA→B→Aと戻る変更は、世代付き設定ではないため検出できない。
+  この修正は接続token/parentの境界であり、agentのworkspace/record/plugin設定について
+  await中の全状態変化を包括的に保証するものではない。
+- Notion API versionの移行、長い単一rich_textの分割、外部サービス側の実料金/上限は別課題。
+
+## Phase 7
+
+視覚・アクセシビリティ・IME・Reduce Motionの最終確認、思考ロゴの調査は未完了。
+
+## 次の優先順位（今回の検証では完了としない）
+
+- P0（公開前）: 実機の録音保持/中断復旧/音声取込と、復元中断のデータ保護。
+  外部保存をまたぐworkspace/privacy/権限変更の追加監査・回帰。
+- P1: Gmail/Calendar/MCPの接続状態・期限切れ・解除・timeoutの追加fixture検証、
+  Phase 7のVoiceOver/Dynamic Type/IME/Reduce Motion/実画面確認、端末性能計測。
+- P2: Notion API version移行と長文block分割、意味的スキル選択、独立した思考ロゴ部品。
+  いずれも実接続や追加料金が必要な部分を無断で有効化しない。

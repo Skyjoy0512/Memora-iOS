@@ -79,6 +79,23 @@ Libraryと既存のメモ作成・取消のmorphをLight/Darkで確認する。�
 ソース登録のローカルエラー処理は同期storeProjectSourceだけを囲む。await越しに
 全体の失敗通知を抑えないことも実SQL失敗で検証する。
 
+同じAudioImportChecksは本番`beginBackupRestore`も実行する。16のbusy状態、
+team/protected/nonemptyとキャンセルの拒否、実音声copy後のduration待機中の復元拒否、
+復元受付時の世代更新とフラグ解除後の旧Picker拒否を確認する。バックアップのエラー型、
+空判定とmodel stateはfixtureであり、復元完了はフラグ解除としてモデル化する。
+本番BackupPackage/BackupRestoreTransactionとSQLiteのrollback/再読込は別の
+`run-backup-restore-checks.sh`で検証する。実復元とnative音声の同時UI E2Eではない。
+
+`run-notion-service-checks.sh`はnext-generationから実行する。本番NotionServiceの
+POST/PATCH組立、100 block分割、会議に属するタスクだけの送信、HTTPエラー、
+通信失敗、キャンセル、トークン/保存先変更・解除、明示的再接続を確認する。
+create/append応答を実際に非同期で待機させ、解除/キャンセル後に後続を送らず、
+作成済みページのID/URLを保持することも検証する。自動再作成/自動retryはしない。
+Meeting/formatting、設定供給、HTTP transport/応答はfixture、タスク型とサービス本体は本番。
+Keychain・実UserDefaults・実URLSession/ネットワーク・実Notionにはアクセスしない。
+HTTP 401/403/404/429/500/502は各段階の模擬応答であり、実認証/料金上限の証明ではない。
+既存呼出先のエラー表示は維持するが、Notionエラー画面の実サービス視覚確認は含まない。
+
 ## GitHub Actions
 
 `.github/workflows/quality.yml`はread-only権限で同じホスト検証を実行し、
