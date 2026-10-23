@@ -120,10 +120,18 @@ struct ProjectSourceImportChecks {
     let url = try original(root, "rollback-input")
     let before = try files()
     try sql("CREATE TRIGGER reject_import BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT, 'import check'); END;", model.storeURL)
-    expect(try await model.importProjectFile(url, projectID: projectID) == nil)
-    precondition(model.projectSources.isEmpty && model.preparedSourceIDs.isEmpty && model.persistenceFailureMessage != nil)
-    expect(try files() == before)
-    guard case .missing = model.store.readOutcome(MemoraModel.StorageKey.projectSources) else { preconditionFailure("Failed import persisted") }
+    for local in [false, true] {
+      model.persistenceFailureMessage = nil
+      expect(try await model.importProjectFile(url, projectID: projectID, presentsErrorsLocally: local) == nil)
+      precondition(model.projectSources.isEmpty && model.preparedSourceIDs.isEmpty)
+      precondition((model.persistenceFailureMessage == nil) == local)
+      expect(try files() == before)
+      guard case .missing = model.store.readOutcome(MemoraModel.StorageKey.projectSources) else { preconditionFailure("Failed import persisted") }
+    }
+    // Global error presentation must be restored immediately after the local
+    // synchronous registration, not suppressed across unrelated async work.
+    precondition(!model.persistNow([ProjectSource](), forKey: MemoraModel.StorageKey.projectSources))
+    precondition(model.persistenceFailureMessage != nil)
     try sql("DROP TRIGGER reject_import;", model.storeURL)
     expect(try await model.importProjectFile(url, projectID: projectID) != nil)
     expect(try reload(model) == model.projectSources)

@@ -47,8 +47,11 @@ class ExperiencePresentationChecks(unittest.TestCase):
 
     def test_capture_keeps_execution_and_native_morph(self):
         menu = (APP / "CaptureMenuPopover.swift").read_text()
-        for call in ("select(action)", "model.startCapture(spaceID: destinationID)", "importSpaceID = spaceID", "handleAudioImport", "model.onlineMeetingCaptureSpaceID = destinationID"):
+        for call in ("select(action)", "model.startCapture(spaceID: destinationID)", "importContext = LocalImportContext(projectID: spaceID, in: model)", "handleAudioImport", "model.onlineMeetingCaptureSpaceID = destinationID"):
             self.assertIn(call, menu)
+        self.assertLess(menu.index("importContext = LocalImportContext"), menu.index("isFileImporterPresented = true"))
+        self.assertIn("model.importPickedAudio(from: url, context: context)", menu)
+        self.assertNotIn("importSpaceID", menu)
         self.assertIn("MemoraActionLabel", menu)
         self.assertIn(".accessibilityHint(action.detail)", menu)
         self.assertIn("min(contentHeight, 480)", menu)
@@ -87,6 +90,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn(".photosPicker(isPresented: $isSelectingPhotos", add)
         self.assertIn("importContext: context", add)
         self.assertIn("importProjectSource(title:", add)
+        self.assertIn("context: context, presentsErrorsLocally: true", add)
         self.assertIn("defer { photos = [] }", add)
         self.assertNotIn(".onTapGesture", add)
         audio = (APP / "MemoraModel+Import.swift").read_text()

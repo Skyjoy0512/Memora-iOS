@@ -1,13 +1,13 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The capture choices shown from the tab bar's prominent button.
+/// The capture choices shown from the top-right create control.
 struct CaptureMenuPopover: View {
   var spaceID: UUID? = nil
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isFileImporterPresented = false
-  @State private var importSpaceID: UUID?
+  @State private var importContext: LocalImportContext?
   @State private var pendingAction: CaptureAction?
   @State private var pendingSourceSpaceID: UUID?
   @State private var contentHeight: CGFloat = 260
@@ -68,7 +68,12 @@ struct CaptureMenuPopover: View {
   private func select(_ action: CaptureAction) {
     InteractionFeedback.shared.send(.tap)
     if action == .importAudio {
-      importSpaceID = spaceID
+      importContext = LocalImportContext(projectID: spaceID, in: model)
+      guard importContext != nil else {
+        collapse()
+        model.importErrorMessage = String(localized: "この保存先には取り込めません。画面を開き直してください。")
+        return
+      }
       isFileImporterPresented = true
     } else {
       pendingAction = action
@@ -116,13 +121,14 @@ struct CaptureMenuPopover: View {
   }
 
   private func handleAudioImport(_ result: Result<[URL], any Error>) {
+    let context = importContext
+    importContext = nil
     collapse()
     switch result {
     case .success(let urls):
       guard let url = urls.first else { return }
-      let destinationID = importSpaceID
       Task {
-        await model.importAudio(from: url, spaceID: destinationID)
+        await model.importPickedAudio(from: url, context: context)
       }
     case .failure:
       model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"

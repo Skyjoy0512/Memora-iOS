@@ -2,6 +2,17 @@ import Foundation
 import UniformTypeIdentifiers
 
 extension MemoraModel {
+  @discardableResult
+  func importPickedAudio(from url: URL, context: LocalImportContext?) async -> UUID? {
+    // A missing picker context must not fall through to importAudio's fresh
+    // context for programmatic imports and silently accept another workspace.
+    guard let context, context.isCurrent(in: self) else {
+      importErrorMessage = String(localized: "保存先の状態が変わったため取り込みませんでした。もう一度ファイルを選択してください。")
+      return nil
+    }
+    return await importAudio(from: url, spaceID: context.projectID, importContext: context)
+  }
+
   /// Copies an audio file into the app, checks that it can actually be played,
   /// and records its real length. The file work runs off the main actor, and a
   /// failed import leaves nothing behind.

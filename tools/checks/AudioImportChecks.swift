@@ -8,9 +8,11 @@ struct AudioImportChecks {
     try FileManager.default.createDirectory(at: AudioInbox.directory, withIntermediateDirectories: true)
     try FileManager.default.createDirectory(at: MediaFiles.directory, withIntermediateDirectories: true)
     for change in 0..<8 { try await race(root, change: change) }
+    for change in 0..<8 { try await pickerRace(root, change: change) }
+    try await pickerSuccessAndMissingContext(root)
     try await sqlFailureAndRetry(root)
     try await unreadableAndQueued(root)
-    print("AudioImportChecks: passed (production importAudio/handle/Inbox queue, real file copy/cleanup, Meeting codec and SQLite reopen; 8 suspended-duration context races, deleted-project fallback, SQL failure/retry, unreadable Inbox retention and queued import; duration/media boundary and navigation/model state are fixtures, no microphone/AV playback/network)")
+    print("AudioImportChecks: passed (production picked-audio/importAudio/handle/Inbox queue, real file copy/cleanup, Meeting codec and SQLite reopen; 8 pre-picker-result and 8 suspended-duration context races, missing-context refusal, selected-project/global saves, deleted-project fallback, SQL failure/retry, unreadable Inbox retention and queued import; duration/media boundary and navigation/model state are fixtures, no microphone/AV playback/network)")
   }
 
   static func incoming(_ name: String) throws -> URL {
@@ -75,6 +77,57 @@ struct AudioImportChecks {
     precondition(!FileManager.default.fileExists(atPath: url.path))
     expect(try reload(model) == model.meetings)
     expect(try Data(contentsOf: model.meetings[0].audioURL!) == Data("HOST AUDIO PAYLOAD".utf8))
+  }
+
+  @MainActor static func pickerRace(_ root: URL, change: Int) async throws {
+    let (model, projectID) = try fixture(root, "picker-race-\(change)")
+    let context = LocalImportContext(projectID: projectID, in: model)!
+    let url = try incoming("picker-race-\(change)")
+    let before = try recordings()
+    MediaFiles.readDuration = { _ in preconditionFailure("Expired picker context reached media read") }
+    let picker = AudioDurationGate()
+    let operation = Task {
+      _ = await picker.wait()
+      return await model.importPickedAudio(from: url, context: context)
+    }
+    await picker.entered()
+    switch change {
+    case 0: model.currentTeamID = "other"
+    case 1: model.currentTeamID = "other"; model.currentTeamID = nil
+    case 2: model.isRestoring = true
+    case 3: model.isStoreProtected = true
+    case 4: model.spaces = []
+    case 5: model.spaces[0].name = "選択待ち中に変更"
+    case 6: operation.cancel()
+    default: model.aiWorkspaceGeneration = UUID()
+    }
+    picker.resume(nil)
+    expect(await operation.value == nil)
+    precondition(model.meetings.isEmpty && model.openedMeetingID == nil && !model.isImporting)
+    precondition(model.importErrorMessage != nil)
+    expect(try recordings() == before && Data(contentsOf: url) == Data("HOST AUDIO PAYLOAD".utf8))
+    guard case .missing = model.store.readOutcome(MemoraModel.StorageKey.meetings) else { preconditionFailure("Expired picker persisted audio") }
+  }
+
+  @MainActor static func pickerSuccessAndMissingContext(_ root: URL) async throws {
+    let (model, projectID) = try fixture(root, "picker-save")
+    let url = try incoming("picker-save")
+    let before = try recordings()
+    MediaFiles.readDuration = { _ in preconditionFailure("Missing picker context reached media read") }
+    expect(await model.importPickedAudio(from: url, context: nil) == nil)
+    expect(try recordings() == before)
+    precondition(model.meetings.isEmpty && model.importErrorMessage != nil)
+    MediaFiles.readDuration = { _ in 1.25 }
+    let context = LocalImportContext(projectID: projectID, in: model)!
+    let id = await model.importPickedAudio(from: url, context: context)
+    precondition(id != nil && model.meetings.count == 1 && model.meetings[0].spaceID == projectID)
+    precondition(model.openedMeetingID == id)
+    expect(try reload(model) == model.meetings)
+    let global = LocalImportContext(in: model)!
+    let second = await model.importPickedAudio(from: url, context: global)
+    precondition(second != nil && second != id && model.meetings.first?.spaceID == nil)
+    expect(try reload(model) == model.meetings)
+    expect(try Data(contentsOf: url) == Data("HOST AUDIO PAYLOAD".utf8))
   }
 
   @MainActor static func unreadableAndQueued(_ root: URL) async throws {

@@ -140,7 +140,7 @@ struct ProjectSourceAddSheet: View {
             var count = 0
             for url in urls.prefix(10) {
               guard context.isCurrent(in: model) else { break }
-              if try await model.importProjectFile(url, projectID: projectID, importContext: context) != nil { count += 1 }
+              if try await model.importProjectFile(url, projectID: projectID, importContext: context, presentsErrorsLocally: true) != nil { count += 1 }
             }
             if count > 0 { message = "\(count)件を保存しました。" }
             return count > 0
@@ -161,7 +161,7 @@ struct ProjectSourceAddSheet: View {
           var count = 0
           for item in items {
             guard context.isCurrent(in: model) else { break }
-            if try await model.importProjectSource(title: "写真", context: context, load: {
+            if try await model.importProjectSource(title: "写真", context: context, presentsErrorsLocally: true, load: {
               try await item.loadTransferable(type: ProjectPhotoTransfer.self)?.receipt
             }) != nil {
               count += 1

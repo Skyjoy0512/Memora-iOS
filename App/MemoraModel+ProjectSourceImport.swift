@@ -1,7 +1,9 @@
 import Foundation
 
 extension MemoraModel {
-  func importProjectFile(_ url: URL, projectID: UUID, importContext: LocalImportContext? = nil) async throws -> UUID? {
+  func importProjectFile(_ url: URL, projectID: UUID, importContext: LocalImportContext? = nil,
+    presentsErrorsLocally: Bool = false
+  ) async throws -> UUID? {
     guard let context = importContext ?? LocalImportContext(projectID: projectID, in: self),
           context.projectID == projectID, context.isCurrent(in: self) else { return nil }
     let scoped = url.startAccessingSecurityScopedResource()
@@ -11,20 +13,22 @@ extension MemoraModel {
     if ["m4a", "mp3", "wav", "aiff", "aif", "caf", "flac", "ogg"].contains(url.pathExtension.lowercased()) {
       return await importAudio(from: url, spaceID: projectID, importContext: context)
     }
-    return try await importProjectSource(title: url.lastPathComponent, context: context) {
+    return try await importProjectSource(title: url.lastPathComponent, context: context, presentsErrorsLocally: presentsErrorsLocally) {
       try await ProjectSourceFiles.shared.copy(url)
     }
   }
 
-  func importProjectSource(title: String, context: LocalImportContext,
+  func importProjectSource(title: String, context: LocalImportContext, presentsErrorsLocally: Bool = false,
     load: () async throws -> ProjectSourceFiles.Receipt?
   ) async throws -> UUID? {
     guard context.projectID != nil, context.isCurrent(in: self) else { return nil }
     guard let receipt = try await load() else { return nil }
-    return await addProjectFile(receipt: receipt, title: title, context: context)
+    return await addProjectFile(receipt: receipt, title: title, context: context, presentsErrorsLocally: presentsErrorsLocally)
   }
 
-  func addProjectFile(receipt: ProjectSourceFiles.Receipt, title: String, context: LocalImportContext) async -> UUID? {
+  func addProjectFile(receipt: ProjectSourceFiles.Receipt, title: String, context: LocalImportContext,
+    presentsErrorsLocally: Bool = false
+  ) async -> UUID? {
     guard let projectID = context.projectID, context.isCurrent(in: self) else {
       await discardProjectImportReceipt(receipt); return nil
     }
@@ -37,7 +41,9 @@ extension MemoraModel {
       ["jpg", "jpeg", "png", "heic", "heif", "tiff", "gif", "webp"].contains(suffix) ? .image : .document
     let value = ProjectSource(projectID: projectID, kind: kind, title: title,
       localFileReference: receipt.reference, contentFingerprint: receipt.fingerprint)
-    guard storeProjectSource(value) else {
+    // Only the synchronous registration owns this scope, never file I/O or
+    // later extraction, which may outlive this sheet.
+    guard storeProjectSource(value, presentsErrorsLocally: presentsErrorsLocally) else {
       await discardProjectImportReceipt(receipt); return nil
     }
     await prepareProjectSource(value.id)
