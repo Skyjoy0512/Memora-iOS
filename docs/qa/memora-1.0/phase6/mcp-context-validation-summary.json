@@ -1,0 +1,106 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "implementationCommit": "ce98f4f",
+  "phaseStatus": "Phase 6 in progress; bounded MCP discovery/execution context protection locally validated",
+  "builds": {
+    "debugPreview": { "status": "passed", "log": "2026-10-23T17-45-08-84705f64.log", "warnings": 11 },
+    "releaseSimulator": { "status": "passed", "log": "2026-10-23T17-46-37-d13535c0.log", "warnings": 11 },
+    "sourceBoundary": "Release requested after final app sources; no app-source changes afterward",
+    "iosSDK": "27.1",
+    "deploymentTarget": "iOS 26",
+    "physicalDeviceVerified": false,
+    "preservedLogDirectory": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-mcp-context-quality/"
+  },
+  "host": {
+    "summary": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-mcp-context-quality/summary.json",
+    "suites": {
+      "next-generation": { "status": "passed", "exitCode": 0 },
+      "design-refresh": { "status": "passed", "exitCode": 0 },
+      "background-summary": { "status": "passed", "exitCode": 0 },
+      "composer-layout": { "status": "passed", "exitCode": 0 },
+      "optimization": { "status": "passed", "exitCode": 0 }
+    },
+    "initialMCPAttempt": {
+      "status": "compileFailed",
+      "exitCode": 1,
+      "error": "Throwing JSON decode inside a non-throwing precondition autoclosure",
+      "resolution": "Decode before assertion; test-only correction. Initial unexecuted checks not counted as passing."
+    },
+    "suspendedExecutionRaces": 63,
+    "suspendedDiscoveryMutations": 20,
+    "coverage": [
+      "21 mutations at approval, modeled SDK preparation and returned-result suspension points",
+      "Workspace, generation, request, message existence/settlement, restore/protection, provenance gate, policy, integration state, server deletion/endpoint/cost/review/fingerprint, credential revision/token changes",
+      "MCP OFF-to-ON and server disabled-to-enabled changes cannot reuse an earlier operation context",
+      "Stale discovery preserves a newer owner's active-tool marker; final filtering removes earlier servers revoked while later discovery waits",
+      "Unknown-cost discovery reads only reviewed cache; private context or writes still require approval",
+      "Production daily budget: 50-call refusal, actual SQLite ABORT prevents dispatch, actual SQLite reopen matches usage",
+      "Approval refusal, cancellation, mocked timeout/authentication/permission/rate-limit errors; remote payload not exposed",
+      "Registry policy and schema checks and actual MCPIntegrationProvider callback forwarding",
+      "Existing Calendar interface/edit policy, MCP OAuth policy, Gmail/Notion suites rerun successfully"
+    ],
+    "boundaries": [
+      "Production MCP model extension, execution context, registry/provider, permission/configuration mutations and budget functions run",
+      "Model state, source authorization predicate, approval, Keychain and MCP SDK client are fixtures",
+      "SQLite is actual LocalStore I/O in isolated temporary databases; fixture persistNow forwards to production store",
+      "Preparation wait models SDK connection preparation; no SDK/DNS/TLS/HTTP/OAuth runs in this binary",
+      "Production MCPClient page/call/cache-generation guards are statically checked and compiled/linked by Bitrig, not runtime exercised in host checks",
+      "OAuth authorization credential-commit revision update is compiled, not tested with actual browser/account",
+      "No Xcode test targets configured; no XCTest or bitrig test success claimed"
+    ]
+  },
+  "ui": {
+    "report": ".e2e/regression/phase6-mcp-context/report.json",
+    "runID": "01a167f1-bb0d-7ee1-87c2-0941597ff3c3",
+    "device": "Dedicated iPhone 18 Pro Max CoreSimulator; fresh app install per scenario, not user preview",
+    "discovered": 85,
+    "selected": 5,
+    "executed": 5,
+    "passed": 5,
+    "failed": 0,
+    "skippedSelected": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "filteredUnexecuted": 80,
+    "retries": 0,
+    "modelTokens": 0,
+    "downloads": 0,
+    "coverage": [
+      "Unconnected MCP management and unsaved editor cancellation in Light/Dark, empty save disabled, unknown cost default on",
+      "Unconfigured Gmail Light/Dark and normal restart",
+      "Onboarding completion and Library start retained after restart",
+      "Library / Ask AI / Journal navigation and Tools sections"
+    ],
+    "visuallyReviewedScreenshots": [
+      "mcp-unconnected-light.png", "mcp-unconnected-dark.png",
+      "mcp-unsaved-editor-light.png", "mcp-unsaved-editor-dark.png"
+    ],
+    "screenshotBoundary": "Final regression screens, not redesign Before/After. SecureField masked by runner; no token entered. No real MCP approval/execution/error UI visually tested.",
+    "actionsNotPerformed": ["save server", "check connection", "sign in", "enter token", "connect to MCP server"]
+  },
+  "performance": {
+    "newBeforeAfterMeasurement": false,
+    "improvementClaim": null,
+    "unmeasured": ["device input latency", "scroll FPS", "memory", "battery", "real MCP timing"]
+  },
+  "remaining": {
+    "P0": ["Further binding of completed external results to permissions across subsequent model sends, including Gmail/Notion paths", "Physical-device recording/interruption/restore data protection"],
+    "P1": ["Calendar state-transition audit/fixtures", "MCP SDK/transport runtime pagination/reconnect/timeout/cancellation and OAuth", "Gmail actual OAuth and Phase 7 accessibility/device performance"],
+    "P2": ["Notion API migration and long text handling", "Semantic skills and reusable thinking-logo component"]
+  },
+  "limitations": [
+    "Already dispatched external operations cannot be undone",
+    "Authorization rechecks at SDK entry/return are not atomic synchronization with individual network bytes",
+    "No comprehensive claim for all services, all model-send paths or real SDK cache lifecycles"
+  ],
+  "externalActions": {
+    "push": false,
+    "upstreamRefetchThisUnit": false,
+    "realAccountAccess": false,
+    "mcpNetworkOrOAuth": false,
+    "paidModelCalls": false,
+    "oauthScopeExpansion": false,
+    "githubCIRunVerified": false
+  }
+}

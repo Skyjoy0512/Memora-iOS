@@ -711,13 +711,66 @@ pushは実施していない。
   新規の性能比較・端末の入力遅延/スクロール/メモリ/電池の計測はなし。
   詳細は`docs/qa/memora-1.0/phase6/gmail-validation-summary.json`。
 
+### MCPの会話世代・権限変更・一覧復帰の保護（2026-10-23）
+
+- 本番MCPの一覧取得/実行を、`MCPAgentExecutionContext`で開始時のworkspace、
+  workspace世代、request/message ID、選択policy、MCP権限世代へ結び付けた。
+  既存`isCloudSessionAuthorized`を再利用し、出典・memory・calendar許可が現在有効か再確認する。
+  contextが古くなった処理は、新しい会話のactive tool一覧/trace/blocked状態を更新しない。
+- 各サーバーの設定/認証世代/tokenを取得前後に検証し、全件取得後にも再filterする。
+  後続サーバーのawait中に無効化された先行サーバーのツールを一覧へ戻さない。
+  未知料金は従来どおり確認済みcacheだけを使い、無料と確認したものだけネットワーク取得へ進む。
+- 承認後、SDK接続準備の後、SDK呼出前、結果の利用前に現在の権限を確認するcallbackを
+  本番Provider/Clientへ渡す。Clientは各ページ/ツール結果で接続世代も確認し、
+  古い取得結果でcacheを更新したり、古い失敗が新しい接続をforgetしたりしないようguardする。
+  開始済みの外部操作の取消や、HTTP送信との原子的な同期を保証するものではない。
+- MCPのOFF→ON、サーバー設定の変更→復元、再認証でも一時的な世代を更新する。
+  世代/承認は保存・復元しない。SQLite形式、既存データ、UI/メニュー、料金/権限の範囲は維持。
+- Hostは本番のMCP extension、Context、Registry/Provider、設定/ON-OFF操作、利用回数制限を実行。
+  承認待ち/接続準備待ち/結果待ち各21変更、計63 raceが成功した。
+  一覧取得中の20変更、後続サーバー待ち中の先行サーバー失効、cache-only、承認拒否、
+  50回上限、実SQLite ABORT/再読込、timeout/認証/権限/回数エラーの秘匿も成功。
+- Model状態/既存出典許可gateの返値/承認/Keychain/MCP SDK clientはfixture。
+  hostの準備待ちは模擬SDKの待機点で、実接続/HTTP/OAuthではない。
+  本番MCPClientのguardはBitrigでcompile/linkと静的配線チェックを行ったが、
+  実SDKの複数ページ/再接続/timeout/cancel/cacheのruntime検証とは区別する。
+  `authorizeMCPServer`の実認証後の世代更新もビルドのみで、実OAuth完走は未検証。
+
+検証:
+
+- 最終Debug preview成功: `2026-10-23T17-45-08-84705f64.log`、既存警告11件。
+  最終アプリソース確定後のRelease Simulatorも成功:
+  `2026-10-23T17-46-37-d13535c0.log`、iOS SDK 27.1、既存警告11件。
+- ホスト5スイートすべて終了0:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-mcp-context-quality/`。
+  SDK OAuth policy、Calendar interface/編集policy、Gmail/Notionの既存チェックも成功。
+  これは実Google/EventKit/MCPサーバーの接続成功を意味しない。
+  初回MCP hostはテストのthrowing decodeをprecondition内で呼びコンパイル失敗（終了1）。
+  decodeをassert前に移して修正した。初期の未実行は63 raceの成功へ合算していない。
+  Xcode test targetは未設定のままであり、XCTest/`bitrig test`成功とは報告しない。
+- UI E2Eは5実行/5成功、失敗/skip/中断/flaky 0、retry 0。
+  `.e2e/regression/phase6-mcp-context/report.json`。検出85件のうち80件はfilteredで未実行。
+  model token/download 0、専用CoreSimulatorのみ。起動/再起動、Library/Journal/Ask AI切替、
+  Tools、Gmail未設定のLight/Dark、MCP未接続/追加フォームのLight/Darkと取消を確認。
+  MCPの接続確認・保存・認証は操作せず、偽の接続済み状態を作っていない。
+- `mcp-unconnected-light.png`/`mcp-unconnected-dark.png`と
+  `mcp-unsaved-editor-light.png`/`mcp-unsaved-editor-dark.png`の4枚を保存・目視済み。
+  SecureFieldはrunnerの自動秘匿マスク（黒い領域）で、tokenは入力していない。
+  UI再構築のBefore/Afterではなく回帰画面。承認中/実行中/実エラー画面を見た意味ではない。
+- 実装コミット`ce98f4f`。main維持、push/上流再取得/実認証/外部操作/課金なし。
+  新しい性能比較・端末の入力遅延/スクロール/メモリ/電池測定はなし。
+  詳細は`docs/qa/memora-1.0/phase6/mcp-context-validation-summary.json`。
+
 残り（Phase 6全体の完了とはしない）:
 
-- Calendar/MCPの状態遷移の追加監査・fixture検証。Gmailの実OAuth/sheet取消/Google失効完了と
+- Calendarの状態遷移の追加監査・fixture検証、MCP SDK/transportの実接続・複数ページ・
+  接続変更・timeout/cancelのruntime検証。Gmailの実OAuth/sheet取消/Google失効完了と
   実メールの表示/解析も未検証。ローカル解除だけで外部側の失効を確認済みとしない。
   実認証/OAuth scope拡大や実メール送信は実施しない。
 - 今回のGmail検証は接続/account世代の境界であり、agentのworkspace/privacy/plugin OFF変更を
   await中にすべて検証した意味ではない。外部取得からAI送信までの追加監査は継続する。
+  MCPも完了済みの取得結果を後続モデル送信に載せる全期間の権限bindingは追加監査が必要。
+  今回のMCP操作中のgateで、全サービス/全送信経路の安全性を完了とはしない。
 - Notionの実token失効/権限変更/通信/作成済みページ内容/エラー表示は実サービス未検証。
   設定が検証点の間にA→B→Aと戻る変更は、世代付き設定ではないため検出できない。
   この修正は接続token/parentの境界であり、agentのworkspace/record/plugin設定について
@@ -732,7 +785,7 @@ pushは実施していない。
 
 - P0（公開前）: 実機の録音保持/中断復旧/音声取込と、復元中断のデータ保護。
   外部保存をまたぐworkspace/privacy/権限変更の追加監査・回帰。
-- P1: Calendar/MCPの接続状態・期限切れ・解除・timeoutの追加fixture検証、Gmailの実OAuth境界、
+- P1: Calendarの追加fixture検証、MCP SDK/transportのruntime検証、Gmailの実OAuth境界、
   Phase 7のVoiceOver/Dynamic Type/IME/Reduce Motion/実画面確認、端末性能計測。
 - P2: Notion API version移行と長文block分割、意味的スキル選択、独立した思考ロゴ部品。
   いずれも実接続や追加料金が必要な部分を無断で有効化しない。

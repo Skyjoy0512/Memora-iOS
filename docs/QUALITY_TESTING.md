@@ -113,6 +113,19 @@ Toolsから実Gmail設定を開き、理由表示・接続ボタン無効・連�
 確認する。認証操作や偽tokenの投入は行わない。将来client IDを設定した場合は、
 この未設定ビルド用期待値を別環境へ分離し、誤った期待に合わせてアプリを戻さない。
 
+`run-mcp-agent-checks.sh`は本番の一覧取得/実行extension、MCPAgentExecutionContext、
+Registry/Provider、設定保存/ON-OFF更新、利用回数制限を通す。承認待ち/SDK準備待ち/
+結果待ちの63 race、一覧取得中の20変更、後続サーバー待機中の先行サーバー失効、
+unknown costのcache-only取得、承認拒否、上限/実SQLite ABORT/再読込、秘匿errorを検証する。
+モデル状態・既存出典許可gateの返値・承認・Keychain・MCP SDK clientはfixture。
+SDK準備待ちはfixtureの待機点であり、実OAuth/DNS/TLS/HTTP/SDK動作ではない。
+本番MCPClientのcallback/generation guardは静的配線チェックとBitrigビルドで別途確認する。
+実SDKによる複数ページ・接続変更・timeout/cancelのruntime証明と混同しない。
+
+`mcp-connection.e2e.ts`は未接続の管理画面と追加フォームのLight/Dark、空の保存不可、
+料金未確認が初期値であること、未保存の取消と再起動後の未登録状態を確認する。
+認証・接続確認・保存は操作せず、偽tokenや接続済み表示を作らない。
+
 ## GitHub Actions
 
 `.github/workflows/quality.yml`はread-only権限で同じホスト検証を実行し、
