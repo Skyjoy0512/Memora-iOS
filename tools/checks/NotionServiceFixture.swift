@@ -16,6 +16,7 @@ struct Meeting {
 struct FixtureMeetingSource { var label: String { "Fixture" } }
 enum MemoraFormat { static func duration(_ value: TimeInterval) -> String { "60s" } }
 enum KeychainStore {
+  static func set(_ value: String?, forKey key: String) -> Bool { false }
   static func string(forKey key: String) -> String? {
     preconditionFailure("Host checks must never read real credentials")
   }

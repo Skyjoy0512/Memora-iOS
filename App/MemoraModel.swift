@@ -103,6 +103,7 @@ final class MemoraModel {
   @ObservationIgnored var mcpPermissionRevision = UUID()
   @ObservationIgnored var mcpResultAuthorizations: [UUID: MCPResultAuthorization] = [:]
   @ObservationIgnored var gmailPermissionRevision = UUID()
+  @ObservationIgnored var notionPermissionRevision = UUID()
   @ObservationIgnored var gmailResultAuthorizations: [UUID: GmailAgentReadContext] = [:]
   @ObservationIgnored var agentToolCallCounts: [UUID: Int] = [:]
   var shareInboxRequests: [ShareInboxRequest] = []

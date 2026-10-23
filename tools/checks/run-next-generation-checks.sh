@@ -19,6 +19,7 @@ bash tools/checks/run-project-source-web-recovery-checks.sh
 bash tools/checks/run-project-source-import-checks.sh
 bash tools/checks/run-audio-import-checks.sh
 bash tools/checks/run-notion-service-checks.sh
+bash tools/checks/run-notion-agent-checks.sh
 bash tools/checks/run-gmail-service-checks.sh
 bash tools/checks/run-gmail-agent-checks.sh
 bash tools/checks/run-mcp-agent-checks.sh

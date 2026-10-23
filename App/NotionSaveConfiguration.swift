@@ -4,4 +4,5 @@ import Foundation
 struct NotionSaveConfiguration: Equatable, Sendable {
   var token: String
   var parentPageID: String
+  var revision: UUID? = nil
 }

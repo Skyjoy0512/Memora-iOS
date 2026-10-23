@@ -5,6 +5,7 @@ enum NotionService {
   enum Failure: Error {
     case missingConfig
     case configurationChanged
+    case authorizationChanged
     case http(Int)
     /// The request may or may not have reached Notion. It is never retried on
     /// its own, so a slow answer cannot leave two pages behind.
@@ -13,6 +14,15 @@ enum NotionService {
 
   /// Notion accepts at most this many blocks in one request.
   private static let blockLimit = 100
+  private static let configurationRevision = IntegrationConfigurationRevision()
+
+  static func configurationDidChange() { configurationRevision.invalidate() }
+
+  @discardableResult
+  static func storeToken(_ token: String?) -> Bool {
+    configurationDidChange()
+    return KeychainStore.set(token, forKey: "integration.notion")
+  }
 
   /// The result of a save: the page that was written, and whether every block
   /// made it. A page that exists but is incomplete is reported with its URL
@@ -26,20 +36,23 @@ enum NotionService {
     currentConfiguration() != nil
   }
 
-  private static func currentConfiguration() -> NotionSaveConfiguration? {
-    guard let token = KeychainStore.string(forKey: "integration.notion"), !token.isEmpty,
-          let pageID = UserDefaults.standard.string(forKey: "memora.notionPageID"), !pageID.isEmpty else { return nil }
-    return NotionSaveConfiguration(token: token, parentPageID: pageID)
+  static func currentConfiguration() -> NotionSaveConfiguration? {
+    readConfiguration(token: { KeychainStore.string(forKey: "integration.notion") },
+      parentPageID: { UserDefaults.standard.string(forKey: "memora.notionPageID") })
   }
 
-  static func save(meeting: Meeting, tasks: [MemoraTask]) async throws -> Outcome {
-    try await save(meeting: meeting, tasks: tasks, configuration: currentConfiguration,
-      transport: { try await URLSession.shared.data(for: $0) })
+  static func readConfiguration(token: () -> String?, parentPageID: () -> String?) -> NotionSaveConfiguration? {
+    let revision = configurationRevision.current()
+    guard let token = token(), !token.isEmpty,
+          let pageID = parentPageID(), !pageID.isEmpty,
+          configurationRevision.current() == revision else { return nil }
+    return NotionSaveConfiguration(token: token, parentPageID: pageID, revision: revision)
   }
 
   static func save(meeting: Meeting, tasks: [MemoraTask],
     configuration: @escaping () -> NotionSaveConfiguration?,
-    transport: @escaping (URLRequest) async throws -> (Data, URLResponse)
+    transport: @escaping (URLRequest) async throws -> (Data, URLResponse),
+    isAuthorized: @escaping @MainActor @Sendable () -> Bool = { true }
   ) async throws -> Outcome {
     try Task.checkCancellation()
     guard let captured = configuration(), !captured.token.isEmpty, !captured.parentPageID.isEmpty else {
@@ -48,6 +61,8 @@ enum NotionService {
     let sendRequest: (URLRequest) async throws -> Data = { request in
       // Validate immediately before each transport call, including after an
       // executor hop into createPage/append. Never substitute new credentials.
+      try ensureCurrent(captured, configuration: configuration)
+      guard await isAuthorized() else { throw Failure.authorizationChanged }
       try ensureCurrent(captured, configuration: configuration)
       return try await send(request, transport: transport)
     }
@@ -67,9 +82,11 @@ enum NotionService {
     )
 
     do {
+      guard await isAuthorized() else { throw Failure.authorizationChanged }
       try ensureCurrent(captured, configuration: configuration)
       for batch in batches.dropFirst() {
         try await append(token: captured.token, pageID: created.pageID, children: batch, send: sendRequest)
+        guard await isAuthorized() else { throw Failure.authorizationChanged }
         try ensureCurrent(captured, configuration: configuration)
       }
     } catch {

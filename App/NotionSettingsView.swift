@@ -4,6 +4,7 @@ struct NotionSettingsView: View {
   @AppStorage("memora.notionPageID") private var pageID = ""
   @State private var token = ""
   @State private var hasToken = false
+  @State private var failure = false
 
   var body: some View {
     MemoraForm {
@@ -15,7 +16,7 @@ struct NotionSettingsView: View {
         }
 
         Button("トークンを保存", icon: .checkmark) {
-          KeychainStore.set(token, forKey: "integration.notion")
+          guard NotionService.storeToken(token) else { failure = true; return }
           token = ""
           hasToken = KeychainStore.has("integration.notion")
         }
@@ -23,7 +24,7 @@ struct NotionSettingsView: View {
 
         if hasToken {
           Button("トークンを削除", icon: .trash, role: .destructive) {
-            KeychainStore.set(nil, forKey: "integration.notion")
+            guard NotionService.storeToken(nil) else { failure = true; return }
             hasToken = false
           }
         }
@@ -36,7 +37,11 @@ struct NotionSettingsView: View {
       Section {
         HStack(spacing: 12) {
           SettingsIcon(icon: .docText)
-          TextField("ページID または データベースID", text: $pageID)
+          // Invalidate synchronously: onChange notifications can coalesce A → B → A.
+          TextField("ページID または データベースID", text: Binding(get: { pageID }, set: {
+            if $0 != pageID { NotionService.configurationDidChange() }
+            pageID = $0
+          }))
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
         }
@@ -52,6 +57,7 @@ struct NotionSettingsView: View {
     }
     .navigationTitle("Notion")
     .memoraBackButton()
+    .alert("保存できませんでした", isPresented: $failure) { Button("閉じる", role: .cancel) {} }
     .onAppear {
       hasToken = KeychainStore.has("integration.notion")
     }

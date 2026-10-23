@@ -14,6 +14,7 @@ final class MemoraModel {
   var message = GmailFixtureMessage()
   var hasMessage = true
   var gmailPermissionRevision = UUID()
+  var notionPermissionRevision = UUID()
   var gmailResultAuthorizations: [UUID: GmailAgentReadContext] = [:]
   var mcpPermissionRevision = UUID()
   var activeMCPTools: [String: MCPTool] = [:]

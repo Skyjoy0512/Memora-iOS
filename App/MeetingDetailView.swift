@@ -404,30 +404,37 @@ struct MeetingDetailView: View {
   }
 
   private func saveToNotion(_ meeting: Meeting) {
-    guard !isSavingToNotion else { return }
+    guard !isSavingToNotion, let context = LocalImportContext(in: model) else { return }
     isSavingToNotion = true
     Task {
       defer { isSavingToNotion = false }
       do {
-        let outcome = try await NotionService.save(meeting: meeting, tasks: model.tasks)
+        let outcome = try await model.saveMeetingToNotion(meeting.id, environment: .live)
+        guard context.isCurrent(in: model) else { return }
         statusAlert = StatusAlert(
           title: "Notion",
           message: "Notionに保存しました。",
           linkURL: outcome.pageURL
         )
       } catch let partial as NotionService.PartialPageFailure {
+        guard context.isCurrent(in: model) else { return }
         statusAlert = StatusAlert(
           title: "Notion",
           message: partial.message,
           linkURL: partial.pageURL
         )
       } catch NotionService.Failure.unknownOutcome {
+        guard context.isCurrent(in: model) else { return }
         // The page may or may not exist; sending again could make a duplicate.
         statusAlert = StatusAlert(
           title: "Notion",
           message: "保存できたか確認できませんでした。重複を避けるため自動では再送しません。Notionを開いて確認してください。"
         )
+      } catch NotionService.Failure.authorizationChanged {
+        guard context.isCurrent(in: model) else { return }
+        statusAlert = StatusAlert(title: "Notion", message: RecordAccessPolicy.refusal)
       } catch {
+        guard context.isCurrent(in: model) else { return }
         statusAlert = StatusAlert(
           title: "Notion",
           message: "Notionに保存できませんでした。設定のトークンと保存先を確認してください。"

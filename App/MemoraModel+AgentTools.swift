@@ -96,7 +96,7 @@ extension MemoraModel {
     case .draftEmail:
       return await draftEmailTool(call, messageID: messageID)
     case .saveToNotion:
-      return await saveToNotionTool(call, messageID: messageID, scope: scope)
+      return await saveToNotionTool(call, messageID: messageID, scope: scope, environment: .live)
     case .saveMemory:
       return await saveMemoryTool(call, messageID: messageID)
     case .searchEmail:
@@ -567,53 +567,6 @@ extension MemoraModel {
     } catch {
       finishAgentStep(stepID, on: messageID, state: .failed, detail: "追加できませんでした")
       return AgentToolOutcome(text: "カレンダーに追加できませんでした。", isError: true)
-    }
-  }
-
-  private func saveToNotionTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {
-    guard NotionService.isConfigured else {
-      return AgentToolOutcome(text: "Notionが連携されていません。設定の「Notion」で連携するよう伝えてください。", isError: true)
-    }
-    let allowed = Self.meetings(in: scope, from: meetings)
-    guard let id = UUID(uuidString: call.string("meeting_id")), let meeting = allowed.first(where: { $0.id == id }) else {
-      return AgentToolOutcome(text: "会議の記録が見つかりません。search_recordsのidを使ってください。", isError: true)
-    }
-    guard RecordAccessPolicy.allows(meeting.effectivePrivacy, purpose: .cloudAI),
-          agentPluginPolicies[messageID].map({ !$0.limitsRecordReads || $0.recordIDs.contains(id) }) ?? true else {
-      return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)
-    }
-    let credential = KeychainStore.string(forKey: "integration.notion")
-    let pageID = UserDefaults.standard.string(forKey: "memora.notionPageID")
-    guard let stepID = await approve(
-      tool: .saveToNotion,
-      title: "Notionに保存",
-      lines: [meeting.displayTitle, "この記録と送信を許可した関連タスクをNotionへ送ります。", "外部処理の料金は未確認です。今回の保存だけを許可します。"],
-      confirmTitle: "保存",
-      messageID: messageID
-    ) else {
-      agentBlockedExternalTools[messageID, default: []].insert(call.name)
-      return Self.declinedOutcome
-    }
-    guard integrationIsEnabled("notion"), self.meeting(id: meeting.id) == meeting,
-          credential == KeychainStore.string(forKey: "integration.notion"),
-          pageID == UserDefaults.standard.string(forKey: "memora.notionPageID") else {
-      return AgentToolOutcome(text: "記録または接続設定が変わったため、送信を止めました。内容を確認して再度依頼してください。", isError: true)
-    }
-    do {
-      let safeTasks = permittedTasks(for: .cloudAI, scope: scope).filter { $0.meetingID == meeting.id }
-      let outcome = try await NotionService.save(meeting: meeting, tasks: safeTasks)
-      finishAgentStep(stepID, on: messageID, state: .done, detail: meeting.displayTitle)
-      return AgentToolOutcome(text: "Notionに保存しました。\(outcome.pageURL?.absoluteString ?? "")")
-    } catch {
-      finishAgentStep(stepID, on: messageID, state: .failed, detail: "保存できませんでした")
-      agentBlockedExternalTools[messageID, default: []].insert(call.name)
-      if let failure = error as? NotionService.Failure, case .http(let code) = failure {
-        return AgentToolOutcome(text: ExternalToolFailure.http(code).localizedDescription, isError: true)
-      }
-      if let partial = error as? NotionService.PartialPageFailure {
-        return AgentToolOutcome(text: "ページは作成されましたが、一部の内容を追加できませんでした。自動再作成はしません。" + (partial.pageURL.map { "ページ: " + $0.absoluteString } ?? ""), isError: true)
-      }
-      return AgentToolOutcome(text: "Notionへの保存結果を確認できませんでした。サービス側でページを確認してください。自動再作成はしません。", isError: true)
     }
   }
 

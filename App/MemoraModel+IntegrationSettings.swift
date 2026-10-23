@@ -6,6 +6,7 @@ extension MemoraModel {
   func setIntegrationEnabled(_ id: String, enabled: Bool) {
     if id == "mcp", enabled != integrationIsEnabled(id) { mcpPermissionRevision = UUID() }
     if id == "gmail", enabled != integrationIsEnabled(id) { gmailPermissionRevision = UUID() }
+    if id == "notion", enabled != integrationIsEnabled(id) { notionPermissionRevision = UUID() }
     disabledIntegrationIDs.removeAll { $0 == id }
     if !enabled { disabledIntegrationIDs.append(id) }
     if id == "mcp", !enabled { activeMCPTools.removeAll() }
