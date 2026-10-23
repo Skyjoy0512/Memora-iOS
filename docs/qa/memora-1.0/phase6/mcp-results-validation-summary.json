@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "implementationCommit": "57619a3",
+  "phaseStatus": "Phase 6 in progress; completed MCP result authorization locally validated",
+  "builds": {
+    "debugPreview": { "status": "passed", "log": "2026-10-23T21-22-00-00bb09b0.log", "warnings": 11 },
+    "releaseSimulator": { "status": "passed", "log": "2026-10-23T21-23-51-fefbfb5d.log", "warnings": 11 },
+    "sourceBoundary": "Both builds include final app sources; subsequent changes are tests, documentation and screenshots only",
+    "iosSDK": "27.1",
+    "deploymentTarget": "iOS 26",
+    "physicalDeviceVerified": false,
+    "preservedLogs": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-mcp-results-quality/"
+  },
+  "host": {
+    "summary": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-mcp-results-quality/summary.json",
+    "suites": {
+      "next-generation": { "status": "passed", "exitCode": 0 },
+      "design-refresh": { "status": "passed", "exitCode": 0 },
+      "background-summary": { "status": "passed", "exitCode": 0 },
+      "composer-layout": { "status": "passed", "exitCode": 0 },
+      "optimization": { "status": "passed", "exitCode": 0 }
+    },
+    "finalMCPStandalone": { "status": "passed", "exitCode": 0, "reason": "Rerun after adding repeated-dispatch refusal assertions to retained-result cases" },
+    "newCoverage": [
+      "23 invalidations after successful MCP result: original 21 context/permission/connection mutations plus missing/unknown grants",
+      "All 23 invalidations also prevent a repeated call from dispatching and replacing the first observation",
+      "24 retained-grant upper bound; no raw token retained in grant",
+      "Production conversation loop refuses batch acceptance when permissions change during a later tool",
+      "Production conversation loop stops accepting an answer when permissions change during the next model response",
+      "Production cloud provenance gate respects MCP authorization rejection; this specific MCP predicate is a bool fixture",
+      "Production conversation snapshot codec omits grant IDs on encoding and restores no grants"
+    ],
+    "existingCoverage": "63 suspended MCP execution races, 20 discovery mutations, actual SQLite usage/save failure/reopen, Calendar/Gmail/Notion, source privacy, conversations, artifacts and existing quality suites passed",
+    "boundaries": [
+      "MCP model state, source authorization predicate, approval, Keychain and MCP SDK transport are fixtures",
+      "Production MCP result/context/registry/provider/orchestration and conversation loop execute in host runner",
+      "Production source authorization gate is tested separately with a fixture MCP predicate, not one integrated SDK/model transport execution",
+      "No real MCP SDK/network/OAuth/model requests/accounts/paid APIs used in new cases",
+      "No Xcode test targets; no XCTest or bitrig test success claimed"
+    ]
+  },
+  "ui": {
+    "report": ".e2e/regression/phase6-mcp-results/report.json",
+    "runID": "01a168b7-b72d-7664-99ca-b0ffd004dbc5",
+    "device": "Dedicated iPhone 18 Pro Max CoreSimulator; fresh install per scenario, not user preview",
+    "discovered": 85,
+    "selected": 5,
+    "executed": 5,
+    "passed": 5,
+    "failed": 0,
+    "skippedSelected": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "filteredUnexecuted": 80,
+    "retries": 0,
+    "modelTokens": 0,
+    "downloads": 0,
+    "coverage": ["Onboarding and restart", "Library/Journal/Ask AI side-menu navigation", "Tools sections", "Unconfigured Gmail Light/Dark", "Unconnected MCP and unsaved editor Light/Dark cancellation"],
+    "visuallyReviewedScreenshots": ["mcp-results-unconnected-light.png", "mcp-results-unconnected-dark.png", "mcp-results-unsaved-editor-light.png", "mcp-results-unsaved-editor-dark.png"],
+    "screenshotBoundary": "Regression screens, not redesign Before/After; SecureField automatically masked by runner, no token entered. Connected/approval/execution/revocation UI not visually exercised."
+  },
+  "performance": {
+    "newBeforeAfterMeasurement": false,
+    "improvementClaim": null,
+    "unmeasured": ["Additional authorization gate with real Keychain", "Physical input latency", "Scroll FPS", "Memory", "Battery"]
+  },
+  "remaining": {
+    "P0": ["Gmail/Notion workspace/privacy/plugin binding across reads/writes and later AI use", "Physical recording/interruption/restore data protection"],
+    "P1": ["Calendar state transition audit", "Real MCP SDK pagination/reconnect/timeout/cancellation and OAuth", "Phase 7 accessibility and physical performance"],
+    "P2": ["Notion API migration and long text", "Semantic skills", "Reusable thinking-logo component"]
+  },
+  "limitations": ["Already dispatched external operations or model requests cannot be undone", "Authorization rechecks do not atomically synchronize individual network sends", "No comprehensive completion claim for Phase 6 or all provider/model paths"],
+  "externalActions": { "push": false, "upstreamRefetchThisUnit": false, "realAccountAccess": false, "scopeExpansion": false, "realExternalWrites": false, "realBilling": false }
+}

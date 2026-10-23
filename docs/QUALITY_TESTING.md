@@ -122,6 +122,13 @@ SDK準備待ちはfixtureの待機点であり、実OAuth/DNS/TLS/HTTP/SDK動作
 本番MCPClientのcallback/generation guardは静的配線チェックとBitrigビルドで別途確認する。
 実SDKによる複数ページ・接続変更・timeout/cancelのruntime証明と混同しない。
 
+同じrunnerは本番`MCPResultAuthorization`と会話ループも実行する。
+取得完了後の23変更（未知/消失したgrantを含む）、24件の保持上限、別ツール待機中の
+batch拒否と次のモデル応答待機中の停止を確認する。既存の63操作中raceとは別の検証である。
+`PersonPrivacyChecks`は本番のcloud出典gateがMCP結果gateの拒否を尊重する配線を確認するが、
+そのテストのMCP gate自体はbool fixture。snapshot codecは一時grant IDを保存・復元しない
+ことを確認する。実MCP SDK/モデル送信/認証済みアカウントのruntime検証ではない。
+
 `mcp-connection.e2e.ts`は未接続の管理画面と追加フォームのLight/Dark、空の保存不可、
 料金未確認が初期値であること、未保存の取消と再起動後の未登録状態を確認する。
 認証・接続確認・保存は操作せず、偽tokenや接続済み表示を作らない。

@@ -777,6 +777,60 @@ pushは実施していない。
   await中の全状態変化を包括的に保証するものではない。
 - Notion API versionの移行、長い単一rich_textの分割、外部サービス側の実料金/上限は別課題。
 
+### MCP取得済み結果の後続利用を権限へ結び付ける（2026-10-23）
+
+- `MCPResultAuthorization`と既存の会話contextを再利用し、成功したMCP結果を
+  開始時のworkspace世代/request/message、選択policy、MCP権限世代、サーバー設定、
+  認証世代、Bearer tokenのfingerprint、ツールfingerprintへ一時的に結び付けた。
+  token本文をgrantへ保存しない。grantは最大24件で、新しいagent依頼時に破棄する。
+- `isCloudSessionAuthorized`から同じgrantを確認するため、取得後の変更でも既存の
+  次モデル要求/stream表示/承認/資料生成gateが停止する。contextの基本bindingと
+  cloud出典gateを分離し、結果grantによる再帰呼出しを避けた。
+  既に開始した外部操作/モデル送信を取り消すものではなく、ネットワーク送信との原子的同期でもない。
+- 会話のmessageには一時IDのみを持たせる。grant消失/未知IDは拒否し、後続呼出しで
+  古い許可を新しい許可へ置換しない。結果を利用した回答は既存のprovenanceを不完全とし、
+  履歴経由の外部AIへの自動再利用を許可しない。SQLiteの会話codecはID/grantを保存・復元しない。
+  既存データ形式、UI、Liquid Glass、作成/コンポーザー位置、外部サービスの権限範囲は変更なし。
+- Hostは取得完了後の21状態変更にgrant消失/未知IDを加えた23ケースと、それぞれで
+  再呼出ししてもdispatchが増えないこと、保持上限、別ツール待ち中のbatch拒否、
+  次モデル応答待ち中の停止を本番会話ループで確認した。
+  `PersonPrivacyChecks`は本番cloud出典gateがMCP gateの拒否を尊重すること、
+  snapshot codecはgrant IDを保存/復元しないことを確認する。
+- MCP hostのmodel/既存cloud許可/承認/Keychain/SDK transportはfixtureのまま。
+  PersonPrivacyのMCP predicateもbool fixtureであり、全model送信と実MCP SDKを
+  一体で実行したE2Eとは区別する。実API/認証済みアカウント/実課金は操作していない。
+
+検証:
+
+- Debug preview成功: `2026-10-23T21-22-00-00bb09b0.log`、既存警告11件。
+- 最終アプリソース確定後のRelease Simulator成功:
+  `2026-10-23T21-23-51-fefbfb5d.log`、iOS SDK 27.1、既存警告11件。
+- ホスト5スイートすべて終了0:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-mcp-results-quality/summary.json`。
+  新規MCPの23ケースと会話ループ2ケース、既存の63操作中race/20一覧変更、
+  source/privacy/会話保存/Calendar/Gmail/Notion/資料/SQLite失敗の既存回帰も成功。
+  最終テスト差分追加後のMCP単独runnerも終了0。Xcode test targetは未設定であり、
+  XCTest/`bitrig test`成功とは報告しない。
+- UI E2Eは5実行/5成功、失敗/skip/中断/flaky 0、retry 0。
+  `.e2e/regression/phase6-mcp-results/report.json`、run `01a168b7-b72d-7664-99ca-b0ffd004dbc5`。
+  85検出のうち80はfilteredで未実行。model token/download 0、専用CoreSimulatorのみ。
+  起動/再起動、Library/Journal/Ask AI切替、Tools、Gmail未設定、MCP未接続/追加取消を確認。
+- `mcp-results-unconnected-light.png`/`mcp-results-unconnected-dark.png`と
+  `mcp-results-unsaved-editor-light.png`/`mcp-results-unsaved-editor-dark.png`を保存・目視済み。
+  SecureFieldはrunnerの秘匿マスクで、tokenは入力していない。
+  UI変更のBefore/Afterではなく回帰画像。実接続済み/実行中/失効時の画面確認ではない。
+- 実装コミット`57619a3`。main維持、push/上流再取得/実認証/OAuth scope拡大/外部操作なし。
+  新規の性能比較は行っておらず改善率は報告しない。実Keychainを含む追加gateの負荷、
+  入力遅延/スクロール/メモリ/電池は端末で未計測。
+  詳細は`docs/qa/memora-1.0/phase6/mcp-results-validation-summary.json`。
+
+残り:
+
+- Phase 6は継続中。Gmail/Notionの取得/保存から後続AI利用までのworkspace/privacy/plugin
+  境界、Calendar状態遷移の追加監査、実MCP SDK/transport/OAuthのruntime検証は未完了。
+- 実機の録音保持/中断復旧/復元、Phase 7、端末性能計測も未検証のまま。
+  このMCP単位のローカル成功を全サービス/全Phase完了とはしない。
+
 ## Phase 7
 
 視覚・アクセシビリティ・IME・Reduce Motionの最終確認、思考ロゴの調査は未完了。
