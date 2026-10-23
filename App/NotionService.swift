@@ -4,6 +4,7 @@ import Foundation
 enum NotionService {
   enum Failure: Error {
     case missingConfig
+    case configurationChanged
     case http(Int)
     /// The request may or may not have reached Notion. It is never retried on
     /// its own, so a slow answer cannot leave two pages behind.
@@ -22,19 +23,33 @@ enum NotionService {
   }
 
   static var isConfigured: Bool {
-    guard let token = KeychainStore.string(forKey: "integration.notion"), !token.isEmpty else {
-      return false
-    }
-    return !pageID.isEmpty
+    currentConfiguration() != nil
   }
 
-  private static var pageID: String {
-    UserDefaults.standard.string(forKey: "memora.notionPageID") ?? ""
+  private static func currentConfiguration() -> NotionSaveConfiguration? {
+    guard let token = KeychainStore.string(forKey: "integration.notion"), !token.isEmpty,
+          let pageID = UserDefaults.standard.string(forKey: "memora.notionPageID"), !pageID.isEmpty else { return nil }
+    return NotionSaveConfiguration(token: token, parentPageID: pageID)
   }
 
   static func save(meeting: Meeting, tasks: [MemoraTask]) async throws -> Outcome {
-    guard let token = KeychainStore.string(forKey: "integration.notion"), !token.isEmpty, !pageID.isEmpty else {
+    try await save(meeting: meeting, tasks: tasks, configuration: currentConfiguration,
+      transport: { try await URLSession.shared.data(for: $0) })
+  }
+
+  static func save(meeting: Meeting, tasks: [MemoraTask],
+    configuration: @escaping () -> NotionSaveConfiguration?,
+    transport: @escaping (URLRequest) async throws -> (Data, URLResponse)
+  ) async throws -> Outcome {
+    try Task.checkCancellation()
+    guard let captured = configuration(), !captured.token.isEmpty, !captured.parentPageID.isEmpty else {
       throw Failure.missingConfig
+    }
+    let sendRequest: (URLRequest) async throws -> Data = { request in
+      // Validate immediately before each transport call, including after an
+      // executor hop into createPage/append. Never substitute new credentials.
+      try ensureCurrent(captured, configuration: configuration)
+      return try await send(request, transport: transport)
     }
 
     let children = blocks(meeting: meeting, tasks: tasks)
@@ -45,19 +60,24 @@ enum NotionService {
     // The page is created with the first batch, so there is exactly one page
     // even when the record is long.
     let created = try await createPage(
-      token: token,
+      configuration: captured,
       title: meeting.title,
-      children: batches.first ?? []
+      children: batches.first ?? [],
+      send: sendRequest
     )
 
-    for batch in batches.dropFirst() {
-      do {
-        try await append(token: token, pageID: created.pageID, children: batch)
-      } catch Failure.http(let status) {
-        // The page is there with part of the record; say so instead of adding
-        // more pages.
-        throw PartialPageFailure(status: status, pageID: created.pageID, pageURL: created.url)
+    do {
+      try ensureCurrent(captured, configuration: configuration)
+      for batch in batches.dropFirst() {
+        try await append(token: captured.token, pageID: created.pageID, children: batch, send: sendRequest)
+        try ensureCurrent(captured, configuration: configuration)
       }
+    } catch {
+      // A timeout/cancellation or revoked configuration after page creation is
+      // not evidence that the page vanished. Preserve its identity for recovery.
+      let status: Int?
+      if case Failure.http(let code) = error { status = code } else { status = nil }
+      throw PartialPageFailure(status: status, pageID: created.pageID, pageURL: created.url)
     }
 
     return Outcome(pageURL: created.url, isComplete: true)
@@ -66,12 +86,13 @@ enum NotionService {
   /// A created page whose later blocks could not be added. Carries the page so
   /// the person can open what was written.
   struct PartialPageFailure: Error {
-    var status: Int
+    var status: Int?
     var pageID: String
     var pageURL: URL?
 
     var message: String {
-      "ページは作成されましたが、一部の内容を追加できませんでした（\(status)）。"
+      if let status { return String(localized: "ページは作成されましたが、一部の内容を追加できませんでした（\(status)）。") }
+      return String(localized: "ページは作成されましたが、内容の保存を確認できませんでした。Notionで確認してください。自動では再作成しません。")
     }
   }
 
@@ -81,17 +102,18 @@ enum NotionService {
   }
 
   private static func createPage(
-    token: String,
+    configuration: NotionSaveConfiguration,
     title: String,
-    children: [[String: Any]]
+    children: [[String: Any]],
+    send: (URLRequest) async throws -> Data
   ) async throws -> CreatedPage {
     var request = URLRequest(url: URL(string: "https://api.notion.com/v1/pages")!)
     request.httpMethod = "POST"
-    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+    request.setValue("Bearer \(configuration.token)", forHTTPHeaderField: "Authorization")
     request.setValue("2022-06-28", forHTTPHeaderField: "Notion-Version")
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.httpBody = try JSONSerialization.data(withJSONObject: [
-      "parent": ["type": "page_id", "page_id": pageID],
+      "parent": ["type": "page_id", "page_id": configuration.parentPageID],
       "properties": ["title": ["title": [["type": "text", "text": ["content": title]]]]],
       "children": children
     ])
@@ -100,14 +122,18 @@ enum NotionService {
     guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
       throw Failure.unknownOutcome
     }
-    guard let pageIdentifier = object["id"] as? String else {
+    guard let pageIdentifier = object["id"] as? String, UUID(uuidString: pageIdentifier) != nil else {
       throw Failure.unknownOutcome
     }
-    let url = (object["url"] as? String).flatMap(URL.init(string:))
+    let url = (object["url"] as? String).flatMap(URL.init(string:)).flatMap { value in
+      value.scheme?.lowercased() == "https" && value.host != nil && value.user == nil && value.password == nil ? value : nil
+    }
     return CreatedPage(pageID: pageIdentifier, url: url)
   }
 
-  private static func append(token: String, pageID: String, children: [[String: Any]]) async throws {
+  private static func append(token: String, pageID: String, children: [[String: Any]],
+    send: (URLRequest) async throws -> Data
+  ) async throws {
     var request = URLRequest(
       url: URL(string: "https://api.notion.com/v1/blocks/\(pageID)/children")!
     )
@@ -121,17 +147,26 @@ enum NotionService {
 
   /// Sends a request and returns its body. A transport error is reported as an
   /// unknown outcome, because Notion may have received it.
-  private static func send(_ request: URLRequest) async throws -> Data {
+  private static func send(_ request: URLRequest,
+    transport: (URLRequest) async throws -> (Data, URLResponse)
+  ) async throws -> Data {
     let data: Data
     let response: URLResponse
     do {
-      (data, response) = try await URLSession.shared.data(for: request)
+      (data, response) = try await transport(request)
     } catch {
       throw Failure.unknownOutcome
     }
     guard let http = response as? HTTPURLResponse else { throw Failure.unknownOutcome }
     guard (200..<300).contains(http.statusCode) else { throw Failure.http(http.statusCode) }
     return data
+  }
+
+  private static func ensureCurrent(_ captured: NotionSaveConfiguration,
+    configuration: () -> NotionSaveConfiguration?
+  ) throws {
+    try Task.checkCancellation()
+    guard configuration() == captured else { throw Failure.configurationChanged }
   }
 
   private static func blocks(meeting: Meeting, tasks: [MemoraTask]) -> [[String: Any]] {
