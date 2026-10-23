@@ -17,6 +17,7 @@ extension MemoraModel {
     guard revision == mcpCredentialRevisions[snapshot.id], mcpServers.contains(snapshot) else { throw MCPOAuthError.reauthentication }
     let value = String(decoding: try JSONEncoder().encode(credential), as: UTF8.self)
     guard KeychainStore.set(value, forKey: snapshot.oauthAccount) else { throw MCPOAuthError.storage }
+    mcpCredentialRevisions[snapshot.id] = UUID()
     if let index = mcpServers.firstIndex(where: { $0.id == snapshot.id }) {
       mcpServers[index].reviewedEndpoint = nil
       mcpServers[index].approvedReadToolFingerprints = nil

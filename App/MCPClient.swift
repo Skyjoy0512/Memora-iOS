@@ -9,15 +9,24 @@ actor MCPClient {
   private var identities: [UUID: String] = [:]
   private var cachedTools: [UUID: (Date, [MCPTool])] = [:]
 
-  func tools(on server: MCPServerConfig, token: String?) async throws -> [MCPTool] {
+  func tools(on server: MCPServerConfig, token: String?,
+    isAuthorized: @escaping @MainActor @Sendable () -> Bool = { true }
+  ) async throws -> [MCPTool] {
+    guard !Task.isCancelled, await isAuthorized() else { throw MCPClientError.unauthorized }
     let client = try await connected(server, token: token)
+    let generation = generations[server.id, default: 0]
+    guard await isAuthorized(), !Task.isCancelled, generations[server.id] == generation else { throw MCPClientError.unauthorized }
     if let cached = cachedTools[server.id], Date.now.timeIntervalSince(cached.0) < 300 { return cached.1 }
     do {
       var offered: [MCPTool] = [], cursor: String?
       var cursors = Set<String>()
       for _ in 0..<4 {
         let pageCursor = cursor
-        let result = try await bounded(client: client) { try await client.listTools(cursor: pageCursor) }
+        let result = try await bounded(client: client) {
+          guard !Task.isCancelled, await isAuthorized() else { throw MCPClientError.unauthorized }
+          return try await client.listTools(cursor: pageCursor)
+        }
+        guard await isAuthorized(), !Task.isCancelled, generations[server.id] == generation else { throw MCPClientError.unauthorized }
         for tool in result.tools.prefix(40 - offered.count) {
           let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
           let schema = try encoder.encode(tool.inputSchema)
@@ -31,22 +40,37 @@ actor MCPClient {
       }
       cachedTools[server.id] = (.now, offered)
       return offered
-    } catch { await forget(server.id); throw safeError(error) }
+    } catch {
+      if await isAuthorized(), generations[server.id] == generation { await forget(server.id) }
+      throw safeError(error)
+    }
   }
 
-  func call(_ tool: String, arguments: Data, on server: MCPServerConfig, token: String?) async throws -> (text: String, isError: Bool) {
+  func call(_ tool: String, arguments: Data, on server: MCPServerConfig, token: String?,
+    isAuthorized: @escaping @MainActor @Sendable () -> Bool
+  ) async throws -> (text: String, isError: Bool) {
+    guard !Task.isCancelled, await isAuthorized() else { throw MCPClientError.unauthorized }
     guard arguments.count <= 32 * 1024 else { throw MCPClientError.malformed }
     let args = try JSONDecoder().decode([String: MCP.Value].self, from: arguments)
     let client = try await connected(server, token: token)
+    let generation = generations[server.id, default: 0]
+    guard await isAuthorized(), !Task.isCancelled, generations[server.id] == generation else { throw MCPClientError.unauthorized }
     do {
-      let result = try await bounded(client: client) { try await client.callTool(name: tool, arguments: args) }
+      let result = try await bounded(client: client) {
+        guard !Task.isCancelled, await isAuthorized() else { throw MCPClientError.unauthorized }
+        return try await client.callTool(name: tool, arguments: args)
+      }
+      guard await isAuthorized(), !Task.isCancelled, generations[server.id] == generation else { throw MCPClientError.unauthorized }
       var text = ""
       for item in result.content {
         if case .text(let value, _, _) = item { text += String(value.prefix(max(0, 20_000 - text.count))) + "\n" }
         if text.count >= 20_000 { break }
       }
       return (String(text.prefix(20_000)), result.isError ?? false)
-    } catch { await forget(server.id); throw safeError(error) }
+    } catch {
+      if await isAuthorized(), generations[server.id] == generation { await forget(server.id) }
+      throw safeError(error)
+    }
   }
 
   func reviewedCachedTools(on server: MCPServerConfig) -> [MCPTool] {

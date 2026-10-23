@@ -100,6 +100,7 @@ final class MemoraModel {
   @ObservationIgnored var projectWebFetchJobs: [UUID: (id: UUID, task: Task<WebSourceFetcher.Result, Error>)] = [:]
   var integrationUsage: [IntegrationUsage] = []
   @ObservationIgnored var mcpCredentialRevisions: [UUID: UUID] = [:]
+  @ObservationIgnored var mcpPermissionRevision = UUID()
   @ObservationIgnored var agentToolCallCounts: [UUID: Int] = [:]
   var shareInboxRequests: [ShareInboxRequest] = []
   var shareInboxRejectedIDs: [UUID] = []

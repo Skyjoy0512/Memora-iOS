@@ -158,7 +158,7 @@ extension MemoraModel {
         let serverIDs = pluginPolicy.map { policy in Set(policy.pluginIDs.compactMap { id -> UUID? in
           id.hasPrefix("mcp:") ? UUID(uuidString: String(id.dropFirst(4))) : nil
         }) }
-        let externalTools = await self.loadMCPToolsForAgent(onlyServerIDs: serverIDs, request: trimmed)
+        let externalTools = await self.loadMCPToolsForAgent(messageID: placeholder.id, onlyServerIDs: serverIDs, request: trimmed)
         guard !Task.isCancelled, self.aiChatRequestID == requestID else { return }
         if var policy = self.agentPluginPolicies[placeholder.id] {
           policy.toolIDs.formUnion(externalTools.map(\.id))
