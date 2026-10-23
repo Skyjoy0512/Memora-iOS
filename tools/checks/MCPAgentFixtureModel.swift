@@ -15,6 +15,7 @@ final class MemoraModel {
   var mcpServers: [MCPServerConfig] = []
   var mcpCredentialRevisions: [UUID: UUID] = [:]
   var mcpPermissionRevision = UUID()
+  var gmailPermissionRevision = UUID()
   var mcpResultAuthorizations: [UUID: MCPResultAuthorization] = [:]
   var activeMCPTools: [String: MCPTool] = [:]
   var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]

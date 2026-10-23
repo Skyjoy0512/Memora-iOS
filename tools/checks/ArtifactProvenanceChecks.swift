@@ -31,6 +31,15 @@ import Foundation
       model.hasMessage = true; model.pendingMailDraft = nil
     }
     reset()
+    for cloud in [false, true] {
+      reset(cloud: cloud)
+      let current = model.artifactProvenance(for: model.message)
+      precondition(model.artifactCreationIsCurrent(messageID: messageID, workspaceID: nil, provenance: current))
+      model.gmailResultsCurrent = false
+      precondition(!model.artifactCreationIsCurrent(messageID: messageID, workspaceID: nil, provenance: current))
+      model.gmailResultsCurrent = true
+    }
+    reset()
     model.message.projectSourceReferences = [.init(id: source.id, projectID: projectID, fingerprint: AIRecordFingerprint.make(source)!)]
     let provenance = model.artifactProvenance(for: model.message)
     precondition(provenance.isValid && !provenance.isComplete && provenance.records.count == 4 && provenance.projectSources.count == 1)

@@ -6,15 +6,6 @@ extension MemoraModel {
     if !enabled { disabledSkillIDs.append(id) }
   }
 
-  func integrationIsEnabled(_ id: String) -> Bool { !disabledIntegrationIDs.contains(id) }
-
-  func setIntegrationEnabled(_ id: String, enabled: Bool) {
-    if id == "mcp", enabled != integrationIsEnabled(id) { mcpPermissionRevision = UUID() }
-    disabledIntegrationIDs.removeAll { $0 == id }
-    if !enabled { disabledIntegrationIDs.append(id) }
-    if id == "mcp", !enabled { activeMCPTools.removeAll() }
-  }
-
   var enabledAgentTools: [AgentTool] {
     AgentTool.offered.filter { tool in
       if tool.needsGmail { return integrationIsEnabled("gmail") }

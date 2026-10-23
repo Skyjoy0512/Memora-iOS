@@ -26,7 +26,8 @@ extension MemoraModel {
   func artifactCreationIsCurrent(messageID: UUID, workspaceID: String?, provenance: ArtifactProvenance) -> Bool {
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == workspaceID,
           workspaceID == nil, provenance.workspaceID == workspaceID, provenance.isValid,
-          let message = agentMessage(messageID), calendarReadIsCurrent(message.calendarReadSnapshot) else { return false }
+          let message = agentMessage(messageID), calendarReadIsCurrent(message.calendarReadSnapshot),
+          gmailResultsAreCurrent(messageID) else { return false }
     if let policy = agentPluginPolicies[messageID], !personPolicyIsCurrent(policy) { return false }
     if message.cloudProvenance != nil, !isCloudSessionAuthorized(messageID) { return false }
     return provenance.records.allSatisfy { recordReference(for: $0.target) == $0 && allowsRecordAccess($0.target, purpose: .onDeviceAI) }

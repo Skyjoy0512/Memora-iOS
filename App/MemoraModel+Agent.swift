@@ -81,6 +81,7 @@ extension MemoraModel {
     aiChatRequestID = requestID
     // Old messages retain their IDs and fail closed once their grants are gone.
     mcpResultAuthorizations.removeAll()
+    gmailResultAuthorizations.removeAll()
     var placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
     placeholder.isAgentReply = true
     placeholder.interfaceWorkspaceID = currentTeamID
@@ -317,14 +318,18 @@ extension MemoraModel {
   private func runOnDeviceAgent(prompt: String, messageID: UUID, scope: AIChatScope, skillContext: String) async -> AIAnswerResult {
     let tools = OnDeviceAgentTool.all(AgentTool.offeredOnDevice.filter { enabledAgentTools.contains($0) && (agentPluginPolicies[messageID]?.toolIDs.contains("memora:" + $0.rawValue) ?? true) }) { [weak self] name, argumentsJSON in
       guard let self else { return "" }
+      guard self.gmailResultsAreCurrent(messageID) else { return AIAnswerFailure.contextChanged.message }
       let arguments = argumentsJSON.data(using: .utf8)
         .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
       let call = AgentToolCall(id: UUID().uuidString, name: name, arguments: arguments)
-      return await self.runAgentTool(call, messageID: messageID, scope: scope, compact: true).text
+      let outcome = await self.runAgentTool(call, messageID: messageID, scope: scope, compact: true)
+      guard self.gmailResultsAreCurrent(messageID) else { return AIAnswerFailure.contextChanged.message }
+      return outcome.text
     }
     let session = LanguageModelSession(tools: tools, instructions: Self.onDeviceAgentInstructions(scope: scope) + skillContext)
     do {
       let response = try await session.respond(to: prompt)
+      guard gmailResultsAreCurrent(messageID) else { return .failure(.contextChanged) }
       let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
       return text.isEmpty ? .failure(.empty) : .answer(text)
     } catch {

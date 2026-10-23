@@ -157,7 +157,9 @@ final class GmailService {
 
   /// Mail matching a Gmail search, newest first, with sender, subject and
   /// the opening words.
-  func search(_ query: String, limit: Int) async throws -> [GmailMessage] {
+  func search(_ query: String, limit: Int,
+    isAuthorized: @escaping @MainActor @Sendable () -> Bool = { true }
+  ) async throws -> [GmailMessage] {
     let revision = connectionRevision
     var components = URLComponents(url: Self.api.appendingPathComponent("messages"), resolvingAgainstBaseURL: false)!
     var items = [URLQueryItem(name: "maxResults", value: "\(min(max(limit, 1), 60))")]
@@ -165,7 +167,7 @@ final class GmailService {
     items.append(URLQueryItem(name: "q", value: trimmed.isEmpty ? "in:inbox" : trimmed))
     components.queryItems = items
 
-    let list = try await get(components.url!)
+    let list = try await get(components.url!, isAuthorized: isAuthorized)
     guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
     guard list["messages"] == nil || list["messages"] is [[String: Any]] else { throw ExternalToolFailure.failed }
     let ids = try (list["messages"] as? [[String: Any]] ?? []).prefix(min(max(limit, 1), 60)).map { item in
@@ -177,7 +179,7 @@ final class GmailService {
       var detail = URLComponents(url: try Self.messageURL(id), resolvingAgainstBaseURL: false)!
       detail.queryItems = [URLQueryItem(name: "format", value: "metadata")]
         + ["From", "To", "Subject", "Date"].map { URLQueryItem(name: "metadataHeaders", value: $0) }
-      let json = try await get(detail.url!)
+      let json = try await get(detail.url!, isAuthorized: isAuthorized)
       guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
       guard json["id"] as? String == id else { throw ExternalToolFailure.failed }
       messages.append(Self.message(from: json, includeBody: false))
@@ -186,10 +188,10 @@ final class GmailService {
   }
 
   /// One mail with its text.
-  func read(_ id: String) async throws -> GmailMessage {
+  func read(_ id: String, isAuthorized: @escaping @MainActor @Sendable () -> Bool = { true }) async throws -> GmailMessage {
     var components = URLComponents(url: try Self.messageURL(id), resolvingAgainstBaseURL: false)!
     components.queryItems = [URLQueryItem(name: "format", value: "full")]
-    let json = try await get(components.url!)
+    let json = try await get(components.url!, isAuthorized: isAuthorized)
     guard json["id"] as? String == id else { throw ExternalToolFailure.failed }
     return Self.message(from: json, includeBody: true)
   }
@@ -202,17 +204,26 @@ final class GmailService {
     return api.appendingPathComponent("messages").appendingPathComponent(id)
   }
 
-  private func get(_ url: URL) async throws -> [String: Any] {
+  private func get(_ url: URL, isAuthorized: @escaping @MainActor @Sendable () -> Bool = { true }) async throws -> [String: Any] {
     let revision = connectionRevision
     try Task.checkCancellation()
+    guard isAuthorized() else { throw ExternalToolFailure.permissionDenied }
     var request = URLRequest(url: url)
     request.setValue("Bearer \(try await validAccessToken())", forHTTPHeaderField: "Authorization")
     guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
     try Task.checkCancellation()
+    guard isAuthorized() else { throw ExternalToolFailure.permissionDenied }
     let (data, response) = try await environment.transport(request)
     try Task.checkCancellation()
     guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
+    guard isAuthorized() else { throw ExternalToolFailure.permissionDenied }
     guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+      if url.path.hasPrefix("/gmail/v1/users/me/messages"),
+         let status = (response as? HTTPURLResponse)?.statusCode, status == 401 || status == 403 {
+        // A rejected read also revokes data already held by an active agent.
+        // Keep the connection for an explicit retry/refresh, not silent reuse.
+        connectionRevision = UUID()
+      }
       if (response as? HTTPURLResponse)?.statusCode == 401 {
         // Keep a possibly valid refresh token, but never reuse the rejected
         // access token. A later explicit read may refresh; this call never retries.

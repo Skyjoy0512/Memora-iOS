@@ -35,6 +35,8 @@ import Foundation
   var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
   var mcpResultsCurrent = true
   func mcpResultsAreCurrent(_ id: UUID) -> Bool { mcpResultsCurrent }
+  var gmailResultsCurrent = true
+  func gmailResultsAreCurrent(_ id: UUID) -> Bool { gmailResultsCurrent }
   #if ARTIFACT_PROVENANCE_CHECKS
   var documents: [MemoraDocument] = []
   var mailDrafts: [MailDraft] = []

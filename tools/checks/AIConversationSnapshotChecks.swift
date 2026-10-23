@@ -12,6 +12,8 @@ enum AIConversationSnapshotChecks {
     answer.interfaceWorkspaceID = "private-team"
     let externalGrant = UUID()
     answer.mcpResultAuthorizationIDs = [externalGrant]
+    let gmailGrant = UUID()
+    answer.gmailResultAuthorizationIDs = [gmailGrant]
     answer.calendarReadSnapshot = AICalendarReadSnapshot(revision: UUID(), readAt: .now, events: [
       .init(sourceID: "never-persist-eventkit-id", title: "取得した予定", start: .now, end: .now, isAllDay: false)
     ])
@@ -34,6 +36,8 @@ enum AIConversationSnapshotChecks {
     precondition(restored[1].interfaceTaskIDs.isEmpty && restored[1].interfaceProjectIDs.isEmpty)
     precondition(restored[1].calendarReadSnapshot == nil)
     precondition(restored[1].mcpResultAuthorizationIDs.isEmpty)
+    precondition(restored[1].gmailResultAuthorizationIDs.isEmpty)
+    precondition(!String(decoding: data, as: UTF8.self).contains(gmailGrant.uuidString))
     precondition(!String(decoding: data, as: UTF8.self).contains(externalGrant.uuidString))
     precondition(!String(decoding: data, as: UTF8.self).contains("never-persist-eventkit-id"))
     precondition(restored[1].cloudAuthorizationTargets == nil && restored[1].interfaceWorkspaceID == nil)

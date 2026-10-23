@@ -86,6 +86,20 @@ struct CalendarInterfaceChecks {
     precondition(!emptyResult.isError && empty.message.calendarReadSnapshot?.events.isEmpty == true)
     precondition(emptyResult.text.contains("予定はありません"))
     checkBounds()
+    for cloud in [false, true] {
+      let guarded = try fixture(root, cloud: cloud)
+      let approval = AgentApproval(messageID: guarded.message.id, icon: .envelopeOpen, title: "Fixture write", lines: [], confirmTitle: "実行")
+      guarded.gmailResultsCurrent = false
+      let denied = await guarded.requestAgentApproval(approval)
+      precondition(!denied && guarded.pendingAgentApproval == nil && !guarded.message.didChangeData)
+      guarded.gmailResultsCurrent = true
+      let operation = Task { await guarded.requestAgentApproval(approval) }
+      let pending = await awaiting(guarded)
+      guarded.gmailResultsCurrent = false
+      guarded.agentApprovalWaiter.resolve(true, id: pending.id)
+      let stale = await operation.value
+      precondition(!stale && !guarded.message.didChangeData)
+    }
     print("CalendarInterfaceChecks: passed (production read tool, approval/waiter, real schema/registry/policy, ephemeral UUID binding, actual-value rendering lookup, cloud pre-send authorization, invalidation/permissions/workspace, cancellation/deferred reads, stable recurrence IDs, empty/bounded sources; EventKit and registry assembly are mocks, no system calendar or network)")
   }
 

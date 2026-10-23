@@ -57,6 +57,9 @@ import SQLite3
     model.mcpResultsCurrent = false
     precondition(!model.isCloudSessionAuthorized(messageID))
     model.mcpResultsCurrent = true
+    model.gmailResultsCurrent = false
+    precondition(!model.isCloudSessionAuthorized(messageID))
+    model.gmailResultsCurrent = true
     let captured = model.message.cloudProvenance!
     let capturedReference = model.recordReference(for: .person(person.id))!
     let encoded = try JSONEncoder().encode(captured)

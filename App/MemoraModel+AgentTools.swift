@@ -38,7 +38,7 @@ extension MemoraModel {
       guard !automaticAccess else {
         return AgentToolOutcome(text: "料金未確認のメール取得は自動処理では実行できません。チャットから明示的に依頼してください。", isError: true)
       }
-      if let refusal = await directPluginReadRefusal(call, messageID: messageID) { return refusal }
+      return await gmailReadTool(call, messageID: messageID, compact: compact, service: .shared)
     }
     if compact, agentPluginPolicies[messageID]?.personID != nil,
        let outcome = automaticRecordTool(call, messageID: messageID, purpose: .onDeviceAI, scope: scope) { return outcome }
@@ -100,9 +100,9 @@ extension MemoraModel {
     case .saveMemory:
       return await saveMemoryTool(call, messageID: messageID)
     case .searchEmail:
-      return await searchEmailTool(call, messageID: messageID, compact: compact)
+      return AgentToolOutcome(text: "メール取得を停止しました。", isError: true)
     case .readEmail:
-      return await readEmailTool(call, messageID: messageID, compact: compact)
+      return AgentToolOutcome(text: "メール取得を停止しました。", isError: true)
     case .askUser:
       return await askUserTool(call, messageID: messageID)
     }
@@ -132,63 +132,6 @@ extension MemoraModel {
       "Q: \(question.text)\nA: \(answer.isEmpty ? "（回答なし）" : answer)"
     }
     return AgentToolOutcome(text: lines.joined(separator: "\n\n"))
-  }
-
-  // MARK: - Mail
-
-  private func searchEmailTool(_ call: AgentToolCall, messageID: UUID, compact: Bool) async -> AgentToolOutcome {
-    let query = call.string("query")
-    let limit = min((call.arguments["limit"] as? Int) ?? 8, compact ? 5 : 15)
-    let stepID = beginAgentStep(
-      AgentStep(
-        icon: AgentTool.searchEmail.icon,
-        title: query.isEmpty ? "受信トレイを確認" : "メールを検索",
-        query: query.isEmpty ? nil : query
-      ),
-      on: messageID
-    )
-    do {
-      let messages = try await GmailService.shared.search(query, limit: limit)
-      finishAgentStep(
-        stepID,
-        on: messageID,
-        state: .done,
-        detail: "\(messages.count)件",
-        results: messages.map { AgentStep.Result(title: $0.subject, subtitle: $0.from) }
-      )
-      guard !messages.isEmpty else { return AgentToolOutcome(text: "該当するメールはありません。") }
-      return AgentToolOutcome(text: messages.map { message in
-        let date = message.date.map(Self.agentDate) ?? ""
-        return "- id=\(message.id) \(date) 差出人: \(message.from) 件名: \(message.subject) 冒頭: \(message.snippet.prefix(compact ? 60 : 160))"
-      }.joined(separator: "\n"))
-    } catch {
-      finishAgentStep(stepID, on: messageID, state: .failed, detail: "読み込めませんでした")
-      agentBlockedExternalTools[messageID, default: []].insert(call.name)
-      return AgentToolOutcome(text: ExternalToolFailure.message(for: error), isError: true)
-    }
-  }
-
-  private func readEmailTool(_ call: AgentToolCall, messageID: UUID, compact: Bool) async -> AgentToolOutcome {
-    let id = call.string("id")
-    guard !id.isEmpty else { return AgentToolOutcome(text: "idがありません。", isError: true) }
-    let stepID = beginAgentStep(AgentStep(icon: AgentTool.readEmail.icon, title: "メールを読む"), on: messageID)
-    do {
-      let message = try await GmailService.shared.read(id)
-      finishAgentStep(stepID, on: messageID, state: .done, detail: message.subject)
-      let body = message.body.isEmpty ? message.snippet : message.body
-      return AgentToolOutcome(text: """
-      差出人: \(message.from)
-      宛先: \(message.to)
-      件名: \(message.subject)
-      日時: \(message.date.map(Self.agentDate) ?? "不明")
-
-      \(body.prefix(compact ? 1_500 : 12_000))
-      """)
-    } catch {
-      finishAgentStep(stepID, on: messageID, state: .failed, detail: "読み込めませんでした")
-      agentBlockedExternalTools[messageID, default: []].insert(call.name)
-      return AgentToolOutcome(text: ExternalToolFailure.message(for: error), isError: true)
-    }
   }
 
   // MARK: - Memory
