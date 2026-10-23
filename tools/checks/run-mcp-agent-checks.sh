@@ -11,8 +11,10 @@ swiftc Shared/MemoraIcon.swift App/AgentTool.swift App/AgentToolCall.swift App/A
   App/ExternalToolFailure.swift App/GmailError.swift App/MCPClientError.swift App/MCPOAuthError.swift \
   App/MCPTool.swift App/MCPServerConfig.swift App/MCPOAuthSettings.swift App/MCPOAuthPolicy.swift \
   App/MCPConnectionPolicy.swift App/ProjectSourceURL.swift App/ProjectSource.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
-  App/SemanticToolDiscovery.swift App/LocalStore.swift App/MCPAgentExecutionContext.swift App/MCPIntegrationProvider.swift \
+  App/SemanticToolDiscovery.swift App/LocalStore.swift App/AIRecordFingerprint.swift \
+  App/MCPAgentExecutionContext.swift App/MCPResultAuthorization.swift App/MemoraModel+MCPResultAuthorization.swift App/MCPIntegrationProvider.swift \
   App/MemoraModel+MCP.swift App/MemoraModel+ToolExecution.swift \
+  App/AgentConversationLoop.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AIAnswerResult.swift App/AIAnswerFailure.swift \
   tools/checks/HTTPResponseGate.swift tools/checks/MCPAgentFixtureModel.swift tools/checks/MCPAgentFixtureServices.swift \
   tools/checks/MCPAgentChecks.swift -lsqlite3 -o "$check_dir/mcp-agent"
 "$check_dir/mcp-agent" "$check_dir"

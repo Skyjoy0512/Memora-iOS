@@ -61,13 +61,72 @@ struct MCPAgentChecks {
     }
     try await discovery(root)
     try await cancelled(root)
+    try await retainedResults(root)
     // SDK-dependent code is compiled by Bitrig, not run in this host binary.
     let client = try String(contentsOfFile: "App/MCPClient.swift", encoding: .utf8)
     precondition(client.contains("generations[server.id] == generation"))
     precondition(client.components(separatedBy: "await isAuthorized()").count >= 8)
     let entry = try String(contentsOfFile: "App/MemoraModel+Agent.swift", encoding: .utf8)
     precondition(entry.contains("loadMCPToolsForAgent(messageID: placeholder.id"))
+    let provenance = try String(contentsOfFile: "App/MemoraModel+AIProvenance.swift", encoding: .utf8)
+    precondition(provenance.contains("mcpResultsAreCurrent(messageID)"))
     print("MCPAgentChecks: passed (production discovery/execution/registry/provider/budgets with real SQLite, 63 suspended approval/preparation/result races, stale discovery ownership and final filtering, denial/error/cancel; model/provenance/approval/Keychain/SDK transport are fixtures, no network/accounts)")
+  }
+
+  @MainActor static func retainedResults(_ root: URL) async throws {
+    for mode in 0..<23 {
+      let (model, tool, call) = try setup(root)
+      let outcome = await model.performMCPTool(tool, call: call, messageID: model.message.id)
+      precondition(!outcome.isError && model.isCloudSessionAuthorized(model.message.id))
+      precondition(model.message.mcpResultAuthorizationIDs.count == 1 && model.message.cloudProvenance?.isComplete == false)
+      if mode == 21 { model.mcpResultAuthorizations.removeAll() }
+      else if mode == 22 { model.message.mcpResultAuthorizationIDs.insert(UUID()) }
+      else { mutate(mode, model, tool) }
+      precondition(!model.isCloudSessionAuthorized(model.message.id))
+      let repeated = await model.performMCPTool(tool, call: call, messageID: model.message.id)
+      precondition(repeated.isError && MCPClient.shared.dispatched == 1)
+    }
+    // A later call cannot replace the first observation with a fresh grant.
+    let (bounded, tool, call) = try setup(root)
+    for _ in 0..<24 {
+      let outcome = await bounded.performMCPTool(tool, call: call, messageID: bounded.message.id)
+      precondition(!outcome.isError)
+    }
+    let overflow = await bounded.performMCPTool(tool, call: call, messageID: bounded.message.id)
+    precondition(overflow.isError && !overflow.text.contains("PRIVATE_FIXTURE_RESULT"))
+    precondition(bounded.mcpResultAuthorizations.count == 24)
+
+    // Exercise the production loop, not just a direct snapshot predicate.
+    // Revocation during another tool stops batch acceptance; during the next
+    // model response it stops rendering. Already dispatched requests cannot undo.
+    for duringModel in [false, true] {
+      let (model, tool, call) = try setup(root)
+      let gate = HTTPResponseGate()
+      var requests = 0
+      var accepted = 0
+      let operation = Task {
+        await AgentConversationLoop.run(isAuthorized: { model.isCloudSessionAuthorized(model.message.id) }, next: {
+          requests += 1
+          if requests == 1 {
+            let calls = duringModel ? [call] : [call, AgentToolCall(id: "later", name: "fixture_wait", arguments: [:])]
+            return AgentTurn(text: "", toolCalls: calls)
+          }
+          await gate.pause()
+          return AgentTurn(text: "PRIVATE_FINAL_ANSWER", toolCalls: [])
+        }, execute: { nextCall in
+          if nextCall.id == call.id { return await model.performMCPTool(tool, call: call, messageID: model.message.id) }
+          await gate.pause()
+          return AgentToolOutcome(text: "later fixture")
+        }, accept: { _, _ in accepted += 1 })
+      }
+      await gate.waitForRequest()
+      model.setIntegrationEnabled("mcp", enabled: false)
+      await gate.release()
+      let result = await operation.value
+      precondition(result.failure == .contextChanged && result.text == nil)
+      precondition(requests == (duringModel ? 2 : 1) && accepted == (duringModel ? 1 : 0))
+    }
+    print("MCP retained-result checks passed: 23 invalidations, missing/unknown grants, 24-grant bound, production loop batch/response revocation")
   }
 
   @MainActor static func approvalAndBudgets(_ root: URL) async throws {

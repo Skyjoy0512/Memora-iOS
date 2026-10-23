@@ -79,6 +79,8 @@ extension MemoraModel {
     let requestID = UUID()
     let safeHistory = runner.isOnDevice ? (text: "", references: [AIRecordReference]()) : cloudConversationContext(for: trimmed)
     aiChatRequestID = requestID
+    // Old messages retain their IDs and fail closed once their grants are gone.
+    mcpResultAuthorizations.removeAll()
     var placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
     placeholder.isAgentReply = true
     placeholder.interfaceWorkspaceID = currentTeamID

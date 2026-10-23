@@ -15,6 +15,7 @@ final class MemoraModel {
   var mcpServers: [MCPServerConfig] = []
   var mcpCredentialRevisions: [UUID: UUID] = [:]
   var mcpPermissionRevision = UUID()
+  var mcpResultAuthorizations: [UUID: MCPResultAuthorization] = [:]
   var activeMCPTools: [String: MCPTool] = [:]
   var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
   var agentBlockedExternalTools: [UUID: Set<String>] = [:]
@@ -37,7 +38,11 @@ final class MemoraModel {
   }
 
   func agentMessage(_ id: UUID) -> MCPFixtureMessage? { hasMessage && message.id == id ? message : nil }
-  func isCloudSessionAuthorized(_ id: UUID) -> Bool { cloudAuthorized && agentMessage(id) != nil }
+  func isCloudSessionAuthorized(_ id: UUID) -> Bool { cloudAuthorized && mcpResultsAreCurrent(id) }
+  func updateAgentMessage(_ id: UUID, _ update: (inout MCPFixtureMessage) -> Void) {
+    guard hasMessage, message.id == id else { return }
+    update(&message)
+  }
   func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
     do { try store.write(key, data: JSONEncoder().encode(value)); return true } catch { return false }
   }
@@ -61,6 +66,7 @@ final class MemoraModel {
 struct MCPFixtureMessage {
   var id = UUID()
   var isThinking = true
+  var mcpResultAuthorizationIDs: Set<UUID> = []
   var cloudProvenance: MCPFixtureProvenance? = MCPFixtureProvenance()
   var steps: [AgentStep] = []
 }

@@ -99,7 +99,7 @@ extension MemoraModel {
   func isCloudSessionAuthorized(_ messageID: UUID) -> Bool {
     guard !isRestoring, !isStoreProtected, let message = agentMessage(messageID),
           let provenance = message.cloudProvenance, let targets = message.cloudAuthorizationTargets,
-          calendarReadIsCurrent(message.calendarReadSnapshot) else { return false }
+          calendarReadIsCurrent(message.calendarReadSnapshot), mcpResultsAreCurrent(messageID) else { return false }
     if let policy = agentPluginPolicies[messageID] {
       guard personPolicyIsCurrent(policy) else { return false }
     }

@@ -33,6 +33,8 @@ import Foundation
   var account: FixtureProfile?
   var deletionFailureMessage: String?
   var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
+  var mcpResultsCurrent = true
+  func mcpResultsAreCurrent(_ id: UUID) -> Bool { mcpResultsCurrent }
   #if ARTIFACT_PROVENANCE_CHECKS
   var documents: [MemoraDocument] = []
   var mailDrafts: [MailDraft] = []

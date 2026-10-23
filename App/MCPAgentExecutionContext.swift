@@ -27,9 +27,14 @@ struct MCPAgentExecutionContext {
   }
 
   func isCurrent(in model: MemoraModel) -> Bool {
+    bindingIsCurrent(in: model) && model.isCloudSessionAuthorized(messageID)
+  }
+
+  // Result grants use the same binding without recursively checking themselves.
+  func bindingIsCurrent(in model: MemoraModel) -> Bool {
     !Task.isCancelled && workspaceID == nil && ownsMessage(in: model) &&
       !model.isRestoring && !model.isStoreProtected &&
       model.mcpPermissionRevision == permissionRevision &&
-      model.agentPluginPolicies[messageID] == policy && model.isCloudSessionAuthorized(messageID)
+      model.agentPluginPolicies[messageID] == policy
   }
 }

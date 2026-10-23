@@ -54,6 +54,9 @@ import SQLite3
     precondition(!permitted.isError && permitted.text.contains(person.note!) && !permitted.text.contains("private-contact-id"))
     precondition(Set(model.reads) == [.person(person.id)] && model.message.cloudProvenance?.isComplete == true)
     precondition(model.isCloudSessionAuthorized(messageID) && model.canReuseCloudConversation(model.message.cloudProvenance))
+    model.mcpResultsCurrent = false
+    precondition(!model.isCloudSessionAuthorized(messageID))
+    model.mcpResultsCurrent = true
     let captured = model.message.cloudProvenance!
     let capturedReference = model.recordReference(for: .person(person.id))!
     let encoded = try JSONEncoder().encode(captured)
