@@ -521,7 +521,9 @@ pushは実施していない。
   当該失敗ログは`.e2e/regression/phase5-import-final/`に残す。
 - 最終Debug preview成功: `2026-10-23T08-42-09-c203c0d2.log`、既存警告11件。
   Release Simulatorビルドも成功: `2026-10-23T08-40-45-5535c1a7.log`、SDK 27.1、
-  既存警告11件。ReleaseはDebug previewを待って再開し、最終appコードを含む。
+  既存警告11件。ただしRelease要求後に写真選択のreset修正を入れたため、
+  この古いRelease snapshotが最終変更を含むという前回の記述は撤回する。
+  最終コードのDebug/UI検証とは区別し、次節でコード確定後にReleaseを再実行する。
 - 修正後のUI E2Eは2シナリオを各2回、4実行/4成功。失敗/skip/中断/flaky 0、
   retry 0、model token/download 0。`.e2e/regression/phase5-import-post-review/report.json`。
   repeatを含む検出結果83件のうち、他79件はfilteredで未実行、成功には数えない。
@@ -536,13 +538,63 @@ pushは実施していない。
 
 実機確認やPhase 5全体の完了を意味しない。
 
+### 右上音声Pickerとnative写真の失敗復旧（2026-10-23）
+
+- CaptureMenuPopoverは保存先IDだけでなく、既存LocalImportContextを**Picker表示前**に
+  保持する。選択結果はimportPickedAudio入口で再検証し、nil contextでも新しいscopeを
+  暗黙取得しない。失効時は原本を変更せず、選び直す理由を既存のエラー表示へ渡す。
+  右上作成・native popover/Picker・既存morph・メニュー構成は変えない。
+- 本番音声入口の選択待ち8 raceとnil context拒否、正常なproject/global保存を追加。
+  コピー後のduration待ち8 raceと、project削除後の未分類保存は引き続き成功する。
+  実ファイル・本番Meeting codec・SQLiteを通すが、duration/mediaはhost fixtureのまま。
+- 実写真を選ぶUI E2Eで、SQL登録失敗時に「ソースを追加」シートまで閉じる不具合を検出。
+  写真/一般ファイルのsource登録だけに既存のpresentsErrorsLocallyを渡し、
+  フォーム内で失敗を示して入力を保持するよう修正。scopeは同期storeProjectSourceだけ。
+  copy/解析のawaitを囲まない。音声の独自エラーや解析後段の全体通知は変更しない。
+- SourceImportの既存32 raceを再実行し、local/global両方の実SQL ABORTと後始末を検証。
+  ローカル登録失敗直後の別保存は全体へ失敗通知されることも確認し、通知の抑止漏れを防ぐ。
+- ProjectPhotoTransferとVisionを含む本番経路で、専用Simulatorの既定の風景写真を選択。
+  SQL失敗後の入力/保存配列/ファイル保持、同一写真再選択での成功、SHA一致と重複排除、
+  再起動後の再表示/SQLite一致/原本bytes一致を検証する。4つの外部権限はfalseのまま。
+  当該写真はOCR文字がなく、保存済み・内容未取得と正しく表示される。
+  任意画像の認識精度、画像全体のAI理解、実ユーザーの写真を試したという意味ではない。
+
+検証:
+
+- 最終Debug preview成功: `2026-10-23T08-58-20-6d59f50e.log`、既存警告11件。
+  アプリコード確定後のRelease Simulatorビルドも成功:
+  `2026-10-23T09-04-46-eb681d36.log`、SDK 27.1、既存警告11件。
+  途中のRelease `2026-10-23T08-55-12-b7936a0c.log`も成功したが、
+  登録エラー修正より前に要求したため、最終コードの証明には使わない。
+- ホスト5スイートすべて終了0:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-picker-photo-quality/`。
+  SourceImport 32 raceとAudioImport 16 race、SQL失敗のlocal/global通知を含む。
+  Xcode test target未設定は変わらず、XCTest成功とは数えない。
+- 最終UI E2Eは4実行/4成功、失敗/skip/中断/flaky 0、retry 0。
+  `.e2e/regression/phase5-picker-photo-final/report.json`、model token/download 0。
+  検出83件のうち他79件はfilteredで未実行。対象はnative写真の失敗/再選択/重複/再起動、
+  Libraryの音声Picker取消/メモ作成取消（Light/Dark）、source Picker取消、Office取込。
+- 初期写真E2Eは1実行/1失敗。登録失敗時にフォームまで閉じた実画面を保持した。
+  local登録エラー処理の修正後は2回続けて写真E2E成功。途中の4件runは3成功/1失敗で、
+  失敗はプロジェクト詳細にLibrary用の新規作成ボタンがあるというテストの誤った前提。
+  その詳細には専用作成操作があるため、UIを変えずLibraryの実際の入口へテストを修正した。
+  どちらの失敗も成功件数へ合算せず、元report/traceを残す。
+- `photo-failure-before-dismissed.png`と`photo-failure-after-retains-input.png`を保存し目視。
+  同じSimulator/失敗条件の別run（テスト用UUIDは異なる）で、画面全体の再設計や
+  ピクセル比較ではない。再起動後の画像ソースは`photo-transfer-restored.png`へ保存し目視。
+  `audio-picker-capture-light.png`/`audio-picker-capture-dark.png`も目視済み。
+- 実装コミット`65229f6`、詳細はPhase 5の`picker-photo-validation-summary.json`。
+  mainのまま、push/上流再取得/実認証/OAuth権限拡大なし。性能の新規実測はない。
+  既存ネイティブUIと選択写真だけの権限範囲を保ち、エラー処理だけ既存部品へ接続した。
+
 残り（Phase 5全体の完了とはしない）:
 
-- 右上作成メニューの音声Pickerも、表示開始前からcontextを保持する追加確認。
-  今回はprojectのsource追加Pickerと、音声importAudio開始後の境界を検証した。
-- 選択写真の実loadTransferable・OCR・失敗後の同一写真再選択、実AV音声読取/再生。
+- 実機の選択写真・画像OCRの精度/失敗再試行、実AV音声読取/再生。
+  native写真の実転送/保存失敗/同一写真再選択はSimulatorで検証したが、実機確認ではない。
 - PDF/OCR/画像の実端末での範囲表示・失敗再試行、実YouTube通信と縮小画像の品質。
 - 実バックアップ復元途中の中断UI E2E。hookのhost検証だけでは代替しない。
+- global音声取込と復元の同時実行、および復元完了後の世代境界の追加確認。
+  今回のrestore検証は処理中の拒否であり、完了をまたぐ全シナリオの証明ではない。
 
 ## Phase 6〜7
 

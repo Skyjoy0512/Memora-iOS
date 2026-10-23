@@ -65,6 +65,20 @@ APIキーを環境から外し、モデル呼出を含まないテストを選�
 確認する。写真Pickerの一時的なLoading画面ではなく、実際の写真タブを待って操作する。
 選択写真の転送やOCR成功を確認したという意味ではない。
 
+`project-source-photo.e2e.ts`は専用Simulatorの既定写真を実際に選び、PhotosPickerの
+FileRepresentation転送・SQLite保存失敗・同一写真の再選択・SHA重複排除・再起動後の
+原本保持を検証する。唯一のUI作成markerで特定したSQLiteだけに一時的な失敗triggerを
+置き、finallyで回収する。画像OCRは本番Vision経路を通すが、既定の風景画像1枚で
+任意の写真の認識精度を保証しない。実ユーザーの写真や実アカウントは使わない。
+
+`capture-audio-picker.e2e.ts`はLibraryの右上作成から音声Pickerを開いて取り消し、
+Libraryと既存のメモ作成・取消のmorphをLight/Darkで確認する。プロジェクト詳細の
+専用作成操作とは区別し、実音声の選択・再生は含まない。
+対応するhost AudioImportChecksは、表示前contextを使う本番importPickedAudio入口で
+8つの選択待ちraceとnil contextの拒否を追加し、正常な個人/プロジェクト保存も確認する。
+ソース登録のローカルエラー処理は同期storeProjectSourceだけを囲む。await越しに
+全体の失敗通知を抑えないことも実SQL失敗で検証する。
+
 ## GitHub Actions
 
 `.github/workflows/quality.yml`はread-only権限で同じホスト検証を実行し、

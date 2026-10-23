@@ -14,7 +14,7 @@
     "result": "succeeded",
     "warnings": 11,
     "log": "2026-10-23T08-40-45-5535c1a7.log",
-    "boundary": "Release resumed after the Debug preview and compiled final app sources; not physical-device validation"
+    "boundary": "Build succeeded, but its request preceded the final photo-selection reset change. The earlier claim that this older Release snapshot necessarily contained final sources is withdrawn; final Debug/UI results remain separate. See picker-photo-validation-summary.json for a frozen-source Release rebuild."
   },
   "hostChecks": {
     "output": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-import-final-quality",

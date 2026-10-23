@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "appCodeRevision": "65229f6",
+  "phaseStatus": "Phase 5 local picker scope and native photo registration recovery validated; physical-device and restore-overlap boundaries remain",
+  "sdk": "iPhoneSimulator27.1.sdk",
+  "deploymentTarget": "iOS 26.0",
+  "debugPreview": {"result": "succeeded", "warnings": 11, "log": "2026-10-23T08-58-20-6d59f50e.log"},
+  "releaseSimulatorBuild": {
+    "result": "succeeded",
+    "warnings": 11,
+    "log": "2026-10-23T09-04-46-eb681d36.log",
+    "sourceFreeze": "Requested after all app-source edits; app sources remained unchanged throughout this final Release build and final UI run",
+    "physicalDeviceValidation": false,
+    "earlierBuild": "08-55-12-b7936a0c succeeded but was requested before the local registration-error correction, so is not used as final-source evidence",
+    "historicalCorrection": "The earlier import-validation-summary.json Release claim has been corrected: a build requested before a subsequent source edit does not prove that edit was in its temporary snapshot"
+  },
+  "appSourceSHA256": {
+    "App/CaptureMenuPopover.swift": "4f013b73c7efa799b3b0a7572e80174f31e5ccaeb66a589f735af978054f4f29",
+    "App/MemoraModel+Import.swift": "e92776fa2bf28073c6b27c579196e8624755a8206329884685c42feac3ebbb94",
+    "App/MemoraModel+ProjectSourceImport.swift": "35b99ac876831c083454a31f6f1679229ce6b5ffa4dafe77f657b72b58dcc10d",
+    "App/ProjectSourceAddSheet.swift": "3676e7f2601ef67ed7a6d34577bbfba80e1406575f5901b177f0993bbc466826"
+  },
+  "hostChecks": {
+    "output": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase5-picker-photo-quality",
+    "suites": [
+      {"name": "next-generation", "status": "passed", "exitCode": 0},
+      {"name": "design-refresh", "status": "passed", "exitCode": 0},
+      {"name": "background-summary", "status": "passed", "exitCode": 0},
+      {"name": "composer-layout", "status": "passed", "exitCode": 0},
+      {"name": "optimization", "status": "passed", "exitCode": 0}
+    ],
+    "sourceImportRacesRerun": 32,
+    "audioImportRaces": {"beforePickerResult": 8, "duringDurationRead": 8},
+    "newChecks": ["production importPickedAudio entry rejects missing context before media read", "picker context captured before selection rejects team, ABA, restoring, protected store, deleted project, renamed project, cancellation and generation replacement", "valid selected-project and global audio save with Meeting codec/SQLite reopen", "existing post-start deleted-project unfiled fallback retained", "actual source registration SQL ABORT in both local and global presentation modes", "local scope ends synchronously so unrelated subsequent failure is still globally reported", "existing cleanup and retry checks retained"],
+    "fixtureBoundary": "Audio duration/media, navigation and model state are fixtures. File operations, import entry, Meeting codec and SQLite paths are production; this is not native AV decoding, microphone or actual recording verification.",
+    "xcodeTestTargets": "not configured in Project.json; not counted as XCTest success"
+  },
+  "uiChecks": {
+    "report": ".e2e/regression/phase5-picker-photo-final/report.json",
+    "discovered": 83,
+    "selected": 4,
+    "executed": 4,
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "retries": 0,
+    "modelTokens": 0,
+    "downloads": 0,
+    "cases": ["native stock-photo FileRepresentation transfer, actual registration SQL failure, input and original store/file retention, same-photo retry, SHA dedup, four external permissions false, actual SQLite/file reopen after restart", "Library top-right audio picker cancellation and existing memo create/cancel in Light and Dark", "project native photo/file picker cancellation retains unsaved URL", "Office import, extraction, partial-coverage presentation, SQLite reread and fixture cleanup"],
+    "nativePhotoOutcome": "The selected landscape produced no OCR text: source remained unavailable with saved original and truthful first-frame OCR limitation notice; no full-image AI understanding claimed",
+    "priorRuns": [
+      {"report": ".e2e/regression/phase5-photo-initial/report.json", "passed": 0, "failed": 1, "observed": "source form dismissed after photo registration SQL failure, no error text available", "fix": "use existing local synchronous source-registration failure presentation without spanning awaits"},
+      {"report": ".e2e/regression/phase5-picker-photo/report.json", "passed": 3, "failed": 1, "observed": "photo recovery now passed; capture test incorrectly expected Library create control inside project detail", "fix": "test the actual Library entry, leave project detail UI unchanged; project-context policy covered separately by host tests"}
+    ],
+    "environment": "fresh app per scenario on dedicated iPhone 18 Pro Max CoreSimulator; stock simulator photo only, not Bitrig user preview, user photos or a real account",
+    "boundary": "79 filtered tests were not executed; real photo transfer is covered but arbitrary-image OCR accuracy, full-library permission, QuickLook opening, real audio import/playback and physical-device behavior are not covered"
+  },
+  "screenshots": [
+    {"file": "photo-failure-before-dismissed.png", "appearance": "light", "visuallyInspected": true},
+    {"file": "photo-failure-after-retains-input.png", "appearance": "light", "visuallyInspected": true},
+    {"file": "photo-transfer-restored.png", "appearance": "light", "visuallyInspected": true},
+    {"file": "audio-picker-capture-light.png", "appearance": "light", "visuallyInspected": true},
+    {"file": "audio-picker-capture-dark.png", "appearance": "dark", "visuallyInspected": true}
+  ],
+  "screenshotBoundary": "Failure before/after uses the same simulator and SQL failure condition in separate runs with different fixture UUIDs, not a pixel baseline or whole-app redesign audit",
+  "performance": {"newBeforeAfterMeasurements": false, "claim": "correctness and recovery change only; no device speed, memory or energy improvement claimed"},
+  "github": {"pushPerformed": false, "upstreamRefreshedThisUnit": false, "actionsRunVerified": false},
+  "remaining": [
+    "Physical recording retention/interruption/recovery, native audio duration/playback and audio-session behavior",
+    "Physical selected-photo/OCR accuracy and retry, PDF coverage, real YouTube and thumbnail quality",
+    "Actual backup-restore interruption UI flow and global audio-import/restore overlap including post-restore generation boundaries",
+    "Physical performance, Phase 6 connector reliability fixtures and Phase 7 final accessibility/IME/visual review"
+  ]
+}
