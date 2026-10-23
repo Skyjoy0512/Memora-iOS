@@ -1,8 +1,7 @@
-import AuthenticationServices
 import CryptoKit
 import Foundation
 import Observation
-import UIKit
+import Security
 
 /// Reads the person's Gmail, read-only, for Ask AI. Signing in uses Google's
 /// OAuth with PKCE in the system web sheet; only the refresh token is kept,
@@ -14,22 +13,27 @@ import UIKit
 @MainActor
 @Observable
 final class GmailService {
-  static let shared = GmailService()
+  static let shared = GmailService(environment: .live)
 
-  private(set) var isConnected = KeychainStore.string(forKey: GmailService.refreshTokenKey) != nil
-  private(set) var connectedEmail = UserDefaults.standard.string(forKey: GmailService.emailKey)
+  private(set) var isConnected: Bool
+  private(set) var connectedEmail: String?
   private(set) var isWorking = false
   @ObservationIgnored private(set) var connectionRevision = UUID()
 
-  private static let refreshTokenKey = "gmail.refreshToken"
-  private static let emailKey = "memora.gmail.email"
   private static let scope = "https://www.googleapis.com/auth/gmail.readonly"
   private static let api = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me")!
 
   @ObservationIgnored private var accessToken: String?
   @ObservationIgnored private var accessTokenExpiry = Date.distantPast
-  @ObservationIgnored private var authSession: ASWebAuthenticationSession?
-  @ObservationIgnored private let presentation = GmailPresentationAnchor()
+  @ObservationIgnored private let environment: GmailServiceEnvironment
+  @ObservationIgnored private var isDisconnecting = false
+
+  init(environment: GmailServiceEnvironment) {
+    self.environment = environment
+    let connected = !environment.isLocallyDisconnected() && environment.refreshToken()?.isEmpty == false
+    isConnected = connected
+    connectedEmail = connected ? environment.email() : nil
+  }
 
   static var clientID: String? {
     let value = Bundle.main.object(forInfoDictionaryKey: "MemoraGoogleClientID") as? String
@@ -47,11 +51,13 @@ final class GmailService {
   // MARK: - Connecting
 
   func connect() async throws {
-    guard let clientID = Self.clientID else { throw GmailError.notConfigured }
+    try Task.checkCancellation()
+    guard !isWorking else { throw GmailError.cancelled }
+    guard let clientID = environment.clientID() else { throw GmailError.notConfigured }
     connectionRevision = UUID()
-    let revision = connectionRevision
+    var revision = connectionRevision
     isWorking = true
-    defer { isWorking = false }
+    defer { if revision == connectionRevision { isWorking = false } }
 
     let verifier = Self.randomURLSafeString(byteCount: 48)
     let challenge = Data(SHA256.hash(data: Data(verifier.utf8))).base64URLEncoded
@@ -72,11 +78,15 @@ final class GmailService {
       URLQueryItem(name: "prompt", value: "consent")
     ]
 
-    let callback = try await authorize(url: components.url!, scheme: scheme)
+    let callback = try await environment.authorize(components.url!, scheme)
+    try Task.checkCancellation()
     guard revision == connectionRevision else { throw GmailError.cancelled }
     let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
-    guard items.first(where: { $0.name == "state" })?.value == state,
-          let code = items.first(where: { $0.name == "code" })?.value else {
+    guard callback.scheme == scheme, callback.path == "/oauth2redirect", callback.host == nil,
+          items.filter({ $0.name == "state" }).count == 1,
+          items.filter({ $0.name == "code" }).count == 1,
+          items.first(where: { $0.name == "state" })?.value == state,
+          let code = items.first(where: { $0.name == "code" })?.value, !code.isEmpty else {
       throw GmailError.authorizationFailed
     }
 
@@ -88,59 +98,59 @@ final class GmailService {
       "redirect_uri": redirectURI
     ])
     guard revision == connectionRevision,
-          let refresh = token.refreshToken, KeychainStore.set(refresh, forKey: Self.refreshTokenKey) else {
+          let refresh = token.refreshToken, !refresh.isEmpty, environment.storeRefreshToken(refresh) else {
       throw GmailError.authorizationFailed
     }
+    // Reads started while the previous account was still connected cannot be
+    // accepted as results from the newly committed account.
+    connectionRevision = UUID()
+    revision = connectionRevision
+    environment.setLocallyDisconnected(false)
     accessToken = token.accessToken
-    accessTokenExpiry = Date.now.addingTimeInterval(token.expiresIn - 60)
+    accessTokenExpiry = environment.now().addingTimeInterval(token.expiresIn - 60)
     isConnected = true
     connectedEmail = nil
-    UserDefaults.standard.removeObject(forKey: Self.emailKey)
+    environment.storeEmail(nil)
 
-    if let profile = try? await get(Self.api.appendingPathComponent("profile")),
-       let email = profile["emailAddress"] as? String {
+    let profile = try? await get(Self.api.appendingPathComponent("profile"))
+    try Task.checkCancellation()
+    guard revision == connectionRevision else { throw GmailError.cancelled }
+    if let email = profile?["emailAddress"] as? String {
       connectedEmail = email
-      UserDefaults.standard.set(email, forKey: Self.emailKey)
+      environment.storeEmail(email)
     }
   }
 
   /// Forgets the connection and asks Google to revoke it.
   func disconnect() async {
-    connectionRevision = UUID()
-    let revision = connectionRevision
-    if let refresh = KeychainStore.string(forKey: Self.refreshTokenKey) {
+    guard !isDisconnecting else { return }
+    let refresh = environment.refreshToken()
+    clearLocalConnection()
+    environment.cancelAuthorization()
+    isDisconnecting = true
+    isWorking = true
+    defer { isDisconnecting = false; isWorking = false }
+    if let refresh, !refresh.isEmpty {
       var request = URLRequest(url: URL(string: "https://oauth2.googleapis.com/revoke")!)
       request.httpMethod = "POST"
       request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
       request.httpBody = Self.formBody(["token": refresh])
-      _ = try? await URLSession.shared.data(for: request)
+      _ = try? await environment.transport(request)
     }
-    guard revision == connectionRevision else { return }
-    KeychainStore.set(nil, forKey: Self.refreshTokenKey)
-    UserDefaults.standard.removeObject(forKey: Self.emailKey)
+  }
+
+  private func clearLocalConnection() {
+    connectionRevision = UUID()
+    // A settings tombstone also protects the next launch if Keychain deletion
+    // fails. It is cleared only after a new token has been stored successfully.
+    environment.setLocallyDisconnected(true)
+    _ = environment.storeRefreshToken(nil)
+    environment.storeEmail(nil)
     accessToken = nil
     accessTokenExpiry = .distantPast
     connectedEmail = nil
     isConnected = false
-  }
-
-  private func authorize(url: URL, scheme: String) async throws -> URL {
-    try await withCheckedThrowingContinuation { continuation in
-      let session = ASWebAuthenticationSession(url: url, callbackURLScheme: scheme) { callback, error in
-        if let callback {
-          continuation.resume(returning: callback)
-        } else if let error = error as? ASWebAuthenticationSessionError, error.code == .canceledLogin {
-          continuation.resume(throwing: GmailError.cancelled)
-        } else {
-          continuation.resume(throwing: GmailError.authorizationFailed)
-        }
-      }
-      session.presentationContextProvider = presentation
-      authSession = session
-      if !session.start() {
-        continuation.resume(throwing: GmailError.authorizationFailed)
-      }
-    }
+    isWorking = false
   }
 
   // MARK: - Reading
@@ -157,14 +167,19 @@ final class GmailService {
 
     let list = try await get(components.url!)
     guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
-    let ids = (list["messages"] as? [[String: Any]] ?? []).compactMap { $0["id"] as? String }
+    guard list["messages"] == nil || list["messages"] is [[String: Any]] else { throw ExternalToolFailure.failed }
+    let ids = try (list["messages"] as? [[String: Any]] ?? []).prefix(min(max(limit, 1), 60)).map { item in
+      guard let id = item["id"] as? String else { throw ExternalToolFailure.failed }
+      return id
+    }
     var messages: [GmailMessage] = []
     for id in ids {
-      var detail = URLComponents(url: Self.api.appendingPathComponent("messages/\(id)"), resolvingAgainstBaseURL: false)!
+      var detail = URLComponents(url: try Self.messageURL(id), resolvingAgainstBaseURL: false)!
       detail.queryItems = [URLQueryItem(name: "format", value: "metadata")]
         + ["From", "To", "Subject", "Date"].map { URLQueryItem(name: "metadataHeaders", value: $0) }
       let json = try await get(detail.url!)
       guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
+      guard json["id"] as? String == id else { throw ExternalToolFailure.failed }
       messages.append(Self.message(from: json, includeBody: false))
     }
     return messages
@@ -172,30 +187,51 @@ final class GmailService {
 
   /// One mail with its text.
   func read(_ id: String) async throws -> GmailMessage {
-    var components = URLComponents(url: Self.api.appendingPathComponent("messages/\(id)"), resolvingAgainstBaseURL: false)!
+    var components = URLComponents(url: try Self.messageURL(id), resolvingAgainstBaseURL: false)!
     components.queryItems = [URLQueryItem(name: "format", value: "full")]
-    return Self.message(from: try await get(components.url!), includeBody: true)
+    let json = try await get(components.url!)
+    guard json["id"] as? String == id else { throw ExternalToolFailure.failed }
+    return Self.message(from: json, includeBody: true)
+  }
+
+  private static func messageURL(_ id: String) throws -> URL {
+    guard !id.isEmpty, id.utf8.count <= 512,
+          id.utf8.allSatisfy({ (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 45 || $0 == 95 }) else {
+      throw ExternalToolFailure.unavailable
+    }
+    return api.appendingPathComponent("messages").appendingPathComponent(id)
   }
 
   private func get(_ url: URL) async throws -> [String: Any] {
     let revision = connectionRevision
+    try Task.checkCancellation()
     var request = URLRequest(url: url)
     request.setValue("Bearer \(try await validAccessToken())", forHTTPHeaderField: "Authorization")
     guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
-    let (data, response) = try await URLSession.shared.data(for: request)
+    try Task.checkCancellation()
+    let (data, response) = try await environment.transport(request)
+    try Task.checkCancellation()
     guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
-    let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
     guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+      if (response as? HTTPURLResponse)?.statusCode == 401 {
+        // Keep a possibly valid refresh token, but never reuse the rejected
+        // access token. A later explicit read may refresh; this call never retries.
+        accessToken = nil
+        accessTokenExpiry = .distantPast
+      }
       throw ExternalToolFailure.http((response as? HTTPURLResponse)?.statusCode ?? 500)
     }
+    guard let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { throw ExternalToolFailure.failed }
     return json
   }
 
   private func validAccessToken() async throws -> String {
     let revision = connectionRevision
-    if let accessToken, accessTokenExpiry > .now { return accessToken }
-    guard let clientID = Self.clientID else { throw GmailError.notConfigured }
-    guard let refresh = KeychainStore.string(forKey: Self.refreshTokenKey) else { throw GmailError.notConnected }
+    try Task.checkCancellation()
+    guard isConnected, !environment.isLocallyDisconnected(),
+          let refresh = environment.refreshToken(), !refresh.isEmpty else { throw GmailError.notConnected }
+    if let accessToken, accessTokenExpiry > environment.now() { return accessToken }
+    guard let clientID = environment.clientID() else { throw GmailError.notConfigured }
     let token = try await requestToken([
       "client_id": clientID,
       "refresh_token": refresh,
@@ -203,31 +239,28 @@ final class GmailService {
     ])
     guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
     accessToken = token.accessToken
-    accessTokenExpiry = Date.now.addingTimeInterval(token.expiresIn - 60)
+    accessTokenExpiry = environment.now().addingTimeInterval(token.expiresIn - 60)
     return token.accessToken
   }
 
   private func requestToken(_ fields: [String: String]) async throws -> (accessToken: String, refreshToken: String?, expiresIn: TimeInterval) {
     let revision = connectionRevision
+    try Task.checkCancellation()
     var request = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
     request.httpMethod = "POST"
     request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
     request.httpBody = Self.formBody(fields)
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let (data, response) = try await environment.transport(request)
+    try Task.checkCancellation()
     guard revision == connectionRevision else { throw ExternalToolFailure.authenticationExpired }
     let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
     guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-          let access = json["access_token"] as? String else {
+          let access = json["access_token"] as? String, !access.isEmpty else {
       // Transient service failures must not revoke a still-valid connection.
-      if fields["grant_type"] == "refresh_token", json["error"] as? String == "invalid_grant" {
-        if fields["refresh_token"] == KeychainStore.string(forKey: Self.refreshTokenKey) {
-          connectionRevision = UUID()
-          KeychainStore.set(nil, forKey: Self.refreshTokenKey)
-          UserDefaults.standard.removeObject(forKey: Self.emailKey)
-          accessToken = nil
-          accessTokenExpiry = .distantPast
-          connectedEmail = nil
-          isConnected = false
+      if let http = response as? HTTPURLResponse, (400..<500).contains(http.statusCode),
+         fields["grant_type"] == "refresh_token", json["error"] as? String == "invalid_grant" {
+        if fields["refresh_token"] == environment.refreshToken() {
+          clearLocalConnection()
         }
         throw ExternalToolFailure.authenticationExpired
       }
@@ -237,6 +270,11 @@ final class GmailService {
       throw GmailError.authorizationFailed
     }
     let expires = (json["expires_in"] as? NSNumber)?.doubleValue ?? 3_600
+    guard expires.isFinite, expires > 0 else { throw GmailError.authorizationFailed }
+    if let scopes = json["scope"] as? String,
+       !scopes.split(separator: " ").contains(Substring(Self.scope)) {
+      throw ExternalToolFailure.permissionDenied
+    }
     return (access, json["refresh_token"] as? String, expires)
   }
 
@@ -310,17 +348,6 @@ final class GmailService {
     var bytes = [UInt8](repeating: 0, count: byteCount)
     _ = SecRandomCopyBytes(kSecRandomDefault, byteCount, &bytes)
     return Data(bytes).base64URLEncoded
-  }
-}
-
-/// Shows Google's sign-in over the app's active window.
-private final class GmailPresentationAnchor: NSObject, ASWebAuthenticationPresentationContextProviding {
-  func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-    MainActor.assumeIsolated {
-      let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-      let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
-      return scene?.keyWindow ?? ASPresentationAnchor()
-    }
   }
 }
 

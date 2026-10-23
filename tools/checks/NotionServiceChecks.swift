@@ -188,7 +188,7 @@ struct NotionServiceChecks {
 
     for pauseAt in [1, 2] {
       for cancel in [false, true] {
-        let gate = NotionResponseGate()
+        let gate = HTTPResponseGate()
         let configuration = NotionFixtureConfiguration(initial)
         let heldMeeting = long
         let operation = Task { () -> (Error, Int) in

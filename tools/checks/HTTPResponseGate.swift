@@ -1,7 +1,7 @@
 import Foundation
 
 // Hold a real suspension point without a clock-based race or external request.
-actor NotionResponseGate {
+actor HTTPResponseGate {
   private var arrived = false
   private var waiter: CheckedContinuation<Void, Never>?
   private var pending: CheckedContinuation<Void, Never>?
