@@ -43,7 +43,7 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
         self.assertIn("min(width * 0.945, MemoraSpacing.readingWidth)", root)
         self.assertNotIn(".id(composerScope)\n", root)
         native = (APP / "CaptureToolbarButton.swift").read_text()
-        for contract in ("ToolbarIconButton", "matchedTransitionSource", "navigationTransition(.zoom"):
+        for contract in ("ToolbarActionLabel", "Menu {", ".confirmationDialog(", "importPickedAudio"):
             self.assertIn(contract, native)
 
     def test_sidebar_footer_shortens_secondary_copy_not_tap_targets(self):

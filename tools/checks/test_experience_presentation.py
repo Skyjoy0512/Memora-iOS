@@ -45,19 +45,39 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn("isAwaitingQuery || filter == .shared ? [] : projects", projects)
         self.assertIn("{ query = \"\" }", projects)
 
-    def test_capture_keeps_execution_and_native_morph(self):
+    def test_capture_keeps_execution_and_uses_system_menu(self):
         menu = (APP / "CaptureMenuPopover.swift").read_text()
-        for call in ("select(action)", "model.startCapture(spaceID: destinationID)", "importContext = LocalImportContext(projectID: spaceID, in: model)", "handleAudioImport", "model.onlineMeetingCaptureSpaceID = destinationID"):
+        for call in ("onSelect(action)", "CaptureAction.available", "model.sourceAddProjectID = spaceID"):
             self.assertIn(call, menu)
-        self.assertLess(menu.index("importContext = LocalImportContext"), menu.index("isFileImporterPresented = true"))
-        self.assertIn("model.importPickedAudio(from: url, context: context)", menu)
-        self.assertNotIn("importSpaceID", menu)
-        self.assertIn("MemoraActionLabel", menu)
         self.assertIn(".accessibilityHint(action.detail)", menu)
-        self.assertIn("min(contentHeight, 480)", menu)
         native = (APP / "CaptureToolbarButton.swift").read_text()
-        for contract in ("ToolbarIconButton", "matchedTransitionSource", "presentationCompactAdaptation(.popover)", "navigationTransition(.zoom"):
+        for contract in ("ToolbarActionLabel", "Menu {", ".confirmationDialog(", "model.importPickedAudio(from: url, context: context)", "NSUserCancelledError"):
             self.assertIn(contract, native)
+        self.assertLess(native.index("importContext = LocalImportContext"), native.index("isFileImporterPresented = true"))
+        for obsolete in ("Task.sleep", "navigationTransition", "matchedTransitionSource", ".popover("):
+            self.assertNotIn(obsolete, native + menu)
+        dispatch = (APP / "MemoraModel+CaptureMenu.swift").read_text()
+        for call in ("startCapture(spaceID: projectID)", "onlineMeetingCaptureSpaceID = projectID", "startNewAIChat()", "isLifeLogCreationPresented = true", "openCalling()"):
+            self.assertIn(call, dispatch)
+
+    def test_search_and_device_toolbar_reuse_real_model_state(self):
+        sidebar = (APP / "FileSidebarView.swift").read_text()
+        self.assertIn('SidebarRow(title: "検索"', sidebar)
+        root = (APP / "RootTabView.swift").read_text()
+        self.assertIn("closeSidebar { model.sidebarSearchRequest = UUID() }", root)
+        for file in ("LibraryView.swift", "HomeView.swift", "ToolsView.swift", "SearchView.swift"):
+            self.assertIn(".onChange(of: model.sidebarSearchRequest)", (APP / file).read_text())
+        for file in ("LibraryView.swift", "HomeView.swift"):
+            source = (APP / file).read_text()
+            self.assertIn("RecorderStatusToolbarButton()", source)
+            self.assertNotIn('ToolbarIconButton("検索"', source)
+        detail = (APP / "MeetingDetailToolbarActions.swift").read_text()
+        self.assertIn("ToolbarItemGroup", detail)
+        for obsolete in ("Task.sleep", "isPlayRevealed", "isSeparated", "glassEffectID"):
+            self.assertNotIn(obsolete, detail)
+        connection = (APP / "OmiPairingManager.swift").read_text()
+        for contract in ("RecorderBatteryState.serviceUUID", "RecorderBatteryState.characteristicUUID", "connectedPeripheral === peripheral", "batteryState.disconnected(from:", "central.cancelPeripheralConnection(peripheral)"):
+            self.assertIn(contract, connection)
 
     def test_task_and_document_actions_are_real(self):
         tasks = (APP / "TasksView.swift").read_text()

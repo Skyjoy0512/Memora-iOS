@@ -1,6 +1,6 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, openSidebarSearch, tapControl, tapTab } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -42,7 +42,7 @@ test('skill polish: explain validation and protect an unsaved edit', async ({ ap
 test('skill polish: search Tools, open an article and clear the search', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await tapTab(screen, 'ツール');
-  await tapControl(screen, screen.getByLabel('ツールを検索'));
+  await openSidebarSearch(screen);
   const search = screen.getByPlaceholder('ツールを検索');
   await search.fill('project');
   const article = screen.getByRole('button', { name: /プロジェクトの要点整理/ });

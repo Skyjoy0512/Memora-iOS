@@ -2,6 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ToolsView: View {
+  @Environment(MemoraModel.self) private var model
   var onOpenSidebar: () -> Void
   @AppStorage("memora.tools.section") private var section = ToolsSection.skills
   @State private var newSkill: MemoraSkill?
@@ -45,10 +46,6 @@ struct ToolsView: View {
       ToolbarActionItem(placement: .topBarLeading) {
         ToolbarIconButton("メニュー", icon: .line3Horizontal) { onOpenSidebar() }
       }
-      ToolbarActionItem {
-        ToolbarIconButton("ツールを検索", icon: .magnifyingglass) { isSearching = true }
-      }
-      ToolbarActionGap()
       ToolbarActionItem(usesSystemBackground: true) {
         Menu {
           Button("スキルを作成", icon: .squareAndPencil) {
@@ -62,6 +59,10 @@ struct ToolsView: View {
           NavigationLink { MCPServersView() } label: { Label("MCPサーバーを登録", icon: .plugsConnected) }
         } label: { ToolbarActionLabel("ツールを追加", icon: .plus) }
       }
+    }
+    .onChange(of: model.sidebarSearchRequest) { _, request in
+      guard request != nil, model.isToolsPresented else { return }
+      isSearching = true
     }
     .sheet(item: $newSkill) { SkillEditorView(skill: $0) }
     .sheet(item: $newTemplate) { SummaryTemplateEditor(template: $0) }

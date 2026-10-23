@@ -27,22 +27,6 @@ struct LibraryView: View {
   @State private var shareTarget: Meeting?
   var onOpenSidebar: () -> Void
 
-  private var fileSearchAction: some View {
-    MeetingDetailToolbarActions(
-      primaryTitle: "検索",
-      primaryIcon: .magnifyingglass,
-      hasAudio: false,
-      isPlaying: false,
-      isRecording: false,
-      play: {},
-      share: {
-        withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-          isSearching = true
-        }
-      }
-    )
-  }
-
   private var librarySectionPicker: some View {
     @Bindable var model = model
     return MemoraTextTabBar(items: LibrarySection.allCases, selection: $model.librarySection, horizontalPadding: MemoraSpacing.screen) {
@@ -134,19 +118,12 @@ struct LibraryView: View {
         // The `if` sits outside the item, so an empty item never leaves an
         // empty glass frame behind.
         if !isSelectionMode {
-          if #available(iOS 26.0, *) {
-            ToolbarItem(placement: .topBarTrailing) {
-              fileSearchAction
-            }
-            .sharedBackgroundVisibility(.hidden)
-          } else {
-            ToolbarItem(placement: .topBarTrailing) {
-              fileSearchAction
-            }
+          ToolbarItem(placement: .topBarTrailing) {
+            RecorderStatusToolbarButton()
           }
 
           if model.librarySection == .files {
-            ToolbarActionItem {
+            ToolbarActionItem(usesSystemBackground: true) {
               CaptureToolbarButton(spaceID: model.visibleProjectID, tab: .library)
             }
           } else {
@@ -173,7 +150,7 @@ struct LibraryView: View {
         switch route {
         case .meeting(let id):
           if model.librarySection == .files {
-            MeetingDetailView(meetingID: id, morphsFromLibraryToolbar: true)
+            MeetingDetailView(meetingID: id)
               .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
           } else {
             MeetingDetailView(meetingID: id)
@@ -240,6 +217,12 @@ struct LibraryView: View {
       .onChange(of: model.selectedTab) { _, tab in
         guard tab == .library else { return }
         Task { await upcoming.refresh() }
+      }
+      .onChange(of: model.sidebarSearchRequest) { _, request in
+        guard request != nil, model.selectedTab == .library, !model.isToolsPresented,
+              model.libraryPath.isEmpty else { return }
+        endSelection()
+        isSearching = true
       }
       .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
         Task { await upcoming.refresh() }

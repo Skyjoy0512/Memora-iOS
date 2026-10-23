@@ -1,6 +1,6 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, openSidebarSearch, tapControl, tapTab } from './ui-helpers';
 
 /// Wait for the shared native-frame readiness gate before touching a control.
 async function tapStable(locator: any) {
@@ -196,7 +196,7 @@ test('journal editing and confirmed deletion persist after restart', { timeout: 
   await launchMemora(app, device, screen);
   await tapTab(screen, 'ジャーナル');
   await addMemo(screen, 'Journal CRUD');
-  await tapStable(screen.getByLabel('検索'));
+  await openSidebarSearch(screen);
   await screen.getByPlaceholder('ジャーナルを検索').fill('Journal CRUD');
   await tapStable(screen.getByText('Journal CRUD', { exact: true }).first());
   await tapStable(screen.getByLabel('その他'));
@@ -207,7 +207,7 @@ test('journal editing and confirmed deletion persist after restart', { timeout: 
   await expect(screen.getByText('Edited journal detail', { exact: true }).last()).toBeVisible();
   await app.restart();
   await tapTab(screen, 'ジャーナル');
-  await tapStable(screen.getByLabel('検索'));
+  await openSidebarSearch(screen);
   await screen.getByPlaceholder('ジャーナルを検索').fill('Journal CRUD edited');
   await tapStable(screen.getByText('Journal CRUD edited', { exact: true }).first());
   await expect(screen.getByText('Edited journal detail', { exact: true }).last()).toBeVisible();
@@ -229,7 +229,7 @@ test('journal editing and confirmed deletion persist after restart', { timeout: 
   await expect(screen.getByText('見つかりませんでした', { exact: true })).toBeVisible();
   await app.restart();
   await tapTab(screen, 'ジャーナル');
-  await tapStable(screen.getByLabel('検索'));
+  await openSidebarSearch(screen);
   await screen.getByPlaceholder('ジャーナルを検索').fill('Journal CRUD edited');
   await expect(screen.getByText('見つかりませんでした', { exact: true })).toBeVisible();
   await app.screenshot('journal-confirmed-delete-restored');
@@ -239,7 +239,7 @@ test('journal search replaces the recap and restores the timeline without losing
   await launchMemora(app, device, screen);
   await tapTab(screen, 'ジャーナル');
   await addMemo(screen, 'JournalSearchEvidence');
-  await tapControl(screen.getByRole('button', { name: '検索', exact: true }));
+  await openSidebarSearch(screen);
   const query = screen.getByRole('textbox').first();
   await query.fill('JournalSearchEvidence');
   await expect(screen.getByText('JournalSearchEvidence', { exact: true }).first()).toBeVisible();
@@ -287,7 +287,7 @@ test('editing a record saves it to the new date', async ({ app, device, screen }
   const title = `E2E edit ${Date.now()}`;
   await addMemo(screen, title);
 
-  await tapStable(screen.getByLabel('検索'));
+  await openSidebarSearch(screen);
   await screen.getByPlaceholder('ジャーナルを検索').fill(title);
   const preview = screen.getByText(title).first();
   await expect(preview).toBeVisible();

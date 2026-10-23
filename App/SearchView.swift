@@ -48,6 +48,10 @@ struct SearchView: View {
       .contentShape(Rectangle())
       .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
       .toolbar(.hidden, for: .navigationBar)
+      .onChange(of: model.sidebarSearchRequest) { _, request in
+        guard request != nil, model.selectedTab == .askAI, !model.isToolsPresented else { return }
+        isSearchSheetPresented = true
+      }
       .sheet(isPresented: $isSearchSheetPresented) {
         searchSheet
       }

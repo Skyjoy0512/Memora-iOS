@@ -1,6 +1,6 @@
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { focusComposer, launchMemora, scrollToControl, tapControl, tapTab } from './ui-helpers';
+import { focusComposer, launchMemora, openSidebarSearch, scrollToControl, tapControl, tapTab } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -65,12 +65,12 @@ test('experience: empty task action creates a task, completes it and keeps it af
 
 test('experience: search states clear their real query and hide the underlying project list', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await tapControl(screen, screen.getByRole('button', { name: '検索', exact: true }));
+  await openSidebarSearch(screen);
   const query = screen.getByRole('textbox').first();
   await query.fill('存在しない記録xyz');
   await tapControl(screen, screen.getByRole('button', { name: '検索をやり直す', exact: true }));
   await expect(query).not.toHaveValue('存在しない記録xyz');
-  await expect(screen.getByText('記録を検索')).toBeVisible();
+  await expect(screen.getByText('ファイルを検索', { exact: true })).toBeVisible();
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
   await device.openLink('memora://projects');
   await tapControl(screen, screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());
@@ -78,7 +78,7 @@ test('experience: search states clear their real query and hide the underlying p
   await tapControl(screen, screen.getByRole('button', { name: '作成', exact: true }));
   await device.openLink('memora://projects');
   await expect(screen.getByText('E2E Search Scope')).toBeVisible();
-  await tapControl(screen, screen.getByRole('button', { name: '検索', exact: true }));
+  await openSidebarSearch(screen);
   await expect(screen.getByText('プロジェクトを検索')).toBeVisible();
   await expect(screen.getByText('E2E Search Scope')).not.toBeVisible();
   await query.fill('存在しないプロジェクトxyz');
@@ -124,7 +124,7 @@ test('experience: source-only search reports a real match instead of zero', asyn
   await tapControl(screen, screen.getByLabel('閉じる'));
   await device.openLink('memora://projects');
   await tapControl(screen, screen.getByRole('button', { name: 'ファイル', exact: true }).first());
-  await tapControl(screen, screen.getByRole('button', { name: '検索', exact: true }));
+  await openSidebarSearch(screen);
   await expect(screen.getByText('ファイルを検索')).toBeVisible();
   await expect(screen.getByText('E2ESourceCountEvidence')).not.toBeVisible();
   await screen.getByRole('textbox').first().fill('E2ESourceCountEvidence');

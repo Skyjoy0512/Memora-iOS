@@ -14,10 +14,11 @@ assert 'toolbar(.hidden, for: .tabBar)' in root
 assert 'onCloseAnimationCompleted: completeSidebarAction' in root
 assert 'model.composerDismissRequests += 1' in root
 capture = (app / "CaptureToolbarButton.swift").read_text()
-assert 'matchedTransitionSource' in capture
-assert 'presentationCompactAdaptation(.popover)' in capture
-assert 'navigationTransition(.zoom' in capture
+assert 'Menu {' in capture
+assert 'confirmationDialog' in capture
+for obsolete in ('matchedTransitionSource', 'navigationTransition', 'Task.sleep', '.popover('):
+    assert obsolete not in capture
 assert 'model.selectedTab == tab && !model.isToolsPresented' in capture
 assert "navigationTransition" in (app / "HomeView.swift").read_text()
 assert "matchedTransitionSource" in (app / "HomeView.swift").read_text()
-print("Motion policy passed: immediate saved content; sidebar completion, scoped native capture morph and journal Hero retained; bottom tabs hidden")
+print("Motion policy passed: immediate saved content; sidebar completion, scoped system capture Menu/dialog and journal Hero retained; bottom tabs hidden")

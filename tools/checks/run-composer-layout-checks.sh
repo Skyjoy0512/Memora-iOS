@@ -10,3 +10,5 @@ swiftc -O -swift-version 6 App/AgentPromptSuggestion.swift App/MemoraModel+Agent
   App/SummarySensitivity.swift App/RecordAccessPolicy.swift \
   tools/checks/AgentSuggestionFixtureModel.swift tools/checks/AgentSuggestionChecks.swift -o "$check_dir/suggestions"
 "$check_dir/suggestions"
+swiftc -O -swift-version 6 App/RecorderBatteryState.swift tools/checks/RecorderBatteryChecks.swift -o "$check_dir/recorder-battery"
+"$check_dir/recorder-battery"

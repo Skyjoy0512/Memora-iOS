@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, openSidebarSearch, tapControl, tapTab } from './ui-helpers';
 import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
 
 test('journal SQLite failures retain drafts and records, then recover through the UI', { timeout: 360_000 }, async ({ app, device, screen }) => {
@@ -19,7 +19,7 @@ test('journal SQLite failures retain drafts and records, then recover through th
   }
   async function searchAndOpen(title: string) {
     await tapTab(screen, 'ジャーナル');
-    await tapControl(screen, screen.getByLabel('検索'));
+    await openSidebarSearch(screen);
     await screen.getByPlaceholder('ジャーナルを検索').fill(title);
     await tapControl(screen, screen.getByText(title, { exact: true }).first());
     await expect(screen.getByLabel('その他')).toBeVisible();
@@ -84,7 +84,7 @@ test('journal SQLite failures retain drafts and records, then recover through th
     await expect(screen.getByText('見つかりませんでした', { exact: true })).toBeVisible();
     await app.restart();
     await tapTab(screen, 'ジャーナル');
-    await tapControl(screen, screen.getByLabel('検索'));
+    await openSidebarSearch(screen);
     await screen.getByPlaceholder('ジャーナルを検索').fill('Recovered journal edit');
     await expect(screen.getByText('見つかりませんでした', { exact: true })).toBeVisible();
   } finally {

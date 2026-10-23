@@ -61,10 +61,12 @@ final class OmiPairingManager: NSObject {
   private(set) var devices: [Device] = []
   /// Populated once a device is connected and it reports its own details.
   private(set) var details: DeviceDetails?
+  private(set) var batteryState = RecorderBatteryState()
 
   @ObservationIgnored private var centralManager: CBCentralManager?
   @ObservationIgnored private var peripherals: [UUID: CBPeripheral] = [:]
   @ObservationIgnored private var connectedPeripheral: CBPeripheral?
+  @ObservationIgnored private var connectingPeripheralID: UUID?
   /// True only while someone is looking for a device. Bluetooth coming back on
   /// must not start a scan by itself.
   @ObservationIgnored private var wantsScanning = false
@@ -74,6 +76,8 @@ final class OmiPairingManager: NSObject {
   private static let firmwareRevisionCharacteristic = CBUUID(string: "2A26")
   private static let modelNumberCharacteristic = CBUUID(string: "2A24")
   private static let manufacturerNameCharacteristic = CBUUID(string: "2A29")
+  private static let batteryService = CBUUID(string: RecorderBatteryState.serviceUUID)
+  private static let batteryLevelCharacteristic = CBUUID(string: RecorderBatteryState.characteristicUUID)
   private static let rememberedNameKey = "omiRememberedDeviceName"
 
   /// True once an external recorder has been paired, even if none is connected
@@ -119,6 +123,11 @@ final class OmiPairingManager: NSObject {
 
   func connect(to device: Device) {
     guard let peripheral = peripherals[device.id], let centralManager else { return }
+    if let previous = connectedPeripheral { centralManager.cancelPeripheralConnection(previous) }
+    connectedPeripheral = nil
+    details = nil
+    batteryState = RecorderBatteryState()
+    connectingPeripheralID = peripheral.identifier
     wantsScanning = false
     centralManager.stopScan()
     state = .connecting(device.name)
@@ -131,7 +140,9 @@ final class OmiPairingManager: NSObject {
     }
     wantsScanning = false
     connectedPeripheral = nil
+    connectingPeripheralID = nil
     details = nil
+    batteryState = RecorderBatteryState()
     peripherals = [:]
     devices = []
     UserDefaults.standard.removeObject(forKey: Self.rememberedNameKey)
@@ -193,6 +204,10 @@ final class OmiPairingManager: NSObject {
 
 extension OmiPairingManager: CBCentralManagerDelegate {
   func centralManagerDidUpdateState(_ central: CBCentralManager) {
+    if central.state != .poweredOn {
+      batteryState = RecorderBatteryState()
+      connectingPeripheralID = nil
+    }
     beginScanIfPossible(using: central)
   }
 
@@ -216,23 +231,34 @@ extension OmiPairingManager: CBCentralManagerDelegate {
   }
 
   func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+    guard connectingPeripheralID == peripheral.identifier else {
+      central.cancelPeripheralConnection(peripheral)
+      return
+    }
+    connectingPeripheralID = nil
     connectedPeripheral = peripheral
+    batteryState.connected(to: peripheral.identifier)
     let name = peripheral.name ?? "Omi"
     UserDefaults.standard.set(name, forKey: Self.rememberedNameKey)
     details = DeviceDetails(identifier: peripheral.identifier, name: name)
     peripheral.delegate = self
     // The Device Information service carries the firmware revision, model and
     // manufacturer the details screen shows.
-    peripheral.discoverServices([Self.deviceInformationService, Self.audioService])
+    peripheral.discoverServices([Self.deviceInformationService, Self.audioService, Self.batteryService])
     state = .connected(name)
   }
 
   func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+    guard connectingPeripheralID == peripheral.identifier else { return }
+    connectingPeripheralID = nil
+    batteryState = RecorderBatteryState()
     peripherals[peripheral.identifier] = nil
     state = .failed(error?.localizedDescription ?? "Omiへ接続できませんでした。")
   }
 
   func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+    guard connectedPeripheral === peripheral else { return }
+    batteryState.disconnected(from: peripheral.identifier)
     connectedPeripheral = nil
     details = nil
     peripherals[peripheral.identifier] = nil
@@ -246,16 +272,20 @@ extension OmiPairingManager: CBCentralManagerDelegate {
 
 extension OmiPairingManager: CBPeripheralDelegate {
   func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-    guard error == nil, let services = peripheral.services else { return }
-    for service in services where service.uuid == Self.deviceInformationService {
-      peripheral.discoverCharacteristics(
-        [
-          Self.firmwareRevisionCharacteristic,
-          Self.modelNumberCharacteristic,
-          Self.manufacturerNameCharacteristic
-        ],
-        for: service
-      )
+    guard connectedPeripheral === peripheral, error == nil, let services = peripheral.services else { return }
+    for service in services {
+      if service.uuid == Self.batteryService {
+        peripheral.discoverCharacteristics([Self.batteryLevelCharacteristic], for: service)
+      } else if service.uuid == Self.deviceInformationService {
+        peripheral.discoverCharacteristics(
+          [
+            Self.firmwareRevisionCharacteristic,
+            Self.modelNumberCharacteristic,
+            Self.manufacturerNameCharacteristic
+          ],
+          for: service
+        )
+      }
     }
   }
 
@@ -264,9 +294,15 @@ extension OmiPairingManager: CBPeripheralDelegate {
     didDiscoverCharacteristicsFor service: CBService,
     error: Error?
   ) {
-    guard error == nil, let characteristics = service.characteristics else { return }
+    guard connectedPeripheral === peripheral, error == nil, let characteristics = service.characteristics else { return }
     for characteristic in characteristics {
       switch characteristic.uuid {
+      case Self.batteryLevelCharacteristic:
+        guard service.uuid == Self.batteryService else { continue }
+        if characteristic.properties.contains(.read) { peripheral.readValue(for: characteristic) }
+        if characteristic.properties.contains(.notify) || characteristic.properties.contains(.indicate) {
+          peripheral.setNotifyValue(true, for: characteristic)
+        }
       case Self.firmwareRevisionCharacteristic,
         Self.modelNumberCharacteristic,
         Self.manufacturerNameCharacteristic:
@@ -278,6 +314,12 @@ extension OmiPairingManager: CBPeripheralDelegate {
   }
 
   func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+    guard connectedPeripheral === peripheral, case .connected = state else { return }
+    if characteristic.uuid == Self.batteryLevelCharacteristic {
+      guard characteristic.service?.uuid == Self.batteryService else { return }
+      batteryState.receive(error == nil ? characteristic.value : nil, from: peripheral.identifier)
+      return
+    }
     guard error == nil, let data = characteristic.value else { return }
     let value = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
     guard !value.isEmpty else { return }

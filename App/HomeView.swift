@@ -171,27 +171,19 @@ struct HomeView: View {
           }
         }
 
-        // The external recorder's state only earns a place here for people who
-        // have set one up; the sidebar still reaches the setting either way.
-        if isOmiConnected || OmiPairingManager.hasRememberedDevice {
-          ToolbarItem(placement: .topBarLeading) {
-            sourceStatusButton
-          }
-        }
-
-        ToolbarActionItem {
-          ToolbarIconButton("検索", icon: .magnifyingglass) {
-            withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-              isSearching = true
-            }
-          }
-          .labelStyle(.iconOnly)
+        ToolbarItem(placement: .topBarTrailing) {
+          RecorderStatusToolbarButton()
         }
 
         // The create action is the top-right control on every main screen.
-        ToolbarActionItem {
+        ToolbarActionItem(usesSystemBackground: true) {
           CaptureToolbarButton(spaceID: model.visibleProjectID, tab: .home)
         }
+      }
+      .onChange(of: model.sidebarSearchRequest) { _, request in
+        guard request != nil, model.selectedTab == .home, !model.isToolsPresented,
+              model.homePath.isEmpty else { return }
+        isSearching = true
       }
       .sheet(isPresented: $showsReview) {
         JournalReviewView(date: selectedDate)
@@ -290,20 +282,6 @@ struct HomeView: View {
     }
   }
 
-  /// The lifelog connection lives beside the menu so the journal itself keeps
-  /// the full screen.
-  private var sourceStatusButton: some View {
-    Button {
-      model.isSettingsPresented = true
-    } label: {
-      Label("Omi", icon: isOmiConnected ? .dotRadiowavesLeftAndRight : .link)
-        .font(.subheadline.weight(.medium))
-        .foregroundStyle(isOmiConnected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-    }
-    .accessibilityLabel(isOmiConnected ? "Omi 接続中" : "ライフログの接続先")
-    .accessibilityHint("レコーダー設定を開きます")
-  }
-
   /// True while the journal is showing the current day.
   private var isViewingToday: Bool {
     Calendar.current.isDateInToday(selectedDate)
@@ -323,11 +301,6 @@ struct HomeView: View {
       selectedDate = today
     }
     todayAnchor = today
-  }
-
-  private var isOmiConnected: Bool {
-    if case .connected = model.omiPairingManager.state { return true }
-    return false
   }
 
   private var matchingEntries: [LifeLogEntry] {

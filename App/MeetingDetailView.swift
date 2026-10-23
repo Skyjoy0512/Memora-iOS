@@ -7,9 +7,7 @@ struct MeetingDetailView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var meetingID: UUID
-  var morphsFromLibraryToolbar = false
   @State private var detailTab: RootTab?
-  @State private var hasReplacedToolbarIcons = false
   /// When set, the transcript opens and plays from here — used when an AI answer's
   /// source line is tapped.
   var initialPlaybackStart: TimeInterval?
@@ -53,10 +51,8 @@ struct MeetingDetailView: View {
     var linkURL: URL?
   }
 
-  private func playbackAndShareActions(_ meeting: Meeting) -> some View {
+  private func playbackAndShareActions(_ meeting: Meeting) -> some ToolbarContent {
     MeetingDetailToolbarActions(
-      morphsFromLibrary: morphsFromLibraryToolbar,
-      onReplaceIcons: { hasReplacedToolbarIcons = true },
       hasAudio: meeting.audioURL != nil,
       isPlaying: player.isPlaying,
       isRecording: model.isRecording,
@@ -161,16 +157,7 @@ struct MeetingDetailView: View {
                 .accessibilityLabel("Notionへ保存中")
             }
           }
-          if #available(iOS 26.0, *) {
-            ToolbarItem(placement: .topBarTrailing) {
-              playbackAndShareActions(meeting)
-            }
-            .sharedBackgroundVisibility(.hidden)
-          } else {
-            ToolbarItem(placement: .topBarTrailing) {
-              playbackAndShareActions(meeting)
-            }
-          }
+          playbackAndShareActions(meeting)
           ToolbarActionItem(usesSystemBackground: true) {
             Menu {
               Button("プライバシーと外部送信", icon: .lockShield) { isPrivacyPresented = true }
@@ -206,8 +193,7 @@ struct MeetingDetailView: View {
                 isDeleting = true
               }
             } label: {
-              ToolbarActionLabel("その他", icon: morphsFromLibraryToolbar && !hasReplacedToolbarIcons && !reduceMotion ? .line3HorizontalDecrease : .ellipsis)
-                .contentTransition(reduceMotion ? .identity : .opacity)
+              ToolbarActionLabel("その他", icon: .ellipsis)
             }
           }
         }

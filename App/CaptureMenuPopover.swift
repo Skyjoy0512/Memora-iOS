@@ -1,137 +1,27 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
-/// The capture choices shown from the top-right create control.
+/// Shared native Menu/dialog actions; presentation is owned by the system.
 struct CaptureMenuPopover: View {
   var spaceID: UUID? = nil
+  var onSelect: (CaptureAction) -> Void
   @Environment(MemoraModel.self) private var model
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var isFileImporterPresented = false
-  @State private var importContext: LocalImportContext?
-  @State private var pendingAction: CaptureAction?
-  @State private var pendingSourceSpaceID: UUID?
-  @State private var contentHeight: CGFloat = 260
-  @ScaledMetric(relativeTo: .body) private var menuWidth: CGFloat = 260
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 0) {
-        Text("新しい記録")
-          .font(MemoraTypography.metadata.weight(.medium))
-          .foregroundStyle(MemoraPalette.textSecondary)
-          .padding(.horizontal, MemoraSpacing.sm)
-          .padding(.vertical, MemoraSpacing.xs)
-        if let spaceID, let space = model.space(id: spaceID) {
-          Label("保存先：\(space.name)", icon: .folder)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(MemoraSpacing.sm)
-        }
-        if let spaceID, model.space(id: spaceID) != nil {
-          Button {
-            pendingSourceSpaceID = spaceID
-            collapse()
-          } label: {
-            MemoraActionLabel(title: "ソースを追加", detail: "リンク・ファイル・メモを参照資料にします。", icon: .paperclip)
-          }
-          .accessibilityLabel("ソースを追加")
-        }
-        ForEach(CaptureAction.available) { action in
-          Button {
-            select(action)
-          } label: {
-            MemoraActionLabel(title: action.title, icon: action.symbol)
-          }
-          .accessibilityLabel(action.title)
-          .accessibilityHint(action.detail)
-        }
+    if let spaceID, let space = model.space(id: spaceID) {
+      Button {
+        model.sourceAddProjectID = spaceID
+      } label: {
+        Label("ソースを追加", icon: .paperclip)
       }
-      .padding(MemoraSpacing.sm)
-      .buttonStyle(MemoraMenuButtonStyle())
-      .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-        if abs(contentHeight - height) > 0.5 { contentHeight = height }
-      }
+      .accessibilityHint("保存先：\(space.name)。リンク・ファイル・メモを参照資料にします。")
     }
-    .scrollBounceBehavior(.basedOnSize)
-    .frame(idealWidth: min(menuWidth, 320), maxWidth: min(menuWidth, 320))
-    .frame(idealHeight: min(contentHeight, 480), maxHeight: min(contentHeight, 480))
-    .onDisappear(perform: completeSelection)
-    .fileImporter(
-      isPresented: $isFileImporterPresented,
-      allowedContentTypes: [.audio],
-      allowsMultipleSelection: false,
-      onCompletion: handleAudioImport
-    )
-  }
-
-  private func select(_ action: CaptureAction) {
-    InteractionFeedback.shared.send(.tap)
-    if action == .importAudio {
-      importContext = LocalImportContext(projectID: spaceID, in: model)
-      guard importContext != nil else {
-        collapse()
-        model.importErrorMessage = String(localized: "この保存先には取り込めません。画面を開き直してください。")
-        return
+    ForEach(CaptureAction.available) { action in
+      Button {
+        onSelect(action)
+      } label: {
+        Label(action.title, icon: action.symbol)
       }
-      isFileImporterPresented = true
-    } else {
-      pendingAction = action
-      collapse()
-    }
-  }
-
-  private func completeSelection() {
-    let action = pendingAction
-    let sourceSpaceID = pendingSourceSpaceID
-    let destinationID = spaceID
-    pendingAction = nil
-    pendingSourceSpaceID = nil
-    guard action != nil || sourceSpaceID != nil else { return }
-    Task { @MainActor in
-      // The zoom presentation must finish before another sheet can be shown.
-      try? await Task.sleep(for: .milliseconds(reduceMotion ? 0 : 180))
-      if let sourceSpaceID {
-        model.sourceAddProjectID = sourceSpaceID
-        return
-      }
-      switch action {
-      case .recording:
-        await model.startCapture(spaceID: destinationID)
-      case .newMemo:
-        model.isLifeLogCreationPresented = true
-      case .newChat:
-        model.selectedTab = .askAI
-        model.startNewAIChat()
-      case .phoneCall:
-        model.openCalling()
-      case .onlineMeeting:
-        model.onlineMeetingCaptureSpaceID = destinationID
-        model.isOnlineMeetingCapturePresented = true
-      case .importAudio, nil:
-        break
-      }
-    }
-  }
-
-  private func collapse() {
-    withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
-      model.isCaptureSourcePresented = false
-    }
-  }
-
-  private func handleAudioImport(_ result: Result<[URL], any Error>) {
-    let context = importContext
-    importContext = nil
-    collapse()
-    switch result {
-    case .success(let urls):
-      guard let url = urls.first else { return }
-      Task {
-        await model.importPickedAudio(from: url, context: context)
-      }
-    case .failure:
-      model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"
+      .accessibilityHint(action.detail)
     }
   }
 }

@@ -26,6 +26,7 @@ struct OmiDeviceDetailView: View {
         infoRow("モデル", details?.model ?? "取得できませんでした")
         infoRow("メーカー", details?.manufacturer ?? "取得できませんでした")
         infoRow("識別子", shortIdentifier)
+        infoRow("バッテリー", manager.batteryState.percentage.map { "\($0)%" } ?? "取得できませんでした")
       }
 
       Section {

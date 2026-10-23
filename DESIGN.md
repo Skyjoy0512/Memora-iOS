@@ -294,19 +294,28 @@ competing for a narrow horizontal column.
 ## Interaction and accessibility
 
 Liquid Glass belongs to navigation, the side menu, the top-right create control
-and the composer. There are no bottom tabs. Keep the create popover compact and
-the composer on the bottom edge.
+and the composer. There are no bottom tabs. Keep the composer on the bottom edge.
 Create-menu actions show a stable action name; input explanations are spoken hints.
-The create control is the source of the system zoom/morph presentation. The
-composer attachment control delegates presentation to the native Menu, so opening
-it never replaces the input surface. Native rows preserve all photo, audio, file,
+The create and composer attachment controls delegate presentation to native Menu,
+without custom zoom transitions, measured popovers or timed dispatch delays.
+Empty-state capture requests reuse the create actions in a native confirmation
+dialog. Attachment opening never replaces the input surface.
+Native attachment rows preserve all photo, audio, file,
 mention and integration actions; no unimplemented camera or new assistant mode is implied.
 Memo creation is presented by the root, not the Journal tab, so a create menu
 on Library can open it too. Journal supplies its selected day through transient
-model state; dismissal clears that date. Capture destinations are dispatched
-after the popover disappears, keeping the system morph and the next sheet apart.
-Each toolbar owns its popover state; only the active destination responds to the
+model state; dismissal clears that date. Capture destinations reuse the existing
+model/import paths; the system coordinates menu dismissal and the next sheet.
+Only the active destination responds to the
 shared capture request. Inactive TabView toolbars must never present alongside it.
+Search lives in the side menu and names the current destination. It opens the
+existing local search UI without changing the selected screen; Ask AI retains
+its conversation search sheet. Root Library and Journal toolbars use the former
+search slot for device status and the recorder hub. Only a connected recorder's
+valid standard Bluetooth Battery Service value is shown as a percentage;
+unavailable values are not invented or substituted with the phone battery.
+Record-detail playback/share actions are native ToolbarItemGroup items, available
+immediately without staggered timers or manually drawn glass backgrounds.
 Tools search uses the same toolbar field as Library and Journal, keeping the
 skills/templates/connectors segments in place. It filters local catalog metadata,
 not record contents or connected services. Empty results sit above the keyboard
@@ -314,8 +323,6 @@ with a short text hint rather than a large decorative icon.
 Skill editing explains missing or over-limit fields inline, keeps procedure text
 intact and provides a keyboard Done action. Cancel confirms only meaningful
 unsaved changes; no confirmation is needed for an unchanged editor.
-The native popover sizes to measured content, caps its ideal height and scrolls;
-the recording/import/project destination callbacks are unchanged.
 Purposeful spring motion remains; Reduce Motion suppresses nonessential movement.
 Shared timings are 0.32s for screens, 0.30s for the drawer, 0.22s for controls
 and 0.14s for press feedback. First-appearance movement is limited to 8pt;

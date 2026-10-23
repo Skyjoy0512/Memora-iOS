@@ -1,6 +1,6 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { focusComposer, launchMemora, tapControl, tapTab } from './ui-helpers';
+import { focusComposer, launchMemora, openSidebarSearch, tapControl, tapTab } from './ui-helpers';
 
 // Also run with the dedicated simulator's system text size set to Accessibility
 // XXXL using agent-device settings. No fixed font override is injected in-app.
@@ -30,7 +30,7 @@ test('design: mention controls remain below navigation and above native input', 
 
 test('design: toolbar search clears without dismissing input and cancels back to tabs', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await tapControl(screen, screen.getByRole('button', { name: '検索', exact: true }));
+  await openSidebarSearch(screen);
   const input = screen.getByRole('textbox').first();
   await expect(input).toBeFocused();
   await input.fill('DesignSearch');

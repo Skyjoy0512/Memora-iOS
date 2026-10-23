@@ -4,6 +4,7 @@ import SwiftUI
 struct FileSidebarView: View {
   @Environment(MemoraModel.self) private var model
 
+  var onSearch: () -> Void
   var onOpenRecorder: () -> Void
   var onOpenProjects: () -> Void
   var onOpenDocuments: () -> Void
@@ -24,6 +25,12 @@ struct FileSidebarView: View {
         VStack(alignment: .leading, spacing: 0) {
           VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
             VStack(spacing: 0) {
+              SidebarRow(title: "検索", symbol: .magnifyingglass,
+                detail: model.isToolsPresented ? "ツール" : model.selectedTab.title) {
+                onSearch()
+              }
+              .accessibilityLabel("検索")
+              .accessibilityHint("表示中の画面を検索します")
               SidebarRow(title: "ライブラリ", symbol: .folder,
                 isSelected: !model.isToolsPresented && model.selectedTab == .library) {
                 onSelectTab(.library)

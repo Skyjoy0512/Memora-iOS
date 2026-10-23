@@ -41,8 +41,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   (`FileSidebarView`). The bottom edge belongs to the Ask AI composer alone. `RootTab` still names
   the destination and keeps the old saved identifiers, but nothing draws tabs.
 - **Create (＋) button**: every main screen puts the create control at the top
-  right (`CaptureToolbarButton`), opening `CaptureMenuPopover`. It holds record,
-  import, memo, online meeting, new chat and the flagged phone-call action. Do
+  right (`CaptureToolbarButton`), opening a native `Menu` whose shared actions
+  live in `CaptureMenuPopover`. Empty-state requests use those same actions in
+  a native confirmation dialog; do not add custom zoom or delayed dispatch.
+  It holds record, import, memo, online meeting, new chat and the flagged phone-call action. Do
   not move it back to a floating bottom button.
 - **Files screen top chrome**: do not drive the navigation bar's visibility from
   a scroll-offset flag. Hiding and showing the bar from that state re-runs
@@ -53,9 +55,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - **Bottom edge**: the Ask AI composer stays at the bottom; scrolling moves no
   navigation bar because there is none. Search and file selection still hide
   the composer so results or the share / move / delete bar own the bottom edge.
-- **Search**: Files and Journal search from a toolbar magnifying-glass button
-  that opens `ToolbarSearchField` in place of the navigation bar. While it is
-  open (`isSearchActive`), the composer hides and the screen shows only results,
+- **Search**: the side menu's Search action searches the current destination.
+  Files, Journal and Tools open `ToolbarSearchField`; Ask AI opens its existing
+  conversation search sheet. The former root search toolbar slot belongs to
+  `RecorderStatusToolbarButton`, which opens the existing recorder hub. Battery
+  values come only from the connected recorder, never the phone or a fixture.
+  While the toolbar field is open (`isSearchActive`), the composer hides and the screen shows only results,
   never the list behind them. Do not bring back an always-visible `.searchable`
   drawer. Picking files on Files (`isFileSelectionActive`) hides the composer
   the same way, so the share / move / delete bar owns the bottom edge.

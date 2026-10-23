@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-24",
+  "branch": "main",
+  "deploymentTarget": "iOS 26",
+  "simulatorSDK": "27.1",
+  "debugPreview": {
+    "result": "success",
+    "log": "2026-10-23T23-51-59-c8ca2a8d.log"
+  },
+  "releaseSimulatorBuild": {
+    "result": "success",
+    "log": "2026-10-23T23-54-45-168a0abe.log"
+  },
+  "existingBuildWarnings": 11,
+  "hostSuites": {
+    "next-generation": "passed",
+    "design-refresh": "passed",
+    "background-summary": "passed",
+    "composer-layout": "passed",
+    "optimization": "passed"
+  },
+  "hostArtifacts": "/Volumes/WorkspaceSSD/Development/Temp/memora-native-header-20261023-quality",
+  "ui": {
+    "runID": "01a1694a-8c5f-794d-9291-b1106ded9d35",
+    "report": ".e2e/regression/native-header-verified/report.json",
+    "discovered": 93,
+    "selected": 8,
+    "executed": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "interrupted": 0,
+    "retries": 0,
+    "filteredOutNotExecuted": 85,
+    "modelTokens": 0,
+    "downloads": 0
+  },
+  "priorUnsuccessfulUIRuns": [
+    { "output": "native-header-initial", "selected": 7, "passed": 6, "failed": 1 },
+    { "output": "native-header-final", "selected": 8, "passed": 6, "failed": 2 }
+  ],
+  "visuallyReviewed": [
+    "Library header Light/Dark",
+    "sidebar search entry",
+    "Library and Journal search",
+    "native create Menu Light/Dark",
+    "native create Menu with Reduce Motion",
+    "largest accessibility text and Menu scrolling to final action",
+    "native record-detail toolbar"
+  ],
+  "realBLEConnectionAndBatteryNotificationsVerified": false,
+  "realAudioRecordingOrImportVerifiedThisTurn": false,
+  "spokenVoiceOverVerified": false,
+  "japaneseMarkedTextCompositionVerified": false,
+  "frameTimingOrDevicePerformanceMeasured": false,
+  "matchedBeforeAfterCaptured": false,
+  "allMemoraPhasesComplete": false
+}

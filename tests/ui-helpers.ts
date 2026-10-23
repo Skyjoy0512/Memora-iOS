@@ -36,6 +36,16 @@ export async function tapTab(screen: any, name: string) {
   await expect(screen.getByLabel('メニュー').first()).toBeVisible();
 }
 
+export async function openSidebarSearch(screen: any) {
+  await tapControl(screen, screen.getByLabel('メニュー').first());
+  await tapControl(screen, screen.getByRole('button', { name: '検索', exact: true }));
+  const input = screen.getByRole('textbox', { visible: true }).first();
+  await expect(input).toBeVisible();
+  await stableBounds(input);
+  await input.tap();
+  await expect(input).toBeFocused();
+}
+
 export async function focusComposer(screen: any) {
   const input = screen.getByTestId('ai.composer.input');
   await expect(input).toBeVisible();

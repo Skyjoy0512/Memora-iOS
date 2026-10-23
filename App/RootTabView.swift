@@ -9,7 +9,6 @@ struct RootTabView: View {
   @State private var isComposing = false
   @State private var isSidebarOpen = false
   @State private var pendingSidebarAction: (() -> Void)?
-  @State private var isRecorderPresented = false
   @State private var isKeyboardVisible = false
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
   /// controls re-add the home indicator inset themselves.
@@ -21,8 +20,9 @@ struct RootTabView: View {
     SidebarContainer(isOpen: $isSidebarOpen, isEnabled: canRevealSidebar,
       onCloseAnimationCompleted: completeSidebarAction) {
       FileSidebarView(
+        onSearch: { closeSidebar { model.sidebarSearchRequest = UUID() } },
         onOpenRecorder: {
-          closeSidebar { isRecorderPresented = true }
+          closeSidebar { model.isRecorderConnectionPresented = true }
         },
         onOpenProjects: {
           selectFromSidebar {
@@ -137,12 +137,12 @@ struct RootTabView: View {
     .sheet(isPresented: $model.isLifeLogCreationPresented, onDismiss: { model.lifeLogCreationDate = nil }) {
       LifeLogCreationSheet(date: model.lifeLogCreationDate ?? .now, eventDate: model.lifeLogCreationDate)
     }
-    .sheet(isPresented: $isRecorderPresented) {
+    .sheet(isPresented: $model.isRecorderConnectionPresented) {
       NavigationStack {
         ExternalRecorderSettingsView()
           .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-              ToolbarIconButton("完了", icon: .checkmark) { isRecorderPresented = false }
+              ToolbarIconButton("完了", icon: .checkmark) { model.isRecorderConnectionPresented = false }
             }
           }
       }

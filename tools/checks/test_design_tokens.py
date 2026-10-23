@@ -57,7 +57,7 @@ class DesignTokenChecks(unittest.TestCase):
         for title in ("ライブラリ", "ジャーナル", "Ask AI", "ツール"):
             self.assertIn(f'SidebarRow(title: "{title}"', sidebar)
         capture = (APP / "CaptureToolbarButton.swift").read_text()
-        for contract in ("ToolbarIconButton", "matchedTransitionSource", "presentationCompactAdaptation(.popover)"):
+        for contract in ("ToolbarActionLabel", "Menu {", "CaptureMenuPopover(spaceID: spaceID, onSelect: select)"):
             self.assertIn(contract, capture)
         source = (APP / "QuickAIComposer.swift").read_text()
         self.assertIn("ComposerMentionToken.parse", source)
