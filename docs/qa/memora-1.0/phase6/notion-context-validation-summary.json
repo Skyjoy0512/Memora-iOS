@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-23",
+  "branch": "main",
+  "implementationCommit": "c8eefc6",
+  "phaseStatus": "Phase 6 in progress; bounded Notion export/agent authorization and settings revisions locally validated",
+  "builds": {
+    "debugPreview": { "status": "passed", "log": "2026-10-23T22-46-18-06c4f4e8.log", "warnings": 11 },
+    "releaseSimulator": { "status": "passed", "log": "2026-10-23T22-46-20-d6c6a1ee.log", "warnings": 11 },
+    "sourceBoundary": "Both contain final app sources; no subsequent app-source changes",
+    "iosSDK": "27.1",
+    "deploymentTarget": "iOS 26",
+    "physicalDeviceVerified": false,
+    "preservedLogs": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-notion-context-final-quality/"
+  },
+  "host": {
+    "summary": "/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-notion-context-final-quality/summary.json",
+    "suites": {
+      "next-generation": { "status": "passed", "exitCode": 0 },
+      "design-refresh": { "status": "passed", "exitCode": 0 },
+      "background-summary": { "status": "passed", "exitCode": 0 },
+      "composer-layout": { "status": "passed", "exitCode": 0 },
+      "optimization": { "status": "passed", "exitCode": 0 }
+    },
+    "finalNotionStandalone": { "status": "passed", "exitCode": 0, "reason": "Rerun after final post-save trace settlement adjustment" },
+    "suspendedAgentCases": 188,
+    "suspendedManualCases": 45,
+    "coverage": [
+      "Agent: cloud 24 and compact 23 mutations at approval/create/middle append/final append",
+      "Manual: 15 workspace/record/task/privacy/settings mutations at three HTTP suspension points",
+      "Exact permitted meeting/task snapshots, omitted private and unrelated tasks, no silent inclusion of newly added tasks",
+      "Workspace/generation/request/message/policy/plugin/Gmail permission changes; Notion OFF and OFF-to-ON are agent-only restrictions",
+      "Manual export remains available while Ask AI integration is disabled, but still requires source external-send permission",
+      "Production settings revision detects token and parent A-to-B-to-A; failed token writes/deletes retain old fixture value",
+      "Partial page ID/URL retained after creation; original owner receives local recovery trace, stale outcome not sent to model or new conversation",
+      "Decline/cancel/401/403/429/500 and no automatic retry/recreation; existing Notion service batching and error checks rerun",
+      "Existing Gmail/MCP/privacy/SQLite/Office/source/conversation tests passed"
+    ],
+    "initialAttempt": { "status": "compileFailed", "exitCode": 1, "cause": "AIAnswerFailure.swift omitted from host compiler inputs", "resolution": "Added production source to runner; initial unexecuted checks not counted as passed" },
+    "boundaries": [
+      "Production Notion service/export/agent contexts, shared conversation binding, privacy/registry validation and integration-setting mutations run",
+      "Meeting shape/model state/registry assembly/approval UI/Keychain/configuration inputs/HTTP are fixtures",
+      "recordCloudReads assembly is a fixture; production cloud provenance and SQLite are exercised separately by existing suites",
+      "No live Notion/Keychain/UserDefaults/URLSession network/account use in host checks",
+      "No durable SQLite export receipt or cross-workspace recovery list implemented or claimed",
+      "Post-service-return trace settlement branch reviewed and compiled; the precise executor-hop window is not deterministically reproduced",
+      "No Xcode test targets; no XCTest or bitrig test success claimed"
+    ]
+  },
+  "ui": {
+    "report": ".e2e/regression/phase6-notion-verified/report.json",
+    "runID": "01a16905-f3d1-7374-8d6c-64ca322b71f7",
+    "device": "Dedicated iPhone 18 Pro Max CoreSimulator; fresh app install per scenario, not user preview",
+    "discovered": 86,
+    "selected": 5,
+    "executed": 5,
+    "passed": 5,
+    "failed": 0,
+    "skippedSelected": 0,
+    "interrupted": 0,
+    "flaky": 0,
+    "filteredUnexecuted": 81,
+    "retries": 0,
+    "modelTokens": 0,
+    "downloads": 0,
+    "coverage": ["Onboarding/restart", "Library/Journal/Ask AI side-menu navigation", "Tools sections", "Unconfigured Gmail Light/Dark", "Unconfigured Notion Light/Dark, non-secret parent field edit/restart/reload/clear without a token or connected state"],
+    "visuallyReviewedScreenshots": ["notion-context-unconfigured-light.png", "notion-context-unconfigured-dark.png"],
+    "screenshotBoundary": "Regression images, not redesign Before/After. SecureField automatically masked, no token entered. Save-failure alert, connected state and real export UI not exercised.",
+    "initialFailure": { "report": ".e2e/regression/phase6-notion-context/report.json", "passed": 4, "failed": 1, "cause": "Empty native TextField AX value equals placeholder, not empty string", "resolution": "Read trace and screenshot; assert previous value absent and native placeholder value. Initial failure and unreached Dark remainder not counted as passing." },
+    "intermediateSuccessNotAddedToFinalCounts": ".e2e/regression/phase6-notion-context-final/report.json"
+  },
+  "performance": { "newBeforeAfterMeasurement": false, "improvementClaim": null, "unmeasured": ["Large snapshot validation overhead", "Physical input latency", "Scroll FPS", "Memory", "Battery"] },
+  "remaining": {
+    "P0": ["Additional binding audit for completed Notion results across later model sends", "Physical recording/interruption/restore data protection"],
+    "P1": ["Durable partial-export receipts/restart recovery", "Calendar state transitions", "Non-agent Gmail and plugin catalog edit/revert epochs", "Live Notion/Gmail/MCP SDK authentication and network behavior", "Real Keychain-failure alert", "Database-label/page-only implementation wording alignment", "Phase 7 accessibility and physical performance"],
+    "P2": ["Notion API version and long rich-text migration", "Semantic skills", "Reusable thinking-logo component"]
+  },
+  "limitations": ["Already dispatched external writes cannot be undone", "Rechecks do not atomically synchronize network bytes", "Settings revision covers app mutation paths, not every out-of-process write", "No comprehensive Phase 6 or complete-result lifetime guarantee"],
+  "externalActions": { "push": false, "upstreamRefetchThisUnit": false, "realAccountAccess": false, "scopeExpansion": false, "realExternalWrites": false, "realBilling": false }
+}

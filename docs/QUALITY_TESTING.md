@@ -96,6 +96,24 @@ Keychain・実UserDefaults・実URLSession/ネットワーク・実Notionには�
 HTTP 401/403/404/429/500/502は各段階の模擬応答であり、実認証/料金上限の証明ではない。
 既存呼出先のエラー表示は維持するが、Notionエラー画面の実サービス視覚確認は含まない。
 
+`run-notion-agent-checks.sh`は本番のexport/agent context、共有会話binding、NotionService、
+設定世代更新、連携ON/OFF処理とprivacy/registry検証を実行する。
+承認・create・中間append・最終appendの待機中変更をcloud/compact計188ケース、
+手動保存の45ケースで確認する。設定A→B→A、workspace/request変更、編集/削除/送信許可、
+Gmail許可失効、Notion OFF→ON、キャンセル/HTTPエラー、既知ページID/URLの保持を含む。
+未許可/別会議のタスクを送らず、承認後に増えたタスクも勝手に追加しない。
+「Ask AIで利用する」OFFは手動保存の禁止ではなく、手動でも記録の送信許可は必要。
+token保存/削除失敗の返値と旧値保持もfixtureで確認する。
+Meeting形状/model state、registry組立、承認UI、Keychain、設定供給、HTTPはfixture。
+実SQLiteにNotionの受領票を保存するテストではなく、再起動後やworkspace変更後の
+永続的な部分保存一覧も未実装。既知ページを別会話へ自動再送しない。
+
+`notion-connection.e2e.ts`は専用Simulatorの未設定画面をLight/Darkで確認し、
+tokenを保存せず、親IDの非秘密テスト文字列だけを編集・再起動・再表示・消去する。
+親IDだけを入力しても設定済みと表示しない。native TextFieldの空のAX valueは
+placeholderなので、消去前の値がないこととplaceholderの両方を確認する。
+Keychain保存失敗のalertや実Notionへの保存画面はこのUI E2Eの対象外。
+
 `run-gmail-service-checks.sh`は本番GmailServiceを、設定/Keychain/browser/時計/HTTPの
 差し替え境界で実行する。解除リクエスト待機中の新規読取拒否、削除失敗時の解除markerと
 サービス再生成、再接続後の古いtoken/list/detail応答・invalid_grantの破棄、接続中に開始した

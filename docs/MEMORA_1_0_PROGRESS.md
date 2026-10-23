@@ -905,6 +905,82 @@ Host検証の範囲:
 - 性能改善の実測は追加していない。保持済みgrant確認に伴うplugin/registry検証の負荷、
   実機の入力遅延/スクロール/メモリ/電池、録音保持/中断復旧、Phase 7は未検証。
 
+### Notionの外部保存を承認済みsnapshotと現在の権限へ限定する（2026-10-23）
+
+- `NotionExportContext`で会議と外部送信を許可した関連タスクを固定し、会議詳細の手動保存と
+  AI保存で同じ送信検証を再利用した。private/別会議のタスクは送らず、承認中に増えた
+  タスクも勝手に追加しない。編集/削除/送信許可、workspace世代、復元/保護を各batchで確認する。
+- Agentは既存の`AgentConversationExecutionContext`と新しいNotion固有contextを重ね、
+  request/message/policy、plugin/registry、Gmail由来の許可、Notion ON/OFF世代も検証する。
+  送信対象を既存cloud/artifactの出典へ記録し、後続の通常出典gateでも変更を検知する。
+  旧会話は新しいtrace/blocked状態を更新せず、失効結果のページURLをモデルへ渡さない。
+- NotionServiceは各POST/PATCH直前と応答後にMainActorの許可callbackを確認する。
+  UIからのtoken保存/削除と親ID編集で一時世代を更新し、A→B→Aも検知する。
+  設定世代はlockで保護し保存しない。設定値/既存SQLite形式/既存データは維持した。
+- 「Ask AIで利用する」OFFは手動保存の禁止ではないため、Notionの利用OFF世代は
+  agent側だけで確認する。手動保存にも記録の外部送信許可と保存先の検証は必須。
+  この区別をレビューで修正し、手動保存が残ることを正のケースで確認した。
+- ページ作成後の中断は既存`PartialPageFailure`でID/URLを保持し、後続batchを止める。
+  所有中の元会話には復旧用のローカルtraceを残すが、別会話へは渡さず、自動再作成しない。
+  保存完了後、呼出元へ戻る直前に状態が変わった場合も実行中表示を残さず停止扱いにする。
+  これは永続的な受領票/再起動後の復旧一覧ではなく、workspace変更後の自動転記もしない。
+- 手動保存のalertは元workspace/世代だけに表示する。token保存/削除に失敗した場合は
+  入力/接続状態を消さず、既存フォームにnative alertで失敗を表示する。
+  SwiftUI指針に沿ってnative入力とView identityを維持し、親IDの失効処理だけを同期setterへ追加。
+  `onChange`の通知coalesceで一時変更を取り逃がさないための局所的なbindingであり、UI再構築はない。
+
+Host検証の範囲:
+
+- Agentはcloud 24変更・compact 23変更 × 承認/create/中間append/最終appendの4待機点、
+  計188ケース。手動は記録/タスク/workspace/設定の15変更 × 3待機点、計45ケースが成功。
+  中間の「手動でもAsk AI OFFを拒否」の51ケースは最終45ケースへ合算しない。
+- 承認拒否/cancel/HTTP 401/403/429/500、既知ページID/URL、同じ依頼の再実行拒否、
+  送信対象の正確な選別、承認後に増えたタスクの除外、設定ABA、設定保存/削除失敗の旧値保持も確認。
+- 本番Service/export/agent context、共有会話binding、privacy/registry、連携ON/OFF処理を実行する。
+  Meeting形状/model state/registry組立/承認UI/Keychain/設定供給/HTTPはfixture。
+  実Google/Notion、実Keychain、URLSessionネットワーク、認証済みUIではない。
+  recordCloudReadsの組立はfixtureであり、実cloud出典gateやSQLiteの既存回帰とは別の境界として扱う。
+- 最初の新規hostは`AIAnswerFailure.swift`を検証用コンパイル対象に含め忘れ、終了1で未実行。
+  runnerへ実ファイルを追加して修正した。未実行を成功へ数えていない。
+- 最初のUI E2Eは4成功/1失敗。親IDの消去自体は成功していたが、空欄のAX valueが
+  placeholderになるiOSの挙動へ空文字列を期待していた。trace/画像を確認し、
+  以前の入力値が消えたこととplaceholderを確認する期待へ修正した。
+  この失敗と未到達のDark後半を成功には数えず、別runで再実行した。
+
+最終検証:
+
+- Debug preview成功: `2026-10-23T22-46-18-06c4f4e8.log`。
+  Release Simulator成功: `2026-10-23T22-46-20-d6c6a1ee.log`。
+  いずれも最終アプリソースを含み、以後ソース変更なし。iOS SDK 27.1、既存警告11件ずつ。
+- ホスト5スイート終了0:
+  `/Volumes/WorkspaceSSD/Development/Temp/memora-phase6-notion-context-final-quality/summary.json`。
+  最終の状態表示調整後にもNotion単独runnerを再実行し終了0。
+  Xcode test target未設定のためXCTest/`bitrig test`成功とは報告しない。
+- 最終DebugでUI E2E 5実行/5成功、失敗/skip/中断/flaky 0、retry 0。
+  `.e2e/regression/phase6-notion-verified/report.json`、
+  run `01a16905-f3d1-7374-8d6c-64ca322b71f7`。86検出中81はfilteredで未実行。
+  model token/download 0、専用CoreSimulator。起動/再起動、Library/Journal/Ask AI、Tools、
+  Gmail未設定、Notion未設定のLight/Dark、親IDの編集/再起動後復元/消去を確認。
+  親IDの非秘密テスト文字列を消去しており、token保存/削除や実サービス接続は操作していない。
+- `notion-context-unconfigured-light.png`/`notion-context-unconfigured-dark.png`を保存・目視済み。
+  SecureFieldの黒い領域はrunnerの秘匿マスクで、tokenは入力していない。
+  通常フォームの回帰画像であり、UI変更のBefore/Afterや失敗alertの実行確認ではない。
+- 実装コミット`c8eefc6`。main維持、push/上流再取得/実認証/外部保存/実課金なし。
+  詳細は`docs/qa/memora-1.0/phase6/notion-context-validation-summary.json`。
+
+残り（Phase 6全体の完了とはしない）:
+
+- 実Notionの接続/権限変更/timeout/ページ描画と、実Keychain失敗alertの実行確認。
+  設定世代はアプリの更新経路を覆うが、他プロセス等から直接書き換わる全経路のABA保証ではない。
+- 部分保存の永続受領票/再起動後復旧一覧、完了済みNotion URLを保持した後の全モデル送信期間の
+  接続bindingは追加監査が必要。既に始めた送信を取り消したり、送信と検証を原子的に同期したりはしない。
+- Calendarの追加状態監査、Gmailの非agent経路、plugin catalogの一時変更→復元、
+  実MCP SDK/OAuth、実機の録音保持/中断復旧/復元、Phase 7は未検証のまま。
+- Notion API version/長文rich_textの扱い、現行設定欄のdatabase表現とpage保存実装の文言整合は残る。
+  本修正でdatabase保存を追加したり、既存API versionを移行したりはしていない。
+- 新しい性能比較は行っていない。多数のタスクを持つsnapshot検証の負荷、
+  実機の入力遅延/スクロール/メモリ/電池は未計測で、改善率は報告しない。
+
 ## Phase 7
 
 視覚・アクセシビリティ・IME・Reduce Motionの最終確認、思考ロゴの調査は未完了。
