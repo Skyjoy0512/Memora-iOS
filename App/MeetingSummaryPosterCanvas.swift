@@ -23,15 +23,15 @@ struct MeetingSummaryPosterCanvas: View {
         Rectangle().fill(Color.black.opacity(0.15)).frame(width: 1)
         section("02 / 次のアクション", items: content.actions, lines: 5)
       }
-      .frame(height: 300, alignment: .top)
+      .fixedSize(horizontal: false, vertical: true)
       Rectangle().fill(Color.black.opacity(0.15)).frame(height: 1)
       section("03 / 未解決の確認事項", items: content.questions, lines: 2)
-      Spacer(minLength: 0)
       Text("保存済み要約から抜粋。件数・長さに上限があり、長い項目は省略しています。\n記載がない欄は未抽出です。全内容・条件・出典は本文で確認してください。")
         .font(.system(size: 14)).lineSpacing(4).foregroundStyle(Color.black.opacity(0.65))
     }
     .padding(40)
-    .frame(width: 720, height: 1200, alignment: .topLeading)
+    .frame(width: 720, alignment: .topLeading)
+    .fixedSize(horizontal: false, vertical: true)
     .foregroundStyle(Color.black)
     .background(Color.white)
     .environment(\.layoutDirection, .leftToRight)

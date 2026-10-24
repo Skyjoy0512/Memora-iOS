@@ -571,7 +571,6 @@ struct MeetingDetailView: View {
           if let notice = template.sensitivityClassification.notice {
             Text(notice).font(.footnote).foregroundStyle(.secondary)
           }
-          SummarySectionIndex(meeting: meeting)
         }
       }
       if !meeting.summaryVersions.isEmpty {

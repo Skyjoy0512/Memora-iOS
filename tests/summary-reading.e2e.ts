@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, test } from '@e2e-dev/mobile';
@@ -34,7 +35,9 @@ test('summary PNG, full-text reading and reversible transcript survive restart',
   const png = readFileSync(pngPath);
   expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
   expect(png.readUInt32BE(16)).toBe(1440);
-  expect(png.readUInt32BE(20)).toBe(2400);
+  const fullPosterHeight = png.readUInt32BE(20);
+  expect(fullPosterHeight).toBeGreaterThan(0);
+  expect(fullPosterHeight).toBeLessThan(2400);
   const artifacts = join('.e2e', 'regression', 'summary-poster-artifacts');
   mkdirSync(artifacts, { recursive: true });
   writeFileSync(join(artifacts, marker + '.png'), png, { flag: 'wx' });
@@ -105,15 +108,46 @@ test('summary PNG, full-text reading and reversible transcript survive restart',
   const legacyRecords = JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
   expect(legacyRecords).toHaveLength(1);
   expect(legacyRecords[0].id.toLowerCase()).toBe(fixture.id.toLowerCase());
-  legacyRecords[0].summary = '**日程**: 2026/10/24\n**議題**: 条件付きで比較するが、本番切替はまだ承認されていない。';
+  legacyRecords[0].summary = '## メモ\n**日程**: 2026/10/24\n**議題**: 条件付きで比較するが、本番切替はまだ承認されていない。';
+  const versionID = randomUUID();
+  legacyRecords[0].activeSummaryVersionID = versionID;
+  legacyRecords[0].summaryVersions = [{ id: versionID, sourceRecordID: fixture.id,
+    templateID: 'market.regular', summaryLength: 'standard', displayOrder: 'importance',
+    sections: [{ id: randomUUID(), title: 'メモ', content: legacyRecords[0].summary.split('\n').slice(1).join('\n'), order: 0, sourceReferences: [] }],
+    generatedAt: fixture.createdAt, modelInfo: 'UI regression fixture; no AI generation', schemaVersion: 1,
+    markdown: legacyRecords[0].summary, keyPoints: [], decisions: [], openQuestions: [] }];
   const legacyBytes = Buffer.from(JSON.stringify(legacyRecords), 'utf8').toString('hex');
   sql(database, `UPDATE documents SET data=X'${legacyBytes}' WHERE key='memoraMeetings' AND instr(lower(CAST(data AS TEXT)), '${fixture.id.toLowerCase()}')>0;`);
   await app.restart();
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
+  // A known market template and nonempty parsed section would previously
+  // expose the redundant index. Positively verify that context before absence.
+  await scrollToControl(screen, screen.getByText('定例会議 · 標準', { exact: true }));
+  await expect(screen.getByText('定例会議 · 標準', { exact: true })).toBeVisible();
+  await expect(screen.getByText('要約履歴（1）', { exact: true })).toBeVisible();
+  await expect(screen.getByText('要約の項目と原文', { exact: true })).not.toBeVisible();
+  await app.screenshot('summary-template-without-redundant-source-index');
+  await scrollToControl(screen, screen.getByTestId('summary.poster.open'), { minimumY: 90, maximumY: 750 });
   await tapControl(screen.getByTestId('summary.poster.open'));
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
   await tapControl(screen.getByRole('button', { name: '拡大して読む', exact: true }));
   await tapControl(screen.getByRole('button', { name: '全体を表示', exact: true }));
   await app.screenshot('summary-legacy-literal-excerpt-no-inferred-decision');
+  await tapControl(screen.getByTestId('summary.poster.export'));
+  await tapControl(screen.getByRole('button', { name: '共有先・保存先を選ぶ', exact: true }));
+  await expect.poll(() => pngFiles().length).toBe(1);
+  const sparsePath = join(folder, pngFiles()[0]);
+  const sparse = readFileSync(sparsePath);
+  expect(sparse.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+  expect(sparse.readUInt32BE(16)).toBe(1440);
+  expect(sparse.readUInt32BE(20)).toBeGreaterThan(0);
+  expect(sparse.readUInt32BE(20)).toBeLessThan(fullPosterHeight);
+  writeFileSync(join(artifacts, marker + '-sparse.png'), sparse, { flag: 'wx' });
+  await tapControl(screen.getByRole('button', { name: /^(Close|閉じる)$/ }).first());
+  await expect.poll(() => existsSync(sparsePath)).toBe(false);
+  const finalRecord = JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"))[0];
+  expect(finalRecord.summaryVersions).toHaveLength(1);
+  expect(finalRecord.summaryVersions[0].markdown).toBe(legacyRecords[0].summary);
+  expect(finalRecord.transcript[0].text).toBe(raw);
 });

@@ -47,7 +47,7 @@ struct MeetingSummaryPosterSheet: View {
               }
               Button(isEnlarged ? "全体を表示" : "拡大して読む") { isEnlarged.toggle() }
                 .frame(minHeight: 44)
-              Text("端末内で作成・1440 × 2400 PNG\n抜粋のため、条件や出典を含む全文もご確認ください。")
+              Text("端末内で作成・\(Int(image.size.width * image.scale)) × \(Int(image.size.height * image.scale)) PNG\n抜粋のため、条件や出典を含む全文もご確認ください。")
                 .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 .padding(.horizontal)
             } else if let failure {
