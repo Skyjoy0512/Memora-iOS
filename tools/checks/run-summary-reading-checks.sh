@@ -29,6 +29,8 @@ layout_sources=("${sources[@]}" App/SummaryTopic.swift App/SummaryRelation.swift
   App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift App/MarkdownSummaryExtractor.swift)
 swiftc "${layout_sources[@]}" tools/checks/SummaryLayoutChecks.swift -o "$check_dir/layout"
 "$check_dir/layout"
+swiftc "${layout_sources[@]}" App/SummaryTemplateNotes.swift tools/checks/SummaryTemplateNotesChecks.swift -o "$check_dir/template-notes"
+"$check_dir/template-notes"
 swiftc "${layout_sources[@]}" App/LocalStore.swift App/MarkdownBlock.swift App/SourcedMarkdownBlock.swift \
   App/MarkdownFence.swift App/MarkdownBlockParser.swift App/MarkdownBlockWriter.swift \
   tools/checks/SummaryRelationChecks.swift -o "$check_dir/relations"

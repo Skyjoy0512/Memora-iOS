@@ -110,22 +110,11 @@ enum OnDeviceSummarizer {
     var sectionItems: [String: [String]] = [:]
     var customParts: [String] = []
     let headings = template.sections.isEmpty ? ["要点", "未確認事項"] : template.sections
-    for topic in topics {
-      let notes = SummaryRelationMarkdown.bullets(topic.points, relations: topic.relations, target: .point)
-        + SummaryRelationMarkdown.bullets(topic.decisions, relations: topic.relations)
-        + topic.concerns + topic.questions
-        + topic.actions.map { "\($0.title) / 担当: \($0.owner ?? "未定") / 期限: \($0.due ?? "未定")" }
-      var chunks: [String] = []
-      var chunk = ""
-      for note in notes {
-        if chunk.count + note.count > characterLimit, !chunk.isEmpty {
-          chunks.append(chunk)
-          chunk = ""
-        }
-        chunk += note + "\n"
-      }
-      if !chunk.isEmpty { chunks.append(chunk) }
-      for chunk in chunks {
+    guard let notes = SummaryTemplateNotes.prepare(topics, characterLimit: characterLimit) else {
+      return .failure(.contextTooLarge)
+    }
+    for topic in notes {
+      for chunk in topic.chunks {
         guard !Task.isCancelled else { return .failure(.cancelled) }
         do {
           let session = LanguageModelSession(instructions: instructions)
