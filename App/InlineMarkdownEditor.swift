@@ -26,12 +26,15 @@ struct InlineMarkdownEditor: View {
   @Environment(MemoraModel.self) private var model
   @State private var isEditing = false
   @State private var draft = ""
+  /// The editor can keep input in memory even when the draft store is full.
+  @State private var retainedDraft: String?
   @State private var editorID = UUID()
   /// Identifies one editing session, so a commit that finishes late clears only
   /// the draft belonging to the session it was editing.
   @State private var draftSessionID = UUID()
   @State private var didRestoreDraft = false
   @State private var draftSaveTask: Task<Void, Never>?
+  @State private var commitTask: Task<Void, Never>?
   @FocusState private var isFocused: Bool
   @ScaledMetric(relativeTo: .body) private var readingLineSpacing = MemoraTypography.readingLineSpacing
 
@@ -95,10 +98,15 @@ struct InlineMarkdownEditor: View {
 
   private func beginEditing() {
     guard !isEditing else { return }
+    // Reopening supersedes an older save still encoding in the background.
+    commitTask?.cancel()
     // A new session under the same key; an older commit must not clear its draft.
     draftSessionID = UUID()
 
-    if let draftKey, let stored = DraftStore.load(draftKey), stored != text {
+    if let retainedDraft, retainedDraft != text {
+      draft = retainedDraft
+      didRestoreDraft = true
+    } else if let draftKey, let stored = DraftStore.load(draftKey), stored != text {
       draft = stored
       didRestoreDraft = true
     } else {
@@ -131,6 +139,7 @@ struct InlineMarkdownEditor: View {
     let key = draftKey
     let session = draftSessionID
     if value != text {
+      retainedDraft = value
       // Keep the latest text in the draft before trying to commit, so a failed
       // or slow write leaves what was just typed rather than an older debounced
       // copy that the end of editing cancelled.
@@ -140,13 +149,15 @@ struct InlineMarkdownEditor: View {
       // The draft is only cleared once the record is actually stored, and only
       // if this editing session is still the current one — a newer edit may have
       // written a newer draft under the same key while the commit was in flight.
-      Task { @MainActor in
-        guard await onCommit(value), let key, draftSessionID == session else { return }
-        DraftStore.clear(key)
+      commitTask = Task { @MainActor in
+        guard await onCommit(value), draftSessionID == session else { return }
+        retainedDraft = nil
+        if let key { DraftStore.clear(key) }
       }
-    } else if let key {
+    } else {
       // Nothing changed, so the safety copy has served its purpose.
-      DraftStore.clear(key)
+      retainedDraft = nil
+      if let key { DraftStore.clear(key) }
     }
   }
 

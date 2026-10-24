@@ -55,12 +55,13 @@ extension MemoraModel {
   }
 
   /// Corrects the body of one transcript segment, leaving the speaker as is.
-  func updateTranscriptSegment(meetingID: UUID, segmentID: UUID, text: String) {
+  @discardableResult
+  func updateTranscriptSegment(meetingID: UUID, segmentID: UUID, text: String) async -> Bool {
     guard let meetingIndex = meetings.firstIndex(where: { $0.id == meetingID }),
-          let segmentIndex = meetings[meetingIndex].transcript.firstIndex(where: { $0.id == segmentID }) else { return }
-    meetings[meetingIndex].transcript[segmentIndex].text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    meetingSearchTexts.removeValue(forKey: meetingID)
-    persistMeetings()
+          let segmentIndex = meetings[meetingIndex].transcript.firstIndex(where: { $0.id == segmentID }) else { return false }
+    return await commitMeetingChange(meetingID) {
+      $0.transcript[segmentIndex].text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
   }
 
   @discardableResult
@@ -77,10 +78,31 @@ extension MemoraModel {
   /// record could not be written.
   @discardableResult
   private func commitMeetingChange(_ id: UUID, change: (inout Meeting) -> Void) async -> Bool {
-    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
+    guard !Task.isCancelled, !isRestoring, currentTeamID == nil, isStoreWritable(),
+          let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
+    let original = meetings
+    let generation = aiWorkspaceGeneration
+    var candidate = original
+    change(&candidate[index])
+    let snapshot = candidate
+    let data: Data
+    do {
+      data = try await Task.detached(priority: .userInitiated) { try RecordStore.encoded(snapshot) }.value
+    } catch {
+      return persistBatch { throw error }
+    }
+    guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
+          aiWorkspaceGeneration == generation else { return false }
+    guard meetings == original else {
+      persistenceFailureMessage = "記録が更新されたため保存を止めました。書きかけの内容を確認して、もう一度保存してください。"
+      return false
+    }
+    // Encoding stays off the UI actor. Only the ordered commit and publication
+    // share a turn: no stale candidate can replace a change made during encoding.
+    guard persistBatch({ [(key: StorageKey.meetings, data: data)] }) else { return false }
     meetingSearchTexts.removeValue(forKey: id)
-    change(&meetings[index])
-    return await persistNowAsync(meetings, forKey: StorageKey.meetings)
+    meetings = candidate
+    return true
   }
 
   /// Changes a record in memory only, for passing state such as a progress

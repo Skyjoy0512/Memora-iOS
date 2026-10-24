@@ -111,7 +111,7 @@ enum RecordStore {
   }
 
   /// Encodes a value, reporting failure instead of silently dropping it.
-  static func encoded<T: Encodable>(_ value: T) throws -> Data {
+  nonisolated static func encoded<T: Encodable>(_ value: T) throws -> Data {
     try JSONEncoder().encode(value)
   }
 

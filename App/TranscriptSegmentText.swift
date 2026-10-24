@@ -38,11 +38,11 @@ struct TranscriptSegmentText: View {
           placeholder: "タップして入力",
           font: MemoraTypography.readingBody,
           minHeight: 60,
+          draftKey: "meeting.\(meetingID).transcript.\(segment.id)",
           allowsStructure: false,
           displayText: usesReadableText ? TranscriptReadability.cleaned(segment.text) : nil,
           onCommit: { text in
-            model.updateTranscriptSegment(meetingID: meetingID, segmentID: segment.id, text: text)
-            return true
+            await model.updateTranscriptSegment(meetingID: meetingID, segmentID: segment.id, text: text)
           }
         )
       }

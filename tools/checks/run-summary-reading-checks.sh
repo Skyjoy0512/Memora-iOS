@@ -21,3 +21,6 @@ swiftc App/MarkdownBlock.swift App/SourcedMarkdownBlock.swift App/MarkdownFence.
 swiftc App/RecordPrivacy.swift App/SummarySensitivity.swift App/MeetingSummaryPosterSnapshot.swift \
   tools/checks/MeetingSummaryPosterAccessChecks.swift -o "$check_dir/poster-access"
 "$check_dir/poster-access"
+swiftc App/LocalStore.swift App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift \
+  App/MemoraModel+Meetings.swift tools/checks/MeetingEditChecks.swift -o "$check_dir/meeting-edit"
+"$check_dir/meeting-edit"
