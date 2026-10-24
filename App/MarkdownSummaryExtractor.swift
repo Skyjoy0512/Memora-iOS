@@ -68,11 +68,14 @@ enum MarkdownSummaryExtractor {
     case decisions, questions, actions, other
 
     init(heading: String) {
-      if heading.contains("決定") {
-        self = .decisions
-      } else if heading.contains("未決") || heading.contains("オープンクエスチョン") || heading.contains("未解決") {
+      // Question labels take precedence over the word 決定 inside 未決定.
+      if heading.contains("未決") || heading.contains("オープンクエスチョン") || heading.contains("未解決")
+        || heading.contains("確認が必要") || heading.contains("まだ決まって") {
         self = .questions
-      } else if heading.contains("アクション") || heading.contains("今後の予定") {
+      } else if heading.contains("決定") || heading.contains("決まったこと") || heading.contains("約束したこと") {
+        self = .decisions
+      } else if heading.contains("アクション") || heading.contains("今後の予定")
+        || heading.contains("次にやること") || heading.contains("次にすること") {
         self = .actions
       } else {
         self = .other

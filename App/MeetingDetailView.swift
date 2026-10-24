@@ -554,6 +554,9 @@ struct MeetingDetailView: View {
     }
 
     CollapsibleInsightSection(.summary, showsDivider: false) {
+      if !meeting.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        MeetingSummaryPosterEntry(meetingID: meeting.id)
+      }
       if let version = meeting.summaryVersions.first(where: { $0.id == meeting.activeSummaryVersionID }),
          let templateID = version.templateID, let choice = model.summaryChoice(templateID) {
         Text("\(choice.title) · \(version.summaryLength.title)").font(.subheadline).foregroundStyle(.secondary)

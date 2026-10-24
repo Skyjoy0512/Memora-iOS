@@ -14,7 +14,10 @@ enum TranscriptReadability {
       // Do not touch あの/その/はい/多分, in-sentence repairs, names or numbers.
       for _ in 0..<12 {
         guard let filler = fillers.first(where: { word in
-          value.lowercased().hasPrefix(word) && value.count > word.count &&
+          let prefix = String(value.prefix(word.count))
+          // All-capital English abbreviations may be names, not hesitation.
+          if word.first?.isASCII == true && prefix == word.uppercased() { return false }
+          return prefix.lowercased() == word &&
             value.dropFirst(word.count).unicodeScalars.first.map(separators.contains) == true
         }) else { break }
         let next = String(value.dropFirst(filler.count).drop { character in
