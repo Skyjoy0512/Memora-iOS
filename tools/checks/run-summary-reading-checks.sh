@@ -24,3 +24,12 @@ swiftc App/RecordPrivacy.swift App/SummarySensitivity.swift App/MeetingSummaryPo
 swiftc App/LocalStore.swift App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift \
   App/MemoraModel+Meetings.swift tools/checks/MeetingEditChecks.swift -o "$check_dir/meeting-edit"
 "$check_dir/meeting-edit"
+layout_sources=("${sources[@]}" App/SummaryTopic.swift App/SummaryRelation.swift App/SummaryRelationMarkdown.swift
+  App/SummaryMarkdownBuilder.swift App/SummaryActionItem.swift App/SummaryResponseParser.swift
+  App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift App/MarkdownSummaryExtractor.swift)
+swiftc "${layout_sources[@]}" tools/checks/SummaryLayoutChecks.swift -o "$check_dir/layout"
+"$check_dir/layout"
+swiftc "${layout_sources[@]}" App/LocalStore.swift App/MarkdownBlock.swift App/SourcedMarkdownBlock.swift \
+  App/MarkdownFence.swift App/MarkdownBlockParser.swift App/MarkdownBlockWriter.swift \
+  tools/checks/SummaryRelationChecks.swift -o "$check_dir/relations"
+"$check_dir/relations" "$@"

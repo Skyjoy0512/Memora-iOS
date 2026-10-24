@@ -44,6 +44,9 @@ test('failed transcript saves keep the stored record and durable or in-memory dr
     expect(storedDraft[0]).toBe(1);
     expect(storedDraft.subarray(1).toString('utf8')).toBe(firstEdit);
     await app.screenshot('transcript-save-failure-keeps-original');
+    // The next check is draft restoration, not startup write failure. Leaving
+    // the trigger installed can present an unrelated launch-time save alert.
+    recover();
     await app.restart();
     await tapTab(screen, 'ライブラリ');
     await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
@@ -52,7 +55,6 @@ test('failed transcript saves keep the stored record and durable or in-memory dr
     await expect(field).toHaveValue(firstEdit);
     await expect(screen.getByText('書きかけの内容を復元しました', { exact: true })).toBeVisible();
     await app.screenshot('transcript-draft-restored-after-restart');
-    recover();
     await finish();
     await expect.poll(() => read()[0].transcript[0].text).toBe(firstEdit);
     await expect.poll(draft).toBe('');

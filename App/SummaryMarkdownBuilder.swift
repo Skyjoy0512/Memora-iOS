@@ -24,6 +24,7 @@ enum SummaryMarkdownBuilder {
     let decisions = unique(topics.flatMap(\.decisions))
     let questions = unique(topics.flatMap(\.questions))
     let actions = SummaryResponseParser.deduplicated(topics.flatMap(\.actions))
+    let relations = topics.flatMap(\.relations)
 
     var lines: [String] = []
     switch template {
@@ -41,9 +42,9 @@ enum SummaryMarkdownBuilder {
           lines.append("- **関与者**: \(topic.speakers.joined(separator: ", "))")
         }
         lines.append("- **要点**:")
-        lines += topic.points.map { "  - \($0)" }
+        lines += SummaryRelationMarkdown.bullets(topic.points, relations: topic.relations, target: .point, level: 1)
         lines.append("- **決定事項**:")
-        lines += nested(topic.decisions)
+        lines += nested(topic.decisions, relations: topic.relations)
         lines.append("- **課題・懸念**:")
         lines += nested(topic.concerns)
         lines.append("### アクションアイテム")
@@ -63,10 +64,10 @@ enum SummaryMarkdownBuilder {
       ]
       for topic in orderedTopics {
         lines.append("### \(topic.title)")
-        lines += topic.points.map { "- \($0)" }
+        lines += SummaryRelationMarkdown.bullets(topic.points, relations: topic.relations, target: .point)
       }
       lines.append("## 決定事項")
-      lines += bullets(decisions)
+      lines += bullets(decisions, relations: relations)
       lines.append("## 今後の予定・アクション項目")
       lines += actions.isEmpty
         ? ["- なし"]
@@ -76,7 +77,7 @@ enum SummaryMarkdownBuilder {
 
     case .builtIn(.detailedMinutes):
       lines = ["## 会議の要旨", overview, "## 主要な決定事項"]
-      lines += bullets(decisions)
+      lines += bullets(decisions, relations: relations)
       lines.append("## アクションアイテム")
       lines += actions.isEmpty
         ? ["- なし"]
@@ -85,7 +86,7 @@ enum SummaryMarkdownBuilder {
       for topic in orderedTopics {
         let range = "\(MemoraFormat.duration(topic.startTime))-\(MemoraFormat.duration(topic.endTime))"
         lines.append("### [\(range)] \(topic.title)")
-        lines += topic.points.map { "- \($0)" }
+        lines += SummaryRelationMarkdown.bullets(topic.points, relations: topic.relations, target: .point)
       }
       lines.append("## 未決事項")
       lines += bullets(questions)
@@ -99,19 +100,19 @@ enum SummaryMarkdownBuilder {
       ]
       lines += actionTable(actions)
       lines.append("## 決定事項")
-      lines += bullets(decisions)
+      lines += bullets(decisions, relations: relations)
       lines.append("## 未決事項・確認が必要なこと")
       lines += bullets(questions)
     }
     return lines.joined(separator: "\n")
   }
 
-  private static func bullets(_ items: [String]) -> [String] {
-    items.isEmpty ? ["- なし"] : items.map { "- \($0)" }
+  private static func bullets(_ items: [String], relations: [SummaryRelation] = []) -> [String] {
+    items.isEmpty ? ["- なし"] : SummaryRelationMarkdown.bullets(items, relations: relations)
   }
 
-  private static func nested(_ items: [String]) -> [String] {
-    items.isEmpty ? ["  - なし"] : items.map { "  - \($0)" }
+  private static func nested(_ items: [String], relations: [SummaryRelation] = []) -> [String] {
+    items.isEmpty ? ["  - なし"] : SummaryRelationMarkdown.bullets(items, relations: relations, level: 1)
   }
 
   private static func actionTable(_ actions: [SummaryActionItem]) -> [String] {

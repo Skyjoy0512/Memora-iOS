@@ -111,7 +111,9 @@ enum OnDeviceSummarizer {
     var customParts: [String] = []
     let headings = template.sections.isEmpty ? ["要点", "未確認事項"] : template.sections
     for topic in topics {
-      let notes = topic.points + topic.decisions + topic.concerns + topic.questions
+      let notes = SummaryRelationMarkdown.bullets(topic.points, relations: topic.relations, target: .point)
+        + SummaryRelationMarkdown.bullets(topic.decisions, relations: topic.relations)
+        + topic.concerns + topic.questions
         + topic.actions.map { "\($0.title) / 担当: \($0.owner ?? "未定") / 期限: \($0.due ?? "未定")" }
       var chunks: [String] = []
       var chunk = ""
@@ -187,6 +189,7 @@ enum OnDeviceSummarizer {
     \(length.instruction)
     \(SummaryPrompt.intermediateFocus(input, includeCandidates: false))
     用途別の事実はpointsに保持する。会議ではない場合、該当しないdecisions/actions/questionsは空配列にする。
+    \(SummaryRelation.generationInstructions)
 
     \(section.map(MeetingSummaryInput.line(for:)).joined(separator: "\n"))
     """
@@ -198,7 +201,7 @@ enum OnDeviceSummarizer {
         generating: SectionDigest.self,
         options: GenerationOptions(temperature: 0.2)
       )
-      return .success(response.content.topics.compactMap { topic($0, in: section) })
+      return .success(response.content.topics.compactMap { topic($0, in: section, duration: meetingEnd) })
     } catch {
       let failure = FoundationModelFailure.reason(for: error)
       guard failure == .contextTooLarge, allowsSplit, section.count > 1 else {
@@ -216,9 +219,10 @@ enum OnDeviceSummarizer {
     }
   }
 
-  private static func topic(_ digest: TopicDigest, in section: [TranscriptSegment]) -> SummaryTopic? {
+  private static func topic(_ digest: TopicDigest, in section: [TranscriptSegment], duration: TimeInterval) -> SummaryTopic? {
     let title = digest.title.trimmingCharacters(in: .whitespacesAndNewlines)
     let points = clean(digest.points)
+    let decisions = clean(digest.decisions)
     guard !title.isEmpty, !points.isEmpty else { return nil }
     let sectionStart = section.first?.timestamp ?? 0
     let sectionEnd = section.last?.timestamp ?? sectionStart
@@ -233,7 +237,7 @@ enum OnDeviceSummarizer {
       endTime: sectionEnd,
       speakers: clean(digest.speakers),
       points: points,
-      decisions: clean(digest.decisions),
+      decisions: decisions,
       concerns: clean(digest.concerns),
       actions: digest.actions.compactMap { action in
         let title = action.title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -244,7 +248,11 @@ enum OnDeviceSummarizer {
           due: SummaryActionItem.normalized(action.due)
         )
       },
-      questions: clean(digest.questions)
+      questions: clean(digest.questions),
+      relations: digest.relations.prefix(2).compactMap {
+        SummaryRelation.validated(parent: $0.parent, kind: $0.kind, sourceTime: $0.sourceTime,
+          quote: $0.quote, points: points, decisions: decisions, transcript: section, duration: duration)
+      }
     )
   }
 
@@ -262,6 +270,7 @@ enum OnDeviceSummarizer {
         previous.concerns += topic.concerns
         previous.actions += topic.actions
         previous.questions += topic.questions
+        previous.relations += topic.relations
         merged[merged.count - 1] = previous
       } else {
         merged.append(topic)
@@ -289,16 +298,8 @@ enum OnDeviceSummarizer {
     characterLimit: Int
   ) async -> Result<Overview, AIAnswerFailure> {
     // Titles, decisions and the first points of each topic, trimmed to fit.
-    var notes = ""
-    for (index, topic) in topics.enumerated() {
-      var block = "\(index + 1). \(topic.title)\n"
-      block += topic.points.prefix(2).map { "- \($0)" }.joined(separator: "\n")
-      if !topic.decisions.isEmpty {
-        block += "\n" + topic.decisions.prefix(2).map { "- （決定）\($0)" }.joined(separator: "\n")
-      }
-      guard notes.count + block.count < characterLimit else { break }
-      notes += block + "\n"
-    }
+    let notes = SummaryRelationMarkdown.overviewNotes(topics, limit: characterLimit)
+    guard !notes.isEmpty else { return .failure(.contextTooLarge) }
 
     let lens: String = if case .market(let template) = input.template, template.usesPrompt {
       "次の指示に沿って（\(template.prompt.prefix(300))）"
@@ -380,9 +381,9 @@ private struct TopicDigest {
   var startTime: String
   @Guide(description: "この話題で発言した話者ラベル")
   var speakers: [String]
-  @Guide(description: "誰が何を述べたかが分かる具体的な要点。発言の書き写しではなく言い切りの文で。数値や固有名詞は正確に。", .maximumCount(6))
+  @Guide(description: "誰が何を述べたかが分かる簡潔な要点。数値や固有名詞は正確に。relationsの親にする項目だけは原文の短い節をそのまま使う。", .maximumCount(6))
   var points: [String]
-  @Guide(description: "決まったこと。無ければ空。", .maximumCount(4))
+  @Guide(description: "実際に決まったこと。提案や却下は合意にしない。relationsの親にする項目だけは原文の節を使う。無ければ空。", .maximumCount(4))
   var decisions: [String]
   @Guide(description: "出された課題や懸念。無ければ空。", .maximumCount(3))
   var concerns: [String]
@@ -390,6 +391,8 @@ private struct TopicDigest {
   var actions: [ActionDigest]
   @Guide(description: "結論が出ずに残った問いを疑問文で。感想や決まったことは含めない。無ければ空。", .maximumCount(3))
   var questions: [String]
+  @Guide(description: "同じ発言に明示された親と理由・条件・影響だけ。無ければ空配列。", .maximumCount(2))
+  var relations: [OnDeviceSummaryRelationDigest]
 }
 
 @available(iOS 26.0, *)

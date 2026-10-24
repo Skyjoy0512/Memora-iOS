@@ -15,12 +15,22 @@ enum MarkdownSummaryExtractor {
     var tableHeader: [String]?
     var bulletActions: [SummaryActionItem] = []
     var parentIndent: Int?
+    var narrativeLevel: Int?
 
     for rawLine in markdown.components(separatedBy: "\n") {
       let line = rawLine.trimmingCharacters(in: .whitespaces)
 
       if line.hasPrefix("#") {
-        section = Section(heading: line)
+        let level = line.prefix { $0 == "#" }.count
+        let heading = line.dropFirst(level).trimmingCharacters(in: .whitespaces)
+        // Topic titles under the narrative are not semantic section labels:
+        // "承認の決定に向けて" does not turn all its notes into decisions.
+        if let narrativeLevel, level > narrativeLevel {
+          section = .other
+        } else {
+          narrativeLevel = ["議事録", "詳細議事録"].contains(heading) ? level : nil
+          section = Section(heading: heading)
+        }
         tableHeader = nil
         parentIndent = nil
         continue

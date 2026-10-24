@@ -12,4 +12,5 @@ struct SummaryTopic: Hashable {
   var concerns: [String] = []
   var actions: [SummaryActionItem] = []
   var questions: [String] = []
+  var relations: [SummaryRelation] = []
 }

@@ -2,6 +2,7 @@
 
 続きの保存失敗・復旧改善は [RECOVERY](RECOVERY.md) を参照。
 常時表示画像・因果関係の階層・追加専用サンプルは [INLINE](INLINE.md) を参照。
+端末内要約の根拠付き階層と検証範囲は [ON_DEVICE_RELATIONS](ON_DEVICE_RELATIONS.md) を参照。
 
 ## 実装（2026-10-24）
 
