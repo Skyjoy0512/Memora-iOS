@@ -5,6 +5,7 @@ struct ManualAIProcessingCard: View {
   var title: String
   var detail: String
   var actionTitle: String
+  var notice = "実行するまでAI利用は発生しません"
   var action: () -> Void
 
   var body: some View {
@@ -20,7 +21,7 @@ struct ManualAIProcessingCard: View {
         }
       }
 
-      Label("実行するまでAI利用は発生しません", icon: .handRaised)
+      Label(notice, icon: .handRaised)
         .font(.footnote.weight(.medium))
         .foregroundStyle(.secondary)
 
@@ -34,4 +35,3 @@ struct ManualAIProcessingCard: View {
     .memoraCard()
   }
 }
-

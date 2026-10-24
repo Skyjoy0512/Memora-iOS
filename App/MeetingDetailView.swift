@@ -478,13 +478,19 @@ struct MeetingDetailView: View {
           model.startTranscription(meeting.id)
         }
       case .waitingForSummary:
+        let pendingJob = model.pendingSummaryJobs.first { $0.meetingID == meeting.id }
+        let needsConfirmation = pendingJob?.requiresUserRetry == true || (pendingJob != nil && pendingJob?.inputFingerprint == nil)
         ManualAIProcessingCard(
           symbol: .sparkles,
-          title: model.hasPendingSummary(meeting.id) ? "要約をバックグラウンドで続けています" : "文字起こしが完成しました",
-          detail: model.hasPendingSummary(meeting.id)
-            ? "アプリを閉じても、iOSが許可したタイミングで続きます。戻ってきたときにも再開します。"
+          title: pendingJob != nil ? "要約の再開を待っています" : "文字起こしが完成しました",
+          detail: pendingJob != nil
+            ? (needsConfirmation
+              ? "前回の処理は停止しています。原文と保存済みの要約はそのままです。「いま要約する」から設定を確認し、再試行できます。"
+              : (model.backgroundSummaryNotice ?? "原文と要約の設定は保存されています。iOSが実行を許可したとき、またはアプリに戻ったときに再開します。"))
             : "要約方法を選ぶまで、追加のAI処理は行いません。",
-          actionTitle: model.hasPendingSummary(meeting.id) ? "いま要約する" : "要約を生成"
+          actionTitle: pendingJob != nil ? "いま要約する" : "要約を生成",
+          notice: pendingJob == nil ? "実行するまでAI利用は発生しません"
+            : (needsConfirmation ? "再実行するまで追加のAI処理は行いません" : "保存済みの設定で要約を再試行します")
         ) {
           isSummaryGenerationPresented = true
         }
