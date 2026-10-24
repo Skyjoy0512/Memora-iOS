@@ -121,4 +121,19 @@ test('summary PNG, full-text reading and reversible transcript survive restart',
     await expect(screen.getByRole('button', { name: '完了', exact: true })).toBeVisible();
     await app.screenshot('summary-full-text-largest-dynamic-type');
   } finally { contentSize(previousSize); }
+  await device.closeApp();
+  const legacyRecords = JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
+  expect(legacyRecords).toHaveLength(1);
+  expect(legacyRecords[0].id.toLowerCase()).toBe(fixture.id.toLowerCase());
+  legacyRecords[0].summary = '**日程**: 2026/10/24\n**議題**: 条件付きで比較するが、本番切替はまだ承認されていない。';
+  const legacyBytes = Buffer.from(JSON.stringify(legacyRecords), 'utf8').toString('hex');
+  sql(database, `UPDATE documents SET data=X'${legacyBytes}' WHERE key='memoraMeetings' AND instr(lower(CAST(data AS TEXT)), '${fixture.id.toLowerCase()}')>0;`);
+  await app.restart();
+  await tapTab(screen, 'ライブラリ');
+  await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
+  await tapControl(screen.getByTestId('summary.poster.open'));
+  await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '拡大して読む', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '全体を表示', exact: true }));
+  await app.screenshot('summary-legacy-literal-excerpt-no-inferred-decision');
 });

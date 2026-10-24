@@ -52,6 +52,10 @@ enum MeetingSummaryPosterChecks {
     precondition(legacy.questions == ["本番への反映日", "承認者"])
     let labels = MeetingSummaryPosterContent(title: "旧形式", date: "", summary: "**日時**: 2026/10/24\n**用件**: 承認前の条件付き検討。")
     precondition(labels.overview == "承認前の条件付き検討。")
+    let unknownLabels = "**日程**: 2026/10/24\n**議題**: 条件付きで比較するが、本番切替はまだ承認されていない。"
+    let literal = MeetingSummaryPosterContent(title: "旧形式", date: "", summary: unknownLabels)
+    precondition(literal.overview == MarkdownBlockParser.plainText(unknownLabels))
+    precondition(literal.decisions.isEmpty && literal.actions.isEmpty && literal.fullSummary == unknownLabels)
     print("Meeting summary poster checks passed: source-only excerpts, uncertainty, actions, edits, Unicode limits and full text")
   }
 }

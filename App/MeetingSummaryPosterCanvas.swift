@@ -14,7 +14,7 @@ struct MeetingSummaryPosterCanvas: View {
       Text(content.title).font(.system(size: 36, weight: .bold)).lineLimit(2)
       Rectangle().frame(height: 2)
       VStack(alignment: .leading, spacing: 12) {
-        Text("要旨").font(.system(size: 17, weight: .semibold))
+        Text("要旨・本文の抜粋").font(.system(size: 17, weight: .semibold))
         Text(content.overview.isEmpty ? "概要の段落はありません。全文をご確認ください。" : content.overview)
           .font(.system(size: 25, weight: .medium)).lineSpacing(6).lineLimit(5)
       }

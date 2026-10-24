@@ -33,11 +33,16 @@ struct MeetingSummaryPosterContent: Equatable {
 
   private static func labelledOverview(_ summary: String) -> String {
     // Older summaries used a bullet for 用件 instead of an overview paragraph.
+    var firstPassage = ""
     for block in MarkdownBlockParser.blocks(for: summary) {
       let text: String
       switch block {
       case .bullet(_, _, let value), .paragraph(let value): text = value
       default: continue
+      }
+      if firstPassage.isEmpty {
+        let plain = MarkdownBlockParser.plainText(text)
+        if plain.count >= 20 { firstPassage = plain }
       }
       for line in text.components(separatedBy: "\n") {
         let plain = MarkdownBlockParser.plainText(line)
@@ -49,6 +54,8 @@ struct MeetingSummaryPosterContent: Equatable {
         }
       }
     }
-    return ""
+    // Unknown labels cannot grant a semantic interpretation. Show the literal
+    // passage as an excerpt rather than saying that a populated summary is empty.
+    return firstPassage
   }
 }
