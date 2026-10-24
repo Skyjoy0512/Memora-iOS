@@ -97,8 +97,13 @@ struct MarkdownBulletMarker: View {
   var body: some View {
     switch marker {
     case .dot:
-      Text(level == 0 ? "•" : "◦")
-        .foregroundStyle(.secondary)
+      if level > 0 {
+        Image(icon: .arrowTurnDownRight, size: 16)
+          .foregroundStyle(.secondary)
+          .accessibilityHidden(true)
+      } else {
+        Text("•").foregroundStyle(.secondary).accessibilityHidden(true)
+      }
     case .number(let number):
       Text("\(number).")
         .monospacedDigit()

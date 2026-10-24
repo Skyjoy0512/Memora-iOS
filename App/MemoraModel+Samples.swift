@@ -1,6 +1,22 @@
 import Foundation
 
 extension MemoraModel {
+  /// Add one explicitly requested example without replacing existing records or
+  /// resetting other collections. An edited copy is opened, never overwritten.
+  @discardableResult
+  func openSummarizedAudioSample() -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return false }
+    if !meetings.contains(where: { $0.id == SummarizedAudioSample.id }) {
+      let candidate = [SummarizedAudioSample.make()] + meetings
+      guard persistBatch({ [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))] }) else { return false }
+      meetings = candidate
+    }
+    selectedTab = .library
+    librarySection = .files
+    libraryPath = [.meeting(SummarizedAudioSample.id)]
+    return true
+  }
+
   /// Adds the display samples, used only when the person chooses them from
   /// onboarding (or reloads them from the debug settings). Real records are not
   /// touched, but the debug reload replaces the current set by design.

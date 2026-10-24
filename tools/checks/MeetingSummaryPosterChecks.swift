@@ -56,6 +56,36 @@ enum MeetingSummaryPosterChecks {
     let literal = MeetingSummaryPosterContent(title: "旧形式", date: "", summary: unknownLabels)
     precondition(literal.overview == MarkdownBlockParser.plainText(unknownLabels))
     precondition(literal.decisions.isEmpty && literal.actions.isEmpty && literal.fullSummary == unknownLabels)
+    let hierarchy = """
+    ## 決定事項
+    - 公開を延期する
+      - 理由：障害の原因は未確認
+      - 条件：復旧を確認してから日程を再検討
+    - 検証を続ける
+    ## アクションアイテム
+    - ログを確認する
+      - 条件：個人情報は除く
+    ## 未決事項
+    - 原因
+      - 理由：まだ調査中
+    """
+    let grouped = MarkdownSummaryExtractor.extract(from: hierarchy)
+    precondition(grouped.decisions == ["公開を延期する ／ 理由：障害の原因は未確認 ／ 条件：復旧を確認してから日程を再検討", "検証を続ける"])
+    precondition(grouped.actions.count == 1 && grouped.actions[0].title == "ログを確認する" && grouped.actions[0].detail == "条件：個人情報は除く")
+    precondition(grouped.openQuestions == ["原因 ／ 理由：まだ調査中"])
+    let parentless = MarkdownSummaryExtractor.extract(from: "## 決定事項\n  - 理由：原文にある項目\n- 同列の別件")
+    precondition(parentless.decisions == ["理由：原文にある項目", "同列の別件"])
+    let labelled = MarkdownSummaryExtractor.extract(from: "- **決定事項**:\n  - 延期する\n    - 理由：未確認\n  - 検証する")
+    precondition(labelled.decisions == ["延期する ／ 理由：未確認", "検証する"])
+    let boldDecision = MarkdownSummaryExtractor.extract(from: "## 決定事項\n- **初回の設定を録音後へ移す**\n  - 理由：設定項目が多い\n- **5人で検証する**\n## アクションアイテム\n- **ログを調べる**")
+    precondition(boldDecision.decisions == ["**初回の設定を録音後へ移す** ／ 理由：設定項目が多い", "**5人で検証する**"])
+    precondition(boldDecision.actions.count == 1 && boldDecision.actions[0].title == "**ログを調べる**")
+    let boldParent = MarkdownSummaryExtractor.extract(from: "## 決定事項\n- **公開を延期する**：\n  - 理由：検証がまだ終わっていない\n- 検証を続ける")
+    precondition(boldParent.decisions == ["**公開を延期する**： ／ 理由：検証がまだ終わっていない", "検証を続ける"])
+    let blocks = MarkdownBlockParser.sourcedBlocks(for: hierarchy)
+    precondition(blocks.contains { if case .bullet(level: 1, marker: .dot, text: "理由：障害の原因は未確認") = $0.block { return true }; return false })
+    let child = blocks.first { if case .bullet(_, _, text: "理由：障害の原因は未確認") = $0.block { return true }; return false }!
+    precondition(hierarchy.components(separatedBy: "\n")[child.lines.lowerBound] == "  - 理由：障害の原因は未確認")
     print("Meeting summary poster checks passed: source-only excerpts, uncertainty, actions, edits, Unicode limits and full text")
   }
 }

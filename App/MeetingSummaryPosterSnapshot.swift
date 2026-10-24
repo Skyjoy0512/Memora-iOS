@@ -1,6 +1,6 @@
 import Foundation
 
-struct MeetingSummaryPosterSnapshot: Identifiable {
+struct MeetingSummaryPosterSnapshot: Identifiable, Equatable {
   var id = UUID()
   var meetingID: UUID
   var workspaceGeneration: UUID
@@ -8,6 +8,14 @@ struct MeetingSummaryPosterSnapshot: Identifiable {
   var createdAt: Date
   var summary: String
   var privacy: RecordPrivacy
+
+  // Presentation IDs are not revisions: an unrelated body update must not
+  // re-render the same image, but edits and access changes must invalidate it.
+  static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.meetingID == rhs.meetingID && lhs.workspaceGeneration == rhs.workspaceGeneration
+      && lhs.title == rhs.title && lhs.createdAt == rhs.createdAt
+      && lhs.summary == rhs.summary && lhs.privacy == rhs.privacy
+  }
 
   @MainActor
   init?(meetingID: UUID, model: MemoraModel) {

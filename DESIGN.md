@@ -203,6 +203,15 @@ Record detail: common reading width/type for summary, transcript, decisions,
 tasks and notes. Flat section tabs. Edit one block/cell in place; Markdown source
 editing stays a deliberate context-menu action. Tables retain every value.
 Audio, timestamps, source navigation and saving retain their existing paths.
+The one-page summary image appears inline above the editable summary, even
+when the summary text is folded. Its separate enlarge/share action retains
+the accessible full-text alternative and export confirmation. Images are local
+excerpts, not a new AI interpretation; edits and access changes invalidate them.
+Nested bullet items use a quiet branch glyph. Explicit reason/condition labels
+carry the meaning; nesting alone never asserts causation. Real summaries only
+use causal structure supported by their transcript. Display samples are labeled
+as fictional, contain no audio and can be added individually from Diagnostics
+without replacing existing records.
 The record header uses its display-title fallback and one wrapping metadata line.
 Summary section headings are text-only, retaining the disclosure chevron and
 44pt touch target. The Library's section selector sits 12pt below the toolbar;

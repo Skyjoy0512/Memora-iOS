@@ -535,6 +535,12 @@ struct MeetingDetailView: View {
         .foregroundStyle(MemoraPalette.textSecondary)
         .fixedSize(horizontal: false, vertical: true)
 
+      if SampleContent.isSample(meetingID: meeting.id) {
+        SampleTag()
+        Text("表示用の架空データです。実際の音声・AI処理の結果ではありません。")
+          .font(.caption).foregroundStyle(.secondary)
+      }
+
       if meeting.audioURL == nil, !SampleContent.isSample(meetingID: meeting.id) {
         Label("音声なし", icon: .waveformSlash)
           .font(.caption)
@@ -553,10 +559,11 @@ struct MeetingDetailView: View {
         .transition(.opacity)
     }
 
+    if !meeting.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      MeetingSummaryPosterEntry(meetingID: meeting.id)
+    }
+
     CollapsibleInsightSection(.summary, showsDivider: false) {
-      if !meeting.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        MeetingSummaryPosterEntry(meetingID: meeting.id)
-      }
       if let version = meeting.summaryVersions.first(where: { $0.id == meeting.activeSummaryVersionID }),
          let templateID = version.templateID, let choice = model.summaryChoice(templateID) {
         Text("\(choice.title) · \(version.summaryLength.title)").font(.subheadline).foregroundStyle(.secondary)

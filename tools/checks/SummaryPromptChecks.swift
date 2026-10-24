@@ -27,6 +27,8 @@ struct SummaryPromptChecks {
     precondition(SummaryPrompt.dataContract.contains("\"templateID\""))
     precondition(!SummaryPrompt.system.contains("Markdownだけ"))
     precondition(SummaryPrompt.system.contains(ReadabilityGuide.summaryRules))
+    precondition(ReadabilityGuide.summaryRules.contains("2スペース字下げ"))
+    precondition(ReadabilityGuide.summaryRules.contains("推測を因果に変えない"))
     var overview = minutes
     overview.template = .builtIn(.detailedOverview)
     precondition(SummaryPrompt.format(for: overview.template, input: overview).contains("影響が大きい順"))

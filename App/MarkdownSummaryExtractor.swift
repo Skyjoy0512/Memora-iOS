@@ -14,6 +14,7 @@ enum MarkdownSummaryExtractor {
     var section = Section.other
     var tableHeader: [String]?
     var bulletActions: [SummaryActionItem] = []
+    var parentIndent: Int?
 
     for rawLine in markdown.components(separatedBy: "\n") {
       let line = rawLine.trimmingCharacters(in: .whitespaces)
@@ -21,11 +22,13 @@ enum MarkdownSummaryExtractor {
       if line.hasPrefix("#") {
         section = Section(heading: line)
         tableHeader = nil
+        parentIndent = nil
         continue
       }
       // A bold label inside a bullet ("- **決定事項**:") opens a sub-section.
       if let label = boldLabel(in: line) {
         section = Section(heading: label)
+        parentIndent = nil
         continue
       }
 
@@ -44,6 +47,27 @@ enum MarkdownSummaryExtractor {
       tableHeader = nil
 
       guard let item = bulletText(line), SummaryActionItem.normalized(item) != nil else { continue }
+      let indent = rawLine.prefix { $0 == " " || $0 == "\t" }.reduce(0) { $0 + ($1 == "\t" ? 4 : 1) }
+      // Explicit child reasons/conditions qualify their parent, not a new
+      // decision or task. Keep their actual words, without inferring causation.
+      let plain = item.replacingOccurrences(of: "**", with: "")
+      let isRelation = ["理由", "条件", "影響", "そのため"].contains { plain.hasPrefix($0 + "：") || plain.hasPrefix($0 + ":") }
+      if let parentIndent, indent > parentIndent, isRelation {
+        switch section {
+        case .decisions where !result.decisions.isEmpty:
+          result.decisions[result.decisions.count - 1] += " ／ " + item
+          continue
+        case .questions where !result.openQuestions.isEmpty:
+          result.openQuestions[result.openQuestions.count - 1] += " ／ " + item
+          continue
+        case .actions where !bulletActions.isEmpty:
+          let index = bulletActions.count - 1
+          bulletActions[index].detail = [bulletActions[index].detail, item].filter { !$0.isEmpty }.joined(separator: " ／ ")
+          continue
+        default: break
+        }
+      }
+      parentIndent = indent
       switch section {
       case .decisions:
         result.decisions.append(item)
@@ -89,8 +113,14 @@ enum MarkdownSummaryExtractor {
     guard let end = body.range(of: "**") else { return nil }
     let rest = body[end.upperBound...].trimmingCharacters(in: .whitespaces)
     // Only a label that introduces nested items, not "**x**: value" on one line.
-    guard rest == ":" || rest == "：" || rest.isEmpty else { return nil }
-    return String(body[..<end.lowerBound])
+    let label = String(body[..<end.lowerBound])
+    // A fully bold decision is content, not a new section. Older documents
+    // also used a few exact section labels without a colon.
+    let sectionLabels = ["決定事項", "主要な決定事項", "決まったこと", "約束したこと", "未決事項", "未決定事項", "未解決事項", "確認が必要なこと", "まだ決まっていないこと", "オープンクエスチョン", "アクション", "アクションアイテム", "今後の予定", "次にやること", "次にすること"]
+    let topicLabels = ["関与者", "要点", "課題・懸念"]
+    guard (rest == ":" || rest == "：" || rest.isEmpty),
+          sectionLabels.contains(label) || topicLabels.contains(label) else { return nil }
+    return label
   }
 
   private static func bulletText(_ line: String) -> String? {

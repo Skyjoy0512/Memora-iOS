@@ -26,7 +26,7 @@ enum SampleContent {
 
   static let meetingIDs: Set<UUID> = [
     productMeetingID, oneOnOneMeetingID, salesMeetingID, designMeetingID,
-    weeklyMeetingID, interviewMeetingID, ideaMeetingID, importedWaitingMeetingID
+    weeklyMeetingID, interviewMeetingID, ideaMeetingID, importedWaitingMeetingID, SummarizedAudioSample.id
   ]
   static let spaceIDs: Set<UUID> = [productSpaceID, salesSpaceID]
   static let personIDs: Set<UUID> = [tanakaID, satoID]
@@ -151,6 +151,7 @@ enum SampleContent {
     ]
 
     var meetings = [
+      SummarizedAudioSample.make(),
       Meeting(
         id: importedWaitingMeetingID,
         title: "顧客インタビュー音声",

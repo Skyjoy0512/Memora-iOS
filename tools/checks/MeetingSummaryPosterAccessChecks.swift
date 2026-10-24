@@ -39,8 +39,11 @@ enum MeetingSummaryPosterAccessChecks {
     let record = FixtureRecord()
     model.record = record
     let snapshot = MeetingSummaryPosterSnapshot(meetingID: record.id, model: model)!
+    let same = MeetingSummaryPosterSnapshot(meetingID: record.id, model: model)!
+    precondition(snapshot.id != same.id && snapshot == same)
     precondition(snapshot.isCurrent(in: model))
     model.record?.summary = "変更後"
+    precondition(snapshot != MeetingSummaryPosterSnapshot(meetingID: record.id, model: model))
     precondition(!snapshot.isCurrent(in: model))
     model.record = record
     model.record?.privacy.allowsCloudAI = true

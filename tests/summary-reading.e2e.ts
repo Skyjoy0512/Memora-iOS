@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFi
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { tapControl, tapTab } from './ui-helpers';
+import { tapControl, tapTab, scrollToControl } from './ui-helpers';
 import { sql } from './sqlite-fixture-helpers';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 
@@ -14,6 +14,7 @@ afterEach(async ({ device }) => { await device.setAppearance('light'); });
 test('summary PNG, full-text reading and reversible transcript survive restart', { timeout: 360_000 }, async ({ app, device, screen }) => {
   const { database, identity, fixture, title, summary, raw, marker } = await seedSummaryFixture(app, device, screen);
   await expect(screen.getByTestId('summary.poster.open')).toBeVisible();
+  await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
   await app.screenshot('summary-entry-light');
   await tapControl(screen.getByTestId('summary.poster.open'));
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible({ timeout: 60_000 });
@@ -72,10 +73,12 @@ test('summary PNG, full-text reading and reversible transcript survive restart',
   await tapControl(screen.getByRole('button', { name: 'サマリー', exact: true }));
   const overview = '予算は10万円ではなく12万円。承認された場合だけ来週実施する。';
   const edited = '予算は12万円。承認待ちのため本番切替はしない。';
+  await scrollToControl(screen, screen.getByRole('button', { name: overview, exact: true }));
   await tapControl(screen.getByRole('button', { name: overview, exact: true }));
   await screen.getByRole('textbox', { name: '本文', exact: true }).fill(edited);
   await tapControl(screen.getByRole('button', { name: '完了', exact: true }));
   await expect.poll(() => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"))[0].summary.includes(edited)).toBe(true);
+  await scrollToControl(screen, screen.getByTestId('summary.poster.open'), { minimumY: 90, maximumY: 750 });
   await tapControl(screen.getByTestId('summary.poster.open'));
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
   await tapControl(screen.getByRole('tab', { name: '全文', exact: true }));

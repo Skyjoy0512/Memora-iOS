@@ -18,6 +18,7 @@ struct SettingsCategoryView: View {
   @Environment(\.openURL) private var openURL
   @State private var isSignOutConfirmationPresented = false
   @State private var isAccountDeletionPresented = false
+  @State private var summarySampleFailure: String?
   @State private var isPlanPresented = false
   @State private var isAuthPresented = false
 
@@ -455,6 +456,22 @@ struct SettingsCategoryView: View {
   private var diagnosticsSections: some View {
     Group {
         Section("表示と動作") {
+          Button("要約済み音声のサンプルを見る", icon: .docText) {
+            summarySampleFailure = nil
+            if model.handlingPersistenceFailureLocally({ model.openSummarizedAudioSample() }) {
+              closeSettings()
+            } else {
+              summarySampleFailure = "サンプルを保存できませんでした。既存の記録は変更していません。保存先を確認して再試行してください。"
+            }
+          }
+          .disabled(model.currentTeamID != nil || model.isRestoring)
+          .accessibilityIdentifier("summary.sample.open")
+          .accessibilityHint("表示用の架空データを1件追加します。既存の記録は置き換えません。音声やAI処理は含みません")
+          if let summarySampleFailure {
+            Text(summarySampleFailure).font(.footnote).foregroundStyle(MemoraPalette.danger)
+              .accessibilityIdentifier("summary.sample.failure")
+          }
+
           NavigationLink {
             StateGalleryView()
           } label: {
