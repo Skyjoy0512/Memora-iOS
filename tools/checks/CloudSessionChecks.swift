@@ -6,6 +6,7 @@ struct CloudSessionChecks {
   typealias Response = CloudSessionFixtureResponse
 
   @MainActor static func main() async throws {
+    try await CloudSummaryTransportChecks.run()
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("memora-cloud-fixture-" + UUID().uuidString, isDirectory: true)
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: root) }

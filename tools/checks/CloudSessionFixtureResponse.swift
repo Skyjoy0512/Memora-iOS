@@ -16,7 +16,7 @@ enum CloudSessionFixtureResponse {
     return .init(data: try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]))
   }
 
-  static func sse(provider: LLMProvider, calls: [AgentToolCall] = [], text: String = "", terminated: Bool = true) throws -> CloudSessionFixtureProtocol.Reply {
+  static func sse(provider: LLMProvider, calls: [AgentToolCall] = [], text: String = "", terminated: Bool = true, finish: String? = nil) throws -> CloudSessionFixtureProtocol.Reply {
     var events: [[String: Any]] = []
     if provider.usesAnthropicAPI {
       events.append(["type": "message_start", "message": ["usage": ["input_tokens": 10, "output_tokens": 0]]])
@@ -49,10 +49,10 @@ enum CloudSessionFixtureResponse {
       }
     }
     if provider.usesAnthropicAPI {
-      events.append(["type": "message_delta", "delta": ["stop_reason": calls.isEmpty ? "end_turn" : "tool_use"], "usage": ["output_tokens": 12]])
+      events.append(["type": "message_delta", "delta": ["stop_reason": finish ?? (calls.isEmpty ? "end_turn" : "tool_use")], "usage": ["output_tokens": 12]])
       if terminated { events.append(["type": "message_stop"]) }
     } else {
-      events.append(["choices": [["index": 0, "delta": [:], "finish_reason": calls.isEmpty ? "stop" : "tool_calls"]]])
+      events.append(["choices": [["index": 0, "delta": [:], "finish_reason": finish ?? (calls.isEmpty ? "stop" : "tool_calls")]]])
       events.append(["choices": [], "usage": ["completion_tokens": 12]])
     }
     let lines = try events.map { "data: " + String(decoding: try JSONSerialization.data(withJSONObject: $0, options: [.sortedKeys]), as: UTF8.self) }

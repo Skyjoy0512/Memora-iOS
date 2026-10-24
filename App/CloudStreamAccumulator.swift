@@ -4,7 +4,9 @@ import Foundation
 /// validated provider turn is handed back to the existing agent runner.
 struct CloudStreamAccumulator {
   enum Provider { case chatCompletions, anthropic }
+  enum ResponseKind { case agentTurn, textCompletion }
   var provider: Provider
+  var responseKind: ResponseKind = .agentTurn
   private(set) var text = ""
   private(set) var isFinished = false
   private var assistant: [String: Any] = ["role": "assistant"]
@@ -90,7 +92,8 @@ struct CloudStreamAccumulator {
     if provider == .anthropic {
       var response: [String: Any] = ["content": blocks.keys.sorted().compactMap { blocks[$0] }, "stop_reason": finishReason ?? ""]
       if let usage { response["usage"] = usage }
-      _ = try CloudAgentTurnDecoder.anthropic(response)
+      if responseKind == .textCompletion { _ = try CloudSummaryResponse(response, provider: provider) }
+      else { _ = try CloudAgentTurnDecoder.anthropic(response) }
       return response
     }
     var message = assistant
@@ -99,7 +102,8 @@ struct CloudStreamAccumulator {
     }
     var response: [String: Any] = ["choices": [["message": message, "finish_reason": finishReason ?? ""]]]
     if let usage { response["usage"] = usage }
-    _ = try CloudAgentTurnDecoder.chatCompletions(response)
+    if responseKind == .textCompletion { _ = try CloudSummaryResponse(response, provider: provider) }
+    else { _ = try CloudAgentTurnDecoder.chatCompletions(response) }
     return response
   }
 

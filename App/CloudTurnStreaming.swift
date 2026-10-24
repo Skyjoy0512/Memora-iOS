@@ -4,7 +4,8 @@ enum CloudTurnStreaming {
   @MainActor
   static func response(for original: URLRequest, provider: CloudStreamAccumulator.Provider,
                        onText: @escaping @MainActor (String) -> Void,
-                       sessionConfiguration: URLSessionConfiguration = .ephemeral) async throws -> [String: Any] {
+                       sessionConfiguration: URLSessionConfiguration = .ephemeral,
+                       responseKind: CloudStreamAccumulator.ResponseKind = .agentTurn) async throws -> [String: Any] {
     var request = original
     guard let data = request.httpBody,
           var body = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
@@ -28,6 +29,6 @@ enum CloudTurnStreaming {
       guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
       return object
     }
-    return try await CloudTurnStreamReader.response(from: bytes, provider: provider, onText: onText)
+    return try await CloudTurnStreamReader.response(from: bytes, provider: provider, responseKind: responseKind, onText: onText)
   }
 }

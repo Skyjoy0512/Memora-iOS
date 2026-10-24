@@ -7,11 +7,12 @@ enum CloudTurnStreamReader {
   static func response<Bytes: AsyncSequence>(
     from bytes: Bytes,
     provider: CloudStreamAccumulator.Provider,
+    responseKind: CloudStreamAccumulator.ResponseKind = .agentTurn,
     now: () -> ContinuousClock.Instant = { .now },
     onText: @MainActor (String) -> Void
   ) async throws -> [String: Any] where Bytes.Element == UInt8 {
     try Task.checkCancellation()
-    var accumulator = CloudStreamAccumulator(provider: provider)
+    var accumulator = CloudStreamAccumulator(provider: provider, responseKind: responseKind)
     var events = CloudSSEEventDecoder()
     var lastPublication = now()
     var published = ""

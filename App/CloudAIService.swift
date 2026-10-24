@@ -34,27 +34,10 @@ enum CloudAIService {
     }
     guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
     let anthropicAPI = llm.provider.usesAnthropicAPI
-    var request = URLRequest(url: anthropicAPI ? LLMProvider.anthropic.baseURL.appendingPathComponent("messages") : llm.baseURL.appendingPathComponent("chat/completions"))
-    request.httpMethod = "POST"
-    request.timeoutInterval = 300
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    var body: [String: Any] = ["model": llm.modelID, "messages": [["role": "user", "content": user]]]
-    if anthropicAPI {
-      request.setValue(key, forHTTPHeaderField: "x-api-key")
-      request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-      body["system"] = system
-      body["max_tokens"] = 16_000
-      if llm.modelID == "claude-opus-5" || llm.modelID == "claude-fable-5-1" {
-        request.setValue("server-side-fallback-2026-07-01", forHTTPHeaderField: "anthropic-beta")
-        body["fallbacks"] = "default"
-      }
-    } else {
-      request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-      if llm.provider == .openRouter { request.setValue("Memora", forHTTPHeaderField: "X-Title") }
-      body["messages"] = [["role": "system", "content": system], ["role": "user", "content": user]]
-    }
     do {
-      request.httpBody = try JSONSerialization.data(withJSONObject: body)
+      let messages = anthropicAPI ? [["role": "user", "content": user]] :
+        [["role": "system", "content": system], ["role": "user", "content": user]]
+      let request = try streamingRequest(system: system, messages: messages, llm: llm, key: key)
       let response = try await CloudTurnStreaming.response(for: request, provider: anthropicAPI ? .anthropic : .chatCompletions, onText: onText)
       let text: String
       if anthropicAPI {
@@ -106,44 +89,48 @@ enum CloudAIService {
     }
   }
 
-  /// Streams the answer instead of waiting for it whole. A long summary takes
-  /// minutes to write; streamed, the connection carries text the whole time, so
-  /// no idle timeout cuts it off, and `onProgress` can say how much has come in.
-  /// An answer cut off at the provider's length limit is continued, up to a few
-  /// times, rather than returned half-written.
+  /// A transport EOF is not a completed summary. Continue only an explicitly
+  /// length-limited, terminated text response, never a disconnected request.
   static func completeStreaming(
     system: String,
     user: String,
     llm: LLMSelection,
+    sessionConfiguration: URLSessionConfiguration = .ephemeral,
     onProgress: @escaping @MainActor (Int) -> Void
   ) async -> AIAnswerResult {
-    // The Anthropic path has its own long timeout and a generous token cap.
-    guard !llm.provider.usesAnthropicAPI else {
-      return await complete(system: system, user: user, llm: llm)
-    }
     guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return .failure(llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey)
     }
     guard !llm.modelID.isEmpty else { return .failure(.modelUnavailable) }
 
-    var messages: [[String: String]] = [
-      ["role": "system", "content": system],
-      ["role": "user", "content": user]
-    ]
+    let anthropicAPI = llm.provider.usesAnthropicAPI
+    let provider: CloudStreamAccumulator.Provider = anthropicAPI ? .anthropic : .chatCompletions
+    var messages = anthropicAPI ? [["role": "user", "content": user]] :
+      [["role": "system", "content": system], ["role": "user", "content": user]]
+    // Preserve the old request ceilings: no new automatic Anthropic charges.
+    let requestLimit = anthropicAPI ? 1 : maxContinuations
     var answer = ""
     do {
-      for _ in 0..<maxContinuations {
+      for attempt in 0..<requestLimit {
+        try Task.checkCancellation()
         let alreadyWritten = answer.count
-        let part = try await streamChatCompletion(messages: messages, llm: llm, key: key) { count in
-          onProgress(alreadyWritten + count)
-        }
+        let request = try streamingRequest(system: system, messages: messages, llm: llm, key: key)
+        let response = try await CloudTurnStreaming.response(for: request, provider: provider,
+          onText: { text in onProgress(alreadyWritten + text.count) },
+          sessionConfiguration: sessionConfiguration, responseKind: .textCompletion)
+        try Task.checkCancellation()
+        let part = try CloudSummaryResponse(response, provider: provider)
         answer += part.text
-        guard part.wasCutOff else { break }
-        messages.append(["role": "assistant", "content": answer])
+        // Also publish short/JSON responses, so access-change cancellation runs
+        // before another billable continuation could be submitted.
+        await onProgress(answer.count)
+        try Task.checkCancellation()
+        guard part.wasCutOff else { return .answer(answer.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        guard attempt + 1 < requestLimit else { throw AIAnswerFailure.executionLimit }
+        messages.append(["role": "assistant", "content": part.text])
         messages.append(["role": "user", "content": "出力が途中で切れました。直前の出力の続きから、重複させずにそのまま書き続けてください。"])
       }
-      let text = answer.trimmingCharacters(in: .whitespacesAndNewlines)
-      return text.isEmpty ? .failure(.empty) : .answer(text)
+      return .failure(.executionLimit)
     } catch let failure as AIAnswerFailure {
       return .failure(failure)
     } catch is CancellationError {
@@ -157,53 +144,35 @@ enum CloudAIService {
 
   private static let maxContinuations = 4
 
-  private static func streamChatCompletion(
+  private static func streamingRequest(
+    system: String,
     messages: [[String: String]],
     llm: LLMSelection,
-    key: String,
-    onProgress: @escaping @MainActor (Int) -> Void
-  ) async throws -> (text: String, wasCutOff: Bool) {
-    var request = URLRequest(url: llm.baseURL.appendingPathComponent("chat/completions"))
+    key: String
+  ) throws -> URLRequest {
+    let anthropicAPI = llm.provider.usesAnthropicAPI
+    var request = URLRequest(url: anthropicAPI ? LLMProvider.anthropic.baseURL.appendingPathComponent("messages") : llm.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
     // The gap allowed between two pieces of the stream, not the whole answer.
     // Reasoning models can think quietly for a while before the first word.
     request.timeoutInterval = 300
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-    request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-    if llm.provider == .openRouter {
-      request.setValue("Memora", forHTTPHeaderField: "X-Title")
-    }
-    request.httpBody = try JSONSerialization.data(withJSONObject: [
-      "model": llm.modelID,
-      "messages": messages,
-      "stream": true
-    ] as [String: Any])
-
-    let (bytes, response) = try await URLSession.shared.bytes(for: request)
-    try validate(response)
-
-    var text = ""
-    var finishReason: String?
-    var lastReported = 0
-    for try await line in bytes.lines {
-      // Blank lines and ": keep-alive" comments only keep the connection open.
-      guard line.hasPrefix("data:") else { continue }
-      let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
-      if payload == "[DONE]" { break }
-      guard let data = payload.data(using: .utf8),
-            let chunk = try? JSONDecoder().decode(ChatCompletionChunk.self, from: data) else { continue }
-      if chunk.error != nil { throw AIAnswerFailure.server }
-      for choice in chunk.choices ?? [] {
-        if let piece = choice.delta?.content { text += piece }
-        if let reason = choice.finishReason { finishReason = reason }
+    var body: [String: Any] = ["model": llm.modelID, "messages": messages]
+    if anthropicAPI {
+      request.setValue(key, forHTTPHeaderField: "x-api-key")
+      request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+      body["system"] = system
+      body["max_tokens"] = 16_000
+      if llm.modelID == "claude-opus-5" || llm.modelID == "claude-fable-5-1" {
+        request.setValue("server-side-fallback-2026-07-01", forHTTPHeaderField: "anthropic-beta")
+        body["fallbacks"] = "default"
       }
-      if text.count - lastReported >= 400 {
-        lastReported = text.count
-        await onProgress(text.count)
-      }
+    } else {
+      request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+      if llm.provider == .openRouter { request.setValue("Memora", forHTTPHeaderField: "X-Title") }
     }
-    return (text, finishReason == "length")
+    request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    return request
   }
 
   /// The OpenAI chat-completions shape, which every non-Anthropic provider here
@@ -331,21 +300,4 @@ private struct AnthropicResponse: Decodable {
     case content
     case stopReason = "stop_reason"
   }
-}
-
-/// One piece of a streamed chat-completions answer.
-private struct ChatCompletionChunk: Decodable {
-  struct Choice: Decodable {
-    struct Delta: Decodable { var content: String? }
-    var delta: Delta?
-    var finishReason: String?
-
-    enum CodingKeys: String, CodingKey {
-      case delta
-      case finishReason = "finish_reason"
-    }
-  }
-  struct StreamError: Decodable { var message: String? }
-  var choices: [Choice]?
-  var error: StreamError?
 }
