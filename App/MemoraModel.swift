@@ -31,6 +31,7 @@ final class MemoraModel {
         MemoryRetrievalOrchestrator.invalidate()
         didChangeConversationWorkspace(from: oldValue)
         cancelProjectWebFetches()
+        interruptPendingSummaries(requiresUserRetry: true)
       }
     }
   }
@@ -317,7 +318,10 @@ final class MemoraModel {
   /// written, so a record added meanwhile cannot be silently replaced.
   var isRestoring = false {
     didSet {
-      if isRestoring { cancelProjectWebFetches() }
+      if isRestoring {
+        cancelProjectWebFetches()
+        interruptPendingSummaries(requiresUserRetry: true)
+      }
       else { recoverInterruptedProjectSources() }
     }
   }
@@ -511,6 +515,10 @@ final class MemoraModel {
   @ObservationIgnored let processing = ProcessingService()
   /// Summaries that may still need a background processing window.
   var pendingSummaryJobs: [PendingSummaryJob] = []
+  @ObservationIgnored var summaryQueueRunID: UUID?
+  @ObservationIgnored var activeSummaryRuns: [UUID: UUID] = [:]
+  @ObservationIgnored var summaryBackgroundScheduler: any SummaryBackgroundScheduling = SystemSummaryBackgroundScheduler()
+  var backgroundSummaryNotice: String?
   /// Timings for the paths that matter when comparing builds. Holds numbers and
   /// names only, never content.
   @ObservationIgnored let performance = PerformanceLog.shared

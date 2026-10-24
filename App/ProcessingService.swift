@@ -40,6 +40,8 @@ final class ProcessingService {
     activeIDs.contains(id)
   }
 
+  func runID(for id: UUID) -> UUID? { runs[id]?.id }
+
   /// Runs `work` for the record and hands its outcome to `apply` only while this
   /// is still the record's current job, and only if nothing cancelled it.
   func run<Outcome>(

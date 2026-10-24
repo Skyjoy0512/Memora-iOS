@@ -109,7 +109,7 @@ struct SummaryGenerationSheet: View {
       Button {
         var preferences = model.summaryPreferences
         preferences.length = length
-        model.generateSummary(
+        let started = model.generateSummary(
           meetingID,
           choice: resolvedChoice,
           configuration: model.summaryConfiguration(for: selectedEngine),
@@ -118,7 +118,7 @@ struct SummaryGenerationSheet: View {
           preferences: preferences,
           cloudDisclosureConfirmed: confirmsCloudDisclosure
         )
-        dismiss()
+        if started { dismiss() }
       } label: {
         Text("生成")
           .frame(maxWidth: .infinity)

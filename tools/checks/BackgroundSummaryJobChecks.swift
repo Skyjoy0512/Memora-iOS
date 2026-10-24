@@ -15,6 +15,12 @@ struct BackgroundSummaryJobChecks {
     precondition(restored.choice == job.choice && restored.engine == .cloud && restored.llm == llm)
     precondition(restored.cloudDisclosureConfirmed && restored.usesCloud && restored.automaticallySelect)
     precondition(restored.preferences == job.preferences && restored.useCaseID == "sales")
+    precondition(restored.inputFingerprint == nil && restored.requiresUserRetry == nil)
+    var current = job
+    current.inputFingerprint = "fixture-fingerprint"
+    current.requiresUserRetry = true
+    let currentRestored = try JSONDecoder().decode(PendingSummaryJob.self, from: JSONEncoder().encode(current))
+    precondition(currentRestored.inputFingerprint == current.inputFingerprint && currentRestored.requiresUserRetry == true)
     print("BackgroundSummaryJobChecks: passed (job codec round-trip)")
   }
 }

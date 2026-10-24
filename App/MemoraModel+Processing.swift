@@ -13,7 +13,8 @@ extension MemoraModel {
     for index in meetings.indices where ids.contains(meetings[index].id) {
       switch meetings[index].status {
       case .importing, .transcribing, .organizing:
-        meetings[index].status = .failed("処理が中断されました。音声は保存されています。もう一度試せます。")
+        meetings[index].status = hasPendingSummary(meetings[index].id) && !meetings[index].transcript.isEmpty
+          ? .waitingForSummary : .failed("処理が中断されました。音声は保存されています。もう一度試せます。")
         changed = true
       default:
         break
@@ -25,6 +26,7 @@ extension MemoraModel {
   }
 
   func persistInterruptedJobs() {
+    recoverCancelledSummaryRuns()
     persistInBackground(processing.activeIDStrings, forKey: StorageKey.activeJobs)
   }
 
@@ -45,151 +47,6 @@ extension MemoraModel {
     runTranscription(id, preparation: .milliseconds(600), progress: 0.62, recordsTiming: false)
   }
 
-  /// Rewrites the summary from the real transcript with the chosen template,
-  /// then files its decisions, open questions and key points on the record and
-  /// its actions in the tasks tab. Nothing is invented: when no engine can
-  /// answer, the record says so and keeps whatever the person had.
-  ///
-  /// `configuration` is the AI chosen in the summary sheet; without one, the
-  /// settings engine is used.
-  func generateSummary(
-    _ id: UUID,
-    choice: SummaryTemplateChoice,
-    configuration: (engine: AIEngine, llm: LLMSelection)? = nil,
-    automaticallySelect: Bool = false,
-    useCaseID: String? = nil,
-    preferences: SummaryPreferences? = nil,
-    cloudDisclosureConfirmed: Bool = false
-  ) {
-    guard let meeting = meeting(id: id), !meeting.transcript.isEmpty,
-          !speakerAnalysisIDs.contains(id), !processing.isActive(id), !isRestoring, isStoreWritable() else { return }
-    let selectedEngine = configuration?.engine ?? settingsAIConfiguration.engine
-    let effectiveEngine = AIEngineService.effectiveEngine(selectedEngine)
-    let usesCloud = effectiveEngine == .cloud || effectiveEngine == .memora
-    if effectiveEngine == .cloud || effectiveEngine == .memora {
-      guard RecordAccessPolicy.allows(meeting.effectivePrivacy, purpose: .cloudAI,
-        explicitCloudConsent: cloudDisclosureConfirmed) else {
-        announce(RecordAccessPolicy.refusal)
-        return
-      }
-    }
-
-    updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
-    let inputRevision = ProcessingService.inputRevision(meeting.transcript)
-    let summaryRevision = meeting.summary
-    let startedAt = Date()
-    let input = MeetingSummaryInput(
-      title: meeting.displayTitle,
-      date: meeting.createdAt,
-      duration: meeting.duration,
-      participantNames: usesCloud ? [] : (meeting.participantIDs ?? []).compactMap { person(id: $0)?.name },
-      transcript: meeting.transcript,
-      template: choice,
-      glossary: processingVocabulary(external: usesCloud),
-      preferences: preferences ?? summaryPreferences,
-      automaticCandidates: automaticallySelect ? automaticSummaryCandidates(for: meeting, fallback: choice) : []
-    )
-    let engine = configuration?.engine ?? settingsAIConfiguration.engine
-    let llm = configuration?.llm ?? settingsAIConfiguration.llm
-
-    enqueueBackgroundSummary(
-      PendingSummaryJob(
-        meetingID: id,
-        choice: choice,
-        engineRawValue: engine.rawValue,
-        llm: llm,
-        automaticallySelect: automaticallySelect,
-        useCaseID: useCaseID,
-        preferences: input.preferences,
-        cloudDisclosureConfirmed: cloudDisclosureConfirmed,
-        usesCloud: usesCloud
-      )
-    )
-
-    processing.run(id: id) { [weak self] in
-      let background = BackgroundActivity(name: "要約を作成")
-      defer { background.end() }
-      return await MeetingSummarizer.summarize(input, engine: engine, llm: llm) { step in
-        guard let self, !Task.isCancelled else { return }
-        self.updateMeetingTransiently(id) { meeting in
-          if case .organizing = meeting.status {
-            meeting.status = .organizing("\(choice.processingLabel)：\(step)")
-          }
-        }
-      }
-    } apply: { [weak self] result in
-      guard let self, !Task.isCancelled else { return }
-      self.performance.record(
-        "処理（要約）",
-        milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000
-      )
-
-      // The service checks the run; these two fingerprints catch an edit made
-      // while the answer was being written. A transcript that changed or a
-      // summary that was edited by hand wins over the older result.
-      guard let current = self.meeting(id: id) else { return }
-      guard !self.isRestoring, self.isStoreWritable() else { return }
-      guard current.privacy == meeting.privacy else {
-        self.updateMeeting(id) { $0.status = .waitingForSummary }
-        self.announce("外部送信の設定が変わったため、古い要約は反映しませんでした。")
-        return
-      }
-      let transcriptChanged = ProcessingService.inputRevision(current.transcript) != inputRevision
-      let summaryEdited = current.summary != summaryRevision
-      guard !transcriptChanged, !summaryEdited else {
-        self.updateMeeting(id) { $0.status = .waitingForSummary }
-        self.announce("記録が編集されたため、古い要約は反映しませんでした。もう一度生成できます。")
-        return
-      }
-
-      switch result {
-      case .success(let summary):
-        self.updateMeeting(id) { meeting in
-          if !meeting.summary.isEmpty, !meeting.summaryVersions.contains(where: { $0.markdown == meeting.summary }) {
-            meeting.summaryVersions.append(.snapshot(record: meeting, templateID: nil,
-              preferences: input.preferences, modelInfo: "手動編集・旧形式"))
-          }
-          meeting.summary = summary.markdown
-          meeting.keyPoints = summary.keyPoints
-          meeting.decisions = summary.decisions
-          meeting.openQuestions = summary.openQuestions
-          meeting.status = .ready
-          if let useCaseID { meeting.summaryUseCaseID = useCaseID.isEmpty ? nil : useCaseID }
-          let version = TemplateSummary.snapshot(record: meeting, templateID: summary.templateID,
-            preferences: input.preferences, modelInfo: engine == .cloud || engine == .memora ? llm.modelLabel : "端末内AI",
-            evidence: summary.evidence)
-          meeting.summaryVersions.append(version)
-          meeting.activeSummaryVersionID = version.id
-          meeting.privacy = meeting.effectivePrivacy
-          if input.automaticCandidates.isEmpty, case .market(let template) = input.template {
-            meeting.privacy.protect(template.sensitivityClassification)
-          }
-          if let selected = summary.templateID.flatMap(self.summaryChoice), case .market(let template) = selected {
-            meeting.privacy.protect(template.sensitivityClassification)
-          }
-        }
-        let added = self.addExtractedTasks(summary.actions, meetingID: id, meetingDate: current.createdAt)
-        let permitsAutomaticDelivery = self.allowsRecordAccess(id, purpose: .automaticWebhook)
-        if permitsAutomaticDelivery { self.deliverSummaryToWebhooks(id) }
-        self.runResidentsAfterMeeting(id)
-        self.offerPlusIfNeeded()
-        self.announce(added > 0 ? "要約ができました。タスクを\(added)件追加しました。" : "要約ができました。")
-      case .failure(.cancelled):
-        // Cancelled without a newer request taking over: leave the record able
-        // to be generated again rather than stuck mid-process.
-        self.updateMeeting(id) { meeting in
-          if case .organizing = meeting.status {
-            meeting.status = .waitingForSummary
-          }
-        }
-      case .failure(let failure):
-        let message = failure == .empty ? "要約が空でした。もう一度お試しください。" : failure.message
-        self.updateMeeting(id) { $0.status = .failed(message) }
-        self.announce("要約を作成できませんでした。\(message)")
-      }
-      self.removeBackgroundSummary(meetingID: id)
-    }
-  }
 
   func beginProcessing(_ id: UUID) {
     runTranscription(id, preparation: .milliseconds(700), progress: 0.58, recordsTiming: true)

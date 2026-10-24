@@ -55,7 +55,10 @@ struct ContentView: View {
     .overlay { lockOverlay }
     .onAppear { appLock.lockIfEnabled() }
     .modifier(WidgetSnapshotUpdates())
-    .task { await model.refreshWidgetSnapshot() }
+    .task {
+      model.resumePendingSummariesIfNeeded()
+      await model.refreshWidgetSnapshot()
+    }
     .onChange(of: scenePhase) { _, phase in
       if phase == .active {
         model.scheduleWidgetSnapshot()

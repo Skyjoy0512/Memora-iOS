@@ -8,9 +8,10 @@ import UIKit
 final class BackgroundActivity {
   private var identifier = UIBackgroundTaskIdentifier.invalid
 
-  init(name: String) {
+  init(name: String, onExpiration: (@MainActor () -> Void)? = nil) {
     identifier = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in
       self?.end()
+      onExpiration?()
     }
   }
 

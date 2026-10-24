@@ -1,4 +1,3 @@
-import BackgroundTasks
 import Foundation
 
 extension MemoraModel {
@@ -6,13 +5,15 @@ extension MemoraModel {
 
   /// Keeps the summary parameters with the record, so a run cut short by the app
   /// leaving the foreground can be picked up again by the system.
-  func enqueueBackgroundSummary(_ job: PendingSummaryJob) {
-    guard !isRestoring, isStoreWritable() else { return }
+  @discardableResult
+  func enqueueBackgroundSummary(_ job: PendingSummaryJob) -> Bool {
+    guard currentTeamID == nil, !isRestoring, isStoreWritable() else { return false }
     var jobs = pendingSummaryJobs.filter { $0.meetingID != job.meetingID }
     jobs.append(job)
-    guard persistPendingSummaryJobs(jobs) else { return }
+    guard persistPendingSummaryJobs(jobs) else { return false }
     pendingSummaryJobs = jobs
     scheduleBackgroundSummary()
+    return true
   }
 
   static let autoSummaryAfterTranscriptionKey = "memora.summary.autoAfterTranscription"
@@ -46,7 +47,8 @@ extension MemoraModel {
         useCaseID: useCaseID,
         preferences: summaryPreferences,
         cloudDisclosureConfirmed: false,
-        usesCloud: usesCloud
+        usesCloud: usesCloud,
+        inputFingerprint: SummaryJobFingerprint.make(meeting)
       )
     )
     // The transcription job is still finishing when this is called; let it
@@ -67,12 +69,12 @@ extension MemoraModel {
   func resumePendingSummariesIfNeeded() {
     guard !pendingSummaryJobs.isEmpty, currentTeamID == nil,
           !isRestoring, !isStoreProtected else { return }
-    guard !pendingSummaryJobs.contains(where: { processing.isActive($0.meetingID) }) else { return }
+    guard summaryQueueRunID == nil else { return }
     Task { _ = await runPendingBackgroundSummaries() }
   }
 
-  func removeBackgroundSummary(meetingID: UUID) {
-    let jobs = pendingSummaryJobs.filter { $0.meetingID != meetingID }
+  func removeBackgroundSummary(meetingID: UUID, jobID: UUID? = nil) {
+    let jobs = pendingSummaryJobs.filter { $0.meetingID != meetingID || (jobID != nil && $0.id != jobID) }
     guard jobs.count != pendingSummaryJobs.count else { return }
     guard persistPendingSummaryJobs(jobs) else { return }
     pendingSummaryJobs = jobs
@@ -83,26 +85,10 @@ extension MemoraModel {
   /// The system decides when that window comes; an empty queue cancels the
   /// request so a finished summary does not wake the app.
   func scheduleBackgroundSummary() {
-    BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.backgroundSummaryTaskID)
-    let jobs = pendingSummaryJobs
-    guard !jobs.isEmpty, currentTeamID == nil, !isRestoring, !isStoreProtected else { return }
-    let request = BGProcessingTaskRequest(identifier: Self.backgroundSummaryTaskID)
-    request.requiresNetworkConnectivity = jobs.contains { $0.usesCloud }
-    request.requiresExternalPower = false
-    request.earliestBeginDate = .now.addingTimeInterval(5)
-    try? BGTaskScheduler.shared.submit(request)
-  }
-
-  func handleBackgroundSummary(_ task: BGProcessingTask) {
-    // Keep the next pending job queued before this window is used.
-    scheduleBackgroundSummary()
-    let work = Task { [weak self] in
-      let success = await self?.runPendingBackgroundSummaries() ?? false
-      task.setTaskCompleted(success: success)
-    }
-    task.expirationHandler = { [weak self] in
-      work.cancel()
-      Task { @MainActor in self?.interruptBackgroundSummaries() }
+    let jobs = pendingSummaryJobs.filter { $0.requiresUserRetry != true && $0.inputFingerprint != nil }
+    let permitted = !jobs.isEmpty && currentTeamID == nil && !isRestoring && !isStoreProtected
+    summaryBackgroundScheduler.scheduleDeferred(requiresNetwork: permitted ? jobs.contains { $0.usesCloud } : nil) { [weak self] message in
+      self?.backgroundSummaryNotice = message
     }
   }
 
@@ -110,44 +96,58 @@ extension MemoraModel {
   /// reaches a terminal state, so a window cut short leaves the work for the
   /// next one instead of losing it.
   func runPendingBackgroundSummaries() async -> Bool {
-    guard currentTeamID == nil, !isRestoring, !isStoreProtected else { return false }
+    guard summaryQueueRunID == nil, currentTeamID == nil, !isRestoring, !isStoreProtected else { return false }
+    let token = UUID()
+    let generation = aiWorkspaceGeneration
+    summaryQueueRunID = token
+    defer { if summaryQueueRunID == token { summaryQueueRunID = nil }; scheduleBackgroundSummary() }
+    var allSucceeded = true
     for job in pendingSummaryJobs {
-      guard !Task.isCancelled else { return false }
+      guard !Task.isCancelled, generation == aiWorkspaceGeneration, currentTeamID == nil,
+            !isRestoring, !isStoreProtected else { return false }
+      guard pendingSummaryJobs.contains(where: { $0.id == job.id }), job.requiresUserRetry != true else { continue }
       guard let meeting = meeting(id: job.meetingID), !meeting.transcript.isEmpty else {
-        removeBackgroundSummary(meetingID: job.meetingID)
+        removeBackgroundSummary(meetingID: job.meetingID, jobID: job.id)
         continue
       }
-      if meeting.status == .ready {
-        removeBackgroundSummary(meetingID: job.meetingID)
+      if processing.isActive(job.meetingID) { continue }
+      guard let fingerprint = job.inputFingerprint, fingerprint == SummaryJobFingerprint.make(meeting) else {
+        pauseBackgroundSummary(job, requiresUserRetry: true)
         continue
       }
 
-      generateSummary(
+      let started = generateSummary(
         job.meetingID,
         choice: job.choice,
         configuration: (job.engine, job.llm),
         automaticallySelect: job.automaticallySelect,
         useCaseID: job.useCaseID,
         preferences: job.preferences,
-        cloudDisclosureConfirmed: job.cloudDisclosureConfirmed
+        cloudDisclosureConfirmed: job.cloudDisclosureConfirmed,
+        pendingJob: job
       )
+      guard started else { pauseBackgroundSummary(job, requiresUserRetry: true); continue }
 
-      guard await waitForSummary(job.meetingID) else {
-        interruptBackgroundSummary(job.meetingID)
+      guard await waitForSummary(job, generation: generation) else {
+        pauseBackgroundSummary(job, requiresUserRetry: false)
         return false
       }
-      removeBackgroundSummary(meetingID: job.meetingID)
+      if self.meeting(id: job.meetingID)?.status != .ready { allSucceeded = false }
+      // Completion, not the waiter, owns removal. A stopped task, failed save
+      // or a replacement run must never be mistaken for a delivered summary.
     }
-    scheduleBackgroundSummary()
-    return true
+    return pendingSummaryJobs.isEmpty && allSucceeded
   }
 
   /// The summary itself is run by `ProcessingService`; this waits for that run
   /// to settle. The bound keeps a broken job from holding the whole window.
-  private func waitForSummary(_ id: UUID) async -> Bool {
+  private func waitForSummary(_ job: PendingSummaryJob, generation: UUID) async -> Bool {
     for _ in 0..<540 {
-      guard !Task.isCancelled else { return false }
-      if !processing.isActive(id) { return true }
+      guard !Task.isCancelled, currentTeamID == nil, aiWorkspaceGeneration == generation,
+            !isRestoring, !isStoreProtected else { return false }
+      guard pendingSummaryJobs.contains(where: { $0.id == job.id }) else { return true }
+      guard activeSummaryRuns[job.id] == processing.runID(for: job.meetingID) else { return true }
+      if !processing.isActive(job.meetingID) { return true }
       do {
         try await Task.sleep(for: .seconds(1))
       } catch {
@@ -157,23 +157,38 @@ extension MemoraModel {
     return false
   }
 
-  private func interruptBackgroundSummaries() {
+  func interruptPendingSummaries(requiresUserRetry: Bool) {
     for job in pendingSummaryJobs {
-      interruptBackgroundSummary(job.meetingID)
+      pauseBackgroundSummary(job, requiresUserRetry: requiresUserRetry)
     }
     scheduleBackgroundSummary()
   }
 
   /// Stops the processing task and puts the record back where it can be retried
   /// instead of leaving the spinner on screen.
-  private func interruptBackgroundSummary(_ id: UUID) {
-    guard processing.isActive(id) else { return }
-    processing.cancel(id)
-    updateMeeting(id) { meeting in
+  func pauseBackgroundSummary(_ job: PendingSummaryJob, requiresUserRetry: Bool) {
+    guard let index = pendingSummaryJobs.firstIndex(where: { $0.id == job.id }) else { return }
+    if let run = activeSummaryRuns.removeValue(forKey: job.id), processing.runID(for: job.meetingID) == run {
+      processing.cancel(job.meetingID)
+    }
+    summaryBackgroundScheduler.finish(jobID: job.id, success: false)
+    var jobs = pendingSummaryJobs
+    jobs[index].requiresUserRetry = requiresUserRetry || jobs[index].requiresUserRetry == true
+    _ = persistPendingSummaryJobs(jobs)
+    pendingSummaryJobs = jobs
+    updateMeeting(job.meetingID) { meeting in
       if case .organizing = meeting.status {
         meeting.status = .waitingForSummary
       }
     }
+  }
+
+  func recoverCancelledSummaryRuns() {
+    let interrupted = pendingSummaryJobs.filter { job in
+      guard let run = activeSummaryRuns[job.id] else { return false }
+      return processing.runID(for: job.meetingID) != run
+    }
+    for job in interrupted { pauseBackgroundSummary(job, requiresUserRetry: true) }
   }
 
   private func persistPendingSummaryJobs(_ jobs: [PendingSummaryJob]) -> Bool {

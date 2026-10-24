@@ -15,6 +15,10 @@ struct PendingSummaryJob: Codable, Identifiable, Sendable {
   var cloudDisclosureConfirmed: Bool
   var usesCloud: Bool
   var createdAt = Date.now
+  /// Older jobs have no fingerprint and must be confirmed again, not silently
+  /// reuse a one-time disclosure against possibly changed record contents.
+  var inputFingerprint: String? = nil
+  var requiresUserRetry: Bool? = nil
 
   var engine: AIEngine {
     AIEngine(rawValue: engineRawValue) ?? .automatic

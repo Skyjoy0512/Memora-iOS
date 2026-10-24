@@ -63,7 +63,8 @@
         "properties" : {
           "BGTaskSchedulerPermittedIdentifiers" : [
             "app.memora.residents.refresh",
-            "app.memora.summaries.processing"
+            "app.memora.summaries.processing",
+            "$(PRODUCT_BUNDLE_IDENTIFIER).summaries.continued.*"
           ],
           "CFBundleDisplayName" : "Memora",
           "CFBundleDocumentTypes" : [
