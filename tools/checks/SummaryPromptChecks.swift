@@ -26,6 +26,12 @@ struct SummaryPromptChecks {
     precondition(SummaryPrompt.format(for: minutes.template, input: minutes).contains("## 未決事項"))
     precondition(SummaryPrompt.dataContract.contains("\"templateID\""))
     precondition(!SummaryPrompt.system.contains("Markdownだけ"))
+    precondition(SummaryPrompt.system.contains(ReadabilityGuide.summaryRules))
+    var overview = minutes
+    overview.template = .builtIn(.detailedOverview)
+    precondition(SummaryPrompt.format(for: overview.template, input: overview).contains("影響が大きい順"))
+    overview.preferences.displayOrder = .chronological
+    precondition(SummaryPrompt.format(for: overview.template, input: overview).contains("話題は時間順"))
     var custom = SummaryTemplateCatalog.market[0]
     custom.isCustom = true
     custom.sections = ["私の見出し"]

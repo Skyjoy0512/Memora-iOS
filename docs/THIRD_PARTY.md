@@ -27,7 +27,7 @@
 | --- | --- | --- |
 | [MCP Swift SDK 0.12.1](https://github.com/modelcontextprotocol/swift-sdk/tree/0.12.1) | リモートMCPのクライアント。ライセンス全文をアプリ内リソースに同梱 | MIT |
 | [LucideSwift 0.9.11](https://github.com/ajaxjiang96/lucide-swift/tree/0.9.11) | アプリ・ウィジェットの共通アイコン。対応表は `docs/LUCIDE_ICONS.md`。ライセンス全文はアプリ内リソースに同梱 | ISC |
-| [yomiyasu v2.0.1](https://github.com/nanaism/yomiyasu/tree/v2.0.1)（nanaism） | 日本語を読みやすくする規則を要約・Ask AI・エージェントの指示文に取り入れた（`App/ReadabilityGuide.swift`） | MIT |
+| [yomiyasu v2.3.0](https://github.com/nanaism/yomiyasu/tree/v2.3.0)（nanaism） | 日本語を読みやすくする規則を要約・Ask AI・エージェントの指示文に取り入れた（`App/ReadabilityGuide.swift`） | MIT |
 | [日本語の技術文書の書き方](https://gist.github.com/k16shikano/fd287c3133457c4fd8f5601d34aa817d)（k16shikano） | 段落・推量・用語の規則を同じく取り入れた | Unlicense |
 | [OpenDots](https://github.com/CopilotKit/OpenDots)（CopilotKit） | 常駐エージェント（名前・役割・指示・権限・定期的な見回り・作業記録）の設計を参考にした。コードはTypeScriptのため移植していない | MIT |
 | [OpenMuse](https://github.com/CopilotKit/openmuse)（CopilotKit） | 目標の定期チェックと見える作業記録の考え方を参考にした | MIT |
@@ -62,3 +62,13 @@ Copyright (c) 2026 nanaism。全文を `App/Resources/Yomiyasu-LICENSE.txt` に�
 既存のReadabilityGuideへ適応した。現在の発言者/担当の区別、条件・否定・確度、テンプレート/スキーマ保護は残す。
 Ask AIの自然な会話と段落の指示も追加し、資料を命令として扱わない現行の安全指示は維持した。
 Python/スキル実行環境は導入しない。実モデルによる文章品質のA/B評価は未実施。
+
+## yomiyasu 2.3.0への指針更新（2026-10-24）
+
+GitHubの最新タグとmainを確認し、両方の実コミット
+`15244a1369c192d6b7e74963ee9709537fadf166`を固定した。
+2.3.0の連用形名詞、専門用語/直訳、意味・確度・目的/理由の保持、提出前の原文との照合を
+Memoraの指示へ適応した。会議では提案/合意/条件付き合意/記載なしと未定を区別し、
+原文のない担当・期限・根拠を補完しない。テンプレート、スキーマ、引用の原文は保つ。
+同梱MIT全文は上流と同じ。Pythonのlint/diff/check、hooksやCLIの性能改善は移植しておらず、
+スキル全体がiOS上で動くとは扱わない。追加LLM呼び出しはなく、保存済み要約の自動再生成もしない。
