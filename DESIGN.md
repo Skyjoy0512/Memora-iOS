@@ -210,6 +210,8 @@ excerpts, not a new AI interpretation; edits and access changes invalidate them.
 The image keeps its reading width but fits its content height, without empty
 fixed-height columns or a blank page tail. The redundant template section/source
 disclosure is not shown; the editable summary, transcript tab and history remain.
+Decision lists omit the per-item transcript confirmation/source shortcuts;
+editing remains on the item, and the transcript stays in its own section tab.
 Nested bullet items use a quiet branch glyph. Explicit reason/condition labels
 carry the meaning; nesting alone never asserts causation. Real summaries only
 use causal structure supported by their transcript. Display samples are labeled

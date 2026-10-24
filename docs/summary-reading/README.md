@@ -5,6 +5,7 @@
 端末内要約の根拠付き階層と検証範囲は [ON_DEVICE_RELATIONS](ON_DEVICE_RELATIONS.md) を参照。
 カスタム形式の入力分割と条件保全は [TEMPLATE_INPUT](TEMPLATE_INPUT.md) を参照。
 画像の余白と重複項目の整理は [COMPACT_POSTER](COMPACT_POSTER.md) を参照。
+決定事項の原文リンク整理と長文画像の確認は [READING_POLISH](READING_POLISH.md) を参照。
 
 ## 実装（2026-10-24）
 

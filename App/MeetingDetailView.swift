@@ -596,16 +596,10 @@ struct MeetingDetailView: View {
     }
 
     CollapsibleInsightSection(.decisions) {
-      let sources = SummaryEvidence.matches(items: meeting.decisions, transcript: meeting.transcript, duration: meeting.duration)
       InlineEditableList(
         items: meeting.decisions,
         emptyText: "明確な決定は見つかりませんでした",
-        onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) },
-        sourceLabels: sources.mapValues { "一致する発言：\(MemoraFormat.duration($0.timestamp))" },
-        onShowSource: meeting.transcript.isEmpty ? nil : { item in
-          InteractionFeedback.shared.send(.tap)
-          model.detailPlaybackRequest = DetailPlaybackRequest(meetingID: meeting.id, time: sources[item]?.timestamp)
-        }
+        onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) }
       )
     }
 
