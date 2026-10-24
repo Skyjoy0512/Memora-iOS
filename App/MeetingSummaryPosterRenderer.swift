@@ -4,11 +4,21 @@ import UIKit
 @MainActor
 enum MeetingSummaryPosterRenderer {
   static func render(_ content: MeetingSummaryPosterContent) throws -> UIImage {
-    let renderer = ImageRenderer(content: MeetingSummaryPosterCanvas(content: content))
-    renderer.scale = 2
-    renderer.isOpaque = true
-    guard let image = renderer.uiImage else { throw CocoaError(.fileReadUnknown) }
-    return image
+    var fitted = content
+    while true {
+      let renderer = ImageRenderer(content: MeetingSummaryPosterCanvas(content: fitted))
+      renderer.scale = 2
+      renderer.isOpaque = true
+      // Measure the native layout before allocating a bitmap for a long document.
+      var measured = CGSize.zero
+      renderer.render { size, _ in measured = size }
+      guard measured.height > 0 else { throw CocoaError(.fileReadUnknown) }
+      if measured.height <= 1200 {
+        guard let image = renderer.uiImage else { throw CocoaError(.fileReadUnknown) }
+        return image
+      }
+      guard fitted.reduceToFit() else { throw CocoaError(.fileReadTooLarge) }
+    }
   }
 
   static func export(_ image: UIImage) throws -> URL {

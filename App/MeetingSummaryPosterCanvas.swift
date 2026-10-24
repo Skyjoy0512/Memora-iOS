@@ -4,32 +4,24 @@ struct MeetingSummaryPosterCanvas: View {
   var content: MeetingSummaryPosterContent
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 20) {
+    VStack(alignment: .leading, spacing: 22) {
       HStack {
-        Text("MEMORA / MEETING BRIEF").font(.system(size: 15, weight: .semibold, design: .monospaced))
+        Text("MEMORA / SUMMARY").font(.system(size: 15, weight: .semibold, design: .monospaced))
         Spacer()
         Text(content.date).font(.system(size: 16))
       }
       .foregroundStyle(Color.black.opacity(0.6))
-      Text(content.title).font(.system(size: 36, weight: .bold)).lineLimit(2)
+      Text(content.title).font(.system(size: 34, weight: .bold))
       Rectangle().frame(height: 2)
-      VStack(alignment: .leading, spacing: 12) {
-        Text("要旨・本文の抜粋").font(.system(size: 17, weight: .semibold))
-        Text(content.overview.isEmpty ? "概要の段落はありません。全文をご確認ください。" : content.overview)
-          .font(.system(size: 25, weight: .medium)).lineSpacing(6).lineLimit(5)
+      ForEach(content.sections) { section in
+        MeetingSummaryPosterSectionView(section: section)
       }
-      HStack(alignment: .top, spacing: 28) {
-        section("01 / 決定事項", items: content.decisions, lines: 5)
-        Rectangle().fill(Color.black.opacity(0.15)).frame(width: 1)
-        section("02 / 次のアクション", items: content.actions, lines: 5)
-      }
-      .fixedSize(horizontal: false, vertical: true)
-      Rectangle().fill(Color.black.opacity(0.15)).frame(height: 1)
-      section("03 / 未解決の確認事項", items: content.questions, lines: 2)
-      Text("保存済み要約から抜粋。件数・長さに上限があり、長い項目は省略しています。\n記載がない欄は未抽出です。全内容・条件・出典は本文で確認してください。")
+      Text(content.hasOmissions
+           ? "保存済み要約の一部を掲載しています。省略した項目・条件を含む全文は要約本文で確認できます。"
+           : "保存済み要約から作成。全文は要約本文で確認できます。")
         .font(.system(size: 14)).lineSpacing(4).foregroundStyle(Color.black.opacity(0.65))
     }
-    .padding(40)
+    .padding(36)
     .frame(width: 720, alignment: .topLeading)
     .fixedSize(horizontal: false, vertical: true)
     .foregroundStyle(Color.black)
@@ -37,19 +29,5 @@ struct MeetingSummaryPosterCanvas: View {
     .environment(\.layoutDirection, .leftToRight)
     .environment(\.dynamicTypeSize, .large)
     .environment(\.colorScheme, .light)
-  }
-
-  private func section(_ title: String, items: [String], lines: Int) -> some View {
-    VStack(alignment: .leading, spacing: 16) {
-      Text(title).font(.system(size: 17, weight: .semibold))
-      if items.isEmpty {
-        Text("要約本文からは未抽出").font(.system(size: 20)).foregroundStyle(Color.black.opacity(0.55))
-      }
-      ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-        Text("• " + item).font(.system(size: 20)).lineSpacing(4).lineLimit(lines)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .topLeading)
   }
 }

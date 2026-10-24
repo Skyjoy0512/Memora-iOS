@@ -33,7 +33,7 @@ struct MeetingSummaryPosterEntry: View {
           Image(uiImage: image).resizable().scaledToFit()
             .frame(maxWidth: .infinity)
             .overlay(Rectangle().stroke(MemoraPalette.border, lineWidth: 1))
-            .accessibilityLabel("\(current.title)の1枚サマリー。要旨・決定事項・次のアクション・未解決の確認事項。下の要約本文で全内容を読めます")
+            .accessibilityLabel("\(current.title)の1枚サマリー。要約本文の見出しと項目に沿って構成しています。下の要約本文で全内容を読めます")
             .accessibilityIdentifier("summary.poster.inline")
         } else if failed {
           Button("画像を再作成") { render(current) }

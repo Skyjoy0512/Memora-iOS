@@ -208,7 +208,12 @@ when the summary text is folded. Its separate enlarge/share action retains
 the accessible full-text alternative and export confirmation. Images are local
 excerpts, not a new AI interpretation; edits and access changes invalidate them.
 The image keeps its reading width but fits its content height, without empty
-fixed-height columns or a blank page tail. The redundant template section/source
+fixed-height columns or a blank page tail. Its sections follow the saved document's
+own headings, hierarchy, lists and table labels, not fixed decision/action slots.
+Long images are fitted by removing whole groups before allocating the PNG;
+bounded text and omitted material are disclosed, with the untouched full text available.
+The task-add action uses the shared quiet capsule with a 44pt minimum target.
+The redundant template section/source
 disclosure is not shown; the editable summary, transcript tab and history remain.
 Decision lists omit the per-item transcript confirmation/source shortcuts;
 editing remains on the item, and the transcript stays in its own section tab.

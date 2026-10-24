@@ -25,9 +25,11 @@ struct AddTaskView: View {
       MemoraForm {
         Section("タスク") {
           TextField("すること", text: $title)
+            .accessibilityLabel("すること")
           TaskAssigneeFields(people: model.people, name: $assignee, personID: $assigneePersonID, ownedByMe: $ownedByMe)
           TextField("メモ・完了条件", text: $detail, axis: .vertical)
             .lineLimit(3...8)
+            .accessibilityLabel("メモ・完了条件")
         }
 
         Section {

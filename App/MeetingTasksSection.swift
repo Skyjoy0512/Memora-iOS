@@ -24,7 +24,9 @@ struct MeetingTasksSection: View {
       Button("タスクを追加", icon: .textBadgePlus) {
         isAddingTask = true
       }
-      .font(.subheadline.weight(.medium))
+      .buttonStyle(MemoraButtonStyle(emphasis: .secondary))
+      .accessibilityIdentifier("meeting.tasks.add")
+      .accessibilityHint("この会議に関連するタスクを作成します")
     }
     .sheet(item: $editingTask) { task in
       TaskEditView(task: task)

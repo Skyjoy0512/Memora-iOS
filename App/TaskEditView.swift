@@ -60,8 +60,10 @@ struct TaskEditView: View {
       MemoraForm {
         Section("内容") {
           TextField("タイトル", text: $title, axis: .vertical)
+            .accessibilityLabel("タイトル")
           TextField("メモ・完了条件", text: $detail, axis: .vertical)
             .lineLimit(3...8)
+            .accessibilityLabel("メモ・完了条件")
           TaskAssigneeFields(people: model.people, name: $assignee, personID: $assigneePersonID, ownedByMe: $ownedByMe)
           if currentTask.isCompleted {
             LabeledContent("状態", value: currentTask.statusLabel)

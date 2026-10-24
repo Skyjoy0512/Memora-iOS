@@ -41,7 +41,7 @@ struct MeetingSummaryPosterSheet: View {
               ScrollView([.horizontal, .vertical]) {
                 Image(uiImage: image).resizable().scaledToFit()
                   .frame(width: isEnlarged ? 720 : min(720, availableWidth))
-                  .accessibilityLabel("\(snapshot.title)の1枚サマリー。要旨、決定事項、次のアクション、未解決の確認事項。全文タブで全内容を読めます")
+                  .accessibilityLabel("\(snapshot.title)の1枚サマリー。要約本文の見出しと項目に沿って構成しています。全文タブで全内容を読めます")
                   .accessibilityIdentifier("summary.poster.image")
                   .padding(.horizontal, 16)
               }
