@@ -8,6 +8,7 @@ struct TranscriptSegmentText: View {
   var meetingID: UUID
   var segment: TranscriptSegment
   var showsSpeaker: Bool
+  var usesReadableText = true
   var timeWidth: CGFloat = 50
   /// Highlighted while the recording is playing this line.
   var isActive = false
@@ -38,6 +39,7 @@ struct TranscriptSegmentText: View {
           font: MemoraTypography.readingBody,
           minHeight: 60,
           allowsStructure: false,
+          displayText: usesReadableText ? TranscriptReadability.cleaned(segment.text) : nil,
           onCommit: { text in
             model.updateTranscriptSegment(meetingID: meetingID, segmentID: segment.id, text: text)
             return true

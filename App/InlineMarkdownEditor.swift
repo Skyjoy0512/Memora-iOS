@@ -16,6 +16,8 @@ struct InlineMarkdownEditor: View {
   /// screen or stopping the app does not lose the draft.
   var draftKey: String?
   var allowsStructure = true
+  /// Reading-only projection. The edit draft always starts from the source text.
+  var displayText: String? = nil
   /// Commits the text and reports whether it was stored. The draft is only
   /// cleared once this says the text is saved, so a failed write keeps what was
   /// being written.
@@ -66,7 +68,7 @@ struct InlineMarkdownEditor: View {
             Text(placeholder)
               .foregroundStyle(.tertiary)
           } else {
-            Text(Self.attributed(text))
+            Text(Self.attributed(displayText ?? text))
           }
         }
         .font(font)
@@ -75,7 +77,7 @@ struct InlineMarkdownEditor: View {
         .contentShape(Rectangle())
         .onTapGesture { beginEditing() }
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint("タップして編集")
+        .accessibilityHint(displayText == nil ? "タップして編集" : "タップして原文を編集")
         .accessibilityAction(named: "編集") { beginEditing() }
       }
     }

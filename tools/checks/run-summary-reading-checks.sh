@@ -11,3 +11,5 @@ sources=(Shared/MemoraIcon.swift App/ReadabilityGuide.swift App/SummaryPrompt.sw
   App/OccupationSummaryTemplates.swift App/SummaryTemplateSelector.swift)
 swiftc "${sources[@]}" tools/checks/SummaryPromptChecks.swift -o "$check_dir/prompt"
 "$check_dir/prompt"
+swiftc "${sources[@]}" App/TranscriptReadability.swift tools/checks/TranscriptReadabilityChecks.swift -o "$check_dir/transcript"
+"$check_dir/transcript"

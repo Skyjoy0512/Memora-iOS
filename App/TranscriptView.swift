@@ -5,6 +5,7 @@ struct TranscriptView: View {
   var meetingID: UUID
   @State private var detailTab: RootTab?
   @State private var editingSegment: TranscriptSegment?
+  @AppStorage("memora.transcript.readable") private var usesReadableText = true
 
   var body: some View {
     Group {
@@ -40,11 +41,13 @@ struct TranscriptView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, MemoraSpacing.group)
               } else {
+                TranscriptReadingOptions(isReadable: $usesReadableText)
                 ForEach(meeting.transcript) { segment in
                   TranscriptSegmentText(
                     meetingID: meeting.id,
                     segment: segment,
                     showsSpeaker: showsSpeaker,
+                    usesReadableText: usesReadableText,
                     timeWidth: 62,
                     onEditSpeaker: { editingSegment = segment }
                   )
@@ -78,4 +81,3 @@ struct TranscriptView: View {
     }
   }
 }
-

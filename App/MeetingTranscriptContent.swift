@@ -11,6 +11,7 @@ struct MeetingTranscriptContent: View {
   /// The line being played. Kept here and set by `ActiveSegmentTracker`, so
   /// the list redraws when playback moves to another line, not on every tick.
   @State private var activeSegmentID: UUID?
+  @AppStorage("memora.transcript.readable") private var usesReadableText = true
 
   var body: some View {
     // Each of these scans the transcript. Read once here rather than per line,
@@ -50,12 +51,14 @@ struct MeetingTranscriptContent: View {
         }
         .frame(maxWidth: .infinity)
       } else {
+        TranscriptReadingOptions(isReadable: $usesReadableText)
         LazyVStack(alignment: .leading, spacing: 22) {
           ForEach(meeting.transcript) { segment in
             TranscriptSegmentText(
               meetingID: meeting.id,
               segment: segment,
               showsSpeaker: showsSpeaker,
+              usesReadableText: usesReadableText,
               timeWidth: 42,
               isActive: segment.id == activeSegmentID || segment.id == focusedSegmentID,
               onSeek: seekAction,
