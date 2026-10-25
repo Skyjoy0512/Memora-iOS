@@ -12,6 +12,7 @@ struct SummaryPreferences: Codable, Equatable {
   var method: Method = .automatic
   var length: SummaryLength = .standard
   var displayOrder: DisplayOrder = .importance
+  var processingMode: SummaryProcessingMode = .balanced
 
   static func loadOrMigrate(defaults: UserDefaults = .standard) -> Self {
     let key = "memora.summaryPreferences"
@@ -33,5 +34,17 @@ struct SummaryPreferences: Codable, Equatable {
     let existing = defaults.bool(forKey: "hasSeenMemoraWelcome")
       || defaults.string(forKey: "memora.summary.defaultTemplate") != nil
     return Self(method: existing ? .fixed : .automatic)
+  }
+}
+
+extension SummaryPreferences {
+  private enum CodingKeys: String, CodingKey { case method, length, displayOrder, processingMode }
+
+  init(from decoder: Decoder) throws {
+    let values = try decoder.container(keyedBy: CodingKeys.self)
+    method = try values.decodeIfPresent(Method.self, forKey: .method) ?? .automatic
+    length = try values.decodeIfPresent(SummaryLength.self, forKey: .length) ?? .standard
+    displayOrder = try values.decodeIfPresent(DisplayOrder.self, forKey: .displayOrder) ?? .importance
+    processingMode = try values.decodeIfPresent(SummaryProcessingMode.self, forKey: .processingMode) ?? .balanced
   }
 }

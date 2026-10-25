@@ -3,6 +3,15 @@ import Foundation
 @main
 struct BackgroundSummaryJobChecks {
   static func main() throws {
+    let oldPreferences = try JSONDecoder().decode(SummaryPreferences.self,
+      from: Data(#"{"method":"fixed","length":"detailed","displayOrder":"chronological"}"#.utf8))
+    precondition(oldPreferences.processingMode == .balanced && oldPreferences.method == .fixed && oldPreferences.displayOrder == .chronological)
+    for mode in SummaryProcessingMode.allCases {
+      var preferences = oldPreferences
+      preferences.processingMode = mode
+      let restored = try JSONDecoder().decode(SummaryPreferences.self, from: JSONEncoder().encode(preferences))
+      precondition(restored == preferences)
+    }
     let llm = LLMSelection(provider: .openAI, modelID: "gpt-test", displayName: "Test")
     let market = SummaryMarketTemplate(id: "custom.one", title: "議事録", detail: "詳細", symbol: .doc,
       lead: "lead", sections: ["決定"], focus: "focus")

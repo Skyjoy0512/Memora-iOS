@@ -91,6 +91,8 @@ enum CloudAIService {
     user: String,
     llm: LLMSelection,
     sessionConfiguration: URLSessionConfiguration = .ephemeral,
+    processingMode: SummaryProcessingMode = .balanced,
+    authorize: (@MainActor () -> Bool)? = nil,
     onActivity: (@MainActor () -> Void)? = nil,
     onProgress: @escaping @MainActor (Int) -> Void
   ) async -> AIAnswerResult {
@@ -109,8 +111,10 @@ enum CloudAIService {
     do {
       for attempt in 0..<requestLimit {
         try Task.checkCancellation()
+        if let authorize, !(await authorize()) { throw AIAnswerFailure.cancelled }
+        try Task.checkCancellation()
         let alreadyWritten = answer.count
-        let request = try streamingRequest(system: system, messages: messages, llm: llm, key: key)
+        let request = try streamingRequest(system: system, messages: messages, llm: llm, key: key, processingMode: processingMode)
         let response = try await CloudTurnStreaming.response(for: request, provider: provider,
           onText: { text in onProgress(alreadyWritten + text.count) },
           sessionConfiguration: sessionConfiguration, onActivity: onActivity, responseKind: .textCompletion)
@@ -145,7 +149,8 @@ enum CloudAIService {
     system: String,
     messages: [[String: String]],
     llm: LLMSelection,
-    key: String
+    key: String,
+    processingMode: SummaryProcessingMode = .balanced
   ) throws -> URLRequest {
     let anthropicAPI = llm.provider.usesAnthropicAPI
     var request = URLRequest(url: anthropicAPI ? LLMProvider.anthropic.baseURL.appendingPathComponent("messages") : llm.baseURL.appendingPathComponent("chat/completions"))
@@ -168,6 +173,7 @@ enum CloudAIService {
       request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
       if llm.provider == .openRouter { request.setValue("Memora", forHTTPHeaderField: "X-Title") }
     }
+    SummaryGenerationPolicy.apply(processingMode, llm: llm, to: &body)
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
     return request
   }

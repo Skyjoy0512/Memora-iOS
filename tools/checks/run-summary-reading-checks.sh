@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-summary-reading.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
-sources=(Shared/MemoraIcon.swift App/ReadabilityGuide.swift App/SummaryPrompt.swift
+sources=(Shared/MemoraIcon.swift App/SummaryProcessingMode.swift App/ReadabilityGuide.swift App/SummaryPrompt.swift
   App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/MemoraFormat.swift
   App/MeetingSummaryInput.swift App/SummaryTemplate.swift App/SummaryMarketTemplate.swift
   App/SummaryTemplateChoice.swift App/SummarySensitivity.swift App/SummaryLength.swift
@@ -27,6 +27,11 @@ swiftc App/LocalStore.swift App/TranscriptSegment.swift App/SpeakerIdentificatio
 layout_sources=("${sources[@]}" App/SummaryTopic.swift App/SummaryRelation.swift App/SummaryRelationMarkdown.swift
   App/SummaryMarkdownBuilder.swift App/SummaryActionItem.swift App/SummaryResponseParser.swift
   App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift App/MarkdownSummaryExtractor.swift)
+swiftc "${layout_sources[@]}" App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
+  App/LLMProvider.swift App/LLMModelOption.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift \
+  App/SummaryDiagnostics.swift App/SummaryGenerationPolicy.swift App/SummaryPartScheduler.swift App/MeetingSummarizer.swift \
+  tools/checks/SummaryPipelineChecks.swift -o "$check_dir/pipeline"
+"$check_dir/pipeline"
 swiftc "${layout_sources[@]}" tools/checks/SummaryLayoutChecks.swift -o "$check_dir/layout"
 "$check_dir/layout"
 swiftc "${layout_sources[@]}" App/SummaryTemplateNotes.swift tools/checks/SummaryTemplateNotesChecks.swift -o "$check_dir/template-notes"

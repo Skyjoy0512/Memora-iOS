@@ -60,6 +60,7 @@ enum CloudSummaryTransportChecks {
       }
     }
     try await continuationChecks()
+    try await processingModeChecks()
     try completedJSONChecks()
     for streaming in [false, true] {
       let diagnostics = SummaryDiagnostics(jobID: UUID(), engine: "cloud", provider: "fixture", model: "fixture", characters: 1, segments: 1)
@@ -78,6 +79,48 @@ enum CloudSummaryTransportChecks {
       Wire.state.assertConsumed(2)
     }
     print("CloudSummaryTransportChecks: passed (production summary → URLSession → bounded SSE/JSON → terminal text validation; both APIs, EOF/refusal/tools/limits/cancel/HTTP failures, bounded continuations; no keys/network/paid API)")
+  }
+
+  static func processingModeChecks() async throws {
+    Wire.state.reset([])
+    check(await CloudAIService.completeStreaming(system: "fixture", user: "fixture",
+      llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"),
+      sessionConfiguration: CloudSessionChecks.configuration(), processingMode: .fast,
+      authorize: { false }, onProgress: { _ in }), .failure(.cancelled))
+    Wire.state.assertConsumed(0)
+    Wire.state.reset(try [reply(.deepSeek, text: "途中の本文", finish: "length")])
+    var authorized = true
+    check(await CloudAIService.completeStreaming(system: "fixture", user: "fixture",
+      llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"),
+      sessionConfiguration: CloudSessionChecks.configuration(), processingMode: .fast,
+      authorize: { authorized }, onProgress: { _ in authorized = false }), .failure(.cancelled))
+    Wire.state.assertConsumed(1)
+    for provider in LLMProvider.allCases {
+      for model in ["deepseek-flash", "deepseek-v4-pro", "deepseek-reasoner", "registered-unknown"] {
+        for mode in SummaryProcessingMode.allCases {
+          for custom in [false, true] {
+            let llm = LLMSelection(provider: provider, modelID: model,
+              endpoint: custom ? URL(string: "https://offline.invalid/v1") : nil,
+              credentialAccount: "ai.deepSeek")
+            Wire.state.reset(try [reply(provider, text: "決定は条件付き。予算150万円、期限は未定。")])
+            let result = await CloudAIService.completeStreaming(system: "fixture", user: "fixture", llm: llm,
+              sessionConfiguration: CloudSessionChecks.configuration(), processingMode: mode, onProgress: { _ in })
+            check(result, .answer("決定は条件付き。予算150万円、期限は未定。"))
+            let body = try CloudSessionChecks.body(Wire.state.requests[0])
+            let controlled = provider == .deepSeek && !custom && ["deepseek-flash", "deepseek-v4-pro"].contains(model) && mode != .balanced
+            if controlled {
+              precondition((body["thinking"] as? [String: String])?["type"] == (mode == .fast ? "disabled" : "enabled"))
+              precondition(body["max_tokens"] as? Int == 65_536)
+              precondition(body["reasoning_effort"] as? String == (mode == .accurate ? "high" : nil))
+            } else {
+              precondition(body["thinking"] == nil && body["reasoning_effort"] == nil, "Provider flag leaked to an unverified route")
+            }
+            precondition(SummaryGenerationPolicy.parallelParts(mode, llm: llm) == (controlled && mode == .fast ? 2 : 1))
+            Wire.state.assertConsumed(1)
+          }
+        }
+      }
+    }
   }
 
   static func completedJSONChecks() throws {

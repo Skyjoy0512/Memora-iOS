@@ -13,14 +13,14 @@ check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-background-summary.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 swiftc Shared/MemoraIcon.swift App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
   App/LLMProvider.swift App/LLMModelOption.swift App/SummaryTemplate.swift App/SummaryMarketTemplate.swift \
-  App/SummaryTemplateCategory.swift App/SummaryTemplateChoice.swift App/SummaryPreferences.swift \
+  App/SummaryProcessingMode.swift App/SummaryTemplateCategory.swift App/SummaryTemplateChoice.swift App/SummaryPreferences.swift \
   App/SummaryLength.swift App/SummarySensitivity.swift App/PendingSummaryJob.swift \
   tools/checks/BackgroundSummaryJobChecks.swift -o "$check_dir/check"
 "$check_dir/check"
 swiftc \
   Shared/MemoraIcon.swift App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
   App/LLMProvider.swift App/LLMModelOption.swift App/SummaryTemplate.swift App/SummaryMarketTemplate.swift \
-  App/SummaryTemplateCategory.swift App/SummaryTemplateChoice.swift App/SummaryPreferences.swift \
+  App/SummaryProcessingMode.swift App/SummaryTemplateCategory.swift App/SummaryTemplateChoice.swift App/SummaryPreferences.swift \
   App/SummaryLength.swift App/SummarySensitivity.swift App/PendingSummaryJob.swift \
   App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift \
   App/MeetingStatus.swift App/RecordPrivacy.swift App/RecordAccessPolicy.swift App/AIAnswerFailure.swift \

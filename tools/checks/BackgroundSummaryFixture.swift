@@ -96,8 +96,10 @@ enum MeetingSummarizer {
   }
   static var requests: [Request] = []
   static func summarize(_ input: MeetingSummaryInput, engine: AIEngine, llm: LLMSelection,
+    authorize: (@MainActor () -> Bool)? = nil,
     progress: @escaping @MainActor (String) -> Void) async -> Result<MeetingSummary, AIAnswerFailure> {
-    await withCheckedContinuation { requests.append(Request(input: input, progress: progress, complete: $0)) }
+    if let authorize, !authorize() { return .failure(.cancelled) }
+    return await withCheckedContinuation { requests.append(Request(input: input, progress: progress, complete: $0)) }
   }
 }
 

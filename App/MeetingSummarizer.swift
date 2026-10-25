@@ -14,6 +14,7 @@ enum MeetingSummarizer {
     _ input: MeetingSummaryInput,
     engine: AIEngine,
     llm: LLMSelection,
+    authorize: (@MainActor () -> Bool)? = nil,
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
     guard !input.transcript.isEmpty else { return .failure(.empty) }
@@ -27,7 +28,7 @@ enum MeetingSummarizer {
       // A local LLM still needs a bundled model; this build has none.
       return .failure(.notBundled)
     case .cloud, .memora:
-      return await cloud(input, llm: llm, progress: progress)
+      return await cloud(input, llm: llm, authorize: authorize, progress: progress)
     }
   }
 
@@ -48,6 +49,7 @@ enum MeetingSummarizer {
   private static func cloud(
     _ input: MeetingSummaryInput,
     llm: LLMSelection,
+    authorize: (@MainActor () -> Bool)?,
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
     let lines = input.transcript
@@ -61,10 +63,11 @@ enum MeetingSummarizer {
       request = SummaryPrompt.document(for: input, transcript: transcript)
     } else {
       let parts = split(lines, limit: partCharacterLimit)
-      var notes: [String] = []
-      for (index, part) in parts.enumerated() {
+      let collected = await SummaryPartScheduler.collect(count: parts.count,
+        maximumConcurrent: SummaryGenerationPolicy.parallelParts(input.preferences.processingMode, llm: llm)) { index in
+        let part = parts[index]
+        progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)）")
         guard !Task.isCancelled else { return .failure(.cancelled) }
-        await progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)）")
         let range = timeRange(of: part)
         let result = await CloudAIService.completeStreaming(
           system: SummaryPrompt.system,
@@ -76,14 +79,21 @@ enum MeetingSummarizer {
             transcript: part.joined(separator: "\n")
           ),
           llm: llm,
+          processingMode: input.preferences.processingMode,
+          authorize: authorize,
           onActivity: { progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)）") }
         ) { count in
           progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)・\(count)文字）")
         }
         switch result {
-        case .answer(let text): notes.append("# 部分\(index + 1)（\(range)）\n\(text)")
+        case .answer(let text): return .success("# 部分\(index + 1)（\(range)）\n\(text)")
         case .failure(let failure): return .failure(failure)
         }
+      }
+      let notes: [String]
+      switch collected {
+      case .success(let collected): notes = collected
+      case .failure(let failure): return .failure(failure)
       }
       await progress("全体をまとめています")
       request = SummaryPrompt.merge(for: input, notes: notes.joined(separator: "\n\n"))
@@ -95,6 +105,8 @@ enum MeetingSummarizer {
       system: SummaryPrompt.system,
       user: request,
       llm: llm,
+      processingMode: input.preferences.processingMode,
+      authorize: authorize,
       onActivity: { progress("要約を作成しています") }
     ) { count in
       progress("AIが書いています（\(count)文字）")

@@ -10,6 +10,7 @@ struct SummaryGenerationSheet: View {
   @State private var engineChoice: SummaryEngineChoice?
   @State private var selectedDetent = PresentationDetent.medium
   @State private var length = SummaryLength.standard
+  @State private var processingMode = SummaryProcessingMode.balanced
   @State private var useCaseID = ""
   @State private var confirmsCloudDisclosure = false
   var meetingID: UUID
@@ -59,6 +60,8 @@ struct SummaryGenerationSheet: View {
               ForEach(SummaryLength.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
+            SummaryProcessingPicker(mode: $processingMode, supportsControl: usesCloud &&
+              SummaryGenerationPolicy.supportsThinkingControl(model.summaryConfiguration(for: selectedEngine).llm))
             if case .market(let selected) = resolvedChoice, let notice = selected.sensitivityClassification.notice {
               Text(notice).font(.footnote).foregroundStyle(.secondary)
             }
@@ -93,6 +96,7 @@ struct SummaryGenerationSheet: View {
       }
       .onAppear {
         length = model.summaryPreferences.length
+        processingMode = model.summaryPreferences.processingMode
         useCaseID = model.meeting(id: meetingID)?.summaryUseCaseID ?? ""
         template = resolvedChoice
       }
@@ -111,6 +115,7 @@ struct SummaryGenerationSheet: View {
       Button {
         var preferences = model.summaryPreferences
         preferences.length = length
+        preferences.processingMode = processingMode
         let started = model.generateSummary(
           meetingID,
           choice: resolvedChoice,

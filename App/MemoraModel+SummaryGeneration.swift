@@ -77,6 +77,7 @@ extension MemoraModel {
     let diagnostics = SummaryDiagnostics(jobID: job.id, engine: effectiveEngine.rawValue,
       provider: usesCloud ? llm.provider.rawValue : "onDevice", model: usesCloud ? llm.modelID : "system",
       characters: meeting.transcript.reduce(0) { $0 + $1.text.count }, segments: meeting.transcript.count)
+    diagnostics.record(.processingMode, code: input.preferences.processingMode.diagnosticCode)
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     backgroundSummaryNotice = nil
     // Automatic OS wakeups use their delivered processing window; only a
@@ -92,7 +93,19 @@ extension MemoraModel {
 
     processing.run(id: id) { [weak self] in
       let outcome = await SummaryDiagnostics.$current.withValue(diagnostics) {
-        await MeetingSummarizer.summarize(input, engine: engine, llm: llm) { step in
+        await MeetingSummarizer.summarize(input, engine: engine, llm: llm, authorize: { [weak self] in
+          guard let self, !Task.isCancelled, self.aiWorkspaceGeneration == workspaceGeneration,
+                self.currentTeamID == nil, !self.isRestoring, !self.isStoreProtected,
+                self.pendingSummaryJobs.contains(where: { $0.id == job.id }),
+                let current = self.meeting(id: id), SummaryJobFingerprint.make(current) == job.inputFingerprint,
+                (!usesCloud || RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI,
+                  explicitCloudConsent: cloudDisclosureConfirmed)) else {
+            diagnostics.record(.contextChanged)
+            self?.pauseBackgroundSummary(job, requiresUserRetry: true)
+            return false
+          }
+          return true
+        }) { step in
           guard let self, !Task.isCancelled else { return }
           guard self.aiWorkspaceGeneration == workspaceGeneration, self.currentTeamID == nil,
                 !self.isRestoring, !self.isStoreProtected,

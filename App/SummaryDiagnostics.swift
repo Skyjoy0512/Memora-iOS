@@ -14,6 +14,7 @@ final class SummaryDiagnostics: Sendable {
     case inputTokens, outputTokens, reasoningTokens
     case enteredForeground, enteredBackground
     case providerStop
+    case processingMode
   }
   struct Event: Sendable {
     var stage: Stage
