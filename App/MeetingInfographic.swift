@@ -39,7 +39,8 @@ struct MeetingInfographic: Codable, Equatable {
       for panel in panels {
         guard Self.bounded(panel.title, 24), (1...2).contains(panel.items.count),
               Set(panel.items.map(\.label)).count == panel.items.count,
-              Self.numbers(in: panel.title).allSatisfy({ source.contains($0) }) else { throw ValidationError.invalid }
+              GroundedQuantity.supports(panel.title, in: panel.items.map(\.evidence).joined(separator: " ")),
+              GroundedQuantity.preservesQualification(panel.title, in: panel.items.map(\.evidence).joined(separator: " "), considersEvidence: false) else { throw ValidationError.invalid }
         for item in panel.items { try Self.validate(item, source: source, limit: 48) }
       }
     }
@@ -48,7 +49,9 @@ struct MeetingInfographic: Codable, Equatable {
       let quote = normalized(claim.evidence)
       guard bounded(claim.label, 24), bounded(claim.text, limit), bounded(claim.evidence, 800, allowsNewlines: true),
             quote.count >= 4, source.contains(quote),
-            numbers(in: claim.label + " " + claim.text).allSatisfy({ quote.contains($0) }) else { throw ValidationError.invalid }
+            GroundedQuantity.supports(claim.label + " " + claim.text, in: quote),
+            GroundedQuantity.preservesQualification(claim.text, in: quote),
+            GroundedQuantity.preservesQualification(claim.label, in: quote, considersEvidence: false) else { throw ValidationError.invalid }
     }
 
     private static func bounded(_ text: String, _ limit: Int, allowsNewlines: Bool = false) -> Bool {
@@ -61,10 +64,6 @@ struct MeetingInfographic: Codable, Equatable {
       text.replacingOccurrences(of: "**", with: "").split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
-    private static func numbers(in text: String) -> [String] {
-      text.split(whereSeparator: { !$0.isNumber && $0 != "." && $0 != "," && $0 != "%" })
-        .map(String.init).filter { $0.contains(where: \.isNumber) }
-    }
   }
 
   enum ValidationError: LocalizedError {

@@ -82,6 +82,20 @@ enum MeetingInfographicSample {
 
 @main enum MeetingInfographicChecks {
   @MainActor static func main() async throws {
+    for (claim, evidence, accepted) in [
+      ("50人", "150人", false), ("500円", "1,500円", false), ("10%", "110%", false),
+      ("50人", "50円", false), ("10%", "10人", false), ("1時間", "1時", false),
+      ("-5%", "+5%", false), ("2026/10/25", "2026/10/24", false),
+      ("5月1日", "5月11日", false), ("10:30", "11:30", false),
+      ("1,500円", "1500円", true), ("1500円", "１，５００円", true),
+      ("50%", "50パーセント", true), ("150,50円", "150,50円", false),
+      ("20GWh", "20MWh", false), ("100USD", "100JPY", false), ("50匹", "50頭", false)
+    ] { precondition(GroundedQuantity.supports(claim, in: evidence) == accepted, "Quantity evidence mismatch: \(claim)") }
+    for (claim, evidence, accepted) in [
+      ("50人", "承認された場合は50人", false), ("50人", "50人増加しない", false),
+      ("50人増加しない", "50人増加しない", true), ("50人", "50人の予定", false),
+      ("50人から100人へ減少", "50人から100人へ増加", false)
+    ] { precondition(GroundedQuantity.preservesQualification(claim, in: evidence) == accepted) }
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("infographic-" + UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: root) }
     let model = try MemoraModel(url: root.appendingPathComponent("records.sqlite"))
