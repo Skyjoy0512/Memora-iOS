@@ -19,9 +19,11 @@ export async function replaceEditorWithPaste(screen: any, device: any, editor: a
 
 export async function selectAllEditorText(screen: any, editor: any) {
   await expect(editor).toBeFocused();
+  await stableBounds(editor);
   // A multiline field's centre may be empty space after a short last line.
   // Tap actual text, then tap the caret to open UIKit's editing menu.
   await editor.tap({ position: { x: 12, y: 10 } });
+  await stableBounds(editor);
   const selectAll = screen.getByRole('listitem', { name: /^(すべてを選択|全選択|Select All)$/ });
   if (!(await selectAll.isVisible())) await editor.tap({ position: { x: 12, y: 10 } });
   await tapControl(selectAll);
