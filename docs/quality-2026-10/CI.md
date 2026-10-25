@@ -12,6 +12,8 @@ Local `run-performance-checks.py` passes both locales and performance-log checks
 
 Remote proof: [run 40242901262](https://github.com/Skyjoy0512/Memora-iOS/actions/runs/40242901262), commit `e4c140bfcbb63c1f6bea03030b9cb31761624f90`, completed/success. Downloaded `host-quality-results/summary.json`: next-generation, design-refresh, background-summary, summary-reliability, composer-layout, optimization all exit 0. Job duration 7m7s. This verifies this commit, not later unpushed changes. Artifact action reports its pinned version targets deprecated Node20 (forced to24); no suite failed for it. Final subsequent HEAD verification is recorded in the follow-up report.
 
+Additional code proof: [run 40245583867](https://github.com/Skyjoy0512/Memora-iOS/actions/runs/40245583867), commit `d1fae4a552a662df740ce237bdc001c2691d481b`, completed/success. Downloaded artifact summary again: **all six suites passed**, including processing-mode transport fixtures, bounded summary scheduler and expanded RAG gates. The later 10,000-Meeting benchmark and UI wrapping regression are separate follow-up changes; do not infer their remote result from this run.
+
 ## Earlier investigation (historical)
 
 Status: workflow fix implemented; remote re-run **Not Run** (not pushed/dispatched by this session).

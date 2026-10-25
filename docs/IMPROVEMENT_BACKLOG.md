@@ -1,5 +1,14 @@
 # Memora — 改善バックログ
 
+## 2026-10-26: CI正常化・要約速度/安定性（継続中）
+
+- CI optimizationの実SIGTRAPを英語localeの日付ラベル差へ特定。比較harnessだけを固定し、GitHubコードcommitの全6suite Greenを確認。
+- reasoningと本文の診断を分離し、HTTPごとのtimeline/usage/終了理由を追加。既知DeepSeek上限修正と実時計30〜180秒mock通信を再検証。実50秒事象との同一性は未確認。
+- 既存の詳しさとは別に生成modeを追加。レビュー済み公式DeepSeekだけopt-in thinking制御/最大2並列、各送信前に権限/入力を再検証。実APIの品質/料金A/Bは未実施。
+- 本文bufferは同条件21試行のホストBefore/After、RAGは27問で混入0.519→0.167を確認。Keychain失敗時のlicense整合性を修正。1,000/10,000件の実Meeting保存codec/SQLiteを計測したが、全量保存負荷の最適化は未完了。
+- 生成modeと日本語編集のdistinct E2E3件、Debug/Release、Light/Dark/最大文字サイズの実画面を検証。Liquid Glass/ブランド/ナビゲーション/原文を維持。
+- 詳細と実装/検証/未実装/外部境界は [到達点と残作業](quality-2026-10/K_FOLLOWUP_STATUS.md)。実機・実DeepSeek未検証のため総合完了ではない。
+
 ## 2026-10-25: 総合品質改善（進行中）
 
 - DeepSeekの大量推論SSEが本文前に2MiB上限へ達する欠陥を再現・修正。wire/本文/単一eventの上限を分離。HTTP timeoutは延長しない。

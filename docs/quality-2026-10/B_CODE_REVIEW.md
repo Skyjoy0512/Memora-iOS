@@ -5,6 +5,19 @@ P0の実際の50秒事象は [A](A_SUMMARY_TIMEOUT.md) のとおり診断照合�
 
 ## 修正した問題
 
+2026-10-26追加（既存修正を置換・重複実装しない）:
+
+| 優先度 | 観測した問題・原因 | 修正箇所と方法 | 回帰/残るリスク |
+| --- | --- | --- | --- |
+| P0 CI | 英語localeで旧monthラベルと現行日本語ラベルのequalityがSIGTRAP | 比較harnessのclock/calendar/UI契約を固定。両localeで全assert維持 | 実GitHub全6suite Green。[CI](CI.md) |
+| P0 診断 | reasoning到着を初回本文として記録、複数requestのtoken区間が混同 | accumulatorの実本文/reasoning counterとrequestごとのTaskLocal ID | 重複request/usage/秘匿/仮想長時間のfixture。実50秒原因は未確定 |
+| P0 性能 | 小さな本文deltaごとにAny dictionary alias/全文を再構築 | 独立append buffer、Anthropic index順を保持 | 本文一致・Unicode・snapshot・上限/切断・agent context保持。ホスト21試行比較 [H](H_SUMMARY_SPEED.md) |
+| P0 要約 | 長文を逐次で処理、推論設定と出力長が分離されていない | 互換decodeの生成mode、レビュー済みDeepSeekだけopt-in設定/最大2並列、各送信前に権限/入力を再検査 | 本番通信matrix/実summarizerの順序・取消・部分失敗。実API速度/品質/料金はNot Run |
+| P1 保存 | Keychain失敗でもlicense状態だけ有効化/解除 | 成功確認前のメモリ/設定変更を拒否、起動flag再計算、削除失敗も表示 | 失敗注入・再読込・期限・旧code保持 [I](I_LICENSE_STORAGE.md)。実Keychain OSエラー未検証 |
+| P1 RAG | 弱い語句・数字/英語部分一致と重複chunkがcontextを占有 | confidence/anchor/複数話題補完とexact chunk dedup | 27問で混入0.519→0.167。まだ混入あり、意味の完全保証ではない [J](J_RAG_PRECISION.md) |
+
+以下は前回修正の記録:
+
 | 優先度 | 観測した問題・原因 | 修正箇所と方法 | 検証境界 |
 | --- | --- | --- | --- |
 | P0 | DeepSeekの非表示推論と反復JSONも2MiB総量制限に含め、本文前に拒否 | `CloudSSEEventDecoder`, `CloudStreamAccumulator`, `CloudTurnStreamReader`：wire/本文/イベントの上限を分離、要約では推論を保持しない、実deltaの活動通知 | 修正前fixtureで再現、修正後同一fixture PASS。利用者の実事象との一致は未確定 |

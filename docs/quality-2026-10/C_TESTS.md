@@ -1,5 +1,35 @@
 # 検証記録（2026-10-25）
 
+## 2026-10-26の追加検証
+
+- ローカル全6suite Pass: `memora-quality-kplgf35_/summary.json`（外部scratchの絶対path prefixは従来と同じ）。追加後の10,000件benchmarkを含むoptimizationも個別再実行Pass。UIの後続変更はDebug/Releaseと以下E2Eで別に検査。
+- GitHubコードcommit `d1fae4a` [run 40245583867](https://github.com/Skyjoy0512/Memora-iOS/actions/runs/40245583867): 全6suite Pass。実artifactのsummary/logを取得して確認。先行CI修正だけの`e4c140b`も全6suite Pass。最新HEADの検証はCI.md/Actions参照。
+- `MEMORA_REALTIME_SUMMARY_CHECKS=1 bash tools/checks/run-cloud-session-checks.sh`: 再実行Pass。30/60/120/180秒の観測31.998/64.000/128.001/192.006秒、初回60秒指定は63.999秒。実URLSessionのモック、外部APIなし。
+- 生成mode: 全provider×4モデル×3mode×公式/custom routeの本番HTTP fixture、未知routeへのflag漏洩なし、送信前/継続前authorize失効で追加requestなし。誤ったfixture credentialの初回失敗は、アプリ側を変更せずfixtureの明示的なoffline account指定へ修正し再実行Pass。
+- 実MeetingSummarizerの分割/並列/時系列merge/parser: 逐次180秒/2並列120秒の制御可能な仮想応答、逆順完了、部分失敗/取消/権限失効をPass。実API速度/品質とは別。
+- 日本語の旧設定/job decode、全modeのcodec round trip、SQLite ABORT、古いrun/入力/権限/workspace失効、DeepSeek大量推論、Unicode/buffer snapshot/2MiB保持上限をPass。
+- RAGは27問へ拡張。hit@1=22/22、Recall@3=1.000、MRR=1.000、Precision@3=0.379、無関係送信0.167、棄権5/5。page/excerptの元資料一致・重複・follow-upもPass。固定corpusの指標を一般的な回答品質と扱わない。
+- Licenseの本番extension+失敗可能なKeychain/検証器fixture: 保存/置換/削除失敗、期限、再読込、旧code保持をPass。実SecItemはNot Run。
+- 1,000/10,000件の実Meeting codec+SQLiteは21試行、全record/原文/reopen一致Pass。測定値と範囲はD。初回harnessの不足sourceを追加し、privacy日時とUUIDも固定して再測定した。schema最適化を実装したわけではない。
+
+### Simulator E2E（課金なし）
+
+`npx e2e run tests/summary-modes.e2e.ts tests/markdown-replacement.e2e.ts --workers 1 --retries 0 --no-cache --output .e2e/regression/summary-modes-20261026 --trace=on`: **3/3 Pass**、276.07秒。e2e skillに従うnative locator/assertionのみでagent/model APIを実行しない。専用CoreSimulatorのfreshデータはUI作成UUIDで特定し、preview/実機DBをseedしない。CLIの表示モデル名は実行されたモデル呼出の証拠ではない。
+
+その後、engine boundsのassertion追加でmode 1件を64.12秒で再実行Pass。最大文字サイズ対応後も同じ1件を72.09秒で再実行Pass（`.e2e/regression/summary-modes-accessibility-layout-20261026/report.json`）。**distinctケースは3件**であり、再実行を別ケースとして水増ししない。実機IMEの未確定変換はNot Run。最大文字サイズ/Light/Darkの手動確認はEの実画像を参照。
+
+初回のoutput絶対path指定はe2eがproject外を拒否してexit2/テスト未実行だった。既存のignored `.e2e/regression`配下に変更して再実行した。設定/署名/テストのassertionを緩めていない。選択外のUIシナリオはNot Runで、全UI E2Eの完了ではない。
+
+### ビルドと実行環境
+
+Debug `bitrig preview -platform iOS`: Pass、preview更新。最終app変更のlog `2026-10-26T08-49-47-a6c56590.log`。Release SimulatorもPass（`2026-10-26T08-53-53-208eb7c3.log`）。`run-design-refresh-checks.sh`は最終UI変更後もPass。既存11 warning（OAuth/GmailのASWebAuthenticationSession init、MapKit/CLGeocoder、extension AppIntents metadata）を隠していない。新たに加えた不要awaitの3 warningは修正して再ビルド11件へ戻した。
+
+追跡用の結果抜粋は [validation-20261026.json](validation-20261026.json)。最後のmode E2Eはrun開始時にUIが未commitだった（runnerのdirty=true）ため、それを隠さず記録し、検証した同じapp差分を後で`798fe07`としてcommitした。
+
+`bitrig test -scheme Memora -destination 'platform=iOS Simulator'`は再確認してexit78: Project.jsonにXcode test targetなし。**Not Run**でありPassとはしない。xcodebuildへ迂回していない。実機/実DeepSeek/StoreKit/外部MCP/VO/録音電池・UIフレーム時間はNot Run。
+
+以下は前回検証の履歴:
+
 ## MCP/保存/診断の追加検証
 
 `ed2969d` / `acef618` の後続検査は全6suite Pass:

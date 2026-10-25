@@ -1,0 +1,59 @@
+{
+  "asOf": "2026-10-26",
+  "github": {
+    "commit": "d1fae4a552a662df740ce237bdc001c2691d481b",
+    "runID": 40245583867,
+    "url": "https://github.com/Skyjoy0512/Memora-iOS/actions/runs/40245583867",
+    "artifact": "host-quality-results/summary.json",
+    "conclusion": "success",
+    "passedSuites": ["next-generation", "design-refresh", "background-summary", "summary-reliability", "composer-layout", "optimization"],
+    "scope": "Code commit before the later large-Meeting benchmark and accessibility wrapping follow-up; subsequent HEAD checks are separate."
+  },
+  "localHostSuites": {
+    "artifactDirectory": "memora-quality-kplgf35_",
+    "passed": 6,
+    "failed": 0,
+    "followupChecks": ["run-optimization-checks.py with large-Meeting benchmark", "run-design-refresh-checks.sh", "run-meeting-persistence-performance-checks.py with frozen dates and UUIDs"]
+  },
+  "wallClockURLSessionFixture": {
+    "paidAPI": false,
+    "cases": [
+      {"requestedSeconds": 30, "firstRequestedSeconds": 0, "actualSeconds": 31.998, "firstActualSeconds": 0.001, "result": "pass"},
+      {"requestedSeconds": 60, "firstRequestedSeconds": 0, "actualSeconds": 64.000, "firstActualSeconds": 0.001, "result": "pass"},
+      {"requestedSeconds": 120, "firstRequestedSeconds": 0, "actualSeconds": 128.001, "firstActualSeconds": 0.001, "result": "pass"},
+      {"requestedSeconds": 120, "firstRequestedSeconds": 60, "actualSeconds": 128.001, "firstActualSeconds": 63.999, "result": "pass"},
+      {"requestedSeconds": 180, "firstRequestedSeconds": 0, "actualSeconds": 192.006, "firstActualSeconds": 0.001, "result": "pass"},
+      {"requestedSeconds": 180, "firstRequestedSeconds": 60, "actualSeconds": 192.006, "firstActualSeconds": 63.999, "result": "pass"}
+    ]
+  },
+  "e2e": {
+    "runID": "01a1756c-d83b-7750-9167-78763a1712ce",
+    "sourceCommit": "d1fae4a552a662df740ce237bdc001c2691d481b",
+    "sourceDirty": false,
+    "report": ".e2e/regression/summary-modes-20261026/report.json",
+    "selected": 3,
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "agentSteps": false,
+    "tests": ["Japanese replacement, Unicode paste and navigation keep exact committed text", "formatting, list and table edits change only their own source lines", "summary processing mode is separate from detail and never regenerates on selection"],
+    "latestModeRecheck": {
+      "runID": "01a1757c-2596-7dba-80b7-64ce2ec3cea7",
+      "sourceCommitAtStart": "649cde9fe34d1ff1887492aa428aadafe550f775",
+      "sourceDirtyAtStart": true,
+      "appDiffCommittedAfterTestAs": "798fe07",
+      "selected": 1,
+      "passed": 1,
+      "seconds": 72.09,
+      "scope": "Normal-size mode selection, data unchanged and engine/description bounds. Largest Dynamic Type was a separate manual Simulator check."
+    }
+  },
+  "builds": {
+    "debugSimulator": "pass; 2026-10-26T08-49-47-a6c56590.log",
+    "releaseSimulator": "pass; 2026-10-26T08-53-53-208eb7c3.log",
+    "existingWarnings": 11,
+    "bitrigTest": "Not Run; exit 78, Project.json has no Xcode test target"
+  },
+  "notRun": ["paid provider A/B and real DeepSeek incident reproduction", "physical-device IME composition", "physical-device OS background delivery/expiration", "real Keychain lock/errors", "real MCP/OAuth services", "real VoiceOver speech", "device launch/scroll/recording CPU/battery/frame-time benchmarks"],
+  "projectComplete": false
+}
