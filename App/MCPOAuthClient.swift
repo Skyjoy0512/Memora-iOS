@@ -3,6 +3,9 @@ import Foundation
 actor MCPOAuthClient {
   static let shared = MCPOAuthClient()
   private var refreshes: [String: (id: UUID, task: Task<String, Error>)] = [:]
+  private var http: MCPPinnedHTTP
+
+  init(http: MCPPinnedHTTP = .init()) { self.http = http }
 
   func cancel(_ id: UUID) {
     let prefix = id.uuidString + ":"
@@ -15,7 +18,7 @@ actor MCPOAuthClient {
     let values = ["grant_type": "authorization_code", "code": code, "code_verifier": verifier,
       "client_id": settings.clientID, "redirect_uri": MCPOAuthPolicy.redirectURI.absoluteString,
       "resource": try MCPConnectionPolicy.endpoint(server.url).absoluteString]
-    let data = try await Self.request(settings: settings, values: values)
+    let data = try await Self.request(settings: settings, values: values, http: http)
     return try MCPOAuthCredential.decodeResponse(data, identity: identity,
       requestedScopes: MCPOAuthPolicy.scopeSet(settings.scopes))
   }
@@ -33,10 +36,11 @@ actor MCPOAuthClient {
       return try await withTaskCancellationHandler { try await existing.task.value } onCancel: { existing.task.cancel() }
     }
     let requestID = UUID()
+    let http = http
     let task = Task<String, Error> {
       let data = try await Self.request(settings: settings, values: ["grant_type": "refresh_token",
         "refresh_token": refresh, "client_id": settings.clientID, "resource": server.url,
-        "scope": credential.scopes.sorted().joined(separator: " ")])
+        "scope": credential.scopes.sorted().joined(separator: " ")], http: http)
       let renewed = try MCPOAuthCredential.decodeResponse(data, identity: identity,
         requestedScopes: credential.scopes, previous: credential)
       try Task.checkCancellation()
@@ -51,35 +55,18 @@ actor MCPOAuthClient {
     return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
   }
 
-  private static func request(settings: MCPOAuthSettings, values: [String: String]) async throws -> Data {
+  private static func request(settings: MCPOAuthSettings, values: [String: String], http: MCPPinnedHTTP) async throws -> Data {
     let validated = try MCPOAuthPolicy.validated(settings)
     let endpoint = try MCPConnectionPolicy.endpoint(validated.tokenURL)
     return try await withThrowingTaskGroup(of: Data.self) { group in
       group.addTask {
-        guard let host = endpoint.host else { throw MCPOAuthError.configuration }
-        try await MCPPublicAddressPolicy.validateHost(host)
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.httpCookieStorage = nil; configuration.urlCredentialStorage = nil; configuration.urlCache = nil
-        configuration.timeoutIntervalForRequest = 20; configuration.timeoutIntervalForResource = 30
-        let session = URLSession(configuration: configuration, delegate: ProjectMetadataRedirectPolicy(), delegateQueue: nil)
-        defer { session.invalidateAndCancel() }
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.httpBody = MCPOAuthPolicy.form(values)
-        guard request.httpBody!.count <= 32 * 1024 else { throw MCPOAuthError.configuration }
-        let (bytes, response) = try await session.bytes(for: request)
-        guard let http = response as? HTTPURLResponse, http.url == endpoint,
-              http.statusCode == 200, http.mimeType == "application/json",
-              http.expectedContentLength <= 128 * 1024 else { throw MCPOAuthError.tokenResponse }
-        var data = Data()
-        for try await byte in bytes {
-          try Task.checkCancellation()
-          guard data.count < 128 * 1024 else { throw MCPOAuthError.tokenResponse }
-          data.append(byte)
-        }
-        return data
+        let body = MCPOAuthPolicy.form(values)
+        guard body.count <= 32 * 1024 else { throw MCPOAuthError.configuration }
+        let response = try await http.post(endpoint: endpoint, body: body,
+          headers: ["Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"],
+          maximumResponseBytes: 128 * 1024, contentTypes: ["application/json"], emptyStatuses: [])
+        guard response.status == 200 else { throw MCPOAuthError.tokenResponse }
+        return response.body
       }
       group.addTask { try await Task.sleep(for: .seconds(35)); throw MCPClientError.timeout }
       defer { group.cancelAll() }

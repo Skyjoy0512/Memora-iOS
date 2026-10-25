@@ -1,69 +1,51 @@
 import Foundation
+#if !MCP_HTTP_CHECKS
 import MCP
 import Logging
+#endif
 
 actor MCPBoundedHTTPTransport: Transport {
   nonisolated let logger = Logger(label: "memora.mcp", factory: { _ in SwiftLogNoOpLogHandler() })
   private var endpoint: URL
   private var token: String?
-  private var sessionID: String?
+  private let responseState = MCPHTTPResponseState()
   private var version = MCP.Version.latest
-  private var session: URLSession
+  private var http: MCPPinnedHTTP
+  private var requests: [UUID: Task<WebSourceHTTPDecoder.Response, Error>] = [:]
   private var stream: AsyncThrowingStream<Data, Error>
   private var continuation: AsyncThrowingStream<Data, Error>.Continuation
-  init(endpoint: URL, token: String?) {
-    self.endpoint = endpoint; self.token = token
+  init(endpoint: URL, token: String?, http: MCPPinnedHTTP = .init()) {
+    self.endpoint = endpoint; self.token = token; self.http = http
     let pair = AsyncThrowingStream<Data, Error>.makeStream()
     stream = pair.stream; continuation = pair.continuation
-    let configuration = URLSessionConfiguration.ephemeral
-    configuration.httpCookieStorage = nil
-    configuration.urlCredentialStorage = nil
-    configuration.urlCache = nil
-    configuration.timeoutIntervalForRequest = 20
-    configuration.timeoutIntervalForResource = 30
-    session = URLSession(configuration: configuration, delegate: ProjectMetadataRedirectPolicy(), delegateQueue: nil)
   }
-  func connect() async throws {}
+  func connect() async throws { try responseState.checkOpen() }
   func receive() -> AsyncThrowingStream<Data, Error> { stream }
   func setVersion(_ value: String) { version = value }
-  func disconnect() async { session.invalidateAndCancel(); continuation.finish() }
+  func disconnect() async {
+    responseState.disconnect(); token = nil
+    for request in requests.values { request.cancel() }
+    requests.removeAll(); continuation.finish()
+  }
   func send(_ data: Data) async throws {
+    try Task.checkCancellation()
     guard data.count <= 64 * 1024 else { throw MCPClientError.malformed }
-    guard let host = endpoint.host else { throw MCPClientError.invalidURL }
-    try await MCPPublicAddressPolicy.validateHost(host)
-    var request = URLRequest(url: endpoint)
-    request.httpMethod = "POST"; request.httpBody = data
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("application/json, text/event-stream", forHTTPHeaderField: "Accept")
-    request.setValue(version, forHTTPHeaderField: "MCP-Protocol-Version")
-    if let sessionID { request.setValue(sessionID, forHTTPHeaderField: "Mcp-Session-Id") }
-    if let token, !token.isEmpty { request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }
-    let (bytes, response) = try await session.bytes(for: request)
-    guard let http = response as? HTTPURLResponse, http.url == endpoint else { throw MCPClientError.malformed }
-    guard (200..<300).contains(http.statusCode) else { throw ExternalToolFailure.http(http.statusCode) }
-    if let id = http.value(forHTTPHeaderField: "Mcp-Session-Id") {
-      guard id.utf8.count <= 512, !id.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else { throw MCPClientError.malformed }
-      sessionID = id
+    let id = UUID(), responseState = responseState
+    let sessionID = try responseState.begin(id)
+    defer { responseState.end(id); requests[id] = nil }
+    var headers = ["Content-Type": "application/json", "Accept": "application/json, text/event-stream", "MCP-Protocol-Version": version]
+    if let sessionID { headers["Mcp-Session-Id"] = sessionID }
+    if let token, !token.isEmpty { headers["Authorization"] = "Bearer " + token }
+    let continuation = continuation
+    let reader = MCPHTTPResponseReader(request: data) { continuation.yield($0) }
+    let endpoint = endpoint, http = http
+    let task = Task {
+      try await http.post(endpoint: endpoint, body: data, headers: headers,
+        onResponse: { try responseState.read($0, complete: $1, reader: reader, id: id) })
     }
-    guard http.expectedContentLength <= 2 * 1024 * 1024 else { throw MCPClientError.malformed }
-    let outgoingID = MCPEventStream.requestID(data)
-    var receivedBytes = 0
-    var body = Data()
-    let sse = http.mimeType == "text/event-stream"
-    guard sse || http.mimeType == "application/json" || http.statusCode == 202 || http.statusCode == 204 else { throw MCPClientError.malformed }
-    for try await byte in bytes {
-      try Task.checkCancellation()
-      receivedBytes += 1
-      guard receivedBytes <= 2 * 1024 * 1024 else { throw MCPClientError.malformed }
-      body.append(byte)
-      if sse, MCPEventStream.isBoundary(body) {
-        if let event = MCPEventStream.payload(body) {
-          continuation.yield(event)
-          if let outgoingID, MCPEventStream.requestID(event) == outgoingID { return }
-        }
-        body.removeAll(keepingCapacity: true)
-      }
-    }
-    if !body.isEmpty && !sse { continuation.yield(body) }
+    requests[id] = task
+    _ = try await withTaskCancellationHandler { try await task.value } onCancel: { responseState.end(id); task.cancel() }
+    try Task.checkCancellation()
+    try responseState.checkOpen()
   }
 }

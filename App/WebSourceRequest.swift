@@ -8,7 +8,7 @@ struct WebSourceRequest: Sendable {
   private(set) var address: String
   private(set) var bytes: Data
 
-  init(url: URL, addresses: [String]) throws {
+  init(url: URL, addresses: [String], body: Data? = nil, headers: [String: String] = [:]) throws {
     let checked = try Self.checkedURL(url)
     guard !addresses.isEmpty, addresses.count <= 64,
           addresses.allSatisfy(MCPPublicAddressPolicy.isPublic), let address = addresses.first(where: { !$0.contains(":") }) ?? addresses.first,
@@ -17,8 +17,23 @@ struct WebSourceRequest: Sendable {
     let path = components.percentEncodedPath.isEmpty ? "/" : components.percentEncodedPath
     let target = path + (components.percentEncodedQuery.map { "?" + $0 } ?? "")
     guard target.utf8.allSatisfy({ (33...126).contains($0) }) else { throw WebSourceFailure.unsafeAddress }
+    // Callers cannot override framing, the validated Host, or connection policy.
+    let allowed = Set(["accept", "content-type", "authorization", "mcp-protocol-version", "mcp-session-id"])
+    var fields: [String: String] = [:]
+    for (name, value) in headers {
+      let key = name.lowercased()
+      guard allowed.contains(key), fields[key] == nil, value.utf8.count <= 8_192,
+            value.utf8.allSatisfy({ (32...126).contains($0) }) else { throw WebSourceFailure.unsafeAddress }
+      fields[key] = value
+    }
+    guard body?.count ?? 0 <= 64 * 1024 else { throw WebSourceFailure.tooLarge }
+    fields["accept"] = fields["accept"] ?? "text/html, application/xhtml+xml, text/plain"
+    var head = "\(body == nil ? "GET" : "POST") \(target) HTTP/1.1\r\nHost: \(host)\r\nAccept-Encoding: identity\r\nUser-Agent: MemoraSource/1.0\r\nConnection: close\r\n"
+    for key in fields.keys.sorted() { head += "\(key): \(fields[key]!)\r\n" }
+    if let body { head += "Content-Length: \(body.count)\r\n" }
+    guard head.utf8.count <= 16 * 1024 else { throw WebSourceFailure.tooLarge }
     self.url = checked; self.host = host; self.address = address
-    bytes = Data("GET \(target) HTTP/1.1\r\nHost: \(host)\r\nAccept: text/html, application/xhtml+xml, text/plain\r\nAccept-Encoding: identity\r\nUser-Agent: MemoraSource/1.0\r\nConnection: close\r\n\r\n".utf8)
+    bytes = Data((head + "\r\n").utf8) + (body ?? Data())
   }
 
   static func checkedURL(_ url: URL) throws -> URL {

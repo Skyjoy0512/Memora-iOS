@@ -8,15 +8,19 @@ final class PinnedHTTPSConnection: @unchecked Sendable {
   private let queue = DispatchQueue(label: "app.memora.web-source", qos: .utility)
   private let connection: NWConnection
   private var request: WebSourceRequest
-  private var decoder = WebSourceHTTPDecoder()
+  private var decoder: WebSourceHTTPDecoder
+  private var timeout: TimeInterval
+  private var responseHandler: (@Sendable (WebSourceHTTPDecoder.Response, Bool) throws -> Bool)?
   private var continuation: CheckedContinuation<WebSourceHTTPDecoder.Response, Error>?
   private var completed: Result<WebSourceHTTPDecoder.Response, Error>?
   private var deadline: DispatchWorkItem?
 
-  init(request: WebSourceRequest) throws {
+  init(request: WebSourceRequest, decoder: WebSourceHTTPDecoder = .init(), timeout: TimeInterval = 15,
+       responseHandler: (@Sendable (WebSourceHTTPDecoder.Response, Bool) throws -> Bool)? = nil) throws {
     guard MCPPublicAddressPolicy.isPublic(request.address),
           (try? WebSourceRequest.checkedURL(request.url)) != nil else { throw WebSourceFailure.unsafeAddress }
     self.request = request
+    self.decoder = decoder; self.timeout = timeout; self.responseHandler = responseHandler
     let tls = NWProtocolTLS.Options()
     sec_protocol_options_set_min_tls_protocol_version(tls.securityProtocolOptions, .TLSv12)
     sec_protocol_options_set_tls_server_name(tls.securityProtocolOptions, request.host)
@@ -38,8 +42,9 @@ final class PinnedHTTPSConnection: @unchecked Sendable {
     return SecTrustEvaluateWithError(reference, nil)
   }
 
-  static func fetch(_ request: WebSourceRequest) async throws -> WebSourceHTTPDecoder.Response {
-    let exchange = try PinnedHTTPSConnection(request: request)
+  static func fetch(_ request: WebSourceRequest, decoder: WebSourceHTTPDecoder = .init(), timeout: TimeInterval = 15,
+                    responseHandler: (@Sendable (WebSourceHTTPDecoder.Response, Bool) throws -> Bool)? = nil) async throws -> WebSourceHTTPDecoder.Response {
+    let exchange = try PinnedHTTPSConnection(request: request, decoder: decoder, timeout: timeout, responseHandler: responseHandler)
     return try await withTaskCancellationHandler {
       try await withCheckedThrowingContinuation { exchange.start($0) }
     } onCancel: { exchange.cancel() }
@@ -51,7 +56,7 @@ final class PinnedHTTPSConnection: @unchecked Sendable {
       self.continuation = value
       let deadline = DispatchWorkItem { [weak self] in self?.finish(.failure(WebSourceFailure.timeout)) }
       self.deadline = deadline
-      self.queue.asyncAfter(deadline: .now() + 15, execute: deadline)
+      self.queue.asyncAfter(deadline: .now() + self.timeout, execute: deadline)
       self.connection.stateUpdateHandler = { state in
         switch state {
         case .ready:
@@ -75,7 +80,12 @@ final class PinnedHTTPSConnection: @unchecked Sendable {
     connection.receive(minimumIncompleteLength: 1, maximumLength: 32 * 1024) { data, _, ended, error in
       guard self.completed == nil else { return }
       do {
-        if let response = try self.decoder.append(data ?? Data(), ended: ended) { self.finish(.success(response)) }
+        let response = try self.decoder.append(data ?? Data(), ended: ended)
+        if let handler = self.responseHandler,
+           let snapshot = response ?? self.decoder.partialResponse, try handler(snapshot, response != nil) {
+          self.finish(.success(snapshot)); return
+        }
+        if let response { self.finish(.success(response)) }
         else if error != nil { self.finish(.failure(WebSourceFailure.network)) }
         else { self.receive() }
       } catch { self.finish(.failure(error)) }
