@@ -3,6 +3,7 @@ import Foundation
 @main
 enum DeepSeekSummaryChecks {
   @MainActor static func main() async throws {
+    try buffering()
     // Realistic Chat Completions framing: the same envelope repeats for each
     // tiny inference delta. Nothing here is actual private model reasoning.
     let prefix = #"{"id":"offline-deepseek-trace","object":"chat.completion.chunk","created":0,"model":"deepseek-v4-pro","system_fingerprint":"fixture","choices":[{"index":0,"delta":{"reasoning_content":"fixture"},"finish_reason":null,"logprobs":null}]}"#
@@ -38,6 +39,47 @@ enum DeepSeekSummaryChecks {
       do { _ = try bounded.consume(120); preconditionFailure("Oversized SSE event retained") }
       catch AIAnswerFailure.executionLimit {}
       print("DeepSeekSummaryChecks: PASS; bounded summary wire budget, final document intact, no reasoning retained")
+  }
+
+  static func buffering() throws {
+    func json(_ object: [String: Any]) throws -> String {
+      String(decoding: try JSONSerialization.data(withJSONObject: object), as: UTF8.self)
+    }
+    var chat = CloudStreamAccumulator(provider: .chatCompletions, responseKind: .textCompletion)
+    var snapshots: [String] = []
+    let pieces = ["日本語", "👩🏽‍💻", "e\u{301}", "条件は未確定"]
+    for piece in pieces {
+      try chat.consume(json(["choices": [["delta": ["content": piece]]]]))
+      snapshots.append(chat.text)
+    }
+    try chat.consume(#"{"choices":[{"delta":{},"finish_reason":"stop"}]}"#)
+    try chat.consume("[DONE]")
+    let chatResult = try CloudSummaryResponse(chat.response(), provider: .chatCompletions)
+    precondition(chatResult.text == pieces.joined())
+    precondition(snapshots[0] == "日本語" && snapshots[1] == "日本語👩🏽‍💻", "Published snapshots mutated")
+
+    var blocks = CloudStreamAccumulator(provider: .anthropic, responseKind: .textCompletion)
+    for (index, text) in [(2, "後"), (0, "前")] {
+      try blocks.consume(json(["type": "content_block_start", "index": index, "content_block": ["type": "text", "text": text]]))
+    }
+    try blocks.consume(#"{"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"半"}}"#)
+    try blocks.consume(#"{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"半"}}"#)
+    let snapshot = blocks.text
+    for index in [0, 2] { try blocks.consume(json(["type": "content_block_stop", "index": index])) }
+    try blocks.consume(#"{"type":"message_delta","delta":{"stop_reason":"end_turn"}}"#)
+    try blocks.consume(#"{"type":"message_stop"}"#)
+    precondition(snapshot == "前半後半" && blocks.text == snapshot)
+    let blockResult = try CloudSummaryResponse(blocks.response(), provider: .anthropic)
+    precondition(blockResult.text == snapshot)
+
+    var invalid = CloudStreamAccumulator(provider: .chatCompletions, responseKind: .textCompletion)
+    do { try invalid.consume(#"{"choices":[{"delta":{"content":123}}]}"#); preconditionFailure("Invalid content accepted") }
+    catch AIAnswerFailure.server {}
+    var bounded = CloudStreamAccumulator(provider: .chatCompletions, responseKind: .textCompletion)
+    let cap = String(repeating: "x", count: CloudStreamAccumulator.maximumRetainedTextBytes)
+    try bounded.consume(json(["choices": [["delta": ["content": cap]]]]))
+    do { try bounded.consume(#"{"choices":[{"delta":{"content":"x"}}]}"#); preconditionFailure("Retained limit weakened") }
+    catch AIAnswerFailure.executionLimit {}
   }
 
   struct Bytes: AsyncSequence {

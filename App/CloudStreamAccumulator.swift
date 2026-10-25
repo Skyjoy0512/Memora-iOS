@@ -18,7 +18,11 @@ struct CloudStreamAccumulator {
   private(set) var textEvents = 0
   private(set) var reasoningEvents = 0
   private var assistant: [String: Any] = ["role": "assistant"]
+  private var hasChatText = false
+  private var retainedTextBytes = 0
   private var blocks: [Int: [String: Any]] = [:]
+  private var blockText: [Int: String] = [:]
+  private var lastTextIndex = -1
   private var inputFragments: [Int: String] = [:]
   private var openBlocks: Set<Int> = []
   private(set) var finishReason: String?
@@ -56,10 +60,16 @@ struct CloudStreamAccumulator {
             guard delta["function_call"] == nil || delta["function_call"] is NSNull else { throw AIAnswerFailure.server }
             delta = delta.filter { ["role", "content", "refusal"].contains($0.key) }
           }
+          if let content = delta.removeValue(forKey: "content"), !(content is NSNull) {
+            guard let piece = content as? String else { throw AIAnswerFailure.server }
+            try retain(piece)
+            hasChatText = true
+            // Keep the growing buffer out of the Any dictionary. Aliasing it
+            // there forces a full copy for every small token delta.
+            text.append(piece)
+          }
           assistant = try Self.merge(assistant, delta)
-          text = assistant["content"] as? String ?? ""
-          guard text.utf8.count <= Self.maximumRetainedTextBytes,
-                (assistant["refusal"] as? String ?? "").utf8.count <= Self.maximumRetainedTextBytes else { throw AIAnswerFailure.executionLimit }
+          guard (assistant["refusal"] as? String ?? "").utf8.count <= Self.maximumRetainedTextBytes else { throw AIAnswerFailure.executionLimit }
         }
         if let reason = choice["finish_reason"] as? String { finishReason = reason }
       }
@@ -82,6 +92,10 @@ struct CloudStreamAccumulator {
           guard ["text", "thinking", "redacted_thinking"].contains(block["type"] as? String ?? "") else { throw AIAnswerFailure.server }
           block = block.filter { ["type", "text"].contains($0.key) }
         }
+        if block["type"] as? String == "text" {
+          guard let piece = block.removeValue(forKey: "text") as? String else { throw AIAnswerFailure.server }
+          try appendBlockText(piece, index: index)
+        }
         blocks[index] = block
         openBlocks.insert(index)
       case "content_block_delta":
@@ -89,9 +103,10 @@ struct CloudStreamAccumulator {
               var block = blocks[index], let delta = object["delta"] as? [String: Any] else { throw AIAnswerFailure.server }
         switch delta["type"] as? String {
         case "text_delta":
+          guard block["type"] as? String == "text", let piece = delta["text"] as? String else { throw AIAnswerFailure.server }
           if !(delta["text"] as? String ?? "").isEmpty { outputEvents += 1 }
           if !(delta["text"] as? String ?? "").isEmpty { textEvents += 1 }
-          block["text"] = (block["text"] as? String ?? "") + (delta["text"] as? String ?? "")
+          try appendBlockText(piece, index: index)
         case "thinking_delta":
           if !(delta["thinking"] as? String ?? "").isEmpty { outputEvents += 1 }
           if !(delta["thinking"] as? String ?? "").isEmpty { reasoningEvents += 1 }
@@ -122,21 +137,25 @@ struct CloudStreamAccumulator {
         isFinished = true
       default: throw AIAnswerFailure.server
       }
-      text = blocks.keys.sorted().compactMap { blocks[$0]?["text"] as? String }.joined()
-      guard text.utf8.count <= Self.maximumRetainedTextBytes else { throw AIAnswerFailure.executionLimit }
     }
   }
 
   func response() throws -> [String: Any] {
     guard isFinished else { throw AIAnswerFailure.connectionLost }
     if provider == .anthropic {
-      var response: [String: Any] = ["content": blocks.keys.sorted().compactMap { blocks[$0] }, "stop_reason": finishReason ?? ""]
+      let content = blocks.keys.sorted().compactMap { index -> [String: Any]? in
+        guard var block = blocks[index] else { return nil }
+        if let text = blockText[index] { block["text"] = text }
+        return block
+      }
+      var response: [String: Any] = ["content": content, "stop_reason": finishReason ?? ""]
       if let usage { response["usage"] = usage }
       if responseKind == .textCompletion { _ = try CloudSummaryResponse(response, provider: provider) }
       else { _ = try CloudAgentTurnDecoder.anthropic(response) }
       return response
     }
     var message = assistant
+    if hasChatText { message["content"] = text }
     if let calls = message["tool_calls"] as? [[String: Any]] {
       message["tool_calls"] = calls.map { call in var call = call; call.removeValue(forKey: "index"); return call }
     }
@@ -145,6 +164,24 @@ struct CloudStreamAccumulator {
     if responseKind == .textCompletion { _ = try CloudSummaryResponse(response, provider: provider) }
     else { _ = try CloudAgentTurnDecoder.chatCompletions(response) }
     return response
+  }
+
+  private mutating func retain(_ piece: String) throws {
+    let bytes = piece.utf8.count
+    guard bytes <= Self.maximumRetainedTextBytes - retainedTextBytes else { throw AIAnswerFailure.executionLimit }
+    retainedTextBytes += bytes
+  }
+
+  private mutating func appendBlockText(_ piece: String, index: Int) throws {
+    try retain(piece)
+    blockText[index, default: ""].append(piece)
+    if index >= lastTextIndex {
+      text.append(piece)
+      lastTextIndex = index
+    } else {
+      // Interleaved blocks must still render in provider index order.
+      text = blockText.keys.sorted().compactMap { blockText[$0] }.joined()
+    }
   }
 
   /// Preserve provider-specific reasoning/signatures alongside indexed tool

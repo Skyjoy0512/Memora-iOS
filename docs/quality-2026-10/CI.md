@@ -8,7 +8,9 @@ Instrumented the existing section equality precondition (no assertion removed). 
 
 Fix: only the historical presentation expression `date.formatted(.dateTime.year().month())` is normalized to the already-shipped Japanese `MemoraFormat.monthTitle`. Both extracted candidates receive one fixed Gregorian/UTC calendar and evaluation date. Full section equality and ranking equality remain, and independent exact Japanese heading assertions are added. App code/UI is unchanged. The default runner now requires **both en_US and ja_JP** in fresh child processes with UTC; `--locale` permits isolated reproductions. No persistent host locale setting is written.
 
-Local `run-performance-checks.py` passes both locales and performance-log checks. The full optimization and remote six-suite re-run are tracked below as results become available; neither is presumed successful from this targeted pass.
+Local `run-performance-checks.py` passes both locales and performance-log checks. Full optimization also passes.
+
+Remote proof: [run 40242901262](https://github.com/Skyjoy0512/Memora-iOS/actions/runs/40242901262), commit `e4c140bfcbb63c1f6bea03030b9cb31761624f90`, completed/success. Downloaded `host-quality-results/summary.json`: next-generation, design-refresh, background-summary, summary-reliability, composer-layout, optimization all exit 0. Job duration 7m7s. This verifies this commit, not later unpushed changes. Artifact action reports its pinned version targets deprecated Node20 (forced to24); no suite failed for it. Final subsequent HEAD verification is recorded in the follow-up report.
 
 ## Earlier investigation (historical)
 
