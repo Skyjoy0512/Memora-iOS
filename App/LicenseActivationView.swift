@@ -44,19 +44,18 @@ struct LicenseActivationView: View {
         } footer: {
           Text("会社の管理者から受け取ったコードを貼り付けます。コードはこの端末で確認し、外部には送りません。")
         }
-
-        if let errorMessage {
-          Section {
-            Label(errorMessage, icon: .exclamationmarkTriangle)
-              .foregroundStyle(.secondary)
-          }
+      }
+      if let errorMessage {
+        Section {
+          Label(errorMessage, icon: .exclamationmarkTriangle)
+            .foregroundStyle(.secondary)
         }
       }
     }
     .navigationTitle("法人ライセンス")
     .navigationBarTitleDisplayMode(.inline)
     .confirmationDialog("ライセンスを外しますか？", isPresented: $isConfirmingRemoval, titleVisibility: .visible) {
-      Button("外す", role: .destructive) { model.removeLicense() }
+      Button("外す", role: .destructive, action: remove)
       Button("キャンセル", role: .cancel) {}
     } message: {
       Text("記録は消えません。チーム機能とライセンスのプランが使えなくなります。")
@@ -67,6 +66,15 @@ struct LicenseActivationView: View {
     do {
       try model.activateLicense(code: code)
       code = ""
+      errorMessage = nil
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  private func remove() {
+    do {
+      try model.removeLicense()
       errorMessage = nil
     } catch {
       errorMessage = error.localizedDescription

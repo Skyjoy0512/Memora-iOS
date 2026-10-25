@@ -9,6 +9,7 @@ os.chdir(Path(__file__).resolve().parents[2])
 subprocess.run(['python3', 'tools/checks/run-performance-checks.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-local-store-checks.py'], check=True)
 subprocess.run(['bash', 'tools/checks/run-tool-integration-checks.sh'], check=True)
+subprocess.run(['bash', 'tools/checks/run-license-persistence-checks.sh'], check=True)
 project = ['ProjectCitation', 'ProjectEvidenceChunk', 'ProjectEvidenceInput', 'ProjectSourceText', 'ProjectContextBuilder']
 checks = [
     ('ProjectSearchIndexChecks', project + ['ProjectSearchIndex'], []),

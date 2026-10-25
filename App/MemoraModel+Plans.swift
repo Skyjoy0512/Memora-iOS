@@ -39,15 +39,17 @@ extension MemoraModel {
   @discardableResult
   func activateLicense(code: String) throws -> MemoraLicense {
     let license = try LicenseCodeVerifier.license(from: code)
-    KeychainStore.set(code.trimmingCharacters(in: .whitespacesAndNewlines), forKey: Self.licenseAccount)
+    guard KeychainStore.set(code.trimmingCharacters(in: .whitespacesAndNewlines), forKey: Self.licenseAccount) else {
+      throw LicenseCodeError.storage
+    }
     self.license = license
     isSubscribed = true
     UserDefaults.standard.set(true, forKey: StorageKey.isSubscribed)
     return license
   }
 
-  func removeLicense() {
-    KeychainStore.set(nil, forKey: Self.licenseAccount)
+  func removeLicense() throws {
+    guard KeychainStore.set(nil, forKey: Self.licenseAccount) else { throw LicenseCodeError.storage }
     license = nil
     choosePlan(plan)
   }

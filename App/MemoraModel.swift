@@ -554,14 +554,18 @@ final class MemoraModel {
     let launchStartedAt = Date()
 
     hasCompletedOnboarding = defaults.bool(forKey: StorageKey.hasCompletedOnboarding)
-    isSubscribed = defaults.bool(forKey: StorageKey.isSubscribed)
     // Earlier builds stored "personal" or "team"; neither was billed, so they
     // carry over as Pro and the team plan.
     let legacyTier = defaults.string(forKey: StorageKey.planTier)
     let storedPlan = defaults.string(forKey: StorageKey.plan)
       ?? legacyTier.map { $0 == "team" ? MemoraPlan.team.rawValue : MemoraPlan.pro.rawValue }
     plan = storedPlan.flatMap(MemoraPlan.init(rawValue:))
-    license = MemoraModel.storedLicense()
+    let loadedLicense = MemoraModel.storedLicense()
+    license = loadedLicense
+    // The old convenience flag is not evidence of a persisted, valid license.
+    let loadedSubscription = storedPlan.flatMap(MemoraPlan.init(rawValue:)) != nil || loadedLicense != nil
+    isSubscribed = loadedSubscription
+    defaults.set(loadedSubscription, forKey: StorageKey.isSubscribed)
     hasOfferedPlus = defaults.bool(forKey: StorageKey.hasOfferedPlus)
     aiEngine = AIEngine(rawValue: defaults.string(forKey: StorageKey.aiEngine) ?? "") ?? .automatic
     let storedProvider = LLMProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
