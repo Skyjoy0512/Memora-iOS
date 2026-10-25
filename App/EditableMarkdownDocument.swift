@@ -11,6 +11,7 @@ struct EditableMarkdownDocument: View {
   /// Stores the whole document after one block changes, and reports whether
   /// it was saved.
   var onCommit: (String) async -> Bool
+  var onEditSource: (() -> Void)? = nil
 
   @Environment(MemoraModel.self) private var model
   /// The document as edited here, until the stored copy catches up.
@@ -67,7 +68,13 @@ struct EditableMarkdownDocument: View {
       handleReturn(in: newValue)
     }
     .onAppear(perform: restoreDraft)
-    .onDisappear { finish() }
+    .onDisappear {
+      if target != nil {
+        // Let UIKit settle marked text before taking the final draft snapshot.
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+      }
+      finish()
+    }
   }
 
   // MARK: - Rows
@@ -93,6 +100,7 @@ struct EditableMarkdownDocument: View {
         .accessibilityAction(named: "編集") { begin(.block(index), text: Self.text(of: block)) }
         .contextMenu {
           Button("コピー", icon: .docOnDoc) { UIPasteboard.general.string = Self.text(of: block) }
+          sourceEditingAction()
         }
     }
   }
@@ -140,26 +148,13 @@ struct EditableMarkdownDocument: View {
   /// A table row's card, with each value editable on its own.
   private func tableCard(header: [String], row: [String], block: Int, rowIndex: Int) -> some View {
     MarkdownTableRow(header: header, row: row) { column, value, font in
-      cell(value, target: .cell(block: block, row: rowIndex, column: column), font: font)
+      cell(value, target: .cell(block: block, row: rowIndex, column: column), font: font, header: header, row: row)
         .font(font)
-    }
-    .contextMenu {
-      ForEach(header.indices, id: \.self) { column in
-        Button("列\(column + 1)の見出しを編集") {
-          begin(.cell(block: block, row: -1, column: column), text: header[column])
-        }
-      }
-      ForEach(header.indices, id: \.self) { column in
-        Button("\(header[column])を編集") {
-          begin(.cell(block: block, row: rowIndex, column: column),
-            text: row.indices.contains(column) ? row[column] : "")
-        }
-      }
     }
   }
 
   @ViewBuilder
-  private func cell(_ value: String, target cellTarget: EditTarget, font: Font) -> some View {
+  private func cell(_ value: String, target cellTarget: EditTarget, font: Font, header: [String], row: [String]) -> some View {
     if target == cellTarget {
       textField("", font: font)
         .id(editorID)
@@ -170,6 +165,31 @@ struct EditableMarkdownDocument: View {
         .onTapGesture { begin(cellTarget, text: value) }
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("タップして編集")
+        .contextMenu {
+          if case .cell(let block, let rowIndex, _) = cellTarget {
+            ForEach(header.indices, id: \.self) { column in
+              Button("列\(column + 1)の見出しを編集") {
+                begin(.cell(block: block, row: -1, column: column), text: header[column])
+              }
+            }
+            ForEach(header.indices, id: \.self) { column in
+              Button("\(header[column])を編集") {
+                begin(.cell(block: block, row: rowIndex, column: column),
+                  text: row.indices.contains(column) ? row[column] : "")
+              }
+            }
+          }
+          sourceEditingAction()
+        }
+    }
+  }
+
+  @ViewBuilder
+  private func sourceEditingAction() -> some View {
+    // Never attach a SwiftUI context menu above a live UITextView: even an
+    // empty parent menu can compete with its native selection gestures.
+    if target == nil, let onEditSource {
+      Button("Markdownで編集", icon: .chevronLeftForwardslashChevronRight, action: onEditSource)
     }
   }
 

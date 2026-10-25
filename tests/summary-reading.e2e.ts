@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFi
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { tapControl, tapTab, scrollToControl, openSummaryPoster } from './ui-helpers';
+import { tapControl, tapTab, scrollToControl, openSummaryPoster, replaceEditorWithPaste } from './ui-helpers';
 import { sql } from './sqlite-fixture-helpers';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 
@@ -80,7 +80,7 @@ test('summary PNG, full-text reading and reversible transcript survive restart',
   const summaryEditor = screen.getByRole('textbox', { name: '本文', exact: true });
   await expect(summaryEditor).toHaveValue(overview);
   await expect(summaryEditor).toBeFocused();
-  await summaryEditor.fill(edited);
+  await replaceEditorWithPaste(screen, device, summaryEditor, edited);
   await expect(summaryEditor).toHaveValue(edited);
   await tapControl(screen.getByRole('button', { name: '完了', exact: true }));
   await expect.poll(() => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"))[0].summary.includes(edited)).toBe(true);

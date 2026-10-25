@@ -59,12 +59,8 @@ struct InlineMarkdownEditor: View {
       } else if rendersBlocks, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         // A document is edited where it is read, block by block, so it keeps
         // the look it had. The whole source stays reachable for bigger changes.
-        EditableMarkdownDocument(markdown: text, draftKey: draftKey, onCommit: onCommit)
-          .contextMenu {
-            Button("Markdownで編集", icon: .chevronLeftForwardslashChevronRight) {
-              beginEditing()
-            }
-          }
+        EditableMarkdownDocument(markdown: text, draftKey: draftKey,
+          onCommit: onCommit, onEditSource: beginEditing)
       } else {
         Group {
           if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -93,7 +89,12 @@ struct InlineMarkdownEditor: View {
     .onChange(of: draft) { _, newValue in
       scheduleDraftSave(newValue)
     }
-    .onDisappear { endEditing() }
+    .onDisappear {
+      if isEditing {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+      }
+      endEditing()
+    }
   }
 
   private func beginEditing() {

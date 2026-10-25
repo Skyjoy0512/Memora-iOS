@@ -7,6 +7,26 @@ export async function tapControl(screenOrLocator: any, locator: any = screenOrLo
   await locator.tap();
 }
 
+// agent-device's fill clears by tapping the middle-right of a multiline field
+// and sending at most 120 backspaces. That is not Select All and leaves text
+// after the caret. Exercise UIKit's actual selection/paste actions instead.
+export async function replaceEditorWithPaste(screen: any, device: any, editor: any, value: string) {
+  await device.setClipboard(value);
+  await selectAllEditorText(screen, editor);
+  await tapControl(screen.getByRole('listitem', { name: /^(ペースト|Paste)$/ }));
+  await expect(editor).toHaveValue(value);
+}
+
+export async function selectAllEditorText(screen: any, editor: any) {
+  await expect(editor).toBeFocused();
+  // A multiline field's centre may be empty space after a short last line.
+  // Tap actual text, then tap the caret to open UIKit's editing menu.
+  await editor.tap({ position: { x: 12, y: 10 } });
+  const selectAll = screen.getByRole('listitem', { name: /^(すべてを選択|全選択|Select All)$/ });
+  if (!(await selectAll.isVisible())) await editor.tap({ position: { x: 12, y: 10 } });
+  await tapControl(selectAll);
+}
+
 export async function openSummaryImageMenu(screen: any) {
   const image = screen.getByTestId('summary.poster.inline');
   for (let attempt = 0; attempt < 12; attempt++) {

@@ -53,16 +53,19 @@ private struct MarkdownTextSurface: UIViewRepresentable {
     context.coordinator.parent = self
     let category = view.traitCollection.preferredContentSizeCategory
     if (context.coordinator.lastMarkdown != markdown || context.coordinator.category != category), view.markedTextRange == nil {
+      context.coordinator.isApplyingExternalUpdate = true
+      defer { context.coordinator.isApplyingExternalUpdate = false }
       let selection = view.selectedRange
       view.attributedText = MarkdownEditingText.attributed(markdown, textStyle: textStyle)
-      view.selectedRange = NSRange(location: min(selection.location, view.attributedText.length), length: 0)
+      let location = min(selection.location, view.attributedText.length)
+      view.selectedRange = NSRange(location: location, length: min(selection.length, view.attributedText.length - location))
       context.coordinator.lastMarkdown = markdown
       context.coordinator.category = category
       view.typingAttributes = MarkdownEditingText.typingAttributes(textStyle: textStyle)
     }
     if isFocused.wrappedValue, !view.isFirstResponder {
       DispatchQueue.main.async {
-        guard context.coordinator.parent.isFocused.wrappedValue else { return }
+        guard context.coordinator.parent.isFocused.wrappedValue, view.window != nil else { return }
         view.becomeFirstResponder()
       }
     } else if !isFocused.wrappedValue, view.isFirstResponder {
@@ -79,16 +82,39 @@ private struct MarkdownTextSurface: UIViewRepresentable {
     var parent: MarkdownTextSurface
     var lastMarkdown: String?
     var category: UIContentSizeCategory?
+    var isApplyingExternalUpdate = false
+    var wasComposing = false
     weak var textView: UITextView?
 
     init(_ parent: MarkdownTextSurface) { self.parent = parent }
 
     func textViewDidBeginEditing(_ textView: UITextView) { parent.isFocused.wrappedValue = true }
     func textViewDidEndEditing(_ textView: UITextView) {
+      publishCommittedText(textView)
       parent.isFocused.wrappedValue = false
     }
     func textViewDidChange(_ textView: UITextView) {
+      // Marked text belongs to UIKit until conversion commits. Publishing it
+      // could make SwiftUI replace the editor or interpret Return as a new block.
+      guard textView.markedTextRange == nil else { wasComposing = true; return }
+      wasComposing = false
+      publishCommittedText(textView)
+    }
+
+    func textViewDidChangeSelection(_ textView: UITextView) {
+      // Some input methods unmark during a selection change without another
+      // text-change callback. Flush that committed value exactly once as well.
+      guard textView.isFirstResponder else { return }
+      guard textView.markedTextRange == nil else { wasComposing = true; return }
+      guard wasComposing else { return }
+      wasComposing = false
+      publishCommittedText(textView)
+    }
+
+    private func publishCommittedText(_ textView: UITextView) {
+      guard !isApplyingExternalUpdate, textView.markedTextRange == nil else { return }
       let value = MarkdownEditingText.markdown(textView.attributedText)
+      guard lastMarkdown != value else { return }
       lastMarkdown = value
       parent.markdown = value
       textView.invalidateIntrinsicContentSize()
@@ -144,9 +170,11 @@ private struct MarkdownTextSurface: UIViewRepresentable {
     }
 
     @objc private func finish() {
-      guard let textView, textView.markedTextRange == nil else { return }
-      parent.isFocused.wrappedValue = false
+      guard let textView else { return }
+      // Resigning lets the input method commit its current conversion first.
       textView.resignFirstResponder()
+      publishCommittedText(textView)
+      parent.isFocused.wrappedValue = false
     }
 
     private func toggle(_ trait: UIFontDescriptor.SymbolicTraits) {

@@ -32,20 +32,36 @@ enum MarkdownEditingText {
   }
 
   static func markdown(_ value: NSAttributedString) -> String {
-    var result = ""
+    var spans: [Span] = []
     value.enumerateAttributes(in: NSRange(location: 0, length: value.length)) { attributes, range, _ in
-      var text = (value.string as NSString).substring(with: range)
+      let text = (value.string as NSString).substring(with: range)
       let font = attributes[.font] as? UIFont
-      let traits = font?.fontDescriptor.symbolicTraits ?? []
-      if traits.contains(.traitMonoSpace) { text = "`\(text)`" }
-      else {
-        if traits.contains(.traitItalic) { text = "*\(text)*" }
-        if traits.contains(.traitBold) { text = "**\(text)**" }
-        if attributes[.strikethroughStyle] != nil { text = "~~\(text)~~" }
-      }
-      if let link = attributes[.link] as? URL { text = "[\(text)](\(link.absoluteString))" }
-      result += text
+      let traits = (font?.fontDescriptor.symbolicTraits ?? []).intersection([.traitBold, .traitItalic, .traitMonoSpace])
+      let span = Span(text: text, traits: traits, strikethrough: attributes[.strikethroughStyle] != nil,
+        link: attributes[.link] as? URL)
+      // IME spelling/selection attributes can split one formatted word into many
+      // runs. Markdown markers describe semantic formatting, not those runs.
+      if let last = spans.last, last.traits == span.traits, last.strikethrough == span.strikethrough, last.link == span.link {
+        spans[spans.count - 1].text += span.text
+      } else { spans.append(span) }
     }
-    return result
+    return spans.map { span in
+      var text = span.text
+      if span.traits.contains(.traitMonoSpace) { text = "`\(text)`" }
+      else {
+        if span.traits.contains(.traitItalic) { text = "*\(text)*" }
+        if span.traits.contains(.traitBold) { text = "**\(text)**" }
+        if span.strikethrough { text = "~~\(text)~~" }
+      }
+      if let link = span.link { text = "[\(text)](\(link.absoluteString))" }
+      return text
+    }.joined()
+  }
+
+  private struct Span {
+    var text: String
+    var traits: UIFontDescriptor.SymbolicTraits
+    var strikethrough: Bool
+    var link: URL?
   }
 }
