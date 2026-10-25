@@ -12,11 +12,12 @@ enum MeetingPersistencePerformanceChecks {
     let url = folder.appendingPathComponent("meetings-\(count).sqlite")
     let store = LocalStore(fileURL: url)
     try store.prepare()
-    let transcript = (0..<20).map { index in TranscriptSegment(id: UUID(), speaker: "話者1", speakerIsCertain: false,
+    let transcript = (0..<20).map { index in TranscriptSegment(id: UUID(uuidString: String(format: "00000000-0000-4000-8000-%012d", index + 1))!, speaker: "話者1", speakerIsCertain: false,
       timestamp: Double(index * 15), text: "予算は150万円。承認がなければ公開しない。期限は未定です。") }
-    let meetings = (0..<count).map { index in Meeting(id: UUID(), title: "合成記録\(index)", createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+    let meetings = (0..<count).map { index in Meeting(id: UUID(uuidString: String(format: "10000000-0000-4000-8000-%012d", index + 1))!, title: "合成記録\(index)", createdAt: Date(timeIntervalSince1970: 1_700_000_000),
       duration: 300, source: .importFile, status: .ready, summary: String(repeating: "承認は未確定。条件を維持する。", count: 20),
-      keyPoints: ["予算150万円"], decisions: [], openQuestions: ["承認日"], transcript: transcript) }
+      keyPoints: ["予算150万円"], decisions: [], openQuestions: ["承認日"], transcript: transcript,
+      privacy: RecordPrivacy(updatedAt: Date(timeIntervalSince1970: 1_700_000_000))) }
     var copyMS: [Double] = [], encodeMS: [Double] = [], sqliteMS: [Double] = [], totalMS: [Double] = []
     var lastData = Data()
     var before = rusage()
