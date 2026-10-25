@@ -1,0 +1,24 @@
+# 接続・配布状態（コード調査、2026-10-25）
+
+「実装済み」は実サービス運用済みを意味しない。今回、実機・外部アカウント・本番サービスへの接続はしていない。
+
+| 機能 | 分類 | 現在の実装と不足 |
+| --- | --- | --- |
+| Memora Intelligence | バックエンド未接続 | `MemoraIntelligence` はサーバーURL/発行tokenを必要とするOpenAI互換経路。サーバー・credit精算は未構築。プロバイダー鍵をアプリへ内蔵しない |
+| StoreKit課金/サインイン | 一部実装 | `MemoraModel+Account.choosePlan` はローカル設定。StoreKit取引・検証・購読復元は未接続。課金済みと扱わない |
+| TeamBackend | バックエンド未接続 | `MemoraModel.teamBackend = UnconfiguredTeamBackend()`。チーム作成/参加を拒否。サーバー・認証・同期の実装が必要 |
+| CloudKit共有 | 一部実装 | `CloudSharingService` の読み取り専用snapshot経路。メディア同期/統合/競合解決は未実装。capability/container/実iCloudアカウント確認が必要。実機未検証 |
+| Share Extension | 実装済み・実機未検証 | 共有取り込みと安全なInboxのホストfixtureあり。実共有元・署名・App Group連携は未検証。設定キーが未指定なら接続済みと表示しない |
+| Widget App Groups | 一部実装 | `MemoraWidgetSnapshotStore` は `MemoraWidgetAppGroup` が必要。実container共有は未確認。ライブ録音機能の既存動作を削除しない |
+| Gmail | 実装済み・実機未検証 | PKCE/read-only OAuth、refreshのKeychain保持、権限・承認・失効のfixtureあり。現在のProject.jsonにはGoogle client IDなし。実Googleログインは未検証 |
+| Notion | 実装済み・実機未検証 | 利用者token/parent pageによる保存・分割・部分失敗回復。fixtureでHTTP/権限競合を検査。実workspaceへの作成は未実施 |
+| MCP OAuth | 実装済み・実機未検証 | PKCE/token更新・権限失効のfixtureあり。任意endpointのDNS rebinding対策には [B](B_CODE_REVIEW.md) の残課題あり。本番安全性確認済みとはしない |
+| Google Drive / GitHub連携 | 未実装 | 設定/選択肢だけでサービス接続を実装していない。MCPに同名ツールを登録したことをネイティブ連携完成としない |
+| 会社Officeテンプレート | 一部実装 | ローカル解析・OOXML保持/置換のPoC、XML/ZIP・原本非変更・SQLite検証あり。Officeでの組版/ページ送り/実テンプレート再現性は未検証 |
+
+この調査では「実装済み・実機検証済み」に分類できる上記接続機能はない。Bundle ID、App Groups、署名、恒久containerは無断変更していない。
+
+## 変更の追跡
+
+各まとまりは独立commit。`git log --oneline -- docs/quality-2026-10 App` と、各報告の再実行コマンドで追跡できる。
+Bitrigがcommitを公開するため手動pushはしない。GitHub上での公開後のCI判定は [CI](CI.md) と分ける。

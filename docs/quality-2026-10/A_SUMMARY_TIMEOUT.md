@@ -8,7 +8,8 @@
 利用者からBYOK DeepSeekで発生したことを確認済み。該当ジョブのモデルID・HTTP状態・OS中断記録はなく、許可のない有料API実行はしていない。
 今回の修正は確認できた終了検証・中断復旧の欠陥と診断不足を解消するもの。
 
-現在の本番受信経路を通すオフラインの実時間テストでは、50秒での固定中断を再現しなかった。
+小さい応答で本番受信経路を通すオフラインの実時間テストでは、経過50秒そのものによる固定中断はなかった。
+一方、大量のDeepSeek推論deltaを送ると、以下のバイト上限による失敗を実際に再現した。
 request timeout 300秒、resource timeout 600秒は延長していない。
 
 ## DeepSeek経路で再現した具体的な欠陥
@@ -27,12 +28,18 @@ DeepSeek公式Chat Completions形式で9,000個の小さな推論deltaを送り�
 この配送レートなら約52秒だが、実際の利用者の配送レートや失敗理由を計測した値ではない。
 
 DeepSeekの `insufficient_system_resource` / `aborted` は、HTTP/通信タイムアウトから分離して扱う。
-DeepSeekは初期設定でthinkingが有効であり、待機中のkeep-aliveと推論deltaは別物。
+今回確認したDeepSeek公式APIではthinkingが既定で有効。利用者のモデル/設定は未取得で、すべてのBYOKモデルに同じ既定があるとは仮定しない。待機中のkeep-aliveと推論deltaは別物。
 根拠: [Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/)、
 [Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode/)、
 [Keep-alive](https://api-docs.deepseek.com/quick_start/rate_limit/)。
 
 この実装欠陥は修正済みだが、実際の50秒事象のエラーがこれだったかは診断ログでの照合が残る。
+
+該当呼び出し: `MemoraModel+SummaryGeneration.generateSummary` →
+`MeetingSummarizer.summarize/cloud` → `CloudAIService.completeStreaming` →
+`CloudTurnStreaming.response` → `CloudTurnStreamReader.response` →
+`CloudSSEEventDecoder.consume` / `CloudStreamAccumulator.consume`。
+主な境界は `CloudSSEEventDecoder.maximumBytes` と `CloudStreamAccumulator.maximumSummaryWireBytes`。
 
 ## 観測できた原因と経路
 
@@ -62,7 +69,7 @@ DeepSeekは初期設定でthinkingが有効であり、待機中のkeep-aliveと
 開始日時、エンジン・プロバイダー、モデルのSHA256識別子、入力文字数・区間数、HTTP状態、最初／最後の出力、
 解析・保存・失敗・中断の実際のイベントと開始からの経過秒を記録。
 本文・URL・キー・トークン・任意のエラー説明は記録しない。モデルIDは利用者が任意文字列を登録できるためハッシュ化する。
-端末の診断画面は直近12件・各256イベントまで。OSLogの保持期間はOSが管理する。
+端末の診断画面は直近12件・先頭256イベントまで（その後もOSLogへ記録）。大量の分割を行うジョブでは終端が画面の上限外になる制限が残る。OSLogの保持期間はOSが管理する。
 「原因を確認」またはDebug設定の「計測と自己チェック → 要約のタイムライン」から確認可能。
 
 ## 検証結果

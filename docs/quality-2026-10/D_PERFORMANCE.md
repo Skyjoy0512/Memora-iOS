@@ -1,0 +1,42 @@
+# 性能・検索品質の計測
+
+すべて合成fixtureのMacホスト計測。iPhone実機、Simulator UIの起動/スクロール/CPU/電池の計測ではない。
+ビルドや他の検査と並行した測定を含むため、小さい時間差を最適化の効果としない。
+
+## 今回の変更前後
+
+| 対象 | Before (`23230af`) | After | 評価 |
+| --- | --- | --- | --- |
+| DeepSeek SSE 2,178,128 byte/9,000 reasoning delta | 実行した本番decoderが本文の前にexecutionLimit | 同じfixtureが最終stopまで完了、非表示推論を保持しない | 信頼性・保持量の改善。速度/実RSSの改善率は未計測 |
+| 検索hit@1、Recall@3、MRR | 11/11、1.000、1.000 | 11/11、1.000、1.000 | 既存の正解を維持。12問だけのfixtureで一般化しない |
+| 不一致質問の棄権 | 1/1 | 1/1 | 最終Contextの既存棄権を維持。index自体の無条件200chunk fallbackは今回禁止 |
+| 送信した根拠の無関係率 | 0.500 | 0.500 | 未改善。単一のhit率だけで検索の完成としない |
+| RAG検索+Context、p50/p95 | 0.74/22.95ms | 個別再実行3.13/20.25ms、最終全体検査内0.47/12.49ms | いずれも同じ合成corpus。測定負荷が異なるので高速化と解釈しない |
+
+再実行: `python3 tools/checks/run-project-search-quality.py --baseline-ref 23230af5e0356a1a5f7d8d4e72ed22b5d937d704` と、引数なしの現行検査。
+根拠のproject/権限、削除・更新・失効、長いPDFのページ抜粋も実FTS5とContextで検査する。
+
+## 現行コードの基準値（ms）
+
+以下は今回のホスト全体検査の実測例。過去の最適化を今回実装したと称さない。
+`tools/checks/run-optimization-checks.py`、21試行のmedian/p95/max。
+
+| 処理 | 件数 | median | p95 | max |
+| --- | ---: | ---: | ---: | ---: |
+| 記録ランキング | 1,000 | 6.689 | 7.120 | 7.818 |
+| ライブラリsection作成 | 1,000 | 2.718 | 2.746 | 2.789 |
+| SQLite batch | 1,000 | 8.622 | 9.053 | 11.312 |
+| ジャーナル関連の所有権一括集計 | 1,000 | 0.400 | 0.411 | 0.416 |
+| ID index参照 | 1,000 | 0.174 | 0.195 | 0.201 |
+
+測定ログ: `/Volumes/WorkspaceSSD/Development/Agents/Codex/tmp/memora-quality/memora-quality-g3mec4x7/optimization.log`。
+最終の固定ソース検査は [C](C_TESTS.md) に別記する。先行の並行負荷が大きい実行ではSQLite p95=20.390ms、ranking p95=16.791msだった。測定中の他の処理の影響を無視して差分を改善率としない。
+
+## まだ測定していないもの
+
+- 実機の起動/初期描画、録音中CPU・メモリ・電池、画像/PDF/Officeのメモリピーク、長時間推論中のUIフレーム時間。
+- 1件更新での全Meeting配列encodeのサイズ別CPU/RSS・p95。直列queue上での順序保護は維持したが、単一record更新方式への移行は行っていない。
+- 起動・スクロール・ストリーミングの実機Before/After。体感やホストアルゴリズムの値で代用しない。
+
+OSLogの要約タイムラインは処理区間を測れるが、CPU/RSS/描画フレームを測るものではない。
+次の性能変更は、同一デバイス/fixture/ビルド条件で基準値を確保してから行う。

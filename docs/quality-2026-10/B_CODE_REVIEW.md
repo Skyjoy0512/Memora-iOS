@@ -1,0 +1,45 @@
+# 総合レビュー：修正と残課題
+
+基点 `23230af5e0356a1a5f7d8d4e72ed22b5d937d704`。これは全機能の品質保証完了報告ではない。
+P0の実際の50秒事象は [A](A_SUMMARY_TIMEOUT.md) のとおり診断照合が残る。
+
+## 修正した問題
+
+| 優先度 | 観測した問題・原因 | 修正箇所と方法 | 検証境界 |
+| --- | --- | --- | --- |
+| P0 | DeepSeekの非表示推論と反復JSONも2MiB総量制限に含め、本文前に拒否 | `CloudSSEEventDecoder`, `CloudStreamAccumulator`, `CloudTurnStreamReader`：wire/本文/イベントの上限を分離、要約では推論を保持しない、実deltaの活動通知 | 修正前fixtureで再現、修正後同一fixture PASS。利用者の実事象との一致は未確定 |
+| P0 | JSON/SSEの終了検証が不一致、空・拒否・tool・lengthの混同 | `CloudAIService`, `CloudTurnStreaming`, `CloudSummaryResponse`, `CloudAgentTurnDecoder`：共通の検証済みdecoderへ集約 | プロバイダー別fixture、終端なしEOF・未完成tool・複数choice・不正型等 |
+| P0 | 推論開始を永続化せず、再起動時に課金済みかもしれないジョブを再送し得る | `PendingSummaryJob`, `MemoraModel+SummaryGeneration`, `MemoraModel+BackgroundSummary`：開始前の原子的保存と要確認マーカー、開始済みジョブの自動再送禁止 | 実SQLite失敗注入・再読み込み。クラウド再送なし |
+| P0 | 前景復帰時のUIKit猶予expiration、540秒待機制限 | `SystemSummaryBackgroundScheduler`, `MemoraModel+BackgroundSummaryTask`：OS制約と前景実行を分離 | scheduler fixture。実機OS配信未検証 |
+| P0 | Foundation Modelsのtimeout等を準備不足に分類 | `FoundationModelFailure`, `OnDeviceSummarizer`：timeout/資産不足/未知生成エラーを区別、区間分割は一度だけ | SDKの実エラー型と区間制御fixture。実モデル未実行 |
+| P0 | 「150人」の根拠が「50人」を支持する部分一致 | `GroundedQuantity`, `MeetingInfographic`, prompt：数値・桁区切り・符号・単位・日時をトークン単位で照合。関係・否定・条件があるときは保守的に原文句の保持を要求 | 人数、通貨、%、日時、増減、否定、未確定、未知の漢字/英字単位のfixture |
+| P0 | 日本語未確定変換中のBinding書き戻し、選択範囲の消失、終了時の未確定入力 | `MarkdownEditorField`：marked textはUIKit所有、確定時のみ反映、選択長保持、外部書き戻し中のdelegate防止。`EditableMarkdownDocument`, `InlineMarkdownEditor`：終了時に入力確定 | 自動入力と実機IMEは別。最終結果は [C](C_TESTS.md) |
+| P0 | 親のSwiftUIメニューがUITextViewの選択メニューを奪う | `InlineMarkdownEditor`, `EditableMarkdownDocument`：編集中は親のカスタムメニューを抑制。編集終了後は従来のソース編集・表メニューを維持 | ネイティブ全文選択/ペーストのE2E。ドライバーのBackspace削除不具合も別途記録 |
+| P0 | IME一時属性で分割された連続の太字/斜体を別Markdown構文へ変換 | `MarkdownEditingText`：意味上同じ書式の隣接runを結合してから変換 | UIKitのビルドとE2E。実変換候補の操作は未検証 |
+| P0 | CIがjob envで無効なrunner contextを使用 | [CI](CI.md)：step envへ移動 | ローカルrunner単体検査。remote結果は別 |
+| P1 | @記録にスキル/ツール/Notionを追加すると記録参照範囲が解除 | `AIPluginExecutionPolicy+Selection`, `AIPluginExecutionPolicy`, `MemoraModel+Agent`, `MemoraModel+AgentTools`, `MemoraModel+AutomaticRecordTools`：ツール許可とデータ許可を分離。記録限定時は全体の履歴・メモリを追加しない | 両エンジンのfactoryと本番readerを検査。選択外記録・タスク拒否 |
+| P1 | 検索不一致でも直近200chunkを無条件取得 | `ProjectSearchIndex`, `ProjectContextBuilder`：文脈を引き継ぐ質問にだけfallback | 実FTS5、別project/削除/権限失効fixture。検索品質全体が完成したわけではない |
+| P2 | 読みやすさ指針の上流更新 | `ReadabilityGuide`, `THIRD_PARTY`：yomiyasu 2.4.0に追従。担当/通知先の創作禁止、文脈限定の用語整理、スライド限定の読点 | 指示組み込み検査。実モデル文章のA/B評価未実施 |
+
+## 維持した保護
+
+- 本文の生成に失敗した場合に文字起こしへ戻る処理、要約/タスク/ジョブの原子的保存、保存前のrun ID・原文fingerprint・最新権限・workspace世代検証を維持。
+- HTTP 408/504、502/503、URLSession切断/timeout、ユーザーキャンセル、background expirationを区別。無条件リトライは追加しない。明示的な出力上限の継続だけ既存の有限回数を維持。
+- 実行直前のプラグイン/MCPのアカウント・設定・許可・コスト確認、変更ツールの承認、引用の型付きID、復元時の実行権限非復元を維持。
+- 既存SQLite文書形式は変更しない。新しいジョブ日時はoptionalで旧データ互換。録音/写真のファイル参照、復旧draft、バックアップのtransaction/ファイル保持を維持。
+- Bundle ID・署名・App Groups・CloudKit設定・ブランド・タブ構成・Liquid Glass適用箇所は変更していない。
+
+## 未修正／未検証のリスク（次の安全な実装候補）
+
+| 優先度 | 残課題 | 根拠と必要な次の検証 |
+| --- | --- | --- |
+| P0 | 実際のDeepSeek50秒失敗の確定 | 新診断のjob ID/終了理由との照合。有料APIを無断実行していないため、実経路での再検証は残る |
+| P1 セキュリティ | MCP/OAuthのDNS検査と接続の間に再解決がある | `MCPBoundedHTTPTransport.send` / `MCPOAuthClient.request` は検査後URLSessionで接続。redirect拒否とIP範囲検査だけではDNS rebinding防止を証明できない。既存Web取得用のnumeric IP+TLS SNI固定経路を安全に再利用できるか実装/通信fixtureを設計する。制限緩和で回避しない |
+| P1 配布 | 任意MCPサーバーの本番管理 | DNS rebinding自体はクライアントIP pinningで防げる設計だが、接続先審査・認可・監査・料金/上限をMemoraが一元保証する運用には、信頼されたバックエンドによる登録/制御を推奨する（設計判断）。個人BYOKの直接接続と管理サービスの保証を区別する。現状を本番安全性確認済みとは評価しない |
+| P1 保存/性能 | 1件更新も配列文書全体をencode | `RecordStore.save` は直列queue上でencode/writeし、順序を保護するが全量負荷は残る。単一record保存へ移行するには実データ相当の計測、二重読み込み/移行マーカー/ロールバックを別途設計。今回データ形式を変えない |
+| P1 検索 | fixtureの送信根拠の適合率が十分ではない | 11問のhit@1/Recall@3は良好でもunrelated-sent=0.500。現fixtureでこれを隠さず、否定例・曖昧語・複数根拠を増やしPrecisionも改善する必要あり |
+| P1 図解 | 語の一致は意味全体の証明ではない | 誰に対応する数値か、未知の表現の否定/条件/因果は完全には判定できない。不確実な場合は生成を拒否し元要約へ戻す。数値正当性やモデル解釈の完全保証はしない |
+| P1 実行環境 | 実機IME、OS中断、録音負荷、空き容量/保護状態の実OS、外部サービス | fixtureの成功と実環境の成功を区別する。コードとSQLite失敗は検査したが、デバイス/アカウントが必要な検査は未実施 |
+| P2 診断 | 256イベントを超える分割ジョブの画面表示 | OSLogには最後まで記録するが、現在の画面内保持は先頭256件。終了イベントを優先するring buffer等は後続の改善候補 |
+
+外部費用や不可逆操作は実施していない。機能の削除、テストassertionの削除/skip、正常なセキュリティ制限の緩和は行っていない。

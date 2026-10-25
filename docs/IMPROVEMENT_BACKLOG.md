@@ -1,5 +1,14 @@
 # Memora — 改善バックログ
 
+## 2026-10-25: 総合品質改善（進行中）
+
+- DeepSeekの大量推論SSEが本文前に2MiB上限へ達する欠陥を再現・修正。wire/本文/単一eventの上限を分離。HTTP timeoutは延長しない。
+- 終了理由検証、診断timeline、推論前の永続attempt marker、中断後の確認付き再試行を追加。古い内容・権限・workspace世代での確定を拒否。
+- 日本語の確定文字/選択/Markdown書式、図解の数値・単位・符号・日時・条件/否定、@記録にskill/toolを追加したときの参照範囲を保護。yomiyasuは2.4.0へ更新。
+- 全6ホストsuite、長時間mock通信、関連E2E10case、Debug/Releaseを検証。失敗後の修正と再検証も記録。既存Liquid Glass/データ形式/Bundle IDは維持。
+- 実際の約50秒事象との診断照合、実DeepSeek/実機IME/OS期限、MCP DNS再解決対策、検索precisionと実機性能は未完了。有料API・本番変更なし。
+- 詳細・Pass/Fail/Not Run・比較画像・接続状態は [品質改善レポート](quality-2026-10/README.md)。総合プロジェクトの完了報告ではない。
+
 ## 2026-10-25: BYOK要約の通信・終端検証
 
 - 途中切断と継続回数上限で不完全な要約を完成扱いする経路を修正。共有の上限付きSSE受信を再利用し、Anthropicの要約もストリーミングへ接続。自動リクエスト上限・権限・UIは維持。[修正と検証境界](BYOK_SUMMARY_TRANSPORT.md)。
