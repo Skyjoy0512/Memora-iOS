@@ -100,7 +100,11 @@ enum AIAnswerResult {
     for (claim, evidence, accepted) in [
       ("50人", "承認された場合は50人", false), ("50人", "50人増加しない", false),
       ("50人増加しない", "50人増加しない", true), ("50人", "50人の予定", false),
-      ("50人から100人へ減少", "50人から100人へ増加", false)
+      ("50人から100人へ減少", "50人から100人へ増加", false),
+      ("10万円", "10万円ではなく12万円", false),
+      ("10万円ではなく12万円", "10万円ではなく12万円", true),
+      ("50人", "50人以外", false), ("50人", "50人を除く", false),
+      ("承認済み", "未承認", false), ("実施", "未実施", false)
     ] { precondition(GroundedQuantity.preservesQualification(claim, in: evidence) == accepted) }
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("infographic-" + UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: root) }

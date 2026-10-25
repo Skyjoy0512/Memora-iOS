@@ -8,7 +8,7 @@ enum GroundedQuantity {
   private static let number = try! NSRegularExpression(pattern: #"[0-9][0-9,]*(?:\.[0-9]+)?"#)
   private static let grouped = try! NSRegularExpression(pattern: #"^[0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?$"#)
   private static let relational = ["増", "減", "上回", "下回", "以上", "以下", "未満", "より", "対し", "最大", "最小",
-    "予定", "見込", "未定", "未確定", "検討", "提案", "条件", "場合", "なら", "ない", "なかった", "せず", "否定", "却下", "ため", "によって", "を受けて"]
+    "予定", "見込", "未定", "未確定", "検討", "提案", "条件", "場合", "なら", "ない", "なかった", "せず", "ではなく", "でなく", "以外", "除く", "除外", "除い", "未承認", "未実施", "未完了", "禁止", "不可", "否定", "却下", "ため", "によって", "を受けて"]
 
   static func supports(_ claim: String, in evidence: String) -> Bool {
     guard let claims = tokens(claim), let sources = tokens(evidence) else { return false }
