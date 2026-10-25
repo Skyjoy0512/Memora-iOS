@@ -19,11 +19,6 @@ jobs:
     runs-on: xcode-27
     timeout-minutes: 45
     env:
-      MEMORA_CHECK_ROOT: ${{ runner.temp }}/memora-checks
-      MEMORA_CHECK_TMPDIR: ${{ runner.temp }}
-      TMPDIR: ${{ runner.temp }}/
-      CLANG_MODULE_CACHE_PATH: ${{ runner.temp }}/clang-module-cache
-      SWIFT_MODULECACHE_PATH: ${{ runner.temp }}/swift-module-cache
       SWIFT_BACKTRACE: enable=no
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -35,9 +30,15 @@ jobs:
           swiftc --version
           xcrun --sdk iphonesimulator --show-sdk-version
           python3 --version
-          mkdir -p "$MEMORA_CHECK_ROOT" "$CLANG_MODULE_CACHE_PATH" "$SWIFT_MODULECACHE_PATH"
       - name: Run production host checks
+        env:
+          MEMORA_CHECK_ROOT: ${{ runner.temp }}/memora-checks
+          MEMORA_CHECK_TMPDIR: ${{ runner.temp }}
+          TMPDIR: ${{ runner.temp }}/
+          CLANG_MODULE_CACHE_PATH: ${{ runner.temp }}/clang-module-cache
+          SWIFT_MODULECACHE_PATH: ${{ runner.temp }}/swift-module-cache
         run: |
+          mkdir -p "$MEMORA_CHECK_ROOT" "$CLANG_MODULE_CACHE_PATH" "$SWIFT_MODULECACHE_PATH"
           python3 -B tools/checks/test_quality_runner.py
           bash tools/checks/run-quality-checks.sh --output-dir "$RUNNER_TEMP/memora-quality-results"
       - name: Upload actual suite logs
