@@ -33,6 +33,17 @@ struct ProjectSourceFilesChecks {
     precondition(!FileManager.default.fileExists(atPath: firstURL.path))
     precondition(FileManager.default.fileExists(atPath: original.path))
     precondition(FileManager.default.fileExists(atPath: ProjectSourceFiles.resolve(second.reference, in: managed)!.path))
-    print("ProjectSourceFilesChecks: passed (bounded import, content fingerprint, path/symlink isolation, selective deletion)")
+    // A symlinked parent is safe once canonicalized; a child escaping it is not.
+    // Include a nonexistent leaf because resolving an existing file alone misses
+    // the Foundation /private/var alias behavior observed in the full runner.
+    let alias = root.appendingPathComponent("managed-alias")
+    try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: managed)
+    let future = ProjectSourceFiles.resolve("future.json", in: alias)
+    precondition(future?.deletingLastPathComponent().standardizedFileURL == managed.resolvingSymlinksInPath().standardizedFileURL)
+    precondition(ProjectSourceFiles.resolve("escaped.txt", in: alias) == nil)
+    try Data("alias-safe".utf8).write(to: future!)
+    let saved = try Data(contentsOf: ProjectSourceFiles.resolve("future.json", in: managed)!)
+    precondition(saved == Data("alias-safe".utf8))
+    print("ProjectSourceFilesChecks: passed (bounded import, content fingerprint, canonical parent/new leaf, path/symlink isolation, selective deletion)")
   }
 }

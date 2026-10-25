@@ -41,11 +41,13 @@ actor ProjectSourceFiles {
   }
 
   static func resolve(_ name: String, in folder: URL? = nil) -> URL? {
-    let directory = folder ?? Self.directory
+    // Resolve the existing parent first. Foundation can canonicalize /private/var
+    // differently for an existing directory and its not-yet-created child.
+    let directory = (folder ?? Self.directory).resolvingSymlinksInPath().standardizedFileURL
     guard !name.isEmpty, name != ".", name != "..", !name.contains("/"),
           !name.contains("\\"), !name.contains("\0") else { return nil }
     let url = directory.appendingPathComponent(name)
-    let root = directory.resolvingSymlinksInPath().standardizedFileURL.path + "/"
+    let root = directory.path + "/"
     guard url.resolvingSymlinksInPath().standardizedFileURL.path.hasPrefix(root) else { return nil }
     return url
   }
