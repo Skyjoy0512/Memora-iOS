@@ -38,12 +38,20 @@ struct Meeting: Codable, Equatable {
   var title = "図解テスト"
   var displayTitle: String { title }
   var createdAt = Date(timeIntervalSince1970: 0)
+  var duration = 0.0
+  enum Source: Codable { case importFile }
+  var source = Source.importFile
+  enum Status: Codable { case ready }
+  var status = Status.ready
   var summary = "## 決定事項\n- 先に5人で検証し、結果を見て公開日を決める\n## 未解決事項\n- 公開日は未定"
+  var keyPoints: [String] = []
+  var decisions: [String] = []
+  var openQuestions: [String] = []
   var summaryInfographicJSON: String?
   var privacy = RecordPrivacy()
   var effectivePrivacy: RecordPrivacy { privacy }
-  var notes = ""
   var transcript: [TranscriptSegment] = []
+  var notes = ""
 }
 enum RecordStore {
   static func encoded<T: Encodable>(_ value: T) throws -> Data { try JSONEncoder().encode(value) }
@@ -74,11 +82,6 @@ enum AIAnswerResult {
     return .answer(response)
   }
 }
-enum MeetingInfographicSample {
-  static func resolve(_ snapshot: MeetingSummaryPosterSnapshot) -> MeetingInfographic? {
-    MeetingInfographic.decode(snapshot.infographicJSON, meetingID: snapshot.meetingID, summary: snapshot.summary, privacy: snapshot.privacy)
-  }
-}
 
 @main enum MeetingInfographicChecks {
   @MainActor static func main() async throws {
@@ -89,7 +92,10 @@ enum MeetingInfographicSample {
       ("5月1日", "5月11日", false), ("10:30", "11:30", false),
       ("1,500円", "1500円", true), ("1500円", "１，５００円", true),
       ("50%", "50パーセント", true), ("150,50円", "150,50円", false),
-      ("20GWh", "20MWh", false), ("100USD", "100JPY", false), ("50匹", "50頭", false)
+      ("20GWh", "20MWh", false), ("100USD", "100JPY", false), ("50匹", "50頭", false),
+      ("10月28日", "| 田中 | 10月28日 |", true), ("2026/10/25", "日付は 2026/10/25 です", true),
+      ("5%", "- 5%", false), ("-5%", "- 5%", true),
+      ("¥5", "-¥5", false), ("$5", "+$5", false), ("-¥5", "- ¥5", true)
     ] { precondition(GroundedQuantity.supports(claim, in: evidence) == accepted, "Quantity evidence mismatch: \(claim)") }
     for (claim, evidence, accepted) in [
       ("50人", "承認された場合は50人", false), ("50人", "50人増加しない", false),
@@ -99,6 +105,20 @@ enum MeetingInfographicSample {
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("infographic-" + UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: root) }
     let model = try MemoraModel(url: root.appendingPathComponent("records.sqlite"))
+    let displaySample = SummarizedAudioSample.make()
+    model.meetings = [displaySample]
+    let displaySource = displaySample.summary.replacingOccurrences(of: "**", with: "").split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    for claim in [MeetingInfographicSample.content.headline] + MeetingInfographicSample.content.panels.flatMap(\.items) {
+      if !displaySource.contains(claim.evidence) { print("Sample quote mismatch: \(claim.label)") }
+      if !GroundedQuantity.supports(claim.label + " " + claim.text, in: claim.evidence) { print("Sample quantity mismatch: \(claim.label)") }
+      if !GroundedQuantity.preservesQualification(claim.text, in: claim.evidence) { print("Sample qualification mismatch: \(claim.label)") }
+      if !GroundedQuantity.preservesQualification(claim.label, in: claim.evidence, considersEvidence: false) { print("Sample label mismatch: \(claim.label)") }
+    }
+    guard let displaySnapshot = MeetingSummaryPosterSnapshot(meetingID: displaySample.id, model: model),
+          MeetingInfographicSample.resolve(displaySnapshot) != nil else {
+      print("FAIL: production display sample no longer satisfies evidence validation")
+      exit(1)
+    }
     let record = Meeting()
     model.meetings = [record]
     model.activeDetailMeetingID = record.id
