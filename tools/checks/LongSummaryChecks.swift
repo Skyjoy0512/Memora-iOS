@@ -42,13 +42,27 @@ enum LongSummaryChecks {
     precondition(!diagnostic.report.contains("private-model-identifier"))
     precondition(diagnostic.events.map(\.stage) == [.started, .request, .firstToken, .lastToken, .responseComplete, .failed])
     precondition(diagnostic.report.contains("providerTimedOut"))
+    let longDiagnostic = SummaryDiagnostics(jobID: UUID(), engine: "cloud", provider: "deepSeek",
+      model: "private-model-identifier", characters: 123_456, segments: 999)
+    for section in 0..<600 { longDiagnostic.record(.generation, code: section) }
+    longDiagnostic.record(.request)
+    longDiagnostic.outputReceived()
+    longDiagnostic.responseCompleted()
+    longDiagnostic.record(.saveStarted)
+    longDiagnostic.record(.saveFailed)
+    longDiagnostic.failed(.generationFailed)
+    precondition(longDiagnostic.events.count == 256 && longDiagnostic.events.first?.stage == .started)
+    precondition(longDiagnostic.events.last?.stage == .failed && longDiagnostic.events.last?.failure == "generationFailed")
+    precondition(longDiagnostic.events.suffix(7).map(\.stage) == [.request, .firstToken, .lastToken, .responseComplete, .saveStarted, .saveFailed, .failed])
+    precondition(longDiagnostic.report.contains("retainedEvents=256 omittedEvents=352"))
+    precondition(!longDiagnostic.report.contains("private-model-identifier"))
     precondition(FoundationModelFailure.reason(for: NSError(domain: "fixture", code: 1)) == .generationFailed)
     precondition(FoundationModelFailure.reason(for: CancellationError()) == .cancelled)
     if #available(macOS 27.0, iOS 27.0, *) {
       precondition(FoundationModelFailure.reason(for: LanguageModelError.timeout(.init(debugDescription: "private"))) == .onDeviceTimedOut)
       precondition(FoundationModelFailure.reason(for: SystemLanguageModel.Error.assetsUnavailable(.init(debugDescription: "private"))) == .assetsUnavailable)
     }
-    print("LongSummaryChecks: PASS; virtual receive times, EOF rejection, redacted timeline and actual FoundationModels error types. No inference or network; OS/HTTP wall-clock deadlines are not simulated by the virtual clock.")
+    print("LongSummaryChecks: PASS; virtual receive times, EOF rejection, redacted/bounded timeline retaining late failures, and actual FoundationModels error types. No inference or network; OS/HTTP wall-clock deadlines are not simulated by the virtual clock.")
   }
 
   final class Timeline {

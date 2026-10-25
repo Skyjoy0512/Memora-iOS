@@ -19,8 +19,16 @@ final class SummaryDiagnostics: Sendable {
   }
   private struct State: Sendable {
     var events: [Event] = []
+    var omittedEvents = 0
     var firstOutput = false
     var lastOutput: Event?
+
+    mutating func append(_ event: Event) {
+      // Keep the job origin and recent timeline, especially the final save or
+      // failure. A long, sectioned job must not hide its eventual outcome.
+      if events.count == 256 { events.remove(at: 1); omittedEvents += 1 }
+      events.append(event)
+    }
   }
   @TaskLocal static var current: SummaryDiagnostics?
   private static let logger = Logger(subsystem: "app.memora", category: "SummaryTimeline")
@@ -49,7 +57,7 @@ final class SummaryDiagnostics: Sendable {
   func record(_ stage: Stage, code: Int? = nil) {
     let event = event(stage, code: code)
     state.withLock { value in
-      if value.events.count < 256 { value.events.append(event) }
+      value.append(event)
     }
     Self.logger.info("job=\(self.jobID.uuidString, privacy: .public) stage=\(stage.rawValue, privacy: .public) elapsed=\(event.elapsed, privacy: .public) code=\(code ?? 0, privacy: .public)")
   }
@@ -69,7 +77,7 @@ final class SummaryDiagnostics: Sendable {
       let last = value.lastOutput
       value.lastOutput = nil
       value.firstOutput = false
-      if let last, value.events.count < 256 { value.events.append(last) }
+      if let last { value.append(last) }
       return last
     }
     if let last {
@@ -81,13 +89,15 @@ final class SummaryDiagnostics: Sendable {
   func failed(_ failure: AIAnswerFailure) {
     var entry = event(.failed)
     entry.failure = String(describing: failure)
-    state.withLock { if $0.events.count < 256 { $0.events.append(entry) } }
+    state.withLock { $0.append(entry) }
     Self.logger.error("job=\(self.jobID.uuidString, privacy: .public) failure=\(entry.failure ?? "unknown", privacy: .public) elapsed=\(entry.elapsed, privacy: .public)")
   }
 
   var events: [Event] { state.withLock { $0.events + ($0.lastOutput.map { [$0] } ?? []) } }
   var report: String {
-    (["job=\(jobID.uuidString) started=\(startedAt.ISO8601Format())", metadata] + events.map {
+    let snapshot = state.withLock { ($0.events + ($0.lastOutput.map { [$0] } ?? []), $0.omittedEvents) }
+    return (["job=\(jobID.uuidString) started=\(startedAt.ISO8601Format())", metadata,
+      "retainedEvents=\(snapshot.0.count) omittedEvents=\(snapshot.1)"] + snapshot.0.map {
       String(format: "%.3fs %@ code=%d", $0.elapsed, $0.stage.rawValue, $0.code ?? 0) + ($0.failure.map { " failure=\($0)" } ?? "")
     }).joined(separator: "\n")
   }
