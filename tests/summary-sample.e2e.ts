@@ -3,7 +3,7 @@ import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
-import { tapControl, tapTab, scrollToControl } from './ui-helpers';
+import { tapControl, tapTab, scrollToControl, replaceEditorWithPaste } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -34,6 +34,7 @@ test('summary sample is additive, recoverable and displays its image without a t
   await expect(screen.getByText(title, { exact: true, visible: true }).last()).toBeVisible();
   await expect(screen.getByText('表示用の架空データです。実際の音声・AI処理の結果ではありません。', { exact: true })).toBeVisible();
   await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
+  await expect(screen.getByTestId('summary.poster.inline')).toHaveAccessibleName(/先に5人で検証し、結果を見て公開日を決める/);
   await app.screenshot('inline-summary-sample-light');
   expect(records()).toHaveLength(2);
   expect(records().find((record: any) => record.id.toLowerCase() === fixture.id.toLowerCase())).toMatchObject({
@@ -51,7 +52,7 @@ test('summary sample is additive, recoverable and displays its image without a t
   await app.screenshot('summary-branch-hierarchy-dark');
   const editedReason = '理由：検証前のため、効果はまだ確定していない。';
   await tapControl(reason);
-  await screen.getByRole('textbox', { name: '本文', exact: true }).fill(editedReason);
+  await replaceEditorWithPaste(screen, device, screen.getByRole('textbox', { name: '本文', exact: true }), editedReason);
   await tapControl(screen.getByRole('button', { name: '完了', exact: true }));
   await expect.poll(() => records().find((record: any) => record.id.toLowerCase() === sampleID).summary.includes('  - ' + editedReason)).toBe(true);
   sample = records().find((record: any) => record.id.toLowerCase() === sampleID);

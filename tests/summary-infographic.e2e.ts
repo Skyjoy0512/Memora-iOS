@@ -14,13 +14,13 @@ test('separate infographic restores evidence and stages three record questions w
   const document = { version: 1, meetingID: fixture.id, sourceSummary: summary, privacy,
     modelLabel: 'UI検証用・実モデル未実行', generatedAt: fixture.createdAt,
     content: {
-      headline: { label: '判断軸', text: '本番ではなく、検証環境で比較', evidence: '- 本番切替はしない\n- 検証環境で比較する' },
+      headline: { label: '判断軸', text: '本番切替はしない', evidence: '- 本番切替はしない\n- 検証環境で比較する' },
       panels: [
         { title: '予算と前提', kind: 'metric', items: [
-          { label: '予算', text: '12万円', evidence: '予算は10万円ではなく12万円。承認された場合だけ来週実施する。' },
-          { label: '実施条件', text: '承認が前提', evidence: '承認された場合だけ来週実施する。' }] },
+          { label: '予算', text: '予算は10万円ではなく12万円。承認された場合だけ来週実施する。', evidence: '予算は10万円ではなく12万円。承認された場合だけ来週実施する。' },
+          { label: '前提', text: '承認された場合だけ来週実施する。', evidence: '承認された場合だけ来週実施する。' }] },
         { title: '残る判断', kind: 'note', items: [
-          { label: '未確定', text: '承認日は未定', evidence: '承認日は未確定' }] },
+          { label: '未確定', text: '承認日は未確定', evidence: '承認日は未確定' }] },
       ], questions,
     } };
   const savedFixture = { ...fixture, privacy, summaryInfographicJSON: JSON.stringify(document) };
@@ -30,7 +30,7 @@ test('separate infographic restores evidence and stages three record questions w
   await app.restart();
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
-  await expect(screen.getByTestId('summary.poster.inline')).toHaveAccessibleName(/本番ではなく、検証環境で比較/);
+  await expect(screen.getByTestId('summary.poster.inline')).toHaveAccessibleName(/本番切替はしない/);
   await expect(screen.getByText('1枚サマリー', { exact: true })).not.toBeVisible();
   await expect(screen.getByText('拡大・共有', { exact: true })).not.toBeVisible();
   await expect(screen.getByRole('button', { name: 'AIで図解を再生成', exact: true })).not.toBeVisible();
@@ -39,7 +39,7 @@ test('separate infographic restores evidence and stages three record questions w
   await app.screenshot('infographic-restored-image');
   await tapControl(screen.getByRole('tab', { name: '全文', exact: true }));
   await expect(screen.getByText('図解の読み方と根拠', { exact: true })).toBeVisible();
-  await expect(screen.getByText('本番ではなく、検証環境で比較', { exact: true })).toBeVisible();
+  await expect(screen.getByText('本番切替はしない', { exact: true })).toBeVisible();
   await app.screenshot('infographic-evidence');
   await tapControl(screen.getByRole('button', { name: '完了', exact: true }));
   const prepare = screen.getByRole('button', { name: 'AIで図解を再生成', exact: true });
@@ -67,7 +67,7 @@ test('separate infographic restores evidence and stages three record questions w
   await app.restart();
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
-  await expect(screen.getByTestId('summary.poster.inline')).toHaveAccessibleName(/本番ではなく、検証環境で比較/);
+  await expect(screen.getByTestId('summary.poster.inline')).toHaveAccessibleName(/本番切替はしない/);
   const restored = JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"))[0];
   expect(restored.summaryInfographicJSON).toBe(savedFixture.summaryInfographicJSON);
   expect(restored.summary).toBe(summary);
