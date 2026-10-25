@@ -41,7 +41,7 @@ actor ProjectSearchIndex {
                          values: [projectID.uuidString, expression])
     }
     // Follow-ups can refer to the previous answer without repeating its words.
-    if result.isEmpty {
+    if result.isEmpty, ProjectContextBuilder.allowsContextFallback(question) {
       result = try query("SELECT payload FROM project_chunks WHERE project = ? ORDER BY rowid DESC LIMIT 200;", values: [projectID.uuidString])
     }
     return result

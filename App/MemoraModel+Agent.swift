@@ -77,7 +77,8 @@ extension MemoraModel {
     }
 
     let requestID = UUID()
-    let safeHistory = runner.isOnDevice ? (text: "", references: [AIRecordReference]()) : cloudConversationContext(for: trimmed)
+    let limitsSources = pluginPolicy?.limitsRecordReads == true
+    let safeHistory = runner.isOnDevice || limitsSources ? (text: "", references: [AIRecordReference]()) : cloudConversationContext(for: trimmed)
     aiChatRequestID = requestID
     // Old messages retain their IDs and fail closed once their grants are gone.
     mcpResultAuthorizations.removeAll()
@@ -100,7 +101,7 @@ extension MemoraModel {
     isAIChatResponding = true
 
     // The on-device window is small, so it gets only the end of the thread.
-    let thread = runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : safeHistory.text
+    let thread = limitsSources ? "" : runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : safeHistory.text
     var opening = trimmed
     for template in companyTemplates where pluginPolicy?.templateIDs.contains(template.id) == true && template.workspaceID == currentTeamID {
       opening += "\n選択した会社テンプレート: template_id=\(template.id)、形式=\(template.format.rawValue)、必須の差し込み項目=\(template.analysis.placeholders.joined(separator: ", "))。create_document/create_slidesのtemplate_fieldsに全項目の値を指定する。原本は端末内で処理する。"
@@ -119,8 +120,9 @@ extension MemoraModel {
     // a question can be answered from them straight away, and work starts
     // from the right records. Smaller on the device's window.
     let allowedMeetings = Self.meetings(in: scope, from: meetings).filter {
-      (pluginPolicy?.personID == nil || pluginPolicy?.recordIDs.contains($0.id) == true)
-        && (pluginPolicy == nil || pluginPolicy?.pluginIDs.contains(where: { $0.hasPrefix("skill:") || $0 == "tool:memora:search_records" }) == true || pluginPolicy?.recordIDs.contains($0.id) == true)
+      (!limitsSources || pluginPolicy?.recordIDs.contains($0.id) == true)
+        && (pluginPolicy == nil || pluginPolicy?.recordIDs.contains($0.id) == true
+          || (!limitsSources && pluginPolicy?.pluginIDs.contains(where: { $0.hasPrefix("skill:") || $0 == "tool:memora:search_records" }) == true))
         && (runner.isOnDevice || RecordAccessPolicy.allows($0.effectivePrivacy, purpose: .cloudAI))
     }
     if !runner.isOnDevice {
@@ -146,7 +148,7 @@ extension MemoraModel {
         + (pluginPolicy == nil ? Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings).map { .task($0.id) } : []), messageID: placeholder.id)
     }
     // What the agent knows about the person, smaller on the device's window.
-    let personal = pluginPolicy?.personID != nil ? "" : personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000, includesHistory: runner.isOnDevice)
+    let personal = limitsSources ? "" : personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000, includesHistory: runner.isOnDevice)
     if !personal.isEmpty {
       opening = personal + "\n\n" + opening
     }

@@ -453,6 +453,23 @@ struct AskAIIntegrationScenarioChecks {
     precondition(!policy.permits("draft_email", arguments: [:]))
     let onDevicePolicy = AIPluginExecutionPolicy.forSelection(pluginIDs: [gmailPlugin.id], plugins: [gmailPlugin], onDevice: true)
     precondition(onDevicePolicy.toolIDs == [gmail.id])
+    let selectedRecord = UUID(), otherRecord = UUID()
+    let record = AIPlugin(id: "record:\(selectedRecord)", name: "指定記録", summary: "fixture", aliases: [],
+      kind: .file, state: .ready, toolIDs: ["memora:read_record"], permissions: [], cost: .local,
+      provider: .memora, recordID: selectedRecord)
+    for kind in [AIPlugin.Kind.skill, .builtin, .connected] {
+      let extra = AIPlugin(id: kind == .connected ? "service:notion" : "skill:fixture", name: "追加手順", summary: "fixture", aliases: [],
+        kind: kind, state: .ready, toolIDs: ["memora:search_records", "memora:read_record", "memora:read_person"],
+        permissions: [], cost: .local, provider: .memora)
+      for local in [true, false] {
+        let selected = AIPluginExecutionPolicy.forSelection(pluginIDs: [record.id, extra.id], plugins: [record, extra], onDevice: local)
+        precondition(selected.limitsRecordReads && selected.recordIDs == [selectedRecord])
+        precondition(selected.permits("read_record", arguments: ["id": selectedRecord.uuidString]))
+        precondition(!selected.permits("read_record", arguments: ["id": otherRecord.uuidString]))
+        precondition(!selected.permits("read_person", arguments: ["person_id": UUID().uuidString]))
+        precondition(selected.permits("search_records", arguments: ["query": "fixture"]))
+      }
+    }
     let templateCall = await gmailProvider.calls
     precondition(templateCall == 1)
   }

@@ -31,6 +31,7 @@ struct AIPluginExecutionPolicy: Equatable {
     if let personID, id == "memora:read_person" {
       return (arguments["person_id"] as? String).flatMap(UUID.init(uuidString:)) == personID
     }
+    if limitsRecordReads, personID == nil, id == "memora:read_person" { return false }
     if limitsRecordReads && id == "memora:read_record" {
       guard let text = arguments["id"] as? String, let id = UUID(uuidString: text),
             recordIDs.contains(id) || (personID != nil && personJournalIDs.contains(id)) else { return false }

@@ -117,7 +117,7 @@ enum ProjectContextBuilder {
     return counts
   }
 
-  private static func allowsContextFallback(_ value: String) -> Bool {
+  static func allowsContextFallback(_ value: String) -> Bool {
     let question = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     if question.isEmpty { return true }
     if ["このプロジェクト", "プロジェクト全体", "全体"].contains(where: { question.hasPrefix($0) }),

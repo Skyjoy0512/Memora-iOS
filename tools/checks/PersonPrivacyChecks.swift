@@ -163,6 +163,29 @@ import SQLite3
     precondition(afterRestart.canReuseCloudConversation(restoredHistory[0].cloudProvenance))
     precondition(model.deletePerson(other.id))
     precondition(!model.isCloudSessionAuthorized(messageID) && !model.canReuseCloudConversation(model.message.cloudProvenance))
+
+    // A skill/tool grant must not expand the data selected with @record, on
+    // either engine. Exercise the production reader, not just policy creation.
+    model.aiPersonScopeID = nil
+    let selected = Meeting(title: "選択した記録", privacy: cloudGrant, summary: "SELECTED_ONLY")
+    let unrelated = Meeting(title: "選択していない記録", privacy: cloudGrant, summary: "UNRELATED_SECRET")
+    model.meetings = [selected, unrelated]
+    model.tasks = [
+      MemoraTask(id: UUID(), title: "選択記録の作業", meetingID: selected.id, isCompleted: false, privacy: cloudGrant),
+      MemoraTask(id: UUID(), title: "無関係の作業", meetingID: unrelated.id, isCompleted: false, privacy: cloudGrant)
+    ]
+    model.agentPluginPolicies[messageID] = .init(pluginIDs: ["record:\(selected.id)", "skill:fixture"],
+      toolIDs: ["memora:search_records", "memora:read_record", "memora:list_tasks"],
+      recordIDs: [selected.id], limitsRecordReads: true)
+    for purpose in [RecordAccessPolicy.Purpose.onDeviceAI, .cloudAI] {
+      resetMessage()
+      let search = model.automaticRecordTool(.init(id: "search", name: "search_records", arguments: [:]), messageID: messageID, purpose: purpose)!
+      precondition(search.text.contains("選択した記録") && !search.text.contains("選択していない記録"))
+      let read = model.automaticRecordTool(.init(id: "read", name: "read_record", arguments: ["id": unrelated.id.uuidString]), messageID: messageID, purpose: purpose)!
+      precondition(read.isError && !read.text.contains("UNRELATED_SECRET"))
+      let tasks = model.automaticRecordTool(.init(id: "tasks", name: "list_tasks", arguments: [:]), messageID: messageID, purpose: purpose)!
+      precondition(tasks.text.contains("選択記録の作業") && !tasks.text.contains("無関係の作業"))
+    }
     print("PersonPrivacyChecks: passed (production person codec/privacy/read_person/provenance/authorization + real SQLite; private-by-default, exported fields only, grants/revoke/edit/delete/merge, duplicate identity, related ACLs, typed IDs, legacy/reopen, workspace/protected/restore, atomic failure; isolated fixtures, no API)")
   }
 }

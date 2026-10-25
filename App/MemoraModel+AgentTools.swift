@@ -40,7 +40,7 @@ extension MemoraModel {
       }
       return await gmailReadTool(call, messageID: messageID, compact: compact, service: .shared)
     }
-    if compact, agentPluginPolicies[messageID]?.personID != nil,
+    if compact, agentPluginPolicies[messageID]?.limitsRecordReads == true,
        let outcome = automaticRecordTool(call, messageID: messageID, purpose: .onDeviceAI, scope: scope) { return outcome }
     if automaticAccess {
       guard let tool = call.tool, AgentTool.residentTools.contains(tool) else {
