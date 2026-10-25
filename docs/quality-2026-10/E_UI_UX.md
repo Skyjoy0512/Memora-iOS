@@ -1,5 +1,21 @@
 # UI/UX確認
 
+## 2026-10-26: 生成modeとDynamic Type
+
+native-app-design/HIGに従い、既存の詳しさsegmented controlを保持し、その下に生成modeのnative menuを1つ追加。通常の画面構成・モノトーン・ロゴ・Glassの適用箇所は変えない。未知モデルで設定を適用しないことと、並列中断の料金注意を表示する。選択のみではAI処理を開始しない。
+
+実Simulatorの確認で、エンジン名の折返しが説明文と重なる既存問題を発見。[修正前](screenshots/summary-engine-wrap-before.png)を保存し、Pickerの縦サイズを確保。最大Dynamic Typeでは横並びが詰まるため、AppleのAnyLayoutを使って選択値のstateを保った縦並びにし、固定footerの説明をscroll領域へ移した。文言・機能を削らず、生成ボタンは下部に維持。
+
+| 実装画面 | 検証 |
+| --- | --- |
+| [通常 Light](screenshots/summary-modes-light.png) / [Dark](screenshots/summary-modes-dark.png) | 生成mode/詳しさ/engine/送信同意/料金注意。生成未実行 |
+| [最大Dynamic Typeのmode](screenshots/summary-modes-largest-type.png) | label/値/説明を縦配置し、scrollで到達可能 |
+| [最大Dynamic Typeのengine](screenshots/summary-engine-largest-type.png) | engine名と説明が重ならず、全文をscrollで読める |
+
+`summary-modes.e2e.ts`は高速/高精度/標準の切替、詳しさ不変、元summary/原文不変、jobを作らないこと、engineと説明のboundsが重ならないことをassert。通常サイズでPass（最大文字サイズは手動Simulator確認）。`markdown-replacement.e2e.ts`も2件再実行Pass。実VoiceOver読み上げや実機IME変換を検証済みとはしない。確認後、Simulatorの文字サイズ/appearanceを標準Large/Lightへ戻した。
+
+以下は前回の画面検証:
+
 大きなデザイン変更はしていない。モノトーン、フラットな本文、ブランド、余白、上部の作成Menu、サイドバーのナビゲーション、下部composer、既存のLiquid Glass実装は維持。
 今回の画面変更は要約診断への導線、再送時の課金注意、実処理段階の表示と、ネイティブ編集を妨げるmenuの修正。
 

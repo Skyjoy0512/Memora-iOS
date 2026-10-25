@@ -27,6 +27,13 @@ test('summary processing mode is separate from detail and never regenerates on s
     expect(records[0].transcript[0].text).toBe(raw);
   }
   await app.screenshot('summary-mode-standard-light');
+  const engine = screen.getByTestId('summary.engineChoice');
+  await scrollToControl(screen, engine);
+  const engineBounds = await engine.boundingBox();
+  const explanationBounds = await screen.getByTestId('summary.engineApproach').boundingBox();
+  expect(engineBounds).not.toBeNull();
+  expect(explanationBounds).not.toBeNull();
+  expect(explanationBounds!.y).toBeGreaterThanOrEqual(engineBounds!.y + engineBounds!.height);
   await device.setAppearance('dark');
   await app.screenshot('summary-mode-standard-dark');
   await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));

@@ -4,6 +4,7 @@ struct SummaryGenerationSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @State private var mode = SummaryGenerationMode.automatic
   @State private var template = SummaryTemplateChoice.standard
   /// The AI for this summary only. Unset starts on the one Ask AI uses.
@@ -74,6 +75,10 @@ struct SummaryGenerationSheet: View {
               Text("前回の生成が途中で止まった場合も、AIサービス側では処理・課金が済んでいる可能性があります。再試行は新しいリクエストとなり、追加の利用料金が発生する場合があります。")
                 .font(.footnote).foregroundStyle(.secondary)
             }
+            if dynamicTypeSize.isAccessibilitySize {
+              Text("生成を押すまでAI処理は始まりません")
+                .font(.caption).foregroundStyle(.secondary)
+            }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.horizontal, MemoraSpacing.xl)
@@ -108,9 +113,11 @@ struct SummaryGenerationSheet: View {
 
   private var generateAction: some View {
     VStack(spacing: 8) {
-      Text("生成を押すまでAI処理は始まりません")
-        .font(.caption)
-        .foregroundStyle(.secondary)
+      if !dynamicTypeSize.isAccessibilitySize {
+        Text("生成を押すまでAI処理は始まりません")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
 
       Button {
         var preferences = model.summaryPreferences
@@ -166,12 +173,15 @@ struct SummaryGenerationSheet: View {
 
   private var engineSection: some View {
     let configuration = model.summaryConfiguration(for: selectedEngine)
+    let layout = dynamicTypeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+      : AnyLayout(HStackLayout())
 
     return VStack(alignment: .leading, spacing: 8) {
-      HStack {
+      layout {
         Label("AIエンジン", icon: configuration.engine.symbol)
           .font(.headline)
-        Spacer()
+        if !dynamicTypeSize.isAccessibilitySize { Spacer() }
         Picker("AIエンジン", selection: Binding {
           selectedEngine
         } set: { engineChoice = $0 }) {
@@ -184,6 +194,8 @@ struct SummaryGenerationSheet: View {
         }
         .pickerStyle(.menu)
         .labelsHidden()
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityIdentifier("summary.engineChoice")
       }
 
       // Cloud and on-device differ in depth, so the sheet says which is coming.
@@ -191,6 +203,7 @@ struct SummaryGenerationSheet: View {
         .font(.footnote)
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
+        .accessibilityIdentifier("summary.engineApproach")
     }
     .padding(MemoraSpacing.lg)
     .background(

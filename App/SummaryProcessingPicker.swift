@@ -1,14 +1,18 @@
 import SwiftUI
 
 struct SummaryProcessingPicker: View {
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Binding var mode: SummaryProcessingMode
   var supportsControl: Bool
 
   var body: some View {
+    let layout = dynamicTypeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+      : AnyLayout(HStackLayout())
     VStack(alignment: .leading, spacing: 8) {
-      HStack {
+      layout {
         Text("生成モード")
-        Spacer()
+        if !dynamicTypeSize.isAccessibilitySize { Spacer() }
         Picker("生成モード", selection: $mode) {
           Text("高速").tag(SummaryProcessingMode.fast)
           Text("標準").tag(SummaryProcessingMode.balanced)
