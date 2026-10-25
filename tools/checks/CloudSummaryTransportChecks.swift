@@ -61,6 +61,22 @@ enum CloudSummaryTransportChecks {
     }
     try await continuationChecks()
     try completedJSONChecks()
+    for streaming in [false, true] {
+      let diagnostics = SummaryDiagnostics(jobID: UUID(), engine: "cloud", provider: "fixture", model: "fixture", characters: 1, segments: 1)
+      Wire.state.reset(try [reply(.openAI, text: "一回目", streaming: streaming), reply(.openAI, text: "二回目", streaming: streaming)])
+      await SummaryDiagnostics.$current.withValue(diagnostics) {
+        check(await complete(.openAI), .answer("一回目"))
+        check(await complete(.openAI), .answer("二回目"))
+      }
+      let ids = diagnostics.events.filter { $0.stage == .request }.compactMap(\.requestID)
+      precondition(ids.count == 2 && Set(ids).count == 2)
+      for id in ids {
+        precondition(diagnostics.events.filter { $0.requestID == id && $0.stage == .firstToken }.count == 1)
+        precondition(diagnostics.events.filter { $0.requestID == id && $0.stage == .lastToken }.count == 1)
+        precondition(diagnostics.events.contains { $0.requestID == id && $0.reason == "stop" })
+      }
+      Wire.state.assertConsumed(2)
+    }
     print("CloudSummaryTransportChecks: passed (production summary → URLSession → bounded SSE/JSON → terminal text validation; both APIs, EOF/refusal/tools/limits/cancel/HTTP failures, bounded continuations; no keys/network/paid API)")
   }
 

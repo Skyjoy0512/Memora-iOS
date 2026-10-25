@@ -15,11 +15,13 @@ struct CloudStreamAccumulator {
   private(set) var text = ""
   private(set) var isFinished = false
   private(set) var outputEvents = 0
+  private(set) var textEvents = 0
+  private(set) var reasoningEvents = 0
   private var assistant: [String: Any] = ["role": "assistant"]
   private var blocks: [Int: [String: Any]] = [:]
   private var inputFragments: [Int: String] = [:]
   private var openBlocks: Set<Int> = []
-  private var finishReason: String?
+  private(set) var finishReason: String?
   private var receivedBytes = 0
   private var usage: [String: Any]?
 
@@ -42,6 +44,8 @@ struct CloudStreamAccumulator {
       for choice in choices where (choice["index"] as? Int ?? 0) == 0 {
         guard finishReason == nil else { throw AIAnswerFailure.server }
         if var delta = choice["delta"] as? [String: Any] {
+          if !(delta["content"] as? String ?? "").isEmpty { textEvents += 1 }
+          if ["reasoning_content", "reasoning"].contains(where: { !(delta[$0] as? String ?? "").isEmpty }) { reasoningEvents += 1 }
           if ["content", "reasoning_content", "reasoning"].contains(where: { !(delta[$0] as? String ?? "").isEmpty }) {
             outputEvents += 1
           }
@@ -72,6 +76,8 @@ struct CloudStreamAccumulator {
         guard let index = object["index"] as? Int, (0..<64).contains(index), blocks[index] == nil,
               var block = object["content_block"] as? [String: Any] else { throw AIAnswerFailure.server }
         if !(block["text"] as? String ?? "").isEmpty || !(block["thinking"] as? String ?? "").isEmpty { outputEvents += 1 }
+        if !(block["text"] as? String ?? "").isEmpty { textEvents += 1 }
+        if !(block["thinking"] as? String ?? "").isEmpty { reasoningEvents += 1 }
         if responseKind == .textCompletion {
           guard ["text", "thinking", "redacted_thinking"].contains(block["type"] as? String ?? "") else { throw AIAnswerFailure.server }
           block = block.filter { ["type", "text"].contains($0.key) }
@@ -84,9 +90,11 @@ struct CloudStreamAccumulator {
         switch delta["type"] as? String {
         case "text_delta":
           if !(delta["text"] as? String ?? "").isEmpty { outputEvents += 1 }
+          if !(delta["text"] as? String ?? "").isEmpty { textEvents += 1 }
           block["text"] = (block["text"] as? String ?? "") + (delta["text"] as? String ?? "")
         case "thinking_delta":
           if !(delta["thinking"] as? String ?? "").isEmpty { outputEvents += 1 }
+          if !(delta["thinking"] as? String ?? "").isEmpty { reasoningEvents += 1 }
           if responseKind == .agentTurn { block["thinking"] = (block["thinking"] as? String ?? "") + (delta["thinking"] as? String ?? "") }
         case "signature_delta":
           if responseKind == .agentTurn { block["signature"] = (block["signature"] as? String ?? "") + (delta["signature"] as? String ?? "") }

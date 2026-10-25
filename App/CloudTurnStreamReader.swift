@@ -16,18 +16,28 @@ enum CloudTurnStreamReader {
     var accumulator = CloudStreamAccumulator(provider: provider, responseKind: responseKind)
     var events = CloudSSEEventDecoder()
     if responseKind == .textCompletion { events.maximumBytes = CloudStreamAccumulator.maximumSummaryWireBytes }
-    defer { SummaryDiagnostics.current?.record(.wireBytes, code: events.receivedBytes) }
+    defer {
+      SummaryDiagnostics.current?.record(.wireBytes, code: events.receivedBytes)
+      SummaryDiagnostics.current?.providerStopped(accumulator.finishReason)
+    }
     var lastPublication = now()
     var published = ""
     var receivedOutputEvents = 0
+    var receivedTextEvents = 0
+    var receivedReasoningEvents = 0
     var lastActivity: ContinuousClock.Instant?
     for try await byte in bytes {
       try Task.checkCancellation()
       if let payload = try events.consume(byte) {
         try accumulator.consume(payload)
         let instant = now()
+        if accumulator.reasoningEvents > 0, receivedReasoningEvents == 0 {
+          SummaryDiagnostics.current?.record(.firstReasoning)
+        }
+        if accumulator.textEvents > receivedTextEvents { SummaryDiagnostics.current?.outputReceived() }
+        receivedTextEvents = accumulator.textEvents
+        receivedReasoningEvents = accumulator.reasoningEvents
         if accumulator.outputEvents > receivedOutputEvents {
-          SummaryDiagnostics.current?.outputReceived()
           if lastActivity == nil || lastActivity!.duration(to: instant) >= .seconds(1) {
             onActivity?()
             lastActivity = instant
@@ -45,6 +55,7 @@ enum CloudTurnStreamReader {
     if !accumulator.isFinished, let payload = try events.finish() { try accumulator.consume(payload) }
     try Task.checkCancellation()
     let result = try accumulator.response()
+    SummaryDiagnostics.current?.receivedUsage(result, usesAnthropicAPI: provider == .anthropic)
     SummaryDiagnostics.current?.responseCompleted()
     if accumulator.text != published { onText(accumulator.text) }
     return result

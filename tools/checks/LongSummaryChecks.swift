@@ -56,6 +56,31 @@ enum LongSummaryChecks {
     precondition(longDiagnostic.events.suffix(7).map(\.stage) == [.request, .firstToken, .lastToken, .responseComplete, .saveStarted, .saveFailed, .failed])
     precondition(longDiagnostic.report.contains("retainedEvents=256 omittedEvents=352"))
     precondition(!longDiagnostic.report.contains("private-model-identifier"))
+    let correlated = SummaryDiagnostics(jobID: UUID(), engine: "cloud", provider: "fixture", model: "fixture", characters: 1, segments: 1)
+    let firstRequest = UUID(), secondRequest = UUID()
+    SummaryDiagnostics.$requestID.withValue(firstRequest) { correlated.outputReceived() }
+    SummaryDiagnostics.$requestID.withValue(secondRequest) { correlated.outputReceived() }
+    SummaryDiagnostics.$requestID.withValue(firstRequest) { correlated.responseCompleted() }
+    precondition(correlated.events.contains { $0.stage == .lastToken && $0.requestID == secondRequest })
+    SummaryDiagnostics.$requestID.withValue(secondRequest) { correlated.responseCompleted() }
+    for id in [firstRequest, secondRequest] {
+      precondition(correlated.events.filter { $0.stage == .firstToken && $0.requestID == id }.count == 1)
+      precondition(correlated.events.filter { $0.stage == .lastToken && $0.requestID == id }.count == 1)
+    }
+    correlated.receivedUsage(["usage": ["prompt_tokens": 123, "completion_tokens": 45,
+      "completion_tokens_details": ["reasoning_tokens": 30]]], usesAnthropicAPI: false)
+    precondition(correlated.events.suffix(3).map(\.code) == [123, 45, 30])
+    let beforeInvalid = correlated.events.count
+    correlated.receivedUsage(["usage": ["prompt_tokens": true, "completion_tokens": -1,
+      "completion_tokens_details": ["reasoning_tokens": "private"]]], usesAnthropicAPI: false)
+    precondition(correlated.events.count == beforeInvalid)
+    correlated.providerStopped("stop")
+    correlated.providerStopped("private-provider-message")
+    precondition(correlated.events.suffix(2).map(\.reason) == ["stop", "unrecognized"])
+    precondition(!correlated.report.contains("private-provider-message"))
+    SummaryDiagnostics.recordLifecycle(jobIDs: [correlated.jobID], isForeground: false)
+    SummaryDiagnostics.recordLifecycle(jobIDs: [correlated.jobID], isForeground: true)
+    precondition(correlated.events.suffix(2).map(\.stage) == [.enteredBackground, .enteredForeground])
     precondition(FoundationModelFailure.reason(for: NSError(domain: "fixture", code: 1)) == .generationFailed)
     precondition(FoundationModelFailure.reason(for: CancellationError()) == .cancelled)
     if #available(macOS 27.0, iOS 27.0, *) {

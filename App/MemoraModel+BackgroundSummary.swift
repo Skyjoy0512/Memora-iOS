@@ -18,6 +18,11 @@ extension MemoraModel {
 
   static let autoSummaryAfterTranscriptionKey = "memora.summary.autoAfterTranscription"
 
+  func recordSummaryLifecycle() {
+    let active = Set(pendingSummaryJobs.filter { processing.isActive($0.meetingID) }.map(\.id))
+    SummaryDiagnostics.recordLifecycle(jobIDs: active, isForeground: summaryBackgroundScheduler.isForeground)
+  }
+
   var automaticallySummarizesTranscriptions: Bool {
     UserDefaults.standard.bool(forKey: Self.autoSummaryAfterTranscriptionKey)
   }

@@ -1,4 +1,5 @@
 import CryptoKit
+import CoreFoundation
 import Foundation
 import OSLog
 import Synchronization
@@ -6,22 +7,30 @@ import Synchronization
 /// An allow-listed timeline: no prompts, responses, URLs, keys or error descriptions.
 final class SummaryDiagnostics: Sendable {
   enum Stage: String, Sendable {
-    case started, analysis, generation, request, httpResponse, firstToken, lastToken
+    case started, analysis, generation, request, httpResponse, firstReasoning, firstToken, lastToken
     case responseComplete, parseStarted, parseCompleted, saveStarted, saveCompleted
     case backgroundExpiration, cancelled, contextChanged, saveFailed, failed, completed
     case onDeviceSection, onDeviceError, wireBytes
+    case inputTokens, outputTokens, reasoningTokens
+    case enteredForeground, enteredBackground
+    case providerStop
   }
   struct Event: Sendable {
     var stage: Stage
     var elapsed: Double
     var code: Int?
     var failure: String? = nil
+    var requestID: UUID? = nil
+    var reason: String? = nil
+  }
+  private struct Output: Sendable {
+    var firstReceived = false
+    var last: Event?
   }
   private struct State: Sendable {
     var events: [Event] = []
     var omittedEvents = 0
-    var firstOutput = false
-    var lastOutput: Event?
+    var outputs: [UUID?: Output] = [:]
 
     mutating func append(_ event: Event) {
       // Keep the job origin and recent timeline, especially the final save or
@@ -31,6 +40,7 @@ final class SummaryDiagnostics: Sendable {
     }
   }
   @TaskLocal static var current: SummaryDiagnostics?
+  @TaskLocal static var requestID: UUID?
   private static let logger = Logger(subsystem: "app.memora", category: "SummaryTimeline")
   private static let recent = Mutex<[SummaryDiagnostics]>([])
   let jobID: UUID
@@ -59,14 +69,14 @@ final class SummaryDiagnostics: Sendable {
     state.withLock { value in
       value.append(event)
     }
-    Self.logger.info("job=\(self.jobID.uuidString, privacy: .public) stage=\(stage.rawValue, privacy: .public) elapsed=\(event.elapsed, privacy: .public) code=\(code ?? 0, privacy: .public)")
+    Self.logger.info("job=\(self.jobID.uuidString, privacy: .public) request=\(event.requestID?.uuidString ?? "job", privacy: .public) stage=\(stage.rawValue, privacy: .public) elapsed=\(event.elapsed, privacy: .public) code=\(code ?? 0, privacy: .public)")
   }
 
   func outputReceived() {
     let first = state.withLock { value in
-      let first = !value.firstOutput
-      value.firstOutput = true
-      value.lastOutput = event(.lastToken)
+      let first = !value.outputs[Self.requestID, default: Output()].firstReceived
+      value.outputs[Self.requestID, default: Output()].firstReceived = true
+      value.outputs[Self.requestID, default: Output()].last = event(.lastToken)
       return first
     }
     if first { record(.firstToken) }
@@ -74,16 +84,43 @@ final class SummaryDiagnostics: Sendable {
 
   func responseCompleted() {
     let last = state.withLock { value -> Event? in
-      let last = value.lastOutput
-      value.lastOutput = nil
-      value.firstOutput = false
+      let last = value.outputs.removeValue(forKey: Self.requestID)?.last
       if let last { value.append(last) }
       return last
     }
     if let last {
-      Self.logger.info("job=\(self.jobID.uuidString, privacy: .public) stage=lastToken elapsed=\(last.elapsed, privacy: .public)")
+      Self.logger.info("job=\(self.jobID.uuidString, privacy: .public) request=\(last.requestID?.uuidString ?? "job", privacy: .public) stage=lastToken elapsed=\(last.elapsed, privacy: .public)")
     }
     record(.responseComplete)
+  }
+
+  func receivedUsage(_ response: [String: Any], usesAnthropicAPI: Bool) {
+    guard let usage = response["usage"] as? [String: Any] else { return }
+    let input = usage[usesAnthropicAPI ? "input_tokens" : "prompt_tokens"]
+    let output = usage[usesAnthropicAPI ? "output_tokens" : "completion_tokens"]
+    let reasoning = (usage["completion_tokens_details"] as? [String: Any])?["reasoning_tokens"]
+    for (stage, raw) in [(Stage.inputTokens, input), (.outputTokens, output), (.reasoningTokens, reasoning)] {
+      guard let number = raw as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(),
+            let value = Int(exactly: number.doubleValue), value >= 0 else { continue }
+      record(stage, code: value)
+    }
+  }
+
+  func providerStopped(_ raw: String?) {
+    guard let raw else { return }
+    let known = ["stop", "length", "end_turn", "max_tokens", "tool_calls", "tool_use", "stop_sequence",
+      "refusal", "content_filter", "aborted", "insufficient_system_resource", "pause_turn", "model_context_window_exceeded"]
+    var entry = event(.providerStop)
+    // Unknown provider strings are untrusted and could contain personal data.
+    entry.reason = known.contains(raw) ? raw : "unrecognized"
+    state.withLock { $0.append(entry) }
+    Self.logger.info("job=\(self.jobID.uuidString, privacy: .public) request=\(entry.requestID?.uuidString ?? "job", privacy: .public) stage=providerStop reason=\(entry.reason ?? "unrecognized", privacy: .public) elapsed=\(entry.elapsed, privacy: .public)")
+  }
+
+  static func recordLifecycle(jobIDs: Set<UUID>, isForeground: Bool) {
+    for run in recent.withLock({ $0 }).filter({ jobIDs.contains($0.jobID) }) {
+      run.record(isForeground ? .enteredForeground : .enteredBackground)
+    }
   }
 
   func failed(_ failure: AIAnswerFailure) {
@@ -93,18 +130,20 @@ final class SummaryDiagnostics: Sendable {
     Self.logger.error("job=\(self.jobID.uuidString, privacy: .public) failure=\(entry.failure ?? "unknown", privacy: .public) elapsed=\(entry.elapsed, privacy: .public)")
   }
 
-  var events: [Event] { state.withLock { $0.events + ($0.lastOutput.map { [$0] } ?? []) } }
+  var events: [Event] { state.withLock { $0.events + $0.outputs.values.compactMap(\.last) } }
   var report: String {
-    let snapshot = state.withLock { ($0.events + ($0.lastOutput.map { [$0] } ?? []), $0.omittedEvents) }
+    let snapshot = state.withLock { ($0.events + $0.outputs.values.compactMap(\.last), $0.omittedEvents) }
     return (["job=\(jobID.uuidString) started=\(startedAt.ISO8601Format())", metadata,
       "retainedEvents=\(snapshot.0.count) omittedEvents=\(snapshot.1)"] + snapshot.0.map {
-      String(format: "%.3fs %@ code=%d", $0.elapsed, $0.stage.rawValue, $0.code ?? 0) + ($0.failure.map { " failure=\($0)" } ?? "")
+      String(format: "%.3fs %@ code=%d", $0.elapsed, $0.stage.rawValue, $0.code ?? 0)
+        + ($0.requestID.map { " request=\($0.uuidString)" } ?? "") + ($0.failure.map { " failure=\($0)" } ?? "")
+        + ($0.reason.map { " reason=\($0)" } ?? "")
     }).joined(separator: "\n")
   }
   static var reports: [String] { recent.withLock { $0 }.reversed().map(\.report) }
 
   private func event(_ stage: Stage, code: Int? = nil) -> Event {
     let duration = start.duration(to: .now).components
-    return Event(stage: stage, elapsed: Double(duration.seconds) + Double(duration.attoseconds) / 1e18, code: code)
+    return Event(stage: stage, elapsed: Double(duration.seconds) + Double(duration.attoseconds) / 1e18, code: code, requestID: Self.requestID)
   }
 }

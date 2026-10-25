@@ -7,6 +7,16 @@ enum CloudTurnStreaming {
                        sessionConfiguration: URLSessionConfiguration = .ephemeral,
                        onActivity: (@MainActor () -> Void)? = nil,
                        responseKind: CloudStreamAccumulator.ResponseKind = .agentTurn) async throws -> [String: Any] {
+    try await SummaryDiagnostics.$requestID.withValue(UUID()) {
+      try await performResponse(for: original, provider: provider, onText: onText,
+        sessionConfiguration: sessionConfiguration, onActivity: onActivity, responseKind: responseKind)
+    }
+  }
+
+  @MainActor
+  private static func performResponse(for original: URLRequest, provider: CloudStreamAccumulator.Provider,
+                       onText: @escaping @MainActor (String) -> Void, sessionConfiguration: URLSessionConfiguration,
+                       onActivity: (@MainActor () -> Void)?, responseKind: CloudStreamAccumulator.ResponseKind) async throws -> [String: Any] {
     var request = original
     guard let data = request.httpBody,
           var body = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
@@ -30,7 +40,11 @@ enum CloudTurnStreaming {
         data.append(byte)
       }
       guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
+      let finish = provider == .anthropic ? object["stop_reason"] as? String :
+        (object["choices"] as? [[String: Any]])?.first?["finish_reason"] as? String
+      SummaryDiagnostics.current?.providerStopped(finish)
       try validate(object, provider: provider, responseKind: responseKind)
+      SummaryDiagnostics.current?.receivedUsage(object, usesAnthropicAPI: provider == .anthropic)
       SummaryDiagnostics.current?.outputReceived()
       SummaryDiagnostics.current?.responseCompleted()
       return object

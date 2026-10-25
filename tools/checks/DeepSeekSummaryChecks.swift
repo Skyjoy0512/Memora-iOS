@@ -14,16 +14,25 @@ enum DeepSeekSummaryChecks {
     var tick = 0
     var activity = 0
     var publications: [String] = []
-      let response = try await CloudTurnStreamReader.response(from: Bytes(data: bytes), provider: .chatCompletions,
+    let diagnostics = SummaryDiagnostics(jobID: UUID(), engine: "cloud", provider: "deepSeek", model: "fixture", characters: 10, segments: 1)
+      let response = try await SummaryDiagnostics.$current.withValue(diagnostics) {
+        try await CloudTurnStreamReader.response(from: Bytes(data: bytes), provider: .chatCompletions,
         responseKind: .textCompletion, now: {
           defer { tick += 1 }
           return start.advanced(by: .milliseconds(tick * 6))
-        }, onActivity: { activity += 1 }, onText: { publications.append($0) })
+        }, onActivity: {
+          activity += 1
+          if tick < 9_000 { precondition(!diagnostics.events.contains { $0.stage == .firstToken }, "Reasoning was mislabeled as visible text") }
+        }, onText: { publications.append($0) })
+      }
       let result = try CloudSummaryResponse(response, provider: .chatCompletions)
       precondition(result.text == "## 要約\n条件を維持する。")
       let message = ((response["choices"] as! [[String: Any]])[0]["message"] as! [String: Any])
       precondition(message["reasoning_content"] == nil, "Summary retained private inference text it never uses")
       precondition(activity > 50 && publications == [result.text], "Real inference activity was hidden or private output was published")
+      precondition(diagnostics.events.filter { $0.stage == .firstReasoning }.count == 1)
+      precondition(diagnostics.events.filter { $0.stage == .firstToken }.count == 1)
+      precondition(diagnostics.events.firstIndex { $0.stage == .firstReasoning }! < diagnostics.events.firstIndex { $0.stage == .firstToken }!)
       var bounded = CloudSSEEventDecoder(maximumBytes: 1_024, maximumBufferedBytes: 16)
       for _ in 0..<16 { _ = try bounded.consume(120) }
       do { _ = try bounded.consume(120); preconditionFailure("Oversized SSE event retained") }

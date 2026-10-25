@@ -60,6 +60,7 @@ struct ContentView: View {
       await model.refreshWidgetSnapshot()
     }
     .onChange(of: scenePhase) { _, phase in
+      if phase == .active || phase == .background { model.recordSummaryLifecycle() }
       if phase == .active {
         model.scheduleWidgetSnapshot()
         model.resumePendingSummariesIfNeeded()
