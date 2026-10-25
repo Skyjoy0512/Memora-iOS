@@ -85,7 +85,7 @@ extension MemoraModel {
   /// The system decides when that window comes; an empty queue cancels the
   /// request so a finished summary does not wake the app.
   func scheduleBackgroundSummary() {
-    let jobs = pendingSummaryJobs.filter { $0.requiresUserRetry != true && $0.inputFingerprint != nil }
+    let jobs = pendingSummaryJobs.filter { $0.requiresUserRetry != true && $0.attemptStartedAt == nil && $0.inputFingerprint != nil }
     let permitted = !jobs.isEmpty && currentTeamID == nil && !isRestoring && !isStoreProtected
     summaryBackgroundScheduler.scheduleDeferred(requiresNetwork: permitted ? jobs.contains { $0.usesCloud } : nil) { [weak self] message in
       self?.backgroundSummaryNotice = message
@@ -105,7 +105,8 @@ extension MemoraModel {
     for job in pendingSummaryJobs {
       guard !Task.isCancelled, generation == aiWorkspaceGeneration, currentTeamID == nil,
             !isRestoring, !isStoreProtected else { return false }
-      guard pendingSummaryJobs.contains(where: { $0.id == job.id }), job.requiresUserRetry != true else { continue }
+      guard pendingSummaryJobs.contains(where: { $0.id == job.id }), job.requiresUserRetry != true,
+            job.attemptStartedAt == nil else { continue }
       guard let meeting = meeting(id: job.meetingID), !meeting.transcript.isEmpty else {
         removeBackgroundSummary(meetingID: job.meetingID, jobID: job.id)
         continue
@@ -129,7 +130,7 @@ extension MemoraModel {
       guard started else { pauseBackgroundSummary(job, requiresUserRetry: true); continue }
 
       guard await waitForSummary(job, generation: generation) else {
-        pauseBackgroundSummary(job, requiresUserRetry: false)
+        pauseBackgroundSummary(job, requiresUserRetry: true)
         return false
       }
       if self.meeting(id: job.meetingID)?.status != .ready { allSucceeded = false }
@@ -142,7 +143,10 @@ extension MemoraModel {
   /// The summary itself is run by `ProcessingService`; this waits for that run
   /// to settle. The bound keeps a broken job from holding the whole window.
   private func waitForSummary(_ job: PendingSummaryJob, generation: UUID) async -> Bool {
-    for _ in 0..<540 {
+    var elapsedSeconds = 0
+    // The deferred OS window has a bound; foreground inference does not inherit
+    // that waiter's deadline (a long multi-part summary can need more time).
+    while elapsedSeconds < 540 || summaryBackgroundScheduler.isForeground {
       guard !Task.isCancelled, currentTeamID == nil, aiWorkspaceGeneration == generation,
             !isRestoring, !isStoreProtected else { return false }
       guard pendingSummaryJobs.contains(where: { $0.id == job.id }) else { return true }
@@ -150,6 +154,7 @@ extension MemoraModel {
       if !processing.isActive(job.meetingID) { return true }
       do {
         try await Task.sleep(for: .seconds(1))
+        elapsedSeconds += 1
       } catch {
         return false
       }
@@ -173,7 +178,7 @@ extension MemoraModel {
     }
     summaryBackgroundScheduler.finish(jobID: job.id, success: false)
     var jobs = pendingSummaryJobs
-    jobs[index].requiresUserRetry = requiresUserRetry || jobs[index].requiresUserRetry == true
+    jobs[index].requiresUserRetry = requiresUserRetry || jobs[index].requiresUserRetry == true || jobs[index].attemptStartedAt != nil
     _ = persistPendingSummaryJobs(jobs)
     pendingSummaryJobs = jobs
     updateMeeting(job.meetingID) { meeting in

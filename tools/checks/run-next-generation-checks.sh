@@ -67,7 +67,7 @@ swiftc App/AIAnswerFailure.swift App/AgentToolCall.swift App/AgentTurn.swift App
 "$check_dir/stream"
 swiftc App/AIAnswerFailure.swift App/AgentToolCall.swift App/AgentTurn.swift App/CloudAgentTurnDecoder.swift App/AIAnswerResult.swift App/AgentToolOutcome.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/CloudAgentTurnChecks.swift -o "$check_dir/turn-decoder"
 "$check_dir/turn-decoder"
-swiftc -D DEBUG App/AIAnswerFailure.swift App/AgentSessionBudget.swift App/AgentToolCall.swift App/AgentTurn.swift App/CloudAgentTurnDecoder.swift App/CloudSummaryResponse.swift App/CloudStreamAccumulator.swift App/CloudSSEEventDecoder.swift App/CloudTurnStreamReader.swift App/SyntheticAIEventStream.swift tools/checks/CloudSSETransportChecks.swift -o "$check_dir/sse-transport"
+swiftc -D DEBUG App/SummaryDiagnostics.swift App/AIAnswerFailure.swift App/AgentSessionBudget.swift App/AgentToolCall.swift App/AgentTurn.swift App/CloudAgentTurnDecoder.swift App/CloudSummaryResponse.swift App/CloudStreamAccumulator.swift App/CloudSSEEventDecoder.swift App/CloudTurnStreamReader.swift App/SyntheticAIEventStream.swift tools/checks/CloudSSETransportChecks.swift -o "$check_dir/sse-transport"
 "$check_dir/sse-transport"
 swiftc App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift tools/checks/NativeAIInterfaceChecks.swift -o "$check_dir/ui"
 "$check_dir/ui"

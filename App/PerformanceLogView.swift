@@ -14,6 +14,9 @@ struct PerformanceLogView: View {
   var body: some View {
     NavigationStack {
       MemoraList {
+        Section("要約の診断") {
+          NavigationLink("要約のタイムライン") { SummaryDiagnosticsView() }
+        }
         Section {
           if SelfChecks.results.isEmpty {
             Text("自己チェックはまだ実行されていません。")

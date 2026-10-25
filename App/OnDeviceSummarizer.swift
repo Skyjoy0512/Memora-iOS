@@ -21,6 +21,7 @@ enum OnDeviceSummarizer {
 
     for (index, section) in sections.enumerated() {
       guard !Task.isCancelled else { return .failure(.cancelled) }
+      SummaryDiagnostics.current?.record(.onDeviceSection, code: index + 1)
       await progress("区間を整理中（\(index + 1)/\(sections.count)）")
       switch await digest(section, meetingEnd: input.duration, length: input.preferences.length, input: input) {
       case .success(let found):
@@ -193,7 +194,9 @@ enum OnDeviceSummarizer {
       return .success(response.content.topics.compactMap { topic($0, in: section, duration: meetingEnd) })
     } catch {
       let failure = FoundationModelFailure.reason(for: error)
-      guard failure == .contextTooLarge, allowsSplit, section.count > 1 else {
+      // On-device retries have no provider charge. Bound the retry to one split;
+      // a timeout on one section must not replay sections already processed.
+      guard [.contextTooLarge, .onDeviceTimedOut].contains(failure), allowsSplit, section.count > 1 else {
         return .failure(failure)
       }
       let middle = section.count / 2

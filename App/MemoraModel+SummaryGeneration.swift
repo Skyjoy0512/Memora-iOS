@@ -68,12 +68,22 @@ extension MemoraModel {
     } else {
       guard pendingSummaryJobs.contains(where: { $0.id == job.id }) else { return false }
     }
+    var startedJobs = pendingSummaryJobs
+    guard let jobIndex = startedJobs.firstIndex(where: { $0.id == job.id }) else { return false }
+    startedJobs[jobIndex].attemptStartedAt = startedAt
+    startedJobs[jobIndex].requiresUserRetry = true
+    guard persistNow(startedJobs, forKey: StorageKey.pendingSummaryJobs) else { return false }
+    pendingSummaryJobs = startedJobs
+    let diagnostics = SummaryDiagnostics(jobID: job.id, engine: effectiveEngine.rawValue,
+      provider: usesCloud ? llm.provider.rawValue : "onDevice", model: usesCloud ? llm.modelID : "system",
+      characters: meeting.transcript.reduce(0) { $0 + $1.text.count }, segments: meeting.transcript.count)
     updateMeeting(id) { $0.status = .organizing(choice.processingLabel) }
     backgroundSummaryNotice = nil
     // Automatic OS wakeups use their delivered processing window; only a
     // person starting work in the foreground requests continued processing.
     if summaryBackgroundScheduler.isForeground {
       summaryBackgroundScheduler.begin(jobID: job.id, requestsContinuedProcessing: pendingJob == nil) { [weak self] in
+        diagnostics.record(.backgroundExpiration)
         self?.pauseBackgroundSummary(job, requiresUserRetry: true)
       } onFailure: { [weak self] message in
         self?.backgroundSummaryNotice = message
@@ -81,22 +91,29 @@ extension MemoraModel {
     }
 
     processing.run(id: id) { [weak self] in
-      return await MeetingSummarizer.summarize(input, engine: engine, llm: llm) { step in
-        guard let self, !Task.isCancelled else { return }
-        guard self.aiWorkspaceGeneration == workspaceGeneration, self.currentTeamID == nil,
-              !self.isRestoring, !self.isStoreProtected,
-              let current = self.meeting(id: id), current.privacy == meeting.privacy,
-              current.spaceID == meeting.spaceID else {
-          self.pauseBackgroundSummary(job, requiresUserRetry: true)
-          return
-        }
-        self.summaryBackgroundScheduler.report(jobID: job.id, step: step)
-        self.updateMeetingTransiently(id) { meeting in
-          if case .organizing = meeting.status {
-            meeting.status = .organizing("\(choice.processingLabel)：\(step)")
+      let outcome = await SummaryDiagnostics.$current.withValue(diagnostics) {
+        await MeetingSummarizer.summarize(input, engine: engine, llm: llm) { step in
+          guard let self, !Task.isCancelled else { return }
+          guard self.aiWorkspaceGeneration == workspaceGeneration, self.currentTeamID == nil,
+                !self.isRestoring, !self.isStoreProtected,
+                let current = self.meeting(id: id), current.privacy == meeting.privacy,
+                current.spaceID == meeting.spaceID,
+                (!usesCloud || RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI,
+                  explicitCloudConsent: cloudDisclosureConfirmed)) else {
+            self.pauseBackgroundSummary(job, requiresUserRetry: true)
+            diagnostics.record(.contextChanged)
+            return
+          }
+          self.summaryBackgroundScheduler.report(jobID: job.id, step: step)
+          self.updateMeetingTransiently(id) { meeting in
+            if case .organizing = meeting.status {
+              meeting.status = .organizing("\(choice.processingLabel)：\(step)")
+            }
           }
         }
       }
+      if Task.isCancelled { diagnostics.record(.cancelled) }
+      return outcome
     } apply: { [weak self] result in
       guard let self, !Task.isCancelled,
             self.pendingSummaryJobs.contains(where: { $0.id == job.id }) else { return }
@@ -118,7 +135,10 @@ extension MemoraModel {
         self.pauseBackgroundSummary(job, requiresUserRetry: true)
         return
       }
-      guard SummaryJobFingerprint.make(current) == job.inputFingerprint else {
+      guard SummaryJobFingerprint.make(current) == job.inputFingerprint,
+            (!usesCloud || RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI,
+              explicitCloudConsent: cloudDisclosureConfirmed)) else {
+        diagnostics.record(.contextChanged)
         self.pauseBackgroundSummary(job, requiresUserRetry: true)
         return
       }
@@ -155,6 +175,8 @@ extension MemoraModel {
         let extracted = self.extractedTasks(summary.actions, meetingID: id, meetingDate: current.createdAt)
         let candidateTasks = extracted + self.tasks
         let candidateJobs = self.pendingSummaryJobs.filter { $0.id != job.id }
+        diagnostics.record(.saveStarted)
+        self.updateMeetingTransiently(id) { $0.status = .organizing("結果を保存しています") }
         // Deliver the result and acknowledge the job in the same transaction.
         // A failed record write must never erase its only recoverable request.
         guard self.persistBatch({ [
@@ -162,6 +184,7 @@ extension MemoraModel {
           (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
           (key: StorageKey.pendingSummaryJobs, data: try RecordStore.encoded(candidateJobs))
         ] }) else {
+          diagnostics.record(.saveFailed)
           self.pauseBackgroundSummary(job, requiresUserRetry: true)
           return
         }
@@ -169,6 +192,8 @@ extension MemoraModel {
         self.meetings = candidateMeetings
         self.tasks = candidateTasks
         self.pendingSummaryJobs = candidateJobs
+        diagnostics.record(.saveCompleted)
+        diagnostics.record(.completed)
         delivered = true
         self.scheduleBackgroundSummary()
         let added = extracted.count
@@ -178,11 +203,13 @@ extension MemoraModel {
         self.offerPlusIfNeeded()
         self.announce(added > 0 ? "要約ができました。タスクを\(added)件追加しました。" : "要約ができました。")
       case .failure(.cancelled):
+        diagnostics.record(.cancelled)
         // Cancelled without a newer request taking over: leave the record able
         // to be generated again rather than stuck mid-process.
         self.pauseBackgroundSummary(job, requiresUserRetry: true)
         return
       case .failure(let failure):
+        diagnostics.failed(failure)
         if !self.summaryBackgroundScheduler.isForeground,
            [.connectionLost, .network, .timedOut, .engineNotReady, .assetsUnavailable].contains(failure) {
           self.pauseBackgroundSummary(job, requiresUserRetry: true)

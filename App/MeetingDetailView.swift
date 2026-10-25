@@ -500,9 +500,9 @@ struct MeetingDetailView: View {
       case .importing, .transcribing, .organizing:
         ProcessingOverview(meeting: meeting)
       case .failed(let message):
-        FailureOverview(message: message) {
+        FailureOverview(message: message, retry: {
           retryFailedStep(meeting)
-        }
+        }, showsSummaryDiagnostics: !meeting.transcript.isEmpty)
       case .partialFailure(let message):
         PartialFailureBanner(message: message) {
           retryFailedStep(meeting)

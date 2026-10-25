@@ -37,6 +37,9 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
       // The short UIKit grace period is only a fallback until the continued
       // processing task has actually been delivered by the scheduler.
       guard let self, let run = self.runs[jobID], run.identifier == identifier, run.task == nil else { return }
+      // A grace-period callback can arrive just after returning to the app.
+      // Losing a background lease is not a deadline on foreground inference.
+      guard !self.isForeground else { return }
       self.expire(jobID, identifier: identifier)
     }
     runs[jobID] = Run(identifier: identifier, activity: activity, expire: onExpiration)

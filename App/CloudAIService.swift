@@ -39,15 +39,9 @@ enum CloudAIService {
         [["role": "system", "content": system], ["role": "user", "content": user]]
       let request = try streamingRequest(system: system, messages: messages, llm: llm, key: key)
       let response = try await CloudTurnStreaming.response(for: request, provider: anthropicAPI ? .anthropic : .chatCompletions, onText: onText)
-      let text: String
-      if anthropicAPI {
-        guard response["stop_reason"] as? String != "refusal" else { throw AIAnswerFailure.refused }
-        text = (response["content"] as? [[String: Any]] ?? []).filter { $0["type"] as? String == "text" }.compactMap { $0["text"] as? String }.joined()
-      } else {
-        text = ((response["choices"] as? [[String: Any]])?.first?["message"] as? [String: Any])?["content"] as? String ?? ""
-      }
-      let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-      return trimmed.isEmpty ? .failure(.empty) : .answer(trimmed)
+      let part = try CloudSummaryResponse(response, provider: anthropicAPI ? .anthropic : .chatCompletions)
+      guard !part.wasCutOff else { throw AIAnswerFailure.executionLimit }
+      return .answer(part.text.trimmingCharacters(in: .whitespacesAndNewlines))
     } catch let reason as AIAnswerFailure { return .failure(reason) }
     catch is CancellationError { return .failure(.cancelled) }
     catch let error as URLError { return .failure(failure(for: error)) }
@@ -74,6 +68,7 @@ enum CloudAIService {
     } catch is CancellationError {
       return .failure(.cancelled)
     } catch let error as URLError {
+      SummaryDiagnostics.current?.record(.failed, code: error.errorCode)
       return .failure(failure(for: error))
     } catch {
       return .failure(.network)
@@ -96,6 +91,7 @@ enum CloudAIService {
     user: String,
     llm: LLMSelection,
     sessionConfiguration: URLSessionConfiguration = .ephemeral,
+    onActivity: (@MainActor () -> Void)? = nil,
     onProgress: @escaping @MainActor (Int) -> Void
   ) async -> AIAnswerResult {
     guard let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
@@ -117,7 +113,7 @@ enum CloudAIService {
         let request = try streamingRequest(system: system, messages: messages, llm: llm, key: key)
         let response = try await CloudTurnStreaming.response(for: request, provider: provider,
           onText: { text in onProgress(alreadyWritten + text.count) },
-          sessionConfiguration: sessionConfiguration, responseKind: .textCompletion)
+          sessionConfiguration: sessionConfiguration, onActivity: onActivity, responseKind: .textCompletion)
         try Task.checkCancellation()
         let part = try CloudSummaryResponse(response, provider: provider)
         answer += part.text
@@ -136,6 +132,7 @@ enum CloudAIService {
     } catch is CancellationError {
       return .failure(.cancelled)
     } catch let error as URLError {
+      SummaryDiagnostics.current?.record(.failed, code: error.errorCode)
       return .failure(failure(for: error))
     } catch {
       return .failure(.network)
@@ -208,12 +205,7 @@ enum CloudAIService {
 
     let (data, response) = try await URLSession.shared.data(for: request)
     try validate(response)
-    let decoded = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
-    if maximumOutputTokens != nil, decoded.choices.first?.finishReason == "length" { throw AIAnswerFailure.executionLimit }
-    let text = decoded.choices.first?.message.content?
-      .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    guard !text.isEmpty else { throw AIAnswerFailure.empty }
-    return text
+    return try completedText(data, provider: .chatCompletions)
   }
 
   private static func anthropic(system: String, user: String, model: String, key: String, maximumOutputTokens: Int? = nil) async throws -> String {
@@ -242,18 +234,14 @@ enum CloudAIService {
 
     let (data, response) = try await URLSession.shared.data(for: request)
     try validate(response)
-    let decoded = try JSONDecoder().decode(AnthropicResponse.self, from: data)
-    if maximumOutputTokens != nil, decoded.stopReason == "max_tokens" { throw AIAnswerFailure.executionLimit }
-    if decoded.stopReason == "refusal" { throw AIAnswerFailure.refused }
-    // Thinking blocks come first and carry no text; only text blocks are the
-    // answer.
-    let text = decoded.content
-      .filter { $0.type == "text" }
-      .compactMap(\.text)
-      .joined()
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !text.isEmpty else { throw AIAnswerFailure.empty }
-    return text
+    return try completedText(data, provider: .anthropic)
+  }
+
+  static func completedText(_ data: Data, provider: CloudStreamAccumulator.Provider) throws -> String {
+    guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AIAnswerFailure.server }
+    let result = try CloudSummaryResponse(object, provider: provider)
+    guard !result.wasCutOff else { throw AIAnswerFailure.executionLimit }
+    return result.text.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
   /// Turns the provider's status into the reason it failed, so a wrong key, a
@@ -272,32 +260,12 @@ enum CloudAIService {
       throw AIAnswerFailure.outOfCredits
     case 429:
       throw AIAnswerFailure.rateLimited
+    case 408, 504:
+      throw AIAnswerFailure.providerTimedOut
+    case 502, 503:
+      throw AIAnswerFailure.providerUnavailable
     default:
       throw AIAnswerFailure.server
     }
-  }
-}
-
-private struct ChatCompletionResponse: Decodable {
-  struct Choice: Decodable {
-    struct Message: Decodable { var content: String? }
-    var message: Message
-    var finishReason: String?
-    enum CodingKeys: String, CodingKey { case message; case finishReason = "finish_reason" }
-  }
-  var choices: [Choice]
-}
-
-private struct AnthropicResponse: Decodable {
-  struct Block: Decodable {
-    var type: String
-    var text: String?
-  }
-  var content: [Block]
-  var stopReason: String?
-
-  enum CodingKeys: String, CodingKey {
-    case content
-    case stopReason = "stop_reason"
   }
 }

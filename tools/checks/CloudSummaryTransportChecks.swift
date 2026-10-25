@@ -7,7 +7,7 @@ enum CloudSummaryTransportChecks {
   typealias Response = CloudSessionFixtureResponse
 
   static func run() async throws {
-    for provider in [LLMProvider.openAI, .anthropic] {
+    for provider in [LLMProvider.openAI, .anthropic, .deepSeek] {
       for streaming in [false, true] {
         let text = "## 確認事項\n承認前には公開しない。👨‍👩‍👧‍👦\n"
         Wire.state.reset(try [reply(provider, text: text, streaming: streaming)])
@@ -31,6 +31,11 @@ enum CloudSummaryTransportChecks {
         Wire.state.reset(try [reply(provider, text: "", streaming: streaming)])
         check(await complete(provider), .failure(.empty))
         Wire.state.assertConsumed(1)
+        for (finish, failure) in [("insufficient_system_resource", AIAnswerFailure.providerUnavailable), ("aborted", .providerInterrupted)] {
+          Wire.state.reset(try [reply(provider, text: "途中の文章", streaming: streaming, finish: finish)])
+          check(await complete(provider), .failure(failure))
+          Wire.state.assertConsumed(1)
+        }
       }
 
       // Even a finish_reason without its transport terminator is not complete.
@@ -41,7 +46,8 @@ enum CloudSummaryTransportChecks {
       try await cancellationChecks(provider)
 
       for (status, reason) in [(401, AIAnswerFailure.unauthorized), (403, .unauthorized),
-        (402, .outOfCredits), (429, .rateLimited), (500, .server)] {
+        (402, .outOfCredits), (429, .rateLimited), (500, .server), (408, .providerTimedOut),
+        (502, .providerUnavailable), (503, .providerUnavailable), (504, .providerTimedOut)] {
         Wire.state.reset([.init(data: Data(), status: status)])
         check(await complete(provider), .failure(reason))
         Wire.state.assertConsumed(1)
@@ -54,7 +60,23 @@ enum CloudSummaryTransportChecks {
       }
     }
     try await continuationChecks()
+    try completedJSONChecks()
     print("CloudSummaryTransportChecks: passed (production summary → URLSession → bounded SSE/JSON → terminal text validation; both APIs, EOF/refusal/tools/limits/cancel/HTTP failures, bounded continuations; no keys/network/paid API)")
+  }
+
+  static func completedJSONChecks() throws {
+    for provider in [LLMProvider.openAI, .anthropic] {
+      let format: CloudStreamAccumulator.Provider = provider.usesAnthropicAPI ? .anthropic : .chatCompletions
+      let valid = try Response.json(provider: provider, text: "検証用の回答")
+      let text = try CloudAIService.completedText(valid.data, provider: format)
+      precondition(text == "検証用の回答")
+      for (reason, expected) in [(provider.usesAnthropicAPI ? "max_tokens" : "length", AIAnswerFailure.executionLimit),
+        ("refusal", .refused), ("unknown", .server)] {
+        let invalid = try Response.json(provider: provider, finish: reason)
+        do { _ = try CloudAIService.completedText(invalid.data, provider: format); preconditionFailure("Invalid JSON completion accepted") }
+        catch let failure as AIAnswerFailure { precondition(failure == expected) }
+      }
+    }
   }
 
   static func complete(_ provider: LLMProvider, onProgress: @escaping @MainActor (Int) -> Void = { _ in }) async -> AIAnswerResult {
@@ -132,7 +154,7 @@ enum CloudSummaryTransportChecks {
       precondition(request.value(forHTTPHeaderField: "x-api-key") == "offline-fixture-key")
       precondition(body["system"] as? String == "架空の検査用")
     } else {
-      precondition(request.url?.path == "/v1/chat/completions")
+      precondition(request.url?.path == (provider == .deepSeek ? "/chat/completions" : "/v1/chat/completions"))
       precondition(request.value(forHTTPHeaderField: "Authorization") == "Bearer offline-fixture-key")
     }
   }

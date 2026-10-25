@@ -33,6 +33,11 @@ enum AIAnswerFailure: Error, Equatable {
   /// The provider did not answer in time. Long summaries take minutes, so this
   /// is told apart from having no connection at all.
   case timedOut
+  case providerTimedOut
+  case providerUnavailable
+  case providerInterrupted
+  case generationFailed
+  case onDeviceTimedOut
   /// The connection dropped mid-answer, usually because the app left the
   /// screen while a long answer was still being written.
   case connectionLost
@@ -87,7 +92,17 @@ enum AIAnswerFailure: Error, Equatable {
     case .server:
       "AIのサーバーがエラーを返しました。時間をおいてもう一度お試しください。"
     case .timedOut:
-      "AIの応答が時間内に返ってきませんでした。長い会議の要約は数分かかることがあります。もう一度お試しください。"
+      "AIとの通信が待機時間の上限に達しました。送信済みの場合は、プロバイダー側で処理・課金が続いている可能性があります。"
+    case .providerTimedOut:
+      "AIサービスまたは中継サーバーが時間切れを返しました（HTTP 408/504）。処理・課金が済んでいる可能性があるため、利用履歴を確認してから再試行してください。"
+    case .providerUnavailable:
+      "AIサービスまたは中継サーバーが一時的に利用できません（HTTP 502/503）。自動再送はしていません。"
+    case .providerInterrupted:
+      "AIサービスが生成を中断しました。完成した要約は受け取っていません。処理・課金が済んでいる可能性があるため、利用履歴を確認してから再試行してください。"
+    case .generationFailed:
+      "端末内AIの生成中にエラーが発生しました。原文と保存済みの要約は保持しています。原因を確認して再試行してください。"
+    case .onDeviceTimedOut:
+      "端末内AIが1回の生成時間の上限に達しました。通信のタイムアウトではありません。原文は保存されています。範囲を短くするか、別のAIを選んでください。"
     case .connectionLost:
       "AIとの通信が途中で切れました。要約が終わるまで、アプリを開いたままにしてお試しください。"
     case .contextChanged:

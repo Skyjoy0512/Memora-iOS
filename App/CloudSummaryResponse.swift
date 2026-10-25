@@ -30,6 +30,8 @@ struct CloudSummaryResponse {
       raw = message["content"] as? String ?? ""
     }
     if reason == "refusal" || reason == "content_filter" { throw AIAnswerFailure.refused }
+    if reason == "insufficient_system_resource" { throw AIAnswerFailure.providerUnavailable }
+    if reason == "aborted" { throw AIAnswerFailure.providerInterrupted }
     if ["pause_turn", "model_context_window_exceeded"].contains(reason ?? "") { throw AIAnswerFailure.executionLimit }
     guard let reason else { throw AIAnswerFailure.connectionLost }
     let accepted = provider == .anthropic ? ["end_turn", "stop_sequence", "max_tokens"] : ["stop", "length"]

@@ -17,6 +17,7 @@ enum MeetingSummarizer {
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
     guard !input.transcript.isEmpty else { return .failure(.empty) }
+    SummaryDiagnostics.current?.record(.analysis)
 
     switch AIEngineService.effectiveEngine(engine) {
     case .foundation, .automatic:
@@ -74,7 +75,8 @@ enum MeetingSummarizer {
             range: range,
             transcript: part.joined(separator: "\n")
           ),
-          llm: llm
+          llm: llm,
+          onActivity: { progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)）") }
         ) { count in
           progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)・\(count)文字）")
         }
@@ -88,15 +90,18 @@ enum MeetingSummarizer {
     }
 
     guard !Task.isCancelled else { return .failure(.cancelled) }
+    SummaryDiagnostics.current?.record(.generation)
     let reply = await CloudAIService.completeStreaming(
       system: SummaryPrompt.system,
       user: request,
-      llm: llm
+      llm: llm,
+      onActivity: { progress("要約を作成しています") }
     ) { count in
       progress("AIが書いています（\(count)文字）")
     }
     switch reply {
     case .answer(let reply):
+      SummaryDiagnostics.current?.record(.parseStarted)
       let choices = input.automaticCandidates.isEmpty ? [input.template] : input.automaticCandidates
       let actionFree = choices.compactMap { choice -> String? in
         if case .market(let template) = choice, !template.includesActions { return choice.id }
@@ -104,6 +109,7 @@ enum MeetingSummarizer {
       }
       let summary = SummaryResponseParser.validateTemplate(SummaryResponseParser.parse(reply),
         allowedIDs: Set(choices.map(\.id)), actionFreeIDs: Set(actionFree))
+      SummaryDiagnostics.current?.record(.parseCompleted)
       return summary.markdown.isEmpty ? .failure(.empty) : .success(summary)
     case .failure(let failure):
       return .failure(failure)

@@ -19,6 +19,9 @@ struct PendingSummaryJob: Codable, Identifiable, Sendable {
   /// reuse a one-time disclosure against possibly changed record contents.
   var inputFingerprint: String? = nil
   var requiresUserRetry: Bool? = nil
+  /// Written before inference. A terminated process must never replay a request
+  /// that the provider may already have billed, even if no token arrived.
+  var attemptStartedAt: Date? = nil
 
   var engine: AIEngine {
     AIEngine(rawValue: engineRawValue) ?? .automatic

@@ -6,16 +6,23 @@ import FoundationModels
 @available(iOS 26.0, *)
 enum FoundationModelFailure {
   static func reason(for error: Error) -> AIAnswerFailure {
+    SummaryDiagnostics.current?.record(.onDeviceError, code: (error as NSError).code)
     if error is CancellationError { return .cancelled }
     // The error type differs before and after iOS 27.
     if #available(iOS 27.0, *) {
       if let modelError = error as? LanguageModelError {
         return reason(for: modelError)
       }
+      if let modelError = error as? SystemLanguageModel.Error {
+        switch modelError {
+        case .assetsUnavailable: return .assetsUnavailable
+        @unknown default: return .generationFailed
+        }
+      }
     } else if let generationError = error as? LanguageModelSession.GenerationError {
       return reason(for: generationError)
     }
-    return .engineNotReady
+    return .generationFailed
   }
 
   @available(iOS 27.0, *)
@@ -25,7 +32,8 @@ enum FoundationModelFailure {
     case .rateLimited: .rateLimited
     case .unsupportedLanguageOrLocale: .unsupportedLanguage
     case .guardrailViolation, .refusal: .guardrail
-    default: .engineNotReady
+    case .timeout: .onDeviceTimedOut
+    default: .generationFailed
     }
   }
 
@@ -36,7 +44,7 @@ enum FoundationModelFailure {
     case .unsupportedLanguageOrLocale: .unsupportedLanguage
     case .guardrailViolation, .refusal: .guardrail
     case .assetsUnavailable: .assetsUnavailable
-    default: .engineNotReady
+    default: .generationFailed
     }
   }
 }

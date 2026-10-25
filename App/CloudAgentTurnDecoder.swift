@@ -8,6 +8,8 @@ enum CloudAgentTurnDecoder {
     guard response["error"] == nil, let content = response["content"] as? [[String: Any]] else {
       throw AIAnswerFailure.server
     }
+    guard content.allSatisfy({ ["text", "thinking", "redacted_thinking", "tool_use"].contains($0["type"] as? String ?? "") }),
+          content.filter({ $0["type"] as? String == "text" }).allSatisfy({ $0["text"] is String }) else { throw AIAnswerFailure.server }
     let rawCalls = content.filter { $0["type"] as? String == "tool_use" }
     guard rawCalls.count <= 24 else { throw AIAnswerFailure.executionLimit }
     var identifiers: Set<String> = []
@@ -21,6 +23,7 @@ enum CloudAgentTurnDecoder {
     }
     let text = content.filter { $0["type"] as? String == "text" }
       .compactMap { $0["text"] as? String }.joined().trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty || !calls.isEmpty else { throw AIAnswerFailure.empty }
     let reasoning = content.filter { $0["type"] as? String == "thinking" }
       .compactMap { $0["thinking"] as? String }.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     return AgentTurn(text: text, toolCalls: calls, reasoning: reasoning)
@@ -28,10 +31,14 @@ enum CloudAgentTurnDecoder {
 
   static func chatCompletions(_ response: [String: Any]) throws -> AgentTurn {
     guard response["error"] == nil, let choices = response["choices"] as? [[String: Any]],
+          choices.count == 1,
           let choice = choices.first, let message = choice["message"] as? [String: Any] else {
       throw AIAnswerFailure.server
     }
     try validateFinish(choice["finish_reason"] as? String, allowed: ["stop", "tool_calls"])
+    if let refusal = message["refusal"] as? String, !refusal.isEmpty { throw AIAnswerFailure.refused }
+    guard message["role"] == nil || message["role"] as? String == "assistant" else { throw AIAnswerFailure.server }
+    if let content = message["content"], !(content is NSNull), !(content is String) { throw AIAnswerFailure.server }
     var rawCalls: [[String: Any]] = []
     if let value = message["tool_calls"], !(value is NSNull) {
       guard let calls = value as? [[String: Any]] else { throw AIAnswerFailure.server }
@@ -54,6 +61,7 @@ enum CloudAgentTurnDecoder {
     guard (choice["finish_reason"] as? String == "tool_calls") == !calls.isEmpty,
           (message["function_call"] == nil || message["function_call"] is NSNull) else { throw AIAnswerFailure.server }
     let text = (message["content"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty || !calls.isEmpty else { throw AIAnswerFailure.empty }
     let reasoning = ((message["reasoning_content"] ?? message["reasoning"]) as? String ?? "")
       .trimmingCharacters(in: .whitespacesAndNewlines)
     return AgentTurn(text: text, toolCalls: calls, reasoning: reasoning)
@@ -61,6 +69,8 @@ enum CloudAgentTurnDecoder {
 
   private static func validateFinish(_ reason: String?, allowed: Set<String>) throws {
     if reason == "refusal" || reason == "content_filter" { throw AIAnswerFailure.refused }
+    if reason == "insufficient_system_resource" { throw AIAnswerFailure.providerUnavailable }
+    if reason == "aborted" { throw AIAnswerFailure.providerInterrupted }
     if reason == "length" || reason == "max_tokens" || reason == "model_context_window_exceeded" || reason == "pause_turn" {
       throw AIAnswerFailure.executionLimit
     }

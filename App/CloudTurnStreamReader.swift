@@ -9,18 +9,31 @@ enum CloudTurnStreamReader {
     provider: CloudStreamAccumulator.Provider,
     responseKind: CloudStreamAccumulator.ResponseKind = .agentTurn,
     now: () -> ContinuousClock.Instant = { .now },
+    onActivity: (@MainActor () -> Void)? = nil,
     onText: @MainActor (String) -> Void
   ) async throws -> [String: Any] where Bytes.Element == UInt8 {
     try Task.checkCancellation()
     var accumulator = CloudStreamAccumulator(provider: provider, responseKind: responseKind)
     var events = CloudSSEEventDecoder()
+    if responseKind == .textCompletion { events.maximumBytes = CloudStreamAccumulator.maximumSummaryWireBytes }
+    defer { SummaryDiagnostics.current?.record(.wireBytes, code: events.receivedBytes) }
     var lastPublication = now()
     var published = ""
+    var receivedOutputEvents = 0
+    var lastActivity: ContinuousClock.Instant?
     for try await byte in bytes {
       try Task.checkCancellation()
       if let payload = try events.consume(byte) {
         try accumulator.consume(payload)
         let instant = now()
+        if accumulator.outputEvents > receivedOutputEvents {
+          SummaryDiagnostics.current?.outputReceived()
+          if lastActivity == nil || lastActivity!.duration(to: instant) >= .seconds(1) {
+            onActivity?()
+            lastActivity = instant
+          }
+        }
+        receivedOutputEvents = accumulator.outputEvents
         if accumulator.text != published, published.isEmpty || lastPublication.duration(to: instant) >= .milliseconds(100) || accumulator.isFinished {
           published = accumulator.text
           lastPublication = instant
@@ -32,6 +45,7 @@ enum CloudTurnStreamReader {
     if !accumulator.isFinished, let payload = try events.finish() { try accumulator.consume(payload) }
     try Task.checkCancellation()
     let result = try accumulator.response()
+    SummaryDiagnostics.current?.responseCompleted()
     if accumulator.text != published { onText(accumulator.text) }
     return result
   }

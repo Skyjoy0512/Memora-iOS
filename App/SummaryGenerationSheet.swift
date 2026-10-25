@@ -68,6 +68,8 @@ struct SummaryGenerationSheet: View {
                 .font(.subheadline)
               Text("顧客・利用者・未成年者などの情報が含まれる場合は、録音・外部送信の同意と所属先の方針を確認してください。声の特徴量は送信しません。")
                 .font(.footnote).foregroundStyle(.secondary)
+              Text("前回の生成が途中で止まった場合も、AIサービス側では処理・課金が済んでいる可能性があります。再試行は新しいリクエストとなり、追加の利用料金が発生する場合があります。")
+                .font(.footnote).foregroundStyle(.secondary)
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)

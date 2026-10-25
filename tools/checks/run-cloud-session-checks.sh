@@ -6,7 +6,7 @@ trap 'rm -rf "$check_dir"' EXIT
 # All URLSession instances use a fail-closed URLProtocol. Keychain, Gmail and
 # credit display are isolated fixtures; no provider or token endpoint is reached.
 swiftc -enable-bare-slash-regex -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENANCE_CHECKS -D CLOUD_SESSION_CHECKS \
-  App/CloudAgentSession.swift App/CloudAIService.swift App/CloudSummaryResponse.swift App/CloudTurnStreaming.swift App/CloudTurnStreamReader.swift \
+  App/SummaryDiagnostics.swift App/CloudAgentSession.swift App/CloudAIService.swift App/CloudSummaryResponse.swift App/CloudTurnStreaming.swift App/CloudTurnStreamReader.swift \
   App/CloudSSEEventDecoder.swift App/CloudStreamAccumulator.swift App/CloudAgentTurnDecoder.swift App/CloudTokenUsage.swift \
   App/AgentRunBudget.swift App/AgentSessionBudget.swift App/AgentOutputBudget.swift App/AgentGenerationPolicy.swift \
   App/LLMProvider.swift App/LLMSelection.swift App/LLMModelOption.swift App/AIAnswerPrompt.swift App/ReadabilityGuide.swift \
@@ -30,5 +30,5 @@ swiftc -enable-bare-slash-regex -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENAN
   App/ArtifactSourceTarget.swift App/ArtifactSourceRow.swift App/MemoraModel+ArtifactProvenance.swift App/MemoraModel+Documents.swift \
   App/MemoraModel+MailDrafts.swift App/MemoraModel+MailDraftTool.swift \
   tools/checks/CloudSessionFixtureProtocol.swift tools/checks/CloudSessionFixtureResponse.swift tools/checks/CloudSessionFixtureServices.swift \
-  tools/checks/CloudSummaryTransportChecks.swift tools/checks/CloudSessionChecks.swift -o "$check_dir/session"
+  tools/checks/SlowSummaryHTTPChecks.swift tools/checks/CloudSummaryTransportChecks.swift tools/checks/CloudSessionChecks.swift -o "$check_dir/session"
 "$check_dir/session"

@@ -4,7 +4,7 @@ import Foundation
 // The runner compiles the actual HTTP status mapper, prompt, providers and tools.
 enum KeychainStore {
   static func string(forKey key: String) -> String? {
-    ["ai.openAI", "ai.anthropic"].contains(key) ? "offline-fixture-key" : nil
+    ["ai.openAI", "ai.anthropic", "ai.deepSeek"].contains(key) ? "offline-fixture-key" : nil
   }
   static func has(_ key: String) -> Bool { string(forKey: key) != nil }
 }

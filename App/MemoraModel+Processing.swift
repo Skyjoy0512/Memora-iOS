@@ -6,6 +6,13 @@ extension MemoraModel {
   func recoverInterruptedJobs() {
     let ids = Set(processing.activeIDStrings.compactMap(UUID.init(uuidString:)))
     guard !ids.isEmpty else { return }
+    // Older builds did not persist an attempt marker before sending. Treat
+    // their interrupted requests conservatively rather than replaying them.
+    var jobs = pendingSummaryJobs
+    for index in jobs.indices where ids.contains(jobs[index].meetingID) {
+      jobs[index].requiresUserRetry = true
+    }
+    if persistNow(jobs, forKey: StorageKey.pendingSummaryJobs) { pendingSummaryJobs = jobs }
     processing.restoreInterrupted([])
     persistInterruptedJobs()
 

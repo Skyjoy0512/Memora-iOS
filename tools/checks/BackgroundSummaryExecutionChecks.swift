@@ -43,6 +43,9 @@ enum BackgroundSummaryExecutionChecks {
     let success = try model()
     let request = await start(success)
     let startedJob = success.pendingSummaryJobs[0]
+    let inFlight = try read(success, MemoraModel.StorageKey.pendingSummaryJobs, as: [PendingSummaryJob].self)
+    precondition(inFlight[0].attemptStartedAt != nil && inFlight[0].requiresUserRetry == true,
+      "Process termination could automatically resend a billed request")
     precondition(success.scheduler.starts == [startedJob.id])
     precondition(success.scheduler.continuedRequests == [true])
     request.progress("実際の出力を受信")
@@ -139,10 +142,17 @@ enum BackgroundSummaryExecutionChecks {
     // Single-flight queue uses the persisted job ID, never enqueues a duplicate.
     let queued = try model()
     let original = await start(queued)
-    let queueJob = queued.pendingSummaryJobs[0]
-    queued.pauseBackgroundSummary(queueJob, requiresUserRetry: false)
+    let attemptedJob = queued.pendingSummaryJobs[0]
+    queued.pauseBackgroundSummary(attemptedJob, requiresUserRetry: false)
     original.complete.resume(returning: .failure(.cancelled))
     await Task.yield()
+    _ = await queued.runPendingBackgroundSummaries()
+    precondition(MeetingSummarizer.requests.isEmpty && queued.pendingSummaryJobs[0].requiresUserRetry == true)
+    let queueJob = PendingSummaryJob(meetingID: queued.meetings[0].id, choice: .standard,
+      engineRawValue: AIEngine.cloud.rawValue, llm: queued.settingsAIConfiguration.llm,
+      automaticallySelect: false, preferences: SummaryPreferences(), cloudDisclosureConfirmed: true,
+      usesCloud: true, inputFingerprint: SummaryJobFingerprint.make(queued.meetings[0]))
+    precondition(queued.enqueueBackgroundSummary(queueJob))
     let run = Task { await queued.runPendingBackgroundSummaries() }
     while MeetingSummarizer.requests.isEmpty { await Task.yield() }
     precondition(queued.pendingSummaryJobs.count == 1 && queued.pendingSummaryJobs[0].id == queueJob.id)
@@ -159,6 +169,10 @@ enum BackgroundSummaryExecutionChecks {
       let pending = await start(stale)
       let job = stale.pendingSummaryJobs[0]
       stale.pauseBackgroundSummary(job, requiresUserRetry: false)
+      var unstarted = job
+      unstarted.attemptStartedAt = nil
+      unstarted.requiresUserRetry = nil
+      precondition(stale.enqueueBackgroundSummary(unstarted))
       if legacy { stale.pendingSummaryJobs[0].inputFingerprint = nil }
       else { stale.meetings[0].transcript[0].text = "新しい内容" }
       pending.complete.resume(returning: .failure(.cancelled))

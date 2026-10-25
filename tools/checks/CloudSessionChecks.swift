@@ -7,6 +7,9 @@ struct CloudSessionChecks {
 
   @MainActor static func main() async throws {
     try await CloudSummaryTransportChecks.run()
+    if ProcessInfo.processInfo.environment["MEMORA_REALTIME_SUMMARY_CHECKS"] == "1" {
+      try await SlowSummaryHTTPChecks.run()
+    }
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("memora-cloud-fixture-" + UUID().uuidString, isDirectory: true)
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: root) }
@@ -287,7 +290,7 @@ struct CloudSessionChecks {
 
   @MainActor static func httpFailures() async throws {
     for (status, reason) in [(401, AIAnswerFailure.unauthorized), (402, .outOfCredits), (403, .unauthorized),
-      (404, .modelUnavailable), (429, .rateLimited), (503, .server)] {
+      (404, .modelUnavailable), (429, .rateLimited), (503, .providerUnavailable)] {
       var response = try Response.json(provider: .openAI)
       response.status = status
       Wire.state.reset([response])
