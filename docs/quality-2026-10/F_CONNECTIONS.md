@@ -12,7 +12,7 @@
 | Widget App Groups | 一部実装 | `MemoraWidgetSnapshotStore` は `MemoraWidgetAppGroup` が必要。実container共有は未確認。ライブ録音機能の既存動作を削除しない |
 | Gmail | 実装済み・実機未検証 | PKCE/read-only OAuth、refreshのKeychain保持、権限・承認・失効のfixtureあり。現在のProject.jsonにはGoogle client IDなし。実Googleログインは未検証 |
 | Notion | 実装済み・実機未検証 | 利用者token/parent pageによる保存・分割・部分失敗回復。fixtureでHTTP/権限競合を検査。実workspaceへの作成は未実施 |
-| MCP OAuth | 実装済み・実機未検証 | PKCE/token更新・権限失効のfixtureあり。任意endpointのDNS rebinding対策には [B](B_CODE_REVIEW.md) の残課題あり。本番安全性確認済みとはしない |
+| MCP OAuth | 実装済み・実機未検証 | PKCE/token更新・権限失効、IP固定POST/TLS、MCP sessionと切断競合のfixtureあり。クライアントのDNS再解決経路は修正。ブラウザー/実サービス/実機、HTTP互換性と本番運用保証は [G](G_MCP_STORAGE_FOLLOWUP.md) の未検証事項として残る |
 | Google Drive / GitHub連携 | 未実装 | 設定/選択肢だけでサービス接続を実装していない。MCPに同名ツールを登録したことをネイティブ連携完成としない |
 | 会社Officeテンプレート | 一部実装 | ローカル解析・OOXML保持/置換のPoC、XML/ZIP・原本非変更・SQLite検証あり。Officeでの組版/ページ送り/実テンプレート再現性は未検証 |
 

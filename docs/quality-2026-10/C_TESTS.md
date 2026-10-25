@@ -1,5 +1,26 @@
 # 検証記録（2026-10-25）
 
+## MCP/保存/診断の追加検証
+
+`ed2969d` / `acef618` の後続検査は全6suite Pass:
+`/Volumes/WorkspaceSSD/Development/Agents/Codex/tmp/memora-quality/memora-quality-ns8tghh9/summary.json`
+コピー [host-summary-mcp-followup.json](host-summary-mcp-followup.json)。MCP POSTの本番actor/HTTP parser/OAuth actorを新たに含む。DNS/HTTP転送/SDK記号/Keychainはfixtureで、実サービス成功を意味しない。
+
+`6a167fb` の診断保持の最終変更は `run-summary-reliability-checks.sh` を再実行してPass。608イベント後も開始・最終token・保存失敗・終了理由を256件以内に保持し、省略352件を確認。仮想30/60/120/180秒、初回60秒、DeepSeek 9,000推論deltaの回帰もPass。今回、前回の実時計191秒通信試験やUI E2Eを再実行したとはしない。
+
+| 追加検証 | 結果 | 境界 |
+| --- | --- | --- |
+| `run-mcp-pinned-http-checks.sh` | Pass | Swift 6、本番transport/OAuth、IP束縛、HTTP分割/上限、SSE/JSON/ID、early session、切断/late callback、refresh CAS。転送はfixture |
+| `run-mcp-agent-checks.sh` | Pass | 63競合、承認/コスト/権限/registry/SQLite境界。実SDK通信はfixture |
+| `run-project-source-storage-checks.sh` | Pass | `/private/var`を含む保存先、24競合、原文/SQLite rollback/reopen |
+| `run-project-source-import-checks.sh` | Pass | 32競合、file転送/原本保持/SQLite |
+| `run-project-source-web-recovery-checks.sh` とfull suite内Web取得 | Pass | 28競合、GET/TLS trust/hostname不一致、bounded HTTP、原本保持。ネットワーク未実行 |
+| `ProjectSourceFilesChecks`（optimizationにも含む） | Pass | 既存親/新規leafの正規化、外向きsymlink/不正パス拒否、選択的削除 |
+| Debug `bitrig preview -platform iOS` | Pass、preview更新 | `logs/2026-10-25T19-20-50-b3b5d88a.log` |
+| Release `bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release` | Pass | `logs/2026-10-25T19-19-21-7ae3bb26.log`、最終生成19:22:30。preview中の待機後に再開 |
+
+Debug/Releaseは引き続き既存11 warning。詳細、初期の保存failureによる中断、テスト準備/compile失敗と再検証、HTTP互換性/実機のNot Runは [G](G_MCP_STORAGE_FOLLOWUP.md)。GitHubは再照会しても既存main `23230af`/run `40149268122` のFailのまま。手動push/dispatchは実施していない。
+
 ## 環境とデータ境界
 
 - iOS 26 deployment target、Xcode iOS 27.1 SDK。UI E2Eは専用iPhone 18 Pro Max / iOS 27.0 CoreSimulator、実機ではない。

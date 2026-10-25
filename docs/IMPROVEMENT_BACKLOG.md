@@ -6,7 +6,8 @@
 - 終了理由検証、診断timeline、推論前の永続attempt marker、中断後の確認付き再試行を追加。古い内容・権限・workspace世代での確定を拒否。
 - 日本語の確定文字/選択/Markdown書式、図解の数値・単位・符号・日時・条件/否定、@記録にskill/toolを追加したときの参照範囲を保護。yomiyasuは2.4.0へ更新。
 - 全6ホストsuite、長時間mock通信、関連E2E10case、Debug/Releaseを検証。失敗後の修正と再検証も記録。既存Liquid Glass/データ形式/Bundle IDは維持。
-- 実際の約50秒事象との診断照合、実DeepSeek/実機IME/OS期限、MCP DNS再解決対策、検索precisionと実機性能は未完了。有料API・本番変更なし。
+- 追加修正：MCP/OAuthのDNS再解決を検査済みIP/TLS固定へ置換しsession/切断競合を検査。保存パスの親を先に正規化し、長い要約診断でも終了理由を保持。[追加検証](quality-2026-10/G_MCP_STORAGE_FOLLOWUP.md)。
+- 実際の約50秒事象との診断照合、実DeepSeek/実機IME/OS期限、MCP/OAuth実サービス互換性、検索precisionと実機性能は未完了。有料API・本番変更なし。
 - 詳細・Pass/Fail/Not Run・比較画像・接続状態は [品質改善レポート](quality-2026-10/README.md)。総合プロジェクトの完了報告ではない。
 
 ## 2026-10-25: BYOK要約の通信・終端検証

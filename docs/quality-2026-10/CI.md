@@ -9,3 +9,5 @@ Status: workflow fix implemented; remote re-run **Not Run** (not pushed/dispatch
 - `xcode-27` is intentional, not a guessed invalid label: [GitHub runner announcement](https://github.blog/changelog/2026-10-15-xcode-27-runner-image-generally-available/).
 
 Local verification: `python3 -B tools/checks/test_quality_runner.py` (runner unit tests); final full-suite results are recorded in `C_TESTS.md`. A local pass is not proof of remote CI success. Bitrig publishes commits; no separate `git push` or billable hosted-run dispatch was performed.
+
+Follow-up re-check after resuming work: fetched GitHub main again and queried the latest three runs. Main remains `23230af5e0356a1a5f7d8d4e72ed22b5d937d704`; latest run remains `40149268122` / completed / failure. No new remote result was available. The newly added `run-mcp-pinned-http-checks.sh` is included in the existing next-generation suite, not a skipped/optional gate. All six local suites passed in `memora-quality-ns8tghh9`; the final bounded-diagnostic change was separately revalidated. This does not mark the unexecuted remote CI fix as verified.

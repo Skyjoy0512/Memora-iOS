@@ -19,6 +19,10 @@ P0の実際の50秒事象は [A](A_SUMMARY_TIMEOUT.md) のとおり診断照合�
 | P0 | CIがjob envで無効なrunner contextを使用 | [CI](CI.md)：step envへ移動 | ローカルrunner単体検査。remote結果は別 |
 | P1 | @記録にスキル/ツール/Notionを追加すると記録参照範囲が解除 | `AIPluginExecutionPolicy+Selection`, `AIPluginExecutionPolicy`, `MemoraModel+Agent`, `MemoraModel+AgentTools`, `MemoraModel+AutomaticRecordTools`：ツール許可とデータ許可を分離。記録限定時は全体の履歴・メモリを追加しない | 両エンジンのfactoryと本番readerを検査。選択外記録・タスク拒否 |
 | P1 | 検索不一致でも直近200chunkを無条件取得 | `ProjectSearchIndex`, `ProjectContextBuilder`：文脈を引き継ぐ質問にだけfallback | 実FTS5、別project/削除/権限失効fixture。検索品質全体が完成したわけではない |
+| P1 セキュリティ | MCP/OAuthのDNS検査後、URLSessionが接続先を再解決 | `MCPPinnedHTTP`, `WebSourceRequest`, `PinnedHTTPSConnection`：検査したnumeric IPへ接続、元hostのTLS検証。redirect/自動再送なし | 本番parser/transport/OAuth actorをoffline wire fixtureで検査。実サーバー・実機・ブラウザーは未検証。詳細 [G](G_MCP_STORAGE_FOLLOWUP.md) |
+| P1 通信 | MCP返信の受け渡し後にsession IDを保存すると、SDKの次の通知に間に合わない | `MCPHTTPResponseState`：返信をyieldする前にsessionを同期的に公開、切断/キャンセル後のcallbackを失効 | 初回sendの復帰を保留したまま、次のnotificationがsession付きで送られるrace fixture |
+| P1 保存 | 既存親フォルダと新規子ファイルでFoundationの`/private/var`正規化結果が異なり、正しい新規保存を拒否 | `ProjectSourceFiles.resolve`：既存親を先に正規化してから子パスを組み立てる。逸脱/子symlinkの拒否は維持 | 修正前full runnerでinvalidFileを再現、修正後は同じprivate/var環境の保存/SQLite/競合と別名親/新規leafのfixtureがPass |
+| P2 診断 | 256イベント以降の保存/終了理由が診断画面から消える | `SummaryDiagnostics`：開始+末尾255件を保持し省略数を表示 | 608イベントでも最後の保存失敗・終了理由、モデル識別子の秘匿を維持 |
 | P2 | 読みやすさ指針の上流更新 | `ReadabilityGuide`, `THIRD_PARTY`：yomiyasu 2.4.0に追従。担当/通知先の創作禁止、文脈限定の用語整理、スライド限定の読点 | 指示組み込み検査。実モデル文章のA/B評価未実施 |
 
 ## 維持した保護
@@ -34,12 +38,11 @@ P0の実際の50秒事象は [A](A_SUMMARY_TIMEOUT.md) のとおり診断照合�
 | 優先度 | 残課題 | 根拠と必要な次の検証 |
 | --- | --- | --- |
 | P0 | 実際のDeepSeek50秒失敗の確定 | 新診断のjob ID/終了理由との照合。有料APIを無断実行していないため、実経路での再検証は残る |
-| P1 セキュリティ | MCP/OAuthのDNS検査と接続の間に再解決がある | `MCPBoundedHTTPTransport.send` / `MCPOAuthClient.request` は検査後URLSessionで接続。redirect拒否とIP範囲検査だけではDNS rebinding防止を証明できない。既存Web取得用のnumeric IP+TLS SNI固定経路を安全に再利用できるか実装/通信fixtureを設計する。制限緩和で回避しない |
+| P1 外部互換性 | IP固定MCP/OAuthの実サーバー検証 | クライアントの再解決経路は修正。現在はHTTP/1.1・identity encoding・単一の検査済みIPを使用。H2専用/圧縮専用・不足した証明書中間CAのオンライン取得・複数IPの自動failoverは未対応。実サービスE2Eと任意サーバーの運用保証は別途必要 |
 | P1 配布 | 任意MCPサーバーの本番管理 | DNS rebinding自体はクライアントIP pinningで防げる設計だが、接続先審査・認可・監査・料金/上限をMemoraが一元保証する運用には、信頼されたバックエンドによる登録/制御を推奨する（設計判断）。個人BYOKの直接接続と管理サービスの保証を区別する。現状を本番安全性確認済みとは評価しない |
 | P1 保存/性能 | 1件更新も配列文書全体をencode | `RecordStore.save` は直列queue上でencode/writeし、順序を保護するが全量負荷は残る。単一record保存へ移行するには実データ相当の計測、二重読み込み/移行マーカー/ロールバックを別途設計。今回データ形式を変えない |
 | P1 検索 | fixtureの送信根拠の適合率が十分ではない | 11問のhit@1/Recall@3は良好でもunrelated-sent=0.500。現fixtureでこれを隠さず、否定例・曖昧語・複数根拠を増やしPrecisionも改善する必要あり |
 | P1 図解 | 語の一致は意味全体の証明ではない | 誰に対応する数値か、未知の表現の否定/条件/因果は完全には判定できない。不確実な場合は生成を拒否し元要約へ戻す。数値正当性やモデル解釈の完全保証はしない |
 | P1 実行環境 | 実機IME、OS中断、録音負荷、空き容量/保護状態の実OS、外部サービス | fixtureの成功と実環境の成功を区別する。コードとSQLite失敗は検査したが、デバイス/アカウントが必要な検査は未実施 |
-| P2 診断 | 256イベントを超える分割ジョブの画面表示 | OSLogには最後まで記録するが、現在の画面内保持は先頭256件。終了イベントを優先するring buffer等は後続の改善候補 |
 
 外部費用や不可逆操作は実施していない。機能の削除、テストassertionの削除/skip、正常なセキュリティ制限の緩和は行っていない。
