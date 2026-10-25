@@ -29,6 +29,12 @@ struct SummaryPromptChecks {
     precondition(SummaryPrompt.system.contains(ReadabilityGuide.summaryRules))
     precondition(ReadabilityGuide.summaryRules.contains("2スペース字下げ"))
     precondition(ReadabilityGuide.summaryRules.contains("推測を因果に変えない"))
+    precondition(ReadabilityGuide.yomiyasuVersion == "2.4.0")
+    precondition(ReadabilityGuide.yomiyasuRevision == "ae258d7a57b335673e30b88a018ae08d4f72c449")
+    precondition(ReadabilityGuide.rules.contains("主語や通知先・依頼先として足さない"))
+    precondition(ReadabilityGuide.compactRules.contains("主語・通知先・依頼先に足さない"))
+    precondition(ReadabilityGuide.rules.contains("一覧の頭→先頭"))
+    precondition(ReadabilityGuide.rules.contains("通常の文章にはこの省略を適用せず"))
     var overview = minutes
     overview.template = .builtIn(.detailedOverview)
     precondition(SummaryPrompt.format(for: overview.template, input: overview).contains("影響が大きい順"))

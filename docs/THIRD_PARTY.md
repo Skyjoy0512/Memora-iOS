@@ -27,7 +27,7 @@
 | --- | --- | --- |
 | [MCP Swift SDK 0.12.1](https://github.com/modelcontextprotocol/swift-sdk/tree/0.12.1) | リモートMCPのクライアント。ライセンス全文をアプリ内リソースに同梱 | MIT |
 | [LucideSwift 0.9.11](https://github.com/ajaxjiang96/lucide-swift/tree/0.9.11) | アプリ・ウィジェットの共通アイコン。対応表は `docs/LUCIDE_ICONS.md`。ライセンス全文はアプリ内リソースに同梱 | ISC |
-| [yomiyasu v2.3.0](https://github.com/nanaism/yomiyasu/tree/v2.3.0)（nanaism） | 日本語を読みやすくする規則を要約・Ask AI・エージェントの指示文に取り入れた（`App/ReadabilityGuide.swift`） | MIT |
+| [yomiyasu v2.4.0](https://github.com/nanaism/yomiyasu/tree/v2.4.0)（nanaism） | 日本語を読みやすくする規則を要約・Ask AI・エージェントの指示文に取り入れた（`App/ReadabilityGuide.swift`） | MIT |
 | [日本語の技術文書の書き方](https://gist.github.com/k16shikano/fd287c3133457c4fd8f5601d34aa817d)（k16shikano） | 段落・推量・用語の規則を同じく取り入れた | Unlicense |
 | [OpenDots](https://github.com/CopilotKit/OpenDots)（CopilotKit） | 常駐エージェント（名前・役割・指示・権限・定期的な見回り・作業記録）の設計を参考にした。コードはTypeScriptのため移植していない | MIT |
 | [OpenMuse](https://github.com/CopilotKit/openmuse)（CopilotKit） | 目標の定期チェックと見える作業記録の考え方を参考にした | MIT |
@@ -72,3 +72,16 @@ Memoraの指示へ適応した。会議では提案/合意/条件付き合意/�
 原文のない担当・期限・根拠を補完しない。テンプレート、スキーマ、引用の原文は保つ。
 同梱MIT全文は上流と同じ。Pythonのlint/diff/check、hooksやCLIの性能改善は移植しておらず、
 スキル全体がiOS上で動くとは扱わない。追加LLM呼び出しはなく、保存済み要約の自動再生成もしない。
+
+## yomiyasu 2.4.0への指針更新（2026-10-25）
+
+[最新リリース](https://github.com/nanaism/yomiyasu/releases/tag/v2.4.0)を確認。
+annotated tag `d45383e66e09c6c179ab593a31c2624e8fbb81fb` の実コミット
+`ae258d7a57b335673e30b88a018ae08d4f72c449` を固定した。mainのその後の変更はREADME整理のみ。
+取り込み対象は、不自然な短い直訳語を文脈に合った呼び名にする規則、資料・依頼にない
+主語／担当／通知先／依頼先を補わない照合、スライドの短い見出し・箇条書きだけの読点整理。
+引用、条件、否定、専門用語、通常の本文、テンプレート・スキーマ・ページ順を保護する。
+これらは既存の共通指示へ適応したもので、生成後に本文を機械的に書き換えるものではない。
+上流のPython lint/diff/checkやインストール手順・フックは導入しない。追加API呼び出しなし。
+同梱MITライセンスは上流と同一（SHA256 `79d802f15bc8caf67f1a83c1bdbe214ccb41a0a0275f9046b329b89c65ee1fca`）。
+指示の組み込みはホストテストで検証。実モデルでの文章品質・意味保持のA/B評価は未実施。
