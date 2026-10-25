@@ -7,6 +7,24 @@ export async function tapControl(screenOrLocator: any, locator: any = screenOrLo
   await locator.tap();
 }
 
+export async function openSummaryImageMenu(screen: any) {
+  const image = screen.getByTestId('summary.poster.inline');
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const box = await image.boundingBox();
+    if (box && box.y + box.height / 2 >= 150 && box.y + box.height / 2 <= 650) break;
+    const downward = !box || box.y + box.height / 2 > 650;
+    await screen.swipe({ from: { x: 215, y: downward ? 650 : 300 }, to: { x: 215, y: downward ? 400 : 550 }, duration: 500 });
+  }
+  await stableBounds(image);
+  await image.longPress({ duration: 800 });
+  await expect(screen.getByRole('button', { name: '拡大・共有', exact: true })).toBeVisible();
+}
+
+export async function openSummaryPoster(screen: any) {
+  await openSummaryImageMenu(screen);
+  await tapControl(screen.getByRole('button', { name: '拡大・共有', exact: true }));
+}
+
 async function stableBounds(control: any) {
   let box: any;
   let previous = '';

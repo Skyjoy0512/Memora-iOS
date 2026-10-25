@@ -21,6 +21,7 @@ struct FixtureRecord {
   var displayTitle = "検証用会議"
   var createdAt = Date(timeIntervalSince1970: 0)
   var summary = "保存済みの要約"
+  var summaryInfographicJSON: String?
   var privacy = RecordPrivacy()
   var templateSensitivity = SummarySensitivity.general
   var effectivePrivacy: RecordPrivacy {
@@ -42,6 +43,9 @@ enum MeetingSummaryPosterAccessChecks {
     let same = MeetingSummaryPosterSnapshot(meetingID: record.id, model: model)!
     precondition(snapshot.id != same.id && snapshot == same)
     precondition(snapshot.isCurrent(in: model))
+    model.record?.summaryInfographicJSON = "new diagram"
+    precondition(!snapshot.isCurrent(in: model))
+    model.record = record
     model.record?.summary = "変更後"
     precondition(snapshot != MeetingSummaryPosterSnapshot(meetingID: record.id, model: model))
     precondition(!snapshot.isCurrent(in: model))

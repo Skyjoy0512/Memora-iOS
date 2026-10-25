@@ -26,6 +26,7 @@ struct Meeting: Identifiable, Hashable, Codable {
   var summaryUseCaseID: String? = nil
   var summaryVersions: [TemplateSummary] = []
   var activeSummaryVersionID: UUID? = nil
+  var summaryInfographicJSON: String? = nil
   var privacy = RecordPrivacy()
   /// People tagged on this recording.
   var participantIDs: [UUID]? = nil
@@ -61,6 +62,7 @@ extension Meeting {
     case notes
     case recordingMarkers
     case summaryUseCaseID, summaryVersions, activeSummaryVersionID
+    case summaryInfographicJSON
     case privacy
     case participantIDs
     case photoFileNames
@@ -91,6 +93,8 @@ extension Meeting {
     summaryUseCaseID = try container.decodeIfPresent(String.self, forKey: .summaryUseCaseID)
     summaryVersions = try container.decodeIfPresent([TemplateSummary].self, forKey: .summaryVersions) ?? []
     activeSummaryVersionID = try container.decodeIfPresent(UUID.self, forKey: .activeSummaryVersionID)
+    // A damaged optional diagram must never prevent recovery of the recording.
+    summaryInfographicJSON = try? container.decodeIfPresent(String.self, forKey: .summaryInfographicJSON)
     privacy = try container.decodeIfPresent(RecordPrivacy.self, forKey: .privacy) ?? RecordPrivacy()
 
     // Photos moved out of the record and into the media folder. Older records
@@ -140,6 +144,7 @@ extension Meeting {
     try container.encodeIfPresent(summaryUseCaseID, forKey: .summaryUseCaseID)
     if !summaryVersions.isEmpty { try container.encode(summaryVersions, forKey: .summaryVersions) }
     try container.encodeIfPresent(activeSummaryVersionID, forKey: .activeSummaryVersionID)
+    try container.encodeIfPresent(summaryInfographicJSON, forKey: .summaryInfographicJSON)
     try container.encode(privacy, forKey: .privacy)
 
     // A record still waiting to have its inline photos written keeps the bytes,

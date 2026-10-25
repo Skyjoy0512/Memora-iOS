@@ -8,13 +8,14 @@ struct MeetingSummaryPosterSnapshot: Identifiable, Equatable {
   var createdAt: Date
   var summary: String
   var privacy: RecordPrivacy
+  var infographicJSON: String?
 
   // Presentation IDs are not revisions: an unrelated body update must not
   // re-render the same image, but edits and access changes must invalidate it.
   static func == (lhs: Self, rhs: Self) -> Bool {
     lhs.meetingID == rhs.meetingID && lhs.workspaceGeneration == rhs.workspaceGeneration
       && lhs.title == rhs.title && lhs.createdAt == rhs.createdAt
-      && lhs.summary == rhs.summary && lhs.privacy == rhs.privacy
+      && lhs.summary == rhs.summary && lhs.privacy == rhs.privacy && lhs.infographicJSON == rhs.infographicJSON
   }
 
   @MainActor
@@ -27,6 +28,7 @@ struct MeetingSummaryPosterSnapshot: Identifiable, Equatable {
     createdAt = meeting.createdAt
     summary = meeting.summary
     privacy = meeting.effectivePrivacy
+    infographicJSON = meeting.summaryInfographicJSON
   }
 
   @MainActor
@@ -35,6 +37,6 @@ struct MeetingSummaryPosterSnapshot: Identifiable, Equatable {
           model.allowsRecordAccess(meetingID, purpose: .onDeviceAI),
           let meeting = model.meeting(id: meetingID) else { return false }
     return meeting.displayTitle == title && meeting.createdAt == createdAt
-      && meeting.summary == summary && meeting.effectivePrivacy == privacy
+      && meeting.summary == summary && meeting.effectivePrivacy == privacy && meeting.summaryInfographicJSON == infographicJSON
   }
 }

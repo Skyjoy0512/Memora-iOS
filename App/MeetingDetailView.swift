@@ -90,6 +90,9 @@ struct MeetingDetailView: View {
               )
 
               sectionContent(meeting)
+              if selectedSection == .summary, !meeting.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                MeetingQuestionSuggestionsView(meetingID: meeting.id)
+              }
             }
             .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
             .padding(.horizontal, MemoraSpacing.screen)

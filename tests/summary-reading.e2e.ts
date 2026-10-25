@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFi
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { tapControl, tapTab, scrollToControl } from './ui-helpers';
+import { tapControl, tapTab, scrollToControl, openSummaryPoster } from './ui-helpers';
 import { sql } from './sqlite-fixture-helpers';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 
@@ -14,10 +14,9 @@ afterEach(async ({ device }) => { await device.setAppearance('light'); });
 // UUID memo, receives this explicit fixture. The preview's records are untouched.
 test('summary PNG, full-text reading and reversible transcript survive restart', { timeout: 360_000 }, async ({ app, device, screen }) => {
   const { database, identity, fixture, title, summary, raw, marker } = await seedSummaryFixture(app, device, screen);
-  await expect(screen.getByTestId('summary.poster.open')).toBeVisible();
   await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
   await app.screenshot('summary-entry-light');
-  await tapControl(screen.getByTestId('summary.poster.open'));
+  await openSummaryPoster(screen);
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible({ timeout: 60_000 });
   await app.screenshot('summary-poster-light');
   await tapControl(screen.getByRole('tab', { name: '全文', exact: true }));
@@ -78,11 +77,14 @@ test('summary PNG, full-text reading and reversible transcript survive restart',
   const edited = '予算は12万円。承認待ちのため本番切替はしない。';
   await scrollToControl(screen, screen.getByRole('button', { name: overview, exact: true }));
   await tapControl(screen.getByRole('button', { name: overview, exact: true }));
-  await screen.getByRole('textbox', { name: '本文', exact: true }).fill(edited);
+  const summaryEditor = screen.getByRole('textbox', { name: '本文', exact: true });
+  await expect(summaryEditor).toHaveValue(overview);
+  await expect(summaryEditor).toBeFocused();
+  await summaryEditor.fill(edited);
+  await expect(summaryEditor).toHaveValue(edited);
   await tapControl(screen.getByRole('button', { name: '完了', exact: true }));
   await expect.poll(() => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"))[0].summary.includes(edited)).toBe(true);
-  await scrollToControl(screen, screen.getByTestId('summary.poster.open'), { minimumY: 90, maximumY: 750 });
-  await tapControl(screen.getByTestId('summary.poster.open'));
+  await openSummaryPoster(screen);
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
   await tapControl(screen.getByRole('tab', { name: '全文', exact: true }));
   await expect(screen.getByText(edited, { exact: true })).toBeVisible();
@@ -128,8 +130,7 @@ test('summary PNG, full-text reading and reversible transcript survive restart',
   await expect(screen.getByText('要約履歴（1）', { exact: true })).toBeVisible();
   await expect(screen.getByText('要約の項目と原文', { exact: true })).not.toBeVisible();
   await app.screenshot('summary-template-without-redundant-source-index');
-  await scrollToControl(screen, screen.getByTestId('summary.poster.open'), { minimumY: 90, maximumY: 750 });
-  await tapControl(screen.getByTestId('summary.poster.open'));
+  await openSummaryPoster(screen);
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
   await tapControl(screen.getByRole('button', { name: '拡大して読む', exact: true }));
   await tapControl(screen.getByRole('button', { name: '全体を表示', exact: true }));

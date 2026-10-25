@@ -77,7 +77,7 @@ extension MemoraModel {
   /// Used where a draft is cleared afterwards, so the draft is kept when the
   /// record could not be written.
   @discardableResult
-  private func commitMeetingChange(_ id: UUID, change: (inout Meeting) -> Void) async -> Bool {
+  func commitMeetingChange(_ id: UUID, change: (inout Meeting) -> Void) async -> Bool {
     guard !Task.isCancelled, !isRestoring, currentTeamID == nil, isStoreWritable(),
           let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
     let original = meetings

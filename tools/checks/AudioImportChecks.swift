@@ -15,6 +15,7 @@ struct AudioImportChecks {
     try await restoreAdmission(root)
     try await restoreDuringImport(root)
     try await pickerAcrossRestore(root)
+    try infographicCodec()
     let backup = try String(contentsOfFile: "App/MemoraModel+Backup.swift", encoding: .utf8)
     precondition(backup.components(separatedBy: "try beginBackupRestore()").count == 2)
     precondition(backup.contains("try beginBackupRestore()\n    defer { isRestoring = false }"))
@@ -26,6 +27,23 @@ struct AudioImportChecks {
     try Data("HOST AUDIO PAYLOAD".utf8).write(to: url, options: .atomic)
     try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -120)], ofItemAtPath: url.path)
     return url
+  }
+
+  static func infographicCodec() throws {
+    let record = Meeting(id: UUID(), title: "codec fixture", createdAt: .now, duration: 0,
+      source: .importFile, status: .ready, summary: "本文を保持", keyPoints: [], decisions: [],
+      openQuestions: [], transcript: [], spaceID: nil, audioURL: nil)
+    let bytes = try JSONEncoder().encode(record)
+    let legacy = try JSONDecoder().decode(Meeting.self, from: bytes)
+    precondition(legacy.summaryInfographicJSON == nil && legacy.summary == record.summary)
+    var saved = record
+    saved.summaryInfographicJSON = "{\"version\":1,\"fixture\":true}"
+    let roundTrip = try JSONDecoder().decode(Meeting.self, from: JSONEncoder().encode(saved))
+    precondition(roundTrip.summaryInfographicJSON == saved.summaryInfographicJSON)
+    var malformed = try JSONSerialization.jsonObject(with: bytes) as! [String: Any]
+    malformed["summaryInfographicJSON"] = ["invalid": true]
+    let recovered = try JSONDecoder().decode(Meeting.self, from: JSONSerialization.data(withJSONObject: malformed))
+    precondition(recovered.summary == record.summary && recovered.summaryInfographicJSON == nil)
   }
   @MainActor static func fixture(_ root: URL, _ name: String) throws -> (MemoraModel, UUID) {
     let model = try MemoraModel(storeURL: root.appendingPathComponent(name + ".sqlite"))

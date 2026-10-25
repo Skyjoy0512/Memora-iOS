@@ -6,7 +6,7 @@ import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
-import { tapControl, tapTab, scrollToControl } from './ui-helpers';
+import { tapControl, tapTab, scrollToControl, openSummaryPoster } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -26,7 +26,7 @@ test('validated on-device summary relations survive reading, editing and restart
     const { database, title, fixture } = await seedSummaryFixture(app, device, screen, { ...generated, timestamp: 12 });
     const read = () => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
     await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
-    await tapControl(screen.getByTestId('summary.poster.open'));
+    await openSummaryPoster(screen);
     await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
     await tapControl(screen.getByRole('tab', { name: '全文', exact: true }));
     const child = screen.getByText(generated.child, { exact: true });

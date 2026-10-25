@@ -2,7 +2,7 @@ import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
-import { scrollToControl, tapControl, tapTab } from './ui-helpers';
+import { scrollToControl, tapControl, tapTab, openSummaryPoster } from './ui-helpers';
 
 test('content-led poster and meeting task creation preserve saved records', { timeout: 240_000 }, async ({ app, device, screen }) => {
   const summary = '## 選択肢の比較\n### 品質と制約\n| 案 | 利点 | 条件 |\n| --- | --- | --- |\n| A | 小さく試せる | 承認が必要 |\n## 次の実験\n- 同じデータで比較する\n  - 理由：条件の違いを避ける\n  - 条件：個人情報を除く';
@@ -14,7 +14,7 @@ test('content-led poster and meeting task creation preserve saved records', { ti
     return value ? JSON.parse(value) : [];
   };
   await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
-  await tapControl(screen.getByTestId('summary.poster.open'));
+  await openSummaryPoster(screen);
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
   await app.screenshot('adaptive-poster-custom-headings');
   await tapControl(screen.getByRole('tab', { name: '全文', exact: true }));

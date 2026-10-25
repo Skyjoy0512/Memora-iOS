@@ -3,7 +3,17 @@ import UIKit
 
 @MainActor
 enum MeetingSummaryPosterRenderer {
-  static func render(_ content: MeetingSummaryPosterContent) throws -> UIImage {
+  static func render(_ content: MeetingSummaryPosterContent, infographic: MeetingInfographic? = nil) throws -> UIImage {
+    if let infographic {
+      let renderer = ImageRenderer(content: MeetingInfographicCanvas(title: content.title, date: content.date, document: infographic))
+      renderer.scale = 2
+      renderer.isOpaque = true
+      var measured = CGSize.zero
+      renderer.render { size, _ in measured = size }
+      guard measured.height > 0, measured.height <= 1600,
+            let image = renderer.uiImage else { throw CocoaError(.fileReadTooLarge) }
+      return image
+    }
     var fitted = content
     while true {
       let renderer = ImageRenderer(content: MeetingSummaryPosterCanvas(content: fitted))

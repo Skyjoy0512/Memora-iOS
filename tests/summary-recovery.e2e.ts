@@ -3,7 +3,7 @@ import { chmodSync, existsSync, lstatSync, readFileSync, readdirSync, realpathSy
 import { dirname, join, resolve, sep } from 'node:path';
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { tapControl, tapTab } from './ui-helpers';
+import { tapControl, tapTab, openSummaryPoster } from './ui-helpers';
 import { sql } from './sqlite-fixture-helpers';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 
@@ -87,7 +87,7 @@ test('PNG write failure keeps the preview and a retry uses the real share sheet'
   const originalMode = statSync(folder).mode & 0o777;
   if ((originalMode & 0o200) === 0) throw new Error('Fixture temp folder was already unwritable');
   const pngFiles = () => readdirSync(folder).filter(name => /^Memora-summary-[a-f0-9-]+\.png$/i.test(name));
-  await tapControl(screen.getByTestId('summary.poster.open'));
+  await openSummaryPoster(screen);
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
   const originalFiles = pngFiles();
   async function exportPNG() {

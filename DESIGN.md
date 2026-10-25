@@ -204,12 +204,24 @@ tasks and notes. Flat section tabs. Edit one block/cell in place; Markdown sourc
 editing stays a deliberate context-menu action. Tables retain every value.
 Audio, timestamps, source navigation and saving retain their existing paths.
 The one-page summary image appears inline above the editable summary, even
-when the summary text is folded. Its separate enlarge/share action retains
+when the summary text is folded, without a visible title, caption or action row.
+Its long-press menu and VoiceOver actions offer enlarge/share and AI generation,
+keeping operation labels off the reading canvas. The enlarge/share sheet retains
 the accessible full-text alternative and export confirmation. Images are local
-excerpts, not a new AI interpretation; edits and access changes invalidate them.
+excerpts until the person explicitly generates a separate AI interpretation;
+edits and access changes invalidate them. AI diagrams use a prominent takeaway
+and content-selected metric/flow/comparison/timeline/note panels, not the original
+heading order or fixed summary slots. Each claim retains a verified source quote,
+with interpretation and model provenance disclosed; the full-text alternative
+exposes every claim and quote. A generator sheet explains cloud transfer and cost,
+checks the record's policy or a one-run consent, and never starts on opening.
+The explicitly fictional, unedited diagnostics sample has a labeled display-only
+diagram. No real record receives sample interpretations. Three contextual questions
+at the bottom stage a record-scoped draft only, preserving existing input,
+attachments and mentions; normal send-time privacy checks still apply.
 The image keeps its reading width but fits its content height, without empty
-fixed-height columns or a blank page tail. Its sections follow the saved document's
-own headings, hierarchy, lists and table labels, not fixed decision/action slots.
+fixed-height columns or a blank page tail. Fallback excerpts follow the saved
+document's own headings, hierarchy, lists and table labels, not fixed decision/action slots.
 Long images are fitted by removing whole groups before allocating the PNG;
 bounded text and omitted material are disclosed, with the untouched full text available.
 The task-add action uses the shared quiet capsule with a 44pt minimum target.

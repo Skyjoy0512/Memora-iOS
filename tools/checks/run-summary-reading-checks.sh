@@ -35,3 +35,4 @@ swiftc "${layout_sources[@]}" App/LocalStore.swift App/MarkdownBlock.swift App/S
   App/MarkdownFence.swift App/MarkdownBlockParser.swift App/MarkdownBlockWriter.swift \
   tools/checks/SummaryRelationChecks.swift -o "$check_dir/relations"
 "$check_dir/relations" "$@"
+bash tools/checks/run-infographic-checks.sh

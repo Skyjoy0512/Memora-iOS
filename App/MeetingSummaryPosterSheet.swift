@@ -13,6 +13,7 @@ struct MeetingSummaryPosterSheet: View {
   @State private var isSharing = false
   @State private var exportURL: URL?
   @State private var availableWidth: CGFloat = 320
+  @State private var document: MeetingInfographic?
 
   var body: some View {
     let isCurrent = snapshot.isCurrent(in: model)
@@ -32,6 +33,7 @@ struct MeetingSummaryPosterSheet: View {
               ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                   Text(snapshot.title).font(.title2.bold())
+                  if let document { MeetingInfographicEvidenceView(document: document) }
                   MarkdownDocumentView(markdown: snapshot.summary, isLazy: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(20)
@@ -41,13 +43,13 @@ struct MeetingSummaryPosterSheet: View {
               ScrollView([.horizontal, .vertical]) {
                 Image(uiImage: image).resizable().scaledToFit()
                   .frame(width: isEnlarged ? 720 : min(720, availableWidth))
-                  .accessibilityLabel("\(snapshot.title)の1枚サマリー。要約本文の見出しと項目に沿って構成しています。全文タブで全内容を読めます")
+                  .accessibilityLabel("\(snapshot.title)の1枚サマリー。全文タブで図解の内容・根拠と本文を読めます")
                   .accessibilityIdentifier("summary.poster.image")
                   .padding(.horizontal, 16)
               }
               Button(isEnlarged ? "全体を表示" : "拡大して読む") { isEnlarged.toggle() }
                 .frame(minHeight: 44)
-              Text("端末内で作成・\(Int(image.size.width * image.scale)) × \(Int(image.size.height * image.scale)) PNG\n抜粋のため、条件や出典を含む全文もご確認ください。")
+              Text("端末内で画像化・\(Int(image.size.width * image.scale)) × \(Int(image.size.height * image.scale)) PNG\n図解の解釈・抜粋は、条件や根拠を含む全文もご確認ください。")
                 .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 .padding(.horizontal)
             } else if let failure {
@@ -84,7 +86,7 @@ struct MeetingSummaryPosterSheet: View {
         Button("共有先・保存先を選ぶ") { export() }
         Button("キャンセル", role: .cancel) {}
       } message: {
-        Text("要約の抜粋が画像に含まれます。機密情報や共有範囲を確認してください。自動送信はしません。")
+        Text("要約の抜粋または本文に基づく図解が画像に含まれます。機密情報や共有範囲を確認してください。自動送信はしません。")
       }
       .sheet(isPresented: $isSharing, onDismiss: cleanUp) {
         if let exportURL, snapshot.isCurrent(in: model) {
@@ -102,8 +104,10 @@ struct MeetingSummaryPosterSheet: View {
     guard !Task.isCancelled, snapshot.isCurrent(in: model) else { return }
     failure = nil
     do {
+      let infographic = MeetingInfographicSample.resolve(snapshot)
       image = try MeetingSummaryPosterRenderer.render(MeetingSummaryPosterContent(
-        title: snapshot.title, date: snapshot.createdAt.formatted(date: .abbreviated, time: .omitted), summary: snapshot.summary))
+        title: snapshot.title, date: snapshot.createdAt.formatted(date: .abbreviated, time: .omitted), summary: snapshot.summary), infographic: infographic)
+      document = infographic
     } catch { failure = "本文は保持されています。もう一度お試しください。" }
   }
 

@@ -4,7 +4,7 @@ import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 import { sql } from './sqlite-fixture-helpers';
-import { tapControl, tapTab, scrollToControl } from './ui-helpers';
+import { tapControl, tapTab, scrollToControl, openSummaryPoster } from './ui-helpers';
 
 afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
@@ -74,7 +74,7 @@ test('long summary images stay bounded while preserving the complete saved summa
     summary, raw: sentence, segmentID: '81818181-8181-4181-8181-818181818181', timestamp: 0,
   });
   await expect(screen.getByTestId('summary.poster.inline')).toBeVisible();
-  await tapControl(screen.getByTestId('summary.poster.open'));
+  await openSummaryPoster(screen);
   await expect(screen.getByTestId('summary.poster.image')).toBeVisible();
   await app.screenshot('bounded-long-summary-image-light');
   await device.setAppearance('dark');
