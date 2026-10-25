@@ -27,7 +27,7 @@ struct ProjectSearchQualityChecks {
     let allowed = Set(inputs.map(\.target))
     _ = try await index.retrieve(question: "公開", projectID: beta,
       inputs: corpus.documents.filter { $0.project == "beta" }.map(input))
-    var recalls: [Double] = [], reciprocalRanks: [Double] = [], latencies: [Double] = []
+    var recalls: [Double] = [], reciprocalRanks: [Double] = [], precisions: [Double] = [], latencies: [Double] = []
     var firstHits = 0, irrelevant = 0, sent = 0, unknownAbstained = 0, unknownCount = 0
     let clock = ContinuousClock()
     print("Project search fixture asOf=\(corpus.asOf); IDs, text and gold labels are synthetic")
@@ -43,11 +43,17 @@ struct ProjectSearchQualityChecks {
       var retrieved: [String] = []
       for source in context.used {
         let name = names[source.target]!
+        let original = allowedDocs.first { $0.id == name }!
+        precondition(original.blocks.contains { block in
+          let full = String(repeating: "定例の説明を記載しています。", count: block.repeatPrefix ?? 0) + block.text
+          return full.contains(source.excerpt) && block.page == source.page
+        }, "Citation excerpt/page is not in the allowed original source")
         if !retrieved.contains(name) { retrieved.append(name) }
       }
       let top = Array(retrieved.prefix(3)), gold = Set(query.gold)
       if !gold.isEmpty {
         recalls.append(Double(gold.intersection(top).count) / Double(gold.count))
+        precisions.append(Double(gold.intersection(top).count) / 3)
         let rank = retrieved.firstIndex { gold.contains($0) }
         reciprocalRanks.append(rank.map { 1 / Double($0 + 1) } ?? 0)
         if top.first.map(gold.contains) == true { firstHits += 1 }
@@ -61,14 +67,17 @@ struct ProjectSearchQualityChecks {
         precondition(context.used.contains { $0.excerpt.contains(excerpt) && $0.page == query.requiredPage }, "Long PDF evidence lost")
       }
       print("\(query.id): top3=\(top.joined(separator: ",")) gold=\(query.gold.joined(separator: ",")) sent=\(retrieved.count)")
+      fflush(stdout)
     }
     let recall = recalls.reduce(0, +) / Double(recalls.count)
     let mrr = reciprocalRanks.reduce(0, +) / Double(reciprocalRanks.count)
+    let precision = precisions.reduce(0, +) / Double(precisions.count)
     let sorted = latencies.sorted()
     let unrelatedRatio = Double(irrelevant) / Double(max(1, sent))
-    print(String(format: "MEASURE hit@1=%d/%d recall@3=%.3f MRR=%.3f unrelated-sent=%.3f no-evidence-abstain=%d/%d p50=%.2fms p95=%.2fms",
-      firstHits, recalls.count, recall, mrr, unrelatedRatio, unknownAbstained, unknownCount,
-      sorted[sorted.count / 2], sorted[min(sorted.count - 1, Int(Double(sorted.count) * 0.95))]))
+    print(String(format: "MEASURE hit@1=%d/%d recall@3=%.3f precision@3=%.3f MRR=%.3f unrelated-sent=%.3f no-evidence-abstain=%d/%d p50=%.2fms p95=%.2fms max=%.2fms",
+      firstHits, recalls.count, recall, precision, mrr, unrelatedRatio, unknownAbstained, unknownCount,
+      sorted[sorted.count / 2], sorted[min(sorted.count - 1, Int(Double(sorted.count) * 0.95))], sorted.last!))
+    fflush(stdout)
     if !CommandLine.arguments.contains("--measure-only") {
       precondition(firstHits == recalls.count && recall == 1, "Fixed corpus retrieval regressed")
       precondition(unknownAbstained == unknownCount && unrelatedRatio <= 0.5, "Fixed corpus evidence precision regressed")

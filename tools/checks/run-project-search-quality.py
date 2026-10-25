@@ -29,7 +29,7 @@ def main():
         command = [str(executable), str(root / "tools/checks/fixtures/project-search-quality.json"), str(directory)]
         if args.baseline_ref:
             command.append("--measure-only")
-        subprocess.run(command, check=True, cwd=root)
+        subprocess.run(command, check=True, cwd=root, env={**os.environ, "SWIFT_BACKTRACE": "enable=no"}, timeout=120)
 
 
 if __name__ == "__main__":

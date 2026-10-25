@@ -27,18 +27,29 @@ enum ProjectContextBuilder {
                     allowed: Set<ProjectCitation.Target>, characterBudget: Int,
                     selectedTarget: ProjectCitation.Target? = nil) -> Context {
     let terms = queryGrams(question)
+    let topics = question.components(separatedBy: "と").filter { !informativeGrams($0).isEmpty }
+    let asksMultipleTopics = topics.count >= 2
+    let numbers = numberTokens(question)
+    let requiredNumber = !asksMultipleTopics && numbers.count == 1 ? numbers.first.flatMap { $0.count >= 2 ? $0 : nil } : nil
+    let latinWords = question.contains(where: { $0.isLetter && !$0.isASCII }) ? Set<String>() : wordTokens(question)
+    let usesExplicitContext = selectedTarget != nil || allowsContextFallback(question)
+    var seen = Set<ProjectEvidenceChunk>()
     let scoped = chunks.filter {
       $0.projectID == projectID && allowed.contains($0.target) && (selectedTarget == nil || $0.target == selectedTarget)
+        && seen.insert($0).inserted
     }
-    var ranked: [(Int, ProjectEvidenceChunk, Int)] = []
+    var ranked: [(Int, ProjectEvidenceChunk, Int, Set<String>)] = []
     var titleTerms: [String: Set<String>] = [:]
     for (index, chunk) in scoped.enumerated() {
+      let searchable = chunk.title + " " + chunk.text
+      if !usesExplicitContext, let requiredNumber, !numberTokens(searchable).contains(requiredNumber) { continue }
+      if !usesExplicitContext && !latinWords.isEmpty && latinWords.isDisjoint(with: wordTokens(searchable)) { continue }
       let counts = countedGrams(chunk.text)
       let bodyScore = terms.reduce(0) { $0 + counts[$1, default: 0] }
       let titleGrams = titleTerms[chunk.title] ?? grams(chunk.title)
       titleTerms[chunk.title] = titleGrams
       let titleScore = titleGrams.intersection(terms).count
-      ranked.append((index, chunk, bodyScore * 2 + titleScore))
+      ranked.append((index, chunk, bodyScore * 2 + titleScore, Set(counts.keys).union(titleGrams).intersection(terms)))
     }
     ranked.sort { left, right in
       left.2 == right.2 ? left.0 < right.0 : left.2 > right.2
@@ -46,13 +57,21 @@ enum ProjectContextBuilder {
     let matched = ranked.filter { $0.2 > 0 }
     // Keep contextual follow-ups working, but an unrelated standalone question
     // must not receive arbitrary recent sources just because they exist.
-    let minimumScore = max(1, (matched.first?.2 ?? 0) * 2 / 5)
-    let candidates = matched.isEmpty ? (selectedTarget != nil || allowsContextFallback(question) ? ranked : []) :
-      matched.filter { $0.2 >= minimumScore }
+    // Weak shared terms (e.g. "担当" or "確認") should not attach whole
+    // unrelated documents to a much stronger topical match. This is a lexical
+    // confidence gate, not a proof that the retained evidence answers the query.
+    let minimumScore = max(1, Int(ceil(Double(matched.first?.2 ?? 0) * 2 / 3)))
+    var coveredTerms = Set<String>()
+    let candidates = matched.isEmpty ? (usesExplicitContext ? ranked : []) :
+      matched.filter { candidate in
+        let include = candidate.2 >= minimumScore || (asksMultipleTopics && !candidate.3.subtracting(coveredTerms).isEmpty)
+        if include { coveredTerms.formUnion(candidate.3) }
+        return include
+      }
     var text = ""
     var used: [ProjectCitation] = []
     var perSource: [ProjectCitation.Target: Int] = [:]
-    for (_, chunk, _) in candidates {
+    for (_, chunk, _, _) in candidates {
       guard used.count < 8, perSource[chunk.target, default: 0] < 2 else { continue }
       let safeTime = chunk.time.flatMap { $0.isFinite && $0 >= 0 && $0 < Double(Int.max) ? $0 : nil }
       let location = chunk.page.map { " · ページ\($0)" } ?? safeTime.map { " · \(Int($0))秒" } ?? ""
@@ -104,6 +123,21 @@ enum ProjectContextBuilder {
     grams(value).filter { gram in
       gram.unicodeScalars.contains { !(0x3040...0x309f).contains($0.value) }
     }
+  }
+
+  private static let numberExpression = try? NSRegularExpression(pattern: #"(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)?"#)
+
+  private static func numberTokens(_ value: String) -> Set<String> {
+    let normalized = value.folding(options: .widthInsensitive, locale: Locale(identifier: "en_US_POSIX"))
+    guard let expression = numberExpression else { return [] }
+    return Set(expression.matches(in: normalized, range: NSRange(normalized.startIndex..., in: normalized)).compactMap {
+      Range($0.range, in: normalized).map { String(normalized[$0]).replacingOccurrences(of: ",", with: "") }
+    })
+  }
+
+  private static func wordTokens(_ value: String) -> Set<String> {
+    Set(value.lowercased().split { !$0.isLetter && !$0.isNumber && $0 != "_" }
+      .filter { $0.count >= 3 && $0.allSatisfy(\.isASCII) }.map(String.init))
   }
 
   private static func countedGrams(_ value: String) -> [String: Int] {

@@ -56,6 +56,16 @@ struct ProjectContextChecks {
     let overview = ProjectContextBuilder.build(question: "このプロジェクトの進捗をまとめて", projectID: project,
       chunks: kana + privateChunks + otherChunks, allowed: [source], characterBudget: 1_000)
     precondition(!overview.used.isEmpty && overview.used.allSatisfy { $0.target == source && $0.title == "さくら" })
+    let duplicates = ProjectContextBuilder.build(question: "納期", projectID: project,
+      chunks: deadlines + deadlines + deadlines, allowed: [source], characterBudget: 12_000)
+    precondition(duplicates.used.count == 1 && duplicates.matchedCount == 1, "Duplicate chunks consumed source slots")
+    let money = ProjectContextBuilder.split("予算は1,500円です。", projectID: project, target: source, title: "予算")
+    let exactMoney = ProjectContextBuilder.build(question: "１５００円の予算", projectID: project,
+      chunks: money, allowed: [source], characterBudget: 1_000)
+    precondition(exactMoney.used.count == 1)
+    let wrongMoney = ProjectContextBuilder.build(question: "50円の予算", projectID: project,
+      chunks: money, allowed: [source], characterBudget: 1_000)
+    precondition(wrongMoney.used.isEmpty)
     print("ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)")
   }
 }

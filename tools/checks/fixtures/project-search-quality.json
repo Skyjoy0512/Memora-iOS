@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-15",
+  "asOf": "2026-10-26",
   "documents": [
     {"id":"release","project":"alpha","title":"さくら計画の公開日","blocks":[{"text":"さくら計画の本番リリース日は11月18日。公開前にプライバシーの確認を行います。公開判定の担当は佐藤です。"}]},
     {"id":"open","project":"alpha","title":"さくら計画の未決事項","blocks":[{"text":"まだ決まっていないことは、プライバシー規約の承認と英語版の翻訳レビューです。規約は法務、翻訳は田中が確認中。デザインの確認は完了しました。"}]},
@@ -12,6 +12,10 @@
     {"id":"october","project":"alpha","title":"10月の活動記録","blocks":[{"text":"10月の活動。録音は14件、会議は9回、完了したタスクは18件でした。未完了のタスクは4件です。"}]},
     {"id":"travel","project":"alpha","title":"出張の移動案","blocks":[{"text":"京都出張。11月5日午前に新幹線で移動し、午後は顧客を訪問します。交通費は3万円、宿泊費は2万円です。"}]},
     {"id":"campaign","project":"alpha","title":"広報キャンペーン","blocks":[{"text":"広報キャンペーンの公開日は12月1日。広告の予算は20万円です。メールの配信日は11月28日を予定しています。"}]},
+    {"id":"care","project":"alpha","title":"入浴の条件確認","blocks":[{"text":"体温が37.5℃以上の場合は入浴を中止し、担当看護師へ確認する。診断や原因はまだ確認されていません。"}]},
+    {"id":"sales","project":"alpha","title":"顧客の要望と提案","blocks":[{"text":"顧客は通知だけを希望している。自動送信は営業側の提案であり、承認されていない。契約の合意には至っていません。"}]},
+    {"id":"routine","project":"alpha","title":"日常の持ち物","blocks":[{"text":"水曜日に図書館へ返却する。傘と貸出カードを持参する。予定の時刻は未定です。"}]},
+    {"id":"design","project":"alpha","title":"余白と文字サイズの確認","blocks":[{"text":"見出しは本文より大きくする。VoiceOverの読み順を確認し、Dynamic Typeで文字が欠けないか確認する。"}]},
     {"id":"revoked","project":"alpha","allowed":false,"title":"参照を取り消した資料","blocks":[{"text":"非公開の検証用口座番号は12345です。この資料を検索へ渡してはいけません。"}]},
     {"id":"other","project":"beta","title":"別プロジェクトの公開計画","blocks":[{"text":"さくら計画の公開日は1月10日。別プロジェクトだけの秘密の説明です。この資料をalphaで参照してはいけません。"}]}
   ],
@@ -27,6 +31,21 @@
     {"id":"budget-paraphrase","kind":"語彙のずれ","question":"支出の上限が増えた理由を知りたい","gold":["budget-new"]},
     {"id":"schedule-paraphrase","kind":"語彙のずれ","question":"納期と担当を一覧にして","gold":["actions"]},
     {"id":"travel-date","kind":"日付と混入","question":"京都の顧客訪問はいつ？","gold":["travel"]},
-    {"id":"unanswerable","kind":"該当資料なし","question":"木星の衛星軌道を計算して","gold":[]}
+    {"id":"unanswerable","kind":"該当資料なし","question":"木星の衛星軌道を計算して","gold":[]},
+    {"id":"care-conditions","kind":"条件付きの否定","question":"入浴の中止条件は？","gold":["care"]},
+    {"id":"care-temperature","kind":"小数と医療表現","question":"体温37.5℃の場合の対応は？","gold":["care"]},
+    {"id":"sales-negation","kind":"提案と承認の区別","question":"自動送信は顧客が承認した？","gold":["sales"]},
+    {"id":"sales-wish","kind":"希望と提案","question":"顧客の通知に関する要望は？","gold":["sales"]},
+    {"id":"routine-items","kind":"日常の複合語","question":"図書館の持ち物は？","gold":["routine"]},
+    {"id":"routine-uncertain","kind":"未確定時刻","question":"水曜日の返却時刻は？","gold":["routine"]},
+    {"id":"design-type","kind":"英語識別子","question":"Dynamic Typeで何を確認する？","gold":["design"]},
+    {"id":"design-accessibility","kind":"英語と日本語","question":"VoiceOverの読み順は確認する？","gold":["design"]},
+    {"id":"contract-date","kind":"日時・数字","question":"保守契約の2027年の更新日は？","gold":["contract"]},
+    {"id":"campaign-budget","kind":"類似する予算との分離","question":"広報キャンペーンの広告予算は？","gold":["campaign"]},
+    {"id":"two-sources","kind":"異なる分野の複数根拠","question":"VoiceOverと入浴の確認事項を整理して","gold":["design","care"]},
+    {"id":"unknown-private","kind":"失効資料の除外","question":"口座番号12345は？","gold":[]},
+    {"id":"unknown-english","kind":"英語の無関係質問","question":"orbital telescope galaxy","gold":[]},
+    {"id":"unknown-partial-number","kind":"150を50の根拠にしない","question":"50万円の計画予算は？","gold":[]},
+    {"id":"unknown-partial-word","kind":"VoiceOverをOverの一致としない","question":"Over","gold":[]}
   ]
 }
