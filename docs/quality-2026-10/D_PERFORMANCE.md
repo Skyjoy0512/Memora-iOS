@@ -1,5 +1,20 @@
 # 性能・検索品質の計測
 
+## 2026-10-26の追加測定
+
+本文バッファのBefore/Afterは [H](H_SUMMARY_SPEED.md)、検索の同じ拡張corpusでの比較は [J](J_RAG_PRECISION.md)。以下は既存の全Meeting保存方式の**基準値のみ**で、改善率ではない。
+
+実`Meeting`/`TranscriptSegment`/`TemplateSummary` codecと実`LocalStore.applyBatch`をSwift `-O`で実行。各recordは20発言・5分相当の合成日本語、音声/写真なし。1件の要約だけ変更し、全Meeting配列と空tasks/jobsを原子的に保存、21試行。caseごとに別process・SQLite、試行ごとautoreleaseを解放し、再open/decodeで変更外の全record/原文の厳密一致をassert。メディアAPIは呼ばれたら失敗するfixture。実app DBを開かない。
+
+| 件数 / JSON bytes | 配列copy median/p95/max ms | 全量encode median/p95/max ms | SQLite batch median/p95/max ms | 合計 median/p95/max ms | 21試行のCPU ms | loop終了時process peak RSS bytes |
+| --- | --- | --- | --- | --- | ---: | ---: |
+| 1,000 / 6,082,791 | 0.050/0.060/0.074 | 46.290/47.715/48.961 | 18.083/85.610/114.006 | 64.517/131.937/160.345 | 1,139.652 | 68,993,024 |
+| 10,000 / 60,837,779 | 0.528/1.085/1.179 | 465.003/510.309/518.438 | 113.303/128.350/164.305 | 579.198/630.711/675.793 | 12,079.465 | 521,371,648 |
+
+再実行: `python3 -B tools/checks/run-meeting-persistence-performance-checks.py`。optimizationにも追加。CPUはtimed loop中のprocess user+system CPU合計、RSSはloop終了時点のprocess高水位（fixture/encoder/保存bytesを含む）で、iPhoneのCPU使用率・アプリRSSではない。他のビルド/検査との同時負荷があり、比較最適化のBefore/Afterとして扱わない。
+
+10,000件の全量encodeは明確な負荷。要約確定の同期原子的commitをそのままasyncへ移すだけでは、await中の他record/task更新を古い配列で上書きする危険がある。今回はschemaやtransaction境界を急に変えず、単一record更新方式・再検証付きoff-actor encode・段階移行/rollbackを次段とする。要約保存/起動/実機の大幅高速化は未達。SQLite値自体も50秒失敗を説明しない。
+
 すべて合成fixtureのMacホスト計測。iPhone実機、Simulator UIの起動/スクロール/CPU/電池の計測ではない。
 ビルドや他の検査と並行した測定を含むため、小さい時間差を最適化の効果としない。
 
