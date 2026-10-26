@@ -138,21 +138,25 @@ enum BackgroundSummaryExecutionChecks {
     precondition(network.pendingSummaryJobs[0].requiresUserRetry == true && network.backgroundSummaryNotice != nil)
 
     // In-flight edits/permissions/workspace ABA must never publish stale output.
-    for mutate in 0..<7 {
-      let changed = try model()
-      let pending = await start(changed)
-      switch mutate {
-      case 0: changed.meetings[0].transcript[0].text = "訂正した原文"
-      case 1: changed.meetings[0].summary = "本人の手編集"
-      case 2: changed.meetings[0].privacy.revokeExternalPermissions()
-      case 3: changed.aiWorkspaceGeneration = UUID()
-      case 4: changed.isRestoring = true
-      case 5: changed.meetings[0].spaceID = UUID()
-      default: changed.summaryConfigurationIdentity = [UUID()]
+    for mutate in 0..<8 {
+      for checksSendBoundary in [false, true] {
+        let changed = try model()
+        let pending = await start(changed)
+        switch mutate {
+        case 0: changed.meetings[0].transcript[0].text = "訂正した原文"
+        case 1: changed.meetings[0].summary = "本人の手編集"
+        case 2: changed.meetings[0].privacy.revokeExternalPermissions()
+        case 3: changed.aiWorkspaceGeneration = UUID()
+        case 4: changed.isRestoring = true
+        case 5: changed.meetings[0].spaceID = UUID()
+        case 6: changed.summaryConfigurationIdentity = [UUID()]
+        default: changed.meetings[0].derivedSensitivity = .sensitive
+        }
+        if checksSendBoundary { precondition(pending.authorize?() == false) }
+        pending.complete.resume(returning: .success(result))
+        try await settle(changed)
+        precondition(changed.meetings[0].summary != result.markdown && changed.pendingSummaryJobs.count == 1 && changed.tasks.isEmpty)
       }
-      pending.complete.resume(returning: .success(result))
-      try await settle(changed)
-      precondition(changed.meetings[0].summary != result.markdown && changed.pendingSummaryJobs.count == 1 && changed.tasks.isEmpty)
     }
 
     // Single-flight queue uses the persisted job ID, never enqueues a duplicate.

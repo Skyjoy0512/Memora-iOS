@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { existsSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdtempSync, rmSync, rmdirSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
@@ -49,5 +51,25 @@ test('power mode changes and pause preserve the AAC recording and SQLite draft',
   }).toBe(true);
   expect(existsSync(audio)).toBe(true);
   expect(statSync(audio).size).toBeGreaterThan(0);
+  const audioInfo = execFileSync('/usr/bin/afinfo', [audio], { encoding: 'utf8', timeout: 10_000 });
+  expect(audioInfo).toMatch(/44100 Hz/);
+  expect(audioInfo).toMatch(/aac/);
+  expect(audioInfo).toMatch(/audio packets: [1-9]/);
+  console.log(audioInfo);
+  const decodeRoot = mkdtempSync(join(process.env.MEMORA_CHECK_TMPDIR ?? tmpdir(), 'memora-aac-'));
+  const decoded = join(decodeRoot, 'decoded.wav');
+  try {
+    execFileSync('/usr/bin/afconvert', ['-f', 'WAVE', '-d', 'LEI16', audio, decoded], { timeout: 10_000 });
+    const decodedInfo = execFileSync('/usr/bin/afinfo', [decoded], { encoding: 'utf8', timeout: 10_000 });
+    expect(decodedInfo).toMatch(/44100 Hz/);
+    const originalDuration = Number(audioInfo.match(/estimated duration: ([0-9.]+)/)![1]);
+    const decodedDuration = Number(decodedInfo.match(/estimated duration: ([0-9.]+)/)![1]);
+    expect(Math.abs(originalDuration - decodedDuration)).toBeLessThan(0.001);
+    expect(statSync(decoded).size).toBeGreaterThan(0);
+    console.log('AAC fully decoded to PCM with matching duration: ' + decodedDuration);
+  } finally {
+    if (existsSync(decoded)) rmSync(decoded);
+    rmdirSync(decodeRoot);
+  }
   expect(draft()).toBeNull();
 });

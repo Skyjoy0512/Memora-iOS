@@ -1,0 +1,94 @@
+{
+  "schema": "memora.time-profile-summary.v1",
+  "samples": 476,
+  "app_binary_uuids": [
+    "8DBF72ED-F167-30FA-AC16-99565AD328A2"
+  ],
+  "sample_span_seconds": 15.267002,
+  "total_sample_weight_ms": 476.0,
+  "main_thread_sample_weight_ms": 462.0,
+  "app_inclusive_sample_weight_ms": 462.0,
+  "ambiguous_app_sample_weight_ms": 0.0,
+  "missing_backtrace_sample_weight_ms": 1.0,
+  "app_symbolication": "partial",
+  "state_sample_weight_ms": {
+    "Running": 476.0
+  },
+  "top_leaves": [
+    {
+      "symbol": "mach_msg2_trap",
+      "sample_weight_ms": 40.0
+    },
+    {
+      "symbol": "__kdebug_trace64",
+      "sample_weight_ms": 27.0
+    },
+    {
+      "symbol": "_kernelrpc_mach_port_extract_member_trap",
+      "sample_weight_ms": 24.0
+    },
+    {
+      "symbol": "objc_msgSend",
+      "sample_weight_ms": 16.0
+    },
+    {
+      "symbol": "thread_selfcounts",
+      "sample_weight_ms": 12.0
+    },
+    {
+      "symbol": "voucher_mach_msg_revert",
+      "sample_weight_ms": 12.0
+    },
+    {
+      "symbol": "CFRetain",
+      "sample_weight_ms": 11.0
+    },
+    {
+      "symbol": "__CFRunLoopRun",
+      "sample_weight_ms": 6.0
+    },
+    {
+      "symbol": "mach_msg_overwrite",
+      "sample_weight_ms": 6.0
+    },
+    {
+      "symbol": "AGGraphSetOutputValue",
+      "sample_weight_ms": 5.0
+    },
+    {
+      "symbol": "CABackingStoreCollect_(double, bool)",
+      "sample_weight_ms": 5.0
+    },
+    {
+      "symbol": "__CFRunLoopDoObservers",
+      "sample_weight_ms": 5.0
+    },
+    {
+      "symbol": "__CFRunLoopServiceMachPort",
+      "sample_weight_ms": 5.0
+    },
+    {
+      "symbol": "dyld4::APIs::dyld_program_sdk_at_least(dyld_build_version_t)",
+      "sample_weight_ms": 5.0
+    },
+    {
+      "symbol": "-[__NSArrayM count]",
+      "sample_weight_ms": 4.0
+    }
+  ],
+  "top_app_inclusive": [
+    {
+      "symbol": "__debug_main_executable_dylib_entry_point",
+      "sample_weight_ms": 462.0
+    },
+    {
+      "symbol": "static MemoraApp.$main()",
+      "sample_weight_ms": 462.0
+    },
+    {
+      "symbol": "closure #1 in closure #1 in closure #1 in closure #1 in ShimmerText.body.getter",
+      "sample_weight_ms": 1.0
+    }
+  ],
+  "limitations": "Statistical sample weights; not wall latency, FPS, body counts, exact CPU occupancy, memory, or iPhone hardware performance. Inclusive weights overlap; deduplicated/unresolved app symbols are excluded from named totals."
+}

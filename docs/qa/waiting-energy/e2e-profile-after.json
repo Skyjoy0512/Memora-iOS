@@ -1,0 +1,3856 @@
+{
+  "schemaVersion": "report-1",
+  "run": {
+    "id": "01a1766a-cf6d-754f-8618-4ef7987a84c5",
+    "specVersion": "0.1",
+    "runner": {
+      "name": "e2e",
+      "version": "0.21.2"
+    },
+    "status": "passed",
+    "exitCode": 0,
+    "startedAt": "2026-10-26T04:14:38.487Z",
+    "finishedAt": "2026-10-26T04:15:36.635Z",
+    "project": {
+      "id": "unportable-07842d9c1e965b5d9b4dc0eb9a68bff2",
+      "configDigest": "151ffa4d0ff86a5da9ad3ea16023713519556d5d60df253d1697d48fbbaca78d"
+    },
+    "environment": {
+      "ci": false,
+      "trustNoticeShown": false,
+      "os": "darwin 27.0.0",
+      "arch": "arm64",
+      "runtime": "node v22.23.2"
+    },
+    "vcs": {
+      "commit": "e8cdb51f154eda669db9b3efef8a27e47726b800",
+      "branch": "main",
+      "dirty": true
+    },
+    "targets": [
+      {
+        "id": "ios",
+        "index": 0,
+        "platform": "ios",
+        "environment": "test",
+        "engine": {
+          "name": "mobile",
+          "version": "0.12.3",
+          "spiVersion": 1
+        },
+        "capabilities": [
+          "actions",
+          "artifacts",
+          "device",
+          "keyboard",
+          "location",
+          "observation",
+          "pointer"
+        ],
+        "artifactCapabilities": [
+          "screenshot",
+          "video"
+        ],
+        "stateCapability": false
+      }
+    ],
+    "serialGroups": [],
+    "results": [
+      {
+        "id": "cbe20903395bdf8610e9ee47fad2437cd855392ddaa90038bcaf9983218d8cbb",
+        "testId": "tests/agent-approval.e2e.ts::local%20agent%20approval%20edits%20and%20selects%20a%20candidate%20before%20a%20real%20SQLite%20save",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "local agent approval edits and selects a candidate before a real SQLite save"
+        ],
+        "file": "tests/agent-approval.e2e.ts",
+        "source": {
+          "file": "tests/agent-approval.e2e.ts",
+          "line": 19,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "bd95c6b4c891095660986aacd2215bc47bfd5dc25cb69fe5c5d69b6084849d2c",
+        "testId": "tests/agent-approval.e2e.ts::local%20agent%20decline%20and%20stop%20resolve%20the%20approval%20without%20saving",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "local agent decline and stop resolve the approval without saving"
+        ],
+        "file": "tests/agent-approval.e2e.ts",
+        "source": {
+          "file": "tests/agent-approval.e2e.ts",
+          "line": 38,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "90ed68d53c0a36c76e1bd4d3f8ca8a9c55c58576962d4306e331fc2b8057fda6",
+        "testId": "tests/agent-entry.e2e.ts::agent%20entry%3A%20suggestions%20stage%20an%20editable%20request%20without%20sending",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "agent entry: suggestions stage an editable request without sending"
+        ],
+        "file": "tests/agent-entry.e2e.ts",
+        "source": {
+          "file": "tests/agent-entry.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "bc4349bdedfef069b13fe08dc69f4cfb120534d848576919cbb0e0cc8f7f08d2",
+        "testId": "tests/agent-entry.e2e.ts::agent%20entry%3A%20native%20attachment%20menu%20preserves%20draft%20and%20all%20existing%20routes",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "agent entry: native attachment menu preserves draft and all existing routes"
+        ],
+        "file": "tests/agent-entry.e2e.ts",
+        "source": {
+          "file": "tests/agent-entry.e2e.ts",
+          "line": 31,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "93bd30927baf0aacc1cb59d44b8a3030cb118d5b41518beda716adb71f3b1a26",
+        "testId": "tests/agent-entry.e2e.ts::agent%20entry%3A%20recorder%20hub%20exposes%20direct%20pairing%20and%20honest%20generic%20import",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "agent entry: recorder hub exposes direct pairing and honest generic import"
+        ],
+        "file": "tests/agent-entry.e2e.ts",
+        "source": {
+          "file": "tests/agent-entry.e2e.ts",
+          "line": 48,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "db148165aa17838a51a7f535070567e6669049afeb741464d24b21e3b5d32182",
+        "testId": "tests/answer-actions.e2e.ts::answer%20actions%20open%20selectable%20text%20and%20hide%20an%20unavailable%20retry",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "answer actions open selectable text and hide an unavailable retry"
+        ],
+        "file": "tests/answer-actions.e2e.ts",
+        "source": {
+          "file": "tests/answer-actions.e2e.ts",
+          "line": 22,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "e5c846864194fc4459db75b4d491bc7d4e5fb07f8b62f5c500a8dab622fa5d3b",
+        "testId": "tests/answer-actions.e2e.ts::a%20long%20composer%20draft%20can%20expand%20and%20collapse%20without%20submitting",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "a long composer draft can expand and collapse without submitting"
+        ],
+        "file": "tests/answer-actions.e2e.ts",
+        "source": {
+          "file": "tests/answer-actions.e2e.ts",
+          "line": 39,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "859e651936baca99411908a236a797a7e78c0640180654d7902a2c116f87292d",
+        "testId": "tests/answer-actions.e2e.ts::reusable%20skills%3A%20review%20an%20answer%2C%20save%20the%20procedure%20and%20reuse%20it%20after%20restart",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "reusable skills: review an answer, save the procedure and reuse it after restart"
+        ],
+        "file": "tests/answer-actions.e2e.ts",
+        "source": {
+          "file": "tests/answer-actions.e2e.ts",
+          "line": 54,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "2eb0647798400348072c3b6457fd84f5cd970bdf488d04615e3f7a14d191c16c",
+        "testId": "tests/background-summary.e2e.ts::paused%20background%20summary%20preserves%20text%20and%20offers%20explicit%20retry%20after%20restart",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "paused background summary preserves text and offers explicit retry after restart"
+        ],
+        "file": "tests/background-summary.e2e.ts",
+        "source": {
+          "file": "tests/background-summary.e2e.ts",
+          "line": 10,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "18ff7837ac719b72a0189d915429bb5455314ccea2dafa75c3618b754b62e909",
+        "testId": "tests/calendar-context.e2e.ts::calendar%20context%3A%20disabled%20AI%20use%20persists%20and%20re-enabling%20does%20not%20grant%20device%20access",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "calendar context: disabled AI use persists and re-enabling does not grant device access"
+        ],
+        "file": "tests/calendar-context.e2e.ts",
+        "source": {
+          "file": "tests/calendar-context.e2e.ts",
+          "line": 9,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "ba36b59a57062c2634c51939d812ff6729487e047fe5e81f29a78e77006beab0",
+        "testId": "tests/capture-audio-picker.e2e.ts::top-right%20audio%20picker%20cancellation%20preserves%20Library%20capture%20and%20native%20morph",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "top-right audio picker cancellation preserves Library capture and native morph"
+        ],
+        "file": "tests/capture-audio-picker.e2e.ts",
+        "source": {
+          "file": "tests/capture-audio-picker.e2e.ts",
+          "line": 5,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "f11b0fa0a5c530eb467fd4eff4e2710959b3be092a1141ae59aa9fbb8e12a728",
+        "testId": "tests/chat-surface.e2e.ts::chat%20surface%3A%20capture%20composer%20and%20sidebar%20in%20both%20appearances",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "chat surface: capture composer and sidebar in both appearances"
+        ],
+        "file": "tests/chat-surface.e2e.ts",
+        "source": {
+          "file": "tests/chat-surface.e2e.ts",
+          "line": 13,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "6d23a990aea101758c5549cd5f834e1b7b3aeae744d3614da06a941630a46042",
+        "testId": "tests/chat-surface.e2e.ts::chat%20surface%3A%20stacked%20controls%20keep%20draft%20navigation%20available%20after%20dismissing%20the%20keyboard",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "chat surface: stacked controls keep draft navigation available after dismissing the keyboard"
+        ],
+        "file": "tests/chat-surface.e2e.ts",
+        "source": {
+          "file": "tests/chat-surface.e2e.ts",
+          "line": 53,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "729e9fd26cee287bdb063311aa94cbb952bb44345b8e040db5498e05ea41e159",
+        "testId": "tests/chat-surface.e2e.ts::chat%20surface%3A%20flat%20title%20menu%20still%20opens%20history%20and%20search",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "chat surface: flat title menu still opens history and search"
+        ],
+        "file": "tests/chat-surface.e2e.ts",
+        "source": {
+          "file": "tests/chat-surface.e2e.ts",
+          "line": 76,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "3e7ca63664f455e248e0025cb01fc7a071387fec0781c1307f232cc1fec86ac9",
+        "testId": "tests/collection-polish.e2e.ts::collection%20polish%3A%20people%20search%20keeps%20notes%2C%20detail%20navigation%20and%20cancellation",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "collection polish: people search keeps notes, detail navigation and cancellation"
+        ],
+        "file": "tests/collection-polish.e2e.ts",
+        "source": {
+          "file": "tests/collection-polish.e2e.ts",
+          "line": 25,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "633c5c8c7c5bb98b697165ac76871265e6432fe394c885458ab14a7172f42c72",
+        "testId": "tests/collection-polish.e2e.ts::collection%20polish%3A%20documents%20menu%20keeps%20existing%20actions%20and%20search%20empty%20state",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "collection polish: documents menu keeps existing actions and search empty state"
+        ],
+        "file": "tests/collection-polish.e2e.ts",
+        "source": {
+          "file": "tests/collection-polish.e2e.ts",
+          "line": 68,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "feb3954b8b44c77cd5da95472f3896b640dfcce67914c6e7e7d25e59e267300d",
+        "testId": "tests/collection-polish.e2e.ts::collection%20polish%3A%20compact%20document%20menu%20opens%20mail%20drafts%20and%20company%20templates",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "collection polish: compact document menu opens mail drafts and company templates"
+        ],
+        "file": "tests/collection-polish.e2e.ts",
+        "source": {
+          "file": "tests/collection-polish.e2e.ts",
+          "line": 90,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "8053ade0879899844466321884605a3db3463cf2ab86c1c46637b8ea7d9d3d1b",
+        "testId": "tests/collection-polish.e2e.ts::collection%20polish%3A%20document%20edits%20confirm%20discard%2C%20save%20and%20restore%20after%20restart",
+        "kind": "test",
+        "declarationIndex": 4,
+        "titlePath": [
+          "collection polish: document edits confirm discard, save and restore after restart"
+        ],
+        "file": "tests/collection-polish.e2e.ts",
+        "source": {
+          "file": "tests/collection-polish.e2e.ts",
+          "line": 104,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "e930ddaaf4c9785099891c5554cf45d16f104a695b26bdf2e84ef2ab8019e039",
+        "testId": "tests/design-accessibility.e2e.ts::design%3A%20mention%20controls%20remain%20below%20navigation%20and%20above%20native%20input",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "design: mention controls remain below navigation and above native input"
+        ],
+        "file": "tests/design-accessibility.e2e.ts",
+        "source": {
+          "file": "tests/design-accessibility.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "c174c3d215457cc3caea60ace3418bb159b637daeabf04a0d826c53763f0643b",
+        "testId": "tests/design-accessibility.e2e.ts::design%3A%20toolbar%20search%20clears%20without%20dismissing%20input%20and%20cancels%20back%20to%20tabs",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "design: toolbar search clears without dismissing input and cancels back to tabs"
+        ],
+        "file": "tests/design-accessibility.e2e.ts",
+        "source": {
+          "file": "tests/design-accessibility.e2e.ts",
+          "line": 31,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "1c222096e237e60b1c2217a0dee89f82757db48322c01b3c00e4584c24ab2e73",
+        "testId": "tests/design-refresh.e2e.ts::design%3A%20navigation%20and%20settings%20in%20light%20and%20dark",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "design: navigation and settings in light and dark"
+        ],
+        "file": "tests/design-refresh.e2e.ts",
+        "source": {
+          "file": "tests/design-refresh.e2e.ts",
+          "line": 39,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "e1096828a6887d3c0e8f8b0a954f2c7d1e404d7dd2a70290dd0c1bb73c9acd28",
+        "testId": "tests/design-refresh.e2e.ts::design%3A%20mentions%20search%2C%20select%20twice%2C%20preserve%20focus%2C%20remove%20and%20use%20plus",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "design: mentions search, select twice, preserve focus, remove and use plus"
+        ],
+        "file": "tests/design-refresh.e2e.ts",
+        "source": {
+          "file": "tests/design-refresh.e2e.ts",
+          "line": 63,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "3a3f2ac32e9d27cf1f37f45a226d1766f612dc7eaff95dce1e161b5f74de6712",
+        "testId": "tests/design-refresh.e2e.ts::design%3A%20unavailable%20integrations%20explain%20their%20state",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "design: unavailable integrations explain their state"
+        ],
+        "file": "tests/design-refresh.e2e.ts",
+        "source": {
+          "file": "tests/design-refresh.e2e.ts",
+          "line": 88,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "7ce653ea2c28383401b203bf788bbdf1d2e312f3353a14fcb8311666358dae91",
+        "testId": "tests/design-refresh.e2e.ts::design%3A%20project%20mentions%20preserve%20scope%20and%20the%20workspace%20three%20tabs",
+        "kind": "test",
+        "declarationIndex": 4,
+        "titlePath": [
+          "design: project mentions preserve scope and the workspace three tabs"
+        ],
+        "file": "tests/design-refresh.e2e.ts",
+        "source": {
+          "file": "tests/design-refresh.e2e.ts",
+          "line": 98,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "14acece290535c80adda00a6435be4317ba1d1b21d1d15735381887723c49663",
+        "testId": "tests/design-refresh.e2e.ts::design%3A%20long%20Markdown%20edits%20use%20real%20SQLite%20persistence%20across%20restart",
+        "kind": "test",
+        "declarationIndex": 5,
+        "titlePath": [
+          "design: long Markdown edits use real SQLite persistence across restart"
+        ],
+        "file": "tests/design-refresh.e2e.ts",
+        "source": {
+          "file": "tests/design-refresh.e2e.ts",
+          "line": 147,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "49c791894f49856460d1c4177bfcf466cd32b219e039758da9c62e322ee6d0f9",
+        "testId": "tests/design-refresh.e2e.ts::design%3A%20conversation%20typography%20renders%20Japanese%20prose%20in%20both%20appearances",
+        "kind": "test",
+        "declarationIndex": 6,
+        "titlePath": [
+          "design: conversation typography renders Japanese prose in both appearances"
+        ],
+        "file": "tests/design-refresh.e2e.ts",
+        "source": {
+          "file": "tests/design-refresh.e2e.ts",
+          "line": 176,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "81900d668e9c3a6ab4fc4cc881c01ba910d992a8cd26b204fa0e1c3bcea91f0b",
+        "testId": "tests/experience-polish.e2e.ts::experience%3A%20journal%2C%20library%20and%20create%20menu%20remain%20coherent%20in%20both%20appearances",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "experience: journal, library and create menu remain coherent in both appearances"
+        ],
+        "file": "tests/experience-polish.e2e.ts",
+        "source": {
+          "file": "tests/experience-polish.e2e.ts",
+          "line": 23,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "44ca4375f441f2c76fd074e81f325c4a5d208bc7005003acb6b747ee2991add9",
+        "testId": "tests/experience-polish.e2e.ts::experience%3A%20empty%20task%20action%20creates%20a%20task%2C%20completes%20it%20and%20keeps%20it%20after%20restart",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "experience: empty task action creates a task, completes it and keeps it after restart"
+        ],
+        "file": "tests/experience-polish.e2e.ts",
+        "source": {
+          "file": "tests/experience-polish.e2e.ts",
+          "line": 44,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "083f6bd438b20ad0a9342e174dbc6cae9b3d2d5748754d433cd792308051fcfe",
+        "testId": "tests/experience-polish.e2e.ts::experience%3A%20search%20states%20clear%20their%20real%20query%20and%20hide%20the%20underlying%20project%20list",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "experience: search states clear their real query and hide the underlying project list"
+        ],
+        "file": "tests/experience-polish.e2e.ts",
+        "source": {
+          "file": "tests/experience-polish.e2e.ts",
+          "line": 66,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "c21e220ef06583a5ecb8b3b48b3a21b433a1c82d7b5c72e1ebec4bc927f590e0",
+        "testId": "tests/experience-polish.e2e.ts::experience%3A%20document%20action%20returns%20to%20Ask%20AI%20without%20clearing%20the%20draft",
+        "kind": "test",
+        "declarationIndex": 4,
+        "titlePath": [
+          "experience: document action returns to Ask AI without clearing the draft"
+        ],
+        "file": "tests/experience-polish.e2e.ts",
+        "source": {
+          "file": "tests/experience-polish.e2e.ts",
+          "line": 93,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "fb7e6632e3826210fc5e515ce7cfff5029efda40bbb596cb5d76c8ae86d3823d",
+        "testId": "tests/experience-polish.e2e.ts::experience%3A%20source-only%20search%20reports%20a%20real%20match%20instead%20of%20zero",
+        "kind": "test",
+        "declarationIndex": 5,
+        "titlePath": [
+          "experience: source-only search reports a real match instead of zero"
+        ],
+        "file": "tests/experience-polish.e2e.ts",
+        "source": {
+          "file": "tests/experience-polish.e2e.ts",
+          "line": 106,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "aac2e3a23f51942f2cdafa967f9ba307ca11397a5f7330b5407bcb0cd15c7f1a",
+        "testId": "tests/experience-polish.e2e.ts::experience%3A%20selected%20day%20returns%20to%20today%20through%20a%20real%2044-point%20action",
+        "kind": "test",
+        "declarationIndex": 6,
+        "titlePath": [
+          "experience: selected day returns to today through a real 44-point action"
+        ],
+        "file": "tests/experience-polish.e2e.ts",
+        "source": {
+          "file": "tests/experience-polish.e2e.ts",
+          "line": 138,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "8ae77dcdc3bba6f94fe17b3bacd8249247cd519738d82fc08aa12c7cb9cd932f",
+        "testId": "tests/experience-polish.e2e.ts::experience%3A%20capture%20actions%20scroll%20at%20large%20text%20and%20open%20the%20real%20preparation%20screen",
+        "kind": "test",
+        "declarationIndex": 7,
+        "titlePath": [
+          "experience: capture actions scroll at large text and open the real preparation screen"
+        ],
+        "file": "tests/experience-polish.e2e.ts",
+        "source": {
+          "file": "tests/experience-polish.e2e.ts",
+          "line": 153,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "5e3749204b831ffebdbaa4a3c1d6f319ba2cbe34d2909de8a02048b52eb4ca19",
+        "testId": "tests/experience-polish.e2e.ts::experience%3A%20task%2C%20people%20and%20document%20screens%20retain%20their%20working%20actions",
+        "kind": "test",
+        "declarationIndex": 8,
+        "titlePath": [
+          "experience: task, people and document screens retain their working actions"
+        ],
+        "file": "tests/experience-polish.e2e.ts",
+        "source": {
+          "file": "tests/experience-polish.e2e.ts",
+          "line": 171,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "b80ad0ce39cd3b2a776456050eb2d3678e37bf361fcb8c9ce9e053087aaece04",
+        "testId": "tests/experience-polish.e2e.ts::experience%3A%20journal%20creation%20keeps%20the%20selected%20date%20across%20restart%20while%20external%20new%20memo%20uses%20today",
+        "kind": "test",
+        "declarationIndex": 9,
+        "titlePath": [
+          "experience: journal creation keeps the selected date across restart while external new memo uses today"
+        ],
+        "file": "tests/experience-polish.e2e.ts",
+        "source": {
+          "file": "tests/experience-polish.e2e.ts",
+          "line": 193,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "13bb237092bce40a3e20dc6c57783d3fc7543c536e006f7941197b97d722d1dd",
+        "testId": "tests/gmail-connection.e2e.ts::unconfigured%20Gmail%20stays%20disconnected%20and%20explains%20read-only%20access%20in%20Light%20and%20Dark",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "unconfigured Gmail stays disconnected and explains read-only access in Light and Dark"
+        ],
+        "file": "tests/gmail-connection.e2e.ts",
+        "source": {
+          "file": "tests/gmail-connection.e2e.ts",
+          "line": 6,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "edaa7816f4a3e27811dca42da80d335aa8a90ccdd4c4a0d6ae921e484282de22",
+        "testId": "tests/journal-failure.e2e.ts::journal%20SQLite%20failures%20retain%20drafts%20and%20records%2C%20then%20recover%20through%20the%20UI",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "journal SQLite failures retain drafts and records, then recover through the UI"
+        ],
+        "file": "tests/journal-failure.e2e.ts",
+        "source": {
+          "file": "tests/journal-failure.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "40ef85d7c06a3b1497f0a815452d46bdb719c42e36fb52c68a54e048b3ec726c",
+        "testId": "tests/markdown-replacement.e2e.ts::Japanese%20replacement%2C%20Unicode%20paste%20and%20navigation%20keep%20exact%20committed%20text",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "Japanese replacement, Unicode paste and navigation keep exact committed text"
+        ],
+        "file": "tests/markdown-replacement.e2e.ts",
+        "source": {
+          "file": "tests/markdown-replacement.e2e.ts",
+          "line": 11,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "1526b878bd386957b6496ed3dd69623227368f210643b5df8f4d9eb90dff216e",
+        "testId": "tests/markdown-replacement.e2e.ts::formatting%2C%20list%20and%20table%20edits%20change%20only%20their%20own%20source%20lines",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "formatting, list and table edits change only their own source lines"
+        ],
+        "file": "tests/markdown-replacement.e2e.ts",
+        "source": {
+          "file": "tests/markdown-replacement.e2e.ts",
+          "line": 54,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "be09b1385fc4b62380d09c854d614909f8a2f22b63832e526f71eb009ee7ed51",
+        "testId": "tests/mcp-connection.e2e.ts::unconnected%20MCP%20keeps%20setup%20reachable%20and%20cancels%20an%20unsaved%20server%20in%20Light%20and%20Dark",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "unconnected MCP keeps setup reachable and cancels an unsaved server in Light and Dark"
+        ],
+        "file": "tests/mcp-connection.e2e.ts",
+        "source": {
+          "file": "tests/mcp-connection.e2e.ts",
+          "line": 5,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "94541d40f329271447daa7396f88d70187e04bcc3154874217c099872cd71f86",
+        "testId": "tests/memora.e2e.ts::onboarding%20completion%20survives%20a%20normal%20restart",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "onboarding completion survives a normal restart"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 6,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "f0a886fd13c77689cd40c0c69c53cce47c41d52abd1d63f8ac3603eb33dbe73c",
+        "testId": "tests/memora.e2e.ts::the%20app%20opens%20on%20the%20library",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "the app opens on the library"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 13,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "45da6e80f197de3d7998ba88e0b53987c4f99fa925fe69cdc21ca93a22a3367a",
+        "testId": "tests/memora.e2e.ts::the%20side%20menu%20switches%20between%20home%2C%20library%20and%20Ask%20AI",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "the side menu switches between home, library and Ask AI"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 19,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "2d53798cd0d66806e64dcfe39e2794a61358c25dd2dbe8aec799456113251141",
+        "testId": "tests/memora.e2e.ts::the%20side%20menu%20lists%20the%20main%20destinations",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "the side menu lists the main destinations"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 29,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "ed74196df03639ab1fed58d852eba2d339a1dd6ebc96822071c075ac1c233054",
+        "testId": "tests/memora.e2e.ts::the%20top%20navigation%20controls%20are%20round",
+        "kind": "test",
+        "declarationIndex": 4,
+        "titlePath": [
+          "the top navigation controls are round"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 42,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "6f2827576250bea5e73deb66319e3690fffd78ea62af1a6a21eadeda065709c9",
+        "testId": "tests/memora.e2e.ts::the%20top-right%20create%20control%20opens%20capture%20actions",
+        "kind": "test",
+        "declarationIndex": 5,
+        "titlePath": [
+          "the top-right create control opens capture actions"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 51,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "eb0ccedad306d05640451b700c584b628c70fea5f7a9b5204647a23978ce6d3c",
+        "testId": "tests/memora.e2e.ts::the%20tools%20hub%20reaches%20skills%2C%20templates%20and%20connectors",
+        "kind": "test",
+        "declarationIndex": 6,
+        "titlePath": [
+          "the tools hub reaches skills, templates and connectors"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 60,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "3c10be47743cb316da757fead259117d9c14852059980b3ed7fa4d3b4d4892f5",
+        "testId": "tests/memora.e2e.ts::Settings%20opens%20from%20the%20side%20menu",
+        "kind": "test",
+        "declarationIndex": 7,
+        "titlePath": [
+          "Settings opens from the side menu"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 70,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "f16676af9a2891cb194ee901522c5d444f2403689430ec42deb975801c9c38f5",
+        "testId": "tests/memora.e2e.ts::the%20footer%20settings%20control%20opens%20settings",
+        "kind": "test",
+        "declarationIndex": 8,
+        "titlePath": [
+          "the footer settings control opens settings"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 78,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "a990935ec05ad69f583a8deea48e1b3ed894508331d44b446d6a3f6f8345e6c0",
+        "testId": "tests/memora.e2e.ts::the%20journal%20add-record%20action%20opens%20the%20capture%20sheet",
+        "kind": "test",
+        "declarationIndex": 9,
+        "titlePath": [
+          "the journal add-record action opens the capture sheet"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 85,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "56ca5601c5f38419adb29de93097f3c8518dd28283d2e9af6e4c6852facae5b5",
+        "testId": "tests/memora.e2e.ts::the%20tasks%20list%20opens%20from%20the%20journal",
+        "kind": "test",
+        "declarationIndex": 10,
+        "titlePath": [
+          "the tasks list opens from the journal"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 94,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "2048a4705f9ed3520a3d1c2413e3dabe4f24e2b16f89558b7a2df5ff09c0b344",
+        "testId": "tests/memora.e2e.ts::the%20structured%20answer%20example%20renders%20the%20comparison%20table%20and%20Row",
+        "kind": "test",
+        "declarationIndex": 11,
+        "titlePath": [
+          "the structured answer example renders the comparison table and Row"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 112,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "baaccfe2471e6df3ca4755fa057b671943150271d684a54671f0f248d7512b8e",
+        "testId": "tests/memora.e2e.ts::the%20structured%20answer%20example%20replays%20its%20streaming%20state",
+        "kind": "test",
+        "declarationIndex": 12,
+        "titlePath": [
+          "the structured answer example replays its streaming state"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 124,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "9605dd8c8ae2bce960ea737642ca093101a314c7e9de280d9a6bbc146543cda8",
+        "testId": "tests/memora.e2e.ts::the%20source%20list%20and%20progress%20fixture%20renders",
+        "kind": "test",
+        "declarationIndex": 13,
+        "titlePath": [
+          "the source list and progress fixture renders"
+        ],
+        "file": "tests/memora.e2e.ts",
+        "source": {
+          "file": "tests/memora.e2e.ts",
+          "line": 134,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "a97785cb079e11d0a8cd633a90cb1da293c0803df8ac6a69e1723647e7428b6b",
+        "testId": "tests/minimal-polish.e2e.ts::minimal%20polish%3A%20sidebar%20switching%20keeps%20the%20conversation%20and%20settles%20on%20one%20canvas",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "minimal polish: sidebar switching keeps the conversation and settles on one canvas"
+        ],
+        "file": "tests/minimal-polish.e2e.ts",
+        "source": {
+          "file": "tests/minimal-polish.e2e.ts",
+          "line": 5,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "b3081082519ae892763e1bf8ffe0a3ad811add9ead12279778566705eaee92f7",
+        "testId": "tests/minimal-polish.e2e.ts::minimal%20polish%3A%20Tools%20menus%2C%20article%20actions%20and%20connectors%20stay%20usable",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "minimal polish: Tools menus, article actions and connectors stay usable"
+        ],
+        "file": "tests/minimal-polish.e2e.ts",
+        "source": {
+          "file": "tests/minimal-polish.e2e.ts",
+          "line": 28,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "4bb23e444e7cc3e62135c01525ab487c0642dce256211f8e74aa82153ac700e9",
+        "testId": "tests/native-header.e2e.ts::native%20header%3A%20recorder%20status%20opens%20the%20real%20hub%20and%20search%20lives%20in%20the%20sidebar",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "native header: recorder status opens the real hub and search lives in the sidebar"
+        ],
+        "file": "tests/native-header.e2e.ts",
+        "source": {
+          "file": "tests/native-header.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "6e9caaf9edbb7222c57b7cc8f4ba90ed8631be1fb0738b1e47777cf5c61b7610",
+        "testId": "tests/native-header.e2e.ts::native%20header%3A%20journal%20sidebar%20search%20preserves%20its%20destination%20and%20flat%20content",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "native header: journal sidebar search preserves its destination and flat content"
+        ],
+        "file": "tests/native-header.e2e.ts",
+        "source": {
+          "file": "tests/native-header.e2e.ts",
+          "line": 30,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "8ea2ca57d6c30bf11d4e59b34a7a244682140520c7996138d3d7adfe2e78cb3e",
+        "testId": "tests/native-header.e2e.ts::native%20header%3A%20Ask%20AI%20sidebar%20search%20retains%20the%20existing%20chat%20actions",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "native header: Ask AI sidebar search retains the existing chat actions"
+        ],
+        "file": "tests/native-header.e2e.ts",
+        "source": {
+          "file": "tests/native-header.e2e.ts",
+          "line": 45,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "ed884d46065557236b43fc68312135ad8a68fb6c4d126470a3208556bfe49653",
+        "testId": "tests/native-header.e2e.ts::native%20header%3A%20empty%20Library%20capture%20action%20retains%20its%20native%20dialog%20route",
+        "kind": "test",
+        "declarationIndex": 4,
+        "titlePath": [
+          "native header: empty Library capture action retains its native dialog route"
+        ],
+        "file": "tests/native-header.e2e.ts",
+        "source": {
+          "file": "tests/native-header.e2e.ts",
+          "line": 59,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "8f85eb52cc8dbc66ca67364cb627eb9de585913fa9912c9785de872a7959f0d9",
+        "testId": "tests/notion-connection.e2e.ts::unconfigured%20Notion%20keeps%20native%20parent%20editing%20durable%20without%20claiming%20a%20connection",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "unconfigured Notion keeps native parent editing durable without claiming a connection"
+        ],
+        "file": "tests/notion-connection.e2e.ts",
+        "source": {
+          "file": "tests/notion-connection.e2e.ts",
+          "line": 5,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "d2dce032c0114bdaa3f9c85afb107a5ca69c702acbdc47f7a2e048727510ebd5",
+        "testId": "tests/project-source-interruption.e2e.ts::interrupted%20source%20status%20recovers%20on%20launch%20without%20fetching%20content",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "interrupted source status recovers on launch without fetching content"
+        ],
+        "file": "tests/project-source-interruption.e2e.ts",
+        "source": {
+          "file": "tests/project-source-interruption.e2e.ts",
+          "line": 9,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "336d79c93b39c3c6be38811871a1077e9ca88074b25d34e8a42a93063e535388",
+        "testId": "tests/project-source-office.e2e.ts::Office%20source%20import%20preserves%20partial%20coverage%20and%20reopens%20extracted%20text",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "Office source import preserves partial coverage and reopens extracted text"
+        ],
+        "file": "tests/project-source-office.e2e.ts",
+        "source": {
+          "file": "tests/project-source-office.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "dc5a896c0c9e29d855536783dffa117d6ff8cd1a25a04991c6d9bfb37e5126a2",
+        "testId": "tests/project-source-photo.e2e.ts::selected%20photo%20survives%20SQL%20failure%2C%20same-photo%20retry%2C%20deduplication%20and%20restart",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "selected photo survives SQL failure, same-photo retry, deduplication and restart"
+        ],
+        "file": "tests/project-source-photo.e2e.ts",
+        "source": {
+          "file": "tests/project-source-photo.e2e.ts",
+          "line": 11,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "af8fd3b7f41d19e984a8fbfb21b780b1f122dc4f4a19c32f9bb1ac2c2711211f",
+        "testId": "tests/project-source-pickers.e2e.ts::source%20native%20photo%20and%20file%20pickers%20cancel%20without%20losing%20entered%20text",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "source native photo and file pickers cancel without losing entered text"
+        ],
+        "file": "tests/project-source-pickers.e2e.ts",
+        "source": {
+          "file": "tests/project-source-pickers.e2e.ts",
+          "line": 6,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "e92a7065f8f720d7bd3fe0fe9e745601657769701da4b45e69a37f8f1ab0aa8d",
+        "testId": "tests/project-source-recovery.e2e.ts::project%20source%20notes%20retain%20failed%20creates%20and%20edits%2C%20persist%20drafts%2C%20and%20recover%20after%20restart",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "project source notes retain failed creates and edits, persist drafts, and recover after restart"
+        ],
+        "file": "tests/project-source-recovery.e2e.ts",
+        "source": {
+          "file": "tests/project-source-recovery.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "7e99fefc8231ddc35b94757670566ca551698fd1311978119774ebab69ff3453",
+        "testId": "tests/recording-power.e2e.ts::power%20mode%20changes%20and%20pause%20preserve%20the%20AAC%20recording%20and%20SQLite%20draft",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "power mode changes and pause preserve the AAC recording and SQLite draft"
+        ],
+        "file": "tests/recording-power.e2e.ts",
+        "source": {
+          "file": "tests/recording-power.e2e.ts",
+          "line": 9,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "969370127cd57e0a6752a1d7801ef625fb2bf7d4ff8150198dbd96e47388a290",
+        "testId": "tests/screen-polish.e2e.ts::screen%20polish%3A%20Library%20is%20the%20default%20and%20leads%20Journal%20in%20the%20drawer",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "screen polish: Library is the default and leads Journal in the drawer"
+        ],
+        "file": "tests/screen-polish.e2e.ts",
+        "source": {
+          "file": "tests/screen-polish.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "7a9899d58a0b5b7b068dee467124566a50bc8cfa24846898046dce05c57a8544",
+        "testId": "tests/screen-polish.e2e.ts::screen%20polish%3A%20Settings%20opens%20after%20the%20drawer%20closes%20on%20every%20main%20destination",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "screen polish: Settings opens after the drawer closes on every main destination"
+        ],
+        "file": "tests/screen-polish.e2e.ts",
+        "source": {
+          "file": "tests/screen-polish.e2e.ts",
+          "line": 26,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "a7ea71f39fb30729e1ca19b6cf45c97a71eae8a476f0c7b63e62766dddd26c76",
+        "testId": "tests/screen-polish.e2e.ts::screen%20polish%3A%20onboarding%20remains%20readable%20and%20can%20finish%20without%20recording",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "screen polish: onboarding remains readable and can finish without recording"
+        ],
+        "file": "tests/screen-polish.e2e.ts",
+        "source": {
+          "file": "tests/screen-polish.e2e.ts",
+          "line": 40,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "073d88bb02a9ec7c3e62aac2f46e75d97a4a5895a47fda7062fbb356bff80448",
+        "testId": "tests/screen-polish.e2e.ts::screen%20polish%3A%20account%20and%20plan%20retain%20honest%20states%20and%20usable%20controls",
+        "kind": "test",
+        "declarationIndex": 4,
+        "titlePath": [
+          "screen polish: account and plan retain honest states and usable controls"
+        ],
+        "file": "tests/screen-polish.e2e.ts",
+        "source": {
+          "file": "tests/screen-polish.e2e.ts",
+          "line": 58,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "bfd782b63025622be8376a835332723f95a635d46aa785e4845a4e265e1d256b",
+        "testId": "tests/screen-polish.e2e.ts::screen%20polish%3A%20the%20task%20editor%20still%20saves%20to%20the%20local%20store",
+        "kind": "test",
+        "declarationIndex": 5,
+        "titlePath": [
+          "screen polish: the task editor still saves to the local store"
+        ],
+        "file": "tests/screen-polish.e2e.ts",
+        "source": {
+          "file": "tests/screen-polish.e2e.ts",
+          "line": 85,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "99a227f1afc78e4ada3ad69b63de6c6f5bb0aa7eff8a4561caa324cfbe228ea8",
+        "testId": "tests/screen-polish.e2e.ts::screen%20polish%3A%20secondary%20lists%20and%20presentation%20fixtures%20remain%20navigable",
+        "kind": "test",
+        "declarationIndex": 6,
+        "titlePath": [
+          "screen polish: secondary lists and presentation fixtures remain navigable"
+        ],
+        "file": "tests/screen-polish.e2e.ts",
+        "source": {
+          "file": "tests/screen-polish.e2e.ts",
+          "line": 101,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "6171989539dc604f74c88377b67026f1ae52f81435ccb424c00661780b412361",
+        "testId": "tests/settings-polish.e2e.ts::settings%20polish%3A%20topic%20hierarchy%2C%20profile%20editing%20and%20shared%20sidebar%20icons",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "settings polish: topic hierarchy, profile editing and shared sidebar icons"
+        ],
+        "file": "tests/settings-polish.e2e.ts",
+        "source": {
+          "file": "tests/settings-polish.e2e.ts",
+          "line": 27,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "1c1ef575ccba6e2de35bc991cac46277024ac9449f294461e890025fa7fd688d",
+        "testId": "tests/settings-polish.e2e.ts::settings%20polish%3A%20workspace%20switching%20and%20team%20registration%20remain%20reachable%20in%20Settings",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "settings polish: workspace switching and team registration remain reachable in Settings"
+        ],
+        "file": "tests/settings-polish.e2e.ts",
+        "source": {
+          "file": "tests/settings-polish.e2e.ts",
+          "line": 69,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "9b8ab9b313c66b907e22a312cd0b0461cda49f76d2ebe99cd813c1c406d698fc",
+        "testId": "tests/settings-polish.e2e.ts::settings%20polish%3A%20appearance%20preferences%20survive%20restart%20without%20changing%20records",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "settings polish: appearance preferences survive restart without changing records"
+        ],
+        "file": "tests/settings-polish.e2e.ts",
+        "source": {
+          "file": "tests/settings-polish.e2e.ts",
+          "line": 90,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "0ba661b0d479d9115fe881a1db373656f575428b4ff6eb694a07c0caf194e1b6",
+        "testId": "tests/settings-polish.e2e.ts::settings%20polish%3A%20relocated%20AI%2C%20recording%2C%20plan%20and%20connection%20controls%20remain%20reachable",
+        "kind": "test",
+        "declarationIndex": 4,
+        "titlePath": [
+          "settings polish: relocated AI, recording, plan and connection controls remain reachable"
+        ],
+        "file": "tests/settings-polish.e2e.ts",
+        "source": {
+          "file": "tests/settings-polish.e2e.ts",
+          "line": 112,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "31a1dc573e089652597c75d77c810468408ced5a51012c3a412344a5a7083cc8",
+        "testId": "tests/sidebar-glass.e2e.ts::sidebar%20glass%3A%20supplied%20logo%20sits%20above%20Library%20in%20both%20appearances",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "sidebar glass: supplied logo sits above Library in both appearances"
+        ],
+        "file": "tests/sidebar-glass.e2e.ts",
+        "source": {
+          "file": "tests/sidebar-glass.e2e.ts",
+          "line": 9,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "5dc4bf1ed1fe15f08abb42c775ed53ea086b0b053f38c2038fd56ee591a8bec7",
+        "testId": "tests/sidebar-glass.e2e.ts::sidebar%20glass%3A%20create%20morph%20keeps%20capture%20choices%20and%20memo%20cancellation%20working",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "sidebar glass: create morph keeps capture choices and memo cancellation working"
+        ],
+        "file": "tests/sidebar-glass.e2e.ts",
+        "source": {
+          "file": "tests/sidebar-glass.e2e.ts",
+          "line": 32,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "a9df936146c92d8629c20d8f20f6326e814dc8b2a7bbde1e4d459b29a591aa25",
+        "testId": "tests/sidebar-glass.e2e.ts::sidebar%20glass%3A%20attachment%20glass%20keeps%20the%20composer%20mounted%20and%20preserves%20its%20draft",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "sidebar glass: attachment glass keeps the composer mounted and preserves its draft"
+        ],
+        "file": "tests/sidebar-glass.e2e.ts",
+        "source": {
+          "file": "tests/sidebar-glass.e2e.ts",
+          "line": 63,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "0b946f177423394f466cf5733b7faf94d6bcbc67ca0bd71342ad5beb889fd6b6",
+        "testId": "tests/skill-polish.e2e.ts::skill%20polish%3A%20explain%20validation%20and%20protect%20an%20unsaved%20edit",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "skill polish: explain validation and protect an unsaved edit"
+        ],
+        "file": "tests/skill-polish.e2e.ts",
+        "source": {
+          "file": "tests/skill-polish.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "7f4efdca6c6c95140c4a88c794d8c707d44dbf7c9a6705a0f785400bf35956c4",
+        "testId": "tests/skill-polish.e2e.ts::skill%20polish%3A%20search%20Tools%2C%20open%20an%20article%20and%20clear%20the%20search",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "skill polish: search Tools, open an article and clear the search"
+        ],
+        "file": "tests/skill-polish.e2e.ts",
+        "source": {
+          "file": "tests/skill-polish.e2e.ts",
+          "line": 42,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "1312c0c065c033cb4247920524f32d9e08042063c2434b98f8dfee5d057fc9e9",
+        "testId": "tests/summary-adaptive.e2e.ts::content-led%20poster%20and%20meeting%20task%20creation%20preserve%20saved%20records",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "content-led poster and meeting task creation preserve saved records"
+        ],
+        "file": "tests/summary-adaptive.e2e.ts",
+        "source": {
+          "file": "tests/summary-adaptive.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "d5ca1b031e975c8160df07bec88ff5803a019b1ef9a0acfec225083d7c08f5ba",
+        "testId": "tests/summary-infographic.e2e.ts::separate%20infographic%20restores%20evidence%20and%20stages%20three%20record%20questions%20without%20sending",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "separate infographic restores evidence and stages three record questions without sending"
+        ],
+        "file": "tests/summary-infographic.e2e.ts",
+        "source": {
+          "file": "tests/summary-infographic.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "418daf89e9951c986e671e92252fd8e2cf5825ca9d976e4ccdbcc21764211c6d",
+        "testId": "tests/summary-modes.e2e.ts::summary%20processing%20mode%20is%20separate%20from%20detail%20and%20never%20regenerates%20on%20selection",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "summary processing mode is separate from detail and never regenerates on selection"
+        ],
+        "file": "tests/summary-modes.e2e.ts",
+        "source": {
+          "file": "tests/summary-modes.e2e.ts",
+          "line": 11,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "2ef906e4b4a3cb24b38f3d61816c87b3f6c6d65578bf7c386ae63c142017b78f",
+        "testId": "tests/summary-one-tap.e2e.ts::summary%20has%20one%20Generate%20action%20and%20discloses%20only%20external%20destinations",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "summary has one Generate action and discloses only external destinations"
+        ],
+        "file": "tests/summary-one-tap.e2e.ts",
+        "source": {
+          "file": "tests/summary-one-tap.e2e.ts",
+          "line": 6,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "dea1651c8d9da1ce6e944a6537e110cf54b259358765ea424e2c4886bc7f42d3",
+        "testId": "tests/summary-polish.e2e.ts::summary%20decisions%20remain%20editable%20without%20transcript%20confirmation%20links",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "summary decisions remain editable without transcript confirmation links"
+        ],
+        "file": "tests/summary-polish.e2e.ts",
+        "source": {
+          "file": "tests/summary-polish.e2e.ts",
+          "line": 11,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "8aac7abeac001a09a246038af9620b08f5155cabdbf53ad209dcea4504a25c04",
+        "testId": "tests/summary-polish.e2e.ts::long%20summary%20images%20stay%20bounded%20while%20preserving%20the%20complete%20saved%20summary",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "long summary images stay bounded while preserving the complete saved summary"
+        ],
+        "file": "tests/summary-polish.e2e.ts",
+        "source": {
+          "file": "tests/summary-polish.e2e.ts",
+          "line": 69,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "97406b6f329f2f92d1deee1b3117051a8768671d07035244ba2d19c37c496015",
+        "testId": "tests/summary-reading.e2e.ts::summary%20PNG%2C%20full-text%20reading%20and%20reversible%20transcript%20survive%20restart",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "summary PNG, full-text reading and reversible transcript survive restart"
+        ],
+        "file": "tests/summary-reading.e2e.ts",
+        "source": {
+          "file": "tests/summary-reading.e2e.ts",
+          "line": 15,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "628243264a15074b1795df9f2ccb8ac30530bd4552d15df85c7e458ae2ce63cf",
+        "testId": "tests/summary-recovery.e2e.ts::failed%20transcript%20saves%20keep%20the%20stored%20record%20and%20durable%20or%20in-memory%20draft",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "failed transcript saves keep the stored record and durable or in-memory draft"
+        ],
+        "file": "tests/summary-recovery.e2e.ts",
+        "source": {
+          "file": "tests/summary-recovery.e2e.ts",
+          "line": 12,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "a61ac7281797939f0a4d3af65b1bdccc01cee0bb1feee9676cf41f1094aea02a",
+        "testId": "tests/summary-recovery.e2e.ts::PNG%20write%20failure%20keeps%20the%20preview%20and%20a%20retry%20uses%20the%20real%20share%20sheet",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "PNG write failure keeps the preview and a retry uses the real share sheet"
+        ],
+        "file": "tests/summary-recovery.e2e.ts",
+        "source": {
+          "file": "tests/summary-recovery.e2e.ts",
+          "line": 82,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "0e8d3ed354c3e51ab34f29fe297f6f0da9b4445aa34a5ccd8009faa62278696a",
+        "testId": "tests/summary-relations.e2e.ts::validated%20on-device%20summary%20relations%20survive%20reading%2C%20editing%20and%20restart",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "validated on-device summary relations survive reading, editing and restart"
+        ],
+        "file": "tests/summary-relations.e2e.ts",
+        "source": {
+          "file": "tests/summary-relations.e2e.ts",
+          "line": 15,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "6b7e970ae70fcf6dcccf14f35a4e77457c8be1873552baf7754fdfe0e2d72ab2",
+        "testId": "tests/summary-sample.e2e.ts::summary%20sample%20is%20additive%2C%20recoverable%20and%20displays%20its%20image%20without%20a%20tap",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "summary sample is additive, recoverable and displays its image without a tap"
+        ],
+        "file": "tests/summary-sample.e2e.ts",
+        "source": {
+          "file": "tests/summary-sample.e2e.ts",
+          "line": 10,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "851aadab4bc41742d0ca1116bfada1533b82c40d1ba6fbfe3cceacc4918c8399",
+        "testId": "tests/ui-polish.e2e.ts::polish%3A%20candidate%20names%2C%20selected%20state%20and%20keyboard%20survive%20appearance%20changes",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "polish: candidate names, selected state and keyboard survive appearance changes"
+        ],
+        "file": "tests/ui-polish.e2e.ts",
+        "source": {
+          "file": "tests/ui-polish.e2e.ts",
+          "line": 16,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "d951b33ac93456b31460cdaade1d64af1185fe13c81f8f71d1e29af1d740f616",
+        "testId": "tests/ui-polish.e2e.ts::polish%3A%20library%20metadata%20and%20status%20remain%20readable%20in%20both%20appearances",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "polish: library metadata and status remain readable in both appearances"
+        ],
+        "file": "tests/ui-polish.e2e.ts",
+        "source": {
+          "file": "tests/ui-polish.e2e.ts",
+          "line": 48,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "199e2bdb254b3ed688dd18c5fd26b208b21253869051adefbb2c25e795039bc3",
+        "testId": "tests/waiting-evidence.e2e.ts::waiting%20evidence%20uses%20actual%20status%20components%20with%20local%20display%20fixtures",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "waiting evidence uses actual status components with local display fixtures"
+        ],
+        "file": "tests/waiting-evidence.e2e.ts",
+        "source": {
+          "file": "tests/waiting-evidence.e2e.ts",
+          "line": 8,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": true,
+        "status": "passed",
+        "attempts": [
+          {
+            "id": "01a1766a-e25f-7967-b217-30ee601a5332",
+            "index": 0,
+            "status": "passed",
+            "startedAt": "2026-10-26T04:14:38.687Z",
+            "durationMs": 57922,
+            "artifacts": [
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:artifact:0",
+                "kind": "screenshot",
+                "mediaType": "image/png",
+                "redaction": "complete",
+                "producer": {
+                  "kind": "step",
+                  "stepId": "01a1766a-e25f-7967-b217-30ee601a5332:19"
+                },
+                "path": "waiting-evidence-waiting-evidence-uses-actual-199e2bdb254b3ed6/attempt-1/screenshots/001-waiting-light.png",
+                "size": 21868,
+                "sha256": "c048d473ae25f19dc65390b0e5af69ff12913f7ca70a6999b2d0e46698295f8b"
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:artifact:1",
+                "kind": "screenshot",
+                "mediaType": "image/png",
+                "redaction": "complete",
+                "producer": {
+                  "kind": "step",
+                  "stepId": "01a1766a-e25f-7967-b217-30ee601a5332:21"
+                },
+                "path": "waiting-evidence-waiting-evidence-uses-actual-199e2bdb254b3ed6/attempt-1/screenshots/002-waiting-dark.png",
+                "size": 20321,
+                "sha256": "1034afb456b1bc78fe3e5370410e38e7132cd276fee9cf2c7477405ca3e59620"
+              }
+            ],
+            "secondaryErrors": [],
+            "cleanup": "complete",
+            "environment": {
+              "platform": "ios",
+              "device": "iPhone 18 Pro Max"
+            },
+            "steps": [
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:0",
+                "index": 0,
+                "kind": "resource",
+                "api": "device.installApp",
+                "label": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/DerivedData/Build/Products/Debug-iphonesimulator/Memora.app",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:41.714Z",
+                "durationMs": 2236,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 109,
+                  "column": 16
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:1",
+                "index": 1,
+                "kind": "app",
+                "api": "app.restart",
+                "label": "",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:43.951Z",
+                "durationMs": 3305,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 110,
+                  "column": 13
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:2",
+                "index": 2,
+                "kind": "screen",
+                "api": "screen.tapAt",
+                "label": "(387.83333333333326, 92)",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:49.578Z",
+                "durationMs": 431,
+                "events": [
+                  {
+                    "kind": "engine",
+                    "name": "tap",
+                    "startedAt": "2026-10-26T04:14:49.578Z",
+                    "durationMs": 431,
+                    "status": "passed",
+                    "detail": "tap at (388, 92)"
+                  }
+                ],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 118,
+                  "column": 18
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:3",
+                "index": 3,
+                "kind": "assertion",
+                "api": "expect.toBeVisible",
+                "label": "getByLabel(\"メニュー\").first()",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:50.010Z",
+                "durationMs": 526,
+                "events": [
+                  {
+                    "kind": "poll",
+                    "name": "expect",
+                    "startedAt": "2026-10-26T04:14:50.010Z",
+                    "durationMs": 526,
+                    "status": "passed",
+                    "count": 2,
+                    "detail": "no node (0 matches) -> at 526ms default states (1 match)"
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4 / ライブラリ",
+                  "nodes": 39,
+                  "changes": []
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 120,
+                  "column": 22
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:4",
+                "index": 4,
+                "kind": "assertion",
+                "api": "expect.toBeVisible",
+                "label": "getByLabel(\"メニュー\").first()",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:50.537Z",
+                "durationMs": 148,
+                "events": [
+                  {
+                    "kind": "poll",
+                    "name": "expect",
+                    "startedAt": "2026-10-26T04:14:50.537Z",
+                    "durationMs": 148,
+                    "status": "passed",
+                    "count": 1
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4 / ライブラリ",
+                  "nodes": 39,
+                  "since": 3,
+                  "changes": []
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 5,
+                  "column": 25
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:5",
+                "index": 5,
+                "kind": "locator",
+                "api": "locator.tap",
+                "label": "getByLabel(\"メニュー\").first()",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:51.320Z",
+                "durationMs": 744,
+                "events": [
+                  {
+                    "kind": "engine",
+                    "name": "tap",
+                    "startedAt": "2026-10-26T04:14:51.320Z",
+                    "durationMs": 744,
+                    "status": "passed",
+                    "detail": "tap button \"メニュー\""
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4 / ライブラリ",
+                  "nodes": 40,
+                  "since": 4,
+                  "changes": [
+                    "added image \"設定\""
+                  ]
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 7,
+                  "column": 17
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:6",
+                "index": 6,
+                "kind": "assertion",
+                "api": "expect.toBeVisible",
+                "label": "getByTestId(\"sidebar.settings\")",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:52.064Z",
+                "durationMs": 150,
+                "events": [
+                  {
+                    "kind": "poll",
+                    "name": "expect",
+                    "startedAt": "2026-10-26T04:14:52.064Z",
+                    "durationMs": 150,
+                    "status": "passed",
+                    "count": 1
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4",
+                  "nodes": 61,
+                  "since": 5,
+                  "changes": [
+                    "added button \"メニューを閉じる\"",
+                    "added button \"検索\" testid=\"sidebar.navigation\"",
+                    "added text \"検索\"",
+                    "added button \"ライブラリ\" testid=\"sidebar.navigation\" [selected]",
+                    "added button \"ジャーナル\" testid=\"sidebar.navigation\"",
+                    "added text \"ジャーナル\"",
+                    "added button \"Ask AI\" testid=\"sidebar.navigation\"",
+                    "added text \"Ask AI\"",
+                    "added image \"Lucide Icon\"",
+                    "added button \"ツール\" testid=\"sidebar.navigation\"",
+                    "added text \"ツール\"",
+                    "added image \"Lucide Icon\""
+                  ],
+                  "more": 25
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 5,
+                  "column": 25
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:7",
+                "index": 7,
+                "kind": "locator",
+                "api": "locator.tap",
+                "label": "getByTestId(\"sidebar.settings\")",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:53.118Z",
+                "durationMs": 758,
+                "events": [
+                  {
+                    "kind": "engine",
+                    "name": "tap",
+                    "startedAt": "2026-10-26T04:14:53.118Z",
+                    "durationMs": 758,
+                    "status": "passed",
+                    "detail": "tap button \"設定\""
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4",
+                  "nodes": 60,
+                  "since": 6,
+                  "changes": [
+                    "removed image \"Lucide Icon\""
+                  ]
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 7,
+                  "column": 17
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:8",
+                "index": 8,
+                "kind": "screen",
+                "api": "screen.swipe",
+                "label": "(215, 700) → (215, 300)",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:54.024Z",
+                "durationMs": 986,
+                "events": [
+                  {
+                    "kind": "engine",
+                    "name": "swipeTo",
+                    "startedAt": "2026-10-26T04:14:54.024Z",
+                    "durationMs": 986,
+                    "status": "passed",
+                    "detail": "swipeTo at (215, 700)"
+                  }
+                ],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 132,
+                  "column": 20
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:9",
+                "index": 9,
+                "kind": "screen",
+                "api": "screen.swipe",
+                "label": "(215, 700) → (215, 300)",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:55.227Z",
+                "durationMs": 1182,
+                "events": [
+                  {
+                    "kind": "engine",
+                    "name": "swipeTo",
+                    "startedAt": "2026-10-26T04:14:55.227Z",
+                    "durationMs": 1182,
+                    "status": "passed",
+                    "detail": "swipeTo at (215, 700)"
+                  }
+                ],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 132,
+                  "column": 20
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:10",
+                "index": 10,
+                "kind": "assertion",
+                "api": "expect.toBeVisible",
+                "label": "getByTestId(\"settings.category.diagnostics\").first()",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:56.606Z",
+                "durationMs": 192,
+                "events": [
+                  {
+                    "kind": "poll",
+                    "name": "expect",
+                    "startedAt": "2026-10-26T04:14:56.606Z",
+                    "durationMs": 192,
+                    "status": "passed",
+                    "count": 1
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4 / 設定",
+                  "nodes": 68,
+                  "since": 7,
+                  "changes": [
+                    "added other testid=\"settings\"",
+                    "added navigation testid=\"設定\"",
+                    "added text \"設定\"",
+                    "added button \"閉じる\"",
+                    "added button \"プランと利用状況、無料\" testid=\"settings.category.plan\"",
+                    "added text \"プランと利用状況\"",
+                    "added text \"無料\"",
+                    "added image testid=\"chevron.forward\"",
+                    "added listitem",
+                    "added text \"アプリ\"",
+                    "added listitem",
+                    "added button \"録音と文字起こし\" testid=\"settings.category.recording\""
+                  ],
+                  "more": 82
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 5,
+                  "column": 25
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:11",
+                "index": 11,
+                "kind": "locator",
+                "api": "locator.tap",
+                "label": "getByTestId(\"settings.category.diagnostics\").first()",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:57.586Z",
+                "durationMs": 1047,
+                "events": [
+                  {
+                    "kind": "engine",
+                    "name": "tap",
+                    "startedAt": "2026-10-26T04:14:57.586Z",
+                    "durationMs": 1047,
+                    "status": "passed",
+                    "detail": "tap button \"診断とプレビュー\""
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4 / 設定",
+                  "nodes": 68,
+                  "since": 10,
+                  "changes": []
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 7,
+                  "column": 17
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:12",
+                "index": 12,
+                "kind": "assertion",
+                "api": "expect.toBeVisible",
+                "label": "getByRole(\"button\", name: \"状態と復旧UIを確認\")",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:58.633Z",
+                "durationMs": 243,
+                "events": [
+                  {
+                    "kind": "poll",
+                    "name": "expect",
+                    "startedAt": "2026-10-26T04:14:58.633Z",
+                    "durationMs": 243,
+                    "status": "passed",
+                    "count": 1
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4 / 診断とプレビュー",
+                  "nodes": 89,
+                  "since": 11,
+                  "changes": [
+                    "added navigation testid=\"診断とプレビュー\"",
+                    "added button \"設定\" testid=\"BackButton\"",
+                    "added listitem [selected]",
+                    "added button \"診断とプレビュー\" testid=\"settings.category.diagnostics\" [selected]",
+                    "added text \"診断とプレビュー\"",
+                    "added collection-view",
+                    "added text \"表示と動作\"",
+                    "added listitem",
+                    "added button \"要約済み音声のサンプルを見る\" testid=\"summary.sample.open\"",
+                    "added text \"要約済み音声のサンプルを見る\"",
+                    "added listitem",
+                    "added button \"状態と復旧UIを確認\""
+                  ],
+                  "more": 25
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 5,
+                  "column": 25
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:13",
+                "index": 13,
+                "kind": "locator",
+                "api": "locator.tap",
+                "label": "getByRole(\"button\", name: \"状態と復旧UIを確認\")",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:14:59.682Z",
+                "durationMs": 955,
+                "events": [
+                  {
+                    "kind": "engine",
+                    "name": "tap",
+                    "startedAt": "2026-10-26T04:14:59.683Z",
+                    "durationMs": 955,
+                    "status": "passed",
+                    "detail": "tap button \"状態と復旧UIを確認\""
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4 / 診断とプレビュー",
+                  "nodes": 38,
+                  "since": 12,
+                  "changes": [
+                    "removed text \"設定\"",
+                    "removed text \"診断とプレビュー\"",
+                    "removed button \"閉じる\"",
+                    "removed image \"Lucide Icon\"",
+                    "removed collection-view",
+                    "removed listitem",
+                    "removed button \"プランと利用状況、無料\" testid=\"settings.category.plan\"",
+                    "removed text \"プランと利用状況\"",
+                    "removed text \"無料\"",
+                    "removed image testid=\"chevron.forward\"",
+                    "removed listitem",
+                    "removed text \"アプリ\""
+                  ],
+                  "more": 39
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 7,
+                  "column": 17
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:14",
+                "index": 14,
+                "kind": "screen",
+                "api": "screen.swipe",
+                "label": "(215, 700) → (215, 300)",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:00.885Z",
+                "durationMs": 1254,
+                "events": [
+                  {
+                    "kind": "engine",
+                    "name": "swipeTo",
+                    "startedAt": "2026-10-26T04:15:00.885Z",
+                    "durationMs": 1254,
+                    "status": "passed",
+                    "detail": "swipeTo at (215, 700)"
+                  }
+                ],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 132,
+                  "column": 20
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:15",
+                "index": 15,
+                "kind": "assertion",
+                "api": "expect.toBeVisible",
+                "label": "getByRole(\"button\", name: \"Ask AIの経過（表示の確認）\")",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:02.350Z",
+                "durationMs": 203,
+                "events": [
+                  {
+                    "kind": "poll",
+                    "name": "expect",
+                    "startedAt": "2026-10-26T04:15:02.350Z",
+                    "durationMs": 203,
+                    "status": "passed",
+                    "count": 1
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4 / 状態と復旧",
+                  "nodes": 63,
+                  "since": 13,
+                  "changes": [
+                    "added navigation testid=\"状態と復旧\"",
+                    "added button \"1つ前に戻る\"",
+                    "added text \"状態と復旧\"",
+                    "added button \"回答アクション（操作の確認）\"",
+                    "added text \"回答アクション（操作の確認）\"",
+                    "added text \"システム導線（遷移の確認）\"",
+                    "added button \"Ask AIのリンクを開く\"",
+                    "added button \"今日のタスクのリンクを開く\"",
+                    "added button \"ジャーナルのリンクを開く\"",
+                    "added button \"メモ作成のリンクを開く\"",
+                    "added text \"Ask AI\"",
+                    "added listitem"
+                  ],
+                  "more": 61
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 5,
+                  "column": 25
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:16",
+                "index": 16,
+                "kind": "locator",
+                "api": "locator.tap",
+                "label": "getByRole(\"button\", name: \"Ask AIの経過（表示の確認）\")",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:04.979Z",
+                "durationMs": 1130,
+                "events": [
+                  {
+                    "kind": "engine",
+                    "name": "tap",
+                    "startedAt": "2026-10-26T04:15:04.979Z",
+                    "durationMs": 1130,
+                    "status": "passed",
+                    "detail": "tap button \"Ask AIの経過（表示の確認）\""
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4 / 状態と復旧",
+                  "nodes": 65,
+                  "since": 15,
+                  "changes": [
+                    "added text \"権限と録音\"",
+                    "added listitem",
+                    "added image \"Lucide Icon\"",
+                    "added text \"マイクを使えません\"",
+                    "added other \"Vertical scroll bar, 4 pages\" value=\"41%\"",
+                    "added other \"Vertical scroll bar, 4 pages\" value=\"41%\"",
+                    "removed button \"回答アクション（操作の確認）\"",
+                    "removed text \"回答アクション（操作の確認）\"",
+                    "removed other \"Vertical scroll bar, 4 pages\" value=\"36%\"",
+                    "removed other \"Vertical scroll bar, 4 pages\" value=\"36%\""
+                  ]
+                },
+                "source": {
+                  "file": "tests/ui-helpers.ts",
+                  "line": 7,
+                  "column": 17
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:17",
+                "index": 17,
+                "kind": "assertion",
+                "api": "expect.toBeVisible",
+                "label": "getByText(\"作業しています\").first()",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:06.110Z",
+                "durationMs": 240,
+                "events": [
+                  {
+                    "kind": "poll",
+                    "name": "expect",
+                    "startedAt": "2026-10-26T04:15:06.110Z",
+                    "durationMs": 240,
+                    "status": "passed",
+                    "count": 1
+                  }
+                ],
+                "artifacts": [],
+                "screen": {
+                  "location": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4",
+                  "nodes": 76,
+                  "since": 16,
+                  "changes": [
+                    "added navigation testid=\"_TtGC7SwiftUI32NavigationStackHosting\"",
+                    "added button \"状態と復旧\" testid=\"BackButton\"",
+                    "added listitem [selected]",
+                    "added button \"Ask AIの経過（表示の確認）\" [selected]",
+                    "added scroll-view",
+                    "added other \"作業しています\" testid=\"ai.waitingStatus\"",
+                    "added text \"作業しています\"",
+                    "added text \"作業しています\"",
+                    "added disclosure-triangle \"実行状況 · 操作2件\"",
+                    "added disclosure-triangle \"実行状況 · 操作2件\"",
+                    "added image testid=\"collapsed\"",
+                    "added other \"確認を待っています（表示例）\" testid=\"ai.waitingStatus\""
+                  ],
+                  "more": 7
+                },
+                "source": {
+                  "file": "tests/waiting-evidence.e2e.ts",
+                  "line": 16,
+                  "column": 70
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:18",
+                "index": 18,
+                "kind": "resource",
+                "api": "device.setAppearance",
+                "label": "light",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:06.351Z",
+                "durationMs": 219,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/waiting-evidence.e2e.ts",
+                  "line": 18,
+                  "column": 18
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:19",
+                "index": 19,
+                "kind": "app",
+                "api": "app.screenshot",
+                "label": "waiting-light",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:06.570Z",
+                "durationMs": 702,
+                "events": [],
+                "artifacts": [
+                  "01a1766a-e25f-7967-b217-30ee601a5332:artifact:0"
+                ],
+                "source": {
+                  "file": "tests/waiting-evidence.e2e.ts",
+                  "line": 19,
+                  "column": 15
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:20",
+                "index": 20,
+                "kind": "resource",
+                "api": "device.setAppearance",
+                "label": "dark",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:07.272Z",
+                "durationMs": 111,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/waiting-evidence.e2e.ts",
+                  "line": 18,
+                  "column": 18
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:21",
+                "index": 21,
+                "kind": "app",
+                "api": "app.screenshot",
+                "label": "waiting-dark",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:07.384Z",
+                "durationMs": 705,
+                "events": [],
+                "artifacts": [
+                  "01a1766a-e25f-7967-b217-30ee601a5332:artifact:1"
+                ],
+                "source": {
+                  "file": "tests/waiting-evidence.e2e.ts",
+                  "line": 19,
+                  "column": 15
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:22",
+                "index": 22,
+                "kind": "resource",
+                "api": "device.setAppearance",
+                "label": "light",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:08.089Z",
+                "durationMs": 112,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/waiting-evidence.e2e.ts",
+                  "line": 22,
+                  "column": 18
+                }
+              },
+              {
+                "id": "01a1766a-e25f-7967-b217-30ee601a5332:23",
+                "index": 23,
+                "kind": "resource",
+                "api": "device.setAppearance",
+                "label": "light",
+                "status": "passed",
+                "startedAt": "2026-10-26T04:15:36.286Z",
+                "durationMs": 322,
+                "events": [],
+                "phase": "afterEach",
+                "artifacts": [],
+                "source": {
+                  "file": "tests/waiting-evidence.e2e.ts",
+                  "line": 6,
+                  "column": 48
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "11dd179f21287b450e0133efc33a83eda8458aec6fed35d68366b9da42952028",
+        "testId": "tests/waiting-transitions.e2e.ts::waiting%20text%20yields%20to%20streaming%2C%20stops%20for%20approval%20and%20terminal%20states",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "waiting text yields to streaming, stops for approval and terminal states"
+        ],
+        "file": "tests/waiting-transitions.e2e.ts",
+        "source": {
+          "file": "tests/waiting-transitions.e2e.ts",
+          "line": 5,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "89c28165365d730d916b5711b73e97ef7c09a253c17cb2aeeea2ec011763870b",
+        "testId": "tests/workflow-polish.e2e.ts::workflow%20polish%3A%20task%20planning%2C%20active%20filters%20and%20completion%20remain%20clear",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "workflow polish: task planning, active filters and completion remain clear"
+        ],
+        "file": "tests/workflow-polish.e2e.ts",
+        "source": {
+          "file": "tests/workflow-polish.e2e.ts",
+          "line": 7,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "5e72ea694fea8d3c9573d0cb06dcb6f3be5e099e19ec96dcf7982fd0cc1bd193",
+        "testId": "tests/workflow-polish.e2e.ts::workflow%20polish%3A%20project%20rename%20keeps%20edits%20until%20confirmed%20and%20saves%20from%20keyboard",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "workflow polish: project rename keeps edits until confirmed and saves from keyboard"
+        ],
+        "file": "tests/workflow-polish.e2e.ts",
+        "source": {
+          "file": "tests/workflow-polish.e2e.ts",
+          "line": 52,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "f7316eda3a3f955cd52fadb0c997562827300cafffac4b8132e7802075dab647",
+        "testId": "tests/workflow-polish.e2e.ts::workflow%20polish%3A%20empty%20mail%20drafts%20return%20to%20Ask%20AI%20without%20clearing%20its%20draft",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "workflow polish: empty mail drafts return to Ask AI without clearing its draft"
+        ],
+        "file": "tests/workflow-polish.e2e.ts",
+        "source": {
+          "file": "tests/workflow-polish.e2e.ts",
+          "line": 86,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "af2199c3b0c88110b45c8154d03ad1604bd501049fcced12fce6ea48e5ca92ae",
+        "testId": "tests/workspace-journal.e2e.ts::the%20workspace%20tabs%20read%20chat%2C%20files%2C%20sources%20and%20switch%20in%20place",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "the workspace tabs read chat, files, sources and switch in place"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 64,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "9d98b3a153d44541771ef611763a6d2b888dfe7664a6f5c356b523855a27479d",
+        "testId": "tests/workspace-journal.e2e.ts::the%20week%20strip%20selects%20a%20day%20and%20updates%20the%20timeline",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "the week strip selects a day and updates the timeline"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 93,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "b70fc6672a8402e68371c535f21e30891d3e6213916a194a8257ab3f9f87b1f2",
+        "testId": "tests/workspace-journal.e2e.ts::the%20inline%20plus%20buttons%20add%20a%20record",
+        "kind": "test",
+        "declarationIndex": 2,
+        "titlePath": [
+          "the inline plus buttons add a record"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 116,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "555076e61b698d2cba650397a3141c5a2d340c1c709a95d33fdc5869ce499874",
+        "testId": "tests/workspace-journal.e2e.ts::journal%20insertion%20proposes%20the%20selected%20day%20and%20the%20time%20between%20events",
+        "kind": "test",
+        "declarationIndex": 3,
+        "titlePath": [
+          "journal insertion proposes the selected day and the time between events"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 137,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "7a5519db74f3a985df46bdcb11342c25d1ef75c1061c37534ee4c9cf3e5a3bbd",
+        "testId": "tests/workspace-journal.e2e.ts::journal%20editing%20and%20confirmed%20deletion%20persist%20after%20restart",
+        "kind": "test",
+        "declarationIndex": 4,
+        "titlePath": [
+          "journal editing and confirmed deletion persist after restart"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 195,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "59603f2bb5244f6f4d43179bb7e49165036c2dc752f5485349c6cd4ecce435ed",
+        "testId": "tests/workspace-journal.e2e.ts::journal%20search%20replaces%20the%20recap%20and%20restores%20the%20timeline%20without%20losing%20records",
+        "kind": "test",
+        "declarationIndex": 5,
+        "titlePath": [
+          "journal search replaces the recap and restores the timeline without losing records"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 238,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "9fb102f7121f7e87219788bcac89157a412d363051a93d263d8865c4b98f104e",
+        "testId": "tests/workspace-journal.e2e.ts::the%20journal%20and%20workspace%20stay%20legible%20in%20dark%20appearance",
+        "kind": "test",
+        "declarationIndex": 6,
+        "titlePath": [
+          "the journal and workspace stay legible in dark appearance"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 264,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "3d8afb9a44b1d7b77df6eb4a4dcc38c8db5944613e5714ce4656c64814d2ad5b",
+        "testId": "tests/workspace-journal.e2e.ts::editing%20a%20record%20saves%20it%20to%20the%20new%20date",
+        "kind": "test",
+        "declarationIndex": 7,
+        "titlePath": [
+          "editing a record saves it to the new date"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 284,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "00d1df21d1efad01587177a77be9b66973fea8cc22d9f51a814e1097512cd454",
+        "testId": "tests/workspace-journal.e2e.ts::a%20source%20added%20in%20the%20workspace%20stays%20in%20the%20sources%20tab",
+        "kind": "test",
+        "declarationIndex": 8,
+        "titlePath": [
+          "a source added in the workspace stays in the sources tab"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 319,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "81b72454c20f0ef3e264271f296bc16644d51bb8306c32f716ed1e3d9c83550c",
+        "testId": "tests/workspace-journal.e2e.ts::the%20project%20list%20filters%20all%2C%20mine%20and%20shared",
+        "kind": "test",
+        "declarationIndex": 9,
+        "titlePath": [
+          "the project list filters all, mine and shared"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 346,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "75a1e937c2e0909abba7f796c196461527a12d916e81ad61f90cb1903ff6de8a",
+        "testId": "tests/workspace-journal.e2e.ts::the%20files%20tab%20offers%20recording%20and%20existing-file%20actions",
+        "kind": "test",
+        "declarationIndex": 10,
+        "titlePath": [
+          "the files tab offers recording and existing-file actions"
+        ],
+        "file": "tests/workspace-journal.e2e.ts",
+        "source": {
+          "file": "tests/workspace-journal.e2e.ts",
+          "line": 361,
+          "column": 1
+        },
+        "targetId": "ios",
+        "platform": "ios",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      }
+    ],
+    "errors": [],
+    "summary": {
+      "discovered": 111,
+      "selected": 1,
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "interrupted": 0,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "limits": {
+      "maxAgentContextBytes": 16384,
+      "maxLedgerBytes": 8192,
+      "maxObservationBytes": 262144,
+      "maxEventsPerStep": 1000,
+      "maxModelTokensPerCall": 64000
+    },
+    "usage": {
+      "discoveredResults": 111,
+      "maxAgentContextBytes": 0,
+      "maxLedgerBytes": 0,
+      "maxObservationBytes": 0,
+      "artifactBytes": 42189,
+      "downloads": 0,
+      "events": 16,
+      "modelTokens": 0,
+      "maxModelCallsInStep": 0,
+      "maxActionStepsInStep": 0
+    }
+  }
+}

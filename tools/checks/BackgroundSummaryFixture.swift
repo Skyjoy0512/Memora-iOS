@@ -96,6 +96,7 @@ enum MeetingSummarizer {
     var input: MeetingSummaryInput
     var engine: AIEngine
     var llm: LLMSelection
+    var authorize: (@MainActor () -> Bool)?
     var progress: @MainActor (String) -> Void
     var complete: CheckedContinuation<Result<MeetingSummary, AIAnswerFailure>, Never>
   }
@@ -104,7 +105,8 @@ enum MeetingSummarizer {
     authorize: (@MainActor () -> Bool)? = nil,
     progress: @escaping @MainActor (String) -> Void) async -> Result<MeetingSummary, AIAnswerFailure> {
     if let authorize, !authorize() { return .failure(.cancelled) }
-    return await withCheckedContinuation { requests.append(Request(input: input, engine: engine, llm: llm, progress: progress, complete: $0)) }
+    return await withCheckedContinuation { requests.append(Request(input: input, engine: engine, llm: llm,
+      authorize: authorize, progress: progress, complete: $0)) }
   }
 }
 
@@ -126,13 +128,19 @@ struct Meeting: Codable {
   var transcript = [TranscriptSegment(id: UUID(), speaker: "検証話者", speakerIsCertain: false,
     timestamp: 0, text: "承認前には公開しない。")]
   var privacy = RecordPrivacy()
+  var derivedSensitivity: SummarySensitivity?
   var spaceID: UUID?
   var participantIDs: [UUID]?
   var summaryUseCaseID: String?
   var summaryVersions: [TemplateSummary] = []
   var activeSummaryVersionID: UUID?
   var displayTitle: String { title }
-  var effectivePrivacy: RecordPrivacy { privacy }
+  var effectivePrivacy: RecordPrivacy {
+    var effective = privacy
+    if let derivedSensitivity { effective.protect(derivedSensitivity) }
+    effective.updatedAt = privacy.updatedAt
+    return effective
+  }
 }
 struct TemplateSummary: Codable {
   var id = UUID()

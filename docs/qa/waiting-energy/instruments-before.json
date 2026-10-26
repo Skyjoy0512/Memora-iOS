@@ -1,0 +1,106 @@
+{
+  "schema": "memora.time-profile-summary.v1",
+  "samples": 730,
+  "app_binary_uuids": [
+    "6D0904AA-C65D-3CFA-9321-F091151C6E93"
+  ],
+  "sample_span_seconds": 15.300003,
+  "total_sample_weight_ms": 730.0,
+  "main_thread_sample_weight_ms": 693.0,
+  "app_inclusive_sample_weight_ms": 693.0,
+  "ambiguous_app_sample_weight_ms": 0.0,
+  "missing_backtrace_sample_weight_ms": 0.0,
+  "app_symbolication": "named",
+  "state_sample_weight_ms": {
+    "Running": 730.0
+  },
+  "top_leaves": [
+    {
+      "symbol": "AG::Graph::UpdateStack::update()",
+      "sample_weight_ms": 74.0
+    },
+    {
+      "symbol": "invocation function for block in mach_o::UnsafeHeader::forEachSegment(void (mach_o::UnsafeHeader::SegmentInfo const&, bool&) block_pointer) const",
+      "sample_weight_ms": 50.0
+    },
+    {
+      "symbol": "mach_msg2_trap",
+      "sample_weight_ms": 50.0
+    },
+    {
+      "symbol": "AG::Subgraph::update(unsigned int)",
+      "sample_weight_ms": 49.0
+    },
+    {
+      "symbol": "mach_o::UnsafeHeader::forEachLoadCommand(void (load_command const*, bool&) block_pointer) const",
+      "sample_weight_ms": 28.0
+    },
+    {
+      "symbol": "kevent_id",
+      "sample_weight_ms": 23.0
+    },
+    {
+      "symbol": "start_wqthread",
+      "sample_weight_ms": 17.0
+    },
+    {
+      "symbol": "CA::Layer::thread_flags_(CA::Transaction*)",
+      "sample_weight_ms": 16.0
+    },
+    {
+      "symbol": "<deduplicated_symbol>",
+      "sample_weight_ms": 15.0
+    },
+    {
+      "symbol": "__kdebug_trace64",
+      "sample_weight_ms": 13.0
+    },
+    {
+      "symbol": "CABackingStoreCollect_(double, bool)",
+      "sample_weight_ms": 11.0
+    },
+    {
+      "symbol": "CA::Layer::collect_animations_(double, double*, CA::Layer::CollectAnimationsData*)",
+      "sample_weight_ms": 10.0
+    },
+    {
+      "symbol": "madvise",
+      "sample_weight_ms": 10.0
+    },
+    {
+      "symbol": "CA::Layer::free_transaction(CA::Transaction*)",
+      "sample_weight_ms": 8.0
+    },
+    {
+      "symbol": "_kernelrpc_mach_port_insert_member_trap",
+      "sample_weight_ms": 7.0
+    }
+  ],
+  "top_app_inclusive": [
+    {
+      "symbol": "__debug_main_executable_dylib_entry_point",
+      "sample_weight_ms": 693.0
+    },
+    {
+      "symbol": "static MemoraApp.$main()",
+      "sample_weight_ms": 693.0
+    },
+    {
+      "symbol": "closure #1 in ThinkingGauge.body.getter",
+      "sample_weight_ms": 3.0
+    },
+    {
+      "symbol": "closure #1 in TimelineView<>.init(_:content:)",
+      "sample_weight_ms": 3.0
+    },
+    {
+      "symbol": "closure #1 in closure #1 in ThinkingGauge.body.getter",
+      "sample_weight_ms": 2.0
+    },
+    {
+      "symbol": "Shape.fill<A>(_:style:)",
+      "sample_weight_ms": 1.0
+    }
+  ],
+  "limitations": "Statistical sample weights; not wall latency, FPS, body counts, exact CPU occupancy, memory, or iPhone hardware performance. Inclusive weights overlap; deduplicated/unresolved app symbols are excluded from named totals."
+}

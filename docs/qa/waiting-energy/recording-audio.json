@@ -1,0 +1,16 @@
+{
+  "scope": "Short Simulator AVAudioRecorder recording with power-mode change, pause/resume, hide/reopen, SQLite commit and draft removal",
+  "format": "AAC",
+  "sampleRateHz": 44100,
+  "channels": 1,
+  "durationSeconds": 11.028027,
+  "packets": 477,
+  "validFrames": 486336,
+  "primingFrames": 2112,
+  "audioBytes": 1908,
+  "fullyDecodedToPCM": true,
+  "decodedDurationSeconds": 11.028027,
+  "speechContinuityEvaluated": false,
+  "batteryMeasured": false,
+  "interruptionSource": "User pause/resume only; not a phone call or route loss"
+}

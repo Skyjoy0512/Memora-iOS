@@ -13,8 +13,8 @@ test('summary has one Generate action and discloses only external destinations',
   await tapControl(ai);
   await tapControl(screen.getByRole('button', { name: /^AIモデル/ }).first());
   await tapControl(screen.getByRole('button', { name: /^クラウド（BYOK）/ }).first());
-  await tapControl(screen.getByRole('button', { name: '前に戻る', exact: true }));
-  await tapControl(screen.getByRole('button', { name: '前に戻る', exact: true }));
+  await device.back();
+  await device.back();
   await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());

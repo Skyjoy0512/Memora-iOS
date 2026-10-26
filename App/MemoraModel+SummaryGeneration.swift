@@ -37,8 +37,7 @@ extension MemoraModel {
       engine: selectedEngine, llm: llm) == true
     if submission != nil && !explicitSubmission { return false }
     if effectiveEngine == .cloud || effectiveEngine == .memora {
-      guard explicitSubmission ? RecordAccessPolicy.allowsSummarySubmission(meeting.effectivePrivacy)
-        : RecordAccessPolicy.allows(meeting.effectivePrivacy, purpose: .cloudAI) else {
+      guard RecordAccessPolicy.allowsSummary(meeting.effectivePrivacy, userInitiated: explicitSubmission) else {
         announce(RecordAccessPolicy.refusal)
         return false
       }
@@ -114,8 +113,8 @@ extension MemoraModel {
                 self.summaryConfigurationIdentity == configurationIdentity,
                 self.pendingSummaryJobs.contains(where: { $0.id == job.id }),
                 let current = self.meeting(id: id), SummaryJobFingerprint.make(current) == job.inputFingerprint,
-                (!usesCloud || RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI,
-                  explicitCloudConsent: explicitSubmission)) else {
+                (!usesCloud || RecordAccessPolicy.allowsSummary(current.effectivePrivacy,
+                  userInitiated: explicitSubmission)) else {
             diagnostics.record(.contextChanged)
             self?.pauseBackgroundSummary(job, requiresUserRetry: true)
             return false
@@ -127,9 +126,10 @@ extension MemoraModel {
                 !self.isRestoring, !self.isStoreProtected,
                 self.summaryConfigurationIdentity == configurationIdentity,
                 let current = self.meeting(id: id), current.privacy == meeting.privacy,
+                current.effectivePrivacy == meeting.effectivePrivacy,
                 current.spaceID == meeting.spaceID,
-                (!usesCloud || RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI,
-                  explicitCloudConsent: explicitSubmission)) else {
+                (!usesCloud || RecordAccessPolicy.allowsSummary(current.effectivePrivacy,
+                  userInitiated: explicitSubmission)) else {
             self.pauseBackgroundSummary(job, requiresUserRetry: true)
             diagnostics.record(.contextChanged)
             return
@@ -167,8 +167,8 @@ extension MemoraModel {
         return
       }
       guard SummaryJobFingerprint.make(current) == job.inputFingerprint,
-            (!usesCloud || RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI,
-              explicitCloudConsent: explicitSubmission)) else {
+            (!usesCloud || RecordAccessPolicy.allowsSummary(current.effectivePrivacy,
+              userInitiated: explicitSubmission)) else {
         diagnostics.record(.contextChanged)
         self.pauseBackgroundSummary(job, requiresUserRetry: true)
         return

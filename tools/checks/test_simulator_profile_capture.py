@@ -31,6 +31,7 @@ class SimulatorProfileCaptureChecks(unittest.TestCase):
         self.device = {'udid': self.simulator, 'state': 'Booted', 'isAvailable': True, 'name': 'Synthetic iPhone'}
         self.jobs = f'123\t0\tUIKitApplication:{self.bundle}[synthetic]\n'
         self.installed_uuid = self.image_uuid
+        self.installed_debug_uuid = self.image_uuid
         self.commands = []
         self.export_error = None
 
@@ -44,6 +45,8 @@ class SimulatorProfileCaptureChecks(unittest.TestCase):
             return str(Path(self.folder.name) / 'Installed.app')
         if args[:3] == ['xcrun', 'dwarfdump', '--uuid']:
             image_uuid = self.image_uuid if str(self.app) in args[-1] else self.installed_uuid
+            if args[-1].endswith('.debug.dylib') and str(self.app) not in args[-1]:
+                image_uuid = self.installed_debug_uuid
             return f'UUID: {image_uuid} (arm64) {args[-1]}'
         if args[:3] == ['xcrun', 'xctrace', 'export']:
             if self.export_error:
@@ -90,6 +93,22 @@ class SimulatorProfileCaptureChecks(unittest.TestCase):
 
     def test_installed_build_mismatch_does_not_attach(self):
         self.installed_uuid = '00000000-0000-0000-0000-000000000004'
+        with self.assertRaises(SystemExit): self.invoke()
+        self.assert_no_capture()
+        self.assertFalse(self.output.exists())
+
+    def test_missing_debug_code_image_does_not_attach(self):
+        (self.app / 'Memora.debug.dylib').write_bytes(b'synthetic')
+        with self.assertRaises(SystemExit): self.invoke()
+        self.assert_no_capture()
+        self.assertFalse(self.output.exists())
+
+    def test_mismatched_debug_code_with_identical_launcher_does_not_attach(self):
+        (self.app / 'Memora.debug.dylib').write_bytes(b'synthetic')
+        installed = Path(self.folder.name) / 'Installed.app'
+        installed.mkdir()
+        (installed / 'Memora.debug.dylib').write_bytes(b'synthetic-other-build')
+        self.installed_debug_uuid = '00000000-0000-0000-0000-000000000006'
         with self.assertRaises(SystemExit): self.invoke()
         self.assert_no_capture()
         self.assertFalse(self.output.exists())

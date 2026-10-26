@@ -44,8 +44,18 @@ def main():
         parser.error('App is not uniquely running on the selected simulator')
     installed = Path(command(['xcrun', 'simctl', 'get_app_container', simulator, bundle, 'app']).strip())
     uuid_pattern = r'UUID: ([A-Fa-f0-9-]{36}) \(([^)]+)\)'
-    built_ids = set(re.findall(uuid_pattern, command(['xcrun', 'dwarfdump', '--uuid', str(app / executable)])))
-    installed_ids = set(re.findall(uuid_pattern, command(['xcrun', 'dwarfdump', '--uuid', str(installed / executable)])))
+    images = [executable]
+    debug_image = executable + '.debug.dylib'
+    if (app / debug_image).is_file():
+        images.append(debug_image)
+    built_ids, installed_ids = set(), set()
+    for image in images:
+        if image == debug_image and not (installed / image).is_file():
+            parser.error('Installed app is missing its debug code image')
+        built_ids.update((value, architecture, image) for value, architecture in
+                         re.findall(uuid_pattern, command(['xcrun', 'dwarfdump', '--uuid', str(app / image)])))
+        installed_ids.update((value, architecture, image) for value, architecture in
+                             re.findall(uuid_pattern, command(['xcrun', 'dwarfdump', '--uuid', str(installed / image)])))
     if not built_ids or built_ids != installed_ids:
         parser.error('Installed executable UUIDs differ from the supplied build')
     output = args.output_dir.resolve()
@@ -77,7 +87,7 @@ def main():
     xml = output / 'profile.xml'
     command(['xcrun', 'xctrace', 'export', '--input', trace, '--xpath',
              '/trace-toc/run[@number="1"]/data/table[@schema="time-profile"]', '--output', str(xml)])
-    summary = summarize(xml, executable, [value for value, _ in built_ids])
+    summary = summarize(xml, executable, [value for value, _, _ in built_ids])
     (output / 'summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n')
     print(f'Exported {summary["samples"]} samples; app symbols: {summary["app_symbolication"]}. Not a latency/FPS measurement.')
 

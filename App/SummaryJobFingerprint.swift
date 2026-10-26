@@ -4,7 +4,7 @@ import Foundation
 enum SummaryJobFingerprint {
   static func make(_ meeting: Meeting) -> String? {
     let input = Input(title: meeting.title, date: meeting.createdAt, duration: meeting.duration,
-      transcript: meeting.transcript, summary: meeting.summary, privacy: meeting.privacy,
+      transcript: meeting.transcript, summary: meeting.summary, privacy: meeting.effectivePrivacy,
       projectID: meeting.spaceID, participantIDs: meeting.participantIDs)
     let encoder = JSONEncoder()
     encoder.outputFormatting = .sortedKeys

@@ -1,0 +1,38 @@
+[
+  {
+    "suite": "next-generation",
+    "status": "passed",
+    "exitCode": 0,
+    "log": "next-generation.log"
+  },
+  {
+    "suite": "design-refresh",
+    "status": "passed",
+    "exitCode": 0,
+    "log": "design-refresh.log"
+  },
+  {
+    "suite": "background-summary",
+    "status": "passed",
+    "exitCode": 0,
+    "log": "background-summary.log"
+  },
+  {
+    "suite": "summary-reliability",
+    "status": "passed",
+    "exitCode": 0,
+    "log": "summary-reliability.log"
+  },
+  {
+    "suite": "composer-layout",
+    "status": "passed",
+    "exitCode": 0,
+    "log": "composer-layout.log"
+  },
+  {
+    "suite": "optimization",
+    "status": "passed",
+    "exitCode": 0,
+    "log": "optimization.log"
+  }
+]

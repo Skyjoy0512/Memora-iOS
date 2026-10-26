@@ -13,6 +13,12 @@ test('waiting text yields to streaming, stops for approval and terminal states',
   const status = screen.getByTestId('ai.waitingStatus');
   await expect(status).toHaveCount(2);
   await expect(screen.getByRole('progressbar')).not.toBeVisible();
+  const history = screen.getByLabel('実行状況 · 操作1件', { exact: true }).first();
+  await tapControl(history);
+  await expect(screen.getByText('記録を確認', { exact: true })).toBeVisible();
+  await expect(screen.getByText('実行中', { exact: true }).first()).toBeVisible();
+  await app.screenshot('waiting-tool-detail');
+  await tapControl(history);
   const reduce = screen.getByRole('switch', { name: 'シマーを休止（表示検証）', exact: true });
   await reduce.check();
   await expect(reduce).toBeChecked();

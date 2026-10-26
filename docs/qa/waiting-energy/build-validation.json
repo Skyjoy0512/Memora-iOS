@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-26",
+  "platform": "iOS Simulator",
+  "sdk": "iOS 27.1",
+  "debug": {
+    "command": "bitrig preview -platform iOS",
+    "result": "success",
+    "log": "2026-10-26T13-29-13-15268dfd.log"
+  },
+  "release": {
+    "command": "bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release",
+    "result": "success",
+    "log": "2026-10-26T13-29-14-06b23209.log"
+  },
+  "logDirectory": "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs",
+  "xcodeTests": "Project.json has no Xcode test targets; bitrig test -list returned 78. Host Swift executables and native E2E were used instead.",
+  "physicalIPhone": "Offline; no physical-device battery, thermal, recognition-accuracy or long-duration recording validation"
+}

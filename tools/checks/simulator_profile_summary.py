@@ -86,7 +86,7 @@ def summarize(path, app_name, expected_uuids):
             if binary is None:
                 raise ValueError('Frame has no binary')
             binary = resolve(binary)
-            if binary.get('name') != app_name:
+            if binary.get('name') not in {app_name, app_name + '.debug.dylib'}:
                 continue
             image_uuid = str(uuid.UUID(binary.get('UUID', ''))).upper()
             observed_uuids.add(image_uuid)

@@ -1,0 +1,30 @@
+{
+  "simulator": "16370698-209F-479C-BAC3-A19323D5D25B",
+  "device": "iPhone 18 Pro Max",
+  "bundle": "app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4",
+  "configuration": "Debug",
+  "configuration_source": "caller; use the exact Bitrig output path",
+  "executable_uuids": [
+    [
+      "0E4D467F-DDED-3AE6-BC75-3BE73664E34F",
+      "arm64",
+      "Memora"
+    ],
+    [
+      "6D0904AA-C65D-3CFA-9321-F091151C6E93",
+      "arm64",
+      "Memora.debug.dylib"
+    ],
+    [
+      "9130EB1D-BF67-3B4D-A1E6-7A6635230DC2",
+      "x86_64",
+      "Memora.debug.dylib"
+    ],
+    [
+      "E0D502BC-C12B-3116-9691-431860CA313E",
+      "x86_64",
+      "Memora"
+    ]
+  ],
+  "requested_seconds": 15
+}

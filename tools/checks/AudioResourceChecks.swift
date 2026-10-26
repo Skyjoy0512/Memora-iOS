@@ -40,9 +40,6 @@ enum AudioResourceChecks {
     precondition(history.lines.last?.id == minutes * 60 - 1)
     let retainedLines = history.lines.count
     let retainedBytes = history.lines.reduce(0) { $0 + $1.text.utf8.count }
-    var adversarial = LiveTranscriptHistory()
-    adversarial.append(String(repeating: "a\u{301}", count: 50_000))
-    precondition(adversarial.lines[0].text.utf8.count <= LiveTranscriptHistory.maximumUTF8BytesPerLine + 3)
     #endif
 
     let source = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
@@ -92,6 +89,11 @@ enum AudioResourceChecks {
       "peakRSSBytes": usage.ru_maxrss, "realTimeRecording": false,
       "batteryMeasured": false, "recognitionQualityMeasured": false]
     print(String(data: try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys]), encoding: .utf8)!)
+    #if !BASELINE
+    var adversarial = LiveTranscriptHistory()
+    adversarial.append(String(repeating: "a\u{301}", count: 50_000))
+    precondition(adversarial.lines[0].text.utf8.count <= LiveTranscriptHistory.maximumUTF8BytesPerLine + 3)
+    #endif
   }
 
   static func cpuSeconds() -> Double {

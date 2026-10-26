@@ -14,6 +14,10 @@ enum RecordAccessPolicy {
     return privacy.classification == .unknown || privacy.allowsCloudAI
   }
 
+  static func allowsSummary(_ privacy: RecordPrivacy, userInitiated: Bool) -> Bool {
+    userInitiated ? allowsSummarySubmission(privacy) : allows(privacy, purpose: .cloudAI)
+  }
+
   static func allows(_ privacy: RecordPrivacy, purpose: Purpose, explicitCloudConsent: Bool = false) -> Bool {
     if purpose == .onDeviceAI { return true }
     if purpose == .cloudAI, explicitCloudConsent { return true }

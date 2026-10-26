@@ -57,6 +57,17 @@ class SimulatorProfileSummaryChecks(unittest.TestCase):
         for row in root.findall('.//row'):
             root.find('node').remove(row)
         with self.assertRaises(ValueError): self.run_summary(root)
+
+    def test_debug_code_image_is_owned_and_requires_its_own_uuid(self):
+        root = self.fixture()
+        binary = root.find('.//binary')
+        binary.set('name', 'Memora.debug.dylib')
+        debug_uuid = '00000000-0000-0000-0000-000000000005'
+        binary.set('UUID', debug_uuid)
+        with self.assertRaises(ValueError): self.run_summary(root)
+        result = self.run_summary(root, [self.image_uuid, debug_uuid])
+        self.assertEqual(result['app_binary_uuids'], [debug_uuid])
+        self.assertEqual(result['app_symbolication'], 'named')
         root = self.fixture(); root.find('.//schema').set('name', 'time-sample')
         with self.assertRaises(ValueError): self.run_summary(root)
 

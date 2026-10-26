@@ -69,7 +69,7 @@ struct AgentActivityView: View {
 
   @ViewBuilder private func status(_ step: AgentStep) -> some View {
     if step.state == .running && isRunning {
-      Text(isWaiting ? "確認待ち" : "実行中").font(.caption2)
+      Image(icon: step.icon, size: 16).accessibilityLabel(stateLabel(step))
     } else {
       Image(icon: step.state == .done ? .checkmark : step.state == .failed ? .exclamationmarkTriangle : .minusCircle)
         .font(.caption).accessibilityLabel(stateLabel(step))

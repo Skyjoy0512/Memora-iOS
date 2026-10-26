@@ -23,9 +23,11 @@ final class LiveAudioBufferConverter: @unchecked Sendable {
   }
 
   nonisolated func convert(_ input: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer? {
-    let interval = signposter.isEnabled ? signposter.beginInterval("ConvertBuffer") : nil
-    defer { if let interval { signposter.endInterval("ConvertBuffer", interval) } }
     inputBufferCount += 1
+    // Sample profiling so instrumentation itself does not dominate a short tap.
+    let interval = inputBufferCount.isMultiple(of: 256) && signposter.isEnabled
+      ? signposter.beginInterval("SampledBufferConversion") : nil
+    defer { if let interval { signposter.endInterval("SampledBufferConversion", interval) } }
     guard input.format == sourceFormat else { throw CocoaError(.fileReadCorruptFile) }
     guard input.frameLength > 0 else { return nil }
     if let converter {
