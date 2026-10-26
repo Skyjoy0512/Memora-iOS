@@ -38,6 +38,7 @@ extension MemoraModel {
       await ProjectSourceFiles.shared.remove([name]); throw CancellationError()
     }
     result.artifactFileReference = name; result.artifactFormat = format.uppercased()
+    result.artifactRevision = result.contentRevision ?? 0
     return result
   }
 }

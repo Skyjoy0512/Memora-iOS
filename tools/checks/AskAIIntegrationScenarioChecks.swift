@@ -276,14 +276,11 @@ struct AskAIIntegrationScenarioChecks {
     precondition(docxText.contains(report.answer) && report.sources.allSatisfy { docxText.contains($0.url.absoluteString) })
     precondition(model.updateDocument(written.id, title: "再編集した調査レポート", body: "根拠を再確認する。"))
     let edited: [MemoraDocument] = try reload(MemoraModel.StorageKey.documents, store: reopened)
-    precondition(edited.first?.title == "再編集した調査レポート" && edited.first?.artifactFileReference == nil)
+    precondition(edited.first?.title == "再編集した調査レポート" && edited.first?.artifactFileReference == written.artifactFileReference)
+    precondition(edited.first?.hasOutdatedArtifact == true)
     precondition(edited.first?.spaceID == projectID && edited.first?.provenance?.projectSources.count == 3)
-    let discarded = ProjectSourceFiles.resolve(written.artifactFileReference!)!
-    for _ in 0..<10_000 {
-      if !FileManager.default.fileExists(atPath: discarded.path) { break }
-      await Task.yield()
-    }
-    precondition(!FileManager.default.fileExists(atPath: discarded.path), "Edited artifact cleanup did not finish")
+    let retained = ProjectSourceFiles.resolve(written.artifactFileReference!)!
+    precondition(FileManager.default.fileExists(atPath: retained.path), "Edited artifact was deleted before replacement")
   }
 
   @MainActor static func researchProjectRollback(root: URL) async throws {

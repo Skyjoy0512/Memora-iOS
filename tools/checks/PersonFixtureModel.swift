@@ -55,6 +55,8 @@ import Foundation
   var projectSources: [ProjectSource] = []
   #if ASK_AI_SCENARIO_CHECKS
   var companyTemplates: [CompanyTemplate] = []
+  #else
+  var companyTemplates: [FixtureTemplateReference] = []
   #endif
   #if RESEARCH_PROJECT_STORAGE_CHECKS
   var webResearchReports: [WebResearchReport] = []
@@ -128,6 +130,13 @@ import Foundation
   static func agentTaskLine(_ task: MemoraTask) -> String { "id=\(task.id) \(task.title) " + AnswerSourceCitation.marker(for: .record(.task(task.id))) }
   static func agentDate(_ date: Date) -> String { date.description }
 }
+
+#if ARTIFACT_PROVENANCE_CHECKS && !ASK_AI_SCENARIO_CHECKS
+// Provenance-only checks need the file-ownership boundary, not an Office engine.
+struct FixtureTemplateReference {
+  var fileReference: String
+}
+#endif
 struct Meeting: Identifiable, Hashable, Codable {
   var id = UUID(); var title: String; var participantIDs: [UUID]?; var privacy: RecordPrivacy
   var createdAt = Date.now; var spaceID: UUID?; var duration: Double = 0; var summary = ""; var keyPoints: [String] = []; var notes = ""; var transcript: [String] = []; var decisions: [String] = []; var openQuestions: [String] = []

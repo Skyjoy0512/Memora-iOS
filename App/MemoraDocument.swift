@@ -22,9 +22,41 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   var artifactFileReference: String?
   var artifactFormat: String?
   var companyTemplateID: UUID?
+  /// Missing revisions identify a legacy document and its original export (0).
+  var contentRevision: Int?
+  var artifactRevision: Int?
   var sourceProjectFileIDs: [UUID]?
   var sourceRecordIDs: [UUID]?
   var provenance: ArtifactProvenance?
+
+  var hasOutdatedArtifact: Bool {
+    artifactFileReference != nil && (artifactRevision ?? 0) != (contentRevision ?? 0)
+  }
+
+  var hasValidRevisions: Bool {
+    (contentRevision ?? 0) >= 0 && (artifactRevision ?? 0) >= 0
+      && (artifactRevision ?? 0) <= (contentRevision ?? 0)
+  }
+
+  /// An outline edit does not prove that a company Office file was rewritten.
+  /// Keep the last successful export and attribution until a replacement exists.
+  func editing(title: String, body: String, at date: Date = .now) -> Self? {
+    guard hasValidRevisions, (contentRevision ?? 0) < Int.max else { return nil }
+    var edited = self
+    edited.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    switch kind {
+    case .document:
+      edited.markdown = body
+    case .slides:
+      if body != DocumentSlide.outline(of: slides) {
+        edited.slides = DocumentSlide.slides(fromOutline: body)
+      }
+    }
+    guard edited.title != self.title || edited.markdown != markdown || edited.slides != slides else { return self }
+    edited.contentRevision = (contentRevision ?? 0) + 1
+    edited.updatedAt = date
+    return edited
+  }
 
   var displayTitle: String {
     title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の\(kind.label)" : title

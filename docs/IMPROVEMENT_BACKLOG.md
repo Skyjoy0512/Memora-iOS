@@ -1,5 +1,14 @@
 # Memora — 改善バックログ
 
+## 2026-10-27: 全文要件の監査・OSS PoC・企業資料の保護
+
+- GitHub mainを再取得（7f928c6、remote追加差分なし）。35 OSS候補のHEAD/release/LICENSE/manifest/代表ソースを固定SHAで調査。採否と取得失敗は[OSS比較](OSS_EVALUATION_2026_10.md)。
+- Mac限定のPptxGenJS/office-kitでeditable表・3種chart・master/theme・notes・画像・複製/編集/再読込を検証。iOSランタイムや有料backendは追加しない。
+- 資料の本文編集で企業template ID/生成file/出典を失わない。本文/export revision、stale表示、競合/restore guard、backup互換、会社原本保護を追加。結果は[資料品質](PRESENTATION_QUALITY_2026_10.md)。
+- 1k/5k/10k/50k実Meeting codecを計測。50kはmedian2.88秒/peakRSS2.41GB。部分保存・実機負荷の改善は未実装。数値は[監査](AUDIT_2026_10.md)。
+- 年額ライトの損益条件を修正。手数料30%/10%税込仮定のAIだけの分岐は169.70円/USD。現行価格/課金は変更せず、年額提供前に再設計。認証/課金/同期の[未接続境界](BACKEND_DECISIONS_2026_10.md)も明文化。
+- UI全面刷新、typed slide/table/chartの本番実装、全画面snapshot、実機/Office最終描画、実API測定は継続事項。総合Phase 1〜5全完了ではない。
+
 ## 2026-10-26: 低コストでの総合改善・資料品質（第一弾）
 
 - 標準スライドに端末内の共通組版を追加。保存済みの論理スライドを保ち、画面・PDF・PPTXで同じ改ページを使う。本文24pt、長い項目も省略せず続きへ送る。

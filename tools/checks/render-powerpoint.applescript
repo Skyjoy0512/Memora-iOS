@@ -3,11 +3,12 @@
 on run arguments
   if (count arguments) is not 2 then error "Pass input PPTX and output PDF paths"
   set inputFile to POSIX file (item 1 of arguments) as alias
+  set fixtureName to name of (info for inputFile)
   set outputFile to POSIX file (item 2 of arguments)
   with timeout of 55 seconds
     tell application id "com.microsoft.Powerpoint"
       open inputFile
-      set fixture to active presentation
+      set fixture to presentation fixtureName
       try
         save fixture in outputFile as save as PDF
       on error errorText number errorNumber

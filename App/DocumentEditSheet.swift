@@ -38,6 +38,9 @@ struct DocumentEditSheet: View {
         } header: {
           Text(document.kind == .slides ? "スライド" : "本文（Markdown）")
         } footer: {
+          if document.companyTemplateID != nil {
+            Text("ここでの編集は本文に保存されます。会社ファイルへの再差込は未対応のため、生成済みファイルは編集前のまま保持します。")
+          }
           if document.kind == .slides {
             Text("「# 」で新しいスライド、「- 」で要点、「> 」で話すメモになります。")
           }
@@ -55,7 +58,7 @@ struct DocumentEditSheet: View {
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
             focusedField = nil
-            if model.updateDocument(document.id, title: title, body: bodyText) { dismiss() }
+            if model.updateDocument(document.id, title: title, body: bodyText, expectedUpdatedAt: document.updatedAt) { dismiss() }
             else { saveError = true }
           }
           .disabled(!hasChanges)

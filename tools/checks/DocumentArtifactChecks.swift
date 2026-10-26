@@ -5,8 +5,26 @@ import Foundation
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     let doc = MemoraDocument(title: "提案書 {{title}}", kind: .document, markdown: "# 背景\n{{body}}\n\n| 項目 | 内容 |\n| --- | --- |\n| 費用 | 未確認 |")
+    var legacy = doc
+    legacy.artifactFileReference = "original.docx"
+    legacy.artifactFormat = "DOCX"
+    legacy.companyTemplateID = UUID()
+    let legacyDecoded = try JSONDecoder().decode(MemoraDocument.self, from: JSONEncoder().encode(legacy))
+    precondition(legacyDecoded.contentRevision == nil && !legacyDecoded.hasOutdatedArtifact)
+    let edited = legacyDecoded.editing(title: "編集済み", body: "変更した本文")!
+    precondition(edited.hasOutdatedArtifact && edited.contentRevision == 1 && edited.artifactRevision == nil)
+    precondition(edited.artifactFileReference == legacy.artifactFileReference && edited.companyTemplateID == legacy.companyTemplateID)
+    precondition(edited.editing(title: edited.title, body: edited.markdown) == edited)
+    let editedReloaded = try JSONDecoder().decode(MemoraDocument.self, from: JSONEncoder().encode(edited))
+    precondition(editedReloaded == edited)
+    var invalid = legacy; invalid.contentRevision = Int.max
+    precondition(invalid.editing(title: "変更", body: "変更") == nil)
+    invalid.contentRevision = -1
+    precondition(!invalid.hasValidRevisions && invalid.editing(title: "変更", body: "変更") == nil)
     let word = try DOCXWriter.data(for: doc)
     let slides = MemoraDocument(title: "報告", kind: .slides, slides: [DocumentSlide(title: "{{title}}", bullets: ["{{body}}"], notes: "保存メモ")])
+    let titleOnlyEdit = slides.editing(title: "改題", body: DocumentSlide.outline(of: slides.slides))!
+    precondition(titleOnlyEdit.slides == slides.slides && titleOnlyEdit.contentRevision == 1)
     let powerpoint = PPTXWriter.data(for: slides)
     for (format, bytes) in [(CompanyTemplate.Format.docx, word), (.pptx, powerpoint)] {
       let analysis = try CompanyTemplateEngine.analyze(bytes, format: format)

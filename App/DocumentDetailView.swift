@@ -37,11 +37,7 @@ struct DocumentDetailView: View {
         VStack(alignment: .leading, spacing: 20) {
           header(document)
           if let name = document.artifactFileReference, let url = ProjectSourceFiles.resolve(name) {
-            HStack {
-              Button("生成ファイルを確認", icon: .docText) { artifactPreview = url }
-              ShareLink(item: url) { Label("保存・共有", icon: .squareAndArrowUp) }
-            }
-            .buttonStyle(.borderless)
+            DocumentArtifactFileView(document: document, url: url) { artifactPreview = url }
           }
 
           ArtifactSourcesView(provenance: document.provenance, meetingIDs: document.sourceRecordIDs ?? [],
@@ -53,7 +49,7 @@ struct DocumentDetailView: View {
               placeholder: "タップして入力",
               rendersBlocks: true,
               draftKey: "document.\(document.id).body",
-              onCommit: { model.updateDocument(document.id, title: document.title, body: $0) }
+              onCommit: { model.updateDocument(document.id, title: document.title, body: $0, expectedUpdatedAt: document.updatedAt) }
             )
             .environment(\.openURL, OpenURLAction { url in
               guard url.scheme?.lowercased() == "memora" else { return .systemAction }
@@ -88,7 +84,7 @@ struct DocumentDetailView: View {
       ToolbarActionItem(usesSystemBackground: true) {
         Menu {
           if document.kind == .document {
-            Button("Wordで共有", icon: .docRichtext) { share(document, as: .word) }
+            Button(document.companyTemplateID != nil && document.hasOutdatedArtifact ? "会社Word（編集前）で共有" : "Wordで共有", icon: .docRichtext) { share(document, as: .word) }
           }
           if document.companyTemplateID == nil {
             Button("PDFで共有", icon: .docRichtext) { share(document, as: .pdf) }
@@ -96,7 +92,7 @@ struct DocumentDetailView: View {
             Button("会社書式のPDF変換は未対応", icon: .docRichtext) {}.disabled(true)
           }
           if document.kind == .slides {
-            Button("PowerPointで共有", icon: .rectangleOnRectangleAngled) { share(document, as: .powerPoint) }
+            Button(document.companyTemplateID != nil && document.hasOutdatedArtifact ? "会社PowerPoint（編集前）で共有" : "PowerPointで共有", icon: .rectangleOnRectangleAngled) { share(document, as: .powerPoint) }
           }
           Button("テキストで共有", icon: .textAlignleft) { share(document, as: .text) }
         } label: {
@@ -200,6 +196,12 @@ struct DocumentDetailView: View {
   }
 
   private func originalArtifact(_ document: MemoraDocument, suffix: String) throws -> URL? {
+    if document.hasOutdatedArtifact && document.companyTemplateID == nil { return nil }
+    if document.companyTemplateID != nil {
+      guard document.artifactFormat?.lowercased() == suffix, let name = document.artifactFileReference,
+            let source = ProjectSourceFiles.resolve(name) else { throw CocoaError(.fileNoSuchFile) }
+      return try ArtifactExportFile.copy(source, preferredName: document.exportFileName, suffix: suffix)
+    }
     guard document.artifactFormat?.lowercased() == suffix, let name = document.artifactFileReference,
           let source = ProjectSourceFiles.resolve(name) else { return nil }
     return try ArtifactExportFile.copy(source, preferredName: document.exportFileName, suffix: suffix)

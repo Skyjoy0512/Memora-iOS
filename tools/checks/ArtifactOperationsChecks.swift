@@ -56,10 +56,46 @@ struct ArtifactOperationsChecks {
     guard case .data(let editedData) = reopened.readOutcome(MemoraModel.StorageKey.documents) else { preconditionFailure("edited document missing") }
     stored = try JSONDecoder().decode([MemoraDocument].self, from: editedData)
     precondition(stored[0].title == "編集した提案" && stored[0].markdown.contains("概算を確認済み"))
-    precondition(stored[0].artifactFileReference == nil && stored[0].companyTemplateID == nil)
+    precondition(stored[0].artifactFileReference == originalName && stored[0].hasOutdatedArtifact)
+    precondition(stored[0].contentRevision == 1 && stored[0].artifactRevision == 0)
     precondition(stored[0].provenance?.isValid == true)
-    let removed = await waitUntil { !FileManager.default.fileExists(atPath: originalURL.path) }
-    precondition(removed)
+    precondition(FileManager.default.fileExists(atPath: originalURL.path))
+    var editedWord = try OfficeArchiveReader(data: DOCXWriter.data(for: stored[0]))
+    let editedText = try OfficeDocumentExtraction.read(archive: &editedWord, extension: "docx").blocks.map(\.text).joined()
+    precondition(editedText.contains("概算を確認済み") && !editedText.contains("概算を出す"))
+    let settled = model.documents
+    precondition(!model.updateDocument(document.id, title: "古い画面", body: "上書き禁止", expectedUpdatedAt: document.updatedAt))
+    precondition(model.documents == settled)
+    model.isRestoring = true
+    precondition(!model.updateDocument(document.id, title: "復元中", body: "上書き禁止"))
+    model.isRestoring = false
+
+    let templateBytes = PPTXWriter.data(for: MemoraDocument(title: "会社原本", kind: .slides,
+      slides: [DocumentSlide(title: "{{title}}", bullets: ["{{body}}"], notes: "元のノート")]))
+    let templateName = try await ProjectSourceFiles.shared.write(templateBytes, extension: "pptx")
+    let template = CompanyTemplate(name: "会社原本", format: .pptx, fileReference: templateName,
+      analysis: try CompanyTemplateEngine.analyze(templateBytes, format: .pptx))
+    model.companyTemplates = [template]
+    var company = MemoraDocument(title: "会社資料", kind: .slides, slides: [DocumentSlide(title: "生成内容", bullets: ["要点"])])
+    company = try await model.prepareDocumentArtifact(company, call: AgentToolCall(id: "company", name: "create_slides", arguments: [
+      "template_id": template.id.uuidString, "template_fields": [["name": "title", "value": "生成内容"], ["name": "body", "value": "要点"]]
+    ]))
+    precondition(model.addDocument(company))
+    let generatedURL = ProjectSourceFiles.resolve(company.artifactFileReference!)!
+    let generatedBytes = try Data(contentsOf: generatedURL)
+    precondition(model.updateDocument(company.id, title: "編集した会社資料", body: "# 編集後\n- 新しい要点"))
+    let companyAfter = model.documents.first { $0.id == company.id }!
+    precondition(companyAfter.companyTemplateID == template.id && companyAfter.hasOutdatedArtifact)
+    precondition(companyAfter.artifactFileReference == company.artifactFileReference && companyAfter.artifactFormat == "PPTX")
+    let preserved = try Data(contentsOf: generatedURL)
+    let original = try Data(contentsOf: ProjectSourceFiles.resolve(templateName)!)
+    precondition(preserved == generatedBytes && original == templateBytes)
+    var referenceToOriginal = company
+    referenceToOriginal.id = UUID(); referenceToOriginal.artifactFileReference = templateName
+    precondition(model.addDocument(referenceToOriginal))
+    model.deleteDocument(referenceToOriginal.id)
+    await Task.yield()
+    precondition(FileManager.default.fileExists(atPath: ProjectSourceFiles.resolve(templateName)!.path))
 
     // A slide deck follows the same save/reload path and keeps its outline.
     var slides = MemoraDocument(title: "架空の報告", kind: .slides,
@@ -92,6 +128,8 @@ struct ArtifactOperationsChecks {
   @MainActor static func failedSaveDoesNotReportSuccess(root: URL) async throws {
     let storeURL = root.appendingPathComponent("failure.sqlite")
     let model = try MemoraModel(storeURL: storeURL)
+    let existing = MemoraDocument(title: "保存済み", kind: .document, markdown: "保存済み本文", artifactFileReference: "keep.docx", artifactFormat: "DOCX")
+    precondition(model.addDocument(existing))
     let before = model.documents
     var db: OpaquePointer?
     precondition(sqlite3_open(storeURL.path, &db) == SQLITE_OK)
@@ -99,9 +137,12 @@ struct ArtifactOperationsChecks {
     precondition(sqlite3_exec(db, "CREATE TRIGGER reject_documents BEFORE INSERT ON documents WHEN NEW.key = 'documents' BEGIN SELECT RAISE(ABORT, 'fixture'); END;", nil, nil, nil) == SQLITE_OK)
     let document = MemoraDocument(title: "保存できない資料", kind: .document, markdown: "本文")
     precondition(!model.addDocument(document))
+    precondition(!model.updateDocument(existing.id, title: "保存失敗", body: "書き込めない本文"))
     precondition(model.documents == before)
     let reopened = LocalStore(fileURL: storeURL); try reopened.prepare()
-    precondition({ if case .missing = reopened.readOutcome(MemoraModel.StorageKey.documents) { return true }; return false }())
+    guard case .data(let unchanged) = reopened.readOutcome(MemoraModel.StorageKey.documents) else { preconditionFailure("existing data lost") }
+    let reloaded = try JSONDecoder().decode([MemoraDocument].self, from: unchanged)
+    precondition(reloaded == before)
 
     var draft = MailDraft(recipients: [], subject: "保存できない下書き", body: "本文", workspaceID: model.currentTeamID)
     precondition(sqlite3_exec(db, "CREATE TRIGGER reject_drafts BEFORE INSERT ON documents WHEN NEW.key = 'memora.mailDrafts.v1' BEGIN SELECT RAISE(ABORT, 'fixture'); END;", nil, nil, nil) == SQLITE_OK)

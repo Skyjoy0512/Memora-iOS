@@ -20,7 +20,7 @@ extension MemoraModel {
   /// a document as made once it is really saved.
   @discardableResult
   func addDocument(_ document: MemoraDocument) -> Bool {
-    guard !isRestoring, isStoreWritable(), document.provenance?.isValid ?? true,
+    guard !isRestoring, isStoreWritable(), document.hasValidRevisions, document.provenance?.isValid ?? true,
           document.provenance.map({ $0.workspaceID == currentTeamID }) ?? true else { return false }
     var candidate = documents
     candidate.insert(document, at: 0)
@@ -35,24 +35,15 @@ extension MemoraModel {
   /// Replaces a document's title and body. The body is markdown for a written
   /// document and the slide outline for slides.
   @discardableResult
-  func updateDocument(_ id: UUID, title: String, body: String) -> Bool {
-    guard isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }) else { return false }
-    let oldArtifact = documents[index].artifactFileReference
+  func updateDocument(_ id: UUID, title: String, body: String, expectedUpdatedAt: Date? = nil) -> Bool {
+    guard !isRestoring, isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }),
+          expectedUpdatedAt.map({ $0 == documents[index].updatedAt }) ?? true,
+          let edited = documents[index].editing(title: title, body: body) else { return false }
+    guard edited != documents[index] else { return true }
     var candidate = documents
-    candidate[index].title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-    switch candidate[index].kind {
-    case .document:
-      candidate[index].markdown = body
-    case .slides:
-      candidate[index].slides = DocumentSlide.slides(fromOutline: body)
-    }
-    candidate[index].artifactFileReference = nil
-    candidate[index].artifactFormat = nil
-    candidate[index].companyTemplateID = nil
-    candidate[index].updatedAt = .now
+    candidate[index] = edited
     guard persistBatch({ [(key: StorageKey.documents, data: try RecordStore.encoded(candidate))] }) else { return false }
     documents = candidate
-    if let oldArtifact { Task { await ProjectSourceFiles.shared.remove([oldArtifact]) } }
     return true
   }
 
@@ -63,6 +54,10 @@ extension MemoraModel {
     guard persistNow(candidate, forKey: StorageKey.documents) else { return }
     documents = candidate
     invalidateProjectEvidence([.document(id)])
-    if let name = document.artifactFileReference { Task { await ProjectSourceFiles.shared.remove([name]) } }
+    if let name = document.artifactFileReference,
+       !candidate.contains(where: { $0.artifactFileReference == name }),
+       !companyTemplates.contains(where: { $0.fileReference == name }) {
+      Task { await ProjectSourceFiles.shared.remove([name]) }
+    }
   }
 }

@@ -37,6 +37,7 @@ struct BackupRestoreChecks {
       analysis: try CompanyTemplateEngine.analyze(docx, format: .docx))
     var document = MemoraDocument(title: "提案資料", kind: .slides, slides: [DocumentSlide(title: "概要", bullets: ["架空の内容"])], spaceID: project.id)
     document.artifactFileReference = "artifact.pptx"; document.artifactFormat = "PPTX"
+    document.contentRevision = 2; document.artifactRevision = 1
     document.sourceRecordIDs = [meeting.id]
     let source = ProjectSource(projectID: project.id, kind: .note, title: "根拠", extractedTextReference: "source.txt")
     let artifactProvenance = ArtifactProvenance(sourceMessageID: UUID(), records: [
@@ -75,6 +76,10 @@ struct BackupRestoreChecks {
     invalid = manifest; invalid.mailDrafts?[0].recipients = Array(repeating: "fixture@example.com", count: 101)
     try reject(invalid, in: package)
     invalid = manifest; invalid.documents?[0].artifactFileReference = "../escape.pptx"
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.documents?[0].contentRevision = -1
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.documents?[0].artifactRevision = 3
     try reject(invalid, in: package)
     invalid = manifest; invalid.documents?[0].provenance?.records.append(artifactProvenance.records[0])
     try reject(invalid, in: package)

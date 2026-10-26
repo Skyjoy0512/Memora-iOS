@@ -33,6 +33,7 @@ extension MemoraModel {
     document.markdown = values.sorted { $0.key < $1.key }.map { "## " + $0.key + "\n" + $0.value }.joined(separator: "\n\n")
     document.artifactFileReference = name; document.artifactFormat = template.format.rawValue.uppercased()
     document.companyTemplateID = templateID
+    document.artifactRevision = document.contentRevision ?? 0
     guard !Task.isCancelled, workspace == currentTeamID, addDocument(document), let result = ProjectSourceFiles.resolve(name) else {
       await ProjectSourceFiles.shared.remove([name]); throw CancellationError()
     }
