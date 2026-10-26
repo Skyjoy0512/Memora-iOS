@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl } from './ui-helpers';
+import { launchMemora, tapControl, tapTab } from './ui-helpers';
 import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
 
 // A short regression by default; an explicit duration runs real wall-clock
@@ -40,6 +40,8 @@ async function startIsolatedRecording(app: any, device: any, screen: any) {
     const value = sql(database, `SELECT CAST(data AS TEXT) FROM documents WHERE key='${key}';`);
     return value ? JSON.parse(value) : null;
   };
+  await tapControl(screen.getByRole('button', { name: '重要マークを追加', exact: true }));
+  await expect.poll(() => document('memoraRecordingDraft')?.markers?.length ?? 0).toBe(1);
   const draft = document('memoraRecordingDraft');
   expect(draft?.fileName).toMatch(/\.m4a$/);
   const root = dirname(dirname(dirname(dirname(database))));
@@ -63,6 +65,7 @@ async function startIsolatedRecording(app: any, device: any, screen: any) {
 function validateAAC(audio: string) {
   const info = execFileSync('/usr/bin/afinfo', [audio], { encoding: 'utf8', timeout: 10_000 });
   expect(info).toMatch(/44100 Hz/);
+  expect(info).toMatch(/1 ch,/);
   expect(info).toMatch(/aac/);
   expect(info).toMatch(/audio packets: [1-9]/);
   const duration = Number(info.match(/estimated duration: ([0-9.]+)/)![1]);
@@ -123,6 +126,10 @@ test('SIGKILL recovers one recording without replacing the audio or restarting c
     await expect.poll(() => statSync(capture.audio).size, { timeout: 30_000, interval: 1_000 }).toBeGreaterThan(firstSize);
     // PID comes only from this UI-marked test container's selected simulator.
     process.kill(capture.pid, 'SIGKILL');
+    await expect.poll(() => {
+      try { process.kill(capture.pid, 0); return false; }
+      catch { return true; }
+    }).toBe(true);
     const original = createHash('sha256').update(readFileSync(capture.audio)).digest('hex');
     expect(capture.document('memoraRecordingDraft')?.id).toBe(capture.draft.id);
     // Durability and container readability are distinct. This probe records
@@ -136,7 +143,23 @@ test('SIGKILL recovers one recording without replacing the audio or restarting c
     const recovered = () => capture.document('memoraMeetings').filter((record: any) => record.id === capture.draft.id);
     expect(recovered()).toHaveLength(1);
     expect(recovered()[0].audioURL).toBe(capture.draft.fileName);
-    expect(recovered()[0].status).toEqual({ waitingForTranscription: {} });
+    const expectsReadFailure = !readable && process.env.MEMORA_RECORDING_BASELINE !== '1';
+    if (expectsReadFailure) {
+      expect(recovered()[0].status.failed?._0).toContain('音声の長さを確認できません');
+      expect(recovered()[0].duration).toBe(0);
+      expect(recovered()[0].recordingMarkers).toEqual(capture.draft.markers);
+      await tapTab(screen, 'ライブラリ');
+      await tapControl(screen.getByRole('button', { name: new RegExp('^' + recovered()[0].title) }).first());
+      await expect(screen.getByText('処理を完了できませんでした', { exact: true })).toBeVisible();
+      await expect(screen.getByText(/元のファイルは変更していません/)).toBeVisible();
+      await expect(screen.getByText(/時間不明/).first()).toBeVisible();
+      await expect(screen.getByRole('button', { name: '文字起こしを開始', exact: true })).not.toBeVisible();
+      await device.setAppearance('dark');
+      await app.screenshot('recording-read-failure-dark');
+      await device.setAppearance('light');
+    } else {
+      expect(recovered()[0].status).toEqual({ waitingForTranscription: {} });
+    }
     expect(recovered()[0].transcript).toEqual([]);
     expect(createHash('sha256').update(readFileSync(capture.audio)).digest('hex')).toBe(original);
     await expect(screen.getByRole('button', { name: /録音を続けています/ })).not.toBeVisible();
@@ -145,10 +168,54 @@ test('SIGKILL recovers one recording without replacing the audio or restarting c
     await app.restart();
     await expect(screen.getByLabel('メニュー').first()).toBeVisible();
     expect(recovered()).toHaveLength(1);
+    if (expectsReadFailure) expect(recovered()[0].recordingMarkers).toEqual(capture.draft.markers);
     expect(capture.document('memoraLifeLogEntries').filter((entry: any) => entry.meetingID === capture.draft.id)).toHaveLength(1);
     expect(createHash('sha256').update(readFileSync(capture.audio)).digest('hex')).toBe(original);
     console.log('RECORDING_LIFECYCLE_EVIDENCE=' + JSON.stringify({ scenario: 'sigkill-recovery',
       baseline: process.env.MEMORA_RECORDING_BASELINE === '1', recoveryCount: recovered().length,
-      audioUnchanged: true, audio, readable,
+      audioUnchanged: true, audio, readable, markerCount: recovered()[0].recordingMarkers?.length,
+      recoveryStatus: recovered()[0].status,
       caveat: 'Simulator SIGKILL only; not a real-device call, route loss, storage failure, or power loss test' }));
+  });
+
+test('a finalized AAC staged as a recovery draft still offers manual transcription',
+  { timeout: 240_000 }, async ({ app, device, screen }) => {
+    const capture = await startIsolatedRecording(app, device, screen);
+    await tapControl(screen.getByRole('button', { name: '終了して保存', exact: true }));
+    await expect.poll(() => capture.document('memoraRecordingDraft')).toBeNull();
+    const audio = validateAAC(capture.audio);
+    const original = createHash('sha256').update(readFileSync(capture.audio)).digest('hex');
+    await device.closeApp();
+    // Only this fresh, UI-marked test container is staged. This verifies the
+    // readable branch; it does not claim SIGKILL produced finalized audio.
+    const draft = { ...capture.draft, title: '確定済みAACの復旧確認', note: '復旧後も残す架空の録音メモ' };
+    const meetings = capture.document('memoraMeetings').filter((record: any) => record.id !== draft.id);
+    const entries = capture.document('memoraLifeLogEntries').filter((entry: any) => entry.id !== draft.id && entry.meetingID !== draft.id);
+    const writes = [['memoraMeetings', meetings], ['memoraLifeLogEntries', entries], ['memoraRecordingDraft', draft]];
+    sql(capture.database, 'BEGIN IMMEDIATE; ' + writes.map(([key, value]) => {
+      const hex = Buffer.from(JSON.stringify(value)).toString('hex');
+      return `INSERT OR REPLACE INTO documents(key,data,updated_at) VALUES ('${key}',X'${hex}',0);`;
+    }).join(' ') + ' COMMIT;');
+    await app.restart();
+    await expect.poll(() => capture.document('memoraRecordingDraft')).toBeNull();
+    const recovered = () => capture.document('memoraMeetings').filter((record: any) => record.id === draft.id);
+    expect(recovered()).toHaveLength(1);
+    expect(recovered()[0].status).toEqual({ waitingForTranscription: {} });
+    expect(recovered()[0].notes).toBe(draft.note);
+    expect(recovered()[0].recordingMarkers).toEqual(draft.markers);
+    expect(recovered()[0].audioURL).toBe(draft.fileName);
+    expect(Math.abs(recovered()[0].duration - audio.duration)).toBeLessThan(0.1);
+    await tapTab(screen, 'ライブラリ');
+    await tapControl(screen.getByRole('button', { name: new RegExp('^' + draft.title) }).first());
+    await expect(screen.getByText('文字起こしはまだ始まっていません', { exact: true })).toBeVisible();
+    await expect(screen.getByRole('button', { name: '文字起こしを開始', exact: true })).toBeEnabled();
+    await app.screenshot('recording-readable-recovery');
+    await app.restart();
+    await expect(screen.getByLabel('メニュー').first()).toBeVisible();
+    expect(recovered()).toHaveLength(1);
+    expect(recovered()[0].recordingMarkers).toEqual(draft.markers);
+    expect(createHash('sha256').update(readFileSync(capture.audio)).digest('hex')).toBe(original);
+    console.log('RECORDING_LIFECYCLE_EVIDENCE=' + JSON.stringify({ scenario: 'finalized-aac-recovery-fixture',
+      manualTranscriptionOnly: true, markerCount: draft.markers.length, audioUnchanged: true,
+      duration: audio.duration, caveat: 'Real AAC recording, staged draft; not a playable SIGKILL recovery claim' }));
   });

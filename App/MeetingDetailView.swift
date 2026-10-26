@@ -539,7 +539,9 @@ struct MeetingDetailView: View {
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityAddTraits(.isHeader)
 
-      Text([MemoraFormat.meetingDate(meeting.createdAt), MemoraFormat.duration(meeting.duration), meeting.source.label].joined(separator: " · "))
+      Text([MemoraFormat.meetingDate(meeting.createdAt), meeting.duration == 0
+        ? String(localized: "時間不明", comment: "Audio duration could not be read")
+        : MemoraFormat.duration(meeting.duration), meeting.source.label].joined(separator: " · "))
         .font(MemoraTypography.secondary)
         .foregroundStyle(MemoraPalette.textSecondary)
         .fixedSize(horizontal: false, vertical: true)

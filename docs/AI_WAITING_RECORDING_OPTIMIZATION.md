@@ -14,6 +14,8 @@
 | 端末内要約 | — | [外部送信の説明なし](qa/waiting-energy/after-summary-on-device.png) |
 | 録音 | — | [省電力・一時停止後に再開](qa/waiting-energy/recording-low-power.png) |
 | 15分の背景録音 | — | [前景復帰時の15:07表示](qa/waiting-energy/recording-after-15min-background.png) |
+| 読み取り未確認の復旧 | — | [Light](qa/waiting-energy/recording-read-failure-light.png) / [Dark](qa/waiting-energy/recording-read-failure-dark.png) |
+| 読み取れる音声の復旧fixture | — | [手動文字起こしの導線を維持](qa/waiting-energy/recording-readable-recovery.png) |
 | Reduce Motion | — | [Simulatorのシステム設定を有効にした状態](qa/waiting-energy/reduce-motion-system.png) |
 
 変更前の待機画面には、作業テキスト左側のゲージと経過秒、承認待ち左側のゲージがある。変更後は短い状態テキストだけ。以前のBitrig Debugビルドを保存して比較し、開始時のソースでも同じ旧ゲージ実装を確認した。主実行ファイルのUUIDだけではDebugビルドの同一性を証明できないため、Instruments採取では `.debug.dylib` も照合している。
@@ -117,6 +119,18 @@ MEMORA_CHECK_TMPDIR=/Volumes/WorkspaceSSD/Development/Agents/Codex \
 
 このため追加の強制終了回帰テストが保証するのは、原音声bytes/参照の保持、重複しない復旧、無断の録音/認識再開がないこと。AACの可読性は別フィールドで実測し、失敗を成功に読み替えない。破損候補の実ファイルはWorkspaceSSDの検証フォルダーへ保全し、既存の録音方式・ファイルを書き換える修復は今回導入していない。
 
+### 後続実装：読み取り未確認の通知とdraftの置き換え防止
+
+これまでの復旧は`MediaFiles.duration`の失敗を1秒で置き換え、常に「復旧しました・文字起こしできます」と表示していた。読み取り未確認でも成功した印象になるため、長さを取得できない/0以下/非有限値/整数表示範囲外の場合は、**原音声を保持したまま既存のエラーUI**にする。「音声の長さを確認できない」「開けない可能性」「元のファイルは変更していない」と明示し、読み取り失敗を恒久的な破損とは断定しない。正常に長さを読める音声の手動文字起こし導線は維持する。
+
+未確認の長さは0として既存の数値フィールドへ保存し、詳細画面では「時間不明」と表示する。マークを仮の1秒へ切り詰めて失わないよう、長さ不明時は有効なtimestamp/IDを保持する。再読込時も保持し、長さが既知の場合の範囲チェック、非有限値/負値/重複/整数範囲外の除去は維持した。SQLiteのschema、バックアップのversion/キー、音声ファイルの参照形式は変えていない。`RecordingDraft`のEquatable追加と復旧中フラグはメモリ上の実行保護で、保存データに許可や実行状態を追加しない。
+
+復旧のメディア読み取りがawaitしている間に新規録音がdraftを置き換え得たため、復旧を単一実行にし、新規録音は前のdraftの復旧・保存を待つ。保存失敗/処理中なら新しい録音を開始しない。メディア確認から戻るときはdraft全体、workspace generation、キャンセル、録音/保存/復元/ストア保護状態を再検証する。保存には従来と同じ、記録・ジャーナル・draft除去の原子的commitを使い、失敗時は元ファイルとdraftを残す。AACの録音方式・品質・割込み処理・自動認識の許可は変更していない。
+
+**これはAACコンテナの修復ではない。** 強制終了した音声の再生保証、実機の電源断、着信やBluetooth切断の検証は引き続き未完了。今回解決したのは、未確認音声の成功扱い、仮の長さによるマークの欠落、復旧と新規録音が競合する経路である。
+
+実E2EのSIGKILL後は、SHA-256不変・マーク1件保持・記録/ジャーナルが一度だけ復旧されることを確認し、Light/Darkで既存のエラーUIと「時間不明」を確認した。さらに、正常に録音終了した実AACを復旧draftとして扱う専用fixtureでは、メモ/マーク/音声参照を保ち、「文字起こしを開始」が有効なまま自動認識しないことを確認。後者はデータを構成したfixtureであり、強制終了したAACが再生できたという証拠にはしない。
+
 ### 15分間の実時間Simulator録音
 
 省電力でホーム画面に移り、**903.165秒間、実時間で背景録音**した。背景中はAXツリーを取得せず（取得で前景に戻るため）、音声ファイルとプロセスだけを読み取った。同じdraft/ファイルを保ち、前景復帰後に通常保存でき、AAC/44.1kHzとPCM全体へのデコード、デコード前後の長さの0.001秒以内の一致をassertした。[試験記録](qa/waiting-energy/recording-lifecycle.json)。これはホストの合成15分相当試験とは別の実行である。
@@ -144,6 +158,7 @@ GitHub Actionsと同じ6スイートをローカルで全Pass: next-generation�
 - 拡張BackgroundSummaryExecutionChecks: 今回だけの送信、一度きりの消費、宛先不一致、分類済み禁止、許可の取消、原文・要約・workspace・モデルrevision・実効機密区分の変化を送信前/結果適用の両方で拒否、旧ジョブ自動再送拒否、端末内経路、継続許可/Agent/Webhookへ漏れないこと、実SQLite rollback/reopen。
 - AudioResourceChecks: 15/60/120分相当の有界履歴、長大な結合文字列、PCM所有権・変換・キュー上限。
 - RecordingResourceLifecycleChecks: 本番の`MemoraModel+RecordingResources`をサービス境界fixtureに対して実行。背景/復帰、一時停止、省電力、ライブOFF、メーター非表示でのTaskの取消と再作成、録音時刻の参照、AAC本体のstop/pauseを呼ばないこと。optimizationスイートへ組み込み。
+- RecordingRecoveryChecks: 本番の復旧/新規録音の受付保護を、実Meeting/Journal codec・SQLiteへ実行。8種類の長さ、11種類のawait中の変更、二重復旧、commit待ちの新規録音拒否、SQL失敗rollback/retry、再open、音声/メモ/マークの保持、音声欠落時のメモ保存。OSの音声長さ確認、モデルの保持状態と保存サービス境界はfixtureで、実AVFoundationの復旧は別のE2Eで検証する。
 - test_process_resource_sampler.py: ホスト専用の読み取り計測器について、無効なPIDの拒否、測定範囲/単位、Mach timebase変換と別のOSツール`ps`のCPU時間の一致を3テストで確認。iPhone用の計測APIや権限設定は追加していない。
 - test_waiting_audio_presentation.py: ゲージ/ロゴ/経過秒の撤去、承認待ち、Reduce Motion/背景の枝、外部送信Toggle撤去、非表示時のTask停止と録音独立性。
 - Simulator profile tests: Debugコードの認識、UUID不一致、欠落、空/不正traceの拒否。
@@ -154,6 +169,8 @@ Debugは `bitrig preview -platform iOS`、Releaseは `bitrig build -destination 
 継続検証でも上記Debug/Releaseを再ビルドして成功。追加のリソースライフサイクル/計測器テストを含む6スイートを再度全Pass。[追加後の結果](qa/waiting-energy/quality-six-lifecycle.json)。生ログは `/Volumes/WorkspaceSSD/Development/Agents/Codex/memora-quality-20261026-lifecycle-final/`。
 
 追加の録音E2EはDebugの15分試験で2件Pass。ログを有界化・SQLiteの音声参照一致を追加した後、短時間Debugの通常保存はPassしたが、次の試験は`device.installApp`のSimulator導入エラーで動作検証前に失敗した（同時に可変のDerivedData成果物を再ビルドしていたが、因果は未確定）。ビルド完了後の固定Release成果物でファイル全体を再実行し、2件ともPass。正常保存のAACは16.368617秒、PCMデコード後も同じ長さで、ログ全体が上限内に収まることも確認。[ビルドと再試験の記録](qa/waiting-energy/recording-lifecycle-validation.json)。強制終了時の「bytes保持は成功・AAC可読性は失敗」という制約はReleaseでも再現した。
+
+復旧保護を実装した最終ソースでもDebug preview/Release buildを成功。ローカル6スイートを全Passし、最後に拡張した旧draft codecの検査も単独で再実行した。[6スイート](qa/waiting-energy/quality-six-recovery.json)。関連Debug E2E 5件＋読み取れる音声の復旧fixture 1件、最終Releaseの復旧E2E 3件をPass。[詳細](qa/waiting-energy/recording-recovery-safety.json)。Releaseの正常保存AACは18.272653秒で全体デコード後も同じ長さ。ログは `/Volumes/WorkspaceSSD/Development/Agents/Codex/memora-quality-20261026-recovery/` と `.e2e/waiting-recovery-*`。プレビューに試験用データは注入していない。
 
 ## 8. GitHub Actionsと実機の残課題
 
@@ -179,5 +196,7 @@ Debugは `bitrig preview -platform iOS`、Releaseは `bitrig build -destination 
 要約: SummaryGenerationSheet、SummarySubmissionIntent、LLMSelection、MemoraModel+SummaryGeneration、MemoraModel+BackgroundSummary、PendingSummaryJob、RecordAccessPolicy、RecordPrivacy、MemoraModel+RecordPrivacy、RegisteredLLMStore、MemoraModel+ModelSelection。
 
 録音: RecordingPowerMode、MemoraModel+RecordingResources、MemoraModel+Capture、AudioRecorderService、RecordingLevelMeter、RecordingSheetBackground、CaptureSessionView、VoiceGlow、ActiveRecordingStrip、RealtimeTranscriptionService、LiveTranscriptHistory、RealtimeTranscriptView、SpeechRecognitionSettingsView、RootTabView、MemoraModel+Processing、TranscriptionService、FluidSpeakerDiarizationService、LiveAudioBufferConverter、AudioProcessingDiagnostics。
+
+後続の復旧保護: MemoraModel+RecordingRecovery、MemoraModelの復旧中フラグ、MemoraModel+Captureの新規録音受付、RecordingMarker、Meetingのマーク復元、MeetingDetailViewの「時間不明」表示。
 
 SpeechInputServiceとAudioSessionCoordinatorは調査のみ。録音中の音声入力拒否とtoken所有権を維持し、今回の省電力処理からsessionを解除しない。

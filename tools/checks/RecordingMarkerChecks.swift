@@ -14,6 +14,9 @@ struct RecordingMarkerChecks {
     precondition(RecordingMarker.validated([second, first, second], duration: 60) == [first, second])
     precondition(RecordingMarker.validated([second, first], duration: 10) == [first])
     precondition(RecordingMarker.validated([first], duration: .nan).isEmpty)
+    precondition(RecordingMarker.validated([second, first, second], duration: nil) == [first, second])
+    precondition(RecordingMarker.validated([RecordingMarker(timestamp: .infinity),
+      RecordingMarker(timestamp: -1), RecordingMarker(timestamp: Double(Int.max))], duration: nil).isEmpty)
     precondition(RecordingMarker(timestamp: 1, title: " \n").displayTitle == "重要な場面")
     let data = try JSONEncoder().encode([first, second])
     let restored = try JSONDecoder().decode([RecordingMarker].self, from: data)

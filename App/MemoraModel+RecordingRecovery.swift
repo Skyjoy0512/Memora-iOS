@@ -6,7 +6,7 @@ extension MemoraModel {
   /// recovery that is tried again finds the record it already made instead of
   /// making a second one. Drafts written before the id was stored have none, and
   /// are given one on the first load.
-  struct RecordingDraft: Codable {
+  struct RecordingDraft: Codable, Equatable {
     var id: UUID?
     var fileName: String
     var title: String
@@ -26,13 +26,19 @@ extension MemoraModel {
   }
 
   /// Brings back a recording that was interrupted: its audio becomes a record
-  /// awaiting transcription, or, when no audio survived, the note becomes a
-  /// memo. Recording is never restarted on its own.
+  /// awaiting transcription only when its duration can be read. Unverified
+  /// audio keeps its file with an error; a missing file leaves a memo instead.
+  /// Recording is never restarted on its own.
   func recoverRecordingDraft() async {
-    guard let draft = recordingDraft else { return }
+    guard !isRecoveringRecordingDraft, !isRecording, !isPreparingCapture,
+          !isSavingCapture, !isRestoring, !Task.isCancelled,
+          let draft = recordingDraft else { return }
     // A store that could not be read must not be written over, so recovery waits
     // for the next healthy launch instead of adding records that cannot be saved.
     guard !isStoreProtected else { return }
+    isRecoveringRecordingDraft = true
+    defer { isRecoveringRecordingDraft = false }
+    let workspaceGeneration = aiWorkspaceGeneration
 
     let id = draft.id ?? UUID()
     // A recovery that already stored the record but was cut off before the draft
@@ -68,15 +74,28 @@ extension MemoraModel {
       return
     }
 
-    let duration = await MediaFiles.duration(of: audioURL) ?? 1
+    let measuredDuration = await MediaFiles.duration(of: audioURL)
+    guard !Task.isCancelled, !isStoreProtected, !isRestoring,
+          !isRecording, !isPreparingCapture, !isSavingCapture,
+          recordingDraft == draft, aiWorkspaceGeneration == workspaceGeneration,
+          !meetings.contains(where: { $0.id == id }),
+          !lifeLogEntries.contains(where: { $0.id == id }) else { return }
+    let duration = measuredDuration.flatMap {
+      $0.isFinite && $0 > 0 && $0 < Double(Int.max) ? $0 : nil
+    }
+    // Zero represents an unverified duration, not an invented one-second clip.
+    // Keep valid markers without clipping them to that unknown endpoint.
+    let unreadableNotice = String(localized: "録音ファイルは端末に保持していますが、音声の長さを確認できませんでした。中断により開けない可能性があります。元のファイルは変更していません。",
+      comment: "Interrupted recording retained without confirming that its audio is readable")
     var meeting = Meeting(
       id: id,
       title: title.isEmpty ? "復旧した録音" : title,
       createdAt: draft.startedAt,
-      duration: duration,
+      duration: duration ?? 0,
       source: .recording,
-      status: .waitingForTranscription,
-      summary: "アプリが中断する前に録音していた音声を復旧しました。文字起こしを開始できます。",
+      status: duration == nil ? .failed(unreadableNotice) : .waitingForTranscription,
+      summary: duration == nil ? unreadableNotice
+        : "アプリが中断する前に録音していた音声を復旧しました。文字起こしを開始できます。",
       keyPoints: [],
       decisions: [],
       openQuestions: [],
@@ -93,7 +112,8 @@ extension MemoraModel {
         id: id,
         createdAt: draft.startedAt,
         title: meeting.title,
-        summary: "中断前に録音していた音声を復旧しました。",
+        summary: duration == nil ? "中断前の録音ファイルを保持しました。音声の読み取りを確認してください。"
+          : "中断前に録音していた音声を復旧しました。",
         source: .iphone,
         meetingID: meeting.id
       ),
@@ -110,7 +130,19 @@ extension MemoraModel {
       lifeLogEntries.removeAll { $0.id == id }
       return
     }
-    recordingDraft = nil
+    if recordingDraft == draft { recordingDraft = nil }
+  }
+
+  /// Recovery owns the old draft until its record is committed. A new capture
+  /// must not replace it while media inspection or SQLite is still suspended.
+  func resolvePendingRecordingBeforeCapture() async -> Bool {
+    if recordingDraft != nil { await recoverRecordingDraft() }
+    guard recordingDraft == nil, !isRecoveringRecordingDraft else {
+      recordingErrorMessage = String(localized: "前回の録音を保存できていないため、新しい録音は開始していません。復旧が完了してからもう一度お試しください。",
+        comment: "A pending interrupted recording blocks replacement by a new recording")
+      return false
+    }
+    return !isRestoring && !isStoreProtected
   }
 
   /// Forgets the recording draft and removes its stored copy. `alreadyRemoved`

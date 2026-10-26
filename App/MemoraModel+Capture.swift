@@ -51,6 +51,9 @@ extension MemoraModel {
       return
     }
 
+    guard await resolvePendingRecordingBeforeCapture() else { return }
+    guard !isRestoring, !isPreparingCapture, !isSavingCapture, !isRecording else { return }
+
     isPreparingCapture = true
     guard spaceID == nil || ProjectFiling.existingProject(spaceID, in: spaces) != nil else {
       isPreparingCapture = false

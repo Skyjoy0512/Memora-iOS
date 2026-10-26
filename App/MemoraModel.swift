@@ -547,6 +547,7 @@ final class MemoraModel {
   var cloudShareMessage: String?
   /// What a recording in progress would need to be recovered after a stop.
   @ObservationIgnored var recordingDraft: RecordingDraft?
+  @ObservationIgnored var isRecoveringRecordingDraft = false
   /// Media whose record is already gone but whose files could not be removed.
   /// Kept so the removal can be tried again instead of being dropped silently.
   @ObservationIgnored var pendingMediaDeletions: [PendingMediaDeletion] = []

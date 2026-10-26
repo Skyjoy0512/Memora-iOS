@@ -16,11 +16,15 @@ struct RecordingMarker: Identifiable, Hashable, Codable, Sendable {
     return markers + [RecordingMarker(timestamp: timestamp)]
   }
 
-  static func validated(_ markers: [RecordingMarker], duration: TimeInterval) -> [RecordingMarker] {
-    guard duration.isFinite, duration >= 0, duration < Double(Int.max) else { return [] }
+  static func validated(_ markers: [RecordingMarker], duration: TimeInterval?) -> [RecordingMarker] {
+    if let duration {
+      guard duration.isFinite, duration >= 0, duration < Double(Int.max) else { return [] }
+    }
+    let upperBound = duration ?? Double(Int.max)
     var seen: Set<UUID> = []
     return markers.filter {
-      $0.timestamp.isFinite && $0.timestamp >= 0 && $0.timestamp <= duration && seen.insert($0.id).inserted
+      $0.timestamp.isFinite && $0.timestamp >= 0 && $0.timestamp < Double(Int.max)
+        && $0.timestamp <= upperBound && seen.insert($0.id).inserted
     }.sorted {
       $0.timestamp == $1.timestamp ? $0.id.uuidString < $1.id.uuidString : $0.timestamp < $1.timestamp
     }

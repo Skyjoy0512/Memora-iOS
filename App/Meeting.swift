@@ -86,8 +86,11 @@ extension Meeting {
     transcript = try container.decode([TranscriptSegment].self, forKey: .transcript)
     spaceID = try container.decodeIfPresent(UUID.self, forKey: .spaceID)
     notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
+    // An interrupted file may have no readable duration yet; do not discard
+    // its marks just because that unknown duration is stored as zero.
     recordingMarkers = RecordingMarker.validated(
-      try container.decodeIfPresent([RecordingMarker].self, forKey: .recordingMarkers) ?? [], duration: duration)
+      try container.decodeIfPresent([RecordingMarker].self, forKey: .recordingMarkers) ?? [],
+      duration: duration == 0 ? nil : duration)
     participantIDs = try container.decodeIfPresent([UUID].self, forKey: .participantIDs)
     calendarEventID = try container.decodeIfPresent(String.self, forKey: .calendarEventID)
     summaryUseCaseID = try container.decodeIfPresent(String.self, forKey: .summaryUseCaseID)

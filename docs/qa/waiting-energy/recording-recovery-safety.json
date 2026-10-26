@@ -1,0 +1,169 @@
+{
+  "scope": "Actual isolated iPhone 18 Pro Max Simulator UI and AVAudioRecorder, plus host production-code/SQLite checks. Not an AAC repair, device-energy measurement, or speech-accuracy evaluation.",
+  "builds": {
+    "debug": {
+      "result": "success",
+      "command": "bitrig preview -platform iOS",
+      "log": "2026-10-26T15-02-05-f9545e1b.log",
+      "warnings": 11
+    },
+    "release": {
+      "result": "success",
+      "command": "bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release",
+      "log": "2026-10-26T15-02-06-e37e34e2.log",
+      "warnings": 11
+    }
+  },
+  "e2e": {
+    "debugRelated": {
+      "id": "01a176c9-2da4-7d91-9724-ee98317165d1",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-26T05:57:47.687Z",
+      "finishedAt": "2026-10-26T06:02:49.419Z",
+      "summary": {
+        "discovered": 113,
+        "selected": 5,
+        "executed": 5,
+        "passed": 5,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "tests": [
+        {
+          "title": "paused background summary preserves text and offers explicit retry after restart",
+          "status": "passed",
+          "durationMs": 64555
+        },
+        {
+          "title": "background low-power recording keeps the same draft and a complete decodable AAC",
+          "status": "passed",
+          "durationMs": 45737
+        },
+        {
+          "title": "SIGKILL recovers one recording without replacing the audio or restarting capture",
+          "status": "passed",
+          "durationMs": 52575
+        },
+        {
+          "title": "power mode changes and pause preserve the AAC recording and SQLite draft",
+          "status": "passed",
+          "durationMs": 53828
+        },
+        {
+          "title": "summary has one Generate action and discloses only external destinations",
+          "status": "passed",
+          "durationMs": 84664
+        }
+      ]
+    },
+    "debugReadableFixture": {
+      "id": "01a176d2-5f0c-7eda-aba2-5e98e85c5dc8",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-26T06:07:47.312Z",
+      "finishedAt": "2026-10-26T06:08:41.472Z",
+      "summary": {
+        "discovered": 114,
+        "selected": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "tests": [
+        {
+          "title": "a finalized AAC staged as a recovery draft still offers manual transcription",
+          "status": "passed",
+          "durationMs": 53820
+        }
+      ]
+    },
+    "releaseRecovery": {
+      "id": "01a176d3-f478-7d29-8d93-d80e39a4af1c",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-26T06:09:29.202Z",
+      "finishedAt": "2026-10-26T06:11:44.828Z",
+      "summary": {
+        "discovered": 114,
+        "selected": 3,
+        "executed": 3,
+        "passed": 3,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "tests": [
+        {
+          "title": "background low-power recording keeps the same draft and a complete decodable AAC",
+          "status": "passed",
+          "durationMs": 46451
+        },
+        {
+          "title": "SIGKILL recovers one recording without replacing the audio or restarting capture",
+          "status": "passed",
+          "durationMs": 45440
+        },
+        {
+          "title": "a finalized AAC staged as a recovery draft still offers manual transcription",
+          "status": "passed",
+          "durationMs": 43509
+        }
+      ]
+    }
+  },
+  "host": {
+    "qualitySuites": "quality-six-recovery.json",
+    "durationStates": 8,
+    "suspendedInspectionRaces": 11,
+    "legacyDraftWithoutIDOrMarkersDecoded": true,
+    "legacyDraftCodecRecheckedAfterSixSuiteRun": true,
+    "realSQLiteRollbackAndReopen": true,
+    "realMeetingAndJournalCodecs": true,
+    "serviceBoundaries": "Duration reading, model state, and persistence adapter are fixtures; actual AAC is verified by native E2E."
+  },
+  "verified": {
+    "unreadableAudioShowsFailedStatus": true,
+    "doesNotClaimPlayableRecovery": true,
+    "unverifiedDurationStoredAsZero": true,
+    "unknownDurationDoesNotDiscardValidMarkers": true,
+    "marksRetainedAcrossSecondLaunch": true,
+    "originalAudioSHA256Unchanged": true,
+    "noAutomaticRecordingOrTranscriptionRestart": true,
+    "newCaptureCannotReplacePendingDraftDuringMediaReadOrCommit": true,
+    "readableFinalizedAACStillOffersManualTranscription": true,
+    "failedMetadataWriteRetainsDraftAndAudio": true
+  },
+  "releaseAudio": {
+    "normalSave": {
+      "durationSeconds": 18.272653,
+      "decodedDurationSeconds": 18.272653,
+      "format": "AAC, 44100 Hz, mono",
+      "packets": 789,
+      "validFrames": 805824
+    },
+    "sigkill": {
+      "aacReadable": false,
+      "retainedFileBytes": 58352,
+      "retainedMarkers": 1,
+      "recoveredRecordCount": 1
+    },
+    "readableRecoveryFixture": {
+      "durationSeconds": 6.058957,
+      "manualTranscriptionOnly": true,
+      "retainedMarkers": 1,
+      "fixtureNote": "Finalized real AAC staged as an interrupted draft; not evidence that SIGKILL produces finalized audio."
+    }
+  },
+  "remaining": [
+    "AAC container repair/playable SIGKILL recovery is not implemented.",
+    "Physical iPhone remains Offline; battery, thermal behavior, speech accuracy, calls/routes, 60/120-minute real-device runs remain unverified.",
+    "No push/new-SHA GitHub Actions run."
+  ]
+}
