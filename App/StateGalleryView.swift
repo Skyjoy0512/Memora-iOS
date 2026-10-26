@@ -14,6 +14,7 @@ struct StateGalleryView: View {
         NavigationLink("記憶の更新（架空データ）") { AIMemoryEditingExampleView() }
         NavigationLink("Loading・本文表示を確認") { MotionLoadingGalleryView() }
         NavigationLink("資料・メールの出典表示を確認") { ArtifactSourcesExampleView() }
+        NavigationLink("スライドの組版（長文・文字サイズ）") { SlideLayoutExampleView() }
         NavigationLink("回答アクション（操作の確認）") { AIAnswerActionsExampleView() }
       }
       Section("システム導線（遷移の確認）") {

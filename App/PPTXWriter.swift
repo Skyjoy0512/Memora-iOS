@@ -1,22 +1,18 @@
 import CoreGraphics
 import Foundation
 
-/// Writes slides as a PowerPoint (.pptx) file that Keynote, PowerPoint and
-/// Google Slides open. Each slide is drawn with text boxes at fixed positions
-/// that match `SlideView`, so the file looks like the app's preview.
+/// Editable text with the same derived pages used by screen and PDF.
 enum PPTXWriter {
   /// 16:9 in EMU; one point is 12,700 EMU, so this is `SlideView`'s 960 × 540.
   static let slideWidth = 12_192_000
   static let slideHeight = 6_858_000
-  static let accentHex = "0A84FF"
-  static let textHex = "1C1C1E"
+  static let accentHex = "0D0D0D"
+  static let textHex = "0D0D0D"
   static let secondaryHex = "6E6E73"
 
   static func data(for document: MemoraDocument) -> Data {
     var archive = ZipArchive()
-    let slides = document.slides.isEmpty
-      ? [DocumentSlide(title: document.displayTitle, bullets: [])]
-      : document.slides
+    let slides = SlidePageLayout.pages(for: document)
 
     archive.add("[Content_Types].xml", text: contentTypes(slideCount: slides.count))
     archive.add("_rels/.rels", text: rootRelationships)
@@ -108,70 +104,48 @@ enum PPTXWriter {
 
   // MARK: - Slides
 
-  /// Positions in points on the 960 × 540 slide, shared with `SlideView`.
-  enum Layout {
-    static let margin: CGFloat = 54
-    static let contentWidth: CGFloat = 852
-    static let titleTop: CGFloat = 36
-    static let titleHeight: CGFloat = 80
-    static let accentTop: CGFloat = 122
-    static let bodyTop: CGFloat = 144
-    static let bodyHeight: CGFloat = 360
-    static let coverTitleTop: CGFloat = 170
-    static let coverTitleHeight: CGFloat = 120
-    static let coverAccentTop: CGFloat = 302
-    static let titleSize: CGFloat = 32
-    static let coverTitleSize: CGFloat = 44
-    static let bulletSize: CGFloat = 20
-  }
+  private typealias Layout = SlidePageLayout
 
-  private static func slideXML(_ slide: DocumentSlide) -> String {
+  private static func slideXML(_ slide: SlidePage) -> String {
     var shapes: [String] = []
-    if slide.isTitleSlide {
+    let titleSize = slide.isCover ? Layout.coverTitleSize : Layout.titleSize
+    let titleLineHeight = slide.isCover ? Layout.coverLineHeight : Layout.titleLineHeight
+    shapes.append(textBox(
+      id: 2, name: "Title",
+      frame: CGRect(x: Layout.margin, y: slide.isCover ? Layout.coverTitleTop : Layout.titleTop,
+                    width: Layout.contentWidth, height: CGFloat(slide.titleLines.count) * titleLineHeight),
+      anchor: "t", paragraphs: [lineParagraph(slide.titleLines, size: titleSize, bold: true, lineHeight: titleLineHeight)]
+    ))
+    var top = Layout.bodyTop
+    for (index, bullet) in slide.bullets.enumerated() {
+      let height = CGFloat(bullet.lines.count) * Layout.bulletLineHeight
       shapes.append(textBox(
-        id: 2, name: "Title",
-        frame: CGRect(x: Layout.margin, y: Layout.coverTitleTop, width: Layout.contentWidth, height: Layout.coverTitleHeight),
-        anchor: "b",
-        paragraphs: [paragraph(slide.title, size: Layout.coverTitleSize, bold: true, color: textHex)]
-      ))
-      shapes.append(accentBar(id: 3, frame: CGRect(x: Layout.margin, y: Layout.coverAccentTop, width: 86, height: 4)))
-    } else {
-      shapes.append(textBox(
-        id: 2, name: "Title",
-        frame: CGRect(x: Layout.margin, y: Layout.titleTop, width: Layout.contentWidth, height: Layout.titleHeight),
-        anchor: "b",
-        paragraphs: [paragraph(slide.title, size: Layout.titleSize, bold: true, color: textHex)]
-      ))
-      shapes.append(accentBar(id: 3, frame: CGRect(x: Layout.margin, y: Layout.accentTop, width: 72, height: 3.6)))
-      shapes.append(textBox(
-        id: 4, name: "Body",
-        frame: CGRect(x: Layout.margin, y: Layout.bodyTop, width: Layout.contentWidth, height: Layout.bodyHeight),
+        id: index + 3, name: "Point \(bullet.sourceIndex + 1)",
+        frame: CGRect(x: Layout.margin, y: top, width: Layout.contentWidth, height: height),
         anchor: "t",
-        paragraphs: slide.bullets.map(bulletParagraph)
+        paragraphs: [lineParagraph(bullet.lines, size: Layout.bulletSize, bold: false,
+                                   lineHeight: Layout.bulletLineHeight, bullet: bullet.showsMarker)]
       ))
+      top += height + Layout.bulletGap
     }
     return header + #"<p:sld \#(namespaces)><p:cSld><p:spTree>\#(emptyTree)\#(shapes.joined())</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>"#
   }
 
   private static func textBox(id: Int, name: String, frame: CGRect, anchor: String, paragraphs: [String]) -> String {
     let body = paragraphs.isEmpty ? #"<a:p><a:endParaRPr lang="ja-JP"/></a:p>"# : paragraphs.joined()
-    return #"<p:sp><p:nvSpPr><p:cNvPr id="\#(id)" name="\#(name)"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>\#(transform(frame))<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="\#(anchor)"><a:normAutofit/></a:bodyPr><a:lstStyle/>\#(body)</p:txBody></p:sp>"#
+    return #"<p:sp><p:nvSpPr><p:cNvPr id="\#(id)" name="\#(name)"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>\#(transform(frame))<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="\#(anchor)"><a:noAutofit/></a:bodyPr><a:lstStyle/>\#(body)</p:txBody></p:sp>"#
   }
 
-  private static func accentBar(id: Int, frame: CGRect) -> String {
-    #"<p:sp><p:nvSpPr><p:cNvPr id="\#(id)" name="Accent"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>\#(transform(frame))<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="\#(accentHex)"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>"#
-  }
-
-  private static func paragraph(_ text: String, size: CGFloat, bold: Bool, color: String) -> String {
-    #"<a:p>\#(run(text, size: size, bold: bold, color: color))</a:p>"#
-  }
-
-  private static func bulletParagraph(_ text: String) -> String {
-    #"<a:p><a:pPr marL="342900" indent="-342900"><a:spcBef><a:spcPts val="1400"/></a:spcBef><a:buClr><a:srgbClr val="\#(accentHex)"/></a:buClr><a:buFont typeface="Arial"/><a:buChar char="•"/></a:pPr>\#(run(text, size: Layout.bulletSize, bold: false, color: textHex))</a:p>"#
+  private static func lineParagraph(_ lines: [String], size: CGFloat, bold: Bool,
+                                    lineHeight: CGFloat, bullet: Bool? = nil) -> String {
+    let indent = bullet == nil ? "" : #" marL="\#(emu(Layout.bulletIndent))" indent="\#(bullet == true ? -emu(Layout.bulletIndent) : 0)""#
+    let marker = bullet == true ? #"<a:buFont typeface="Arial"/><a:buChar char="•"/>"# : "<a:buNone/>"
+    let content = lines.map { run(Layout.visibleLine($0), size: size, bold: bold, color: textHex) }.joined(separator: "<a:br/>")
+    return #"<a:p><a:pPr\#(indent)><a:lnSpc><a:spcPts val="\#(Int(lineHeight * 100))"/></a:lnSpc>\#(marker)</a:pPr>\#(content)<a:endParaRPr sz="\#(Int(size * 100))"/></a:p>"#
   }
 
   private static func run(_ text: String, size: CGFloat, bold: Bool, color: String) -> String {
-    #"<a:r><a:rPr lang="ja-JP" altLang="en-US" sz="\#(Int(size * 100))" b="\#(bold ? 1 : 0)" dirty="0"><a:solidFill><a:srgbClr val="\#(color)"/></a:solidFill></a:rPr><a:t>\#(escaped(text))</a:t></a:r>"#
+    #"<a:r><a:rPr lang="ja-JP" altLang="en-US" sz="\#(Int(size * 100))" b="\#(bold ? 1 : 0)" dirty="0"><a:solidFill><a:srgbClr val="\#(color)"/></a:solidFill><a:latin typeface="Helvetica Neue"/><a:ea typeface="Hiragino Sans"/></a:rPr><a:t xml:space="preserve">\#(escaped(text))</a:t></a:r>"#
   }
 
   private static func transform(_ frame: CGRect) -> String {
@@ -184,7 +158,10 @@ enum PPTXWriter {
 
   private static func escaped(_ text: String) -> String {
     // Control characters other than tab and newline are not allowed in XML.
-    let cleaned = String(text.unicodeScalars.filter { $0.value >= 0x20 || $0 == "\t" || $0 == "\n" })
+    let cleaned = String(text.unicodeScalars.filter {
+      $0 == "\t" || $0 == "\n" || $0 == "\r" || (0x20...0xD7FF).contains($0.value)
+        || (0xE000...0xFFFD).contains($0.value) || (0x10000...0x10FFFF).contains($0.value)
+    })
     return cleaned
       .replacingOccurrences(of: "&", with: "&amp;")
       .replacingOccurrences(of: "<", with: "&lt;")

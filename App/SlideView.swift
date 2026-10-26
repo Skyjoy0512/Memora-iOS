@@ -1,72 +1,60 @@
 import SwiftUI
 
-/// Draws one slide on a white 16:9 page, at the same positions the PowerPoint
-/// export uses, scaled to whatever width it is given. Slides stay on white in
-/// dark mode, the way a presentation file will look.
+/// A fixed-size presentation page; surrounding reading UI supports Dynamic Type.
 struct SlideView: View {
-  var slide: DocumentSlide
+  var page: SlidePage
 
-  private typealias Layout = PPTXWriter.Layout
-  private static let accent = Color(red: 10 / 255, green: 132 / 255, blue: 1)
-  private static let ink = Color(red: 28 / 255, green: 28 / 255, blue: 30 / 255)
+  private typealias Layout = SlidePageLayout
+  private static let ink = Color(red: 13 / 255, green: 13 / 255, blue: 13 / 255)
 
   var body: some View {
     GeometryReader { proxy in
       canvas
-        .frame(width: 960, height: 540, alignment: .topLeading)
-        .scaleEffect(proxy.size.width / 960, anchor: .topLeading)
+        .frame(width: Layout.size.width, height: Layout.size.height, alignment: .topLeading)
+        .scaleEffect(proxy.size.width / Layout.size.width, anchor: .topLeading)
     }
     .aspectRatio(16 / 9, contentMode: .fit)
     .background(Color.white)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(([slide.title] + slide.bullets).joined(separator: "、"))
+    .accessibilityLabel(([page.title] + page.bullets.map(\.text)).joined(separator: "、"))
   }
 
   private var canvas: some View {
-    ZStack(alignment: .topLeading) {
+    let titleHeight = page.isCover ? Layout.coverLineHeight : Layout.titleLineHeight
+    let titleTop = page.isCover ? Layout.coverTitleTop : Layout.titleTop
+    let titleSize = page.isCover ? Layout.coverTitleSize : Layout.titleSize
+    return ZStack(alignment: .topLeading) {
       Color.white
-
-      if slide.isTitleSlide {
-        Text(slide.title)
-          .font(.system(size: Layout.coverTitleSize, weight: .bold))
-          .foregroundStyle(Self.ink)
-          .minimumScaleFactor(0.5)
-          .frame(width: Layout.contentWidth, height: Layout.coverTitleHeight, alignment: .bottomLeading)
-          .offset(x: Layout.margin, y: Layout.coverTitleTop)
-
-        Self.accent
-          .frame(width: 86, height: 4)
-          .offset(x: Layout.margin, y: Layout.coverAccentTop)
-      } else {
-        Text(slide.title)
-          .font(.system(size: Layout.titleSize, weight: .bold))
-          .foregroundStyle(Self.ink)
-          .minimumScaleFactor(0.5)
-          .frame(width: Layout.contentWidth, height: Layout.titleHeight, alignment: .bottomLeading)
-          .offset(x: Layout.margin, y: Layout.titleTop)
-
-        Self.accent
-          .frame(width: 72, height: 3.6)
-          .offset(x: Layout.margin, y: Layout.accentTop)
-
-        VStack(alignment: .leading, spacing: 14) {
-          ForEach(Array(slide.bullets.enumerated()), id: \.offset) { _, bullet in
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-              Text("•")
-                .foregroundStyle(Self.accent)
-              Text(bullet)
-                .foregroundStyle(Self.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-            .font(.system(size: Layout.bulletSize))
-          }
+      VStack(alignment: .leading, spacing: 0) {
+        ForEach(page.titleLines.indices, id: \.self) { index in
+          Text(verbatim: Layout.visibleLine(page.titleLines[index]))
+            .lineLimit(1)
+            .font(.custom(Layout.boldFont, fixedSize: titleSize))
+            .frame(width: Layout.contentWidth, height: titleHeight, alignment: .leading)
         }
-        .minimumScaleFactor(0.6)
-        .padding(.top, 14)
-        .frame(width: Layout.contentWidth, height: Layout.bodyHeight, alignment: .topLeading)
-        .offset(x: Layout.margin, y: Layout.bodyTop)
       }
+      .offset(x: Layout.margin, y: titleTop)
+
+      VStack(alignment: .leading, spacing: Layout.bulletGap) {
+        ForEach(page.bullets) { bullet in
+          HStack(alignment: .top, spacing: 0) {
+            Text(bullet.showsMarker ? "•" : "")
+              .frame(width: Layout.bulletIndent, height: Layout.bulletLineHeight, alignment: .leading)
+            VStack(alignment: .leading, spacing: 0) {
+              ForEach(bullet.lines.indices, id: \.self) { index in
+                Text(verbatim: Layout.visibleLine(bullet.lines[index]))
+                  .lineLimit(1)
+                  .frame(width: Layout.contentWidth - Layout.bulletIndent,
+                         height: Layout.bulletLineHeight, alignment: .leading)
+              }
+            }
+          }
+          .font(.custom(Layout.regularFont, fixedSize: Layout.bulletSize))
+        }
+      }
+      .offset(x: Layout.margin, y: Layout.bodyTop)
     }
+    .foregroundStyle(Self.ink)
     .environment(\.colorScheme, .light)
   }
 }

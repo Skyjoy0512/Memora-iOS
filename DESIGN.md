@@ -125,6 +125,13 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | SidebarAccountFooter | anchored account/plan/settings controls, separated from scrollable destinations |
 | MemoraForm / native Menu / sheet / alert | settings, integrations, skill setup, editors and confirmation |
 
+Standard presentation pages use SlidePageLayout for line breaks, fixed 24pt
+body type and content-preserving pagination across screen, PDF and PowerPoint.
+DocumentSlidesView keeps the white 16:9 page flat, with a separate page count,
+native text disclosure and speaker-note disclosure. At accessibility text sizes,
+the readable text replaces the scaled page. Saved logical slides remain intact.
+Company template artifacts keep their original file and formatting.
+
 GlassSegmentedPicker/Control and arbitrary memoraCard(radius:) are retired.
 The old colored SettingsIconStyle tiles and per-section Tint palette are retired;
 settings and integration screens share one monochrome glyph implementation.

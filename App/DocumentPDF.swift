@@ -28,9 +28,9 @@ enum DocumentPDF {
   private static func writeSlides(_ document: MemoraDocument, to url: URL) throws {
     var box = CGRect(x: 0, y: 0, width: 960, height: 540)
     guard let pdf = CGContext(url as CFURL, mediaBox: &box, nil) else { throw ExportError.renderFailed }
-    let slides = document.slides.isEmpty ? [DocumentSlide(title: document.displayTitle, bullets: [])] : document.slides
-    for slide in slides {
-      let renderer = ImageRenderer(content: SlideView(slide: slide).frame(width: 960, height: 540))
+    let pages = SlidePageLayout.pages(for: document)
+    for page in pages {
+      let renderer = ImageRenderer(content: SlideView(page: page).frame(width: 960, height: 540))
       renderer.proposedSize = ProposedViewSize(width: 960, height: 540)
       renderer.render { _, draw in
         pdf.beginPDFPage(nil)

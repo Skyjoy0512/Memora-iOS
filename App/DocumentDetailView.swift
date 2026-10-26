@@ -65,7 +65,7 @@ struct DocumentDetailView: View {
               return .handled
             })
           case .slides:
-            slideList(document)
+            DocumentSlidesView(document: document)
           }
         }
         .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
@@ -169,33 +169,6 @@ struct DocumentDetailView: View {
     return parts.joined(separator: " · ")
   }
 
-  private func slideList(_ document: MemoraDocument) -> some View {
-    LazyVStack(alignment: .leading, spacing: 18) {
-      ForEach(Array(document.slides.enumerated()), id: \.element.id) { index, slide in
-        VStack(alignment: .leading, spacing: 8) {
-          SlideView(slide: slide)
-            .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
-            .overlay {
-              RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous)
-                .stroke(Color(uiColor: .separator), lineWidth: 0.5)
-            }
-            .shadow(color: .black.opacity(0.08), radius: 8, y: 3)
-
-          HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text("\(index + 1)")
-              .font(.caption.weight(.semibold).monospacedDigit())
-              .foregroundStyle(.secondary)
-            if !slide.notes.isEmpty {
-              Text(slide.notes)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            }
-          }
-        }
-      }
-    }
-  }
-
   private enum ShareFormat {
     case pdf
     case word
@@ -211,7 +184,12 @@ struct DocumentDetailView: View {
       case .pdf:
         shareItems = [try DocumentPDF.write(document)]
       case .powerPoint:
-        shareItems = [try originalArtifact(document, suffix: "pptx") ?? PPTXWriter.write(document)]
+        if document.companyTemplateID == nil && !document.slides.isEmpty {
+          // Stored standard exports may predate the current pagination policy.
+          shareItems = [try PPTXWriter.write(document)]
+        } else {
+          shareItems = [try originalArtifact(document, suffix: "pptx") ?? PPTXWriter.write(document)]
+        }
       case .text:
         shareItems = [document.plainText]
       }
