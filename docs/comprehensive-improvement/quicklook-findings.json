@@ -1,0 +1,140 @@
+{
+  "renderer": "macOS Quick Look HTML",
+  "officeRendering": "unverified",
+  "visualQuality": "not approved",
+  "before": [
+    {
+      "slide": 1,
+      "images": [],
+      "tables": 0,
+      "chartTitle": null,
+      "chartImageMissing": false
+    },
+    {
+      "slide": 2,
+      "images": [],
+      "tables": 1,
+      "chartTitle": null,
+      "chartImageMissing": false
+    },
+    {
+      "slide": 3,
+      "images": [],
+      "tables": 0,
+      "chartTitle": null,
+      "chartImageMissing": false
+    },
+    {
+      "slide": 4,
+      "images": [],
+      "tables": 0,
+      "chartTitle": "棒グラフ",
+      "chartImageMissing": true
+    },
+    {
+      "slide": 5,
+      "images": [],
+      "tables": 0,
+      "chartTitle": "折れ線グラフ",
+      "chartImageMissing": true
+    },
+    {
+      "slide": 6,
+      "images": [],
+      "tables": 0,
+      "chartTitle": "円グラフ",
+      "chartImageMissing": true
+    },
+    {
+      "slide": 7,
+      "images": [
+        "Attachment1.pdf",
+        "Attachment2.pdf"
+      ],
+      "tables": 0,
+      "chartTitle": null,
+      "chartImageMissing": false
+    },
+    {
+      "slide": 8,
+      "images": [
+        "Attachment3.jpeg"
+      ],
+      "tables": 0,
+      "chartTitle": null,
+      "chartImageMissing": false
+    }
+  ],
+  "after": [
+    {
+      "slide": 1,
+      "images": [],
+      "tables": 0,
+      "chartTitle": null,
+      "chartImageMissing": false
+    },
+    {
+      "slide": 2,
+      "images": [],
+      "tables": 1,
+      "chartTitle": null,
+      "chartImageMissing": false
+    },
+    {
+      "slide": 3,
+      "images": [],
+      "tables": 0,
+      "chartTitle": null,
+      "chartImageMissing": false
+    },
+    {
+      "slide": 4,
+      "images": [
+        "Attachment1.pdf"
+      ],
+      "tables": 0,
+      "chartTitle": "棒グラフ",
+      "chartImageMissing": false
+    },
+    {
+      "slide": 5,
+      "images": [],
+      "tables": 0,
+      "chartTitle": "折れ線グラフ",
+      "chartImageMissing": true
+    },
+    {
+      "slide": 6,
+      "images": [],
+      "tables": 0,
+      "chartTitle": "円グラフ",
+      "chartImageMissing": true
+    },
+    {
+      "slide": 7,
+      "images": [
+        "Attachment4.pdf",
+        "Attachment2.pdf"
+      ],
+      "tables": 0,
+      "chartTitle": null,
+      "chartImageMissing": false
+    },
+    {
+      "slide": 8,
+      "images": [
+        "Attachment3.jpeg"
+      ],
+      "tables": 0,
+      "chartTitle": null,
+      "chartImageMissing": false
+    },
+    {
+      "slide": 9,
+      "images": [],
+      "tables": 0,
+      "chartTitle": null,
+      "chartImageMissing": false
+    }
+  ]
+}

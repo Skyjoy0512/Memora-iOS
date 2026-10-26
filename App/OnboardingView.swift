@@ -1,49 +1,85 @@
 import SwiftUI
 
-/// A short, skippable introduction. Three pages, then straight into recording.
 struct OnboardingView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var startRecording: () -> Void
   var showSample: () -> Void
   var skip: () -> Void
-
   @State private var page = OnboardingPage.record
   @State private var isOccupationSelectionPresented = false
 
   var body: some View {
     VStack(spacing: 0) {
       HStack {
+        Text("Memora").font(.headline)
         Spacer()
         Button("スキップ", action: skip)
-          .font(.subheadline.weight(.medium))
-          .foregroundStyle(.secondary)
-          .frame(minHeight: MemoraSpacing.touchTarget)
-          .opacity(isLastPage ? 0 : 1)
-          .accessibilityHidden(isLastPage)
+          .font(.subheadline)
+          .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+          .accessibilityIdentifier("onboarding.skip")
       }
-      .padding(.horizontal, MemoraSpacing.xxl)
-      .padding(.top, MemoraSpacing.sm)
+      .padding(.horizontal, MemoraSpacing.screen)
 
-      TabView(selection: $page) {
-        ForEach(OnboardingPage.allCases) { item in
-          OnboardingPageView(page: item, isCurrent: item == page)
-            .tag(item)
+      ScrollViewReader { proxy in
+        ScrollView {
+          VStack(alignment: .leading, spacing: MemoraSpacing.section) {
+            VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
+              Text(page.title)
+                .font(MemoraTypography.display)
+                .accessibilityAddTraits(.isHeader)
+              Text(page.detail)
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .lineSpacing(4)
+              OnboardingPreview(page: page, isCurrent: true)
+            }
+            .id(page)
+
+            HStack {
+              Text("\((OnboardingPage.allCases.firstIndex(of: page) ?? 0) + 1) / \(OnboardingPage.allCases.count)")
+                .font(.footnote.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("ページ \((OnboardingPage.allCases.firstIndex(of: page) ?? 0) + 1) / \(OnboardingPage.allCases.count)")
+              Spacer()
+              if page != .record {
+                Button("前へ") { page = page == .act ? .understand : .record }
+                  .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+              }
+              if let next = page.next {
+                Button("次へ") { page = next }
+                  .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
+                  .accessibilityLabel("説明の次のページ")
+                  .accessibilityIdentifier("onboarding.next")
+              }
+            }
+            actions
+
+            DisclosureGroup {
+              Text("文字起こしには対応言語のモデル、要約には対応端末のAIかクラウドAIの設定が必要です。初回のモデル取得や処理に時間がかかる場合があります。クラウドAIには、許可した内容だけを送信します。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding(.vertical, MemoraSpacing.sm)
+            } label: {
+              Text("文字起こしとAIについて")
+                .font(.subheadline)
+                .frame(minHeight: MemoraSpacing.touchTarget)
+            }
+            if page == .act {
+              Button("仕事・活動を選ぶ（任意）") { isOccupationSelectionPresented = true }
+                .font(.subheadline)
+                .frame(minHeight: MemoraSpacing.touchTarget)
+            }
+            Text("録音はまず、このiPhoneに保存されます。ログインや購入は必要ありません。")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+          }
+          .padding(.horizontal, MemoraSpacing.screen)
+          .padding(.vertical, MemoraSpacing.xxl)
+          .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+          .frame(maxWidth: .infinity)
         }
+        .onChange(of: page) { proxy.scrollTo(page, anchor: .top) }
       }
-      .tabViewStyle(.page(indexDisplayMode: .never))
-
-      PageIndicator(current: page)
-        .padding(.bottom, MemoraSpacing.xxl)
-
-      actions
-        .padding(.horizontal, MemoraSpacing.xxl)
-        .frame(minHeight: 132, alignment: .top)
-
-      Label("録音はまず、このiPhoneに保存されます", icon: .lockShield)
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-        .padding(.top, MemoraSpacing.lg)
-        .padding(.bottom, MemoraSpacing.md)
     }
     .background(MemoraPalette.background)
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: page)
@@ -59,102 +95,27 @@ struct OnboardingView: View {
     }
   }
 
-  @ViewBuilder
   private var actions: some View {
-    VStack(spacing: 12) {
-      Button(action: primaryAction) {
-        Text(isLastPage ? "最初の会話を録音" : "次へ")
-          .font(.headline)
-          .contentTransition(.opacity)
+    VStack(spacing: MemoraSpacing.md) {
+      Button {
+        startRecording()
+      } label: {
+        Text("録音してみる")
           .frame(maxWidth: .infinity)
       }
       .buttonStyle(MemoraButtonStyle())
+      .accessibilityIdentifier("onboarding.primary")
+      .accessibilityHint("マイクの許可を確認してから録音します。")
 
-      if isLastPage {
-        VStack(spacing: 2) {
-          Button("仕事・活動を選ぶ（任意）") { isOccupationSelectionPresented = true }
-            .font(.subheadline)
-            .frame(minHeight: MemoraSpacing.touchTarget)
-          Button("サンプルで見る", action: showSample)
-            .font(.headline)
-            .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
-
-          Button("このiPhoneで始める", action: skip)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
-        }
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
+      Button(action: showSample) {
+        Text("サンプルを見る").frame(maxWidth: .infinity)
       }
+        .buttonStyle(MemoraButtonStyle(emphasis: .secondary))
+        .accessibilityIdentifier("onboarding.sample")
+      Button("ログインせず始める", action: skip)
+        .font(.subheadline)
+        .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
+        .accessibilityIdentifier("onboarding.local")
     }
-  }
-
-  private var isLastPage: Bool {
-    page == OnboardingPage.allCases.last
-  }
-
-  private func primaryAction() {
-    if isLastPage {
-      startRecording()
-    } else if let next = page.next {
-      page = next
-    }
-  }
-}
-
-private struct OnboardingPageView: View {
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  var page: OnboardingPage
-  var isCurrent: Bool
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 0) {
-      Spacer(minLength: 0)
-        .frame(maxHeight: 72)
-
-      Image(icon: page.symbol, size: 38)
-        .font(.system(size: 38, weight: .semibold))
-        .foregroundStyle(MemoraPalette.textPrimary)
-        .frame(width: 56, height: 56, alignment: .leading)
-        .scaleEffect(isCurrent || reduceMotion ? 1 : 0.86)
-        .animation(reduceMotion ? nil : MemoraMotion.control, value: isCurrent)
-        .accessibilityHidden(true)
-
-      Text(page.title)
-        .font(.largeTitle.bold())
-        .tracking(-0.8)
-        .padding(.top, MemoraSpacing.section)
-
-      Text(page.detail)
-        .font(.title3)
-        .foregroundStyle(.secondary)
-        .lineSpacing(3)
-        .padding(.top, MemoraSpacing.lg)
-
-      OnboardingPreview(page: page, isCurrent: isCurrent)
-        .padding(.top, 26)
-
-      Spacer(minLength: 0)
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.horizontal, MemoraSpacing.xxl)
-  }
-}
-
-private struct PageIndicator: View {
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  var current: OnboardingPage
-
-  var body: some View {
-    HStack(spacing: 7) {
-      ForEach(OnboardingPage.allCases) { page in
-        Capsule()
-          .fill(page == current ? AnyShapeStyle(.primary) : AnyShapeStyle(.quaternary))
-          .frame(width: page == current ? 22 : 7, height: 7)
-      }
-    }
-    .animation(reduceMotion ? nil : MemoraMotion.control, value: current)
-    .accessibilityElement()
-    .accessibilityLabel("ページ \((OnboardingPage.allCases.firstIndex(of: current) ?? 0) + 1) / \(OnboardingPage.allCases.count)")
   }
 }

@@ -4,6 +4,8 @@ cd "$(dirname "$0")/../.."
 python3 tools/checks/test_design_tokens.py
 python3 tools/checks/test_settings_presentation.py
 python3 tools/checks/test_experience_presentation.py
+python3 -B tools/checks/pricing-scenarios.py --check
+python3 -B tools/checks/run-sample-preview-checks.py
 python3 tools/checks/test_chat_surface_presentation.py
 python3 -B tools/checks/test_waiting_audio_presentation.py
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-design-checks.XXXXXX")

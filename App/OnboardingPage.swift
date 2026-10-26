@@ -21,22 +21,22 @@ enum OnboardingPage: String, CaseIterable, Identifiable, Hashable {
   var title: String {
     switch self {
     case .record:
-      "話すだけで、\nあとは任せる。"
+      "会話を、忘れない記録に。"
     case .understand:
-      "終わった瞬間に、\n要点と決定だけ。"
+      "長い会話から、大切なことを。"
     case .act:
-      "次にすることが、\nそのまま残る。"
+      "会議のあとを、次の仕事へ。"
     }
   }
 
   var detail: String {
     switch self {
     case .record:
-      "会議が始まったら録音を押すだけ。設定も準備もいりません。"
+      "まずは録音。マイクの許可は、録音を始めるときに確認します。"
     case .understand:
-      "サマリー・決定・未決事項へ自動で整理し、元の発言まで戻れます。"
+      "文字起こしと要約で、決定・未決事項を整理。元の発言も確認できます。"
     case .act:
-      "会話から見つかったタスクが集まり、担当と期限まで揃います。"
+      "記録にある作業をタスクへ。担当者や期限は、会話で決まった内容だけ。"
     }
   }
 

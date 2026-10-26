@@ -226,7 +226,7 @@ struct SettingsCategoryView: View {
               isPlanPresented = true
             } label: {
               LabeledContent {
-                Text("チームプランで利用可")
+                Text("プラン条件あり・共有にはiCloud設定が必要")
                   .foregroundStyle(.secondary)
               } label: {
                 SettingsLabel("チーム共有", icon: .person3Fill)

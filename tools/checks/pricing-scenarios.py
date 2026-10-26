@@ -1,8 +1,12 @@
 """Deterministic planning scenarios, not provider calls or a billing ledger."""
 import json
+import argparse
 from decimal import Decimal as D
 
 plans = [("light", 480, 300), ("pro", 1480, 800), ("unlimited", 2980, 1500), ("team", 3480, 1500)]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--check", action="store_true", help="Print only the regression result")
+args = parser.parse_args()
 rows = []
 for name, yen, credits in plans:
     for annual in (False, True):
@@ -22,4 +26,7 @@ annual_light = next(r for r in rows if r["plan"] == "light" and r["annual"] and 
 assert annual_light["breakEvenUSDJPYBeforeOperating"] == 169.70
 assert annual_light["margins"][1]["AIOnlyRemainingYen"] < 0
 assert D(12000) * D("0.30") / 1_000_000 + D(800) * D("1.20") / 1_000_000 == D("0.00456")
-print(json.dumps({"checkedAt": "2026-10-27", "assumptions": "JPY tax 10%; FX scenarios, not live FX; excludes infrastructure, refunds, labor and abuse", "scenarios": rows}, ensure_ascii=False, indent=2))
+if args.check:
+    print("Pricing scenarios: passed (16 monthly/annual/fee cases; FX160/200; annual Light break-even169.70, negative maximum-use scenarios retained; no provider calls)")
+else:
+    print(json.dumps({"checkedAt": "2026-10-27", "assumptions": "JPY tax 10%; FX scenarios, not live FX; excludes infrastructure, refunds, labor and abuse", "scenarios": rows}, ensure_ascii=False, indent=2))

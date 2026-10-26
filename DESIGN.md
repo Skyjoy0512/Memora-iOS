@@ -4,6 +4,12 @@ Updated 2026-10-23. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
+2026-10-27: onboarding offers recording, the non-destructive sample and local
+use from the first page; explanatory pages are optional. Auth providers carry
+an unavailable label until connected. Plans use native Form/Picker, separating
+future pricing/credits from current on-device/BYOK features and local settings.
+No new glass, logo assets or decorative animation. See docs/UI_UX_2026_10.md.
+
 ## Direction and provenance
 
 Put reading, finding and acting on recorded knowledge first: neutral surfaces,

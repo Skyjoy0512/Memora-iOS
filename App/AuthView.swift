@@ -10,28 +10,31 @@ struct AuthView: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 0) {
-          Image(icon: .personBadgeKey, size: 28)
-            .foregroundStyle(MemoraPalette.textPrimary)
-            .accessibilityHidden(true)
-
-          Text("サインインはまだ\n接続されていません。")
+          Text("Memoraで始める")
             .font(MemoraTypography.display)
-            .padding(.top, MemoraSpacing.xxl)
+            .accessibilityAddTraits(.isHeader)
 
-          Text("アカウント連携と複数端末の同期は、まだ実装されていません。録音・文字起こし・整理は、このiPhoneの中だけで使えます。")
+          Text("ログインせず、このiPhoneで使えます。アカウント連携と複数端末の同期は準備中です。")
             .font(.body)
             .foregroundStyle(.secondary)
             .lineSpacing(4)
             .padding(.top, MemoraSpacing.md)
 
           VStack(spacing: 10) {
-            AuthProviderButton(provider: .apple, isProminent: true) { showUnavailable() }
+            AuthProviderButton(provider: .apple) { showUnavailable() }
             AuthProviderButton(provider: .google) { showUnavailable() }
             AuthProviderButton(provider: .email) { showUnavailable() }
           }
           .padding(.top, MemoraSpacing.section)
 
-          Label("録音そのものは、サインインの有無にかかわらずこのiPhoneに保存されます。", icon: .lockShield)
+          Button { dismiss() } label: {
+            Text("ログインせず利用").frame(maxWidth: .infinity)
+          }
+            .buttonStyle(MemoraButtonStyle())
+            .padding(.top, MemoraSpacing.section)
+            .accessibilityIdentifier("auth.continueLocal")
+
+          Text("録音はこのiPhoneに保存されます。クラウドAIを設定した場合は、許可した内容を送信します。")
             .font(.footnote)
             .foregroundStyle(.secondary)
             .padding(.top, MemoraSpacing.xxl)
@@ -53,7 +56,7 @@ struct AuthView: View {
       .alert("サインインは準備中です", isPresented: $isUnavailableNoticePresented) {
         Button("OK", role: .cancel) {}
       } message: {
-        Text("アカウント連携と同期はまだ実装されていません。今はこのiPhoneの中で動作します。")
+        Text("認証サービスは未接続です。アカウントは作成されません。ログインせず利用できます。")
       }
     }
   }

@@ -64,6 +64,22 @@ Presentonはmanifest/構成/テンプレート設計を検討、実行PoCなし�
 - Microsoft PowerPoint16.114.1とKeynote Creator Studioでfixtureの自動open/PDF exportを試みたが、両方AppleEvent timeout(-1712)。PDF/PNGを得られず、PowerPoint/Keynote最終描画・日本語フォント・重なりは未確認。
 - LibreOffice/.NET rendererは未導入。異renderer画像比較、Officeで編集→保存、native PDFとの画像一致は未実施。
 
+### 追加: macOS Quick Lookの描画比較
+
+`qlmanage -t`で元8枚/編集後9枚の表紙を描画でき、日本語・差込後の会社名を目視確認。
+編集後の表紙は以下。これはPowerPointアプリでの描画成功とは別である。
+
+![Quick Lookの表紙](comprehensive-improvement/pptx-poc-quicklook-cover.png)
+
+`qlmanage -p`のHTML/attachment出力を元と編集後で比較した。
+元fileでは3種のchart画像が出ず、office-kitでchart値を更新した後は棒chart画像のみ出たが、
+折れ線/円は出なかった。表のHTMLと画像/connectorは両方に存在した。
+Quick Look側の制限か生成XML互換性かは未確定であり、Officeでも壊れるという断定はしない。
+逆に、OOXML検査成功から最終描画を保証しない。
+[取得結果](comprehensive-improvement/quicklook-findings.json)と
+`tools/checks/inspect-quicklook-slides.py`で欠落を記録し、visualQualityは`not approved`のまま。
+この結果を受け、両OSSの本番導入を引き続き保留する。
+
 残作業: backward-compatibleなtyped slides、2/3column・comparison/table・process・chartのSwift生成、
 slide単位の追加/並替/複製/削除/editor、企業size/master/theme/font/placeholdersの構造化分析、
 レンダラーごとの視覚検証。高忠実度の会社書式再現に成功したと主張しない。

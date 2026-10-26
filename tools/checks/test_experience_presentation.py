@@ -6,6 +6,52 @@ APP = Path(__file__).resolve().parents[2] / "App"
 
 
 class ExperiencePresentationChecks(unittest.TestCase):
+    def test_onboarding_is_honest_optional_and_scrolls_at_large_text(self):
+        view = (APP / "OnboardingView.swift").read_text()
+        copy = (APP / "OnboardingPage.swift").read_text()
+        preview = (APP / "OnboardingPreview.swift").read_text()
+        for contract in ("ScrollView {", 'Button("スキップ", action: skip)', 'Button(action: showSample)',
+                         'Button("ログインせず始める", action: skip)', '"録音してみる"', "startRecording()", "OccupationSelectionView()"):
+            self.assertIn(contract, view)
+        for claim in ("設定も準備もいりません", "終わった瞬間", "担当と期限まで揃います"):
+            self.assertNotIn(claim, copy)
+        self.assertIn("初回のモデル取得や処理に時間がかかる", view)
+        self.assertIn('.accessibilityIdentifier("onboarding.next")', view)
+        actions = view.split("private var actions:")[1]
+        self.assertIn("startRecording()", actions)
+        self.assertNotIn("page.next", actions)
+        self.assertIn("表示例・架空の会話", preview)
+        self.assertNotIn("memoraCard", preview)
+        self.assertNotIn("repeatForever", preview)
+        self.assertIn(".accessibilityElement(children: .combine)", preview)
+        entry = (APP / "ContentView.swift").read_text()
+        self.assertIn("if model.openSummarizedAudioSample() { model.completeOnboarding() }", entry)
+        self.assertNotIn("model.loadSampleContent()", entry)
+        self.assertIn("既存の記録は変更していません", entry)
+
+    def test_authentication_never_pretends_to_connect(self):
+        auth = (APP / "AuthView.swift").read_text()
+        provider = (APP / "AuthProviderButton.swift").read_text()
+        for option in (".apple", ".google", ".email"):
+            self.assertIn(f"AuthProviderButton(provider: {option})", auth)
+        self.assertIn('Text("ログインせず利用").frame(maxWidth: .infinity)', auth)
+        self.assertIn('Text("準備中")', provider)
+        self.assertIn("認証は未接続です", provider)
+        self.assertIn("許可した内容を送信します", auth)
+        self.assertNotIn("model.signIn", auth)
+        self.assertNotIn("SecureField", auth)
+
+    def test_plans_separate_future_products_from_local_selection(self):
+        plan = (APP / "PaywallView.swift").read_text()
+        for contract in ('Text("提供予定のプラン")', 'Text("いま利用できること")', 'Picker("プラン", selection: $selectedPlan)',
+                         ".pickerStyle(.menu)", "model.choosePlan(selectedPlan)", "LicenseActivationView()", "model.activeLicense != nil"):
+            self.assertIn(contract, plan)
+        for contract in ("有効な購入やサブスクリプションを示すものではありません", "クラウドAIが無制限になるプランではありません", "購入の復元について"):
+            self.assertIn(contract, plan)
+        self.assertNotIn("年額は月額の10か月分", plan)
+        self.assertNotIn("BenefitRow", plan)
+        self.assertNotIn("selectedPlan.tagline", plan)
+
     def test_one_empty_state_across_core_screens(self):
         self.assertFalse((APP / "ProjectWorkspaceEmptyState.swift").exists())
         for name in ("HomeView", "LibraryView", "ProjectsView", "SpaceDetailView", "TasksView", "PeopleView", "DocumentsView"):

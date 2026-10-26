@@ -6,6 +6,7 @@ struct ContentView: View {
   @Environment(\.openURL) private var openURL
   @Environment(\.scenePhase) private var scenePhase
   @State private var appLock = AppLockService()
+  @State private var sampleUnavailable = false
   @AppStorage("memora.prefersDarkAppearance") private var prefersDarkAppearance = false
 
   var body: some View {
@@ -22,8 +23,8 @@ struct ContentView: View {
             await model.startCapture()
           }
         } showSample: {
-          model.completeOnboarding()
-          model.loadSampleContent()
+          if model.openSummarizedAudioSample() { model.completeOnboarding() }
+          else { sampleUnavailable = true }
         } skip: {
           model.completeOnboarding()
         }
@@ -70,6 +71,11 @@ struct ContentView: View {
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isImporting)
     .preferredColorScheme(prefersDarkAppearance ? .dark : nil)
+    .alert("サンプルを開けませんでした", isPresented: $sampleUnavailable) {
+      Button("閉じる", role: .cancel) {}
+    } message: {
+      Text("既存の記録は変更していません。個人ワークスペースと保存先の状態を確認してください。ログインせず始めることもできます。")
+    }
     .alert("マイクへのアクセスが必要です", isPresented: $model.microphonePermissionDenied) {
       Button("設定を開く") {
         if let url = URL(string: UIApplication.openSettingsURLString) {

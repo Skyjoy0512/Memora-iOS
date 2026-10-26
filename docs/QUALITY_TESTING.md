@@ -1,5 +1,21 @@
 # 品質チェック
 
+## 2026-10-27の追加検証
+
+6 suiteを維持しskipなしで全pass。[実際のhost結果](comprehensive-improvement/host-suites-20261027.json)。
+最初のrunでは新しい原本保護で必要なcompanyTemplatesがprovenance用fixtureに不足しnext-generationが失敗した。
+fixtureの境界を追加して全suiteを再実行した。failをskip/合格へ書換えていない。
+
+- ArtifactOperations/BackupRestore: 本文/export revision、企業ID/file/source保持、旧data、stale edit/restore/SQLite ABORTの拒否。
+- design-refresh: 11 presentation contracts、非破壊sample actionの本番コード+SQLite、16料金シナリオ（年額赤字ケースを含む）。
+- OSS PoCは独立した開発検査。ZIP/XMLとQuick Look描画欠落を分離し、[資料品質](PRESENTATION_QUALITY_2026_10.md)に記録。
+- `bitrig test -list -json`は2026-10-27もexit78（Project.jsonにtest targetなし）。XCTest/XCUITest/SnapshotTestingの実行成功とはしない。
+- Debugの実アプリで[Before/After・最大文字・Light/Dark](UI_UX_2026_10.md)を確認。実機/API/Office最終描画とは分離する。
+
+SnapshotTesting1.19.7はtest-only第一候補としてLICENSE/manifest/UIView strategyを監査した。
+image strategyのhost app条件があり、未対応の標準projectへ無理にテストframeworkをリンクしない。
+native test hostの構築/自動baseline画像比較は今後の課題で、今回の手動PNGを自動snapshot合格と報告しない。
+
 ## 標準PowerPointとスライド組版
 
 `bash tools/checks/run-slide-checks.sh` はCoreTextを使う本番のSlidePageLayoutと
@@ -39,6 +55,7 @@ symlinkや既存ファイルを上書きしないため拒否する。指定し�
 | next-generation | 実Swift domain処理、SQLite/バックアップ、権限・人物・workspace、会話復元、MCP/OAuth、Office生成・出典、HTTP/CloudAgentSession fixture、構造化UI |
 | design-refresh | 現行サイドメニュー・右上作成・モノトーン・44pt/文字・設定の静的契約、Markdown、motion/loading/cancellation |
 | background-summary | 背景処理の設定とジョブ保存形式 |
+| summary-reliability | stream・要約のtimeout/中断/終了/継続・generation policyと権限のfixture回帰 |
 | composer-layout | 日本語/絵文字・長文の入力欄寸法規則 |
 | optimization | 保存失敗・録音buffer・派生index・プロジェクト検索・データ操作・既存性能fixture |
 
