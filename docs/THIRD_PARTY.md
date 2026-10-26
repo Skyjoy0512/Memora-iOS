@@ -1,5 +1,18 @@
 # 取り入れたオープンソース
 
+## 開発時だけの検証ツール（2026-10-27）
+
+| 名前 | 用途・範囲 | ライセンス |
+| --- | --- | --- |
+| [PptxGenJS4.0.1](https://github.com/gitbrent/PptxGenJS/blob/v4.0.1/LICENSE) | 外部scratchのNodeでeditable PPTX生成を比較。アプリにNodeやコードを同梱しない | MIT |
+| [office-kit/pptx0.28.0](https://github.com/office-kit/pptx) | 外部scratchで既存PPTX編集/複製/再読込。製品依存なし | MIT |
+| [SnapshotTesting1.19.7](https://github.com/pointfreeco/swift-snapshot-testing/blob/1.19.7/LICENSE) | `tools/poc/SnapshotComparison`のMac画像比較のみ。固定SHA1488390b0735e726564b948bf08b384398bdab5c | MIT |
+
+SnapshotTestingの解決済み依存は同ディレクトリのPackage.resolvedに記録。
+swift-custom-dump/issue-reportingはMIT、swift-syntaxはApache-2.0 with Runtime Library Exception。
+配布する場合はそれぞれのLICENSE/NOTICEを保持する。今回、vendorコードやbinaryはGitへ同梱せず、
+Project.json/Appのランタイム依存と混同しない。各候補とモデル/画像の許諾は別に確認する。
+
 ## 話者分離と声の特徴量
 
 - [FluidAudio 0.17.7](https://github.com/FluidInference/FluidAudio/tree/v0.17.7): 録音後の話者分離と256次元embedding生成。SDKはApache-2.0。`FluidAudio-LICENSE.txt`、FastclusterのBSD-2-Clause、VBxおよびNeMo関連のライセンス/NOTICEを `App/Resources/` に同梱。TTSフロントエンドの第三者告知も保存する。

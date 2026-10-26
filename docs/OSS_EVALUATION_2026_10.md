@@ -26,7 +26,7 @@ PoC再現: 隔離ディレクトリに固定版を`--ignore-scripts`でインス
 
 | 候補 | ライセンス / 互換性・依存 | 置換対象・判断 |
 | --- | --- | --- |
-| [SnapshotTesting](https://github.com/pointfreeco/swift-snapshot-testing) 1.19.7 | MIT、Swift tools 6.0、iOS13以上。UIView image strategyはhost appが必要。別製品にswift-syntax/custom-dump | 最優先のtest-only候補。現行Project.jsonのBitrig標準プロジェクトはnative XCTest target未提供。製品targetにテストframeworkを追加しない。ネイティブテストhost対応まで導入保留、Simulator証跡を別管理 |
+| [SnapshotTesting](https://github.com/pointfreeco/swift-snapshot-testing) 1.19.7 | MIT、Swift tools 6.0、iOS13以上。UIView image strategyはhost appが必要。manifest解決にswift-syntax/custom-dump/issue-reporting | 開発専用SwiftPMで採用PoC成功。Swift6.4/Macで実Simulator PNG/PPTX描画の5組一致・5組差分を2testsで確認。Project.json/製品targetには追加しない。native iOS test host・自動capture/baseline回帰は未実装 |
 | [Swift Navigation](https://github.com/pointfreeco/swift-navigation) 2.11.2 | MIT、main tools6.4、iOS15、Dependencies/Perception等 | NavigationStack/既存ルートを置換する必然性がない。mainのtools要件とreleaseを混同しない。全面移行不採用 |
 | [TCA](https://github.com/pointfreeco/swift-composable-architecture) 1.26.2 | MIT、main tools6.4、iOS16、Swift6、多数のPoint-Free製品 | MemoraModel+Domainの全面置換は回帰面積が大きい。dependency増に見合わず不採用 |
 | [ChatGPTUI](https://github.com/bryanrg22/chatgpt-ios-ui) 0.2.0 | MIT、Swift6.2 / iOS26、swift-markdown | 現行の部分利用・帰属を維持。UI全体の模倣/アセット転用はしない。ヘッダー/入力/IME/承認は既存を磨く |
@@ -38,7 +38,8 @@ PoC再現: 隔離ディレクトリに固定版を`--ignore-scripts`でインス
 
 サイドバー/空状態/オンボーディング/ログイン/ペイウォールはApple標準List/Form/Menu/
 ContentUnavailableView/AuthenticationServices/StoreKitを優先する。見た目だけのOSSを各画面に
-追加しない。SnapshotTestingによるLight/Dark・最大文字・キーボードの自動回帰はまだ未整備。
+追加しない。SnapshotTestingのMac画像比較PoCは`tools/poc/SnapshotComparison`。
+Light/Dark・最大文字・キーボードをiOS上で自動撮影する回帰はまだ未整備。
 
 ## AI・検索・録音
 

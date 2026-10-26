@@ -9,12 +9,15 @@ fixtureの境界を追加して全suiteを再実行した。failをskip/合格�
 - ArtifactOperations/BackupRestore: 本文/export revision、企業ID/file/source保持、旧data、stale edit/restore/SQLite ABORTの拒否。
 - design-refresh: 11 presentation contracts、非破壊sample actionの本番コード+SQLite、16料金シナリオ（年額赤字ケースを含む）。
 - OSS PoCは独立した開発検査。ZIP/XMLとQuick Look描画欠落を分離し、[資料品質](PRESENTATION_QUALITY_2026_10.md)に記録。
-- `bitrig test -list -json`は2026-10-27もexit78（Project.jsonにtest targetなし）。XCTest/XCUITest/SnapshotTestingの実行成功とはしない。
+- `bitrig test -list -json`は2026-10-27もexit78（Project.jsonにtest targetなし）。iOS native XCTest/XCUITest実行成功とはしない。
 - Debugの実アプリで[Before/After・最大文字・Light/Dark](UI_UX_2026_10.md)を確認。実機/API/Office最終描画とは分離する。
 
-SnapshotTesting1.19.7はtest-only第一候補としてLICENSE/manifest/UIView strategyを監査した。
-image strategyのhost app条件があり、未対応の標準projectへ無理にテストframeworkをリンクしない。
-native test hostの構築/自動baseline画像比較は今後の課題で、今回の手動PNGを自動snapshot合格と報告しない。
+SnapshotTesting1.19.7はLICENSE/manifest/UIView strategyを監査し、別の開発用SwiftPM packageで
+Mac NSImageの`diffV2`を実行した。実Simulator PNGとPPTXのQuick Look描画で5一致/5差分、
+2 XCTestが0 failure。Package.resolvedでSwiftSyntax604.0.0/custom-dump1.7.3/issue-reporting2.1.2も固定。
+検証は`tools/poc/SnapshotComparison`のREADMEに従い、cache/build/diffは外部scratchへ出す。
+これは6 suiteとは別のPoCで、iOS画面の自動capture、承認済みbaselineとの継続回帰、
+キーボード/IME automationではない。製品targetにtest frameworkをリンクせず、native iOS hostは未整備。
 
 ## 標準PowerPointとスライド組版
 

@@ -80,6 +80,12 @@ Quick Look側の制限か生成XML互換性かは未確定であり、Officeで�
 `tools/checks/inspect-quicklook-slides.py`で欠落を記録し、visualQualityは`not approved`のまま。
 この結果を受け、両OSSの本番導入を引き続き保留する。
 
+MacのSnapshotTesting1.19.7 PoCで同じ表紙PNGが一致し、元/編集後では差分になることも確認。
+以下は実描画どうしの差分で、白い部分が主に会社名と見出し位置の違い。
+自動baseline更新はしない。これも表紙1枚の比較に限り、全slideのOffice描画を保証しない。
+
+![実Quick Look表紙の差分](comprehensive-improvement/pptx-poc-cover-difference.png)
+
 残作業: backward-compatibleなtyped slides、2/3column・comparison/table・process・chartのSwift生成、
 slide単位の追加/並替/複製/削除/editor、企業size/master/theme/font/placeholdersの構造化分析、
 レンダラーごとの視覚検証。高忠実度の会社書式再現に成功したと主張しない。
