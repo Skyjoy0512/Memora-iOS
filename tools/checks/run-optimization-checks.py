@@ -8,12 +8,14 @@ import tempfile
 os.chdir(Path(__file__).resolve().parents[2])
 subprocess.run(['python3', 'tools/checks/run-performance-checks.py'], check=True)
 subprocess.run(['python3', '-B', 'tools/checks/run-audio-resource-checks.py'], check=True)
+subprocess.run(['python3', '-B', 'tools/checks/test_process_resource_sampler.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-local-store-checks.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-meeting-persistence-performance-checks.py'], check=True)
 subprocess.run(['bash', 'tools/checks/run-tool-integration-checks.sh'], check=True)
 subprocess.run(['bash', 'tools/checks/run-license-persistence-checks.sh'], check=True)
 project = ['ProjectCitation', 'ProjectEvidenceChunk', 'ProjectEvidenceInput', 'ProjectSourceText', 'ProjectContextBuilder']
 checks = [
+    ('RecordingResourceLifecycleChecks', ['RecordingPowerMode', 'MemoraModel+RecordingResources'], ['-swift-version', '6']),
     ('ProjectSearchIndexChecks', project + ['ProjectSearchIndex'], []),
     ('ProjectContextChecks', ['ProjectCitation', 'ProjectEvidenceChunk', 'ProjectContextBuilder'], []),
     ('ProjectChatHistoryChecks', ['ProjectCitation', 'ProjectChatTurn', 'ProjectChatThread', 'ProjectChatHistory'], []),

@@ -1,0 +1,90 @@
+{
+  "scope": "Isolated iPhone 18 Pro Max Simulator, iOS 27.0. Debug AVAudioRecorder; input is essentially silence, not speech-quality validation.",
+  "appDebugArm64UUID": "6AD4EBB0-CCFD-37FC-9167-BF6DCE66FCC9",
+  "baselineDebugArm64UUID": "6D0904AA-C65D-3CFA-9321-F091151C6E93",
+  "background": {
+    "requestedSeconds": 900,
+    "actualSeconds": 903.1654929580001,
+    "sameDraftAndAudioReference": true,
+    "sqliteRecordSavedAndDraftRemoved": true,
+    "aac44100HzValidated": true,
+    "fullPCMDecodeSucceeded": true,
+    "decodedDurationMatchesAACWithinSeconds": 0.001,
+    "exactDurationSeconds": null,
+    "durationLowerBoundSeconds": 902.1654929580001,
+    "exactDurationNote": "The initial E2E console line was capped at 8192 characters; full AAC metadata and later ps samples were not retained. Assertions for full decode and duration passed; do not invent an exact duration. Logging now emits a bounded summary and is rechecked in a short run."
+  },
+  "sigkill": {
+    "originalBytesUnchangedByRecovery": true,
+    "recordAndJournalCount": 1,
+    "secondRestartDoesNotDuplicate": true,
+    "doesNotRestartRecordingOrTranscription": true,
+    "readableAAC": false,
+    "baselineReadableAAC": false,
+    "baselineBytes": 57596,
+    "afterBytes": 57848,
+    "initialStrictAACDecodeAttempt": "failed at afinfo (AudioFileOpenURL failed); not fixed or reclassified as playable audio",
+    "knownLimitation": "Abruptly terminated AAC may not have a readable finalized container. Preservation/recovery invariants pass, but playable audio is not guaranteed."
+  },
+  "latestShortAndReleaseValidation": "recording-lifecycle-validation.json",
+  "runs": {
+    "short": {
+      "id": "01a17683-893d-7010-876d-1ce8eb39cfcd",
+      "status": "failed",
+      "startedAt": "2026-10-26T04:41:42.693Z",
+      "finishedAt": "2026-10-26T04:43:18.276Z",
+      "selected": 2,
+      "passed": 1,
+      "failed": 1,
+      "tests": [
+        {
+          "title": "background low-power recording keeps the same draft and a complete decodable AAC",
+          "status": "passed",
+          "durationMs": 52510
+        },
+        {
+          "title": "SIGKILL recovers one recording without replacing the audio or restarting capture",
+          "status": "failed",
+          "durationMs": 42852
+        }
+      ]
+    },
+    "before": {
+      "id": "01a17686-452c-7149-850b-da4afb74e035",
+      "status": "passed",
+      "startedAt": "2026-10-26T04:44:38.057Z",
+      "finishedAt": "2026-10-26T04:45:20.044Z",
+      "selected": 1,
+      "passed": 1,
+      "failed": 0,
+      "tests": [
+        {
+          "title": "SIGKILL recovers one recording without replacing the audio or restarting capture",
+          "status": "passed",
+          "durationMs": 41787
+        }
+      ]
+    },
+    "15min": {
+      "id": "01a17687-3da1-7605-a76e-392242296975",
+      "status": "passed",
+      "startedAt": "2026-10-26T04:45:41.685Z",
+      "finishedAt": "2026-10-26T05:02:05.731Z",
+      "selected": 2,
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "title": "background low-power recording keeps the same draft and a complete decodable AAC",
+          "status": "passed",
+          "durationMs": 941926
+        },
+        {
+          "title": "SIGKILL recovers one recording without replacing the audio or restarting capture",
+          "status": "passed",
+          "durationMs": 41903
+        }
+      ]
+    }
+  }
+}

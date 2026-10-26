@@ -1,0 +1,93 @@
+{
+  "builds": {
+    "debug": {
+      "command": "bitrig preview -platform iOS",
+      "result": "success",
+      "warnings": 11,
+      "log": "2026-10-26T14-03-18-f6502d9c.log"
+    },
+    "release": {
+      "command": "bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release",
+      "result": "success",
+      "warnings": 11,
+      "log": "2026-10-26T13-45-37-f281ef38.log"
+    }
+  },
+  "e2e": {
+    "final": {
+      "id": "01a17697-6c59-7dae-8975-61a9dd50d1f5",
+      "status": "error",
+      "exitCode": 3,
+      "startedAt": "2026-10-26T05:03:22.296Z",
+      "finishedAt": "2026-10-26T05:04:18.913Z",
+      "summary": {
+        "discovered": 113,
+        "selected": 2,
+        "executed": 2,
+        "passed": 1,
+        "failed": 1,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "tests": [
+        {
+          "title": "background low-power recording keeps the same draft and a complete decodable AAC",
+          "status": "passed",
+          "durationMs": 53452
+        },
+        {
+          "title": "SIGKILL recovers one recording without replacing the audio or restarting capture",
+          "status": "failed",
+          "durationMs": 2963,
+          "errorCode": "ENGINE_FAILURE"
+        }
+      ]
+    },
+    "release": {
+      "id": "01a17699-3295-7f67-8376-6eed512a0599",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-26T05:05:18.498Z",
+      "finishedAt": "2026-10-26T05:06:37.579Z",
+      "summary": {
+        "discovered": 113,
+        "selected": 2,
+        "executed": 2,
+        "passed": 2,
+        "failed": 0,
+        "interrupted": 0,
+        "flaky": 0,
+        "skipped": 0
+      },
+      "tests": [
+        {
+          "title": "background low-power recording keeps the same draft and a complete decodable AAC",
+          "status": "passed",
+          "durationMs": 44689
+        },
+        {
+          "title": "SIGKILL recovers one recording without replacing the audio or restarting capture",
+          "status": "passed",
+          "durationMs": 34190
+        }
+      ]
+    }
+  },
+  "releaseNormalSave": {
+    "aacDurationSeconds": 16.368617,
+    "decodedDurationSeconds": 16.368617,
+    "format": "AAC / 44100 Hz / mono",
+    "packets": 707,
+    "validFrames": 721856,
+    "audioBytes": 2828,
+    "logSummaryNotTruncated": true,
+    "sqliteAudioReferenceMatchesDraft": true
+  },
+  "notes": [
+    "The short Debug rerun passed normal background save, then failed in device.installApp before the SIGKILL test began. The install error is retained, not counted as an app behavior pass.",
+    "The build was running against the mutable DerivedData app path at that time; causality was not established. Retested the complete file against the immutable Bitrig Release output only after the build finished: both tests passed.",
+    "Release also reproduced unreadable AAC after SIGKILL. Raw bytes, reference, single recovery, and no automatic capture/transcription passed; readable abrupt-termination recovery remains unresolved.",
+    "No new GitHub Actions result for these commits; no push performed."
+  ]
+}

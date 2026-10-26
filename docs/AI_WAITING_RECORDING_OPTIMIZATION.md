@@ -13,6 +13,7 @@
 | クラウド要約 | [Toggleあり・生成不可](qa/waiting-energy/before-summary-light.png) | [送信先表示・生成可能](qa/waiting-energy/after-summary-cloud.png) |
 | 端末内要約 | — | [外部送信の説明なし](qa/waiting-energy/after-summary-on-device.png) |
 | 録音 | — | [省電力・一時停止後に再開](qa/waiting-energy/recording-low-power.png) |
+| 15分の背景録音 | — | [前景復帰時の15:07表示](qa/waiting-energy/recording-after-15min-background.png) |
 | Reduce Motion | — | [Simulatorのシステム設定を有効にした状態](qa/waiting-energy/reduce-motion-system.png) |
 
 変更前の待機画面には、作業テキスト左側のゲージと経過秒、承認待ち左側のゲージがある。変更後は短い状態テキストだけ。以前のBitrig Debugビルドを保存して比較し、開始時のソースでも同じ旧ゲージ実装を確認した。主実行ファイルのUUIDだけではDebugビルドの同一性を証明できないため、Instruments採取では `.debug.dylib` も照合している。
@@ -108,17 +109,51 @@ MEMORA_CHECK_TMPDIR=/Volumes/WorkspaceSSD/Development/Agents/Codex \
 
 最終の録音E2EではafinfoでもAAC/44,100Hz/monoを確認。長さ11.028027秒、477 packets、486,336 valid frames（+2,112 priming）だった。afconvertでPCMへ全体をデコードし、長さが0.001秒以内で一致することも確認した。検証用PCMだけを試験終了時に削除し、AAC原音声は維持する。Simulatorの入力であり、発話の欠落や音質の同等性を評価できる録音ではない。[結果](qa/waiting-energy/recording-audio.json)。
 
+### 継続検証で見つかった強制終了時の制約
+
+追加E2Eでは実録音中のプロセスをSIGKILLし、再起動後に同じIDの記録とジャーナルが一度だけ作られ、SQLite draftが原子的に解除され、録音が自動再開されないことを確認した。復旧前後の音声ファイルはSHA-256で同一。一方、**強制終了したAACはafinfoで開けないケースがあり、再生可能な音声の完全復旧は保証できない**。最初の全体デコードを要求する試験は実際に失敗した。
+
+保存していた旧Debugビルドでも同じSIGKILL試験を実行し、AACを開けないことを再現した。今回の省電力変更による回帰とは確認されていない。コンテナを最終化できない終了の制約と考えられるが、iPhone実機の電源断・着信・OSによる終了まで同じ結果とは断定しない。正常な「終了して保存」とユーザーの一時停止/再開のデコード成功とは別の結果である。
+
+このため追加の強制終了回帰テストが保証するのは、原音声bytes/参照の保持、重複しない復旧、無断の録音/認識再開がないこと。AACの可読性は別フィールドで実測し、失敗を成功に読み替えない。破損候補の実ファイルはWorkspaceSSDの検証フォルダーへ保全し、既存の録音方式・ファイルを書き換える修復は今回導入していない。
+
+### 15分間の実時間Simulator録音
+
+省電力でホーム画面に移り、**903.165秒間、実時間で背景録音**した。背景中はAXツリーを取得せず（取得で前景に戻るため）、音声ファイルとプロセスだけを読み取った。同じdraft/ファイルを保ち、前景復帰後に通常保存でき、AAC/44.1kHzとPCM全体へのデコード、デコード前後の長さの0.001秒以内の一致をassertした。[試験記録](qa/waiting-energy/recording-lifecycle.json)。これはホストの合成15分相当試験とは別の実行である。
+
+初回はE2Eの1行ログが8,192文字で切られ、AACの正確な総秒数と後半のpsサンプルを保存できなかった。デコードと長さのassertはPassしたが、取得できなかった正確な値を補わない。ログを先頭/末尾・観測RSS範囲の有界な要約へ修正した。生ログ/失敗記録は `/Volumes/WorkspaceSSD/Development/Agents/Codex/memora-recording-lifecycle-20261026/` と `.e2e/waiting-lifecycle-*` に残す。
+
+別途、背景維持区間の488.286秒を読み取り専用の`proc_pid_rusage`で採取（39点、前景復帰の少なくとも30秒前まで）。[全サンプルと計算](qa/waiting-energy/recording-background-process.json)。CPUカウンターはMach ticksをホストのtimebaseで変換し、`ps`との一致をテストした。[Apple XNUの計測仕様](https://github.com/apple-oss-distributions/xnu/blob/main/doc/observability/recount.md)。
+
+| ホスト上のDebug Simulatorプロセス | 観測値 |
+| --- | ---: |
+| 区間のuser+system CPU | 4.137秒（1コア換算平均0.847%） |
+| RSS 最初→最後 / 観測最大 | 524.266→524.906 MiB / 524.906 MiB |
+| physical footprint 最初→最後 | 165.596→165.721 MiB |
+| lifetime最大physical footprint | 165.940 MiB（RSSのPeakではない） |
+| interrupt wakeups / package-idle wakeups | 4,883 / 54 |
+
+RSSはサンプルの最大値で、真のPeak RSSではない。interrupt wakeupsも全スレッドの起床回数ではなく、UI/録音/OSへ分解できない。この1条件・1回の結果から省電力による改善率やリーク不在を断定しない。実入力はSimulatorのほぼ無音であり、発言欠落、認識精度、iPhoneの電池や熱、60/120分を検証したものではない。
+
+再現: `MEMORA_RECORDING_BACKGROUND_SECONDS=900 MEMORA_CHECK_TMPDIR=/Volumes/WorkspaceSSD/Development/Agents/Codex npx e2e run tests/recording-lifecycle.e2e.ts --output .e2e/waiting-lifecycle-repeat --trace on`。通常の回帰実行は環境変数を省き10秒にする。録音先はUIでUUIDマーカーを作った専用テストSimulatorに限定し、ユーザーのプレビューや実データを初期化しない。
+
 ## 7. 回帰テスト・ビルド
 
 GitHub Actionsと同じ6スイートをローカルで全Pass: next-generation、design-refresh、background-summary、summary-reliability、composer-layout、optimization。[結果](qa/waiting-energy/quality-six.json)。生ログは `/Volumes/WorkspaceSSD/Development/Agents/Codex/memora-quality-20261026-final/`。最後に計測器を修正した後も、影響するmotion/loadingスイートとprofile回帰テスト15件を再実行した。
 
 - 拡張BackgroundSummaryExecutionChecks: 今回だけの送信、一度きりの消費、宛先不一致、分類済み禁止、許可の取消、原文・要約・workspace・モデルrevision・実効機密区分の変化を送信前/結果適用の両方で拒否、旧ジョブ自動再送拒否、端末内経路、継続許可/Agent/Webhookへ漏れないこと、実SQLite rollback/reopen。
 - AudioResourceChecks: 15/60/120分相当の有界履歴、長大な結合文字列、PCM所有権・変換・キュー上限。
+- RecordingResourceLifecycleChecks: 本番の`MemoraModel+RecordingResources`をサービス境界fixtureに対して実行。背景/復帰、一時停止、省電力、ライブOFF、メーター非表示でのTaskの取消と再作成、録音時刻の参照、AAC本体のstop/pauseを呼ばないこと。optimizationスイートへ組み込み。
+- test_process_resource_sampler.py: ホスト専用の読み取り計測器について、無効なPIDの拒否、測定範囲/単位、Mach timebase変換と別のOSツール`ps`のCPU時間の一致を3テストで確認。iPhone用の計測APIや権限設定は追加していない。
 - test_waiting_audio_presentation.py: ゲージ/ロゴ/経過秒の撤去、承認待ち、Reduce Motion/背景の枝、外部送信Toggle撤去、非表示時のTask停止と録音独立性。
 - Simulator profile tests: Debugコードの認識、UUID不一致、欠落、空/不正traceの拒否。
 - 関連E2E 7件Pass: 待機fixture、待機→本文/承認/終端の遷移、生成操作、既存の生成モード、再開ジョブの保持、承認/保存2件。追加で録音E2EもPass。クラウドの送信先表示は設定を実際のUIでクラウドに切り替えた追加E2EでもPass。モデルAPIへの有料リクエストは使用していない。
 
 Debugは `bitrig preview -platform iOS`、Releaseは `bitrig build -destination 'generic/platform=iOS Simulator' -configuration Release` でいずれも成功。[最終ビルド情報](qa/waiting-energy/build-validation.json)。Project.jsonプロジェクトにはXcode test targetがないため、`bitrig test -list -json` はexit 78。XcodeテストのPassとは報告せず、上記ホスト実行スイートとE2Eを使用した。
+
+継続検証でも上記Debug/Releaseを再ビルドして成功。追加のリソースライフサイクル/計測器テストを含む6スイートを再度全Pass。[追加後の結果](qa/waiting-energy/quality-six-lifecycle.json)。生ログは `/Volumes/WorkspaceSSD/Development/Agents/Codex/memora-quality-20261026-lifecycle-final/`。
+
+追加の録音E2EはDebugの15分試験で2件Pass。ログを有界化・SQLiteの音声参照一致を追加した後、短時間Debugの通常保存はPassしたが、次の試験は`device.installApp`のSimulator導入エラーで動作検証前に失敗した（同時に可変のDerivedData成果物を再ビルドしていたが、因果は未確定）。ビルド完了後の固定Release成果物でファイル全体を再実行し、2件ともPass。正常保存のAACは16.368617秒、PCMデコード後も同じ長さで、ログ全体が上限内に収まることも確認。[ビルドと再試験の記録](qa/waiting-energy/recording-lifecycle-validation.json)。強制終了時の「bytes保持は成功・AAC可読性は失敗」という制約はReleaseでも再現した。
 
 ## 8. GitHub Actionsと実機の残課題
 
@@ -129,11 +164,11 @@ Debugは `bitrig preview -platform iOS`、Releaseは `bitrig build -destination 
 | 条件（各15/60/120分） | 今回の状態 |
 | --- | --- |
 | 録音のみ / 録音＋ライブ / 録音＋音量 / 全部 | コード経路調査と短時間の録音保存。実機の比較未実施 |
-| 省電力録音 | 切替・pause/resume・保存のSimulator E2E。電池削減量は未測定 |
+| 省電力録音 | 切替・pause/resume・保存と15分の実時間背景Simulator E2E。電池削減量は未測定 |
 | 保存後の正式文字起こし | 経路維持とライブ終了待ち。実音声の認識精度比較は未実施 |
 | 話者分離ON/OFF、computeUnits別 | 計測区間を追加。モデル設定を維持。実機未測定 |
 | Low Power Mode ON/OFF、通常/高温 | ポリシーの全組合せをホストテスト。実機状態変化は未検証 |
-| 画面表示中/背景 | 装飾とTimerの停止条件、録音画面を閉じた保存を検証。長時間背景録音は未検証 |
+| 画面表示中/背景 | 装飾とTimerの停止条件、15分の背景録音/復帰/保存をSimulatorで検証。実機と60/120分は未検証 |
 
 実機ではCPU使用率、Peak RSS、Allocations、キュー滞留、スレッド起床、熱状態、電池残量、処理時間、CER/WER、欠落区間、音声ファイルの整合性と背景録音の安定性を記録する。現時点で電池消費や文字起こし精度が何%改善したとの主張はしない。
 
