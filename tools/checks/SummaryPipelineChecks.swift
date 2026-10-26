@@ -4,6 +4,16 @@ import Foundation
 @main @MainActor
 enum SummaryPipelineChecks {
   static func main() async throws {
+    for empty in ["", " \n\t　"] {
+      CloudAIService.gate = SummaryFixtureGate()
+      var input = makeInput(mode: .fast)
+      input.transcript = [input.transcript[0]]
+      input.transcript[0].text = empty
+      let result = await MeetingSummarizer.summarize(input, engine: .cloud,
+        llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"), progress: { _ in })
+      guard case .failure(.empty) = result else { throw NSError(domain: "SummaryPipelineChecks.empty", code: 1) }
+      precondition(CloudAIService.gate.calls.isEmpty, "Empty source made a billable request")
+    }
     for mode in [SummaryProcessingMode.balanced, .fast, .accurate] {
       let gate = SummaryFixtureGate()
       CloudAIService.gate = gate

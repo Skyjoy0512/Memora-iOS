@@ -17,7 +17,9 @@ enum MeetingSummarizer {
     authorize: (@MainActor () -> Bool)? = nil,
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
-    guard !input.transcript.isEmpty else { return .failure(.empty) }
+    guard input.transcript.contains(where: { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+      return .failure(.empty)
+    }
     SummaryDiagnostics.current?.record(.analysis)
 
     switch AIEngineService.effectiveEngine(engine) {

@@ -39,6 +39,14 @@ enum BackgroundSummaryExecutionChecks {
       SummaryActionItem(title: "承認を確認", owner: nil, due: nil)
     ])
 
+    // Empty segments are possible after editing; no inference/job/status write.
+    let empty = try MemoraModel(url: root.appendingPathComponent("empty.sqlite"))
+    empty.meetings = [Meeting()]
+    empty.meetings[0].transcript[0].text = " \n\t　"
+    precondition(!empty.generateSummary(empty.meetings[0].id, choice: .standard, cloudDisclosureConfirmed: true))
+    precondition(empty.pendingSummaryJobs.isEmpty && empty.processing.activeIDs.isEmpty && MeetingSummarizer.requests.isEmpty)
+    precondition(empty.meetings[0].summary == "保存済みの旧要約")
+
     // Actual generation -> ProcessingService -> atomic commit -> SQLite reopen.
     let success = try model()
     let request = await start(success)

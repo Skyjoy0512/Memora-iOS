@@ -2,12 +2,16 @@
 
 ## 2026-10-26の追加検証
 
+- 最終ローカル全6suiteもPass: `memora-quality-6201kkm1/summary.json`。この全体実行中に追加した空白入力ガードは、下記の関連2suiteとDebug/Releaseを変更後に再実行してPass。固定commitのremote検証とは区別する。
+- 後続benchmark/UIを含む`9fe9ac94e865de2dda0b6d655b9586a1cea38bc7`の[run 40247229216](https://github.com/Skyjoy0512/Memora-iOS/actions/runs/40247229216)もcompleted/success。取得したartifactの全6suiteはexit 0。最後の空白入力ガードはこのrunの後の差分であり、別commitのActions結果を確認する。
+- ユーザーの最終指定に従い、実APIを実行せず現時点の検証範囲を報告。推論ON/OFFの実API品質・総生成時間・料金の比較はNot Runのままとする。
 - ローカル全6suite Pass: `memora-quality-kplgf35_/summary.json`（外部scratchの絶対path prefixは従来と同じ）。追加後の10,000件benchmarkを含むoptimizationも個別再実行Pass。UIの後続変更はDebug/Releaseと以下E2Eで別に検査。
 - GitHubコードcommit `d1fae4a` [run 40245583867](https://github.com/Skyjoy0512/Memora-iOS/actions/runs/40245583867): 全6suite Pass。実artifactのsummary/logを取得して確認。先行CI修正だけの`e4c140b`も全6suite Pass。最新HEADの検証はCI.md/Actions参照。
 - `MEMORA_REALTIME_SUMMARY_CHECKS=1 bash tools/checks/run-cloud-session-checks.sh`: 再実行Pass。30/60/120/180秒の観測31.998/64.000/128.001/192.006秒、初回60秒指定は63.999秒。実URLSessionのモック、外部APIなし。
 - 生成mode: 全provider×4モデル×3mode×公式/custom routeの本番HTTP fixture、未知routeへのflag漏洩なし、送信前/継続前authorize失効で追加requestなし。誤ったfixture credentialの初回失敗は、アプリ側を変更せずfixtureの明示的なoffline account指定へ修正し再実行Pass。
 - 実MeetingSummarizerの分割/並列/時系列merge/parser: 逐次180秒/2並列120秒の制御可能な仮想応答、逆順完了、部分失敗/取消/権限失効をPass。実API速度/品質とは別。
 - 日本語の旧設定/job decode、全modeのcodec round trip、SQLite ABORT、古いrun/入力/権限/workspace失効、DeepSeek大量推論、Unicode/buffer snapshot/2MiB保持上限をPass。
+- 最終レビューで全segmentが空白の入力も送信可能と判明。入口を修正し、実MeetingSummarizerでempty/Unicode空白はHTTP 0件、実generateSummaryでjob/processing 0件・旧要約保持をassert。`run-summary-reading-checks.sh`/`run-background-summary-job-checks.sh`を再実行Pass。
 - RAGは27問へ拡張。hit@1=22/22、Recall@3=1.000、MRR=1.000、Precision@3=0.379、無関係送信0.167、棄権5/5。page/excerptの元資料一致・重複・follow-upもPass。固定corpusの指標を一般的な回答品質と扱わない。
 - Licenseの本番extension+失敗可能なKeychain/検証器fixture: 保存/置換/削除失敗、期限、再読込、旧code保持をPass。実SecItemはNot Run。
 - 1,000/10,000件の実Meeting codec+SQLiteは21試行、全record/原文/reopen一致Pass。測定値と範囲はD。初回harnessの不足sourceを追加し、privacy日時とUUIDも固定して再測定した。schema最適化を実装したわけではない。
@@ -22,7 +26,7 @@
 
 ### ビルドと実行環境
 
-Debug `bitrig preview -platform iOS`: Pass、preview更新。最終app変更のlog `2026-10-26T08-49-47-a6c56590.log`。Release SimulatorもPass（`2026-10-26T08-53-53-208eb7c3.log`）。`run-design-refresh-checks.sh`は最終UI変更後もPass。既存11 warning（OAuth/GmailのASWebAuthenticationSession init、MapKit/CLGeocoder、extension AppIntents metadata）を隠していない。新たに加えた不要awaitの3 warningは修正して再ビルド11件へ戻した。
+Debug `bitrig preview -platform iOS`: Pass、preview更新。最後の空白入力ガードを含むlog `2026-10-26T09-01-59-63c46bc3.log`。Release SimulatorもPass（`2026-10-26T09-03-35-67171d24.log`）。`run-design-refresh-checks.sh`は最終UI変更後もPass。既存11 warning（OAuth/GmailのASWebAuthenticationSession init、MapKit/CLGeocoder、extension AppIntents metadata）を隠していない。新たに加えた不要awaitの3 warningは修正して再ビルド11件へ戻した。
 
 追跡用の結果抜粋は [validation-20261026.json](validation-20261026.json)。最後のmode E2Eはrun開始時にUIが未commitだった（runnerのdirty=true）ため、それを隠さず記録し、検証した同じapp差分を後で`798fe07`としてcommitした。
 

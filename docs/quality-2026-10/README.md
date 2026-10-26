@@ -4,7 +4,7 @@
 
 **総合プロジェクトは未完了。** BYOK DeepSeekの「本文前に2MiB制限で失敗する」欠陥は修正・回帰検証済みだが、利用者の約50秒事象が同じ原因だったかは実ジョブ診断との照合が残る。HTTP timeoutの延長では対処していない。
 
-今回のコードcommit `d1fae4a` は[実GitHub Actions全6suite Green](https://github.com/Skyjoy0512/Memora-iOS/actions/runs/40245583867)。生成mode/最大2並列、実本文を区別する診断、ホストで測定した本文buffer改善、Keychain失敗時のlicense整合性、RAG混入低減を追加。実APIの速度/品質/料金A/Bと、実機の50秒再発確認は未検証。後続benchmark/UIの検証はCとKで区別する。
+今回のコードcommit `d1fae4a`、後続benchmark/UIを含む`9fe9ac9`は実GitHub Actions全6suite Green（[後続run](https://github.com/Skyjoy0512/Memora-iOS/actions/runs/40247229216)）。生成mode/最大2並列、実本文を区別する診断、ホストで測定した本文buffer改善、Keychain失敗時のlicense整合性、RAG混入低減を追加。実APIはユーザー指定で実行せず、速度/品質/料金A/Bと実機の50秒再発確認は未検証。最後の空白入力ガードは関連ホスト検査とDebug/ReleaseをPassし、別commitのremote結果と区別する。詳細はCとKを参照。
 
 | レポート | 内容 |
 | --- | --- |

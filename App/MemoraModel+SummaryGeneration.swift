@@ -22,6 +22,10 @@ extension MemoraModel {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty,
           currentTeamID == nil, !speakerAnalysisIDs.contains(id), !processing.isActive(id),
           !isRestoring, isStoreWritable() else { return false }
+    guard meeting.transcript.contains(where: { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+      announce("要約できる文字起こしがありません。原文を確認してください。")
+      return false
+    }
     let workspaceGeneration = aiWorkspaceGeneration
     let selectedEngine = configuration?.engine ?? settingsAIConfiguration.engine
     let effectiveEngine = AIEngineService.effectiveEngine(selectedEngine)
