@@ -7,7 +7,7 @@ import SQLite3
 enum MeetingPersistencePerformanceChecks {
   static func main() throws {
     let count = Int(CommandLine.arguments[1])!
-    precondition([1_000, 10_000].contains(count))
+    precondition([1_000, 5_000, 10_000, 50_000].contains(count))
     let folder = URL(fileURLWithPath: CommandLine.arguments[2], isDirectory: true)
     let url = folder.appendingPathComponent("meetings-\(count).sqlite")
     let store = LocalStore(fileURL: url)
