@@ -90,7 +90,7 @@ extension MemoraModel {
   /// The system decides when that window comes; an empty queue cancels the
   /// request so a finished summary does not wake the app.
   func scheduleBackgroundSummary() {
-    let jobs = pendingSummaryJobs.filter { $0.requiresUserRetry != true && $0.attemptStartedAt == nil && $0.inputFingerprint != nil }
+    let jobs = pendingSummaryJobs.filter { !$0.cloudDisclosureConfirmed && $0.requiresUserRetry != true && $0.attemptStartedAt == nil && $0.inputFingerprint != nil }
     let permitted = !jobs.isEmpty && currentTeamID == nil && !isRestoring && !isStoreProtected
     summaryBackgroundScheduler.scheduleDeferred(requiresNetwork: permitted ? jobs.contains { $0.usesCloud } : nil) { [weak self] message in
       self?.backgroundSummaryNotice = message
@@ -117,6 +117,11 @@ extension MemoraModel {
         continue
       }
       if processing.isActive(job.meetingID) { continue }
+      // A persisted checkbox or user gesture is never a new send instruction.
+      if job.cloudDisclosureConfirmed {
+        pauseBackgroundSummary(job, requiresUserRetry: true)
+        continue
+      }
       guard let fingerprint = job.inputFingerprint, fingerprint == SummaryJobFingerprint.make(meeting) else {
         pauseBackgroundSummary(job, requiresUserRetry: true)
         continue
@@ -129,7 +134,6 @@ extension MemoraModel {
         automaticallySelect: job.automaticallySelect,
         useCaseID: job.useCaseID,
         preferences: job.preferences,
-        cloudDisclosureConfirmed: job.cloudDisclosureConfirmed,
         pendingJob: job
       )
       guard started else { pauseBackgroundSummary(job, requiresUserRetry: true); continue }

@@ -16,7 +16,7 @@ extension MemoraModel {
     automaticallySelect: Bool = false,
     useCaseID: String? = nil,
     preferences: SummaryPreferences? = nil,
-    cloudDisclosureConfirmed: Bool = false,
+    submission: SummarySubmissionIntent? = nil,
     pendingJob: PendingSummaryJob? = nil
   ) -> Bool {
     guard let meeting = meeting(id: id), !meeting.transcript.isEmpty,
@@ -27,17 +27,24 @@ extension MemoraModel {
       return false
     }
     let workspaceGeneration = aiWorkspaceGeneration
+    let configurationIdentity = summaryConfigurationIdentity
     let selectedEngine = configuration?.engine ?? settingsAIConfiguration.engine
     let effectiveEngine = AIEngineService.effectiveEngine(selectedEngine)
     let usesCloud = effectiveEngine == .cloud || effectiveEngine == .memora
+    let llm = configuration?.llm ?? settingsAIConfiguration.llm
+    let explicitSubmission = pendingJob == nil && submission?.matches(meetingID: id,
+      fingerprint: SummaryJobFingerprint.make(meeting), workspace: workspaceGeneration,
+      engine: selectedEngine, llm: llm) == true
+    if submission != nil && !explicitSubmission { return false }
     if effectiveEngine == .cloud || effectiveEngine == .memora {
-      guard RecordAccessPolicy.allows(meeting.effectivePrivacy, purpose: .cloudAI,
-        explicitCloudConsent: cloudDisclosureConfirmed) else {
+      guard explicitSubmission ? RecordAccessPolicy.allowsSummarySubmission(meeting.effectivePrivacy)
+        : RecordAccessPolicy.allows(meeting.effectivePrivacy, purpose: .cloudAI) else {
         announce(RecordAccessPolicy.refusal)
         return false
       }
     }
 
+    if let submission, !submission.consume() { return false }
     let startedAt = Date()
     let input = MeetingSummaryInput(
       title: meeting.displayTitle,
@@ -51,9 +58,9 @@ extension MemoraModel {
       automaticCandidates: automaticallySelect ? automaticSummaryCandidates(for: meeting, fallback: choice) : []
     )
     let engine = configuration?.engine ?? settingsAIConfiguration.engine
-    let llm = configuration?.llm ?? settingsAIConfiguration.llm
 
     let job = pendingJob ?? PendingSummaryJob(
+        id: submission?.jobID ?? UUID(),
         meetingID: id,
         choice: choice,
         engineRawValue: engine.rawValue,
@@ -61,12 +68,16 @@ extension MemoraModel {
         automaticallySelect: automaticallySelect,
         useCaseID: useCaseID,
         preferences: input.preferences,
-        cloudDisclosureConfirmed: cloudDisclosureConfirmed,
+        cloudDisclosureConfirmed: usesCloud && explicitSubmission,
         usesCloud: usesCloud,
         inputFingerprint: SummaryJobFingerprint.make(meeting)
       )
     guard job.meetingID == id, job.inputFingerprint != nil,
+          job.engine == engine, job.llm == llm, job.usesCloud == usesCloud,
           job.inputFingerprint == SummaryJobFingerprint.make(meeting) else { return false }
+    if pendingJob != nil && (job.cloudDisclosureConfirmed || job.requiresUserRetry == true || job.attemptStartedAt != nil) {
+      return false
+    }
     if pendingJob == nil {
       guard enqueueBackgroundSummary(job) else { return false }
     } else {
@@ -100,10 +111,11 @@ extension MemoraModel {
         await MeetingSummarizer.summarize(input, engine: engine, llm: llm, authorize: { [weak self] in
           guard let self, !Task.isCancelled, self.aiWorkspaceGeneration == workspaceGeneration,
                 self.currentTeamID == nil, !self.isRestoring, !self.isStoreProtected,
+                self.summaryConfigurationIdentity == configurationIdentity,
                 self.pendingSummaryJobs.contains(where: { $0.id == job.id }),
                 let current = self.meeting(id: id), SummaryJobFingerprint.make(current) == job.inputFingerprint,
                 (!usesCloud || RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI,
-                  explicitCloudConsent: cloudDisclosureConfirmed)) else {
+                  explicitCloudConsent: explicitSubmission)) else {
             diagnostics.record(.contextChanged)
             self?.pauseBackgroundSummary(job, requiresUserRetry: true)
             return false
@@ -113,10 +125,11 @@ extension MemoraModel {
           guard let self, !Task.isCancelled else { return }
           guard self.aiWorkspaceGeneration == workspaceGeneration, self.currentTeamID == nil,
                 !self.isRestoring, !self.isStoreProtected,
+                self.summaryConfigurationIdentity == configurationIdentity,
                 let current = self.meeting(id: id), current.privacy == meeting.privacy,
                 current.spaceID == meeting.spaceID,
                 (!usesCloud || RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI,
-                  explicitCloudConsent: cloudDisclosureConfirmed)) else {
+                  explicitCloudConsent: explicitSubmission)) else {
             self.pauseBackgroundSummary(job, requiresUserRetry: true)
             diagnostics.record(.contextChanged)
             return
@@ -148,13 +161,14 @@ extension MemoraModel {
       // result. Hash only at the request boundaries, never on streaming ticks.
       guard let current = self.meeting(id: id) else { return }
       guard !self.isRestoring, self.isStoreWritable(), self.currentTeamID == nil,
-            self.aiWorkspaceGeneration == workspaceGeneration else {
+            self.aiWorkspaceGeneration == workspaceGeneration,
+            self.summaryConfigurationIdentity == configurationIdentity else {
         self.pauseBackgroundSummary(job, requiresUserRetry: true)
         return
       }
       guard SummaryJobFingerprint.make(current) == job.inputFingerprint,
             (!usesCloud || RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI,
-              explicitCloudConsent: cloudDisclosureConfirmed)) else {
+              explicitCloudConsent: explicitSubmission)) else {
         diagnostics.record(.contextChanged)
         self.pauseBackgroundSummary(job, requiresUserRetry: true)
         return

@@ -17,6 +17,7 @@ final class MemoraModel {
   var meetingSearchTexts: [UUID: String] = [:]
   var currentTeamID: String?
   var aiWorkspaceGeneration = UUID()
+  var summaryConfigurationIdentity = [UUID()]
   var isRestoring = false
   var isStoreProtected = false
   var speakerAnalysisIDs: Set<UUID> = []
@@ -59,7 +60,9 @@ final class MemoraModel {
   func automaticSummaryCandidates(for meeting: Meeting, fallback: SummaryTemplateChoice) -> [SummaryTemplateChoice] { [fallback] }
   func automaticSummaryChoice(for meeting: Meeting, useCaseID: String?) -> SummaryTemplateChoice { .standard }
   func announce(_ text: String) {}
-  func allowsRecordAccess(_ id: UUID, purpose: RecordAccessPolicy.Purpose) -> Bool { true }
+  func allowsRecordAccess(_ id: UUID, purpose: RecordAccessPolicy.Purpose) -> Bool {
+    meeting(id: id).map { RecordAccessPolicy.allows($0.effectivePrivacy, purpose: purpose) } ?? false
+  }
   func deliverSummaryToWebhooks(_ id: UUID) { deliveries += 1 }
   func runResidentsAfterMeeting(_ id: UUID) {}
   func offerPlusIfNeeded() {}
@@ -91,6 +94,8 @@ final class FixtureSummaryScheduler: SummaryBackgroundScheduling {
 enum MeetingSummarizer {
   struct Request {
     var input: MeetingSummaryInput
+    var engine: AIEngine
+    var llm: LLMSelection
     var progress: @MainActor (String) -> Void
     var complete: CheckedContinuation<Result<MeetingSummary, AIAnswerFailure>, Never>
   }
@@ -99,7 +104,7 @@ enum MeetingSummarizer {
     authorize: (@MainActor () -> Bool)? = nil,
     progress: @escaping @MainActor (String) -> Void) async -> Result<MeetingSummary, AIAnswerFailure> {
     if let authorize, !authorize() { return .failure(.cancelled) }
-    return await withCheckedContinuation { requests.append(Request(input: input, progress: progress, complete: $0)) }
+    return await withCheckedContinuation { requests.append(Request(input: input, engine: engine, llm: llm, progress: progress, complete: $0)) }
   }
 }
 

@@ -98,6 +98,8 @@ extension MemoraModel {
 
       // Only a real engine's transcript is ever stored. When none can run, the
       // record says so and keeps the audio for a retry — never sample text.
+      await self.realtimeTranscriber.waitUntilStopped()
+      guard !Task.isCancelled else { return .cancelled }
       return await TranscriptionService.transcribe(
         fileURL: original.audioURL,
         vocabulary: self.transcriptionVocabulary,

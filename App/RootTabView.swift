@@ -72,6 +72,9 @@ struct RootTabView: View {
     .onChange(of: model.isToolsPresented) { _, isOpen in
       if isOpen { model.composerDismissRequests += 1 }
     }
+    .onChange(of: model.registeredLLMs.revision) { _, _ in
+      model.interruptPendingSummaries(requiresUserRetry: true)
+    }
     .onChange(of: isSidebarOpen) { _, open in
       if open { model.composerDismissRequests += 1 }
     }
@@ -87,6 +90,7 @@ struct RootTabView: View {
     }
     .onGeometryChange(for: CGSize.self) { $0.size } action: { _ in refreshSafeAreaInsets() }
     .onChange(of: scenePhase) { _, phase in
+      model.updateRecordingResources(isForeground: phase == .active)
       refreshSafeAreaInsets()
       // Automatic records written while the app was away land when it returns.
       if phase == .active {
@@ -112,10 +116,17 @@ struct RootTabView: View {
       }
     }
     .onAppear {
+      model.updateRecordingResources(isForeground: scenePhase == .active)
       refreshSafeAreaInsets()
       model.prepareWeeklyReviewIfNeeded()
     }
     .task { await model.refreshShareInbox() }
+    .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
+      model.refreshRecordingResources()
+    }
+    .onReceive(NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification)) { _ in
+      model.refreshRecordingResources()
+    }
     .task { await model.refreshTeams() }
     .onChange(of: model.spaces) { _, _ in Task { await model.refreshShareInbox() } }
     .onChange(of: model.currentTeamID) { _, _ in Task { await model.refreshShareInbox() } }

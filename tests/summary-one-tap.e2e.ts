@@ -1,0 +1,35 @@
+import { test } from '@e2e-dev/mobile';
+import { expect } from 'e2e';
+import { seedSummaryFixture } from './summary-fixture-helpers';
+import { scrollToControl, tapControl, tapTab } from './ui-helpers';
+
+test('summary has one Generate action and discloses only external destinations', async ({ app, device, screen }) => {
+  const { title } = await seedSummaryFixture(app, device, screen);
+  await tapControl(screen.getByRole('button', { name: '前に戻る', exact: true }));
+  await tapControl(screen.getByLabel('メニュー').first());
+  await tapControl(screen.getByTestId('sidebar.settings'));
+  const ai = screen.getByTestId('settings.category.ai').first();
+  await scrollToControl(screen, ai);
+  await tapControl(ai);
+  await tapControl(screen.getByRole('button', { name: /^AIモデル/ }).first());
+  await tapControl(screen.getByRole('button', { name: /^クラウド（BYOK）/ }).first());
+  await tapControl(screen.getByRole('button', { name: '前に戻る', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '前に戻る', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
+  await tapTab(screen, 'ライブラリ');
+  await tapControl(screen.getByRole('button', { name: new RegExp('^' + title) }).first());
+  await tapControl(screen.getByRole('button', { name: 'その他', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '要約をやり直す', exact: true }));
+  const engine = screen.getByTestId('summary.engineChoice');
+  await scrollToControl(screen, engine);
+  await expect(screen.getByRole('switch', { name: '文字起こしを選択したAIサービスへ送信する', exact: true })).not.toBeVisible();
+  await expect(screen.getByTestId('summary.generate')).toBeEnabled();
+  await expect(screen.getByTestId('summary.destination')).toHaveText(/OpenAI · api.openai.com：文字起こしを送信して生成します/);
+  await app.screenshot('summary-one-tap-selected');
+  await tapControl(engine);
+  await tapControl(screen.getByRole('button', { name: '端末内AI', exact: true }));
+  await expect(screen.getByTestId('summary.destination')).not.toBeVisible();
+  await expect(screen.getByTestId('summary.generate')).toBeEnabled();
+  await app.screenshot('summary-on-device');
+  await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
+});

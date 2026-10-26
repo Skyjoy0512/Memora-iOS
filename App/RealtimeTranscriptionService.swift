@@ -11,7 +11,7 @@ import Speech
 @Observable
 final class RealtimeTranscriptionService {
   /// Lines that have settled, oldest first.
-  private(set) var finalized: [String] = []
+  private(set) var history = LiveTranscriptHistory()
   /// The line still being recognised, shown lighter.
   private(set) var volatileText = ""
   private(set) var isRunning = false
@@ -19,6 +19,8 @@ final class RealtimeTranscriptionService {
   private(set) var unavailableReason: String?
 
   @ObservationIgnored private var session: Any?
+  @ObservationIgnored private var stoppingTask: Task<Void, Never>?
+  @ObservationIgnored private var stoppingGeneration = UUID()
 
   static let enabledKey = "memora.liveTranscription"
 
@@ -28,7 +30,6 @@ final class RealtimeTranscriptionService {
 
   func start() {
     guard session == nil else { return }
-    finalized = []
     volatileText = ""
     unavailableReason = nil
 
@@ -47,11 +48,12 @@ final class RealtimeTranscriptionService {
 
     let session = RealtimeTranscriptionSession(
       onFinal: { [weak self] text in
-        self?.finalized.append(text)
+        self?.history.append(text)
         self?.volatileText = ""
       },
       onVolatile: { [weak self] text in
-        self?.volatileText = text
+        let bounded = LiveTranscriptHistory.boundedText(text)
+        if self?.volatileText != bounded { self?.volatileText = bounded }
       },
       onRunning: { [weak self] running in
         self?.isRunning = running
@@ -61,15 +63,34 @@ final class RealtimeTranscriptionService {
       }
     )
     self.session = session
-    session.start()
+    session.start(after: stoppingTask)
   }
 
   func stop() {
     if #available(iOS 26.0, *) {
-      (session as? RealtimeTranscriptionSession)?.stop()
+      if let previous = (session as? RealtimeTranscriptionSession)?.stop() {
+        stoppingGeneration = UUID()
+        stoppingTask = previous
+      }
     }
     session = nil
     isRunning = false
+  }
+
+  func waitUntilStopped() async {
+    let generation = stoppingGeneration
+    await stoppingTask?.value
+    if stoppingGeneration == generation { stoppingTask = nil }
+  }
+
+  func suspendForPowerSaving() {
+    stop()
+    unavailableReason = "省電力動作中です。音声は同じ品質で録音し、保存後に文字起こしします。"
+  }
+
+  func resetHistory() {
+    history = LiveTranscriptHistory()
+    volatileText = ""
   }
 }
 
@@ -88,6 +109,7 @@ private final class RealtimeTranscriptionSession {
   private var continuation: AsyncThrowingStream<AnalyzerInput, Error>.Continuation?
   private var hasInstalledInputTap = false
   private var isStopped = false
+  private var analyzer: SpeechAnalyzer?
 
   init(
     onFinal: @escaping (String) -> Void,
@@ -101,16 +123,26 @@ private final class RealtimeTranscriptionSession {
     self.onUnavailable = onUnavailable
   }
 
-  func start() {
-    task = Task { [weak self] in await self?.run() }
+  func start(after previous: Task<Void, Never>?) {
+    task = Task { [weak self] in
+      await previous?.value
+      guard !Task.isCancelled else { return }
+      await self?.run()
+    }
   }
 
-  func stop() {
+  @discardableResult
+  func stop() -> Task<Void, Never>? {
     isStopped = true
+    let previous = task
     task?.cancel()
     task = nil
     stopEngine()
+    let analyzer = self.analyzer
+    self.analyzer = nil
+    Task { await analyzer?.cancelAndFinishNow() }
     onRunning(false)
+    return previous
   }
 
   private func stopEngine() {
@@ -125,6 +157,11 @@ private final class RealtimeTranscriptionSession {
   }
 
   private func run() async {
+    let preparation = AudioProcessingDiagnostics.signposter.beginInterval("LiveModelPreparation")
+    var prepared = false
+    defer {
+      if !prepared { AudioProcessingDiagnostics.signposter.endInterval("LiveModelPreparation", preparation) }
+    }
     guard let supported = await SpeechTranscriber.supportedLocale(equivalentTo: Locale.current) else {
       if !isStopped { onUnavailable("この言語は録音中の文字起こしに対応していません。") }
       return
@@ -150,8 +187,6 @@ private final class RealtimeTranscriptionSession {
       return
     }
     if Task.isCancelled { return }
-
-    let analyzer = SpeechAnalyzer(modules: [transcriber])
 
     guard AVAudioSession.sharedInstance().isInputAvailable else {
       onUnavailable("マイクの入力がありません。録音後の文字起こしをお使いください。")
@@ -192,6 +227,13 @@ private final class RealtimeTranscriptionSession {
     hasInstalledInputTap = true
     self.engine = engine
 
+    let analyzer = SpeechAnalyzer(modules: [transcriber])
+    self.analyzer = analyzer
+    AudioProcessingDiagnostics.signposter.endInterval("LiveModelPreparation", preparation)
+    prepared = true
+    let recognition = AudioProcessingDiagnostics.signposter.beginInterval("LiveRecognition")
+    defer { AudioProcessingDiagnostics.signposter.endInterval("LiveRecognition", recognition) }
+
     let collect = Task { [weak self] in
       do {
         for try await result in transcriber.results {
@@ -208,7 +250,9 @@ private final class RealtimeTranscriptionSession {
           }
         }
       } catch {
-        // A stopped or failed run simply stops updating.
+        guard let self, !self.isStopped, !Task.isCancelled else { return }
+        self.onUnavailable("ライブ認識を停止しました。音声は録音を続け、保存後に文字起こしします。")
+        self.stop()
       }
     }
 
@@ -226,6 +270,10 @@ private final class RealtimeTranscriptionSession {
 
     collect.cancel()
     stopEngine()
+    // Finishing the stream alone does not guarantee the model has stopped.
+    await analyzer.cancelAndFinishNow()
+    self.analyzer = nil
+    _ = await collect.result
     if !isStopped { onRunning(false) }
   }
 }

@@ -1,6 +1,10 @@
 import Foundation
 
 extension MemoraModel {
+  var summaryConfigurationIdentity: [UUID] {
+    [summaryConfigurationRevision, registeredLLMs.revision]
+  }
+
   /// Capture once per question so changing the menu cannot reroute an answer
   /// already in flight. Auto follows the explicit settings engine policy.
   var askAIConfiguration: (engine: AIEngine, llm: LLMSelection) {

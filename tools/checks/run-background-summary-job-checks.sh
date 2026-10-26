@@ -14,14 +14,14 @@ trap 'rm -rf "$check_dir"' EXIT
 swiftc Shared/MemoraIcon.swift App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
   App/LLMProvider.swift App/LLMModelOption.swift App/SummaryTemplate.swift App/SummaryMarketTemplate.swift \
   App/SummaryProcessingMode.swift App/SummaryTemplateCategory.swift App/SummaryTemplateChoice.swift App/SummaryPreferences.swift \
-  App/SummaryLength.swift App/SummarySensitivity.swift App/PendingSummaryJob.swift \
+  App/SummaryLength.swift App/SummarySensitivity.swift App/PendingSummaryJob.swift App/SummarySubmissionIntent.swift \
   tools/checks/BackgroundSummaryJobChecks.swift -o "$check_dir/check"
 "$check_dir/check"
 swiftc \
   Shared/MemoraIcon.swift App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
   App/LLMProvider.swift App/LLMModelOption.swift App/SummaryTemplate.swift App/SummaryMarketTemplate.swift \
   App/SummaryProcessingMode.swift App/SummaryTemplateCategory.swift App/SummaryTemplateChoice.swift App/SummaryPreferences.swift \
-  App/SummaryLength.swift App/SummarySensitivity.swift App/PendingSummaryJob.swift \
+  App/SummaryLength.swift App/SummarySensitivity.swift App/PendingSummaryJob.swift App/SummarySubmissionIntent.swift \
   App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift \
   App/MeetingStatus.swift App/RecordPrivacy.swift App/RecordAccessPolicy.swift App/AIAnswerFailure.swift \
   App/MeetingSummary.swift App/MeetingSummaryInput.swift App/GeneratedSummaryEvidence.swift \

@@ -112,7 +112,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
       ]
       let recorder = try AVAudioRecorder(url: url, settings: settings)
       recorder.delegate = self
-      recorder.isMeteringEnabled = true
+      recorder.isMeteringEnabled = purpose == .voiceEnrollment
       guard recorder.prepareToRecord(), recorder.record() else {
         throw AudioRecorderError.couldNotStart
       }
@@ -147,13 +147,17 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
 
   /// 0...1 loudness for the voice glow.
   func level() -> Double {
-    guard let recorder else { return 0 }
+    guard let recorder, recorder.isRecording, recorder.isMeteringEnabled else { return 0 }
     recorder.updateMeters()
     let decibels = Double(recorder.averagePower(forChannel: 0))
     return max(0, min(1, (decibels + 50) / 50))
   }
 
   var elapsed: TimeInterval { recordedDuration ?? 0 }
+
+  func setMeteringEnabled(_ enabled: Bool) {
+    recorder?.isMeteringEnabled = enabled
+  }
 
   func pause() {
     _ = recordedDuration

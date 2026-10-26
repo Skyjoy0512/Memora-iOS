@@ -5,6 +5,7 @@ import SwiftUI
 struct VoiceGlow: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.colorScheme) private var colorScheme
+  @Environment(\.scenePhase) private var scenePhase
 
   /// 0...1, how loud the voice is right now.
   var level: Double
@@ -21,7 +22,7 @@ struct VoiceGlow: View {
   var body: some View {
     GeometryReader { proxy in
       let size = proxy.size
-      if reduceMotion {
+      if reduceMotion || !isActive || scenePhase != .active {
         glow(in: size, time: 0)
       } else {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in

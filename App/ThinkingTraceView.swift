@@ -4,6 +4,8 @@ import SwiftUI
 struct ThinkingTraceView: View {
   @Environment(MemoraModel.self) private var model
   var message: AIChatMessage
+  var isWaitingForApproval = false
+  var permitsShimmer = true
   @State private var source: ArtifactSourceTarget?
 
   /// Shown only while a reply is being formed.
@@ -12,16 +14,17 @@ struct ThinkingTraceView: View {
   }
 
   var body: some View {
-    let isWaiting = model.pendingAgentApproval?.messageID == message.id
+    let isWaiting = isWaitingForApproval || model.pendingAgentApproval?.messageID == message.id
       || model.pendingAgentQuestions?.messageID == message.id
 
     VStack(alignment: .leading, spacing: 0) {
-      if message.isThinking {
+      if message.isThinking && (message.text.isEmpty || isWaiting) {
         ConversationStatusLine(label: isWaiting ? "確認を待っています" : label,
-          since: message.createdAt, isWaiting: isWaiting, showsShimmer: message.text.isEmpty)
+          since: message.createdAt, isWaiting: isWaiting, showsShimmer: message.text.isEmpty && permitsShimmer)
       }
       if !message.agentSteps.isEmpty {
-        AgentActivityView(steps: message.agentSteps, isRunning: message.isThinking, isWaiting: isWaiting) { id in
+        AgentActivityView(steps: message.agentSteps, isRunning: message.isThinking, isWaiting: isWaiting,
+          startedAt: message.createdAt) { id in
           let target = ArtifactSourceTarget.record(.meeting(id))
           guard model.answerCitationTargets(for: message).contains(target),
                 model.canOpenArtifactSource(target, workspaceID: model.artifactProvenance(for: message).workspaceID) else { return }

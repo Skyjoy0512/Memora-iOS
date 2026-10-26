@@ -9,6 +9,8 @@ actor FluidSpeakerDiarizationService: SpeakerDiarizationService {
   func analyze(_ url: URL) async throws -> SpeakerAnalysisResult {
     guard !isProcessing else { throw SpeakerProcessingFailure.busy }
     isProcessing = true
+    let interval = AudioProcessingDiagnostics.signposter.beginInterval("SpeakerDiarization")
+    defer { AudioProcessingDiagnostics.signposter.endInterval("SpeakerDiarization", interval) }
     defer { isProcessing = false }
     let accessed = url.startAccessingSecurityScopedResource()
     defer { if accessed { url.stopAccessingSecurityScopedResource() } }
@@ -25,6 +27,7 @@ actor FluidSpeakerDiarizationService: SpeakerDiarizationService {
       pldaRhoModel: MLModel(contentsOf: directory.appendingPathComponent("PldaRho.mlmodelc"), configuration: configuration),
       pldaPsi: loadPsi(directory), compilationDuration: 0
     )
+    try Task.checkCancellation()
     var config = OfflineDiarizerConfig.default
     config.exposeChunkEmbeddings = true
     let manager = OfflineDiarizerManager(config: config)

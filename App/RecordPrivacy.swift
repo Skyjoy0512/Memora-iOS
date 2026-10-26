@@ -19,8 +19,11 @@ struct RecordPrivacy: Codable, Hashable, Sendable {
   var allowsAutomaticWebhook = false
   var allowsTeamSharing = false
   var updatedAt: Date = .now
+  /// Optional so older records and backups keep decoding.
+  var blocksOneTimeCloudSummary: Bool? = nil
 
   mutating func revokeExternalPermissions() {
+    blocksOneTimeCloudSummary = true
     allowsCloudAI = false
     allowsAutomaticAgentAccess = false
     allowsAutomaticWebhook = false

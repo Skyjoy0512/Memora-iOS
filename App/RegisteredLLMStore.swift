@@ -6,6 +6,7 @@ import Observation
 final class RegisteredLLMStore {
   private(set) var models: [RegisteredLLM]
   private(set) var selectedID: UUID?
+  private(set) var revision = UUID()
   @ObservationIgnored private var defaults: UserDefaults
   private static let modelsKey = "memora.registeredLLMs"
   private static let selectionKey = "memora.askAI.registeredModel"
@@ -38,6 +39,7 @@ final class RegisteredLLMStore {
   }
 
   func select(_ id: UUID?) {
+    revision = UUID()
     selectedID = models.contains { $0.id == id } ? id : nil
     defaults.set(selectedID?.uuidString, forKey: Self.selectionKey)
   }
@@ -57,6 +59,7 @@ final class RegisteredLLMStore {
     } else {
       models.append(cleaned)
     }
+    revision = UUID()
     persist()
     return true
   }
@@ -67,6 +70,7 @@ final class RegisteredLLMStore {
   }
 
   func remove(_ id: UUID) {
+    revision = UUID()
     models.removeAll { $0.id == id }
     if selectedID == id { select(nil) }
     persist()

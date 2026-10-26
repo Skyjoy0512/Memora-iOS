@@ -12,6 +12,8 @@ struct PendingSummaryJob: Codable, Identifiable, Sendable {
   var automaticallySelect: Bool
   var useCaseID: String?
   var preferences: SummaryPreferences
+  /// Legacy field retained for decoding. True jobs require a new foreground
+  /// Generate gesture; this flag alone can never authorize a restored send.
   var cloudDisclosureConfirmed: Bool
   var usesCloud: Bool
   var createdAt = Date.now

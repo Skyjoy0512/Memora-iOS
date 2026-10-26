@@ -90,13 +90,18 @@ struct SpeechRecognitionSettingsView: View {
       }
 
       Section {
+        Picker("録音モード", selection: Binding {
+          model.recordingPowerMode
+        } set: { model.recordingPowerMode = $0 }) {
+          ForEach(RecordingPowerMode.allCases) { Text($0.title).tag($0) }
+        }
         Toggle(isOn: $liveTranscription) {
           SettingsLabel("録音中に文字起こしを表示", icon: .textDocument)
         }
       } header: {
         Text("録音中")
       } footer: {
-        Text("iOS 26 以降の端末内エンジンで、録音中に発言を表示します。表示だけに使い、保存する文字起こしは録音後に音声から作成します。")
+        Text("通常モードでは端末内エンジンでライブ表示します。省電力モード・低電力モード・高温時はライブ認識と音量アニメーションを休止します。録音品質は変えず、正式な文字起こしは保存後に音声から作成します。")
       }
 
       Section {
@@ -113,6 +118,7 @@ struct SpeechRecognitionSettingsView: View {
       }
     }
     .navigationTitle("文字起こし")
+    .onChange(of: liveTranscription) { _, _ in model.refreshRecordingResources() }
     .memoraBackButton()
     .sheet(isPresented: $isKeySheetPresented) {
       APIKeySheet(provider: provider.label, account: "transcription.\(provider.rawValue)")

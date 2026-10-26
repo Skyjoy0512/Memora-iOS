@@ -13,7 +13,6 @@ struct SummaryGenerationSheet: View {
   @State private var length = SummaryLength.standard
   @State private var processingMode = SummaryProcessingMode.balanced
   @State private var useCaseID = ""
-  @State private var confirmsCloudDisclosure = false
   var meetingID: UUID
 
   var body: some View {
@@ -68,8 +67,6 @@ struct SummaryGenerationSheet: View {
             }
             engineSection
             if usesCloud {
-              Toggle("文字起こしを選択したAIサービスへ送信する", isOn: $confirmsCloudDisclosure)
-                .font(.subheadline)
               Text("顧客・利用者・未成年者などの情報が含まれる場合は、録音・外部送信の同意と所属先の方針を確認してください。声の特徴量は送信しません。")
                 .font(.footnote).foregroundStyle(.secondary)
               Text("前回の生成が途中で止まった場合も、AIサービス側では処理・課金が済んでいる可能性があります。再試行は新しいリクエストとなり、追加の利用料金が発生する場合があります。")
@@ -105,14 +102,24 @@ struct SummaryGenerationSheet: View {
         useCaseID = model.meeting(id: meetingID)?.summaryUseCaseID ?? ""
         template = resolvedChoice
       }
-      .onChange(of: selectedEngine) { _, _ in confirmsCloudDisclosure = false }
     }
     .presentationDetents([.medium, .large], selection: $selectedDetent)
     .presentationDragIndicator(.visible)
   }
 
   private var generateAction: some View {
-    VStack(spacing: 8) {
+    let configuration = model.summaryConfiguration(for: selectedEngine)
+    let fingerprint = model.meeting(id: meetingID).flatMap(SummaryJobFingerprint.make)
+    let workspace = model.aiWorkspaceGeneration
+    return VStack(spacing: 8) {
+      if usesCloud {
+        Text("\(configuration.llm.summaryDestination)：文字起こしを送信して生成します")
+          .font(.footnote).foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityIdentifier("summary.destination")
+        Text("タイトル・日時・用語集・選択した生成指示も送信します。今回の要約だけに使用します。")
+          .font(.caption).foregroundStyle(.secondary)
+      }
       if !dynamicTypeSize.isAccessibilitySize {
         Text("生成を押すまでAI処理は始まりません")
           .font(.caption)
@@ -126,11 +133,12 @@ struct SummaryGenerationSheet: View {
         let started = model.generateSummary(
           meetingID,
           choice: resolvedChoice,
-          configuration: model.summaryConfiguration(for: selectedEngine),
+          configuration: configuration,
           automaticallySelect: mode == .automatic && model.summaryPreferences.method == .automatic && useCaseID.isEmpty,
           useCaseID: useCaseID,
           preferences: preferences,
-          cloudDisclosureConfirmed: confirmsCloudDisclosure
+          submission: SummarySubmissionIntent(meetingID: meetingID, inputFingerprint: fingerprint,
+            workspaceGeneration: workspace, engine: configuration.engine, llm: configuration.llm)
         )
         if started { dismiss() }
       } label: {
@@ -138,7 +146,8 @@ struct SummaryGenerationSheet: View {
           .frame(maxWidth: .infinity)
       }
       .buttonStyle(MemoraButtonStyle())
-      .disabled((usesCloud && !confirmsCloudDisclosure) || model.processing.isActive(meetingID)
+      .accessibilityIdentifier("summary.generate")
+      .disabled(model.processing.isActive(meetingID)
         || model.speakerAnalysisIDs.contains(meetingID))
     }
     .padding(.horizontal, MemoraSpacing.xl)

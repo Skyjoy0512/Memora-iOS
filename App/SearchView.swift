@@ -23,7 +23,6 @@ struct SearchView: View {
         }
       }
       .background {
-        AskAIGlow(isThinking: model.isAIChatResponding, isEmpty: false, entrance: 0, permitsIdleGlow: false)
       }
       .background(MemoraPalette.background)
       .safeAreaInset(edge: .top, spacing: 0) {

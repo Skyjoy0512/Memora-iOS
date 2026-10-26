@@ -330,6 +330,14 @@ final class MemoraModel {
   /// The glow's microphone level, kept in its own observable object so the ~22
   /// updates a second redraw only the view drawing the glow.
   @ObservationIgnored let levelMeter = RecordingLevelMeter()
+  var recordingPowerMode = RecordingPowerMode.current {
+    didSet {
+      UserDefaults.standard.set(recordingPowerMode.rawValue, forKey: RecordingPowerMode.settingsKey)
+      refreshRecordingResources()
+    }
+  }
+  var recordingConservesResources = false
+  @ObservationIgnored var recordingIsForeground = true
   /// The live transcription shown while recording, on iOS 26 only. Display-only.
   @ObservationIgnored let realtimeTranscriber = RealtimeTranscriptionService()
   var recordingTitle = ""
@@ -455,9 +463,11 @@ final class MemoraModel {
   /// The engine Ask AI and summaries actually use. The model owns it, so what
   /// the composer shows and what the request calls cannot drift apart.
   var registeredLLMs = RegisteredLLMStore()
+  @ObservationIgnored var summaryConfigurationRevision = UUID()
   var aiEngine: AIEngine = .automatic {
     didSet {
       UserDefaults.standard.set(aiEngine.rawValue, forKey: StorageKey.aiEngine)
+      if aiEngine != oldValue { summaryConfigurationRevision = UUID(); interruptPendingSummaries(requiresUserRetry: true) }
     }
   }
   /// The bring-your-own-key provider used when the engine is cloud.
@@ -465,6 +475,8 @@ final class MemoraModel {
     didSet {
       UserDefaults.standard.set(aiProvider.rawValue, forKey: StorageKey.aiProvider)
       guard aiProvider != oldValue else { return }
+      summaryConfigurationRevision = UUID()
+      interruptPendingSummaries(requiresUserRetry: true)
       // Each provider remembers its own model, so switching back restores it.
       aiModelID = Self.storedModelID(for: aiProvider)
     }
@@ -473,6 +485,7 @@ final class MemoraModel {
   var aiModelID: String = "" {
     didSet {
       UserDefaults.standard.set(aiModelID, forKey: StorageKey.aiModel(aiProvider))
+      if aiModelID != oldValue { summaryConfigurationRevision = UUID(); interruptPendingSummaries(requiresUserRetry: true) }
     }
   }
   /// The provider and model a cloud request goes to, read together.

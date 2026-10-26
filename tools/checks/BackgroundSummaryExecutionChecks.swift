@@ -20,12 +20,18 @@ enum BackgroundSummaryExecutionChecks {
       return try JSONDecoder().decode(T.self, from: data)
     }
     func start(_ model: MemoraModel) async -> MeetingSummarizer.Request {
-      precondition(model.generateSummary(model.meetings[0].id, choice: .standard, cloudDisclosureConfirmed: true))
+      precondition(model.generateSummary(model.meetings[0].id, choice: .standard, submission: intent(model)))
       for _ in 0..<1000 {
         if !MeetingSummarizer.requests.isEmpty { return MeetingSummarizer.requests.removeFirst() }
         await Task.yield()
       }
       preconditionFailure("inference not started")
+    }
+    func intent(_ model: MemoraModel) -> SummarySubmissionIntent {
+      SummarySubmissionIntent(meetingID: model.meetings[0].id,
+        inputFingerprint: SummaryJobFingerprint.make(model.meetings[0]),
+        workspaceGeneration: model.aiWorkspaceGeneration,
+        engine: model.settingsAIConfiguration.engine, llm: model.settingsAIConfiguration.llm)
     }
     func settle(_ model: MemoraModel) async throws {
       for _ in 0..<1000 {
@@ -43,7 +49,7 @@ enum BackgroundSummaryExecutionChecks {
     let empty = try MemoraModel(url: root.appendingPathComponent("empty.sqlite"))
     empty.meetings = [Meeting()]
     empty.meetings[0].transcript[0].text = " \n\t　"
-    precondition(!empty.generateSummary(empty.meetings[0].id, choice: .standard, cloudDisclosureConfirmed: true))
+    precondition(!empty.generateSummary(empty.meetings[0].id, choice: .standard, submission: intent(empty)))
     precondition(empty.pendingSummaryJobs.isEmpty && empty.processing.activeIDs.isEmpty && MeetingSummarizer.requests.isEmpty)
     precondition(empty.meetings[0].summary == "保存済みの旧要約")
 
@@ -69,7 +75,8 @@ enum BackgroundSummaryExecutionChecks {
     let savedTasks = try read(success, MemoraModel.StorageKey.tasks, as: [MemoraTask].self)
     let savedJobs = try read(success, MemoraModel.StorageKey.pendingSummaryJobs, as: [PendingSummaryJob].self)
     precondition(savedTasks.count == 1 && savedTasks[0].assignee == nil && savedTasks[0].dueDate == nil && savedJobs.isEmpty)
-    precondition(success.deliveries == 1 && success.scheduler.finishes.last?.1 == true)
+    precondition(success.deliveries == 0 && success.scheduler.finishes.last?.1 == true)
+    precondition(!success.meetings[0].privacy.allowsCloudAI && !success.meetings[0].privacy.allowsAutomaticAgentAccess)
 
     // A denied task write rolls back the summary and the queue acknowledgement.
     let failed = try model()
@@ -131,7 +138,7 @@ enum BackgroundSummaryExecutionChecks {
     precondition(network.pendingSummaryJobs[0].requiresUserRetry == true && network.backgroundSummaryNotice != nil)
 
     // In-flight edits/permissions/workspace ABA must never publish stale output.
-    for mutate in 0..<6 {
+    for mutate in 0..<7 {
       let changed = try model()
       let pending = await start(changed)
       switch mutate {
@@ -140,7 +147,8 @@ enum BackgroundSummaryExecutionChecks {
       case 2: changed.meetings[0].privacy.revokeExternalPermissions()
       case 3: changed.aiWorkspaceGeneration = UUID()
       case 4: changed.isRestoring = true
-      default: changed.meetings[0].spaceID = UUID()
+      case 5: changed.meetings[0].spaceID = UUID()
+      default: changed.summaryConfigurationIdentity = [UUID()]
       }
       pending.complete.resume(returning: .success(result))
       try await settle(changed)
@@ -158,9 +166,12 @@ enum BackgroundSummaryExecutionChecks {
     precondition(MeetingSummarizer.requests.isEmpty && queued.pendingSummaryJobs[0].requiresUserRetry == true)
     let queueJob = PendingSummaryJob(meetingID: queued.meetings[0].id, choice: .standard,
       engineRawValue: AIEngine.cloud.rawValue, llm: queued.settingsAIConfiguration.llm,
-      automaticallySelect: false, preferences: SummaryPreferences(), cloudDisclosureConfirmed: true,
+      automaticallySelect: false, preferences: SummaryPreferences(), cloudDisclosureConfirmed: false,
       usesCloud: true, inputFingerprint: SummaryJobFingerprint.make(queued.meetings[0]))
     precondition(queued.enqueueBackgroundSummary(queueJob))
+    queued.meetings[0].privacy.classification = .general
+    queued.meetings[0].privacy.allowsCloudAI = true
+    queued.pendingSummaryJobs[0].inputFingerprint = SummaryJobFingerprint.make(queued.meetings[0])
     let run = Task { await queued.runPendingBackgroundSummaries() }
     while MeetingSummarizer.requests.isEmpty { await Task.yield() }
     precondition(queued.pendingSummaryJobs.count == 1 && queued.pendingSummaryJobs[0].id == queueJob.id)
@@ -207,9 +218,12 @@ enum BackgroundSummaryExecutionChecks {
     let queueFailure = try model()
     let queuedFailureJob = PendingSummaryJob(meetingID: queueFailure.meetings[0].id, choice: .standard,
       engineRawValue: AIEngine.cloud.rawValue, llm: queueFailure.settingsAIConfiguration.llm,
-      automaticallySelect: false, preferences: SummaryPreferences(), cloudDisclosureConfirmed: true,
+      automaticallySelect: false, preferences: SummaryPreferences(), cloudDisclosureConfirmed: false,
       usesCloud: true, inputFingerprint: SummaryJobFingerprint.make(queueFailure.meetings[0]))
     precondition(queueFailure.enqueueBackgroundSummary(queuedFailureJob))
+    queueFailure.meetings[0].privacy.classification = .general
+    queueFailure.meetings[0].privacy.allowsCloudAI = true
+    queueFailure.pendingSummaryJobs[0].inputFingerprint = SummaryJobFingerprint.make(queueFailure.meetings[0])
     let failingWindow = Task { await queueFailure.runPendingBackgroundSummaries() }
     while MeetingSummarizer.requests.isEmpty { await Task.yield() }
     MeetingSummarizer.requests.removeFirst().complete.resume(returning: .failure(.missingKey))
@@ -221,10 +235,52 @@ enum BackgroundSummaryExecutionChecks {
     var unsavedDB: OpaquePointer?
     precondition(sqlite3_open(root.appendingPathComponent("\(number).sqlite").path, &unsavedDB) == SQLITE_OK)
     precondition(sqlite3_exec(unsavedDB, "CREATE TRIGGER fail_enqueue BEFORE INSERT ON documents WHEN NEW.key='memoraPendingSummaryJobs' BEGIN SELECT RAISE(ABORT, 'fixture enqueue failure'); END;", nil, nil, nil) == SQLITE_OK)
-    let accepted = unsaved.generateSummary(unsaved.meetings[0].id, choice: .standard, cloudDisclosureConfirmed: true)
+    let accepted = unsaved.generateSummary(unsaved.meetings[0].id, choice: .standard, submission: intent(unsaved))
     precondition(!accepted && unsaved.pendingSummaryJobs.isEmpty && !unsaved.processing.isActive(unsaved.meetings[0].id))
     precondition(unsaved.meetings[0].summary == "保存済みの旧要約" && MeetingSummarizer.requests.isEmpty)
     sqlite3_close(unsavedDB)
+
+    // Typed intent is consumed once and cannot authorize another record,
+    // destination, privacy revision, workspace, or restored legacy job.
+    let oneShot = try model()
+    let grant = intent(oneShot)
+    let config = oneShot.settingsAIConfiguration
+    var otherDestination = config.llm
+    otherDestination.endpoint = URL(string: "https://wrong.invalid/v1")
+    precondition(!oneShot.generateSummary(oneShot.meetings[0].id, choice: .standard,
+      configuration: (config.engine, otherDestination), submission: grant))
+    precondition(MeetingSummarizer.requests.isEmpty)
+    precondition(oneShot.generateSummary(oneShot.meetings[0].id, choice: .standard, submission: grant))
+    while MeetingSummarizer.requests.isEmpty { await Task.yield() }
+    let sent = MeetingSummarizer.requests.removeFirst()
+    precondition(sent.llm == config.llm && sent.llm.baseURL == config.llm.baseURL)
+    precondition(sent.llm.summaryDestination.contains(config.llm.baseURL.host!))
+    sent.complete.resume(returning: .failure(.missingKey))
+    try await settle(oneShot)
+    precondition(!oneShot.generateSummary(oneShot.meetings[0].id, choice: .standard, submission: grant))
+    for classification in [RecordPrivacy.Classification.general, .personal, .sensitive] {
+      let denied = try model()
+      denied.meetings[0].privacy.classification = classification
+      precondition(!denied.generateSummary(denied.meetings[0].id, choice: .standard, submission: intent(denied)))
+    }
+    let revoked = try model()
+    revoked.meetings[0].privacy.revokeExternalPermissions()
+    precondition(!revoked.generateSummary(revoked.meetings[0].id, choice: .standard, submission: intent(revoked)))
+    let restored = try model()
+    let legacy = PendingSummaryJob(meetingID: restored.meetings[0].id, choice: .standard,
+      engineRawValue: config.engine.rawValue, llm: config.llm,
+      automaticallySelect: false, preferences: SummaryPreferences(), cloudDisclosureConfirmed: true,
+      usesCloud: true, inputFingerprint: SummaryJobFingerprint.make(restored.meetings[0]))
+    precondition(restored.enqueueBackgroundSummary(legacy))
+    _ = await restored.runPendingBackgroundSummaries()
+    precondition(MeetingSummarizer.requests.isEmpty && restored.pendingSummaryJobs[0].requiresUserRetry == true)
+    let local = try model()
+    precondition(local.generateSummary(local.meetings[0].id, choice: .standard, configuration: (.foundation, config.llm)))
+    while MeetingSummarizer.requests.isEmpty { await Task.yield() }
+    let localRequest = MeetingSummarizer.requests.removeFirst()
+    precondition(localRequest.engine == .foundation && !local.pendingSummaryJobs[0].usesCloud)
+    localRequest.complete.resume(returning: .failure(.noEngine))
+    try await settle(local)
     print("BackgroundSummaryExecutionChecks: passed (production queue/generation/cancellation, real SQLite atomic save and reopen; OS/model are fixtures)")
   }
 }

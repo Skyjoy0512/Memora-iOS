@@ -5,9 +5,10 @@ import SwiftUI
 /// it says why instead of showing an empty box.
 struct RealtimeTranscriptView: View {
   var service: RealtimeTranscriptionService
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
-    if service.finalized.isEmpty, service.volatileText.isEmpty {
+    if service.history.lines.isEmpty, service.volatileText.isEmpty {
       VStack(spacing: 10) {
         Image(icon: .textBubble)
           .font(.title2)
@@ -22,9 +23,16 @@ struct RealtimeTranscriptView: View {
     } else {
       ScrollViewReader { proxy in
         ScrollView {
-          VStack(alignment: .leading, spacing: 8) {
-            ForEach(Array(service.finalized.enumerated()), id: \.offset) { _, line in
-              Text(line)
+          LazyVStack(alignment: .leading, spacing: 8) {
+            if service.history.hasTrimmedHistory {
+              Text("ライブ表示は直近200文、長い発言は末尾のみです。全文は保存した音声から文字起こしします。")
+                .font(.caption).foregroundStyle(.secondary)
+            }
+            if let reason = service.unavailableReason {
+              Text(reason).font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(service.history.lines) { line in
+              Text(line.text)
                 .font(.body)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -40,8 +48,8 @@ struct RealtimeTranscriptView: View {
           }
           .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .onChange(of: service.finalized.count) { _, _ in
-          withAnimation(.smooth(duration: 0.2)) {
+        .onChange(of: service.history.totalLines) { _, _ in
+          withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) {
             proxy.scrollTo("liveBottom", anchor: .bottom)
           }
         }

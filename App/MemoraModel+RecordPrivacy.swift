@@ -154,6 +154,7 @@ extension MemoraModel {
     guard !isRestoring, isStoreWritable(), let record = meeting(id: meetingID) else { return false }
     var updated = privacy
     guard updated.classification.rank >= record.minimumPrivacyClassification.rank else { return false }
+    updated.blocksOneTimeCloudSummary = !updated.allowsCloudAI
     updated.updatedAt = .now
     guard updateMeeting(meetingID, change: { $0.privacy = updated }) else { return false }
     guard await persistNowAsync(meetings, forKey: StorageKey.meetings) else {

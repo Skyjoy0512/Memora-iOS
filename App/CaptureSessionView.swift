@@ -4,6 +4,7 @@ struct CaptureSessionView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @Environment(\.scenePhase) private var scenePhase
   @State private var section = CaptureSection.notes
   @State private var isDiscardConfirmationPresented = false
   @State private var selectedDetent = PresentationDetent.fraction(0.5)
@@ -70,6 +71,18 @@ struct CaptureSessionView: View {
           .padding(.horizontal, MemoraSpacing.xl)
           .padding(.top, MemoraSpacing.md)
           .accessibilityLabel(message)
+      }
+
+      Picker("録音モード", selection: $model.recordingPowerMode) {
+        ForEach(RecordingPowerMode.allCases) { Text($0.title).tag($0) }
+      }
+      .pickerStyle(.segmented)
+      .padding(.horizontal, MemoraSpacing.xl)
+      .padding(.top, MemoraSpacing.md)
+      if model.recordingConservesResources {
+        Text("省電力動作中：ライブ認識と音量アニメーションを休止。録音品質は変わりません。")
+          .font(.caption).foregroundStyle(.secondary)
+          .padding(.horizontal, MemoraSpacing.xl)
       }
 
       MemoraSectionPicker(items: CaptureSection.allCases, selection: $section, title: \.title)
@@ -161,7 +174,7 @@ struct CaptureSessionView: View {
       .padding(.bottom, MemoraSpacing.lg)
     }
     .presentationBackground {
-      sheetBackground
+      RecordingSheetBackground()
     }
     // Extra-large text needs more room than the half sheet gives, and the
     // keyboard needs the tall sheet so the field it is editing stays visible.
@@ -186,11 +199,13 @@ struct CaptureSessionView: View {
       }
       // The glow is the only reader of the level, so sampling runs only while
       // this sheet is on screen. Recording itself is unaffected.
-      model.levelMeter.isActive = true
+      model.setRecordingMeterVisible(!reduceMotion && scenePhase == .active)
     }
     .onDisappear {
-      model.levelMeter.isActive = false
+      model.setRecordingMeterVisible(false)
     }
+    .onChange(of: scenePhase) { _, phase in model.setRecordingMeterVisible(!reduceMotion && phase == .active) }
+    .onChange(of: reduceMotion) { _, reduced in model.setRecordingMeterVisible(!reduced && scenePhase == .active) }
     .presentationDragIndicator(.visible)
     .presentationCornerRadius(38)
     .interactiveDismissDisabled()
@@ -208,19 +223,6 @@ struct CaptureSessionView: View {
     }
   }
 
-  /// A Liquid Glass surface with the live voice glow gathering at the bottom.
-  private var sheetBackground: some View {
-    ZStack(alignment: .bottom) {
-      Rectangle()
-        .fill(.regularMaterial)
-
-      VoiceGlow(
-        level: model.levelMeter.level,
-        isActive: model.isRecording && !model.isRecordingPaused
-      )
-      .frame(height: 300)
-    }
-  }
 }
 
 private enum CaptureSection: String, CaseIterable, Identifiable {

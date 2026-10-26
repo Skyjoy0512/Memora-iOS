@@ -7,6 +7,7 @@ import tempfile
 
 os.chdir(Path(__file__).resolve().parents[2])
 subprocess.run(['python3', 'tools/checks/run-performance-checks.py'], check=True)
+subprocess.run(['python3', '-B', 'tools/checks/run-audio-resource-checks.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-local-store-checks.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-meeting-persistence-performance-checks.py'], check=True)
 subprocess.run(['bash', 'tools/checks/run-tool-integration-checks.sh'], check=True)

@@ -41,7 +41,7 @@ struct ProjectChatView: View {
             }
             ProjectChatStreamingReply(threadID: threadID)
             if let stage = model.projectChatStages[threadID] {
-              ConversationStatusLine(label: stage, since: thread.messages.last?.createdAt)
+              ProjectChatWaitingStatus(threadID: threadID, stage: stage)
               Button("回答を停止", icon: .stopFill) { model.cancelProjectChat(threadID) }
                 .frame(minHeight: 44).tint(MemoraPalette.textPrimary)
             } else if let failure = thread.lastFailure {

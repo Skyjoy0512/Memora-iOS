@@ -346,7 +346,7 @@ struct AIComposerBar: View {
         .font(.system(size: 20, weight: .semibold))
         .foregroundStyle(onStop != nil || canSend || isBusy || speechInput.isListening
           ? MemoraPalette.actionLabel : MemoraPalette.textPrimary)
-        .symbolEffect(.pulse, isActive: !reduceMotion && (speechInput.isListening || isBusy))
+        .symbolEffect(.pulse, isActive: !reduceMotion && speechInput.isListening)
         .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
         .frame(width: 36, height: 36)
         .background(Circle().fill(onStop != nil || canSend || isBusy || speechInput.isListening

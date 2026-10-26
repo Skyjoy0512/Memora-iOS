@@ -1,25 +1,13 @@
 import SwiftUI
 
-/// Long-running work, said plainly: a pixel loader, what is happening, and
-/// how long it has really been running. The timer is shown only when the real
-/// start time is known.
+/// Long-running work shares the conversation's quiet, text-only indicator.
 struct WorkingStatus: View {
   var label: String
   var startedAt: Date?
   var pattern: PixelLoader.Pattern = .drive
 
   var body: some View {
-    HStack(spacing: 10) {
-      PixelLoader(pattern: pattern)
-      ShimmerText(text: label)
-        .font(.subheadline.weight(.medium))
-      if let startedAt {
-        ElapsedText(since: startedAt)
-          .font(.caption.monospacedDigit())
-          .foregroundStyle(.tertiary)
-      }
-    }
-    .accessibilityElement(children: .combine)
+    ConversationStatusLine(label: label)
   }
 }
 
@@ -28,7 +16,7 @@ struct ElapsedText: View {
   var since: Date
 
   var body: some View {
-    TimelineView(.periodic(from: since, by: 0.1)) { context in
+    TimelineView(.periodic(from: since, by: 1)) { context in
       Text(Self.format(context.date.timeIntervalSince(since)))
     }
   }

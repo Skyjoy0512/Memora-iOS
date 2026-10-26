@@ -16,6 +16,11 @@ struct LLMSelection: Hashable, Sendable, Codable {
   var keychainAccount: String { credentialAccount ?? provider.keychainAccount }
   var isMemoraIntelligence: Bool { credentialAccount == MemoraIntelligence.tokenAccount }
 
+  var summaryDestination: String {
+    let name = isMemoraIntelligence ? "Memora Intelligence" : provider.label
+    return "\(name) · \(baseURL.host ?? baseURL.absoluteString)"
+  }
+
   /// The name shown in an answer's details: the suggested name when the id is
   /// one of the suggestions, otherwise the id itself.
   var modelLabel: String {

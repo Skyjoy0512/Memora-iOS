@@ -18,7 +18,7 @@ export default {
       engine: mobile({ platform: 'ios', device: 'iPhone 18 Pro Max', settle: 300, transition: 700 }),
       app: {
         bundleId: 'app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4',
-        appPath:
+        appPath: process.env.MEMORA_E2E_APP_PATH ??
           '/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/DerivedData/Build/Products/Debug-iphonesimulator/Memora.app',
       },
     },

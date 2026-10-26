@@ -5,6 +5,7 @@ python3 tools/checks/test_design_tokens.py
 python3 tools/checks/test_settings_presentation.py
 python3 tools/checks/test_experience_presentation.py
 python3 tools/checks/test_chat_surface_presentation.py
+python3 -B tools/checks/test_waiting_audio_presentation.py
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-design-checks.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 swiftc Shared/MemoraIcon.swift App/SettingsCategory.swift App/MemoraIconMetrics.swift \

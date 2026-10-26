@@ -4,31 +4,33 @@ import SwiftUI
 /// Motion keeps the text still.
 struct ShimmerText: View {
   var text: String
-  @State private var phase: CGFloat = 0
+  var isActive = true
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.scenePhase) private var scenePhase
 
   var body: some View {
-    Text(text)
-      .foregroundStyle(.tertiary)
-      .overlay {
-        if !reduceMotion {
-          Text(text)
-            .accessibilityHidden(true)
-            .foregroundStyle(.primary)
-            .mask {
-              GeometryReader { proxy in
-                LinearGradient(colors: [.clear, .white, .clear], startPoint: .leading, endPoint: .trailing)
-                  .frame(width: proxy.size.width * 0.5)
-                  .offset(x: (phase * 2 - 0.5) * proxy.size.width)
+    if isActive && !reduceMotion && scenePhase == .active {
+      TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+        let phase = context.date.timeIntervalSinceReferenceDate
+          .truncatingRemainder(dividingBy: MemoraLoadingPolicy.shimmerSeconds)
+          / MemoraLoadingPolicy.shimmerSeconds
+        Text(text)
+          .foregroundStyle(.secondary)
+          .overlay {
+            Text(text)
+              .accessibilityHidden(true)
+              .foregroundStyle(.primary)
+              .mask {
+                GeometryReader { proxy in
+                  LinearGradient(colors: [.clear, .white.opacity(0.65), .clear], startPoint: .leading, endPoint: .trailing)
+                    .frame(width: proxy.size.width * 0.5)
+                    .offset(x: (phase * 2 - 0.5) * proxy.size.width)
+                }
               }
-            }
-        }
+          }
       }
-      .onAppear {
-        guard !reduceMotion else { return }
-        withAnimation(.linear(duration: MemoraLoadingPolicy.shimmerSeconds).repeatForever(autoreverses: false)) {
-          phase = 1
-        }
-      }
+    } else {
+      Text(text).foregroundStyle(.secondary)
+    }
   }
 }

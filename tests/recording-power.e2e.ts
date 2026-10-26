@@ -1,0 +1,53 @@
+import { randomUUID } from 'node:crypto';
+import { existsSync, statSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { test } from '@e2e-dev/mobile';
+import { expect } from 'e2e';
+import { launchMemora, tapControl } from './ui-helpers';
+import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
+
+test('power mode changes and pause preserve the AAC recording and SQLite draft', { timeout: 240_000 }, async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  const marker = 'recording-power-' + randomUUID();
+  await device.openLink('memora://new-memo');
+  await screen.getByRole('textbox', { name: 'メモのタイトル', exact: true }).fill(marker);
+  await tapControl(screen.getByRole('button', { name: '追加', exact: true }));
+  await expect(screen.getByText('ライフログを追加', { exact: true })).not.toBeVisible();
+  const identity = await device.foregroundApp();
+  const database = isolatedDatabase(marker, identity.bundleId!);
+  await device.setPermission('microphone', 'grant');
+  await app.restart();
+  await tapControl(screen.getByLabel('新規作成').first());
+  await tapControl(screen.getByRole('button', { name: '録音を開始', exact: true }));
+  await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).toBeVisible();
+  const draft = () => {
+    const value = sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraRecordingDraft';");
+    return value ? JSON.parse(value) : null;
+  };
+  const firstDraft = draft();
+  expect(firstDraft?.fileName).toMatch(/\.m4a$/);
+  const root = dirname(dirname(dirname(dirname(database))));
+  const audio = join(root, 'Documents', 'Recordings', firstDraft.fileName.split('/').pop());
+  expect(existsSync(audio)).toBe(true);
+  await tapControl(screen.getByRole('tab', { name: '省電力', exact: true }));
+  await expect(screen.getByText('省電力動作中：ライブ認識と音量アニメーションを休止。録音品質は変わりません。', { exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '一時停止', exact: true }));
+  await expect(screen.getByRole('button', { name: '再開', exact: true })).toBeVisible();
+  expect(draft().fileName).toBe(firstDraft.fileName);
+  await tapControl(screen.getByRole('button', { name: '再開', exact: true }));
+  await expect(screen.getByRole('button', { name: '一時停止', exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '録音画面を閉じる', exact: true }));
+  expect(draft().fileName).toBe(firstDraft.fileName);
+  await tapControl(screen.getByRole('button', { name: /録音を続けています/ }).first());
+  await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).toBeVisible();
+  await app.screenshot('recording-low-power-resumed');
+  await tapControl(screen.getByRole('button', { name: '終了して保存', exact: true }));
+  await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).not.toBeVisible();
+  await expect.poll(async () => {
+    const value = sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';");
+    return value !== '' && JSON.parse(value).some((record: any) => record.id === firstDraft.id);
+  }).toBe(true);
+  expect(existsSync(audio)).toBe(true);
+  expect(statSync(audio).size).toBeGreaterThan(0);
+  expect(draft()).toBeNull();
+});

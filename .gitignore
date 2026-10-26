@@ -50,3 +50,4 @@ build-*/
 .e2e/regression/
 .e2e/accessibility/
 .e2e/selection-polish-workspace/
+.e2e/waiting-*/

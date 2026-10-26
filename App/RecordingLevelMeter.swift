@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 /// The microphone level the glow follows. It is kept apart from the model so the
-/// ~22 updates a second reach only the view that draws the glow, instead of
+/// 10 updates a second reach only the view that draws the glow, instead of
 /// every screen observing the model.
 @Observable
 final class RecordingLevelMeter {
@@ -13,10 +13,11 @@ final class RecordingLevelMeter {
 
   func update(from target: Double) {
     let rate = target > level ? 0.6 : 0.12
-    level += (target - level) * rate
+    let next = level + (target - level) * rate
+    if abs(next - level) >= 0.002 { level = next }
   }
 
   func reset() {
-    level = 0
+    if level != 0 { level = 0 }
   }
 }

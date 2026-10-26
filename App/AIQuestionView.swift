@@ -137,7 +137,7 @@ struct AIQuestionView: View {
           .foregroundStyle(.secondary)
       }
 
-      if isAnswering {
+      if isAnswering && (answer ?? "").isEmpty {
         ConversationStatusLine(label: stage, since: startedAt).transition(.opacity)
       }
     }

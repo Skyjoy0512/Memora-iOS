@@ -32,6 +32,7 @@ extension MemoraModel {
     }
 
     updateLiveActivity()
+    refreshRecordingResources()
   }
 
   func startCapture(event: UpcomingMeeting? = nil, spaceID: UUID? = nil) async {
@@ -87,6 +88,7 @@ extension MemoraModel {
       isRecording = true
       isCapturePresented = true
       levelMeter.reset()
+      realtimeTranscriber.resetHistory()
       if let recordingURL, let fileName = MediaFiles.reference(for: recordingURL) {
         recordingDraft = RecordingDraft(
           id: UUID(),
@@ -107,9 +109,8 @@ extension MemoraModel {
         }
       }
       startRecordingTicker()
-      startLevelTicker()
       startLiveActivity()
-      realtimeTranscriber.start()
+      refreshRecordingResources()
       announce("録音を開始しました")
     } catch {
       recordingErrorMessage = error.localizedDescription
@@ -301,7 +302,7 @@ extension MemoraModel {
       self.recordingPausedAt = nil
       isRecordingPaused = false
       recordingInterruptionMessage = nil
-      realtimeTranscriber.start()
+      // Resource policy below decides whether live recognition should resume.
     } else {
       realtimeTranscriber.stop()
       recorder.pause()
@@ -309,36 +310,31 @@ extension MemoraModel {
       isRecordingPaused = true
     }
     updateLiveActivity()
+    refreshRecordingResources()
   }
 
-  private func startRecordingTicker() {
+  func startRecordingTicker() {
     recordingTicker?.cancel()
     recordingTicker = Task { [weak self] in
       while !Task.isCancelled {
         try? await Task.sleep(for: .seconds(1))
         guard !Task.isCancelled, let self, self.isRecording else { return }
         if let duration = self.recorder.recordedDuration {
-          self.recordingElapsed = duration
+          if self.recordingElapsed != duration { self.recordingElapsed = duration }
         }
       }
     }
   }
 
-  /// Samples the recorder at ~22Hz so the glow can follow the voice.
-  private func startLevelTicker() {
+  /// Created only while a visible, active meter needs samples.
+  func startLevelTicker() {
     levelTicker?.cancel()
     levelTicker = Task { [weak self] in
       while !Task.isCancelled {
-        try? await Task.sleep(for: .milliseconds(45))
-        guard let self else { return }
-        // Nothing shows the glow unless a screen asks for it, and recording
-        // itself does not depend on the level being sampled.
-        if self.levelMeter.isActive {
-          self.levelMeter.update(from: self.isRecordingPaused ? 0 : self.recorder.level())
-          try? await Task.sleep(for: .milliseconds(45))
-        } else {
-          try? await Task.sleep(for: .milliseconds(300))
-        }
+        do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
+        guard !Task.isCancelled, let self, self.isRecording, !self.isRecordingPaused,
+              self.levelMeter.isActive, self.recordingIsForeground else { return }
+        self.levelMeter.update(from: self.recorder.level())
       }
     }
   }

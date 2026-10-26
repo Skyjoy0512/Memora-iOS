@@ -93,6 +93,8 @@ private enum SpeechAnalyzerTranscriber {
   }
 
   static func transcribe(fileURL: URL, locale: Locale, vocabulary: [String]) async throws -> Outcome {
+    let interval = AudioProcessingDiagnostics.signposter.beginInterval("SavedAudioTranscription")
+    defer { AudioProcessingDiagnostics.signposter.endInterval("SavedAudioTranscription", interval) }
     guard SpeechTranscriber.isAvailable,
           let supportedLocale = await SpeechTranscriber.supportedLocale(equivalentTo: locale) else {
       throw Failure.unsupported
@@ -109,11 +111,13 @@ private enum SpeechAnalyzerTranscriber {
       reportingOptions: [],
       attributeOptions: [.audioTimeRange]
     )
+    try Task.checkCancellation()
 
     // Pull the model down once, then it is reused.
     if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
       try await request.downloadAndInstall()
     }
+    try Task.checkCancellation()
 
     let audioFile = try AVAudioFile(forReading: fileURL)
     let analyzer = SpeechAnalyzer(modules: [transcriber])
