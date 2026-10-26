@@ -14,7 +14,7 @@
   ChatGPTの非公開仕様との一致や商標・ロゴの模倣は目標にしない。
 - 対象はiPhone / iOS 26以上。iOS 27.1 SDKにないAPIを使わない。
 
-## 現行コードから確認したこと
+## 開始時のコードから確認したこと
 
 | 領域 | 実装 | 改善・確認すべき境界 |
 | --- | --- | --- |
@@ -33,7 +33,7 @@
 | 0 | 現状と非対象を固定、既存資料チェック・iOSビルド | 完了 |
 | 1 | 標準スライドの共通組版、長文の改ページ、フラットなプレビュー、PDF/PPTXの同じページ構成。文字保持・境界・日本語/絵文字を検査 | 完了（Office最終描画は未検証） |
 | 2 | PPTX発表者ノート、XML/relationship/編集可能なテキストを独立検査、既存資料・承認の回帰とiOSプレビュー | 完了（実モデル/Office描画/実機は未検証） |
-| 3 | OSSの採否、固定費を追加しないバックエンド境界、次段の優先順位と未検証項目を記録 | 調査中 |
+| 3 | OSSの採否、固定費を追加しないバックエンド境界、Residentの実行判断と説明、次段の優先順位・検証結果を記録 | 完了（設計の本番導入は対象外） |
 
 各フェーズ末に検証結果を記録しコミットする。本番APIを使う品質評価や
 実機検証は、ローカルfixture・Simulator・コンパイルの成功と区別する。
@@ -103,7 +103,7 @@ Trigger.dev / VPS / 常時コンテナの構築は次回指示まで保留。
 - 変更前 `run-artifact-checks.sh`: 成功。DOCX/PPTX・差込・実SQLite再読込。
 - 変更前 `bitrig preview -platform iOS`: 成功、既存警告11件。
   ログ `2026-10-26T23-09-39-82b5ec31.log`。
-- 変更後の結果はフェーズ完了時に追記する。
+- 変更後の結果は以下。全体の未完了項目は「次段の評価」を参照。
 
 ### フェーズ1
 
@@ -144,4 +144,29 @@ Trigger.dev / VPS / 常時コンテナの構築は次回指示まで保留。
   [Darkとノート](comprehensive-improvement/slides-notes-dark.png)、
   [最大文字](comprehensive-improvement/slides-largest-text-dark.png)。
   VoiceOverの実読み上げ、実機・実モデルの品質、Office最終描画は未検証。
-- 共通6 host suiteの再実行は進行中。最終結果は次フェーズで記録する。
+- 共通6 host suiteの最終結果は次フェーズに記録。
+
+### フェーズ3
+
+- 朝・週次の実行判断をResidentTrigger.shouldRunへ集約。既存の実行可能時間・
+  重複抑止を維持し、OSのwake-upと実行判断を分離。未使用の重複上限定数を削除。
+  ResidentLimitsChecksで開始直前/直後、期限ちょうど、既実行/未来のlastRunAt、
+  夏時間開始/終了、会議トリガーを時刻実行しない境界を検査して成功。
+  BGTaskSchedulerの登録・会議終了トリガー・実行上限・BYOK条件は維持。
+- 常駐画面の「次に開いたときに動く」という過剰な説明を修正し、
+  24時間/定刻の保証がなく、許容時間を過ぎた分は見送る実動作を説明。
+- `bitrig test -list -json`: 78。この標準Project.json構成にはXcodeのテストターゲットがない。
+  ビルド失敗やテスト成功とは扱わず、既存の本番コードhost suiteで検証する。
+- 全画面刷新・実モデルの生成品質・DB保存の部分更新・チーム/Intelligenceのサーバー実装は
+  未完了。今回は資料と既存常駐の一段階目であり、全面的な品質保証ではない。
+- 共通host checks: 6/6成功、全exit code 0。
+  next-generation / design-refresh / background-summary / summary-reliability /
+  composer-layout / optimization。元ログはWorkspaceSSDの
+  `Development/Agents/Codex/tmp/memora-quality-asjtqn0m/`。
+  [結果一覧](comprehensive-improvement/validation.json)。
+- この実行開始後に分離したResidentの最新コードは、ResidentLimitsChecksを単独で再実行して成功。
+  全suite成功だけを根拠に、OSのバックグラウンド実行や実API成功を主張しない。
+- 最終 `bitrig preview -platform iOS`: 成功、既存警告11件。
+  ログ `2026-10-26T23-27-35-eb19cb08.log`。
+  常駐画面の説明、既存の朝/会議後/週次の設定と追加操作が残ることをSimulatorで確認。
+  実行・課金・認証・契約・デプロイ操作は追加していない。

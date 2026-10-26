@@ -16,6 +16,13 @@ enum ResidentTrigger: String, Codable, CaseIterable, Identifiable {
     }
   }
 
+  /// This policy is independent of BGTaskScheduler: an OS wake-up is an
+  /// opportunity to run, never proof that a scheduled time was delivered.
+  func shouldRun(at now: Date, lastRunAt: Date?, calendar: Calendar = .current) -> Bool {
+    guard let due = lastDue(before: now, calendar: calendar) else { return false }
+    return now.timeIntervalSince(due) < lateWindow && (lastRunAt ?? .distantPast) < due
+  }
+
   /// The most recent time this trigger fell due, before `now`; nil for one
   /// that runs on an event rather than a clock.
   func lastDue(before now: Date, calendar: Calendar = .current) -> Date? {

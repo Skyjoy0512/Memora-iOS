@@ -9,10 +9,6 @@ import UserNotifications
 // or the on-device model, and they change nothing on their own.
 extension MemoraModel {
   static let residentRefreshTaskID = "app.memora.residents.refresh"
-  /// Enough to search, read a few records and write, within the short time
-  /// the system gives a background refresh.
-  private static let residentMaxTurns = 8
-
   /// The model a resident agent would run on, or nil when there is no BYOK
   /// cloud model with a key.
   var residentLLM: LLMSelection? {
@@ -45,9 +41,7 @@ extension MemoraModel {
     guard currentTeamID == nil, residentLLM != nil, !isRestoring, !isStoreProtected else { return }
     let now = Date.now
     for agent in residentAgents where agent.isEnabled {
-      guard let due = agent.trigger.lastDue(before: now),
-            now.timeIntervalSince(due) < agent.trigger.lateWindow,
-            (agent.lastRunAt ?? .distantPast) < due else { continue }
+      guard agent.trigger.shouldRun(at: now, lastRunAt: agent.lastRunAt) else { continue }
       guard !Task.isCancelled else { return }
       await runResident(agent)
     }

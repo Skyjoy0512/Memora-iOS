@@ -1,5 +1,19 @@
 # 品質チェック
 
+## 標準PowerPointとスライド組版
+
+`bash tools/checks/run-slide-checks.sh` はCoreTextを使う本番のSlidePageLayoutと
+PPTXWriterを実行し、9ケースで文字順序・欠落/重複・改ページ・日本語/結合文字・
+ノート・旧codecを確認する。Python標準ライブラリでZIP、XML、relationship先、
+文字列、枠、編集可能なテキストとnotesを独立検査する。外部APIと利用者の記録を使わない。
+共通next-generation → artifact suiteにも含まれる。
+
+Officeアプリのfont fallback、描画、編集・再保存、PDFの実ファイル描画は別の検証。
+`docs/COMPREHENSIVE_IMPROVEMENT.md`に今回の画面と検証境界を記録する。
+python-pptx 1.0.2による読込PoCは外部の隔離venvで実施し、アプリ/CIに依存を加えない。
+このProject.jsonプロジェクトにはXcodeのテストターゲットがないため、
+`bitrig test -list -json`は78を返す。host suiteの成功とXcodeテスト実行を混同しない。
+
 ## ローカル実行
 
 ```sh

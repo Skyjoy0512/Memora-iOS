@@ -12,7 +12,7 @@ struct ResidentAgentsView: View {
     MemoraForm {
       if !isAvailable {
         Section {
-          Label("常駐エージェントは、ご自身のAPIキー（BYOK）でクラウドのモデルを使うときだけ動きます。設定の「AI整理」でキーとモデルを登録してください。Memora Intelligenceや端末内のAIでは動きません。", icon: .infoCircle)
+          Label("常駐エージェントは、ご自身のAPIキー（BYOK）でクラウドのモデルを使うときだけ動きます。設定の「AIと要約」でキーとモデルを登録してください。Memora Intelligenceや端末内のAIでは動きません。", icon: .infoCircle)
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }
@@ -43,7 +43,7 @@ struct ResidentAgentsView: View {
           )
         }
       } footer: {
-        Text("オンにしたエージェントは、決まった時刻や会議の要約ができたときに記録を読み、結果をAsk AIの会話に投稿します。常駐中は読むだけで、タスクの追加やメールの下書きは「提案」として出し、タップしたときに承認つきで実行します。バックグラウンドで動く時刻はiOSが決めるため、予定より遅れることがあります。その場合は、次にアプリを開いたときに動きます。")
+        Text("記録を読み、結果をAsk AIに投稿します。変更は提案として表示し、承認後に実行します。実行時刻と時間はiOSが決めます。24時間動作や定刻の実行は保証されず、許容時間を過ぎた実行は見送ります。")
       }
     }
     .navigationTitle("常駐エージェント")
