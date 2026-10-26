@@ -208,11 +208,11 @@ enum AgentTool: String, CaseIterable {
         "title": string("スライド資料のタイトル"),
         "slides": [
           "type": "array",
-          "description": "スライド。1枚の要点は3〜6個、各30字程度まで",
+          "description": "1枚につき一つの話題。要点は3〜6個、各30字程度まで。根拠や詳しい補足はnotesへ",
           "items": object([
             "title": string("スライドの見出し"),
             "bullets": ["type": "array", "items": ["type": "string"], "description": "要点"],
-            "notes": string("話す内容のメモ（任意）")
+            "notes": string("発表時の補足と、確認した記録の資料名・参照箇所（任意）。PowerPointの発表者ノートへ出力。未確認の出典を作らない")
           ], required: ["title", "bullets"])
         ],
         "project_id": string("入れるプロジェクトのid（任意）"),

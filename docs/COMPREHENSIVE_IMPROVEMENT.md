@@ -32,7 +32,7 @@
 | --- | --- | --- |
 | 0 | 現状と非対象を固定、既存資料チェック・iOSビルド | 完了 |
 | 1 | 標準スライドの共通組版、長文の改ページ、フラットなプレビュー、PDF/PPTXの同じページ構成。文字保持・境界・日本語/絵文字を検査 | 完了（Office最終描画は未検証） |
-| 2 | PPTX発表者ノート、XML/relationship/編集可能なテキストを独立検査、既存資料・承認の回帰とiOSプレビュー | 未実装 |
+| 2 | PPTX発表者ノート、XML/relationship/編集可能なテキストを独立検査、既存資料・承認の回帰とiOSプレビュー | 完了（実モデル/Office描画/実機は未検証） |
 | 3 | OSSの採否、固定費を追加しないバックエンド境界、次段の優先順位と未検証項目を記録 | 調査中 |
 
 各フェーズ末に検証結果を記録しコミットする。本番APIを使う品質評価や
@@ -53,6 +53,12 @@
 ライセンスが許諾していても脆弱性がない証拠にはならない。
 今回、全依存のCVE監査・更新追従性の保証は行っていない。
 新規OSSのコード転載・パッケージ追加は行わない。
+
+公式GitHub APIで両候補の非archive状態を確認。取得した`pushed_at`は
+PptxGenJSが2025-11-28、python-pptxが2024-08-07であり、直近の活発な保守を
+この値から保証できない。将来採用時にrelease、未解決issue、advisoryを再評価する。
+python-pptx 1.0.2はDevSSD上の隔離venvで**読込互換性検査だけ**に利用した。
+アプリ・Project.json・CIの依存へは追加していない。
 
 ## バックエンドの境界（設計のみ）
 
@@ -118,3 +124,24 @@ Trigger.dev / VPS / 常時コンテナの構築は次回指示まで保留。
 - 最終iOSプレビュー `2026-10-26T23-18-08-724d3b89.log`: 成功、既存警告11件。
   iPhone 18 Pro Max / iOS 27.1で診断画面からproduction部品の表紙・本文・
   5ページ構成とテキスト/ノートの入口をLightで目視。Dark/最大文字は次フェーズで確認。
+
+### フェーズ2
+
+- PPTXにnotesMaster / notesSlide / content type / 双方向relationshipを追加。
+  1論理スライドにつき最初の派生ページだけにノートを保存する。
+  ノートなしならnotes部品を作らず、PDF本文にノートを混ぜない。
+- AIへの指示で、1枚1話題、短い本文、詳しい補足・確認済み出典はノートに分ける。
+  未確認の数字・URLを作らない。tool許可・承認・保存形式は変更していない。
+- `run-artifact-checks.sh`: 成功。9ケース・59ページ・3ノート。
+  独立ZIP/XML検査でnotesの本文/改行/空行/引用記号と関連先、XML禁止文字の除外を確認。
+- python-pptx 1.0.2で生成ファイル59枚を独立読込し、全見出しと3ノートの一致を確認。
+  これは相互運用の読込PoCであり、Officeアプリでの描画・編集・再保存検証ではない。
+- `bitrig preview -platform iOS`: 成功、既存警告11件。
+  ログ `2026-10-26T23-22-08-d57dde2d.log`。
+- iPhone 18 Pro Max / iOS 27.1でテキストの展開、ノートの展開、Dark、
+  最大アクセシビリティ文字サイズでの本文表示を目視。確認後はLight/標準文字へ復帰。
+  [Light](comprehensive-improvement/slides-reading-light.png)、
+  [Darkとノート](comprehensive-improvement/slides-notes-dark.png)、
+  [最大文字](comprehensive-improvement/slides-largest-text-dark.png)。
+  VoiceOverの実読み上げ、実機・実モデルの品質、Office最終描画は未検証。
+- 共通6 host suiteの再実行は進行中。最終結果は次フェーズで記録する。

@@ -13,19 +13,28 @@ enum PPTXWriter {
   static func data(for document: MemoraDocument) -> Data {
     var archive = ZipArchive()
     let slides = SlidePageLayout.pages(for: document)
+    let noteNumbers = slides.enumerated().compactMap { $0.element.notes.isEmpty ? nil : $0.offset + 1 }
 
-    archive.add("[Content_Types].xml", text: contentTypes(slideCount: slides.count))
+    archive.add("[Content_Types].xml", text: contentTypes(slideCount: slides.count, noteNumbers: noteNumbers))
     archive.add("_rels/.rels", text: rootRelationships)
-    archive.add("ppt/presentation.xml", text: presentation(slideCount: slides.count))
-    archive.add("ppt/_rels/presentation.xml.rels", text: presentationRelationships(slideCount: slides.count))
+    archive.add("ppt/presentation.xml", text: presentation(slideCount: slides.count, hasNotes: !noteNumbers.isEmpty))
+    archive.add("ppt/_rels/presentation.xml.rels", text: presentationRelationships(slideCount: slides.count, hasNotes: !noteNumbers.isEmpty))
     archive.add("ppt/slideMasters/slideMaster1.xml", text: slideMaster)
     archive.add("ppt/slideMasters/_rels/slideMaster1.xml.rels", text: slideMasterRelationships)
     archive.add("ppt/slideLayouts/slideLayout1.xml", text: slideLayout)
     archive.add("ppt/slideLayouts/_rels/slideLayout1.xml.rels", text: slideLayoutRelationships)
     archive.add("ppt/theme/theme1.xml", text: theme)
+    if !noteNumbers.isEmpty {
+      archive.add("ppt/notesMasters/notesMaster1.xml", text: notesMaster)
+      archive.add("ppt/notesMasters/_rels/notesMaster1.xml.rels", text: notesMasterRelationships)
+    }
     for (index, slide) in slides.enumerated() {
       archive.add("ppt/slides/slide\(index + 1).xml", text: slideXML(slide))
-      archive.add("ppt/slides/_rels/slide\(index + 1).xml.rels", text: slideRelationships)
+      archive.add("ppt/slides/_rels/slide\(index + 1).xml.rels", text: slideRelationships(number: index + 1, hasNotes: !slide.notes.isEmpty))
+      if !slide.notes.isEmpty {
+        archive.add("ppt/notesSlides/notesSlide\(index + 1).xml", text: notesXML(slide.notes))
+        archive.add("ppt/notesSlides/_rels/notesSlide\(index + 1).xml.rels", text: notesRelationships(number: index + 1))
+      }
     }
     return archive.data()
   }
@@ -44,27 +53,33 @@ enum PPTXWriter {
   private static let namespaces = #"xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main""#
   private static let relationshipBase = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
-  private static func contentTypes(slideCount: Int) -> String {
+  private static func contentTypes(slideCount: Int, noteNumbers: [Int]) -> String {
     let slides = (1...slideCount).map {
       #"<Override PartName="/ppt/slides/slide\#($0).xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>"#
     }.joined()
-    return header + #"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>"# + slides + "</Types>"
+    let notes = noteNumbers.map {
+      #"<Override PartName="/ppt/notesSlides/notesSlide\#($0).xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>"#
+    }.joined()
+    let master = noteNumbers.isEmpty ? "" : #"<Override PartName="/ppt/notesMasters/notesMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"/>"#
+    return header + #"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>"# + slides + notes + master + "</Types>"
   }
 
   private static var rootRelationships: String {
     header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/officeDocument" Target="ppt/presentation.xml"/></Relationships>"#
   }
 
-  private static func presentation(slideCount: Int) -> String {
+  private static func presentation(slideCount: Int, hasNotes: Bool) -> String {
     let ids = (1...slideCount).map { #"<p:sldId id="\#(255 + $0)" r:id="rId\#($0 + 2)"/>"# }.joined()
-    return header + #"<p:presentation \#(namespaces)><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>\#(ids)</p:sldIdLst><p:sldSz cx="\#(slideWidth)" cy="\#(slideHeight)"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>"#
+    let notes = hasNotes ? #"<p:notesMasterIdLst><p:notesMasterId r:id="rIdNotesMaster"/></p:notesMasterIdLst>"# : ""
+    return header + #"<p:presentation \#(namespaces)><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>\#(notes)<p:sldIdLst>\#(ids)</p:sldIdLst><p:sldSz cx="\#(slideWidth)" cy="\#(slideHeight)"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>"#
   }
 
-  private static func presentationRelationships(slideCount: Int) -> String {
+  private static func presentationRelationships(slideCount: Int, hasNotes: Bool) -> String {
     let slides = (1...slideCount).map {
       #"<Relationship Id="rId\#($0 + 2)" Type="\#(relationshipBase)/slide" Target="slides/slide\#($0).xml"/>"#
     }.joined()
-    return header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/slideMaster" Target="slideMasters/slideMaster1.xml"/><Relationship Id="rId2" Type="\#(relationshipBase)/theme" Target="theme/theme1.xml"/>"# + slides + "</Relationships>"
+    let notes = hasNotes ? #"<Relationship Id="rIdNotesMaster" Type="\#(relationshipBase)/notesMaster" Target="notesMasters/notesMaster1.xml"/>"# : ""
+    return header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/slideMaster" Target="slideMasters/slideMaster1.xml"/><Relationship Id="rId2" Type="\#(relationshipBase)/theme" Target="theme/theme1.xml"/>"# + slides + notes + "</Relationships>"
   }
 
   private static let emptyTree = #"<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>"#
@@ -85,8 +100,31 @@ enum PPTXWriter {
     header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>"#
   }
 
-  private static var slideRelationships: String {
-    header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>"#
+  private static func slideRelationships(number: Int, hasNotes: Bool) -> String {
+    let notes = hasNotes ? #"<Relationship Id="rIdNotes" Type="\#(relationshipBase)/notesSlide" Target="../notesSlides/notesSlide\#(number).xml"/>"# : ""
+    return header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>\#(notes)</Relationships>"#
+  }
+
+  private static var notesMaster: String {
+    header + #"<p:notesMaster \#(namespaces)><p:cSld><p:spTree>\#(emptyTree)</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:notesStyle><a:lvl1pPr><a:defRPr sz="1200"/></a:lvl1pPr></p:notesStyle></p:notesMaster>"#
+  }
+
+  private static var notesMasterRelationships: String {
+    header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/theme" Target="../theme/theme1.xml"/></Relationships>"#
+  }
+
+  private static func notesRelationships(number: Int) -> String {
+    header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/notesMaster" Target="../notesMasters/notesMaster1.xml"/><Relationship Id="rId2" Type="\#(relationshipBase)/slide" Target="../slides/slide\#(number).xml"/></Relationships>"#
+  }
+
+  private static func notesXML(_ notes: String) -> String {
+    let normalized = notes.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+    let paragraphs = normalized.components(separatedBy: "\n").map {
+      "<a:p>" + run($0, size: 12, bold: false, color: textHex) + "</a:p>"
+    }.joined()
+    let frame = CGRect(x: 54, y: 342, width: 432, height: 324)
+    let body = #"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Speaker notes"/><p:cNvSpPr txBox="1"/><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr><p:spPr>\#(transform(frame))</p:spPr><p:txBody><a:bodyPr/><a:lstStyle/>\#(paragraphs)</p:txBody></p:sp>"#
+    return header + #"<p:notes \#(namespaces)><p:cSld><p:spTree>\#(emptyTree)\#(body)</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:notes>"#
   }
 
   private static var theme: String {
@@ -94,8 +132,8 @@ enum PPTXWriter {
     let fill = #"<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>"#
     let colors = [
       ("dk1", textHex), ("lt1", "FFFFFF"), ("dk2", "3A3A3C"), ("lt2", "F2F2F7"),
-      ("accent1", accentHex), ("accent2", "30B0C7"), ("accent3", "34C759"), ("accent4", "FF9F0A"),
-      ("accent5", "AF52DE"), ("accent6", "FF375F"), ("hlink", accentHex), ("folHlink", "5E5CE6")
+      ("accent1", accentHex), ("accent2", "303030"), ("accent3", "5D5D5D"), ("accent4", "767676"),
+      ("accent5", "AFAFAF"), ("accent6", "E5E5E5"), ("hlink", accentHex), ("folHlink", "5D5D5D")
     ].map { #"<a:\#($0.0)><a:srgbClr val="\#($0.1)"/></a:\#($0.0)>"# }.joined()
     let lines = [6350, 12700, 19050].map { #"<a:ln w="\#($0)">\#(fill)</a:ln>"# }.joined()
     let effects = String(repeating: "<a:effectStyle><a:effectLst/></a:effectStyle>", count: 3)

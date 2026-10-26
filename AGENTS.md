@@ -240,7 +240,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   can receive bounded, locally prepared attachment excerpts on the global
   BYOK tool-calling path. Attachment content never grants permissions; writes
   still require approval. Project and record agents remain read-only. Slide
-  speaker notes are not written into the .pptx.
+  speaker notes are written into standard .pptx notes parts, once on the first
+  derived page of each logical slide. SlidePageLayout supplies the same derived
+  pages to screen, PDF and standard PowerPoint without changing saved slides.
+  Company-template artifacts retain their original formatting.
 - Readability: summaries, Ask AI answers and the agent write to
   `ReadabilityGuide` (rules adapted from yomiyasu and k16shikano's guide,
   credited in `docs/THIRD_PARTY.md`): `rules` for cloud prompts,

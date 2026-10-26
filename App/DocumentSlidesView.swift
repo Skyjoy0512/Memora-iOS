@@ -29,15 +29,23 @@ private struct DocumentSlidePageView: View {
         SlideReadingContent(page: page)
       } else {
         SlideView(page: page)
-        DisclosureGroup("テキストを読む") { SlideReadingContent(page: page) }
+        DisclosureGroup {
+          SlideReadingContent(page: page)
+        } label: {
+          Text("テキストを読む")
+            .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+        }
           .font(.subheadline)
       }
       if !page.notes.isEmpty {
-        DisclosureGroup("発表者ノート") {
+        DisclosureGroup {
           Text(page.notes)
             .memoraReadingText()
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+          Text("発表者ノート")
+            .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
         }
         .font(.subheadline)
       }

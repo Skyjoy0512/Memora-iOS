@@ -8,10 +8,11 @@ import Foundation
       DocumentSlide(title: "決まったこと", bullets: ["次回に確認", "予算は据え置き"], notes: "話す内容\n根拠: 資料1"),
       DocumentSlide(title: String(repeating: "長い見出し😀", count: 100), bullets: []),
       DocumentSlide(title: String(repeating: "長い本文見出し", count: 100), bullets: ["本文は欠かさない"]),
-      DocumentSlide(title: "長い要点", bullets: [String(repeating: "日本語、留保・条件を残す。👨‍👩‍👧‍👦e\u{301} ", count: 180), "後続の要点"]),
+      DocumentSlide(title: "長い要点", bullets: [String(repeating: "日本語、留保・条件を残す。👨‍👩‍👧‍👦e\u{301} ", count: 180), "後続の要点"], notes: "最初のページに一度だけ\n確認済み資料の補足 <&> \"引用\""),
       DocumentSlide(title: "明示改行", bullets: ["\n最初\r\n次の行\n\n末尾\n", "", "同じ内容", "同じ内容"]),
       DocumentSlide(title: "連続英数字", bullets: [String(repeating: "abcdefghijklmnopqrstuvwxyz0123456789", count: 120)]),
-      DocumentSlide(title: "多数の要点", bullets: (0..<100).map { "要点\($0): 条件付きで検討する" })
+      DocumentSlide(title: "多数の要点", bullets: (0..<100).map { "要点\($0): 条件付きで検討する" }),
+      DocumentSlide(title: "XMLと引用 <&> \"", bullets: ["先頭と末尾の空白  ", "\t引用 ' & < >"], notes: "\r\n根拠 <&>\r補足\n\n末尾\n")
     ]
     var total = 0
     for slide in samples {
@@ -63,9 +64,17 @@ import Foundation
     try data.write(to: root.appendingPathComponent("pagination.pptx"))
     let expected = SlidePageLayout.pages(for: doc).map { page in
       ["title": page.titleLines.map(SlidePageLayout.visibleLine),
-       "bullets": page.bullets.flatMap { $0.lines.map(SlidePageLayout.visibleLine) }]
+       "bullets": page.bullets.flatMap { $0.lines.map(SlidePageLayout.visibleLine) },
+       "notes": page.notes.isEmpty ? [] : page.notes.replacingOccurrences(of: "\r\n", with: "\n")
+        .replacingOccurrences(of: "\r", with: "\n").components(separatedBy: "\n")]
     }
     try JSONSerialization.data(withJSONObject: expected).write(to: root.appendingPathComponent("pages.json"))
+    let plain = MemoraDocument(title: "ノートなし", kind: .slides, slides: [samples[0]])
+    let plainArchive = try OfficeArchiveReader(data: PPTXWriter.data(for: plain))
+    precondition(!plainArchive.partNames.contains { $0.contains("notes") })
+    let controls = MemoraDocument(title: "無効文字", kind: .slides,
+      slides: [DocumentSlide(title: "前\0後\u{fffe}", bullets: ["本文\u{b}"], notes: "注\u{ffff}記")])
+    try PPTXWriter.data(for: controls).write(to: root.appendingPathComponent("controls.pptx"))
     print("SlidePageChecks: passed (\(samples.count) cases, \(total) derived pages; lossless ordered text, graphemes, intact points, notes, geometry, identity, old codec and real PPTX)")
   }
 }
