@@ -55,3 +55,15 @@
 
 - Phase A: 最新mainと上流の取得、既存実装/制約/検証境界を記録。
 - 開始時の6スイートとDebug previewを実行中。結果は後続コミットで記録する。
+
+### Phase B/Cの実装と実測
+
+- 構造化DocumentSlide、65型catalog、共通ベクター組版、SwiftUI/PDF/PPTX接続を追加。
+- 既存のcreate_slidesでlayout/content_jsonを受け取り、入力/版面検査後に従来の承認・保存を実施。
+- スライド単位の本文/表/数値/グラフ/ノート編集、複製/削除/並べ替え、SQLite下書きと保存競合検出。
+- 旧outline編集による構造化データ消失を拒否。会社原本とrevisionを保持。
+- 個別65型検査: 65/65成功。日本語PDF抽出、編集可能図形、数値/出典ノート、codec、決定性、不正入力。
+- Quick Lookの65枚の実thumbnail生成に成功。ただし目視確認は別の工程として継続。
+- 実画像でb24の線方向不整合を発見。custGeomの線からflipV/flipHつき標準connectorへ変更。
+- Debug preview (15:58:09): succeeded、既存の非推奨API等11 warnings。実機検証ではない。
+- 完成扱いしない項目はPRESENTATION_LAYOUT_MATRIX.mdに全65件と共に記載。

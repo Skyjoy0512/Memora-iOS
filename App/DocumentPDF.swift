@@ -14,6 +14,7 @@ enum DocumentPDF {
   private static let pageMargin: CGFloat = 48
 
   static func write(_ document: MemoraDocument) throws -> URL {
+    try PresentationExportCheck.validate(document)
     let url = FileManager.default.temporaryDirectory
       .appendingPathComponent("\(document.exportFileName)-\(UUID().uuidString.prefix(8)).pdf")
     switch document.kind {

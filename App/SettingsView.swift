@@ -51,6 +51,14 @@ struct SettingsView: View {
             }
           }
         }
+        Section {
+          NavigationLink {
+            OpenSourceLicensesView()
+          } label: {
+            SettingsLabel("オープンソースライセンス", icon: .docText)
+          }
+          .accessibilityIdentifier("settings.openSourceLicenses.open")
+        }
       }
       .memoraSettingsPage("設定")
       .navigationDestination(for: SettingsCategory.self) { category in

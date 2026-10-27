@@ -9,14 +9,23 @@ struct SlideView: View {
 
   var body: some View {
     GeometryReader { proxy in
-      canvas
+      Group {
+        if let elements = page.elements {
+          Canvas { context, _ in
+            context.withCGContext { cg in PresentationDrawing.draw(elements, in: cg) }
+          }
+          .background(.white)
+        } else {
+          canvas
+        }
+      }
         .frame(width: Layout.size.width, height: Layout.size.height, alignment: .topLeading)
         .scaleEffect(proxy.size.width / Layout.size.width, anchor: .topLeading)
     }
     .aspectRatio(16 / 9, contentMode: .fit)
     .background(Color.white)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(([page.title] + page.bullets.map(\.text)).joined(separator: "、"))
+    .accessibilityLabel(([page.title] + (page.readingText ?? page.bullets.map(\.text))).joined(separator: "、"))
   }
 
   private var canvas: some View {

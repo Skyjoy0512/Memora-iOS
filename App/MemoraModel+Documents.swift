@@ -60,4 +60,23 @@ extension MemoraModel {
       Task { await ProjectSourceFiles.shared.remove([name]) }
     }
   }
+
+  @discardableResult
+  func updateDocumentSlides(_ id: UUID, title: String, slides: [DocumentSlide], expectedUpdatedAt: Date) -> Bool {
+    guard !isRestoring, isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }),
+          documents[index].updatedAt == expectedUpdatedAt, documents[index].kind == .slides,
+          documents[index].hasValidRevisions, (documents[index].contentRevision ?? 0) < Int.max,
+          !slides.isEmpty, Set(slides.map(\.id)).count == slides.count else { return false }
+    var edited = documents[index]
+    edited.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    edited.slides = slides
+    guard edited != documents[index] else { return true }
+    edited.contentRevision = (edited.contentRevision ?? 0) + 1
+    edited.updatedAt = .now
+    var candidate = documents; candidate[index] = edited
+    guard persistBatch({ [(key: StorageKey.documents, data: try RecordStore.encoded(candidate))] }) else { return false }
+    documents = candidate
+    invalidateProjectEvidence([.document(id)])
+    return true
+  }
 }

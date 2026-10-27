@@ -6,10 +6,12 @@ struct DocumentSlide: Identifiable, Hashable, Codable, Sendable {
   var title: String
   var bullets: [String]
   var notes = ""
+  /// Absent in legacy documents and backups; those keep their original pagination.
+  var composition: SlideContent?
 
   /// A slide with a heading and nothing under it is drawn as a title slide.
   var isTitleSlide: Bool {
-    bullets.isEmpty
+    composition == nil && bullets.isEmpty
   }
 }
 
@@ -21,6 +23,7 @@ extension DocumentSlide {
       .map { slide in
         var lines = ["# \(slide.title)"]
         lines += slide.bullets.map { "- \($0)" }
+        lines += (slide.composition?.readingText ?? []).map { "- \($0)" }
         lines += slide.notes
           .split(separator: "\n", omittingEmptySubsequences: false)
           .filter { !$0.isEmpty }

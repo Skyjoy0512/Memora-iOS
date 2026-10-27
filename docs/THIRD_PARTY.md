@@ -1,5 +1,17 @@
 # 取り入れたオープンソース
 
+## 65型の資料生成仕様（2026-10-27）
+
+[consulting-pptx-skill](https://github.com/carnot-tech/jinba-consulting-pptx-skill)
+HEAD `e5f35e57e14d3998249a559c620a9286c95b4595`、MIT、Copyright (c) 2026 Carnot AI Inc.。
+65型の対応、構成→型→検査の手順、禁止表現/数値照合の考え方をSwiftへ適応。
+Python/Node/HTML実行基盤とブランド資産は同梱しない。MIT全文はConsultingPPTX-LICENSE.txt。
+TRADEMARK.mdを確認し、他社名・広告・ロゴを生成プロンプト/資料に追加しない。
+成果物の所有権と、配布する仕様由来のコード/文面のMIT告知を区別する。
+
+設定最下部の「オープンソースライセンス」へランタイム依存/モデル/再利用文面を集約。
+MCP 0.12.1同梱ライセンスの実文はApache-2.0/MIT移行告知を含むため、画面もその旨を表示する。
+
 ## 開発時だけの検証ツール（2026-10-27）
 
 | 名前 | 用途・範囲 | ライセンス |

@@ -65,6 +65,9 @@ private struct SlideReadingContent: View {
       ForEach(page.bullets) { bullet in
         Text(bullet.text).memoraReadingText()
       }
+      if let text = page.readingText {
+        Text(text.joined(separator: "\n\n")).memoraReadingText()
+      }
     }
     .textSelection(.enabled)
     .frame(maxWidth: .infinity, alignment: .leading)

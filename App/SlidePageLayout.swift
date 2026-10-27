@@ -31,6 +31,11 @@ enum SlidePageLayout {
   }
 
   static func pages(for slide: DocumentSlide) -> [SlidePage] {
+    if let content = slide.composition {
+      return [SlidePage(sourceID: slide.id, fragment: 0, titleLines: [slide.title], bullets: [], notes: slide.notes,
+        isCover: [.b01, .b04, .b10].contains(content.layout), elements: PresentationLayoutEngine.elements(for: slide),
+        readingText: content.readingText)]
+    }
     let isCover = slide.isTitleSlide
     let headingLines = lines(slide.title, size: isCover ? coverTitleSize : titleSize,
                              width: contentWidth, bold: true)

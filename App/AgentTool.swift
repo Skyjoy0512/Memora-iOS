@@ -208,9 +208,12 @@ enum AgentTool: String, CaseIterable {
         "title": string("スライド資料のタイトル"),
         "slides": [
           "type": "array",
-          "description": "1枚につき一つの話題。要点は3〜6個、各30字程度まで。根拠や詳しい補足はnotesへ",
+          "maxItems": 65,
+          "description": "先に根拠付きの主張の列を作り、各主張に合うlayoutを選ぶ。構造化レイアウトはcontent_jsonに実データを渡す。必要データがない型は選ばない。",
           "items": object([
             "title": string("スライドの見出し"),
+            "layout": ["type": "string", "enum": (1...30).map { String(format: "b%02d", $0) } + (1...35).map { String(format: "m%02d", $0) }, "description": "65型。未指定なら従来の箇条書き。PowerPointスキルの型対応に従う"],
+            "content_json": string("layout指定時は必須のJSON object。items:[{heading,body}]、table:{columns:[文字列],rows:[[文字列]],scores:[[0〜1]],rowGroups:[文字列]}、metrics:[{label,value:数値,unit,detail}]、chart:{kind:bar/line/pie/stacked/scatter/waterfall,categories:[文字列],series:[{name,values:[数値]}],xLabel,yLabel,unit,points:[{label,x,y}],totalIndices:[0始まりの絶対値バー位置]}、diagram:{nodes:[{id,label,level:0〜3}],edges:[{from,to,label}]}、schedule:{periods:[文字列],entries:[{label,lane,start:0始まり,end:含む}]}。共通:subtitle,annotations:[文字列],sources:[{title,locator,excerpt}]。必要な項目だけ。出典と数値は許可された原資料から。項目最大6、表6×6、グラフ4系列10区分。図形位置はアプリが決める。"),
             "bullets": ["type": "array", "items": ["type": "string"], "description": "要点"],
             "notes": string("発表時の補足と、確認した記録の資料名・参照箇所（任意）。PowerPointの発表者ノートへ出力。未確認の出典を作らない")
           ], required: ["title", "bullets"])

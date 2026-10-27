@@ -112,7 +112,11 @@ struct DocumentDetailView: View {
     }
     .quickLookPreview($artifactPreview)
     .sheet(isPresented: $isEditing) {
-      DocumentEditSheet(document: document)
+      if document.kind == .slides {
+        PresentationEditorView(document: document)
+      } else {
+        DocumentEditSheet(document: document)
+      }
     }
     .sheet(isPresented: $isSharing, onDismiss: cleanUpShare) {
       ActivityView(items: shareItems, onComplete: cleanUpShare)
@@ -191,7 +195,7 @@ struct DocumentDetailView: View {
       }
       isSharing = true
     } catch {
-      exportErrorMessage = "ファイルを作れませんでした。もう一度お試しください。"
+      exportErrorMessage = error.localizedDescription
     }
   }
 

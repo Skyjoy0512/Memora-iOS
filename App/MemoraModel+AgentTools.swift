@@ -393,12 +393,12 @@ extension MemoraModel {
         .prefix(4)
       lines += headings.map { "・\($0)" }
     case .slides:
-      document.slides = call.objects("slides").map { slide in
-        DocumentSlide(
-          title: (slide["title"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
-          bullets: (slide["bullets"] as? [Any] ?? []).compactMap { $0 as? String },
-          notes: slide["notes"] as? String ?? ""
-        )
+      do {
+        let input = call.objects("slides")
+        guard input.count <= 65 else { return AgentToolOutcome(text: "一度の作成は65枚までです。", isError: true) }
+        document.slides = try input.map { try PresentationToolInput.slide($0) }
+      } catch {
+        return AgentToolOutcome(text: "スライドを保存する前に修正してください: \(error.localizedDescription)", isError: true)
       }
       guard !document.slides.isEmpty else {
         return AgentToolOutcome(text: "slidesが空です。スライドを1枚以上書いてください。", isError: true)

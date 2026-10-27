@@ -49,6 +49,9 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
       edited.markdown = body
     case .slides:
       if body != DocumentSlide.outline(of: slides) {
+        // An outline cannot represent tables, graph coordinates or provenance.
+        // Structured documents use the slide editor instead of losing those fields.
+        guard slides.allSatisfy({ $0.composition == nil }) else { return nil }
         edited.slides = DocumentSlide.slides(fromOutline: body)
       }
     }

@@ -8,6 +8,8 @@ struct SlidePage: Identifiable, Equatable {
   var bullets: [Bullet]
   var notes: String
   var isCover: Bool
+  var elements: [PresentationElement]? = nil
+  var readingText: [String]? = nil
 
   var id: String { "\(sourceID.uuidString):\(fragment)" }
   var title: String { titleLines.joined() }

@@ -12,7 +12,13 @@ enum PPTXWriter {
 
   static func data(for document: MemoraDocument) -> Data {
     var archive = ZipArchive()
-    let slides = SlidePageLayout.pages(for: document)
+    let slides = SlidePageLayout.pages(for: document).map { page in
+      var page = page
+      if let text = page.readingText {
+        page.notes += (page.notes.isEmpty ? "" : "\n\n") + text.joined(separator: "\n")
+      }
+      return page
+    }
     let noteNumbers = slides.enumerated().compactMap { $0.element.notes.isEmpty ? nil : $0.offset + 1 }
 
     archive.add("[Content_Types].xml", text: contentTypes(slideCount: slides.count, noteNumbers: noteNumbers))
@@ -41,6 +47,7 @@ enum PPTXWriter {
 
   /// Writes the file to the temporary folder for the share sheet.
   static func write(_ document: MemoraDocument) throws -> URL {
+    try PresentationExportCheck.validate(document)
     let url = FileManager.default.temporaryDirectory
       .appendingPathComponent("\(document.exportFileName)-\(UUID().uuidString.prefix(8)).pptx")
     try data(for: document).write(to: url, options: .atomic)
@@ -145,6 +152,9 @@ enum PPTXWriter {
   private typealias Layout = SlidePageLayout
 
   private static func slideXML(_ slide: SlidePage) -> String {
+    if let elements = slide.elements {
+      return header + #"<p:sld \#(namespaces)><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>\#(emptyTree)\#(PresentationOOXML.shapes(elements))</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>"#
+    }
     var shapes: [String] = []
     let titleSize = slide.isCover ? Layout.coverTitleSize : Layout.titleSize
     let titleLineHeight = slide.isCover ? Layout.coverLineHeight : Layout.titleLineHeight
