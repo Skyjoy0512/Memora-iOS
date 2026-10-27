@@ -55,6 +55,7 @@ struct InlineMarkdownEditor: View {
             isFocused: $isFocused,
             allowsStructure: allowsStructure
           )
+          InlineLinkSummaryView(text: $draft)
         }
       } else if rendersBlocks, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         // A document is edited where it is read, block by block, so it keeps

@@ -21,6 +21,7 @@ struct ProjectNoteEditSheet: View {
         if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
         TextField("タイトル", text: $title).accessibilityLabel("タイトル")
         TextEditor(text: $text).frame(minHeight: 240).accessibilityLabel("メモ本文")
+        InlineLinkSummaryView(text: $text)
       }
       .disabled(isSaving)
       .onChange(of: title) { _, value in DraftStore.save(value, key: "workspace.note.\(source.id).title") }

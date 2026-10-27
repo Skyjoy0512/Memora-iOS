@@ -70,6 +70,7 @@ struct ProjectSourceAddSheet: View {
               .accessibilityLabel("タイトル")
               .focused($focusedField, equals: .title)
             TextEditor(text: $noteText).frame(minHeight: 120).accessibilityLabel("メモ本文")
+            InlineLinkSummaryView(text: $noteText)
               .focused($focusedField, equals: .body)
               .id(Field.body)
             Button("メモを保存", icon: .noteText) {

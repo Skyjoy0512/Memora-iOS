@@ -42,6 +42,18 @@ struct OpenSourceNotice: Identifiable, Sendable {
       url: "https://github.com/bryanrg22/chatgpt-ios-ui"),
     .init(id: "writing", name: "日本語の技術文書の書き方", version: "参照指針", license: "Unlicense",
       copyright: "k16shikano (public domain dedication)", files: ["WritingGuide-UNLICENSE.txt"],
-      url: "https://gist.github.com/k16shikano/fd287c3133457c4fd8f5601d34aa817d")
+      url: "https://gist.github.com/k16shikano/fd287c3133457c4fd8f5601d34aa817d"),
+    .init(id: "eventsource", name: "EventSource", version: "1.5.1", license: "MIT",
+      copyright: "Copyright 2025 Mattt", files: ["EventSource-LICENSE.txt"], url: "https://github.com/mattt/eventsource"),
+    .init(id: "swift-system", name: "Swift System", version: "1.8.1", license: "Apache-2.0 with Runtime Library Exception",
+      copyright: "Apple Inc. and the Swift project authors", files: ["SwiftSystem-LICENSE.txt"], url: "https://github.com/apple/swift-system"),
+    .init(id: "swift-log", name: "SwiftLog", version: "1.16.1", license: "Apache-2.0",
+      copyright: "Apple Inc. and SwiftLog project authors", files: ["SwiftLog-LICENSE.txt", "SwiftLog-NOTICE.txt"], url: "https://github.com/apple/swift-log"),
+    .init(id: "swift-atomics", name: "Swift Atomics", version: "1.3.1 (解決済み間接依存)", license: "Apache-2.0 with Runtime Library Exception",
+      copyright: "Apple Inc. and the Swift project authors", files: ["SwiftAtomics-LICENSE.txt"], url: "https://github.com/apple/swift-atomics"),
+    .init(id: "swift-collections", name: "Swift Collections", version: "1.7.3 (解決済み間接依存)", license: "Apache-2.0 with Runtime Library Exception",
+      copyright: "Apple Inc. and the Swift project authors", files: ["SwiftCollections-LICENSE.txt"], url: "https://github.com/apple/swift-collections"),
+    .init(id: "swift-nio", name: "SwiftNIO", version: "2.104.0 (SDK検証用の解決依存)", license: "Apache-2.0",
+      copyright: "Apple Inc. and SwiftNIO project authors", files: ["SwiftNIO-LICENSE.txt"], url: "https://github.com/apple/swift-nio")
   ]
 }

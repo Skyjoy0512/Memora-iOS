@@ -37,6 +37,7 @@ struct LifeLogCreationSheet: View {
           TextField("ひとことや背景", text: $detail, axis: .vertical)
             .lineLimit(3...6)
             .accessibilityLabel("ひとことや背景")
+          InlineLinkSummaryView(text: $detail)
           DatePicker("記録した時刻", selection: $createdAt)
         }
 

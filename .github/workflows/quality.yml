@@ -49,3 +49,20 @@ jobs:
           path: ${{ runner.temp }}/memora-quality-results
           if-no-files-found: error
           retention-days: 14
+      - name: Check all 65 presentation layouts and inline links
+        env:
+          MEMORA_CHECK_ROOT: ${{ runner.temp }}/memora-presentation-checks
+          TMPDIR: ${{ runner.temp }}/
+        run: |
+          mkdir -p "$MEMORA_CHECK_ROOT"
+          bash tools/checks/run-presentation-checks.sh 2>&1 | tee "$MEMORA_CHECK_ROOT/presentation.log"
+          bash tools/checks/run-inline-link-checks.sh 2>&1 | tee "$MEMORA_CHECK_ROOT/inline-links.log"
+          python3 -B tools/checks/verify-oss-resources.py 2>&1 | tee "$MEMORA_CHECK_ROOT/oss.log"
+      - name: Upload presentation outputs and logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: presentation-and-inline-link-checks
+          path: ${{ runner.temp }}/memora-presentation-checks
+          if-no-files-found: error
+          retention-days: 14

@@ -34,6 +34,7 @@ struct LifeLogEditSheet: View {
           TextField("本文", text: $summary, axis: .vertical)
             .lineLimit(3...8)
             .accessibilityLabel("本文")
+          InlineLinkSummaryView(text: $summary)
         }
 
         Section {

@@ -90,6 +90,8 @@ struct AIComposerBar: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
+      InlineLinkSummaryView(text: $text, isComposing: (mentionInput ?? fallbackInput).value?.hasMarkedText ?? false)
+        .padding(.horizontal, MemoraSpacing.lg)
       if let removeMention, !model.composerMentions.isEmpty {
         ComposerMentionStrip(mentions: model.composerMentions, scope: mentionScope, remove: removeMention)
           .padding(.horizontal, MemoraSpacing.md)
