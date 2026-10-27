@@ -8,7 +8,7 @@ import zipfile
 root = Path(sys.argv[1])
 ns = {"p": "http://schemas.openxmlformats.org/presentationml/2006/main",
       "a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
-files = sorted(root.glob("*.pptx"))
+files = sorted(p for p in root.glob("*.pptx") if p.stem != "catalog-65")
 assert len(files) == 65, len(files)
 for path in files:
     with zipfile.ZipFile(path) as z:

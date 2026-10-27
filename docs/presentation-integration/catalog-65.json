@@ -1,0 +1,2870 @@
+{
+  "createdAt" : 814778603.564882,
+  "id" : "A3CF886B-8E31-4E56-A452-28581442E44D",
+  "kind" : "slides",
+  "markdown" : "",
+  "slides" : [
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b01",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "2CE42D30-1A38-4C1D-B558-C5C5C7E42680",
+      "notes" : "架空の表示検証です。",
+      "title" : "b01 表紙"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "3B4A6C06-F7ED-4A99-81BB-112AE8941DC6"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "AB49165B-A916-43DD-BB1C-B916FAE9CB90"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "90C7834C-C5EA-4ED5-A7DA-F4FBCE180D06"
+          }
+        ],
+        "layout" : "b02",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "68489CB0-23C1-4ADC-B0A8-E25918BF6810",
+      "notes" : "架空の表示検証です。",
+      "title" : "b02 全体マップ"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "4952B59A-86C2-45D8-8C02-08530D758D34"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "672EC135-66A3-4231-844A-54AAD43361AC"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "E4D50E92-6DE9-4D9A-9E69-6181927F097E"
+          }
+        ],
+        "layout" : "b03",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "B230F4DC-E672-4471-B8E2-7080F90EC5BA",
+      "notes" : "架空の表示検証です。",
+      "title" : "b03 目次"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b04",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "AB733E5B-A3A6-42A5-B345-DBDF40B85B1D",
+      "notes" : "架空の表示検証です。",
+      "title" : "b04 章扉"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "F682C9A0-E622-4689-8245-9CD2C16A80A9"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "B8ABEBF9-35C4-4B39-AB58-2D1DEC6E69E9"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "84840F95-184F-483A-9618-553DF2D391B9"
+          }
+        ],
+        "layout" : "b05",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "ED475ACC-6E6A-4ED3-A3CD-4BFD5658EA52",
+      "notes" : "架空の表示検証です。",
+      "title" : "b05 矢羽・プロセス"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "B1A15AE0-33DE-46C6-8A73-D49D5C169CED"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "82F3C3A0-4F76-4B0C-8B7F-2234A24DEB62"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "01FDCE2E-0802-4BCF-B055-B1C91DD82AD9"
+          }
+        ],
+        "layout" : "b06",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "89445620-812C-49FE-BD4B-B84553BA4E91",
+      "notes" : "架空の表示検証です。",
+      "title" : "b06 前提→帰結"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b07",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "9B17BB3B-1220-45C0-AE71-60303DE9DE39",
+      "notes" : "架空の表示検証です。",
+      "title" : "b07 大型数値の表＋読み取り"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "A301030A-18EB-4235-90FC-D293B3141161"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "2960E57A-ECD1-4CD9-87EF-EE02BF3896A9"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "F3972F5C-7455-4109-A8DD-AFF2FC2E5752"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項4",
+            "id" : "D68E4688-0DCC-4F70-9E1F-222E49D84139"
+          }
+        ],
+        "layout" : "b08",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "B4367B62-1C12-4C99-8C03-4101250738B1",
+      "notes" : "架空の表示検証です。",
+      "title" : "b08 2×2カード"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b09",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "165F2B83-2CF6-4FBF-B9F2-D5E17D2D4842",
+      "notes" : "架空の表示検証です。",
+      "title" : "b09 軸のある表"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b10",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "AF3DD327-A6E4-4400-848B-4677C1B95491",
+      "notes" : "架空の表示検証です。",
+      "title" : "b10 裏表紙"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "annotations" : [
+          "出典と比較条件を確認"
+        ],
+        "chart" : {
+          "categories" : [
+            "第1期",
+            "第2期",
+            "第3期"
+          ],
+          "kind" : "bar",
+          "series" : [
+            {
+              "name" : "実績",
+              "values" : [
+                20,
+                30,
+                40
+              ]
+            }
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "b11",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "D4C28D6A-B825-4810-B55B-72F51424CA25",
+      "notes" : "架空の表示検証です。",
+      "title" : "b11 主張パネル＋図"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b12",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "B3AC0D86-8F78-4752-B075-382C6FE2925E",
+      "notes" : "架空の表示検証です。",
+      "title" : "b12 打ち手の効果表"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b13",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "106A35C9-75EB-4986-AA78-2DB48D09E330",
+      "notes" : "架空の表示検証です。",
+      "title" : "b13 状態ヒートマップ＋コメント"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b14",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "F7F8DC4D-8202-4AB2-A2B6-FC630BA8DCC7",
+      "notes" : "架空の表示検証です。",
+      "title" : "b14 ハーベイボール評価表"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b15",
+        "metrics" : [
+          {
+            "detail" : "架空の比較値",
+            "id" : "067232A5-0AE0-4D7E-B110-69641F777668",
+            "label" : "指標1",
+            "unit" : "%",
+            "value" : 15
+          },
+          {
+            "detail" : "架空の比較値",
+            "id" : "2FB53986-09D8-4942-844D-65F0A3FCA0C7",
+            "label" : "指標2",
+            "unit" : "%",
+            "value" : 30
+          }
+        ],
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "E5CB0864-884D-4D30-A42A-F07C66B95CC0",
+      "notes" : "架空の表示検証です。",
+      "title" : "b15 割合のドットマトリクス"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b16",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "4DF74C76-D688-4A18-80FC-45A064412AFF",
+      "notes" : "架空の表示検証です。",
+      "title" : "b16 進捗バブル行列"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "annotations" : [
+          "出典と比較条件を確認"
+        ],
+        "chart" : {
+          "categories" : [
+            "第1期",
+            "第2期",
+            "第3期"
+          ],
+          "kind" : "bar",
+          "series" : [
+            {
+              "name" : "実績",
+              "values" : [
+                20,
+                30,
+                40
+              ]
+            }
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "b17",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "46FF9211-2B8B-4F61-A192-7C8788D8E97A",
+      "notes" : "架空の表示検証です。",
+      "title" : "b17 順位棒グラフ＋注記"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "annotations" : [
+          "出典と比較条件を確認"
+        ],
+        "chart" : {
+          "categories" : [
+            "第1期",
+            "第2期",
+            "第3期"
+          ],
+          "kind" : "scatter",
+          "points" : [
+            {
+              "label" : "検索",
+              "x" : 0.2,
+              "y" : 0.3
+            },
+            {
+              "label" : "資料",
+              "x" : 0.7,
+              "y" : 0.8
+            }
+          ],
+          "series" : [
+            {
+              "name" : "実績",
+              "values" : [
+                20,
+                30,
+                40
+              ]
+            }
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "b18",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "2FDD3671-12B7-4C06-8EA3-70F9096EED0C",
+      "notes" : "架空の表示検証です。",
+      "title" : "b18 散布図＋注記"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "1198A434-A68F-4D82-9557-D9EEB2B2B21B"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "675AFFC2-3F75-4EBF-A797-EB7C4871393D"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "3B9C68F3-7398-4B93-B7E9-5DD173D753FA"
+          }
+        ],
+        "layout" : "b19",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "DC4D30A9-91BE-46C4-B2A7-B8816C9A9F6E",
+      "notes" : "架空の表示検証です。",
+      "title" : "b19 柱＋土台"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "4E718E62-AB75-4D00-A3ED-6E0E4715EA35"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "B799A866-3087-4961-AEBD-1798CF7597AA"
+          }
+        ],
+        "layout" : "b20",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "A287D6C6-CB5F-4A99-A81E-EFCB6908F339",
+      "notes" : "架空の表示検証です。",
+      "title" : "b20 対向シェブロン"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "54AD23FF-E0F8-4F42-BC64-B8842ECE8AEF"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "C756402F-089C-43CF-ACF4-25B30D16CE80"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "87F320E4-E9B1-4768-9CE5-0EC788B09F8B"
+          }
+        ],
+        "layout" : "b21",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "2426D88C-8656-4C90-86ED-CC8A52DAFFB2",
+      "notes" : "架空の表示検証です。",
+      "title" : "b21 外部動向の根拠グリッド"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b22",
+        "metrics" : [
+          {
+            "detail" : "架空の比較値",
+            "id" : "AC53FE84-CA82-43EC-B9BF-4D2D66488FF3",
+            "label" : "指標1",
+            "unit" : "%",
+            "value" : 15
+          },
+          {
+            "detail" : "架空の比較値",
+            "id" : "51982E38-76F9-42FD-BA0F-D5D9466FD540",
+            "label" : "指標2",
+            "unit" : "%",
+            "value" : 30
+          }
+        ],
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "855C4BF8-D97F-4DEA-B992-A42DB43AD152",
+      "notes" : "架空の表示検証です。",
+      "title" : "b22 比例円の対比"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "chart" : {
+          "categories" : [
+            "起点",
+            "増加",
+            "減少",
+            "着地"
+          ],
+          "kind" : "waterfall",
+          "series" : [
+            {
+              "name" : "増減",
+              "values" : [
+                100,
+                20,
+                -10,
+                110
+              ]
+            }
+          ],
+          "totalIndices" : [
+            0,
+            3
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "b23",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "93A91795-9873-4FB3-91BD-85058B8D854A",
+      "notes" : "架空の表示検証です。",
+      "title" : "b23 増減の縦棒＋左右合計"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "annotations" : [
+          "出典と比較条件を確認"
+        ],
+        "chart" : {
+          "categories" : [
+            "第1期",
+            "第2期",
+            "第3期"
+          ],
+          "kind" : "bar",
+          "series" : [
+            {
+              "name" : "実績",
+              "values" : [
+                20,
+                30,
+                40
+              ]
+            },
+            {
+              "name" : "計画",
+              "values" : [
+                30,
+                35,
+                45
+              ]
+            }
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "b24",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "207A2F71-DBB6-4AB1-B72E-93919ED61873",
+      "notes" : "架空の表示検証です。",
+      "title" : "b24 シナリオ線＋成長率"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "F4533F95-0F51-4F99-A0AD-9DAABE90F699"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "2E9ECD3F-BB8F-4680-9F1A-1A8584E52892"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "8EBE574E-FF43-451F-8BB3-A06A20C2035E"
+          }
+        ],
+        "layout" : "b25",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "76AFECFB-F8FE-4F5D-9D06-2B52C15F02B0",
+      "notes" : "架空の表示検証です。",
+      "title" : "b25 調査の土台"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "8F8CC467-A13F-41DF-AE45-87F79D3C8092"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "148ADD6F-B183-488A-8F5C-A5E6037FE11B"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "12C27486-C753-4B94-A5D7-ECBA944E6933"
+          }
+        ],
+        "layout" : "b26",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "41AF3246-50B3-4E92-9334-CA5BB494180B",
+      "notes" : "架空の表示検証です。",
+      "title" : "b26 課題と打ち手"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "6E890B45-9587-4A4E-94D6-B51F51EE199C"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "70A52481-229E-4BBD-995F-EB03ED8A37E3"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "51100872-DB16-4764-BD1B-1A2DB59AC89A"
+          }
+        ],
+        "layout" : "b27",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "63E809FE-3F36-4039-A7BB-FFEB7E8197C6",
+      "notes" : "架空の表示検証です。",
+      "title" : "b27 アジェンダ再掲型の章扉"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "b28",
+        "schedule" : {
+          "entries" : [
+            {
+              "end" : 0,
+              "id" : "006F270B-DDE3-470B-9136-EBCED427AAE8",
+              "label" : "準備",
+              "lane" : "企画",
+              "start" : 0
+            },
+            {
+              "end" : 1,
+              "id" : "E8A7191B-DEAB-4DE4-9610-2E09FC43E968",
+              "label" : "試行",
+              "lane" : "開発",
+              "start" : 1
+            },
+            {
+              "end" : 2,
+              "id" : "6DC2B855-AE53-41A4-B90C-A0E9E2E83BB9",
+              "label" : "評価",
+              "lane" : "運用",
+              "start" : 2
+            }
+          ],
+          "periods" : [
+            "準備",
+            "試行",
+            "評価"
+          ]
+        },
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "A8631CA5-F724-4814-9F81-CF2862215854",
+      "notes" : "架空の表示検証です。",
+      "title" : "b28 スイムレーン＋番号付き注記"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "32990768-49D7-4C98-A66D-3084963D0017"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "2188D842-0EF0-4778-9ADF-BE137634AC55"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "07112E91-DEAF-4AA5-A3EA-861786022728"
+          }
+        ],
+        "layout" : "b29",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "85891C05-9881-41C6-A240-B28D072C72F9",
+      "notes" : "架空の表示検証です。",
+      "title" : "b29 表と裏の2段"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "24B12536-4D15-4715-AE4D-4F581A7A3698"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "4C770656-4110-49DF-AE33-29F28B4C47E8"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "49AB8EE5-EFB8-4180-BB6B-CAEF3A4D4B1F"
+          }
+        ],
+        "layout" : "b30",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "5DD8DEEF-F37F-48C8-83EE-DCA6A1412D5D",
+      "notes" : "架空の表示検証です。",
+      "title" : "b30 一問一答"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "6B81D1D3-DA96-4850-906A-E268E7C5C09C"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "7EC49AB6-B934-4803-B58B-AD7996FCC33E"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "2565034C-43CD-41A4-A0D0-D2049CC9BAB9"
+          }
+        ],
+        "layout" : "m01",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "E700118B-D985-4427-BF73-AB70E254D729",
+      "notes" : "架空の表示検証です。",
+      "title" : "m01 エグゼクティブサマリー"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "85995423-0415-40FC-A273-736DB11C9F16"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "7328B2F4-BA67-47B4-9F91-A2EAC73CD9D0"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "1443282E-F5F3-4ED4-82DB-5C94B592BBD2"
+          }
+        ],
+        "layout" : "m02",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "EA94BBE8-9707-4CD0-9361-19241363EB4F",
+      "notes" : "架空の表示検証です。",
+      "title" : "m02 調査根拠の整理"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m03",
+        "metrics" : [
+          {
+            "detail" : "架空の比較値",
+            "id" : "03032819-584E-4E70-AD3F-A4BF5A5D1CEE",
+            "label" : "指標1",
+            "unit" : "%",
+            "value" : 15
+          },
+          {
+            "detail" : "架空の比較値",
+            "id" : "542C49D4-BD24-478C-9481-5D580A0DA2D7",
+            "label" : "指標2",
+            "unit" : "%",
+            "value" : 30
+          }
+        ],
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "3E52044E-E4B7-4F1B-8111-086DFB99FAC1",
+      "notes" : "架空の表示検証です。",
+      "title" : "m03 大型数値2つの比較"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m04",
+        "metrics" : [
+          {
+            "detail" : "架空の比較値",
+            "id" : "5C7CAB90-3CF0-4209-86A0-A289A4AFCCD0",
+            "label" : "指標1",
+            "unit" : "%",
+            "value" : 15
+          },
+          {
+            "detail" : "架空の比較値",
+            "id" : "FE1782AB-5BDA-4F05-AA73-2A8881B93CE3",
+            "label" : "指標2",
+            "unit" : "%",
+            "value" : 30
+          },
+          {
+            "detail" : "架空の比較値",
+            "id" : "42441E20-4779-4B86-AE9A-6BA09815F360",
+            "label" : "指標3",
+            "unit" : "%",
+            "value" : 45
+          },
+          {
+            "detail" : "架空の比較値",
+            "id" : "E8D70A87-F6C0-4F01-BCD2-7BD7DEDD12A2",
+            "label" : "指標4",
+            "unit" : "%",
+            "value" : 60
+          },
+          {
+            "detail" : "架空の比較値",
+            "id" : "DB142730-0726-4AAB-802F-9C21BDE143A7",
+            "label" : "指標5",
+            "unit" : "%",
+            "value" : 75
+          },
+          {
+            "detail" : "架空の比較値",
+            "id" : "9CA897AD-1266-4DFE-B110-8073EF893FD1",
+            "label" : "指標6",
+            "unit" : "%",
+            "value" : 90
+          }
+        ],
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "59DDD519-2EA6-4FED-BAA8-2A28AAA2F9FB",
+      "notes" : "架空の表示検証です。",
+      "title" : "m04 KPIダッシュボード"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "annotations" : [
+          "出典と比較条件を確認"
+        ],
+        "chart" : {
+          "categories" : [
+            "第1期",
+            "第2期",
+            "第3期"
+          ],
+          "kind" : "bar",
+          "series" : [
+            {
+              "name" : "実績",
+              "values" : [
+                20,
+                30,
+                40
+              ]
+            }
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "m05",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "0EB313E7-A13E-49CB-9641-0FCC3DB4D677",
+      "notes" : "架空の表示検証です。",
+      "title" : "m05 チャート＋示唆"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "chart" : {
+          "categories" : [
+            "第1期",
+            "第2期",
+            "第3期"
+          ],
+          "kind" : "bar",
+          "series" : [
+            {
+              "name" : "実績",
+              "values" : [
+                20,
+                30,
+                40
+              ]
+            },
+            {
+              "name" : "計画",
+              "values" : [
+                30,
+                35,
+                45
+              ]
+            }
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "m06",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "7F4E368D-2237-4D00-9490-FBFCDF2F8883",
+      "notes" : "架空の表示検証です。",
+      "title" : "m06 積み上げ棒グラフ"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "chart" : {
+          "categories" : [
+            "起点",
+            "増加",
+            "減少",
+            "着地"
+          ],
+          "kind" : "waterfall",
+          "series" : [
+            {
+              "name" : "増減",
+              "values" : [
+                100,
+                20,
+                -10,
+                110
+              ]
+            }
+          ],
+          "totalIndices" : [
+            0,
+            3
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "m07",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "805F5EEF-CA3E-470D-9D90-FDD9FCEABE77",
+      "notes" : "架空の表示検証です。",
+      "title" : "m07 寄与度ブリッジ"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "chart" : {
+          "categories" : [
+            "起点",
+            "増加",
+            "減少",
+            "着地"
+          ],
+          "kind" : "waterfall",
+          "series" : [
+            {
+              "name" : "増減",
+              "values" : [
+                100,
+                20,
+                -10,
+                110
+              ]
+            }
+          ],
+          "totalIndices" : [
+            0,
+            3
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "m08",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "37BA42F8-DF6C-43E4-ABB7-7F7E5521E5E8",
+      "notes" : "架空の表示検証です。",
+      "title" : "m08 厳密なウォーターフォール"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "chart" : {
+          "categories" : [
+            "第1期",
+            "第2期",
+            "第3期"
+          ],
+          "kind" : "bar",
+          "series" : [
+            {
+              "name" : "実績",
+              "values" : [
+                20,
+                30,
+                40
+              ]
+            },
+            {
+              "name" : "計画",
+              "values" : [
+                30,
+                35,
+                45
+              ]
+            }
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "m09",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "CEA2AB22-59A5-465E-B478-F17EAC942E29",
+      "notes" : "架空の表示検証です。",
+      "title" : "m09 小図の並列比較"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m10",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "9AFD0C55-EDF4-45B0-9ACC-0FECFCE4A776",
+      "notes" : "架空の表示検証です。",
+      "title" : "m10 選択肢の比較表"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m11",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "9B0B6342-7BA2-4D3E-A714-E30A7FCBE8BE",
+      "notes" : "架空の表示検証です。",
+      "title" : "m11 シナリオ比較表"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m12",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "D9BE2555-AB09-4F82-8FB5-965F098C3FF3",
+      "notes" : "架空の表示検証です。",
+      "title" : "m12 リスク一覧表"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m13",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "28BE57CC-73B2-40DA-ABE7-6632A719D74F",
+      "notes" : "架空の表示検証です。",
+      "title" : "m13 横軸評価表"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m14",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "FA33BA23-D84B-48B1-8667-2BDF1554EDA9",
+      "notes" : "架空の表示検証です。",
+      "title" : "m14 ヒートマップ表"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "chart" : {
+          "categories" : [
+            "第1期",
+            "第2期",
+            "第3期"
+          ],
+          "kind" : "scatter",
+          "points" : [
+            {
+              "label" : "検索",
+              "x" : 0.2,
+              "y" : 0.3
+            },
+            {
+              "label" : "資料",
+              "x" : 0.7,
+              "y" : 0.8
+            }
+          ],
+          "series" : [
+            {
+              "name" : "実績",
+              "values" : [
+                20,
+                30,
+                40
+              ]
+            }
+          ],
+          "unit" : "万円",
+          "xLabel" : "期間",
+          "yLabel" : "売上"
+        },
+        "layout" : "m15",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "90FDA23E-EA5B-4171-AF3E-DB37B3E7D2B8",
+      "notes" : "架空の表示検証です。",
+      "title" : "m15 2×2マトリクス"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m16",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "9E2203B7-F822-4745-8E29-7E93A5CC5B14",
+      "notes" : "架空の表示検証です。",
+      "title" : "m16 プロセス×観点の行列"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m17",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "EC048616-7A59-4D25-A398-7CA629A474AF",
+      "notes" : "架空の表示検証です。",
+      "title" : "m17 入れ子行の行列"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m18",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ",
+        "table" : {
+          "columns" : [
+            "施策",
+            "現状",
+            "目標"
+          ],
+          "rowGroups" : [
+            "製品",
+            "製品",
+            "運用"
+          ],
+          "rows" : [
+            [
+              "検索",
+              "導入中",
+              "評価"
+            ],
+            [
+              "共有",
+              "検討中",
+              "試行"
+            ],
+            [
+              "資料",
+              "開発中",
+              "検査"
+            ]
+          ],
+          "scores" : [
+            [
+              0,
+              0.5,
+              1
+            ],
+            [
+              0,
+              0.25,
+              0.75
+            ],
+            [
+              0,
+              0.75,
+              1
+            ]
+          ]
+        }
+      },
+      "id" : "3C519525-2561-4272-A68D-6DA943C7C419",
+      "notes" : "架空の表示検証です。",
+      "title" : "m18 時系列マトリクス"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "1CD35FCF-A219-42B9-B697-1DEE202636EC"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "DCFE32E7-0BA1-42FA-BC9F-58933AF27E49"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "83947194-4971-4883-BA8A-7B564FB13C2D"
+          }
+        ],
+        "layout" : "m19",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "3222A965-1E6D-4936-8750-E1B5F16A0459",
+      "notes" : "架空の表示検証です。",
+      "title" : "m19 テーマカード"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "CC204CF2-C5D6-465E-A23A-4873F478C5EC"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "373CBDA6-1F0F-4EEB-8E38-2887BC7215C0"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "829F4241-3786-44EE-9768-BDA0300D23AE"
+          }
+        ],
+        "layout" : "m20",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "0FBA0765-BCB5-4538-AC68-431F275275F9",
+      "notes" : "架空の表示検証です。",
+      "title" : "m20 提言の柱"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "7278EF49-FE9B-4030-A151-4468088F5E46"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "EDB9C4AD-F34E-44D5-A91E-1024CB95F1E8"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "440D110C-ABAD-4EE3-9ECD-4D55276C0A97"
+          }
+        ],
+        "layout" : "m21",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "BDEC38E5-54CB-409D-B797-8EE0D2C0C4E0",
+      "notes" : "架空の表示検証です。",
+      "title" : "m21 番号付き施策"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "A64ADA52-FE34-45BE-B182-90742B0027AB"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "FF4DCDC1-DC9A-4D6C-812C-3E145FB83A14"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "61A17488-ED73-4E4B-9516-3686DC0A8105"
+          }
+        ],
+        "layout" : "m22",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "B6D7A679-2F68-4F48-9691-BFA30115439D",
+      "notes" : "架空の表示検証です。",
+      "title" : "m22 状況・課題・対策"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "0192D866-F421-4A13-9908-5BA720342260"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "328C3096-D16D-41AE-BCAE-D145E53992DE"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "886E8286-E41E-41B5-869D-7DE23864EF9A"
+          }
+        ],
+        "layout" : "m23",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "327CBE2C-EEF2-4EC0-A1AB-89FDBA06231B",
+      "notes" : "架空の表示検証です。",
+      "title" : "m23 課題と施策の対応"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "BF7FB86D-E27C-489C-A987-491BD09EB91C"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "96348D33-780A-499C-B8AA-52477A2C4C8B"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "C23AD6F2-8EB6-4A80-A7B7-1FC82A8B169D"
+          }
+        ],
+        "layout" : "m24",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "6CE66217-B0D0-43E2-8B08-EC8B1D7EBC5B",
+      "notes" : "架空の表示検証です。",
+      "title" : "m24 課題→原因→解決"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "diagram" : {
+          "edges" : [
+            {
+              "from" : "root",
+              "to" : "a"
+            },
+            {
+              "from" : "root",
+              "to" : "b"
+            },
+            {
+              "from" : "a",
+              "to" : "c"
+            }
+          ],
+          "nodes" : [
+            {
+              "id" : "root",
+              "label" : "検討する課題",
+              "level" : 0
+            },
+            {
+              "id" : "a",
+              "label" : "品質の確認",
+              "level" : 1
+            },
+            {
+              "id" : "b",
+              "label" : "運用の確認",
+              "level" : 1
+            },
+            {
+              "id" : "c",
+              "label" : "試行の結果",
+              "level" : 2
+            }
+          ]
+        },
+        "layout" : "m25",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "994EB0C0-B72F-43E8-9AD5-05B728B8D5D2",
+      "notes" : "架空の表示検証です。",
+      "title" : "m25 イシューツリー"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "CB6BBF9F-76A5-40FF-80DD-EA656BFE8DED"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "FE1C39E9-708A-427F-9BFF-9D235E09AFC6"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "41270881-6CDC-45D9-8DAE-6B47CEBEF5ED"
+          }
+        ],
+        "layout" : "m26",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "825ED21B-C262-4088-AB1E-EAED9F970CC5",
+      "notes" : "架空の表示検証です。",
+      "title" : "m26 現状と目指す姿"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "0826209E-C6F3-4009-823F-B820917C9F4D"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "19955903-7578-4938-B6A1-CE774B539E43"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "8EFCABD8-38EF-4717-9B45-C6E447173AAD"
+          }
+        ],
+        "layout" : "m27",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "0F9DE7A5-34FE-455D-B12D-48FF64A679CB",
+      "notes" : "架空の表示検証です。",
+      "title" : "m27 計算ロジックの流れ"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "C5BD3FC1-C3DC-431E-BC45-AB5515049521"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "53BFD65B-9378-4B9D-95A0-9A7A28F31381"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "F640226A-AC96-4004-889E-3F2ADBB4D8EB"
+          }
+        ],
+        "layout" : "m28",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "B5D9D2BC-A23F-4BE2-8F6A-F72891A44EE7",
+      "notes" : "架空の表示検証です。",
+      "title" : "m28 プロセスフロー"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "64A9C2F4-7245-45BF-8798-F845EB9EE8AF"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "695BAFDA-419E-489D-BE45-96A6BA7A02DD"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "9062301D-E286-49B5-B8B3-4962267765B0"
+          }
+        ],
+        "layout" : "m29",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "F59A85ED-D4D4-4C63-AB5F-906C42E07916",
+      "notes" : "架空の表示検証です。",
+      "title" : "m29 循環サイクル"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "F81516CF-A1D4-4A72-AC52-69237734F064"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "BAEAF7B0-EDAA-4108-969A-2C93468E1E9F"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "D88848C0-C538-4EB2-90EB-D88E716271D8"
+          }
+        ],
+        "layout" : "m30",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "43DAAA62-D542-45ED-A6CA-0C8FB5B1977E",
+      "notes" : "架空の表示検証です。",
+      "title" : "m30 段階を示す矢羽"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "04C3DC90-BFFD-40B1-A08E-121DCBEC3478"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "CDE4D933-36A2-4D7E-B52D-D20EF967D02B"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "50222FFB-4535-41F2-BE8F-33473832F74D"
+          }
+        ],
+        "layout" : "m31",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "0EF8B186-31D5-474B-9DF2-3633D3850BF1",
+      "notes" : "架空の表示検証です。",
+      "title" : "m31 バリューチェーン"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "diagram" : {
+          "edges" : [
+            {
+              "from" : "root",
+              "to" : "a"
+            },
+            {
+              "from" : "root",
+              "to" : "b"
+            },
+            {
+              "from" : "a",
+              "to" : "c"
+            }
+          ],
+          "nodes" : [
+            {
+              "id" : "root",
+              "label" : "検討する課題",
+              "level" : 0
+            },
+            {
+              "id" : "a",
+              "label" : "品質の確認",
+              "level" : 1
+            },
+            {
+              "id" : "b",
+              "label" : "運用の確認",
+              "level" : 1
+            },
+            {
+              "id" : "c",
+              "label" : "試行の結果",
+              "level" : 2
+            }
+          ]
+        },
+        "layout" : "m32",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "70ACF50B-4CBC-40EA-B905-9F8C93E411CE",
+      "notes" : "架空の表示検証です。",
+      "title" : "m32 分岐と判断"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m33",
+        "schedule" : {
+          "entries" : [
+            {
+              "end" : 0,
+              "id" : "E1BB62B6-72B7-4385-8A7D-4B9963CC3630",
+              "label" : "準備",
+              "lane" : "企画",
+              "start" : 0
+            },
+            {
+              "end" : 1,
+              "id" : "A1590F1A-2BD7-4CA7-A3A5-C31EA5F8B8FD",
+              "label" : "試行",
+              "lane" : "開発",
+              "start" : 1
+            },
+            {
+              "end" : 2,
+              "id" : "F19C2949-21ED-4021-AA1D-FFF48EEA5553",
+              "label" : "評価",
+              "lane" : "運用",
+              "start" : 2
+            }
+          ],
+          "periods" : [
+            "準備",
+            "試行",
+            "評価"
+          ]
+        },
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "95B23106-A658-46D9-940F-20001AD25716",
+      "notes" : "架空の表示検証です。",
+      "title" : "m33 ロードマップ"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "layout" : "m34",
+        "schedule" : {
+          "entries" : [
+            {
+              "end" : 0,
+              "id" : "DB185A04-7CEF-4588-9FE7-813D288879F0",
+              "label" : "準備",
+              "lane" : "企画",
+              "start" : 0
+            },
+            {
+              "end" : 1,
+              "id" : "2CED77D1-7193-442F-B81C-69C74EEB387A",
+              "label" : "試行",
+              "lane" : "開発",
+              "start" : 1
+            },
+            {
+              "end" : 2,
+              "id" : "8C3E4414-C6CA-454D-B6A4-2094F9FF24A8",
+              "label" : "評価",
+              "lane" : "運用",
+              "start" : 2
+            }
+          ],
+          "periods" : [
+            "準備",
+            "試行",
+            "評価"
+          ]
+        },
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "D5E7EF9C-BB63-431E-8B12-F244D79F4F84",
+      "notes" : "架空の表示検証です。",
+      "title" : "m34 ガントチャート"
+    },
+    {
+      "bullets" : [
+
+      ],
+      "composition" : {
+        "items" : [
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項1",
+            "id" : "FFA9F630-82FF-4286-AA72-0371D6A1BDF4"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項2",
+            "id" : "BE09FC81-1A54-4583-82F5-D440730E0CEB"
+          },
+          {
+            "body" : "担当と期限を確認",
+            "heading" : "確認事項3",
+            "id" : "34E19CE9-5512-4B2C-B942-647509950DED"
+          }
+        ],
+        "layout" : "m35",
+        "sources" : [
+          {
+            "locator" : "ローカルfixture。実際の業績ではありません。",
+            "title" : "架空データ・表示検証用"
+          }
+        ],
+        "subtitle" : "確認した事実から次の判断へ"
+      },
+      "id" : "E08BF0A8-0E77-4328-A474-3278EF55E27A",
+      "notes" : "架空の表示検証です。",
+      "title" : "m35 意思決定ページ"
+    }
+  ],
+  "title" : "65型・架空データ検証",
+  "updatedAt" : 814778603.564882
+}

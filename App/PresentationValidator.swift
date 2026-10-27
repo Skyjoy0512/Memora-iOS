@@ -121,7 +121,8 @@ enum PresentationValidator {
           || element.maxX > 960.01 || element.maxY > 540.01 {
         issues.append(.init(slideID: slide.id, code: "bounds", message: "要素がページの外へ出ています。", isError: true, elementID: element.id))
       }
-      if element.kind == .text, Double(PresentationText.lines(element).count) * element.fontSize * 1.3 > element.height + 1 {
+      if element.kind == .text, Double(PresentationText.lines(element).count) * element.fontSize * 1.3 > element.height + 1
+          || PresentationText.widestLine(element) > element.width + 1 {
         issues.append(.init(slideID: slide.id, code: "overflow", message: "「\(element.text.prefix(24))」が枠に収まりません。文章を短くするか、スライドを分けてください。", isError: true, elementID: element.id))
       }
     }
@@ -132,10 +133,22 @@ enum PresentationValidator {
       }
     }
     let allText = ([slide.title] + content.readingText).joined(separator: "\n")
+    let unused: [String] = [
+      content.items?.isEmpty == false && content.layout.input != .items ? "本文の項目" : nil,
+      content.table != nil && content.layout.input != .table ? "表" : nil,
+      content.metrics?.isEmpty == false && content.layout.input != .metrics ? "指標" : nil,
+      content.chart != nil && content.layout.input != .chart ? "グラフ" : nil,
+      content.diagram != nil && content.layout.input != .diagram ? "図の接続" : nil,
+      content.schedule != nil && content.layout.input != .schedule ? "予定" : nil
+    ].compactMap { $0 }
+    if !unused.isEmpty {
+      issues.append(.init(slideID: slide.id, code: "unusedContent", message: "このレイアウトでは\(unused.joined(separator: "・"))が表示されません。保存データとPPTXノートには保持します。必要な内容が見える型を選んでください。", isError: false))
+    }
     if allText.range(of: #"\b(Text\s*\d+|YYYY|TODO|TBD)\b|タイトル\s*\d+|ラベル\s*\d+"#, options: .regularExpression) != nil {
       issues.append(.init(slideID: slide.id, code: "placeholder", message: "置換前のプレースホルダーが残っています。", isError: true))
     }
-    if (content.sources ?? []).isEmpty, content.chart != nil || content.metrics != nil || content.table != nil {
+    if (content.sources ?? []).allSatisfy({ $0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || $0.locator.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
+       content.chart != nil || content.metrics != nil || content.table != nil {
       issues.append(.init(slideID: slide.id, code: "source", message: "数値・比較の出典がありません。原資料と照合してください。", isError: false))
     }
     for phrase in ["革命的", "圧倒的", "ゲームチェンジャー", "ご不明な点がございましたら", "さらなる高み"] where allText.contains(phrase) {
@@ -149,6 +162,25 @@ enum PresentationValidator {
     var titles = Set<String>()
     for slide in document.slides where !titles.insert(slide.title).inserted {
       result.append(.init(slideID: slide.id, code: "duplicate", message: "同じ主張のスライドがあります。内容の重複を確認してください。", isError: false))
+    }
+    var facts: [String: (Double, UUID)] = [:]
+    for slide in document.slides {
+      guard let c = slide.composition, let sources = c.sources, !sources.isEmpty else { continue }
+      let sourceKey = sources.map { $0.title + "|" + $0.locator }.sorted().joined(separator: "\n")
+      var values = (c.metrics ?? []).map { ($0.label + "|" + $0.unit, $0.value) }
+      if let chart = c.chart {
+        values += chart.series.flatMap { series in
+          zip(chart.categories, series.values).map { (series.name + "|" + $0.0 + "|" + chart.unit, $0.1) }
+        }
+      }
+      for (label, value) in values {
+        let key = sourceKey + "|" + label
+        if let previous = facts[key], previous.0.isFinite, value.isFinite,
+           abs(previous.0 - value) > max(1, abs(value)) * 1e-8 {
+          result.append(.init(slideID: slide.id, code: "numberConflict",
+            message: "同じ出典・項目「\(label.replacingOccurrences(of: "|", with: " / "))」の数値が一致しません。時点や比較条件も確認してください。", isError: false))
+        } else { facts[key] = (value, slide.id) }
+      }
     }
     return result
   }

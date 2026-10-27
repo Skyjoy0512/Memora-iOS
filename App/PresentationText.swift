@@ -2,6 +2,13 @@ import CoreText
 import Foundation
 
 enum PresentationText {
+  static func widestLine(_ element: PresentationElement) -> Double {
+    let attributes = [NSAttributedString.Key(kCTFontAttributeName as String): font(size: element.fontSize, bold: element.bold)]
+    return lines(element).map { text in
+      CTLineGetTypographicBounds(CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: attributes)), nil, nil, nil)
+    }.max() ?? 0
+  }
+
   static func font(size: Double, bold: Bool) -> CTFont {
     let font = CTFontCreateWithName(PresentationTheme.font as CFString, size, nil)
     return bold ? CTFontCreateCopyWithSymbolicTraits(font, size, nil, .traitBold, .traitBold) ?? font : font

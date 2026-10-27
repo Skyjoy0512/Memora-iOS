@@ -27,8 +27,15 @@ extension MemoraModel {
     } else if document.kind == .document {
       data = try DOCXWriter.data(for: document); format = "docx"
     } else {
-      guard document.slides.count <= 40, document.slides.allSatisfy({ $0.title.count <= 80 && $0.bullets.count <= 6 && $0.bullets.allSatisfy { $0.count <= 80 } }) else { throw CompanyTemplateEngine.Failure.tooLong }
-      data = PPTXWriter.data(for: document); format = "pptx"
+      guard document.slides.count <= 65, document.slides.allSatisfy({ slide in
+        slide.composition != nil || (slide.title.count <= 80 && slide.bullets.count <= 6 && slide.bullets.allSatisfy { $0.count <= 80 })
+      }) else { throw CompanyTemplateEngine.Failure.tooLong }
+      data = try await Task.detached(priority: .userInitiated) {
+        try Task.checkCancellation()
+        try PresentationExportCheck.validate(document)
+        return PPTXWriter.data(for: document)
+      }.value
+      format = "pptx"
     }
     var validation = try OfficeArchiveReader(data: data)
     _ = try OfficeDocumentExtraction.read(archive: &validation, extension: format)

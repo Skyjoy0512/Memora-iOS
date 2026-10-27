@@ -1,0 +1,1 @@
+ArtifactOperationsChecks: passed (real DOCX/PPTX files, production save/edit/reload, SQLite ABORT leaves no success, share copy cleanup, source rows for deleted/revoked/other workspace; share destination and Office final rendering unverified)

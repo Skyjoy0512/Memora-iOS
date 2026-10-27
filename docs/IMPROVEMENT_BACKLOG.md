@@ -1,5 +1,13 @@
 # Memora — 改善バックログ
 
+## 2026-10-27: 65型のSwift基盤・編集・URL共通導線
+
+実装・検証の到達点は `docs/presentation-integration/REPORT.md`。
+65型の構造化描画/編集可能図形PPTX/PDF/ホスト検査は65/65、最終完成数は0/65。
+会社マスター再利用、既存slideのAI部分修正、独立レビュー、全型実データ/Office/実機、
+URLサムネイル/自動metadata、全画面磨き込み、レコード単位保存と実性能比較は未完了。
+これらを「65型を登録した」ことで完了扱いしない。
+
 ## 2026-10-27: 全文要件の監査・OSS PoC・企業資料の保護
 
 - GitHub mainを再取得（7f928c6、remote追加差分なし）。35 OSS候補のHEAD/release/LICENSE/manifest/代表ソースを固定SHAで調査。採否と取得失敗は[OSS比較](OSS_EVALUATION_2026_10.md)。

@@ -67,3 +67,10 @@
 - 実画像でb24の線方向不整合を発見。custGeomの線からflipV/flipHつき標準connectorへ変更。
 - Debug preview (15:58:09): succeeded、既存の非推奨API等11 warnings。実機検証ではない。
 - 完成扱いしない項目はPRESENTATION_LAYOUT_MATRIX.mdに全65件と共に記載。
+
+### 後続の到達点
+
+URLインライン導線、安全な明示取得、スライド詳細フォーム、品質診断、22個のOSS告知を追加。
+最新結果・成果物・実Simulator画像・1k/10k/50k計測・未完成条件は
+[検証レポート](presentation-integration/REPORT.md)へ集約。
+65型のホスト検査成功と、全体/65型の最終完成を区別する。

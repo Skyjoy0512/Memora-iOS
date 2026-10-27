@@ -193,7 +193,8 @@ enum PresentationLayoutEngine {
       }
     }
     // Every supplied annotation is retained. Side-comment layouts already position it.
-    if ![.b07, .b11, .b13, .b17, .b18, .b24, .m05].contains(layout), !annotations.isEmpty {
+    if (!([.b07, .b11, .b13, .b17, .b18, .b24, .m05] as [SlideArchetype]).contains(layout)
+        || layout == .b11 && content.subtitle != nil), !annotations.isEmpty {
       b.text(annotations, 54, 466, 852, 28, size: 12, color: PresentationTheme.secondary)
     }
     let sources = (content.sources ?? []).map { "出典: \($0.title) \($0.locator)" }.joined(separator: " / ")
@@ -483,9 +484,13 @@ enum PresentationLayoutEngine {
       let n = max(1, chart.categories.count)
       if horizontal {
         let h = ph / Double(n), maxValue = max(0.000001, values.map { abs($0) }.max() ?? 1)
-        for (i, v) in (chart.series.first?.values ?? []).enumerated() {
+        let ranked = zip(chart.categories, chart.series.first?.values ?? []).enumerated().sorted {
+          $0.element.1 == $1.element.1 ? $0.offset < $1.offset : $0.element.1 > $1.element.1
+        }
+        for (i, entry) in ranked.enumerated() {
+          let v = entry.element.1
           let top = py + Double(i) * h
-          text(chart.categories.indices.contains(i) ? chart.categories[i] : "", x, top, 112, h - 4, size: 15)
+          text(entry.element.0, x, top, 112, h - 4, size: 15)
           rect(x + 124, top + 4, abs(v) / maxValue * max(1, width - 212), max(1, h - 18), fill: PresentationTheme.blue)
           text(SlideContent.number(v) + chart.unit, x + width - 80, top, 80, h - 4, size: 15)
         }

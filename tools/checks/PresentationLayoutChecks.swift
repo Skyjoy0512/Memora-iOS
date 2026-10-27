@@ -88,7 +88,36 @@ struct PresentationLayoutChecks {
       points: [.init(x: 20, y: 50), .init(x: 120, y: 30)])
     let lineXML = PresentationOOXML.shapes([ascending])
     precondition(lineXML.contains("p:cxnSp") && lineXML.contains("flipV=\"1\""))
+    let first = PresentationExample.slide(.m03)
+    var conflicting = first; conflicting.id = UUID(); conflicting.composition?.metrics?[0].value = 99
+    let conflictDocument = MemoraDocument(title: "出典内の不整合", kind: .slides, slides: [first, conflicting])
+    precondition(PresentationValidator.issues(for: conflictDocument).contains { $0.code == "numberConflict" })
+    let narrow = PresentationElement(id: 0, kind: .text, x: 0, y: 0, width: 1, height: 100, text: "👩🏽‍💻", fontSize: 30)
+    precondition(PresentationText.widestLine(narrow) > narrow.width)
     print("Distinct geometry signatures: \(signatures.count)/65; failures: \(failures)")
     if failures > 0 { exit(1) }
+    let catalog = MemoraDocument(title: "65型・架空データ検証", kind: .slides,
+      slides: SlideArchetype.allCases.map { layout in
+        var slide = PresentationExample.slide(layout)
+        slide.title = "\(layout.rawValue) \(layout.title)"
+        return slide
+      })
+    let start = ContinuousClock.now
+    let catalogData = PPTXWriter.data(for: catalog)
+    let elapsed = start.duration(to: .now)
+    try catalogData.write(to: output.appendingPathComponent("catalog-65.pptx"))
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    try encoder.encode(catalog).write(to: output.appendingPathComponent("catalog-65.json"))
+    var mediaBox = CGRect(x: 0, y: 0, width: 960, height: 540)
+    let catalogPDF = CGContext(output.appendingPathComponent("catalog-65.pdf") as CFURL, mediaBox: &mediaBox, nil)!
+    for slide in catalog.slides {
+      catalogPDF.beginPDFPage(nil); catalogPDF.saveGState()
+      catalogPDF.setFillColor(PresentationDrawing.color("FFFFFF")); catalogPDF.fill(mediaBox)
+      catalogPDF.translateBy(x: 0, y: 540); catalogPDF.scaleBy(x: 1, y: -1)
+      PresentationDrawing.draw(PresentationLayoutEngine.elements(for: slide), in: catalogPDF)
+      catalogPDF.restoreGState(); catalogPDF.endPDFPage()
+    }
+    catalogPDF.closePDF()
+    print("65-page editable catalog: \(catalogData.count) bytes, PPTX generation \(elapsed) (host Debug; not device latency)")
   }
 }

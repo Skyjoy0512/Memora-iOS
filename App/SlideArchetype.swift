@@ -17,6 +17,17 @@ enum SlideArchetype: String, CaseIterable, Codable, Hashable, Sendable, Identifi
 
   enum Input: String, Sendable {
     case title, items, table, metrics, chart, diagram, schedule
+    var label: String {
+      switch self {
+      case .title: "タイトルと補足"
+      case .items: "見出しと本文"
+      case .table: "表"
+      case .metrics: "指標と数値"
+      case .chart: "グラフの数値と比較軸"
+      case .diagram: "項目と接続"
+      case .schedule: "期間と予定"
+      }
+    }
   }
 
   private var specification: (String, String, Input) {

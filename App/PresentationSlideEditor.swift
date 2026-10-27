@@ -15,13 +15,16 @@ struct PresentationSlideEditor: View {
       }
       Section("タイトル") { TextField("この1枚で伝えること", text: $slide.title, axis: .vertical) }
       if let content = slide.composition {
+        Section("補足") {
+          TextField("補足・要旨", text: Binding(get: { slide.composition?.subtitle ?? "" }, set: { slide.composition?.subtitle = $0 }), axis: .vertical)
+        }
         Section("レイアウト") {
           Picker("レイアウト", selection: layoutBinding) {
             ForEach(SlideArchetype.allCases) { layout in
               Text("\(layout.rawValue) \(layout.title)").tag(layout)
             }
           }
-          Text("必要データ: \(content.layout.input.rawValue)。既存のデータはレイアウトを変更しても保持します。")
+          Text("必要な内容: \(content.layout.input.label)。レイアウトを変えても入力内容は保持します。")
             .font(.footnote).foregroundStyle(.secondary)
         }
         if let items = content.items {
@@ -57,6 +60,8 @@ struct PresentationSlideEditor: View {
         }
         if let chart = content.chart {
           Section("グラフのデータ") {
+            TextField("横軸", text: Binding(get: { slide.composition?.chart?.xLabel ?? "" }, set: { slide.composition?.chart?.xLabel = $0 }))
+            TextField("縦軸", text: Binding(get: { slide.composition?.chart?.yLabel ?? "" }, set: { slide.composition?.chart?.yLabel = $0 }))
             ForEach(chart.series.indices, id: \.self) { series in
               DisclosureGroup(chart.series[series].name) {
                 ForEach(chart.categories.indices, id: \.self) { category in
@@ -67,14 +72,21 @@ struct PresentationSlideEditor: View {
                 }
               }
             }
+            if let points = chart.points {
+              ForEach(points.indices, id: \.self) { index in
+                DisclosureGroup(points[index].label) {
+                  TextField("横軸の値", value: pointValue(index, x: true), format: .number).keyboardType(.numbersAndPunctuation)
+                  TextField("縦軸の値", value: pointValue(index, x: false), format: .number).keyboardType(.numbersAndPunctuation)
+                }
+              }
+            }
           }
         }
+        PresentationDiagramFields(slide: $slide)
+        PresentationScheduleFields(slide: $slide)
         Section("注記・出典") {
           TextField("注記（改行で区切る）", text: annotationBinding, axis: .vertical)
-          if let sources = content.sources {
-            Text(sources.map { $0.title + " " + $0.locator }.joined(separator: "\n"))
-              .font(.footnote).textSelection(.enabled)
-          }
+          PresentationSourceFields(slide: $slide)
         }
         Section {
           DisclosureGroup("詳細データを編集", isExpanded: $showsData) {
@@ -132,6 +144,15 @@ struct PresentationSlideEditor: View {
   }
   private func chartValue(_ series: Int, _ category: Int) -> Binding<Double> {
     Binding(get: { slide.composition?.chart?.series[series].values[category] ?? 0 }, set: { slide.composition?.chart?.series[series].values[category] = $0 })
+  }
+  private func pointValue(_ index: Int, x: Bool) -> Binding<Double> {
+    Binding(get: {
+      guard let points = slide.composition?.chart?.points, points.indices.contains(index) else { return 0 }
+      return x ? points[index].x : points[index].y
+    }, set: {
+      guard slide.composition?.chart?.points?.indices.contains(index) == true else { return }
+      if x { slide.composition?.chart?.points?[index].x = $0 } else { slide.composition?.chart?.points?[index].y = $0 }
+    })
   }
   private func refreshData() {
     guard let content = slide.composition else { return }

@@ -1,8 +1,8 @@
 import Foundation
 
 /// The paid plans for people without their own AI key. Each one's AI credits
-/// and cloud transcription are capped so that, used to the full, its cost stays
-/// below what it earns after tax and the App Store fee (docs/PRICING.md).
+/// and cloud transcription are planning caps, not a profitability guarantee.
+/// Annual/FX/operating-cost gates remain open in docs/PRICING.md.
 /// Billing is not connected yet; a plan is a local choice and the screen says so.
 enum MemoraPlan: String, CaseIterable, Identifiable, Codable {
   case light

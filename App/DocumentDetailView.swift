@@ -61,6 +61,7 @@ struct DocumentDetailView: View {
               return .handled
             })
           case .slides:
+            PresentationQualityView(document: document)
             DocumentSlidesView(document: document)
           }
         }
