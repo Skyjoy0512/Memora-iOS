@@ -1,0 +1,14 @@
+{
+  "renderer": "macOS Quick Look",
+  "wholeDeckHTMLPages": 66,
+  "appendedJapaneseTitlesRetained": 65,
+  "previewOnlyCopies": 65,
+  "thumbnailPNGsGenerated": 65,
+  "contactSheetsVisuallyInspected": 5,
+  "copyModification": "Only ppt/presentation.xml slide-list metadata; appended slide, layout, master and theme parts unchanged",
+  "sourceSHA256": "3384953f38c3c1633e3a9853af68342f8eaf6f2a9ce9d18ad9b745acd33c200f",
+  "catalogSHA256": "e02ca81493a0c8c4b5de5ef455de114e0086326d87c2809a67f9bfc450cdca06",
+  "scope": "Synthetic short Japanese fixtures; colored rectangle is not a real logo image",
+  "powerPointKeynoteDeviceRendering": "unverified",
+  "companyNativePreviewPDF": "not implemented"
+}

@@ -10,6 +10,11 @@ IDと上流の型名はApp/SlideArchetype.swiftを正とする。
 PPTXは編集可能な文字・図形・コネクタ。ネイティブOffice Chart/Excelデータシートではない。
 AI選択の登録は済み、実モデルによる65型選択の評価は未実施。
 
+2026-10-28追補: [会社PPTXへの追加export](presentation-integration/COMPANY_APPEND.md)を実装。
+b01–b30 / m01–m35の全65型で、条件限定の合成会社書式への追加・編集可能図形・独立XML検査・
+Quick Look検証用画像生成/比較シート目視を確認した。会社書式PDF/ネイティブ描画、
+一般プレースホルダー、実AI/Office/実機は未達であり、下表の全条件完成は変更しない。
+
 | ID | 登録/固有描画 | ホストpreview/PDF | PPTX/XML/図形 | 検査/codec/再生成 | Quick Look生成 | 全条件完成 |
 |---|---|---|---|---|---|---|
 | b01 | 実装 | 成功 | 成功 | 成功 | fixture生成・目視済 | 未達 |

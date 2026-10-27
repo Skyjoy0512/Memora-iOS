@@ -1,0 +1,18 @@
+{
+  "passed": 65,
+  "total": 65,
+  "aggregatePages": 66,
+  "checks": [
+    "XML",
+    "relationship targets",
+    "content types",
+    "unique IDs",
+    "editable shapes",
+    "Japanese",
+    "sources",
+    "original part bytes",
+    "corporate layout link"
+  ],
+  "sourceSHA256": "3384953f38c3c1633e3a9853af68342f8eaf6f2a9ce9d18ad9b745acd33c200f",
+  "finalOfficeRendering": "unverified"
+}
