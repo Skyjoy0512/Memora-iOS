@@ -4,6 +4,12 @@ cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-artifact-operations.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 export MEMORA_WORKSPACE_FILES_DIRECTORY="$check_dir/workspace"
+entrypoint=tools/checks/ArtifactOperationsChecks.swift
+extra_sources=()
+if [[ "${1:-}" == --presentation-revision ]]; then
+  entrypoint=tools/checks/PresentationRevisionAccessChecks.swift
+  extra_sources=(App/MemoraModel+PresentationRevision.swift)
+fi
 swiftc -enable-bare-slash-regex -D MEMORA_HOST_CHECKS -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENANCE_CHECKS -D ASK_AI_SCENARIO_CHECKS \
   Shared/MemoraIcon.swift App/LocalStore.swift App/Person.swift App/PersonIdentity.swift App/PersonAIContext.swift \
   App/MemoraModel+PersonPrivacy.swift App/PersonSelectionOption.swift App/PersonTaskAssociation.swift App/PersonMemory.swift App/PersonConversationSummary.swift \
@@ -22,5 +28,5 @@ swiftc -enable-bare-slash-regex -D MEMORA_HOST_CHECKS -D PERSON_PROVENANCE_CHECK
   App/AnswerSourceCitation.swift App/AnswerCitations.swift App/MeetingLink.swift App/AIAnswerDocumentBuilder.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift App/ToolInputValidator.swift App/MissingRecordNotice.swift App/MemoraModel+AnswerCitations.swift \
   App/ZipArchive.swift App/ProjectSourceText.swift App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift App/DOCXWriter.swift App/SlidePage.swift App/SlidePageLayout.swift App/PPTXWriter.swift \
   App/CompanyTemplate.swift App/CompanyTemplateEngine.swift App/OfficeTemplateTextPart.swift App/ProjectSourceFiles.swift \
-  tools/checks/ArtifactOperationsChecks.swift -lsqlite3 -framework CryptoKit -o "$check_dir/operations"
+  "${extra_sources[@]}" "$entrypoint" -lsqlite3 -framework CryptoKit -o "$check_dir/operations"
 "$check_dir/operations"

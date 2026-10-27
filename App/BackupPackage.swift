@@ -243,7 +243,8 @@ enum BackupPackage {
             draft.recipients.count + draft.cc.count + draft.bcc.count <= 100 &&
             (draft.recipients + draft.cc + draft.bcc).allSatisfy(MailDraft.validAddress) &&
             (draft.provenance?.isValid ?? true) && (draft.provenance.map { $0.workspaceID == draft.workspaceID } ?? true) }),
-          (manifest.documents ?? []).allSatisfy({ $0.hasValidRevisions && ($0.provenance?.isValid ?? true) }),
+          (manifest.documents ?? []).allSatisfy({ $0.hasValidRevisions && ($0.provenance?.isValid ?? true)
+            && ($0.presentationPlan?.isValid(for: $0.slides) ?? true) }),
           templates.count <= 100, Set(templates.map(\.id)).count == templates.count,
           templates.allSatisfy({ $0.analysis.placeholders.count <= 30 && MediaFiles.isPlainName($0.fileReference) }) else { throw BackupError.unreadable }
     let sources = manifest.projectSources ?? []

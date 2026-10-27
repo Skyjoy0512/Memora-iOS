@@ -28,6 +28,13 @@ struct PresentationEditorView: View {
             }
           }
         }
+        if document.companyTemplateID == nil {
+          Section {
+            NavigationLink("AIで一部を修正") {
+              PresentationRevisionView(draft: $draft, original: document)
+            }
+          }
+        }
         if document.companyTemplateID != nil {
           Section {
             Text("ここでの編集は元の会社ファイルに反映されません。元ファイルと関連情報を保持します。")

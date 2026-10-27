@@ -5,7 +5,7 @@ import AppKit
 
 @main
 struct PresentationLayoutChecks {
-  static func main() throws {
+  @MainActor static func main() async throws {
     setbuf(stdout, nil)
     let output = URL(fileURLWithPath: CommandLine.arguments[1])
     try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
@@ -15,6 +15,7 @@ struct PresentationLayoutChecks {
     let old = try JSONDecoder().decode(DocumentSlide.self, from: legacy)
     precondition(old.composition == nil && SlidePageLayout.pages(for: old).first?.elements == nil)
     try PresentationPlanningChecks.run()
+    try await PresentationRevisionChecks.run()
     var failures = 0
     var signatures = Set<[PresentationElement]>()
     for layout in SlideArchetype.allCases {

@@ -9,7 +9,8 @@ swiftc -DDEBUG App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/Art
   App/PresentationLayoutEngine.swift App/PresentationValidator.swift App/PresentationExportCheck.swift \
   App/PresentationOOXML.swift App/PresentationDrawing.swift App/PresentationExample.swift App/PresentationToolInput.swift \
   App/SlidePage.swift App/SlidePageLayout.swift App/ZipArchive.swift App/PPTXWriter.swift \
-  tools/checks/PresentationPlanningChecks.swift tools/checks/PresentationLayoutChecks.swift -o "$check_dir/checks"
+  App/AIAnswerFailure.swift App/AIAnswerResult.swift App/PresentationRevision.swift App/PresentationRevisionSession.swift \
+  tools/checks/PresentationPlanningChecks.swift tools/checks/PresentationRevisionChecks.swift tools/checks/PresentationLayoutChecks.swift -o "$check_dir/checks"
 "$check_dir/checks" "$check_dir/output"
 python3 -B tools/checks/validate-presentation-packages.py "$check_dir/output"
 echo "Presentation artifacts: $check_dir/output"

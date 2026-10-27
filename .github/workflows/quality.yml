@@ -56,6 +56,7 @@ jobs:
         run: |
           mkdir -p "$MEMORA_CHECK_ROOT"
           bash tools/checks/run-presentation-checks.sh 2>&1 | tee "$MEMORA_CHECK_ROOT/presentation.log"
+          bash tools/checks/run-artifact-operation-checks.sh --presentation-revision 2>&1 | tee "$MEMORA_CHECK_ROOT/presentation-access.log"
           bash tools/checks/run-inline-link-checks.sh 2>&1 | tee "$MEMORA_CHECK_ROOT/inline-links.log"
           python3 -B tools/checks/verify-oss-resources.py 2>&1 | tee "$MEMORA_CHECK_ROOT/oss.log"
       - name: Upload presentation outputs and logs

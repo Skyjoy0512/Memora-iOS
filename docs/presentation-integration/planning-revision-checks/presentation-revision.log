@@ -1,0 +1,71 @@
+Presentation planning passed: legacy decode, source/unknown separation, bounded input, stable slide IDs, reorder/delete reconciliation and revision-safe outline editing
+Presentation revisions passed: all 65 layouts, selected-only payload, preserved IDs/numbers/sources/chart data, malformed/stale rejection, single request, cancel/replacement, live revocation and explicit draft apply; AI mocked, no API calls
+PASS b01 title_page: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b02 overview_map: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b03 table_of_contents: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b04 section_divider: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b05 chevron_steps: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b06 premise_conclusion: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b07 stat_table_readout: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b08 card_grid_2x2: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b09 axis_table: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b10 back_cover: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b11 claim_panel_figure: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b12 lever_effect_table: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b13 status_heatmap_comment: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b14 harvey_ball_table: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b15 dot_matrix_share: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b16 progress_bubble_matrix: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b17 ranked_bar_annotated: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b18 scatter_annotated: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b19 pillars_foundation: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b20 opposing_chevrons: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b21 evidence_clip_grid: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b22 proportional_circles: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b23 delta_bars_totals: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b24 scenario_lines_cagr: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b25 research_basis: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b26 issue_action_columns: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b27 agenda_separator: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b28 swimlane_numbered_notes: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b29 front_back_two_tier: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS b30 qa_list: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m01 executive_summary: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m02 evidence_basis: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m03 big_stat_pair: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m04 kpi_dashboard: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m05 chart_insight: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m06 stacked_bar: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m07 waterfall: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m08 true_waterfall: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m09 small_multiples: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m10 comparison_table: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m11 scenario_table: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m12 risk_table: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m13 horizontal_axis_table: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m14 heatmap_table: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m15 matrix_2x2: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m16 process_matrix: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m17 nested_row_matrix: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m18 timeline_matrix: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m19 theme_card_grid: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m20 recommendation_pillars: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m21 numbered_imperatives: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m22 scr: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m23 issue_to_solution_map: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m24 issue_cause_solution: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m25 issue_tree: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m26 current_target_state: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m27 calc_flow: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m28 process_flow: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m29 cycle: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m30 chevron_rail: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m31 chevron_value_chain: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m32 decision_fork: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m33 roadmap: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m34 gantt: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+PASS m35 decision_page: model, geometry, PDF text, PPTX, roundtrip, edit, empty
+Distinct geometry signatures: 65/65; failures: 0
+65-page editable catalog: 1257040 bytes, PPTX generation 0.036745792 seconds (host Debug; not device latency)
+65/65 package XML, relationship targets, editable shapes, Japanese, sources and PDF presence passed
+Presentation artifacts: /Volumes/WorkspaceSSD/Development/memora-integration-lC8LwD//memora-presentation.V3jzxL/output

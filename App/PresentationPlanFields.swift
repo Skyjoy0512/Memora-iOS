@@ -7,9 +7,9 @@ struct PresentationPlanFields: View {
   var body: some View {
     Form {
       Section("目的と対象読者") {
-        TextField("何を伝える資料か", text: $plan.purpose, axis: .vertical)
-        TextField("誰に見せるか", text: $plan.audience, axis: .vertical)
-        TextField("何を判断してほしいか", text: $plan.decision, axis: .vertical)
+        LabeledContent("目的") { TextField("何を伝える資料か", text: $plan.purpose, axis: .vertical) }
+        LabeledContent("対象読者") { TextField("誰に見せるか", text: $plan.audience, axis: .vertical) }
+        LabeledContent("判断事項") { TextField("何を判断してほしいか", text: $plan.decision, axis: .vertical) }
       }
       Section {
         TextField("未確認の前提（1行に1件）", text: $plan.assumptionsText, axis: .vertical)
@@ -40,9 +40,9 @@ private struct PresentationStoryPointFields: View {
 
   var body: some View {
     DisclosureGroup(point.claim.isEmpty ? "主張を入力" : point.claim) {
-      TextField("このページの主張", text: $point.claim, axis: .vertical)
-      TextField("根拠・参照箇所（1行に1件）", text: $point.evidenceText, axis: .vertical)
-      TextField("未確認事項（1行に1件）", text: $point.unconfirmedText, axis: .vertical)
+      LabeledContent("主張") { TextField("このページの主張", text: $point.claim, axis: .vertical) }
+      LabeledContent("根拠") { TextField("根拠・参照箇所（1行に1件）", text: $point.evidenceText, axis: .vertical) }
+      LabeledContent("未確認") { TextField("未確認事項（1行に1件）", text: $point.unconfirmedText, axis: .vertical) }
     }
   }
 }
