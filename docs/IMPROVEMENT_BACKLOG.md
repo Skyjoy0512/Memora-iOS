@@ -1,5 +1,12 @@
 # Memora — 改善バックログ
 
+## 2026-10-27: 企業PowerPoint書式の計測基盤
+
+マスター/レイアウト/テーマの関係、寸法、フォント・色・継承位置をSwiftで計測・保存・表示する。
+旧版/SQLite/バックアップ/原本保持を検査。[到達点と制限](presentation-integration/COMPANY_PROFILE.md)。
+計測成功を新規ページの会社書式再現成功とは扱わない。マスター適用・追加exportは未実装。
+参考PPTXのExcel埋め込みは既存の安全方針で拒否し、回避しない。最終完成数は0/65。
+
 ## 2026-10-27: 65型のSwift基盤・編集・URL共通導線
 
 実装・検証の到達点は `docs/presentation-integration/REPORT.md`。

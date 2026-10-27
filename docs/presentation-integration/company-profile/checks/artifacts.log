@@ -1,0 +1,10 @@
+CompanyPresentationChecks: passed (relationship-linked masters/layouts, exact EMU, per-layout usage, theme/Japanese fonts/colors, inherited frames, explicit font sizes, decorations/background, Strict/custom prefix, ambiguous body unresolved, groups disclosed, malformed/traversal/external/missing/duplicate references rejected, legacy decode, bounded file API, unchanged original/non-slide bytes; new-master application and Office rendering NOT validated)
+DocumentArtifactChecks: passed (real DOCX/PPTX, split runs, namespaces/entities/style/whitespace preservation, paragraph/break/field/tracked-change rejection, Japanese/tables/long flow, unchanged parts, reload; final Office rendering unverified)
+Local OOXML PoC docx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.
+Split-run docx: independent ZIP/XML reload, unchanged element/format attributes and untouched parts; Office layout unverified.
+Local OOXML PoC pptx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.
+Split-run pptx: independent ZIP/XML reload, unchanged element/format attributes and untouched parts; Office layout unverified.
+SlidePageChecks: passed (9 cases, 59 derived pages; lossless ordered text, graphemes, intact points, notes, geometry, identity, old codec and real PPTX)
+Slide package: passed (59 pages, 3 notes; independent ZIP/XML, all relationship targets, ordered editable text, notes and frame bounds; Office rendering unverified)
+Slide XML: passed (forbidden XML scalars excluded from headings, body and notes)
+CompanyTemplateAnalysisChecks: passed (production explicit local refresh, old metadata upgrade, unchanged file/ID/version, real SQLite reopen/failure, stale/edit/delete/workspace/generation/protection/restore/cancel; stored state and file resolver are fixtures)
