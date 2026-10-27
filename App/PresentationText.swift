@@ -3,24 +3,36 @@ import Foundation
 
 enum PresentationText {
   static func widestLine(_ element: PresentationElement) -> Double {
-    let attributes = [NSAttributedString.Key(kCTFontAttributeName as String): font(size: element.fontSize, bold: element.bold)]
     return lines(element).map { text in
-      CTLineGetTypographicBounds(CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: attributes)), nil, nil, nil)
+      CTLineGetTypographicBounds(CTLineCreateWithAttributedString(attributed(text, element: element)), nil, nil, nil)
     }.max() ?? 0
   }
 
-  static func font(size: Double, bold: Bool) -> CTFont {
-    let font = CTFontCreateWithName(PresentationTheme.font as CFString, size, nil)
+  static func font(size: Double, bold: Bool, name: String = PresentationTheme.font) -> CTFont {
+    let font = CTFontCreateWithName(name as CFString, size, nil)
     return bold ? CTFontCreateCopyWithSymbolicTraits(font, size, nil, .traitBold, .traitBold) ?? font : font
   }
 
+  static func attributed(_ text: String, element: PresentationElement) -> NSAttributedString {
+    let key = NSAttributedString.Key(kCTFontAttributeName as String)
+    let result = NSMutableAttributedString(string: text, attributes: [key: font(size: element.fontSize, bold: element.bold, name: element.fontName)])
+    if let latin = element.latinFontName, latin != element.fontName {
+      let face = font(size: element.fontSize, bold: element.bold, name: latin)
+      var offset = 0
+      for character in text {
+        let count = String(character).utf16.count
+        if character.unicodeScalars.allSatisfy({ $0.value < 128 }) { result.addAttribute(key, value: face, range: NSRange(location: offset, length: count)) }
+        offset += count
+      }
+    }
+    return result
+  }
+
   static func lines(_ element: PresentationElement) -> [String] {
-    let font = font(size: element.fontSize, bold: element.bold)
     return element.text.components(separatedBy: .newlines).flatMap { paragraph -> [String] in
       guard !paragraph.isEmpty else { return [""] }
       let source = paragraph as NSString
-      let typesetter = CTTypesetterCreateWithAttributedString(NSAttributedString(string: paragraph,
-        attributes: [NSAttributedString.Key(kCTFontAttributeName as String): font]))
+      let typesetter = CTTypesetterCreateWithAttributedString(attributed(paragraph, element: element))
       var result: [String] = [], offset = 0
       while offset < source.length {
         let count = max(1, CTTypesetterSuggestLineBreak(typesetter, offset, max(1, element.width * 0.94)))

@@ -221,6 +221,7 @@ enum AgentTool: String, CaseIterable {
         ],
         "project_id": string("入れるプロジェクトのid（任意）"),
         "template_id": string("利用者が選択した会社テンプレートのid（任意）"),
+        "template_mode": ["type": "string", "enum": ["markers", "append"], "description": "markers（既定）は既存の{{name}}差し込み。appendは利用者が選択した対応PPTXの原ページを残して構造化スライドを追加する。append時のtemplate_fieldsは空。空白レイアウト・寸法・フォント・装飾の適合を端末で再確認する。未対応なら理由を返し、標準テーマへ切り替えない。"],
         "template_fields": ["type": "array", "maxItems": 30, "items": object([
           "name": string("差し込み項目名"), "value": string("差し込む文字列。PPTXは120文字以内")
         ], required: ["name", "value"])]

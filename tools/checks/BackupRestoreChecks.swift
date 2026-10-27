@@ -40,6 +40,7 @@ struct BackupRestoreChecks {
     var document = MemoraDocument(title: "提案資料", kind: .slides, slides: [DocumentSlide(title: "概要", bullets: ["架空の内容"])], spaceID: project.id)
     document.artifactFileReference = "artifact.pptx"; document.artifactFormat = "PPTX"
     document.contentRevision = 2; document.artifactRevision = 1
+    document.companyTemplateID = powerpointTemplate.id; document.companyTemplateVersion = powerpointTemplate.version
     document.presentationPlan = PresentationPlan(purpose: "判断を支援", audience: "会議の参加者", decision: "次の確認事項",
       assumptions: ["架空データ"], storyline: [.init(slideID: document.slides[0].id, claim: "概要を共有する", evidence: ["会議"], unconfirmed: ["実機検証"])])
     document.sourceRecordIDs = [meeting.id]
@@ -89,6 +90,10 @@ struct BackupRestoreChecks {
     invalid = manifest; invalid.documents?[0].contentRevision = -1
     try reject(invalid, in: package)
     invalid = manifest; invalid.documents?[0].artifactRevision = 3
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.documents?[0].companyTemplateVersion = 0
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.documents?[0].companyTemplateID = nil
     try reject(invalid, in: package)
     invalid = manifest; invalid.documents?[0].presentationPlan?.storyline[0].slideID = UUID()
     try reject(invalid, in: package)

@@ -55,7 +55,7 @@ struct CompanyPresentationLayoutView: View {
         }
         LabeledContent("レイアウト図形・画像", value: layout.decorations.count.formatted())
       } header: { Text("マスターと装飾") } footer: {
-        Text("タイトル・本文・フッター等の位置と書式例を計測しています。余白の自動選択、表・グラフの再現、新規ページへの適用はまだ行いません。フォントのインストール状況も未検証です。")
+        Text("タイトル・本文・フッター等の位置と書式例です。新規ページの追加は対応する空白レイアウトのみで、実行時にフォント・色・重なりを再検査します。余白や表・グラフの書式への自動適合は未対応です。")
       }
     }
     .navigationTitle(layout.name).navigationBarTitleDisplayMode(.inline)

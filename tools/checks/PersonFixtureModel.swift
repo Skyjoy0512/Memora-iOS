@@ -20,6 +20,7 @@ import Foundation
   var meetingsByPerson: [UUID: [Meeting]] { Dictionary(uniqueKeysWithValues: people.map { person in (person.id, meetings.filter { $0.participantIDs?.contains(person.id) == true }) }) }
   var aiPersonScopeID: UUID?
   var currentTeamID: String?
+  var aiWorkspaceGeneration = UUID()
   #if PERSON_PROVENANCE_CHECKS
   var calendarContextRevision = UUID()
   var agentBlockedExternalTools: [UUID: Set<String>] = [:]
@@ -72,7 +73,6 @@ import Foundation
   #if INTELLIGENT_UI_CHECKS
   var isAIChatResponding = false
   var aiChatRequestID: UUID?
-  var aiWorkspaceGeneration = UUID()
   var aiChatTask: Task<Void, Never>?
   var interfaceCalls: [AgentToolCall] = []
   #if INTERFACE_TASK_EXECUTION_CHECKS

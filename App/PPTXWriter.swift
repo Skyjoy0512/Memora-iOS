@@ -89,7 +89,7 @@ enum PPTXWriter {
     return header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/slideMaster" Target="slideMasters/slideMaster1.xml"/><Relationship Id="rId2" Type="\#(relationshipBase)/theme" Target="theme/theme1.xml"/>"# + slides + notes + "</Relationships>"
   }
 
-  private static let emptyTree = #"<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>"#
+  static let emptyTree = #"<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>"#
 
   private static var slideMaster: String {
     header + #"<p:sldMaster \#(namespaces)><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>\#(emptyTree)</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst><p:txStyles><p:titleStyle/><p:bodyStyle/><p:otherStyle/></p:txStyles></p:sldMaster>"#
@@ -112,7 +112,7 @@ enum PPTXWriter {
     return header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>\#(notes)</Relationships>"#
   }
 
-  private static var notesMaster: String {
+  static var notesMaster: String {
     header + #"<p:notesMaster \#(namespaces)><p:cSld><p:spTree>\#(emptyTree)</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:notesStyle><a:lvl1pPr><a:defRPr sz="1200"/></a:lvl1pPr></p:notesStyle></p:notesMaster>"#
   }
 
@@ -124,7 +124,7 @@ enum PPTXWriter {
     header + #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="\#(relationshipBase)/notesMaster" Target="../notesMasters/notesMaster1.xml"/><Relationship Id="rId2" Type="\#(relationshipBase)/slide" Target="../slides/slide\#(number).xml"/></Relationships>"#
   }
 
-  private static func notesXML(_ notes: String) -> String {
+  static func notesXML(_ notes: String) -> String {
     let normalized = notes.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
     let paragraphs = normalized.components(separatedBy: "\n").map {
       "<a:p>" + run($0, size: 12, bold: false, color: textHex) + "</a:p>"

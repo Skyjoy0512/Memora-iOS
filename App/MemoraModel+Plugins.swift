@@ -51,11 +51,12 @@ extension MemoraModel {
     }
     for template in companyTemplates where template.workspaceID == currentTeamID {
       let modelSupportsTemplate = onDeviceTools == nil || template.format == .docx
-      let ready = template.analysis.isAvailable && ProjectSourceFiles.resolve(template.fileReference).map { FileManager.default.fileExists(atPath: $0.path) } == true
+      let canAppend = template.format == .pptx && CompanyPresentationExporter.hasCandidate(template.analysis.presentation)
+      let ready = (template.analysis.isAvailable || canAppend) && ProjectSourceFiles.resolve(template.fileReference).map { FileManager.default.fileExists(atPath: $0.path) } == true
       entries.append(AIPlugin(id: "template:" + template.id.uuidString, name: template.name,
-        summary: "差し込み項目名をAIへ渡します。書式ファイルは端末内で適用します。", aliases: ["会社", template.format.rawValue],
-        kind: .template, state: ready && !modelSupportsTemplate ? .setup("PowerPointテンプレートの@利用にはツール対応クラウドAIが必要です。資料のテンプレート画面では端末内で生成できます。") : ready ? .ready : .unavailable("対応する差し込み欄または原本がありません。資料の会社テンプレートから確認してください。"),
-        toolIDs: [template.format == .docx ? "memora:create_document" : "memora:create_slides"], permissions: ["差し込み項目名のみAIへ送信。生成前に承認。"], cost: .unknown, provider: .memora, templateID: template.id))
+        summary: "差し込み項目名と追加対応可否をAIへ渡します。書式ファイルは端末内で適用します。", aliases: ["会社", template.format.rawValue],
+        kind: .template, state: ready && !modelSupportsTemplate ? .setup("PowerPointテンプレートの@利用にはツール対応クラウドAIが必要です。書式は端末内で適用します。") : ready ? .ready : .unavailable("対応する差し込み欄・空白レイアウト候補または原本がありません。資料の会社テンプレートから確認してください。"),
+        toolIDs: [template.format == .docx ? "memora:create_document" : "memora:create_slides"], permissions: ["差し込み項目名と追加対応可否のみAIへ送信。生成前に承認。"], cost: .unknown, provider: .memora, templateID: template.id))
     }
     for server in mcpServers {
       let tools = registry.tools.values.filter { $0.requiredPermissions == ["mcp:" + server.id.uuidString] }

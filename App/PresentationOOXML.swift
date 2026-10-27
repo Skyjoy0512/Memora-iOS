@@ -3,15 +3,22 @@ import Foundation
 /// Charts are editable vector shapes, avoiding Quick Look's missing native-chart path.
 /// Office's chart-data editor is not available for these shapes; data is edited in Memora.
 enum PresentationOOXML {
-  static func shapes(_ elements: [PresentationElement]) -> String {
-    elements.map { e in
+  static func shapes(_ elements: [PresentationElement], schemeColors: [String: String] = [:], lightenedColors: Set<String> = []) -> String {
+    func color(_ hex: String) -> String {
+      if let role = schemeColors[hex], ["bg1", "bg2", "tx1", "tx2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6"].contains(role) {
+        let tint = lightenedColors.contains(hex) ? "<a:lumMod val=\"20000\"/><a:lumOff val=\"80000\"/>" : ""
+        return "<a:schemeClr val=\"\(role)\">\(tint)</a:schemeClr>"
+      }
+      return "<a:srgbClr val=\"\(hex)\"/>"
+    }
+    return elements.map { e in
       if e.kind == .line, let first = e.points.first, let last = e.points.last {
         let flip = (first.x > last.x ? " flipH=\"1\"" : "") + (first.y > last.y ? " flipV=\"1\"" : "")
         let frame = "<a:xfrm\(flip)><a:off x=\"\(emu(e.x))\" y=\"\(emu(e.y))\"/><a:ext cx=\"\(max(1, emu(e.width)))\" cy=\"\(max(1, emu(e.height)))\"/></a:xfrm>"
-        return "<p:cxnSp><p:nvCxnSpPr><p:cNvPr id=\"\(e.id + 2)\" name=\"Memora connector \(e.id)\"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr>\(frame)<a:prstGeom prst=\"line\"><a:avLst/></a:prstGeom><a:ln w=\"12700\"><a:solidFill><a:srgbClr val=\"\(e.color)\"/></a:solidFill></a:ln></p:spPr><p:style><a:lnRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:lnRef><a:fillRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:fillRef><a:effectRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:effectRef><a:fontRef idx=\"minor\"><a:schemeClr val=\"tx1\"/></a:fontRef></p:style></p:cxnSp>"
+        return "<p:cxnSp><p:nvCxnSpPr><p:cNvPr id=\"\(e.id + 2)\" name=\"Memora connector \(e.id)\"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr>\(frame)<a:prstGeom prst=\"line\"><a:avLst/></a:prstGeom><a:ln w=\"12700\"><a:solidFill>\(color(e.color))</a:solidFill></a:ln></p:spPr><p:style><a:lnRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:lnRef><a:fillRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:fillRef><a:effectRef idx=\"0\"><a:schemeClr val=\"accent1\"/></a:effectRef><a:fontRef idx=\"minor\"><a:schemeClr val=\"tx1\"/></a:fontRef></p:style></p:cxnSp>"
       }
       let frame = transform(x: e.x, y: e.y, width: e.width, height: e.height)
-      let fill = e.fill.map { "<a:solidFill><a:srgbClr val=\"\($0)\"/></a:solidFill>" } ?? "<a:noFill/>"
+      let fill = e.fill.map { "<a:solidFill>\(color($0))</a:solidFill>" } ?? "<a:noFill/>"
       var geometry: String
       switch e.kind {
       case .line, .polygon:
@@ -23,12 +30,12 @@ enum PresentationOOXML {
       default:
         geometry = "<a:prstGeom prst=\"\(e.kind == .ellipse ? "ellipse" : "rect")\"><a:avLst/></a:prstGeom>"
       }
-      let stroke = e.kind == .line ? "<a:ln w=\"12700\"><a:solidFill><a:srgbClr val=\"\(e.color)\"/></a:solidFill></a:ln>" : "<a:ln><a:noFill/></a:ln>"
+      let stroke = e.kind == .line ? "<a:ln w=\"12700\"><a:solidFill>\(color(e.color))</a:solidFill></a:ln>" : "<a:ln><a:noFill/></a:ln>"
       var body = ""
       if e.kind == .text {
         let sz = Int(e.fontSize * 100), lineHeight = Int(e.fontSize * 130)
         let paragraphs = PresentationText.lines(e).map { line in
-          "<a:p><a:pPr><a:lnSpc><a:spcPts val=\"\(lineHeight)\"/></a:lnSpc><a:buNone/></a:pPr><a:r><a:rPr lang=\"ja-JP\" sz=\"\(sz)\" b=\"\(e.bold ? 1 : 0)\"><a:solidFill><a:srgbClr val=\"\(e.color)\"/></a:solidFill><a:latin typeface=\"\(PresentationTheme.font)\"/><a:ea typeface=\"\(PresentationTheme.font)\"/></a:rPr><a:t xml:space=\"preserve\">\(escape(line))</a:t></a:r><a:endParaRPr lang=\"ja-JP\" sz=\"\(sz)\"/></a:p>"
+          "<a:p><a:pPr><a:lnSpc><a:spcPts val=\"\(lineHeight)\"/></a:lnSpc><a:buNone/></a:pPr><a:r><a:rPr lang=\"ja-JP\" sz=\"\(sz)\" b=\"\(e.bold ? 1 : 0)\"><a:solidFill>\(color(e.color))</a:solidFill><a:latin typeface=\"\(escape(e.latinFontName ?? e.fontName))\"/><a:ea typeface=\"\(escape(e.fontName))\"/></a:rPr><a:t xml:space=\"preserve\">\(escape(line))</a:t></a:r><a:endParaRPr lang=\"ja-JP\" sz=\"\(sz)\"/></a:p>"
         }.joined()
         body = "<p:txBody><a:bodyPr wrap=\"none\" lIns=\"0\" tIns=\"0\" rIns=\"0\" bIns=\"0\"><a:noAutofit/></a:bodyPr><a:lstStyle/>\(paragraphs)</p:txBody>"
       }

@@ -6,16 +6,11 @@ enum AIEngineService { static func effectiveEngine(_ engine: AIEngine) -> AIEngi
 @MainActor private enum RevisionAccessFixture {
   static var engine = AIEngine.cloud
   static var llm = LLMSelection()
-  static var generation = UUID()
   static var configurationRevision = UUID()
 }
 extension MemoraModel {
   var askAIConfiguration: (engine: AIEngine, llm: LLMSelection) { (RevisionAccessFixture.engine, RevisionAccessFixture.llm) }
   var summaryConfigurationIdentity: [UUID] { [RevisionAccessFixture.configurationRevision] }
-  var aiWorkspaceGeneration: UUID {
-    get { RevisionAccessFixture.generation }
-    set { RevisionAccessFixture.generation = newValue }
-  }
 }
 
 @main

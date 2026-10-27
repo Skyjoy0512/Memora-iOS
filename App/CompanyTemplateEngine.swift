@@ -2,7 +2,7 @@ import Foundation
 
 /// Replaces scalar markers within a paragraph, preserving every other part's bytes.
 enum CompanyTemplateEngine {
-  static let analysisVersion = 3
+  static let analysisVersion = 4
   struct Analysis: Codable, Hashable {
     var placeholders: [String]
     var features: [String]

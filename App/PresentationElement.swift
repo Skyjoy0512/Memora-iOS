@@ -10,6 +10,8 @@ struct PresentationElement: Hashable, Sendable, Identifiable {
   var height: Double
   var text = ""
   var fontSize = 20.0
+  var fontName = PresentationTheme.font
+  var latinFontName: String?
   var bold = false
   var color = PresentationTheme.ink
   var fill: String?

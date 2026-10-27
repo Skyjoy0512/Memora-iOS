@@ -104,7 +104,12 @@ extension MemoraModel {
     let thread = limitsSources ? "" : runner.isOnDevice ? Self.trailingHistory(history, budget: 600) : safeHistory.text
     var opening = trimmed
     for template in companyTemplates where pluginPolicy?.templateIDs.contains(template.id) == true && template.workspaceID == currentTeamID {
-      opening += "\n選択した会社テンプレート: template_id=\(template.id)、形式=\(template.format.rawValue)、必須の差し込み項目=\(template.analysis.placeholders.joined(separator: ", "))。create_document/create_slidesのtemplate_fieldsに全項目の値を指定する。原本は端末内で処理する。"
+      opening += "\n選択した会社テンプレート: template_id=\(template.id)、形式=\(template.format.rawValue)、差し込み項目=\(template.analysis.placeholders.joined(separator: ", "))。原本は端末内で処理する。"
+      if template.format == .pptx, CompanyPresentationExporter.hasCandidate(template.analysis.presentation) {
+        opening += "create_slidesのtemplate_mode=appendで既存ページを保持して新規の構造化スライドを追加可能な候補です。template_fieldsは空にします。最終的な書式適合は端末内で再検査され、未対応なら理由を表示します。"
+      } else {
+        opening += "差し込み方式のみです。template_fieldsに全項目の値を指定し、原本へのページ追加は行わないでください。"
+      }
     }
     if let personID = pluginPolicy?.personID {
       opening += "\n人物限定の依頼: person_id=\(personID)。read_personではこのperson_idを指定し、nameは空文字でも構いません。担当の指定・本人の発言・会議全体の決定を区別してください。参照範囲外の人物・記録は使えません。"

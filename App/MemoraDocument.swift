@@ -22,6 +22,7 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   var artifactFileReference: String?
   var artifactFormat: String?
   var companyTemplateID: UUID?
+  var companyTemplateVersion: Int?
   /// Missing revisions identify a legacy document and its original export (0).
   var contentRevision: Int?
   var artifactRevision: Int?
@@ -38,6 +39,7 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   var hasValidRevisions: Bool {
     (contentRevision ?? 0) >= 0 && (artifactRevision ?? 0) >= 0
       && (artifactRevision ?? 0) <= (contentRevision ?? 0)
+      && (companyTemplateVersion.map { $0 > 0 && companyTemplateID != nil } ?? true)
   }
 
   /// An outline edit does not prove that a company Office file was rewritten.

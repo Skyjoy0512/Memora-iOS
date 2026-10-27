@@ -22,7 +22,7 @@ extension MemoraModel {
 
   func generateCompanyDocument(templateID: UUID, title: String, values: [String: String]) async throws -> URL {
     guard let template = companyTemplates.first(where: { $0.id == templateID && $0.workspaceID == currentTeamID }),
-          template.analysis.isAvailable, let url = ProjectSourceFiles.resolve(template.fileReference), !isRestoring else { throw CompanyTemplateEngine.Failure.unsupported }
+          template.version > 0, template.analysis.isAvailable, let url = ProjectSourceFiles.resolve(template.fileReference), !isRestoring, isStoreWritable() else { throw CompanyTemplateEngine.Failure.unsupported }
     let workspace = currentTeamID
     let generation = aiWorkspaceGeneration
     let worker = Task.detached(priority: .userInitiated) { try CompanyTemplateEngine.fill(url, format: template.format, values: values) }
@@ -33,6 +33,7 @@ extension MemoraModel {
     document.markdown = values.sorted { $0.key < $1.key }.map { "## " + $0.key + "\n" + $0.value }.joined(separator: "\n\n")
     document.artifactFileReference = name; document.artifactFormat = template.format.rawValue.uppercased()
     document.companyTemplateID = templateID
+    document.companyTemplateVersion = template.version
     document.artifactRevision = document.contentRevision ?? 0
     guard !Task.isCancelled, workspace == currentTeamID, generation == aiWorkspaceGeneration, !isRestoring,
           companyTemplates.contains(template), addDocument(document), let result = ProjectSourceFiles.resolve(name) else {

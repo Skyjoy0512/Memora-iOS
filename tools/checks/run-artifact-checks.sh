@@ -17,3 +17,4 @@ if [[ "${MEMORA_KEEP_SPLIT_FIXTURES:-0}" == "1" ]]; then
   cp "$check_dir/generated/split-runs.docx" docs/fixtures/ask-ai-artifacts/split-runs.docx
   cp "$check_dir/generated/split-runs.pptx" docs/fixtures/ask-ai-artifacts/split-runs.pptx
 fi
+bash tools/checks/run-company-presentation-checks.sh

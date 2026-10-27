@@ -16,9 +16,60 @@ struct ArtifactOperationsChecks {
 
     try await saveReloadEdit(root: root)
     try await failedSaveDoesNotReportSuccess(root: root)
+    try await companyAppend(root: root)
     try shareCopyLifetime(root: root)
     try sourceRowsRespectDeletionPrivacyAndWorkspace()
     print("ArtifactOperationsChecks: passed (real DOCX/PPTX files, production save/edit/reload, SQLite ABORT leaves no success, share copy cleanup, source rows for deleted/revoked/other workspace; share destination and Office final rendering unverified)")
+  }
+
+  @MainActor static func companyAppend(root: URL) async throws {
+    let storeURL = root.appendingPathComponent("company-append.sqlite")
+    let model = try MemoraModel(storeURL: storeURL)
+    let original = PPTXWriter.data(for: .init(title: "会社の原本", kind: .slides,
+      slides: [.init(title: "原本のページ", bullets: ["この内容は変更しない"]) ]))
+    let name = try await ProjectSourceFiles.shared.write(original, extension: "pptx")
+    var template = CompanyTemplate(name: "差し込み欄なし", format: .pptx, fileReference: name,
+      analysis: try CompanyTemplateEngine.analyze(original, format: .pptx))
+    template.version = 7
+    model.companyTemplates = [template]
+    var slide = DocumentSlide(title: "次の判断を共有する", bullets: [], notes: "発表者の注記")
+    slide.composition = .init(layout: .b01, subtitle: "架空の検証資料", sources: [.init(title: "手元の会議メモ", locator: "会議1")])
+    let call = AgentToolCall(id: "append", name: "create_slides", arguments: [
+      "template_id": template.id.uuidString, "template_mode": "append", "template_fields": []])
+    let document = try await model.prepareDocumentArtifact(.init(title: "追加資料", kind: .slides, slides: [slide]), call: call)
+    precondition(model.addDocument(document))
+    let reopened = LocalStore(fileURL: storeURL); try reopened.prepare()
+    guard case .data(let bytes) = reopened.readOutcome(MemoraModel.StorageKey.documents) else { preconditionFailure("missing append") }
+    let stored = try JSONDecoder().decode([MemoraDocument].self, from: bytes)[0]
+    precondition(stored == document && stored.companyTemplateID == template.id && stored.companyTemplateVersion == 7)
+    let artifactURL = ProjectSourceFiles.resolve(stored.artifactFileReference!)!
+    let artifact = try Data(contentsOf: artifactURL)
+    var analyzer = try CompanyPresentationAnalyzer(data: artifact)
+    let profile = try analyzer.measure(); precondition(profile.slideCount == 2)
+    var changed = stored.slides; changed[0].title = "編集した次の判断"
+    precondition(model.updateDocumentSlides(stored.id, title: stored.title, slides: changed, expectedUpdatedAt: stored.updatedAt))
+    let edited = model.documents[0]
+    precondition(edited.companyTemplateVersion == 7 && edited.hasOutdatedArtifact && edited.artifactFileReference == stored.artifactFileReference)
+    let regenerated = try await model.prepareDocumentArtifact(edited, call: call)
+    let regeneratedBytes = try Data(contentsOf: ProjectSourceFiles.resolve(regenerated.artifactFileReference!)!)
+    var regeneratedAnalyzer = try CompanyPresentationAnalyzer(data: regeneratedBytes)
+    let regeneratedProfile = try regeneratedAnalyzer.measure()
+    precondition(regeneratedProfile.slideCount == 2, "Regeneration appended to a previous artifact")
+    precondition(regenerated.artifactRevision == edited.contentRevision && !regenerated.hasOutdatedArtifact)
+    let preservedArtifact = try Data(contentsOf: artifactURL), preservedOriginal = try Data(contentsOf: ProjectSourceFiles.resolve(name)!)
+    precondition(preservedArtifact == artifact && preservedOriginal == original)
+    for arguments: [String: Any] in [
+      [:], ["template_id": "invalid"], ["template_mode": "append"], ["template_mode": "markers"],
+      ["template_id": template.id.uuidString, "template_mode": "unknown"],
+      ["template_id": template.id.uuidString, "template_mode": "append", "template_fields": [["name": "title", "value": "禁止"]]]
+    ] {
+      do { _ = try await model.prepareDocumentArtifact(edited, call: .init(id: "invalid", name: "create_slides", arguments: arguments)); preconditionFailure("invalid append silently fell back") } catch {}
+    }
+    model.isRestoring = true
+    do { _ = try await model.prepareDocumentArtifact(edited, call: call); preconditionFailure("restore permitted append") } catch is CancellationError {}
+    model.isRestoring = false; model.isStoreProtected = true
+    do { _ = try await model.prepareDocumentArtifact(edited, call: call); preconditionFailure("protected store permitted append") } catch is CancellationError {}
+    print("Corporate append lifecycle passed: production preparation/save/SQLite reload/edit/regeneration, template version 7, original and old artifact intact, invalid modes and protected/restore refusal; no AI/network")
   }
 
   @MainActor static func saveReloadEdit(root: URL) async throws {

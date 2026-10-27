@@ -80,7 +80,7 @@ struct CompanyPresentationAnalyzer {
     guard usage.keys.allSatisfy({ seenLayouts.contains($0) }) else { throw OfficeArchiveReader.Failure.invalid }
     let result = CompanyPresentationProfile(presentationPart: main, widthEMU: width, heightEMU: height, slideCount: slideCount, masters: masters,
       layouts: layouts.sorted { $0.useCount == $1.useCount ? $0.id < $1.id : $0.useCount > $1.useCount },
-      notices: ["計測情報です。新規スライドへのマスター適用・書式再現は未対応です。", "画像の位置は計測しますが、ロゴの自動判定は行いません。", "表・グラフの個別書式、ページ番号の自動生成、最終描画は未検証です。"])
+      notices: ["計測情報です。空白レイアウトへの追加は実行時に適合を再検査します。その他の書式再現は未対応です。", "画像の位置は計測しますが、ロゴの自動判定は行いません。", "表・グラフの個別書式、ページ番号の自動生成、最終描画は未検証です。"])
     guard result.isValid, try JSONEncoder().encode(result).count <= 512 * 1024 else { throw OfficeArchiveReader.Failure.limit }
     return result
   }
@@ -150,7 +150,9 @@ struct CompanyPresentationAnalyzer {
           let node = value.nodes[color]
           guard Self.a.contains(node.namespace) else { continue }
           let raw = node.name == "srgbClr" ? node.attributes["val"] : node.name == "sysClr" ? node.attributes["lastClr"] : nil
-          if let raw, raw.range(of: "^[0-9A-Fa-f]{6}$", options: .regularExpression) != nil { colors[value.nodes[slot].name] = raw.uppercased() }
+          if let raw, node.children.isEmpty, raw.range(of: "^[0-9A-Fa-f]{6}$", options: .regularExpression) != nil {
+            colors[value.nodes[slot].name] = raw.uppercased()
+          }
         }
       }
     }

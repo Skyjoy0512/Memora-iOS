@@ -20,12 +20,10 @@ enum PresentationDrawing {
           if e.kind == .polygon { context.closePath(); context.fillPath() } else { context.strokePath() }
         }
       case .text:
-        let font = PresentationText.font(size: e.fontSize, bold: e.bold)
         for (i, text) in PresentationText.lines(e).enumerated() {
-          let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: [
-            NSAttributedString.Key(kCTFontAttributeName as String): font,
-            NSAttributedString.Key(kCTForegroundColorAttributeName as String): color(e.color)
-          ]))
+          let attributed = NSMutableAttributedString(attributedString: PresentationText.attributed(text, element: e))
+          attributed.addAttribute(NSAttributedString.Key(kCTForegroundColorAttributeName as String), value: color(e.color), range: NSRange(location: 0, length: attributed.length))
+          let line = CTLineCreateWithAttributedString(attributed)
           context.saveGState()
           context.translateBy(x: e.x, y: e.y + Double(i) * e.fontSize * 1.3 + e.fontSize)
           context.scaleBy(x: 1, y: -1)
