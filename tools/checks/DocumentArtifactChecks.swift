@@ -4,6 +4,7 @@ import Foundation
   static func main() throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    try CompanyPresentationChecks.run(root: root)
     let doc = MemoraDocument(title: "提案書 {{title}}", kind: .document, markdown: "# 背景\n{{body}}\n\n| 項目 | 内容 |\n| --- | --- |\n| 費用 | 未確認 |")
     var legacy = doc
     legacy.artifactFileReference = "original.docx"

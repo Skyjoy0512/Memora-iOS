@@ -20,7 +20,7 @@ struct BackupRestoreChecks {
     let pptx = try Data(contentsOf: URL(fileURLWithPath: "docs/fixtures/ask-ai-artifacts/generated.pptx"))
     let audio = Data("fixture audio, never played".utf8)
     let photo = Data("fixture image, never displayed".utf8)
-    let workspaceFiles = ["template.docx": docx, "artifact.pptx": pptx, "source.txt": Data("根拠の本文".utf8)]
+    let workspaceFiles = ["template.docx": docx, "template.pptx": pptx, "artifact.pptx": pptx, "source.txt": Data("根拠の本文".utf8)]
     for (name, data) in workspaceFiles { try data.write(to: ProjectSourceFiles.resolve(name)!) }
     try audio.write(to: MediaFiles.directory.appendingPathComponent("audio.m4a"))
     try photo.write(to: MediaFiles.photosDirectory.appendingPathComponent("photo.jpg"))
@@ -35,6 +35,8 @@ struct BackupRestoreChecks {
     draft.personIDs = [person.id]; draft.projectID = project.id; draft.recordIDs = [meeting.id]
     let template = CompanyTemplate(name: "会社書式", format: .docx, fileReference: "template.docx", projectID: project.id,
       analysis: try CompanyTemplateEngine.analyze(docx, format: .docx))
+    let powerpointTemplate = CompanyTemplate(name: "PowerPointの計測", format: .pptx, fileReference: "template.pptx", projectID: project.id,
+      analysis: try CompanyTemplateEngine.analyze(pptx, format: .pptx))
     var document = MemoraDocument(title: "提案資料", kind: .slides, slides: [DocumentSlide(title: "概要", bullets: ["架空の内容"])], spaceID: project.id)
     document.artifactFileReference = "artifact.pptx"; document.artifactFormat = "PPTX"
     document.contentRevision = 2; document.artifactRevision = 1
@@ -51,9 +53,9 @@ struct BackupRestoreChecks {
     let sessionID = UUID()
     let episode = AIEpisode(id: UUID(), sessionID: sessionID, date: now, topic: "提案書", objective: "資料作成", summary: "会社書式を確認した", personIDs: [person.id], projectIDs: [project.id], recordIDs: [meeting.id], documentIDs: [document.id])
     let history = AIConversationEntry(id: UUID(), question: "前回の提案書", answer: "保存しました", scopeLabel: "すべて", createdAt: now, episode: episode)
-    let package = try BackupPackage.write(meetings: [meeting], spaces: [project], tasks: [], lifeLogEntries: [], people: [person], aiHistory: [history], aiMemories: [memory], mailDrafts: [draft], companyTemplates: [template], documents: [document], projectSources: [source], into: input)
+    let package = try BackupPackage.write(meetings: [meeting], spaces: [project], tasks: [], lifeLogEntries: [], people: [person], aiHistory: [history], aiMemories: [memory], mailDrafts: [draft], companyTemplates: [template, powerpointTemplate], documents: [document], projectSources: [source], into: input)
     let manifest = try BackupPackage.read(from: package)
-    precondition(manifest.aiMemories == [memory] && manifest.mailDrafts == [draft] && manifest.companyTemplates == [template])
+    precondition(manifest.aiMemories == [memory] && manifest.mailDrafts == [draft] && manifest.companyTemplates == [template, powerpointTemplate])
     precondition(manifest.documents == [document] && manifest.aiHistory.first?.episode == episode)
     for (name, bytes) in workspaceFiles {
       let restored = try Data(contentsOf: package.appendingPathComponent("workspace/" + name))
@@ -73,6 +75,11 @@ struct BackupRestoreChecks {
     try originalJSON.write(to: manifestURL, options: .atomic)
 
     var invalid = manifest
+    invalid.companyTemplates?[1].analysis.presentation?.widthEMU = -1
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.companyTemplates?[1].analysis.presentation?.masters.append(powerpointTemplate.analysis.presentation!.masters[0])
+    try reject(invalid, in: package)
+    invalid = manifest
     invalid.documents = [document, document]
     try reject(invalid, in: package)
     invalid = manifest; invalid.mailDrafts?[0].recipients = Array(repeating: "fixture@example.com", count: 101)
@@ -212,7 +219,7 @@ struct BackupRestoreChecks {
     let drafts = try JSONDecoder().decode([MailDraft].self, from: read(reopened, "mail"))
     let templates = try JSONDecoder().decode([CompanyTemplate].self, from: read(reopened, "templates"))
     let documents = try JSONDecoder().decode([MemoraDocument].self, from: read(reopened, "documents"))
-    precondition(memories == [memory] && drafts == [draft] && templates == [template] && documents == [document])
+    precondition(memories == [memory] && drafts == [draft] && templates == [template, powerpointTemplate] && documents == [document])
     for (name, bytes) in workspaceFiles {
       let restored = try Data(contentsOf: ProjectSourceFiles.resolve(name)!)
       precondition(restored == bytes)

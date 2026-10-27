@@ -29,6 +29,11 @@ struct CompanyTemplateDetailView: View {
             }
           }.disabled(busy)
         }
+        if let profile = template.analysis.presentation {
+          CompanyPresentationProfileView(profile: profile)
+        } else if template.format == .pptx {
+          Section { Text("ページとマスターの計測には、テンプレートを再解析してください。").font(.footnote).foregroundStyle(.secondary) }
+        }
         Section("差し込み内容") {
           ForEach(template.analysis.placeholders, id: \.self) { name in
             TextField(name, text: Binding(get: { values[name] ?? "" }, set: { values[name] = $0 }), axis: .vertical)
@@ -52,7 +57,11 @@ struct CompanyTemplateDetailView: View {
             Text("資料に保存済みです。書式は元ファイルのままです。保存前に文字あふれと改ページを確認してください。").font(.footnote).foregroundStyle(.secondary)
           }
         }
-        Section("解析した構造") { ForEach(Array(template.analysis.features.enumerated()), id: \.offset) { _, feature in Text(feature).font(.caption).textSelection(.enabled) } }
+        Section {
+          DisclosureGroup("解析したXML構造") {
+            ForEach(Array(template.analysis.features.enumerated()), id: \.offset) { _, feature in Text(feature).font(.caption).textSelection(.enabled) }
+          }
+        }
       } else {
         Text("このワークスペースではテンプレートを利用できません。")
       }

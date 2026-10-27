@@ -17,7 +17,7 @@ import SQLite3
     model.companyTemplates = seed
     try await model.refreshCompanyTemplateAnalysis(old.id)
     let refreshed = model.companyTemplates[0]
-    precondition(refreshed.analysis.engineVersion == 2 && refreshed.analysis.isAvailable)
+    precondition(refreshed.analysis.engineVersion == CompanyTemplateEngine.analysisVersion && refreshed.analysis.isAvailable)
     precondition(refreshed.analysis.placeholders == ["body", "title"] && refreshed.version == old.version)
     precondition(refreshed.id == old.id && refreshed.fileReference == old.fileReference && model.companyTemplates[1] == foreign)
     let actualFile = try Data(contentsOf: file)
@@ -66,6 +66,13 @@ import SQLite3
     precondition(sqlite3_exec(db, "DROP TRIGGER reject_analysis", nil, nil, nil) == SQLITE_OK)
     try model.finishCompanyTemplateAnalysis(analysis, original: old, workspace: nil, generation: generation)
     precondition(model.companyTemplates[0].analysis == analysis)
+    let powerpoint = CompanyTemplate(name: "架空の企業PPTX", format: .pptx, fileReference: "measured-template.pptx", analysis: old.analysis)
+    model.companyTemplates.append(powerpoint)
+    try await model.refreshCompanyTemplateAnalysis(powerpoint.id)
+    precondition(model.companyTemplates.last?.analysis.presentation?.layouts.first?.placeholders.first?.frameSource == "ppt/slideMasters/slideMaster1.xml")
+    guard case .data(let savedProfile) = reopened.readOutcome("memora.companyTemplates.v1") else { preconditionFailure("missing profile") }
+    let reloadedProfile = try JSONDecoder().decode([CompanyTemplate].self, from: savedProfile)
+    precondition(reloadedProfile == model.companyTemplates && reloadedProfile.last?.analysis.presentation?.isValid == true)
     print("CompanyTemplateAnalysisChecks: passed (production explicit local refresh, old metadata upgrade, unchanged file/ID/version, real SQLite reopen/failure, stale/edit/delete/workspace/generation/protection/restore/cancel; stored state and file resolver are fixtures)")
   }
 }
@@ -86,5 +93,5 @@ import SQLite3
 
 @MainActor enum ProjectSourceFiles {
   static var root = URL(fileURLWithPath: "/unused-template-fixtures")
-  static func resolve(_ name: String) -> URL? { name == "split-template.docx" ? root.appendingPathComponent(name) : nil }
+  static func resolve(_ name: String) -> URL? { ["split-template.docx", "measured-template.pptx"].contains(name) ? root.appendingPathComponent(name) : nil }
 }

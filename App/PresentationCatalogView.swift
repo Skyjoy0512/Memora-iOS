@@ -5,6 +5,7 @@ struct PresentationCatalogView: View {
   var body: some View {
     List {
       NavigationLink("資料計画・部分修正の表示検証") { PresentationEditingExampleView() }
+      NavigationLink("企業書式の計測を表示（架空PPTX）") { CompanyPresentationExampleView() }
       ForEach(SlideArchetype.allCases) { layout in
         NavigationLink {
           PresentationSlideEditorHost(layout: layout)

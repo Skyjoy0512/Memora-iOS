@@ -21,7 +21,7 @@ swiftc -enable-bare-slash-regex -D MEMORA_HOST_CHECKS -D PERSON_PROVENANCE_CHECK
   App/MemoraModel+MailDrafts.swift App/MemoraModel+MailDraftTool.swift App/MemoraModel+DocumentArtifacts.swift \
   App/AnswerSourceCitation.swift App/AnswerCitations.swift App/MeetingLink.swift App/AIAnswerDocumentBuilder.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift App/ToolInputValidator.swift App/MissingRecordNotice.swift App/MemoraModel+AnswerCitations.swift \
   App/ZipArchive.swift App/ProjectSourceText.swift App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift App/DOCXWriter.swift App/SlidePage.swift App/SlidePageLayout.swift App/PPTXWriter.swift \
-  App/CompanyTemplate.swift App/CompanyTemplateEngine.swift App/OfficeTemplateTextPart.swift App/ProjectSourceFiles.swift \
+  App/CompanyTemplate.swift App/CompanyTemplateEngine.swift App/CompanyPresentationProfile.swift App/CompanyPresentationAnalyzer.swift App/OfficeTemplateTextPart.swift App/ProjectSourceFiles.swift \
   App/WebResearchSource.swift App/WebResearchReport.swift App/ResearchPlan.swift App/ResearchLoop.swift App/MemoraModel+WebResearchStorage.swift \
   App/ProjectSourceURL.swift App/ProjectYouTubeMetadata.swift App/ProjectMetadataTransport.swift App/ProjectMetadataRedirectPolicy.swift App/WebResearchClient.swift \
   App/MemoryRetrievalItem.swift App/MemoryRetrievalOrchestrator.swift \

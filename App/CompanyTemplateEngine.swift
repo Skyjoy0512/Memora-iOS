@@ -2,18 +2,37 @@ import Foundation
 
 /// Replaces scalar markers within a paragraph, preserving every other part's bytes.
 enum CompanyTemplateEngine {
-  static let analysisVersion = 2
+  static let analysisVersion = 3
   struct Analysis: Codable, Hashable {
     var placeholders: [String]
     var features: [String]
     var unsupportedSplitMarkers: Bool
     var engineVersion: Int? = nil
+    var presentation: CompanyPresentationProfile? = nil
     var isAvailable: Bool { !placeholders.isEmpty && placeholders.count <= 30 && !unsupportedSplitMarkers }
     var notice: String {
       "同じ段落内の{{name}}に30種類まで差し込めます。分割された欄は先頭文字の書式を引き継ぎます。マスター・画像・ノートは保持します。改ページ、文字あふれ、最終フォントはOfficeで確認してください。" +
         (engineVersion != CompanyTemplateEngine.analysisVersion ? "旧解析情報です。再解析で現在の対応範囲を確認してください。" : "") +
         (unsupportedSplitMarkers ? "段落・改行・フィールド等をまたぐ欄、変更履歴内の欄、不完全な欄は利用できません。" : "")
     }
+  }
+
+  static func analyze(_ url: URL, format: CompanyTemplate.Format) throws -> Analysis {
+    try analyze(readOriginal(url), format: format)
+  }
+
+  static func fill(_ url: URL, format: CompanyTemplate.Format, values: [String: String]) throws -> Data {
+    try fill(readOriginal(url), format: format, values: values)
+  }
+
+  private static func readOriginal(_ url: URL) throws -> Data {
+    try Task.checkCancellation()
+    let handle = try FileHandle(forReadingFrom: url)
+    defer { try? handle.close() }
+    let bytes = try handle.read(upToCount: OfficeArchiveReader.maximumArchiveBytes + 1) ?? Data()
+    try Task.checkCancellation()
+    guard bytes.count <= OfficeArchiveReader.maximumArchiveBytes else { throw OfficeArchiveReader.Failure.limit }
+    return bytes
   }
   enum Failure: LocalizedError {
     case unsupported, fields, tooLong, save, invalidText
@@ -61,7 +80,12 @@ enum CompanyTemplateEngine {
       }
     }
     guard names.count <= 30 else { throw Failure.fields }
-    return Analysis(placeholders: names.sorted(), features: Array(features.prefix(100)), unsupportedSplitMarkers: split, engineVersion: analysisVersion)
+    var presentation: CompanyPresentationProfile?
+    if format == .pptx {
+      var analyzer = try CompanyPresentationAnalyzer(data: data)
+      presentation = try analyzer.measure()
+    }
+    return Analysis(placeholders: names.sorted(), features: Array(features.prefix(100)), unsupportedSplitMarkers: split, engineVersion: analysisVersion, presentation: presentation)
   }
 
   static func fill(_ data: Data, format: CompanyTemplate.Format, values: [String: String]) throws -> Data {

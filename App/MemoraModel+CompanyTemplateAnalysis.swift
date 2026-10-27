@@ -9,10 +9,7 @@ extension MemoraModel {
     let workspace = currentTeamID
     let generation = aiWorkspaceGeneration
     let worker = Task.detached(priority: .userInitiated) {
-      let handle = try FileHandle(forReadingFrom: url)
-      defer { try? handle.close() }
-      let data = try handle.read(upToCount: OfficeArchiveReader.maximumArchiveBytes + 1) ?? Data()
-      return try CompanyTemplateEngine.analyze(data, format: original.format)
+      try CompanyTemplateEngine.analyze(url, format: original.format)
     }
     let analysis = try await withTaskCancellationHandler {
       try await worker.value

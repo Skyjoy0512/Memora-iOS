@@ -246,7 +246,8 @@ enum BackupPackage {
           (manifest.documents ?? []).allSatisfy({ $0.hasValidRevisions && ($0.provenance?.isValid ?? true)
             && ($0.presentationPlan?.isValid(for: $0.slides) ?? true) }),
           templates.count <= 100, Set(templates.map(\.id)).count == templates.count,
-          templates.allSatisfy({ $0.analysis.placeholders.count <= 30 && MediaFiles.isPlainName($0.fileReference) }) else { throw BackupError.unreadable }
+          templates.allSatisfy({ $0.analysis.placeholders.count <= 30 && MediaFiles.isPlainName($0.fileReference)
+            && ($0.analysis.presentation?.isValid ?? true) }) else { throw BackupError.unreadable }
     let sources = manifest.projectSources ?? []
     let chats = manifest.projectChats ?? []
     guard Set(sources.map(\.id)).count == sources.count,

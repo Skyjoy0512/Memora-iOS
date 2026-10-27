@@ -19,7 +19,7 @@ extension MemoraModel {
       guard Set(pairs.map { $0.0 }).count == pairs.count else { throw CompanyTemplateEngine.Failure.fields }
       let values = Dictionary(uniqueKeysWithValues: pairs)
       data = try await Task.detached(priority: .userInitiated) {
-        try CompanyTemplateEngine.fill(Data(contentsOf: url), format: template.format, values: values)
+        try CompanyTemplateEngine.fill(url, format: template.format, values: values)
       }.value
       format = template.format.rawValue
       guard companyTemplates.contains(template) else { throw CancellationError() }
