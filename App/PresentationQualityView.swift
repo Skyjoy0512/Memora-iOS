@@ -9,6 +9,12 @@ struct PresentationQualityView: View {
       VStack(alignment: .leading, spacing: MemoraSpacing.md) {
         Text("版面・入力・同じ出典の数値を機械検査しています。数値の真偽、日本語の自然さ、論理の妥当性は原資料と照合してください。")
           .foregroundStyle(.secondary)
+        if let plan = document.presentationPlan {
+          ForEach(plan.reviewNotes(for: document.slides), id: \.self) { Text($0).foregroundStyle(.secondary) }
+        } else {
+          Text("目的・対象読者・ストーリーラインは未設定です。編集から整理できます。")
+            .foregroundStyle(.secondary)
+        }
         if issues.isEmpty { Text("機械検査の指摘はありません。") }
         ForEach(issues) { issue in
           let page = document.slides.firstIndex { $0.id == issue.slideID }.map { $0 + 1 }

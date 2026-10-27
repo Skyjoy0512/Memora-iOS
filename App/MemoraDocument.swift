@@ -28,6 +28,8 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   var sourceProjectFileIDs: [UUID]?
   var sourceRecordIDs: [UUID]?
   var provenance: ArtifactProvenance?
+  /// Optional so documents and backups written before presentation planning still decode.
+  var presentationPlan: PresentationPlan?
 
   var hasOutdatedArtifact: Bool {
     artifactFileReference != nil && (artifactRevision ?? 0) != (contentRevision ?? 0)
@@ -55,6 +57,7 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
         edited.slides = DocumentSlide.slides(fromOutline: body)
       }
     }
+    edited.presentationPlan = presentationPlan?.reconciled(with: edited.slides)
     guard edited.title != self.title || edited.markdown != markdown || edited.slides != slides else { return self }
     edited.contentRevision = (contentRevision ?? 0) + 1
     edited.updatedAt = date

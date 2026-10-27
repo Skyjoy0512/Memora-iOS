@@ -17,6 +17,17 @@ struct PresentationEditorView: View {
     NavigationStack {
       List {
         Section("資料名") { TextField("資料名", text: $draft.title) }
+        Section {
+          if let binding = Binding($draft.presentationPlan) {
+            NavigationLink("目的と構成") { PresentationPlanFields(plan: binding, slides: draft.slides) }
+          } else {
+            Button("目的と構成を整理") {
+              draft.presentationPlan = PresentationPlan(storyline: draft.slides.map {
+                .init(slideID: $0.id, claim: $0.title.isEmpty ? "主張を入力" : $0.title)
+              })
+            }
+          }
+        }
         if document.companyTemplateID != nil {
           Section {
             Text("ここでの編集は元の会社ファイルに反映されません。元ファイルと関連情報を保持します。")
@@ -90,7 +101,8 @@ struct PresentationEditorView: View {
   private var draftKey: String { "presentation.\(document.id).\(document.updatedAt.timeIntervalSince1970)" }
 
   private func save() {
-    guard model.updateDocumentSlides(document.id, title: draft.title, slides: draft.slides, expectedUpdatedAt: document.updatedAt) else {
+    guard model.updateDocumentSlides(document.id, title: draft.title, slides: draft.slides, expectedUpdatedAt: document.updatedAt,
+                                    plan: draft.presentationPlan) else {
       failure = "資料が別の画面で変更されたか、保存先に書き込めません。入力内容は下書きに残っています。"
       return
     }

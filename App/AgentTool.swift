@@ -206,6 +206,7 @@ enum AgentTool: String, CaseIterable {
     case .createSlides:
       return object([
         "title": string("スライド資料のタイトル"),
+        "plan_json": string("型を選ぶ前に作る資料計画のJSON。purpose:目的、audience:対象読者、decision:判断してほしいこと、assumptions:[未確認の前提]、storyline:[{slide_number:1始まり,claim:そのページの主張,evidence:[確認した出典と箇所],unconfirmed:[未確認事項]}]。不明な対象読者等は空文字とassumptionsで未確認を明示。タイトルに型名を使わない。最大50KB。"),
         "slides": [
           "type": "array",
           "maxItems": 65,

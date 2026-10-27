@@ -20,7 +20,8 @@ extension MemoraModel {
   /// a document as made once it is really saved.
   @discardableResult
   func addDocument(_ document: MemoraDocument) -> Bool {
-    guard !isRestoring, isStoreWritable(), document.hasValidRevisions, document.provenance?.isValid ?? true,
+    guard !isRestoring, isStoreWritable(), document.hasValidRevisions,
+          document.presentationPlan?.isValid(for: document.slides) ?? true, document.provenance?.isValid ?? true,
           document.provenance.map({ $0.workspaceID == currentTeamID }) ?? true else { return false }
     var candidate = documents
     candidate.insert(document, at: 0)
@@ -62,14 +63,17 @@ extension MemoraModel {
   }
 
   @discardableResult
-  func updateDocumentSlides(_ id: UUID, title: String, slides: [DocumentSlide], expectedUpdatedAt: Date) -> Bool {
+  func updateDocumentSlides(_ id: UUID, title: String, slides: [DocumentSlide], expectedUpdatedAt: Date,
+                            plan: PresentationPlan? = nil) -> Bool {
     guard !isRestoring, isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }),
           documents[index].updatedAt == expectedUpdatedAt, documents[index].kind == .slides,
           documents[index].hasValidRevisions, (documents[index].contentRevision ?? 0) < Int.max,
-          !slides.isEmpty, Set(slides.map(\.id)).count == slides.count else { return false }
+          !slides.isEmpty, slides.count <= 65, Set(slides.map(\.id)).count == slides.count else { return false }
     var edited = documents[index]
     edited.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
     edited.slides = slides
+    edited.presentationPlan = (plan ?? edited.presentationPlan)?.reconciled(with: slides)
+    guard edited.presentationPlan?.isValid(for: slides) ?? true else { return false }
     guard edited != documents[index] else { return true }
     edited.contentRevision = (edited.contentRevision ?? 0) + 1
     edited.updatedAt = .now

@@ -110,6 +110,18 @@ struct ArtifactOperationsChecks {
     let storedSlides = try JSONDecoder().decode([MemoraDocument].self, from: slideData)
     precondition(storedSlides.contains { $0.artifactFileReference == slideName && $0.slides.first?.title == "報告" })
 
+    let plan = PresentationPlan(purpose: "進捗報告", audience: "チーム", decision: "確認事項を決める",
+      storyline: [.init(slideID: slides.slides[0].id, claim: "決定事項を共有する", evidence: ["会議の決定事項"])])
+    precondition(model.updateDocumentSlides(slides.id, title: slides.title, slides: slides.slides,
+      expectedUpdatedAt: slides.updatedAt, plan: plan))
+    reopened = LocalStore(fileURL: storeURL); try reopened.prepare()
+    guard case .data(let plannedData) = reopened.readOutcome(MemoraModel.StorageKey.documents) else { preconditionFailure("plan missing") }
+    let plannedSlides = try JSONDecoder().decode([MemoraDocument].self, from: plannedData).first { $0.id == slides.id }!
+    precondition(plannedSlides.presentationPlan == plan && plannedSlides.contentRevision == 1)
+    precondition(plannedSlides.artifactFileReference == slideName && plannedSlides.hasOutdatedArtifact)
+    precondition(!model.updateDocumentSlides(slides.id, title: "古い画面", slides: slides.slides,
+      expectedUpdatedAt: slides.updatedAt, plan: plan))
+
     // Mail drafts are saved as local drafts, never as sent mail.
     let draft = MailDraft(recipients: [], subject: "確認のお願い",
       body: "概算を確認します。", workspaceID: model.currentTeamID,

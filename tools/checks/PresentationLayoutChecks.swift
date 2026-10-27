@@ -14,6 +14,7 @@ struct PresentationLayoutChecks {
     let legacy = Data(#"{"id":"11111111-1111-1111-1111-111111111111","title":"旧資料","bullets":["元の要点"],"notes":"発表者ノート"}"#.utf8)
     let old = try JSONDecoder().decode(DocumentSlide.self, from: legacy)
     precondition(old.composition == nil && SlidePageLayout.pages(for: old).first?.elements == nil)
+    try PresentationPlanningChecks.run()
     var failures = 0
     var signatures = Set<[PresentationElement]>()
     for layout in SlideArchetype.allCases {

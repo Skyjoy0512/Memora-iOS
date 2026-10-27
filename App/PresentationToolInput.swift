@@ -44,4 +44,35 @@ enum PresentationToolInput {
       return value
     }
   }
+
+  static func plan(_ json: String, slides: [DocumentSlide]) throws -> PresentationPlan {
+    guard json.utf8.count <= 50_000, let data = json.data(using: .utf8),
+          let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+          Set(object.keys).isSubset(of: ["purpose", "audience", "decision", "assumptions", "storyline"]) else {
+      throw Failure(message: "資料計画は50KB以内の既知のJSON項目で指定してください。")
+    }
+    struct Input: Decodable {
+      var purpose: String
+      var audience: String
+      var decision: String
+      var assumptions: [String]
+      var storyline: [Point]
+      struct Point: Decodable {
+        var slide_number: Int
+        var claim: String
+        var evidence: [String]
+        var unconfirmed: [String]
+      }
+    }
+    let input = try JSONDecoder().decode(Input.self, from: data)
+    guard input.storyline.allSatisfy({ (1...max(1, slides.count)).contains($0.slide_number) && $0.slide_number <= slides.count }) else {
+      throw Failure(message: "資料計画のスライド番号が範囲外です。")
+    }
+    let plan = PresentationPlan(purpose: input.purpose, audience: input.audience, decision: input.decision,
+      assumptions: input.assumptions, storyline: input.storyline.map {
+        .init(slideID: slides[$0.slide_number - 1].id, claim: $0.claim, evidence: $0.evidence, unconfirmed: $0.unconfirmed)
+      })
+    guard plan.isValid(for: slides) else { throw Failure(message: "資料計画の重複・文字数・主張を確認してください。") }
+    return plan
+  }
 }
