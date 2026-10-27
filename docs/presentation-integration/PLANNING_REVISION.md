@@ -46,3 +46,24 @@ AskAI会話から既存資料を探して直接部分修正する道具、独立
 計画は`create_slides`のoptional入力であり、以前の呼出にも計画の強制や架空の補完はしない。
 計画画面と比較画面はApple標準のForm/List/DisclosureGroupを使い、アプリ全体のUIを置き換えていない。
 全65型のOffice/実機最終描画は未完了。全完成条件は引き続き0/65。
+
+## 最終ビルド・Simulatorの確認
+
+- Debug preview成功: `2026-10-27T21-25-01-c5b23d62.log`。
+- Release iOS Simulator build成功: `2026-10-27T21-25-03-97965e57.log`。
+  両方とも既存の非推奨等11 warnings。iOS 27.1 SDK、iOS 26 target。
+- iPhone 18 Pro Maxの架空データで、フォームのラベル、Light/Dark、最大Dynamic Typeの折返し、
+  変更前後の表示、1枚の選択、ASCII依頼入力、キーボード表示中のボタン到達、送信前の権限拒否を確認。
+  有料APIは呼んでいない。比較画面は固定の架空例で、実AI生成の成功画像ではない。
+- 入力欄を埋めた後も意味が分かるよう、目的・対象読者・判断事項・根拠にラベルを保持する。
+  `native-app-design`に沿った標準フォームで、最大文字サイズでは縦に再配置される。
+- [計画・Dark](planning-labeled-dark.png) / [Light](planning-labeled-light.png) /
+  [最大文字サイズ](planning-accessibility-light.png) / [修正前後](revision-comparison-dark.png) /
+  [送信拒否](revision-refused-light.png)。[ラベル補強前](planning-before-labels-dark.png)も保持。
+- [計画/65型/部分修正検査ログ](planning-revision-checks/presentation-revision.log)、
+  [権限検査](planning-revision-checks/presentation-access.log)、
+  [バックアップ](planning-revision-checks/presentation-plan-backup.log)、
+  [6スイート結果](planning-revision-checks/summary.json)。同フォルダに6本の生ログ。
+
+VoiceOver実操作、Reduce Motion、全端末サイズ、実際の日本語IME変換、実モデルと実機は未検証。
+テストはskipせず、確認できた範囲と未確認範囲を分けている。
