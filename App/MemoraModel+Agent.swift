@@ -105,7 +105,7 @@ extension MemoraModel {
     var opening = trimmed
     for template in companyTemplates where pluginPolicy?.templateIDs.contains(template.id) == true && template.workspaceID == currentTeamID {
       opening += "\n選択した会社テンプレート: template_id=\(template.id)、形式=\(template.format.rawValue)、差し込み項目=\(template.analysis.placeholders.joined(separator: ", "))。原本は端末内で処理する。"
-      if template.format == .pptx, CompanyPresentationExporter.hasCandidate(template.analysis.presentation) {
+      if template.format == .pptx, CompanyPresentationExporter.canAppend(template.analysis) {
         opening += "create_slidesのtemplate_mode=appendで既存ページを保持して新規の構造化スライドを追加可能な候補です。template_fieldsは空にします。最終的な書式適合は端末内で再検査され、未対応なら理由を表示します。"
       } else {
         opening += "差し込み方式のみです。template_fieldsに全項目の値を指定し、原本へのページ追加は行わないでください。"

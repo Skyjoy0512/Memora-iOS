@@ -16,6 +16,10 @@ import Foundation
       return value
     }
     try source.write(to: root.appendingPathComponent("source.pptx"))
+    try require(CompanyPresentationExporter.canAppend(CompanyTemplateEngine.analyze(source, format: .pptx)))
+    let scalarSource = try changing(source) { path, value in path == "ppt/slides/slide1.xml" ? value.replacingOccurrences(of: "原本を保持", with: "{{title}}") : value }
+    let scalarAnalysis = try CompanyTemplateEngine.analyze(scalarSource, format: .pptx)
+    try require(scalarAnalysis.isAvailable && !CompanyPresentationExporter.canAppend(scalarAnalysis))
     let slides = SlideArchetype.allCases.map { PresentationExample.slide($0) }
     for slide in slides {
       let document = MemoraDocument(title: "架空の会社資料", kind: .slides, slides: [slide])

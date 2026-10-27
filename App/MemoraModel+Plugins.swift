@@ -51,7 +51,7 @@ extension MemoraModel {
     }
     for template in companyTemplates where template.workspaceID == currentTeamID {
       let modelSupportsTemplate = onDeviceTools == nil || template.format == .docx
-      let canAppend = template.format == .pptx && CompanyPresentationExporter.hasCandidate(template.analysis.presentation)
+      let canAppend = template.format == .pptx && CompanyPresentationExporter.canAppend(template.analysis)
       let ready = (template.analysis.isAvailable || canAppend) && ProjectSourceFiles.resolve(template.fileReference).map { FileManager.default.fileExists(atPath: $0.path) } == true
       entries.append(AIPlugin(id: "template:" + template.id.uuidString, name: template.name,
         summary: "差し込み項目名と追加対応可否をAIへ渡します。書式ファイルは端末内で適用します。", aliases: ["会社", template.format.rawValue],

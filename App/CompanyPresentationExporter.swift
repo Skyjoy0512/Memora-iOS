@@ -18,6 +18,10 @@ enum CompanyPresentationExporter {
     PresentationTheme.rule: "tx2", "A3A3A3": "accent4", "DBEAFE": "accent1"]
 
   /// Stored metadata is only a hint. The actual file is remeasured at export.
+  static func canAppend(_ analysis: CompanyTemplateEngine.Analysis) -> Bool {
+    analysis.placeholders.isEmpty && !analysis.unsupportedSplitMarkers && hasCandidate(analysis.presentation)
+  }
+
   static func hasCandidate(_ profile: CompanyPresentationProfile?) -> Bool {
     guard let profile, profile.isValid, profile.widthEMU == PPTXWriter.slideWidth, profile.heightEMU == PPTXWriter.slideHeight else { return false }
     return profile.layouts.contains { layout in
