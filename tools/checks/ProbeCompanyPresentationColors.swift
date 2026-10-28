@@ -20,7 +20,8 @@ import Foundation
         context.draw(image, in: CGRect(x: 0, y: 0, width: 960, height: 540))
       }
       let bytes = context.data!.assumingMemoryBound(to: UInt8.self)
-      let locations = [("masterRectangle", 850, 10), ("firstEllipse", 267, 300), ("secondEllipse", 693, 300)]
+      let locations = [("masterRectangle", 850, 10), ("masterLuminanceModulation", 730, 10),
+        ("layoutLuminanceModulationAndOffset", 610, 10), ("firstEllipse", 267, 300), ("secondEllipse", 693, 300)]
       let samples: [[String: Any]] = locations.map { name, x, y in
         let offset = y * 3840 + x * 4
         return ["element": name, "x": x, "y": y, "sRGB": [Int(bytes[offset]), Int(bytes[offset + 1]), Int(bytes[offset + 2])]]

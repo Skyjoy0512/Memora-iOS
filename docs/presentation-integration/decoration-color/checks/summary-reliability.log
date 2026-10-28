@@ -1,0 +1,20 @@
+App/FoundationModelFailure.swift:40:62: warning: 'GenerationError' was deprecated in macOS 27.0 [#DeprecatedDeclaration]
+38 |   }
+39 | 
+40 |   private static func reason(for error: LanguageModelSession.GenerationError) -> AIAnswerFailure {
+   |                                                              `- warning: 'GenerationError' was deprecated in macOS 27.0 [#DeprecatedDeclaration]
+41 |     switch error {
+42 |     case .exceededContextWindowSize: .contextTooLarge
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+Virtual summary duration=30s firstToken=0s: PASS
+Virtual summary duration=30s firstToken=30s: PASS
+Virtual summary duration=60s firstToken=0s: PASS
+Virtual summary duration=60s firstToken=60s: PASS
+Virtual summary duration=120s firstToken=0s: PASS
+Virtual summary duration=120s firstToken=60s: PASS
+Virtual summary duration=180s firstToken=0s: PASS
+Virtual summary duration=180s firstToken=60s: PASS
+LongSummaryChecks: PASS; virtual receive times, EOF rejection, redacted/bounded timeline retaining late failures, and actual FoundationModels error types. No inference or network; OS/HTTP wall-clock deadlines are not simulated by the virtual clock.
+Synthetic DeepSeek SSE bytes=2178128; 9000 reasoning-only chunks before answer
+DeepSeekSummaryChecks: PASS; bounded summary wire budget, final document intact, no reasoning retained

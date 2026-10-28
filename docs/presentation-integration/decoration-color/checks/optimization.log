@@ -1,0 +1,57 @@
+CollectionPerformanceChecks locale=en_US
+ranking,100,median=1.133,p95=1.452,max=1.538
+sections,100,median=0.287,p95=0.297,max=0.323
+ranking,1000,median=5.766,p95=5.828,max=5.858
+sections,1000,median=1.864,p95=1.878,max=1.879
+CollectionPerformanceChecks: passed (0/1/100/1000, ordering, no-match fallback, loose/multiple tasks)
+CollectionPerformanceChecks locale=ja_JP
+ranking,100,median=0.600,p95=0.615,max=0.624
+sections,100,median=0.236,p95=0.238,max=0.240
+ranking,1000,median=5.727,p95=5.818,max=5.822
+sections,1000,median=1.863,p95=1.876,max=1.878
+CollectionPerformanceChecks: passed (0/1/100/1000, ordering, no-match fallback, loose/multiple tasks)
+log-burst-100,median=1.018,p95=3.118,max=3.312,writes=21
+PerformanceLogChecks: passed (capacity, stats, ordered reset, retry, snapshot round trip)
+{"batteryMeasured": false, "convertedBuffers": 9690, "cpuSeconds": 0.06303, "maximumOutputFrames": 1487, "peakRSSBytes": 10387456, "queueCapacity": 16, "realTimeRecording": false, "recognitionQualityMeasured": false, "retainedLines": 900, "retainedUTF8Bytes": 501190, "virtualMinutes": 15, "wallSeconds": 0.06822597980499268, "version": "before"}
+{"batteryMeasured": false, "convertedBuffers": 38760, "cpuSeconds": 0.13811600000000002, "maximumOutputFrames": 1487, "peakRSSBytes": 12304384, "queueCapacity": 16, "realTimeRecording": false, "recognitionQualityMeasured": false, "retainedLines": 3600, "retainedUTF8Bytes": 2007690, "virtualMinutes": 60, "wallSeconds": 0.13905298709869385, "version": "before"}
+{"batteryMeasured": false, "convertedBuffers": 77520, "cpuSeconds": 0.277316, "maximumOutputFrames": 1487, "peakRSSBytes": 14811136, "queueCapacity": 16, "realTimeRecording": false, "recognitionQualityMeasured": false, "retainedLines": 7200, "retainedUTF8Bytes": 4016490, "virtualMinutes": 120, "wallSeconds": 0.2801389694213867, "version": "before"}
+{"batteryMeasured": false, "convertedBuffers": 9690, "cpuSeconds": 0.047244, "maximumOutputFrames": 1487, "peakRSSBytes": 9961472, "queueCapacity": 16, "realTimeRecording": false, "recognitionQualityMeasured": false, "retainedLines": 200, "retainedUTF8Bytes": 111400, "virtualMinutes": 15, "wallSeconds": 0.049873948097229004, "version": "after"}
+{"batteryMeasured": false, "convertedBuffers": 38760, "cpuSeconds": 0.139459, "maximumOutputFrames": 1487, "peakRSSBytes": 10092544, "queueCapacity": 16, "realTimeRecording": false, "recognitionQualityMeasured": false, "retainedLines": 200, "retainedUTF8Bytes": 111600, "virtualMinutes": 60, "wallSeconds": 0.1408149003982544, "version": "after"}
+{"batteryMeasured": false, "convertedBuffers": 77520, "cpuSeconds": 0.2763, "maximumOutputFrames": 1487, "peakRSSBytes": 10043392, "queueCapacity": 16, "realTimeRecording": false, "recognitionQualityMeasured": false, "retainedLines": 200, "retainedUTF8Bytes": 111600, "virtualMinutes": 120, "wallSeconds": 0.2774730920791626, "version": "after"}
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.884s
+
+OK
+RecordingRecoveryChecks: passed (production recovery/admission, real Meeting/Journal codecs and SQLite rollback/reopen, 8 duration states, 11 suspended races, duplicate recovery, blocked replacement during commit, missing audio and marker retention; media duration, capture/persistence service boundaries are fixtures; no inference/network)
+sqlite-batch,100,median=1.250,p95=3.739,max=5.892
+sqlite-batch,1000,median=11.664,p95=12.351,max=16.517
+LocalStoreChecks: passed (legacy bytes, atomic rollback, statement reuse after failure, ordered duplicate keys, removals, reopen)
+{"copy":{"maxMS":0.21233399999999999,"medianMS":0.044957999999999998,"p95MS":0.047458},"encode":{"maxMS":74.892207999999997,"medianMS":40.370249999999999,"p95MS":41.086958000000003},"jsonBytes":6075905,"processCPUms":1023.7450000000001,"processPeakRSSBytes":64798720,"records":1000,"samples":21,"segmentsPerRecord":20,"sqliteAtomicBatch":{"maxMS":21.871791999999999,"medianMS":17.360624999999999,"p95MS":18.987833999999999},"total":{"maxMS":96.976333999999994,"medianMS":57.771749999999997,"p95MS":59.46575}}
+{"copy":{"maxMS":0.70595799999999997,"medianMS":0.46020800000000001,"p95MS":0.48399999999999999},"encode":{"maxMS":461.89249999999998,"medianMS":415.57129099999997,"p95MS":431.594583},"jsonBytes":60768905,"processCPUms":10672.930999999999,"processPeakRSSBytes":539672576,"records":10000,"samples":21,"segmentsPerRecord":20,"sqliteAtomicBatch":{"maxMS":122.480709,"medianMS":105.414,"p95MS":109.542834},"total":{"maxMS":585.07916699999998,"medianMS":521.65354200000002,"p95MS":538.79304200000001}}
+ToolIntegrationChecks: passed (schema, registry, disabled/unknown tools, SSE IDs/CRLF, legacy config, namespace/fingerprint)
+AIWebSearchIntentChecks: passed (natural search, internal scope, negation, missing topic, follow-ups, explicit toggle)
+AIConversationProvenanceChecks: passed (grant, revoke, edit, missing source, workspace, memory, limit, legacy)
+MCPOAuthChecks: passed (endpoint/scope validation, identity binding, callback/CSRF duplicates, expiry, refresh rotation, privilege escalation, form encoding)
+LicensePersistenceChecks: PASS; production activation/removal, failed write/delete, replacement, reload, expiry, personal-plan fallback. Keychain and verifier are isolated fixtures; no billing or real credentials.
+RecordingResourceLifecycleChecks: passed (background, foreground, pause, mode, live OFF, hidden meter; AAC never stopped)
+ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)
+ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)
+ProjectChatHistoryChecks: passed (bounded complete turns, revoked evidence, legacy decoding, retained archive)
+RecordStoreFailureChecks: passed (async rollback, concurrent one-shot failure, sync recovery)
+Health review loader checks passed
+ownership-before,1000,median=2.997,p95=5.543,max=7.104
+ownership-batched,1000,median=0.359,p95=0.373,max=0.379
+JournalPerformanceChecks: passed (ownership and profile name changes)
+Journal activity days and task status checks passed
+RecordPrivacyChecks: passed (fail closed, one-shot consent, sticky classification, persistence)
+RootNavigationChecks: passed (three tabs, legacy IDs, segment restoration, isolated stacks, recording destination, AI scopes)
+ProjectSourceFilesChecks: passed (bounded import, content fingerprint, canonical parent/new leaf, path/symlink isolation, selective deletion)
+id-lookup-linear,100,median=0.025,p95=0.025,max=0.030
+id-lookup-indexed,100,median=0.042,p95=0.044,max=0.049
+id-lookup-linear,1000,median=1.086,p95=1.461,max=2.089
+id-lookup-indexed,1000,median=0.275,p95=0.278,max=0.294
+SourceLookupChecks: passed (0/1/100/1000, current edited permissions, deletion, ordering, first duplicate)
+StandaloneRecordPrivacyChecks: passed (legacy, grant, inheritance, orphan, parent floor, location denial)
+ShareInboxChecks: passed (atomic publication, reopen, file bytes, interrupted drafts, unsafe paths, symlinks, scheme rejection, targeted cleanup)
+Optimization checks: all passed

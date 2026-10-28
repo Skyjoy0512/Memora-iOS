@@ -10,13 +10,19 @@ import Foundation
     try FileManager.default.createDirectory(at: images, withIntermediateDirectories: true)
     let base = PPTXWriter.data(for: .init(title: "原本", kind: .slides, slides: [.init(title: "含めない原本ページ", bullets: ["原本を変更しない"]) ]))
     let decoration = "<p:sp><p:nvSpPr><p:cNvPr id='40' name='Fictional mark'/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x='10160000' y='25400'/><a:ext cx='1270000' cy='203200'/></a:xfrm><a:prstGeom prst='rect'><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val='accent1'/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>"
+    let dark = decoration.replacingOccurrences(of: "id='40'", with: "id='41'").replacingOccurrences(of: "x='10160000'", with: "x='8636000'")
+      .replacingOccurrences(of: "<a:schemeClr val='accent1'/>", with: "<a:schemeClr val='accent1'><a:lumMod val='50000'/></a:schemeClr>")
+    let light = decoration.replacingOccurrences(of: "id='40'", with: "id='42'").replacingOccurrences(of: "x='10160000'", with: "x='7112000'")
+      .replacingOccurrences(of: "<a:schemeClr val='accent1'/>", with: "<a:srgbClr val='005A50'><a:lumMod val='20000'/><a:lumOff val='80000'/></a:srgbClr>")
     let source = try changing(base) { path, value in
-      if path == "ppt/slideMasters/slideMaster1.xml" { return value.replacingOccurrences(of: "</p:spTree>", with: decoration + "</p:spTree>") }
+      if path == "ppt/slideMasters/slideMaster1.xml" { return value.replacingOccurrences(of: "</p:spTree>", with: decoration + dark + "</p:spTree>") }
+      if path == "ppt/slideLayouts/slideLayout1.xml" { return value.replacingOccurrences(of: "</p:spTree>", with: light + "</p:spTree>") }
       if path == "ppt/theme/theme1.xml" { return value.replacingOccurrences(of: "<a:accent1><a:srgbClr val=\"0D0D0D\"/></a:accent1>", with: "<a:accent1><a:srgbClr val=\"005A50\"/></a:accent1>")
         .replacingOccurrences(of: "<a:accent2><a:srgbClr val=\"303030\"/></a:accent2>", with: "<a:accent2><a:srgbClr val=\"803300\"/></a:accent2>") }
       return value
     }
     try source.write(to: output.appendingPathComponent("source.pptx"))
+    try CompanyPresentationColorChecks.run(source: source)
     let slides = SlideArchetype.allCases.map { PresentationExample.slide($0) }
     for slide in slides {
       let id = slide.composition!.layout.rawValue
@@ -25,6 +31,7 @@ import Foundation
       precondition(preview.pages.count == 1 && preview.originalPageCount == 1 && preview.pages[0].sourceID == slide.id)
       let elements = preview.pages[0].elements!
       precondition(elements[0].fill == "005A50" && elements[0].x == 800 && elements[0].y == 2)
+      precondition(elements[1].fill == "002D28" && elements[1].x == 680 && elements[2].fill == "ABFFF6" && elements[2].x == 560)
       precondition(!elements.contains { $0.fill == PresentationTheme.blue || $0.fill == PresentationTheme.orange })
       precondition(elements.filter { $0.kind == .text }.allSatisfy { $0.fontName == "Hiragino Sans" && $0.latinFontName == "Helvetica Neue" })
       let repeated = try CompanyPresentationPreview.make(document: document, template: source)
@@ -37,7 +44,7 @@ import Foundation
       try render(pdf, to: images.appendingPathComponent(id + ".png"))
       let pptx = try CompanyPresentationExporter.data(for: document, template: source)
       try pptx.write(to: output.appendingPathComponent(id + ".pptx"))
-      print("PASS corporate preview \(id): selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene")
+      print("PASS corporate preview \(id): selected layout, company colors/fonts, master/layout luminance decorations, PDF Japanese/pixels, original excluded, deterministic scene")
     }
     let deck = MemoraDocument(title: "会社書式の65型", kind: .slides, slides: slides)
     let aggregate = try CompanyPresentationPreview.make(document: deck, template: source)
@@ -75,8 +82,11 @@ import Foundation
       space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
     context.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1)); context.fill(CGRect(x: 0, y: 0, width: 960, height: 540))
     context.drawPDFPage(pdf.page(at: 1)!)
-    let pixels = context.data!.assumingMemoryBound(to: UInt8.self), offset = 10 * 3840 + 850 * 4
-    precondition(pixels[offset] == 0 && pixels[offset + 1] == 90 && pixels[offset + 2] == 80, "Company sRGB changed in actual PDF rendering")
+    let pixels = context.data!.assumingMemoryBound(to: UInt8.self)
+    for (x, expected) in [(850, [0,90,80]), (730, [0,45,40]), (610, [171,255,246])] {
+      let offset = 10 * 3840 + x * 4
+      precondition((0..<3).allSatisfy { Int(pixels[offset + $0]) == expected[$0] }, "Company HSL/sRGB changed in actual PDF rendering")
+    }
     let bitmap = NSBitmapImageRep(cgImage: context.makeImage()!)
     try bitmap.representation(using: .png, properties: [:])!.write(to: url)
   }

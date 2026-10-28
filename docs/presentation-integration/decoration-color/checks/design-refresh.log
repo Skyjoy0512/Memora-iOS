@@ -1,0 +1,51 @@
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
+...........
+----------------------------------------------------------------------
+Ran 11 tests in 0.002s
+
+OK
+Pricing scenarios: passed (16 monthly/annual/fee cases; FX160/200; annual Light break-even169.70, negative maximum-use scenarios retained; no provider calls)
+SamplePreviewChecks: passed (production preview action/sample/Meeting codec + real SQLite, existing records/collections unchanged, duplicate and edited sample retained, restore/team/protection/failure refused before routing; container and routes are fixtures, no recording/AI)
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.001s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+OK
+SettingsNavigationChecks passed: 12 distinct topics including workspace, four groups, common icon and touch metrics
+AIPluginMenuCopyChecks passed: concise builtin copy, original custom/MCP/record descriptions preserved
+ProjectMentionChecks passed: real resolver, cross-project denial, external/write denial, selected evidence, deduplication, skill guidance, disabled tools, revoked/moved sources, workspace change
+AI response table: Japanese, large text, narrow/invalid widths, ragged/long/large tables passed
+AIComposerLayoutChecks: passed (Japanese/emoji character threshold, multiline/CRLF, collapsed/tall bounds, large input)
+Agent suggestions: production builder/model staging, privacy, workspace, samples, stale sources and draft protection passed
+Recorder battery checks passed: all 256 byte values, invalid data, identity, reconnect and disconnect
+Motion policy passed: immediate saved content; sidebar completion, scoped system capture Menu/dialog and journal Hero retained; bottom tabs hidden
+...............
+----------------------------------------------------------------------
+Ran 15 tests in 0.020s
+
+OK
+LoadingPolicyChecks: passed (50/200/2000/5000ms virtual clock, stale/overlap/cancel/retry, refresh keeps content, empty/failure, calendar day/settings identity)
+ProjectSourceTextLoaderChecks: passed (real loader with suspended mock reads: overlap, immediate stop, late success/failure, retry, refresh, reference change, parent cancellation, nil/empty; no files or network)
+ConversationScrollChecks: passed (stream growth, lazy layout, manual reading, simultaneous scroll/resize, new-answer reset, invalid geometry)
+IncrementalMarkdownChecks: passed (1/7/37-scalar chunks, every live prefix matches final parser, stable settled blocks, no completion structure change, Japanese/combining/emoji/CRLF, headings/lists/quotes/tables/fences/links, replacement, no replay parse)
+CatalogPresentationChecks: passed (honest Notion capabilities, unavailable Drive/GitHub, named project search)
+AgentBudgetChecks: passed (16 requests, per/total bytes, exact deadline, negative/overflow rejection, no network or keys)
+AgentGenerationChecks: passed (reviewed models only, custom/unknown compatibility, Sol/Luna tool parameters, streaming usage opt-in, 128k reservations, missing usage, refunds, remaining clamp, overflow/malformed counters, real loop stops before fifth dispatch or over-limit tools; no API/keys)
+AgentRunBudgetChecks: passed (parent + 3 children share 16 requests/bytes/time/output, concurrent reservation identity/refunds, no overcommit, cancellation/late reply/tool stop, strict child completion; mocks only)
+Agent interaction passed: approval/questions, cancellation, replacement, stale IDs, no writes after cancellation
+ProjectChatExecutionChecks: passed (real lifecycle extension, workspace generations, late cleanup, immediate retry, saved-history preservation, cancellation, failed persistence; memory fixtures only)
+ProjectChatDispatchChecks: passed (production send/cancel/delete + memory storage/model mocks, suspended retrieval, immediate resend, A-B-A, late callbacks/final/cleanup; no API, keys or files)

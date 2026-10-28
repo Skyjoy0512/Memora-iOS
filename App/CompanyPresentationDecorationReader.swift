@@ -66,12 +66,7 @@ enum CompanyPresentationDecorationReader {
             let fill = xml.children(properties, named: "solidFill", namespaces: a).first,
             xml.nodes[fill].children.count == 1 else { throw CompanyPresentationPreview.Failure.unsupported }
       guard xml.descendants(child, named: "cNvPr", namespaces: p).allSatisfy({ xml.nodes[$0].attributes.keys.allSatisfy { ["id", "name"].contains($0) } }) else { throw CompanyPresentationPreview.Failure.unsupported }
-      let colorNode = xml.nodes[fill].children[0], color = xml.nodes[colorNode]
-      guard a.contains(color.namespace), color.children.isEmpty, color.attributes.count == 1, let value = color.attributes["val"] else { throw CompanyPresentationPreview.Failure.unsupported }
-      let hex: String
-      if color.name == "srgbClr", CompanyPresentationColor.isHex(value) { hex = value.uppercased() }
-      else if color.name == "schemeClr" { hex = try CompanyPresentationColor.resolve(value, master: master) }
-      else { throw CompanyPresentationPreview.Failure.unsupported }
+      let hex = try CompanyPresentationColor.decorationFill(fill, in: xml, master: master)
       output.append(.init(id: output.count, kind: kind == "rect" ? .rectangle : .ellipse,
         x: x / 12700, y: y / 12700, width: w / 12700, height: h / 12700, color: hex, fill: hex, checksCollision: false))
     }
