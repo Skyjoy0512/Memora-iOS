@@ -1,0 +1,3 @@
+Presentation planning passed: legacy decode, source/unknown separation, bounded input, stable slide IDs, reorder/delete reconciliation and revision-safe outline editing
+checks/PresentationRevisionChecks.swift:89: Precondition failed
+tools/checks/run-presentation-checks.sh: line 14: 42480 Trace/BPT trap: 5       "$check_dir/checks" "$check_dir/output"

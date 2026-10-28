@@ -76,25 +76,28 @@ enum PresentationRevisionChecks {
     authorized = false
     do { _ = try session.accept(in: document); preconditionFailure("Stale permission applied") } catch {}
     authorized = true
+    var delayedReply: CheckedContinuation<AIAnswerResult, Never>?
     let delayed = Task { await session.generate(request, isCurrent: { authorized }) {
       calls += 1
-      try? await Task.sleep(for: .milliseconds(500))
-      return .answer(answer)
+      return await withCheckedContinuation { delayedReply = $0 }
     } }
-    await waitUntil { session.isBusy && calls == 2 }
+    await waitUntil { session.isBusy && calls == 2 && delayedReply != nil }
     await session.generate(request, isCurrent: { true }) { calls += 1; return .answer(answer) }
     precondition(calls == 2, "Concurrent duplicate request")
     authorized = false
-    try await Task.sleep(for: .milliseconds(350))
+    await waitUntil { !session.isBusy && session.failure != nil }
     precondition(!session.isBusy && session.proposal == nil && session.failure != nil)
     authorized = true
+    delayedReply?.resume(returning: .answer(answer)); delayedReply = nil
     await delayed.value
     precondition(session.proposal == nil, "Revocation revived after OFF/ON")
+    var lateReply: CheckedContinuation<AIAnswerResult, Never>?
     let late = Task { await session.generate(request, isCurrent: { true }) {
-      try? await Task.sleep(for: .milliseconds(80)); return .answer(answer)
+      await withCheckedContinuation { lateReply = $0 }
     } }
-    await waitUntil { session.isBusy }; session.cancel()
+    await waitUntil { session.isBusy && lateReply != nil }; session.cancel()
     await session.generate(request, isCurrent: { true }) { .failure(.network) }
+    lateReply?.resume(returning: .answer(answer)); lateReply = nil
     await late.value
     precondition(session.proposal == nil && session.failure == AIAnswerFailure.network.message)
     await session.generate(request, isCurrent: { true }) { .answer(answer) }
@@ -104,7 +107,8 @@ enum PresentationRevisionChecks {
   }
 
   @MainActor static func waitUntil(_ ready: () -> Bool) async {
-    for _ in 0..<100 {
+    let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+    while ContinuousClock.now < deadline {
       if ready() { return }
       try? await Task.sleep(for: .milliseconds(2))
     }

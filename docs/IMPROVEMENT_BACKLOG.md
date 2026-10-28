@@ -1,5 +1,11 @@
 # Memora — 改善バックログ
 
+## 2026-10-29: CI追加検査の失敗伝播と修正テストの安定化
+
+Actions successと実artifact内のassert失敗を照合。固定350ms待機を状態待ち/応答gateへ変更し、
+追加stepに明示bashとproducer/logger失敗の回帰テストを追加した。[証拠・修正・検証](presentation-integration/CI_PRESENTATION_FAILURE.md)。
+本番監視/権限/取消、Project.json、UIは変更せず、旧CIの緑表示を追加検査の成功として扱わない。完成0/65を維持する。
+
 ## 2026-10-29: 会社装飾色の明度変換
 
 単色矩形/楕円のlumMod/lumOffを順序・各段clampを保ってプレビュー/PDFへ反映。未対応変換は拒否する。

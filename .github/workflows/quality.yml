@@ -50,10 +50,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Check all 65 presentation layouts and inline links
+        shell: bash
         env:
           MEMORA_CHECK_ROOT: ${{ runner.temp }}/memora-presentation-checks
           TMPDIR: ${{ runner.temp }}/
         run: |
+          python3 -B tools/checks/test_ci_failure_propagation.py
           mkdir -p "$MEMORA_CHECK_ROOT"
           bash tools/checks/run-presentation-checks.sh 2>&1 | tee "$MEMORA_CHECK_ROOT/presentation.log"
           bash tools/checks/run-artifact-operation-checks.sh --presentation-revision 2>&1 | tee "$MEMORA_CHECK_ROOT/presentation-access.log"

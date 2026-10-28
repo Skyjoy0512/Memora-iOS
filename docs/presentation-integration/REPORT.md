@@ -1,5 +1,8 @@
 # Memora統合開発・検証済み到達点
 
+2026-10-29 CI追補: [緑表示なのに追加検査が失敗していた問題](CI_PRESENTATION_FAILURE.md)を修正。
+固定時間依存の検査を状態/応答gateへ置換し、tee pipelineの失敗をCIへ伝播する。テストの削除/skipはしない。
+
 2026-10-29最新追補: [会社装飾色の明度変換](COMPANY_DECORATION_COLOR.md)を追加。
 マスター/レイアウトのlumMod/lumOffを条件限定でscene/PDFへ反映し、65型の実画素/原部品保持を検査。
 Quick Lookとの差、Office/実機/原本込み会社PDFは未達。最終完成数0/65を維持する。
