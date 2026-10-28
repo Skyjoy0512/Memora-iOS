@@ -1,7 +1,7 @@
 import Foundation
 
 /// Presentation pages are derived, so pagination never rewrites saved slides.
-struct SlidePage: Identifiable, Equatable {
+struct SlidePage: Identifiable, Equatable, Sendable {
   var sourceID: UUID
   var fragment: Int
   var titleLines: [String]
@@ -14,7 +14,7 @@ struct SlidePage: Identifiable, Equatable {
   var id: String { "\(sourceID.uuidString):\(fragment)" }
   var title: String { titleLines.joined() }
 
-  struct Bullet: Identifiable, Equatable {
+  struct Bullet: Identifiable, Equatable, Sendable {
     var sourceIndex: Int
     var firstLine: Int
     var lines: [String]

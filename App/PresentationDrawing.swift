@@ -38,7 +38,8 @@ enum PresentationDrawing {
 
   static func color(_ hex: String) -> CGColor {
     let value = UInt32(hex, radix: 16) ?? 0x171717
-    return CGColor(red: Double((value >> 16) & 255) / 255,
+    // DrawingML srgbClr and brand hex tokens refer to sRGB, not generic RGB.
+    return CGColor(srgbRed: Double((value >> 16) & 255) / 255,
                    green: Double((value >> 8) & 255) / 255, blue: Double(value & 255) / 255, alpha: 1)
   }
 }

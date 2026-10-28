@@ -13,7 +13,7 @@ enum CompanyPresentationExporter {
   private static let package = "http://schemas.openxmlformats.org/package/2006/relationships"
   private static let types = "http://schemas.openxmlformats.org/package/2006/content-types"
   private static let namespaces = "xmlns:p=\"\(p)\" xmlns:a=\"\(a)\" xmlns:r=\"\(r)\""
-  private static let palette = [PresentationTheme.white: "bg1", PresentationTheme.ink: "tx1", PresentationTheme.blue: "accent1",
+  static let palette = [PresentationTheme.white: "bg1", PresentationTheme.ink: "tx1", PresentationTheme.blue: "accent1",
     PresentationTheme.orange: "accent2", PresentationTheme.secondary: "tx2", PresentationTheme.pale: "bg2",
     PresentationTheme.rule: "tx2", "A3A3A3": "accent4", "DBEAFE": "accent1"]
 
@@ -37,6 +37,11 @@ enum CompanyPresentationExporter {
   }
 
   static func data(for document: MemoraDocument, template: Data) throws -> Data {
+    let profile = try validatedProfile(document: document, template: template)
+    return try append(document, template: template, profile: profile)
+  }
+
+  static func validatedProfile(document: MemoraDocument, template: Data) throws -> CompanyPresentationProfile {
     try Task.checkCancellation()
     guard document.kind == .slides, (1...65).contains(document.slides.count), document.slides.allSatisfy({ $0.composition != nil }) else {
       throw Failure(reason: "1〜65枚の構造化スライドを指定してください。")
@@ -48,6 +53,10 @@ enum CompanyPresentationExporter {
           analysis.placeholders.isEmpty, !analysis.unsupportedSplitMarkers else {
       throw Failure(reason: "960×540pt・差し込み欄のない空白レイアウトが必要です。既存の差し込み方式は別に利用できます。")
     }
+    return profile
+  }
+
+  private static func append(_ document: MemoraDocument, template: Data, profile: CompanyPresentationProfile) throws -> Data {
     var original = try OfficeArchiveReader(data: template), parts: [String: Data] = [:]
     for path in original.partNames where !path.hasSuffix("/") { parts[path] = try original.read(path) }
     for (path, data) in parts where path.hasSuffix(".rels") {
@@ -158,7 +167,7 @@ enum CompanyPresentationExporter {
     return result
   }
 
-  private static func choose(profile: CompanyPresentationProfile, document: MemoraDocument) throws -> (layout: CompanyPresentationProfile.Layout, master: CompanyPresentationProfile.Master) {
+  static func choose(profile: CompanyPresentationProfile, document: MemoraDocument) throws -> (layout: CompanyPresentationProfile.Layout, master: CompanyPresentationProfile.Master) {
     var lastFailure: Error?
     for layout in profile.layouts where layout.placeholders.isEmpty && layout.notices.isEmpty && ["blank", "未指定"].contains(layout.kind) {
       guard layout.id.range(of: #"^ppt/slideLayouts/[A-Za-z0-9_.-]+\.xml$"#, options: .regularExpression) != nil,
@@ -204,7 +213,7 @@ enum CompanyPresentationExporter {
     guard colors["bg1"]! > 0.99 else { throw Failure(reason: "この版は白い背景の会社書式が対象です。") }
   }
 
-  private static func themedElements(_ slide: DocumentSlide, theme: CompanyPresentationProfile.Theme) throws -> [PresentationElement] {
+  static func themedElements(_ slide: DocumentSlide, theme: CompanyPresentationProfile.Theme) throws -> [PresentationElement] {
     func face(_ fonts: [String: String], japanese: Bool) throws -> String {
       guard let name = japanese ? fonts["Jpan"] ?? fonts["ea"] ?? fonts["latin"] : fonts["latin"], !name.isEmpty else { throw Failure(reason: "テーマのフォントを確定できません。") }
       let font = PresentationText.font(size: 20, bold: false, name: name)

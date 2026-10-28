@@ -41,6 +41,7 @@ struct DocumentDetailView: View {
           }
           if document.kind == .slides, document.companyTemplateID != nil {
             CompanyPresentationExportView(model: model, document: document)
+            CompanyPresentationPreviewButton(model: model, document: document)
           }
           if let revisions = document.artifactHistory, !revisions.isEmpty {
             DocumentArtifactHistoryView(revisions: revisions, preview: previewRevision, share: shareRevision)
@@ -96,7 +97,7 @@ struct DocumentDetailView: View {
           if document.companyTemplateID == nil {
             Button("PDFで共有", icon: .docRichtext) { share(document, as: .pdf) }
           } else {
-            Button("会社書式のPDF変換は未対応", icon: .docRichtext) {}.disabled(true)
+            Button("原本を含むPDF変換は未対応", icon: .docRichtext) {}.disabled(true)
           }
           if document.kind == .slides {
             Button(document.companyTemplateID != nil && document.hasOutdatedArtifact ? "会社PowerPoint（編集前）で共有" : "PowerPointで共有", icon: .rectangleOnRectangleAngled) { share(document, as: .powerPoint) }
