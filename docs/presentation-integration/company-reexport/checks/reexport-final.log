@@ -1,0 +1,14 @@
+PASS reexport: edit → confirmation snapshot → real export → atomic save → SQLite reopen → template v4 → retained history → shared-file-safe delete
+PASS reexport suspended race: edit, no stale publication or lost edit
+PASS reexport suspended race: delete, no stale publication or lost edit
+PASS reexport suspended race: workspaceRoundTrip, no stale publication or lost edit
+PASS reexport suspended race: generation, no stale publication or lost edit
+PASS reexport suspended race: templateVersion, no stale publication or lost edit
+PASS reexport suspended race: templateAnalysis, no stale publication or lost edit
+PASS reexport suspended race: protectedStore, no stale publication or lost edit
+PASS reexport suspended race: restoring, no stale publication or lost edit
+PASS reexport suspended race: cancel, no stale publication or lost edit
+PASS reexport suspended race: sqlFailure, no stale publication or lost edit
+PASS reexport suspended race: adoptedFile, no stale publication or lost edit
+PASS reexport refusal: missing original/template, history capacity, invalid/duplicate/path/format/revision metadata, old codec
+Company reexport passed: real Swift PPTX/SQLite, retained history/old bytes/template versions, fresh current-document commit, unrelated edits preserved, suspended prepare races, cancellation, SQL rollback/file cleanup, shared-file deletion protection, legacy/invalid history; no network/AI/device or Office certification

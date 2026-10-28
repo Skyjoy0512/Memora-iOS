@@ -1,5 +1,12 @@
 # Memora — 改善バックログ
 
+## 2026-10-28: 編集後の会社PPTX再出力・ファイル履歴
+
+対応する構造化会社資料の詳細へ確認付き再出力を接続し、旧成果物・本文版・会社書式版を履歴とbackupへ保持。
+実PPTX/実SQLite、生成中の11条件、旧codec/欠落/容量、共有参照の削除保護を検証。
+[実装・ログ・Simulator表示](presentation-integration/COMPANY_REEXPORT.md)。既存6スイートとDebug/Release成功。
+会社PDF、一般会社書式、実資料UI保存E2E、Office/実機、全条件0/65は継続課題。
+
 ## 2026-10-28: 条件限定の会社PowerPoint追加export
 
 原本ページ/マスター/テーマを保持する別PPTXへ構造化65型を追加し、@テンプレートと承認付き
