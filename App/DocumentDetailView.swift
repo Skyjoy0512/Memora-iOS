@@ -39,6 +39,12 @@ struct DocumentDetailView: View {
           if let name = document.artifactFileReference, let url = ProjectSourceFiles.resolve(name) {
             DocumentArtifactFileView(document: document, url: url) { artifactPreview = url }
           }
+          if document.kind == .slides, document.companyTemplateID != nil {
+            CompanyPresentationExportView(model: model, document: document)
+          }
+          if let revisions = document.artifactHistory, !revisions.isEmpty {
+            DocumentArtifactHistoryView(revisions: revisions, preview: previewRevision, share: shareRevision)
+          }
 
           ArtifactSourcesView(provenance: document.provenance, meetingIDs: document.sourceRecordIDs ?? [],
             projectFileIDs: document.sourceProjectFileIDs ?? [])
@@ -140,7 +146,9 @@ struct DocumentDetailView: View {
       }
       Button("キャンセル", role: .cancel) {}
     } message: {
-      Text("削除した資料は元に戻せません。")
+      Text(document.artifactHistory?.isEmpty == false
+        ? "以前のファイルも削除され、元に戻せません。会社テンプレートの原本は残ります。"
+        : "削除した資料は元に戻せません。")
     }
     .alert("書き出せませんでした", isPresented: Binding(
       get: { exportErrorMessage != nil },
@@ -210,6 +218,28 @@ struct DocumentDetailView: View {
     guard document.artifactFormat?.lowercased() == suffix, let name = document.artifactFileReference,
           let source = ProjectSourceFiles.resolve(name) else { return nil }
     return try ArtifactExportFile.copy(source, preferredName: document.exportFileName, suffix: suffix)
+  }
+
+  private func revisionURL(_ revision: DocumentArtifactRevision) throws -> URL {
+    guard model.document(id: documentID)?.artifactHistory?.contains(revision) == true, revision.isValid,
+          let url = ProjectSourceFiles.resolve(revision.fileReference),
+          let attributes = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]),
+          attributes.isRegularFile == true, attributes.isSymbolicLink != true else { throw CocoaError(.fileNoSuchFile) }
+    return url
+  }
+
+  private func previewRevision(_ revision: DocumentArtifactRevision) {
+    do { artifactPreview = try revisionURL(revision) }
+    catch { exportErrorMessage = "以前のファイルが見つかりません。バックアップを確認してください。" }
+  }
+
+  private func shareRevision(_ revision: DocumentArtifactRevision) {
+    do {
+      let source = try revisionURL(revision)
+      let name = (model.document(id: documentID)?.exportFileName ?? "資料") + "-v\(revision.contentRevision)"
+      shareItems = [try ArtifactExportFile.copy(source, preferredName: name, suffix: revision.format.rawValue.lowercased())]
+      isSharing = true
+    } catch { exportErrorMessage = error.localizedDescription }
   }
 
   /// Removes the temporary export once the share sheet is done with it.

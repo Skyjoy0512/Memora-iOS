@@ -6,7 +6,7 @@ trap 'rm -rf "$check_dir"' EXIT
 output_dir=${MEMORA_COMPANY_APPEND_OUTPUT:-$check_dir/output}
 swiftc -DDEBUG App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/ArtifactProvenance.swift \
   App/ArtifactProjectSourceReference.swift Shared/MemoraIcon.swift App/MemoraDocumentKind.swift \
-  App/SlideArchetype.swift App/SlideContent.swift App/DocumentSlide.swift App/PresentationPlan.swift App/MemoraDocument.swift \
+  App/SlideArchetype.swift App/SlideContent.swift App/DocumentSlide.swift App/PresentationPlan.swift App/DocumentArtifactRevision.swift App/MemoraDocument.swift \
   App/PresentationTheme.swift App/PresentationElement.swift App/PresentationText.swift App/PresentationExample.swift \
   App/PresentationLayoutEngine.swift App/PresentationValidator.swift App/PresentationExportCheck.swift App/PresentationOOXML.swift \
   App/SlidePage.swift App/SlidePageLayout.swift App/ZipArchive.swift App/PPTXWriter.swift \

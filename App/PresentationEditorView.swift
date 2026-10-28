@@ -37,7 +37,7 @@ struct PresentationEditorView: View {
         }
         if document.companyTemplateID != nil {
           Section {
-            Text("ここでの編集は元の会社ファイルに反映されません。元ファイルと関連情報を保持します。")
+            Text("原本と以前のファイルを保持します。対応する追加方式の資料は、保存後に資料画面で会社PPTXへ書き出せます。")
               .font(.footnote).foregroundStyle(.secondary)
           }
         }

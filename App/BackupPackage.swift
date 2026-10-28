@@ -23,7 +23,7 @@ enum BackupPackage {
     var aiMemories: [AIMemory]? = nil
     var mailDrafts: [MailDraft]? = nil
     var companyTemplates: [CompanyTemplate]? = nil
-    var additionalWorkspaceFiles: [String] { (companyTemplates ?? []).map(\.fileReference) + (documents ?? []).compactMap(\.artifactFileReference) }
+    var additionalWorkspaceFiles: [String] { (companyTemplates ?? []).map(\.fileReference) + (documents ?? []).flatMap(\.artifactFileReferences) }
     /// Documents and slides. Optional, so a package from before they existed
     /// still restores.
     var documents: [MemoraDocument]?
@@ -125,6 +125,7 @@ enum BackupPackage {
     skillSelections: [SkillSelection] = [],
     into directory: URL
   ) throws -> URL {
+    guard documents.allSatisfy(\.hasValidRevisions) else { throw BackupError.unreadable }
     let plan = try collectMedia(meetings: meetings, lifeLogEntries: lifeLogEntries)
 
     // A folder of its own for every export, so nothing from an earlier one can
@@ -168,7 +169,7 @@ enum BackupPackage {
     }
 
     do {
-      try ProjectWorkspaceBackup.export(projectSources, into: packageURL, additionalNames: companyTemplates.map(\.fileReference) + documents.compactMap(\.artifactFileReference))
+      try ProjectWorkspaceBackup.export(projectSources, into: packageURL, additionalNames: companyTemplates.map(\.fileReference) + documents.flatMap(\.artifactFileReferences))
     } catch {
       try? FileManager.default.removeItem(at: packageURL)
       throw error

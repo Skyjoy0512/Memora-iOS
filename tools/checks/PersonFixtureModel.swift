@@ -4,6 +4,7 @@ import Foundation
 // legacy meeting/journal shapes are minimal fixtures; no app store or services are touched.
 @MainActor final class MemoraModel {
   var store: LocalStore
+  var fixtureStoreURL: URL
   var people: [Person] = [] { didSet { personIndex.invalidate() } }
   var tasks: [MemoraTask] = [] { didSet { taskIndex.invalidate() } }
   var meetings: [Meeting] = []
@@ -94,7 +95,7 @@ import Foundation
   var reads: [RecordPrivacyTarget] = []
   #endif
   enum StorageKey { static let tasks = "tasks", people = "people", meetings = "meetings", lifeLogEntries = "journal", lifeLogTrash = "journalTrash", pendingMediaDeletions = "deletions", autoLifeLogInbox = "inbox", documents = "documents", projectSources = "projectSources" }
-  init(storeURL: URL) throws { store = LocalStore(fileURL: storeURL); try store.prepare() }
+  init(storeURL: URL) throws { fixtureStoreURL = storeURL; store = LocalStore(fileURL: storeURL); try store.prepare() }
   func isStoreWritable() -> Bool { !isRestoring && !isStoreProtected && !rejectWrites }
   func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
     guard isStoreWritable() else { return false }

@@ -20,7 +20,7 @@ struct BackupRestoreChecks {
     let pptx = try Data(contentsOf: URL(fileURLWithPath: "docs/fixtures/ask-ai-artifacts/generated.pptx"))
     let audio = Data("fixture audio, never played".utf8)
     let photo = Data("fixture image, never displayed".utf8)
-    let workspaceFiles = ["template.docx": docx, "template.pptx": pptx, "artifact.pptx": pptx, "source.txt": Data("根拠の本文".utf8)]
+    let workspaceFiles = ["template.docx": docx, "template.pptx": pptx, "artifact.pptx": pptx, "older.pptx": pptx, "source.txt": Data("根拠の本文".utf8)]
     for (name, data) in workspaceFiles { try data.write(to: ProjectSourceFiles.resolve(name)!) }
     try audio.write(to: MediaFiles.directory.appendingPathComponent("audio.m4a"))
     try photo.write(to: MediaFiles.photosDirectory.appendingPathComponent("photo.jpg"))
@@ -41,6 +41,8 @@ struct BackupRestoreChecks {
     document.artifactFileReference = "artifact.pptx"; document.artifactFormat = "PPTX"
     document.contentRevision = 2; document.artifactRevision = 1
     document.companyTemplateID = powerpointTemplate.id; document.companyTemplateVersion = powerpointTemplate.version
+    document.artifactHistory = [.init(fileReference: "older.pptx", format: .pptx, contentRevision: 0,
+      companyTemplateID: powerpointTemplate.id, companyTemplateVersion: powerpointTemplate.version)]
     document.presentationPlan = PresentationPlan(purpose: "判断を支援", audience: "会議の参加者", decision: "次の確認事項",
       assumptions: ["架空データ"], storyline: [.init(slideID: document.slides[0].id, claim: "概要を共有する", evidence: ["会議"], unconfirmed: ["実機検証"])])
     document.sourceRecordIDs = [meeting.id]
@@ -95,6 +97,12 @@ struct BackupRestoreChecks {
     try reject(invalid, in: package)
     invalid = manifest; invalid.documents?[0].companyTemplateID = nil
     try reject(invalid, in: package)
+    invalid = manifest; invalid.documents?[0].artifactHistory?[0].fileReference = "../older.pptx"
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.documents?[0].artifactHistory?.append(document.artifactHistory![0])
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.documents?[0].artifactHistory?[0].contentRevision = 3
+    try reject(invalid, in: package)
     invalid = manifest; invalid.documents?[0].presentationPlan?.storyline[0].slideID = UUID()
     try reject(invalid, in: package)
     invalid = manifest; invalid.documents?[0].presentationPlan?.assumptions = Array(repeating: "過大入力", count: 21)
@@ -125,6 +133,10 @@ struct BackupRestoreChecks {
     try fm.removeItem(at: artifactURL)
     try expectFailure { _ = try BackupPackage.read(from: package) }
     try pptx.write(to: artifactURL)
+    let historicalURL = folder.appendingPathComponent("older.pptx")
+    try fm.removeItem(at: historicalURL)
+    try expectFailure { _ = try BackupPackage.read(from: package) }
+    try pptx.write(to: historicalURL)
     let largeURL = folder.appendingPathComponent("oversize.docx")
     fm.createFile(atPath: largeURL.path, contents: nil)
     let largeHandle = try FileHandle(forWritingTo: largeURL)

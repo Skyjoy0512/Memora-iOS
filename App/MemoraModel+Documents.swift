@@ -55,10 +55,11 @@ extension MemoraModel {
     guard persistNow(candidate, forKey: StorageKey.documents) else { return }
     documents = candidate
     invalidateProjectEvidence([.document(id)])
-    if let name = document.artifactFileReference,
-       !candidate.contains(where: { $0.artifactFileReference == name }),
-       !companyTemplates.contains(where: { $0.fileReference == name }) {
-      Task { await ProjectSourceFiles.shared.remove([name]) }
+    let workspace = currentTeamID, generation = aiWorkspaceGeneration
+    Task {
+      guard workspace == currentTeamID, generation == aiWorkspaceGeneration else { return }
+      let retained = Set(documents.flatMap(\.artifactFileReferences) + companyTemplates.map(\.fileReference) + projectSources.flatMap(\.fileReferences))
+      await ProjectSourceFiles.shared.remove(document.artifactFileReferences.filter { !retained.contains($0) })
     }
   }
 

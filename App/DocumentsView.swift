@@ -84,7 +84,9 @@ struct DocumentsView: View {
       }
       Button("キャンセル", role: .cancel) { pendingDeletion = nil }
     } message: {
-      Text("削除した資料は元に戻せません。")
+      Text(pendingDeletion?.artifactHistory?.isEmpty == false
+        ? "以前のファイルも削除され、元に戻せません。会社テンプレートの原本は残ります。"
+        : "削除した資料は元に戻せません。")
     }
   }
 }
