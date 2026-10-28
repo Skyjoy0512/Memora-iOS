@@ -68,6 +68,28 @@ Quick Look用コピーは、原本ページのpresentation-list entryだけを�
 
 ## 未実装・未検証
 
+### ローカルPowerPointの確認は失敗
+
+`/Applications/Microsoft PowerPoint.app` 16.114.1があり、既存の自動操作経路でversion取得は成功した。
+架空66ページPPTXの外部SSD上の別コピーだけを開き、PDFへ保存する検査を試みたが、open操作が
+45秒でAppleEvent timeout (-1712)となり、PDFは生成されなかった。
+対象名に限定した後続照会は0資料。LaunchServices経由の通常openはexit 0だったが、
+5秒後の同じ限定照会も0だった。コマンド受付を正常描画と扱わない。
+
+原因は未特定。破損PPTX、ライセンス、ダイアログ、アクセス権等のどれかに断定しない。
+コピーと生成済みPPTXのSHA256は両方`c71c02e237decb913facc494134c018813d2d2427089b557226632451f6cfba8`のまま。
+利用者の文書、契約、認証、設定は変更せず、既存資料やアプリ全体をclose/quitしていない。
+Keynote/LibreOfficeは標準のApplications配置とPATHで見つからなかった。他の配置の存在までは否定しない。
+
+[version](decoration-color/checks/powerpoint-access.log) /
+[失敗](decoration-color/checks/powerpoint-export.log) /
+[限定照会](decoration-color/checks/powerpoint-fixture-check.log) /
+[通常open後の照会](decoration-color/checks/powerpoint-fixture-check-launchservices.log) /
+[原本/コピーのハッシュ](decoration-color/checks/powerpoint-source-hashes.log)。
+PowerPointの画面目視・描画・編集成功は今回も未検証。
+
+### 残る範囲
+
 画像ロゴ、輪郭線、複雑な図形、任意色変換、一般プレースホルダー/寸法、原本込み会社PDFは従来どおり未対応。
 Office/Keynote/実機、今回の明度装飾を使った実資料UI→共有E2E、全型の実AI生成/修正、最終画像一致は未検証。
 新規UIはなくSimulator Before/Afterを作っていない。ビルド/プレビュー更新を、新機能の実機E2Eと扱わない。
