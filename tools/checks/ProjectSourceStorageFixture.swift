@@ -70,6 +70,7 @@ final class MemoraModel {
     didSet { if oldValue != currentTeamID { aiWorkspaceGeneration = UUID() } }
   }
   var aiWorkspaceGeneration = UUID()
+  var retainedOfficeFileReferences: Set<String> = []
   var isRestoring = false
   var isStoreProtected = false
   var invalidated: [ProjectCitation.Target] = []

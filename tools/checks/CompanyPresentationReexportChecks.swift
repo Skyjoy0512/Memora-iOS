@@ -60,6 +60,7 @@ import SQLite3
     let next = try await model.reexportCompanyPresentation(nextRequest)
     precondition(next.companyTemplateVersion == 4 && next.artifactHistory?.count == 2)
     precondition(next.artifactHistory?[0].fileReference == result.artifactFileReference && next.artifactHistory?[0].companyTemplateVersion == 3)
+    precondition(model.retainedOfficeFileReferences == Set(next.artifactFileReferences + [originalName]))
     let sharedDocument = MemoraDocument(title: "同じ成果物の参照", kind: .slides, artifactFileReference: oldName, artifactFormat: "PPTX")
     precondition(model.addDocument(sharedDocument))
     model.projectSources = [.init(kind: .document, title: "別のソース", localFileReference: result.artifactFileReference)]

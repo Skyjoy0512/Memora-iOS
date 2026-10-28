@@ -2,6 +2,11 @@ import Foundation
 
 // Documents: written documents and slides made from the records.
 extension MemoraModel {
+  /// Imported sources can share a restored file with an Office artifact.
+  var retainedOfficeFileReferences: Set<String> {
+    Set(documents.flatMap(\.artifactFileReferences) + companyTemplates.map(\.fileReference))
+  }
+
   func document(from message: AIChatMessage) -> MemoraDocument {
     let question: String?
     if message.residentName == nil, let index = aiMessages.firstIndex(where: { $0.id == message.id }) {

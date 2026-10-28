@@ -162,6 +162,20 @@ struct ProjectSourceImportChecks {
     await Task.yield()
     expect(try reload(model) == [shared])
     expect(try Data(contentsOf: ProjectSourceFiles.resolve(shared.localFileReference!)!) == Data("保持する元のファイル".utf8))
+    model.retainedOfficeFileReferences = Set(shared.fileReferences)
+    precondition(model.deleteProjectSource(shared.id))
+    try await Task.sleep(for: .milliseconds(25))
+    expect(try reload(model).isEmpty)
+    expect(try Data(contentsOf: ProjectSourceFiles.resolve(shared.localFileReference!)!) == Data("保持する元のファイル".utf8))
+    print("PASS source deletion preserves files retained by Office documents/history/templates (reference registry fixture)")
+
+    let lateID = try await model.importProjectFile(original(root, "late-delete-input"), projectID: projectID)!
+    let late = model.source(id: lateID)!
+    precondition(model.deleteProjectSource(lateID))
+    model.currentTeamID = "other"; model.currentTeamID = nil
+    try await Task.sleep(for: .milliseconds(25))
+    expect(try Data(contentsOf: ProjectSourceFiles.resolve(late.localFileReference!)!) == Data("保持する元のファイル".utf8))
+    print("PASS source deletion cleanup refuses a changed workspace generation")
   }
 
   @MainActor static func contextPolicy(_ root: URL) throws {

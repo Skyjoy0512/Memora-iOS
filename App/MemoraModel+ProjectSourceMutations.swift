@@ -20,8 +20,12 @@ extension MemoraModel {
     }
     projectSources = remaining
     invalidateProjectEvidence([.source(id)])
-    let retained = Set(remaining.flatMap(\.fileReferences))
-    Task { await ProjectSourceFiles.shared.remove(source.fileReferences.filter { !retained.contains($0) }) }
+    let workspace = currentTeamID, generation = aiWorkspaceGeneration
+    Task {
+      guard workspace == currentTeamID, generation == aiWorkspaceGeneration else { return }
+      let retained = Set(projectSources.flatMap(\.fileReferences)).union(retainedOfficeFileReferences)
+      await ProjectSourceFiles.shared.remove(source.fileReferences.filter { !retained.contains($0) })
+    }
     return true
   }
 }
