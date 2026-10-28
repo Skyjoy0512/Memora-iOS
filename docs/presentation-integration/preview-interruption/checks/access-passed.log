@@ -1,0 +1,13 @@
+PASS held preview result: unchanged
+PASS held preview result: document edit
+PASS held preview result: document delete
+PASS held preview result: template version
+PASS held preview result: template analysis
+PASS held preview result: template delete
+PASS held preview result: workspace switch
+PASS held preview result: workspace A-B-A
+PASS held preview result: generation
+PASS held preview result: restoring
+PASS held preview result: protected store
+PASS held preview result: cancellation
+Company preview access: real source/SQLite unchanged, production factory/preparation/publication checks; 8 preflight refusals, pre-cancel without work, 12 deterministically held real-worker results, typed stale/cancel/preparation errors, missing source and legacy refusal; no UI-save/OS-termination/AI/device certification

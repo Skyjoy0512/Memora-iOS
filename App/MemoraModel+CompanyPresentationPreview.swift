@@ -19,19 +19,28 @@ extension MemoraModel {
       (request.document.provenance.map { $0.workspaceID == currentTeamID } ?? true)
   }
 
-  func loadCompanyPresentationPreview(_ request: CompanyPresentationPreviewRequest) async throws -> CompanyPresentationPreview {
+  func loadCompanyPresentationPreview(
+    _ request: CompanyPresentationPreviewRequest,
+    prepare: (MemoraDocument, URL) async throws -> CompanyPresentationPreview = MemoraModel.prepareCompanyPresentationPreview
+  ) async throws -> CompanyPresentationPreview {
+    try Task.checkCancellation()
     guard companyPresentationPreviewIsCurrent(request), let source = ProjectSourceFiles.resolve(request.template.fileReference) else { throw CompanyPresentationPreview.Failure.stale }
-    let document = request.document
+    let preview = try await prepare(request.document, source)
+    try Task.checkCancellation()
+    guard companyPresentationPreviewIsCurrent(request) else { throw CompanyPresentationPreview.Failure.stale }
+    return preview
+  }
+
+  nonisolated static func prepareCompanyPresentationPreview(document: MemoraDocument, source: URL) async throws -> CompanyPresentationPreview {
+    try Task.checkCancellation()
     let worker = Task.detached(priority: .userInitiated) {
+      try Task.checkCancellation()
       let attributes = try source.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
       guard attributes.isRegularFile == true, attributes.isSymbolicLink != true else { throw CompanyPresentationPreview.Failure.unsupported }
       let reader = try FileHandle(forReadingFrom: source); defer { try? reader.close() }
       let data = try reader.read(upToCount: OfficeArchiveReader.maximumArchiveBytes + 1) ?? Data()
       return try CompanyPresentationPreview.make(document: document, template: data)
     }
-    let preview = try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
-    try Task.checkCancellation()
-    guard companyPresentationPreviewIsCurrent(request) else { throw CompanyPresentationPreview.Failure.stale }
-    return preview
+    return try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
   }
 }
