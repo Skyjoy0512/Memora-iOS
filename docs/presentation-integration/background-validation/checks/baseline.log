@@ -1,0 +1,2 @@
+checks/CompanyPresentationBackgroundChecks.swift:58: Fatal error: Unsupported background silently accepted by reader: ppt/slideMasters/slideMaster1.xml #0
+tools/checks/run-company-presentation-checks.sh: line 24: 57458 Trace/BPT trap: 5       "$check_dir/checks" "$output_dir"

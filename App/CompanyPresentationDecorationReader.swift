@@ -17,14 +17,7 @@ enum CompanyPresentationDecorationReader {
           let tree = xml.children(common, named: "spTree", namespaces: p).first else { throw CompanyPresentationPreview.Failure.unsupported }
     guard xml.children(common, named: "bg", namespaces: p).count <= 1 else { throw CompanyPresentationPreview.Failure.unsupported }
     for background in xml.children(common, named: "bg", namespaces: p) {
-      guard xml.nodes[background].attributes.isEmpty, xml.nodes[background].children.count == 1,
-            let properties = xml.children(background, named: "bgPr", namespaces: p).first,
-            xml.nodes[properties].attributes.isEmpty,
-            xml.nodes[properties].children.allSatisfy({ xml.matches($0, "solidFill", namespaces: a) || xml.matches($0, "effectLst", namespaces: a) && xml.nodes[$0].children.isEmpty }),
-            let fill = xml.children(properties, named: "solidFill", namespaces: a).first, xml.nodes[fill].children.count == 1 else { throw CompanyPresentationPreview.Failure.unsupported }
-      let color = xml.nodes[xml.nodes[fill].children[0]]
-      guard a.contains(color.namespace), color.children.isEmpty, color.attributes.count == 1,
-            color.name == "srgbClr" && color.attributes["val"]?.uppercased() == "FFFFFF" || color.name == "schemeClr" && color.attributes["val"] == "bg1" else { throw CompanyPresentationPreview.Failure.unsupported }
+      try validateBackground(background, in: xml)
     }
     for override in xml.children(0, named: "clrMapOvr", namespaces: p) {
       guard xml.nodes[override].children.count == 1,
@@ -71,5 +64,30 @@ enum CompanyPresentationDecorationReader {
         x: x / 12700, y: y / 12700, width: w / 12700, height: h / 12700, color: hex, fill: hex, checksCollision: false))
     }
     return output
+  }
+
+  private static func validateBackground(_ background: Int, in xml: OfficeXMLDocument) throws {
+    func plain(_ index: Int) -> Bool {
+      xml.nodes[index].attributes.isEmpty && xml.nodes[index].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    guard plain(background), xml.nodes[background].children.count == 1,
+          let properties = xml.children(background, named: "bgPr", namespaces: p).first,
+          plain(properties), (1...2).contains(xml.nodes[properties].children.count),
+          let fill = xml.nodes[properties].children.first,
+          xml.matches(fill, "solidFill", namespaces: a), plain(fill),
+          xml.nodes[fill].children.count == 1 else { throw CompanyPresentationPreview.Failure.unsupported }
+    // Selecting the first fill would hide a conflicting background in the source.
+    if xml.nodes[properties].children.count == 2 {
+      let effect = xml.nodes[properties].children[1]
+      guard xml.matches(effect, "effectLst", namespaces: a), plain(effect), xml.nodes[effect].children.isEmpty else {
+        throw CompanyPresentationPreview.Failure.unsupported
+      }
+    }
+    let color = xml.nodes[xml.nodes[fill].children[0]]
+    guard a.contains(color.namespace), color.children.isEmpty, color.attributes.count == 1,
+          color.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+          color.name == "srgbClr" && color.attributes["val"]?.uppercased() == "FFFFFF" || color.name == "schemeClr" && color.attributes["val"] == "bg1" else {
+      throw CompanyPresentationPreview.Failure.unsupported
+    }
   }
 }

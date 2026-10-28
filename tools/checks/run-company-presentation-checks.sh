@@ -9,7 +9,7 @@ extra_sources=()
 if [[ "${1:-}" == --preview ]]; then
   output_dir=${MEMORA_COMPANY_PREVIEW_OUTPUT:-$check_dir/output}
   entrypoint=tools/checks/CompanyPresentationPreviewChecks.swift
-  extra_sources=(App/PresentationDrawing.swift App/CompanyPresentationPreview.swift App/CompanyPresentationColor.swift App/CompanyPresentationDecorationReader.swift App/CompanyPresentationPDF.swift tools/checks/CompanyPresentationColorChecks.swift)
+  extra_sources=(App/PresentationDrawing.swift App/CompanyPresentationPreview.swift App/CompanyPresentationColor.swift App/CompanyPresentationDecorationReader.swift App/CompanyPresentationPDF.swift tools/checks/CompanyPresentationColorChecks.swift tools/checks/CompanyPresentationBackgroundChecks.swift)
 fi
 swiftc -DDEBUG App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/ArtifactProvenance.swift \
   App/ArtifactProjectSourceReference.swift Shared/MemoraIcon.swift App/MemoraDocumentKind.swift \

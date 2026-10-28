@@ -1,5 +1,9 @@
 # Memora統合開発・検証済み到達点
 
+2026-10-29追補: [会社背景の厳密な検査](COMPANY_BACKGROUND_VALIDATION.md)。
+重複fillの受け入れを再現し、未対応の背景58ケースをreader/packageプレビューで拒否する。
+原本・UI・保存形式は変更しない。全条件の完成数は0/65を維持する。
+
 2026-10-29 CI追補: [緑表示なのに追加検査が失敗していた問題](CI_PRESENTATION_FAILURE.md)を修正。
 固定時間依存の検査を状態/応答gateへ置換し、tee pipelineの失敗をCIへ伝播する。テストの削除/skipはしない。
 

@@ -23,6 +23,7 @@ import Foundation
     }
     try source.write(to: output.appendingPathComponent("source.pptx"))
     try CompanyPresentationColorChecks.run(source: source)
+    try CompanyPresentationBackgroundChecks.run(source: source)
     let slides = SlideArchetype.allCases.map { PresentationExample.slide($0) }
     for slide in slides {
       let id = slide.composition!.layout.rawValue

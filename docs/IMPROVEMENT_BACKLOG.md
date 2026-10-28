@@ -1,5 +1,11 @@
 # Memora — 改善バックログ
 
+## 2026-10-29: 会社背景の省略防止
+
+重複した背景fillを旧readerが受け入れる問題を再現し、指定数/順序/属性/文字混入を検査する。
+master/layoutで対応10件・拒否58件をreaderと実packageプレビューで検証。
+[詳細・検証結果](presentation-integration/COMPANY_BACKGROUND_VALIDATION.md)。UI/保存形式/原本は維持。全条件0/65。
+
 ## 2026-10-29: CI追加検査の失敗伝播と修正テストの安定化
 
 Actions successと実artifact内のassert失敗を照合。固定350ms待機を状態待ち/応答gateへ変更し、
