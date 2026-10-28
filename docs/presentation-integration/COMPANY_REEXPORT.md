@@ -1,7 +1,7 @@
 # 編集した会社PPTXの確認付き再出力・ファイル履歴
 
 2026-10-28。開始main: `c751a8ae58b15d1c13d446e009ee40c6fc7d152e`。
-実装コミット: `31c8df1`。前フェーズの[条件限定append exporter](COMPANY_APPEND.md)を、
+実装コミット: `31c8df1`、ソース削除からの保護: `eb9317d`。前フェーズの[条件限定append exporter](COMPANY_APPEND.md)を、
 保存済み資料の詳細画面へ接続した。指示書全体の完了報告ではない。全完成条件は **0 / 65** のまま。
 
 ## 実装完了
@@ -13,6 +13,7 @@
 - ファイル生成とSQLite確定を分離。確定直前に文書全体・テンプレート全体・workspace世代・保存可否・復元・取消を再確認。同期的なDB保存が成功してからモデルを更新する。途中の別資料の変更も保持する。
 - 失効/取消/保存失敗時は未公開の新ファイルを片付ける。他の資料・履歴・テンプレート・プロジェクトソースが参照しているファイルは削除しない。
 - バックアップに最新/過去の全ファイルを含め、復元時もメタデータとバイトを保持する。資料削除の確認文に履歴削除を明示し、会社原本や他用途の参照は残す。
+- ソース側から削除した場合も、資料の最新/履歴・会社原本の参照を残す。遅延した削除はworkspace世代を再確認する。最終レビューで逆方向の参照保護が不足していたため補強した。
 - 最大100履歴。上限時は再出力を拒否し、自動削除しない。既存の500MBソース保存上限も維持する。履歴の個別削除/本文を過去版へ戻す機能は今回追加していない。
 
 UIはnative-app-designの方針を使い、既存詳細画面へフラットなボタンとDisclosureGroupを追加した。
@@ -30,6 +31,7 @@ UIはnative-app-designの方針を使い、既存詳細画面へフラットな�
 | 生成を中断した11条件 | 編集、削除、workspace往復、世代変更、会社版/計測変更、保護、復元、取消、SQLite ABORT、新ファイルの他用途参照 | 本番prepare/commit/discardをテスト用gateで中断。実OSプロセス終了ではない |
 | 不正入力/互換 | 旧codec、履歴重複、path/形式/版番号、100件上限、元成果物/原本欠落、異なるテンプレートIDを拒否 | あらゆる企業資料を受理できるとはしない |
 | backup/restore | 実packageと実SQLiteで履歴・バイト復元、旧backup、欠落/不正参照/rollback | 隔離fixture。ユーザーの実データを操作していない |
+| ソース側の削除 | Office側の保持参照とworkspace変更後の削除拒否を追加検査 | 削除/実ファイル/SQLiteは本番処理。Office保持集合はfixture入力、実文書からの集合構築は再出力テストで別途確認 |
 | 標準65型 | 65/65で固有geometry、編集可能PPTX、PDF文字、日本語/出典、codec/編集/empty/独立XML検査 | 短い固定fixture。Office/実機の最終認定ではない |
 | 会社65型の回帰 | next-generation内の65/65 append検査を再実行 | 条件限定書式。新UIで全65型を保存した検査ではない |
 | 部分修正の権限回帰 | `--presentation-revision` Pass | 実provider呼出しなし |
@@ -46,6 +48,7 @@ composer-layout / optimization。新しい再出力チェックをnext-generatio
 ### 検査ログ
 
 - [再出力と11条件](company-reexport/checks/reexport-final.log)、[backup/restore](company-reexport/checks/backup.log)
+- [ソース削除からの参照保護](company-reexport/checks/source-delete-final.log)
 - [65型](company-reexport/checks/presentation-final.log)、[部分修正の権限](company-reexport/checks/revision-access-final.log)
 - [6スイート結果](company-reexport/checks/summary.json)と同フォルダの個別ログ
 - [Debug preview](company-reexport/checks/preview-final.log)、[Release](company-reexport/checks/release-final.log)、[OSS](company-reexport/checks/oss-final.log)

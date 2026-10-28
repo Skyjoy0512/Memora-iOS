@@ -1,0 +1,3 @@
+PASS source deletion preserves files retained by Office documents/history/templates (reference registry fixture)
+PASS source deletion cleanup refuses a changed workspace generation
+ProjectSourceImportChecks: passed (production file copy/transfer registration, fingerprints, SQLite reopen, 32 context races before load/during copy/after transfer/after registration, dedup and committed-file retention, SQL rollback/retry, detach/delete workspace guards; OS preparation/audio and model state are fixtures, no network)

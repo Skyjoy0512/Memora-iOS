@@ -1,4 +1,4 @@
-Log: /Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-28T20-47-33-f7b6ab1c.log
+Log: /Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-28T21-04-33-f83ac7c7.log
 ▸ Previewing iOS in Bitrig's simulator.
 ▸ Building the app for iOS Simulator
 ** BUILD SUCCEEDED **  11 warnings
@@ -9,13 +9,7 @@ Log: /Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec1
       "diagnostics" : [
         {
           "classification" : "warning",
-          "message" : "2026-10-28 20:47:41.725 appintentsmetadataprocessor[3855:26961438] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
-        },
-        {
-          "classification" : "warning",
-          "filePath" : "App/GmailAuthorizationSession.swift",
-          "lineNumber" : 63,
-          "message" : "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+          "message" : "2026-10-28 21:04:46.323 appintentsmetadataprocessor[11473:27016720] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
         },
         {
           "classification" : "warning",
@@ -49,12 +43,6 @@ Log: /Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec1
         },
         {
           "classification" : "warning",
-          "filePath" : "App/MCPOAuthBrowser.swift",
-          "lineNumber" : 71,
-          "message" : "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
-        },
-        {
-          "classification" : "warning",
           "filePath" : "App/PlaceNameResolver.swift",
           "lineNumber" : 12,
           "message" : "'CLGeocoder' was deprecated in iOS 26.0: Use MapKit [#DeprecatedDeclaration]"
@@ -70,12 +58,24 @@ Log: /Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec1
           "filePath" : "App/PlaceNameResolver.swift",
           "lineNumber" : 33,
           "message" : "'placemark' was deprecated in iOS 26.0: Use location, address and addressRepresentations instead [#DeprecatedDeclaration]"
+        },
+        {
+          "classification" : "warning",
+          "filePath" : "App/GmailAuthorizationSession.swift",
+          "lineNumber" : 63,
+          "message" : "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
+        },
+        {
+          "classification" : "warning",
+          "filePath" : "App/MCPOAuthBrowser.swift",
+          "lineNumber" : 71,
+          "message" : "'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead. [#DeprecatedDeclaration]"
         }
       ],
       "result" : "succeeded",
       "scheme" : "Memora"
     }
   ],
-  "log" : "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-28T20-47-33-f7b6ab1c.log",
+  "log" : "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-28T21-04-33-f83ac7c7.log",
   "result" : "success"
 }

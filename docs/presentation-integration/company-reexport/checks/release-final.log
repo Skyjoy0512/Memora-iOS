@@ -1,17 +1,17 @@
-Log: /Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-28T20-47-58-8ce6e4a4.log
+Log: /Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-28T21-05-28-b03b03ba.log
 ▸ Building Memora for iOS Simulator
 ** BUILD SUCCEEDED **  11 warnings
 {
   "builds" : [
     {
       "apps" : [
-        "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/Apps/Release-iphonesimulator/Memora.app/1793188391653-67E307E2/Memora.app"
+        "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/Apps/Release-iphonesimulator/Memora.app/1793189450915-4CAB3455/Memora.app"
       ],
       "destination" : "generic/platform=iOS Simulator",
       "diagnostics" : [
         {
           "classification" : "warning",
-          "message" : "2026-10-28 20:49:21.098 appintentsmetadataprocessor[5746:26977844] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
+          "message" : "2026-10-28 21:06:17.787 appintentsmetadataprocessor[13267:27032224] warning: Metadata extraction skipped, no AppIntents.framework dependency found"
         },
         {
           "classification" : "warning",
@@ -78,6 +78,6 @@ Log: /Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec1
       "scheme" : "Memora"
     }
   ],
-  "log" : "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-28T20-47-58-8ce6e4a4.log",
+  "log" : "/Users/ken/Library/Bitrig/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-10-28T21-05-28-b03b03ba.log",
   "result" : "success"
 }

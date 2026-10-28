@@ -16,11 +16,13 @@ Infographic checks passed: production generation → validated interpretation �
 JournalInsertionTimeChecks: passed (midpoint, equal/reversed, now marker exclusion, selected day, natural tail, overflow, DST and day boundaries)
 CalendarEventEditPolicyChecks: passed (permission/writable/owner/cancelled gates, exact recurring occurrence and stale revision; EventKit UI save and account permissions require separate device validation)
 PersistenceFailurePresentationChecks: passed (global default, explicit synchronous local scope, nested return/throw cleanup, no async scope)
-MemoryRetrievalChecks: passed (legacy, validity, conflict states, sensitivity, Japanese FTS5, scope, snapshot invalidation, eviction, expiry, concurrent reads, 2000 items 0.039938926696777344s; no LLM quality claim)
+MemoryRetrievalChecks: passed (legacy, validity, conflict states, sensitivity, Japanese FTS5, scope, snapshot invalidation, eviction, expiry, concurrent reads, 2000 items 0.0355839729309082s; no LLM quality claim)
 MemoryEditingChecks: passed (production edit plan/management, explicit resolution, history, stale values, scope, sensitivity, legacy, SQLite reopen and atomic failure; no AI calls)
 ProjectSourceStorageChecks: passed (production note/store paths, actual file/SQLite reopen, edit and shared-file retention, 24 suspended-write races, failed SQL rollback/retry, local error presentation, workspace and size guards; model state/evidence notification are fixtures, no network)
 ProjectSourcePreparationChecks: passed (production metadata/local orchestration, 60 suspended-result/file-write races, cancellation, duplicate execution, SQLite failure/retry/reopen, file cleanup and reader size bounds; extraction/network/downsample payloads and model state are fixtures, no network)
 ProjectSourceWebRecoveryChecks: passed (production fetch orchestration/client/text extraction/file/SQLite reopen; 28 suspended-response/write races, replacement ownership, cancellation, SQL rollback/retry, orphaned-status recovery and failed recovery save; DNS/HTTP payload and model state are fixtures, no network)
+PASS source deletion preserves files retained by Office documents/history/templates (reference registry fixture)
+PASS source deletion cleanup refuses a changed workspace generation
 ProjectSourceImportChecks: passed (production file copy/transfer registration, fingerprints, SQLite reopen, 32 context races before load/during copy/after transfer/after registration, dedup and committed-file retention, SQL rollback/retry, detach/delete workspace guards; OS preparation/audio and model state are fixtures, no network)
 AudioImportChecks: passed (production picked-audio/importAudio/handle/Inbox queue/restore admission, real file copy/cleanup, Meeting codec and SQLite reopen; 16 import races, 16 restore busy states, team/protected/nonempty/cancel refusal, real suspended import excludes restore, picker remains invalid after restore flag clears; duration/media, backup error types, empty-state classification and navigation/model state are fixtures, no microphone/AV playback/network)
 Notion service checks passed: batching, HTTP failures, cancellation, configuration changes, partial-page recovery and explicit reconnect; fixture transport only, no accounts/network
@@ -83,7 +85,7 @@ unknown-private: top3= gold= sent=0
 unknown-english: top3= gold= sent=0
 unknown-partial-number: top3= gold= sent=0
 unknown-partial-word: top3= gold= sent=0
-MEASURE hit@1=22/22 recall@3=1.000 precision@3=0.379 MRR=1.000 unrelated-sent=0.167 no-evidence-abstain=5/5 p50=0.44ms p95=5.01ms max=25.76ms
+MEASURE hit@1=22/22 recall@3=1.000 precision@3=0.379 MRR=1.000 unrelated-sent=0.167 no-evidence-abstain=5/5 p50=0.44ms p95=3.91ms max=15.34ms
 ProjectSearchQualityChecks: passed (measured real FTS5 + context, long PDF/page evidence, scoped snapshots, update/delete/revoke invalidation; metrics are not LLM answer quality)
 ProjectSourceAvailabilityChecks: passed (legacy codec, honest partial/missing states, unchanged privacy and evidence eligibility)
 WebSourceChecks: passed (fixed public endpoint, redirect DNS, secret-free GET, split/chunked/bounded HTTP, nonexecuting HTML, entities, Unicode, cancellation; mock transport, no network)
@@ -214,7 +216,7 @@ PASS corporate m35: editable shapes, theme links, notes, unchanged original part
 Corporate export: 65/65 host checks; existing notes reuse, slide-count metadata, theme tint, incompatible geometry/font/contrast/collision/markers/parts/legacy rejection and verbatim XML insertion passed. Office/Keynote/device rendering NOT certified.
 {"passed": 65, "total": 65, "aggregatePages": 66, "checks": ["XML", "relationship targets", "content types", "unique IDs", "editable shapes", "Japanese", "sources", "original part bytes", "corporate layout link"], "sourceSHA256": "3384953f38c3c1633e3a9853af68342f8eaf6f2a9ce9d18ad9b745acd33c200f", "finalOfficeRendering": "unverified"}
 BackupRestoreChecks: passed (production package/restore + real SQLite, new metadata/files roundtrip, legacy restore, duplicate documents, recipient limits, truncated/missing/oversize, traversal/symlinks, DB rollback, cancellation/gate, conflict preserves bytes, reopen; isolated fixtures only)
-PersonTaskChecks host lookup: 500 people, 2000 tasks, 0.007284998893737793s (not physical-device performance)
+PersonTaskChecks host lookup: 500 people, 2000 tasks, 0.007266998291015625s (not physical-device performance)
 PersonTaskChecks: passed (production task/people/scope/read_person + real SQLite; same-name IDs, legacy unconfirmed, privacy/revoke, reassignment, rename/merge rollback, tombstones, workspace, reopen; isolated fixtures only)
 PersonJournalChecks: passed (production journal CRUD/event-date editing/trash + real SQLite rollback/reopen; photo-write refusal, restoration/workspace guards, person scope/read/search/privacy, legacy, same-name IDs, tombstones, grants, revoke/edit/delete, typed UUID collision and merge rollback; OS/media services are fixtures)
 PersonPrivacyChecks: passed (production person codec/privacy/read_person/provenance/authorization + real SQLite; private-by-default, exported fields only, grants/revoke/edit/delete/merge, duplicate identity, related ACLs, typed IDs, legacy/reopen, workspace/protected/restore, atomic failure; isolated fixtures, no API)
@@ -226,7 +228,7 @@ CloudSummaryTransportChecks: passed (production summary → URLSession → bound
 CloudSessionChecks: passed (production CloudAgentSession + URLSession/JSON/SSE + registry/policy + conversation loop + person/mail/document/SQLite; both API formats, no network/keys/paid API)
 IntelligentUIStreamingChecks: passed (complete component prefix, Japanese/escapes/nesting, stable IDs, append-only scan, replacement/final cache, unknown/duplicate/oversize rejection, live-ID progress/mail schemas, no arbitrary actions, old v1)
 AgentActivitySummaryChecks: passed (actual event counts/state only, failure/decline/waiting, no reasoning input)
-Host UI parse benchmark, 1000 identical settled renders: uncached=0.100884583 seconds, cached=0.000110833 seconds; 2 components, 371 UTF8 bytes; not device/FPS evidence
+Host UI parse benchmark, 1000 identical settled renders: uncached=0.096360209 seconds, cached=0.000101458 seconds; 2 components, 371 UTF8 bytes; not device/FPS evidence
 OpenUINativePolishChecks: passed (comparison-table widths incl. large text/long cells/invalid viewports, task progress counts from tasks only, source rows resolved from stored sources with availability, ComparisonTable evidence reference accepted and still bounded, read-only Row/Column layout bounded to one shallow level, live component streaming)
 OpenUINativePolishViewTypeCheck: passed (views compile against the iOS SDK; icon/destination stubs only)
 IntelligentUITaskExecutionChecks: passed (production UI action + registry/schema/policy + approval/waiter + task update + real SQLite reopen; decline/cancel/race/stale IDs, deferred dispatch, permission/selection/scope/revision changes, failed save, atomic batch and repeat tap; registry assembly/dispatcher/reminder services are fixtures, no network)
