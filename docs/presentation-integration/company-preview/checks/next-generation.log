@@ -1,0 +1,309 @@
+Candidate format characters: 46 choices / 5758 → 7 choices / 1115
+SummaryPromptChecks: passed (headings, order, intermediate focus, contract)
+Transcript reading checks passed: conservative fillers, negatives/numbers/names/quotes/uncertainty, idempotence and raw evidence preservation
+Meeting summary poster checks passed: source-only excerpts, uncertainty, actions, edits, Unicode limits and full text
+Poster access checks passed: edit, title, date, privacy, deletion, restore, protection, workspace A-B-A and empty source
+Meeting edit checks passed: production transcript/summary/notes/speaker edits, SQLite ABORT + retry/reopen, unchanged publication/cache on failure, segment evidence, team/restore/protected/cancel guards
+Suspended encoding checks passed: concurrent edit, team, workspace generation, restore, protection, cancellation and deletion never publish or persist stale candidates
+Summary pipeline virtual latency mode=balanced parts=4 part=30s merge=60s total=180s width=1; no API, not model quality
+Summary pipeline virtual latency mode=fast parts=4 part=30s merge=60s total=120s width=2; no API, not model quality
+Summary pipeline virtual latency mode=accurate parts=4 part=30s merge=60s total=180s width=1; no API, not model quality
+SummaryPipelineChecks: PASS; actual split/ordered merge/parser, bounded concurrency, partial failure, cancellation and revoked progress boundary. Virtual timings are scheduling proof only.
+SummaryLayoutChecks: passed (importance, chronological, explicit timeline)
+Summary template note checks passed: indivisible parent/condition groups, all-topic preflight, exact newline/Unicode/escape bounds, unchanged ordinary notes, ordered complete chunks and oversized-input rejection. No model/session or device execution.
+Summary relation checks passed: whole-utterance evidence/parent/UUID/kind/time/window validation, conservative rejection, all built-in templates, deduplication, Markdown/edit round trip, conditions in bounded overview notes and real SQLite reopen. Model generation is not exercised.
+Infographic checks passed: production generation → validated interpretation → SQLite → reopen; consent, invalid JSON, invented number/evidence, duplicate IDs, save failure, privacy/workspace race, stale source and draft/attachment/mention protection
+JournalInsertionTimeChecks: passed (midpoint, equal/reversed, now marker exclusion, selected day, natural tail, overflow, DST and day boundaries)
+CalendarEventEditPolicyChecks: passed (permission/writable/owner/cancelled gates, exact recurring occurrence and stale revision; EventKit UI save and account permissions require separate device validation)
+PersistenceFailurePresentationChecks: passed (global default, explicit synchronous local scope, nested return/throw cleanup, no async scope)
+MemoryRetrievalChecks: passed (legacy, validity, conflict states, sensitivity, Japanese FTS5, scope, snapshot invalidation, eviction, expiry, concurrent reads, 2000 items 0.04040801525115967s; no LLM quality claim)
+MemoryEditingChecks: passed (production edit plan/management, explicit resolution, history, stale values, scope, sensitivity, legacy, SQLite reopen and atomic failure; no AI calls)
+ProjectSourceStorageChecks: passed (production note/store paths, actual file/SQLite reopen, edit and shared-file retention, 24 suspended-write races, failed SQL rollback/retry, local error presentation, workspace and size guards; model state/evidence notification are fixtures, no network)
+ProjectSourcePreparationChecks: passed (production metadata/local orchestration, 60 suspended-result/file-write races, cancellation, duplicate execution, SQLite failure/retry/reopen, file cleanup and reader size bounds; extraction/network/downsample payloads and model state are fixtures, no network)
+ProjectSourceWebRecoveryChecks: passed (production fetch orchestration/client/text extraction/file/SQLite reopen; 28 suspended-response/write races, replacement ownership, cancellation, SQL rollback/retry, orphaned-status recovery and failed recovery save; DNS/HTTP payload and model state are fixtures, no network)
+PASS source deletion preserves files retained by Office documents/history/templates (reference registry fixture)
+PASS source deletion cleanup refuses a changed workspace generation
+ProjectSourceImportChecks: passed (production file copy/transfer registration, fingerprints, SQLite reopen, 32 context races before load/during copy/after transfer/after registration, dedup and committed-file retention, SQL rollback/retry, detach/delete workspace guards; OS preparation/audio and model state are fixtures, no network)
+AudioImportChecks: passed (production picked-audio/importAudio/handle/Inbox queue/restore admission, real file copy/cleanup, Meeting codec and SQLite reopen; 16 import races, 16 restore busy states, team/protected/nonempty/cancel refusal, real suspended import excludes restore, picker remains invalid after restore flag clears; duration/media, backup error types, empty-state classification and navigation/model state are fixtures, no microphone/AV playback/network)
+Notion service checks passed: batching, HTTP failures, cancellation, configuration changes, partial-page recovery and explicit reconnect; fixture transport only, no accounts/network
+NotionAgentChecks: passed (production service/export/agent/context/settings epoch + registry/privacy policies; 188 suspended agent and 45 manual races, partial identity, deny/cancel/HTTP errors, exact permitted tasks, manual export remains available with Ask AI disabled; model/record shape/registry assembly/approval/Keychain/HTTP are fixtures, no network/accounts)
+GmailServiceChecks: passed (production connection/read/refresh/disconnect, immediate local refusal, persisted disconnect tombstone, HTTP failures, cancellation, stale responses, PKCE/callback/scope and message-ID validation; fixture browser/storage/clock/HTTP only, no accounts/network)
+GmailAgentChecks: passed (production context/approval/read orchestration/Gmail service/registry/loop; 135 approval-refresh-list-metadata-full-read races, retained grants, cloud and compact, cancel/deny/errors; conversation/registry assembly/approval/browser/storage/HTTP are fixtures, no network/accounts)
+MCP retained-result checks passed: 23 invalidations, missing/unknown grants, 24-grant bound, production loop batch/response revocation
+MCPAgentChecks: passed (production discovery/execution/registry/provider/budgets with real SQLite, 63 suspended approval/preparation/result races, stale discovery ownership and final filtering, denial/error/cancel; model/provenance/approval/Keychain/SDK transport are fixtures, no network/accounts)
+App/MCPPublicAddressPolicy.swift:62:24: warning: 'init(cString:)' is deprecated: Use String(decoding: array, as: UTF8.self) instead, after truncating the null termination. [#DeprecatedDeclaration]
+60 |         guard getnameinfo(address.pointee.ai_addr, address.pointee.ai_addrlen,
+61 |                           &buffer, socklen_t(buffer.count), nil, 0, NI_NUMERICHOST) == 0,
+62 |               isPublic(String(cString: buffer)) else { return [] }
+   |                        `- warning: 'init(cString:)' is deprecated: Use String(decoding: array, as: UTF8.self) instead, after truncating the null termination. [#DeprecatedDeclaration]
+63 |         let text = String(cString: buffer)
+64 |         if !addresses.contains(text) { addresses.append(text) }
+
+App/MCPPublicAddressPolicy.swift:63:20: warning: 'init(cString:)' is deprecated: Use String(decoding: array, as: UTF8.self) instead, after truncating the null termination. [#DeprecatedDeclaration]
+61 |                           &buffer, socklen_t(buffer.count), nil, 0, NI_NUMERICHOST) == 0,
+62 |               isPublic(String(cString: buffer)) else { return [] }
+63 |         let text = String(cString: buffer)
+   |                    `- warning: 'init(cString:)' is deprecated: Use String(decoding: array, as: UTF8.self) instead, after truncating the null termination. [#DeprecatedDeclaration]
+64 |         if !addresses.contains(text) { addresses.append(text) }
+65 |         current = address.pointee.ai_next
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+MCPPinnedHTTPChecks: passed (numeric DNS binding, strict POST/framing, fragmented JSON/SSE, matching reply, no replay, disconnect/caller cancellation, OAuth stale refresh/CAS; fixture transport, no network)
+AI response table: Japanese, large text, narrow/invalid widths, ragged/long/large tables passed
+AIComposerLayoutChecks: passed (Japanese/emoji character threshold, multiline/CRLF, collapsed/tall bounds, large input)
+Agent suggestions: production builder/model staging, privacy, workspace, samples, stale sources and draft protection passed
+Recorder battery checks passed: all 256 byte values, invalid data, identity, reconnect and disconnect
+PersonIdentityChecks: passed (same family, identical names, honorific, spaces, missing)
+ProjectTaskListChecks: passed (all assignees, completion, current membership/move/removal, no global/orphan fallback; local fixture)
+ProjectContextChecks: passed (chunk/page fidelity, isolation, budgets, follow-ups, citations, hiragana/title search, no-match abstention, local aliases)
+ProjectSearchIndexChecks: passed (FTS5, persistence, update, removal, membership isolation, bound queries)
+Project search fixture asOf=2026-10-26; IDs, text and gold labels are synthetic
+release-date: top3=release gold=release sent=1
+open-items: top3=open gold=open sent=1
+owner-date: top3=actions gold=actions sent=1
+budget-change: top3=budget-new,budget-old,actions gold=budget-old,budget-new sent=3
+long-pdf: top3=contract gold=contract sent=1
+local-transcription: top3=architecture gold=architecture sent=1
+activity-compare: top3=september,october gold=september,october sent=2
+recording-count: top3=october,actions gold=october sent=2
+budget-paraphrase: top3=budget-new,budget-old gold=budget-new sent=2
+schedule-paraphrase: top3=actions,care gold=actions sent=2
+travel-date: top3=travel gold=travel sent=1
+unanswerable: top3= gold= sent=0
+care-conditions: top3=care gold=care sent=1
+care-temperature: top3=care gold=care sent=1
+sales-negation: top3=sales gold=sales sent=1
+sales-wish: top3=sales gold=sales sent=1
+routine-items: top3=routine gold=routine sent=1
+routine-uncertain: top3=routine gold=routine sent=1
+design-type: top3=design gold=design sent=1
+design-accessibility: top3=design gold=design sent=1
+contract-date: top3=contract gold=contract sent=1
+campaign-budget: top3=campaign gold=campaign sent=1
+two-sources: top3=design,care,open gold=design,care sent=3
+unknown-private: top3= gold= sent=0
+unknown-english: top3= gold= sent=0
+unknown-partial-number: top3= gold= sent=0
+unknown-partial-word: top3= gold= sent=0
+MEASURE hit@1=22/22 recall@3=1.000 precision@3=0.379 MRR=1.000 unrelated-sent=0.167 no-evidence-abstain=5/5 p50=0.51ms p95=4.30ms max=15.18ms
+ProjectSearchQualityChecks: passed (measured real FTS5 + context, long PDF/page evidence, scoped snapshots, update/delete/revoke invalidation; metrics are not LLM answer quality)
+ProjectSourceAvailabilityChecks: passed (legacy codec, honest partial/missing states, unchanged privacy and evidence eligibility)
+WebSourceChecks: passed (fixed public endpoint, redirect DNS, secret-free GET, split/chunked/bounded HTTP, nonexecuting HTML, entities, Unicode, cancellation; mock transport, no network)
+OfficeDocumentChecks: passed (real stored/DEFLATE/descriptor OOXML, Japanese text, slide/sheet order, cached cells, strict namespace, bounds, cancellation, corrupt/hostile packages; no network)
+AI conversation snapshot checks passed
+AgentAttachmentChecks: passed (bounded prepared identity, untrusted JSON, operation intent, filename-only persistence, mock loop/declined approval; no network or records)
+AgentTaskDraftChecks: passed (strict proposal parsing, editable fields, source/identity binding, selection, date/text/count bounds; no records)
+ConversationScrollChecks: passed (stream growth, lazy layout, manual reading, simultaneous scroll/resize, new-answer reset, invalid geometry)
+RelevantTextWindowChecks: passed (long Japanese/emoji passages, specific term selection, case-insensitive match, deterministic order, bounded/empty fallback)
+AgentConversationLoopChecks: passed (mock turns, ordered real loop dispatch, revoke/cancel/empty/failure, bounded calls, replay rejection; no network)
+ScopedAgentEvidenceChecks: passed (fixture scope/revoke rejection, stable citations, guessed/ambiguous IDs, source/text limits; no network)
+AttachmentScopeChecks: passed (bounded UTF-8, malformed endings, local file isolation, cancellation, record/project/task boundaries, prepared identity)
+ProjectSourceReadChecks: passed (real local evidence, async cancellation, byte limit, invalid/path/symlink/directory rejection)
+ProjectChatHistoryChecks: passed (bounded complete turns, revoked evidence, legacy decoding, retained archive)
+CloudStreamChecks: passed (split/interleaved tools, signatures, reasoning, termination, truncated/invalid/error/bounds rejection)
+CloudAgentTurnChecks: passed (whole-batch validation, JSON fallback, completion reasons, malformed/missing arguments, IDs, bounds, valid empty object)
+CloudSSETransportChecks: passed (actual bounded wire → event decoder → accumulator → turn decoder; incremental publication, LF/CRLF/CR, BOM/comments/multiline, EOF, truncated/invalid rejection; no network)
+NativeAIInterfaceChecks: passed (typed components, Markdown fallback, incomplete input, unknown components/keys/actions, malformed IDs, bounds, table shape, duplicate identity)
+DiscoverySkillChecks: passed (local relevance/order, reusable drafts, name/keyword selection, disable, size validation without truncation, Markdown round-trip, untrusted/unknown/script metadata rejection)
+ResidentLimitsChecks: passed (legacy decode, bounded requests/tools, read whitelist, notification setting, daily/weekly expiry, duplicate suppression, DST and event-trigger separation; no OS scheduling guarantee)
+SystemIntegrationChecks: passed (local destinations, malformed links, snapshot roundtrip, expiry, identity/date/count bounds, missing/corrupt/oversize files)
+ComposerMentionChecks passed (parser, IME refusal, editing, draft IDs, tool/record restrictions)
+PluginDispatchChecks passed (real registry dispatch, mock provider, scope/schema/identity/disable rejection; no network)
+ToolIntegrationChecks: passed (schema, registry, disabled/unknown tools, SSE IDs/CRLF, legacy config, namespace/fingerprint)
+AIWebSearchIntentChecks: passed (natural search, internal scope, negation, missing topic, follow-ups, explicit toggle)
+AIConversationProvenanceChecks: passed (grant, revoke, edit, missing source, workspace, memory, limit, legacy)
+MCPOAuthChecks: passed (endpoint/scope validation, identity binding, callback/CSRF duplicates, expiry, refresh rotation, privilege escalation, form encoding)
+AI history search checks passed
+AI journal privacy checks passed
+RootNavigationChecks: passed (three tabs, legacy IDs, segment restoration, isolated stacks, recording destination, AI scopes)
+RecordPrivacyChecks: passed (fail closed, one-shot consent, sticky classification, persistence)
+AskAIIntegrationScenarioChecks: passed (A template DOCX/PPTX -> real file -> SQLite; B episode reuse revoked by task/workspace/deletion; C bounded research -> sources/report atomic SQLite save/reopen -> project DOCX/PPTX/edit, partial coverage, 9 suspended-write rollback races; D meeting draft approval/save/edit/reload, unknown recipient refused; E production registry/policy selection; model/HTTP/OS/approval fixtures, no network/keys/user data)
+Corporate append lifecycle passed: production preparation/save/SQLite reload/edit/regeneration, template version 7, original and old artifact intact, invalid modes and protected/restore refusal; no AI/network
+ArtifactOperationsChecks: passed (real DOCX/PPTX files, production save/edit/reload, SQLite ABORT leaves no success, share copy cleanup, source rows for deleted/revoked/other workspace; share destination and Office final rendering unverified)
+PASS reexport: edit → confirmation snapshot → real export → atomic save → SQLite reopen → template v4 → retained history → shared-file-safe delete
+PASS reexport suspended race: edit, no stale publication or lost edit
+PASS reexport suspended race: delete, no stale publication or lost edit
+PASS reexport suspended race: workspaceRoundTrip, no stale publication or lost edit
+PASS reexport suspended race: generation, no stale publication or lost edit
+PASS reexport suspended race: templateVersion, no stale publication or lost edit
+PASS reexport suspended race: templateAnalysis, no stale publication or lost edit
+PASS reexport suspended race: protectedStore, no stale publication or lost edit
+PASS reexport suspended race: restoring, no stale publication or lost edit
+PASS reexport suspended race: cancel, no stale publication or lost edit
+PASS reexport suspended race: sqlFailure, no stale publication or lost edit
+PASS reexport suspended race: adoptedFile, no stale publication or lost edit
+PASS reexport refusal: missing original/template, history capacity, invalid/duplicate/path/format/revision metadata, old codec
+Company reexport passed: real Swift PPTX/SQLite, retained history/old bytes/template versions, fresh current-document commit, unrelated edits preserved, suspended prepare races, cancellation, SQL rollback/file cleanup, shared-file deletion protection, legacy/invalid history; no network/AI/device or Office certification
+PASS corporate preview b01: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b02: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b03: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b04: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b05: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b06: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b07: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b08: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b09: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b10: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b11: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b12: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b13: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b14: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b15: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b16: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b17: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b18: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b19: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b20: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b21: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b22: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b23: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b24: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b25: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b26: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b27: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b28: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b29: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview b30: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m01: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m02: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m03: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m04: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m05: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m06: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m07: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m08: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m09: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m10: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m11: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m12: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m13: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m14: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m15: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m16: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m17: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m18: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m19: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m20: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m21: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m22: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m23: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m24: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m25: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m26: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m27: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m28: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m29: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m30: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m31: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m32: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m33: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m34: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+PASS corporate preview m35: selected layout, company colors/fonts, master decoration, PDF Japanese, original excluded, deterministic scene
+Corporate preview: 65/65 native scenes and real PDF pages; unsupported artwork rejected; original pages excluded, no Office/device certification
+{"passed": 65, "total": 65, "aggregatePages": 66, "checks": ["XML", "relationship targets", "content types", "unique IDs", "editable shapes", "Japanese", "sources", "original part bytes", "corporate layout link"], "sourceSHA256": "c1f594f723f172056f6c13a7ee15c97e3659219c7cbe647a22dc58dde5a7f837", "finalOfficeRendering": "unverified"}
+Company preview access: real source/SQLite unchanged, production snapshot/factory/worker checks, edited/deleted document, template update/delete, workspace A-B-A, restore/protection/generation, cancel, missing source, legacy refusal; no UI-save/AI/device certification
+PluginIconChecks: passed (official service assets, calendar symbol, fallback, 16 distinct skills, stable icon/version roundtrip)
+PersonSummaryChecks: passed (literal evidence changes, source IDs, unresolved, empty; no inference)
+ResearchLoopChecks: passed (production iterative loop, bound/dedupe/error/partial/revoke/timeout/save failure/replay/empty/citations; draft persistence, unknown recipient, header injection; mocks only)
+AgentSourceChecks: passed (production extension, individual grant, page/source provenance, selected IDs, workspace, revoke/edit during suspended read, automatic refusal; no files/network)
+CompanyPresentationChecks: passed (relationship-linked masters/layouts, exact EMU, per-layout usage, theme/Japanese fonts/colors, inherited frames, explicit font sizes, decorations/background, Strict/custom prefix, ambiguous body unresolved, groups disclosed, malformed/traversal/external/missing/duplicate references rejected, legacy decode, bounded file API, unchanged original/non-slide bytes; new-master application and Office rendering NOT validated)
+DocumentArtifactChecks: passed (real DOCX/PPTX, split runs, namespaces/entities/style/whitespace preservation, paragraph/break/field/tracked-change rejection, Japanese/tables/long flow, unchanged parts, reload; final Office rendering unverified)
+Local OOXML PoC docx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.
+Split-run docx: independent ZIP/XML reload, unchanged element/format attributes and untouched parts; Office layout unverified.
+Local OOXML PoC pptx: package/XML valid; all untouched parts byte-identical. Visual pagination unverified.
+Split-run pptx: independent ZIP/XML reload, unchanged element/format attributes and untouched parts; Office layout unverified.
+SlidePageChecks: passed (9 cases, 59 derived pages; lossless ordered text, graphemes, intact points, notes, geometry, identity, old codec and real PPTX)
+Slide package: passed (59 pages, 3 notes; independent ZIP/XML, all relationship targets, ordered editable text, notes and frame bounds; Office rendering unverified)
+Slide XML: passed (forbidden XML scalars excluded from headings, body and notes)
+CompanyTemplateAnalysisChecks: passed (production explicit local refresh, old metadata upgrade, unchanged file/ID/version, real SQLite reopen/failure, stale/edit/delete/workspace/generation/protection/restore/cancel; stored state and file resolver are fixtures)
+PASS corporate b01: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b02: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b03: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b04: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b05: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b06: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b07: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b08: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b09: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b10: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b11: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b12: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b13: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b14: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b15: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b16: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b17: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b18: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b19: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b20: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b21: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b22: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b23: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b24: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b25: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b26: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b27: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b28: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b29: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate b30: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m01: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m02: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m03: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m04: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m05: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m06: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m07: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m08: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m09: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m10: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m11: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m12: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m13: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m14: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m15: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m16: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m17: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m18: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m19: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m20: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m21: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m22: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m23: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m24: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m25: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m26: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m27: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m28: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m29: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m30: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m31: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m32: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m33: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m34: editable shapes, theme links, notes, unchanged original parts, deterministic package
+PASS corporate m35: editable shapes, theme links, notes, unchanged original parts, deterministic package
+Corporate export: 65/65 host checks; existing notes reuse, slide-count metadata, theme tint, incompatible geometry/font/contrast/collision/markers/parts/legacy rejection and verbatim XML insertion passed. Office/Keynote/device rendering NOT certified.
+{"passed": 65, "total": 65, "aggregatePages": 66, "checks": ["XML", "relationship targets", "content types", "unique IDs", "editable shapes", "Japanese", "sources", "original part bytes", "corporate layout link"], "sourceSHA256": "3384953f38c3c1633e3a9853af68342f8eaf6f2a9ce9d18ad9b745acd33c200f", "finalOfficeRendering": "unverified"}
+BackupRestoreChecks: passed (production package/restore + real SQLite, new metadata/files roundtrip, legacy restore, duplicate documents, recipient limits, truncated/missing/oversize, traversal/symlinks, DB rollback, cancellation/gate, conflict preserves bytes, reopen; isolated fixtures only)
+PersonTaskChecks host lookup: 500 people, 2000 tasks, 0.007324934005737305s (not physical-device performance)
+PersonTaskChecks: passed (production task/people/scope/read_person + real SQLite; same-name IDs, legacy unconfirmed, privacy/revoke, reassignment, rename/merge rollback, tombstones, workspace, reopen; isolated fixtures only)
+PersonJournalChecks: passed (production journal CRUD/event-date editing/trash + real SQLite rollback/reopen; photo-write refusal, restoration/workspace guards, person scope/read/search/privacy, legacy, same-name IDs, tombstones, grants, revoke/edit/delete, typed UUID collision and merge rollback; OS/media services are fixtures)
+PersonPrivacyChecks: passed (production person codec/privacy/read_person/provenance/authorization + real SQLite; private-by-default, exported fields only, grants/revoke/edit/delete/merge, duplicate identity, related ACLs, typed IDs, legacy/reopen, workspace/protected/restore, atomic failure; isolated fixtures, no API)
+Mock person-to-answer/document/mail scenario: passed (production loop/domain/builder/SQLite, mocked provider and approval/registry entry points, explicit duplicate person ID, typed citations, retained draft, mid-turn revoke; no network)
+IntelligentUIContextChecks: passed (production context/mail/navigation gates and task dispatch entry, live membership/deletion, current workspace/restore/protected state, team-store isolation, foreign draft/document/message/UUID rejection, transient grants, revoked cloud context; dispatch spy never writes)
+ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)
+InlineCitationChecks: passed (production parser/URL/legacy formatting/document builder/snapshot, typed UUID collisions, forged IDs and URL variants, unfinished stream markers, label escaping, saved links, bounded source sets, 5000 markers; no network)
+CloudSummaryTransportChecks: passed (production summary → URLSession → bounded SSE/JSON → terminal text validation; both APIs, EOF/refusal/tools/limits/cancel/HTTP failures, bounded continuations; no keys/network/paid API)
+CloudSessionChecks: passed (production CloudAgentSession + URLSession/JSON/SSE + registry/policy + conversation loop + person/mail/document/SQLite; both API formats, no network/keys/paid API)
+IntelligentUIStreamingChecks: passed (complete component prefix, Japanese/escapes/nesting, stable IDs, append-only scan, replacement/final cache, unknown/duplicate/oversize rejection, live-ID progress/mail schemas, no arbitrary actions, old v1)
+AgentActivitySummaryChecks: passed (actual event counts/state only, failure/decline/waiting, no reasoning input)
+Host UI parse benchmark, 1000 identical settled renders: uncached=0.08889525 seconds, cached=9.7166e-05 seconds; 2 components, 371 UTF8 bytes; not device/FPS evidence
+OpenUINativePolishChecks: passed (comparison-table widths incl. large text/long cells/invalid viewports, task progress counts from tasks only, source rows resolved from stored sources with availability, ComparisonTable evidence reference accepted and still bounded, read-only Row/Column layout bounded to one shallow level, live component streaming)
+OpenUINativePolishViewTypeCheck: passed (views compile against the iOS SDK; icon/destination stubs only)
+IntelligentUITaskExecutionChecks: passed (production UI action + registry/schema/policy + approval/waiter + task update + real SQLite reopen; decline/cancel/race/stale IDs, deferred dispatch, permission/selection/scope/revision changes, failed save, atomic batch and repeat tap; registry assembly/dispatcher/reminder services are fixtures, no network)
+TaskProposalExecutionChecks: passed (production read/agent loop/task proposals/approval waiter/SQLite reopen/list; edited selection, decline/cancel, policy/source/privacy/workspace races, malformed and forged IDs, failed atomic save, duplicate and replay rejection; model responses/registry assembly/OS services are fixtures, no network)
+Calendar lifecycle checks passed: 54 ownership/permission changes across approval and suspended reads, cloud and device
+Calendar lifecycle recovery passed: no-op setting retains grant; OFF/ON revokes preview/cloud/artifact use; a new approved request recovers with fresh IDs
+CalendarInterfaceChecks: passed (production read tool, approval/waiter, real schema/registry/policy, ephemeral UUID binding, actual-value rendering lookup, cloud pre-send authorization, invalidation/permissions/workspace, cancellation/deferred reads, stable recurrence IDs, empty/bounded sources; EventKit and registry assembly are mocks, no system calendar or network)
+ReadabilityGuide checks passed
+BranchIntegrationChecks: passed (intentional horizontal swipe once, invalid samples, conversational formatting preserves source/scope instructions)
+Branch integration guard: no legacy external-memory auto-send wired; current layout retained

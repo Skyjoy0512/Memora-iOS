@@ -1,0 +1,110 @@
+[
+  {
+    "file" : "\/Volumes\/WorkspaceSSD\/Development\/memora-company-preview.MA7Td4\/output\/b22.pdf",
+    "samples" : [
+      {
+        "element" : "masterRectangle",
+        "sRGB" : [
+          0,
+          108,
+          99
+        ],
+        "x" : 850,
+        "y" : 10
+      },
+      {
+        "element" : "firstEllipse",
+        "sRGB" : [
+          0,
+          108,
+          99
+        ],
+        "x" : 267,
+        "y" : 300
+      },
+      {
+        "element" : "secondEllipse",
+        "sRGB" : [
+          148,
+          68,
+          0
+        ],
+        "x" : 693,
+        "y" : 300
+      }
+    ],
+    "status" : "measured_not_rendering_approval"
+  },
+  {
+    "file" : "\/Volumes\/WorkspaceSSD\/Development\/memora-company-preview.MA7Td4\/output-handoff\/b22.pdf",
+    "samples" : [
+      {
+        "element" : "masterRectangle",
+        "sRGB" : [
+          0,
+          90,
+          80
+        ],
+        "x" : 850,
+        "y" : 10
+      },
+      {
+        "element" : "firstEllipse",
+        "sRGB" : [
+          0,
+          90,
+          80
+        ],
+        "x" : 267,
+        "y" : 300
+      },
+      {
+        "element" : "secondEllipse",
+        "sRGB" : [
+          128,
+          51,
+          0
+        ],
+        "x" : 693,
+        "y" : 300
+      }
+    ],
+    "status" : "measured_not_rendering_approval"
+  },
+  {
+    "file" : "\/Volumes\/WorkspaceSSD\/Development\/memora-company-preview.MA7Td4\/quicklook-matched\/b22.pptx.png",
+    "samples" : [
+      {
+        "element" : "masterRectangle",
+        "sRGB" : [
+          0,
+          90,
+          80
+        ],
+        "x" : 850,
+        "y" : 10
+      },
+      {
+        "element" : "firstEllipse",
+        "sRGB" : [
+          0,
+          108,
+          99
+        ],
+        "x" : 267,
+        "y" : 300
+      },
+      {
+        "element" : "secondEllipse",
+        "sRGB" : [
+          148,
+          68,
+          0
+        ],
+        "x" : 693,
+        "y" : 300
+      }
+    ],
+    "status" : "measured_not_rendering_approval"
+  }
+]

@@ -1,0 +1,522 @@
+[
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b01",
+    "meanPixelDifference" : 0.0098128832808837101,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b02",
+    "meanPixelDifference" : 0.012278027414669827,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b03",
+    "meanPixelDifference" : 0.013891599592510781,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b04",
+    "meanPixelDifference" : 0.0084675320745580662,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b05",
+    "meanPixelDifference" : 0.016572296356803705,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 20,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b06",
+    "meanPixelDifference" : 0.013617931997901419,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b07",
+    "meanPixelDifference" : 0.011315793189703464,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b08",
+    "meanPixelDifference" : 0.011865120430888523,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b09",
+    "meanPixelDifference" : 0.008905818809004689,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b10",
+    "meanPixelDifference" : 0.0080194540264655872,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b11",
+    "meanPixelDifference" : 0.01096219892277818,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b12",
+    "meanPixelDifference" : 0.0087011619462596737,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b13",
+    "meanPixelDifference" : 0.0092738340192004848,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b14",
+    "meanPixelDifference" : 0.0095660907367053575,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 13,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b15",
+    "meanPixelDifference" : 0.013282293936086764,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 126,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b16",
+    "meanPixelDifference" : 0.0099292897200022739,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 21,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b17",
+    "meanPixelDifference" : 0.012191554708303206,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b18",
+    "meanPixelDifference" : 0.0078989500121032803,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 3,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b19",
+    "meanPixelDifference" : 0.015407717562332297,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b20",
+    "meanPixelDifference" : 0.013844836802993711,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b21",
+    "meanPixelDifference" : 0.011286030924715449,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b22",
+    "meanPixelDifference" : 0.014056826434282401,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 27,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b23",
+    "meanPixelDifference" : 0.0089588628661341502,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b24",
+    "meanPixelDifference" : 0.0094223351892183567,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 16,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b25",
+    "meanPixelDifference" : 0.01408704762769186,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b26",
+    "meanPixelDifference" : 0.013512111171628422,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b27",
+    "meanPixelDifference" : 0.015835817094325903,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b28",
+    "meanPixelDifference" : 0.0091084962277081846,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b29",
+    "meanPixelDifference" : 0.012308399903169847,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "b30",
+    "meanPixelDifference" : 0.014485538711368791,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m01",
+    "meanPixelDifference" : 0.016524464415395325,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m02",
+    "meanPixelDifference" : 0.011254788489468337,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m03",
+    "meanPixelDifference" : 0.0091081810296134054,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m04",
+    "meanPixelDifference" : 0.017117609235051574,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m05",
+    "meanPixelDifference" : 0.010637053175178629,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m06",
+    "meanPixelDifference" : 0.0094116209755505525,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m07",
+    "meanPixelDifference" : 0.0098212524207199614,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m08",
+    "meanPixelDifference" : 0.0091394209432746239,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m09",
+    "meanPixelDifference" : 0.012448095699183535,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m10",
+    "meanPixelDifference" : 0.009595411724360528,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m11",
+    "meanPixelDifference" : 0.013728236201887505,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m12",
+    "meanPixelDifference" : 0.014021604938263996,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m13",
+    "meanPixelDifference" : 0.01047875564834938,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 13,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m14",
+    "meanPixelDifference" : 0.014137224642935951,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m15",
+    "meanPixelDifference" : 0.0056166384249177028,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 1,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m16",
+    "meanPixelDifference" : 0.010544833777130469,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m17",
+    "meanPixelDifference" : 0.0099808687363831649,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m18",
+    "meanPixelDifference" : 0.010334843762607399,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m19",
+    "meanPixelDifference" : 0.010534714657467702,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m20",
+    "meanPixelDifference" : 0.015403473735171806,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m21",
+    "meanPixelDifference" : 0.01148247498587724,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m22",
+    "meanPixelDifference" : 0.01136547849592499,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m23",
+    "meanPixelDifference" : 0.01426306433066981,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m24",
+    "meanPixelDifference" : 0.011139612583715739,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m25",
+    "meanPixelDifference" : 0.0083455907568786552,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 68,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m26",
+    "meanPixelDifference" : 0.013836908940530206,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m27",
+    "meanPixelDifference" : 0.01088926964818766,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m28",
+    "meanPixelDifference" : 0.011218762607922721,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m29",
+    "meanPixelDifference" : 0.0094941272290803465,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 79,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m30",
+    "meanPixelDifference" : 0.016389395727416399,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 772,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m31",
+    "meanPixelDifference" : 0.018988511659817384,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 19,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m32",
+    "meanPixelDifference" : 0.0083790471435454556,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 68,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m33",
+    "meanPixelDifference" : 0.010855210602756186,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 41,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m34",
+    "meanPixelDifference" : 0.0088448847131437532,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  },
+  {
+    "blueOverlapRecall" : 1,
+    "id" : "m35",
+    "meanPixelDifference" : 0.016313869220525714,
+    "nativeBluePixels" : 0,
+    "officeBluePixels" : 0,
+    "status" : "measured_not_visual_approval"
+  }
+]

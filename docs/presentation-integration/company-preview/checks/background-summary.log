@@ -1,0 +1,2 @@
+BackgroundSummaryJobChecks: passed (job codec round-trip)
+BackgroundSummaryExecutionChecks: passed (production queue/generation/cancellation, real SQLite atomic save and reopen; OS/model are fixtures)
