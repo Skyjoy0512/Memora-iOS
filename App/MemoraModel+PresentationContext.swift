@@ -63,12 +63,23 @@ extension MemoraModel {
         version: document.artifactRevision.map(String.init), isFinal: isFinalDeck))
     }
     for person in people {
-      guard projectID == nil else { continue }
       guard !cloud || allowsPersonAccess(person.id, purpose: purposeType) else { continue }
-      // Only the name is sent; private notes stay on the device.
+      let related = workspaceMeetings.filter { $0.participantIDs?.contains(person.id) == true }
+      // Private notes stay on the device. Only the name, the meetings the person
+      // was tagged on, and their own recorded lines are sent.
+      var lines = [person.name]
+      for meeting in related.prefix(8) {
+        lines.append("会議: \(meeting.displayTitle) \(meeting.createdAt.formatted(date: .numeric, time: .omitted))")
+        let quotes = meeting.transcript
+          .filter { $0.speaker.contains(person.name) && !$0.text.isEmpty }
+          .prefix(3)
+          .map(\.text)
+        if !quotes.isEmpty { lines.append("発言: " + quotes.joined(separator: " / ")) }
+      }
+      guard projectID == nil || !related.isEmpty else { continue }
       sources.append(.init(id: "person:\(person.id.uuidString)", kind: .person,
-        title: person.name, text: person.name, permission: .allowed, stance: .fact,
-        confidence: .reported))
+        title: person.name, text: lines.joined(separator: "\n"), permission: .allowed,
+        stance: .fact, confidence: .reported))
     }
     if isAIMemoryEnabled {
       for memory in visibleAIMemories where memory.status == .current {

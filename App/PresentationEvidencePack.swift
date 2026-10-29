@@ -265,7 +265,13 @@ enum PresentationContextBuilder {
     pack.unconfirmed.append(contentsOf: denied.map { "\($0.title) は参照が許可されていないため資料に使いません。" })
     pack.unconfirmed.append(contentsOf: unknown.map { "\($0.title) は参照許可が未確認のため、クラウド資料では使いません。" })
 
-    let terms = searchTerms(request)
+    let allowedDecisionSourceIDs = Set(allowed.map(\.id))
+    let relevantDecisions = decisions.filter { allowedDecisionSourceIDs.contains($0.sourceID) }
+    // A decision's subject is a search lead even when the request did not use
+    // the same word.
+    var searchRequest = request
+    searchRequest.topics += relevantDecisions.prefix(12).map(\.subject)
+    let terms = searchTerms(searchRequest)
     // A term in most records ("会議") says nothing about relevance. Keep the
     // terms that distinguish records; fall back only when every term is common.
     let frequencyLimit = max(3, allowed.count / 5)
@@ -371,8 +377,6 @@ enum PresentationContextBuilder {
       pack.changesSincePreviousDeck = changes(previous: previous, newer: Array(newer))
     }
 
-    let allowedDecisionSourceIDs = Set(allowed.map(\.id))
-    let relevantDecisions = decisions.filter { allowedDecisionSourceIDs.contains($0.sourceID) }
     pack.decisions = resolveDecisions(relevantDecisions)
     for decision in pack.decisions where decision.decidedBy != nil {
       let name = decision.decidedBy!
