@@ -8,7 +8,7 @@ trap 'rm -rf "$check_dir"' EXIT
 swiftc -enable-bare-slash-regex -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENANCE_CHECKS -D CLOUD_SESSION_CHECKS \
   App/SummaryProcessingMode.swift App/SummaryGenerationPolicy.swift App/SummaryDiagnostics.swift App/CloudAgentSession.swift App/CloudAIService.swift App/CloudSummaryResponse.swift App/CloudTurnStreaming.swift App/CloudTurnStreamReader.swift \
   App/CloudSSEEventDecoder.swift App/CloudStreamAccumulator.swift App/CloudAgentTurnDecoder.swift App/CloudTokenUsage.swift \
-  App/AgentRunBudget.swift App/AgentSessionBudget.swift App/AgentOutputBudget.swift App/AgentGenerationPolicy.swift \
+  App/AgentContextCompactor.swift App/AgentRunBudget.swift App/AgentSessionBudget.swift App/AgentOutputBudget.swift App/AgentGenerationPolicy.swift \
   App/LLMProvider.swift App/LLMSelection.swift App/LLMModelOption.swift App/ModelCapabilities.swift App/ModelBudgetScaling.swift App/TokenBudgetManager.swift App/AIAnswerPrompt.swift App/ReadabilityGuide.swift \
   App/AgentTool.swift App/AIToolRegistry.swift App/AIToolDefinition.swift App/IntegrationProvider.swift App/IntegrationToolResult.swift \
   App/MCPTool.swift App/MCPServerConfig.swift App/MCPOAuthSettings.swift \

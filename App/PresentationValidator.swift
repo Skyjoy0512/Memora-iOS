@@ -163,6 +163,7 @@ enum PresentationValidator {
     for slide in document.slides where !titles.insert(slide.title).inserted {
       result.append(.init(slideID: slide.id, code: "duplicate", message: "同じ主張のスライドがあります。内容の重複を確認してください。", isError: false))
     }
+    result.append(contentsOf: jinbaNotes(for: document))
     var facts: [String: (Double, UUID)] = [:]
     for slide in document.slides {
       guard let c = slide.composition, let sources = c.sources, !sources.isEmpty else { continue }
@@ -180,6 +181,53 @@ enum PresentationValidator {
           result.append(.init(slideID: slide.id, code: "numberConflict",
             message: "同じ出典・項目「\(label.replacingOccurrences(of: "|", with: " / "))」の数値が一致しません。時点や比較条件も確認してください。", isError: false))
         } else { facts[key] = (value, slide.id) }
+      }
+    }
+    return result
+  }
+
+  /// Style rules from Jinba's slide-rules that can be checked without a
+  /// renderer. They are notes, not a claim that the text is good.
+  static func jinbaNotes(for document: MemoraDocument) -> [Issue] {
+    var result: [Issue] = []
+    let slides = document.slides
+    if slides.count >= 4 {
+      let titles = slides.map(\.title)
+      let polite = titles.filter { $0.hasSuffix("です") || $0.hasSuffix("ます") || $0.hasSuffix("でした") || $0.hasSuffix("ました") }
+      if polite.count * 5 >= titles.count * 3 {
+        result.append(.init(slideID: slides[0].id, code: "titleStyle",
+          message: "タイトルが「です・ます」で終わるページが多い。常体の主張文にしてください。", isError: false))
+      }
+      let patterns = Dictionary(grouping: titles) { title -> String in
+        let endings = ["する", "した", "せる", "される", "になる", "とした", "へ", "を"]
+        return endings.first { title.hasSuffix($0) } ?? String(title.suffix(2))
+      }
+      if let most = patterns.max(by: { $0.value.count < $1.value.count }), most.value.count * 5 >= titles.count * 3 {
+        result.append(.init(slideID: slides[0].id, code: "titlePattern",
+          message: "同じ文型で終わるタイトルが6割以上あります。事実・問い・判断をそれぞれ自然な文にしてください。", isError: false))
+      }
+    }
+    for slide in slides {
+      if ["現状と課題", "課題と対策", "本日の論点", "まとめ"].contains(where: { slide.title.hasPrefix($0 + "：") || slide.title.hasPrefix($0 + ":") }) {
+        result.append(.init(slideID: slide.id, code: "titleLabel",
+          message: "タイトルが分類ラベルで始まっています。何を伝えるページかを主張で書いてください。", isError: false))
+      }
+      guard let content = slide.composition else { continue }
+      if let chart = content.chart, (chart.kind == .pie || [.b22].contains(content.layout)), chart.categories.count > 3 {
+        result.append(.init(slideID: slide.id, code: "pie",
+          message: "円グラフの区分が4つ以上あります。構成比は積み上げ横棒か、項目比較は横棒にしてください。", isError: false))
+      }
+      if let table = content.table {
+        let vague = ["観点", "大項目", "その他", "項目"]
+        if table.columns.contains(where: { vague.contains($0.trimmingCharacters(in: .whitespaces)) }) {
+          result.append(.init(slideID: slide.id, code: "tableHeader",
+            message: "表の列名「観点」「大項目」などは、下のセルを指す具体的な名詞にしてください。", isError: false))
+        }
+      }
+      let text = ([slide.title] + content.readingText).joined(separator: "\n")
+      if text.contains(" — ") || text.contains("—") {
+        result.append(.init(slideID: slide.id, code: "aiSmell",
+          message: "「—」による連結表現を具体的な文へ直してください。", isError: false))
       }
     }
     return result

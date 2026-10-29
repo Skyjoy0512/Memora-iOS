@@ -18,6 +18,8 @@ swiftc App/IntegrationCatalog.swift App/LibrarySection.swift tools/checks/Catalo
 swiftc App/AIAnswerFailure.swift App/AgentSessionBudget.swift tools/checks/AgentBudgetChecks.swift -o "$check_dir/budget"
 "$check_dir/budget"
 swiftc App/LLMModelOption.swift App/LLMProvider.swift App/LLMSelection.swift App/MemoraIntelligence.swift App/ModelCapabilities.swift App/ModelBudgetScaling.swift App/TokenBudgetManager.swift App/AgentSessionBudget.swift App/AgentOutputBudget.swift App/AgentRunBudget.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/ModelCapabilitiesChecks.swift -o "$check_dir/model-capabilities"
+swiftc App/AgentContextCompactor.swift tools/checks/AgentContextCompactorChecks.swift -o "$check_dir/context-compactor"
+"$check_dir/context-compactor"
 "$check_dir/model-capabilities"
 swiftc App/LLMModelOption.swift App/LLMProvider.swift App/LLMSelection.swift App/MemoraIntelligence.swift App/ModelCapabilities.swift App/TokenBudgetManager.swift App/PresentationEvidencePack.swift tools/checks/PresentationContextChecks.swift -o "$check_dir/presentation-context"
 swiftc App/LLMModelOption.swift App/LLMProvider.swift App/LLMSelection.swift App/MemoraIntelligence.swift App/ModelCapabilities.swift App/TokenBudgetManager.swift App/PresentationEvidencePack.swift tools/checks/PresentationDeepContextChecks.swift -o "$check_dir/presentation-deep-context"

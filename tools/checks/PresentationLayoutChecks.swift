@@ -96,6 +96,19 @@ struct PresentationLayoutChecks {
     precondition(PresentationValidator.issues(for: conflictDocument).contains { $0.code == "numberConflict" })
     let narrow = PresentationElement(id: 0, kind: .text, x: 0, y: 0, width: 1, height: 100, text: "👩🏽‍💻", fontSize: 30)
     precondition(PresentationText.widestLine(narrow) > narrow.width)
+    var politeSlides = (0..<4).map { _ in PresentationExample.slide(.m03) }
+    for index in politeSlides.indices {
+      politeSlides[index].id = UUID()
+      politeSlides[index].title = "売上が伸びています"
+    }
+    let polite = MemoraDocument(title: "文体", kind: .slides, slides: politeSlides)
+    precondition(PresentationValidator.issues(for: polite).contains { $0.code == "titleStyle" })
+    var vagueTable = PresentationExample.slide(.b09)
+    vagueTable.composition?.table?.columns[0] = "観点"
+    precondition(PresentationValidator.issues(for: MemoraDocument(title: "表", kind: .slides, slides: [vagueTable])).contains { $0.code == "tableHeader" })
+    var punctuation = PresentationExample.slide(.m21)
+    punctuation.composition?.items?[0].body = "A — B"
+    precondition(PresentationValidator.issues(for: MemoraDocument(title: "文体", kind: .slides, slides: [punctuation])).contains { $0.code == "aiSmell" })
     print("Distinct geometry signatures: \(signatures.count)/65; failures: \(failures)")
     if failures > 0 { exit(1) }
     let catalog = MemoraDocument(title: "65型・架空データ検証", kind: .slides,

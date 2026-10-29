@@ -30,7 +30,7 @@ enum PresentationLayoutEngine {
         b.text(content.subtitle ?? "", 54, 420, 852, 58)
       }
     } else {
-      b.text(slide.title, 54, 28, 852, 80, size: 30, bold: true)
+      b.text(slide.title, 54, 28, 852, 80, size: 24, bold: true)
       b.rule(54, 120, 852)
       switch layout {
       case .b01, .b04, .b10: break
@@ -192,13 +192,17 @@ enum PresentationLayoutEngine {
         b.itemRows(items, x: 54, y: 254, width: 852, height: 206, numbered: true)
       }
     }
-    // Every supplied annotation is retained. Side-comment layouts already position it.
-    if (!([.b07, .b11, .b13, .b17, .b18, .b24, .m05] as [SlideArchetype]).contains(layout)
-        || layout == .b11 && content.subtitle != nil), !annotations.isEmpty {
-      b.text(annotations, 54, 466, 852, 28, size: 12, color: PresentationTheme.secondary)
+    // A cover, back cover or section divider carries no notes or source line;
+    // those belong to the content pages that use the evidence.
+    if layout.input != .title {
+      // Every supplied annotation is retained. Side-comment layouts already position it.
+      if (!([.b07, .b11, .b13, .b17, .b18, .b24, .m05] as [SlideArchetype]).contains(layout)
+          || layout == .b11 && content.subtitle != nil), !annotations.isEmpty {
+        b.text(annotations, 54, 466, 852, 28, size: 12, color: PresentationTheme.secondary)
+      }
+      let sources = (content.sources ?? []).map { "出典: \($0.title) \($0.locator)" }.joined(separator: " / ")
+      b.text(sources, 54, 504, 852, 24, size: 10, color: PresentationTheme.secondary)
     }
-    let sources = (content.sources ?? []).map { "出典: \($0.title) \($0.locator)" }.joined(separator: " / ")
-    b.text(sources, 54, 504, 852, 24, size: 10, color: PresentationTheme.secondary)
     return b.elements
   }
 
@@ -384,7 +388,7 @@ enum PresentationLayoutEngine {
       // Jinba's table rule: the header is larger and bold with no fill; the
       // data rows are separated by horizontal rules only.
       for (c, label) in table.columns.enumerated() {
-        text(label, x + Double(c) * w + 10, y + 7, w - 20, h - 14, size: 20, bold: true,
+        text(label, x + Double(c) * w + 10, y + 7, w - 20, h - 14, size: 21, bold: true,
              color: PresentationTheme.ink)
       }
       // A hairline under the header separates labels from data without boxing
@@ -487,7 +491,8 @@ enum PresentationLayoutEngine {
           text(p.label, xx + 10, yy - 12, 68, 32, size: 12)
         }
         text(chart.xLabel, px, py + ph + 18, pw, 26, size: 16)
-        text(chart.yLabel + " " + chart.unit, x, y - 12, width, 22, size: 14)
+        text(chart.yLabel + " " + chart.unit, x, y - 14, width * 0.45, 22, size: 14)
+        drawLegend(chart, x: x, y: y, width: width)
         return
       }
       let n = max(1, chart.categories.count)
@@ -511,7 +516,8 @@ enum PresentationLayoutEngine {
         rule(px, top, pw)
         text(SlideContent.number(v), x, top - 8, 56, 20, size: 12)
       }
-      text(chart.yLabel + " " + chart.unit, x, y - 12, width, 22, size: 14)
+      text(chart.yLabel + " " + chart.unit, x, y - 14, width * 0.45, 22, size: 14)
+      drawLegend(chart, x: x, y: y, width: width)
       let step = pw / Double(n)
       for (i, label) in chart.categories.enumerated() {
         text(label, px + Double(i) * step + 2, py + ph + 12, step - 4, 30, size: 13)
@@ -544,10 +550,19 @@ enum PresentationLayoutEngine {
           }
         }
       }
-      let legendW = pw / Double(max(1, chart.series.count))
+    }
+
+    /// Jinba puts the legend above the chart, right aligned, so the reading
+    /// order stays title → legend → plot rather than title → plot → legend.
+    mutating func drawLegend(_ chart: SlideContent.Chart, x: Double, y: Double, width: Double) {
+      let count = max(1, chart.series.count)
+      let legendW = min(112, width * 0.5 / Double(count))
+      var left = x + width - legendW * Double(count)
+      if left < x + width * 0.5 { left = x + width * 0.5 }
       for (s, series) in chart.series.enumerated() {
-        text(series.name, px + Double(s) * legendW, py + ph + 44, legendW - 8, 24, size: 12,
-             color: PresentationTheme.series[s % 4])
+        rect(left + Double(s) * legendW, y - 6, 8, 8, fill: PresentationTheme.series[s % 4])
+        text(series.name, left + Double(s) * legendW + 12, y - 14, legendW - 14, 22,
+             size: 11, color: PresentationTheme.secondary)
       }
     }
 

@@ -86,6 +86,13 @@ final class CloudAgentSession {
     }
   }
 
+  /// The outbound copy is shortened when the run has grown past the model's
+  /// input room. The stored messages stay intact for local accounting.
+  private func outboundMessages() -> [[String: Any]] {
+    let budget = TokenBudgetManager.budget(capabilities: capabilities, task: .agent).inputCharacterBudget
+    return AgentContextCompactor.compact(messages, characterBudget: max(8_000, budget * 2 / 3))
+  }
+
   private func boundedResponse(for request: URLRequest) async throws -> [String: Any] {
     let session = URLSession(configuration: sessionConfiguration)
     defer { session.invalidateAndCancel() }
@@ -138,7 +145,7 @@ final class CloudAgentSession {
       } + externalTools.map { tool in
         ["name": tool.agentName, "description": "[\(tool.serverName)] \(tool.summary)", "input_schema": tool.schemaObject]
       },
-      "messages": messages
+      "messages": outboundMessages()
     ]
     // Matches `CloudAIService`: these models may decline on a classifier, and
     // the fallback lets another model answer instead.
@@ -179,7 +186,7 @@ final class CloudAgentSession {
     }
     var body: [String: Any] = [
       "model": llm.modelID,
-      "messages": [["role": "system", "content": system]] + messages,
+      "messages": [["role": "system", "content": system]] + outboundMessages(),
       "tools": tools.map { tool in
         [
           "type": "function",
