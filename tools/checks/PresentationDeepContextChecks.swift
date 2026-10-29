@@ -56,7 +56,14 @@ enum PresentationDeepContextChecks {
         status: .changed, decidedBy: nil, sourceID: "record:important"),
       PresentationDecisionRecord(id: "d-cancel", subject: "旧システム移行",
         statement: "旧システム移行を撤回する", date: base.addingTimeInterval(280 * 86_400),
-        status: .withdrawn, decidedBy: "田中 一郎", sourceID: "record:important")
+        status: .withdrawn, decidedBy: "田中 一郎", sourceID: "record:important"),
+      PresentationDecisionRecord(id: "d-explicit-old", subject: "移行方針",
+        statement: "従来方式で進める", date: base.addingTimeInterval(90 * 86_400),
+        status: .approved, decidedBy: "田中 一郎", sourceID: "record:seed"),
+      PresentationDecisionRecord(id: "d-explicit-new", subject: "新しい方式",
+        statement: "新方式へ切り替える", date: base.addingTimeInterval(270 * 86_400),
+        status: .changed, decidedBy: nil, supersedes: "d-explicit-old",
+        sourceID: "record:important")
     ]
     let request = PresentationContextRequest(purpose: "経営会議へサブスク販売システムの進捗を報告",
       audience: "経営会議", decisionRequired: "追加投資を承認するか",
@@ -78,11 +85,16 @@ enum PresentationDeepContextChecks {
     require(pack.decisions.contains { $0.id == "d-new" && $0.isCurrent }, "new decision is current")
     require(pack.decisions.contains { $0.id == "d-old" && !$0.isCurrent }, "old decision is history")
     require(pack.decisions.contains { $0.id == "d-cancel" && !$0.isCurrent }, "withdrawn decision is not current")
+    require(pack.decisions.contains { $0.id == "d-explicit-old" && !$0.isCurrent }, "explicitly superseded decision is history")
+    require(pack.decisions.contains { $0.id == "d-explicit-new" && $0.isCurrent }, "the explicit superseder is current")
     require(pack.decisions.contains { $0.decidedBy == nil } && pack.unconfirmed.contains { $0.contains("決定者") }, "missing decider is reported")
     require(pack.contradictions.contains { $0.contains("数値が異なります") }, "number conflict is reported")
     require(pack.metrics.contains { $0.value.contains("1240") || $0.value.contains("1,240") }, "new metric retained")
     require(pack.stakeholders.filter { $0.name == "田中 一郎" }.count <= 2, "same-name people stay separate by ID")
     require(pack.render().contains("[record:important]"), "source ID kept in rendered prompt")
+    require(!pack.changesSincePreviousDeck.isEmpty, "changes against the previous deck are listed")
+    require(pack.changesSincePreviousDeck.contains { $0.contains("800") }, "old number is flagged as unconfirmed")
+    require(pack.render().contains("前回最終版からの変更"), "changes are in the prompt block")
     require(!pack.render().contains("record:revoked"), "revoked source absent from prompt")
 
     // Scenario: a proposal with no numeric basis must say so, not invent one.

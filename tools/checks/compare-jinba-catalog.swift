@@ -80,10 +80,11 @@ enum CompareJinbaCatalog {
 
     - 比較: 65/65
     - 機械的な差あり: \(flagged)/65
+    - 目視・実描画で合格: 0/65（未実施。機械比較は完成証明ではない）
     - 色はJinbaの暖色とMemoraの白黒青オレンジで意図的に異なるため、判定に含めない。
     - 残課題: 目視レビュー、PowerPoint/Keynote/PDFの実描画、実データでの折返し・表の改行。
     """
-    try (header + rows.joined(separator: "\n") + footer)
+    try (header + rows.joined(separator: "\n") + "\n" + footer)
       .write(to: reportURL, atomically: true, encoding: .utf8)
     print("Jinba comparison: 65 pages, \(flagged) flagged, report \(reportURL.path)")
   }

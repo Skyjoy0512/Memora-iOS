@@ -119,3 +119,19 @@ Jinba上流HEAD: `e5f35e57e14d3998249a559c620a9286c95b4595`（開始時点と同
   罫線と見出し階層だけで読ませる。
 - 検査: 根拠付き資料のJSON往復、旧資料の復号、バックアップ往復、65型の通常/会社
   テンプレート書き出し、PDF/PPTX生成。
+
+## 追記: 前回最終版との差分とJinba原本の機械比較
+
+- 根拠パックに `changesSincePreviousDeck` を追加。前回最終版の数値と、それ以降の
+  許可済み資料の数値を比べ、新しく出た数値と、今回の根拠で確認できない旧数値を
+  一覧にする（どちらが正しいかは断定しない）。
+- 意思決定は主題の時系列に加え、明示的な `supersedes` でも交代を解決する。
+  異なる主題名でも「新方式が旧方式を置き換えた」を現在の決定へ反映できる。
+- `tools/checks/compare-jinba-catalog.swift` を追加。Jinbaの
+  `assets/SlideCatalog_16x9.pdf` とMemoraの65 PNGを、余白・情報密度・版面の重なりで
+  比較しMarkdownを出力する。Jinba本体はリポジトリへ同梱しない。
+- 実行例:
+  `swiftc App/SlideArchetype.swift tools/checks/compare-jinba-catalog.swift -o /tmp/jinba-compare`
+  `/tmp/jinba-compare <Jinba>/assets/SlideCatalog_16x9.pdf <Memora出力>/output docs/presentation-integration/JINBA_COMPARISON_2026_10.md`
+- 結果: 65/65比較、機械的な差あり40/65。差の多くはJinba見本のフッター・資料名と
+  サンプル密度による。目視・実描画の合格は0/65（未実施）。

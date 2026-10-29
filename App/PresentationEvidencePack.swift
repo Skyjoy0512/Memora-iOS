@@ -18,6 +18,7 @@ struct PresentationEvidencePack: Codable, Hashable, Sendable {
   var risks: [String] = []
   var unconfirmed: [String] = []
   var previousFinalDeck: SourceReference?
+  var changesSincePreviousDeck: [String] = []
   var relatedSources: [SourceReference] = []
   var permissions: [SourceReference] = []
   var versions: [String] = []
@@ -362,6 +363,13 @@ enum PresentationContextBuilder {
     }
     pack.timeline.sort { $0.date < $1.date }
     pack.risks = unique(pack.risks).prefix(12).map { $0 }
+    if let previous {
+      let newer = allowed.filter {
+        $0.id != previous.id
+          && ($0.date ?? .distantPast) >= (previous.date ?? .distantPast)
+      }.prefix(300)
+      pack.changesSincePreviousDeck = changes(previous: previous, newer: Array(newer))
+    }
 
     let allowedDecisionSourceIDs = Set(allowed.map(\.id))
     let relevantDecisions = decisions.filter { allowedDecisionSourceIDs.contains($0.sourceID) }
@@ -414,42 +422,64 @@ enum PresentationContextBuilder {
   /// history stays in the same list with `isCurrent == false`.
   static func resolveDecisions(_ records: [PresentationDecisionRecord]) -> [PresentationEvidencePack.DecisionEntry] {
     let grouped = Dictionary(grouping: records) { normalize($0.subject).prefix(60).description }
+    // An explicit "B supersedes A" link wins even when the subjects are worded
+    // differently. A withdrawal also ends the record it names.
+    var explicitlySuperseded = Set<String>()
+    for record in records {
+      if let target = record.supersedes { explicitlySuperseded.insert(target) }
+      if !record.status.isEffective, let target = record.supersedes { explicitlySuperseded.insert(target) }
+    }
     var result: [PresentationEvidencePack.DecisionEntry] = []
     for (_, group) in grouped {
       let ordered = group.sorted { left, right in
         if left.date != right.date { return left.date < right.date }
         return left.id < right.id
       }
-      let byID = Dictionary(uniqueKeysWithValues: ordered.map { ($0.id, $0) })
-      // The newest record decides whether the subject has a current decision;
-      // an earlier approved record only stands if nothing later withdrew it.
       var latestEffective: PresentationDecisionRecord?
-      var superseded: [PresentationDecisionRecord] = []
       for record in ordered {
         if record.status.isEffective {
-          if let previous = latestEffective {
-            superseded.append(previous)
-            _ = byID[previous.id]
-          }
           latestEffective = record
         } else {
-          if let previous = latestEffective { superseded.append(previous) }
           latestEffective = nil
         }
       }
       for record in ordered {
         let isCurrent = latestEffective?.id == record.id
+          && !explicitlySuperseded.contains(record.id)
         result.append(.init(id: record.id, subject: record.subject, statement: record.statement,
           date: record.date, decidedBy: record.decidedBy, meetingTitle: record.meetingTitle,
           status: record.status, supersedes: record.supersedes, rationale: record.rationale,
           dissent: record.dissent, unresolved: record.unresolved, sourceID: record.sourceID,
           isCurrent: isCurrent))
       }
-      _ = superseded
     }
     return result.sorted { $0.date > $1.date }
   }
 
+  /// What the new evidence changes against the previous final deck: numbers
+  /// that appear for the first time, and old numbers no newer source confirms.
+  /// It does not decide which is right; the person confirms the source.
+  static func changes(previous: PresentationEvidenceSource,
+                      newer: [PresentationEvidenceSource]) -> [String] {
+    let oldNumbers = numbers(in: previous.title + " " + previous.text)
+    guard !oldNumbers.isEmpty || !newer.isEmpty else { return [] }
+    var newNumbers = Set<String>()
+    var lines: [String] = []
+    for source in newer.sorted(by: { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }) {
+      let sourceNumbers = numbers(in: source.title + " " + source.text)
+      newNumbers.formUnion(sourceNumbers)
+      let added = sourceNumbers.subtracting(oldNumbers)
+      guard !added.isEmpty else { continue }
+      let shown = added.sorted().prefix(4).joined(separator: ", ")
+      lines.append("新しい数値 \(shown)（\(source.id): \(clipped(source.text, 90))）")
+      if lines.count >= 8 { break }
+    }
+    let missing = oldNumbers.subtracting(newNumbers)
+    if !missing.isEmpty {
+      lines.append("前回の数値 \(missing.sorted().prefix(6).joined(separator: ", ")) は今回の根拠で確認できません。")
+    }
+    return lines
+  }
   // MARK: - Text helpers
 
   static func normalize(_ text: String) -> String {
@@ -603,6 +633,10 @@ extension PresentationEvidencePack {
     if !decisionRequired.isEmpty { lines.append("判断してほしいこと: \(decisionRequired)") }
     if !projectContext.isEmpty { lines.append(contentsOf: projectContext.prefix(4)) }
     if let previousFinalDeck { lines.append("前回の最終提出版: \(previousFinalDeck.summary)") }
+    if !changesSincePreviousDeck.isEmpty {
+      lines.append("前回最終版からの変更:")
+      lines.append(contentsOf: changesSincePreviousDeck.map { "- \($0)" })
+    }
     if !decisions.isEmpty {
       lines.append("意思決定（現在有効なものと履歴）:")
       for decision in decisions.prefix(20) {

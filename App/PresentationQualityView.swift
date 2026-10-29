@@ -37,6 +37,10 @@ struct PresentationQualityView: View {
           if let deck = evidence.previousFinalDeck {
             Text("前回: \(deck.title)\(deck.isFinal ? "（最終版）" : "（草稿）")")
           }
+          if !evidence.changesSincePreviousDeck.isEmpty {
+            Text("前回からの変更").foregroundStyle(.secondary)
+            ForEach(evidence.changesSincePreviousDeck, id: \.self) { Text("・\($0)") }
+          }
           if !evidence.investigation.topics.isEmpty {
             Text("検索語: " + evidence.investigation.topics.prefix(8).joined(separator: "、"))
           }
