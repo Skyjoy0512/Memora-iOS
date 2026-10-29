@@ -23,6 +23,20 @@ struct PresentationEvidencePack: Codable, Hashable, Sendable {
   var versions: [String] = []
   var estimatedTokens = 0
   var generatedAt = Date.now
+  var investigation = Investigation()
+  var gaps: [String] = []
+
+  /// What the search looked at, so a person can see the scope rather than trust
+  /// an unseen "investigated everything" claim.
+  struct Investigation: Codable, Hashable, Sendable {
+    var consideredSources = 0
+    var allowedSources = 0
+    var includedSources = 0
+    var topics: [String] = []
+    var expandedTopics: [String] = []
+    var truncated = false
+    var searchPasses = 0
+  }
 
   enum Stance: String, Codable, Hashable, Sendable {
     case fact, opinion, hypothesis
@@ -237,20 +251,67 @@ enum PresentationContextBuilder {
       pack.projectContext.append("対象期間: \(start.formatted(date: .numeric, time: .omitted)) 〜 \(end.formatted(date: .numeric, time: .omitted))")
     }
 
-    let allowed = sources.filter { $0.permission == .allowed }
+    let permitted = sources.filter { $0.permission == .allowed }
+    // A bounded snapshot keeps one request from scanning an unbounded archive.
+    // The first 2,000 allowed sources are considered; the count says so.
+    let allowed = Array(permitted.prefix(2_000))
     let unknown = sources.filter { $0.permission == .unknown }
     let denied = sources.filter { $0.permission == .denied }
-    pack.relatedSources = allowed.map(\.reference)
     pack.permissions = denied.map(\.reference) + unknown.map(\.reference)
+    pack.investigation.consideredSources = sources.count
+    pack.investigation.allowedSources = allowed.count
+    pack.investigation.truncated = permitted.count > allowed.count
     pack.unconfirmed.append(contentsOf: denied.map { "\($0.title) は参照が許可されていないため資料に使いません。" })
     pack.unconfirmed.append(contentsOf: unknown.map { "\($0.title) は参照許可が未確認のため、クラウド資料では使いません。" })
 
     let terms = searchTerms(request)
-    let ranked = allowed.enumerated().map { index, source -> (Int, PresentationEvidenceSource, Int) in
+    // A term in most records ("会議") says nothing about relevance. Keep the
+    // terms that distinguish records; fall back only when every term is common.
+    let frequencyLimit = max(3, allowed.count / 5)
+    let baseFrequency = documentFrequency(of: terms, in: allowed)
+    let specificTerms = terms.filter { baseFrequency[$0, default: 0] <= frequencyLimit }
+    let effectiveTerms = specificTerms.isEmpty ? terms : specificTerms
+    let baseScores = allowed.map { source -> Int in
       let text = source.title + " " + source.text
-      let score = terms.reduce(0) { $0 + occurrences(of: $1, in: text) }
+      return effectiveTerms.reduce(0) { $0 + occurrences(of: $1, in: text) }
         + (source.isFinal ? 4 : 0)
         + (source.kind == .previousDeck ? 6 : 0)
+    }
+    // Second pass: terms that recur in the strongest records but were not in
+    // the request itself. This finds a decision recorded under a different
+    // word (for example "本番移行" for "リリース") without pretending the two
+    // are the same term.
+    let seedIndices = baseScores.indices.filter { baseScores[$0] > 0 }
+      .sorted { baseScores[$0] == baseScores[$1] ? $0 < $1 : baseScores[$0] > baseScores[$1] }
+      .prefix(6)
+    var expansionCounts: [String: Int] = [:]
+    for index in seedIndices {
+      let source = allowed[index]
+      for (term, count) in frequentTerms(in: source.text) where !effectiveTerms.contains(term) {
+        expansionCounts[term, default: 0] += count
+      }
+    }
+    // A word that appears in half the archive is not a useful expansion: it
+    // would pull every routine record in. Keep only terms rare enough to say
+    // something about the topic.
+    let candidateTerms = Array(expansionCounts.sorted {
+      $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value
+    }.prefix(48).map(\.key))
+    let frequencies = documentFrequency(of: candidateTerms, in: allowed)
+    let expansionFrequencyLimit = max(2, allowed.count / 4)
+    let expansionTerms = candidateTerms.filter {
+      frequencies[$0, default: 0] <= expansionFrequencyLimit
+        && $0.rangeOfCharacter(from: .decimalDigits) == nil
+    }.prefix(24)
+    pack.investigation.topics = Array(effectiveTerms.filter { $0.count >= 2 }.prefix(12))
+    pack.investigation.expandedTopics = Array(expansionTerms.prefix(24))
+    pack.investigation.searchPasses = expansionTerms.isEmpty ? 1 : 2
+
+    let ranked = allowed.indices.map { index -> (Int, PresentationEvidenceSource, Double) in
+      let source = allowed[index]
+      let text = source.title + " " + source.text
+      let related = expansionTerms.reduce(0) { $0 + occurrences(of: $1, in: text) }
+      let score = Double(baseScores[index]) + Double(related) / 4
       return (index, source, score)
     }.sorted { left, right in
       if left.2 != right.2 { return left.2 > right.2 }
@@ -273,6 +334,7 @@ enum PresentationContextBuilder {
       }
     }
 
+    var included = 0
     for (_, source, score) in ranked {
       let isPinned = source.id == previous?.id
       guard score > 0 || isPinned else { continue }
@@ -285,6 +347,8 @@ enum PresentationContextBuilder {
       let fact = PresentationEvidencePack.Fact(text: excerpt, sourceID: source.id,
         date: source.date, stance: source.stance, confidence: source.confidence, locator: source.locator)
       pack.keyFacts.append(fact)
+      pack.relatedSources.append(source.reference)
+      included += 1
       used += excerpt.count
       if let date = source.date {
         pack.timeline.append(.init(date: date, title: source.title, sourceID: source.id))
@@ -331,6 +395,12 @@ enum PresentationContextBuilder {
       pack.unconfirmed.append("判断してほしいことが未指定です。")
     }
     pack.unconfirmed = unique(pack.unconfirmed).prefix(20).map { $0 }
+    pack.investigation.includedSources = included
+    pack.investigation.truncated = pack.investigation.truncated || included < ranked.filter { $0.2 > 0 }.count
+    if pack.decisions.isEmpty { pack.gaps.append("意思決定の記録が見つかりません。決定として書かないでください。") }
+    if pack.metrics.isEmpty { pack.gaps.append("数値の根拠が見つかりません。数値を作らないでください。") }
+    if pack.previousFinalDeck == nil { pack.gaps.append("前回の最終提出版を特定できません。草稿を最終版として扱わないでください。") }
+    if pack.investigation.truncated { pack.gaps.append("候補が予算を超えたため、関連度の高い資料だけを読んでいます。") }
     pack.versions = allowed.compactMap { source in
       guard let version = source.version else { return nil }
       return "\(source.title): \(version)\(source.isFinal ? "（最終）" : "")"
@@ -398,7 +468,39 @@ enum PresentationContextBuilder {
     var result = terms(base)
     result.formUnion(request.topics.flatMap { terms($0) })
     result.formUnion(request.topics.map { normalize($0) })
-    return Array(result).filter { !$0.isEmpty }.sorted()
+    // Hiragana-only bigrams ("する", "るか") are grammar, not topics; they would
+    // match almost every record.
+    return Array(result).filter { term in
+      !term.isEmpty && term.unicodeScalars.contains { !(0x3040...0x309f).contains($0.value) }
+    }.sorted()
+  }
+
+  /// Frequent bigrams in a bounded slice. The slice keeps a long archive from
+  /// making one request quadratic; it is a search hint, not a document summary.
+  static func frequentTerms(in text: String) -> [String: Int] {
+    let bounded = String(text.prefix(4_000))
+    let runs = bounded.components(separatedBy: CharacterSet.letters.union(.decimalDigits).inverted)
+    var counts: [String: Int] = [:]
+    for run in runs {
+      let characters = Array(run)
+      guard characters.count >= 2 else { continue }
+      for index in 0..<(characters.count - 1) {
+        let term = String(characters[index...index + 1])
+        if term.unicodeScalars.contains(where: { !(0x3040...0x309f).contains($0.value) }) {
+          counts[term, default: 0] += 1
+        }
+      }
+    }
+    return counts
+  }
+
+  static func documentFrequency(of terms: [String], in sources: [PresentationEvidenceSource]) -> [String: Int] {
+    var result: [String: Int] = [:]
+    for source in sources {
+      let text = normalize(String((source.title + " " + source.text).prefix(2_000)))
+      for term in terms where text.contains(term) { result[term, default: 0] += 1 }
+    }
+    return result
   }
 
   static func occurrences(of term: String, in text: String) -> Int {
@@ -515,7 +617,7 @@ extension PresentationEvidencePack {
     }
     if !keyFacts.isEmpty {
       lines.append("根拠となる抜粋（原文のIDを保持。要約で数字を変えない）:")
-      for fact in keyFacts.prefix(20) {
+      for fact in keyFacts {
         lines.append("- [\(fact.sourceID)] (\(fact.stance.label)/\(fact.confidence.label)) \(fact.text)")
       }
     }
@@ -529,6 +631,7 @@ extension PresentationEvidencePack {
     if !risks.isEmpty { lines.append("リスク・課題:"); lines.append(contentsOf: risks.map { "- \($0)" }) }
     if !unconfirmed.isEmpty { lines.append("未確認:"); lines.append(contentsOf: unconfirmed.map { "- \($0)" }) }
     if !stakeholders.isEmpty { lines.append("関係者: " + stakeholders.prefix(10).map(\.name).joined(separator: "、")) }
+    if !gaps.isEmpty { lines.append("不足:"); lines.append(contentsOf: gaps.map { "- \($0)" }) }
     return lines.joined(separator: "\n")
   }
 }

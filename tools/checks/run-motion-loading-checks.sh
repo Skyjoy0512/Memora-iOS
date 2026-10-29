@@ -20,6 +20,8 @@ swiftc App/AIAnswerFailure.swift App/AgentSessionBudget.swift tools/checks/Agent
 swiftc App/LLMModelOption.swift App/LLMProvider.swift App/LLMSelection.swift App/MemoraIntelligence.swift App/ModelCapabilities.swift App/ModelBudgetScaling.swift App/TokenBudgetManager.swift App/AgentSessionBudget.swift App/AgentOutputBudget.swift App/AgentRunBudget.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/ModelCapabilitiesChecks.swift -o "$check_dir/model-capabilities"
 "$check_dir/model-capabilities"
 swiftc App/LLMModelOption.swift App/LLMProvider.swift App/LLMSelection.swift App/MemoraIntelligence.swift App/ModelCapabilities.swift App/TokenBudgetManager.swift App/PresentationEvidencePack.swift tools/checks/PresentationContextChecks.swift -o "$check_dir/presentation-context"
+swiftc App/LLMModelOption.swift App/LLMProvider.swift App/LLMSelection.swift App/MemoraIntelligence.swift App/ModelCapabilities.swift App/TokenBudgetManager.swift App/PresentationEvidencePack.swift tools/checks/PresentationDeepContextChecks.swift -o "$check_dir/presentation-deep-context"
+"$check_dir/presentation-deep-context"
 "$check_dir/presentation-context"
 swiftc App/AIAnswerFailure.swift App/AgentSessionBudget.swift App/LLMModelOption.swift App/LLMProvider.swift App/AgentGenerationPolicy.swift App/AgentOutputBudget.swift App/CloudTokenUsage.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/AgentGenerationChecks.swift -o "$check_dir/generation"
 "$check_dir/generation"
