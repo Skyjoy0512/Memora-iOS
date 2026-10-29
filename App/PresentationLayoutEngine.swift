@@ -18,12 +18,12 @@ enum PresentationLayoutEngine {
       switch layout {
       case .b01:
         b.rect(54, 112, 7, 240, fill: PresentationTheme.blue)
-        b.text(slide.title, 88, 140, 780, 180, size: 42, bold: true)
+        b.text(slide.title, 88, 140, 780, 180, size: PresentationTypography.coverTitle.size, bold: true)
         b.text(content.subtitle ?? "", 88, 342, 780, 80, size: 22)
       case .b04:
         b.rect(0, 0, 28, 540, fill: PresentationTheme.blue)
         b.text(content.subtitle ?? "", 66, 130, 810, 40, size: 20, color: PresentationTheme.blue)
-        b.text(slide.title, 66, 200, 810, 200, size: 40, bold: true)
+        b.text(slide.title, 66, 200, 810, 200, size: PresentationTypography.sectionTitle.size, bold: true)
       default:
         b.text(slide.title, 54, 210, 852, 150, size: 38, bold: true)
         b.rule(54, 400, 852)
@@ -244,7 +244,8 @@ enum PresentationLayoutEngine {
       for (i, item) in items.enumerated() {
         let left = x + Double(i % columns) * (w + 24), top = y + Double(i / columns) * (h + 20)
         rect(left, top, w, h, fill: PresentationTheme.pale)
-        text((numbered ? "\(i + 1)  " : "") + item.heading, left + 14, top + 12, w - 28, 52,
+        rect(left, top, 4, h, fill: PresentationTheme.blue)
+        text((numbered ? "\(i + 1)  " : "") + item.heading, left + 16, top + 12, w - 32, 52,
              size: 22, bold: true, color: PresentationTheme.blue)
         text(item.body, left + 14, top + 76, w - 28, h - 88, size: 18)
       }
@@ -380,12 +381,20 @@ enum PresentationLayoutEngine {
                         visual: Visual = .plain, large: Bool = false, highlightLast: Bool = false, nested: Bool = false) {
       guard let table, !table.columns.isEmpty else { return }
       let n = table.columns.count, w = width / Double(n), h = height / Double(table.rows.count + 1)
+      // Jinba's table rule: the header is larger and bold with no fill; the
+      // data rows are separated by horizontal rules only.
       for (c, label) in table.columns.enumerated() {
-        rect(x + Double(c) * w, y, w - 2, h - 2, fill: PresentationTheme.pale)
-        text(label, x + Double(c) * w + 10, y + 9, w - 20, h - 18, size: 18, bold: true)
+        text(label, x + Double(c) * w + 10, y + 7, w - 20, h - 14, size: 20, bold: true,
+             color: PresentationTheme.ink)
       }
+      // A hairline under the header separates labels from data without boxing
+      // every cell; alternating rows carry the eye across a wide table.
+      rect(x, y + h - 2.5, width, 2.5, fill: PresentationTheme.blue)
       for (r, row) in table.rows.enumerated() {
         let top = y + Double(r + 1) * h
+        if visual == .plain, r % 2 == 1 {
+          rect(x, top, width, h - 2, fill: "FAFAFA")
+        }
         for (c, value) in row.enumerated() {
           let left = x + Double(c) * w
           let score = table.scores.flatMap { $0.indices.contains(r) && $0[r].indices.contains(c) ? $0[r][c] : nil }
@@ -408,7 +417,7 @@ enum PresentationLayoutEngine {
                  color: visual == .heat && (score ?? 0) >= 0.67 ? PresentationTheme.white : highlightLast && c == n - 1 ? PresentationTheme.blue : PresentationTheme.ink)
           }
         }
-        rule(x, top + h - 2, width)
+        if r < table.rows.count - 1 { rule(x, top + h - 2, width) }
       }
       if nested, let groups = table.rowGroups {
         for (r, group) in groups.enumerated() where r == 0 || groups[r - 1] != group {

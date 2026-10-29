@@ -107,3 +107,13 @@ Quick Look検証用画像生成/比較シート目視を確認した。会社書
 企業マスター再利用、画像/RichText/Group等の要素追加、AIによる既存スライドの部分修正、
 独立した内容レビュープロセスの実装/評価。単純な図形生成成功と区別する。
 行グループ、成長率、根拠グリッドの個別表現など上流への忠実度も追加の実データ評価が必要。
+
+## 2026-10-29 追記: 型スケールとJinba表ルール
+
+- `PresentationTypography` を追加し、表紙・章扉の見出しを型スケールから引く。
+- Jinba `references/rules-digest.md` の表ルールに合わせ、見出し行を本文+2pt・太字・
+  塗りなし、データ行のみ横罫線、最終行の下罫線なしへ変更。
+- カードのアクセントは青1色に統一（意味なく複数色を使わない）。
+- `run-presentation-checks.sh`: geometry signature 65/65 distinct、失敗0。
+  ただしGolden HTMLとのピクセル比較とPowerPoint実描画は依然未実施。
+- 詳細: [DEEP_CONTEXT_2026_10.md](DEEP_CONTEXT_2026_10.md)。

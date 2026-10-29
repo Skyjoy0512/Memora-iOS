@@ -9,7 +9,7 @@ swiftc -enable-bare-slash-regex -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENAN
   App/SummaryProcessingMode.swift App/SummaryGenerationPolicy.swift App/SummaryDiagnostics.swift App/CloudAgentSession.swift App/CloudAIService.swift App/CloudSummaryResponse.swift App/CloudTurnStreaming.swift App/CloudTurnStreamReader.swift \
   App/CloudSSEEventDecoder.swift App/CloudStreamAccumulator.swift App/CloudAgentTurnDecoder.swift App/CloudTokenUsage.swift \
   App/AgentRunBudget.swift App/AgentSessionBudget.swift App/AgentOutputBudget.swift App/AgentGenerationPolicy.swift \
-  App/LLMProvider.swift App/LLMSelection.swift App/LLMModelOption.swift App/AIAnswerPrompt.swift App/ReadabilityGuide.swift \
+  App/LLMProvider.swift App/LLMSelection.swift App/LLMModelOption.swift App/ModelCapabilities.swift App/ModelBudgetScaling.swift App/TokenBudgetManager.swift App/AIAnswerPrompt.swift App/ReadabilityGuide.swift \
   App/AgentTool.swift App/AIToolRegistry.swift App/AIToolDefinition.swift App/IntegrationProvider.swift App/IntegrationToolResult.swift \
   App/MCPTool.swift App/MCPServerConfig.swift App/MCPOAuthSettings.swift \
   App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift \
@@ -26,7 +26,7 @@ swiftc -enable-bare-slash-regex -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENAN
   App/MemoraModel+Journal.swift App/MemoraModel+JournalPeople.swift App/MemoraModel+RecordPrivacy.swift App/MemoraModel+AutomaticRecordTools.swift \
   tools/checks/PersonFixtureModel.swift App/AIConversationEntry.swift App/AIEpisode.swift App/AIRecordReference.swift App/ArtifactProvenance.swift \
   App/ArtifactProjectSourceReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/MemoraModel+Glossary.swift \
-  App/AICalendarEventReference.swift App/AICalendarReadSnapshot.swift App/MemoraModel+CalendarContext.swift App/MemoraModel+AIProvenance.swift App/ProjectSource.swift App/MemoraDocumentKind.swift App/SlideArchetype.swift App/SlideContent.swift App/PresentationTheme.swift App/PresentationElement.swift App/PresentationText.swift App/PresentationLayoutEngine.swift App/PresentationValidator.swift App/PresentationExportCheck.swift App/PresentationOOXML.swift App/PresentationToolInput.swift App/DocumentSlide.swift App/PresentationPlan.swift App/DocumentArtifactRevision.swift App/MemoraDocument.swift App/MailDraft.swift \
+  App/AICalendarEventReference.swift App/AICalendarReadSnapshot.swift App/MemoraModel+CalendarContext.swift App/MemoraModel+AIProvenance.swift App/ProjectSource.swift App/MemoraDocumentKind.swift App/SlideArchetype.swift App/SlideContent.swift App/PresentationTheme.swift App/PresentationElement.swift App/PresentationText.swift App/PresentationTypography.swift App/PresentationLayoutEngine.swift App/PresentationValidator.swift App/PresentationExportCheck.swift App/PresentationOOXML.swift App/PresentationToolInput.swift App/DocumentSlide.swift App/PresentationPlan.swift App/DocumentArtifactRevision.swift App/MemoraDocument.swift App/MailDraft.swift \
   App/ArtifactSourceTarget.swift App/ArtifactSourceRow.swift App/MemoraModel+ArtifactProvenance.swift App/MemoraModel+Documents.swift \
   App/MemoraModel+MailDrafts.swift App/MemoraModel+MailDraftTool.swift \
   tools/checks/CloudSessionFixtureProtocol.swift tools/checks/CloudSessionFixtureResponse.swift tools/checks/CloudSessionFixtureServices.swift \
