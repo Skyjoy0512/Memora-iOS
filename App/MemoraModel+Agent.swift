@@ -21,6 +21,11 @@ extension MemoraModel {
     guard !trimmed.isEmpty, !isAIChatResponding else { return false }
 
     let configuration = askAIConfiguration
+    let isCloudEngine = AIEngineService.effectiveEngine(configuration.engine) == .cloud
+    let contextTask = DeepContextPolicy.task(for: trimmed)
+    let capabilities = ModelCapabilities.resolve(llm: configuration.llm)
+    let contextBudget = AIEngineService.contextCharacterLimit(for: configuration.engine,
+      llm: configuration.llm, task: contextTask)
     if let personID = pluginPolicy?.personID,
        AIEngineService.effectiveEngine(configuration.engine) == .cloud,
        !allowsPersonAccess(personID, purpose: .cloudAI) {
@@ -32,7 +37,8 @@ extension MemoraModel {
       guard AIEngineService.effectiveEngine(configuration.engine) == .cloud,
             configuration.llm.supportsToolCalling, !configuration.llm.isMemoraIntelligence,
             let preparedAttachment,
-            let content = AgentAttachmentContext.content(attachment: attachment, prepared: preparedAttachment) else { return false }
+            let content = AgentAttachmentContext.content(attachment: attachment, prepared: preparedAttachment,
+              maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities, task: contextTask)) else { return false }
       attachmentContext = content
     } else { attachmentContext = nil }
     let scope = AIChatScope.all
@@ -48,8 +54,9 @@ extension MemoraModel {
       ? MemoraSkill.automaticSelection(for: trimmed, disabled: disabledSkillIDs, catalog: skillCatalog)
       : Array(explicitSkills.prefix(2))
     // Two validated custom procedures can each contain 6,000 characters.
-    // Keep their final review steps intact on the cloud path.
-    let skillContext = MemoraSkill.guidance(selectedSkills, budget: 14_000)
+    // Keep their final review steps intact, with room scaled to the model.
+    let skillContext = MemoraSkill.guidance(selectedSkills,
+      budget: isCloudEngine ? min(48_000, max(14_000, contextBudget / 8)) : 300)
 
     let llm = configuration.llm
     let runner: AgentRunner
@@ -139,7 +146,8 @@ extension MemoraModel {
       allowedMeetings: allowedMeetings,
       tasks: pluginPolicy != nil ? [] : runner.isOnDevice ? Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings)
         : permittedTasks(for: .cloudAI, scope: scope).filter { !$0.isCompleted },
-      characterLimit: runner.isOnDevice ? 1_500 : 8_000
+      characterLimit: runner.isOnDevice ? 1_500 : min(160_000,
+        DeepContextPolicy.isDeep(trimmed) ? contextBudget * 3 / 5 : contextBudget / 3)
     )
     if !found.context.isEmpty {
       opening = "関係しそうな記録（検索済み。idは search_records で得られます）:\n\(found.context)\n\n" + opening
@@ -153,9 +161,28 @@ extension MemoraModel {
         + (pluginPolicy == nil ? Self.openTasks(in: scope, from: tasks, meetings: allowedMeetings).map { .task($0.id) } : []), messageID: placeholder.id)
     }
     // What the agent knows about the person, smaller on the device's window.
-    let personal = limitsSources ? "" : personalContext(for: trimmed, budget: runner.isOnDevice ? 500 : 3_000, includesHistory: runner.isOnDevice)
+    let personalBudget = DeepContextPolicy.isDeep(trimmed) ? min(40_000, contextBudget / 5) : min(16_000, contextBudget / 8)
+    let personal = limitsSources ? "" : personalContext(for: trimmed,
+      budget: runner.isOnDevice ? 500 : max(3_000, personalBudget), includesHistory: runner.isOnDevice)
     if !personal.isEmpty {
       opening = personal + "\n\n" + opening
+    }
+    // A presentation or a deep request starts from what the records already
+    // hold: the decisions, the people and the earlier deck, each with its
+    // source ID, rather than from the newest few records alone.
+    if isCloudEngine, contextTask.isDeep {
+      let pack = presentationEvidencePack(query: trimmed, purpose: trimmed)
+      let rendered = pack.render()
+      if !rendered.isEmpty {
+        opening = "資料作成・深掘りの根拠パック（利用が許可された記録のみ。出典IDを保持し、要約で数値や固有名詞を変えない）:\n\(rendered)\n\n" + opening
+        let packRecordIDs = pack.relatedSources.compactMap { reference -> UUID? in
+          guard reference.id.hasPrefix("record:") else { return nil }
+          return UUID(uuidString: String(reference.id.dropFirst("record:".count)))
+        }
+        if !packRecordIDs.isEmpty {
+          recordCloudReads(packRecordIDs.map { .meeting($0) }, messageID: placeholder.id)
+        }
+      }
     }
 
     aiChatTask?.cancel()
