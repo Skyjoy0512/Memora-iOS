@@ -1,9 +1,8 @@
 name: Host quality checks
 
+# GitHub Actions の予算上限に達したため、当面は手動実行のみ。
+# 予算が回復したら pull_request / push を戻す。
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
