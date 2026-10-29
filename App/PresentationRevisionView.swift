@@ -80,7 +80,7 @@ struct PresentationRevisionView: View {
     let configuration = model.askAIConfiguration
     let cloud = AIEngineService.effectiveEngine(configuration.engine) == .cloud
     do {
-      let limit = cloud ? 24_000 : max(0, AIEngineService.contextCharacterLimit(for: configuration.engine) - 900)
+      let limit = cloud ? max(24_000, min(80_000, AIEngineService.contextCharacterLimit(for: configuration.engine, llm: configuration.llm, task: .presentation))) : max(0, AIEngineService.contextCharacterLimit(for: configuration.engine) - 900)
       let request = try PresentationRevision.request(document: draft, selectedIDs: selectedIDs,
         instruction: instruction, contextLimit: limit)
       let authorization = model.presentationRevisionAuthorization(for: original, engine: configuration.engine, llm: configuration.llm)

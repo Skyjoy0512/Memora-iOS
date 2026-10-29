@@ -18,6 +18,7 @@ final class CloudAgentSession {
   var externalTools: [MCPTool] = []
   private var messages: [[String: Any]] = []
   let runBudget: AgentRunBudget
+  let capabilities: ModelCapabilities
 
   /// Returns nil when there is no key for the provider; the caller says so.
   /// `tools` narrows what the model is offered; resident agents get only the
@@ -33,7 +34,9 @@ final class CloudAgentSession {
     self.toolDescriptions = toolDescriptions
     self.sessionConfiguration = (sessionConfiguration.copy() as? URLSessionConfiguration) ?? .ephemeral
     self.sessionConfiguration.timeoutIntervalForResource = 600
-    self.runBudget = runBudget ?? AgentRunBudget()
+    let capabilities = ModelCapabilities.resolve(llm: llm)
+    self.capabilities = capabilities
+    self.runBudget = runBudget ?? AgentRunBudget(capabilities: capabilities)
   }
 
   func addUserMessage(_ text: String) {
@@ -101,7 +104,7 @@ final class CloudAgentSession {
   private func reserveOutput(in body: inout [String: Any], isStreaming: Bool) throws -> AgentOutputBudget.Reservation? {
     guard let policy = AgentGenerationPolicy.resolve(provider: llm.provider, modelID: llm.modelID,
       hasCustomEndpoint: llm.endpoint != nil || llm.credentialAccount != nil) else { return nil }
-    let reservation = try runBudget.reserveOutput(maximum: policy.maximumOutputTokens)
+    let reservation = try runBudget.reserveOutput(maximum: min(policy.maximumOutputTokens, capabilities.maximumOutputTokens))
     policy.apply(to: &body, allowance: reservation.maximumTokens, isStreaming: isStreaming)
     return reservation
   }
@@ -126,8 +129,9 @@ final class CloudAgentSession {
     var body: [String: Any] = [
       "model": llm.modelID,
       // A document is written inside one tool call, so the cap leaves room for
-      // a long one after the model's thinking.
-      "max_tokens": 32_000,
+      // a long one after the model's thinking. It never exceeds what the model
+      // accepts as output.
+      "max_tokens": capabilities.maximumOutputTokens,
       "system": system,
       "tools": tools.map { tool in
         ["name": tool.rawValue, "description": toolDescriptions[tool] ?? tool.summary, "input_schema": tool.inputSchema]

@@ -1,7 +1,7 @@
 import Foundation
 
 enum AIAttachmentText {
-  private static let maximumCharacters = 8_000
+  private static let maximumCharacters = 60_000
 
   static func prepare(_ attachment: AIAttachment) async -> PreparedAIAttachment {
     let job = Task.detached(priority: .userInitiated) { readContent(attachment) }
@@ -31,7 +31,7 @@ enum AIAttachmentText {
       }
       content.text = String(text.prefix(maximumCharacters))
       var notices = [result.notice].compactMap { $0 }.filter { !$0.isEmpty }
-      if text.count > maximumCharacters { notices.append("添付は長いため、先頭8,000文字までを読み込みました。") }
+      if text.count > maximumCharacters { notices.append("添付は長いため、先頭\(maximumCharacters)文字までを読み込みました。") }
       content.notice = notices.isEmpty ? nil : notices.joined(separator: " ")
     } catch is CancellationError {
       content.failure = "添付の読み込みを停止しました。"

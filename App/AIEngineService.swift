@@ -27,12 +27,28 @@ enum AIEngineService {
   /// and the rest is left as room; Japanese runs about one token per character.
   static let defaultContextCharacterLimit = 2_000
 
-  static func contextCharacterLimit(for engine: AIEngine) -> Int {
-    guard effectiveEngine(engine) != .cloud else { return 40_000 }
+  /// The context room for one request. A cloud model is never held to a single
+  /// fixed character count: its declared window, the answer's reservation and
+  /// a safety margin decide the budget, and deep work asks for more of it.
+  /// Without a selection the conservative profile is used, which still beats
+  /// the old flat limit on every model that supports a normal window.
+  static func contextCharacterLimit(for engine: AIEngine, llm: LLMSelection? = nil,
+                                    task: ContextTaskKind = .chat) -> Int {
+    guard effectiveEngine(engine) != .cloud else {
+      let capabilities = llm.map { ModelCapabilities.resolve(llm: $0) }
+        ?? .conservative(provider: .openAI, modelID: "unknown")
+      return TokenBudgetManager.budget(capabilities: capabilities, task: task).inputCharacterBudget
+    }
     if #available(iOS 26.0, *) {
       return max(1_000, SystemLanguageModel.default.contextSize / 2)
     }
     return defaultContextCharacterLimit
+  }
+
+  static func tokenBudget(for engine: AIEngine, llm: LLMSelection?, task: ContextTaskKind) -> TokenBudget {
+    let capabilities = llm.map { ModelCapabilities.resolve(llm: $0) }
+      ?? .conservative(provider: .openAI, modelID: "unknown")
+    return TokenBudgetManager.budget(capabilities: capabilities, task: task)
   }
 
   static func answer(

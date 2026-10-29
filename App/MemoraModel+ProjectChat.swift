@@ -64,7 +64,7 @@ extension MemoraModel {
     let configuration = askAIConfiguration
     guard let selection = projectMentionSelection(pluginIDs, projectID: projectID) else { return false }
     let cloud = AIEngineService.effectiveEngine(configuration.engine) == .cloud
-    guard question.count <= min(4_000, AIEngineService.contextCharacterLimit(for: configuration.engine) / 2),
+    guard question.count <= min(4_000, AIEngineService.contextCharacterLimit(for: configuration.engine, llm: configuration.llm, task: .agent) / 2),
           !cloud || allowsPaidRequest else { return false }
     let user = ProjectChatTurn(role: .user, text: question)
     if thread.messages.isEmpty { thread.title = String(question.prefix(40)) }
@@ -98,7 +98,7 @@ extension MemoraModel {
           && (pluginIDs.isEmpty || projectMentionSelection(pluginIDs, projectID: projectID) == selection)
       }
       guard isCurrentExecution() else { return }
-      let limit = max(400, AIEngineService.contextCharacterLimit(for: configuration.engine) - question.count)
+      let limit = max(400, AIEngineService.contextCharacterLimit(for: configuration.engine, llm: configuration.llm, task: .agent) - question.count)
       let context = await projectContext(question: question, projectID: projectID, cloud: cloud,
         budget: max(0, limit * 2 / 3 - 200 - selection.guidance.count), selectedTargets: selection.targets)
       guard isCurrentExecution() else { return }

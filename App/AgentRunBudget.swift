@@ -8,6 +8,11 @@ final class AgentRunBudget {
   private var cancelled = false
   private var exceeded = false
 
+  init(requests: AgentSessionBudget = AgentSessionBudget(), output: AgentOutputBudget = AgentOutputBudget()) {
+    self.requests = requests
+    self.output = output
+  }
+
   var isStopped: Bool { cancelled || exceeded || output.isExhausted }
   var requestCount: Int { requests.requests }
   var chargedOutputTokens: Int { output.chargedTokens }
@@ -40,7 +45,7 @@ final class AgentRunBudget {
     catch {
       // In-flight replies can still refund capacity; don't discard them merely
       // because the currently reserved total fills the budget.
-      if output.chargedTokens == AgentOutputBudget.maximumTokens, !output.hasPendingReservations { exceeded = true }
+      if output.chargedTokens == output.limitTokens, !output.hasPendingReservations { exceeded = true }
       throw error
     }
   }

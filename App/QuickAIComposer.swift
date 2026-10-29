@@ -267,7 +267,10 @@ struct QuickAIComposer: View {
       else { prepared = await AIAttachmentText.prepare(attached) }
       guard !Task.isCancelled else { return }
       preparedAttachment = prepared
-      guard AgentAttachmentContext.content(attachment: attached, prepared: prepared) != nil else {
+      let capabilities = ModelCapabilities.resolve(llm: configuration.llm)
+      guard AgentAttachmentContext.content(attachment: attached, prepared: prepared,
+        maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities,
+          task: DeepContextPolicy.task(for: question))) != nil else {
         projectError = prepared.failure ?? "添付の本文を取得できませんでした。入力と添付は保持しています。"
         return
       }

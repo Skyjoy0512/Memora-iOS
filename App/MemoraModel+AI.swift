@@ -116,7 +116,10 @@ extension MemoraModel {
 
     if let attachment, AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud,
        askAIConfiguration.llm.supportsToolCalling, !askAIConfiguration.llm.isMemoraIntelligence {
-      guard let preparedAttachment, AgentAttachmentContext.content(attachment: attachment, prepared: preparedAttachment) != nil else {
+      let attachmentCapabilities = ModelCapabilities.resolve(llm: askAIConfiguration.llm)
+      guard let preparedAttachment, AgentAttachmentContext.content(attachment: attachment, prepared: preparedAttachment,
+        maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: attachmentCapabilities,
+          task: DeepContextPolicy.task(for: trimmed))) != nil else {
         aiRequestRefusalMessage = preparedAttachment?.failure ?? "添付を解析してから送信してください。入力と添付は保持しています。"
         return false
       }
@@ -190,7 +193,7 @@ extension MemoraModel {
     }
     let personal = personalContext(
       for: trimmed,
-      budget: AIEngineService.contextCharacterLimit(for: engine) / 6
+      budget: max(1_000, AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat) / 6)
     )
     // The trace shows the record search that really runs, and its results.
     var placeholder = AIChatMessage(role: .assistant, text: "", isThinking: true)
@@ -366,7 +369,8 @@ extension MemoraModel {
       scopedRecord = permitted.first
     } else { scopedRecord = nil }
     safeStage("記録を探しています")
-    var content = buildContent(limit: scopedRecord == nil ? AIEngineService.contextCharacterLimit(for: engine) : 28_000)
+    let contextBudget = AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat)
+    var content = buildContent(limit: scopedRecord == nil ? contextBudget : min(28_000, contextBudget))
     func outcome(_ result: AIAnswerResult) -> AIAnswerOutcome {
       AIAnswerOutcome(question: content.question, scopeLabel: scopeLabel, result: result,
         sources: result.text == nil ? [] : content.sources,
@@ -415,7 +419,7 @@ extension MemoraModel {
     guard contextAvailable() else { return outcome(.failure(.contextChanged)) }
     // A local retry reuses the same extracted attachment and the same verified records.
     if case .failure(.contextTooLarge) = result, !cloud {
-      content = buildContent(limit: max(500, AIEngineService.contextCharacterLimit(for: engine) / 2))
+      content = buildContent(limit: max(500, AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat) / 2))
       guard content.unsupportedAttachmentNote == nil else { return outcome(.failure(.attachmentNotAnalysed)) }
       onContextReady?(content.sources)
       guard !Task.isCancelled, contextAvailable() else {

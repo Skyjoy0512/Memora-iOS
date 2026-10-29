@@ -10,7 +10,7 @@ extension MemoraModel {
         throw InfographicError.message(RecordAccessPolicy.refusal)
       }
     }
-    guard snapshot.summary.count <= min(30_000, AIEngineService.contextCharacterLimit(for: engine)) else {
+    guard snapshot.summary.count <= min(30_000, AIEngineService.contextCharacterLimit(for: engine, llm: configuration.llm, task: .chat)) else {
       throw InfographicError.message("この要約は図解生成で扱える長さを超えています。本文はそのまま利用できます。")
     }
     let result: AIAnswerResult

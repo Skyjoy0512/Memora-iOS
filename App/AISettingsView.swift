@@ -38,6 +38,12 @@ struct AISettingsView: View {
         .pickerStyle(.menu)
 
         NavigationLink {
+          ModelCapabilitiesView()
+        } label: {
+          SettingsLabel("モデルの上限", icon: .cpu)
+        }
+
+        NavigationLink {
           RegisteredLLMsView()
         } label: {
           SettingsLabel("登録済みモデル", icon: .cpu)

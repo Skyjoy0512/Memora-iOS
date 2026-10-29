@@ -57,7 +57,7 @@ final class InlineLinkSession {
   func summarize(engine: AIEngine, llm: LLMSelection, isCurrent: @escaping @MainActor () -> Bool) async {
     guard let result = await fetch(), !Task.isCancelled, isCurrent(), let url else { return }
     let id = UUID(); operation = id; status = .summarizing; error = nil
-    let limit = min(20_000, AIEngineService.contextCharacterLimit(for: engine))
+    let limit = min(20_000, AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat))
     let source = result.content.blocks.map(\.text).joined(separator: "\n")
     let bounded = String(source.prefix(limit))
     let data: [String: String] = ["url": result.finalURL.absoluteString, "title": title, "article": bounded]

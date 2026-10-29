@@ -53,7 +53,7 @@ extension MemoraModel {
       if summarize {
         report.status = .writing
         guard storeWebResearch(report) else { return }
-        let budget = min(ResearchPlan.maximumContextCharacters, max(0, AIEngineService.contextCharacterLimit(for: configuration.engine) - report.query.count - 400))
+        let budget = min(max(ResearchPlan.maximumContextCharacters, 48_000), max(0, AIEngineService.contextCharacterLimit(for: configuration.engine, llm: configuration.llm, task: .research) - report.query.count - 400))
         report.sources.sort { ResearchPlan.isPrimaryCandidate($0.url) && !ResearchPlan.isPrimaryCandidate($1.url) }
         let context = WebResearchContext.build(report.sources, budget: budget)
         guard !context.sent.isEmpty else { throw WebResearchClient.Failure.empty }

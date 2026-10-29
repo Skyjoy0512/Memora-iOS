@@ -13,7 +13,10 @@ extension MemoraModel {
       return true
     }
     if let attachment {
-      guard let preparedAttachment, AgentAttachmentContext.content(attachment: attachment, prepared: preparedAttachment) != nil else {
+      let capabilities = ModelCapabilities.resolve(llm: askAIConfiguration.llm)
+      guard let preparedAttachment, AgentAttachmentContext.content(attachment: attachment, prepared: preparedAttachment,
+        maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities,
+          task: DeepContextPolicy.task(for: question))) != nil else {
         return refuse(preparedAttachment?.failure ?? "添付を解析してから送信してください。入力と添付は保持しています。")
       }
     }
