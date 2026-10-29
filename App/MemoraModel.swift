@@ -447,6 +447,7 @@ final class MemoraModel {
   }
   var aiRequestRefusalMessage: String?
   @ObservationIgnored var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
+  @ObservationIgnored var agentPresentationEvidence: [UUID: PresentationEvidencePack] = [:]
   @ObservationIgnored var approvedAgentTaskDrafts: [UUID: [AgentTaskDraft]] = [:]
   @ObservationIgnored var agentBlockedExternalTools: [UUID: Set<String>] = [:]
   var composerMentions: [ComposerMention] = [] {

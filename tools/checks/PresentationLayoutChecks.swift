@@ -90,6 +90,20 @@ struct PresentationLayoutChecks {
       points: [.init(x: 20, y: 50), .init(x: 120, y: 30)])
     let lineXML = PresentationOOXML.shapes([ascending])
     precondition(lineXML.contains("p:cxnSp") && lineXML.contains("flipV=\"1\""))
+    let evidence = PresentationContextBuilder.build(
+      request: PresentationContextRequest(purpose: "検証", audience: "経営会議",
+        decisionRequired: "承認", query: "売上"),
+      sources: [.init(id: "record:a", kind: .record, title: "会議", text: "売上は 100 万円。",
+        date: Date(timeIntervalSince1970: 1_700_000_000), permission: .allowed)],
+      characterBudget: 4_000)
+    var evidenced = MemoraDocument(title: "根拠付き", kind: .slides, slides: [PresentationExample.slide(.b01)])
+    evidenced.presentationEvidence = evidence
+    let evidenceData = try JSONEncoder().encode(evidenced)
+    let evidenceDecoded = try JSONDecoder().decode(MemoraDocument.self, from: evidenceData)
+    precondition(evidenceDecoded == evidenced)
+    let legacyDocument = Data(#"{"id":"11111111-1111-1111-1111-111111111111","title":"旧資料","kind":"slides","markdown":"","slides":[],"createdAt":0,"updatedAt":0}"#.utf8)
+    let legacyDecoded = try JSONDecoder().decode(MemoraDocument.self, from: legacyDocument)
+    precondition(legacyDecoded.presentationEvidence == nil)
     let first = PresentationExample.slide(.m03)
     var conflicting = first; conflicting.id = UUID(); conflicting.composition?.metrics?[0].value = 99
     let conflictDocument = MemoraDocument(title: "出典内の不整合", kind: .slides, slides: [first, conflicting])

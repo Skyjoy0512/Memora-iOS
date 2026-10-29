@@ -174,6 +174,7 @@ extension MemoraModel {
       let pack = presentationEvidencePack(query: trimmed, purpose: trimmed)
       let rendered = pack.render()
       if !rendered.isEmpty {
+        agentPresentationEvidence[placeholder.id] = pack
         opening = "資料作成・深掘りの根拠パック（利用が許可された記録のみ。出典IDを保持し、要約で数値や固有名詞を変えない）:\n\(rendered)\n\n" + opening
         let packRecordIDs = pack.relatedSources.compactMap { reference -> UUID? in
           guard reference.id.hasPrefix("record:") else { return nil }

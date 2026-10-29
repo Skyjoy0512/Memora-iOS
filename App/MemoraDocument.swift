@@ -32,6 +32,9 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   var provenance: ArtifactProvenance?
   /// Optional so documents and backups written before presentation planning still decode.
   var presentationPlan: PresentationPlan?
+  /// The evidence a generated deck was built from, kept with the deck so its
+  /// scope and gaps can be reviewed after the conversation is gone.
+  var presentationEvidence: PresentationEvidencePack?
 
   var hasOutdatedArtifact: Bool {
     artifactFileReference != nil && (artifactRevision ?? 0) != (contentRevision ?? 0)

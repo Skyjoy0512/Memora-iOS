@@ -405,7 +405,7 @@ enum PresentationContextBuilder {
       guard let version = source.version else { return nil }
       return "\(source.title): \(version)\(source.isFinal ? "（最終）" : "")"
     }
-    pack.estimatedTokens = TokenBudgetManager.estimatedTokens(pack.render())
+    pack.estimatedTokens = TokenEstimate.tokens(pack.render())
     return pack
   }
 

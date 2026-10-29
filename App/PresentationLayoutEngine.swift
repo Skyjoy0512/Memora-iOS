@@ -396,9 +396,6 @@ enum PresentationLayoutEngine {
       rect(x, y + h - 2.5, width, 2.5, fill: PresentationTheme.blue)
       for (r, row) in table.rows.enumerated() {
         let top = y + Double(r + 1) * h
-        if visual == .plain, r % 2 == 1 {
-          rect(x, top, width, h - 2, fill: "FAFAFA")
-        }
         for (c, value) in row.enumerated() {
           let left = x + Double(c) * w
           let score = table.scores.flatMap { $0.indices.contains(r) && $0[r].indices.contains(c) ? $0[r][c] : nil }

@@ -406,6 +406,11 @@ extension MemoraModel {
       guard !document.slides.isEmpty else {
         return AgentToolOutcome(text: "slidesが空です。スライドを1枚以上書いてください。", isError: true)
       }
+      if let evidence = agentPresentationEvidence[messageID] {
+        document.presentationEvidence = evidence
+        lines.append("根拠: 候補\(evidence.investigation.consideredSources)件 / 採用\(evidence.investigation.includedSources)件 / 決定\(evidence.decisions.count)件")
+        if !evidence.gaps.isEmpty { lines.append("不足: \(evidence.gaps.joined(separator: " / "))") }
+      }
       lines.append("\(document.slides.count)枚")
       lines += document.slides.prefix(4).map { "・\($0.title)" }
     }

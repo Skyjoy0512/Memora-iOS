@@ -26,6 +26,7 @@ extension MemoraModel {
     aiConversationID = UUID()
     agentToolCallCounts = [:]
     agentPluginPolicies = [:]
+    agentPresentationEvidence = [:]
     approvedAgentTaskDrafts = [:]
     agentBlockedExternalTools = [:]
     isAIChatResponding = false

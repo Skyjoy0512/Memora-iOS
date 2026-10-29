@@ -75,31 +75,9 @@ enum TokenBudgetManager {
       inputTokens: min(input, task.inputTokenTarget))
   }
 
-  /// A rough token count used when the provider gives none. CJK characters are
-  /// counted as one token each; runs of other letters are counted at about
-  /// three characters per token. This is an estimate for budgeting, never a
-  /// billing figure.
+  /// Kept as the public name used by callers; the estimate lives in one place.
   static func estimatedTokens(_ text: String) -> Int {
-    var tokens = 0
-    var asciiRun = 0
-    func flush() {
-      if asciiRun > 0 { tokens += (asciiRun + 2) / 3 }
-      asciiRun = 0
-    }
-    for scalar in text.unicodeScalars {
-      switch scalar.value {
-      case 0x3040...0x30FF, 0x3400...0x4DBF, 0x4E00...0x9FFF, 0xAC00...0xD7AF, 0xFF00...0xFFEF:
-        flush()
-        tokens += 1
-      case 0x20, 0x09, 0x0A, 0x0D:
-        flush()
-        tokens += 1
-      default:
-        asciiRun += 1
-      }
-    }
-    flush()
-    return tokens
+    TokenEstimate.tokens(text)
   }
 }
 

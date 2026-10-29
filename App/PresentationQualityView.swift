@@ -5,6 +5,7 @@ struct PresentationQualityView: View {
 
   var body: some View {
     let issues = PresentationValidator.issues(for: document)
+    let evidence = document.presentationEvidence
     DisclosureGroup("品質チェック（\(issues.count)件）") {
       VStack(alignment: .leading, spacing: MemoraSpacing.md) {
         Text("版面・入力・同じ出典の数値を機械検査しています。数値の真偽、日本語の自然さ、論理の妥当性は原資料と照合してください。")
@@ -26,5 +27,43 @@ struct PresentationQualityView: View {
       .padding(.vertical, MemoraSpacing.sm)
     }
     .font(.footnote)
+
+    if let evidence {
+      DisclosureGroup("根拠パック（候補\(evidence.investigation.consideredSources)件 / 採用\(evidence.investigation.includedSources)件）") {
+        VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+          if !evidence.purpose.isEmpty { Text("目的: \(evidence.purpose)") }
+          if !evidence.audience.isEmpty { Text("読者: \(evidence.audience)") }
+          if !evidence.decisionRequired.isEmpty { Text("判断: \(evidence.decisionRequired)") }
+          if let deck = evidence.previousFinalDeck {
+            Text("前回: \(deck.title)\(deck.isFinal ? "（最終版）" : "（草稿）")")
+          }
+          if !evidence.investigation.topics.isEmpty {
+            Text("検索語: " + evidence.investigation.topics.prefix(8).joined(separator: "、"))
+          }
+          let current = evidence.decisions.filter(\.isCurrent)
+          if !current.isEmpty {
+            Text("現在の決定").foregroundStyle(.secondary)
+            ForEach(current.prefix(5), id: \.id) { decision in
+              Text("・\(decision.statement)（\(decision.date.formatted(date: .numeric, time: .omitted)) / 出典 \(decision.sourceID)）")
+            }
+          }
+          if !evidence.contradictions.isEmpty {
+            Text("矛盾").foregroundStyle(.secondary)
+            ForEach(evidence.contradictions.prefix(3), id: \.self) { Text("・\($0)") }
+          }
+          if !evidence.gaps.isEmpty {
+            Text("不足").foregroundStyle(.secondary)
+            ForEach(evidence.gaps, id: \.self) { Text("・\($0)") }
+          }
+          if !evidence.unconfirmed.isEmpty {
+            Text("未確認").foregroundStyle(.secondary)
+            ForEach(evidence.unconfirmed.prefix(5), id: \.self) { Text("・\($0)") }
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, MemoraSpacing.sm)
+      }
+      .font(.footnote)
+    }
   }
 }
