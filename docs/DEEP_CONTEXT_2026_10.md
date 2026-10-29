@@ -155,3 +155,11 @@ Jinba上流HEAD: `e5f35e57e14d3998249a559c620a9286c95b4595`（開始時点と同
 - 実行: `MEMORA_SCENARIO_OUTPUT=docs/presentation-integration/scenarios bash tools/checks/run-presentation-scenario-checks.sh`
 - 結果: 3シナリオ、構造・版面エラー0、機械検査の注意0。前回差分・現在の決定・不足は
   根拠パックに記録。目視とPowerPoint/Keynoteの最終描画は未実施。
+
+## 追記: Jinba部品への構造合わせ（m21 / m02）
+
+- m21「番号付き施策」をJinbaの部品21に合わせ、カードではなく大きな青い番号・細い罫線・
+  見出し・本文の等幅カラムへ変更。
+- m02「調査根拠の整理」をJinbaの部品02に合わせ、左に短い前提、右に大きな値の行と
+  罫線という構成へ変更。
+- Jinba比較: 機械的な差あり39/65（m21は一致へ）。目視・実描画は未実施のまま。

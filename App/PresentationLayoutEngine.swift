@@ -103,8 +103,7 @@ enum PresentationLayoutEngine {
         b.text(content.subtitle ?? "", 54, 150, 220, 300, size: 25, bold: true, color: PresentationTheme.blue)
         b.itemRows(items, x: 316, y: 152, width: 590, height: 304, numbered: true)
       case .m02:
-        b.itemGrid(items, columns: 2, x: 54, y: 188, width: 852, height: 270, numbered: true)
-        b.text(content.subtitle ?? "", 54, 142, 852, 36, size: 20)
+        b.evidenceRows(items, lead: content.subtitle ?? "")
       case .m03:
         b.metrics(content.metrics ?? [], columns: 2, large: true)
       case .m04:
@@ -158,7 +157,7 @@ enum PresentationLayoutEngine {
       case .m20:
         b.pillars(items, foundation: content.subtitle ?? "", recommendation: true)
       case .m21:
-        b.itemRows(items, x: 54, y: 154, width: 852, height: 306, numbered: true)
+        b.imperatives(items)
       case .m22:
         b.itemGrid(items, columns: 3, x: 54, y: 166, width: 852, height: 288, numbered: true)
       case .m23:
@@ -252,6 +251,35 @@ enum PresentationLayoutEngine {
         text((numbered ? "\(i + 1)  " : "") + item.heading, left + 16, top + 12, w - 32, 52,
              size: 22, bold: true, color: PresentationTheme.blue)
         text(item.body, left + 14, top + 76, w - 28, h - 88, size: 18)
+      }
+    }
+
+    /// Jinba's evidence basis: a short leading note on the left and large
+    /// value-led rows on the right, separated by hairlines rather than cards.
+    mutating func evidenceRows(_ items: [SlideContent.Item], lead: String) {
+      if !lead.isEmpty {
+        text(lead, 54, 166, 260, 250, size: 17, color: PresentationTheme.secondary)
+      }
+      let count = max(1, items.count), h = 300 / Double(count)
+      for (i, item) in items.enumerated() {
+        let top = 154 + Double(i) * h
+        text(item.heading, 356, top + 10, 190, h - 20, size: 27, bold: true, color: PresentationTheme.blue)
+        text(item.body, 560, top + 14, 346, h - 24, size: 17)
+        rule(356, top + h - 2, 550)
+      }
+    }
+
+    /// Numbered imperatives follow Jinba's part 21: a large blue number, a
+    /// hairline, then the heading and copy in equal columns without cards.
+    mutating func imperatives(_ items: [SlideContent.Item]) {
+      let count = max(1, items.count), gap = 32.0
+      let w = (852 - Double(count - 1) * gap) / Double(count)
+      for (i, item) in items.enumerated() {
+        let x = 54 + Double(i) * (w + gap)
+        text("\(i + 1)", x, 150, w, 54, size: 40, bold: true, color: PresentationTheme.blue)
+        line(x, 212, x + w, 212, color: PresentationTheme.ink)
+        text(item.heading, x, 226, w, 54, size: 20, bold: true)
+        text(item.body, x, 286, w, 200, size: 17)
       }
     }
 
