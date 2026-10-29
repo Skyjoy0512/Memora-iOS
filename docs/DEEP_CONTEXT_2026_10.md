@@ -142,3 +142,16 @@ Jinba上流HEAD: `e5f35e57e14d3998249a559c620a9286c95b4595`（開始時点と同
 - 人物は名前だけでなく、参加記録の会議名・日時と、その人物の発言として記録された
   行だけを根拠に含める。人物メモ（非公開）は送らない。同姓同名はperson IDで区別する。
 - 根拠パックの関係者欄には、人物ごとの確認済み発言が入る。
+
+## 追記: 実務シナリオ3種の資料生成
+
+- `tools/checks/PresentationScenarioChecks.swift` を追加。架空データで次の3種を生成する。
+  - A: 経営会議向け事業報告（前回最終版、決定変更、撤回、KPI、リスク、判断ページ）
+  - B: 営業提案（課題、現状/目標、選択肢比較、プロセス、ロードマップ、判断）
+  - C: 既存資料の更新（前回最終版、決定変更、費用/開始日の差分、ガント）
+- 各シナリオで根拠パックを作り、`PresentationValidator`、PPTX、PDF、ページPNGを実際に生成する。
+- 出力: [scenarios](presentation-integration/scenarios/SCENARIO_REPORT.md)
+  （`A/A.pptx`、`B/B.pptx`、`C/C.pptx`、各PDF、ページPNG）
+- 実行: `MEMORA_SCENARIO_OUTPUT=docs/presentation-integration/scenarios bash tools/checks/run-presentation-scenario-checks.sh`
+- 結果: 3シナリオ、構造・版面エラー0、機械検査の注意0。前回差分・現在の決定・不足は
+  根拠パックに記録。目視とPowerPoint/Keynoteの最終描画は未実施。
