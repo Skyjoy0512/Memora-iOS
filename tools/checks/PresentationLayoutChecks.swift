@@ -86,6 +86,10 @@ struct PresentationLayoutChecks {
       var bad = validInput; bad["content_json"] = raw
       do { _ = try PresentationToolInput.slide(bad); preconditionFailure("Invalid input accepted") } catch {}
     }
+    let numbered = PresentationLayoutEngine.elements(for: PresentationExample.slide(.m01), pageNumber: 7)
+    precondition(numbered.contains { $0.text == "7" && $0.fontSize == 10 })
+    let cover = PresentationLayoutEngine.elements(for: PresentationExample.slide(.b01), pageNumber: 7)
+    precondition(!cover.contains { $0.text == "7" && $0.fontSize == 10 })
     let ascending = PresentationElement(id: 0, kind: .line, x: 20, y: 30, width: 100, height: 20,
       points: [.init(x: 20, y: 50), .init(x: 120, y: 30)])
     let lineXML = PresentationOOXML.shapes([ascending])
