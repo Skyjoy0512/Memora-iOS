@@ -5,6 +5,7 @@ struct DocumentsView: View {
   @Environment(MemoraModel.self) private var model
   @State private var pendingDeletion: MemoraDocument?
   @State private var isEmptyWeekNoticePresented = false
+  @State private var operationError: String?
   @State private var query = ""
   @State private var isSearching = false
 
@@ -55,10 +56,13 @@ struct DocumentsView: View {
       ToolbarActionItem(usesSystemBackground: true) {
         Menu {
           Button("今週の週報を作る", icon: .calendarBadgeCheckmark) {
-            if let review = model.makeWeeklyReview(containing: .now) {
+            switch model.makeWeeklyReview(containing: .now) {
+            case .saved(let review):
               model.libraryPath.append(.document(review.id))
-            } else {
+            case .noContent:
               isEmptyWeekNoticePresented = true
+            case .failed:
+              operationError = "週報を保存できませんでした。保存先を確認して、もう一度お試しください。"
             }
           }
           NavigationLink { MailDraftsView() } label: { Label("メール下書き", icon: .envelope) }
@@ -78,7 +82,9 @@ struct DocumentsView: View {
     ) {
       Button("削除", role: .destructive) {
         if let document = pendingDeletion {
-          model.deleteDocument(document.id)
+          if !model.deleteDocument(document.id) {
+            operationError = "「\(document.displayTitle)」を削除できませんでした。資料は残っています。もう一度お試しください。"
+          }
         }
         pendingDeletion = nil
       }
@@ -88,5 +94,8 @@ struct DocumentsView: View {
         ? "以前のファイルも削除され、元に戻せません。会社テンプレートの原本は残ります。"
         : "削除した資料は元に戻せません。")
     }
+    .alert("操作を完了できませんでした", isPresented: Binding(get: { operationError != nil }, set: { if !$0 { operationError = nil } })) {
+      Button("OK", role: .cancel) { operationError = nil }
+    } message: { Text(operationError ?? "") }
   }
 }

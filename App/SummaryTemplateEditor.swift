@@ -5,7 +5,10 @@ import SwiftUI
 struct SummaryTemplateEditor: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @State private var cancelsEditing = false
+  @State private var editorCompleted = false
   @State private var template: SummaryMarketTemplate
+  @State private var saveError = false
   @FocusState private var isPromptFocused: Bool
 
   init(template: SummaryMarketTemplate) {
@@ -68,30 +71,40 @@ struct SummaryTemplateEditor: View {
         } header: {
           Text("プロンプト")
         } footer: {
-          Text("どんな形で、何を中心に、どのくらいの長さでまとめるかを書きます。AIはこの指示どおりに要約します。文字起こしに無いことは書きません。")
+          Text("どんな形で、何を中心に、どのくらいの長さでまとめるかを書きます。この指示をもとに要約します。生成後に内容と文字起こしを確認してください。")
         }
 
         Section {
           Toggle("アクションアイテム（タスク）を作る", isOn: $template.includesActions)
         } footer: {
-          Text("オンにすると、要約の最後に担当と期限つきの行動を付け、タスクに追加します。")
+          Text("オンにすると、要約の最後に会議で明示された担当・期限を含む行動を付け、タスクに追加します。")
         }
       }
       .navigationTitle(model.customTemplates.contains { $0.id == template.id } ? "テンプレートを編集" : "テンプレートを作成")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { cancelsEditing = true }
         }
         ToolbarItem(placement: .confirmationAction) {
           Button("保存", action: save)
             .disabled(!canSave)
         }
       }
+      .alert("保存できませんでした", isPresented: $saveError) {
+        Button("編集を続ける", role: .cancel) {}
+      } message: { Text("入力内容はこの画面に残っています。保存先を確認して、もう一度お試しください。") }
       .onAppear {
         if template.prompt.isEmpty { isPromptFocused = true }
       }
     }
+    .protectsEditorDraft(key: "editor.\(model.currentTeamID ?? "personal").template.\(model.customTemplates.contains { $0.id == template.id } ? template.id : "new")",
+      fields: [
+        EditorDraftField("title", $template.title),
+        EditorDraftField("prompt", $template.prompt),
+        EditorDraftField("symbol", $template.symbol),
+        EditorDraftField("actions", $template.includesActions)
+      ], cancels: $cancelsEditing, completed: editorCompleted)
   }
 
   private var canSave: Bool {
@@ -105,7 +118,7 @@ struct SummaryTemplateEditor: View {
     template.sections = []
     template.focus = ""
     template.detail = String(template.prompt.replacingOccurrences(of: "\n", with: " ").prefix(60))
-    model.saveCustomTemplate(template)
-    dismiss()
+    if model.saveCustomTemplate(template) { editorCompleted = true; dismiss() }
+    else { saveError = true }
   }
 }

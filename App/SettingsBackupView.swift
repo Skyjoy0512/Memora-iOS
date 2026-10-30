@@ -37,13 +37,14 @@ struct SettingsBackupView: View {
         SettingsValue(title: "タスク", value: "\(model.tasks.count)件", icon: .checklist)
         SettingsValue(title: "ジャーナル", value: "\(model.lifeLogEntries.count)件", icon: .calendar)
         SettingsValue(title: "人", value: "\(model.people.count)件", icon: .person2)
+        SettingsValue(title: "AIメモリ", value: "\(model.aiMemories.count)件", icon: .brainHeadProfile)
         SettingsValue(title: "AI履歴", value: "\(model.aiHistory.count)件", icon: .chatBubble)
         SettingsValue(title: "資料", value: "\(model.documents.count)件", icon: .docText)
         SettingsValue(title: "音声と写真", value: "媒体として同梱", icon: .photo)
       } header: {
         Text("含まれるもの")
       } footer: {
-        Text("APIキーや設定、AIメモリ、自作テンプレート、自分の声のサンプルは含みません。")
+        Text("APIキーや設定、自作テンプレート、自分の声のサンプルは含みません。")
       }
 
       Section {

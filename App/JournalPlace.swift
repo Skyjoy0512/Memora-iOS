@@ -1,6 +1,6 @@
 import CoreLocation
 
-struct JournalPlace: Equatable {
+struct JournalPlace: Codable, Equatable {
   var name: String
   var latitude: Double
   var longitude: Double

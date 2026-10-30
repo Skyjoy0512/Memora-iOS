@@ -3,6 +3,8 @@ import SwiftUI
 struct RegisteredLLMEditor: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @State private var cancelsEditing = false
+  @State private var editorCompleted = false
   @State var draft: RegisteredLLM
   @State private var showsKey = false
   @State private var saveError = false
@@ -59,11 +61,11 @@ struct RegisteredLLMEditor: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { cancelsEditing = true }
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
-            if model.registeredLLMs.save(draft) { dismiss() } else { saveError = true }
+            if model.registeredLLMs.save(draft) { editorCompleted = true; dismiss() } else { saveError = true }
           }
           .disabled(draft.modelID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
@@ -79,6 +81,13 @@ struct RegisteredLLMEditor: View {
         Text("同じプロバイダーとモデルIDはすでに登録されています。既存のモデルを編集してください。")
       }
     }
+    .protectsEditorDraft(key: "editor.\(model.currentTeamID ?? "personal").llm.\(model.registeredLLMs.models.contains { $0.id == draft.id } ? draft.id.uuidString : "new")",
+      fields: [
+        EditorDraftField("provider", $draft.provider),
+        EditorDraftField("name", $draft.name),
+        EditorDraftField("model", $draft.modelID),
+        EditorDraftField("tools", $draft.supportsToolCalling)
+      ], cancels: $cancelsEditing, completed: editorCompleted)
   }
 
   private func refreshKey() {

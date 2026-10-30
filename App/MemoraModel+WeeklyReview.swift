@@ -19,19 +19,20 @@ extension MemoraModel {
           let lastWeekDay = calendar.date(byAdding: .day, value: -1, to: thisWeek.start),
           let lastWeek = calendar.dateInterval(of: .weekOfYear, for: lastWeekDay) else { return }
     guard !documents.contains(where: { $0.weekStart == lastWeek.start }) else { return }
-    makeWeeklyReview(for: lastWeek)
+    _ = makeWeeklyReview(for: lastWeek)
   }
 
   /// Writes, or rewrites, the review of the week containing `date`. Returns
   /// the document, or nil when there was nothing to review.
   @discardableResult
-  func makeWeeklyReview(containing date: Date) -> MemoraDocument? {
-    guard let week = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return nil }
+  func makeWeeklyReview(containing date: Date) -> WeeklyReviewResult {
+    guard let week = Calendar.current.dateInterval(of: .weekOfYear, for: date) else { return .failed }
     return makeWeeklyReview(for: week)
   }
 
   @discardableResult
-  private func makeWeeklyReview(for week: DateInterval) -> MemoraDocument? {
+  private func makeWeeklyReview(for week: DateInterval) -> WeeklyReviewResult {
+    guard !isRestoring, isStoreWritable() else { return .failed }
     // Sample records are for looking around; a review of them would read as
     // the person's own week.
     let input = WeeklyReviewBuilder.Input(
@@ -41,22 +42,24 @@ extension MemoraModel {
       entries: lifeLogEntries.filter { !SampleContent.isSample(lifeLogEntry: $0) },
       spaceNames: Dictionary(spaces.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
     )
-    guard let markdown = WeeklyReviewBuilder.markdown(input) else { return nil }
+    guard let markdown = WeeklyReviewBuilder.markdown(input) else { return .noContent }
 
     if let index = documents.firstIndex(where: { $0.weekStart == week.start }) {
       guard let previous = documents[index].generatedReviewMarkdown,
             documents[index].markdown.hasPrefix(previous) else {
-        return documents[index]
+        return .saved(documents[index])
       }
       let personalNotes = String(documents[index].markdown.dropFirst(previous.count))
       // Rewriting the current week keeps the same document, so a link to it
       // still opens the newest version.
-      documents[index].title = WeeklyReviewBuilder.title(for: week)
-      documents[index].markdown = markdown + personalNotes
-      documents[index].generatedReviewMarkdown = markdown
-      documents[index].updatedAt = .now
-      persistDocuments()
-      return documents[index]
+      var candidate = documents
+      candidate[index].title = WeeklyReviewBuilder.title(for: week)
+      candidate[index].markdown = markdown + personalNotes
+      candidate[index].generatedReviewMarkdown = markdown
+      candidate[index].updatedAt = .now
+      guard persistNow(candidate, forKey: StorageKey.documents) else { return .failed }
+      documents = candidate
+      return .saved(candidate[index])
     }
 
     let review = MemoraDocument(
@@ -66,7 +69,7 @@ extension MemoraModel {
       weekStart: week.start,
       generatedReviewMarkdown: markdown
     )
-    return addDocument(review) ? review : nil
+    return addDocument(review) ? .saved(review) : .failed
   }
 
   func markDocumentOpened(_ id: UUID) {

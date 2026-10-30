@@ -18,6 +18,7 @@ struct DocumentDetailView: View {
   @State private var exportErrorMessage: String?
   @State private var citedSource: ArtifactSourceTarget?
   @State private var sourceErrorMessage: String?
+  @State private var deleteError = false
 
   var body: some View {
     Group {
@@ -142,8 +143,8 @@ struct DocumentDetailView: View {
     }
     .confirmationDialog("この\(document.kind.label)を削除しますか？", isPresented: $isDeleteConfirmationPresented, titleVisibility: .visible) {
       Button("削除", role: .destructive) {
-        model.deleteDocument(document.id)
-        dismiss()
+        if model.deleteDocument(document.id) { dismiss() }
+        else { deleteError = true }
       }
       Button("キャンセル", role: .cancel) {}
     } message: {
@@ -151,6 +152,9 @@ struct DocumentDetailView: View {
         ? "以前のファイルも削除され、元に戻せません。会社テンプレートの原本は残ります。"
         : "削除した資料は元に戻せません。")
     }
+    .alert("削除できませんでした", isPresented: $deleteError) {
+      Button("OK", role: .cancel) {}
+    } message: { Text("資料は残っています。保存先を確認して、もう一度お試しください。") }
     .alert("書き出せませんでした", isPresented: Binding(
       get: { exportErrorMessage != nil },
       set: { if !$0 { exportErrorMessage = nil } }

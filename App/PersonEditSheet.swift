@@ -4,6 +4,8 @@ import SwiftUI
 struct PersonEditSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @State private var cancelsEditing = false
+  @State private var editorCompleted = false
   var personID: UUID
 
   @State private var name = ""
@@ -67,11 +69,11 @@ struct PersonEditSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { cancelsEditing = true }
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
-            if model.updatePerson(personID, name: trimmedName, note: note) { dismiss() }
+            if model.updatePerson(personID, name: trimmedName, note: note) { editorCompleted = true; dismiss() }
             else { saveError = true }
           }
           .disabled(trimmedName.isEmpty)
@@ -99,12 +101,18 @@ struct PersonEditSheet: View {
         note = person?.note ?? ""
       }
     }
+    .protectsEditorDraft(key: "editor.\(model.currentTeamID ?? "personal").person.\(personID)",
+      fields: [
+        EditorDraftField("name", $name),
+        EditorDraftField("note", $note)
+      ], ready: didLoad, cancels: $cancelsEditing, completed: editorCompleted)
   }
 
   private func merge() {
     guard let mergeTarget else { return }
     if model.mergePerson(personID, into: mergeTarget.id) {
       self.mergeTarget = nil
+      editorCompleted = true
       dismiss()
     } else { saveError = true }
   }

@@ -201,6 +201,7 @@ struct ArtifactOperationsChecks {
     let document = MemoraDocument(title: "保存できない資料", kind: .document, markdown: "本文")
     precondition(!model.addDocument(document))
     precondition(!model.updateDocument(existing.id, title: "保存失敗", body: "書き込めない本文"))
+    precondition(!model.deleteDocument(existing.id))
     precondition(model.documents == before)
     let reopened = LocalStore(fileURL: storeURL); try reopened.prepare()
     guard case .data(let unchanged) = reopened.readOutcome(MemoraModel.StorageKey.documents) else { preconditionFailure("existing data lost") }

@@ -53,11 +53,12 @@ extension MemoraModel {
     return true
   }
 
-  func deleteDocument(_ id: UUID) {
-    guard isStoreWritable() else { return }
-    guard let document = document(id: id) else { return }
+  @discardableResult
+  func deleteDocument(_ id: UUID) -> Bool {
+    guard !isRestoring, isStoreWritable() else { return false }
+    guard let document = document(id: id) else { return false }
     let candidate = documents.filter { $0.id != id }
-    guard persistNow(candidate, forKey: StorageKey.documents) else { return }
+    guard persistNow(candidate, forKey: StorageKey.documents) else { return false }
     documents = candidate
     invalidateProjectEvidence([.document(id)])
     let workspace = currentTeamID, generation = aiWorkspaceGeneration
@@ -66,6 +67,7 @@ extension MemoraModel {
       let retained = Set(documents.flatMap(\.artifactFileReferences) + companyTemplates.map(\.fileReference) + projectSources.flatMap(\.fileReferences))
       await ProjectSourceFiles.shared.remove(document.artifactFileReferences.filter { !retained.contains($0) })
     }
+    return true
   }
 
   @discardableResult

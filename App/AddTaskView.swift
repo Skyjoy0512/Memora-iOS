@@ -4,6 +4,8 @@ import UIKit
 struct AddTaskView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @State private var cancelsEditing = false
+  @State private var editorCompleted = false
   @Environment(\.openURL) private var openURL
   /// Set when the task is added from a meeting's "next actions".
   var meetingID: UUID?
@@ -64,7 +66,7 @@ struct AddTaskView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { cancelsEditing = true }
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("追加", icon: .plus) {
@@ -80,7 +82,7 @@ struct AddTaskView: View {
               detail: detail,
               assigneePersonID: ownedByMe ? nil : assigneePersonID
             )
-            if saved { dismiss() } else { saveError = true }
+            if saved { editorCompleted = true; dismiss() } else { saveError = true }
           }
           .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
@@ -94,6 +96,18 @@ struct AddTaskView: View {
         if !isOn { remindsAtDue = false }
       }
     }
+    .protectsEditorDraft(key: "editor.\(model.currentTeamID ?? "personal").task.new.\(meetingID?.uuidString ?? "global").\(parentTaskID?.uuidString ?? "root")",
+      fields: [
+        EditorDraftField("title", $title),
+        EditorDraftField("assignee", $assignee),
+        EditorDraftField("person", $assigneePersonID),
+        EditorDraftField("owned", $ownedByMe),
+        EditorDraftField("detail", $detail),
+        EditorDraftField("dueEnabled", $includesDueDate),
+        EditorDraftField("due", optionalDate($dueDate, enabled: includesDueDate)),
+        EditorDraftField("reminds", $remindsAtDue),
+        EditorDraftField("reminder", optionalDate($reminderTime, enabled: includesDueDate && remindsAtDue))
+      ], cancels: $cancelsEditing, completed: editorCompleted)
   }
 
   /// True when the chosen time has already passed on the due day, so nothing

@@ -26,16 +26,21 @@ extension MemoraModel {
   // MARK: - The person's own templates
 
   /// Adds or updates one of the person's templates.
-  func saveCustomTemplate(_ template: SummaryMarketTemplate) {
+  @discardableResult
+  func saveCustomTemplate(_ template: SummaryMarketTemplate) -> Bool {
+    guard !isRestoring, isStoreWritable() else { return false }
     var template = template
     template.isCustom = true
     template.lead = template.title
-    if let index = customTemplates.firstIndex(where: { $0.id == template.id }) {
-      customTemplates[index] = template
+    var candidate = customTemplates
+    if let index = candidate.firstIndex(where: { $0.id == template.id }) {
+      candidate[index] = template
     } else {
-      customTemplates.append(template)
+      candidate.append(template)
     }
-    persistInBackground(customTemplates, forKey: StorageKey.customTemplates)
+    guard persistNow(candidate, forKey: StorageKey.customTemplates) else { return false }
+    customTemplates = candidate
+    return true
   }
 
   func deleteCustomTemplate(_ id: String) {

@@ -6,6 +6,8 @@ import UIKit
 struct TaskEditView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @State private var cancelsEditing = false
+  @State private var editorCompleted = false
   @Environment(\.openURL) private var openURL
   var task: MemoraTask
 
@@ -166,7 +168,7 @@ struct TaskEditView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { cancelsEditing = true }
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
@@ -184,7 +186,7 @@ struct TaskEditView: View {
               ownedByMe: ownedByMe,
               relationships: TaskRelationships(parentID: parentID, documentIDs: documentIDs, assigneePersonID: ownedByMe ? nil : assigneePersonID)
             )
-            if saved { dismiss() }
+            if saved { editorCompleted = true; dismiss() }
             else { saveError = true }
           }
           .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -192,7 +194,7 @@ struct TaskEditView: View {
       }
       .confirmationDialog("このタスクを削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
         Button("削除", role: .destructive) {
-          if model.deleteTask(task.id) { dismiss() }
+          if model.deleteTask(task.id) { editorCompleted = true; dismiss() }
         }
         Button("キャンセル", role: .cancel) {}
       }
@@ -217,6 +219,24 @@ struct TaskEditView: View {
         Text("人物や親課題、保存先の状態を確認してください。入力内容は画面に残っています。")
       }
     }
+    .protectsEditorDraft(key: "editor.\(model.currentTeamID ?? "personal").task.\(task.id)",
+      fields: [
+        EditorDraftField("title", $title),
+        EditorDraftField("detail", $detail),
+        EditorDraftField("workEnabled", $hasWorkDate),
+        EditorDraftField("work", optionalDate($workDate, enabled: hasWorkDate)),
+        EditorDraftField("progress", $progress),
+        EditorDraftField("assignee", $assignee),
+        EditorDraftField("person", $assigneePersonID),
+        EditorDraftField("owned", $ownedByMe),
+        EditorDraftField("dueEnabled", $hasDueDate),
+        EditorDraftField("due", optionalDate($dueDate, enabled: hasDueDate)),
+        EditorDraftField("meeting", $meetingID),
+        EditorDraftField("reminds", $remindsAtDue),
+        EditorDraftField("reminder", optionalDate($reminderTime, enabled: hasDueDate && remindsAtDue)),
+        EditorDraftField("parent", $parentID),
+        EditorDraftField("documents", $documentIDs)
+      ], ready: hasLoadedOwnership, cancels: $cancelsEditing, completed: editorCompleted)
     .presentationDetents([.large])
   }
 

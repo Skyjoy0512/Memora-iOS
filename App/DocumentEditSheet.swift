@@ -5,10 +5,11 @@ import SwiftUI
 struct DocumentEditSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @State private var cancelsEditing = false
+  @State private var editorCompleted = false
   var document: MemoraDocument
   @State private var title: String
   @State private var bodyText: String
-  @State private var confirmsDiscard = false
   @State private var saveError = false
   @FocusState private var focusedField: Field?
 
@@ -52,13 +53,13 @@ struct DocumentEditSheet: View {
         ToolbarItem(placement: .cancellationAction) {
           ToolbarIconButton("キャンセル", icon: .xmark) {
             focusedField = nil
-            if hasChanges { confirmsDiscard = true } else { dismiss() }
+            cancelsEditing = true
           }
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
             focusedField = nil
-            if model.updateDocument(document.id, title: title, body: bodyText, expectedUpdatedAt: document.updatedAt) { dismiss() }
+            if model.updateDocument(document.id, title: title, body: bodyText, expectedUpdatedAt: document.updatedAt) { editorCompleted = true; dismiss() }
             else { saveError = true }
           }
           .disabled(!hasChanges)
@@ -68,19 +69,17 @@ struct DocumentEditSheet: View {
           Button("完了") { focusedField = nil }
         }
       }
-      .interactiveDismissDisabled(hasChanges)
-      .alert("変更を破棄しますか？", isPresented: $confirmsDiscard) {
-        Button("編集を続ける", role: .cancel) {}
-        Button("変更を破棄", role: .destructive) { dismiss() }
-      } message: {
-        Text("保存前の変更だけを破棄します。保存済みの資料は変更しません。")
-      }
       .alert("保存できませんでした", isPresented: $saveError) {
         Button("閉じる", role: .cancel) {}
       } message: {
         Text("資料や保存先の状態を確認してください。入力内容はこの画面に残っています。")
       }
     }
+    .protectsEditorDraft(key: "editor.\(model.currentTeamID ?? "personal").document.\(document.id).\(document.updatedAt.timeIntervalSince1970)",
+      fields: [
+        EditorDraftField("title", $title),
+        EditorDraftField("body", $bodyText)
+      ], cancels: $cancelsEditing, completed: editorCompleted)
   }
 
   private var hasChanges: Bool {

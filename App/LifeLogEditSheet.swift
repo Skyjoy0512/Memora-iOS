@@ -5,6 +5,8 @@ import SwiftUI
 struct LifeLogEditSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @State private var cancelsEditing = false
+  @State private var editorCompleted = false
   var entry: LifeLogEntry
   @State private var title: String
   @State private var summary: String
@@ -55,7 +57,7 @@ struct LifeLogEditSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("キャンセル", icon: .xmark) { dismiss() }
+          ToolbarIconButton("キャンセル", icon: .xmark) { cancelsEditing = true }
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) {
@@ -68,7 +70,7 @@ struct LifeLogEditSheet: View {
               place: place,
               personIDs: personIDs
             ) }
-            if saved { dismiss() } else { saveError = true }
+            if saved { editorCompleted = true; dismiss() } else { saveError = true }
           }
           .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
@@ -79,6 +81,15 @@ struct LifeLogEditSheet: View {
         Text("記録と人物の登録状態を確認して、もう一度お試しください。入力内容はこの画面に残っています。")
       }
     }
+    .protectsEditorDraft(key: "editor.\(model.currentTeamID ?? "personal").journal.\(entry.id)",
+      fields: [
+        EditorDraftField("title", $title),
+        EditorDraftField("summary", $summary),
+        EditorDraftField("date", $createdAt),
+        EditorDraftField("location", $locationName),
+        EditorDraftField("place", $place),
+        EditorDraftField("people", Binding(get: { personIDs.sorted { $0.uuidString < $1.uuidString } }, set: { personIDs = Set($0) }))
+      ], cancels: $cancelsEditing, completed: editorCompleted)
     .presentationDetents([.medium, .large])
   }
 }
