@@ -20,6 +20,7 @@ struct DocumentDetailView: View {
   @State private var citedSource: ArtifactSourceTarget?
   @State private var sourceErrorMessage: String?
   @State private var deleteError = false
+  @State private var pdfExport = DocumentPDFExportSession()
 
   var body: some View {
     Group {
@@ -29,8 +30,19 @@ struct DocumentDetailView: View {
         ContentUnavailableView("資料が見つかりません", icon: .docQuestionmark, description: Text("削除された可能性があります。"))
       }
     }
+    .disabled(pdfExport.isRunning)
+    .accessibilityHidden(pdfExport.isRunning)
+    .overlay {
+      if let progress = pdfExport.progress {
+        ZStack {
+          Color.black.opacity(0.08).ignoresSafeArea().accessibilityHidden(true)
+          DocumentPDFExportProgressView(progress: progress) { pdfExport.cancel() }
+        }
+      }
+    }
     .navigationBarTitleDisplayMode(.inline)
     .onAppear { model.markDocumentOpened(documentID) }
+    .onDisappear { pdfExport.cancel() }
   }
 
   private func content(_ document: MemoraDocument) -> some View {
@@ -196,12 +208,23 @@ struct DocumentDetailView: View {
   }
 
   private func share(_ document: MemoraDocument, as format: ShareFormat) {
+    if format == .pdf {
+      let workspace = model.currentTeamID, generation = model.aiWorkspaceGeneration
+      pdfExport.start(document: document, isCurrent: {
+        model.currentTeamID == workspace && model.aiWorkspaceGeneration == generation
+          && !model.isRestoring && !model.isStoreProtected && model.document(id: document.id) == document
+      }, completed: { url in
+        shareItems = [url]
+        isSharing = true
+      }, failed: { exportErrorMessage = $0 })
+      return
+    }
     do {
       switch format {
       case .word:
         shareItems = [try originalArtifact(document, suffix: "docx") ?? DOCXWriter.write(document)]
       case .pdf:
-        shareItems = [try DocumentPDF.write(document)]
+        return
       case .powerPoint:
         if document.companyTemplateID == nil && !document.slides.isEmpty {
           // Stored standard exports may predate the current pagination policy.

@@ -15,6 +15,7 @@ struct StateGalleryView: View {
         NavigationLink("Loading・本文表示を確認") { MotionLoadingGalleryView() }
         NavigationLink("資料・メールの出典表示を確認") { ArtifactSourcesExampleView() }
         NavigationLink("スライドの組版（長文・文字サイズ）") { SlideLayoutExampleView() }
+        NavigationLink("長文PDF（改ページ・取消の検証）") { DocumentPDFExportExampleView() }
         NavigationLink("写真編集（架空の画像・保存しません）") { PhotoEditingExampleView() }
         NavigationLink("65レイアウトの表示と編集（架空データ）") { PresentationCatalogView() }
         NavigationLink("資料の編集と版管理（表示の確認）") { DocumentRevisionExampleView() }
