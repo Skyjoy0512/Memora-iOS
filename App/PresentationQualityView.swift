@@ -35,6 +35,15 @@ struct PresentationQualityView: View {
           if !evidence.purpose.isEmpty { Text("目的: \(evidence.purpose)") }
           if !evidence.audience.isEmpty { Text("読者: \(evidence.audience)") }
           if !evidence.decisionRequired.isEmpty { Text("判断: \(evidence.decisionRequired)") }
+          let revoked = evidence.relatedSources.filter { reference in
+            guard reference.id.hasPrefix("record:"),
+                  let id = UUID(uuidString: String(reference.id.dropFirst("record:".count))) else { return false }
+            return model.meeting(id: id) == nil || !model.allowsRecordAccess(id, purpose: .cloudAI)
+          }
+          if !revoked.isEmpty {
+            Text("根拠のうち\(revoked.count)件は参照権限が変更されています。保存された資料はそのまま残りますが、再生成時は使われません。")
+              .foregroundStyle(AnyShapeStyle(MemoraPalette.danger))
+          }
           if let deck = evidence.previousFinalDeck {
             Text("前回: \(deck.title)\(deck.isFinal ? "（最終版）" : "（草稿）")")
           }

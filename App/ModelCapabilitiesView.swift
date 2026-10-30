@@ -29,6 +29,27 @@ struct ModelCapabilitiesView: View {
       }
 
       Section {
+        ForEach(ContextTaskKind.allCases, id: \.rawValue) { task in
+          let budget = TokenBudgetManager.budget(capabilities: capabilities, task: task)
+          VStack(alignment: .leading, spacing: 2) {
+            HStack {
+              Text(task.label)
+              Spacer()
+              Text("入力 \(budget.inputTokens.formatted()) / 出力 \(budget.outputTokens.formatted()) tokens")
+                .foregroundStyle(.secondary)
+            }
+            Text(budget.estimatedCostUSD.map { "推定 $\(String(format: "%.3f", $0))" } ?? "料金は未確認")
+              .font(.caption)
+              .foregroundStyle(.tertiary)
+          }
+        }
+      } header: {
+        Text("このモデルで使う予算")
+      } footer: {
+        Text("入力はコンテキスト窓から出力予約と安全余白を引いた範囲です。日本語は1文字≒1トークンとして安全側に見積もります。料金は提供元で確認できるまで表示しません。")
+      }
+
+      Section {
         numberField("コンテキスト（tokens）", text: $contextText)
         numberField("最大出力（tokens）", text: $outputText)
         numberField("リクエスト上限（bytes）", text: $requestText)

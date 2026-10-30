@@ -39,7 +39,7 @@ enum PresentationLayoutEngine {
         b.itemGrid(items, columns: 3, x: 54, y: 164, width: 852, height: 296, numbered: true)
         b.text(content.subtitle ?? "", 54, 132, 852, 28, size: 18, color: PresentationTheme.blue)
       case .b03:
-        b.itemRows(items, x: 100, y: 156, width: 760, height: 310, numbered: true)
+        b.tocRows(items)
       case .b05:
         b.process(items, y: 194, height: 210, chevron: true)
       case .b06:
@@ -108,7 +108,7 @@ enum PresentationLayoutEngine {
       case .m03:
         b.bigStats(content.metrics ?? [])
       case .m04:
-        b.metrics(content.metrics ?? [], columns: 3, large: false)
+        b.kpiTiles(content.metrics ?? [])
       case .m05:
         b.chart(content.chart, x: 54, y: 156, width: 620, height: 298)
         b.rule(700, 158, 206)
@@ -260,6 +260,26 @@ enum PresentationLayoutEngine {
       }
     }
 
+    /// Jinba's table of contents: a number, the label, and its note on one
+    /// line, separated by hairlines rather than cards.
+    mutating func tocRows(_ items: [SlideContent.Item]) {
+      let count = max(1, items.count), h = max(52.0, min(100.0, 330 / Double(count)))
+      for (i, item) in items.enumerated() {
+        let top = 148 + Double(i) * h
+        text(String(format: "%02d", i + 1), 100, top + 8, 68, 38, size: 26, bold: true,
+             color: PresentationTheme.blue)
+        if h >= 70 {
+          text(item.heading, 184, top + 4, 696, 34, size: 24)
+          text(item.body, 184, top + 44, 696, max(16, h - 52), size: 15,
+               color: PresentationTheme.secondary)
+        } else {
+          text(item.heading, 184, top + 8, 300, 30, size: 20)
+          text(item.body, 500, top + 10, 380, 28, size: 14, color: PresentationTheme.secondary)
+        }
+        rule(100, top + h - 6, 780)
+      }
+    }
+
     /// Jinba's evidence basis: a short leading note on the left and large
     /// value-led rows on the right, separated by hairlines rather than cards.
     mutating func evidenceRows(_ items: [SlideContent.Item], lead: String) {
@@ -309,7 +329,11 @@ enum PresentationLayoutEngine {
         let y = 186 + Double(i) * h
         rect(54, y, 386, h - 16, fill: PresentationTheme.pale)
         text(item.heading, 70, y + 12, 354, h - 40, size: 22, bold: true)
-        if arrow { text("→", 462, y + 12, 40, 42, size: 26, color: PresentationTheme.blue) }
+        if arrow {
+          let mid = y + (h - 16) / 2
+          polygon([.init(x: 454, y: mid - 11), .init(x: 454, y: mid + 11), .init(x: 480, y: mid)],
+                  fill: PresentationTheme.blue)
+        }
         text(item.body, 536, y + 12, 354, h - 40, size: 22)
       }
     }
@@ -404,6 +428,26 @@ enum PresentationLayoutEngine {
         size -= 4
       }
       return minimum
+    }
+
+    /// Jinba's KPI dashboard: a thin ink rule, label, value and note per tile.
+    mutating func kpiTiles(_ metrics: [SlideContent.Metric]) {
+      guard !metrics.isEmpty else { return }
+      let columns = min(3, metrics.count)
+      let rows = max(1, Int(ceil(Double(metrics.count) / Double(columns))))
+      let gap = 24.0
+      let w = (852 - Double(columns - 1) * gap) / Double(columns)
+      let h = (300 - Double(rows - 1) * 24) / Double(rows)
+      for (i, metric) in metrics.enumerated() {
+        let x = 54 + Double(i % columns) * (w + gap)
+        let y = 154 + Double(i / columns) * (h + 24)
+        rect(x, y, w, 3, fill: PresentationTheme.ink)
+        text(metric.label, x, y + 14, w, 28, size: 17)
+        text(SlideContent.number(metric.value) + metric.unit, x, y + 46, w, 60,
+             size: 40, bold: true, color: PresentationTheme.blue)
+        text(metric.detail ?? "", x, y + 112, w, max(24, h - 116), size: 15,
+             color: PresentationTheme.secondary)
+      }
     }
 
     /// Jinba's big-stat pair: two oversized values with the reading beneath,

@@ -1,7 +1,7 @@
 import Foundation
 
 /// How much room a request needs. The task changes the target, the model caps it.
-enum ContextTaskKind: String, Codable, Sendable {
+enum ContextTaskKind: String, Codable, Sendable, CaseIterable {
   case chat
   case agent
   case deepAnalysis
@@ -31,6 +31,16 @@ enum ContextTaskKind: String, Codable, Sendable {
   }
 
   var isDeep: Bool { self == .deepAnalysis || self == .presentation || self == .research }
+
+  var label: String {
+    switch self {
+    case .chat: "通常の質問"
+    case .agent: "エージェント"
+    case .deepAnalysis: "深い分析"
+    case .presentation: "資料作成"
+    case .research: "調査"
+    }
+  }
 }
 
 /// One request's token plan. `inputTokens` is what is left after the answer's
