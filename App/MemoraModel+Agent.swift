@@ -170,8 +170,8 @@ extension MemoraModel {
     // A presentation or a deep request starts from what the records already
     // hold: the decisions, the people and the earlier deck, each with its
     // source ID, rather than from the newest few records alone.
-    if isCloudEngine, contextTask.isDeep {
-      let pack = presentationEvidencePack(query: trimmed, purpose: trimmed)
+    if isCloudEngine, contextTask.isDeep, pluginPolicy == nil {
+      let pack = presentationEvidencePack(query: trimmed, purpose: trimmed, task: contextTask)
       let rendered = pack.render()
       if !rendered.isEmpty {
         agentPresentationEvidence[placeholder.id] = pack
@@ -181,12 +181,9 @@ extension MemoraModel {
         finishAgentStep(evidenceStep, on: placeholder.id, state: .done,
           detail: "候補\(pack.investigation.consideredSources)件 / 採用\(pack.investigation.includedSources)件 / 決定\(pack.decisions.filter(\.isCurrent).count)件")
         opening = "資料作成・深掘りの根拠パック（利用が許可された記録のみ。出典IDを保持し、要約で数値や固有名詞を変えない）:\n\(rendered)\n\n" + opening
-        let packRecordIDs = pack.relatedSources.compactMap { reference -> UUID? in
-          guard reference.id.hasPrefix("record:") else { return nil }
-          return UUID(uuidString: String(reference.id.dropFirst("record:".count)))
-        }
-        if !packRecordIDs.isEmpty {
-          recordCloudReads(packRecordIDs.map { .meeting($0) }, messageID: placeholder.id)
+        let packTargets = presentationEvidenceReadTargets(pack)
+        if !packTargets.isEmpty {
+          recordCloudReads(packTargets, messageID: placeholder.id)
         }
       }
     }

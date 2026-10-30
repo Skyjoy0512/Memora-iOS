@@ -70,6 +70,7 @@ struct PresentationEvidencePack: Codable, Hashable, Sendable {
     var version: String?
     var isFinal: Bool
     var permission: Permission
+    var dependencyIDs: [String]? = nil
 
     var summary: String {
       var parts = ["[\(id)] \(kind.label): \(title)"]
@@ -128,7 +129,10 @@ struct PresentationEvidencePack: Codable, Hashable, Sendable {
   }
 
   /// One fact is a check on the deck, never permission to read its source.
-  var allowedFacts: [Fact] { keyFacts.filter { _ in true } }
+  var allowedFacts: [Fact] {
+    let allowed = Set(relatedSources.filter { $0.permission == .allowed }.map(\.id))
+    return keyFacts.filter { allowed.contains($0.sourceID) }
+  }
 }
 
 enum PresentationSourceKind: String, Codable, Hashable, Sendable {
@@ -180,7 +184,7 @@ enum PresentationDecisionStatus: String, Codable, Hashable, Sendable {
     }
   }
   /// A decision that still governs today. A withdrawn or cancelled one does not.
-  var isEffective: Bool { self == .approved || self == .changed || self == .completed || self == .open }
+  var isEffective: Bool { self == .approved || self == .changed || self == .completed }
 }
 
 typealias DecisionStatus = PresentationDecisionStatus
@@ -200,10 +204,11 @@ struct PresentationEvidenceSource: Codable, Hashable, Sendable, Identifiable {
   var locator: String?
   var version: String?
   var isFinal = false
+  var dependencyIDs: [String] = []
 
   var reference: PresentationEvidencePack.SourceReference {
     .init(id: id, kind: kind, title: title, date: date, updatedAt: updatedAt,
-      version: version, isFinal: isFinal, permission: permission)
+      version: version, isFinal: isFinal, permission: permission, dependencyIDs: dependencyIDs)
   }
 }
 
@@ -262,27 +267,24 @@ enum PresentationContextBuilder {
     pack.investigation.consideredSources = sources.count
     pack.investigation.allowedSources = allowed.count
     pack.investigation.truncated = permitted.count > allowed.count
-    pack.unconfirmed.append(contentsOf: denied.map { "\($0.title) は参照が許可されていないため資料に使いません。" })
-    pack.unconfirmed.append(contentsOf: unknown.map { "\($0.title) は参照許可が未確認のため、クラウド資料では使いません。" })
+    if !denied.isEmpty { pack.unconfirmed.append("参照不可の資料\(denied.count)件を除外しました。") }
+    if !unknown.isEmpty { pack.unconfirmed.append("許可未確認の資料\(unknown.count)件を除外しました。") }
 
     let allowedDecisionSourceIDs = Set(allowed.map(\.id))
     let relevantDecisions = decisions.filter { allowedDecisionSourceIDs.contains($0.sourceID) }
-    // A decision's subject is a search lead even when the request did not use
-    // the same word.
-    var searchRequest = request
-    searchRequest.topics += relevantDecisions.prefix(12).map(\.subject)
-    let terms = searchTerms(searchRequest)
+    // Archive-wide decision subjects must not expand the person's request
+    // into unrelated projects before relevance has been established.
+    let terms = searchTerms(request)
     // A term in most records ("会議") says nothing about relevance. Keep the
     // terms that distinguish records; fall back only when every term is common.
     let frequencyLimit = max(3, allowed.count / 5)
     let baseFrequency = documentFrequency(of: terms, in: allowed)
-    let specificTerms = terms.filter { baseFrequency[$0, default: 0] <= frequencyLimit }
+    let queryTerms = Self.terms(request.query)
+    let specificTerms = terms.filter { queryTerms.contains($0) || baseFrequency[$0, default: 0] <= frequencyLimit }
     let effectiveTerms = specificTerms.isEmpty ? terms : specificTerms
     let baseScores = allowed.map { source -> Int in
       let text = source.title + " " + source.text
       return effectiveTerms.reduce(0) { $0 + occurrences(of: $1, in: text) }
-        + (source.isFinal ? 4 : 0)
-        + (source.kind == .previousDeck ? 6 : 0)
     }
     // Second pass: terms that recur in the strongest records but were not in
     // the request itself. This finds a decision recorded under a different
@@ -318,7 +320,8 @@ enum PresentationContextBuilder {
       let source = allowed[index]
       let text = source.title + " " + source.text
       let related = expansionTerms.reduce(0) { $0 + occurrences(of: $1, in: text) }
-      let score = Double(baseScores[index]) + Double(related) / 4
+      let relevance = Double(baseScores[index]) + Double(related) / 4
+      let score = relevance > 0 ? relevance + (source.isFinal ? 4 : 0) : 0
       return (index, source, score)
     }.sorted { left, right in
       if left.2 != right.2 { return left.2 > right.2 }
@@ -330,15 +333,10 @@ enum PresentationContextBuilder {
 
     var seen = Set<String>()
     var used = 0
-    let previous = ranked.first { $0.1.kind == .previousDeck && $0.1.isFinal }?.1
-      ?? ranked.first { $0.1.kind == .previousDeck }?.1
+    let previous = ranked.first { $0.2 > 0 && $0.1.kind == .previousDeck && $0.1.isFinal }?.1
     if let previous {
       pack.previousFinalDeck = previous.reference
-      if previous.isFinal {
-        pack.background.append("前回の最終提出版: \(previous.title)")
-      } else {
-        pack.unconfirmed.append("最終提出版を特定できませんでした。\(previous.title) は草稿として扱います。")
-      }
+      pack.background.append("前回の最終提出版: \(previous.title)")
     }
 
     var included = 0
@@ -360,8 +358,10 @@ enum PresentationContextBuilder {
       if let date = source.date {
         pack.timeline.append(.init(date: date, title: source.title, sourceID: source.id))
       }
-      extractMetrics(source).forEach { pack.metrics.append($0) }
-      extractRisks(source.text).forEach { pack.risks.append("\(source.title): \($0)") }
+      var excerptSource = source
+      excerptSource.text = excerpt
+      pack.metrics += extractMetrics(excerptSource)
+      extractRisks(excerpt).forEach { pack.risks.append("\(source.title): \($0)") }
       if source.kind == .person {
         pack.stakeholders.append(.init(name: source.title, role: nil,
           relatedSourceIDs: [source.id], statements: [excerpt]))
@@ -369,15 +369,20 @@ enum PresentationContextBuilder {
     }
     pack.timeline.sort { $0.date < $1.date }
     pack.risks = unique(pack.risks).prefix(12).map { $0 }
-    if let previous {
+    if let previous, !pack.relatedSources.contains(where: { $0.id == previous.id }) {
+      pack.previousFinalDeck = nil
+    }
+    if let previous, pack.previousFinalDeck != nil {
+      let includedIDs = Set(pack.relatedSources.map(\.id))
       let newer = allowed.filter {
-        $0.id != previous.id
-          && ($0.date ?? .distantPast) >= (previous.date ?? .distantPast)
+        includedIDs.contains($0.id) && $0.id != previous.id
+          && $0.date != nil && previous.date != nil && $0.date! > previous.date!
       }.prefix(300)
       pack.changesSincePreviousDeck = changes(previous: previous, newer: Array(newer))
     }
 
-    pack.decisions = resolveDecisions(relevantDecisions)
+    let includedIDs = Set(pack.relatedSources.map(\.id))
+    pack.decisions = resolveDecisions(relevantDecisions).filter { includedIDs.contains($0.sourceID) }
     for decision in pack.decisions where decision.decidedBy != nil {
       let name = decision.decidedBy!
       if let index = pack.stakeholders.firstIndex(where: { $0.name == name }) {
@@ -417,6 +422,31 @@ enum PresentationContextBuilder {
       guard let version = source.version else { return nil }
       return "\(source.title): \(version)\(source.isFinal ? "（最終）" : "")"
     }
+    // The budget covers the entire prompt block, including decisions and
+    // warnings. Drop whole source bundles so no surviving fact loses its ID.
+    let truncationNote = "根拠は検索・文字数の上限内の抜粋です。必要な原資料を追加確認してください。"
+    if pack.investigation.truncated { pack.gaps.append(truncationNote) }
+    while pack.render().count > max(0, characterBudget), !pack.keyFacts.isEmpty {
+      let removed = pack.keyFacts.removeLast().sourceID
+      pack.relatedSources.removeAll { $0.id == removed }
+      pack.timeline.removeAll { $0.sourceID == removed }
+      pack.metrics.removeAll { $0.sourceID == removed }
+      pack.decisions.removeAll { $0.sourceID == removed }
+      pack.stakeholders.removeAll { $0.relatedSourceIDs.contains(removed) }
+      if pack.previousFinalDeck?.id == removed { pack.previousFinalDeck = nil }
+      pack.background = []
+      pack.risks = []
+      pack.changesSincePreviousDeck = []
+      pack.unconfirmed = []
+      pack.contradictions = contradictions(in: pack.keyFacts)
+      pack.investigation.truncated = true
+      pack.gaps = [truncationNote]
+    }
+    if pack.render().count > max(0, characterBudget) {
+      pack.purpose = ""; pack.audience = ""; pack.decisionRequired = ""
+      pack.projectContext = []; pack.gaps = []; pack.unconfirmed = []
+    }
+    pack.investigation.includedSources = pack.relatedSources.count
     pack.estimatedTokens = TokenEstimate.tokens(pack.render())
     return pack
   }
@@ -430,8 +460,7 @@ enum PresentationContextBuilder {
     // differently. A withdrawal also ends the record it names.
     var explicitlySuperseded = Set<String>()
     for record in records {
-      if let target = record.supersedes { explicitlySuperseded.insert(target) }
-      if !record.status.isEffective, let target = record.supersedes { explicitlySuperseded.insert(target) }
+      if record.status != .proposed, let target = record.supersedes { explicitlySuperseded.insert(target) }
     }
     var result: [PresentationEvidencePack.DecisionEntry] = []
     for (_, group) in grouped {
@@ -443,7 +472,7 @@ enum PresentationContextBuilder {
       for record in ordered {
         if record.status.isEffective {
           latestEffective = record
-        } else {
+        } else if record.status == .withdrawn || record.status == .cancelled || record.status == .open {
           latestEffective = nil
         }
       }
@@ -465,12 +494,12 @@ enum PresentationContextBuilder {
   /// It does not decide which is right; the person confirms the source.
   static func changes(previous: PresentationEvidenceSource,
                       newer: [PresentationEvidenceSource]) -> [String] {
-    let oldNumbers = numbers(in: previous.title + " " + previous.text)
+    let oldNumbers = quantities(in: previous.text)
     guard !oldNumbers.isEmpty || !newer.isEmpty else { return [] }
     var newNumbers = Set<String>()
     var lines: [String] = []
     for source in newer.sorted(by: { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }) {
-      let sourceNumbers = numbers(in: source.title + " " + source.text)
+      let sourceNumbers = quantities(in: source.text)
       newNumbers.formUnion(sourceNumbers)
       let added = sourceNumbers.subtracting(oldNumbers)
       guard !added.isEmpty else { continue }
@@ -572,18 +601,29 @@ enum PresentationContextBuilder {
     })
   }
 
+  // Require a business unit: years, page numbers, version IDs and model
+  // numbers are not metrics. Longest units come first to preserve 万円, etc.
+  private static let quantityExpression = try? NSRegularExpression(pattern:
+    #"(?<![A-Za-z0-9.,])([+−-]?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)?)\s*((?:兆円|億円|万円|千円|円|億人|万人|千人|人|万件|千件|件|店舗|店|拠点|時間|分|秒|か月|ヶ月|週間|倍|pt|ポイント|%)(?:/(?:月|年|週|日|人|件))?)(?![A-Za-z])"#)
+
+  static func quantities(in text: String) -> Set<String> {
+    Set(extractMetrics(.init(id: "", kind: .document, title: "", text: text)).map { $0.value + $0.unit })
+  }
+
   static func extractMetrics(_ source: PresentationEvidenceSource) -> [PresentationEvidencePack.Metric] {
-    let lines = source.text.components(separatedBy: CharacterSet.newlines)
+    guard let expression = quantityExpression else { return [] }
+    let text = source.text.folding(options: .widthInsensitive, locale: Locale(identifier: "ja_JP"))
     var result: [PresentationEvidencePack.Metric] = []
-    for line in lines {
-      let trimmed = line.trimmingCharacters(in: .whitespaces)
-      guard !trimmed.isEmpty, !numbers(in: trimmed).isEmpty else { continue }
-      let unit = ["%", "円", "件", "人", "時間", "分", "倍", "pt", "万人", "億円"].first { trimmed.contains($0) } ?? ""
-      let name = trimmed.split(whereSeparator: { $0 == ":" || $0 == "：" || $0 == "は" || $0 == "が" })
-        .first.map(String.init) ?? trimmed
-      result.append(.init(name: clipped(name, 60), value: numbers(in: trimmed).sorted().joined(separator: ", "),
-        unit: unit, period: source.date.map { $0.formatted(date: .numeric, time: .omitted) }, sourceID: source.id))
-      if result.count >= 8 { break }
+    for sentence in text.components(separatedBy: CharacterSet(charactersIn: "。\n、;；")) {
+      let trimmed = sentence.trimmingCharacters(in: .whitespaces)
+      for match in expression.matches(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)) {
+        guard let valueRange = Range(match.range(at: 1), in: trimmed),
+              let unitRange = Range(match.range(at: 2), in: trimmed) else { continue }
+        let raw = trimmed[valueRange].replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "−", with: "-")
+        guard let number = Double(raw), number.isFinite else { continue }
+        result.append(.init(name: clipped(trimmed, 160), value: String(number).replacingOccurrences(of: #"\.0$"#, with: "", options: .regularExpression),
+          unit: String(trimmed[unitRange]), period: nil, sourceID: source.id))
+      }
     }
     return result
   }
@@ -602,13 +642,15 @@ enum PresentationContextBuilder {
     for i in facts.indices {
       let left = facts[i]
       let leftTerms = terms(left.text)
-      let leftNumbers = numbers(in: left.text)
+      let leftNumbers = quantities(in: left.text)
       guard !leftNumbers.isEmpty else { continue }
       for j in (i + 1)..<facts.count {
         let right = facts[j]
         let shared = leftTerms.intersection(terms(right.text)).count
-        let rightNumbers = numbers(in: right.text)
-        guard shared >= 6, !rightNumbers.isEmpty, leftNumbers != rightNumbers else { continue }
+        let rightNumbers = quantities(in: right.text)
+        // A shorter excerpt or a different unit alone is not a contradiction.
+        guard shared >= 6, !rightNumbers.isEmpty,
+              !leftNumbers.isSubset(of: rightNumbers), !rightNumbers.isSubset(of: leftNumbers) else { continue }
         result.append("\(left.sourceID) と \(right.sourceID) で数値が異なります（\(leftNumbers.sorted().joined(separator: ", ")) / \(rightNumbers.sorted().joined(separator: ", "))）。どちらが現在の値か原資料で確認してください。")
         if result.count >= 6 { return result }
       }
@@ -655,14 +697,14 @@ extension PresentationEvidencePack {
     }
     if !keyFacts.isEmpty {
       lines.append("根拠となる抜粋（原文のIDを保持。要約で数字を変えない）:")
-      for fact in keyFacts {
+      for fact in allowedFacts {
         lines.append("- [\(fact.sourceID)] (\(fact.stance.label)/\(fact.confidence.label)) \(fact.text)")
       }
     }
     if !metrics.isEmpty {
       lines.append("数値:")
       for metric in metrics.prefix(12) {
-        lines.append("- \(metric.name): \(metric.value)\(metric.unit) [\(metric.sourceID)]")
+        lines.append("- \(metric.value)\(metric.unit)（原文: \(metric.name)） [\(metric.sourceID)]")
       }
     }
     if !contradictions.isEmpty { lines.append("矛盾:"); lines.append(contentsOf: contradictions.map { "- \($0)" }) }

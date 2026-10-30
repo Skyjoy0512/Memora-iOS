@@ -62,6 +62,9 @@ enum PresentationValidator {
       if c.layout == .b15 { require(metric.value <= 100 && metric.unit == "%", "ドットマトリクスは0〜100%を指定してください。") }
     }
     if let chart = c.chart {
+      if c.layout == .b17 {
+        require(chart.series.count == 1 && chart.kind == .bar, "順位付き横棒は棒グラフの1系列で指定してください。")
+      }
       require(chart.series.count <= 4 && chart.categories.count <= 10 && (chart.points?.count ?? 0) <= 12, "グラフは4系列・10区分・12点までです。")
       require(chart.series.allSatisfy { $0.values.count == chart.categories.count }, "各系列の値の数と区分数を一致させてください。")
       require(chart.series.flatMap(\.values).allSatisfy { $0.isFinite && abs($0) <= 1e12 }, "グラフの数値が範囲外です。")
@@ -78,7 +81,7 @@ enum PresentationValidator {
       if [.b23, .m07, .m08].contains(c.layout) || chart.kind == .waterfall {
         require(chart.series.count == 1, "ブリッジは1系列で指定してください。")
         require((chart.totalIndices ?? [0]).allSatisfy { chart.categories.indices.contains($0) }, "合計バーの位置が範囲外です。")
-        if c.layout == .m08, let values = chart.series.first?.values, values.count >= 2,
+        if let values = chart.series.first?.values, values.count >= 2,
            let totals = chart.totalIndices, totals.contains(values.count - 1) {
           var running = values[0]
           for i in 1..<(values.count - 1) { running = totals.contains(i) ? values[i] : running + values[i] }
@@ -110,10 +113,10 @@ enum PresentationValidator {
     return issues
   }
 
-  static func issues(for slide: DocumentSlide) -> [Issue] {
+  static func issues(for slide: DocumentSlide, pageNumber: Int = 1) -> [Issue] {
     var issues = inputIssues(for: slide)
     guard issues.isEmpty, let content = slide.composition else { return issues }
-    let elements = PresentationLayoutEngine.elements(for: slide, pageNumber: [.b01, .b04, .b10].contains(content.layout) ? nil : 1)
+    let elements = PresentationLayoutEngine.elements(for: slide, pageNumber: [.b01, .b04, .b10].contains(content.layout) ? nil : pageNumber)
     for element in elements {
       if ![element.x, element.y, element.width, element.height].allSatisfy(\.isFinite)
           || element.x < 0 || element.y < 0 || element.width < 0 || element.height < 0
@@ -158,12 +161,42 @@ enum PresentationValidator {
   }
 
   static func issues(for document: MemoraDocument) -> [Issue] {
-    var result = document.slides.flatMap { issues(for: $0) }
+    let pages = SlidePageLayout.pages(for: document)
+    var result = document.slides.flatMap { slide in
+      issues(for: slide, pageNumber: (pages.firstIndex { $0.sourceID == slide.id } ?? 0) + 1)
+    }
     var titles = Set<String>()
     for slide in document.slides where !titles.insert(slide.title).inserted {
       result.append(.init(slideID: slide.id, code: "duplicate", message: "同じ主張のスライドがあります。内容の重複を確認してください。", isError: false))
     }
     result.append(contentsOf: jinbaNotes(for: document))
+    if let evidence = document.presentationEvidence {
+      let sourceText = evidence.allowedFacts.map(\.text).joined(separator: "\n")
+      var supported = PresentationContextBuilder.quantities(in: sourceText)
+      supported.formUnion(supported.map { String($0.split(separator: "/")[0]) })
+      for slide in document.slides {
+        guard let content = slide.composition else { continue }
+        var claimed = Set((content.metrics ?? []).map {
+          PresentationContextBuilder.normalize(SlideContent.number($0.value).replacingOccurrences(of: ",", with: "") + $0.unit)
+        })
+        if let chart = content.chart {
+          claimed.formUnion(chart.series.flatMap(\.values).map {
+            SlideContent.number($0).replacingOccurrences(of: ",", with: "") + chart.unit
+          })
+        }
+        if let table = content.table {
+          claimed.formUnion(PresentationContextBuilder.quantities(in: table.rows.flatMap { $0 }.joined(separator: "\n")))
+        }
+        let prose = [slide.title, content.subtitle ?? ""]
+          + (content.items ?? []).flatMap { [$0.heading, $0.body] } + (content.annotations ?? [])
+        claimed.formUnion(PresentationContextBuilder.quantities(in: prose.joined(separator: "\n")))
+        let missing = claimed.subtracting(supported)
+        if !missing.isEmpty {
+          result.append(.init(slideID: slide.id, code: "evidenceNumber",
+            message: "保存した根拠の抜粋に数値「\(missing.sorted().prefix(4).joined(separator: "、"))」を確認できません。原資料・計算式と照合し、試算や提案なら明示してください。", isError: false))
+        }
+      }
+    }
     var facts: [String: (Double, UUID)] = [:]
     for slide in document.slides {
       guard let c = slide.composition, let sources = c.sources, !sources.isEmpty else { continue }

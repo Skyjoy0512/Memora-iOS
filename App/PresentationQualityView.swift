@@ -36,9 +36,7 @@ struct PresentationQualityView: View {
           if !evidence.audience.isEmpty { Text("読者: \(evidence.audience)") }
           if !evidence.decisionRequired.isEmpty { Text("判断: \(evidence.decisionRequired)") }
           let revoked = evidence.relatedSources.filter { reference in
-            guard reference.id.hasPrefix("record:"),
-                  let id = UUID(uuidString: String(reference.id.dropFirst("record:".count))) else { return false }
-            return model.meeting(id: id) == nil || !model.allowsRecordAccess(id, purpose: .cloudAI)
+            !model.presentationEvidenceSourceAllowsCloud(reference)
           }
           if !revoked.isEmpty {
             Text("根拠のうち\(revoked.count)件は参照権限が変更されています。保存された資料はそのまま残りますが、再生成時は使われません。")
@@ -85,9 +83,8 @@ struct PresentationQualityView: View {
   /// not be shown as a current decision from the saved pack.
   private func visibleDecisions(_ evidence: PresentationEvidencePack) -> [PresentationEvidencePack.DecisionEntry] {
     evidence.decisions.filter { decision in
-      guard decision.sourceID.hasPrefix("record:"),
-            let id = UUID(uuidString: String(decision.sourceID.dropFirst("record:".count))) else { return true }
-      return model.meeting(id: id) != nil && model.allowsRecordAccess(id, purpose: .cloudAI)
+      guard let source = evidence.relatedSources.first(where: { $0.id == decision.sourceID }) else { return false }
+      return model.presentationEvidenceSourceAllowsCloud(source)
     }
   }
 }

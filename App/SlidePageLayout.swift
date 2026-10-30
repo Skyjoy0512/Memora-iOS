@@ -27,7 +27,11 @@ enum SlidePageLayout {
     let slides = document.slides.isEmpty
       ? [DocumentSlide(id: document.id, title: document.displayTitle, bullets: [])]
       : document.slides
-    return slides.enumerated().flatMap { index, slide in pages(for: slide, pageNumber: index + 1) }
+    var result: [SlidePage] = []
+    for slide in slides {
+      result += pages(for: slide, pageNumber: result.count + 1)
+    }
+    return result
   }
 
   static func pages(for slide: DocumentSlide) -> [SlidePage] {

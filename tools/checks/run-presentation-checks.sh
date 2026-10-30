@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+bash tools/checks/run-presentation-context-checks.sh
 check_dir=$(mktemp -d "${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}/memora-presentation.XXXXXX")
 swiftc -DDEBUG App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/ArtifactProvenance.swift \
   App/ArtifactProjectSourceReference.swift Shared/MemoraIcon.swift App/MemoraDocumentKind.swift \

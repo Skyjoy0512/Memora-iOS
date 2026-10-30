@@ -88,6 +88,7 @@ struct PresentationLayoutChecks {
     }
     let numbered = PresentationLayoutEngine.elements(for: PresentationExample.slide(.m01), pageNumber: 7)
     precondition(numbered.contains { $0.text == "7" && $0.fontSize == 10 })
+    precondition(PresentationValidator.issues(for: PresentationExample.slide(.m01), pageNumber: 1_000_000).contains { $0.code == "overflow" })
     let cover = PresentationLayoutEngine.elements(for: PresentationExample.slide(.b01), pageNumber: 7)
     precondition(!cover.contains { $0.text == "7" && $0.fontSize == 10 })
     let ascending = PresentationElement(id: 0, kind: .line, x: 20, y: 30, width: 100, height: 20,
@@ -105,6 +106,30 @@ struct PresentationLayoutChecks {
     let evidenceData = try JSONEncoder().encode(evidenced)
     let evidenceDecoded = try JSONDecoder().decode(MemoraDocument.self, from: evidenceData)
     precondition(evidenceDecoded == evidenced)
+    var unsupported = PresentationExample.slide(.m03)
+    unsupported.composition?.metrics = [.init(label: "売上", value: 999, unit: "万円")]
+    evidenced.slides = [unsupported]
+    precondition(PresentationValidator.issues(for: evidenced).contains { $0.code == "evidenceNumber" })
+    evidenced.slides[0].composition?.metrics?[0].value = 100
+    precondition(!PresentationValidator.issues(for: evidenced).contains { $0.code == "evidenceNumber" })
+    var ranked = PresentationExample.slide(.b17)
+    ranked.composition?.chart?.categories = ["減少", "増加"]
+    ranked.composition?.chart?.series = [.init(name: "増減", values: [-10, 20])]
+    let signed = PresentationLayoutEngine.elements(for: ranked)
+    let negative = signed.first { $0.kind == .rectangle && $0.fill == PresentationTheme.orange }!
+    let positive = signed.first { $0.kind == .rectangle && $0.fill == PresentationTheme.blue }!
+    precondition(abs(negative.maxX - positive.x) < 0.01 && abs(negative.width * 2 - positive.width) < 0.01)
+    ranked.composition?.chart?.series.append(.init(name: "隠れてしまう系列", values: [1, 2]))
+    precondition(!PresentationValidator.inputIssues(for: ranked).isEmpty)
+    var bridge = PresentationExample.slide(.m08)
+    bridge.composition?.layout = .m07
+    bridge.composition?.chart?.series[0].values[3] = 999
+    precondition(PresentationValidator.inputIssues(for: bridge).contains { $0.message.contains("着地") })
+    let longOutline = DocumentSlide(title: "長い要点", bullets: (0..<20).map { "要点\($0)" })
+    let mixed = MemoraDocument(title: "ページ番号", kind: .slides, slides: [longOutline, PresentationExample.slide(.m01)])
+    let mixedPages = SlidePageLayout.pages(for: mixed)
+    precondition(mixedPages.count > 2)
+    precondition(mixedPages.last!.elements!.contains { $0.text == String(mixedPages.count) && $0.fontSize == 10 })
     let legacyDocument = Data(#"{"id":"11111111-1111-1111-1111-111111111111","title":"旧資料","kind":"slides","markdown":"","slides":[],"createdAt":0,"updatedAt":0}"#.utf8)
     let legacyDecoded = try JSONDecoder().decode(MemoraDocument.self, from: legacyDocument)
     precondition(legacyDecoded.presentationEvidence == nil)

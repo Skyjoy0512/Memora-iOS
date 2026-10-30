@@ -84,7 +84,7 @@ enum CompareJinbaCatalog {
     - 色はJinbaの暖色とMemoraの白黒青オレンジで意図的に異なるため、判定に含めない。
     - 残課題: 目視レビュー、PowerPoint/Keynote/PDFの実描画、実データでの折返し・表の改行。
     """
-    try (header + rows.joined(separator: "\n") + "\n" + footer)
+    try (header + "\n" + rows.joined(separator: "\n") + "\n" + footer)
       .write(to: reportURL, atomically: true, encoding: .utf8)
     print("Jinba comparison: 65 pages, \(flagged) flagged, report \(reportURL.path)")
   }

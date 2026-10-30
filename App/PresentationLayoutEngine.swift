@@ -604,7 +604,10 @@ enum PresentationLayoutEngine {
       }
       let n = max(1, chart.categories.count)
       if horizontal {
-        let h = ph / Double(n), maxValue = max(0.000001, values.map { abs($0) }.max() ?? 1)
+        let h = ph / Double(n)
+        let plotX = x + 124, plotWidth = max(1, width - 212)
+        let zeroX = plotX + (0 - minimum) / span * plotWidth
+        line(zeroX, py, zeroX, py + ph)
         let ranked = zip(chart.categories, chart.series.first?.values ?? []).enumerated().sorted {
           $0.element.1 == $1.element.1 ? $0.offset < $1.offset : $0.element.1 > $1.element.1
         }
@@ -612,7 +615,9 @@ enum PresentationLayoutEngine {
           let v = entry.element.1
           let top = py + Double(i) * h
           text(entry.element.0, x, top, 112, h - 4, size: 15)
-          rect(x + 124, top + 4, abs(v) / maxValue * max(1, width - 212), max(1, h - 18), fill: PresentationTheme.blue)
+          let valueX = plotX + (v - minimum) / span * plotWidth
+          rect(min(zeroX, valueX), top + 4, max(1, abs(valueX - zeroX)), max(1, h - 18),
+            fill: v < 0 ? PresentationTheme.orange : PresentationTheme.blue)
           text(SlideContent.number(v) + chart.unit, x + width - 80, top, 80, h - 4, size: 15)
         }
         return

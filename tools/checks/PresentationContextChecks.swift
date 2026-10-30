@@ -42,7 +42,8 @@ enum PresentationContextChecks {
     precondition(!pack.keyFacts.contains { $0.sourceID == "record:denied" })
     precondition(!pack.keyFacts.contains { $0.sourceID == "record:unknown" })
     precondition(pack.permissions.contains { $0.id == "record:denied" })
-    precondition(pack.unconfirmed.contains { $0.contains("機密") })
+    precondition(pack.unconfirmed.contains { $0.contains("参照不可") })
+    precondition(!pack.render().contains("役員会 機密"), "Denied source titles must stay out of cloud prompts")
     precondition(pack.previousFinalDeck?.id == "deck:old")
     precondition(pack.keyFacts.contains { $0.sourceID == "deck:old" })
 
@@ -82,6 +83,42 @@ enum PresentationContextChecks {
     ])
     precondition(withdrawn.allSatisfy { !$0.isCurrent })
     precondition(withdrawn.count == 2)
+
+    let unrelated = PresentationEvidenceSource(id: "unrelated", kind: .previousDeck, title: "採用計画の最終版",
+      text: "採用人数は50人。", date: base, permission: .allowed, isFinal: true)
+    let scoped = PresentationContextBuilder.build(request: request, sources: [sources[0], unrelated],
+      decisions: [.init(id: "other", subject: "採用計画", statement: "採用枠を承認",
+        date: base, status: .approved, sourceID: "unrelated")], characterBudget: 4_000)
+    precondition(scoped.previousFinalDeck == nil && scoped.decisions.isEmpty)
+    precondition(!scoped.render().contains("採用計画"))
+
+    let metrics = PresentationContextBuilder.extractMetrics(.init(id: "mixed", kind: .record, title: "2026年の報告",
+      text: "2026年10月30日。売上は1,200万円、解約率は2.4%。型番A123、資料12ページ。予算は-300万円。", permission: .allowed))
+    precondition(metrics.map { $0.value + $0.unit } == ["1200万円", "2.4%", "-300万円"])
+    precondition(PresentationContextBuilder.quantities(in: "2026年、12ページ、A123、version 4").isEmpty)
+
+    let newNumbers = PresentationContextBuilder.changes(previous: sources[4], newer: [sources[0]])
+    precondition(newNumbers.contains { $0.contains("1200万円") })
+    precondition(!newNumbers.contains { $0.contains("2023") })
+    let draft = PresentationEvidenceSource(id: "draft", kind: .previousDeck, title: "販売システム草稿",
+      text: "販売システムの売上は900万円。", permission: .allowed)
+    precondition(PresentationContextBuilder.build(request: request, sources: [draft], characterBudget: 4_000).previousFinalDeck == nil)
+
+    let pending = PresentationContextBuilder.resolveDecisions([
+      .init(id: "p1", subject: "予算", statement: "承認済み", date: base, status: .approved, sourceID: "s"),
+      .init(id: "p2", subject: "予算", statement: "増額を提案", date: base.addingTimeInterval(1), status: .proposed,
+        supersedes: "p1", sourceID: "s")
+    ])
+    precondition(pending.contains { $0.id == "p1" && $0.isCurrent }, "A proposal must not supersede an approval")
+    precondition(!PresentationDecisionStatus.open.isEffective)
+    for budget in [0, 100, 600, 2_000] {
+      let bounded = PresentationContextBuilder.build(request: request, sources: sources, decisions: decisions, characterBudget: budget)
+      if bounded.render().count > budget {
+        print("FAIL budget \(budget): \(bounded.render().count) characters: \(bounded.render())")
+        exit(1)
+      }
+      precondition(bounded.investigation.includedSources == bounded.relatedSources.count)
+    }
 
     print("PresentationContextChecks: passed (permission gate, final-deck reuse, decision lineage, contradictions, metrics, bounded pack)")
   }

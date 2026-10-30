@@ -16,6 +16,7 @@ extension MemoraModel {
     task: ContextTaskKind = .presentation,
     cloud: Bool = true
   ) -> PresentationEvidencePack {
+    guard currentTeamID == nil, !isRestoring, !isStoreProtected else { return PresentationEvidencePack() }
     let purposeType: RecordAccessPolicy.Purpose = cloud ? .cloudAI : .onDeviceAI
     let projectName = projectID.flatMap { space(id: $0)?.name }
     let workspaceMeetings = meetings.filter { meeting in
@@ -36,11 +37,15 @@ extension MemoraModel {
         title: meeting.displayTitle, text: lines.joined(separator: "\n"),
         date: meeting.createdAt, updatedAt: meeting.createdAt,
         permission: cloud ? permission : .allowed, stance: .fact,
-        confidence: meeting.status == .ready ? .confirmed : .reported,
+        confidence: .reported,
         locator: meeting.summary.isEmpty ? "記録" : "要約"))
     }
-    for task in tasks {
-      guard !cloud || allowsTaskAccess(task, purpose: purposeType) else { continue }
+    let meetingIDs = Set(workspaceMeetings.map(\.id))
+    let permittedTasks = tasks.filter {
+      (projectID == nil || $0.meetingID.map(meetingIDs.contains) == true)
+        && (!cloud || allowsTaskAccess($0, purpose: purposeType))
+    }
+    for task in permittedTasks {
       var lines = [task.title]
       if !task.detail.isEmpty { lines.append(task.detail) }
       if let assignee = task.assignee, !assignee.isEmpty { lines.append("担当: \(assignee)") }
@@ -50,7 +55,9 @@ extension MemoraModel {
         updatedAt: task.completedAt, permission: .allowed, stance: .fact,
         confidence: task.isCompleted ? .confirmed : .reported))
     }
-    for document in documents where projectID == nil || document.spaceID == projectID {
+    // Documents have no external-send permission, as in projectEvidenceAllowed.
+    // Stored evidence and an exported artifact do not grant cloud access.
+    for document in documents where !cloud && (projectID == nil || document.spaceID == projectID) {
       let isFinalDeck = document.kind == .slides && document.artifactFileReference != nil
       let text = [document.title, document.markdown, document.plainText,
         document.slides.map(\.title).joined(separator: " / ")]
@@ -59,23 +66,28 @@ extension MemoraModel {
       sources.append(.init(id: "document:\(document.id.uuidString)",
         kind: isFinalDeck ? .previousDeck : .document, title: document.title, text: text,
         date: document.createdAt, updatedAt: document.updatedAt, permission: .allowed,
-        stance: .fact, confidence: isFinalDeck ? .confirmed : .reported,
+        stance: .fact, confidence: .reported,
         version: document.artifactRevision.map(String.init), isFinal: isFinalDeck))
     }
+    let personNameCounts = Dictionary(grouping: people) { $0.name.trimmingCharacters(in: .whitespacesAndNewlines) }.mapValues(\.count)
     for person in people {
       guard !cloud || allowsPersonAccess(person.id, purpose: purposeType) else { continue }
       let related = workspaceMeetings.filter { $0.participantIDs?.contains(person.id) == true }
       // Private notes stay on the device. Only the name, the meetings the person
       // was tagged on, and their own recorded lines are sent.
       var lines = [person.name]
-      let assigned = tasks.filter { $0.relationships.assigneePersonID == person.id && !$0.isCompleted }
+      var dependencies: [String] = []
+      let assigned = permittedTasks.filter { $0.relationships.assigneePersonID == person.id && !$0.isCompleted }
       for task in assigned.prefix(5) {
+        dependencies.append("task:\(task.id.uuidString)")
         lines.append("担当タスク: \(task.title)\(task.dueDate.map { "（期限 \($0.formatted(date: .numeric, time: .omitted))）" } ?? "")")
       }
       for meeting in related.prefix(8) {
+        dependencies.append("record:\(meeting.id.uuidString)")
         lines.append("会議: \(meeting.displayTitle) \(meeting.createdAt.formatted(date: .numeric, time: .omitted))")
         let quotes = meeting.transcript
-          .filter { $0.speaker.contains(person.name) && !$0.text.isEmpty }
+          .filter { $0.speaker.trimmingCharacters(in: .whitespacesAndNewlines) == person.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            && personNameCounts[person.name.trimmingCharacters(in: .whitespacesAndNewlines)] == 1 && !$0.text.isEmpty }
           .prefix(3)
           .map(\.text)
         if !quotes.isEmpty { lines.append("発言: " + quotes.joined(separator: " / ")) }
@@ -83,7 +95,7 @@ extension MemoraModel {
       guard projectID == nil || !related.isEmpty else { continue }
       sources.append(.init(id: "person:\(person.id.uuidString)", kind: .person,
         title: person.name, text: lines.joined(separator: "\n"), permission: .allowed,
-        stance: .fact, confidence: .reported))
+        stance: .fact, confidence: .reported, dependencyIDs: dependencies))
     }
     if isAIMemoryEnabled {
       for memory in visibleAIMemories where memory.status == .current {
@@ -94,7 +106,7 @@ extension MemoraModel {
       }
     }
     for entry in lifeLogEntries.prefix(400) where projectID == nil {
-      guard !cloud || RecordAccessPolicy.allows(entry.privacy, purpose: purposeType) else { continue }
+      guard !cloud || allowsJournalAccess(entry, purpose: purposeType) else { continue }
       let text = [entry.title, entry.summary].filter { !$0.isEmpty }.joined(separator: "\n")
       sources.append(.init(id: "journal:\(entry.id.uuidString)", kind: .journal,
         title: entry.title, text: text, date: entry.occurredAt, updatedAt: entry.createdAt,
@@ -114,16 +126,56 @@ extension MemoraModel {
     // The pack is a prompt input, not a second copy of the archive: cap it.
     let budget = min(80_000, AIEngineService.contextCharacterLimit(for: askAIConfiguration.engine,
       llm: askAIConfiguration.llm, task: task) / 2)
-    return PresentationContextBuilder.build(
+    var pack = PresentationContextBuilder.build(
       request: PresentationContextRequest(purpose: purpose, audience: audience,
         decisionRequired: decision, query: query, projectName: projectName),
-      sources: sources, decisions: decisions, characterBudget: max(4_000, budget))
+      sources: sources, decisions: decisions, characterBudget: max(0, budget))
+    if cloud && !documents.isEmpty {
+      pack.gaps.append("既存資料は外部送信の許可がないため自動参照していません。必要な前回資料は添付して指定してください。")
+    }
+    return pack
+  }
+
+  func presentationEvidenceReadTargets(_ pack: PresentationEvidencePack) -> [RecordPrivacyTarget] {
+    Set(pack.relatedSources.flatMap { [$0.id] + ($0.dependencyIDs ?? []) }).compactMap { sourceID in
+      let parts = sourceID.split(separator: ":", maxSplits: 1)
+      guard parts.count == 2, let id = UUID(uuidString: String(parts[1])) else { return nil }
+      switch parts[0] {
+      case "record": return .meeting(id)
+      case "task": return .task(id)
+      case "person": return .person(id)
+      case "journal": return .journal(id)
+      default: return nil
+      }
+    }
+  }
+
+  func presentationEvidenceSourceAllowsCloud(_ reference: PresentationEvidencePack.SourceReference) -> Bool {
+    guard currentTeamID == nil, !isRestoring, !isStoreProtected, reference.permission == .allowed else { return false }
+    for sourceID in [reference.id] + (reference.dependencyIDs ?? []) {
+      let parts = sourceID.split(separator: ":", maxSplits: 1)
+      guard parts.count == 2, let id = UUID(uuidString: String(parts[1])) else { return false }
+      let target: RecordPrivacyTarget
+      switch parts[0] {
+      case "record": target = .meeting(id)
+      case "task": target = .task(id)
+      case "person": target = .person(id)
+      case "journal": target = .journal(id)
+      case "memory":
+        guard isAIMemoryEnabled, visibleAIMemories.contains(where: { $0.id == id && $0.status == .current }) else { return false }
+        continue
+      default: return false
+      }
+      guard allowsRecordAccess(target, purpose: .cloudAI) else { return false }
+    }
+    return true
   }
 
   static func presentationDecisionStatus(_ statement: String) -> PresentationDecisionStatus {
+    if ["未承認", "承認待ち", "未決", "保留", "継続検討", "承認されていない", "承認していない",
+        "撤回しない", "中止しない", "見送らない"].contains(where: statement.contains) { return .open }
     if statement.contains("撤回") || statement.contains("取り下げ") { return .withdrawn }
     if statement.contains("中止") || statement.contains("見送り") { return .cancelled }
-    if statement.contains("未決") || statement.contains("保留") || statement.contains("継続検討") { return .open }
     if statement.contains("完了") { return .completed }
     if statement.contains("変更") || statement.contains("修正") { return .changed }
     if statement.contains("提案") || statement.contains("検討") { return .proposed }
