@@ -27,7 +27,7 @@ struct TaskRow: View {
           .frame(width: 44, height: 44)
           .contentShape(Rectangle())
       }
-      .accessibilityLabel(task.isCompleted ? "未完了に戻す" : "完了にする")
+      .accessibilityLabel("\(task.title)を\(task.isCompleted ? "未完了に戻す" : "完了にする")")
       .accessibilityValue(task.isCompleted ? "完了" : "未完了")
       .buttonStyle(.plain)
       .labelStyle(.iconOnly)

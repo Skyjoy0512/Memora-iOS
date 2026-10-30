@@ -7,7 +7,7 @@ struct ContentView: View {
   @Environment(\.scenePhase) private var scenePhase
   @State private var appLock = AppLockService()
   @State private var sampleUnavailable = false
-  @AppStorage("memora.prefersDarkAppearance") private var prefersDarkAppearance = false
+  @AppStorage("memora.appearance") private var appearance = AppearancePreference.migrate()
 
   var body: some View {
     @Bindable var model = model
@@ -70,7 +70,7 @@ struct ContentView: View {
       appLock.handleScenePhase(phase, isRecording: model.isRecording)
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isImporting)
-    .preferredColorScheme(prefersDarkAppearance ? .dark : nil)
+    .preferredColorScheme(appearance == .system ? nil : (appearance == .dark ? .dark : .light))
     .alert("サンプルを開けませんでした", isPresented: $sampleUnavailable) {
       Button("閉じる", role: .cancel) {}
     } message: {

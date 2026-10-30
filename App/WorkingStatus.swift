@@ -7,7 +7,7 @@ struct WorkingStatus: View {
   var pattern: PixelLoader.Pattern = .drive
 
   var body: some View {
-    ConversationStatusLine(label: label)
+    ConversationStatusLine(label: label, since: startedAt)
   }
 }
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SUITES = [
+    ["App/AppearancePreference.swift", "tools/checks/AppearancePreferenceChecks.swift"],
     ["App/EditorDraftEnvelope.swift", "tools/checks/EditorDraftChecks.swift"],
     ["App/WeeklyReviewBuilder.swift", "App/WeeklyReviewResult.swift",
      "App/MemoraModel+WeeklyReview.swift", "tools/checks/WeeklyReviewPersistenceChecks.swift"],

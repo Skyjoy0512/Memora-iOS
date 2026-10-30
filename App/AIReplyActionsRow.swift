@@ -29,7 +29,7 @@ struct AIReplyActionsRow: View {
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("根拠になった発言")
+        .accessibilityLabel("根拠になった発言\(excerptCount)件")
         .accessibilityValue(isSourcesOpen ? "開いています" : "閉じています")
       }
     }

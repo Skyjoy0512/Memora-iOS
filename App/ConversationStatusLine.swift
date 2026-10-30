@@ -7,7 +7,10 @@ struct ConversationStatusLine: View {
   var showsShimmer = true
 
   var body: some View {
-    ShimmerText(text: label, isActive: showsShimmer && !isWaiting)
+    HStack(spacing: MemoraSpacing.sm) {
+      ShimmerText(text: label, isActive: showsShimmer && !isWaiting)
+      if let since { ElapsedText(since: since).monospacedDigit().foregroundStyle(.secondary).accessibilityHidden(true) }
+    }
     .font(MemoraTypography.metadata.weight(.medium))
     .padding(.vertical, MemoraSpacing.xs)
     .frame(maxWidth: .infinity, alignment: .leading)

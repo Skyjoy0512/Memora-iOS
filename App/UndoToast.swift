@@ -15,10 +15,10 @@ struct UndoToast: View {
         .lineLimit(2)
         .frame(maxWidth: .infinity, alignment: .leading)
 
-      Button("取り消す") {
-        model.performPendingUndo()
+      Button { model.performPendingUndo() } label: {
+        Text("取り消す").font(.subheadline.weight(.semibold))
+          .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
       }
-      .font(.subheadline.weight(.semibold))
       .accessibilityHint("削除を取り消します")
     }
     .padding(.horizontal, MemoraSpacing.lg)

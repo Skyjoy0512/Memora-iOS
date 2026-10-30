@@ -48,7 +48,7 @@ struct PersonDetailView: View {
               VStack(alignment: .leading, spacing: 4) {
                 Text(topic.title).font(.subheadline.weight(.medium))
                 if !topic.summary.isEmpty { Text(topic.summary).font(.subheadline).foregroundStyle(.secondary) }
-                Text(topic.date.formatted(date: .abbreviated, time: .omitted)).font(.caption).foregroundStyle(.secondary)
+                Text(MemoraFormat.documentDate(topic.date)).font(.caption).foregroundStyle(.secondary)
               }
             }
           }

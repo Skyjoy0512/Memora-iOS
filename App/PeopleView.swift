@@ -88,6 +88,6 @@ struct PeopleView: View {
     guard let last = model.meetings(withPerson: person.id).first?.createdAt else {
       return person.note ?? "記録はまだありません"
     }
-    return "会議\(count)件 · 最後に会った日 \(last.formatted(date: .abbreviated, time: .omitted))"
+    return "会議\(count)件 · 最後に会った日 \(MemoraFormat.documentDate(last))"
   }
 }

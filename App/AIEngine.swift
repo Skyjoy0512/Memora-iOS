@@ -56,7 +56,7 @@ enum AIEngine: String, CaseIterable, Identifiable, Codable {
   var detail: String {
     switch self {
     case .automatic:
-      "対応状況に合わせて、端末内を優先して選びます。"
+      "対応端末ではAppleの端末内モデルを使います。未対応時は別のエンジンを選んでください。"
     case .memora:
       "キーなしで使えるMemoraのクラウドAI。プランのAIクレジットを使います（ライト以上）。"
     case .foundation:

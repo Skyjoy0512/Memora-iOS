@@ -32,7 +32,7 @@ struct FileSidebarView: View {
               .accessibilityLabel("検索")
               .accessibilityHint("表示中の画面を検索します")
               SidebarRow(title: "ライブラリ", symbol: .folder,
-                isSelected: !model.isToolsPresented && model.selectedTab == .library) {
+                isSelected: isLibraryCollection && model.librarySection == .files) {
                 onSelectTab(.library)
               }
               SidebarRow(title: "ジャーナル", symbol: .calendar,
@@ -50,7 +50,7 @@ struct FileSidebarView: View {
 
             sidebarSection("コレクション") {
               SidebarRow(title: "プロジェクト", symbol: .rectangleStack,
-                isSelected: !model.isToolsPresented && model.selectedTab == .library && model.librarySection == .projects) {
+                isSelected: isLibraryCollection && model.librarySection == .projects) {
                 onOpenProjects()
               }
               SidebarRow(
@@ -119,6 +119,11 @@ struct FileSidebarView: View {
 
       content()
     }
+  }
+
+  private var isLibraryCollection: Bool {
+    !model.isToolsPresented && model.selectedTab == .library
+      && model.libraryPath.first != .documents && model.libraryPath.first != .people
   }
 
   private var isShowingDocuments: Bool {

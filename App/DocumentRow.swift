@@ -32,7 +32,7 @@ struct DocumentRow: View {
   }
 
   private var caption: String {
-    var parts = [document.weekStart == nil ? document.kind.label : "週報", document.createdAt.formatted(date: .abbreviated, time: .omitted)]
+    var parts = [document.weekStart == nil ? document.kind.label : "週報", MemoraFormat.documentDate(document.createdAt)]
     if let spaceName {
       parts.append(spaceName)
     }

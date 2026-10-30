@@ -22,7 +22,7 @@ class SettingsPresentationChecks(unittest.TestCase):
         self.assertEqual(keys, {
             "memora.transcriptionEngine", "memora.transcriptionLanguage",
             "memora.autoLifeLog.enabled", "memora.journal.showCalendarEvents",
-            "memora.appLock", "memora.prefersDarkAppearance", "memora.haptics.enabled",
+            "memora.appLock", "memora.appearance", "memora.haptics.enabled",
         })
         for guard in ("AppLockService.availabilityMessage()", "discardPendingEnable()",
                       "CalendarService.requestAccess()", "model.deleteSampleContent()",

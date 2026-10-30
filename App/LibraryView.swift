@@ -308,7 +308,7 @@ struct LibraryView: View {
 
       if !savedSources.isEmpty, !isAwaitingQuery {
         Section {
-          ForEach(Array(savedSources.prefix(3))) { source in
+          ForEach(isSearching ? savedSources : Array(savedSources.prefix(3))) { source in
             NavigationLink(value: LibraryRoute.projectSource(source.id)) { ProjectSourceRow(source: source) }
           }
           NavigationLink("すべてのソース", value: LibraryRoute.projectSources(nil))

@@ -7,8 +7,10 @@ APP = Path(__file__).resolve().parents[2] / 'App'
 class WaitingAudioPresentationChecks(unittest.TestCase):
     def test_only_text_waits_for_ai(self):
         status = (APP / 'ConversationStatusLine.swift').read_text()
-        for obsolete in ['ThinkingGauge', 'ProgressView', 'Image(', 'ElapsedText', 'Canvas', 'TimelineView']:
+        for obsolete in ['ThinkingGauge', 'ProgressView', 'Image(', 'Canvas', 'TimelineView']:
             self.assertNotIn(obsolete, status)
+        self.assertIn('ElapsedText(since: since)', status)
+        self.assertIn('since: startedAt', (APP / 'WorkingStatus.swift').read_text())
         self.assertIn('showsShimmer && !isWaiting', status)
         self.assertIn('AccessibilityNotification.Announcement(label)', status)
         shimmer = (APP / 'ShimmerText.swift').read_text()

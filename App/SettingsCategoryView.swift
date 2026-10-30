@@ -8,7 +8,7 @@ struct SettingsCategoryView: View {
   @AppStorage("memora.autoLifeLog.enabled") private var autoLifeLogEnabled = false
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @AppStorage("memora.appLock") private var appLockEnabled = false
-  @AppStorage("memora.prefersDarkAppearance") private var prefersDarkAppearance = false
+  @AppStorage("memora.appearance") private var appearance = AppearancePreference.migrate()
   @AppStorage("memora.haptics.enabled") private var hapticsEnabled = true
   @State private var isLocationPermissionAlertPresented = false
   @State private var isCalendarPermissionAlertPresented = false
@@ -246,9 +246,9 @@ struct SettingsCategoryView: View {
   private var appearanceSections: some View {
     Group {
         Section {
-          Toggle(isOn: $prefersDarkAppearance) {
-            SettingsLabel("ダークモード", icon: .moonFill)
-          }
+          Picker(selection: $appearance) {
+            ForEach(AppearancePreference.allCases) { preference in Text(preference.label).tag(preference) }
+          } label: { SettingsLabel("外観", icon: .moonFill) }
           Toggle(isOn: $hapticsEnabled) {
             SettingsLabel("触覚フィードバック", icon: .iphone)
           }

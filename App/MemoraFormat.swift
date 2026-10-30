@@ -1,6 +1,8 @@
 import Foundation
 
 enum MemoraFormat {
+  static func documentDate(_ date: Date) -> String { documentDateFormatter.string(from: date) }
+
   static func duration(_ interval: TimeInterval) -> String {
     let totalSeconds = max(0, Int(interval))
     let hours = totalSeconds / 3_600
@@ -50,6 +52,7 @@ enum MemoraFormat {
     return formatter
   }()
 
+  private static let documentDateFormatter = dateFormatter(template: "y年M月d日")
   private static let dueDateFormatter = dateFormatter(template: "M月d日(E)")
   private static let meetingDateFormatter = dateFormatter(template: "M月d日(E) H:mm")
   private static let monthTitleFormatter = dateFormatter(template: "yMMMM")

@@ -4,6 +4,7 @@ struct AISettingsView: View {
   @Environment(MemoraModel.self) private var model
   @State private var isAPIKeySheetPresented = false
   @State private var availability = EngineAvailability.Status()
+  @State private var engineAvailability: [AIEngine: EngineAvailability.Status] = [:]
   @State private var hasKey = false
   @State private var readyProviders: Set<LLMProvider> = []
 
@@ -17,7 +18,7 @@ struct AISettingsView: View {
       } header: {
         Text("AIエンジン")
       } footer: {
-        Text("端末内を優先し、必要な時だけクラウドを使います。選べない項目はこの版では利用できません。")
+        Text("自動は対応端末のAppleモデルを使います。クラウドは選択したときに使い、自動では切り替えません。各項目の利用状態を確認してください。")
       }
 
       Section {
@@ -108,7 +109,7 @@ struct AISettingsView: View {
         Text("状態")
       }
     }
-    .navigationTitle("AI整理")
+    .navigationTitle("AIモデル")
     .memoraBackButton()
     .sheet(isPresented: $isAPIKeySheetPresented) {
       APIKeySheet(llmProvider: model.aiProvider) { refresh() }
@@ -130,6 +131,10 @@ struct AISettingsView: View {
           Text(option.detail)
             .font(.caption)
             .foregroundStyle(.secondary)
+          if let status = engineAvailability[option] {
+            Text(status.summary).font(.caption.weight(.medium))
+              .foregroundStyle(status.isReady ? AnyShapeStyle(.secondary) : AnyShapeStyle(MemoraPalette.danger))
+          }
         }
         Spacer(minLength: 8)
         if option == model.aiEngine {
@@ -148,6 +153,7 @@ struct AISettingsView: View {
   }
 
   private func refresh() {
+    engineAvailability = Dictionary(uniqueKeysWithValues: AIEngine.allCases.map { ($0, EngineAvailability.ai($0, provider: model.aiProvider)) })
     hasKey = EngineAvailability.hasKey(model.aiProvider.keychainAccount)
     availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
     readyProviders = Set(LLMProvider.allCases.filter { EngineAvailability.hasKey($0.keychainAccount) })
