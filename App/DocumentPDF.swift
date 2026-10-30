@@ -87,7 +87,7 @@ private struct DocumentPDFContent: View {
       VStack(alignment: .leading, spacing: 6) {
         Text(document.displayTitle)
           .font(.title.bold())
-        Text(document.createdAt.formatted(date: .long, time: .omitted))
+        Text(document.createdAt.formatted(Date.FormatStyle(date: .long, time: .omitted).locale(Locale(identifier: "ja_JP"))))
           .font(.footnote)
           .foregroundStyle(.secondary)
       }

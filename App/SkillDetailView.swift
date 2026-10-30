@@ -121,7 +121,7 @@ private struct SkillArticleSettings: View {
           set: { model.setSkillEnabled(skill.id, enabled: $0) }))
         LabeledContent("料金", value: (skill.cost ?? .unknown).rawValue)
         if let date = model.skillLastSelectedAt[skill.id] {
-          LabeledContent("最終選択", value: date.formatted(date: .abbreviated, time: .shortened))
+          LabeledContent("最終選択", value: date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))
         }
         ForEach(skill.toolNames, id: \.self) { Text($0).font(.subheadline.monospaced()) }
         ForEach(skill.declaredPermissions ?? [], id: \.self) { Text($0).font(.footnote) }

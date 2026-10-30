@@ -23,7 +23,7 @@ struct ProjectCard: View {
                 .font(.headline)
                 .fixedSize(horizontal: false, vertical: true)
               if let latestRecordDate {
-                Text("最新の記録 \(latestRecordDate.formatted(date: .abbreviated, time: .omitted))")
+                Text("最新の記録 \(latestRecordDate.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))))")
                   .font(.caption).foregroundStyle(MemoraPalette.cardTextSecondary)
               }
             }

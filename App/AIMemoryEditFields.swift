@@ -29,7 +29,7 @@ struct AIMemoryEditFields: View {
         ForEach(related) { memory in
           VStack(alignment: .leading, spacing: 4) {
             Text(memory.text)
-            Text("\(memory.status.label) · \(memory.updatedAt.formatted(date: .abbreviated, time: .omitted))")
+            Text("\(memory.status.label) · \(memory.updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))))")
               .font(.caption).foregroundStyle(.secondary)
           }
           .accessibilityElement(children: .combine)

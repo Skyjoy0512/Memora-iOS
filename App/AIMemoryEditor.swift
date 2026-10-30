@@ -34,14 +34,14 @@ struct AIMemoryEditor: View {
                 AIHistoryDetailView(entry: entry, ask: { _ = model.sendAIChat($0); dismiss() })
               }
             }
-            LabeledContent("最終更新", value: memory.updatedAt.formatted(date: .abbreviated, time: .shortened))
+            LabeledContent("最終更新", value: memory.updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))
           }
           if let revisions = memory.revisions, !revisions.isEmpty {
             Section("過去の内容") {
               ForEach(Array(revisions.enumerated()), id: \.offset) { _, revision in
                 VStack(alignment: .leading, spacing: 4) {
                   Text(revision.text)
-                  Text("\(revision.semantic?.status.label ?? AIMemory.Status.current.label) · \(revision.supersededAt.formatted(date: .abbreviated, time: .shortened))")
+                  Text("\(revision.semantic?.status.label ?? AIMemory.Status.current.label) · \(revision.supersededAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))")
                     .font(.caption).foregroundStyle(.secondary)
                 }
               }

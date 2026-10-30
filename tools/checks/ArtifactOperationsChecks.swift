@@ -254,6 +254,11 @@ struct ArtifactOperationsChecks {
     defer { try? FileManager.default.removeItem(at: root) }
     let model = try MemoraModel(storeURL: root.appendingPathComponent("rows.sqlite"))
     let personID = UUID(), meetingID = UUID(), taskID = UUID(), journalID = UUID()
+    precondition(ArtifactSourceTarget.presentationSourceID("record:\(meetingID)") == .record(.meeting(meetingID)))
+    precondition(ArtifactSourceTarget.presentationSourceID("task:\(taskID)") == .record(.task(taskID)))
+    for unsupported in [meetingID.uuidString, "record:invalid", "record:\(meetingID):extra", "web:\(meetingID)", "memory:\(meetingID)"] {
+      precondition(ArtifactSourceTarget.presentationSourceID(unsupported) == nil, "unsupported evidence must not become a navigation grant")
+    }
     let grant = grantedPrivacy()
     model.people = [Person(id: personID, name: "架空の田中", note: "メモ", contactIdentifier: nil, privacy: grant)]
     model.meetings = [Meeting(id: meetingID, title: "会議", privacy: grant)]

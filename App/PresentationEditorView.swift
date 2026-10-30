@@ -4,17 +4,20 @@ struct PresentationEditorView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var document: MemoraDocument
+  @State private var slidePath: [UUID]
+  @State private var didLoadDraft = false
   @State private var draft: MemoraDocument
   @State private var failure: String?
   @State private var confirmsDiscard = false
 
-  init(document: MemoraDocument) {
+  init(document: MemoraDocument, initialSlideID: UUID? = nil) {
+    _slidePath = State(initialValue: initialSlideID.map { [$0] } ?? [])
     self.document = document
     _draft = State(initialValue: document)
   }
 
   var body: some View {
-    NavigationStack {
+    NavigationStack(path: $slidePath) {
       List {
         Section("資料名") { TextField("資料名", text: $draft.title) }
         Section {
@@ -43,9 +46,7 @@ struct PresentationEditorView: View {
         }
         Section {
           ForEach($draft.slides) { $slide in
-            NavigationLink {
-              PresentationSlideEditor(slide: $slide)
-            } label: {
+            NavigationLink(value: slide.id) {
               VStack(alignment: .leading, spacing: 8) {
                 Text(slide.title.isEmpty ? "無題のスライド" : slide.title).font(.headline)
                 Text(slide.composition?.layout.title ?? "従来のスライド")
@@ -70,6 +71,11 @@ struct PresentationEditorView: View {
             .font(.footnote).foregroundStyle(.secondary)
         }
       }
+      .navigationDestination(for: UUID.self) { id in
+        if let index = draft.slides.firstIndex(where: { $0.id == id }) {
+          PresentationSlideEditor(slide: $draft.slides[index])
+        } else { Text("このスライドは削除されています。") }
+      }
       .navigationTitle("スライドを編集")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -85,6 +91,8 @@ struct PresentationEditorView: View {
         }
       }
       .task {
+        guard !didLoadDraft else { return }
+        didLoadDraft = true
         if let json = DraftStore.load(draftKey), let data = json.data(using: .utf8),
            let restored = try? JSONDecoder().decode(MemoraDocument.self, from: data),
            restored.id == document.id, restored.updatedAt == document.updatedAt { draft = restored }

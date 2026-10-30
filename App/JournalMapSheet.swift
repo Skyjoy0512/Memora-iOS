@@ -18,7 +18,7 @@ struct JournalMapSheet: View {
         VStack(alignment: .leading, spacing: 8) {
           Text(place.name).font(.headline)
           if let date {
-            Text(date.formatted(date: .abbreviated, time: .shortened))
+            Text(date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))
               .font(.subheadline).foregroundStyle(.secondary)
           }
           Button("Appleマップで開く") {

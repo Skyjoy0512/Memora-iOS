@@ -118,7 +118,7 @@ private struct MeetingPDFContent: View {
       VStack(alignment: .leading, spacing: 6) {
         Text(meeting.title)
           .font(.title.bold())
-        Text("\(meeting.createdAt.formatted(date: .long, time: .shortened)) · \(MemoraFormat.duration(meeting.duration)) · \(meeting.source.label)")
+        Text("\(meeting.createdAt.formatted(Date.FormatStyle(date: .long, time: .shortened).locale(Locale(identifier: "ja_JP")))) · \(MemoraFormat.duration(meeting.duration)) · \(meeting.source.label)")
           .font(.footnote)
           .foregroundStyle(.secondary)
       }

@@ -26,7 +26,7 @@ struct ShareInboxView: View {
               ForEach(request.items) { item in Text(item.title.isEmpty ? "共有された内容" : item.title).lineLimit(2) }
               Button("取り込みを再試行") { Task { await model.importShareInbox(requestID: request.id, projectID: projectID) } }
               Button("未取り込みの共有を削除", role: .destructive) { deleting = request.id }
-            } header: { Text(request.createdAt.formatted(date: .abbreviated, time: .shortened)) }
+            } header: { Text(request.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))) }
           }
           .disabled(model.isImportingShareInbox || model.currentTeamID != nil)
         }

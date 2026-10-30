@@ -391,10 +391,10 @@ struct HomeView: View {
       entryView(entry, connectsToNext: connectsToNext, nextDate: nextDate)
     case .record(let meeting):
       NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
-        JournalTimelineRow(time: meeting.createdAt.formatted(date: .omitted, time: .shortened),
+        JournalTimelineRow(time: meeting.createdAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))),
           date: meeting.createdAt, icon: meeting.source.icon, connectsToNext: connectsToNext, nextDate: nextDate) {
           VStack(alignment: .leading, spacing: 8) {
-            Text(meeting.createdAt.formatted(date: .omitted, time: .shortened))
+            Text(meeting.createdAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))))
               .font(.caption.monospacedDigit())
             Text(meeting.displayTitle).font(.headline)
             Text(meeting.summaryPreview.isEmpty ? "記録の詳細を確認" : meeting.summaryPreview)
@@ -417,10 +417,10 @@ struct HomeView: View {
         InteractionFeedback.shared.send(.tap)
         editingTask = task
       } label: {
-        JournalTimelineRow(time: task.completedAt?.formatted(date: .omitted, time: .shortened) ?? "",
+        JournalTimelineRow(time: task.completedAt?.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))) ?? "",
           date: task.completedAt ?? selectedDate, icon: .checkmark, connectsToNext: connectsToNext, nextDate: nextDate) {
           VStack(alignment: .leading, spacing: 8) {
-            Text(task.completedAt?.formatted(date: .omitted, time: .shortened) ?? "")
+            Text(task.completedAt?.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))) ?? "")
               .font(.caption.monospacedDigit())
             Text(task.title).font(.headline)
             Text("タスクを完了").font(.subheadline).foregroundStyle(.secondary)

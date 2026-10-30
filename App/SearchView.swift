@@ -79,7 +79,7 @@ struct SearchView: View {
       ScrollView {
         LazyVStack(alignment: .leading, spacing: MemoraSpacing.section) {
           if let first = model.aiMessages.first {
-            Text(first.createdAt.formatted(date: .abbreviated, time: .shortened))
+            Text(first.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))
               .font(.caption)
               .foregroundStyle(.secondary)
               .frame(maxWidth: .infinity)

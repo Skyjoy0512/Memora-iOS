@@ -12,8 +12,8 @@ enum UpcomingMeetingFormat {
   }
 
   static func timeRange(_ meeting: UpcomingMeeting) -> String {
-    let start = meeting.start.formatted(date: .omitted, time: .shortened)
-    let end = meeting.end.formatted(date: .omitted, time: .shortened)
+    let start = meeting.start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP")))
+    let end = meeting.end.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP")))
     return "\(start)–\(end)"
   }
 }

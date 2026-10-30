@@ -11,6 +11,7 @@ struct LifeLogCreationSheet: View {
   @State private var eventDate = Date.now.addingTimeInterval(3_600)
   @State private var locationName = ""
   @State private var photoItem: PhotosPickerItem?
+  @State private var isPhotoLoading = false
   @State private var photoData: Data?
   @State private var editingPhoto: PhotoEditRequest?
   @State private var place: JournalPlace?
@@ -58,6 +59,7 @@ struct LifeLogCreationSheet: View {
           PhotosPicker(selection: $photoItem, matching: .images) {
             Label(photoData == nil ? "写真を選択" : "写真を変更", icon: .photoBadgePlus)
           }
+          .disabled(isPhotoLoading)
 
           if let photoData, let image = UIImage(data: photoData) {
             Image(uiImage: image)
@@ -80,12 +82,8 @@ struct LifeLogCreationSheet: View {
             .disabled(!canSave)
         }
       }
-      .onChange(of: photoItem) { _, newValue in
-        Task {
-          guard let data = try? await newValue?.loadTransferable(type: Data.self) else { return }
-          photoItem = nil
-          editingPhoto = PhotoEditRequest(data: data)
-        }
+      .loadsSelectedPhoto($photoItem, isLoading: $isPhotoLoading) { data in
+        editingPhoto = PhotoEditRequest(data: data)
       }
       .alert("保存できませんでした", isPresented: $saveError) {
         Button("OK", role: .cancel) {}

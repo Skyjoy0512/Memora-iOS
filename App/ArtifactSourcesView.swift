@@ -21,7 +21,7 @@ struct ArtifactSourcesView: View {
           ArtifactSourceLink(row: row) { selectedSource = row }
         }
         if let date = provenance?.capturedAt {
-          Text("参照日時: " + date.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+          Text("参照日時: " + date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))).font(.caption).foregroundStyle(.secondary)
         }
         Text(provenance?.isComplete == true
           ? "参照した情報です。本文の各記述との一致は未検証です。"

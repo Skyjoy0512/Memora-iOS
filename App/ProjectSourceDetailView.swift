@@ -25,7 +25,7 @@ struct ProjectSourceDetailView: View {
           Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
           Text("\(source.kindLabel) · \(source.statusLabel)").font(.footnote).foregroundStyle(.secondary)
           if let date = source.webFetchedAt {
-            Text("取得: \(date.formatted(date: .abbreviated, time: .shortened))")
+            Text("取得: \(date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))")
               .font(.footnote).foregroundStyle(.secondary)
           }
           if let author = source.metadata?["youtubeAuthor"], !author.isEmpty {

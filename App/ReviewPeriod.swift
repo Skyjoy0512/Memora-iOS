@@ -8,9 +8,9 @@ struct ReviewPeriod: Hashable {
 
   var label: String {
     let lastDay = end.addingTimeInterval(-1)
-    let startLabel = start.formatted(date: .abbreviated, time: .omitted)
+    let startLabel = start.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP")))
     if Calendar.current.isDate(start, inSameDayAs: lastDay) { return startLabel }
-    return "\(startLabel)〜\(lastDay.formatted(date: .abbreviated, time: .omitted))"
+    return "\(startLabel)〜\(lastDay.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))))"
   }
 
   static func day(_ date: Date, calendar: Calendar = .current) -> ReviewPeriod {

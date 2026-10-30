@@ -12,6 +12,7 @@ struct DocumentDetailView: View {
 
   @State private var artifactPreview: URL?
   @State private var isEditing = false
+  @State private var presentationEditRequest: PresentationEditRequest?
   @State private var isDeleteConfirmationPresented = false
   @State private var shareItems: [Any] = []
   @State private var isSharing = false
@@ -69,7 +70,9 @@ struct DocumentDetailView: View {
               return .handled
             })
           case .slides:
-            PresentationQualityView(document: document)
+            PresentationQualityView(document: document) { id in
+              presentationEditRequest = PresentationEditRequest(document: document, initialSlideID: id)
+            }
             DocumentSlidesView(document: document)
           }
         }
@@ -112,7 +115,10 @@ struct DocumentDetailView: View {
       ToolbarActionGap()
       ToolbarActionItem(usesSystemBackground: true) {
         Menu {
-          Button("編集", icon: .pencil) { isEditing = true }
+          Button("編集", icon: .pencil) {
+            if document.kind == .slides { presentationEditRequest = PresentationEditRequest(document: document) }
+            else { isEditing = true }
+          }
           Button("削除", icon: .trash, role: .destructive) { isDeleteConfirmationPresented = true }
         } label: {
           ToolbarActionLabel("その他", icon: .ellipsis)
@@ -121,11 +127,10 @@ struct DocumentDetailView: View {
     }
     .quickLookPreview($artifactPreview)
     .sheet(isPresented: $isEditing) {
-      if document.kind == .slides {
-        PresentationEditorView(document: document)
-      } else {
-        DocumentEditSheet(document: document)
-      }
+      DocumentEditSheet(document: document)
+    }
+    .sheet(item: $presentationEditRequest) { request in
+      PresentationEditorView(document: request.document, initialSlideID: request.initialSlideID)
     }
     .sheet(isPresented: $isSharing, onDismiss: cleanUpShare) {
       ActivityView(items: shareItems, onComplete: cleanUpShare)
@@ -176,7 +181,7 @@ struct DocumentDetailView: View {
   }
 
   private func caption(_ document: MemoraDocument) -> String {
-    var parts = [document.weekStart == nil ? document.kind.label : "週報", document.updatedAt.formatted(date: .abbreviated, time: .shortened)]
+    var parts = [document.weekStart == nil ? document.kind.label : "週報", document.updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))]
     if let spaceID = document.spaceID, let space = model.space(id: spaceID) {
       parts.append(space.name)
     }

@@ -43,7 +43,7 @@ struct JournalReviewView: View {
               ForEach(places) { entry in
                 VStack(alignment: .leading, spacing: 4) {
                   Text(entry.locationName ?? entry.title)
-                  Text(entry.occurredAt.formatted(date: weekly ? .abbreviated : .omitted, time: .shortened))
+                  Text(entry.occurredAt.formatted(Date.FormatStyle(date: weekly ? .abbreviated : .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))))
                     .font(.caption).foregroundStyle(.secondary)
                 }
               }

@@ -6,6 +6,7 @@ struct MeetingNotesContent: View {
   @Environment(MemoraModel.self) private var model
   var meetingID: UUID
   @State private var photoItem: PhotosPickerItem?
+  @State private var isPhotoLoading = false
   @State private var editingPhoto: PhotoEditRequest?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var photoImages: [String: UIImage] = [:]
@@ -36,6 +37,7 @@ struct MeetingNotesContent: View {
                 .scaledToFill()
                 .frame(width: 160, height: 160)
                 .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+                .accessibilityLabel("\(index + 1)枚目の写真")
                 .overlay(alignment: .topTrailing) {
                   Button {
                     model.removeMeetingPhoto(meetingID, index: index)
@@ -44,10 +46,11 @@ struct MeetingNotesContent: View {
                       .foregroundStyle(.white)
                       .frame(width: 26, height: 26)
                       .background(.black.opacity(0.45), in: Circle())
-                      .padding(MemoraSpacing.sm)
+                      .frame(width: 44, height: 44)
+                      .contentShape(Rectangle())
                   }
                   .buttonStyle(.plain)
-                  .accessibilityLabel("写真を削除")
+                  .accessibilityLabel("\(index + 1)枚目の写真を削除")
                 }
             }
           }
@@ -65,13 +68,14 @@ struct MeetingNotesContent: View {
           }
           .buttonStyle(.plain)
           .accessibilityLabel("写真を追加")
+          .disabled(isPhotoLoading)
         }
       }
       .scrollIndicators(.hidden)
     }
     .animation(reduceMotion ? nil : .smooth, value: photos.count)
-    .onChange(of: photoItem) { _, item in
-      Task { await addPhoto(item) }
+    .loadsSelectedPhoto($photoItem, isLoading: $isPhotoLoading) { data in
+      editingPhoto = PhotoEditRequest(data: data)
     }
     .task(id: photos) {
       for name in photos where photoImages[name] == nil {
@@ -87,9 +91,4 @@ struct MeetingNotesContent: View {
     }
   }
 
-  private func addPhoto(_ item: PhotosPickerItem?) async {
-    guard let item, let data = try? await item.loadTransferable(type: Data.self) else { return }
-    photoItem = nil
-    editingPhoto = PhotoEditRequest(data: data)
-  }
 }

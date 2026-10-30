@@ -40,7 +40,7 @@ struct WebResearchView: View {
             NavigationLink { WebResearchDetailView(reportID: report.id, openProjectAction: { id in dismiss(); model.openProject(id) }) } label: {
               VStack(alignment: .leading, spacing: 4) {
                 Text(report.query).lineLimit(2)
-                Text(report.createdAt.formatted(date: .abbreviated, time: .shortened)).font(.footnote).foregroundStyle(.secondary)
+                Text(report.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))).font(.footnote).foregroundStyle(.secondary)
               }
             }
             .contextMenu {

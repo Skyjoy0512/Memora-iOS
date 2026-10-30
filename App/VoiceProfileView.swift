@@ -22,7 +22,7 @@ struct VoiceProfileView: View {
         Text("声を登録すると、録音の中からあなたの発言を確認しやすくなります。静かな場所で、自分だけで20〜40秒を目安に自然な声で話してください。")
           .foregroundStyle(.secondary)
         if let profile = model.speakerProfile {
-          LabeledContent("登録日", value: profile.createdAt.formatted(date: .abbreviated, time: .omitted))
+          LabeledContent("登録日", value: profile.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))))
           LabeledContent("発話を検出", value: "\(Int(profile.qualityMetadata.speechDuration))秒")
           LabeledContent("登録サンプル", value: "\(profile.sampleCount)件")
           Toggle("登録した声の照合を有効にする", isOn: Binding {

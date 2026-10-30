@@ -106,7 +106,7 @@ struct MeetingSummaryPosterSheet: View {
     do {
       let infographic = MeetingInfographicSample.resolve(snapshot)
       image = try MeetingSummaryPosterRenderer.render(MeetingSummaryPosterContent(
-        title: snapshot.title, date: snapshot.createdAt.formatted(date: .abbreviated, time: .omitted), summary: snapshot.summary), infographic: infographic)
+        title: snapshot.title, date: snapshot.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))), summary: snapshot.summary), infographic: infographic)
       document = infographic
     } catch { failure = "本文は保持されています。もう一度お試しください。" }
   }

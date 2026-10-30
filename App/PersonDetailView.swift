@@ -106,7 +106,7 @@ struct PersonDetailView: View {
               VStack(alignment: .leading, spacing: 3) {
                 Text(decision.text)
                   .font(.subheadline)
-                Text("\(decision.meetingTitle) · \(decision.date.formatted(date: .abbreviated, time: .omitted))")
+                Text("\(decision.meetingTitle) · \(decision.date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))))")
                   .font(.caption)
                   .foregroundStyle(.secondary)
               }
@@ -199,7 +199,7 @@ struct PersonDetailView: View {
 
   private func summary(_ memory: PersonMemory) -> String {
     guard let lastMet = memory.lastMet else { return "一緒の会議はまだありません" }
-    return "会議\(memory.meetings.count)件 · 最後に会った日 \(lastMet.formatted(date: .abbreviated, time: .omitted))"
+    return "会議\(memory.meetings.count)件 · 最後に会った日 \(lastMet.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))))"
   }
 
   /// Hands the question to the agent, which can read the person's records.

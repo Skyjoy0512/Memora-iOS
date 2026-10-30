@@ -13,11 +13,11 @@ struct JournalMovementRow: View {
       InteractionFeedback.shared.send(.tap)
       onOpen(movement)
     } label: {
-      JournalTimelineRow(time: movement.start.formatted(date: .omitted, time: .shortened),
+      JournalTimelineRow(time: movement.start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))),
         date: movement.start, icon: .tramFill, connectsToNext: connectsToNext, nextDate: nextDate) {
         VStack(alignment: .leading, spacing: 8) {
           Text(
-            "\(movement.start.formatted(date: .omitted, time: .shortened))〜\(movement.end.formatted(date: .omitted, time: .shortened))"
+            "\(movement.start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))))〜\(movement.end.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))))"
           )
           .font(.caption)
           .foregroundStyle(.secondary)

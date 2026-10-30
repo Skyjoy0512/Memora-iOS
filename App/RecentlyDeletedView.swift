@@ -103,7 +103,7 @@ struct RecentlyDeletedView: View {
         .font(.headline)
         .lineLimit(2)
 
-      Text("削除 \(record.deletedAt.formatted(date: .abbreviated, time: .shortened)) ・ 残り\(record.daysRemaining())日")
+      Text("削除 \(record.deletedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))) ・ 残り\(record.daysRemaining())日")
         .font(.caption)
         .foregroundStyle(.secondary)
     }
@@ -127,7 +127,7 @@ struct RecentlyDeletedView: View {
         .font(.headline)
         .lineLimit(2)
 
-      Text("削除 \(record.deletedAt.formatted(date: .abbreviated, time: .shortened)) ・ 残り\(record.daysRemaining())日")
+      Text("削除 \(record.deletedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))) ・ 残り\(record.daysRemaining())日")
         .font(.caption)
         .foregroundStyle(.secondary)
     }

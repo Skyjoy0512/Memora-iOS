@@ -6,7 +6,7 @@ enum MeetingShareText {
   static func make(meeting: Meeting, tasks: [MemoraTask]) -> String {
     var lines: [String] = [
       meeting.title,
-      "\(meeting.createdAt.formatted(date: .abbreviated, time: .shortened)) · \(MemoraFormat.duration(meeting.duration))"
+      "\(meeting.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))) · \(MemoraFormat.duration(meeting.duration))"
     ]
 
     if !meeting.summary.isEmpty {

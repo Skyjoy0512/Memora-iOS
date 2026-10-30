@@ -13,6 +13,7 @@ struct PeopleManagerSheet: View {
   @State private var isPhotoPickerPresented = false
   @State private var photoTarget: PhotoTarget?
   @State private var photoItem: PhotosPickerItem?
+  @State private var isPhotoLoading = false
   @State private var editingPhoto: PhotoEditRequest?
   @State private var editingPerson: Person?
 
@@ -38,6 +39,7 @@ struct PeopleManagerSheet: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("写真を選ぶ")
+            .disabled(isPhotoLoading)
 
             TextField("名前", text: $newName)
               .onSubmit(add)
@@ -69,11 +71,14 @@ struct PeopleManagerSheet: View {
                 .accessibilityAddTraits(.isButton)
                 .accessibilityLabel("\(person.name)を編集")
 
-                Button("写真を変更", icon: .photo) {
+                Button {
                   photoTarget = .person(person.id)
                   isPhotoPickerPresented = true
+                } label: {
+                  Label("\(person.name)の写真を変更", icon: .photo).labelStyle(.iconOnly)
+                    .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }
-                .labelStyle(.iconOnly)
+                .disabled(isPhotoLoading)
                 .foregroundStyle(.secondary)
               }
               .swipeActions(edge: .trailing) {
@@ -95,13 +100,8 @@ struct PeopleManagerSheet: View {
         }
       }
       .photosPicker(isPresented: $isPhotoPickerPresented, selection: $photoItem, matching: .images)
-      .onChange(of: photoItem) { _, item in
-        guard let item else { return }
-        Task {
-          guard let data = try? await item.loadTransferable(type: Data.self) else { return }
-          photoItem = nil
-          editingPhoto = PhotoEditRequest(data: data)
-        }
+      .loadsSelectedPhoto($photoItem, isLoading: $isPhotoLoading) { data in
+        editingPhoto = PhotoEditRequest(data: data)
       }
       .sheet(item: $editingPerson) { person in
         PersonEditSheet(personID: person.id)

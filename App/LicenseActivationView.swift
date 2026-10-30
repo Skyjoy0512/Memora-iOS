@@ -16,7 +16,7 @@ struct LicenseActivationView: View {
           LabeledContent("会社", value: license.company)
           LabeledContent("プラン", value: license.plan.label)
           LabeledContent("席数", value: "\(license.seats)")
-          LabeledContent("有効期限", value: license.expiresAt.formatted(date: .long, time: .omitted))
+          LabeledContent("有効期限", value: license.expiresAt.formatted(Date.FormatStyle(date: .long, time: .omitted).locale(Locale(identifier: "ja_JP"))))
         } header: {
           Text("有効なライセンス")
         } footer: {

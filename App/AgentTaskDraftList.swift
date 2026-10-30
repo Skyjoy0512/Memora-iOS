@@ -20,7 +20,7 @@ struct AgentTaskDraftList: View {
                   Text(draft.detail).font(.footnote).foregroundStyle(.secondary).lineLimit(2)
                 }
                 let metadata = [draft.assignee.isEmpty ? nil : draft.assignee,
-                  draft.dueDate?.formatted(date: .abbreviated, time: .omitted)].compactMap { $0 }
+                  draft.dueDate?.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP")))].compactMap { $0 }
                 if !metadata.isEmpty {
                   Text(metadata.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

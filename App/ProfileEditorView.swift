@@ -9,6 +9,7 @@ struct ProfileEditorView: View {
   @State private var isStickerInputActive = false
   @State private var isPhotoPickerPresented = false
   @State private var photoItem: PhotosPickerItem?
+  @State private var isPhotoLoading = false
   @State private var editingPhoto: PhotoEditRequest?
   @State private var saveFailed = false
 
@@ -62,6 +63,7 @@ struct ProfileEditorView: View {
           Button("写真を選ぶ", icon: .photoOnRectangle) {
             isPhotoPickerPresented = true
           }
+          .disabled(isPhotoLoading)
 
           if profile.avatarKind == .photo {
             Button("写真を編集", icon: .crop) {
@@ -96,15 +98,8 @@ struct ProfileEditorView: View {
         }
       }
       .photosPicker(isPresented: $isPhotoPickerPresented, selection: $photoItem, matching: .images)
-      .onChange(of: photoItem) { _, item in
-        guard let item else { return }
-        Task {
-          let data = try? await item.loadTransferable(type: Data.self)
-          photoItem = nil
-          if let data {
-            editingPhoto = PhotoEditRequest(data: data)
-          }
-        }
+      .loadsSelectedPhoto($photoItem, isLoading: $isPhotoLoading) { data in
+        editingPhoto = PhotoEditRequest(data: data)
       }
       .sheet(item: $editingPhoto) { request in
         PhotoEditorView(source: request.data, lockedAspect: .square) { edited in

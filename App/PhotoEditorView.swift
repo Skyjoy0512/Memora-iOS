@@ -7,6 +7,7 @@ import UIKit
 /// zoom, choose a shape, rotate, and tune brightness and contrast.
 struct PhotoEditorView: View {
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.dynamicTypeSize) private var typeSize
   var source: Data
   /// Fixes the crop shape, for a profile picture that must be square. The
   /// shape picker is hidden and a round guide shows what the avatar keeps.
@@ -32,10 +33,12 @@ struct PhotoEditorView: View {
 
   var body: some View {
     NavigationStack {
-      VStack(spacing: 16) {
-        cropArea
-        controls
-        Spacer(minLength: 0)
+      ScrollView {
+        VStack(spacing: 16) {
+          cropArea
+          controls
+        }
+        .frame(maxWidth: .infinity)
       }
       .padding(.horizontal, 20)
       .padding(.top, 12)
@@ -90,6 +93,22 @@ struct PhotoEditorView: View {
       }
       .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
       .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel("トリミング範囲")
+      .accessibilityValue("拡大率\(Int(scale * 100))パーセント")
+      .accessibilityAdjustableAction { direction in
+        switch direction {
+        case .increment: scale = min(6, scale + 0.25)
+        case .decrement: scale = max(1, scale - 0.25)
+        @unknown default: break
+        }
+        clamp(size)
+      }
+      .accessibilityAction(named: "中央に戻す") { offset = .zero }
+      .accessibilityAction(named: "写真を左へ移動") { offset.width -= size.width / 10; clamp(size) }
+      .accessibilityAction(named: "写真を右へ移動") { offset.width += size.width / 10; clamp(size) }
+      .accessibilityAction(named: "写真を上へ移動") { offset.height -= size.height / 10; clamp(size) }
+      .accessibilityAction(named: "写真を下へ移動") { offset.height += size.height / 10; clamp(size) }
       .gesture(magnificationGesture(size))
       .simultaneousGesture(dragGesture(size))
       .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
@@ -108,10 +127,18 @@ struct PhotoEditorView: View {
   private var controls: some View {
     VStack(spacing: 14) {
       if lockedAspect == nil {
-        MemoraSectionPicker(items: PhotoAspect.allCases, selection: $aspect, title: \.label)
+        Picker("写真の形", selection: $aspect) {
+          ForEach(PhotoAspect.allCases) { aspect in Text(aspect.label).tag(aspect) }
+        }
+        .pickerStyle(.menu)
+        .buttonStyle(.bordered)
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
 
-      HStack(spacing: 12) {
+      let buttonLayout = typeSize.isAccessibilitySize
+        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+        : AnyLayout(HStackLayout(spacing: 12))
+      buttonLayout {
         Button("回転", icon: .rotateRight) {
           quarterTurns += 1
           scale = 1
@@ -131,7 +158,7 @@ struct PhotoEditorView: View {
           clamp()
         }
         .buttonStyle(.bordered)
-        .disabled(quarterTurns == 0 && brightness == 0 && contrast == 1)
+        .disabled(quarterTurns == 0 && brightness == 0 && contrast == 1 && scale == 1 && offset == .zero)
       }
 
       slider(title: "明るさ", symbol: .sunMax, value: $brightness, range: -0.4...0.4)

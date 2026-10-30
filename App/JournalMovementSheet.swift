@@ -19,7 +19,7 @@ struct JournalMovementSheet: View {
             openEntry = entry
           } label: {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
-              Text(entry.createdAt.formatted(date: .omitted, time: .shortened))
+              Text(entry.createdAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))))
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
               Text(Self.stationName(from: entry.title))
@@ -31,7 +31,7 @@ struct JournalMovementSheet: View {
           }
           .buttonStyle(.plain)
           .accessibilityLabel(
-            "\(entry.createdAt.formatted(date: .omitted, time: .shortened))、\(Self.stationName(from: entry.title))"
+            "\(entry.createdAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))))、\(Self.stationName(from: entry.title))"
           )
           .accessibilityHint("記録を開きます")
           .swipeActions(edge: .trailing, allowsFullSwipe: true) {

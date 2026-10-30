@@ -207,7 +207,7 @@ enum NotionService {
       ])
     }
 
-    paragraph("\(meeting.createdAt.formatted(date: .long, time: .shortened)) · \(MemoraFormat.duration(meeting.duration)) · \(meeting.source.label)")
+    paragraph("\(meeting.createdAt.formatted(Date.FormatStyle(date: .long, time: .shortened).locale(Locale(identifier: "ja_JP")))) · \(MemoraFormat.duration(meeting.duration)) · \(meeting.source.label)")
 
     if !meeting.summary.isEmpty {
       heading("要約")

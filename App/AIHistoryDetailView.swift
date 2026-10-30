@@ -37,7 +37,7 @@ struct AIHistoryDetailView: View {
         VStack(alignment: .leading, spacing: 6) {
           detailRow("対象", entry.scopeLabel)
           detailRow("エンジン", engineLabel)
-          detailRow("日時", entry.createdAt.formatted(date: .abbreviated, time: .shortened))
+          detailRow("日時", entry.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))
         }
         .font(.subheadline)
         .foregroundStyle(.secondary)

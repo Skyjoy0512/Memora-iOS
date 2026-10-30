@@ -23,7 +23,7 @@ struct JournalSummaryView: View {
     let shareRecap = JournalDailyRecap.build(date: date, meetings: model.meetings,
       tasks: ownTasks, entries: model.lifeLogEntries, spaces: model.spaces,
       people: model.people, events: events)
-    let shareText = ([date.formatted(date: .complete, time: .omitted), shareRecap.heading,
+    let shareText = ([date.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(Locale(identifier: "ja_JP"))), shareRecap.heading,
       shareRecap.narrative, shareRecap.context.metrics.joined(separator: " · "),
       shareRecap.context.decisions.isEmpty ? "" : "決まったこと\n" + shareRecap.context.decisions.joined(separator: "\n"),
       shareRecap.context.openQuestions.isEmpty ? "" : "引き継ぐ問い\n" + shareRecap.context.openQuestions.joined(separator: "\n")])
@@ -206,7 +206,7 @@ struct JournalSummaryView: View {
 
   private func highlight(_ item: JournalRecapHighlight) -> some View {
     VStack(alignment: .leading, spacing: 12) {
-      Label(item.date.formatted(date: .omitted, time: .shortened), icon: item.icon)
+      Label(item.date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))), icon: item.icon)
         .font(.subheadline.weight(.medium))
       Text(item.title).font(.headline).lineLimit(3)
       Text(item.summary.isEmpty ? item.category : item.summary)

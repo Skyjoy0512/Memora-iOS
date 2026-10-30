@@ -35,7 +35,7 @@ struct AIHistoryView: View {
                   Text(entry.question)
                     .font(.body.weight(.medium))
                     .foregroundStyle(.primary)
-                  Text("\(entry.scopeLabel) · \(entry.createdAt.formatted(date: .abbreviated, time: .shortened))")
+                  Text("\(entry.scopeLabel) · \(entry.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
@@ -56,7 +56,7 @@ struct AIHistoryView: View {
                   } label: {
                     VStack(alignment: .leading, spacing: 4) {
                       Text(report.query).font(.body.weight(.medium)).lineLimit(2)
-                      Text(report.createdAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                      Text(report.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))).font(.caption).foregroundStyle(.secondary)
                     }
                   }
                 }

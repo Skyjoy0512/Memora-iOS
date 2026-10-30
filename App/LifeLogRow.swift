@@ -7,7 +7,7 @@ struct LifeLogRow: View {
   @State private var photo: UIImage?
 
   var body: some View {
-    JournalTimelineRow(time: entry.occurredAt.formatted(date: .omitted, time: .shortened),
+    JournalTimelineRow(time: entry.occurredAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))),
       date: entry.occurredAt,
       icon: entry.title == "起床" && entry.kind == .memo ? .sunrise : entry.meetingID == nil ? entry.kind.symbol : .waveform,
       connectsToNext: connectsToNext, nextDate: nextDate) {
@@ -43,7 +43,7 @@ struct LifeLogRow: View {
         }
 
         if let eventDate = entry.eventDate {
-          Label(eventDate.formatted(date: .abbreviated, time: .shortened), icon: .calendar)
+          Label(eventDate.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))), icon: .calendar)
             .font(.caption.weight(.medium))
             .foregroundStyle(.secondary)
         }
@@ -89,9 +89,9 @@ struct LifeLogRow: View {
 
   /// A stay shows its whole span; anything else shows just its time.
   private var timeLabel: String {
-    let start = entry.occurredAt.formatted(date: .omitted, time: .shortened)
+    let start = entry.occurredAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP")))
     guard let endDate = entry.endDate else { return start }
-    return "\(start)〜\(endDate.formatted(date: .omitted, time: .shortened))"
+    return "\(start)〜\(endDate.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))))"
   }
 
   private var isAutomatic: Bool {
@@ -112,7 +112,7 @@ struct LifeLogRow: View {
       parts.append(entry.summary)
     }
     if let eventDate = entry.eventDate {
-      parts.append("予定 \(eventDate.formatted(date: .abbreviated, time: .shortened))")
+      parts.append("予定 \(eventDate.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))")
     }
     if let locationName = entry.locationName, !locationName.isEmpty {
       parts.append(locationName)

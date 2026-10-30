@@ -111,8 +111,8 @@ struct CalendarEventSheet: View {
     if event.isAllDay {
       return "終日"
     }
-    let start = event.start.formatted(date: .omitted, time: .shortened)
-    let end = event.end.formatted(date: .omitted, time: .shortened)
+    let start = event.start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP")))
+    let end = event.end.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP")))
     return "\(start)〜\(end)"
   }
 

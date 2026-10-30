@@ -32,7 +32,7 @@ enum WebhookDelivery {
         ] as [String: Any]
       ]
     case .slack:
-      var lines = ["*\(meeting.displayTitle)*（\(meeting.createdAt.formatted(date: .abbreviated, time: .shortened))）"]
+      var lines = ["*\(meeting.displayTitle)*（\(meeting.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))）"]
       if isTest { lines.insert("Memoraからのテスト送信です。", at: 0) }
       let overview = meeting.summaryPreview.trimmingCharacters(in: .whitespacesAndNewlines)
       if !overview.isEmpty { lines.append(String(overview.prefix(600))) }

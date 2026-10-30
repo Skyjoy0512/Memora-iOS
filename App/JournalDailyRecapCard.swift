@@ -43,7 +43,7 @@ struct JournalDailyRecapCard: View {
       .contentShape(RoundedRectangle(cornerRadius: MemoraRadius.card))
     }
     .buttonStyle(.plain)
-    .accessibilityLabel("\(date.formatted(date: .complete, time: .omitted))。\(recap.heading)。\(recap.narrative)。\(recap.context.metrics.joined(separator: "、"))")
+    .accessibilityLabel("\(date.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(Locale(identifier: "ja_JP"))))。\(recap.heading)。\(recap.narrative)。\(recap.context.metrics.joined(separator: "、"))")
     .accessibilityHint("1日のサマリーを開きます")
   }
 }

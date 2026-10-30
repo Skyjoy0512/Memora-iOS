@@ -27,7 +27,7 @@ struct HealthReviewStatusView: View {
       }
       if loader.period == period, let error = loader.errorMessage { Text(error).foregroundStyle(.secondary) }
       if loader.period == period, let updatedAt = loader.updatedAt {
-        Text("最終取得: \(updatedAt.formatted(date: .abbreviated, time: .shortened))")
+        Text("最終取得: \(updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))")
           .font(.caption).foregroundStyle(.secondary)
       }
       Text("データなしと読み取り不許可は区別できません。端末内でのみ表示し、AIや共有には渡しません。")

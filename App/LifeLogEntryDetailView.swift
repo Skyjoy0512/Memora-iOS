@@ -126,7 +126,7 @@ struct LifeLogEntryDetailView: View {
           Image(icon: entry.kind.symbol)
           Text(entry.kind.label)
           Text("·")
-          Text(entry.occurredAt.formatted(date: .abbreviated, time: .shortened))
+          Text(entry.occurredAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))
         }
         .font(.subheadline)
         .foregroundStyle(.primary)

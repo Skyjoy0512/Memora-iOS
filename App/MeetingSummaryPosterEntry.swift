@@ -16,21 +16,27 @@ struct MeetingSummaryPosterEntry: View {
     if let current {
       VStack(alignment: .leading, spacing: 12) {
         if renderedSnapshot == current, let image {
-          Image(uiImage: image).resizable().scaledToFit()
+          Button { snapshot = current } label: {
+            Image(uiImage: image).resizable().scaledToFit()
             .frame(maxWidth: .infinity)
             .overlay(Rectangle().stroke(MemoraPalette.border, lineWidth: 1))
             .accessibilityLabel(document.map { "\(current.title)の図解。\($0.content.headline.text)。\($0.content.panels.map { $0.title + ": " + $0.items.map(\.text).joined(separator: "、") }.joined(separator: "。"))。拡大・共有の全文タブで根拠を読めます" }
               ?? "\(current.title)の本文の抜粋。図解は未作成です。下の要約本文で全内容を読めます")
+          }
+          .buttonStyle(.plain)
             .accessibilityIdentifier("summary.poster.inline")
-            .accessibilityHint("長押しで拡大・共有や図解生成を選べます")
-            .contextMenu {
-              Button("拡大・共有") { snapshot = current }
-                .accessibilityIdentifier("summary.poster.open")
-              Button(document == nil ? "AIで図解を生成" : "AIで図解を再生成") { generationSnapshot = current }
-                .accessibilityIdentifier("summary.infographic.prepare")
-            }
+            .accessibilityHint("タップで拡大・共有を開きます")
             .accessibilityAction(named: "拡大・共有") { snapshot = current }
             .accessibilityAction(named: "AIで図解を生成") { generationSnapshot = current }
+          Menu {
+            Button("拡大・共有") { snapshot = current }
+              .accessibilityIdentifier("summary.poster.open")
+            Button(document == nil ? "AIで図解を生成" : "AIで図解を再生成") { generationSnapshot = current }
+              .accessibilityIdentifier("summary.infographic.prepare")
+          } label: {
+            Label("画像の操作", icon: .ellipsis)
+              .frame(minHeight: 44).contentShape(Rectangle())
+          }
         } else if failed {
           Button("画像を再作成") { render(current) }
             .frame(minHeight: 44)
@@ -57,7 +63,7 @@ struct MeetingSummaryPosterEntry: View {
     do {
       let infographic = MeetingInfographicSample.resolve(current)
       let rendered = try MeetingSummaryPosterRenderer.render(MeetingSummaryPosterContent(
-        title: current.title, date: current.createdAt.formatted(date: .abbreviated, time: .omitted), summary: current.summary), infographic: infographic)
+        title: current.title, date: current.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))), summary: current.summary), infographic: infographic)
       guard !Task.isCancelled, current.isCurrent(in: model) else { return }
       image = rendered
       document = infographic

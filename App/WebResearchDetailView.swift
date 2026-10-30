@@ -50,7 +50,7 @@ struct WebResearchDetailView: View {
             } label: {
               VStack(alignment: .leading, spacing: 4) {
                 Text(source.title).font(.body.weight(.medium)).lineLimit(2)
-                Text(source.publishedAt.map { "公開・更新: " + $0.formatted(date: .abbreviated, time: .omitted) } ?? "公開・更新日時は未確認").font(.caption).foregroundStyle(.secondary)
+                Text(source.publishedAt.map { "公開・更新: " + $0.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))) } ?? "公開・更新日時は未確認").font(.caption).foregroundStyle(.secondary)
                 Text(source.kind.label + (report.citedSourceIDs.contains(source.id) ? " · 回答が引用" :
                   report.sentSourceIDs?.contains(source.id) == true ? " · AIへ送信" : ""))
                   .font(.footnote).foregroundStyle(.secondary)

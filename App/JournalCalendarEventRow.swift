@@ -32,7 +32,7 @@ struct JournalCalendarEventRow: View {
   }
 
   private var label: some View {
-    JournalTimelineRow(time: event.start < Calendar.current.startOfDay(for: day) ? "継続" : event.start.formatted(date: .omitted, time: .shortened),
+    JournalTimelineRow(time: event.start < Calendar.current.startOfDay(for: day) ? "継続" : event.start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))),
       date: max(event.start, Calendar.current.startOfDay(for: day)),
       icon: event.meetingID == nil ? .calendar : .waveform,
       connectsToNext: connectsToNext, nextDate: nextDate) {
@@ -71,10 +71,10 @@ struct JournalCalendarEventRow: View {
 
   private var timeText: String {
     let dayStart = Calendar.current.startOfDay(for: day)
-    let end = event.end.formatted(date: .omitted, time: .shortened)
+    let end = event.end.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP")))
     if event.start < dayStart {
       return "〜\(end)"
     }
-    return "\(event.start.formatted(date: .omitted, time: .shortened))〜\(end)"
+    return "\(event.start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP"))))〜\(end)"
   }
 }

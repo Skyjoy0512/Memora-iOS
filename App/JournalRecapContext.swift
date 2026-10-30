@@ -73,7 +73,7 @@ struct JournalRecapContext {
       result.nextSteps = unique(due.map { "明日が期限：\($0.title)（現在未完了）" })
       let upcoming = events.filter { period.contains($0.start) && $0.start > now }
         .sorted { $0.start < $1.start }
-      result.nextSteps += unique(upcoming.map { "この後の予定：\($0.start.formatted(date: .omitted, time: .shortened)) \($0.title)" })
+      result.nextSteps += unique(upcoming.map { "この後の予定：\($0.start.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: "ja_JP")))) \($0.title)" })
     }
     return result
   }

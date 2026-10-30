@@ -85,7 +85,7 @@ private struct ResidentAgentRow: View {
   private var subtitle: String {
     var text = agent.trigger.label
     if let last = agent.lastRunAt {
-      text += " · 前回 \(last.formatted(date: .abbreviated, time: .shortened))"
+      text += " · 前回 \(last.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))"
     }
     return text
   }
