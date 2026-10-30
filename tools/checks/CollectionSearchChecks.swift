@@ -3,7 +3,11 @@ import Foundation
 @main
 struct CollectionSearchChecks {
   static func main() {
+    precondition(!CollectionSearch.hasQuery(" \t\n　"))
+    precondition(CollectionSearch.hasQuery(" 研究　相談\n"))
     precondition(CollectionSearch.matches("  ", fields: []))
+    precondition(CollectionSearch.matches(" 研究　相談\n", fields: ["研究計画", "相談メモ"]))
+    precondition(CollectionSearch.matches("ＡＰＩ 開発", fields: ["api", "開発プロジェクト"]))
     precondition(CollectionSearch.matches("mori design", fields: ["Mori", "Design team"]))
     precondition(CollectionSearch.matches("ｍｏｒｉ", fields: ["Mori"]))
     precondition(CollectionSearch.matches("cafe", fields: ["Café"]))

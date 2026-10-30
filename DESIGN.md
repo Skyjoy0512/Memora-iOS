@@ -1,6 +1,6 @@
 # Memora — Native reading and conversation
 
-Updated 2026-10-23. This is the current design specification. Product behavior
+Updated 2026-10-31. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
@@ -281,7 +281,7 @@ File import is explicitly distinct from Bluetooth pairing and uses the existing
 workspace-bound, validated audio/SQLite path. Other vendor protocols are unsupported.
 
 Tools: the side menu's `ToolsView` is a Plaud-style hub for skills, summary
-templates and connectors. A top segmented picker switches between マイスキル,
+templates and connectors. A shared text selector switches between マイスキル,
 テンプレート and コネクタ, retaining the selection. Plain native lists group
 skills by source, templates by category, and connectors by purpose. Article-style
 details use a common reading width and a bottom primary action. Skill use stages
@@ -382,7 +382,7 @@ Loading reflects real operations; never invent progress or expose private reason
 
 Icon-only controls have accessible names. State uses text/traits/symbols as well
 as color. Targets are at least 44pt, with background inside the label. Larger
-text wraps/reflows; section tabs scroll. Use leading/trailing layout. Native
+text wraps/reflows; section tabs become a native menu Picker at accessibility sizes. Use leading/trailing layout. Native
 cursor, selection, VoiceOver and Japanese marked-text composition take priority.
 
 ## Verification
@@ -410,3 +410,23 @@ hierarchy, relocated controls, icon metrics and follow-up verification.
 subsequent Journal, Library, workspace, task, people, document and capture refinements.
 [Chat surface review](docs/design-refresh/CHAT_SURFACE.md) records the later
 conversation-first header, stable composer, draft navigation and sidebar refinement.
+
+
+## 2026-10-31 usability refinements
+
+Collection search uses the same local, whitespace-separated AND matching across
+Library, projects, Journal, people, documents and Tools, with case/width/diacritic
+folding. An empty or whitespace-only search shows guidance, with the original
+collection hidden. Search submission dismisses the keyboard; clearing the field
+focuses it again. No-result guidance scrolls and provides a clear-query action.
+Tools keeps its selected catalog category as the search scope. See
+[coverage and verification](docs/handoffs/UI_UX_POLISH_2026_10.md).
+
+At accessibility text sizes, content selectors use the native menu Picker,
+identifying titles wrap fully, metadata reflows, and Library bulk actions use two
+columns. While selecting, Library shows selectable local records and the bulk
+bar; sample-removal actions, unrelated sources/shared records and normal row
+mutation menus step aside. Task text uses a real Button independent of its
+completion control. Keep the system back control in pushed screens and standard
+push navigation for Library meetings. Edge-swipe behavior still needs physical
+device verification; a successful back-button tap is not that evidence.

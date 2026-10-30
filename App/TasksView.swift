@@ -148,11 +148,12 @@ struct TasksView: View {
         editingTask = task
       }
 
-      if let meetingID = task.meetingID {
+      if let meetingID = task.meetingID, model.meetingTitles[meetingID] != nil {
         ToolbarIconButton("元の会議を開く", icon: .chevronRight) {
           model.homePath.append(.meeting(meetingID))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("「\(model.meetingTitles[meetingID] ?? "記録")」を開く")
       }
     }
     .padding(.leading, CGFloat(min(depth, 4)) * 12)
@@ -192,7 +193,7 @@ struct TasksView: View {
       Button("期限を来週に", icon: .calendar) {
         model.setTaskDueDate(task.id, to: Calendar.current.date(byAdding: .day, value: 7, to: .now))
       }
-      if let meetingID = task.meetingID {
+      if let meetingID = task.meetingID, model.meetingTitles[meetingID] != nil {
         Button("元の会議を開く", icon: .docText) { model.homePath.append(.meeting(meetingID)) }
       }
       Button("削除", icon: .trash, role: .destructive) { model.deleteTask(task.id) }

@@ -19,14 +19,22 @@ struct DocumentsView: View {
     }
 
     MemoraList {
-      ForEach(documents) { document in
-        NavigationLink(value: LibraryRoute.document(document.id)) {
-          DocumentRow(document: document, spaceName: document.spaceID.flatMap { model.space(id: $0)?.name })
-        }
-        .swipeActions(edge: .trailing) {
-          Button("削除", icon: .trash, role: .destructive) {
-            pendingDeletion = document
+      Section {
+        ForEach(documents) { document in
+          NavigationLink(value: LibraryRoute.document(document.id)) {
+            DocumentRow(document: document, spaceName: document.spaceID.flatMap { model.space(id: $0)?.name })
           }
+          .swipeActions(edge: .trailing) {
+            Button("削除", icon: .trash, role: .destructive) {
+              pendingDeletion = document
+            }
+          }
+        }
+      } header: {
+        if isSearching && !isAwaitingQuery && !documents.isEmpty {
+          Text("\(documents.count)件の検索結果")
+            .font(MemoraTypography.metadata)
+            .textCase(nil)
         }
       }
     }
@@ -34,7 +42,8 @@ struct DocumentsView: View {
     .overlay(alignment: .top) {
       if isSearching && documents.isEmpty {
         CollectionSearchState(title: isAwaitingQuery ? "資料を検索" : "見つかりません",
-          message: isAwaitingQuery ? "タイトル・本文・プロジェクト名から探せます。" : "タイトルや本文の一部で検索してください。")
+          message: isAwaitingQuery ? "タイトル・本文・プロジェクト名から探せます。" : "タイトルや本文の一部で検索してください。",
+          clear: isAwaitingQuery ? nil : { query = "" })
           .accessibilityIdentifier("documents.search.state")
       } else if model.documents.isEmpty {
         ScrollView {

@@ -2,6 +2,10 @@ import Foundation
 
 /// Matches local text fields without fetching files or contacting a service.
 enum CollectionSearch {
+  static func hasQuery(_ query: String) -> Bool {
+    query.contains { !$0.isWhitespace }
+  }
+
   static func matches(_ query: String, fields: [String]) -> Bool {
     let terms = query.split(whereSeparator: \.isWhitespace)
     guard !terms.isEmpty else { return true }

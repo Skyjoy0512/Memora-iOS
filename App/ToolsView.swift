@@ -14,19 +14,22 @@ struct ToolsView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      Picker("ツールの表示", selection: $section) {
-        ForEach(ToolsSection.allCases) { section in Text(section.rawValue).tag(section) }
-      }
-      .pickerStyle(.segmented)
+      MemoraSectionPicker(items: ToolsSection.allCases, selection: $section) { $0.rawValue }
+      .accessibilityLabel("ツールの表示")
       .padding(.horizontal, MemoraSpacing.screen)
       .padding(.top, MemoraSpacing.sm)
       .padding(.bottom, MemoraSpacing.xs)
 
       Group {
-        switch section {
-        case .skills: ToolsSkillsList(query: query)
-        case .templates: ToolsTemplatesList(query: query)
-        case .connectors: ToolsConnectorsList(query: query)
+        if isSearching && !CollectionSearch.hasQuery(query) {
+          CollectionSearchState(title: "ツールを検索", message: "選んだ分類の名前や用途から探せます。複数の言葉を空白で区切って絞り込めます。")
+            .accessibilityIdentifier("tools.search.prompt")
+        } else {
+          switch section {
+          case .skills: ToolsSkillsList(query: $query)
+          case .templates: ToolsTemplatesList(query: $query)
+          case .connectors: ToolsConnectorsList(query: $query)
+          }
         }
       }
       .listStyle(.plain)

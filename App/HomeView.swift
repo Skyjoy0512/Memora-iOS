@@ -257,7 +257,7 @@ struct HomeView: View {
   /// what the search covers rather than showing the journal behind it.
   @ViewBuilder
   private func searchResults(_ entries: [LifeLogEntry]) -> some View {
-    if query.isEmpty {
+    if !CollectionSearch.hasQuery(query) {
       MemoraEmptyState(icon: .magnifyingglass, title: "記録を検索",
         message: "すべての日の記録から、タイトル・内容・記録元で探せます。予定は検索対象に含みません。")
         .padding(.top, MemoraSpacing.xxl)
@@ -306,13 +306,11 @@ struct HomeView: View {
   private var matchingEntries: [LifeLogEntry] {
     // A search looks across every day; the journal otherwise shows the day
     // picked in the calendar, taken from the index built with the records.
-    let base = query.isEmpty ? entriesForSelectedDay : model.newestLifeLogEntries
+    let base = !CollectionSearch.hasQuery(query) ? entriesForSelectedDay : model.newestLifeLogEntries
 
-    guard !query.isEmpty else { return base }
+    guard CollectionSearch.hasQuery(query) else { return base }
     return base.filter {
-      $0.title.localizedCaseInsensitiveContains(query)
-        || $0.summary.localizedCaseInsensitiveContains(query)
-        || $0.source.label.localizedCaseInsensitiveContains(query)
+      CollectionSearch.matches(query, fields: [$0.title, $0.summary, $0.source.label])
     }
   }
 

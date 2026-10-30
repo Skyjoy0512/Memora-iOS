@@ -5,6 +5,8 @@ struct DocumentRow: View {
   var document: MemoraDocument
   var spaceName: String?
 
+  @Environment(\.dynamicTypeSize) private var typeSize
+
   var body: some View {
     let preview = document.preview
     HStack(spacing: 14) {
@@ -13,12 +15,12 @@ struct DocumentRow: View {
       VStack(alignment: .leading, spacing: 3) {
         Text(document.displayTitle)
           .font(.body.weight(.medium))
-          .lineLimit(2)
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
         if document.kind == .document && !preview.isEmpty {
           Text(preview)
             .font(MemoraTypography.secondary)
             .foregroundStyle(MemoraPalette.textSecondary)
-            .lineLimit(2)
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
         }
         Text(caption)
           .font(MemoraTypography.metadata)

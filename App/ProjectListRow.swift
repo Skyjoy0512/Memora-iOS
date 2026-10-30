@@ -8,6 +8,8 @@ struct ProjectListRow: View {
   var share: () -> Void
   var delete: () -> Void
 
+  @Environment(\.dynamicTypeSize) private var typeSize
+
   var body: some View {
     HStack(spacing: 0) {
       NavigationLink(value: LibraryRoute.space(space.id)) {
@@ -16,7 +18,7 @@ struct ProjectListRow: View {
           VStack(alignment: .leading, spacing: 4) {
             Text(space.name)
               .font(.body.weight(.semibold))
-              .lineLimit(2)
+              .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
               .fixedSize(horizontal: false, vertical: true)
             Text(metadata)
               .font(.footnote)

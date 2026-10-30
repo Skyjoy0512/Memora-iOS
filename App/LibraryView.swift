@@ -4,10 +4,10 @@ import SwiftUI
 struct LibraryView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
   @Environment(\.scenePhase) private var scenePhase
   @State private var query = ""
   @State private var isSearching = false
-  @Namespace private var heroNamespace
   @State private var isSelectionMode = false
   @State private var selectedMeetingIDs: Set<UUID> = []
   @State private var isBulkDeleteConfirmPresented = false
@@ -146,15 +146,14 @@ struct LibraryView: View {
         model.isFileSelectionActive = selecting
       }
       .onAppear { model.isFileSelectionActive = isSelectionMode }
+      .onChange(of: model.meetingTitles) { _, titles in
+        guard isSelectionMode else { return }
+        selectedMeetingIDs.formIntersection(titles.keys)
+      }
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id):
-          if model.librarySection == .files {
-            MeetingDetailView(meetingID: id)
-              .navigationTransition(.zoom(sourceID: id, in: heroNamespace))
-          } else {
-            MeetingDetailView(meetingID: id)
-          }
+          MeetingDetailView(meetingID: id)
         default: LibraryDestinationView(route: route)
         }
       }
@@ -268,15 +267,15 @@ struct LibraryView: View {
   private var filesPage: some View {
     // Searching replaces the list with its results; before anything is typed
     // there is nothing to match, so the files stay out of the way.
-    let isAwaitingQuery = isSearching && query.isEmpty
+    let isAwaitingQuery = isSearching && !CollectionSearch.hasQuery(query)
     let sections = isAwaitingQuery ? [] : fileSections
     let count = sections.reduce(0) { $0 + $1.meetings.count }
     let sharedRecords = model.cloudSharing.sharedRecords
-    let savedSources = isAwaitingQuery ? [] : model.projectSources.filter { query.isEmpty || $0.title.localizedStandardContains(query) }
+    let savedSources = isAwaitingQuery ? [] : model.projectSources.filter { CollectionSearch.matches(query, fields: [$0.title]) }
     let resultCount = count + savedSources.count
 
     return List {
-      if !isSearching {
+      if !isSearching && !isSelectionMode {
         listHeaderRows
 
         if model.hasSampleContent {
@@ -293,7 +292,7 @@ struct LibraryView: View {
 
       // Teammates' records sit in their own section, apart from this person's
       // files, and only while nothing narrows the list.
-      if !isSearching, statusFilter == .all, !sharedRecords.isEmpty {
+      if !isSearching, !isSelectionMode, statusFilter == .all, !sharedRecords.isEmpty {
         Section {
           ForEach(sharedRecords) { record in
             sharedRow(record)
@@ -306,7 +305,7 @@ struct LibraryView: View {
         }
       }
 
-      if !savedSources.isEmpty, !isAwaitingQuery {
+      if !savedSources.isEmpty, !isAwaitingQuery, !isSelectionMode {
         Section {
           ForEach(isSearching ? savedSources : Array(savedSources.prefix(3))) { source in
             NavigationLink(value: LibraryRoute.projectSource(source.id)) { ProjectSourceRow(source: source) }
@@ -317,12 +316,12 @@ struct LibraryView: View {
         }
       }
 
-      if sections.isEmpty && savedSources.isEmpty {
+      if sections.isEmpty && (savedSources.isEmpty || isSelectionMode) {
         Group {
           if isAwaitingQuery {
             MemoraEmptyState(icon: .magnifyingglass, title: "ファイルを検索",
               message: "タイトル、発言、決定、タスクと保存したソースから探せます。")
-          } else if !query.isEmpty {
+          } else if CollectionSearch.hasQuery(query) {
             MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
               message: "「\(query)」に一致するファイル・ソースはありません。短い言葉や別の表現で試してください。",
               actionTitle: "検索をやり直す", actionIcon: .xmark) { query = "" }
@@ -351,7 +350,7 @@ struct LibraryView: View {
           }
         }
 
-        if !query.isEmpty {
+        if CollectionSearch.hasQuery(query) {
           Text("\(resultCount)件")
             .font(MemoraTypography.secondary)
             .foregroundStyle(.secondary)
@@ -406,33 +405,43 @@ struct LibraryView: View {
       }
     }
     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-      Button(role: .destructive) {
-        withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-          model.deleteMeeting(meeting.id)
+      if !isSelectionMode {
+        Button(role: .destructive) {
+          withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+            model.deleteMeeting(meeting.id)
+          }
+        } label: {
+          Label("削除", icon: .trash)
         }
-      } label: {
-        Label("削除", icon: .trash)
       }
     }
     .swipeActions(edge: .leading) {
-      Button {
-        withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-          beginSelection(with: meeting.id)
+      if !isSelectionMode {
+        Button {
+          withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+            beginSelection(with: meeting.id)
+          }
+        } label: {
+          Label("選択", icon: .checkmarkCircle)
         }
-      } label: {
-        Label("選択", icon: .checkmarkCircle)
+        .tint(MemoraPalette.textPrimary)
       }
-      .tint(MemoraPalette.textPrimary)
     }
     .contextMenu {
-      Button("開く", icon: .arrowUpRightSquare) {
-        model.libraryPath.append(.meeting(meeting.id))
+      if isSelectionMode {
+        Button(selectedMeetingIDs.contains(meeting.id) ? "選択を解除" : "選択", icon: .checkmarkCircle) {
+          toggleSelection(meeting.id)
+        }
+      } else {
+        Button("開く", icon: .arrowUpRightSquare) {
+          model.libraryPath.append(.meeting(meeting.id))
+        }
+        Button("名前を変更", icon: .pencil) { renameTarget = meeting }
+        Button("プロジェクトへ移動", icon: .folder) { moveTarget = meeting }
+        Button("共有", icon: .squareAndArrowUp) { shareTarget = meeting }
+        Button("選択", icon: .checkmarkCircle) { beginSelection(with: meeting.id) }
+        Button("削除", icon: .trash, role: .destructive) { model.deleteMeeting(meeting.id) }
       }
-      Button("名前を変更", icon: .pencil) { renameTarget = meeting }
-      Button("プロジェクトへ移動", icon: .folder) { moveTarget = meeting }
-      Button("共有", icon: .squareAndArrowUp) { shareTarget = meeting }
-      Button("選択", icon: .checkmarkCircle) { beginSelection(with: meeting.id) }
-      Button("削除", icon: .trash, role: .destructive) { model.deleteMeeting(meeting.id) }
     }
   }
 
@@ -446,7 +455,6 @@ struct LibraryView: View {
         isSelecting: isSelectionMode,
         isSelected: selectedMeetingIDs.contains(meeting.id)
       )
-      .matchedTransitionSource(id: meeting.id, in: heroNamespace)
     }
     .buttonStyle(.plain)
     .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
@@ -495,7 +503,9 @@ struct LibraryView: View {
   }
 
   private var selectionBar: some View {
-    HStack(spacing: 8) {
+    let columns = Array(repeating: GridItem(.flexible(), spacing: MemoraSpacing.sm),
+                        count: typeSize.isAccessibilitySize ? 2 : 4)
+    return LazyVGrid(columns: columns, spacing: MemoraSpacing.sm) {
       selectionAction("共有", icon: .squareAndArrowUp) { shareSelected() }
       selectionAction(
         "チーム",
@@ -530,6 +540,8 @@ struct LibraryView: View {
         Text(title)
           .font(.caption2.weight(.medium))
       }
+      .multilineTextAlignment(.center)
+      .fixedSize(horizontal: false, vertical: true)
       .frame(maxWidth: .infinity, minHeight: 48)
       .foregroundStyle(isDestructive ? AnyShapeStyle(.red) : AnyShapeStyle(.tint))
       .contentShape(Rectangle())
@@ -537,6 +549,7 @@ struct LibraryView: View {
     .buttonStyle(.plain)
     .disabled(selectedMeetingIDs.isEmpty)
     .accessibilityLabel(title)
+    .accessibilityValue("\(selectedMeetingIDs.count)件を選択")
   }
 
   private var emptyFilesPrompt: some View {
@@ -556,11 +569,14 @@ struct LibraryView: View {
 
   private func beginSelection(with id: UUID) {
     InteractionFeedback.shared.send(.selection)
-    isSelectionMode = true
+    beginSelectionMode()
     selectedMeetingIDs.insert(id)
   }
 
   private func beginSelectionMode() {
+    isSearching = false
+    query = ""
+    model.isSearchActive = false
     withAnimation(reduceMotion ? nil : MemoraMotion.control) {
       isSelectionMode = true
     }
@@ -638,7 +654,7 @@ struct LibraryView: View {
   private var matchingMeetings: [Meeting] {
     let records = model.meetings
     var result = records.filter { statusFilter.matches($0.status) }
-    if !query.isEmpty {
+    if CollectionSearch.hasQuery(query) {
       result = result.filter(matchesQuery)
     }
     switch sort {
@@ -688,7 +704,7 @@ struct LibraryView: View {
   }
 
   private func matchesQuery(_ meeting: Meeting) -> Bool {
-    model.searchText(for: meeting).localizedCaseInsensitiveContains(query)
+    CollectionSearch.matches(query, fields: [model.searchText(for: meeting)])
   }
 
 }

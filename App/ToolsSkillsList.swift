@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ToolsSkillsList: View {
   @Environment(MemoraModel.self) private var model
-  var query = ""
+  @Binding var query: String
 
   var body: some View {
     let groups: [(String, [MemoraSkill])] = [
@@ -37,7 +37,7 @@ struct ToolsSkillsList: View {
     }
     .overlay(alignment: .top) {
       if groups.allSatisfy({ $0.1.isEmpty }) {
-        ToolsSearchEmptyState()
+        ToolsSearchEmptyState { query = "" }
       }
     }
   }

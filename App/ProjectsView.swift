@@ -14,11 +14,11 @@ struct ProjectsView: View {
 
   var body: some View {
     let latestDates = model.spaceAggregates.compactMapValues(\.latestDate)
-    let projects = order.ordered(model.spaces.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }, latestDates: latestDates)
+    let projects = order.ordered(model.spaces.filter { CollectionSearch.matches(query, fields: [$0.name]) }, latestDates: latestDates)
     let matchingIDs = Set(projects.map(\.id))
-    let isAwaitingQuery = isSearching && query.isEmpty
+    let isAwaitingQuery = isSearching && !CollectionSearch.hasQuery(query)
     let shared = model.cloudSharing.sharedProjects.filter {
-      query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) || $0.ownerName.localizedCaseInsensitiveContains(query)
+      CollectionSearch.matches(query, fields: [$0.name, $0.ownerName])
     }
     let visibleProjects = isAwaitingQuery || filter == .shared ? [] : projects
     let visibleShared = isAwaitingQuery || filter == .mine ? [] : shared

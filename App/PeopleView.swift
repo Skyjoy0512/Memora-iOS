@@ -15,22 +15,30 @@ struct PeopleView: View {
     }
 
     MemoraList {
-      ForEach(people) { person in
-        NavigationLink(value: LibraryRoute.person(person.id)) {
-          HStack(spacing: 12) {
-            PersonAvatar(name: person.name, size: 44, photoData: person.photoData)
-            VStack(alignment: .leading, spacing: 2) {
-              Text(person.name)
-                .font(.body.weight(.medium))
-              Text(caption(for: person))
-                .font(MemoraTypography.metadata)
-                .foregroundStyle(MemoraPalette.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+      Section {
+        ForEach(people) { person in
+          NavigationLink(value: LibraryRoute.person(person.id)) {
+            HStack(spacing: 12) {
+              PersonAvatar(name: person.name, size: 44, photoData: person.photoData)
+              VStack(alignment: .leading, spacing: 2) {
+                Text(person.name)
+                  .font(.body.weight(.medium))
+                Text(caption(for: person))
+                  .font(MemoraTypography.metadata)
+                  .foregroundStyle(MemoraPalette.textSecondary)
+                  .fixedSize(horizontal: false, vertical: true)
+              }
             }
+            .padding(.vertical, MemoraSpacing.xxs)
+            .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)
+            .accessibilityElement(children: .combine)
           }
-          .padding(.vertical, MemoraSpacing.xxs)
-          .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)
-          .accessibilityElement(children: .combine)
+        }
+      } header: {
+        if isSearching && !isAwaitingQuery && !people.isEmpty {
+          Text("\(people.count)件の検索結果")
+            .font(MemoraTypography.metadata)
+            .textCase(nil)
         }
       }
     }
@@ -38,7 +46,8 @@ struct PeopleView: View {
     .overlay(alignment: .top) {
       if isSearching && people.isEmpty {
         CollectionSearchState(title: isAwaitingQuery ? "人物を検索" : "見つかりません",
-          message: isAwaitingQuery ? "名前やメモから探せます。" : "名前やメモの一部で検索してください。")
+          message: isAwaitingQuery ? "名前やメモから探せます。" : "名前やメモの一部で検索してください。",
+          clear: isAwaitingQuery ? nil : { query = "" })
           .accessibilityIdentifier("people.search.state")
       } else if model.people.isEmpty {
         ScrollView {
@@ -86,7 +95,8 @@ struct PeopleView: View {
   private func caption(for person: Person) -> String {
     let count = model.meetingCount(forPerson: person.id)
     guard let last = model.meetings(withPerson: person.id).first?.createdAt else {
-      return person.note ?? "記録はまだありません"
+      let note = person.note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      return note.isEmpty ? "記録はまだありません" : note
     }
     return "会議\(count)件 · 最後に会った日 \(MemoraFormat.documentDate(last))"
   }

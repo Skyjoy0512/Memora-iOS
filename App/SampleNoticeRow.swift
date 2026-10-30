@@ -6,22 +6,33 @@ import SwiftUI
 struct SampleNoticeRow: View {
   @Environment(MemoraModel.self) private var model
   @State private var isConfirming = false
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
-    HStack(spacing: 10) {
-      Image(icon: .sparkles)
-        .foregroundStyle(.primary)
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.md))
+      : AnyLayout(HStackLayout(spacing: MemoraSpacing.sm))
+    return layout {
+      HStack(spacing: MemoraSpacing.sm) {
+        Image(icon: .sparkles)
+          .foregroundStyle(.primary)
+          .accessibilityHidden(true)
 
-      Text("サンプルを表示しています")
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
+        Text("サンプルを表示しています")
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
 
-      Spacer(minLength: 8)
-
-      Button("サンプルを削除") {
-        isConfirming = true
       }
-      .font(.subheadline.weight(.semibold))
+      if !typeSize.isAccessibilitySize { Spacer(minLength: MemoraSpacing.sm) }
+
+      Button { isConfirming = true } label: {
+        Text("サンプルを削除")
+          .font(.subheadline.weight(.semibold))
+          .fixedSize(horizontal: false, vertical: true)
+          .frame(minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+          .contentShape(Rectangle())
+      }
     }
     .padding(MemoraSpacing.lg)
     .memoraCard()

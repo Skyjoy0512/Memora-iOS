@@ -4,19 +4,27 @@ import SwiftUI
 struct CollectionSearchState: View {
   var title: String
   var message: String
+  var clear: (() -> Void)? = nil
 
   var body: some View {
-    VStack(spacing: MemoraSpacing.sm) {
-      Text(title).font(.headline)
-      Text(message).font(.subheadline).foregroundStyle(MemoraPalette.textSecondary)
-        .lineSpacing(MemoraSpacing.xs)
+    ScrollView {
+      VStack(spacing: MemoraSpacing.sm) {
+        Text(title).font(.headline).accessibilityAddTraits(.isHeader)
+        Text(message).font(.subheadline).foregroundStyle(MemoraPalette.textSecondary)
+          .lineSpacing(MemoraSpacing.xs)
+        if let clear {
+          Button("検索語を消去", action: clear)
+            .buttonStyle(MemoraButtonStyle(emphasis: .secondary))
+            .padding(.top, MemoraSpacing.sm)
+        }
+      }
+      .multilineTextAlignment(.center)
+      .fixedSize(horizontal: false, vertical: true)
+      .frame(maxWidth: MemoraSpacing.messageWidth)
+      .padding(.horizontal, MemoraSpacing.screen)
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, MemoraSpacing.section)
     }
-    .multilineTextAlignment(.center)
-    .fixedSize(horizontal: false, vertical: true)
-    .frame(maxWidth: MemoraSpacing.messageWidth)
-    .padding(.horizontal, MemoraSpacing.screen)
     .frame(maxWidth: .infinity)
-    .padding(.top, MemoraSpacing.section)
-    .accessibilityElement(children: .combine)
   }
 }

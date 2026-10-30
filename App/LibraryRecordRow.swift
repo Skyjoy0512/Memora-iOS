@@ -7,8 +7,13 @@ struct LibraryRecordRow: View {
   var isSelected = false
   var sharedBy: String?
 
+  @Environment(\.dynamicTypeSize) private var typeSize
+
   var body: some View {
-    HStack(alignment: .top, spacing: MemoraSpacing.md) {
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+      : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
+    return layout {
       if isSelecting {
         Image(icon: isSelected ? .checkmarkCircleFill : .circle, size: 17)
           .frame(width: ProjectLayout.iconSide)
@@ -27,7 +32,7 @@ struct LibraryRecordRow: View {
           Text(meeting.shortSummaryPreview)
             .font(MemoraTypography.secondary)
             .foregroundStyle(MemoraPalette.textSecondary)
-            .lineLimit(2)
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
             .padding(.leading, ProjectLayout.iconSide + MemoraSpacing.md)
         }
       }
@@ -38,6 +43,8 @@ struct LibraryRecordRow: View {
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
     .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    .accessibilityValue(isSelecting ? (isSelected ? "選択済み" : "未選択") : "")
+    .accessibilityHint(isSelecting ? "タップして選択を切り替えます" : "記録を開きます")
   }
 
   private var hasPreview: Bool {

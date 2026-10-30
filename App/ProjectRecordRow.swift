@@ -4,8 +4,13 @@ struct ProjectRecordRow: View {
   var meeting: Meeting
   var showsReadyStatus = false
 
+  @Environment(\.dynamicTypeSize) private var typeSize
+
   var body: some View {
-    HStack(alignment: .top, spacing: MemoraSpacing.md) {
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+      : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
+    return layout {
       Image(icon: meeting.source.icon, size: 17)
         .frame(width: ProjectLayout.iconSide, height: 24)
         .foregroundStyle(MemoraPalette.textSecondary)
@@ -13,7 +18,7 @@ struct ProjectRecordRow: View {
       VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
         Text(meeting.displayTitle)
           .font(MemoraTypography.body.weight(.medium))
-          .lineLimit(2)
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
           .fixedSize(horizontal: false, vertical: true)
         Text("\(MemoraFormat.relativeDate(meeting.createdAt)) · \(meeting.source.label) · \(MemoraFormat.duration(meeting.duration))")
           .font(MemoraTypography.metadata)

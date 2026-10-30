@@ -26,9 +26,16 @@ struct ToolbarSearchField: View {
           .focused($isFocused)
           .submitLabel(.search)
           .autocorrectionDisabled()
+          .textInputAutocapitalization(.never)
+          .accessibilityLabel(prompt)
+          .accessibilityIdentifier("collection.search.input")
+          .onSubmit { isFocused = false }
 
         if !text.isEmpty {
-          MemoraIconButton("検索語を消去", icon: .xmarkCircleFill) { text = "" }
+          MemoraIconButton("検索語を消去", icon: .xmarkCircleFill) {
+            text = ""
+            isFocused = true
+          }
         }
       }
       .padding(.horizontal, MemoraSpacing.md)
@@ -40,6 +47,7 @@ struct ToolbarSearchField: View {
           .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget)
           .contentShape(Rectangle())
       }
+      .accessibilityIdentifier("collection.search.cancel")
     }
     .padding(.horizontal, MemoraSpacing.screen)
     .padding(.vertical, MemoraSpacing.sm)
@@ -68,6 +76,7 @@ private struct ToolbarSearchModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
+      .scrollDismissesKeyboard(.interactively)
       .toolbar(isPresented ? .hidden : .visible, for: .navigationBar)
       .safeAreaInset(edge: .top, spacing: 0) {
         if isPresented {

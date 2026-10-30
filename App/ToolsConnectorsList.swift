@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ToolsConnectorsList: View {
-  var query = ""
+  @Binding var query: String
   var body: some View {
     let services = IntegrationCatalog.services.filter {
       ToolsCatalogSearch.matches(query, fields: [$0.name, $0.summary] + $0.aliases)
@@ -42,7 +42,7 @@ struct ToolsConnectorsList: View {
     }
     .overlay(alignment: .top) {
       if services.isEmpty && !showsWebhook && !showsSystem {
-        ToolsSearchEmptyState()
+        ToolsSearchEmptyState { query = "" }
       }
     }
   }
@@ -88,8 +88,9 @@ private struct ToolsConnectorStatus: View {
         .padding(.horizontal, MemoraSpacing.sm)
         .padding(.vertical, MemoraSpacing.xs)
         .background(MemoraPalette.success.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
-    } else if !isImplemented {
-      Text("未対応").font(.caption).foregroundStyle(.secondary)
+    } else {
+      Text(isImplemented ? "未接続" : "未対応").font(.caption).foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
     }
   }
 }
