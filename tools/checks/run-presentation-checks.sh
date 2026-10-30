@@ -13,4 +13,5 @@ swiftc -DDEBUG App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/Art
   tools/checks/PresentationPlanningChecks.swift tools/checks/PresentationRevisionChecks.swift tools/checks/PresentationLayoutChecks.swift -o "$check_dir/checks"
 "$check_dir/checks" "$check_dir/output"
 python3 -B tools/checks/validate-presentation-packages.py "$check_dir/output"
+bash tools/checks/run-presentation-scenario-checks.sh >/dev/null
 echo "Presentation artifacts: $check_dir/output"

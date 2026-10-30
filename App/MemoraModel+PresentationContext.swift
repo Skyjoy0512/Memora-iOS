@@ -68,6 +68,10 @@ extension MemoraModel {
       // Private notes stay on the device. Only the name, the meetings the person
       // was tagged on, and their own recorded lines are sent.
       var lines = [person.name]
+      let assigned = tasks.filter { $0.relationships.assigneePersonID == person.id && !$0.isCompleted }
+      for task in assigned.prefix(5) {
+        lines.append("担当タスク: \(task.title)\(task.dueDate.map { "（期限 \($0.formatted(date: .numeric, time: .omitted))）" } ?? "")")
+      }
       for meeting in related.prefix(8) {
         lines.append("会議: \(meeting.displayTitle) \(meeting.createdAt.formatted(date: .numeric, time: .omitted))")
         let quotes = meeting.transcript

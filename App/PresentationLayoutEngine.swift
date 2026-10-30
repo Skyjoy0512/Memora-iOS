@@ -3,7 +3,7 @@ import Foundation
 
 /// Content-specific compositions share primitives, never a generic bullet fallback.
 enum PresentationLayoutEngine {
-  static func elements(for slide: DocumentSlide) -> [PresentationElement] {
+  static func elements(for slide: DocumentSlide, pageNumber: Int? = nil) -> [PresentationElement] {
     guard let content = slide.composition else { return [] }
     let problems = PresentationValidator.inputIssues(for: slide)
     guard problems.isEmpty else {
@@ -11,6 +11,7 @@ enum PresentationLayoutEngine {
                     text: "内容を確認してください\n" + problems.map(\.message).joined(separator: "\n"))]
     }
     var b = Builder()
+    b.pageNumber = pageNumber
     let layout = content.layout
     let items = content.items ?? []
     let annotations = (content.annotations ?? []).joined(separator: "\n")
@@ -105,7 +106,7 @@ enum PresentationLayoutEngine {
       case .m02:
         b.evidenceRows(items, lead: content.subtitle ?? "")
       case .m03:
-        b.metrics(content.metrics ?? [], columns: 2, large: true)
+        b.bigStats(content.metrics ?? [])
       case .m04:
         b.metrics(content.metrics ?? [], columns: 3, large: false)
       case .m05:
@@ -200,13 +201,18 @@ enum PresentationLayoutEngine {
         b.text(annotations, 54, 466, 852, 28, size: 12, color: PresentationTheme.secondary)
       }
       let sources = (content.sources ?? []).map { "出典: \($0.title) \($0.locator)" }.joined(separator: " / ")
-      b.text(sources, 54, 504, 852, 24, size: 10, color: PresentationTheme.secondary)
+      b.text(sources, 54, 504, b.pageNumber == nil ? 852 : 790, 24, size: 10,
+             color: PresentationTheme.secondary)
+      if let pageNumber = b.pageNumber {
+        b.text(String(pageNumber), 880, 506, 26, 20, size: 10, color: PresentationTheme.secondary)
+      }
     }
     return b.elements
   }
 
   private struct Builder {
     var elements: [PresentationElement] = []
+    var pageNumber: Int? = nil
     enum Visual { case plain, heat, harvey, bubble }
     enum ScheduleMode { case swimlane, roadmap, gantt }
 
@@ -382,6 +388,38 @@ enum PresentationLayoutEngine {
         text(SlideContent.number(metric.value) + metric.unit, x, y + 48, w, large ? 94 : 64,
              size: large ? 56 : 38, bold: true, color: i == 1 ? PresentationTheme.orange : PresentationTheme.blue)
         text(metric.detail ?? "", x, y + (large ? 162 : 114), w, max(20, h - (large ? 172 : 122)), size: 18)
+      }
+    }
+
+    /// Shrinks a display value only as far as needed to fit its column; it
+    /// never wraps a number into two lines.
+    func fittedSize(_ text: String, width: Double, maximum: Double, minimum: Double) -> Double {
+      var size = maximum
+      while size > minimum {
+        let probe = PresentationElement(id: 0, kind: .text, x: 0, y: 0, width: width, height: 150,
+                                        text: text, fontSize: size, bold: true)
+        if PresentationText.lines(probe).count == 1, PresentationText.widestLine(probe) <= width {
+          return size
+        }
+        size -= 4
+      }
+      return minimum
+    }
+
+    /// Jinba's big-stat pair: two oversized values with the reading beneath,
+    /// not a grid of tiles.
+    mutating func bigStats(_ metrics: [SlideContent.Metric]) {
+      let shown = Array(metrics.prefix(2))
+      let count = max(1, shown.count), gap = 96.0
+      let w = (852 - Double(count - 1) * gap) / Double(count)
+      for (i, metric) in shown.enumerated() {
+        let x = 54 + Double(i) * (w + gap)
+        let value = SlideContent.number(metric.value) + metric.unit
+        text(value, x, 148, w, 150,
+             size: fittedSize(value, width: w, maximum: 104, minimum: 44), bold: true,
+             color: PresentationTheme.blue)
+        text(metric.label, x, 312, w, 60, size: 21)
+        text(metric.detail ?? "", x, 374, w, 90, size: 15, color: PresentationTheme.secondary)
       }
     }
 

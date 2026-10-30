@@ -175,6 +175,11 @@ extension MemoraModel {
       let rendered = pack.render()
       if !rendered.isEmpty {
         agentPresentationEvidence[placeholder.id] = pack
+        let evidenceStep = beginAgentStep(AgentStep(icon: AgentTool.searchRecords.icon,
+          title: "根拠を整理しました", detail: "候補\(pack.investigation.consideredSources)件"),
+          on: placeholder.id)
+        finishAgentStep(evidenceStep, on: placeholder.id, state: .done,
+          detail: "候補\(pack.investigation.consideredSources)件 / 採用\(pack.investigation.includedSources)件 / 決定\(pack.decisions.filter(\.isCurrent).count)件")
         opening = "資料作成・深掘りの根拠パック（利用が許可された記録のみ。出典IDを保持し、要約で数値や固有名詞を変えない）:\n\(rendered)\n\n" + opening
         let packRecordIDs = pack.relatedSources.compactMap { reference -> UUID? in
           guard reference.id.hasPrefix("record:") else { return nil }

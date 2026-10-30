@@ -113,7 +113,7 @@ enum PresentationValidator {
   static func issues(for slide: DocumentSlide) -> [Issue] {
     var issues = inputIssues(for: slide)
     guard issues.isEmpty, let content = slide.composition else { return issues }
-    let elements = PresentationLayoutEngine.elements(for: slide)
+    let elements = PresentationLayoutEngine.elements(for: slide, pageNumber: [.b01, .b04, .b10].contains(content.layout) ? nil : 1)
     for element in elements {
       if ![element.x, element.y, element.width, element.height].allSatisfy(\.isFinite)
           || element.x < 0 || element.y < 0 || element.width < 0 || element.height < 0

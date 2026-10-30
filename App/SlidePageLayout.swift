@@ -27,13 +27,18 @@ enum SlidePageLayout {
     let slides = document.slides.isEmpty
       ? [DocumentSlide(id: document.id, title: document.displayTitle, bullets: [])]
       : document.slides
-    return slides.flatMap { pages(for: $0) }
+    return slides.enumerated().flatMap { index, slide in pages(for: slide, pageNumber: index + 1) }
   }
 
   static func pages(for slide: DocumentSlide) -> [SlidePage] {
+    pages(for: slide, pageNumber: nil)
+  }
+
+  static func pages(for slide: DocumentSlide, pageNumber: Int?) -> [SlidePage] {
     if let content = slide.composition {
+      let number = [.b01, .b04, .b10].contains(content.layout) ? nil : pageNumber
       return [SlidePage(sourceID: slide.id, fragment: 0, titleLines: [slide.title], bullets: [], notes: slide.notes,
-        isCover: [.b01, .b04, .b10].contains(content.layout), elements: PresentationLayoutEngine.elements(for: slide),
+        isCover: [.b01, .b04, .b10].contains(content.layout), elements: PresentationLayoutEngine.elements(for: slide, pageNumber: number),
         readingText: content.readingText)]
     }
     let isCover = slide.isTitleSlide

@@ -32,7 +32,8 @@ struct PresentationScenarioChecks {
         report.append("")
         report.append("**失敗**: " + errors.map { "\($0.code): \($0.message)" }.joined(separator: " / "))
         report.append("")
-        continue
+        
+                continue
       }
       let directory = output.appendingPathComponent(scenario.id, isDirectory: true)
       try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

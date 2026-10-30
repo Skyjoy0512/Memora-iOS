@@ -129,7 +129,7 @@ enum CompanyPresentationExporter {
     for (index, slide) in document.slides.enumerated() {
       try Task.checkCancellation()
       let slidePath = newPath("ppt/slides", prefix: "slide"), notePath = newPath("ppt/notesSlides", prefix: "notesSlide")
-      let elements = try themedElements(slide, theme: selection.master.theme!)
+      let elements = try themedElements(slide, theme: selection.master.theme!, pageNumber: [.b01, .b04, .b10].contains(slide.composition?.layout) ? nil : index + 1)
       let shapes = PresentationOOXML.shapes(elements, schemeColors: palette, lightenedColors: [PresentationTheme.rule, "DBEAFE"])
       parts[slidePath] = Data(("<?xml version=\"1.0\" encoding=\"UTF-8\"?><p:sld \(namespaces)><p:cSld><p:spTree>\(PPTXWriter.emptyTree)\(shapes)</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>").utf8)
       parts[relationshipPath(slidePath)] = Data(relsXML([("rIdLayout", "slideLayout", "../slideLayouts/" + (selection.layout.id as NSString).lastPathComponent),
@@ -213,7 +213,8 @@ enum CompanyPresentationExporter {
     guard colors["bg1"]! > 0.99 else { throw Failure(reason: "この版は白い背景の会社書式が対象です。") }
   }
 
-  static func themedElements(_ slide: DocumentSlide, theme: CompanyPresentationProfile.Theme) throws -> [PresentationElement] {
+  static func themedElements(_ slide: DocumentSlide, theme: CompanyPresentationProfile.Theme,
+                             pageNumber: Int? = nil) throws -> [PresentationElement] {
     func face(_ fonts: [String: String], japanese: Bool) throws -> String {
       guard let name = japanese ? fonts["Jpan"] ?? fonts["ea"] ?? fonts["latin"] : fonts["latin"], !name.isEmpty else { throw Failure(reason: "テーマのフォントを確定できません。") }
       let font = PresentationText.font(size: 20, bold: false, name: name)
@@ -223,7 +224,7 @@ enum CompanyPresentationExporter {
     }
     let heading = (try face(theme.headingFonts, japanese: true), try face(theme.headingFonts, japanese: false))
     let body = (try face(theme.bodyFonts, japanese: true), try face(theme.bodyFonts, japanese: false))
-    return try PresentationLayoutEngine.elements(for: slide).map { original in
+    return try PresentationLayoutEngine.elements(for: slide, pageNumber: pageNumber).map { original in
       var e = original
       guard palette[e.color] != nil, e.fill == nil || palette[e.fill!] != nil else { throw Failure(reason: "テーマへ対応できない色があります。") }
       e.fontName = e.bold ? heading.0 : body.0; e.latinFontName = e.bold ? heading.1 : body.1

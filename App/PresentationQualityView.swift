@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PresentationQualityView: View {
+  @Environment(MemoraModel.self) private var model
   var document: MemoraDocument
 
   var body: some View {
@@ -44,7 +45,7 @@ struct PresentationQualityView: View {
           if !evidence.investigation.topics.isEmpty {
             Text("検索語: " + evidence.investigation.topics.prefix(8).joined(separator: "、"))
           }
-          let current = evidence.decisions.filter(\.isCurrent)
+          let current = visibleDecisions(evidence).filter(\.isCurrent)
           if !current.isEmpty {
             Text("現在の決定").foregroundStyle(.secondary)
             ForEach(current.prefix(5), id: \.id) { decision in
@@ -68,6 +69,16 @@ struct PresentationQualityView: View {
         .padding(.vertical, MemoraSpacing.sm)
       }
       .font(.footnote)
+    }
+  }
+
+  /// A record whose cloud permission was revoked after the deck was made must
+  /// not be shown as a current decision from the saved pack.
+  private func visibleDecisions(_ evidence: PresentationEvidencePack) -> [PresentationEvidencePack.DecisionEntry] {
+    evidence.decisions.filter { decision in
+      guard decision.sourceID.hasPrefix("record:"),
+            let id = UUID(uuidString: String(decision.sourceID.dropFirst("record:".count))) else { return true }
+      return model.meeting(id: id) != nil && model.allowsRecordAccess(id, purpose: .cloudAI)
     }
   }
 }
