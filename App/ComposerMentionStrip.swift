@@ -53,7 +53,7 @@ struct ComposerMentionStrip: View {
       NavigationStack {
         MemoraForm {
           Section {
-            Label(plugin.name, icon: plugin.icon.systemSymbol)
+            Label(plugin.name, icon: plugin.icon.icon)
             Text(plugin.summary)
             LabeledContent("状態", value: plugin.state.label)
             LabeledContent("料金", value: plugin.cost.rawValue)

@@ -10,8 +10,7 @@ struct LibraryRecordRow: View {
   var body: some View {
     HStack(alignment: .top, spacing: MemoraSpacing.md) {
       if isSelecting {
-        Image(icon: isSelected ? .checkmarkCircleFill : .circle)
-          .font(.body)
+        Image(icon: isSelected ? .checkmarkCircleFill : .circle, size: 17)
           .frame(width: ProjectLayout.iconSide)
           .accessibilityHidden(true)
       }

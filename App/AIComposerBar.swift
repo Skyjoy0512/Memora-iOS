@@ -339,8 +339,7 @@ struct AIComposerBar: View {
     } label: {
       Group {
         if onStop == nil, !canSend, !isBusy, !speechInput.isListening {
-          Image(icon: .mic)
-            .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
+          Image(icon: .mic, size: MemoraIconMetrics.glyph)
         } else {
           Image(icon: actionSymbol)
         }
@@ -348,8 +347,7 @@ struct AIComposerBar: View {
         .font(.system(size: 20, weight: .semibold))
         .foregroundStyle(onStop != nil || canSend || isBusy || speechInput.isListening
           ? MemoraPalette.actionLabel : MemoraPalette.textPrimary)
-        .symbolEffect(.pulse, isActive: !reduceMotion && speechInput.isListening)
-        .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
+        .contentTransition(.opacity)
         .frame(width: 36, height: 36)
         .background(Circle().fill(onStop != nil || canSend || isBusy || speechInput.isListening
           ? MemoraPalette.action : .clear))

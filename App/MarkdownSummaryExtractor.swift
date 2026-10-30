@@ -126,7 +126,7 @@ enum MarkdownSummaryExtractor {
     let label = String(body[..<end.lowerBound])
     // A fully bold decision is content, not a new section. Older documents
     // also used a few exact section labels without a colon.
-    let sectionLabels = ["決定事項", "主要な決定事項", "決まったこと", "約束したこと", "未決事項", "未決定事項", "未解決事項", "確認が必要なこと", "まだ決まっていないこと", "オープンクエスチョン", "アクション", "アクションアイテム", "今後の予定", "次にやること", "次にすること"]
+    let sectionLabels = ["決定事項", "主要な決定事項", "決まったこと", "約束したこと", "未決事項", "未決定事項", "未解決事項", "確認が必要なこと", "まだ決まっていないこと", "オープンクエスチョン", "アクション", "アクションアイテム", "予定アクション", "今後の予定", "次にやること", "次にすること"]
     let topicLabels = ["関与者", "要点", "課題・懸念"]
     guard (rest == ":" || rest == "：" || rest.isEmpty),
           sectionLabels.contains(label) || topicLabels.contains(label) else { return nil }

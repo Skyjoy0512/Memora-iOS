@@ -51,7 +51,6 @@ struct MeetingRow: View {
 
       if showsDisclosure {
         Image(icon: .chevronRight, size: 13)
-          .font(.caption.weight(.semibold))
           .foregroundStyle(.primary)
           .padding(.top, MemoraSpacing.xs)
           .accessibilityHidden(true)

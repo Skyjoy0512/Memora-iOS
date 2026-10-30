@@ -1,5 +1,5 @@
-/// Every icon the app draws, named by its SF Symbol. Raw values keep the older
-/// SF Symbols names so stored choices (a project's icon) still resolve.
+/// Stable identifiers for interface icons. Legacy raw values remain compatible
+/// with saved projects; every identifier resolves to an outlined Lucide glyph.
 enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case antennaRadiowavesLeftAndRight = "antenna.radiowaves.left.and.right"
   case antennaRadiowavesLeftAndRightSlash = "antenna.radiowaves.left.and.right.slash"
@@ -21,6 +21,8 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case arrowUturnBackward = "arrow.uturn.backward"
   case bell = "bell"
   case bellFill = "bell.fill"
+  case heading = "heading"
+  case listOrdered = "list.ordered"
   case bold = "bold"
   case boltFill = "bolt.fill"
   case brain = "brain"
@@ -238,25 +240,4 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case xmarkCircle = "xmark.circle"
   case xmarkCircleFill = "xmark.circle.fill"
 
-  /// The SF Symbol name. Raw values are kept for stored choices, so a few that
-  /// have no matching SF Symbol resolve to the closest one here.
-  var systemName: String {
-    switch self {
-    case .calendarFill: "calendar"
-    case .calendarBadgeCheckmarkFill: "calendar.badge.checkmark"
-    case .chatBubble: "bubble.left"
-    case .chatBubbleFill: "bubble.left.fill"
-    case .checklistFill: "checklist"
-    case .dotRadiowavesLeftAndRightFill: "dot.radiowaves.left.and.right"
-    case .faceidFill: "faceid"
-    case .iphoneFill: "iphone"
-    case .mappinSlashFill: "mappin.slash"
-    case .notionLogo: "book.closed"
-    case .plugsConnected: "powerplug"
-    case .plugsConnectedFill: "powerplug.fill"
-    case .sparklesFill: "sparkles"
-    case .waveformFill: "waveform"
-    default: rawValue
-    }
-  }
 }

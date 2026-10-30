@@ -11,7 +11,6 @@ struct ConnectContactsView: View {
     VStack(alignment: .leading, spacing: 18) {
       Spacer()
       Image(icon: .personCropCircleBadgePlus, size: 40)
-        .font(.system(size: 40))
         .foregroundStyle(.tint)
         .frame(width: 84, height: 84)
         .background(Color.accentColor.opacity(0.12), in: Circle())

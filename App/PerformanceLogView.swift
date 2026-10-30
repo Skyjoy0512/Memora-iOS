@@ -4,7 +4,6 @@ import SwiftUI
 /// Debug-only look at the recorded timings, so a change can be compared with
 /// the build it was made against. It shows names and numbers only.
 struct PerformanceLogView: View {
-  @Environment(\.dismiss) private var dismiss
   @Environment(MemoraModel.self) private var model
   @State private var isMeasuring = false
   @State private var measurementNote: String?
@@ -12,120 +11,115 @@ struct PerformanceLogView: View {
   private var log: PerformanceLog { .shared }
 
   var body: some View {
-    NavigationStack {
-      MemoraList {
-        Section("要約の診断") {
-          NavigationLink("要約のタイムライン") { SummaryDiagnosticsView() }
-        }
-        Section {
-          if SelfChecks.results.isEmpty {
-            Text("自己チェックはまだ実行されていません。")
-              .foregroundStyle(.secondary)
-          } else {
-            ForEach(SelfChecks.results) { result in
-              Label {
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(result.name)
-                  if let detail = result.detail {
-                    Text(detail)
-                      .font(.caption)
-                      .foregroundStyle(.secondary)
-                  }
+    MemoraList {
+      Section("要約の診断") {
+        NavigationLink("要約のタイムライン") { SummaryDiagnosticsView() }
+      }
+      Section {
+        if SelfChecks.results.isEmpty {
+          Text("自己チェックはまだ実行されていません。")
+            .foregroundStyle(.secondary)
+        } else {
+          ForEach(SelfChecks.results) { result in
+            Label {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(result.name)
+                if let detail = result.detail {
+                  Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
-              } icon: {
-                Image(icon: result.passed ? .checkmarkCircle : .xmarkCircle)
-                  .foregroundStyle(result.passed ? Color.green : Color.red)
               }
-              .accessibilityLabel("\(result.name): \(result.passed ? "成功" : "失敗")")
+            } icon: {
+              Image(icon: result.passed ? .checkmarkCircle : .xmarkCircle)
+                .foregroundStyle(result.passed ? Color.green : Color.red)
             }
-          }
-        } header: {
-          Text("自己チェック（ビルド \(Bundle.main.appVersion)）")
-        } footer: {
-          Text("失敗しても処理は続きます。これはテストの証拠ではなく、実行の記録です。")
-        }
-
-        if log.entries.isEmpty {
-          ContentUnavailableView(
-            "まだ計測がありません",
-            icon: .stopwatch,
-            description: Text("起動・検索・保存・画像表示・処理を通ると記録されます。")
-          )
-        }
-
-        ForEach(log.names, id: \.self) { name in
-          if let stats = log.stats(for: name) {
-            Section(name) {
-              row("回数", "\(stats.samples)")
-              row("中央値", milliseconds(stats.median))
-              row("p95", milliseconds(stats.p95))
-              row("最大", milliseconds(stats.maximum))
-            }
+            .accessibilityLabel("\(result.name): \(result.passed ? "成功" : "失敗")")
           }
         }
+      } header: {
+        Text("自己チェック（ビルド \(Bundle.main.appVersion)）")
+      } footer: {
+        Text("失敗しても処理は続きます。これはテストの証拠ではなく、実行の記録です。")
+      }
 
-        Section {
-          Button("計測を実行（検索20回）", icon: .play) {
-            Task { await runMeasurement() }
-          }
-          .disabled(isMeasuring)
+      if log.entries.isEmpty {
+        ContentUnavailableView(
+          "まだ計測がありません",
+          icon: .stopwatch,
+          description: Text("起動・検索・保存・画像表示・処理を通ると記録されます。")
+        )
+      }
 
-          if let measurementNote {
-            Text(measurementNote)
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-          }
-
-          Button("計測用に100件を追加", icon: .plus) {
-            model.addMeasurementRecords(100)
-          }
-          Button("計測用に1,000件を追加", icon: .plus) {
-            model.addMeasurementRecords(1_000)
-          }
-          Button("計測用データを削除", icon: .trash, role: .destructive) {
-            model.removeMeasurementRecords()
-          }
-        } header: {
-          Text("検証データ")
-        } footer: {
-          Text("音声・要約・文字起こしの無い、番号だけの記録と、記録ごとに1件のタスクです。計測が終わったら削除できます。")
-        }
-
-        Section {
-          Button("現在地で駅判定を実行", icon: .location) {
-            stationCheckNote = "確認中…"
-            AutoLocationLogger.shared.debugEvaluateCurrentLocation { result in
-              stationCheckNote = result.message
-            }
-          }
-
-          if let stationCheckNote {
-            Text(stationCheckNote)
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-          }
-        } header: {
-          Text("位置情報")
-        } footer: {
-          Text("設定の「移動と滞在を自動で記録」をオンにし、「常に」を許可したうえで実行してください。移動しなくても一連の処理を確認できます。結果はジャーナルに届きます。")
-        }
-
-        if let latest = log.entries.last {
-          Section("記録した環境") {
-            row("ビルド", latest.build)
-            row("端末", latest.device)
+      ForEach(log.names, id: \.self) { name in
+        if let stats = log.stats(for: name) {
+          Section(name) {
+            row("回数", "\(stats.samples)")
+            row("中央値", milliseconds(stats.median))
+            row("p95", milliseconds(stats.p95))
+            row("最大", milliseconds(stats.maximum))
           }
         }
       }
-      .navigationTitle("計測と自己チェック")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
+
+      Section {
+        Button("計測を実行（検索20回）", icon: .play) {
+          Task { await runMeasurement() }
         }
-        ToolbarItem(placement: .topBarTrailing) {
-          Button("消去", role: .destructive) { log.reset() }
+        .disabled(isMeasuring)
+
+        if let measurementNote {
+          Text(measurementNote)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
         }
+
+        Button("計測用に100件を追加", icon: .plus) {
+          model.addMeasurementRecords(100)
+        }
+        Button("計測用に1,000件を追加", icon: .plus) {
+          model.addMeasurementRecords(1_000)
+        }
+        Button("計測用データを削除", icon: .trash, role: .destructive) {
+          model.removeMeasurementRecords()
+        }
+      } header: {
+        Text("検証データ")
+      } footer: {
+        Text("音声・要約・文字起こしの無い、番号だけの記録と、記録ごとに1件のタスクです。計測が終わったら削除できます。")
+      }
+
+      Section {
+        Button("現在地で駅判定を実行", icon: .location) {
+          stationCheckNote = "確認中…"
+          AutoLocationLogger.shared.debugEvaluateCurrentLocation { result in
+            stationCheckNote = result.message
+          }
+        }
+
+        if let stationCheckNote {
+          Text(stationCheckNote)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
+      } header: {
+        Text("位置情報")
+      } footer: {
+        Text("設定の「移動と滞在を自動で記録」をオンにし、「常に」を許可したうえで実行してください。移動しなくても一連の処理を確認できます。結果はジャーナルに届きます。")
+      }
+
+      if let latest = log.entries.last {
+        Section("記録した環境") {
+          row("ビルド", latest.build)
+          row("端末", latest.device)
+        }
+      }
+    }
+    .navigationTitle("計測と自己チェック")
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Button("消去", role: .destructive) { log.reset() }
       }
     }
   }

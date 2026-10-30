@@ -204,8 +204,7 @@ private struct StateExampleRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      Image(icon: symbol)
-        .font(.body.weight(.semibold))
+      Image(icon: symbol, size: 17)
         .foregroundStyle(tint)
         .frame(width: 28)
       VStack(alignment: .leading, spacing: 5) {

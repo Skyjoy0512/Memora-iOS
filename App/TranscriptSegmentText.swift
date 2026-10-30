@@ -86,8 +86,7 @@ struct TranscriptSegmentText: View {
       Text(segment.speaker)
         .font(.caption.weight(.semibold))
       if !segment.speakerIsCertain {
-        Image(icon: .questionmark)
-          .font(.caption2.bold())
+        Image(icon: .questionmark, size: 11)
       }
     }
     .foregroundStyle(.primary)

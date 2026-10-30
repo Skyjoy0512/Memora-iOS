@@ -11,7 +11,7 @@ struct SettingsNavigationChecks {
     precondition(categories.filter { $0.group == "アプリ" }.count == 5)
     precondition(SettingsCategory.integrations.title == "連携")
     precondition(SettingsCategory.ai.title == "AIと要約")
-    precondition(categories.allSatisfy { !$0.icon.systemName.isEmpty })
+    precondition(categories.allSatisfy { !$0.icon.rawValue.isEmpty })
     precondition(MemoraIconMetrics.glyph == 20)
     precondition(MemoraIconMetrics.slot >= MemoraIconMetrics.glyph)
     precondition(MemoraIconMetrics.touchTarget >= 44)

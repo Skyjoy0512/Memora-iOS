@@ -50,6 +50,12 @@ class SettingsPresentationChecks(unittest.TestCase):
         self.assertIn("minHeight: MemoraIconMetrics.touchTarget", (APP / "SettingsLabel.swift").read_text())
         self.assertIn("MemoraInterfaceIcon(icon: symbol)", (APP / "FileSidebarView.swift").read_text())
 
+    def test_pushed_diagnostics_keep_the_settings_navigation_stack(self):
+        diagnostics = (APP / "PerformanceLogView.swift").read_text()
+        self.assertNotIn("NavigationStack {", diagnostics)
+        self.assertIn("PerformanceLogView()", (APP / "SettingsCategoryView.swift").read_text())
+        self.assertIn("SelfChecks.results", diagnostics)
+
     def test_workspace_and_sidebar_content_can_wrap_and_scroll(self):
         workspace = (APP / "WorkspaceSwitcher.swift").read_text()
         self.assertNotIn("lineLimit(1)", workspace)

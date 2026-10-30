@@ -1,12 +1,8 @@
 import Foundation
 
 struct AIPluginIcon {
-  enum Kind { case systemSymbol, asset }
   var pluginID: String
-  var kind: Kind = .systemSymbol
-  var systemSymbol: MemoraIcon
-  var assetName: String?
-  var fallbackIcon: MemoraIcon = .plugsConnected
+  var icon: MemoraIcon
   var accessibilityLabel: String
 
   static func resolve(pluginID: String, name: String, iconIdentifier: String? = nil) -> Self {
@@ -23,13 +19,6 @@ struct AIPluginIcon {
     else if pluginID.contains("deep_research") || pluginID.contains("search_web") { symbol = .magnifyingglass }
     else if pluginID.hasPrefix("tool:") { symbol = .docText }
     else { symbol = .plugsConnected }
-    let serviceID = pluginID.hasPrefix("service:") ? String(pluginID.dropFirst(8))
-      : pluginID.hasPrefix("mcp:") ? "mcp" : nil
-    let brandedServices: Set<String> = ["gmail", "notion", "drive", "github", "mcp"]
-    if let serviceID, brandedServices.contains(serviceID) {
-      return Self(pluginID: pluginID, kind: .asset, systemSymbol: symbol,
-        assetName: "service." + serviceID, fallbackIcon: symbol, accessibilityLabel: name)
-    }
-    return Self(pluginID: pluginID, systemSymbol: symbol, accessibilityLabel: name)
+    return Self(pluginID: pluginID, icon: symbol, accessibilityLabel: name)
   }
 }

@@ -96,8 +96,7 @@ struct DialerView: View {
         Button {
           number = String(number.dropLast())
         } label: {
-          Image(icon: .deleteLeft)
-            .font(.title2)
+          Image(icon: .deleteLeft, size: 22)
             .foregroundStyle(.secondary)
             .frame(width: 84, height: 84)
         }
@@ -112,7 +111,7 @@ struct DialerView: View {
   private func callButton(action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Group {
-        if isCalling { ProgressView().tint(.white) } else { Image(icon: .phoneFill).font(.title) }
+        if isCalling { ProgressView().tint(.white) } else { Image(icon: .phoneFill, size: 28) }
       }
       .foregroundStyle(.white)
       .frame(width: 84, height: 84)

@@ -62,15 +62,13 @@ private struct CallIllustration: View {
           }
           Spacer()
           ForEach([MemoraIcon.circleGrid3x3Fill, .mic, .speakerWave2Fill], id: \.self) { icon in
-            Image(icon: icon)
-              .font(.caption)
+            Image(icon: icon, size: 12)
               .frame(width: 30, height: 30)
               .background(.white.opacity(0.12), in: Circle())
           }
         }
         HStack {
-          Image(icon: .pauseFill)
-            .font(.caption)
+          Image(icon: .pauseFill, size: 12)
             .frame(width: 52, height: 30)
             .background(.white.opacity(0.12), in: Capsule())
           Spacer()
@@ -78,8 +76,7 @@ private struct CallIllustration: View {
             .font(.caption2.monospacedDigit())
             .foregroundStyle(.green)
           Spacer()
-          Image(icon: .phoneDownFill)
-            .font(.caption)
+          Image(icon: .phoneDownFill, size: 12)
             .frame(width: 52, height: 30)
             .background(.red, in: Capsule())
         }

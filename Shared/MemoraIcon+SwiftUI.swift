@@ -2,41 +2,41 @@ import SwiftUI
 import LucideSwift
 import UIKit
 
-// Mirrors the `systemImage:` initializers, so an icon reads the same at every
-// call site and keeps the behaviors that come with a Label (icon-only toolbar
-// items, menu rows, VoiceOver names). Stored names resolve through the icon map.
+// Shared labels preserve native menu, toolbar and VoiceOver behavior.
+// Stored identifiers resolve through the same Lucide map on every surface.
 
 extension Image {
   init(icon: MemoraIcon, size: CGFloat = 20) {
-    if let name = icon.lucideName {
-      self.init(lucide: name, size: CGSize(width: size, height: size))
+    if let image = MemoraIconRendering.image(icon, size: size) {
+      self = Image(image, scale: MemoraIconRendering.scale, label: Text("")).renderingMode(.template)
     } else {
-      self.init(systemName: icon.systemName)
+      self.init(uiImage: UIImage())
     }
   }
 }
 
 extension UIImage {
-  convenience init?(icon: MemoraIcon, configuration: UIImage.SymbolConfiguration? = nil) {
-    self.init(systemName: icon.systemName, withConfiguration: configuration)
+  convenience init?(icon: MemoraIcon, size: CGFloat = 20) {
+    guard let image = MemoraIconRendering.image(icon, size: size) else { return nil }
+    self.init(cgImage: image, scale: MemoraIconRendering.scale, orientation: .up)
   }
 }
 
 extension Label where Title == Text, Icon == Image {
-  init(_ titleKey: LocalizedStringKey, icon: MemoraIcon) {
+  init(_ titleKey: LocalizedStringKey, icon: MemoraIcon, size: CGFloat = 20) {
     self.init {
       Text(titleKey)
     } icon: {
-      Image(icon: icon)
+      Image(icon: icon, size: size)
     }
   }
 
   @_disfavoredOverload
-  init<S: StringProtocol>(_ title: S, icon: MemoraIcon) {
+  init<S: StringProtocol>(_ title: S, icon: MemoraIcon, size: CGFloat = 20) {
     self.init {
       Text(title)
     } icon: {
-      Image(icon: icon)
+      Image(icon: icon, size: size)
     }
   }
 }
@@ -45,11 +45,12 @@ extension Button where Label == SwiftUI.Label<Text, Image> {
   init(
     _ titleKey: LocalizedStringKey,
     icon: MemoraIcon,
+    size: CGFloat = 20,
     role: ButtonRole? = nil,
     action: @escaping () -> Void
   ) {
     self.init(role: role, action: action) {
-      SwiftUI.Label(titleKey, icon: icon)
+      SwiftUI.Label(titleKey, icon: icon, size: size)
     }
   }
 
@@ -57,11 +58,12 @@ extension Button where Label == SwiftUI.Label<Text, Image> {
   init<S: StringProtocol>(
     _ title: S,
     icon: MemoraIcon,
+    size: CGFloat = 20,
     role: ButtonRole? = nil,
     action: @escaping () -> Void
   ) {
     self.init(role: role, action: action) {
-      SwiftUI.Label(title, icon: icon)
+      SwiftUI.Label(title, icon: icon, size: size)
     }
   }
 }

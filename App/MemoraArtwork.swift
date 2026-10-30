@@ -39,4 +39,42 @@ enum MemoraArtwork: String, CaseIterable {
   case editorChecklist = "editor-checklist"
   case editorCheck = "editor-check"
   case editorTable = "editor-table"
+
+  var icon: MemoraIcon {
+    switch self {
+    case .askAITab, .askAIHeader, .askAITabSolid: .chatBubble
+    case .signIn, .settingsSignUp: .personCropCircle
+    case .settingsTranscription, .voiceInput: .mic
+    case .settingsIntelligence, .settingsMemoraIntelligence: .brain
+    case .settingsResidentAgent: .personBadgeKey
+    case .settingsMemory: .brainHeadProfile
+    case .settingsSummary, .insightSummary: .docText
+    case .settingsWebhook: .link
+    case .settingsMCP: .plugsConnected
+    case .settingsStorage: .internaldrive
+    case .settingsLocalModel: .cpu
+    case .settingsRegisteredModels: .rectangleStack
+    case .settingsAPIKey: .key
+    case .settingsProvider: .cloud
+    case .settingsNotion: .notionLogo
+    case .settingsGmail: .envelope
+    case .settingsCredits: .boltFill
+    case .settingsLicense: .checkmarkSeal
+    case .settingsTeam: .person3
+    case .settingsPlan: .crown
+    case .searchIntelligence: .magnifyingglass
+    case .journalTab, .journalTabSolid: .calendar
+    case .folderSolid: .folder
+    case .insightQuestion: .questionmarkBubble
+    case .insightTarget: .pin
+    case .editorBody: .textAlignleft
+    case .editorHeading: .heading
+    case .editorBold: .bold
+    case .editorItalic: .italic
+    case .editorList: .listBulletRectangle
+    case .editorChecklist: .checklist
+    case .editorCheck: .checkmark
+    case .editorTable: .tablecells
+    }
+  }
 }

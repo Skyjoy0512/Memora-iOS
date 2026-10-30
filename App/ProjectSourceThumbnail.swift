@@ -12,7 +12,7 @@ struct ProjectSourceThumbnail: View {
           .frame(width: 32, height: 32).clipped()
           .clipShape(RoundedRectangle(cornerRadius: 4))
       } else {
-        Image(icon: source.icon, size: 17).font(.body).foregroundStyle(.secondary)
+        Image(icon: source.icon, size: 17).foregroundStyle(.secondary)
           .frame(width: 32, height: 32)
       }
     }

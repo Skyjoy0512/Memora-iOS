@@ -12,7 +12,6 @@ struct MemoraEmptyState: View {
   var body: some View {
     VStack(spacing: MemoraSpacing.lg) {
       Image(icon: icon, size: 28)
-        .font(.system(size: 28, weight: .regular))
         .foregroundStyle(MemoraPalette.textSecondary)
         .frame(height: MemoraSpacing.touchTarget)
         .accessibilityHidden(true)

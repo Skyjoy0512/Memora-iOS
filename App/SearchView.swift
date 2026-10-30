@@ -321,7 +321,6 @@ struct SearchView: View {
       Image(icon: symbol, size: 11)
       Text(title)
       Image(icon: .chevronDown, size: 11)
-        .font(.caption2.weight(.semibold))
     }
     .font(.subheadline.weight(.medium))
     .foregroundStyle(.primary)

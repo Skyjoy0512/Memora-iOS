@@ -63,18 +63,18 @@ struct MeetingPlaybackBar: View {
 
   private var transportRow: some View {
     HStack(spacing: 28) {
-      Button("15秒戻す", icon: .gobackward15) {
+      Button("15秒戻す", icon: .gobackward15, size: 24) {
         player.skip(by: -15)
       }
       .labelStyle(.iconOnly)
 
-      Button(player.isPlaying ? "一時停止" : "再生", icon: player.isPlaying ? .pauseFill : .playFill) {
+      Button(player.isPlaying ? "一時停止" : "再生", icon: player.isPlaying ? .pauseFill : .playFill, size: 26) {
         player.toggle()
       }
       .labelStyle(.iconOnly)
       .font(.title2)
 
-      Button("15秒送る", icon: .goforward15) {
+      Button("15秒送る", icon: .goforward15, size: 24) {
         player.skip(by: 15)
       }
       .labelStyle(.iconOnly)

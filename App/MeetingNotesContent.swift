@@ -40,8 +40,7 @@ struct MeetingNotesContent: View {
                   Button {
                     model.removeMeetingPhoto(meetingID, index: index)
                   } label: {
-                    Image(icon: .xmark)
-                      .font(.footnote.weight(.bold))
+                    Image(icon: .xmark, size: 13)
                       .foregroundStyle(.white)
                       .frame(width: 26, height: 26)
                       .background(.black.opacity(0.45), in: Circle())
@@ -55,8 +54,7 @@ struct MeetingNotesContent: View {
 
           PhotosPicker(selection: $photoItem, matching: .images) {
             VStack(spacing: 8) {
-              Image(icon: .photoBadgePlus)
-                .font(.title2)
+              Image(icon: .photoBadgePlus, size: 22)
               Text("写真を追加")
                 .font(.caption.weight(.medium))
             }

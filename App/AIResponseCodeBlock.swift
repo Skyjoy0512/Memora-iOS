@@ -30,7 +30,7 @@ struct AIResponseCodeBlock: View {
         }
         .labelStyle(.iconOnly).buttonStyle(.plain)
         .frame(width: 44, height: 44)
-        .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+        .contentTransition(reduceMotion ? .identity : .opacity)
       }
 
       ScrollView(.horizontal) {

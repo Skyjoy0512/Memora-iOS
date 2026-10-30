@@ -22,7 +22,7 @@ struct AIResponseActionBar: View {
       Button(didCopy ? "コピーしました" : "コピー", icon: didCopy ? .checkmark : .docOnDoc) {
         copy()
       }
-      .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+      .contentTransition(reduceMotion ? .identity : .opacity)
       .disabled(text.isEmpty)
 
       ShareLink(item: text) { Label("共有", icon: .squareAndArrowUp) }

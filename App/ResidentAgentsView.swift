@@ -60,8 +60,7 @@ private struct ResidentAgentRow: View {
 
   var body: some View {
     HStack(spacing: 12) {
-      Image(icon: agent.symbol)
-        .font(.body)
+      Image(icon: agent.symbol, size: 17)
         .foregroundStyle(agent.isEnabled ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
         .frame(width: 28)
       VStack(alignment: .leading, spacing: 3) {

@@ -75,8 +75,7 @@ struct SpaceDetailView: View {
       .toolbar {
         ToolbarItem(placement: .principal) {
           HStack(spacing: 7) {
-            Image(icon: .folder)
-              .font(MemoraTypography.secondary)
+            Image(icon: .folder, size: 15)
               .foregroundStyle(.secondary)
             Text(space.name)
               .font(.headline)

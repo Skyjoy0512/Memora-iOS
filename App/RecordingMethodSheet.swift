@@ -81,7 +81,6 @@ struct RecordingMethodSheet: View {
       Spacer(minLength: 8)
 
       Image(icon: .chevronRight, size: 13)
-        .font(.footnote.weight(.semibold))
         .foregroundStyle(.tertiary)
     }
     .padding(.vertical, MemoraSpacing.md)

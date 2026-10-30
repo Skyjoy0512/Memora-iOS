@@ -3,15 +3,11 @@ import Foundation
 @main struct PluginIconChecks {
   static func main() throws {
     let names = ["gmail", "notion", "calendar", "drive", "github", "mcp"]
-    let icons = names.map { AIPluginIcon.resolve(pluginID: "service:" + $0, name: $0).systemSymbol }
+    let icons = names.map { AIPluginIcon.resolve(pluginID: "service:" + $0, name: $0).icon }
     precondition(Set(icons).count == names.count)
-    for name in ["gmail", "notion", "drive", "github", "mcp"] {
-      let icon = AIPluginIcon.resolve(pluginID: "service:" + name, name: name)
-      precondition(icon.kind == .asset && icon.assetName == "service." + name)
-    }
-    precondition(AIPluginIcon.resolve(pluginID: "service:calendar", name: "カレンダー").kind == .systemSymbol)
-    precondition(AIPluginIcon.resolve(pluginID: "record:fixture", name: "資料").systemSymbol == .docText)
-    precondition(AIPluginIcon.resolve(pluginID: "skill:old", name: "旧スキル", iconIdentifier: "unknown").systemSymbol == .docRichtext)
+    precondition(AIPluginIcon.resolve(pluginID: "service:calendar", name: "カレンダー").icon == .calendar)
+    precondition(AIPluginIcon.resolve(pluginID: "record:fixture", name: "資料").icon == .docText)
+    precondition(AIPluginIcon.resolve(pluginID: "skill:old", name: "旧スキル", iconIdentifier: "unknown").icon == .docRichtext)
     let builtin = MemoraSkill.bundled
     let expectedIDs: Set<String> = ["project-reading", "journal-review", "project-organize", "travel-plan",
       "proposal", "executive-report", "meeting-report", "business-plan", "powerpoint", "word-document",
@@ -28,6 +24,6 @@ import Foundation
     precondition(skill.unavailabilityReason(enabled: false, availableTools: Set(skill.toolNames), onDeviceTools: nil) != nil)
     precondition(skill.unavailabilityReason(enabled: true, availableTools: [], onDeviceTools: nil) != nil)
     precondition(skill.unavailabilityReason(enabled: true, availableTools: Set(skill.toolNames), onDeviceTools: nil) == nil)
-    print("PluginIconChecks: passed (official service assets, calendar symbol, fallback, 16 distinct skills, stable icon/version roundtrip)")
+    print("PluginIconChecks: passed (Lucide service glyphs, calendar glyph, legacy ID fallback, 16 distinct skills, stable icon/version roundtrip)")
   }
 }

@@ -5,10 +5,7 @@ struct ArtworkIcon: View {
   var size: CGFloat
 
   var body: some View {
-    Image(artwork.rawValue)
-      .renderingMode(.template)
-      .resizable()
-      .scaledToFit()
+    Image(icon: artwork.icon, size: size)
       .frame(width: size, height: size)
       .accessibilityHidden(true)
   }

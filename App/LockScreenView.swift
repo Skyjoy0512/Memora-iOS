@@ -13,7 +13,6 @@ struct LockScreenView: View {
 
       VStack(spacing: 20) {
         Image(icon: .lockShieldFill, size: 44)
-          .font(.system(size: 44, weight: .semibold))
           .foregroundStyle(.primary)
           .frame(width: 84, height: 84)
           .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))

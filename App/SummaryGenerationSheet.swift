@@ -237,7 +237,6 @@ struct SummaryGenerationSheet: View {
     } label: {
       HStack(spacing: 14) {
         Image(icon: symbol, size: 20)
-          .font(.title3.weight(.semibold))
           .frame(width: 30)
         VStack(alignment: .leading, spacing: 3) {
           Text(title)
@@ -272,7 +271,6 @@ struct SummaryGenerationSheet: View {
     } label: {
       HStack(spacing: 14) {
         Image(icon: item.symbol, size: 17)
-          .font(.headline)
           .frame(width: 38, height: 38)
           .background(Color.primary.opacity(0.07), in: Circle())
 

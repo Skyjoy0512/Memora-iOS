@@ -63,8 +63,7 @@ private struct MemoraLiveActivityView: View {
       .padding()
     } else {
       HStack(spacing: 14) {
-        Image(icon: context.state.isPaused ? .pauseFill : .waveform)
-          .font(.title2.weight(.semibold))
+        Image(icon: context.state.isPaused ? .pauseFill : .waveform, size: 22)
           .foregroundStyle(.red)
 
         VStack(alignment: .leading, spacing: 2) {

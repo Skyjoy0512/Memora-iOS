@@ -27,7 +27,6 @@ struct ProfileEditorView: View {
               ProfileAvatar(profile: profile, size: 132)
                 .overlay(alignment: .bottomTrailing) {
                   Image(icon: .faceSmilingFill, size: 20)
-                    .font(.title3)
                     .foregroundStyle(MemoraPalette.actionLabel)
                     .frame(width: 38, height: 38)
                     .background(MemoraPalette.action, in: Circle())

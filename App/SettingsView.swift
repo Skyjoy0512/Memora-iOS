@@ -24,7 +24,6 @@ struct SettingsView: View {
               }
               .frame(maxWidth: .infinity, alignment: .leading)
               Image(icon: .chevronRight, size: MemoraIconMetrics.accessory)
-                .font(.system(size: MemoraIconMetrics.accessory, weight: .semibold))
                 .foregroundStyle(MemoraPalette.textSecondary)
                 .accessibilityHidden(true)
             }

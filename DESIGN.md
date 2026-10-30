@@ -96,6 +96,11 @@ Custom disclosure accessories use the separate 12pt accessory role.
 variant for navigation only; stored `MemoraIcon` values never change. Toolbars,
 search and speech controls use the same glyph size. Native system menus own
 their symbol layout. Profile avatars are 48pt in navigation, not menu glyphs.
+SwiftUI, UIKit editing controls and widgets share `MemoraIconRendering`: a
+2/24 proportional stroke on Lucide paths, rendered at an explicit point size.
+There is no SF Symbol fallback. `.font` and SF-specific symbol effects do not
+resize or animate these template images; use explicit sizes and opacity
+transitions. Keep the 15-second transport label visible on rotation glyphs.
 Do not reintroduce per-item artwork, scale multipliers or oversized search icons.
 
 ## Shared components
@@ -284,10 +289,11 @@ a mention in the existing Ask AI draft without sending it; template use sets the
 existing automatic-summary preference. The top-right plus opens the same editors
 as Settings and preserves Markdown import and MCP registration. Service state
 comes from the existing catalog; no fabricated connections or authors.
-Service identities use the unmodified official logos through `AIPluginIcon`;
-sources are recorded in `docs/CONNECTOR_LOGOS.md`. Ordinary interface controls
-continue to use Lucide. The device calendar retains its native calendar glyph.
-Connector details use an article layout: official identity and real state,
+Service entries use distinct Lucide glyphs through `AIPluginIcon`: mail,
+notebook, calendar, drive, code and plug. Retained historical logo sources are
+recorded in `docs/CONNECTOR_LOGOS.md`. Provider logos and the supplied Memora
+brand mark remain identity images, separate from interface glyphs.
+Connector details use an article layout: service identity and real state,
 summary, access/cost explanation, then enable/setup controls. Explanatory
 paragraphs are not separate table rows; dividers separate controls only.
 

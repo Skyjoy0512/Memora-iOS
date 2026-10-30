@@ -8,8 +8,6 @@ struct MemoraIconBadge: View {
 
   var body: some View {
     Image(icon: symbol, size: size * 0.42)
-      .font(.system(size: size * 0.42, weight: .medium))
-      .symbolRenderingMode(.monochrome)
       .foregroundStyle(.primary)
       .frame(width: size, height: size)
       .background(MemoraPalette.selection, in: RoundedRectangle(cornerRadius: MemoraRadius.small, style: .continuous))

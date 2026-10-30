@@ -1,14 +1,40 @@
-# Lucide icons
+# Lucideアイコン対応表
 
-LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:icon:)`, and button/menu helpers resolve through `MemoraIcon.lucideName`. Stored SF names stay unchanged. Lucide uses template outline images; fill variants resolve to the same outline. Native SF fallback remains for unmatched symbols and UIKit symbol configuration.
+アプリ内の操作・ナビゲーション・状態表示は[Lucide](https://github.com/lucide-icons/lucide)に統一する。
+アプリとウィジェットは既存のLucideSwift 0.9.11を使用し、238種類の`MemoraIcon`を
+`Shared/MemoraIcon+Lucide.swift`の省略のないswitchで解決する。SF Symbolsへのフォールバックはない。
+保存済みプロジェクト・設定との互換性のため、既存のraw valueは変更しない。
+`.fill`付きの旧IDも同じアウトラインへ解決する。選択状態は既存の色・ラベル・選択トレイトで伝える。
 
-`Image(icon:size:)` sets the raster image point size (default 20); `.font` does not resize a Lucide image. Use an explicit size for specialized controls. Navigation lives in the side menu, which uses `MemoraInterfaceIcon`; there is no bottom tab bar.
+## 描画とサイズ
 
-| Stored icon | Lucide name / fallback |
+- SwiftUI、UIKit本文編集ツールバー、ウィジェットは`MemoraIconRendering`を共有する。
+- Lucideの24ptグリッドに対する2pt線幅、丸い線端と角を維持し、指定サイズの3倍解像度でテンプレート画像にする。
+- `Image(icon:size:)`の標準サイズは20pt。`.font`は画像をリサイズしないため、必要なサイズを直接渡す。
+- 設定・サイドメニューは20ptの図形を28pt枠へ配置する。補助矢印は12pt、操作領域は44pt以上。
+- 再生の「15秒戻す／送る」は`rotateCcw`／`rotateCw`へ実際の秒数を重ねる。
+- 本文編集の見出し、箇条書き、番号付きリストはそれぞれ`heading`、`list`、`listOrdered`で区別する。
+- SF専用の`symbolEffect`は使わず、既存のReduce Motion設定に従うopacity遷移を使用する。
+- 装飾画像は空の画像ラベルにし、ボタンやLabelが操作名を読み上げる。「Lucide Icon」という汎用ラベルは読み上げない。
+
+Gmail／Notion／カレンダー／Drive／GitHub／MCPの操作アイコンも、mail／notebook／calendar／hardDrive／code／plugに統一した。
+Lucideにブランドロゴは含まれない。Memoraのブランドマーク、AI提供元のロゴ、利用者の写真は識別用の画像として保持する。
+OSが描く標準ナビゲーション矢印やシステムシート内の記号はシステムに任せる。
+旧素材の出典は[CONNECTOR_LOGOS.md](CONNECTOR_LOGOS.md)、ライセンスは[THIRD_PARTY.md](THIRD_PARTY.md)を参照。
+
+## 検証
+
+- `tools/checks/test_lucide_icons.py`：対応表の網羅性、旧ID、SF直接描画の混入、サイズ指定、本文編集のリスト識別を検査する。
+- Debug起動時の`SelfChecks`：全238種類を12／20／48ptで描画し、画像が存在し透明画像ではないことを確認する。
+- シミュレータでの確認範囲と結果は[ICON_REVIEW_2026_10.md](handoffs/ICON_REVIEW_2026_10.md)に記録する。
+
+## 全対応表
+
+| 保存ID | Lucide名 |
 | --- | --- |
 | `antenna.radiowaves.left.and.right` | `radio` |
 | `antenna.radiowaves.left.and.right.slash` | `radioOff` |
-| `apple.logo` | SF Symbols fallback |
+| `apple.logo` | `cpu` |
 | `arrow.clockwise` | `rotateCw` |
 | `arrow.counterclockwise` | `rotateCcw` |
 | `arrow.down` | `arrowDown` |
@@ -26,6 +52,8 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `arrow.uturn.backward` | `undo2` |
 | `bell` | `bell` |
 | `bell.fill` | `bell` |
+| `heading` | `heading` |
+| `list.ordered` | `listOrdered` |
 | `bold` | `bold` |
 | `bolt.fill` | `zap` |
 | `brain` | `brain` |
@@ -122,11 +150,11 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `folder.badge.plus` | `folderPlus` |
 | `folder.badge.questionmark` | `folderSearch` |
 | `folder.fill` | `folder` |
-| `g.circle` | SF Symbols fallback |
+| `g.circle` | `globe` |
 | `gearshape` | `settings` |
 | `gearshape.fill` | `settings` |
-| `gobackward.15` | SF Symbols fallback |
-| `goforward.15` | SF Symbols fallback |
+| `gobackward.15` | `rotateCcw` |
+| `goforward.15` | `rotateCw` |
 | `hand.raised` | `hand` |
 | `hand.raised.fill` | `hand` |
 | `icloud.slash` | `cloudOff` |
@@ -160,7 +188,7 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `moon` | `moon` |
 | `moon.fill` | `moon` |
 | `note.text` | `notebookText` |
-| `notion.logo` | SF Symbols fallback |
+| `notion.logo` | `notebook` |
 | `paintpalette` | `palette` |
 | `paperclip` | `paperclip` |
 | `paragraph` | `pilcrow` |
@@ -210,7 +238,7 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `square.and.pencil` | `squarePen` |
 | `square.grid.2x2` | `grid2X2` |
 | `square.stack.3d.up` | `layers` |
-| `star.bubble` | SF Symbols fallback |
+| `star.bubble` | `messageCircleHeart` |
 | `star.fill` | `star` |
 | `stop.fill` | `square` |
 | `stopwatch` | `timer` |
@@ -221,13 +249,13 @@ LucideSwift 0.9.11 is linked to the app and widget. `Image(icon:)`, `Label(_:ico
 | `text.alignleft` | `textAlignStart` |
 | `textformat` | `type` |
 | `tablecells` | `table` |
-| `text.badge.plus` | SF Symbols fallback |
+| `text.badge.plus` | `listPlus` |
 | `text.bubble` | `messageSquareText` |
 | `text.document` | `fileText` |
 | `trash` | `trash` |
 | `tram.fill` | `tramFront` |
 | `trash.fill` | `trash` |
-| `trash.slash` | SF Symbols fallback |
+| `trash.slash` | `shredder` |
 | `tray` | `inbox` |
 | `video` | `video` |
 | `wand.and.stars` | `wandSparkles` |

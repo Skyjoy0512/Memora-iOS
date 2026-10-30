@@ -4,8 +4,6 @@ import SwiftUI
 /// recording continues and one tap returns to the recording screen.
 struct ActiveRecordingStrip: View {
   @Environment(MemoraModel.self) private var model
-  @Environment(\.scenePhase) private var scenePhase
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     Button {
@@ -14,8 +12,6 @@ struct ActiveRecordingStrip: View {
       HStack(spacing: 12) {
         Image(icon: model.isRecordingPaused ? .pauseFill : .waveform)
           .foregroundStyle(.red)
-          .symbolEffect(.variableColor.iterative, isActive: !model.isRecordingPaused
-            && !model.recordingConservesResources && !reduceMotion && scenePhase == .active)
 
         VStack(alignment: .leading, spacing: 2) {
           Text(model.isRecordingPaused ? "録音を一時停止中" : "録音を続けています")

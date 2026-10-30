@@ -551,9 +551,9 @@ enum SelfChecks {
         }
       }
     }
-    group("Custom icon artwork") {
-      for artwork in MemoraArtwork.allCases where UIImage(named: artwork.rawValue) == nil {
-        report("custom icon artwork missing: \(artwork.rawValue)")
+    group("Legacy artwork icon aliases") {
+      for artwork in MemoraArtwork.allCases where UIImage(icon: artwork.icon) == nil {
+        report("legacy artwork icon alias missing: \(artwork.rawValue)")
       }
     }
     group("Icon assets", checkIconAssets)
@@ -599,8 +599,6 @@ enum SelfChecks {
     )
   }
 
-  /// Every icon the code can name must exist as an SF Symbol; a name that no
-  /// longer resolves would otherwise draw nothing, silently.
   /// A reply with its data block: the document is kept apart from the block,
   /// "未定" never becomes an owner, and a repeated action is filed once.
   private static func checkSummaryReplyParsing() {
@@ -701,8 +699,18 @@ enum SelfChecks {
   }
 
   private static func checkIconAssets() {
-    for icon in MemoraIcon.allCases where UIImage(systemName: icon.systemName) == nil {
-      report("icon missing: \(icon.rawValue)")
+    for icon in MemoraIcon.allCases {
+      for size: CGFloat in [12, 20, 48] {
+        guard let image = UIImage(icon: icon, size: size), let cg = image.cgImage,
+              let bytes = cg.dataProvider?.data else {
+          report("Lucide icon missing: \(icon.rawValue) at \(size)")
+          continue
+        }
+        let data = bytes as Data
+        if !stride(from: 3, to: data.count, by: 4).contains(where: { data[$0] > 0 }) {
+          report("Lucide icon blank: \(icon.rawValue) at \(size)")
+        }
+      }
     }
   }
 
@@ -1947,7 +1955,7 @@ enum SelfChecks {
     let attachment = AIAttachment(id: UUID(), name: url.lastPathComponent, url: url)
     let content = AIAttachmentText.readContent(attachment)
     if let text = content.text {
-      if text.count > 8_000 || content.notice?.contains("先頭") != true { report("a long attachment was not shortened") }
+      if text.count > AIAttachmentText.maximumCharacters || content.notice?.contains("先頭") != true { report("a long attachment was not shortened") }
     } else {
       report("a large UTF-8 attachment was refused: \(content.failure ?? "unknown")")
     }

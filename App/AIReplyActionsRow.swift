@@ -20,8 +20,7 @@ struct AIReplyActionsRow: View {
             MemoraInterfaceIcon(icon: .docText)
             Text("発言 \(excerptCount)件").font(MemoraTypography.metadata)
               .fixedSize(horizontal: false, vertical: true)
-            Image(icon: .chevronDown)
-              .font(.system(size: MemoraIconMetrics.accessory, weight: .medium))
+            Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)
               .rotationEffect(.degrees(isSourcesOpen ? 180 : 0))
           }
           .foregroundStyle(MemoraPalette.textSecondary)

@@ -57,6 +57,7 @@ enum RecordStore {
   static func encoded<T: Encodable>(_ value: T) throws -> Data { try JSONEncoder().encode(value) }
 }
 enum AIEngine { case cloud, foundation }
+enum ContextTaskKind { case chat }
 struct LLMSelection { var modelLabel = "Fixture・実モデル未実行" }
 struct AIAnswerFailure { var message = "Fixture error" }
 enum AIAnswerResult {
@@ -66,7 +67,8 @@ enum AIAnswerResult {
 }
 @MainActor enum AIEngineService {
   static func effectiveEngine(_ engine: AIEngine) -> AIEngine { engine }
-  static func contextCharacterLimit(for engine: AIEngine) -> Int { 40_000 }
+  static func contextCharacterLimit(for engine: AIEngine, llm: LLMSelection? = nil,
+                                    task: ContextTaskKind = .chat) -> Int { 40_000 }
   static func answer(engine: AIEngine, llm: LLMSelection, question: String, scopeLabel: String, context: String, history: String) async -> AIAnswerResult {
     .failure(.init())
   }

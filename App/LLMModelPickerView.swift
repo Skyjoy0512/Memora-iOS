@@ -109,8 +109,7 @@ struct LLMModelPickerView: View {
         }
         Spacer(minLength: 8)
         if id == model.aiModelID {
-          Image(icon: .checkmark)
-            .font(.body.weight(.semibold))
+          Image(icon: .checkmark, size: 17)
             .foregroundStyle(.primary)
         }
       }

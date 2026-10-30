@@ -23,8 +23,7 @@ struct CaptureSessionView: View {
             section = .markers
           }
         } label: {
-          Image(icon: .flag)
-            .font(.body.weight(.semibold))
+          Image(icon: .flag, size: 17)
             .frame(width: 44, height: 44)
             .memoraGlass(in: Circle(), interactive: true)
         }

@@ -32,8 +32,7 @@ struct MeetingBriefSection: View {
             }
           }
           Spacer(minLength: 8)
-          Image(icon: .chevronRight)
-            .font(.footnote.weight(.semibold))
+          Image(icon: .chevronRight, size: 13)
             .foregroundStyle(.tertiary)
         }
         .padding(MemoraSpacing.lg)

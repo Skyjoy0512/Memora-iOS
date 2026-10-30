@@ -12,7 +12,7 @@ struct ArtifactSourceLink: View {
           Text(row.title).frame(maxWidth: .infinity, alignment: .leading)
           Text(row.target.label + " · " + row.status).font(.caption).foregroundStyle(.secondary)
         }
-        if row.canOpen { Image(icon: .chevronRight).font(.caption).accessibilityHidden(true) }
+        if row.canOpen { Image(icon: .chevronRight, size: 12).accessibilityHidden(true) }
       }
       .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
       .contentShape(Rectangle())

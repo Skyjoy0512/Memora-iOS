@@ -122,22 +122,22 @@ private struct MarkdownTextSurface: UIViewRepresentable {
 
     func installToolbar(on view: UITextView) {
       textView = view
-      let bold = button("太字", artwork: .editorBold) { self.toggle(.traitBold) }
-      let italic = button("斜体", artwork: .editorItalic) { self.toggle(.traitItalic) }
+      let bold = button("太字", icon: .bold) { self.toggle(.traitBold) }
+      let italic = button("斜体", icon: .italic) { self.toggle(.traitItalic) }
       let done = button("完了", title: "完了") { self.finish() }
       done.tintColor = .systemBlue
       if parent.allowsStructure {
         let formatting = [
-          button("本文", artwork: .editorBody) { self.structure(.paragraph) },
-          button("見出し", artwork: .editorHeading) { self.structure(.heading) },
+          button("本文", icon: .textAlignleft) { self.structure(.paragraph) },
+          button("見出し", icon: .heading) { self.structure(.heading) },
           bold, italic,
-          button("箇条書き", artwork: .editorList) { self.structure(.bullet) },
-          button("番号付き", artwork: .editorList) { self.structure(.numbered) },
-          button("チェックリスト", artwork: .editorChecklist) { self.structure(.checklist) }
+          button("箇条書き", icon: .listBulletRectangle) { self.structure(.bullet) },
+          button("番号付き", icon: .listOrdered) { self.structure(.numbered) },
+          button("チェックリスト", icon: .checklist) { self.structure(.checklist) }
         ]
         let table = [
-          button("チェック状態を切り替える", artwork: .editorCheck) { self.structure(.toggleCheck) },
-          button("表を挿入", artwork: .editorTable) { self.structure(.table) },
+          button("チェック状態を切り替える", icon: .checkmark) { self.structure(.toggleCheck) },
+          button("表を挿入", icon: .tablecells) { self.structure(.table) },
           button("行を追加", title: "行＋") { self.structure(.addRow) },
           button("列を追加", title: "列＋") { self.structure(.addColumn) },
           button("この行を削除", title: "行−") { self.structure(.deleteRow) },
@@ -149,13 +149,12 @@ private struct MarkdownTextSurface: UIViewRepresentable {
       }
     }
 
-    private func button(_ label: String, artwork: MemoraArtwork? = nil, title: String? = nil,
+    private func button(_ label: String, icon: MemoraIcon? = nil, title: String? = nil,
       handler: @escaping () -> Void) -> UIButton {
       var configuration = UIButton.Configuration.plain()
       configuration.title = title
       let iconSize = min(UIFontMetrics(forTextStyle: .body).scaledValue(for: 18), 24)
-      configuration.image = artwork?.image(size: iconSize)
-      configuration.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+      configuration.image = icon.flatMap { UIImage(icon: $0, size: iconSize)?.withRenderingMode(.alwaysTemplate) }
       configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attributes in
         var attributes = attributes
         attributes.font = UIFontMetrics(forTextStyle: .subheadline).scaledFont(

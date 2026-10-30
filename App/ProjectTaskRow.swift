@@ -23,8 +23,7 @@ struct ProjectTaskRow: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       if let meetingID = task.meetingID {
         NavigationLink(value: LibraryRoute.meeting(meetingID)) {
-          Image(icon: .docText)
-            .font(.body).foregroundStyle(.secondary)
+          Image(icon: .docText, size: 17).foregroundStyle(.secondary)
             .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)

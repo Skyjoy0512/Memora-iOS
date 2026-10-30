@@ -19,8 +19,7 @@ struct AIFollowUpList: View {
           onSelect(prompt)
         } label: {
           HStack(spacing: 8) {
-            Image(icon: .arrowTurnDownRight)
-              .font(.caption2)
+            Image(icon: .arrowTurnDownRight, size: 11)
               .foregroundStyle(.tertiary)
             Text(prompt)
               .font(.subheadline)

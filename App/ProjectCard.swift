@@ -14,8 +14,7 @@ struct ProjectCard: View {
       NavigationLink(value: LibraryRoute.space(space.id)) {
         VStack(alignment: .leading, spacing: 16) {
           HStack(alignment: .center, spacing: 12) {
-            Image(icon: space.icon)
-              .font(.title3.weight(.medium))
+            Image(icon: space.icon, size: 20)
               .frame(width: 44, height: 44)
               .background(MemoraPalette.selection, in: RoundedRectangle(cornerRadius: MemoraRadius.field))
               .accessibilityHidden(true)
@@ -49,8 +48,7 @@ struct ProjectCard: View {
 
       // A sibling menu keeps its taps separate from the navigation link.
       Menu { actions } label: {
-        Image(icon: .ellipsis)
-          .font(MemoraTypography.body.weight(.medium))
+        Image(icon: .ellipsis, size: 17)
           .foregroundStyle(MemoraPalette.cardTextSecondary)
           .frame(width: 44, height: 44)
           .contentShape(Rectangle())

@@ -1,7 +1,7 @@
 import Foundation
 
 enum AIAttachmentText {
-  private static let maximumCharacters = 60_000
+  static let maximumCharacters = 60_000
 
   static func prepare(_ attachment: AIAttachment) async -> PreparedAIAttachment {
     let job = Task.detached(priority: .userInitiated) { readContent(attachment) }

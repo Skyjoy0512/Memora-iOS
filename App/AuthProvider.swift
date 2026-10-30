@@ -32,7 +32,7 @@ enum AuthProvider: String, Codable, Hashable, CaseIterable, Identifiable {
   var symbol: MemoraIcon {
     switch self {
     case .apple:
-      .appleLogo
+      .key
     case .google:
       .gCircle
     case .email:

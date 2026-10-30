@@ -56,8 +56,7 @@ struct HomeActivityLinks: View {
             Text(space.name).font(MemoraTypography.body.weight(.medium))
               .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
-            Image(icon: .chevronRight)
-              .font(.system(size: MemoraIconMetrics.accessory, weight: .semibold))
+            Image(icon: .chevronRight, size: MemoraIconMetrics.accessory)
               .foregroundStyle(.secondary).accessibilityHidden(true)
           }
           .foregroundStyle(.primary)

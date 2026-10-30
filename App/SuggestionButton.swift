@@ -11,8 +11,7 @@ struct SuggestionButton: View {
           .foregroundStyle(.primary)
           .multilineTextAlignment(.leading)
         Spacer()
-        Image(icon: .arrowUpLeft)
-          .font(.caption.weight(.semibold))
+        Image(icon: .arrowUpLeft, size: 12)
           .foregroundStyle(.primary)
       }
       .contentShape(Rectangle())

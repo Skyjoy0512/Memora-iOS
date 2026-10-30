@@ -9,8 +9,7 @@ struct CallExplanationView: View {
     VStack(spacing: 0) {
       ScrollView {
         VStack(spacing: 24) {
-          Image(icon: .phoneFill)
-            .font(.title)
+          Image(icon: .phoneFill, size: 28)
             .foregroundStyle(.white)
             .frame(width: 72, height: 72)
             .background(.green, in: Circle())
@@ -51,8 +50,7 @@ struct CallExplanationView: View {
 
   private func step(_ icon: MemoraIcon, _ text: String) -> some View {
     HStack(spacing: 14) {
-      Image(icon: icon)
-        .font(.body)
+      Image(icon: icon, size: 17)
         .frame(width: 40, height: 40)
         .background(Color(uiColor: .systemBackground), in: Circle())
         .accessibilityHidden(true)

@@ -10,8 +10,7 @@ struct RealtimeTranscriptView: View {
   var body: some View {
     if service.history.lines.isEmpty, service.volatileText.isEmpty {
       VStack(spacing: 10) {
-        Image(icon: .textBubble)
-          .font(.title2)
+        Image(icon: .textBubble, size: 22)
           .foregroundStyle(.primary)
         Text(service.unavailableReason ?? "録音を終えると文字起こしします")
           .font(.subheadline)

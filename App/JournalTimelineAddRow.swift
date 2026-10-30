@@ -22,8 +22,7 @@ struct JournalTimelineAddRow: View {
 
       Button(action: action) {
         HStack(spacing: 6) {
-          Image(icon: .plus)
-            .font(.caption.weight(.bold))
+          Image(icon: .plus, size: 12)
           Text(displayLabel)
             .font(.caption.weight(.medium))
             .lineLimit(1)

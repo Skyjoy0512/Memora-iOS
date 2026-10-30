@@ -302,8 +302,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   only tools the server marks `readOnlyHint` run without the approval card.
   The on-device agent does not get MCP tools.
 - Icons are Lucide (`Shared/MemoraIcon+Lucide.swift`) behind stored names in
-  `MemoraIcon` (`Shared/MemoraIcon.swift`); unmatched names fall back to their
-  SF Symbol. Draw them with `Image(icon:size:)`, `Label(_:icon:)`,
+  `MemoraIcon` (`Shared/MemoraIcon.swift`); the exhaustive mapping has no
+  SF Symbol fallback. SwiftUI, UIKit and widgets share `MemoraIconRendering`.
+  Draw them with `Image(icon:size:)`, `Label(_:icon:)`,
   `Button(_:icon:)` and friends rather than a literal `systemName`/`systemImage`,
   so a stored icon resolves the same everywhere. Pass the point size Lucide
   should rasterize at; `.font` does not resize it. Raw values keep the names

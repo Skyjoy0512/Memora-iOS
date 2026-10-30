@@ -21,8 +21,7 @@ struct JournalTimelineRow<Content: View>: View {
           .accessibilityHidden(true)
       }
 
-      Image(icon: icon)
-        .font(.title3)
+      Image(icon: icon, size: 20)
         .foregroundStyle(MemoraPalette.textSecondary)
         .frame(width: JournalTimelineMetrics.iconSide, height: JournalTimelineMetrics.iconSide)
         .accessibilityHidden(true)

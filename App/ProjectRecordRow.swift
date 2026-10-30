@@ -6,8 +6,7 @@ struct ProjectRecordRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: MemoraSpacing.md) {
-      Image(icon: meeting.source.icon)
-        .font(.body)
+      Image(icon: meeting.source.icon, size: 17)
         .frame(width: ProjectLayout.iconSide, height: 24)
         .foregroundStyle(MemoraPalette.textSecondary)
         .accessibilityHidden(true)

@@ -1,10 +1,10 @@
 import LucideSwift
 
 /// Lucide is the app's icon family. Stored `MemoraIcon` values keep their SF
-/// names so existing projects and settings still resolve; anything without a
-/// Lucide counterpart falls back to the SF Symbol in `systemName`.
+/// names so existing projects and settings still resolve. The exhaustive map
+/// keeps every interface glyph in the same family, including legacy names.
 extension MemoraIcon {
-  var lucideName: LucideIconName? {
+  var lucideName: LucideIconName {
     switch self {
     case .antennaRadiowavesLeftAndRight: .radio
     case .antennaRadiowavesLeftAndRightSlash: .radioOff
@@ -234,7 +234,16 @@ extension MemoraIcon {
     case .xmark: .x
     case .xmarkCircle: .circleX
     case .xmarkCircleFill: .circleX
-    default: nil
+    case .appleLogo: .cpu
+    case .gCircle: .globe
+    case .gobackward15: .rotateCcw
+    case .goforward15: .rotateCw
+    case .notionLogo: .notebook
+    case .starBubble: .messageCircleHeart
+    case .textBadgePlus: .listPlus
+    case .trashSlash: .shredder
+    case .heading: .heading
+    case .listOrdered: .listOrdered
     }
   }
 }

@@ -42,7 +42,6 @@ struct AgentQuestionCard: View {
         model.resolveAgentQuestions(nil, requestID: request.id)
       } label: {
         Image(icon: .xmark, size: 13)
-          .font(.caption.weight(.semibold))
           .foregroundStyle(.tertiary)
           .frame(width: 36, height: 36)
           .contentShape(Rectangle())
@@ -109,7 +108,6 @@ struct AgentQuestionCard: View {
           .strokeBorder(isOn ? Color.clear : Color.secondary.opacity(0.5), lineWidth: 1.5)
           .background(isOn ? Color.primary : Color.clear, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
         Image(icon: .checkmark, size: 11)
-          .font(.caption2.weight(.bold))
           .foregroundStyle(Color(uiColor: .systemBackground))
           .opacity(isOn ? 1 : 0)
       } else {
@@ -131,7 +129,7 @@ struct AgentQuestionCard: View {
   private var footer: some View {
     HStack(spacing: 6) {
       Button { go(to: index - 1) } label: {
-        Image(icon: .chevronUp, size: 13).font(.caption.weight(.semibold))
+        Image(icon: .chevronUp, size: 13)
       }
       .disabled(index == 0)
       .accessibilityLabel("前の質問")
@@ -142,7 +140,7 @@ struct AgentQuestionCard: View {
         .contentTransition(.numericText(value: Double(index)))
 
       Button { go(to: index + 1) } label: {
-        Image(icon: .chevronDown, size: 13).font(.caption.weight(.semibold))
+        Image(icon: .chevronDown, size: 13)
       }
       .disabled(isLast)
       .accessibilityLabel("次の質問")

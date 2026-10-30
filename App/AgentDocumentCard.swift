@@ -10,8 +10,7 @@ struct AgentDocumentCard: View {
       HStack(spacing: 12) {
         DocumentRow(document: document, spaceName: nil)
         Spacer(minLength: 4)
-        Image(icon: .chevronRight)
-          .font(.caption.weight(.semibold))
+        Image(icon: .chevronRight, size: 12)
           .foregroundStyle(.tertiary)
       }
       .padding(.horizontal, MemoraSpacing.md)

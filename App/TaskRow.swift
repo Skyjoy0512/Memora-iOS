@@ -22,9 +22,8 @@ struct TaskRow: View {
         let updated = model.tasks.first { $0.id == task.id }
         InteractionFeedback.shared.send(updated?.isCompleted == !task.isCompleted ? .selection : .error)
       } label: {
-        Image(icon: task.isCompleted ? .checkmarkCircleFill : .circle)
-          .font(.system(size: MemoraIconMetrics.glyph, weight: .regular))
-          .symbolEffect(.bounce, options: .speed(1.6), value: reduceMotion ? false : task.isCompleted)
+        Image(icon: task.isCompleted ? .checkmarkCircleFill : .circle, size: MemoraIconMetrics.glyph)
+          .contentTransition(.opacity)
           .frame(width: 44, height: 44)
           .contentShape(Rectangle())
       }

@@ -6,7 +6,6 @@ struct MemoraInterfaceIcon: View {
 
   var body: some View {
     Image(icon: outline, size: MemoraIconMetrics.glyph)
-      .symbolRenderingMode(.monochrome)
       .foregroundStyle(MemoraPalette.textPrimary)
       .frame(width: MemoraIconMetrics.slot, height: MemoraIconMetrics.slot)
       .accessibilityHidden(true)

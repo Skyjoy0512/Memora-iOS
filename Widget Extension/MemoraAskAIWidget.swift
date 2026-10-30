@@ -17,12 +17,12 @@ private struct AskAIWidgetContent: View {
   @Environment(\.widgetFamily) private var family
   var body: some View {
     if family == .accessoryCircular {
-      Image(icon: .chatBubble).font(.title2).accessibilityLabel("Ask AIを開く")
+      Image(icon: .chatBubble, size: 22).accessibilityLabel("Ask AIを開く")
     } else if family == .accessoryInline {
       Label("Ask AI", icon: .chatBubble)
     } else {
       VStack(alignment: .leading, spacing: 8) {
-        Image(icon: .chatBubble).font(.title2).widgetAccentable()
+        Image(icon: .chatBubble, size: 22).widgetAccentable()
         if family == .systemSmall || family == .systemMedium { Spacer(minLength: 0) }
         Text("Ask AI").font(.headline)
         if family != .accessoryRectangular { Text("Memoraに話しかける").font(.caption).foregroundStyle(.secondary) }

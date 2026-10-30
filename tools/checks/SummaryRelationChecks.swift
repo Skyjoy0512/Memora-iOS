@@ -3,6 +3,28 @@ import Foundation
 @main
 enum SummaryRelationChecks {
   static func main() throws {
+    for bullet in ["-", "*"] {
+      for colon in [":", "：", ""] {
+        let legacy = """
+        ### サマリー
+        \(bullet) **決定事項**:
+          - SIDを分ける
+        \(bullet) **予定アクション**\(colon)
+          - 榎木さんへ報告
+        ### アクションアイテム
+        | タイトル | 説明 | 責任者 | 期限 |
+        | --- | --- | --- | --- |
+        | 榎木さんへ報告 | 遅延を共有 | Speaker 1 | 未定 |
+        """
+        let extracted = SummaryResponseParser.parse(legacy)
+        precondition(extracted.decisions == ["SIDを分ける"])
+        precondition(extracted.actions.count == 1 && extracted.actions[0].title == "榎木さんへ報告")
+        precondition(extracted.actions[0].owner == "Speaker 1" && extracted.actions[0].due == nil)
+        let withoutTable = SummaryResponseParser.parse(legacy.components(separatedBy: "### アクションアイテム")[0])
+        precondition(withoutTable.decisions == ["SIDを分ける"])
+        precondition(withoutTable.actions.map(\.title) == ["榎木さんへ報告"])
+      }
+    }
     let parent = "公開は延期します"
     let raw = "検証が終わっていないため、公開は延期します。"
     let source = TranscriptSegment(id: UUID(), speaker: "話者1", speakerIsCertain: false, timestamp: 12, text: raw)

@@ -526,8 +526,7 @@ struct LibraryView: View {
       action()
     } label: {
       VStack(spacing: 3) {
-        Image(icon: icon)
-          .font(.title3)
+        Image(icon: icon, size: 20)
         Text(title)
           .font(.caption2.weight(.medium))
       }

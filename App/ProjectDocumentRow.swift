@@ -5,8 +5,7 @@ struct ProjectDocumentRow: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      Image(icon: document.kind.symbol)
-        .font(.body)
+      Image(icon: document.kind.symbol, size: 17)
         .frame(width: ProjectLayout.iconSide, height: 24)
         .foregroundStyle(.secondary)
         .accessibilityHidden(true)

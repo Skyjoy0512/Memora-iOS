@@ -71,8 +71,7 @@ struct AgentActivityView: View {
     if step.state == .running && isRunning {
       Image(icon: step.icon, size: 16).accessibilityLabel(stateLabel(step))
     } else {
-      Image(icon: step.state == .done ? .checkmark : step.state == .failed ? .exclamationmarkTriangle : .minusCircle)
-        .font(.caption).accessibilityLabel(stateLabel(step))
+      Image(icon: step.state == .done ? .checkmark : step.state == .failed ? .exclamationmarkTriangle : .minusCircle, size: 12).accessibilityLabel(stateLabel(step))
     }
   }
 }

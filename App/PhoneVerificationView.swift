@@ -44,7 +44,7 @@ struct PhoneVerificationView: View {
             if isStarting {
               ProgressView().tint(.black)
             } else {
-              Image(icon: .phoneFill, size: 22).font(.title2)
+              Image(icon: .phoneFill, size: 22)
             }
           }
           .foregroundStyle(.black)
@@ -66,7 +66,6 @@ struct PhoneVerificationView: View {
 
   private var badge: some View {
     Image(icon: .checkmarkSealFill, size: 44)
-      .font(.system(size: 44))
       .foregroundStyle(.white)
       .frame(width: 96, height: 96)
       .background(.green, in: Circle())

@@ -303,8 +303,7 @@ struct MeetingDetailView: View {
               ZStack {
                 Circle()
                   .fill(Color.primary.opacity(0.08))
-                Image(icon: .plus)
-                  .font(.title3)
+                Image(icon: .plus, size: 20)
                   .foregroundStyle(.primary)
               }
               .frame(width: 56, height: 56)

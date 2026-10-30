@@ -40,7 +40,6 @@ struct CollapsibleInsightSection<Content: View>: View {
             .foregroundStyle(.primary)
           Spacer(minLength: 8)
           Image(icon: .chevronDown, size: 15)
-            .font(.subheadline.weight(.semibold))
             .foregroundStyle(.secondary)
             .rotationEffect(.degrees(isCollapsed ? -90 : 0))
         }
