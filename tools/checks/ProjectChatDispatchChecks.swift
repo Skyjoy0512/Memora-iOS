@@ -139,6 +139,7 @@ enum ProjectContextBuilder {
   static func cited(_ text: String, from: [ProjectCitation]) -> [ProjectCitation] { [] }
 }
 
+enum ContextTaskKind { case agent }
 @MainActor
 enum AIEngineService {
   static var pending: [String: CheckedContinuation<AIAnswerResult, Never>] = [:]
@@ -146,6 +147,7 @@ enum AIEngineService {
   static var requests: [String] = []
   static func effectiveEngine(_ engine: MockEngine) -> MockEngine { engine }
   static func contextCharacterLimit(for engine: MockEngine) -> Int { 10_000 }
+  static func contextCharacterLimit(for engine: MockEngine, llm: MockLLM, task: ContextTaskKind) -> Int { 10_000 }
   static func modelLabel(engine: MockEngine, llm: MockLLM) -> String? { nil }
   static func answer(engine: MockEngine, llm: MockLLM, question: String, scopeLabel: String, context: String,
                      history: String, onText: (@MainActor (String) -> Void)?) async -> AIAnswerResult {

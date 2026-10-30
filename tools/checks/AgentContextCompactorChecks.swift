@@ -45,6 +45,13 @@ enum AgentContextCompactorChecks {
     let small: [[String: Any]] = [["role": "user", "content": "短い"]]
     precondition(AgentContextCompactor.compact(small, characterBudget: 10_000).count == 1)
     precondition((AgentContextCompactor.compact(small, characterBudget: 10_000)[0]["content"] as? String) == "短い")
+    let reasoning: [[String: Any]] = [["role": "assistant", "content": "", "reasoning_content": long]]
+    precondition(AgentContextCompactor.estimatedCharacters(reasoning) > long.count)
+    let thinking: [[String: Any]] = [["role": "assistant", "content": [["type": "thinking", "thinking": long, "signature": long]]]]
+    precondition(AgentContextCompactor.estimatedCharacters(thinking) > long.count * 2)
+    let nested: [[String: Any]] = [["role": "user", "content": [["type": "tool_result", "tool_use_id": "x",
+      "content": [["type": "text", "text": long]]]]]]
+    precondition(AgentContextCompactor.estimatedCharacters(nested) > long.count)
 
     print("AgentContextCompactorChecks: passed (keeps request/recent turns, shortens old tool results, preserves tool-call pairing, both API shapes, no-op within budget)")
   }

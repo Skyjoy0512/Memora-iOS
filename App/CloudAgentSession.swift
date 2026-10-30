@@ -19,11 +19,13 @@ final class CloudAgentSession {
   private var messages: [[String: Any]] = []
   let runBudget: AgentRunBudget
   let capabilities: ModelCapabilities
+  private let contextTask: ContextTaskKind
 
   /// Returns nil when there is no key for the provider; the caller says so.
   /// `tools` narrows what the model is offered; resident agents get only the
   /// reading tools.
-  init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil, toolDescriptions: [AgentTool: String] = [:], runBudget: AgentRunBudget? = nil, sessionConfiguration: URLSessionConfiguration = .ephemeral) {
+  init?(llm: LLMSelection, system: String, tools: [AgentTool]? = nil, toolDescriptions: [AgentTool: String] = [:], runBudget: AgentRunBudget? = nil, sessionConfiguration: URLSessionConfiguration = .ephemeral,
+        contextTask: ContextTaskKind = .agent, capabilityOverrides: [String: ModelCapabilityOverride]? = nil) {
     guard llm.supportsToolCalling, let key = KeychainStore.string(forKey: llm.keychainAccount), !key.isEmpty else {
       return nil
     }
@@ -34,8 +36,10 @@ final class CloudAgentSession {
     self.toolDescriptions = toolDescriptions
     self.sessionConfiguration = (sessionConfiguration.copy() as? URLSessionConfiguration) ?? .ephemeral
     self.sessionConfiguration.timeoutIntervalForResource = 600
-    let capabilities = ModelCapabilities.resolve(llm: llm)
+    let capabilities = capabilityOverrides.map { ModelCapabilities.resolve(llm: llm, overrides: $0) }
+      ?? ModelCapabilities.resolve(llm: llm)
     self.capabilities = capabilities
+    self.contextTask = contextTask
     self.runBudget = runBudget ?? AgentRunBudget(capabilities: capabilities)
   }
 
@@ -89,8 +93,21 @@ final class CloudAgentSession {
   /// The outbound copy is shortened when the run has grown past the model's
   /// input room. The stored messages stay intact for local accounting.
   private func outboundMessages() -> [[String: Any]] {
-    let budget = TokenBudgetManager.budget(capabilities: capabilities, task: .agent).inputCharacterBudget
-    return AgentContextCompactor.compact(messages, characterBudget: max(8_000, budget * 2 / 3))
+    let budget = TokenBudgetManager.budget(capabilities: capabilities, task: contextTask).inputCharacterBudget
+    return AgentContextCompactor.compact(messages, characterBudget: max(0, budget * 2 / 3))
+  }
+
+  private func requestBody(_ body: [String: Any]) throws -> Data {
+    let data = try JSONSerialization.data(withJSONObject: body)
+    guard data.count <= capabilities.maximumRequestBytes else { throw AIAnswerFailure.executionLimit }
+    // Include system instructions, schemas and provider thinking/signatures.
+    // Compaction preserves the request and recent turns; if those cannot fit,
+    // stop before sending rather than silently dropping their evidence.
+    let input = body.filter { ["system", "messages", "tools"].contains($0.key) }
+    let inputData = try JSONSerialization.data(withJSONObject: input)
+    let budget = TokenBudgetManager.budget(capabilities: capabilities, task: contextTask).inputCharacterBudget
+    guard String(decoding: inputData, as: UTF8.self).count <= budget else { throw AIAnswerFailure.executionLimit }
+    return data
   }
 
   private func boundedResponse(for request: URLRequest) async throws -> [String: Any] {
@@ -111,7 +128,12 @@ final class CloudAgentSession {
   private func reserveOutput(in body: inout [String: Any], isStreaming: Bool) throws -> AgentOutputBudget.Reservation? {
     guard let policy = AgentGenerationPolicy.resolve(provider: llm.provider, modelID: llm.modelID,
       hasCustomEndpoint: llm.endpoint != nil || llm.credentialAccount != nil) else { return nil }
-    let reservation = try runBudget.reserveOutput(maximum: min(policy.maximumOutputTokens, capabilities.maximumOutputTokens))
+    let plannedOutput = TokenBudgetManager.budget(capabilities: capabilities, task: contextTask).outputTokens
+    let maximum = min(policy.maximumOutputTokens, plannedOutput)
+    var preflight = body
+    policy.apply(to: &preflight, allowance: maximum, isStreaming: isStreaming)
+    _ = try requestBody(preflight)
+    let reservation = try runBudget.reserveOutput(maximum: maximum)
     policy.apply(to: &body, allowance: reservation.maximumTokens, isStreaming: isStreaming)
     return reservation
   }
@@ -138,7 +160,7 @@ final class CloudAgentSession {
       // A document is written inside one tool call, so the cap leaves room for
       // a long one after the model's thinking. It never exceeds what the model
       // accepts as output.
-      "max_tokens": capabilities.maximumOutputTokens,
+      "max_tokens": TokenBudgetManager.budget(capabilities: capabilities, task: contextTask).outputTokens,
       "system": system,
       "tools": tools.map { tool in
         ["name": tool.rawValue, "description": toolDescriptions[tool] ?? tool.summary, "input_schema": tool.inputSchema]
@@ -154,7 +176,7 @@ final class CloudAgentSession {
       body["fallbacks"] = "default"
     }
     let outputIsReserved = try reserveOutput(in: &body, isStreaming: onText != nil)
-    request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    request.httpBody = try requestBody(body)
 
     try runBudget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]
@@ -208,7 +230,7 @@ final class CloudAgentSession {
       }
     ]
     let outputIsReserved = try reserveOutput(in: &body, isStreaming: onText != nil)
-    request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    request.httpBody = try requestBody(body)
 
     try runBudget.reserveRequest(bytes: request.httpBody?.count ?? 0)
     let decoded: [String: Any]

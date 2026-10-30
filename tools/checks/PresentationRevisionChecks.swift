@@ -2,6 +2,8 @@ import Foundation
 
 enum PresentationRevisionChecks {
   @MainActor static func run() async throws {
+    precondition(PresentationRevision.inputLimit(modelBudget: 100) == 0)
+    precondition(PresentationRevision.inputLimit(modelBudget: 4_096) + PresentationRevision.instructions.count + 100 == 4_096)
     for layout in SlideArchetype.allCases {
       let slide = PresentationExample.slide(layout)
       let other = DocumentSlide(title: "送信しない別ページ", bullets: ["送信しない秘密"])
@@ -50,6 +52,31 @@ enum PresentationRevisionChecks {
     do {
       _ = try PresentationRevision.decode(try response(for: numberedRequest) { $0[0]["title"] = "二つの施策で15万円を確認" }, for: numberedRequest)
       preconditionFailure("Changed Japanese number accepted")
+    } catch {}
+    let quantities = DocumentSlide(title: "予算を確認", bullets: ["予算10万円、比率20%。期日は2026年8月1日。"], notes: "")
+    let quantitiesRequest = try PresentationRevision.request(document: .init(title: "数量の保持", kind: .slides, slides: [quantities]),
+      selectedIDs: [quantities.id], instruction: "読みやすく", contextLimit: 24_000)
+    for body in [
+      "予算10%、比率20万円。期日は2026年8月1日。",
+      "予算10万円、比率20%。期日は2026年1月8日。",
+      "予算10万円、比率20%。予算10万円。期日は2026年8月1日。",
+      "予算10万円、比率20%。期日は2026年8月1日。比率20%。"
+    ] {
+      do {
+        _ = try PresentationRevision.decode(try response(for: quantitiesRequest) { $0[0]["bullets"] = [body] }, for: quantitiesRequest)
+        preconditionFailure("Changed units, dates or quantity multiplicity accepted")
+      } catch {}
+    }
+    _ = try PresentationRevision.decode(try response(for: quantitiesRequest) {
+      $0[0]["bullets"] = ["予算１０ 万円、比率２０%。期日は２０２６年８月１日。"]
+    }, for: quantitiesRequest)
+    do {
+      _ = try PresentationRevision.decode(try response(for: quantitiesRequest) {
+        $0[0]["bullets"] = []
+        $0[0]["layout"] = "b01"
+        $0[0]["content_json"] = #"{"subtitle":"予算10万円、比率20%。期日は2026年8月1日。"}"#
+      }, for: quantitiesRequest)
+      preconditionFailure("An outline silently became a structured deck")
     } catch {}
     var metric = PresentationExample.slide(.m03)
     metric.composition?.metrics = [.init(label: "指標|15.0", value: 30, unit: "%")]

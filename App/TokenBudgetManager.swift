@@ -75,7 +75,7 @@ enum TokenBudgetManager {
 
   static func budget(capabilities: ModelCapabilities, task: ContextTaskKind) -> TokenBudget {
     let window = max(1_024, capabilities.contextWindowTokens)
-    let requestedOutput = min(max(512, task.outputTokenTarget), max(512, capabilities.maximumOutputTokens))
+    let requestedOutput = min(max(256, task.outputTokenTarget), max(256, capabilities.maximumOutputTokens))
     let safety = safetyTokens(contextWindow: window)
     // Never reserve so much for the answer that the input has no room.
     let output = min(requestedOutput, max(256, window - safety - 1_024))

@@ -22,6 +22,7 @@ struct CloudSessionChecks {
       try await suspendedRevocation(root: root, provider: provider)
       try await approvalBoundaryChecks(root: root, provider: provider)
       try await cancelledTransport(provider: provider)
+      try await preflightBudgets(provider: provider)
     }
     try await httpFailures()
     try await schemaAndSelectionChecks()
@@ -148,7 +149,7 @@ struct CloudSessionChecks {
     let definitions = object["tools"] as! [[String: Any]]
     let names = definitions.map { provider.usesAnthropicAPI ? $0["name"] as! String : ($0["function"] as! [String: Any])["name"] as! String }
     precondition(Set(names) == ["read_person", "draft_email"])
-    precondition(object[provider.usesAnthropicAPI ? "max_tokens" : "max_completion_tokens"] as? Int == 32_000)
+    precondition(object[provider.usesAnthropicAPI ? "max_tokens" : "max_completion_tokens"] as? Int == 16_000)
     precondition((object["stream"] as? Bool == true) == streaming)
     if streaming { precondition(request.value(forHTTPHeaderField: "Accept") == "text/event-stream") }
     if !provider.usesAnthropicAPI {
@@ -339,12 +340,87 @@ struct CloudSessionChecks {
     object.removeValue(forKey: "usage")
     response.data = try JSONSerialization.data(withJSONObject: object)
     Wire.state.reset(Array(repeating: response, count: 4))
-    let budget = AgentRunBudget()
+    let budget = AgentRunBudget(output: AgentOutputBudget(maximumTokens: 64_000))
     let session = session(.openAI, budget: budget)
     for _ in 0..<4 { _ = try await session.next() }
     do { _ = try await session.next(); preconditionFailure("Fifth unmetered request sent") }
     catch AIAnswerFailure.executionLimit {}
-    precondition(budget.requestCount == 4 && budget.chargedOutputTokens == 128_000)
+    precondition(budget.requestCount == 4 && budget.chargedOutputTokens == 64_000)
     Wire.state.assertConsumed(4)
+  }
+
+  @MainActor static func preflightBudgets(provider: LLMProvider) async throws {
+    let model = provider.usesAnthropicAPI ? "claude-sonnet-5" : "gpt-6-sol"
+    let key = ModelCapabilityOverrides.key(provider: provider, modelID: model)
+    let small = ModelCapabilityOverride(contextWindowTokens: 4_096, maximumOutputTokens: 256, maximumRequestBytes: 65_536)
+    func make(system: String = "検査", override: ModelCapabilityOverride? = nil,
+              task: ContextTaskKind = .agent) -> CloudAgentSession {
+      CloudAgentSession(llm: .init(provider: provider, modelID: model), system: system, tools: [],
+        sessionConfiguration: configuration(), contextTask: task, capabilityOverrides: [key: override ?? small])!
+    }
+    for scenario in 0..<4 {
+      Wire.state.reset([])
+      let session: CloudAgentSession
+      switch scenario {
+      case 0: session = make(system: String(repeating: "会", count: 4_000))
+      case 1:
+        session = make(); session.addUserMessage(String(repeating: "会", count: 4_000))
+      case 2:
+        session = make()
+        session.externalTools = [.init(serverID: UUID(), serverName: "fixture", name: "read", summary: String(repeating: "会", count: 4_000),
+          inputSchema: Data(#"{"type":"object"}"#.utf8), isReadOnly: true)]
+      default:
+        // Characters fit the large window, but Japanese UTF-8 exceeds 64 KiB.
+        session = make(system: String(repeating: "会", count: 24_000),
+          override: .init(contextWindowTokens: 400_000, maximumOutputTokens: 256, maximumRequestBytes: 65_536))
+      }
+      do { _ = try await session.next(); preconditionFailure("Oversize request reached transport") }
+      catch AIAnswerFailure.executionLimit {}
+      precondition(session.runBudget.requestCount == 0 && session.runBudget.chargedOutputTokens == 0)
+      Wire.state.assertConsumed(0)
+    }
+
+    Wire.state.reset([try Response.json(provider: provider)])
+    let tiny = make()
+    tiny.addUserMessage("短い依頼")
+    _ = try await tiny.next()
+    let outputField = provider.usesAnthropicAPI ? "max_tokens" : "max_completion_tokens"
+    let tinyBody = try body(Wire.state.requests[0])
+    precondition(tinyBody[outputField] as? Int == 256)
+    Wire.state.assertConsumed(1)
+
+    // Provider thinking is retained, counted, and never truncated as if it
+    // were an expendable tool result. The next request must stop locally.
+    var thinkingReply = try Response.json(provider: provider)
+    var thinkingObject = try JSONSerialization.jsonObject(with: thinkingReply.data) as! [String: Any]
+    if provider.usesAnthropicAPI {
+      var content = thinkingObject["content"] as! [[String: Any]]
+      content[0]["thinking"] = String(repeating: "会", count: 4_000)
+      thinkingObject["content"] = content
+    } else {
+      var choices = thinkingObject["choices"] as! [[String: Any]]
+      var message = choices[0]["message"] as! [String: Any]
+      message["reasoning_content"] = String(repeating: "会", count: 4_000)
+      choices[0]["message"] = message; thinkingObject["choices"] = choices
+    }
+    thinkingReply.data = try JSONSerialization.data(withJSONObject: thinkingObject)
+    Wire.state.reset([thinkingReply])
+    let growing = make()
+    growing.addUserMessage("依頼")
+    _ = try await growing.next()
+    do { _ = try await growing.next(); preconditionFailure("Protected recent context escaped its window") }
+    catch AIAnswerFailure.executionLimit {}
+    precondition(growing.runBudget.requestCount == 1 && growing.runBudget.chargedOutputTokens == 12)
+    Wire.state.assertConsumed(1)
+
+    Wire.state.reset([try Response.json(provider: provider)])
+    let presentation = CloudAgentSession(llm: .init(provider: provider, modelID: model), system: "資料検査", tools: [],
+      sessionConfiguration: configuration(), contextTask: .presentation, capabilityOverrides: [:])!
+    presentation.addUserMessage("資料を作る")
+    _ = try await presentation.next()
+    let presentationBody = try body(Wire.state.requests[0])
+    precondition(presentationBody[outputField] as? Int == 32_000)
+    Wire.state.assertConsumed(1)
+    print("Preflight budgets passed: \(provider), system/schemas/user/byte limits before transport, 256-token cap, recent-turn refusal, presentation output reservation")
   }
 }

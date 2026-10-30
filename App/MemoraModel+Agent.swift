@@ -62,7 +62,7 @@ extension MemoraModel {
     let runner: AgentRunner
     switch AIEngineService.effectiveEngine(configuration.engine) {
     case .cloud:
-      guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope) + "\n" + NativeAIInterface.instructions + skillContext, tools: offeredTools) else {
+      guard let session = CloudAgentSession(llm: llm, system: Self.agentInstructions(scope: scope) + "\n" + NativeAIInterface.instructions + skillContext, tools: offeredTools, contextTask: contextTask) else {
         let failure: AIAnswerFailure = llm.isMemoraIntelligence ? .serviceNotConnected : .missingKey
         if attachment != nil {
           aiMessages.removeAll { $0.id == userMessage.id }

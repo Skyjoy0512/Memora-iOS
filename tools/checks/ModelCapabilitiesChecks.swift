@@ -71,6 +71,12 @@ enum ModelCapabilitiesChecks {
     precondition(session.limitRequestBytes <= 8 * 1024 * 1024)
     let conservativeSession = AgentSessionBudget(capabilities: unknown)
     precondition(conservativeSession.limitRequestBytes == AgentSessionBudget.maximumRequestBytes)
+    let minimum = ModelCapabilityOverride(contextWindowTokens: 4_096, maximumOutputTokens: 256, maximumRequestBytes: 65_536)
+      .applying(to: declared)!
+    let minimumBudget = TokenBudgetManager.budget(capabilities: minimum, task: .agent)
+    precondition(minimumBudget.outputTokens == 256)
+    precondition(minimumBudget.inputTokens + minimumBudget.outputTokens + minimumBudget.safetyTokens <= 4_096)
+    precondition(AgentSessionBudget(capabilities: minimum).limitRequestBytes == 65_536)
 
     let output = AgentOutputBudget(maximumTokens: 16_000)
     precondition(output.limitTokens == 16_000)

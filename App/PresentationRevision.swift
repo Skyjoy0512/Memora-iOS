@@ -11,6 +11,10 @@ struct PresentationRevision: Hashable, Sendable {
     var instruction: String
   }
 
+  static func inputLimit(modelBudget: Int) -> Int {
+    max(0, min(80_000, modelBudget - instructions.count - 100))
+  }
+
   private struct ProtectedMetric: Equatable {
     var label: String
     var value: Double
@@ -80,7 +84,7 @@ struct PresentationRevision: Hashable, Sendable {
       }
       guard !slide.title.isEmpty, slide.title.count <= 160, slide.notes.count <= 4_000,
             slide.bullets.count <= 6, slide.bullets.allSatisfy({ $0.count <= 80 }),
-            original.composition == nil || slide.composition != nil else {
+            (original.composition == nil) == (slide.composition == nil) else {
         throw PresentationToolInput.Failure(message: "修正案の文字数、または構造化データの欠落を確認してください。")
       }
       guard (original.composition?.sources ?? []) == (slide.composition?.sources ?? []),
@@ -117,19 +121,25 @@ struct PresentationRevision: Hashable, Sendable {
   版面に収め、1枚1メッセージにし、未確認を確認済みと断定しません。
   """
 
-  private static func numbers(in slide: DocumentSlide) -> Set<String> {
+  private static func numbers(in slide: DocumentSlide) -> [String: Int] {
     let rawText = ([slide.title, slide.notes] + slide.bullets + (slide.composition?.readingText ?? [])).joined(separator: "\n")
     let text = rawText.applyingTransform(.fullwidthToHalfwidth, reverse: false) ?? rawText
-    let regex = try! NSRegularExpression(pattern: #"[-−+]?[0-9]+(?:[,.][0-9]+)*"#)
-    var values = Set(regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match -> String? in
-      guard let range = Range(match.range, in: text) else { return nil }
+    let regex = try! NSRegularExpression(pattern:
+      #"([-−+]?[0-9]+(?:[,.][0-9]+)*)(?:\s*((?:兆円|億円|万円|千円|円|億人|万人|千人|人|万件|千件|件|店舗|店|拠点|時間|分|秒|か月|ヶ月|週間|年|月|日|週|倍|pt|ポイント|%|案|個|つ)(?:/(?:月|年|週|日|人|件))?))?"#)
+    // A set loses repetitions, and a bare number loses its unit. Preserve
+    // both so swapping 10万円/20% or duplicating an old value is rejected.
+    var values: [String: Int] = [:]
+    for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+      guard let range = Range(match.range(at: 1), in: text) else { continue }
       let raw = String(text[range]).replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "−", with: "-")
-      guard let value = Decimal(string: raw, locale: Locale(identifier: "en_US_POSIX")) else { return raw }
-      return NSDecimalNumber(decimal: value).stringValue
-    })
+      let value = Decimal(string: raw, locale: Locale(identifier: "en_US_POSIX"))
+        .map { NSDecimalNumber(decimal: $0).stringValue } ?? raw
+      let unit = Range(match.range(at: 2), in: text).map { String(text[$0]) } ?? ""
+      values["\(value)|\(unit)", default: 0] += 1
+    }
     let kanji = try! NSRegularExpression(pattern: "[〇零一二三四五六七八九十百千万億兆]+")
     for match in kanji.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
-      if let range = Range(match.range, in: text) { values.insert(String(text[range])) }
+      if let range = Range(match.range, in: text) { values[String(text[range]), default: 0] += 1 }
     }
     return values
   }

@@ -39,26 +39,15 @@ enum AgentContextCompactor {
 
   /// A character estimate, matching the conservative budgeting used elsewhere.
   static func estimatedCharacters(_ messages: [[String: Any]]) -> Int {
-    var total = 0
-    for message in messages {
-      if let text = message["content"] as? String {
-        total += text.count
-      } else if let blocks = message["content"] as? [[String: Any]] {
-        for block in blocks {
-          if let text = block["content"] as? String { total += text.count }
-          if let text = block["text"] as? String { total += text.count }
-        }
-      }
-      if let calls = message["tool_calls"] as? [[String: Any]] {
-        for call in calls {
-          if let function = call["function"] as? [String: Any],
-             let arguments = function["arguments"] as? String {
-            total += arguments.count
-          }
-        }
-      }
-      total += 64
+    messages.reduce(0) { $0 + characters(in: $1) + 64 }
+  }
+
+  private static func characters(in value: Any) -> Int {
+    if let text = value as? String { return text.count }
+    if let object = value as? [String: Any] {
+      return object.reduce(0) { $0 + $1.key.count + characters(in: $1.value) + 4 }
     }
-    return total
+    if let values = value as? [Any] { return values.reduce(0) { $0 + characters(in: $1) + 1 } }
+    return 16
   }
 }
