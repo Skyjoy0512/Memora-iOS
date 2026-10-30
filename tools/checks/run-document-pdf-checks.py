@@ -31,3 +31,10 @@ with tempfile.TemporaryDirectory(prefix="memora-pdf-session-checks-") as tempora
                     "App/DocumentPDFExportSession.swift", "tools/checks/DocumentPDFExportSessionChecks.swift",
                     "-o", executable], cwd=root, check=True)
     subprocess.run([executable], cwd=root, check=True)
+
+with tempfile.TemporaryDirectory(prefix="memora-meeting-pdf-checks-") as temporary:
+    executable = str(Path(temporary) / "meeting-checks")
+    subprocess.run(["swiftc", *[f"App/{name}.swift" for name in sources],
+                    "App/ArtifactExportFile.swift", "App/MeetingPDFContent.swift", "App/MeetingPDF.swift",
+                    "tools/checks/MeetingPDFChecks.swift", "-o", executable], cwd=root, check=True)
+    subprocess.run([executable], cwd=root, check=True)

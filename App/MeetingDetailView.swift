@@ -38,9 +38,7 @@ struct MeetingDetailView: View {
   @State private var hasLeft = false
 
   @State private var isSavingToNotion = false
-  /// The PDF export in progress, with its progress, while it runs.
-  @State private var pdfExportProgress: Double?
-  @State private var pdfExportTask: Task<Void, Never>?
+  @State private var pdfExport = DocumentPDFExportSession()
   @Environment(\.openURL) private var openURL
 
   private struct StatusAlert: Identifiable {
@@ -101,11 +99,6 @@ struct MeetingDetailView: View {
             .padding(.bottom, model.bottomContentClearance)
           }
           .background(MemoraPalette.background)
-          .overlay {
-            if let progress = pdfExportProgress {
-              pdfExportCard(progress)
-            }
-          }
           .onAppear {
             hasLeft = false
             detailTab = model.selectedTab
@@ -274,6 +267,17 @@ struct MeetingDetailView: View {
         ContentUnavailableView("会議が見つかりません", icon: .docQuestionmark)
       }
     }
+    .disabled(pdfExport.isRunning)
+    .accessibilityHidden(pdfExport.isRunning)
+    .overlay {
+      if let progress = pdfExport.progress {
+        ZStack {
+          Color.black.opacity(0.08).ignoresSafeArea().accessibilityHidden(true)
+          DocumentPDFExportProgressView(progress: progress) { pdfExport.cancel() }
+        }
+      }
+    }
+    .onDisappear { pdfExport.cancel() }
   }
 
   /// People tagged on the recording, shown as round story-style avatars with a
@@ -332,62 +336,26 @@ struct MeetingDetailView: View {
   }
 
   private func sharePDF(_ meeting: Meeting) {
-    guard pdfExportTask == nil else { return }
-    pdfExportProgress = 0
-    pdfExportTask = Task {
-      defer {
-        pdfExportProgress = nil
-        pdfExportTask = nil
-      }
-      do {
-        let url = try await MeetingPDF.write(meeting: meeting, tasks: model.tasks) { progress in
-          pdfExportProgress = progress
-        }
-        shareItems = [url]
-        isSharing = true
-      } catch MeetingPDF.ExportError.cancelled {
-        // Cancelled on purpose; nothing to report.
-        return
-      } catch {
-        statusAlert = StatusAlert(
-          title: "PDFを作成できませんでした",
-          message: "記録は残っています。もう一度お試しください。"
-        )
-      }
-    }
-  }
-
-  /// Shows that the export is running and how far along it is, with a way out of
-  /// a long one.
-  private func pdfExportCard(_ progress: Double) -> some View {
-    VStack(spacing: 12) {
-      ProgressView(value: progress)
-        .progressViewStyle(.linear)
-
-      HStack(spacing: 12) {
-        Text("PDFを作成しています… \(Int(progress * 100))%")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-        Spacer(minLength: 8)
-        Button("キャンセル") { cancelPDFExport() }
-          .font(.subheadline.weight(.semibold))
-      }
-    }
-    .padding(MemoraSpacing.lg)
-    .frame(maxWidth: 320)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
-    .padding()
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel("PDFを作成しています。\(Int(progress * 100))パーセント")
-    .accessibilityAction(named: "キャンセル") { cancelPDFExport() }
-  }
-
-  private func cancelPDFExport() {
-    pdfExportTask?.cancel()
+    let workspaceID = model.currentTeamID
+    let generation = model.aiWorkspaceGeneration
+    let tasks = model.tasks.filter { $0.meetingID == meeting.id }
+    pdfExport.start(isCurrent: {
+      model.currentTeamID == workspaceID && model.aiWorkspaceGeneration == generation
+        && !model.isRestoring && !model.isStoreProtected
+        && model.meeting(id: meeting.id) == meeting
+        && model.tasks.filter { $0.meetingID == meeting.id } == tasks
+    }, operation: { progress in
+      try await MeetingPDF.write(meeting: meeting, tasks: tasks, onProgress: progress)
+    }, completed: { url in
+      shareItems = [url]
+      isSharing = true
+    }, failed: { message in
+      statusAlert = StatusAlert(title: "PDFを作成できませんでした", message: message)
+    })
   }
 
   private func cleanUpSharedFiles() {
-    MeetingPDF.discard(shareItems)
+    ArtifactExportFile.removeTemporary(shareItems)
     shareItems = []
   }
 

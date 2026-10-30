@@ -10,9 +10,17 @@ final class DocumentPDFExportSession {
 
   func start(document: MemoraDocument, isCurrent: @escaping @MainActor () -> Bool,
              completed: @escaping @MainActor (URL) -> Void, failed: @escaping @MainActor (String) -> Void) {
+    start(isCurrent: isCurrent, operation: { progress in
+      try await DocumentPDF.write(document, onProgress: progress)
+    }, completed: completed, failed: failed)
+  }
+
+  func start(isCurrent: @escaping @MainActor () -> Bool,
+             operation: @escaping @MainActor (@escaping @MainActor @Sendable (DocumentPDFProgress) -> Void) async throws -> URL,
+             completed: @escaping @MainActor (URL) -> Void, failed: @escaping @MainActor (String) -> Void) {
     guard !isRunning else { return }
     guard isCurrent() else {
-      failed("資料が変更されたか、現在のワークスペースで開けません。資料を開き直して、もう一度お試しください。")
+      failed("内容が変更されたか、現在のワークスペースで開けません。開き直して、もう一度お試しください。")
       return
     }
     let id = UUID()
@@ -20,7 +28,7 @@ final class DocumentPDFExportSession {
     progress = .preparing
     task = Task {
       do {
-        let url = try await DocumentPDF.write(document) { value in
+        let url = try await operation { value in
           guard self.requestID == id else { return }
           if !isCurrent() { self.cancel(); return }
           if case .writing(let previous, let previousTotal) = self.progress {

@@ -14,6 +14,8 @@ struct DocumentPDFExportExampleView: View {
         Text("架空の文章と表だけを使います。記録の保存・外部通信は行いません。生成ファイルはプレビューを閉じると削除します。")
         Button("改ページのPDFを作成") { generate(stress: false) }
         Button("長文で進行と取消を確認") { generate(stress: true) }
+        Button("会議PDFの改ページを確認") { generateMeeting(stress: false) }
+        Button("会議PDFの進行と取消を確認") { generateMeeting(stress: true) }
       }
     }
     .disabled(export.isRunning)
@@ -53,6 +55,23 @@ struct DocumentPDFExportExampleView: View {
       file = url
       preview = url
     }, failed: { failure = $0 })
+  }
+
+  private func generateMeeting(stress: Bool) {
+    cleanUp()
+    let paragraphs = (1...(stress ? 20_000 : 32)).map { index in
+      "段落\(index)。会議の事実と提案を区別し、担当者と期限は記録された内容だけを使います。改ページ後も数値123.45と条件を維持します。"
+    }.joined(separator: "\n\n")
+    let meeting = Meeting(id: UUID(), title: "架空の会議PDF・保存しません", createdAt: .now,
+      duration: 1860, source: .recording, status: .ready,
+      summary: "## 議題\n\n" + paragraphs,
+      keyPoints: ["重要事項・本文の最後まで確認できました。"], decisions: ["条件を変えない"],
+      openQuestions: ["期限は未定"], transcript: [], spaceID: nil, audioURL: nil)
+    let tasks = [MemoraTask(id: UUID(), title: "見積を確認", meetingID: meeting.id,
+                           assignee: "担当者A", isCompleted: false)]
+    export.start(isCurrent: { true }, operation: { progress in
+      try await MeetingPDF.write(meeting: meeting, tasks: tasks, onProgress: progress)
+    }, completed: { url in file = url; preview = url }, failed: { failure = $0 })
   }
 
   private func cleanUp() {

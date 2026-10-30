@@ -8,6 +8,8 @@ enum DocumentPDFRenderer {
     var title: String
     var date: String
     var markdown: String
+    // Explicit blocks preserve record sections without interpreting their text as markdown headings.
+    var blocks: [MarkdownBlock]? = nil
   }
 
   static func write(_ input: Input, to url: URL,
@@ -19,7 +21,7 @@ enum DocumentPDFRenderer {
     onProgress(.preparing)
     var builder = DocumentPDFLayout.Builder()
     try builder.appendTitle(input.title, date: input.date)
-    try builder.append(MarkdownBlockParser.blocks(for: input.markdown))
+    try builder.append(input.blocks ?? MarkdownBlockParser.blocks(for: input.markdown))
     try Task.checkCancellation()
     try render(builder.pages, to: output.stagingURL, onProgress: onProgress)
     try output.commit(expectedPages: builder.pages.count)
