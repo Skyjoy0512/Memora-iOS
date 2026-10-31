@@ -4,6 +4,7 @@ struct CommunityCatalogView: View {
   @State private var community = CommunityMarketplace.shared
   @State private var mine = false
   @State private var showsAccount = false
+  @State private var selectedPost: CommunityPost?
 
   var body: some View {
     List {
@@ -20,7 +21,8 @@ struct CommunityCatalogView: View {
           Section { Text(failure).font(.subheadline); Button("再読み込み") { Task { await community.refresh(mine: mine) } } }
         }
         ForEach(community.posts) { post in
-          NavigationLink { CommunityPostDetailView(post: post) } label: { CommunityPostRow(post: post, showsStatus: mine) }
+          Button { selectedPost = post } label: { CommunityPostRow(post: post, showsStatus: mine) }
+            .buttonStyle(.plain)
         }
         if community.posts.isEmpty && !community.isLoading && community.failure == nil {
           ContentUnavailableView(mine ? "投稿はまだありません" : "投稿をお待ちしています", icon: .person2)
@@ -43,5 +45,11 @@ struct CommunityCatalogView: View {
     }
     .refreshable { await community.refresh(mine: mine) }
     .sheet(isPresented: $showsAccount, onDismiss: { Task { await community.refresh(mine: mine) } }) { CommunityAccountView() }
+    .sheet(item: $selectedPost) { post in
+      NavigationStack { CommunityPostDetailView(post: post, isMarketplaceSheet: true) }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(32)
+    }
   }
 }

@@ -4,14 +4,10 @@ struct MarketplaceItemLink<Label: View>: View {
   var item: MarketplaceItem
   var onConnectorDismiss: (() -> Void)?
   @ViewBuilder var label: () -> Label
-  @State private var showsConnector = false
+  @State private var showsDetail = false
 
   var body: some View {
-    if case .service(let service) = item {
-      Button { showsConnector = true } label: { label() }
-        .sheet(isPresented: $showsConnector, onDismiss: onConnectorDismiss) { ConnectorDetailSheet(service: service) }
-    } else {
-      NavigationLink { item.destination } label: { label() }
-    }
+    Button { showsDetail = true } label: { label() }
+      .sheet(isPresented: $showsDetail, onDismiss: onConnectorDismiss) { MarketplaceDetailSheet(item: item) }
   }
 }

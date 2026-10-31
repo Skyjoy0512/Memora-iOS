@@ -4,6 +4,7 @@ struct CommunityPostDetailView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @State var post: CommunityPost
+  var isMarketplaceSheet = false
   @State private var isWorking = false
   @State private var showsAccount = false
   @State private var showsReport = false
@@ -14,9 +15,18 @@ struct CommunityPostDetailView: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 24) {
-        Text(post.title).font(.largeTitle.weight(.semibold))
-        Text(post.authorName).font(.subheadline).foregroundStyle(.secondary)
-        Text(post.summary).font(.body)
+        if let item {
+          MarketplaceDetailHero(item: item, subtitle: "\(post.authorName) · \(post.definition.kind == .skill ? "スキル" : "要約テンプレート")") {
+            Button { authenticated { try await install() } } label: {
+              MarketplaceDetailActionLabel(title: isWorking ? "処理中…" : installTitle, icon: model.hasCommunityItem(post) && pendingVersion == nil ? .checkmark : .arrowDown)
+            }
+            .buttonStyle(.plain)
+            .disabled(cannotInstall)
+          }
+        } else { Text(post.title).font(.largeTitle.weight(.semibold)) }
+        if let message { Text(message).font(.subheadline).foregroundStyle(.secondary) }
+        MarketplaceDetailFacts(fields: facts)
+        Text(post.summary).memoraReadingText().textSelection(.enabled)
         HStack(spacing: 24) {
           Button {
             authenticated {
@@ -24,37 +34,27 @@ struct CommunityPostDetailView: View {
             }
           } label: { Label("\(post.liked == true ? "いいね済み" : "いいね") \(post.likes)", icon: .starFill).frame(minHeight: 44) }
             .accessibilityAddTraits(post.liked == true ? .isSelected : [])
-          Label("追加 \(post.downloads)", icon: .squareAndArrowDown).font(.subheadline)
         }
         if post.status != "published" { Text(post.statusLabel).font(.headline) }
+        postActions
         MarketplaceDefinitionContent(definition: post.definition)
-        if let message { Text(message).font(.subheadline).foregroundStyle(.secondary) }
       }
       .padding(20).frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading).frame(maxWidth: .infinity)
     }
     .disabled(isWorking)
-    .navigationTitle("コミュニティ").navigationBarTitleDisplayMode(.inline)
-    .safeAreaInset(edge: .bottom) {
-      Button {
-        authenticated { try await install() }
-      } label: {
-        Text(pendingVersion != nil ? "集計を再試行" : model.hasCommunityItem(post) ? "追加済み" : "追加する")
-          .frame(maxWidth: .infinity)
-      }
-      .buttonStyle(MemoraButtonStyle())
-      .disabled(isWorking || post.status != "published" || (model.hasCommunityItem(post) && pendingVersion == nil))
-      .padding(20).background(.bar)
-    }
+    .background(MemoraPalette.background)
+    .tint(MemoraPalette.textPrimary)
+    .navigationTitle(post.title).navigationBarTitleDisplayMode(.inline)
+    .navigationBarBackButtonHidden(isMarketplaceSheet)
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        Menu {
-          ShareLink(item: post.definition.shareText) { Label("内容を共有", icon: .squareAndArrowUp) }
-          Button("投稿を報告", icon: .flag) { showsReport = true }
-          Button("この投稿者を非表示", icon: .person) { CommunityMarketplace.shared.block(post.authorID); dismiss() }
-          if FirebaseCommunitySession.shared.userID == post.authorID {
-            Button("投稿を取り下げる", icon: .trash, role: .destructive) { confirmsRemoval = true }
-          }
-        } label: { Image(icon: .ellipsis, size: 20).accessibilityLabel("投稿の操作") }
+      if isMarketplaceSheet {
+        ToolbarActionItem(placement: .topBarLeading) { ToolbarIconButton("閉じる", icon: .xmark) { dismiss() } }
+      }
+      ToolbarActionItem(usesSystemBackground: true) {
+        ToolbarIconButton(model.hasCommunityItem(post) && pendingVersion == nil ? "追加済み" : "追加する", icon: model.hasCommunityItem(post) && pendingVersion == nil ? .checkmark : .plus) {
+          authenticated { try await install() }
+        }
+        .disabled(cannotInstall)
       }
     }
     .sheet(isPresented: $showsAccount) { CommunityAccountView() }
@@ -69,6 +69,45 @@ struct CommunityPostDetailView: View {
         authenticated { try await CommunityMarketplace.shared.remove(post); dismiss() }
       }
     }
+  }
+
+  private var postActions: some View {
+    Menu {
+      ShareLink(item: post.definition.shareText) { Label("内容を共有", icon: .squareAndArrowUp) }
+      Button("投稿を報告", icon: .flag) { showsReport = true }
+      Button("この投稿者を非表示", icon: .person) { CommunityMarketplace.shared.block(post.authorID); dismiss() }
+      if FirebaseCommunitySession.shared.userID == post.authorID {
+        Button("投稿を取り下げる", icon: .trash, role: .destructive) { confirmsRemoval = true }
+      }
+    } label: {
+      Label("投稿の操作", icon: .ellipsis)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+  }
+
+  private var item: MarketplaceItem? {
+    switch post.definition.kind {
+    case .skill: post.definition.skill.map(MarketplaceItem.skill)
+    case .template: post.definition.template.map(MarketplaceItem.template)
+    }
+  }
+
+  private var installTitle: String {
+    pendingVersion != nil ? "集計を再試行" : model.hasCommunityItem(post) ? "追加済み" : "追加する"
+  }
+
+  private var cannotInstall: Bool {
+    isWorking || post.status != "published" || (model.hasCommunityItem(post) && pendingVersion == nil)
+  }
+
+  private var facts: [(String, String)] {
+    var values = [("追加数", post.downloads.formatted()), ("カテゴリー", item?.category ?? "コミュニティ")]
+    if let version = post.definition.skill?.version { values.append(("バージョン", String(version))) }
+    values.append(("投稿日", Date(timeIntervalSince1970: post.createdAt / 1000)
+      .formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(Locale(identifier: "ja_JP")))))
+    values.append(("投稿者", post.authorName))
+    return values
   }
 
   private func report(_ reason: String) {

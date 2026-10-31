@@ -5,16 +5,16 @@ struct MarketplaceDefinitionContent: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 18) {
       if let skill = definition.skill {
-        Text("手順").font(.headline)
-        Text(skill.instructions).font(.body)
+        Text("使い方").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+        Text(skill.instructions).memoraReadingText()
         if !skill.toolNames.isEmpty {
           Text("利用するツール").font(.headline)
           ForEach(skill.toolNames, id: \.self) { Text($0).font(.caption.monospaced()) }
         }
       }
       if let template = definition.template {
-        Text(template.usesPrompt ? "指示" : "まとめる項目").font(.headline)
-        if template.usesPrompt { Text(template.prompt) }
+        Text(template.usesPrompt ? "プロンプト" : "まとめる項目").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+        if template.usesPrompt { Text(template.prompt).memoraReadingText() }
         else { ForEach(template.sections, id: \.self) { Text($0) } }
         if !template.focus.isEmpty { Text(template.focus).font(.subheadline).foregroundStyle(.secondary) }
       }

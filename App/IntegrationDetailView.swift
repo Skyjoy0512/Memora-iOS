@@ -10,17 +10,18 @@ struct IntegrationDetailView: View {
   var body: some View {
     let state = model.integrationState(service)
     ScrollView {
-      VStack(alignment: .leading, spacing: 28) {
-        VStack(spacing: 18) {
-          AIPluginIconView(icon: .resolve(pluginID: "service:" + service.id, name: service.name), size: 54)
-            .frame(width: 100, height: 100)
-            .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: 28))
-          Text(service.name).font(.title.weight(.semibold)).multilineTextAlignment(.center)
-          Text(service.isImplemented ? (connected ? "接続済み" : state.label) : "準備中").font(.subheadline).foregroundStyle(.secondary)
+      VStack(alignment: .leading, spacing: MemoraSpacing.section) {
+        MarketplaceDetailHero(item: .service(service), subtitle: "コネクタ · \(service.isImplemented ? (connected ? "接続済み" : state.label) : "準備中")") {
           if service.isImplemented { connectionAction(ready: connected) }
-        }.frame(maxWidth: .infinity)
+        }
+        MarketplaceDetailFacts(fields: [
+          ("接続", service.isImplemented ? (connected ? "接続済み" : state.label) : "準備中"),
+          ("カテゴリー", "コネクタ"),
+          ("Ask AIでの利用", model.integrationIsEnabled(service.id) && service.isImplemented ? "有効" : "無効"),
+          ("アクセス", accessLabel)
+        ])
 
-        Text(service.summary).font(.body).foregroundStyle(.secondary)
+        Text(service.summary).memoraReadingText().textSelection(.enabled)
         if service.isImplemented {
           VStack(alignment: .leading, spacing: 16) {
             Text("このコネクタでできること").font(.headline)
@@ -46,7 +47,9 @@ struct IntegrationDetailView: View {
           }
         }
       }
-      .padding(20).padding(.vertical, 16)
+      .padding(.horizontal, MemoraSpacing.screen)
+      .padding(.top, MemoraSpacing.xl)
+      .padding(.bottom, MemoraSpacing.section)
       .frame(maxWidth: MemoraSpacing.readingWidth)
       .frame(maxWidth: .infinity)
     }
@@ -56,22 +59,27 @@ struct IntegrationDetailView: View {
     .tint(MemoraPalette.textPrimary)
     .navigationTitle(service.name)
     .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      if service.isImplemented {
+        ToolbarActionItem(usesSystemBackground: true) { connectionAction(ready: connected, compact: true) }
+      }
+    }
     .alert("アクセスを許可できませんでした", isPresented: $permissionFailure) {
       Button("閉じる", role: .cancel) {}
     } message: { Text("設定アプリでカレンダーへのアクセスを確認してください。") }
   }
 
-  @ViewBuilder private func connectionAction(ready: Bool) -> some View {
+  @ViewBuilder private func connectionAction(ready: Bool, compact: Bool = false) -> some View {
     switch service.id {
     case "gmail":
-      NavigationLink { GmailSettingsView() } label: { actionLabel(ready ? "接続を管理" : "接続") }
-        .buttonStyle(MemoraButtonStyle())
+      NavigationLink { GmailSettingsView() } label: { actionLabel(ready ? "接続を管理" : "接続", compact: compact) }
+        .buttonStyle(.plain)
     case "notion":
-      NavigationLink { NotionSettingsView() } label: { actionLabel(ready ? "接続を管理" : "接続") }
-        .buttonStyle(MemoraButtonStyle())
+      NavigationLink { NotionSettingsView() } label: { actionLabel(ready ? "接続を管理" : "接続", compact: compact) }
+        .buttonStyle(.plain)
     case "mcp":
-      NavigationLink { MCPServersView() } label: { actionLabel("コネクタを追加・管理") }
-        .buttonStyle(MemoraButtonStyle())
+      NavigationLink { MCPServersView() } label: { actionLabel("コネクタを追加・管理", compact: compact) }
+        .buttonStyle(.plain)
     case "calendar":
       if CalendarService.access != .granted {
         Button {
@@ -79,12 +87,25 @@ struct IntegrationDetailView: View {
             if !(await CalendarService.requestAccess()) { permissionFailure = true }
             connected = model.integrationHasConnection(service.id)
           }
-        } label: { actionLabel("接続") }
-        .buttonStyle(MemoraButtonStyle())
+        } label: { actionLabel("接続", compact: compact) }
+        .buttonStyle(.plain)
       }
     default: EmptyView()
     }
   }
 
-  private func actionLabel(_ title: String) -> some View { Text(title).frame(maxWidth: .infinity, minHeight: 22) }
+  @ViewBuilder private func actionLabel(_ title: String, compact: Bool) -> some View {
+    if compact { Label(title, icon: .plus).labelStyle(.iconOnly) }
+    else { MarketplaceDetailActionLabel(title: title) }
+  }
+
+  private var accessLabel: String {
+    switch service.id {
+    case "gmail": "読み取り専用"
+    case "calendar": "予定の閲覧・追加"
+    case "notion": "ページの作成"
+    case "mcp": "接続先に準ずる"
+    default: "準備中"
+    }
+  }
 }

@@ -295,22 +295,21 @@ pairing/details, PLAUD audio import and generic recorder/voice-memo audio import
 File import is explicitly distinct from Bluetooth pairing and uses the existing
 workspace-bound, validated audio/SQLite path. Other vendor protocols are unsupported.
 
-Tools: the side menu's `ToolsView` is a Plaud-style hub for skills, summary
-templates and connectors. A shared text selector switches between マイスキル,
-テンプレート and コネクタ, retaining the selection. Plain native lists group
-skills by source, templates by category, and connectors by purpose. Article-style
-details use a common reading width and a bottom primary action. Skill use stages
+Tools: the side menu's `ToolsView` opens the marketplace for skills, summary
+templates and connectors. Horizontal card shelves open single-column card catalogs.
+Details use a large gradient hero, native sheet toolbar, metadata grid and a
+scrolling article at the common reading width. Skill use stages
 a mention in the existing Ask AI draft without sending it; template use sets the
 existing automatic-summary preference. The top-right plus opens the same editors
 as Settings and preserves Markdown import and MCP registration. Service state
 comes from the existing catalog; no fabricated connections or authors.
-Service entries use distinct Lucide glyphs through `AIPluginIcon`: mail,
-notebook, calendar, drive, code and plug. Retained historical logo sources are
+Service entries use official identity images through `AIPluginIcon`; local
+calendar and interface actions use Lucide. Logo sources are
 recorded in `docs/CONNECTOR_LOGOS.md`. Provider logos and the supplied Memora
 brand mark remain identity images, separate from interface glyphs.
-Connector details use an article layout: service identity and real state,
-summary, access/cost explanation, then enable/setup controls. Explanatory
-paragraphs are not separate table rows; dividers separate controls only.
+Connector details share the marketplace hero, with the service's identity and
+connect/manage action, followed by real state, capabilities and enable/setup
+controls. Access/cost explanations expand on request.
 
 The composer plus is an unadorned 44pt target. Its system Menu owns anchored
 Liquid Glass opening/closing, without a custom popover, navigation zoom, matched

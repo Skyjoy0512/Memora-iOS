@@ -16,7 +16,7 @@ struct MarketplaceHomeView: View {
       VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
         if let featured {
           let item = MarketplaceItem.skill(featured)
-          NavigationLink { item.destination } label: { MarketplaceCard(item: item, featured: true) }
+          MarketplaceItemLink(item: item) { MarketplaceCard(item: item, featured: true) }
             .buttonStyle(.plain)
             .accessibilityIdentifier("marketplace.featured")
             .padding(.horizontal, MemoraSpacing.screen)

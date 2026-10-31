@@ -4,6 +4,7 @@ struct SkillDetailView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var skillID: String
+  var isMarketplaceSheet = false
   @State private var editing: MemoraSkill?
   @State private var deleting = false
   @State private var failure = false
@@ -12,44 +13,21 @@ struct SkillDetailView: View {
   var body: some View {
     if let skill = model.skillCatalog.first(where: { $0.id == skillID }) {
       let enabled = !model.disabledSkillIDs.contains(skillID)
+      let provider = skill.id.hasPrefix("custom-") ? "マイスキル" : "Memora"
       ScrollView {
         VStack(alignment: .leading, spacing: MemoraSpacing.section) {
-          SkillArticleHeader(skill: skill)
-          SkillArticleInstructions(summary: skill.summary, instructions: skill.instructions)
-          SkillArticleSettings(skill: skill)
-        }
-        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
-        .padding(.horizontal, MemoraSpacing.screen)
-        .padding(.top, MemoraSpacing.xxl)
-        .padding(.bottom, MemoraSpacing.section)
-        .frame(maxWidth: .infinity, alignment: .center)
-      }
-      .background(MemoraPalette.background)
-      .navigationTitle("スキル")
-      .navigationBarTitleDisplayMode(.inline)
-      .tint(MemoraPalette.textPrimary)
-      .navigationBarBackButtonHidden(true)
-      .toolbarBackground(MemoraPalette.background, for: .navigationBar)
-      .safeAreaInset(edge: .bottom, spacing: 0) {
-        ToolsPrimaryAction(title: enabled ? "チャットで使用" : "スキルを有効にする") {
-          if enabled {
-            model.prepareSkillInComposer(skillID)
-          } else {
-            model.setSkillEnabled(skillID, enabled: true)
+          MarketplaceDetailHero(item: .skill(skill), subtitle: "\(provider) · スキル") {
+            Button { useSkill() } label: {
+              MarketplaceDetailActionLabel(title: enabled ? "チャットで使用" : "有効にしてチャットで使用")
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("marketplace.detail.useSkill")
           }
-        }
-        .padding(.horizontal, MemoraSpacing.screen)
-        .frame(maxWidth: MemoraSpacing.readingWidth + MemoraSpacing.screen * 2)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, MemoraSpacing.md)
-        .background(MemoraPalette.background)
-      }
-      .sheet(isPresented: $publishes) { CommunityPublishSheet(definition: .init(skill: skill)) }
-      .toolbar {
-        ToolbarActionItem(placement: .topBarLeading) {
-          ToolbarIconButton("1つ前に戻る", icon: .chevronLeft) { dismiss() }
-        }
-        ToolbarActionItem(usesSystemBackground: true) {
+          MarketplaceDetailFacts(fields: [
+            ("利用状況", enabled ? "有効" : "無効"), ("カテゴリー", "スキル"),
+            ("バージョン", String(skill.version ?? 1)), ("提供", provider)
+          ])
+          Text(skill.summary).memoraReadingText().textSelection(.enabled)
           Menu {
             Button("コミュニティに投稿", icon: .squareAndArrowUp) { publishes = true }
             ShareLink(item: MarketplaceDefinition(skill: skill).shareText) { Label("スキルを共有", icon: .squareAndArrowUp) }
@@ -58,7 +36,37 @@ struct SkillDetailView: View {
               Button("編集", icon: .pencil) { editing = skill }
               Button("スキルを削除", icon: .trash, role: .destructive) { deleting = true }
             }
-          } label: { ToolbarActionLabel("スキルの操作", icon: .ellipsis) }
+          } label: {
+            Label(skill.id.hasPrefix("custom-") ? "共有・編集" : "共有", icon: .ellipsis)
+              .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+              .contentShape(Rectangle())
+          }
+          .accessibilityLabel("スキルの操作")
+          VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
+            Text("使い方").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+            MarkdownDocumentView(markdown: skill.instructions)
+          }
+          .textSelection(.enabled)
+          SkillArticleSettings(skill: skill)
+        }
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+        .padding(.horizontal, MemoraSpacing.screen)
+        .padding(.top, MemoraSpacing.xl)
+        .padding(.bottom, MemoraSpacing.section)
+        .frame(maxWidth: .infinity, alignment: .center)
+      }
+      .background(MemoraPalette.background)
+      .navigationTitle(skill.name)
+      .navigationBarTitleDisplayMode(.inline)
+      .tint(MemoraPalette.textPrimary)
+      .navigationBarBackButtonHidden(true)
+      .sheet(isPresented: $publishes) { CommunityPublishSheet(definition: .init(skill: skill)) }
+      .toolbar {
+        ToolbarActionItem(placement: .topBarLeading) {
+          ToolbarIconButton(isMarketplaceSheet ? "閉じる" : "1つ前に戻る", icon: isMarketplaceSheet ? .xmark : .chevronLeft) { dismiss() }
+        }
+        ToolbarActionItem(usesSystemBackground: true) {
+          ToolbarIconButton("スキルをチャットに追加", icon: .plus) { useSkill() }
         }
       }
       .sheet(item: $editing) { SkillEditorView(skill: $0) }
@@ -72,44 +80,11 @@ struct SkillDetailView: View {
       ContentUnavailableView("スキルが見つかりません", icon: .docText)
     }
   }
-}
 
-private struct SkillArticleHeader: View {
-  var skill: MemoraSkill
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
-      Text(skill.name).font(MemoraTypography.screenTitle)
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityAddTraits(.isHeader)
-      VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
-        LabeledContent("提供", value: skill.id.hasPrefix("custom-") ? "自分で作成" : "Memora")
-        LabeledContent("バージョン", value: String(skill.version ?? 1))
-      }
-      .font(.subheadline)
-      .foregroundStyle(MemoraPalette.textSecondary)
-      .padding(.leading, MemoraSpacing.md)
-      .overlay(alignment: .leading) { Rectangle().fill(MemoraPalette.border).frame(width: 2) }
-    }
-  }
-}
-
-private struct SkillArticleInstructions: View {
-  var summary: String
-  var instructions: String
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: MemoraSpacing.section) {
-      VStack(alignment: .leading, spacing: MemoraSpacing.md) {
-        Text("目的とシナリオ").font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
-        Text(summary).memoraReadingText()
-      }
-      VStack(alignment: .leading, spacing: MemoraSpacing.md) {
-        Text("仕組み").font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
-        MarkdownDocumentView(markdown: instructions)
-      }
-    }
-    .textSelection(.enabled)
+  private func useSkill() {
+    if model.disabledSkillIDs.contains(skillID) { model.setSkillEnabled(skillID, enabled: true) }
+    dismiss()
+    model.prepareSkillInComposer(skillID)
   }
 }
 
