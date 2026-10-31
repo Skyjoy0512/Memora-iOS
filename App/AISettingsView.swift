@@ -10,15 +10,16 @@ struct AISettingsView: View {
 
   var body: some View {
     MemoraForm {
-      Section { NavigationLink("Web検索・調査") { WebResearchSettingsView() } }
       Section {
-        ForEach(AIEngine.allCases) { option in
-          engineRow(option)
+        Picker("使うAI", selection: Binding(get: { model.aiEngine }, set: { model.aiEngine = $0 })) {
+          ForEach(AIEngine.allCases) { option in
+            Text(option.isSelectable ? option.label : "\(option.label)（準備中）")
+              .tag(option).disabled(!option.isSelectable)
+          }
         }
-      } header: {
-        Text("AIエンジン")
-      } footer: {
-        Text("自動は対応端末のAppleモデルを使います。クラウドは選択したときに使い、自動では切り替えません。各項目の利用状態を確認してください。")
+        .pickerStyle(.navigationLink)
+        .accessibilityIdentifier("settings.ai.engine")
+        LabeledContent("状態", value: availability.summary)
       }
 
       Section {
@@ -26,7 +27,7 @@ struct AISettingsView: View {
           get: { model.registeredLLMs.selectedID },
           set: { model.registeredLLMs.select($0) }
         )) {
-          Text("Auto").tag(UUID?.none)
+          Text("設定に従う").tag(UUID?.none)
           ForEach(model.registeredLLMs.models) { registered in
             Text(readyProviders.contains(registered.provider)
                  ? registered.name : "\(registered.name)（APIキー未設定）")
@@ -34,23 +35,15 @@ struct AISettingsView: View {
               .disabled(!readyProviders.contains(registered.provider))
           }
         } label: {
-          SettingsLabel("Ask AIのモデル", icon: .sparkles)
+          SettingsLabel("使用するモデル", icon: .sparkles)
         }
         .pickerStyle(.menu)
 
         NavigationLink {
-          ModelCapabilitiesView()
-        } label: {
-          SettingsLabel("モデルの上限", icon: .cpu)
-        }
-
-        NavigationLink {
           RegisteredLLMsView()
         } label: {
-          SettingsLabel("登録済みモデル", icon: .cpu)
+          SettingsLabel("モデルを追加・管理", icon: .cpu)
         }
-      } footer: {
-        Text("Ask AIはAutoが基本で、上のAIエンジンに従います。登録済みモデルを選ぶと、Ask AIと要約の初期値にそのモデルを使います。")
       }
 
       if model.aiEngine.usesCloud {
@@ -60,7 +53,7 @@ struct AISettingsView: View {
           } label: {
             HStack(spacing: 12) {
               SettingsIcon(icon: .sparkles)
-              LabeledContent("プロバイダー", value: model.aiProvider.label)
+              LabeledContent("サービス", value: model.aiProvider.label)
             }
           }
 
@@ -83,31 +76,21 @@ struct AISettingsView: View {
             }
           }
         } header: {
-          Text("クラウド（BYOK）")
-        } footer: {
-          Text("自分のAPIキーで各社のモデルを使います。キーはKeychainに保存し、設定画面にも再表示しません。記録の内容は、質問や要約のときだけ選んだプロバイダーへ送られます。")
+          Text("クラウドAI")
         }
       }
 
       Section {
-        LabeledContent { Text(effectiveLabel) } label: {
-          SettingsLabel("実際に使う", icon: .sparkles)
+        DisclosureGroup("詳細設定") {
+          LabeledContent("現在のAI", value: effectiveLabel)
+          NavigationLink("モデルの上限") { ModelCapabilitiesView() }
+          NavigationLink("Web検索・調査") { WebResearchSettingsView() }
+          if let message = availability.message {
+            Text(message).font(.footnote).foregroundStyle(.secondary)
+          }
         }
-        LabeledContent { Text(availability.summary) } label: {
-          SettingsLabel("この設定での状態", icon: .infoCircle)
-        }
-        if model.aiEngine == .memora, let blocker = model.memoraIntelligenceBlocker {
-          Text(blocker)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        } else if let message = availability.message {
-          Text(message)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
-      } header: {
-        Text("状態")
       }
+
     }
     .navigationTitle("AIモデル")
     .memoraBackButton()
@@ -117,35 +100,6 @@ struct AISettingsView: View {
     .onAppear(perform: refresh)
     .onChange(of: model.aiEngine) { _, _ in refresh() }
     .onChange(of: model.aiProvider) { _, _ in refresh() }
-  }
-
-  private func engineRow(_ option: AIEngine) -> some View {
-    Button {
-      model.aiEngine = option
-    } label: {
-      HStack(spacing: 12) {
-        SettingsIcon(icon: option.symbol)
-        VStack(alignment: .leading, spacing: 2) {
-          Text(option.label)
-            .foregroundStyle(option.isSelectable ? .primary : .secondary)
-          Text(option.detail)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-          if let status = engineAvailability[option] {
-            Text(status.summary).font(.caption.weight(.medium))
-              .foregroundStyle(status.isReady ? AnyShapeStyle(.secondary) : AnyShapeStyle(MemoraPalette.danger))
-          }
-        }
-        Spacer(minLength: 8)
-        if option == model.aiEngine {
-          Image(icon: .checkmark, size: 17)
-            .foregroundStyle(.primary)
-        }
-      }
-      .contentShape(Rectangle())
-    }
-    .disabled(!option.isSelectable)
-    .accessibilityAddTraits(option == model.aiEngine ? .isSelected : [])
   }
 
   private var modelName: String {

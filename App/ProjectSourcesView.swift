@@ -13,11 +13,11 @@ struct ProjectSourcesView: View {
     }
     .listStyle(.plain).scrollContentBackground(.hidden)
     .background(MemoraPalette.background)
-    .navigationTitle("ソース").navigationBarTitleDisplayMode(.inline)
-    .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "ソース名を検索")
+    .navigationTitle("参考資料").navigationBarTitleDisplayMode(.inline)
+    .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "参考資料を検索")
     .overlay {
       if items.isEmpty {
-        ContentUnavailableView(query.isEmpty ? "ソースはまだありません" : "該当するソースはありません", icon: .doc)
+        ContentUnavailableView(query.isEmpty ? "参考資料はまだありません" : "見つかりません", icon: .doc)
       }
     }
     .toolbar {
@@ -26,7 +26,7 @@ struct ProjectSourcesView: View {
       }
       if let projectID {
         ToolbarItem(placement: .topBarTrailing) {
-          ToolbarIconButton("ソースを追加", icon: .plus) { model.sourceAddProjectID = projectID }
+          ToolbarIconButton("参考資料を追加", icon: .plus) { model.sourceAddProjectID = projectID }
         }
       }
     }

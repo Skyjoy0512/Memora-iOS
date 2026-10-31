@@ -17,12 +17,12 @@ enum CaptureAction: CaseIterable, Identifiable {
 
   var title: String {
     switch self {
-    case .recording: "録音を開始"
-    case .importAudio: "ファイルをインポート"
-    case .newMemo: "メモを作成"
-    case .onlineMeeting: "オンライン会議"
+    case .recording: "録音する"
+    case .importAudio: "音声を取り込む"
+    case .newMemo: "メモを書く"
+    case .onlineMeeting: "オンライン会議を録音"
     case .phoneCall: "電話をかける"
-    case .newChat: "新規チャット"
+    case .newChat: "新しいチャット"
     }
   }
 

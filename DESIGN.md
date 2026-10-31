@@ -10,6 +10,21 @@ an unavailable label until connected. Plans use native Form/Picker, separating
 future pricing/credits from current on-device/BYOK features and local settings.
 No new glass, logo assets or decorative animation. See docs/UI_UX_2026_10.md.
 
+## Everyday interactions
+
+- Show the content and the next useful action first. Avoid repeating titles,
+  describing gestures in paragraphs, or showing empty insight groups.
+- Use short action labels: 録音する, 音声を取り込む, 要約する. Use 記録 for
+  recordings/transcripts, 参考資料 for imported context, and 連携 for services.
+  Stored navigation and setting identifiers keep their existing values.
+- Summary setup shows AI, format and length. Put use case and processing policy
+  in 詳細設定. Native pickers own selection and navigation.
+- Keep the actual cloud destination beside the explicit send action. Show errors
+  next to the failed control, with an action to resolve them. Generic assurances,
+  implementation details and repeated warnings do not belong in the main flow.
+- Connect and manage services through controls first. Connection status is visible;
+  technical access details expand only when requested.
+
 ## Direction and provenance
 
 Put reading, finding and acting on recorded knowledge first: neutral surfaces,

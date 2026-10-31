@@ -22,7 +22,7 @@ enum MeetingInsightSection: String, CaseIterable, Identifiable {
 
   var title: String {
     switch self {
-    case .summary: "サマリー"
+    case .summary: "要約"
     case .decisions: "決まったこと"
     case .tasks: "次にすること"
     case .openQuestions: "まだ決まっていないこと"

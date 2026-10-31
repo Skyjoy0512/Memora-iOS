@@ -162,7 +162,7 @@ struct SettingsCategoryView: View {
         } header: {
           Text("アカウント")
         } footer: {
-          Text("同期・アカウントは未接続です。このiPhoneだけで使えます。")
+          Text("アカウント連携は準備中")
         }
 
         if model.isSignedIn {
@@ -254,8 +254,6 @@ struct SettingsCategoryView: View {
           }
         } header: {
           Text("表示と操作")
-        } footer: {
-          Text("タップ・選択・操作完了を振動で知らせます。録音・音声入力・声の登録中は、音声に振動が入らないよう抑えます。")
         }
 
 

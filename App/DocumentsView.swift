@@ -48,8 +48,8 @@ struct DocumentsView: View {
       } else if model.documents.isEmpty {
         ScrollView {
           MemoraEmptyState(icon: .docRichtext, title: "資料はまだありません",
-            message: "Ask AIに作成を頼んだ資料や、記録からまとめた週報がここに保存されます。",
-            actionTitle: "Ask AIを開く", actionIcon: .sparkles) { model.openSystemDestination(.askAI) }
+            message: "AIに頼んで、記録から資料を作れます。",
+            actionTitle: "AIで資料を作る", actionIcon: .sparkles) { model.openSystemDestination(.askAI) }
             .padding(.top, MemoraSpacing.section)
             .padding(.bottom, model.bottomContentClearance)
         }

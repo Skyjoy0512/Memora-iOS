@@ -14,7 +14,7 @@ struct ToolsView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      MemoraSectionPicker(items: ToolsSection.allCases, selection: $section) { $0.rawValue }
+      MemoraSectionPicker(items: ToolsSection.allCases, selection: $section) { $0.title }
       .accessibilityLabel("ツールの表示")
       .padding(.horizontal, MemoraSpacing.screen)
       .padding(.top, MemoraSpacing.sm)
@@ -22,7 +22,7 @@ struct ToolsView: View {
 
       Group {
         if isSearching && !CollectionSearch.hasQuery(query) {
-          CollectionSearchState(title: "ツールを検索", message: "選んだ分類の名前や用途から探せます。複数の言葉を空白で区切って絞り込めます。")
+          CollectionSearchState(title: "ツールを検索", message: "名前や用途で検索")
             .accessibilityIdentifier("tools.search.prompt")
         } else {
           switch section {
@@ -51,15 +51,18 @@ struct ToolsView: View {
       }
       ToolbarActionItem(usesSystemBackground: true) {
         Menu {
-          Button("スキルを作成", icon: .squareAndPencil) {
-            newSkill = .draft()
+          switch section {
+          case .skills:
+            Button("スキルを作成", icon: .squareAndPencil) { newSkill = .draft() }
+            Button("ファイルから読み込む", icon: .docText) { importingSkill = true }
+          case .templates:
+            Button("テンプレートを作成", icon: .docOnDoc) {
+              newTemplate = SummaryMarketTemplate(id: "custom.\(UUID().uuidString)",
+                title: "", detail: "", symbol: .docText, lead: "", isCustom: true)
+            }
+          case .connectors:
+            NavigationLink { MCPServersView() } label: { Label("MCPサーバーを追加", icon: .plugsConnected) }
           }
-          Button("スキルのMarkdownを読み込む", icon: .docText) { importingSkill = true }
-          Button("テンプレートを作成", icon: .docOnDoc) {
-            newTemplate = SummaryMarketTemplate(id: "custom.\(UUID().uuidString)",
-              title: "", detail: "", symbol: .docText, lead: "", isCustom: true)
-          }
-          NavigationLink { MCPServersView() } label: { Label("MCPサーバーを登録", icon: .plugsConnected) }
         } label: { ToolbarActionLabel("ツールを追加", icon: .plus) }
       }
     }

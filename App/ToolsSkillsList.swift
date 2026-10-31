@@ -30,8 +30,6 @@ struct ToolsSkillsList: View {
             SettingsLabel("スキルを管理", icon: .sliderHorizontal3)
           }
           .listRowBackground(MemoraPalette.background)
-        } footer: {
-          Text("繰り返す作業の手順を保存し、@や「チャットで使用」で呼び出せます。依頼に名前やキーワードが含まれると自動選択します。右上の＋から作成できます。")
         }
       }
     }

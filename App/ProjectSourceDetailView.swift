@@ -34,21 +34,17 @@ struct ProjectSourceDetailView: View {
           if let author = source.metadata?["youtubeAuthor"], !author.isEmpty {
             Text(author).font(.footnote).foregroundStyle(.secondary)
           }
-          if let failure = source.metadata?["thumbnailError"] {
-            Text(failure).font(.subheadline).foregroundStyle(.secondary)
-          }
-          if let message = source.availabilityNotice {
-            Text(message).font(.subheadline).foregroundStyle(.secondary)
-          }
           if source.kind == .youtube {
             if let recordID = source.metadata?["videoTranscriptMeetingID"].flatMap(UUID.init(uuidString:)),
                model.meeting(id: recordID) != nil {
-              NavigationLink("字幕と要約を開く", value: LibraryRoute.meeting(recordID)).frame(minHeight: 44)
+              NavigationLink("要約を開く", value: LibraryRoute.meeting(recordID))
+                .buttonStyle(MemoraButtonStyle()).frame(minHeight: 44)
             } else {
-              Button("字幕・文字起こしから要約", icon: .sparkles) {
+              Button("字幕を追加して要約", icon: .sparkles) {
                 videoWorkspaceGeneration = model.aiWorkspaceGeneration
                 isAddingVideoTranscript = true
               }
+                .buttonStyle(MemoraButtonStyle())
                 .frame(minHeight: 44)
                 .disabled(model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
             }
@@ -76,6 +72,11 @@ struct ProjectSourceDetailView: View {
               }
             }
           }
+          if let message = source.availabilityNotice {
+            DisclosureGroup("読み込み情報") {
+              Text(message).font(.footnote).foregroundStyle(.secondary)
+            }
+          }
           if let url = source.originalURL {
             Link("元のページを開く", destination: url).font(.body)
           }
@@ -92,7 +93,7 @@ struct ProjectSourceDetailView: View {
         .frame(maxWidth: .infinity, alignment: .center)
       }
       .background(MemoraPalette.background)
-      .navigationTitle("").navigationBarTitleDisplayMode(.inline)
+      .navigationTitle(source.kindLabel).navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {

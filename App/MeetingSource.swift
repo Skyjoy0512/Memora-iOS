@@ -11,7 +11,7 @@ enum MeetingSource: String, Hashable, Codable {
     case .recording:
       "録音"
     case .importFile:
-      "インポート"
+      "取り込み"
     case .call:
       "通話"
     }

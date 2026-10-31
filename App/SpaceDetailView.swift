@@ -87,7 +87,7 @@ struct SpaceDetailView: View {
         addToolbarItem(spaceID: spaceID)
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
-            Button("ソースを追加", icon: .plus) { model.sourceAddProjectID = spaceID }
+            Button("参考資料を追加", icon: .plus) { model.sourceAddProjectID = spaceID }
             Button("既存記録を移動", icon: .folder) { isAddingFiles = true }
             Button("未決事項を質問", icon: .sparkles) { isAskingAI = true }
             NavigationLink("関連タスク", value: LibraryRoute.projectTasks(spaceID))
@@ -174,7 +174,7 @@ struct SpaceDetailView: View {
       }
     case .sources:
       ToolbarItem(placement: .topBarTrailing) {
-        ToolbarIconButton("ソースを追加", icon: .plus) {
+        ToolbarIconButton("参考資料を追加", icon: .plus) {
           model.sourceAddProjectID = spaceID
         }
         .disabled(model.isRestoring || model.isStoreProtected)

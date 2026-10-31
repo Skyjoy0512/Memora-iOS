@@ -17,6 +17,8 @@ struct MeetingDetailView: View {
   var showsLocalPlaybackBar = false
   @State private var selectedSection = MeetingDetailSection.summary
   @State private var isRenaming = false
+  @State private var isAddingTask = false
+  @State private var isEditingHighlights = false
   @State private var isDeleting = false
   @State private var isRemovingAudio = false
   @State private var isSummaryGenerationPresented = false
@@ -67,7 +69,7 @@ struct MeetingDetailView: View {
             VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
               meetingHeader(meeting)
 
-              participantsRow(meeting)
+              if !model.participants(in: meeting.id).isEmpty { participantsRow(meeting) }
 
               if !meeting.recordingMarkers.isEmpty {
                 RecordingMarkersView(markers: meeting.recordingMarkers,
@@ -157,10 +159,13 @@ struct MeetingDetailView: View {
                 saveToNotion(meeting)
               }
               .disabled(!NotionService.isConfigured || isSavingToNotion)
-              Button("要約をやり直す", icon: .sparkles) {
+              Button(meeting.summary.isEmpty ? "要約する" : "要約し直す", icon: .sparkles) {
                 isSummaryGenerationPresented = true
               }
               .disabled(meeting.transcript.isEmpty)
+              Button("タスクを追加", icon: .textBadgePlus) { isAddingTask = true }
+              Button("要点・決定事項を編集", icon: .pencil) { isEditingHighlights = true }
+              Button("参加者を編集", icon: .personBadgePlus) { isAddingPeople = true }
               if meeting.audioURL != nil {
                 Button("音声を削除（文字起こしと要約は残す）", icon: .waveformBadgeMinus) {
                   isRemovingAudio = true
@@ -189,6 +194,8 @@ struct MeetingDetailView: View {
         .sheet(isPresented: $isPrivacyPresented) {
           RecordPrivacySettingsView(meetingID: meeting.id)
         }
+        .sheet(isPresented: $isAddingTask) { AddTaskView(meetingID: meeting.id) }
+        .sheet(isPresented: $isEditingHighlights) { MeetingHighlightsEditor(meetingID: meeting.id) }
         .sheet(isPresented: $isAddingPeople) {
           AddPeopleSheet(meetingID: meeting.id)
         }
@@ -414,31 +421,15 @@ struct MeetingDetailView: View {
     case .summary:
       switch meeting.status {
       case .waitingForTranscription:
-        ManualAIProcessingCard(
-          symbol: .waveformBadgePlus,
-          title: "文字起こしはまだ始まっていません",
-          detail: meeting.source == .recording
-            ? "復旧した音声は端末に保存済みです。開始すると文字起こしを行います。録音は自動で再開しません。"
-            : "音声は端末に保存済みです。必要な時に開始してください。",
-          actionTitle: "文字起こしを開始"
-        ) {
+        ManualAIProcessingCard(symbol: .textBubble, title: "音声を文字にする",
+          detail: "", actionTitle: "文字起こしする") {
           model.startTranscription(meeting.id)
         }
       case .waitingForSummary:
         let pendingJob = model.pendingSummaryJobs.first { $0.meetingID == meeting.id }
-        let needsConfirmation = pendingJob?.requiresUserRetry == true || (pendingJob != nil && pendingJob?.inputFingerprint == nil)
-        ManualAIProcessingCard(
-          symbol: .sparkles,
-          title: pendingJob != nil ? "要約の再開を待っています" : "文字起こしが完成しました",
-          detail: pendingJob != nil
-            ? (needsConfirmation
-              ? "前回の処理は停止しています。原文と保存済みの要約はそのままです。「いま要約する」から設定を確認し、再試行できます。"
-              : (model.backgroundSummaryNotice ?? "原文と要約の設定は保存されています。iOSが実行を許可したとき、またはアプリに戻ったときに再開します。"))
-            : "要約方法を選ぶまで、追加のAI処理は行いません。",
-          actionTitle: pendingJob != nil ? "いま要約する" : "要約を生成",
-          notice: pendingJob == nil ? "実行するまでAI利用は発生しません"
-            : (needsConfirmation ? "再実行するまで追加のAI処理は行いません" : "保存済みの設定で要約を再試行します")
-        ) {
+        ManualAIProcessingCard(symbol: .sparkles,
+          title: pendingJob == nil ? "文字起こしを要約する" : "要約が途中で止まりました",
+          detail: "", actionTitle: pendingJob == nil ? "要約する" : "もう一度要約する") {
           isSummaryGenerationPresented = true
         }
       case .importing, .transcribing, .organizing:
@@ -506,10 +497,24 @@ struct MeetingDetailView: View {
   }
 
   @ViewBuilder
+  private func summaryActions(_ meeting: Meeting) -> some View {
+    if !meeting.summaryVersions.isEmpty {
+      NavigationLink { SummaryHistoryView(meetingID: meeting.id) } label: {
+        Label("履歴", icon: .clockArrowCirclepath).font(.subheadline)
+      }
+      .frame(minHeight: 44)
+      .accessibilityValue("\(meeting.summaryVersions.count)件")
+    }
+    Button("要約し直す", icon: .sparkles) { isSummaryGenerationPresented = true }
+      .font(.subheadline)
+      .frame(minHeight: 44)
+      .accessibilityIdentifier("meeting.summary.regenerate")
+  }
+
+  @ViewBuilder
   private func insightContent(_ meeting: Meeting) -> some View {
     // Offered only when the records give a reason; otherwise nothing shows.
     let suggestions = model.projectSuggestions(for: meeting)
-    let isVideo = meeting.usesVideoSummary
     let hasTasks = !model.tasks(forMeeting: meeting.id).isEmpty
     if !suggestions.isEmpty {
       ProjectSuggestionCard(meeting: meeting, suggestions: suggestions)
@@ -521,23 +526,10 @@ struct MeetingDetailView: View {
       MeetingSummaryPosterEntry(meetingID: meeting.id)
     }
 
-    CollapsibleInsightSection(.summary, showsDivider: false) {
-      if let version = meeting.summaryVersions.first(where: { $0.id == meeting.activeSummaryVersionID }),
-         let templateID = version.templateID, let choice = model.summaryChoice(templateID) {
-        Text("\(choice.title) · \(version.summaryLength.title)").font(.subheadline).foregroundStyle(.secondary)
-        if case .market(let template) = choice {
-          if let notice = template.sensitivityClassification.notice {
-            Text(notice).font(.footnote).foregroundStyle(.secondary)
-          }
-        }
-      }
-      if !meeting.summaryVersions.isEmpty {
-        NavigationLink {
-          SummaryHistoryView(meetingID: meeting.id)
-        } label: {
-          Label("要約履歴（\(meeting.summaryVersions.count)）", icon: .clockArrowCirclepath)
-            .font(.subheadline)
-        }
+    VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
+      ViewThatFits(in: .horizontal) {
+        HStack(spacing: MemoraSpacing.lg) { summaryActions(meeting) }
+        VStack(alignment: .leading, spacing: MemoraSpacing.sm) { summaryActions(meeting) }
       }
       // A generated document reads and edits at body size; a short summary
       // keeps its large single-text look.
@@ -553,7 +545,7 @@ struct MeetingDetailView: View {
       )
     }
 
-    if !isVideo || !meeting.decisions.isEmpty {
+    if !meeting.decisions.isEmpty {
       CollapsibleInsightSection(.decisions) {
         InlineEditableList(
           items: meeting.decisions,
@@ -563,13 +555,13 @@ struct MeetingDetailView: View {
       }
     }
 
-    if !isVideo || hasTasks {
+    if hasTasks {
       CollapsibleInsightSection(.tasks) {
         MeetingTasksSection(meetingID: meeting.id)
       }
     }
 
-    if !isVideo || !meeting.openQuestions.isEmpty {
+    if !meeting.openQuestions.isEmpty {
       CollapsibleInsightSection(.openQuestions) {
         InlineEditableList(
           items: meeting.openQuestions,
@@ -579,12 +571,14 @@ struct MeetingDetailView: View {
       }
     }
 
-    CollapsibleInsightSection(.keyPoints) {
-      InlineEditableList(
-        items: meeting.keyPoints,
-        emptyText: "重要なポイントはありません",
-        onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }
-      )
+    if !meeting.keyPoints.isEmpty {
+      CollapsibleInsightSection(.keyPoints) {
+        InlineEditableList(
+          items: meeting.keyPoints,
+          emptyText: "重要なポイントはありません",
+          onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }
+        )
+      }
     }
   }
 
@@ -600,7 +594,7 @@ private enum MeetingDetailSection: String, CaseIterable, Identifiable {
   var label: String {
     switch self {
     case .summary:
-      "サマリー"
+      "要約"
     case .transcript:
       "文字起こし"
     case .notes:

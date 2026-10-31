@@ -13,24 +13,24 @@ enum ProjectWorkspaceTab: String, CaseIterable, Identifiable {
   var title: String {
     switch self {
     case .chat: "チャット"
-    case .files: "ファイル"
-    case .sources: "ソース"
+    case .files: "記録"
+    case .sources: "参考資料"
     }
   }
 
   var emptyTitle: LocalizedStringKey {
     switch self {
     case .chat: "チャットを始める"
-    case .files: "ファイルを追加"
-    case .sources: "ソースを追加"
+    case .files: "記録を追加"
+    case .sources: "参考資料を追加"
     }
   }
 
   var emptyDescription: LocalizedStringKey {
     switch self {
-    case .chat: "このプロジェクトの記録について質問できます。会話はここに残ります。"
+    case .chat: "このプロジェクトの記録をAIに聞けます。"
     case .files: "録音や資料をこのプロジェクトにまとめると、ここから開けます。"
-    case .sources: "リンク・ファイル・メモを追加すると、AIの参照候補になります。"
+    case .sources: "リンク・ファイル・メモをまとめられます。"
     }
   }
 
@@ -46,7 +46,7 @@ enum ProjectWorkspaceTab: String, CaseIterable, Identifiable {
     switch self {
     case .chat: "新しいチャット"
     case .files: "録音を追加"
-    case .sources: "ソースを追加"
+    case .sources: "参考資料を追加"
     }
   }
 

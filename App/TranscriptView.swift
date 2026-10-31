@@ -19,15 +19,6 @@ struct TranscriptView: View {
               VStack(alignment: .leading, spacing: 8) {
                 Text(meeting.displayTitle)
                   .font(MemoraTypography.screenTitle)
-                if !meeting.transcript.isEmpty {
-                  Text(
-                    showsSpeaker
-                      ? "話者名と本文はタップして修正できます。"
-                      : "この文字起こしは話者を分けていません。本文はタップすると修正できます。"
-                  )
-                  .font(.subheadline)
-                  .foregroundStyle(.secondary)
-                }
               }
               .padding(.top, MemoraSpacing.sm)
               .padding(.bottom, MemoraSpacing.md)

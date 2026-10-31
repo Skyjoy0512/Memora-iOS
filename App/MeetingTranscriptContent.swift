@@ -25,13 +25,6 @@ struct MeetingTranscriptContent: View {
         Text("文字起こし")
           .font(MemoraTypography.sectionHeading)
 
-        if !meeting.transcript.isEmpty {
-          Text(
-            "話者名をタップして確認・修正できます。本文はタップすると修正、時刻は原音声を再生します。"
-          )
-          .font(MemoraTypography.secondary)
-          .foregroundStyle(.secondary)
-        }
         if !meeting.transcript.isEmpty, meeting.audioURL != nil {
           Button("話者を端末内で解析", icon: .personWave2) {
             Task { await model.analyzeSpeakers(meeting.id) }

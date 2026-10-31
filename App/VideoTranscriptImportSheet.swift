@@ -20,10 +20,14 @@ struct VideoTranscriptImportSheet: View {
         MemoraForm {
           Section {
             Text(source.title).font(.headline)
-            Text("YouTubeの字幕や、用意した文字起こしを貼り付けてください。貼り付けた範囲を動画用の形式で要約します。")
-              .font(.subheadline).foregroundStyle(.secondary)
+
           }
           Section {
+            PasteButton(payloadType: String.self) { values in
+              let pasted = values.joined(separator: "\n")
+              text = text.isEmpty ? pasted : text + "\n" + pasted
+            }
+            .accessibilityLabel("字幕を貼り付け")
             TextEditor(text: $text)
               .frame(minHeight: 240)
               .focused($isEditing)
@@ -31,14 +35,15 @@ struct VideoTranscriptImportSheet: View {
               .accessibilityIdentifier("video.transcript")
           } header: {
             Text("字幕・文字起こし")
-          } footer: {
-            Text("20万文字まで。動画の音声・字幕は自動取得しません。次の画面でAIと送信先を確認し、「生成」を押すと要約します。")
+          }
+          if text.count > VideoTranscript.maximumCharacters {
+            Text("20万文字以内にしてください").font(.footnote).foregroundStyle(.red)
           }
           if let errorMessage {
             Section { Text(errorMessage).foregroundStyle(.red) }
           }
           Section {
-            Button("保存して要約設定へ", icon: .sparkles) {
+            Button("保存して次へ", icon: .sparkles) {
               guard let id = model.handlingPersistenceFailureLocally({
                 model.importVideoTranscript(text, source: source, context: context)
               }) else {
@@ -56,7 +61,7 @@ struct VideoTranscriptImportSheet: View {
           }
         }
         .scrollDismissesKeyboard(.interactively)
-        .navigationTitle("字幕から要約")
+        .navigationTitle("字幕を追加")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {

@@ -9,11 +9,8 @@ struct ToolsConnectorsList: View {
     let showsWebhook = ToolsCatalogSearch.matches(query, fields: ["Webhook", "通知", "自動化"])
     let showsSystem = ToolsCatalogSearch.matches(query, fields: ["ウィジェットとショートカット", "システム", "Widget", "Shortcuts"])
     let groups: [(String, [IntegrationCatalog])] = [
-      ("コミュニケーション", services.filter { $0.id == "gmail" }),
-      ("カレンダー", services.filter { $0.id == "calendar" }),
-      ("ナレッジ", services.filter { ["notion", "drive"].contains($0.id) }),
-      ("開発", services.filter { $0.id == "github" }),
-      ("拡張", services.filter { $0.id == "mcp" })
+      ("接続できるサービス", services.filter(\.isImplemented)),
+      ("準備中", services.filter { !$0.isImplemented })
     ]
     List {
       ForEach(groups, id: \.0) { title, services in
@@ -89,7 +86,7 @@ private struct ToolsConnectorStatus: View {
         .padding(.vertical, MemoraSpacing.xs)
         .background(MemoraPalette.success.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
     } else {
-      Text(isImplemented ? "未接続" : "未対応").font(.caption).foregroundStyle(.secondary)
+      Text(isImplemented ? "未接続" : "準備中").font(.caption).foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
     }
   }

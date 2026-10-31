@@ -11,9 +11,6 @@ struct ProcessingOverview: View {
     return VStack(alignment: .leading, spacing: 18) {
       VStack(alignment: .leading, spacing: 6) {
         WorkingStatus(label: primaryText, startedAt: model.processing.startedAt[meeting.id])
-        Text("終わった内容から順に使えるようになります")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
       }
 
       VStack(alignment: .leading, spacing: 12) {

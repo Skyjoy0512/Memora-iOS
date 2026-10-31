@@ -271,8 +271,10 @@ struct LibraryView: View {
     let sections = isAwaitingQuery ? [] : fileSections
     let count = sections.reduce(0) { $0 + $1.meetings.count }
     let sharedRecords = model.cloudSharing.sharedRecords
-    let savedSources = isAwaitingQuery ? [] : model.projectSources.filter { CollectionSearch.matches(query, fields: [$0.title]) }
+    let savedSources = isAwaitingQuery || statusFilter != .all ? [] : model.projectSources.filter { CollectionSearch.matches(query, fields: [$0.title]) }
     let resultCount = count + savedSources.count
+    let hasSharedRecords = !isSearching && !isSelectionMode && statusFilter == .all && !sharedRecords.isEmpty
+    let hasSavedSources = !savedSources.isEmpty && !isAwaitingQuery && !isSelectionMode
 
     return List {
       if !isSearching && !isSelectionMode {
@@ -290,40 +292,14 @@ struct LibraryView: View {
         filterChipRow
       }
 
-      // Teammates' records sit in their own section, apart from this person's
-      // files, and only while nothing narrows the list.
-      if !isSearching, !isSelectionMode, statusFilter == .all, !sharedRecords.isEmpty {
-        Section {
-          ForEach(sharedRecords) { record in
-            sharedRow(record)
-          }
-        } header: {
-          Label("チームから共有", icon: .person2)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .textCase(nil)
-        }
-      }
-
-      if !savedSources.isEmpty, !isAwaitingQuery, !isSelectionMode {
-        Section {
-          ForEach(isSearching ? savedSources : Array(savedSources.prefix(3))) { source in
-            NavigationLink(value: LibraryRoute.projectSource(source.id)) { ProjectSourceRow(source: source) }
-          }
-          NavigationLink("すべてのソース", value: LibraryRoute.projectSources(nil))
-        } header: {
-          Text("保存したソース").font(.subheadline.weight(.semibold)).textCase(nil)
-        }
-      }
-
-      if sections.isEmpty && (savedSources.isEmpty || isSelectionMode) {
+      if sections.isEmpty && !hasSavedSources && !hasSharedRecords {
         Group {
           if isAwaitingQuery {
-            MemoraEmptyState(icon: .magnifyingglass, title: "ファイルを検索",
-              message: "タイトル、発言、決定、タスクと保存したソースから探せます。")
+            MemoraEmptyState(icon: .magnifyingglass, title: "記録を検索",
+              message: "タイトルや本文で検索")
           } else if CollectionSearch.hasQuery(query) {
             MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
-              message: "「\(query)」に一致するファイル・ソースはありません。短い言葉や別の表現で試してください。",
+              message: "「\(query)」に一致する記録はありません。",
               actionTitle: "検索をやり直す", actionIcon: .xmark) { query = "" }
           } else if statusFilter != .all {
             filteredEmpty
@@ -347,6 +323,32 @@ struct LibraryView: View {
               .font(MemoraTypography.secondary.weight(.medium))
               .foregroundStyle(MemoraPalette.textSecondary)
               .textCase(nil)
+          }
+        }
+
+        // Teammates' records sit in their own section, apart from this person's
+        // files, and only while nothing narrows the list.
+        if hasSharedRecords {
+          Section {
+            ForEach(sharedRecords) { record in
+              sharedRow(record)
+            }
+          } header: {
+            Label("チームから共有", icon: .person2)
+              .font(.subheadline.weight(.semibold))
+              .foregroundStyle(.secondary)
+              .textCase(nil)
+          }
+        }
+
+        if hasSavedSources {
+          Section {
+            ForEach(isSearching ? savedSources : Array(savedSources.prefix(3))) { source in
+              NavigationLink(value: LibraryRoute.projectSource(source.id)) { ProjectSourceRow(source: source) }
+            }
+            NavigationLink("参考資料をすべて見る", value: LibraryRoute.projectSources(nil))
+          } header: {
+            Text("参考資料").font(.subheadline.weight(.semibold)).textCase(nil)
           }
         }
 
@@ -555,9 +557,9 @@ struct LibraryView: View {
   private var emptyFilesPrompt: some View {
     MemoraEmptyState(
       icon: .waveform,
-      title: "ファイルはまだありません",
-      message: "録音や読み込んだ音声を、プロジェクトをまたいで一覧できます。",
-      actionTitle: "録音または読み込み",
+      title: "記録を始めましょう",
+      message: "録音・音声・メモをここに保存できます。",
+      actionTitle: "記録を追加",
       actionIcon: .plus
     ) {
       model.isCaptureSourcePresented = true

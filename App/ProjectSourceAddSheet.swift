@@ -7,6 +7,8 @@ struct ProjectSourceAddSheet: View {
   @Environment(\.dismiss) private var dismiss
   var projectID: UUID
   @State private var link = ""
+  @AppStorage("memora.sources.inputKind") private var inputKind = InputKind.link
+  private enum InputKind: String, CaseIterable { case link = "リンク", file = "ファイル", memo = "メモ" }
   @State private var noteTitle = ""
   @State private var noteText = ""
   @State private var photos: [PhotosPickerItem] = []
@@ -33,62 +35,78 @@ struct ProjectSourceAddSheet: View {
                 .id("source-save-status")
             }
           }
-          Section("リンク") {
-            TextField("YouTube・WebのURL", text: $link)
-              .accessibilityLabel("YouTube・WebのURL")
-              .focused($focusedField, equals: .link)
-              .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-            Button("リンクを保存", icon: .link) {
-              perform {
-                guard let id = try model.handlingPersistenceFailureLocally({ try model.addProjectLink(link, projectID: projectID) }) else {
-                  return false
-                }
-                link = ""
-                return model.source(id: id) != nil
-              }
-            }.disabled(link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-          }
           Section {
-            Button {
-              photoImportContext = LocalImportContext(projectID: projectID, in: model)
-              guard photoImportContext != nil else { perform { false }; return }
-              isSelectingPhotos = true
-            } label: {
-              Label("写真を選択", icon: .photo)
+            Picker("追加する内容", selection: $inputKind) {
+              ForEach(InputKind.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
-            Button("ファイルを選択", icon: .doc) {
-              fileImportContext = LocalImportContext(projectID: projectID, in: model)
-              guard fileImportContext != nil else { perform { false }; return }
-              isImportingFiles = true
-            }
-            Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
-          } footer: {
-            Text("ファイルは50MBまで。録音・音声取り込みは右上の＋からも始められます。")
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("source.inputKind")
           }
-          Section("テキストメモ") {
-            TextField("タイトル", text: $noteTitle)
-              .accessibilityLabel("タイトル")
-              .focused($focusedField, equals: .title)
-            TextEditor(text: $noteText).frame(minHeight: 120).accessibilityLabel("メモ本文")
-            InlineLinkSummaryView(text: $noteText)
-              .focused($focusedField, equals: .body)
-              .id(Field.body)
-            Button("メモを保存", icon: .noteText) {
-              perform {
-                guard
-                  try await model.addProjectNote(
-                    title: noteTitle, text: noteText, projectID: projectID, presentsErrorsLocally: true) != nil
-                else { return false }
-                DraftStore.clear("workspace.newNote.\(projectID)")
-                DraftStore.clear("workspace.newNote.\(projectID).title")
-                noteTitle = ""
-                noteText = ""
-                return true
+          if inputKind == .link {
+            Section("リンク") {
+              TextField("YouTube・Webのリンク", text: $link)
+                .accessibilityLabel("YouTube・Webのリンク")
+                .focused($focusedField, equals: .link)
+                .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                .submitLabel(.done)
+                .onSubmit { focusedField = nil }
+              Button("リンクを追加", icon: .link) {
+                perform {
+                  guard let id = try model.handlingPersistenceFailureLocally({ try model.addProjectLink(link, projectID: projectID) }) else {
+                    return false
+                  }
+                  link = ""
+                  return model.source(id: id) != nil
+                }
+              }.disabled(link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+          }
+          if inputKind == .file {
+            Section {
+              Button {
+                photoImportContext = LocalImportContext(projectID: projectID, in: model)
+                guard photoImportContext != nil else { perform { false }; return }
+                isSelectingPhotos = true
+              } label: {
+                Label("写真を選択", icon: .photo)
               }
-            }.disabled(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+              Button("ファイルを選択", icon: .doc) {
+                fileImportContext = LocalImportContext(projectID: projectID, in: model)
+                guard fileImportContext != nil else { perform { false }; return }
+                isImportingFiles = true
+              }
+              Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
+            }
+          }
+          if inputKind == .memo {
+            Section("テキストメモ") {
+              TextField("タイトル", text: $noteTitle)
+                .accessibilityLabel("タイトル")
+                .focused($focusedField, equals: .title)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .body }
+              TextEditor(text: $noteText).frame(minHeight: 200).accessibilityLabel("メモ本文")
+                .focused($focusedField, equals: .body)
+                .id(Field.body)
+              InlineLinkSummaryView(text: $noteText)
+              Button("メモを保存", icon: .noteText) {
+                perform {
+                  guard
+                    try await model.addProjectNote(
+                      title: noteTitle, text: noteText, projectID: projectID, presentsErrorsLocally: true) != nil
+                  else { return false }
+                  DraftStore.clear("workspace.newNote.\(projectID)")
+                  DraftStore.clear("workspace.newNote.\(projectID).title")
+                  noteTitle = ""
+                  noteText = ""
+                  return true
+                }
+              }.disabled(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
           }
         }
         .scrollDismissesKeyboard(.interactively)
+        .onChange(of: inputKind) { _, _ in focusedField = nil }
         .onChange(of: message) { _, value in
           if failed, value != nil { scroll.scrollTo("source-save-status", anchor: .top) }
         }
@@ -118,7 +136,7 @@ struct ProjectSourceAddSheet: View {
           DraftStore.save(value, key: "workspace.newNote.\(projectID)")
         }
       }
-      .navigationTitle("ソースを追加")
+      .navigationTitle("参考資料を追加")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItemGroup(placement: .keyboard) {

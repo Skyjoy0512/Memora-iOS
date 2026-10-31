@@ -139,7 +139,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
     def test_source_editors_keep_drafts_and_own_their_save_errors(self):
         add = (APP / "ProjectSourceAddSheet.swift").read_text()
         edit = (APP / "ProjectNoteEditSheet.swift").read_text()
-        self.assertIn("右上の＋", add)
+        self.assertIn('accessibilityIdentifier("source.inputKind")', add)
         self.assertNotIn("右下の＋", add)
         for source in (add, edit):
             self.assertIn("presentsErrorsLocally: true", source)

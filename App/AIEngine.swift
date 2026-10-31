@@ -13,11 +13,11 @@ enum AIEngine: String, CaseIterable, Identifiable, Codable {
 
   var label: String {
     switch self {
-    case .automatic: "自動（おすすめ）"
+    case .automatic: "おまかせ"
     case .memora: "Memora Intelligence"
-    case .foundation: "Apple Foundation Models"
+    case .foundation: "端末内AI"
     case .local: "ローカルLLM"
-    case .cloud: "クラウド（BYOK）"
+    case .cloud: "クラウドAI"
     }
   }
 

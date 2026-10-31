@@ -10,6 +10,8 @@ struct ProjectRecordRow: View {
     let layout = typeSize.isAccessibilitySize
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
       : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
+    let metadata = [MemoraFormat.relativeDate(meeting.createdAt), meeting.source.label]
+      + (meeting.duration > 0 ? [MemoraFormat.duration(meeting.duration)] : [])
     return layout {
       Image(icon: meeting.source.icon, size: 17)
         .frame(width: ProjectLayout.iconSide, height: 24)
@@ -20,7 +22,7 @@ struct ProjectRecordRow: View {
           .font(MemoraTypography.body.weight(.medium))
           .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
           .fixedSize(horizontal: false, vertical: true)
-        Text("\(MemoraFormat.relativeDate(meeting.createdAt)) · \(meeting.source.label) · \(MemoraFormat.duration(meeting.duration))")
+        Text(metadata.joined(separator: " · "))
           .font(MemoraTypography.metadata)
           .foregroundStyle(MemoraPalette.textSecondary)
           .fixedSize(horizontal: false, vertical: true)

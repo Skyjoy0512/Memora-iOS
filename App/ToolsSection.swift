@@ -6,4 +6,11 @@ enum ToolsSection: String, CaseIterable, Identifiable {
   case connectors = "コネクタ"
 
   var id: Self { self }
+  var title: String {
+    switch self {
+    case .skills: "スキル"
+    case .templates: "要約テンプレート"
+    case .connectors: "連携"
+    }
+  }
 }

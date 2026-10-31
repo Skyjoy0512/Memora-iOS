@@ -12,8 +12,7 @@ struct MeetingQuestionSuggestionsView: View {
     VStack(alignment: .leading, spacing: 0) {
       if let snapshot, preparedSnapshot == snapshot, !questions.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
-        Text("Ask AIで深掘り").font(.headline)
-        Text("この記録について聞いてみる").font(.footnote).foregroundStyle(.secondary)
+        Text("AIに聞く").font(.headline)
         ForEach(questions, id: \.self) { question in
           Button {
             _ = model.stageMeetingQuestion(question, snapshot: snapshot)
@@ -31,8 +30,7 @@ struct MeetingQuestionSuggestionsView: View {
           .accessibilityIdentifier("summary.question.\(questions.firstIndex(of: question) ?? 0)")
           Divider()
         }
-        Text(hasInput ? "入力中の内容を優先しています。送信または消去すると選べます。" : "選ぶと入力欄に入ります。内容を編集してから送信できます。")
-          .font(.caption).foregroundStyle(.secondary)
+
       }
       }
     }

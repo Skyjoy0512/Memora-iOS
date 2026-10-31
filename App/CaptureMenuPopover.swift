@@ -11,7 +11,7 @@ struct CaptureMenuPopover: View {
       Button {
         model.sourceAddProjectID = spaceID
       } label: {
-        Label("ソースを追加", icon: .paperclip)
+        Label("参考資料を追加", icon: .paperclip)
       }
       .accessibilityHint("保存先：\(space.name)。リンク・ファイル・メモを参照資料にします。")
     }

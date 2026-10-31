@@ -259,11 +259,11 @@ struct HomeView: View {
   private func searchResults(_ entries: [LifeLogEntry]) -> some View {
     if !CollectionSearch.hasQuery(query) {
       MemoraEmptyState(icon: .magnifyingglass, title: "記録を検索",
-        message: "すべての日の記録から、タイトル・内容・記録元で探せます。予定は検索対象に含みません。")
+        message: "タイトルや本文で検索")
         .padding(.top, MemoraSpacing.xxl)
     } else if entries.isEmpty {
       MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
-        message: "「\(query)」に一致する記録はありません。短い言葉や別の表現で試してください。",
+        message: "「\(query)」に一致する記録はありません。",
         actionTitle: "検索をやり直す", actionIcon: .xmark) { query = "" }
         .padding(.top, MemoraSpacing.xxl)
     } else {
