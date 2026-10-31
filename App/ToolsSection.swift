@@ -10,7 +10,7 @@ enum ToolsSection: String, CaseIterable, Identifiable {
     switch self {
     case .skills: "スキル"
     case .templates: "要約テンプレート"
-    case .connectors: "連携"
+    case .connectors: "コネクタ"
     }
   }
 }

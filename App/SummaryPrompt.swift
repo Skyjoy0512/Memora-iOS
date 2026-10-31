@@ -303,6 +303,9 @@ enum SummaryPrompt {
     **概要**: {この観点で重要なことを3〜5文}
     \(sections)\(actions)\(template.appendsMeetingQuestions ? "\n## 未決事項\n- {結論が出なかった問い}" : "")
     定義されていない会議専用の見出しを追加しない。
+    \(template.category == .learning ? "学習・取材の内容を会議の決定とみなさない。JSONのdecisions・actionsは空配列にする。" : "")
+    該当する発言がない項目は内容を創作して埋めない。未言及と、当事者が未定・保留とした事項を区別する。
+    評価・提言・活用案は、原文で述べられたものだけを残す。AI独自の助言を記録の事実へ混ぜない。
     """
   }
 

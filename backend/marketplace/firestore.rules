@@ -1,0 +1,8 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The API verifies identity and owns all counters, visibility and review state.
+    match /marketplacePosts/{post}/{document=**} { allow read, write: if false; }
+    match /marketplaceUsers/{user}/{document=**} { allow read, write: if false; }
+  }
+}

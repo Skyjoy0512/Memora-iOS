@@ -33,8 +33,9 @@ struct SummaryMarketTemplate: Identifiable, Hashable, Codable {
   }
 
   var appendsMeetingQuestions: Bool {
-    !isCustom && !id.hasPrefix("work.") && !id.hasPrefix("content.")
-      && !sections.contains { $0.contains("未決") || $0.contains("持ち越") }
+    includesActions && category != .learning && category != .life && category != .care && category != .field
+      && !isCustom && !id.hasPrefix("work.") && !id.hasPrefix("content.")
+      && !sections.contains { $0.contains("未決") || $0.contains("持ち越") || $0.contains("確認") || $0.contains("宿題") }
   }
 
   init(

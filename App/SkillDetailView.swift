@@ -7,6 +7,7 @@ struct SkillDetailView: View {
   @State private var editing: MemoraSkill?
   @State private var deleting = false
   @State private var failure = false
+  @State private var publishes = false
 
   var body: some View {
     if let skill = model.skillCatalog.first(where: { $0.id == skillID }) {
@@ -43,12 +44,15 @@ struct SkillDetailView: View {
         .padding(.vertical, MemoraSpacing.md)
         .background(MemoraPalette.background)
       }
+      .sheet(isPresented: $publishes) { CommunityPublishSheet(definition: .init(skill: skill)) }
       .toolbar {
         ToolbarActionItem(placement: .topBarLeading) {
           ToolbarIconButton("1つ前に戻る", icon: .chevronLeft) { dismiss() }
         }
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
+            Button("コミュニティに投稿", icon: .squareAndArrowUp) { publishes = true }
+            ShareLink(item: MarketplaceDefinition(skill: skill).shareText) { Label("スキルを共有", icon: .squareAndArrowUp) }
             ShareLink(item: skill.skillMarkdown) { Label("Markdownを共有", icon: .squareAndArrowUp) }
             if skill.id.hasPrefix("custom-") {
               Button("編集", icon: .pencil) { editing = skill }

@@ -29,7 +29,7 @@ struct MarketplaceSearchResults: View {
             if !items.isEmpty {
               Section(title) {
                 ForEach(items) { item in
-                  NavigationLink { item.destination } label: {
+                  MarketplaceItemLink(item: item) {
                     HStack(spacing: MemoraSpacing.md) {
                       Image(icon: item.icon, size: 24).frame(width: 32).accessibilityHidden(true)
                       VStack(alignment: .leading, spacing: MemoraSpacing.xs) {

@@ -24,7 +24,7 @@ struct MarketplaceShelf: View {
       ScrollView(.horizontal) {
         HStack(alignment: .top, spacing: MemoraSpacing.md) {
           ForEach(items) { item in
-            NavigationLink { item.destination } label: { MarketplaceCard(item: item) }
+            MarketplaceItemLink(item: item) { MarketplaceCard(item: item) }
               .buttonStyle(.plain)
               .frame(width: min(cardWidth, 320))
               .accessibilityIdentifier("marketplace.item.\(item.id)")

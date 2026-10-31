@@ -21,6 +21,13 @@ struct SummaryPromptChecks {
       precondition(template.sections.allSatisfy { notes.contains($0) })
       precondition(notes.contains("数量") && notes.contains("原文にない事実を追加しない"))
     }
+    for id in ["market.seminar", "market.lecture", "market.userInterview", "market.press", "market.interview"] {
+      let template = SummaryTemplateCatalog.template(id: id)!
+      precondition(!template.appendsMeetingQuestions, "non-meeting must not gain meeting questions: \(id)")
+    }
+    precondition(!SummaryTemplateCatalog.template(id: "market.hearing")!.appendsMeetingQuestions)
+    precondition(SummaryTemplateCatalog.template(id: "market.sales")!.focus.contains("記載なし"))
+    precondition(SummaryTemplateCatalog.template(id: "market.brainstorm")!.focus.contains("勝手に順位"))
     let video = VideoSummaryTemplate.template
     precondition(SummaryTemplateCatalog.template(id: video.id) == video && !video.includesActions)
     precondition(!video.appendsMeetingQuestions)

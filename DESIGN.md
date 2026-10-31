@@ -462,3 +462,17 @@ push/back, search, menu and sheet behavior owns navigation and creation.
 The root plus offers skill creation/import, template creation and MCP registration;
 each category offers its relevant actions. Management remains reachable from home,
 full catalogs and Settings. Existing service status and approval rules are intact.
+
+## Community and connectors — 2026-10-31
+
+Community appears directly below the featured marketplace card. Popular/newest
+and personal submissions use actual server state, author names and counters; no
+fixture fills an unconfigured service. Publishing previews the exact definition
+and exposes public-content rules before submission. Personal skill/template
+definitions can also be shared locally and reviewed in the existing editors.
+
+Ask AI's plus and marketplace service cards open the same native connector
+sheets: actual connected services, recommendations and unavailable services.
+Details put identity, connect/manage and human-readable capabilities first;
+access details expand on request. Connection and AI-use permission remain
+separate. Provider configuration and execution-time approvals stay intact.

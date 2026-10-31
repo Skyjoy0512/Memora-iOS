@@ -70,7 +70,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   opens each full catalog. Home search spans all three catalogs and custom items;
   category search stays scoped. Creation/import, template management and MCP
   registration remain reachable through native menus and the Settings editors.
-  Never invent install counts, popularity, reviews or a public publishing backend.
+  Community publishing uses the Firebase REST client and server implementation in
+  `backend/marketplace`. Until `MemoraMarketplaceURL` and `MemoraFirebaseAPIKey` are
+  configured and deployed, show it as unavailable; never fabricate posts or counts.
+  Definitions are reviewed before publication. Only the server changes counts;
+  additions require a receipt and confirmed local save. Shared definitions never
+  grant tool permissions or include meeting/chat data. Ask AI's plus and the
+  marketplace use the same connector hub/detail sheet and existing setup routes.
 - **Tasks**: `TasksView` lives inside Home's NavigationStack (`.tasks` route),
   including notification navigation. Keep creation, editing and source links reachable.
 - **Project context**: capture uses `visibleProjectID` from the active navigation

@@ -7,6 +7,16 @@ struct IntegrationCatalog: Identifiable {
   var permissions: String
   var isImplemented: Bool
 
+  var capabilities: [String] {
+    switch id {
+    case "gmail": ["必要なメールを検索する", "メールの本文を読んで回答に使う"]
+    case "calendar": ["予定を確認する", "内容を確認して予定を追加する"]
+    case "notion": ["指定したページに文書を作成する"]
+    case "mcp": ["接続したサービスのツールをAsk AIで使う"]
+    default: []
+    }
+  }
+
   var aliases: [String] {
     switch id {
     case "gmail": ["Google Mail", "メール", "ジーメール"]

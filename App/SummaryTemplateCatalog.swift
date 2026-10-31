@@ -14,7 +14,7 @@ enum SummaryTemplateCatalog {
       lead: "定例会議（進捗・課題・決定）",
       category: .meetings,
       sections: ["前回からの進捗", "課題・リスク", "決まったこと"],
-      focus: "進捗は担当者ごとに、課題は影響と対応方針を添えて書く。",
+      focus: "前回から変わったこと、変わっていないこと、会議で確定したことを分ける。進捗・担当・影響・対策は発言された範囲だけで、未報告を未着手とみなさない。",
       includesActions: true
     ),
     SummaryMarketTemplate(
@@ -25,18 +25,18 @@ enum SummaryTemplateCatalog {
       lead: "決定ログ（決めたことと理由）",
       category: .meetings,
       sections: ["決定事項", "判断の理由", "検討して見送った案"],
-      focus: "決定ごとに、根拠と前提条件、見送った案とその理由を書く。",
+      focus: "決定・提案・保留を分け、明示された決定だけを決定事項にする。根拠・前提・見送った案と理由は述べられたものだけ残す。反対意見を合意としてまとめない。",
       includesActions: true
     ),
     SummaryMarketTemplate(
       id: "market.brainstorm",
       title: "ブレスト",
-      detail: "出たアイデアを整理し、有望なものを選ぶ",
+      detail: "アイデア・評価・検証案を整理",
       symbol: .lightbulb,
       lead: "ブレスト（アイデアと有望な案）",
       category: .meetings,
       sections: ["出たアイデア", "有望な案と理由", "次に検証すること"],
-      focus: "アイデアは似たものをまとめ、発案者が分かれば添える。評価が分かれた点も残す。",
+      focus: "似たアイデアをまとめる。会議で評価された案と未評価の案を区別し、AIが勝手に順位や推奨案を作らない。発案者・評価理由・検証案は発言がある場合だけ残す。",
       includesActions: true
     ),
     SummaryMarketTemplate(
@@ -47,7 +47,7 @@ enum SummaryTemplateCatalog {
       lead: "デイリー（進捗と止まっている点）",
       category: .meetings,
       sections: ["昨日やったこと", "今日やること", "困っていること"],
-      focus: "一人ずつ短く。止まっている点は誰の助けが要るかを書く。",
+      focus: "話者ごとに実績・予定・障害を短く分ける。「昨日」「今日」は発言の表現を保ち、録音日から日付を推定しない。支援者は明示された場合だけ記載する。",
       includesActions: true
     ),
     SummaryMarketTemplate(
@@ -58,7 +58,7 @@ enum SummaryTemplateCatalog {
       lead: "経営会議（論点・判断・数値）",
       category: .meetings,
       sections: ["主要な数値と状況", "論点", "経営判断", "懸念とリスク"],
-      focus: "数値は文字起こしの値をそのまま使い、判断には責任者を添える。",
+      focus: "数値は単位・対象期間・比較基準と一緒に原文どおり残す。実績・予測・目標を分ける。判断、責任者、承認状態は明言された場合だけ記載する。",
       includesActions: true
     ),
     SummaryMarketTemplate(
@@ -80,7 +80,7 @@ enum SummaryTemplateCatalog {
       lead: "商談（顧客の要望と次の一手）",
       category: .customers,
       sections: ["顧客の状況と課題", "要望・ニーズ", "予算・時期・決裁者", "懸念点・反論", "次の一手"],
-      focus: "顧客が実際に言ったことと、こちらの提案を分けて書く。BANT（予算・決裁・ニーズ・時期）で分からない項目は未定とする。",
+      focus: "顧客が実際に言ったことと、こちらの提案を分けて書く。BANT（予算・決裁・ニーズ・時期）の未言及は「記載なし」、当事者が未定と述べたものだけ「未定」とする。受注見込みや購買意欲を推測しない。",
       includesActions: true
     ),
     SummaryMarketTemplate(
@@ -136,7 +136,7 @@ enum SummaryTemplateCatalog {
       lead: "1on1（本人の状態と次の一歩）",
       category: .people,
       sections: ["最近の状況", "悩み・相談", "フィードバック", "次の一歩"],
-      focus: "本人の言葉を尊重し、評価的な表現を避ける。",
+      focus: "本人の相談・希望と、相手の助言・合意を分ける。感情や能力を推測・診断しない。次の一歩は当事者が決めた内容だけ残す。",
       includesActions: true
     ),
     SummaryMarketTemplate(
@@ -147,7 +147,7 @@ enum SummaryTemplateCatalog {
       lead: "評価面談（成果と期待）",
       category: .people,
       sections: ["成果", "課題", "今後の期待・目標", "本人の意見"],
-      focus: "評価の根拠となる具体例を残す。",
+      focus: "本人の自己評価と評価者の所見を区別し、述べられた具体例を添える。AIが評点、能力や達成度を判断しない。合意した目標と提案段階の目標を分ける。",
       includesActions: true
     ),
     SummaryMarketTemplate(
@@ -158,7 +158,7 @@ enum SummaryTemplateCatalog {
       lead: "採用面接（経歴と評価）",
       category: .people,
       sections: ["経歴・経験", "強み", "懸念点", "志向・動機", "総合所感"],
-      focus: "候補者の発言と面接官の評価を分ける。年齢・家族など採否に関係ない個人情報は書かない。",
+      focus: "候補者の経験・発言と面接官が明示した評価を分ける。評価者の発言がない総合所感や採否・適性の判断をAIで作らない。採否に無関係な個人情報は書かない。",
       includesActions: false
     ),
     SummaryMarketTemplate(
@@ -191,7 +191,7 @@ enum SummaryTemplateCatalog {
       lead: "進捗報告（予定と実績）",
       category: .projects,
       sections: ["全体の状況", "予定との差", "課題と対策", "支援が必要なこと"],
-      focus: "遅れは理由と挽回策を添える。",
+      focus: "実績・予定・見込みを分け、予定との差と対象期間を示す。遅延の原因と挽回策は発言された範囲だけ残し、不明な理由を補わない。",
       includesActions: true
     ),
     SummaryMarketTemplate(
@@ -202,7 +202,7 @@ enum SummaryTemplateCatalog {
       lead: "振り返り（続けたいこと・課題・次の試み）",
       category: .projects,
       sections: ["Keep（続けたいこと）", "Problem（課題）", "Try（次に試すこと）"],
-      focus: "Tryは具体的な行動にする。",
+      focus: "Keep/Problem/Tryには実際に挙がった内容だけを書く。Tryの提案と合意済みの行動を分け、担当や期限を補完しない。",
       includesActions: true
     ),
     SummaryMarketTemplate(
@@ -223,8 +223,8 @@ enum SummaryTemplateCatalog {
       symbol: .graduationcap,
       lead: "セミナー（学びと活用）",
       category: .learning,
-      sections: ["主な内容", "重要なポイント", "自分の業務への活かし方"],
-      focus: "講師の主張と具体例を分けて書く。",
+      sections: ["主な内容", "重要なポイント", "紹介された活用例"],
+      focus: "講師の主張・根拠・具体例を分ける。紹介された活用例だけを残し、視聴者の業務や今後の行動を創作しない。",
       includesActions: false
     ),
     SummaryMarketTemplate(
@@ -246,7 +246,7 @@ enum SummaryTemplateCatalog {
       lead: "ユーザーインタビュー（行動と不満）",
       category: .learning,
       sections: ["回答者の背景", "行動と使い方", "不満・困りごと", "印象的な発言", "示唆"],
-      focus: "印象的な発言はかぎ括弧で原文のまま残す。",
+      focus: "発言、報告された行動、聞き手の解釈を区別する。引用は短い逐語引用に限る。示唆は記録で述べられたものだけとし、少数の発言を全利用者の傾向へ一般化しない。",
       includesActions: false
     ),
     SummaryMarketTemplate(

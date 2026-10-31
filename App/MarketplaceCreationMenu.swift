@@ -10,9 +10,10 @@ struct MarketplaceCreationMenu: View {
 
   var body: some View {
     Menu {
+      NavigationLink { CommunitySubmissionPicker() } label: { Label("コミュニティに投稿", icon: .squareAndArrowUp) }
       if section == nil || section == .skills {
         Button("スキルを作成", icon: .squareAndPencil) { newSkill = .draft() }
-        Button("ファイルから読み込む", icon: .docText) { importingSkill = true }
+        Button("共有された項目を読み込む", icon: .docText) { importingSkill = true }
       }
       if section == nil || section == .templates {
         Button("テンプレートを作成", icon: .docOnDoc) {
@@ -26,20 +27,24 @@ struct MarketplaceCreationMenu: View {
     } label: { ToolbarActionLabel("作成・追加", icon: .plus) }
     .sheet(item: $newSkill) { SkillEditorView(skill: $0) }
     .sheet(item: $newTemplate) { SummaryTemplateEditor(template: $0) }
-    .fileImporter(isPresented: $importingSkill, allowedContentTypes: [.plainText, .text], allowsMultipleSelection: false) { result in
+    .fileImporter(isPresented: $importingSkill, allowedContentTypes: [.plainText, .text, .json], allowsMultipleSelection: false) { result in
       guard case .success(let urls) = result, let url = urls.first else { return }
       let allowed = Set(AgentTool.allCases.map(\.rawValue))
       Task {
         do {
           let text = try await Task.detached(priority: .userInitiated) { try MemoraSkillMarkdown.read(url) }.value
-          newSkill = try MemoraSkillMarkdown.parse(text, allowedTools: allowed)
+          let definition = try MarketplaceDefinition.read(text, allowedTools: allowed)
+          switch definition.kind {
+          case .skill: newSkill = definition.skill
+          case .template: newTemplate = definition.template
+          }
         } catch { importFailure = true }
       }
     }
-    .alert("スキルを読み込めません", isPresented: $importFailure) {
+    .alert("共有された項目を読み込めません", isPresented: $importFailure) {
       Button("閉じる", role: .cancel) {}
     } message: {
-      Text("名前・用途・手順を含むUTF-8のMarkdownを選んでください。最大32KBで、未登録のツールは追加できません。")
+      Text("共有されたJSONまたはスキルのMarkdownを選んでください（最大32KB）。")
     }
   }
 }

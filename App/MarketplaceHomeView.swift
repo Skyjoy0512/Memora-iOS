@@ -17,6 +17,19 @@ struct MarketplaceHomeView: View {
             .accessibilityIdentifier("marketplace.featured")
             .padding(.horizontal, MemoraSpacing.screen)
         }
+        NavigationLink { CommunityCatalogView() } label: {
+          HStack(spacing: 14) {
+            Image(icon: .person2, size: 28).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+              Text("コミュニティ").font(.headline)
+              Text("みんなのスキル・テンプレート").font(.subheadline).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            Image(icon: .chevronRight, size: 14).accessibilityHidden(true)
+          }.padding(20).background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        }
+        .buttonStyle(.plain).padding(.horizontal, MemoraSpacing.screen)
+
         MarketplaceShelf(section: .skills, items: skills.prefix(6).map(MarketplaceItem.skill))
         MarketplaceShelf(section: .templates, items: templates.prefix(6).map(MarketplaceItem.template))
         MarketplaceShelf(section: .connectors, items: services.map(MarketplaceItem.service))

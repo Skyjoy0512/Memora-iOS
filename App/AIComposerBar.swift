@@ -231,7 +231,7 @@ struct AIComposerBar: View {
     }
     .sheet(isPresented: $isIntegrationsPresented) {
       NavigationStack {
-        IntegrationsView()
+        ConnectorHubView()
           .toolbar {
             ToolbarItem(placement: .cancellationAction) {
               ToolbarIconButton("閉じる", icon: .xmark) { isIntegrationsPresented = false }

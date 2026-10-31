@@ -1,6 +1,16 @@
 import Foundation
 
 extension MemoraModel {
+  func integrationHasConnection(_ id: String) -> Bool {
+    switch id {
+    case "gmail": GmailService.isConfigured && GmailService.shared.isConnected
+    case "notion": NotionService.isConfigured
+    case "calendar": CalendarService.access == .granted
+    case "mcp": !activeMCPTools.isEmpty
+    default: false
+    }
+  }
+
   func integrationIsEnabled(_ id: String) -> Bool { !disabledIntegrationIDs.contains(id) }
 
   func setIntegrationEnabled(_ id: String, enabled: Bool) {

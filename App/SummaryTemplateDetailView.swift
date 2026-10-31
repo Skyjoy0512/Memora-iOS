@@ -6,6 +6,7 @@ struct SummaryTemplateDetailView: View {
   var templateID: String
   @State private var editing: SummaryMarketTemplate?
   @State private var isConfirmingDelete = false
+  @State private var publishes = false
 
   var body: some View {
     if let template = model.customTemplates.first(where: { $0.id == templateID })
@@ -55,6 +56,8 @@ struct SummaryTemplateDetailView: View {
         }
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
+            ShareLink(item: MarketplaceDefinition(template: template).shareText) { Label("テンプレートを共有", icon: .squareAndArrowUp) }
+            Button("コミュニティに投稿", icon: .squareAndArrowUp) { publishes = true }
             if template.isCustom {
               Button("編集", icon: .pencil) { editing = template }
               Button("削除", icon: .trash, role: .destructive) { isConfirmingDelete = true }
@@ -77,6 +80,7 @@ struct SummaryTemplateDetailView: View {
           } label: { ToolbarActionLabel("テンプレートの操作", icon: .ellipsis) }
         }
       }
+      .sheet(isPresented: $publishes) { CommunityPublishSheet(definition: .init(template: template)) }
       .sheet(item: $editing) { SummaryTemplateEditor(template: $0) }
       .confirmationDialog("「\(template.title)」を削除しますか？", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
         Button("削除", role: .destructive) {
