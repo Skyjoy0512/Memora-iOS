@@ -19,6 +19,7 @@ final class MemoraAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
   ) -> Bool {
     UNUserNotificationCenter.current().delegate = self
     AutoLocationLogger.shared.startIfEnabled()
+    model.summaryBackgroundScheduler.registerContinuedProcessing()
     // Must be registered before launch finishes, or the system drops the task.
     BGTaskScheduler.shared.register(forTaskWithIdentifier: MemoraModel.residentRefreshTaskID, using: .main) { [model] task in
       guard let task = task as? BGAppRefreshTask else { return }

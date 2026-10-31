@@ -7,12 +7,51 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
     var identifier: String
     var task: BGContinuedProcessingTask?
     var activity: BackgroundActivity
+    var gate: SummaryExecutionGate
+    var requestsContinuedProcessing: Bool
     var expire: @MainActor () -> Void
     var step = "文字起こしを整理しています"
     var events: Int64 = 0
   }
   private var runs: [UUID: Run] = [:]
   private var deferredRevision = UUID()
+  private var registrationAttempted = false
+  private var isRegistered = false
+  private var bundleIdentifier: String?
+
+  init(bundleIdentifier: String? = Bundle.main.bundleIdentifier) {
+    self.bundleIdentifier = bundleIdentifier
+  }
+
+  func registerContinuedProcessing() {
+    guard !registrationAttempted, let bundleID = bundleIdentifier else { return }
+    registrationAttempted = true
+    // Register the same wildcard listed in Info.plist once, then route each unique request by its delivered ID.
+    isRegistered = BGTaskScheduler.shared.register(forTaskWithIdentifier: bundleID + ".summaries.continued.*", using: .main) { [weak self] task in
+      MainActor.assumeIsolated {
+        guard let self else { task.setTaskCompleted(success: false); return }
+        self.accept(task)
+      }
+    }
+  }
+
+  private func accept(_ task: BGTask) {
+    guard let continued = task as? BGContinuedProcessingTask,
+          let (jobID, run) = runs.first(where: { $0.value.identifier == task.identifier }), run.task == nil else {
+      task.setTaskCompleted(success: false)
+      return
+    }
+    runs[jobID]?.task = continued
+    run.activity.end()
+    continued.progress.totalUnitCount = -1
+    continued.progress.completedUnitCount = run.events
+    continued.updateTitle("要約を作成", subtitle: run.step)
+    let identifier = run.identifier
+    continued.expirationHandler = { [weak self] in
+      Task { @MainActor in self?.expire(jobID, identifier: identifier) }
+    }
+    run.gate.resolve(.continued)
+  }
   var isForeground: Bool { UIApplication.shared.applicationState == .active }
 
   func scheduleDeferred(requiresNetwork: Bool?, onFailure: @escaping @MainActor (String) -> Void) {
@@ -31,56 +70,51 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
 
   func begin(jobID: UUID, requestsContinuedProcessing: Bool, onExpiration: @escaping @MainActor () -> Void,
     onFailure: @escaping @MainActor (String) -> Void) {
-    guard isForeground, runs[jobID] == nil, let bundleID = Bundle.main.bundleIdentifier else { return }
+    guard isForeground, runs[jobID] == nil, let bundleID = bundleIdentifier else { return }
     let identifier = bundleID + ".summaries.continued." + UUID().uuidString
     let activity = BackgroundActivity(name: "要約を作成") { [weak self] in
-      // The short UIKit grace period is only a fallback until the continued
-      // processing task has actually been delivered by the scheduler.
-      guard let self, let run = self.runs[jobID], run.identifier == identifier, run.task == nil else { return }
-      // A grace-period callback can arrive just after returning to the app.
-      // Losing a background lease is not a deadline on foreground inference.
-      guard !self.isForeground else { return }
+      guard let self, let run = self.runs[jobID], run.identifier == identifier,
+            run.task == nil, !self.isForeground else { return }
+      // A queued request has not sent any inference yet. Let iOS deliver its window later;
+      // expiring a short UIKit lease must not cancel that queued handoff.
+      if run.requestsContinuedProcessing && self.isRegistered { return }
       self.expire(jobID, identifier: identifier)
     }
-    runs[jobID] = Run(identifier: identifier, activity: activity, expire: onExpiration)
-    guard requestsContinuedProcessing else { return }
-    let registered = BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: .main) { [weak self] task in
-      MainActor.assumeIsolated {
-        guard let self, let continued = task as? BGContinuedProcessingTask,
-              let run = self.runs[jobID], run.identifier == identifier else {
-          task.setTaskCompleted(success: false)
-          return
-        }
-        self.runs[jobID]?.task = continued
-        run.activity.end()
-        // AI output length is not a known percentage. Count real progress
-        // callbacks without fabricating a completion estimate or timer ticks.
-        continued.progress.totalUnitCount = -1
-        continued.progress.completedUnitCount = run.events
-        continued.updateTitle("要約を作成", subtitle: run.step)
-        continued.expirationHandler = { [weak self] in
-          Task { @MainActor in self?.expire(jobID, identifier: identifier) }
-        }
-      }
-    }
-    guard registered else {
+    let gate = SummaryExecutionGate()
+    runs[jobID] = Run(identifier: identifier, activity: activity, gate: gate,
+      requestsContinuedProcessing: requestsContinuedProcessing, expire: onExpiration)
+    guard requestsContinuedProcessing else { gate.resolve(.foreground); return }
+    registerContinuedProcessing()
+    guard isRegistered else {
+      SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundRejected, code: 0)
       onFailure("バックグラウンド要約を登録できませんでした。画面を開いた状態では処理を続けます。")
+      gate.resolve(isForeground ? .foreground : .stopped)
       return
     }
     let request = BGContinuedProcessingTaskRequest(identifier: identifier,
       title: "要約を作成", subtitle: "文字起こしを整理しています")
-    // Work has already been requested now. A queued OS callback must not start
-    // a second generation later or resurrect a cancelled/finished job.
-    request.strategy = .fail
+    // Inference waits for the delivered lease, so queueing never sends it twice.
+    request.strategy = .queue
+    SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundRequested)
     submit(request) { [weak self] error in
       guard let self, let run = self.runs[jobID], run.identifier == identifier else {
         BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: identifier)
         return
       }
-      if error != nil {
-        onFailure("iOSが継続実行を許可しませんでした。画面を開いた状態では処理を続け、時間切れの場合は再開待ちとして保存します。")
+      if let error, run.task == nil {
+        SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundRejected, code: (error as NSError).code)
+        self.runs[jobID]?.requestsContinuedProcessing = false
+        run.gate.resolve(self.isForeground ? .foreground : .stopped)
+        onFailure("iOSが継続実行を許可しませんでした。画面を開いた状態では処理を続け、時間切れの場合は再試行待ちとして保存します。")
+      } else if error == nil {
+        SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundAccepted)
       }
     }
+  }
+
+  func waitUntilReady(jobID: UUID) async -> SummaryExecutionGate.Permission {
+    guard let run = runs[jobID] else { return .stopped }
+    return await run.gate.wait()
   }
 
   func report(jobID: UUID, step: String) {
@@ -95,6 +129,7 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
   func finish(jobID: UUID, success: Bool) {
     guard let run = runs.removeValue(forKey: jobID) else { return }
     run.activity.end()
+    run.gate.resolve(.stopped)
     if let task = run.task {
       task.expirationHandler = nil
       if success {
@@ -116,10 +151,8 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
   private func submit(_ request: BGTaskRequest, completion: @escaping @MainActor (Error?) -> Void) {
     if #available(iOS 27.0, *) {
       // The 27 API reports asynchronous submission errors the old API misses.
-      Task.detached {
-        BGTaskScheduler.shared.submitTaskRequest(request) { error in
-          Task { @MainActor in completion(error) }
-        }
+      BGTaskScheduler.shared.submitTaskRequest(request) { error in
+        Task { @MainActor in completion(error) }
       }
     } else {
       do { try BGTaskScheduler.shared.submit(request); completion(nil) }

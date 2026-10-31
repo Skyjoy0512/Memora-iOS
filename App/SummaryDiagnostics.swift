@@ -15,6 +15,8 @@ final class SummaryDiagnostics: Sendable {
     case enteredForeground, enteredBackground
     case providerStop
     case processingMode
+    case backgroundWaiting, backgroundGranted, backgroundFallback
+    case backgroundRequested, backgroundAccepted, backgroundRejected
   }
   struct Event: Sendable {
     var stage: Stage
@@ -122,6 +124,10 @@ final class SummaryDiagnostics: Sendable {
     for run in recent.withLock({ $0 }).filter({ jobIDs.contains($0.jobID) }) {
       run.record(isForeground ? .enteredForeground : .enteredBackground)
     }
+  }
+
+  static func recordBackground(jobID: UUID, stage: Stage, code: Int? = nil) {
+    recent.withLock { $0.first { $0.jobID == jobID } }?.record(stage, code: code)
   }
 
   func failed(_ failure: AIAnswerFailure) {

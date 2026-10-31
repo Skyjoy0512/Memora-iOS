@@ -285,6 +285,59 @@ enum BackgroundSummaryExecutionChecks {
     precondition(localRequest.engine == .foundation && !local.pendingSummaryJobs[0].usesCloud)
     localRequest.complete.resume(returning: .failure(.noEngine))
     try await settle(local)
+    // A foreground request accepted into the OS queue must not send inference until its lease arrives.
+    let delayed = try model()
+    delayed.scheduler.holdsContinuedRequests = true
+    precondition(delayed.generateSummary(delayed.meetings[0].id, choice: .standard, submission: intent(delayed)))
+    let delayedJob = delayed.pendingSummaryJobs[0]
+    for _ in 0..<30 { await Task.yield() }
+    precondition(MeetingSummarizer.requests.isEmpty && delayed.processing.isActive(delayedJob.meetingID))
+    delayed.scheduler.isForeground = false
+    delayed.scheduler.gates[delayedJob.id]?.resolve(.continued)
+    while MeetingSummarizer.requests.isEmpty { await Task.yield() }
+    let deliveredRequest = MeetingSummarizer.requests.removeFirst()
+    deliveredRequest.complete.resume(returning: .success(result))
+    try await settle(delayed)
+    precondition(delayed.meetings[0].summary == result.markdown && delayed.pendingSummaryJobs.isEmpty)
+    let deliveredRecords = try read(delayed, MemoraModel.StorageKey.meetings, as: [Meeting].self)
+    precondition(deliveredRecords[0].summary == result.markdown)
+
+    // A queued cancellation and its late delivery may never start a provider request.
+    let cancelledQueue = try model()
+    cancelledQueue.scheduler.holdsContinuedRequests = true
+    precondition(cancelledQueue.generateSummary(cancelledQueue.meetings[0].id, choice: .standard, submission: intent(cancelledQueue)))
+    let cancelledJob = cancelledQueue.pendingSummaryJobs[0]
+    let cancelledGate = cancelledQueue.scheduler.gates[cancelledJob.id]!
+    for _ in 0..<30 { await Task.yield() }
+    cancelledQueue.scheduler.expirations[cancelledJob.id]?()
+    cancelledGate.resolve(.continued)
+    for _ in 0..<30 { await Task.yield() }
+    precondition(MeetingSummarizer.requests.isEmpty && cancelledQueue.pendingSummaryJobs[0].requiresUserRetry == true)
+    precondition(cancelledQueue.meetings[0].summary == "保存済みの旧要約")
+
+    // Revocation/edit during the OS wait is checked again before the first send.
+    for mutate in 0..<3 {
+      let staleQueue = try model()
+      staleQueue.scheduler.holdsContinuedRequests = true
+      precondition(staleQueue.generateSummary(staleQueue.meetings[0].id, choice: .standard, submission: intent(staleQueue)))
+      let job = staleQueue.pendingSummaryJobs[0]
+      for _ in 0..<30 { await Task.yield() }
+      if mutate == 0 { staleQueue.meetings[0].privacy.revokeExternalPermissions() }
+      else if mutate == 1 { staleQueue.meetings[0].transcript[0].text = "待機中に訂正" }
+      else { staleQueue.aiWorkspaceGeneration = UUID() }
+      staleQueue.scheduler.gates[job.id]?.resolve(.continued)
+      try await settle(staleQueue)
+      precondition(MeetingSummarizer.requests.isEmpty && staleQueue.meetings[0].summary == "保存済みの旧要約")
+    }
+    let lostForeground = try model()
+    lostForeground.scheduler.holdsContinuedRequests = true
+    precondition(lostForeground.generateSummary(lostForeground.meetings[0].id, choice: .standard, submission: intent(lostForeground)))
+    let fallbackJob = lostForeground.pendingSummaryJobs[0]
+    lostForeground.scheduler.gates[fallbackJob.id]?.resolve(.foreground)
+    lostForeground.scheduler.isForeground = false
+    try await settle(lostForeground)
+    precondition(MeetingSummarizer.requests.isEmpty && lostForeground.pendingSummaryJobs.count == 1)
+
     print("BackgroundSummaryExecutionChecks: passed (production queue/generation/cancellation, real SQLite atomic save and reopen; OS/model are fixtures)")
   }
 }

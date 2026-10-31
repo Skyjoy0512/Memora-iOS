@@ -96,7 +96,8 @@ extension MemoraModel {
     backgroundSummaryNotice = nil
     // Automatic OS wakeups use their delivered processing window; only a
     // person starting work in the foreground requests continued processing.
-    if summaryBackgroundScheduler.isForeground {
+    let hasForegroundLease = summaryBackgroundScheduler.isForeground
+    if hasForegroundLease {
       summaryBackgroundScheduler.begin(jobID: job.id, requestsContinuedProcessing: pendingJob == nil) { [weak self] in
         diagnostics.record(.backgroundExpiration)
         self?.pauseBackgroundSummary(job, requiresUserRetry: true)
@@ -107,7 +108,18 @@ extension MemoraModel {
 
     processing.run(id: id) { [weak self] in
       let outcome = await SummaryDiagnostics.$current.withValue(diagnostics) {
-        await MeetingSummarizer.summarize(input, engine: engine, llm: llm, authorize: { [weak self] in
+        if hasForegroundLease {
+          guard let self else { return Result<MeetingSummary, AIAnswerFailure>.failure(.cancelled) }
+          if pendingJob == nil {
+            diagnostics.record(.backgroundWaiting)
+            self.updateMeetingTransiently(id) { $0.status = .organizing("iOSの継続実行枠を待っています") }
+          }
+          let permission = await self.summaryBackgroundScheduler.waitUntilReady(jobID: job.id)
+          guard !Task.isCancelled, permission != .stopped,
+                permission != .foreground || self.summaryBackgroundScheduler.isForeground else { return .failure(.cancelled) }
+          diagnostics.record(permission == .continued ? .backgroundGranted : .backgroundFallback)
+        }
+        return await MeetingSummarizer.summarize(input, engine: engine, llm: llm, authorize: { [weak self] in
           guard let self, !Task.isCancelled, self.aiWorkspaceGeneration == workspaceGeneration,
                 self.currentTeamID == nil, !self.isRestoring, !self.isStoreProtected,
                 self.summaryConfigurationIdentity == configurationIdentity,
