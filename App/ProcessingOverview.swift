@@ -5,7 +5,10 @@ struct ProcessingOverview: View {
   var meeting: Meeting
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 18) {
+    let isVideo = meeting.usesVideoSummary || model.pendingSummaryJobs.contains {
+      $0.meetingID == meeting.id && $0.choice.id == VideoSummaryTemplate.template.id
+    }
+    return VStack(alignment: .leading, spacing: 18) {
       VStack(alignment: .leading, spacing: 6) {
         WorkingStatus(label: primaryText, startedAt: model.processing.startedAt[meeting.id])
         Text("終わった内容から順に使えるようになります")
@@ -14,9 +17,13 @@ struct ProcessingOverview: View {
       }
 
       VStack(alignment: .leading, spacing: 12) {
-        ProcessStep(title: "音声を保存", isComplete: true, isCurrent: false)
-        ProcessStep(title: "文字にする", isComplete: hasTranscript, isCurrent: !hasTranscript)
-        ProcessStep(title: "要点と行動を整理", isComplete: false, isCurrent: isOrganizing)
+        if meeting.audioURL != nil {
+          ProcessStep(title: "音声を保存", isComplete: true, isCurrent: false)
+          ProcessStep(title: "文字にする", isComplete: hasTranscript, isCurrent: !hasTranscript)
+        } else {
+          ProcessStep(title: "原文を保存", isComplete: hasTranscript, isCurrent: !hasTranscript)
+        }
+        ProcessStep(title: isVideo ? "動画の内容を整理" : "要点と行動を整理", isComplete: false, isCurrent: isOrganizing)
       }
     }
     .padding(MemoraSpacing.lg)

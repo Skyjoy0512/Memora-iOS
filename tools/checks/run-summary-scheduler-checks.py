@@ -14,7 +14,7 @@ with tempfile.TemporaryDirectory(prefix="memora-summary-scheduler-") as temporar
     scheduler.write_text(source)
     executable = directory / "check"
     subprocess.run(["swiftc", "App/SummaryDiagnostics.swift", "App/AIAnswerFailure.swift",
-                    "App/SummaryExecutionGate.swift", "App/SummaryBackgroundScheduling.swift",
+                    "App/SummaryBackgroundScheduling.swift",
                     str(scheduler), "tools/checks/ContinuedSummarySchedulerChecks.swift", "-o", str(executable)],
                    cwd=root, check=True)
     subprocess.run([str(executable)], cwd=root, check=True)

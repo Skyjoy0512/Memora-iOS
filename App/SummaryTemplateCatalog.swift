@@ -5,6 +5,7 @@ import Foundation
 /// Earlier ids are kept, so templates added in older builds stay added.
 enum SummaryTemplateCatalog {
   static let market: [SummaryMarketTemplate] = [
+    VideoSummaryTemplate.template,
     SummaryMarketTemplate(
       id: "market.regular",
       title: "定例会議",

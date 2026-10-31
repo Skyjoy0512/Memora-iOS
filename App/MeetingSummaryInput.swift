@@ -41,12 +41,18 @@ struct MeetingSummaryInput {
     return "[\(time)] [segmentID=\(segment.id.uuidString)] \(segment.speaker): \(segment.text.trimmingCharacters(in: .whitespacesAndNewlines))"
   }
 
+  func transcriptLine(for segment: TranscriptSegment, cloud: Bool = false) -> String {
+    guard duration <= 0 else { return cloud ? Self.cloudLine(for: segment) : Self.line(for: segment) }
+    let identity = cloud ? " [segmentID=\(segment.id.uuidString)]" : ""
+    return "[時刻不明]\(identity) \(segment.speaker): \(segment.text.trimmingCharacters(in: .whitespacesAndNewlines))"
+  }
+
   /// The header the engines are given about the meeting itself.
   var headerLines: [String] {
     var lines = [
       "タイトル: \(title)",
-      "日時: \(dateText)",
-      "長さ: \(MemoraFormat.duration(duration))",
+      "記録の保存日時（公開日・収録日ではない）: \(dateText)",
+      duration > 0 ? "長さ: \(MemoraFormat.duration(duration))" : "長さ・時刻情報: 不明",
       "話者: \(speakers.isEmpty ? "不明" : speakers.joined(separator: ", "))"
     ]
     if !participantNames.isEmpty {

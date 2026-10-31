@@ -12,11 +12,13 @@ extension MemoraModel {
 
   func automaticSummaryCandidates(for meeting: Meeting, fallback: SummaryTemplateChoice) -> [SummaryTemplateChoice] {
     let available = allSummaryChoices
+    if fallback.id == VideoSummaryTemplate.template.id { return [fallback] }
     let ids = SummaryTemplateSelector.candidateIDs(fallbackID: fallback.id,
       contentID: SummaryTemplateSelector.contentTemplateID(meeting.transcript.map(\.text).joined(separator: "\n")),
       recommendedIDs: recommendedSummaryChoices.map(\.id),
       genericIDs: [SummaryTemplateChoice.builtIn(.detailedOverview).id,
-        SummaryTemplateChoice.builtIn(.meetingMinutes).id, "work.journal", SummaryTemplateChoice.builtIn(.actionPlan).id],
+        SummaryTemplateChoice.builtIn(.meetingMinutes).id, "work.journal", SummaryTemplateChoice.builtIn(.actionPlan).id,
+        VideoSummaryTemplate.template.id],
       availableIDs: Set(available.map(\.id)))
     return ids.compactMap { id in available.first { $0.id == id } }
   }

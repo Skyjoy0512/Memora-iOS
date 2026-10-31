@@ -9,6 +9,7 @@ struct TranscriptSegmentText: View {
   var segment: TranscriptSegment
   var showsSpeaker: Bool
   var usesReadableText = true
+  var showsTime = true
   var timeWidth: CGFloat = 50
   /// Highlighted while the recording is playing this line.
   var isActive = false
@@ -18,7 +19,7 @@ struct TranscriptSegmentText: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
-      timeLabel
+      if showsTime { timeLabel }
 
       VStack(alignment: .leading, spacing: 6) {
         if showsSpeaker {

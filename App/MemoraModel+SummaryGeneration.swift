@@ -108,17 +108,7 @@ extension MemoraModel {
 
     processing.run(id: id) { [weak self] in
       let outcome = await SummaryDiagnostics.$current.withValue(diagnostics) {
-        if hasForegroundLease {
-          guard let self else { return Result<MeetingSummary, AIAnswerFailure>.failure(.cancelled) }
-          if pendingJob == nil {
-            diagnostics.record(.backgroundWaiting)
-            self.updateMeetingTransiently(id) { $0.status = .organizing("iOSの継続実行枠を待っています") }
-          }
-          let permission = await self.summaryBackgroundScheduler.waitUntilReady(jobID: job.id)
-          guard !Task.isCancelled, permission != .stopped,
-                permission != .foreground || self.summaryBackgroundScheduler.isForeground else { return .failure(.cancelled) }
-          diagnostics.record(permission == .continued ? .backgroundGranted : .backgroundFallback)
-        }
+        guard !Task.isCancelled else { return Result<MeetingSummary, AIAnswerFailure>.failure(.cancelled) }
         return await MeetingSummarizer.summarize(input, engine: engine, llm: llm, authorize: { [weak self] in
           guard let self, !Task.isCancelled, self.aiWorkspaceGeneration == workspaceGeneration,
                 self.currentTeamID == nil, !self.isRestoring, !self.isStoreProtected,

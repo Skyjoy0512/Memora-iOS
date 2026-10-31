@@ -509,12 +509,15 @@ struct MeetingDetailView: View {
   private func insightContent(_ meeting: Meeting) -> some View {
     // Offered only when the records give a reason; otherwise nothing shows.
     let suggestions = model.projectSuggestions(for: meeting)
+    let isVideo = meeting.usesVideoSummary
+    let hasTasks = !model.tasks(forMeeting: meeting.id).isEmpty
     if !suggestions.isEmpty {
       ProjectSuggestionCard(meeting: meeting, suggestions: suggestions)
         .transition(.opacity)
     }
 
-    if !meeting.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+    if FeatureFlags.isInlineSummaryPosterEnabled,
+       !meeting.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       MeetingSummaryPosterEntry(meetingID: meeting.id)
     }
 
@@ -550,24 +553,30 @@ struct MeetingDetailView: View {
       )
     }
 
-    CollapsibleInsightSection(.decisions) {
-      InlineEditableList(
-        items: meeting.decisions,
-        emptyText: "明確な決定は見つかりませんでした",
-        onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) }
-      )
+    if !isVideo || !meeting.decisions.isEmpty {
+      CollapsibleInsightSection(.decisions) {
+        InlineEditableList(
+          items: meeting.decisions,
+          emptyText: "明確な決定は見つかりませんでした",
+          onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) }
+        )
+      }
     }
 
-    CollapsibleInsightSection(.tasks) {
-      MeetingTasksSection(meetingID: meeting.id)
+    if !isVideo || hasTasks {
+      CollapsibleInsightSection(.tasks) {
+        MeetingTasksSection(meetingID: meeting.id)
+      }
     }
 
-    CollapsibleInsightSection(.openQuestions) {
-      InlineEditableList(
-        items: meeting.openQuestions,
-        emptyText: "未決事項はありません",
-        onCommit: { model.updateMeetingList(meeting.id, \.openQuestions, items: $0) }
-      )
+    if !isVideo || !meeting.openQuestions.isEmpty {
+      CollapsibleInsightSection(.openQuestions) {
+        InlineEditableList(
+          items: meeting.openQuestions,
+          emptyText: "未決事項はありません",
+          onCommit: { model.updateMeetingList(meeting.id, \.openQuestions, items: $0) }
+        )
+      }
     }
 
     CollapsibleInsightSection(.keyPoints) {

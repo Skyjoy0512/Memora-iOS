@@ -56,7 +56,7 @@ enum MeetingSummarizer {
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
     let lines = input.transcript
       .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-      .map(MeetingSummaryInput.cloudLine(for:))
+      .map { input.transcriptLine(for: $0, cloud: true) }
     let transcript = lines.joined(separator: "\n")
 
     let request: String
@@ -121,8 +121,9 @@ enum MeetingSummarizer {
         if case .market(let template) = choice, !template.includesActions { return choice.id }
         return nil
       }
-      let summary = SummaryResponseParser.validateTemplate(SummaryResponseParser.parse(reply),
+      var summary = SummaryResponseParser.validateTemplate(SummaryResponseParser.parse(reply),
         allowedIDs: Set(choices.map(\.id)), actionFreeIDs: Set(actionFree))
+      if summary.templateID == VideoSummaryTemplate.template.id { summary.decisions = [] }
       SummaryDiagnostics.current?.record(.parseCompleted)
       return summary.markdown.isEmpty ? .failure(.empty) : .success(summary)
     case .failure(let failure):

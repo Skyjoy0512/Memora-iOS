@@ -14,6 +14,19 @@ enum SummaryPipelineChecks {
       guard case .failure(.empty) = result else { throw NSError(domain: "SummaryPipelineChecks.empty", code: 1) }
       precondition(CloudAIService.gate.calls.isEmpty, "Empty source made a billable request")
     }
+    // Even an off-contract video reply cannot turn viewer advice into tasks or meeting decisions.
+    let videoGate = SummaryFixtureGate()
+    CloudAIService.gate = videoGate
+    let videoInput = MeetingSummaryInput(title: "字幕だけの動画", date: .now, duration: 0,
+      participantNames: [], transcript: [TranscriptSegment(id: UUID(), speaker: "字幕", speakerIsCertain: false,
+        timestamp: 0, text: "今回の動画では条件付きの方法を説明します。")], template: .market(VideoSummaryTemplate.template))
+    let videoWork = Task { await MeetingSummarizer.summarize(videoInput, engine: .cloud,
+      llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"), progress: { _ in }) }
+    await wait { videoGate.pending.count == 1 }
+    precondition(videoGate.calls[0].user.contains("[時刻不明]"))
+    videoGate.finish(0, .answer("## 重要なポイント\n条件付きの方法。\n<memora-data>{\"templateID\":\"content.video\",\"decisions\":[\"登録する\"],\"actions\":[{\"title\":\"登録する\"}]}</memora-data>"))
+    guard case .success(let videoResult) = await videoWork.value else { preconditionFailure("video summary failed") }
+    precondition(videoResult.actions.isEmpty && videoResult.decisions.isEmpty && videoResult.templateID == "content.video")
     for mode in [SummaryProcessingMode.balanced, .fast, .accurate] {
       let gate = SummaryFixtureGate()
       CloudAIService.gate = gate

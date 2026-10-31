@@ -17,6 +17,12 @@ enum SummaryTemplateSelector {
   }
 
   static func contentTemplateID(_ text: String) -> String? {
+    // Require a viewer address plus a content cue; mentioning YouTube in a meeting is insufficient.
+    let addressesViewer = ["チャンネル登録", "高評価", "ご視聴ありがとうございました", "このポッドキャスト"]
+      .contains { text.localizedStandardContains($0) }
+    let discussesContent = ["今回の動画", "この動画では", "今日の動画", "今回の配信", "今回のエピソード"]
+      .contains { text.localizedStandardContains($0) }
+    if addressesViewer && discussesContent { return VideoSummaryTemplate.template.id }
     let rules: [(String, [String])] = [
       ("market.regular", ["スタッフ配置", "スタッフ会議", "定例会議", "議題", "体制に", "会議", "担当を決め", "シフト", "議事", "議論"]),
       ("work.customer-chart", ["毛先", "前髪", "ヘアカラー", "カラーも", "髪を", "カットして", "髪の長さ", "肩まで", "染めたい", "施術", "髪色", "パーマ", "お客様の希望"]),

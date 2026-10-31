@@ -13,6 +13,9 @@ struct ProjectSourceDetailView: View {
   @State private var textLoader = ProjectSourceTextLoader()
   @State private var textRetry = 0
   @State private var webFetchRequest: UUID?
+  @State private var isAddingVideoTranscript = false
+  @State private var savedVideoMeetingID: UUID?
+  @State private var videoWorkspaceGeneration: UUID?
 
   var body: some View {
     if let source = model.source(id: sourceID) {
@@ -36,6 +39,19 @@ struct ProjectSourceDetailView: View {
           }
           if let message = source.availabilityNotice {
             Text(message).font(.subheadline).foregroundStyle(.secondary)
+          }
+          if source.kind == .youtube {
+            if let recordID = source.metadata?["videoTranscriptMeetingID"].flatMap(UUID.init(uuidString:)),
+               model.meeting(id: recordID) != nil {
+              NavigationLink("字幕と要約を開く", value: LibraryRoute.meeting(recordID)).frame(minHeight: 44)
+            } else {
+              Button("字幕・文字起こしから要約", icon: .sparkles) {
+                videoWorkspaceGeneration = model.aiWorkspaceGeneration
+                isAddingVideoTranscript = true
+              }
+                .frame(minHeight: 44)
+                .disabled(model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
+            }
           }
           if source.kind == .web {
             if webFetchRequest != nil {
@@ -118,6 +134,14 @@ struct ProjectSourceDetailView: View {
           sourceID == textRequest.sourceID &&
             model.source(id: textRequest.sourceID)?.extractedTextReference == textRequest.reference
         }
+      }
+      .sheet(isPresented: $isAddingVideoTranscript, onDismiss: {
+        if videoWorkspaceGeneration == model.aiWorkspaceGeneration,
+           let id = savedVideoMeetingID, model.meeting(id: id) != nil { model.openSavedMeeting(id) }
+        savedVideoMeetingID = nil
+        videoWorkspaceGeneration = nil
+      }) {
+        VideoTranscriptImportSheet(source: source) { savedVideoMeetingID = $0 }
       }
       .sheet(isPresented: $isEditing) {
         ProjectNoteEditSheet(source: source, text: extracted.map(\.text).joined(separator: "\n"))

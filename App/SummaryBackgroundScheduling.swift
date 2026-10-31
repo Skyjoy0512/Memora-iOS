@@ -10,7 +10,6 @@ protocol SummaryBackgroundScheduling: AnyObject {
   func begin(jobID: UUID, requestsContinuedProcessing: Bool, onExpiration: @escaping @MainActor () -> Void,
     onFailure: @escaping @MainActor (String) -> Void)
   func report(jobID: UUID, step: String)
-  func waitUntilReady(jobID: UUID) async -> SummaryExecutionGate.Permission
   func finish(jobID: UUID, success: Bool)
 }
 

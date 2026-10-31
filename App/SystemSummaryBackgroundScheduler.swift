@@ -7,8 +7,6 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
     var identifier: String
     var task: BGContinuedProcessingTask?
     var activity: BackgroundActivity
-    var gate: SummaryExecutionGate
-    var requestsContinuedProcessing: Bool
     var expire: @MainActor () -> Void
     var step = "文字起こしを整理しています"
     var events: Int64 = 0
@@ -50,7 +48,7 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
     continued.expirationHandler = { [weak self] in
       Task { @MainActor in self?.expire(jobID, identifier: identifier) }
     }
-    run.gate.resolve(.continued)
+    SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundGranted)
   }
   var isForeground: Bool { UIApplication.shared.applicationState == .active }
 
@@ -75,26 +73,21 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
     let activity = BackgroundActivity(name: "要約を作成") { [weak self] in
       guard let self, let run = self.runs[jobID], run.identifier == identifier,
             run.task == nil, !self.isForeground else { return }
-      // A queued request has not sent any inference yet. Let iOS deliver its window later;
-      // expiring a short UIKit lease must not cancel that queued handoff.
-      if run.requestsContinuedProcessing && self.isRegistered { return }
+      // Submission acceptance is not a lease. Stop the existing request when UIKit time ends.
       self.expire(jobID, identifier: identifier)
     }
-    let gate = SummaryExecutionGate()
-    runs[jobID] = Run(identifier: identifier, activity: activity, gate: gate,
-      requestsContinuedProcessing: requestsContinuedProcessing, expire: onExpiration)
-    guard requestsContinuedProcessing else { gate.resolve(.foreground); return }
+    runs[jobID] = Run(identifier: identifier, activity: activity, expire: onExpiration)
+    guard requestsContinuedProcessing else { return }
     registerContinuedProcessing()
     guard isRegistered else {
       SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundRejected, code: 0)
       onFailure("バックグラウンド要約を登録できませんでした。画面を開いた状態では処理を続けます。")
-      gate.resolve(isForeground ? .foreground : .stopped)
       return
     }
     let request = BGContinuedProcessingTaskRequest(identifier: identifier,
       title: "要約を作成", subtitle: "文字起こしを整理しています")
-    // Inference waits for the delivered lease, so queueing never sends it twice.
-    request.strategy = .queue
+    // The foreground request starts immediately; iOS can extend that same run without replaying it.
+    request.strategy = .fail
     SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundRequested)
     submit(request) { [weak self] error in
       guard let self, let run = self.runs[jobID], run.identifier == identifier else {
@@ -103,18 +96,12 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
       }
       if let error, run.task == nil {
         SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundRejected, code: (error as NSError).code)
-        self.runs[jobID]?.requestsContinuedProcessing = false
-        run.gate.resolve(self.isForeground ? .foreground : .stopped)
+        SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundFallback)
         onFailure("iOSが継続実行を許可しませんでした。画面を開いた状態では処理を続け、時間切れの場合は再試行待ちとして保存します。")
       } else if error == nil {
         SummaryDiagnostics.recordBackground(jobID: jobID, stage: .backgroundAccepted)
       }
     }
-  }
-
-  func waitUntilReady(jobID: UUID) async -> SummaryExecutionGate.Permission {
-    guard let run = runs[jobID] else { return .stopped }
-    return await run.gate.wait()
   }
 
   func report(jobID: UUID, step: String) {
@@ -129,7 +116,6 @@ final class SystemSummaryBackgroundScheduler: SummaryBackgroundScheduling {
   func finish(jobID: UUID, success: Bool) {
     guard let run = runs.removeValue(forKey: jobID) else { return }
     run.activity.end()
-    run.gate.resolve(.stopped)
     if let task = run.task {
       task.expirationHandler = nil
       if success {

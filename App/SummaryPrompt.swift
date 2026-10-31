@@ -24,7 +24,7 @@ enum SummaryPrompt {
   /// The request for one pass over the whole transcript.
   static func document(for input: MeetingSummaryInput, transcript: String) -> String {
     """
-    # 会議情報
+    # 記録情報
     \(input.headerLines.joined(separator: "\n"))
 
     # 出力形式
@@ -49,7 +49,7 @@ enum SummaryPrompt {
     transcript: String
   ) -> String {
     """
-    # 会議情報
+    # 記録情報
     \(input.headerLines.joined(separator: "\n"))
 
     これは長い記録の文字起こしを時間順に分けた \(part)/\(total) 番目の部分（\(range)）です。
@@ -74,7 +74,7 @@ enum SummaryPrompt {
   /// The final pass over the part notes of a long meeting.
   static func merge(for input: MeetingSummaryInput, notes: String) -> String {
     """
-    # 会議情報
+    # 記録情報
     \(input.headerLines.joined(separator: "\n"))
 
     以下は、長い記録の文字起こしを時間順に分けて作った作業メモです。同じ出来事が部分をまたいでいる場合は重複をまとめ、指定した用途の記録を作ってください。異なる日時・数量・人物の出来事は混ぜず、矛盾や未確認事項は補完しないでください。
@@ -123,7 +123,7 @@ enum SummaryPrompt {
     let order = input.preferences.displayOrder == .chronological
       ? "同じセクション内の項目は時間順に並べる。日時が不明なら順序を捏造しない。"
       : "同じセクション内では重要な確認済みの情報を先に書く。"
-    guard !input.automaticCandidates.isEmpty else {
+    guard !input.automaticCandidates.isEmpty, input.automaticCandidates.count != 1 else {
       return format(for: input.template, input: input) + "\n" + length + "\n" + order
     }
     let catalog = input.automaticCandidates.map { choice in
@@ -144,7 +144,7 @@ enum SummaryPrompt {
     以下の候補から文字起こしの内容に最も合う形式を1つ選び、同じ回答内で要約する。
     形式分類だけの別回答は不要。職業を根拠に内容を決めつけない。
     内容が曖昧なら候補「\(input.template.id)」を使用する。
-    # タイトル、日時、短い概要に続け、選んだ形式の見出しを ## で順番通りに書く。
+    # タイトルと短い概要に続け、選んだ形式の見出しを ## で順番通りに書く。日時・参加者は会議の形式にだけ記載する。
     各見出しにはその観点の根拠がある内容だけを書く。記録に無い場合は「記録なし」。
     \(length)
     \(order)
@@ -269,6 +269,16 @@ enum SummaryPrompt {
   private static func marketFormat(_ template: SummaryMarketTemplate, input: MeetingSummaryInput) -> String {
     if template.usesPrompt {
       return promptFormat(template, input: input)
+    }
+    if template.id == VideoSummaryTemplate.template.id {
+      return """
+      次の構成のMarkdownで、渡された字幕・文字起こしの範囲だけを要約する。
+      \(template.focus)
+      情報のない見出しは省略する。同じ要点を各見出しへ繰り返さない。
+      # {内容が分かるタイトル}
+      **概要**: {テーマと中心的な結論を2〜3文}
+      \(template.sections.map { "## \($0)\n- {この観点の具体的な内容}" }.joined(separator: "\n"))
+      """
     }
     let focus = template.focus.trimmingCharacters(in: .whitespacesAndNewlines)
     let sections = template.sections.isEmpty

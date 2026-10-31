@@ -77,8 +77,6 @@ final class FixtureSummaryScheduler: SummaryBackgroundScheduling {
   var finishes: [(UUID, Bool)] = []
   var steps: [String] = []
   var failSubmission = false
-  var holdsContinuedRequests = false
-  var gates: [UUID: SummaryExecutionGate] = [:]
   func scheduleDeferred(requiresNetwork: Bool?, onFailure: @escaping @MainActor (String) -> Void) {
     if failSubmission, requiresNetwork != nil { onFailure("fixture scheduling refused") }
   }
@@ -86,17 +84,10 @@ final class FixtureSummaryScheduler: SummaryBackgroundScheduling {
     onExpiration: @escaping @MainActor () -> Void, onFailure: @escaping @MainActor (String) -> Void) {
     starts.append(jobID); expirations[jobID] = onExpiration
     continuedRequests.append(requestsContinuedProcessing)
-    let gate = SummaryExecutionGate()
-    gates[jobID] = gate
-    if !holdsContinuedRequests || !requestsContinuedProcessing { gate.resolve(.foreground) }
     if failSubmission { onFailure("fixture continued submission refused") }
-  }
-  func waitUntilReady(jobID: UUID) async -> SummaryExecutionGate.Permission {
-    await gates[jobID]?.wait() ?? .stopped
   }
   func report(jobID: UUID, step: String) { steps.append(step) }
   func finish(jobID: UUID, success: Bool) {
-    gates.removeValue(forKey: jobID)?.resolve(.stopped)
     finishes.append((jobID, success))
   }
 }

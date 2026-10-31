@@ -13,6 +13,7 @@ struct SummaryGenerationSheet: View {
   @State private var length = SummaryLength.standard
   @State private var processingMode = SummaryProcessingMode.balanced
   @State private var useCaseID = ""
+  @State private var startFailure: String?
   var meetingID: UUID
 
   var body: some View {
@@ -126,7 +127,13 @@ struct SummaryGenerationSheet: View {
           .foregroundStyle(.secondary)
       }
 
+      if let message = unavailableReason ?? startFailure {
+        Text(message).font(.footnote).foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityIdentifier("summary.startFailure")
+      }
       Button {
+        startFailure = nil
         var preferences = model.summaryPreferences
         preferences.length = length
         preferences.processingMode = processingMode
@@ -141,19 +148,37 @@ struct SummaryGenerationSheet: View {
             workspaceGeneration: workspace, engine: configuration.engine, llm: configuration.llm)
         )
         if started { dismiss() }
+        else {
+          startFailure = unavailableReason ?? model.persistenceFailureMessage
+            ?? "要約を開始できませんでした。記録とAIの設定を確認し、もう一度お試しください。"
+        }
       } label: {
         Text("生成")
           .frame(maxWidth: .infinity)
       }
       .buttonStyle(MemoraButtonStyle())
       .accessibilityIdentifier("summary.generate")
-      .disabled(model.processing.isActive(meetingID)
-        || model.speakerAnalysisIDs.contains(meetingID))
+      .disabled(unavailableReason != nil)
     }
     .padding(.horizontal, MemoraSpacing.xl)
     .padding(.top, MemoraSpacing.md)
     .padding(.bottom, MemoraSpacing.md)
     .background(.bar)
+  }
+
+  private var unavailableReason: String? {
+    guard let meeting = model.meeting(id: meetingID) else { return "記録が見つかりません。開き直してください。" }
+    if meeting.transcript.allSatisfy({ $0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+      return "要約できる文字起こしがありません。原文を確認してください。"
+    }
+    if model.currentTeamID != nil { return "このワークスペースでは要約を実行できません。" }
+    if model.isRestoring { return "復元が終わってから要約できます。" }
+    if model.isStoreProtected { return "保存領域を利用できません。端末のロックを解除して開き直してください。" }
+    if model.processing.isActive(meetingID) || model.speakerAnalysisIDs.contains(meetingID) {
+      return "この記録の処理が終わってから要約できます。"
+    }
+    if usesCloud && !RecordAccessPolicy.allowsSummarySubmission(meeting.effectivePrivacy) { return RecordAccessPolicy.refusal }
+    return nil
   }
 
   private var selectedEngine: SummaryEngineChoice {
@@ -172,6 +197,9 @@ struct SummaryGenerationSheet: View {
   }
 
   private var automaticDetail: String {
+    if resolvedChoice.id == VideoSummaryTemplate.template.id {
+      return "字幕・文字起こしを動画用の形式で整理します"
+    }
     if !useCaseID.isEmpty || model.summaryPreferences.method == .fixed {
       return "「\(resolvedChoice.title)」で整理"
     }

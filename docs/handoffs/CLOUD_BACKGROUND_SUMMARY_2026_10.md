@@ -1,45 +1,48 @@
-# クラウド要約のバックグラウンド継続 — 2026-10-31
+# クラウド要約のバックグラウンド継続 — 2026-10-31 更新
 
-利用者から、クラウド（BYOK / Memora Intelligence）の要約がバックグラウンドでまだ停止すると報告された。実端末の停止ログや有料APIは今回取得・実行していないため、個別の停止原因を一つに断定しない。既存コードには、継続枠が渡る前に推論を開始し、即時実行を拒否された場合に短いUIKit猶予だけで走る経路が残っていた。
+## 開始できない退行の修正
 
-## 修正した実行順序
+`e6f8bd7` は、iOSの継続枠が届くまで `SummaryExecutionGate` で生成を待たせていた。
+利用者から「要約実行できない」と報告があり、この待機は撤去した。前面で開始できる要約を
+継続枠の配信に依存させた設計が問題だった。以前のfixture検査は「待つこと」を正解としており、
+OSが枠を配信しない場合の前面利用性を保証していなかった。
 
-1. 起動時にInfo.plistの許可リストと同じ `bundleID.summaries.continued.*` のハンドラーを1回登録する。各依頼には引き続き再利用しない固有IDを使い、遅れた通知を元のジョブにだけ対応させる。
-2. 利用者が生成を依頼したら、既存の原文・条件・試行マーカーを保存し、継続処理を `.queue` で申請する。iOS 27の非同期申請を別のdetached Taskへ遅らせず、前面の依頼の流れで呼ぶ。iOS 26の同期申請は維持する。
-3. 申請の受付と実行枠の取得を区別する。新しい `SummaryExecutionGate` で、実際に `BGContinuedProcessingTask` が渡されるまで同じ生成処理を待たせる。受付通知だけではクラウドへ送信しない。画面には「iOSの継続実行枠を待っています」と表示する。
-4. まだ推論を送っていない予約待ちでは、短いUIKit猶予の期限だけで予約と要約を取り消さない。バックグラウンドで実行枠が渡されたら、待っていた同じ生成を1回だけ進める。OSのコールバックから2個目の要約は作らない。
-5. 登録/申請が拒否された場合は、前面にいるときだけ従来の前面処理へ進む。待ちの解除と推論開始の間にアプリが背景へ移った場合も再確認する。拒否後の前面処理の猶予が切れたとき、OS中止、入力/権限変更では安全に再試行待ちへ戻す。
-6. 要約と抽出タスクをSQLiteへ同時保存できたときだけOSへ成功を返す。待機中の取消、古い実行枠・期限通知、他のジョブ、前面/背景の切替で二重送信や別処理の取消を起こさない。
+## 現在の実行契約
 
-自動復旧・自動要約は、利用者の新しい操作なしに継続枠を申請しない。開始済みのクラウド依頼を自動再送しない試行マーカー、送信直前の原文/プライバシー/モデル/workspace確認、旧要約保持、保存失敗時のロールバックは維持する。途中のAI文字列を保存して続きを自動生成する実装は追加していない。
+1. 原文・生成条件・試行開始マーカーを永続化してから、通常の `ProcessingService` で生成を開始する。
+   OSの申請結果や枠の配信を待たない。送信直前の原文・権限・workspace・モデル設定の再確認は維持する。
+2. 前面の利用者操作には継続処理を `.fail` で申請する。資源不足で即時配信できない場合も前面の生成を妨げない。
+   起動時のwildcard登録、依頼ごとの固有ID、iOS 26/27の申請API分岐は維持する。
+3. 枠が届いたら**既に動いている同じ処理**のUIKit猶予を返却し、OSの継続枠に引き継ぐ。
+   OSのコールバックは推論を開始・再送しない。実際の進捗イベントを反映する。
+4. 申請の受付だけでは背景での実行時間を得たことにしない。枠が届かず背景のUIKit猶予が切れた場合は停止し、
+   原文・旧要約・条件を保存して明示的な再試行待ちとする。期限が切れた処理へ遅れて届いた枠は失敗で返却する。
+5. 期限切れ・利用者中止・古い通知はジョブIDと実行トークンで隔離する。開始済み依頼を自動再送しない。
+   要約・タスク・ジョブ削除のSQLiteトランザクション成功後にだけ、OSへ成功を通知する。
 
-## 診断
+診断の `backgroundRequested` / `backgroundAccepted` / `backgroundGranted` / `backgroundFallback` /
+`backgroundRejected` は、申請受付と実枠の取得を区別する。`backgroundWaiting` は過去の診断との互換用に残るが、
+現在の処理は記録しない。原文・回答・キー・接続URLをログへ追加していない。
 
-既存の要約診断に `backgroundRequested` / `backgroundAccepted` / `backgroundWaiting` / `backgroundGranted` / `backgroundFallback` / `backgroundRejected` を追加。
-受付後にまだ枠が来ていない場合と、枠を取得してから通信や保存で失敗した場合を分けて調べられる。拒否時はOSの数値コードを記録し、原文・プロンプト・回答・APIキー・接続URLはログへ出さない。進捗は実際の処理イベントを使い、待ち時間から完成率を作らない。
+## 検証と境界
 
-## 検査
+- `run-background-summary-job-checks.sh`: 本番キュー・生成domain・ProcessingService・実SQLiteの保存/再読込/ABORT、
+  取消・権限変更・二重実行防止に加え、OS境界が枠を全く配信しない場合/申請を拒否する場合の前面開始・結果保存を検査。
+- `run-summary-scheduler-checks.py`: 本番スケジューラーを、OSだけ決定的なfixtureに置き換えて検査。
+  即時申請、枠受取とUIKit猶予の引継ぎ、未配信時の猶予切れ、遅れた配信の拒否、並行ジョブの隔離を検査。
+- `run-cloud-session-checks.sh`: 本番URLSession/SSE/JSON/終了条件/取消/送信失敗をfail-closedなURLProtocolで検査。
+  有料APIへは送信しない。
+- iOSプレビューと、今回追加した動画要約の操作検査は [SUMMARY_START_VIDEO_2026_10.md](SUMMARY_START_VIDEO_2026_10.md) に記録する。
 
-- `bash tools/checks/run-background-summary-job-checks.sh`: 通過。既存のcodec、本番キュー/生成/ProcessingService/タスク抽出と実SQLiteの保存・ABORT・再読込・取消検査に加え、枠待ちでは推論ゼロ、背景での枠受取後の保存、待機中の取消/原文訂正/権限失効/workspace変更、前面fallback解除直前の背景移行を検査した。推論とOSはfixture。
-- `python3 tools/checks/run-summary-scheduler-checks.py`: 通過。**本番SystemSummaryBackgroundSchedulerの処理本体**をコンパイルし、UIKit/BackgroundTasksの境界だけを決定的なfixtureへ差し替える。wildcardの1回登録、queue、受付と枠の区別、短い猶予切れ後の待機維持、背景での枠受取、取消/遅延通知/置換、並行2件の独立性、登録/申請拒否、前面fallback、OS完了通知の重複防止、自動ジョブの申請禁止を検査した。実OSのスケジューリングを再現した試験ではない。
-- `bash tools/checks/run-cloud-session-checks.sh`: 通過。本番クラウド要約からURLSession、SSE/JSON受信、終了条件、取消、HTTP/接続失敗、継続回数上限を検査。両API形式、関連する権限/予算/SQLiteも既存検査が通過。fail-closedなURLProtocolであり、実プロバイダーへ通信・課金していない。
-- `git diff --check`: 通過。
+これらは実OSによる枠の配信や、実プロバイダーの背景完了を証明するテストではない。
+実機のBYOKで他アプリ移動・ロック・低電力・OS中止・切断を確認する必要がある。
+Memora Intelligenceのサーバー未接続状態は実装によって解消しない。
 
-## ビルドと端末での確認範囲
+Project.json、entitlement、Keychain保護、ファイル保護は変更していない。
+無音再生などで背景時間を延長する仕組みも追加していない。
 
-`bitrig preview -platform iOS`: success、既存警告11件、新規コンパイルエラーなし。最終ログは `2026-10-31T10-11-06-7b74bfef.log`。iPhone 18 Pro Maxのライブラリが起動し、自己チェック失敗ログは0件。実APIキー・実音声・有料リクエストでの背景完了を試したものではない。
+## 一次資料
 
-生成済みアプリのInfo.plistで、実bundle IDへ展開された継続処理のwildcardと `processing` モードを確認。Project.json、entitlement、ファイル保護、Keychainの保護設定は変更していない。無音の再生で背景時間を確保する処理は追加していない。
-
-## 残る実機確認
-
-実機のクラウド接続で、他アプリへ移動/画面ロックして要約が完了すること、OSの表示・中止・資源不足・低電力・通信切断を確認する必要がある。今回の検査は実際のクラウド要約が背景で完了したという証拠ではない。
-
-OSが実行枠を拒否・終了したり、利用者がアプリを強制終了した場合まで、アプリだけで処理を無制限に継続できるとはしない。中止された開始済み依頼は原文と設定を残して再試行待ちとし、課金済みの可能性がある通信を勝手に再送しない。
-
-## 参照した一次資料
-
-- Apple: [長時間処理の実行、queue/fail、進捗、完了と中止](https://developer.apple.com/documentation/backgroundtasks/performing-long-running-tasks-on-ios-and-ipados)
-- Apple: [継続処理の開始条件](https://developer.apple.com/documentation/backgroundtasks/bgcontinuedprocessingtaskrequest)
-- Apple: [ハンドラーの登録](https://developer.apple.com/documentation/backgroundtasks/bgtaskscheduler/register(fortaskwithidentifier:using:launchhandler:))
-- XcodeのiOS 27.1 SDK `BackgroundTasks.framework/Headers` も照合した。既存のiOS 27用申請APIはavailability分岐を維持する。
+- Apple: [長時間処理の実行と完了](https://developer.apple.com/documentation/backgroundtasks/performing-long-running-tasks-on-ios-and-ipados)
+- Apple: [即時実行できない場合に申請を失敗させるfail戦略](https://developer.apple.com/documentation/backgroundtasks/bgcontinuedprocessingtaskrequest/submissionstrategy/fail)
+- Apple: [ハンドラー登録](https://developer.apple.com/documentation/backgroundtasks/bgtaskscheduler/register(fortaskwithidentifier:using:launchhandler:))

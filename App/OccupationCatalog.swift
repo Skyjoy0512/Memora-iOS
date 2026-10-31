@@ -13,7 +13,7 @@ enum OccupationCatalog {
   }()
   static var categories: [OccupationCategory] { (data?.categories ?? []).sorted { $0.sortOrder < $1.sortOrder } }
   static var occupations: [Occupation] { data?.occupations ?? [] }
-  static var useCases: [SummaryUseCase] { data?.useCases ?? [] }
+  static var useCases: [SummaryUseCase] { (data?.useCases ?? []) + [VideoSummaryTemplate.useCase] }
   static func occupation(_ id: String) -> Occupation? { occupations.first { $0.id == id } }
 
   static func recommendedIDs(for profile: UserOccupationProfile) -> [String] {

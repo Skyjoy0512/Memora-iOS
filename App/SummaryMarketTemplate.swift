@@ -33,7 +33,7 @@ struct SummaryMarketTemplate: Identifiable, Hashable, Codable {
   }
 
   var appendsMeetingQuestions: Bool {
-    !isCustom && !id.hasPrefix("work.")
+    !isCustom && !id.hasPrefix("work.") && !id.hasPrefix("content.")
       && !sections.contains { $0.contains("未決") || $0.contains("持ち越") }
   }
 

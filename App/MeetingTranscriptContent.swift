@@ -59,6 +59,7 @@ struct MeetingTranscriptContent: View {
               segment: segment,
               showsSpeaker: showsSpeaker,
               usesReadableText: usesReadableText,
+              showsTime: meeting.audioURL != nil || meeting.duration > 0,
               timeWidth: 42,
               isActive: segment.id == activeSegmentID || segment.id == focusedSegmentID,
               onSeek: seekAction,

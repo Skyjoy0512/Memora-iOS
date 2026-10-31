@@ -1,6 +1,6 @@
 import Foundation
 
-// Only UIKit/BackgroundTasks are substituted; the scheduler source and execution gate are production code.
+// Only UIKit/BackgroundTasks are substituted; the scheduler is production code.
 @main struct ContinuedSummarySchedulerChecks {
   @MainActor static func main() async {
     let scheduler = SystemSummaryBackgroundScheduler(bundleIdentifier: "app.memora.fixture")
@@ -13,24 +13,18 @@ import Foundation
       scheduler.begin(jobID: job, requestsContinuedProcessing: true,
         onExpiration: { expirations.append(job) }, onFailure: { failures.append($0) })
       let request = BGTaskScheduler.shared.requests.last as! BGContinuedProcessingTaskRequest
-      precondition(request.strategy == .queue)
+      precondition(request.strategy == .fail)
       return (job, request.identifier)
     }
     let (job, id) = begin()
-    var result: SummaryExecutionGate.Permission?
-    let work = Task { result = await scheduler.waitUntilReady(jobID: job) }
-    await drain()
-    precondition(result == nil)
     BGTaskScheduler.shared.resolve(id, error: nil)
     await drain()
-    precondition(result == nil, "submission success started inference before a delivered lease")
-    UIApplication.shared.applicationState = .background
-    BackgroundActivity.all.last!.expire()
-    await drain()
-    precondition(result == nil && expirations.isEmpty, "short UIKit expiry cancelled queued work")
+    let grace = BackgroundActivity.all.last!
     let task = BGTaskScheduler.shared.deliver(id)
-    await work.value
-    precondition(result == .continued && BackgroundActivity.all.last!.ended)
+    precondition(grace.ended)
+    UIApplication.shared.applicationState = .background
+    grace.expire()
+    precondition(expirations.isEmpty, "UIKit expiry cancelled an already delivered continued lease")
     scheduler.report(jobID: job, step: "実際の出力を受信")
     precondition(task.progress.completedUnitCount == 1 && task.progress.totalUnitCount == -1)
     let lateExpiration = task.expirationHandler
@@ -40,74 +34,58 @@ import Foundation
     await drain()
     precondition(expirations.isEmpty)
 
+    // Accepted submission without a delivered lease does not extend execution time.
+    UIApplication.shared.applicationState = .active
+    let (undelivered, undeliveredID) = begin()
+    BGTaskScheduler.shared.resolve(undeliveredID, error: nil)
+    await drain()
+    UIApplication.shared.applicationState = .background
+    BackgroundActivity.all.last!.expire()
+    precondition(expirations == [undelivered])
+    precondition(BGTaskScheduler.shared.cancellations.contains(undeliveredID))
+    precondition(BGTaskScheduler.shared.deliver(undeliveredID).completions == [false])
+
     UIApplication.shared.applicationState = .active
     let (cancelled, oldID) = begin()
-    let waiting = Task { await scheduler.waitUntilReady(jobID: cancelled) }
-    await drain()
     scheduler.finish(jobID: cancelled, success: false)
-    let cancelledPermission = await waiting.value
-    precondition(cancelledPermission == .stopped)
     let (replacement, replacementID) = begin()
     precondition(oldID != replacementID)
-    let late = BGTaskScheduler.shared.deliver(oldID)
-    precondition(late.completions == [false])
+    precondition(BGTaskScheduler.shared.deliver(oldID).completions == [false])
     BGTaskScheduler.shared.resolve(oldID, error: NSError(domain: "fixture", code: 1))
     await drain()
     precondition(failures.isEmpty)
     let live = BGTaskScheduler.shared.deliver(replacementID)
-    let permission1 = await scheduler.waitUntilReady(jobID: replacement)
-    precondition(permission1 == .continued)
-    let expiry = live.expirationHandler
-    expiry?()
+    live.expirationHandler?()
     await drain()
-    precondition(expirations == [replacement] && live.completions == [false])
+    precondition(expirations.contains(replacement) && live.completions == [false])
     scheduler.finish(jobID: replacement, success: false)
     precondition(live.completions == [false], "completed one OS task twice")
 
-    let (foregroundFallback, fallbackID) = begin()
+    let (fallback, fallbackID) = begin()
     BGTaskScheduler.shared.resolve(fallbackID, error: NSError(domain: "fixture", code: 2))
     await drain()
-    let permission2 = await scheduler.waitUntilReady(jobID: foregroundFallback)
-    precondition(permission2 == .foreground)
+    precondition(failures.count == 1)
     UIApplication.shared.applicationState = .background
     BackgroundActivity.all.last!.expire()
-    precondition(expirations.contains(foregroundFallback))
-
-    UIApplication.shared.applicationState = .active
-    let (backgroundRefused, refusedID) = begin()
-    UIApplication.shared.applicationState = .background
-    BGTaskScheduler.shared.resolve(refusedID, error: NSError(domain: "fixture", code: 3))
-    await drain()
-    let permission3 = await scheduler.waitUntilReady(jobID: backgroundRefused)
-    precondition(permission3 == .stopped)
-    scheduler.finish(jobID: backgroundRefused, success: false)
-    precondition(failures.count == 2)
+    precondition(expirations.contains(fallback))
 
     UIApplication.shared.applicationState = .active
     let automatic = UUID()
     let previous = BGTaskScheduler.shared.requests.count
     scheduler.begin(jobID: automatic, requestsContinuedProcessing: false,
       onExpiration: {}, onFailure: { _ in preconditionFailure() })
-    let permission4 = await scheduler.waitUntilReady(jobID: automatic)
-    precondition(permission4 == .foreground)
     precondition(BGTaskScheduler.shared.requests.count == previous, "automatic job requested a user-only lease")
     scheduler.finish(jobID: automatic, success: false)
 
-    let (firstConcurrent, firstID) = begin()
-    let (secondConcurrent, secondID) = begin()
-    var firstPermission: SummaryExecutionGate.Permission?
-    var secondPermission: SummaryExecutionGate.Permission?
-    let firstWork = Task { firstPermission = await scheduler.waitUntilReady(jobID: firstConcurrent) }
-    let secondWork = Task { secondPermission = await scheduler.waitUntilReady(jobID: secondConcurrent) }
-    await drain()
-    _ = BGTaskScheduler.shared.deliver(secondID)
-    await secondWork.value
-    precondition(firstPermission == nil && secondPermission == .continued)
-    scheduler.finish(jobID: secondConcurrent, success: false)
-    _ = BGTaskScheduler.shared.deliver(firstID)
-    await firstWork.value
-    precondition(firstPermission == .continued)
-    scheduler.finish(jobID: firstConcurrent, success: false)
+    let (first, firstID) = begin()
+    let (second, secondID) = begin()
+    let secondTask = BGTaskScheduler.shared.deliver(secondID)
+    scheduler.finish(jobID: second, success: true)
+    precondition(secondTask.completions == [true])
+    let firstTask = BGTaskScheduler.shared.deliver(firstID)
+    precondition(firstTask.completions.isEmpty)
+    scheduler.finish(jobID: first, success: false)
+    precondition(firstTask.completions == [false])
 
     BGTaskScheduler.shared.registrationSucceeds = false
     let unregistered = SystemSummaryBackgroundScheduler(bundleIdentifier: "app.memora.registration-fixture")
@@ -115,21 +93,9 @@ import Foundation
     var registrationFailure = false
     unregistered.begin(jobID: rejectedJob, requestsContinuedProcessing: true,
       onExpiration: {}, onFailure: { _ in registrationFailure = true })
-    let registrationPermission = await unregistered.waitUntilReady(jobID: rejectedJob)
-    precondition(registrationFailure && registrationPermission == .foreground)
+    precondition(registrationFailure)
     unregistered.finish(jobID: rejectedJob, success: false)
-
-    let gate = SummaryExecutionGate()
-    let cancelledWait = Task { await gate.wait() }
-    await drain()
-    cancelledWait.cancel()
-    let permission5 = await cancelledWait.value
-    precondition(permission5 == .stopped)
-    gate.resolve(.stopped)
-    gate.resolve(.continued)
-    let permission6 = await gate.wait()
-    precondition(permission6 == .stopped)
-    print("ContinuedSummarySchedulerChecks passed: wildcard registered once, queue, no send before delivery, delayed background grant, short-lease expiry, cancellation, late callbacks, replacement isolation, foreground fallback, background refusal, automatic policy, no duplicate completion; OS APIs are fixtures")
+    print("ContinuedSummarySchedulerChecks passed: immediate strategy, delivered lease handoff, undelivered lease expiry, cancellation, late callbacks, isolation, fallback, automatic policy; OS APIs are fixtures")
   }
   @MainActor static func drain() async { for _ in 0..<30 { await Task.yield() } }
 }
