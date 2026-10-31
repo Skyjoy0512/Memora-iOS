@@ -451,7 +451,7 @@ device verification; a successful back-button tap is not that evidence.
 The sidebar names the destination マーケットプレイス. Its existing Tools state and
 root navigation remain intact. The home has one editorial recommendation and
 horizontal shelves for skills, summary templates and integrations. Each shelf
-opens its full native list with すべて見る; every card opens the existing working
+opens a vertically scrolling, single-column card catalog with すべて見る; every card opens the existing working
 detail view. Search is local catalog metadata only and never queries a service.
 There are no fabricated installs, rankings, reviews or public publisher claims.
 
@@ -462,6 +462,22 @@ push/back, search, menu and sheet behavior owns navigation and creation.
 The root plus offers skill creation/import, template creation and MCP registration;
 each category offers its relevant actions. Management remains reachable from home,
 full catalogs and Settings. Existing service status and approval rules are intact.
+
+Full catalogs and cross-category search reuse the same artwork and cards as the
+home shelves. Full-width cards wrap their complete title and description. The
+column stays single on wider displays, capped at 680pt for reading. Saved templates
+appear once under マイテンプレート, rather than repeating in their category. Disabled
+skills and the selected default template retain their status. The connector
+catalog uses cards; Ask AI's connector hub retains its native connection list.
+
+The bundled catalog has 32 skills and 55 summary templates. Sixteen additional
+skills cover preparation, decision history, blockers, risks, requirements, FAQ,
+feedback, comparisons, learning, interview questions, indexes, procedures,
+handover, estimates, goals and weekly planning. These workflows read permitted
+records/tasks and return sourced answers; they do not grant writes or external
+reads. Twelve additional templates cover design, incidents, releases, experiments,
+partners, onboarding, mentoring, reading groups, workshops, events and family
+discussions. Educational and family summaries do not turn suggestions into tasks.
 
 ## Community and connectors — 2026-10-31
 

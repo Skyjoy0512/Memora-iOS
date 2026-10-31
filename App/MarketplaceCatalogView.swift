@@ -13,10 +13,6 @@ struct MarketplaceCatalogView: View {
       case .connectors: ToolsConnectorsList(query: $query)
       }
     }
-    .listStyle(.plain)
-    .scrollContentBackground(.hidden)
-    .listSectionSpacing(MemoraSpacing.lg)
-    .environment(\.defaultMinListRowHeight, 72)
     .background(MemoraPalette.background)
     .navigationTitle(section.title)
     .navigationBarTitleDisplayMode(.inline)

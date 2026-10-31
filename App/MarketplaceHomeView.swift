@@ -7,6 +7,10 @@ struct MarketplaceHomeView: View {
     let templates = SummaryTemplateCatalog.market
     let services = IntegrationCatalog.services.filter(\.isImplemented)
     let featured = skills.first { $0.id == "meeting-followup" } ?? skills.first
+    let shelfSkills = ["meeting-preparation", "proposal", "decision-timeline", "powerpoint", "task-blockers", "customer-faq"]
+      .compactMap { id in skills.first { $0.id == id } }.map(MarketplaceItem.skill)
+    let shelfTemplates = ["content.video", "market.regular", "market.designReview", "market.incidentReview", "market.readingClub", "market.householdPlanning"]
+      .compactMap { id in templates.first { $0.id == id } }.map(MarketplaceItem.template)
 
     ScrollView {
       VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
@@ -30,8 +34,8 @@ struct MarketplaceHomeView: View {
         }
         .buttonStyle(.plain).padding(.horizontal, MemoraSpacing.screen)
 
-        MarketplaceShelf(section: .skills, items: skills.prefix(6).map(MarketplaceItem.skill))
-        MarketplaceShelf(section: .templates, items: templates.prefix(6).map(MarketplaceItem.template))
+        MarketplaceShelf(section: .skills, items: shelfSkills)
+        MarketplaceShelf(section: .templates, items: shelfTemplates)
         MarketplaceShelf(section: .connectors, items: services.map(MarketplaceItem.service))
 
         VStack(spacing: 0) {

@@ -10,30 +10,19 @@ struct ToolsSkillsList: View {
     ].map { title, skills in
       (title, skills.filter { ToolsCatalogSearch.matches(query, fields: [$0.name, $0.summary] + $0.keywords) })
     }
-    List {
+    let badges = Dictionary(uniqueKeysWithValues: Set(model.disabledSkillIDs).map { ("skill:" + $0, "無効") })
+    MarketplaceCatalogColumn {
       ForEach(groups, id: \.0) { title, skills in
         if !skills.isEmpty {
-          Section {
-            ForEach(skills) { skill in
-              NavigationLink { SkillDetailView(skillID: skill.id) } label: {
-                ToolsCatalogRow(title: skill.name, summary: skill.summary,
-                  badge: model.disabledSkillIDs.contains(skill.id) ? "無効" : nil)
-              }
-              .listRowBackground(MemoraPalette.background)
-            }
-          } header: { ToolsSectionHeading(title: title) }
+          MarketplaceCardSection(title: title, items: skills.map(MarketplaceItem.skill), badges: badges)
         }
       }
       if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        Section {
-          NavigationLink { SkillsView() } label: {
-            SettingsLabel("スキルを管理", icon: .sliderHorizontal3)
-          }
-          .listRowBackground(MemoraPalette.background)
+        NavigationLink { SkillsView() } label: {
+          Label("スキルを管理", icon: .sliderHorizontal3)
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
         }
       }
-    }
-    .overlay(alignment: .top) {
       if groups.allSatisfy({ $0.1.isEmpty }) {
         ToolsSearchEmptyState { query = "" }
       }

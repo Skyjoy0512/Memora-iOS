@@ -24,7 +24,10 @@ enum MarketplaceItem: Identifiable {
   var summary: String {
     switch self {
     case .skill(let value): value.summary
-    case .template(let value): value.detail
+    case .template(let value):
+      if !value.detail.isEmpty { value.detail }
+      else if !value.sections.isEmpty { value.sections.joined(separator: "・") }
+      else { "カスタムテンプレート" }
     case .service(let value): value.summary
     }
   }

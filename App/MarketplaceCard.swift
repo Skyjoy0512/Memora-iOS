@@ -4,6 +4,8 @@ struct MarketplaceCard: View {
   @Environment(\.dynamicTypeSize) private var typeSize
   var item: MarketplaceItem
   var featured = false
+  var showsFullText = false
+  var badge: String?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -15,7 +17,7 @@ struct MarketplaceCard: View {
         cardText(Text(item.title).font(featured ? .title2.weight(.semibold) : .headline))
         cardText(Text(item.summary).font(.subheadline).foregroundStyle(.secondary))
         HStack {
-          Text(featured ? "Memora" : item.category).font(.caption).foregroundStyle(.secondary)
+          Text(badge ?? (featured ? "Memora" : item.category)).font(.caption).foregroundStyle(.secondary)
           Spacer(minLength: 8)
           if featured {
             Text("表示").font(.subheadline.weight(.semibold))
@@ -38,7 +40,7 @@ struct MarketplaceCard: View {
   }
 
   @ViewBuilder private func cardText(_ text: Text) -> some View {
-    if featured || typeSize.isAccessibilitySize {
+    if featured || showsFullText || typeSize.isAccessibilitySize {
       text.fixedSize(horizontal: false, vertical: true)
     } else {
       text.lineLimit(2, reservesSpace: true).fixedSize(horizontal: false, vertical: true)

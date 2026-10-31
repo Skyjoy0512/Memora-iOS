@@ -24,30 +24,13 @@ struct MarketplaceSearchResults: View {
       } else if groups.allSatisfy({ $0.1.isEmpty }) {
         ContentUnavailableView.search(text: query)
       } else {
-        List {
+        MarketplaceCatalogColumn {
           ForEach(groups, id: \.0) { title, items in
             if !items.isEmpty {
-              Section(title) {
-                ForEach(items) { item in
-                  MarketplaceItemLink(item: item) {
-                    HStack(spacing: MemoraSpacing.md) {
-                      Image(icon: item.icon, size: 24).frame(width: 32).accessibilityHidden(true)
-                      VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
-                        Text(item.title).font(.headline)
-                        Text(item.summary).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
-                        if item.category == "準備中" { Text("準備中").font(.caption).foregroundStyle(.secondary) }
-                      }
-                    }
-                    .padding(.vertical, MemoraSpacing.sm)
-                  }
-                  .listRowBackground(MemoraPalette.background)
-                }
-              }
+              MarketplaceCardSection(title: title, items: items)
             }
           }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
       }
     }
   }

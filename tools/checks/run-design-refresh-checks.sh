@@ -17,7 +17,7 @@ swiftc Shared/MemoraIcon.swift App/SettingsCategory.swift App/MemoraIconMetrics.
 swiftc App/AIPluginMenuCopy.swift tools/checks/AIPluginMenuCopyChecks.swift -o "$check_dir/plugin-menu-copy"
 "$check_dir/plugin-menu-copy"
 swiftc App/ProjectCitation.swift App/ProjectMentionSelection.swift App/AIPlugin.swift \
-  App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraModel+ProjectMentions.swift \
+  App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraModel+ProjectMentions.swift \
   tools/checks/ProjectMentionChecks.swift -o "$check_dir/project-mentions"
 "$check_dir/project-mentions"
 bash tools/checks/run-answer-presentation-checks.sh

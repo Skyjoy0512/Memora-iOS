@@ -7,7 +7,7 @@ sources=(Shared/MemoraIcon.swift App/SummaryProcessingMode.swift App/Readability
   App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/MemoraFormat.swift
   App/MeetingSummaryInput.swift App/SummaryTemplate.swift App/SummaryMarketTemplate.swift
   App/SummaryTemplateChoice.swift App/SummaryUseCase.swift App/VideoSummaryTemplate.swift App/SummarySensitivity.swift App/SummaryLength.swift
-  App/SummaryPreferences.swift App/SummaryTemplateCategory.swift App/SummaryTemplateCatalog.swift
+  App/SummaryPreferences.swift App/SummaryTemplateCategory.swift App/SummaryTemplateCatalog.swift App/SummaryTemplateCatalog+Workflows.swift
   App/OccupationSummaryTemplates.swift App/SummaryTemplateSelector.swift)
 swiftc "${sources[@]}" tools/checks/SummaryPromptChecks.swift -o "$check_dir/prompt"
 "$check_dir/prompt"

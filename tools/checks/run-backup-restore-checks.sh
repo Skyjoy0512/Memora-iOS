@@ -10,7 +10,7 @@ swiftc Shared/MemoraIcon.swift App/LocalStore.swift App/AIMemory.swift App/AIMem
   App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift \
   App/ProjectSource.swift App/ProjectSourceURL.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
   App/WebResearchReport.swift App/WebResearchSource.swift App/ResearchPlan.swift \
-  App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkillMarkdown.swift App/SkillSelection.swift \
+  App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkillMarkdown.swift App/SkillSelection.swift \
   App/BackupPackage.swift App/BackupPackageFile.swift App/ProjectWorkspaceBackup.swift App/BackupRestoreTransaction.swift \
   tools/checks/BackupRestoreChecks.swift -o "$check_dir/backup"
 "$check_dir/backup"

@@ -9,30 +9,23 @@ struct ToolsTemplatesList: View {
     let custom = model.customTemplates.filter(matches)
     let installed = market.filter { model.installedTemplateIDs.contains($0.id) }
     let categories = SummaryTemplateCategory.allCases.compactMap { category -> (SummaryTemplateCategory, [SummaryMarketTemplate])? in
-      let templates = market.filter { $0.category == category }
+      let templates = market.filter { $0.category == category && !model.installedTemplateIDs.contains($0.id) }
       return templates.isEmpty ? nil : (category, templates)
     }
-    List {
+    let badges = ["template:" + model.defaultSummaryChoice.id: "自動生成の既定"]
+    MarketplaceCatalogColumn {
       if !custom.isEmpty || !installed.isEmpty {
-        Section {
-          ForEach(custom + installed) { template in ToolsTemplateRow(template: template) }
-        } header: { ToolsSectionHeading(title: "マイテンプレート") }
+        MarketplaceCardSection(title: "マイテンプレート", items: (custom + installed).map(MarketplaceItem.template), badges: badges)
       }
       ForEach(categories, id: \.0) { category, templates in
-        Section {
-          ForEach(templates) { template in ToolsTemplateRow(template: template) }
-        } header: { ToolsSectionHeading(title: category.title) }
+        MarketplaceCardSection(title: category.title, items: templates.map(MarketplaceItem.template), badges: badges)
       }
       if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        Section {
-          NavigationLink { SummaryTemplateMarketplaceView() } label: {
-            SettingsLabel("テンプレートを検索・管理", icon: .magnifyingglass)
-          }
-          .listRowBackground(MemoraPalette.background)
+        NavigationLink { SummaryTemplateMarketplaceView() } label: {
+          Label("マイテンプレートを管理", icon: .sliderHorizontal3)
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
         }
       }
-    }
-    .overlay(alignment: .top) {
       if custom.isEmpty && installed.isEmpty && categories.isEmpty {
         ToolsSearchEmptyState { query = "" }
       }
@@ -42,19 +35,5 @@ struct ToolsTemplatesList: View {
   private func matches(_ template: SummaryMarketTemplate) -> Bool {
     ToolsCatalogSearch.matches(query, fields: [template.title, template.detail, template.category.title, template.focus]
       + template.sections + template.occupationTags + template.useCaseTags)
-  }
-}
-
-private struct ToolsTemplateRow: View {
-  @Environment(MemoraModel.self) private var model
-  var template: SummaryMarketTemplate
-
-  var body: some View {
-    NavigationLink { SummaryTemplateDetailView(templateID: template.id) } label: {
-      ToolsCatalogRow(title: template.title,
-        summary: template.detail.isEmpty ? template.sections.joined(separator: "・") : template.detail,
-        badge: model.defaultSummaryChoice.id == template.id ? "自動生成の既定" : nil)
-    }
-    .listRowBackground(MemoraPalette.background)
   }
 }
