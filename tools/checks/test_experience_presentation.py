@@ -85,7 +85,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
             self.assertGreater(home.index(operation), search_branch)
         library = (APP / "LibraryView.swift").read_text()
         projects = (APP / "ProjectsView.swift").read_text()
-        self.assertIn("isAwaitingQuery ? [] : model.projectSources", library)
+        self.assertIn("isAwaitingQuery || statusFilter != .all ? [] : model.projectSources", library)
         self.assertIn("resultCount = count + savedSources.count", library)
         self.assertIn("@Binding var query: String", projects)
         self.assertIn("isAwaitingQuery || filter == .shared ? [] : projects", projects)

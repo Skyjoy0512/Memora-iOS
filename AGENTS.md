@@ -37,7 +37,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 ## Known regressions to avoid
 
 - **Navigation**: there is no bottom tab bar. The app opens on Library, and the
-  destinations (Journal, Library, Ask AI, Tools) live at the top of the side menu
+  destinations (Journal, Library, Ask AI, Marketplace) live at the top of the side menu
   (`FileSidebarView`). The bottom edge belongs to the Ask AI composer alone. `RootTab` still names
   the destination and keeps the old saved identifiers, but nothing draws tabs.
 - **Create (＋) button**: every main screen puts the create control at the top
@@ -64,10 +64,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   never the list behind them. Do not bring back an always-visible `.searchable`
   drawer. Picking files on Files (`isFileSelectionActive`) hides the composer
   the same way, so the share / move / delete bar owns the bottom edge.
-- **Tools**: `ToolsView` is the Plaud-style hub from the side menu. It links to
-  skills, summary templates and connectors, and creates new skills/templates
-  from the same editors used in Settings. Keep registration reachable; do not
-  turn it into display-only cards.
+- **Marketplace**: `ToolsView` retains the saved Tools destination and opens
+  マーケットプレイス from the side menu. It shows a featured recommendation and
+  skill/template/integration shelves. Cards open the existing details; すべて見る
+  opens each full catalog. Home search spans all three catalogs and custom items;
+  category search stays scoped. Creation/import, template management and MCP
+  registration remain reachable through native menus and the Settings editors.
+  Never invent install counts, popularity, reviews or a public publishing backend.
 - **Tasks**: `TasksView` lives inside Home's NavigationStack (`.tasks` route),
   including notification navigation. Keep creation, editing and source links reachable.
 - **Project context**: capture uses `visibleProjectID` from the active navigation

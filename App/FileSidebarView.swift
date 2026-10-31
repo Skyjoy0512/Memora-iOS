@@ -26,7 +26,7 @@ struct FileSidebarView: View {
           VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
             VStack(spacing: 0) {
               SidebarRow(title: "検索", symbol: .magnifyingglass,
-                detail: model.isToolsPresented ? "ツール" : model.selectedTab.title) {
+                detail: model.isToolsPresented ? "マーケットプレイス" : model.selectedTab.title) {
                 onSearch()
               }
               .accessibilityLabel("検索")
@@ -43,7 +43,7 @@ struct FileSidebarView: View {
                 isSelected: !model.isToolsPresented && model.selectedTab == .askAI) {
                 onSelectTab(.askAI)
               }
-              SidebarRow(title: "ツール", symbol: .puzzle, isSelected: model.isToolsPresented) {
+              SidebarRow(title: "マーケットプレイス", symbol: .puzzle, isSelected: model.isToolsPresented) {
                 onOpenTools()
               }
             }

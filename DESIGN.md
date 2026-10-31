@@ -69,7 +69,7 @@ and alert retain system sizing and focus behavior.
 Supporting text and borders strengthen in Increase Contrast. Essential
 explanations are never disabled text. Provider logos, calendar categories,
 profile images and photos keep their content colors. Destructive actions retain
-their system role. No decorative content gradient or manual elevation shadow.
+their system role. No decorative content gradient or manual elevation shadow in reading or settings surfaces. Marketplace catalog artwork may use category gradients; labels stay on semantic surfaces.
 
 | Type role | Native style | Default iOS size / weight |
 |---|---|---|
@@ -318,7 +318,7 @@ transition namespace or fixed dismissal delay. Mention candidates occupy layout 
 so the complete candidate surface is inside its hit-test bounds. The field stays
 mounted for cursor/IME continuity, and candidate controls use the shared glass.
 The composer occupies 94.5% of the available width, capped at the reading width.
-Tools is a full-page destination with a sidebar button, not a bottom sheet.
+Marketplace (the saved Tools destination) is a full-page destination with a sidebar button, not a bottom sheet.
 Sidebar selections replace content without a second page-slide animation;
 only the drawer closes. Details still use native push/back navigation.
 The underlying tab surface stays mounted while Tools is visible, preserving
@@ -337,7 +337,7 @@ The capture menu shows action names and icons in 44pt rows with a 260pt width
 that grows with Dynamic Type up to 320pt; explanations remain VoiceOver hints.
 
 Sidebar: the main destinations (Library / Journal / Ask AI /
-Tools) first, then collections (Projects / Documents / People), Devices, and
+Marketplace) first, then collections (Projects / Documents / People), Devices, and
 plan/settings controls. There is no bottom tab bar. A destination name stays constant; connection
 state is a separate secondary value. Rows use the shared 28pt icon column and
 52pt minimum height, growing with text. Signed-in account information and the plan/settings
@@ -434,7 +434,7 @@ Library, projects, Journal, people, documents and Tools, with case/width/diacrit
 folding. An empty or whitespace-only search shows guidance, with the original
 collection hidden. Search submission dismisses the keyboard; clearing the field
 focuses it again. No-result guidance scrolls and provides a clear-query action.
-Tools keeps its selected catalog category as the search scope. See
+Marketplace home searches across skills, templates and services, including custom items. Each full catalog searches its own category. See
 [coverage and verification](docs/handoffs/UI_UX_POLISH_2026_10.md).
 
 At accessibility text sizes, content selectors use the native menu Picker,
@@ -445,3 +445,20 @@ mutation menus step aside. Task text uses a real Button independent of its
 completion control. Keep the system back control in pushed screens and standard
 push navigation for Library meetings. Edge-swipe behavior still needs physical
 device verification; a successful back-button tap is not that evidence.
+
+## Marketplace — 2026-10-31
+
+The sidebar names the destination マーケットプレイス. Its existing Tools state and
+root navigation remain intact. The home has one editorial recommendation and
+horizontal shelves for skills, summary templates and integrations. Each shelf
+opens its full native list with すべて見る; every card opens the existing working
+detail view. Search is local catalog metadata only and never queries a service.
+There are no fabricated installs, rankings, reviews or public publisher claims.
+
+Artwork is a static Lucide glyph on a category gradient, clipped to its own
+thumbnail. Card labels use semantic colors and system type. Accessibility sizes
+wrap full labels and expand cards. No autoplay or decorative animation. Native
+push/back, search, menu and sheet behavior owns navigation and creation.
+The root plus offers skill creation/import, template creation and MCP registration;
+each category offers its relevant actions. Management remains reachable from home,
+full catalogs and Settings. Existing service status and approval rules are intact.

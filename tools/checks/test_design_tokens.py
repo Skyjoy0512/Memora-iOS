@@ -54,7 +54,7 @@ class DesignTokenChecks(unittest.TestCase):
         root = (APP / "RootTabView.swift").read_text()
         self.assertIn('toolbar(.hidden, for: .tabBar)', root)
         sidebar = (APP / "FileSidebarView.swift").read_text()
-        for title in ("ライブラリ", "ジャーナル", "Ask AI", "ツール"):
+        for title in ("ライブラリ", "ジャーナル", "Ask AI", "マーケットプレイス"):
             self.assertIn(f'SidebarRow(title: "{title}"', sidebar)
         capture = (APP / "CaptureToolbarButton.swift").read_text()
         for contract in ("ToolbarActionLabel", "Menu {", "CaptureMenuPopover(spaceID: spaceID, onSelect: select)"):
