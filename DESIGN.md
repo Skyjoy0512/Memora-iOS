@@ -476,3 +476,15 @@ sheets: actual connected services, recommendations and unavailable services.
 Details put identity, connect/manage and human-readable capabilities first;
 access details expand on request. Connection and AI-use permission remain
 separate. Provider configuration and execution-time approvals stay intact.
+
+## Official service identity — 2026-10-31
+
+External service marks use the bundled official Gmail, Drive, Notion, GitHub and
+MCP artwork across connector lists/details, marketplace cards/search, Ask AI
+candidates and selected chips. Preserve aspect ratios and original colors;
+service marks do not use the tilted artwork treatment. GitHub uses its supplied
+light/dark variants. Device calendar keeps the Lucide calendar because it is
+EventKit, not a Google Calendar connection. Google sign-in uses the official G
+mark; Apple's OS mark appears only for Apple sign-in. Provider logos keep their
+original artwork on white plates for legibility. Navigation/action glyphs remain
+Lucide. See docs/CONNECTOR_LOGOS.md for provenance.

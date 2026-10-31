@@ -1,20 +1,19 @@
 import SwiftUI
 
-/// A provider's mark on a small tile, so every logo sits on the same shape and
-/// the one-color marks follow light and dark appearance.
+/// Keep provider artwork in its original colors on a neutral plate in both appearances.
 struct ProviderLogo: View {
   var provider: LLMProvider
   var size: CGFloat = 30
 
   var body: some View {
     Image(provider.logoAssetName)
+      .renderingMode(.original)
       .resizable()
       .scaledToFit()
-      .foregroundStyle(.primary)
       .padding(size * 0.2)
       .frame(width: size, height: size)
       .background(
-        Color(uiColor: .systemBackground),
+        Color.white,
         in: RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
       )
       .overlay {

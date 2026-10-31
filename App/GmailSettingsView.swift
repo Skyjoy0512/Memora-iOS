@@ -24,7 +24,8 @@ struct GmailSettingsView: View {
             connect()
           } label: {
             HStack {
-              Label("Gmailと連携", icon: .envelopeOpen)
+              AIPluginIconView(icon: .resolve(pluginID: "service:gmail", name: "Gmail"))
+              Text("Gmailと連携")
               Spacer()
               if gmail.isWorking { ProgressView() }
             }

@@ -40,6 +40,10 @@ class LucideIconChecks(unittest.TestCase):
             for path in (ROOT / folder).rglob("*.swift"):
                 source = re.sub(r'//[^\n]*', '', path.read_text())
                 with self.subTest(path=path.relative_to(ROOT)):
+                    if path.relative_to(ROOT).as_posix() == "App/AuthProviderButton.swift":
+                        # The user's explicit brand request uses Apple's sign-in mark only.
+                        self.assertIn('Image(systemName: "apple.logo")', source)
+                        source = source.replace('Image(systemName: "apple.logo")', 'AppleSignInBrand()')
                     self.assertNotRegex(source, r'\b(?:Image|UIImage)\s*\(\s*systemName\s*:')
                     self.assertNotRegex(source, r'\bsystemImage\s*:')
                     self.assertNotRegex(source, r'\.symbolEffect\s*\(')

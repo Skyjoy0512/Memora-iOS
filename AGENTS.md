@@ -318,6 +318,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   so a stored icon resolves the same everywhere. Pass the point size Lucide
   should rasterize at; `.font` does not resize it. Raw values keep the names
   older builds stored. The mapping is listed in `docs/LUCIDE_ICONS.md`.
+- Service/account brand identity uses official bundled logos (`AIPluginIcon.brandAssetName`,
+  `AIPluginIconView`, `ProviderLogo`) in original colors. See `docs/CONNECTOR_LOGOS.md`.
+  Apple's native `apple.logo` is limited to the sign-in button. Device calendar is
+  EventKit and must not use Google Calendar branding. Interface glyphs remain Lucide.
 - Settings has one entry point: the gear at the bottom right of the side menu
   (`FileSidebarView` footer, beside Memora Plus). Tabs carry no settings button.
   Dark mode is a toggle in Settings › 表示と操作, not in the side menu. The editable

@@ -5,6 +5,14 @@ struct AIPluginIcon {
   var icon: MemoraIcon
   var accessibilityLabel: String
 
+  // Brand identity comes from the registered service, never an untrusted display name.
+  var brandAssetName: String? {
+    if pluginID.hasPrefix("mcp:") { return "service.mcp" }
+    guard pluginID.hasPrefix("service:") else { return nil }
+    let service = String(pluginID.dropFirst(8))
+    return ["gmail", "drive", "notion", "github", "mcp"].contains(service) ? "service." + service : nil
+  }
+
   static func resolve(pluginID: String, name: String, iconIdentifier: String? = nil) -> Self {
     let services: [String: MemoraIcon] = ["gmail": .envelope, "notion": .notionLogo, "calendar": .calendar,
       "drive": .externaldrive, "github": .chevronLeftForwardslashChevronRight, "mcp": .plugsConnected]

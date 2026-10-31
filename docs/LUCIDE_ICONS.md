@@ -17,10 +17,10 @@
 - SF専用の`symbolEffect`は使わず、既存のReduce Motion設定に従うopacity遷移を使用する。
 - 装飾画像は空の画像ラベルにし、ボタンやLabelが操作名を読み上げる。「Lucide Icon」という汎用ラベルは読み上げない。
 
-Gmail／Notion／カレンダー／Drive／GitHub／MCPの操作アイコンも、mail／notebook／calendar／hardDrive／code／plugに統一した。
-Lucideにブランドロゴは含まれない。Memoraのブランドマーク、AI提供元のロゴ、利用者の写真は識別用の画像として保持する。
+mail／notebook／calendar／hardDrive／code／plugは一般操作の図形として使用する。
+Lucideにブランドロゴは含まれない。外部サービス、Memora、AI提供元のロゴと利用者の写真は識別用の画像として扱う。
 OSが描く標準ナビゲーション矢印やシステムシート内の記号はシステムに任せる。
-旧素材の出典は[CONNECTOR_LOGOS.md](CONNECTOR_LOGOS.md)、ライセンスは[THIRD_PARTY.md](THIRD_PARTY.md)を参照。
+ブランド画像の出典は[CONNECTOR_LOGOS.md](CONNECTOR_LOGOS.md)、ライセンスは[THIRD_PARTY.md](THIRD_PARTY.md)を参照。
 
 ## 検証
 
@@ -270,3 +270,10 @@ OSが描く標準ナビゲーション矢印やシステムシート内の記号
 | `xmark` | `x` |
 | `xmark.circle` | `circleX` |
 | `xmark.circle.fill` | `circleX` |
+
+## 公式ブランド画像の例外（2026-10-31）
+
+操作・記録・スキルのアイコンは本表のLucideを維持する。Gmail/Drive/Notion/GitHub/MCPと
+アカウントの識別は利用者の指示により公式画像を使う。出典と使い分けは[ブランド画像](CONNECTOR_LOGOS.md)。
+Appleサインインに限りOSの`apple.logo`を使用し、一般の操作アイコンでは使用しない。
+保存済みMemoraIconの名前と対応表は変更しない。
