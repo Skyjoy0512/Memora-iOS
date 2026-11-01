@@ -13,6 +13,7 @@ swiftc -D MEMORA_HOST_CHECKS -D MEMORA_SOURCE_IMPORT_CHECKS -D MEMORA_PDF_PARTIT
   App/PDFSourcePartition.swift App/PDFSourcePartitionPart.swift App/PDFSourcePartitionSnapshot.swift \
   App/PDFSourcePartitionBuilder.swift App/PDFSourcePartitionFailure.swift App/PDFSourcePartitionImportFailure.swift \
   App/PDFSourcePartitionLease.swift App/PDFSourcePartitionStaging.swift \
+  App/PDFSourceCopyLease.swift App/PDFSourceCopyJournal.swift \
   App/ProjectSourcePreparationContext.swift App/LocalImportContext.swift \
   App/MemoraModel+ProjectSourceStorage.swift App/MemoraModel+SourceIntake.swift App/MemoraModel+PDFSourcePartition.swift \
   tools/checks/ProjectSourceStorageFixture.swift tools/checks/PDFPartitionChecks.swift -lsqlite3 -o "$check_dir/checks"

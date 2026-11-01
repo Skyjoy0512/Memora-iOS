@@ -53,14 +53,22 @@ actor ProjectSourceFiles {
   }
 
   func copy(_ source: URL) throws -> Receipt {
+    try copy(source, named: nil)
+  }
+
+  func copy(_ source: URL, named reference: String?) throws -> Receipt {
     let accessed = source.startAccessingSecurityScopedResource()
     defer { if accessed { source.stopAccessingSecurityScopedResource() } }
     let values = try source.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
     guard values.isRegularFile == true, values.isSymbolicLink != true else { throw Failure.invalidFile }
     guard (values.fileSize ?? Int.max) <= Self.maximumFileBytes else { throw Failure.tooLarge }
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    let staging = root.appendingPathComponent(".stage-\(UUID().uuidString)")
-    FileManager.default.createFile(atPath: staging.path, contents: nil)
+    let suffix = source.pathExtension.lowercased().filter { $0.isASCII && ($0.isLetter || $0.isNumber) }
+    let name = reference ?? (UUID().uuidString + (suffix.isEmpty ? "" : "." + String(suffix.prefix(12))))
+    guard let destination = Self.resolve(name, in: root),
+          !FileManager.default.fileExists(atPath: destination.path) else { throw Failure.invalidFile }
+    let staging = root.appendingPathComponent(".stage-\(name)")
+    try Data().write(to: staging, options: .withoutOverwriting)
     defer { try? FileManager.default.removeItem(at: staging) }
     let reader = try FileHandle(forReadingFrom: source)
     let writer = try FileHandle(forWritingTo: staging)
@@ -76,11 +84,9 @@ actor ProjectSourceFiles {
     }
     try writer.synchronize()
     try writer.close()
-    let suffix = source.pathExtension.lowercased().filter { $0.isASCII && ($0.isLetter || $0.isNumber) }
-    let name = UUID().uuidString + (suffix.isEmpty ? "" : "." + String(suffix.prefix(12)))
     let total = try occupiedBytes()
     guard total <= Self.maximumStorageBytes else { throw Failure.capacity }
-    try FileManager.default.moveItem(at: staging, to: root.appendingPathComponent(name))
+    try FileManager.default.moveItem(at: staging, to: destination)
     return Receipt(reference: name, fingerprint: digest.finalize().map { String(format: "%02x", $0) }.joined())
   }
 
@@ -99,6 +105,25 @@ actor ProjectSourceFiles {
     for name in Set(names) {
       if let url = Self.resolve(name, in: root) { try? FileManager.default.removeItem(at: url) }
     }
+  }
+
+  /// Recovery must keep its journal until every owned file is gone. Ordinary
+  /// best-effort removal cannot distinguish a missing file from a failed delete.
+  func removePendingCopies(_ names: [String]) -> Bool {
+    var succeeded = true
+    for name in Set(names) {
+      guard let url = Self.resolve(name, in: root) else { succeeded = false; continue }
+      do {
+        let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+        guard values.isRegularFile == true, values.isSymbolicLink != true else { succeeded = false; continue }
+        try FileManager.default.removeItem(at: url)
+      } catch {
+        let error = error as NSError
+        if error.domain != NSCocoaErrorDomain ||
+          ![NSFileNoSuchFileError, NSFileReadNoSuchFileError].contains(error.code) { succeeded = false }
+      }
+    }
+    return succeeded
   }
 
   private func occupiedBytes() throws -> Int {

@@ -1,6 +1,11 @@
 import Foundation
 
 extension MemoraModel {
+  func recoverPendingPDFCopies() async {
+    guard !isStoreProtected, !isRestoring else { return }
+    try? await PDFSourceCopyJournal(store: localStore).recover()
+  }
+
   func importPDFParts(_ partition: PDFSourcePartition, context: LocalImportContext,
     originalSource: ProjectSource? = nil
   ) async throws -> [UUID]? {
@@ -23,14 +28,16 @@ extension MemoraModel {
       guard part.firstPage == nextPage, part.lastPage >= part.firstPage else { throw ProjectSourceFiles.Failure.invalidFile }
       nextPage = part.lastPage + 1
     }
-    var copied: [String] = []
-    var committed = false
+    let journal = PDFSourceCopyJournal(store: localStore)
+    try await journal.recover()
+    guard isCurrent() else { return nil }
+    let lease = try journal.begin(count: partition.parts.count)
     do {
       var proposals: [(part: PDFSourcePartition.Part, source: ProjectSource, isNew: Bool)] = []
-      for part in partition.parts {
+      for (partIndex, part) in partition.parts.enumerated() {
         try Task.checkCancellation()
         guard isCurrent() else {
-          await discardPDFPartCopies(copied); return nil
+          try? await journal.finish(lease); return nil
         }
         if let existing = projectSources.first(where: {
           matchesPDFPart($0, partition: partition, part: part, projectID: context.projectID)
@@ -41,10 +48,9 @@ extension MemoraModel {
           proposals.append((part, existing, false))
           continue
         }
-        let receipt = try await ProjectSourceFiles.shared.copy(part.url)
-        copied.append(receipt.reference)
+        let receipt = try await ProjectSourceFiles.shared.copy(part.url, named: lease.references[partIndex])
         guard isCurrent() else {
-          await discardPDFPartCopies(copied); return nil
+          try? await journal.finish(lease); return nil
         }
         let originalName = originalSource?.title ?? partition.originalName
         let title = originalName + "（元PDF \(part.firstPage)–\(part.lastPage)ページ）"
@@ -60,7 +66,7 @@ extension MemoraModel {
       }
       try Task.checkCancellation()
       guard isCurrent(), isStoreWritable() else {
-        await discardPDFPartCopies(copied); return nil
+        try? await journal.finish(lease); return nil
       }
       var added: [ProjectSource] = []
       var ids: [UUID] = []
@@ -75,7 +81,7 @@ extension MemoraModel {
           }
           ids.append(existing.id)
         } else {
-          guard proposal.isNew else { await discardPDFPartCopies(copied); return nil }
+          guard proposal.isNew else { try? await journal.finish(lease); return nil }
           added.append(proposal.source)
           ids.append(proposal.source.id)
         }
@@ -84,19 +90,21 @@ extension MemoraModel {
         // A failed group write must not leave a subset registered or start AI
         // work for records that were never durably saved.
         let candidate = added + projectSources
-        guard handlingPersistenceFailureLocally({ persistNow(candidate, forKey: StorageKey.projectSources) }) else {
-          await discardPDFPartCopies(copied); return nil
+        guard handlingPersistenceFailureLocally({ persistBatch {
+          [(key: StorageKey.projectSources, data: try JSONEncoder().encode(candidate)),
+           try journal.committedDocument(lease, retaining: Set(added.flatMap(\.fileReferences)))]
+        } }) else {
+          try? await journal.finish(lease); return nil
         }
         projectSources = candidate
         invalidateProjectEvidence(added.map { .source($0.id) })
       }
-      committed = true
       var preceding: Task<Void, Never>?
       for source in added { preceding = scheduleProjectSourcePreparation(source.id, after: preceding) }
-      await discardPDFPartCopies(copied)
+      try? await journal.finish(lease)
       return isCurrent() ? ids : nil
     } catch {
-      if !committed { await discardPDFPartCopies(copied) }
+      try? await journal.finish(lease)
       throw error
     }
   }
@@ -111,8 +119,4 @@ extension MemoraModel {
       source.metadata?["partitionLastPage"] == String(part.lastPage)
   }
 
-  private func discardPDFPartCopies(_ names: [String]) async {
-    let retained = Set(projectSources.flatMap(\.fileReferences))
-    await ProjectSourceFiles.shared.remove(names.filter { !retained.contains($0) })
-  }
 }

@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 @MainActor
 @Observable
 final class MemoraModel {
+  @ObservationIgnored let localStore = LocalStore.shared
   var selectedTab = RootTab.library {
     didSet { didChangeTab(from: oldValue) }
   }
@@ -733,6 +734,7 @@ final class MemoraModel {
     // retry instead of looking stuck forever.
     recoverInterruptedJobs()
     recoverInterruptedProjectSources(includingPending: true)
+    Task { await recoverPendingPDFCopies() }
 
     // Records kept past their recovery window are removed for good.
     purgeExpiredTrash()

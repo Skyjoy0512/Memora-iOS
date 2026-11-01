@@ -5,6 +5,7 @@ import Foundation
 @MainActor
 final class MemoraModel {
   var store: LocalStore
+  var localStore: LocalStore { store }
   var storeURL: URL
   var projectSources: [ProjectSource] = [] { didSet { projectSourceIndex.invalidate() } }
   var projectSourceIndex = IdentifiableIndex<ProjectSource>()
@@ -130,6 +131,17 @@ final class MemoraModel {
     do {
       guard !isStoreProtected else { return false }
       try store.write(key, data: JSONEncoder().encode(value))
+      return true
+    } catch {
+      if failurePresentation.shouldPresentGlobally { persistenceFailureMessage = "SQLite write failed" }
+      return false
+    }
+  }
+
+  func persistBatch(_ build: () throws -> [(key: String, data: Data)], removing: [String] = []) -> Bool {
+    do {
+      guard !isStoreProtected else { return false }
+      try store.applyBatch(writes: try build(), removing: removing)
       return true
     } catch {
       if failurePresentation.shouldPresentGlobally { persistenceFailureMessage = "SQLite write failed" }

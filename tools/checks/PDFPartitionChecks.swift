@@ -1,5 +1,6 @@
 import AppKit
 import CryptoKit
+import Darwin
 import Foundation
 import PDFKit
 import SQLite3
@@ -7,6 +8,10 @@ import SQLite3
 @main struct PDFPartitionChecks {
   @MainActor static func main() async throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+    if CommandLine.arguments.contains("--abrupt-copy") {
+      try await abruptCopy(root: root, commit: CommandLine.arguments.contains("--commit"))
+      _exit(0)
+    }
     let original = root.appendingPathComponent("205-page-source.pdf")
     try makePDF(original)
     let before = try Data(contentsOf: original)
@@ -37,6 +42,7 @@ import SQLite3
     precondition(partition.parts.allSatisfy { FileManager.default.fileExists(atPath: $0.url.path) })
     precondition(other.cleanup())
     try await importChecks(root: root, original: original, partition: partition)
+    try await recoveryChecks(root: root)
     try refusalChecks(root: root, stage: stage, original: original)
     let cancelled = Task.detached {
       withUnsafeCurrentTask { $0?.cancel() }
@@ -46,7 +52,7 @@ import SQLite3
     catch is CancellationError {}
     expect(try Data(contentsOf: original) == before)
     precondition(partition.cleanup())
-    print("PDFPartitionChecks: PASS. Real205-page PDF ->3 native parts, late text, metadata/URL annotation, unchanged original, active lease/orphan cleanup; real copy/SQLite atomic registration/rollback and range dedup/scope/privacy inheritance. Production scheduler serializes preparations with fixture work; no iOS/UI/LLM/resource-profile claim.")
+    print("PDFPartitionChecks: PASS. Real205-page PDF ->3 native parts; atomic registration/rollback/dedup/privacy; abrupt subprocess exit before/after commit, provisional copy/stage recovery, live-lock protection, unrelated-file preservation, corrupt journal and failed cleanup retention. No iOS/UI/LLM/resource-profile claim.")
   }
 
   @MainActor private static func importChecks(root: URL, original: URL, partition: PDFSourcePartition) async throws {
@@ -102,7 +108,7 @@ import SQLite3
     expect(try files() == filesBefore)
     let failing = try MemoraModel(storeURL: root.appendingPathComponent("partition-failure.sqlite"))
     let personal = LocalImportContext(in: failing)!
-    try execute("CREATE TRIGGER reject_partition BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT, 'partition check'); END;", file: failing.storeURL)
+    try execute("CREATE TRIGGER reject_partition BEFORE INSERT ON documents WHEN NEW.key = '\(PDFSourceCopyJournal.key)' AND EXISTS(SELECT 1 FROM documents WHERE key = 'memoraProjectSources') BEGIN SELECT RAISE(ABORT, 'partition journal commit check'); END;", file: failing.storeURL)
     let failed = try await failing.importPDFParts(partition, context: personal)
     precondition(failed == nil && failing.projectSources.isEmpty && failing.sourcePreparationJobs.isEmpty)
     expect(try files() == filesBefore)
@@ -113,6 +119,92 @@ import SQLite3
     catch {}
     precondition(failing.projectSources.isEmpty && failing.sourcePreparationJobs.isEmpty)
     expect(try files() == filesBefore)
+  }
+
+  @MainActor private static func abruptCopy(root: URL, commit: Bool) async throws {
+    let store = LocalStore(fileURL: root.appendingPathComponent("crash.sqlite"))
+    try store.prepare()
+    let journal = PDFSourceCopyJournal(store: store)
+    let lease = try journal.begin(count: 2)
+    let input = root.appendingPathComponent("abrupt-input.pdf")
+    try Data("Abrupt process fixture".utf8).write(to: input)
+    let copied = try await ProjectSourceFiles.shared.copy(input, named: lease.references[0])
+    let stage = ProjectSourceFiles.directory.appendingPathComponent(".stage-" + lease.references[1])
+    try Data("Interrupted partial copy".utf8).write(to: stage)
+    if commit {
+      let source = ProjectSource(kind: .pdf, title: "Committed before exit", localFileReference: copied.reference)
+      try store.applyBatch(writes: [
+        (key: "committedSources", data: try JSONEncoder().encode([source])),
+        try journal.committedDocument(lease, retaining: [copied.reference])
+      ], removing: [])
+    }
+    // Do not run deinit or normal finish: this leaves the actual SQLite ledger
+    // and copies for the parent process to recover after OS lock release.
+    withExtendedLifetime(lease) { _exit(0) }
+  }
+
+  @MainActor private static func recoveryChecks(root: URL) async throws {
+    let storeURL = root.appendingPathComponent("crash.sqlite")
+    let store = LocalStore(fileURL: storeURL)
+    try store.prepare()
+    let journal = PDFSourceCopyJournal(store: store)
+    let legacy = ProjectSourceFiles.directory.appendingPathComponent("legacy-user.pdf")
+    try Data("Never sweep unjournaled data".utf8).write(to: legacy)
+    let before = try files()
+    for commit in [false, true] {
+      let child = Process()
+      child.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+      child.arguments = [root.path, "--abrupt-copy"] + (commit ? ["--commit"] : [])
+      try child.run()
+      child.waitUntilExit()
+      precondition(child.terminationStatus == 0)
+      let pending = try ledger(store)
+      precondition(pending.count == 1)
+      let staged = try files().subtracting(before)
+      precondition(staged.contains { $0.hasPrefix(".stage-pdfcopy-") })
+      try await journal.recover()
+      expect(try ledger(store).isEmpty)
+      if commit {
+        guard case .data(let data) = store.readOutcome("committedSources") else { preconditionFailure("Lost committed source") }
+        let saved = try JSONDecoder().decode([ProjectSource].self, from: data)
+        let reference = saved[0].localFileReference!
+        precondition(FileManager.default.fileExists(atPath: ProjectSourceFiles.resolve(reference)!.path))
+        expect(try files() == before.union([reference]))
+        await ProjectSourceFiles.shared.remove([reference])
+      } else {
+        expect(try files() == before)
+      }
+    }
+    var live: PDFSourceCopyLease? = try journal.begin(count: 1)
+    let liveReference = live!.references[0]
+    let liveFile = ProjectSourceFiles.resolve(liveReference)!
+    try Data("Active copy".utf8).write(to: liveFile)
+    try await journal.recover()
+    precondition(FileManager.default.fileExists(atPath: liveFile.path))
+    live = nil
+    try await journal.recover()
+    precondition(!FileManager.default.fileExists(atPath: liveFile.path))
+
+    var blocked: PDFSourceCopyLease? = try journal.begin(count: 1)
+    let blockedFile = ProjectSourceFiles.resolve(blocked!.references[0])!
+    try FileManager.default.createDirectory(at: blockedFile, withIntermediateDirectories: false)
+    blocked = nil
+    do { try await journal.recover(); preconditionFailure("Deleted an unexpected directory") } catch {}
+    expect(try ledger(store).count == 1)
+    precondition(FileManager.default.fileExists(atPath: blockedFile.path))
+    try FileManager.default.removeItem(at: blockedFile)
+    try await journal.recover()
+    expect(try ledger(store).isEmpty)
+    try store.write(PDFSourceCopyJournal.key, data: Data("corrupt journal".utf8))
+    do { try await journal.recover(); preconditionFailure("Ignored unreadable ledger") } catch {}
+    expect(try files() == before)
+    try store.write(PDFSourceCopyJournal.key, data: JSONEncoder().encode([String: [String]]()))
+    precondition(FileManager.default.fileExists(atPath: legacy.path))
+  }
+
+  @MainActor private static func ledger(_ store: LocalStore) throws -> [String: [String]] {
+    guard case .data(let data) = store.readOutcome(PDFSourceCopyJournal.key) else { preconditionFailure("Missing journal") }
+    return try JSONDecoder().decode([String: [String]].self, from: data)
   }
 
   private static func refusalChecks(root: URL, stage: URL, original: URL) throws {

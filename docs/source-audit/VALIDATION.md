@@ -180,3 +180,27 @@ inline画像、vector文字、XObject/Form以外の注釈/pattern/maskは検出�
 新しい分割追加/再読み取り画面の実操作、実Speech、長時間media、iOS実機のメモリ/電池/取消時間、課金provider、実teamは未検証。アクセシビリティの追加検証もしていない。SDKは引き続き27.2で、追加APIは27.1より新しいAPIを使っていない。
 
 受け入れ境界: 入力500MB等の上限全部を最大実ファイルで計測した試験ではない。PDFKitの単一writeは取消できず、一時候補が上限を超えてから判定される。文書全体のしおり/添付等は保持を保証せず、UIにも説明する。分割temporaryは中断後に回収するが、SQLite登録前のプロセス終了でWorkspaceFilesへ既にコピーした未参照fileの起動時回収は残る。AskAI/共有拡張/Open Inの大容量PDF自動分割は未接続。
+
+## P1: 分割PDFの未登録コピーを起動時回収（a13a6d07から）
+
+開始時main / `a13a6d07`、未コミット変更なし。UI・Marketplaceは変更していない。
+上段で残件としていた「新しい分割追加で登録前に終了したコピー」の回収を実装した。
+SQLite journalに作成前の名前を記録し、source保存とjournalの所有解除を同じcommitへ統合。
+旧ProjectSourceの形式変更やデータ移行は不要。導入前の未追跡fileは一括削除しない。
+
+| 限定検査 | 結果 | 今回確認した範囲 |
+|---|---|---|
+| PDFPartitionChecks | PASS | 実205page PDFの分割/後半本文/注釈/元hash/重複/権限継承。実SQLiteでsource書込後のjournal更新をtriggerで失敗させ、全体rollbackとcopy回収を確認。別プロセスを`_exit`で後片付けなし終了させ、登録前はcopyと部分stageを回収、登録後は保存済みcopyを保持。生存中flock、追跡外の旧file、異常なdirectory、壊れたjournalは保護 |
+| ProjectSourceStorageChecks | PASS | 変更した共通file copyとproduction source保存・SQLite再読込、既存24競合、共有参照保持、SQL失敗・再試行。model state/通知はfixture |
+| ProjectSourceImportChecks | PASS | 共通copy・登録の既存32競合、重複・保存後のfile保持、失敗rollback、PDF再読込・OCR失敗再試行・削除時参照保持。OS抽出/Speech/schedulerはfixture |
+
+最初の限定検査で出たhost helperのactor警告を解消し、commit最後のjournal更新失敗を加えて
+PDF suiteを再実行した。通過済みの全体suiteは反復していない。
+プロセス終了検査の部分stageはfixtureで作成してから実プロセスを終了するもので、
+iOSの強制終了・端末ストレージロック・OSによる途中停止を実機で再現した試験ではない。
+実機の性能/電池/メモリ、実AI/Speech/チーム、アクセシビリティの追加検証は未実施。
+AskAI/共有拡張/Open Inの大容量PDF分割接続は引き続き残る。
+
+今回の最終 `bitrig preview -platform iOS` は成功、プレビュー更新済み。
+log: `logs/2026-11-01T23-08-35-0fba3315.log`、従来と同じ警告11件。
+`git diff --check` 通過。新しい画面・設定・SDK27.1より新しいAPIは追加していない。
