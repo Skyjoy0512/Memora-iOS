@@ -3,7 +3,23 @@ import Foundation
 @main struct AttachmentCitationChecks {
   static func main() async throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1]).appendingPathComponent("AIAttachments")
-    let first = AIAttachment(id: UUID(), name: "First PDF", url: root.appendingPathComponent("first.pdf"))
+    let metadata = ["partitionOriginalFingerprint": String(repeating: "a", count: 64),
+      "partitionOriginalName": "Original PDF.pdf", "partitionOriginalPageCount": "240",
+      "partitionFirstPage": "101", "partitionLastPage": "200"]
+    let first = AIAttachment(id: UUID(), name: "First PDF（101–200ページ）", url: root.appendingPathComponent("first.pdf"), sourceMetadata: metadata)
+    precondition(first.files[0].sourceMetadata == metadata && first.displayName == "Original PDF.pdf")
+    precondition(AIAttachment.isValidSourceMetadata(nil) && AIAttachment.isValidSourceMetadata(metadata))
+    for (key, value) in [("unexpectedKey", "value"), ("partitionOriginalFingerprint", String(repeating: "A", count: 64)),
+                         ("partitionOriginalPageCount", "10001"), ("partitionFirstPage", "0"),
+                         ("partitionFirstPage", "201"), ("partitionLastPage", "241"),
+                         ("partitionOriginalName", String(repeating: "あ", count: 534))] {
+      var bad = metadata
+      bad[key] = value
+      precondition(!AIAttachment.isValidSourceMetadata(bad))
+    }
+    var incomplete = metadata
+    incomplete.removeValue(forKey: "partitionFirstPage")
+    precondition(!AIAttachment.isValidSourceMetadata(incomplete))
     let second = AIAttachment(id: UUID(), name: "Second audio", url: root.appendingPathComponent("second.m4a"))
     var attachment = first
     attachment.append(second)
@@ -19,6 +35,7 @@ import Foundation
     precondition(citations.contains { $0.file.id == first.id && $0.page == 24 && late.text.hasPrefix($0.excerpt) })
     precondition(citations.contains { $0.file.id == second.id && $0.time == 72.5 && $0.page == nil })
     precondition(citations.allSatisfy { $0.isValid && text.contains($0.contextText) && $0.file.additionalFiles == nil })
+    precondition(citations.first { $0.file.id == first.id }?.file.sourceMetadata == metadata)
     precondition(AIAttachmentCitation.retained(citations, in: text) == citations)
     if let last = citations.last, let range = text.range(of: last.contextText) {
       let cut = String(text[..<range.lowerBound]) + last.marker + "\n" + String(last.excerpt.prefix(3))
@@ -31,6 +48,16 @@ import Foundation
       precondition(retained.allSatisfy { cut.contains($0.contextText) })
     }
     let reference = AIAttachmentFileReference(first)!
+    let referenceBytes = try JSONEncoder().encode(reference)
+    let restoredReference = try JSONDecoder().decode(AIAttachmentFileReference.self, from: referenceBytes)
+    precondition(restoredReference.sourceMetadata == metadata && restoredReference.isValid)
+    var legacy = try JSONSerialization.jsonObject(with: referenceBytes) as! [String: Any]
+    legacy.removeValue(forKey: "sourceMetadata")
+    let legacyReference = try JSONDecoder().decode(AIAttachmentFileReference.self, from: JSONSerialization.data(withJSONObject: legacy))
+    precondition(legacyReference.sourceMetadata == nil && legacyReference.isValid)
+    var invalidReference = reference
+    invalidReference.sourceMetadata?["systemInstruction"] = "untrusted external instruction"
+    precondition(!invalidReference.isValid)
     precondition(AIAttachmentCitation(number: 1, file: reference, excerpt: "evidence", page: 0) == nil)
     precondition(AIAttachmentCitation(number: 65, file: reference, excerpt: "evidence") == nil)
     precondition(AIAttachmentCitation(number: 1, file: reference, excerpt: " ") == nil)

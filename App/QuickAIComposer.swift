@@ -292,7 +292,8 @@ struct QuickAIComposer: View {
     }
   }
   private func startProjectRequest(_ request: AIQuestionRequest, allowsPaidRequest: Bool) {
-    guard case .space(let projectID) = request.scope, !isPreparingAttachment else { return }
+    guard case .space(let projectID) = request.scope, !isPreparingAttachment,
+          let importContext = LocalImportContext(projectID: projectID, in: model) else { return }
     let workspaceID = model.currentTeamID
     let configuration = model.askAIConfiguration
     let existingChat = model.activeProjectChatID.flatMap { model.projectChat(id: $0) }
@@ -302,34 +303,42 @@ struct QuickAIComposer: View {
       defer { isPreparingAttachment = false }
       do {
         if let attached = request.attachment {
-          guard let id = try await model.importProjectFile(attached.url, projectID: projectID) else {
-            projectError = "添付を保存できませんでした。質問は入力欄に残っています。"
+          guard attached.files.allSatisfy({ AIAttachment.isValidSourceMetadata($0.sourceMetadata) }) else {
+            projectError = "添付の元資料情報を確認できません。選択し直してください。"
             return
           }
-          guard !Task.isCancelled, model.currentTeamID == workspaceID,
-                !model.isRestoring, !model.isStoreProtected else {
-            projectError = "ワークスペースまたは保存状態が変わったため、質問を送信していません。"
-            return
-          }
-          if model.source(id: id) != nil {
-            await model.prepareProjectSource(id)
-            guard let saved = model.source(id: id), saved.projectID == projectID, saved.canProvideText else {
-              projectError = "添付は保存しましたが、参照できる本文がまだありません。ソース詳細で解析状態を確認してください。"
+          for file in attached.files {
+            guard let id = try await model.importProjectFile(file.url, projectID: projectID,
+              importContext: importContext, sourceTitle: file.name, originalURL: file.originalURL,
+              sourceMetadata: file.sourceMetadata) else {
+              projectError = "添付を保存できませんでした。質問は入力欄に残っています。"
               return
             }
-            if AIEngineService.effectiveEngine(model.askAIConfiguration.engine) == .cloud,
-               !RecordAccessPolicy.allows(saved.privacy, purpose: .cloudAI) {
-              model.libraryPath.append(.projectSource(id))
-              projectError = "添付は保存しました。外部AIへ送る場合は、ソース詳細のプライバシー設定で送信を許可してください。"
+            guard importContext.isCurrent(in: model), model.currentTeamID == workspaceID,
+                  !model.isRestoring, !model.isStoreProtected else {
+              projectError = "ワークスペースまたは保存状態が変わったため、質問を送信していません。"
               return
             }
-          } else {
-            projectError = "音声は録音として保存しました。文字起こしと送信許可を確認してから質問してください。"
-            return
+            if model.source(id: id) != nil {
+              await model.prepareProjectSource(id)
+              guard let saved = model.source(id: id), saved.projectID == projectID, saved.canProvideText else {
+                projectError = "添付は保存しましたが、参照できる本文がまだありません。ソース詳細で解析状態を確認してください。"
+                return
+              }
+              if AIEngineService.effectiveEngine(model.askAIConfiguration.engine) == .cloud,
+                 !RecordAccessPolicy.allows(saved.privacy, purpose: .cloudAI) {
+                model.libraryPath.append(.projectSource(id))
+                projectError = "添付は保存しました。外部AIへ送る場合は、ソース詳細のプライバシー設定で送信を許可してください。"
+                return
+              }
+            } else {
+              projectError = "音声は録音として保存しました。文字起こしと送信許可を確認してから質問してください。"
+              return
+            }
           }
         }
         guard !Task.isCancelled, !model.isRestoring, !model.isStoreProtected,
-              model.currentTeamID == workspaceID, model.space(id: projectID) != nil,
+              model.currentTeamID == workspaceID, importContext.isCurrent(in: model),
               model.askAIConfiguration.engine == configuration.engine,
               model.askAIConfiguration.llm == configuration.llm else {
           projectError = "ワークスペース・保存先・AI設定が変わったため、質問を送信していません。現在の設定を確認してください。"

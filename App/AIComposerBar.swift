@@ -432,6 +432,7 @@ struct AIComposerBar: View {
 
   private func importFile(_ result: Result<[URL], any Error>) {
     let generation = model.aiWorkspaceGeneration
+    let conversationID = model.aiConversationID
     let previous = attachment
     Task { @MainActor in
       var created: [AIAttachment] = []
@@ -441,19 +442,24 @@ struct AIComposerBar: View {
         guard !urls.isEmpty, urls.count <= capacity else { importErrorMessage = "添付は10件までです。"; return }
         var combined = previous
         for url in urls {
-          let file = try await model.importAIAttachment(from: url)
+          try Task.checkCancellation()
+          let available = 10 - (combined?.files.count ?? 0)
+          let file = try await model.importAIAttachment(from: url, maximumFiles: available)
           created.append(file)
+          guard file.files.count <= available else { throw ConversationSourceIntake.Failure.unavailable("添付は10件までです。") }
           if combined == nil { combined = file } else { combined?.append(file) }
         }
+        try Task.checkCancellation()
         guard model.aiWorkspaceGeneration == generation, model.currentTeamID == nil,
+              model.aiConversationID == conversationID,
               !model.isRestoring, !model.isStoreProtected, attachment == previous else {
-          for file in created { try? FileManager.default.removeItem(at: file.url) }
+          for file in created.flatMap(\.files) { try? FileManager.default.removeItem(at: file.url) }
           importErrorMessage = "保存先や入力が変わりました。もう一度選択してください。"
           return
         }
         attachment = combined
       } catch {
-        for file in created { try? FileManager.default.removeItem(at: file.url) }
+        for file in created.flatMap(\.files) { try? FileManager.default.removeItem(at: file.url) }
         importErrorMessage = error.localizedDescription
       }
     }

@@ -43,6 +43,7 @@ import SQLite3
     precondition(other.cleanup())
     try await importChecks(root: root, original: original, partition: partition)
     try await recoveryChecks(root: root)
+    try await largeFileRouteChecks(root: root)
     try refusalChecks(root: root, stage: stage, original: original)
     let cancelled = Task.detached {
       withUnsafeCurrentTask { $0?.cancel() }
@@ -53,6 +54,139 @@ import SQLite3
     expect(try Data(contentsOf: original) == before)
     precondition(partition.cleanup())
     print("PDFPartitionChecks: PASS. Real205-page PDF ->3 native parts; atomic registration/rollback/dedup/privacy; abrupt subprocess exit before/after commit, provisional copy/stage recovery, live-lock protection, unrelated-file preservation, corrupt journal and failed cleanup retention. No iOS/UI/LLM/resource-profile claim.")
+  }
+
+  @MainActor private static func largeFileRouteChecks(root: URL) async throws {
+    let large = root.appendingPathComponent("large-provider-file")
+    try makeLargePDF(large, pages: 205)
+    precondition(PDFDocument(url: large)?.pageCount == 205)
+    expect(try PDFSourcePartitioning.requiresPartition(large))
+    let partition = try await PDFSourcePartitioning.prepare(large, maximumParts: 3)
+    defer { partition.cleanup() }
+    precondition(partition.parts.map(\.firstPage) == [1, 101, 201])
+    precondition(PDFDocument(url: partition.parts[2].url)?.page(at: 4)?.string?.contains("LATE PAGE 205") == true)
+    do {
+      _ = try await PDFSourcePartitioning.prepare(large, maximumParts: 2)
+      preconditionFailure("Conversation part budget ignored")
+    } catch PDFSourcePartitionFailure.partLimit {}
+    let model = try MemoraModel(storeURL: root.appendingPathComponent("large-entry.sqlite"))
+    let context = LocalImportContext(in: model)!
+    let ids = try await model.importInformationSources(large, context: context)!
+    precondition(ids.count == 3 && model.projectSources.count == 3)
+    let again = try await model.importInformationSources(large, context: context)
+    precondition(again == ids && model.projectSources.count == 3)
+
+    // The same part saved from a conversation can have different native PDF
+    // bytes. Its original fingerprint/range must still find the existing source.
+    let altered = root.appendingPathComponent("conversation-part.pdf")
+    try FileManager.default.copyItem(at: partition.parts[0].url, to: altered)
+    let writer = try FileHandle(forWritingTo: altered)
+    try writer.seekToEnd(); try writer.write(contentsOf: Data("\n".utf8)); try writer.close()
+    let saved = try await model.importProjectFile(altered, projectID: nil, importContext: context,
+      waitsForPreparation: false, sourceMetadata: partition.metadata(for: partition.parts[0]))
+    precondition(saved == ids[0] && model.projectSources.count == 3)
+    let receipt = (key: "test.sharedPDFReceipt", data: Data("registered".utf8))
+    let shared = try await model.importPDFParts(partition, context: context, registrationReceipt: { _ in receipt })
+    precondition(shared == ids && model.projectSources.count == 3)
+    guard case .data(let bytes) = model.store.readOutcome(receipt.key) else { preconditionFailure("Missing atomic receipt") }
+    precondition(bytes == receipt.data)
+    let failing = try MemoraModel(storeURL: root.appendingPathComponent("large-receipt-failure.sqlite"))
+    let before = try files()
+    try execute("CREATE TRIGGER reject_receipt BEFORE INSERT ON documents WHEN NEW.key = '\(receipt.key)' BEGIN SELECT RAISE(ABORT, 'receipt check'); END;", file: failing.storeURL)
+    let rejected = try await failing.importPDFParts(partition, context: LocalImportContext(in: failing)!, registrationReceipt: { _ in receipt })
+    precondition(rejected == nil && failing.projectSources.isEmpty && failing.sourcePreparationJobs.isEmpty)
+    expect(try files() == before)
+    guard case .missing = failing.store.readOutcome(receipt.key),
+          case .missing = failing.store.readOutcome(MemoraModel.StorageKey.projectSources) else { preconditionFailure("Partial share registration") }
+    let fake = root.appendingPathComponent("fake-large.pdf")
+    try FileManager.default.copyItem(at: large, to: fake)
+    let fakeWriter = try FileHandle(forWritingTo: fake)
+    try fakeWriter.write(contentsOf: Data("FAKE!".utf8)); try fakeWriter.close()
+    expect(try !PDFSourcePartitioning.requiresPartition(fake))
+    let link = root.appendingPathComponent("large-link.pdf")
+    try FileManager.default.createSymbolicLink(at: link, withDestinationURL: large)
+    do { _ = try PDFSourcePartitioning.requiresPartition(link); preconditionFailure("Large symlink admitted") } catch {}
+    try await sharedLargeFileChecks(root: root, large: large)
+    print("PASS real >50MB 205-page PDF automatic intake/late-page content, native conversation part budget, cross-entry metadata dedup, atomic shared receipt/rollback, magic and symlink guards")
+  }
+
+  @MainActor private static func sharedLargeFileChecks(root: URL, large: URL) async throws {
+    let queueRoot = root.appendingPathComponent("share-pdf-queue")
+    ShareInboxConfiguration.root = queueRoot
+    defer { ShareInboxConfiguration.root = nil }
+    let queue = ShareInboxQueue(root: queueRoot)
+    let model = try MemoraModel(storeURL: root.appendingPathComponent("shared-route.sqlite"))
+    let project = MemoraSpace(id: UUID(), name: "Share target", symbol: "folder")
+    model.spaces = [project]
+    let requestID = UUID(), draft = try await queue.draft(requestID)
+    let name = try ShareInboxQueue.stageFile(large, in: draft)
+    let pdf = ShareInboxItem(kind: .file, title: "Shared original PDF", value: name)
+    let note = ShareInboxItem(kind: .text, title: "FAIL_SECOND_ITEM", value: "Saved after retry")
+    let request = ShareInboxRequest(id: requestID, projectID: project.id, items: [pdf, note])
+    try await queue.publish(request)
+    try execute("CREATE TRIGGER reject_second BEFORE INSERT ON documents WHEN NEW.key = 'memoraProjectSources' AND CAST(NEW.data AS TEXT) LIKE '%FAIL_SECOND_ITEM%' BEGIN SELECT RAISE(ABORT, 'second item check'); END;", file: model.storeURL)
+    await model.importShareInbox()
+    precondition(model.projectSources.count == 3 && model.shareInboxRequests.count == 1 && model.shareInboxFailure != nil)
+    var ids = Set(model.projectSources.map(\.id))
+    for var source in model.projectSources {
+      source.projectID = nil
+      precondition(model.storeProjectSource(source))
+    }
+    await model.importShareInbox()
+    precondition(Set(model.projectSources.map(\.id)) == ids && model.projectSources.allSatisfy { $0.projectID == nil })
+    // Simulate restoring an earlier source snapshot while the failed request
+    // remains in the Inbox. Its receipt must not suppress the missing PDF.
+    precondition(model.persistNow([ProjectSource](), forKey: MemoraModel.StorageKey.projectSources))
+    model.projectSources = []
+    await model.importShareInbox()
+    precondition(model.projectSources.count == 3 && Set(model.projectSources.map(\.id)).isDisjoint(with: ids))
+    ids = Set(model.projectSources.map(\.id))
+    for var source in model.projectSources {
+      source.projectID = nil
+      precondition(model.storeProjectSource(source))
+    }
+    try execute("DROP TRIGGER reject_second;", file: model.storeURL)
+    await model.importShareInbox()
+    precondition(model.projectSources.count == 4 && model.shareInboxRequests.isEmpty && model.shareInboxFailure == nil)
+    precondition(model.projectSources.filter { ids.contains($0.id) }.allSatisfy { $0.projectID == nil })
+    guard case .missing = model.store.readOutcome("memora.share.pdfReceipt." + pdf.id.uuidString) else { preconditionFailure("Receipt not cleared after queue removal") }
+    let pending = try await queue.inspect()
+    precondition(pending.requests.isEmpty && pending.invalidIDs.isEmpty)
+    precondition(FileManager.default.fileExists(atPath: large.path))
+    print("PASS production share queue -> native PDF parts -> SQLite, later-item failure retains queue; receipt prevents duplicate/re-filing, earlier snapshot restore reimports missing group; final success clears queue/receipt")
+  }
+
+  private static func makeLargePDF(_ url: URL, pages: Int) throws {
+    FileManager.default.createFile(atPath: url.path, contents: nil)
+    let file = try FileHandle(forWritingTo: url)
+    defer { try? file.close() }
+    var offsets: [UInt64] = [0]
+    func write(_ text: String) throws { try file.write(contentsOf: Data(text.utf8)) }
+    func object(_ number: Int, _ body: String) throws {
+      precondition(number == offsets.count)
+      offsets.append(try file.offset())
+      try write("\(number) 0 obj\n\(body)\nendobj\n")
+    }
+    try write("%PDF-1.7\n")
+    try object(1, "<< /Type /Catalog /Pages 2 0 R >>")
+    try object(2, "<< /Type /Pages /Count \(pages) /Kids [" + (0..<pages).map { "\(3 + 2 * $0) 0 R" }.joined(separator: " ") + "] >>")
+    let font = 3 + 2 * pages
+    for page in 0..<pages {
+      try object(3 + 2 * page, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Resources << /Font << /F1 \(font) 0 R >> >> /Contents \(4 + 2 * page) 0 R >>")
+      let text = "BT /F1 18 Tf 40 700 Td (LATE PAGE \(page + 1)) Tj ET"
+      try object(4 + 2 * page, "<< /Length \(text.utf8.count) >>\nstream\n\(text)\nendstream")
+    }
+    try object(font, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    offsets.append(try file.offset())
+    let padding = ProjectSourceFiles.maximumFileBytes + 1
+    try write("\(font + 1) 0 obj\n<< /Length \(padding) >>\nstream\n")
+    try file.seek(toOffset: try file.offset() + UInt64(padding))
+    try write("\nendstream\nendobj\n")
+    let xref = try file.offset()
+    try write("xref\n0 \(offsets.count)\n0000000000 65535 f \n")
+    for offset in offsets.dropFirst() { try write(String(format: "%010llu 00000 n \n", offset)) }
+    try write("trailer\n<< /Size \(offsets.count) /Root 1 0 R >>\nstartxref\n\(xref)\n%%EOF\n")
+    try file.synchronize()
   }
 
   @MainActor private static func importChecks(root: URL, original: URL, partition: PDFSourcePartition) async throws {

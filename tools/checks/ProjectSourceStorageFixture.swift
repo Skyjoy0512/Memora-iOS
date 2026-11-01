@@ -51,6 +51,14 @@ final class MemoraModel {
   #endif
   #endif
   var spaces: [MemoraSpace] = []
+  #if MEMORA_SHARE_PDF_CHECKS
+  var recentProjects: [MemoraSpace] { spaces }
+  var recentProjectIDs: [UUID] = []
+  var isImportingShareInbox = false
+  var shareInboxFailure: String?
+  var shareInboxRequests: [ShareInboxRequest] = []
+  var shareInboxRejectedIDs: [UUID] = []
+  #endif
   #if MEMORA_AUDIO_IMPORT_CHECKS
   var meetings: [Meeting] = []
   var tasks: [AudioImportTask] = []

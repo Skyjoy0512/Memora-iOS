@@ -14,7 +14,7 @@ enum AIAttachmentText {
       do {
         try Task.checkCancellation()
         let reference = AIAttachmentFileReference(AIAttachment(id: file.id, name: file.name,
-          url: file.url, originalURL: file.originalURL))
+          url: file.url, originalURL: file.originalURL, sourceMetadata: file.sourceMetadata))
         let result = try await SourceExtractionCache.shared.extract(file.url, vocabulary: vocabulary)
         guard !result.blocks.isEmpty else {
           prepared.failure = "「\(file.name)」: " + (result.notice ?? "参照できる文字がありません。")

@@ -58,14 +58,7 @@ struct PDFSourcePartitionSheet: View {
     job = Task { @MainActor in
       defer { job = nil }
       do {
-        // Native PDFKit work runs away from UI and shares the intake working-set
-        // gate with OCR/media. Cancellation reaches the detached worker too.
-        let worker = Task.detached(priority: .utility) {
-          try await SourceProcessingQueue.shared.perform { try PDFSourcePartition.prepare(originalURL) }
-        }
-        let partition = try await withTaskCancellationHandler {
-          try await worker.value
-        } onCancel: { worker.cancel() }
+        let partition = try await PDFSourcePartitioning.prepare(originalURL)
         defer { partition.cleanup() }
         try Task.checkCancellation()
         guard let ids = try await model.importPDFParts(partition, context: request.context, originalSource: request.originalSource), !ids.isEmpty else {

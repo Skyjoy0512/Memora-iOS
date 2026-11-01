@@ -16,9 +16,6 @@ struct ProjectSourceAddSheet: View {
   @State private var isMovingRecords = false
   @State private var isSaving = false
   @State private var failure: String?
-  @State private var partitionRequest: PDFSourcePartitionRequest?
-  @State private var showsPartition = false
-  @State private var partitionRemainingURLs: [URL] = []
   private var draftKey: String { "workspace.newNote.\(projectID?.uuidString ?? "library")" }
 
   var body: some View {
@@ -101,11 +98,6 @@ struct ProjectSourceAddSheet: View {
       .sheet(isPresented: $isMovingRecords) {
         if let projectID { ProjectFilePickerSheet(spaceID: projectID) }
       }
-      .navigationDestination(isPresented: $showsPartition) {
-        if let partitionRequest {
-          PDFSourcePartitionSheet(request: partitionRequest, isPresentedAsSheet: false) { finishPartition() }
-        }
-      }
       .tint(MemoraPalette.textPrimary)
     }
   }
@@ -117,34 +109,18 @@ struct ProjectSourceAddSheet: View {
     Task { @MainActor in
       defer { isSaving = false }
       do {
-        let selected = Array(urls.prefix(10))
-        for (index, url) in selected.enumerated() {
+        guard urls.count <= 10 else { failure = "一度に追加できるファイルは10件です。"; return }
+        for url in urls {
           guard context.isCurrent(in: model) else { throw ProjectSourceFiles.Failure.invalidFile }
-          do {
-            guard try await model.importProjectFile(url, projectID: projectID, importContext: context,
-              presentsErrorsLocally: true, waitsForPreparation: false) != nil else {
-              failure = model.persistenceFailureMessage ?? "保存できませんでした。保存先を確認して再試行してください。"
-              return
-            }
-          } catch ProjectSourceFiles.Failure.tooLarge where SourceIntake.kind(for: url) == .pdf {
-            guard context.isCurrent(in: model) else { return }
-            partitionRequest = PDFSourcePartitionRequest(url: url, context: context)
-            partitionRemainingURLs = Array(selected.dropFirst(index + 1))
-            showsPartition = true
+          guard let ids = try await model.importInformationSources(url, context: context, presentsErrorsLocally: true),
+                !ids.isEmpty else {
+            failure = model.persistenceFailureMessage ?? "保存できませんでした。保存先を確認して再試行してください。"
             return
           }
         }
         if !urls.isEmpty { dismiss() }
       } catch { failure = error.localizedDescription }
     }
-  }
-
-  private func finishPartition() {
-    let remaining = partitionRemainingURLs
-    partitionRemainingURLs = []
-    showsPartition = false
-    if remaining.isEmpty { dismiss() }
-    else { importFiles(remaining) }
   }
 
   private func saveText() {

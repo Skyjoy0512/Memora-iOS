@@ -1,5 +1,15 @@
 # Memora — 改善バックログ
 
+## 2026-11-01 大容量PDFファイルの取り込み入口を統一
+
+Library/project・Open In・共有Inbox・Ask AIのファイル添付を共通のPDF分割処理へ接続。
+内容のPDF headerを確認した50MB超のfileだけ自動分割し、通常追加で追加の分割画面を挟まない。
+会話は会話専用領域に保持し、明示保存までLibraryへ登録しない。元hash/ページ範囲を履歴・引用・保存に継承。
+共有は全part保存と受領記録を一括commitし、後続項目の失敗後も重複・意図しない再所属を防ぐ。
+実50MB超・205page PDFの共通取り込みとproduction共有経路をhostで確認。UI・実拡張・実AIは未検証。
+会話は従来の合計10添付枠、HTTP取得は50MBの上限を維持。詳細は
+[実装・上限](source-audit/IMPLEMENTATION.md)、[検証範囲](source-audit/VALIDATION.md)。
+
 ## 2026-11-01 PDF分割追加の未登録コピーを中断後に回収
 
 コピー前のファイル名予約をSQLiteへ保存し、資料の一括登録と回収対象の更新を同じtransactionにした。

@@ -18,8 +18,10 @@ struct PDFSourcePartition: Sendable {
   var originalPageCount: Int
   private var lease: PDFSourcePartitionLease
 
-  static func prepare(_ url: URL, pagesPerPart: Int = 100, directory: URL? = nil) throws -> PDFSourcePartition {
+  static func prepare(_ url: URL, pagesPerPart: Int = 100, directory: URL? = nil,
+                      maximumParts: Int = Self.maximumParts) throws -> PDFSourcePartition {
     guard (1...maximumPages).contains(pagesPerPart) else { throw PDFSourcePartitionFailure.invalidPagesPerPart }
+    guard (1...Self.maximumParts).contains(maximumParts) else { throw PDFSourcePartitionFailure.partLimit }
     lock.lock()
     defer { lock.unlock() }
     try Task.checkCancellation()
@@ -38,7 +40,7 @@ struct PDFSourcePartition: Sendable {
     guard (1...maximumPages).contains(count) else { throw PDFSourcePartitionFailure.pageLimit }
     guard (count + pagesPerPart - 1) / pagesPerPart <= maximumParts else { throw PDFSourcePartitionFailure.partLimit }
     try rejectInteractiveDocument(document)
-    let builder = PDFSourcePartitionBuilder(document: document, directory: folder)
+    let builder = PDFSourcePartitionBuilder(document: document, directory: folder, maximumParts: maximumParts)
     var first = 1
     while first <= count {
       try Task.checkCancellation()
@@ -59,6 +61,13 @@ struct PDFSourcePartition: Sendable {
   @discardableResult
   func cleanup() -> Bool {
     lease.remove()
+  }
+
+  func metadata(for part: Part, originalName: String? = nil) -> [String: String] {
+    ["partitionOriginalFingerprint": fingerprint,
+     "partitionOriginalName": originalName ?? self.originalName,
+     "partitionOriginalPageCount": String(originalPageCount),
+     "partitionFirstPage": String(part.firstPage), "partitionLastPage": String(part.lastPage)]
   }
 
   private static func rejectInteractiveDocument(_ document: PDFDocument) throws {

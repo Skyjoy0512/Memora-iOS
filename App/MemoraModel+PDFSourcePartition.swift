@@ -7,7 +7,8 @@ extension MemoraModel {
   }
 
   func importPDFParts(_ partition: PDFSourcePartition, context: LocalImportContext,
-    originalSource: ProjectSource? = nil
+    originalSource: ProjectSource? = nil, sourceTitle: String? = nil,
+    registrationReceipt: (([UUID]) throws -> (key: String, data: Data))? = nil
   ) async throws -> [UUID]? {
     func isCurrent() -> Bool {
       guard context.isCurrent(in: self) else { return false }
@@ -52,16 +53,12 @@ extension MemoraModel {
         guard isCurrent() else {
           try? await journal.finish(lease); return nil
         }
-        let originalName = originalSource?.title ?? partition.originalName
+        let originalName = originalSource?.title ?? sourceTitle ?? partition.originalName
         let title = originalName + "（元PDF \(part.firstPage)–\(part.lastPage)ページ）"
         let source = ProjectSource(projectID: context.projectID, kind: .pdf, title: title,
           localFileReference: receipt.reference, contentFingerprint: receipt.fingerprint,
-          privacy: originalSource?.privacy ?? RecordPrivacy(), metadata: [
-            "partitionOriginalFingerprint": partition.fingerprint,
-            "partitionOriginalName": originalName,
-            "partitionOriginalPageCount": String(partition.originalPageCount),
-            "partitionFirstPage": String(part.firstPage), "partitionLastPage": String(part.lastPage)
-          ], summaryOptions: originalSource?.summaryOptions)
+          privacy: originalSource?.privacy ?? RecordPrivacy(),
+          metadata: partition.metadata(for: part, originalName: originalName), summaryOptions: originalSource?.summaryOptions)
         proposals.append((part, source, true))
       }
       try Task.checkCancellation()
@@ -86,13 +83,15 @@ extension MemoraModel {
           ids.append(proposal.source.id)
         }
       }
-      if !added.isEmpty {
+      if !added.isEmpty || registrationReceipt != nil {
         // A failed group write must not leave a subset registered or start AI
         // work for records that were never durably saved.
         let candidate = added + projectSources
         guard handlingPersistenceFailureLocally({ persistBatch {
-          [(key: StorageKey.projectSources, data: try JSONEncoder().encode(candidate)),
-           try journal.committedDocument(lease, retaining: Set(added.flatMap(\.fileReferences)))]
+          var writes = [(key: StorageKey.projectSources, data: try JSONEncoder().encode(candidate)),
+                        try journal.committedDocument(lease, retaining: Set(added.flatMap(\.fileReferences)))]
+          if let registrationReceipt { writes.append(try registrationReceipt(ids)) }
+          return writes
         } }) else {
           try? await journal.finish(lease); return nil
         }

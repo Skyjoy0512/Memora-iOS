@@ -7,7 +7,7 @@ extension MemoraModel {
     let files = Array(candidates.filter { seen.insert($0.id).inserted }.prefix(10))
     guard let first = files.first else { return nil }
     return AIAttachment(id: first.id, name: first.name, url: first.url,
-      additionalFiles: files.count > 1 ? Array(files.dropFirst()) : nil, originalURL: first.originalURL)
+      additionalFiles: files.count > 1 ? Array(files.dropFirst()) : nil, originalURL: first.originalURL, sourceMetadata: first.sourceMetadata)
   }
 
   func prepareConversationSources(question: String, attachment: AIAttachment?, includesHistory: Bool) async throws -> AIAttachment? {
@@ -32,6 +32,7 @@ extension MemoraModel {
   }
 
   func saveConversationFile(_ file: AIAttachment.File, projectID: UUID? = nil) async throws -> UUID? {
+    guard AIAttachment.isValidSourceMetadata(file.sourceMetadata) else { throw ProjectSourceFiles.Failure.invalidFile }
     guard let context = LocalImportContext(projectID: projectID, in: self) else { return nil }
     let link = try file.originalURL.map { try ProjectSourceURL.normalized($0.absoluteString) }
     if let link, let existing = projectSources.first(where: { $0.projectID == projectID && $0.originalURL == link.url }) {
@@ -60,6 +61,6 @@ extension MemoraModel {
       return context.isCurrent(in: self) ? source.id : nil
     }
     return try await importProjectFile(file.url, projectID: projectID, importContext: context,
-      waitsForPreparation: false, sourceTitle: file.name, originalURL: link?.url)
+      waitsForPreparation: false, sourceTitle: file.name, originalURL: link?.url, sourceMetadata: file.sourceMetadata)
   }
 }

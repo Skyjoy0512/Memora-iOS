@@ -102,9 +102,14 @@ workspace世代・source snapshot・project snapshot・設定revisionで非同�
 
 ## 大きなPDFの分割追加・旧PDFの再読み取り
 
-通常の追加では形式や分割数を選ばせない。資料追加で50MB超のPDFを選んだ場合だけ、同じNavigationStackで「PDFを分けて追加」へ進む。既存PDFはその他メニューから同じ操作を使える。既存PDF自体は残し、分割後のPDFを新しい資料として登録する。
+通常の追加では形式や分割数を選ばせない。内容の先頭が `%PDF-` の50MB超のローカルfileは、Library/project・Open In・共有Inbox・Ask AI添付から同じnative分割処理へ自動接続する。既存PDFのその他メニューには明示的な「PDFを分けて追加」も残す。既存PDF自体は変更しない。
 
-- 分割追加の入口はLibrary/projectの資料追加と既存PDF詳細。AskAI/共有拡張/Open Inからの大容量PDFの自動分割は未接続。
+- 共通の `PDFSourcePartitioning` がregular file・symlink拒否・PDF header・入力容量を確認する。拡張子だけでは大きなfileの上限を引き上げない。PDFKit処理はOCR/mediaと同じworking-set gateで端末内実行。キャンセルをnative workerへ渡し、破棄された結果のtemporaryも回収する。
+- Library/projectの資料追加とOpen Inは同じmodel helperへ。通常資料は従来経路、50MB超の真のPDFだけ自動分割する。pickerで10件を超えた場合も先頭だけ黙って保存しない。Open InのInbox原本は全part保存が成功したときだけ除去する。
+- 共有拡張は大きなPDFも64KB単位でコピー。headerでPDFを判定し、拡張子のないprovider fileも `.pdf` へ正規化。PDF500MB/通常file50MB・通常合計100MB/1共有全体500MB・10項目/キュー1GB（manifest込み）。公開・再読込・file参照でもheaderと容量を再検査する。全文解析は拡張で実行せずアプリ側で行う。
+- 共有の各PDFの受領記録と全partをSQLiteへ一括登録する。後続の別項目が失敗しても、同じ共有IDを再実行してpartを複製・再所属しない。受領記録は保存済みIDを保持し、古いバックアップへの復元で全partがなくなった場合はqueueから再追加できる。1件でも残っている間は手動の所属解除を維持する。全共有の除去後に受領記録を除去する。キュー除去後・記録除去前に停止すると小さな内部記録だけが残る場合がある。
+- Ask AIは会話専用領域へnative PDF partsをコピーし、成功後にまとめて添付する。合計10枠に分割後の全partが収まらなければ全部を拒否し、Libraryへの追加を案内する。上限はnative書出し前とページ範囲の再分割時にも検査。draft・会話・workspaceの変更や失敗時は新規の全partを回収する。勝手な恒久保存・project公開はしない。
+- 会話添付/履歴/引用のoptional `sourceMetadata` に元hash・元の名前・総ページ数・元範囲を保持する。既知5キー・hash・範囲・文字量を検証し、旧添付は項目なしで読み込む。明示保存時もこの情報で既存Library/projectのpartを再利用し、元のprivacyを上書きしない。引用先は実際に開く分割file内のページ。
 - 入力は最大500MB/10,000ページ、100ページを目安に分割。完成した各PDFは50MB以下、最大100件/合計400MB。大きい範囲は二分し、1ページだけで50MBを超える場合は理由を示して拒否する。抽出JSON8MB等の各資料の解析上限は別に維持する。
 - PDFKitのnativeページコピーで本文/画像と通常注釈/URIリンクを保つ。入力フォーム/電子署名/暗号化は機能を保って分割できないため拒否する。しおり/ページラベル/埋め込み添付/名前付き移動先は再構築せず、別分割へのリンクは解決しない場合がある。UIでも元PDF保管を案内する。
 - 名前とmetadataに入力PDFの名前・SHA256・総ページ数・元ページ範囲を保存。抽出ブロックと引用のページ番号は実際に開く分割PDF内の番号で、元PDFの範囲はタイトルで区別する。
@@ -127,6 +132,7 @@ workspace世代・source snapshot・project snapshot・設定revisionで非同�
 
 - 解析cacheの上限超過・期限切れ・OS/locale/用語集変更・OS退避後は再解析が必要。全資料を無期限に重複解析しない保証ではない。保存済みsourceの本文JSONは正本として従来どおり永続保存する。
 - 原本50MB/source領域・会話添付領域はそれぞれ500MB、PDF最大2000ページ・抽出JSON約8MB・1回180秒、text4MB。超過分は未解析として保持・表示。時間制限後のページ単位継続は実装済み。大きなPDFの分割追加は実装済み。固定100ページの分割でも1partの抽出上限を超える場合や、入力500MB/1万ページ以上、音声/動画の分割追加は残る。
+- HTTPで取得するPDFは従来の50MB応答上限を維持する。500MBまでの新経路はユーザー提供のローカルfileであり、URL応答を500MBまでDataへ読み込む実装は加えていない。会話の10枠は分割後のfile数で数える。多partのPDFはLibraryで保存して検索・質問する。
 - 新しい分割groupの未登録コピーはSQLite journalで起動時回収する。導入前の追跡がない未参照file、通常資料/会話添付等のjournal対象外の未登録コピーは、安全に所有を確定できないため一括削除しない。稀にjournal除去後・lock file除去前の終了で0byte lockだけが残る場合がある。
 - OCRは文字のみ。画像XObject/Formを持つ混在ページの画像文字も読み取り対象だが、表の構造、数式、図や映像の意味は保証しない。inline画像、注釈appearance、pattern/mask、ベクター化された文字は画像資源検査の対象外。画像単体は先頭frame、Officeは既存の抽出可能部分。
 - 検索はローカル字句FTS。意味検索や全資料を同時にLLMへ渡す方式ではない。回答の根拠抜粋と件数はmodel予算で有限。
@@ -135,3 +141,8 @@ workspace世代・source snapshot・project snapshot・設定revisionで非同�
 - 資料の任意要約設定は実装済み。実モデルでのジャンル別出力品質、追加設定画面の端末操作、モデル削除/プライバシー変更を含む実サービス試験は追加確認が必要。
 - OAuth client設定・Google審査/権限、cloud AI、team backend/CloudKitは実環境の構成が必要。架空の接続やfixtureを本番成功にしない。
 - 実機の音声認識資産、長時間mediaの電力/メモリ、全415 viewの操作、team実環境、課金providerは別途受け入れ検証が必要。検証状況は次の文書を参照。
+
+プロジェクト内のAsk AI送信も、複合添付の全fileを順に登録・解析してから質問する。
+元PDF metadataを引き継ぎ、途中で保存・本文・送信許可を確認できない場合は質問せず
+入力と添付を保持する。先に保存済みのfileは残し、再試行では既存の重複判定を使う。
+全体Ask AIの会話専用保存とは異なり、プロジェクト送信は従来どおりそのprojectに保存する。

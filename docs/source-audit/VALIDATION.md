@@ -204,3 +204,34 @@ AskAI/共有拡張/Open Inの大容量PDF分割接続は引き続き残る。
 今回の最終 `bitrig preview -platform iOS` は成功、プレビュー更新済み。
 log: `logs/2026-11-01T23-08-35-0fba3315.log`、従来と同じ警告11件。
 `git diff --check` 通過。新しい画面・設定・SDK27.1より新しいAPIは追加していない。
+
+## P0/P1: 大容量PDF fileの入口統一（6eb261c0から）
+
+開始時main / `6eb261c0`、未コミット変更なし。共有queueとAsk AI添付を独立して分担し、
+rootが共通native処理・Library/Open In・共有登録と統合した。Marketplace・権限・AI送信先の変更なし。
+
+| 限定検査 | 結果 | 実証と境界 |
+|---|---|---|
+| PDFPartitionChecks | PASS | headerがPDFで50MB超の実205page PDF（未使用の疎stream付き）をPDFKitで開き、3part化・後半205page本文・part上限拒否を確認。productionの自動取り込みhelperとSQLiteで重複抑止、会話partとLibraryの元hash/range一致、共有受領記録の一括commit/失敗rollbackを確認 |
+| 同suiteの共有経路 | PASS | production `ShareInboxQueue` → `MemoraModel+ShareInbox` → native分割 → SQLite。2項目目の保存をtriggerで失敗させキュー維持、先に保存したpartを所属解除後に再試行しても複製・再所属せず、古いsource snapshot復元でpartが全て消えた場合は元queueから再登録し、最終成功でqueue/受領記録を除去。App Group rootとmodel state/AI準備はfixture |
+| ShareInboxChecks | PASS | 実50MB超fileのstreaming受付、拡張子なしPDF、偽PDF/変更後header拒否。疎fileで500MB境界・通常合計/共有全体/queue容量を確認。500MB実本文解析や実extensionの起動ではない |
+| AttachmentPartitionImportChecks | PASS | productionの添付import methodを抽出してcompile。partition/copy service fixtureで枠の伝達、全part保存、metadata/旧codec、途中copy失敗/取消時の全新規file回収。実PDFKitとの結合・UIではない |
+| AttachmentCitationChecks | PASS | production抜粋選択・引用生成・参照codecにpartition metadataを含め、原文/位置/実送信予算/旧data読込・不正metadata拒否。抽出はfixture。既存fixtureのoptional interpolation警告あり |
+| ProjectSourceImportChecks | PASS | 既存32 context競合、実file/SQLite、登録・重複・共有参照保持・失敗rollback・PDF再読込等。OS解析/schedulerはfixture |
+
+共通native検査を通した後、共有itemの後続失敗と受領記録の実model経路を追加し、同suiteを再実行した。
+通過済みの全体検査は反復していない。iOS buildは別途最終結果を下に記録する。
+今回追加した入口の実file picker/共有拡張/Open In操作、実機の500MB/1万page負荷、cloud回答の品質、
+実Speech/チーム、アクセシビリティの追加検証は未実施。HTTP取得の50MB上限と会話の10添付枠は維持。
+
+最終統合レビューで、プロジェクト内Ask AIの旧処理が複合添付の先頭fileしか
+保存しない点を確認し、全fileの登録・解析・許可確認を通ってから送信するよう修正した。
+このプロジェクト送信の変更はコードレビューとiOS buildの対象であり、
+複数添付の実UI操作・実AI回答を検証した結果とは扱わない。
+
+最終 `bitrig preview -platform iOS` は成功し、利用者のプレビューを更新した。
+log: `logs/2026-11-02T07-12-10-464695c9.log`、既存と同じ警告11件。
+途中の共有receipt closureで出た明示self不足のcompile errorは修正済み。
+後から追加されたUI指定を同じ最終previewへ含め、全host suiteの反復はしていない。
+SDK27.1より新しいAPI・設定変更・破壊的移行は追加していない。
+UIの実確認は[比較記録](../ui-minimal-2026-11/README.md)に分離する。

@@ -5,7 +5,9 @@ actor ShareInboxQueue {
   static let maximumItems = 10
   static let maximumFileBytes = 50 * 1024 * 1024
   static let maximumRequestBytes = 100 * 1024 * 1024
-  static let maximumQueueBytes = 500 * 1024 * 1024
+  static let maximumPDFBytes = 500 * 1024 * 1024
+  static let maximumCombinedRequestBytes = 500 * 1024 * 1024
+  static let maximumQueueBytes = 1_024 * 1024 * 1024
   init(root: URL) { self.root = root }
 
   enum Failure: LocalizedError {
@@ -13,7 +15,7 @@ actor ShareInboxQueue {
     var errorDescription: String? {
       switch self {
       case .invalid: "共有内容を読み込めませんでした。元のアプリからもう一度共有してください。"
-      case .tooLarge: "1ファイル50MB、1回の共有100MB・10項目まで保存できます。"
+      case .tooLarge: "PDFは1ファイル500MB、その他は1ファイル50MB・合計100MBまで。1回の共有は全体で500MB・10項目まで保存できます。"
       case .full: "未取り込みの共有が多すぎます。Memoraを開いて取り込んでから再度共有してください。"
       }
     }
@@ -48,23 +50,40 @@ actor ShareInboxQueue {
     defer { if scoped { url.stopAccessingSecurityScopedResource() } }
     let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
     guard values.isRegularFile == true, values.isSymbolicLink != true else { throw Failure.invalid }
-    guard (values.fileSize ?? Int.max) <= maximumFileBytes else { throw Failure.tooLarge }
+    guard let size = values.fileSize, size >= 0, size <= maximumPDFBytes else { throw Failure.tooLarge }
+    let reader = try FileHandle(forReadingFrom: url)
+    defer { try? reader.close() }
+    let header = try reader.read(upToCount: 5) ?? Data()
+    let isPDF = header == Data("%PDF-".utf8)
+    let maximum = isPDF ? maximumPDFBytes : maximumFileBytes
+    guard size <= maximum else { throw Failure.tooLarge }
+    let budget = try stagedBytes(in: folder)
+    let occupied = try occupiedBytes(in: folder.deletingLastPathComponent())
+    guard budget.count < maximumItems,
+          size <= maximumCombinedRequestBytes - budget.total,
+          isPDF || size <= maximumRequestBytes - budget.ordinary else { throw Failure.tooLarge }
+    guard size <= maximumQueueBytes - occupied else { throw Failure.full }
     let extensionHint = url.pathExtension.isEmpty ? preferredExtension ?? "" : url.pathExtension
-    let suffix = String(extensionHint.lowercased().filter { $0.isASCII && ($0.isLetter || $0.isNumber) }.prefix(12))
+    let suffix = isPDF ? "pdf" : String(extensionHint.lowercased().filter { $0.isASCII && ($0.isLetter || $0.isNumber) }.prefix(12))
     let name = UUID().uuidString + (suffix.isEmpty ? "" : "." + suffix)
     let output = folder.appendingPathComponent(name)
-    FileManager.default.createFile(atPath: output.path, contents: nil)
-    let reader = try FileHandle(forReadingFrom: url)
+    guard FileManager.default.createFile(atPath: output.path, contents: nil) else { throw Failure.invalid }
     let writer = try FileHandle(forWritingTo: output)
-    defer { try? reader.close(); try? writer.close() }
+    defer { try? writer.close() }
     var count = 0
     do {
+      try reader.seek(toOffset: 0)
       while let data = try reader.read(upToCount: 64 * 1024), !data.isEmpty {
         try Task.checkCancellation()
         count += data.count
-        guard count <= maximumFileBytes else { throw Failure.tooLarge }
+        guard count <= maximum,
+              count <= maximumCombinedRequestBytes - budget.total,
+              isPDF || count <= maximumRequestBytes - budget.ordinary else { throw Failure.tooLarge }
+        guard count <= maximumQueueBytes - occupied else { throw Failure.full }
         try writer.write(contentsOf: data)
       }
+      guard count == size else { throw Failure.invalid }
+      if isPDF { guard try pdfHeader(output) else { throw Failure.invalid } }
       try writer.synchronize()
     } catch { try? FileManager.default.removeItem(at: output); throw error }
     return name
@@ -74,9 +93,9 @@ actor ShareInboxQueue {
     let folder = root.appendingPathComponent(".partial-" + request.id.uuidString, isDirectory: true)
     try validate(request, folder: folder)
     let pending = try requests()
-    guard pending.count < 20, try occupiedBytes() <= Self.maximumQueueBytes else { throw Failure.full }
     let data = try JSONEncoder().encode(request)
     guard data.count <= 2 * 1024 * 1024 else { throw Failure.tooLarge }
+    guard pending.count < 20, try Self.occupiedBytes(in: root) <= Self.maximumQueueBytes - data.count else { throw Failure.full }
     try data.write(to: folder.appendingPathComponent("manifest.json"), options: .atomic)
     try FileManager.default.moveItem(at: folder, to: root.appendingPathComponent(request.id.uuidString, isDirectory: true))
   }
@@ -108,9 +127,7 @@ actor ShareInboxQueue {
   func file(_ name: String, requestID: UUID) throws -> URL {
     let folder = root.appendingPathComponent(requestID.uuidString, isDirectory: true)
     let url = try safeFile(name, folder: folder)
-    let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
-    guard values.isRegularFile == true, values.isSymbolicLink != true else { throw Failure.invalid }
-    guard (values.fileSize ?? Int.max) <= Self.maximumFileBytes else { throw Failure.tooLarge }
+    _ = try Self.fileBytes(url)
     return url
   }
 
@@ -135,7 +152,7 @@ actor ShareInboxQueue {
   private func validate(_ request: ShareInboxRequest, folder: URL) throws {
     guard !request.items.isEmpty, request.items.count <= Self.maximumItems,
           Set(request.items.map(\.id)).count == request.items.count else { throw Failure.invalid }
-    var total = 0
+    var total = 0, ordinary = 0
     for item in request.items {
       guard item.title.count <= 200 else { throw Failure.invalid }
       switch item.kind {
@@ -146,15 +163,15 @@ actor ShareInboxQueue {
       case .text:
         guard !item.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, item.value.utf8.count <= 512 * 1024 else { throw Failure.tooLarge }
         total += item.value.utf8.count
+        ordinary += item.value.utf8.count
       case .file:
         let url = try safeFile(item.value, folder: folder)
-        let size = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
-        guard size.isRegularFile == true, size.isSymbolicLink != true else { throw Failure.invalid }
-        guard let bytes = size.fileSize, bytes <= Self.maximumFileBytes else { throw Failure.tooLarge }
-        total += bytes
+        let file = try Self.fileBytes(url)
+        total += file.bytes
+        if !file.isPDF { ordinary += file.bytes }
       }
     }
-    guard total <= Self.maximumRequestBytes else { throw Failure.tooLarge }
+    guard ordinary <= Self.maximumRequestBytes, total <= Self.maximumCombinedRequestBytes else { throw Failure.tooLarge }
   }
 
   private func safeFile(_ name: String, folder: URL) throws -> URL {
@@ -178,13 +195,43 @@ actor ShareInboxQueue {
     return data
   }
 
-  private func occupiedBytes() throws -> Int {
-    guard let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: [.fileSizeKey, .isSymbolicLinkKey]) else { return 0 }
+  private static func pdfHeader(_ url: URL) throws -> Bool {
+    let reader = try FileHandle(forReadingFrom: url)
+    defer { try? reader.close() }
+    return try reader.read(upToCount: 5) == Data("%PDF-".utf8)
+  }
+
+  private static func fileBytes(_ url: URL) throws -> (bytes: Int, isPDF: Bool) {
+    let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])
+    guard values.isRegularFile == true, values.isSymbolicLink != true else { throw Failure.invalid }
+    guard let bytes = values.fileSize, bytes >= 0, bytes <= maximumPDFBytes else { throw Failure.tooLarge }
+    // Filename and provider type alone must never raise the ordinary file limit.
+    let isPDF = try url.pathExtension.lowercased() == "pdf" && pdfHeader(url)
+    guard bytes <= (isPDF ? maximumPDFBytes : maximumFileBytes) else { throw Failure.tooLarge }
+    return (bytes, isPDF)
+  }
+
+  private static func stagedBytes(in folder: URL) throws -> (total: Int, ordinary: Int, count: Int) {
+    let values = try folder.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+    guard values.isDirectory == true, values.isSymbolicLink != true else { throw Failure.invalid }
+    var total = 0, ordinary = 0, count = 0
+    for url in try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) {
+      let file = try fileBytes(url)
+      total += file.bytes
+      if !file.isPDF { ordinary += file.bytes }
+      count += 1
+      guard total <= maximumCombinedRequestBytes, ordinary <= maximumRequestBytes, count <= maximumItems else { throw Failure.tooLarge }
+    }
+    return (total, ordinary, count)
+  }
+
+  private static func occupiedBytes(in root: URL) throws -> Int {
+    guard let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: [.fileSizeKey, .isSymbolicLinkKey, .isRegularFileKey]) else { throw Failure.invalid }
     var total = 0
     for case let url as URL in files {
-      let values = try url.resourceValues(forKeys: [.fileSizeKey, .isSymbolicLinkKey])
+      let values = try url.resourceValues(forKeys: [.fileSizeKey, .isSymbolicLinkKey, .isRegularFileKey])
       guard values.isSymbolicLink != true else { throw Failure.invalid }
-      total += values.fileSize ?? 0
+      if values.isRegularFile == true { total += values.fileSize ?? 0 }
       if total > Self.maximumQueueBytes { throw Failure.full }
     }
     return total

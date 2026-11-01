@@ -118,7 +118,10 @@ extension MemoraModel {
     case failed
   }
 
-  func importAIAttachment(from sourceURL: URL) async throws -> AIAttachment {
+  func importAIAttachment(from sourceURL: URL, maximumFiles: Int = 10) async throws -> AIAttachment {
+    guard (1...10).contains(maximumFiles) else {
+      throw ConversationSourceIntake.Failure.unavailable("添付は10件までです。")
+    }
     let hasSecurityScope = sourceURL.startAccessingSecurityScopedResource()
     defer {
       if hasSecurityScope {
@@ -126,8 +129,42 @@ extension MemoraModel {
       }
     }
 
-    let receipt = try await AIAttachmentFiles.shared.copy(sourceURL)
-    return AIAttachment(id: UUID(), name: sourceURL.lastPathComponent, url: try AIAttachmentFiles.url(receipt.reference))
+    var copies: [String] = []
+    do {
+      try Task.checkCancellation()
+      if try PDFSourcePartitioning.requiresPartition(sourceURL) {
+        let partition: PDFSourcePartition
+        do { partition = try await PDFSourcePartitioning.prepare(sourceURL, maximumParts: maximumFiles) }
+        catch PDFSourcePartitionFailure.partLimit {
+          throw ConversationSourceIntake.Failure.unavailable("添付は10件までです。大きいPDFはライブラリに追加して質問してください。")
+        }
+        defer { partition.cleanup() }
+        guard !partition.parts.isEmpty, partition.parts.count <= maximumFiles else {
+          throw ConversationSourceIntake.Failure.unavailable("添付は10件までです。大きいPDFはライブラリに追加して質問してください。")
+        }
+        var files: [AIAttachment.File] = []
+        for part in partition.parts {
+          try Task.checkCancellation()
+          let metadata = partition.metadata(for: part)
+          guard AIAttachment.isValidSourceMetadata(metadata) else { throw ProjectSourceFiles.Failure.invalidFile }
+          let receipt = try await AIAttachmentFiles.shared.copy(part.url)
+          copies.append(receipt.reference)
+          try Task.checkCancellation()
+          let name = "\(sourceURL.deletingPathExtension().lastPathComponent)（\(part.firstPage)–\(part.lastPage)ページ）.pdf"
+          files.append(.init(id: UUID(), name: name, url: try AIAttachmentFiles.url(receipt.reference), sourceMetadata: metadata))
+        }
+        guard let first = files.first else { throw ProjectSourceFiles.Failure.invalidFile }
+        return AIAttachment(id: first.id, name: first.name, url: first.url,
+          additionalFiles: files.count > 1 ? Array(files.dropFirst()) : nil, sourceMetadata: first.sourceMetadata)
+      }
+      let receipt = try await AIAttachmentFiles.shared.copy(sourceURL)
+      copies.append(receipt.reference)
+      try Task.checkCancellation()
+      return AIAttachment(id: UUID(), name: sourceURL.lastPathComponent, url: try AIAttachmentFiles.url(receipt.reference))
+    } catch {
+      await AIAttachmentFiles.shared.remove(copies)
+      throw error
+    }
   }
 
   func importAIPhoto(data: Data, fileExtension: String) async throws -> AIAttachment {

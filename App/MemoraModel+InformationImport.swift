@@ -8,8 +8,7 @@ extension MemoraModel {
     importErrorMessage = nil
     defer { isImporting = false }
     do {
-      guard let id = try await importProjectFile(url, projectID: context.projectID, importContext: context,
-        waitsForPreparation: false) else {
+      guard let ids = try await importInformationSources(url, context: context), let id = ids.first else {
         importErrorMessage = persistenceFailureMessage ?? "資料を保存できませんでした。もう一度追加してください。"
         return nil
       }

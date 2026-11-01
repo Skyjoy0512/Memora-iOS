@@ -7,16 +7,18 @@ final class PDFSourcePartitionBuilder {
   private(set) var parts: [PDFSourcePartition.Part] = []
   private var document: PDFDocument
   private var directory: URL
+  private var maximumParts: Int
   private(set) var outputBytes = 0
 
-  init(document: PDFDocument, directory: URL) {
+  init(document: PDFDocument, directory: URL, maximumParts: Int = PDFSourcePartition.maximumParts) {
     self.document = document
     self.directory = directory
+    self.maximumParts = maximumParts
   }
 
   func append(_ range: ClosedRange<Int>) throws {
     try Task.checkCancellation()
-    guard parts.count < PDFSourcePartition.maximumParts else { throw PDFSourcePartitionFailure.partLimit }
+    guard parts.count < maximumParts else { throw PDFSourcePartitionFailure.partLimit }
     let target = directory.appendingPathComponent("pages-\(range.lowerBound)-\(range.upperBound).pdf")
     let bytes = try autoreleasepool {
       let part = PDFDocument()
@@ -52,7 +54,7 @@ final class PDFSourcePartitionBuilder {
       try FileManager.default.removeItem(at: target)
       guard range.lowerBound < range.upperBound else { throw PDFSourcePartitionFailure.singlePageTooLarge(range.lowerBound) }
       // Even the smallest legal result needs one file for each side.
-      guard parts.count + 2 <= PDFSourcePartition.maximumParts else { throw PDFSourcePartitionFailure.partLimit }
+      guard parts.count + 2 <= maximumParts else { throw PDFSourcePartitionFailure.partLimit }
       let midpoint = range.lowerBound + (range.upperBound - range.lowerBound) / 2
       try append(range.lowerBound...midpoint)
       try append((midpoint + 1)...range.upperBound)
