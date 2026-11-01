@@ -10,6 +10,8 @@ struct RootTabView: View {
   @State private var isSidebarOpen = false
   @State private var pendingSidebarAction: (() -> Void)?
   @State private var isKeyboardVisible = false
+  @State private var onlineMeetingContext: LocalImportContext?
+  @State private var shouldStartOnlineMeeting = false
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
   /// controls re-add the home indicator inset themselves.
   @State private var safeAreaInsets = EdgeInsets()
@@ -181,19 +183,11 @@ struct RootTabView: View {
     .sheet(item: $model.pendingSourceCitation) { target in
       ArtifactSourceDetailView(target: target, workspaceID: nil)
     }
-    .sheet(isPresented: $model.isOnlineMeetingCapturePresented, onDismiss: {
-      model.onlineMeetingCaptureEvent = nil
-      model.onlineMeetingCaptureSpaceID = nil
-    }) {
+    .sheet(isPresented: $model.isOnlineMeetingCapturePresented, onDismiss: completeOnlineMeetingDismissal) {
       NavigationStack {
         OnlineMeetingCaptureView {
-          let event = model.onlineMeetingCaptureEvent
-          let spaceID = model.onlineMeetingCaptureSpaceID
+          shouldStartOnlineMeeting = true
           model.isOnlineMeetingCapturePresented = false
-          Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(250))
-            await model.startCapture(event: event, spaceID: spaceID)
-          }
         }
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {
@@ -202,6 +196,10 @@ struct RootTabView: View {
             }
           }
         }
+      }
+      .onAppear {
+        shouldStartOnlineMeeting = false
+        onlineMeetingContext = LocalImportContext(projectID: model.onlineMeetingCaptureSpaceID, in: model)
       }
     }
     .overlay(alignment: .bottom) {
@@ -214,6 +212,24 @@ struct RootTabView: View {
       }
     }
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.pendingUndo?.id)
+  }
+
+  private func completeOnlineMeetingDismissal() {
+    let event = model.onlineMeetingCaptureEvent
+    let spaceID = model.onlineMeetingCaptureSpaceID
+    let context = onlineMeetingContext
+    let shouldStart = shouldStartOnlineMeeting
+    model.onlineMeetingCaptureEvent = nil
+    model.onlineMeetingCaptureSpaceID = nil
+    onlineMeetingContext = nil
+    shouldStartOnlineMeeting = false
+    guard shouldStart else { return }
+    guard let context else {
+      model.recordingErrorMessage = "この保存先では録音できません。画面を開き直してください。"
+      return
+    }
+    // Wait for the system's dismissal, rather than guessing its animation time.
+    Task { await model.startCapture(event: event, spaceID: spaceID, context: context) }
   }
 
   private var tabSurface: some View {
@@ -261,7 +277,9 @@ struct RootTabView: View {
           )
       }
 
-      MemoraGlassContainer(spacing: 4) {
+      // These controls are independent surfaces. A shared glass container can
+      // intercept native menu rows where they overlap the composer's surface.
+      Group {
         HStack(alignment: .bottom, spacing: showsCaptureButtons ? 8 : 0) {
           if shouldShowComposer {
             QuickAIComposer(

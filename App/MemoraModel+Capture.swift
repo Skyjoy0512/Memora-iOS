@@ -35,7 +35,8 @@ extension MemoraModel {
     refreshRecordingResources()
   }
 
-  func startCapture(event: UpcomingMeeting? = nil, spaceID: UUID? = nil) async {
+  func startCapture(event: UpcomingMeeting? = nil, spaceID: UUID? = nil,
+                    context suppliedContext: LocalImportContext? = nil) async {
     // A finished recording still waiting to be stored comes first: starting a new
     // one now could replace it, so save that one before recording anything else.
     guard !isRestoring else { return }
@@ -51,8 +52,18 @@ extension MemoraModel {
       return
     }
 
+    guard let context = suppliedContext ?? LocalImportContext(projectID: spaceID, in: self),
+          context.projectID == spaceID else {
+      if !Task.isCancelled {
+        recordingErrorMessage = "この保存先では録音できません。画面を開き直してください。"
+      }
+      return
+    }
+    guard validateCaptureContext(context) else { return }
+
     guard await resolvePendingRecordingBeforeCapture() else { return }
     guard !isRestoring, !isPreparingCapture, !isSavingCapture, !isRecording else { return }
+    guard validateCaptureContext(context) else { return }
 
     isPreparingCapture = true
     guard spaceID == nil || ProjectFiling.existingProject(spaceID, in: spaces) != nil else {
@@ -62,8 +73,10 @@ extension MemoraModel {
     }
     let destinationID = spaceID ?? event.flatMap { recurringProjectID(forEventID: $0.id) }
     defer { isPreparingCapture = false }
+    guard let destinationContext = LocalImportContext(projectID: destinationID, in: self) else { return }
 
     let allowed = await recorder.requestPermission()
+    guard validateCaptureContext(context), validateCaptureContext(destinationContext) else { return }
     guard allowed else {
       microphonePermissionDenied = true
       announce("マイクの使用が許可されていません。設定から許可してください。")
@@ -77,7 +90,17 @@ extension MemoraModel {
     }
 
     do {
-      recordingURL = try await recorder.start()
+      let url = try await recorder.start()
+      // Session ownership can suspend too. An obsolete request must not start
+      // a recording in the workspace that replaced it or retain its audio.
+      guard validateCaptureContext(context), validateCaptureContext(destinationContext) else {
+        recorder.stop()
+        if !MediaFiles.delete(url) {
+          deletionFailureMessage = "開始を取り消した録音ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
+        }
+        return
+      }
+      recordingURL = url
       recordingStartedAt = .now
       recordingPausedAt = nil
       recordingPausedDuration = 0
@@ -118,6 +141,16 @@ extension MemoraModel {
     } catch {
       recordingErrorMessage = error.localizedDescription
     }
+  }
+
+  private func validateCaptureContext(_ context: LocalImportContext) -> Bool {
+    guard context.isCurrent(in: self) else {
+      if !Task.isCancelled {
+        recordingErrorMessage = "保存先が変更されたため、録音を開始しませんでした。画面を開き直してお試しください。"
+      }
+      return false
+    }
+    return true
   }
 
   func stopCapture() async {

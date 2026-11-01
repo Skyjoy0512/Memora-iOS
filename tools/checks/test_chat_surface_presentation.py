@@ -16,7 +16,7 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
         self.assertIn("interactionChanged?(interacting)", bar)
         self.assertIn("ComposerInputObserver", bar)
         quick = (APP / "QuickAIComposer.swift").read_text()
-        self.assertIn("isConversation: model.selectedTab == .askAI && scope == .global", quick)
+        self.assertIn("isConversation: !compactIdle && model.selectedTab == .askAI && scope == .global", quick)
         self.assertIn("isComposing = interacting", quick)
         self.assertIn("!snapshot.hasMarkedText", quick)
 
@@ -38,12 +38,14 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
         self.assertIn("AIAnswerActions(message: message)", row)
         self.assertIn("toggleSources", row)
 
-    def test_conversation_width_does_not_collapse_when_keyboard_closes(self):
+    def test_composer_keeps_identity_while_capture_controls_yield_to_input(self):
         root = (APP / "RootTabView.swift").read_text()
-        self.assertIn("min(width * 0.945, MemoraSpacing.readingWidth)", root)
+        self.assertIn(".frame(maxWidth: MemoraSpacing.readingWidth)", root)
+        self.assertIn(".frame(width: showsCaptureButtons ? 112 : 0", root)
+        self.assertIn("compactIdle: true", root)
         self.assertNotIn(".id(composerScope)\n", root)
-        native = (APP / "CaptureToolbarButton.swift").read_text()
-        for contract in ("ToolbarActionLabel", "Menu {", ".confirmationDialog(", "importInformationFile"):
+        native = (APP / "CaptureFloatingButtons.swift").read_text()
+        for contract in ("group: .notes", "group: .recording", "Menu {", ".confirmationDialog(", "importInformationFile"):
             self.assertIn(contract, native)
 
     def test_sidebar_footer_shortens_secondary_copy_not_tap_targets(self):

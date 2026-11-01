@@ -96,15 +96,29 @@ class ExperiencePresentationChecks(unittest.TestCase):
         for call in ("onSelect(action)", "CaptureAction.available", "model.sourceAddProjectID = spaceID"):
             self.assertIn(call, menu)
         self.assertIn(".accessibilityHint(action.detail)", menu)
-        native = (APP / "CaptureToolbarButton.swift").read_text()
-        for contract in ("ToolbarActionLabel", "Menu {", ".confirmationDialog(", "model.importInformationFile(url, context: context)", "NSUserCancelledError"):
+        native = (APP / "CaptureFloatingButtons.swift").read_text()
+        for contract in ("group: .notes", "group: .recording", "Menu {", ".confirmationDialog(", "model.importInformationFile(url, context: context)", "NSUserCancelledError"):
             self.assertIn(contract, native)
+        self.assertEqual(native.count("Menu {"), 2)
+        self.assertIn("if isVisible {", native)
+        self.assertIn("interactive: true, backed: false", native)
+        notes = menu.split("case .notes:")[1].split("case .recording:")[0]
+        self.assertLess(notes.index("action(.newMemo)"), notes.index("addSource"))
+        recording = menu.split("case .recording:")[1].split("case .all:")[0]
+        self.assertLess(recording.index("action(.recording)"), recording.index("action(.importAudio)"))
+        self.assertLess(recording.index("action(.importAudio)"), recording.index("action(.onlineMeeting)"))
         self.assertLess(native.index("importContext = LocalImportContext"), native.index("isFileImporterPresented = true"))
         for obsolete in ("Task.sleep", "navigationTransition", "matchedTransitionSource", ".popover("):
             self.assertNotIn(obsolete, native + menu)
         dispatch = (APP / "MemoraModel+CaptureMenu.swift").read_text()
         for call in ("startCapture(spaceID: projectID)", "onlineMeetingCaptureSpaceID = projectID", "startNewAIChat()", "isLifeLogCreationPresented = true", "openCalling()"):
             self.assertIn(call, dispatch)
+        root = (APP / "RootTabView.swift").read_text()
+        self.assertIn("onDismiss: completeOnlineMeetingDismissal", root)
+        self.assertIn("spaceID: spaceID, context: context)", root)
+        self.assertNotIn("Task.sleep", root)
+        self.assertIn("spaceID: model.visibleProjectID", root)
+        self.assertIn("!isComposing, !isKeyboardVisible", root)
 
     def test_search_and_device_toolbar_reuse_real_model_state(self):
         sidebar = (APP / "FileSidebarView.swift").read_text()

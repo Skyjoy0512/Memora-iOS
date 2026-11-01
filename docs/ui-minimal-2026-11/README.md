@@ -188,3 +188,40 @@ UIの区切りでpreviewと主要操作を確認し、全host検査の反復や�
 音声pickerの検索キーボード・取消を再確認。入力文字・送信・保存は実行していない。
 待機中の下書きがある場合の作成ボタン維持は静的確認で、文字を入力した操作試験ではない。
 `git diff --check`通過。既存データの変更・移行とSDK27.1より新しいAPI追加はない。
+
+## 下部メニューの遷移と録音開始保護 — 2026-11-02
+
+オンライン会議の準備画面から録音へ移る処理に、固定250msの待機が残っていた。
+sheetの`onDismiss`で明示的な開始要求だけを引き継ぎ、閉じる・スワイプ終了では開始しない。
+準備画面を開いた時点の保存先contextは保持し、別workspaceへの切替・復元・保護状態への
+移行・projectの変更/削除後は無効にする。中断した開始要求を永続化・自動再開しない。
+
+共通`startCapture`も、既存録音の復旧、マイク許可、音声session取得のawaitの前後で
+LocalImportContextを確認する。定例会議から決まるprojectも許可要求前に固定する。
+session取得後に依頼が失効していた場合は停止し、その開始で作った未保存fileのみ削除する。
+既存の録音・復旧draftや利用者の音声を削除しない。保存データの移行は不要。
+
+確認はこの変更範囲に絞った。
+
+- `python3 tools/checks/run-recording-start-checks.py` 成功。productionの録音開始methodと
+  `LocalImportContext`を実行し、24の失効境界、正常開始・二重開始抑止・許可拒否・
+  定例project変更・取消を確認。マイク・音声session・永続化・UIはfixtureで、
+  実音声ファイルの作成/削除やiOS callbackの発火はこの検査の対象外。
+- capture・native navigation・composerの表示契約の4件、motion policy検査を限定実行し成功。
+  旧`CaptureToolbarButton`の参照と「全画面のfade禁止」は最新の利用者指定に合わせた。
+  全suiteや追加のアクセシビリティ検査は実行していない。
+
+実画面の確認で、native Menuの下部項目をAsk AIのglass表面と重なる位置で押すと
+反応しないことを確認した。メモ側の先頭項目、オンライン会議項目の上端では遷移した。
+下部3操作を包む共通glass containerを外し、それぞれのnative glassを独立させる。
+配置と個々のglass素材は維持する。
+
+最終 `bitrig preview -platform iOS` 成功、既存警告11件、プレビュー更新済み。
+log: `logs/2026-11-02T08-04-20-cd9161f8.log`。
+iPhone18 Pro／ダークのsimulatorで、修正前と同じ座標にある資料追加項目の中央
+`(196,807)`とオンライン会議項目の中央`(260,796)`をtapし、それぞれのsheetへの遷移を確認。
+メモ作成画面への遷移も確認した。AX読み取りは失敗したため画像・座標で確認している。
+オンライン会議画面は録音準備ボタンを押さずに閉じ、通常の一覧へ戻ることを確認した。
+[オンライン会議の遷移後](images/capture-online-sheet-after.png)。
+実録音開始・許可ダイアログ・音声session取得・スワイプ終了・実機の操作は未検証。
+既存データの編集・新しい資料保存・AI送信は実行していない。
