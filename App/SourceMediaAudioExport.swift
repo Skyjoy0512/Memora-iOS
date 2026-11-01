@@ -21,7 +21,7 @@ final class SourceMediaAudioExport: @unchecked Sendable {
           try Task.checkCancellation()
           try await session.export(to: output, as: .m4a)
           try Task.checkCancellation()
-        } onCancel: { [self] in cancelLegacyExport() }
+        } onCancel: { [self] in self.cancelLegacyExport() }
         return true
       }
       group.addTask {

@@ -20,6 +20,17 @@ extension MemoraModel {
       let result = try await extract(file)
       try Task.checkCancellation()
       guard context.isCurrent(in: self) else { return }
+      if context.source.kind == .pdf, context.source.extractedTextReference != nil, result.blocks.isEmpty {
+        var previous = context.source
+        previous.processingStatus = .ready
+        if let page = result.resumePage { previous.resumePage = page }
+        if !result.ocrFailedPages.isEmpty { previous.ocrFailedPages = result.ocrFailedPages }
+        previous.errorInformation = "以前に読み取った本文を表示しています。" +
+          (result.notice ?? "新しい本文を読み取れませんでした。元のPDFを確認して再試行してください。")
+        previous.updatedAt = .now
+        _ = storeProjectSource(previous)
+        return
+      }
       let bytes = try JSONEncoder().encode(result.blocks)
       guard bytes.count <= ProjectSourceTextReader.maximumBytes else {
         throw ProjectSourceFiles.Failure.extractedTextTooLarge
@@ -64,10 +75,12 @@ extension MemoraModel {
       await ProjectSourceFiles.shared.remove(created)
       guard context.isCurrent(in: self, allowsCancellation: true) else { return }
       var current = context.source
-      current.processingStatus = .failed
-      current.errorInformation = error is CancellationError
+      let hasPreviousPDFText = current.kind == .pdf && current.extractedTextReference != nil
+      current.processingStatus = hasPreviousPDFText ? .ready : .failed
+      let reason = error is CancellationError
         ? "解析を停止しました。元ファイルは保存されています。"
         : (error as? LocalizedError)?.errorDescription ?? "解析できませんでした。元ファイルは保存されています。"
+      current.errorInformation = (hasPreviousPDFText ? "以前に読み取った本文を表示しています。" : "") + reason
       _ = storeProjectSource(current)
     }
   }

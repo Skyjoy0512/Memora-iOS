@@ -25,7 +25,52 @@ struct ProjectSourcePreparationChecks {
     }
     try await rejectedMetadata(root)
     try await oversized(root)
+    try await previousPDFText(root)
     print("ProjectSourcePreparationChecks: passed (production metadata/local orchestration, 60 suspended-result/file-write races, cancellation, duplicate execution, SQLite failure/retry/reopen, file cleanup and reader size bounds; extraction/network/downsample payloads and model state are fixtures, no network)")
+  }
+
+  @MainActor static func previousPDFText(_ root: URL) async throws {
+    let (model, id) = try await fixture(root, "previous-pdf", youtube: false)
+    let reference = try await ProjectSourceFiles.shared.write(JSONEncoder().encode([
+      ProjectSourceText(text: "Previously readable PDF", page: 24)
+    ]), extension: "json")
+    var previous = model.source(id: id)!
+    previous.kind = .pdf
+    previous.extractedTextReference = reference
+    previous.summary = "Previously generated summary"
+    previous.summaryTextReference = reference
+    previous.acquiredAt = Date(timeIntervalSince1970: 1_000)
+    precondition(model.storeProjectSource(previous))
+    await model.prepareProjectLocalSource(id, extract: { _ in throw Failure.offline })
+    var restored = model.source(id: id)!
+    precondition(restored.canProvideText && restored.extractedTextReference == reference)
+    precondition(restored.summary == previous.summary && restored.summaryTextReference == reference)
+    precondition(restored.acquiredAt == previous.acquiredAt && restored.privacy == previous.privacy)
+    precondition(restored.errorInformation?.contains("以前") == true)
+    restored.processingStatus = .pending
+    precondition(model.storeProjectSource(restored))
+    await model.prepareProjectLocalSource(id, extract: { _ in .init(blocks: [], notice: "Locked fixture") })
+    restored = model.source(id: id)!
+    precondition(restored.canProvideText && restored.extractedTextReference == reference && restored.errorInformation?.contains("Locked fixture") == true)
+    restored.processingStatus = .pending
+    precondition(model.storeProjectSource(restored))
+    let gate = PreparationGate<ProjectSourceExtractionResult>()
+    let cancelled = Task { await model.prepareProjectLocalSource(id, extract: { _ in try await gate.wait() }) }
+    await gate.entered()
+    cancelled.cancel()
+    gate.resume(extracted)
+    await cancelled.value
+    restored = model.source(id: id)!
+    precondition(restored.canProvideText && restored.extractedTextReference == reference)
+    restored.processingStatus = .pending
+    precondition(model.storeProjectSource(restored))
+    await model.prepareProjectLocalSource(id, extract: { _ in extracted })
+    let updated = model.source(id: id)!
+    precondition(updated.canProvideText && updated.extractedTextReference != reference)
+    precondition(updated.summary == previous.summary && updated.summaryTextReference == reference)
+    precondition(updated.revisions?.last?.textReference == reference)
+    try verifyDurable(model)
+    print("PASS PDF re-read throw/empty/cancel preserves previously readable evidence and summary; only successful replacement changes text reference and retains revision (extractor fixture, production SQLite/files)")
   }
 
   @MainActor static func fixture(_ root: URL, _ label: String, youtube: Bool) async throws -> (MemoraModel, UUID) {

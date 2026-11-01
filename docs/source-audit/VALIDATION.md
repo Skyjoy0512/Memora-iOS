@@ -163,3 +163,20 @@ PDFは処理済みページをSQLiteへ記録して、取消・時間制限後�
 inline画像、vector文字、XObject/Form以外の注釈/pattern/maskは検出対象外。OCRは表/図の構造や正確な読み順を復元しない。未使用の画像資源で追加OCRになる場合がある。巨大ページの早期上限判定は追加したが、PDFKit内部の文字列生成・実機のメモリ/電力は未計測。
 
 最終コードの `bitrig preview -platform iOS` は成功、プレビュー更新済み（既存と同じ11 warnings）。log: `logs/2026-11-01T18-35-41-b32b5f88.log`。`git diff --check` も通過。ビルド環境は引き続きSDK27.2で、追加したCoreGraphics/PDFKit/Vision APIは27.1より新しいAPIではない。
+
+## 並行P1: PDF分割追加・旧PDF再読み取り・media領域（7b3278f8から）
+
+独立した3系統を並行実装してrootが統合。作業開始時HEADは `7b3278f86a8e12670efe6b36570373f27ba20bf6`、途中で共有ツリーのHEADが `0c20cfb2ff046ae94a41d160a63bcd3982b2b9fa` へ進み、今回の途中実装とsidebar logo変更を含んでいた。そのcommitを保持したまま残りを完成させた。branchはmain、既存データ/設定の消去はしていない。
+
+| 限定検査 | 結果 | 境界/log |
+|---|---|---|
+| PDFPartitionChecks | PASS | 実205page PDF→100/100/5pageのnative PDF。後半本文/author/URI注釈、原本hash不変、active flock保護/孤児回収、暗号化/form/symlink/事前取消拒否。production file/SQLiteで全part登録/失敗一括rollback、元hash+範囲の重複抑止、元privacy継承と不一致拒否、古いscope拒否。production schedulerでpartの順次準備、作業本体はfixture。`pdf-partitions-20261101.log` |
+| ProjectSourceImportChecks | PASS | 既存32競合に加え、旧ready PDFの再読み取り受入れ/1job/SQL失敗rollback、原本/本文/要約/設定/権限保持、元file不在/消えたproject/実行中/team/復元/保護時の拒否。scheduler/OS抽出はfixture。`pdf-reread-20261101.log` |
+| SourceMediaExportChecks | PASS | 実AVFoundationの1秒WAV→M4Aとduration保持、疎fileで100MB超の拒否、fixture空き容量の拒否、開始前取消、flock active保持、孤児/lease作成前領域回収。Speech/実機/in-flight取消の時間は試験していない。`bounded-media-export-20261101.log` |
+| ProjectSourcePreparationChecks | PASS | 最終レビューで見つけた再読み取り失敗時の本文不可視化を修正後、production SQLite/fileとfixture抽出で例外/空結果/取消時の以前の本文ready維持、要約参照/取得日時/権限維持、成功時のみ本文置換とrevision保存。既存60競合等も同suite。`pdf-reread-preservation-20261101.log` |
+
+最初の統合previewは成功（`logs/2026-11-01T22-17-46-bee1f512.log`）。その後に発見したPDF再読み取りの保護を実装し、それに必要な4件目の限定検査と最終previewだけを追加した。最終 `bitrig preview -platform iOS` は成功、プレビュー更新済み、既存と同じ11 warnings。log: `logs/2026-11-01T22-21-52-a05efde3.log`。host media検査にあったSendable/明示selfの警告は最終iOS buildまでに修正。通過済み3suite・全体6suiteは反復していない。`git diff --check` 通過。
+
+新しい分割追加/再読み取り画面の実操作、実Speech、長時間media、iOS実機のメモリ/電池/取消時間、課金provider、実teamは未検証。アクセシビリティの追加検証もしていない。SDKは引き続き27.2で、追加APIは27.1より新しいAPIを使っていない。
+
+受け入れ境界: 入力500MB等の上限全部を最大実ファイルで計測した試験ではない。PDFKitの単一writeは取消できず、一時候補が上限を超えてから判定される。文書全体のしおり/添付等は保持を保証せず、UIにも説明する。分割temporaryは中断後に回収するが、SQLite登録前のプロセス終了でWorkspaceFilesへ既にコピーした未参照fileの起動時回収は残る。AskAI/共有拡張/Open Inの大容量PDF自動分割は未接続。

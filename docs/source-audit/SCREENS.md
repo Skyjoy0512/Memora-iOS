@@ -421,3 +421,11 @@
 | WorkspaceSelectionRow | [App/WorkspaceSelectionRow.swift](../../App/WorkspaceSelectionRow.swift) | 画面/部品（呼出元で表示） | 共通コンテナ/呼出元に委譲 |
 | WorkspaceSettingsView | [App/WorkspaceSettingsView.swift](../../App/WorkspaceSettingsView.swift) | 画面/部品（呼出元で表示） | シート |
 | WorkspaceSwitcher | [App/WorkspaceSwitcher.swift](../../App/WorkspaceSwitcher.swift) | 画面/部品（呼出元で表示） | 共通コンテナ/呼出元に委譲 |
+
+## 今回追加した分割追加画面
+
+基準415宣言とは分けた追加記録。端末の実操作を確認した表ではない。
+
+| View | ソース | 入口/状態 |
+|---|---|---|
+| PDFSourcePartitionSheet | [App/PDFSourcePartitionSheet.swift](../../App/PDFSourcePartitionSheet.swift) | 資料追加の大きいPDF/既存PDFのその他メニュー。元の名前、保存範囲、分割とPDF機能の限界、準備中、失敗、取消/再試行。通常追加の形式選択は増やさない |

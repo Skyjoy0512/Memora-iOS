@@ -8,7 +8,9 @@
     "a158414a5fbfe29345c759668750b326c5be1443",
     "adf81795e5e1c13b070190765644937c16f4c288",
     "a4b9ccfef353923cafa6e2231a957940d1c47e80",
-    "8a5094bb578e8eddac4faf9ac287e17983a068c4"
+    "8a5094bb578e8eddac4faf9ac287e17983a068c4",
+    "7b3278f86a8e12670efe6b36570373f27ba20bf6",
+    "0c20cfb2ff046ae94a41d160a63bcd3982b2b9fa"
   ],
   "suites": [
     {
@@ -61,47 +63,57 @@
   "xctest": "Project.json has no test targets (bitrig test exit 78)",
   "futureValidationPolicy": "Accessibility deferred at user request; batch implementation and run necessary build/regression checks at phase boundaries, not after each feature.",
   "latestBatch": {
-    "baseCommit": "8a5094bb578e8eddac4faf9ac287e17983a068c4",
-    "scope": "Mixed digital/raster PDF extraction, conservative text merge, OCR failure retry and bounded preprocessing",
+    "baseCommit": "7b3278f86a8e12670efe6b36570373f27ba20bf6",
+    "sharedTreeIntegrationCommit": "0c20cfb2ff046ae94a41d160a63bcd3982b2b9fa",
+    "scope": "Parallel P1 native PDF partition import with atomic scoped storage/privacy and serial processing, old PDF re-read preservation, bounded AVFoundation media staging/export",
     "hostChecks": [
       {
-        "suite": "source-intake",
+        "suite": "pdf-partition",
         "status": "passed",
         "exitCode": 0,
-        "log": "mixed-pdf-intake-20261101.log",
-        "boundary": "Actual macOS PDFKit/Vision/SQLite, nested Form mixed page24 and FTS citation; OCR exception injected, retry uses real Vision; digital-only23 pages avoidOCR"
-      },
-      {
-        "suite": "source-extraction-cache",
-        "status": "passed",
-        "exitCode": 0,
-        "log": "mixed-pdf-cache-20261101.log",
-        "boundary": "Production hash/SQLite; oldPDF invalidation, unchangedTXT reuse, OCR failure nonpublication; extractor fixture"
+        "log": "pdf-partitions-20261101.log",
+        "boundary": "Actual205-page PDF/nativeparts/URI/author/hash/lease + production SQLite/file group registration; real scheduler, preparation fixture"
       },
       {
         "suite": "project-source-import",
         "status": "passed",
         "exitCode": 0,
-        "log": "mixed-pdf-retry-20261101.log",
-        "boundary": "Production SQLite and source/file handling; OCR retry metadata/admission and existing32 races; scheduler/model fixtures"
+        "log": "pdf-reread-20261101.log",
+        "boundary": "Production file/SQLite/admission and32 existing races; old PDF re-read singleflight/refusal/rollback; scheduler fixture"
+      },
+      {
+        "suite": "source-media-export",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "bounded-media-export-20261101.log",
+        "boundary": "Actual1-second AVFoundation WAV-to-M4A; sparse-file limit, leases/orphan cleanup and pre-cancel; no speech or in-flight timing claim"
+      },
+      {
+        "suite": "project-source-preparation",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "pdf-reread-preservation-20261101.log",
+        "boundary": "Production SQLite/file/orchestration, extractor fixture: throw/empty/cancel preserves old readable evidence, successful replacement retainsrevision; existing60 races"
       }
-    ],
-    "notRepeated": "Six broad suites, added button interaction, accessibility, real model/provider output or device acceptance",
-    "remaining": [
-      "iOS real-device acceptance and retry button interaction",
-      "Inline images, vector text, annotation/pattern/mask detection and document structure accuracy",
-      "Oversized-document split import UI",
-      "Real audio/video and service acceptance",
-      "Full-screen runtime audit and resource profiling",
-      "Historical missing summary attribution cannot be reconstructed"
     ],
     "preview": {
       "command": "bitrig preview -platform iOS",
       "result": "success",
       "warnings": 11,
-      "log": "logs/2026-11-01T18-35-41-b32b5f88.log",
-      "note": "SDK27.2 in Bitrig; added APIs are available before27.1; no new device/runtime claim"
-    }
+      "log": "logs/2026-11-01T22-21-52-a05efde3.log",
+      "note": "Final PDF re-read preservation included; initial successful preview followed by justified final change/rebuild"
+    },
+    "notRepeated": "Passed three initial suites, six broad suites, new UI interaction, accessibility, device speech/performance or real service acceptance",
+    "remaining": [
+      "Device/UI acceptance and resource profiling",
+      "Automatic large-PDF partition routing from AskAI/share-extension/OpenIn",
+      "Startup collection of unregistered WorkspaceFiles copies after process death before group SQLite commit",
+      "Document-wide PDF outline/attachments/named/cross-part navigation preservation",
+      "PDF larger than500MB/10000pages or singlepage over50MB; perpart extraction caps still apply",
+      "Audio/video split import and long-duration real-device speech",
+      "Real authenticated YouTube/cloudAI/team acceptance",
+      "Full-screen runtime audit and historical missing summary attribution"
+    ]
   },
   "batchHistory": [
     {
@@ -262,6 +274,49 @@
         "Full-screen runtime audit and resource profiling",
         "Historical missing summary attribution cannot be reconstructed"
       ]
+    },
+    {
+      "baseCommit": "8a5094bb578e8eddac4faf9ac287e17983a068c4",
+      "scope": "Mixed digital/raster PDF extraction, conservative text merge, OCR failure retry and bounded preprocessing",
+      "hostChecks": [
+        {
+          "suite": "source-intake",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "mixed-pdf-intake-20261101.log",
+          "boundary": "Actual macOS PDFKit/Vision/SQLite, nested Form mixed page24 and FTS citation; OCR exception injected, retry uses real Vision; digital-only23 pages avoidOCR"
+        },
+        {
+          "suite": "source-extraction-cache",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "mixed-pdf-cache-20261101.log",
+          "boundary": "Production hash/SQLite; oldPDF invalidation, unchangedTXT reuse, OCR failure nonpublication; extractor fixture"
+        },
+        {
+          "suite": "project-source-import",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "mixed-pdf-retry-20261101.log",
+          "boundary": "Production SQLite and source/file handling; OCR retry metadata/admission and existing32 races; scheduler/model fixtures"
+        }
+      ],
+      "notRepeated": "Six broad suites, added button interaction, accessibility, real model/provider output or device acceptance",
+      "remaining": [
+        "iOS real-device acceptance and retry button interaction",
+        "Inline images, vector text, annotation/pattern/mask detection and document structure accuracy",
+        "Oversized-document split import UI",
+        "Real audio/video and service acceptance",
+        "Full-screen runtime audit and resource profiling",
+        "Historical missing summary attribution cannot be reconstructed"
+      ],
+      "preview": {
+        "command": "bitrig preview -platform iOS",
+        "result": "success",
+        "warnings": 11,
+        "log": "logs/2026-11-01T18-35-41-b32b5f88.log",
+        "note": "SDK27.2 in Bitrig; added APIs are available before27.1; no new device/runtime claim"
+      }
     }
   ]
 }

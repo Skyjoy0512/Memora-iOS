@@ -11,7 +11,7 @@ actor SourceMediaStaging {
   private let availableCapacity: @Sendable (URL) throws -> Int64
 
   init(directory: URL = FileManager.default.temporaryDirectory.appendingPathComponent("MemoraSourceMedia", isDirectory: true),
-       availableCapacity: @escaping @Sendable (URL) throws -> Int64 = SourceMediaStaging.availableBytes) {
+       availableCapacity: @escaping @Sendable (URL) throws -> Int64 = { try SourceMediaStaging.availableBytes($0) }) {
     self.directory = directory
     self.availableCapacity = availableCapacity
   }
@@ -62,21 +62,24 @@ actor SourceMediaStaging {
   }
 
   static func size(of root: URL) throws -> Int64 {
-    let manager = FileManager.default
     let rootValues = try root.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
     guard rootValues.isDirectory == true, rootValues.isSymbolicLink != true else { throw SourceMediaFailure.invalidTemporaryFile }
     var bytes: Int64 = 0
-    var folders = [root]
-    while let folder = folders.popLast() {
+    var visited = 0
+    var folders = [(root, 0)]
+    while let (folder, depth) = folders.popLast() {
+      guard depth <= 16 else { throw SourceMediaFailure.stagingLimit }
       let files: [URL]
-      do { files = try manager.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]) }
+      do { files = try childURLs(in: folder) }
       catch where isMissing(error) { continue }
       for file in files {
+        visited += 1
+        guard visited <= 4_096 else { throw SourceMediaFailure.stagingLimit }
         let values: URLResourceValues
         do { values = try file.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]) }
         catch where isMissing(error) { continue }
         guard values.isSymbolicLink != true else { throw SourceMediaFailure.invalidTemporaryFile }
-        if values.isDirectory == true { folders.append(file) }
+        if values.isDirectory == true { folders.append((file, depth + 1)) }
         else if values.isRegularFile == true { bytes += Int64(values.fileSize ?? 0) }
         else { throw SourceMediaFailure.invalidTemporaryFile }
         if bytes > maximumTotalBytes { return bytes }
@@ -92,11 +95,27 @@ actor SourceMediaStaging {
   }
 
   private func stageDirectories() throws -> [URL] {
-    try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+    try Self.childURLs(in: directory)
       .filter { url in
         let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
         return UUID(uuidString: url.lastPathComponent) != nil && values.isDirectory == true && values.isSymbolicLink != true
       }
+  }
+
+  private static func childURLs(in directory: URL) throws -> [URL] {
+    var failure: Error?
+    guard let enumeration = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil,
+      options: [.skipsSubdirectoryDescendants], errorHandler: { _, error in failure = error; return false }) else {
+      throw SourceMediaFailure.invalidTemporaryFile
+    }
+    var files: [URL] = []
+    while let file = enumeration.nextObject() as? URL {
+      try Task.checkCancellation()
+      guard files.count < 4_096 else { throw SourceMediaFailure.stagingLimit }
+      files.append(file)
+    }
+    if let failure { throw failure }
+    return files
   }
 
   static func availableBytes(_ directory: URL) throws -> Int64 {

@@ -47,6 +47,8 @@ struct PDFSourcePartitionSnapshot {
     }
   }
 
+  static func inputByteCount(_ url: URL) throws -> Int { try attributes(url).bytes }
+
   private static func attributes(_ url: URL) throws -> Attributes {
     guard url.isFileURL else { throw PDFSourcePartitionFailure.invalidFile }
     let properties = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey,

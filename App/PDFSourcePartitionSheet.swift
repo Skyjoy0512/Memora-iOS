@@ -17,11 +17,12 @@ struct PDFSourcePartitionSheet: View {
   private var form: some View {
     MemoraForm {
       Section {
-        Text(request.url.lastPathComponent).textSelection(.enabled)
+        Text(request.originalSource?.title ?? request.url.lastPathComponent).textSelection(.enabled)
         Text("100ページを目安に、読み返しやすい複数のPDFとして保存します。大きなページがある場合は、さらに小さく分けます。")
           .font(.subheadline).foregroundStyle(.secondary)
       } footer: {
         Text("元のファイルは変更しません。ページ範囲を付けたPDFを追加し、それぞれ要約・検索・Ask AIで使えます。引用のページ番号は分割後のPDF内の番号です。")
+        Text("しおりやPDF内の添付ファイル、元PDF全体をまたぐリンクは引き継げない場合があります。元のPDFも手元に保管してください。")
       }
       Section {
         Text(request.context.projectID.flatMap { model.space(id: $0)?.name }.map { "保存先：" + $0 } ?? "ライブラリに保存します")
@@ -67,7 +68,7 @@ struct PDFSourcePartitionSheet: View {
         } onCancel: { worker.cancel() }
         defer { partition.cleanup() }
         try Task.checkCancellation()
-        guard let ids = try await model.importPDFParts(partition, context: request.context), !ids.isEmpty else {
+        guard let ids = try await model.importPDFParts(partition, context: request.context, originalSource: request.originalSource), !ids.isEmpty else {
           failure = model.persistenceFailureMessage ?? "保存できませんでした。保存先と空き容量を確認して再試行してください。"
           return
         }

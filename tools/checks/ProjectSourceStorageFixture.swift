@@ -19,6 +19,13 @@ final class MemoraModel {
   var audioImportCalls = 0
   var discardedSourceExtractions: [ProjectSource] = []
   func discardSourceExtraction(for source: ProjectSource) { discardedSourceExtractions.append(source) }
+  #if MEMORA_PDF_PARTITION_CHECKS
+  func performProjectSourcePreparation(_ id: UUID) async {
+    preparedSourceIDs.append(id)
+    await preparationHook?(id)
+  }
+  func recoverInterruptedProjectSources(includingPending: Bool = false) {}
+  #else
   func prepareProjectSource(_ id: UUID) async {
     preparedSourceIDs.append(id)
     await preparationHook?(id)
@@ -34,6 +41,7 @@ final class MemoraModel {
     sourcePreparationJobs[id] = (attempt, job)
     return job
   }
+  #endif
   #if !MEMORA_AUDIO_IMPORT_CHECKS
   func importAudio(from url: URL, spaceID: UUID?, importContext: LocalImportContext?) async -> UUID? {
     audioImportCalls += 1

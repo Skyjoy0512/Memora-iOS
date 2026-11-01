@@ -16,7 +16,7 @@ struct PDFSourcePartition: Sendable {
   var originalName: String
   var fingerprint: String
   var originalPageCount: Int
-  private var stagingDirectory: URL
+  private var lease: PDFSourcePartitionLease
 
   static func prepare(_ url: URL, pagesPerPart: Int = 100, directory: URL? = nil) throws -> PDFSourcePartition {
     guard (1...maximumPages).contains(pagesPerPart) else { throw PDFSourcePartitionFailure.invalidPagesPerPart }
@@ -26,14 +26,11 @@ struct PDFSourcePartition: Sendable {
     let accessed = url.startAccessingSecurityScopedResource()
     defer { if accessed { url.stopAccessingSecurityScopedResource() } }
     let base = directory ?? FileManager.default.temporaryDirectory.appendingPathComponent("MemoraPDFPartitions", isDirectory: true)
-    guard base.isFileURL else { throw PDFSourcePartitionFailure.invalidFile }
-    try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
-    let folder = base.resolvingSymlinksInPath().standardizedFileURL
-      .appendingPathComponent("partition-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false,
-      attributes: [.posixPermissions: 0o700])
+    let inputBytes = try PDFSourcePartitionSnapshot.inputByteCount(url)
+    let lease = try PDFSourcePartitionStaging.acquire(in: base, inputBytes: inputBytes)
+    let folder = lease.directory
     var retained = false
-    defer { if !retained { try? FileManager.default.removeItem(at: folder) } }
+    defer { if !retained { lease.remove() } }
     let snapshot = try PDFSourcePartitionSnapshot(url, in: folder)
     guard let document = PDFDocument(url: snapshot.url) else { throw PDFSourcePartitionFailure.invalidFile }
     guard !document.isLocked, !document.isEncrypted else { throw PDFSourcePartitionFailure.encrypted }
@@ -51,8 +48,9 @@ struct PDFSourcePartition: Sendable {
     try Task.checkCancellation()
     try snapshot.verifyOriginal()
     try FileManager.default.removeItem(at: snapshot.url)
+    try lease.finishPreparation(outputBytes: builder.outputBytes)
     let result = PDFSourcePartition(parts: builder.parts, originalName: url.lastPathComponent,
-      fingerprint: snapshot.fingerprint, originalPageCount: count, stagingDirectory: folder)
+      fingerprint: snapshot.fingerprint, originalPageCount: count, lease: lease)
     try Task.checkCancellation()
     retained = true
     return result
@@ -60,9 +58,7 @@ struct PDFSourcePartition: Sendable {
 
   @discardableResult
   func cleanup() -> Bool {
-    guard FileManager.default.fileExists(atPath: stagingDirectory.path) else { return true }
-    do { try FileManager.default.removeItem(at: stagingDirectory); return true }
-    catch { return !FileManager.default.fileExists(atPath: stagingDirectory.path) }
+    lease.remove()
   }
 
   private static func rejectInteractiveDocument(_ document: PDFDocument) throws {

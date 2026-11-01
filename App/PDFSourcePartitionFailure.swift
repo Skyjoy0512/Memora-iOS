@@ -12,6 +12,9 @@ enum PDFSourcePartitionFailure: LocalizedError {
   case invalidPagesPerPart
   case writeFailed
   case originalChanged
+  case stagingBusy
+  case stagingLimit
+  case insufficientCapacity
 
   var errorDescription: String? {
     switch self {
@@ -26,6 +29,9 @@ enum PDFSourcePartitionFailure: LocalizedError {
     case .invalidPagesPerPart: "分割するページ数は1〜10,000ページで指定してください。"
     case .writeFailed: "分割したPDFを保存できませんでした。保存容量を確認して再試行してください。"
     case .originalChanged: "分割中に元のPDFが変更されました。現在のファイルを確認して再試行してください。"
+    case .stagingBusy: "別のPDFを準備しています。完了してからもう一度お試しください。"
+    case .stagingLimit: "PDFの一時保存容量の上限に達しています。進行中の保存が終わってから再試行してください。"
+    case .insufficientCapacity: "PDFを分割するための空き容量が不足しています。端末の空き容量を増やして再試行してください。"
     }
   }
 }

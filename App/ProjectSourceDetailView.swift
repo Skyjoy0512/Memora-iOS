@@ -210,7 +210,7 @@ struct ProjectSourceDetailView: View {
                 guard canStartSourceChange(), let current = model.source(id: sourceID), current.kind == .pdf,
                       let reference = current.localFileReference, let file = ProjectSourceFiles.resolve(reference),
                       let context = LocalImportContext(projectID: current.projectID, in: model) else { return }
-                partitionRequest = PDFSourcePartitionRequest(url: file, context: context)
+                partitionRequest = PDFSourcePartitionRequest(url: file, context: context, originalSource: current)
               }
             }
             Button("プライバシー", icon: .lock) { isEditingPrivacy = true }

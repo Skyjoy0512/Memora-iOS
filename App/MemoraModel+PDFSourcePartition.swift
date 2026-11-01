@@ -1,8 +1,18 @@
 import Foundation
 
 extension MemoraModel {
-  func importPDFParts(_ partition: PDFSourcePartition, context: LocalImportContext) async throws -> [UUID]? {
-    guard context.isCurrent(in: self) else { return nil }
+  func importPDFParts(_ partition: PDFSourcePartition, context: LocalImportContext,
+    originalSource: ProjectSource? = nil
+  ) async throws -> [UUID]? {
+    func isCurrent() -> Bool {
+      guard context.isCurrent(in: self) else { return false }
+      guard let originalSource else { return true }
+      return originalSource.projectID == context.projectID && originalSource.kind == .pdf &&
+        source(id: originalSource.id)?.hasSameReadableEvidence(as: originalSource) == true &&
+        source(id: originalSource.id)?.summaryOptions == originalSource.summaryOptions &&
+        (originalSource.contentFingerprint == nil || originalSource.contentFingerprint == partition.fingerprint)
+    }
+    guard isCurrent() else { return nil }
     guard !partition.parts.isEmpty, partition.parts.count <= 100,
           partition.parts.first?.firstPage == 1,
           partition.parts.last?.lastPage == partition.originalPageCount else {
@@ -19,32 +29,37 @@ extension MemoraModel {
       var proposals: [(part: PDFSourcePartition.Part, source: ProjectSource, isNew: Bool)] = []
       for part in partition.parts {
         try Task.checkCancellation()
-        guard context.isCurrent(in: self) else {
+        guard isCurrent() else {
           await discardPDFPartCopies(copied); return nil
         }
         if let existing = projectSources.first(where: {
           matchesPDFPart($0, partition: partition, part: part, projectID: context.projectID)
         }) {
+          if let originalSource, existing.privacy != originalSource.privacy {
+            throw PDFSourcePartitionImportFailure.privacyChanged
+          }
           proposals.append((part, existing, false))
           continue
         }
         let receipt = try await ProjectSourceFiles.shared.copy(part.url)
         copied.append(receipt.reference)
-        guard context.isCurrent(in: self) else {
+        guard isCurrent() else {
           await discardPDFPartCopies(copied); return nil
         }
-        let title = partition.originalName + "（元PDF \(part.firstPage)–\(part.lastPage)ページ）"
+        let originalName = originalSource?.title ?? partition.originalName
+        let title = originalName + "（元PDF \(part.firstPage)–\(part.lastPage)ページ）"
         let source = ProjectSource(projectID: context.projectID, kind: .pdf, title: title,
-          localFileReference: receipt.reference, contentFingerprint: receipt.fingerprint, metadata: [
+          localFileReference: receipt.reference, contentFingerprint: receipt.fingerprint,
+          privacy: originalSource?.privacy ?? RecordPrivacy(), metadata: [
             "partitionOriginalFingerprint": partition.fingerprint,
-            "partitionOriginalName": partition.originalName,
+            "partitionOriginalName": originalName,
             "partitionOriginalPageCount": String(partition.originalPageCount),
             "partitionFirstPage": String(part.firstPage), "partitionLastPage": String(part.lastPage)
-          ])
+          ], summaryOptions: originalSource?.summaryOptions)
         proposals.append((part, source, true))
       }
       try Task.checkCancellation()
-      guard context.isCurrent(in: self), isStoreWritable() else {
+      guard isCurrent(), isStoreWritable() else {
         await discardPDFPartCopies(copied); return nil
       }
       var added: [ProjectSource] = []
@@ -55,6 +70,9 @@ extension MemoraModel {
         if let existing = projectSources.first(where: {
           matchesPDFPart($0, partition: partition, part: proposal.part, projectID: context.projectID)
         }) {
+          if let originalSource, existing.privacy != originalSource.privacy {
+            throw PDFSourcePartitionImportFailure.privacyChanged
+          }
           ids.append(existing.id)
         } else {
           guard proposal.isNew else { await discardPDFPartCopies(copied); return nil }
@@ -76,7 +94,7 @@ extension MemoraModel {
       var preceding: Task<Void, Never>?
       for source in added { preceding = scheduleProjectSourcePreparation(source.id, after: preceding) }
       await discardPDFPartCopies(copied)
-      return context.isCurrent(in: self) ? ids : nil
+      return isCurrent() ? ids : nil
     } catch {
       if !committed { await discardPDFPartCopies(copied) }
       throw error

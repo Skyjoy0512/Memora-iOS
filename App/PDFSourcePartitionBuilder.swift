@@ -7,7 +7,7 @@ final class PDFSourcePartitionBuilder {
   private(set) var parts: [PDFSourcePartition.Part] = []
   private var document: PDFDocument
   private var directory: URL
-  private var outputBytes = 0
+  private(set) var outputBytes = 0
 
   init(document: PDFDocument, directory: URL) {
     self.document = document
@@ -40,6 +40,7 @@ final class PDFSourcePartitionBuilder {
         .saveImagesAsJPEGOption: false,
         .optimizeImagesForScreenOption: false
       ]
+      try PDFSourcePartitionStaging.ensureWriteCapacity(in: directory)
       guard part.write(to: target, withOptions: options) else { throw PDFSourcePartitionFailure.writeFailed }
       try Task.checkCancellation()
       let properties = try target.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey])

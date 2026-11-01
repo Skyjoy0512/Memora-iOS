@@ -1,5 +1,15 @@
 # Memora — 改善バックログ
 
+## 2026-11-01 PDFの分割追加・旧PDF再読込・media領域保護
+
+独立した3系統を並行実装して統合。大きなPDFを100ページ目安で分割し、
+元ページ範囲/hashと機密設定を保持して全partをSQLiteへ一括登録する。
+旧PDFの再読み取りと、失敗時に以前の本文/要約を利用できる保護を追加。
+mediaの一時M4Aを容量監視し、flockで実行中のfileを守って孤児を回収する。
+関連host検査4件は成功。追加UI・実Speech・実機の性能は未検証。
+PDFの文書全体機能の保持、単一native writeの一時超過、登録前終了時の
+WorkspaceFiles未参照コピー回収は[制約](source-audit/IMPLEMENTATION.md)を参照。
+
 ## 2026-11-01 混在PDFとOCR失敗の復旧
 
 文字layerのあるページも画像資源を調べ、画像内文章を端末OCRしてページ付きで検索/AskAIへ接続。
