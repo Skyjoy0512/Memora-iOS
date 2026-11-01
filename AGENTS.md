@@ -40,12 +40,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   destinations (Journal, Library, Ask AI, Marketplace) live at the top of the side menu
   (`FileSidebarView`). The bottom edge holds Ask AI with the two independent capture controls. `RootTab` still names
   the destination and keeps the old saved identifiers, but nothing draws tabs.
-- **Create controls**: the idle bottom row is Ask AI / memo / microphone.
+- **Create controls**: the idle bottom row is Ask AI / memo / plus.
   `CaptureFloatingButtons` presents two native menus from `CaptureMenuPopover`:
-  memo has メモを書く / 資料を追加; microphone has 録音する / 音声を取り込む /
+  memo has メモを書く / 資料を追加; plus has 録音する / 音声を取り込む /
   オンライン会議を録音, with recording first. Do not restore the top-right ＋.
   While composing, give Ask AI the full row; hide capture controls without
-  unmounting their file importer. Empty states reuse the full native dialog.
+  unmounting their file importer. Keep the 52pt circle geometry stable; only
+  its reserved slot collapses. Empty states reuse the full native dialog.
   Project creation stays in Projects' options menu and empty state; a project's
   new chat stays in its options and chat empty state.
 - **Files screen top chrome**: do not drive the navigation bar's visibility from

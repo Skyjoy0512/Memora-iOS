@@ -294,8 +294,12 @@ struct RootTabView: View {
           }
           CaptureFloatingButtons(spaceID: model.visibleProjectID, isVisible: showsCaptureButtons,
             includesProjectCreation: model.selectedTab == .library && model.librarySection == .projects)
+            // Collapse the slot, never the circular controls inside it. Keep
+            // inherited layout animation out of the native glass surfaces.
+            .fixedSize(horizontal: true, vertical: true)
+            .transaction { $0.animation = nil }
             // Keep presentation mounted when a picker raises its own keyboard.
-            .frame(width: showsCaptureButtons ? 112 : 0, height: showsCaptureButtons ? 52 : 0)
+            .frame(width: showsCaptureButtons ? 112 : 0, height: showsCaptureButtons ? 52 : 0, alignment: .trailing)
             .opacity(showsCaptureButtons ? 1 : 0)
             .allowsHitTesting(showsCaptureButtons)
             .accessibilityHidden(!showsCaptureButtons)

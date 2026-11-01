@@ -23,7 +23,7 @@ struct CaptureFloatingButtons: View {
       Menu {
         CaptureMenuPopover(spaceID: spaceID, group: .recording, onSelect: select)
       } label: {
-        menuLabel("録音", icon: .mic)
+        menuLabel("録音メニュー", icon: .plus)
       }
       .menuOrder(.fixed)
     }
@@ -57,19 +57,14 @@ struct CaptureFloatingButtons: View {
     }
   }
 
-  @ViewBuilder
   private func menuLabel(_ title: LocalizedStringKey, icon: MemoraIcon) -> some View {
-    if isVisible {
-      Label(title, icon: icon, size: 22)
-        .labelStyle(.iconOnly)
-        .frame(width: 52, height: 52)
-        .contentShape(Circle())
-        .memoraGlass(in: Circle(), interactive: true, backed: false)
-    } else {
-      // Container glass is composited separately from an outer opacity change.
-      // Remove only its surface; the importer remains attached to this view.
-      Color.clear.frame(width: 52, height: 52)
-    }
+    Label(title, icon: icon, size: 22)
+      .labelStyle(.iconOnly)
+      .frame(width: 52, height: 52)
+      .contentShape(Circle())
+      .memoraGlass(in: Circle(), interactive: true, backed: false)
+      // Keep the glass shape and view identity while the composer takes space.
+      .opacity(isVisible ? 1 : 0)
   }
 
   private func select(_ action: CaptureAction) {

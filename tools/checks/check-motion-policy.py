@@ -23,7 +23,7 @@ assert 'Menu {' in capture
 assert 'confirmationDialog' in capture
 for obsolete in ('matchedTransitionSource', 'navigationTransition', 'Task.sleep', '.popover('):
     assert obsolete not in capture
-assert 'if isVisible {' in capture
+assert '.opacity(isVisible ? 1 : 0)' in capture
 assert "navigationTransition" in (app / "HomeView.swift").read_text()
 assert "matchedTransitionSource" in (app / "HomeView.swift").read_text()
 print("Motion policy passed: bounded screen/text entrances; no per-row reveal; native capture menus and journal Hero retained; bottom tabs hidden")

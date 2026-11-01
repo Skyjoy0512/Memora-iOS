@@ -12,8 +12,8 @@ No new logo assets. Floating Ask AI controls use native Liquid Glass; motion fol
 
 ## Everyday interactions
 
-- The bottom idle row holds Ask AI on the left, then separate memo and microphone
-  circles in native Liquid Glass. Memo offers メモを書く / 資料を追加; microphone
+- The bottom idle row holds Ask AI on the left, then separate memo and plus
+  circles in native Liquid Glass. Memo offers メモを書く / 資料を追加; plus
   offers 録音する / 音声を取り込む / オンライン会議を録音, in that order.
   Remove the duplicate top-right create control. Projects' options menu and
   empty state retain project creation.
@@ -537,11 +537,13 @@ Marketplace and export renderers keep their existing presentation.
 ## Split bottom capture controls — 2026-11-02
 
 The latest requested layout supersedes earlier top-right create guidance. The
-compact idle Ask AI field omits its voice-input glyph; the independent microphone
-is recording. Focusing the field or dictation gives the composer full width; a paused draft
+compact idle Ask AI field omits its voice-input glyph; the independent plus
+opens the recording menu. Focusing the field or dictation gives the composer full width; a paused draft
 keeps capture available without clearing it. Its expanded controls keep message voice input and sending.
-Capture circles are 52pt with 8pt gaps and 12pt outer margins. Use one glass
-container with spacing 4 to keep the surfaces independent. Preserve the editor
+Capture circles are 52pt with 8pt gaps and 12pt outer margins. Keep separate glass
+surfaces without a shared container so native menu rows remain tappable. Keep
+circle geometry and label identity stable while their reserved slot collapses;
+do not animate the glass into a zero-size rectangle. Preserve the editor
 identity and keep the capture presentation mounted at zero visible size while
 typing, searching or selecting, so a picker's keyboard cannot remove its host.
 Search/selection retain the bottom edge. Shared received items hide creation.

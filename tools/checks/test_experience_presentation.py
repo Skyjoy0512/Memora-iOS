@@ -100,7 +100,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         for contract in ("group: .notes", "group: .recording", "Menu {", ".confirmationDialog(", "model.importInformationFile(url, context: context)", "NSUserCancelledError"):
             self.assertIn(contract, native)
         self.assertEqual(native.count("Menu {"), 2)
-        self.assertIn("if isVisible {", native)
+        self.assertIn(".opacity(isVisible ? 1 : 0)", native)
         self.assertIn("interactive: true, backed: false", native)
         notes = menu.split("case .notes:")[1].split("case .recording:")[0]
         self.assertLess(notes.index("action(.newMemo)"), notes.index("addSource"))
