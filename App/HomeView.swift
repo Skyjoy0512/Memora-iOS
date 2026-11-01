@@ -176,10 +176,6 @@ struct HomeView: View {
           RecorderStatusToolbarButton(compactWhenDisconnected: true)
         }
 
-        // The create action is the top-right control on every main screen.
-        ToolbarActionItem(usesSystemBackground: true) {
-          CaptureToolbarButton(spaceID: model.visibleProjectID, tab: .home)
-        }
       }
       .onChange(of: model.sidebarSearchRequest) { _, request in
         guard request != nil, model.selectedTab == .home, !model.isToolsPresented,

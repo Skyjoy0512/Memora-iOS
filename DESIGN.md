@@ -1,6 +1,6 @@
 # Memora — Native reading and conversation
 
-Updated 2026-11-01. This is the current design specification. Product behavior
+Updated 2026-11-02. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
@@ -12,14 +12,17 @@ No new logo assets. Floating Ask AI controls use native Liquid Glass; motion fol
 
 ## Everyday interactions
 
-- Recording is the first command in the shared top-right create menu, including
-  Projects. Project creation remains in that menu and the project empty state.
+- The bottom idle row holds Ask AI on the left, then separate memo and microphone
+  circles in native Liquid Glass. Memo offers メモを書く / 資料を追加; microphone
+  offers 録音する / 音声を取り込む / オンライン会議を録音, in that order.
+  Remove the duplicate top-right create control. Projects' options menu and
+  empty state retain project creation.
 - Files (ファイル) and Projects (プロジェクト) switch through the existing pill tabs beneath the Library title.
   Display, sort, filter and selection remain in the adjacent native menu. Library
   sources continue in the lazy list without a three-item preview or a See All link.
 - A project's title menu switches between chat, records and reference sources.
-  Its top-right create menu also starts with recording in every view; new chat
-  stays inside the project. A paperclip denotes source-only attachment actions.
+  Its options menu retains project-scoped new chat; capture uses the shared
+  bottom row and the visible project. A paperclip denotes source-only attachment actions.
 - Keep the Ask AI composer compact, using untinted regular Liquid Glass without
   an opaque card backing or a simulated border. Normal ready states need no badges;
   partial content, failures and recovery actions stay visible. Source metadata
@@ -374,8 +377,8 @@ competing for a narrow horizontal column.
 
 ## Interaction and accessibility
 
-Liquid Glass belongs to navigation, the side menu, the top-right create control
-and the composer. There are no bottom tabs. Keep the composer on the bottom edge.
+Liquid Glass belongs to navigation, the side menu, the floating capture controls
+and the composer. There are no bottom tabs. Keep the shared row on the bottom edge.
 Create-menu actions show a stable action name; input explanations are spoken hints.
 The create and composer attachment controls delegate presentation to native Menu,
 without custom zoom transitions, measured popovers or timed dispatch delays.
@@ -530,3 +533,16 @@ and generated-document titles use a short text reveal. Only a new streaming
 Ask AI reply receives an introduction, once per message; history and later tokens
 remain immediate. Reduce Motion removes text movement and uses a brief page fade.
 Marketplace and export renderers keep their existing presentation.
+
+## Split bottom capture controls — 2026-11-02
+
+The latest requested layout supersedes earlier top-right create guidance. The
+compact idle Ask AI field omits its voice-input glyph; the independent microphone
+is recording. Focusing the field or dictation gives the composer full width; a paused draft
+keeps capture available without clearing it. Its expanded controls keep message voice input and sending.
+Capture circles are 52pt with 8pt gaps and 12pt outer margins. Use one glass
+container with spacing 4 to keep the surfaces independent. Preserve the editor
+identity and keep the capture presentation mounted at zero visible size while
+typing, searching or selecting, so a picker's keyboard cannot remove its host.
+Search/selection retain the bottom edge. Shared received items hide creation.
+Marketplace keeps its existing presentation.

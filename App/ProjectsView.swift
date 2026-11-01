@@ -142,6 +142,9 @@ struct ProjectsView: View {
 
   private var orderMenu: some View {
     Menu {
+      Button("プロジェクトを作成", icon: .folder) { model.isFileCreationPresented = true }
+        .disabled(model.isRestoring || model.isStoreProtected)
+      Divider()
       Picker("表示", selection: $filter) {
         ForEach(ProjectListFilter.allCases) { Text($0.title).tag($0) }
       }

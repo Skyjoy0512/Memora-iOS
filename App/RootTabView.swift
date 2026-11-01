@@ -261,29 +261,30 @@ struct RootTabView: View {
           )
       }
 
-      // Scrolling hides only the tab bar; Ask AI stays at the bottom so it is
-      // always one tap away.
-      if shouldShowComposer {
-        QuickAIComposer(
-          scope: composerScope,
-          isComposing: $isComposing,
-          keepsFocusAfterSubmit: model.selectedTab == .askAI || model.activeProjectChatID != nil
-        )
-        // The Ask AI component keeps a small side margin on every page.
-        .containerRelativeFrame(.horizontal) { width, _ in
-          min(width * 0.945, MemoraSpacing.readingWidth)
+      MemoraGlassContainer(spacing: 4) {
+        HStack(alignment: .bottom, spacing: showsCaptureButtons ? 8 : 0) {
+          if shouldShowComposer {
+            QuickAIComposer(
+              scope: composerScope,
+              isComposing: $isComposing,
+              keepsFocusAfterSubmit: model.selectedTab == .askAI || model.activeProjectChatID != nil,
+              compactIdle: true
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // Keep the editor identity while the available width changes.
+            .transition(.opacity)
+          }
+          CaptureFloatingButtons(spaceID: model.visibleProjectID, isVisible: showsCaptureButtons,
+            includesProjectCreation: model.selectedTab == .library && model.librarySection == .projects)
+            // Keep presentation mounted when a picker raises its own keyboard.
+            .frame(width: showsCaptureButtons ? 112 : 0, height: showsCaptureButtons ? 52 : 0)
+            .opacity(showsCaptureButtons ? 1 : 0)
+            .allowsHitTesting(showsCaptureButtons)
+            .accessibilityHidden(!showsCaptureButtons)
         }
-        // Note: no `.id(composerScope)` — recreating the field would throw away
-        // what someone had already typed when the scope changed.
-        // A glass-like entrance: it blurs and rises into place instead of
-        // snapping in.
-        .transition(
-          reduceMotion
-            ? .opacity
-            : .move(edge: .bottom)
-              .combined(with: .opacity)
-              .combined(with: .scale(scale: 0.94, anchor: .bottom))
-        )
+        .frame(maxWidth: MemoraSpacing.readingWidth)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity)
       }
 
     }
@@ -314,6 +315,14 @@ struct RootTabView: View {
     .animation(reduceMotion ? nil : MemoraMotion.screen, value: isShowingMeetingDetail)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: model.isCaptureSourcePresented)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: isSearchCovering)
+  }
+
+  private var showsCaptureButtons: Bool {
+    guard shouldShowComposer, !isComposing, !isKeyboardVisible else { return false }
+    switch model.activeNavigationPath.last {
+    case .sharedRecord?, .sharedProject?: return false
+    default: return true
+    }
   }
 
   /// An open search, or picking files, takes the screen until a record is

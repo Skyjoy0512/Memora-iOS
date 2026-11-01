@@ -134,10 +134,6 @@ struct LibraryView: View {
             RecorderStatusToolbarButton(compactWhenDisconnected: true)
           }
 
-          ToolbarActionItem(usesSystemBackground: true) {
-            CaptureToolbarButton(spaceID: model.visibleProjectID, tab: .library,
-              includesProjectCreation: model.librarySection == .projects)
-          }
         }
 
       }

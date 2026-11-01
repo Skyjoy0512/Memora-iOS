@@ -95,6 +95,10 @@ struct SpaceDetailView: View {
         }
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
+            Button("新しいチャット", icon: .squareAndPencil) {
+              if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
+            }
+            .disabled(model.isRestoring || model.isStoreProtected)
             Button("既存記録を移動", icon: .folder) { isAddingFiles = true }
             Button("未決事項を質問", icon: .sparkles) { isAskingAI = true }
             NavigationLink("関連タスク", value: LibraryRoute.projectTasks(spaceID))
@@ -107,12 +111,6 @@ struct SpaceDetailView: View {
           } label: {
             ToolbarActionLabel("その他", icon: .ellipsis)
           }
-        }
-        ToolbarActionItem(usesSystemBackground: true) {
-          CaptureToolbarButton(spaceID: spaceID, tab: .library) {
-            if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
-          }
-          .disabled(model.isRestoring || model.isStoreProtected)
         }
       }
       .sheet(isPresented: $isAddingFiles) { ProjectFilePickerSheet(spaceID: spaceID) }

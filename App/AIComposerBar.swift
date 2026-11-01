@@ -9,6 +9,7 @@ struct AIComposerBar: View {
   @Binding var attachment: AIAttachment?
   var placeholder: String
   var isConversation = false
+  var offersIdleVoiceInput = true
   var isBusy = false
   var onStop: (() -> Void)?
   /// Keeps the keyboard up after sending, so a chat can continue.
@@ -120,8 +121,10 @@ struct AIComposerBar: View {
             researchButton
               .matchedGeometryEffect(id: "research", in: controlsNamespace)
           }
-          actionButton
-            .matchedGeometryEffect(id: "action", in: controlsNamespace)
+          if offersIdleVoiceInput || onStop != nil || isBusy || speechInput.isListening {
+            actionButton
+              .matchedGeometryEffect(id: "action", in: controlsNamespace)
+          }
         }
       }
       .padding(.horizontal, usesStackedLayout ? MemoraSpacing.lg : MemoraSpacing.xs)
@@ -153,8 +156,6 @@ struct AIComposerBar: View {
       }
     }
     .background { listeningBackdrop }
-    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
-      interactive: true, backed: false)
     // Keep attachment presentation separate from the native text field so its
     // menu does not replace the editor or interrupt keyboard focus.
     .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {
@@ -162,6 +163,10 @@ struct AIComposerBar: View {
         .padding(.leading, usesStackedLayout ? MemoraSpacing.sm : MemoraSpacing.xs)
         .padding(.bottom, usesStackedLayout ? MemoraSpacing.sm : 0)
     }
+    // Include the attachment control in the glass foreground, not behind a
+    // sibling surface when the composer belongs to a glass container.
+    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
+      interactive: true, backed: false)
     .preservesComposerFocus()
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)

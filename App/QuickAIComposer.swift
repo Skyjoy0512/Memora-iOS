@@ -10,6 +10,8 @@ struct QuickAIComposer: View {
   /// Keeps the keyboard up after sending on the Ask AI tab. The field is never
   /// focused on its own, so switching tabs does not raise the keyboard.
   var keepsFocusAfterSubmit = false
+  /// Independent recording controls leave the idle field as a compact input.
+  var compactIdle = false
   /// Focuses the field when it appears, for the full-screen Ask AI opening.
   var autofocus = false
   @State private var preparedAttachment: PreparedAIAttachment?
@@ -54,7 +56,8 @@ struct QuickAIComposer: View {
         text: $model.composerDraft,
         attachment: Binding(get: { model.composerAttachment }, set: { model.composerAttachment = $0 }),
         placeholder: placeholder,
-        isConversation: model.selectedTab == .askAI && scope == .global,
+        isConversation: !compactIdle && model.selectedTab == .askAI && scope == .global,
+        offersIdleVoiceInput: !compactIdle,
         isBusy: isPreparingAttachment || model.activeProjectChatID.map { model.projectChatBusyIDs.contains($0) } == true,
         onStop: scope == .global && model.isAIChatResponding ? { model.stopAIChat() } : nil,
         keepsFocusAfterSubmit: keepsFocusAfterSubmit,

@@ -1,29 +1,37 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The top-right create control. It owns the same capture menu the old bottom
-/// bar opened, so recording, import, memos and a new chat stay one tap away.
-struct CaptureToolbarButton: View {
+/// Two independent capture menus beside the shared Ask AI field. Presentation
+/// stays mounted while typing so a file picker cannot disappear with its label.
+struct CaptureFloatingButtons: View {
   @Environment(MemoraModel.self) private var model
   var spaceID: UUID?
-  var tab: RootTab
+  var isVisible = true
   var includesProjectCreation = false
-  var onNewChat: (() -> Void)?
   @State private var isDialogPresented = false
   @State private var isFileImporterPresented = false
   @State private var importContext: LocalImportContext?
 
   var body: some View {
-    Menu {
-      CaptureMenuPopover(spaceID: spaceID, includesProjectCreation: includesProjectCreation, onSelect: select)
-    } label: {
-      ToolbarActionLabel("新規作成", icon: .plus)
+    HStack(spacing: 8) {
+      Menu {
+        CaptureMenuPopover(spaceID: spaceID, group: .notes, onSelect: select)
+      } label: {
+        menuLabel("メモと資料", icon: .squareAndPencil)
+      }
+      .menuOrder(.fixed)
+      Menu {
+        CaptureMenuPopover(spaceID: spaceID, group: .recording, onSelect: select)
+      } label: {
+        menuLabel("録音", icon: .mic)
+      }
+      .menuOrder(.fixed)
     }
-    .menuOrder(.fixed)
-    .accessibilityLabel("新規作成")
+    .buttonStyle(.plain)
+    .tint(MemoraPalette.textPrimary)
+    .disabled(model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
     .confirmationDialog("新しい記録", isPresented: $isDialogPresented, titleVisibility: .visible) {
-      // Empty-state requests cannot programmatically open a Menu. They use the
-      // same actions in a native dialog, with no simulated taps or timers.
+      // Empty states reuse these actions without programmatically opening a Menu.
       CaptureMenuPopover(spaceID: spaceID, includesProjectCreation: includesProjectCreation, onSelect: select)
     }
     .fileImporter(isPresented: $isFileImporterPresented, allowedContentTypes: [.audio]) { result in
@@ -40,7 +48,7 @@ struct CaptureToolbarButton: View {
     .onChange(of: model.isCaptureSourcePresented) { _, presented in
       if !presented {
         isDialogPresented = false
-      } else if model.selectedTab == tab && !model.isToolsPresented {
+      } else if !model.isToolsPresented {
         isDialogPresented = true
       }
     }
@@ -49,10 +57,25 @@ struct CaptureToolbarButton: View {
     }
   }
 
+  @ViewBuilder
+  private func menuLabel(_ title: LocalizedStringKey, icon: MemoraIcon) -> some View {
+    if isVisible {
+      Label(title, icon: icon, size: 22)
+        .labelStyle(.iconOnly)
+        .frame(width: 52, height: 52)
+        .contentShape(Circle())
+        .memoraGlass(in: Circle(), interactive: true, backed: false)
+    } else {
+      // Container glass is composited separately from an outer opacity change.
+      // Remove only its surface; the importer remains attached to this view.
+      Color.clear.frame(width: 52, height: 52)
+    }
+  }
+
   private func select(_ action: CaptureAction) {
     InteractionFeedback.shared.send(.tap)
-    if action == .newChat, let onNewChat {
-      onNewChat()
+    if action == .newChat, let spaceID {
+      if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
     } else if action == .importAudio {
       importContext = LocalImportContext(projectID: spaceID, in: model)
       guard importContext != nil else {

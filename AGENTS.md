@@ -38,23 +38,25 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 - **Navigation**: there is no bottom tab bar. The app opens on Library, and the
   destinations (Journal, Library, Ask AI, Marketplace) live at the top of the side menu
-  (`FileSidebarView`). The bottom edge belongs to the Ask AI composer alone. `RootTab` still names
+  (`FileSidebarView`). The bottom edge holds Ask AI with the two independent capture controls. `RootTab` still names
   the destination and keeps the old saved identifiers, but nothing draws tabs.
-- **Create (＋) button**: every main screen puts the create control at the top
-  right (`CaptureToolbarButton`), opening a native `Menu` whose shared actions
-  live in `CaptureMenuPopover`. Empty-state requests use those same actions in
-  a native confirmation dialog; do not add custom zoom or delayed dispatch.
-  It holds record, import, memo, online meeting, new chat and the flagged phone-call action. Do
-  not move it back to a floating bottom button.
+- **Create controls**: the idle bottom row is Ask AI / memo / microphone.
+  `CaptureFloatingButtons` presents two native menus from `CaptureMenuPopover`:
+  memo has メモを書く / 資料を追加; microphone has 録音する / 音声を取り込む /
+  オンライン会議を録音, with recording first. Do not restore the top-right ＋.
+  While composing, give Ask AI the full row; hide capture controls without
+  unmounting their file importer. Empty states reuse the full native dialog.
+  Project creation stays in Projects' options menu and empty state; a project's
+  new chat stays in its options and chat empty state.
 - **Files screen top chrome**: do not drive the navigation bar's visibility from
   a scroll-offset flag. Hiding and showing the bar from that state re-runs
   layout, which is read back as more scrolling and freezes the screen. The
   Library tab lists records across all projects; projects are opened and
   created in the Library's Projects segment (`ProjectsView`); both segments
   share one `libraryPath`. Persist the selected `LibrarySection` as a setting.
-- **Bottom edge**: the Ask AI composer stays at the bottom; scrolling moves no
+- **Bottom edge**: Ask AI and the capture controls stay at the bottom; scrolling moves no
   navigation bar because there is none. Search and file selection still hide
-  the composer so results or the share / move / delete bar own the bottom edge.
+  the composer and capture controls so results or the share / move / delete bar own the bottom edge.
 - **Search**: the side menu's Search action searches the current destination.
   Files, Journal and Tools open `ToolbarSearchField`; Ask AI opens its existing
   conversation search sheet. The former root search toolbar slot belongs to

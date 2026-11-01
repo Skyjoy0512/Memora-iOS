@@ -10,7 +10,7 @@ enum CaptureAction: CaseIterable, Identifiable {
 
   var id: Self { self }
 
-  /// The actions the ＋ menu shows; calling waits behind its flag.
+  /// Full empty-state actions; calling waits behind its flag.
   static var available: [CaptureAction] {
     allCases.filter { $0 != .phoneCall || FeatureFlags.isCallingEnabled }
   }
