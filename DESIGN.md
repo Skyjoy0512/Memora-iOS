@@ -1,6 +1,6 @@
 # Memora — Native reading and conversation
 
-Updated 2026-10-31. This is the current design specification. Product behavior
+Updated 2026-11-01. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
@@ -12,6 +12,15 @@ No new glass, logo assets or decorative animation. See docs/UI_UX_2026_10.md.
 
 ## Everyday interactions
 
+- Recording is the first command in the shared top-right create menu, including
+  Projects. Project creation remains in that menu and the project empty state.
+- Library and Projects switch through the navigation title menu. Keep display,
+  sort, filter and selection controls in native menus rather than stacked pill rows.
+- Keep the Ask AI composer flat and compact. Normal ready states need no badges;
+  partial content, failures and recovery actions stay visible. Source metadata
+  forms one quiet line; summary, original and source links retain their roles.
+- Marketplace keeps its existing cards, artwork and detail presentation. See
+  [the November UI comparison](docs/ui-minimal-2026-11/README.md).
 - Show the content and the next useful action first. Avoid repeating titles,
   describing gestures in paragraphs, or showing empty insight groups.
 - Use short action labels: 録音する, 音声を取り込む, 要約する. Use 記録 for

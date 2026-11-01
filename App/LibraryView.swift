@@ -29,71 +29,72 @@ struct LibraryView: View {
   @State private var shareTarget: Meeting?
   var onOpenSidebar: () -> Void
 
-  private var librarySectionPicker: some View {
-    @Bindable var model = model
-    return MemoraTextTabBar(items: LibrarySection.allCases, selection: $model.librarySection, horizontalPadding: MemoraSpacing.screen) {
-      $0.title
-    }
-    .accessibilityLabel("ライブラリの表示")
+  private var libraryTitle: String {
+    model.librarySection == .files ? "ライブラリ" : "プロジェクト"
   }
 
-  /// Sort, filter and selection sit beside the tabs, keeping the navigation bar
-  /// to the title and two actions.
-  private var fileViewOptions: some View {
-    Menu {
-      Picker("表示", selection: $layout) {
-        ForEach(FileListLayout.allCases) {
-          Text($0 == .card ? "プレビュー付き" : "コンパクト").tag($0)
-        }
+  private var libraryTitleMenu: some View {
+    @Bindable var model = model
+    return Menu {
+      Picker("表示する内容", selection: $model.librarySection) {
+        Text("ライブラリ").tag(LibrarySection.files)
+        Text("プロジェクト").tag(LibrarySection.projects)
       }
-      Picker("並べ替え", selection: $sort) {
-        ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
-      }
-      Picker("絞り込み", selection: $statusFilter) {
-        ForEach(FileListFilter.allCases) { Text($0.label).tag($0) }
-      }
-      Divider()
-      Button("選択", icon: .checkmarkCircle) {
-        beginSelectionMode()
+      .pickerStyle(.inline)
+      if model.librarySection == .files {
+        Divider()
+        fileViewOptions
       }
     } label: {
-      Image(icon: .line3HorizontalDecrease, size: MemoraIconMetrics.glyph)
-        .foregroundStyle(MemoraPalette.textPrimary)
-        .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
-        .contentShape(Rectangle())
+      HStack(spacing: MemoraSpacing.xs) {
+        Text(libraryTitle)
+          .font(.headline)
+          .lineLimit(1)
+        Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)
+          .foregroundStyle(MemoraPalette.textSecondary)
+          .accessibilityHidden(true)
+      }
+      .frame(minHeight: MemoraSpacing.touchTarget)
+      .contentShape(Rectangle())
     }
-    .accessibilityLabel("表示と並べ替え")
+    .buttonStyle(.plain)
     .tint(MemoraPalette.textPrimary)
+    .accessibilityLabel("\(libraryTitle)、表示切り替えとオプション")
+  }
+
+  @ViewBuilder
+  private var fileViewOptions: some View {
+    Picker("表示", selection: $layout) {
+      ForEach(FileListLayout.allCases) {
+        Text($0 == .card ? "プレビュー付き" : "コンパクト").tag($0)
+      }
+    }
+    .pickerStyle(.menu)
+    Picker("並べ替え", selection: $sort) {
+      ForEach(FileListSort.allCases) { Text($0.label).tag($0) }
+    }
+    .pickerStyle(.menu)
+    Picker("絞り込み", selection: $statusFilter) {
+      ForEach(FileListFilter.allCases) { Text($0.label).tag($0) }
+    }
+    .pickerStyle(.menu)
+    Divider()
+    Button("選択", icon: .checkmarkCircle) { beginSelectionMode() }
   }
 
   var body: some View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
-      VStack(spacing: 0) {
-        if !isSearching, !isSelectionMode {
-          HStack(spacing: MemoraSpacing.sm) {
-            librarySectionPicker
-            Spacer(minLength: 0)
-            if model.librarySection == .files {
-              fileViewOptions
-            }
-          }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.top, MemoraSpacing.md)
-          .padding(.trailing, MemoraSpacing.screen)
-          .padding(.bottom, MemoraSpacing.sm)
-        }
-        Group {
-          if model.librarySection == .files {
-            filesPage
-          } else {
-            ProjectsView(query: $query, isSearching: isSearching)
-          }
+      Group {
+        if model.librarySection == .files {
+          filesPage
+        } else {
+          ProjectsView(query: $query, isSearching: isSearching)
         }
       }
       .background(MemoraPalette.background)
-      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : (isSearching ? "" : "ライブラリ"))
+      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : (isSearching ? "" : libraryTitle))
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
       .task(id: SourceSearchRequest(query: query, sources: model.projectSources, workspaceGeneration: model.aiWorkspaceGeneration)) {
@@ -107,9 +108,13 @@ struct LibraryView: View {
       .toolbar {
         if !isSearching {
           ToolbarItem(placement: .principal) {
-            Text(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ライブラリ")
-              .font(.headline)
-              .lineLimit(1)
+            if isSelectionMode {
+              Text("\(selectedMeetingIDs.count)件を選択")
+                .font(.headline)
+                .lineLimit(1)
+            } else {
+              libraryTitleMenu
+            }
           }
         }
 
@@ -129,20 +134,12 @@ struct LibraryView: View {
         // empty glass frame behind.
         if !isSelectionMode {
           ToolbarItem(placement: .topBarTrailing) {
-            RecorderStatusToolbarButton()
+            RecorderStatusToolbarButton(compactWhenDisconnected: true)
           }
 
-          if model.librarySection == .files {
-            ToolbarActionItem(usesSystemBackground: true) {
-              CaptureToolbarButton(spaceID: model.visibleProjectID, tab: .library)
-            }
-          } else {
-            ToolbarActionItem {
-              ToolbarIconButton("プロジェクトを作成", icon: .plus) {
-                model.isFileCreationPresented = true
-              }
-              .disabled(model.isRestoring)
-            }
+          ToolbarActionItem(usesSystemBackground: true) {
+            CaptureToolbarButton(spaceID: model.visibleProjectID, tab: .library,
+              includesProjectCreation: model.librarySection == .projects)
           }
         }
 
@@ -360,8 +357,14 @@ struct LibraryView: View {
           Section {
             ForEach(isSearching ? savedSources : Array(savedSources.prefix(3))) { source in
               NavigationLink(value: LibraryRoute.projectSource(source.id)) { ProjectSourceRow(source: source) }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset,
+                  bottom: 8, trailing: ProjectLayout.horizontalInset))
             }
-            NavigationLink("参考資料をすべて見る", value: LibraryRoute.projectSources(nil))
+            NavigationLink("すべて見る", value: LibraryRoute.projectSources(nil))
+              .font(MemoraTypography.secondary)
+              .foregroundStyle(MemoraPalette.textSecondary)
+              .listRowBackground(Color.clear)
           } header: {
             Text("参考資料").font(.subheadline.weight(.semibold)).textCase(nil)
           }
@@ -572,12 +575,12 @@ struct LibraryView: View {
   private var emptyFilesPrompt: some View {
     MemoraEmptyState(
       icon: .waveform,
-      title: "記録を始めましょう",
-      message: "録音・音声・メモをここに保存できます。",
-      actionTitle: "記録を追加",
-      actionIcon: .plus
+      title: "録音を始めましょう",
+      message: "記録はここに並びます。",
+      actionTitle: "録音する",
+      actionIcon: .waveform
     ) {
-      model.isCaptureSourcePresented = true
+      Task { await model.performCaptureMenuAction(.recording, projectID: model.visibleProjectID) }
     }
     .padding(.vertical, MemoraSpacing.group)
   }

@@ -30,20 +30,21 @@ struct ProjectsView: View {
 
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
-        MemoraTextTabBar(items: ProjectListFilter.allCases, selection: $filter, horizontalPadding: 0) { $0.title }
         if model.shareInboxFailure != nil {
           Button("共有からの取り込みを確認") { isShareInboxPresented = true }
             .font(MemoraTypography.secondary).frame(minHeight: 44).tint(MemoraPalette.textPrimary)
         }
-        if total > 0 {
-          HStack {
+        HStack {
+          if total > 0 {
             Text(isSearching ? "検索結果 \(total)件" : "\(total)件")
               .font(MemoraTypography.secondary)
               .foregroundStyle(.secondary)
               .accessibilityLabel("プロジェクト\(total)件")
-            Spacer()
-            if filter != .shared { orderMenu }
+          } else if filter != .all {
+            Text(filter.title).font(MemoraTypography.secondary).foregroundStyle(.secondary)
           }
+          Spacer()
+          orderMenu
         }
         if !recent.isEmpty {
           heading("最近使用", count: nil)
@@ -141,13 +142,21 @@ struct ProjectsView: View {
 
   private var orderMenu: some View {
     Menu {
-      Picker("並べ替え", selection: $order) {
-        ForEach(ProjectListOrder.allCases) { Text($0.title).tag($0) }
+      Picker("表示", selection: $filter) {
+        ForEach(ProjectListFilter.allCases) { Text($0.title).tag($0) }
       }
-      Toggle("最近使用を先に", isOn: $recentFirst)
+      if filter != .shared {
+        Picker("並べ替え", selection: $order) {
+          ForEach(ProjectListOrder.allCases) { Text($0.title).tag($0) }
+        }
+        Toggle("最近使用を先に", isOn: $recentFirst)
+      }
     } label: {
-      Text("並べ替え").font(MemoraTypography.secondary).frame(minHeight: 44)
+      Image(icon: .ellipsis, size: MemoraIconMetrics.glyph)
+        .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
+        .contentShape(Rectangle())
     }
+    .accessibilityLabel("プロジェクトの表示オプション")
     .accessibilityValue(order.title)
     .tint(MemoraPalette.textPrimary)
   }

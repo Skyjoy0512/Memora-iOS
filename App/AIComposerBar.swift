@@ -46,7 +46,7 @@ struct AIComposerBar: View {
   @Namespace private var controlsNamespace
 
   /// The capsule's height while collapsed; its corners make it fully round.
-  private static let collapsedHeight: CGFloat = 65
+  private static let collapsedHeight: CGFloat = 56
   /// The Ask AI layout keeps two rows; the field row grows with the taller
   /// composer instead of leaving the extra height to the controls.
   private static let stackedFieldHeight: CGFloat = 32
@@ -153,9 +153,14 @@ struct AIComposerBar: View {
       }
     }
     .background { listeningBackdrop }
-    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), interactive: true, backed: false)
-    // Keep the presentation source outside the input's glass rendering group.
-    // Otherwise the system zoom snapshots and hides the whole composer.
+    .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        .strokeBorder(MemoraPalette.border, lineWidth: 0.5)
+        .allowsHitTesting(false)
+    }
+    // Keep attachment presentation separate from the native text field so its
+    // menu does not replace the editor or interrupt keyboard focus.
     .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {
       attachmentMenu
         .padding(.leading, usesStackedLayout ? MemoraSpacing.sm : MemoraSpacing.xs)

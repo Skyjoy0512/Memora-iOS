@@ -172,7 +172,7 @@ struct HomeView: View {
         }
 
         ToolbarItem(placement: .topBarTrailing) {
-          RecorderStatusToolbarButton()
+          RecorderStatusToolbarButton(compactWhenDisconnected: true)
         }
 
         // The create action is the top-right control on every main screen.

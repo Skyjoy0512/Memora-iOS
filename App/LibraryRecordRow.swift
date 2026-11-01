@@ -20,7 +20,7 @@ struct LibraryRecordRow: View {
           .accessibilityHidden(true)
       }
       VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
-        ProjectRecordRow(meeting: meeting, showsReadyStatus: true)
+        ProjectRecordRow(meeting: meeting, showsReadyStatus: false)
         if let sharedBy {
           SharedOwnerBadge(ownerName: sharedBy)
             .padding(.leading, ProjectLayout.iconSide + MemoraSpacing.md)

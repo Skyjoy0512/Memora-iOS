@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RecorderStatusToolbarButton: View {
   @Environment(MemoraModel.self) private var model
+  var compactWhenDisconnected = false
 
   var body: some View {
     let state = model.omiPairingManager.state
@@ -16,11 +17,13 @@ struct RecorderStatusToolbarButton: View {
     } label: {
       HStack(spacing: MemoraSpacing.xs) {
         ToolbarIconGlyph(icon: isConnected ? .dotRadiowavesLeftAndRight : .link)
-        Text(battery.map { "\($0)%" } ?? status)
-          .font(.caption.weight(.medium))
-          .monospacedDigit()
+        if !compactWhenDisconnected || isConnected {
+          Text(battery.map { "\($0)%" } ?? status)
+            .font(.caption.weight(.medium))
+            .monospacedDigit()
+        }
       }
-      .frame(minHeight: MemoraIconMetrics.slot)
+      .frame(minHeight: compactWhenDisconnected ? MemoraSpacing.touchTarget : MemoraIconMetrics.slot)
       .contentShape(Rectangle())
     }
     .accessibilityLabel("デバイスの接続状態")

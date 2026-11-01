@@ -28,19 +28,16 @@ struct ProjectSourceDetailView: View {
       let sourceIsPreparing = isPreparing(source)
       let cannotChange = sourceIsPreparing || model.isRestoring || model.isStoreProtected
       let previousSummaries = self.previousSummaries(for: source)
+      let revisions = source.revisions ?? []
+      let availabilityMessage = source.processingStatus == .ready || source.kind == .youtube ? nonempty(source.availabilityNotice) : nil
       ScrollViewReader { proxy in
         ScrollView {
           LazyVStack(alignment: .leading, spacing: 20) {
-            Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
-            Text(source.kindLabel).font(.footnote).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 6) {
+              Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
+              Text(metadataDescription(for: source)).font(.caption).foregroundStyle(.secondary)
+            }
             if let sourceActionFailure { Text(sourceActionFailure).font(.footnote).foregroundStyle(.secondary) }
-            if let author = source.metadata?["webAuthor"] ?? source.metadata?["youtubeAuthor"], !author.isEmpty {
-              Text(author).font(.footnote).foregroundStyle(.secondary)
-            }
-            if let date = source.acquiredAt ?? source.webFetchedAt {
-              Text("取得：\(date.formatted(.dateTime.year().month().day().locale(Locale(identifier: "ja_JP"))))")
-                .font(.caption).foregroundStyle(.secondary)
-            }
             if sourceIsPreparing {
               ProgressView("準備しています…").font(.subheadline)
             }
@@ -72,7 +69,9 @@ struct ProjectSourceDetailView: View {
             }
             if source.canProvideText {
               Button("この資料について聞く", icon: .sparkles) { isAsking = true }
-                .buttonStyle(MemoraButtonStyle())
+                .buttonStyle(.plain).font(.subheadline)
+                .foregroundStyle(MemoraPalette.textPrimary)
+                .frame(minHeight: 44, alignment: .leading)
                 .accessibilityIdentifier("source.askAI")
             }
             if source.kind == .youtube, !source.canProvideText {
@@ -124,27 +123,33 @@ struct ProjectSourceDetailView: View {
                   }
               }.id("source.original")
             }
-            if let message = source.availabilityNotice, source.processingStatus == .ready || source.kind == .youtube {
-              DisclosureGroup("資料について") { Text(message).font(.footnote).foregroundStyle(.secondary) }
-            }
-            if !previousSummaries.isEmpty {
-              DisclosureGroup("以前の要約") {
-                ForEach(Array(previousSummaries.enumerated()), id: \.offset) { index, summary in
-                  DisclosureGroup("保存済みの要約 \(index + 1)") {
-                    MarkdownDocumentView(markdown: summary, isLazy: true)
+            if availabilityMessage != nil || !previousSummaries.isEmpty || !revisions.isEmpty {
+              VStack(alignment: .leading, spacing: 12) {
+                Divider()
+                if let availabilityMessage {
+                  DisclosureGroup("資料について") { Text(availabilityMessage).font(.footnote).foregroundStyle(.secondary) }
+                }
+                if !previousSummaries.isEmpty {
+                  DisclosureGroup("以前の要約") {
+                    ForEach(Array(previousSummaries.enumerated()), id: \.offset) { index, summary in
+                      DisclosureGroup("保存済みの要約 \(index + 1)") {
+                        MarkdownDocumentView(markdown: summary, isLazy: true)
+                      }
+                    }
+                  }
+                }
+                if !revisions.isEmpty {
+                  DisclosureGroup("原文の更新履歴") {
+                    ForEach(Array(revisions.enumerated()), id: \.offset) { _, revision in
+                      VStack(alignment: .leading, spacing: 8) {
+                        Text(revision.acquiredAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                        if let summary = nonempty(revision.summary) { MarkdownDocumentView(markdown: summary, isLazy: true) }
+                      }
+                    }
                   }
                 }
               }
-            }
-            if let revisions = source.revisions, !revisions.isEmpty {
-              DisclosureGroup("原文の更新履歴") {
-                ForEach(Array(revisions.enumerated()), id: \.offset) { _, revision in
-                  VStack(alignment: .leading, spacing: 8) {
-                    Text(revision.acquiredAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
-                    if let summary = nonempty(revision.summary) { MarkdownDocumentView(markdown: summary, isLazy: true) }
-                  }
-                }
-              }
+              .font(.subheadline).tint(MemoraPalette.textSecondary)
             }
             if let url = source.originalURL { Link("元のページを開く", destination: url).frame(minHeight: 44) }
             if let name = source.localFileReference, let file = ProjectSourceFiles.resolve(name) {
@@ -276,5 +281,14 @@ struct ProjectSourceDetailView: View {
   private func nonempty(_ value: String?) -> String? {
     guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
     return value
+  }
+
+  private func metadataDescription(for source: ProjectSource) -> String {
+    var parts = [source.kindLabel]
+    if let author = nonempty(source.metadata?["webAuthor"] ?? source.metadata?["youtubeAuthor"]) { parts.append(author) }
+    if let date = source.acquiredAt ?? source.webFetchedAt {
+      parts.append("取得：" + date.formatted(.dateTime.year().month().day().locale(Locale(identifier: "ja_JP"))))
+    }
+    return parts.joined(separator: " · ")
   }
 }

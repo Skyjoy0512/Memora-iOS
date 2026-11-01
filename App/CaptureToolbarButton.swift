@@ -7,23 +7,23 @@ struct CaptureToolbarButton: View {
   @Environment(MemoraModel.self) private var model
   var spaceID: UUID?
   var tab: RootTab
+  var includesProjectCreation = false
   @State private var isDialogPresented = false
   @State private var isFileImporterPresented = false
   @State private var importContext: LocalImportContext?
 
   var body: some View {
     Menu {
-      Section("新しい記録") {
-        CaptureMenuPopover(spaceID: spaceID, onSelect: select)
-      }
+      CaptureMenuPopover(spaceID: spaceID, includesProjectCreation: includesProjectCreation, onSelect: select)
     } label: {
       ToolbarActionLabel("新規作成", icon: .plus)
     }
+    .menuOrder(.fixed)
     .accessibilityLabel("新規作成")
     .confirmationDialog("新しい記録", isPresented: $isDialogPresented, titleVisibility: .visible) {
       // Empty-state requests cannot programmatically open a Menu. They use the
       // same actions in a native dialog, with no simulated taps or timers.
-      CaptureMenuPopover(spaceID: spaceID, onSelect: select)
+      CaptureMenuPopover(spaceID: spaceID, includesProjectCreation: includesProjectCreation, onSelect: select)
     }
     .fileImporter(isPresented: $isFileImporterPresented, allowedContentTypes: [.audio]) { result in
       let context = importContext

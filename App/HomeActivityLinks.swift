@@ -18,30 +18,36 @@ struct HomeActivityLinks: View {
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
       : AnyLayout(HStackLayout(spacing: MemoraSpacing.md))
 
-    VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
-      headingLayout {
-        Text("今日のタスク").font(MemoraTypography.body.weight(.semibold))
-          .accessibilityAddTraits(.isHeader)
-        if !typeSize.isAccessibilitySize { Spacer() }
+    Group {
+      if today.isEmpty, dueSoon.isEmpty {
         NavigationLink(value: LibraryRoute.tasks) {
-          Text("すべて見る")
+          Label("タスク", icon: .checkmarkCircle)
             .font(MemoraTypography.secondary)
             .frame(minHeight: MemoraSpacing.touchTarget)
-            .contentShape(Rectangle())
         }
-          .accessibilityLabel("すべてのタスクを見る")
-      }
-      if today.isEmpty, dueSoon.isEmpty {
-        Text("今日取り組むタスクや期限の近いタスクはありません。")
-          .font(MemoraTypography.secondary).foregroundStyle(.secondary)
+        .tint(MemoraPalette.textSecondary)
       } else {
-        if !today.isEmpty {
-          Text("今日取り組む").font(.caption).foregroundStyle(.secondary)
-          ForEach(today.prefix(3)) { task in TaskRow(task: task, showsSource: true) { editingTask = task } }
-        }
-        if !dueSoon.isEmpty {
-          Text("期限が近いタスク").font(.caption).foregroundStyle(.secondary)
-          ForEach(dueSoon.prefix(3)) { task in TaskRow(task: task, showsSource: true) { editingTask = task } }
+        VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
+          headingLayout {
+            Text("今日のタスク").font(MemoraTypography.body.weight(.semibold))
+              .accessibilityAddTraits(.isHeader)
+            if !typeSize.isAccessibilitySize { Spacer() }
+            NavigationLink(value: LibraryRoute.tasks) {
+              Text("すべて見る")
+                .font(MemoraTypography.secondary)
+                .frame(minHeight: MemoraSpacing.touchTarget)
+                .contentShape(Rectangle())
+            }
+            .accessibilityLabel("すべてのタスクを見る")
+          }
+          if !today.isEmpty {
+            Text("今日取り組む").font(.caption).foregroundStyle(.secondary)
+            ForEach(today.prefix(3)) { task in TaskRow(task: task, showsSource: true) { editingTask = task } }
+          }
+          if !dueSoon.isEmpty {
+            Text("期限が近いタスク").font(.caption).foregroundStyle(.secondary)
+            ForEach(dueSoon.prefix(3)) { task in TaskRow(task: task, showsSource: true) { editingTask = task } }
+          }
         }
       }
     }
