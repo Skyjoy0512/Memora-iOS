@@ -99,7 +99,7 @@ private enum FoundationModelAnswer {
     guard SystemLanguageModel.default.isAvailable else { return .failure(.noEngine) }
 
     let session = LanguageModelSession(
-      instructions: "あなたは会議の記録を要約して答えるアシスタントです。短い日本語で、与えられた記録だけに沿って答えます。\n\(ReadabilityGuide.compactRules)"
+      instructions: AIAnswerPrompt.grounding + "\n" + ReadabilityGuide.compactRules
     )
     let prompt = AIAnswerPrompt.text(
       question: question,

@@ -11,7 +11,7 @@ enum CloudAIService {
     onText: (@MainActor (String) -> Void)? = nil
   ) async -> AIAnswerResult {
     let system = """
-    あなたは会議の記録を要約して答えるアシスタントです。短い日本語で、与えられた記録だけに沿って答えます。
+    \(AIAnswerPrompt.grounding)
     記録をもとにした文の末尾には、その記録の番号を【資料1】の形で付けます。与えられた番号だけを使い、記録にない内容には付けません。
 
     \(ReadabilityGuide.rules)

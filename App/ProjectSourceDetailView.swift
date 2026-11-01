@@ -94,11 +94,11 @@ struct ProjectSourceDetailView: View {
                             }
                           }
                           Text(block.text).memoraReadingText().textSelection(.enabled)
-                        }.id(index)
+                        }.id("source.text.\(index)")
                       }
                     }
                   }
-              }
+              }.id("source.original")
             }
             if let message = source.availabilityNotice, source.processingStatus == .ready || source.kind == .youtube {
               DisclosureGroup("資料について") { Text(message).font(.footnote).foregroundStyle(.secondary) }
@@ -131,7 +131,14 @@ struct ProjectSourceDetailView: View {
         .onChange(of: extracted) { _, blocks in
           guard let initialExcerpt, let index = blocks.firstIndex(where: { $0.text.contains(initialExcerpt) }) else { return }
           showsOriginal = true
-          proxy.scrollTo(index, anchor: .top)
+          // The disclosure's header already exists before its text is expanded.
+          proxy.scrollTo("source.original", anchor: .top)
+          if showsOriginal { proxy.scrollTo("source.text.\(index)", anchor: .top) }
+        }
+        .onChange(of: showsOriginal) { _, expanded in
+          guard expanded, let initialExcerpt,
+                let index = extracted.firstIndex(where: { $0.text.contains(initialExcerpt) }) else { return }
+          proxy.scrollTo("source.text.\(index)", anchor: .top)
         }
       }
       .background(MemoraPalette.background)

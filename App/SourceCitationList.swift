@@ -5,8 +5,13 @@ struct SourceCitationList: View {
   var citations: [ProjectCitation]
 
   var body: some View {
+    let locations = citations.reduce(into: [ProjectCitation]()) { result, citation in
+      if !result.contains(where: { $0.target == citation.target && $0.page == citation.page && $0.time == citation.time }) {
+        result.append(citation)
+      }
+    }
     if model.currentTeamID == nil {
-      ForEach(citations) { citation in
+      ForEach(locations) { citation in
         if case .source(let id) = citation.target, let source = model.source(id: id) {
           NavigationLink {
             if source.kind == .pdf, let page = citation.page {

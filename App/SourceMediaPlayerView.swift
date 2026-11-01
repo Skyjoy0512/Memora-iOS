@@ -5,24 +5,26 @@ struct SourceMediaPlayerView: View {
   @Environment(MemoraModel.self) private var model
   var sourceID: UUID
   var start: TimeInterval?
-  @State private var videoPlayer: AVPlayer?
+  @State private var video = SourceVideoPlayback()
 
   var body: some View {
     if let source = model.source(id: sourceID), let name = source.localFileReference,
        let url = ProjectSourceFiles.resolve(name) {
       Group {
         if SourceIntake.kind(for: url) == .video {
-          VideoPlayer(player: videoPlayer)
-            .task(id: url) {
-              let player = AVPlayer(url: url)
-              videoPlayer = player
-              if let time = ProjectCitationLocation.playbackTime(start) {
-                await player.seek(to: CMTime(seconds: time, preferredTimescale: 600))
-                guard !Task.isCancelled else { return }
-                player.play()
+          ZStack {
+            if let player = video.player {
+              VideoPlayer(player: player)
+            } else {
+              VStack(spacing: 16) {
+                if let notice = video.notice { Text(notice).foregroundStyle(.secondary) }
+                Button("再生", icon: .playFill) { Task { await video.load(url, start: start) } }
+                  .buttonStyle(MemoraButtonStyle())
               }
             }
-            .onDisappear { videoPlayer?.pause(); videoPlayer = nil }
+          }
+          .task(id: url) { await video.load(url, start: start) }
+          .onDisappear { video.stop() }
         } else {
           SourceAudioPlaybackControls(url: url, title: source.title, start: start)
         }
