@@ -1,0 +1,26 @@
+# 主要画面の変更比較
+
+修正前は基準commitのコード、修正後は実装コードとシミュレーターで確認したもの。修正前のスクリーンショットは採取できていない。新しいデータを旧バージョンで開く回帰リスクを避け、旧buildへの巻き戻しは実施しない。
+
+| 画面 | 基準commit | 実装後 |
+|---|---|---|
+| 新規作成/資料追加 | project向け先行Pickerでリンク/file/メモ選択。Libraryでは新source追加入口なし | 全体＋/project＋から同じ「資料を追加」。リンク/メモ入力欄とfile/写真追加。保存範囲をfooterに表示。形式・templateの先行選択なし |
+| Web/資料詳細 | URL保存と本文取得が別。metadata/原文中心、要約と単一資料AIの導線不足 | URL追加後に自動取得・要約。タイトル/取得日時→要約→この資料に聞く→原文→元URL。簡潔な失敗/再試行のみ |
+| YouTube字幕 | 手動貼付＋template、別Meetingを新規作成 | 原sourceへ字幕を保存。動画/字幕fileが主導線、権限のある公式API接続とmanual貼付はdisclosure。旧Meetingリンク保持 |
+| Library/参考資料の検索 | source title中心 | 抽出本文FTS・summary・title。検索中に「見つかりません」を確定しない |
+| 録音機/音声import | 保存後に文字起こしの別操作 | 原音を共通sourceに保存し、対応環境では端末内転写・要約。旧録音/録音操作はMeetingを維持 |
+| AskAI添付 | 1添付、先頭抜粋、media非対応、URLは独立カード | 最大10資料、共通抽出、質問に応じ後半を含めた抜粋。送ったURLも会話添付へ。明示的なLibrary保存 |
+| 要約/処理表示 | 固定template候補、複数工程名 | 自動は内容適応型。資料の端末内schemaも会議用と分離。一つの「準備しています…」に統一 |
+
+## 実際の画像
+
+- [出典から原文へ](images/source-quote-after.png): VoiceOver ONで出典を開き、原文が画面内に現れた実表示。
+- [資料詳細](images/source-detail-after.png): 最終版で再取り込みしたIANA記事の自動要約。原文にない疑問文を出さず、内容に応じた見出し。
+- [最大Dynamic Typeの追加画面](images/source-add-large-text.png): 小画面端末。スクロール後に写真追加まで到達することをAXで確認。
+- [追加画面](images/source-add-after.png): iPhone 18 Pro Max / light。保存先と入力/ファイル操作を確認。
+
+資料詳細・原文への移動・小画面の操作結果は VALIDATION.md に記録する。AskAI回答の生成品質には同文書の未確認事項が残る。画像は検証時点の実表示で、生成したモックではない。
+
+## 生成品質で見つかった問題
+
+最初の端末内Web要約には、原文にない「このドメインの利用制限はいつまで続くのか」が混入した。実際の失敗として記録する。資料用 `SourceSectionDigest` / `SourceTopicDigest` を追加し、会議用の未決質問schemaを資料へ使用しないよう変更した。要約に質問欄を追加する固定レイアウトも撤去した。最終出力の確認は検証文書を参照。

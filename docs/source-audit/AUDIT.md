@@ -65,3 +65,17 @@
 - 実機・課金provider・YouTube所有者OAuth・CloudKit/teamの未構成部分はテスト用成功表示で代替しない。
 
 実装後の差分・互換性・テスト・制約は IMPLEMENTATION.md / VALIDATION.md に記録する。
+
+## 実装中のシミュレーターで再現した問題
+
+以下は静的推測と区別する。修正コードとホスト試験の成功は、LLM/実機の再現試験成功を意味しない。
+
+| ID | 再現した問題 | 原因と変更 | 検証境界 |
+|---|---|---|---|
+| R01 | IANA Web記事の要約に原文にない疑問文 | 端末内の会議用questions schemaが資料にも使われた。資料専用topic/points schemaに分離 | iOS build成功。最終版の同記事再取込で要約成功・今回の出力に不当な疑問なし |
+| R02 | 原文を質問中に要約が更新されるとcontextChanged | 資料全体の等価性で検査していた。本文参照/原本/所属/権限等を比較し、要約だけの更新は許容 | production identityの変更許容/拒否テストPASS。最終live完走は未確認 |
+| R03 | 短い記事の端末内再要約でcontextTooLarge | topic再要約の狭いwindow工程を撤去し、各区間の要点から概要を構成。schemaの話題/要点件数も制限 | build成功。最終版の同記事自動要約が成功。長大/他genreの生成品質は追加確認が必要 |
+
+| R04 | AskAIがドメイン表記を変形し、内部方針を回答に混ぜた | 固有名詞/否定・条件保持をsystem指示へ追加。実行指示と資料contextを分離 | 表記保持は途中版で確認。最後の分離変更はbuild/関連host検査成功、最終生成は未確認 |
+
+実装後の入口表・互換性は [IMPLEMENTATION.md](IMPLEMENTATION.md)、操作比較は [COMPARISON.md](COMPARISON.md)、現在の結果と未確認は [VALIDATION.md](VALIDATION.md)。

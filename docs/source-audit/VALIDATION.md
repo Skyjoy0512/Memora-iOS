@@ -1,0 +1,93 @@
+# 現在の検証結果
+
+2026-11-01。対象実装 `85b6954941c184d15a145ed8510c9f5f4b72e1d3` ＋修正 `e17a84350e072e55dc7a3b7e5ea5e759c48df148`、閲覧/grounding/動画保護 `6bf68526368f46eb5e9c5f1ca4c437d8dcb1bde2`。この文書は今回実行した結果だけを扱い、過去CIを成功証拠にしない。
+
+## 環境とビルド
+
+- 開始時のHEAD/二つのmain remoteは基準 `7ba0305e285706108525c10b5d1a2dc3f4b1a913` と一致。開始時未コミット変更なし。mainのまま作業。ユーザーデータ/既存サンプルの削除・設定リセットなし。
+- `bitrig preview -platform iOS` 成功。iOS Simulator arm64/x86_64、アプリと既存拡張をビルド。既存のMapKit/AuthSession非推奨等11 warnings。エラー0。
+- 最終コードのbuild log: `Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-11-01T11-50-05-58e0c3c1.log`。
+- 実際のビルド環境はログ上iPhoneSimulator27.2.sdk。追加APIはiOS26以前のもの（FoundationModels/SpeechAnalyzerは26.0 availability）に限定。SDK27.1そのものを用いたビルド結果ではない。
+- `bitrig test -list -json`: exit78、Project.json形式にtest targetなし。XCTest成功とはしない。既存のSwift実コードホスト検査を実行した。
+- シミュレーター: Bitrig iPhone 18 Pro Maxと、後述の小画面切替。途中で一覧が空になったが再接続。新端末は初回起動となり、既存端末のデータを削除せず別の個人ライブラリで確認。
+- 実iPhone/iPad、課金cloud provider、所有者Googleアカウント、CloudKit/teamの実接続は未検証。
+
+## 受け入れ12項目
+
+| # | ケース | 今回の実証 | 未確認/制約 |
+|---|---|---|---|
+| 1 | Web URL→本文/要約→AskAI | シミュレーターで `https://www.iana.org/help/example-domains` を＋から追加。title/本文/日本語要約が自動生成された。資料限定AI画面を操作 | 初回要約に原文にない疑問が混入しschemaを修正。最終回答は下記操作記録 |
+| 2 | 入口が異なる同URL | 同じ正規化/addProjectLinkを共用。URL/ファイル指紋の重複、SQLite再読込をホストテスト | 全入口（共有extension、本文カード、会話）のlive同一URL比較は未完 |
+| 3 | 21ページ超PDF | production PDFKitで24ページ生成→全抽出→page24のunique語をSQLite FTSで取得し実ページ引用。2M文字を超えた後半page99も検索 | iOSのPDF viewerでページ24をtapするE2Eは未実施 |
+| 4 | scan PDFの限界 | production Visionで5ページをOCR、4ページ目の語を取得、白紙5ページ目をunreadableとして区別、coverage partial | 端末の多言語/表/図精度は未測定 |
+| 5 | 音声追加の自動転写/要約 | 共通経路の接続と原本コピー/SQLite/retry/context raceを実行。端末内認識を指定する実装をビルド | m4a/mp3/wavの実音声認識成功は未検証。ホストの音声duration/recognizerはfixture |
+| 6 | ローカル動画音声の解析 | AVAsset音声track検査→一時M4A→端末転写の実装をビルド。音声なしの明示失敗経路 | 実mp4/mov、DRM、音声なし/長時間videoの端末試験は未実施 |
+| 7 | YouTube合法字幕/取得不可 | production OAuth/公式API serviceをmock認証/HTTPで実行。403/empty/revoke/disconnect、時刻付きcaption、別token境界を検査 | Google実認証/所有動画の取得成功は未検証。任意動画の字幕を保証しない |
+| 8 | 複数資料AI→原文 | 最大10添付、後半page関連抜粋、複数reference codec、source引用保持をテスト。資料限定AI画面を操作 | 複数mediaを含むlive質問、添付の任意page/timeへ直接飛ぶアンカーは未完 |
+| 9 | 中断/再起動/切断/retry/重複 | 実ファイル/SQLite＋suspended read/writeで取消/rollback/再試行/A→B→A/重複。シミュレーターでbuild再起動後に本文/既存要約保持と中断retry表示を確認 | OS強制終了の全時点、実ネットワーク切断、background完走は未実証 |
+| 10 | 個人/project/team/機密 | 実権限policy/世代snapshot/取消race/旧履歴のgrant非復元。team未接続を拒否 | 実backend/複数利用者端末は未接続・未検証 |
+| 11 | 既存機能 | 会議要約parser/長文merge/録音import codec/日記/task/資料/PPTX/DOCX/backup/AI履歴/連携のproduction-code suite | 実マイク録音・通知・calendar UI・共有拡張の送信先を全て操作したわけではない |
+| 12 | 小画面/dark/Dynamic Type/VoiceOver | 小画面の追加/詳細/質問を操作、最大Dynamic Typeの追加画面で写真追加まで到達。control label/44ptをコード確認 | 全415 viewの手操作/読み上げを保証しない |
+
+## ホストの実コード検査
+
+保管先（外部SSD、リポジトリ外）:
+`/Volumes/WorkspaceSSD/Development/Agents/Bitrig/library/Users/23515/Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/source-audit-validation/`
+
+- `SourceIntakeChecks`: 実PDFKit/Vision/SQLite、24page/scan5page/後半2M超/時刻字幕/旧decode/全体順位付け。モデル・networkのfixtureで成功を置き換えたテストではない。macOS hostの実抽出で、iOS認識・LLM出力品質の証拠ではない。
+- `YouTubeCaptionChecks`: PKCE/state/scopes、公式URL、403/字幕なし、切断/権限失効。HTTP/認証UIはfixture。
+- `ProjectSourceStorageChecks`: 実ファイル/SQLite/reopen、24 suspended-write race、SQL ABORT/retry、共有参照保護。
+- `ProjectSourcePreparationChecks`: 60 race、取消、重複、rollback、reader上限。OS extractionはfixture。
+- `ProjectSourceWebRecoveryChecks`: 28 race、安全transport/decoder、更新・復旧・失敗rollback。DNS/HTTPはfixture。
+- `ProjectSourceImportChecks`: 実コピー/指紋/SQLite、32 context race、保存済み原本保護。OS処理はfixture。
+- `AudioImportChecks`: 新source経路のOpen In/Inbox/重複/SQL再試行＋旧Meeting import/restore/codec。音声認識を実行したという意味ではない。
+- `AIConversationSnapshotChecks`: 新source citationと複数添付のcodec、旧履歴decode、path拒否。実行grantは非保存。
+
+全体runnerは `python3 tools/checks/run-quality-checks.py --output-dir <external>`。今回、旧UI名の検査、host fixtureのcalendar/Notion依存不足、新添付budget型のcompile依存不足を発見・修正した。古い検査をskipしたのではなく、新しい保存経路と旧機能保護を検査し直した。初回/途中失敗logも保管している。
+
+最終確認は6系統ともexit0（実行ログは上の外部SSDへ保存）。最初に失敗した総合runnerのsummary.jsonは失敗記録のまま残し、修復後の総合suiteを通し直した別logを採用する。
+
+| 系統 | 今回の最終結果 | 実行log |
+|---|---|---|
+| next-generation | PASS、全工程を一度通してexit0 | next-generation-complete.log |
+| design-refresh | PASS | quality-final-20261101/design-refresh.log |
+| background-summary | PASS | quality-final-20261101/background-summary.log |
+| summary-reliability | PASS | quality-final-20261101/summary-reliability.log |
+| composer-layout | PASS | quality-final-20261101/composer-layout.log |
+| optimization | PASS | quality-final-20261101/optimization.log |
+
+その後の画面検証で見つかった自動要約完了との競合は、同じ本文/許可のsnapshotを比較する修正を追加。production `hasSameReadableEvidence` が要約更新を許容し、本文差替え/移動/許可変更を拒否する追加 `SourceIntakeChecks` もPASS。端末内資料schemaの件数上限と再生成の軽量化はiOS buildで検査する。上のsuiteはLLMの全出力品質を保証しない。
+
+## シミュレーター操作の記録
+
+1. 既存Library/サンプルを保持したまま、上部＋→資料追加。
+2. 形式/template選択なしでIANA URLを入力・追加。Libraryの同sourceがtitle「Example Domains」に更新。
+3. 原文に登録/移転不可の説明を確認。追加操作で本文取得や転写開始を押していない。
+4. 初回の日本語要約が表示されたが、原文にない疑問文も出た。資料の端末内schemaを分離して修正。
+5. 要約再生成中のbuild再起動で、本文・以前の要約が残り「要約が中断されました」＋retryが表示。自動で外部処理を再送しない。
+6. 最終buildでretry、資料だけの質問画面を開き、提供済みsuggestion「要約して」を送信。
+
+成功していない操作は未確認のままにし、接続のない機能を成功と扱わない。
+
+7. 要約が更新された時点で並行中のAskAIがcontextChangedになる現象を再現。生成要約だけの更新と、本文/権限の更新を区別する修正と検査を追加した。
+8. 修正途中の資料要約で短い記事でもcontextTooLargeが返った。資料の端末内処理は、各区間で作った要点から概要を組み立て、全topicをもう一度狭いwindowへ送る工程を省いた。旧summaryと原文は保持。最終版の新端末で同URLを再取り込みし、自動要約の成功を確認。原文にない疑問文は今回の出力に含まれず、会議の固定見出しもない。
+
+シミュレーターは一時的に再び非activeとなり `listSimulators` が空。その後iPhone 17eとして再接続したが、画像はOS起動中（Appleロゴ）のため、アプリの小画面確認ではない。再接続後の小画面・最大Dynamic Type・AskAI成功/出典tapは下記へ追記。darkの操作検証は未完。VoiceOverは下記の限定操作を確認。OSのdark設定変更要求は受理されたが、アプリ側の表示設定と実画面の確認を完了していないため、dark検証済みとはしない。
+
+9. 最終buildの小画面端末でログインせず個人ライブラリを開始→＋→同じIANA URL追加。本文と自動要約が成功。最終要約は「ドメイン管理」「参考資料」の内容に応じた見出しで、原文にない疑問文は今回の出力にない。これを全入力のLLM品質保証とはしない。
+10. 追加画面を最大Dynamic Typeで確認し、スクロール後の「写真を追加」まで到達。文字サイズとOS appearanceは標準large/lightへ戻した。追加画面/資料詳細の画像をCOMPARISON.mdへ保存。
+
+11. 資料限定AskAIの「要約して」が完了し、記事に対応する回答と出典ボタンを表示。出典tapで保存した本文を開けた。ただし同じ資料・位置のボタン重複と、本文が画面外に残る問題を確認。位置の重複排除とdisclosure展開時のscrollを修正。
+12. 端末内AI回答で `example.com` が `例.com` に変形、HTTPサービスの条件を単純化した表現も確認。system指示へ固有名詞/URL/否定・条件保持を追加し、会議限定のroleを資料全般へ変更。出典へ戻れることは回答内容の正しさを保証しない。修正後の応答は追加確認。
+13. 動画再生は既存AudioSessionCoordinatorへ接続。録音準備・録音中の再生拒否、録音開始時の停止、他playerへの引き渡し、古いseek後の自動再生抑止を実装。ビルド確認であり、動画/録音の実動作試験ではない。
+
+14. 最後のprompt/引用/動画保護変更後も `bitrig preview -platform iOS` PASS（11 warnings）。追加でchat/experience presentation 19検査、BranchIntegrationChecks、CloudSessionChecksを再実行してPASS。動画のOS動作・LLM意味精度をこれらのhost検査だけで確認済みとはしない。
+
+15. 最後の表示修正で、回答下の同じsource/位置の出典は1ボタンになった。VoiceOverをONにし初回OS説明を閉じ、出典をダブルtapで開くと「原文」が展開され実本文が画面内へスクロール（AX offscreenではない）した。画像source-quote-after.png。その後VoiceOverをOFFへ戻した。読み上げ内容/全画面のジェスチャ認証ではない。
+16. 最後の指示変更前の回答では固有名詞を保持したが、作業方針の説明が回答末尾に混入した。本文context内の実行指示をsystem側へ分離し、本文は取得範囲という事実のmetadataだけに変更。最終指示での再生成は追加確認。
+
+## 検証の優先順位の変更
+
+2026-11-01の利用者指示により、アクセシビリティの追加検証は後回しとする。以後は機能をまとめて実装し、区切りでビルドと変更範囲に必要な回帰確認を行う。機能追加のたびの全体テストや、通過済み検査の反復は行わない。
+
+最後のsystem/資料本文の分離変更はビルド成功、BranchIntegrationChecks成功。追加の画面再生成、dark設定操作、アクセシビリティ検証は実施していない。実音声/動画、所有者YouTube実認証、チーム実接続などの未確認事項は表のとおり残る。

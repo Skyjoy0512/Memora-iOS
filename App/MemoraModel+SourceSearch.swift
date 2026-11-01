@@ -38,7 +38,7 @@ extension MemoraModel {
     snapshots = snapshots.filter { used.contains(.source($0.id)) }
     let text = snapshots.map { source in
       "\n資料「\(source.title)」 " + AnswerSourceCitation.marker(for: .projectFile(source.id)) + "\n" +
-        (source.originalURL?.absoluteString ?? "") + "\n本文から検索した抜粋。全文を読んだとは表現しない。" +
+        (source.originalURL?.absoluteString ?? "") + "\n取得範囲: 抽出本文から選んだ抜粋。" +
         (source.textCoverage == .complete ? "" : "元資料の一部だけを取得できています。未取得部分は不明です。") + "\n" +
         SourceContentSearch.rendered(.init(text: "", used: citations.filter { $0.target == .source(source.id) }, matchedCount: 0))
     }.joined(separator: "\n")
