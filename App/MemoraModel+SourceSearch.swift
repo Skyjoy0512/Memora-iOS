@@ -29,7 +29,7 @@ extension MemoraModel {
             !isRestoring, !isStoreProtected else { return ("", [], []) }
       guard let context = try? await SourceContentSearch.context(source: source,
         question: request.effectiveQuestion, budget: min(4_000, max(700, budget))),
-        self.source(id: source.id) == source, !context.used.isEmpty else { continue }
+        self.source(id: source.id)?.hasSameReadableEvidence(as: source) == true, !context.used.isEmpty else { continue }
       citations += context.used
       snapshots.append(source)
     }
@@ -38,7 +38,8 @@ extension MemoraModel {
     snapshots = snapshots.filter { used.contains(.source($0.id)) }
     let text = snapshots.map { source in
       "\n資料「\(source.title)」 " + AnswerSourceCitation.marker(for: .projectFile(source.id)) + "\n" +
-        (source.originalURL?.absoluteString ?? "") + "\n" +
+        (source.originalURL?.absoluteString ?? "") + "\n本文から検索した抜粋。全文を読んだとは表現しない。" +
+        (source.textCoverage == .complete ? "" : "元資料の一部だけを取得できています。未取得部分は不明です。") + "\n" +
         SourceContentSearch.rendered(.init(text: "", used: citations.filter { $0.target == .source(source.id) }, matchedCount: 0))
     }.joined(separator: "\n")
     return (text, citations, snapshots)
@@ -51,9 +52,9 @@ extension MemoraModel {
     }
     let generation = aiWorkspaceGeneration
     guard let context = try? await SourceContentSearch.context(source: source, question: query, budget: compact ? 1_000 : 12_000),
-          !Task.isCancelled, generation == aiWorkspaceGeneration, self.source(id: id) == source,
+          !Task.isCancelled, generation == aiWorkspaceGeneration, self.source(id: id)?.hasSameReadableEvidence(as: source) == true,
           canReadAgentSource(source, compact: compact, policy: agentPluginPolicies[messageID]),
-          let fingerprint = AIRecordFingerprint.make(source) else {
+          let fingerprint = self.source(id: source.id).flatMap({ AIRecordFingerprint.make($0) }) else {
       return .init(text: "本文を参照できませんでした。保存状態と許可を確認してください。", isError: true)
     }
     updateAgentMessage(messageID) { message in
@@ -80,7 +81,7 @@ extension MemoraModel {
         found.insert(source.id)
       } else if source.canProvideText,
         let context = try? await SourceContentSearch.context(source: source, question: query, budget: 1_600),
-        !context.used.isEmpty, self.source(id: source.id) == source {
+        !context.used.isEmpty, self.source(id: source.id)?.hasSameReadableEvidence(as: source) == true {
         found.insert(source.id)
       }
     }
@@ -96,7 +97,7 @@ extension MemoraModel {
       guard !Task.isCancelled, aiWorkspaceGeneration == generation,
             canReadAgentSource(source, compact: compact, policy: agentPluginPolicies[messageID]) else { return [] }
       guard let context = try? await SourceContentSearch.context(source: source, question: query, budget: compact ? 700 : 2_000),
-            self.source(id: source.id) == source,
+            self.source(id: source.id)?.hasSameReadableEvidence(as: source) == true,
             canReadAgentSource(source, compact: compact, policy: agentPluginPolicies[messageID]),
             aiWorkspaceGeneration == generation else { continue }
       gathered += context.used
@@ -105,10 +106,10 @@ extension MemoraModel {
     var lines: [String] = []
     for source in candidates {
       let citations = selected.filter { $0.target == .source(source.id) }
-      guard !citations.isEmpty, self.source(id: source.id) == source,
+      guard !citations.isEmpty, self.source(id: source.id)?.hasSameReadableEvidence(as: source) == true,
             aiWorkspaceGeneration == generation,
             canReadAgentSource(source, compact: compact, policy: agentPluginPolicies[messageID]),
-            let fingerprint = AIRecordFingerprint.make(source) else { continue }
+            let fingerprint = self.source(id: source.id).flatMap({ AIRecordFingerprint.make($0) }) else { continue }
       let context = ProjectContextBuilder.Context(text: "", used: citations, matchedCount: citations.count)
       lines.append("id=\(source.id) 資料「\(source.title)」 " + AnswerSourceCitation.marker(for: .projectFile(source.id)) + "\n" + SourceContentSearch.rendered(context))
       updateAgentMessage(messageID) { message in

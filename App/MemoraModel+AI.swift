@@ -363,7 +363,10 @@ extension MemoraModel {
       if case .file(let id) = request.scope, meeting(id: id) == nil { return false }
       if case .space(let id) = request.scope, space(id: id) == nil { return false }
       if let id = request.sourceID, source(id: id) == nil { return false }
-      return sourcePack.sources.allSatisfy { self.source(id: $0.id) == $0 && (!cloud || RecordAccessPolicy.allows($0.privacy, purpose: .cloudAI)) }
+      return sourcePack.sources.allSatisfy {
+        self.source(id: $0.id)?.hasSameReadableEvidence(as: $0) == true &&
+          (!cloud || RecordAccessPolicy.allows($0.privacy, purpose: .cloudAI))
+      }
         && (memoryFingerprint == nil || memoryFingerprint == cloudMemoryFingerprint)
         && permitted.allSatisfy { record in
           meeting(id: record.id) == record
@@ -402,7 +405,7 @@ extension MemoraModel {
         details: AIAnswerDetails(scopeLabel: scopeLabel,
           engineLabel: AIEngineService.effectiveEngine(engine).label,
           modelLabel: AIEngineService.modelLabel(engine: engine, llm: llm),
-          sourceCount: result.text == nil ? 0 : content.sources.count, generatedAt: .now),
+          sourceCount: result.text == nil ? 0 : content.sources.count + Set(sourcePack.citations.map(\.target)).count, generatedAt: .now),
         unsupportedAttachmentNote: content.unsupportedAttachmentNote, contextNote: content.contextNote,
         sourceCitations: result.text == nil ? [] : sourcePack.citations)
     }

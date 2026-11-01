@@ -16,3 +16,4 @@ enum WebResearchClient { static let keyName = "unconfigured-brave-fixture" }
   static let isConfigured = false
   var isConnected = false
 }
+@MainActor enum NotionService { static let isConfigured = false }

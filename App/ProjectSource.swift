@@ -55,6 +55,16 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
     processingStatus == .ready && extractedTextReference != nil
   }
 
+  // A summary finishing does not change the original passages sent to Ask AI.
+  // Moves, privacy edits and replacement originals must still revoke the read.
+  func hasSameReadableEvidence(as other: Self) -> Bool {
+    id == other.id && projectID == other.projectID && kind == other.kind && title == other.title &&
+      originalURL == other.originalURL && localFileReference == other.localFileReference &&
+      extractedTextReference == other.extractedTextReference && contentFingerprint == other.contentFingerprint &&
+      processingStatus == other.processingStatus && textCoverage == other.textCoverage && privacy == other.privacy &&
+      errorInformation == other.errorInformation
+  }
+
   mutating func retainRevision() {
     guard let extractedTextReference, revisions?.last?.textReference != extractedTextReference else { return }
     revisions = Array(((revisions ?? []) + [Revision(acquiredAt: acquiredAt ?? updatedAt,

@@ -15,6 +15,8 @@ enum OnDeviceSummarizer {
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
     let model = SystemLanguageModel.default
     guard model.isAvailable else { return .failure(.noEngine) }
+    let sourceOnly = input.template.id == SummaryTemplateChoice.adaptive.id &&
+      { if case .market(let template) = input.template { return !template.includesActions }; return false }()
 
     let sections = sectioned(input.transcript, characterLimit: sectionCharacterLimit(model))
     var topics: [SummaryTopic] = []
@@ -43,11 +45,17 @@ enum OnDeviceSummarizer {
     guard !Task.isCancelled else { return .failure(.cancelled) }
     await progress("全体の概要をまとめています")
     let overview: Overview
-    switch await self.overview(of: topics, input: input, characterLimit: sectionCharacterLimit(model)) {
-    case .success(let found):
-      overview = found
-    case .failure(let failure):
-      return .failure(failure)
+    if sourceOnly {
+      // Every section has already been summarized. Reusing those points avoids
+      // a second constrained-window pass that can reject even a short article.
+      let points = unique(topics.flatMap(\.points))
+      overview = Overview(headline: input.title, overview: points.prefix(2).joined(separator: " "),
+        keyPoints: Array(points.prefix(5)))
+    } else {
+      switch await self.overview(of: topics, input: input, characterLimit: sectionCharacterLimit(model)) {
+      case .success(let found): overview = found
+      case .failure(let failure): return .failure(failure)
+      }
     }
 
     var markdown = SummaryMarkdownBuilder.build(
@@ -64,7 +72,8 @@ enum OnDeviceSummarizer {
       for topic in topics {
         let location = input.duration > 0 ? "[\(MemoraFormat.duration(topic.startTime))] " : ""
         if topics.count > 1 || input.duration > 0 { lines += ["", "## \(location)\(topic.title)"] }
-        lines += [""] + unique(topic.points + topic.decisions + topic.concerns).map { "- \($0)" }
+        let points = sourceOnly ? topic.points.filter { !overview.keyPoints.prefix(2).contains($0) } : topic.points
+        lines += [""] + unique(points + topic.decisions + topic.concerns).map { "- \($0)" }
       }
       if case .market(let template) = input.template, template.includesActions {
         let decisions = unique(topics.flatMap(\.decisions))

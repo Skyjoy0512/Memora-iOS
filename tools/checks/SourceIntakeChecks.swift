@@ -18,6 +18,19 @@ import PDFKit
     let context = try await SourceContentSearch.context(source: source, question: "SAPPHIRE QUARTZ 2468", budget: 4_000, index: index)
     precondition(context.used.contains { $0.page == 24 && $0.excerpt.contains("SAPPHIRE QUARTZ 2468") })
     precondition(context.used.allSatisfy { $0.target == .source(source.id) })
+    var summarized = source
+    summarized.summary = "生成された要約"
+    summarized.summaryStatus = .ready
+    summarized.summaryUpdatedAt = .now
+    precondition(summarized.hasSameReadableEvidence(as: source))
+    summarized.privacy.allowsCloudAI = true
+    precondition(!summarized.hasSameReadableEvidence(as: source))
+    summarized = source
+    summarized.extractedTextReference = "replacement.json"
+    precondition(!summarized.hasSameReadableEvidence(as: source))
+    summarized = source
+    summarized.projectID = UUID()
+    precondition(!summarized.hasSameReadableEvidence(as: source))
     let unrelated = try await SourceContentSearch.context(source: source, question: "PLATINUM ZIRCON 9988", budget: 4_000, index: index)
     precondition(unrelated.used.isEmpty)
     let selected = SourceTextSelection.text(blocks: result.blocks, question: "SAPPHIRE QUARTZ 2468", budget: 700)
