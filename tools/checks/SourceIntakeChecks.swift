@@ -7,6 +7,8 @@ import SQLite3
 @main struct SourceIntakeChecks {
   static func main() async throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+    PDFPageTextMergeChecks.run()
+    try await MixedPDFExtractionChecks.run(root: root)
     let pdf = root.appendingPathComponent("24-pages.pdf")
     try makeTextPDF(pdf)
     let result = try PDFSourceExtraction.read(pdf)

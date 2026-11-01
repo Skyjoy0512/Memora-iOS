@@ -7,7 +7,8 @@
     "606ac16ae771e8df60e3974fa60f9c0ff87de80a",
     "a158414a5fbfe29345c759668750b326c5be1443",
     "adf81795e5e1c13b070190765644937c16f4c288",
-    "a4b9ccfef353923cafa6e2231a957940d1c47e80"
+    "a4b9ccfef353923cafa6e2231a957940d1c47e80",
+    "8a5094bb578e8eddac4faf9ac287e17983a068c4"
   ],
   "suites": [
     {
@@ -60,39 +61,47 @@
   "xctest": "Project.json has no test targets (bitrig test exit 78)",
   "futureValidationPolicy": "Accessibility deferred at user request; batch implementation and run necessary build/regression checks at phase boundaries, not after each feature.",
   "latestBatch": {
-    "baseCommit": "a4b9ccfef353923cafa6e2231a957940d1c47e80",
-    "scope": "Optional per-source template/length/AI settings and successful-summary versus attempted-original attribution",
+    "baseCommit": "8a5094bb578e8eddac4faf9ac287e17983a068c4",
+    "scope": "Mixed digital/raster PDF extraction, conservative text merge, OCR failure retry and bounded preprocessing",
     "hostChecks": [
       {
-        "suite": "source-summary",
+        "suite": "source-intake",
         "status": "passed",
         "exitCode": 0,
-        "log": "source-summary-options-20261101.log",
-        "boundary": "Production resolution/admission/storage/recovery/SQLite/text read; registry/model state/summarizer fixtures;13 suspended mutation cases and old data decoding"
+        "log": "mixed-pdf-intake-20261101.log",
+        "boundary": "Actual macOS PDFKit/Vision/SQLite, nested Form mixed page24 and FTS citation; OCR exception injected, retry uses real Vision; digital-only23 pages avoidOCR"
       },
       {
-        "suite": "project-source-preparation",
+        "suite": "source-extraction-cache",
         "status": "passed",
         "exitCode": 0,
-        "log": "source-summary-compatibility-20261101.log",
-        "boundary": "Production source orchestration/file/SQLite;60 suspended races; extraction/network fixtures"
+        "log": "mixed-pdf-cache-20261101.log",
+        "boundary": "Production hash/SQLite; oldPDF invalidation, unchangedTXT reuse, OCR failure nonpublication; extractor fixture"
+      },
+      {
+        "suite": "project-source-import",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "mixed-pdf-retry-20261101.log",
+        "boundary": "Production SQLite and source/file handling; OCR retry metadata/admission and existing32 races; scheduler/model fixtures"
       }
+    ],
+    "notRepeated": "Six broad suites, added button interaction, accessibility, real model/provider output or device acceptance",
+    "remaining": [
+      "iOS real-device acceptance and retry button interaction",
+      "Inline images, vector text, annotation/pattern/mask detection and document structure accuracy",
+      "Oversized-document split import UI",
+      "Real audio/video and service acceptance",
+      "Full-screen runtime audit and resource profiling",
+      "Historical missing summary attribution cannot be reconstructed"
     ],
     "preview": {
       "command": "bitrig preview -platform iOS",
       "result": "success",
       "warnings": 11,
-      "log": "logs/2026-11-01T18-18-39-45ca642e.log"
-    },
-    "notRepeated": "Six broad suites, new UI interaction, accessibility, real model/provider output or device acceptance",
-    "remaining": [
-      "iOS real-device acceptance and added UI interaction",
-      "Mixed text/image PDF and structure accuracy",
-      "Oversized-document split import UI",
-      "Real audio/video and service acceptance",
-      "Full-screen runtime audit and resource profiling",
-      "Historical missing summary attribution cannot be reconstructed"
-    ]
+      "log": "logs/2026-11-01T18-35-41-b32b5f88.log",
+      "note": "SDK27.2 in Bitrig; added APIs are available before27.1; no new device/runtime claim"
+    }
   },
   "batchHistory": [
     {
@@ -218,6 +227,41 @@
         "log": "logs/2026-11-01T17-10-40-8261e167.log",
         "note": "After final citation-number preservation and duplicate-number validation changes; SDK27.2, APIs not newer than27.1"
       }
+    },
+    {
+      "baseCommit": "a4b9ccfef353923cafa6e2231a957940d1c47e80",
+      "scope": "Optional per-source template/length/AI settings and successful-summary versus attempted-original attribution",
+      "hostChecks": [
+        {
+          "suite": "source-summary",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "source-summary-options-20261101.log",
+          "boundary": "Production resolution/admission/storage/recovery/SQLite/text read; registry/model state/summarizer fixtures;13 suspended mutation cases and old data decoding"
+        },
+        {
+          "suite": "project-source-preparation",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "source-summary-compatibility-20261101.log",
+          "boundary": "Production source orchestration/file/SQLite;60 suspended races; extraction/network fixtures"
+        }
+      ],
+      "preview": {
+        "command": "bitrig preview -platform iOS",
+        "result": "success",
+        "warnings": 11,
+        "log": "logs/2026-11-01T18-18-39-45ca642e.log"
+      },
+      "notRepeated": "Six broad suites, new UI interaction, accessibility, real model/provider output or device acceptance",
+      "remaining": [
+        "iOS real-device acceptance and added UI interaction",
+        "Mixed text/image PDF and structure accuracy",
+        "Oversized-document split import UI",
+        "Real audio/video and service acceptance",
+        "Full-screen runtime audit and resource profiling",
+        "Historical missing summary attribution cannot be reconstructed"
+      ]
     }
   ]
 }

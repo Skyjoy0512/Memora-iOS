@@ -45,6 +45,10 @@ struct ProjectSourceDetailView: View {
               Button("ページ\(page)から読み取りを続ける", icon: .arrowClockwise) {
                 model.resumeProjectSource(sourceID)
               }.frame(minHeight: 44).disabled(cannotChange)
+            } else if source.kind == .pdf, !(source.ocrFailedPages ?? []).isEmpty, source.canProvideText {
+              Button("画像内の文字を再読み取り", icon: .arrowClockwise) {
+                model.resumeProjectSource(sourceID)
+              }.frame(minHeight: 44).disabled(cannotChange)
             }
             if let summary = source.summary, !summary.isEmpty {
               if source.summaryTextReference != source.extractedTextReference {

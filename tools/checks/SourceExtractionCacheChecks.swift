@@ -103,7 +103,49 @@ struct SourceExtractionCacheChecks {
     do { _ = try await cache.extract(link); preconditionFailure("Symlink accepted") }
     catch ProjectSourceFiles.Failure.invalidFile {}
     try await durableChecks(root: root, original: first)
+    try await pdfVersionChecks(root: root)
     print("SourceExtractionCacheChecks: passed (production hashing/SQLite cache; restart, copied originals, coverage/thumbnail retention, expiry, eviction, corrupt records, missing thumbnails, unavailable persistence, retry, concurrent single flight, clear/mutation invalidation, symlink rejection; OS extraction is a fixture)")
+  }
+
+  static func pdfVersionChecks(root: URL) async throws {
+    let directory = root.appendingPathComponent("pdf-extractor-version", isDirectory: true)
+    let pdf = root.appendingPathComponent("versioned.pdf")
+    let text = root.appendingPathComponent("versioned.txt")
+    let content = Data("same accessible original".utf8)
+    try content.write(to: pdf)
+    try content.write(to: text)
+    let digest = SHA256.hash(data: content).map { String(format: "%02x", $0) }.joined()
+    let vocabulary = SHA256.hash(data: try JSONEncoder().encode([String]())).map { String(format: "%02x", $0) }.joined()
+    let os = ProcessInfo.processInfo.operatingSystemVersion
+    let prefix = "v2.\(os.majorVersion).\(os.minorVersion).\(Locale.current.identifier).\(digest)."
+    let previous = SourceExtractionPersistence(directory: directory)
+    previous.write(prefix + "pdf." + vocabulary, result: .init(blocks: [.init(text: "old digital-only PDF")]))
+    previous.write(prefix + "txt." + vocabulary, result: .init(blocks: [.init(text: "old unchanged text")]))
+    let calls = ExtractionCalls()
+    let updated = SourceExtractionCache(persistenceDirectory: directory) { url, terms in
+      await calls.extract(url, vocabulary: terms)
+    }
+    let newPDF = try await updated.extract(pdf)
+    expect(await calls.count == 1)
+    precondition(newPDF.blocks.first?.text == "本文")
+    let unchanged = try await updated.extract(text)
+    precondition(unchanged.blocks.first?.text == "old unchanged text")
+    expect(await calls.count == 1)
+    let restarted = SourceExtractionCache(persistenceDirectory: directory) { _, _ in
+      preconditionFailure("New PDF extraction was not reused after restart")
+    }
+    let reused = try await restarted.extract(pdf)
+    precondition(reused.blocks == newPDF.blocks)
+    let failureDirectory = root.appendingPathComponent("failed-ocr-result")
+    let failureCalls = OCRFailureCalls()
+    let failed = SourceExtractionCache(persistenceDirectory: failureDirectory) { _, _ in await failureCalls.extract() }
+    _ = try await failed.extract(pdf)
+    _ = try await failed.extract(pdf)
+    expect(await failureCalls.count == 2)
+    let retry = SourceExtractionCache(persistenceDirectory: failureDirectory) { _, _ in await failureCalls.extract() }
+    _ = try await retry.extract(pdf)
+    expect(await failureCalls.count == 3)
+    print("PDF cache version: PASS. Old PDF extraction ignored, unrelated text cache retained, new PDF result reused. Extractor fixture; production hash/SQLite cache.")
   }
 
   static func durableChecks(root: URL, original: URL) async throws {
@@ -335,6 +377,15 @@ struct SourceExtractionCacheChecks {
     return Int(sqlite3_column_int64(query, 0))
   }
   static func expect(_ value: Bool) { precondition(value) }
+}
+
+private actor OCRFailureCalls {
+  var count = 0
+  func extract() -> ProjectSourceExtractionResult {
+    count += 1
+    return .init(blocks: [.init(text: "preserved digital text", page: 1)], coverage: .partial,
+      pageCount: 1, ocrPages: [1], ocrFailedPages: [1])
+  }
 }
 
 private actor ExtractionCalls {

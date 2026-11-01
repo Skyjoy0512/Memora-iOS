@@ -11,7 +11,8 @@ enum PDFSourceExtraction {
   private static let lock = NSLock()
 
   static func read(_ url: URL, checkpointStore: PDFCheckpointStore = .shared,
-                   now: () -> Date = Date.init, didReadPage: ((Int) -> Void)? = nil) throws -> ProjectSourceExtractionResult {
+                   now: () -> Date = Date.init, didReadPage: ((Int) -> Void)? = nil,
+                   recognizeText: ((CGImage) throws -> [String])? = nil) throws -> ProjectSourceExtractionResult {
     lock.lock()
     defer { lock.unlock() }
     try Task.checkCancellation()
@@ -43,27 +44,44 @@ enum PDFSourceExtraction {
         result.omittedPages = Array((index + 1)...document.pageCount)
         break
       }
-      let page: PDFPageCheckpoint = try autoreleasepool {
-        guard let page = document.page(at: index) else {
-          return .init(page: index + 1, blocks: [], usedOCR: false, unreadable: true)
-        }
-        var text = page.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let usedOCR = text.isEmpty
-        if usedOCR {
-          let thumbnail = page.thumbnail(of: CGSize(width: 1_600, height: 1_600), for: .mediaBox)
-          #if canImport(UIKit)
-          let image = thumbnail.cgImage
-          #else
-          let image = thumbnail.cgImage(forProposedRect: nil, context: nil, hints: nil)
-          #endif
-          if let image {
-            do { text = try recognize(image) }
-            catch is CancellationError { throw CancellationError() }
-            catch { text = "" }
+      let page: PDFPageCheckpoint
+      do {
+        page = try autoreleasepool {
+          guard let page = document.page(at: index) else {
+            return .init(page: index + 1, blocks: [], usedOCR: false, unreadable: true)
           }
+          let digitalText = page.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+          try requireTextBudget(digitalText, page: index + 1, remaining: maximumBytes - bytes)
+          var text = digitalText
+          let usedOCR = digitalText.isEmpty || (page.pageRef.map { PDFPageImageInspection.containsImage(in: $0) } ?? true)
+          var ocrFailed = false
+          if usedOCR {
+            try Task.checkCancellation()
+            let thumbnail = page.thumbnail(of: CGSize(width: 1_600, height: 1_600), for: .mediaBox)
+            #if canImport(UIKit)
+            let image = thumbnail.cgImage
+            #else
+            let image = thumbnail.cgImage(forProposedRect: nil, context: nil, hints: nil)
+            #endif
+            if let image {
+              var lines: [String]?
+              do {
+                if let recognizeText { lines = try recognizeText(image) }
+                else { lines = try recognize(image) }
+              } catch is CancellationError { throw CancellationError() }
+              catch { ocrFailed = true }
+              try Task.checkCancellation()
+              if let lines { text = PDFPageTextMerge.merge(digitalText: digitalText, recognizedLines: lines) }
+            } else { ocrFailed = true }
+          }
+          try requireTextBudget(text, page: index + 1, remaining: maximumBytes - bytes)
+          let blocks = SourceTextChunks.split(text, page: index + 1)
+          return .init(page: index + 1, blocks: blocks, usedOCR: usedOCR,
+            unreadable: blocks.isEmpty, ocrFailed: ocrFailed)
         }
-        let blocks = SourceTextChunks.split(text, page: index + 1)
-        return .init(page: index + 1, blocks: blocks, usedOCR: usedOCR, unreadable: blocks.isEmpty)
+      } catch PageBudgetFailure.exceeded {
+        result.omittedPages = Array((index + 1)...document.pageCount)
+        break
       }
       try Task.checkCancellation()
       guard checkpointStore.isActive(session, fingerprint: snapshot.fingerprint) else { throw CancellationError() }
@@ -74,7 +92,9 @@ enum PDFSourceExtraction {
       }
       bytes += added
       append(page, to: &result)
-      checkpointStore.save(page, fingerprint: snapshot.fingerprint, pageCount: document.pageCount, session: session)
+      if page.ocrFailed != true {
+        checkpointStore.save(page, fingerprint: snapshot.fingerprint, pageCount: document.pageCount, session: session)
+      }
       didReadPage?(index + 1)
     }
     try Task.checkCancellation()
@@ -87,6 +107,10 @@ enum PDFSourceExtraction {
     var notices: [String] = []
     if !result.unreadablePages.isEmpty {
       notices.append("文字を読み取れなかったページ: " + pageList(result.unreadablePages) + "。")
+    }
+    if !result.ocrFailedPages.isEmpty {
+      notices.append("画像の文字を読み取れなかったページ: " + pageList(result.ocrFailedPages) +
+        "。読み取れた本文と元のPDFは保持しています。再試行できます。")
     }
     if !result.omittedPages.isEmpty {
       let reason = stoppedForTime ? "まだ読み取っていないページ: " : "解析上限により未解析のページ: "
@@ -103,19 +127,41 @@ enum PDFSourceExtraction {
     result.blocks += page.blocks
     if page.usedOCR { result.ocrPages.append(page.page) }
     if page.unreadable { result.unreadablePages.append(page.page) }
+    if page.ocrFailed == true { result.ocrFailedPages.append(page.page) }
   }
+
+  private static func requireTextBudget(_ text: String, page: Int, remaining: Int) throws {
+    guard text.utf8.count <= remaining else { throw PageBudgetFailure.exceeded }
+    guard !text.isEmpty else { return }
+    // Count the minimum serialized block before merge tokenization or chunk
+    // allocation. Splitting adds block metadata, checked by the final encoder.
+    var encoded = try JSONEncoder().encode([ProjectSourceText(text: "", page: page)]).count
+    for byte in text.utf8 {
+      let cost: Int
+      switch byte {
+      case 0x08, 0x09, 0x0A, 0x0C, 0x0D, 0x22, 0x5C: cost = 2
+      case 0x00...0x1F: cost = 6
+      default: cost = 1
+      }
+      guard encoded <= remaining - cost else { throw PageBudgetFailure.exceeded }
+      encoded += cost
+    }
+  }
+
+  private enum PageBudgetFailure: Error { case exceeded }
 
   private static func pageList(_ pages: [Int]) -> String {
     pages.prefix(30).map(String.init).joined(separator: "、") + (pages.count > 30 ? "ほか\(pages.count - 30)ページ" : "")
   }
 
-  private static func recognize(_ image: CGImage) throws -> String {
+  private static func recognize(_ image: CGImage) throws -> [String] {
     try Task.checkCancellation()
     let request = VNRecognizeTextRequest()
     request.recognitionLevel = .accurate
     request.usesLanguageCorrection = true
     request.recognitionLanguages = ["ja-JP", "en-US"]
     try VNImageRequestHandler(cgImage: image).perform([request])
-    return (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
+    try Task.checkCancellation()
+    return (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }
   }
 }

@@ -130,6 +130,21 @@ struct ProjectSourceImportChecks {
     gate.resume()
     if let job = model.sourcePreparationJobs[id]?.task { await job.value }
     print("PASS explicit PDF continuation preserves original/text/privacy, refuses team/restore/protected store, rolls back failed writes and starts one queued preparation (scheduler fixture)")
+    var failedOCR = model.source(id: id)!
+    failedOCR.processingStatus = .ready
+    failedOCR.resumePage = nil
+    failedOCR.omittedPages = []
+    failedOCR.ocrFailedPages = [24]
+    precondition(model.storeProjectSource(failedOCR))
+    expect(try reload(model).first?.ocrFailedPages == [24])
+    let retryGate = ImportGate()
+    model.preparationHook = { _ in await retryGate.wait() }
+    precondition(model.resumeProjectSource(id) && !model.resumeProjectSource(id))
+    await retryGate.entered()
+    precondition(model.source(id: id)?.extractedTextReference == text)
+    retryGate.resume()
+    if let job = model.sourcePreparationJobs[id]?.task { await job.value }
+    print("PASS failed image OCR is persisted and admits one explicit retry without omitting readable digital text (scheduler fixture)")
   }
 
   @MainActor static func race(_ root: URL, stage: Int, change: Int) async throws {

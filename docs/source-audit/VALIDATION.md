@@ -147,3 +147,19 @@ PDFは処理済みページをSQLiteへ記録して、取消・時間制限後�
 `bitrig preview -platform iOS` は成功、既存と同じ11 warnings。log: `logs/2026-11-01T18-18-39-45ca642e.log`。プレビュー更新済み、`git diff --check` も通過。
 
 追加シートの端末操作、実モデルでの業務template出力、実provider送信は未検証。過去に保存された要約へ、存在しない設定履歴や失われた本文参照を推定して付与しない。既存全体6suiteとアクセシビリティ検証は反復していない。
+
+## 混在PDFの画像文字・OCR失敗復旧（8a5094bbから）
+
+文字layerがあるPDFでも画像XObject/入れ子Form内の文字をOCR対象にし、デジタル本文と結合した。画像資源だけを上限付きで検査し、文字のみのページは追加OCRしない。OCR例外は完了として保存せず、読み取れた本文を保持して失敗時だけ再読み取りを出す。
+
+| 限定検査 | 結果 | 境界/log |
+|---|---|---|
+| SourceIntakeChecks + MixedPDFExtractionChecks + PDFPageTextMergeChecks | PASS | macOSの実PDFKit/Vision/SQLite。24ページの実PDFで23ページは追加OCRなし、24ページ目の入れ子Form画像内文章とdigital本文を保持し、page24のFTS引用へ到達。見出し重複除去、数字/符号/否定等の違い保持、循環資源、checkpoint再利用を確認。OCR例外だけは注入し、再試行は実Visionでpage24のみ復旧。既存24page・5scan・取消/時間制限等も同suiteでPASS。`mixed-pdf-intake-20261101.log` |
+| SourceExtractionCacheChecks | PASS | production hash/SQLite/cacheで旧PDF世代の回避、text cache継続、新PDFの別instance再利用、OCR失敗結果のmemory/disk非固定化。抽出器はfixture。`mixed-pdf-cache-20261101.log` |
+| ProjectSourceImportChecks | PASS | production source/SQLite/登録処理と既存32競合。OCR失敗ページの保存/再読込、原本/本文を残す明示再試行と二重開始拒否。scheduler/OS抽出/model状態はfixture。`mixed-pdf-retry-20261101.log` |
+
+最初のhostコンパイルでCoreGraphicsのoptional参照の扱いを修正し、失敗した取り込みsuiteだけを再実行した。通過済み2suiteは反復していない。既存全体6suite、追加ボタンの実操作、実モデルの回答、iOS実機、アクセシビリティを今回検証したとはしない。
+
+inline画像、vector文字、XObject/Form以外の注釈/pattern/maskは検出対象外。OCRは表/図の構造や正確な読み順を復元しない。未使用の画像資源で追加OCRになる場合がある。巨大ページの早期上限判定は追加したが、PDFKit内部の文字列生成・実機のメモリ/電力は未計測。
+
+最終コードの `bitrig preview -platform iOS` は成功、プレビュー更新済み（既存と同じ11 warnings）。log: `logs/2026-11-01T18-35-41-b32b5f88.log`。`git diff --check` も通過。ビルド環境は引き続きSDK27.2で、追加したCoreGraphics/PDFKit/Vision APIは27.1より新しいAPIではない。

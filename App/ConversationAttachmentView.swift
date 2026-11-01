@@ -54,6 +54,8 @@ struct ConversationAttachmentView: View {
           if let notice = content.notice { Text(notice).font(.footnote).foregroundStyle(.secondary) }
           if let page = content.resumePage {
             Button("ページ\(page)から読み取りを続ける", icon: .arrowClockwise) { readAttempt += 1 }.frame(minHeight: 44)
+          } else if !content.ocrFailedPages.isEmpty, !content.blocks.isEmpty {
+            Button("画像内の文字を再読み取り", icon: .arrowClockwise) { readAttempt += 1 }.frame(minHeight: 44)
           }
             if content.blocks.isEmpty {
               Text("読み取れる本文がありません。元の資料を確認できます。")

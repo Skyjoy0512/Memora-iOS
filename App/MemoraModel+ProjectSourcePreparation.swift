@@ -51,6 +51,7 @@ extension MemoraModel {
       current.unreadablePages = result.unreadablePages
       current.omittedPages = result.omittedPages
       current.ocrPages = result.ocrPages
+      current.ocrFailedPages = result.ocrFailedPages
       current.resumePage = result.resumePage
       current.updatedAt = .now
       current.errorInformation = result.notice

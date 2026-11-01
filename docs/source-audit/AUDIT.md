@@ -93,3 +93,6 @@
 | S15 | PDFの取消/時間制限後に先頭からOCRをやり直す | hashで結んだ連続ページcheckpointと、時間制限時の明示的継続 | production PDFKit/Vision/SQLiteの取消/再開/再OCR抑止/削除失効をhostで確認。iOS実機は未確認 |
 | S16 | sourceは再要約の形式/長さ/AIを資料単位で選べない | その他メニューの任意設定とSQLiteへのoptional保存。削除済み選択へフォールバックしない | production解決/受入れ/保存と13競合のhost検査。追加UI/実AI品質は未確認 |
 | S17 | 要約開始時に成功原文参照まで上書きし、失敗後に古い要約の出典が新本文に見える | summaryAttemptTextReferenceを分離。成功時のみsummaryTextReference更新 | 実SQLite/本文読込とfixture要約器の失敗→再試行で検証。過去に失われた参照は推測しない |
+| S18 | PDFに文字layerがあるとOCRを省略し、画像内の文章が抜ける | 画像XObject/入れ子Formの候補ページをOCRし、原文保持と保守的な重複除去 | 実PDFKit/Visionで24ページ目の混在本文・FTS引用をhost確認。iOS実操作は未確認 |
+| S19 | OCR例外時も完了checkpoint/完成cacheへ保存し、一時失敗が再試行で直らない | OCR失敗ページを区別し、完了保存を避け、明示再試行を追加 | 例外注入→実OCRで失敗ページの復旧、実SQLiteの再試行保存/完成cache回避。画面操作は未確認 |
+| S20 | PDFのbyte上限確認前に巨大な本文を単語/位置索引/チャンクへ展開 | UTF8/JSON保存量の下限を先に確認し、超過ページから未解析扱い | 静的レビューとiOS build。OS内部のPDFKitメモリ/電力は未計測 |

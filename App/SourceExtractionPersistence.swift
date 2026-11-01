@@ -74,7 +74,7 @@ final class SourceExtractionPersistence {
   func write(_ key: String, result: ProjectSourceExtractionResult) {
     var newThumbnail: URL?
     do {
-      guard !result.blocks.isEmpty else { return }
+      guard !result.blocks.isEmpty, result.ocrFailedPages.isEmpty else { return }
       try prepare()
       let reference = result.thumbnail.map { _ in UUID().uuidString + ".thumb" }
       let snapshot = SourceExtractionSnapshot(result, thumbnailReference: reference,

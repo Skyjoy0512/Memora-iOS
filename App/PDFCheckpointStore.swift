@@ -34,7 +34,7 @@ final class PDFCheckpointStore: @unchecked Sendable {
 
   static func key(fingerprint: String) -> String {
     let version = ProcessInfo.processInfo.operatingSystemVersion
-    return "pdf-v1.\(version.majorVersion).\(version.minorVersion).\(Locale.current.identifier).\(fingerprint)"
+    return "pdf-v2.\(version.majorVersion).\(version.minorVersion).\(Locale.current.identifier).\(fingerprint)"
   }
 
   func begin(fingerprint: String) -> UUID {
