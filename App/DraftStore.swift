@@ -14,6 +14,8 @@ enum DraftStore {
   private static let prefix = "draft."
   private static let textFormatMarker: UInt8 = 0x01
 
+  static func storageKey(for key: String) -> String { prefix + key }
+
   static func load(_ key: String) -> String? {
     guard case .data(let data) = RecordStore.load(prefix + key) else {
       return nil

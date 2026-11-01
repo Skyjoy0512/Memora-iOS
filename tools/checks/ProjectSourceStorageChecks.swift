@@ -6,6 +6,7 @@ struct ProjectSourceStorageChecks {
   @MainActor static func main() async throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     let project = MemoraSpace(id: UUID(), name: "架空の保存先", symbol: "folder")
+    try await noteDraftCommit(root: root, project: project)
     let model = try MemoraModel(storeURL: root.appendingPathComponent("sources.sqlite"))
     model.spaces = [project]
     guard let id = try await model.addProjectNote(title: "元のタイトル", text: "保存した本文", projectID: project.id),
@@ -127,6 +128,27 @@ struct ProjectSourceStorageChecks {
   }
 
   private static func expect(_ condition: Bool) { precondition(condition) }
+
+  @MainActor private static func noteDraftCommit(root: URL, project: MemoraSpace) async throws {
+    let url = root.appendingPathComponent("memo-draft.sqlite")
+    let model = try MemoraModel(storeURL: url)
+    model.spaces = [project]
+    let key = "draft.workspace.newMemo.\(project.id)"
+    try model.store.write(key, data: Data("Draft to keep until the note is committed".utf8))
+    try FileManager.default.createDirectory(at: ProjectSourceFiles.directory, withIntermediateDirectories: true)
+    let before = try files()
+    try sql("CREATE TRIGGER fail_draft BEFORE DELETE ON documents WHEN OLD.key = '\(key)' BEGIN SELECT RAISE(ABORT, 'draft removal'); END;", url: url)
+    expect(try await model.addProjectNote(title: "メモ", text: "本文", projectID: project.id, removing: [key]) == nil)
+    precondition(model.projectSources.isEmpty)
+    expect(try files() == before)
+    guard case .data = model.store.readOutcome(key) else { preconditionFailure("Failed commit lost the draft") }
+    try sql("DROP TRIGGER fail_draft;", url: url)
+    let id = try await model.addProjectNote(title: "メモ", text: "本文", projectID: project.id, removing: [key])!
+    precondition(model.source(id: id)?.projectID == project.id)
+    expect(try reload(model) == model.projectSources)
+    guard case .missing = model.store.readOutcome(key) else { preconditionFailure("Committed memo left a duplicate draft") }
+    print("Memo draft: atomic commit/removal and SQLite delete-failure rollback passed")
+  }
   private static func text(_ source: ProjectSource) throws -> String {
     try ProjectSourceTextReader.read(source.extractedTextReference!).map(\.text).joined(separator: "\n")
   }

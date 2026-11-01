@@ -41,7 +41,8 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
     def test_composer_keeps_identity_while_capture_controls_yield_to_input(self):
         root = (APP / "RootTabView.swift").read_text()
         self.assertIn(".frame(maxWidth: MemoraSpacing.readingWidth)", root)
-        self.assertIn(".frame(width: showsCaptureButtons ? 112 : 0", root)
+        self.assertIn(".padding(.trailing, showsCaptureButtons ? 120 : 0)", root)
+        self.assertIn(".overlay(alignment: .bottomTrailing)", root)
         self.assertIn("compactIdle: true", root)
         self.assertNotIn(".id(composerScope)\n", root)
         native = (APP / "CaptureFloatingButtons.swift").read_text()

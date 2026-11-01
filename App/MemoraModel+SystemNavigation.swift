@@ -18,7 +18,10 @@ extension MemoraModel {
     case .todayTasks:
       selectedTab = .home; homePath = [.tasks]; systemTaskFilterToday = true
     case .newMemo:
-      selectedTab = .home; homePath = []; isLifeLogCreationPresented = true
+      selectedTab = .library; libraryPath = []
+      sourceAddProjectID = nil
+      sourceAddAsMemo = true
+      isSourceAddPresented = true
     case .projects: openProjects()
     case .project(let id): openProject(id)
     }

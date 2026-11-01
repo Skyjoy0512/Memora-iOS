@@ -14,13 +14,9 @@ struct LibraryRecordRow: View {
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
       : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
     return layout {
-      if isSelecting {
-        Image(icon: isSelected ? .checkmarkCircleFill : .circle, size: 17)
-          .frame(width: ProjectLayout.iconSide)
-          .accessibilityHidden(true)
-      }
       VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
-        ProjectRecordRow(meeting: meeting, showsReadyStatus: false)
+        ProjectRecordRow(meeting: meeting, showsReadyStatus: false,
+          selectionState: isSelecting ? isSelected : nil)
         if let sharedBy {
           SharedOwnerBadge(ownerName: sharedBy)
             .padding(.leading, ProjectLayout.iconSide + MemoraSpacing.md)
@@ -39,6 +35,7 @@ struct LibraryRecordRow: View {
       .frame(maxWidth: .infinity, alignment: .leading)
     }
     .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)
+    .fixedSize(horizontal: false, vertical: true)
     .foregroundStyle(.primary)
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)

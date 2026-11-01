@@ -15,6 +15,13 @@
 
 `ProjectSource` の追加項目はすべてoptional。原本/URL・タイトル・種類・取得日時・本文/字幕JSON・ページ/時刻・解析範囲・要約・要約対象本文参照・失敗理由・履歴を保持する。ファイルSHA指紋、正規化URL、既存privacyを再利用する。旧データの一括書換えやID再採番はない。
 
+作成メニューの「メモを書く」とsystem memo linkは、同じ資料エディタのmemo表示を使う。
+通常の文章はLibrary/現在の個人projectの`ProjectSource.note`へ、単独URLは共通リンク取得へ接続する。
+保存先ごとのSQLite draftを通常資料追加と分け、note登録とdraft削除は一括transaction。
+権限/所属/workspaceの失効で別の保存先へ流さない。既存のJournalメモは変換・移動せず、
+日付付きJournal作成は従来画面を維持する。実操作/検証境界は
+[UI確認記録](../ui-minimal-2026-11/README.md#fab固定配置複数選択メモ導線--2026-11-02)を参照。
+
 ## 入口×形式×保存範囲×検索×AskAI（実装後）
 
 「共通解析」はコード経路の接続を表す。全組合せの端末試験済みという意味ではない。

@@ -141,8 +141,8 @@ struct RootTabView: View {
     .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged).receive(on: RunLoop.main)) { _ in
       model.invalidateAICalendarContext()
     }
-    .sheet(isPresented: Binding(get: { model.isSourceAddPresented || model.sourceAddProjectID != nil }, set: { if !$0 { model.sourceAddProjectID = nil; model.isSourceAddPresented = false } })) {
-      ProjectSourceAddSheet(projectID: model.sourceAddProjectID)
+    .sheet(isPresented: Binding(get: { model.isSourceAddPresented || model.sourceAddProjectID != nil }, set: { if !$0 { model.sourceAddProjectID = nil; model.isSourceAddPresented = false; model.sourceAddAsMemo = false } })) {
+      ProjectSourceAddSheet(projectID: model.sourceAddProjectID, isMemo: model.sourceAddAsMemo)
     }
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()
@@ -280,7 +280,7 @@ struct RootTabView: View {
       // These controls are independent surfaces. A shared glass container can
       // intercept native menu rows where they overlap the composer's surface.
       Group {
-        HStack(alignment: .bottom, spacing: showsCaptureButtons ? 8 : 0) {
+        HStack(alignment: .bottom, spacing: 0) {
           if shouldShowComposer {
             QuickAIComposer(
               scope: composerScope,
@@ -289,22 +289,18 @@ struct RootTabView: View {
               compactIdle: true
             )
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.trailing, showsCaptureButtons ? 120 : 0)
             // Keep the editor identity while the available width changes.
             .transition(.opacity)
           }
+        }
+        .frame(maxWidth: MemoraSpacing.readingWidth)
+        .overlay(alignment: .bottomTrailing) {
           CaptureFloatingButtons(spaceID: model.visibleProjectID, isVisible: showsCaptureButtons,
             includesProjectCreation: model.selectedTab == .library && model.librarySection == .projects)
-            // Collapse the slot, never the circular controls inside it. Keep
-            // inherited layout animation out of the native glass surfaces.
-            .fixedSize(horizontal: true, vertical: true)
-            .transaction { $0.animation = nil }
-            // Keep presentation mounted when a picker raises its own keyboard.
-            .frame(width: showsCaptureButtons ? 112 : 0, height: showsCaptureButtons ? 52 : 0, alignment: .trailing)
-            .opacity(showsCaptureButtons ? 1 : 0)
             .allowsHitTesting(showsCaptureButtons)
             .accessibilityHidden(!showsCaptureButtons)
         }
-        .frame(maxWidth: MemoraSpacing.readingWidth)
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)
       }

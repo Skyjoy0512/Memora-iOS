@@ -4,14 +4,14 @@ extension MemoraModel {
   func source(id: UUID) -> ProjectSource? { projectSourceIndex.element(id, in: projectSources) }
 
   @discardableResult
-  func storeProjectSource(_ source: ProjectSource, presentsErrorsLocally: Bool = false) -> Bool {
+  func storeProjectSource(_ source: ProjectSource, presentsErrorsLocally: Bool = false, removing: [String] = []) -> Bool {
     if presentsErrorsLocally {
-      return handlingPersistenceFailureLocally { commitProjectSource(source) }
+      return handlingPersistenceFailureLocally { commitProjectSource(source, removing: removing) }
     }
-    return commitProjectSource(source)
+    return commitProjectSource(source, removing: removing)
   }
 
-  private func commitProjectSource(_ source: ProjectSource) -> Bool {
+  private func commitProjectSource(_ source: ProjectSource, removing: [String]) -> Bool {
     // Team storage is not connected. Never write its apparent records into the
     // personal SQLite document, including after an asynchronous import returns.
     guard !isRestoring, currentTeamID == nil, isStoreWritable(),
@@ -19,13 +19,17 @@ extension MemoraModel {
     var candidate = projectSources
     if let index = candidate.firstIndex(where: { $0.id == source.id }) { candidate[index] = source }
     else { candidate.insert(source, at: 0) }
-    guard persistNow(candidate, forKey: StorageKey.projectSources) else { return false }
+    let stored = removing.isEmpty
+      ? persistNow(candidate, forKey: StorageKey.projectSources)
+      : persistBatch({ [(key: StorageKey.projectSources, data: try JSONEncoder().encode(candidate))] }, removing: removing)
+    guard stored else { return false }
     projectSources = candidate
     invalidateProjectEvidence([.source(source.id)])
     return true
   }
 
-  func addProjectNote(title: String, text: String, projectID: UUID?, presentsErrorsLocally: Bool = false) async throws -> UUID? {
+  func addProjectNote(title: String, text: String, projectID: UUID?, presentsErrorsLocally: Bool = false,
+                      removing: [String] = []) async throws -> UUID? {
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
           !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
     let project = projectID.flatMap { space(id: $0) }
@@ -42,7 +46,8 @@ extension MemoraModel {
     source.extractedTextReference = name
     source.processingStatus = .ready
     source.textCoverage = .complete
-    guard storeProjectSource(source, presentsErrorsLocally: presentsErrorsLocally) else {
+    // A committed note cannot leave behind a draft that restores as a duplicate.
+    guard storeProjectSource(source, presentsErrorsLocally: presentsErrorsLocally, removing: removing) else {
       await ProjectSourceFiles.shared.remove([name]); return nil
     }
     return source.id

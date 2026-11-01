@@ -121,6 +121,7 @@ final class MemoraModel {
   @ObservationIgnored var projectChatRequestIDs: [UUID: UUID] = [:]
   var sourceAddProjectID: UUID?
   var isSourceAddPresented = false
+  var sourceAddAsMemo = false
   var voiceProfile: VoiceProfile?
   var speakerProfile: SpeakerProfile?
   var speakerProfileReference: SpeakerProfileReference?

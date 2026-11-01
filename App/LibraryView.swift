@@ -594,12 +594,10 @@ struct LibraryView: View {
 
   private func toggleSelection(_ id: UUID) {
     InteractionFeedback.shared.send(.selection)
-    withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-      if selectedMeetingIDs.contains(id) {
-        selectedMeetingIDs.remove(id)
-      } else {
-        selectedMeetingIDs.insert(id)
-      }
+    if selectedMeetingIDs.contains(id) {
+      selectedMeetingIDs.remove(id)
+    } else {
+      selectedMeetingIDs.insert(id)
     }
   }
 

@@ -6,6 +6,9 @@ struct ProjectSourceAddSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var projectID: UUID?
+  var isMemo = false
+  @State private var saveContext: LocalImportContext?
+  @State private var hasLoadedDraft = false
   @State private var text = ""
   @State private var title = ""
   @State private var photos: [PhotosPickerItem] = []
@@ -16,7 +19,7 @@ struct ProjectSourceAddSheet: View {
   @State private var isMovingRecords = false
   @State private var isSaving = false
   @State private var failure: String?
-  private var draftKey: String { "workspace.newNote.\(projectID?.uuidString ?? "library")" }
+  private var draftKey: String { "workspace.\(isMemo ? "newMemo" : "newNote").\(projectID?.uuidString ?? "library")" }
 
   var body: some View {
     NavigationStack {
@@ -24,29 +27,31 @@ struct ProjectSourceAddSheet: View {
         Section {
           TextEditor(text: $text)
             .frame(minHeight: 150)
-            .accessibilityLabel("リンクまたはメモ")
+            .accessibilityLabel(isMemo ? "メモ本文" : "リンクまたはメモ")
             .accessibilityIdentifier("source.content")
           DisclosureGroup("タイトルを付ける") {
             TextField("タイトル", text: $title).accessibilityLabel("タイトル")
           }
         } header: {
-          Text("リンクまたはメモを貼り付け")
+          Text(isMemo ? "本文" : "リンクまたはメモを貼り付け")
         } footer: {
           Text(projectID.flatMap { model.space(id: $0)?.name }.map { "保存先：" + $0 } ?? "ライブラリに保存します")
         }
-        Section {
-          Button("ファイルを追加", icon: .doc) {
-            fileContext = LocalImportContext(projectID: projectID, in: model)
-            guard fileContext != nil else { failure = "保存先を確認して開き直してください。"; return }
-            isImportingFiles = true
-          }
-          Button("写真を追加", icon: .photo) {
-            photoContext = LocalImportContext(projectID: projectID, in: model)
-            guard photoContext != nil else { failure = "保存先を確認して開き直してください。"; return }
-            isSelectingPhotos = true
-          }
-          if projectID != nil {
-            Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
+        if !isMemo {
+          Section {
+            Button("ファイルを追加", icon: .doc) {
+              fileContext = LocalImportContext(projectID: projectID, in: model)
+              guard fileContext != nil else { failure = "保存先を確認して開き直してください。"; return }
+              isImportingFiles = true
+            }
+            Button("写真を追加", icon: .photo) {
+              photoContext = LocalImportContext(projectID: projectID, in: model)
+              guard photoContext != nil else { failure = "保存先を確認して開き直してください。"; return }
+              isSelectingPhotos = true
+            }
+            if projectID != nil {
+              Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
+            }
           }
         }
         if let failure {
@@ -55,29 +60,39 @@ struct ProjectSourceAddSheet: View {
       }
       .scrollDismissesKeyboard(.interactively)
       .disabled(isSaving || model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
-      .navigationTitle("資料を追加")
+      .navigationTitle(isMemo ? "メモを書く" : "資料を追加")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
+            .disabled(isSaving)
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("追加") { saveText() }
+          Button(isMemo ? "保存" : "追加") { saveText() }
             .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
             .accessibilityIdentifier("source.add")
         }
       }
       .onAppear {
+        guard !hasLoadedDraft else { return }
+        hasLoadedDraft = true
+        saveContext = LocalImportContext(projectID: projectID, in: model)
         text = DraftStore.load(draftKey) ?? ""
         title = DraftStore.load(draftKey + ".title") ?? ""
       }
-      .onChange(of: text) { _, value in DraftStore.save(value, key: draftKey) }
-      .onChange(of: title) { _, value in DraftStore.save(value, key: draftKey + ".title") }
+      .onChange(of: text) { _, value in
+        if saveContext?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey) }
+      }
+      .onChange(of: title) { _, value in
+        if saveContext?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey + ".title") }
+      }
+      .interactiveDismissDisabled(isSaving)
       .fileImporter(isPresented: $isImportingFiles, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
         switch result {
         case .success(let urls):
           importFiles(urls)
-        case .failure(let error): failure = error.localizedDescription
+        case .failure(let error):
+          if (error as NSError).code != NSUserCancelledError { failure = error.localizedDescription }
         }
       }
       .photosPicker(isPresented: $isSelectingPhotos, selection: $photos, maxSelectionCount: 6, matching: .images)
@@ -125,12 +140,18 @@ struct ProjectSourceAddSheet: View {
 
   private func saveText() {
     let input = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let context = saveContext, context.isCurrent(in: model) else {
+      failure = "保存先が変更されました。画面を開き直してください。"
+      return
+    }
     perform {
+      guard context.isCurrent(in: model) else { return false }
       let id: UUID?
       if let url = URL(string: input), url.scheme != nil, !input.contains(where: \.isWhitespace) {
         id = try model.handlingPersistenceFailureLocally { try model.addProjectLink(input, projectID: projectID) }
       } else {
-        id = try await model.addProjectNote(title: title, text: input, projectID: projectID, presentsErrorsLocally: true)
+        id = try await model.addProjectNote(title: title, text: input, projectID: projectID, presentsErrorsLocally: true,
+          removing: [DraftStore.storageKey(for: draftKey), DraftStore.storageKey(for: draftKey + ".title")])
         if let id { Task { await model.summarizeProjectSource(id) } }
       }
       guard id != nil else { return false }

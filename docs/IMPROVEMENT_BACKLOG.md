@@ -1,5 +1,20 @@
 # Memora — 改善バックログ
 
+## 2026-11-02 FAB固定配置・複数選択の文字重なり・メモ導線
+
+FABは入力欄と同じHStackで幅を縮めず、固定したtrailing overlayへ移した。
+入力中はvisual Menuだけをanimationなしで除去し、fileImporterのhostを維持する。
+Libraryの選択markはsource iconを置換し、タイトルの幅を変えない。行の必要高さを
+layoutへ伝え、個々の選択でList全体をanimationしない。
+作成メニューとsystem linkのメモは既存ProjectSourceのメモへ統一。Library/projectを保持し、
+追加資料とは別のSQLite draftを復元する。メモ登録とdraft削除を一括commitし失敗時は保持。
+旧Journal/Meeting/ProjectSourceの移行・ID変更はなく、日付付きJournalの作成は維持。
+検証は関連するnote保存と表示契約に限定。全suiteや追加アクセシビリティ検査は反復しない。
+最終iOS preview成功。production rowの長いタイトル3件で2件選択して重なりなし、
+FABの入力/復帰、file pickerの検索keyboard/取消、Libraryメモのdraft復元をsimulatorで確認。
+実データでのLibrary一括移動/削除、project新規メモ操作、遷移の全フレーム計測は未検証。
+[詳細と実操作の範囲](ui-minimal-2026-11/README.md#fab固定配置複数選択メモ導線--2026-11-02)。
+
 ## 2026-11-02 右端FABを＋へ変更・入力時の形状を固定
 
 右端のマイクglyphを既存Lucideの＋へ変更。録音/音声取込/オンライン会議の順序は維持。

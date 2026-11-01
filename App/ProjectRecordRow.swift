@@ -3,6 +3,7 @@ import SwiftUI
 struct ProjectRecordRow: View {
   var meeting: Meeting
   var showsReadyStatus = false
+  var selectionState: Bool? = nil
 
   @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -13,7 +14,7 @@ struct ProjectRecordRow: View {
     let metadata = [MemoraFormat.relativeDate(meeting.createdAt), meeting.source.label]
       + (meeting.duration > 0 ? [MemoraFormat.duration(meeting.duration)] : [])
     return layout {
-      Image(icon: meeting.source.icon, size: 17)
+      Image(icon: selectionState.map { $0 ? .checkmarkCircleFill : .circle } ?? meeting.source.icon, size: 17)
         .frame(width: ProjectLayout.iconSide, height: 24)
         .foregroundStyle(MemoraPalette.textSecondary)
         .accessibilityHidden(true)
@@ -33,6 +34,7 @@ struct ProjectRecordRow: View {
       .frame(maxWidth: .infinity, alignment: .leading)
     }
     .frame(minHeight: ProjectLayout.minimumRowHeight, alignment: .center)
+    .fixedSize(horizontal: false, vertical: true)
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
   }

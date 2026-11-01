@@ -36,6 +36,7 @@ struct CaptureMenuPopover: View {
 
   private var addSource: some View {
     Button("資料を追加", icon: .paperclip) {
+      model.sourceAddAsMemo = false
       model.sourceAddProjectID = spaceID
       model.isSourceAddPresented = true
     }

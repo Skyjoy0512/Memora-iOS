@@ -250,3 +250,67 @@ AX取得は失敗したため画像と座標で操作した。切替途中の全
 |---|---|
 | 右端＋・52ptの独立した円形 | [通常表示](images/capture-plus-row-after.png) |
 | Ask AI入力時・全幅、FABなし | [入力状態](images/capture-plus-focused-after.png) |
+
+## FAB固定配置・複数選択・メモ導線 — 2026-11-02
+
+前回の固定サイズ/opacityだけでは入力時の違和感が残るとの報告を受け、FABを
+入力欄と同じ横並びlayoutから固定trailing overlayへ移した。入力欄はtrailing paddingを
+変えるだけで、FAB hostの幅/高さ/位置は補間しない。非表示時はvisual Menuだけを
+animationなしで除去し、fileImporter/dialogのhostは常時mountedのまま保持する。
+通常時のメモ・＋、そのメニュー内容・glass素材・Marketplaceは維持。
+
+ライブラリの複数選択時に名前が重なるとの報告に対し、選択markを別列に追加する構造を
+やめ、既存source iconのslotへ置く。タイトルの利用幅が選択前後で変わらず、
+`LibraryRecordRow`/`ProjectRecordRow`は必要な高さをlayoutへ伝える。
+個々の選択toggleでList全体をanimationしない。既存の診断画面のDEBUG領域に、
+同じproduction rowを使う長い日本語タイトル3件の選択例を追加した。
+架空データはmemory内のみで、SQLite・録音・外部AIは使わない。
+
+作成メニューとsystem memo linkは、既存の`ProjectSourceAddSheet`のmemo modeへ接続。
+本文・任意タイトル・保存先だけを表示し、開いている個人projectまたはLibraryへ
+従来の`ProjectSource.note`として保存する。URLだけを貼った場合は通常の資料追加と同じ
+安全なリンク取得経路へ接続し、入口によって解析結果を変えない。旧Journalのメモを移動・変換せず、
+日付指定のJournal作成は既存の`LifeLogCreationSheet`へ残す。
+
+メモは保存先別に`workspace.newMemo.<project/library>`のDraftStoreを使い、
+既存の資料追加`workspace.newNote`と混ぜない。画面を開いた時点のLocalImportContextを
+保存時/下書き更新時に再検査し、note本体のSQLite登録と2つのdraft key削除を同じ
+transactionにした。失敗なら本文fileをrollbackしてdraftを維持する。成功後の自動要約は
+既存の送信許可/AI設定に従う。既存データのschema変更や一括移行はない。
+
+限定検査: `run-project-source-storage-checks.sh` PASS。production note/store path、
+実file/SQLite再読込、既存24の競合に加え、draft削除にSQL failureを注入して
+note登録・file・draftのrollbackと再試行成功を確認した。最初の追加fixtureは空の
+作業directory未作成で失敗し、fixtureの初期化を修正して最終実行は成功した。
+表示契約2件とmotion policyは成功。全suiteや実外部AIの反復試験はしていない。
+
+初回preview成功後、simulatorのLibraryで「メモを書く」の保存先・簡潔な表示と
+入力した検証用draftの閉じる→開き直す復元を確認。検証用本文は空へ戻して閉じ、
+資料保存・AI送信は実行していない。projectへの実操作は未確認で、保存先保持はhost検査と
+静的な導線確認の範囲。
+
+iPhone18 Pro／ダークのsimulatorで次を確認した。AX取得は失敗したため画像と座標で操作した。
+
+- DEBUGの既存「デザインと保存の検証」で、長い日本語タイトル3件の通常→複数選択→
+  2件選択→通常への復帰。タイトルの開始位置・折り返し・行高が変わらず重ならない。
+  同じproduction rowによる表示確認であり、実際のLibrary全体の選択bar/削除/移動を
+  実データで試した証拠ではない。架空のMeetingは保存していない。
+- Ask AI入力時のFAB非表示・入力欄全幅・blur後のメモ/＋復帰。native音声file pickerを開き、
+  検索keyboard中も維持されることと取消後の復帰。音声fileの選択/取り込みはしていない。
+- メモの新しい表題とLibrary保存先、未保存の検証用draftの閉じる→再表示での復元。
+  確認用本文は空へ戻した。旧Journalデータや既存資料の編集・録音・実AI送信は行わない。
+
+FAB遷移途中の全フレーム計測、実機、project内からの新規メモ操作、単独URLの今回の
+実取得は未検証。追加アクセシビリティ検査・全host suiteの反復もしていない。
+
+| 今回の確認 | 画像 |
+|---|---|
+| 長いタイトル・通常表示（production rowの架空表示例） | [通常](images/library-long-names-normal-after.png) |
+| 同じ幅・高さで2件を選択 | [複数選択](images/library-selection-long-names-after.png) |
+| 固定overlayのFABを除いたAsk AI入力状態 | [入力状態](images/capture-fixed-overlay-focused-after.png) |
+
+最終 `bitrig preview -platform iOS` 成功、既存警告11件、プレビュー更新済み。
+log: `logs/2026-11-02T08-29-31-550da365.log`。
+上の選択例/FAB/file pickerの操作は直前の`08:23:54-ce4be34b`版で実施した。
+最後の変更は単独URLのmode分岐を外して従来の共通取得へ揃える修正とindent整形。
+最終版の通常画面の起動を確認した。単独URLでの新たな通信/AI試験や全検査の反復はしていない。

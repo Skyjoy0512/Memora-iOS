@@ -100,7 +100,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         for contract in ("group: .notes", "group: .recording", "Menu {", ".confirmationDialog(", "model.importInformationFile(url, context: context)", "NSUserCancelledError"):
             self.assertIn(contract, native)
         self.assertEqual(native.count("Menu {"), 2)
-        self.assertIn(".opacity(isVisible ? 1 : 0)", native)
+        self.assertIn("if isVisible { menus.transition(.identity) }", native)
         self.assertIn("interactive: true, backed: false", native)
         notes = menu.split("case .notes:")[1].split("case .recording:")[0]
         self.assertLess(notes.index("action(.newMemo)"), notes.index("addSource"))
@@ -111,7 +111,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         for obsolete in ("Task.sleep", "navigationTransition", "matchedTransitionSource", ".popover("):
             self.assertNotIn(obsolete, native + menu)
         dispatch = (APP / "MemoraModel+CaptureMenu.swift").read_text()
-        for call in ("startCapture(spaceID: projectID)", "onlineMeetingCaptureSpaceID = projectID", "startNewAIChat()", "isLifeLogCreationPresented = true", "openCalling()"):
+        for call in ("startCapture(spaceID: projectID)", "onlineMeetingCaptureSpaceID = projectID", "startNewAIChat()", "sourceAddAsMemo = true", "openCalling()"):
             self.assertIn(call, dispatch)
         root = (APP / "RootTabView.swift").read_text()
         self.assertIn("onDismiss: completeOnlineMeetingDismissal", root)

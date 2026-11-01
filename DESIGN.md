@@ -541,10 +541,17 @@ compact idle Ask AI field omits its voice-input glyph; the independent plus
 opens the recording menu. Focusing the field or dictation gives the composer full width; a paused draft
 keeps capture available without clearing it. Its expanded controls keep message voice input and sending.
 Capture circles are 52pt with 8pt gaps and 12pt outer margins. Keep separate glass
-surfaces without a shared container so native menu rows remain tappable. Keep
-circle geometry and label identity stable while their reserved slot collapses;
-do not animate the glass into a zero-size rectangle. Preserve the editor
-identity and keep the capture presentation mounted at zero visible size while
-typing, searching or selecting, so a picker's keyboard cannot remove its host.
+surfaces without a shared container so native menu rows remain tappable. The
+controls belong to a fixed trailing overlay, outside the composer's resizing
+layout. Remove their visual menus without animation while typing; do not shrink
+or fade native glass. Keep the presentation host mounted so a picker's keyboard
+cannot remove its importer. Preserve the editor identity as its trailing padding changes.
 Search/selection retain the bottom edge. Shared received items hide creation.
 Marketplace keeps its existing presentation.
+
+Selection marks replace the source glyph in Library rows, keeping title width
+and wrapped height unchanged. Avoid animating the list for individual selection toggles.
+The create-menu memo uses the existing source editor in memo mode: body, optional
+title and current Library/project destination. Drafts are separate from link/file
+addition; note commit and draft removal are atomic. Journal's dated entries and
+existing stored memos are preserved.

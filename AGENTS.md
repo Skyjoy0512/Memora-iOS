@@ -45,8 +45,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   memo has メモを書く / 資料を追加; plus has 録音する / 音声を取り込む /
   オンライン会議を録音, with recording first. Do not restore the top-right ＋.
   While composing, give Ask AI the full row; hide capture controls without
-  unmounting their file importer. Keep the 52pt circle geometry stable; only
-  its reserved slot collapses. Empty states reuse the full native dialog.
+  unmounting their file importer. The controls stay in a fixed trailing overlay;
+  remove their visual menus without animation while composing, never shrink or
+  fade the glass. Empty states reuse the full native dialog.
+  The create menu and system memo link use ProjectSourceAddSheet in memo mode,
+  with drafts scoped to Library/project. Journal's dated entry editor remains separate.
   Project creation stays in Projects' options menu and empty state; a project's
   new chat stays in its options and chat empty state.
 - **Files screen top chrome**: do not drive the navigation bar's visibility from
@@ -55,6 +58,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Library tab lists records across all projects; projects are opened and
   created in the Library's Projects segment (`ProjectsView`); both segments
   share one `libraryPath`. Persist the selected `LibrarySection` as a setting.
+  During multiple selection, replace the source icon with the selection mark;
+  never add a column that changes title width or animates wrapped row heights.
 - **Bottom edge**: Ask AI and the capture controls stay at the bottom; scrolling moves no
   navigation bar because there is none. Search and file selection still hide
   the composer and capture controls so results or the share / move / delete bar own the bottom edge.

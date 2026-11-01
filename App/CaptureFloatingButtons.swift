@@ -13,6 +13,47 @@ struct CaptureFloatingButtons: View {
   @State private var importContext: LocalImportContext?
 
   var body: some View {
+    // The presentation host survives keyboard/picker changes. Only the visual
+    // menus are removed, with no native-glass fade or zero-size interpolation.
+    Color.clear
+      .frame(width: 112, height: 52)
+      .overlay {
+        if isVisible { menus.transition(.identity) }
+      }
+      .transaction {
+        $0.animation = nil
+        $0.disablesAnimations = true
+      }
+      .buttonStyle(.plain)
+      .tint(MemoraPalette.textPrimary)
+      .disabled(model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
+      .confirmationDialog("新しいファイル", isPresented: $isDialogPresented, titleVisibility: .visible) {
+        CaptureMenuPopover(spaceID: spaceID, includesProjectCreation: includesProjectCreation, onSelect: select)
+      }
+      .fileImporter(isPresented: $isFileImporterPresented, allowedContentTypes: [.audio]) { result in
+        let context = importContext
+        importContext = nil
+        switch result {
+        case .success(let url):
+          Task { await model.importInformationFile(url, context: context) }
+        case .failure(let error):
+          guard (error as NSError).code != NSUserCancelledError else { return }
+          model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"
+        }
+      }
+      .onChange(of: model.isCaptureSourcePresented) { _, presented in
+        if !presented {
+          isDialogPresented = false
+        } else if !model.isToolsPresented {
+          isDialogPresented = true
+        }
+      }
+      .onChange(of: isDialogPresented) { _, presented in
+        if !presented { model.isCaptureSourcePresented = false }
+      }
+  }
+
+  private var menus: some View {
     HStack(spacing: 8) {
       Menu {
         CaptureMenuPopover(spaceID: spaceID, group: .notes, onSelect: select)
@@ -27,34 +68,6 @@ struct CaptureFloatingButtons: View {
       }
       .menuOrder(.fixed)
     }
-    .buttonStyle(.plain)
-    .tint(MemoraPalette.textPrimary)
-    .disabled(model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
-    .confirmationDialog("新しい記録", isPresented: $isDialogPresented, titleVisibility: .visible) {
-      // Empty states reuse these actions without programmatically opening a Menu.
-      CaptureMenuPopover(spaceID: spaceID, includesProjectCreation: includesProjectCreation, onSelect: select)
-    }
-    .fileImporter(isPresented: $isFileImporterPresented, allowedContentTypes: [.audio]) { result in
-      let context = importContext
-      importContext = nil
-      switch result {
-      case .success(let url):
-        Task { await model.importInformationFile(url, context: context) }
-      case .failure(let error):
-        guard (error as NSError).code != NSUserCancelledError else { return }
-        model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"
-      }
-    }
-    .onChange(of: model.isCaptureSourcePresented) { _, presented in
-      if !presented {
-        isDialogPresented = false
-      } else if !model.isToolsPresented {
-        isDialogPresented = true
-      }
-    }
-    .onChange(of: isDialogPresented) { _, presented in
-      if !presented { model.isCaptureSourcePresented = false }
-    }
   }
 
   private func menuLabel(_ title: LocalizedStringKey, icon: MemoraIcon) -> some View {
@@ -63,8 +76,6 @@ struct CaptureFloatingButtons: View {
       .frame(width: 52, height: 52)
       .contentShape(Circle())
       .memoraGlass(in: Circle(), interactive: true, backed: false)
-      // Keep the glass shape and view identity while the composer takes space.
-      .opacity(isVisible ? 1 : 0)
   }
 
   private func select(_ action: CaptureAction) {

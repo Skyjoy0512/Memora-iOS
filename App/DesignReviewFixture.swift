@@ -3,6 +3,12 @@ import Foundation
 
 @MainActor enum DesignReviewFixture {
   static let recordID = UUID(uuidString: "1AFAB0D2-BEEA-4C73-8452-F159D40F1F01")!
+  static let selectionRecords = (1...3).map { index in
+    Meeting(id: UUID(), title: "表示例\(index)：長いファイル名を複数選択しても隣のファイル名や説明と重ならずに表示するための確認", createdAt: .now,
+      duration: 180, source: .importFile, status: .ready,
+      summary: "表示確認用の架空の本文です。SQLiteや外部サービスには保存しません。長いタイトルとプレビューの折り返しを確認します。",
+      keyPoints: [], decisions: [], openQuestions: [], transcript: [], spaceID: nil)
+  }
   static let markdown = """
   # 次の一歩をそろえる
 
