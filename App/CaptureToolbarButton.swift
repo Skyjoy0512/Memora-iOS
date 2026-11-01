@@ -8,6 +8,7 @@ struct CaptureToolbarButton: View {
   var spaceID: UUID?
   var tab: RootTab
   var includesProjectCreation = false
+  var onNewChat: (() -> Void)?
   @State private var isDialogPresented = false
   @State private var isFileImporterPresented = false
   @State private var importContext: LocalImportContext?
@@ -50,7 +51,9 @@ struct CaptureToolbarButton: View {
 
   private func select(_ action: CaptureAction) {
     InteractionFeedback.shared.send(.tap)
-    if action == .importAudio {
+    if action == .newChat, let onNewChat {
+      onNewChat()
+    } else if action == .importAudio {
       importContext = LocalImportContext(projectID: spaceID, in: model)
       guard importContext != nil else {
         model.importErrorMessage = "この保存先には取り込めません。画面を開き直してください。"

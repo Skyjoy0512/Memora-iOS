@@ -21,16 +21,10 @@ struct AgentPromptSuggestionRow: View {
           Text(suggestion.title).font(.body.weight(.medium))
           if let title = suggestion.sourceTitle {
             Text(title).font(.footnote).foregroundStyle(.secondary).lineLimit(2)
-          } else {
-            Text("参照できる記録を選んで開始")
-              .font(.footnote).foregroundStyle(.secondary)
           }
         }
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
-        Image(icon: .chevronRight, size: MemoraIconMetrics.accessory)
-          .padding(.top, MemoraSpacing.xs)
-          .accessibilityHidden(true)
       }
       .foregroundStyle(MemoraPalette.textPrimary)
       .padding(.vertical, MemoraSpacing.lg)

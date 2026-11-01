@@ -20,7 +20,12 @@ struct ProjectSourcesView: View {
       }
     }
     List {
-      ForEach(items) { item in ProjectWorkspaceRow(item: item) }
+      ForEach(items) { item in
+        ProjectWorkspaceRow(item: item)
+          .listRowBackground(Color.clear)
+          .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset,
+            bottom: 8, trailing: ProjectLayout.horizontalInset))
+      }
     }
     .listStyle(.plain).scrollContentBackground(.hidden)
     .background(MemoraPalette.background)
@@ -48,7 +53,7 @@ struct ProjectSourcesView: View {
         ToolbarIconButton("検索", icon: .magnifyingglass) { isSearching = true }
       }
       ToolbarItem(placement: .topBarTrailing) {
-        ToolbarIconButton("参考資料を追加", icon: .plus) {
+        ToolbarIconButton("参考資料を追加", icon: .paperclip) {
           model.sourceAddProjectID = projectID
           model.isSourceAddPresented = true
         }

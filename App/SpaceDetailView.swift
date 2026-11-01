@@ -20,10 +20,6 @@ struct SpaceDetailView: View {
       let sources = model.workspaceSources(projectID: spaceID)
 
       VStack(spacing: 0) {
-        MemoraTextTabBar(items: ProjectWorkspaceTab.allCases, selection: $selectedTab) { $0.title }
-          .padding(.top, MemoraSpacing.xxs)
-          .padding(.bottom, MemoraSpacing.md)
-
         Group {
           switch selectedTab {
           case .chat:
@@ -74,20 +70,31 @@ struct SpaceDetailView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .principal) {
-          HStack(spacing: 7) {
-            Image(icon: .folder, size: 15)
-              .foregroundStyle(.secondary)
-            Text(space.name)
-              .font(.headline)
-              .lineLimit(1)
+          Menu {
+            Picker("表示する内容", selection: $selectedTab) {
+              ForEach(ProjectWorkspaceTab.allCases) { tab in
+                Text(tab.title).tag(tab)
+              }
+            }
+            .pickerStyle(.inline)
+          } label: {
+            VStack(spacing: 2) {
+              Text(space.name).font(.headline).lineLimit(1)
+              HStack(spacing: MemoraSpacing.xs) {
+                Text(selectedTab.title).font(.caption)
+                Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)
+                  .accessibilityHidden(true)
+              }
+              .foregroundStyle(MemoraPalette.textSecondary)
+            }
+            .frame(minHeight: MemoraSpacing.touchTarget)
+            .contentShape(Rectangle())
           }
-          .accessibilityElement(children: .combine)
-          .accessibilityAddTraits(.isHeader)
+          .buttonStyle(.plain)
+          .accessibilityLabel("\(space.name)、\(selectedTab.title)、表示切り替え")
         }
-        addToolbarItem(spaceID: spaceID)
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
-            Button("参考資料を追加", icon: .plus) { model.sourceAddProjectID = spaceID }
             Button("既存記録を移動", icon: .folder) { isAddingFiles = true }
             Button("未決事項を質問", icon: .sparkles) { isAskingAI = true }
             NavigationLink("関連タスク", value: LibraryRoute.projectTasks(spaceID))
@@ -100,6 +107,12 @@ struct SpaceDetailView: View {
           } label: {
             ToolbarActionLabel("その他", icon: .ellipsis)
           }
+        }
+        ToolbarActionItem(usesSystemBackground: true) {
+          CaptureToolbarButton(spaceID: spaceID, tab: .library) {
+            if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
+          }
+          .disabled(model.isRestoring || model.isStoreProtected)
         }
       }
       .sheet(isPresented: $isAddingFiles) { ProjectFilePickerSheet(spaceID: spaceID) }
@@ -151,34 +164,4 @@ struct SpaceDetailView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
-  @ToolbarContentBuilder
-  private func addToolbarItem(spaceID: UUID) -> some ToolbarContent {
-    switch selectedTab {
-    case .chat:
-      ToolbarItem(placement: .topBarTrailing) {
-        ToolbarIconButton("新しいチャット", icon: .squareAndPencil) {
-          if let id = model.createProjectChat(projectID: spaceID) { model.openProjectChat(id) }
-        }
-        .disabled(model.isRestoring || model.isStoreProtected)
-      }
-    case .files:
-      ToolbarActionItem(usesSystemBackground: true) {
-        Menu {
-          Button("録音を追加", icon: .waveform) {
-            Task { await model.startCapture(spaceID: spaceID) }
-          }
-          Button("既存ファイルを移動", icon: .folder) { isAddingFiles = true }
-        } label: {
-          ToolbarActionLabel("ファイルを追加", icon: .plus)
-        }
-      }
-    case .sources:
-      ToolbarItem(placement: .topBarTrailing) {
-        ToolbarIconButton("参考資料を追加", icon: .plus) {
-          model.sourceAddProjectID = spaceID
-        }
-        .disabled(model.isRestoring || model.isStoreProtected)
-      }
-    }
-  }
 }

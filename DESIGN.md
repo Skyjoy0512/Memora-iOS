@@ -16,9 +16,15 @@ No new glass, logo assets or decorative animation. See docs/UI_UX_2026_10.md.
   Projects. Project creation remains in that menu and the project empty state.
 - Library and Projects switch through the navigation title menu. Keep display,
   sort, filter and selection controls in native menus rather than stacked pill rows.
+- A project's title menu switches between chat, records and reference sources.
+  Its top-right create menu also starts with recording in every view; new chat
+  stays inside the project. A paperclip denotes source-only attachment actions.
 - Keep the Ask AI composer flat and compact. Normal ready states need no badges;
   partial content, failures and recovery actions stay visible. Source metadata
   forms one quiet line; summary, original and source links retain their roles.
+- New Ask AI chats show quiet prompt suggestions without a marketing heading,
+  repeated generic subtitles or a permanent explanation beneath them. Preserve
+  source titles, draft protection and approval at execution time.
 - Marketplace keeps its existing cards, artwork and detail presentation. See
   [the November UI comparison](docs/ui-minimal-2026-11/README.md).
 - Show the content and the next useful action first. Avoid repeating titles,

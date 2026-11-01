@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The three surfaces of a project workspace. The order is the order the tab
-/// bar shows; chat comes first because a project is usually opened to ask
+/// The three surfaces of a project workspace. The title menu keeps chat first
+/// because a project is usually opened to ask
 /// something about it.
 enum ProjectWorkspaceTab: String, CaseIterable, Identifiable {
   case chat
