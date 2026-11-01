@@ -22,8 +22,7 @@ struct SearchView: View {
           chatTranscript
         }
       }
-      .background {
-      }
+      .memoraAppear()
       .background(MemoraPalette.background)
       .safeAreaInset(edge: .top, spacing: 0) {
         VStack(spacing: 10) {

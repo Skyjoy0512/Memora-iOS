@@ -35,6 +35,7 @@ struct ProjectSourceDetailView: View {
           LazyVStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
               Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
+                .memoraTextReveal()
               Text(metadataDescription(for: source)).font(.caption).foregroundStyle(.secondary)
             }
             if let sourceActionFailure { Text(sourceActionFailure).font(.footnote).foregroundStyle(.secondary) }

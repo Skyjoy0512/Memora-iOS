@@ -186,6 +186,7 @@ struct DocumentDetailView: View {
     VStack(alignment: .leading, spacing: 6) {
       Text(document.displayTitle)
         .font(.title2.bold())
+        .memoraTextReveal()
       Label(caption(document), icon: document.kind.symbol)
         .font(.subheadline)
         .foregroundStyle(.secondary)

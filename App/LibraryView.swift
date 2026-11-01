@@ -29,37 +29,24 @@ struct LibraryView: View {
   @State private var shareTarget: Meeting?
   var onOpenSidebar: () -> Void
 
-  private var libraryTitle: String {
-    model.librarySection == .files ? "ライブラリ" : "プロジェクト"
+  private var librarySectionPicker: some View {
+    @Bindable var model = model
+    return MemoraTextTabBar(items: LibrarySection.allCases, selection: $model.librarySection) { $0.title }
+      .accessibilityLabel("ライブラリの表示")
   }
 
-  private var libraryTitleMenu: some View {
-    @Bindable var model = model
-    return Menu {
-      Picker("表示する内容", selection: $model.librarySection) {
-        Text("ライブラリ").tag(LibrarySection.files)
-        Text("プロジェクト").tag(LibrarySection.projects)
-      }
-      .pickerStyle(.inline)
-      if model.librarySection == .files {
-        Divider()
-        fileViewOptions
-      }
+  private var fileViewOptionsMenu: some View {
+    Menu {
+      fileViewOptions
     } label: {
-      HStack(spacing: MemoraSpacing.xs) {
-        Text(libraryTitle)
-          .font(.headline)
-          .lineLimit(1)
-        Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)
-          .foregroundStyle(MemoraPalette.textSecondary)
-          .accessibilityHidden(true)
-      }
-      .frame(minHeight: MemoraSpacing.touchTarget)
-      .contentShape(Rectangle())
+      Image(icon: .line3HorizontalDecrease, size: MemoraIconMetrics.glyph)
+        .foregroundStyle(MemoraPalette.textPrimary)
+        .frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)
+        .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
     .tint(MemoraPalette.textPrimary)
-    .accessibilityLabel("\(libraryTitle)、表示切り替えとオプション")
+    .accessibilityLabel("表示と並べ替え")
   }
 
   @ViewBuilder
@@ -86,15 +73,29 @@ struct LibraryView: View {
     @Bindable var model = model
 
     NavigationStack(path: $model.libraryPath) {
-      Group {
-        if model.librarySection == .files {
-          filesPage
-        } else {
-          ProjectsView(query: $query, isSearching: isSearching)
+      VStack(spacing: 0) {
+        if !isSearching, !isSelectionMode {
+          HStack(spacing: MemoraSpacing.sm) {
+            librarySectionPicker
+            Spacer(minLength: 0)
+            if model.librarySection == .files { fileViewOptionsMenu }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.top, MemoraSpacing.md)
+          .padding(.trailing, MemoraSpacing.screen)
+          .padding(.bottom, MemoraSpacing.sm)
+        }
+        Group {
+          if model.librarySection == .files {
+            filesPage
+          } else {
+            ProjectsView(query: $query, isSearching: isSearching)
+          }
         }
       }
+      .memoraAppear()
       .background(MemoraPalette.background)
-      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : (isSearching ? "" : libraryTitle))
+      .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : (isSearching ? "" : "ライブラリ"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
       .task(id: SourceSearchRequest(query: query, sources: model.projectSources, workspaceGeneration: model.aiWorkspaceGeneration)) {
@@ -108,13 +109,9 @@ struct LibraryView: View {
       .toolbar {
         if !isSearching {
           ToolbarItem(placement: .principal) {
-            if isSelectionMode {
-              Text("\(selectedMeetingIDs.count)件を選択")
-                .font(.headline)
-                .lineLimit(1)
-            } else {
-              libraryTitleMenu
-            }
+            Text(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : "ライブラリ")
+              .font(.headline)
+              .lineLimit(1)
           }
         }
 
@@ -161,6 +158,7 @@ struct LibraryView: View {
         switch route {
         case .meeting(let id):
           MeetingDetailView(meetingID: id)
+            .memoraAppear()
         default: LibraryDestinationView(route: route)
         }
       }
@@ -355,16 +353,12 @@ struct LibraryView: View {
 
         if hasSavedSources {
           Section {
-            ForEach(isSearching ? savedSources : Array(savedSources.prefix(3))) { source in
+            ForEach(savedSources) { source in
               NavigationLink(value: LibraryRoute.projectSource(source.id)) { ProjectSourceRow(source: source) }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset,
                   bottom: 8, trailing: ProjectLayout.horizontalInset))
             }
-            NavigationLink("すべて見る", value: LibraryRoute.projectSources(nil))
-              .font(MemoraTypography.secondary)
-              .foregroundStyle(MemoraPalette.textSecondary)
-              .listRowBackground(Color.clear)
           } header: {
             Text("参考資料").font(.subheadline.weight(.semibold)).textCase(nil)
           }

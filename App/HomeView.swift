@@ -160,6 +160,7 @@ struct HomeView: View {
         await model.refresh()
         if healthRequest.canRead { await healthLoader.load(healthRequest.period) }
       }
+      .memoraAppear()
       .background(MemoraPalette.background)
       .navigationTitle(isSearching ? "" : "ジャーナル")
       .navigationBarTitleDisplayMode(.inline)

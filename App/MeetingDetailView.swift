@@ -471,6 +471,7 @@ struct MeetingDetailView: View {
     VStack(alignment: .leading, spacing: 10) {
       Text(meeting.displayTitle)
         .font(MemoraTypography.screenTitle)
+        .memoraTextReveal()
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityAddTraits(.isHeader)
 

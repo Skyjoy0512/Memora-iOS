@@ -4,6 +4,14 @@ struct LibraryDestinationView: View {
   var route: LibraryRoute
 
   var body: some View {
+    Group {
+      destination
+    }
+    .memoraAppear()
+  }
+
+  @ViewBuilder
+  private var destination: some View {
     switch route {
     case .meeting(let id): MeetingDetailView(meetingID: id)
     case .meetingCitation(let id, let time): MeetingDetailView(meetingID: id, initialPlaybackStart: ProjectCitationLocation.playbackTime(time))

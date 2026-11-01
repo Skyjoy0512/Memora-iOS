@@ -153,12 +153,8 @@ struct AIComposerBar: View {
       }
     }
     .background { listeningBackdrop }
-    .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        .strokeBorder(MemoraPalette.border, lineWidth: 0.5)
-        .allowsHitTesting(false)
-    }
+    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
+      interactive: true, backed: false)
     // Keep attachment presentation separate from the native text field so its
     // menu does not replace the editor or interrupt keyboard focus.
     .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {

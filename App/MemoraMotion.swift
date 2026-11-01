@@ -34,7 +34,7 @@ private struct MemoraAppear: ViewModifier {
   func body(content: Content) -> some View {
     content
       .opacity(hasAppeared ? 1 : 0)
-      .offset(y: hasAppeared || reduceMotion ? 0 : 8)
+      .offset(y: hasAppeared || reduceMotion ? 0 : 4)
       .onAppear {
         withAnimation(animation) {
           hasAppeared = true
@@ -44,7 +44,7 @@ private struct MemoraAppear: ViewModifier {
 
   private var animation: Animation {
     reduceMotion
-      ? .easeOut(duration: 0.2)
+      ? .smooth(duration: 0.16)
       : MemoraMotion.screen.delay(delay)
   }
 }
@@ -73,7 +73,7 @@ private struct MemoraTextReveal: ViewModifier {
           withAnimation(.easeOut(duration: 0.24).delay(delay)) {
             isShown = true
           }
-          withAnimation(.linear(duration: 0.75).delay(delay)) {
+          withAnimation(.smooth(duration: 0.4).delay(delay)) {
             revealProgress = 1
           }
         }

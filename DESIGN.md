@@ -8,18 +8,20 @@ Historical visual experiments are superseded.
 use from the first page; explanatory pages are optional. Auth providers carry
 an unavailable label until connected. Plans use native Form/Picker, separating
 future pricing/credits from current on-device/BYOK features and local settings.
-No new glass, logo assets or decorative animation. See docs/UI_UX_2026_10.md.
+No new logo assets. Floating Ask AI controls use native Liquid Glass; motion follows the restrained page/text treatment below. See docs/UI_UX_2026_10.md.
 
 ## Everyday interactions
 
 - Recording is the first command in the shared top-right create menu, including
   Projects. Project creation remains in that menu and the project empty state.
-- Library and Projects switch through the navigation title menu. Keep display,
-  sort, filter and selection controls in native menus rather than stacked pill rows.
+- Files (ファイル) and Projects (プロジェクト) switch through the existing pill tabs beneath the Library title.
+  Display, sort, filter and selection remain in the adjacent native menu. Library
+  sources continue in the lazy list without a three-item preview or a See All link.
 - A project's title menu switches between chat, records and reference sources.
   Its top-right create menu also starts with recording in every view; new chat
   stays inside the project. A paperclip denotes source-only attachment actions.
-- Keep the Ask AI composer flat and compact. Normal ready states need no badges;
+- Keep the Ask AI composer compact, using untinted regular Liquid Glass without
+  an opaque card backing or a simulated border. Normal ready states need no badges;
   partial content, failures and recovery actions stay visible. Source metadata
   forms one quiet line; summary, original and source links retain their roles.
 - New Ask AI chats show quiet prompt suggestions without a marketing heading,
@@ -518,3 +520,13 @@ EventKit, not a Google Calendar connection. Google sign-in uses the official G
 mark; Apple's OS mark appears only for Apple sign-in. Provider logos keep their
 original artwork on white plates for legibility. Navigation/action glyphs remain
 Lucide. See docs/CONNECTOR_LOGOS.md for provenance.
+
+## Restrained motion — 2026-11-02
+
+Main Library, Journal and Ask AI content, Library destinations and settings forms
+fade in briefly on first appearance. Keep navigation chrome, the composer and
+scrolling rows stable; do not replay motion on list updates. Source, recording
+and generated-document titles use a short text reveal. Only a new streaming
+Ask AI reply receives an introduction, once per message; history and later tokens
+remain immediate. Reduce Motion removes text movement and uses a brief page fade.
+Marketplace and export renderers keep their existing presentation.

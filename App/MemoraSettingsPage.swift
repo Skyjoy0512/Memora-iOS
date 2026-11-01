@@ -6,6 +6,7 @@ struct MemoraSettingsPage: ViewModifier {
   func body(content: Content) -> some View {
     content
       .memoraPlainList()
+      .memoraAppear()
       .navigationTitle(title)
       .navigationBarTitleDisplayMode(.inline)
   }
