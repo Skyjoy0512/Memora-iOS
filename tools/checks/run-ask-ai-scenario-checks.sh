@@ -4,7 +4,7 @@ cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-askai-scenarios.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 export MEMORA_WORKSPACE_FILES_DIRECTORY="$check_dir/workspace"
-swiftc -enable-bare-slash-regex -D MEMORA_HOST_CHECKS -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENANCE_CHECKS -D ASK_AI_SCENARIO_CHECKS -D RESEARCH_PROJECT_STORAGE_CHECKS \
+swiftc App/AIAttachmentCitation.swift -enable-bare-slash-regex -D MEMORA_HOST_CHECKS -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENANCE_CHECKS -D ASK_AI_SCENARIO_CHECKS -D RESEARCH_PROJECT_STORAGE_CHECKS \
   Shared/MemoraIcon.swift App/LocalStore.swift App/Person.swift App/PersonIdentity.swift App/PersonAIContext.swift \
   App/MemoraModel+PersonPrivacy.swift App/PersonSelectionOption.swift App/PersonTaskAssociation.swift App/PersonMemory.swift App/PersonConversationSummary.swift \
   App/MemoraTask.swift App/TaskRelationships.swift App/TaskProgress.swift App/TaskOwnership.swift App/TaskHierarchy.swift \

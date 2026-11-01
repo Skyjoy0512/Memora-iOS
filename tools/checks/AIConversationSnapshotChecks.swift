@@ -8,6 +8,9 @@ enum AIConversationSnapshotChecks {
     answer.sources = [AIChatSource(meetingID: recordID, title: "資料", excerpts: [.init(text: "根拠", start: 12)])]
     answer.details = AIAnswerDetails(scopeLabel: "すべて", engineLabel: "端末内", sourceCount: 1, generatedAt: .now)
     answer.sourceCitations = [.init(target: .source(UUID()), title: "長いPDF", excerpt: "最後のページの根拠", page: 24)]
+    let file = AIAttachment(id: UUID(), name: "会話のPDF", url: URL(fileURLWithPath: "/fixture/AIAttachments/source.pdf"))
+    let fileReference = AIAttachmentFileReference(file)!
+    answer.attachmentCitations = [AIAttachmentCitation(number: 1, file: fileReference, excerpt: "添付の後半ページ", page: 24)!]
     answer.interfaceTaskIDs = [UUID()]
     answer.interfaceProjectIDs = [UUID()]
     answer.interfaceWorkspaceID = "private-team"
@@ -35,6 +38,16 @@ enum AIConversationSnapshotChecks {
     precondition(restored.count == 3 && restored[1].id == answer.id)
     precondition(restored[1].sources == answer.sources && restored[1].details == answer.details)
     precondition(restored[1].sourceCitations == answer.sourceCitations)
+    precondition(restored[1].attachmentCitations == answer.attachmentCitations)
+    let exchange = AIConversationEntry(id: UUID(), question: "添付について", answer: answer.text, scopeLabel: "すべて",
+      createdAt: .now, attachmentCitations: answer.attachmentCitations, attachment: fileReference)
+    let savedExchange = try JSONEncoder().encode(exchange)
+    let restoredExchange = try JSONDecoder().decode(AIConversationEntry.self, from: savedExchange)
+    precondition(restoredExchange.attachmentCitations == answer.attachmentCitations)
+    var oldExchange = try JSONSerialization.jsonObject(with: savedExchange) as! [String: Any]
+    oldExchange.removeValue(forKey: "attachmentCitations")
+    let legacyExchange = try JSONDecoder().decode(AIConversationEntry.self, from: JSONSerialization.data(withJSONObject: oldExchange))
+    precondition(legacyExchange.attachmentCitations == nil && legacyExchange.answer == answer.text)
     precondition(restored[1].interfaceTaskIDs.isEmpty && restored[1].interfaceProjectIDs.isEmpty)
     precondition(restored[1].calendarReadSnapshot == nil)
     precondition(restored[1].mcpResultAuthorizationIDs.isEmpty)
@@ -49,11 +62,13 @@ enum AIConversationSnapshotChecks {
     for index in oldTurns.indices {
       oldTurns[index].removeValue(forKey: "artifactProvenance")
       oldTurns[index].removeValue(forKey: "sourceCitations")
+      oldTurns[index].removeValue(forKey: "attachmentCitations")
     }
     legacyJSON["turns"] = oldTurns
     let old = try AIConversationSnapshot.decode(JSONSerialization.data(withJSONObject: legacyJSON), workspaceID: nil)
     precondition(old.restoredMessages()[1].artifactProvenance == nil)
     precondition(old.restoredMessages()[1].sourceCitations.isEmpty)
+    precondition(old.restoredMessages()[1].attachmentCitations.isEmpty)
     let attachmentRoot = URL(fileURLWithPath: "/fixture/AIAttachments")
     let secondFile = AIAttachment(id: UUID(), name: "字幕", url: attachmentRoot.appendingPathComponent("captions.vtt"))
     var multi = AIAttachment(id: UUID(), name: "PDF", url: attachmentRoot.appendingPathComponent("document.pdf"),
@@ -86,6 +101,15 @@ enum AIConversationSnapshotChecks {
     try reject(JSONEncoder().encode(invalid))
     invalid = snapshot
     invalid.turns[0].role = "system"
+    try reject(JSONEncoder().encode(invalid))
+    invalid = snapshot
+    invalid.turns[1].attachmentCitations?[0].file.fileName = "../private.pdf"
+    try reject(JSONEncoder().encode(invalid))
+    invalid = snapshot
+    invalid.turns[1].attachmentCitations = Array(repeating: answer.attachmentCitations[0], count: 65)
+    try reject(JSONEncoder().encode(invalid))
+    invalid = snapshot
+    invalid.turns[1].attachmentCitations = Array(repeating: answer.attachmentCitations[0], count: 2)
     try reject(JSONEncoder().encode(invalid))
     invalid = snapshot
     invalid.turns[1].artifactProvenance?.workspaceID = "other"

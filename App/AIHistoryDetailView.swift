@@ -43,6 +43,7 @@ struct AIHistoryDetailView: View {
         .foregroundStyle(.secondary)
 
         SourceCitationList(citations: entry.sourceCitations ?? [])
+        AttachmentCitationList(citations: entry.attachmentCitations ?? [])
         if let attachment = entry.attachment?.resolve() {
           ForEach(attachment.files) { file in
             NavigationLink(file.name) { ConversationAttachmentView(file: file) }.frame(minHeight: 44)

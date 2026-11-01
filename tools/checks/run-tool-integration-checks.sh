@@ -14,7 +14,7 @@ swiftc App/ToolInputValidator.swift App/AIToolDefinition.swift App/AIToolRegistr
 swiftc App/AIWebSearchIntent.swift tools/checks/AIWebSearchIntentChecks.swift -o "$check_dir/web"
 "$check_dir/web"
 
-swiftc App/AIRecordFingerprint.swift App/AIRecordReference.swift App/RecordPrivacyTarget.swift \
+swiftc App/AIAttachmentCitation.swift App/AIRecordFingerprint.swift App/AIRecordReference.swift App/RecordPrivacyTarget.swift \
   App/AIConversationProvenance.swift App/AIEpisode.swift App/ProjectCitation.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/AIConversationEntry.swift \
   tools/checks/AIConversationProvenanceChecks.swift -o "$check_dir/privacy"
 "$check_dir/privacy"

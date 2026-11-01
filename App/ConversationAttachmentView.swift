@@ -5,6 +5,7 @@ struct ConversationAttachmentView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var file: AIAttachment.File
+  var initialExcerpt: String? = nil
   @State private var content: ProjectSourceExtractionResult?
   @State private var readingFailure: String?
   @State private var readAttempt = 0
@@ -34,41 +35,51 @@ struct ConversationAttachmentView: View {
   }
 
   private var attachmentContent: some View {
-    ScrollView {
-      LazyVStack(alignment: .leading, spacing: 20) {
-        Text(file.name).font(.title2.weight(.semibold)).textSelection(.enabled)
-        if let url = file.originalURL { Link("元のページを開く", destination: url).frame(minHeight: 44) }
-        if kind == .pdf {
-          NavigationLink("PDFを開く") { LocalSourcePDFView(url: file.url).navigationTitle(file.name).navigationBarTitleDisplayMode(.inline) }
-            .frame(minHeight: 44)
-        } else if kind == .audio || kind == .video {
-          NavigationLink("再生") { LocalSourceMediaPlayerView(url: file.url, title: file.name, start: nil) }
-            .frame(minHeight: 44)
-        } else if file.url.pathExtension.lowercased() != "memorasource" {
-          Button("元のファイルを開く", icon: .doc) { previewURL = file.url }.frame(minHeight: 44)
-        }
-        saveControls
+    ScrollViewReader { proxy in
+      ScrollView {
+        LazyVStack(alignment: .leading, spacing: 20) {
+          Text(file.name).font(.title2.weight(.semibold)).textSelection(.enabled)
+          if let url = file.originalURL { Link("元のページを開く", destination: url).frame(minHeight: 44) }
+          if kind == .pdf {
+            NavigationLink("PDFを開く") { LocalSourcePDFView(url: file.url).navigationTitle(file.name).navigationBarTitleDisplayMode(.inline) }
+              .frame(minHeight: 44)
+          } else if kind == .audio || kind == .video {
+            NavigationLink("再生") { LocalSourceMediaPlayerView(url: file.url, title: file.name, start: nil) }
+              .frame(minHeight: 44)
+          } else if file.url.pathExtension.lowercased() != "memorasource" {
+            Button("元のファイルを開く", icon: .doc) { previewURL = file.url }.frame(minHeight: 44)
+          }
+          saveControls
         if let content {
           if let notice = content.notice { Text(notice).font(.footnote).foregroundStyle(.secondary) }
-          if content.blocks.isEmpty {
-            Text("読み取れる本文がありません。元の資料を確認できます。")
-              .font(.subheadline).foregroundStyle(.secondary)
-            Button("再試行", icon: .arrowClockwise) { readAttempt += 1 }.frame(minHeight: 44)
-          } else {
-            Text(kind == .audio || kind == .video || content.blocks.contains(where: { $0.time != nil }) ? "文字起こし・字幕" : "原文")
-              .font(.headline)
-            ForEach(content.blocks.indices, id: \.self) { index in
-              originalBlock(content.blocks[index])
-            }
+          if let page = content.resumePage {
+            Button("ページ\(page)から読み取りを続ける", icon: .arrowClockwise) { readAttempt += 1 }.frame(minHeight: 44)
           }
-        } else if let readingFailure {
-          Text(readingFailure).font(.footnote).foregroundStyle(.secondary)
-          Button("再試行", icon: .arrowClockwise) { readAttempt += 1 }.frame(minHeight: 44)
-        } else { ProgressView("読み込んでいます…") }
+            if content.blocks.isEmpty {
+              Text("読み取れる本文がありません。元の資料を確認できます。")
+                .font(.subheadline).foregroundStyle(.secondary)
+              Button("再試行", icon: .arrowClockwise) { readAttempt += 1 }.frame(minHeight: 44)
+            } else {
+              Text(kind == .audio || kind == .video || content.blocks.contains(where: { $0.time != nil }) ? "文字起こし・字幕" : "原文")
+                .font(.headline)
+              ForEach(content.blocks.indices, id: \.self) { index in
+                originalBlock(content.blocks[index]).id("attachment.text.\(index)")
+              }
+            }
+          } else if let readingFailure {
+            Text(readingFailure).font(.footnote).foregroundStyle(.secondary)
+            Button("再試行", icon: .arrowClockwise) { readAttempt += 1 }.frame(minHeight: 44)
+          } else { ProgressView("読み込んでいます…") }
 
-      }
+        }
         .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
         .padding(MemoraSpacing.screen).frame(maxWidth: .infinity)
+      }
+      .onChange(of: content?.blocks) { _, blocks in
+        guard let initialExcerpt, !initialExcerpt.isEmpty,
+              let index = blocks?.firstIndex(where: { $0.text.contains(initialExcerpt) }) else { return }
+        proxy.scrollTo("attachment.text.\(index)", anchor: .top)
+      }
     }
   }
 

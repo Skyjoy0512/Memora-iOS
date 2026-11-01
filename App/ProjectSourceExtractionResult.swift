@@ -9,4 +9,5 @@ struct ProjectSourceExtractionResult: Sendable {
   var unreadablePages: [Int] = []
   var omittedPages: [Int] = []
   var ocrPages: [Int] = []
+  var resumePage: Int?
 }

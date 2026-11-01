@@ -13,6 +13,19 @@ struct SourceExtractionCacheChecks {
     let first = root.appendingPathComponent("first.txt")
     let copy = root.appendingPathComponent("copy.txt")
     try Data("取得済みの本文".utf8).write(to: first)
+    let resumeCalls = PDFResumeCalls()
+    let resumeDirectory = root.appendingPathComponent("resume-result-cache")
+    let partialCache = SourceExtractionCache(persistenceDirectory: resumeDirectory) { _, _ in await resumeCalls.extract() }
+    let partial = try await partialCache.extract(first)
+    precondition(partial.resumePage == 2)
+    let restartedResume = SourceExtractionCache(persistenceDirectory: resumeDirectory) { _, _ in await resumeCalls.extract() }
+    let completed = try await restartedResume.extract(first)
+    precondition(completed.resumePage == nil)
+    expect(await resumeCalls.count == 2)
+    let completedCache = SourceExtractionCache(persistenceDirectory: resumeDirectory) { _, _ in
+      preconditionFailure("Completed result was not reused")
+    }
+    _ = try await completedCache.extract(first)
     try FileManager.default.copyItem(at: first, to: copy)
     let initial = try await cache.extract(first)
     let reused = try await cache.extract(copy, vocabulary: ["文章の解析には無関係"])
@@ -355,5 +368,14 @@ private actor ExtractionGate {
     let pending = continuations
     continuations = []
     for continuation in pending { continuation.resume(returning: .init(blocks: [.init(text: "本文")])) }
+  }
+}
+
+private actor PDFResumeCalls {
+  var count = 0
+  func extract() -> ProjectSourceExtractionResult {
+    count += 1
+    return .init(blocks: [.init(text: "preserved page", page: 1)], coverage: count == 1 ? .partial : .complete,
+      pageCount: 2, omittedPages: count == 1 ? [2] : [], resumePage: count == 1 ? 2 : nil)
   }
 }

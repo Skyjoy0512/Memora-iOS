@@ -116,3 +116,21 @@
 全体6suiteは反復していない。追加UIの端末操作、PDF24ページのtap、音声/videoの実再生、アプリの実プロセス再起動によるcache再利用は未検証。hostでの別instance復元と、iOSでの実際の再起動を区別する。アクセシビリティの追加検証も実施していない。
 
 統合後の `bitrig preview -platform iOS` は成功、プレビュー更新済み（既存と同じ11 warnings）。log: `logs/2026-11-01T12-10-32-3bd7f10b.log`。今回のapp変更をまとめてビルドした結果で、上記UIの操作確認を意味しない。`git diff --check` も通過。
+
+## 添付の出典遷移・PDFページ継続（adf81795から）
+
+添付の実送信抜粋と元ファイル/実ページ/実時刻を回答・履歴へ任意項目として保持し、参照ボタンから原本へ戻す。最終contextで全文が残らない抜粋はボタンの対象外。同一ページでも引用番号と原文が異なる場合は別の根拠として保持する。モデルが書いた任意の番号を参照先にはしない。
+
+PDFは処理済みページをSQLiteへ記録して、取消・時間制限後に継続する。readyな部分本文も明示的な継続操作で更新し、原本を再取得しない。2000ページ/8MBの総上限は維持し、時間停止だけを継続可能と表示する。
+
+| 限定検査 | 結果 | 境界/log |
+|---|---|---|
+| AttachmentCitationChecks | PASS | production prepare/selection/referenceで後半page24と時刻、Unicode/byte予算、各切断点の実送信全文照合、10資料/64引用、無効な復元情報、一時原本の旧API互換。抽出器はfixture。`attachment-evidence-20261101.log` |
+| SourceIntakeChecks | PASS | production PDFKit/Vision/SQLiteで実Task取消、別storeで再開、時間制限後のscan PDF続行、処理済みページの再OCR抑止、原本変更/破損/削除session失効。既存24page/FTS/OCR検査も同suite。macOS hostでありiOS実機ではない。`pdf-checkpoints-20261101.log` |
+| ProjectSourceImportChecks | PASS | production SQLite/fileに加え明示的な継続の保存失敗/権限/二重開始拒否、原本/既存本文/プライバシー保持。scheduler/OS解析はfixture。`pdf-continuation-20261101.log` |
+| AIConversationSnapshotChecks | PASS | production snapshot/履歴codecで引用復元、旧形式の欠落項目、無効なパス/重複番号/上限拒否、grant非復元。`conversation-evidence-20261101.log` |
+| SourceExtractionCacheChecks | PASS | 継続可能な結果を完成cacheへ固定しないこと、完成後の永続再利用。既存破損/失効/削除競合も同suite。OS抽出器はfixture。`continuation-cache-20261101.log` |
+
+既存全体6suite、実機・追加画面のタップ、クラウドモデルの最終出力は再検証していない。参照ボタンの追加をLLMの正答保証としない。追加のアクセシビリティ検証も行っていない。最終レビューの引用番号保持修正後は履歴codec検査のみ再実行し、他の通過済み限定suiteは反復しない。
+
+最終コードの `bitrig preview -platform iOS` は成功、既存と同じ11 warnings。log: `logs/2026-11-01T17-10-40-8261e167.log`。プレビュー更新済み、`git diff --check` も通過。ビルド環境は引き続きSDK27.2であり、追加実装は27.1より新しいAPIを使用していない。

@@ -89,3 +89,5 @@
 | S11 | 原本登録後、準備job開始前の終了でpendingが残る。復旧処理はprocessingのみ対象 | 起動/復元/取消後に、live jobのないpendingも再試行状態へ戻す | production SQLiteとlive queue/rollbackのhost検査。実OS強制終了は未確認 |
 | S12 | 会話添付viewerがAI用の有限抜粋を原文として表示 | 全抽出ブロックを遅延表示し、実ページ/時刻へ共通viewerを再利用 | iOS buildと静的レビュー。追加UI実操作は未確認 |
 | S13 | 解析結果の再利用はmemoryのみ。再起動で転写/OCRを再実行 | 上限付きSQLite派生cache、原本hash/形式/用語集/schema/OS/localeで再検証 | 別instance再起動/破損/失効/削除競合のhost検査。端末認識器はfixture |
+| S14 | 添付を根拠に答えても、回答・履歴に原本の位置への参照が残らない | 実送信抜粋に限定した添付引用をoptional保存。予算で欠けた抜粋・不正番号はリンクにしない | production prepare/selection/codec検査。追加UIの実操作は未確認 |
+| S15 | PDFの取消/時間制限後に先頭からOCRをやり直す | hashで結んだ連続ページcheckpointと、時間制限時の明示的継続 | production PDFKit/Vision/SQLiteの取消/再開/再OCR抑止/削除失効をhostで確認。iOS実機は未確認 |

@@ -191,6 +191,7 @@ extension MemoraModel {
     aiChatTask?.cancel()
     aiChatTask = Task { [weak self] in
       guard let self else { return }
+      var attachmentCitations: [AIAttachmentCitation] = []
       let excerpts = await self.searchAgentProjectSources(query: trimmed, messageID: placeholder.id, compact: runner.isOnDevice)
       guard !Task.isCancelled, self.aiChatRequestID == requestID else { return }
       if !excerpts.isEmpty {
@@ -212,6 +213,7 @@ extension MemoraModel {
               maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities, task: contextTask)) else {
               throw ConversationSourceIntake.Failure.unavailable(prepared.failure ?? "資料を読み取れませんでした。元の資料を確認して再試行してください。")
             }
+            attachmentCitations = AIAttachmentCitation.retained(prepared.attachmentCitations, in: prepared.text ?? "")
             opening += "\n\n" + context
             if let index = self.aiMessages.firstIndex(where: { $0.id == userMessage.id }) { self.aiMessages[index].attachment = staged }
             self.markCloudProvenanceIncomplete(placeholder.id)
@@ -225,7 +227,10 @@ extension MemoraModel {
           self.isAIChatResponding = false; self.aiChatTask = nil; self.aiChatRequestID = nil
           return
         }
-      } else if let attachmentContext { opening += "\n\n" + attachmentContext }
+      } else if let attachmentContext {
+        attachmentCitations = AIAttachmentCitation.retained(preparedAttachment?.attachmentCitations ?? [], in: preparedAttachment?.text ?? "")
+        opening += "\n\n" + attachmentContext
+      }
       let result: AIAnswerResult
       switch runner {
       case .cloud(let session):
@@ -275,7 +280,7 @@ extension MemoraModel {
         engineLabel: runner.isOnDevice ? "エージェント（端末内）" : "エージェント",
         modelLabel: runner.isOnDevice ? nil : llm.modelLabel,
         // The records the agent opened are what its answer rests on.
-        sourceCount: self.agentMessage(placeholder.id)?.agentSteps.filter { $0.icon == AgentTool.readRecord.icon }.count ?? 0,
+        sourceCount: (self.agentMessage(placeholder.id)?.agentSteps.filter { $0.icon == AgentTool.readRecord.icon }.count ?? 0) + Set(attachmentCitations.map { $0.file.id }).count,
         generatedAt: .now
       )
       switch result {
@@ -283,6 +288,7 @@ extension MemoraModel {
         self.completeAgentWebResearch(messageID: placeholder.id, answer: text, details: details)
         self.updateAgentMessage(placeholder.id) {
           $0.text = text
+          $0.attachmentCitations = attachmentCitations
           $0.details = details
           $0.isThinking = false
           $0.finishedAt = .now

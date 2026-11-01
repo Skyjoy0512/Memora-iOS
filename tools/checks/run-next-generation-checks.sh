@@ -20,6 +20,7 @@ bash tools/checks/run-project-source-web-recovery-checks.sh
 bash tools/checks/run-project-source-import-checks.sh
 bash tools/checks/run-source-intake-checks.sh
 bash tools/checks/run-source-extraction-cache-checks.sh
+bash tools/checks/run-attachment-citation-checks.sh
 bash tools/checks/run-youtube-caption-checks.sh
 bash tools/checks/run-audio-import-checks.sh
 bash tools/checks/run-notion-service-checks.sh
@@ -47,9 +48,9 @@ python3 tools/checks/make-web-certificate-fixture.py "$check_dir/web.cer"
 python3 tools/checks/make-office-fixtures.py "$check_dir/office-fixtures"
 swiftc App/ZipArchive.swift App/ProjectSourceText.swift App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift tools/checks/OfficeDocumentChecks.swift -o "$check_dir/office"
 "$check_dir/office" "$check_dir/office-fixtures"
-swiftc Shared/MemoraIcon.swift App/AgentStep.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/ComposerMention.swift App/AIAnswerDetails.swift App/AIChatSource.swift App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/ArtifactProvenance.swift App/ArtifactProjectSourceReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/AICalendarEventReference.swift App/AICalendarReadSnapshot.swift App/ProjectCitation.swift App/AIChatMessage.swift App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift App/AIConversationSnapshot.swift tools/checks/AIConversationSnapshotChecks.swift -o "$check_dir/conversation"
+swiftc App/AIEpisode.swift App/AIConversationEntry.swift App/AIAttachmentCitation.swift Shared/MemoraIcon.swift App/AgentStep.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/ComposerMention.swift App/AIAnswerDetails.swift App/AIChatSource.swift App/RecordPrivacyTarget.swift App/AIRecordReference.swift App/ArtifactProvenance.swift App/ArtifactProjectSourceReference.swift App/AIConversationProvenance.swift App/AgentSourceReference.swift App/AICalendarEventReference.swift App/AICalendarReadSnapshot.swift App/ProjectCitation.swift App/AIChatMessage.swift App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift App/AIConversationSnapshot.swift tools/checks/AIConversationSnapshotChecks.swift -o "$check_dir/conversation"
 "$check_dir/conversation"
-swiftc App/AIAttachment.swift App/AIAttachmentFileReference.swift App/PreparedAIAttachment.swift App/LLMModelOption.swift App/LLMProvider.swift App/LLMSelection.swift App/MemoraIntelligence.swift App/ModelCapabilities.swift App/TokenEstimate.swift App/TokenBudgetManager.swift App/AgentAttachmentContext.swift App/AIPluginExecutionPolicy.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/AgentAttachmentChecks.swift -o "$check_dir/agent-attachment"
+swiftc App/AIAttachmentCitation.swift App/AIAttachment.swift App/AIAttachmentFileReference.swift App/PreparedAIAttachment.swift App/LLMModelOption.swift App/LLMProvider.swift App/LLMSelection.swift App/MemoraIntelligence.swift App/ModelCapabilities.swift App/TokenEstimate.swift App/TokenBudgetManager.swift App/AgentAttachmentContext.swift App/AIPluginExecutionPolicy.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swift App/AgentToolOutcome.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AgentConversationLoop.swift tools/checks/AgentAttachmentChecks.swift -o "$check_dir/agent-attachment"
 "$check_dir/agent-attachment"
 swiftc App/ReviewPeriod.swift App/AgentTaskDraft.swift tools/checks/AgentTaskDraftChecks.swift -o "$check_dir/task-drafts"
 "$check_dir/task-drafts"
@@ -61,7 +62,7 @@ swiftc App/AIAnswerFailure.swift App/AIAnswerResult.swift App/AgentToolCall.swif
 "$check_dir/agent-loop"
 swiftc App/AgentToolOutcome.swift App/ProjectCitation.swift App/ProjectEvidenceChunk.swift App/ProjectContextBuilder.swift App/ScopedAgentEvidence.swift tools/checks/ScopedAgentEvidenceChecks.swift -o "$check_dir/scoped-evidence"
 "$check_dir/scoped-evidence"
-swiftc App/BoundedTextReader.swift App/AIAttachment.swift App/PreparedAIAttachment.swift App/AIQueryScope.swift tools/checks/AttachmentScopeChecks.swift -o "$check_dir/attachments"
+swiftc App/AIAttachmentFileReference.swift App/AIAttachmentCitation.swift App/BoundedTextReader.swift App/AIAttachment.swift App/PreparedAIAttachment.swift App/AIQueryScope.swift tools/checks/AttachmentScopeChecks.swift -o "$check_dir/attachments"
 "$check_dir/attachments"
 swiftc App/ProjectSourceFiles.swift App/ProjectSourceText.swift App/ProjectSourceTextReader.swift tools/checks/ProjectSourceReadChecks.swift -o "$check_dir/source-read"
 "$check_dir/source-read"

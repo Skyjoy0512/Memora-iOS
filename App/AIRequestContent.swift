@@ -17,4 +17,5 @@ struct AIRequestContent {
   /// Said when the attachment or the history was trimmed to fit the budget, so
   /// a short answer is not mistaken for a complete one.
   var contextNote: String?
+  var attachmentCitations: [AIAttachmentCitation] = []
 }

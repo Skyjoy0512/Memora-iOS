@@ -9,6 +9,7 @@ struct PreparedAIAttachment: Sendable {
   var notice: String?
   var preparedQuestion: String?
   var additionalFileIDs: [UUID]?
+  var attachmentCitations: [AIAttachmentCitation] = []
 
   func matches(_ attachment: AIAttachment) -> Bool {
     id == attachment.id && name == attachment.name && url == attachment.url &&

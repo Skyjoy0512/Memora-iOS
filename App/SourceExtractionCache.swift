@@ -32,11 +32,11 @@ actor SourceExtractionCache {
     // Bump the extractor version whenever extraction semantics change. Locale
     // and OS changes can alter OCR/speech output even for identical originals.
     let system = ProcessInfo.processInfo.operatingSystemVersion
-    let key = "v1.\(system.majorVersion).\(system.minorVersion).\(Locale.current.identifier)."
+    let key = "v2.\(system.majorVersion).\(system.minorVersion).\(Locale.current.identifier)."
       + digest + "." + suffix + "." + vocabularyDigest
     guard try attributes(url) == before else { throw ProjectSourceFiles.Failure.invalidFile }
-    if let cached = results[key] { return cached }
-    if let cached = persistence?.read(key) {
+    if let cached = results[key], cached.resumePage == nil { return cached }
+    if let cached = persistence?.read(key), cached.resumePage == nil {
       try Task.checkCancellation()
       guard try attributes(url) == before, try fingerprint(url) == digest else {
         throw ProjectSourceFiles.Failure.invalidFile
@@ -75,14 +75,14 @@ actor SourceExtractionCache {
     if !job.hasPublished {
       job.hasPublished = true
       remember(result, key: key)
-      if !result.blocks.isEmpty { persistence?.write(key, result: result) }
+      if !result.blocks.isEmpty, result.resumePage == nil { persistence?.write(key, result: result) }
     }
     return result
   }
 
   private func remember(_ result: ProjectSourceExtractionResult, key: String) {
     let bytes = result.blocks.reduce(0) { $0 + $1.text.utf8.count } + (result.thumbnail?.count ?? 0)
-    if results[key] == nil, !result.blocks.isEmpty, bytes <= 4 * 1024 * 1024 {
+    if results[key] == nil, !result.blocks.isEmpty, result.resumePage == nil, bytes <= 4 * 1024 * 1024 {
       if results.count >= 6 || results.values.reduce(0, { $0 + $1.blocks.reduce(0) { $0 + $1.text.utf8.count } + ($1.thumbnail?.count ?? 0) }) + bytes > 12 * 1024 * 1024 {
         results = [:]
       }

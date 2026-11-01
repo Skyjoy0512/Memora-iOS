@@ -10,6 +10,7 @@ struct ProjectSourceImportChecks {
       for change in 0..<8 { try await race(root, stage: stage, change: change) }
     }
     try await conversationCopy(root)
+    try await continuation(root)
     try await rollback(root)
     try await mutations(root)
     try contextPolicy(root)
@@ -91,6 +92,44 @@ struct ProjectSourceImportChecks {
       sourceTitle: "個人の資料", originalURL: originalURL)
     precondition(libraryID != nil && libraryID != id && model.source(id: libraryID!)?.projectID == nil)
     print("PASS conversation copy saves title/URL/privacy atomically before deferred preparation, deduplicates URL without overwriting evidence, preserves project scope")
+  }
+
+  @MainActor static func continuation(_ root: URL) async throws {
+    let (model, projectID) = try fixture(root, "pdf-continuation")
+    let originalURL = try original(root, "pdf-kept-original")
+    let id = try await model.importProjectFile(originalURL, projectID: projectID)!
+    let text = try await ProjectSourceFiles.shared.write(JSONEncoder().encode([ProjectSourceText(text: "already readable", page: 20)]), extension: "json")
+    var partial = model.source(id: id)!
+    partial.kind = .pdf
+    partial.processingStatus = .ready
+    partial.extractedTextReference = text
+    partial.resumePage = 21
+    partial.omittedPages = [21, 22, 23, 24]
+    precondition(model.storeProjectSource(partial))
+    for blocked in 0..<3 {
+      if blocked == 0 { model.currentTeamID = "team" }
+      if blocked == 1 { model.isRestoring = true }
+      if blocked == 2 { model.isStoreProtected = true }
+      precondition(!model.resumeProjectSource(id) && model.source(id: id) == partial)
+      model.currentTeamID = nil; model.isRestoring = false; model.isStoreProtected = false
+    }
+    try sql("CREATE TRIGGER reject_continuation BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT, 'continuation check'); END;", model.storeURL)
+    precondition(!model.resumeProjectSource(id) && model.sourcePreparationJobs[id] == nil)
+    expect(try reload(model) == [partial])
+    try sql("DROP TRIGGER reject_continuation;", model.storeURL)
+    let gate = ImportGate()
+    model.preparationHook = { _ in await gate.wait() }
+    precondition(model.resumeProjectSource(id) && !model.resumeProjectSource(id))
+    await gate.entered()
+    let queued = model.source(id: id)!
+    precondition(queued.processingStatus == .pending && queued.extractedTextReference == text)
+    precondition(queued.privacy == partial.privacy && queued.localFileReference == partial.localFileReference)
+    expect(try reload(model) == [queued])
+    expect(try ProjectSourceTextReader.read(text).first?.page == 20)
+    expect(try Data(contentsOf: ProjectSourceFiles.resolve(queued.localFileReference!)!) == Data(contentsOf: originalURL))
+    gate.resume()
+    if let job = model.sourcePreparationJobs[id]?.task { await job.value }
+    print("PASS explicit PDF continuation preserves original/text/privacy, refuses team/restore/protected store, rolls back failed writes and starts one queued preparation (scheduler fixture)")
   }
 
   @MainActor static func race(_ root: URL, stage: Int, change: Int) async throws {

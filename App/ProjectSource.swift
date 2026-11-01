@@ -26,6 +26,7 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   var unreadablePages: [Int]?
   var omittedPages: [Int]?
   var ocrPages: [Int]?
+  var resumePage: Int?
   var summary: String?
   var summaryStatus: ProcessingStatus?
   var summaryTextReference: String?

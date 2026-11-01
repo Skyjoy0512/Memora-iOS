@@ -14,6 +14,7 @@ struct AIQuestionView: View {
   @State private var contextNote: String?
   @State private var sources: [AIChatSource] = []
   @State private var sourceCitations: [ProjectCitation] = []
+  @State private var attachmentCitations: [AIAttachmentCitation] = []
   @State private var focusedSourceID: UUID?
   @State private var isAnswering = false
   @State private var askTask: Task<Void, Never>?
@@ -151,6 +152,7 @@ struct AIQuestionView: View {
     VStack(alignment: .leading, spacing: 18) {
       AIResponseText(text: AnswerSourceCitation.stripped(answer), isStreaming: isAnswering)
       SourceCitationList(citations: sourceCitations)
+      AttachmentCitationList(citations: attachmentCitations)
 
       if !sources.isEmpty {
         sourceList
@@ -359,6 +361,7 @@ struct AIQuestionView: View {
     failureMessage = nil
     sources = []
     sourceCitations = []
+    attachmentCitations = []
     unsupportedAttachmentNote = nil
     contextNote = nil
     isAnswering = true
@@ -389,6 +392,8 @@ struct AIQuestionView: View {
           if model.aiWorkspaceGeneration != generation {
             answer = nil
             sources = []
+            sourceCitations = []
+            attachmentCitations = []
             failureMessage = AIAnswerFailure.contextChanged.message
           }
         }
@@ -424,12 +429,14 @@ struct AIQuestionView: View {
         answer = text
         sources = outcome.sources
         sourceCitations = outcome.sourceCitations
+        attachmentCitations = outcome.attachmentCitations
         model.saveAIExchange(
           question: outcome.question,
           answer: text,
           scopeLabel: outcome.scopeLabel,
           engineLabel: outcome.details.engineLabel,
-          modelLabel: outcome.details.modelLabel, sourceCitations: outcome.sourceCitations, attachment: submitted?.attachment
+          modelLabel: outcome.details.modelLabel, sourceCitations: outcome.sourceCitations,
+          attachmentCitations: outcome.attachmentCitations, attachment: submitted?.attachment
         )
       case .failure(let failure):
         guard failure != .cancelled else { return }

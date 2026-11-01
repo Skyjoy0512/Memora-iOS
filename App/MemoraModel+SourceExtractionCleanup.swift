@@ -10,6 +10,10 @@ extension MemoraModel {
     Task {
       if hasUnknownOriginal { await SourceExtractionCache.shared.clearStoredResults() }
       else { await SourceExtractionCache.shared.invalidate(fingerprints: fingerprints) }
+      await Task.detached(priority: .utility) {
+        if hasUnknownOriginal { PDFCheckpointStore.shared.clearStoredResults() }
+        else { PDFCheckpointStore.shared.invalidate(fingerprints: fingerprints) }
+      }.value
     }
   }
 }

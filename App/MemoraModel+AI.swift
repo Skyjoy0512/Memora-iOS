@@ -271,6 +271,7 @@ extension MemoraModel {
           // Only records that were actually sent are offered as grounds.
           self.aiMessages[index].sources = outcome.sources
           self.aiMessages[index].sourceCitations = outcome.sourceCitations
+          self.aiMessages[index].attachmentCitations = outcome.attachmentCitations
           self.settleTraceSteps(at: index, as: .done)
         }
         self.saveAIExchange(
@@ -405,9 +406,10 @@ extension MemoraModel {
         details: AIAnswerDetails(scopeLabel: scopeLabel,
           engineLabel: AIEngineService.effectiveEngine(engine).label,
           modelLabel: AIEngineService.modelLabel(engine: engine, llm: llm),
-          sourceCount: result.text == nil ? 0 : content.sources.count + Set(sourcePack.citations.map(\.target)).count, generatedAt: .now),
+          sourceCount: result.text == nil ? 0 : content.sources.count + Set(sourcePack.citations.map(\.target)).count + Set(content.attachmentCitations.map { $0.file.id }).count, generatedAt: .now),
         unsupportedAttachmentNote: content.unsupportedAttachmentNote, contextNote: content.contextNote,
-        sourceCitations: result.text == nil ? [] : sourcePack.citations)
+        sourceCitations: result.text == nil ? [] : sourcePack.citations,
+        attachmentCitations: result.text == nil ? [] : content.attachmentCitations)
     }
     if let attachmentPreparationFailure {
       var failed = outcome(.failure(.attachmentNotAnalysed))
@@ -572,7 +574,8 @@ extension MemoraModel {
       history: historyText,
       sources: built.sources,
       unsupportedAttachmentNote: unsupportedNote,
-      contextNote: notes.isEmpty ? nil : notes.joined(separator: "\n")
+      contextNote: notes.isEmpty ? nil : notes.joined(separator: "\n"),
+      attachmentCitations: AIAttachmentCitation.retained(attachmentContent?.attachmentCitations ?? [], in: attachmentText)
     )
   }
 
@@ -1030,6 +1033,7 @@ extension MemoraModel {
     cloudProvenance: AIConversationProvenance? = nil,
     webResearchReportID: UUID? = nil,
     sourceCitations: [ProjectCitation]? = nil,
+    attachmentCitations: [AIAttachmentCitation]? = nil,
     attachment: AIAttachment? = nil
   ) {
     let entryID = UUID()
@@ -1037,9 +1041,10 @@ extension MemoraModel {
     let last = candidate?.text == answer ? candidate : nil
     let userFile = attachment ?? aiMessages.last(where: { $0.role == .user && $0.text == question })?.attachment
     let citations = sourceCitations ?? last?.sourceCitations ?? []
+    let clips = Array((attachmentCitations ?? last?.attachmentCitations ?? []).filter(\.isValid).prefix(64))
     let references = (last?.sources ?? []).compactMap { recordReference(for: .meeting($0.meetingID)) }
     var provenance = cloudProvenance ?? (last?.isAgentReply == false ? newCloudProvenance(references: references) : nil)
-    if !citations.isEmpty || userFile != nil { provenance?.isComplete = false }
+    if !citations.isEmpty || !clips.isEmpty || userFile != nil { provenance?.isComplete = false }
     let episode = isAIMemoryEnabled ? AIEpisode(id: entryID, sessionID: aiConversationID, date: .now,
       topic: String(question.prefix(120)), objective: String(question.prefix(240)), summary: String(answer.prefix(600)),
       personIDs: aiPersonScopeID.map { [$0] } ?? [], recordIDs: (last?.sources ?? []).map(\.meetingID),
@@ -1057,7 +1062,7 @@ extension MemoraModel {
         cloudProvenance: provenance,
         webResearchReportID: webResearchReportID,
         episode: episode, sourceCitations: citations.isEmpty ? nil : citations,
-        attachment: userFile.flatMap(AIAttachmentFileReference.init)
+        attachmentCitations: clips.isEmpty ? nil : clips, attachment: userFile.flatMap(AIAttachmentFileReference.init)
       ),
       at: 0
     )

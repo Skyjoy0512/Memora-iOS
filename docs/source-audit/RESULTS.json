@@ -5,7 +5,8 @@
     "e17a84350e072e55dc7a3b7e5ea5e759c48df148",
     "6bf68526368f46eb5e9c5f1ca4c437d8dcb1bde2",
     "606ac16ae771e8df60e3974fa60f9c0ff87de80a",
-    "a158414a5fbfe29345c759668750b326c5be1443"
+    "a158414a5fbfe29345c759668750b326c5be1443",
+    "adf81795e5e1c13b070190765644937c16f4c288"
   ],
   "suites": [
     {
@@ -58,45 +59,61 @@
   "xctest": "Project.json has no test targets (bitrig test exit 78)",
   "futureValidationPolicy": "Accessibility deferred at user request; batch implementation and run necessary build/regression checks at phase boundaries, not after each feature.",
   "latestBatch": {
-    "baseCommit": "a158414a5fbfe29345c759668750b326c5be1443",
-    "scope": "Parallel P0/P1: bounded SQLite extraction reuse, full original attachment reading with actual page/time links, retry/history UI, orphaned pending recovery, deletion invalidation",
+    "baseCommit": "adf81795e5e1c13b070190765644937c16f4c288",
+    "scope": "Attachment evidence-to-original navigation and bounded PDF page checkpoint continuation",
     "hostChecks": [
       {
-        "suite": "source-extraction-cache",
+        "suite": "attachment-citations",
         "status": "passed",
         "exitCode": 0,
-        "log": "p1-durable-cache-20261101.log",
-        "boundary": "Production hashing, SQLite and files; OS extractor fixture; restart means new cache instance"
+        "log": "attachment-evidence-20261101.log",
+        "boundary": "Production preparation/selection/reference; extraction fixture; only complete sent passages retained"
       },
       {
-        "suite": "project-source-web-recovery",
+        "suite": "source-intake",
         "status": "passed",
         "exitCode": 0,
-        "log": "p1-pending-recovery-20261101.log",
-        "boundary": "Production recovery/copy/SQLite; model and DNS/HTTP fixtures"
+        "log": "pdf-checkpoints-20261101.log",
+        "boundary": "Actual macOS PDFKit/Vision/SQLite and Task cancellation; new store reuses page checkpoints"
       },
       {
         "suite": "project-source-import",
         "status": "passed",
         "exitCode": 0,
-        "log": "p1-source-deletion-20261101.log",
-        "boundary": "Production copy and SQLite; cache deletion hook fixture; actual cache invalidation covered separately"
+        "log": "pdf-continuation-20261101.log",
+        "boundary": "Production file/SQLite continuation admission, privacy, rollback and single scheduling; scheduler fixture"
+      },
+      {
+        "suite": "conversation-evidence",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "conversation-evidence-20261101.log",
+        "boundary": "Production snapshot/history codecs, old data, invalid paths/duplicate numbers, grant non-restoration; rerun after final validation guards"
+      },
+      {
+        "suite": "source-extraction-cache",
+        "status": "passed",
+        "exitCode": 0,
+        "log": "continuation-cache-20261101.log",
+        "boundary": "Continuation result bypasses final cache; completed result survives restart; extraction fixture"
       }
+    ],
+    "notRepeated": "Six broad suites, new UI interaction, accessibility, device media or cloud model output checks",
+    "remaining": [
+      "iOS real-device PDF continuation and evidence button interaction",
+      "Mixed text/image PDF and structure accuracy",
+      "Oversized-document split import UI",
+      "Optional per-source summary templates",
+      "Real audio/video and service acceptance",
+      "Full-screen runtime audit and resource profiling"
     ],
     "preview": {
       "command": "bitrig preview -platform iOS",
       "result": "success",
       "warnings": 11,
-      "log": "logs/2026-11-01T12-10-32-3bd7f10b.log"
-    },
-    "notRepeated": "Six broad suites, simulator interaction, accessibility and real-device tests",
-    "remaining": [
-      "PDF page checkpoint resume",
-      "AI answer attachment citation-to-location anchors",
-      "Real audio/video and app-process-restart acceptance",
-      "Optional per-source summary templates",
-      "Full-screen runtime audit and resource profiling"
-    ]
+      "log": "logs/2026-11-01T17-10-40-8261e167.log",
+      "note": "After final citation-number preservation and duplicate-number validation changes; SDK27.2, APIs not newer than27.1"
+    }
   },
   "batchHistory": [
     {
@@ -124,6 +141,47 @@
         "warnings": 11,
         "log": "logs/2026-11-01T12-00-40-842d2eff.log"
       }
+    },
+    {
+      "baseCommit": "a158414a5fbfe29345c759668750b326c5be1443",
+      "scope": "Parallel P0/P1: bounded SQLite extraction reuse, full original attachment reading with actual page/time links, retry/history UI, orphaned pending recovery, deletion invalidation",
+      "hostChecks": [
+        {
+          "suite": "source-extraction-cache",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "p1-durable-cache-20261101.log",
+          "boundary": "Production hashing, SQLite and files; OS extractor fixture; restart means new cache instance"
+        },
+        {
+          "suite": "project-source-web-recovery",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "p1-pending-recovery-20261101.log",
+          "boundary": "Production recovery/copy/SQLite; model and DNS/HTTP fixtures"
+        },
+        {
+          "suite": "project-source-import",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "p1-source-deletion-20261101.log",
+          "boundary": "Production copy and SQLite; cache deletion hook fixture; actual cache invalidation covered separately"
+        }
+      ],
+      "preview": {
+        "command": "bitrig preview -platform iOS",
+        "result": "success",
+        "warnings": 11,
+        "log": "logs/2026-11-01T12-10-32-3bd7f10b.log"
+      },
+      "notRepeated": "Six broad suites, simulator interaction, accessibility and real-device tests",
+      "remaining": [
+        "PDF page checkpoint resume",
+        "AI answer attachment citation-to-location anchors",
+        "Real audio/video and app-process-restart acceptance",
+        "Optional per-source summary templates",
+        "Full-screen runtime audit and resource profiling"
+      ]
     }
   ]
 }

@@ -19,6 +19,7 @@ struct AIAnswerOutcome {
   /// engine's budget, so a short answer is not mistaken for a complete one.
   var contextNote: String?
   var sourceCitations: [ProjectCitation] = []
+  var attachmentCitations: [AIAttachmentCitation] = []
 
   var isAnswer: Bool { result.text != nil }
 }

@@ -112,7 +112,10 @@ struct AIMessageView: View {
         }
       }
 
-      if !message.isThinking { SourceCitationList(citations: message.sourceCitations) }
+      if !message.isThinking {
+        SourceCitationList(citations: message.sourceCitations)
+        AttachmentCitationList(citations: message.attachmentCitations)
+      }
 
       let followUps = model.followUps(for: message)
       if !followUps.isEmpty {

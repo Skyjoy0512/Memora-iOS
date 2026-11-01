@@ -8,26 +8,47 @@ enum AIAttachmentText {
       preparedQuestion: question, additionalFileIDs: attachment.additionalFiles?.map(\.id))
     guard attachment.files.count <= 10 else { prepared.failure = "添付は10件までです。"; return prepared }
     var parts: [String] = [], notices: [String] = []
-    let budget = max(300, min(Self.maximumCharacters, maximumCharacters) / attachment.files.count - 100)
-    for file in attachment.files {
+    var citations: [AIAttachmentCitation] = []
+    let totalBudget = max(0, min(Self.maximumCharacters, maximumCharacters))
+    for (index, file) in attachment.files.enumerated() {
       do {
         try Task.checkCancellation()
+        let reference = AIAttachmentFileReference(AIAttachment(id: file.id, name: file.name,
+          url: file.url, originalURL: file.originalURL))
         let result = try await SourceExtractionCache.shared.extract(file.url, vocabulary: vocabulary)
         guard !result.blocks.isEmpty else {
           prepared.failure = "「\(file.name)」: " + (result.notice ?? "参照できる文字がありません。")
           return prepared
         }
+        let header = "資料「\(file.name.prefix(100))」\n"
+        let fileBudget = max(0, totalBudget / attachment.files.count - (index == 0 ? 0 : 2) - header.count)
+        let slots = min(24, (64 - citations.count) / (attachment.files.count - index))
         let selection = await Task.detached(priority: .utility) {
-          SourceTextSelection.text(blocks: result.blocks, question: question, budget: budget)
+          SourceTextSelection.selectedBlocks(blocks: result.blocks, question: question, budget: fileBudget,
+            maximumBlocks: slots, maximumBlockUTF8Bytes: 8_000, additionalCharactersPerBlock: 16)
         }.value
-        guard !selection.text.isEmpty else { prepared.failure = "質問に使える本文が見つかりませんでした。"; return prepared }
-        parts.append("資料「\(file.name.prefix(100))」\n" + selection.text)
+        var excerpts: [String] = []
+        for block in selection.blocks {
+          // Accessible originals can be read before a durable conversation copy exists.
+          guard let reference else {
+            let location = block.page.map { "[ページ\($0)] " } ?? block.time.map { "[\(Int($0))秒] " } ?? ""
+            excerpts.append(location + block.text)
+            continue
+          }
+          guard let citation = AIAttachmentCitation(number: citations.count + 1, file: reference,
+            excerpt: block.text, page: block.page, time: block.time) else { continue }
+          excerpts.append(citation.contextText)
+          citations.append(citation)
+        }
+        guard !excerpts.isEmpty else { prepared.failure = "質問に使える本文が見つかりませんでした。"; return prepared }
+        parts.append(header + excerpts.joined(separator: "\n\n"))
         if let notice = result.notice { notices.append("「\(file.name)」: " + notice) }
         if selection.isExcerpt { notices.append("「\(file.name)」は全ページの文字から選んだ抜粋です。全文を読んだ回答とは限りません。") }
       } catch is CancellationError { prepared.failure = "添付の読み込みを停止しました。"; return prepared }
       catch { prepared.failure = "「\(file.name)」: " + error.localizedDescription; return prepared }
     }
     prepared.text = parts.joined(separator: "\n\n")
+    prepared.attachmentCitations = AIAttachmentCitation.retained(citations, in: prepared.text ?? "")
     prepared.notice = notices.isEmpty ? nil : notices.joined(separator: "\n")
     return prepared
   }

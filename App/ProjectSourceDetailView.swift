@@ -40,6 +40,11 @@ struct ProjectSourceDetailView: View {
             if sourceIsPreparing {
               ProgressView("準備しています…").font(.subheadline)
             }
+            if let page = source.resumePage, source.kind == .pdf {
+              Button("ページ\(page)から読み取りを続ける", icon: .arrowClockwise) {
+                model.resumeProjectSource(sourceID)
+              }.frame(minHeight: 44).disabled(cannotChange)
+            }
             if let summary = source.summary, !summary.isEmpty {
               if source.summaryTextReference != source.extractedTextReference {
                 Text("以前の原文から作成した要約です").font(.caption).foregroundStyle(.secondary)
@@ -74,7 +79,8 @@ struct ProjectSourceDetailView: View {
                 NavigationLink("以前の字幕・要約を開く", value: LibraryRoute.meeting(id)).frame(minHeight: 44)
               }
             }
-            if source.processingStatus == .failed || source.processingStatus == .unavailable, source.kind != .youtube {
+            if source.processingStatus == .failed || source.processingStatus == .unavailable,
+               source.kind != .youtube, source.resumePage == nil {
               Text(nonempty(source.errorInformation) ?? "内容を読み取れませんでした。元の資料を確認するか、もう一度お試しください。")
                 .font(.footnote).foregroundStyle(.secondary)
               Button("再試行", icon: .arrowClockwise) {

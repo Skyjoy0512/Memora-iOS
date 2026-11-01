@@ -99,7 +99,7 @@ extension MemoraModel {
     aiConversationID = entry.episode?.sessionID ?? UUID()
     aiMessages = [
       AIChatMessage(role: .user, text: entry.question, attachment: entry.attachment?.resolve()),
-      AIChatMessage(role: .assistant, text: entry.answer, sourceCitations: entry.sourceCitations ?? [], cloudProvenance: entry.cloudProvenance)
+      AIChatMessage(role: .assistant, text: entry.answer, sourceCitations: entry.sourceCitations ?? [], attachmentCitations: entry.attachmentCitations ?? [], cloudProvenance: entry.cloudProvenance)
     ]
     if let id = entry.webResearchReportID, webResearch(id: id)?.isChatSearch == true {
       aiMessages[1].webResearchReportIDs = [id]
