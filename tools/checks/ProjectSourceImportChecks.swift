@@ -9,6 +9,7 @@ struct ProjectSourceImportChecks {
     for stage in 0..<4 {
       for change in 0..<8 { try await race(root, stage: stage, change: change) }
     }
+    try await conversationCopy(root)
     try await rollback(root)
     try await mutations(root)
     try contextPolicy(root)
@@ -61,6 +62,35 @@ struct ProjectSourceImportChecks {
     let libraryID = try await model.importProjectFile(url, projectID: nil)
     precondition(libraryID != nil && model.source(id: libraryID!)?.projectID == nil)
     expect(try Data(contentsOf: url) == Data("保持する元のファイル".utf8))
+  }
+
+  @MainActor static func conversationCopy(_ root: URL) async throws {
+    let (model, projectID) = try fixture(root, "conversation-copy")
+    let url = try original(root, "conversation-original")
+    let originalURL = URL(string: "https://example.org/paper.pdf")!
+    let gate = ImportGate()
+    model.preparationHook = { _ in await gate.wait() }
+    guard let id = try await model.importProjectFile(url, projectID: projectID,
+      waitsForPreparation: false, sourceTitle: "論文のタイトル", originalURL: originalURL) else {
+      preconditionFailure("Saving waited for preparation or failed")
+    }
+    let saved = model.source(id: id)!
+    precondition(saved.title == "論文のタイトル" && saved.originalURL == originalURL && !saved.privacy.allowsCloudAI)
+    expect(try reload(model) == [saved])
+    await gate.entered()
+    let before = try files()
+    try Data("URLが同じ別バージョン".utf8).write(to: url)
+    expect(try await model.importProjectFile(url, projectID: projectID, waitsForPreparation: false,
+      sourceTitle: "上書きしない", originalURL: originalURL) == id)
+    precondition(model.source(id: id) == saved)
+    expect(try files() == before)
+    gate.resume()
+    if let job = model.sourcePreparationJobs[id]?.task { await job.value }
+    model.preparationHook = nil
+    let libraryID = try await model.importProjectFile(url, projectID: nil,
+      sourceTitle: "個人の資料", originalURL: originalURL)
+    precondition(libraryID != nil && libraryID != id && model.source(id: libraryID!)?.projectID == nil)
+    print("PASS conversation copy saves title/URL/privacy atomically before deferred preparation, deduplicates URL without overwriting evidence, preserves project scope")
   }
 
   @MainActor static func race(_ root: URL, stage: Int, change: Int) async throws {

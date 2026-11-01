@@ -205,7 +205,7 @@ extension MemoraModel {
             if let cached = preparedAttachment, cached.matches(staged), cached.preparedQuestion == trimmed { prepared = cached }
             else {
               prepared = await AIAttachmentText.prepare(staged, question: trimmed,
-                maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities, task: contextTask))
+                maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities, task: contextTask), vocabulary: self.transcriptionVocabulary)
             }
             guard !Task.isCancelled, self.aiChatRequestID == requestID else { return }
             guard let context = AgentAttachmentContext.content(attachment: staged, prepared: prepared,

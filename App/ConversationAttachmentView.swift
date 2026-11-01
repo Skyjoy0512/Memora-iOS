@@ -52,7 +52,7 @@ struct ConversationAttachmentView: View {
       .quickLookPreview($previewURL)
       .task(id: file) {
         let generation = model.aiWorkspaceGeneration
-        let value = await AIAttachmentText.prepare(AIAttachment(id: file.id, name: file.name, url: file.url, originalURL: file.originalURL))
+        let value = await AIAttachmentText.prepare(AIAttachment(id: file.id, name: file.name, url: file.url, originalURL: file.originalURL), vocabulary: model.transcriptionVocabulary)
         guard !Task.isCancelled, generation == model.aiWorkspaceGeneration else { return }
         content = value
       }

@@ -3,7 +3,8 @@
   "implementationCommits": [
     "85b6954941c184d15a145ed8510c9f5f4b72e1d3",
     "e17a84350e072e55dc7a3b7e5ea5e759c48df148",
-    "6bf68526368f46eb5e9c5f1ca4c437d8dcb1bde2"
+    "6bf68526368f46eb5e9c5f1ca4c437d8dcb1bde2",
+    "606ac16ae771e8df60e3974fa60f9c0ff87de80a"
   ],
   "suites": [
     {
@@ -54,5 +55,31 @@
   ],
   "deviceValidation": "partial; final automatic Web summary and source-question flow exercised on smaller simulator; see VALIDATION.md",
   "xctest": "Project.json has no test targets (bitrig test exit 78)",
-  "futureValidationPolicy": "Accessibility deferred at user request; batch implementation and run necessary build/regression checks at phase boundaries, not after each feature."
+  "futureValidationPolicy": "Accessibility deferred at user request; batch implementation and run necessary build/regression checks at phase boundaries, not after each feature.",
+  "latestBatch": {
+    "baseCommit": "606ac16ae771e8df60e3974fa60f9c0ff87de80a",
+    "scope": "Conversation save, content-addressed local extraction reuse, atomic source metadata and URL deduplication",
+    "hostChecks": [
+      {
+        "suite": "source-extraction-cache",
+        "status": "passed",
+        "log": "source-cache-20261101.log",
+        "boundary": "Production file hash/cache; OS extractor fixture"
+      },
+      {
+        "suite": "project-source-import",
+        "status": "passed",
+        "log": "conversation-save-20261101.log",
+        "boundary": "Production copy, SQLite and 32 context races; preparation fixture"
+      }
+    ],
+    "notRepeated": "Six broad suites, simulator interaction, accessibility and real-device tests",
+    "remaining": "Extraction cache is volatile and bounded; conversation extraction persistence remains unimplemented",
+    "preview": {
+      "command": "bitrig preview -platform iOS",
+      "result": "success",
+      "warnings": 11,
+      "log": "logs/2026-11-01T12-00-40-842d2eff.log"
+    }
+  }
 }

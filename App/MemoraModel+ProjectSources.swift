@@ -27,7 +27,7 @@ extension MemoraModel {
       if source(id: id)?.canProvideText == true { await summarizeProjectSource(id); return }
       if source(id: id)?.localFileReference != nil {
         let vocabulary = transcriptionVocabulary
-        await prepareProjectLocalSource(id) { try await SourceIntake.extract($0, vocabulary: vocabulary) }
+        await prepareProjectLocalSource(id) { try await SourceExtractionCache.shared.extract($0, vocabulary: vocabulary) }
         await summarizeProjectSource(id)
         return
       }
@@ -45,7 +45,7 @@ extension MemoraModel {
       return
     }
     let vocabulary = transcriptionVocabulary
-    await prepareProjectLocalSource(id) { try await SourceIntake.extract($0, vocabulary: vocabulary) }
+    await prepareProjectLocalSource(id) { try await SourceExtractionCache.shared.extract($0, vocabulary: vocabulary) }
     await summarizeProjectSource(id)
   }
 

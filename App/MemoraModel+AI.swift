@@ -351,7 +351,7 @@ extension MemoraModel {
     if let attachment = effectiveRequest.attachment {
       safeStage("資料を確認しています")
       attachmentContent = await AIAttachmentText.prepare(attachment, question: request.effectiveQuestion,
-        maximumCharacters: min(AIAttachmentText.maximumCharacters, AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat) / 2))
+        maximumCharacters: min(AIAttachmentText.maximumCharacters, AIEngineService.contextCharacterLimit(for: engine, llm: llm, task: .chat) / 2), vocabulary: transcriptionVocabulary)
     } else { attachmentContent = nil }
 
     let sourcePack = await sourceQueryContext(request, cloud: cloud,

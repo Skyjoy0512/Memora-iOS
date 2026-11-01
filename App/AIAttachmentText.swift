@@ -3,7 +3,7 @@ import Foundation
 enum AIAttachmentText {
   static let maximumCharacters = 60_000
 
-  static func prepare(_ attachment: AIAttachment, question: String = "", maximumCharacters: Int = maximumCharacters) async -> PreparedAIAttachment {
+  static func prepare(_ attachment: AIAttachment, question: String = "", maximumCharacters: Int = maximumCharacters, vocabulary: [String] = []) async -> PreparedAIAttachment {
     var prepared = PreparedAIAttachment(id: attachment.id, name: attachment.name, url: attachment.url,
       preparedQuestion: question, additionalFileIDs: attachment.additionalFiles?.map(\.id))
     guard attachment.files.count <= 10 else { prepared.failure = "添付は10件までです。"; return prepared }
@@ -12,7 +12,7 @@ enum AIAttachmentText {
     for file in attachment.files {
       do {
         try Task.checkCancellation()
-        let result = try await AttachmentExtractionCache.shared.extract(file.url)
+        let result = try await SourceExtractionCache.shared.extract(file.url, vocabulary: vocabulary)
         guard !result.blocks.isEmpty else {
           prepared.failure = "「\(file.name)」: " + (result.notice ?? "参照できる文字がありません。")
           return prepared

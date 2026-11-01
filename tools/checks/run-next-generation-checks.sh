@@ -19,6 +19,7 @@ bash tools/checks/run-project-source-preparation-checks.sh
 bash tools/checks/run-project-source-web-recovery-checks.sh
 bash tools/checks/run-project-source-import-checks.sh
 bash tools/checks/run-source-intake-checks.sh
+bash tools/checks/run-source-extraction-cache-checks.sh
 bash tools/checks/run-youtube-caption-checks.sh
 bash tools/checks/run-audio-import-checks.sh
 bash tools/checks/run-notion-service-checks.sh

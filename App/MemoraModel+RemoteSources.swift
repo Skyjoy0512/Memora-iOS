@@ -27,7 +27,7 @@ extension MemoraModel {
         guard storeProjectSource(source) else { await ProjectSourceFiles.shared.remove([name]); return }
         created = nil
         projectSourceProcessingIDs.remove(id)
-        await prepareProjectLocalSource(id, extract: ProjectSourceExtraction.extract)
+        await prepareProjectLocalSource(id) { try await SourceExtractionCache.shared.extract($0) }
       } else {
         // Reuse the transaction/revalidation path without downloading twice.
         projectSourceProcessingIDs.remove(id)
