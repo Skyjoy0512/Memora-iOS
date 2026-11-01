@@ -368,6 +368,9 @@ struct QuickAIComposer: View {
             }
           }
         }
+        try await model.prepareProjectQuestionLinks(request.question, context: importContext,
+          cloud: AIEngineService.effectiveEngine(context.configuration.engine) == .cloud,
+          isCurrent: { context.isCurrent(in: model, scope: scope) })
         guard context.isCurrent(in: model, scope: scope), importContext.isCurrent(in: model) else {
           projectError = "ワークスペース・保存先・AI設定が変わったため、質問を送信していません。現在の設定を確認してください。"
           return
@@ -382,6 +385,10 @@ struct QuickAIComposer: View {
         model.composerAttachment = nil
       } catch is CancellationError {
         return
+      } catch let failure as ProjectQuestionSourceFailure {
+        guard context.isCurrent(in: model, scope: scope) else { return }
+        if case .cloudRestricted(let id) = failure { model.libraryPath.append(.projectSource(id)) }
+        projectError = failure.localizedDescription
       } catch {
         guard context.isCurrent(in: model, scope: scope) else { return }
         projectError = "添付を保存できませんでした。元ファイルと質問は残っています。"

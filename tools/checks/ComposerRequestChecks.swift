@@ -49,7 +49,7 @@ struct ComposerRequestChecks {
       precondition(fixture.model.sent == 0 && fixture.model.composerAttachment != nil)
     }
     for stage in ["copy", "text"] {
-      for change in 0..<7 {
+      for change in 0..<8 {
         let fixture = Fixture(project: true)
         fixture.model.suspends = stage
         let request = fixture.request
@@ -61,7 +61,8 @@ struct ComposerRequestChecks {
         case 2: fixture.model.aiWorkspaceGeneration = UUID()
         case 3: fixture.model.activeNavigationPath = [.space(UUID())]
         case 4: fixture.model.askAIConfiguration.llm.modelID = "changed"
-        case 5: fixture.scope = .space(UUID()) // A source can move without changing the navigation path.
+        case 5: fixture.scope = .space(UUID())
+        case 6: fixture.model.visibleProjectID = UUID() // The async closure still holds the old view scope.
         default: fixture.cancel()
         }
         let draft = fixture.model.composerDraft
@@ -107,7 +108,95 @@ struct ComposerRequestChecks {
       precondition(fixture.model.composerDraft.isEmpty && fixture.model.composerAttachment == nil)
       precondition(fixture.attachmentPreparationTask == nil && fixture.attachmentPreparationContext == nil)
     }
-    print("ComposerRequestChecks PASS: production global/project dispatch; 23 suspended context races, cancellation, stale approval, multi-file success, cleanup")
+    do {
+      let fixture = Fixture(project: true)
+      fixture.model.composerAttachment = nil
+      fixture.model.askAIConfiguration.engine = .onDevice
+      fixture.model.composerDraft = "https://example.org/article?utm_source=chat https://EXAMPLE.org/article#section"
+      fixture.startProject(fixture.request)
+      await until { !fixture.isPreparingAttachment }
+      precondition(fixture.model.sent == 1 && fixture.model.sources.count == 1 && fixture.model.linkPreparations == 1)
+      let source = fixture.model.projectSources[0]
+      precondition(source.projectID == fixture.model.projectID && source.kind == .web)
+      precondition(source.originalURL?.absoluteString == "https://example.org/article" && !source.privacy)
+    }
+    do {
+      let fixture = Fixture(project: true)
+      fixture.model.askAIConfiguration.engine = .onDevice
+      fixture.model.composerDraft = "https://example.org/reference.pdf"
+      fixture.startProject(fixture.request)
+      await until { !fixture.isPreparingAttachment }
+      precondition(fixture.model.sent == 1 && fixture.model.imports == 2 && fixture.model.sources.count == 3)
+    }
+    for youtube in [false, true] {
+      let fixture = Fixture(project: true)
+      fixture.model.composerAttachment = nil
+      fixture.model.composerDraft = youtube ? "https://youtu.be/dQw4w9WgXcQ" : "https://example.org/blocked"
+      fixture.model.linkReadable = false
+      fixture.model.linkFailure = youtube ? "Add a subtitle file" : "Unable to read the page"
+      fixture.startProject(fixture.request)
+      await until { !fixture.isPreparingAttachment }
+      precondition(fixture.model.sent == 0 && fixture.model.sources.count == 1)
+      precondition(fixture.projectError == fixture.model.linkFailure && !fixture.model.composerDraft.isEmpty)
+      let source = fixture.model.projectSources[0]
+      precondition(source.kind == (youtube ? .youtube : .web) && !source.privacy)
+    }
+    do {
+      let fixture = Fixture(project: true)
+      fixture.model.composerAttachment = nil
+      fixture.model.composerDraft = "https://example.org/private"
+      let request = fixture.request
+      fixture.startProject(request)
+      await until { !fixture.isPreparingAttachment }
+      precondition(fixture.model.sent == 0 && fixture.model.sources.count == 1 && fixture.projectError != nil)
+      precondition(!fixture.model.projectSources[0].privacy && fixture.model.composerDraft == request.question)
+      fixture.model.activeNavigationPath = [.space(fixture.model.projectID)]
+      fixture.model.askAIConfiguration.engine = .onDevice
+      fixture.startProject(fixture.request)
+      await until { !fixture.isPreparingAttachment }
+      precondition(fixture.model.sent == 1 && fixture.model.sources.count == 1) // Retry reuses the same URL.
+    }
+    for change in 0..<3 {
+      let fixture = Fixture(project: true)
+      fixture.model.composerAttachment = nil
+      fixture.model.askAIConfiguration.engine = .onDevice
+      fixture.model.composerDraft = "https://example.org/one https://example.org/two"
+      fixture.model.suspends = "link"
+      fixture.startProject(fixture.request)
+      await until { fixture.model.waiter != nil }
+      switch change {
+      case 0: fixture.model.composerDraft = "replacement"
+      case 1: fixture.model.aiWorkspaceGeneration = UUID()
+      default: fixture.cancel()
+      }
+      let draft = fixture.model.composerDraft
+      fixture.model.resume()
+      await until { !fixture.isPreparingAttachment }
+      precondition(fixture.model.sent == 0 && fixture.model.sources.count == 1 && fixture.model.linkPreparations == 1)
+      precondition(fixture.model.composerDraft == draft && fixture.projectError == nil)
+    }
+    do {
+      let fixture = Fixture(project: true)
+      fixture.model.composerAttachment = nil
+      fixture.model.composerDraft = "https://EXAMPLE.org/existing?utm_source=chat"
+      let url = URL(string: "https://example.org/existing")!
+      let existing = ProjectSource(projectID: fixture.model.projectID, kind: .web, title: "kept", originalURL: url, canProvideText: true, privacy: true)
+      fixture.model.sources[existing.id] = existing
+      fixture.model.linkPrivacy = true
+      fixture.startProject(fixture.request)
+      await until { !fixture.isPreparingAttachment }
+      precondition(fixture.model.sent == 1 && fixture.model.sources.count == 1)
+      precondition(fixture.model.sources[existing.id]?.title == "kept" && fixture.model.sources[existing.id]?.privacy == true)
+    }
+    do {
+      let fixture = Fixture(project: true)
+      fixture.model.composerAttachment = nil
+      fixture.model.composerDraft = "https://127.0.0.1/private https://name:secret@example.org/private http://example.org/plain"
+      fixture.startProject(fixture.request)
+      await until { !fixture.isPreparingAttachment }
+      precondition(fixture.model.sources.isEmpty && fixture.model.linkPreparations == 0)
+    }
+    print("ComposerRequestChecks PASS: production global/project dispatch; 25 suspended context races plus pasted-link routing, cancellation, stale approval, multi-file success, cleanup")
   }
 
   static func until(_ condition: () -> Bool) async {
@@ -141,6 +230,7 @@ final class Fixture {
     if project {
       scope = .space(model.projectID)
       model.selectedTab = .library
+      model.visibleProjectID = model.projectID
       model.activeNavigationPath = [.space(model.projectID)]
       model.composerAttachment?.append(AIAttachment(id: UUID(), name: "second", url: URL(fileURLWithPath: "/second")))
     }
@@ -161,6 +251,7 @@ final class MemoraModel {
   var aiWorkspaceGeneration = UUID()
   var selectedTab = RootTab.askAI
   var activeNavigationPath: [LibraryRoute] = []
+  var visibleProjectID: UUID?
   var libraryPath: [LibraryRoute] { get { activeNavigationPath } set { activeNavigationPath = newValue } }
   var currentTeamID: UUID?
   var isRestoring = false
@@ -172,7 +263,12 @@ final class MemoraModel {
   var aiRequestRefusalMessage: String?
   var activeProjectChatID: UUID? { nil }
   var projectID = UUID()
-  var sources: [UUID: Source] = [:]
+  var sources: [UUID: ProjectSource] = [:]
+  var projectSources: [ProjectSource] { Array(sources.values) }
+  var linkPreparations = 0
+  var linkReadable = true
+  var linkFailure: String?
+  var linkPrivacy = false
   var suspends = ""
   var waiter: CheckedContinuation<Void, Never>?
   var imports = 0
@@ -180,7 +276,9 @@ final class MemoraModel {
   var createdChats = 0
 
   func space(id: UUID) -> MemoraSpace? { id == projectID ? MemoraSpace(id: id) : nil }
-  func source(id: UUID) -> Source? { sources[id] }
+  func source(id: UUID) -> ProjectSource? { sources[id] }
+  func storeProjectSource(_ source: ProjectSource) -> Bool { sources[source.id] = source; return true }
+  func scheduleProjectSourcePreparation(_ id: UUID) {}
   func projectChat(id: UUID) -> ProjectChatThread? { nil }
   func importProjectFile(_ url: URL, projectID: UUID?, importContext: LocalImportContext?, sourceTitle: String?,
                          originalURL: URL?, sourceMetadata: [String: String]?) async throws -> UUID? {
@@ -188,10 +286,18 @@ final class MemoraModel {
     if suspends == "copy" && imports == 1 { await pause() }
     if Task.isCancelled { return nil }
     let id = UUID()
-    sources[id] = Source(projectID: projectID, canProvideText: false)
+    sources[id] = ProjectSource(id: id, projectID: projectID, kind: .document, title: sourceTitle ?? "file", canProvideText: false, privacy: true)
     return id
   }
   func prepareProjectSource(_ id: UUID) async {
+    if sources[id]?.kind == .web || sources[id]?.kind == .youtube {
+      linkPreparations += 1
+      if suspends == "link" && linkPreparations == 1 { await pause() }
+      sources[id]?.canProvideText = linkReadable
+      sources[id]?.errorInformation = linkFailure
+      sources[id]?.privacy = linkPrivacy
+      return
+    }
     if suspends == "text" && imports == 1 { await pause() }
     sources[id]?.canProvideText = true
   }
@@ -204,7 +310,17 @@ final class MemoraModel {
 }
 
 struct MemoraSpace: Equatable { var id: UUID }
-struct Source { var projectID: UUID?; var canProvideText: Bool; var privacy = true }
+struct ProjectSource {
+  var id = UUID()
+  var projectID: UUID?
+  var kind: Kind
+  var title: String
+  var originalURL: URL?
+  var canProvideText = false
+  var privacy = false
+  var errorInformation: String?
+  enum Kind { case web, youtube, document }
+}
 struct ProjectChatThread { var id: UUID; var projectID: UUID }
 enum RootTab { case library, home, askAI }
 enum LibraryRoute: Equatable { case space(UUID), projectChat(UUID), projectSource(UUID) }

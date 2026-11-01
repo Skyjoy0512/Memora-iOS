@@ -14,6 +14,7 @@ struct AIComposerRequestContext {
   private var tab: RootTab
   private var path: [LibraryRoute]
   private var scope: AIQueryScope
+  private var visibleProjectID: UUID?
 
   init?(scope: AIQueryScope, in model: MemoraModel) {
     guard !Task.isCancelled, model.currentTeamID == nil, !model.isRestoring,
@@ -27,6 +28,7 @@ struct AIComposerRequestContext {
     tab = model.selectedTab
     path = model.activeNavigationPath
     self.scope = scope
+    visibleProjectID = model.visibleProjectID
   }
 
   func isCurrent(in model: MemoraModel, scope: AIQueryScope) -> Bool {
@@ -34,6 +36,7 @@ struct AIComposerRequestContext {
       !model.isStoreProtected && !model.isToolsPresented &&
       model.aiWorkspaceGeneration == generation && model.aiConversationID == conversationID &&
       model.selectedTab == tab && model.activeNavigationPath == path &&
+      model.visibleProjectID == visibleProjectID &&
       model.composerDraft == draft && model.composerAttachment == attachment &&
       model.composerMentions == mentions && model.askAIConfiguration.engine == configuration.engine &&
       model.askAIConfiguration.llm == configuration.llm

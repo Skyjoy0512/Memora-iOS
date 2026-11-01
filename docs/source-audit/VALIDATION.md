@@ -261,3 +261,31 @@ OSのfile picker・Speech・PDFKit・SQLite・実provider、SwiftUIのonChange/o
 最終 `bitrig preview -platform iOS` は成功、プレビュー更新済み。
 log: `logs/2026-11-02T07-23-10-f83e32db.log`、既存の非推奨API等の警告11件、compile errorなし。
 `git diff --check`通過。ビルドは動作の実機検証とは分けて扱う。
+
+## P0: プロジェクトAsk AIの質問中URL（7573f885から）
+
+開始時main / `7573f885`、未コミット変更なし。UIのレイアウト、Liquid Glass、
+Marketplace、既存データ形式・許可は変更していない。
+
+限定`run-composer-request-checks.py` PASS。前節のproduction送信準備/contextに加え、
+実`InlineURLDetector`・`ProjectSourceURL`・`addProjectLink` methodと新しい質問リンクhelperをcompile。
+保存・解析・AI dispatch・view stateはfixtureで、HTTPや外部サービスは呼ばない。
+
+- tracking/fragment/host表記が異なる同一URLを1資料として登録し、同じprojectへ保持。
+- 添付なしURL、2添付＋URL、既存の許可済みURL、外部送信不許可での停止と端末内への再送を確認。
+  重複時に元資料名/URL/権限を上書きしない。新規sourceのprivacyを自動で許可しない。
+- Web本文なし・YouTube字幕なしではfixtureの失敗理由を表示し、質問送信・下書き消去なし。
+- URL準備を待機し、入力変更・workspace変更・停止の3ケースで、先に保存した1資料を保持し、
+  後続URLや質問を実行しない。unsafe/http/認証情報付きURLは検出対象外で取得に進まない。
+- 従来25の競合検査も同じsuiteで確認。うち追加2件は、async側のscopeを変更せず
+  modelのvisibleProjectIDだけ変えたcopy/本文待機後の拒否で、view値の捕捉を模す。
+
+実際のDNS固定・リダイレクト・HTML/PDF/Speech/公式字幕通信は既存のproduction経路を再利用するが、
+今回の限定検査はそれらやSQLite/FTS/実回答品質を実行した証拠ではない。
+実シミュレーターでのURL入力からの完走、実機・provider・YouTube所有者権限は未検証。
+初回検査後に保存先変更後の失敗理由を別projectから読まないguardと既存/unsafe URLケースを加え、
+同じ限定suiteだけを再実行。全host suite・既存のPDF/音声検査は反復していない。
+
+最終 `bitrig preview -platform iOS` 成功、プレビュー更新済み。
+log: `logs/2026-11-02T07-34-05-7eb2e97f.log`、既存警告11件、compile errorなし。
+`git diff --check`通過。今回の新経路を実端末で完走したとの扱いはしない。

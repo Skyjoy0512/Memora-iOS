@@ -99,3 +99,5 @@
 | S21 | 50MB以上/総解析上限を超えるPDFの追加手段がなく、入口で停止 | 100ページ目安のnative分割追加と原本範囲/hash保持、同範囲重複抑止、保存の一括確定 | 実205page PDF/SQLite/URI注釈/原本不変をhost確認。新UI/実機性能は未確認 |
 | S22 | readyな旧PDFを共通解析へ読み直す操作がない | 元PDFの再読み取りをその他メニューへ追加。取得失敗/本文なし/取消では以前の本文・要約を参照可能に保つ | production登録/本文保存/SQLite、fixture抽出で確認。再ダウンロードせず、正常結果だけ本文を置換 |
 | S23 | mediaの変換後一時音声に容量監視がなく、中断後の一時ファイル回収もない | M4A/作業領域の容量監視・事前空き容量確認・active flock・孤児清掃 | 実AVFoundation WAV→M4A、疎ファイル上限拒否、active保護/未完了領域回収をmacOS host確認。実Speech/実機/in-flight取消時間は未確認 |
+| S24 | プロジェクトAsk AIは添付fileを保存するが、質問中のURLを取得せず質問文だけ渡す | 共通のリンク登録/資料準備へ接続。本文・project・送信許可を確認してから質問 | production追加/正規化/送信準備の限定host検査。HTTP/解析/SQLite/AIはfixtureで実サービス未検証 |
+| S25 | 非同期Taskが開始時のSwiftUI viewを保持し、資料移動後も古いscope値で一致検査できる | model由来のvisibleProjectIDもrequest contextで検査 | view側scopeを変えずmodelの保存先だけ変更し、copy/本文待機から戻っても送信しないhost検査。実画面移動は未検証 |

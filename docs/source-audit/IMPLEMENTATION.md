@@ -26,8 +26,9 @@
 | 同上/録音機import/Open In | audio/local video | 同じsource、原音/動画保持 | 転写後の本文 | 転写時刻、音声のみの理解 |
 | 共有拡張→Inbox | URL/file/text | 指定保存先、キューID重複抑止 | 同じsource検索 | 同じ許可検証 |
 | 日記/メモの文章中URL | URL | 明示した追加で共通source | 元記事の本文 | 元sourceを参照 |
-| AskAI直接URL | Web/PDF/所有者YouTube字幕 | その会話の添付のみ | 質問に応じ全文から抜粋 | 直ちに質問のcontext、添付から原文へ |
-| AskAI直接file | 上記対応形式、最大10件 | 会話添付コピー | 全解析本文から関連部分を選択 | 複数添付を文書名/page/timeとともに渡す |
+| 全体AskAI直接URL | Web/PDF/所有者YouTube字幕 | その会話の添付のみ | 質問に応じ全文から抜粋 | 直ちに質問のcontext、添付から原文へ |
+| 全体AskAI直接file | 上記対応形式、最大10件 | 会話添付コピー | 全解析本文から関連部分を選択 | 複数添付を文書名/page/timeとともに渡す |
+| プロジェクトAskAI直接URL | Web/URL応答PDF/権限のあるYouTube字幕 | その個人projectのsource、元URL | 共通の本文FTS・元source引用 | 本文と送信許可を確認後にproject回答。metadataだけでは送信しない |
 | 会話添付の「ライブラリに保存」 | URL/file | 明示保存、project指定なしはlibrary | sourceとして同じ検索 | 保存後は通常の許可範囲 |
 
 ## 取得・解析・要約の分離
@@ -165,3 +166,21 @@ callback側でもcontextの不一致を確認する。SwiftUIの通知より先�
 取消時に既にprojectへ保存できた資料は削除せず、従来の重複判定で再試行できる。
 ネイティブ解析の途中停止時間は保証しない。古い処理からのエラーで新しい入力を
 遮らないよう、取消や入力変更後の失敗通知も抑える。新しい保存形式・一括移行はない。
+
+## プロジェクトの質問中URL
+
+`prepareProjectQuestionLinks`は共通`InlineURLDetector`が選んだ最大5件のURLを、
+既存`addProjectLink`→`prepareProjectSource`へ順に接続する。URL正規化・重複判定・
+安全なWeb取得・PDF抽出・YouTube公式字幕の経路を別実装にしない。
+同じ保存先の同じURLは元の資料と権限を再利用し、追加の会話専用コピーは作らない。
+全文が取得できたと偽らず、既存の解析範囲とページ/時刻付き本文を検索・質問へ渡す。
+
+取得した本文がない場合は資料の失敗理由を示して質問を止め、URLと下書きを保持。
+新規のprivacyは従来どおり外部AI送信不可で、既存確認を外部AI許可の自動付与には使わない。
+外部AIに質問する場合は資料詳細のprivacyで許可後に再送する。端末内の回答は利用可能な
+端末エンジンに従う。HTTP50MB・字幕の公式API権限・最大5URL等の既存上限は維持する。
+
+URL処理の各非同期前後にも会話/入力/保存先を検査する。取り消しても既に保存した
+sourceを消さず、再送では正規化URLで再利用する。後続URLやAI質問は実行しない。
+SwiftUIのTaskが開始時のview値を保持していても資料移動を検知できるよう、
+request contextはmodelの`visibleProjectID`も保持・再確認する。既存データの移行はない。
