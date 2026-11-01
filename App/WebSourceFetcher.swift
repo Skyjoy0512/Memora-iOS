@@ -2,12 +2,16 @@ import Foundation
 
 struct WebSourceFetcher: Sendable {
   var resolve: @Sendable (String) async throws -> [String] = { try await MCPPublicAddressPolicy.validatedAddresses(for: $0) }
-  var transfer: @Sendable (WebSourceRequest) async throws -> WebSourceHTTPDecoder.Response = { try await PinnedHTTPSConnection.fetch($0) }
+  var transfer: @Sendable (WebSourceRequest) async throws -> WebSourceHTTPDecoder.Response = {
+    try await PinnedHTTPSConnection.fetch($0, decoder: .init(maximumBodyBytes: 50 * 1024 * 1024,
+      contentTypes: ["text/html", "application/xhtml+xml", "text/plain", "application/pdf"]))
+  }
 
   struct Result: Sendable {
     var finalURL: URL
     var fetchedAt: Date
     var content: WebSourceTextExtraction.Result
+    var fileData: Data?
   }
 
   func fetch(_ url: URL) async throws -> Result {
@@ -44,6 +48,11 @@ struct WebSourceFetcher: Sendable {
         url = next; continue
       }
       guard response.status == 200 else { throw WebSourceFailure.status(response.status) }
+      if response.headers["content-type"]?.lowercased().components(separatedBy: ";").first?.trimmingCharacters(in: .whitespaces) == "application/pdf" {
+        guard response.body.starts(with: Data("%PDF-".utf8)), response.body.count <= 50 * 1024 * 1024 else { throw WebSourceFailure.unsupportedContent }
+        return Result(finalURL: checked, fetchedAt: .now,
+          content: .init(title: checked.lastPathComponent, blocks: [], notice: ""), fileData: response.body)
+      }
       let content = try WebSourceTextExtraction.read(response.body, contentType: response.headers["content-type"] ?? "")
       return Result(finalURL: checked, fetchedAt: .now, content: content)
     }

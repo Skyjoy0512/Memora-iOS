@@ -33,12 +33,12 @@ struct RecorderAudioImportView: View {
         .disabled(isWorking || model.isImporting)
         .accessibilityIdentifier("recorder.importAudio")
         if isWorking { ProgressView("音声を保存しています") }
-        if let id = importedRecordID, model.meeting(id: id) != nil {
+        if let id = importedRecordID, model.source(id: id) != nil {
           Label("ライブラリに音声を保存しました", icon: .checkmark)
             .accessibilityIdentifier("recorder.importSuccess")
         }
       } footer: {
-        Text("再生可能な音声だけを取り込みます。元のファイルは変更しません。文字起こし・要約は保存後に開始できます。")
+        Text("再生可能な音声だけを取り込みます。元のファイルは変更しません。対応端末では文字起こしと要約を自動で作成します。外部AIへの送信には既存の許可が必要です。")
       }
       Section {
         LabeledContent("接続方法", value: "音声ファイルの取り込み")
@@ -56,7 +56,7 @@ struct RecorderAudioImportView: View {
         isWorking = true
         Task { @MainActor in
           defer { isWorking = false }
-          let id = await model.importPickedAudio(from: url, context: context)
+          let id = await model.importInformationFile(url, context: context)
           guard let context, context.isCurrent(in: model) else { return }
           if let id {
             importedRecordID = id

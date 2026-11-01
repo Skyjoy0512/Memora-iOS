@@ -9,6 +9,7 @@ actor ProjectSearchIndex {
   private var db: OpaquePointer?
   private var fileURL: URL
   private var synchronizedProject: UUID?
+  private var synchronizedCharacterLimit = 2_000_000
   private var synchronizedInputs: [ProjectEvidenceInput] = []
   private var synchronizedHasUniqueTargets = false
   private struct CachedInput {
@@ -30,9 +31,9 @@ actor ProjectSearchIndex {
 
   enum Failure: Error { case database }
 
-  func retrieve(question: String, projectID: UUID, inputs: [ProjectEvidenceInput]) throws -> [ProjectEvidenceChunk] {
+  func retrieve(question: String, projectID: UUID, inputs: [ProjectEvidenceInput], maximumCharacters: Int = 2_000_000) throws -> [ProjectEvidenceChunk] {
     try open()
-    try synchronize(projectID: projectID, inputs: inputs)
+    try synchronize(projectID: projectID, inputs: inputs, maximumCharacters: maximumCharacters)
     let terms = ProjectContextBuilder.queryGrams(question).sorted().prefix(32)
     let expression = terms.map { "\"" + $0.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }.joined(separator: " OR ")
     var result: [ProjectEvidenceChunk] = []
@@ -91,9 +92,12 @@ actor ProjectSearchIndex {
     }
   }
 
-  private func synchronize(projectID: UUID, inputs: [ProjectEvidenceInput]) throws {
+  private func synchronize(projectID: UUID, inputs: [ProjectEvidenceInput], maximumCharacters: Int) throws {
+    let characterLimit = max(1, min(16_000_000, maximumCharacters))
+    if synchronizedCharacterLimit != characterLimit { clearMemoryCache() }
+    synchronizedCharacterLimit = characterLimit
     if synchronizedProject == projectID, synchronizedHasUniqueTargets, synchronizedInputs == inputs { return }
-    let boundedInputs = Self.bounded(inputs)
+    let boundedInputs = Self.bounded(inputs, maximumCharacters: characterLimit)
     // Only an identical, already committed snapshot can bypass synchronization.
     // A membership, permission-filtered input, title, page, time or body change
     // fails equality. Duplicate targets keep the original sequential semantics.
@@ -162,9 +166,9 @@ actor ProjectSearchIndex {
     cachedInputs = [:]
   }
 
-  private static func bounded(_ inputs: [ProjectEvidenceInput]) -> [ProjectEvidenceInput] {
+  private static func bounded(_ inputs: [ProjectEvidenceInput], maximumCharacters: Int) -> [ProjectEvidenceInput] {
     var result: [ProjectEvidenceInput] = []
-    var remaining = 2_000_000
+    var remaining = maximumCharacters
     for input in inputs {
       guard remaining > 0 else { break }
       var bounded = input

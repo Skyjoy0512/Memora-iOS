@@ -9,7 +9,7 @@ extension MemoraModel {
       throw BackupPackage.BackupError.busy
     }
     guard !isRestoring, !isImporting, !isImportingShareInbox,
-          pendingImportURLs.isEmpty, inFlightImportURLs.isEmpty, projectSourceProcessingIDs.isEmpty,
+          pendingImportURLs.isEmpty, inFlightImportURLs.isEmpty, projectSourceProcessingIDs.isEmpty, sourcePreparationJobs.isEmpty,
           !isAIChatResponding, residentJobs.isEmpty, projectChatJobs.isEmpty, webResearchJobs.isEmpty,
           processing.activeIDs.isEmpty, speakerAnalysisIDs.isEmpty, !isEnrollingSpeaker else {
       throw BackupPackage.BackupError.busy

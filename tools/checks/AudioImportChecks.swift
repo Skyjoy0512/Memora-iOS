@@ -96,11 +96,14 @@ struct AudioImportChecks {
     expect(try recordings() == before && Data(contentsOf: url) == Data("HOST AUDIO PAYLOAD".utf8))
     try sql("DROP TRIGGER reject_audio;", model.storeURL)
     await model.handle(url)
-    precondition(model.meetings.count == 1 && model.openedMeetingID == model.meetings[0].id)
-    precondition(model.meetings[0].duration == 1.25 && model.meetings[0].status == .waitingForTranscription)
+    precondition(model.meetings.isEmpty && model.projectSources.count == 1 && model.importErrorMessage == nil)
+    let source = model.projectSources[0]
+    precondition(source.kind == .audio)
+    guard case .projectSource(source.id)? = model.libraryPath.last else { preconditionFailure("Saved source was not opened") }
     precondition(!FileManager.default.fileExists(atPath: url.path))
-    expect(try reload(model) == model.meetings)
-    expect(try Data(contentsOf: model.meetings[0].audioURL!) == Data("HOST AUDIO PAYLOAD".utf8))
+    guard case .data(let stored) = model.store.readOutcome(MemoraModel.StorageKey.projectSources) else { preconditionFailure("Source was not persisted") }
+    expect(try JSONDecoder().decode([ProjectSource].self, from: stored) == model.projectSources)
+    expect(try Data(contentsOf: ProjectSourceFiles.resolve(source.localFileReference!)!) == Data("HOST AUDIO PAYLOAD".utf8))
   }
 
   @MainActor static func pickerRace(_ root: URL, change: Int) async throws {
@@ -158,9 +161,10 @@ struct AudioImportChecks {
     let (model, _) = try fixture(root, "audio-unreadable")
     let unreadable = try incoming("unreadable")
     let before = try recordings()
-    MediaFiles.readDuration = { _ in nil }
+    MediaFiles.readDuration = { _ in preconditionFailure("Open In must use the shared source path") }
     await model.handle(unreadable)
-    precondition(FileManager.default.fileExists(atPath: unreadable.path) && model.meetings.isEmpty)
+    precondition(!FileManager.default.fileExists(atPath: unreadable.path) && model.meetings.isEmpty)
+    precondition(model.projectSources.count == 1 && model.projectSources[0].kind == .audio)
     expect(try recordings() == before)
     let queued = try incoming("queued")
     model.isRecording = true
@@ -169,11 +173,19 @@ struct AudioImportChecks {
     model.isRecording = false
     await model.processPendingImports()
     precondition(model.pendingImportURLs.isEmpty && model.inFlightImportURLs.isEmpty)
-    precondition(FileManager.default.fileExists(atPath: queued.path) && model.meetings.isEmpty)
-    MediaFiles.readDuration = { _ in 1.25 }
+    precondition(!FileManager.default.fileExists(atPath: queued.path) && model.meetings.isEmpty)
+    // The two byte-identical Inbox copies collapse to one source.
+    precondition(model.projectSources.count == 1)
+    let another = try incoming("scope-change")
+    model.isRecording = true
+    await model.handle(another)
+    model.currentTeamID = "other"; model.currentTeamID = nil
+    model.isRecording = false
+    await model.processPendingImports()
+    precondition(FileManager.default.fileExists(atPath: another.path))
     await model.importInboxAudio()
-    precondition(!FileManager.default.fileExists(atPath: queued.path) && !FileManager.default.fileExists(atPath: unreadable.path))
-    expect(try reload(model) == model.meetings)
+    precondition(!FileManager.default.fileExists(atPath: another.path))
+    precondition(model.projectSources.count == 1)
   }
 
   @MainActor static func restoreAdmission(_ root: URL) async throws {

@@ -11,6 +11,7 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   var localFileReference: String?
   var thumbnailReference: String?
   var extractedTextReference: String?
+  var captionFileReference: String?
   var contentFingerprint: String?
   var createdAt = Date.now
   var updatedAt = Date.now
@@ -20,9 +21,21 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   var privacy = RecordPrivacy()
   var errorInformation: String?
   var metadata: [String: String]?
+  var acquiredAt: Date?
+  var pageCount: Int?
+  var unreadablePages: [Int]?
+  var omittedPages: [Int]?
+  var ocrPages: [Int]?
+  var summary: String?
+  var summaryStatus: ProcessingStatus?
+  var summaryTextReference: String?
+  var summaryUpdatedAt: Date?
+  var summaryError: String?
+  var summaryHistory: [String]?
+  var revisions: [Revision]?
 
   enum Kind: String, Codable, Sendable {
-    case youtube, web, image, pdf, document, audio, note
+    case youtube, web, image, pdf, document, audio, note, video
   }
 
   enum ProcessingStatus: String, Codable, Sendable {
@@ -34,10 +47,26 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   }
 
   var fileReferences: [String] {
-    [localFileReference, thumbnailReference, extractedTextReference].compactMap { $0 }
+    [localFileReference, thumbnailReference, extractedTextReference, captionFileReference].compactMap { $0 }
+      + (revisions ?? []).flatMap { [$0.originalFileReference, $0.textReference].compactMap { $0 } }
   }
 
   var canProvideText: Bool {
     processingStatus == .ready && extractedTextReference != nil
+  }
+
+  mutating func retainRevision() {
+    guard let extractedTextReference, revisions?.last?.textReference != extractedTextReference else { return }
+    revisions = Array(((revisions ?? []) + [Revision(acquiredAt: acquiredAt ?? updatedAt,
+      originalFileReference: localFileReference, textReference: extractedTextReference,
+      fingerprint: contentFingerprint, summary: summary)]).suffix(3))
+  }
+
+  struct Revision: Codable, Hashable, Sendable {
+    var acquiredAt: Date
+    var originalFileReference: String?
+    var textReference: String
+    var fingerprint: String?
+    var summary: String?
   }
 }

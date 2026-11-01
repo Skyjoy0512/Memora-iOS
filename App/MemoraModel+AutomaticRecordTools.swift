@@ -45,7 +45,6 @@ extension MemoraModel {
       let selected = results.sorted { $0.0 > $1.0 }.prefix(limit)
       lines = selected.map { $0.1 + " " + AnswerSourceCitation.marker(for: .record($0.2)) }
       references = selected.map { $0.2 }
-      if purpose == .cloudAI { lines += agentSourceMatches(query: call.string("query"), messageID: messageID) }
     case .readRecord:
       guard let id = UUID(uuidString: call.string("id")) else {
         return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true)

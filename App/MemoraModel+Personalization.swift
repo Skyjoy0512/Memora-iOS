@@ -5,12 +5,11 @@ extension MemoraModel {
     if let useCase = OccupationCatalog.useCases.first(where: { $0.id == useCaseID }),
        let choice = useCase.templateIDs.compactMap(summaryChoice).first { return choice }
     if summaryPreferences.method == .fixed { return defaultSummaryChoice }
-    if let id = SummaryTemplateSelector.contentTemplateID(meeting.transcript.map(\.text).joined(separator: "\n")),
-       let choice = summaryChoice(id) { return choice }
-    return defaultSummaryChoice
+    return .adaptive
   }
 
   func automaticSummaryCandidates(for meeting: Meeting, fallback: SummaryTemplateChoice) -> [SummaryTemplateChoice] {
+    if fallback.id == SummaryTemplateChoice.adaptive.id { return [fallback] }
     let available = allSummaryChoices
     if fallback.id == VideoSummaryTemplate.template.id { return [fallback] }
     let ids = SummaryTemplateSelector.candidateIDs(fallbackID: fallback.id,
@@ -56,7 +55,8 @@ extension MemoraModel {
   }
 
   func summaryChoice(_ id: String) -> SummaryTemplateChoice? {
-    allSummaryChoices.first { $0.id == id }
+    if id == SummaryTemplateChoice.adaptive.id { return .adaptive }
+    return allSummaryChoices.first { $0.id == id }
   }
 
   func setOccupation(_ id: String, selected: Bool) {

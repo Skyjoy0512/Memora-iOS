@@ -18,6 +18,7 @@ struct AIAnswerOutcome {
   /// Said when the attachment or the recent exchanges were trimmed to fit the
   /// engine's budget, so a short answer is not mistaken for a complete one.
   var contextNote: String?
+  var sourceCitations: [ProjectCitation] = []
 
   var isAnswer: Bool { result.text != nil }
 }

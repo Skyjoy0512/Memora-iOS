@@ -21,10 +21,10 @@ enum AttachmentSelfChecks {
     }
     try pdfData.write(to: pdf)
     let projectPDF = try ProjectSourceExtraction.read(pdf)
-    try require(projectPDF.blocks.count == 20 && projectPDF.blocks.last?.page == 20, "PDF page limit")
-    try require(projectPDF.coverage == .partial, "PDF limit must not claim complete extraction")
+    try require(projectPDF.blocks.count == 21 && projectPDF.blocks.last?.page == 21, "PDF includes later pages")
+    try require(projectPDF.coverage == .complete && projectPDF.omittedPages.isEmpty, "complete text PDF coverage")
     let attachmentPDF = prepared(pdf)
-    try require(attachmentPDF.text?.contains("PAGE 1 MEMORA FIXTURE") == true && attachmentPDF.notice?.contains("20") == true, "shared PDF extraction")
+    try require(attachmentPDF.text?.contains("PAGE 21 MEMORA FIXTURE") == true && attachmentPDF.notice == nil, "shared PDF extraction")
 
     let image = root.appendingPathComponent("text.png")
     let imageData = UIGraphicsImageRenderer(size: CGSize(width: 800, height: 240)).pngData { context in

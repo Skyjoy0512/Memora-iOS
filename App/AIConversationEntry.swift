@@ -13,6 +13,8 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
   var cloudProvenance: AIConversationProvenance?
   var webResearchReportID: UUID?
   var episode: AIEpisode?
+  var sourceCitations: [ProjectCitation]?
+  var attachment: AIAttachmentFileReference?
 
   init(
     id: UUID,
@@ -24,7 +26,9 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
     createdAt: Date,
     cloudProvenance: AIConversationProvenance? = nil,
     webResearchReportID: UUID? = nil,
-    episode: AIEpisode? = nil
+    episode: AIEpisode? = nil,
+    sourceCitations: [ProjectCitation]? = nil,
+    attachment: AIAttachmentFileReference? = nil
   ) {
     self.id = id
     self.question = question
@@ -36,6 +40,8 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
     self.cloudProvenance = cloudProvenance
     self.webResearchReportID = webResearchReportID
     self.episode = episode
+    self.sourceCitations = sourceCitations
+    self.attachment = attachment
   }
 
   /// Lenient so entries saved before the engine was recorded still decode.
@@ -51,5 +57,9 @@ struct AIConversationEntry: Identifiable, Hashable, Codable {
     cloudProvenance = try? container.decode(AIConversationProvenance.self, forKey: .cloudProvenance)
     webResearchReportID = try container.decodeIfPresent(UUID.self, forKey: .webResearchReportID)
     episode = try container.decodeIfPresent(AIEpisode.self, forKey: .episode)
+    let citations = try container.decodeIfPresent([ProjectCitation].self, forKey: .sourceCitations)
+    sourceCitations = (citations?.count ?? 0) <= 64 ? citations : nil
+    let file = try container.decodeIfPresent(AIAttachmentFileReference.self, forKey: .attachment)
+    attachment = file?.isValid == true ? file : nil
   }
 }

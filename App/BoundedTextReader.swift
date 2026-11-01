@@ -9,7 +9,7 @@ enum BoundedTextReader {
   enum Failure: Error { case invalidFile, invalidUTF8 }
 
   static func read(_ url: URL, maximumBytes: Int) throws -> Result {
-    guard url.isFileURL, maximumBytes > 0, maximumBytes <= 512 * 1024 else { throw Failure.invalidFile }
+    guard url.isFileURL, maximumBytes > 0, maximumBytes <= 4 * 1024 * 1024 else { throw Failure.invalidFile }
     let accessed = url.startAccessingSecurityScopedResource()
     defer { if accessed { url.stopAccessingSecurityScopedResource() } }
     let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])

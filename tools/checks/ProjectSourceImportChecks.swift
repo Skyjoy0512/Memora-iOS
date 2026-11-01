@@ -49,11 +49,17 @@ struct ProjectSourceImportChecks {
     expect(try await model.importProjectFile(url, projectID: other.id, importContext: context) == nil)
     let audio = root.appendingPathComponent("route.wav")
     try Data([0]).write(to: audio)
-    expect(try await model.importProjectFile(audio, projectID: projectID) == nil)
-    precondition(model.audioImportCalls == 1 && model.projectSources == [source])
+    let audioID = try await model.importProjectFile(audio, projectID: projectID)
+    precondition(audioID != nil && model.source(id: audioID!)?.kind == .audio)
+    precondition(model.audioImportCalls == 0 && model.projectSources.count == 2)
+    expect(try await model.importProjectFile(audio, projectID: projectID) == audioID)
     model.currentTeamID = "unconfigured"
     expect(try await model.importProjectFile(audio, projectID: projectID) == nil)
-    precondition(model.audioImportCalls == 1)
+    precondition(model.audioImportCalls == 0)
+    expect(try await model.importProjectFile(url, projectID: nil) == nil)
+    model.currentTeamID = nil
+    let libraryID = try await model.importProjectFile(url, projectID: nil)
+    precondition(libraryID != nil && model.source(id: libraryID!)?.projectID == nil)
     expect(try Data(contentsOf: url) == Data("保持する元のファイル".utf8))
   }
 

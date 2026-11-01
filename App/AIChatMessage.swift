@@ -21,6 +21,7 @@ struct AIChatMessage: Identifiable, Hashable {
   var mcpResultAuthorizationIDs: Set<UUID> = []
   var gmailResultAuthorizationIDs: Set<UUID> = []
   var projectSourceReferences: [AgentSourceReference] = []
+  var sourceCitations: [ProjectCitation] = []
   var artifactProvenance: ArtifactProvenance?
   var cloudProvenance: AIConversationProvenance?
   var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?

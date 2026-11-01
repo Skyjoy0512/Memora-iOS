@@ -8,7 +8,7 @@ extension MemoraModel {
     return policy == nil || policy?.limitsRecordReads == false
   }
 
-  func readAgentProjectSource(_ id: UUID, messageID: UUID, compact: Bool, automatic: Bool) async -> AgentToolOutcome {
+  func readAgentProjectSource(_ id: UUID, messageID: UUID, compact: Bool, automatic: Bool, query: String = "") async -> AgentToolOutcome {
     let policy = agentPluginPolicies[messageID]
     guard !automatic, let source = source(id: id), canReadAgentSource(source, compact: compact, policy: policy),
           let name = source.extractedTextReference else { return AgentToolOutcome(text: RecordAccessPolicy.refusal, isError: true) }
@@ -22,7 +22,7 @@ extension MemoraModel {
       var remaining = compact ? 1_000 : 16_000
       for block in blocks where remaining > 0 {
         let text = String(block.text.prefix(remaining))
-        lines.append((block.page.map { "[ページ\($0)] " } ?? "") + text)
+        lines.append((block.page.map { "[ページ\($0)] " } ?? block.time.map { "[\(Int($0))秒] " } ?? "") + text)
         remaining -= text.count
       }
       updateAgentMessage(messageID) { message in

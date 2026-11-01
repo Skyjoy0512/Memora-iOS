@@ -12,7 +12,7 @@ swiftc Shared/MemoraIcon.swift App/AgentTool.swift App/AgentToolCall.swift App/A
   App/SummarySensitivity.swift App/RecordPrivacyTarget.swift App/AIAnswerFailure.swift App/GmailError.swift App/ExternalToolFailure.swift App/MCPClientError.swift App/MCPOAuthError.swift \
   App/IntegrationConfigurationRevision.swift App/NotionSaveConfiguration.swift App/NotionSaveEnvironment.swift App/NotionService.swift \
   App/AgentConversationExecutionContext.swift App/NotionExportContext.swift App/NotionAgentExecutionContext.swift \
-  App/MemoraModel+NotionExport.swift App/MemoraModel+NotionTools.swift App/MemoraModel+IntegrationSettings.swift \
+  App/MemoraModel+NotionExport.swift App/MemoraModel+NotionTools.swift App/MemoraModel+IntegrationSettings.swift tools/checks/IntegrationCalendarFixture.swift \
   tools/checks/HTTPResponseGate.swift tools/checks/NotionAgentFixtureModel.swift tools/checks/NotionAgentChecks.swift \
   -o "$check_dir/notion-agent"
 "$check_dir/notion-agent"

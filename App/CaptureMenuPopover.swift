@@ -7,14 +7,11 @@ struct CaptureMenuPopover: View {
   @Environment(MemoraModel.self) private var model
 
   var body: some View {
-    if let spaceID, let space = model.space(id: spaceID) {
-      Button {
-        model.sourceAddProjectID = spaceID
-      } label: {
-        Label("参考資料を追加", icon: .paperclip)
-      }
-      .accessibilityHint("保存先：\(space.name)。リンク・ファイル・メモを参照資料にします。")
+    Button("資料を追加", icon: .paperclip) {
+      model.sourceAddProjectID = spaceID
+      model.isSourceAddPresented = true
     }
+    .accessibilityHint(spaceID.flatMap { model.space(id: $0)?.name }.map { "保存先：" + $0 } ?? "ライブラリに保存します")
     ForEach(CaptureAction.available) { action in
       Button {
         onSelect(action)

@@ -41,10 +41,17 @@ extension MemoraModel {
         await ProjectSourceFiles.shared.remove(created); return
       }
       var current = context.source
+      current.retainRevision()
       current.extractedTextReference = text
       current.thumbnailReference = thumb
       current.processingStatus = text == nil ? .unavailable : .ready
       current.textCoverage = text == nil ? nil : result.coverage
+      current.acquiredAt = .now
+      current.pageCount = result.pageCount
+      current.unreadablePages = result.unreadablePages
+      current.omittedPages = result.omittedPages
+      current.ocrPages = result.ocrPages
+      current.updatedAt = .now
       current.errorInformation = result.notice
       guard storeProjectSource(current) else {
         await ProjectSourceFiles.shared.remove(created); return

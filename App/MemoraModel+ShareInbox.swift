@@ -56,7 +56,7 @@ extension MemoraModel {
   }
 
   private func importShareItem(_ item: ShareInboxItem, requestID: UUID, projectID: UUID, queue: ShareInboxQueue) async throws {
-    guard !isRestoring, currentTeamID == nil, space(id: projectID) != nil else { throw ShareInboxQueue.Failure.invalid }
+    guard let context = LocalImportContext(projectID: projectID, in: self) else { throw ShareInboxQueue.Failure.invalid }
     // A retry after SQLite committed but before the queue was removed sees the
     // same item identity. It does not create another source or undo a detach.
     if source(id: item.id) != nil { return }
@@ -78,6 +78,8 @@ extension MemoraModel {
         created.append(name)
         source.extractedTextReference = name
         source.processingStatus = .ready
+        source.textCoverage = .complete
+        source.acquiredAt = .now
       case .file:
         let file = try await queue.file(item.value, requestID: requestID)
         let receipt = try await ProjectSourceFiles.shared.copy(file)
@@ -85,14 +87,12 @@ extension MemoraModel {
         if projectSources.contains(where: { $0.projectID == projectID && $0.contentFingerprint == receipt.fingerprint }) {
           await ProjectSourceFiles.shared.remove(created); return
         }
-        let suffix = file.pathExtension.lowercased()
-        source.kind = suffix == "pdf" ? .pdf : ["png", "jpg", "jpeg", "heic", "heif", "gif", "webp", "tiff"].contains(suffix) ? .image :
-          ["m4a", "mp3", "wav", "aiff", "caf", "flac", "ogg"].contains(suffix) ? .audio : .document
+        source.kind = SourceIntake.kind(for: file)
         source.localFileReference = receipt.reference
         source.contentFingerprint = receipt.fingerprint
       }
-      guard !isRestoring, currentTeamID == nil, space(id: projectID) != nil, storeProjectSource(source) else { throw ShareInboxQueue.Failure.invalid }
-      if source.kind != .note { Task { await prepareProjectSource(source.id) } }
+      guard context.isCurrent(in: self), storeProjectSource(source) else { throw ShareInboxQueue.Failure.invalid }
+      scheduleProjectSourcePreparation(source.id)
     } catch { await ProjectSourceFiles.shared.remove(created); throw error }
   }
 }

@@ -7,6 +7,8 @@ enum WebSourceTextExtraction {
     var title: String?
     var blocks: [ProjectSourceText]
     var notice: String
+    var author: String?
+    var publishedAt: String?
   }
 
   static func read(_ data: Data, contentType: String) throws -> Result {
@@ -25,6 +27,7 @@ enum WebSourceTextExtraction {
     var title = Collector(maximumBytes: 1_024), body = Collector(), main = Collector(), article = Collector()
     var hiddenDepth = 0, mainDepth = 0, articleDepth = 0, titleDepth = 0
     var cursor = 0, tags = 0
+    var metadata: [String: String] = [:]
     let excluded: Set<String> = ["script", "style", "template", "iframe", "noscript", "svg", "nav", "header", "footer", "aside", "form"]
     let blocks: Set<String> = ["p", "div", "section", "article", "main", "br", "li", "ul", "ol", "h1", "h2", "h3", "h4", "h5", "h6", "tr", "table", "blockquote"]
     let empty: Set<String> = ["br", "hr", "img", "meta", "link", "input", "source", "wbr", "area", "base", "embed", "param", "col", "track"]
@@ -65,13 +68,20 @@ enum WebSourceTextExtraction {
         guard end - cursor <= 8_192 else { throw WebSourceFailure.tooLarge }
       }
       guard end < input.count else { break }
-      let raw = String(decoding: input[cursor + 1..<end], as: UTF8.self).lowercased()
+      let originalTag = String(decoding: input[cursor + 1..<end], as: UTF8.self)
+      let raw = originalTag.lowercased()
       let closing = raw.hasPrefix("/")
       let name = String(raw.dropFirst(closing ? 1 : 0).prefix { $0.isASCII && ($0.isLetter || $0.isNumber) })
       cursor = end + 1
       tags += 1
       guard tags <= 30_000 else { throw WebSourceFailure.tooLarge }
       guard !name.isEmpty else { continue }
+      if name == "meta", !closing {
+        let attributes = attributes(in: originalTag)
+        if let key = attributes["name"] ?? attributes["property"], let value = attributes["content"] {
+          metadata[key.lowercased()] = entities(String(value.prefix(512)))
+        }
+      }
       if closing {
         if let index = stack.lastIndex(where: { $0.name == name }) {
           for frame in stack[index...] { pop(frame) }
@@ -98,7 +108,21 @@ enum WebSourceTextExtraction {
     }
     let chosen = !article.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? article :
       (!main.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? main : body)
-    return try result(title: title.text, text: chosen.text, wasLimited: chosen.wasLimited)
+    var output = try result(title: title.text, text: chosen.text, wasLimited: chosen.wasLimited)
+    output.author = metadata["author"] ?? metadata["article:author"]
+    output.publishedAt = metadata["article:published_time"] ?? metadata["date"]
+    return output
+  }
+
+  private static func attributes(in tag: String) -> [String: String] {
+    guard let expression = try? NSRegularExpression(pattern: #"([a-zA-Z_:][a-zA-Z0-9_:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')"#) else { return [:] }
+    var result: [String: String] = [:]
+    for match in expression.matches(in: tag, range: NSRange(tag.startIndex..., in: tag)) {
+      guard let name = Range(match.range(at: 1), in: tag) else { continue }
+      let value = Range(match.range(at: 2), in: tag) ?? Range(match.range(at: 3), in: tag)
+      if let value { result[String(tag[name]).lowercased()] = String(tag[value]) }
+    }
+    return result
   }
 
   private static func result(title: String?, text: String, wasLimited: Bool) throws -> Result {

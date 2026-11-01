@@ -262,12 +262,12 @@ struct QuickAIComposer: View {
     isPreparingAttachment = true
     attachmentPreparationTask = Task { @MainActor in
       defer { isPreparingAttachment = false; attachmentPreparationTask = nil }
+      let capabilities = ModelCapabilities.resolve(llm: configuration.llm)
       let prepared: PreparedAIAttachment
-      if let cached = preparedAttachment, cached.matches(attached) { prepared = cached }
-      else { prepared = await AIAttachmentText.prepare(attached) }
+      if let cached = preparedAttachment, cached.matches(attached), cached.preparedQuestion == question { prepared = cached }
+      else { prepared = await AIAttachmentText.prepare(attached, question: question, maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities, task: DeepContextPolicy.task(for: question))) }
       guard !Task.isCancelled else { return }
       preparedAttachment = prepared
-      let capabilities = ModelCapabilities.resolve(llm: configuration.llm)
       guard AgentAttachmentContext.content(attachment: attached, prepared: prepared,
         maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities,
           task: DeepContextPolicy.task(for: question))) != nil else {

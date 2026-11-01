@@ -4,6 +4,7 @@ extension ProjectSource {
   var kindLabel: String {
     switch kind {
     case .youtube: "YouTube"
+    case .video: "動画"
     case .web: "Web"
     case .image: "画像"
     case .pdf: "PDF"
@@ -15,7 +16,7 @@ extension ProjectSource {
 
   var icon: MemoraIcon {
     switch kind {
-    case .youtube: .video
+    case .youtube, .video: .video
     case .web: .link
     case .image: .photo
     case .pdf, .document: .docText
@@ -26,23 +27,16 @@ extension ProjectSource {
 
   var statusLabel: String {
     switch processingStatus {
-    case .pending:
-      if kind == .web { "リンク保存済み · 内容未取得" }
-      else { kind == .youtube ? "動画リンク保存済み" : "追加済み · 解析待ち" }
-    case .processing: kind == .youtube ? "動画情報を取得中" : "解析中"
+    case .pending, .processing: "準備中"
     case .ready:
-      if !canProvideText { "内容未取得" }
-      else {
-        switch textCoverage {
-        case .complete: String(localized: "本文解析済み")
-        case .partial: String(localized: "一部解析済み")
-        case nil: String(localized: "本文抽出済み · 解析範囲未確認")
-        }
-      }
+      if summaryStatus == .ready, summaryTextReference == extractedTextReference { "要約あり" }
+      else if !canProvideText { "保存済み" }
+      else if textCoverage == .partial { "本文あり · 一部の内容" }
+      else { "本文あり" }
     case .unavailable:
-      if kind == .youtube, metadata?["youtubeTitle"] != nil { String(localized: "メタデータのみ") }
+      if kind == .youtube, metadata?["youtubeTitle"] != nil { String(localized: "動画リンク") }
       else { "保存済み · 内容未取得" }
-    case .failed: "保存済み · 解析失敗"
+    case .failed: "保存済み · 要確認"
     }
   }
 

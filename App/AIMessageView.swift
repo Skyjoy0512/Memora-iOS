@@ -15,6 +15,7 @@ struct AIMessageView: View {
   @State private var citedSource: ArtifactSourceTarget?
   @State private var isSourcesOpen = false
   @State private var savingWebReportID: UUID?
+  @State private var attachmentFile: AIAttachment.File?
 
   var body: some View {
     switch message.role {
@@ -26,9 +27,19 @@ struct AIMessageView: View {
   }
 
   private var userBubble: some View {
-    AIUserMessageView(text: message.text, attachmentName: message.attachment?.name) {
-      model.restoreAIRequestToComposer(message)
+    VStack(alignment: .trailing, spacing: 4) {
+      AIUserMessageView(text: message.text, attachmentName: message.attachment?.displayName) {
+        model.restoreAIRequestToComposer(message)
+      }
+      if let attachment = message.attachment {
+        Menu("添付資料を開く", icon: .paperclip) {
+          ForEach(attachment.files) { file in
+            Button(file.name) { attachmentFile = file }
+          }
+        }.font(.footnote).frame(minHeight: 44)
+      }
     }
+    .sheet(item: $attachmentFile) { file in ConversationAttachmentView(file: file) }
   }
 
   @ViewBuilder
@@ -100,6 +111,8 @@ struct AIMessageView: View {
             .transition(.opacity.combined(with: .move(edge: .top)))
         }
       }
+
+      if !message.isThinking { SourceCitationList(citations: message.sourceCitations) }
 
       let followUps = model.followUps(for: message)
       if !followUps.isEmpty {

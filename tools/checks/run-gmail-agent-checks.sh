@@ -11,7 +11,7 @@ swiftc Shared/MemoraIcon.swift App/AgentTool.swift App/AgentToolCall.swift App/A
   App/GmailService.swift App/GmailServiceEnvironment.swift App/GmailError.swift App/GmailMessage.swift \
   App/ExternalToolFailure.swift App/MCPClientError.swift App/MCPOAuthError.swift \
   App/AgentConversationExecutionContext.swift App/GmailAgentReadContext.swift App/MemoraModel+GmailContext.swift \
-  App/MemoraModel+GmailTools.swift App/MemoraModel+IntegrationSettings.swift \
+  App/MemoraModel+GmailTools.swift App/MemoraModel+IntegrationSettings.swift tools/checks/IntegrationCalendarFixture.swift \
   App/AgentConversationLoop.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AIAnswerResult.swift App/AIAnswerFailure.swift \
   tools/checks/HTTPResponseGate.swift tools/checks/GmailServiceFixture.swift tools/checks/GmailAgentFixtureModel.swift \
   tools/checks/GmailAgentChecks.swift -o "$check_dir/gmail-agent"

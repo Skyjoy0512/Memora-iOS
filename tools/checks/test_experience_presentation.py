@@ -97,7 +97,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
             self.assertIn(call, menu)
         self.assertIn(".accessibilityHint(action.detail)", menu)
         native = (APP / "CaptureToolbarButton.swift").read_text()
-        for contract in ("ToolbarActionLabel", "Menu {", ".confirmationDialog(", "model.importPickedAudio(from: url, context: context)", "NSUserCancelledError"):
+        for contract in ("ToolbarActionLabel", "Menu {", ".confirmationDialog(", "model.importInformationFile(url, context: context)", "NSUserCancelledError"):
             self.assertIn(contract, native)
         self.assertLess(native.index("importContext = LocalImportContext"), native.index("isFileImporterPresented = true"))
         for obsolete in ("Task.sleep", "navigationTransition", "matchedTransitionSource", ".popover("):
@@ -139,7 +139,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
     def test_source_editors_keep_drafts_and_own_their_save_errors(self):
         add = (APP / "ProjectSourceAddSheet.swift").read_text()
         edit = (APP / "ProjectNoteEditSheet.swift").read_text()
-        self.assertIn('accessibilityIdentifier("source.inputKind")', add)
+        self.assertIn('accessibilityIdentifier("source.content")', add)
         self.assertNotIn("右下の＋", add)
         for source in (add, edit):
             self.assertIn("presentsErrorsLocally: true", source)
@@ -151,8 +151,8 @@ class ExperiencePresentationChecks(unittest.TestCase):
 
     def test_source_import_captures_context_before_native_pickers(self):
         add = (APP / "ProjectSourceAddSheet.swift").read_text()
-        self.assertIn("fileImportContext = LocalImportContext", add)
-        self.assertIn("photoImportContext = LocalImportContext", add)
+        self.assertIn("fileContext = LocalImportContext", add)
+        self.assertIn("photoContext = LocalImportContext", add)
         self.assertIn(".photosPicker(isPresented: $isSelectingPhotos", add)
         self.assertIn("importContext: context", add)
         self.assertIn("importProjectSource(title:", add)
@@ -162,7 +162,8 @@ class ExperiencePresentationChecks(unittest.TestCase):
         audio = (APP / "MemoraModel+Import.swift").read_text()
         self.assertIn("context.isCurrent(in: self, allowsRemovedProject: true)", audio)
         self.assertIn("return meeting.id", audio)
-        self.assertEqual(audio.count("if await importAudio(from: url) != nil { removeInboxCopyIfNeeded(url) }"), 2)
+        self.assertIn("if await importInformationFile(url, context: context) != nil", audio)
+        self.assertIn("removeInboxCopyIfNeeded(url)", audio)
 
 
 if __name__ == "__main__":

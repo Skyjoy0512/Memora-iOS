@@ -25,14 +25,16 @@ extension MemoraModel {
     return true
   }
 
-  func addProjectNote(title: String, text: String, projectID: UUID, presentsErrorsLocally: Bool = false) async throws -> UUID? {
+  func addProjectNote(title: String, text: String, projectID: UUID?, presentsErrorsLocally: Bool = false) async throws -> UUID? {
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
-          let project = space(id: projectID), !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+          !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+    let project = projectID.flatMap { space(id: $0) }
+    guard projectID == nil || project != nil else { return nil }
     let data = try Self.encodedProjectNote(text)
     let generation = aiWorkspaceGeneration
     let name = try await ProjectSourceFiles.shared.write(data, extension: "json")
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
-          aiWorkspaceGeneration == generation, space(id: projectID) == project else {
+          aiWorkspaceGeneration == generation, projectID.flatMap({ space(id: $0) }) == project else {
       await ProjectSourceFiles.shared.remove([name]); return nil
     }
     var source = ProjectSource(projectID: projectID, kind: .note,
@@ -82,7 +84,7 @@ extension MemoraModel {
     guard text.utf8.count <= 512 * 1024 else { throw ProjectSourceFiles.Failure.noteTooLarge }
     let data = try JSONEncoder().encode([ProjectSourceText(text: text)])
     // JSON escaping can exceed the reader's limit even when the raw text fits.
-    guard data.count <= ProjectSourceTextReader.maximumBytes else { throw ProjectSourceFiles.Failure.noteEncodingTooLarge }
+    guard data.count <= min(ProjectSourceTextReader.maximumBytes, 2 * 1024 * 1024) else { throw ProjectSourceFiles.Failure.noteEncodingTooLarge }
     return data
   }
 }

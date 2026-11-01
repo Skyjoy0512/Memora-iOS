@@ -5,214 +5,136 @@ import UniformTypeIdentifiers
 struct ProjectSourceAddSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
-  var projectID: UUID
-  @State private var link = ""
-  @AppStorage("memora.sources.inputKind") private var inputKind = InputKind.link
-  private enum InputKind: String, CaseIterable { case link = "リンク", file = "ファイル", memo = "メモ" }
-  @State private var noteTitle = ""
-  @State private var noteText = ""
+  var projectID: UUID?
+  @State private var text = ""
+  @State private var title = ""
   @State private var photos: [PhotosPickerItem] = []
   @State private var isSelectingPhotos = false
-  @State private var photoImportContext: LocalImportContext?
-  @State private var fileImportContext: LocalImportContext?
+  @State private var photoContext: LocalImportContext?
+  @State private var fileContext: LocalImportContext?
   @State private var isImportingFiles = false
   @State private var isMovingRecords = false
   @State private var isSaving = false
-  @State private var message: String?
-  @State private var failed = false
-  @FocusState private var focusedField: Field?
-  private enum Field: Hashable { case link, title, body }
+  @State private var failure: String?
+  private var draftKey: String { "workspace.newNote.\(projectID?.uuidString ?? "library")" }
 
   var body: some View {
     NavigationStack {
-      ScrollViewReader { scroll in
-        MemoraForm {
-          if let message {
-            Section {
-              Text(message).font(.subheadline)
-                .foregroundStyle(failed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
-                .accessibilityLabel(message)
-                .id("source-save-status")
-            }
+      MemoraForm {
+        Section {
+          TextEditor(text: $text)
+            .frame(minHeight: 150)
+            .accessibilityLabel("リンクまたはメモ")
+            .accessibilityIdentifier("source.content")
+          DisclosureGroup("タイトルを付ける") {
+            TextField("タイトル", text: $title).accessibilityLabel("タイトル")
           }
-          Section {
-            Picker("追加する内容", selection: $inputKind) {
-              ForEach(InputKind.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .accessibilityIdentifier("source.inputKind")
+        } header: {
+          Text("リンクまたはメモを貼り付け")
+        } footer: {
+          Text(projectID.flatMap { model.space(id: $0)?.name }.map { "保存先：" + $0 } ?? "ライブラリに保存します")
+        }
+        Section {
+          Button("ファイルを追加", icon: .doc) {
+            fileContext = LocalImportContext(projectID: projectID, in: model)
+            guard fileContext != nil else { failure = "保存先を確認して開き直してください。"; return }
+            isImportingFiles = true
           }
-          if inputKind == .link {
-            Section("リンク") {
-              TextField("YouTube・Webのリンク", text: $link)
-                .accessibilityLabel("YouTube・Webのリンク")
-                .focused($focusedField, equals: .link)
-                .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                .submitLabel(.done)
-                .onSubmit { focusedField = nil }
-              Button("リンクを追加", icon: .link) {
-                perform {
-                  guard let id = try model.handlingPersistenceFailureLocally({ try model.addProjectLink(link, projectID: projectID) }) else {
-                    return false
-                  }
-                  link = ""
-                  return model.source(id: id) != nil
-                }
-              }.disabled(link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
+          Button("写真を追加", icon: .photo) {
+            photoContext = LocalImportContext(projectID: projectID, in: model)
+            guard photoContext != nil else { failure = "保存先を確認して開き直してください。"; return }
+            isSelectingPhotos = true
           }
-          if inputKind == .file {
-            Section {
-              Button {
-                photoImportContext = LocalImportContext(projectID: projectID, in: model)
-                guard photoImportContext != nil else { perform { false }; return }
-                isSelectingPhotos = true
-              } label: {
-                Label("写真を選択", icon: .photo)
-              }
-              Button("ファイルを選択", icon: .doc) {
-                fileImportContext = LocalImportContext(projectID: projectID, in: model)
-                guard fileImportContext != nil else { perform { false }; return }
-                isImportingFiles = true
-              }
-              Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
-            }
-          }
-          if inputKind == .memo {
-            Section("テキストメモ") {
-              TextField("タイトル", text: $noteTitle)
-                .accessibilityLabel("タイトル")
-                .focused($focusedField, equals: .title)
-                .submitLabel(.next)
-                .onSubmit { focusedField = .body }
-              TextEditor(text: $noteText).frame(minHeight: 200).accessibilityLabel("メモ本文")
-                .focused($focusedField, equals: .body)
-                .id(Field.body)
-              InlineLinkSummaryView(text: $noteText)
-              Button("メモを保存", icon: .noteText) {
-                perform {
-                  guard
-                    try await model.addProjectNote(
-                      title: noteTitle, text: noteText, projectID: projectID, presentsErrorsLocally: true) != nil
-                  else { return false }
-                  DraftStore.clear("workspace.newNote.\(projectID)")
-                  DraftStore.clear("workspace.newNote.\(projectID).title")
-                  noteTitle = ""
-                  noteText = ""
-                  return true
-                }
-              }.disabled(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
+          if projectID != nil {
+            Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
           }
         }
-        .scrollDismissesKeyboard(.interactively)
-        .onChange(of: inputKind) { _, _ in focusedField = nil }
-        .onChange(of: message) { _, value in
-          if failed, value != nil { scroll.scrollTo("source-save-status", anchor: .top) }
-        }
-        .onChange(of: focusedField) { _, field in
-          if field == .body { scroll.scrollTo(Field.body, anchor: .center) }
-        }
-        .onGeometryChange(for: CGFloat.self) {
-          $0.size.height
-        } action: { _ in
-          // The keyboard resizes the form after focus changes. Follow that layout
-          // change once, so the native editor stays above it without a timer.
-          if focusedField == .body { scroll.scrollTo(Field.body, anchor: .center) }
+        if let failure {
+          Section { Text(failure).font(.subheadline).foregroundStyle(MemoraPalette.danger) }
         }
       }
-      .disabled(isSaving || model.isRestoring || model.space(id: projectID) == nil)
-      .onAppear {
-        noteTitle = DraftStore.load("workspace.newNote.\(projectID).title") ?? ""
-        noteText = DraftStore.load("workspace.newNote.\(projectID)") ?? ""
-      }
-      .onChange(of: noteTitle) { _, value in
-        DraftStore.save(value, key: "workspace.newNote.\(projectID).title")
-      }
-      .onChange(of: noteText) { _, value in
-        if value.isEmpty {
-          DraftStore.clear("workspace.newNote.\(projectID)")
-        } else {
-          DraftStore.save(value, key: "workspace.newNote.\(projectID)")
-        }
-      }
-      .navigationTitle("参考資料を追加")
+      .scrollDismissesKeyboard(.interactively)
+      .disabled(isSaving || model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
+      .navigationTitle("資料を追加")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        ToolbarItemGroup(placement: .keyboard) {
-          Spacer()
-          Button("キーボードを閉じる", icon: .chevronDown) { focusedField = nil }
-            .labelStyle(.iconOnly)
-        }
         ToolbarItem(placement: .cancellationAction) {
           ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
         }
+        ToolbarItem(placement: .confirmationAction) {
+          Button("追加") { saveText() }
+            .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
+            .accessibilityIdentifier("source.add")
+        }
       }
-      .fileImporter(
-        isPresented: $isImportingFiles, allowedContentTypes: [.data], allowsMultipleSelection: true
-      ) { result in
+      .onAppear {
+        text = DraftStore.load(draftKey) ?? ""
+        title = DraftStore.load(draftKey + ".title") ?? ""
+      }
+      .onChange(of: text) { _, value in DraftStore.save(value, key: draftKey) }
+      .onChange(of: title) { _, value in DraftStore.save(value, key: draftKey + ".title") }
+      .fileImporter(isPresented: $isImportingFiles, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
         switch result {
         case .success(let urls):
-          let context = fileImportContext
+          let context = fileContext
           perform {
             guard let context, context.isCurrent(in: model) else { return false }
-            var count = 0
             for url in urls.prefix(10) {
-              guard context.isCurrent(in: model) else { break }
-              if try await model.importProjectFile(url, projectID: projectID, importContext: context, presentsErrorsLocally: true) != nil { count += 1 }
+              guard context.isCurrent(in: model),
+                    try await model.importProjectFile(url, projectID: projectID, importContext: context, presentsErrorsLocally: true, waitsForPreparation: false) != nil else { return false }
             }
-            if count > 0 { message = "\(count)件を保存しました。" }
-            return count > 0
+            return !urls.isEmpty
           }
-        case .failure(let error):
-          message = error.localizedDescription
-          failed = true
+        case .failure(let error): failure = error.localizedDescription
         }
       }
       .photosPicker(isPresented: $isSelectingPhotos, selection: $photos, maxSelectionCount: 6, matching: .images)
       .onChange(of: photos) { _, items in
         guard !items.isEmpty else { return }
-        let context = photoImportContext
+        let context = photoContext
         perform {
-          // Reset even after a failed transfer so the same photo can be retried.
           defer { photos = [] }
           guard let context, context.isCurrent(in: model) else { return false }
-          var count = 0
           for item in items {
-            guard context.isCurrent(in: model) else { break }
-            if try await model.importProjectSource(title: "写真", context: context, presentsErrorsLocally: true, load: {
+            guard try await model.importProjectSource(title: "写真", context: context, presentsErrorsLocally: true, waitsForPreparation: false, load: {
               try await item.loadTransferable(type: ProjectPhotoTransfer.self)?.receipt
-            }) != nil {
-              count += 1
-            }
+            }) != nil else { return false }
           }
-          if count > 0 { message = "\(count)件を保存しました。" }
-          return count > 0
+          return true
         }
       }
-      .sheet(isPresented: $isMovingRecords) { ProjectFilePickerSheet(spaceID: projectID) }
+      .sheet(isPresented: $isMovingRecords) {
+        if let projectID { ProjectFilePickerSheet(spaceID: projectID) }
+      }
       .tint(MemoraPalette.textPrimary)
+    }
+  }
+
+  private func saveText() {
+    let input = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    perform {
+      let id: UUID?
+      if let url = URL(string: input), url.scheme != nil, !input.contains(where: \.isWhitespace) {
+        id = try model.handlingPersistenceFailureLocally { try model.addProjectLink(input, projectID: projectID) }
+      } else {
+        id = try await model.addProjectNote(title: title, text: input, projectID: projectID, presentsErrorsLocally: true)
+        if let id { Task { await model.summarizeProjectSource(id) } }
+      }
+      guard id != nil else { return false }
+      DraftStore.clear(draftKey); DraftStore.clear(draftKey + ".title")
+      return true
     }
   }
 
   private func perform(_ operation: @escaping @MainActor () async throws -> Bool) {
     guard !isSaving else { return }
-    isSaving = true
-    message = nil
-    failed = false
+    isSaving = true; failure = nil
     Task { @MainActor in
       defer { isSaving = false }
       do {
-        if try await operation() {
-          message = message ?? "保存しました。"
-        } else {
-          message = model.persistenceFailureMessage ?? "保存できませんでした。"
-          failed = true
-        }
-      } catch {
-        message = error.localizedDescription
-        failed = true
-      }
+        if try await operation() { dismiss() }
+        else { failure = model.persistenceFailureMessage ?? "保存できませんでした。保存先を確認して再試行してください。" }
+      } catch { failure = error.localizedDescription }
     }
   }
 }

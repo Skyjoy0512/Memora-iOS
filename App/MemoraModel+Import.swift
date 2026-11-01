@@ -72,7 +72,7 @@ extension MemoraModel {
         duration: duration,
         source: .importFile,
         status: .waitingForTranscription,
-        summary: "音声を保存しました。必要な時に文字起こしを開始できます。",
+        summary: "",
         keyPoints: [],
         decisions: [],
         openQuestions: [],
@@ -99,6 +99,7 @@ extension MemoraModel {
       importProgress = 1
       isImporting = false
       openSavedMeeting(meeting.id)
+      startTranscription(meeting.id, onDeviceOnly: true, automaticallySummarize: true)
       return meeting.id
     case .unreadable:
       isImporting = false
@@ -117,7 +118,7 @@ extension MemoraModel {
     case failed
   }
 
-  func importAIAttachment(from sourceURL: URL) throws -> AIAttachment {
+  func importAIAttachment(from sourceURL: URL) async throws -> AIAttachment {
     let hasSecurityScope = sourceURL.startAccessingSecurityScopedResource()
     defer {
       if hasSecurityScope {
@@ -125,39 +126,29 @@ extension MemoraModel {
       }
     }
 
-    let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    let directory = base.appendingPathComponent("AIAttachments", isDirectory: true)
-    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-    let destination = directory
-      .appendingPathComponent(UUID().uuidString)
-      .appendingPathExtension(sourceURL.pathExtension)
-    try FileManager.default.copyItem(at: sourceURL, to: destination)
-    return AIAttachment(id: UUID(), name: sourceURL.lastPathComponent, url: destination)
+    let receipt = try await AIAttachmentFiles.shared.copy(sourceURL)
+    return AIAttachment(id: UUID(), name: sourceURL.lastPathComponent, url: try AIAttachmentFiles.url(receipt.reference))
   }
 
-  func importAIPhoto(data: Data, fileExtension: String) throws -> AIAttachment {
-    let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    let directory = base.appendingPathComponent("AIAttachments", isDirectory: true)
-    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+  func importAIPhoto(data: Data, fileExtension: String) async throws -> AIAttachment {
     let safeExtension = fileExtension.lowercased().filter { $0.isLetter || $0.isNumber }
     let resolvedExtension = safeExtension.isEmpty ? "jpg" : safeExtension
-    let fileName = "写真-\(UUID().uuidString.prefix(8)).\(resolvedExtension)"
-    let destination = directory.appendingPathComponent(fileName)
-    try data.write(to: destination, options: .atomic)
-    return AIAttachment(id: UUID(), name: fileName, url: destination)
+    let reference = try await AIAttachmentFiles.shared.write(data, extension: resolvedExtension)
+    return AIAttachment(id: UUID(), name: "写真.\(resolvedExtension)", url: try AIAttachmentFiles.url(reference))
   }
 
   /// Imports an audio file handed to the app. While recording, it waits, so the
   /// recording is not interrupted; it is taken in once the recording ends.
   private func receiveImportedFile(_ url: URL) async {
-    guard Self.isAudioFile(url) else { return }
+    guard let context = LocalImportContext(projectID: visibleProjectID, in: self) else { return }
     if isRecording {
       pendingImportURLs.append(url)
+      pendingInformationImportContexts[url] = context
       inFlightImportURLs.insert(url)
       pendingImportNotice = "録音が終わったら取り込みます。"
       return
     }
-    await importAndCleanUp(url)
+    await importAndCleanUp(url, context: context)
   }
 
   /// Takes in the audio files that arrived during a recording, in order.
@@ -166,15 +157,16 @@ extension MemoraModel {
     let urls = pendingImportURLs
     pendingImportURLs = []
     for url in urls {
-      await importAndCleanUp(url)
+      let context = pendingInformationImportContexts.removeValue(forKey: url)
+      await importAndCleanUp(url, context: context)
     }
   }
 
   /// Imports a file and then removes the copy iOS made in the app's Inbox.
   /// A file the person picked themselves does not sit there and is left alone.
-  private func importAndCleanUp(_ url: URL) async {
+  private func importAndCleanUp(_ url: URL, context: LocalImportContext?) async {
     inFlightImportURLs.insert(url)
-    if await importAudio(from: url) != nil { removeInboxCopyIfNeeded(url) }
+    if await importInformationFile(url, context: context) != nil { removeInboxCopyIfNeeded(url) }
     inFlightImportURLs.remove(url)
   }
 
@@ -195,7 +187,7 @@ extension MemoraModel {
     )) ?? []
     let inFlight = inFlightImportURLs.union(pendingImportURLs)
     return contents.filter { url in
-      guard Self.isAudioFile(url) else { return false }
+      guard !url.hasDirectoryPath else { return false }
       if inFlight.contains(url) { return false }
       // A file handed over just now is still arriving, not left behind.
       if let modified = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
@@ -217,7 +209,7 @@ extension MemoraModel {
     let urls = inboxAudioURLs()
     pendingInboxCount = nil
     for url in urls {
-      if await importAudio(from: url) != nil { removeInboxCopyIfNeeded(url) }
+      if await importInformationFile(url, context: LocalImportContext(in: self)) != nil { removeInboxCopyIfNeeded(url) }
     }
   }
 

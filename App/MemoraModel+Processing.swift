@@ -46,12 +46,12 @@ extension MemoraModel {
 
   /// Starts transcription for any record that has audio and is not already being
   /// processed: an imported file and a recovered recording take the same path.
-  func startTranscription(_ id: UUID) {
+  func startTranscription(_ id: UUID, onDeviceOnly: Bool = false, automaticallySummarize: Bool = false) {
     guard let meeting = meeting(id: id),
           meeting.audioURL != nil,
           !processing.isActive(id), !speakerAnalysisIDs.contains(id), !isRestoring, isStoreWritable() else { return }
     updateMeeting(id) { $0.status = .transcribing(0.08) }
-    runTranscription(id, preparation: .milliseconds(600), progress: 0.62, recordsTiming: false)
+    runTranscription(id, preparation: .milliseconds(0), progress: 0.62, recordsTiming: false, onDeviceOnly: onDeviceOnly, automaticallySummarize: automaticallySummarize)
   }
 
 
@@ -66,19 +66,31 @@ extension MemoraModel {
     _ id: UUID,
     preparation: Duration,
     progress: Double,
-    recordsTiming: Bool
+    recordsTiming: Bool,
+    onDeviceOnly: Bool = false,
+    automaticallySummarize: Bool = false
   ) {
     guard !isRestoring, isStoreWritable(), !speakerAnalysisIDs.contains(id),
           let original = meeting(id: id) else { return }
     let revision = ProcessingService.inputRevision(original.transcript)
+    let generation = aiWorkspaceGeneration
+    let selectedEngine = onDeviceOnly ? TranscriptionEngine.speechAnalyzer : EngineAvailability.currentTranscriptionEngine()
+    let selectedLanguage = EngineAvailability.currentTranscriptionLanguage()
+    let selectedProvider = EngineAvailability.currentTranscriptionProvider()
+
     processing.run(id: id) { [weak self] in
       guard let self else { return TranscriptionOutcome.unavailable }
+      guard self.currentTeamID == nil, self.aiWorkspaceGeneration == generation,
+            self.meeting(id: id)?.privacy == original.privacy else { return .cancelled }
+      if selectedEngine == .cloud, !RecordAccessPolicy.allows(original.effectivePrivacy, purpose: .cloudAI) {
+        return .failed(RecordAccessPolicy.refusal)
+      }
       // Checked before the job starts, so a missing key or an unsupported
       // language is reported at once instead of after a spinner.
       let availability = await EngineAvailability.transcription(
-        EngineAvailability.currentTranscriptionEngine(),
-        language: EngineAvailability.currentTranscriptionLanguage(),
-        provider: EngineAvailability.currentTranscriptionProvider()
+        selectedEngine,
+        language: selectedLanguage,
+        provider: selectedProvider
       )
       guard availability.isReady else {
         return .failed(availability.message ?? "文字起こしを開始できませんでした。")
@@ -100,25 +112,30 @@ extension MemoraModel {
       // record says so and keeps the audio for a retry — never sample text.
       await self.realtimeTranscriber.waitUntilStopped()
       guard !Task.isCancelled else { return .cancelled }
+      guard self.aiWorkspaceGeneration == generation, self.currentTeamID == nil, self.meeting(id: id)?.privacy == original.privacy,
+            (onDeviceOnly || EngineAvailability.currentTranscriptionEngine() == selectedEngine),
+            EngineAvailability.currentTranscriptionLanguage() == selectedLanguage,
+            EngineAvailability.currentTranscriptionProvider() == selectedProvider else { return .cancelled }
       return await TranscriptionService.transcribe(
         fileURL: original.audioURL,
         vocabulary: self.transcriptionVocabulary,
-        cloudVocabulary: self.processingVocabulary(external: true)
+        cloudVocabulary: self.processingVocabulary(external: true),
+        onDeviceOnly: onDeviceOnly
       )
     } apply: { [weak self] outcome in
-      guard let self, !Task.isCancelled, !self.isRestoring, self.isStoreWritable(),
+      guard let self, !Task.isCancelled, self.currentTeamID == nil, self.aiWorkspaceGeneration == generation, !self.isRestoring, self.isStoreWritable(),
             let current = self.meeting(id: id) else { return }
-      guard current.audioURL == original.audioURL,
+      guard current.privacy == original.privacy, current.audioURL == original.audioURL,
             ProcessingService.inputRevision(current.transcript) == revision else {
         self.updateMeeting(id) { $0.status = $0.transcript.isEmpty ? .waitingForTranscription : .waitingForSummary }
         self.announce("記録が編集されたため、古い文字起こしは反映しませんでした。原音声・原文は保持しています。")
         return
       }
-      self.applyTranscription(outcome, to: id)
+      self.applyTranscription(outcome, to: id, automaticallySummarize: automaticallySummarize)
     }
   }
 
-  private func applyTranscription(_ outcome: TranscriptionOutcome, to id: UUID) {
+  private func applyTranscription(_ outcome: TranscriptionOutcome, to id: UUID, automaticallySummarize: Bool = false) {
     switch outcome {
     case .segments(let segments):
       updateMeeting(id) { meeting in
@@ -126,7 +143,7 @@ extension MemoraModel {
         meeting.status = .waitingForSummary
       }
       announce("文字起こしができました。要約を作成しています。")
-      enqueueAutomaticSummaryIfNeeded(for: id)
+      enqueueAutomaticSummaryIfNeeded(for: id, required: automaticallySummarize)
       if automaticallyAnalyzesSpeakers, SpeakerModelAssets.isInstalled {
         Task { [weak self] in
           guard let self, self.automaticallyAnalyzesSpeakers else { return }

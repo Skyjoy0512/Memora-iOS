@@ -13,6 +13,8 @@ struct AIQuestionView: View {
   @State private var unsupportedAttachmentNote: String?
   @State private var contextNote: String?
   @State private var sources: [AIChatSource] = []
+  @State private var sourceCitations: [ProjectCitation] = []
+  @State private var focusedSourceID: UUID?
   @State private var isAnswering = false
   @State private var askTask: Task<Void, Never>?
   @State private var stage = "考えています"
@@ -23,6 +25,7 @@ struct AIQuestionView: View {
   /// attachment, so what is sent cannot change while the answer is written.
   init(request: AIQuestionRequest) {
     _selectedScope = State(initialValue: request.scope)
+    _focusedSourceID = State(initialValue: request.sourceID)
     _question = State(initialValue: request.question)
     _attachment = State(initialValue: request.attachment)
   }
@@ -107,9 +110,9 @@ struct AIQuestionView: View {
 
   private var intro: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("会議をまたいで、答えを探します")
+      Text(focusedSourceID == nil ? "資料をまたいで、答えを探します" : "この資料について質問")
         .font(.title2.bold())
-      Text("会議の要約・発言・タスクから、関係する部分を探して答えます。")
+      Text(focusedSourceID == nil ? "保存した本文・文字起こし・要約から、関係する部分を探して答えます。" : "この資料の原文から、根拠のある箇所を探して答えます。")
         .font(.subheadline)
         .foregroundStyle(.secondary)
     }
@@ -120,7 +123,7 @@ struct AIQuestionView: View {
       Text("\(engineLabel) · \(label(for: request.scope))")
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
-      AIUserMessageView(text: request.effectiveQuestion, attachmentName: request.attachment?.name) {
+      AIUserMessageView(text: request.effectiveQuestion, attachmentName: request.attachment?.displayName) {
         question = request.question
         attachment = request.attachment
       }
@@ -146,7 +149,8 @@ struct AIQuestionView: View {
 
   private func answerContent(_ answer: String) -> some View {
     VStack(alignment: .leading, spacing: 18) {
-      AIResponseText(text: answer, isStreaming: isAnswering)
+      AIResponseText(text: AnswerSourceCitation.stripped(answer), isStreaming: isAnswering)
+      SourceCitationList(citations: sourceCitations)
 
       if !sources.isEmpty {
         sourceList
@@ -276,7 +280,7 @@ struct AIQuestionView: View {
     VStack(alignment: .leading, spacing: 12) {
       Text("たとえば")
         .font(.headline)
-      ForEach(Self.suggestedQuestions, id: \.self) { suggestion in
+      ForEach(focusedSourceID == nil ? Self.suggestedQuestions : ["要約して", "詳しく説明して"], id: \.self) { suggestion in
         SuggestionButton(title: suggestion) {
           question = suggestion
           ask()
@@ -289,7 +293,7 @@ struct AIQuestionView: View {
     AIComposerBar(
       text: $question,
       attachment: $attachment,
-      placeholder: "会議について質問",
+      placeholder: focusedSourceID == nil ? "資料について質問" : "この資料について質問",
       isBusy: isAnswering,
       onSubmit: { submittedAttachment in ask(attachment: submittedAttachment) }
     )
@@ -300,6 +304,7 @@ struct AIQuestionView: View {
   }
 
   private var scopeOptions: [AIQueryScope] {
+    if focusedSourceID != nil { return [selectedScope] }
     switch selectedScope {
     case .file(let meetingID):
       var scopes: [AIQueryScope] = [.file(meetingID)]
@@ -316,6 +321,7 @@ struct AIQuestionView: View {
   }
 
   private func label(for scope: AIQueryScope) -> String {
+    if let id = focusedSourceID { return model.source(id: id)?.title ?? "この資料" }
     switch scope {
     case .file(let id):
       return model.meeting(id: id)?.title ?? "この会議"
@@ -344,7 +350,7 @@ struct AIQuestionView: View {
     let request = AIQuestionRequest(
       question: trimmed,
       scope: selectedScope,
-      attachment: attachmentToSend
+      attachment: attachmentToSend, sourceID: focusedSourceID
     )
     submitted = request
     question = ""
@@ -352,6 +358,7 @@ struct AIQuestionView: View {
     answer = nil
     failureMessage = nil
     sources = []
+    sourceCitations = []
     unsupportedAttachmentNote = nil
     contextNote = nil
     isAnswering = true
@@ -396,6 +403,9 @@ struct AIQuestionView: View {
         history: "",
         engine: engine,
         llm: llm,
+        onAttachmentReady: { file in
+          if submitted?.id == request.id { submitted?.attachment = file }
+        },
         onStage: { value in
           guard !Task.isCancelled, submitted?.id == request.id, model.aiWorkspaceGeneration == generation else { return }
           if stage != value { stage = value }
@@ -413,12 +423,13 @@ struct AIQuestionView: View {
       case .answer(let text):
         answer = text
         sources = outcome.sources
+        sourceCitations = outcome.sourceCitations
         model.saveAIExchange(
           question: outcome.question,
           answer: text,
           scopeLabel: outcome.scopeLabel,
           engineLabel: outcome.details.engineLabel,
-          modelLabel: outcome.details.modelLabel
+          modelLabel: outcome.details.modelLabel, sourceCitations: outcome.sourceCitations, attachment: submitted?.attachment
         )
       case .failure(let failure):
         guard failure != .cancelled else { return }

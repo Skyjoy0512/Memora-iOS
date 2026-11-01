@@ -66,3 +66,4 @@ struct GmailFixtureMessage {
 struct GmailFixtureProvenance { var isComplete = true }
 @MainActor enum KeychainStore { static func has(_ key: String) -> Bool { false } }
 enum WebResearchClient { static let keyName = "no-live-key" }
+@MainActor enum NotionService { static let isConfigured = false }

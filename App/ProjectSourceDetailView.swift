@@ -5,161 +5,177 @@ struct ProjectSourceDetailView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var sourceID: UUID
+  var initialExcerpt: String? = nil
   @State private var previewURL: URL?
   @State private var isDeleting = false
   @State private var isDetaching = false
   @State private var isEditing = false
   @State private var isEditingPrivacy = false
+  @State private var isAsking = false
+  @State private var isAddingVideoTranscript = false
+  @State private var showsOriginal = false
   @State private var textLoader = ProjectSourceTextLoader()
   @State private var textRetry = 0
-  @State private var webFetchRequest: UUID?
-  @State private var isAddingVideoTranscript = false
-  @State private var savedVideoMeetingID: UUID?
-  @State private var videoWorkspaceGeneration: UUID?
 
   var body: some View {
     if let source = model.source(id: sourceID) {
-      let textLoad = textLoader.snapshot
-      let extracted = textLoad.value(for: sourceID) ?? []
-      let textState = textLoad.state(for: sourceID)
-      let textRequest = ProjectSourceTextRequest(sourceID: sourceID, reference: source.extractedTextReference, retry: textRetry)
-      ScrollView {
-        VStack(alignment: .leading, spacing: 16) {
-          Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
-          Text("\(source.kindLabel) · \(source.statusLabel)").font(.footnote).foregroundStyle(.secondary)
-          if let date = source.webFetchedAt {
-            Text("取得: \(date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))))")
-              .font(.footnote).foregroundStyle(.secondary)
-          }
-          if let author = source.metadata?["youtubeAuthor"], !author.isEmpty {
-            Text(author).font(.footnote).foregroundStyle(.secondary)
-          }
-          if source.kind == .youtube {
-            if let recordID = source.metadata?["videoTranscriptMeetingID"].flatMap(UUID.init(uuidString:)),
-               model.meeting(id: recordID) != nil {
-              NavigationLink("要約を開く", value: LibraryRoute.meeting(recordID))
-                .buttonStyle(MemoraButtonStyle()).frame(minHeight: 44)
-            } else {
-              Button("字幕を追加して要約", icon: .sparkles) {
-                videoWorkspaceGeneration = model.aiWorkspaceGeneration
-                isAddingVideoTranscript = true
+      let snapshot = textLoader.snapshot
+      let extracted = snapshot.value(for: sourceID) ?? []
+      let request = ProjectSourceTextRequest(sourceID: sourceID, reference: source.extractedTextReference, retry: textRetry)
+      ScrollViewReader { proxy in
+        ScrollView {
+          LazyVStack(alignment: .leading, spacing: 20) {
+            Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
+            Text(source.kindLabel).font(.footnote).foregroundStyle(.secondary)
+            if let author = source.metadata?["webAuthor"] ?? source.metadata?["youtubeAuthor"], !author.isEmpty {
+              Text(author).font(.footnote).foregroundStyle(.secondary)
+            }
+            if let date = source.acquiredAt ?? source.webFetchedAt {
+              Text("取得：\(date.formatted(.dateTime.year().month().day().locale(Locale(identifier: "ja_JP"))))")
+                .font(.caption).foregroundStyle(.secondary)
+            }
+            if source.summaryStatus == .processing || source.processingStatus == .processing || source.processingStatus == .pending {
+              ProgressView("準備しています…").font(.subheadline)
+            }
+            if let summary = source.summary, !summary.isEmpty {
+              if source.summaryTextReference != source.extractedTextReference {
+                Text("以前の原文から作成した要約です").font(.caption).foregroundStyle(.secondary)
               }
-                .buttonStyle(MemoraButtonStyle())
-                .frame(minHeight: 44)
-                .disabled(model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
+              MarkdownDocumentView(markdown: summary, isLazy: true)
             }
-          }
-          if source.kind == .web {
-            if webFetchRequest != nil {
-              ProgressView("本文を取得中…").font(.subheadline)
-              Button("取得を停止") { webFetchRequest = nil }.frame(minHeight: 44)
-                .tint(MemoraPalette.textPrimary)
-            } else {
-              Button(source.canProvideText ? "本文を更新" : "Web本文を取得") { webFetchRequest = UUID() }
-                .frame(minHeight: 44)
-                .tint(MemoraPalette.textPrimary)
-                .disabled(model.projectSourceProcessingIDs.contains(sourceID) || model.isRestoring || model.isStoreProtected)
-            }
-          }
-          MemoraLoadingContainer(state: textState, label: "保存された本文を読み込んでいます…",
-            activityID: textLoad.activityID,
-            failure: textLoad.key == sourceID ? textLoad.failure : nil,
-            retry: { textRetry += 1 }, cancel: { textLoader.stop() }) {
-            ForEach(Array(extracted.enumerated()), id: \.offset) { _, block in
+            if let failure = source.summaryError {
               VStack(alignment: .leading, spacing: 8) {
-                if let page = block.page { Text("ページ \(page)").font(.footnote).foregroundStyle(.secondary) }
-                Text(block.text).memoraReadingText().textSelection(.enabled)
+                Text(failure).font(.footnote).foregroundStyle(.secondary)
+                if source.canProvideText {
+                  Button("要約を再試行", icon: .arrowClockwise) {
+                    Task { await model.summarizeProjectSource(sourceID, retry: true) }
+                  }.frame(minHeight: 44)
+                }
+              }
+            }
+            if source.canProvideText {
+              Button("この資料について聞く", icon: .sparkles) { isAsking = true }
+                .buttonStyle(MemoraButtonStyle())
+                .accessibilityIdentifier("source.askAI")
+            }
+            if source.kind == .youtube, !source.canProvideText {
+              Text("字幕がまだありません。お持ちの動画・字幕ファイルの追加や、権限のあるYouTubeアカウントとの接続を試せます。")
+                .font(.subheadline).foregroundStyle(.secondary)
+              Button("動画・字幕ファイルを追加", icon: .paperclip) { isAddingVideoTranscript = true }
+                .frame(minHeight: 44)
+              if let id = source.metadata?["videoTranscriptMeetingID"].flatMap(UUID.init(uuidString:)), model.meeting(id: id) != nil {
+                NavigationLink("以前の字幕・要約を開く", value: LibraryRoute.meeting(id)).frame(minHeight: 44)
+              }
+            }
+            if source.processingStatus == .failed || source.processingStatus == .unavailable, source.kind != .youtube {
+              if let message = source.errorInformation { Text(message).font(.footnote).foregroundStyle(.secondary) }
+              Button("再試行", icon: .arrowClockwise) { Task { await model.prepareProjectSource(sourceID) } }
+                .frame(minHeight: 44)
+            }
+            if source.canProvideText || !extracted.isEmpty {
+              DisclosureGroup(source.kind == .audio || source.kind == .video || source.kind == .youtube ? "文字起こし・字幕" : "原文", isExpanded: $showsOriginal) {
+                MemoraLoadingContainer(state: snapshot.state(for: sourceID), label: "読み込んでいます…",
+                  activityID: snapshot.activityID, failure: snapshot.key == sourceID ? snapshot.failure : nil,
+                  retry: { textRetry += 1 }, cancel: { textLoader.stop() }) {
+                    LazyVStack(alignment: .leading, spacing: 20) {
+                      ForEach(Array(extracted.enumerated()), id: \.offset) { index, block in
+                        VStack(alignment: .leading, spacing: 6) {
+                          if let page = block.page, source.kind == .pdf {
+                            NavigationLink("ページ \(page)", value: LibraryRoute.projectPDF(sourceID, page))
+                              .font(.footnote).frame(minHeight: 44)
+                          }
+                          if let time = ProjectCitationLocation.playbackTime(block.time) {
+                            if source.localFileReference != nil {
+                              NavigationLink(MemoraFormat.duration(time)) { SourceMediaPlayerView(sourceID: sourceID, start: time) }
+                                .font(.footnote).frame(minHeight: 44)
+                            } else if let original = source.originalURL, var parts = URLComponents(url: original, resolvingAgainstBaseURL: false) {
+                              let _ = parts.queryItems = (parts.queryItems ?? []).filter { $0.name != "t" } + [URLQueryItem(name: "t", value: String(Int(time)))]
+                              if let url = parts.url { Link(MemoraFormat.duration(time), destination: url).font(.footnote).frame(minHeight: 44) }
+                            }
+                          }
+                          Text(block.text).memoraReadingText().textSelection(.enabled)
+                        }.id(index)
+                      }
+                    }
+                  }
+              }
+            }
+            if let message = source.availabilityNotice, source.processingStatus == .ready || source.kind == .youtube {
+              DisclosureGroup("資料について") { Text(message).font(.footnote).foregroundStyle(.secondary) }
+            }
+            if let revisions = source.revisions, !revisions.isEmpty {
+              DisclosureGroup("更新履歴") {
+                ForEach(Array(revisions.enumerated()), id: \.offset) { _, revision in
+                  VStack(alignment: .leading, spacing: 8) {
+                    Text(revision.acquiredAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                    if let summary = revision.summary { MarkdownDocumentView(markdown: summary, isLazy: true) }
+                  }
+                }
+              }
+            }
+            if let url = source.originalURL { Link("元のページを開く", destination: url).frame(minHeight: 44) }
+            if let name = source.localFileReference, let file = ProjectSourceFiles.resolve(name) {
+              if source.kind == .pdf {
+                NavigationLink("PDFを開く", value: LibraryRoute.projectPDF(sourceID, 1)).frame(minHeight: 44)
+              } else if source.kind == .audio || source.kind == .video || source.kind == .youtube {
+                NavigationLink("再生") { SourceMediaPlayerView(sourceID: sourceID) }.frame(minHeight: 44)
+              } else {
+                Button("元のファイルを開く", icon: .doc) { previewURL = file }.frame(minHeight: 44)
               }
             }
           }
-          if let message = source.availabilityNotice {
-            DisclosureGroup("読み込み情報") {
-              Text(message).font(.footnote).foregroundStyle(.secondary)
-            }
-          }
-          if let url = source.originalURL {
-            Link("元のページを開く", destination: url).font(.body)
-          }
-          if let reference = source.localFileReference, let file = ProjectSourceFiles.resolve(reference) {
-            if source.kind == .pdf {
-              NavigationLink("PDFを表示", value: LibraryRoute.projectPDF(sourceID, 1)).frame(minHeight: 44)
-            } else {
-              Button("ファイルを表示", icon: .doc) { previewURL = file }.frame(minHeight: 44)
-            }
-          }
+          .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+          .padding(ProjectLayout.horizontalInset)
+          .frame(maxWidth: .infinity, alignment: .center)
         }
-        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
-        .padding(ProjectLayout.horizontalInset)
-        .frame(maxWidth: .infinity, alignment: .center)
+        .onChange(of: extracted) { _, blocks in
+          guard let initialExcerpt, let index = blocks.firstIndex(where: { $0.text.contains(initialExcerpt) }) else { return }
+          showsOriginal = true
+          proxy.scrollTo(index, anchor: .top)
+        }
       }
       .background(MemoraPalette.background)
-      .navigationTitle(source.kindLabel).navigationBarTitleDisplayMode(.inline)
+      .navigationTitle("資料").navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
             if source.kind == .note {
-              Button("メモを編集", icon: .pencil) { isEditing = true }
-                .disabled(extracted.isEmpty || textState.isWorking || textState == .failed)
+              Button("メモを編集", icon: .pencil) { isEditing = true }.disabled(extracted.isEmpty)
             }
-            if (source.localFileReference != nil || (source.kind == .youtube && source.metadata?["youtubeTitle"] == nil)) && source.processingStatus != .ready {
-              Button("解析を再試行", icon: .arrowClockwise) {
-                Task { await model.prepareProjectSource(sourceID) }
-              }.disabled(model.projectSourceProcessingIDs.contains(sourceID))
+            if source.canProvideText {
+              Button("要約を作り直す", icon: .sparkles) { Task { await model.summarizeProjectSource(sourceID, retry: true) } }
             }
-            if source.kind == .youtube, source.metadata?["youtubeTitle"] != nil, source.thumbnailReference == nil {
-              Button("サムネイルを取得", icon: .photo) { Task { await model.prepareProjectSource(sourceID) } }
-                .disabled(model.projectSourceProcessingIDs.contains(sourceID))
+            if source.originalURL != nil, source.kind == .web || source.kind == .pdf {
+              Button("原文を更新", icon: .arrowClockwise) {
+                Task { await model.acquireRemoteSource(sourceID, refresh: true); await model.summarizeProjectSource(sourceID) }
+              }
             }
             Button("プライバシー", icon: .lock) { isEditingPrivacy = true }
-            if source.projectID != nil {
-              Button("プロジェクトから外す", icon: .folder) { isDetaching = true }
-            }
-            Button("ソースを削除", icon: .trash, role: .destructive) { isDeleting = true }
+            if source.projectID != nil { Button("プロジェクトから外す", icon: .folder) { isDetaching = true } }
+            Button("資料を削除", icon: .trash, role: .destructive) { isDeleting = true }
           } label: { ToolbarActionLabel("その他", icon: .ellipsis) }
+          .disabled(model.projectSourceProcessingIDs.contains(sourceID) || model.isRestoring || model.isStoreProtected)
         }
       }
       .quickLookPreview($previewURL)
-      .task(id: webFetchRequest) {
-        guard let request = webFetchRequest else { return }
-        await model.fetchProjectWebSource(sourceID)
-        if webFetchRequest == request { webFetchRequest = nil }
-      }
       .task(id: sourceID) {
-        if source.processingStatus == .pending || source.processingStatus == .processing ||
-           (source.kind == .youtube && source.thumbnailReference == nil) {
-          await model.prepareProjectSource(sourceID)
-        }
+        if source.processingStatus == .pending { await model.prepareProjectSource(sourceID) }
       }
-      .task(id: textRequest) {
-        await textLoader.load(textRequest) {
-          sourceID == textRequest.sourceID &&
-            model.source(id: textRequest.sourceID)?.extractedTextReference == textRequest.reference
-        }
+      .task(id: request) {
+        await textLoader.load(request) { model.source(id: sourceID)?.extractedTextReference == request.reference }
+        if source.summary == nil || initialExcerpt != nil { showsOriginal = true }
       }
-      .sheet(isPresented: $isAddingVideoTranscript, onDismiss: {
-        if videoWorkspaceGeneration == model.aiWorkspaceGeneration,
-           let id = savedVideoMeetingID, model.meeting(id: id) != nil { model.openSavedMeeting(id) }
-        savedVideoMeetingID = nil
-        videoWorkspaceGeneration = nil
-      }) {
-        VideoTranscriptImportSheet(source: source) { savedVideoMeetingID = $0 }
-      }
-      .sheet(isPresented: $isEditing) {
-        ProjectNoteEditSheet(source: source, text: extracted.map(\.text).joined(separator: "\n"))
-      }
+      .sheet(isPresented: $isAddingVideoTranscript) { VideoTranscriptImportSheet(source: source) { _ in } }
+      .sheet(isPresented: $isAsking) { AIQuestionView(request: AIQuestionRequest(question: "", scope: .global, sourceID: sourceID)) }
+      .sheet(isPresented: $isEditing) { ProjectNoteEditSheet(source: source, text: extracted.map(\.text).joined(separator: "\n")) }
       .sheet(isPresented: $isEditingPrivacy) { ProjectSourcePrivacySheet(source: source) }
-      .confirmationDialog("ソースを削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
-        Button("削除", role: .destructive) {
-          if model.deleteProjectSource(sourceID) { dismiss() }
-        }
-      } message: { Text("保存したコピーと解析結果を削除します。元のファイルや他の録音・資料は削除しません。") }
+      .confirmationDialog("資料を削除しますか？", isPresented: $isDeleting, titleVisibility: .visible) {
+        Button("削除", role: .destructive) { if model.deleteProjectSource(sourceID) { dismiss() } }
+      } message: { Text("保存したコピーと要約を削除します。元のファイルや他の記録は削除しません。") }
       .confirmationDialog("プロジェクトから外しますか？", isPresented: $isDetaching, titleVisibility: .visible) {
         Button("外す") { model.detachProjectSource(sourceID) }
-      } message: { Text("ソースはライブラリに残ります。") }
+      } message: { Text("資料はライブラリに残ります。") }
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-    } else {
-      ContentUnavailableView("ソースが見つかりません", icon: .docQuestionmark)
-    }
+    } else { ContentUnavailableView("資料が見つかりません", icon: .docQuestionmark) }
   }
-
 }

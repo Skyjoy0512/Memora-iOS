@@ -7,11 +7,11 @@ import Speech
 /// here (missing assets, unsupported locale, or an engine that is not wired yet).
 enum TranscriptionService {
   /// Choose the vocabulary at dispatch, even when engine settings changed while queued.
-  static func transcribe(fileURL: URL?, vocabulary: [String] = [], cloudVocabulary: [String] = []) async -> TranscriptionOutcome {
+  static func transcribe(fileURL: URL?, vocabulary: [String] = [], cloudVocabulary: [String] = [], onDeviceOnly: Bool = false) async -> TranscriptionOutcome {
     guard let fileURL else { return .unavailable }
 
     let defaults = UserDefaults.standard
-    let engine = TranscriptionEngine(
+    let engine = onDeviceOnly ? .automatic : TranscriptionEngine(
       rawValue: defaults.string(forKey: "memora.transcriptionEngine") ?? ""
     ) ?? .automatic
     let language = RecognitionLanguage(

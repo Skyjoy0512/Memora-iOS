@@ -14,6 +14,7 @@ extension MemoraModel {
     guard !isRestoring, currentTeamID == nil, isStoreWritable(), let source = source(id: id) else { return false }
     let remaining = projectSources.filter { $0.id != id }
     guard persistNow(remaining, forKey: StorageKey.projectSources) else { return false }
+    sourcePreparationJobs.removeValue(forKey: id)?.task.cancel()
     if let job = projectWebFetchJobs.removeValue(forKey: id) {
       job.task.cancel()
       projectSourceProcessingIDs.remove(id)

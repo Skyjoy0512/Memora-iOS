@@ -32,7 +32,14 @@ extension MemoraModel {
       return AgentToolOutcome(text: "存在しない、無効、または入力形式に対応していない道具です。実行していません。", isError: true)
     }
     if call.tool == .readRecord, let id = UUID(uuidString: call.string("id")), source(id: id) != nil {
-      return await readAgentProjectSource(id, messageID: messageID, compact: compact, automatic: automaticAccess)
+      let query = aiMessages.first(where: { $0.id == messageID })?.traceQuery ?? ""
+      return await readAgentSourceExcerpt(id, messageID: messageID, compact: compact, automatic: automaticAccess, query: query)
+    }
+    if call.tool == .searchRecords, !automaticAccess {
+      let lines = await searchAgentProjectSources(query: call.string("query"), messageID: messageID, compact: compact)
+      if let outcome = automaticRecordTool(call, messageID: messageID, purpose: compact ? .onDeviceAI : .cloudAI, scope: scope) {
+        return .init(text: ([outcome.text] + lines).joined(separator: "\n"), isError: outcome.isError && lines.isEmpty)
+      }
     }
     if call.tool == .searchEmail || call.tool == .readEmail {
       guard !automaticAccess else {

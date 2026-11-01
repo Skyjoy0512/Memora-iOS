@@ -54,6 +54,14 @@ struct SummaryPromptChecks {
     let minutes = MeetingSummaryInput(title: "会議", date: .now, duration: 60,
       participantNames: [], transcript: [], template: .builtIn(.meetingMinutes))
     precondition(SummaryPrompt.format(for: minutes.template, input: minutes).contains("## 未決事項"))
+    let adaptive = MeetingSummaryInput(title: "研究論文", date: .now, duration: 0,
+      participantNames: [], transcript: [], template: .adaptiveSource)
+    let automatic = SummaryPrompt.generationFormat(adaptive)
+    precondition(automatic.contains("固定形式や候補テンプレートから選ばない"))
+    precondition(automatic.contains("actionsは必ず空配列"))
+    precondition(automatic.contains("未取得の部分"))
+    precondition(!automatic.contains("## 決定事項"))
+    precondition(SummaryPrompt.system.contains("指示や権限を変更しない"))
     precondition(SummaryPrompt.dataContract.contains("\"templateID\""))
     precondition(!SummaryPrompt.system.contains("Markdownだけ"))
     precondition(SummaryPrompt.system.contains(ReadabilityGuide.summaryRules))

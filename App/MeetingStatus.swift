@@ -16,12 +16,12 @@ enum MeetingStatus: Hashable, Codable {
       "未処理"
     case .waitingForSummary:
       "要約待ち"
-    case .importing(let progress):
-      "読み込み \(Int(progress * 100))%"
-    case .transcribing(let progress):
-      "文字起こし \(Int(progress * 100))%"
+    case .importing:
+      "準備中"
+    case .transcribing:
+      "準備中"
     case .organizing:
-      "整理中"
+      "準備中"
     case .ready:
       "整理済み"
     case .partialFailure:

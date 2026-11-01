@@ -3,13 +3,33 @@ import Foundation
 enum AIAttachmentText {
   static let maximumCharacters = 60_000
 
-  static func prepare(_ attachment: AIAttachment) async -> PreparedAIAttachment {
-    let job = Task.detached(priority: .userInitiated) { readContent(attachment) }
-    return await withTaskCancellationHandler {
-      await job.value
-    } onCancel: {
-      job.cancel()
+  static func prepare(_ attachment: AIAttachment, question: String = "", maximumCharacters: Int = maximumCharacters) async -> PreparedAIAttachment {
+    var prepared = PreparedAIAttachment(id: attachment.id, name: attachment.name, url: attachment.url,
+      preparedQuestion: question, additionalFileIDs: attachment.additionalFiles?.map(\.id))
+    guard attachment.files.count <= 10 else { prepared.failure = "添付は10件までです。"; return prepared }
+    var parts: [String] = [], notices: [String] = []
+    let budget = max(300, min(Self.maximumCharacters, maximumCharacters) / attachment.files.count - 100)
+    for file in attachment.files {
+      do {
+        try Task.checkCancellation()
+        let result = try await AttachmentExtractionCache.shared.extract(file.url)
+        guard !result.blocks.isEmpty else {
+          prepared.failure = "「\(file.name)」: " + (result.notice ?? "参照できる文字がありません。")
+          return prepared
+        }
+        let selection = await Task.detached(priority: .utility) {
+          SourceTextSelection.text(blocks: result.blocks, question: question, budget: budget)
+        }.value
+        guard !selection.text.isEmpty else { prepared.failure = "質問に使える本文が見つかりませんでした。"; return prepared }
+        parts.append("資料「\(file.name.prefix(100))」\n" + selection.text)
+        if let notice = result.notice { notices.append("「\(file.name)」: " + notice) }
+        if selection.isExcerpt { notices.append("「\(file.name)」は全ページの文字から選んだ抜粋です。全文を読んだ回答とは限りません。") }
+      } catch is CancellationError { prepared.failure = "添付の読み込みを停止しました。"; return prepared }
+      catch { prepared.failure = "「\(file.name)」: " + error.localizedDescription; return prepared }
     }
+    prepared.text = parts.joined(separator: "\n\n")
+    prepared.notice = notices.isEmpty ? nil : notices.joined(separator: "\n")
+    return prepared
   }
 
   static func readContent(_ attachment: AIAttachment) -> PreparedAIAttachment {

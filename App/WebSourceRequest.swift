@@ -27,7 +27,7 @@ struct WebSourceRequest: Sendable {
       fields[key] = value
     }
     guard body?.count ?? 0 <= 64 * 1024 else { throw WebSourceFailure.tooLarge }
-    fields["accept"] = fields["accept"] ?? "text/html, application/xhtml+xml, text/plain"
+    fields["accept"] = fields["accept"] ?? "text/html, application/xhtml+xml, text/plain, application/pdf"
     var head = "\(body == nil ? "GET" : "POST") \(target) HTTP/1.1\r\nHost: \(host)\r\nAccept-Encoding: identity\r\nUser-Agent: MemoraSource/1.0\r\nConnection: close\r\n"
     for key in fields.keys.sorted() { head += "\(key): \(fields[key]!)\r\n" }
     if let body { head += "Content-Length: \(body.count)\r\n" }

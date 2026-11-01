@@ -9,6 +9,7 @@ final class MemoraModel {
   var projectSources: [ProjectSource] = [] { didSet { projectSourceIndex.invalidate() } }
   var projectSourceIndex = IdentifiableIndex<ProjectSource>()
   var projectSourceProcessingIDs: Set<UUID> = []
+  var sourcePreparationJobs: [UUID: (id: UUID, task: Task<Void, Never>)] = [:]
   #if MEMORA_WEB_SOURCE_CHECKS
   var projectWebFetchJobs: [UUID: (id: UUID, task: Task<WebSourceFetcher.Result, Error>)] = [:]
   #endif
@@ -20,10 +21,22 @@ final class MemoraModel {
     preparedSourceIDs.append(id)
     await preparationHook?(id)
   }
+  @discardableResult
+  func scheduleProjectSourcePreparation(_ id: UUID) -> Task<Void, Never>? {
+    let attempt = UUID()
+    let job = Task {
+      await prepareProjectSource(id)
+      if sourcePreparationJobs[id]?.id == attempt { sourcePreparationJobs.removeValue(forKey: id) }
+    }
+    sourcePreparationJobs[id] = (attempt, job)
+    return job
+  }
+  #if !MEMORA_AUDIO_IMPORT_CHECKS
   func importAudio(from url: URL, spaceID: UUID?, importContext: LocalImportContext?) async -> UUID? {
     audioImportCalls += 1
     return nil
   }
+  #endif
   #endif
   var spaces: [MemoraSpace] = []
   #if MEMORA_AUDIO_IMPORT_CHECKS
@@ -48,6 +61,8 @@ final class MemoraModel {
   var isEnrollingSpeaker = false
   var isEmpty = true
   var pendingImportURLs: [URL] = []
+  var pendingInformationImportContexts: [URL: LocalImportContext] = [:]
+  var visibleProjectID: UUID?
   var inFlightImportURLs: Set<URL> = []
   var pendingImportNotice: String?
   var pendingInboxCount: Int?
@@ -61,6 +76,11 @@ final class MemoraModel {
   func noteRealSaveForSampleCleanup() {}
   func presentPendingSampleCleanupIfNeeded() {}
   func openSavedMeeting(_ id: UUID) { openedMeetingID = id }
+  var transcriptionStarts: [UUID] = []
+  func startTranscription(_ id: UUID, onDeviceOnly: Bool, automaticallySummarize: Bool) {
+    precondition(onDeviceOnly && automaticallySummarize)
+    transcriptionStarts.append(id)
+  }
   func openExternalSourceCitation(_ url: URL) {}
   func openSystemDestination(_ link: MemoraAppLink) {}
   func openTask(_ id: UUID) {}

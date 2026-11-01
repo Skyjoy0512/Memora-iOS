@@ -22,7 +22,7 @@ struct WebSourceHTTPDecoder: Sendable {
   init(maximumBodyBytes: Int = Self.maximumBodyBytes,
        contentTypes: Set<String> = ["text/html", "application/xhtml+xml", "text/plain"],
        successfulStatuses: Range<Int> = 200..<201, emptyStatuses: Set<Int> = [], additionalHeaders: Set<String> = []) {
-    bodyLimit = max(0, min(maximumBodyBytes, Self.maximumBodyBytes))
+    bodyLimit = max(0, min(maximumBodyBytes, 50 * 1024 * 1024))
     self.contentTypes = contentTypes; self.successfulStatuses = successfulStatuses
     self.emptyStatuses = emptyStatuses; self.additionalHeaders = additionalHeaders
   }

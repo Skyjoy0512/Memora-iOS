@@ -1,18 +1,17 @@
 import Foundation
 
 extension MemoraModel {
-  /// Called by the person's fetch action only. Saving or reopening a URL never
-  /// fetches it; an interrupted network operation is not persisted or replayed.
+  /// An explicit add fetches once; reopening never repeats a failed request.
   @discardableResult
   func fetchProjectWebSource(_ id: UUID, fetcher: WebSourceFetcher = WebSourceFetcher(),
-    writeText: ((Data) async throws -> String)? = nil
+    writeText: ((Data) async throws -> String)? = nil, prepared: WebSourceFetcher.Result? = nil
   ) async -> Bool {
     guard let context = ProjectSourcePreparationContext(id, in: self),
           context.source.kind == .web, let url = context.source.originalURL,
           !projectSourceProcessingIDs.contains(id), projectWebFetchJobs[id] == nil else { return false }
     let original = context.source
     let operationID = UUID()
-    let job = Task { try await fetcher.fetch(url) }
+    let job = Task { if let prepared { return prepared }; return try await fetcher.fetch(url) }
     projectWebFetchJobs[id] = (operationID, job)
     projectSourceProcessingIDs.insert(id)
     defer {
@@ -43,24 +42,27 @@ extension MemoraModel {
       guard !job.isCancelled, var source = current() else {
         await ProjectSourceFiles.shared.remove([reference]); return false
       }
-      let old = source.extractedTextReference
+      let oldReferences = source.fileReferences
+      source.retainRevision()
       if source.title == original.title, let title = result.content.title { source.title = title }
       source.extractedTextReference = reference
       source.processingStatus = .ready
       source.textCoverage = .partial
+      source.acquiredAt = result.fetchedAt
       source.updatedAt = result.fetchedAt
       source.errorInformation = result.content.notice
       var metadata = source.metadata ?? [:]
       metadata["webFetchedAt"] = ISO8601DateFormatter().string(from: result.fetchedAt)
       metadata["webFinalURL"] = result.finalURL.absoluteString
+      metadata["webAuthor"] = result.content.author
+      metadata["webPublishedAt"] = result.content.publishedAt
       source.metadata = metadata
       guard storeProjectSource(source) else {
         await ProjectSourceFiles.shared.remove([reference]); return false
       }
       created = nil
-      if let old, !projectSources.contains(where: { $0.fileReferences.contains(old) }) {
-        await ProjectSourceFiles.shared.remove([old])
-      }
+      let retained = Set(projectSources.flatMap(\.fileReferences))
+      await ProjectSourceFiles.shared.remove(oldReferences.filter { !retained.contains($0) })
       return true
     } catch {
       if let created { await ProjectSourceFiles.shared.remove([created]) }
@@ -80,6 +82,8 @@ extension MemoraModel {
   }
 
   func cancelProjectWebFetches() {
+    for job in sourcePreparationJobs.values { job.task.cancel() }
+    sourcePreparationJobs = [:]
     let ids = Set(projectWebFetchJobs.keys)
     for job in projectWebFetchJobs.values { job.task.cancel() }
     projectWebFetchJobs = [:]

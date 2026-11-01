@@ -8,6 +8,12 @@ extension MemoraModel {
     guard currentTeamID == nil, !isRestoring, !isStoreProtected else { return false }
     var candidate = projectSources
     var changed: [ProjectCitation.Target] = []
+    for index in candidate.indices where candidate[index].summaryStatus == .processing &&
+      !projectSourceProcessingIDs.contains(candidate[index].id) {
+      candidate[index].summaryStatus = .failed
+      candidate[index].summaryError = "要約が中断されました。原文は保存されています。再試行できます。"
+      changed.append(.source(candidate[index].id))
+    }
     for index in candidate.indices where candidate[index].processingStatus == .processing &&
       !projectSourceProcessingIDs.contains(candidate[index].id) {
       candidate[index].processingStatus = candidate[index].kind == .youtube ? .unavailable : .failed

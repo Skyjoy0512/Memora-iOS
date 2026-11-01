@@ -1,7 +1,7 @@
 import Foundation
 
 enum ProjectSourceTextReader {
-  static let maximumBytes = 2 * 1024 * 1024
+  static let maximumBytes = 16 * 1024 * 1024
 
   static func read(_ reference: String, in directory: URL? = nil) throws -> [ProjectSourceText] {
     try Task.checkCancellation()

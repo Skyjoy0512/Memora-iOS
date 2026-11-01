@@ -90,8 +90,6 @@ struct AIComposerBar: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      InlineLinkSummaryView(text: $text, isComposing: (mentionInput ?? fallbackInput).value?.hasMarkedText ?? false)
-        .padding(.horizontal, MemoraSpacing.lg)
       if let removeMention, !model.composerMentions.isEmpty {
         ComposerMentionStrip(mentions: model.composerMentions, scope: mentionScope, remove: removeMention)
           .padding(.horizontal, MemoraSpacing.md)
@@ -207,14 +205,14 @@ struct AIComposerBar: View {
     .fileImporter(
       isPresented: $isImporterPresented,
       allowedContentTypes: [.item],
-      allowsMultipleSelection: false
+      allowsMultipleSelection: true
     ) { result in
       importFile(result)
     }
     .fileImporter(
       isPresented: $isAudioImporterPresented,
       allowedContentTypes: [.audio],
-      allowsMultipleSelection: false
+      allowsMultipleSelection: true
     ) { result in
       importFile(result)
     }
@@ -241,10 +239,17 @@ struct AIComposerBar: View {
     }
     .sheet(item: $editingPhoto) { request in
       PhotoEditorView(source: request.data) { edited in
-        do {
-          attachment = try model.importAIPhoto(data: edited, fileExtension: "jpg")
-        } catch {
-          importErrorMessage = "写真を添付できませんでした。もう一度お試しください。"
+        let generation = model.aiWorkspaceGeneration
+        let previous = attachment
+        Task {
+          do {
+            guard (previous?.files.count ?? 0) < 10 else { importErrorMessage = "添付は10件までです。"; return }
+            let file = try await model.importAIPhoto(data: edited, fileExtension: "jpg")
+            guard generation == model.aiWorkspaceGeneration, attachment == previous, !model.isRestoring, !model.isStoreProtected else {
+              try? FileManager.default.removeItem(at: file.url); return
+            }
+            if attachment == nil { attachment = file } else { attachment?.append(file) }
+          } catch { importErrorMessage = error.localizedDescription }
         }
       }
     }
@@ -273,7 +278,7 @@ struct AIComposerBar: View {
   private var attachmentStrip: some View {
     HStack(spacing: 8) {
       Image(icon: .paperclip)
-      Text(attachment?.name ?? "")
+      Text(attachment?.displayName ?? "")
         .lineLimit(1)
       Spacer(minLength: 4)
       MemoraIconButton("添付を外す", icon: .xmark) {
@@ -421,11 +426,31 @@ struct AIComposerBar: View {
   }
 
   private func importFile(_ result: Result<[URL], any Error>) {
-    do {
-      guard let sourceURL = try result.get().first else { return }
-      attachment = try model.importAIAttachment(from: sourceURL)
-    } catch {
-      importErrorMessage = "ファイルを添付できませんでした。もう一度お試しください。"
+    let generation = model.aiWorkspaceGeneration
+    let previous = attachment
+    Task { @MainActor in
+      var created: [AIAttachment] = []
+      do {
+        let urls = try result.get()
+        let capacity = 10 - (previous?.files.count ?? 0)
+        guard !urls.isEmpty, urls.count <= capacity else { importErrorMessage = "添付は10件までです。"; return }
+        var combined = previous
+        for url in urls {
+          let file = try await model.importAIAttachment(from: url)
+          created.append(file)
+          if combined == nil { combined = file } else { combined?.append(file) }
+        }
+        guard model.aiWorkspaceGeneration == generation, model.currentTeamID == nil,
+              !model.isRestoring, !model.isStoreProtected, attachment == previous else {
+          for file in created { try? FileManager.default.removeItem(at: file.url) }
+          importErrorMessage = "保存先や入力が変わりました。もう一度選択してください。"
+          return
+        }
+        attachment = combined
+      } catch {
+        for file in created { try? FileManager.default.removeItem(at: file.url) }
+        importErrorMessage = error.localizedDescription
+      }
     }
   }
 

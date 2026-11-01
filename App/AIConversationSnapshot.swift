@@ -34,6 +34,8 @@ struct AIConversationSnapshot: Codable, Sendable {
           && turn.documentIDs.count <= 256 && turn.webResearchReportIDs.count <= 256
           && (turn.createdTaskIDs?.count ?? 0) <= 30
           && turn.sources.allSatisfy { $0.excerpts.count <= 20 }
+          && (turn.sourceCitations?.count ?? 0) <= 64
+          && (turn.sourceCitations ?? []).allSatisfy { $0.excerpt.utf8.count <= 8_000 && ($0.page.map { $0 > 0 } ?? true) && ($0.time.map { $0.isFinite && $0 >= 0 } ?? true) }
           && (turn.cloudProvenance?.references.count ?? 0) <= 256
           && (turn.artifactProvenance?.isValid ?? true)
           && (turn.artifactProvenance.map { $0.workspaceID == workspaceID } ?? true)
@@ -60,6 +62,7 @@ struct AIConversationSnapshot: Codable, Sendable {
     var pluginIDs: [String]
     var details: AIAnswerDetails?
     var sources: [AIChatSource]
+    var sourceCitations: [ProjectCitation]?
     var documentIDs: [UUID]
     var createdTaskIDs: [UUID]?
     var webResearchReportIDs: [UUID]
@@ -73,16 +76,19 @@ struct AIConversationSnapshot: Codable, Sendable {
     /// JSON can escape a UTF-8 byte into six bytes. Count conservatively before
     /// handing the immutable value to the existing serial background writer.
     var maximumEncodedBytes: Int {
-      let metadata = [residentName, attachment?.name, attachment?.fileName, details?.scopeLabel, details?.engineLabel, details?.modelLabel,
+      let attachmentStrings = attachment.map { ([$0] + ($0.additionalFiles ?? [])).flatMap { [$0.name, $0.fileName, $0.originalURL?.absoluteString ?? ""] } } ?? []
+      let metadata = [residentName, details?.scopeLabel, details?.engineLabel, details?.modelLabel,
         cloudProvenance?.workspaceID, cloudProvenance?.memoryFingerprint, artifactProvenance?.workspaceID].compactMap { $0 }
       let sourceStrings = sources.flatMap { [$0.title] + $0.excerpts.map(\.text) }
+        + (sourceCitations ?? []).flatMap { [$0.title, $0.excerpt] }
       let fingerprints = (cloudProvenance?.references.map(\.fingerprint) ?? [])
         + (artifactProvenance?.records.map(\.fingerprint) ?? []) + (artifactProvenance?.projectSources.map(\.fingerprint) ?? [])
       let mentionStrings = mentions?.flatMap { [$0.label, $0.pluginID] } ?? []
-      let bytes = ([text] + pluginIDs + suggestions + metadata + sourceStrings + fingerprints + mentionStrings)
+      let bytes = ([text] + pluginIDs + suggestions + metadata + attachmentStrings + sourceStrings + fingerprints + mentionStrings)
         .reduce(0) { $0 + $1.utf8.count }
       return 2_048 + bytes * 6 + (sources.count + sources.reduce(0) { $0 + $1.excerpts.count }
-        + documentIDs.count + (createdTaskIDs?.count ?? 0) + webResearchReportIDs.count + fingerprints.count + (mentions?.count ?? 0)) * 256
+        + documentIDs.count + (createdTaskIDs?.count ?? 0) + webResearchReportIDs.count + fingerprints.count + (mentions?.count ?? 0)
+        + (sourceCitations?.count ?? 0) + (attachment?.additionalFiles?.count ?? 0)) * 256
     }
 
     init(_ message: AIChatMessage) {
@@ -98,6 +104,7 @@ struct AIConversationSnapshot: Codable, Sendable {
       pluginIDs = message.pluginIDs
       details = message.details
       sources = message.sources
+      sourceCitations = message.sourceCitations
       documentIDs = message.documentIDs
       createdTaskIDs = message.createdTaskIDs
       webResearchReportIDs = message.webResearchReportIDs
@@ -119,6 +126,7 @@ struct AIConversationSnapshot: Codable, Sendable {
       message.pluginIDs = pluginIDs
       message.details = details
       message.sources = sources
+      message.sourceCitations = sourceCitations ?? []
       message.documentIDs = documentIDs
       message.createdTaskIDs = createdTaskIDs ?? []
       message.webResearchReportIDs = webResearchReportIDs

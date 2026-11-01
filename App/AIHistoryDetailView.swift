@@ -42,6 +42,13 @@ struct AIHistoryDetailView: View {
         .font(.subheadline)
         .foregroundStyle(.secondary)
 
+        SourceCitationList(citations: entry.sourceCitations ?? [])
+        if let attachment = entry.attachment?.resolve() {
+          ForEach(attachment.files) { file in
+            NavigationLink(file.name) { ConversationAttachmentView(file: file) }.frame(minHeight: 44)
+          }
+        }
+
         if let id = entry.webResearchReportID, model.webResearch(id: id) != nil {
           NavigationLink("出典・プロジェクトへの保存") { WebResearchDetailView(reportID: id, openProjectAction: openProjectAction) }
             .frame(minHeight: 44)

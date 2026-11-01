@@ -13,7 +13,7 @@ swiftc Shared/MemoraIcon.swift App/AgentTool.swift App/AgentToolCall.swift App/A
   App/MCPConnectionPolicy.swift App/ProjectSourceURL.swift App/ProjectSource.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
   App/SemanticToolDiscovery.swift App/LocalStore.swift App/AIRecordFingerprint.swift \
   App/AgentConversationExecutionContext.swift App/MCPAgentExecutionContext.swift App/MCPResultAuthorization.swift App/MemoraModel+MCPResultAuthorization.swift App/MCPIntegrationProvider.swift \
-  App/MemoraModel+MCP.swift App/MemoraModel+ToolExecution.swift App/MemoraModel+IntegrationSettings.swift \
+  App/MemoraModel+MCP.swift App/MemoraModel+ToolExecution.swift App/MemoraModel+IntegrationSettings.swift tools/checks/IntegrationCalendarFixture.swift \
   App/AgentConversationLoop.swift App/AgentTurn.swift App/AgentRunEvent.swift App/AIAnswerResult.swift App/AIAnswerFailure.swift \
   tools/checks/HTTPResponseGate.swift tools/checks/MCPAgentFixtureModel.swift tools/checks/MCPAgentFixtureServices.swift \
   tools/checks/MCPAgentChecks.swift -lsqlite3 -o "$check_dir/mcp-agent"

@@ -211,10 +211,10 @@ struct ProjectSourcePreparationChecks {
     let (model, id) = try await fixture(root, "oversized", youtube: false)
     let before = try files()
     await model.prepareProjectLocalSource(id, extract: { _ in
-      ProjectSourceExtractionResult(blocks: [ProjectSourceText(text: String(repeating: "\u{1}", count: 400_000))])
+      ProjectSourceExtractionResult(blocks: [ProjectSourceText(text: String(repeating: "\u{1}", count: ProjectSourceTextReader.maximumBytes / 6 + 1))])
     })
     precondition(model.source(id: id)!.processingStatus == .failed && !model.source(id: id)!.canProvideText)
-    precondition(model.source(id: id)!.errorInformation?.contains("2MB") == true)
+    precondition(model.source(id: id)!.errorInformation?.contains("16MB") == true)
     expect(try files() == before)
     try verifyDurable(model)
   }

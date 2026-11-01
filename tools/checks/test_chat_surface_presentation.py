@@ -43,7 +43,7 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
         self.assertIn("min(width * 0.945, MemoraSpacing.readingWidth)", root)
         self.assertNotIn(".id(composerScope)\n", root)
         native = (APP / "CaptureToolbarButton.swift").read_text()
-        for contract in ("ToolbarActionLabel", "Menu {", ".confirmationDialog(", "importPickedAudio"):
+        for contract in ("ToolbarActionLabel", "Menu {", ".confirmationDialog(", "importInformationFile"):
             self.assertIn(contract, native)
 
     def test_sidebar_footer_shortens_secondary_copy_not_tap_targets(self):
@@ -84,7 +84,7 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
             self.assertIn(contract, row)
         self.assertIn("ExternalRecorderSettingsView()", (APP / "RootTabView.swift").read_text())
         importer = (APP / "RecorderAudioImportView.swift").read_text()
-        for contract in ("LocalImportContext(in: model)", "importPickedAudio(from: url, context: context)",
+        for contract in ("LocalImportContext(in: model)", "importInformationFile(url, context: context)",
                          "context.isCurrent(in: model)", 'value: "未対応"', "showsFailure = true"):
             self.assertIn(contract, importer)
 

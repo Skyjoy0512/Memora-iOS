@@ -30,8 +30,8 @@ extension MemoraModel {
   /// Queues the default summary after a transcript lands, when the person
   /// opted in. A record without cloud permission stays waiting instead of
   /// being sent to an external model.
-  func enqueueAutomaticSummaryIfNeeded(for id: UUID) {
-    guard automaticallySummarizesTranscriptions,
+  func enqueueAutomaticSummaryIfNeeded(for id: UUID, required: Bool = false) {
+    guard (required || automaticallySummarizesTranscriptions),
           let meeting = meeting(id: id), !meeting.transcript.isEmpty,
           !hasPendingSummary(id) else { return }
     let configuration = settingsAIConfiguration

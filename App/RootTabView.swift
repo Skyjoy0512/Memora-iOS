@@ -139,8 +139,8 @@ struct RootTabView: View {
     .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged).receive(on: RunLoop.main)) { _ in
       model.invalidateAICalendarContext()
     }
-    .sheet(isPresented: Binding(get: { model.sourceAddProjectID != nil }, set: { if !$0 { model.sourceAddProjectID = nil } })) {
-      if let id = model.sourceAddProjectID { ProjectSourceAddSheet(projectID: id) }
+    .sheet(isPresented: Binding(get: { model.isSourceAddPresented || model.sourceAddProjectID != nil }, set: { if !$0 { model.sourceAddProjectID = nil; model.isSourceAddPresented = false } })) {
+      ProjectSourceAddSheet(projectID: model.sourceAddProjectID)
     }
     .sheet(isPresented: $model.isFileCreationPresented) {
       FileCreationSheet()

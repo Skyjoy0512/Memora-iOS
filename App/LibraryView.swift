@@ -2,6 +2,8 @@ import EventKit
 import SwiftUI
 
 struct LibraryView: View {
+  @State private var matchingSourceIDs: Set<UUID> = []
+  @State private var completedSourceQuery = ""
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var typeSize
@@ -94,6 +96,14 @@ struct LibraryView: View {
       .navigationTitle(isSelectionMode ? "\(selectedMeetingIDs.count)件を選択" : (isSearching ? "" : "ライブラリ"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbarSearch(text: $query, isPresented: $isSearching, prompt: model.librarySection.searchPrompt)
+      .task(id: SourceSearchRequest(query: query, sources: model.projectSources, workspaceGeneration: model.aiWorkspaceGeneration)) {
+        matchingSourceIDs = []
+        guard CollectionSearch.hasQuery(query) else { completedSourceQuery = query; return }
+        let value = query
+        let matches = await model.matchingSourceIDs(query: value)
+        guard !Task.isCancelled, query == value else { return }
+        matchingSourceIDs = matches; completedSourceQuery = value
+      }
       .toolbar {
         if !isSearching {
           ToolbarItem(placement: .principal) {
@@ -271,7 +281,10 @@ struct LibraryView: View {
     let sections = isAwaitingQuery ? [] : fileSections
     let count = sections.reduce(0) { $0 + $1.meetings.count }
     let sharedRecords = model.cloudSharing.sharedRecords
-    let savedSources = isAwaitingQuery || statusFilter != .all ? [] : model.projectSources.filter { CollectionSearch.matches(query, fields: [$0.title]) }
+    let savedSources = isAwaitingQuery || statusFilter != .all ? [] : model.projectSources.filter {
+      CollectionSearch.matches(query, fields: [$0.title, $0.summary ?? ""]) ||
+        (completedSourceQuery == query && matchingSourceIDs.contains($0.id))
+    }
     let resultCount = count + savedSources.count
     let hasSharedRecords = !isSearching && !isSelectionMode && statusFilter == .all && !sharedRecords.isEmpty
     let hasSavedSources = !savedSources.isEmpty && !isAwaitingQuery && !isSelectionMode
@@ -297,6 +310,8 @@ struct LibraryView: View {
           if isAwaitingQuery {
             MemoraEmptyState(icon: .magnifyingglass, title: "記録を検索",
               message: "タイトルや本文で検索")
+          } else if CollectionSearch.hasQuery(query), completedSourceQuery != query {
+            ProgressView("検索しています")
           } else if CollectionSearch.hasQuery(query) {
             MemoraEmptyState(icon: .magnifyingglass, title: "見つかりませんでした",
               message: "「\(query)」に一致する記録はありません。",

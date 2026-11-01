@@ -30,7 +30,7 @@ struct CaptureToolbarButton: View {
       importContext = nil
       switch result {
       case .success(let url):
-        Task { await model.importPickedAudio(from: url, context: context) }
+        Task { await model.importInformationFile(url, context: context) }
       case .failure(let error):
         guard (error as NSError).code != NSUserCancelledError else { return }
         model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"

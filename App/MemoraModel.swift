@@ -98,6 +98,7 @@ final class MemoraModel {
   @ObservationIgnored var webResearchJobs: [UUID: Task<Void, Never>] = [:]
   var projectChatBusyIDs: Set<UUID> = []
   var projectSourceProcessingIDs: Set<UUID> = []
+  @ObservationIgnored var sourcePreparationJobs: [UUID: (id: UUID, task: Task<Void, Never>)] = [:]
   @ObservationIgnored var projectWebFetchJobs: [UUID: (id: UUID, task: Task<WebSourceFetcher.Result, Error>)] = [:]
   var integrationUsage: [IntegrationUsage] = []
   @ObservationIgnored var mcpCredentialRevisions: [UUID: UUID] = [:]
@@ -118,6 +119,7 @@ final class MemoraModel {
   @ObservationIgnored var projectChatJobs: [UUID: Task<Void, Never>] = [:]
   @ObservationIgnored var projectChatRequestIDs: [UUID: UUID] = [:]
   var sourceAddProjectID: UUID?
+  var isSourceAddPresented = false
   var voiceProfile: VoiceProfile?
   var speakerProfile: SpeakerProfile?
   var speakerProfileReference: SpeakerProfileReference?
@@ -185,6 +187,7 @@ final class MemoraModel {
   @ObservationIgnored private var taskReminderObserver: NSObjectProtocol?
   /// Audio files handed to the app while a recording owns the microphone.
   @ObservationIgnored var pendingImportURLs: [URL] = []
+  @ObservationIgnored var pendingInformationImportContexts: [URL: LocalImportContext] = [:]
   /// Files being imported right now, so the Inbox scan never mistakes a file
   /// that is on its way in for one left behind.
   @ObservationIgnored var inFlightImportURLs: Set<URL> = []
