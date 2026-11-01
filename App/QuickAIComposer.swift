@@ -14,6 +14,7 @@ struct QuickAIComposer: View {
   var autofocus = false
   @State private var preparedAttachment: PreparedAIAttachment?
   @State private var attachmentPreparationTask: Task<Void, Never>?
+  @State private var attachmentPreparationContext: AIComposerRequestContext?
   /// The question handed to the focused screen. It is built when the sheet
   /// opens, so clearing the composer afterwards cannot empty what is being asked.
   @State private var pendingQuestion: AIQuestionRequest?
@@ -81,12 +82,25 @@ struct QuickAIComposer: View {
           } }
       }
     }
-    .onChange(of: model.composerDraft) { _, _ in dismissedMention = nil }
+    .onChange(of: model.composerDraft) { _, _ in
+      dismissedMention = nil
+      cancelStaleAttachmentPreparation()
+    }
     .onChange(of: mentionInput.value) { _, _ in openMentionMenuIfReady() }
     .onChange(of: model.composerDismissRequests) { _, _ in dismissedMention = activeMention }
-    .onChange(of: model.selectedTab) { _, _ in usesWebSearch = false }
-    .onChange(of: scope) { _, _ in attachmentPreparationTask?.cancel(); requestsMentionMenu = false; dismissedMention = nil }
-    .onChange(of: model.composerAttachment?.id) { _, _ in attachmentPreparationTask?.cancel() }
+    .onChange(of: model.selectedTab) { _, _ in
+      usesWebSearch = false
+      cancelStaleAttachmentPreparation()
+    }
+    .onChange(of: model.aiConversationID) { _, _ in cancelStaleAttachmentPreparation() }
+    .onChange(of: model.aiWorkspaceGeneration) { _, _ in cancelStaleAttachmentPreparation() }
+    .onChange(of: model.activeNavigationPath) { _, _ in cancelStaleAttachmentPreparation() }
+    .onChange(of: model.isToolsPresented) { _, _ in cancelStaleAttachmentPreparation() }
+    .onChange(of: model.composerMentions) { _, _ in cancelStaleAttachmentPreparation() }
+    .onChange(of: model.askAIConfiguration.engine) { _, _ in cancelStaleAttachmentPreparation() }
+    .onChange(of: model.askAIConfiguration.llm) { _, _ in cancelStaleAttachmentPreparation() }
+    .onChange(of: scope) { _, _ in cancelStaleAttachmentPreparation(); requestsMentionMenu = false; dismissedMention = nil }
+    .onChange(of: model.composerAttachment) { _, _ in cancelStaleAttachmentPreparation() }
     .onDisappear { attachmentPreparationTask?.cancel() }
     .sheet(item: $pendingQuestion) { request in
       AIQuestionView(request: request)
@@ -253,20 +267,30 @@ struct QuickAIComposer: View {
     return true
   }
 
+  private func cancelStaleAttachmentPreparation() {
+    guard let context = attachmentPreparationContext, !context.isCurrent(in: model, scope: scope) else { return }
+    attachmentPreparationTask?.cancel()
+  }
+
   private func startGlobalAttachmentRequest(_ attached: AIAttachment, question: String, pluginIDs: [String]) {
-    guard !isPreparingAttachment, !model.isAIChatResponding, !model.isRestoring, !model.isStoreProtected else { return }
-    let draft = model.composerDraft
-    let mentions = model.composerMentions
-    let configuration = model.askAIConfiguration
-    let workspaceID = model.currentTeamID
+    guard scope == .global, model.selectedTab == .askAI, !isPreparingAttachment,
+          !model.isAIChatResponding, !model.isRestoring, !model.isStoreProtected else { return }
+    guard let context = AIComposerRequestContext(scope: scope, in: model), context.attachment == attached else { return }
+    let configuration = context.configuration
+    attachmentPreparationContext = context
     isPreparingAttachment = true
     attachmentPreparationTask = Task { @MainActor in
-      defer { isPreparingAttachment = false; attachmentPreparationTask = nil }
+      defer {
+        isPreparingAttachment = false
+        attachmentPreparationTask = nil
+        attachmentPreparationContext = nil
+      }
+      guard context.isCurrent(in: model, scope: scope) else { return }
       let capabilities = ModelCapabilities.resolve(llm: configuration.llm)
       let prepared: PreparedAIAttachment
       if let cached = preparedAttachment, cached.matches(attached), cached.preparedQuestion == question { prepared = cached }
       else { prepared = await AIAttachmentText.prepare(attached, question: question, maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities, task: DeepContextPolicy.task(for: question)), vocabulary: model.transcriptionVocabulary) }
-      guard !Task.isCancelled else { return }
+      guard context.isCurrent(in: model, scope: scope) else { return }
       preparedAttachment = prepared
       guard AgentAttachmentContext.content(attachment: attached, prepared: prepared,
         maximumCharacters: AgentAttachmentContext.characterBudget(capabilities: capabilities,
@@ -274,10 +298,7 @@ struct QuickAIComposer: View {
         projectError = prepared.failure ?? "添付の本文を取得できませんでした。入力と添付は保持しています。"
         return
       }
-      guard model.currentTeamID == workspaceID, model.selectedTab == .askAI, scope == .global,
-            !model.isRestoring, !model.isStoreProtected, model.composerDraft == draft,
-            model.composerMentions == mentions, model.composerAttachment == attached,
-            model.askAIConfiguration.engine == configuration.engine, model.askAIConfiguration.llm == configuration.llm else {
+      guard context.isCurrent(in: model, scope: scope), model.selectedTab == .askAI, scope == .global else {
         projectError = "入力・参照範囲・AI設定が変わったため送信していません。現在の設定で送信し直してください。"
         return
       }
@@ -292,15 +313,26 @@ struct QuickAIComposer: View {
     }
   }
   private func startProjectRequest(_ request: AIQuestionRequest, allowsPaidRequest: Bool) {
-    guard case .space(let projectID) = request.scope, !isPreparingAttachment,
-          let importContext = LocalImportContext(projectID: projectID, in: model) else { return }
-    let workspaceID = model.currentTeamID
-    let configuration = model.askAIConfiguration
+    guard case .space(let projectID) = request.scope, request.scope == scope, !isPreparingAttachment,
+          let importContext = LocalImportContext(projectID: projectID, in: model),
+          let context = AIComposerRequestContext(scope: scope, in: model) else { return }
+    let trimmed = context.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard context.attachment == request.attachment,
+          request.question == (trimmed.isEmpty ? "このソースを確認して" : trimmed),
+          request.pluginIDs == context.mentions.filter({ $0.isValid(in: context.draft) }).map(\.pluginID) else {
+      projectError = "入力が変わったため送信していません。現在の入力で送信し直してください。"
+      return
+    }
     let existingChat = model.activeProjectChatID.flatMap { model.projectChat(id: $0) }
     guard existingChat?.projectID == projectID || existingChat == nil else { return }
+    attachmentPreparationContext = context
     isPreparingAttachment = true
-    Task { @MainActor in
-      defer { isPreparingAttachment = false }
+    attachmentPreparationTask = Task { @MainActor in
+      defer {
+        isPreparingAttachment = false
+        attachmentPreparationTask = nil
+        attachmentPreparationContext = nil
+      }
       do {
         if let attached = request.attachment {
           guard attached.files.allSatisfy({ AIAttachment.isValidSourceMetadata($0.sourceMetadata) }) else {
@@ -308,19 +340,18 @@ struct QuickAIComposer: View {
             return
           }
           for file in attached.files {
-            guard let id = try await model.importProjectFile(file.url, projectID: projectID,
+            guard context.isCurrent(in: model, scope: scope), importContext.isCurrent(in: model) else { return }
+            let importedID = try await model.importProjectFile(file.url, projectID: projectID,
               importContext: importContext, sourceTitle: file.name, originalURL: file.originalURL,
-              sourceMetadata: file.sourceMetadata) else {
+              sourceMetadata: file.sourceMetadata)
+            guard context.isCurrent(in: model, scope: scope), importContext.isCurrent(in: model) else { return }
+            guard let id = importedID else {
               projectError = "添付を保存できませんでした。質問は入力欄に残っています。"
-              return
-            }
-            guard importContext.isCurrent(in: model), model.currentTeamID == workspaceID,
-                  !model.isRestoring, !model.isStoreProtected else {
-              projectError = "ワークスペースまたは保存状態が変わったため、質問を送信していません。"
               return
             }
             if model.source(id: id) != nil {
               await model.prepareProjectSource(id)
+              guard context.isCurrent(in: model, scope: scope), importContext.isCurrent(in: model) else { return }
               guard let saved = model.source(id: id), saved.projectID == projectID, saved.canProvideText else {
                 projectError = "添付は保存しましたが、参照できる本文がまだありません。ソース詳細で解析状態を確認してください。"
                 return
@@ -337,10 +368,7 @@ struct QuickAIComposer: View {
             }
           }
         }
-        guard !Task.isCancelled, !model.isRestoring, !model.isStoreProtected,
-              model.currentTeamID == workspaceID, importContext.isCurrent(in: model),
-              model.askAIConfiguration.engine == configuration.engine,
-              model.askAIConfiguration.llm == configuration.llm else {
+        guard context.isCurrent(in: model, scope: scope), importContext.isCurrent(in: model) else {
           projectError = "ワークスペース・保存先・AI設定が変わったため、質問を送信していません。現在の設定を確認してください。"
           return
         }
@@ -350,11 +378,12 @@ struct QuickAIComposer: View {
           return
         }
         model.openProjectChat(id)
-        if model.composerDraft.trimmingCharacters(in: .whitespacesAndNewlines) == request.question {
-          model.composerDraft = ""
-        }
-        if attachment?.id == request.attachment?.id { attachment = nil }
+        model.composerDraft = ""
+        model.composerAttachment = nil
+      } catch is CancellationError {
+        return
       } catch {
+        guard context.isCurrent(in: model, scope: scope) else { return }
         projectError = "添付を保存できませんでした。元ファイルと質問は残っています。"
       }
     }

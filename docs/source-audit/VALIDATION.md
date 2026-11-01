@@ -235,3 +235,29 @@ log: `logs/2026-11-02T07-12-10-464695c9.log`、既存と同じ警告11件。
 後から追加されたUI指定を同じ最終previewへ含め、全host suiteの反復はしていない。
 SDK27.1より新しいAPI・設定変更・破壊的移行は追加していない。
 UIの実確認は[比較記録](../ui-minimal-2026-11/README.md)に分離する。
+
+## P0/P1: 添付送信準備の中断・会話・下書き保護（32b165dbから）
+
+開始時main / `32b165db`、未コミット変更なし。UIの見た目、Liquid Glass、
+ピル切替、Marketplace、保存データ形式は変更していない。
+
+`MEMORA_CHECK_ROOT=…/Builds/<project> python3 tools/checks/run-composer-request-checks.py` PASS。
+productionの`AIComposerRequestContext`・`LocalImportContext`・添付型・リクエスト型と、
+`QuickAIComposer`の取消判定・global/projectの送信準備methodをそのままcompileする。
+view storage、modelのI/O・解析・AI送信だけfixtureへ置換したhost検査である。
+
+- 通常Ask AIの抽出を待たせ、会話ID・workspace世代・下書き・主IDを維持した複合添付・
+  モデル・Marketplace表示・選択画面・navigation path・@指定の9変更で送信なし、入力保持。
+- projectのfile copy／本文準備をそれぞれ待たせ、下書き・添付・workspace・画面・モデル・
+  scopeだけの変更・取消の7変更（計14）で、後続fileの登録・会話作成・質問送信なし、入力保持、古いエラーなし。
+- 送信開始時の遅れたcallbackで新しいTaskを止めないこと、明示停止、古い確認からの
+  入力/scope不一致拒否、2添付の正常送信・成功時だけ入力を外すこと、Task/contextの解除。
+
+OSのfile picker・Speech・PDFKit・SQLite・実provider、SwiftUIのonChange/onDisappear
+の実発火・停止操作を端末で試した検査ではない。実機・ライブAIと追加アクセシビリティ検証は未実施。
+初回の限定検査後、確認待ち/解析中のscope変更と取消後のnil登録結果の扱いをレビューで修正し、
+同じ限定suiteだけを再実行した。全host suite・既存のPDF/音声検査は反復していない。
+
+最終 `bitrig preview -platform iOS` は成功、プレビュー更新済み。
+log: `logs/2026-11-02T07-23-10-f83e32db.log`、既存の非推奨API等の警告11件、compile errorなし。
+`git diff --check`通過。ビルドは動作の実機検証とは分けて扱う。
