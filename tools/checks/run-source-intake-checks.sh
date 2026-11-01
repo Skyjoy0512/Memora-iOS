@@ -5,7 +5,7 @@ check_dir=$(mktemp -d "${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}/memora-source-intak
 trap 'rm -rf "$check_dir"' EXIT
 export MEMORA_WORKSPACE_FILES_DIRECTORY="$check_dir/workspace"
 export SWIFT_BACKTRACE=enable=no
-swiftc -D MEMORA_HOST_CHECKS Shared/MemoraIcon.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
+swiftc App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift -D MEMORA_HOST_CHECKS Shared/MemoraIcon.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
   App/ProjectSource.swift App/ProjectSourceText.swift App/ProjectSourceFiles.swift App/ProjectSourceTextReader.swift \
   App/ProjectSourceExtractionResult.swift App/PDFPageCheckpoint.swift App/PDFCheckpointStore.swift \
   App/PDFSourceSnapshot.swift App/PDFSourceExtraction.swift App/SourceExtractionSnapshot.swift \

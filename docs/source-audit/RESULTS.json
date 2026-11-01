@@ -6,7 +6,8 @@
     "6bf68526368f46eb5e9c5f1ca4c437d8dcb1bde2",
     "606ac16ae771e8df60e3974fa60f9c0ff87de80a",
     "a158414a5fbfe29345c759668750b326c5be1443",
-    "adf81795e5e1c13b070190765644937c16f4c288"
+    "adf81795e5e1c13b070190765644937c16f4c288",
+    "a4b9ccfef353923cafa6e2231a957940d1c47e80"
   ],
   "suites": [
     {
@@ -59,61 +60,39 @@
   "xctest": "Project.json has no test targets (bitrig test exit 78)",
   "futureValidationPolicy": "Accessibility deferred at user request; batch implementation and run necessary build/regression checks at phase boundaries, not after each feature.",
   "latestBatch": {
-    "baseCommit": "adf81795e5e1c13b070190765644937c16f4c288",
-    "scope": "Attachment evidence-to-original navigation and bounded PDF page checkpoint continuation",
+    "baseCommit": "a4b9ccfef353923cafa6e2231a957940d1c47e80",
+    "scope": "Optional per-source template/length/AI settings and successful-summary versus attempted-original attribution",
     "hostChecks": [
       {
-        "suite": "attachment-citations",
+        "suite": "source-summary",
         "status": "passed",
         "exitCode": 0,
-        "log": "attachment-evidence-20261101.log",
-        "boundary": "Production preparation/selection/reference; extraction fixture; only complete sent passages retained"
+        "log": "source-summary-options-20261101.log",
+        "boundary": "Production resolution/admission/storage/recovery/SQLite/text read; registry/model state/summarizer fixtures;13 suspended mutation cases and old data decoding"
       },
       {
-        "suite": "source-intake",
+        "suite": "project-source-preparation",
         "status": "passed",
         "exitCode": 0,
-        "log": "pdf-checkpoints-20261101.log",
-        "boundary": "Actual macOS PDFKit/Vision/SQLite and Task cancellation; new store reuses page checkpoints"
-      },
-      {
-        "suite": "project-source-import",
-        "status": "passed",
-        "exitCode": 0,
-        "log": "pdf-continuation-20261101.log",
-        "boundary": "Production file/SQLite continuation admission, privacy, rollback and single scheduling; scheduler fixture"
-      },
-      {
-        "suite": "conversation-evidence",
-        "status": "passed",
-        "exitCode": 0,
-        "log": "conversation-evidence-20261101.log",
-        "boundary": "Production snapshot/history codecs, old data, invalid paths/duplicate numbers, grant non-restoration; rerun after final validation guards"
-      },
-      {
-        "suite": "source-extraction-cache",
-        "status": "passed",
-        "exitCode": 0,
-        "log": "continuation-cache-20261101.log",
-        "boundary": "Continuation result bypasses final cache; completed result survives restart; extraction fixture"
+        "log": "source-summary-compatibility-20261101.log",
+        "boundary": "Production source orchestration/file/SQLite;60 suspended races; extraction/network fixtures"
       }
-    ],
-    "notRepeated": "Six broad suites, new UI interaction, accessibility, device media or cloud model output checks",
-    "remaining": [
-      "iOS real-device PDF continuation and evidence button interaction",
-      "Mixed text/image PDF and structure accuracy",
-      "Oversized-document split import UI",
-      "Optional per-source summary templates",
-      "Real audio/video and service acceptance",
-      "Full-screen runtime audit and resource profiling"
     ],
     "preview": {
       "command": "bitrig preview -platform iOS",
       "result": "success",
       "warnings": 11,
-      "log": "logs/2026-11-01T17-10-40-8261e167.log",
-      "note": "After final citation-number preservation and duplicate-number validation changes; SDK27.2, APIs not newer than27.1"
-    }
+      "log": "logs/2026-11-01T18-18-39-45ca642e.log"
+    },
+    "notRepeated": "Six broad suites, new UI interaction, accessibility, real model/provider output or device acceptance",
+    "remaining": [
+      "iOS real-device acceptance and added UI interaction",
+      "Mixed text/image PDF and structure accuracy",
+      "Oversized-document split import UI",
+      "Real audio/video and service acceptance",
+      "Full-screen runtime audit and resource profiling",
+      "Historical missing summary attribution cannot be reconstructed"
+    ]
   },
   "batchHistory": [
     {
@@ -182,6 +161,63 @@
         "Optional per-source summary templates",
         "Full-screen runtime audit and resource profiling"
       ]
+    },
+    {
+      "baseCommit": "adf81795e5e1c13b070190765644937c16f4c288",
+      "scope": "Attachment evidence-to-original navigation and bounded PDF page checkpoint continuation",
+      "hostChecks": [
+        {
+          "suite": "attachment-citations",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "attachment-evidence-20261101.log",
+          "boundary": "Production preparation/selection/reference; extraction fixture; only complete sent passages retained"
+        },
+        {
+          "suite": "source-intake",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "pdf-checkpoints-20261101.log",
+          "boundary": "Actual macOS PDFKit/Vision/SQLite and Task cancellation; new store reuses page checkpoints"
+        },
+        {
+          "suite": "project-source-import",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "pdf-continuation-20261101.log",
+          "boundary": "Production file/SQLite continuation admission, privacy, rollback and single scheduling; scheduler fixture"
+        },
+        {
+          "suite": "conversation-evidence",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "conversation-evidence-20261101.log",
+          "boundary": "Production snapshot/history codecs, old data, invalid paths/duplicate numbers, grant non-restoration; rerun after final validation guards"
+        },
+        {
+          "suite": "source-extraction-cache",
+          "status": "passed",
+          "exitCode": 0,
+          "log": "continuation-cache-20261101.log",
+          "boundary": "Continuation result bypasses final cache; completed result survives restart; extraction fixture"
+        }
+      ],
+      "notRepeated": "Six broad suites, new UI interaction, accessibility, device media or cloud model output checks",
+      "remaining": [
+        "iOS real-device PDF continuation and evidence button interaction",
+        "Mixed text/image PDF and structure accuracy",
+        "Oversized-document split import UI",
+        "Optional per-source summary templates",
+        "Real audio/video and service acceptance",
+        "Full-screen runtime audit and resource profiling"
+      ],
+      "preview": {
+        "command": "bitrig preview -platform iOS",
+        "result": "success",
+        "warnings": 11,
+        "log": "logs/2026-11-01T17-10-40-8261e167.log",
+        "note": "After final citation-number preservation and duplicate-number validation changes; SDK27.2, APIs not newer than27.1"
+      }
     }
   ]
 }

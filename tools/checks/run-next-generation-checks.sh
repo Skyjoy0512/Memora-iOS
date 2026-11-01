@@ -20,6 +20,7 @@ bash tools/checks/run-project-source-web-recovery-checks.sh
 bash tools/checks/run-project-source-import-checks.sh
 bash tools/checks/run-source-intake-checks.sh
 bash tools/checks/run-source-extraction-cache-checks.sh
+bash tools/checks/run-source-summary-checks.sh
 bash tools/checks/run-attachment-citation-checks.sh
 bash tools/checks/run-youtube-caption-checks.sh
 bash tools/checks/run-audio-import-checks.sh
@@ -40,9 +41,9 @@ swiftc App/ProjectCitation.swift App/ProjectEvidenceChunk.swift App/ProjectEvide
 "$check_dir/project-index"
 swiftc App/ProjectCitation.swift App/ProjectEvidenceChunk.swift App/ProjectEvidenceInput.swift App/ProjectSourceText.swift App/ProjectContextBuilder.swift App/ProjectSearchIndex.swift tools/checks/ProjectSearchQualityChecks.swift -lsqlite3 -o "$check_dir/project-quality"
 "$check_dir/project-quality" tools/checks/fixtures/project-search-quality.json "$check_dir"
-swiftc Shared/MemoraIcon.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSource+Presentation.swift tools/checks/ProjectSourceAvailabilityChecks.swift -o "$check_dir/source-availability"
+swiftc App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift Shared/MemoraIcon.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSource+Presentation.swift tools/checks/ProjectSourceAvailabilityChecks.swift -o "$check_dir/source-availability"
 "$check_dir/source-availability"
-swiftc App/MCPDNSLookup.swift App/MCPClientError.swift App/MCPPublicAddressPolicy.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSourceText.swift App/ProjectSourceURL.swift App/WebSourceFailure.swift App/WebSourceRequest.swift App/WebSourceHTTPDecoder.swift App/PinnedHTTPSConnection.swift App/WebSourceTextExtraction.swift App/WebSourceFetcher.swift tools/checks/WebSourceChecks.swift -o "$check_dir/web-source"
+swiftc App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift App/MCPDNSLookup.swift App/MCPClientError.swift App/MCPPublicAddressPolicy.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSourceText.swift App/ProjectSourceURL.swift App/WebSourceFailure.swift App/WebSourceRequest.swift App/WebSourceHTTPDecoder.swift App/PinnedHTTPSConnection.swift App/WebSourceTextExtraction.swift App/WebSourceFetcher.swift tools/checks/WebSourceChecks.swift -o "$check_dir/web-source"
 python3 tools/checks/make-web-certificate-fixture.py "$check_dir/web.cer"
 "$check_dir/web-source" "$check_dir/web.cer"
 python3 tools/checks/make-office-fixtures.py "$check_dir/office-fixtures"

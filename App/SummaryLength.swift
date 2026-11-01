@@ -1,6 +1,6 @@
 import Foundation
 
-enum SummaryLength: String, Codable, CaseIterable, Identifiable {
+enum SummaryLength: String, Codable, CaseIterable, Identifiable, Sendable {
   case concise, standard, detailed
   var id: Self { self }
   var title: String {

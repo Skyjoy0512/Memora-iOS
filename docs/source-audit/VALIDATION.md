@@ -134,3 +134,16 @@ PDFは処理済みページをSQLiteへ記録して、取消・時間制限後�
 既存全体6suite、実機・追加画面のタップ、クラウドモデルの最終出力は再検証していない。参照ボタンの追加をLLMの正答保証としない。追加のアクセシビリティ検証も行っていない。最終レビューの引用番号保持修正後は履歴codec検査のみ再実行し、他の通過済み限定suiteは反復しない。
 
 最終コードの `bitrig preview -platform iOS` は成功、既存と同じ11 warnings。log: `logs/2026-11-01T17-10-40-8261e167.log`。プレビュー更新済み、`git diff --check` も通過。ビルド環境は引き続きSDK27.2であり、追加実装は27.1より新しいAPIを使用していない。
+
+## 資料別の任意要約設定（a4b9ccfeから）
+
+資料詳細のその他メニューにだけ任意の設定シートを追加。まとめ方/詳しさ/AIは資料ごとに保存し、通常の自動取り込みには追加操作を要求しない。キャンセルは保存せず、開始時に本文と送信先のsnapshotを確認してmodel所有jobへ渡す。以前の要約と試行対象の本文参照を分離した。
+
+| 限定検査 | 結果 | 境界/log |
+|---|---|---|
+| SourceSummaryChecks | PASS | production設定解決/受入れ/要約保存/SQLite/本文reader。適応型の既定、明示設定の再利用、削除済みモデル/形式と非対応長さの拒否、厳格なcloudAI許可、古い要約の出典維持、履歴上限、旧データdecode、SQL開始/完了失敗、13種の設定・原文・権限等の変更。model状態/registry/要約器はfixture、実AI出力ではない。`source-summary-options-20261101.log` |
+| ProjectSourcePreparationChecks | PASS | 既存の実source orchestration/SQLite/fileと60競合検査。optional項目を追加したsourceの保存/再読込/取消/rollback/原本保持。OS抽出・network payloadはfixture。`source-summary-compatibility-20261101.log` |
+
+`bitrig preview -platform iOS` は成功、既存と同じ11 warnings。log: `logs/2026-11-01T18-18-39-45ca642e.log`。プレビュー更新済み、`git diff --check` も通過。
+
+追加シートの端末操作、実モデルでの業務template出力、実provider送信は未検証。過去に保存された要約へ、存在しない設定履歴や失われた本文参照を推定して付与しない。既存全体6suiteとアクセシビリティ検証は反復していない。

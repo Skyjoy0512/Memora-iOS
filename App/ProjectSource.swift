@@ -30,9 +30,11 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   var summary: String?
   var summaryStatus: ProcessingStatus?
   var summaryTextReference: String?
+  var summaryAttemptTextReference: String?
   var summaryUpdatedAt: Date?
   var summaryError: String?
   var summaryHistory: [String]?
+  var summaryOptions: SourceSummaryOptions?
   var revisions: [Revision]?
 
   enum Kind: String, Codable, Sendable {

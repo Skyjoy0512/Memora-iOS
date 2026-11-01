@@ -5,7 +5,7 @@ check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-cloud-session.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 # All URLSession instances use a fail-closed URLProtocol. Keychain, Gmail and
 # credit display are isolated fixtures; no provider or token endpoint is reached.
-swiftc App/AIAttachmentCitation.swift -enable-bare-slash-regex -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENANCE_CHECKS -D CLOUD_SESSION_CHECKS \
+swiftc App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift App/AIAttachmentCitation.swift -enable-bare-slash-regex -D PERSON_PROVENANCE_CHECKS -D ARTIFACT_PROVENANCE_CHECKS -D CLOUD_SESSION_CHECKS \
   App/SummaryProcessingMode.swift App/SummaryGenerationPolicy.swift App/SummaryDiagnostics.swift App/CloudAgentSession.swift App/CloudAIService.swift App/CloudSummaryResponse.swift App/CloudTurnStreaming.swift App/CloudTurnStreamReader.swift \
   App/CloudSSEEventDecoder.swift App/CloudStreamAccumulator.swift App/CloudAgentTurnDecoder.swift App/CloudTokenUsage.swift \
   App/AgentContextCompactor.swift App/AgentRunBudget.swift App/AgentSessionBudget.swift App/AgentOutputBudget.swift App/AgentGenerationPolicy.swift \

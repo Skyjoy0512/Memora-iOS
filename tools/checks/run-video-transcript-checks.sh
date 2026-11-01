@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-video-transcript.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
-swiftc Shared/MemoraIcon.swift App/LocalStore.swift App/MemoraSpace.swift App/RecordPrivacy.swift \
+swiftc App/SourceSummaryOptions.swift App/SummaryEngineChoice.swift Shared/MemoraIcon.swift App/LocalStore.swift App/MemoraSpace.swift App/RecordPrivacy.swift \
   App/SummarySensitivity.swift App/SummaryMarketTemplate.swift App/SummaryTemplateCategory.swift \
   App/SummaryLength.swift App/SummaryUseCase.swift App/VideoSummaryTemplate.swift \
   App/ProjectSource.swift App/ProjectCitation.swift App/LocalImportContext.swift \

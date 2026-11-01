@@ -18,10 +18,10 @@ struct ProjectSourcePrivacySheet: View {
           Picker("区分", selection: $privacy.classification) {
             ForEach(RecordPrivacy.Classification.allCases, id: \.self) { Text($0.title).tag($0) }
           }
-          Toggle("外部AIでの参照を許可", isOn: $privacy.allowsCloudAI)
+          Toggle("クラウドAIへの送信を許可", isOn: $privacy.allowsCloudAI)
             .disabled(privacy.classification == .unknown)
         } footer: {
-          Text("許可したソースの抽出本文を、質問時に選択中のAIへ送信します。画像の元データや音声はこのチャットから送信しません。")
+          Text("許可した資料の抽出本文を、質問や要約で選んだAIへ送信します。元の画像・音声・動画ファイルは送信しません。")
         }
       }
       .navigationTitle("プライバシー").navigationBarTitleDisplayMode(.inline)

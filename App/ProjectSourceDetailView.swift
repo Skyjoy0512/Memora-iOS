@@ -13,6 +13,7 @@ struct ProjectSourceDetailView: View {
   @State private var isEditingPrivacy = false
   @State private var isAsking = false
   @State private var isAddingVideoTranscript = false
+  @State private var isChoosingSummaryOptions = false
   @State private var showsOriginal = false
   @State private var textLoader = ProjectSourceTextLoader()
   @State private var textRetry = 0
@@ -179,6 +180,10 @@ struct ProjectSourceDetailView: View {
                 guard canStartSourceChange() else { return }
                 Task { await model.summarizeProjectSource(sourceID, retry: true) }
               }
+              Button("要約の設定", icon: .sliderHorizontal3) {
+                guard canStartSourceChange() else { return }
+                isChoosingSummaryOptions = true
+              }
             }
             if source.originalURL != nil, source.kind == .web || source.kind == .pdf {
               Button("原文を更新", icon: .arrowClockwise) {
@@ -202,6 +207,7 @@ struct ProjectSourceDetailView: View {
         if source.summary == nil || initialExcerpt != nil { showsOriginal = true }
       }
       .sheet(isPresented: $isAddingVideoTranscript) { VideoTranscriptImportSheet(source: source) { _ in } }
+      .sheet(isPresented: $isChoosingSummaryOptions) { SourceSummaryOptionsSheet(sourceID: sourceID) }
       .sheet(isPresented: $isAsking) { AIQuestionView(request: AIQuestionRequest(question: "", scope: .global, sourceID: sourceID)) }
       .sheet(isPresented: $isEditing) { ProjectNoteEditSheet(source: source, text: extracted.map(\.text).joined(separator: "\n")) }
       .sheet(isPresented: $isEditingPrivacy) { ProjectSourcePrivacySheet(source: source) }

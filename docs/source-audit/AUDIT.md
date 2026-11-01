@@ -91,3 +91,5 @@
 | S13 | 解析結果の再利用はmemoryのみ。再起動で転写/OCRを再実行 | 上限付きSQLite派生cache、原本hash/形式/用語集/schema/OS/localeで再検証 | 別instance再起動/破損/失効/削除競合のhost検査。端末認識器はfixture |
 | S14 | 添付を根拠に答えても、回答・履歴に原本の位置への参照が残らない | 実送信抜粋に限定した添付引用をoptional保存。予算で欠けた抜粋・不正番号はリンクにしない | production prepare/selection/codec検査。追加UIの実操作は未確認 |
 | S15 | PDFの取消/時間制限後に先頭からOCRをやり直す | hashで結んだ連続ページcheckpointと、時間制限時の明示的継続 | production PDFKit/Vision/SQLiteの取消/再開/再OCR抑止/削除失効をhostで確認。iOS実機は未確認 |
+| S16 | sourceは再要約の形式/長さ/AIを資料単位で選べない | その他メニューの任意設定とSQLiteへのoptional保存。削除済み選択へフォールバックしない | production解決/受入れ/保存と13競合のhost検査。追加UI/実AI品質は未確認 |
+| S17 | 要約開始時に成功原文参照まで上書きし、失敗後に古い要約の出典が新本文に見える | summaryAttemptTextReferenceを分離。成功時のみsummaryTextReference更新 | 実SQLite/本文読込とfixture要約器の失敗→再試行で検証。過去に失われた参照は推測しない |
