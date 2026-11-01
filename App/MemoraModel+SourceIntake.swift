@@ -7,7 +7,7 @@ extension MemoraModel {
   }
 
   @discardableResult
-  func scheduleProjectSourcePreparation(_ id: UUID) -> Task<Void, Never>? {
+  func scheduleProjectSourcePreparation(_ id: UUID, after predecessor: Task<Void, Never>? = nil) -> Task<Void, Never>? {
     if let job = sourcePreparationJobs[id] { return job.task }
     guard ProjectSourcePreparationContext(id, in: self) != nil else { return nil }
     let attempt = UUID()
@@ -18,7 +18,8 @@ extension MemoraModel {
         if self.sourcePreparationJobs[id]?.id == attempt { self.sourcePreparationJobs.removeValue(forKey: id) }
         self.recoverInterruptedProjectSources(includingPending: true)
       }
-      guard self.aiWorkspaceGeneration == generation else { return }
+      await predecessor?.value
+      guard !Task.isCancelled, self.aiWorkspaceGeneration == generation else { return }
       await self.performProjectSourcePreparation(id)
     }
     sourcePreparationJobs[id] = (attempt, job)

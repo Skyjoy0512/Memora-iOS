@@ -10,14 +10,17 @@ enum SourceMediaExtraction {
       return .init(blocks: [], notice: "音声トラックがありません。映像の内容は解析していません。")
     }
     let duration = try await asset.load(.duration).seconds
-    guard duration.isFinite, duration > 0, duration <= 6 * 60 * 60,
-          let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
+    guard duration.isFinite, duration > 0, duration <= 6 * 60 * 60 else {
       return .init(blocks: [], notice: "この音声を解析できません。6時間以内の再生可能なファイルを追加してください。原本は保存されています。")
     }
-    let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("memora-audio-\(UUID()).m4a")
-    defer { try? FileManager.default.removeItem(at: temporary) }
+    let stage = try await SourceMediaStaging.shared.acquire()
+    defer { stage.remove() }
+    guard let export = SourceMediaAudioExport(asset: asset, temporaryDirectory: stage.directory) else {
+      return .init(blocks: [], notice: "この音声を解析できません。再生可能なファイルを追加してください。原本は保存されています。")
+    }
+    let temporary = stage.audioURL
     try Task.checkCancellation()
-    try await session.export(to: temporary, as: .m4a)
+    try await export.write(to: temporary, stageDirectory: stage.directory)
     try Task.checkCancellation()
     // Importing a file is not permission to upload it to a speech provider.
     let outcome = await TranscriptionService.transcribe(fileURL: temporary, vocabulary: vocabulary, onDeviceOnly: true)

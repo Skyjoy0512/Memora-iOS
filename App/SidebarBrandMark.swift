@@ -7,7 +7,7 @@ struct SidebarBrandMark: View {
       .resizable()
       .renderingMode(.original)
       .scaledToFit()
-      .frame(width: 132, height: 27)
+      .frame(width: 106, height: 22)
       .accessibilityLabel("Memora")
       .accessibilityIdentifier("sidebar.logo")
   }

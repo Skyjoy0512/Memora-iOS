@@ -1,0 +1,89 @@
+import Foundation
+import PDFKit
+
+/// Owns temporary, native PDF parts until the import finishes. The caller must
+/// call cleanup after copying them into durable source storage.
+struct PDFSourcePartition: Sendable {
+  typealias Part = PDFSourcePartitionPart
+  static let maximumInputBytes = 500 * 1024 * 1024
+  static let maximumPartBytes = 50 * 1024 * 1024
+  static let maximumOutputBytes = 400 * 1024 * 1024
+  static let maximumPages = 10_000
+  static let maximumParts = 100
+  private static let lock = NSLock()
+
+  var parts: [Part]
+  var originalName: String
+  var fingerprint: String
+  var originalPageCount: Int
+  private var stagingDirectory: URL
+
+  static func prepare(_ url: URL, pagesPerPart: Int = 100, directory: URL? = nil) throws -> PDFSourcePartition {
+    guard (1...maximumPages).contains(pagesPerPart) else { throw PDFSourcePartitionFailure.invalidPagesPerPart }
+    lock.lock()
+    defer { lock.unlock() }
+    try Task.checkCancellation()
+    let accessed = url.startAccessingSecurityScopedResource()
+    defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+    let base = directory ?? FileManager.default.temporaryDirectory.appendingPathComponent("MemoraPDFPartitions", isDirectory: true)
+    guard base.isFileURL else { throw PDFSourcePartitionFailure.invalidFile }
+    try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+    let folder = base.resolvingSymlinksInPath().standardizedFileURL
+      .appendingPathComponent("partition-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false,
+      attributes: [.posixPermissions: 0o700])
+    var retained = false
+    defer { if !retained { try? FileManager.default.removeItem(at: folder) } }
+    let snapshot = try PDFSourcePartitionSnapshot(url, in: folder)
+    guard let document = PDFDocument(url: snapshot.url) else { throw PDFSourcePartitionFailure.invalidFile }
+    guard !document.isLocked, !document.isEncrypted else { throw PDFSourcePartitionFailure.encrypted }
+    let count = document.pageCount
+    guard (1...maximumPages).contains(count) else { throw PDFSourcePartitionFailure.pageLimit }
+    guard (count + pagesPerPart - 1) / pagesPerPart <= maximumParts else { throw PDFSourcePartitionFailure.partLimit }
+    try rejectInteractiveDocument(document)
+    let builder = PDFSourcePartitionBuilder(document: document, directory: folder)
+    var first = 1
+    while first <= count {
+      try Task.checkCancellation()
+      try builder.append(first...min(first + pagesPerPart - 1, count))
+      first += pagesPerPart
+    }
+    try Task.checkCancellation()
+    try snapshot.verifyOriginal()
+    try FileManager.default.removeItem(at: snapshot.url)
+    let result = PDFSourcePartition(parts: builder.parts, originalName: url.lastPathComponent,
+      fingerprint: snapshot.fingerprint, originalPageCount: count, stagingDirectory: folder)
+    try Task.checkCancellation()
+    retained = true
+    return result
+  }
+
+  @discardableResult
+  func cleanup() -> Bool {
+    guard FileManager.default.fileExists(atPath: stagingDirectory.path) else { return true }
+    do { try FileManager.default.removeItem(at: stagingDirectory); return true }
+    catch { return !FileManager.default.fileExists(atPath: stagingDirectory.path) }
+  }
+
+  private static func rejectInteractiveDocument(_ document: PDFDocument) throws {
+    guard let catalog = document.documentRef?.catalog else { throw PDFSourcePartitionFailure.invalidFile }
+    var permissions: CGPDFDictionaryRef?
+    if CGPDFDictionaryGetDictionary(catalog, "Perms", &permissions), let permissions {
+      var signature: CGPDFObjectRef?
+      if CGPDFDictionaryGetObject(permissions, "DocMDP", &signature) ||
+         CGPDFDictionaryGetObject(permissions, "UR3", &signature) || CGPDFDictionaryGetObject(permissions, "UR", &signature) {
+        throw PDFSourcePartitionFailure.interactiveDocument
+      }
+    }
+    var form: CGPDFDictionaryRef?
+    if CGPDFDictionaryGetDictionary(catalog, "AcroForm", &form), let form {
+      var fields: CGPDFArrayRef?, dynamicForm: CGPDFObjectRef?
+      var flags: CGPDFInteger = 0
+      if CGPDFDictionaryGetObject(form, "XFA", &dynamicForm) ||
+         (CGPDFDictionaryGetArray(form, "Fields", &fields) && fields.map { CGPDFArrayGetCount($0) > 0 } == true) ||
+         (CGPDFDictionaryGetInteger(form, "SigFlags", &flags) && flags != 0) {
+        throw PDFSourcePartitionFailure.interactiveDocument
+      }
+    }
+  }
+}

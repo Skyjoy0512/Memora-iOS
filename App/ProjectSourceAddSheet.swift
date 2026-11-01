@@ -16,6 +16,8 @@ struct ProjectSourceAddSheet: View {
   @State private var isMovingRecords = false
   @State private var isSaving = false
   @State private var failure: String?
+  @State private var partitionRequest: PDFSourcePartitionRequest?
+  @State private var showsPartition = false
   private var draftKey: String { "workspace.newNote.\(projectID?.uuidString ?? "library")" }
 
   var body: some View {
@@ -76,15 +78,7 @@ struct ProjectSourceAddSheet: View {
       .fileImporter(isPresented: $isImportingFiles, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
         switch result {
         case .success(let urls):
-          let context = fileContext
-          perform {
-            guard let context, context.isCurrent(in: model) else { return false }
-            for url in urls.prefix(10) {
-              guard context.isCurrent(in: model),
-                    try await model.importProjectFile(url, projectID: projectID, importContext: context, presentsErrorsLocally: true, waitsForPreparation: false) != nil else { return false }
-            }
-            return !urls.isEmpty
-          }
+          importFiles(urls)
         case .failure(let error): failure = error.localizedDescription
         }
       }
@@ -106,7 +100,39 @@ struct ProjectSourceAddSheet: View {
       .sheet(isPresented: $isMovingRecords) {
         if let projectID { ProjectFilePickerSheet(spaceID: projectID) }
       }
+      .navigationDestination(isPresented: $showsPartition) {
+        if let partitionRequest {
+          PDFSourcePartitionSheet(request: partitionRequest, isPresentedAsSheet: false) { dismiss() }
+        }
+      }
       .tint(MemoraPalette.textPrimary)
+    }
+  }
+
+  private func importFiles(_ urls: [URL]) {
+    guard !isSaving, let context = fileContext, context.isCurrent(in: model) else { return }
+    isSaving = true
+    failure = nil
+    Task { @MainActor in
+      defer { isSaving = false }
+      do {
+        for url in urls.prefix(10) {
+          guard context.isCurrent(in: model) else { throw ProjectSourceFiles.Failure.invalidFile }
+          do {
+            guard try await model.importProjectFile(url, projectID: projectID, importContext: context,
+              presentsErrorsLocally: true, waitsForPreparation: false) != nil else {
+              failure = model.persistenceFailureMessage ?? "保存できませんでした。保存先を確認して再試行してください。"
+              return
+            }
+          } catch ProjectSourceFiles.Failure.tooLarge where SourceIntake.kind(for: url) == .pdf {
+            guard context.isCurrent(in: model) else { return }
+            partitionRequest = PDFSourcePartitionRequest(url: url, context: context)
+            showsPartition = true
+            return
+          }
+        }
+        if !urls.isEmpty { dismiss() }
+      } catch { failure = error.localizedDescription }
     }
   }
 

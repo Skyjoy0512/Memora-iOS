@@ -14,6 +14,8 @@ struct ProjectSourceDetailView: View {
   @State private var isAsking = false
   @State private var isAddingVideoTranscript = false
   @State private var isChoosingSummaryOptions = false
+  @State private var sourceActionFailure: String?
+  @State private var partitionRequest: PDFSourcePartitionRequest?
   @State private var showsOriginal = false
   @State private var textLoader = ProjectSourceTextLoader()
   @State private var textRetry = 0
@@ -31,6 +33,7 @@ struct ProjectSourceDetailView: View {
           LazyVStack(alignment: .leading, spacing: 20) {
             Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
             Text(source.kindLabel).font(.footnote).foregroundStyle(.secondary)
+            if let sourceActionFailure { Text(sourceActionFailure).font(.footnote).foregroundStyle(.secondary) }
             if let author = source.metadata?["webAuthor"] ?? source.metadata?["youtubeAuthor"], !author.isEmpty {
               Text(author).font(.footnote).foregroundStyle(.secondary)
             }
@@ -195,6 +198,21 @@ struct ProjectSourceDetailView: View {
                 Task { await model.acquireRemoteSource(sourceID, refresh: true); await model.summarizeProjectSource(sourceID) }
               }
             }
+            if source.kind == .pdf, source.localFileReference != nil {
+              Button("原文を読み直す", icon: .arrowClockwise) {
+                guard canStartSourceChange() else { return }
+                sourceActionFailure = nil
+                if !model.rereadProjectPDFSource(sourceID) {
+                  sourceActionFailure = "原文を読み直せませんでした。保存したPDFと保存先を確認して、もう一度お試しください。"
+                }
+              }
+              Button("PDFを分けて追加", icon: .docText) {
+                guard canStartSourceChange(), let current = model.source(id: sourceID), current.kind == .pdf,
+                      let reference = current.localFileReference, let file = ProjectSourceFiles.resolve(reference),
+                      let context = LocalImportContext(projectID: current.projectID, in: model) else { return }
+                partitionRequest = PDFSourcePartitionRequest(url: file, context: context)
+              }
+            }
             Button("プライバシー", icon: .lock) { isEditingPrivacy = true }
             if source.projectID != nil { Button("プロジェクトから外す", icon: .folder) { isDetaching = true } }
             Button("資料を削除", icon: .trash, role: .destructive) { isDeleting = true }
@@ -212,6 +230,7 @@ struct ProjectSourceDetailView: View {
       }
       .sheet(isPresented: $isAddingVideoTranscript) { VideoTranscriptImportSheet(source: source) { _ in } }
       .sheet(isPresented: $isChoosingSummaryOptions) { SourceSummaryOptionsSheet(sourceID: sourceID) }
+      .sheet(item: $partitionRequest) { request in PDFSourcePartitionSheet(request: request) }
       .sheet(isPresented: $isAsking) { AIQuestionView(request: AIQuestionRequest(question: "", scope: .global, sourceID: sourceID)) }
       .sheet(isPresented: $isEditing) { ProjectNoteEditSheet(source: source, text: extracted.map(\.text).joined(separator: "\n")) }
       .sheet(isPresented: $isEditingPrivacy) { ProjectSourcePrivacySheet(source: source) }

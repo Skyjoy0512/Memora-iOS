@@ -24,9 +24,10 @@ final class MemoraModel {
     await preparationHook?(id)
   }
   @discardableResult
-  func scheduleProjectSourcePreparation(_ id: UUID) -> Task<Void, Never>? {
+  func scheduleProjectSourcePreparation(_ id: UUID, after predecessor: Task<Void, Never>? = nil) -> Task<Void, Never>? {
     let attempt = UUID()
     let job = Task {
+      await predecessor?.value
       await prepareProjectSource(id)
       if sourcePreparationJobs[id]?.id == attempt { sourcePreparationJobs.removeValue(forKey: id) }
     }

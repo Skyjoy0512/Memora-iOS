@@ -11,6 +11,7 @@ struct ProjectSourceImportChecks {
     }
     try await conversationCopy(root)
     try await continuation(root)
+    try await rereadPDF(root)
     try await rollback(root)
     try await mutations(root)
     try contextPolicy(root)
@@ -145,6 +146,71 @@ struct ProjectSourceImportChecks {
     retryGate.resume()
     if let job = model.sourcePreparationJobs[id]?.task { await job.value }
     print("PASS failed image OCR is persisted and admits one explicit retry without omitting readable digital text (scheduler fixture)")
+  }
+
+  @MainActor static func rereadPDF(_ root: URL) async throws {
+    let (model, projectID) = try fixture(root, "pdf-reread")
+    let originalURL = try original(root, "pdf-reread-original")
+    let id = try await model.importProjectFile(originalURL, projectID: projectID)!
+    let text = try await ProjectSourceFiles.shared.write(JSONEncoder().encode([ProjectSourceText(text: "以前に読めた本文", page: 1)]), extension: "json")
+    var ready = model.source(id: id)!
+    ready.kind = .pdf
+    ready.processingStatus = .ready
+    ready.extractedTextReference = text
+    ready.summary = "保持する要約"
+    ready.summaryStatus = .ready
+    ready.summaryTextReference = text
+    ready.originalURL = URL(string: "https://example.org/do-not-download.pdf")
+    ready.privacy.classification = .sensitive
+    ready.privacy.allowsCloudAI = false
+    precondition(model.storeProjectSource(ready))
+    precondition(!model.resumeProjectSource(id), "Complete PDFs must not masquerade as continuation")
+    for blocked in 0..<4 {
+      if blocked == 0 { model.currentTeamID = "team" }
+      if blocked == 1 { model.isRestoring = true }
+      if blocked == 2 { model.isStoreProtected = true }
+      if blocked == 3 { model.spaces = [] }
+      precondition(!model.rereadProjectPDFSource(id) && model.source(id: id) == ready)
+      model.currentTeamID = nil; model.isRestoring = false; model.isStoreProtected = false
+      model.spaces = [MemoraSpace(id: projectID, name: "架空の取込先", symbol: "folder")]
+    }
+    model.projectSourceProcessingIDs.insert(id)
+    precondition(!model.rereadProjectPDFSource(id))
+    model.projectSourceProcessingIDs.remove(id)
+    var busy = ready
+    busy.summaryStatus = .processing
+    precondition(model.storeProjectSource(busy) && !model.rereadProjectPDFSource(id))
+    var missing = ready
+    missing.localFileReference = "missing-pdf-original.pdf"
+    precondition(model.storeProjectSource(missing) && !model.rereadProjectPDFSource(id))
+    var unsupported = ready
+    unsupported.kind = .document
+    precondition(model.storeProjectSource(unsupported) && !model.rereadProjectPDFSource(id))
+    precondition(model.storeProjectSource(ready))
+    try sql("CREATE TRIGGER reject_reread BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT, 'reread check'); END;", model.storeURL)
+    precondition(!model.rereadProjectPDFSource(id) && model.sourcePreparationJobs[id] == nil)
+    expect(try reload(model) == [ready])
+    try sql("DROP TRIGGER reject_reread;", model.storeURL)
+    let gate = ImportGate()
+    model.preparationHook = { _ in await gate.wait() }
+    let before = try files()
+    let preparedCount = model.preparedSourceIDs.count
+    precondition(model.rereadProjectPDFSource(id) && !model.rereadProjectPDFSource(id) && !model.resumeProjectSource(id))
+    await gate.entered()
+    var queued = ready
+    queued.processingStatus = .pending
+    precondition(model.source(id: id) == queued && model.preparedSourceIDs.count == preparedCount + 1)
+    expect(try reload(model) == [queued] && files() == before)
+    expect(try ProjectSourceTextReader.read(text).first?.text == "以前に読めた本文")
+    expect(try Data(contentsOf: ProjectSourceFiles.resolve(queued.localFileReference!)!) == Data(contentsOf: originalURL))
+    gate.resume()
+    if let job = model.sourcePreparationJobs[id]?.task { await job.value }
+    model.preparationHook = nil
+    ready.projectID = nil
+    precondition(model.storeProjectSource(ready) && model.rereadProjectPDFSource(id))
+    if let job = model.sourcePreparationJobs[id]?.task { await job.value }
+    precondition(model.source(id: id)?.projectID == nil && model.audioImportCalls == 0)
+    print("PASS explicit PDF re-read queues one local preparation for old ready records, preserves original/text/summary/privacy and scope, rejects missing/orphan/busy/team/restore/protected inputs and rolls back failed persistence (scheduler fixture)")
   }
 
   @MainActor static func race(_ root: URL, stage: Int, change: Int) async throws {
