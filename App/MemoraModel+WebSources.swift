@@ -88,6 +88,6 @@ extension MemoraModel {
     for job in projectWebFetchJobs.values { job.task.cancel() }
     projectWebFetchJobs = [:]
     projectSourceProcessingIDs.subtract(ids)
-    recoverInterruptedProjectSources()
+    recoverInterruptedProjectSources(includingPending: true)
   }
 }

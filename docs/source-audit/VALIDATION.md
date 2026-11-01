@@ -6,7 +6,7 @@
 
 - 開始時のHEAD/二つのmain remoteは基準 `7ba0305e285706108525c10b5d1a2dc3f4b1a913` と一致。開始時未コミット変更なし。mainのまま作業。ユーザーデータ/既存サンプルの削除・設定リセットなし。
 - `bitrig preview -platform iOS` 成功。iOS Simulator arm64/x86_64、アプリと既存拡張をビルド。既存のMapKit/AuthSession非推奨等11 warnings。エラー0。
-- 最終コードのbuild log: `Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-11-01T11-50-05-58e0c3c1.log`。
+- 初回P0修正後のbuild log: `Builds/a8e58691-1b31-4bb3-8c2f-f9dec163a2ea/logs/2026-11-01T11-50-05-58e0c3c1.log`。後続変更のbuildは末尾の各工程に記録する。
 - 実際のビルド環境はログ上iPhoneSimulator27.2.sdk。追加APIはiOS26以前のもの（FoundationModels/SpeechAnalyzerは26.0 availability）に限定。SDK27.1そのものを用いたビルド結果ではない。
 - `bitrig test -list -json`: exit78、Project.json形式にtest targetなし。XCTest成功とはしない。既存のSwift実コードホスト検査を実行した。
 - シミュレーター: Bitrig iPhone 18 Pro Maxと、後述の小画面切替。途中で一覧が空になったが再接続。新端末は初回起動となり、既存端末のデータを削除せず別の個人ライブラリで確認。
@@ -102,3 +102,17 @@
 - `conversation-save-20261101.log`: production file copy/SQLiteで、元URL/表示名/既定privacyの初回保存、要約待ちなし、URL重複時に本文を上書きしないこと、保存範囲分離をPASS。既存32競合/rollback検査も同suiteでPASS。実要約器はfixture。
 - 過去の6全体suiteは再実行していない。今回の追加変更に対する結果は上記の限定host検査と別記するiOS preview buildに限る。追加のシミュレーター操作・実機試験は実施していない。
 - 最終コードの `bitrig preview -platform iOS` は成功（既存と同じ11 warnings）。log: `logs/2026-11-01T12-00-40-842d2eff.log`。最終レビューで追加した重複競合対策を含む。`git diff --check` も通過。
+
+## P0/P1の並行改善（a158414aから）
+
+利用者の並行実装の指示を受け、解析結果の永続化、添付の全文/位置閲覧、資料の再試行/要約履歴を分担して統合した。追加でrootが未開始pendingの復旧と、SQLite削除成功後の派生cache破棄を接続した。
+
+| 限定検査 | 結果 | 境界/log |
+|---|---|---|
+| SourceExtractionCacheChecks | PASS | production hashing/SQLite/ファイルで別instance再起動、coverage/thumbnail保持、期限/件数/byte容量、破損/欠落、保存不可、選択削除/取消、同時waiterの1回保存。OS抽出器はfixture。`p1-durable-cache-20261101.log` |
+| ProjectSourceWebRecoveryChecks | PASS | 既存28競合と、pending起動復旧/live queue保護/SQL失敗rollback/原本保持。DNS/HTTPとmodel stateはfixture。`p1-pending-recovery-20261101.log` |
+| ProjectSourceImportChecks | PASS | 既存32競合/コピー/SQLite/URL重複と、削除成功時だけ派生cache破棄を要求するhook。model hookはfixture、cache本体の選択削除は上の検査。`p1-source-deletion-20261101.log` |
+
+全体6suiteは反復していない。追加UIの端末操作、PDF24ページのtap、音声/videoの実再生、アプリの実プロセス再起動によるcache再利用は未検証。hostでの別instance復元と、iOSでの実際の再起動を区別する。アクセシビリティの追加検証も実施していない。
+
+統合後の `bitrig preview -platform iOS` は成功、プレビュー更新済み（既存と同じ11 warnings）。log: `logs/2026-11-01T12-10-32-3bd7f10b.log`。今回のapp変更をまとめてビルドした結果で、上記UIの操作確認を意味しない。`git diff --check` も通過。

@@ -4,7 +4,7 @@ extension MemoraModel {
   /// This reconciles current state, never a suspended job's snapshot. It changes
   /// only orphaned status/notice fields and never resumes a read or removes files.
   @discardableResult
-  func recoverInterruptedProjectSources() -> Bool {
+  func recoverInterruptedProjectSources(includingPending: Bool = false) -> Bool {
     guard currentTeamID == nil, !isRestoring, !isStoreProtected else { return false }
     var candidate = projectSources
     var changed: [ProjectCitation.Target] = []
@@ -14,7 +14,8 @@ extension MemoraModel {
       candidate[index].summaryError = "要約が中断されました。原文は保存されています。再試行できます。"
       changed.append(.source(candidate[index].id))
     }
-    for index in candidate.indices where candidate[index].processingStatus == .processing &&
+    for index in candidate.indices where (candidate[index].processingStatus == .processing ||
+      (includingPending && candidate[index].processingStatus == .pending && sourcePreparationJobs[candidate[index].id] == nil)) &&
       !projectSourceProcessingIDs.contains(candidate[index].id) {
       candidate[index].processingStatus = candidate[index].kind == .youtube ? .unavailable : .failed
       candidate[index].errorInformation = "処理は中断されました。ソースは保持しています。必要に応じて再試行してください。自動では再開しません。"

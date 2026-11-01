@@ -189,12 +189,15 @@ struct ProjectSourceImportChecks {
     }
     try sql("CREATE TRIGGER reject_delete BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT, 'delete check'); END;", model.storeURL)
     precondition(!model.deleteProjectSource(id))
+    precondition(model.discardedSourceExtractions.isEmpty)
     expect(try reload(model) == [source] && files() == before)
     try sql("DROP TRIGGER reject_delete;", model.storeURL)
     precondition(model.detachProjectSource(id) && model.source(id: id)!.projectID == nil)
-    var shared = model.source(id: id)!
+    let detached = model.source(id: id)!
+    var shared = detached
     shared.id = UUID()
     precondition(model.storeProjectSource(shared) && model.deleteProjectSource(id))
+    precondition(model.discardedSourceExtractions == [detached])
     await Task.yield()
     expect(try reload(model) == [shared])
     expect(try Data(contentsOf: ProjectSourceFiles.resolve(shared.localFileReference!)!) == Data("保持する元のファイル".utf8))

@@ -21,6 +21,7 @@ extension MemoraModel {
     }
     projectSources = remaining
     invalidateProjectEvidence([.source(id)])
+    discardSourceExtraction(for: source)
     let workspace = currentTeamID, generation = aiWorkspaceGeneration
     Task {
       guard workspace == currentTeamID, generation == aiWorkspaceGeneration else { return }

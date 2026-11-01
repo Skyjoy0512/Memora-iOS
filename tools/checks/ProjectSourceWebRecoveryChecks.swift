@@ -23,6 +23,7 @@ struct ProjectSourceWebRecoveryChecks {
     try await cancellation(root)
     try await rollback(root)
     try await recovery(root)
+    try await pendingRecovery(root)
     print("ProjectSourceWebRecoveryChecks: passed (production fetch orchestration/client/text extraction/file/SQLite reopen; 28 suspended-response/write races, replacement ownership, cancellation, SQL rollback/retry, orphaned-status recovery and failed recovery save; DNS/HTTP payload and model state are fixtures, no network)")
   }
 
@@ -217,6 +218,42 @@ struct ProjectSourceWebRecoveryChecks {
     expect(try files() == before)
     expect(try Data(contentsOf: ProjectSourceFiles.resolve(originalFile)!) == Data("保持する原本".utf8))
     expect(try ProjectSourceTextReader.read(reference).first?.text == "保持する本文")
+  }
+
+  @MainActor static func pendingRecovery(_ root: URL) async throws {
+    let (model, _) = try fixture(root, "pending-recovery")
+    let original = try await ProjectSourceFiles.shared.write(Data("待機中も保持する原本".utf8), extension: "txt")
+    var pending = ProjectSource(kind: .document, title: "開始前に中断", localFileReference: original)
+    var active = pending
+    active.id = UUID()
+    var youtube = ProjectSource(kind: .youtube, title: "開始前の動画", originalURL: URL(string: "https://www.youtube.com/watch?v=abcdefghijk"))
+    let queued = Task {}
+    model.sourcePreparationJobs[active.id] = (UUID(), queued)
+    model.projectSources = [pending, active, youtube]
+    precondition(model.persistNow(model.projectSources, forKey: MemoraModel.StorageKey.projectSources))
+    let before = try files()
+    // Ordinary per-stage reconciliation leaves a newly queued source alone.
+    precondition(model.recoverInterruptedProjectSources() && model.projectSources == [pending, active, youtube])
+    pending.processingStatus = .failed
+    pending.errorInformation = notice
+    youtube.processingStatus = .unavailable
+    youtube.errorInformation = notice
+    precondition(model.recoverInterruptedProjectSources(includingPending: true))
+    precondition(model.projectSources == [pending, active, youtube])
+    expect(try reload(model) == model.projectSources && files() == before)
+    model.sourcePreparationJobs = [:]
+    try sql("CREATE TRIGGER reject_pending_recovery BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT, 'pending recovery check'); END;", model.storeURL)
+    precondition(!model.recoverInterruptedProjectSources(includingPending: true))
+    precondition(model.projectSources == [pending, active, youtube])
+    try sql("DROP TRIGGER reject_pending_recovery;", model.storeURL)
+    precondition(model.recoverInterruptedProjectSources(includingPending: true))
+    active.processingStatus = .failed
+    active.errorInformation = notice
+    precondition(model.projectSources == [pending, active, youtube])
+    expect(try reload(model) == model.projectSources && files() == before)
+    expect(try Data(contentsOf: ProjectSourceFiles.resolve(original)!) == Data("待機中も保持する原本".utf8))
+    await queued.value
+    print("PASS pending source recovery preserves live queue entries and original files, persists retry state after restart, rolls back failed recovery writes")
   }
 
   static func expect(_ value: Bool) { precondition(value) }

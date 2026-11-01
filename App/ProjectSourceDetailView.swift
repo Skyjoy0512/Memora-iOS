@@ -22,6 +22,9 @@ struct ProjectSourceDetailView: View {
       let snapshot = textLoader.snapshot
       let extracted = snapshot.value(for: sourceID) ?? []
       let request = ProjectSourceTextRequest(sourceID: sourceID, reference: source.extractedTextReference, retry: textRetry)
+      let sourceIsPreparing = isPreparing(source)
+      let cannotChange = sourceIsPreparing || model.isRestoring || model.isStoreProtected
+      let previousSummaries = self.previousSummaries(for: source)
       ScrollViewReader { proxy in
         ScrollView {
           LazyVStack(alignment: .leading, spacing: 20) {
@@ -34,7 +37,7 @@ struct ProjectSourceDetailView: View {
               Text("取得：\(date.formatted(.dateTime.year().month().day().locale(Locale(identifier: "ja_JP"))))")
                 .font(.caption).foregroundStyle(.secondary)
             }
-            if source.summaryStatus == .processing || source.processingStatus == .processing || source.processingStatus == .pending {
+            if sourceIsPreparing {
               ProgressView("準備しています…").font(.subheadline)
             }
             if let summary = source.summary, !summary.isEmpty {
@@ -43,13 +46,14 @@ struct ProjectSourceDetailView: View {
               }
               MarkdownDocumentView(markdown: summary, isLazy: true)
             }
-            if let failure = source.summaryError {
+            if let failure = summaryFailure(for: source) {
               VStack(alignment: .leading, spacing: 8) {
                 Text(failure).font(.footnote).foregroundStyle(.secondary)
                 if source.canProvideText {
                   Button("要約を再試行", icon: .arrowClockwise) {
+                    guard canStartSourceChange() else { return }
                     Task { await model.summarizeProjectSource(sourceID, retry: true) }
-                  }.frame(minHeight: 44)
+                  }.frame(minHeight: 44).disabled(cannotChange)
                 }
               }
             }
@@ -61,16 +65,22 @@ struct ProjectSourceDetailView: View {
             if source.kind == .youtube, !source.canProvideText {
               Text("字幕がまだありません。お持ちの動画・字幕ファイルの追加や、権限のあるYouTubeアカウントとの接続を試せます。")
                 .font(.subheadline).foregroundStyle(.secondary)
-              Button("動画・字幕ファイルを追加", icon: .paperclip) { isAddingVideoTranscript = true }
-                .frame(minHeight: 44)
+              Button("動画・字幕ファイルを追加", icon: .paperclip) {
+                guard canStartSourceChange() else { return }
+                isAddingVideoTranscript = true
+              }
+                .frame(minHeight: 44).disabled(cannotChange)
               if let id = source.metadata?["videoTranscriptMeetingID"].flatMap(UUID.init(uuidString:)), model.meeting(id: id) != nil {
                 NavigationLink("以前の字幕・要約を開く", value: LibraryRoute.meeting(id)).frame(minHeight: 44)
               }
             }
             if source.processingStatus == .failed || source.processingStatus == .unavailable, source.kind != .youtube {
-              if let message = source.errorInformation { Text(message).font(.footnote).foregroundStyle(.secondary) }
-              Button("再試行", icon: .arrowClockwise) { Task { await model.prepareProjectSource(sourceID) } }
-                .frame(minHeight: 44)
+              Text(nonempty(source.errorInformation) ?? "内容を読み取れませんでした。元の資料を確認するか、もう一度お試しください。")
+                .font(.footnote).foregroundStyle(.secondary)
+              Button("再試行", icon: .arrowClockwise) {
+                guard canStartSourceChange() else { return }
+                Task { await model.prepareProjectSource(sourceID) }
+              }.frame(minHeight: 44).disabled(cannotChange)
             }
             if source.canProvideText || !extracted.isEmpty {
               DisclosureGroup(source.kind == .audio || source.kind == .video || source.kind == .youtube ? "文字起こし・字幕" : "原文", isExpanded: $showsOriginal) {
@@ -103,12 +113,21 @@ struct ProjectSourceDetailView: View {
             if let message = source.availabilityNotice, source.processingStatus == .ready || source.kind == .youtube {
               DisclosureGroup("資料について") { Text(message).font(.footnote).foregroundStyle(.secondary) }
             }
+            if !previousSummaries.isEmpty {
+              DisclosureGroup("以前の要約") {
+                ForEach(Array(previousSummaries.enumerated()), id: \.offset) { index, summary in
+                  DisclosureGroup("保存済みの要約 \(index + 1)") {
+                    MarkdownDocumentView(markdown: summary, isLazy: true)
+                  }
+                }
+              }
+            }
             if let revisions = source.revisions, !revisions.isEmpty {
-              DisclosureGroup("更新履歴") {
+              DisclosureGroup("原文の更新履歴") {
                 ForEach(Array(revisions.enumerated()), id: \.offset) { _, revision in
                   VStack(alignment: .leading, spacing: 8) {
                     Text(revision.acquiredAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
-                    if let summary = revision.summary { MarkdownDocumentView(markdown: summary, isLazy: true) }
+                    if let summary = nonempty(revision.summary) { MarkdownDocumentView(markdown: summary, isLazy: true) }
                   }
                 }
               }
@@ -150,10 +169,14 @@ struct ProjectSourceDetailView: View {
               Button("メモを編集", icon: .pencil) { isEditing = true }.disabled(extracted.isEmpty)
             }
             if source.canProvideText {
-              Button("要約を作り直す", icon: .sparkles) { Task { await model.summarizeProjectSource(sourceID, retry: true) } }
+              Button("要約を作り直す", icon: .sparkles) {
+                guard canStartSourceChange() else { return }
+                Task { await model.summarizeProjectSource(sourceID, retry: true) }
+              }
             }
             if source.originalURL != nil, source.kind == .web || source.kind == .pdf {
               Button("原文を更新", icon: .arrowClockwise) {
+                guard canStartSourceChange() else { return }
                 Task { await model.acquireRemoteSource(sourceID, refresh: true); await model.summarizeProjectSource(sourceID) }
               }
             }
@@ -161,12 +184,12 @@ struct ProjectSourceDetailView: View {
             if source.projectID != nil { Button("プロジェクトから外す", icon: .folder) { isDetaching = true } }
             Button("資料を削除", icon: .trash, role: .destructive) { isDeleting = true }
           } label: { ToolbarActionLabel("その他", icon: .ellipsis) }
-          .disabled(model.projectSourceProcessingIDs.contains(sourceID) || model.isRestoring || model.isStoreProtected)
+          .disabled(cannotChange)
         }
       }
       .quickLookPreview($previewURL)
       .task(id: sourceID) {
-        if source.processingStatus == .pending { await model.prepareProjectSource(sourceID) }
+        if model.source(id: sourceID)?.processingStatus == .pending { await model.prepareProjectSource(sourceID) }
       }
       .task(id: request) {
         await textLoader.load(request) { model.source(id: sourceID)?.extractedTextReference == request.reference }
@@ -184,5 +207,39 @@ struct ProjectSourceDetailView: View {
       } message: { Text("資料はライブラリに残ります。") }
       .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
     } else { ContentUnavailableView("資料が見つかりません", icon: .docQuestionmark) }
+  }
+
+  private func isPreparing(_ source: ProjectSource) -> Bool {
+    model.projectSourceProcessingIDs.contains(sourceID) ||
+      source.processingStatus == .pending || source.processingStatus == .processing || source.summaryStatus == .processing
+  }
+
+  private func canStartSourceChange() -> Bool {
+    guard let current = model.source(id: sourceID),
+          !model.isRestoring, !model.isStoreProtected,
+          model.sourcePreparationJobs[sourceID] == nil else { return false }
+    return !isPreparing(current)
+  }
+
+  private func summaryFailure(for source: ProjectSource) -> String? {
+    if let message = nonempty(source.summaryError) { return message }
+    guard source.summaryStatus == .failed || source.summaryStatus == .unavailable else { return nil }
+    return source.canProvideText
+      ? "要約を作成できませんでした。原文は引き続き確認できます。"
+      : "要約を作成できませんでした。資料の内容を取得してから、もう一度お試しください。"
+  }
+
+  private func previousSummaries(for source: ProjectSource) -> [String] {
+    // Original revisions already retain their own summaries; don't show those twice.
+    var seen = Set(([source.summary] + (source.revisions ?? []).map(\.summary)).compactMap(nonempty))
+    return Array((source.summaryHistory ?? []).reversed().compactMap { value in
+      guard let summary = nonempty(value), seen.insert(summary).inserted else { return nil }
+      return summary
+    }.prefix(3))
+  }
+
+  private func nonempty(_ value: String?) -> String? {
+    guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
+    return value
   }
 }

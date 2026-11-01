@@ -16,6 +16,7 @@ extension MemoraModel {
       guard let self else { return }
       defer {
         if self.sourcePreparationJobs[id]?.id == attempt { self.sourcePreparationJobs.removeValue(forKey: id) }
+        self.recoverInterruptedProjectSources(includingPending: true)
       }
       guard self.aiWorkspaceGeneration == generation else { return }
       await self.performProjectSourcePreparation(id)

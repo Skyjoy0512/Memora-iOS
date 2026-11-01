@@ -325,7 +325,7 @@ final class MemoraModel {
         cancelProjectWebFetches()
         interruptPendingSummaries(requiresUserRetry: true)
       }
-      else { recoverInterruptedProjectSources() }
+      else { recoverInterruptedProjectSources(includingPending: true) }
     }
   }
   var recordingElapsed: TimeInterval = 0
@@ -732,7 +732,7 @@ final class MemoraModel {
     // Anything that was mid-processing when the app stopped is offered for
     // retry instead of looking stuck forever.
     recoverInterruptedJobs()
-    recoverInterruptedProjectSources()
+    recoverInterruptedProjectSources(includingPending: true)
 
     // Records kept past their recovery window are removed for good.
     purgeExpiredTrash()

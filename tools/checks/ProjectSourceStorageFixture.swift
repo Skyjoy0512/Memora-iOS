@@ -17,6 +17,8 @@ final class MemoraModel {
   var preparedSourceIDs: [UUID] = []
   var preparationHook: ((UUID) async -> Void)?
   var audioImportCalls = 0
+  var discardedSourceExtractions: [ProjectSource] = []
+  func discardSourceExtraction(for source: ProjectSource) { discardedSourceExtractions.append(source) }
   func prepareProjectSource(_ id: UUID) async {
     preparedSourceIDs.append(id)
     await preparationHook?(id)

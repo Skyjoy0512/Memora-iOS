@@ -79,3 +79,13 @@
 | R04 | AskAIがドメイン表記を変形し、内部方針を回答に混ぜた | 固有名詞/否定・条件保持をsystem指示へ追加。実行指示と資料contextを分離 | 表記保持は途中版で確認。最後の分離変更はbuild/関連host検査成功、最終生成は未確認 |
 
 実装後の入口表・互換性は [IMPLEMENTATION.md](IMPLEMENTATION.md)、操作比較は [COMPARISON.md](COMPARISON.md)、現在の結果と未確認は [VALIDATION.md](VALIDATION.md)。
+
+## P1統合時に静的コードで確認した追加問題
+
+以下は実機での再現報告ではない。実装経路と限定host検査で確認したもの。
+
+| ID | 問題と原因 | 修正 | 検証境界 |
+|---|---|---|---|
+| S11 | 原本登録後、準備job開始前の終了でpendingが残る。復旧処理はprocessingのみ対象 | 起動/復元/取消後に、live jobのないpendingも再試行状態へ戻す | production SQLiteとlive queue/rollbackのhost検査。実OS強制終了は未確認 |
+| S12 | 会話添付viewerがAI用の有限抜粋を原文として表示 | 全抽出ブロックを遅延表示し、実ページ/時刻へ共通viewerを再利用 | iOS buildと静的レビュー。追加UI実操作は未確認 |
+| S13 | 解析結果の再利用はmemoryのみ。再起動で転写/OCRを再実行 | 上限付きSQLite派生cache、原本hash/形式/用語集/schema/OS/localeで再検証 | 別instance再起動/破損/失効/削除競合のhost検査。端末認識器はfixture |
