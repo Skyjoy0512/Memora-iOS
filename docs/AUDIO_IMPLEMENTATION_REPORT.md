@@ -19,6 +19,11 @@ live認識も既存の文字起こし言語設定を使う。原本・本文・r
 [原本参照の実装・関連ファイルと検査](RECORDING_AUDIO_ORIGINALS.md)。録音下書きの複数原本復旧は残件。
 原本管理、backup/restore、録音確定、Journalの関連host検査と差分検査は通過。
 最終iOS previewも成功（既存警告11件）。実機24時間/RTF/CERの測定結果はまだない。
+録音manifestを新規下書きへ接続し、全原本の時刻・確定状態を保持する復旧と安全な破棄を追加。
+単一原本の確認後は既存の認識へ渡す。複数原本の連続音声準備と自動rotationはまだ有効にしない。
+[録音manifestの追補](RECORDING_MANIFEST.md)。
+manifest/録音確定、原本管理/破棄、開始、旧下書き復旧、backup/restore、音声取り込み、
+動画文字起こし取り込みの7系統のhost検査と差分検査は通過。最終iOS previewも成功（既存警告11件）。
 
 ## 1. 変更した機能
 

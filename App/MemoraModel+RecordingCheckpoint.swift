@@ -8,6 +8,7 @@ extension MemoraModel {
     guard !Task.isCancelled, (isRecording || isSavingCapture), !isRestoring, !isStoreProtected,
           var draft = recordingDraft, draft.id != nil,
           let url = recordingURL, MediaFiles.reference(for: url) == draft.fileName else { return false }
+    guard draft.audioManifest.map({ $0.isValid(for: draft.id!, activeFileName: draft.fileName) }) ?? true else { return false }
     let previous = draft
     draft.title = recordingTitle
     draft.note = recordingNote

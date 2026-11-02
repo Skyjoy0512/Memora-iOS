@@ -7,7 +7,7 @@ swiftc App/SourceSummaryOptions.swift App/SummaryEngineChoice.swift Shared/Memor
   App/SummarySensitivity.swift App/SummaryMarketTemplate.swift App/SummaryTemplateCategory.swift \
   App/SummaryLength.swift App/SummaryUseCase.swift App/VideoSummaryTemplate.swift \
   App/ProjectSource.swift App/ProjectCitation.swift App/LocalImportContext.swift \
-  App/Meeting.swift App/MeetingSource.swift App/MeetingStatus.swift App/TranscriptSegment.swift \
+  App/RecordingAudioPart.swift App/RecordingAudioManifest.swift App/Meeting.swift App/MeetingSource.swift App/MeetingStatus.swift App/TranscriptSegment.swift \
   App/SpeakerIdentificationStatus.swift App/RecordingMarker.swift App/AudioInbox.swift \
   App/VideoTranscript.swift App/MemoraModel+VideoTranscript.swift \
   tools/checks/AudioImportFixtureServices.swift tools/checks/VideoTranscriptImportFixture.swift \

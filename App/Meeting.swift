@@ -23,6 +23,7 @@ struct Meeting: Identifiable, Hashable, Codable {
   var audioURL: URL?
   /// Segment originals retained alongside the existing playable file.
   var originalAudioFileNames: [String] = []
+  var recordingAudioManifest: RecordingAudioManifest? = nil
   var notes = ""
   var recordingMarkers: [RecordingMarker] = []
   var summaryUseCaseID: String? = nil
@@ -62,6 +63,7 @@ extension Meeting {
     case spaceID
     case audioURL
     case originalAudioFileNames
+    case recordingAudioManifest
     case notes
     case recordingMarkers
     case summaryUseCaseID, summaryVersions, activeSummaryVersionID
@@ -89,6 +91,7 @@ extension Meeting {
     transcript = try container.decode([TranscriptSegment].self, forKey: .transcript)
     spaceID = try container.decodeIfPresent(UUID.self, forKey: .spaceID)
     originalAudioFileNames = try container.decodeIfPresent([String].self, forKey: .originalAudioFileNames) ?? []
+    recordingAudioManifest = try container.decodeIfPresent(RecordingAudioManifest.self, forKey: .recordingAudioManifest)
     notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
     // An interrupted file may have no readable duration yet; do not discard
     // its marks just because that unknown duration is stored as zero.
@@ -147,6 +150,7 @@ extension Meeting {
     if !originalAudioFileNames.isEmpty {
       try container.encode(originalAudioFileNames, forKey: .originalAudioFileNames)
     }
+    try container.encodeIfPresent(recordingAudioManifest, forKey: .recordingAudioManifest)
     try container.encode(notes, forKey: .notes)
     if !recordingMarkers.isEmpty { try container.encode(recordingMarkers, forKey: .recordingMarkers) }
     try container.encodeIfPresent(participantIDs, forKey: .participantIDs)

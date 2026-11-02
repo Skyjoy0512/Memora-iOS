@@ -465,6 +465,7 @@ enum BackupPackage {
     }
 
     for meeting in meetings {
+      try validateRecordingManifest(meeting)
       // A record still holding inline photos would be refused on restore, so the
       // export says so instead of writing a package that cannot come back.
       if meeting.legacyPhotoData != nil {
@@ -507,6 +508,7 @@ enum BackupPackage {
     var photos: Set<String> = []
 
     for meeting in manifest.meetings {
+      try validateRecordingManifest(meeting)
       for name in meeting.originalAudioFileNames {
         guard manifest.version >= 3 else { throw BackupError.unreadable }
         guard MediaFiles.isPlainName(name) else { throw BackupError.unsafeReference(name) }
@@ -545,6 +547,12 @@ enum BackupPackage {
     guard fileManager.fileExists(atPath: source.path) else { return false }
     if fileManager.fileExists(atPath: destination.path) { return true }
     return (try? fileManager.copyItem(at: source, to: destination)) != nil
+  }
+
+  private static func validateRecordingManifest(_ meeting: Meeting) throws {
+    guard let recording = meeting.recordingAudioManifest else { return }
+    guard recording.isValid(for: meeting.id),
+          Set(recording.fileNames).isSubset(of: Set(meeting.originalAudioFileNames)) else { throw BackupError.unreadable }
   }
 
   private static func validateIdentifiers(_ manifest: Manifest) throws {

@@ -5,6 +5,8 @@ import Foundation
 enum MediaFiles {
   static var directory: URL { AudioInbox.directory.deletingLastPathComponent().appendingPathComponent("recordings") }
   static var readDuration: @Sendable (URL) async -> TimeInterval? = { _ in 1.25 }
+  static var readFrames: @Sendable (URL, Int) async -> Int64? = { _, _ in nil }
+  static func recordingFrameCount(of url: URL, sampleRate: Int) async -> Int64? { await readFrames(url, sampleRate) }
   static func duration(of url: URL) async -> TimeInterval? { await readDuration(url) }
   static func reference(for url: URL) -> String? {
     guard url.deletingLastPathComponent().standardizedFileURL == directory.standardizedFileURL else { return nil }

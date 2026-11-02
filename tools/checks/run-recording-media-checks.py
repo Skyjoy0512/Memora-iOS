@@ -15,6 +15,8 @@ trash = Path('App/MemoraModel+Trash.swift').read_text()
 methods = trash[trash.index('  func permanentlyDeleteTrashedRecord('):trash.rindex('\n}')]
 journal = Path('App/MemoraModel+Journal.swift').read_text()
 methods += '\n' + journal[journal.index('  func permanentlyDeleteTrashedLifeLogEntry('):journal.index('  /// Brings in journal records')]
+capture = Path('App/MemoraModel+Capture.swift').read_text()
+methods += '\n' + capture[capture.index('  func cancelCapture()'):capture.index('  /// Stops the microphone')]
 usage = Path('App/StorageUsageView.swift').read_text()
 usage = usage[usage.index('private struct AudioUsage'):].replace('private struct AudioUsage', 'struct AudioUsage', 1)
 with tempfile.TemporaryDirectory(prefix='memora-recording-media-', dir=os.environ.get('MEMORA_CHECK_ROOT')) as temporary:
@@ -22,7 +24,7 @@ with tempfile.TemporaryDirectory(prefix='memora-recording-media-', dir=os.enviro
     generated = root / 'ProductionFilePaths.swift'
     generated.write_text('import Foundation\nextension MediaFiles {\n' + paths + delete + '}\nextension MemoraModel {\n' + methods + '}\n' + usage)
     binary = root / 'checks'
-    subprocess.run(['swiftc', 'Shared/MemoraIcon.swift', 'App/LocalStore.swift', 'App/Meeting.swift', 'App/Meeting+AudioFiles.swift',
+    subprocess.run(['swiftc', 'Shared/MemoraIcon.swift', 'App/LocalStore.swift', 'App/RecordingAudioPart.swift', 'App/RecordingAudioManifest.swift', 'App/Meeting.swift', 'App/Meeting+AudioFiles.swift',
                     'App/MeetingSource.swift', 'App/MeetingStatus.swift', 'App/TranscriptSegment.swift', 'App/SpeakerIdentificationStatus.swift',
                     'App/RecordPrivacy.swift', 'App/SummarySensitivity.swift', 'App/RecordingMarker.swift', 'App/UndoAction.swift', 'App/StorageUsage.swift',
                     'App/MemoraModel+Media.swift', 'tools/checks/RecordingRecoveryStoreFixture.swift',

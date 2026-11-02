@@ -32,20 +32,23 @@ extension MemoraModel {
     diagnostic?.end(checkpoint, outcome: checkpointed ? .success : .failed)
     guard ownsStoppedCapture() else { return }
     let draft = recordingDraft
-    let recordID = draft?.id ?? UUID()
+    let recordID = draft?.id ?? draft?.audioManifest?.recordingID ?? UUID()
+    guard draft?.audioManifest.map({ $0.isValid(for: recordID, activeFileName: draft?.fileName) }) ?? true else {
+      recordingErrorMessage = RecordingAudioValidation.manifestNotice
+      return
+    }
     func isCurrent() -> Bool {
       ownsStoppedCapture() && recordingDraft == draft
     }
     let verification = diagnostic?.begin(.verification)
-    let measured = if let audioURL { await MediaFiles.duration(of: audioURL) } else { nil as TimeInterval? }
+    let inspection = await inspectRecordingDraft(draft, legacyURL: audioURL)
     guard isCurrent() else { return }
     guard !meetings.contains(where: { $0.id == recordID }),
           !lifeLogEntries.contains(where: { $0.id == recordID }) else { return }
-    let duration = RecordingAudioValidation.duration(measured)
+    let duration = inspection.duration
     diagnostic?.setAudioSeconds(duration)
     diagnostic?.end(verification, outcome: duration == nil ? .unavailable : .success)
-    let hasFile = audioURL.map { FileManager.default.fileExists(atPath: $0.path) } ?? false
-    let notice = hasFile ? RecordingAudioValidation.unreadableNotice : RecordingAudioValidation.missingNotice
+    let notice = inspection.notice
 
     var meeting = Meeting(
       id: recordID,
@@ -55,15 +58,17 @@ extension MemoraModel {
       createdAt: recordingStartedAt ?? .now,
       duration: duration ?? 0,
       source: .recording,
-      status: duration == nil ? .failed(notice) : .transcribing(0.12),
-      summary: duration == nil ? notice : "録音を保存しました。文字起こしを準備しています。",
+      status: inspection.canProcess ? .transcribing(0.12) : .failed(notice),
+      summary: !inspection.canProcess ? notice : "録音を保存しました。文字起こしを準備しています。",
       keyPoints: [],
       decisions: [],
       openQuestions: [],
       transcript: [],
       spaceID: ProjectFiling.existingProject(recordingSpaceID, in: spaces),
-      audioURL: audioURL
+      audioURL: inspection.playbackURL
     )
+    meeting.originalAudioFileNames = draft?.audioManifest?.fileNames ?? []
+    meeting.recordingAudioManifest = inspection.manifest
     meeting.notes = recordingNote
     meeting.recordingMarkers = RecordingMarker.validated(recordingMarkers, duration: duration)
     meeting.calendarEventID = captureEvent?.id
@@ -74,7 +79,7 @@ extension MemoraModel {
         id: meeting.id,
         createdAt: meeting.createdAt,
         title: meeting.title,
-        summary: duration == nil ? "録音の保存情報を保持しました。音声ファイルを確認してください。" : "iPhoneで新しい音声を記録しました。",
+        summary: !inspection.canProcess ? "録音の保存情報を保持しました。音声ファイルを確認してください。" : "iPhoneで新しい音声を記録しました。",
         source: .iphone,
         meetingID: meeting.id
       ),
@@ -88,7 +93,7 @@ extension MemoraModel {
     let persistence = diagnostic?.begin(.persistence)
     let committed = await commitRecordingSave()
     diagnostic?.end(persistence, outcome: committed ? .success : .failed)
-    diagnosticOutcome = committed && duration != nil ? .success : .failed
+    diagnosticOutcome = committed && inspection.canProcess ? .success : .failed
     guard committed else {
       guard isCurrent() else { return }
       // Do not take the success path: keep the title, note, audio and draft so

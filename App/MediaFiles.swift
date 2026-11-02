@@ -16,6 +16,10 @@ enum MediaFiles {
     await RecordingAudioValidation.readDuration(of: url)
   }
 
+  static func recordingFrameCount(of url: URL, sampleRate: Int) async -> Int64? {
+    await RecordingAudioValidation.frameCount(of: url, sampleRate: sampleRate)
+  }
+
   /// A stored media name must be a plain file name: no path separators, no
   /// `.`/`..`, and nothing that could name the folder itself. Media never lives
   /// in subfolders, so anything else is refused.

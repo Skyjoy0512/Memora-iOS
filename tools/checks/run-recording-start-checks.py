@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory(prefix='memora-recording-start-', dir=os.enviro
     production = root / 'RecordingStart.swift'
     production.write_text('import Foundation\nextension MemoraModel {\n' + methods + '}\n')
     binary = root / 'checks'
-    subprocess.run(['swiftc', 'Shared/MemoraIcon.swift', 'App/MemoraSpace.swift',
+    subprocess.run(['swiftc', 'App/RecordingAudioPart.swift', 'App/RecordingAudioManifest.swift', 'Shared/MemoraIcon.swift', 'App/MemoraSpace.swift',
                     'App/LocalImportContext.swift', 'App/ProjectFiling.swift',
                     'tools/checks/RecordingStartChecks.swift', str(production),
                     '-o', str(binary)], check=True)

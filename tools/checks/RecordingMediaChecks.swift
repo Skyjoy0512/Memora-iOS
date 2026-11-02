@@ -4,7 +4,7 @@ import SQLite3
 @main
 struct RecordingMediaChecks {
   @MainActor
-  static func main() throws {
+  static func main() async throws {
     MediaFiles.directory = URL(fileURLWithPath: CommandLine.arguments[1]).appendingPathComponent("audio")
     try FileManager.default.createDirectory(at: MediaFiles.directory, withIntermediateDirectories: true)
     let storeURL = MediaFiles.directory.deletingLastPathComponent().appendingPathComponent("store.sqlite")
@@ -157,7 +157,43 @@ struct RecordingMediaChecks {
     model.removeMeetingAudio(unsafe.id)
     model.undoAction!.finalize()
     precondition(exists(outside))
+    try await discardChecks(model, storeURL: storeURL)
     print("PASS: production Meeting legacy/parts codec, actual managed paths, SQLite removal+undo atomicity and rollback/reopen, bulk originals, targeted permanent deletion, shared/draft/trash ownership, protected store, unsafe paths")
+  }
+
+  @MainActor
+  static func discardChecks(_ model: MemoraModel, storeURL: URL) async throws {
+    let record = try record("discard")
+    let manifest = RecordingAudioManifest(recordingID: record.id, sampleRate: 44_100, parts: [
+      .init(fileName: record.originalAudioFileNames[0], frameOffset: 0, frameCount: 44_100, state: .finalized),
+      .init(fileName: record.originalAudioFileNames[1], frameOffset: 44_100, frameCount: nil, state: .writing)
+    ])
+    model.meetings = []
+    model.recordingDraft = .init(fileName: manifest.fileNames[1], audioManifest: manifest)
+    model.recordingURL = MediaFiles.resolve(manifest.fileNames[1])
+    model.isRecording = true
+    model.isCapturePresented = true
+    model.pendingMediaDeletions = []
+    try model.store.write("draft", data: JSONEncoder().encode(model.recordingDraft))
+    var db: OpaquePointer?
+    precondition(sqlite3_open(storeURL.path, &db) == SQLITE_OK)
+    defer { sqlite3_close(db) }
+    precondition(sqlite3_exec(db, "CREATE TRIGGER reject_discard BEFORE DELETE ON documents WHEN OLD.key = 'draft' BEGIN SELECT RAISE(ABORT, 'fixture'); END;", nil, nil, nil) == SQLITE_OK)
+    await model.cancelCapture()
+    precondition(model.recordingDraft?.audioManifest == manifest && model.pendingMediaDeletions.isEmpty)
+    precondition(model.isCapturePresented && model.recordingErrorMessage != nil)
+    for name in manifest.fileNames { precondition(exists(MediaFiles.resolve(name)!)) }
+    precondition(sqlite3_exec(db, "DROP TRIGGER reject_discard", nil, nil, nil) == SQLITE_OK)
+    // Another record owns the first part; explicit discard removes only the other.
+    var owner = record
+    owner.audioURL = nil
+    owner.originalAudioFileNames = [manifest.fileNames[0]]
+    model.meetings = [owner]
+    await model.cancelCapture()
+    precondition(model.recordingDraft == nil && model.pendingMediaDeletions.isEmpty && !model.isCapturePresented)
+    precondition(exists(MediaFiles.resolve(manifest.fileNames[0])!))
+    precondition(!exists(MediaFiles.resolve(manifest.fileNames[1])!))
+    guard case .missing = model.store.readOutcome("draft") else { preconditionFailure("Discard did not settle draft") }
   }
 
   static func record(_ prefix: String, date: Date = .now) throws -> Meeting {
@@ -192,9 +228,23 @@ final class MemoraModel {
   var persistenceFailureMessage: String?
   var deletionFailureMessage: String?
   var undoAction: UndoAction?
-  struct RecordingDraft { var fileName: String }
+  var recordingURL: URL?
+  var isRecording = false
+  var isSavingCapture = false
+  var hasUnsavedRecording = false
+  var isPreparingCapture = false
+  var isRecoveringRecordingDraft = false
+  var isCapturePresented = false
+  var captureEvent: String?
+  var recordingErrorMessage: String?
+  var recordingInterruptionMessage: String?
+  struct RecordingDraft: Codable { var fileName: String; var audioManifest: RecordingAudioManifest? = nil }
+  func stopRecorder() { isRecording = false }
+  func resetRecordingClock() { recordingURL = nil }
+  func endLiveActivity() async {}
   enum StorageKey {
     static let meetings = "meetings", pendingMediaDeletions = "pending", trash = "trash", lifeLogTrash = "journalTrash"
+    static let recordingDraft = "draft"
   }
   init(storeURL: URL) throws {
     store = LocalStore(fileURL: storeURL); try store.prepare(); RecordStore.store = store
@@ -203,9 +253,9 @@ final class MemoraModel {
     try store.applyBatch(writes: [("meetings", try RecordStore.encoded(meetings)), ("pending", try RecordStore.encoded(pendingMediaDeletions))], removing: [])
   }
   func isStoreWritable() -> Bool { !isStoreProtected }
-  func persistBatch(_ build: () throws -> [(key: String, data: Data)]) -> Bool {
+  func persistBatch(_ build: () throws -> [(key: String, data: Data)], removing: [String] = []) -> Bool {
     guard !isStoreProtected else { return false }
-    do { try store.applyBatch(writes: build(), removing: []); return true } catch { persistenceFailureMessage = "save failed"; return false }
+    do { try store.applyBatch(writes: build(), removing: removing); return true } catch { persistenceFailureMessage = "save failed"; return false }
   }
   func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
     persistBatch { [(key, try RecordStore.encoded(value))] }

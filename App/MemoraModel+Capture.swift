@@ -116,13 +116,15 @@ extension MemoraModel {
       levelMeter.reset()
       realtimeTranscriber.resetHistory()
       if let recordingURL, let fileName = MediaFiles.reference(for: recordingURL) {
+        let recordingID = UUID()
         recordingDraft = RecordingDraft(
-          id: UUID(),
+          id: recordingID,
           fileName: fileName,
           title: event?.title ?? "",
           note: "",
           startedAt: .now,
-          spaceID: destinationID
+          spaceID: destinationID,
+          audioManifest: .starting(id: recordingID, fileName: fileName)
         )
         guard persistNow(recordingDraft, forKey: StorageKey.recordingDraft) else {
           stopRecorder()
@@ -224,16 +226,30 @@ extension MemoraModel {
   }
 
   func cancelCapture() async {
+    guard !isSavingCapture, !hasUnsavedRecording, !isPreparingCapture, !isRecoveringRecordingDraft, isStoreWritable() else { return }
     stopRecorder()
-    isCapturePresented = false
-    // Discarding means the audio goes too; nothing is kept for the journal.
-    captureEvent = nil
-    recordingDraft = nil
-    persistRecordingDraft()
-    recordingInterruptionMessage = nil
-    if !MediaFiles.delete(recordingURL) {
-      deletionFailureMessage = "録音ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
+    var names = recordingDraft?.audioManifest?.fileNames ?? []
+    if let name = recordingDraft?.fileName { names.append(name) }
+    if let url = recordingURL, let name = MediaFiles.reference(for: url) { names.append(name) }
+    let managed = Set(names.compactMap { name -> String? in
+      guard let url = MediaFiles.resolve(name) else { return nil }
+      return MediaFiles.reference(for: url)
+    })
+    let additions = managed.map { PendingMediaDeletion(id: UUID(), audioReference: $0, photoNames: []) }
+    let pending = pendingMediaDeletions + additions
+    guard persistBatch({
+      [(key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))]
+    }, removing: [StorageKey.recordingDraft]) else {
+      recordingErrorMessage = "録音の破棄を保存できませんでした。元のファイルと下書きは変更していません。空き容量を確認してください。"
+      await endLiveActivity()
+      return
     }
+    recordingDraft = nil
+    pendingMediaDeletions = pending
+    retryPendingMediaDeletions(onlyIDs: Set(additions.map(\.id)))
+    isCapturePresented = false
+    captureEvent = nil
+    recordingInterruptionMessage = nil
     resetRecordingClock()
     await endLiveActivity()
   }

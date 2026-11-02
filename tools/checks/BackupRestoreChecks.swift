@@ -255,12 +255,17 @@ struct BackupRestoreChecks {
     var meeting = original
     meeting.photoFileNames = nil
     meeting.originalAudioFileNames = ["part-0.m4a", "part-1.m4a", "part-0.m4a"]
+    meeting.recordingAudioManifest = .init(recordingID: meeting.id, sampleRate: 44_100, parts: [
+      .init(fileName: "part-0.m4a", frameOffset: 0, frameCount: 44_100, state: .finalized),
+      .init(fileName: "part-1.m4a", frameOffset: 44_100, frameCount: 44_100, state: .finalized)
+    ])
     let parts = ["part-0.m4a": Data("original zero".utf8), "part-1.m4a": Data("original one".utf8)]
     for (name, bytes) in parts { try bytes.write(to: MediaFiles.resolve(name)!) }
     let package = try BackupPackage.write(meetings: [meeting], spaces: [], tasks: [], lifeLogEntries: [], people: [], aiHistory: [], into: input)
     let manifest = try BackupPackage.read(from: package)
     precondition(manifest.version == 3 && Set(manifest.audioFileNames) == ["audio.m4a", "part-0.m4a", "part-1.m4a"])
     precondition(manifest.meetings[0].originalAudioFileNames == meeting.originalAudioFileNames)
+    precondition(manifest.meetings[0].recordingAudioManifest == meeting.recordingAudioManifest)
     var invalid = manifest
     invalid.version = 2
     try reject(invalid, in: package)
@@ -268,8 +273,13 @@ struct BackupRestoreChecks {
     try reject(invalid, in: package)
     invalid = manifest; invalid.meetings[0].originalAudioFileNames = ["../escape.m4a"]
     try reject(invalid, in: package)
+    invalid = manifest; invalid.meetings[0].recordingAudioManifest?.recordingID = UUID()
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.meetings[0].recordingAudioManifest?.parts[1].frameOffset += 1
+    try reject(invalid, in: package)
     for name in ["../escape.m4a", "/tmp/escape.m4a", "missing.m4a"] {
       var invalidMeeting = meeting
+      invalidMeeting.recordingAudioManifest = nil
       invalidMeeting.originalAudioFileNames = [name]
       try expectFailure {
         _ = try BackupPackage.write(meetings: [invalidMeeting], spaces: [], tasks: [], lifeLogEntries: [], people: [], aiHistory: [], into: input)
@@ -280,6 +290,7 @@ struct BackupRestoreChecks {
     missingPrimary.audioURL = nil
     missingPrimary.rawAudioReference = MediaFiles.directory.appendingPathComponent("missing-primary.m4a").path
     missingPrimary.originalAudioFileNames = []
+    missingPrimary.recordingAudioManifest = nil
     do {
       _ = try BackupPackage.write(meetings: [missingPrimary], spaces: [], tasks: [], lifeLogEntries: [], people: [], aiHistory: [], into: input)
       preconditionFailure("Unresolved original reference silently omitted")
@@ -287,7 +298,7 @@ struct BackupRestoreChecks {
       precondition(names == ["missing-primary.m4a"])
     }
     try fm.createSymbolicLink(at: link, withDestinationURL: MediaFiles.resolve("part-0.m4a")!)
-    var linked = meeting; linked.originalAudioFileNames = ["part-link.m4a"]
+    var linked = meeting; linked.originalAudioFileNames = ["part-link.m4a"]; linked.recordingAudioManifest = nil
     try expectFailure { _ = try BackupPackage.write(meetings: [linked], spaces: [], tasks: [], lifeLogEntries: [], people: [], aiHistory: [], into: input) }
     try fm.removeItem(at: link)
     for name in manifest.audioFileNames { try fm.removeItem(at: MediaFiles.resolve(name)!) }

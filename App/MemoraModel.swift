@@ -679,7 +679,7 @@ final class MemoraModel {
         // A draft from an older build has no id; give it a stable one now so a
         // recovery that is cut off and retried does not make a second record.
         if recordingDraft?.id == nil {
-          recordingDraft?.id = UUID()
+          recordingDraft?.id = decoded.audioManifest?.recordingID ?? UUID()
         }
       } else if RecordStore.quarantine(draftData, key: StorageKey.recordingDraft) {
         didFindUnreadableData = true

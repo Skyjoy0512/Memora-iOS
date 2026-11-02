@@ -91,6 +91,9 @@ extension MemoraModel {
     names.formUnion(trashedRecords.flatMap { $0.meeting.managedAudioFileNames })
     if let draft = recordingDraft, let url = MediaFiles.resolve(draft.fileName),
        let name = MediaFiles.reference(for: url) { names.insert(name) }
+    for reference in recordingDraft?.audioManifest?.fileNames ?? [] {
+      if let url = MediaFiles.resolve(reference), let name = MediaFiles.reference(for: url) { names.insert(name) }
+    }
     return names
   }
 
@@ -136,6 +139,7 @@ extension MemoraModel {
       candidate[index].audioURL = original.audioURL
       candidate[index].rawAudioReference = original.rawAudioReference
       candidate[index].originalAudioFileNames = original.originalAudioFileNames
+      candidate[index].recordingAudioManifest = original.recordingAudioManifest
       meetingSearchTexts.removeValue(forKey: original.id)
     }
     let pending = pendingMediaDeletions.filter { !pendingIDs.contains($0.id) }

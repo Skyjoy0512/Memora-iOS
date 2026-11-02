@@ -23,6 +23,7 @@ struct RecordingFinalizationChecks {
     try await newerCheckpointWins(root)
     try await finalizationCheckpointRace(root)
     try await dismissalCheckpointFailure(root)
+    try await RecordingManifestChecks.run(root)
     print("RecordingFinalizationChecks: PASS. Production stop/completion/retry and draft checkpoint with real SQLite and Meeting codecs; subsecond/24h metadata or unknown duration, no guessed-clock fallback, marker/note/calendar retention, unreadable-audio inference refusal, 10 inspection races, activity/retry races, duplicate stop, SQL ABORT/retry/reopen, checkpoint acknowledgement/unchanged skip/rollback, stale callback refusal, newer edit preservation, finalization checkpoint race and dismissal failure. Real WAV/container validation; microphone, activity, scheduling, UI and inference are fixtures. No 24h recording/device quality claim.")
   }
 

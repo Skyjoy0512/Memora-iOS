@@ -40,6 +40,8 @@ enum RecordingStartChecks {
     await normal.startCapture(spaceID: normal.spaces[0].id)
     precondition(normal.isRecording && normal.isCapturePresented && normal.savedDrafts == 1)
     precondition(normal.recordingSpaceID == normal.spaces[0].id && !normal.isPreparingCapture)
+    precondition(normal.recordingDraft?.audioManifest?.isValid(for: normal.recordingDraft!.id,
+      activeFileName: normal.recordingDraft!.fileName) == true)
     await normal.startCapture()
     precondition(normal.recorder.starts == 1)
 
@@ -130,6 +132,7 @@ final class MemoraModel {
   struct RecordingDraft {
     var id: UUID; var fileName: String; var title: String; var note: String
     var startedAt: Date; var spaceID: UUID?
+    var audioManifest: RecordingAudioManifest? = nil
   }
   enum StorageKey { static let recordingDraft = "draft" }
   func space(id: UUID) -> MemoraSpace? { spaces.first { $0.id == id } }
