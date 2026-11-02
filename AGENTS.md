@@ -50,6 +50,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   fade the glass. Empty states reuse the full native dialog.
   The create menu and system memo link use ProjectSourceAddSheet in memo mode,
   with drafts scoped to Library/project. Journal's dated entry editor remains separate.
+  Note and URL save settle their drafts in the same transaction. Use DraftStore.read
+  before enabling new-source editors; an unreadable draft must not be replaced by empty text.
   Project creation stays in Projects' options menu and empty state; a project's
   new chat stays in its options and chat empty state.
 - **Files screen top chrome**: do not drive the navigation bar's visibility from

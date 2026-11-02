@@ -159,8 +159,10 @@ class ExperiencePresentationChecks(unittest.TestCase):
             self.assertIn("presentsErrorsLocally: true", source)
             self.assertIn('.accessibilityLabel("タイトル")', source)
             self.assertIn(".title", source)
-            self.assertIn("DraftStore.load", source)
-            self.assertIn("DraftStore.clear", source)
+        self.assertIn("DraftStore.read", add)
+        self.assertIn("removing: draftKeys", add)
+        self.assertIn("DraftStore.load", edit)
+        self.assertIn("DraftStore.clear", edit)
         self.assertIn(".interactiveDismissDisabled(isSaving)", edit)
 
     def test_source_import_captures_context_before_native_pickers(self):

@@ -191,3 +191,19 @@ URL処理の各非同期前後にも会話/入力/保存先を検査する。取
 sourceを消さず、再送では正規化URLで再利用する。後続URLやAI質問は実行しない。
 SwiftUIのTaskが開始時のview値を保持していても資料移動を検知できるよう、
 request contextはmodelの`visibleProjectID`も保持・再確認する。既存データの移行はない。
+
+## URLメモと下書きの復元保護
+
+資料/メモエディタの単独URLも、source登録と本文/タイトルdraftの削除を同じSQLite
+transactionで確定する。既存の正規化URLならsource/permission/metadataを上書きせず、
+draftの削除だけをcommitする。失敗なら両draftを保持してエディタを閉じない。
+同じsourceの取得/要約jobを再起動しない。URL安全性・redirect/DNS検査は既存経路のまま。
+
+`DraftStore.read`は未保存・有効な空本文・復号不能を分ける。旧JSON文字列形式と
+現行UTF-8 marker形式を読み、marker付きでも不正UTF-8なら復号不能にする。
+資料/メモの追加画面は本文/タイトルの両方を読めた後だけ編集/保存/自動draft更新を許可する。
+保存先contextが無効ならprivate draftを読まない。従来の`load` APIは互換性のため残す。
+
+SQLiteで既存0byte blobにbyte pointerがない場合も、LocalStoreは`.data(Data())`を返す。
+存在する不正documentを`.missing`にせず、RecordStoreが旧設定を再移行しないようにする。
+schema変更、既存データ削除、一括移行はない。通常画面の配置やFABの表示制御は変更しない。

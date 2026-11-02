@@ -2,16 +2,19 @@ import Foundation
 
 extension MemoraModel {
   @discardableResult
-  func addProjectLink(_ input: String, projectID: UUID?) throws -> UUID? {
+  func addProjectLink(_ input: String, projectID: UUID?, removing: [String] = []) throws -> UUID? {
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
           projectID.map({ space(id: $0) != nil }) ?? true else { return nil }
     let link = try ProjectSourceURL.normalized(input)
     if let existing = projectSources.first(where: { $0.projectID == projectID && $0.originalURL == link.url }) {
+      // Reusing a source must settle its draft too, without rewriting privacy,
+      // metadata or dispatching another paid preparation job.
+      guard removing.isEmpty || persistBatch({ [] }, removing: removing) else { return nil }
       return existing.id
     }
     let source = ProjectSource(projectID: projectID, kind: link.kind,
       title: link.youtubeID.map { "YouTube · \($0)" } ?? link.url.host ?? "Webリンク", originalURL: link.url)
-    guard storeProjectSource(source) else { return nil }
+    guard storeProjectSource(source, removing: removing) else { return nil }
     scheduleProjectSourcePreparation(source.id)
     return source.id
   }

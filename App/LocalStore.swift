@@ -92,8 +92,13 @@ final class LocalStore {
     case SQLITE_DONE:
       return .missing
     case SQLITE_ROW:
-      guard let bytes = sqlite3_column_blob(statement, 0) else { return .missing }
       let count = Int(sqlite3_column_bytes(statement, 0))
+      guard let bytes = sqlite3_column_blob(statement, 0) else {
+        // SQLite has no byte pointer for an existing empty blob. Calling it
+        // missing can revive legacy data or overwrite a damaged document.
+        return count == 0 && sqlite3_column_type(statement, 0) == SQLITE_BLOB
+          ? .data(Data()) : .failed
+      }
       return .data(Data(bytes: bytes, count: count))
     default:
       return .failed

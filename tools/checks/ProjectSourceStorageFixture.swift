@@ -9,6 +9,10 @@ final class MemoraModel {
   var storeURL: URL
   var projectSources: [ProjectSource] = [] { didSet { projectSourceIndex.invalidate() } }
   var projectSourceIndex = IdentifiableIndex<ProjectSource>()
+  #if MEMORA_DRAFT_STORAGE_CHECKS
+  var linkPreparationIDs: [UUID] = []
+  func scheduleProjectSourcePreparation(_ id: UUID) { linkPreparationIDs.append(id) }
+  #endif
   var projectSourceProcessingIDs: Set<UUID> = []
   var sourcePreparationJobs: [UUID: (id: UUID, task: Task<Void, Never>)] = [:]
   #if MEMORA_WEB_SOURCE_CHECKS

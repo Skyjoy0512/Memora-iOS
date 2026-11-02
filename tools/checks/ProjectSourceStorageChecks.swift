@@ -6,6 +6,8 @@ struct ProjectSourceStorageChecks {
   @MainActor static func main() async throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     let project = MemoraSpace(id: UUID(), name: "架空の保存先", symbol: "folder")
+    try draftReads(root: root)
+    try linkDraftCommit(root: root, project: project)
     try await noteDraftCommit(root: root, project: project)
     let model = try MemoraModel(storeURL: root.appendingPathComponent("sources.sqlite"))
     model.spaces = [project]
@@ -128,6 +130,72 @@ struct ProjectSourceStorageChecks {
   }
 
   private static func expect(_ condition: Bool) { precondition(condition) }
+
+  @MainActor private static func draftReads(root: URL) throws {
+    let url = root.appendingPathComponent("draft-reads.sqlite")
+    let store = LocalStore(fileURL: url)
+    try store.prepare()
+    RecordStore.store = store
+    let key = "editor"
+    precondition(DraftStore.read(key) == .absent)
+    try DraftStore.saveAndWait("", key: key)
+    precondition(DraftStore.read(key) == .text(""))
+    let original = "日本語の下書き\n\"引用\""
+    try DraftStore.saveAndWait(original, key: key)
+    precondition(DraftStore.read(key) == .text(original) && DraftStore.load(key) == original)
+    RecordStore.failsReading = true
+    precondition(DraftStore.read(key) == .unreadable)
+    RecordStore.failsReading = false
+    let reopened = LocalStore(fileURL: url)
+    try reopened.prepare()
+    RecordStore.store = reopened
+    precondition(DraftStore.read(key) == .text(original))
+    try store.write(DraftStore.storageKey(for: key), data: JSONEncoder().encode(original))
+    precondition(DraftStore.read(key) == .text(original)) // Earlier JSON-string drafts.
+    for data in [Data("not JSON".utf8), Data([1, 255]), Data()] {
+      try store.write(DraftStore.storageKey(for: key), data: data)
+      precondition(DraftStore.read(key) == .unreadable)
+      guard case .data(let retained) = store.readOutcome(DraftStore.storageKey(for: key)), retained == data else {
+        preconditionFailure("Reading an invalid draft changed its original bytes")
+      }
+    }
+    print("Draft reads: absent/empty/legacy/reopen, read failure and malformed UTF-8 preserved")
+  }
+
+  @MainActor private static func linkDraftCommit(root: URL, project: MemoraSpace) throws {
+    for duplicate in [false, true] {
+      let url = root.appendingPathComponent("link-draft-\(duplicate).sqlite")
+      let model = try MemoraModel(storeURL: url)
+      model.spaces = [project]
+      RecordStore.store = model.store
+      if duplicate { _ = try model.addProjectLink("https://example.org/page?utm_source=old", projectID: project.id) }
+      let previous = model.projectSources
+      let preparations = model.linkPreparationIDs
+      let bodyKey = "workspace.newMemo.\(project.id)"
+      let titleKey = bodyKey + ".title"
+      let keys = [bodyKey, titleKey].map { DraftStore.storageKey(for: $0) }
+      let link = "https://EXAMPLE.org/page?utm_source=new#position"
+      try DraftStore.saveAndWait(link, key: bodyKey)
+      try DraftStore.saveAndWait("残すタイトル", key: titleKey)
+      try sql("CREATE TRIGGER fail_link_draft BEFORE DELETE ON documents WHEN OLD.key = '\(keys[1])' BEGIN SELECT RAISE(ABORT, 'link draft'); END;", url: url)
+      expect(try model.addProjectLink(link, projectID: project.id, removing: keys) == nil)
+      precondition(model.projectSources == previous && model.linkPreparationIDs == preparations)
+      precondition(DraftStore.read(bodyKey) == .text(link) && DraftStore.read(titleKey) == .text("残すタイトル"))
+      if previous.isEmpty {
+        guard case .missing = model.store.readOutcome(MemoraModel.StorageKey.projectSources) else {
+          preconditionFailure("Failed link commit left a source document")
+        }
+      } else { expect(try reload(model) == previous) }
+      try sql("DROP TRIGGER fail_link_draft;", url: url)
+      let id = try model.addProjectLink(link, projectID: project.id, removing: keys)!
+      precondition(model.projectSources.count == previous.count + (duplicate ? 0 : 1))
+      precondition(model.linkPreparationIDs.count == preparations.count + (duplicate ? 0 : 1))
+      if duplicate { precondition(model.projectSources == previous && previous[0].id == id) }
+      precondition(DraftStore.read(bodyKey) == .absent && DraftStore.read(titleKey) == .absent)
+      expect(try reload(model) == model.projectSources)
+    }
+    print("URL drafts: new/deduplicated source, atomic removal, rollback and no duplicate preparation passed")
+  }
 
   @MainActor private static func noteDraftCommit(root: URL, project: MemoraSpace) async throws {
     let url = root.appendingPathComponent("memo-draft.sqlite")

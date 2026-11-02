@@ -1,5 +1,18 @@
 # Memora — 改善バックログ
 
+## 2026-11-02 URLメモの一括保存・読めない下書きの保護
+
+URL単独の追加にもnoteと同じdraft削除transactionを接続。新規登録に失敗したときは
+URL/タイトルdraftを保持する。重複URLは元のsource/権限/metadataを変更せず、draftだけを
+一括確定し、取得/要約のjobを再dispatchしない。
+DraftStoreは未保存・空本文・読取失敗を区別。資料/メモの追加では読めないdraftを空欄として
+書き戻さず、元のbytesを保持して再表示を案内する。不正UTF-8も置換文字で保存し直さない。
+LocalStoreの既存0byte blobをmissing扱いする誤りも修正し、legacy再移行を防ぐ。
+関連する実SQLite/codec/URL保存とcomposerの限定検査は成功。HTTP・AI・実機は別検証。
+最終iOS preview成功。通常メモの編集可否・保存ボタン・draft復元をsimulatorで確認。
+失敗の画面操作は未検証。破損draftのbyte保持とSQL failure時のrollbackはhostの検証範囲。
+[実装](source-audit/IMPLEMENTATION.md#urlメモと下書きの復元保護)、[確認範囲](source-audit/VALIDATION.md#urlメモと下書きの保護ae91acd5から)。
+
 ## 2026-11-02 FAB固定配置・複数選択の文字重なり・メモ導線
 
 FABは入力欄と同じHStackで幅を縮めず、固定したtrailing overlayへ移した。

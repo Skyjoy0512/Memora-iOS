@@ -277,7 +277,13 @@ final class MemoraModel {
 
   func space(id: UUID) -> MemoraSpace? { id == projectID ? MemoraSpace(id: id) : nil }
   func source(id: UUID) -> ProjectSource? { sources[id] }
-  func storeProjectSource(_ source: ProjectSource) -> Bool { sources[source.id] = source; return true }
+  func storeProjectSource(_ source: ProjectSource, removing: [String] = []) -> Bool {
+    precondition(removing.isEmpty) // Draft commits run against real SQLite in the storage checks.
+    sources[source.id] = source; return true
+  }
+  func persistBatch(_ build: () throws -> [(key: String, data: Data)], removing: [String]) -> Bool {
+    preconditionFailure("Composer fixtures do not commit editor drafts")
+  }
   func scheduleProjectSourcePreparation(_ id: UUID) {}
   func projectChat(id: UUID) -> ProjectChatThread? { nil }
   func importProjectFile(_ url: URL, projectID: UUID?, importContext: LocalImportContext?, sourceTitle: String?,

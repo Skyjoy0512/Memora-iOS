@@ -286,6 +286,37 @@ Marketplace、既存データ形式・許可は変更していない。
 初回検査後に保存先変更後の失敗理由を別projectから読まないguardと既存/unsafe URLケースを加え、
 同じ限定suiteだけを再実行。全host suite・既存のPDF/音声検査は反復していない。
 
+## URLメモと下書きの保護（ae91acd5から）
+
+開始時main / `ae91acd5`、未コミット変更なし。
+`run-project-source-storage-checks.sh` PASS。productionのDraftStore、LocalStore、
+URL正規化/追加method、note/store methodを使い、実SQLite/file上で以下を確認した。
+
+- draft未保存と有効な空本文を区別。日本語/改行/引用、旧JSON文字列の読込、DB再open。
+- 読取失敗、JSON不正、不正UTF-8、0byte blobをunreadableとして扱い、元bytesを保持。
+  最初の検査で0byte blobがmissingになるproductionの誤りを検出し、LocalStoreを修正して再実行成功。
+- 新規URLと重複URLで、タイトルdraft削除へのSQL failureを注入。
+  先行するsource書込/本文draft削除もrollbackし、再試行で両draftが消えることを確認。
+  重複では元source全体とIDが等しく、準備jobの追加dispatchがない。
+- 前回のnote一括保存と、24の停止中書込競合/実fileのrollback等も同じsuiteで成功。
+
+RecordStoreの外側は同期SQLiteを使うfixtureであり、productionの非同期保存queueの順序や
+legacy UserDefaults再移行を端末上で実行した証拠ではない。準備jobはdispatch記録のみで、
+HTTP・要約・外部AIは呼ばない。破損した利用者のdraftを作って実アプリに注入していない。
+
+`run-composer-request-checks.py` PASS。同じproduction URL追加methodの既定引数を使う
+プロジェクト質問経路、既存25の文脈競合・中断・複合添付・stale承認を確認した。
+エディタのdraft commitはcomposer fixtureでは実行せず、上記の実SQLite検査で確認する。
+既存のエディタ表示契約1件も成功。全suite・追加アクセシビリティ検査は反復していない。
+
+最終 `bitrig preview -platform iOS` 成功、既存警告11件、利用者のプレビュー更新済み。
+log: `logs/2026-11-02T13-52-15-ac050b52.log`。
+iPhone18 Pro/ダークのsimulatorで、正常な空draftからメモ画面が編集可能になること、
+検証用本文を入力して保存ボタンが有効になること、閉じる→開き直すと本文が復元することを
+画像/座標操作で確認した。入力した検証用本文は空へ戻して閉じ、メモ/資料の本登録や
+AI送信は行わない。破損/読取失敗のエラー画面、URL保存失敗の端末操作は未検証で、
+上記hostでの実SQLite/codec検査と静的な画面接続確認の範囲に限る。実機は未検証。
+
 最終 `bitrig preview -platform iOS` 成功、プレビュー更新済み。
 log: `logs/2026-11-02T07-34-05-7eb2e97f.log`、既存警告11件、compile errorなし。
 `git diff --check`通過。今回の新経路を実端末で完走したとの扱いはしない。

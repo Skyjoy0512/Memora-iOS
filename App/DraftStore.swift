@@ -16,11 +16,28 @@ enum DraftStore {
 
   static func storageKey(for key: String) -> String { prefix + key }
 
-  static func load(_ key: String) -> String? {
-    guard case .data(let data) = RecordStore.load(prefix + key) else {
+  enum LoadOutcome: Equatable {
+    case absent, unreadable
+    case text(String)
+
+    var text: String? {
+      if case .text(let value) = self { return value }
       return nil
     }
-    return decode(data)
+  }
+
+  /// An unreadable draft must not become an empty editor that overwrites it.
+  static func read(_ key: String) -> LoadOutcome {
+    switch RecordStore.load(storageKey(for: key)) {
+    case .absent: return .absent
+    case .failed: return .unreadable
+    case .data(let data):
+      return decode(data).map(LoadOutcome.text) ?? .unreadable
+    }
+  }
+
+  static func load(_ key: String) -> String? {
+    read(key).text
   }
 
   static func save(_ text: String, key: String) {
@@ -48,7 +65,7 @@ enum DraftStore {
 
   private static func decode(_ data: Data) -> String? {
     if data.first == textFormatMarker {
-      return String(decoding: data.dropFirst(), as: UTF8.self)
+      return String(data: Data(data.dropFirst()), encoding: .utf8)
     }
     // The old writer stored a JSON-encoded string; decoding it recovers the
     // original text without the quotes and escapes that leaked before.

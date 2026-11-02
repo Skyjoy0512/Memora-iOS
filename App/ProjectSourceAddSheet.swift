@@ -9,6 +9,7 @@ struct ProjectSourceAddSheet: View {
   var isMemo = false
   @State private var saveContext: LocalImportContext?
   @State private var hasLoadedDraft = false
+  @State private var isDraftReady = false
   @State private var text = ""
   @State private var title = ""
   @State private var photos: [PhotosPickerItem] = []
@@ -59,7 +60,7 @@ struct ProjectSourceAddSheet: View {
         }
       }
       .scrollDismissesKeyboard(.interactively)
-      .disabled(isSaving || model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
+      .disabled(!isDraftReady || isSaving || model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
       .navigationTitle(isMemo ? "メモを書く" : "資料を追加")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -69,22 +70,33 @@ struct ProjectSourceAddSheet: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           Button(isMemo ? "保存" : "追加") { saveText() }
-            .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
+            .disabled(!isDraftReady || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
             .accessibilityIdentifier("source.add")
         }
       }
       .onAppear {
         guard !hasLoadedDraft else { return }
         hasLoadedDraft = true
-        saveContext = LocalImportContext(projectID: projectID, in: model)
-        text = DraftStore.load(draftKey) ?? ""
-        title = DraftStore.load(draftKey + ".title") ?? ""
+        guard let context = LocalImportContext(projectID: projectID, in: model) else {
+          failure = "この保存先では編集できません。画面を開き直してください。"
+          return
+        }
+        saveContext = context
+        let bodyDraft = DraftStore.read(draftKey)
+        let titleDraft = DraftStore.read(draftKey + ".title")
+        guard bodyDraft != .unreadable, titleDraft != .unreadable else {
+          failure = "下書きを読み込めませんでした。元の下書きは変更していません。画面を開き直してお試しください。"
+          return
+        }
+        text = bodyDraft.text ?? ""
+        title = titleDraft.text ?? ""
+        isDraftReady = true
       }
       .onChange(of: text) { _, value in
-        if saveContext?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey) }
+        if isDraftReady, saveContext?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey) }
       }
       .onChange(of: title) { _, value in
-        if saveContext?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey + ".title") }
+        if isDraftReady, saveContext?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey + ".title") }
       }
       .interactiveDismissDisabled(isSaving)
       .fileImporter(isPresented: $isImportingFiles, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
@@ -140,22 +152,22 @@ struct ProjectSourceAddSheet: View {
 
   private func saveText() {
     let input = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard let context = saveContext, context.isCurrent(in: model) else {
+    guard isDraftReady, let context = saveContext, context.isCurrent(in: model) else {
       failure = "保存先が変更されました。画面を開き直してください。"
       return
     }
     perform {
       guard context.isCurrent(in: model) else { return false }
+      let draftKeys = [DraftStore.storageKey(for: draftKey), DraftStore.storageKey(for: draftKey + ".title")]
       let id: UUID?
       if let url = URL(string: input), url.scheme != nil, !input.contains(where: \.isWhitespace) {
-        id = try model.handlingPersistenceFailureLocally { try model.addProjectLink(input, projectID: projectID) }
+        id = try model.handlingPersistenceFailureLocally { try model.addProjectLink(input, projectID: projectID, removing: draftKeys) }
       } else {
         id = try await model.addProjectNote(title: title, text: input, projectID: projectID, presentsErrorsLocally: true,
-          removing: [DraftStore.storageKey(for: draftKey), DraftStore.storageKey(for: draftKey + ".title")])
+          removing: draftKeys)
         if let id { Task { await model.summarizeProjectSource(id) } }
       }
       guard id != nil else { return false }
-      DraftStore.clear(draftKey); DraftStore.clear(draftKey + ".title")
       return true
     }
   }
