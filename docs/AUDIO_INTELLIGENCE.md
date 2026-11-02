@@ -71,9 +71,10 @@ manifest、再生・backup・復旧への統合が揃うまでは単一録音の
 
 ## 今回のアプリ実装と検査
 
-- BYOK: OpenAI Whisperのverbose_json区間、Deepgram Nova-3のutterances/diarizeを
+- BYOK: OpenAI Whisperのverbose_json区間、Deepgram Nova-3のutterancesを
   読み、開始/終了時刻・匿名クラスタ・取得できたconfidence・engine/model/言語を
   `TranscriptSegment`へ保存。confidenceをspeaker確信度へ転用しない。
+  有料のcloud話者分離は自動要求しない。speakerが返った場合に保持するdecoderを持つ。
   時刻なし本文を時刻0へ平坦化しない。旧recordはoptionalな追加属性なしで読める。
 - BYOK送信直前にもworkspace/record/privacy/設定を再検査。自動・取り込みに
   クラウド許可を付けない。Memora提供STTへの接続は追加していない。
@@ -109,3 +110,23 @@ manifest、再生・backup・復旧への統合が揃うまでは単一録音の
 
 端末内RTF/CER/WER/DER、学習VAD、実BYOK、日本語認識境界、小声、24時間実録音、
 電池/thermal、容量低下の実機通知、UI操作は未検証。音声/個人情報をlogへ追加していない。
+
+## 長時間要約の追加統合
+
+`SummaryNoteHierarchy`を既存の部分ノート→全体統合の間に追加した。
+ノート合計が60,000文字を超える時だけ、時間順のbounded groupを段階的に整理する。
+短い入力は追加APIなし。各groupの上限、最大512部分・8段階、縮まらない出力・
+空出力・取消で停止し、無限再試行しない。日時/話者/数値/否定条件/segmentID/逐語引用の
+保持を中間promptへ指定し、最終の既存出典検証・テンプレート・権限callbackを維持。
+この1記録の統合は、日別cache/複数日階層の実装ではない。
+
+- `run-summary-hierarchy-checks.sh`: PASS。順序と全入力のgroup分配、短い入力の追加呼出なし、
+  非縮小/過大出力/取消の停止。reducerはfixtureなので実AIの情報保持率は未検証。
+- `run-summary-reliability-checks.sh`: PASS。既存の長いstream/遅い初token/EOF/DeepSeek reasoningの
+  有界処理を再確認。virtual clockとSSE fixtureで、実providerの通信ではない。
+- `run-source-summary-checks.sh`: PASS。既存の形式/長さ/厳格cloud許可、13の停止中race、
+  SQLite失敗時保持を確認。古いfixtureに欠けていた`persistBatch`を実SQLiteへ合わせた。
+
+費用・販売条件と全人数シナリオは [運用設計](AUDIO_CLOUD_OPERATIONS.md) と
+[生成表](AUDIO_COST_SCENARIOS.md)。サーバー台帳コアの11件の実SQLite検査はPASSだが、
+認証・App Store購入検証・D1/provider/R2のE2Eが完了するまで有料cloudを提供しない。

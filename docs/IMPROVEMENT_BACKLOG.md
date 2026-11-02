@@ -1,5 +1,20 @@
 # Memora — 改善バックログ
 
+## 2026-11-02 Audio Intelligence統合（段階実装）
+
+完了したコード: BYOK区間時刻/匿名話者/confidence・後方互換metadata、送信直前の許可再検査、
+保存済み録音の不変snapshot/15分chunk/SQLite再開、24h区間計画、録音中の容量監視、
+品質/VADの評価adapter、bounded階層要約、非公開の予約/精算台帳、4,480件の原価シナリオ。
+既存のUI・資料/引用/検索/外部送信制限を維持。クラウド販売・本番配備なし。
+
+残件: 日本語正解音声と実iPhoneでRTF/CER/DER/電池/thermalを測定、VAD切除/NSの採否、
+live確定区間と録音時計の整合証明、録音rotation/manifest/再生/backupの一体化、
+資料/会話/Share Extensionの50MB制限をbackup含めて解消、日別永続要約と複数日階層、
+認証/購入検証/実provider計量/R2削除/価格監視/濫用防止/D1 staging E2E。
+今回のhost検査成功は実機24時間・実AIの検証ではない。
+[監査・実装・検査](AUDIO_INTELLIGENCE.md)、[費用と未提供条件](AUDIO_CLOUD_OPERATIONS.md)、
+[今回の報告](AUDIO_IMPLEMENTATION_REPORT.md)。
+
 ## 2026-11-02 音声・動画の区間再開・認識言語の固定
 
 15分区間の完了本文/無音区間数を端末内の有界SQLite cacheへ保存し、同じ原本・locale・
