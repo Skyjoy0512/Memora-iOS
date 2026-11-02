@@ -32,7 +32,7 @@ actor SourceExtractionCache {
     // Bump the extractor version whenever extraction semantics change. Locale
     // and OS changes can alter OCR/speech output even for identical originals.
     let system = ProcessInfo.processInfo.operatingSystemVersion
-    let version = suffix == "pdf" ? "v3" : "v2"
+    let version = suffix == "pdf" || [.audio, .video].contains(SourceIntake.kind(for: url)) ? "v3" : "v2"
     let key = "\(version).\(system.majorVersion).\(system.minorVersion).\(Locale.current.identifier)."
       + digest + "." + suffix + "." + vocabularyDigest
     guard try attributes(url) == before else { throw ProjectSourceFiles.Failure.invalidFile }

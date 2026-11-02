@@ -15,6 +15,24 @@ import Foundation
     precondition(duration > 0.9 && duration < 1.2)
     try SourceMediaAudioExport.validateOutput(stage.audioURL, stageDirectory: stage.directory)
 
+    let chunks = try SourceMediaChunk.plan(duration: 1_800.5)
+    precondition(chunks.map(\.start) == [0, 900, 1_800])
+    precondition(chunks.map(\.duration) == [900, 900, 0.5])
+    let longest = try SourceMediaChunk.plan(duration: SourceMediaChunk.maximumDuration)
+    precondition(longest.count == 24)
+    for invalid in [Double.nan, Double.infinity, 0, -1, SourceMediaChunk.maximumDuration + 1] {
+      do { _ = try SourceMediaChunk.plan(duration: invalid); preconditionFailure("Invalid duration") }
+      catch SourceMediaFailure.invalidDuration { }
+    }
+    let partStage = try await staging.acquire()
+    let part = SourceMediaAudioExport(asset: AVURLAsset(url: original), temporaryDirectory: partStage.directory,
+      chunk: SourceMediaChunk(start: 0.25, duration: 0.5))!
+    try await part.write(to: partStage.audioURL, stageDirectory: partStage.directory)
+    let partDuration = try await AVURLAsset(url: partStage.audioURL).load(.duration).seconds
+    precondition(partDuration > 0.45 && partDuration < 0.65)
+    partStage.remove()
+    precondition(!FileManager.default.fileExists(atPath: partStage.directory.path))
+
     let orphan = stage.directory.deletingLastPathComponent().appendingPathComponent(UUID().uuidString, isDirectory: true)
     try FileManager.default.createDirectory(at: orphan, withIntermediateDirectories: false)
     try Data().write(to: orphan.appendingPathComponent(".lease"))
@@ -56,7 +74,7 @@ import Foundation
     precondition(!FileManager.default.fileExists(atPath: cancelledStage.directory.path))
     stage.remove()
     precondition(!FileManager.default.fileExists(atPath: stage.directory.path))
-    print("SourceMediaExportChecks: PASS. Actual local AVFoundation WAV-to-M4A export, retained duration, strict sparse-file capacity rejection, low-disk preflight, pre-cancel refusal, active flock preservation, unlocked orphan and incomplete-stage cleanup. Host macOS; no speech/device/in-flight cancellation timing claim.")
+    print("SourceMediaExportChecks: PASS. Actual local AVFoundation WAV-to-M4A export, selected time range, bounded chunk plans, retained duration, strict sparse-file capacity rejection, low-disk preflight, pre-cancel refusal, active flock preservation, unlocked orphan and incomplete-stage cleanup. Host macOS; no speech/device/in-flight cancellation timing claim.")
   }
 
   private static func makeAudio(_ url: URL) throws {

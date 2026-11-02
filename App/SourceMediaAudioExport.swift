@@ -7,9 +7,13 @@ final class SourceMediaAudioExport: @unchecked Sendable {
   static let maximumOutputBytes: Int64 = 100 * 1_024 * 1_024
   private let session: AVAssetExportSession
 
-  init?(asset: AVAsset, temporaryDirectory: URL) {
+  init?(asset: AVAsset, temporaryDirectory: URL, chunk: SourceMediaChunk? = nil) {
     guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else { return nil }
     session.directoryForTemporaryFiles = temporaryDirectory
+    if let chunk {
+      session.timeRange = CMTimeRange(start: CMTime(seconds: chunk.start, preferredTimescale: 60_000),
+        duration: CMTime(seconds: chunk.duration, preferredTimescale: 60_000))
+    }
     self.session = session
   }
 
