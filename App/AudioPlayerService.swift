@@ -41,6 +41,7 @@ final class AudioPlayerService {
   private let timePitch = AVAudioUnitTimePitch()
   private var file: AVAudioFile?
   private var startFrame: AVAudioFramePosition = 0
+  private var playbackSchedule = AudioPlaybackSchedule()
   private var ticker: Task<Void, Never>?
   private var loadedURL: URL?
   /// The session claim this player holds, so only this run gives it up.
@@ -80,6 +81,10 @@ final class AudioPlayerService {
 
     do {
       let file = try AVAudioFile(forReading: url)
+      guard file.length > 0, file.processingFormat.sampleRate.isFinite,
+            file.processingFormat.sampleRate > 0 else {
+        throw CocoaError(.fileReadCorruptFile)
+      }
       self.file = file
       duration = Double(file.length) / file.processingFormat.sampleRate
     } catch {
@@ -119,12 +124,13 @@ final class AudioPlayerService {
         try engine.start()
       }
 
-      player.scheduleSegment(
-        file,
-        startingFrame: startFrame,
-        frameCount: AVAudioFrameCount(file.length - startFrame),
-        at: nil
+      let segments = playbackSchedule.start(
+        at: startFrame, length: file.length, sampleRate: sampleRate
       )
+      guard !segments.isEmpty else {
+        throw CocoaError(.fileReadCorruptFile)
+      }
+      for segment in segments { enqueue(segment, file: file) }
       player.play()
       isPlaying = true
       publishNowPlaying()
@@ -135,9 +141,28 @@ final class AudioPlayerService {
         }
       }
     } catch {
+      playbackSchedule.cancel()
+      player.stop()
+      player.reset()
+      engine?.stop()
+      removeRemoteCommands()
       AudioSessionCoordinator.shared.release(token)
       sessionToken = nil
       errorMessage = "再生を開始できませんでした。"
+    }
+  }
+
+  private func enqueue(_ segment: AudioPlaybackSchedule.Segment, file: AVAudioFile) {
+    player.scheduleSegment(
+      file, startingFrame: segment.start, frameCount: segment.count, at: nil,
+      completionCallbackType: .dataPlayedBack
+    ) { [weak self] _ in
+      Task { @MainActor [weak self] in
+        guard let self, self.isPlaying,
+              let next = self.playbackSchedule.complete(segment),
+              let file = self.file else { return }
+        self.enqueue(next, file: file)
+      }
     }
   }
 
@@ -164,6 +189,7 @@ final class AudioPlayerService {
   func pause() {
     guard isPlaying else { return }
     let elapsed = elapsedTime()
+    playbackSchedule.cancel()
     player.stop()
     player.reset()
     startFrame = frame(for: elapsed)
@@ -174,13 +200,15 @@ final class AudioPlayerService {
   }
 
   func seek(to time: TimeInterval) {
-    let clamped = min(max(0, time), duration)
+    let targetFrame = frame(for: time)
+    let clamped = Double(targetFrame) / sampleRate
     let wasPlaying = isPlaying
+    playbackSchedule.cancel()
     if wasPlaying {
       player.stop()
       player.reset()
     }
-    startFrame = frame(for: clamped)
+    startFrame = targetFrame
     currentTime = clamped
     publishNowPlaying()
     if wasPlaying {
@@ -196,6 +224,7 @@ final class AudioPlayerService {
   /// Stops and unloads, e.g. when leaving the screen.
   func stop() {
     stopTicker()
+    playbackSchedule.cancel()
     if isPlaying {
       player.stop()
       player.reset()
@@ -288,7 +317,7 @@ final class AudioPlayerService {
   }
 
   private func frame(for time: TimeInterval) -> AVAudioFramePosition {
-    max(0, AVAudioFramePosition(time * sampleRate))
+    AudioPlaybackSchedule.frame(at: time, length: file?.length ?? 0, sampleRate: sampleRate)
   }
 
   private func startTicker() {
@@ -296,7 +325,7 @@ final class AudioPlayerService {
     ticker = Task { [weak self] in
       while !Task.isCancelled {
         try? await Task.sleep(for: .milliseconds(200))
-        guard let self, self.isPlaying else { return }
+        guard !Task.isCancelled, let self, self.isPlaying else { return }
         let elapsed = self.elapsedTime()
         self.currentTime = min(elapsed, self.duration)
         if self.currentTime >= self.duration - 0.05 {
