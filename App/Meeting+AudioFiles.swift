@@ -1,6 +1,16 @@
 import Foundation
 
 extension Meeting {
+  var hasTranscriptionAudio: Bool {
+    audioURL != nil || ((recordingAudioManifest?.parts.count ?? 0) > 1 &&
+      recordingAudioManifest?.isValid(for: id) == true && recordingAudioManifest?.finalizedDuration != nil)
+  }
+
+  func hasSameAudioInput(as other: Meeting) -> Bool {
+    audioURL == other.audioURL && originalAudioFileNames == other.originalAudioFileNames &&
+      recordingAudioManifest == other.recordingAudioManifest
+  }
+
   var hasAudioFiles: Bool {
     audioURL != nil || rawAudioReference != nil || !originalAudioFileNames.isEmpty || recordingAudioManifest != nil
   }

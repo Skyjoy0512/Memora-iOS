@@ -9,13 +9,22 @@ enum RecordedAudioTranscription {
                          staging: SourceMediaStaging = .shared,
                          checkReadiness: @escaping @Sendable () throws -> Void = { try AudioProcessingReadiness.check() },
                          recognize: @escaping @Sendable (URL) async -> TranscriptionOutcome) async -> TranscriptionOutcome {
+    await transcribe(.file(url), locale: locale, vocabulary: vocabulary, checkpointStore: checkpointStore,
+      staging: staging, checkReadiness: checkReadiness, recognize: recognize)
+  }
+
+  static func transcribe(_ input: RecordedAudioInput, locale: Locale, vocabulary: [String],
+                         checkpointStore: SourceMediaCheckpointStore = .shared,
+                         staging: SourceMediaStaging = .shared,
+                         checkReadiness: @escaping @Sendable () throws -> Void = { try AudioProcessingReadiness.check() },
+                         recognize: @escaping @Sendable (URL) async -> TranscriptionOutcome) async -> TranscriptionOutcome {
     do {
       return try await AudioProcessingDiagnostics.trace(.recordedTranscription) {
         let diagnostic = AudioProcessingDiagnostics.current
         let queued = diagnostic?.begin(.queue)
         return try await SourceProcessingQueue.shared.perform {
           diagnostic?.end(queued, outcome: .success)
-          return try await run(url, locale: locale, vocabulary: vocabulary, store: checkpointStore,
+          return try await run(input, locale: locale, vocabulary: vocabulary, store: checkpointStore,
             staging: staging, checkReadiness: checkReadiness, recognize: recognize)
         }
       } outcome: { $0.diagnosticOutcome }
@@ -28,26 +37,24 @@ enum RecordedAudioTranscription {
     }
   }
 
-  private static func run(_ url: URL, locale: Locale, vocabulary: [String],
+  private static func run(_ input: RecordedAudioInput, locale: Locale, vocabulary: [String],
                           store: SourceMediaCheckpointStore, staging: SourceMediaStaging,
                           checkReadiness: @Sendable () throws -> Void,
                           recognize: @Sendable (URL) async -> TranscriptionOutcome) async throws -> TranscriptionOutcome {
-    let scoped = url.startAccessingSecurityScopedResource()
-    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+    let scopeURL: URL = switch input { case .file(let url): url; case .parts(_, let directory): directory }
+    let scoped = scopeURL.startAccessingSecurityScopedResource()
+    defer { if scoped { scopeURL.stopAccessingSecurityScopedResource() } }
     let session = store.begin()
-    let bytes = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
-    let stage = try await staging.acquire(inputBytes: Int64(bytes))
+    let stage = try await staging.acquire(inputBytes: input.byteCount())
     defer { stage.remove() }
-    let snapshot = try SourceMediaSnapshot(url, directory: stage.directory,
-      maximumBytes: Int(SourceMediaStaging.maximumInputBytes))
-    let asset = AVURLAsset(url: snapshot.url)
-    let duration = try await asset.load(.duration).seconds
+    let prepared = try await input.prepare(in: stage.directory)
+    let asset = prepared.asset
+    let duration = prepared.duration
     let diagnostic = AudioProcessingDiagnostics.current
     diagnostic?.setAudioSeconds(duration)
     let chunks = try SourceMediaChunk.plan(duration: duration)
-    let key = try SourceMediaCheckpointStore.key(fingerprint: snapshot.fingerprint,
-      suffix: url.pathExtension.lowercased(), locale: locale, vocabulary: vocabulary,
-      pipeline: "recording-speech-analyzer-v1")
+    let key = try SourceMediaCheckpointStore.key(fingerprint: prepared.fingerprint,
+      suffix: prepared.suffix, locale: locale, vocabulary: vocabulary, pipeline: prepared.pipeline)
     let checkpoint = store.load(key, duration: duration, session: session)
     var segments = checkpoint?.segments ?? []
     var completed = checkpoint?.completedChunks ?? 0
@@ -105,7 +112,7 @@ enum RecordedAudioTranscription {
     }
     try Task.checkCancellation()
     let verification = diagnostic?.begin(.verification)
-    try snapshot.verifyOriginal()
+    for snapshot in prepared.snapshots { try snapshot.verifyOriginal() }
     diagnostic?.end(verification, outcome: .success)
     return segments.isEmpty ? .nothingRecognized : .segments(segments)
   }

@@ -9,8 +9,10 @@ enum TranscriptionService {
   /// Choose the vocabulary at dispatch, even when engine settings changed while queued.
   static func transcribe(fileURL: URL?, vocabulary: [String] = [], cloudVocabulary: [String] = [], onDeviceOnly: Bool = false,
                          locale: Locale? = nil, isPreparedChunk: Bool = false,
+                         recordingManifest: RecordingAudioManifest? = nil, recordingDirectory: URL? = nil,
                          authorizeCloud: (@MainActor @Sendable () -> Bool)? = nil) async -> TranscriptionOutcome {
-    guard let fileURL else { return .unavailable }
+    let isSegmented = (recordingManifest?.parts.count ?? 0) > 1
+    guard fileURL != nil || isSegmented else { return .unavailable }
 
     let defaults = UserDefaults.standard
     let engine = onDeviceOnly ? .automatic : TranscriptionEngine(
@@ -24,11 +26,21 @@ enum TranscriptionService {
     switch engine {
     case .speechAnalyzer, .automatic:
       if !isPreparedChunk {
+        if isSegmented {
+          guard let recordingManifest, let recordingDirectory else { return .unavailable }
+          return await RecordedAudioTranscription.transcribe(.parts(recordingManifest, directory: recordingDirectory),
+            locale: locale, vocabulary: vocabulary) { chunkURL in
+              await transcribe(fileURL: chunkURL, vocabulary: vocabulary, onDeviceOnly: true,
+                locale: locale, isPreparedChunk: true)
+            }
+        }
+        guard let fileURL else { return .unavailable }
         return await RecordedAudioTranscription.transcribe(fileURL, locale: locale, vocabulary: vocabulary) { chunkURL in
           await transcribe(fileURL: chunkURL, vocabulary: vocabulary, onDeviceOnly: true,
             locale: locale, isPreparedChunk: true)
         }
       }
+      guard let fileURL else { return .unavailable }
       if #available(iOS 26.0, *) {
         do {
           switch try await SpeechAnalyzerTranscriber.transcribe(
@@ -54,6 +66,10 @@ enum TranscriptionService {
       return .unavailable
 
     case .cloud:
+      guard !isSegmented else {
+        return .failed("分割録音の文字起こしは端末内で利用できます。設定で端末内の文字起こしを選んで再試行してください。")
+      }
+      guard let fileURL else { return .unavailable }
       guard let authorizeCloud, await authorizeCloud() else { return .failed(RecordAccessPolicy.refusal) }
       let provider = CloudProvider(
         rawValue: defaults.string(forKey: "memora.transcriptionProvider") ?? ""

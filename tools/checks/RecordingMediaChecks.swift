@@ -10,6 +10,7 @@ struct RecordingMediaChecks {
     let storeURL = MediaFiles.directory.deletingLastPathComponent().appendingPathComponent("store.sqlite")
     let model = try MemoraModel(storeURL: storeURL)
     let original = try record("first")
+    transcriptionInputChecks(original)
     var legacyJSON = try JSONSerialization.jsonObject(with: JSONEncoder().encode(original)) as! [String: Any]
     legacyJSON.removeValue(forKey: "originalAudioFileNames")
     let legacy = try JSONDecoder().decode(Meeting.self, from: JSONSerialization.data(withJSONObject: legacyJSON))
@@ -159,6 +160,37 @@ struct RecordingMediaChecks {
     precondition(exists(outside))
     try await discardChecks(model, storeURL: storeURL)
     print("PASS: production Meeting legacy/parts codec, actual managed paths, SQLite removal+undo atomicity and rollback/reopen, bulk originals, targeted permanent deletion, shared/draft/trash ownership, protected store, unsafe paths")
+  }
+
+  static func transcriptionInputChecks(_ original: Meeting) {
+    precondition(original.hasTranscriptionAudio)
+    var parts = original
+    parts.audioURL = nil
+    precondition(!parts.hasTranscriptionAudio)
+    parts.recordingAudioManifest = .init(recordingID: parts.id, sampleRate: 44_100, parts: [
+      .init(fileName: parts.originalAudioFileNames[0], frameOffset: 0, frameCount: 44_100, state: .finalized),
+      .init(fileName: parts.originalAudioFileNames[1], frameOffset: 44_100, frameCount: 44_100, state: .finalized)
+    ])
+    precondition(parts.hasTranscriptionAudio && parts.hasSameAudioInput(as: parts))
+    var changed = parts
+    changed.notes = "Unrelated edit"
+    precondition(changed.hasSameAudioInput(as: parts))
+    changed.recordingAudioManifest!.parts[1].frameCount = 88_200
+    precondition(!changed.hasSameAudioInput(as: parts))
+    changed = parts
+    changed.originalAudioFileNames.swapAt(0, 1)
+    precondition(!changed.hasSameAudioInput(as: parts))
+    changed = parts
+    changed.audioURL = original.audioURL
+    precondition(!changed.hasSameAudioInput(as: parts))
+    changed = parts
+    changed.recordingAudioManifest!.parts[1].state = .writing
+    changed.recordingAudioManifest!.parts[1].frameCount = nil
+    precondition(!changed.hasTranscriptionAudio && !changed.hasSameAudioInput(as: parts))
+    changed = parts
+    changed.recordingAudioManifest!.recordingID = UUID()
+    precondition(!changed.hasTranscriptionAudio)
+    print("PASS: production transcription input eligibility, unsealed/foreign manifest refusal, stale audio metadata detection, unrelated notes retained")
   }
 
   @MainActor
