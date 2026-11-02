@@ -16,17 +16,26 @@ extension MemoraModel {
       )
     }
 
-    let draft = recordingDraft
-    let recordID = draft?.id ?? UUID()
     let audioURL = recordingURL
     let workspaceGeneration = aiWorkspaceGeneration
-    func isCurrent() -> Bool {
+    let originalDraftID = recordingDraft?.id, originalDraftName = recordingDraft?.fileName
+    func ownsStoppedCapture() -> Bool {
       !Task.isCancelled && !isRestoring && !isStoreProtected && !isRecording &&
-        recordingDraft == draft && recordingURL == audioURL && aiWorkspaceGeneration == workspaceGeneration
+        recordingURL == audioURL && aiWorkspaceGeneration == workspaceGeneration &&
+        recordingDraft?.id == originalDraftID && recordingDraft?.fileName == originalDraftName
     }
     stopRecorder()
     await endLiveActivity()
-    guard isCurrent() else { return }
+    guard ownsStoppedCapture() else { return }
+    let checkpoint = diagnostic?.begin(.persistence)
+    let checkpointed = await checkpointRecordingDraft()
+    diagnostic?.end(checkpoint, outcome: checkpointed ? .success : .failed)
+    guard ownsStoppedCapture() else { return }
+    let draft = recordingDraft
+    let recordID = draft?.id ?? UUID()
+    func isCurrent() -> Bool {
+      ownsStoppedCapture() && recordingDraft == draft
+    }
     let verification = diagnostic?.begin(.verification)
     let measured = if let audioURL { await MediaFiles.duration(of: audioURL) } else { nil as TimeInterval? }
     guard isCurrent() else { return }

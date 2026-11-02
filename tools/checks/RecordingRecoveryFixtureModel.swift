@@ -46,6 +46,8 @@ final class MemoraModel {
   func beginProcessing(_ id: UUID) { processed.append(id) }
   func announce(_ message: String) { announcements.append(message) }
   func processPendingImports() async {}
+  func presentPendingSampleCleanupIfNeeded() {}
+  func openSavedMeeting(_ id: UUID) {}
 
   enum StorageKey {
     static let recordingDraft = "memoraRecordingDraft"

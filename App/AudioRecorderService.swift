@@ -20,6 +20,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   /// Called when the session is interrupted or the input goes away, so the
   /// caller can keep its state honest and let the person resume.
   var onInterruption: ((Interruption) -> Void)?
+  var onCheckpoint: (() async -> Bool)?
 
   private var recorder: AVAudioRecorder?
   private var startRunID: UUID?
@@ -237,16 +238,30 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
       while !Task.isCancelled {
         do { try await Task.sleep(for: .seconds(15)) }
         catch { return }
-        guard let self, let active = self.recorder, ObjectIdentifier(active) == identity else { return }
-        self.diagnostic?.setAudioSeconds(self.recordedDuration)
-        if (try? SourceMediaStaging.availableBytes(directory)) ?? 0 < SourceMediaStaging.minimumAvailableBytes {
-          self.diagnostic?.count(.storageStop)
-          self.handleUnexpectedStop(identity: identity,
-            reason: "空き容量が少なくなったため録音を停止します。ここまでの音声を保存します。古い記録は削除しません。")
-          return
-        }
+        guard let self, await self.checkStorageAndDraft(identity: identity, directory: directory) else { return }
       }
     }
+  }
+
+  private func checkStorageAndDraft(identity: ObjectIdentifier, directory: URL) async -> Bool {
+    guard !Task.isCancelled else { return false }
+    guard let active = recorder, ObjectIdentifier(active) == identity, !hasReportedFailure else { return false }
+    diagnostic?.setAudioSeconds(recordedDuration)
+    if (try? SourceMediaStaging.availableBytes(directory)) ?? 0 < SourceMediaStaging.minimumAvailableBytes {
+      diagnostic?.count(.storageStop)
+      handleUnexpectedStop(identity: identity,
+        reason: "空き容量が少なくなったため録音を停止します。ここまでの音声を保存します。古い記録は削除しません。")
+      return false
+    }
+    let saved = if let onCheckpoint { await onCheckpoint() } else { true }
+    guard !Task.isCancelled, let active = recorder, ObjectIdentifier(active) == identity, !hasReportedFailure else { return false }
+    if !saved {
+      diagnostic?.count(.draftCheckpointFailure)
+      handleUnexpectedStop(identity: identity,
+        reason: "録音の復旧情報を保存できないため録音を停止します。残っている音声とメモを保存します。ストレージの空き容量を確認してください。")
+      return false
+    }
+    return true
   }
 
   private func observeSession() {

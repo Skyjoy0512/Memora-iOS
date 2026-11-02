@@ -11,6 +11,7 @@ BYOK文字起こし・話者解析・要約を計測する。既存の同意・A
 
 録音の確定は`recordingFinalization`として別traceに記録する。音声metadataの確認を
 `verification`、SQLite保存を`persistence`に分け、確認不能な長さは分母に採用しない。
+録音中の編集metadataの周期保存に失敗した回数は`draftCheckpointFailure`に記録する。
 [終了/復旧/再試行の判定](RECORDING_FINALIZATION.md)。
 
 「音声品質も測定」は次の処理から適用する。保存音声と音声/動画資料の15分以下の

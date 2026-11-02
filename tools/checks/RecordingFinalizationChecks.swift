@@ -18,7 +18,12 @@ struct RecordingFinalizationChecks {
     try await deletedProject(root)
     try await realAudioMetadata(root)
     try await finalizationMetrics(root)
-    print("RecordingFinalizationChecks: PASS. Production stop/completion/retry with real SQLite and Meeting codecs; verified subsecond/24h metadata or unknown duration, no guessed clock/one-second fallback, marker/note/calendar retention, no inference on unreadable audio, 10 suspended races, live-activity race, duplicate-stop refusal, save rollback/retry/reopen, missing media and deleted project. Real WAV/container validation; microphone, Live Activity, duration scheduling, UI and inference are fixtures. No 24h recording/device quality claim.")
+    try await draftCheckpoints(root)
+    try await staleCheckpointCompletion(root)
+    try await newerCheckpointWins(root)
+    try await finalizationCheckpointRace(root)
+    try await dismissalCheckpointFailure(root)
+    print("RecordingFinalizationChecks: PASS. Production stop/completion/retry and draft checkpoint with real SQLite and Meeting codecs; subsecond/24h metadata or unknown duration, no guessed-clock fallback, marker/note/calendar retention, unreadable-audio inference refusal, 10 inspection races, activity/retry races, duplicate stop, SQL ABORT/retry/reopen, checkpoint acknowledgement/unchanged skip/rollback, stale callback refusal, newer edit preservation, finalization checkpoint race and dismissal failure. Real WAV/container validation; microphone, activity, scheduling, UI and inference are fixtures. No 24h recording/device quality claim.")
   }
 
   static func fixture(_ root: URL, _ name: String) throws -> (MemoraModel, URL, MemoraModel.RecordingDraft) {
@@ -198,13 +203,138 @@ struct RecordingFinalizationChecks {
         try await Task.sleep(for: .milliseconds(10))
       }
       guard let report else { preconditionFailure("Finalization metrics missing") }
-      precondition(report.isValid && report.totals["verification"]?.calls == 1 && report.totals["persistence"]?.calls == 1)
+      precondition(report.isValid && report.totals["verification"]?.calls == 1 && report.totals["persistence"]?.calls == 2)
       precondition(report.audioSeconds == duration && (report.overallRTF != nil) == (duration != nil))
     }
     let exported = await AudioDiagnosticArchive.shared.export()
     precondition(!exported.contains("private-metrics-") && !exported.contains("本文と否定条件") && !exported.contains("保存先"))
     let numeric = root.appendingPathComponent("finalization-metrics.json")
     try Data(exported.utf8).write(to: numeric)
+  }
+
+  static func draftCheckpoints(_ root: URL) async throws {
+    let (model, audio, old) = try fixture(root, "draft-checkpoints")
+    let originalBytes = try Data(contentsOf: audio)
+    let baseline = RecordStore.asyncCommits
+    expect(await model.checkpointRecordingDraft())
+    precondition(RecordStore.asyncCommits == baseline)
+    model.recordingTitle = "録音中に編集した名前"
+    model.recordingNote = "否定と固有名詞を保持する新しいメモ"
+    model.recordingMarkers.append(.init(timestamp: 900))
+    expect(await model.checkpointRecordingDraft())
+    precondition(RecordStore.asyncCommits == baseline + 1)
+    let acknowledged = model.recordingDraft!
+    precondition(acknowledged.id == old.id && acknowledged.fileName == old.fileName && acknowledged.startedAt == old.startedAt)
+    precondition(acknowledged.title == model.recordingTitle && acknowledged.note == model.recordingNote && acknowledged.markers == model.recordingMarkers)
+    let reopened = LocalStore(fileURL: model.storeURL)
+    try reopened.prepare()
+    let stored: MemoraModel.RecordingDraft = try document(MemoraModel.StorageKey.recordingDraft, store: reopened)!
+    precondition(stored == acknowledged && model.meetings.isEmpty && model.lifeLogEntries.isEmpty)
+    expect(await model.checkpointRecordingDraft())
+    precondition(RecordStore.asyncCommits == baseline + 1)
+    model.recordingNote = "失敗しても編集中の内容を保持する"
+    try sql("CREATE TRIGGER reject_checkpoint BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT, 'fixture'); END;", url: model.storeURL)
+    expect(await !model.checkpointRecordingDraft())
+    precondition(model.recordingDraft == acknowledged && model.recordingNote == "失敗しても編集中の内容を保持する")
+    let retained: MemoraModel.RecordingDraft = try document(MemoraModel.StorageKey.recordingDraft, store: reopened)!
+    precondition(retained == acknowledged)
+    try sql("DROP TRIGGER reject_checkpoint;", url: model.storeURL)
+    expect(await model.checkpointRecordingDraft())
+    model.isStoreProtected = true
+    model.recordingNote = "保護中には書かない"
+    let writes = RecordStore.asyncCommits
+    expect(await !model.checkpointRecordingDraft())
+    model.isStoreProtected = false
+    model.isRestoring = true
+    expect(await !model.checkpointRecordingDraft())
+    model.isRestoring = false
+    model.recordingURL = MediaFiles.directory.appendingPathComponent("wrong-capture.m4a")
+    expect(await !model.checkpointRecordingDraft())
+    precondition(RecordStore.asyncCommits == writes)
+    model.recordingURL = audio
+    model.isRecording = false
+    expect(await !model.checkpointRecordingDraft())
+    model.isSavingCapture = true
+    expect(await model.checkpointRecordingDraft())
+    expect(try Data(contentsOf: audio) == originalBytes)
+  }
+
+  static func staleCheckpointCompletion(_ root: URL) async throws {
+    for change in 0..<4 {
+      let (model, audio, original) = try fixture(root, "stale-checkpoint-\(change)")
+      let gate = RecordingRecoveryGate<Bool>()
+      RecordStore.beforeAsyncCommit = { _ = await gate.wait() }
+      model.recordingNote = "書き込みへ渡したメモ"
+      let operation = Task { await model.checkpointRecordingDraft() }
+      await gate.entered()
+      switch change {
+      case 0: model.recordingDraft = nil; model.recordingURL = nil
+      case 1: model.recordingDraft?.id = UUID()
+      case 2: model.isStoreProtected = true
+      default: operation.cancel()
+      }
+      let replacement = model.recordingDraft
+      RecordStore.beforeAsyncCommit = nil
+      gate.resume(true)
+      expect(await !operation.value)
+      precondition(model.recordingDraft == replacement && FileManager.default.fileExists(atPath: audio.path))
+      // The accepted local write can finish; stale completion must not restore
+      // its model draft or replace a later capture's metadata.
+      let stored: MemoraModel.RecordingDraft = try document(MemoraModel.StorageKey.recordingDraft, store: model.store)!
+      precondition(stored.id == original.id && stored.note == "書き込みへ渡したメモ")
+    }
+  }
+
+  static func newerCheckpointWins(_ root: URL) async throws {
+    let (model, _, old) = try fixture(root, "newer-checkpoint")
+    let gate = RecordingRecoveryGate<Bool>()
+    RecordStore.afterAsyncCommit = { _ = await gate.wait() }
+    model.recordingNote = "先に送ったcheckpoint"
+    let operation = Task { await model.checkpointRecordingDraft() }
+    await gate.entered()
+    var newer = old
+    newer.note = "後から保存したメモ"
+    newer.markers = [RecordingMarker(timestamp: 900)]
+    // Simulate a later acknowledged marker save after the first disk write,
+    // before that write's acknowledgement has returned to the model.
+    try model.store.write(MemoraModel.StorageKey.recordingDraft, data: RecordStore.encoded(newer))
+    model.recordingDraft = newer
+    model.recordingNote = newer.note
+    model.recordingMarkers = newer.markers!
+    RecordStore.afterAsyncCommit = nil
+    gate.resume(true)
+    expect(await operation.value)
+    let saved: MemoraModel.RecordingDraft = try document(MemoraModel.StorageKey.recordingDraft, store: model.store)!
+    precondition(model.recordingDraft == newer && saved == newer)
+  }
+
+  static func finalizationCheckpointRace(_ root: URL) async throws {
+    let (model, _, _) = try fixture(root, "finalization-checkpoint-race")
+    let gate = RecordingRecoveryGate<Bool>()
+    RecordStore.beforeAsyncCommit = { _ = await gate.wait() }
+    model.recordingNote = "停止直前のメモ"
+    MediaFiles.readDuration = { _ in preconditionFailure("Replaced draft reached inspection") }
+    let operation = Task { await model.stopCapture() }
+    await gate.entered()
+    model.recordingDraft?.id = UUID()
+    let replacement = model.recordingDraft
+    RecordStore.beforeAsyncCommit = nil
+    gate.resume(true)
+    await operation.value
+    precondition(model.recordingDraft == replacement && model.meetings.isEmpty && model.processed.isEmpty && !model.isSavingCapture)
+  }
+
+  static func dismissalCheckpointFailure(_ root: URL) async throws {
+    let (model, _, old) = try fixture(root, "dismissal-checkpoint-failure")
+    model.recordingNote = "閉じる直前の新しいメモ"
+    try sql("CREATE TRIGGER reject_checkpoint BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT, 'fixture'); END;", url: model.storeURL)
+    model.completeCaptureDismissal()
+    for _ in 0..<200 {
+      if model.recordingErrorMessage != nil { break }
+      try await Task.sleep(for: .milliseconds(10))
+    }
+    precondition(model.recordingDraft == old && model.recordingNote == "閉じる直前の新しいメモ")
+    precondition(model.recordingErrorMessage?.contains("保存できません") == true && model.isRecording && model.stops == 0)
   }
 
   static func deletedProject(_ root: URL) async throws {

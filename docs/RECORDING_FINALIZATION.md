@@ -34,10 +34,33 @@ Live Activity終了待ち/音声確認後に、workspace世代・draft・ファ�
 音声の再確認や録音の再開をしない。確認できなかった記録を保存できた後も、AIを自動開始しない。
 record schema・既存データ・Library/Journal/Ask AI/Marketplaceや作成導線は変更していない。
 
+## 録音中の下書きcheckpoint
+
+既存の約15秒ごとの録音容量監視へ、タイトル・メモ・重要マークの保存を接続した。
+変更がないときはSQLiteへ書かず、変更時だけ既存の`RecordStore.commitAsync`の直列キューへ
+渡す。MainActor上でディスク書き込み完了を同期的に待たず、周期処理同士も重ねない。
+画面を閉じるときと録音を確定するときにも最新の編集を保存する。
+
+SQLiteの成功応答を受けたsnapshotだけを`recordingDraft`へ反映する。
+失敗時は前回成功したdraftと編集中の入力を保持し、古い応答が新しいdraftや後から保存した
+重要マークを上書きしない。既存のdraft ID・fileNameと管理フォルダの参照を照合し、
+保護中/復元中/取消後や別録音に対して書き込み完了を反映しない。
+一度キューへ渡したローカル書き込みは完了し得るが、後続のdraft削除や保存は同じキューで順序を守る。
+
+周期保存が失敗すると既存の異常停止経路でpause・保存/復旧へ移り、
+`draftCheckpointFailure`の数だけを診断へ記録する。音声や下書きを削除しない。
+画面を閉じたときの保存失敗も既存の録音エラー表示で知らせる。
+チェックポイント待ちの間に停止/取消/レコーダー交代があった場合、古い失敗で新しい録音を停止しない。
+
+このcheckpointは編集metadataの保護であり、録音中M4Aのヘッダーを確定する処理ではない。
+OSによるsuspend・強制終了・I/O待ち中に15秒間隔や最後の編集の保存を保証しない。
+長時間の録音ファイルのローテーション/復旧可能な形式の検証は引き続き必要。
+
 ## 計測
 
 既存の初期オフの音声計測に`recordingFinalization` traceを追加した。
 `verification`は音声metadata確認、`persistence`は既存SQLite transactionの待ちを含む保存時間。
+確定時の下書きcheckpointと最終の記録transactionは`persistence`の別callとして集計する。
 確認不能な音声を保存したtraceはfailedとなり、全体RTFを出さない。
 元音声時間は確認できた値だけを記録する。タイトル・note・ファイル名・record ID・
 エラー内容は数値ログへ追加しない。
@@ -51,6 +74,7 @@ record schema・既存データ・Library/Journal/Ask AI/Marketplaceや作成導
 
 ```bash
 python3 -B tools/checks/run-recording-finalization-checks.py
+python3 -B tools/checks/run-recording-checkpoint-service-checks.py
 bash tools/checks/run-recording-recovery-checks.sh
 python3 -B tools/checks/run-recording-start-checks.py
 bash tools/checks/run-audio-diagnostic-checks.sh
@@ -65,6 +89,13 @@ SQL ABORT→再試行→再open、欠落音声、project削除時の未分類保
 fixtureの24時間durationは数値と保存形式の検査であり、24時間録音の実績ではない。
 マイク・Live Activity・確認待ちのschedule・推論・UIはfixture境界である。
 
+checkpointの追加検査では、変更なしの書き込み省略、SQLite再open、SQL ABORT時の前回draft保持と
+再試行、取消/別draft/保護状態の古い完了拒否、後から保存した編集の保持、確定処理の
+checkpoint待ちrace、画面を閉じたときの保存失敗表示を確認する。
+service検査はproductionの容量/checkpoint/異常停止メソッドを使い、容量不足/取得不能、
+失敗の一回だけのpause/通知、待ち中の停止/交代/取消を確認する。容量・recorder・OSはfixtureで、
+実タイマーのバックグラウンド実行やマイク動作は検査していない。
+
 既存recoveryは8 duration・11 raceと保存/再開、startは24の古いcontext境界と
 正常/二重開始・許可拒否・取消を確認した。iOS 27.2 SDKの`bitrig preview -platform iOS`成功、
 既存警告11件。実機動作・VoiceOver・共有先でのJSON受信はこの検査に含めていない。
@@ -78,6 +109,10 @@ fixtureの24時間durationは数値と保存形式の検査であり、24時間�
 `MemoraModel+RecordingRecovery`（共通の判定/案内）、`MediaFiles`（metadata確認）、
 `AudioDiagnosticReport`（kind/stage）、`AudioDiagnosticsView`（メモリ数値変換のclamp）、
 既存のrecovery fixture/runner、start runner、`audio-measurements.py`と関連文書。
+
+checkpoint追加: `App/MemoraModel+RecordingCheckpoint.swift`、`AudioRecorderService.swift`、
+`MemoraModel.swift`の既存service配線、`RecordingCheckpointServiceChecks.swift`と専用runner、
+`RecordingFinalizationChecks`/store fixture。記録schemaや新しいUserDefaults保存は追加しない。
 
 ## 残件
 

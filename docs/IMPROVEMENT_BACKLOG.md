@@ -7,6 +7,9 @@
 コンテナmetadata/音声trackを有界に確認し、workspace/draft/取消などの確認待ちraceと
 二重保存を防ぐ。既存の記録+Journal+draft削除transactionと保存再試行を維持。
 recordingFinalizationの数値traceに音声確認/SQLite保存時間を追加した。
+既存15秒の容量監視で編集metadataの非同期checkpointも実行。変更なしは書込を省略し、
+成功したdraftだけを反映する。失敗時は既存の異常停止/保存へ移り、旧callbackは別録音へ作用しない。
+OS停止中の周期実行や録音中M4Aの完全性を保証するものではない。
 [実装と検査境界](RECORDING_FINALIZATION.md)。ローテーション/連続再生/backup/24h実機検証は残件。
 
 ## 2026-11-02 Audio Intelligenceの数値計測

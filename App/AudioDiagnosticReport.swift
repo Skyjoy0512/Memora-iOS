@@ -16,7 +16,7 @@ struct AudioDiagnosticReport: Codable, Identifiable, Sendable {
     case appleSpeech, openAIWhisper, deepgramNova3, fluidSpeaker, silero, onDeviceSummary, cloudSummary
   }
   enum Counter: String, Codable, Sendable {
-    case recordingPause, recordingResume, audioInterruption, inputLost, audioReset, storageStop, liveBufferDropped
+    case recordingPause, recordingResume, audioInterruption, inputLost, audioReset, storageStop, liveBufferDropped, draftCheckpointFailure
   }
   struct Event: Codable, Sendable {
     var stage: Stage

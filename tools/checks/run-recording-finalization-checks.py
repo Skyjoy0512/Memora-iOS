@@ -7,7 +7,7 @@ import tempfile
 
 os.chdir(Path(__file__).resolve().parents[2])
 source = Path('App/MemoraModel+Capture.swift').read_text()
-methods = source[source.index('  func retrySavingRecording()'):source.index('  func completeCaptureDismissal()')]
+methods = source[source.index('  func retrySavingRecording()'):source.index('  func cancelCapture()')]
 with tempfile.TemporaryDirectory(prefix='memora-recording-finalization-', dir=os.environ.get('MEMORA_CHECK_ROOT')) as temporary:
     root = Path(temporary)
     production = root / 'RecordingSaveCompletion.swift'
@@ -21,7 +21,7 @@ with tempfile.TemporaryDirectory(prefix='memora-recording-finalization-', dir=os
         'App/TranscriptSegment.swift', 'App/SpeakerIdentificationStatus.swift',
         'App/LifeLogEntry.swift', 'App/LifeLogKind.swift', 'App/LifeLogSource.swift', 'App/LifeLogOrigin.swift',
         'App/RecordingMarker.swift', 'App/RecordingAudioValidation.swift', 'App/ProjectFiling.swift',
-        'App/MemoraModel+RecordingRecovery.swift', 'App/MemoraModel+RecordingFinalization.swift',
+        'App/MemoraModel+RecordingRecovery.swift', 'App/MemoraModel+RecordingCheckpoint.swift', 'App/MemoraModel+RecordingFinalization.swift',
         'tools/checks/AudioImportFixtureServices.swift', 'tools/checks/RecordingRecoveryStoreFixture.swift',
         'tools/checks/RecordingRecoveryFixtureModel.swift', 'tools/checks/RecordingRecoveryGate.swift',
         'tools/checks/RecordingFinalizationChecks.swift', str(production),

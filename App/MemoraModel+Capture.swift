@@ -205,9 +205,13 @@ extension MemoraModel {
     // The sheet can be closed while recording continues, so remember what was
     // typed in case the app does not get to save.
     if isRecording, recordingDraft != nil {
-      recordingDraft?.title = recordingTitle
-      recordingDraft?.note = recordingNote
-      persistRecordingDraft()
+      let draftID = recordingDraft?.id, url = recordingURL
+      Task { [weak self] in
+        guard let self, self.recordingDraft?.id == draftID, self.recordingURL == url else { return }
+        let saved = await self.checkpointRecordingDraft()
+        guard !saved, self.isRecording, self.recordingDraft?.id == draftID, self.recordingURL == url else { return }
+        self.recordingErrorMessage = "録音のメモを保存できませんでした。入力内容は編集中のまま保持しています。空き容量を確認してから保存を再試行してください。"
+      }
     }
 
     guard let meetingID = pendingMeetingNavigationID else {

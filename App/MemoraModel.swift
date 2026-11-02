@@ -758,6 +758,7 @@ final class MemoraModel {
     recorder.onInterruption = { [weak self] event in
       self?.handleRecorderInterruption(event)
     }
+    recorder.onCheckpoint = { [weak self] in await self?.checkpointRecordingDraft() ?? false }
 
     // didSet does not run for the loads above, so the derived data is built here.
     rebuildMeetingAggregates()
