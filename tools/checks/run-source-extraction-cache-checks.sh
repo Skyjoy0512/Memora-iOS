@@ -9,5 +9,9 @@ swiftc App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineC
   App/ProjectSource.swift App/ProjectSourceText.swift App/ProjectSourceFiles.swift App/ProjectSourceTextReader.swift \
   App/ProjectSourceExtractionResult.swift App/SourceIntake.swift App/ConversationLinkSnapshot.swift \
   App/SourceExtractionSnapshot.swift App/SourceExtractionPersistence.swift \
-  App/SourceExtractionCache.swift tools/checks/SourceExtractionCacheChecks.swift -lsqlite3 -o "$check_dir/checks"
+  App/SourceMediaFailure.swift App/SourceMediaChunk.swift App/SourceMediaCheckpoint.swift \
+  App/SourceMediaCheckpointStore.swift App/SourceMediaSnapshot.swift App/SourceMediaTranscript.swift \
+  App/SourceTextChunks.swift App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift \
+  tools/checks/SourceMediaCheckpointChecks.swift \
+  App/RecognitionLanguage.swift App/SourceExtractionCache.swift tools/checks/SourceExtractionCacheChecks.swift -lsqlite3 -o "$check_dir/checks"
 "$check_dir/checks" "$check_dir"

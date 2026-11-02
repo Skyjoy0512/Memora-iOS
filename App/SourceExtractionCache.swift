@@ -3,7 +3,12 @@ import Foundation
 
 actor SourceExtractionCache {
   #if !MEMORA_HOST_CHECKS
-  static let shared = SourceExtractionCache(persistenceDirectory: SourceExtractionPersistence.directory) {
+  static let shared = SourceExtractionCache(persistenceDirectory: SourceExtractionPersistence.directory,
+    mediaExtraction: { try await SourceIntake.extract($0, vocabulary: $1, speechLocale: $2) },
+    discardMediaCheckpoints: { fingerprints in
+      if let fingerprints { SourceMediaCheckpointStore.shared.invalidate(fingerprints: fingerprints) }
+      else { SourceMediaCheckpointStore.shared.clear() }
+    }) {
     try await SourceIntake.extract($0, vocabulary: $1)
   }
   #endif
@@ -12,11 +17,17 @@ actor SourceExtractionCache {
   private var jobs: [String: ExtractionJob] = [:]
   private var generation = UUID()
   private let extraction: @Sendable (URL, [String]) async throws -> ProjectSourceExtractionResult
+  private let mediaExtraction: (@Sendable (URL, [String], Locale) async throws -> ProjectSourceExtractionResult)?
+  private let discardMediaCheckpoints: @Sendable (Set<String>?) -> Void
   private let persistence: SourceExtractionPersistence?
 
   init(persistenceDirectory: URL? = nil, now: @escaping () -> Date = Date.init,
+       mediaExtraction: (@Sendable (URL, [String], Locale) async throws -> ProjectSourceExtractionResult)? = nil,
+       discardMediaCheckpoints: @escaping @Sendable (Set<String>?) -> Void = { _ in },
        extraction: @escaping @Sendable (URL, [String]) async throws -> ProjectSourceExtractionResult) {
     self.extraction = extraction
+    self.mediaExtraction = mediaExtraction
+    self.discardMediaCheckpoints = discardMediaCheckpoints
     persistence = persistenceDirectory.map { SourceExtractionPersistence(directory: $0, now: now) }
   }
 
@@ -27,14 +38,20 @@ actor SourceExtractionCache {
     let before = try attributes(url)
     let digest = try fingerprint(url)
     let suffix = url.pathExtension.lowercased()
-    let terms = [.audio, .video].contains(SourceIntake.kind(for: url)) ? vocabulary : []
+    let isMedia = [.audio, .video].contains(SourceIntake.kind(for: url))
+    let terms = isMedia ? vocabulary : []
+    let speechLocale = isMedia ? (RecognitionLanguage(rawValue:
+      UserDefaults.standard.string(forKey: "memora.transcriptionLanguage") ?? "") ?? .japanese).locale : nil
     let vocabularyDigest = SHA256.hash(data: try JSONEncoder().encode(terms)).map { String(format: "%02x", $0) }.joined()
     // Bump the extractor version whenever extraction semantics change. Locale
     // and OS changes can alter OCR/speech output even for identical originals.
     let system = ProcessInfo.processInfo.operatingSystemVersion
-    let version = suffix == "pdf" || [.audio, .video].contains(SourceIntake.kind(for: url)) ? "v3" : "v2"
+    let version = isMedia ? "v4" : (suffix == "pdf" ? "v3" : "v2")
+    let speechKey = try speechLocale.map {
+      "." + SHA256.hash(data: try JSONEncoder().encode($0.identifier)).map { String(format: "%02x", $0) }.joined()
+    } ?? ""
     let key = "\(version).\(system.majorVersion).\(system.minorVersion).\(Locale.current.identifier)."
-      + digest + "." + suffix + "." + vocabularyDigest
+      + digest + "." + suffix + "." + vocabularyDigest + speechKey
     guard try attributes(url) == before else { throw ProjectSourceFiles.Failure.invalidFile }
     if let cached = results[key], cached.resumePage == nil, cached.ocrFailedPages.isEmpty { return cached }
     if let cached = persistence?.read(key), cached.resumePage == nil {
@@ -50,6 +67,7 @@ actor SourceExtractionCache {
     if let existing = jobs[key] { job = existing }
     else {
       let extraction = self.extraction
+      let mediaExtraction = self.mediaExtraction
       job = ExtractionJob(task: Task {
         if suffix == "memorasource" {
           let snapshot = try JSONDecoder().decode(ConversationLinkSnapshot.self, from: Data(contentsOf: url))
@@ -57,6 +75,9 @@ actor SourceExtractionCache {
             throw ProjectSourceFiles.Failure.extractedTextTooLarge
           }
           return .init(blocks: snapshot.blocks, notice: snapshot.notice, coverage: .partial)
+        }
+        if let speechLocale, let mediaExtraction {
+          return try await mediaExtraction(url, vocabulary, speechLocale)
         }
         return try await extraction(url, vocabulary)
       })
@@ -104,6 +125,7 @@ actor SourceExtractionCache {
   func clearStoredResults() {
     results = [:]
     persistence?.clear()
+    discardMediaCheckpoints(nil)
   }
 
   /// Deletion removes every format/vocabulary variant of the original, without
@@ -119,6 +141,7 @@ actor SourceExtractionCache {
       if let job = jobs.removeValue(forKey: key) { job.isValid = false; job.task.cancel() }
     }
     persistence?.invalidate(fingerprints: values)
+    discardMediaCheckpoints(values)
   }
 
   private func attributes(_ url: URL) throws -> Attributes {

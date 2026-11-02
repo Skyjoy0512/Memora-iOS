@@ -7,7 +7,8 @@ import Speech
 /// here (missing assets, unsupported locale, or an engine that is not wired yet).
 enum TranscriptionService {
   /// Choose the vocabulary at dispatch, even when engine settings changed while queued.
-  static func transcribe(fileURL: URL?, vocabulary: [String] = [], cloudVocabulary: [String] = [], onDeviceOnly: Bool = false) async -> TranscriptionOutcome {
+  static func transcribe(fileURL: URL?, vocabulary: [String] = [], cloudVocabulary: [String] = [], onDeviceOnly: Bool = false,
+                         locale: Locale? = nil) async -> TranscriptionOutcome {
     guard let fileURL else { return .unavailable }
 
     let defaults = UserDefaults.standard
@@ -17,6 +18,7 @@ enum TranscriptionService {
     let language = RecognitionLanguage(
       rawValue: defaults.string(forKey: "memora.transcriptionLanguage") ?? ""
     ) ?? .japanese
+    let locale = locale ?? language.locale
 
     switch engine {
     case .speechAnalyzer, .automatic:
@@ -24,7 +26,7 @@ enum TranscriptionService {
         do {
           switch try await SpeechAnalyzerTranscriber.transcribe(
             fileURL: fileURL,
-            locale: language.locale,
+            locale: locale,
             vocabulary: vocabulary
           ) {
           case .segments(let segments):
@@ -51,7 +53,7 @@ enum TranscriptionService {
       do {
         let segments = try await CloudTranscriptionService.transcribe(
           fileURL: fileURL,
-          locale: language.locale,
+          locale: locale,
           provider: provider,
           vocabulary: cloudVocabulary
         )

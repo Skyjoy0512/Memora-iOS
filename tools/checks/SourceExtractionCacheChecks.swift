@@ -6,6 +6,8 @@ import CryptoKit
 struct SourceExtractionCacheChecks {
   static func main() async throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+    try SourceMediaCheckpointChecks.run(root: root)
+    try await speechLocaleChecks(root: root)
     let calls = ExtractionCalls()
     let cache = SourceExtractionCache { url, vocabulary in
       await calls.extract(url, vocabulary: vocabulary)
@@ -289,6 +291,50 @@ struct SourceExtractionCacheChecks {
     expect(await restartCalls.count == 6)
 
     try await invalidationChecks(root: root, original: original)
+  }
+
+  static func speechLocaleChecks(root: URL) async throws {
+    let defaults = UserDefaults.standard
+    let previous = defaults.object(forKey: "memora.transcriptionLanguage")
+    defer {
+      if let previous { defaults.set(previous, forKey: "memora.transcriptionLanguage") }
+      else { defaults.removeObject(forKey: "memora.transcriptionLanguage") }
+    }
+    let calls = ExtractionCalls()
+    let file = root.appendingPathComponent("locale-fixture.m4a")
+    let data = Data("media identity fixture, not actual speech".utf8)
+    try data.write(to: file)
+    let fingerprint = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    let checkpoints = SourceMediaCheckpointStore(directory: root.appendingPathComponent("locale-checkpoints"))
+    let key = try SourceMediaCheckpointStore.key(fingerprint: fingerprint, suffix: "m4a",
+      locale: Locale(identifier: "ja-JP"), vocabulary: [])
+    let session = checkpoints.begin()
+    let prefix = SourceMediaCheckpoint(duration: 1_801, completedChunks: 1, blocks: [])
+    checkpoints.save(prefix, key: key, session: session)
+    let cache = SourceExtractionCache(mediaExtraction: { url, vocabulary, locale in
+      UserDefaults.standard.set("english", forKey: "memora.transcriptionLanguage")
+      var result = await calls.extract(url, vocabulary: vocabulary)
+      result.notice = locale.identifier
+      return result
+    }, discardMediaCheckpoints: { fingerprints in
+      if let fingerprints { checkpoints.invalidate(fingerprints: fingerprints) }
+      else { checkpoints.clear() }
+    }) { _, _ in preconditionFailure("Media must receive its captured locale") }
+    defaults.set("japanese", forKey: "memora.transcriptionLanguage")
+    let japanese = try await cache.extract(file)
+    let english = try await cache.extract(file)
+    defaults.set("japanese", forKey: "memora.transcriptionLanguage")
+    let cachedJapanese = try await cache.extract(file)
+    precondition(japanese.notice == "ja-JP" && english.notice == "en-US" && cachedJapanese.notice == "ja-JP")
+    expect(await calls.count == 2)
+    await cache.invalidate(fingerprints: [fingerprint])
+    checkpoints.save(prefix, key: key, session: session)
+    precondition(checkpoints.load(key, duration: 1_801, session: checkpoints.begin()) == nil)
+    let next = checkpoints.begin()
+    checkpoints.save(prefix, key: key, session: next)
+    await cache.clearStoredResults()
+    checkpoints.save(prefix, key: key, session: next)
+    precondition(checkpoints.load(key, duration: 1_801, session: checkpoints.begin()) == nil)
   }
 
   static func invalidationChecks(root: URL, original: URL) async throws {

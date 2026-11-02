@@ -4,7 +4,7 @@ import CryptoKit
 
 /// A discardable, device-local cache, separate from the backed-up user store.
 /// SQLite bounds and serializes records; image bytes remain separate files.
-/// Only SourceExtractionCache's actor accesses this instance.
+/// Each instance is confined to its owning actor or lock.
 final class SourceExtractionPersistence {
   static let maximumBytes = 32 * 1024 * 1024
   static let maximumEntryBytes = 12 * 1024 * 1024
@@ -33,19 +33,7 @@ final class SourceExtractionPersistence {
 
   func read(_ key: String) -> ProjectSourceExtractionResult? {
     do {
-      try prepare()
-      try prune()
-      let query = try statement("SELECT data, data_hash FROM extractions WHERE key = ?;")
-      defer { sqlite3_finalize(query) }
-      bind(key, to: query, at: 1)
-      guard sqlite3_step(query) == SQLITE_ROW,
-            let bytes = sqlite3_column_blob(query, 0) else { return nil }
-      let count = Int(sqlite3_column_bytes(query, 0))
-      guard count > 0, count <= Self.maximumEntryBytes else { try remove(key); return nil }
-      let data = Data(bytes: bytes, count: count)
-      guard let storedHash = sqlite3_column_text(query, 1), digest(data) == String(cString: storedHash) else {
-        try remove(key); return nil
-      }
+      guard let data = readPayload(key) else { return nil }
       let snapshot = try JSONDecoder().decode(SourceExtractionSnapshot.self, from: data)
       var thumbnail: Data?
       if let reference = snapshot.thumbnailReference {
@@ -59,11 +47,6 @@ final class SourceExtractionPersistence {
         guard let thumbnail, snapshot.thumbnailFingerprint == digest(thumbnail) else { try remove(key); return nil }
       }
       guard let result = snapshot.result(thumbnail: thumbnail) else { try remove(key); return nil }
-      let touch = try statement("UPDATE extractions SET accessed_at = ? WHERE key = ?;")
-      defer { sqlite3_finalize(touch) }
-      sqlite3_bind_double(touch, 1, now().timeIntervalSince1970)
-      bind(key, to: touch, at: 2)
-      try step(touch)
       return result
     } catch {
       try? remove(key)
@@ -72,19 +55,63 @@ final class SourceExtractionPersistence {
   }
 
   func write(_ key: String, result: ProjectSourceExtractionResult) {
-    var newThumbnail: URL?
     do {
       guard !result.blocks.isEmpty, result.ocrFailedPages.isEmpty else { return }
-      try prepare()
       let reference = result.thumbnail.map { _ in UUID().uuidString + ".thumb" }
       let snapshot = SourceExtractionSnapshot(result, thumbnailReference: reference,
         thumbnailFingerprint: result.thumbnail.map(digest))
       guard snapshot.result(thumbnail: result.thumbnail) != nil else { return }
       let data = try JSONEncoder().encode(snapshot)
-      let bytes = data.count + (result.thumbnail?.count ?? 0)
+      try persistPayload(key, data: data, thumbnail: result.thumbnail, reference: reference)
+    } catch {
+      // Saving a derived cache must never turn a successful import into failure.
+    }
+  }
+
+  func readPayload(_ key: String) -> Data? {
+    do {
+      try prepare()
+      try prune()
+      let query = try statement("SELECT data, data_hash FROM extractions WHERE key = ?;")
+      defer { sqlite3_finalize(query) }
+      bind(key, to: query, at: 1)
+      guard sqlite3_step(query) == SQLITE_ROW,
+            let pointer = sqlite3_column_blob(query, 0) else { return nil }
+      let count = Int(sqlite3_column_bytes(query, 0))
+      guard count > 0, count <= Self.maximumEntryBytes else { try remove(key); return nil }
+      let data = Data(bytes: pointer, count: count)
+      guard let hash = sqlite3_column_text(query, 1), digest(data) == String(cString: hash) else {
+        try remove(key); return nil
+      }
+      let touch = try statement("UPDATE extractions SET accessed_at = ? WHERE key = ?;")
+      defer { sqlite3_finalize(touch) }
+      sqlite3_bind_double(touch, 1, now().timeIntervalSince1970)
+      bind(key, to: touch, at: 2)
+      try step(touch)
+      return data
+    } catch {
+      try? remove(key)
+      return nil
+    }
+  }
+
+  func writePayload(_ key: String, data: Data) {
+    try? persistPayload(key, data: data, thumbnail: nil, reference: nil)
+  }
+
+  func removePayload(_ key: String) {
+    do { try prepare(); try remove(key) }
+    catch { destroy() }
+  }
+
+  private func persistPayload(_ key: String, data: Data, thumbnail: Data?, reference: String?) throws {
+    var newThumbnail: URL?
+    do {
+      let bytes = data.count + (thumbnail?.count ?? 0)
       guard bytes <= Self.maximumEntryBytes else { return }
+      try prepare()
       try prune(reservingBytes: bytes, reservingEntry: true)
-      if let reference, let thumbnail = result.thumbnail {
+      if let reference, let thumbnail {
         let url = root.appendingPathComponent(reference)
         try thumbnail.write(to: url, options: .atomic)
         newThumbnail = url
@@ -104,7 +131,7 @@ final class SourceExtractionPersistence {
       if let previous, let url = ProjectSourceFiles.resolve(previous, in: root) { try? FileManager.default.removeItem(at: url) }
     } catch {
       if let newThumbnail { try? FileManager.default.removeItem(at: newThumbnail) }
-      // Saving a derived cache must never turn a successful import into failure.
+      throw error
     }
   }
 

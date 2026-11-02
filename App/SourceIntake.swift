@@ -16,11 +16,11 @@ enum SourceIntake {
   }
 
   #if !MEMORA_HOST_CHECKS
-  static func extract(_ url: URL, vocabulary: [String] = []) async throws -> ProjectSourceExtractionResult {
+  static func extract(_ url: URL, vocabulary: [String] = [], speechLocale: Locale? = nil) async throws -> ProjectSourceExtractionResult {
     try await SourceProcessingQueue.shared.perform {
       switch kind(for: url) {
       case .audio, .video:
-        return try await SourceMediaExtraction.extract(url, vocabulary: vocabulary)
+        return try await SourceMediaExtraction.extract(url, vocabulary: vocabulary, speechLocale: speechLocale)
       default:
         return try await ProjectSourceExtraction.extract(url)
       }

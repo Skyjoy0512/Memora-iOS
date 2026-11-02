@@ -14,13 +14,25 @@ struct SourceMediaTranscript {
             segment.timestamp <= chunk.duration + 1 else { throw SourceMediaFailure.invalidTranscript }
       let time = chunk.start + min(segment.timestamp, chunk.duration)
       for block in SourceTextChunks.split(segment.text, time: time) {
-        let added = try encoder.encode(block).count + (blocks.isEmpty ? 0 : 1)
-        guard added <= ProjectSourceTextReader.maximumBytes - encodedBytes else {
-          throw SourceMediaFailure.transcriptTooLarge
-        }
-        encodedBytes += added
-        blocks.append(block)
+        try append(block, encoder: encoder)
       }
     }
+  }
+
+  mutating func restore(_ completed: [ProjectSourceText]) throws {
+    let encoder = JSONEncoder()
+    for block in completed {
+      try Task.checkCancellation()
+      try append(block, encoder: encoder)
+    }
+  }
+
+  private mutating func append(_ block: ProjectSourceText, encoder: JSONEncoder) throws {
+    let added = try encoder.encode(block).count + (blocks.isEmpty ? 0 : 1)
+    guard added <= ProjectSourceTextReader.maximumBytes - encodedBytes else {
+      throw SourceMediaFailure.transcriptTooLarge
+    }
+    encodedBytes += added
+    blocks.append(block)
   }
 }
