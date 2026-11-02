@@ -83,6 +83,8 @@ RTF=処理秒÷原音声秒。10分/1h/6h/24hの端末別測定手順は`AUDIO_I
 Groq large v3 $0.111/h、OpenAI Whisper $0.36/h、OpenAI miniは推定$0.18/h、
 Deepgram multilingualは現料金表の保守値$0.552/h、用語強調込み$0.63/h。
 話者分離は追加$0.002/分なので自動要求を外した。公式ページ間の差/旧indexを明記。
+OpenAI Whisperは公式モデルページのDeprecated表示も確認。既存BYOK互換を維持し、
+時刻対応・価格が異なる新モデルへ自動切替は行わない。
 リンクと課金単位は [運用設計](AUDIO_CLOUD_OPERATIONS.md#stt比較)。日本語精度による採用は未決定。
 
 720h全量STT（FX200）はCF Turbo4,432.32円/Groq Turbo5,760円/OpenAI Whisper51,840円。

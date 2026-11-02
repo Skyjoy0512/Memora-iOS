@@ -13,7 +13,7 @@
 | [Cloudflare Whisper large v3 Turbo](https://developers.cloudflare.com/workers-ai/models/whisper-large-v3-turbo/) | 0.03078 | $0.000513/分、language/VAD/segmentsあり。日本語正解評価後の第一候補 |
 | [Groq Whisper Turbo](https://console.groq.com/docs/model/whisper-large-v3-turbo) | 0.04 | 多言語。10秒の最低課金、free/devのfile制限を区別 |
 | [Groq Whisper large v3](https://console.groq.com/docs/model/whisper-large-v3) | 0.111 | 多言語。Turboとの日本語CER比較が必要 |
-| [OpenAI Whisper](https://openai.com/api/pricing/) | 0.36 | 既存BYOK。25MB/要求、verbose_json区間時刻、話者分離なし |
+| [OpenAI Whisper](https://developers.openai.com/api/docs/models/whisper-1) | 0.36 | 既存BYOK互換。公式はDeprecated表示。25MB/要求、verbose_json区間時刻、話者分離なし。廃止日と時刻対応の移行先を接続前に再確認 |
 | [OpenAI mini transcribe](https://developers.openai.com/api/docs/pricing) | 推定0.18 | 表示目安$0.003/分。token課金で、分単価の固定保証ではない。時刻/形式がWhisperと異なる |
 | [Deepgram Nova-3 multilingual](https://deepgram.com/pricing) | 保守値0.552 | 取得した料金表$0.0092/分。検索indexには旧pre-recorded$0.0052/分も残る。販売用計量に旧値を固定しない |
 
