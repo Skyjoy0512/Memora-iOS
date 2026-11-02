@@ -15,4 +15,14 @@ enum TranscriptionOutcome {
   /// The work was stopped before it produced anything. Nothing is applied and
   /// the audio is kept.
   case cancelled
+
+  var diagnosticOutcome: AudioDiagnosticReport.Outcome {
+    switch self {
+    case .segments: .success
+    case .nothingRecognized: .empty
+    case .unavailable: .unavailable
+    case .failed: .failed
+    case .cancelled: .cancelled
+    }
+  }
 }

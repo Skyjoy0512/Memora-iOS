@@ -11,6 +11,10 @@ struct SourceMediaSnapshot {
   private var maximumBytes: Int
 
   init(_ original: URL, directory: URL, maximumBytes: Int = ProjectSourceFiles.maximumFileBytes) throws {
+    let diagnostic = AudioProcessingDiagnostics.current
+    let span = diagnostic?.begin(.snapshot)
+    var outcome: AudioDiagnosticReport.Outcome = .failed
+    defer { diagnostic?.end(span, outcome: Task.isCancelled ? .cancelled : outcome) }
     let before = try Self.attributes(original, maximumBytes: maximumBytes)
     let url = directory.appendingPathComponent("input").appendingPathExtension(original.pathExtension)
     let digest = try Self.copy(original, to: url, maximumBytes: maximumBytes)
@@ -23,6 +27,7 @@ struct SourceMediaSnapshot {
     self.original = original
     originalAttributes = before
     self.maximumBytes = maximumBytes
+    outcome = .success
   }
 
   func verifyOriginal() throws {

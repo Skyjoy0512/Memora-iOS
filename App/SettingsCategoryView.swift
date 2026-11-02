@@ -453,6 +453,13 @@ struct SettingsCategoryView: View {
 
   private var diagnosticsSections: some View {
     Group {
+        Section("音声の計測") {
+          NavigationLink {
+            AudioDiagnosticsView()
+          } label: {
+            SettingsLabel("音声処理の計測", icon: .stopwatchFill)
+          }
+        }
         Section("表示と動作") {
           Button("要約済み音声のサンプルを見る", icon: .docText) {
             summarySampleFailure = nil

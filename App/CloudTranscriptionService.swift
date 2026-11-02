@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 
 /// Transcribes a recording with a provider's API using the person's own key.
 enum CloudTranscriptionService {
@@ -25,6 +26,17 @@ enum CloudTranscriptionService {
     vocabulary: [String] = [],
     authorize: @escaping @MainActor @Sendable () -> Bool
   ) async throws -> [TranscriptSegment] {
+    try await AudioProcessingDiagnostics.trace(.cloudTranscription) {
+      try await perform(fileURL: fileURL, locale: locale, provider: provider, vocabulary: vocabulary, authorize: authorize)
+    } outcome: { $0.isEmpty ? .empty : .success }
+  }
+
+  private static func perform(fileURL: URL, locale: Locale, provider: CloudProvider, vocabulary: [String],
+                              authorize: @escaping @MainActor @Sendable () -> Bool) async throws -> [TranscriptSegment] {
+    if let diagnostic = AudioProcessingDiagnostics.current,
+       let duration = try? await AVURLAsset(url: fileURL).load(.duration).seconds {
+      diagnostic.setAudioSeconds(duration)
+    }
     guard let key = KeychainStore.string(forKey: "transcription.\(provider.rawValue)"), !key.isEmpty else {
       throw Failure.missingKey
     }
@@ -34,8 +46,10 @@ enum CloudTranscriptionService {
     let segments: [TranscriptSegment]
     switch provider {
     case .openAI:
+      AudioProcessingDiagnostics.current?.setEngine(.openAIWhisper)
       segments = try await openAI(fileURL: fileURL, language: language, key: key, vocabulary: vocabulary, authorize: authorize)
     case .deepgram:
+      AudioProcessingDiagnostics.current?.setEngine(.deepgramNova3)
       segments = try await deepgram(fileURL: fileURL, language: language, key: key, vocabulary: vocabulary, authorize: authorize)
     case .anthropic, .google:
       throw Failure.unsupported
@@ -110,10 +124,15 @@ enum CloudTranscriptionService {
 
     try Task.checkCancellation()
     guard await authorize() else { throw CancellationError() }
+    let diagnostic = AudioProcessingDiagnostics.current
+    let upload = diagnostic?.begin(.upload, audioSeconds: diagnostic?.snapshot.audioSeconds)
     let (data, response) = try await URLSession.shared.upload(for: request, fromFile: bodyURL)
     try validate(response)
-
-    return try CloudTranscriptDecoder.openAI(data, language: language)
+    diagnostic?.end(upload, outcome: .success)
+    let decode = diagnostic?.begin(.decode)
+    let segments = try CloudTranscriptDecoder.openAI(data, language: language)
+    diagnostic?.end(decode, outcome: .success)
+    return segments
   }
 
   private static func deepgram(fileURL: URL, language: String, key: String, vocabulary: [String],
@@ -137,10 +156,15 @@ enum CloudTranscriptionService {
 
     try Task.checkCancellation()
     guard await authorize() else { throw CancellationError() }
+    let diagnostic = AudioProcessingDiagnostics.current
+    let upload = diagnostic?.begin(.upload, audioSeconds: diagnostic?.snapshot.audioSeconds)
     let (data, response) = try await URLSession.shared.upload(for: request, fromFile: fileURL)
     try validate(response)
-
-    return try CloudTranscriptDecoder.deepgram(data, language: language)
+    diagnostic?.end(upload, outcome: .success)
+    let decode = diagnostic?.begin(.decode)
+    let segments = try CloudTranscriptDecoder.deepgram(data, language: language)
+    diagnostic?.end(decode, outcome: .success)
+    return segments
   }
 
   /// Refuses a file that is too large before any of it is sent.

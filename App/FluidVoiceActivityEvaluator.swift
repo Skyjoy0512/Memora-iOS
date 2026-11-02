@@ -13,11 +13,21 @@ actor FluidVoiceActivityEvaluator {
   }
 
   func evaluate(_ url: URL) async throws -> VoiceActivityTimeline {
+    try await AudioProcessingDiagnostics.trace(.voiceActivity) { try await perform(url) } outcome: { _ in .success }
+  }
+
+  private func perform(_ url: URL) async throws -> VoiceActivityTimeline {
+    let diagnostic = AudioProcessingDiagnostics.current
+    diagnostic?.setEngine(.silero)
     let scoped = url.startAccessingSecurityScopedResource()
     defer { if scoped { url.stopAccessingSecurityScopedResource() } }
     let file = try AVAudioFile(forReading: url)
     let source = file.processingFormat
     let duration = Double(file.length) / source.sampleRate
+    diagnostic?.setAudioSeconds(duration)
+    let span = diagnostic?.begin(.vad, audioSeconds: duration)
+    var outcome: AudioDiagnosticReport.Outcome = .failed
+    defer { diagnostic?.end(span, outcome: Task.isCancelled ? .cancelled : outcome) }
     guard duration.isFinite, duration > 0, duration <= SourceMediaChunk.durationPerChunk + 1,
           let target = AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1),
           let converter = AVAudioConverter(from: source, to: target),
@@ -56,6 +66,8 @@ actor FluidVoiceActivityEvaluator {
       if status == .endOfStream { break }
       guard output.frameLength > 0 else { throw SourceMediaFailure.invalidTemporaryFile }
     }
-    return try VoiceActivityTimeline.candidates(probabilities: probabilities, frameDuration: 0.256, duration: duration)
+    let timeline = try VoiceActivityTimeline.candidates(probabilities: probabilities, frameDuration: 0.256, duration: duration)
+    outcome = .success
+    return timeline
   }
 }

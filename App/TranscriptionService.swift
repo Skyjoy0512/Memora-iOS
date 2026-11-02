@@ -106,6 +106,9 @@ private enum SpeechAnalyzerTranscriber {
   }
 
   static func transcribe(fileURL: URL, locale: Locale, vocabulary: [String]) async throws -> Outcome {
+    let diagnostic = AudioProcessingDiagnostics.current
+    diagnostic?.setEngine(.appleSpeech)
+    let preparation = diagnostic?.begin(.modelPreparation)
     let interval = AudioProcessingDiagnostics.signposter.beginInterval("SavedAudioTranscription")
     defer { AudioProcessingDiagnostics.signposter.endInterval("SavedAudioTranscription", interval) }
     guard SpeechTranscriber.isAvailable,
@@ -133,6 +136,10 @@ private enum SpeechAnalyzerTranscriber {
     try Task.checkCancellation()
 
     let audioFile = try AVAudioFile(forReading: fileURL)
+    diagnostic?.end(preparation, outcome: .success)
+    let recognition = diagnostic?.begin(.recognition, audioSeconds: Double(audioFile.length) / audioFile.processingFormat.sampleRate)
+    var diagnosticOutcome: AudioDiagnosticReport.Outcome = .failed
+    defer { diagnostic?.end(recognition, outcome: Task.isCancelled ? .cancelled : diagnosticOutcome) }
     let analyzer = SpeechAnalyzer(modules: [transcriber])
     if !vocabulary.isEmpty {
       // Names and terms the recogniser would otherwise not know.
@@ -188,6 +195,7 @@ private enum SpeechAnalyzerTranscriber {
       await analyzer.cancelAndFinishNow()
       return .cancelled
     }
+    diagnosticOutcome = segments.isEmpty ? .empty : .success
     return segments.isEmpty ? .nothingRecognized : .segments(segments)
   }
 

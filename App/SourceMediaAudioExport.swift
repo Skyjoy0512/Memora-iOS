@@ -6,6 +6,7 @@ import Foundation
 final class SourceMediaAudioExport: @unchecked Sendable {
   static let maximumOutputBytes: Int64 = 100 * 1_024 * 1_024
   private let session: AVAssetExportSession
+  private let audioSeconds: Double?
 
   init?(asset: AVAsset, temporaryDirectory: URL, chunk: SourceMediaChunk? = nil) {
     guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else { return nil }
@@ -15,9 +16,14 @@ final class SourceMediaAudioExport: @unchecked Sendable {
         duration: CMTime(seconds: chunk.duration, preferredTimescale: 60_000))
     }
     self.session = session
+    audioSeconds = chunk?.duration
   }
 
   func write(to output: URL, stageDirectory: URL) async throws {
+    let diagnostic = AudioProcessingDiagnostics.current
+    let span = diagnostic?.begin(.exportAudio, audioSeconds: audioSeconds)
+    var outcome: AudioDiagnosticReport.Outcome = .failed
+    defer { diagnostic?.end(span, outcome: Task.isCancelled ? .cancelled : outcome) }
     try Task.checkCancellation()
     try await withThrowingTaskGroup(of: Bool.self) { group in
       group.addTask { [self] in
@@ -49,6 +55,7 @@ final class SourceMediaAudioExport: @unchecked Sendable {
     }
     try Task.checkCancellation()
     try Self.validateOutput(output, stageDirectory: stageDirectory)
+    outcome = .success
   }
 
   static func validateOutput(_ output: URL, stageDirectory: URL) throws {

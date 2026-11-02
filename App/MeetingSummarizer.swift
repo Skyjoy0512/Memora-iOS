@@ -17,6 +17,32 @@ enum MeetingSummarizer {
     authorize: (@MainActor () -> Bool)? = nil,
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
+    await AudioProcessingDiagnostics.trace(.summary, audioSeconds: input.duration) {
+      let diagnostic = AudioProcessingDiagnostics.current
+      let effective = AIEngineService.effectiveEngine(engine)
+      diagnostic?.setEngine(effective == .cloud || effective == .memora ? .cloudSummary : .onDeviceSummary)
+      let span = diagnostic?.begin(.summary, audioSeconds: input.duration)
+      let result = await performSummary(input, engine: engine, llm: llm, authorize: authorize, progress: progress)
+      let outcome: AudioDiagnosticReport.Outcome
+      switch result {
+      case .success: outcome = .success
+      case .failure(.cancelled): outcome = .cancelled
+      case .failure: outcome = .failed
+      }
+      diagnostic?.end(span, outcome: outcome)
+      return result
+    } outcome: { result in
+      switch result {
+      case .success: .success
+      case .failure(.cancelled): .cancelled
+      case .failure: .failed
+      }
+    }
+  }
+
+  private static func performSummary(_ input: MeetingSummaryInput, engine: AIEngine, llm: LLMSelection,
+                                     authorize: (@MainActor () -> Bool)?,
+                                     progress: @escaping @MainActor (String) -> Void) async -> Result<MeetingSummary, AIAnswerFailure> {
     guard input.transcript.contains(where: { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
       return .failure(.empty)
     }

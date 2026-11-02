@@ -17,13 +17,18 @@ enum SourceIntake {
 
   #if !MEMORA_HOST_CHECKS
   static func extract(_ url: URL, vocabulary: [String] = [], speechLocale: Locale? = nil) async throws -> ProjectSourceExtractionResult {
-    try await SourceProcessingQueue.shared.perform {
-      switch kind(for: url) {
-      case .audio, .video:
-        return try await SourceMediaExtraction.extract(url, vocabulary: vocabulary, speechLocale: speechLocale)
-      default:
-        return try await ProjectSourceExtraction.extract(url)
-      }
+    if [.audio, .video].contains(kind(for: url)) {
+      return try await AudioProcessingDiagnostics.trace(.sourceExtraction) {
+        let diagnostic = AudioProcessingDiagnostics.current
+        let queued = diagnostic?.begin(.queue)
+        return try await SourceProcessingQueue.shared.perform {
+          diagnostic?.end(queued, outcome: .success)
+          return try await SourceMediaExtraction.extract(url, vocabulary: vocabulary, speechLocale: speechLocale)
+        }
+      } outcome: { $0.blocks.isEmpty ? .empty : .success }
+    }
+    return try await SourceProcessingQueue.shared.perform {
+      return try await ProjectSourceExtraction.extract(url)
     }
   }
   #endif

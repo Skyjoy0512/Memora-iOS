@@ -47,6 +47,7 @@ final class RealtimeTranscriptionService {
     }
 
     let session = RealtimeTranscriptionSession(
+      locale: (RecognitionLanguage(rawValue: UserDefaults.standard.string(forKey: "memora.transcriptionLanguage") ?? "") ?? .japanese).locale,
       onFinal: { [weak self] text in
         self?.history.append(text)
         self?.volatileText = ""
@@ -99,6 +100,7 @@ final class RealtimeTranscriptionService {
 @available(iOS 26.0, *)
 @MainActor
 private final class RealtimeTranscriptionSession {
+  private let locale: Locale
   private let onFinal: (String) -> Void
   private let onVolatile: (String) -> Void
   private let onRunning: (Bool) -> Void
@@ -112,11 +114,13 @@ private final class RealtimeTranscriptionSession {
   private var analyzer: SpeechAnalyzer?
 
   init(
+    locale: Locale,
     onFinal: @escaping (String) -> Void,
     onVolatile: @escaping (String) -> Void,
     onRunning: @escaping (Bool) -> Void,
     onUnavailable: @escaping (String) -> Void
   ) {
+    self.locale = locale
     self.onFinal = onFinal
     self.onVolatile = onVolatile
     self.onRunning = onRunning
@@ -157,12 +161,18 @@ private final class RealtimeTranscriptionSession {
   }
 
   private func run() async {
+    guard !Task.isCancelled, !isStopped else { return }
+    let diagnostic = AudioProcessingDiagnostics.begin(.liveTranscription)
+    diagnostic?.setEngine(.appleSpeech)
+    let modelPreparation = diagnostic?.begin(.modelPreparation)
+    var diagnosticOutcome: AudioDiagnosticReport.Outcome = .unavailable
+    defer { diagnostic?.finish(Task.isCancelled ? .cancelled : diagnosticOutcome) }
     let preparation = AudioProcessingDiagnostics.signposter.beginInterval("LiveModelPreparation")
     var prepared = false
     defer {
       if !prepared { AudioProcessingDiagnostics.signposter.endInterval("LiveModelPreparation", preparation) }
     }
-    guard let supported = await SpeechTranscriber.supportedLocale(equivalentTo: Locale.current) else {
+    guard let supported = await SpeechTranscriber.supportedLocale(equivalentTo: locale) else {
       if !isStopped { onUnavailable("この言語は録音中の文字起こしに対応していません。") }
       return
     }
@@ -183,6 +193,7 @@ private final class RealtimeTranscriptionSession {
       }
     } catch {
       guard !isStopped else { return }
+      diagnosticOutcome = .failed
       onUnavailable("文字起こしモデルを準備できませんでした。")
       return
     }
@@ -218,6 +229,7 @@ private final class RealtimeTranscriptionSession {
       do {
         guard let ownedBuffer = try converter.convert(buffer) else { return }
         if case .dropped = continuation.yield(AnalyzerInput(buffer: ownedBuffer)) {
+          diagnostic?.count(.liveBufferDropped)
           continuation.finish(throwing: CocoaError(.coderInvalidValue))
         }
       } catch {
@@ -230,6 +242,8 @@ private final class RealtimeTranscriptionSession {
     let analyzer = SpeechAnalyzer(modules: [transcriber])
     self.analyzer = analyzer
     AudioProcessingDiagnostics.signposter.endInterval("LiveModelPreparation", preparation)
+    diagnostic?.end(modelPreparation, outcome: .success)
+    _ = diagnostic?.begin(.recognition)
     prepared = true
     let recognition = AudioProcessingDiagnostics.signposter.beginInterval("LiveRecognition")
     defer { AudioProcessingDiagnostics.signposter.endInterval("LiveRecognition", recognition) }
@@ -260,9 +274,11 @@ private final class RealtimeTranscriptionSession {
       engine.prepare()
       try engine.start()
       onRunning(true)
+      diagnosticOutcome = .success
       _ = try await analyzer.analyzeSequence(stream)
       try await analyzer.finalizeAndFinishThroughEndOfInput()
     } catch {
+      if !Task.isCancelled { diagnosticOutcome = .failed }
       if !Task.isCancelled {
         onUnavailable("録音中の文字起こしを停止しました。音声の録音は続けています。保存後に文字起こしできます。")
       }

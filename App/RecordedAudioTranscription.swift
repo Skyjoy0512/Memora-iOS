@@ -9,10 +9,15 @@ enum RecordedAudioTranscription {
                          staging: SourceMediaStaging = .shared,
                          recognize: @escaping @Sendable (URL) async -> TranscriptionOutcome) async -> TranscriptionOutcome {
     do {
-      return try await SourceProcessingQueue.shared.perform {
-        try await run(url, locale: locale, vocabulary: vocabulary, store: checkpointStore,
-          staging: staging, recognize: recognize)
-      }
+      return try await AudioProcessingDiagnostics.trace(.recordedTranscription) {
+        let diagnostic = AudioProcessingDiagnostics.current
+        let queued = diagnostic?.begin(.queue)
+        return try await SourceProcessingQueue.shared.perform {
+          diagnostic?.end(queued, outcome: .success)
+          return try await run(url, locale: locale, vocabulary: vocabulary, store: checkpointStore,
+            staging: staging, recognize: recognize)
+        }
+      } outcome: { $0.diagnosticOutcome }
     } catch is CancellationError {
       return .cancelled
     } catch let failure as SourceMediaFailure {
@@ -35,6 +40,8 @@ enum RecordedAudioTranscription {
       maximumBytes: Int(SourceMediaStaging.maximumInputBytes))
     let asset = AVURLAsset(url: snapshot.url)
     let duration = try await asset.load(.duration).seconds
+    let diagnostic = AudioProcessingDiagnostics.current
+    diagnostic?.setAudioSeconds(duration)
     let chunks = try SourceMediaChunk.plan(duration: duration)
     let key = try SourceMediaCheckpointStore.key(fingerprint: snapshot.fingerprint,
       suffix: url.pathExtension.lowercased(), locale: locale, vocabulary: vocabulary,
@@ -42,6 +49,7 @@ enum RecordedAudioTranscription {
     let checkpoint = store.load(key, duration: duration, session: session)
     var segments = checkpoint?.segments ?? []
     var completed = checkpoint?.completedChunks ?? 0
+    diagnostic?.chunks(reused: completed, completed: completed)
     for chunk in chunks.dropFirst(completed) {
       try Task.checkCancellation()
       guard try SourceMediaStaging.availableBytes(stage.directory) >= SourceMediaStaging.minimumAvailableBytes else {
@@ -54,6 +62,12 @@ enum RecordedAudioTranscription {
       do {
         defer { try? FileManager.default.removeItem(at: stage.audioURL) }
         try await export.write(to: stage.audioURL, stageDirectory: stage.directory)
+        if AudioProcessingDiagnostics.inspectsSignal {
+          do { _ = try AudioSignalInspector.inspect(stage.audioURL) }
+          catch is CancellationError { throw CancellationError() }
+          catch { }
+        }
+        try Task.checkCancellation()
         outcome = await recognize(stage.audioURL)
       }
       try Task.checkCancellation()
@@ -76,6 +90,7 @@ enum RecordedAudioTranscription {
       case .failed, .unavailable, .cancelled: return outcome
       }
       completed += 1
+      diagnostic?.chunks(completed: completed)
       let prefix = SourceMediaCheckpoint(duration: duration, completedChunks: completed, blocks: [], segments: segments)
       guard prefix.isValid(for: duration) else { throw SourceMediaFailure.invalidTranscript }
       guard try JSONEncoder().encode(prefix).count <= SourceExtractionPersistence.maximumEntryBytes else {
@@ -84,7 +99,9 @@ enum RecordedAudioTranscription {
       store.save(prefix, key: key, session: session)
     }
     try Task.checkCancellation()
+    let verification = diagnostic?.begin(.verification)
     try snapshot.verifyOriginal()
+    diagnostic?.end(verification, outcome: .success)
     return segments.isEmpty ? .nothingRecognized : .segments(segments)
   }
 }

@@ -1,19 +1,32 @@
 @preconcurrency import CoreML
 import FluidAudio
 import Foundation
+import AVFoundation
 
 actor FluidSpeakerDiarizationService: SpeakerDiarizationService {
   static let shared = FluidSpeakerDiarizationService()
   private var isProcessing = false
 
   func analyze(_ url: URL) async throws -> SpeakerAnalysisResult {
+    try await AudioProcessingDiagnostics.trace(.speakerAnalysis) { try await perform(url) } outcome: { _ in .success }
+  }
+
+  private func perform(_ url: URL) async throws -> SpeakerAnalysisResult {
+    let diagnostic = AudioProcessingDiagnostics.current
+    diagnostic?.setEngine(.fluidSpeaker)
+    let accessed = url.startAccessingSecurityScopedResource()
+    defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+    if let diagnostic, let duration = try? await AVURLAsset(url: url).load(.duration).seconds {
+      diagnostic.setAudioSeconds(duration)
+    }
+    let span = diagnostic?.begin(.diarization, audioSeconds: diagnostic?.snapshot.audioSeconds)
+    var outcome: AudioDiagnosticReport.Outcome = .failed
+    defer { diagnostic?.end(span, outcome: Task.isCancelled ? .cancelled : outcome) }
     guard !isProcessing else { throw SpeakerProcessingFailure.busy }
     isProcessing = true
     let interval = AudioProcessingDiagnostics.signposter.beginInterval("SpeakerDiarization")
     defer { AudioProcessingDiagnostics.signposter.endInterval("SpeakerDiarization", interval) }
     defer { isProcessing = false }
-    let accessed = url.startAccessingSecurityScopedResource()
-    defer { if accessed { url.stopAccessingSecurityScopedResource() } }
     let directory = try await SpeakerModelAssets.shared.verifiedDirectory()
     try Task.checkCancellation()
     let configuration = MLModelConfiguration()
@@ -57,6 +70,7 @@ actor FluidSpeakerDiarizationService: SpeakerDiarizationService {
         end: min($0.end, chunk.endTimeSeconds)) }
     }
     let embeddings = vectors.compactMapValues(SpeakerEmbeddingMath.mean)
+    outcome = .success
     return SpeakerAnalysisResult(intervals: intervals, embeddings: embeddings,
       modelID: SpeakerModelAssets.modelID, modelVersion: SpeakerModelAssets.revision,
       eligibleSpeechDurations: eligibleIntervals.mapValues(SpeakerEmbeddingQuality.duration))

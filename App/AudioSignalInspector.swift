@@ -5,6 +5,10 @@ import Foundation
 /// normalizes a quiet voice, or classifies music/noise from volume alone.
 enum AudioSignalInspector {
   static func inspect(_ url: URL) throws -> AudioSignalReport {
+    let diagnostic = AudioProcessingDiagnostics.current
+    let span = diagnostic?.begin(.quality)
+    var outcome: AudioDiagnosticReport.Outcome = .failed
+    defer { diagnostic?.end(span, outcome: Task.isCancelled ? .cancelled : outcome) }
     let scoped = url.startAccessingSecurityScopedResource()
     defer { if scoped { url.stopAccessingSecurityScopedResource() } }
     let file = try AVAudioFile(forReading: url)
@@ -39,11 +43,15 @@ enum AudioSignalInspector {
     }
     let sampleCount = Double(frames) * Double(format.channelCount)
     let rms = sqrt(squares / sampleCount)
-    return AudioSignalReport(duration: Double(frames) / format.sampleRate,
+    let report = AudioSignalReport(duration: Double(frames) / format.sampleRate,
       sampleRate: format.sampleRate, channels: Int(format.channelCount),
       codec: file.fileFormat.streamDescription.pointee.mFormatID,
       rmsDBFS: rms > 0 ? 20 * log10(rms) : -160, peak: peak,
       clippedSampleFraction: Double(clipped) / sampleCount,
       quietFrameFraction: Double(quiet) / Double(frames), inspectedFrames: frames)
+    if diagnostic?.snapshot.kind == .quality { diagnostic?.setAudioSeconds(report.duration) }
+    diagnostic?.signal(report)
+    outcome = .success
+    return report
   }
 }

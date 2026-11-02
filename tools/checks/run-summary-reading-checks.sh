@@ -24,10 +24,11 @@ swiftc App/RecordPrivacy.swift App/SummarySensitivity.swift App/MeetingSummaryPo
 swiftc App/LocalStore.swift App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift \
   App/MemoraModel+Meetings.swift tools/checks/MeetingEditChecks.swift -o "$check_dir/meeting-edit"
 "$check_dir/meeting-edit"
+source tools/checks/audio-diagnostic-sources.sh
 layout_sources=("${sources[@]}" App/SummaryTopic.swift App/SummaryRelation.swift App/SummaryRelationMarkdown.swift
   App/SummaryMarkdownBuilder.swift App/SummaryActionItem.swift App/SummaryResponseParser.swift
   App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift App/MarkdownSummaryExtractor.swift)
-swiftc "${layout_sources[@]}" App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
+swiftc "${layout_sources[@]}" "${audio_diagnostic_sources[@]}" App/SummaryNoteHierarchy.swift App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
   App/LLMProvider.swift App/LLMModelOption.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift \
   App/SummaryDiagnostics.swift App/SummaryGenerationPolicy.swift App/SummaryPartScheduler.swift App/MeetingSummarizer.swift \
   tools/checks/SummaryPipelineChecks.swift -o "$check_dir/pipeline"

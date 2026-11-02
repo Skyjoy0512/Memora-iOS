@@ -26,6 +26,8 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   private var lastRecordedDuration: TimeInterval?
   private var hasReportedFailure = false
   private var storageMonitor: Task<Void, Never>?
+  private var diagnostic: AudioDiagnosticSession?
+  private var diagnosticOutcome: AudioDiagnosticReport.Outcome = .success
   var recordedDuration: TimeInterval? {
     if let seconds = recorder?.currentTime, seconds.isFinite, seconds >= 0 {
       lastRecordedDuration = max(lastRecordedDuration ?? 0, seconds)
@@ -121,7 +123,11 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
         throw AudioRecorderError.couldNotStart
       }
       self.recorder = recorder
-      if purpose == .recording { monitorStorage(for: recorder) }
+      if purpose == .recording {
+        diagnostic = AudioProcessingDiagnostics.begin(.recording)
+        diagnosticOutcome = .success
+        monitorStorage(for: recorder)
+      }
       return url
     } catch {
       releaseSession()
@@ -135,6 +141,15 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     storageMonitor = nil
     startRunID = nil
     _ = recordedDuration
+    if let diagnostic {
+      diagnostic.setAudioSeconds(lastRecordedDuration)
+      let outcome = diagnosticOutcome
+      Task {
+        diagnostic.sample(await AudioResourceProbe.capture())
+        diagnostic.finish(outcome)
+      }
+      self.diagnostic = nil
+    }
     recorder?.delegate = nil
     recorder?.stop()
     recorder = nil
@@ -167,6 +182,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   }
 
   func pause() {
+    if recorder?.isRecording == true { diagnostic?.count(.recordingPause) }
     _ = recordedDuration
     recorder?.pause()
   }
@@ -180,7 +196,9 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     } catch {
       return false
     }
-    return recorder.record()
+    let resumed = recorder.record()
+    if resumed { diagnostic?.count(.recordingResume) }
+    return resumed
   }
 
   nonisolated func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
@@ -204,6 +222,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     guard let recorder, ObjectIdentifier(recorder) == identity, !hasReportedFailure else { return }
     _ = recordedDuration
     hasReportedFailure = true
+    diagnosticOutcome = .failed
     recorder.pause()
     storageMonitor?.cancel()
     storageMonitor = nil
@@ -219,7 +238,9 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
         do { try await Task.sleep(for: .seconds(15)) }
         catch { return }
         guard let self, let active = self.recorder, ObjectIdentifier(active) == identity else { return }
+        self.diagnostic?.setAudioSeconds(self.recordedDuration)
         if (try? SourceMediaStaging.availableBytes(directory)) ?? 0 < SourceMediaStaging.minimumAvailableBytes {
+          self.diagnostic?.count(.storageStop)
           self.handleUnexpectedStop(identity: identity,
             reason: "空き容量が少なくなったため録音を停止します。ここまでの音声を保存します。古い記録は削除しません。")
           return
@@ -246,6 +267,8 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
       center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: session, queue: .main) { [weak self] _ in
         MainActor.assumeIsolated {
           guard let self, self.recorder != nil else { return }
+          self.diagnostic?.count(.audioReset)
+          self.diagnosticOutcome = .interrupted
           _ = self.recordedDuration
           self.recorder?.delegate = nil
           self.recorder = nil
@@ -262,6 +285,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
 
     switch type {
     case .began:
+      diagnostic?.count(.audioInterruption)
       pause()
       onInterruption?(.began)
     case .ended:
@@ -277,6 +301,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
           let reason = AVAudioSession.RouteChangeReason(rawValue: raw) else { return }
 
     guard reason == .oldDeviceUnavailable else { return }
+    diagnostic?.count(.inputLost)
     pause()
     onInterruption?(.inputLost("オーディオ機器が外れたため、録音を一時停止しました。「再開」で続けられます。"))
   }
