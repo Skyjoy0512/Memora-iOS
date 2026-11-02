@@ -25,6 +25,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   private var startRunID: UUID?
   private var lastRecordedDuration: TimeInterval?
   private var hasReportedFailure = false
+  private var storageMonitor: Task<Void, Never>?
   var recordedDuration: TimeInterval? {
     if let seconds = recorder?.currentTime, seconds.isFinite, seconds >= 0 {
       lastRecordedDuration = max(lastRecordedDuration ?? 0, seconds)
@@ -102,6 +103,9 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
       case .recording: try recordingsDirectory()
       case .voiceEnrollment: try VoiceProfileFiles.prepareDirectory()
       }
+      guard try SourceMediaStaging.availableBytes(directory) >= SourceMediaStaging.minimumAvailableBytes else {
+        throw SourceMediaFailure.capacity
+      }
       let url = directory.appendingPathComponent("Memora-\(UUID().uuidString).m4a")
       destination = url
       let settings: [String: Any] = [
@@ -117,6 +121,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
         throw AudioRecorderError.couldNotStart
       }
       self.recorder = recorder
+      if purpose == .recording { monitorStorage(for: recorder) }
       return url
     } catch {
       releaseSession()
@@ -126,6 +131,8 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   }
 
   func stop() {
+    storageMonitor?.cancel()
+    storageMonitor = nil
     startRunID = nil
     _ = recordedDuration
     recorder?.delegate = nil
@@ -198,7 +205,27 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     _ = recordedDuration
     hasReportedFailure = true
     recorder.pause()
+    storageMonitor?.cancel()
+    storageMonitor = nil
     onInterruption?(.failed(reason))
+  }
+
+  private func monitorStorage(for recorder: AVAudioRecorder) {
+    let identity = ObjectIdentifier(recorder)
+    let directory = recorder.url.deletingLastPathComponent()
+    storageMonitor?.cancel()
+    storageMonitor = Task { [weak self] in
+      while !Task.isCancelled {
+        do { try await Task.sleep(for: .seconds(15)) }
+        catch { return }
+        guard let self, let active = self.recorder, ObjectIdentifier(active) == identity else { return }
+        if (try? SourceMediaStaging.availableBytes(directory)) ?? 0 < SourceMediaStaging.minimumAvailableBytes {
+          self.handleUnexpectedStop(identity: identity,
+            reason: "空き容量が少なくなったため録音を停止します。ここまでの音声を保存します。古い記録は削除しません。")
+          return
+        }
+      }
+    }
   }
 
   private func observeSession() {

@@ -8,27 +8,31 @@ struct SourceMediaSnapshot {
   var fingerprint: String
   private var original: URL
   private var originalAttributes: Attributes
+  private var maximumBytes: Int
 
-  init(_ original: URL, directory: URL) throws {
-    let before = try Self.attributes(original)
+  init(_ original: URL, directory: URL, maximumBytes: Int = ProjectSourceFiles.maximumFileBytes) throws {
+    let before = try Self.attributes(original, maximumBytes: maximumBytes)
     let url = directory.appendingPathComponent("input").appendingPathExtension(original.pathExtension)
-    let digest = try Self.copy(original, to: url)
-    guard try Self.attributes(original) == before, try Self.digest(original) == digest else {
+    let digest = try Self.copy(original, to: url, maximumBytes: maximumBytes)
+    guard try Self.attributes(original, maximumBytes: maximumBytes) == before,
+          try Self.digest(original, maximumBytes: maximumBytes) == digest else {
       throw ProjectSourceFiles.Failure.invalidFile
     }
     self.url = url
     fingerprint = digest
     self.original = original
     originalAttributes = before
+    self.maximumBytes = maximumBytes
   }
 
   func verifyOriginal() throws {
-    guard try Self.attributes(original) == originalAttributes, try Self.digest(original) == fingerprint else {
+    guard try Self.attributes(original, maximumBytes: maximumBytes) == originalAttributes,
+          try Self.digest(original, maximumBytes: maximumBytes) == fingerprint else {
       throw ProjectSourceFiles.Failure.invalidFile
     }
   }
 
-  private static func copy(_ original: URL, to copy: URL) throws -> String {
+  private static func copy(_ original: URL, to copy: URL, maximumBytes: Int) throws -> String {
     guard FileManager.default.createFile(atPath: copy.path, contents: nil,
       attributes: [.posixPermissions: 0o600]) else { throw ProjectSourceFiles.Failure.invalidFile }
     let input = try FileHandle(forReadingFrom: original)
@@ -39,7 +43,7 @@ struct SourceMediaSnapshot {
     while let bytes = try input.read(upToCount: 64 * 1024), !bytes.isEmpty {
       try Task.checkCancellation()
       count += bytes.count
-      guard count <= ProjectSourceFiles.maximumFileBytes else { throw ProjectSourceFiles.Failure.tooLarge }
+      guard count <= maximumBytes else { throw ProjectSourceFiles.Failure.tooLarge }
       try output.write(contentsOf: bytes)
       hash.update(data: bytes)
     }
@@ -48,26 +52,26 @@ struct SourceMediaSnapshot {
     return hash.finalize().map { String(format: "%02x", $0) }.joined()
   }
 
-  private static func digest(_ url: URL) throws -> String {
+  private static func digest(_ url: URL, maximumBytes: Int) throws -> String {
     let input = try FileHandle(forReadingFrom: url)
     defer { try? input.close() }
     var hash = SHA256(), count = 0
     while let bytes = try input.read(upToCount: 64 * 1024), !bytes.isEmpty {
       try Task.checkCancellation()
       count += bytes.count
-      guard count <= ProjectSourceFiles.maximumFileBytes else { throw ProjectSourceFiles.Failure.tooLarge }
+      guard count <= maximumBytes else { throw ProjectSourceFiles.Failure.tooLarge }
       hash.update(data: bytes)
     }
     return hash.finalize().map { String(format: "%02x", $0) }.joined()
   }
 
-  private static func attributes(_ url: URL) throws -> Attributes {
+  private static func attributes(_ url: URL, maximumBytes: Int) throws -> Attributes {
     guard url.isFileURL else { throw ProjectSourceFiles.Failure.invalidFile }
     let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey, .contentModificationDateKey])
     guard values.isRegularFile == true, values.isSymbolicLink != true, let bytes = values.fileSize, bytes > 0 else {
       throw ProjectSourceFiles.Failure.invalidFile
     }
-    guard bytes <= ProjectSourceFiles.maximumFileBytes else { throw ProjectSourceFiles.Failure.tooLarge }
+    guard bytes <= maximumBytes else { throw ProjectSourceFiles.Failure.tooLarge }
     return Attributes(bytes: bytes, modified: values.contentModificationDate)
   }
 

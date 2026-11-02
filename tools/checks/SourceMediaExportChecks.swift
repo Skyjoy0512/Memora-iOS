@@ -19,7 +19,7 @@ import Foundation
     precondition(chunks.map(\.start) == [0, 900, 1_800])
     precondition(chunks.map(\.duration) == [900, 900, 0.5])
     let longest = try SourceMediaChunk.plan(duration: SourceMediaChunk.maximumDuration)
-    precondition(longest.count == 24)
+    precondition(longest.count == 96)
     for invalid in [Double.nan, Double.infinity, 0, -1, SourceMediaChunk.maximumDuration + 1] {
       do { _ = try SourceMediaChunk.plan(duration: invalid); preconditionFailure("Invalid duration") }
       catch SourceMediaFailure.invalidDuration { }

@@ -1,7 +1,7 @@
 import Foundation
 
 struct SourceMediaChunk: Sendable {
-  static let maximumDuration: TimeInterval = 6 * 60 * 60
+  static let maximumDuration: TimeInterval = 24 * 60 * 60
   static let durationPerChunk: TimeInterval = 15 * 60
 
   var start: TimeInterval

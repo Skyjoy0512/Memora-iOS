@@ -8,7 +8,8 @@ import Speech
 enum TranscriptionService {
   /// Choose the vocabulary at dispatch, even when engine settings changed while queued.
   static func transcribe(fileURL: URL?, vocabulary: [String] = [], cloudVocabulary: [String] = [], onDeviceOnly: Bool = false,
-                         locale: Locale? = nil) async -> TranscriptionOutcome {
+                         locale: Locale? = nil, isPreparedChunk: Bool = false,
+                         authorizeCloud: (@MainActor @Sendable () -> Bool)? = nil) async -> TranscriptionOutcome {
     guard let fileURL else { return .unavailable }
 
     let defaults = UserDefaults.standard
@@ -22,6 +23,12 @@ enum TranscriptionService {
 
     switch engine {
     case .speechAnalyzer, .automatic:
+      if !isPreparedChunk {
+        return await RecordedAudioTranscription.transcribe(fileURL, locale: locale, vocabulary: vocabulary) { chunkURL in
+          await transcribe(fileURL: chunkURL, vocabulary: vocabulary, onDeviceOnly: true,
+            locale: locale, isPreparedChunk: true)
+        }
+      }
       if #available(iOS 26.0, *) {
         do {
           switch try await SpeechAnalyzerTranscriber.transcribe(
@@ -47,6 +54,7 @@ enum TranscriptionService {
       return .unavailable
 
     case .cloud:
+      guard let authorizeCloud, await authorizeCloud() else { return .failed(RecordAccessPolicy.refusal) }
       let provider = CloudProvider(
         rawValue: defaults.string(forKey: "memora.transcriptionProvider") ?? ""
       ) ?? .openAI
@@ -55,7 +63,8 @@ enum TranscriptionService {
           fileURL: fileURL,
           locale: locale,
           provider: provider,
-          vocabulary: cloudVocabulary
+          vocabulary: cloudVocabulary,
+          authorize: authorizeCloud
         )
         return .segments(segments)
       } catch CloudTranscriptionService.Failure.missingKey {
@@ -66,6 +75,8 @@ enum TranscriptionService {
         return .failed("音声から発言を取得できませんでした。音声を確認して再試行してください。")
       } catch CloudTranscriptionService.Failure.tooLarge(let limit) {
         return .failed("音声が大きすぎます（上限\(limit / (1024 * 1024))MB）。ファイルを分割してお試しください。")
+      } catch is CancellationError {
+        return .cancelled
       } catch {
         return .failed("クラウド文字起こしに失敗しました。通信環境とAPIキーを確認して再試行してください。")
       }

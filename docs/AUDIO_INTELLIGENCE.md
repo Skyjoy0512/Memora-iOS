@@ -68,3 +68,44 @@ simulator/合成波/host検査は日本語認識精度・iPhone RTF・電池の�
 OS停止・電話・入力変更・熱・容量不足を含む実機試験まで24時間連続動作を保証しない。
 rotationはpause/stop/startを繋ぐだけでは欠落を防げない。共通音声時計とdurableな
 manifest、再生・backup・復旧への統合が揃うまでは単一録音の保存設計を保持する。
+
+## 今回のアプリ実装と検査
+
+- BYOK: OpenAI Whisperのverbose_json区間、Deepgram Nova-3のutterances/diarizeを
+  読み、開始/終了時刻・匿名クラスタ・取得できたconfidence・engine/model/言語を
+  `TranscriptSegment`へ保存。confidenceをspeaker確信度へ転用しない。
+  時刻なし本文を時刻0へ平坦化しない。旧recordはoptionalな追加属性なしで読める。
+- BYOK送信直前にもworkspace/record/privacy/設定を再検査。自動・取り込みに
+  クラウド許可を付けない。Memora提供STTへの接続は追加していない。
+- 保存済み録音: `RecordedAudioTranscription`が既存queue/export/snapshot/SQLiteを
+  再利用。原本は2GBまでの64KB逐次コピー。15分ずつ認識し、原本の開始/終了時刻を
+  復元。失敗prefixは完成扱いにせず、同一hash/OS/locale/用語/pipelineで再開する。
+  source側の旧key形式・50MB制限・snapshot保護は維持。live文の再利用は未有効。
+- `SourceMediaChunk`の計画は24時間/96区間まで。音声専用importは従来から50MB制限が
+  なく、この録音経路で処理可能。資料/会話/Share Extensionの50MBを全体解除して
+  backupや受領transactionを壊すことは避けた。2GBを超えるPCM等は別対応が必要。
+- 録音開始前・15秒ごとに256MBの空きを確認。低容量時は既存の停止/保存/復旧経路へ
+  渡す。保存済みデータを自動削除しない。iOS停止時にtimerが必ず動く保証はない。
+- 評価用: `AudioSignalInspector`は4096frameずつ全channelを読み、形式・音量・peak・
+  clipping・低energy比率を測る。雑音/音楽の判定と称さない。
+  `FluidVoiceActivityEvaluator`は明示的に渡されたlocalモデルでstreaming推論。
+  自動download/送信なし。候補は低い確率・短い発話も残し、前後750ms、2秒以内を
+  merge。`VoiceActivityTimeline`が候補の連結時刻を原本へ戻す。
+  **この評価器・切除・ノイズ除去は本番認識経路で有効にしていない。** モデルと
+  日本語正解コーパスの実測がないので、効果・節約を実績に計上しない。
+- FluidAudioの追加確認: pinned 0.17.7の`OfflineDiarizerManager.process(URL)`は
+  `AudioSourceFactory.makeDiskBackedSource`を使う。全PCMの配列化ではなかった。
+  長時間のembedding/clustering負荷と一時領域はなお実機未測定。
+
+検査（2026-11-02、macOS host）:
+
+| 検査 | 結果・範囲 |
+| --- | --- |
+| run-cloud-transcript-checks.sh | PASS。公式形式fixture、時刻/終了、匿名話者、confidence、重複発話保持、旧/new Codable、不正時刻拒否 |
+| run-source-extraction-cache-checks.sh | PASS。既存hash/SQLite/失効/変更/locale検査。実50MB超WAV→2個のAAC export、後半失敗で部分非公開、store再生成後のsuffix再開、全完了再利用、低容量拒否を追加 |
+| run-source-media-export-checks.sh | PASS。実AVFoundation範囲export、96区間計画、flock/孤立stage/容量/取消検査 |
+| run-audio-intelligence-checks.sh | PASS。実stereo波形の逆位相/音量/clipping、低確率・短発話保持、不明判定fallback、原本時刻mapping。学習モデル推論はfixture外 |
+| bitrig preview -platform iOS | 音声基盤追加後成功。iOS 27.2 SDK、既存警告11件。追加の最終buildは別途記録 |
+
+端末内RTF/CER/WER/DER、学習VAD、実BYOK、日本語認識境界、小声、24時間実録音、
+電池/thermal、容量低下の実機通知、UI操作は未検証。音声/個人情報をlogへ追加していない。

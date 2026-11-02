@@ -22,7 +22,8 @@ enum CloudTranscriptionService {
     fileURL: URL,
     locale: Locale,
     provider: CloudProvider,
-    vocabulary: [String] = []
+    vocabulary: [String] = [],
+    authorize: @escaping @MainActor @Sendable () -> Bool
   ) async throws -> [TranscriptSegment] {
     guard let key = KeychainStore.string(forKey: "transcription.\(provider.rawValue)"), !key.isEmpty else {
       throw Failure.missingKey
@@ -30,31 +31,23 @@ enum CloudTranscriptionService {
 
     let language = locale.language.languageCode?.identifier ?? "ja"
 
-    let text: String
+    let segments: [TranscriptSegment]
     switch provider {
     case .openAI:
-      text = try await openAI(fileURL: fileURL, language: language, key: key, vocabulary: vocabulary)
+      segments = try await openAI(fileURL: fileURL, language: language, key: key, vocabulary: vocabulary, authorize: authorize)
     case .deepgram:
-      text = try await deepgram(fileURL: fileURL, language: language, key: key, vocabulary: vocabulary)
+      segments = try await deepgram(fileURL: fileURL, language: language, key: key, vocabulary: vocabulary, authorize: authorize)
     case .anthropic, .google:
       throw Failure.unsupported
     }
 
-    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { throw Failure.empty }
-
-    return [
-      TranscriptSegment(
-        id: UUID(),
-        speaker: "話者",
-        speakerIsCertain: false,
-        timestamp: 0,
-        text: trimmed
-      )
-    ]
+    try Task.checkCancellation()
+    guard !segments.isEmpty else { throw Failure.empty }
+    return segments
   }
 
-  private static func openAI(fileURL: URL, language: String, key: String, vocabulary: [String]) async throws -> String {
+  private static func openAI(fileURL: URL, language: String, key: String, vocabulary: [String],
+                             authorize: @MainActor @Sendable () -> Bool) async throws -> [TranscriptSegment] {
     try checkSize(fileURL, limit: openAILimit)
 
     let boundary = "Boundary-\(UUID().uuidString)"
@@ -66,7 +59,8 @@ enum CloudTranscriptionService {
       .appendingPathComponent("openai-upload-\(UUID().uuidString).body")
     defer { try? FileManager.default.removeItem(at: bodyURL) }
 
-    guard FileManager.default.createFile(atPath: bodyURL.path, contents: nil) else {
+    guard FileManager.default.createFile(atPath: bodyURL.path, contents: nil,
+      attributes: [.posixPermissions: 0o600]) else {
       throw Failure.unsupported
     }
     let body = try FileHandle(forWritingTo: bodyURL)
@@ -79,13 +73,20 @@ enum CloudTranscriptionService {
       let input = try FileHandle(forReadingFrom: fileURL)
       defer { try? input.close() }
       while let chunk = try input.read(upToCount: 1 << 20), !chunk.isEmpty {
-        body.write(chunk)
+        try Task.checkCancellation()
+        try body.write(contentsOf: chunk)
       }
     }
 
     write("--\(boundary)\r\n")
     write("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
     write("whisper-1\r\n")
+    write("--\(boundary)\r\n")
+    write("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n")
+    write("verbose_json\r\n")
+    write("--\(boundary)\r\n")
+    write("Content-Disposition: form-data; name=\"timestamp_granularities[]\"\r\n\r\n")
+    write("segment\r\n")
     write("--\(boundary)\r\n")
     write("Content-Disposition: form-data; name=\"language\"\r\n\r\n")
     write("\(language)\r\n")
@@ -107,23 +108,26 @@ enum CloudTranscriptionService {
     request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
     request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
+    try Task.checkCancellation()
+    guard await authorize() else { throw CancellationError() }
     let (data, response) = try await URLSession.shared.upload(for: request, fromFile: bodyURL)
     try validate(response)
 
-    guard let decoded = try? JSONDecoder().decode(OpenAITranscript.self, from: data) else {
-      throw Failure.empty
-    }
-    return decoded.text
+    return try CloudTranscriptDecoder.openAI(data, language: language)
   }
 
-  private static func deepgram(fileURL: URL, language: String, key: String, vocabulary: [String]) async throws -> String {
+  private static func deepgram(fileURL: URL, language: String, key: String, vocabulary: [String],
+                               authorize: @MainActor @Sendable () -> Bool) async throws -> [TranscriptSegment] {
     try checkSize(fileURL, limit: deepgramLimit)
 
     var components = URLComponents(string: "https://api.deepgram.com/v1/listen")
     components?.queryItems = [
+      URLQueryItem(name: "model", value: "nova-3"),
       URLQueryItem(name: "language", value: language),
-      URLQueryItem(name: "punctuate", value: "true")
-    ] + vocabulary.prefix(50).map { URLQueryItem(name: "keywords", value: $0) }
+      URLQueryItem(name: "punctuate", value: "true"),
+      URLQueryItem(name: "utterances", value: "true"),
+      URLQueryItem(name: "diarize", value: "true")
+    ] + vocabulary.prefix(50).map { URLQueryItem(name: "keyterm", value: $0) }
 
     guard let url = components?.url else { throw Failure.unsupported }
     var request = URLRequest(url: url)
@@ -131,11 +135,12 @@ enum CloudTranscriptionService {
     request.setValue("Token \(key)", forHTTPHeaderField: "Authorization")
     request.setValue(MediaFiles.mimeType(for: fileURL), forHTTPHeaderField: "Content-Type")
 
+    try Task.checkCancellation()
+    guard await authorize() else { throw CancellationError() }
     let (data, response) = try await URLSession.shared.upload(for: request, fromFile: fileURL)
     try validate(response)
 
-    let decoded = try JSONDecoder().decode(DeepgramTranscript.self, from: data)
-    return decoded.results?.channels.first?.alternatives.first?.transcript ?? ""
+    return try CloudTranscriptDecoder.deepgram(data, language: language)
   }
 
   /// Refuses a file that is too large before any of it is sent.
@@ -153,19 +158,4 @@ enum CloudTranscriptionService {
       throw Failure.http
     }
   }
-}
-
-private struct OpenAITranscript: Decodable {
-  var text: String
-}
-
-private struct DeepgramTranscript: Decodable {
-  struct Results: Decodable {
-    struct Channel: Decodable {
-      struct Alternative: Decodable { var transcript: String }
-      var alternatives: [Alternative]
-    }
-    var channels: [Channel]
-  }
-  var results: Results?
 }

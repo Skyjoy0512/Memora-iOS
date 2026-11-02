@@ -89,6 +89,10 @@ final class ProcessingService {
       hasher.combine(segment.speakerID)
       hasher.combine(segment.identificationStatus)
       hasher.combine(segment.speakerIsCertain)
+      hasher.combine(segment.recognitionEngine)
+      hasher.combine(segment.recognitionModel)
+      hasher.combine(segment.recognitionLanguage)
+      hasher.combine(segment.recognitionConfidence)
     }
     return hasher.finalize()
   }

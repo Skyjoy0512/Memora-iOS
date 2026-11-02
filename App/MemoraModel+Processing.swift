@@ -120,7 +120,18 @@ extension MemoraModel {
         fileURL: original.audioURL,
         vocabulary: self.transcriptionVocabulary,
         cloudVocabulary: self.processingVocabulary(external: true),
-        onDeviceOnly: onDeviceOnly
+        onDeviceOnly: onDeviceOnly,
+        authorizeCloud: { [weak self] in
+          guard let self, !Task.isCancelled, self.aiWorkspaceGeneration == generation,
+                self.currentTeamID == nil, !self.isRestoring,
+                let current = self.meeting(id: id), current.audioURL == original.audioURL,
+                current.privacy == original.privacy,
+                RecordAccessPolicy.allows(current.effectivePrivacy, purpose: .cloudAI),
+                EngineAvailability.currentTranscriptionEngine() == selectedEngine,
+                EngineAvailability.currentTranscriptionProvider() == selectedProvider,
+                EngineAvailability.currentTranscriptionLanguage() == selectedLanguage else { return false }
+          return true
+        }
       )
     } apply: { [weak self] outcome in
       guard let self, !Task.isCancelled, self.currentTeamID == nil, self.aiWorkspaceGeneration == generation, !self.isRestoring, self.isStoreWritable(),

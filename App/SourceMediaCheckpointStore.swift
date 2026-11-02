@@ -21,8 +21,10 @@ final class SourceMediaCheckpointStore: @unchecked Sendable {
     return generation
   }
 
-  static func key(fingerprint: String, suffix: String, locale: Locale, vocabulary: [String]) throws -> String {
-    let configuration = try JSONEncoder().encode([vocabulary, [locale.identifier]])
+  static func key(fingerprint: String, suffix: String, locale: Locale, vocabulary: [String],
+                  pipeline: String = "source") throws -> String {
+    let configuration = try JSONEncoder().encode(pipeline == "source"
+      ? [vocabulary, [locale.identifier]] : [vocabulary, [locale.identifier], [pipeline]])
     let hash = SHA256.hash(data: configuration).map { String(format: "%02x", $0) }.joined()
     let os = ProcessInfo.processInfo.operatingSystemVersion
     return "media-v1.\(os.majorVersion).\(os.minorVersion).\(SourceMediaChunk.durationPerChunk).\(fingerprint).\(suffix).\(hash)"
@@ -37,7 +39,7 @@ final class SourceMediaCheckpointStore: @unchecked Sendable {
       persistence.removePayload(key)
       return nil
     }
-    if checkpoint.blocks.isEmpty,
+    if !checkpoint.hasText,
        checkpoint.completedChunks == (try? SourceMediaChunk.plan(duration: duration).count) {
       persistence.removePayload(key)
       return nil
@@ -51,7 +53,7 @@ final class SourceMediaCheckpointStore: @unchecked Sendable {
     guard session == generation, checkpoint.isValid(for: checkpoint.duration),
           let data = try? JSONEncoder().encode(checkpoint) else { return }
     // Silence is a reusable prefix, not a permanently cached failed import.
-    if checkpoint.blocks.isEmpty,
+    if !checkpoint.hasText,
        checkpoint.completedChunks == (try? SourceMediaChunk.plan(duration: checkpoint.duration).count) {
       persistence.removePayload(key)
       return

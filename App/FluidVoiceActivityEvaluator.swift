@@ -1,0 +1,61 @@
+import AVFoundation
+@preconcurrency import CoreML
+import FluidAudio
+import Foundation
+
+/// Evaluation adapter for an explicitly supplied, locally verified Silero
+/// model. It neither downloads models nor uploads audio or enables trimming.
+actor FluidVoiceActivityEvaluator {
+  private let detector: VadManager
+
+  init(model: MLModel) {
+    detector = VadManager(config: VadConfig(defaultThreshold: 0.3), vadModel: model)
+  }
+
+  func evaluate(_ url: URL) async throws -> VoiceActivityTimeline {
+    let scoped = url.startAccessingSecurityScopedResource()
+    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+    let file = try AVAudioFile(forReading: url)
+    let source = file.processingFormat
+    let duration = Double(file.length) / source.sampleRate
+    guard duration.isFinite, duration > 0, duration <= SourceMediaChunk.durationPerChunk + 1,
+          let target = AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1),
+          let converter = AVAudioConverter(from: source, to: target),
+          let output = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: 4_096),
+          let input = AVAudioPCMBuffer(pcmFormat: source, frameCapacity: 8_192) else {
+      throw SourceMediaFailure.invalidTemporaryFile
+    }
+    var state = await detector.makeStreamState()
+    var probabilities: [Float] = []
+    while true {
+      try Task.checkCancellation()
+      var readFailure: Error?
+      var conversionFailure: NSError?
+      let status = converter.convert(to: output, error: &conversionFailure) { requested, inputStatus in
+        do {
+          if file.framePosition >= file.length { inputStatus.pointee = .endOfStream; return nil }
+          try file.read(into: input, frameCount: min(requested, input.frameCapacity))
+          inputStatus.pointee = .haveData
+          return input
+        } catch {
+          readFailure = error
+          inputStatus.pointee = .endOfStream
+          return nil
+        }
+      }
+      if let readFailure { throw readFailure }
+      if let conversionFailure { throw conversionFailure }
+      guard status != .error else { throw SourceMediaFailure.invalidTemporaryFile }
+      if output.frameLength > 0 {
+        guard let samples = output.floatChannelData?[0] else { throw SourceMediaFailure.invalidTemporaryFile }
+        let result = try await detector.processStreamingChunk(
+          Array(UnsafeBufferPointer(start: samples, count: Int(output.frameLength))), state: state)
+        state = result.state
+        probabilities.append(result.probability)
+      }
+      if status == .endOfStream { break }
+      guard output.frameLength > 0 else { throw SourceMediaFailure.invalidTemporaryFile }
+    }
+    return try VoiceActivityTimeline.candidates(probabilities: probabilities, frameDuration: 0.256, duration: duration)
+  }
+}

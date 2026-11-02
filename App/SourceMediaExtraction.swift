@@ -64,6 +64,6 @@ enum SourceMediaExtraction {
     try Task.checkCancellation()
     // Importing a file is not permission to upload it to a speech provider.
     return await TranscriptionService.transcribe(fileURL: stage.audioURL, vocabulary: vocabulary,
-      onDeviceOnly: true, locale: locale)
+      onDeviceOnly: true, locale: locale, isPreparedChunk: true)
   }
 }

@@ -3,8 +3,9 @@ import Foundation
 
 actor SourceMediaStaging {
   static let shared = SourceMediaStaging()
-  static let maximumStageBytes: Int64 = 128 * 1_024 * 1_024
-  static let maximumTotalBytes: Int64 = 256 * 1_024 * 1_024
+  static let maximumInputBytes: Int64 = 2 * 1_024 * 1_024 * 1_024
+  static let maximumStageBytes: Int64 = maximumInputBytes + 128 * 1_024 * 1_024
+  static let maximumTotalBytes: Int64 = maximumStageBytes * 2
   static let minimumAvailableBytes: Int64 = 256 * 1_024 * 1_024
   static let staleAge: TimeInterval = 60 * 60
   private let directory: URL
@@ -16,7 +17,7 @@ actor SourceMediaStaging {
     self.availableCapacity = availableCapacity
   }
 
-  func acquire() throws -> SourceMediaStageLease {
+  func acquire(inputBytes: Int64 = 0) throws -> SourceMediaStageLease {
     try Task.checkCancellation()
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
       attributes: [.posixPermissions: 0o700])
@@ -27,7 +28,8 @@ actor SourceMediaStaging {
     guard stages.count < 32, try Self.size(of: directory) <= Self.maximumTotalBytes - Self.maximumStageBytes else {
       throw SourceMediaFailure.stagingLimit
     }
-    guard try availableCapacity(directory) >= Self.minimumAvailableBytes else { throw SourceMediaFailure.capacity }
+    guard inputBytes >= 0, inputBytes <= Self.maximumInputBytes else { throw SourceMediaFailure.stagingLimit }
+    guard try availableCapacity(directory) >= Self.minimumAvailableBytes + inputBytes else { throw SourceMediaFailure.capacity }
     let stage = directory.appendingPathComponent(UUID().uuidString, isDirectory: true)
     try FileManager.default.createDirectory(at: stage, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
     let descriptor = open(stage.appendingPathComponent(".lease").path, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)

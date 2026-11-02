@@ -11,6 +11,9 @@ swiftc App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineC
   App/SourceExtractionSnapshot.swift App/SourceExtractionPersistence.swift \
   App/SourceMediaFailure.swift App/SourceMediaChunk.swift App/SourceMediaCheckpoint.swift \
   App/SourceMediaCheckpointStore.swift App/SourceMediaSnapshot.swift App/SourceMediaTranscript.swift \
+  App/SourceProcessingQueue.swift App/SourceMediaStageLease.swift App/SourceMediaStaging.swift \
+  App/SourceMediaAudioExport.swift App/TranscriptionOutcome.swift App/RecordedAudioTranscription.swift \
+  tools/checks/RecordedAudioTranscriptionChecks.swift \
   App/SourceTextChunks.swift App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift \
   tools/checks/SourceMediaCheckpointChecks.swift \
   App/RecognitionLanguage.swift App/SourceExtractionCache.swift tools/checks/SourceExtractionCacheChecks.swift -lsqlite3 -o "$check_dir/checks"
