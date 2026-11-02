@@ -2,8 +2,7 @@ import AVFAudio
 import Foundation
 import MediaPlayer
 
-/// Plays one recording with `AVAudioEngine`, the way the app stores it: a file
-/// on disk. Supports pause, seeking, skipping, and a speed change.
+/// Plays original files on one frame timeline without creating a combined file.
 @MainActor
 @Observable
 final class AudioPlayerService {
@@ -39,11 +38,12 @@ final class AudioPlayerService {
   private var connectedFormat: AVAudioFormat?
   private let player = AVAudioPlayerNode()
   private let timePitch = AVAudioUnitTimePitch()
-  private var file: AVAudioFile?
+  private var source: AudioPlaybackSource?
   private var startFrame: AVAudioFramePosition = 0
   private var playbackSchedule = AudioPlaybackSchedule()
+  private var scheduledFiles: [Int64: AVAudioFile] = [:]
   private var ticker: Task<Void, Never>?
-  private var loadedURL: URL?
+  private var loadedInput: AudioPlaybackInput?
   /// The session claim this player holds, so only this run gives it up.
   private var sessionToken: AudioSessionCoordinator.Token?
   /// The coordinator's handle for pausing this player when another takes over.
@@ -62,33 +62,32 @@ final class AudioPlayerService {
   }
 
   private var sampleRate: Double {
-    file?.processingFormat.sampleRate ?? 44_100
+    source?.sampleRate ?? 44_100
   }
 
   /// Points the player at a recording. Loading the same file again does nothing,
   /// so scrolling the screen does not restart it.
   func load(_ url: URL?, title: String = "") {
-    guard loadedURL != url else { return }
-    stop()
-    loadedURL = url
+    load(input: url.map { .file($0) }, title: title)
+  }
+
+  func load(input: AudioPlaybackInput?, title: String = "") {
     nowPlayingTitle = title
+    guard loadedInput != input || errorMessage != nil else { return }
+    stop()
+    source = nil
+    loadedInput = input
     errorMessage = nil
-    guard let url else {
-      file = nil
+    guard let input else {
       duration = 0
       return
     }
 
     do {
-      let file = try AVAudioFile(forReading: url)
-      guard file.length > 0, file.processingFormat.sampleRate.isFinite,
-            file.processingFormat.sampleRate > 0 else {
-        throw CocoaError(.fileReadCorruptFile)
-      }
-      self.file = file
-      duration = Double(file.length) / file.processingFormat.sampleRate
+      let source = try AudioPlaybackSource(input)
+      self.source = source
+      duration = Double(source.length) / source.sampleRate
     } catch {
-      file = nil
       duration = 0
       errorMessage = "音声を読み込めませんでした。ファイルが残っているか確認してください。"
     }
@@ -99,7 +98,7 @@ final class AudioPlayerService {
   }
 
   func play() {
-    guard let file, !isPlaying else { return }
+    guard let source, !isPlaying else { return }
     guard let token = AudioSessionCoordinator.shared.claim(.playback) else {
       errorMessage = AudioSessionCoordinator.shared.refusal(for: .playback)
         ?? "今は再生できません。"
@@ -107,7 +106,7 @@ final class AudioPlayerService {
     }
     sessionToken = token
 
-    if startFrame >= file.length {
+    if startFrame >= source.length {
       startFrame = 0
       currentTime = 0
     }
@@ -118,20 +117,21 @@ final class AudioPlayerService {
       try session.setActive(true)
       registerRemoteCommands()
 
-      let engine = preparedEngine(for: file)
+      let engine = preparedEngine(for: source.format)
       if !engine.isRunning {
         engine.prepare()
         try engine.start()
       }
 
       let segments = playbackSchedule.start(
-        at: startFrame, length: file.length, sampleRate: sampleRate
+        at: startFrame, length: source.length, sampleRate: sampleRate, partEnds: source.partEnds
       )
       guard !segments.isEmpty else {
         throw CocoaError(.fileReadCorruptFile)
       }
-      for segment in segments { enqueue(segment, file: file) }
+      for segment in segments { try enqueue(segment) }
       player.play()
+      errorMessage = nil
       isPlaying = true
       publishNowPlaying()
       startTicker()
@@ -141,34 +141,39 @@ final class AudioPlayerService {
         }
       }
     } catch {
-      playbackSchedule.cancel()
-      player.stop()
-      player.reset()
-      engine?.stop()
-      removeRemoteCommands()
-      AudioSessionCoordinator.shared.release(token)
-      sessionToken = nil
-      errorMessage = "再生を開始できませんでした。"
+      failPlayback()
     }
   }
 
-  private func enqueue(_ segment: AudioPlaybackSchedule.Segment, file: AVAudioFile) {
+  private func enqueue(_ segment: AudioPlaybackSchedule.Segment) throws {
+    guard let source else { throw CocoaError(.fileReadCorruptFile) }
+    let resolved = try source.resolve(segment)
+    scheduledFiles[segment.start] = resolved.file
     player.scheduleSegment(
-      file, startingFrame: segment.start, frameCount: segment.count, at: nil,
+      resolved.file, startingFrame: resolved.start, frameCount: segment.count, at: nil,
       completionCallbackType: .dataPlayedBack
     ) { [weak self] _ in
       Task { @MainActor [weak self] in
-        guard let self, self.isPlaying,
-              let next = self.playbackSchedule.complete(segment),
-              let file = self.file else { return }
-        self.enqueue(next, file: file)
+        guard let self, self.isPlaying, self.playbackSchedule.contains(segment) else { return }
+        self.scheduledFiles[segment.start] = nil
+        guard let next = self.playbackSchedule.complete(segment) else { return }
+        do { try self.enqueue(next) }
+        catch { self.failPlayback() }
       }
     }
   }
 
+  private func failPlayback() {
+    let elapsed = isPlaying ? elapsedTime() : currentTime
+    stop()
+    startFrame = frame(for: elapsed)
+    currentTime = Double(startFrame) / sampleRate
+    errorMessage = "再生を開始できませんでした。"
+  }
+
   /// Wires the graph for the file's format, which has to match before
   /// scheduling. Only called once the session is ours.
-  private func preparedEngine(for file: AVAudioFile) -> AVAudioEngine {
+  private func preparedEngine(for format: AVAudioFormat) -> AVAudioEngine {
     let engine: AVAudioEngine
     if let existing = self.engine {
       engine = existing
@@ -178,10 +183,10 @@ final class AudioPlayerService {
       engine.attach(timePitch)
       self.engine = engine
     }
-    if connectedFormat != file.processingFormat {
-      engine.connect(player, to: timePitch, format: file.processingFormat)
-      engine.connect(timePitch, to: engine.mainMixerNode, format: file.processingFormat)
-      connectedFormat = file.processingFormat
+    if connectedFormat != format {
+      engine.connect(player, to: timePitch, format: format)
+      engine.connect(timePitch, to: engine.mainMixerNode, format: format)
+      connectedFormat = format
     }
     return engine
   }
@@ -192,6 +197,7 @@ final class AudioPlayerService {
     playbackSchedule.cancel()
     player.stop()
     player.reset()
+    scheduledFiles.removeAll(keepingCapacity: true)
     startFrame = frame(for: elapsed)
     currentTime = min(elapsed, duration)
     isPlaying = false
@@ -208,6 +214,7 @@ final class AudioPlayerService {
       player.stop()
       player.reset()
     }
+    scheduledFiles.removeAll(keepingCapacity: true)
     startFrame = targetFrame
     currentTime = clamped
     publishNowPlaying()
@@ -225,10 +232,11 @@ final class AudioPlayerService {
   func stop() {
     stopTicker()
     playbackSchedule.cancel()
-    if isPlaying {
+    if engine != nil {
       player.stop()
       player.reset()
     }
+    scheduledFiles.removeAll(keepingCapacity: true)
     isPlaying = false
     currentTime = 0
     startFrame = 0
@@ -254,7 +262,7 @@ final class AudioPlayerService {
   /// Publishes what is actually playing - the record own name, no invented
   /// artist - so Control Center and the lock screen match the screen.
   private func publishNowPlaying() {
-    guard file != nil, isPlaying || currentTime > 0 else {
+    guard source != nil, isPlaying || currentTime > 0 else {
       MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
       return
     }
@@ -307,17 +315,17 @@ final class AudioPlayerService {
   }
 
   private func elapsedTime() -> TimeInterval {
-    guard let file else { return 0 }
-    let offset = Double(startFrame) / file.processingFormat.sampleRate
+    guard source != nil else { return 0 }
+    let offset = Double(startFrame) / sampleRate
     guard let nodeTime = player.lastRenderTime,
           let playerTime = player.playerTime(forNodeTime: nodeTime) else {
       return offset
     }
-    return offset + Double(playerTime.sampleTime) / file.processingFormat.sampleRate
+    return offset + Double(playerTime.sampleTime) / sampleRate
   }
 
   private func frame(for time: TimeInterval) -> AVAudioFramePosition {
-    AudioPlaybackSchedule.frame(at: time, length: file?.length ?? 0, sampleRate: sampleRate)
+    AudioPlaybackSchedule.frame(at: time, length: source?.length ?? 0, sampleRate: sampleRate)
   }
 
   private func startTicker() {

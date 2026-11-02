@@ -166,12 +166,17 @@ struct RecordingMediaChecks {
     precondition(original.hasTranscriptionAudio)
     var parts = original
     parts.audioURL = nil
-    precondition(!parts.hasTranscriptionAudio)
+    precondition(!parts.hasTranscriptionAudio && !parts.hasPlaybackAudio)
     parts.recordingAudioManifest = .init(recordingID: parts.id, sampleRate: 44_100, parts: [
       .init(fileName: parts.originalAudioFileNames[0], frameOffset: 0, frameCount: 44_100, state: .finalized),
       .init(fileName: parts.originalAudioFileNames[1], frameOffset: 44_100, frameCount: 44_100, state: .finalized)
     ])
     precondition(parts.hasTranscriptionAudio && parts.hasSameAudioInput(as: parts))
+    precondition(parts.hasPlaybackAudio)
+    guard let playbackInput = parts.audioPlaybackInput, case .parts(let playbackManifest, _) = playbackInput else {
+      preconditionFailure("Missing playback manifest")
+    }
+    precondition(playbackManifest == parts.recordingAudioManifest)
     var changed = parts
     changed.notes = "Unrelated edit"
     precondition(changed.hasSameAudioInput(as: parts))
@@ -187,6 +192,7 @@ struct RecordingMediaChecks {
     changed.recordingAudioManifest!.parts[1].state = .writing
     changed.recordingAudioManifest!.parts[1].frameCount = nil
     precondition(!changed.hasTranscriptionAudio && !changed.hasSameAudioInput(as: parts))
+    precondition(!changed.hasPlaybackAudio)
     changed = parts
     changed.recordingAudioManifest!.recordingID = UUID()
     precondition(!changed.hasTranscriptionAudio)

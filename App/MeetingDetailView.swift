@@ -50,7 +50,7 @@ struct MeetingDetailView: View {
 
   private func playbackAndShareActions(_ meeting: Meeting) -> some ToolbarContent {
     MeetingDetailToolbarActions(
-      hasAudio: meeting.audioURL != nil,
+      hasAudio: meeting.hasPlaybackAudio,
       isPlaying: player.isPlaying,
       isRecording: model.isRecording,
       play: { player.toggle() },
@@ -73,7 +73,7 @@ struct MeetingDetailView: View {
 
               if !meeting.recordingMarkers.isEmpty {
                 RecordingMarkersView(markers: meeting.recordingMarkers,
-                  onSeek: meeting.audioURL == nil && meeting.transcript.isEmpty ? nil : { time in
+                  onSeek: !meeting.hasPlaybackAudio && meeting.transcript.isEmpty ? nil : { time in
                     InteractionFeedback.shared.send(.tap)
                     model.detailPlaybackRequest = DetailPlaybackRequest(meetingID: meeting.id, time: time)
                   },
@@ -103,12 +103,18 @@ struct MeetingDetailView: View {
             model.pushActiveDetail(meeting.id)
             // Ask AI stays on screen however far the record is scrolled.
             model.isDetailComposerVisible = true
-            player.load(meeting.audioURL, title: meeting.displayTitle)
+            player.load(input: meeting.audioPlaybackInput, title: meeting.displayTitle)
             if !didApplyInitialPlayback, let start = initialPlaybackStart {
               didApplyInitialPlayback = true
               applyPlaybackRequest(start, meeting: meeting, proxy: proxy)
             }
 
+          }
+          .onChange(of: meeting.audioPlaybackInput) { _, input in
+            player.load(input: input, title: meeting.displayTitle)
+          }
+          .onChange(of: player.errorMessage, initial: true) { _, message in
+            if let message { statusAlert = StatusAlert(title: "音声を再生できません", message: message) }
           }
           .onChange(of: model.isRecording) { _, recording in
             // A recording owns the audio session, so playback steps aside.
@@ -166,7 +172,7 @@ struct MeetingDetailView: View {
               Button("タスクを追加", icon: .textBadgePlus) { isAddingTask = true }
               Button("要点・決定事項を編集", icon: .pencil) { isEditingHighlights = true }
               Button("参加者を編集", icon: .personBadgePlus) { isAddingPeople = true }
-              if meeting.audioURL != nil {
+              if meeting.hasAudioFiles {
                 Button("音声を削除（文字起こしと要約は残す）", icon: .waveformBadgeMinus) {
                   isRemovingAudio = true
                 }
@@ -249,7 +255,7 @@ struct MeetingDetailView: View {
           }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-          if showsLocalPlaybackBar, meeting.audioURL != nil, localPlaybackStarted, !model.isInlineEditing {
+          if showsLocalPlaybackBar, meeting.hasPlaybackAudio, localPlaybackStarted, !model.isInlineEditing {
             MeetingPlaybackBar(player: player)
               .padding(.horizontal, MemoraSpacing.md)
               .padding(.bottom, MemoraSpacing.sm)
@@ -400,7 +406,7 @@ struct MeetingDetailView: View {
     selectedSection = meeting.transcript.isEmpty ? .summary : .transcript
     // A request with no time only opens the transcript; it does not play.
     guard let time else { return }
-    if meeting.audioURL != nil && !model.isRecording {
+    if meeting.hasPlaybackAudio && !model.isRecording {
       player.seek(to: time)
       player.play()
     }
@@ -488,7 +494,7 @@ struct MeetingDetailView: View {
           .font(.caption).foregroundStyle(.secondary)
       }
 
-      if meeting.audioURL == nil, !SampleContent.isSample(meetingID: meeting.id) {
+      if !meeting.hasAudioFiles, !SampleContent.isSample(meetingID: meeting.id) {
         Label("音声なし", icon: .waveformSlash)
           .font(.caption)
           .foregroundStyle(.secondary)

@@ -13,11 +13,21 @@ struct AudioPlaybackSchedule {
   private var totalFrames: Int64 = 0
   private var windowFrames: UInt32 = 0
   private var outstanding: Set<Int64> = []
+  private var partEnds: [Int64] = []
 
-  mutating func start(at frame: Int64, length: Int64, sampleRate: Double) -> [Segment] {
+  mutating func start(at frame: Int64, length: Int64, sampleRate: Double, partEnds: [Int64] = []) -> [Segment] {
     cancel()
     guard length > 0, frame >= 0, frame < length,
           sampleRate.isFinite, sampleRate > 0 else { return [] }
+    if !partEnds.isEmpty {
+      guard partEnds.count <= RecordingAudioManifest.maximumParts, partEnds.last == length else { return [] }
+      var previous: Int64 = 0
+      for end in partEnds {
+        guard end > previous else { return [] }
+        previous = end
+      }
+    }
+    self.partEnds = partEnds
     totalFrames = length
     nextFrame = frame
     // Clamp before converting: even malformed format metadata cannot trap.
@@ -26,9 +36,13 @@ struct AudioPlaybackSchedule {
   }
 
   mutating func complete(_ segment: Segment) -> Segment? {
-    guard segment.generation == generation,
-          outstanding.remove(segment.start) != nil else { return nil }
+    guard contains(segment) else { return nil }
+    outstanding.remove(segment.start)
     return reserveNext()
+  }
+
+  func contains(_ segment: Segment) -> Bool {
+    segment.generation == generation && outstanding.contains(segment.start)
   }
 
   mutating func cancel() {
@@ -37,11 +51,13 @@ struct AudioPlaybackSchedule {
     totalFrames = 0
     windowFrames = 0
     outstanding.removeAll(keepingCapacity: true)
+    partEnds.removeAll(keepingCapacity: true)
   }
 
   private mutating func reserveNext() -> Segment? {
     guard nextFrame < totalFrames, windowFrames > 0, outstanding.count < 2 else { return nil }
-    let count = UInt32(min(Int64(windowFrames), totalFrames - nextFrame))
+    let end = partEnds.first(where: { $0 > nextFrame }) ?? totalFrames
+    let count = UInt32(min(Int64(windowFrames), end - nextFrame))
     let segment = Segment(generation: generation, start: nextFrame, count: count)
     outstanding.insert(nextFrame)
     nextFrame += Int64(count)

@@ -1,5 +1,50 @@
 # 長時間音声の再生予約
 
+## 2026-11-03 複数原本の連続再生を接続
+
+確定manifestを持つ複数原本の記録を、既存の再生ボタン・再生バー・速度変更・引用時刻の
+経路へ接続した。画面の構成や操作を増やさず、単一URLを使う資料音声・声のサンプルも維持。
+この追補は実装範囲の記録であり、出音や24時間の連続動作を検証した結果ではない。
+
+`AudioPlaybackInput`は単一URL/manifestを表し、`Meeting.audioPlaybackInput`が記録IDと
+確定状態を確認する。複数原本があるときに、一部分のaudioURLへ黙ってfallbackしない。
+`AudioPlaybackSource`は全原本の通常ファイル・symlink拒否・長さ・共通PCM formatを確認。
+manifestのフレーム数/レートと一致しない場合や欠落があれば、部分的に再生せず失敗する。
+初回は各ファイルのmetadataのみを順次読み、保持するのは最大128原本のURL・時刻・format・
+属性。録音全体を結合・コピー・PCM展開しない。security scopeはsourceの寿命と対応させる。
+
+`AudioPlaybackSchedule`は既存の最大60秒/2区間の予約を維持し、原本の末尾でも必ず区切る。
+通算のInt64フレーム位置を、予約時に各原本内の開始フレームへ変換する。
+音声readerは予約時に開き、長さ/format/サイズ/mtimeを再確認。最大2区間分だけ保持し、
+再生完了・一時停止・シーク・停止で解放する。再生の原本照合は属性とmetadataであり、
+文字起こしcacheのような全内容hashの保証ではない。
+
+プレイヤーのサンプル時計と通算startFrameは原本境界でリセットしない。
+旧世代・重複callbackは、次区間の補充だけでなく新しいreaderの解放も行えないようにする。
+補充に失敗したら予約・ticker・セッションを停止し、既存のalertでエラーを伝える。
+入力参照/manifestの変更や音声削除を詳細画面で監視し、古い再生を停止して読み直す。
+複数原本だけの記録も既存の音声削除/undoへ入り、「音声なし」と誤表示しない。
+
+追加：`App/AudioPlaybackInput.swift`、`AudioPlaybackSource.swift`。
+変更：`AudioPlaybackSchedule.swift`、`AudioPlayerService.swift`、`Meeting+AudioFiles.swift`、
+`MeetingDetailView.swift`。設定・保存形式・新規ライブラリ・クラウド送信の変更はない。
+
+ユーザーの指示に従い、今回はホスト検査と実機検証の実行を後へ回す。
+`bitrig preview -platform iOS`は成功し、プレビューを更新した（既存警告11件）。
+`git diff --check`も通過。ビルド成功は再生動作や境界の連続性の検証ではない。
+既存runnerの新型依存とenqueue抽出を更新し、`SegmentedAudioPlaybackChecks.swift`を追加した。
+予定する検査は実CAFの原本境界/シーク変換・最大2予約/reader・重複/旧callback・原本変更/欠落・
+未確定/不一致/symlink拒否、24h/96原本のフレーム計画。追加検査は未実行。
+再開コマンドは`python3 -B tools/checks/run-audio-playback-checks.py`と
+`python3 -B tools/checks/run-recording-media-checks.py`。
+
+AACの境界音切れ、再生/速度/シーク/一時停止、ロック画面操作、割り込み、バックグラウンドの
+補充遅延、実メモリ/電池、破損圧縮packetの振る舞いは未検証。最大2区間の制約は予約数の
+制約であり、AVFoundation内部のメモリ使用量を実測した値ではない。
+次は録音書込の自動rotationとmanifest更新の一括確定を接続する。
+
+## 2026-11-02 単一原本の予約改修（当時の検査記録）
+
 2026-11-02。UI・保存形式・録音原本を変えず、既存のAVAudioEngine再生を改修した。
 
 従来は残り全フレームをUInt32へ一括変換していた。24時間・96kHzは8,294,400,000

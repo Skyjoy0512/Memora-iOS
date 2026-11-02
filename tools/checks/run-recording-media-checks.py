@@ -24,7 +24,7 @@ with tempfile.TemporaryDirectory(prefix='memora-recording-media-', dir=os.enviro
     generated = root / 'ProductionFilePaths.swift'
     generated.write_text('import Foundation\nextension MediaFiles {\n' + paths + delete + '}\nextension MemoraModel {\n' + methods + '}\n' + usage)
     binary = root / 'checks'
-    subprocess.run(['swiftc', 'Shared/MemoraIcon.swift', 'App/LocalStore.swift', 'App/RecordingAudioPart.swift', 'App/RecordingAudioManifest.swift', 'App/Meeting.swift', 'App/Meeting+AudioFiles.swift',
+    subprocess.run(['swiftc', 'Shared/MemoraIcon.swift', 'App/LocalStore.swift', 'App/RecordingAudioPart.swift', 'App/RecordingAudioManifest.swift', 'App/AudioPlaybackInput.swift', 'App/Meeting.swift', 'App/Meeting+AudioFiles.swift',
                     'App/MeetingSource.swift', 'App/MeetingStatus.swift', 'App/TranscriptSegment.swift', 'App/SpeakerIdentificationStatus.swift',
                     'App/RecordPrivacy.swift', 'App/SummarySensitivity.swift', 'App/RecordingMarker.swift', 'App/UndoAction.swift', 'App/StorageUsage.swift',
                     'App/MemoraModel+Media.swift', 'tools/checks/RecordingRecoveryStoreFixture.swift',

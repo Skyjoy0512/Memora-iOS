@@ -1,6 +1,16 @@
 import Foundation
 
 extension Meeting {
+  var audioPlaybackInput: AudioPlaybackInput? {
+    if let manifest = recordingAudioManifest, manifest.parts.count > 1 {
+      guard manifest.isValid(for: id), manifest.finalizedDuration != nil else { return nil }
+      return .parts(manifest, directory: MediaFiles.directory)
+    }
+    return audioURL.map { .file($0) }
+  }
+
+  var hasPlaybackAudio: Bool { audioPlaybackInput != nil }
+
   var hasTranscriptionAudio: Bool {
     audioURL != nil || ((recordingAudioManifest?.parts.count ?? 0) > 1 &&
       recordingAudioManifest?.isValid(for: id) == true && recordingAudioManifest?.finalizedDuration != nil)

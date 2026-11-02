@@ -3,10 +3,18 @@ import Foundation
 
 @MainActor
 final class PlaybackQueueFixture {
-  var file: AVAudioFile?
+  var source: AudioPlaybackSource?
+  var scheduledFiles: [Int64: AVAudioFile] = [:]
   var isPlaying = false
   var playbackSchedule = AudioPlaybackSchedule()
   var player = PlaybackNodeFixture()
+  var failures = 0
+  func failPlayback() {
+    failures += 1
+    isPlaying = false
+    playbackSchedule.cancel()
+    scheduledFiles.removeAll()
+  }
 }
 
 @MainActor
@@ -84,7 +92,7 @@ struct AudioPlaybackChecks {
     try output.write(from: pcm)
     let file = try AVAudioFile(forReading: url)
     let fixture = PlaybackQueueFixture()
-    fixture.start(file)
+    try fixture.start(file)
     precondition(fixture.player.reservations.count == 2)
     let first = fixture.player.reservations[0]
     first.completion(.dataPlayedBack)
@@ -97,7 +105,7 @@ struct AudioPlaybackChecks {
     precondition(fixture.player.reservations.count == 3)
 
     let stale = fixture.player.reservations[1]
-    fixture.start(file, at: 123)
+    try fixture.start(file, at: 123)
     let restartedCount = fixture.player.reservations.count
     stale.completion(.dataPlayedBack)
     await settle()
@@ -107,7 +115,7 @@ struct AudioPlaybackChecks {
     active.completion(.dataPlayedBack)
     await settle()
     precondition(fixture.player.reservations.count == restartedCount)
-    fixture.start(file)
+    try fixture.start(file)
     let paused = fixture.player.reservations[fixture.player.reservations.count - 2]
     fixture.isPlaying = false
     paused.completion(.dataPlayedBack)
@@ -122,6 +130,7 @@ struct AudioPlaybackChecks {
     ticker.cancelTicker()
     await settle()
     precondition(ticker.reads == 1)
+    try await SegmentedAudioPlaybackChecks.run(root: url.deletingLastPathComponent())
     print("PASS: 24h timelines at 5 sample rates, bounded reservations, overflow/seek bounds, production enqueue refill and stale/duplicate/paused callbacks, cancelled ticker restart")
   }
 
