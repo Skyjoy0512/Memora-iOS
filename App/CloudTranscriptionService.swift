@@ -126,7 +126,7 @@ enum CloudTranscriptionService {
       URLQueryItem(name: "language", value: language),
       URLQueryItem(name: "punctuate", value: "true"),
       URLQueryItem(name: "utterances", value: "true"),
-      URLQueryItem(name: "diarize", value: "true")
+      URLQueryItem(name: "mip_opt_out", value: "true")
     ] + vocabulary.prefix(50).map { URLQueryItem(name: "keyterm", value: $0) }
 
     guard let url = components?.url else { throw Failure.unsupported }

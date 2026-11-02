@@ -65,6 +65,7 @@ enum MeetingSummarizer {
       request = SummaryPrompt.document(for: input, transcript: transcript)
     } else {
       let parts = split(lines, limit: partCharacterLimit)
+      guard parts.count <= 512 else { return .failure(.executionLimit) }
       let collected = await SummaryPartScheduler.collect(count: parts.count,
         maximumConcurrent: SummaryGenerationPolicy.parallelParts(input.preferences.processingMode, llm: llm)) { index in
         let part = parts[index]
@@ -97,8 +98,25 @@ enum MeetingSummarizer {
       case .success(let collected): notes = collected
       case .failure(let failure): return .failure(failure)
       }
-      await progress("全体をまとめています")
-      request = SummaryPrompt.merge(for: input, notes: notes.joined(separator: "\n\n"))
+      let reduced = await SummaryNoteHierarchy.reduce(notes, limit: singlePassCharacterLimit) { group in
+        progress("全体をまとめています")
+        let result = await CloudAIService.completeStreaming(
+          system: SummaryPrompt.system,
+          user: SummaryPrompt.intermediateMerge(for: input, notes: group.joined(separator: "\n\n")),
+          llm: llm, processingMode: input.preferences.processingMode, authorize: authorize,
+          onActivity: { progress("全体をまとめています") }
+        ) { _ in progress("全体をまとめています") }
+        switch result {
+        case .answer(let text): return .success(text)
+        case .failure(let failure): return .failure(failure)
+        }
+      }
+      switch reduced {
+      case .failure(let failure): return .failure(failure)
+      case .success(let notes):
+        await progress("全体をまとめています")
+        request = SummaryPrompt.merge(for: input, notes: notes.joined(separator: "\n\n"))
+      }
     }
 
     guard !Task.isCancelled else { return .failure(.cancelled) }

@@ -43,6 +43,10 @@ import Foundation
     do { try store.write(key, data: JSONEncoder().encode(value)); return true }
     catch { return false }
   }
+  func persistBatch(_ build: () throws -> [(key: String, data: Data)], removing: [String] = []) -> Bool {
+    do { try store.applyBatch(writes: build(), removing: removing); return true }
+    catch { return false }
+  }
 }
 
 struct SourceSummaryRegistry {
