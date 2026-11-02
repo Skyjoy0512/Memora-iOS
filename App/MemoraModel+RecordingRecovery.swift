@@ -80,13 +80,10 @@ extension MemoraModel {
           recordingDraft == draft, aiWorkspaceGeneration == workspaceGeneration,
           !meetings.contains(where: { $0.id == id }),
           !lifeLogEntries.contains(where: { $0.id == id }) else { return }
-    let duration = measuredDuration.flatMap {
-      $0.isFinite && $0 > 0 && $0 < Double(Int.max) ? $0 : nil
-    }
+    let duration = RecordingAudioValidation.duration(measuredDuration)
     // Zero represents an unverified duration, not an invented one-second clip.
     // Keep valid markers without clipping them to that unknown endpoint.
-    let unreadableNotice = String(localized: "録音ファイルは端末に保持していますが、音声の長さを確認できませんでした。中断により開けない可能性があります。元のファイルは変更していません。",
-      comment: "Interrupted recording retained without confirming that its audio is readable")
+    let unreadableNotice = RecordingAudioValidation.unreadableNotice
     var meeting = Meeting(
       id: id,
       title: title.isEmpty ? "復旧した録音" : title,

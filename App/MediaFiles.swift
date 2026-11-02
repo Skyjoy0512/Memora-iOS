@@ -13,10 +13,7 @@ enum MediaFiles {
 
   /// The length of a media file, or nil when it cannot be read.
   static func duration(of url: URL) async -> TimeInterval? {
-    let asset = AVURLAsset(url: url)
-    guard let duration = try? await asset.load(.duration) else { return nil }
-    let seconds = CMTimeGetSeconds(duration)
-    return seconds.isFinite && seconds > 0 ? seconds : nil
+    await RecordingAudioValidation.readDuration(of: url)
   }
 
   /// A stored media name must be a plain file name: no path separators, no

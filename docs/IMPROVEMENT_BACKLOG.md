@@ -1,5 +1,14 @@
 # Memora — 改善バックログ
 
+## 2026-11-02 録音終了時の保存と復旧の判定統一
+
+通常終了でも音声の確認できた長さだけを採用し、確認不能時は原本/メモ/重要マークを保持して
+要確認として保存する。推定clock/最低1秒へのfallbackと、その場合の自動文字起こしを廃止。
+コンテナmetadata/音声trackを有界に確認し、workspace/draft/取消などの確認待ちraceと
+二重保存を防ぐ。既存の記録+Journal+draft削除transactionと保存再試行を維持。
+recordingFinalizationの数値traceに音声確認/SQLite保存時間を追加した。
+[実装と検査境界](RECORDING_FINALIZATION.md)。ローテーション/連続再生/backup/24h実機検証は残件。
+
 ## 2026-11-02 Audio Intelligenceの数値計測
 
 初期オフの端末内計測と設定内のJSON共有を実装。録音/live/保存音声/音声動画取り込み/

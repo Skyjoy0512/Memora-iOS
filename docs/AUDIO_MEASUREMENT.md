@@ -9,6 +9,10 @@
 BYOK文字起こし・話者解析・要約を計測する。既存の同意・APIキー・用語集・
 資料アクセス権限を変更せず、計測目的のクラウド送信やモデルのダウンロードはしない。
 
+録音の確定は`recordingFinalization`として別traceに記録する。音声metadataの確認を
+`verification`、SQLite保存を`persistence`に分け、確認不能な長さは分母に採用しない。
+[終了/復旧/再試行の判定](RECORDING_FINALIZATION.md)。
+
 「音声品質も測定」は次の処理から適用する。保存音声と音声/動画資料の15分以下の
 変換済みチャンクを4,096フレームずつ読み、サンプルレート・チャンネル・codec・
 RMS dBFS・peak・clip比率・低energyフレーム比率を記録する。原本は変更しない。

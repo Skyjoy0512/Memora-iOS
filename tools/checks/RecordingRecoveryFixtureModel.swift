@@ -18,6 +18,34 @@ final class MemoraModel {
   var spaces: [MemoraSpace] = []
   var beforeCommit: (() async -> Void)?
   var durationCalls = 0
+  var performance = RecordingFinalizationPerformanceFixture()
+  var recordingURL: URL?
+  var recordingStartedAt: Date?
+  var recordingSpaceID: UUID?
+  var recordingTitle = ""
+  var recordingNote = ""
+  var recordingMarkers: [RecordingMarker] = []
+  var captureEvent: RecordingFinalizationEventFixture?
+  var persistenceFailureMessage: String?
+  var hasUnsavedRecording = false
+  var isUnsavedRecordingAlertPresented = false
+  var pendingMeetingNavigationID: UUID?
+  var isCapturePresented = true
+  var recordingInterruptionMessage: String?
+  var projectFilingNotice: String?
+  var beforeEndActivity: (() async -> Void)?
+  var stops = 0
+  var processed: [UUID] = []
+  var announcements: [String] = []
+
+  func stopRecorder() { stops += 1; isRecording = false }
+  func endLiveActivity() async { await beforeEndActivity?() }
+  func noteRealSaveForSampleCleanup() {}
+  func resetRecordingClock() { recordingURL = nil; recordingMarkers = []; recordingSpaceID = nil }
+  func meeting(id: UUID) -> Meeting? { meetings.first { $0.id == id } }
+  func beginProcessing(_ id: UUID) { processed.append(id) }
+  func announce(_ message: String) { announcements.append(message) }
+  func processPendingImports() async {}
 
   enum StorageKey {
     static let recordingDraft = "memoraRecordingDraft"
@@ -60,3 +88,9 @@ final class MemoraModel {
     } catch { return false }
   }
 }
+
+struct RecordingFinalizationPerformanceFixture {
+  func record(_ name: String, milliseconds: Double) {}
+}
+
+struct RecordingFinalizationEventFixture { var id: String }

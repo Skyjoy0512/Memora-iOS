@@ -10,7 +10,7 @@ import tempfile
 
 os.chdir(Path(__file__).resolve().parents[2])
 source = Path('App/MemoraModel+Capture.swift').read_text()
-methods = source[source.index('  func startCapture('):source.index('  func stopCapture()')]
+methods = source[source.index('  func startCapture('):source.index('  func retrySavingRecording()')]
 with tempfile.TemporaryDirectory(prefix='memora-recording-start-', dir=os.environ.get('MEMORA_CHECK_ROOT')) as temporary:
     root = Path(temporary)
     production = root / 'RecordingStart.swift'

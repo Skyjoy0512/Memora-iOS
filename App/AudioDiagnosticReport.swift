@@ -4,10 +4,10 @@ import Foundation
 /// string field. Trace IDs are fresh random IDs unrelated to saved records.
 struct AudioDiagnosticReport: Codable, Identifiable, Sendable {
   enum Kind: String, Codable, Sendable {
-    case recording, liveTranscription, recordedTranscription, sourceExtraction, cloudTranscription, speakerAnalysis, voiceActivity, quality, summary
+    case recording, recordingFinalization, liveTranscription, recordedTranscription, sourceExtraction, cloudTranscription, speakerAnalysis, voiceActivity, quality, summary
   }
   enum Stage: String, Codable, Sendable {
-    case queue, snapshot, exportAudio, modelPreparation, recognition, upload, decode, quality, vad, diarization, summary, verification
+    case queue, snapshot, exportAudio, modelPreparation, recognition, upload, decode, quality, vad, diarization, summary, verification, persistence
   }
   enum Outcome: String, Codable, Sendable {
     case running, success, empty, failed, cancelled, unavailable, interrupted, deferred

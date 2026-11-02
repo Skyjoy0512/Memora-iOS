@@ -9,10 +9,10 @@ import statistics
 import sys
 import unicodedata
 
-KINDS = {"recording", "liveTranscription", "recordedTranscription", "sourceExtraction", "cloudTranscription",
+KINDS = {"recording", "recordingFinalization", "liveTranscription", "recordedTranscription", "sourceExtraction", "cloudTranscription",
          "speakerAnalysis", "voiceActivity", "quality", "summary"}
 ENGINES = {"appleSpeech", "openAIWhisper", "deepgramNova3", "fluidSpeaker", "silero", "onDeviceSummary", "cloudSummary"}
-STAGES = {"queue", "snapshot", "exportAudio", "modelPreparation", "recognition", "upload", "decode", "quality", "vad", "diarization", "summary", "verification"}
+STAGES = {"queue", "snapshot", "exportAudio", "modelPreparation", "recognition", "upload", "decode", "quality", "vad", "diarization", "summary", "verification", "persistence"}
 STATES = {"running", "success", "empty", "failed", "cancelled", "unavailable", "interrupted", "deferred"}
 
 

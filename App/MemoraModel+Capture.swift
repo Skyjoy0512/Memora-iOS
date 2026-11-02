@@ -153,90 +153,19 @@ extension MemoraModel {
     return true
   }
 
-  func stopCapture() async {
-    guard isRecording, !isSavingCapture else { return }
-    isSavingCapture = true
-    let startedAt = Date()
-    defer {
-      isSavingCapture = false
-      performance.record(
-        "保存（録音の確定）",
-        milliseconds: Date.now.timeIntervalSince(startedAt) * 1_000
-      )
-    }
-
-    let measuredDuration = recorder.recordedDuration ?? recordingElapsed
-    stopRecorder()
-    await endLiveActivity()
-    let finalDuration = if let recordingURL {
-      await MediaFiles.duration(of: recordingURL) ?? measuredDuration
-    } else {
-      measuredDuration
-    }
-
-    var meeting = Meeting(
-      id: recordingDraft?.id ?? UUID(),
-      title: recordingTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        ? "新しい会話"
-        : recordingTitle.trimmingCharacters(in: .whitespacesAndNewlines),
-      createdAt: recordingStartedAt ?? .now,
-      duration: max(finalDuration, 1),
-      source: .recording,
-      status: .transcribing(0.12),
-      summary: "録音を保存しました。文字起こしを準備しています。",
-      keyPoints: [],
-      decisions: [],
-      openQuestions: [],
-      transcript: [],
-      spaceID: ProjectFiling.existingProject(recordingSpaceID, in: spaces),
-      audioURL: recordingURL
-    )
-    meeting.notes = recordingNote
-    meeting.recordingMarkers = RecordingMarker.validated(recordingMarkers, duration: meeting.duration)
-    meeting.calendarEventID = captureEvent?.id
-    captureEvent = nil
-    meetings.insert(meeting, at: 0)
-    lifeLogEntries.insert(
-      LifeLogEntry(
-        id: meeting.id,
-        createdAt: meeting.createdAt,
-        title: meeting.title,
-        summary: "iPhoneで新しい音声を記録しました。",
-        source: .iphone,
-        meetingID: meeting.id
-      ),
-      at: 0
-    )
-    // The record, its journal entry and the draft removal are one commit: the
-    // draft is only gone once the record is stored, so a failure or a stop here
-    // leaves the audio recoverable rather than lost. On failure the draft stays
-    // and the next launch rebuilds the record from it (with the same id), so no
-    // duplicate is made.
-    let committed = await commitRecordingSave()
-    guard committed else {
-      // Do not take the success path: keep the title, note, audio and draft so
-      // the recording can be saved again, and refuse to start another one until
-      // it is. The generic save alert is replaced by the recording one.
-      persistenceFailureMessage = nil
-      hasUnsavedRecording = true
-      isUnsavedRecordingAlertPresented = true
-      pendingMeetingNavigationID = meeting.id
-      isCapturePresented = false
-      return
-    }
-    recordingDraft = nil
-    noteRealSaveForSampleCleanup()
-    finishCaptureSave(meetingID: meeting.id)
-  }
-
   /// Stores a recording the last attempt could not. The record and draft are
   /// already in memory and on disk, so this only retries the write.
   func retrySavingRecording() async {
-    guard hasUnsavedRecording, !isSavingCapture else { return }
+    guard hasUnsavedRecording, !isSavingCapture, !isRestoring, !isStoreProtected, !Task.isCancelled else { return }
+    let draft = recordingDraft
+    let workspaceGeneration = aiWorkspaceGeneration
+    let navigationID = pendingMeetingNavigationID
     isSavingCapture = true
     defer { isSavingCapture = false }
 
     let committed = await commitRecordingSave()
+    guard !Task.isCancelled, !isRestoring, !isStoreProtected, aiWorkspaceGeneration == workspaceGeneration,
+          recordingDraft == draft, pendingMeetingNavigationID == navigationID else { return }
     guard committed else {
       persistenceFailureMessage = nil
       return
@@ -250,7 +179,7 @@ extension MemoraModel {
   }
 
   /// The parts of finishing a capture that only run once the record is stored.
-  private func finishCaptureSave(meetingID: UUID) {
+  func finishCaptureSave(meetingID: UUID) {
     if recordingSpaceID != nil, meeting(id: meetingID)?.spaceID == nil {
       projectFilingNotice = "録音中に保存先のプロジェクトが削除されたため、音声は未分類のファイルに保存しました。"
     }
@@ -262,8 +191,12 @@ extension MemoraModel {
     captureEvent = nil
     pendingMeetingNavigationID = meetingID
     isCapturePresented = false
-    beginProcessing(meetingID)
-    announce("録音を保存しました。文字起こしを準備しています。")
+    if let record = meeting(id: meetingID), case .transcribing = record.status {
+      beginProcessing(meetingID)
+      announce("録音を保存しました。文字起こしを準備しています。")
+    } else {
+      announce("録音の保存情報を保持しました。音声ファイルを確認してください。")
+    }
     // Files handed over during the recording wait until now.
     Task { await processPendingImports() }
   }
@@ -303,7 +236,7 @@ extension MemoraModel {
 
   /// Stops the microphone, the live transcript and both tickers. Shared by
   /// saving and discarding, which differ only in what happens to the audio.
-  private func stopRecorder() {
+  func stopRecorder() {
     realtimeTranscriber.stop()
     recorder.stop()
     recordingTicker?.cancel()
@@ -400,7 +333,7 @@ extension MemoraModel {
     }
   }
 
-  private func endLiveActivity() async {
+  func endLiveActivity() async {
     guard let recordingActivity else { return }
     let state = MemoraRecordingAttributes.ContentState(
       startedAt: recordingStartedAt ?? .now,

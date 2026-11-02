@@ -47,7 +47,7 @@ struct AudioDiagnosticsView: View {
           }
           LabeledContent("再利用した区間", value: String(report.reusedChunks))
           if let bytes = report.sampledPeakFootprintBytes {
-            LabeledContent("サンプル内の最大メモリ", value: ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .memory))
+            LabeledContent("サンプル内の最大メモリ", value: ByteCountFormatter.string(fromByteCount: Int64(clamping: bytes), countStyle: .memory))
           }
           LabeledContent("環境", value: report.environment.isSimulator ? "シミュレーター" : report.environment.hardware)
         }
