@@ -10,7 +10,7 @@ swiftc "${audio_diagnostic_sources[@]}" App/SourceSummaryOptions.swift App/Summa
   App/ProjectSource.swift App/ProjectSourceText.swift App/ProjectSourceFiles.swift App/ProjectSourceTextReader.swift \
   App/ProjectSourceExtractionResult.swift App/SourceIntake.swift App/ConversationLinkSnapshot.swift \
   App/SourceExtractionSnapshot.swift App/SourceExtractionPersistence.swift \
-  App/SourceMediaFailure.swift App/SourceMediaChunk.swift App/SourceMediaCheckpoint.swift \
+  App/SourceMediaFailure.swift App/AudioProcessingReadiness.swift App/SourceMediaChunk.swift App/SourceMediaCheckpoint.swift \
   App/SourceMediaCheckpointStore.swift App/SourceMediaSnapshot.swift App/SourceMediaTranscript.swift \
   App/SourceProcessingQueue.swift App/SourceMediaStageLease.swift App/SourceMediaStaging.swift \
   App/SourceMediaAudioExport.swift App/TranscriptionOutcome.swift App/RecordedAudioTranscription.swift App/AudioSignalInspector.swift \

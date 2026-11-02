@@ -7,6 +7,7 @@ enum RecordedAudioTranscription {
   static func transcribe(_ url: URL, locale: Locale, vocabulary: [String],
                          checkpointStore: SourceMediaCheckpointStore = .shared,
                          staging: SourceMediaStaging = .shared,
+                         checkReadiness: @escaping @Sendable () throws -> Void = { try AudioProcessingReadiness.check() },
                          recognize: @escaping @Sendable (URL) async -> TranscriptionOutcome) async -> TranscriptionOutcome {
     do {
       return try await AudioProcessingDiagnostics.trace(.recordedTranscription) {
@@ -15,7 +16,7 @@ enum RecordedAudioTranscription {
         return try await SourceProcessingQueue.shared.perform {
           diagnostic?.end(queued, outcome: .success)
           return try await run(url, locale: locale, vocabulary: vocabulary, store: checkpointStore,
-            staging: staging, recognize: recognize)
+            staging: staging, checkReadiness: checkReadiness, recognize: recognize)
         }
       } outcome: { $0.diagnosticOutcome }
     } catch is CancellationError {
@@ -29,6 +30,7 @@ enum RecordedAudioTranscription {
 
   private static func run(_ url: URL, locale: Locale, vocabulary: [String],
                           store: SourceMediaCheckpointStore, staging: SourceMediaStaging,
+                          checkReadiness: @Sendable () throws -> Void,
                           recognize: @Sendable (URL) async -> TranscriptionOutcome) async throws -> TranscriptionOutcome {
     let scoped = url.startAccessingSecurityScopedResource()
     defer { if scoped { url.stopAccessingSecurityScopedResource() } }
@@ -52,6 +54,7 @@ enum RecordedAudioTranscription {
     diagnostic?.chunks(reused: completed, completed: completed)
     for chunk in chunks.dropFirst(completed) {
       try Task.checkCancellation()
+      try checkReadiness()
       guard try SourceMediaStaging.availableBytes(stage.directory) >= SourceMediaStaging.minimumAvailableBytes else {
         throw SourceMediaFailure.capacity
       }
@@ -62,12 +65,14 @@ enum RecordedAudioTranscription {
       do {
         defer { try? FileManager.default.removeItem(at: stage.audioURL) }
         try await export.write(to: stage.audioURL, stageDirectory: stage.directory)
+        try checkReadiness()
         if AudioProcessingDiagnostics.inspectsSignal {
           do { _ = try AudioSignalInspector.inspect(stage.audioURL) }
           catch is CancellationError { throw CancellationError() }
           catch { }
         }
         try Task.checkCancellation()
+        try checkReadiness()
         outcome = await recognize(stage.audioURL)
       }
       try Task.checkCancellation()

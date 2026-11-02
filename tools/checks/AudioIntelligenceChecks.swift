@@ -4,6 +4,14 @@ import Foundation
 @main struct AudioIntelligenceChecks {
   static func main() throws {
     let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+    try AudioProcessingReadiness.check(thermalState: .nominal)
+    try AudioProcessingReadiness.check(thermalState: .fair)
+    for state: ProcessInfo.ThermalState in [.serious, .critical] {
+      do {
+        try AudioProcessingReadiness.check(thermalState: state)
+        preconditionFailure("Thermal pressure accepted")
+      } catch SourceMediaFailure.thermalDeferred { }
+    }
     let url = root.appendingPathComponent("stereo.wav")
     let format = AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 2)!
     do {

@@ -87,6 +87,14 @@ WERは空白区切りなので、分かち書きのない日本語はCERを主�
 
 ## 実機検証マトリクス（残件）
 
+保存音声と音声/動画資料の端末内認識は、各未完了チャンクの変換前・変換後・認識直前に
+OSのthermal stateを確認する。nominal/fairでは続け、serious/criticalでは新しい認識を始めず、
+数値ログをdeferredとして既存の再試行経路へ返す。完成前の本文は公開せず、原本と保存済みprefixは
+維持する。温度が下がってから明示的に再試行すると保存済みprefixの次の未完了区間から続ける。
+全チャンク完成済みのcache再利用にはこの停止条件を加えない。録音/liveを自動停止せず、
+実行中の認識を強制停止したり、冷却後に自動再開/外部送信したりはしない。
+低電力モードでの遅延や本体の温度/電池改善効果は未実装/未測定。
+
 同意済み正解音声を使い、同じ機種/OS/buildと条件で各3回以上実行する。
 10分・1時間・6時間・24時間相当の連続チャンクを分け、通常日本語、雑音、小声、複数人、
 長い無音、音楽/環境音、専門用語/固有名詞、重なり発話を含める。
@@ -138,3 +146,8 @@ signpostにopt-in collectorを追加した。
 `run-audio-diagnostic-checks.sh`、`audio-measurements.py`、`test_audio_measurements.py`を追加。
 既存のaudio intelligence/source extraction cache/source media export/summary reading runnerへ
 共通のproduction計測型を渡すよう更新した。Project.json・依存ライブラリ・record schemaは変更しない。
+
+高温時の区間境界制御は`AudioProcessingReadiness.swift`を追加し、`SourceMediaFailure`、
+`RecordedAudioTranscription`、`SourceMediaExtraction`へ接続。audio intelligence検査でOS状態ごとの
+判定、保存音声検査で実export後の停止・prefix非公開・SQLite再生成後のsuffix再開・
+criticalでも完成cacheを再利用できることを確認する。温度状態と認識結果はfixtureである。

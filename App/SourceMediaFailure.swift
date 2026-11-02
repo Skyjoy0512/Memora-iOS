@@ -3,6 +3,7 @@ import Foundation
 enum SourceMediaFailure: LocalizedError {
   case capacity, stagingLimit, invalidTemporaryFile, exportTooLarge
   case invalidDuration, invalidTranscript, transcriptTooLarge
+  case thermalDeferred
 
   var errorDescription: String? {
     switch self {
@@ -13,6 +14,7 @@ enum SourceMediaFailure: LocalizedError {
     case .invalidDuration: "この音声を解析できません。24時間以内の再生可能なファイルを追加してください。原本は保存されています。"
     case .invalidTranscript: "文字起こしの時刻を確認できませんでした。原本は保存されています。もう一度お試しください。"
     case .transcriptTooLarge: "文字起こしが保存できる本文量を超えました。音声を短く分けて追加してください。原本は保存されています。"
+    case .thermalDeferred: "端末の温度が高いため音声の解析を保留しました。温度が下がってから再試行してください。原本は保存されています。"
     }
   }
 }

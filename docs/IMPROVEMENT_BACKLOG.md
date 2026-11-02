@@ -7,6 +7,8 @@ BYOK/話者解析/要約の時間、区間別完了RTF、待機・再利用数�
 録音中断と入力dropを内容なしで記録する。品質測定は任意の追加scan。原本やcheckpointは変更しない。
 12trace/2MiBのcache、256events/samplesと全期間集計、世代失効と再起動時interruptedを実装。
 ローカルのmedian/p95集計・CER/WER比較CLIを追加。liveの言語を既存の認識言語設定と一致させた。
+保存音声/音声動画資料の未完了chunkはserious/criticalで変換/認識の開始を保留し、
+原本/prefixを残して既存の明示的な再試行から再開する。完成cacheと録音/liveには適用しない。
 
 実機RTF/CER/DER・24時間録音・電池/熱・VAD/NS採否・実provider請求は残件。
 計測fixtureやビルド成功はそれらの実測結果ではない。[手順と検証境界](AUDIO_MEASUREMENT.md)。

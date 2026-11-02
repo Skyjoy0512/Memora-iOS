@@ -72,6 +72,7 @@ enum SourceMediaExtraction {
 
   private static func transcribe(_ chunk: SourceMediaChunk, asset: AVAsset, stage: SourceMediaStageLease,
                                  vocabulary: [String], locale: Locale) async throws -> TranscriptionOutcome {
+    try AudioProcessingReadiness.check()
     // The immutable input stays protected by its lease. Only one exported
     // chunk exists, and recognition never outlives this scope.
     defer { try? FileManager.default.removeItem(at: stage.audioURL) }
@@ -79,12 +80,14 @@ enum SourceMediaExtraction {
       return .failed("この音声を解析できません。再生可能なファイルを追加してください。原本は保存されています。")
     }
     try await export.write(to: stage.audioURL, stageDirectory: stage.directory)
+    try AudioProcessingReadiness.check()
     if AudioProcessingDiagnostics.inspectsSignal {
       do { _ = try AudioSignalInspector.inspect(stage.audioURL) }
       catch is CancellationError { throw CancellationError() }
       catch { }
     }
     try Task.checkCancellation()
+    try AudioProcessingReadiness.check()
     // Importing a file is not permission to upload it to a speech provider.
     return await TranscriptionService.transcribe(fileURL: stage.audioURL, vocabulary: vocabulary,
       onDeviceOnly: true, locale: locale, isPreparedChunk: true)
