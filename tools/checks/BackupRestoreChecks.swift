@@ -24,7 +24,10 @@ struct BackupRestoreChecks {
     for (name, data) in workspaceFiles { try data.write(to: ProjectSourceFiles.resolve(name)!) }
     try audio.write(to: MediaFiles.directory.appendingPathComponent("audio.m4a"))
     try photo.write(to: MediaFiles.photosDirectory.appendingPathComponent("photo.jpg"))
-    let meeting = Meeting(rawAudioReference: "audio.m4a", photoFileNames: ["photo.jpg"])
+    var meeting = Meeting(id: UUID(), title: "Fixture", createdAt: .now, duration: 1, source: .recording,
+      status: .ready, summary: "Fixture summary", keyPoints: [], decisions: [], openQuestions: [], transcript: [],
+      spaceID: nil, audioURL: MediaFiles.resolve("audio.m4a"))
+    meeting.photoFileNames = ["photo.jpg"]
     let project = MemoraSpace()
     let person = Person()
     let now = Date.now
@@ -243,7 +246,59 @@ struct BackupRestoreChecks {
     }
     let restoredAudio = try Data(contentsOf: MediaFiles.directory.appendingPathComponent("audio.m4a"))
     precondition(restoredAudio == audio)
+    try checkSegmentOriginals(meeting, into: input)
     print("BackupRestoreChecks: passed (production package/restore + real SQLite, new metadata/files roundtrip, legacy restore, duplicate documents, recipient limits, truncated/missing/oversize, traversal/symlinks, DB rollback, cancellation/gate, conflict preserves bytes, reopen; isolated fixtures only)")
+  }
+
+  static func checkSegmentOriginals(_ original: Meeting, into input: URL) throws {
+    let fm = FileManager.default
+    var meeting = original
+    meeting.photoFileNames = nil
+    meeting.originalAudioFileNames = ["part-0.m4a", "part-1.m4a", "part-0.m4a"]
+    let parts = ["part-0.m4a": Data("original zero".utf8), "part-1.m4a": Data("original one".utf8)]
+    for (name, bytes) in parts { try bytes.write(to: MediaFiles.resolve(name)!) }
+    let package = try BackupPackage.write(meetings: [meeting], spaces: [], tasks: [], lifeLogEntries: [], people: [], aiHistory: [], into: input)
+    let manifest = try BackupPackage.read(from: package)
+    precondition(manifest.version == 3 && Set(manifest.audioFileNames) == ["audio.m4a", "part-0.m4a", "part-1.m4a"])
+    precondition(manifest.meetings[0].originalAudioFileNames == meeting.originalAudioFileNames)
+    var invalid = manifest
+    invalid.version = 2
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.audioFileNames.removeAll { $0 == "part-1.m4a" }
+    try reject(invalid, in: package)
+    invalid = manifest; invalid.meetings[0].originalAudioFileNames = ["../escape.m4a"]
+    try reject(invalid, in: package)
+    for name in ["../escape.m4a", "/tmp/escape.m4a", "missing.m4a"] {
+      var invalidMeeting = meeting
+      invalidMeeting.originalAudioFileNames = [name]
+      try expectFailure {
+        _ = try BackupPackage.write(meetings: [invalidMeeting], spaces: [], tasks: [], lifeLogEntries: [], people: [], aiHistory: [], into: input)
+      }
+    }
+    let link = MediaFiles.resolve("part-link.m4a")!
+    var missingPrimary = meeting
+    missingPrimary.audioURL = nil
+    missingPrimary.rawAudioReference = MediaFiles.directory.appendingPathComponent("missing-primary.m4a").path
+    missingPrimary.originalAudioFileNames = []
+    do {
+      _ = try BackupPackage.write(meetings: [missingPrimary], spaces: [], tasks: [], lifeLogEntries: [], people: [], aiHistory: [], into: input)
+      preconditionFailure("Unresolved original reference silently omitted")
+    } catch BackupPackage.BackupError.missingSource(let names) {
+      precondition(names == ["missing-primary.m4a"])
+    }
+    try fm.createSymbolicLink(at: link, withDestinationURL: MediaFiles.resolve("part-0.m4a")!)
+    var linked = meeting; linked.originalAudioFileNames = ["part-link.m4a"]
+    try expectFailure { _ = try BackupPackage.write(meetings: [linked], spaces: [], tasks: [], lifeLogEntries: [], people: [], aiHistory: [], into: input) }
+    try fm.removeItem(at: link)
+    for name in manifest.audioFileNames { try fm.removeItem(at: MediaFiles.resolve(name)!) }
+    let installed = try BackupPackage.install(mediaFrom: package, manifest: manifest)
+    for (name, bytes) in parts {
+      let restored = try Data(contentsOf: MediaFiles.resolve(name)!)
+      precondition(restored == bytes)
+    }
+    precondition(installed.count == 3)
+    BackupPackage.removeInstalledMedia(installed)
+    print("PASS: v3 original audio package roundtrip/install, deduplication, missing/unsafe/link originals refused; v1/v2 remain supported")
   }
 
   static func writes(_ value: BackupPackage.Manifest) throws -> [(key: String, data: Data)] {
@@ -271,10 +326,15 @@ struct BackupRestoreChecks {
   }
 }
 
-// Only legacy record shapes and container locations are fixtures. Package validation,
-// new record codecs, file installation, cancellation and SQLite are production code.
+// Unrelated record shapes, summary UI helpers and container locations are fixtures.
+// Meeting codecs, package validation, installation, cancellation and SQLite are production.
 enum FixtureFiles { static let root = FileManager.default.temporaryDirectory.appendingPathComponent("MemoraBackupChecks-\(UUID())") }
-struct Meeting: Codable { var id = UUID(); var rawAudioReference: String?; var photoFileNames: [String]?; var legacyPhotoData: [Data]?; var audioURL: URL? { rawAudioReference.map { MediaFiles.directory.appendingPathComponent($0) } } }
+struct TemplateSummary: Hashable, Codable {}
+enum SummaryPreviewCache { static func preview(for id: UUID, summary: String, build: (String) -> String) -> String { build(summary) } }
+enum MarkdownBlockParser {
+  static func hasBlockStructure(_ text: String) -> Bool { false }
+  static func overview(of text: String) -> String { text }
+}
 struct MemoraSpace: Codable { var id = UUID() }
 struct MemoraTask: Codable { var id = UUID() }
 struct LifeLogEntry: Codable { var id = UUID(); var photoFileName: String? }
@@ -285,9 +345,12 @@ enum MediaFiles {
   static var photosDirectory: URL { FixtureFiles.root.appendingPathComponent("photos") }
   static func isPlainName(_ name: String) -> Bool { !name.isEmpty && name != "." && name != ".." && !name.contains("/") && !name.contains("\\") && !name.contains("\0") }
   static func reference(for url: URL) -> String? { isPlainName(url.lastPathComponent) && url.deletingLastPathComponent() == directory ? url.lastPathComponent : nil }
+  static func resolve(_ name: String) -> URL? { isPlainName(name) ? directory.appendingPathComponent(name) : nil }
   static func photoURL(_ name: String) -> URL? { isPlainName(name) ? photosDirectory.appendingPathComponent(name) : nil }
   static func requiredPhotoFiles(for name: String) -> [String] { [name] }
   static func regenerablePhotoFiles(for name: String) -> [String] { [] }
+  static func writePhoto(_ data: Data) -> String? { preconditionFailure("No photo migration during backup read") }
+  @discardableResult static func deletePhoto(_ name: String) -> Bool { preconditionFailure("No photo migration during backup read") }
 }
 enum ProjectSourceFiles {
   static var directory: URL { FixtureFiles.root.appendingPathComponent("workspace") }

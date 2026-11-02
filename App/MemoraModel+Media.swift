@@ -70,26 +70,28 @@ extension MemoraModel {
     persistPendingMediaDeletions()
   }
 
-  /// Runs the removal an offer registered. A file that cannot be removed is
-  /// remembered again by `deleteMedia`.
+  /// Keep the journal entry until removal succeeds, including across a stop.
   private func finalizePendingMediaDeletion(_ id: UUID) {
-    guard let entry = pendingMediaDeletions.first(where: { $0.id == id }) else { return }
-    cancelPendingMediaDeletion(id)
-    let audioURL = entry.audioReference.flatMap { MediaFiles.resolve($0) }
-    deleteMedia(audioURL: audioURL, photoNames: entry.photoNames)
+    retryPendingMediaDeletions(onlyIDs: [id])
   }
 
-  /// Remembers an audio file for removal, so letting the app stop mid-offer still
-  /// leaves a record that it should be deleted.
-  private func registerPendingAudioDeletion(_ url: URL) -> UUID {
-    let entry = PendingMediaDeletion(
-      id: UUID(),
-      audioReference: MediaFiles.reference(for: url),
-      photoNames: []
-    )
-    pendingMediaDeletions.append(entry)
-    persistPendingMediaDeletions()
-    return entry.id
+  func pendingDeletions(for meeting: Meeting, includingPhotos: Bool = true) -> [PendingMediaDeletion] {
+    var entries = meeting.managedAudioFileNames.map {
+      PendingMediaDeletion(id: UUID(), audioReference: $0, photoNames: [])
+    }
+    if includingPhotos, let photos = meeting.photoFileNames, !photos.isEmpty {
+      entries.append(PendingMediaDeletion(id: UUID(), audioReference: nil, photoNames: photos))
+    }
+    return entries
+  }
+
+  /// A queued removal cannot erase a file another live record or draft owns.
+  var referencedAudioFileNames: Set<String> {
+    var names = Set(meetings.flatMap(\.managedAudioFileNames))
+    names.formUnion(trashedRecords.flatMap { $0.meeting.managedAudioFileNames })
+    if let draft = recordingDraft, let url = MediaFiles.resolve(draft.fileName),
+       let name = MediaFiles.reference(for: url) { names.insert(name) }
+    return names
   }
 
   /// Removes a record's audio but keeps its transcript, summary, notes and
@@ -97,38 +99,55 @@ extension MemoraModel {
   func removeMeetingAudio(_ id: UUID) {
     guard isStoreWritable() else { return }
     guard let index = meetings.firstIndex(where: { $0.id == id }),
-          let url = meetings[index].audioURL else { return }
+          meetings[index].hasAudioFiles else { return }
 
+    let original = meetings[index]
+    let deletions = pendingDeletions(for: original, includingPhotos: false)
+    let pending = pendingMediaDeletions + deletions
     var candidate = meetings
-    candidate[index].audioURL = nil
+    candidate[index].removeAudioReferences()
     meetingSearchTexts.removeValue(forKey: id)
     let stored = persistBatch {
-      [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))]
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
+        (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
+      ]
     }
     guard stored else { return }
 
     meetings = candidate
-    let pendingDeletionID = registerPendingAudioDeletion(url)
+    pendingMediaDeletions = pending
+    let pendingIDs = Set(deletions.map(\.id))
     scheduleUndo(
       UndoAction(message: "音声を削除しました") { [weak self] in
-        self?.cancelPendingMediaDeletion(pendingDeletionID)
-        self?.restoreMeetingAudio(id, url: url)
+        self?.restoreMeetingAudio([original], cancelling: pendingIDs)
       } finalize: { [weak self] in
-        self?.finalizePendingMediaDeletion(pendingDeletionID)
+        self?.retryPendingMediaDeletions(onlyIDs: pendingIDs)
       }
     )
   }
 
-  private func restoreMeetingAudio(_ id: UUID, url: URL) {
-    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
+  private func restoreMeetingAudio(_ originals: [Meeting], cancelling pendingIDs: Set<UUID>) {
+    guard isStoreWritable() else { return }
     var candidate = meetings
-    candidate[index].audioURL = url
-    meetingSearchTexts.removeValue(forKey: id)
+    for original in originals {
+      guard let index = candidate.firstIndex(where: { $0.id == original.id }),
+            !candidate[index].hasAudioFiles else { return }
+      candidate[index].audioURL = original.audioURL
+      candidate[index].rawAudioReference = original.rawAudioReference
+      candidate[index].originalAudioFileNames = original.originalAudioFileNames
+      meetingSearchTexts.removeValue(forKey: original.id)
+    }
+    let pending = pendingMediaDeletions.filter { !pendingIDs.contains($0.id) }
     let stored = persistBatch {
-      [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))]
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
+        (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
+      ]
     }
     guard stored else { return }
     meetings = candidate
+    pendingMediaDeletions = pending
   }
 
   /// Removes the audio of every record older than `days`, keeping the rest of
@@ -136,36 +155,32 @@ extension MemoraModel {
   func removeAudio(olderThanDays days: Int) {
     guard isStoreWritable() else { return }
     let cutoff = Date.now.addingTimeInterval(-Double(days) * 24 * 60 * 60)
-    let removed = meetings.filter { $0.audioURL != nil && $0.createdAt < cutoff }
+    let removed = meetings.filter { $0.hasAudioFiles && $0.createdAt < cutoff }
     guard !removed.isEmpty else { return }
 
     var candidate = meetings
-    var pendingIDs: [UUID] = []
-    var restorable: [(id: UUID, url: URL)] = []
-    for index in candidate.indices where candidate[index].audioURL != nil && candidate[index].createdAt < cutoff {
-      guard let url = candidate[index].audioURL else { continue }
-      pendingIDs.append(registerPendingAudioDeletion(url))
-      restorable.append((candidate[index].id, url))
-      candidate[index].audioURL = nil
+    let deletions = removed.flatMap { pendingDeletions(for: $0, includingPhotos: false) }
+    let pending = pendingMediaDeletions + deletions
+    let pendingIDs = Set(deletions.map(\.id))
+    for index in candidate.indices where candidate[index].hasAudioFiles && candidate[index].createdAt < cutoff {
+      candidate[index].removeAudioReferences()
       meetingSearchTexts.removeValue(forKey: candidate[index].id)
     }
 
     let stored = persistBatch {
-      [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))]
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
+        (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
+      ]
     }
-    guard stored else {
-      pendingIDs.forEach { cancelPendingMediaDeletion($0) }
-      return
-    }
+    guard stored else { return }
     meetings = candidate
+    pendingMediaDeletions = pending
     scheduleUndo(
-      UndoAction(message: "\(restorable.count)件の音声を削除しました") { [weak self] in
-        pendingIDs.forEach { self?.cancelPendingMediaDeletion($0) }
-        for entry in restorable {
-          self?.restoreMeetingAudio(entry.id, url: entry.url)
-        }
+      UndoAction(message: "\(removed.count)件の音声を削除しました") { [weak self] in
+        self?.restoreMeetingAudio(removed, cancelling: pendingIDs)
       } finalize: { [weak self] in
-        pendingIDs.forEach { self?.finalizePendingMediaDeletion($0) }
+        self?.retryPendingMediaDeletions(onlyIDs: pendingIDs)
       }
     )
   }

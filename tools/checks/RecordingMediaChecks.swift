@@ -1,0 +1,247 @@
+import Foundation
+import SQLite3
+
+@main
+struct RecordingMediaChecks {
+  @MainActor
+  static func main() throws {
+    MediaFiles.directory = URL(fileURLWithPath: CommandLine.arguments[1]).appendingPathComponent("audio")
+    try FileManager.default.createDirectory(at: MediaFiles.directory, withIntermediateDirectories: true)
+    let storeURL = MediaFiles.directory.deletingLastPathComponent().appendingPathComponent("store.sqlite")
+    let model = try MemoraModel(storeURL: storeURL)
+    let original = try record("first")
+    var legacyJSON = try JSONSerialization.jsonObject(with: JSONEncoder().encode(original)) as! [String: Any]
+    legacyJSON.removeValue(forKey: "originalAudioFileNames")
+    let legacy = try JSONDecoder().decode(Meeting.self, from: JSONSerialization.data(withJSONObject: legacyJSON))
+    precondition(legacy.originalAudioFileNames.isEmpty && legacy.audioURL == original.audioURL)
+    legacyJSON["audioURL"] = MediaFiles.directory.appendingPathComponent("missing-legacy.m4a").path
+    var missingLegacy = try JSONDecoder().decode(Meeting.self, from: JSONSerialization.data(withJSONObject: legacyJSON))
+    precondition(missingLegacy.audioURL == nil && missingLegacy.rawAudioReference != nil)
+    let savedMissing = try JSONDecoder().decode(Meeting.self, from: JSONEncoder().encode(missingLegacy))
+    precondition(savedMissing.rawAudioReference == missingLegacy.rawAudioReference)
+    missingLegacy.removeAudioReferences()
+    let erasedReferences = try JSONSerialization.jsonObject(with: JSONEncoder().encode(missingLegacy)) as! [String: Any]
+    precondition(erasedReferences["audioURL"] == nil && erasedReferences["originalAudioFileNames"] == nil)
+    let roundtrip = try JSONDecoder().decode(Meeting.self, from: JSONEncoder().encode(original))
+    precondition(roundtrip.originalAudioFileNames == original.originalAudioFileNames)
+    precondition(roundtrip.managedAudioFileNames.count == 3)
+    model.meetings = [original]
+    try model.seed()
+    model.removeMeetingAudio(original.id)
+    precondition(!model.meetings[0].hasAudioFiles && model.pendingMediaDeletions.count == 3)
+    try assertFiles(original, exist: true)
+    let reopened = LocalStore(fileURL: storeURL); try reopened.prepare()
+    let persisted: [Meeting] = try decode(reopened, "meetings")
+    let queued: [MemoraModel.PendingMediaDeletion] = try decode(reopened, "pending")
+    precondition(!persisted[0].hasAudioFiles && queued.count == 3)
+    model.undoAction!.undo()
+    precondition(model.meetings[0].originalAudioFileNames == original.originalAudioFileNames)
+    precondition(model.pendingMediaDeletions.isEmpty)
+    try assertFiles(original, exist: true)
+    model.undoAction = nil
+
+    // Reject the second document write: SQLite must roll back both documents.
+    var db: OpaquePointer?
+    precondition(sqlite3_open(storeURL.path, &db) == SQLITE_OK)
+    defer { sqlite3_close(db) }
+    let rejectSQL = "CREATE TRIGGER reject_pending BEFORE INSERT ON documents WHEN NEW.key = 'pending' BEGIN SELECT RAISE(ABORT, 'fixture'); END;"
+    precondition(sqlite3_exec(db, rejectSQL, nil, nil, nil) == SQLITE_OK)
+    model.removeMeetingAudio(original.id)
+    precondition(model.meetings[0].hasAudioFiles && model.pendingMediaDeletions.isEmpty && model.undoAction == nil)
+    let stillStored: [Meeting] = try decode(reopened, "meetings")
+    precondition(stillStored[0].hasAudioFiles)
+    try assertFiles(original, exist: true)
+    precondition(sqlite3_exec(db, "DROP TRIGGER reject_pending", nil, nil, nil) == SQLITE_OK)
+    model.removeMeetingAudio(original.id)
+    let retryUndo = model.undoAction!
+    precondition(sqlite3_exec(db, rejectSQL, nil, nil, nil) == SQLITE_OK)
+    retryUndo.undo()
+    precondition(!model.meetings[0].hasAudioFiles && model.pendingMediaDeletions.count == 3)
+    try assertFiles(original, exist: true)
+    precondition(sqlite3_exec(db, "DROP TRIGGER reject_pending", nil, nil, nil) == SQLITE_OK)
+    retryUndo.undo()
+    precondition(model.meetings[0].hasAudioFiles && model.pendingMediaDeletions.isEmpty)
+    model.undoAction = nil
+
+    // A different record's permanent deletion cannot settle this undo offer.
+    model.removeMeetingAudio(original.id)
+    let other = try record("other")
+    model.trashedRecords = [.init(meeting: other, deletedAt: .now)]
+    model.permanentlyDeleteTrashedRecord(other.id)
+    try assertFiles(other, exist: false)
+    try assertFiles(original, exist: true)
+    precondition(model.pendingMediaDeletions.count == 3)
+    precondition(model.deletionFailureMessage == nil, "An unrelated undo offer is not a deletion failure")
+    model.trashedLifeLogEntries = [.init(entry: .init(photoFileName: nil), deletedAt: .now)]
+    model.permanentlyDeleteTrashedLifeLogEntry(model.trashedLifeLogEntries[0].id)
+    try assertFiles(original, exist: true)
+    model.undoAction!.undo(); model.undoAction = nil
+
+    // Shared originals, trashed records and an active draft retain ownership.
+    var shared = try record("shared")
+    shared.originalAudioFileNames.append(original.originalAudioFileNames[0])
+    model.meetings.append(shared)
+    model.removeMeetingAudio(original.id)
+    model.recordingDraft = .init(fileName: original.originalAudioFileNames[1])
+    model.undoAction!.finalize(); model.undoAction = nil
+    precondition(!exists(original.audioURL!))
+    precondition(exists(MediaFiles.resolve(original.originalAudioFileNames[0])!))
+    precondition(exists(MediaFiles.resolve(original.originalAudioFileNames[1])!))
+    precondition(model.pendingMediaDeletions.isEmpty)
+    model.recordingDraft = nil
+    model.trashedRecords = [.init(meeting: shared, deletedAt: .now)]
+    model.meetings.removeAll { $0.id == shared.id }
+    model.pendingMediaDeletions = model.pendingDeletions(for: shared, includingPhotos: false)
+    model.retryPendingMediaDeletions()
+    try assertFiles(shared, exist: true)
+
+    // Bulk removal and undo retain all part references without reverting notes.
+    let older = try record("older", date: .now.addingTimeInterval(-100 * 86_400))
+    var older2 = try record("older2", date: older.createdAt)
+    older2.audioURL = nil; older2.rawAudioReference = nil
+    model.meetings = [older, older2]
+    model.pendingMediaDeletions = []
+    model.removeAudio(olderThanDays: 90)
+    precondition(model.meetings.allSatisfy { !$0.hasAudioFiles })
+    precondition(model.pendingMediaDeletions.count == 5)
+    model.meetings[0].notes = "edited after removal"
+    model.undoAction!.undo(); model.undoAction = nil
+    precondition(model.meetings[0].notes == "edited after removal")
+    precondition(model.meetings[1].originalAudioFileNames == older2.originalAudioFileNames)
+    precondition(model.pendingMediaDeletions.isEmpty)
+    model.removeAudio(olderThanDays: 90)
+    model.undoAction!.finalize(); model.undoAction = nil
+    try assertFiles(older, exist: false)
+    try assertFiles(older2, exist: false)
+
+    // A failed deletion stays in the old one-file journal format and retries.
+    let blocked = try record("blocked")
+    model.meetings = [blocked]
+    model.removeMeetingAudio(blocked.id)
+    MediaFiles.failDeletion = true
+    model.undoAction!.finalize(); model.undoAction = nil
+    precondition(model.pendingMediaDeletions.count == 3)
+    try assertFiles(blocked, exist: true)
+    model.isStoreProtected = true
+    MediaFiles.failDeletion = false
+    model.deleteMedia(audioURL: blocked.audioURL, photoNames: [])
+    model.retryPendingMediaDeletions()
+    try assertFiles(blocked, exist: true)
+    model.isStoreProtected = false
+    model.retryPendingMediaDeletions()
+    precondition(model.pendingMediaDeletions.isEmpty)
+    try assertFiles(blocked, exist: false)
+
+    let waiting = try record("waiting")
+    let expired = try record("expired")
+    model.meetings = [waiting]
+    model.removeMeetingAudio(waiting.id)
+    model.trashedRecords = [.init(meeting: expired, deletedAt: .now.addingTimeInterval(-31 * 86_400))]
+    model.purgeExpiredTrash()
+    precondition(model.trashedRecords.isEmpty && model.pendingMediaDeletions.count == 3)
+    try assertFiles(expired, exist: false)
+    try assertFiles(waiting, exist: true)
+    model.undoAction!.undo(); model.undoAction = nil
+
+    let usage = AudioUsage(meetings: [older2, waiting])
+    precondition(usage.largestFirst.count == 2 && usage.oldCount == 1)
+    let expected = waiting.managedAudioURLs.reduce(Int64(0)) { $0 + StorageUsage.size(of: $1) }
+    precondition(usage.largestFirst.first { $0.meeting.id == waiting.id }?.bytes == expected)
+
+    let outside = MediaFiles.directory.deletingLastPathComponent().appendingPathComponent("outside.m4a")
+    try Data([1]).write(to: outside)
+    var unsafe = try record("unsafe")
+    unsafe.originalAudioFileNames = ["../outside.m4a", outside.path, "part-link.m4a"]
+    try FileManager.default.createSymbolicLink(at: MediaFiles.directory.appendingPathComponent("part-link.m4a"), withDestinationURL: outside)
+    model.meetings = [unsafe]
+    model.removeMeetingAudio(unsafe.id)
+    model.undoAction!.finalize()
+    precondition(exists(outside))
+    print("PASS: production Meeting legacy/parts codec, actual managed paths, SQLite removal+undo atomicity and rollback/reopen, bulk originals, targeted permanent deletion, shared/draft/trash ownership, protected store, unsafe paths")
+  }
+
+  static func record(_ prefix: String, date: Date = .now) throws -> Meeting {
+    let names = (0..<3).map { "\(prefix)-\($0).m4a" }
+    for name in names { try Data(name.utf8).write(to: MediaFiles.resolve(name)!) }
+    var record = Meeting(id: UUID(), title: prefix, createdAt: date, duration: 1, source: .recording,
+      status: .ready, summary: "keep summary", keyPoints: [], decisions: [], openQuestions: [], transcript: [], spaceID: nil,
+      audioURL: MediaFiles.resolve(names[0]))
+    record.originalAudioFileNames = [names[1], names[2], names[1]]
+    return record
+  }
+  static func exists(_ url: URL) -> Bool { FileManager.default.fileExists(atPath: url.path) }
+  static func assertFiles(_ meeting: Meeting, exist: Bool) throws {
+    for url in meeting.managedAudioURLs { precondition(exists(url) == exist, "Unexpected audio ownership") }
+  }
+  static func decode<T: Decodable>(_ store: LocalStore, _ key: String) throws -> T {
+    guard case .data(let data) = store.readOutcome(key) else { preconditionFailure("Missing document") }
+    return try JSONDecoder().decode(T.self, from: data)
+  }
+}
+
+@MainActor
+final class MemoraModel {
+  var store: LocalStore
+  var meetings: [Meeting] = []
+  var trashedRecords: [TrashedRecord] = []
+  var trashedLifeLogEntries: [TrashedLifeLogEntry] = []
+  var pendingMediaDeletions: [PendingMediaDeletion] = []
+  var recordingDraft: RecordingDraft?
+  var isStoreProtected = false
+  var meetingSearchTexts: [UUID: String] = [:]
+  var persistenceFailureMessage: String?
+  var deletionFailureMessage: String?
+  var undoAction: UndoAction?
+  struct RecordingDraft { var fileName: String }
+  enum StorageKey {
+    static let meetings = "meetings", pendingMediaDeletions = "pending", trash = "trash", lifeLogTrash = "journalTrash"
+  }
+  init(storeURL: URL) throws {
+    store = LocalStore(fileURL: storeURL); try store.prepare(); RecordStore.store = store
+  }
+  func seed() throws {
+    try store.applyBatch(writes: [("meetings", try RecordStore.encoded(meetings)), ("pending", try RecordStore.encoded(pendingMediaDeletions))], removing: [])
+  }
+  func isStoreWritable() -> Bool { !isStoreProtected }
+  func persistBatch(_ build: () throws -> [(key: String, data: Data)]) -> Bool {
+    guard !isStoreProtected else { return false }
+    do { try store.applyBatch(writes: build(), removing: []); return true } catch { persistenceFailureMessage = "save failed"; return false }
+  }
+  func persistNow<T: Encodable>(_ value: T, forKey key: String) -> Bool {
+    persistBatch { [(key, try RecordStore.encoded(value))] }
+  }
+  func persistPendingMediaDeletions() { _ = persistNow(pendingMediaDeletions, forKey: StorageKey.pendingMediaDeletions) }
+  func scheduleUndo(_ action: UndoAction) { undoAction?.finalize(); undoAction = action }
+  func updateMeeting(_ id: UUID, _ edit: (inout Meeting) -> Void) {
+    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }; edit(&meetings[index])
+  }
+}
+
+enum MediaFiles {
+  static var directory = FileManager.default.temporaryDirectory.appendingPathComponent("unused-fixture-root")
+  static var failDeletion = false
+  static func removeFixtureFile(at url: URL) throws {
+    if failDeletion { throw CocoaError(.fileWriteNoPermission) }
+    try FileManager.default.removeItem(at: url)
+  }
+  static func writePhoto(_ data: Data, thumbnailMaxSide: Int = 400) -> String? { nil }
+  @discardableResult static func deletePhoto(_ name: String) -> Bool { true }
+}
+struct TemplateSummary: Hashable, Codable {}
+enum SummaryPreviewCache { static func preview(for id: UUID, summary: String, build: (String) -> String) -> String { build(summary) } }
+enum MarkdownBlockParser {
+  static func hasBlockStructure(_ text: String) -> Bool { false }
+  static func overview(of text: String) -> String { text }
+}
+struct TrashedRecord: Codable {
+  var meeting: Meeting
+  var deletedAt: Date
+  var id: UUID { meeting.id }
+  static let lifetime: TimeInterval = 30 * 86_400
+}
+struct FixtureJournalEntry: Codable { var id = UUID(); var photoFileName: String? }
+struct TrashedLifeLogEntry: Codable {
+  var entry: FixtureJournalEntry
+  var deletedAt: Date
+  var id: UUID { entry.id }
+}

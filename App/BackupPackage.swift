@@ -9,7 +9,7 @@ import Foundation
 enum BackupPackage {
   static let manifestName = "manifest.json"
   static let mediaFolderName = "media"
-  static let currentVersion = 2
+  static let currentVersion = 3
 
   struct Manifest: Codable {
     var version: Int
@@ -176,7 +176,8 @@ enum BackupPackage {
     }
 
     let manifest = Manifest(
-      version: currentVersion,
+      // Older apps must refuse a package whose extra originals they would drop.
+      version: meetings.contains(where: { !$0.originalAudioFileNames.isEmpty }) ? currentVersion : 2,
       exportedAt: .now,
       meetings: meetings,
       spaces: spaces,
@@ -426,6 +427,7 @@ enum BackupPackage {
   private static func collectMedia(meetings: [Meeting], lifeLogEntries: [LifeLogEntry]) throws -> MediaPlan {
     var plan = MediaPlan()
     var missing: [String] = []
+    var audioNames: Set<String> = []
 
     func addAudio(_ url: URL?) throws {
       guard let url else { return }
@@ -436,7 +438,13 @@ enum BackupPackage {
         missing.append(name)
         return
       }
-      plan.required.append(MediaFile(name: name, url: url, isAudio: true))
+      let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+      guard values?.isRegularFile == true, values?.isSymbolicLink != true else {
+        throw BackupError.unsafeReference(name)
+      }
+      if audioNames.insert(name).inserted {
+        plan.required.append(MediaFile(name: name, url: url, isAudio: true))
+      }
     }
 
     func addPhoto(_ name: String) throws {
@@ -462,7 +470,19 @@ enum BackupPackage {
       if meeting.legacyPhotoData != nil {
         throw BackupError.inlineMediaUnsupported
       }
-      try addAudio(meeting.audioURL)
+      if let url = meeting.audioURL {
+        try addAudio(url)
+      } else if let raw = meeting.rawAudioReference {
+        let candidate = raw.hasPrefix("/") ? URL(fileURLWithPath: raw) : MediaFiles.resolve(raw)
+        guard let url = candidate else { throw BackupError.unsafeReference(raw) }
+        try addAudio(url)
+      }
+      for name in meeting.originalAudioFileNames {
+        guard MediaFiles.isPlainName(name), let url = MediaFiles.resolve(name) else {
+          throw BackupError.unsafeReference(name)
+        }
+        try addAudio(url)
+      }
       for name in meeting.photoFileNames ?? [] {
         try addPhoto(name)
       }
@@ -487,6 +507,11 @@ enum BackupPackage {
     var photos: Set<String> = []
 
     for meeting in manifest.meetings {
+      for name in meeting.originalAudioFileNames {
+        guard manifest.version >= 3 else { throw BackupError.unreadable }
+        guard MediaFiles.isPlainName(name) else { throw BackupError.unsafeReference(name) }
+        audio.insert(name)
+      }
       if let raw = meeting.rawAudioReference {
         // The raw stored value is checked, not the resolved URL: an unsafe
         // reference resolves to nil and would otherwise slip through unnoticed.

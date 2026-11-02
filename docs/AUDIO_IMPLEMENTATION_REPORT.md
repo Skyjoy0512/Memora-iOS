@@ -14,6 +14,11 @@ live認識も既存の文字起こし言語設定を使う。原本・本文・r
 終了/保存/再試行のguardと数値計測・実SQLiteの検査は[録音確定の追補](RECORDING_FINALIZATION.md)。
 長時間再生のUInt32一括変換を最大2区間の予約へ変更し、古いcallbackと取消済みtickerを
 失効させた。[再生の検査と残件](AUDIO_PLAYBACK.md)。録音rotationはまだ有効にしていない。
+保存済み記録の分割原本参照と必須backup/restore、音声削除/undoのSQLite一括保存を追加。
+別のundo待ちや他記録/下書きが参照する音声を保護する。
+[原本参照の実装・関連ファイルと検査](RECORDING_AUDIO_ORIGINALS.md)。録音下書きの複数原本復旧は残件。
+原本管理、backup/restore、録音確定、Journalの関連host検査と差分検査は通過。
+最終iOS previewも成功（既存警告11件）。実機24時間/RTF/CERの測定結果はまだない。
 
 ## 1. 変更した機能
 

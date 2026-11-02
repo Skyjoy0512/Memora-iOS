@@ -21,6 +21,8 @@ struct Meeting: Identifiable, Hashable, Codable {
   var transcript: [TranscriptSegment]
   var spaceID: UUID?
   var audioURL: URL?
+  /// Segment originals retained alongside the existing playable file.
+  var originalAudioFileNames: [String] = []
   var notes = ""
   var recordingMarkers: [RecordingMarker] = []
   var summaryUseCaseID: String? = nil
@@ -59,6 +61,7 @@ extension Meeting {
     case transcript
     case spaceID
     case audioURL
+    case originalAudioFileNames
     case notes
     case recordingMarkers
     case summaryUseCaseID, summaryVersions, activeSummaryVersionID
@@ -85,6 +88,7 @@ extension Meeting {
     openQuestions = try container.decode([String].self, forKey: .openQuestions)
     transcript = try container.decode([TranscriptSegment].self, forKey: .transcript)
     spaceID = try container.decodeIfPresent(UUID.self, forKey: .spaceID)
+    originalAudioFileNames = try container.decodeIfPresent([String].self, forKey: .originalAudioFileNames) ?? []
     notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
     // An interrupted file may have no readable duration yet; do not discard
     // its marks just because that unknown duration is stored as zero.
@@ -140,6 +144,9 @@ extension Meeting {
     try container.encode(openQuestions, forKey: .openQuestions)
     try container.encode(transcript, forKey: .transcript)
     try container.encodeIfPresent(spaceID, forKey: .spaceID)
+    if !originalAudioFileNames.isEmpty {
+      try container.encode(originalAudioFileNames, forKey: .originalAudioFileNames)
+    }
     try container.encode(notes, forKey: .notes)
     if !recordingMarkers.isEmpty { try container.encode(recordingMarkers, forKey: .recordingMarkers) }
     try container.encodeIfPresent(participantIDs, forKey: .participantIDs)
@@ -161,6 +168,10 @@ extension Meeting {
 
     if let audioURL, let reference = MediaFiles.reference(for: audioURL) {
       try container.encode(reference, forKey: .audioURL)
+    } else if let rawAudioReference {
+      // A temporarily missing file must not lose its reference on a notes edit.
+      // Explicit audio removal clears both the resolved and stored references.
+      try container.encode(rawAudioReference, forKey: .audioURL)
     }
   }
 }

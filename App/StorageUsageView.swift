@@ -99,8 +99,8 @@ private struct AudioUsage {
     var oldCount = 0
     var oldBytes: Int64 = 0
     for meeting in meetings {
-      guard let url = meeting.audioURL else { continue }
-      let bytes = StorageUsage.size(of: url)
+      guard meeting.hasAudioFiles else { continue }
+      let bytes = meeting.managedAudioURLs.reduce(Int64(0)) { $0 + StorageUsage.size(of: $1) }
       sized.append((meeting, bytes))
       if meeting.createdAt < cutoff {
         oldCount += 1

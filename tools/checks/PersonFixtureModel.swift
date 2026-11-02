@@ -208,7 +208,7 @@ enum MeetingSummaryInput { static func line(for line: String) -> String { line }
 enum MemoraFormat { static func duration(_ value: TimeInterval) -> String { value.description } }
 extension MemoraModel {
   struct PendingMediaDeletion: Codable { var id: UUID; var audioReference: String?; var photoNames: [String] }
-  func retryPendingMediaDeletions() {}
+  func retryPendingMediaDeletions(onlyIDs: Set<UUID>? = nil) {}
   func updateAgentMessage(_ id: UUID, change: (inout FixtureMessage) -> Void) { change(&message) }
   @discardableResult func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) -> Bool {
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return false }; change(&meetings[index]); return true

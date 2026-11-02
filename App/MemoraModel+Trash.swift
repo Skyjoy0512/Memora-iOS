@@ -198,10 +198,8 @@ extension MemoraModel {
 
     var candidate = trashedRecords
     let record = candidate.remove(at: index)
-    let deletions = pendingMediaDeletions + [PendingMediaDeletion(
-      id: UUID(), audioReference: record.meeting.audioURL.flatMap { MediaFiles.reference(for: $0) },
-      photoNames: record.meeting.photoFileNames ?? []
-    )]
+    let additions = pendingDeletions(for: record.meeting)
+    let deletions = pendingMediaDeletions + additions
     let stored = persistBatch {
       [
         (key: StorageKey.trash, data: try RecordStore.encoded(candidate)),
@@ -212,13 +210,14 @@ extension MemoraModel {
 
     trashedRecords = candidate
     pendingMediaDeletions = deletions
-    retryPendingMediaDeletions()
+    retryPendingMediaDeletions(onlyIDs: Set(additions.map(\.id)))
   }
 
   /// Removes media for records that are already gone from the store. A file that
   /// cannot be removed is remembered and retried, so this never fails in a way
   /// that could only be noticed later.
   func deleteMedia(audioURL: URL?, photoNames: [String]) {
+    guard !isStoreProtected else { return }
     var remainingPhotos: [String] = []
     for name in photoNames where !MediaFiles.deletePhoto(name) {
       remainingPhotos.append(name)
@@ -226,7 +225,8 @@ extension MemoraModel {
     // Keep the managed reference, not the resolved path, so a retry after the
     // app container moves still finds the right file.
     var remainingAudio: String?
-    if let audioURL, !MediaFiles.delete(audioURL) {
+    if let audioURL, let reference = MediaFiles.reference(for: audioURL),
+       !referencedAudioFileNames.contains(reference), !MediaFiles.delete(audioURL) {
       remainingAudio = MediaFiles.reference(for: audioURL)
     }
 
@@ -239,11 +239,17 @@ extension MemoraModel {
   }
 
   /// Tries the removals that failed before, keeping any that fail again.
-  func retryPendingMediaDeletions() {
-    guard !isStoreProtected, !pendingMediaDeletions.isEmpty else { return }
+  func retryPendingMediaDeletions(onlyIDs: Set<UUID>? = nil) {
+    guard !isStoreProtected, !pendingMediaDeletions.isEmpty, onlyIDs?.isEmpty != true else { return }
 
     var remaining: [PendingMediaDeletion] = []
+    var didFail = false
+    let referenced = referencedAudioFileNames
     for deletion in pendingMediaDeletions {
+      if let onlyIDs, !onlyIDs.contains(deletion.id) {
+        remaining.append(deletion)
+        continue
+      }
       var photos: [String] = []
       for name in deletion.photoNames where !MediaFiles.deletePhoto(name) {
         photos.append(name)
@@ -251,16 +257,18 @@ extension MemoraModel {
       var audio: String?
       if let reference = deletion.audioReference,
          let url = MediaFiles.resolve(reference),
+         let name = MediaFiles.reference(for: url), !referenced.contains(name),
          !MediaFiles.delete(url) {
         audio = reference
       }
       if audio != nil || !photos.isEmpty {
+        didFail = true
         remaining.append(PendingMediaDeletion(id: deletion.id, audioReference: audio, photoNames: photos))
       }
     }
     guard persistNow(remaining, forKey: StorageKey.pendingMediaDeletions) else { return }
     pendingMediaDeletions = remaining
-    if !remaining.isEmpty {
+    if didFail {
       deletionFailureMessage = "一部のメディアを削除できませんでした。次回の起動で再試行します。"
     }
   }
@@ -279,13 +287,13 @@ extension MemoraModel {
 
     let candidateRecords = trashedRecords.filter { $0.deletedAt >= cutoff }
     let candidateEntries = trashedLifeLogEntries.filter { $0.deletedAt >= cutoff }
-    let deletions = pendingMediaDeletions
-      + expiredRecords.map { record in
-        PendingMediaDeletion(id: UUID(), audioReference: record.meeting.audioURL.flatMap { MediaFiles.reference(for: $0) }, photoNames: record.meeting.photoFileNames ?? [])
-      }
+    let additions = expiredRecords.flatMap { record in
+      pendingDeletions(for: record.meeting)
+    }
       + expiredEntries.map { record in
         PendingMediaDeletion(id: UUID(), audioReference: nil, photoNames: record.entry.photoFileName.map { [$0] } ?? [])
       }
+    let deletions = pendingMediaDeletions + additions
     let stored = persistBatch {
       var documents: [(key: String, data: Data)] = []
       if !expiredRecords.isEmpty {
@@ -307,6 +315,6 @@ extension MemoraModel {
     }
 
     pendingMediaDeletions = deletions
-    retryPendingMediaDeletions()
+    retryPendingMediaDeletions(onlyIDs: Set(additions.map(\.id)))
   }
 }
