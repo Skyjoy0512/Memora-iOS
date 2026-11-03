@@ -4,7 +4,8 @@
 
 録音/音声インポート/オンライン会議のメニューを、native sheetのCaptureMenuSheetへ変更。
 既存memoraGlass（iOS 26のglassEffectとavailability fallback）を1枚の面に適用し、
-右寄せの操作、閉じるボタン、grabber、スワイプ終了を提供する。通常は高さ300ptから展開可能、
+左側のアイコンと左揃えの操作、閉じるボタン、grabber、スワイプ終了を提供する。
+参照画像は配置のみの参考とし、既存のMemoraのLucide/文字/Glass表現を維持。通常は高さ300ptから展開可能、
 大きい文字/横向きはlargeとスクロールで内容を表示する。
 全画面overlayとFAB位置の計測を外し、native modalのアクセシビリティ制御を使う。
 表示時に保存先contextを捕捉し、onDismiss後に再確認して選択を一度だけ実行する。

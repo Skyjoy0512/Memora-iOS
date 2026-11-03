@@ -11,7 +11,7 @@ struct CaptureMenuSheet: View {
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .trailing, spacing: 12) {
+      VStack(alignment: .leading, spacing: 12) {
         HStack {
           Text("録音と取り込み")
             .font(.headline)
@@ -31,15 +31,15 @@ struct CaptureMenuSheet: View {
             onSelect(action)
           } label: {
             HStack(spacing: 14) {
-              Text(title(for: action))
-                .font(.title3.weight(.medium))
-                .multilineTextAlignment(.trailing)
-                .frame(maxWidth: .infinity, alignment: .trailing)
               Image(icon: action.symbol, size: 22)
                 .frame(width: 28)
                 .accessibilityHidden(true)
+              Text(title(for: action))
+                .font(.title3.weight(.medium))
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
             .contentShape(Rectangle())
           }
           .accessibilityHint(action.detail)
