@@ -91,19 +91,20 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn("isAwaitingQuery || filter == .shared ? [] : projects", projects)
         self.assertIn("{ query = \"\" }", projects)
 
-    def test_capture_keeps_execution_and_uses_system_menu(self):
+    def test_capture_unifies_notes_and_preserves_recording_dispatch(self):
         menu = (APP / "CaptureMenuPopover.swift").read_text()
-        for call in ("onSelect(action)", "CaptureAction.available", "model.sourceAddProjectID = spaceID"):
+        for call in ("onSelect(action)", "CaptureAction.available"):
             self.assertIn(call, menu)
         self.assertIn(".accessibilityHint(action.detail)", menu)
         native = (APP / "CaptureFloatingButtons.swift").read_text()
-        for contract in ("group: .notes", "group: .recording", "Menu {", ".confirmationDialog(", "model.importInformationFile(url, context: context)", "NSUserCancelledError"):
+        for contract in ("select(.newMemo)", "onOpenCaptureMenu", ".confirmationDialog(", "model.importInformationFile(url, context: context)", "NSUserCancelledError"):
             self.assertIn(contract, native)
-        self.assertEqual(native.count("Menu {"), 2)
+        self.assertNotIn("group: .notes", native)
         self.assertIn("if isVisible { menus.transition(.identity) }", native)
         self.assertIn("interactive: true, backed: false", native)
         notes = menu.split("case .notes:")[1].split("case .recording:")[0]
-        self.assertLess(notes.index("action(.newMemo)"), notes.index("addSource"))
+        self.assertIn("action(.newMemo)", notes)
+        self.assertNotIn("addSource", menu)
         recording = menu.split("case .recording:")[1].split("case .all:")[0]
         self.assertLess(recording.index("action(.recording)"), recording.index("action(.importAudio)"))
         self.assertLess(recording.index("action(.importAudio)"), recording.index("action(.onlineMeeting)"))
@@ -170,7 +171,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn("fileContext = LocalImportContext", add)
         self.assertIn("photoContext = LocalImportContext", add)
         self.assertIn(".photosPicker(isPresented: $isSelectingPhotos", add)
-        self.assertIn("importContext: context", add)
+        self.assertIn("model.importInformationSources(url, context: context", add)
         self.assertIn("importProjectSource(title:", add)
         self.assertIn("context: context, presentsErrorsLocally: true", add)
         self.assertIn("defer { photos = [] }", add)

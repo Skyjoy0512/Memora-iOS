@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Two independent capture menus beside the shared Ask AI field. Presentation
+/// Note creation and recording beside the shared Ask AI field. Presentation
 /// stays mounted while typing so a file picker cannot disappear with its label.
 struct CaptureFloatingButtons: View {
   @Environment(MemoraModel.self) private var model
@@ -56,12 +56,11 @@ struct CaptureFloatingButtons: View {
 
   private var menus: some View {
     HStack(spacing: 8) {
-      Menu {
-        CaptureMenuPopover(spaceID: spaceID, group: .notes, onSelect: select)
+      Button {
+        select(.newMemo)
       } label: {
-        menuLabel("メモと資料", icon: .squareAndPencil)
+        menuLabel("ノートと資料を追加", icon: .squareAndPencil)
       }
-      .menuOrder(.fixed)
       Button(action: onOpenCaptureMenu) {
         menuLabel("録音メニュー", icon: .plus)
       }

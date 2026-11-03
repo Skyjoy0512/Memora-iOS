@@ -6,6 +6,7 @@ struct ProjectSourceAddSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var projectID: UUID?
+  /// Retains the old draft preference; both entry points use the same editor.
   var isMemo = false
   @State private var saveContext: LocalImportContext?
   @State private var hasLoadedDraft = false
@@ -20,48 +21,40 @@ struct ProjectSourceAddSheet: View {
   @State private var isMovingRecords = false
   @State private var isSaving = false
   @State private var failure: String?
-  private var draftKey: String { "workspace.\(isMemo ? "newMemo" : "newNote").\(projectID?.uuidString ?? "library")" }
+  @State private var selectedSection = MeetingDetailSection.notes
+  @State private var importedSourceIDs: [UUID] = []
+  @State private var activeDraftKey: String?
+  @State private var availableDraftKeys: [String] = []
+  @FocusState private var isNoteFocused: Bool
+  private var preferredDraftKey: String { "workspace.\(isMemo ? "newMemo" : "newNote").\(projectID?.uuidString ?? "library")" }
+  private var draftKey: String { activeDraftKey ?? preferredDraftKey }
 
   var body: some View {
     NavigationStack {
-      MemoraForm {
-        Section {
-          TextEditor(text: $text)
-            .frame(minHeight: 150)
-            .accessibilityLabel(isMemo ? "メモ本文" : "リンクまたはメモ")
-            .accessibilityIdentifier("source.content")
-          DisclosureGroup("タイトルを付ける") {
-            TextField("タイトル", text: $title).accessibilityLabel("タイトル")
+      ScrollView {
+        VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
+          pageHeader
+          MemoraSectionPicker(items: MeetingDetailSection.allCases, selection: $selectedSection, title: \.label)
+          switch selectedSection {
+          case .notes:
+            notesContent
+          case .summary:
+            emptySection("要約", detail: "保存したノートや資料の要約は、それぞれの詳細で確認できます。")
+          case .transcript:
+            emptySection("文字起こし", detail: "音声や動画を追加すると、資料の詳細で文字起こしを確認できます。")
           }
-        } header: {
-          Text(isMemo ? "本文" : "リンクまたはメモを貼り付け")
-        } footer: {
-          Text(projectID.flatMap { model.space(id: $0)?.name }.map { "保存先：" + $0 } ?? "ライブラリに保存します")
+          if let failure { Text(failure).font(.subheadline).foregroundStyle(MemoraPalette.danger) }
         }
-        if !isMemo {
-          Section {
-            Button("ファイルを追加", icon: .doc) {
-              fileContext = LocalImportContext(projectID: projectID, in: model)
-              guard fileContext != nil else { failure = "保存先を確認して開き直してください。"; return }
-              isImportingFiles = true
-            }
-            Button("写真を追加", icon: .photo) {
-              photoContext = LocalImportContext(projectID: projectID, in: model)
-              guard photoContext != nil else { failure = "保存先を確認して開き直してください。"; return }
-              isSelectingPhotos = true
-            }
-            if projectID != nil {
-              Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
-            }
-          }
-        }
-        if let failure {
-          Section { Text(failure).font(.subheadline).foregroundStyle(MemoraPalette.danger) }
-        }
+        .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+        .padding(.horizontal, MemoraSpacing.screen)
+        .padding(.top, MemoraSpacing.sm)
+        .padding(.bottom, MemoraSpacing.xxl)
+        .frame(maxWidth: .infinity)
       }
+      .background(MemoraPalette.background)
       .scrollDismissesKeyboard(.interactively)
       .disabled(!isDraftReady || isSaving || model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
-      .navigationTitle(isMemo ? "メモを書く" : "資料を追加")
+      .navigationTitle(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "新しいノート" : title)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -69,9 +62,18 @@ struct ProjectSourceAddSheet: View {
             .disabled(isSaving)
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(isMemo ? "保存" : "追加") { saveText() }
+          ToolbarIconButton("保存", icon: .checkmark) { saveText() }
             .disabled(!isDraftReady || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
             .accessibilityIdentifier("source.add")
+        }
+        if availableDraftKeys.count > 1 {
+          ToolbarItem(placement: .topBarTrailing) {
+            Menu("下書き", icon: .clockArrowCirclepath) {
+              ForEach(availableDraftKeys, id: \.self) { key in
+                Button(key.contains("newMemo") ? "メモの下書き" : "資料の下書き") { switchDraft(to: key) }
+              }
+            }
+          }
         }
       }
       .onAppear {
@@ -82,15 +84,7 @@ struct ProjectSourceAddSheet: View {
           return
         }
         saveContext = context
-        let bodyDraft = DraftStore.read(draftKey)
-        let titleDraft = DraftStore.read(draftKey + ".title")
-        guard bodyDraft != .unreadable, titleDraft != .unreadable else {
-          failure = "下書きを読み込めませんでした。元の下書きは変更していません。画面を開き直してお試しください。"
-          return
-        }
-        text = bodyDraft.text ?? ""
-        title = titleDraft.text ?? ""
-        isDraftReady = true
+        restoreDrafts()
       }
       .onChange(of: text) { _, value in
         if isDraftReady, saveContext?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey) }
@@ -111,13 +105,14 @@ struct ProjectSourceAddSheet: View {
       .onChange(of: photos) { _, items in
         guard !items.isEmpty else { return }
         let context = photoContext
-        perform {
+        perform(dismissOnSuccess: false) {
           defer { photos = [] }
           guard let context, context.isCurrent(in: model) else { return false }
           for item in items {
-            guard try await model.importProjectSource(title: "写真", context: context, presentsErrorsLocally: true, waitsForPreparation: false, load: {
+            guard let id = try await model.importProjectSource(title: "写真", context: context, presentsErrorsLocally: true, waitsForPreparation: false, load: {
               try await item.loadTransferable(type: ProjectPhotoTransfer.self)?.receipt
-            }) != nil else { return false }
+            }) else { return false }
+            rememberSources([id])
           }
           return true
         }
@@ -127,6 +122,121 @@ struct ProjectSourceAddSheet: View {
       }
       .tint(MemoraPalette.textPrimary)
     }
+    .presentationDetents([.large])
+  }
+
+  private var pageHeader: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      TextField("新しいノート", text: $title, axis: .vertical)
+        .font(MemoraTypography.screenTitle)
+        .textFieldStyle(.plain)
+        .accessibilityLabel("タイトル")
+      Text(projectID.flatMap { model.space(id: $0)?.name }.map { "保存先：" + $0 } ?? "ライブラリに保存します")
+        .font(MemoraTypography.secondary)
+        .foregroundStyle(MemoraPalette.textSecondary)
+    }
+  }
+
+  private var notesContent: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text("ノート").font(MemoraTypography.sectionHeading)
+      MarkdownEditorField(markdown: $text, font: .body, minHeight: 360, isFocused: $isNoteFocused)
+        .accessibilityLabel("ノート本文")
+        .accessibilityIdentifier("source.content")
+        .overlay(alignment: .topLeading) {
+          if text.isEmpty && !isNoteFocused {
+            Text("タップして入力、またはリンクを貼り付け")
+              .font(.body).foregroundStyle(.tertiary)
+              .allowsHitTesting(false).accessibilityHidden(true)
+          }
+        }
+      Divider()
+      Menu {
+        Button("ファイルを追加", icon: .doc) {
+          fileContext = LocalImportContext(projectID: projectID, in: model)
+          guard fileContext != nil else { failure = "保存先を確認して開き直してください。"; return }
+          isImportingFiles = true
+        }
+        Button("写真を追加", icon: .photo) {
+          photoContext = LocalImportContext(projectID: projectID, in: model)
+          guard photoContext != nil else { failure = "保存先を確認して開き直してください。"; return }
+          isSelectingPhotos = true
+        }
+        if projectID != nil {
+          Button("既存記録を移動", icon: .folder) { isMovingRecords = true }
+        }
+      } label: {
+        Label("資料を追加", icon: .paperclip)
+          .frame(minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      addedSources
+    }
+  }
+
+  private var addedSources: some View {
+    let sources = importedSourceIDs.compactMap { model.source(id: $0) }
+    return VStack(alignment: .leading, spacing: 14) {
+      if !sources.isEmpty {
+        Text("追加した資料は保存済みです")
+          .font(.caption).foregroundStyle(.secondary)
+        ForEach(sources) { source in
+          NavigationLink { ProjectSourceDetailView(sourceID: source.id) } label: {
+            ProjectSourceRow(source: source)
+          }
+          .buttonStyle(.plain)
+        }
+      }
+    }
+  }
+
+  private func emptySection(_ title: String, detail: String) -> some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Text(title).font(MemoraTypography.sectionHeading)
+      Text(detail).font(.body).foregroundStyle(.secondary)
+    }
+    .frame(maxWidth: .infinity, minHeight: 240, alignment: .topLeading)
+  }
+
+  private func restoreDrafts() {
+    let otherKey = "workspace.\(isMemo ? "newNote" : "newMemo").\(projectID?.uuidString ?? "library")"
+    var drafts: [(key: String, text: String, title: String)] = []
+    for key in [preferredDraftKey, otherKey] {
+      let body = DraftStore.read(key), heading = DraftStore.read(key + ".title")
+      guard body != .unreadable, heading != .unreadable else {
+        failure = "下書きを読み込めませんでした。元の下書きは変更していません。画面を開き直してお試しください。"
+        return
+      }
+      drafts.append((key, body.text ?? "", heading.text ?? ""))
+    }
+    let pending = drafts.filter { !$0.text.isEmpty || !$0.title.isEmpty }
+    availableDraftKeys = pending.map(\.key)
+    let restored = pending.first ?? drafts[0]
+    activeDraftKey = restored.key
+    text = restored.text
+    title = restored.title
+    isDraftReady = true
+  }
+
+  private func switchDraft(to key: String) {
+    guard isDraftReady, !isSaving, saveContext?.isCurrent(in: model) == true, key != draftKey else { return }
+    isNoteFocused = false
+    do {
+      try DraftStore.saveAndWait(text, key: draftKey)
+      try DraftStore.saveAndWait(title, key: draftKey + ".title")
+      let body = DraftStore.read(key), heading = DraftStore.read(key + ".title")
+      guard body != .unreadable, heading != .unreadable else { throw CocoaError(.fileReadCorruptFile) }
+      activeDraftKey = key
+      text = body.text ?? ""
+      title = heading.text ?? ""
+      selectedSection = .notes
+      failure = nil
+    } catch { failure = "下書きを切り替えられませんでした。編集中の内容は保持しています。" }
+  }
+
+  private func rememberSources(_ ids: [UUID]) {
+    for id in ids where !importedSourceIDs.contains(id) { importedSourceIDs.append(id) }
   }
 
   private func importFiles(_ urls: [URL]) {
@@ -144,8 +254,8 @@ struct ProjectSourceAddSheet: View {
             failure = model.persistenceFailureMessage ?? "保存できませんでした。保存先を確認して再試行してください。"
             return
           }
+          rememberSources(ids)
         }
-        if !urls.isEmpty { dismiss() }
       } catch { failure = error.localizedDescription }
     }
   }
@@ -172,13 +282,13 @@ struct ProjectSourceAddSheet: View {
     }
   }
 
-  private func perform(_ operation: @escaping @MainActor () async throws -> Bool) {
+  private func perform(dismissOnSuccess: Bool = true, _ operation: @escaping @MainActor () async throws -> Bool) {
     guard !isSaving else { return }
     isSaving = true; failure = nil
     Task { @MainActor in
       defer { isSaving = false }
       do {
-        if try await operation() { dismiss() }
+        if try await operation() { if dismissOnSuccess { dismiss() } }
         else { failure = model.persistenceFailureMessage ?? "保存できませんでした。保存先を確認して再試行してください。" }
       } catch { failure = error.localizedDescription }
     }

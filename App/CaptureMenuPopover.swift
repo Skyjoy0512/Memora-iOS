@@ -12,7 +12,6 @@ struct CaptureMenuPopover: View {
     switch group {
     case .notes:
       action(.newMemo)
-      addSource
     case .recording:
       action(.recording)
       action(.importAudio)
@@ -22,7 +21,6 @@ struct CaptureMenuPopover: View {
       Divider()
       action(.importAudio)
       action(.newMemo)
-      addSource
       Divider()
       ForEach(CaptureAction.available.filter { ![.recording, .importAudio, .newMemo].contains($0) }) { item in
         action(item)
@@ -32,15 +30,6 @@ struct CaptureMenuPopover: View {
           .disabled(model.isRestoring)
       }
     }
-  }
-
-  private var addSource: some View {
-    Button("資料を追加", icon: .paperclip) {
-      model.sourceAddAsMemo = false
-      model.sourceAddProjectID = spaceID
-      model.isSourceAddPresented = true
-    }
-    .accessibilityHint(spaceID.flatMap { model.space(id: $0)?.name }.map { "保存先：" + $0 } ?? "ライブラリに保存します")
   }
 
   private func action(_ action: CaptureAction) -> some View {
