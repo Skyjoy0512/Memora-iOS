@@ -14,6 +14,7 @@ struct RootTabView: View {
   @State private var isCaptureMenuPresented = false
   @State private var isCaptureFileImporterPresented = false
   @State private var captureImportContext: LocalImportContext?
+  @State private var captureButtonFrame: CGRect?
   @State private var onlineMeetingContext: LocalImportContext?
   @State private var shouldStartOnlineMeeting = false
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
@@ -74,6 +75,9 @@ struct RootTabView: View {
           }
           if isCaptureMenuPresented {
             CaptureMenuOverlay(
+              closeButtonCenter: captureButtonFrame.map {
+                CGPoint(x: $0.maxX - 26, y: $0.midY)
+              },
               onSelect: selectCaptureMenuItem,
               onClose: dismissCaptureMenu
             )
@@ -334,6 +338,9 @@ struct RootTabView: View {
             onOpenCaptureMenu: presentCaptureMenu)
             .allowsHitTesting(showsCaptureButtons)
             .accessibilityHidden(!showsCaptureButtons)
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+              captureButtonFrame = frame
+            }
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)

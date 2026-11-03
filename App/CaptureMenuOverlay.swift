@@ -3,9 +3,9 @@ import SwiftUI
 /// A washed-out capture menu over the current screen. Its items fade in from
 /// the top down so the eye reaches the primary action first.
 struct CaptureMenuOverlay: View {
+  var closeButtonCenter: CGPoint?
   var onSelect: (CaptureAction) -> Void
   var onClose: () -> Void
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   private static let items: [CaptureAction] = [.recording, .importAudio, .onlineMeeting]
 
@@ -15,6 +15,7 @@ struct CaptureMenuOverlay: View {
       itemsList
       closeButton
     }
+    .ignoresSafeArea()
     .accessibilityAddTraits(.isModal)
   }
 
@@ -48,7 +49,7 @@ struct CaptureMenuOverlay: View {
       }
     }
     .padding(.trailing, 92)
-    .padding(.bottom, 132)
+    .padding(.bottom, 100)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
   }
 
@@ -61,9 +62,7 @@ struct CaptureMenuOverlay: View {
     }
     .buttonStyle(.plain)
     .accessibilityLabel("閉じる")
-    .padding(.trailing, 12)
-    .padding(.bottom, 12)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+    .modifier(CloseButtonPlacement(center: closeButtonCenter))
   }
 
   private func title(for action: CaptureAction) -> String {
@@ -72,6 +71,21 @@ struct CaptureMenuOverlay: View {
     case .importAudio: "音声インポート"
     case .onlineMeeting: "オンライン会議"
     default: action.title
+    }
+  }
+}
+
+private struct CloseButtonPlacement: ViewModifier {
+  var center: CGPoint?
+
+  func body(content: Content) -> some View {
+    if let center {
+      content.position(x: center.x, y: center.y)
+    } else {
+      content
+        .padding(.trailing, 12)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
     }
   }
 }
