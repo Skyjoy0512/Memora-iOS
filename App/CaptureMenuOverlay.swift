@@ -48,7 +48,7 @@ struct CaptureMenuOverlay: View {
         .memoraAppear(delay: Double(index) * 0.07)
       }
     }
-    .padding(.trailing, 92)
+    .padding(.trailing, 24)
     .padding(.bottom, 100)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
   }
