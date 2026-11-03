@@ -1,5 +1,18 @@
 # Memora — 改善バックログ
 
+## 2026-11-03 録音FABのLiquid Glassボトムシート
+
+録音/音声インポート/オンライン会議のメニューを、native sheetのCaptureMenuSheetへ変更。
+既存memoraGlass（iOS 26のglassEffectとavailability fallback）を1枚の面に適用し、
+右寄せの操作、閉じるボタン、grabber、スワイプ終了を提供する。通常は高さ300ptから展開可能、
+大きい文字/横向きはlargeとスクロールで内容を表示する。
+全画面overlayとFAB位置の計測を外し、native modalのアクセシビリティ制御を使う。
+表示時に保存先contextを捕捉し、onDismiss後に再確認して選択を一度だけ実行する。
+ファイル選択や録音sheetとの同時presentationを避け、固定秒数の待機は追加しない。
+iOS previewビルド成功（既存警告11件）。iPhone 18 ProでFABからの表示、
+オンライン会議準備画面への切替と終了を画像確認。実際の録音は開始していない。
+実録音・実ファイル取り込み・実機/VoiceOver検証は引き続き後へ回す。
+
 ## 2026-11-03 ノート・資料追加の入口を統合
 
 下部のメモボタンから、選択メニューを挟まず新規ノートページを開く。

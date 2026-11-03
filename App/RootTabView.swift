@@ -14,7 +14,8 @@ struct RootTabView: View {
   @State private var isCaptureMenuPresented = false
   @State private var isCaptureFileImporterPresented = false
   @State private var captureImportContext: LocalImportContext?
-  @State private var captureButtonFrame: CGRect?
+  @State private var captureMenuContext: LocalImportContext?
+  @State private var pendingCaptureMenuAction: CaptureAction?
   @State private var onlineMeetingContext: LocalImportContext?
   @State private var shouldStartOnlineMeeting = false
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
@@ -72,17 +73,6 @@ struct RootTabView: View {
             NavigationStack { ToolsView(onOpenSidebar: openSidebar) }
               .transition(.identity)
               .zIndex(1)
-          }
-          if isCaptureMenuPresented {
-            CaptureMenuOverlay(
-              closeButtonCenter: captureButtonFrame.map {
-                CGPoint(x: $0.maxX - 26, y: $0.midY)
-              },
-              onSelect: selectCaptureMenuItem,
-              onClose: dismissCaptureMenu
-            )
-            .transition(.opacity)
-            .zIndex(2)
           }
         }
       }
@@ -177,6 +167,9 @@ struct RootTabView: View {
         guard (error as NSError).code != NSUserCancelledError else { return }
         model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"
       }
+    }
+    .sheet(isPresented: $isCaptureMenuPresented, onDismiss: completeCaptureMenuDismissal) {
+      CaptureMenuSheet(onSelect: selectCaptureMenuItem, onClose: dismissCaptureMenu)
     }
     .sheet(isPresented: Binding(get: { model.isSourceAddPresented || model.sourceAddProjectID != nil }, set: { if !$0 { model.sourceAddProjectID = nil; model.isSourceAddPresented = false; model.sourceAddAsMemo = false } })) {
       ProjectSourceAddSheet(projectID: model.sourceAddProjectID, isMemo: model.sourceAddAsMemo)
@@ -293,7 +286,7 @@ struct RootTabView: View {
     .safeAreaInset(edge: .bottom, spacing: 8) {
       bottomControls
     }
-    .accessibilityHidden(model.isCaptureSourcePresented || isCaptureMenuPresented)
+    .accessibilityHidden(model.isCaptureSourcePresented)
     .background(Color(uiColor: .systemBackground))
   }
 
@@ -338,9 +331,6 @@ struct RootTabView: View {
             onOpenCaptureMenu: presentCaptureMenu)
             .allowsHitTesting(showsCaptureButtons)
             .accessibilityHidden(!showsCaptureButtons)
-            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
-              captureButtonFrame = frame
-            }
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)
@@ -411,31 +401,48 @@ struct RootTabView: View {
   }
 
   private func presentCaptureMenu() {
+    guard !isCaptureMenuPresented,
+          let context = LocalImportContext(projectID: model.visibleProjectID, in: model) else { return }
     InteractionFeedback.shared.send(.tap)
-    withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
-      isCaptureMenuPresented = true
-    }
+    pendingCaptureMenuAction = nil
+    captureMenuContext = context
+    isCaptureMenuPresented = true
   }
 
   private func dismissCaptureMenu() {
-    guard isCaptureMenuPresented else { return }
-    withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-      isCaptureMenuPresented = false
-    }
+    pendingCaptureMenuAction = nil
+    isCaptureMenuPresented = false
   }
 
   private func selectCaptureMenuItem(_ action: CaptureAction) {
-    let projectID = model.visibleProjectID
-    dismissCaptureMenu()
+    guard isCaptureMenuPresented, pendingCaptureMenuAction == nil else { return }
+    pendingCaptureMenuAction = action
+    isCaptureMenuPresented = false
+  }
+
+  /// A picker or the recorder may present another sheet; wait for the system's
+  /// dismissal callback rather than racing its transition with a fixed delay.
+  private func completeCaptureMenuDismissal() {
+    guard !isCaptureMenuPresented else { return }
+    let action = pendingCaptureMenuAction
+    let context = captureMenuContext
+    pendingCaptureMenuAction = nil
+    captureMenuContext = nil
+    guard let action else { return }
+    guard let context, context.isCurrent(in: model) else {
+      model.importErrorMessage = "保存先が変更されました。画面を開き直してお試しください。"
+      return
+    }
     if action == .importAudio {
-      captureImportContext = LocalImportContext(projectID: projectID, in: model)
-      guard captureImportContext != nil else {
-        model.importErrorMessage = "この保存先には取り込めません。画面を開き直してください。"
-        return
-      }
+      captureImportContext = context
       isCaptureFileImporterPresented = true
+    } else if action == .recording {
+      Task { await model.startCapture(spaceID: context.projectID, context: context) }
     } else {
-      Task { await model.performCaptureMenuAction(action, projectID: projectID) }
+      Task {
+        guard context.isCurrent(in: model) else { return }
+        await model.performCaptureMenuAction(action, projectID: context.projectID)
+      }
     }
   }
 
