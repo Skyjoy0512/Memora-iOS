@@ -8,6 +8,7 @@ struct CaptureFloatingButtons: View {
   var spaceID: UUID?
   var isVisible = true
   var includesProjectCreation = false
+  var onOpenCaptureMenu: () -> Void = {}
   @State private var isDialogPresented = false
   @State private var isFileImporterPresented = false
   @State private var importContext: LocalImportContext?
@@ -61,12 +62,10 @@ struct CaptureFloatingButtons: View {
         menuLabel("メモと資料", icon: .squareAndPencil)
       }
       .menuOrder(.fixed)
-      Menu {
-        CaptureMenuPopover(spaceID: spaceID, group: .recording, onSelect: select)
-      } label: {
+      Button(action: onOpenCaptureMenu) {
         menuLabel("録音メニュー", icon: .plus)
       }
-      .menuOrder(.fixed)
+      .buttonStyle(.plain)
     }
   }
 

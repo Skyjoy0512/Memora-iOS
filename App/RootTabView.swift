@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import EventKit
+import UniformTypeIdentifiers
 
 struct RootTabView: View {
   @Environment(MemoraModel.self) private var model
@@ -10,6 +11,9 @@ struct RootTabView: View {
   @State private var isSidebarOpen = false
   @State private var pendingSidebarAction: (() -> Void)?
   @State private var isKeyboardVisible = false
+  @State private var isCaptureMenuPresented = false
+  @State private var isCaptureFileImporterPresented = false
+  @State private var captureImportContext: LocalImportContext?
   @State private var onlineMeetingContext: LocalImportContext?
   @State private var shouldStartOnlineMeeting = false
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
@@ -68,11 +72,28 @@ struct RootTabView: View {
               .transition(.identity)
               .zIndex(1)
           }
+          if isCaptureMenuPresented {
+            CaptureMenuOverlay(
+              onSelect: selectCaptureMenuItem,
+              onClose: dismissCaptureMenu
+            )
+            .transition(.opacity)
+            .zIndex(2)
+          }
         }
       }
     }
     .onChange(of: model.isToolsPresented) { _, isOpen in
-      if isOpen { model.composerDismissRequests += 1 }
+      if isOpen {
+        model.composerDismissRequests += 1
+        dismissCaptureMenu()
+      }
+    }
+    .onChange(of: model.isSearchActive) { _, isSearching in
+      if isSearching { dismissCaptureMenu() }
+    }
+    .onChange(of: isComposing) { _, composing in
+      if composing { dismissCaptureMenu() }
     }
     .onChange(of: model.registeredLLMs.revision) { _, _ in
       model.interruptPendingSummaries(requiresUserRetry: true)
@@ -87,6 +108,7 @@ struct RootTabView: View {
       model.composerDismissRequests += 1
       // The capture popover belongs to the screen it opened on.
       model.isCaptureSourcePresented = false
+      dismissCaptureMenu()
       // A search belongs to the tab it was opened on.
       model.isSearchActive = false
     }
@@ -140,6 +162,17 @@ struct RootTabView: View {
     }
     .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged).receive(on: RunLoop.main)) { _ in
       model.invalidateAICalendarContext()
+    }
+    .fileImporter(isPresented: $isCaptureFileImporterPresented, allowedContentTypes: [.audio]) { result in
+      let context = captureImportContext
+      captureImportContext = nil
+      switch result {
+      case .success(let url):
+        Task { await model.importInformationFile(url, context: context) }
+      case .failure(let error):
+        guard (error as NSError).code != NSUserCancelledError else { return }
+        model.importErrorMessage = "ファイルを選択できませんでした。もう一度お試しください。"
+      }
     }
     .sheet(isPresented: Binding(get: { model.isSourceAddPresented || model.sourceAddProjectID != nil }, set: { if !$0 { model.sourceAddProjectID = nil; model.isSourceAddPresented = false; model.sourceAddAsMemo = false } })) {
       ProjectSourceAddSheet(projectID: model.sourceAddProjectID, isMemo: model.sourceAddAsMemo)
@@ -256,7 +289,7 @@ struct RootTabView: View {
     .safeAreaInset(edge: .bottom, spacing: 8) {
       bottomControls
     }
-    .accessibilityHidden(model.isCaptureSourcePresented)
+    .accessibilityHidden(model.isCaptureSourcePresented || isCaptureMenuPresented)
     .background(Color(uiColor: .systemBackground))
   }
 
@@ -297,7 +330,8 @@ struct RootTabView: View {
         .frame(maxWidth: MemoraSpacing.readingWidth)
         .overlay(alignment: .bottomTrailing) {
           CaptureFloatingButtons(spaceID: model.visibleProjectID, isVisible: showsCaptureButtons,
-            includesProjectCreation: model.selectedTab == .library && model.librarySection == .projects)
+            includesProjectCreation: model.selectedTab == .library && model.librarySection == .projects,
+            onOpenCaptureMenu: presentCaptureMenu)
             .allowsHitTesting(showsCaptureButtons)
             .accessibilityHidden(!showsCaptureButtons)
         }
@@ -357,7 +391,8 @@ struct RootTabView: View {
   }
 
   private var canRevealSidebar: Bool {
-    guard !model.isToolsPresented, !model.isCaptureSourcePresented, !model.isSearchActive else { return false }
+    guard !model.isToolsPresented, !model.isCaptureSourcePresented, !isCaptureMenuPresented,
+          !model.isSearchActive else { return false }
     switch model.selectedTab {
     case .home:
       return model.homePath.isEmpty
@@ -365,6 +400,35 @@ struct RootTabView: View {
       return model.libraryPath.isEmpty
     case .askAI:
       return true
+    }
+  }
+
+  private func presentCaptureMenu() {
+    InteractionFeedback.shared.send(.tap)
+    withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
+      isCaptureMenuPresented = true
+    }
+  }
+
+  private func dismissCaptureMenu() {
+    guard isCaptureMenuPresented else { return }
+    withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+      isCaptureMenuPresented = false
+    }
+  }
+
+  private func selectCaptureMenuItem(_ action: CaptureAction) {
+    let projectID = model.visibleProjectID
+    dismissCaptureMenu()
+    if action == .importAudio {
+      captureImportContext = LocalImportContext(projectID: projectID, in: model)
+      guard captureImportContext != nil else {
+        model.importErrorMessage = "この保存先には取り込めません。画面を開き直してください。"
+        return
+      }
+      isCaptureFileImporterPresented = true
+    } else {
+      Task { await model.performCaptureMenuAction(action, projectID: projectID) }
     }
   }
 
