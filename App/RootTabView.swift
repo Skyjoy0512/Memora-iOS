@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 import EventKit
 import UniformTypeIdentifiers
+import PhotosUI
 
 struct RootTabView: View {
   @Environment(MemoraModel.self) private var model
@@ -15,7 +16,15 @@ struct RootTabView: View {
   @State private var isCaptureFileImporterPresented = false
   @State private var captureImportContext: LocalImportContext?
   @State private var captureMenuContext: LocalImportContext?
-  @State private var pendingCaptureMenuAction: CaptureAction?
+  @State private var pendingCaptureMenuAction: CaptureSheetAction?
+  @State private var captureFileTypes: [UTType] = [.audio]
+  @State private var isCapturePhotosPresented = false
+  @State private var capturePhotos: [PhotosPickerItem] = []
+  @State private var capturePhotoContext: LocalImportContext?
+  @State private var isCameraPresented = false
+  @State private var cameraContext: LocalImportContext?
+  @State private var cameraPhoto: Data?
+  @State private var isCaptureMediaImporting = false
   @State private var onlineMeetingContext: LocalImportContext?
   @State private var shouldStartOnlineMeeting = false
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
@@ -157,7 +166,7 @@ struct RootTabView: View {
     .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged).receive(on: RunLoop.main)) { _ in
       model.invalidateAICalendarContext()
     }
-    .fileImporter(isPresented: $isCaptureFileImporterPresented, allowedContentTypes: [.audio]) { result in
+    .fileImporter(isPresented: $isCaptureFileImporterPresented, allowedContentTypes: captureFileTypes) { result in
       let context = captureImportContext
       captureImportContext = nil
       switch result {
@@ -170,6 +179,42 @@ struct RootTabView: View {
     }
     .sheet(isPresented: $isCaptureMenuPresented, onDismiss: completeCaptureMenuDismissal) {
       CaptureMenuSheet(onSelect: selectCaptureMenuItem, onClose: dismissCaptureMenu)
+    }
+    .photosPicker(isPresented: $isCapturePhotosPresented, selection: $capturePhotos, maxSelectionCount: 6, matching: .images)
+    .onChange(of: capturePhotos) { _, photos in
+      guard !photos.isEmpty else { return }
+      let context = capturePhotoContext
+      capturePhotoContext = nil
+      capturePhotos = []
+      if let context {
+        isCaptureMediaImporting = true
+        Task {
+          defer { isCaptureMediaImporting = false }
+          await model.importCapturePhotos(photos, context: context)
+        }
+      }
+    }
+    .fullScreenCover(isPresented: $isCameraPresented, onDismiss: completeCameraDismissal) {
+      CameraCaptureView { photo in
+        guard cameraContext?.isCurrent(in: model) == true else {
+          model.importErrorMessage = "保存先が変更されたため、撮影した資料を追加できませんでした。保存先を開き直して再試行してください。"
+          isCameraPresented = false
+          return
+        }
+        cameraPhoto = photo
+        isCameraPresented = false
+      }
+    }
+    .onChange(of: model.aiWorkspaceGeneration) { _, _ in
+      dismissCaptureMenu()
+      isCameraPresented = false
+      cameraContext = nil
+      cameraPhoto = nil
+      isCapturePhotosPresented = false
+      capturePhotoContext = nil
+      capturePhotos = []
+      isCaptureFileImporterPresented = false
+      captureImportContext = nil
     }
     .sheet(isPresented: Binding(get: { model.isSourceAddPresented || model.sourceAddProjectID != nil }, set: { if !$0 { model.sourceAddProjectID = nil; model.isSourceAddPresented = false; model.sourceAddAsMemo = false } })) {
       ProjectSourceAddSheet(projectID: model.sourceAddProjectID, isMemo: model.sourceAddAsMemo)
@@ -319,7 +364,7 @@ struct RootTabView: View {
               compactIdle: true
             )
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.trailing, showsCaptureButtons ? 120 : 0)
+            .padding(.trailing, showsCaptureButtons ? 60 : 0)
             // Keep the editor identity while the available width changes.
             .transition(.opacity)
           }
@@ -331,6 +376,7 @@ struct RootTabView: View {
             onOpenCaptureMenu: presentCaptureMenu)
             .allowsHitTesting(showsCaptureButtons)
             .accessibilityHidden(!showsCaptureButtons)
+            .disabled(isCaptureMediaImporting)
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)
@@ -401,7 +447,7 @@ struct RootTabView: View {
   }
 
   private func presentCaptureMenu() {
-    guard !isCaptureMenuPresented,
+    guard !isCaptureMenuPresented, !model.isImporting, !isCaptureMediaImporting,
           let context = LocalImportContext(projectID: model.visibleProjectID, in: model) else { return }
     InteractionFeedback.shared.send(.tap)
     pendingCaptureMenuAction = nil
@@ -414,7 +460,7 @@ struct RootTabView: View {
     isCaptureMenuPresented = false
   }
 
-  private func selectCaptureMenuItem(_ action: CaptureAction) {
+  private func selectCaptureMenuItem(_ action: CaptureSheetAction) {
     guard isCaptureMenuPresented, pendingCaptureMenuAction == nil else { return }
     pendingCaptureMenuAction = action
     isCaptureMenuPresented = false
@@ -433,16 +479,41 @@ struct RootTabView: View {
       model.importErrorMessage = "保存先が変更されました。画面を開き直してお試しください。"
       return
     }
-    if action == .importAudio {
+    switch action {
+    case .importAudio, .files:
       captureImportContext = context
+      captureFileTypes = action == .importAudio ? [.audio] : [.data]
       isCaptureFileImporterPresented = true
-    } else if action == .recording {
+    case .recording:
       Task { await model.startCapture(spaceID: context.projectID, context: context) }
-    } else {
+    case .onlineMeeting:
       Task {
         guard context.isCurrent(in: model) else { return }
-        await model.performCaptureMenuAction(action, projectID: context.projectID)
+        await model.performCaptureMenuAction(.onlineMeeting, projectID: context.projectID)
       }
+    case .newNote, .link:
+      model.sourceAddProjectID = context.projectID
+      model.sourceAddAsMemo = action == .newNote
+      model.isSourceAddPresented = true
+    case .photos:
+      capturePhotoContext = context
+      isCapturePhotosPresented = true
+    case .camera:
+      cameraContext = context
+      cameraPhoto = nil
+      isCameraPresented = true
+    }
+  }
+
+  private func completeCameraDismissal() {
+    let photo = cameraPhoto, context = cameraContext
+    cameraPhoto = nil
+    cameraContext = nil
+    guard let photo, let context, context.isCurrent(in: model) else { return }
+    isCaptureMediaImporting = true
+    Task {
+      defer { isCaptureMediaImporting = false }
+      await model.importCameraPhoto(photo, context: context)
     }
   }
 

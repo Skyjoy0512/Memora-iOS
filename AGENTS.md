@@ -38,12 +38,14 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 - **Navigation**: there is no bottom tab bar. The app opens on Library, and the
   destinations (Journal, Library, Ask AI, Marketplace) live at the top of the side menu
-  (`FileSidebarView`). The bottom edge holds Ask AI with the two independent capture controls. `RootTab` still names
+  (`FileSidebarView`). The bottom edge holds Ask AI with the shared plus control. `RootTab` still names
   the destination and keeps the old saved identifiers, but nothing draws tabs.
-- **Create controls**: the idle bottom row is Ask AI / memo / plus.
-  `CaptureFloatingButtons` presents two native menus from `CaptureMenuPopover`:
-  memo has メモを書く / 資料を追加; plus has 録音する / 音声を取り込む /
-  オンライン会議を録音, with recording first. Do not restore the top-right ＋.
+- **Create controls**: the idle bottom row is Ask AI / plus.
+  The plus opens `CaptureMenuSheet`: camera / photos / files / link shortcuts
+  scroll horizontally above recording / audio import / online meeting / ノート追加.
+  Keep recording first and note creation last; the sheet has no title and closes
+  with the Lucide CircleX. Do not restore the top-right ＋ or a separate memo FAB.
+  Dispatch after dismissal, rechecking the captured LocalImportContext.
   While composing, give Ask AI the full row; hide capture controls without
   unmounting their file importer. The controls stay in a fixed trailing overlay;
   remove their visual menus without animation while composing, never shrink or

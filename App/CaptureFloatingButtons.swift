@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Note creation and recording beside the shared Ask AI field. Presentation
+/// A shared creation menu beside the Ask AI field. Presentation
 /// stays mounted while typing so a file picker cannot disappear with its label.
 struct CaptureFloatingButtons: View {
   @Environment(MemoraModel.self) private var model
@@ -17,7 +17,7 @@ struct CaptureFloatingButtons: View {
     // The presentation host survives keyboard/picker changes. Only the visual
     // menus are removed, with no native-glass fade or zero-size interpolation.
     Color.clear
-      .frame(width: 112, height: 52)
+      .frame(width: 52, height: 52)
       .overlay {
         if isVisible { menus.transition(.identity) }
       }
@@ -55,17 +55,10 @@ struct CaptureFloatingButtons: View {
   }
 
   private var menus: some View {
-    HStack(spacing: 8) {
-      Button {
-        select(.newMemo)
-      } label: {
-        menuLabel("ノートと資料を追加", icon: .squareAndPencil)
-      }
-      Button(action: onOpenCaptureMenu) {
-        menuLabel("録音メニュー", icon: .plus)
-      }
-      .buttonStyle(.plain)
+    Button(action: onOpenCaptureMenu) {
+      menuLabel("追加メニュー", icon: .plus)
     }
+    .buttonStyle(.plain)
   }
 
   private func menuLabel(_ title: LocalizedStringKey, icon: MemoraIcon) -> some View {

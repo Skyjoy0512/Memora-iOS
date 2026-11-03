@@ -97,7 +97,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
             self.assertIn(call, menu)
         self.assertIn(".accessibilityHint(action.detail)", menu)
         native = (APP / "CaptureFloatingButtons.swift").read_text()
-        for contract in ("select(.newMemo)", "onOpenCaptureMenu", ".confirmationDialog(", "model.importInformationFile(url, context: context)", "NSUserCancelledError"):
+        for contract in ('menuLabel("追加メニュー", icon: .plus)', "onOpenCaptureMenu", ".confirmationDialog(", "model.importInformationFile(url, context: context)", "NSUserCancelledError"):
             self.assertIn(contract, native)
         self.assertNotIn("group: .notes", native)
         self.assertIn("if isVisible { menus.transition(.identity) }", native)
