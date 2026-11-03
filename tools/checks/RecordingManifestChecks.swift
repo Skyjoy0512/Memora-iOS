@@ -78,7 +78,11 @@ enum RecordingManifestChecks {
     let record = model.meetings[0]
     expect(record.audioURL == nil && record.originalAudioFileNames == draft.audioManifest!.fileNames)
     expect(record.notes == draft.note && record.transcript.isEmpty && model.processed.isEmpty)
-    guard case .failed = record.status else { preconditionFailure("Unassembled originals claimed readiness") }
+    if scenario == 0 {
+      guard case .waitingForTranscription = record.status else { preconditionFailure("Verified originals lost manual transcription") }
+    } else {
+      guard case .failed = record.status else { preconditionFailure("Unverified originals claimed readiness") }
+    }
     expect(record.duration == (scenario == 0 ? 2 : 0))
     expect(record.recordingAudioManifest?.parts.last?.state == (scenario == 0 ? .finalized : .writing))
     if scenario != 0 { expect(record.recordingMarkers == draft.markers) }

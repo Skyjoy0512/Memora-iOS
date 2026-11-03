@@ -18,8 +18,8 @@ extension MemoraModel {
       frames.append(count)
     }
     let finalized = manifest.finalized(frameCounts: frames)
-    // A lone part is the existing playable file. Multiple originals require an
-    // assembled playback asset; never expose their last part as a full record.
+    // The player and transcriber consume multiple originals via the manifest;
+    // never expose their last part as a complete single-file recording.
     let playbackURL = manifest.parts.count == 1 ? MediaFiles.resolve(manifest.parts[0].fileName) : nil
     let hasFile = playbackURL.map { FileManager.default.fileExists(atPath: $0.path) } ?? false
     return RecordingDraftInspection(playbackURL: playbackURL, duration: finalized?.finalizedDuration,
