@@ -48,8 +48,8 @@ struct CaptureMenuOverlay: View {
       }
     }
     .padding(.trailing, 92)
-    .offset(y: 48)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+    .padding(.bottom, 132)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
   }
 
   private var closeButton: some View {
@@ -61,7 +61,7 @@ struct CaptureMenuOverlay: View {
     }
     .buttonStyle(.plain)
     .accessibilityLabel("閉じる")
-    .padding(.trailing, 20)
+    .padding(.trailing, 12)
     .padding(.bottom, 12)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
   }
