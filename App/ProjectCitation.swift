@@ -9,6 +9,11 @@ struct ProjectCitation: Identifiable, Hashable, Codable, Sendable {
   var excerpt: String
   var page: Int?
   var time: TimeInterval?
+  /// The source evidence this citation was read from. Older citations have no
+  /// stamp and stay readable; a stamped citation is dropped once the source's
+  /// text reference or content fingerprint changes.
+  var evidenceReference: String?
+  var evidenceFingerprint: String?
 
   enum Target: Hashable, Codable, Sendable {
     case source(UUID)

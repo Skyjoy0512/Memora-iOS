@@ -13,11 +13,21 @@ enum SourceContentSearch {
     // Per-source namespaces avoid replacing an actual project's shared index.
     let indexed = try await index.retrieve(question: question, projectID: source.id, inputs: [input],
       maximumCharacters: ProjectSourceTextReader.maximumBytes)
-    return await Task.detached(priority: .utility) {
+    var context = await Task.detached(priority: .utility) {
       ProjectContextBuilder.build(question: question, projectID: source.id, chunks: indexed,
         allowed: [.source(source.id)], characterBudget: budget,
         selectedTarget: question.isEmpty ? .source(source.id) : nil)
     }.value
+    // Bind each citation to the exact extracted evidence, so a later edit or
+    // re-import cannot leave an inline citation pointing at different text.
+    let evidenceReference = source.extractedTextReference, fingerprint = source.contentFingerprint
+    context.used = context.used.map { citation in
+      var stamped = citation
+      stamped.evidenceReference = evidenceReference
+      stamped.evidenceFingerprint = fingerprint
+      return stamped
+    }
+    return context
   }
 
   static func rendered(_ context: ProjectContextBuilder.Context) -> String {

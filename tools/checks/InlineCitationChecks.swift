@@ -70,6 +70,43 @@ import Foundation
     let long = String(repeating: text + " ", count: 1_000)
     precondition(AnswerSourceCitation.citedTargets(in: long, allowed: allowed) == targets)
     precondition(!AnswerCitations.linked(long, sources: [], allowedTargets: []).contains(id.uuidString))
-    print("InlineCitationChecks: passed (production parser/URL/legacy formatting/document builder/snapshot, typed UUID collisions, forged IDs and URL variants, unfinished stream markers, label escaping, saved links, bounded source sets, 5000 markers; no network)")
+
+    // Retrieved project-source citations become openable only while the exact
+    // evidence they were read from still exists.
+    func projectCitation(_ source: UUID, reference: String? = nil, fingerprint: String? = nil) -> ProjectCitation {
+      ProjectCitation(target: .source(source), title: "資料", excerpt: "本文",
+        evidenceReference: reference, evidenceFingerprint: fingerprint)
+    }
+    let sourceID = UUID()
+    let readable = ProjectCitationTargets.Evidence(isReadable: true, reference: "text-v1", fingerprint: "hash-1")
+    precondition(ProjectCitationTargets.live([], evidence: { _ in readable }).isEmpty)
+    precondition(ProjectCitationTargets.live([projectCitation(sourceID, reference: "text-v1", fingerprint: "hash-1")]) { _ in readable }
+      == [.projectFile(sourceID)])
+    precondition(ProjectCitationTargets.live([projectCitation(sourceID)]) { _ in readable }
+      == [.projectFile(sourceID)], "legacy citation without a stamp stays readable")
+    precondition(ProjectCitationTargets.live([projectCitation(sourceID, reference: "text-v0")]) { _ in readable }.isEmpty)
+    precondition(ProjectCitationTargets.live([projectCitation(sourceID, fingerprint: "hash-0")]) { _ in readable }.isEmpty)
+    precondition(ProjectCitationTargets.live([projectCitation(sourceID)]) { _ in
+      ProjectCitationTargets.Evidence(isReadable: false, reference: "text-v1", fingerprint: "hash-1")
+    }.isEmpty)
+    precondition(ProjectCitationTargets.live([projectCitation(sourceID)]) { _ in nil }.isEmpty)
+    precondition(ProjectCitationTargets.live([
+      projectCitation(sourceID), projectCitation(sourceID),
+      ProjectCitation(target: .meeting(UUID()), title: "録音", excerpt: "本文")
+    ]) { _ in readable } == [.projectFile(sourceID)])
+    precondition(ProjectCitationTargets.live([projectCitation(sourceID)]) { _ in
+      ProjectCitationTargets.Evidence(isReadable: true, reference: "text-v1", fingerprint: nil)
+    } == [.projectFile(sourceID)], "a source without a fingerprint is compared by reference only")
+
+    // A saved grounded answer keeps the project-source link it was read from.
+    var grounded = AIChatMessage(role: .assistant,
+      text: "回答です " + AnswerSourceCitation.marker(for: .projectFile(sourceID)))
+    grounded.sourceCitations = [projectCitation(sourceID)]
+    let groundedDocument = AIAnswerDocumentBuilder.make(message: grounded, question: "質問")
+    precondition(groundedDocument.sourceProjectFileIDs == [sourceID])
+    precondition(groundedDocument.markdown.contains(AnswerSourceCitation.url(for: .projectFile(sourceID)).absoluteString))
+    precondition(groundedDocument.markdown.contains("参照した情報"))
+
+    print("InlineCitationChecks: passed (production parser/URL/legacy formatting/document builder/snapshot, typed UUID collisions, forged IDs and URL variants, unfinished stream markers, label escaping, saved links, bounded source sets, project-source evidence stamping/revocation and saved grounded links, 5000 markers; no network)")
   }
 }

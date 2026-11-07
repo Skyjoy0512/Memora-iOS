@@ -23,6 +23,19 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-07 P0-2.1 資料引用リンクの末端接続
+
+通常AskAIで検索・送信したProjectSourceが回答内マーカーから開けるリンクに変換されず、
+許可集合で落ちていた。`answerCitationTargets`へ`message.sourceCitations`由来の資料を
+追加し、`ProjectCitation`へ抽出本文参照/内容fingerprintを任意保存、`ProjectCitationTargets`で
+不一致・未読・削除を無効化した。保存回答も同じリンクと`sourceProjectFileIDs`を保持し、
+`documentCitationTarget`で未読資料を拒否する。
+
+状態: 実装済み・検証済み（host）。実サービス/実機の回答品質は未検証。
+検証: inline citation（スタンプ・失効・保存リンク）PASS、conversation evidence /
+attachment citation / source summary / source intake PASS、`bitrig preview -platform iOS`成功。
+残: 入口別E2Eの実データ貫通、旧UIラベル依存のsource E2E更新、ノート編集後の要約再生成。
+
 ## 2026-11-07 P0-1.4 live文字起こしを録音入力へ一本化
 
 `RealtimeTranscriptionService`の独自engine/tapを削除し、録音の`RecordingMicrophoneInput`

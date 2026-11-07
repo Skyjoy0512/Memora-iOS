@@ -1,5 +1,22 @@
 # Memora — 改善バックログ
 
+## 2026-11-07 P0-2.1 AskAIの資料引用リンクを末端まで接続
+
+通常の（エージェントではない）AskAI経路で、検索したProjectSourceを
+`sourceQueryContext`が送信しても、回答中の`【資料:UUID】`を開けるリンクへ変換する
+許可集合にProjectSourceが入っていなかった。`answerCitationTargets`へ、メッセージに
+保存済みの`sourceCitations`から「現在も読める・プロジェクトが存在する」資料を追加した。
+`ProjectCitation`に抽出本文参照と内容fingerprintの任意スタンプを追加し、
+`SourceContentSearch`が付与、`ProjectCitationTargets`が不一致を無効化する。
+保存した回答（`AIAnswerDocumentBuilder`)も同じ資料リンクと`sourceProjectFileIDs`を保持し、
+`documentCitationTarget`は削除/未読化した資料を開かせない。
+状態は 実装済み・host検証済み、実サービス/実機は未検証。
+検査: `run-inline-citation-checks.sh`（スタンプ一致/参照変更/fingerprint変更/未読/削除/
+旧スタンプなし、保存回答リンク）PASS、conversation evidence / attachment citation /
+source summary / source intake各runner PASS、`bitrig preview -platform iOS`成功。
+残: 入口別E2E（写真/カメラ/ファイル/URL/ノート/音声/動画/会議）の実機・実サービス、
+古いUIラベルに依存した`tests/project-source-*.e2e.ts`の更新、ノート編集後の要約再生成。
+
 ## 2026-11-07 live文字起こしを録音入力へ一本化
 
 live文字起こしの独自`AVAudioEngine` tapを廃止し、録音tapを唯一のマイク入力にした。

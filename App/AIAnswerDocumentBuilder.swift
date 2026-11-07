@@ -3,7 +3,14 @@ import Foundation
 enum AIAnswerDocumentBuilder {
   static func make(message: AIChatMessage, question: String?, provenance: ArtifactProvenance? = nil) -> MemoraDocument {
     let provenance = provenance ?? message.artifactProvenance
-    let allowed = AnswerSourceCitation.targets(provenance: provenance, meetingIDs: message.sources.map(\.meetingID))
+    // Grounded answers cite retrieved project sources without artifact
+    // provenance; keep those links in the saved answer too.
+    let groundedProjectFiles = message.sourceCitations.compactMap { citation -> UUID? in
+      if case .source(let id) = citation.target { return id }
+      return nil
+    }
+    let allowed = AnswerSourceCitation.targets(provenance: provenance,
+      meetingIDs: message.sources.map(\.meetingID), projectFileIDs: groundedProjectFiles)
     let answer = NativeAIInterface.response(message.text).markdown
     let questionTitle = question?.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ") ?? ""
     let answerTitle = AnswerCitations.stripped(answer)
@@ -27,7 +34,9 @@ enum AIAnswerDocumentBuilder {
       markdown += "\n\n## 参照した情報\n\n" + references.joined(separator: "\n")
       markdown += "\n\nリンクは、元の記録がある端末のMemoraで開けます。"
     }
+    let storedProjectFiles = Array(Set((provenance?.projectSources.map(\.id) ?? []) + groundedProjectFiles))
     return MemoraDocument(title: title, kind: .document, markdown: markdown,
-      sourceProjectFileIDs: provenance?.projectSources.map(\.id), sourceRecordIDs: message.sources.map(\.meetingID), provenance: provenance)
+      sourceProjectFileIDs: storedProjectFiles.isEmpty ? nil : storedProjectFiles,
+      sourceRecordIDs: message.sources.map(\.meetingID), provenance: provenance)
   }
 }
