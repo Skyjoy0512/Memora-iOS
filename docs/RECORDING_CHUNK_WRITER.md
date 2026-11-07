@@ -46,6 +46,29 @@ admission成功後、次ファイル作成前に停止すれば、下書きに�
 通常保存では確認できた音声を既存の処理経路へ渡す。欠落/不一致は引き続き失敗として保持する。
 一部分のaudioURLを全体とみなすことはない。
 
+## 実マイク入力の所有（未接続）
+
+2026-11-07。`RecordingMicrophoneInput`を追加した。録音runごとに1つの`AVAudioEngine`
+入力tapを所有し、`inputNode`の実`outputFormat`（44.1kHzを仮定しない）を読み、
+`LiveAudioBufferConverter`で44.1kHz/mono/非interleaved Float32へ変換する。
+セッションは`AudioRecorderService`が取得済みのものを共有し、独自sessionや2つ目のtapを作らない。
+tapは変換と受け渡しだけを行い、ファイル・SQLite・UI処理をしない。所有bufferを
+recording sinkへ先に渡し、成功後にlive sinkへ渡す。sinkがfalseを返したら入力を止め、
+満杯を成功扱いにしない。通算位置は受け取った変換後フレームから求める。
+
+`RecordingInputContinuity`がtapの`when.sampleTime`を前回の終端と比較し、欠落を`gap`、
+重複を`duplicate`として検出する。sampleTimeが無効な端末では検査不能として扱い、
+推定で穴を埋めない。`RecordingChunkWriter`側の16,384フレーム上限と16バッファ待ちが
+そのまま適用される。
+
+**まだ`startCapture`には接続していない。** `RecordingMicrophoneInput.start()`は
+共有sessionがactiveな後にだけ呼ぶ必要があり、実マイク->writer、開始前manifest永続化、
+停止drain、自動rotationは次の小タスクで接続する。`AudioRecorderService`の通常録音は
+引き続き`AVAudioRecorder`を使う。検査は
+`bash tools/checks/run-recording-microphone-input-checks.sh`で、44.1kHz/mono形式、
+gap/duplicate/empty判定、48kHz・stereoの変換、所有コピーをhostで確認する。
+AVAudioEngineのtap開始/停止と実機音声は未検証。
+
 ## 録音runの状態保護
 
 2026-11-07。`RecordingRunCoordinator`を追加し、`AudioRecorderService`の通常録音へ接続した。

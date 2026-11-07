@@ -1,5 +1,16 @@
 # Memora — 改善バックログ
 
+## 2026-11-07 実マイク入力の所有と変換コア
+
+`RecordingMicrophoneInput`を追加。録音runごとに1つの入力tapを所有し、実ハードウェアの
+出力フォーマットを44.1kHz/mono/Float32へ変換して所有bufferをrecording sink（次にlive sink）
+へ渡す。独自audio sessionや2つ目のtapは作らない。`RecordingInputContinuity`で
+sampleTimeの欠落/重複を検出し、黙って詰めない。**まだ`startCapture`へは未接続**で、
+通常録音は従来の`AVAudioRecorder`のまま。状態は 実装済み・host検証済み、実機/接続は未検証。
+検査: `bash tools/checks/run-recording-microphone-input-checks.sh` PASS、
+既存runnerと`bitrig preview -platform iOS`成功（既存警告のみ）。
+次: 開始前manifest永続化・writer接続・停止drain・自動rotation。
+
 ## 2026-11-07 録音runの状態機械と古いcallbackの遮断
 
 `RecordingRunCoordinator`を追加し、`AudioRecorderService`の録音開始/停止/失敗/リセットへ

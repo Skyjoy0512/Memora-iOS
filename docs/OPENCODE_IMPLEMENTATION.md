@@ -23,6 +23,20 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-07 P0-1.2 実マイク入力の所有と変換
+
+`RecordingMicrophoneInput`（`App/RecordingMicrophoneInput.swift`）と
+`RecordingInputContinuity`（`App/RecordingInputContinuity.swift`）を追加した。
+録音runごとに1つの`AVAudioEngine`入力tapを所有し、実フォーマットを
+44.1kHz/mono/非interleaved Float32へ変換して所有bufferをrecording sinkへ渡す。
+独自session・2つ目のtapは作らない。sampleTimeのgap/duplicateを検出する。
+**`startCapture`への接続は未実施**（通常録音は従来のAVAudioRecorder）。
+
+状態: 実装済み・検証済み（host）。実機tapと接続は未検証。
+検証: `bash tools/checks/run-recording-microphone-input-checks.sh` PASS、
+既存の録音系runner PASS、`bitrig preview -platform iOS`成功（既存警告のみ）。
+次: P0-1.3（開始前manifest永続化、writer接続、停止drain、自動rotation）。
+
 ## 2026-11-07 P0-1.1 録音runの状態保護
 
 `RecordingRunCoordinator`（`App/RecordingRunCoordinator.swift`）を追加し、
