@@ -10,7 +10,11 @@ extension MemoraModel {
           draft.audioManifest == rotation.previous,
           draft.fileName == rotation.previous.parts.last?.fileName,
           let currentURL = recordingURL, MediaFiles.reference(for: currentURL) == draft.fileName,
-          let nextName = rotation.next.parts.last?.fileName, let nextURL = MediaFiles.resolve(nextName) else { return false }
+          let nextName = rotation.next.parts.last?.fileName else { return false }
+    // The next original does not exist yet; the writer creates it after this
+    // admission. Validate the name without requiring the file to be present.
+    let nextURL = MediaFiles.directory.appendingPathComponent(nextName)
+    guard MediaFiles.reference(for: nextURL) == nextName else { return false }
     guard !FileManager.default.fileExists(atPath: nextURL.path) else { return false }
     draft.fileName = nextName
     draft.audioManifest = rotation.next

@@ -23,6 +23,7 @@ with tempfile.TemporaryDirectory(prefix='memora-checkpoint-service-', dir=os.env
         ['bash', '-c', r'source tools/checks/audio-diagnostic-sources.sh; printf "%s\n" "${audio_diagnostic_sources[@]}"'], text=True).splitlines()
     binary = root / 'checks'
     subprocess.run(['swiftc', '-D', 'MEMORA_HOST_CHECKS', *diagnostics,
+                    'App/RecordingRunCoordinator.swift',
                     'tools/checks/RecordingRecoveryGate.swift', 'tools/checks/RecordingCheckpointServiceChecks.swift',
                     str(production), '-o', str(binary)], check=True, env=environment)
     subprocess.run([str(binary)], check=True, env=environment)

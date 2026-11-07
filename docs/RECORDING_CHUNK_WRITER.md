@@ -46,7 +46,30 @@ admission成功後、次ファイル作成前に停止すれば、下書きに�
 通常保存では確認できた音声を既存の処理経路へ渡す。欠落/不一致は引き続き失敗として保持する。
 一部分のaudioURLを全体とみなすことはない。
 
-## 実マイク入力の所有（未接続）
+## 実マイクからwriterへの接続
+
+2026-11-07。通常録音を`AVAudioRecorder`から、`RecordingMicrophoneInput`＋
+`RecordingChunkWriter`の経路へ切り替えた。`AudioRecorderService.PreparedRecording`で
+録音IDと最初の原本名を先に決め、モデルがmanifestと下書きをSQLiteへ保存してから
+マイク受信を開始する。開始直後に`recordedDuration`は受理済みフレーム数から求める。
+声紋登録は従来どおり`AVAudioRecorder`を使う。
+
+15分境界ではwriterが原本を閉じてフレーム数を検証し、`admitRecordingRotation`が
+下書きと次のmanifestを同期commitしてから次の原本を排他的に作る。次の存在しない
+原本は`MediaFiles.directory`から名前を検証して作る（`resolve`は実在を要求するため
+admissionには使わない）。停止は「新規PCM遮断→tap除去→writer.finish()でdrain→
+確定manifestを下書きへ反映→既存の検査/SQLite確定」の順で、`stopContinuous()`が
+drain結果のmanifestを返し、モデルが検査前に下書きへ反映する。取消はdrainせず
+writerを失効させる。低容量・checkpoint失敗・入力欠落/重複/過負荷・変換失敗・
+media services resetは`failed`として既存の保存経路へ渡し、成功扱いにしない。
+
+**未検証**: 実機のマイクtap、AAC priming/flushと引用時刻のずれ、15分境界の音切れ、
+割り込み/復帰、24時間・電池/熱/メモリ、RTF/CER。現在live文字起こしは
+`RealtimeTranscriptionService`が別engine/tapを使っており、録音入力との共有
+（C.3の一本化）は次の小タスク。ホスト検査はchunk writer/start/finalization/
+recovery/media/coordinator/microphone-inputの各runnerと`bitrig preview`。
+
+## 実マイク入力の所有
 
 2026-11-07。`RecordingMicrophoneInput`を追加した。録音runごとに1つの`AVAudioEngine`
 入力tapを所有し、`inputNode`の実`outputFormat`（44.1kHzを仮定しない）を読み、
@@ -61,10 +84,8 @@ recording sinkへ先に渡し、成功後にlive sinkへ渡す。sinkがfalseを
 推定で穴を埋めない。`RecordingChunkWriter`側の16,384フレーム上限と16バッファ待ちが
 そのまま適用される。
 
-**まだ`startCapture`には接続していない。** `RecordingMicrophoneInput.start()`は
-共有sessionがactiveな後にだけ呼ぶ必要があり、実マイク->writer、開始前manifest永続化、
-停止drain、自動rotationは次の小タスクで接続する。`AudioRecorderService`の通常録音は
-引き続き`AVAudioRecorder`を使う。検査は
+`RecordingMicrophoneInput.start()`は共有sessionがactiveな後にだけ呼び、通常録音は
+上記のとおり接続済み。検査は
 `bash tools/checks/run-recording-microphone-input-checks.sh`で、44.1kHz/mono形式、
 gap/duplicate/empty判定、48kHz・stereoの変換、所有コピーをhostで確認する。
 AVAudioEngineのtap開始/停止と実機音声は未検証。

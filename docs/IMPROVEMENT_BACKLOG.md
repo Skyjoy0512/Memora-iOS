@@ -1,5 +1,18 @@
 # Memora — 改善バックログ
 
+## 2026-11-07 通常録音を実マイク→分割writerへ接続
+
+通常録音を`AVAudioRecorder`から`RecordingMicrophoneInput`＋`RecordingChunkWriter`へ切り替えた。
+開始前にmanifestと下書きをSQLiteへ保存し、実ハードウェア形式を44.1kHz/mono/Float32へ変換して
+writerへ渡す。15分境界はwriterが原本を閉じて検証し、`admitRecordingRotation`の同期commit後に
+次の原本を排他的に作成（未作成ファイル名は`resolve`ではなくディレクトリから検証）。停止は
+tap除去→drain→確定manifestを下書きへ反映→既存検査/確定の順。低容量・checkpoint失敗・
+入力欠落/重複/過負荷・変換失敗・resetは失敗として保存経路へ渡す。声紋登録は従来経路を維持。
+状態は 実装済み・host検証済み、実機は未検証（実マイクtap、15分境界の音切れ、割り込み、
+24時間・電池/熱/RTF/CER）。live文字起こしとの入力共有は次の小タスク。
+検査: chunk writer / start / finalization / recovery / media / checkpoint / coordinator /
+microphone input各runner PASS、`bitrig preview -platform iOS`成功（既存警告のみ）。
+
 ## 2026-11-07 実マイク入力の所有と変換コア
 
 `RecordingMicrophoneInput`を追加。録音runごとに1つの入力tapを所有し、実ハードウェアの

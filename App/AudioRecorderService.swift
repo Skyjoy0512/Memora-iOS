@@ -1,11 +1,56 @@
 import AVFAudio
 import Foundation
+import Synchronization
 
 @MainActor
 final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   enum Purpose {
     case recording
     case voiceEnrollment
+  }
+
+  /// A recording prepared before the microphone opens, so the manifest and
+  /// draft can be written to the store first.
+  struct PreparedRecording {
+    var manifest: RecordingAudioManifest
+    var directory: URL
+    var fileURL: URL
+  }
+
+  /// Thread-safe state written by the input tap and read on the main actor.
+  private final class ContinuousSink: @unchecked Sendable {
+    let writer: RecordingChunkWriter
+    let frames = Mutex<Int64>(0)
+    let level = Mutex<Float>(0)
+
+    init(writer: RecordingChunkWriter) {
+      self.writer = writer
+    }
+
+    func append(_ output: RecordingMicrophoneInput.Output) -> Bool {
+      let accepted = writer.append(output.buffer)
+      guard accepted else { return false }
+      frames.withLock { $0 += Int64(output.buffer.frameLength) }
+      level.withLock { $0 = Self.rms(output.buffer) }
+      return true
+    }
+
+    private static func rms(_ buffer: AVAudioPCMBuffer) -> Float {
+      guard let samples = buffer.floatChannelData?[0], buffer.frameLength > 0 else { return 0 }
+      let count = Int(buffer.frameLength)
+      let stride = max(1, count / 512)
+      var sum: Float = 0
+      var used = 0
+      var index = 0
+      while index < count {
+        let sample = samples[index]
+        sum += sample * sample
+        used += 1
+        index += stride
+      }
+      let rms = sqrt(sum / Float(max(used, 1)))
+      return min(1, max(0, rms * 4))
+    }
   }
 
   /// Something the system did to the audio session while recording.
@@ -32,6 +77,13 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   private var diagnostic: AudioDiagnosticSession?
   private var diagnosticOutcome: AudioDiagnosticReport.Outcome = .success
   var recordedDuration: TimeInterval? {
+    if isContinuous {
+      if let continuousSink {
+        let frames = continuousSink.frames.withLock { $0 }
+        lastRecordedDuration = max(lastRecordedDuration ?? 0, Double(frames) / 44_100)
+      }
+      return lastRecordedDuration
+    }
     if let seconds = recorder?.currentTime, seconds.isFinite, seconds >= 0 {
       lastRecordedDuration = max(lastRecordedDuration ?? 0, seconds)
     }
@@ -41,6 +93,12 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   private let coordinator: AudioSessionCoordinator
   /// The session claim this recorder holds, so only this run can give it up.
   private var sessionToken: AudioSessionCoordinator.Token?
+  /// Continuous (engine + chunk writer) capture, used for normal recordings.
+  private var microphone: RecordingMicrophoneInput?
+  private var writer: RecordingChunkWriter?
+  private var continuousSink: ContinuousSink?
+  private var isContinuous = false
+  private var writingDirectory: URL?
 
   init(coordinator: AudioSessionCoordinator? = nil) {
     self.coordinator = coordinator ?? .shared
@@ -144,7 +202,211 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     }
   }
 
+  /// Builds the first manifest and its destination without touching the
+  /// microphone. The caller persists a draft from this before `startContinuous`.
+  func prepareRecording() throws -> PreparedRecording {
+    let directory = try recordingsDirectory()
+    guard try SourceMediaStaging.availableBytes(directory) >= SourceMediaStaging.minimumAvailableBytes else {
+      throw SourceMediaFailure.capacity
+    }
+    let recordingID = UUID()
+    let fileName = "Memora-\(UUID().uuidString).m4a"
+    return PreparedRecording(
+      manifest: .starting(id: recordingID, fileName: fileName),
+      directory: directory,
+      fileURL: directory.appendingPathComponent(fileName))
+  }
+
+  /// Takes the session and starts the engine tap feeding a 15-minute chunk
+  /// writer. `admitRotation` must durably persist the next manifest before the
+  /// writer opens the next original.
+  func startContinuous(_ prepared: PreparedRecording,
+                       admitRotation: @escaping @Sendable (RecordingRotation) async -> Bool,
+                       liveSink: (@Sendable (RecordingMicrophoneInput.Output) -> Void)? = nil) async throws -> URL {
+    guard recorder == nil, writer == nil, microphone == nil, let runID = run.begin() else {
+      throw AudioRecorderError.sessionBusy
+    }
+    lastFailureReason = nil
+    guard let token = await coordinator.beginRecording() else {
+      run.cancel(runID)
+      throw AudioRecorderError.sessionBusy
+    }
+    guard run.owns(runID), !Task.isCancelled else {
+      run.cancel(runID)
+      coordinator.endRecording(token)
+      throw CancellationError()
+    }
+    sessionToken = token
+    lastRecordedDuration = nil
+    isContinuous = true
+    writingDirectory = prepared.directory
+    do {
+      let session = AVAudioSession.sharedInstance()
+      try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP])
+      try session.setActive(true)
+      guard session.isInputAvailable else { throw AudioRecorderError.couldNotStart }
+      let diagnosticSession = AudioProcessingDiagnostics.begin(.recording)
+      diagnostic = diagnosticSession
+      let writer = try RecordingChunkWriter(manifest: prepared.manifest, directory: prepared.directory,
+        diagnostic: diagnosticSession, admitRotation: admitRotation)
+      let sink = ContinuousSink(writer: writer)
+      let microphone = RecordingMicrophoneInput(
+        sink: { @Sendable output in sink.append(output) },
+        liveSink: liveSink,
+        onFailure: { @Sendable [weak self] failure in
+          Task { @MainActor [weak self] in self?.handleContinuousFailure(failure) }
+        })
+      try microphone.start()
+      guard run.markRecording(runID) else {
+        microphone.stop()
+        writer.cancel()
+        throw AudioRecorderError.couldNotStart
+      }
+      self.writer = writer
+      self.continuousSink = sink
+      self.microphone = microphone
+      diagnosticOutcome = .success
+      monitorContinuousStorage()
+      return prepared.fileURL
+    } catch {
+      microphone = nil
+      writer?.cancel()
+      writer = nil
+      continuousSink = nil
+      isContinuous = false
+      writingDirectory = nil
+      run.cancel(runID)
+      finishDiagnostic(.failed)
+      releaseSession()
+      throw error
+    }
+  }
+
+  /// Stops the tap, drains every accepted buffer into the writer, and returns
+  /// the writer's verified manifest. The caller persists and inspects it.
+  @discardableResult
+  func stopContinuous() async -> RecordingAudioManifest? {
+    storageMonitor?.cancel()
+    storageMonitor = nil
+    microphone?.stop()
+    microphone = nil
+    guard let writer else {
+      continuousSink = nil
+      isContinuous = false
+      writingDirectory = nil
+      if let id = run.runID { run.cancel(id) }
+      run.reset()
+      releaseSession()
+      return nil
+    }
+    if let id = run.runID, run.beginStopping(id) { run.beginFinalizing(id) }
+    let result = await writer.finish()
+    self.writer = nil
+    continuousSink = nil
+    isContinuous = false
+    writingDirectory = nil
+    if let id = run.runID {
+      if result.isComplete {
+        lastRecordedDuration = result.manifest.finalizedDuration
+        run.markSaved(id)
+      } else {
+        lastFailureReason = "音声の書き込みを完了できませんでした。残っている音声とメモを保存します。"
+        run.fail(id, reason: lastFailureReason ?? "")
+      }
+    }
+    run.reset()
+    releaseSession()
+    finishDiagnostic(result.isComplete ? .success : .failed)
+    return result.manifest
+  }
+
+  /// Discards a continuous run without draining or committing it.
+  func cancelContinuous() {
+    storageMonitor?.cancel()
+    storageMonitor = nil
+    microphone?.stop()
+    microphone = nil
+    writer?.cancel()
+    writer = nil
+    continuousSink = nil
+    isContinuous = false
+    writingDirectory = nil
+    if let id = run.runID { run.cancel(id) }
+    run.reset()
+    releaseSession()
+    finishDiagnostic(.cancelled)
+  }
+
+  private func handleContinuousFailure(_ failure: RecordingMicrophoneInput.Failure) {
+    guard let id = run.runID else { return }
+    let reason = switch failure {
+    case .noInput: "マイクの入力を確認できませんでした。ここまでの音声を保存します。"
+    case .unsupportedFormat: "この入力形式には対応していません。ここまでの音声を保存します。"
+    case .conversion: "音声の変換に失敗しました。ここまでの音声を保存します。"
+    case .inputGap: "音声の一部が途切れました。ここまでの音声を保存します。"
+    case .inputDuplicate: "音声の入力が重複しました。ここまでの音声を保存します。"
+    case .overrun: "音声の書き込みが追いつきませんでした。ここまでの音声を保存します。"
+    }
+    lastFailureReason = reason
+    diagnosticOutcome = .failed
+    guard run.fail(id, reason: reason) else { return }
+    microphone?.stop()
+    storageMonitor?.cancel()
+    storageMonitor = nil
+    onInterruption?(.failed(reason))
+  }
+
+  private func monitorContinuousStorage() {
+    storageMonitor?.cancel()
+    guard let directory = writingDirectory else { return }
+    storageMonitor = Task { [weak self] in
+      while !Task.isCancelled {
+        do { try await Task.sleep(for: .seconds(15)) }
+        catch { return }
+        guard let self, await self.checkContinuousStorage(directory: directory) else { return }
+      }
+    }
+  }
+
+  private func checkContinuousStorage(directory: URL) async -> Bool {
+    guard !Task.isCancelled, isContinuous, run.phase == .recording else { return false }
+    diagnostic?.setAudioSeconds(recordedDuration)
+    if (try? SourceMediaStaging.availableBytes(directory)) ?? 0 < SourceMediaStaging.minimumAvailableBytes {
+      diagnostic?.count(.storageStop)
+      lastFailureReason = "空き容量が少なくなったため録音を停止します。ここまでの音声を保存します。古い記録は削除しません。"
+      if let id = run.runID { run.fail(id, reason: lastFailureReason ?? "") }
+      onInterruption?(.failed(lastFailureReason ?? ""))
+      return false
+    }
+    let saved = if let onCheckpoint { await onCheckpoint() } else { true }
+    guard !Task.isCancelled, isContinuous, run.phase == .recording else { return false }
+    if !saved {
+      diagnostic?.count(.draftCheckpointFailure)
+      lastFailureReason = "録音の復旧情報を保存できないため録音を停止します。残っている音声とメモを保存します。ストレージの空き容量を確認してください。"
+      if let id = run.runID { run.fail(id, reason: lastFailureReason ?? "") }
+      onInterruption?(.failed(lastFailureReason ?? ""))
+      return false
+    }
+    return true
+  }
+
+  private func finishDiagnostic(_ outcome: AudioDiagnosticReport.Outcome) {
+    guard let diagnostic else { return }
+    diagnostic.setAudioSeconds(lastRecordedDuration)
+    Task {
+      diagnostic.sample(await AudioResourceProbe.capture())
+      diagnostic.finish(outcome)
+    }
+    self.diagnostic = nil
+  }
+
   func stop() {
+    // Continuous capture must drain through stopContinuous(); a plain stop here
+    // would release the session without writing what the writer accepted.
+    if isContinuous {
+      cancelContinuous()
+      return
+    }
     storageMonitor?.cancel()
     storageMonitor = nil
     // Only a live capture drains and finalizes; a failed, cancelled or already
@@ -192,6 +454,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
 
   /// 0...1 loudness for the voice glow.
   func level() -> Double {
+    if isContinuous { return Double(continuousSink?.level.withLock { $0 } ?? 0) }
     guard let recorder, recorder.isRecording, recorder.isMeteringEnabled else { return 0 }
     recorder.updateMeters()
     let decibels = Double(recorder.averagePower(forChannel: 0))
@@ -205,12 +468,28 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   }
 
   func pause() {
+    if isContinuous {
+      if run.phase == .recording { diagnostic?.count(.recordingPause) }
+      _ = recordedDuration
+      microphone?.stop()
+      return
+    }
     if recorder?.isRecording == true { diagnostic?.count(.recordingPause) }
     _ = recordedDuration
     recorder?.pause()
   }
 
   func resume() -> Bool {
+    if isContinuous {
+      guard run.phase == .recording, let microphone else { return false }
+      do {
+        try microphone.start(resetTimeline: false)
+      } catch {
+        return false
+      }
+      diagnostic?.count(.recordingResume)
+      return true
+    }
     guard let recorder, run.phase == .recording, let sessionToken,
           coordinator.owns(sessionToken) else { return false }
     do {
@@ -305,7 +584,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     observers.append(
       center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: session, queue: .main) { [weak self] _ in
         MainActor.assumeIsolated {
-          guard let self, self.recorder != nil else { return }
+          guard let self, self.recorder != nil || self.isContinuous else { return }
           self.diagnostic?.count(.audioReset)
           self.diagnosticOutcome = .interrupted
           _ = self.recordedDuration
@@ -314,8 +593,14 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
             self.lastFailureReason = reason
             self.run.fail(id, reason: reason)
           }
-          self.recorder?.delegate = nil
-          self.recorder = nil
+          if self.isContinuous {
+            // The engine cannot be trusted after a reset. Stop the tap; the
+            // writer still drains what it already accepted.
+            self.microphone?.stop()
+          } else {
+            self.recorder?.delegate = nil
+            self.recorder = nil
+          }
           self.onInterruption?(.reset)
         }
       }
@@ -323,7 +608,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   }
 
   private func handleInterruption(_ note: Notification) {
-    guard recorder != nil else { return }
+    guard recorder != nil || isContinuous else { return }
     guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
           let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
 
@@ -340,7 +625,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   }
 
   private func handleRouteChange(_ note: Notification) {
-    guard recorder != nil else { return }
+    guard recorder != nil || isContinuous else { return }
     guard let raw = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
           let reason = AVAudioSession.RouteChangeReason(rawValue: raw) else { return }
 

@@ -60,8 +60,9 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
   }
 
   /// Call only after the shared session is active. The engine's real output
-  /// format is read here; 44.1 kHz is not assumed.
-  func start() throws {
+  /// format is read here; 44.1 kHz is not assumed. On resume pass
+  /// `resetTimeline: false` so the writer continues the same frame timeline.
+  func start(resetTimeline: Bool = true) throws {
     guard !isInstalled else { return }
     let input = engine.inputNode
     let hardware = input.inputFormat(forBus: 0)
@@ -73,7 +74,7 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
       throw Failure.unsupportedFormat
     }
     continuity.reset()
-    framePosition = 0
+    if resetTimeline { framePosition = 0 }
     accepting.withLock { $0 = true }
     input.installTap(onBus: 0, bufferSize: 4_096, format: format) { @Sendable [weak self] buffer, when in
       self?.receive(buffer, when: when, converter: converter)

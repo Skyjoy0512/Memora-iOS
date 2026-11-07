@@ -24,9 +24,24 @@ extension MemoraModel {
         recordingURL == audioURL && aiWorkspaceGeneration == workspaceGeneration &&
         recordingDraft?.id == originalDraftID && recordingDraft?.fileName == originalDraftName
     }
+    let writerManifest = await recorder.stopContinuous()
     stopRecorder()
     await endLiveActivity()
     guard ownsStoppedCapture() else { return }
+    // Persist the writer's verified manifest before verification reads the
+    // originals, so the draft and the files describe the same frame timeline.
+    if let writerManifest, var draft = recordingDraft {
+      draft.audioManifest = writerManifest
+      if let last = writerManifest.parts.last {
+        let url = MediaFiles.resolve(last.fileName)
+          ?? MediaFiles.directory.appendingPathComponent(last.fileName)
+        if MediaFiles.reference(for: url) == last.fileName {
+          draft.fileName = last.fileName
+          recordingURL = url
+        }
+      }
+      recordingDraft = draft
+    }
     let checkpoint = diagnostic?.begin(.persistence)
     let checkpointed = await checkpointRecordingDraft()
     diagnostic?.end(checkpoint, outcome: checkpointed ? .success : .failed)

@@ -23,6 +23,21 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-07 P0-1.3 実マイク→分割writer接続
+
+通常録音を実マイク入力＋15分分割writerへ切り替えた。
+`AudioRecorderService.prepareRecording()`で録音ID/最初の原本を決め、モデルがmanifestと
+下書きを永続化してから`startContinuous()`でtapを開始する。15分境界は
+`admitRecordingRotation`のSQLite同期commit後に次の原本を作成。停止は
+`stopContinuous()`でtap除去→drain→確定manifest返却、モデルが下書きへ反映して既存の
+検査/SQLite確定へ渡す。取消はdrainせず破棄。声紋登録は従来のAVAudioRecorderを維持。
+
+状態: 実装済み・検証済み（host）。実マイクtap、AAC境界、割り込み、24時間、RTF/CERは未検証。
+未対応: live文字起こしは別engine/tapのまま（録音入力との共有は次）。
+検証: chunk writer / recording start / finalization / recovery / media / checkpoint
+service / run coordinator / microphone input 各runner PASS、`git diff --check` PASS、
+`bitrig preview -platform iOS`成功（既存警告のみ）。
+
 ## 2026-11-07 P0-1.2 実マイク入力の所有と変換
 
 `RecordingMicrophoneInput`（`App/RecordingMicrophoneInput.swift`）と
@@ -30,12 +45,12 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 録音runごとに1つの`AVAudioEngine`入力tapを所有し、実フォーマットを
 44.1kHz/mono/非interleaved Float32へ変換して所有bufferをrecording sinkへ渡す。
 独自session・2つ目のtapは作らない。sampleTimeのgap/duplicateを検出する。
-**`startCapture`への接続は未実施**（通常録音は従来のAVAudioRecorder）。
+**`startCapture`への接続は当時未実施**（P0-1.3で接続済み）。
 
 状態: 実装済み・検証済み（host）。実機tapと接続は未検証。
 検証: `bash tools/checks/run-recording-microphone-input-checks.sh` PASS、
 既存の録音系runner PASS、`bitrig preview -platform iOS`成功（既存警告のみ）。
-次: P0-1.3（開始前manifest永続化、writer接続、停止drain、自動rotation）。
+次: P0-1.3（開始前manifest永続化、writer接続、停止drain、自動rotation）。→ P0-1.3で実施。
 
 ## 2026-11-07 P0-1.1 録音runの状態保護
 

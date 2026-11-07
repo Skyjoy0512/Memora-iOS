@@ -89,59 +89,79 @@ extension MemoraModel {
       return
     }
 
+    guard !Task.isCancelled else { return }
+    let prepared: AudioRecorderService.PreparedRecording
     do {
-      let url = try await recorder.start()
-      // Session ownership can suspend too. An obsolete request must not start
-      // a recording in the workspace that replaced it or retain its audio.
+      prepared = try recorder.prepareRecording()
+    } catch {
+      if !Task.isCancelled { recordingErrorMessage = error.localizedDescription }
+      return
+    }
+    let recordingID = prepared.manifest.recordingID
+    let fileName = prepared.manifest.parts[0].fileName
+    // The manifest and draft are durable before the microphone receives a
+    // sample, so a mid-recording rotation can be admitted against them.
+    recordingURL = prepared.fileURL
+    recordingStartedAt = .now
+    recordingPausedAt = nil
+    recordingPausedDuration = 0
+    recordingElapsed = 0
+    captureEvent = event
+    recordingSpaceID = destinationID
+    recordingTitle = event?.title ?? ""
+    recordingNote = ""
+    recordingMarkers = []
+    isRecordingPaused = false
+    recordingDraft = RecordingDraft(
+      id: recordingID,
+      fileName: fileName,
+      title: event?.title ?? "",
+      note: "",
+      startedAt: .now,
+      spaceID: destinationID,
+      audioManifest: prepared.manifest
+    )
+    guard persistNow(recordingDraft, forKey: StorageKey.recordingDraft) else {
+      recordingDraft = nil
+      recordingURL = nil
+      resetRecordingClock()
+      recordingErrorMessage = "録音の復旧情報を保存できないため、開始を中止しました。ストレージの空き容量を確認してください。"
+      return
+    }
+    let generation = aiWorkspaceGeneration
+    let admit: @Sendable (RecordingRotation) async -> Bool = { [weak self] rotation in
+      guard let self else { return false }
+      return await self.admitRecordingRotation(rotation, generation: generation)
+    }
+    do {
+      _ = try await recorder.startContinuous(prepared, admitRotation: admit)
+      // Session ownership can suspend too. An obsolete request must not keep a
+      // recording in the workspace that replaced it or retain its audio.
       guard validateCaptureContext(context), validateCaptureContext(destinationContext) else {
-        recorder.stop()
-        if !MediaFiles.delete(url) {
+        recorder.cancelContinuous()
+        recordingDraft = nil
+        recordingURL = nil
+        resetRecordingClock()
+        try? RecordStore.remove(StorageKey.recordingDraft)
+        if !MediaFiles.delete(prepared.fileURL) {
           deletionFailureMessage = "開始を取り消した録音ファイルを削除できませんでした。ストレージの空き容量を確認してください。"
         }
         return
       }
-      recordingURL = url
-      recordingStartedAt = .now
-      recordingPausedAt = nil
-      recordingPausedDuration = 0
-      recordingElapsed = 0
-      captureEvent = event
-      recordingSpaceID = destinationID
-      recordingTitle = event?.title ?? ""
-      recordingNote = ""
-      recordingMarkers = []
-      isRecordingPaused = false
       isRecording = true
       isCapturePresented = true
       levelMeter.reset()
       realtimeTranscriber.resetHistory()
-      if let recordingURL, let fileName = MediaFiles.reference(for: recordingURL) {
-        let recordingID = UUID()
-        recordingDraft = RecordingDraft(
-          id: recordingID,
-          fileName: fileName,
-          title: event?.title ?? "",
-          note: "",
-          startedAt: .now,
-          spaceID: destinationID,
-          audioManifest: .starting(id: recordingID, fileName: fileName)
-        )
-        guard persistNow(recordingDraft, forKey: StorageKey.recordingDraft) else {
-          stopRecorder()
-          isCapturePresented = false
-          recordingDraft = nil
-          _ = MediaFiles.delete(recordingURL)
-          resetRecordingClock()
-          recordingErrorMessage = "録音の復旧情報を保存できないため、開始を中止しました。ストレージの空き容量を確認してください。"
-          return
-        }
-      }
       startRecordingTicker()
       startLiveActivity()
       refreshRecordingResources()
       announce("録音を開始しました")
     } catch {
-      recordingErrorMessage = error.localizedDescription
+      recordingDraft = nil
+      recordingURL = nil
+      resetRecordingClock()
+      try? RecordStore.remove(StorageKey.recordingDraft)
+      if !Task.isCancelled { recordingErrorMessage = error.localizedDescription }
     }
   }
 
@@ -258,7 +278,7 @@ extension MemoraModel {
   /// saving and discarding, which differ only in what happens to the audio.
   func stopRecorder() {
     realtimeTranscriber.stop()
-    recorder.stop()
+    recorder.cancelContinuous()
     recordingTicker?.cancel()
     recordingTicker = nil
     levelTicker?.cancel()

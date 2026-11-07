@@ -30,7 +30,7 @@ enum RecordingStartChecks {
         MediaFiles.deleted = []
         await model.startCapture(spaceID: project.id, context: context)
         precondition(!model.isRecording && !model.isCapturePresented && model.recordingDraft == nil)
-        precondition(!model.isPreparingCapture && model.savedDrafts == 0)
+        precondition(!model.isPreparingCapture && model.savedDrafts == (phase == 3 ? 1 : 0))
         precondition(model.recorder.starts == (phase == 3 ? 1 : 0))
         precondition(model.recorder.stops == (phase == 3 ? 1 : 0))
         precondition(MediaFiles.deleted.count == (phase == 3 ? 1 : 0))
@@ -72,6 +72,18 @@ enum RecordingStartChecks {
 struct Meeting { var id: UUID; var spaceID: UUID? }
 struct UpcomingMeeting { var id: String; var title: String }
 
+enum AudioRecorderService {
+  struct PreparedRecording {
+    var manifest: RecordingAudioManifest
+    var directory: URL
+    var fileURL: URL
+  }
+}
+
+enum RecordStore {
+  static func remove(_ key: String) throws {}
+}
+
 @MainActor
 final class RecordingStartRecorderFixture {
   var beforePermission: (@MainActor () async -> Void)?
@@ -79,12 +91,23 @@ final class RecordingStartRecorderFixture {
   var allowed = true
   var starts = 0
   var stops = 0
+  private var prepared = 0
   func requestPermission() async -> Bool { await beforePermission?(); return allowed }
-  func start() async throws -> URL {
+  func prepareRecording() throws -> AudioRecorderService.PreparedRecording {
+    prepared += 1
+    let id = UUID()
+    let name = "fixture-\(prepared).m4a"
+    let url = URL(fileURLWithPath: "/fixture/\(name)")
+    return .init(manifest: .starting(id: id, fileName: name),
+      directory: url.deletingLastPathComponent(), fileURL: url)
+  }
+  func startContinuous(_ prepared: AudioRecorderService.PreparedRecording,
+                       admitRotation: @Sendable (RecordingRotation) async -> Bool) async throws -> URL {
     starts += 1
     await beforeStart?()
-    return URL(fileURLWithPath: "/fixture/new.m4a")
+    return prepared.fileURL
   }
+  func cancelContinuous() { stops += 1 }
   func stop() { stops += 1 }
 }
 
@@ -140,7 +163,8 @@ final class MemoraModel {
   func resolvePendingRecordingBeforeCapture() async -> Bool { await beforeRecovery?(); return true }
   func recurringProjectID(forEventID: String) -> UUID? { recurringID }
   func persistNow(_ draft: RecordingDraft?, forKey: String) -> Bool { savedDrafts += 1; return true }
-  func stopRecorder() { recorder.stop(); isRecording = false }
+  func stopRecorder() { recorder.cancelContinuous(); isRecording = false }
+  func admitRecordingRotation(_ rotation: RecordingRotation, generation: UUID) -> Bool { true }
   func resetRecordingClock() { recordingURL = nil }
   func startRecordingTicker() {}
   func startLiveActivity() {}

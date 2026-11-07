@@ -37,6 +37,7 @@ final class MemoraModel {
   var stops = 0
   var processed: [UUID] = []
   var announcements: [String] = []
+  var recorder = RecordingFinalizationRecorderFixture()
 
   func stopRecorder() { stops += 1; isRecording = false }
   func endLiveActivity() async { await beforeEndActivity?() }
@@ -96,3 +97,9 @@ struct RecordingFinalizationPerformanceFixture {
 }
 
 struct RecordingFinalizationEventFixture { var id: String }
+
+@MainActor
+final class RecordingFinalizationRecorderFixture {
+  var writerManifest: RecordingAudioManifest?
+  func stopContinuous() async -> RecordingAudioManifest? { writerManifest }
+}

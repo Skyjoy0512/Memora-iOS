@@ -65,7 +65,9 @@ struct RecordingCheckpointServiceChecks {
 @MainActor final class RecordingCheckpointServiceFixture {
   var recorder: RecorderCheckpointRecorderFixture? = .init()
   var recordedDuration: TimeInterval? = 86_400
-  var hasReportedFailure = false
+  var run = RecordingRunCoordinator()
+  var lastFailureReason: String?
+  var hasReportedFailure: Bool { run.isFailure }
   var storageMonitor: Task<Void, Never>?
   var diagnostic: AudioDiagnosticSession! = AudioDiagnosticSession(kind: .recording) { _ in }
   var diagnosticOutcome = AudioDiagnosticReport.Outcome.success
@@ -73,6 +75,10 @@ struct RecordingCheckpointServiceChecks {
   var failures: [String] = []
   var onInterruption: ((RecorderCheckpointEventFixture) -> Void)? {
     { [weak self] event in if case .failed(let reason) = event { self?.failures.append(reason) } }
+  }
+
+  init() {
+    if let id = run.begin() { run.markRecording(id) }
   }
 }
 
