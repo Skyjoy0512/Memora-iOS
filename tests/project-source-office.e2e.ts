@@ -17,7 +17,7 @@ test('Office source import preserves partial coverage and reopens extracted text
   const word = screen.getByRole('button', { name: /^QA-Word-/ }).first();
   await scrollToControl(screen, word);
   await tapControl(word);
-  await expect(screen.getByText('文書 · 一部解析済み', { exact: true })).toBeVisible();
+  await expect(screen.getByText(/^文書 · 取得：/)).toBeVisible();
   await expect(screen.getByText('MEMORA OFFICE FIXTURE', { exact: true })).toBeVisible();
   await app.screenshot('office-source-partial-coverage');
   await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }).first());
