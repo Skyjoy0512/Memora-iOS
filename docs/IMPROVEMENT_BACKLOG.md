@@ -1,5 +1,17 @@
 # Memora — 改善バックログ
 
+## 2026-11-07 録音runの状態機械と古いcallbackの遮断
+
+`RecordingRunCoordinator`を追加し、`AudioRecorderService`の録音開始/停止/失敗/リセットへ
+runID付きで接続した。preparing/recording/stopping/finalizing/savedを明示遷移し、
+二重start・二重stop・準備中の取消・古いrunIDからの遷移・重複した割り込み通知を拒否する。
+失敗理由は`failed(String)`として保持し、成功として扱わない。状態は 実装済み・
+host検証済み、実機未検証。記録のSQLite確定は既存のモデル経路のまま。
+検査: `bash tools/checks/run-recording-run-coordinator-checks.sh`、
+既存のchunk writer/start/media/recovery/extraction cache各runner、
+`bitrig preview -platform iOS`成功（既存警告のみ）。
+次: `RecordingMicrophoneInput`（実フォーマット→44.1k/mono/Float32）とwriter接続・停止drain。
+
 ## 2026-11-03 追加メニューを一つのボトムシートへ統合
 
 下部はAsk AI / ＋に集約。CaptureMenuSheet上部にカメラ・写真・ファイル・リンクを

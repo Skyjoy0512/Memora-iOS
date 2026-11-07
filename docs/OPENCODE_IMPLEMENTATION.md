@@ -23,6 +23,23 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-07 P0-1.1 録音runの状態保護
+
+`RecordingRunCoordinator`（`App/RecordingRunCoordinator.swift`）を追加し、
+`AudioRecorderService`のstart/stop/失敗/media services resetへ接続した。
+preparing→recording→stopping→finalizing→savedをrunIDで保護し、二重start/stop・
+古いcallback・準備中の取消を拒否する。記録のSQLite確定は既存の
+`stopCapture`→`commitRecordingSave`のまま変更していない。
+
+状態: 実装済み・検証済み（host）。実機の割り込み/二重操作は未検証。
+変更: `App/RecordingRunCoordinator.swift`（新規）、`App/AudioRecorderService.swift`、
+`tools/checks/RecordingRunCoordinatorChecks.swift`（新規）とrunner、関連docs。
+検証: `bash tools/checks/run-recording-run-coordinator-checks.sh` PASS、
+既存のchunk writer / recording start / recording media / recording recovery /
+source extraction cache各runner PASS、`git diff --check` PASS、
+`bitrig preview -platform iOS`成功（既存警告のみ）。
+次: 実マイク入力を44.1kHz/mono/Float32へ変換してwriterへ渡す接続と停止drain。
+
 ## フェーズ
 
 状態は `docs/IMPROVEMENT_BACKLOG.md` と同じ4つ（未着手／実装済み・未検証／

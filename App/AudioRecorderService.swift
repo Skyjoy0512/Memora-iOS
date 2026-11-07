@@ -149,8 +149,17 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     storageMonitor = nil
     // Only a live capture drains and finalizes; a failed, cancelled or already
     // stopped run must not be reported as saved here.
-    if let id = run.runID, run.owns(id) {
-      if run.beginStopping(id) { run.beginFinalizing(id) }
+    if let id = run.runID {
+      switch run.phase {
+      case .recording:
+        if run.beginStopping(id) { run.beginFinalizing(id) }
+      case .preparing:
+        run.cancel(id)
+      case .stopping:
+        run.beginFinalizing(id)
+      case .idle, .finalizing, .saved, .failed, .cancelled:
+        break
+      }
     }
     _ = recordedDuration
     if let diagnostic {
@@ -165,7 +174,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     recorder?.delegate = nil
     recorder?.stop()
     recorder = nil
-    if let id = run.runID { run.markSaved(id) }
+    if let id = run.runID, run.phase == .finalizing { run.markSaved(id) }
     run.reset()
     releaseSession()
   }
@@ -259,7 +268,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
 
   private func checkStorageAndDraft(identity: ObjectIdentifier, directory: URL) async -> Bool {
     guard !Task.isCancelled else { return false }
-    guard let active = recorder, ObjectIdentifier(active) == identity, !hasReportedFailure else { return false }
+    guard let active = recorder, ObjectIdentifier(active) == identity, run.phase == .recording else { return false }
     diagnostic?.setAudioSeconds(recordedDuration)
     if (try? SourceMediaStaging.availableBytes(directory)) ?? 0 < SourceMediaStaging.minimumAvailableBytes {
       diagnostic?.count(.storageStop)
@@ -268,7 +277,8 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
       return false
     }
     let saved = if let onCheckpoint { await onCheckpoint() } else { true }
-    guard !Task.isCancelled, let active = recorder, ObjectIdentifier(active) == identity, !hasReportedFailure else { return false }
+    guard !Task.isCancelled, let active = recorder, ObjectIdentifier(active) == identity,
+          run.phase == .recording else { return false }
     if !saved {
       diagnostic?.count(.draftCheckpointFailure)
       handleUnexpectedStop(identity: identity,
@@ -299,6 +309,11 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
           self.diagnostic?.count(.audioReset)
           self.diagnosticOutcome = .interrupted
           _ = self.recordedDuration
+          if let id = self.run.runID {
+            let reason = "オーディオがリセットされました。"
+            self.lastFailureReason = reason
+            self.run.fail(id, reason: reason)
+          }
           self.recorder?.delegate = nil
           self.recorder = nil
           self.onInterruption?(.reset)

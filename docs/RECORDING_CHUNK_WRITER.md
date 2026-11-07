@@ -46,6 +46,22 @@ admission成功後、次ファイル作成前に停止すれば、下書きに�
 通常保存では確認できた音声を既存の処理経路へ渡す。欠落/不一致は引き続き失敗として保持する。
 一部分のaudioURLを全体とみなすことはない。
 
+## 録音runの状態保護
+
+2026-11-07。`RecordingRunCoordinator`を追加し、`AudioRecorderService`の通常録音へ接続した。
+idle → preparing → recording → stopping → finalizing → saved をrunID付きで管理し、
+二重start/stop、古いcallback、準備中の取消、media servicesのresetを明示的な失敗へ落とす。
+失敗・取消・保存済みのあとは次のrunを開始できる。`stop()`の二重呼び出しはfinalizing以降を
+再遷移させない。`hasReportedFailure`の代わりにrunのphaseで重複した割り込み通知を拒否する。
+
+この範囲は**音声キャプチャのライフサイクル**であり、記録のSQLite確定は従来どおり
+モデル側の`stopCapture`→`commitRecordingSave`が担う。実マイク→writerの接続、停止drain、
+自動rotationはまだ有効ではない。新しい検査は
+`bash tools/checks/run-recording-run-coordinator-checks.sh`で、状態遷移・二重操作・
+古いrunID・各段階の失敗・取消をhostで確認する。既存のchunk writer/start/media/recovery/
+extraction cache各検査と`bitrig preview -platform iOS`も通過した（既存警告のみ）。
+実機の割り込み・二重操作・24時間動作は未検証。
+
 ## 計測・検査の状態
 
 任意の既存diagnostic sessionへ保存待ち時間、確定区間数、書込み済み音声秒数を通知する。
