@@ -2,6 +2,7 @@ import AVFAudio
 import Foundation
 import Observation
 import Speech
+import Synchronization
 
 /// Shows a live transcription while recording, on iOS 26 and only from the
 /// on-device `SpeechAnalyzer`. It is display-only: the result saved with the
@@ -21,6 +22,30 @@ final class RealtimeTranscriptionService {
   @ObservationIgnored private var session: Any?
   @ObservationIgnored private var stoppingTask: Task<Void, Never>?
   @ObservationIgnored private var stoppingGeneration = UUID()
+  /// The prepared live converter, written after the analyzer format is known and
+  /// read by the recording tap. The recording always owns the microphone.
+  @ObservationIgnored private let liveInput = Mutex<LiveInputSlot?>(nil)
+
+  private struct LiveInputSlot: @unchecked Sendable {
+    var id: UUID
+    var feeder: LiveAudioInputFeeder
+  }
+
+  /// Called from the recording tap (not the main actor). Dropped when no live
+  /// session has finished preparing.
+  nonisolated func consume(_ buffer: AVAudioPCMBuffer) {
+    liveInput.withLock { $0 }?.feeder.consume(buffer)
+  }
+
+  private func install(_ feeder: LiveAudioInputFeeder?, id: UUID) {
+    liveInput.withLock { slot in
+      if let feeder {
+        slot = LiveInputSlot(id: id, feeder: feeder)
+      } else if slot?.id == id {
+        slot = nil
+      }
+    }
+  }
 
   static let enabledKey = "memora.liveTranscription"
 
@@ -61,6 +86,9 @@ final class RealtimeTranscriptionService {
       },
       onUnavailable: { [weak self] reason in
         self?.unavailableReason = reason
+      },
+      installFeeder: { [weak self] id, feeder in
+        self?.install(feeder, id: id)
       }
     )
     self.session = session
@@ -95,8 +123,9 @@ final class RealtimeTranscriptionService {
   }
 }
 
-/// The iOS 26 live session: an input tap feeds the on-device analyzer and its
-/// volatile results are handed back to the service.
+/// The iOS 26 live session: it converts the recording's shared microphone
+/// timeline for the on-device analyzer and hands volatile results back to the
+/// service. It never installs an audio tap of its own while recording.
 @available(iOS 26.0, *)
 @MainActor
 private final class RealtimeTranscriptionSession {
@@ -105,11 +134,11 @@ private final class RealtimeTranscriptionSession {
   private let onVolatile: (String) -> Void
   private let onRunning: (Bool) -> Void
   private let onUnavailable: (String) -> Void
+  private let installFeeder: (UUID, LiveAudioInputFeeder?) -> Void
+  private let id = UUID()
 
-  private var engine: AVAudioEngine?
   private var task: Task<Void, Never>?
   private var continuation: AsyncThrowingStream<AnalyzerInput, Error>.Continuation?
-  private var hasInstalledInputTap = false
   private var isStopped = false
   private var analyzer: SpeechAnalyzer?
 
@@ -118,13 +147,15 @@ private final class RealtimeTranscriptionSession {
     onFinal: @escaping (String) -> Void,
     onVolatile: @escaping (String) -> Void,
     onRunning: @escaping (Bool) -> Void,
-    onUnavailable: @escaping (String) -> Void
+    onUnavailable: @escaping (String) -> Void,
+    installFeeder: @escaping (UUID, LiveAudioInputFeeder?) -> Void
   ) {
     self.locale = locale
     self.onFinal = onFinal
     self.onVolatile = onVolatile
     self.onRunning = onRunning
     self.onUnavailable = onUnavailable
+    self.installFeeder = installFeeder
   }
 
   func start(after previous: Task<Void, Never>?) {
@@ -141,7 +172,7 @@ private final class RealtimeTranscriptionSession {
     let previous = task
     task?.cancel()
     task = nil
-    stopEngine()
+    stopInput()
     let analyzer = self.analyzer
     self.analyzer = nil
     Task { await analyzer?.cancelAndFinishNow() }
@@ -149,15 +180,10 @@ private final class RealtimeTranscriptionSession {
     return previous
   }
 
-  private func stopEngine() {
+  private func stopInput() {
     continuation?.finish()
     continuation = nil
-    if hasInstalledInputTap {
-      engine?.inputNode.removeTap(onBus: 0)
-      hasInstalledInputTap = false
-    }
-    engine?.stop()
-    engine = nil
+    installFeeder(id, nil)
   }
 
   private func run() async {
@@ -203,46 +229,27 @@ private final class RealtimeTranscriptionSession {
       onUnavailable("マイクの入力がありません。録音後の文字起こしをお使いください。")
       return
     }
-    let engine = AVAudioEngine()
-    let input = engine.inputNode
-    let format = input.outputFormat(forBus: 0)
-    let hardwareFormat = input.inputFormat(forBus: 0)
-    guard format.sampleRate.isFinite, format.sampleRate > 0, format.channelCount > 0,
-          hardwareFormat.sampleRate.isFinite, hardwareFormat.sampleRate > 0, hardwareFormat.channelCount > 0,
-          format.sampleRate == hardwareFormat.sampleRate else {
-      onUnavailable("マイクの形式を確認できませんでした。録音後の文字起こしをお使いください。")
-      return
-    }
+    // The recording owns the microphone and already produces this format.
+    let format = RecordingMicrophoneInput.targetFormat
     guard let analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber], considering: format) else {
       if !isStopped { onUnavailable("録音中の文字起こしに対応する音声形式がありません。") }
       return
     }
     guard !Task.isCancelled, !isStopped else { return }
-    guard input.outputFormat(forBus: 0) == format,
-          let converter = LiveAudioBufferConverter(source: format, target: analyzerFormat) else {
-      onUnavailable("マイクの形式が変わりました。録音後の文字起こしをお使いください。")
-      return
-    }
     let (stream, continuation) = AsyncThrowingStream<AnalyzerInput, Error>.makeStream(bufferingPolicy: .bufferingNewest(16))
     self.continuation = continuation
-    input.installTap(onBus: 0, bufferSize: 4_096, format: nil) { @Sendable buffer, _ in
-      do {
-        guard let ownedBuffer = try converter.convert(buffer) else { return }
-        if case .dropped = continuation.yield(AnalyzerInput(buffer: ownedBuffer)) {
-          diagnostic?.count(.liveBufferDropped)
-          continuation.finish(throwing: CocoaError(.coderInvalidValue))
-        }
-      } catch {
-        continuation.finish(throwing: error)
-      }
+    guard let feeder = LiveAudioInputFeeder(source: format, target: analyzerFormat,
+      continuation: continuation, diagnostic: diagnostic) else {
+      onUnavailable("録音中の文字起こしに対応する音声形式がありません。")
+      return
     }
-    hasInstalledInputTap = true
-    self.engine = engine
+    installFeeder(id, feeder)
 
     let analyzer = SpeechAnalyzer(modules: [transcriber])
     self.analyzer = analyzer
     AudioProcessingDiagnostics.signposter.endInterval("LiveModelPreparation", preparation)
     diagnostic?.end(modelPreparation, outcome: .success)
+    onRunning(true)
     _ = diagnostic?.begin(.recognition)
     prepared = true
     let recognition = AudioProcessingDiagnostics.signposter.beginInterval("LiveRecognition")
@@ -271,9 +278,6 @@ private final class RealtimeTranscriptionSession {
     }
 
     do {
-      engine.prepare()
-      try engine.start()
-      onRunning(true)
       diagnosticOutcome = .success
       _ = try await analyzer.analyzeSequence(stream)
       try await analyzer.finalizeAndFinishThroughEndOfInput()
@@ -285,7 +289,7 @@ private final class RealtimeTranscriptionSession {
     }
 
     collect.cancel()
-    stopEngine()
+    stopInput()
     // Finishing the stream alone does not guarantee the model has stopped.
     await analyzer.cancelAndFinishNow()
     self.analyzer = nil

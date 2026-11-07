@@ -1,3 +1,4 @@
+import AVFAudio
 import Foundation
 
 @main
@@ -102,7 +103,8 @@ final class RecordingStartRecorderFixture {
       directory: url.deletingLastPathComponent(), fileURL: url)
   }
   func startContinuous(_ prepared: AudioRecorderService.PreparedRecording,
-                       admitRotation: @Sendable (RecordingRotation) async -> Bool) async throws -> URL {
+                       admitRotation: @Sendable (RecordingRotation) async -> Bool,
+                       liveSink: (@Sendable (AVAudioPCMBuffer) -> Void)? = nil) async throws -> URL {
     starts += 1
     await beforeStart?()
     return prepared.fileURL
@@ -117,7 +119,10 @@ final class RecordingStartRecorderFixture {
   static func reference(for url: URL) -> String? { url.lastPathComponent }
 }
 struct RecordingStartMeterFixture { func reset() {} }
-struct RecordingStartTranscriberFixture { func resetHistory() {} }
+struct RecordingStartTranscriberFixture {
+  func resetHistory() {}
+  func consume(_ buffer: AVAudioPCMBuffer) {}
+}
 
 @MainActor
 final class MemoraModel {

@@ -46,6 +46,20 @@ admission成功後、次ファイル作成前に停止すれば、下書きに�
 通常保存では確認できた音声を既存の処理経路へ渡す。欠落/不一致は引き続き失敗として保持する。
 一部分のaudioURLを全体とみなすことはない。
 
+## live文字起こしとの入力共有
+
+2026-11-07。live文字起こしが独自の`AVAudioEngine`入力tapを張る経路を廃止し、
+録音のtapを唯一のマイク入力にした。`RecordingMicrophoneInput`はwriterへ渡した後、
+同じ44.1kHz/mono bufferを`liveSink`へ渡す。`RealtimeTranscriptionService`は
+`LiveAudioInputFeeder`（44.1kHz→analyzer形式の変換とbounded stream）を準備できた時点で
+スレッド安全なslotへ公開し、録音tapが`consume(_:)`で流し込む。準備前・停止後・満杯時は
+入力を捨て、録音は継続する。`consume`は`nonisolated`で、MainActorへ戻さない。
+liveの失敗や遅延は録音・原本・保存へ影響しない。省電力でliveを止めても録音は続き、
+再開すると新しいfeederを同じ録音tapへ差し替える（古いsessionはIDで自分のslotだけを消す）。
+
+**未検証**: 実機でのSpeechAnalyzer複数buffer入力、準備中の取りこぼし、live表示の遅延、
+省電力復帰、二重tapが無いことの実機確認。ホストでは翻訳/変換ロジックと文字起こし履歴のみ。
+
 ## 実マイクからwriterへの接続
 
 2026-11-07。通常録音を`AVAudioRecorder`から、`RecordingMicrophoneInput`＋
@@ -64,9 +78,8 @@ writerを失効させる。低容量・checkpoint失敗・入力欠落/重複/�
 media services resetは`failed`として既存の保存経路へ渡し、成功扱いにしない。
 
 **未検証**: 実機のマイクtap、AAC priming/flushと引用時刻のずれ、15分境界の音切れ、
-割り込み/復帰、24時間・電池/熱/メモリ、RTF/CER。現在live文字起こしは
-`RealtimeTranscriptionService`が別engine/tapを使っており、録音入力との共有
-（C.3の一本化）は次の小タスク。ホスト検査はchunk writer/start/finalization/
+割り込み/復帰、24時間・電池/熱/メモリ、RTF/CER。live文字起こしとの入力共有は
+次の節のとおり接続済み（実機未検証）。ホスト検査はchunk writer/start/finalization/
 recovery/media/coordinator/microphone-inputの各runnerと`bitrig preview`。
 
 ## 実マイク入力の所有

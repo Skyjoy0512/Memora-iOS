@@ -23,6 +23,19 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-07 P0-1.4 live文字起こしを録音入力へ一本化
+
+`RealtimeTranscriptionService`の独自engine/tapを削除し、録音の`RecordingMicrophoneInput`
+を唯一のマイク入力にした。`LiveAudioInputFeeder`が44.1kHz/monoをanalyzer形式へ変換し、
+録音tapが`consume`で流す。準備前/停止後/満杯は破棄し録音は継続。`consume`はnonisolated。
+省電力停止・再開では新しいfeederを同じtapへ差し替える。
+
+状態: 実装済み・検証済み（host）。実機のSpeechAnalyzer入力/遅延/二重tapなしは未検証。
+検証: recording start / audio resource / optimization 各runner PASS、
+`bitrig preview -platform iOS`成功（既存警告のみ）。
+付随修正: `run-meeting-persistence-performance-checks.py`のsource一覧に
+`RecordingAudioPart`/`RecordingAudioManifest`を追加（既存の未同梱で失敗していた）。
+
 ## 2026-11-07 P0-1.3 実マイク→分割writer接続
 
 通常録音を実マイク入力＋15分分割writerへ切り替えた。

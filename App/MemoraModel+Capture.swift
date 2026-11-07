@@ -1,4 +1,5 @@
 import ActivityKit
+import AVFAudio
 import Foundation
 import UIKit
 
@@ -133,8 +134,12 @@ extension MemoraModel {
       guard let self else { return false }
       return await self.admitRecordingRotation(rotation, generation: generation)
     }
+    // The recording tap feeds live recognition as a secondary sink, so there is
+    // one microphone tap. The live service drops input until it is prepared.
+    let liveService = realtimeTranscriber
     do {
-      _ = try await recorder.startContinuous(prepared, admitRotation: admit)
+      _ = try await recorder.startContinuous(prepared, admitRotation: admit,
+        liveSink: { buffer in liveService.consume(buffer) })
       // Session ownership can suspend too. An obsolete request must not keep a
       // recording in the workspace that replaced it or retain its audio.
       guard validateCaptureContext(context), validateCaptureContext(destinationContext) else {

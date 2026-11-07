@@ -1,5 +1,17 @@
 # Memora — 改善バックログ
 
+## 2026-11-07 live文字起こしを録音入力へ一本化
+
+live文字起こしの独自`AVAudioEngine` tapを廃止し、録音tapを唯一のマイク入力にした。
+`RecordingMicrophoneInput`がwriterへ渡した同じbufferを`liveSink`へ流し、
+`RealtimeTranscriptionService`は準備完了後に`LiveAudioInputFeeder`を公開する。
+準備前/停止後/満杯は破棄し、録音は継続。`consume`はnonisolatedでMainActorに戻さない。
+省電力停止後は新しいfeederを同じ録音tapへ差し替える。状態は 実装済み・host検証済み、
+実機のSpeechAnalyzer入力・遅延・二重tapなしは未検証。
+検査: recording start / audio resource / optimization（meeting performance含む）各runner PASS、
+`bitrig preview -platform iOS`成功。既存`run-meeting-persistence-performance-checks.py`が
+`RecordingAudioManifest`未同梱で失敗していたため、source一覧に追加して復旧した。
+
 ## 2026-11-07 通常録音を実マイク→分割writerへ接続
 
 通常録音を`AVAudioRecorder`から`RecordingMicrophoneInput`＋`RecordingChunkWriter`へ切り替えた。

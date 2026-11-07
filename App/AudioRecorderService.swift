@@ -222,7 +222,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   /// writer opens the next original.
   func startContinuous(_ prepared: PreparedRecording,
                        admitRotation: @escaping @Sendable (RecordingRotation) async -> Bool,
-                       liveSink: (@Sendable (RecordingMicrophoneInput.Output) -> Void)? = nil) async throws -> URL {
+                       liveSink: (@Sendable (AVAudioPCMBuffer) -> Void)? = nil) async throws -> URL {
     guard recorder == nil, writer == nil, microphone == nil, let runID = run.begin() else {
       throw AudioRecorderError.sessionBusy
     }

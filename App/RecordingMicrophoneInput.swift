@@ -36,7 +36,7 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
 
   private let engine: AVAudioEngine
   private let sink: Sink
-  private let liveSink: (@Sendable (Output) -> Void)?
+  private let liveSink: (@Sendable (AVAudioPCMBuffer) -> Void)?
   private let onFailure: @Sendable (Failure) -> Void
   private let accepting = Mutex(false)
   private var isInstalled = false
@@ -44,7 +44,7 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
   private var continuity = RecordingInputContinuity()
   private var framePosition: Int64 = 0
 
-  init(sink: @escaping Sink, liveSink: (@Sendable (Output) -> Void)? = nil,
+  init(sink: @escaping Sink, liveSink: (@Sendable (AVAudioPCMBuffer) -> Void)? = nil,
        onFailure: @escaping @Sendable (Failure) -> Void) {
     engine = AVAudioEngine()
     self.sink = sink
@@ -125,7 +125,7 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
         return
       }
       framePosition += Int64(converted.frameLength)
-      liveSink?(output)
+      liveSink?(converted)
     } catch {
       fail(.conversion)
     }

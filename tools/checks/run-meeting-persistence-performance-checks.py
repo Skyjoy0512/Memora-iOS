@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--counts', nargs='+', type=int, choices=[1000, 5000, 10000, 50000], default=[1000, 10000])
 args = parser.parse_args()
 names = ['Meeting', 'MeetingSource', 'MeetingStatus', 'RecordingMarker', 'TranscriptSegment',
+         'RecordingAudioPart', 'RecordingAudioManifest',
          'SpeakerIdentificationStatus', 'RecordPrivacy', 'SummarySensitivity', 'TemplateSummary',
          'SummarySection', 'SummaryEvidence', 'SummaryEvidenceLink', 'GeneratedSummaryEvidence',
          'SummaryLength', 'SummaryPreferences', 'SummaryProcessingMode', 'LocalStore',
