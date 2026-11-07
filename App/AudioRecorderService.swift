@@ -23,9 +23,11 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   var onCheckpoint: (() async -> Bool)?
 
   private var recorder: AVAudioRecorder?
-  private var startRunID: UUID?
+  /// Guards the capture run so a double start/stop or a late callback from an
+  /// older run cannot move the state of a newer one.
+  private var run = RecordingRunCoordinator()
   private var lastRecordedDuration: TimeInterval?
-  private var hasReportedFailure = false
+  private(set) var lastFailureReason: String?
   private var storageMonitor: Task<Void, Never>?
   private var diagnostic: AudioDiagnosticSession?
   private var diagnosticOutcome: AudioDiagnosticReport.Outcome = .success
@@ -67,24 +69,25 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     // Recording waits for anything else using the session to stop, then takes it
     // and keeps it until it stops, so another feature cannot switch the audio off
     // underneath it. Every failure below hands the claim back.
-    guard recorder == nil, startRunID == nil else { throw AudioRecorderError.sessionBusy }
-    let runID = UUID()
-    startRunID = runID
-    defer { if startRunID == runID { startRunID = nil } }
+    guard recorder == nil, let runID = run.begin() else { throw AudioRecorderError.sessionBusy }
+    lastFailureReason = nil
     let token: AudioSessionCoordinator.Token
     switch purpose {
     case .recording:
       guard let claimed = await coordinator.beginRecording() else {
+        run.cancel(runID)
         throw AudioRecorderError.sessionBusy
       }
       token = claimed
     case .voiceEnrollment:
       guard let claimed = coordinator.claim(.voiceEnrollment) else {
+        run.cancel(runID)
         throw AudioRecorderError.sessionBusy
       }
       token = claimed
     }
-    guard startRunID == runID, !Task.isCancelled else {
+    guard run.owns(runID), !Task.isCancelled else {
+      run.cancel(runID)
       if token.use == .recording {
         coordinator.endRecording(token)
       } else {
@@ -94,7 +97,6 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     }
     sessionToken = token
     lastRecordedDuration = nil
-    hasReportedFailure = false
     var destination: URL?
     do {
       let session = AVAudioSession.sharedInstance()
@@ -123,6 +125,10 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
       guard recorder.prepareToRecord(), recorder.record() else {
         throw AudioRecorderError.couldNotStart
       }
+      guard run.markRecording(runID) else {
+        recorder.stop()
+        throw AudioRecorderError.couldNotStart
+      }
       self.recorder = recorder
       if purpose == .recording {
         diagnostic = AudioProcessingDiagnostics.begin(.recording)
@@ -131,6 +137,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
       }
       return url
     } catch {
+      run.cancel(runID)
       releaseSession()
       if let destination { try? FileManager.default.removeItem(at: destination) }
       throw error
@@ -140,7 +147,11 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   func stop() {
     storageMonitor?.cancel()
     storageMonitor = nil
-    startRunID = nil
+    // Only a live capture drains and finalizes; a failed, cancelled or already
+    // stopped run must not be reported as saved here.
+    if let id = run.runID, run.owns(id) {
+      if run.beginStopping(id) { run.beginFinalizing(id) }
+    }
     _ = recordedDuration
     if let diagnostic {
       diagnostic.setAudioSeconds(lastRecordedDuration)
@@ -154,6 +165,8 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     recorder?.delegate = nil
     recorder?.stop()
     recorder = nil
+    if let id = run.runID { run.markSaved(id) }
+    run.reset()
     releaseSession()
   }
 
@@ -189,7 +202,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   }
 
   func resume() -> Bool {
-    guard let recorder, !hasReportedFailure, let sessionToken,
+    guard let recorder, run.phase == .recording, let sessionToken,
           coordinator.owns(sessionToken) else { return false }
     do {
       try AVAudioSession.sharedInstance().setActive(true)
@@ -220,9 +233,10 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   }
 
   private func handleUnexpectedStop(identity: ObjectIdentifier, reason: String) {
-    guard let recorder, ObjectIdentifier(recorder) == identity, !hasReportedFailure else { return }
+    guard let recorder, ObjectIdentifier(recorder) == identity,
+          let runID = run.runID, run.fail(runID, reason: reason) else { return }
     _ = recordedDuration
-    hasReportedFailure = true
+    lastFailureReason = reason
     diagnosticOutcome = .failed
     recorder.pause()
     storageMonitor?.cancel()
