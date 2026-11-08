@@ -9,6 +9,8 @@
 - 回帰E2E: `source-ask-ai` / `source-web-citation` / `source-audio-citation` / `design-accessibility` PASS。
 - 録音E2E: `recording-power` PASS、`recording-lifecycle` 3件 PASS（10秒バックグラウンド省電力、
   SIGKILL復旧、確定AAC復旧）。古い「メモのタイトル」「新規作成」表記を現行UIへ更新。
+- 資料E2E: `project-source-office` / `project-source-photo` / `project-source-note` /
+  `project-source-recovery` PASS。実Webは`run-real-web-e2e.sh`（オプトイン）を追加。
 - PPTX: Quick Look差14/65・host差38/65を型ID別に記録。Office目視0/65。12枚デッキの機械検査PASS。
 - 未実施: 実HTTPS取得、実STT/実音声、クラウドLLM、実機、CI（workflow_dispatchのみ・未pushのため）。
 

@@ -42,6 +42,8 @@ host checkとシミュレータE2E（タップ順→保存→再起動→解除�
 - 回帰E2E: `source-ask-ai` / `source-web-citation` / `source-audio-citation` / `design-accessibility` PASS。
 - 録音E2E: `recording-power` PASS、`recording-lifecycle` 3件 PASS。tap計測の実機手順を
   `AUDIO_MEASUREMENT.md`へ追記。
+- 資料E2E: `project-source-office` / `project-source-photo` PASS。実Web用のオプトイン
+  `source-web-real.e2e.ts`と`run-real-web-e2e.sh`、範囲を[REAL_DATA_E2E.md](REAL_DATA_E2E.md)へ記録。
 - PPTX: Quick Look差14/65・host差38/65を型ID別に記録。Office目視0/65。12枚デッキの機械検査PASS。
 - 未実施: 実HTTPS取得、実STT/実音声、クラウドLLM、実機、CI（workflow_dispatchのみ・未pushのため）。
 
