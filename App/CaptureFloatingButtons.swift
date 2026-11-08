@@ -8,6 +8,8 @@ struct CaptureFloatingButtons: View {
   var spaceID: UUID?
   var isVisible = true
   var includesProjectCreation = false
+  /// Provided by the presenter so the button can morph into the capture sheet.
+  var morphNamespace: Namespace.ID?
   var onOpenCaptureMenu: () -> Void = {}
   @State private var isDialogPresented = false
   @State private var isFileImporterPresented = false
@@ -54,9 +56,14 @@ struct CaptureFloatingButtons: View {
       }
   }
 
-  private var menus: some View {
+  @ViewBuilder private var menus: some View {
     Button(action: onOpenCaptureMenu) {
-      menuLabel("追加メニュー", icon: .plus)
+      if let morphNamespace {
+        menuLabel("追加メニュー", icon: .plus)
+          .matchedTransitionSource(id: "captureMenu", in: morphNamespace)
+      } else {
+        menuLabel("追加メニュー", icon: .plus)
+      }
     }
     .buttonStyle(.plain)
   }

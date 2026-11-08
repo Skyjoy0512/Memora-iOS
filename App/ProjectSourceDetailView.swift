@@ -4,6 +4,7 @@ import QuickLook
 struct ProjectSourceDetailView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var sourceID: UUID
   var initialExcerpt: String? = nil
   @State private var previewURL: URL?
@@ -20,6 +21,7 @@ struct ProjectSourceDetailView: View {
   @State private var showsOriginal = false
   @State private var textLoader = ProjectSourceTextLoader()
   @State private var textRetry = 0
+  @Namespace private var attachmentZoom
 
   var body: some View {
     if let source = model.source(id: sourceID) {
@@ -283,8 +285,16 @@ struct ProjectSourceDetailView: View {
       Text("添付資料はそれぞれ独立して検索・引用されます。").font(.caption).foregroundStyle(.secondary)
       ForEach(Array(attachments.enumerated()), id: \.element.id) { index, attachment in
         HStack(spacing: 8) {
-          NavigationLink { ProjectSourceDetailView(sourceID: attachment.id) } label: {
+          NavigationLink {
+            if reduceMotion {
+              ProjectSourceDetailView(sourceID: attachment.id)
+            } else {
+              ProjectSourceDetailView(sourceID: attachment.id)
+                .navigationTransition(.zoom(sourceID: attachment.id, in: attachmentZoom))
+            }
+          } label: {
             ProjectSourceRow(source: attachment)
+              .matchedTransitionSource(id: attachment.id, in: attachmentZoom)
           }
           .buttonStyle(.plain)
           Menu {

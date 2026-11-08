@@ -47,6 +47,14 @@ host checkとシミュレータE2E（タップ順→保存→再起動→解除�
 - PPTX: Quick Look差14/65・host差38/65を型ID別に記録。Office目視0/65。12枚デッキの機械検査PASS。
 - 未実施: 実HTTPS取得、実STT/実音声、クラウドLLM、実機、CI（workflow_dispatchのみ・未pushのため）。
 
+## 2026-11-08 UI-1 Apple純正モーフィング（シミュレータ検証・実機未検証）
+
+`matchedTransitionSource`と`navigationTransition(.zoom)`で、ホーム作成シート・
+ジャーナル追加シート・ライブラリ/ワークスペースのカード詳細・添付資料詳細を
+ネイティブ遷移にした。AskAIの右下FABは追加せず、中央入力と既存Menuを維持。
+Reduce Motionでは標準遷移。iOS 27専用APIは不使用。詳細は
+[UI_MORPHING.md](UI_MORPHING.md)。
+
 ## 今回の改善反映
 
 2026-11-02 Audio IntelligenceはCodexで直接段階実装。OpenCodeへの委託は行っていない。

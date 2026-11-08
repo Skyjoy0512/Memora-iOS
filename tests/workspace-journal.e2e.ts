@@ -140,7 +140,7 @@ test('journal insertion proposes the selected day and the time between events', 
   const day = new Date();
   day.setDate(day.getDate() - 1);
   const dayName = new RegExp(`^${day.getFullYear()}/${day.getMonth() + 1}/${day.getDate()}[日月火水木金土]曜日、`);
-  const value = (time: string) => new RegExp(`^${time}, ${day.getFullYear()}/${day.getMonth() + 1}/${day.getDate()}$`);
+  const value = (time: string) => new RegExp(`^${time}, ${day.getFullYear()}/0?${day.getMonth() + 1}/0?${day.getDate()}$`);
   await tapStable(screen.getByRole('button', { name: dayName }));
   await addMemo(screen, 'Insertion 09:00');
   const tail = screen.getByRole('button', { name: '記録を追加', exact: true }).last();

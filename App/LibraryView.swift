@@ -27,6 +27,7 @@ struct LibraryView: View {
   @State private var renameTarget: Meeting?
   @State private var moveTarget: Meeting?
   @State private var shareTarget: Meeting?
+  @Namespace private var zoomNamespace
   var onOpenSidebar: () -> Void
 
   private var librarySectionPicker: some View {
@@ -153,9 +154,28 @@ struct LibraryView: View {
       .navigationDestination(for: LibraryRoute.self) { route in
         switch route {
         case .meeting(let id):
-          MeetingDetailView(meetingID: id)
-            .memoraAppear()
-        default: LibraryDestinationView(route: route)
+          if reduceMotion {
+            MeetingDetailView(meetingID: id).memoraAppear()
+          } else {
+            MeetingDetailView(meetingID: id).memoraAppear()
+              .navigationTransition(.zoom(sourceID: id, in: zoomNamespace))
+          }
+        case .projectSource(let id):
+          if reduceMotion {
+            LibraryDestinationView(route: route)
+          } else {
+            LibraryDestinationView(route: route)
+              .navigationTransition(.zoom(sourceID: id, in: zoomNamespace))
+          }
+        case .sharedRecord(let id):
+          if reduceMotion {
+            LibraryDestinationView(route: route)
+          } else {
+            LibraryDestinationView(route: route)
+              .navigationTransition(.zoom(sourceID: id, in: zoomNamespace))
+          }
+        default:
+          LibraryDestinationView(route: route)
         }
       }
       .confirmationDialog(
@@ -323,6 +343,7 @@ struct LibraryView: View {
           Section {
             ForEach(section.meetings) { meeting in
               meetingRow(meeting)
+                .matchedTransitionSource(id: meeting.id, in: zoomNamespace)
             }
           } header: {
             Text(section.title)
@@ -350,7 +371,10 @@ struct LibraryView: View {
         if hasSavedSources {
           Section {
             ForEach(savedSources) { source in
-              NavigationLink(value: LibraryRoute.projectSource(source.id)) { ProjectSourceRow(source: source) }
+              NavigationLink(value: LibraryRoute.projectSource(source.id)) {
+                ProjectSourceRow(source: source)
+                  .matchedTransitionSource(id: source.id, in: zoomNamespace)
+              }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset,
                   bottom: 8, trailing: ProjectLayout.horizontalInset))
@@ -495,6 +519,7 @@ struct LibraryView: View {
     } label: {
       LibraryRecordRow(meeting: record.meeting, showsPreview: layout == .card,
         sharedBy: record.ownerName)
+        .matchedTransitionSource(id: record.id, in: zoomNamespace)
     }
     .buttonStyle(.plain)
     .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
