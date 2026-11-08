@@ -29,7 +29,7 @@ extension MemoraModel {
   }
 
   func addProjectNote(title: String, text: String, projectID: UUID?, presentsErrorsLocally: Bool = false,
-                      removing: [String] = []) async throws -> UUID? {
+                      removing: [String] = [], attachedSourceIDs: [UUID] = []) async throws -> UUID? {
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
           !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
     let project = projectID.flatMap { space(id: $0) }
@@ -41,16 +41,39 @@ extension MemoraModel {
           aiWorkspaceGeneration == generation, projectID.flatMap({ space(id: $0) }) == project else {
       await ProjectSourceFiles.shared.remove([name]); return nil
     }
-    var source = ProjectSource(projectID: projectID, kind: .note,
+    var note = ProjectSource(projectID: projectID, kind: .note,
       title: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? String(text.prefix(40)) : title)
-    source.extractedTextReference = name
-    source.processingStatus = .ready
-    source.textCoverage = .complete
+    note.extractedTextReference = name
+    note.processingStatus = .ready
+    note.textCoverage = .complete
+    // Only existing sources from the same save destination may be attached.
+    var seen = Set<UUID>()
+    let attached = attachedSourceIDs.filter { id in
+      guard let candidate = source(id: id), id != note.id, seen.insert(id).inserted else { return false }
+      return candidate.projectID == projectID
+    }
+    note.attachedSourceIDs = attached.isEmpty ? nil : Array(attached.prefix(64))
     // A committed note cannot leave behind a draft that restores as a duplicate.
-    guard storeProjectSource(source, presentsErrorsLocally: presentsErrorsLocally, removing: removing) else {
+    guard storeProjectSource(note, presentsErrorsLocally: presentsErrorsLocally, removing: removing) else {
       await ProjectSourceFiles.shared.remove([name]); return nil
     }
-    return source.id
+    return note.id
+  }
+
+  /// The linked sources that still exist, in the order they were added.
+  func attachedSources(of note: ProjectSource) -> [ProjectSource] {
+    (note.attachedSourceIDs ?? []).compactMap { source(id: $0) }
+  }
+
+  /// Removes only the note's link; the attached source and its files stay.
+  @discardableResult
+  func removeAttachedSource(_ attachmentID: UUID, fromNote noteID: UUID) -> Bool {
+    guard var note = source(id: noteID), note.kind == .note,
+          var ids = note.attachedSourceIDs, ids.contains(attachmentID) else { return false }
+    ids.removeAll { $0 == attachmentID }
+    note.attachedSourceIDs = ids.isEmpty ? nil : ids
+    note.updatedAt = .now
+    return storeProjectSource(note)
   }
 
   func updateProjectNote(_ id: UUID, title: String, text: String, presentsErrorsLocally: Bool = false) async throws -> Bool {

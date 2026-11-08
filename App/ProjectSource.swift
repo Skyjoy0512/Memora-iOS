@@ -37,6 +37,9 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   var summaryHistory: [String]?
   var summaryOptions: SourceSummaryOptions?
   var revisions: [Revision]?
+  /// Sources a note was composed with, in the order they were added. The
+  /// attachments stay independent records; this is a link, never ownership.
+  var attachedSourceIDs: [UUID]?
 
   enum Kind: String, Codable, Sendable {
     case youtube, web, image, pdf, document, audio, note, video
@@ -82,5 +85,19 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
     var textReference: String
     var fingerprint: String?
     var summary: String?
+  }
+
+  /// Removes a deleted source's link from every note, without removing a note
+  /// or any other source. Used inside the same delete write.
+  static func pruningAttachmentLink(_ id: UUID, in sources: [ProjectSource]) -> [ProjectSource] {
+    sources.map { source in
+      guard source.attachedSourceIDs?.contains(id) == true else { return source }
+      var updated = source
+      var ids = updated.attachedSourceIDs ?? []
+      ids.removeAll { $0 == id }
+      updated.attachedSourceIDs = ids.isEmpty ? nil : ids
+      updated.updatedAt = .now
+      return updated
+    }
   }
 }

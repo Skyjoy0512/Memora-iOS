@@ -21,7 +21,6 @@ struct ProjectSourceAddSheet: View {
   @State private var isMovingRecords = false
   @State private var isSaving = false
   @State private var failure: String?
-  @State private var selectedSection = MeetingDetailSection.notes
   @State private var importedSourceIDs: [UUID] = []
   @State private var activeDraftKey: String?
   @State private var availableDraftKeys: [String] = []
@@ -34,15 +33,7 @@ struct ProjectSourceAddSheet: View {
       ScrollView {
         VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
           pageHeader
-          MemoraSectionPicker(items: MeetingDetailSection.allCases, selection: $selectedSection, title: \.label)
-          switch selectedSection {
-          case .notes:
-            notesContent
-          case .summary:
-            emptySection("要約", detail: "保存したノートや資料の要約は、それぞれの詳細で確認できます。")
-          case .transcript:
-            emptySection("文字起こし", detail: "音声や動画を追加すると、資料の詳細で文字起こしを確認できます。")
-          }
+          notesContent
           if let failure { Text(failure).font(.subheadline).foregroundStyle(MemoraPalette.danger) }
         }
         .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
@@ -191,14 +182,6 @@ struct ProjectSourceAddSheet: View {
     }
   }
 
-  private func emptySection(_ title: String, detail: String) -> some View {
-    VStack(alignment: .leading, spacing: 14) {
-      Text(title).font(MemoraTypography.sectionHeading)
-      Text(detail).font(.body).foregroundStyle(.secondary)
-    }
-    .frame(maxWidth: .infinity, minHeight: 240, alignment: .topLeading)
-  }
-
   private func restoreDrafts() {
     let otherKey = "workspace.\(isMemo ? "newNote" : "newMemo").\(projectID?.uuidString ?? "library")"
     var drafts: [(key: String, text: String, title: String)] = []
@@ -230,7 +213,6 @@ struct ProjectSourceAddSheet: View {
       activeDraftKey = key
       text = body.text ?? ""
       title = heading.text ?? ""
-      selectedSection = .notes
       failure = nil
     } catch { failure = "下書きを切り替えられませんでした。編集中の内容は保持しています。" }
   }
@@ -274,7 +256,7 @@ struct ProjectSourceAddSheet: View {
         id = try model.handlingPersistenceFailureLocally { try model.addProjectLink(input, projectID: projectID, removing: draftKeys) }
       } else {
         id = try await model.addProjectNote(title: title, text: input, projectID: projectID, presentsErrorsLocally: true,
-          removing: draftKeys)
+          removing: draftKeys, attachedSourceIDs: importedSourceIDs)
         if let id { Task { await model.summarizeProjectSource(id) } }
       }
       guard id != nil else { return false }

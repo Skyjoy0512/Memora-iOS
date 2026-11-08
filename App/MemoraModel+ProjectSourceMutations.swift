@@ -12,7 +12,10 @@ extension MemoraModel {
   @discardableResult
   func deleteProjectSource(_ id: UUID) -> Bool {
     guard !isRestoring, currentTeamID == nil, isStoreWritable(), let source = source(id: id) else { return false }
-    let remaining = projectSources.filter { $0.id != id }
+    var remaining = projectSources.filter { $0.id != id }
+    // Drop links to the deleted source in the same write; never delete a note
+    // or an attachment that merely referenced it.
+    remaining = ProjectSource.pruningAttachmentLink(id, in: remaining)
     guard persistNow(remaining, forKey: StorageKey.projectSources) else { return false }
     sourcePreparationJobs.removeValue(forKey: id)?.task.cancel()
     if let job = projectWebFetchJobs.removeValue(forKey: id) {

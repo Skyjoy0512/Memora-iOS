@@ -68,6 +68,9 @@ struct ProjectSourceDetailView: View {
                 }
               }
             }
+            if source.kind == .note, !model.attachedSources(of: source).isEmpty {
+              attachedSourcesSection(source)
+            }
             if source.canProvideText {
               Button("この資料について聞く", icon: .sparkles) { isAsking = true }
                 .buttonStyle(.plain).font(.subheadline)
@@ -268,6 +271,33 @@ struct ProjectSourceDetailView: View {
     return source.canProvideText
       ? "要約を作成できませんでした。原文は引き続き確認できます。"
       : "要約を作成できませんでした。資料の内容を取得してから、もう一度お試しください。"
+  }
+
+  private func attachedSourcesSection(_ source: ProjectSource) -> some View {
+    let attachments = model.attachedSources(of: source)
+    return VStack(alignment: .leading, spacing: 10) {
+      Text("添付資料").font(MemoraTypography.sectionHeading)
+      ForEach(attachments) { attachment in
+        HStack(spacing: 8) {
+          NavigationLink { ProjectSourceDetailView(sourceID: attachment.id) } label: {
+            ProjectSourceRow(source: attachment)
+          }
+          .buttonStyle(.plain)
+          Menu {
+            Button("添付を解除", icon: .xmark, role: .destructive) {
+              if !model.removeAttachedSource(attachment.id, fromNote: source.id) {
+                sourceActionFailure = "添付を解除できませんでした。空き容量を確認してください。"
+              }
+            }
+          } label: {
+            Image(icon: .ellipsis, size: MemoraIconMetrics.accessory)
+              .frame(width: 44, height: 44)
+              .contentShape(Rectangle())
+          }
+          .accessibilityLabel("添付を解除")
+        }
+      }
+    }
   }
 
   private func previousSummaries(for source: ProjectSource) -> [String] {

@@ -10,6 +10,7 @@ struct ProjectSourceStorageChecks {
     try linkDraftCommit(root: root, project: project)
     try failedLinkRetry(root: root, project: project)
     try await noteDraftCommit(root: root, project: project)
+    try await noteAttachments(root: root, project: project)
     let model = try MemoraModel(storeURL: root.appendingPathComponent("sources.sqlite"))
     model.spaces = [project]
     guard let id = try await model.addProjectNote(title: "元のタイトル", text: "保存した本文", projectID: project.id),
@@ -219,6 +220,45 @@ struct ProjectSourceStorageChecks {
     _ = try model.addProjectLink(link, projectID: project.id)
     precondition(model.linkPreparationIDs.count == afterAdd + 1, "a readable duplicate must not be re-fetched")
     print("URL retry: failed source re-added retries the same id; readable duplicate is not re-fetched")
+  }
+
+  @MainActor private static func noteAttachments(root: URL, project: MemoraSpace) async throws {
+    let url = root.appendingPathComponent("note-attachments.sqlite")
+    let model = try MemoraModel(storeURL: url)
+    model.spaces = [project]
+    RecordStore.store = model.store
+    let otherProject = MemoraSpace(id: UUID(), name: "別の保存先", symbol: "folder")
+    model.spaces.append(otherProject)
+    func source(_ title: String, projectID: UUID?) -> ProjectSource {
+      var value = ProjectSource(projectID: projectID, kind: .note, title: title)
+      value.processingStatus = .ready
+      value.extractedTextReference = "\(title).json"
+      return value
+    }
+    let first = source("添付1", projectID: project.id)
+    let second = source("添付2", projectID: project.id)
+    let foreign = source("別プロジェクト", projectID: otherProject.id)
+    for value in [first, second, foreign] { expect(model.storeProjectSource(value)) }
+    let noteID = try await model.addProjectNote(title: "メモ", text: "本文", projectID: project.id,
+      attachedSourceIDs: [first.id, second.id, first.id, foreign.id, UUID()])!
+    guard let note = model.source(id: noteID) else { preconditionFailure("note missing") }
+    precondition(note.attachedSourceIDs == [first.id, second.id], "deduplicated, same-project, existing only")
+    precondition(model.attachedSources(of: note).map(\.id) == [first.id, second.id])
+    // The link survives a reload from SQLite.
+    RecordStore.store = model.store
+    let reloaded = try reload(model)
+    precondition(reloaded.first { $0.id == noteID }?.attachedSourceIDs == [first.id, second.id])
+    // Detaching removes only the link.
+    expect(model.removeAttachedSource(first.id, fromNote: noteID))
+    precondition(model.source(id: noteID)?.attachedSourceIDs == [second.id])
+    precondition(model.source(id: first.id) != nil)
+    // Deleting an attachment prunes the link but keeps every other source.
+    let pruned = ProjectSource.pruningAttachmentLink(second.id, in: model.projectSources)
+    let prunedNote = pruned.first { $0.id == noteID }
+    precondition(prunedNote?.attachedSourceIDs == nil)
+    precondition(pruned.contains { $0.id == first.id } && pruned.contains { $0.id == foreign.id })
+    precondition(pruned.count == model.projectSources.count, "pruning a link never deletes a source")
+    print("Note attachments: ordered/deduplicated/same-project links, note-edit retention, reopen, link-only detach and non-cascading pruning passed")
   }
 
   @MainActor private static func noteDraftCommit(root: URL, project: MemoraSpace) async throws {

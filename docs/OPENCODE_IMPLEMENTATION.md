@@ -23,6 +23,17 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P1-1.1 メモの空タブ削除と添付資料リンク
+
+`ProjectSourceAddSheet`から説明だけの「要約」「文字起こし」タブを削除。
+`ProjectSource.attachedSourceIDs`を追加し、メモ作成時に同時に追加した資料を
+同一プロジェクト・既存・重複なし・順序保持でリンク。資料詳細に「添付資料」を表示し、
+詳細への導線と「添付を解除」を追加。解除はリンクのみ、資料は残す。資料削除時は
+`pruningAttachmentLink`で他ノートのリンクだけを同一書き込みで外す。
+状態: 実装済み・検証済み（host/シミュレータ）。後から添付、並べ替えUI、バックアップ復元E2Eは未検証。
+検証: project-source-storage（リンク/重複排除/同一プロジェクト/reload/解除/非連鎖）PASS、
+import/preparation PASS、pickers E2E PASS、`bitrig preview -platform iOS`成功。
+
 ## 2026-11-08 P0-2.4 取込→本文→検索→引用の実アプリ検証
 
 Office検証を拡張し、 production の検索（`matchingSourceIDs`）、
