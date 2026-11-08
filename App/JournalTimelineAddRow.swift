@@ -5,7 +5,9 @@ import SwiftUI
 struct JournalTimelineAddRow: View {
   var label: String
   var isLast: Bool
-  var action: () -> Void
+  var action: () -> Void = {}
+  /// When present, the row opens a native menu instead of acting immediately.
+  var menuActions: [JournalAddAction] = []
   @Environment(\.dynamicTypeSize) private var typeSize
   @ScaledMetric(relativeTo: .caption) private var timeWidth = 38.0
 
@@ -20,26 +22,8 @@ struct JournalTimelineAddRow: View {
           .frame(width: timeWidth, height: Self.side)
       }
 
-      Button(action: action) {
-        HStack(spacing: 6) {
-          Image(icon: .plus, size: 12)
-          Text(displayLabel)
-            .font(.caption.weight(.medium))
-            .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
-        }
-        .foregroundStyle(MemoraPalette.textSecondary)
-        .padding(.horizontal, MemoraSpacing.md)
-        .frame(height: Self.side)
-        .background(MemoraPalette.card, in: Capsule())
-        .overlay {
-          Capsule()
-            .stroke(MemoraPalette.border.opacity(0.8), lineWidth: 0.5)
-        }
-        .contentShape(Capsule())
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel(Text(label))
+      control
+        .accessibilityLabel(Text(label))
 
       Spacer(minLength: 0)
     }
@@ -53,6 +37,41 @@ struct JournalTimelineAddRow: View {
       }
       .accessibilityHidden(true)
     }
+  }
+
+  @ViewBuilder private var control: some View {
+    if menuActions.isEmpty {
+      Button(action: action) { pill }
+        .buttonStyle(.plain)
+    } else {
+      Menu {
+        ForEach(menuActions) { item in
+          Button(item.title, icon: item.icon, action: item.handler)
+        }
+      } label: {
+        pill
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  private var pill: some View {
+    HStack(spacing: 6) {
+      Image(icon: .plus, size: 12)
+      Text(displayLabel)
+        .font(.caption.weight(.medium))
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+    .foregroundStyle(MemoraPalette.textSecondary)
+    .padding(.horizontal, MemoraSpacing.md)
+    .frame(height: Self.side)
+    .background(MemoraPalette.card, in: Capsule())
+    .overlay {
+      Capsule()
+        .stroke(MemoraPalette.border.opacity(0.8), lineWidth: 0.5)
+    }
+    .contentShape(Capsule())
   }
 
   private var iconColumnLeading: CGFloat {

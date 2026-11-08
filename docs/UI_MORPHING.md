@@ -22,9 +22,11 @@ iOS標準の下から上へのシート表示を維持する。独自のscale/op
 
 - ホーム: 右下の既存作成ボタンから`CaptureMenuSheet`を標準のボトムシートとして
   下から上へ表示する。ボタン位置・シート内容・アクション順は不変。
-- ジャーナル: タイムラインの各行の＋と末尾＋、空の日の追加ボタンから、
-  既存の`LifeLogCreationSheet`を標準のボトムシートとして下から上へ表示する。
-  挿入時刻の計算（`JournalInsertionTime`）は変更していない。
+- ジャーナル: タイムラインの各行の＋と末尾＋はネイティブ`Menu`を開き、
+  「イベントを追加」「メモを追加」「写真を追加」「録音を追加」から選ぶ。
+  選んだ行の挿入時刻（`JournalInsertionTime`）をそのまま使い、作成シートは
+  標準のボトムシートとして下から上へ表示する。空の日の「記録を追加」は
+  従来どおり作成シートを直接開く。
 - ライブラリ: 保存済み参考資料、録音、共有記録のカードから詳細へzoom遷移。
 - プロジェクト一覧: プロジェクトカードからプロジェクト詳細へzoom遷移。
   共有プロジェクトカードも同様。
@@ -46,7 +48,9 @@ iOS 26実機/シミュレータでの見た目、iPad、VoiceOver、Reduce Motio
 - `bitrig preview -platform iOS`: BUILD SUCCEEDED
 - `capture-audio-picker.e2e.ts`: PASS（ライト/ダーク、作成シートが下から表示、音声ピッカー取消）
 - `workspace-journal.e2e.ts --grep "insertion proposes"`: PASS（日付・イベント間の時刻）
-- `workspace-journal.e2e.ts --grep "inline plus"`: PASS（行内＋から追加）
+- `workspace-journal.e2e.ts --grep "inline plus"`: PASS（行内＋→メニュー→追加）
+- `memora.e2e.ts --grep "journal add-record"`: PASS
+- `experience-polish.e2e.ts --grep "journal creation keeps"`: PASS
 - `project-source-note-attach-order.e2e.ts`: PASS（プロジェクトカード→詳細を含む）
 - `source-ask-ai.e2e.ts`: PASS（プロジェクトカード→詳細を含む）
 - `project-source-office.e2e.ts` / `project-source-recovery.e2e.ts`: PASS

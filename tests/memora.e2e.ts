@@ -23,7 +23,7 @@ test('the side menu switches between home, library and Ask AI', async ({ app, de
   await tapTab(screen, 'Ask AI');
   await expect(screen.getByLabel('新しいチャット')).toBeVisible();
   await tapTab(screen, 'ジャーナル');
-  await expect(screen.getByText('今日のタスク')).toBeVisible();
+  await expect(screen.getByText('今日の記録はありません')).toBeVisible();
 });
 
 test('the side menu lists the main destinations', async ({ app, device, screen }) => {
@@ -86,9 +86,11 @@ test('the journal add-record action opens the capture sheet', async ({ app, devi
   await launchMemora(app, device, screen);
   await tapTab(screen, 'ジャーナル');
   await screen.getByText('記録を追加').first().tap();
+  const memo = screen.getByRole('button', { name: 'メモを追加', exact: true });
+  try { await expect(memo).toBeVisible({ timeout: 1_500 }); await tapControl(screen, memo); } catch {}
   await expect(screen.getByText('ライフログを追加')).toBeVisible();
   await device.back();
-  await expect(screen.getByText('今日のタスク')).toBeVisible();
+  await expect(screen.getByText('今日の記録はありません')).toBeVisible();
 });
 
 test('the tasks list opens from the journal', async ({ app, device, screen }) => {

@@ -25,6 +25,7 @@ struct HomeView: View {
   @State private var showsSummary = false
   @State private var editingTask: MemoraTask?
   @State private var backdrops = JournalBackdropSelection()
+  @State private var journalCreation: JournalCreationRequest?
   @Namespace private var summaryNamespace
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @AppStorage("memora.journal.calendarIDs") private var journalCalendarIDsValue = ""
@@ -185,6 +186,9 @@ struct HomeView: View {
       .sheet(isPresented: $showsReview) {
         JournalReviewView(date: selectedDate)
       }
+      .sheet(item: $journalCreation) { request in
+        LifeLogCreationSheet(date: request.date, eventDate: request.date, initialKind: request.kind)
+      }
       .sheet(item: $editingTask) { task in TaskEditView(task: task) }
       .fullScreenCover(isPresented: $showsSummary) {
         if reduceMotion {
@@ -225,19 +229,42 @@ struct HomeView: View {
   }
 
   /// UI additions follow the day being read; external new-memo actions keep now.
-  private func beginJournalEntry() {
-    model.lifeLogCreationDate = JournalInsertionTime.suggestion(on: selectedDate)
-    model.isLifeLogCreationPresented = true
+  private func beginJournalEntry(kind: LifeLogKind = .memo) {
+    let date = JournalInsertionTime.suggestion(on: selectedDate)
+    journalCreation = JournalCreationRequest(date: date, kind: kind)
   }
 
-  private func beginJournalEntry(after index: Int, in items: [JournalTimelineItem]) {
+  private func beginJournalEntry(after index: Int, in items: [JournalTimelineItem],
+                                 kind: LifeLogKind = .memo) {
     let now = Date.now
     let dates = items.map { item -> Date? in
       if case .nowMarker = item { return nil }
       return item.date(on: selectedDate, now: now)
     }
-    model.lifeLogCreationDate = JournalInsertionTime.suggestion(on: selectedDate, after: index, dates: dates, now: now)
-    model.isLifeLogCreationPresented = true
+    let date = JournalInsertionTime.suggestion(on: selectedDate, after: index, dates: dates, now: now)
+    journalCreation = JournalCreationRequest(date: date, kind: kind)
+  }
+
+  private func journalAddActions(after index: Int, in items: [JournalTimelineItem]) -> [JournalAddAction] {
+    let add: (LifeLogKind) -> JournalAddAction = { kind in
+      JournalAddAction(title: kind.label + "を追加", icon: kind.symbol) {
+        beginJournalEntry(after: index, in: items, kind: kind)
+      }
+    }
+    return [
+      add(.event),
+      add(.memo),
+      add(.photo),
+      JournalAddAction(title: "録音を追加", icon: .waveform) {
+        Task { await model.startCapture(spaceID: nil) }
+      }
+    ]
+  }
+
+  private struct JournalCreationRequest: Identifiable {
+    var id = UUID()
+    var date: Date
+    var kind: LifeLogKind
   }
 
   /// The selected day has nothing on it yet.
@@ -365,16 +392,12 @@ struct HomeView: View {
             ? timeline.items[index + 1].date(on: selectedDate) : nil
           timelineRow(item, connectsToNext: true, nextDate: nextDate)
           if index < timeline.items.count - 1 {
-            JournalTimelineAddRow(label: "この間に記録を追加", isLast: false) {
-              InteractionFeedback.shared.send(.tap)
-              beginJournalEntry(after: index, in: timeline.items)
-            }
+            JournalTimelineAddRow(label: "この間に記録を追加", isLast: false,
+              menuActions: journalAddActions(after: index, in: timeline.items))
           }
         }
-        JournalTimelineAddRow(label: "記録を追加", isLast: true) {
-          InteractionFeedback.shared.send(.tap)
-          beginJournalEntry(after: timeline.items.count - 1, in: timeline.items)
-        }
+        JournalTimelineAddRow(label: "記録を追加", isLast: true,
+          menuActions: journalAddActions(after: timeline.items.count - 1, in: timeline.items))
       }
     }
   }

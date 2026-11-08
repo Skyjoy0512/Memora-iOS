@@ -9,9 +9,12 @@ async function tapStable(locator: any) {
 
 /// Adds one memo from the journal's add sheet.
 async function addMemo(screen: any, title: string) {
-  const create = screen.getByRole('button', { name: '記録を追加', exact: true }).first();
+  const create = screen.getByLabel('記録を追加').first();
   await scrollTo(screen, create);
   await tapStable(create);
+  // An empty day opens the sheet directly; an existing timeline opens a menu.
+  const memo = screen.getByRole('button', { name: 'メモを追加', exact: true });
+  try { await expect(memo).toBeVisible({ timeout: 1_500 }); await tapStable(memo); } catch {}
   await expect(screen.getByText('ライフログを追加', { exact: true })).toBeVisible();
   await screen.getByPlaceholder('メモのタイトル').fill(title);
   const add = screen.getByRole('button', { name: '追加' });
@@ -19,12 +22,14 @@ async function addMemo(screen: any, title: string) {
   await tapStable(add);
   await expect(screen.getByText('ライフログを追加', { exact: true })).not.toBeVisible();
   await expect(screen.getByRole('keyboard')).not.toBeVisible();
+  await expect(screen.getByText(title).first()).toBeVisible({ timeout: 30_000 });
 }
 
 /// Taps an add control again if the first touch landed while the previous
 /// sheet was still dismissing, then waits for the add sheet.
 async function openAddSheet(screen: any, locator: any) {
   await tapStable(locator);
+  await tapStable(screen.getByRole('button', { name: 'メモを追加', exact: true }));
   await expect(screen.getByText('ライフログを追加')).toBeVisible({ timeout: 8000 });
 }
 
@@ -128,7 +133,7 @@ test('the inline plus buttons add a record', async ({ app, device, screen }) => 
   await openAddSheet(screen, between);
   await screen.getByText('キャンセル').tap();
 
-  const end = screen.getByRole('button', { name: '記録を追加' }).last();
+  const end = screen.getByRole('pop-up-button', { name: '記録を追加' }).last();
   await scrollTo(screen, end);
   await openAddSheet(screen, end);
   await screen.getByText('キャンセル').tap();
@@ -143,7 +148,7 @@ test('journal insertion proposes the selected day and the time between events', 
   const value = (time: string) => new RegExp(`^${time}, ${day.getFullYear()}/0?${day.getMonth() + 1}/0?${day.getDate()}$`);
   await tapStable(screen.getByRole('button', { name: dayName }));
   await addMemo(screen, 'Insertion 09:00');
-  const tail = screen.getByRole('button', { name: '記録を追加', exact: true }).last();
+  const tail = screen.getByRole('pop-up-button', { name: '記録を追加', exact: true }).last();
   await scrollTo(screen, tail);
   await openAddSheet(screen, tail);
   const recordedPicker = screen.getByRole('listitem').filter({ hasText: '記録した時刻' }).getByRole('button', { name: 'Date and Time Picker', exact: true });
@@ -158,7 +163,7 @@ test('journal insertion proposes the selected day and the time between events', 
   await scrollTo(screen, screen.getByPlaceholder('イベント名'));
   await screen.getByPlaceholder('イベント名').fill('Insertion 09:30');
   await tapStable(screen.getByRole('button', { name: '追加', exact: true }));
-  const middle = screen.getByRole('button', { name: 'この間に記録を追加', exact: true }).first();
+  const middle = screen.getByRole('pop-up-button', { name: 'この間に記録を追加', exact: true }).first();
   await scrollTo(screen, middle);
   // Inspect the button, not its same-labelled child Text (14pt at normal size).
   // Keep the 44pt contract while the native sheet finishes dismissing.

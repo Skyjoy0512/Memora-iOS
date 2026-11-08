@@ -18,9 +18,10 @@ struct LifeLogCreationSheet: View {
   @State private var personIDs: Set<UUID> = []
   @State private var saveError = false
 
-  init(date: Date = .now, eventDate: Date? = nil) {
+  init(date: Date = .now, eventDate: Date? = nil, initialKind: LifeLogKind? = nil) {
     _createdAt = State(initialValue: date)
     _eventDate = State(initialValue: eventDate ?? date.addingTimeInterval(3_600))
+    _kind = State(initialValue: initialKind ?? .memo)
   }
 
   var body: some View {

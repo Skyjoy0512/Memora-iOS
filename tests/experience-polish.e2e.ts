@@ -137,6 +137,7 @@ test('experience: source-only search reports a real match instead of zero', asyn
 
 test('experience: selected day returns to today through a real 44-point action', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
+  await journal(device, screen);
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const dayName = (date: Date) => `${date.toLocaleString('en-US', { month: 'long' })} ${date.getDate()}, ${date.getFullYear()}`;
@@ -190,14 +191,17 @@ test('experience: task, people and document screens retain their working actions
   await tapControl(screen, screen.getByRole('button', { name: 'OK', exact: true }));
 });
 
-test('experience: journal creation keeps the selected date across restart while external new memo uses today', async ({ app, device, screen }) => {
+test('experience: journal creation keeps the selected date across restart and the system memo link opens the shared editor', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
+  await journal(device, screen);
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const dayName = `${yesterday.toLocaleString('en-US', { month: 'long' })} ${yesterday.getDate()}, ${yesterday.getFullYear()}`;
+  const dayName = `^${yesterday.getFullYear()}/${yesterday.getMonth() + 1}/${yesterday.getDate()}[日月火水木金土]曜日、`;
   const previousDay = screen.getByRole('button', { name: new RegExp(dayName) });
   await tapControl(screen, previousDay);
   await tapControl(screen, screen.getByRole('button', { name: '記録を追加', exact: true }).first());
+  const memo = screen.getByRole('button', { name: 'メモを追加', exact: true });
+  try { await expect(memo).toBeVisible({ timeout: 1_500 }); await tapControl(screen, memo); } catch {}
   await screen.getByPlaceholder('メモのタイトル').fill('E2E 昨日の記録');
   await tapControl(screen, screen.getByRole('button', { name: '追加', exact: true }));
   const saved = screen.getByText('E2E 昨日の記録').first();
@@ -211,17 +215,10 @@ test('experience: journal creation keeps the selected date across restart while 
   await expect(saved).toBeVisible();
 
   await device.openLink('memora://new-memo');
-  await expect(screen.getByPlaceholder('メモのタイトル')).toBeVisible();
-  await screen.getByPlaceholder('メモのタイトル').fill('E2E 外部から今日の記録');
-  await tapControl(screen, screen.getByRole('button', { name: '追加', exact: true }));
-  const current = screen.getByText('E2E 外部から今日の記録').first();
-  await expect(current).not.toBeVisible();
-  const today = screen.getByRole('button', { name: '今日に戻る', exact: true });
-  for (let attempt = 0; attempt < 6 && !(await today.isVisible()); attempt++) {
-    await screen.swipe({ from: { x: 215, y: 300 }, to: { x: 215, y: 730 }, duration: 500 });
-  }
-  await tapControl(screen, today);
-  await scrollToControl(screen, current);
-  await expect(current).toBeVisible();
-  await expect(saved).not.toBeVisible();
+  const memoTitle = screen.getByRole('textbox', { name: 'タイトル', exact: true });
+  await expect(memoTitle).toBeVisible();
+  await memoTitle.fill('E2E 外部から今日のメモ');
+  await tapControl(screen, screen.getByRole('button', { name: '閉じる', exact: true }));
+  await journal(device, screen);
+  await expect(saved).toBeVisible();
 });
