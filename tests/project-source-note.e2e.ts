@@ -1,14 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, selectLibrarySection, tapControl, tapTab } from './ui-helpers';
 
 // Note entry uses only local storage and local text extraction.
 test('a note is saved, extracted, listed as text and restored after restart', { timeout: 180_000 }, async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   const marker = 'NoteEntry-' + randomUUID().slice(0, 8);
   const bodyText = `検証用のノート本文 ${marker}。この文は端末内にだけ保存されます。`;
-  await tapControl(screen.getByRole('button', { name: 'プロジェクト', exact: true }));
+  await selectLibrarySection(screen, 'プロジェクト');
   await tapControl(screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());
   await screen.getByPlaceholder('例：新規アプリ').fill(marker);
   await tapControl(screen.getByRole('button', { name: '作成', exact: true }));
@@ -31,7 +31,7 @@ test('a note is saved, extracted, listed as text and restored after restart', { 
   await app.screenshot('note-entry-saved');
   await app.restart();
   await tapTab(screen, 'ライブラリ');
-  await tapControl(screen.getByRole('button', { name: 'プロジェクト', exact: true }));
+  await selectLibrarySection(screen, 'プロジェクト');
   await tapControl(screen.getByText(marker, { exact: true }).first());
   await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
   await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());

@@ -23,6 +23,12 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P2.7 最大文字サイズのE2E
+
+content sizeをAccessibility XXXLにして、design-accessibility 2件とproject-source-note 1件が
+PASS。大きな文字で畳まれるライブラリの表示切替を`selectLibrarySection`で吸収。
+VoiceOverは未検証。content sizeは検査後に`large`へ戻した。
+
 ## 2026-11-08 P2.6 Reduce Motionポリシー拡張
 
 `check-motion-policy.py`で全Appの`withAnimation`/`.animation`のReduce Motionゲートと

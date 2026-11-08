@@ -1,5 +1,14 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P2.7 最大文字サイズ（Accessibility XXXL）でのE2E
+
+シミュレータのcontent sizeを`accessibility-extra-extra-extra-large`にして、
+`design-accessibility.e2e.ts`（メンション操作の位置/44pt、検索クリア後のフォーカス）が
+2件PASS。`project-source-note.e2e.ts`（ノート作成→保存→抽出→一覧→再起動→本文）もPASS。
+大きな文字ではライブラリのセグメントが「ファイル、ライブラリの表示」ボタンへ畳まれるため、
+`selectLibrarySection`ヘルパーで現在の表示に応じてプロジェクトへ切り替えるようにした。
+検査後はcontent sizeを`large`へ戻した。VoiceOverは自動化APIがないため未検証。
+
 ## 2026-11-08 P2.6 Reduce Motionの静的ポリシー拡張と未ゲート箇所の修正
 
 `check-motion-policy.py`を拡張し、App全体の`withAnimation(`と`.animation(`が

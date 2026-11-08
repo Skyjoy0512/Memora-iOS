@@ -76,6 +76,16 @@ export async function tapTab(screen: any, name: string) {
   await expect(screen.getByLabel('メニュー').first()).toBeVisible();
 }
 
+// At accessibility text sizes the Library's segmented control collapses into
+// a "表示と並べ替え" menu. Hiding that condition in the tests keeps the same
+// destination without changing the app.
+export async function selectLibrarySection(screen: any, name: string) {
+  const direct = screen.getByRole('button', { name, exact: true });
+  if (await direct.isVisible()) { await tapControl(screen, direct); return; }
+  await tapControl(screen, screen.getByRole('button', { name: /ライブラリの表示/ }).first());
+  await tapControl(screen, screen.getByRole('button', { name, exact: true }).last());
+}
+
 export async function openSidebarSearch(screen: any) {
   await tapControl(screen, screen.getByLabel('メニュー').first());
   await tapControl(screen, screen.getByRole('button', { name: '検索', exact: true }));
