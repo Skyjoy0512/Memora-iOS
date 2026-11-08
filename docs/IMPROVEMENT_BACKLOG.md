@@ -70,17 +70,19 @@ ID対応、予算内は無変更）PASS、`run-motion-loading-checks.sh`全体PA
 状態は 実装済み・host/シミュレータ検証済み。既存ノートへの後から添付、並べ替えUI、
 バックアップ/復元E2E、VoiceOverは未検証。
 
-## 2026-11-08 E2Eでノート本文エディタを合成タップできない（調査記録）
+## 2026-11-08 ノート本文エディタのタップ領域を修正（E2Eブロッカー解消）
 
-ノート入口の「取込→抽出→再起動」E2Eを追加しようとしたが、
-`ProjectSourceAddSheet`の`MarkdownEditorField`（`UITextView`）が、
-e2eドライバの合成タップ（要素タップ/座標タップ/`pressSequentially`）で
-first responderにならず、本文を入力できなかった。タイトル（SwiftUI TextField）と
-保存ボタンは操作できる。実利用者のタップを再現できていない可能性があり、
-アプリの不具合と断定できないため、アプリ側は変更せずE2Eファイルも追加していない。
-ノート保存・抽出・SQLite再読込は host の `ProjectSourceStorageChecks` で検証済み。
-ノート入口のE2Eは、実機/別入力経路（実キーボード）での確認が必要。
-既存の office 検証は、取込→本文→検索→引用→SQLite一致まで実アプリでPASS。
+`ProjectSourceAddSheet`の`MarkdownEditorField`（`UITextView`）で、空の本文のとき
+`sizeThatFits`が高さ0を返し、見えている約360ptの余白がタップ領域になっていなかった。
+表示フレームだけが`minHeight`で広がり、実際の`UITextView`は高さ0のため、
+利用者が余白をタップしてもフォーカスしない実UIの不具合だった。`MarkdownTextSurface`に
+`minimumHeight`を渡し、`sizeThatFits`が`max(minHeight, 実測高)`を返すようにした。
+併せてタップ時にフォーカスを立てる同時ジェスチャーを追加（選択・キャレット配置は維持）。
+これによりノート入口E2E（作成→保存→抽出→参考資料一覧→再起動→本文表示）が
+iPhone 18 Pro MaxシミュレータでPASS。以前の「E2Eハーネス制約」という記録は誤りで、
+実UIのタップ領域不具合だった。`bitrig preview -platform iOS`成功。
+旧記録: ノート保存・抽出・SQLite再読込は host の `ProjectSourceStorageChecks` でも検証済み。
+
 
 ## 2026-11-08 取込→本文→検索→引用を実アプリで検証（モデル/ネット不要）
 

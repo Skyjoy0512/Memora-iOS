@@ -1,0 +1,41 @@
+import { randomUUID } from 'node:crypto';
+import { test } from '@e2e-dev/mobile';
+import { expect } from 'e2e';
+import { launchMemora, tapControl, tapTab } from './ui-helpers';
+
+// Note entry uses only local storage and local text extraction.
+test('a note is saved, extracted, listed as text and restored after restart', { timeout: 180_000 }, async ({ app, device, screen }) => {
+  await launchMemora(app, device, screen);
+  const marker = 'NoteEntry-' + randomUUID().slice(0, 8);
+  const bodyText = `検証用のノート本文 ${marker}。この文は端末内にだけ保存されます。`;
+  await tapControl(screen.getByRole('button', { name: 'プロジェクト', exact: true }));
+  await tapControl(screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());
+  await screen.getByPlaceholder('例：新規アプリ').fill(marker);
+  await tapControl(screen.getByRole('button', { name: '作成', exact: true }));
+  await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
+  await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
+  await tapControl(screen.getByRole('button', { name: '参考資料を追加', exact: true }).first());
+  const title = screen.getByRole('textbox', { name: 'タイトル', exact: true });
+  await title.fill(marker);
+  const closeKeyboard = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
+  if (await closeKeyboard.isVisible()) await tapControl(closeKeyboard);
+  await expect(screen.getByRole('keyboard')).not.toBeVisible();
+  const body = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
+  await tapControl(screen, body);
+  await expect(body).toBeFocused();
+  await body.pressSequentially(bodyText);
+  if (await closeKeyboard.isVisible()) await tapControl(closeKeyboard);
+  await expect(screen.getByRole('keyboard')).not.toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '保存', exact: true }));
+  await expect(screen.getByText(marker, { exact: true }).first()).toBeVisible({ timeout: 60_000 });
+  await app.screenshot('note-entry-saved');
+  await app.restart();
+  await tapTab(screen, 'ライブラリ');
+  await tapControl(screen.getByRole('button', { name: 'プロジェクト', exact: true }));
+  await tapControl(screen.getByText(marker, { exact: true }).first());
+  await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
+  await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
+  await tapControl(screen.getByRole('button', { name: new RegExp('^' + marker + '、メモ') }).last());
+  await expect(screen.getByText(bodyText, { exact: true })).toBeVisible({ timeout: 30_000 });
+  await app.screenshot('note-entry-restored');
+});

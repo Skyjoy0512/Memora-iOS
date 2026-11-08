@@ -11,9 +11,17 @@ struct MarkdownEditorField: View {
 
   var body: some View {
     MarkdownTextSurface(markdown: $markdown, isFocused: isFocused,
-      onStructure: onStructure, allowsStructure: allowsStructure, textStyle: textStyle)
+      onStructure: onStructure, allowsStructure: allowsStructure, textStyle: textStyle,
+      minimumHeight: minHeight)
       .frame(minHeight: minHeight)
       .focused(isFocused)
+      .contentShape(Rectangle())
+      // A tap anywhere in the editor focuses it even when the tap lands on the
+      // wrapper rather than the text view's own glyph run. The simultaneous
+      // gesture keeps UITextView's caret placement and selection intact.
+      .simultaneousGesture(TapGesture().onEnded {
+        if !isFocused.wrappedValue { isFocused.wrappedValue = true }
+      })
   }
 
   private var textStyle: UIFont.TextStyle {
@@ -31,8 +39,9 @@ private struct MarkdownTextSurface: UIViewRepresentable {
   @Binding var markdown: String
   var isFocused: FocusState<Bool>.Binding
   var onStructure: ((MarkdownEditingAction) -> Void)?
-  var allowsStructure: Bool
+  var allowsStructure = true
   var textStyle: UIFont.TextStyle
+  var minimumHeight: CGFloat
 
   func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -75,7 +84,10 @@ private struct MarkdownTextSurface: UIViewRepresentable {
 
   func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
     guard let width = proposal.width else { return nil }
-    return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+    // An empty text view otherwise has no height, leaving the visible editor
+    // area inert and untappable. The view itself must cover the same height.
+    let measured = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height
+    return CGSize(width: width, height: max(minimumHeight, measured))
   }
 
   final class Coordinator: NSObject, UITextViewDelegate {
