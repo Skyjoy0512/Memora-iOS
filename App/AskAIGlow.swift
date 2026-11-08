@@ -44,8 +44,8 @@ struct AskAIGlow: View {
     .allowsHitTesting(false)
     .accessibilityHidden(true)
     .ignoresSafeArea()
-    .animation(.smooth(duration: 0.9), value: isThinking)
-    .animation(.smooth(duration: 0.6), value: isEmpty)
+    .animation(reduceMotion ? nil : .smooth(duration: 0.9), value: isThinking)
+    .animation(reduceMotion ? nil : .smooth(duration: 0.6), value: isEmpty)
     .onAppear { if permitsIdleGlow { bloom() } }
     .onChange(of: entrance) { _, _ in if permitsIdleGlow { bloom() } }
   }

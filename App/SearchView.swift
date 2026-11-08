@@ -39,7 +39,7 @@ struct SearchView: View {
           MemoraPalette.background
           .ignoresSafeArea(edges: .top)
           .opacity(model.isAIChatResponding ? 0 : 1)
-          .animation(.smooth(duration: 0.9), value: model.isAIChatResponding)
+          .animation(reduceMotion ? nil : .smooth(duration: 0.9), value: model.isAIChatResponding)
         }
       }
       // Tapping the conversation puts the keyboard away.

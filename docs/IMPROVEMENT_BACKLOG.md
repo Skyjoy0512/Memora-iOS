@@ -1,5 +1,16 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P2.6 Reduce Motionの静的ポリシー拡張と未ゲート箇所の修正
+
+`check-motion-policy.py`を拡張し、App全体の`withAnimation(`と`.animation(`が
+Reduce Motionで無効化されていること、`repeatForever`が存在しないことを検査。
+短い押下フィードバックの共有ButtonStyleと、自前で停止する連続レンダラ
+（ShimmerText/VoiceGlow/PixelLoader/AskAIGlow）だけを例外とした。
+検査で見つかった未ゲート箇所を修正: `ProfileEditorView`の背景色選択、
+`SearchView`の0.9秒フェード、`AskAIGlow`のisThinking/isEmpty透明度遷移。
+検査: `run-motion-loading-checks.sh` PASS（motion policy含む）、
+`bitrig preview -platform iOS`成功。実機のReduce Motion設定での目視は未検証。
+
 ## 2026-11-08 P2.5 アクセシビリティE2Eの現行環境対応
 
 `design-accessibility.e2e.ts`がシミュレータのハードウェアキーボード接続時に

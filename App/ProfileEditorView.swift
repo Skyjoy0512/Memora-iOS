@@ -6,6 +6,7 @@ import SwiftUI
 struct ProfileEditorView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isStickerInputActive = false
   @State private var isPhotoPickerPresented = false
   @State private var photoItem: PhotosPickerItem?
@@ -120,7 +121,7 @@ struct ProfileEditorView: View {
     HStack(spacing: 0) {
       ForEach(AvatarBackground.allCases) { option in
         Button {
-          withAnimation(.snappy) {
+          withAnimation(reduceMotion ? nil : .snappy) {
             selection.wrappedValue = option
           }
         } label: {

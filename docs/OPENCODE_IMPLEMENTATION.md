@@ -23,6 +23,13 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P2.6 Reduce Motionポリシー拡張
+
+`check-motion-policy.py`で全Appの`withAnimation`/`.animation`のReduce Motionゲートと
+`repeatForever`不在を検査。未ゲートだった`ProfileEditorView`/`SearchView`/`AskAIGlow`を修正。
+状態: 実装済み・検証済み（静的検査/ビルド）。実機のReduce Motion目視は未検証。
+検証: run-motion-loading-checks PASS、`bitrig preview -platform iOS`成功。
+
 ## 2026-11-08 P2.5 アクセシビリティE2Eの現行環境対応
 
 ソフトキーボード前提の断言をフォーカス保持へ変更し、`focusComposer`も同様に修正。
