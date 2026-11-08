@@ -1,5 +1,16 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 失敗したURL資料の再追加で同じIDを再試行
+
+同じURLを再度追加しても、既存が失敗状態だと準備が再実行されず、利用者が詳細画面から
+個別に再試行するしかなかった。`addProjectLink`は重複時に、`processingStatus == .failed`
+の既存資料だけ同じIDのまま準備を再スケジュールする。ready/processing/unavailableや
+privacy/metadataは書き換えず、二重レコードも作らない。
+状態は 実装済み・host検証済み、実サービス/実機は未検証。
+検査: `run-project-source-storage-checks.sh`（失敗資料の再追加で同一ID・1件・準備+1、
+ready重複は再取得なし）PASS、preparation/import各runner PASS、
+`bitrig preview -platform iOS`成功。
+
 ## 2026-11-08 資料入口E2Eを現行UIへ更新し2件を実機シミュレータで通過
 
 古いUIラベルに依存していたE2Eを現行UI（プロジェクト上部の表示切り替えメニュー、

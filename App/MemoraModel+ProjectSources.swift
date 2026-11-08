@@ -8,8 +8,12 @@ extension MemoraModel {
     let link = try ProjectSourceURL.normalized(input)
     if let existing = projectSources.first(where: { $0.projectID == projectID && $0.originalURL == link.url }) {
       // Reusing a source must settle its draft too, without rewriting privacy,
-      // metadata or dispatching another paid preparation job.
+      // metadata or dispatching another paid preparation job. Re-adding a source
+      // that previously failed is an explicit retry of the same record.
       guard removing.isEmpty || persistBatch({ [] }, removing: removing) else { return nil }
+      if existing.processingStatus == .failed {
+        scheduleProjectSourcePreparation(existing.id)
+      }
       return existing.id
     }
     let source = ProjectSource(projectID: projectID, kind: link.kind,

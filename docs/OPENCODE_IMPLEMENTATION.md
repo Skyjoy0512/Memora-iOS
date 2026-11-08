@@ -23,6 +23,14 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P0-2.3 失敗URL資料の再追加で同一IDを再試行
+
+`addProjectLink`の重複経路で、既存が`.failed`のときだけ同じIDの準備を再スケジュールする。
+ready/processing/unavailable、privacy、metadataは変更せず、二重レコードも作らない。
+状態: 実装済み・検証済み（host）。実ネットワーク再取得は未検証。
+検証: project-source-storage（再追加で同一ID・準備+1、ready重複は再取得なし）PASS、
+preparation/import PASS、`bitrig preview -platform iOS`成功。
+
 ## 2026-11-08 P0-2.2 資料入口E2Eの更新と2件通過
 
 現行UIへ `tests/project-source-pickers.e2e.ts` と `tests/project-source-office.e2e.ts` を更新。
