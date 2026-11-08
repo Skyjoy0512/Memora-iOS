@@ -1,5 +1,15 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 検証サマリ（このセッション）
+
+- P0 録音tapのライブ分離: 実装・host PASS・ビルド成功。実機負荷/15分/省電力復帰は未検証。
+- P0 割り込み後の再開: 実装・host PASS・ビルド成功。着信/Bluetooth/ロック/強制終了は実機未検証。
+- P1 添付順: host PASS、シミュレータE2E PASS（`project-source-note-attach-order.e2e.ts`、94秒）。
+- P1 保存済み引用失効: `run-artifact-provenance-checks.sh` PASS、`run-inline-citation-checks.sh` PASS。
+- 回帰E2E: `source-ask-ai` / `source-web-citation` / `source-audio-citation` / `design-accessibility` PASS。
+- PPTX: Quick Look差14/65・host差38/65を型ID別に記録。Office目視0/65。12枚デッキの機械検査PASS。
+- 未実施: 実HTTPS取得、実STT/実音声、クラウドLLM、実機、CI（workflow_dispatchのみ・未pushのため）。
+
 ## 2026-11-08 P1-6 Jinba 65型の再比較と実務12枚デッキ
 
 `run-jinba-comparison.sh`を再実行し、ホストCoreGraphics差38/65、Quick Look差14/65を
