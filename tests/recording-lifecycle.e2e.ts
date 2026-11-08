@@ -19,17 +19,22 @@ async function startIsolatedRecording(app: any, device: any, screen: any) {
   await launchMemora(app, device, screen);
   const marker = 'recording-lifecycle-' + randomUUID();
   await device.openLink('memora://new-memo');
-  await screen.getByRole('textbox', { name: 'メモのタイトル', exact: true }).fill(marker);
-  await tapControl(screen.getByRole('button', { name: '追加', exact: true }));
+  await screen.getByRole('textbox', { name: 'タイトル', exact: true }).fill(marker);
+  const noteBody = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
+  await tapControl(screen, noteBody);
+  await noteBody.pressSequentially('recording lifecycle ' + marker);
+  const closeKeyboard = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
+  if (await closeKeyboard.isVisible()) await tapControl(closeKeyboard);
+  await tapControl(screen.getByRole('button', { name: '保存', exact: true }));
   await expect(screen.getByText('ライフログを追加', { exact: true })).not.toBeVisible();
   const { bundleId } = await device.foregroundApp();
-  const database = isolatedDatabase(marker, bundleId!);
+  const database = isolatedDatabase(marker, bundleId!, 'memoraProjectSources.v2');
   const simulator = database.match(/\/Devices\/([A-F0-9-]{36})\/data\//i)?.[1];
   if (!simulator) throw new Error('Cannot identify the isolated recording simulator');
   await device.setPermission('microphone', 'grant');
   await app.restart();
-  await tapControl(screen.getByLabel('新規作成').first());
-  await tapControl(screen.getByRole('button', { name: '録音を開始', exact: true }));
+  await tapControl(screen, screen.getByLabel('追加メニュー').first());
+  await tapControl(screen.getByRole('button', { name: '録音開始', exact: true }));
   await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).toBeVisible();
   // The retained old build predates this control. Baseline mode is used only
   // for the separate SIGKILL durability comparison, never a low-power claim.
@@ -207,8 +212,8 @@ test('a finalized AAC staged as a recovery draft still offers manual transcripti
     expect(Math.abs(recovered()[0].duration - audio.duration)).toBeLessThan(0.1);
     await tapTab(screen, 'ライブラリ');
     await tapControl(screen.getByRole('button', { name: new RegExp('^' + draft.title) }).first());
-    await expect(screen.getByText('文字起こしはまだ始まっていません', { exact: true })).toBeVisible();
-    await expect(screen.getByRole('button', { name: '文字起こしを開始', exact: true })).toBeEnabled();
+    await expect(screen.getByText('音声を文字にする', { exact: true })).toBeVisible();
+    await expect(screen.getByRole('button', { name: '文字起こしする', exact: true })).toBeEnabled();
     await app.screenshot('recording-readable-recovery');
     await app.restart();
     await expect(screen.getByLabel('メニュー').first()).toBeVisible();

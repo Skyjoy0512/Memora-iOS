@@ -12,15 +12,20 @@ test('power mode changes and pause preserve the AAC recording and SQLite draft',
   await launchMemora(app, device, screen);
   const marker = 'recording-power-' + randomUUID();
   await device.openLink('memora://new-memo');
-  await screen.getByRole('textbox', { name: 'メモのタイトル', exact: true }).fill(marker);
-  await tapControl(screen.getByRole('button', { name: '追加', exact: true }));
+  await screen.getByRole('textbox', { name: 'タイトル', exact: true }).fill(marker);
+  const noteBody = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
+  await tapControl(screen, noteBody);
+  await noteBody.pressSequentially('recording power ' + marker);
+  const closeKeyboard = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
+  if (await closeKeyboard.isVisible()) await tapControl(closeKeyboard);
+  await tapControl(screen.getByRole('button', { name: '保存', exact: true }));
   await expect(screen.getByText('ライフログを追加', { exact: true })).not.toBeVisible();
   const identity = await device.foregroundApp();
-  const database = isolatedDatabase(marker, identity.bundleId!);
+  const database = isolatedDatabase(marker, identity.bundleId!, 'memoraProjectSources.v2');
   await device.setPermission('microphone', 'grant');
   await app.restart();
-  await tapControl(screen.getByLabel('新規作成').first());
-  await tapControl(screen.getByRole('button', { name: '録音を開始', exact: true }));
+  await tapControl(screen, screen.getByLabel('追加メニュー').first());
+  await tapControl(screen.getByRole('button', { name: '録音開始', exact: true }));
   await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).toBeVisible();
   const draft = () => {
     const value = sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraRecordingDraft';");

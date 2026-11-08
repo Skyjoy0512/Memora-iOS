@@ -40,6 +40,8 @@ host checkとシミュレータE2E（タップ順→保存→再起動→解除�
 - P1 添付順: host PASS、シミュレータE2E PASS（`project-source-note-attach-order.e2e.ts`、94秒）。
 - P1 保存済み引用失効: `run-artifact-provenance-checks.sh` PASS、`run-inline-citation-checks.sh` PASS。
 - 回帰E2E: `source-ask-ai` / `source-web-citation` / `source-audio-citation` / `design-accessibility` PASS。
+- 録音E2E: `recording-power` PASS、`recording-lifecycle` 3件 PASS。tap計測の実機手順を
+  `AUDIO_MEASUREMENT.md`へ追記。
 - PPTX: Quick Look差14/65・host差38/65を型ID別に記録。Office目視0/65。12枚デッキの機械検査PASS。
 - 未実施: 実HTTPS取得、実STT/実音声、クラウドLLM、実機、CI（workflow_dispatchのみ・未pushのため）。
 

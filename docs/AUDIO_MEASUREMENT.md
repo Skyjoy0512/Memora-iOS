@@ -156,3 +156,29 @@ signpostにopt-in collectorを追加した。
 `RecordedAudioTranscription`、`SourceMediaExtraction`へ接続。audio intelligence検査でOS状態ごとの
 判定、保存音声検査で実export後の停止・prefix非公開・SQLite再生成後のsuffix再開・
 criticalでも完成cacheを再利用できることを確認する。温度状態と認識結果はfixtureである。
+
+## 録音tapとライブ分離の計測（2026-11-08）
+
+録音traceには、tapコールバックの所要時間を内容なしのマイクロ秒ヒストグラムで
+`latencies["recordingTap"]`（samples, p50, p95, p99, maximum）として保存する。
+直近4,096コールバックを保持し、音声・ファイル名・record IDは含めない。
+ライブ側は`liveBufferDropped`（有界キューの満杯/analyzer側drop）と
+`liveConversionFailure`（analyzer形式への変換失敗）を数える。どちらも録音writerの
+受理・overrun・保存結果とは別で、ライブ表示だけが止まる。
+
+### 実機で確認する手順（未実施）
+
+1. 設定 › 診断とプレビュー › 音声処理の計測をオンにし、通常の連続録音を15分行う。
+2. 同じ端末で、録音中にBluetooth接続/切断、着信→復帰、ロック、バックグラウンド、
+   省電力切替、一時停止→再開を各1回行う。各操作の前後で録音が続いていること、
+   `recordingTap`のp99が跳ね続けないこと、`liveBufferDropped`が録音停止に
+   つながらないことを確認する。
+3. 録音終了後、AACが`afinfo`で読め、15分境界の前後で連続した原本が残り、
+   SQLiteのmanifestと再生時刻が一致することを確認する。
+4. 計測JSONを共有し、`audio-measurements.py report`でp50/p95/p99とdropを確認する。
+   端末のthermal stateがserious/criticalの区間は別条件として扱い、平均へ混ぜない。
+5. 15分ちょうどの停止、rotation直後の停止、低容量、media services reset、
+   強制終了後の復旧を別々に記録する。復旧は自動再録音ではなく、原本の保持と
+   手動の文字起こし再開までを確認する。
+
+シミュレータの数値はホストCPU/RSSであり、実機の電池・熱・音切れの証明ではない。
