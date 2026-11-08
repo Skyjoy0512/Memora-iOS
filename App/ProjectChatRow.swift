@@ -2,9 +2,18 @@ import SwiftUI
 
 struct ProjectChatRow: View {
   var thread: ProjectChatThread
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Namespace private var zoom
 
   var body: some View {
-    NavigationLink(value: LibraryRoute.projectChat(thread.id)) {
+    NavigationLink {
+      if reduceMotion {
+        ProjectChatView(threadID: thread.id)
+      } else {
+        ProjectChatView(threadID: thread.id)
+          .navigationTransition(.zoom(sourceID: thread.id, in: zoom))
+      }
+    } label: {
       VStack(alignment: .leading, spacing: 5) {
         Text(thread.title)
           .font(MemoraTypography.body.weight(.medium))
@@ -17,6 +26,7 @@ struct ProjectChatRow: View {
       .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
       .contentShape(Rectangle())
       .accessibilityElement(children: .combine)
+      .matchedTransitionSource(id: thread.id, in: zoom)
     }
     .buttonStyle(.plain)
   }
