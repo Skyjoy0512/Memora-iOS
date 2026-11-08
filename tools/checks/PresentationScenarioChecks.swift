@@ -77,7 +77,7 @@ struct PresentationScenarioChecks {
   }
 
   static func scenarios(base: Date) -> [Scenario] {
-    [managementReport(base: base), salesProposal(base: base), deckUpdate(base: base)]
+    [managementReport(base: base), salesProposal(base: base), deckUpdate(base: base), businessReview(base: base)]
   }
 
   // MARK: - A: 経営会議向け事業報告
@@ -241,6 +241,82 @@ struct PresentationScenarioChecks {
         items: [("案", "第2案（3拠点）"), ("開始", "2026年11月"), ("費用", "4,600万円（+600万円）")])
     ]
     return Scenario(id: "C", name: "既存資料の更新", document: document)
+  }
+
+  // MARK: - D: 12枚の実務レビュー
+
+  static func businessReview(base: Date) -> Scenario {
+    let sources = [
+      source("record:d1", .record, "新製品 定例",
+        "新製品の出荷は月1,200台（計画1,000台）。返品率は1.8%。主要部品の納期は6週間で、追加投資は800万円を上限とする。次回は量産ラインの増設判断を行う。",
+        base.addingTimeInterval(-30 * 86_400)),
+      source("record:d2", .record, "価格戦略 会議",
+        "標準価格を12万円から11万5千円へ改定。粗利率は38%から35%へ低下する見込み。法人向け保守は年1万2千円で、更新率は82%。値下げは量産効果の確認後に行う。",
+        base.addingTimeInterval(-12 * 86_400))
+    ]
+    let decisions = [
+      decision("dd1", "増産投資", "量産ライン増設に800万円を上限に承認", base.addingTimeInterval(-30 * 86_400), .approved, "高橋 健", "record:d1"),
+      decision("dd2", "価格改定", "値下げは量産効果の確認後に実施", base.addingTimeInterval(-12 * 86_400), .changed, "高橋 健", "record:d2")
+    ]
+    let evidence = PresentationContextBuilder.build(
+      request: .init(purpose: "新製品の出荷と価格改定の方針確認", audience: "事業レビュー",
+        decisionRequired: "増産投資と価格改定の順序を承認するか", query: "新製品 出荷 返品 価格 粗利 投資",
+        projectName: "新製品立上げ"),
+      sources: sources, decisions: decisions, characterBudget: 16_000)
+    var document = MemoraDocument(title: "新製品 事業レビュー", kind: .slides)
+    document.presentationEvidence = evidence
+    document.slides = [
+      cover("新製品 事業レビュー", "出荷増と価格改定の判断", "2026年11月"),
+      summary("出荷は計画を上回るが、粗利と投資回収の確認が必要", [
+        ("出荷", "月1,200台で計画1,000台を上回る"),
+        ("品質", "返品率1.8%で許容範囲"),
+        ("判断", "増産投資と値下げの順序を決める")
+      ]),
+      kpi("出荷と品質は改善、粗利は低下見込み", [
+        metric("出荷", 1_200, "台/月", "計画 1,000台"),
+        metric("返品率", 1.8, "%", "前月 2.0%"),
+        metric("粗利率", 35, "%", "改定後見込み・現在38%"),
+        metric("更新率", 82, "%", "法人保守")
+      ]),
+      evidenceBasis("出荷・品質・価格の根拠を突き合わせた", [
+        ("出荷", "月1,200台（新製品 定例）"),
+        ("価格", "12万円から11万5千円へ（価格戦略 会議）"),
+        ("投資", "増設は800万円を上限（新製品 定例）")
+      ]),
+      currentTarget("量産効果を確認してから価格を改定する",
+        current: "出荷増に合わせて直ちに値下げする。",
+        target: "量産効果と粗利を確認し、段階的に改定する。"),
+      optionsTable("増産投資を先行し、値下げは条件付きとする", [
+        ["比較軸", "先行投資", "先行値下げ"],
+        ["投資", "800万円", "0円"],
+        ["粗利", "35%を維持", "33%へ低下"],
+        ["供給", "6週間で増設", "現状維持"],
+        ["判断", "量産効果を確認", "需要を逃す"]
+      ]),
+      heatmap("供給と粗利に余裕が少ない", columns: ["区分", "需要", "供給", "粗利"], rows: [
+        ["計画", "堅調", "不足", "維持"],
+        ["実績", "上振れ", "不足", "低下"]
+      ], scores: [[1, 0.8, 0.4, 0.9], [1, 0.9, 0.3, 0.6]]),
+      waterfall("出荷増の効果は量産と保守がけん引", categories: ["前期", "量産", "保守", "値下げ", "今期"],
+        values: [1_000, 150, 90, -40, 1_200]),
+      riskTable("事業判断に残る3つのリスク", [
+        ["供給", "部品納期6週間", "先行発注で補完", "中"],
+        ["粗利", "値下げで低下", "量産効果を確認", "高"],
+        ["品質", "返品率1.8%", "出荷前検査を強化", "低"]
+      ], scores: [[0.5, 0, 0.4, 0.5], [0.9, 0, 0.2, 0.9], [0.2, 0, 0.3, 0.2]]),
+      process("増産投資から価格改定までを段階的に進める", [
+        ("承認", "800万円の投資範囲を決める"),
+        ("増設", "6週間でラインを追加"),
+        ("確認", "量産効果と粗利を測る"),
+        ("改定", "効果を確認して価格を改定")
+      ]),
+      roadmap("3か月で増設、6か月で価格改定を判断", periods: ["1か月", "2-3か月", "4-6か月", "7か月"],
+        entries: [("承認・発注", "企画", 0, 0), ("増設", "生産", 1, 1), ("効果測定", "営業", 2, 2)]),
+      decisionPage("増産投資を承認し、値下げは効果確認後に判断する",
+        subtitle: "今回の判断",
+        items: [("投資", "800万円（上限）"), ("価格", "量産効果の確認後"), ("次回", "3か月後に粗利を確認")])
+    ]
+    return Scenario(id: "D", name: "12枚の実務レビュー", document: document)
   }
 
   // MARK: - Slide builders

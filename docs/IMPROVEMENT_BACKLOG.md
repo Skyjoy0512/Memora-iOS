@@ -1,5 +1,14 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P1-6 Jinba 65型の再比較と実務12枚デッキ
+
+`run-jinba-comparison.sh`を再実行し、ホストCoreGraphics差38/65、Quick Look差14/65を
+再確認。14型を型ID別に分類し、ホストのみの24型はレンダラ差、14型は余白/情報密度の
+差として`docs/presentation-integration/JINBA_COMPARISON_2026_10.md`へ記録した。
+Officeの自動化は`-9074`/`-1712`/`-1728`で引き続きブロックされ、目視合格0/65を維持。
+`run-presentation-scenario-checks.sh`へ12枚の架空事業レビュー（D）を追加し、
+PPTX/PDF/PNGを生成、構造・版面エラー0件。Office/目視は未実施。
+
 ## 2026-11-08 P1-5 保存済み回答・文書の引用失効を統一
 
 保存済み回答のprovenance由来の資料リンクが、生成時の内容と照合されず現在の資料を
