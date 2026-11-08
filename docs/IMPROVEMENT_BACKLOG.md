@@ -1,5 +1,17 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 E2Eでノート本文エディタを合成タップできない（調査記録）
+
+ノート入口の「取込→抽出→再起動」E2Eを追加しようとしたが、
+`ProjectSourceAddSheet`の`MarkdownEditorField`（`UITextView`）が、
+e2eドライバの合成タップ（要素タップ/座標タップ/`pressSequentially`）で
+first responderにならず、本文を入力できなかった。タイトル（SwiftUI TextField）と
+保存ボタンは操作できる。実利用者のタップを再現できていない可能性があり、
+アプリの不具合と断定できないため、アプリ側は変更せずE2Eファイルも追加していない。
+ノート保存・抽出・SQLite再読込は host の `ProjectSourceStorageChecks` で検証済み。
+ノート入口のE2Eは、実機/別入力経路（実キーボード）での確認が必要。
+既存の office 検証は、取込→本文→検索→引用→SQLite一致まで実アプリでPASS。
+
 ## 2026-11-08 取込→本文→検索→引用を実アプリで検証（モデル/ネット不要）
 
 Office検証（Debugギャラリー）を拡張し、3形式の取込・本文再読込・SQLite再読込一致に加えて、
