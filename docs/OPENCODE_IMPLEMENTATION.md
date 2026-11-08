@@ -40,6 +40,11 @@ UIの実ジャンプは未検証。
 引用チップ→資料本文→再起動後の保持をシミュレータでPASS。外部キー/ネットワーク不使用。
 スクロール減速中のタップ対策としてシート表示を最大3回確認。実Web/クラウドLLM/実機は未検証。
 
+## 2026-11-08 P2.8 クラウド台帳・原価計算の再検査
+
+ledger 11件PASS、ledger.mjs構文、audio-cost 1,280/3,200、pricing 16ケースPASS。
+認証/購入/R2削除/D1本番は未実装のまま。本番接続・課金は行っていない。
+
 ## 2026-11-08 P2.7 最大文字サイズのE2E
 
 content sizeをAccessibility XXXLにして、design-accessibility 2件とproject-source-note 1件が

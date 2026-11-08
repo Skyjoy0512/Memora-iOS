@@ -1,5 +1,15 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P2.8 クラウド台帳・原価計算の再検査
+
+本番接続・課金・配備を行わず、既存の非公開コアだけを再検査した。
+`backend/audio-intelligence/test_ledger.py` **11件PASS**（実SQLite。予約/精算/不明usageの
+非返金・期限・並列/本人上限・全体rollback・価格/契約失効・改変/二重精算拒否・追記監査）。
+`node --check ledger.mjs` 成功。`audio-cost-scenarios.py --check` PASS（1,280 audio / 3,200 plan）。
+`pricing-scenarios.py --check` PASS（16ケース、年額Lightの損益分岐169.70、赤字ケース保持）。
+未実装のまま: 公開API・server認証・App Store検証・購入・privacy失効連携・R2削除worker・
+IP/端末レート制限・D1本番。今回も本番デプロイ・課金・契約は行っていない。
+
 ## 2026-11-08 P0-2.7 時刻付き音声/動画ソースの引用位置
 
 Debug検証「音声・字幕の引用位置（検証）」を追加。時刻12.5秒の字幕ブロックを持つ
