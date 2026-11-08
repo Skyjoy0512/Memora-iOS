@@ -65,6 +65,7 @@ struct StateGalleryView: View {
         NavigationLink("タスク候補（編集の確認）") { AgentTaskDraftExampleView() }
         NavigationLink("タスク候補（承認と保存の検証）") { AgentTaskOperationCheckView() }
         NavigationLink("Officeソース（取込と保存の検証）") { ProjectSourceOperationCheckView() }
+        NavigationLink("音声・字幕の引用位置（検証）") { AudioSourceEvidenceCheckView() }
         NavigationLink("関連タスク（範囲と保存の検証）") { ProjectTaskOperationCheckView() }
         #endif
         NavigationLink("Ask AIの経過（表示の確認）") {

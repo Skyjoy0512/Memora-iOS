@@ -1,5 +1,14 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P0-2.7 時刻付き音声/動画ソースの引用位置
+
+Debug検証「音声・字幕の引用位置（検証）」を追加。時刻12.5秒の字幕ブロックを持つ
+`.video`ソースを実際に保存し、`SourceContentSearch.context`が時刻付き引用を返すこと、
+`matchingSourceIDs`で検索できること、`answerCitationTargets`が引用リンクを許可すること、
+SQLite再読込が一致することをアプリ内で確認。`source-audio-citation.e2e.ts`が
+iPhone 18 Pro MaxシミュレータでPASS（約32秒）。モデル/外部APIは不使用。
+**実際の文字起こし・録音・再生ジャンプは未検証**（メディア無しの字幕ソースでの引用経路検証）。
+
 ## 2026-11-08 P0-2.6 引用位置（ページ/時刻）検査をrunnerへ接続
 
 `ProjectCitationLocationChecks`は存在したが、どのrunnerからも実行されていなかった。
