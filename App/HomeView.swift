@@ -25,9 +25,7 @@ struct HomeView: View {
   @State private var showsSummary = false
   @State private var editingTask: MemoraTask?
   @State private var backdrops = JournalBackdropSelection()
-  @State private var journalCreation: JournalCreationRequest?
   @Namespace private var summaryNamespace
-  @Namespace private var journalEntryNamespace
   @AppStorage("memora.journal.showCalendarEvents") private var showCalendarEvents = false
   @AppStorage("memora.journal.calendarIDs") private var journalCalendarIDsValue = ""
   @AppStorage("memora.journal.healthReviewEnabled") private var healthEnabled = false
@@ -187,14 +185,6 @@ struct HomeView: View {
       .sheet(isPresented: $showsReview) {
         JournalReviewView(date: selectedDate)
       }
-      .sheet(item: $journalCreation) { request in
-        if reduceMotion {
-          LifeLogCreationSheet(date: request.date, eventDate: request.date)
-        } else {
-          LifeLogCreationSheet(date: request.date, eventDate: request.date)
-            .navigationTransition(.zoom(sourceID: request.sourceID, in: journalEntryNamespace))
-        }
-      }
       .sheet(item: $editingTask) { task in TaskEditView(task: task) }
       .fullScreenCover(isPresented: $showsSummary) {
         if reduceMotion {
@@ -236,26 +226,18 @@ struct HomeView: View {
 
   /// UI additions follow the day being read; external new-memo actions keep now.
   private func beginJournalEntry() {
-    let date = JournalInsertionTime.suggestion(on: selectedDate)
-    journalCreation = JournalCreationRequest(date: date, sourceID: "journalAdd-empty")
+    model.lifeLogCreationDate = JournalInsertionTime.suggestion(on: selectedDate)
+    model.isLifeLogCreationPresented = true
   }
 
-  private func beginJournalEntry(after index: Int, in items: [JournalTimelineItem], sourceID: String) {
+  private func beginJournalEntry(after index: Int, in items: [JournalTimelineItem]) {
     let now = Date.now
     let dates = items.map { item -> Date? in
       if case .nowMarker = item { return nil }
       return item.date(on: selectedDate, now: now)
     }
-    let date = JournalInsertionTime.suggestion(on: selectedDate, after: index, dates: dates, now: now)
-    journalCreation = JournalCreationRequest(date: date, sourceID: sourceID)
-  }
-
-  /// A private request so the inset add row can morph into the existing
-  /// creation sheet without moving the sheet's presentation into the root.
-  private struct JournalCreationRequest: Identifiable {
-    var id = UUID()
-    var date: Date
-    var sourceID: String
+    model.lifeLogCreationDate = JournalInsertionTime.suggestion(on: selectedDate, after: index, dates: dates, now: now)
+    model.isLifeLogCreationPresented = true
   }
 
   /// The selected day has nothing on it yet.
@@ -266,7 +248,6 @@ struct HomeView: View {
       InteractionFeedback.shared.send(.tap)
       beginJournalEntry()
     }
-    .matchedTransitionSource(id: "journalAdd-empty", in: journalEntryNamespace)
   }
 
   /// Every day's matches, newest day first. Before anything is typed it says
@@ -386,16 +367,14 @@ struct HomeView: View {
           if index < timeline.items.count - 1 {
             JournalTimelineAddRow(label: "この間に記録を追加", isLast: false) {
               InteractionFeedback.shared.send(.tap)
-              beginJournalEntry(after: index, in: timeline.items, sourceID: "journalAdd-\(index)")
+              beginJournalEntry(after: index, in: timeline.items)
             }
-            .matchedTransitionSource(id: "journalAdd-\(index)", in: journalEntryNamespace)
           }
         }
         JournalTimelineAddRow(label: "記録を追加", isLast: true) {
           InteractionFeedback.shared.send(.tap)
-          beginJournalEntry(after: timeline.items.count - 1, in: timeline.items, sourceID: "journalAdd-tail")
+          beginJournalEntry(after: timeline.items.count - 1, in: timeline.items)
         }
-        .matchedTransitionSource(id: "journalAdd-tail", in: journalEntryNamespace)
       }
     }
   }

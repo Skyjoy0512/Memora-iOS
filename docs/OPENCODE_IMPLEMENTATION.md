@@ -49,9 +49,9 @@ host checkとシミュレータE2E（タップ順→保存→再起動→解除�
 
 ## 2026-11-08 UI-1 Apple純正モーフィング（シミュレータ検証・実機未検証）
 
-`matchedTransitionSource`と`navigationTransition(.zoom)`で、ホーム作成シート・
-ジャーナル追加シート・ライブラリ/ワークスペースのカード詳細・添付資料詳細を
-ネイティブ遷移にした。AskAIの右下FABは追加せず、中央入力と既存Menuを維持。
+`matchedTransitionSource`と`navigationTransition(.zoom)`で、ライブラリ/ワークスペースの
+カード詳細・添付資料詳細をネイティブ遷移にした。ホーム作成シートとジャーナル追加シートは
+ボトムシートの標準動作（下から上）を維持した。AskAIの右下FABは追加せず、中央入力と既存Menuを維持。
 Reduce Motionでは標準遷移。iOS 27専用APIは不使用。詳細は
 [UI_MORPHING.md](UI_MORPHING.md)。
 

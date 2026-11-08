@@ -30,7 +30,6 @@ struct RootTabView: View {
   /// The full-bleed drawer hides the safe area from SwiftUI, so the floating
   /// controls re-add the home indicator inset themselves.
   @State private var safeAreaInsets = EdgeInsets()
-  @Namespace private var captureMorph
 
   var body: some View {
     @Bindable var model = model
@@ -179,12 +178,7 @@ struct RootTabView: View {
       }
     }
     .sheet(isPresented: $isCaptureMenuPresented, onDismiss: completeCaptureMenuDismissal) {
-      if reduceMotion {
-        CaptureMenuSheet(onSelect: selectCaptureMenuItem, onClose: dismissCaptureMenu)
-      } else {
-        CaptureMenuSheet(onSelect: selectCaptureMenuItem, onClose: dismissCaptureMenu)
-          .navigationTransition(.zoom(sourceID: "captureMenu", in: captureMorph))
-      }
+      CaptureMenuSheet(onSelect: selectCaptureMenuItem, onClose: dismissCaptureMenu)
     }
     .photosPicker(isPresented: $isCapturePhotosPresented, selection: $capturePhotos, maxSelectionCount: 6, matching: .images)
     .onChange(of: capturePhotos) { _, photos in
@@ -379,7 +373,6 @@ struct RootTabView: View {
         .overlay(alignment: .bottomTrailing) {
           CaptureFloatingButtons(spaceID: model.visibleProjectID, isVisible: showsCaptureButtons,
             includesProjectCreation: model.selectedTab == .library && model.librarySection == .projects,
-            morphNamespace: captureMorph,
             onOpenCaptureMenu: presentCaptureMenu)
             .allowsHitTesting(showsCaptureButtons)
             .accessibilityHidden(!showsCaptureButtons)

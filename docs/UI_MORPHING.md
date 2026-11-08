@@ -1,8 +1,9 @@
 # Apple純正の画面遷移モーフィング（2026-11-08）
 
 既存のナビゲーション、シート、入力欄、配色、レイアウトを変えずに、
-`matchedTransitionSource`と`navigationTransition(.zoom)`だけで画面・メニューの
-出現をApple純正の拡大遷移にした。独自のscale/opacity/GeometryReaderによる
+**画面遷移（push）だけ**を`matchedTransitionSource`と`navigationTransition(.zoom)`で
+Apple純正の拡大遷移にした。ボトムシート（作成メニュー、ライフログ作成）は
+iOS標準の下から上へのシート表示を維持する。独自のscale/opacity/GeometryReaderによる
 疑似Liquid Glassは追加していない。
 
 ## 採用したAPI
@@ -19,14 +20,11 @@
 
 ## 画面別
 
-- ホーム: 右下の既存作成ボタン（`CaptureFloatingButtons`）のラベルに
-  `matchedTransitionSource("captureMenu")`、`CaptureMenuSheet`にzoom遷移。
-  ボタン位置・シート内容・アクション順は不変。
+- ホーム: 右下の既存作成ボタンから`CaptureMenuSheet`を標準のボトムシートとして
+  下から上へ表示する。ボタン位置・シート内容・アクション順は不変。
 - ジャーナル: タイムラインの各行の＋と末尾＋、空の日の追加ボタンから、
-  既存の`LifeLogCreationSheet`へzoom遷移。行ごとにsource IDを分け、
+  既存の`LifeLogCreationSheet`を標準のボトムシートとして下から上へ表示する。
   挿入時刻の計算（`JournalInsertionTime`）は変更していない。
-  グローバルな`model.isLifeLogCreationPresented`経由のシート（外部リンク）は
-  従来どおりで、遷移元がないためzoomを付けない。
 - ライブラリ: 保存済み参考資料、録音、共有記録のカードから詳細へzoom遷移。
 - ワークスペース/プロジェクト: `ProjectWorkspaceRow`の資料・録音・文書カードから
   詳細へzoom遷移。ソース追加と参照の処理は変更なし。
@@ -44,7 +42,7 @@ iOS 26実機/シミュレータでの見た目、iPad、VoiceOver、Reduce Motio
 ## 検証
 
 - `bitrig preview -platform iOS`: BUILD SUCCEEDED
-- `capture-audio-picker.e2e.ts`: PASS（ライト/ダーク、作成シート、音声ピッカー取消）
+- `capture-audio-picker.e2e.ts`: PASS（ライト/ダーク、作成シートが下から表示、音声ピッカー取消）
 - `workspace-journal.e2e.ts --grep "insertion proposes"`: PASS（日付・イベント間の時刻）
 - `workspace-journal.e2e.ts --grep "inline plus"`: PASS（行内＋から追加）
 - `project-source-note-attach-order.e2e.ts`: PASS
