@@ -1,5 +1,15 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P1-3.2 実描画不要のPPTX文字フィット静的検査
+
+Office実描画が自動化タイムアウトで未検証のままでも検出できる品質ゲートを追加。
+`validate-presentation-packages.py`が65の各PPTXについて、テキスト図形の
+`bodyPr wrap="none"`＋`noAutofit`（事前改行・自動縮小なし）、宣言行高の合計が図形高に収まること、
+図形が960×540内にあること、全runのフォントが8pt以上であることを検査する。
+本番のレイアウト検証（bounds/overflow/text重なり/出典/数値）と併用し、実描画の代替にはしない。
+検査: `run-presentation-checks.sh` PASS（65/65、PDF/PPTX/roundtrip含む）。
+実描画・目視合格は引き続き0/65（PowerPoint/Keynoteの自動化ブロック）。
+
 ## 2026-11-08 P1-2.1 重複ツール結果をツールIDで圧縮
 
 長いエージェント会話で同じ読み取り結果が繰り返されると、コンテキストを二重に消費していた。

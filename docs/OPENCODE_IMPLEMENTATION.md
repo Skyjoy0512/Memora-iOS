@@ -23,6 +23,13 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P1-3.2 PPTX文字フィット静的検査
+
+`validate-presentation-packages.py`に、bodyPr(wrap=none/noAutofit)、宣言行高合計≤図形高、
+960×540内、8pt以上のrun、を65PPTXで検査する静的ゲートを追加。実描画の代替ではない。
+状態: 実装済み・検証済み（host）。PowerPoint/Keynote実描画は未検証（0/65維持）。
+検証: `run-presentation-checks.sh` PASS（65/65）。
+
 ## 2026-11-08 P1-2.1 重複ツール結果のコンテキスト圧縮
 
 `AgentContextCompactor`に重複排除を追加。予算超過時、古いtool結果の同一内容は最初の
