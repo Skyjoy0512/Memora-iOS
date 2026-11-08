@@ -483,10 +483,23 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
 
   func resume() -> Bool {
     if isContinuous {
-      guard run.phase == .recording, let microphone else { return false }
+      // Re-check the claim, re-activate the session and confirm the input before
+      // restoring the tap. A route change may also have changed the hardware
+      // format; `start(resetTimeline: false)` rebuilds its converter while the
+      // writer keeps the frame timeline it already saved.
+      guard run.phase == .recording, let microphone, let sessionToken,
+            coordinator.owns(sessionToken) else { return false }
       do {
+        let session = AVAudioSession.sharedInstance()
+        try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP])
+        try session.setActive(true)
+        guard session.isInputAvailable else {
+          lastFailureReason = "マイクの入力を確認できませんでした。「再開」で再試行するか、ここまでの録音を保存してください。"
+          return false
+        }
         try microphone.start(resetTimeline: false)
       } catch {
+        lastFailureReason = "録音を再開できませんでした。オーディオ機器を確認して「再開」で再試行するか、ここまでの録音を保存してください。"
         return false
       }
       diagnostic?.count(.recordingResume)
@@ -631,10 +644,23 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     guard let raw = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
           let reason = AVAudioSession.RouteChangeReason(rawValue: raw) else { return }
 
-    guard reason == .oldDeviceUnavailable else { return }
+    if reason == .oldDeviceUnavailable {
+      diagnostic?.count(.inputLost)
+      pause()
+      onInterruption?(.inputLost("オーディオ機器が外れたため、録音を一時停止しました。「再開」で続けられます。"))
+      return
+    }
+    // A new route can change the hardware sample rate or channel count. The
+    // tap's converter and continuity were built for the old format, so pause
+    // and let resume rebuild them instead of converting with a stale format.
+    guard isContinuous, run.phase == .recording, let installed = microphone?.installedFormat else { return }
+    let session = AVAudioSession.sharedInstance()
+    let formatChanged = abs(session.sampleRate - installed.sampleRate) > 0.5
+      || session.inputNumberOfChannels != Int(installed.channelCount)
+    guard formatChanged else { return }
     diagnostic?.count(.inputLost)
     pause()
-    onInterruption?(.inputLost("オーディオ機器が外れたため、録音を一時停止しました。「再開」で続けられます。"))
+    onInterruption?(.inputLost("オーディオ機器が変わったため、録音を一時停止しました。「再開」で続けられます。"))
   }
 
   private func recordingsDirectory() throws -> URL {

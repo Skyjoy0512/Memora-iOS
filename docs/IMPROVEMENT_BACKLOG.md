@@ -1,5 +1,20 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P0-2.9 割り込み後の連続録音再開を安全化
+
+連続録音の`resume()`がセッション再アクティブ化・入力可否・所有トークンを確認せず
+`RecordingMicrophoneInput.start(resetTimeline:false)`だけを呼んでいた。
+再開前に`AudioSessionCoordinator`の所有を再確認し、category/`setActive(true)`/
+`isInputAvailable`を通し、失敗時は`isRecordingPaused=false`へ進まず理由を
+`recordingInterruptionMessage`へ出して再試行・保存へ回せるようにした。
+再開時は`start`が現在のハードウェア形式でtapを張り直すためconverterも作り直されるが、
+writerの通算フレームは巻き戻さない。route変更でsampleRate/channelCountが変わった場合は
+古いconverterのまま続行せず、一時停止して「再開」を促す。休止区間は無音として挿入しない。
+
+検証: `bitrig preview -platform iOS` BUILD SUCCEEDED、録音関連host runner PASS。
+**着信→復帰・Bluetooth接続/切断・ロック・バックグラウンド・強制終了復旧・15分境界は
+実機未検証**。
+
 ## 2026-11-08 P0-1.5 録音tapからライブ認識の変換を分離
 
 `RecordingMicrophoneInput`のtapが`liveSink`を同期実行し、`LiveAudioInputFeeder.consume`が

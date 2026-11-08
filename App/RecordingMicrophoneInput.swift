@@ -42,6 +42,9 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
   private let accepting = Mutex(false)
   private let timing = Mutex(AudioTapTiming())
   private var isInstalled = false
+  /// Hardware format the current tap was installed with; read by the service to
+  /// detect a route change that needs the tap (and converter) rebuilt.
+  private(set) var installedFormat: AVAudioFormat?
   /// Touched only inside the serial input tap for the current run.
   private var continuity = RecordingInputContinuity()
   private var framePosition: Int64 = 0
@@ -76,6 +79,7 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
       throw Failure.unsupportedFormat
     }
     continuity.reset()
+    installedFormat = format
     if resetTimeline { framePosition = 0 }
     accepting.withLock { $0 = true }
     input.installTap(onBus: 0, bufferSize: 4_096, format: format) { @Sendable [weak self] buffer, when in
@@ -95,6 +99,7 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
   /// further callback runs; the writer drains what it already accepted.
   func stop() {
     accepting.withLock { $0 = false }
+    installedFormat = nil
     guard isInstalled else { return }
     isInstalled = false
     engine.inputNode.removeTap(onBus: 0)

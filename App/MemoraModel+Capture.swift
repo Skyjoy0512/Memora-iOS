@@ -307,7 +307,10 @@ extension MemoraModel {
     guard isRecording else { return }
     if isRecordingPaused {
       guard recorder.resume() else {
-        recordingErrorMessage = "録音を再開できませんでした。"
+        recordingInterruptionMessage = recorder.lastFailureReason
+          ?? "録音を再開できませんでした。「再開」で再試行するか、ここまでの録音を保存してください。"
+        updateLiveActivity()
+        refreshRecordingResources()
         return
       }
       if let recordingPausedAt {
