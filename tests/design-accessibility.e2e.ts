@@ -1,6 +1,8 @@
-import { test } from '@e2e-dev/mobile';
+import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { focusComposer, launchMemora, openSidebarSearch, tapControl, tapTab } from './ui-helpers';
+
+afterEach(async ({ device }) => { await device.setAppearance('light'); });
 
 // Also run with the dedicated simulator's system text size set to Accessibility
 // XXXL using agent-device settings. No fixed font override is injected in-app.
@@ -22,9 +24,22 @@ test('design: mention controls remain below navigation and above native input', 
   expect(closeBox.width).toBeGreaterThanOrEqual(44);
   expect(closeBox.height).toBeGreaterThanOrEqual(44);
   await app.screenshot('mention-layout');
+  // The same layout holds in dark appearance.
+  await device.setAppearance('dark');
+  const darkClose = await close.boundingBox();
+  const darkInput = await input.boundingBox();
+  if (!darkClose || !darkInput) throw new Error('dark mention layout has no frames');
+  expect(darkClose.y).toBeGreaterThan(108);
+  expect(darkClose.y + darkClose.height).toBeLessThan(darkInput.y);
+  expect(darkClose.width).toBeGreaterThanOrEqual(44);
+  expect(darkClose.height).toBeGreaterThanOrEqual(44);
+  await app.screenshot('mention-layout-dark');
+  await device.setAppearance('light');
   await tapControl(screen, close);
   await expect(close).not.toBeVisible();
-  await expect(screen.getByRole('keyboard')).toBeVisible();
+  // With a hardware keyboard attached the soft keyboard has no node; the field
+  // staying focused is the behaviour that matters.
+  await expect(input).toBeFocused();
   await input.fill('');
 });
 
@@ -44,7 +59,7 @@ test('design: toolbar search clears without dismissing input and cancels back to
   // XCTest exposes an empty native field's placeholder as its AX value.
   await expect(input).not.toHaveValue('DesignSearch');
   await expect(clear).not.toBeVisible();
-  await expect(screen.getByRole('keyboard')).toBeVisible();
+  await expect(input).toBeFocused();
   await app.screenshot('search-clear');
   await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
   await expect(screen.getByRole('keyboard')).not.toBeVisible();

@@ -89,16 +89,19 @@ export async function openSidebarSearch(screen: any) {
 export async function focusComposer(screen: any) {
   const input = screen.getByTestId('ai.composer.input');
   await expect(input).toBeVisible();
-  const keyboard = screen.getByRole('keyboard');
   // Deep links already autofocus. A second tap on a moving field can hit the
-  // background and dismiss the keyboard instead of focusing the composer.
-  if (!(await keyboard.isVisible())) {
+  // background and dismiss focus instead of focusing the composer. A hardware
+  // keyboard attached to the simulator has no soft-keyboard node, so focus is
+  // the reliable signal.
+  let focused = false;
+  try {
+    await expect(input).toBeFocused({ timeout: 1_000 });
+    focused = true;
+  } catch {}
+  if (!focused) {
     const box = await stableBounds(input);
-    if (!(await keyboard.isVisible())) {
-      await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
-    }
+    await screen.tapAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
   }
-  await expect(screen.getByRole('keyboard')).toBeVisible();
   await expect(input).toBeFocused();
   return input;
 }
