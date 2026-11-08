@@ -49,7 +49,9 @@ struct BackupRestoreChecks {
     document.presentationPlan = PresentationPlan(purpose: "判断を支援", audience: "会議の参加者", decision: "次の確認事項",
       assumptions: ["架空データ"], storyline: [.init(slideID: document.slides[0].id, claim: "概要を共有する", evidence: ["会議"], unconfirmed: ["実機検証"])])
     document.sourceRecordIDs = [meeting.id]
-    let source = ProjectSource(projectID: project.id, kind: .note, title: "根拠", extractedTextReference: "source.txt")
+    var source = ProjectSource(projectID: project.id, kind: .note, title: "根拠", extractedTextReference: "source.txt")
+    let attachment = ProjectSource(projectID: project.id, kind: .pdf, title: "添付", extractedTextReference: "source.txt")
+    source.attachedSourceIDs = [attachment.id]
     let artifactProvenance = ArtifactProvenance(sourceMessageID: UUID(), records: [
       .init(target: .person(person.id), fingerprint: String(repeating: "a", count: 64)),
       .init(target: .journal(UUID()), fingerprint: String(repeating: "b", count: 64)),
@@ -59,10 +61,12 @@ struct BackupRestoreChecks {
     let sessionID = UUID()
     let episode = AIEpisode(id: UUID(), sessionID: sessionID, date: now, topic: "提案書", objective: "資料作成", summary: "会社書式を確認した", personIDs: [person.id], projectIDs: [project.id], recordIDs: [meeting.id], documentIDs: [document.id])
     let history = AIConversationEntry(id: UUID(), question: "前回の提案書", answer: "保存しました", scopeLabel: "すべて", createdAt: now, episode: episode)
-    let package = try BackupPackage.write(meetings: [meeting], spaces: [project], tasks: [], lifeLogEntries: [], people: [person], aiHistory: [history], aiMemories: [memory], mailDrafts: [draft], companyTemplates: [template, powerpointTemplate], documents: [document], projectSources: [source], into: input)
+    let package = try BackupPackage.write(meetings: [meeting], spaces: [project], tasks: [], lifeLogEntries: [], people: [person], aiHistory: [history], aiMemories: [memory], mailDrafts: [draft], companyTemplates: [template, powerpointTemplate], documents: [document], projectSources: [source, attachment], into: input)
     let manifest = try BackupPackage.read(from: package)
     precondition(manifest.aiMemories == [memory] && manifest.mailDrafts == [draft] && manifest.companyTemplates == [template, powerpointTemplate])
     precondition(manifest.documents == [document] && manifest.aiHistory.first?.episode == episode)
+    precondition(manifest.projectSources?.first { $0.id == source.id }?.attachedSourceIDs == [attachment.id],
+      "attachment link must survive the backup manifest")
     for (name, bytes) in workspaceFiles {
       let restored = try Data(contentsOf: package.appendingPathComponent("workspace/" + name))
       precondition(restored == bytes)
@@ -163,6 +167,7 @@ struct BackupRestoreChecks {
     var legacyCommitted = false
     try await BackupRestoreTransaction.restore(from: package) { value in
       precondition(value.aiMemories == nil && value.companyTemplates == nil && value.mailDrafts == nil)
+      precondition(value.projectSources == nil, "older packages without sources must decode as absent")
       legacyCommitted = true
     }
     precondition(legacyCommitted)

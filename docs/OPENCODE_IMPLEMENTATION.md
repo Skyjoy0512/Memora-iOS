@@ -23,6 +23,13 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P1-1.3 添付リンクのバックアップ互換とAskAIスコープ
+
+バックアップmanifestのsourceリンク保持と旧パッケージ互換をhost検査に追加。
+AskAIは添付資料をメモスコープへ自動拡張せず、各資料を独立に検索/引用する方針とし、
+メモ詳細にその旨を表示。状態: 実装済み・検証済み（host/ビルド）。
+検証: backup-restore PASS、`bitrig preview -platform iOS`成功。
+
 ## 2026-11-08 P1-1.2 既存メモへの後から添付と並べ替え
 
 `ProjectNoteAttachSheet`と`attachProjectSources`/`moveAttachedSource`を追加。

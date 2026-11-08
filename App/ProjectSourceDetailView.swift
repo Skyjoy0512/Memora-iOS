@@ -280,6 +280,7 @@ struct ProjectSourceDetailView: View {
     let attachments = model.attachedSources(of: source)
     return VStack(alignment: .leading, spacing: 10) {
       Text("添付資料").font(MemoraTypography.sectionHeading)
+      Text("添付資料はそれぞれ独立して検索・引用されます。").font(.caption).foregroundStyle(.secondary)
       ForEach(Array(attachments.enumerated()), id: \.element.id) { index, attachment in
         HStack(spacing: 8) {
           NavigationLink { ProjectSourceDetailView(sourceID: attachment.id) } label: {
