@@ -1,4 +1,5 @@
 import AVFAudio
+import Dispatch
 import Foundation
 import Synchronization
 
@@ -39,6 +40,7 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
   private let liveSink: (@Sendable (AVAudioPCMBuffer) -> Void)?
   private let onFailure: @Sendable (Failure) -> Void
   private let accepting = Mutex(false)
+  private let timing = Mutex(AudioTapTiming())
   private var isInstalled = false
   /// Touched only inside the serial input tap for the current run.
   private var continuity = RecordingInputContinuity()
@@ -101,8 +103,16 @@ final class RecordingMicrophoneInput: @unchecked Sendable {
 
   var hasInstalledTap: Bool { isInstalled }
 
+  /// Duration percentiles for the tap callbacks of this run, in microseconds.
+  var tapTiming: AudioTapTiming.Summary? { timing.withLock { $0.summary } }
+
   private func receive(_ buffer: AVAudioPCMBuffer, when: AVAudioTime,
                        converter: LiveAudioBufferConverter) {
+    let started = DispatchTime.now().uptimeNanoseconds
+    defer {
+      let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000
+      timing.withLock { $0.record(microseconds: elapsed) }
+    }
     guard accepting.withLock({ $0 }) else { return }
     switch continuity.observe(
       sampleTime: when.isSampleTimeValid ? when.sampleTime : nil,

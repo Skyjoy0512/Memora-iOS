@@ -1,5 +1,22 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P0-1.5 録音tapからライブ認識の変換を分離
+
+`RecordingMicrophoneInput`のtapが`liveSink`を同期実行し、`LiveAudioInputFeeder.consume`が
+44.1kHz→analyzer形式の変換と`AsyncThrowingStream`投入を音声コールバック上で行っていた。
+`LiveAudioBufferQueue`を追加し、tapは録音writer受理後に**所有コピーを有界キューへ積むだけ**にした。
+変換とanalyzer投入は専用の直列consumerが行い、満杯時は新しいバッファを捨てて
+`liveBufferDropped`、変換失敗は`liveConversionFailure`としてライブ側だけを止める。
+録音writerの受理・順序・overrun処理は変更していない。セッション差し替え/停止時は
+旧feederを`finish()`し、古いconsumerが新しいrunへ出力しないようにした。
+tap時間は内容なしのµsヒストグラム（p50/p95/p99/max、直近4096件）で
+録音診断の`latencies["recordingTap"]`へ保存する。CPUは未計測、メモリ/熱は既存の
+`AudioResourceProbe`サンプルのみ。
+
+検証: `run-live-audio-buffer-queue-checks.sh`、`run-recording-microphone-input-checks.sh`、
+`run-audio-diagnostic-checks.sh` PASS。`bitrig preview -platform iOS` BUILD SUCCEEDED。
+**実機の負荷時p99・15分連続・省電力復帰は未検証**（fixture/ホストのみ）。
+
 ## 2026-11-08 P1-3.3 Quick Look実レンダリングで65型を再比較
 
 PowerPoint/Keynoteアプリの自動化は引き続きブロック（`open=-9074`、PDF保存`-1712`、

@@ -16,7 +16,7 @@ struct AudioDiagnosticReport: Codable, Identifiable, Sendable {
     case appleSpeech, openAIWhisper, deepgramNova3, fluidSpeaker, silero, onDeviceSummary, cloudSummary
   }
   enum Counter: String, Codable, Sendable {
-    case recordingPause, recordingResume, audioInterruption, inputLost, audioReset, storageStop, liveBufferDropped, draftCheckpointFailure
+    case recordingPause, recordingResume, audioInterruption, inputLost, audioReset, storageStop, liveBufferDropped, liveConversionFailure, draftCheckpointFailure
   }
   struct Event: Codable, Sendable {
     var stage: Stage
@@ -34,6 +34,23 @@ struct AudioDiagnosticReport: Codable, Identifiable, Sendable {
     var successfulCalls = 0
     var rtf: Double? { successfulAudioSeconds > 0 ? successfulWallSeconds / successfulAudioSeconds : nil }
   }
+  struct Latency: Codable, Sendable {
+    var samples: Int
+    var p50Microseconds: Double
+    var p95Microseconds: Double
+    var p99Microseconds: Double
+    var maximumMicroseconds: Double
+
+    var isValid: Bool {
+      samples > 0 &&
+        [p50Microseconds, p95Microseconds, p99Microseconds, maximumMicroseconds]
+          .allSatisfy { $0.isFinite && $0 >= 0 } &&
+        p50Microseconds <= p95Microseconds &&
+        p95Microseconds <= p99Microseconds &&
+        p99Microseconds <= maximumMicroseconds
+    }
+  }
+
   struct Resources: Codable, Sendable {
     var elapsedSeconds: Double = 0
     var footprintBytes: UInt64?
@@ -65,6 +82,8 @@ struct AudioDiagnosticReport: Codable, Identifiable, Sendable {
   var maximumThermalState = 0
   var signals: [AudioSignalReport] = []
   var counters: [String: Int] = [:]
+  /// Optional so reports written before tap timing existed still decode.
+  var latencies: [String: Latency]?
 
   var overallRTF: Double? {
     guard outcome == .success || outcome == .empty, kind != .recording, kind != .liveTranscription else { return nil }
@@ -79,6 +98,7 @@ struct AudioDiagnosticReport: Codable, Identifiable, Sendable {
           reusedChunks >= 0, completedChunks >= 0, signals.count <= 128, signals.allSatisfy(\.isValid),
           totals.keys.allSatisfy({ Stage(rawValue: $0) != nil }),
           counters.allSatisfy({ Counter(rawValue: $0.key) != nil && $0.value >= 0 }),
+          (latencies ?? [:]).allSatisfy({ !$0.key.isEmpty && $0.value.isValid }),
           audioSeconds.map({ $0.isFinite && $0 > 0 }) ?? true else { return false }
     return events.allSatisfy {
       $0.elapsedSeconds.isFinite && $0.elapsedSeconds >= 0 &&

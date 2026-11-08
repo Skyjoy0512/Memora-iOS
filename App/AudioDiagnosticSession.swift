@@ -89,6 +89,21 @@ final class AudioDiagnosticSession: Sendable {
     update { $0.report.counters[counter.rawValue, default: 0] += 1 }
   }
 
+  /// Records a bounded latency summary (microseconds) under a fixed stage name.
+  func latency(_ name: String, _ summary: AudioTapTiming.Summary) {
+    guard !name.isEmpty, summary.samples > 0 else { return }
+    update {
+      var latencies = $0.report.latencies ?? [:]
+      latencies[name] = AudioDiagnosticReport.Latency(
+        samples: summary.samples,
+        p50Microseconds: summary.p50Microseconds,
+        p95Microseconds: summary.p95Microseconds,
+        p99Microseconds: summary.p99Microseconds,
+        maximumMicroseconds: summary.maximumMicroseconds)
+      $0.report.latencies = latencies
+    }
+  }
+
   func sample(_ resource: AudioDiagnosticReport.Resources) {
     var sample = resource
     sample.elapsedSeconds = max(0, now())

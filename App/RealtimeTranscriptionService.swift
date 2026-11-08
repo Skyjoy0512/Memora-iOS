@@ -38,13 +38,20 @@ final class RealtimeTranscriptionService {
   }
 
   private func install(_ feeder: LiveAudioInputFeeder?, id: UUID) {
-    liveInput.withLock { slot in
+    let replaced: LiveAudioInputFeeder? = liveInput.withLock { slot in
       if let feeder {
+        let previous = slot?.feeder
         slot = LiveInputSlot(id: id, feeder: feeder)
-      } else if slot?.id == id {
-        slot = nil
+        return previous
       }
+      guard slot?.id == id else { return nil }
+      let previous = slot?.feeder
+      slot = nil
+      return previous
     }
+    // Stop the replaced consumer so a pause/resume or a new run cannot let an
+    // old analyzer conversion run on, or mix its output into the new session.
+    replaced?.finish()
   }
 
   static let enabledKey = "memora.liveTranscription"

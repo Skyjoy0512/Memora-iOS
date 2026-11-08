@@ -288,8 +288,10 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
   func stopContinuous() async -> RecordingAudioManifest? {
     storageMonitor?.cancel()
     storageMonitor = nil
+    let tapTiming = microphone?.tapTiming
     microphone?.stop()
     microphone = nil
+    if let tapTiming { diagnostic?.latency("recordingTap", tapTiming) }
     guard let writer else {
       continuousSink = nil
       isContinuous = false

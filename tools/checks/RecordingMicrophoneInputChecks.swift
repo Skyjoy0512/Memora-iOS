@@ -75,6 +75,17 @@ enum RecordingMicrophoneInputChecks {
     precondition(mono.format == target && mono.frameLength > 0)
     precondition(abs(mono.floatChannelData![0][10] - 0.25) < 0.01)
 
+    // Tap timing keeps only durations, bounded, with ordered percentiles.
+    var timing = AudioTapTiming()
+    for value in 1...100 { timing.record(microseconds: Double(value)) }
+    guard let summary = timing.summary else { preconditionFailure("timing summary missing") }
+    precondition(summary.samples == 100 && summary.maximumMicroseconds == 100)
+    precondition(summary.p50Microseconds <= summary.p95Microseconds &&
+      summary.p95Microseconds <= summary.p99Microseconds &&
+      summary.p99Microseconds <= summary.maximumMicroseconds)
+    for _ in 0..<10_000 { timing.record(microseconds: 1) }
+    precondition(timing.summary?.samples == 10_100)
+
     // Passthrough conversion copies: changing the input later cannot mutate the
     // buffer already handed to the recording sink.
     guard let passthrough = LiveAudioBufferConverter(source: source, target: source) else {

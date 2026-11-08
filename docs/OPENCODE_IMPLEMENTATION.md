@@ -4,6 +4,16 @@
 検証済み / 保留 の4つ。ビルドは Bitrig で都度確認し、実機・シミュレータで
 確認できないものは「未検証」と明記する。
 
+## 2026-11-08 P0-1.5 録音tapのライブ変換分離（実装済み・ホスト検証済み／実機未検証）
+
+録音tapの同期`liveSink`呼び出しをやめ、`LiveAudioBufferQueue`（有界・所有コピー・
+新しい順drop）へ渡すだけにした。analyzer形式への変換とstream投入は`LiveAudioInputFeeder`の
+専用直列consumerが行う。ライブの満杯/変換失敗/停止は録音へ影響しない。
+`RealtimeTranscriptionService`はfeeder差し替え時に旧consumerを終了する。
+録音writerの受理・drain・overrun・manifest動作は変更なし。
+tap所要時間のp50/p95/p99（µs）を録音診断へ追加（内容・ファイル名なし）。
+未検証: 実機の負荷時p99、15分連続、pause/resume・省電力復帰・route変更との組合せ。
+
 ## 今回の改善反映
 
 2026-11-02 Audio IntelligenceはCodexで直接段階実装。OpenCodeへの委託は行っていない。

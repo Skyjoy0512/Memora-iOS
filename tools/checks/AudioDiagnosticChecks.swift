@@ -46,6 +46,8 @@ import Synchronization
       bounded.sample(.init(footprintBytes: UInt64(index + 1000), batteryFraction: index == 0 ? 0.9 : 0.7,
         charging: false, lowPower: false, thermalState: index == 5 ? 3 : 0))
     }
+    bounded.latency("recordingTap", .init(samples: 10, p50Microseconds: 100,
+      p95Microseconds: 200, p99Microseconds: 300, maximumMicroseconds: 400))
     bounded.finish(.success)
     let retained = bounded.snapshot
     precondition(retained.isValid && retained.events.count == 256 && retained.omittedEvents == 1744)
@@ -53,6 +55,7 @@ import Synchronization
     precondition(retained.totals["quality"]?.calls == 1000)
     precondition(retained.firstBatteryFraction == 0.9 && retained.lastBatteryFraction == 0.7)
     precondition(retained.maximumThermalState == 3 && retained.sampledPeakFootprintBytes == 1999)
+    precondition(retained.latencies?["recordingTap"]?.p95Microseconds == 200 && retained.isValid)
 
     let directory = root.appendingPathComponent("archive")
     let archive = AudioDiagnosticArchive(directory: directory)
