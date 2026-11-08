@@ -76,6 +76,37 @@ extension MemoraModel {
     return storeProjectSource(note)
   }
 
+  /// Appends existing sources from the note's own save destination. Order is the
+  /// order they are chosen; duplicates and other projects are refused.
+  @discardableResult
+  func attachProjectSources(_ attachmentIDs: [UUID], toNote noteID: UUID) -> Bool {
+    guard var note = source(id: noteID), note.kind == .note else { return false }
+    var ids = note.attachedSourceIDs ?? []
+    var seen = Set(ids)
+    for id in attachmentIDs where ids.count < 64 {
+      guard id != noteID, !seen.contains(id), let candidate = source(id: id),
+            candidate.projectID == note.projectID, seen.insert(id).inserted else { continue }
+      ids.append(id)
+    }
+    guard ids != (note.attachedSourceIDs ?? []) else { return true }
+    note.attachedSourceIDs = ids.isEmpty ? nil : ids
+    note.updatedAt = .now
+    return storeProjectSource(note)
+  }
+
+  /// Moves one attachment by `offset` places (negative is toward the top).
+  @discardableResult
+  func moveAttachedSource(_ attachmentID: UUID, inNote noteID: UUID, offset: Int) -> Bool {
+    guard var note = source(id: noteID), note.kind == .note,
+          var ids = note.attachedSourceIDs, offset != 0,
+          let index = ids.firstIndex(of: attachmentID),
+          ids.indices.contains(index + offset) else { return false }
+    ids.swapAt(index, index + offset)
+    note.attachedSourceIDs = ids
+    note.updatedAt = .now
+    return storeProjectSource(note)
+  }
+
   func updateProjectNote(_ id: UUID, title: String, text: String, presentsErrorsLocally: Bool = false) async throws -> Bool {
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
           let previous = source(id: id), previous.kind == .note,

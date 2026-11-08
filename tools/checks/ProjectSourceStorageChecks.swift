@@ -237,28 +237,36 @@ struct ProjectSourceStorageChecks {
     }
     let first = source("添付1", projectID: project.id)
     let second = source("添付2", projectID: project.id)
+    let third = source("添付3", projectID: project.id)
     let foreign = source("別プロジェクト", projectID: otherProject.id)
-    for value in [first, second, foreign] { expect(model.storeProjectSource(value)) }
+    for value in [first, second, third, foreign] { expect(model.storeProjectSource(value)) }
     let noteID = try await model.addProjectNote(title: "メモ", text: "本文", projectID: project.id,
       attachedSourceIDs: [first.id, second.id, first.id, foreign.id, UUID()])!
     guard let note = model.source(id: noteID) else { preconditionFailure("note missing") }
     precondition(note.attachedSourceIDs == [first.id, second.id], "deduplicated, same-project, existing only")
     precondition(model.attachedSources(of: note).map(\.id) == [first.id, second.id])
-    // The link survives a reload from SQLite.
+    // Later attach accepts only new same-project sources, in chosen order.
+    expect(model.attachProjectSources([third.id, first.id, foreign.id], toNote: noteID))
+    precondition(model.source(id: noteID)?.attachedSourceIDs == [first.id, second.id, third.id])
+    expect(model.moveAttachedSource(third.id, inNote: noteID, offset: -1))
+    precondition(model.source(id: noteID)?.attachedSourceIDs == [first.id, third.id, second.id])
+    expect(!model.moveAttachedSource(first.id, inNote: noteID, offset: -1))
+    expect(!model.moveAttachedSource(second.id, inNote: noteID, offset: 1))
+    // The order and links survive a reload from SQLite.
     RecordStore.store = model.store
     let reloaded = try reload(model)
-    precondition(reloaded.first { $0.id == noteID }?.attachedSourceIDs == [first.id, second.id])
+    precondition(reloaded.first { $0.id == noteID }?.attachedSourceIDs == [first.id, third.id, second.id])
     // Detaching removes only the link.
     expect(model.removeAttachedSource(first.id, fromNote: noteID))
-    precondition(model.source(id: noteID)?.attachedSourceIDs == [second.id])
+    precondition(model.source(id: noteID)?.attachedSourceIDs == [third.id, second.id])
     precondition(model.source(id: first.id) != nil)
     // Deleting an attachment prunes the link but keeps every other source.
     let pruned = ProjectSource.pruningAttachmentLink(second.id, in: model.projectSources)
     let prunedNote = pruned.first { $0.id == noteID }
-    precondition(prunedNote?.attachedSourceIDs == nil)
+    precondition(prunedNote?.attachedSourceIDs == [third.id])
     precondition(pruned.contains { $0.id == first.id } && pruned.contains { $0.id == foreign.id })
     precondition(pruned.count == model.projectSources.count, "pruning a link never deletes a source")
-    print("Note attachments: ordered/deduplicated/same-project links, note-edit retention, reopen, link-only detach and non-cascading pruning passed")
+    print("Note attachments: creation/later attach, same-project filtering, ordering/reorder, reload, link-only detach and non-cascading pruning passed")
   }
 
   @MainActor private static func noteDraftCommit(root: URL, project: MemoraSpace) async throws {

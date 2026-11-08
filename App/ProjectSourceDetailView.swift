@@ -13,6 +13,7 @@ struct ProjectSourceDetailView: View {
   @State private var isEditingPrivacy = false
   @State private var isAsking = false
   @State private var isAddingVideoTranscript = false
+  @State private var isAttachingSources = false
   @State private var isChoosingSummaryOptions = false
   @State private var sourceActionFailure: String?
   @State private var partitionRequest: PDFSourcePartitionRequest?
@@ -190,6 +191,7 @@ struct ProjectSourceDetailView: View {
           Menu {
             if source.kind == .note {
               Button("メモを編集", icon: .pencil) { isEditing = true }.disabled(extracted.isEmpty)
+              Button("資料を添付", icon: .paperclip) { isAttachingSources = true }
             }
             if source.canProvideText {
               Button("要約を作り直す", icon: .sparkles) {
@@ -238,6 +240,7 @@ struct ProjectSourceDetailView: View {
         if source.summary == nil || initialExcerpt != nil { showsOriginal = true }
       }
       .sheet(isPresented: $isAddingVideoTranscript) { VideoTranscriptImportSheet(source: source) { _ in } }
+      .sheet(isPresented: $isAttachingSources) { ProjectNoteAttachSheet(noteID: sourceID) }
       .sheet(isPresented: $isChoosingSummaryOptions) { SourceSummaryOptionsSheet(sourceID: sourceID) }
       .sheet(item: $partitionRequest) { request in PDFSourcePartitionSheet(request: request) }
       .sheet(isPresented: $isAsking) { AIQuestionView(request: AIQuestionRequest(question: "", scope: .global, sourceID: sourceID)) }
@@ -277,13 +280,20 @@ struct ProjectSourceDetailView: View {
     let attachments = model.attachedSources(of: source)
     return VStack(alignment: .leading, spacing: 10) {
       Text("添付資料").font(MemoraTypography.sectionHeading)
-      ForEach(attachments) { attachment in
+      ForEach(Array(attachments.enumerated()), id: \.element.id) { index, attachment in
         HStack(spacing: 8) {
           NavigationLink { ProjectSourceDetailView(sourceID: attachment.id) } label: {
             ProjectSourceRow(source: attachment)
           }
           .buttonStyle(.plain)
           Menu {
+            Button("上へ移動", icon: .arrowUp) {
+              moveAttachment(attachment.id, index: index, by: -1)
+            }.disabled(index == 0)
+            Button("下へ移動", icon: .arrowDown) {
+              moveAttachment(attachment.id, index: index, by: 1)
+            }.disabled(index == attachments.count - 1)
+            Divider()
             Button("添付を解除", icon: .xmark, role: .destructive) {
               if !model.removeAttachedSource(attachment.id, fromNote: source.id) {
                 sourceActionFailure = "添付を解除できませんでした。空き容量を確認してください。"
@@ -294,9 +304,15 @@ struct ProjectSourceDetailView: View {
               .frame(width: 44, height: 44)
               .contentShape(Rectangle())
           }
-          .accessibilityLabel("添付を解除")
+          .accessibilityLabel("添付の操作")
         }
       }
+    }
+  }
+
+  private func moveAttachment(_ id: UUID, index: Int, by offset: Int) {
+    if !model.moveAttachedSource(id, inNote: sourceID, offset: offset) {
+      sourceActionFailure = "添付資料の順序を変更できませんでした。空き容量を確認してください。"
     }
   }
 
