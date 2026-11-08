@@ -1,5 +1,19 @@
 # Jinba原本とMemora 65型の機械比較
 
+## 2026-11-08 再実行（現行ビルド）
+
+- 比較: **65/65**
+- ホストCoreGraphics previewでの機械的な差あり: **38/65**（前回と同数。型の追加・削除・意図的な再設計はしていない）
+- PowerPoint/Keynoteの実描画: **未検証**。PowerPointのAppleScript `open` は `-9074`、
+  PDF保存は `-1712`（AppleEventタイムアウト）、KeynoteのPDF書き出しも `-1712` で失敗した。
+  アプリの初回ダイアログ/自動化待ちの可能性があり、ダイアログを推測で操作したり
+  強制終了したりしていない。したがって0/65の実描画・目視合格を維持する。
+- 再現: `bash tools/checks/run-jinba-comparison.sh`（host比較）。
+  `MEMORA_RENDER_OFFICE=1`を付けるとPowerPoint描画も試し、失敗時は未検証として終了する。
+  Jinba原本はリポジトリ外の許諾済みPDFを`MEMORA_JINBA_CATALOG`で指定する。
+
+以下は2026-10-30時点の記録（数値は上記で再確認済み）。
+
 - Jinba: `SlideCatalog_16x9.pdf`（65ページ）
 - Memora: `/var/folders/kn/pl6b3wk524g4lzd0l9nvg3c00000gn/T//memora-presentation.7yLAY8/output`
 - 検査日: 2026/10/30 9:43
