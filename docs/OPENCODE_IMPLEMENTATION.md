@@ -23,6 +23,14 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P2.3 参考資料タブの追加導線と資料E2E
+
+`SpaceDetailView`の参考資料タブに「参考資料を追加」ツールバーボタンを追加（資料が
+1件以上あると追加できなかった導線不備の修正）。`project-source-interruption`と
+`project-source-recovery`のE2Eを現行UIへ更新し、シミュレータでPASS。
+`project-source-note`もPASS。photo E2Eは未更新。
+検証: E2E 3件PASS、`bitrig preview -platform iOS`成功。
+
 ## 2026-11-08 P2.2 ノート本文エディタのタップ領域修正
 
 `MarkdownEditorField`の`UITextView`が空本文のとき高さ0で、表示上の余白がタップできない

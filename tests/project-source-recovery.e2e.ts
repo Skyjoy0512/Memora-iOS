@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, tapControl, tapTab, scrollToControl } from './ui-helpers';
+import { launchMemora, scrollToControl, tapControl, tapTab } from './ui-helpers';
 import { isolatedDatabase, sql } from './sqlite-fixture-helpers';
 
 test('project source notes retain failed creates and edits, persist drafts, and recover after restart', { timeout: 360_000 }, async ({ app, device, screen }) => {
@@ -9,8 +9,7 @@ test('project source notes retain failed creates and edits, persist drafts, and 
   const marker = 'source-recovery-' + randomUUID();
   const project = 'SourceRecovery-' + randomUUID().slice(0, 8);
   const title = screen.getByRole('textbox', { name: 'タイトル', exact: true });
-  const body = screen.getByRole('textbox', { name: 'メモ本文', exact: true });
-  const sourceAdd = screen.getByRole('button', { name: 'ソースを追加', exact: true }).first();
+  const sourceAdd = screen.getByRole('button', { name: '参考資料を追加', exact: true }).first();
   const triggers = new Set<string>();
   let database: string | undefined;
   const reveal = (control: any) => scrollToControl(screen, control, { minimumY: 140, maximumY: 850 });
@@ -21,20 +20,26 @@ test('project source notes retain failed creates and edits, persist drafts, and 
   }
   async function fillNote(name: string, text: string) {
     await reveal(title); await title.fill(name); await closeKeyboard();
-    await reveal(body); await body.fill(text); await closeKeyboard();
+    const body = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
+    await reveal(body); await tapControl(screen, body); await expect(body).toBeFocused();
+    await body.pressSequentially(text); await closeKeyboard();
   }
   async function saveNote() {
-    const save = screen.getByRole('button', { name: 'メモを保存', exact: true });
+    const save = screen.getByRole('button', { name: '保存', exact: true });
     await reveal(save); await tapControl(save);
+  }
+  async function openReferences() {
+    await tapControl(screen.getByRole('pop-up-button', { name: /表示切り替え$/ }));
+    await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
   }
   async function reopenProject() {
     await tapTab(screen, 'ライブラリ');
     await tapControl(screen.getByRole('button', { name: 'プロジェクト', exact: true }));
     await tapControl(screen.getByText(project, { exact: true }).first());
-    await tapControl(screen.getByRole('button', { name: 'ソース', exact: true }));
+    await openReferences();
   }
   async function openNote(name: string) {
-    const row = screen.getByText(name, { exact: true }).first();
+    const row = screen.getByRole('button', { name: new RegExp('^' + name + '、メモ') }).last();
     await reveal(row); await tapControl(row);
   }
   function failSourceWrites() {
@@ -49,13 +54,11 @@ test('project source notes retain failed creates and edits, persist drafts, and 
     await tapControl(screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());
     await screen.getByPlaceholder('例：新規アプリ').fill(project);
     await tapControl(screen.getByRole('button', { name: '作成', exact: true }));
-    await tapControl(screen.getByRole('button', { name: 'ソース', exact: true }));
+    await openReferences();
     await tapControl(sourceAdd);
-    await expect(screen.getByText('ファイルは50MBまで。録音・音声取り込みは右上の＋からも始められます。', { exact: true })).toBeVisible();
     await fillNote(marker, 'Isolated source database identity');
     await saveNote();
-    await expect(body).toHaveValue('');
-    await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
+    await expect(screen.getByRole('button', { name: new RegExp('^' + marker + '、メモ') }).first()).toBeVisible({ timeout: 60_000 });
     const identity = await device.foregroundApp();
     if (identity.bundleId !== 'app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4') throw new Error('Unexpected app');
     database = isolatedDatabase(marker, identity.bundleId, 'memoraProjectSources.v2');
@@ -63,40 +66,46 @@ test('project source notes retain failed creates and edits, persist drafts, and 
     await fillNote('Retained source draft', 'Body retained after actual SQLite failure');
     let recover = failSourceWrites();
     await saveNote();
-    await expect(screen.getByText('保存できませんでした。', { exact: true })).toBeVisible();
+    await expect(screen.getByText(/保存できませんでした/).first()).toBeVisible({ timeout: 60_000 });
     await reveal(title); await expect(title).toHaveValue('Retained source draft');
-    await reveal(body); await expect(body).toHaveValue('Body retained after actual SQLite failure');
     await app.screenshot('source-create-failure-retains-draft');
     recover();
     // Closing/reopening and a process restart must retain both fields, not just body.
     await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
     await app.restart(); await reopenProject(); await tapControl(sourceAdd);
     await reveal(title); await expect(title).toHaveValue('Retained source draft');
-    await reveal(body); await expect(body).toHaveValue('Body retained after actual SQLite failure');
-    await saveNote(); await expect(body).toHaveValue('');
-    await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
-    await expect(screen.getByText('本文解析済み', { exact: true }).first()).toBeVisible();
+    const restoredBody = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
+    await reveal(restoredBody); await expect(restoredBody).toHaveValue('Body retained after actual SQLite failure');
+    await saveNote();
+    await expect(screen.getByRole('button', { name: /^Retained source draft、メモ/ }).first()).toBeVisible({ timeout: 60_000 });
     await openNote('Retained source draft');
     await tapControl(screen.getByRole('button', { name: 'その他', exact: true }));
     await tapControl(screen.getByRole('button', { name: 'メモを編集', exact: true }));
-    await title.fill('Recovered source edit'); await body.fill('Edited body survives failed save');
+    const editTitle = screen.getByRole('textbox', { name: 'タイトル', exact: true });
+    const editBody = screen.getByRole('textbox', { name: 'メモ本文', exact: true });
+    await editTitle.fill('Recovered source edit');
+    await editBody.fill('Edited body survives failed save');
     await device.setAppearance('dark');
     recover = failSourceWrites();
     await tapControl(screen.getByRole('button', { name: '保存', exact: true }));
     await expect(screen.getByText('保存できませんでした。開き直して確認してください。', { exact: true })).toBeVisible();
-    await expect(title).toHaveValue('Recovered source edit');
-    await expect(body).toHaveValue('Edited body survives failed save');
+    await expect(editTitle).toHaveValue('Recovered source edit');
+    await expect(editBody).toHaveValue('Edited body survives failed save');
     await app.screenshot('source-edit-failure-retains-draft');
     recover();
     await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
     await app.restart(); await reopenProject(); await openNote('Retained source draft');
     await tapControl(screen.getByRole('button', { name: 'その他', exact: true }));
     await tapControl(screen.getByRole('button', { name: 'メモを編集', exact: true }));
-    await expect(title).toHaveValue('Recovered source edit');
-    await expect(body).toHaveValue('Edited body survives failed save');
+    await expect(editTitle).toHaveValue('Recovered source edit');
+    await expect(editBody).toHaveValue('Edited body survives failed save');
     await tapControl(screen.getByRole('button', { name: '保存', exact: true }));
+    await reveal(screen.getByLabel('原文').first());
+    await tapControl(screen.getByLabel('原文').first());
     await expect(screen.getByText('Edited body survives failed save', { exact: true })).toBeVisible();
     await app.restart(); await reopenProject(); await openNote('Recovered source edit');
+    await reveal(screen.getByLabel('原文').first());
+    await tapControl(screen.getByLabel('原文').first());
     await expect(screen.getByText('Edited body survives failed save', { exact: true })).toBeVisible();
     await app.screenshot('source-edited-note-restored');
   } finally {

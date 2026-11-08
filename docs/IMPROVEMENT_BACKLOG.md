@@ -1,5 +1,17 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P2.3 参考資料タブの追加導線と資料E2Eの現行UI化
+
+プロジェクトの「参考資料」タブに資料が1件以上あると、空状態の追加ボタンが消えて
+新しい資料を追加する導線がなくなっていた。`SpaceDetailView`の「参考資料」タブに
+`参考資料を追加`のツールバーボタンを追加し、既存の`sourceAddProjectID`導線へ接続した。
+併せて`project-source-interruption.e2e.ts`と`project-source-recovery.e2e.ts`を現行UI
+（表示切り替えメニュー→参考資料、ノート本文エディタ、保存、資料詳細の原文展開）へ更新。
+中断状態の起動時回復（自動再取得なし）と、作成/編集のSQLite失敗時の入力・下書き保持、
+ダーク表示、再起動後の本文一致をiPhone 18 Pro Maxシミュレータで確認（2件PASS）。
+`project-source-note.e2e.ts`（前回追加）もPASS。`project-source-photo.e2e.ts`は旧前提のまま未更新。
+検証: 上記E2E 3件PASS、`bitrig preview -platform iOS`成功。
+
 ## 2026-11-08 P2.1 無反応メニュー項目の除去・クラウド/原価の点検
 
 資料詳細の共有メニューから、押せない`原本を含むPDF変換は未対応`（空action＋disabled）を除去。

@@ -93,6 +93,13 @@ struct SpaceDetailView: View {
           .buttonStyle(.plain)
           .accessibilityLabel("\(space.name)、\(selectedTab.title)、表示切り替え")
         }
+        if selectedTab == .sources {
+          ToolbarActionItem(usesSystemBackground: true) {
+            ToolbarIconButton("参考資料を追加", icon: .paperclip) {
+              model.sourceAddProjectID = spaceID
+            }
+          }
+        }
         ToolbarActionItem(usesSystemBackground: true) {
           Menu {
             Button("新しいチャット", icon: .squareAndPencil) {
