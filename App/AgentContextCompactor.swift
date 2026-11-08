@@ -16,6 +16,37 @@ enum AgentContextCompactor {
     let protected = max(0, result.count - max(0, keepRecent))
     // Keep the first user turn: it holds the request and its scope.
     let firstUser = result.firstIndex { ($0["role"] as? String) == "user" } ?? 0
+    // A read that was repeated verbatim costs the same room as a new one. Keep
+    // the first copy and point later old copies at its tool id; recent turns
+    // are never rewritten. The record itself is untouched.
+    var firstByContent: [String: String] = [:]
+    for index in 0..<protected where index != firstUser {
+      guard let role = result[index]["role"] as? String else { continue }
+      if role == "tool" {
+        guard let content = result[index]["content"] as? String, !content.isEmpty,
+              let id = result[index]["tool_call_id"] as? String else { continue }
+        if let first = firstByContent[content] {
+          result[index]["content"] = Self.duplicateNote(first)
+        } else {
+          firstByContent[content] = id
+        }
+      } else if role == "user", let blocks = result[index]["content"] as? [[String: Any]] {
+        var changed = blocks
+        var modified = false
+        for blockIndex in changed.indices
+        where (changed[blockIndex]["type"] as? String) == "tool_result" {
+          guard let content = changed[blockIndex]["content"] as? String, !content.isEmpty,
+                let id = changed[blockIndex]["tool_use_id"] as? String else { continue }
+          if let first = firstByContent[content] {
+            changed[blockIndex]["content"] = Self.duplicateNote(first)
+            modified = true
+          } else {
+            firstByContent[content] = id
+          }
+        }
+        if modified { result[index]["content"] = changed }
+      }
+    }
     for index in 0..<protected where index != firstUser {
       guard estimatedCharacters(result) > characterBudget * 3 / 4 else { break }
       let role = result[index]["role"] as? String
@@ -37,9 +68,12 @@ enum AgentContextCompactor {
     return result
   }
 
+  private static func duplicateNote(_ toolID: String) -> String {
+    "（同じ内容のツール結果は \(toolID) にあります。）"
+  }
+
   /// A character estimate, matching the conservative budgeting used elsewhere.
-  static func estimatedCharacters(_ messages: [[String: Any]]) -> Int {
-    messages.reduce(0) { $0 + characters(in: $1) + 64 }
+  static func estimatedCharacters(_ messages: [[String: Any]]) -> Int {    messages.reduce(0) { $0 + characters(in: $1) + 64 }
   }
 
   private static func characters(in value: Any) -> Int {

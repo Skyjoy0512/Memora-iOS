@@ -1,5 +1,16 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P1-2.1 重複ツール結果をツールIDで圧縮
+
+長いエージェント会話で同じ読み取り結果が繰り返されると、コンテキストを二重に消費していた。
+`AgentContextCompactor`は予算超過時に、古い`tool`結果とAnthropicの`tool_result`ブロックの
+**同一内容を最初の1件だけ残し、後の古い重複を「同じ内容は <tool id> にあります」へ置換**する。
+最新ターンは書き換えず、tool_call/tool_use のID対応も保持する。記録そのものは変更しない。
+検査: `AgentContextCompactorChecks`（OpenAI/Anthropic両形式、重複排除、最新ターン保持、
+ID対応、予算内は無変更）PASS、`run-motion-loading-checks.sh`全体PASS、
+`bitrig preview -platform iOS`成功。併せて、既に現行UIと一致しなくなっていた
+`check-motion-policy.py`の`Menu {`前提を、現行の`CaptureMenuPopover`＋confirmationDialogへ更新した。
+
 ## 2026-11-08 P1-1.3 添付リンクのバックアップ互換とAskAIスコープの決定
 
 `ProjectSource.attachedSourceIDs`はバックアップのmanifestに含まれ、書き出し→読み込みで

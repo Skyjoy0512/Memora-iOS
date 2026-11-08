@@ -53,6 +53,39 @@ enum AgentContextCompactorChecks {
       "content": [["type": "text", "text": long]]]]]]
     precondition(AgentContextCompactor.estimatedCharacters(nested) > long.count)
 
-    print("AgentContextCompactorChecks: passed (keeps request/recent turns, shortens old tool results, preserves tool-call pairing, both API shapes, no-op within budget)")
+    // Repeated reads are deduplicated: the first copy stays, later old copies
+    // point at its tool id, and recent turns are not rewritten.
+    let same = String(repeating: "同じ検索結果。", count: 700)
+    var duplicates: [[String: Any]] = [["role": "user", "content": "依頼"]]
+    for index in 0..<6 {
+      duplicates.append(["role": "assistant", "content": "", "tool_calls": [
+        ["id": "d\(index)", "function": ["name": "search_records", "arguments": "{}"]]
+      ]])
+      duplicates.append(["role": "tool", "tool_call_id": "d\(index)", "content": same])
+    }
+    duplicates.append(["role": "user", "content": "最近"])
+    let deduplicated = AgentContextCompactor.compact(duplicates, keepRecent: 2, characterBudget: 20_000)
+    precondition(deduplicated.count == duplicates.count)
+    precondition(deduplicated[2]["content"] as? String == same)
+    precondition(deduplicated[4]["content"] as? String == "（同じ内容のツール結果は d0 にあります。）")
+    precondition(deduplicated[4]["tool_call_id"] as? String == "d1")
+    precondition(deduplicated[12]["content"] as? String == same, "recent tool result stays intact")
+    let anthropicDuplicates: [[String: Any]] = [
+      ["role": "user", "content": "依頼"],
+      ["role": "user", "content": [
+        ["type": "tool_result", "tool_use_id": "a", "content": same],
+        ["type": "tool_result", "tool_use_id": "b", "content": same]
+      ]],
+      ["role": "user", "content": "最近"],
+      ["role": "user", "content": "最近2"]
+    ]
+    let deduplicatedAnthropic = AgentContextCompactor.compact(anthropicDuplicates, keepRecent: 2, characterBudget: 8_000)
+    let dedupBlocks = deduplicatedAnthropic[1]["content"] as? [[String: Any]]
+    precondition(dedupBlocks?[0]["tool_use_id"] as? String == "a")
+    precondition(dedupBlocks?[0]["content"] as? String == same)
+    precondition(dedupBlocks?[1]["tool_use_id"] as? String == "b")
+    precondition((dedupBlocks?[1]["content"] as? String)?.contains("a") == true)
+
+    print("AgentContextCompactorChecks: passed (keeps request/recent turns, deduplicates repeated tool results by tool id, shortens old tool results, preserves tool-call pairing, both API shapes, no-op within budget)")
   }
 }

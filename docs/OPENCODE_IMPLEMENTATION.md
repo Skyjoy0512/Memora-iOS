@@ -23,6 +23,15 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P1-2.1 重複ツール結果のコンテキスト圧縮
+
+`AgentContextCompactor`に重複排除を追加。予算超過時、古いtool結果の同一内容は最初の
+1件だけ残し、後続はツールID参照へ置換。最新ターンとtool ID対応は保持。記録は変更しない。
+状態: 実装済み・検証済み（host/ビルド）。実providerでの効果は未測定。
+検証: AgentContextCompactorChecks（両API形式/重複/最新保持/ID対応）PASS、
+run-motion-loading-checks PASS、`bitrig preview -platform iOS`成功。
+付随: 既存`check-motion-policy.py`の古い`Menu {`前提を現行CaptureMenuPopoverへ更新。
+
 ## 2026-11-08 P1-1.3 添付リンクのバックアップ互換とAskAIスコープ
 
 バックアップmanifestのsourceリンク保持と旧パッケージ互換をhost検査に追加。

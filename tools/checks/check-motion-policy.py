@@ -19,7 +19,7 @@ assert 'toolbar(.hidden, for: .tabBar)' in root
 assert 'onCloseAnimationCompleted: completeSidebarAction' in root
 assert 'model.composerDismissRequests += 1' in root
 capture = (app / "CaptureFloatingButtons.swift").read_text()
-assert 'Menu {' in capture
+assert 'CaptureMenuPopover' in capture
 assert 'confirmationDialog' in capture
 for obsolete in ('matchedTransitionSource', 'navigationTransition', 'Task.sleep', '.popover('):
     assert obsolete not in capture
