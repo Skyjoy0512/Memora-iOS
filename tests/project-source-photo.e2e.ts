@@ -12,16 +12,26 @@ test('selected photo survives SQL failure, same-photo retry, deduplication and r
   await launchMemora(app, device, screen);
   const marker = 'photo-retry-' + randomUUID();
   const project = 'Photo-' + randomUUID().slice(0, 8);
-  const url = 'https://example.com/' + marker;
-  const sourceAdd = screen.getByRole('button', { name: 'ソースを追加', exact: true }).first();
-  const link = screen.getByRole('textbox', { name: 'YouTube・WebのURL', exact: true });
-  const photoButton = screen.getByRole('button', { name: '写真を選択', exact: true });
+  const sourceAdd = screen.getByRole('button', { name: '参考資料を追加', exact: true }).first();
+  const title = screen.getByRole('textbox', { name: 'タイトル', exact: true });
   const trigger = 'memora_photo_' + randomUUID().replaceAll('-', '');
   let database: string | undefined;
   let triggerInstalled = false;
   let stockPhotoName: string | undefined;
+  async function openReferences() {
+    await tapControl(screen.getByLabel(/表示切り替え$/).last());
+    await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }).last());
+  }
+  async function dismissKeyboard() {
+    for (const label of ['キーボードを閉じる', '完了']) {
+      const control = screen.getByRole('button', { name: label, exact: true }).first();
+      if (await control.isVisible()) { await tapControl(control); break; }
+    }
+    await expect(screen.getByRole('keyboard')).not.toBeVisible();
+  }
   async function pickSamePhoto() {
-    await tapControl(photoButton);
+    await tapControl(screen.getByLabel('資料を追加').first());
+    await tapControl(screen.getByRole('button', { name: '写真を追加', exact: true }));
     await expect(screen.getByRole('tab', { name: '写真', exact: true })).toBeVisible();
     if (!stockPhotoName) {
       const stock = screen.getByRole('image', { name: /^写真, / }).first();
@@ -39,12 +49,18 @@ test('selected photo survives SQL failure, same-photo retry, deduplication and r
     await tapControl(screen.getByRole('button', { name: 'プロジェクトを作成', exact: true }).first());
     await screen.getByPlaceholder('例：新規アプリ').fill(project);
     await tapControl(screen.getByRole('button', { name: '作成', exact: true }));
-    await tapControl(screen.getByRole('button', { name: 'ソース', exact: true }));
+    await openReferences();
     await tapControl(sourceAdd);
-    await link.fill(url);
-    await tapControl(screen.getByRole('button', { name: 'リンクを保存', exact: true }));
-    await expect(link).toHaveValue(/^(YouTube・WebのURL)?$/);
-    await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
+    await title.fill(marker);
+    const body = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
+    await tapControl(screen, body);
+    await expect(body).toBeFocused();
+    await body.pressSequentially('baseline source');
+    const closeKeyboard = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
+    if (await closeKeyboard.isVisible()) await tapControl(closeKeyboard);
+    await expect(screen.getByRole('keyboard')).not.toBeVisible();
+    await tapControl(screen.getByRole('button', { name: '保存', exact: true }));
+    await expect(screen.getByRole('button', { name: new RegExp('^' + marker + '、メモ') }).first()).toBeVisible({ timeout: 60_000 });
     const identity = await device.foregroundApp();
     if (identity.bundleId !== 'app.bitrig.new.811eee03-bad9-4f5e-9d1d-d2820c1e93b4') throw new Error('Unexpected app');
     database = isolatedDatabase(marker, identity.bundleId, 'memoraProjectSources.v2');
@@ -53,23 +69,37 @@ test('selected photo survives SQL failure, same-photo retry, deduplication and r
     const folder = join(dirname(database), 'WorkspaceFiles');
     const files = () => existsSync(folder) ? readdirSync(folder).sort() : [];
     const initialFiles = files();
+    // Reopen on a settled project screen so the toolbar and sheet are not
+    // tapped during the first save's dismissal animation.
+    await app.restart();
+    await tapTab(screen, 'ライブラリ');
+    await tapControl(screen.getByRole('button', { name: 'プロジェクト', exact: true }));
+    await tapControl(screen.getByText(project, { exact: true }).first());
+    await openReferences();
     sql(database, `CREATE TRIGGER ${trigger} BEFORE INSERT ON documents WHEN NEW.key='memoraProjectSources.v2' BEGIN SELECT RAISE(ABORT, 'isolated photo failure'); END;`);
     triggerInstalled = true;
     await tapControl(sourceAdd);
-    await link.fill(url + '-unsaved');
-    const closeKeyboard = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
+    await expect(title).toBeVisible({ timeout: 10_000 });
+    await title.fill('Photo draft');
+    const draftBody = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
+    await expect(draftBody).toBeVisible({ timeout: 10_000 });
+    await tapControl(screen, draftBody);
+    await expect(draftBody).toBeFocused();
+    await draftBody.pressSequentially('Draft retained after a photo save failure');
     if (await closeKeyboard.isVisible()) await tapControl(closeKeyboard);
     await expect(screen.getByRole('keyboard')).not.toBeVisible();
     await pickSamePhoto();
-    await expect(screen.getByText(/^(データを保存できませんでした。ストレージの空き容量を確認してください。|保存できませんでした。)$/).first()).toBeVisible({ timeout: 60_000 });
-    await expect(link).toHaveValue(url + '-unsaved');
-    expect(read()).toEqual(before);
+    await dismissKeyboard();
+    await expect(screen.getByText(/保存できませんでした/).first()).toBeVisible({ timeout: 60_000 });
+    await expect(title).toHaveValue('Photo draft');
+    await expect(draftBody).toHaveValue('Draft retained after a photo save failure');
+    expect(read().filter((source: any) => source.kind === 'image')).toEqual([]);
     expect(files()).toEqual(initialFiles);
     await app.screenshot('photo-save-failure-retains-input');
     sql(database, `DROP TRIGGER ${trigger};`); triggerInstalled = false;
     await pickSamePhoto();
-    await expect(screen.getByText('1件を保存しました。', { exact: true })).toBeVisible({ timeout: 90_000 });
-    await expect(link).toHaveValue(url + '-unsaved');
+    await expect(screen.getByRole('button', { name: /^写真、画像/ }).first()).toBeVisible({ timeout: 90_000 });
+    await expect(title).toHaveValue('Photo draft');
     const imported = read().filter((source: any) => source.kind === 'image');
     expect(imported).toHaveLength(1);
     const photo = imported[0];
@@ -90,21 +120,21 @@ test('selected photo survives SQL failure, same-photo retry, deduplication and r
     await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
     await tapControl(sourceAdd);
     await pickSamePhoto();
-    await expect(screen.getByText('1件を保存しました。', { exact: true })).toBeVisible({ timeout: 60_000 });
+    await expect(screen.getByRole('button', { name: /^写真、画像/ }).first()).toBeVisible({ timeout: 60_000 });
     expect(read()).toEqual(saved);
     expect(files()).toEqual(retainedFiles);
     expect(readFileSync(join(folder, photo.localFileReference))).toEqual(original);
     await tapControl(screen.getByRole('button', { name: '閉じる', exact: true }));
-    await tapControl(screen.getByText('写真', { exact: true }).first());
+    await tapControl(screen.getByRole('button', { name: /^写真、/ }).first());
     await expect(screen.getByText(photo.errorInformation, { exact: true })).toBeVisible();
-    await expect(screen.getByRole('button', { name: 'ファイルを表示', exact: true })).toBeVisible();
+    await expect(screen.getByRole('button', { name: '元のファイルを開く', exact: true })).toBeVisible();
     await app.screenshot('photo-import-ocr-scope');
     await app.restart();
     await tapTab(screen, 'ライブラリ');
     await tapControl(screen.getByRole('button', { name: 'プロジェクト', exact: true }));
     await tapControl(screen.getByText(project, { exact: true }).first());
-    await tapControl(screen.getByRole('button', { name: 'ソース', exact: true }));
-    await tapControl(screen.getByText('写真', { exact: true }).first());
+    await openReferences();
+    await tapControl(screen.getByRole('button', { name: /^写真、/ }).first());
     await expect(screen.getByText(photo.errorInformation, { exact: true })).toBeVisible();
     expect(read()).toEqual(saved);
     expect(files()).toEqual(retainedFiles);

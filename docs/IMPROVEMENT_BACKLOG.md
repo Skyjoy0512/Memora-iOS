@@ -9,7 +9,17 @@
 （表示切り替えメニュー→参考資料、ノート本文エディタ、保存、資料詳細の原文展開）へ更新。
 中断状態の起動時回復（自動再取得なし）と、作成/編集のSQLite失敗時の入力・下書き保持、
 ダーク表示、再起動後の本文一致をiPhone 18 Pro Maxシミュレータで確認（2件PASS）。
-`project-source-note.e2e.ts`（前回追加）もPASS。`project-source-photo.e2e.ts`は旧前提のまま未更新。
+`project-source-note.e2e.ts`（前回追加）もPASS。`project-source-photo.e2e.ts`は次の項で更新。
+
+## 2026-11-08 P2.4 写真入口E2Eを現行UIへ更新
+
+`project-source-photo.e2e.ts`を現行UIへ更新し、写真の取込（ネイティブPhotosPicker）、
+SQLite失敗時の入力・下書き保持とファイル非作成、トリガ解除後の同一写真の再試行、
+同一写真の重複排除、再起動後の本文・OCR案内・原本ファイルの保持を
+iPhone 18 Pro Maxシミュレータで確認（PASS、約153秒）。専用シミュレータの標準写真のみを使用。
+これで資料入口E2E（pickers / office / note / interruption / recovery / photo）が現行UIで揃った。
+実機/VoiceOver/最大文字サイズは未検証。
+
 検証: 上記E2E 3件PASS、`bitrig preview -platform iOS`成功。
 
 ## 2026-11-08 P2.1 無反応メニュー項目の除去・クラウド/原価の点検
