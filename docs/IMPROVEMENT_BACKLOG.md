@@ -1,5 +1,14 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P0-2.6 引用位置（ページ/時刻）検査をrunnerへ接続
+
+`ProjectCitationLocationChecks`は存在したが、どのrunnerからも実行されていなかった。
+`run-project-citation-location-checks.sh`を追加し、`run-inline-citation-checks.sh`から
+実行するようにした。1始まりページ、範囲外/欠落ページ、NaN/無限/負数、7日ちょうどの
+時刻採用と604,801秒の拒否を検査。`run-inline-citation-checks.sh`全体PASS。
+音声・動画・PDFの引用位置が原本の範囲内であることを、外部サービスなしで確認できる。
+実際の再生ジャンプ/ページ表示は実機/シミュレータのUI操作が別途必要（未検証）。
+
 ## 2026-11-08 P0-2.5 オンデバイスAIで資料→回答→引用→再起動を貫通
 
 `tests/source-ask-ai.e2e.ts`を追加。ノートを作成・保存し、資料詳細の

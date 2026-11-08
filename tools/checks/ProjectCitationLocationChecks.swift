@@ -7,7 +7,9 @@ struct ProjectCitationLocationChecks {
     precondition(ProjectCitationLocation.pageIndex(3, count: 3) == 2)
     for page in [-1, 0, 4, Int.max] { precondition(ProjectCitationLocation.pageIndex(page, count: 3) == nil) }
     precondition(ProjectCitationLocation.pageIndex(1, count: 0) == nil)
-    for time: Double in [Double.nan, Double.infinity, -1, 691_200] {
+    // Exactly seven days is the last accepted playback position.
+    precondition(ProjectCitationLocation.playbackTime(604_800) == 604_800)
+    for time: Double in [Double.nan, Double.infinity, -1, -0.001, 604_801, 691_200] {
       precondition(ProjectCitationLocation.playbackTime(time) == nil)
     }
     precondition(ProjectCitationLocation.playbackTime(nil) == nil)
