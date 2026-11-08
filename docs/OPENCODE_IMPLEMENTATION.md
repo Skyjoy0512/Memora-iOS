@@ -23,6 +23,32 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P2.1 無反応コントロールの除去とクラウド/原価の点検
+
+UI: 資料詳細の共有メニューにあった、押せない`原本を含むPDF変換は未対応`（空action＋disabled）を削除し、
+会社書式の資料には本文に「Word/PowerPointの元の形式で共有」と説明を表示する。
+`node tools/checks/ui-surface-audit.mjs`の残り6件は`List`のスタイル提案（Debug/検証画面を含む）で、
+無反応ボタン・空タブ・誤表示ではないため変更していない。`bitrig preview -platform iOS`成功。
+
+クラウド/原価の点検（設計・実装・配備を分離）:
+
+| 項目 | 状態 |
+|---|---|
+| 予約/精算の原子性 | 実装（SQLite/D1向けledger、実SQLiteで検査）。D1本番は未検証 |
+| 利用上限（本人/全体の費用・AI/STT・request・並列） | 実装（ledgerのCHECK/trigger）。配備・実usage連携は未実装 |
+| 価格の固定/期限/失効 | 実装（immutable revision、enabled/valid_untilを実行時確認） |
+| server認証 | **未実装**（HTTP handlerなし） |
+| server-held keys | **未実装**（provider key/配備なし） |
+| App Store署名/通知検証・account発行・購入 | **未実装** |
+| privacy/同意のserver側失効連携 | **未実装**（ledgerはentitlement revision/期限だけを確認） |
+| 原本duration・request hashのserver正規化 | **未実装** |
+| 保持/削除 | 設計のみ（upload URL 5分、24時間拒否、R2 lifecycle）。削除worker/実R2検査は**未実装** |
+| 濫用対策（IP/端末レート） | **未実装**（request/並列上限のみ） |
+| 原価計算 | 実装（`audio-cost-scenarios.py`/`pricing-scenarios.py`、仮定と実測を分離） |
+| Marketplace | Firebase定義/rulesはあるが未配備（URL/API key未設定時は利用不可表示） |
+
+本番接続・課金・契約・配備・利用者データ変更は行っていない。実provider/D1/実機は未検証。
+
 ## 2026-11-08 P1-3.2 PPTX文字フィット静的検査
 
 `validate-presentation-packages.py`に、bodyPr(wrap=none/noAutofit)、宣言行高合計≤図形高、
