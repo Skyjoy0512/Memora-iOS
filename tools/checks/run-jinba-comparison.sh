@@ -1,8 +1,9 @@
 #!/bin/bash
 # Regenerates Memora's 65 layouts and compares them with the licensed Jinba
-# catalog. The PNGs come from the app's own CoreGraphics preview: this is a
-# mechanical margin/density/overlap check, not a PowerPoint render or a visual
-# approval. Set MEMORA_RENDER_OFFICE=1 to also try the local Office apps.
+# catalog. The PNGs come from the app's own CoreGraphics preview and from the
+# system Quick Look renderer: these are mechanical margin/density/overlap checks,
+# not a PowerPoint/Keynote render and not a visual approval. Set
+# MEMORA_RENDER_OFFICE=1 to also try the local Office apps.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -26,6 +27,34 @@ check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-jinba-compare.XXXXXX")
 swiftc App/SlideArchetype.swift tools/checks/compare-jinba-catalog.swift -o "$check_dir/compare"
 "$check_dir/compare" "$catalog" "$output" "$report"
 echo "Host-preview comparison: $report"
+
+# The host preview is not the file Office opens. Quick Look renders the actual
+# PPTX through the system importer and is headless, so it can run here even when
+# the Office apps are waiting on a first-run dialog.
+quick_dir="$check_dir/quicklook"
+mkdir -p "$quick_dir"
+files=()
+for n in $(seq -w 1 30); do files+=("$output/b$n.pptx"); done
+for n in $(seq -w 1 35); do files+=("$output/m$n.pptx"); done
+if qlmanage -t -s 1920 -o "$quick_dir" "${files[@]}" >/dev/null 2>&1; then
+  layouts="$check_dir/quicklook-layouts"
+  mkdir -p "$layouts"
+  rendered=0
+  for file in "$quick_dir"/*.pptx.png; do
+    [ -e "$file" ] || continue
+    base=$(basename "$file" .pptx.png)
+    cp "$file" "$layouts/$base.png"
+    rendered=$((rendered + 1))
+  done
+  if [ "$rendered" -eq 65 ]; then
+    "$check_dir/compare" "$catalog" "$layouts" "${report%.md}.quicklook.md"
+    echo "Quick Look comparison: ${report%.md}.quicklook.md"
+  else
+    echo "Quick Look rendered $rendered of 65 layouts; not treated as verified." >&2
+  fi
+else
+  echo "Quick Look render failed; the 65 layouts remain unverified there." >&2
+fi
 
 if [ "${MEMORA_RENDER_OFFICE:-0}" = "1" ]; then
   # These apps may show a first-run/sign-in dialog; the scripts time out rather

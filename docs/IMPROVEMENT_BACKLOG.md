@@ -1,5 +1,15 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P1-3.3 Quick Look実レンダリングで65型を再比較
+
+PowerPoint/Keynoteアプリの自動化は引き続きブロック（`open=-9074`、PDF保存`-1712`、
+Finder起動後もpresentation 0件、System Eventsは補助アクセス未許可`-1728`）のため、
+macOSの**Quick Look**（`qlmanage -t`）で65 PPTXを1920pxへ実レンダリングし、
+Jinba原本と機械比較した。**65/65比較・差あり14/65**（同じビルドのホストCoreGraphics
+previewは38/65）。Quick LookはOfficeアプリの描画そのものではなく、目視合格は0/65のまま。
+`run-jinba-comparison.sh`がhost比較と`*.quicklook.md`を再現生成する。
+外部サイト/ユーザーデータは使っていない。
+
 ## 2026-11-08 P0-2.8 Web本文の抽出→検索→引用をアプリ内で検証
 
 Debug検証「Web本文の引用（検証）」を追加。同梱HTML fixtureを本番の

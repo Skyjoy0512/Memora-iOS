@@ -1,5 +1,20 @@
 # Jinba原本とMemora 65型の機械比較
 
+## 2026-11-08 Quick Look（システムレンダラ）比較
+
+- 実際の65 PPTXをmacOSの**Quick Look**で1920pxへレンダリング（`qlmanage -t`）。
+- 比較: **65/65**、機械的な差あり: **14/65**。
+- 同じビルドのホストCoreGraphics preview比較は **38/65**。差の多くはレンダラの
+  背景・アンチエイリアス・余白の出方によるもので、Quick LookはOfficeアプリの
+  描画そのものではない。
+- PowerPoint/Keynoteアプリの自動化は引き続きブロック: AppleScriptの`open`は`-9074`、
+  PDF保存は`-1712`、Finderで開いた後もpresentationは0件、System Eventsは
+  `osascriptには補助アクセスは許可されません (-1728)`。
+- **目視・実描画で合格: 0/65**。機械比較（Quick Look含む）は完成証明ではない。
+- 再現: `bash tools/checks/run-jinba-comparison.sh`（host比較と
+  `*.quicklook.md`を生成）。`MEMORA_RENDER_OFFICE=1`はOfficeアプリ描画を試すが、
+  失敗を合格にしない。
+
 ## 2026-11-08 再実行（現行ビルド）
 
 - 比較: **65/65**

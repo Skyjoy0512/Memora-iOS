@@ -1,9 +1,9 @@
 # PowerPoint 65型・検証マトリクス
 
-2026-11-08追補: 現行ビルドでホスト65型生成/検査（65/65）とJinba機械比較（65/65比較・38/65差）を
-再確認した。PowerPoint/Keynoteの実描画はAppleEventタイムアウト/`-9074`で未検証のため、
-**全条件完成0/65を維持**する。比較は`bash tools/checks/run-jinba-comparison.sh`で再現でき、
-`MEMORA_RENDER_OFFICE=1`はOffice描画を試すが失敗を合格にしない。
+2026-11-08追補: 現行ビルドの65 PPTXをQuick Lookで実レンダリングし、Jinbaと機械比較した
+（65/65比較、差あり14/65。ホストpreviewは38/65）。PowerPoint/Keynoteアプリの自動化は
+`-9074`/`-1712`/補助アクセス未許可で未検証のため、**全条件完成0/65を維持**する。
+比較は`bash tools/checks/run-jinba-comparison.sh`で再現できる。
 詳細は[Jinba比較](presentation-integration/JINBA_COMPARISON_2026_10.md)。
 
 2026-10-28追補: [会社書式の追加ページpreview/PDF](presentation-integration/COMPANY_PREVIEW.md)を接続。
