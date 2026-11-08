@@ -21,6 +21,12 @@ tap所要時間のp50/p95/p99（µs）を録音診断へ追加（内容・ファ
 route変更で入出力形式が変わった場合は再開を要求し、新しい形式でtap/converterを作り直す。
 未検証: 着信、Bluetooth、ロック、バックグラウンド、強制終了復旧、15分境界の実機確認。
 
+## 2026-11-08 P1-4 メモ添付のタップ順保存（検証済み・シミュレータ）
+
+`NoteAttachmentSelection`を追加し、`ProjectNoteAttachSheet`の選択を`[UUID]`順で保持。
+解除→再選択は末尾。保存は既存`attachProjectSources`が同一project/重複/64件を再検証。
+host checkとシミュレータE2E（タップ順→保存→再起動→解除）PASS。
+
 ## 今回の改善反映
 
 2026-11-02 Audio IntelligenceはCodexで直接段階実装。OpenCodeへの委託は行っていない。

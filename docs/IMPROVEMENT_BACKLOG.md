@@ -1,5 +1,17 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P1-4 メモ添付の選択順を保存順に固定
+
+`ProjectNoteAttachSheet`が`Set<UUID>`を`Array`化して保存していたため、選択順が
+保証されなかった。`NoteAttachmentSelection`（`[UUID]`が正、containsだけ補助）へ変更し、
+A→B→Cのタップ順で保存、解除→再選択は末尾へ移動する。既存の最大64件・重複排除・
+同一project検証・解除・上下移動・SQLite互換は`attachProjectSources`側を変更せず維持。
+保存直前に同関数がIDを引き直すため、削除/移動済みの資料は別資料へ置換せず除外する。
+
+検証: `run-note-attachment-selection-checks.sh` PASS。新規
+`project-source-note-attach-order.e2e.ts`がシミュレータでPASS（約94秒、3件をB→C順に添付、
+SQLiteで順序確認、再起動後も維持、最後の添付を解除）。実機未検証。
+
 ## 2026-11-08 P0-2.9 割り込み後の連続録音再開を安全化
 
 連続録音の`resume()`がセッション再アクティブ化・入力可否・所有トークンを確認せず

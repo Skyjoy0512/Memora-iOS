@@ -6,7 +6,7 @@ struct ProjectNoteAttachSheet: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   var noteID: UUID
-  @State private var selected: Set<UUID> = []
+  @State private var selection = NoteAttachmentSelection()
   @State private var failure: String?
 
   private var candidates: [ProjectSource] {
@@ -21,18 +21,18 @@ struct ProjectNoteAttachSheet: View {
     NavigationStack {
       List(candidates) { source in
         Button {
-          if selected.contains(source.id) { selected.remove(source.id) } else { selected.insert(source.id) }
+          selection.toggle(source.id)
         } label: {
           HStack(spacing: 12) {
             ProjectSourceRow(source: source)
             Spacer(minLength: 0)
-            Image(icon: selected.contains(source.id) ? .checkmarkCircle : .circle, size: 20)
-              .foregroundStyle(selected.contains(source.id) ? MemoraPalette.textPrimary : MemoraPalette.textSecondary)
+            Image(icon: selection.contains(source.id) ? .checkmarkCircle : .circle, size: 20)
+              .foregroundStyle(selection.contains(source.id) ? MemoraPalette.textPrimary : MemoraPalette.textSecondary)
           }
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(selected.contains(source.id) ? [.isSelected] : [])
+        .accessibilityAddTraits(selection.contains(source.id) ? [.isSelected] : [])
       }
       .overlay {
         if candidates.isEmpty {
@@ -50,10 +50,10 @@ struct ProjectNoteAttachSheet: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("添付", icon: .checkmark) {
-            if model.attachProjectSources(Array(selected), toNote: noteID) { dismiss() }
+            if model.attachProjectSources(selection.ids, toNote: noteID) { dismiss() }
             else { failure = "添付できませんでした。空き容量を確認してください。" }
           }
-          .disabled(selected.isEmpty)
+          .disabled(selection.isEmpty)
         }
       }
     }
