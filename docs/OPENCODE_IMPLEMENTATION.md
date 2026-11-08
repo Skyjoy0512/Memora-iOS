@@ -59,7 +59,8 @@ Reduce Motionでは標準遷移。iOS 27専用APIは不使用。詳細は
 
 行内＋を`Menu`にしてイベント/メモ/写真/録音を選べるようにした。挿入時刻は行の位置から
 `JournalInsertionTime`で算出し、作成シートは下から上への標準表示。空の日は直接シート。
-関連E2Eを現行ロールへ更新してPASS。詳細は[UI_MORPHING.md](UI_MORPHING.md)。
+関連E2Eを現行ロールへ更新し、`workspace-journal`は11/11 PASS。詳細は
+[UI_MORPHING.md](UI_MORPHING.md)。
 
 ## 今回の改善反映
 

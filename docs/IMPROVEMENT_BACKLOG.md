@@ -7,8 +7,9 @@
 `JournalInsertionTime`で計算し、作成シートは標準のボトムシートのまま。
 空の日の「記録を追加」は直接シートを開く。テストはメニュー選択と
 `pop-up-button`ロールへ更新し、`workspace-journal`の行内＋・挿入時刻、
-`memora`・`experience-polish`の該当シナリオがPASS。
-実機・VoiceOver・iOS 26は未検証。
+`memora`・`experience-polish`の該当シナリオがPASS。`workspace-journal`は
+メニュー式タブ・参考資料・絞り込み・ダーク表示・日付編集の古い期待値を現行UIへ更新し、
+11/11 PASS。実機・VoiceOver・iOS 26は未検証。
 
 ## 2026-11-08 UI-1 Apple純正モーフィングの限定導入
 

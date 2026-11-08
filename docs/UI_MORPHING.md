@@ -51,6 +51,8 @@ iOS 26実機/シミュレータでの見た目、iPad、VoiceOver、Reduce Motio
 - `workspace-journal.e2e.ts --grep "inline plus"`: PASS（行内＋→メニュー→追加）
 - `memora.e2e.ts --grep "journal add-record"`: PASS
 - `experience-polish.e2e.ts --grep "journal creation keeps"`: PASS
+- `workspace-journal.e2e.ts`: **11/11 PASS**（メニュー式タブ、行内＋メニュー、挿入時刻、
+  ソース追加、絞り込み、ダーク表示、日付編集を含む）
 - `project-source-note-attach-order.e2e.ts`: PASS（プロジェクトカード→詳細を含む）
 - `source-ask-ai.e2e.ts`: PASS（プロジェクトカード→詳細を含む）
 - `project-source-office.e2e.ts` / `project-source-recovery.e2e.ts`: PASS

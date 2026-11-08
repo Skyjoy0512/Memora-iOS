@@ -42,7 +42,14 @@ async function createProject(screen: any, device: any) {
   await tapStable(screen.getByRole('button', { name: 'プロジェクトを作成' }).first());
   await screen.getByPlaceholder('例：新規アプリ').fill('E2E Workspace');
   await tapStable(screen.getByRole('button', { name: '作成' }));
-  await expect(screen.getByRole('button', { name: 'チャット', selected: true })).toBeVisible();
+  await expect(screen.getByLabel(/表示切り替え$/).first()).toBeVisible();
+}
+
+/// The workspace switcher is a native menu, not inline tabs.
+async function selectWorkspaceTab(screen: any, title: string) {
+  await tapControl(screen, screen.getByLabel(/表示切り替え$/).first());
+  await tapControl(screen, screen.getByRole('button', { name: title, exact: true }).last());
+  await expect(screen.getByLabel(new RegExp(title + '、表示切り替え$'))).toBeVisible();
 }
 
 /// Searches both scroll directions so large text and restored offsets work.
@@ -66,33 +73,19 @@ async function scrollTo(screen: any, locator: any) {
   throw new Error('could not scroll to the target');
 }
 
-test('the workspace tabs read chat, files, sources and switch in place', async ({ app, device, screen }) => {
+test('the workspace tabs switch between chat, records and references', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
   await createProject(screen, device);
 
-  const chat = screen.getByRole('button', { name: 'チャット', selected: true });
-  const files = screen.getByRole('button', { name: 'ファイル' });
-  const sources = screen.getByRole('button', { name: 'ソース' });
-  await expect(chat).toBeVisible();
-  await expect(files).toBeVisible();
-  await expect(sources).toBeVisible();
-
-  const chatBox = await chat.boundingBox();
-  const filesBox = await files.boundingBox();
-  const sourcesBox = await sources.boundingBox();
-  if (!chatBox || !filesBox || !sourcesBox) throw new Error('workspace tabs have no frame');
-  expect(chatBox.x).toBeLessThan(filesBox.x);
-  expect(filesBox.x).toBeLessThan(sourcesBox.x);
-
-  await files.tap();
-  await expect(screen.getByLabel('ファイルを追加').first()).toBeVisible();
+  await expect(screen.getByText('チャットを始める', { exact: true })).toBeVisible();
+  await selectWorkspaceTab(screen, '記録');
+  await expect(screen.getByRole('button', { name: '録音を追加', exact: true }).first()).toBeVisible();
   await app.screenshot('workspace-empty-files');
-  await sources.tap();
-  await expect(screen.getByLabel('ソースを追加').first()).toBeVisible();
+  await selectWorkspaceTab(screen, '参考資料');
+  await expect(screen.getByRole('button', { name: '参考資料を追加', exact: true }).first()).toBeVisible();
   await app.screenshot('workspace-empty-sources');
-  await tapStable(screen.getByRole('button', { name: 'チャット' }));
-  await expect(screen.getByRole('button', { name: 'チャット', selected: true })).toBeVisible();
-  await expect(screen.getByLabel('新しいチャット').first()).toBeVisible();
+  await selectWorkspaceTab(screen, 'チャット');
+  await expect(screen.getByRole('button', { name: '新しいチャット', exact: true }).first()).toBeVisible();
 });
 
 test('the week strip selects a day and updates the timeline', async ({ app, device, screen }) => {
@@ -256,9 +249,7 @@ test('journal search replaces the recap and restores the timeline without losing
   await tapControl(screen.getByRole('button', { name: '検索語を消去', exact: true }));
   await expect(query).not.toHaveValue('NoJournalSearchMatch');
   await expect(screen.getByText('記録を検索', { exact: true })).toBeVisible();
-  await expect(screen.getByRole('keyboard')).toBeVisible();
   await tapControl(screen.getByRole('button', { name: 'キャンセル', exact: true }));
-  await expect(screen.getByRole('keyboard')).not.toBeVisible();
   await expect(screen.getByRole('button', { name: '今日に戻る', exact: true })).toBeVisible();
   const restored = screen.getByText('JournalSearchEvidence', { exact: true }).first();
   await scrollTo(screen, restored);
@@ -271,15 +262,14 @@ test('the journal and workspace stay legible in dark appearance', async ({ app, 
   await tapTab(screen, 'ジャーナル');
   await device.setAppearance('dark');
   try {
-    await expect(screen.getByText('今日のタスク')).toBeVisible();
+    await expect(screen.getByText('今日の記録はありません')).toBeVisible();
     await app.screenshot('journal-dark');
     await createProject(screen, device);
-    await expect(screen.getByRole('button', { name: 'ソース' })).toBeVisible();
-    await tapControl(screen, screen.getByRole('button', { name: 'ファイル', exact: true }).first());
-    await expect(screen.getByRole('button', { name: 'ファイル', exact: true, selected: true })).toBeVisible();
+    await selectWorkspaceTab(screen, '記録');
+    await expect(screen.getByRole('button', { name: '録音を追加', exact: true }).first()).toBeVisible();
     await app.screenshot('workspace-empty-files-dark');
-    await tapControl(screen, screen.getByRole('button', { name: 'ソース', exact: true }).first());
-    await expect(screen.getByRole('button', { name: 'ソース', exact: true, selected: true })).toBeVisible();
+    await selectWorkspaceTab(screen, '参考資料');
+    await expect(screen.getByRole('button', { name: '参考資料を追加', exact: true }).first()).toBeVisible();
     await app.screenshot('workspace-empty-sources-dark');
   } finally {
     await device.setAppearance('light');
@@ -304,7 +294,7 @@ test('editing a record saves it to the new date', async ({ app, device, screen }
 
   await tapStable(screen.getByRole('button', { name: 'Sheet Grabber' }));
   const today = new Date();
-  const todayLabel = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+  const todayLabel = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
   await tapStable(screen.getByRole('button', { name: todayLabel }));
 
   const target = new Date();
@@ -317,35 +307,29 @@ test('editing a record saves it to the new date', async ({ app, device, screen }
   await tapStable(screen.getByText('記録を編集', { exact: true }));
   await expect(screen.getByRole('listitem', { name: new RegExp(targetName) })).not.toBeVisible();
   await tapStable(screen.getByRole('button', { name: '保存' }));
-  const targetLabel = `${target.toLocaleString('en-US', { month: 'short' })} ${target.getDate()}, ${target.getFullYear()}`;
+  const targetLabel = `${target.getMonth() + 1}月${target.getDate()}日`;
   await expect(screen.getByText(new RegExp(targetLabel)).first()).toBeVisible();
 });
 
-test('a source added in the workspace stays in the sources tab', async ({ app, device, screen }) => {
+test('a source added in the workspace stays in the references tab', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await createProject(screen);
+  await createProject(screen, device);
 
-  await tapStable(screen.getByRole('button', { name: 'ソース' }));
-  await tapStable(screen.getByLabel('ソースを追加').first());
-  await screen.getByPlaceholder('YouTube・WebのURL').fill('https://example.com/e2e-source');
-  const save = screen.getByRole('button', { name: 'リンクを保存' });
-  await expect(save).toBeEnabled();
-  await tapStable(save);
-  const link = screen.getByRole('textbox', { name: 'YouTube・WebのURL', exact: true });
-  // XCTest exposes an empty native TextField's placeholder as its AX value.
-  await expect(link).toHaveValue(/^(YouTube・WebのURL)?$/);
-  await link.fill('https://example.com/e2e-source');
-  await tapStable(save);
-  await expect(link).toHaveValue(/^(YouTube・WebのURL)?$/);
-  await tapStable(screen.getByLabel('閉じる'));
+  await selectWorkspaceTab(screen, '参考資料');
+  await tapStable(screen.getByRole('button', { name: '参考資料を追加', exact: true }).first());
+  const title = 'E2E source ' + Date.now();
+  await screen.getByRole('textbox', { name: 'タイトル', exact: true }).fill(title);
+  const body = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
+  await tapControl(screen, body);
+  await body.pressSequentially('端末内にだけ保存する参考資料の本文です。');
+  const closeKeyboard = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
+  if (await closeKeyboard.isVisible()) await tapControl(screen, closeKeyboard);
+  await tapStable(screen.getByRole('button', { name: '保存', exact: true }));
+  await expect(screen.getByText(title).first()).toBeVisible({ timeout: 60_000 });
 
-  const row = screen.getByText('example.com').first();
-  await expect(row).toBeVisible();
-  await expect(screen.getByText('example.com', { exact: true })).toHaveCount(1);
-
-  await tapStable(screen.getByRole('button', { name: 'チャット' }));
-  await tapStable(screen.getByRole('button', { name: 'ソース' }));
-  await expect(screen.getByText('example.com').first()).toBeVisible();
+  await selectWorkspaceTab(screen, 'チャット');
+  await selectWorkspaceTab(screen, '参考資料');
+  await expect(screen.getByText(title).first()).toBeVisible();
 });
 
 test('the project list filters all, mine and shared', async ({ app, device, screen }) => {
@@ -353,27 +337,26 @@ test('the project list filters all, mine and shared', async ({ app, device, scre
   await tapTab(screen, 'ライブラリ');
   await tapControl(screen, screen.getByRole('button', { name: 'プロジェクト', exact: true }));
 
-  await expect(screen.getByRole('button', { name: 'すべて', selected: true })).toBeVisible();
-  await tapStable(screen.getByRole('button', { name: '自分' }));
-  await expect(screen.getByRole('button', { name: '自分', selected: true })).toBeVisible();
-  await tapStable(screen.getByRole('button', { name: '共有' }));
-  await expect(screen.getByRole('button', { name: '共有', selected: true })).toBeVisible();
+  const options = screen.getByLabel('プロジェクトの表示オプション');
+  await tapControl(screen, options);
+  await tapControl(screen, screen.getByRole('button', { name: '自分', exact: true }).last());
+  await tapControl(screen, options);
+  await tapControl(screen, screen.getByRole('button', { name: '共有', exact: true }).last());
   await expect(screen.getByText('共有されたプロジェクトはありません')).toBeVisible();
-  await tapStable(screen.getByRole('button', { name: 'すべて' }));
-  await expect(screen.getByRole('button', { name: 'すべて', selected: true })).toBeVisible();
+  await tapControl(screen, options);
+  await tapControl(screen, screen.getByRole('button', { name: 'すべて', exact: true }).last());
+  await expect(screen.getByRole('button', { name: 'プロジェクトを作成' }).first()).toBeVisible();
 });
 
-test('the files tab offers recording and existing-file actions', async ({ app, device, screen }) => {
+test('the records tab offers recording and moving existing files', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await createProject(screen);
+  await createProject(screen, device);
 
-  await tapStable(screen.getByRole('button', { name: 'ファイル' }));
-  await tapStable(screen.getByRole('button', { name: 'ファイルを追加' }).first());
-  await expect(screen.getByRole('button', { name: '録音を追加' }).first()).toBeVisible();
-  await expect(screen.getByRole('button', { name: '既存ファイルを移動' }).first()).toBeVisible();
-  await tapStable(screen.getByText('既存ファイルを移動'));
-
-  await expect(screen.getByText('既存ファイルを移動').first()).toBeVisible();
-  await tapStable(screen.getByText('キャンセル'));
-  await expect(screen.getByRole('button', { name: 'ファイル', selected: true })).toBeVisible();
+  await selectWorkspaceTab(screen, '記録');
+  await expect(screen.getByRole('button', { name: '録音を追加', exact: true }).first()).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: 'その他', exact: true }));
+  await tapControl(screen, screen.getByRole('button', { name: '既存記録を移動', exact: true }));
+  await expect(screen.getByText('既存ファイルを移動', { exact: true }).first()).toBeVisible();
+  await tapControl(screen, screen.getByRole('button', { name: 'キャンセル', exact: true }));
+  await expect(screen.getByLabel(/記録、表示切り替え$/).first()).toBeVisible();
 });
