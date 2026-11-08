@@ -193,6 +193,7 @@ struct FixtureMessage {
   var calendarReadSnapshot: AICalendarReadSnapshot?
   var cloudAuthorizationTargets: Set<RecordPrivacyTarget>?
   var projectSourceReferences: [AgentSourceReference] = []
+  var sourceCitations: [ProjectCitation] = []
   var artifactProvenance: ArtifactProvenance?
   #endif
   var sources: [AIChatSource] = []; var interfaceTaskIDs: Set<UUID> = []; var interfaceProjectIDs: Set<UUID> = []; var interfaceWorkspaceID: String?

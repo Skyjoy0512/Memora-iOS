@@ -98,6 +98,18 @@ import Foundation
       ProjectCitationTargets.Evidence(isReadable: true, reference: "text-v1", fingerprint: nil)
     } == [.projectFile(sourceID)], "a source without a fingerprint is compared by reference only")
 
+    // A saved document's project-source stamp must still match the current
+    // project and content; a legacy source with no stamp stays a current link.
+    let projectID = UUID()
+    let stamp = ArtifactProjectSourceReference(id: sourceID, projectID: projectID, fingerprint: "hash-1")
+    precondition(ProjectCitationTargets.projectFileIsCurrent(nil, projectID: projectID, fingerprint: "hash-1"),
+      "legacy source without a stamp is a current-source link")
+    precondition(ProjectCitationTargets.projectFileIsCurrent(stamp, projectID: projectID, fingerprint: "hash-1"))
+    precondition(!ProjectCitationTargets.projectFileIsCurrent(stamp, projectID: UUID(), fingerprint: "hash-1"),
+      "a moved project no longer matches")
+    precondition(!ProjectCitationTargets.projectFileIsCurrent(stamp, projectID: projectID, fingerprint: "hash-0"),
+      "changed source text no longer matches")
+
     // A saved grounded answer keeps the project-source link it was read from.
     var grounded = AIChatMessage(role: .assistant,
       text: "回答です " + AnswerSourceCitation.marker(for: .projectFile(sourceID)))

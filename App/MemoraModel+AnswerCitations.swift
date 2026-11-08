@@ -5,6 +5,15 @@ extension MemoraModel {
     let provenance = artifactProvenance(for: message)
     guard currentTeamID == nil, !isRestoring, !isStoreProtected, provenance.workspaceID == currentTeamID else { return [] }
     let sent = AnswerSourceCitation.targets(provenance: provenance, meetingIDs: message.sources.map(\.meetingID))
+      // Provenance project files carry the fingerprint read at generation time;
+      // a source that changed since then is no longer evidence for this answer.
+      .filter { target in
+        guard case .projectFile(let id) = target else { return true }
+        guard let source = source(id: id) else { return false }
+        let reference = provenance.projectSources.first { $0.id == id }
+        return ProjectCitationTargets.projectFileIsCurrent(reference,
+          projectID: source.projectID, fingerprint: AIRecordFingerprint.make(source))
+      }
     // Retrieved project sources were sent to the model; link only those whose
     // source still exists in a live project and still holds the same evidence.
     let projectFiles = ProjectCitationTargets.live(message.sourceCitations) { [self] id in
@@ -32,8 +41,19 @@ extension MemoraModel {
       meetingIDs: document.sourceRecordIDs ?? [], projectFileIDs: document.sourceProjectFileIDs ?? [])
     if let target = AnswerSourceCitation.target(for: url) {
       guard allowed.contains(target) else { return nil }
-      if case .projectFile(let id) = target,
-         source(id: id)?.canProvideText != true { return nil }
+      switch target {
+      case .projectFile(let id):
+        guard let source = source(id: id), source.canProvideText else { return nil }
+        // A stamped document must still match the text reference it was built
+        // from. Documents saved before stamps existed stay open as current
+        // links; their original evidence cannot be re-verified.
+        let reference = document.provenance?.projectSources.first { $0.id == id }
+        guard ProjectCitationTargets.projectFileIsCurrent(reference,
+          projectID: source.projectID, fingerprint: AIRecordFingerprint.make(source)) else { return nil }
+      case .record(let record):
+        if let reference = document.provenance?.records.first(where: { $0.target == record }),
+           recordReference(for: record) != reference { return nil }
+      }
       return target
     }
     // Earlier saved answers have meeting URLs but no separate source metadata.

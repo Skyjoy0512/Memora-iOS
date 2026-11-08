@@ -57,6 +57,28 @@ import Foundation
       precondition(model.documentCitationTarget(for: AnswerSourceCitation.url(for: target), document: citedDocument) == target)
     }
     precondition(model.documentCitationTarget(for: forged, document: citedDocument) == nil)
+
+    // A stamped project source becomes unopenable once its text, project or
+    // existence changes; a legacy document without a stamp stays a current link.
+    let projectFileTarget = ArtifactSourceTarget.projectFile(source.id)
+    let projectFileURL = AnswerSourceCitation.url(for: projectFileTarget)
+    precondition(model.answerCitationTargets(for: model.message).contains(projectFileTarget))
+    precondition(model.documentCitationTarget(for: projectFileURL, document: citedDocument) == projectFileTarget)
+    model.projectSources[0].title = "更新後の資料"
+    precondition(!model.answerCitationTargets(for: model.message).contains(projectFileTarget))
+    precondition(model.documentCitationTarget(for: projectFileURL, document: citedDocument) == nil)
+    model.projectSources = [source]
+    model.projectSources[0].projectID = nil
+    precondition(model.documentCitationTarget(for: projectFileURL, document: citedDocument) == nil)
+    model.projectSources = [source]
+    model.projectSources = []
+    precondition(model.documentCitationTarget(for: projectFileURL, document: citedDocument) == nil)
+    model.projectSources = [source]
+    var unstampedDocument = citedDocument
+    unstampedDocument.provenance = nil
+    precondition(model.documentCitationTarget(for: projectFileURL, document: unstampedDocument) == projectFileTarget,
+      "a document without a stamp links to the current source")
+    model.projectSources = [source]
     var oldDocument = citedDocument
     oldDocument.provenance = nil; oldDocument.sourceRecordIDs = nil; oldDocument.sourceProjectFileIDs = nil
     precondition(model.documentCitationTarget(for: AnswerSourceCitation.url(for: .record(.person(sharedID))), document: oldDocument) == nil)

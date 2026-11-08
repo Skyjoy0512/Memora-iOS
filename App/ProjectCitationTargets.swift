@@ -11,6 +11,15 @@ enum ProjectCitationTargets {
     var fingerprint: String?
   }
 
+  /// A stamped project source is current only while its project and content
+  /// fingerprint still match. A legacy reference with no stamp stays a link to
+  /// the current source, not proof of the original evidence.
+  static func projectFileIsCurrent(_ reference: ArtifactProjectSourceReference?,
+                                   projectID: UUID?, fingerprint: String?) -> Bool {
+    guard let reference else { return true }
+    return reference.projectID == projectID && reference.fingerprint == fingerprint
+  }
+
   static func live(_ citations: [ProjectCitation],
                    evidence: (UUID) -> Evidence?) -> Set<ArtifactSourceTarget> {
     var targets = Set<ArtifactSourceTarget>()

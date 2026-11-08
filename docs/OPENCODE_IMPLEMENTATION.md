@@ -27,6 +27,12 @@ route変更で入出力形式が変わった場合は再開を要求し、新し
 解除→再選択は末尾。保存は既存`attachProjectSources`が同一project/重複/64件を再検証。
 host checkとシミュレータE2E（タップ順→保存→再起動→解除）PASS。
 
+## 2026-11-08 P1-5 保存済み引用の失効（実装済み・ホスト検証済み）
+
+回答・文書のprovenance資料を、生成時のprojectIDとfingerprintで再検証する
+`projectFileIsCurrent`を追加。変更・移動・削除後は引用を開かない。旧データは
+現在の資料へのリンクとして互換維持。未検証: 実機、旧バックアップ、実データ移行。
+
 ## 今回の改善反映
 
 2026-11-02 Audio IntelligenceはCodexで直接段階実装。OpenCodeへの委託は行っていない。

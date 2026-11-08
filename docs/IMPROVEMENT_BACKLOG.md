@@ -1,5 +1,18 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 P1-5 保存済み回答・文書の引用失効を統一
+
+保存済み回答のprovenance由来の資料リンクが、生成時の内容と照合されず現在の資料を
+開けていた。`ProjectCitationTargets.projectFileIsCurrent`を追加し、provenanceの
+projectIDと`AIRecordFingerprint`を再検証する。更新・別project移動・削除後は
+`answerCitationTargets`／`documentCitationTarget`から外れ、古い引用を現在の別内容の
+根拠として開かない。スタンプの無い旧文書は互換のため「現在の資料へのリンク」として
+開く（当時の完全一致は検証不能）。回答本文は書き換えない。
+
+検証: `run-artifact-provenance-checks.sh`（更新/移動/削除/旧文書、実SQLite）PASS、
+`run-inline-citation-checks.sh` PASS、`bitrig preview` BUILD SUCCEEDED。
+**実機・実バックアップ・古いアプリで保存したデータの移行は未検証**。
+
 ## 2026-11-08 P1-4 メモ添付の選択順を保存順に固定
 
 `ProjectNoteAttachSheet`が`Set<UUID>`を`Array`化して保存していたため、選択順が
