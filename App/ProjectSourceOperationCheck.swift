@@ -44,7 +44,21 @@ final class ProjectSourceOperationCheck {
         guard case .data(let data) = RecordStore.load(MemoraModel.StorageKey.projectSources),
               let stored = try? JSONDecoder().decode([ProjectSource].self, from: data),
               sourceIDs.allSatisfy({ id in stored.first { $0.id == id } == model.source(id: id) }) else { throw CheckFailure.failed }
-        result = "3形式の取込・本文再読込・添付解析が成功。SQLite再読込一致: \(sourceIDs.count)件。外部送信はオフです。"
+        // Retrieval and the inline-citation target must work on the imported
+        // text without any model or network call.
+        let query = "MEMORA OFFICE FIXTURE"
+        guard let id = sourceIDs.first, let source = model.source(id: id),
+              await model.matchingSourceIDs(query: query, projectID: project, scoped: true).contains(id),
+              let context = try? await SourceContentSearch.context(source: source, question: query, budget: 4_000),
+              let citation = context.used.first, case .source(let citedID) = citation.target,
+              citedID == id, citation.evidenceReference == source.extractedTextReference else { throw CheckFailure.failed }
+        var grounded = AIChatMessage(role: .assistant, text: "確認【資料:\(id.uuidString)】")
+        grounded.sourceCitations = context.used
+        let allowed = model.answerCitationTargets(for: grounded)
+        guard allowed.contains(.projectFile(id)),
+              AnswerSourceCitation.linked(grounded.text, allowed: allowed)
+                .contains(AnswerSourceCitation.url(for: .projectFile(id)).absoluteString) else { throw CheckFailure.failed }
+        result = "3形式の取込・本文再読込・検索・引用・SQLite再読込一致: \(sourceIDs.count)件。外部送信はオフです。"
       } catch {
         result = error is CancellationError ? "検証を停止しました。" : "検証に失敗しました。\(error.localizedDescription)"
       }

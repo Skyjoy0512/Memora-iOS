@@ -13,7 +13,7 @@ test('Office source import preserves partial coverage and reopens extracted text
   await scrollToControl(screen, destination);
   await tapControl(destination);
   await tapControl(screen.getByRole('button', { name: 'Officeソースの取込を検証', exact: true }));
-  await expect(screen.getByText('3形式の取込・本文再読込・添付解析が成功。SQLite再読込一致: 3件。外部送信はオフです。', { exact: true })).toBeVisible({ timeout: 60_000 });
+  await expect(screen.getByText('3形式の取込・本文再読込・検索・引用・SQLite再読込一致: 3件。外部送信はオフです。', { exact: true })).toBeVisible({ timeout: 60_000 });
   const word = screen.getByRole('button', { name: /^QA-Word-/ }).first();
   await scrollToControl(screen, word);
   await tapControl(word);

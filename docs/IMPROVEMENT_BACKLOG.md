@@ -1,5 +1,16 @@
 # Memora — 改善バックログ
 
+## 2026-11-08 取込→本文→検索→引用を実アプリで検証（モデル/ネット不要）
+
+Office検証（Debugギャラリー）を拡張し、3形式の取込・本文再読込・SQLite再読込一致に加えて、
+本番の`matchingSourceIDs`、`SourceContentSearch.context`、`answerCitationTargets`、
+`AnswerSourceCitation.linked`を通し、取り込んだ資料が
+「検索で見つかる→引用スタンプが現在の本文と一致→回答マーカーが開けるリンクになる」
+ことを実アプリ内で確認するようにした。モデル・外部API・ネットワークは使わない。
+iPhone 18 Pro Maxシミュレータの`project-source-office.e2e.ts`がPASS（約44秒）。
+**LLMの実回答・実Web取得・実機は未検証**。写真/動画/音声/URL入口の同種検証と、
+再起動を挟んだ検索/引用の同一性は残件。
+
 ## 2026-11-08 失敗したURL資料の再追加で同じIDを再試行
 
 同じURLを再度追加しても、既存が失敗状態だと準備が再実行されず、利用者が詳細画面から

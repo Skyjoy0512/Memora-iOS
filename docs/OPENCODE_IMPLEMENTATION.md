@@ -23,6 +23,15 @@ BYOK構造化結果、録音の区間再開/容量監視、VAD評価基盤、長
 無効な日付・対象外の会議・承認中のワークスペース変更は、追加せずエラーとして返す。
 保存失敗と通知・Undo連動の実際の障害試験、クラウドツール実行は未検証。
 
+## 2026-11-08 P0-2.4 取込→本文→検索→引用の実アプリ検証
+
+Office検証を拡張し、 production の検索（`matchingSourceIDs`）、
+`SourceContentSearch.context`（抽出本文参照/fingerprintスタンプ）、
+`answerCitationTargets`、`AnswerSourceCitation.linked` を通して、
+取り込んだ資料が検索で見つかり、引用が開けるリンクになることをアプリ内で確認。
+モデル/外部API/ネットワーク不使用。`project-source-office.e2e.ts` が
+iPhone 18 Pro MaxシミュレータでPASS。LLM実回答・実Web・実機は未検証。
+
 ## 2026-11-08 P0-2.3 失敗URL資料の再追加で同一IDを再試行
 
 `addProjectLink`の重複経路で、既存が`.failed`のときだけ同じIDの準備を再スケジュールする。
