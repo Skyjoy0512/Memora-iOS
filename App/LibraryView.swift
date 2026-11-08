@@ -90,7 +90,7 @@ struct LibraryView: View {
           if model.librarySection == .files {
             filesPage
           } else {
-            ProjectsView(query: $query, isSearching: isSearching)
+            ProjectsView(query: $query, isSearching: isSearching, zoomNamespace: zoomNamespace)
           }
         }
       }
@@ -167,7 +167,21 @@ struct LibraryView: View {
             LibraryDestinationView(route: route)
               .navigationTransition(.zoom(sourceID: id, in: zoomNamespace))
           }
+        case .space(let id):
+          if reduceMotion {
+            LibraryDestinationView(route: route)
+          } else {
+            LibraryDestinationView(route: route)
+              .navigationTransition(.zoom(sourceID: id, in: zoomNamespace))
+          }
         case .sharedRecord(let id):
+          if reduceMotion {
+            LibraryDestinationView(route: route)
+          } else {
+            LibraryDestinationView(route: route)
+              .navigationTransition(.zoom(sourceID: id, in: zoomNamespace))
+          }
+        case .sharedProject(let id):
           if reduceMotion {
             LibraryDestinationView(route: route)
           } else {

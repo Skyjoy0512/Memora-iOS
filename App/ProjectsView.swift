@@ -7,6 +7,7 @@ struct ProjectsView: View {
   @AppStorage("memora.projects.recentFirst") private var recentFirst = false
   @Binding var query: String
   var isSearching: Bool
+  var zoomNamespace: Namespace.ID
   @State private var renameTarget: MemoraSpace?
   @State private var deleteTarget: MemoraSpace?
   @State private var isShareInboxPresented = false
@@ -109,6 +110,7 @@ struct ProjectsView: View {
               .accessibilityElement(children: .combine)
             }
             .buttonStyle(.plain)
+            .matchedTransitionSource(id: project.id, in: zoomNamespace)
           }
         }
       }
@@ -176,7 +178,7 @@ struct ProjectsView: View {
 
   private func projectLink(_ space: MemoraSpace) -> some View {
     let aggregate = model.spaceAggregates[space.id]
-    return ProjectListRow(space: space, recordCount: aggregate?.meetingCount ?? 0,
+    return ProjectListRow(space: space, zoomNamespace: zoomNamespace, recordCount: aggregate?.meetingCount ?? 0,
       latestRecordDate: aggregate?.latestDate,
       rename: { renameTarget = space },
       share: { Task { await model.shareSpaceWithTeam(space.id) } },

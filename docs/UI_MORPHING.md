@@ -26,6 +26,8 @@ iOS標準の下から上へのシート表示を維持する。独自のscale/op
   既存の`LifeLogCreationSheet`を標準のボトムシートとして下から上へ表示する。
   挿入時刻の計算（`JournalInsertionTime`）は変更していない。
 - ライブラリ: 保存済み参考資料、録音、共有記録のカードから詳細へzoom遷移。
+- プロジェクト一覧: プロジェクトカードからプロジェクト詳細へzoom遷移。
+  共有プロジェクトカードも同様。
 - ワークスペース/プロジェクト: `ProjectWorkspaceRow`の資料・録音・文書カードから
   詳細へzoom遷移。ソース追加と参照の処理は変更なし。
 - 参考資料詳細: 添付資料の行から別の資料詳細へzoom遷移。
@@ -45,8 +47,8 @@ iOS 26実機/シミュレータでの見た目、iPad、VoiceOver、Reduce Motio
 - `capture-audio-picker.e2e.ts`: PASS（ライト/ダーク、作成シートが下から表示、音声ピッカー取消）
 - `workspace-journal.e2e.ts --grep "insertion proposes"`: PASS（日付・イベント間の時刻）
 - `workspace-journal.e2e.ts --grep "inline plus"`: PASS（行内＋から追加）
-- `project-source-note-attach-order.e2e.ts`: PASS
-- `source-ask-ai.e2e.ts`: PASS（再実行）
+- `project-source-note-attach-order.e2e.ts`: PASS（プロジェクトカード→詳細を含む）
+- `source-ask-ai.e2e.ts`: PASS（プロジェクトカード→詳細を含む）
 - `project-source-office.e2e.ts` / `project-source-recovery.e2e.ts`: PASS
 
 ワークスペースの古いタブ名を前提にした`workspace-journal`の一部テストは

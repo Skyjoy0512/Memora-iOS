@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ProjectListRow: View {
   var space: MemoraSpace
+  var zoomNamespace: Namespace.ID
   var recordCount: Int
   var latestRecordDate: Date?
   var rename: () -> Void
@@ -30,6 +31,7 @@ struct ProjectListRow: View {
         .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)
         .foregroundStyle(.primary)
         .contentShape(Rectangle())
+        .matchedTransitionSource(id: space.id, in: zoomNamespace)
       }
       .buttonStyle(.plain)
       .accessibilityElement(children: .combine)
