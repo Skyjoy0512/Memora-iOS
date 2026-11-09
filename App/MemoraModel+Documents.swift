@@ -26,7 +26,7 @@ extension MemoraModel {
   /// a document as made once it is really saved.
   @discardableResult
   func addDocument(_ document: MemoraDocument) -> Bool {
-    guard !isRestoring, isStoreWritable(), document.hasValidRevisions,
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), document.hasValidRevisions,
           document.presentationPlan?.isValid(for: document.slides) ?? true, document.provenance?.isValid ?? true,
           document.provenance.map({ $0.workspaceID == currentTeamID }) ?? true else { return false }
     var candidate = documents
@@ -43,7 +43,7 @@ extension MemoraModel {
   /// document and the slide outline for slides.
   @discardableResult
   func updateDocument(_ id: UUID, title: String, body: String, expectedUpdatedAt: Date? = nil) -> Bool {
-    guard !isRestoring, isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }),
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }),
           expectedUpdatedAt.map({ $0 == documents[index].updatedAt }) ?? true,
           let edited = documents[index].editing(title: title, body: body) else { return false }
     guard edited != documents[index] else { return true }
@@ -56,7 +56,7 @@ extension MemoraModel {
 
   @discardableResult
   func deleteDocument(_ id: UUID) -> Bool {
-    guard !isRestoring, isStoreWritable() else { return false }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return false }
     guard let document = document(id: id) else { return false }
     let candidate = documents.filter { $0.id != id }
     guard persistNow(candidate, forKey: StorageKey.documents) else { return false }
@@ -74,7 +74,7 @@ extension MemoraModel {
   @discardableResult
   func updateDocumentSlides(_ id: UUID, title: String, slides: [DocumentSlide], expectedUpdatedAt: Date,
                             plan: PresentationPlan? = nil) -> Bool {
-    guard !isRestoring, isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }),
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), let index = documents.firstIndex(where: { $0.id == id }),
           documents[index].updatedAt == expectedUpdatedAt, documents[index].kind == .slides,
           documents[index].hasValidRevisions, (documents[index].contentRevision ?? 0) < Int.max,
           !slides.isEmpty, slides.count <= 65, Set(slides.map(\.id)).count == slides.count else { return false }

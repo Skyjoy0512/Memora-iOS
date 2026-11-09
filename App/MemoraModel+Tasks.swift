@@ -12,7 +12,7 @@ extension MemoraModel {
   }
 
   func toggleTask(_ id: UUID) {
-    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     var candidate = tasks
     candidate[index].isCompleted.toggle()
     candidate[index].completedAt = candidate[index].isCompleted ? .now : nil
@@ -92,7 +92,7 @@ extension MemoraModel {
 
   /// Changes just the due date, from the task list's long-press menu.
   func setTaskDueDate(_ id: UUID, to date: Date?) {
-    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     var candidate = tasks
     candidate[index].dueDate = date
     guard persistNow(candidate, forKey: StorageKey.tasks) else { return }
@@ -101,7 +101,7 @@ extension MemoraModel {
   }
 
   func setTaskWorkDate(_ id: UUID, to date: Date?) {
-    guard isStoreWritable(), let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), let index = tasks.firstIndex(where: { $0.id == id }) else { return }
     var candidate = tasks
     candidate[index].workDate = date.map { Calendar.current.startOfDay(for: $0) }
     guard persistNow(candidate, forKey: StorageKey.tasks) else { return }
@@ -110,7 +110,7 @@ extension MemoraModel {
 
   @discardableResult
   func deleteTask(_ id: UUID) -> Bool {
-    guard let index = tasks.firstIndex(where: { $0.id == id }) else { return false }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), let index = tasks.firstIndex(where: { $0.id == id }) else { return false }
     guard !tasks.contains(where: { $0.relationships.parentID == id }) else {
       deletionFailureMessage = "子課題が残っています。子課題の親を変更するか、子課題を先に削除してください。"
       return false
@@ -130,6 +130,7 @@ extension MemoraModel {
 
   /// Puts a removed task back where it was, so an undo restores its order too.
   private func restoreTask(_ task: MemoraTask, at index: Int) {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     let position = min(index, tasks.count)
     guard !tasks.contains(where: { $0.id == task.id }) else { return }
     var candidate = tasks
@@ -183,6 +184,7 @@ extension MemoraModel {
 
   @discardableResult
   func insertTasks(_ additions: [MemoraTask]) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return false }
     let ids = Set(additions.map(\.id))
     guard !additions.isEmpty, ids.count == additions.count,
           ids.isDisjoint(with: tasks.map(\.id)) else { return false }

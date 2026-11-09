@@ -6,7 +6,7 @@ extension MemoraModel {
   /// The lists are only changed once the write lands, so a failed save leaves
   /// the screen showing what the store actually holds.
   func deleteMeeting(_ id: UUID) {
-    guard isStoreWritable() else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }
 
     processing.cancel(id)
@@ -63,7 +63,7 @@ extension MemoraModel {
   /// either lands completely or not at all. Each record keeps its own tasks and
   /// journal entries so it can be restored exactly.
   func deleteMeetings(_ ids: Set<UUID>) {
-    guard isStoreWritable() else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     guard !ids.isEmpty else { return }
 
     let removed = meetings.filter { ids.contains($0.id) }
@@ -128,7 +128,7 @@ extension MemoraModel {
   /// the undo path; a restore from the trash days later goes back by date, since
   /// records added meanwhile would have made the old index wrong.
   func restoreTrashedRecord(_ id: UUID, preservingPosition: Bool = false) {
-    guard isStoreWritable() else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     guard let index = trashedRecords.firstIndex(where: { $0.id == id }) else { return }
 
     var candidateTrash = trashedRecords
@@ -193,7 +193,7 @@ extension MemoraModel {
   /// store first; the files are only removed once that write landed, so a failed
   /// write can never lose the attachments while the entry is still there.
   func permanentlyDeleteTrashedRecord(_ id: UUID) {
-    guard isStoreWritable() else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     guard let index = trashedRecords.firstIndex(where: { $0.id == id }) else { return }
 
     var candidate = trashedRecords
@@ -217,7 +217,7 @@ extension MemoraModel {
   /// cannot be removed is remembered and retried, so this never fails in a way
   /// that could only be noticed later.
   func deleteMedia(audioURL: URL?, photoNames: [String]) {
-    guard !isStoreProtected else { return }
+    guard !isRestoring, currentTeamID == nil, !isStoreProtected else { return }
     var remainingPhotos: [String] = []
     let referencedPhotos = referencedPhotoFileNames
     for name in photoNames where !referencedPhotos.contains(name) && !MediaFiles.deletePhoto(name) {
@@ -241,7 +241,7 @@ extension MemoraModel {
 
   /// Tries the removals that failed before, keeping any that fail again.
   func retryPendingMediaDeletions(onlyIDs: Set<UUID>? = nil) {
-    guard !isStoreProtected, !pendingMediaDeletions.isEmpty, onlyIDs?.isEmpty != true else { return }
+    guard !isRestoring, !isStoreProtected, !pendingMediaDeletions.isEmpty, onlyIDs?.isEmpty != true else { return }
 
     var remaining: [PendingMediaDeletion] = []
     var didFail = false
@@ -280,7 +280,7 @@ extension MemoraModel {
   /// interruption leaves either the entry or the files, never a missing file
   /// with the entry still present.
   func purgeExpiredTrash() {
-    guard !isStoreProtected else { return }
+    guard !isRestoring, currentTeamID == nil, !isStoreProtected else { return }
     let cutoff = Date().addingTimeInterval(-TrashedRecord.lifetime)
 
     let expiredRecords = trashedRecords.filter { $0.deletedAt < cutoff }

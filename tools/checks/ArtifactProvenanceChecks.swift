@@ -190,10 +190,35 @@ import Foundation
     let result = await cancelled.value
     precondition(result.isError && model.mailDrafts.isEmpty)
     try await mockConversationScenario(root: root)
+    try readOnlyDocumentChecks(root: root)
     #if INTELLIGENT_UI_CHECKS
     try await IntelligentUIContextChecks.run(root: root)
     #endif
     print("ArtifactProvenanceChecks: passed (typed collisions, capture, changes/revocation/deletion, workspace/protected/restore, legacy, production document/mail save/edit + real SQLite reopen, suspended draft approval/cancel/stale permissions; no network)")
+  }
+
+  @MainActor static func readOnlyDocumentChecks(root: URL) throws {
+    let model = try MemoraModel(storeURL: root.appendingPathComponent("read-only-documents.sqlite"))
+    let document = MemoraDocument(title: "保持する資料", kind: .document, markdown: "元の本文")
+    let slide = MemoraDocument(title: "保持するスライド", kind: .slides, slides: [.init(title: "概要", bullets: ["根拠"])])
+    precondition(model.addDocument(document) && model.addDocument(slide))
+    let original = model.documents
+    guard case .data(let saved) = model.store.readOutcome("documents") else { preconditionFailure() }
+    for mode in 0..<3 {
+      model.currentTeamID = mode == 0 ? "read-only-team" : nil
+      model.isRestoring = mode == 1
+      model.isStoreProtected = mode == 2
+      precondition(!model.addDocument(.init(title: "拒否する資料", kind: .document, markdown: "本文")))
+      precondition(!model.updateDocument(document.id, title: "拒否する編集", body: "置換"))
+      precondition(!model.updateDocumentSlides(slide.id, title: "拒否する編集", slides: [.init(title: "置換", bullets: [])], expectedUpdatedAt: slide.updatedAt))
+      precondition(!model.deleteDocument(document.id))
+      precondition(model.documents == original)
+      guard case .data(let retained) = model.store.readOutcome("documents") else { preconditionFailure() }
+      precondition(retained == saved)
+    }
+    model.currentTeamID = nil; model.isRestoring = false; model.isStoreProtected = false
+    precondition(model.updateDocument(document.id, title: "個人では編集可能", body: "更新"))
+    print("PASS: actual document mutators refuse team/restore/protected writes with SQLite bytes unchanged")
   }
 
   @MainActor static func mockConversationScenario(root: URL) async throws {

@@ -93,7 +93,7 @@ extension MemoraModel {
   /// Removes a record's audio but keeps its transcript, summary, notes and
   /// tasks. The file waits for the offer to pass, so an undo still has audio.
   func removeMeetingAudio(_ id: UUID) {
-    guard isStoreWritable() else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     guard let index = meetings.firstIndex(where: { $0.id == id }),
           meetings[index].hasAudioFiles else { return }
 
@@ -151,7 +151,7 @@ extension MemoraModel {
   /// Removes the audio of every record older than `days`, keeping the rest of
   /// each record. One undo brings all of it back.
   func removeAudio(olderThanDays days: Int) {
-    guard isStoreWritable() else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     let cutoff = Date.now.addingTimeInterval(-Double(days) * 24 * 60 * 60)
     let removed = meetings.filter { $0.hasAudioFiles && $0.createdAt < cutoff }
     guard !removed.isEmpty else { return }

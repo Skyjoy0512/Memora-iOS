@@ -160,6 +160,7 @@ struct RecordingMediaChecks {
     precondition(exists(outside))
     try await discardChecks(model, storeURL: storeURL)
     try photoChecks(model, storeURL: storeURL)
+    try workspaceGuardChecks(model)
     print("PASS: production Meeting legacy/parts codec, actual managed paths, SQLite removal+undo atomicity and rollback/reopen, bulk originals, targeted permanent deletion, shared/draft/trash ownership, protected store, unsafe paths")
   }
 
@@ -254,6 +255,57 @@ struct RecordingMediaChecks {
   }
 
   @MainActor
+  static func workspaceGuardChecks(_ model: MemoraModel) throws {
+    var original = try record("guarded")
+    original.photoFileNames = ["guarded.jpg"]
+    let space = MemoraSpace(id: UUID(), name: "保持する案件", symbol: "folder")
+    original.spaceID = space.id
+    model.meetings = [original]
+    model.spaces = [space]
+    model.pendingMediaDeletions = []
+    model.trashedRecords = [.init(meeting: try record("guarded-trash"), deletedAt: .now)]
+    model.trashedLifeLogEntries = [.init(entry: .init(photoFileName: "guarded-trash.jpg"), deletedAt: .now)]
+    model.undoAction = UndoAction(message: "保持する取り消し", undo: { preconditionFailure("Read-only undo ran") }, finalize: {})
+    let undoID = model.undoAction!.id
+    try model.seed()
+    let keys = ["meetings", "pending"]
+    let before = keys.map { key -> Data in
+      guard case .data(let value) = model.store.readOutcome(key) else { preconditionFailure() }; return value
+    }
+    MediaFiles.deletedPhotos = []
+    for mode in 0..<3 {
+      model.currentTeamID = mode == 0 ? "read-only-team" : nil
+      model.isRestoring = mode == 1
+      model.isStoreProtected = mode == 2
+      precondition(model.addSpace(name: "拒否する追加") == nil)
+      precondition(!model.renameSpace(space.id, name: "拒否する編集"))
+      precondition(!model.deleteSpace(space.id))
+      precondition(!model.setSpace(nil, forMeeting: original.id))
+      model.removeMeetingAudio(original.id)
+      model.removeAudio(olderThanDays: -1)
+      model.removeMeetingPhoto(original.id, index: 0)
+      model.permanentlyDeleteTrashedRecord(model.trashedRecords[0].id)
+      model.permanentlyDeleteTrashedLifeLogEntry(model.trashedLifeLogEntries[0].id)
+      model.purgeExpiredTrash()
+      model.performPendingUndo()
+      precondition(model.meetings == [original] && model.spaces == [space])
+      precondition(model.trashedRecords.count == 1 && model.trashedLifeLogEntries.count == 1)
+      precondition(model.pendingMediaDeletions.isEmpty && model.undoAction?.id == undoID)
+      precondition(MediaFiles.deletedPhotos.isEmpty)
+      for (key, value) in zip(keys, before) {
+        guard case .data(let retained) = model.store.readOutcome(key) else { preconditionFailure() }
+        precondition(retained == value)
+      }
+    }
+    model.currentTeamID = nil; model.isRestoring = false; model.isStoreProtected = false
+    model.undoAction = nil
+    precondition(model.renameSpace(space.id, name: "個人では編集可能"))
+    precondition(model.setSpace(nil, forMeeting: original.id))
+    precondition(model.meetings[0].spaceID == nil)
+    print("PASS: actual project/media/trash/undo mutations refuse team/restore/protected contexts; SQLite bytes and files retained, personal project edits allowed")
+  }
+
+  @MainActor
   static func photoChecks(_ model: MemoraModel, storeURL: URL) throws {
     model.undoAction = nil
     model.isStoreProtected = false
@@ -318,6 +370,12 @@ struct RecordingMediaChecks {
 final class MemoraModel {
   var store: LocalStore
   var meetings: [Meeting] = []
+  var spaces: [MemoraSpace] = []
+  var documents: [FixtureFiledItem] = []
+  var projectSources: [FixtureFiledItem] = []
+  var projectChats: [FixtureFiledItem] = []
+  var tasks: [FixtureFiledItem] = []
+  var projectChatJobs: [UUID: Task<Void, Never>] = [:]
   var trashedRecords: [TrashedRecord] = []
   var trashedLifeLogEntries: [TrashedLifeLogEntry] = []
   var lifeLogEntries: [FixtureJournalEntry] = []
@@ -352,6 +410,7 @@ final class MemoraModel {
   enum StorageKey {
     static let meetings = "meetings", pendingMediaDeletions = "pending", trash = "trash", lifeLogTrash = "journalTrash"
     static let recordingDraft = "draft"
+    static let spaces = "spaces", documents = "documents", projectSources = "sources", projectChats = "chats"
   }
   init(storeURL: URL) throws {
     store = LocalStore(fileURL: storeURL); try store.prepare(); RecordStore.store = store
@@ -370,6 +429,9 @@ final class MemoraModel {
   func persistPendingMediaDeletions() { _ = persistNow(pendingMediaDeletions, forKey: StorageKey.pendingMediaDeletions) }
   func scheduleUndo(_ action: UndoAction) { undoAction?.finalize(); undoAction = action }
   func meeting(id: UUID) -> Meeting? { meetings.first { $0.id == id } }
+  func space(id: UUID) -> MemoraSpace? { spaces.first { $0.id == id } }
+  func announce(_ value: String) {}
+  func invalidateProjectEvidence(_ targets: [ProjectCitation.Target]) {}
   func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) -> Bool {
     guard let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
     var candidate = meetings
@@ -407,6 +469,18 @@ struct TrashedRecord: Codable {
   static let lifetime: TimeInterval = 30 * 86_400
 }
 struct FixtureJournalEntry: Codable { var id = UUID(); var photoFileName: String? }
+struct FixtureFiledItem: Codable {
+  var id = UUID()
+  var spaceID: UUID?
+  var projectID: UUID?
+  var pendingMessageID: UUID?
+  var meetingID: UUID?
+}
+enum ProjectCitation { enum Target { case meeting(UUID), task(UUID) } }
+actor ProjectSearchIndex {
+  static let shared = ProjectSearchIndex()
+  func remove(projectID: UUID) throws {}
+}
 struct TrashedLifeLogEntry: Codable {
   var entry: FixtureJournalEntry
   var deletedAt: Date

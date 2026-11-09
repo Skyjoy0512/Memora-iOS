@@ -172,7 +172,7 @@ extension MemoraModel {
   }
 
   func restoreTrashedLifeLogEntry(_ id: UUID) {
-    guard isStoreWritable() else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
 
     var candidateTrash = trashedLifeLogEntries
@@ -193,7 +193,7 @@ extension MemoraModel {
   }
 
   func permanentlyDeleteTrashedLifeLogEntry(_ id: UUID) {
-    guard isStoreWritable() else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
 
     var candidate = trashedLifeLogEntries
@@ -219,7 +219,7 @@ extension MemoraModel {
   /// not running. Records already present are skipped by id, and the inbox is
   /// cleared in the same write as the import, so nothing is taken twice.
   func importAutoLifeLogInbox() {
-    guard !isStoreProtected else { return }
+    guard !isRestoring, currentTeamID == nil, !isStoreProtected else { return }
     guard case .data(let data) = RecordStore.load(StorageKey.autoLifeLogInbox),
           let inbox = try? JSONDecoder().decode([LifeLogEntry].self, from: data),
           !inbox.isEmpty else { return }

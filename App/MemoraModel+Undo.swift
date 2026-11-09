@@ -21,6 +21,7 @@ extension MemoraModel {
 
   /// Takes the offer back: the record returns and no file is removed.
   func performPendingUndo() {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     undoDismissTask?.cancel()
     undoDismissTask = nil
     guard let action = pendingUndo else { return }

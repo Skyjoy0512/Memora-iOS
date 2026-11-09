@@ -4,6 +4,7 @@ import SQLite3
 @main
 struct PersonTaskChecks {
   @MainActor static func main() throws {
+    try readOnlyMutationChecks()
     let fm = FileManager.default
     let root = fm.temporaryDirectory.appendingPathComponent("MemoraPersonTasks-\(UUID())")
     defer { try? fm.removeItem(at: root) }
@@ -148,6 +149,36 @@ struct PersonTaskChecks {
     precondition(related?.nameMatchedTasks.count == 2_000 && related?.assignedTasks.isEmpty == true)
     print("PersonTaskChecks host lookup: 500 people, 2000 tasks, \(Date().timeIntervalSince(started))s (not physical-device performance)")
     print("PersonTaskChecks: passed (production task/people/scope/read_person + real SQLite; same-name IDs, legacy unconfirmed, privacy/revoke, reassignment, rename/merge rollback, tombstones, workspace, reopen; isolated fixtures only)")
+  }
+
+  @MainActor static func readOnlyMutationChecks() throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent("MemoraReadOnlyTasks-\(UUID())")
+    defer { try? FileManager.default.removeItem(at: root) }
+    let model = try MemoraModel(storeURL: root.appendingPathComponent("store.sqlite"))
+    precondition(model.addTask(title: "保持する課題", assignee: "", dueDate: nil))
+    let original = model.tasks
+    let id = original[0].id
+    guard case .data(let saved) = model.store.readOutcome("tasks") else { preconditionFailure() }
+    for mode in 0..<3 {
+      model.currentTeamID = mode == 0 ? "read-only-team" : nil
+      model.isRestoring = mode == 1
+      model.isStoreProtected = mode == 2
+      model.toggleTask(id)
+      model.setTaskDueDate(id, to: .now)
+      model.setTaskWorkDate(id, to: .now)
+      precondition(!model.deleteTask(id))
+      precondition(!model.updateTask(id, title: "拒否する編集", assignee: "", dueDate: nil, meetingID: nil, workDate: nil))
+      precondition(!model.addTask(title: "拒否する追加", assignee: "", dueDate: nil))
+      var added = original[0]; added.id = UUID()
+      precondition(!model.insertTasks([added]))
+      precondition(model.tasks == original)
+      guard case .data(let retained) = model.store.readOutcome("tasks") else { preconditionFailure() }
+      precondition(retained == saved)
+    }
+    model.currentTeamID = nil; model.isRestoring = false; model.isStoreProtected = false
+    model.toggleTask(id)
+    precondition(model.tasks[0].isCompleted)
+    print("PASS: actual task mutators refuse team/restore/protected writes with SQLite bytes unchanged; personal edits remain available")
   }
 
   static func read(_ store: LocalStore, _ key: String) -> Data {

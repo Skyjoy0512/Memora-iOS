@@ -19,6 +19,8 @@ capture = Path('App/MemoraModel+Capture.swift').read_text()
 methods += '\n' + capture[capture.index('  func cancelCapture()'):capture.index('  /// Stops the microphone')]
 undo = Path('App/MemoraModel+Undo.swift').read_text()
 methods += '\n' + undo[undo.index('  func performPendingUndo()'):undo.index('  /// Passes over the offer')]
+spaces = Path('App/MemoraModel+Spaces.swift').read_text()
+methods += '\n  @discardableResult\n' + spaces[spaces.index('  func addSpace('):spaces.rindex('\n}')]
 usage = Path('App/StorageUsageView.swift').read_text()
 usage = usage[usage.index('private struct AudioUsage'):].replace('private struct AudioUsage', 'struct AudioUsage', 1)
 with tempfile.TemporaryDirectory(prefix='memora-recording-media-', dir=os.environ.get('MEMORA_CHECK_ROOT')) as temporary:
@@ -27,7 +29,7 @@ with tempfile.TemporaryDirectory(prefix='memora-recording-media-', dir=os.enviro
     generated.write_text('import Foundation\nextension MediaFiles {\n' + paths + delete + '}\nextension MemoraModel {\n' + methods + '}\n' + usage)
     binary = root / 'checks'
     subprocess.run(['swiftc', 'Shared/MemoraIcon.swift', 'App/LocalStore.swift', 'App/RecordingAudioPart.swift', 'App/RecordingAudioManifest.swift', 'App/AudioPlaybackInput.swift', 'App/Meeting.swift', 'App/Meeting+AudioFiles.swift',
-                    'App/MeetingSource.swift', 'App/MeetingStatus.swift', 'App/TranscriptSegment.swift', 'App/SpeakerIdentificationStatus.swift',
+                    'App/MeetingSource.swift', 'App/MeetingStatus.swift', 'App/TranscriptSegment.swift', 'App/SpeakerIdentificationStatus.swift', 'App/MemoraSpace.swift', 'App/ProjectFiling.swift',
                     'App/RecordPrivacy.swift', 'App/SummarySensitivity.swift', 'App/RecordingMarker.swift', 'App/UndoAction.swift', 'App/StorageUsage.swift',
                     'App/MemoraModel+Media.swift', 'tools/checks/RecordingRecoveryStoreFixture.swift',
                     'tools/checks/RecordingMediaChecks.swift', str(generated), '-lsqlite3', '-o', str(binary)], check=True)
