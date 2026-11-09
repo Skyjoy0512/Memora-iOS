@@ -35,7 +35,7 @@ struct RecordingMediaChecks {
     let persisted: [Meeting] = try decode(reopened, "meetings")
     let queued: [MemoraModel.PendingMediaDeletion] = try decode(reopened, "pending")
     precondition(!persisted[0].hasAudioFiles && queued.count == 3)
-    model.undoAction!.undo()
+    precondition(model.undoAction!.undo())
     precondition(model.meetings[0].originalAudioFileNames == original.originalAudioFileNames)
     precondition(model.pendingMediaDeletions.isEmpty)
     try assertFiles(original, exist: true)
@@ -56,11 +56,11 @@ struct RecordingMediaChecks {
     model.removeMeetingAudio(original.id)
     let retryUndo = model.undoAction!
     precondition(sqlite3_exec(db, rejectSQL, nil, nil, nil) == SQLITE_OK)
-    retryUndo.undo()
+    precondition(!retryUndo.undo())
     precondition(!model.meetings[0].hasAudioFiles && model.pendingMediaDeletions.count == 3)
     try assertFiles(original, exist: true)
     precondition(sqlite3_exec(db, "DROP TRIGGER reject_pending", nil, nil, nil) == SQLITE_OK)
-    retryUndo.undo()
+    precondition(retryUndo.undo())
     precondition(model.meetings[0].hasAudioFiles && model.pendingMediaDeletions.isEmpty)
     model.undoAction = nil
 
@@ -76,7 +76,7 @@ struct RecordingMediaChecks {
     model.trashedLifeLogEntries = [.init(entry: .init(photoFileName: nil), deletedAt: .now)]
     model.permanentlyDeleteTrashedLifeLogEntry(model.trashedLifeLogEntries[0].id)
     try assertFiles(original, exist: true)
-    model.undoAction!.undo(); model.undoAction = nil
+    precondition(model.undoAction!.undo()); model.undoAction = nil
 
     // Shared originals, trashed records and an active draft retain ownership.
     var shared = try record("shared")
@@ -106,7 +106,7 @@ struct RecordingMediaChecks {
     precondition(model.meetings.allSatisfy { !$0.hasAudioFiles })
     precondition(model.pendingMediaDeletions.count == 5)
     model.meetings[0].notes = "edited after removal"
-    model.undoAction!.undo(); model.undoAction = nil
+    precondition(model.undoAction!.undo()); model.undoAction = nil
     precondition(model.meetings[0].notes == "edited after removal")
     precondition(model.meetings[1].originalAudioFileNames == older2.originalAudioFileNames)
     precondition(model.pendingMediaDeletions.isEmpty)
@@ -142,7 +142,7 @@ struct RecordingMediaChecks {
     precondition(model.trashedRecords.isEmpty && model.pendingMediaDeletions.count == 3)
     try assertFiles(expired, exist: false)
     try assertFiles(waiting, exist: true)
-    model.undoAction!.undo(); model.undoAction = nil
+    precondition(model.undoAction!.undo()); model.undoAction = nil
 
     let usage = AudioUsage(meetings: [older2, waiting])
     precondition(usage.largestFirst.count == 2 && usage.oldCount == 1)
@@ -159,6 +159,7 @@ struct RecordingMediaChecks {
     model.undoAction!.finalize()
     precondition(exists(outside))
     try await discardChecks(model, storeURL: storeURL)
+    try photoChecks(model, storeURL: storeURL)
     print("PASS: production Meeting legacy/parts codec, actual managed paths, SQLite removal+undo atomicity and rollback/reopen, bulk originals, targeted permanent deletion, shared/draft/trash ownership, protected store, unsafe paths")
   }
 
@@ -251,6 +252,66 @@ struct RecordingMediaChecks {
     guard case .data(let data) = store.readOutcome(key) else { preconditionFailure("Missing document") }
     return try JSONDecoder().decode(T.self, from: data)
   }
+
+  @MainActor
+  static func photoChecks(_ model: MemoraModel, storeURL: URL) throws {
+    model.undoAction = nil
+    model.isStoreProtected = false
+    model.isRestoring = false
+    model.currentTeamID = nil
+    model.pendingMediaDeletions = []
+    model.trashedRecords = []
+    model.trashedLifeLogEntries = []
+    var photoRecord = try record("photo")
+    photoRecord.photoFileNames = ["shared.jpg", "remove.jpg"]
+    model.meetings = [photoRecord]
+    try model.seed()
+    let reopened = LocalStore(fileURL: storeURL); try reopened.prepare()
+    var db: OpaquePointer?
+    precondition(sqlite3_open(storeURL.path, &db) == SQLITE_OK)
+    defer { sqlite3_close(db) }
+    let reject = "CREATE TRIGGER reject_photo_pending BEFORE INSERT ON documents WHEN NEW.key = 'pending' BEGIN SELECT RAISE(ABORT, 'fixture'); END;"
+    precondition(sqlite3_exec(db, reject, nil, nil, nil) == SQLITE_OK)
+    model.removeMeetingPhoto(photoRecord.id, index: 1)
+    precondition(model.meetings[0].photoFileNames == photoRecord.photoFileNames && model.undoAction == nil)
+    let unchanged: [Meeting] = try decode(reopened, "meetings")
+    precondition(unchanged[0].photoFileNames == photoRecord.photoFileNames)
+    precondition(sqlite3_exec(db, "DROP TRIGGER reject_photo_pending", nil, nil, nil) == SQLITE_OK)
+    model.removeMeetingPhoto(photoRecord.id, index: 1)
+    let removed: [Meeting] = try decode(reopened, "meetings")
+    let queued: [MemoraModel.PendingMediaDeletion] = try decode(reopened, "pending")
+    precondition(removed[0].photoFileNames == ["shared.jpg"] && queued.count == 1)
+    precondition(sqlite3_exec(db, reject, nil, nil, nil) == SQLITE_OK)
+    model.performPendingUndo()
+    precondition(model.undoAction != nil && model.pendingMediaDeletions.count == 1)
+    let failedUndo: [Meeting] = try decode(reopened, "meetings")
+    let retainedQueue: [MemoraModel.PendingMediaDeletion] = try decode(reopened, "pending")
+    precondition(failedUndo[0].photoFileNames == ["shared.jpg"] && retainedQueue.count == 1)
+    precondition(sqlite3_exec(db, "DROP TRIGGER reject_photo_pending", nil, nil, nil) == SQLITE_OK)
+    model.performPendingUndo()
+    precondition(model.undoAction == nil && model.pendingMediaDeletions.isEmpty)
+    let restored: [Meeting] = try decode(reopened, "meetings")
+    let cancelled: [MemoraModel.PendingMediaDeletion] = try decode(reopened, "pending")
+    precondition(restored[0].photoFileNames == photoRecord.photoFileNames && cancelled.isEmpty)
+
+    model.trashedRecords = [.init(meeting: photoRecord, deletedAt: .now)]
+    model.meetings = []
+    model.lifeLogEntries = [.init(photoFileName: "journal.jpg")]
+    model.trashedLifeLogEntries = [.init(entry: .init(photoFileName: "trash.jpg"), deletedAt: .now)]
+    MediaFiles.deletedPhotos = []
+    let protectedNames = ["shared.jpg", "remove.jpg", "journal.jpg", "trash.jpg"]
+    model.deleteMedia(audioURL: nil, photoNames: protectedNames)
+    model.pendingMediaDeletions = [.init(id: UUID(), audioReference: nil, photoNames: protectedNames)]
+    model.retryPendingMediaDeletions()
+    precondition(MediaFiles.deletedPhotos.isEmpty && model.pendingMediaDeletions.isEmpty)
+    model.meetings = [photoRecord]
+    model.trashedRecords = []
+    model.deleteMedia(audioURL: nil, photoNames: ["shared.jpg", "unowned.jpg"])
+    precondition(MediaFiles.deletedPhotos == ["unowned.jpg"])
+    model.lifeLogEntries = []
+    model.trashedLifeLogEntries = []
+    print("PASS: actual SQLite photo removal/undo atomicity, failed undo retained for retry, live/journal/trash photo ownership; filesystem photo deletion is a spy")
+  }
 }
 
 @MainActor
@@ -259,6 +320,7 @@ final class MemoraModel {
   var meetings: [Meeting] = []
   var trashedRecords: [TrashedRecord] = []
   var trashedLifeLogEntries: [TrashedLifeLogEntry] = []
+  var lifeLogEntries: [FixtureJournalEntry] = []
   var pendingMediaDeletions: [PendingMediaDeletion] = []
   var recordingDraft: RecordingDraft?
   var isStoreProtected = false
@@ -268,6 +330,11 @@ final class MemoraModel {
   var persistenceFailureMessage: String?
   var deletionFailureMessage: String?
   var undoAction: UndoAction?
+  var pendingUndo: UndoAction? {
+    get { undoAction }
+    set { undoAction = newValue }
+  }
+  var undoDismissTask: Task<Void, Never>?
   var recordingURL: URL?
   var isRecording = false
   var isSavingCapture = false
@@ -321,7 +388,11 @@ enum MediaFiles {
     try FileManager.default.removeItem(at: url)
   }
   static func writePhoto(_ data: Data, thumbnailMaxSide: Int = 400) -> String? { nil }
-  @discardableResult static func deletePhoto(_ name: String) -> Bool { true }
+  static var deletedPhotos: [String] = []
+  @discardableResult static func deletePhoto(_ name: String) -> Bool {
+    deletedPhotos.append(name)
+    return true
+  }
 }
 struct TemplateSummary: Hashable, Codable {}
 enum SummaryPreviewCache { static func preview(for id: UUID, summary: String, build: (String) -> String) -> String { build(summary) } }

@@ -254,7 +254,7 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
         sink: { @Sendable output in sink.append(output) },
         liveSink: liveSink,
         onFailure: { @Sendable [weak self] failure in
-          Task { @MainActor [weak self] in self?.handleContinuousFailure(failure) }
+          Task { @MainActor [weak self] in self?.handleContinuousFailure(failure, runID: runID) }
         })
       try microphone.start()
       guard run.markRecording(runID) else {
@@ -339,8 +339,8 @@ final class AudioRecorderService: NSObject, AVAudioRecorderDelegate {
     finishDiagnostic(.cancelled)
   }
 
-  private func handleContinuousFailure(_ failure: RecordingMicrophoneInput.Failure) {
-    guard let id = run.runID else { return }
+  private func handleContinuousFailure(_ failure: RecordingMicrophoneInput.Failure, runID id: UUID) {
+    guard run.owns(id) else { return }
     let reason = switch failure {
     case .noInput: "マイクの入力を確認できませんでした。ここまでの音声を保存します。"
     case .unsupportedFormat: "この入力形式には対応していません。ここまでの音声を保存します。"

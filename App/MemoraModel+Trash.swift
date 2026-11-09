@@ -219,7 +219,8 @@ extension MemoraModel {
   func deleteMedia(audioURL: URL?, photoNames: [String]) {
     guard !isStoreProtected else { return }
     var remainingPhotos: [String] = []
-    for name in photoNames where !MediaFiles.deletePhoto(name) {
+    let referencedPhotos = referencedPhotoFileNames
+    for name in photoNames where !referencedPhotos.contains(name) && !MediaFiles.deletePhoto(name) {
       remainingPhotos.append(name)
     }
     // Keep the managed reference, not the resolved path, so a retry after the
@@ -245,13 +246,14 @@ extension MemoraModel {
     var remaining: [PendingMediaDeletion] = []
     var didFail = false
     let referenced = referencedAudioFileNames
+    let referencedPhotos = referencedPhotoFileNames
     for deletion in pendingMediaDeletions {
       if let onlyIDs, !onlyIDs.contains(deletion.id) {
         remaining.append(deletion)
         continue
       }
       var photos: [String] = []
-      for name in deletion.photoNames where !MediaFiles.deletePhoto(name) {
+      for name in deletion.photoNames where !referencedPhotos.contains(name) && !MediaFiles.deletePhoto(name) {
         photos.append(name)
       }
       var audio: String?

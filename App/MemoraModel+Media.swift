@@ -29,7 +29,7 @@ extension MemoraModel {
   /// only removed once that write landed, so a failed save cannot leave the
   /// record pointing at a file that was already erased.
   func removeMeetingPhoto(_ id: UUID, index: Int) {
-    guard isStoreWritable() else { return }
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
     guard let meetingIndex = meetings.firstIndex(where: { $0.id == id }) else { return }
 
     var candidate = meetings
@@ -37,46 +37,35 @@ extension MemoraModel {
     guard names.indices.contains(index) else { return }
     let removed = names.remove(at: index)
     candidate[meetingIndex].photoFileNames = names.isEmpty ? nil : names
-    meetingSearchTexts.removeValue(forKey: id)
+    let deletion = PendingMediaDeletion(id: UUID(), audioReference: nil, photoNames: [removed])
+    let pending = pendingMediaDeletions + [deletion]
 
     let stored = persistBatch {
-      [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))]
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
+        (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
+      ]
     }
     guard stored else { return }
 
     meetings = candidate
-    // The file is registered as a pending removal right away, so it survives the
-    // app being stopped during the offer, but it is not deleted until the offer
-    // passes: an undo still has a photo to show.
-    let pendingDeletionID = registerPendingPhotoDeletion(removed)
+    pendingMediaDeletions = pending
+    meetingSearchTexts.removeValue(forKey: id)
     scheduleUndo(
-      UndoAction(message: "写真を削除しました") { [weak self] in
-        self?.cancelPendingMediaDeletion(pendingDeletionID)
-        self?.restoreMeetingPhoto(id, name: removed, at: index)
-      } finalize: { [weak self] in
-        self?.finalizePendingMediaDeletion(pendingDeletionID)
-      }
+      UndoAction.retryable(message: "写真を削除しました", attempt: { [weak self] in
+        self?.restoreMeetingPhoto(id, name: removed, at: index, cancelling: deletion.id) ?? false
+      }, finalize: { [weak self] in
+        self?.retryPendingMediaDeletions(onlyIDs: [deletion.id])
+      })
     )
   }
 
-  /// Remembers a photo file for removal, so letting the app stop mid-offer still
-  /// leaves a record that it should be deleted.
-  private func registerPendingPhotoDeletion(_ name: String) -> UUID {
-    let entry = PendingMediaDeletion(id: UUID(), audioReference: nil, photoNames: [name])
-    pendingMediaDeletions.append(entry)
-    persistPendingMediaDeletions()
-    return entry.id
-  }
-
-  /// Drops a registration without deleting the file, for an undo.
-  private func cancelPendingMediaDeletion(_ id: UUID) {
-    pendingMediaDeletions.removeAll { $0.id == id }
-    persistPendingMediaDeletions()
-  }
-
-  /// Keep the journal entry until removal succeeds, including across a stop.
-  private func finalizePendingMediaDeletion(_ id: UUID) {
-    retryPendingMediaDeletions(onlyIDs: [id])
+  var referencedPhotoFileNames: Set<String> {
+    var names = Set(meetings.flatMap { $0.photoFileNames ?? [] })
+    names.formUnion(trashedRecords.flatMap { $0.meeting.photoFileNames ?? [] })
+    names.formUnion(lifeLogEntries.compactMap(\.photoFileName))
+    names.formUnion(trashedLifeLogEntries.compactMap { $0.entry.photoFileName })
+    return names
   }
 
   func pendingDeletions(for meeting: Meeting, includingPhotos: Bool = true) -> [PendingMediaDeletion] {
@@ -126,20 +115,20 @@ extension MemoraModel {
     pendingMediaDeletions = pending
     let pendingIDs = Set(deletions.map(\.id))
     scheduleUndo(
-      UndoAction(message: "音声を削除しました") { [weak self] in
-        self?.restoreMeetingAudio([original], cancelling: pendingIDs)
-      } finalize: { [weak self] in
+      UndoAction.retryable(message: "音声を削除しました", attempt: { [weak self] in
+        self?.restoreMeetingAudio([original], cancelling: pendingIDs) ?? false
+      }, finalize: { [weak self] in
         self?.retryPendingMediaDeletions(onlyIDs: pendingIDs)
-      }
+      })
     )
   }
 
-  private func restoreMeetingAudio(_ originals: [Meeting], cancelling pendingIDs: Set<UUID>) {
-    guard isStoreWritable() else { return }
+  private func restoreMeetingAudio(_ originals: [Meeting], cancelling pendingIDs: Set<UUID>) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return false }
     var candidate = meetings
     for original in originals {
       guard let index = candidate.firstIndex(where: { $0.id == original.id }),
-            !candidate[index].hasAudioFiles else { return }
+            !candidate[index].hasAudioFiles else { return false }
       candidate[index].audioURL = original.audioURL
       candidate[index].rawAudioReference = original.rawAudioReference
       candidate[index].originalAudioFileNames = original.originalAudioFileNames
@@ -153,9 +142,10 @@ extension MemoraModel {
         (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
       ]
     }
-    guard stored else { return }
+    guard stored else { return false }
     meetings = candidate
     pendingMediaDeletions = pending
+    return true
   }
 
   /// Removes the audio of every record older than `days`, keeping the rest of
@@ -185,27 +175,34 @@ extension MemoraModel {
     meetings = candidate
     pendingMediaDeletions = pending
     scheduleUndo(
-      UndoAction(message: "\(removed.count)件の音声を削除しました") { [weak self] in
-        self?.restoreMeetingAudio(removed, cancelling: pendingIDs)
-      } finalize: { [weak self] in
+      UndoAction.retryable(message: "\(removed.count)件の音声を削除しました", attempt: { [weak self] in
+        self?.restoreMeetingAudio(removed, cancelling: pendingIDs) ?? false
+      }, finalize: { [weak self] in
         self?.retryPendingMediaDeletions(onlyIDs: pendingIDs)
-      }
+      })
     )
   }
 
   /// Puts a removed photo back at its old position, so undo restores the order.
-  private func restoreMeetingPhoto(_ id: UUID, name: String, at index: Int) {
-    guard let meetingIndex = meetings.firstIndex(where: { $0.id == id }) else { return }
+  private func restoreMeetingPhoto(_ id: UUID, name: String, at index: Int, cancelling deletionID: UUID) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(),
+          let meetingIndex = meetings.firstIndex(where: { $0.id == id }) else { return false }
     var candidate = meetings
     var names = candidate[meetingIndex].photoFileNames ?? []
     names.insert(name, at: min(index, names.count))
     candidate[meetingIndex].photoFileNames = names
-    meetingSearchTexts.removeValue(forKey: id)
+    let pending = pendingMediaDeletions.filter { $0.id != deletionID }
 
     let stored = persistBatch {
-      [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))]
+      [
+        (key: StorageKey.meetings, data: try RecordStore.encoded(candidate)),
+        (key: StorageKey.pendingMediaDeletions, data: try RecordStore.encoded(pending))
+      ]
     }
-    guard stored else { return }
+    guard stored else { return false }
     meetings = candidate
+    pendingMediaDeletions = pending
+    meetingSearchTexts.removeValue(forKey: id)
+    return true
   }
 }

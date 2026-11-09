@@ -3,6 +3,23 @@ import Foundation
 @main @MainActor
 struct RecordingCheckpointServiceChecks {
   static func main() async {
+    let continuous = RecordingCheckpointServiceFixture()
+    let oldRun = continuous.run.runID!
+    let lateFailure = Task { @MainActor in continuous.inputFailed(.conversion, runID: oldRun) }
+    continuous.run.cancel(oldRun)
+    let newRun = continuous.run.begin()!
+    continuous.run.markRecording(newRun)
+    let continuousMonitor = Task {}
+    continuous.storageMonitor = continuousMonitor
+    await lateFailure.value
+    precondition(continuous.run.owns(newRun) && continuous.lastFailureReason == nil)
+    precondition(continuous.microphone!.stops == 0 && !continuousMonitor.isCancelled && continuous.failures.isEmpty)
+    precondition(continuous.diagnosticOutcome == .success)
+    continuous.inputFailed(.overrun, runID: newRun)
+    precondition(continuous.run.isFailure && continuous.microphone!.stops == 1 && continuousMonitor.isCancelled)
+    precondition(continuous.failures.count == 1 && continuous.diagnosticOutcome == .failed)
+    continuous.inputFailed(.noInput, runID: newRun)
+    precondition(continuous.failures.count == 1 && continuous.microphone!.stops == 1)
     SourceMediaStaging.capacity = SourceMediaStaging.minimumAvailableBytes
     let healthy = RecordingCheckpointServiceFixture()
     let original = healthy.recorder!
@@ -57,13 +74,14 @@ struct RecordingCheckpointServiceChecks {
       precondition(oldRecorder.pauses == 0 && replacement.pauses == 0 && !service.hasReportedFailure)
       precondition(service.failures.isEmpty && service.diagnostic.snapshot.counters["draftCheckpointFailure"] == nil)
     }
-    print("RecordingCheckpointServiceChecks: PASS. Production storage/checkpoint/stop policy; low/unknown capacity, async checkpoint failure, single pause/notification, cancelled monitor, 24h duration counter, stale recorder identity and cancelled callback refusal. Recorder/OS/capacity services are fixtures; timer scheduling and actual microphone are not exercised.")
+    print("RecordingCheckpointServiceChecks: PASS. Production storage/checkpoint/stop policy; low/unknown capacity, async checkpoint failure, single pause/notification, cancelled monitor, 24h duration counter, stale recorder identity, cancelled callback and obsolete continuous-run failure refusal. Recorder/OS/capacity services are fixtures; timer scheduling and actual microphone are not exercised.")
   }
   static func expect(_ value: Bool) { precondition(value) }
 }
 
 @MainActor final class RecordingCheckpointServiceFixture {
   var recorder: RecorderCheckpointRecorderFixture? = .init()
+  var microphone: RecordingMicrophoneInput? = .init()
   var recordedDuration: TimeInterval? = 86_400
   var run = RecordingRunCoordinator()
   var lastFailureReason: String?
@@ -89,6 +107,12 @@ final class RecorderCheckpointRecorderFixture {
 }
 
 enum RecorderCheckpointEventFixture { case failed(String) }
+
+final class RecordingMicrophoneInput {
+  enum Failure { case noInput, unsupportedFormat, conversion, inputGap, inputDuplicate, overrun }
+  var stops = 0
+  func stop() { stops += 1 }
+}
 
 @MainActor enum SourceMediaStaging {
   static let minimumAvailableBytes: Int64 = 256 * 1024 * 1024

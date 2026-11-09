@@ -23,9 +23,12 @@ extension MemoraModel {
   func performPendingUndo() {
     undoDismissTask?.cancel()
     undoDismissTask = nil
-    let action = pendingUndo
+    guard let action = pendingUndo else { return }
     pendingUndo = nil
-    action?.undo()
+    if !action.undo() {
+      // A failed save must leave an explicit retry, without a timer erasing the media.
+      pendingUndo = action
+    }
   }
 
   /// Passes over the offer, running its delayed work such as a file removal.

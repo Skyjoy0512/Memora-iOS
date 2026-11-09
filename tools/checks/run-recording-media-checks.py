@@ -17,6 +17,8 @@ journal = Path('App/MemoraModel+Journal.swift').read_text()
 methods += '\n' + journal[journal.index('  func permanentlyDeleteTrashedLifeLogEntry('):journal.index('  /// Brings in journal records')]
 capture = Path('App/MemoraModel+Capture.swift').read_text()
 methods += '\n' + capture[capture.index('  func cancelCapture()'):capture.index('  /// Stops the microphone')]
+undo = Path('App/MemoraModel+Undo.swift').read_text()
+methods += '\n' + undo[undo.index('  func performPendingUndo()'):undo.index('  /// Passes over the offer')]
 usage = Path('App/StorageUsageView.swift').read_text()
 usage = usage[usage.index('private struct AudioUsage'):].replace('private struct AudioUsage', 'struct AudioUsage', 1)
 with tempfile.TemporaryDirectory(prefix='memora-recording-media-', dir=os.environ.get('MEMORA_CHECK_ROOT')) as temporary:
