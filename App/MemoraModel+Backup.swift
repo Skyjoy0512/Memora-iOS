@@ -95,42 +95,61 @@ extension MemoraModel {
   /// empty library to restore it, since merging packages is not built yet.
   func makeTeamSharePackage(meetingIDs: Set<UUID>) async throws -> URL {
     guard hasTeamPlan else { throw TeamShareError.requiresTeamPlan }
-    let selected = meetings.filter { meetingIDs.contains($0.id) }
-    guard !selected.isEmpty else { throw TeamShareError.empty }
-    guard selected.allSatisfy({ allowsRecordAccess($0.id, purpose: .teamSharing) }) else {
+    guard !meetingIDs.isEmpty else { throw TeamShareError.empty }
+    guard meetingIDs.allSatisfy({ allowsRecordAccess($0, purpose: .teamSharing) }) else {
       throw TeamShareError.privacyRestricted
     }
 
     // Try once more to write any inline photos, so the package carries files.
     materializePendingLegacyPhotos()
 
+    let generation = aiWorkspaceGeneration
+    let workspace = currentTeamID
+    let selected = meetings.filter { meetingIDs.contains($0.id) }
+    // Meeting sharing does not grant permission to export the person's record.
+    let sharedMeetings = selected.map { original in
+      var meeting = original
+      meeting.participantIDs = nil
+      return meeting
+    }
     let spaces = self.spaces.filter { space in
       selected.contains { $0.spaceID == space.id }
     }
     let tasks = self.tasks.filter { ($0.meetingID.map(meetingIDs.contains) ?? false) && allowsTaskAccess($0, purpose: .teamSharing) }
-    let lifeLogEntries = self.lifeLogEntries.filter {
+    let journal = self.lifeLogEntries.filter {
       ($0.meetingID.map(meetingIDs.contains) ?? false) && allowsJournalAccess($0, purpose: .teamSharing)
-    }.map { original in
+    }
+    let lifeLogEntries = journal.map { original in
       var entry = original
       entry.latitude = nil
       entry.longitude = nil
       entry.locationName = nil
+      entry.personIDs = []
       return entry
     }
-    let participantIDs = Set(selected.compactMap(\.participantIDs).flatMap { $0 })
-    let people = self.people.filter { participantIDs.contains($0.id) }
 
-    return try await Task.detached(priority: .userInitiated) {
+    let package = try await Task.detached(priority: .userInitiated) {
       try BackupPackage.write(
-        meetings: selected,
+        meetings: sharedMeetings,
         spaces: spaces,
         tasks: tasks,
         lifeLogEntries: lifeLogEntries,
-        people: people,
+        people: [],
         aiHistory: [],
         into: FileManager.default.temporaryDirectory
       )
     }.value
+    guard !Task.isCancelled, hasTeamPlan,
+          aiWorkspaceGeneration == generation, currentTeamID == workspace,
+          meetings.filter({ meetingIDs.contains($0.id) }) == selected,
+          selected.allSatisfy({ allowsRecordAccess($0.id, purpose: .teamSharing) }),
+          self.spaces.filter({ space in selected.contains { $0.spaceID == space.id } }) == spaces,
+          self.tasks.filter({ ($0.meetingID.map(meetingIDs.contains) ?? false) && allowsTaskAccess($0, purpose: .teamSharing) }) == tasks,
+          self.lifeLogEntries.filter({ ($0.meetingID.map(meetingIDs.contains) ?? false) && allowsJournalAccess($0, purpose: .teamSharing) }) == journal else {
+      try? FileManager.default.removeItem(at: package)
+      throw TeamShareError.privacyRestricted
+    }
+    return package
   }
 
   /// Shares a project with the team through CloudKit. Team plan only.

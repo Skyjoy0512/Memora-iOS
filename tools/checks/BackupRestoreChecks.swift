@@ -15,6 +15,7 @@ struct BackupRestoreChecks {
     try fm.createDirectory(at: ProjectSourceFiles.directory, withIntermediateDirectories: true)
     try fm.createDirectory(at: MediaFiles.directory, withIntermediateDirectories: true)
     try fm.createDirectory(at: MediaFiles.photosDirectory, withIntermediateDirectories: true)
+    try await TeamSharePackageChecks.run()
 
     let docx = try Data(contentsOf: URL(fileURLWithPath: "docs/fixtures/ask-ai-artifacts/generated.docx"))
     let pptx = try Data(contentsOf: URL(fileURLWithPath: "docs/fixtures/ask-ai-artifacts/generated.pptx"))
@@ -29,7 +30,7 @@ struct BackupRestoreChecks {
       spaceID: nil, audioURL: MediaFiles.resolve("audio.m4a"))
     meeting.photoFileNames = ["photo.jpg"]
     let project = MemoraSpace()
-    let person = Person()
+    let person = Person(id: UUID(), name: "検証用の人物", note: nil, contactIdentifier: nil)
     let now = Date.now
     var memory = AIMemory(id: UUID(), text: "簡潔な文章を好む", origin: .told, createdAt: now,
       semantic: .init(type: .style, value: "簡潔な文章を好む", sourceReference: "settings", observedAt: now, updatedAt: now, validFrom: now))
@@ -351,10 +352,17 @@ enum MarkdownBlockParser {
   static func hasBlockStructure(_ text: String) -> Bool { false }
   static func overview(of text: String) -> String { text }
 }
-struct MemoraSpace: Codable { var id = UUID() }
-struct MemoraTask: Codable { var id = UUID() }
-struct LifeLogEntry: Codable { var id = UUID(); var photoFileName: String? }
-struct Person: Codable { var id = UUID() }
+struct MemoraSpace: Hashable, Codable { var id = UUID() }
+struct MemoraTask: Hashable, Codable { var id = UUID(); var meetingID: UUID?; var title = "共有タスク" }
+struct LifeLogEntry: Hashable, Codable {
+  var id = UUID()
+  var photoFileName: String?
+  var meetingID: UUID?
+  var latitude: Double?
+  var longitude: Double?
+  var locationName: String?
+  var personIDs: [UUID] = []
+}
 struct ProjectChatThread: Codable { var id = UUID(); var projectID: UUID? }
 enum MediaFiles {
   static var directory: URL { FixtureFiles.root.appendingPathComponent("audio") }
@@ -365,7 +373,13 @@ enum MediaFiles {
   static func photoURL(_ name: String) -> URL? { isPlainName(name) ? photosDirectory.appendingPathComponent(name) : nil }
   static func requiredPhotoFiles(for name: String) -> [String] { [name] }
   static func regenerablePhotoFiles(for name: String) -> [String] { [] }
-  static func writePhoto(_ data: Data) -> String? { preconditionFailure("No photo migration during backup read") }
+  static var permitsFixturePhotoWrite = false
+  static func writePhoto(_ data: Data) -> String? {
+    precondition(permitsFixturePhotoWrite, "No photo migration during backup read")
+    let name = "migrated-\(UUID()).jpg"
+    do { try data.write(to: photosDirectory.appendingPathComponent(name)); return name }
+    catch { return nil }
+  }
   @discardableResult static func deletePhoto(_ name: String) -> Bool { preconditionFailure("No photo migration during backup read") }
 }
 enum ProjectSourceFiles {
