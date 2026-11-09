@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 
 os.chdir(Path(__file__).resolve().parents[2])
-names = ['Meeting', 'MeetingSource', 'MeetingStatus', 'RecordingMarker', 'TranscriptSegment',
+names = ['RecordingAudioPart', 'RecordingAudioManifest', 'Meeting', 'MeetingSource', 'MeetingStatus', 'RecordingMarker', 'TranscriptSegment',
          'SpeakerIdentificationStatus', 'RecordPrivacy', 'SummarySensitivity', 'TemplateSummary',
          'SummarySection', 'SummaryEvidence', 'SummaryEvidenceLink', 'GeneratedSummaryEvidence',
          'SummaryLength', 'SummaryPreferences', 'SummaryProcessingMode', 'LocalStore',

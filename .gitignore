@@ -53,3 +53,4 @@ build-*/
 .e2e/waiting-*/
 
 .e2e/morph-report/
+.e2e/review-*/

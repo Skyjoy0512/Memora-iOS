@@ -68,7 +68,8 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn(".disabled(isViewingToday)", home)
         self.assertIn("AnyLayout(VStackLayout", (APP / "HomeActivityLinks.swift").read_text())
         self.assertIn("JournalInsertionTime.suggestion(on: selectedDate)", home)
-        self.assertIn("beginJournalEntry(after: index, in: timeline.items)", home)
+        self.assertIn("menuActions: journalAddActions(after: index, in: timeline.items)", home)
+        self.assertIn("beginJournalEntry(after: index, in: items, kind: kind)", home)
         root = (APP / "RootTabView.swift").read_text()
         self.assertIn("LifeLogCreationSheet(date: model.lifeLogCreationDate ?? .now, eventDate: model.lifeLogCreationDate)", root)
         self.assertIn("onDismiss: { model.lifeLogCreationDate = nil }", root)
@@ -130,7 +131,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
             self.assertIn(".onChange(of: model.sidebarSearchRequest)", (APP / file).read_text())
         for file in ("LibraryView.swift", "HomeView.swift"):
             source = (APP / file).read_text()
-            self.assertIn("RecorderStatusToolbarButton()", source)
+            self.assertIn("RecorderStatusToolbarButton(compactWhenDisconnected: true)", source)
             self.assertNotIn('ToolbarIconButton("検索"', source)
         detail = (APP / "MeetingDetailToolbarActions.swift").read_text()
         self.assertIn("ToolbarItemGroup", detail)
@@ -162,8 +163,9 @@ class ExperiencePresentationChecks(unittest.TestCase):
             self.assertIn(".title", source)
         self.assertIn("DraftStore.read", add)
         self.assertIn("removing: draftKeys", add)
-        self.assertIn("DraftStore.load", edit)
-        self.assertIn("DraftStore.clear", edit)
+        self.assertIn("DraftStore.readAll", edit)
+        self.assertIn("expectedSource: source, removing:", edit)
+        self.assertIn("DraftStore.storageKey", edit)
         self.assertIn(".interactiveDismissDisabled(isSaving)", edit)
 
     def test_source_import_captures_context_before_native_pickers(self):

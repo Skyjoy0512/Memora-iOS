@@ -22,7 +22,8 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
 
     def test_header_is_flat_without_removing_actions(self):
         header = (APP / "AskAIHeader.swift").read_text()
-        self.assertEqual(header.count(".memoraGlass("), 1)
+        self.assertNotIn(".memoraGlass(", header)
+        self.assertIn(".buttonStyle(MemoraQuietButtonStyle())", header)
         for action in ("onOpenSidebar", "onNewChat", "onHistory", "onSearch"):
             self.assertIn(action, header)
         self.assertIn("Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)", header)
@@ -41,13 +42,15 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
     def test_composer_keeps_identity_while_capture_controls_yield_to_input(self):
         root = (APP / "RootTabView.swift").read_text()
         self.assertIn(".frame(maxWidth: MemoraSpacing.readingWidth)", root)
-        self.assertIn(".padding(.trailing, showsCaptureButtons ? 120 : 0)", root)
+        self.assertIn(".padding(.trailing, showsCaptureButtons ? 60 : 0)", root)
         self.assertIn(".overlay(alignment: .bottomTrailing)", root)
         self.assertIn("compactIdle: true", root)
         self.assertNotIn(".id(composerScope)\n", root)
         native = (APP / "CaptureFloatingButtons.swift").read_text()
-        for contract in ("group: .notes", "group: .recording", "Menu {", ".confirmationDialog(", "importInformationFile"):
+        for contract in ("Button(action: onOpenCaptureMenu)", ".fileImporter(", "menus.transition(.identity)", ".confirmationDialog(", "importInformationFile"):
             self.assertIn(contract, native)
+        sheet = (APP / "CaptureMenuSheet.swift").read_text()
+        self.assertIn("[.recording, .importAudio, .onlineMeeting, .newNote]", sheet)
 
     def test_sidebar_footer_shortens_secondary_copy_not_tap_targets(self):
         footer = (APP / "SidebarAccountFooter.swift").read_text()

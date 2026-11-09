@@ -57,8 +57,14 @@ class DesignTokenChecks(unittest.TestCase):
         for title in ("ライブラリ", "ジャーナル", "Ask AI", "マーケットプレイス"):
             self.assertIn(f'SidebarRow(title: "{title}"', sidebar)
         capture = (APP / "CaptureFloatingButtons.swift").read_text()
-        for contract in ("Menu {", "group: .notes", "group: .recording", ".memoraGlass(in: Circle()"):
+        for contract in ("Button(action: onOpenCaptureMenu)", ".fileImporter(", "menus.transition(.identity)", ".memoraGlass(in: Circle()"):
             self.assertIn(contract, capture)
+        sheet = (APP / "CaptureMenuSheet.swift").read_text()
+        self.assertIn("[.camera, .photos, .files, .link]", sheet)
+        self.assertIn("[.recording, .importAudio, .onlineMeeting, .newNote]", sheet)
+        self.assertIn("ScrollView(.horizontal)", sheet)
+        self.assertIn(".xmarkCircle", sheet)
+        self.assertNotIn(".navigationTitle(", sheet)
         source = (APP / "QuickAIComposer.swift").read_text()
         self.assertIn("ComposerMentionToken.parse", source)
         self.assertIn("!snapshot.hasMarkedText", source)
