@@ -4,9 +4,11 @@ import SwiftUI
 /// records hold about them.
 struct PeopleView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.revealMemoraSidebar) private var revealSidebar
   @State private var isManaging = false
   @State private var query = ""
   @State private var isSearching = false
+  private var isSidebarRoot: Bool { model.selectedTab == .library && model.libraryPath == [.people] }
 
   var body: some View {
     let isAwaitingQuery = isSearching && query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -60,8 +62,14 @@ struct PeopleView: View {
       }
     }
     .navigationTitle("人物")
+    .navigationBarBackButtonHidden(isSidebarRoot)
     .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "名前・メモを検索")
     .toolbar {
+      if isSidebarRoot, let revealSidebar {
+        ToolbarActionItem(placement: .topBarLeading) {
+          ToolbarIconButton("メニュー", icon: .line3Horizontal, action: revealSidebar.callAsFunction)
+        }
+      }
       ToolbarActionItem {
         ToolbarIconButton("人物を検索", icon: .magnifyingglass) { isSearching = true }
       }
@@ -70,6 +78,9 @@ struct PeopleView: View {
         ToolbarIconButton("人を追加・編集", icon: .personBadgePlus) { isManaging = true }
           .labelStyle(.iconOnly)
       }
+    }
+    .onChange(of: model.sidebarSearchRequest) { _, request in
+      if request != nil && isSidebarRoot && !model.isToolsPresented { isSearching = true }
     }
     .sheet(isPresented: $isManaging) {
       PeopleManagerSheet()

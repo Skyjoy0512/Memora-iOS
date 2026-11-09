@@ -159,3 +159,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
     }
   }
 }
+
+extension EnvironmentValues {
+  @Entry var revealMemoraSidebar: MemoraSidebarAction? = nil
+}

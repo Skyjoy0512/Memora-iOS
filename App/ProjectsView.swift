@@ -8,6 +8,7 @@ struct ProjectsView: View {
   @Binding var query: String
   var isSearching: Bool
   var zoomNamespace: Namespace.ID
+  var onSearch: () -> Void = {}
   @State private var renameTarget: MemoraSpace?
   @State private var deleteTarget: MemoraSpace?
   @State private var isShareInboxPresented = false
@@ -153,6 +154,8 @@ struct ProjectsView: View {
 
   private var orderMenu: some View {
     Menu {
+      Button("プロジェクトを検索", icon: .magnifyingglass, action: onSearch)
+      Divider()
       Button("プロジェクトを作成", icon: .folder) { model.isFileCreationPresented = true }
         .disabled(model.isRestoring || model.isStoreProtected)
       Divider()

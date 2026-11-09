@@ -9,7 +9,8 @@ struct NativeAIInterfaceView: View {
   @State private var mailDraft: MailDraft?
 
   var body: some View {
-    let taskReferences = Set(interface.components.filter { $0.kind == .taskList || $0.kind == .actionBar || $0.kind == .taskProgress }.flatMap { $0.items.compactMap(\.referenceID) })
+    let leaves = interface.components.flatMap { $0.components ?? [$0] }
+    let taskReferences = Set(leaves.filter { $0.kind == .taskList || $0.kind == .actionBar || $0.kind == .taskProgress }.flatMap { $0.items.compactMap(\.referenceID) })
     let context = model.interfaceRenderContext(messageID: messageID, taskIDs: taskReferences)
     VStack(alignment: .leading, spacing: 24) {
       ForEach(interface.components) { component in

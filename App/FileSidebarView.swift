@@ -26,7 +26,7 @@ struct FileSidebarView: View {
           VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
             VStack(spacing: 0) {
               SidebarRow(title: "検索", symbol: .magnifyingglass,
-                detail: model.isToolsPresented ? "マーケットプレイス" : model.selectedTab.title) {
+                detail: searchDestinationTitle) {
                 onSearch()
               }
               .accessibilityLabel("検索")
@@ -104,6 +104,16 @@ struct FileSidebarView: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     .background(MemoraPalette.secondaryBackground.ignoresSafeArea())
+  }
+
+  private var searchDestinationTitle: String {
+    if model.isToolsPresented { return "マーケットプレイス" }
+    if model.selectedTab == .library {
+      if model.libraryPath == [.documents] { return "資料" }
+      if model.libraryPath == [.people] { return "人物" }
+      return model.librarySection.title
+    }
+    return model.selectedTab.title
   }
 
   private func sidebarSection<Content: View>(

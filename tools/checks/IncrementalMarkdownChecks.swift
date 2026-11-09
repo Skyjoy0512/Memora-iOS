@@ -3,6 +3,11 @@ import Foundation
 @main
 enum IncrementalMarkdownChecks {
   static func main() {
+    let escapedTable = MarkdownBlockParser.blocks(for: "| 項目 | 値 |\n| --- | --- |\n| 予算 | A\\|B |")
+    guard escapedTable.count == 1, case .table(let header, let rows) = escapedTable[0] else {
+      preconditionFailure("Escaped table did not parse")
+    }
+    precondition(header.count == 2 && rows[0].count == 2 && rows[0][1] == #"A\|B"#)
     let fixtures = [
       "日本語の長い回答です。" + String(repeating: "自然な読みやすさ。", count: 40),
       "# 見出し\n\n本文**強調**です。\n次の行。\n\n- 項目1\n- 項目2\n\n> 引用\n\n---\n",

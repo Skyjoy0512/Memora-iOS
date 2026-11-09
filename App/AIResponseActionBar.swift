@@ -14,6 +14,7 @@ struct AIResponseActionBar: View {
   var saveSkill: (() -> Void)? = nil
   var saveTitle = "回答を資料に保存"
   var currentText: (() -> String)? = nil
+  var configureAI: (() -> Void)? = nil
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var didCopy = false
   @State private var resetTask: Task<Void, Never>?
@@ -55,6 +56,10 @@ struct AIResponseActionBar: View {
         if canRetry {
           Divider()
           Button("もう一度回答", icon: .arrowClockwise, action: retry)
+        }
+        if let configureAI {
+          Divider()
+          Button("AIモデルの設定", icon: .cpu, action: configureAI)
         }
       } label: {
         Label("回答のその他の操作", icon: .ellipsis)

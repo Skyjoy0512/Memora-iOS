@@ -3,11 +3,13 @@ import SwiftUI
 /// Every document and slide deck, newest first. Opened from the side menu.
 struct DocumentsView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.revealMemoraSidebar) private var revealSidebar
   @State private var pendingDeletion: MemoraDocument?
   @State private var isEmptyWeekNoticePresented = false
   @State private var operationError: String?
   @State private var query = ""
   @State private var isSearching = false
+  private var isSidebarRoot: Bool { model.selectedTab == .library && model.libraryPath == [.documents] }
 
   var body: some View {
     let isAwaitingQuery = isSearching && query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -56,8 +58,14 @@ struct DocumentsView: View {
       }
     }
     .navigationTitle("資料")
+    .navigationBarBackButtonHidden(isSidebarRoot)
     .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "タイトル・本文を検索")
     .toolbar {
+      if isSidebarRoot, let revealSidebar {
+        ToolbarActionItem(placement: .topBarLeading) {
+          ToolbarIconButton("メニュー", icon: .line3Horizontal, action: revealSidebar.callAsFunction)
+        }
+      }
       ToolbarActionItem {
         ToolbarIconButton("資料を検索", icon: .magnifyingglass) { isSearching = true }
       }
@@ -78,6 +86,9 @@ struct DocumentsView: View {
           NavigationLink { CompanyTemplatesView() } label: { Label("会社テンプレート", icon: .docOnDoc) }
         } label: { ToolbarActionLabel("資料の操作", icon: .ellipsis) }
       }
+    }
+    .onChange(of: model.sidebarSearchRequest) { _, request in
+      if request != nil && isSidebarRoot && !model.isToolsPresented { isSearching = true }
     }
     .alert("今週はまだ記録がありません", isPresented: $isEmptyWeekNoticePresented) {
       Button("OK", role: .cancel) {}

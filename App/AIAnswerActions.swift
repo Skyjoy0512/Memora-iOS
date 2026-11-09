@@ -8,6 +8,7 @@ struct AIAnswerActions: View {
   @State private var savedDocument: MemoraDocument?
   @State private var saveError = false
   @State private var skillDraft: MemoraSkill?
+  @State private var isAISettingsPresented = false
 
   var body: some View {
     let exportText = AnswerCitations.stripped(model.answerExportMarkdown(message))
@@ -20,7 +21,17 @@ struct AIAnswerActions: View {
         model.retryAIAnswer(message.id)
       }, saveSkill: { skillDraft = .draft(instructions: AnswerCitations.stripped(model.answerExportMarkdown(message))) },
       saveTitle: model.savedAnswerDocument(for: message) == nil ? "回答を資料に保存" : "保存した資料を開く",
-      currentText: { AnswerCitations.stripped(model.answerExportMarkdown(message)) })
+      currentText: { AnswerCitations.stripped(model.answerExportMarkdown(message)) },
+      configureAI: { isAISettingsPresented = true })
+    .sheet(isPresented: $isAISettingsPresented) {
+      NavigationStack {
+        AISettingsView().toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            ToolbarIconButton("閉じる", icon: .xmark) { isAISettingsPresented = false }
+          }
+        }
+      }
+    }
     .sheet(item: $skillDraft) { SkillEditorView(skill: $0, reviewsAnswer: true) }
     .sheet(item: $savedDocument) { document in
       NavigationStack {

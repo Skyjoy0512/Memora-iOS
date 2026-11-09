@@ -26,6 +26,7 @@ fixture = r'''import Foundation
  var model = AnswerSink()
  func select() { choose(0, in: questions[0]) }
  func confirm() { advance() }
+ func skipCurrent() { skip() }
  func enter(_ value: String) { let questionIndex = index, question = questions[index]
 ''' + setter + "\n }\n" + methods + "\n}\n" + r'''
 @main struct UIInteractionChecks {
@@ -37,11 +38,17 @@ fixture = r'''import Foundation
    precondition(question.model.answers == nil, "Choosing and typing must never submit automatically")
    question.confirm()
    precondition(question.model.answers == ["入力を続けています"])
+   let skipped = QuestionProbe()
+   skipped.select()
+   skipped.skipCurrent()
+   precondition(skipped.model.answers == [""])
    let json = #"{"version":1,"components":[{"id":"table","kind":"ComparisonTable","columns":["対象","値"],"items":[{"id":"row","cells":["予算","150万円"]}]},{"id":"timeline","kind":"Timeline","items":[{"id":"event","title":"締切","detail":"12月20日"}]}]}"#
    let text = "比較結果\n\n```memora-ui\n" + json + "\n```"
    let exported = NativeAIInterface.exportMarkdown(text)
    precondition(exported.contains("| 予算 | 150万円 |") && exported.contains("12月20日"))
    precondition(!exported.contains("memora-ui"))
+   let escapedTable = NativeAIInterface.exportMarkdown(text.replacingOccurrences(of: "150万円", with: "A|B"))
+   precondition(escapedTable.contains(#"A\|B"#))
    let id = UUID()
    let refs = "```memora-ui\n" + #"{"version":1,"components":[{"id":"task","kind":"TaskList","items":[{"id":"task1","referenceID":""# + id.uuidString + #"","title":"model supplied private title"}]}]}"# + "\n```"
    precondition(!NativeAIInterface.exportMarkdown(refs).contains("model supplied"))
@@ -52,7 +59,7 @@ fixture = r'''import Foundation
    precondition(selection.ids == [a])
    selection.toggle(a, maximumCount: 0)
    precondition(selection.isEmpty)
-   print("PASS: explicit question submission, unfinished input retained, structured table/timeline export, reference denial/resolution and attachment capacity")
+   print("PASS: explicit question submission, unfinished input retained, structured table/timeline export, reference denial/resolution, attachment capacity, editor failure/retry and escaped table cells")
  }
 }
 '''

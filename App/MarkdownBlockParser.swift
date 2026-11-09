@@ -245,7 +245,19 @@ enum MarkdownBlockParser {
   }
 
   private static func cells(_ line: String) -> [String] {
-    var cells = line.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) }
+    var cells: [String] = []
+    var current = ""
+    var escaped = false
+    for character in line {
+      if character == "|" && !escaped {
+        cells.append(current.trimmingCharacters(in: .whitespaces))
+        current = ""
+      } else {
+        current.append(character)
+      }
+      escaped = character == "\\" ? !escaped : false
+    }
+    cells.append(current.trimmingCharacters(in: .whitespaces))
     if cells.first?.isEmpty == true { cells.removeFirst() }
     if cells.last?.isEmpty == true { cells.removeLast() }
     return cells

@@ -1,6 +1,6 @@
 # Memora — Native reading and conversation
 
-Updated 2026-11-02. This is the current design specification. Product behavior
+Updated 2026-11-09. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
@@ -12,11 +12,16 @@ No new logo assets. Floating Ask AI controls use native Liquid Glass; motion fol
 
 ## Everyday interactions
 
-- The bottom idle row holds Ask AI on the left, then separate memo and plus
-  circles in native Liquid Glass. Memo offers メモを書く / 資料を追加; plus
-  offers 録音する / 音声を取り込む / オンライン会議を録音, in that order.
-  Remove the duplicate top-right create control. Projects' options menu and
-  empty state retain project creation.
+- The bottom idle row holds Ask AI and one plus control in native Liquid Glass.
+  Plus opens CaptureMenuSheet: horizontal camera/photos/files/link shortcuts above
+  recording, audio import, online meeting and note creation, in that order.
+  There is no separate memo button or top-right create control. Project creation
+  stays in Projects' options menu and empty state.
+- AI questions advance only after 次へ/送信. All question controls have at least
+  44pt targets and the footer stacks at accessibility text sizes.
+- Read-only answer components are included in copy/share/saved documents. Referenced
+  tasks, events and other cards resolve through current grants at the action;
+  display JSON never supplies their titles, dates or permissions.
 - Files (ファイル) and Projects (プロジェクト) switch through the existing pill tabs beneath the Library title.
   Display, sort, filter and selection remain in the adjacent native menu. Library
   sources continue in the lazy list without a three-item preview or a See All link.

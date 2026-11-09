@@ -86,6 +86,7 @@ struct RootTabView: View {
         }
       }
     }
+    .environment(\.revealMemoraSidebar, MemoraSidebarAction(id: ObjectIdentifier(model), action: openSidebar))
     .onChange(of: model.isToolsPresented) { _, isOpen in
       if isOpen {
         model.composerDismissRequests += 1
@@ -440,7 +441,7 @@ struct RootTabView: View {
     case .home:
       return model.homePath.isEmpty
     case .library:
-      return model.libraryPath.isEmpty
+      return model.libraryPath.isEmpty || model.libraryPath == [.documents] || model.libraryPath == [.people]
     case .askAI:
       return true
     }

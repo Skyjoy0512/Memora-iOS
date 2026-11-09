@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MeetingRow: View {
+  @Environment(\.dynamicTypeSize) private var typeSize
   var meeting: Meeting
   /// `List` adds its own indicator for a `NavigationLink`, so rows inside one
   /// should turn this off.
@@ -36,11 +37,14 @@ struct MeetingRow: View {
             .lineSpacing(2)
         }
 
-        HStack(spacing: 6) {
+        let metadataLayout = typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+          : AnyLayout(HStackLayout(spacing: 6))
+        metadataLayout {
           Text(MemoraFormat.relativeDate(meeting.createdAt))
-          Text("·")
+          if !typeSize.isAccessibilitySize { Text("·") }
           Text(MemoraFormat.duration(meeting.duration))
-          Text("·")
+          if !typeSize.isAccessibilitySize { Text("·") }
           MeetingStatusLabel(status: meeting.status)
         }
         .font(.caption)

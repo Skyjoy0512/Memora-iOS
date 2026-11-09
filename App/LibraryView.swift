@@ -52,6 +52,8 @@ struct LibraryView: View {
 
   @ViewBuilder
   private var fileViewOptions: some View {
+    Button("ファイルを検索", icon: .magnifyingglass) { isSearching = true }
+    Divider()
     Picker("表示", selection: $layout) {
       ForEach(FileListLayout.allCases) {
         Text($0 == .card ? "プレビュー付き" : "コンパクト").tag($0)
@@ -90,7 +92,8 @@ struct LibraryView: View {
           if model.librarySection == .files {
             filesPage
           } else {
-            ProjectsView(query: $query, isSearching: isSearching, zoomNamespace: zoomNamespace)
+            ProjectsView(query: $query, isSearching: isSearching, zoomNamespace: zoomNamespace,
+              onSearch: { isSearching = true })
           }
         }
       }
@@ -120,7 +123,7 @@ struct LibraryView: View {
           ToolbarItem(placement: .topBarLeading) {
             ToolbarIconButton("キャンセル", icon: .xmark) { endSelection() }
           }
-        } else {
+        } else if model.libraryPath.isEmpty {
           ToolbarActionItem(placement: .topBarLeading) {
             ToolbarIconButton("メニュー", icon: .line3Horizontal) {
               onOpenSidebar()

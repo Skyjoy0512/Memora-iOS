@@ -5,6 +5,7 @@ struct CaptureSessionView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Environment(\.scenePhase) private var scenePhase
+  @AppStorage("memora.haptics.enabled") private var hapticsEnabled = true
   @State private var section = CaptureSection.notes
   @State private var isDiscardConfirmationPresented = false
   @State private var selectedDetent = PresentationDetent.fraction(0.5)
@@ -39,7 +40,7 @@ struct CaptureSessionView: View {
         .accessibilityLabel("重要マークを追加")
         .accessibilityValue("\(model.recordingMarkers.count)件")
         .accessibilityHint(model.isRecordingPaused ? "録音を再開してから追加できます" : "今の録音位置を保存します")
-        .sensoryFeedback(.success, trigger: markerFeedback)
+        .sensoryFeedback(.success, trigger: markerFeedback) { _, _ in hapticsEnabled }
 
         Button("録音を破棄", icon: .trash) {
           isDiscardConfirmationPresented = true

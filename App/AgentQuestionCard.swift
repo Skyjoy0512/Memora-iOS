@@ -155,9 +155,7 @@ struct AgentQuestionCard: View {
       if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
 
       HStack(spacing: 6) {
-        Button("スキップ") {
-          if isLast { send() } else { go(to: index + 1) }
-        }
+        Button("スキップ", action: skip)
         .font(.subheadline)
         .foregroundStyle(.secondary)
         .padding(.horizontal, MemoraSpacing.md)
@@ -198,6 +196,12 @@ struct AgentQuestionCard: View {
   }
 
   private func advance() {
+    if isLast { send() } else { go(to: index + 1) }
+  }
+
+  private func skip() {
+    picked[index] = []
+    custom[index] = ""
     if isLast { send() } else { go(to: index + 1) }
   }
 

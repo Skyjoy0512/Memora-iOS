@@ -6,7 +6,7 @@ import SwiftUI
 struct RealtimeTranscriptView: View {
   var service: RealtimeTranscriptionService
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var followsLatest = true
+  @State private var position = ConversationScrollState()
   @State private var isUserScrolling = false
 
   var body: some View {
@@ -50,23 +50,26 @@ struct RealtimeTranscriptView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
         }
         .onChange(of: service.history.totalLines) { _, _ in
-          guard followsLatest else { return }
+          guard position.contentArrived() else { return }
           withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) {
             proxy.scrollTo("liveBottom", anchor: .bottom)
           }
         }
-        .onScrollGeometryChange(for: Bool.self) { geometry in
-          geometry.visibleRect.maxY >= geometry.contentSize.height - 80
-        } action: { _, nearBottom in
-          if isUserScrolling || nearBottom { followsLatest = nearBottom }
+        .onScrollGeometryChange(for: ConversationScrollState.Viewport.self) { geometry in
+          .init(offset: geometry.contentOffset.y, height: geometry.containerSize.height,
+            contentHeight: geometry.contentSize.height)
+        } action: { _, viewport in
+          if position.update(viewport, isUserDriven: isUserScrolling) {
+            proxy.scrollTo("liveBottom", anchor: .bottom)
+          }
         }
         .onScrollPhaseChange { _, phase in
-          isUserScrolling = phase == .interacting || phase == .decelerating
+          isUserScrolling = phase == .tracking || phase == .interacting || phase == .decelerating
         }
         .overlay(alignment: .bottomTrailing) {
-          if !followsLatest {
+          if position.hasUnseenContent {
             Button {
-              followsLatest = true
+              position.follow()
               withAnimation(reduceMotion ? nil : MemoraMotion.control) {
                 proxy.scrollTo("liveBottom", anchor: .bottom)
               }
