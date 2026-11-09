@@ -41,6 +41,8 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
     case noStation
     case excluded
     case failed
+    case saveFailed
+    case cancelled
 
     var message: String {
       switch self {
@@ -56,6 +58,10 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
         "この場所は「記録しない場所」に入っています。"
       case .failed:
         "現在地を確認できませんでした。"
+      case .saveFailed:
+        "自動記録を保存できませんでした。既存の記録は保持しています。"
+      case .cancelled:
+        "設定や位置情報の許可が変わったため、記録を中止しました。"
       }
     }
   }
@@ -71,6 +77,7 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   }
 
   private let manager = CLLocationManager()
+  private var locationGeneration = UUID()
   private var enableCompletion: ((Bool) -> Void)?
   private var enablePhase: EnablePhase?
   /// True once the app went to the background while the "always" prompt was
@@ -212,11 +219,13 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   }
 
   private func startMonitoring() {
+    locationGeneration = UUID()
     manager.startMonitoringSignificantLocationChanges()
     manager.startMonitoringVisits()
   }
 
   private func stopMonitoring() {
+    locationGeneration = UUID()
     manager.stopMonitoringSignificantLocationChanges()
     manager.stopMonitoringVisits()
   }
@@ -228,6 +237,7 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   }
 
   private func handleAuthorizationChange(_ manager: CLLocationManager) {
+    locationGeneration = UUID()
     switch manager.authorizationStatus {
     case .authorizedWhenInUse:
       switch enablePhase {
@@ -276,7 +286,7 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
     }
     if debugCompletion != nil {
       runProtected {
-        self.completeDebug(with: await self.recordStationPass(at: location))
+        self.completeDebug(with: await self.recordStationPass(at: location, requiresAlwaysAuthorization: false))
       }
       return
     }
@@ -325,9 +335,17 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
   }
 
   @discardableResult
-  private func recordStationPass(at location: CLLocation) async -> DebugStationResult {
+  private func recordStationPass(at location: CLLocation, requiresAlwaysAuthorization: Bool = true) async -> DebugStationResult {
+    guard Self.isEnabled else { return .disabled }
+    guard isLocationAuthorized(requiresAlways: requiresAlwaysAuthorization) else { return .denied }
+    let generation = locationGeneration
     guard !Self.isExcluded(location) else { return .excluded }
-    guard let station = await PlaceNameResolver.nearestStation(to: location),
+    let resolved = await PlaceNameResolver.nearestStation(to: location)
+    guard !Task.isCancelled, locationGeneration == generation else { return .cancelled }
+    guard Self.isEnabled else { return .disabled }
+    guard isLocationAuthorized(requiresAlways: requiresAlwaysAuthorization) else { return .denied }
+    guard !Self.isExcluded(location) else { return .excluded }
+    guard let station = resolved,
           station.location.distance(from: location) <= 400 else { return .noStation }
 
     let base = PlaceNameResolver.stationNameWithoutSuffix(station.name)
@@ -339,16 +357,14 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
     let defaults = UserDefaults.standard
     if defaults.string(forKey: Self.lastStationTitleKey) == title,
        let stamp = defaults.object(forKey: Self.lastStationAtKey) as? Double,
+       now.timeIntervalSince1970 >= stamp,
        now.timeIntervalSince1970 - stamp < Self.stationRepeatWindow {
       return .station(base)
     }
     if inboxHasRecent(title: title, within: Self.stationRepeatWindow, now: now) {
       return .station(base)
     }
-    defaults.set(title, forKey: Self.lastStationTitleKey)
-    defaults.set(now.timeIntervalSince1970, forKey: Self.lastStationAtKey)
-
-    appendToInbox(
+    let saved = appendToInbox(
       LifeLogEntry(
         id: UUID(),
         createdAt: now,
@@ -362,11 +378,18 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
         longitude: Self.rounded(location.coordinate.longitude)
       )
     )
+    guard saved else { return .saveFailed }
+    defaults.set(title, forKey: Self.lastStationTitleKey)
+    defaults.set(now.timeIntervalSince1970, forKey: Self.lastStationAtKey)
     return .station(base)
   }
 
   private func recordVisit(at location: CLLocation, arrival: Date, departure: Date) async {
+    guard Self.isEnabled, isLocationAuthorized(requiresAlways: true), !Self.isExcluded(location) else { return }
+    let generation = locationGeneration
     let name = await PlaceNameResolver.nearestPlaceName(to: location)
+    guard !Task.isCancelled, locationGeneration == generation, Self.isEnabled,
+          isLocationAuthorized(requiresAlways: true), !Self.isExcluded(location) else { return }
     let title = "\(name)に滞在"
     if inboxHasRecent(title: title, within: Self.minimumStay, now: arrival) {
       return
@@ -390,20 +413,31 @@ final class AutoLocationLogger: NSObject, CLLocationManagerDelegate {
 
   // MARK: - Inbox
 
+  private func isLocationAuthorized(requiresAlways: Bool) -> Bool {
+    manager.authorizationStatus == .authorizedAlways
+      || (!requiresAlways && manager.authorizationStatus == .authorizedWhenInUse)
+  }
+
   /// Adds a record to the inbox the model imports. Kept local and small: no
   /// address or raw path, only the name and a rounded coordinate.
-  private func appendToInbox(_ entry: LifeLogEntry) {
-    Task { @MainActor in
-      var entries: [LifeLogEntry] = []
-      if case .data(let data) = RecordStore.load(Self.inboxKey),
-         let decoded = try? JSONDecoder().decode([LifeLogEntry].self, from: data) {
-        entries = decoded
+  @discardableResult
+  private func appendToInbox(_ entry: LifeLogEntry) -> Bool {
+    do {
+      var entries: [LifeLogEntry]
+      switch RecordStore.load(Self.inboxKey) {
+      case .absent: entries = []
+      case .failed: throw CocoaError(.fileReadUnknown)
+      case .data(let data): entries = try JSONDecoder().decode([LifeLogEntry].self, from: data)
       }
       entries.append(entry)
-      try? RecordStore.saveNow(entries, key: Self.inboxKey)
+      try RecordStore.saveNow(entries, key: Self.inboxKey)
       // The model may be alive in the foreground; let it take the record now
       // instead of waiting for the next activation.
       NotificationCenter.default.post(name: .autoLifeLogInboxDidChange, object: nil)
+      return true
+    } catch {
+      LocalSaveFailure.report("自動記録を保存できませんでした。既存の記録は保持しています。ストレージの空き容量を確認して、もう一度お試しください。")
+      return false
     }
   }
 

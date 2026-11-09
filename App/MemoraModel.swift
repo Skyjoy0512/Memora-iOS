@@ -186,6 +186,7 @@ final class MemoraModel {
   @ObservationIgnored var meetingSearchTexts: [UUID: String] = [:]
   @ObservationIgnored private var dayChangeObservers: [NSObjectProtocol] = []
   @ObservationIgnored private var inboxObserver: NSObjectProtocol?
+  @ObservationIgnored private var localSaveFailureObserver: NSObjectProtocol?
   @ObservationIgnored private var taskReminderObserver: NSObjectProtocol?
   /// Audio files handed to the app while a recording owns the microphone.
   @ObservationIgnored var pendingImportURLs: [URL] = []
@@ -797,6 +798,16 @@ final class MemoraModel {
       queue: .main
     ) { [weak self] _ in
       Task { @MainActor in self?.importAutoLifeLogInbox() }
+    }
+
+    localSaveFailureObserver = NotificationCenter.default.addObserver(
+      forName: LocalSaveFailure.notification, object: nil, queue: .main
+    ) { [weak self] notification in
+      guard let message = notification.userInfo?["message"] as? String else { return }
+      Task { @MainActor in
+        guard let self, self.persistenceFailurePresentation.shouldPresentGlobally else { return }
+        self.persistenceFailureMessage = message
+      }
     }
 
     // A tapped task reminder opens the tasks tab with that task's editor.
