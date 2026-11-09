@@ -8,6 +8,17 @@ struct IntelligentUIContextChecks {
     model.message.interfaceTaskIDs = [task.id]
     model.message.interfaceWorkspaceID = nil
     let messageID = model.message.id
+    let originalText = model.message.text
+    model.message.text = "```memora-ui\n" + #"{"version":1,"components":[{"id":"tasks","kind":"TaskList","items":[{"id":"one","referenceID":""# + task.id.uuidString + #"","title":"forged title"}]}]}"# + "\n```"
+    precondition(model.answerExportMarkdown(model.message).contains(task.title))
+    precondition(!model.answerExportMarkdown(model.message).contains("forged title"))
+    model.message.interfaceTaskIDs = []
+    precondition(!model.answerExportMarkdown(model.message).contains(task.title))
+    model.message.interfaceTaskIDs = [task.id]
+    model.currentTeamID = "other"
+    precondition(!model.answerExportMarkdown(model.message).contains(task.title))
+    model.currentTeamID = nil
+    model.message.text = originalText
     let draft = MailDraft(recipients: [], subject: "確認", body: "架空本文", sourceMessageID: messageID)
     var other = draft; other.id = UUID(); other.sourceMessageID = UUID()
     model.mailDrafts = [draft, other]

@@ -291,7 +291,7 @@ struct SettingsCategoryView: View {
     Group {
         Section("モデル") {
           NavigationLink { AISettingsView() } label: {
-            SettingsValue(title: "AIモデル", value: model.aiEngine == .cloud ? model.aiProvider.label : model.aiEngine.label, icon: .sparkles)
+            SettingsValue(title: "AIモデル", value: model.registeredLLMs.selectedModel?.name ?? (model.aiEngine == .cloud ? model.aiProvider.label : model.aiEngine.label), icon: .sparkles)
           }
         }
         Section("要約") {

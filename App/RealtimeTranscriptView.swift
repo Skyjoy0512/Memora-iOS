@@ -6,6 +6,8 @@ import SwiftUI
 struct RealtimeTranscriptView: View {
   var service: RealtimeTranscriptionService
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var followsLatest = true
+  @State private var isUserScrolling = false
 
   var body: some View {
     if service.history.lines.isEmpty, service.volatileText.isEmpty {
@@ -48,8 +50,33 @@ struct RealtimeTranscriptView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
         }
         .onChange(of: service.history.totalLines) { _, _ in
+          guard followsLatest else { return }
           withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) {
             proxy.scrollTo("liveBottom", anchor: .bottom)
+          }
+        }
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+          geometry.visibleRect.maxY >= geometry.contentSize.height - 80
+        } action: { _, nearBottom in
+          if isUserScrolling || nearBottom { followsLatest = nearBottom }
+        }
+        .onScrollPhaseChange { _, phase in
+          isUserScrolling = phase == .interacting || phase == .decelerating
+        }
+        .overlay(alignment: .bottomTrailing) {
+          if !followsLatest {
+            Button {
+              followsLatest = true
+              withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+                proxy.scrollTo("liveBottom", anchor: .bottom)
+              }
+            } label: {
+              Label("最新へ戻る", icon: .chevronDown)
+                .padding(.horizontal, 12).frame(minHeight: 44)
+                .background(.regularMaterial, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .padding(8)
           }
         }
       }

@@ -79,8 +79,8 @@ struct RecentlyDeletedView: View {
         model.permanentlyDeleteTrashedRecord(record.id)
       }
       Button("キャンセル", role: .cancel) {}
-    } message: { _ in
-      Text("音声を含めて削除され、元に戻せません。")
+    } message: { record in
+      Text("「\(record.meeting.displayTitle)」を音声を含めて削除します。元に戻せません。")
     }
     .confirmationDialog(
       "完全に削除しますか？",
@@ -92,8 +92,8 @@ struct RecentlyDeletedView: View {
         model.permanentlyDeleteTrashedLifeLogEntry(record.id)
       }
       Button("キャンセル", role: .cancel) {}
-    } message: { _ in
-      Text("写真を含めて削除され、元に戻せません。")
+    } message: { record in
+      Text("「\(record.entry.title)」を写真を含めて削除します。元に戻せません。")
     }
   }
 

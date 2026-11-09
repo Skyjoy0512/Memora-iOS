@@ -56,6 +56,31 @@ fixture = r'''import Foundation
  }
 }
 '''
+inline = (ROOT / "App/InlineMarkdownEditor.swift").read_text()
+commit = inline[inline.index("  private func commit("):inline.index("  /// Saves what is being typed")]
+fixture = fixture.replace("@main struct UIInteractionChecks", r'''@MainActor enum DraftStore {
+ static var values: [String: String] = [:]
+ static func clear(_ key: String, matching value: String) { if values[key] == value { values[key] = nil } }
+}
+@MainActor final class SaveProbe {
+ var isSaving = false
+ var saveFailed = false
+ var retainedDraft: String? = "未保存の内容"
+ var draftSessionID = UUID()
+ var commitTask: Task<Void, Never>?
+ var onCommit: (String) async -> Bool = { _ in false }
+ func retry() { commit(retainedDraft!, key: "editor", session: draftSessionID) }
+''' + commit + "\n}\n@main struct UIInteractionChecks")
+fixture = fixture.replace("   let question = QuestionProbe()", r'''   let save = SaveProbe()
+   DraftStore.values["editor"] = save.retainedDraft
+   save.retry()
+   await save.commitTask?.value
+   precondition(save.saveFailed && !save.isSaving && save.retainedDraft != nil && DraftStore.values["editor"] != nil)
+   save.onCommit = { _ in true }
+   save.retry()
+   await save.commitTask?.value
+   precondition(!save.saveFailed && save.retainedDraft == nil && DraftStore.values["editor"] == nil)
+   let question = QuestionProbe()''')
 with tempfile.TemporaryDirectory(prefix="memora-ui-interaction-", dir=os.environ.get("MEMORA_CHECK_ROOT")) as temp:
     folder = Path(temp)
     swift = folder / "UIInteractionChecks.swift"

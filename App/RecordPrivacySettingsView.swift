@@ -26,6 +26,7 @@ struct RecordPrivacySettingsView: View {
               $0.rank >= model.minimumPrivacyClassification(for: target).rank
             }, id: \.self) { Text($0.title).tag($0) }
           }
+          .disabled(!model.cloudReadingIsAvailable(for: target))
         } footer: {
           Text("未判定の記録は自動送信しません。顧客・医療・介護・未成年者の情報は慎重に扱ってください。")
         }
@@ -51,6 +52,8 @@ struct RecordPrivacySettingsView: View {
           }
           if !model.cloudReadingIsAvailable(for: target) {
             Text("位置情報・自動検出した移動や滞在は外部AIへ送信しません。")
+            Text("この記録の外部送信設定は閲覧のみです。")
+              .foregroundStyle(.secondary)
           } else if case .person = target {} else if case .meeting = target {} else {
             Text("元の録音に関連する記録は、元の録音の許可も必要です。タスクの元の会議を変更すると、そのタスクの外部利用許可は解除されます。")
           }

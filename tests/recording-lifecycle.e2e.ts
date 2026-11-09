@@ -34,7 +34,7 @@ async function startIsolatedRecording(app: any, device: any, screen: any) {
   await device.setPermission('microphone', 'grant');
   await app.restart();
   await tapControl(screen, screen.getByLabel('追加メニュー').first());
-  await tapControl(screen.getByRole('button', { name: '録音開始', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '録音する', exact: true }));
   await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).toBeVisible();
   // The retained old build predates this control. Baseline mode is used only
   // for the separate SIGKILL durability comparison, never a low-power claim.

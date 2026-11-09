@@ -18,8 +18,9 @@ struct AIAnswerActions: View {
       }, save: saveDocument, retry: {
         InteractionFeedback.shared.send(.tap)
         model.retryAIAnswer(message.id)
-      }, saveSkill: { skillDraft = .draft(instructions: exportText) },
-      saveTitle: model.savedAnswerDocument(for: message) == nil ? "回答を資料に保存" : "保存した資料を開く")
+      }, saveSkill: { skillDraft = .draft(instructions: AnswerCitations.stripped(model.answerExportMarkdown(message))) },
+      saveTitle: model.savedAnswerDocument(for: message) == nil ? "回答を資料に保存" : "保存した資料を開く",
+      currentText: { AnswerCitations.stripped(model.answerExportMarkdown(message)) })
     .sheet(item: $skillDraft) { SkillEditorView(skill: $0, reviewsAnswer: true) }
     .sheet(item: $savedDocument) { document in
       NavigationStack {

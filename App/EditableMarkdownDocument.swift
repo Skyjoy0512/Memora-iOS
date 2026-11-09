@@ -22,6 +22,9 @@ struct EditableMarkdownDocument: View {
   @State private var draftSaveTask: Task<Void, Never>?
   @State private var isDraftReady = false
   @State private var draftRevision = UUID()
+  @State private var isSaving = false
+  @State private var saveFailed = false
+  @State private var pendingDocument: String?
   @FocusState private var isFocused: Bool
   @ScaledMetric(relativeTo: .body) private var listIndent = MemoraTypography.listIndent
 
@@ -50,6 +53,9 @@ struct EditableMarkdownDocument: View {
     LazyVStack(alignment: .leading, spacing: MarkdownBlockView.blockSpacing) {
       ForEach(blocks.indices, id: \.self) { index in
         row(blocks[index].block, at: index)
+      }
+      EditorSaveStatus(isSaving: isSaving, hasFailure: saveFailed) {
+        if let pendingDocument { save(pendingDocument) }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -429,13 +435,20 @@ struct EditableMarkdownDocument: View {
   private func save(_ document: String) {
     draftSaveTask?.cancel()
     let revision = draftRevision
+    pendingDocument = document
+    isSaving = true
+    saveFailed = false
     if let draftKey {
       try? DraftStore.saveAndWait(document, key: draftKey)
     }
     Task { @MainActor in
-      guard await onCommit(document), draftRevision == revision, let draftKey,
-            working == document || working == nil else { return }
-      DraftStore.clear(draftKey, matching: document)
+      let succeeded = await onCommit(document)
+      guard draftRevision == revision else { return }
+      isSaving = false
+      saveFailed = !succeeded
+      guard succeeded, working == document || working == nil else { return }
+      pendingDocument = nil
+      if let draftKey { DraftStore.clear(draftKey, matching: document) }
     }
   }
 

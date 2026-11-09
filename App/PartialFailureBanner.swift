@@ -12,7 +12,7 @@ struct PartialFailureBanner: View {
       Text(message)
         .font(.subheadline)
         .foregroundStyle(.secondary)
-      Button("AI整理だけ再試行", icon: .arrowClockwise, action: retry)
+      Button("要約を再試行", icon: .arrowClockwise, action: retry)
         .font(.subheadline.weight(.semibold))
     }
     .padding(MemoraSpacing.lg)

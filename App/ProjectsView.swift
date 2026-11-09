@@ -47,6 +47,15 @@ struct ProjectsView: View {
           Spacer()
           orderMenu
         }
+        if filter != .all {
+          HStack {
+            Label("表示：\(filter.title)", icon: .line3HorizontalDecrease)
+              .font(.subheadline)
+            Spacer()
+            Button("解除") { filter = .all }
+              .frame(minWidth: 44, minHeight: 44)
+          }
+        }
         if !recent.isEmpty {
           heading("最近使用", count: nil)
           projectRows(recent)

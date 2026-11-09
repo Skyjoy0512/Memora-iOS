@@ -132,50 +132,50 @@ struct AgentQuestionCard: View {
       : AnyLayout(HStackLayout(spacing: 6))
     return layout {
       HStack(spacing: 6) {
-      Button { go(to: index - 1) } label: {
-        Image(icon: .chevronUp, size: 13)
-          .frame(width: 44, height: 44).contentShape(Rectangle())
-      }
-      .disabled(index == 0)
-      .accessibilityLabel("前の質問")
+        Button { go(to: index - 1) } label: {
+          Image(icon: .chevronUp, size: 13)
+            .frame(width: 44, height: 44).contentShape(Rectangle())
+        }
+        .disabled(index == 0)
+        .accessibilityLabel("前の質問")
 
-      Text("\(index + 1) / \(questions.count)")
-        .font(.caption.weight(.medium).monospacedDigit())
-        .foregroundStyle(.secondary)
-        .contentTransition(.numericText(value: Double(index)))
+        Text("\(index + 1) / \(questions.count)")
+          .font(.caption.weight(.medium).monospacedDigit())
+          .foregroundStyle(.secondary)
+          .contentTransition(.numericText(value: Double(index)))
 
-      Button { go(to: index + 1) } label: {
-        Image(icon: .chevronDown, size: 13)
-          .frame(width: 44, height: 44).contentShape(Rectangle())
-      }
-      .disabled(isLast)
-      .accessibilityLabel("次の質問")
+        Button { go(to: index + 1) } label: {
+          Image(icon: .chevronDown, size: 13)
+            .frame(width: 44, height: 44).contentShape(Rectangle())
+        }
+        .disabled(isLast)
+        .accessibilityLabel("次の質問")
       }
 
       if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
 
       HStack(spacing: 6) {
-      Button("スキップ") {
-        if isLast { send() } else { go(to: index + 1) }
-      }
-      .font(.subheadline)
-      .foregroundStyle(.secondary)
-      .padding(.horizontal, MemoraSpacing.md)
-      .frame(minHeight: 44)
+        Button("スキップ") {
+          if isLast { send() } else { go(to: index + 1) }
+        }
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, MemoraSpacing.md)
+        .frame(minHeight: 44)
 
-      Button {
-        InteractionFeedback.shared.send(.tap)
-        advance()
-      } label: {
-        Text(isLast ? "送信" : "次へ")
-          .font(.subheadline.weight(.semibold))
-          .foregroundStyle(Color(uiColor: .systemBackground))
-          .padding(.horizontal, MemoraSpacing.lg)
-          .frame(minHeight: 44)
-          .background(hasAnswer ? Color.primary : Color.secondary.opacity(0.4), in: Capsule())
-      }
-      .buttonStyle(.plain)
-      .disabled(!hasAnswer)
+        Button {
+          InteractionFeedback.shared.send(.tap)
+          advance()
+        } label: {
+          Text(isLast ? "送信" : "次へ")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Color(uiColor: .systemBackground))
+            .padding(.horizontal, MemoraSpacing.lg)
+            .frame(minHeight: 44)
+            .background(hasAnswer ? Color.primary : Color.secondary.opacity(0.4), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(!hasAnswer)
       }
     }
     .buttonStyle(.plain)
@@ -185,7 +185,7 @@ struct AgentQuestionCard: View {
   // MARK: - Answering
 
   private var hasAnswer: Bool {
-    !picked[index, default: []].isEmpty || !(custom[index] ?? "").trimmingCharacters(in: .whitespaces).isEmpty
+    !picked[index, default: []].isEmpty || !(custom[index] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
   private func choose(_ option: Int, in question: AgentQuestion) {

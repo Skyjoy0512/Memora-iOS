@@ -17,11 +17,11 @@ enum MeetingStatus: Hashable, Codable {
     case .waitingForSummary:
       "要約待ち"
     case .importing:
-      "準備中"
+      "取り込み中"
     case .transcribing:
-      "準備中"
+      "文字起こし中"
     case .organizing:
-      "準備中"
+      "要約中"
     case .ready:
       "整理済み"
     case .partialFailure:

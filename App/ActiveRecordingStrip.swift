@@ -17,9 +17,6 @@ struct ActiveRecordingStrip: View {
           Text(model.isRecordingPaused ? "録音を一時停止中" : "録音を続けています")
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.primary)
-          Text("画面を閉じても安全に保存中")
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
 
         Spacer()

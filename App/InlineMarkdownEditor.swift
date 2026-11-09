@@ -35,50 +35,62 @@ struct InlineMarkdownEditor: View {
   @State private var didRestoreDraft = false
   @State private var draftSaveTask: Task<Void, Never>?
   @State private var commitTask: Task<Void, Never>?
+  @State private var isSaving = false
+  @State private var saveFailed = false
   @FocusState private var isFocused: Bool
   @ScaledMetric(relativeTo: .body) private var readingLineSpacing = MemoraTypography.readingLineSpacing
 
   var body: some View {
-    Group {
-      if isEditing {
-        VStack(alignment: .leading, spacing: 8) {
-          if didRestoreDraft {
-            Label("書きかけの内容を復元しました", icon: .arrowUturnBackward)
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-          }
+    VStack(alignment: .leading, spacing: 8) {
+      Group {
+        if isEditing {
+          VStack(alignment: .leading, spacing: 8) {
+            if didRestoreDraft {
+              Label("書きかけの内容を復元しました", icon: .arrowUturnBackward)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
 
-          MarkdownEditorField(
-            markdown: $draft,
-            font: font,
-            minHeight: minHeight,
-            isFocused: $isFocused,
-            allowsStructure: allowsStructure
-          )
-          InlineLinkSummaryView(text: $draft)
-        }
-      } else if rendersBlocks, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        // A document is edited where it is read, block by block, so it keeps
-        // the look it had. The whole source stays reachable for bigger changes.
-        EditableMarkdownDocument(markdown: text, draftKey: draftKey,
-          onCommit: onCommit, onEditSource: beginEditing)
-      } else {
-        Group {
-          if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            Text(placeholder)
-              .foregroundStyle(.tertiary)
-          } else {
-            Text(Self.attributed(displayText ?? text))
+            MarkdownEditorField(
+              markdown: $draft,
+              font: font,
+              minHeight: minHeight,
+              isFocused: $isFocused,
+              allowsStructure: allowsStructure
+            )
+            InlineLinkSummaryView(text: $draft)
           }
+        } else if rendersBlocks, let retainedDraft {
+          MarkdownDocumentView(markdown: retainedDraft)
+            .onTapGesture { beginEditing() }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction(named: "編集を続ける") { beginEditing() }
+        } else if rendersBlocks, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+          // A document is edited where it is read, block by block, so it keeps
+          // the look it had. The whole source stays reachable for bigger changes.
+          EditableMarkdownDocument(markdown: text, draftKey: draftKey,
+            onCommit: onCommit, onEditSource: beginEditing)
+        } else {
+          Group {
+            if (retainedDraft ?? text).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+              Text(placeholder)
+                .foregroundStyle(.tertiary)
+            } else {
+              Text(Self.attributed(retainedDraft ?? displayText ?? text))
+            }
+          }
+          .font(font)
+          .lineSpacing(readingLineSpacing)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .contentShape(Rectangle())
+          .onTapGesture { beginEditing() }
+          .accessibilityAddTraits(.isButton)
+          .accessibilityHint(displayText == nil ? "タップして編集" : "タップして原文を編集")
+          .accessibilityAction(named: "編集") { beginEditing() }
         }
-        .font(font)
-        .lineSpacing(readingLineSpacing)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture { beginEditing() }
-        .accessibilityAddTraits(.isButton)
-        .accessibilityHint(displayText == nil ? "タップして編集" : "タップして原文を編集")
-        .accessibilityAction(named: "編集") { beginEditing() }
+      }
+      EditorSaveStatus(isSaving: isSaving, hasFailure: saveFailed) {
+        if let value = retainedDraft { commit(value, key: draftKey, session: draftSessionID) }
       }
     }
     .id(editorID)
@@ -105,6 +117,8 @@ struct InlineMarkdownEditor: View {
     catch { model.persistenceFailureMessage = error.localizedDescription; return }
     // Reopening supersedes an older save still encoding in the background.
     commitTask?.cancel()
+    isSaving = false
+    saveFailed = false
     // A new session under the same key; an older commit must not clear its draft.
     draftSessionID = UUID()
 
@@ -155,15 +169,26 @@ struct InlineMarkdownEditor: View {
       // The draft is only cleared once the record is actually stored, and only
       // if this editing session is still the current one — a newer edit may have
       // written a newer draft under the same key while the commit was in flight.
-      commitTask = Task { @MainActor in
-        guard await onCommit(value), draftSessionID == session else { return }
-        retainedDraft = nil
-        if let key { DraftStore.clear(key, matching: value) }
-      }
+      commit(value, key: key, session: session)
     } else {
       // Nothing changed, so the safety copy has served its purpose.
       retainedDraft = nil
       if let key { DraftStore.clear(key, matching: value) }
+    }
+  }
+
+  private func commit(_ value: String, key: String?, session: UUID) {
+    isSaving = true
+    saveFailed = false
+    commitTask = Task { @MainActor in
+      let succeeded = await onCommit(value)
+      guard draftSessionID == session, !Task.isCancelled else { return }
+      isSaving = false
+      saveFailed = !succeeded
+      if succeeded {
+        retainedDraft = nil
+        if let key { DraftStore.clear(key, matching: value) }
+      }
     }
   }
 

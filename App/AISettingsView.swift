@@ -10,8 +10,14 @@ struct AISettingsView: View {
 
   var body: some View {
     MemoraForm {
+      Section("現在の設定で使うAI") {
+        LabeledContent("AI", value: effectiveLabel)
+        LabeledContent("処理する場所", value: usesEffectiveCloud ? model.askAIConfiguration.llm.summaryDestination : "このiPhone")
+        LabeledContent("状態", value: availability.summary)
+        if let message = availability.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
+      }
       Section {
-        Picker("使うAI", selection: Binding(get: { model.aiEngine }, set: { model.aiEngine = $0 })) {
+        Picker("標準のAI", selection: Binding(get: { model.aiEngine }, set: { model.aiEngine = $0 })) {
           ForEach(AIEngine.allCases) { option in
             Text(option.isSelectable ? option.label : "\(option.label)（準備中）")
               .tag(option).disabled(!option.isSelectable)
@@ -19,7 +25,8 @@ struct AISettingsView: View {
         }
         .pickerStyle(.navigationLink)
         .accessibilityIdentifier("settings.ai.engine")
-        LabeledContent("状態", value: availability.summary)
+      } footer: {
+        Text("使用するモデルを選択すると、そのモデルが標準のAIより優先されます。")
       }
 
       Section {
@@ -27,7 +34,7 @@ struct AISettingsView: View {
           get: { model.registeredLLMs.selectedID },
           set: { model.registeredLLMs.select($0) }
         )) {
-          Text("設定に従う").tag(UUID?.none)
+          Text("標準のAIを使う").tag(UUID?.none)
           ForEach(model.registeredLLMs.models) { registered in
             Text(readyProviders.contains(registered.provider)
                  ? registered.name : "\(registered.name)（APIキー未設定）")
@@ -46,7 +53,7 @@ struct AISettingsView: View {
         }
       }
 
-      if model.aiEngine.usesCloud {
+      if model.aiEngine.usesCloud && model.registeredLLMs.selectedModel == nil {
         Section {
           NavigationLink {
             LLMProviderPickerView()
@@ -100,6 +107,7 @@ struct AISettingsView: View {
     .onAppear(perform: refresh)
     .onChange(of: model.aiEngine) { _, _ in refresh() }
     .onChange(of: model.aiProvider) { _, _ in refresh() }
+    .onChange(of: model.registeredLLMs.revision) { _, _ in refresh() }
   }
 
   private var modelName: String {
@@ -109,22 +117,22 @@ struct AISettingsView: View {
   private func refresh() {
     engineAvailability = Dictionary(uniqueKeysWithValues: AIEngine.allCases.map { ($0, EngineAvailability.ai($0, provider: model.aiProvider)) })
     hasKey = EngineAvailability.hasKey(model.aiProvider.keychainAccount)
-    availability = EngineAvailability.ai(model.aiEngine, provider: model.aiProvider)
+    let configuration = model.askAIConfiguration
+    availability = EngineAvailability.ai(configuration.llm.isMemoraIntelligence ? .memora : configuration.engine,
+      provider: configuration.llm.provider)
     readyProviders = Set(LLMProvider.allCases.filter { EngineAvailability.hasKey($0.keychainAccount) })
   }
 
-  /// What will really run, including the model called for a cloud provider.
+  private var usesEffectiveCloud: Bool {
+    AIEngineService.effectiveEngine(model.askAIConfiguration.engine) == .cloud
+  }
+
   private var effectiveLabel: String {
-    let engine = AIEngineService.effectiveEngine(model.aiEngine)
-    switch engine {
-    case .cloud where model.aiEngine == .memora:
-      return "Memora Intelligence"
-    case .cloud:
-      return model.aiSelection.modelLabel
-    case .automatic:
-      return "利用できません（クラウドを選ぶと回答できます）"
-    default:
-      return engine.label
+    if let registered = model.registeredLLMs.selectedModel { return registered.name }
+    let configuration = model.askAIConfiguration
+    if AIEngineService.effectiveEngine(configuration.engine) == .cloud {
+      return configuration.llm.isMemoraIntelligence ? "Memora Intelligence" : configuration.llm.modelLabel
     }
+    return configuration.engine.label
   }
 }

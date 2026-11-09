@@ -62,29 +62,29 @@ enum AIAnswerFailure: Error, Equatable {
   var message: String {
     switch self {
     case .noEngine:
-      "この端末ではAIエンジンを利用できません。設定の「AI整理」でクラウド（BYOK）を選ぶと回答できます。"
+      "この端末ではAIエンジンを利用できません。設定の「AIと要約」→「AIモデル」でクラウドAIを選ぶと回答できます。"
     case .engineNotReady:
       "端末内モデルの準備ができていません。少し待ってからもう一度お試しください。"
     case .contextTooLarge:
       "記録が長すぎて端末内AIでは扱えません。範囲を絞るか、クラウドを選んでください。"
     case .unsupportedLanguage:
-      "この言語は端末内AIが対応していません。設定の「AI整理」でクラウド（BYOK）を選ぶと回答できます。"
+      "この言語は端末内AIが対応していません。設定の「AIと要約」→「AIモデル」でクラウドAIを選ぶと回答できます。"
     case .guardrail:
       "安全上の理由で端末内AIが回答を控えました。質問や記録の内容を変えてお試しください。"
     case .assetsUnavailable:
       "端末内モデルの準備ができていません。少し待ってからもう一度お試しください。"
     case .notBundled:
-      "ローカルLLMはこのアプリにまだ入っていません。設定の「AI整理」で別のエンジンを選んでください。"
+      "ローカルLLMはこのアプリにまだ入っていません。設定の「AIと要約」→「AIモデル」で別のエンジンを選んでください。"
     case .missingKey:
-      "APIキーが設定されていません。設定の「AI整理」でキーを保存してください。"
+      "APIキーが設定されていません。設定の「AIと要約」→「AIモデル」でキーを保存してください。"
     case .outOfCredits:
       "今月のAIクレジットを使い切りました（APIの残高不足の場合もあります）。プランを変えるか、来月まで端末内AIをお使いください。"
     case .serviceNotConnected:
-      "Memora Intelligenceはまだ接続されていません。設定の「AI整理」で端末内AIか自分のAPIキーを選んでください。"
+      "Memora Intelligenceはまだ接続されていません。設定の「AIと要約」→「AIモデル」で端末内AIか自分のAPIキーを選んでください。"
     case .unauthorized:
-      "APIキーが受け付けられませんでした。設定の「AI整理」でキーを確認してください。"
+      "APIキーが受け付けられませんでした。設定の「AIと要約」→「AIモデル」でキーを確認してください。"
     case .modelUnavailable:
-      "選んだモデルはこのAPIキーでは使えません。設定の「AI整理」でモデルを選び直してください。"
+      "選んだモデルはこのAPIキーでは使えません。設定の「AIと要約」→「AIモデル」でモデルを選び直してください。"
     case .refused:
       "安全上の理由でAIが回答を控えました。質問や記録の内容を変えてお試しください。"
     case .rateLimited:
@@ -116,7 +116,7 @@ enum AIAnswerFailure: Error, Equatable {
     case .empty:
       "回答が空でした。もう一度お試しください。"
     case .unsupportedProvider:
-      "このプロバイダーは回答作成に対応していません。設定の「AI整理」で別のプロバイダーを選んでください。"
+      "このプロバイダーは回答作成に対応していません。設定の「AIと要約」→「AIモデル」で別のプロバイダーを選んでください。"
     case .attachmentNotAnalysed:
       "添付の文字を読めないため、回答を開始していません。テキスト・PDF・文字を含む画像に変更するか、添付を外してもう一度送信してください。"
     case .recordContentUnavailable:

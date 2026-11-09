@@ -13,10 +13,14 @@ struct AIResponseActionBar: View {
   var retry: () -> Void
   var saveSkill: (() -> Void)? = nil
   var saveTitle = "回答を資料に保存"
+  var currentText: (() -> String)? = nil
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var didCopy = false
   @State private var resetTask: Task<Void, Never>?
   @State private var selectsText = false
+  @State private var selectionText = ""
+  @State private var shareText = ""
+  @State private var isSharing = false
 
   var body: some View {
     HStack(spacing: 2) {
@@ -26,7 +30,10 @@ struct AIResponseActionBar: View {
       .contentTransition(reduceMotion ? .identity : .opacity)
       .disabled(text.isEmpty)
 
-      ShareLink(item: text) { Label("共有", icon: .squareAndArrowUp) }
+      Button("共有", icon: .squareAndArrowUp) {
+        shareText = currentText?() ?? text
+        isSharing = !shareText.isEmpty
+      }
         .disabled(text.isEmpty)
 
       if let readAloud {
@@ -35,7 +42,10 @@ struct AIResponseActionBar: View {
       }
 
       Menu {
-        Button("テキストを選択…", icon: .textAlignleft) { selectsText = true }
+        Button("テキストを選択…", icon: .textAlignleft) {
+          selectionText = currentText?() ?? text
+          selectsText = true
+        }
           .disabled(text.isEmpty)
         Button(saveTitle, icon: .docText, action: save)
         if let saveSkill {
@@ -56,8 +66,9 @@ struct AIResponseActionBar: View {
     .foregroundStyle(.secondary)
     .padding(.leading, -9)
     .sheet(isPresented: $selectsText) {
-      AIAnswerTextSelectionView(text: text)
+      AIAnswerTextSelectionView(text: selectionText)
     }
+    .sheet(isPresented: $isSharing) { ActivityView(items: [shareText]) }
     .onChange(of: text) { _, _ in
       resetTask?.cancel()
       didCopy = false
@@ -67,7 +78,7 @@ struct AIResponseActionBar: View {
   }
 
   private func copy() {
-    UIPasteboard.general.string = text
+    UIPasteboard.general.string = currentText?() ?? text
     InteractionFeedback.shared.send(.success)
     withAnimation(reduceMotion ? nil : MemoraMotion.control) { didCopy = true }
     resetTask?.cancel()

@@ -10,10 +10,10 @@ enum CaptureSheetAction: CaseIterable, Identifiable {
     case .photos: "写真"
     case .files: "ファイル"
     case .link: "リンク"
-    case .recording: "録音開始"
-    case .importAudio: "音声インポート"
-    case .onlineMeeting: "オンライン会議"
-    case .newNote: "ノート追加"
+    case .recording: "録音する"
+    case .importAudio: "音声を取り込む"
+    case .onlineMeeting: "オンライン会議を録音"
+    case .newNote: "ノートを追加"
     }
   }
 

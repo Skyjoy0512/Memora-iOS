@@ -31,6 +31,7 @@ struct TaskEditView: View {
   @State private var isAddingChild = false
   @State private var editingChild: MemoraTask?
   @State private var isPickingDocuments = false
+  @State private var isPickingMeeting = false
   @State private var openedDocument: MemoraDocument?
   @State private var saveError = false
   @State private var hasLoadedOwnership = false
@@ -149,13 +150,10 @@ struct TaskEditView: View {
         }
 
         Section("元の会議") {
-          Picker("元の会議", selection: $meetingID) {
-            Text("なし").tag(UUID?.none)
-            ForEach(model.meetings) { meeting in
-              Text(meeting.title).tag(UUID?.some(meeting.id))
-            }
+          Button { isPickingMeeting = true } label: {
+            LabeledContent("元の会議", value: meetingID.map { model.meeting(id: $0)?.displayTitle ?? "削除された会議" } ?? "なし")
+              .foregroundStyle(.primary)
           }
-          .pickerStyle(.menu)
         }
 
         Section {
@@ -210,6 +208,7 @@ struct TaskEditView: View {
       .sheet(isPresented: $isPrivacyPresented) { RecordPrivacySettingsView(target: .task(task.id)) }
       .sheet(item: $editingChild) { child in TaskEditView(task: child) }
       .sheet(isPresented: $isPickingDocuments) { TaskDocumentPicker(selection: $documentIDs) }
+      .sheet(isPresented: $isPickingMeeting) { TaskMeetingPicker(selection: $meetingID) }
       .sheet(item: $openedDocument) { document in
         NavigationStack { DocumentDetailView(documentID: document.id, showsCloseButton: true) }
       }

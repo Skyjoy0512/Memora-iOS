@@ -8,6 +8,8 @@ struct CaptureSessionView: View {
   @State private var section = CaptureSection.notes
   @State private var isDiscardConfirmationPresented = false
   @State private var selectedDetent = PresentationDetent.fraction(0.5)
+  @State private var detentBeforeKeyboard: PresentationDetent?
+  @State private var markerFeedback = 0
 
   var body: some View {
     @Bindable var model = model
@@ -20,17 +22,24 @@ struct CaptureSessionView: View {
 
         Button {
           if model.addRecordingMarker() {
-            section = .markers
+            markerFeedback += 1
+            AccessibilityNotification.Announcement("重要マークを追加しました。\(model.recordingMarkers.count)件").post()
           }
         } label: {
-          Image(icon: .flag, size: 17)
-            .frame(width: 44, height: 44)
+          HStack(spacing: 4) {
+            Image(icon: .flag, size: 17)
+            if !model.recordingMarkers.isEmpty {
+              Text("\(model.recordingMarkers.count)").font(.caption.monospacedDigit())
+            }
+          }
+            .frame(minWidth: 44, minHeight: 44)
             .memoraGlass(in: Circle(), interactive: true)
         }
         .disabled(!model.isRecording || model.isRecordingPaused || model.isSavingCapture)
         .accessibilityLabel("重要マークを追加")
         .accessibilityValue("\(model.recordingMarkers.count)件")
         .accessibilityHint(model.isRecordingPaused ? "録音を再開してから追加できます" : "今の録音位置を保存します")
+        .sensoryFeedback(.success, trigger: markerFeedback)
 
         Button("録音を破棄", icon: .trash) {
           isDiscardConfirmationPresented = true
@@ -40,6 +49,7 @@ struct CaptureSessionView: View {
         .foregroundStyle(.red)
         .frame(width: 44, height: 44)
         .memoraGlass(in: Circle(), interactive: true)
+        .disabled(model.isSavingCapture || !model.isRecording || model.hasUnsavedRecording)
 
         Button("録音画面を閉じる", icon: .xmark) {
           InteractionFeedback.shared.send(.tap)
@@ -110,6 +120,7 @@ struct CaptureSessionView: View {
         case .notes:
           TextEditor(text: $model.recordingNote)
             .font(.body)
+            .accessibilityLabel("録音中のメモ")
             .scrollContentBackground(.hidden)
             .overlay(alignment: .topLeading) {
               if model.recordingNote.isEmpty {
@@ -151,6 +162,7 @@ struct CaptureSessionView: View {
           .minimumScaleFactor(0.85)
           .frame(maxWidth: .infinity, minHeight: 56)
           .memoraGlass(in: Capsule(), interactive: true)
+          .disabled(model.isSavingCapture || !model.isRecording)
 
           Button(model.isSavingCapture ? "保存しています…" : "終了して保存", icon: .stopFill) {
             Task {
@@ -182,14 +194,17 @@ struct CaptureSessionView: View {
       selection: $selectedDetent
     )
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+      if detentBeforeKeyboard == nil { detentBeforeKeyboard = selectedDetent }
       withAnimation(reduceMotion ? nil : MemoraMotion.control) {
         selectedDetent = .large
       }
     }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+      guard let previous = detentBeforeKeyboard else { return }
+      detentBeforeKeyboard = nil
       guard !dynamicTypeSize.isAccessibilitySize else { return }
       withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-        selectedDetent = .fraction(0.5)
+        selectedDetent = previous
       }
     }
     .onAppear {

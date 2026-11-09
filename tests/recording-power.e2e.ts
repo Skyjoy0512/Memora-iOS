@@ -25,7 +25,7 @@ test('power mode changes and pause preserve the AAC recording and SQLite draft',
   await device.setPermission('microphone', 'grant');
   await app.restart();
   await tapControl(screen, screen.getByLabel('追加メニュー').first());
-  await tapControl(screen.getByRole('button', { name: '録音開始', exact: true }));
+  await tapControl(screen.getByRole('button', { name: '録音する', exact: true }));
   await expect(screen.getByRole('button', { name: '終了して保存', exact: true })).toBeVisible();
   const draft = () => {
     const value = sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraRecordingDraft';");
