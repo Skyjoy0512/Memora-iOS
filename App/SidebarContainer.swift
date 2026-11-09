@@ -65,7 +65,7 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
             }
           }
           // Clip the closing overlay too, so it cannot fill the rounded corners.
-          .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
+          .clipShape(RoundedRectangle(cornerRadius: 56 * progress, style: .continuous))
           .accessibilityHidden(isOpen)
           .modifier(SidebarSlideEffect(offset: offset, onClosed: onCloseAnimationCompleted))
           .shadow(color: .black.opacity(0.10 * progress), radius: 12, x: -3)

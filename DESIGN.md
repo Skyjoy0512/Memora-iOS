@@ -374,7 +374,7 @@ bottom right, with its entire 44pt glass circle inside the tappable label.
 It is the only Settings entry in the drawer; the top group contains destinations
 only, not a second copy of the same action.
 The drawer uses secondaryBackground, subtly separated from the conversation canvas.
-The supplied 410×68 geometric MEMORA wordmark is displayed at 118pt wide
+The supplied 410×68 geometric MEMORA wordmark is displayed at 144pt wide
 above Library, aligned with the row icons. Its original light and dark artwork is selected by the asset catalog;
 do not tint or redraw the geometry.
 At accessibility sizes, secondary row values move below the title rather than

@@ -20,7 +20,7 @@ redrawn, generated, tinted at runtime, or downloaded.
 - `memora-wordmark.imageset`: the original 410×68 SVG pair. The image has no
   background; the drawing bounds including strokes are 5.5…403.5 horizontally
   and 10.5…57.5 vertically. Keep that original canvas; external spacing belongs
-  to the views. The sidebar displays it at 118pt wide (about 19.6pt high).
+  to the views. The sidebar displays it at 144pt wide (about 23.9pt high).
 - `memora-symbol.imageset`: the original 432×432 SVG pair, including its
   `viewBox="290 287 444 451"`. Its existing viewport and uniform scaling are
   preserved; do not stretch its M to fill a square.
@@ -42,7 +42,7 @@ removed: this project targets iOS only. Functional Lucide icons, provider
 logos and unrelated artwork remain as before. Bundle identifiers, signing,
 app name, backend, models and navigation are unchanged.
 
-The drawer's existing 28pt continuous clipping now encloses its closing wash
+The drawer's 56pt continuous clipping encloses its closing wash
 as well as the screen, preventing the rectangular wash from covering the
 rounded corners. Existing drag, tap and Reduce Motion behavior are retained.
 
@@ -86,3 +86,13 @@ simulator checks must be reported separately from compilation.
   `tests/sidebar-glass.e2e.ts` logo size assertion was updated; this E2E suite
   was not executed. The verification above used actual simulator interactions
   plus repository checks, not an assertion that every E2E test passed.
+
+### Sidebar size refinement
+
+Following the supplied iPhone drawer reference, the open screen now has a 56pt
+continuous corner radius (previously 28pt), and only the sidebar wordmark grows
+from 118pt to 144pt. The same vector geometry and aspect ratio are retained.
+`bitrig preview -platform iOS` succeeded; the 3 brand checks and 8 chat
+presentation checks passed. Light/dark presentation and tap-to-close were
+checked on the iPhone 18 Pro Max simulator. Current screenshots are
+`build/brand-review/sidebar-rounded-light.png` and `sidebar-rounded-dark.png`.
