@@ -14,7 +14,10 @@ import Foundation
     case .data(let data): return .data(data)
     }
   }
-  static func saveData(_ data: Data, key: String) { try! store.write(key, data: data) }
+  static func loadLatestData(_ key: String) -> LoadOutcome { load(key) }
+  static func saveData(_ data: Data, key: String, onFailure: (@MainActor () -> Void)? = nil) {
+    do { try store.write(key, data: data) } catch { onFailure?() }
+  }
   static func saveDataNow(_ data: Data, key: String) throws { try store.write(key, data: data) }
   static func remove(_ key: String) throws { try store.applyBatch(writes: [], removing: [key]) }
   static func remove(_ key: String, ifMatching matches: @Sendable (Data) -> Bool) throws {

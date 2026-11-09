@@ -13,6 +13,12 @@ import Synchronization
 @MainActor
 enum RecordStore {
   private static let queue = DispatchQueue(label: "app.memora.persistence", qos: .utility)
+  private static var pendingDataWrites: [String: PendingDataWrite] = [:]
+
+  private struct PendingDataWrite: Sendable {
+    var id = UUID()
+    var data: Data
+  }
 
   /// What a load found. Absent and unreadable are different answers: absent may
   /// be a first run, while unreadable must never be treated as one.
@@ -93,6 +99,13 @@ enum RecordStore {
     return .data(legacy)
   }
 
+  /// Editors need the last accepted draft even while an unrelated large write
+  /// is ahead of it. Ordinary record reads keep their committed-data semantics.
+  static func loadLatestData(_ key: String) -> LoadOutcome {
+    if let pending = pendingDataWrites[key] { return .data(pending.data) }
+    return load(key)
+  }
+
   /// Keeps an unreadable document aside. The original is only removed once the
   /// copy is safely stored, so a failed quarantine never loses anything.
   @discardableResult
@@ -163,11 +176,25 @@ enum RecordStore {
     key: String,
     onFailure: (@MainActor () -> Void)? = nil
   ) {
+    let pending = PendingDataWrite(data: data)
+    pendingDataWrites[key] = pending
     queue.async {
+      let succeeded: Bool
       do {
         try LocalStore.shared.write(key, data: data)
+        succeeded = true
       } catch {
-        Task { @MainActor in onFailure?() }
+        succeeded = false
+      }
+      Task { @MainActor in
+        guard pendingDataWrites[key]?.id == pending.id else { return }
+        if succeeded {
+          pendingDataWrites.removeValue(forKey: key)
+        } else {
+          // Keep unsaved input available in this process and report that it is
+          // not durable. A later save or explicit discard can settle it.
+          onFailure?()
+        }
       }
     }
   }
@@ -199,12 +226,14 @@ enum RecordStore {
     writes: [(key: String, data: Data)],
     removing removals: [String]
   ) throws {
+    let revisions = dataWriteRevisions(for: writes.map(\.key) + removals)
     try queue.sync {
 #if DEBUG
       try consumeInjectedFailure()
 #endif
       try LocalStore.shared.applyBatch(writes: writes, removing: removals)
     }
+    settleDataWrites(revisions)
   }
 
   /// The same commit off the caller's turn, so a screen does not wait on disk.
@@ -212,6 +241,7 @@ enum RecordStore {
     writes: [(key: String, data: Data)],
     removing removals: [String]
   ) async throws {
+    let revisions = dataWriteRevisions(for: writes.map(\.key) + removals)
     try await withCheckedThrowingContinuation { continuation in
       queue.async {
         do {
@@ -225,6 +255,7 @@ enum RecordStore {
         }
       }
     }
+    settleDataWrites(revisions)
   }
 
   /// Removes a document, waiting for any queued write so an older save cannot
@@ -236,12 +267,31 @@ enum RecordStore {
   /// Compare after earlier queued writes, in the same turn as the removal.
   /// Otherwise an older commit can erase a newer editor's debounced draft.
   static func remove(_ key: String, ifMatching matches: @Sendable (Data) -> Bool) throws {
-    try queue.sync {
-      guard case .data(let data) = LocalStore.shared.readOutcome(key), matches(data) else { return }
+    let pending = pendingDataWrites[key]
+    let removed = try queue.sync {
+      let data: Data
+      if let pending { data = pending.data }
+      else if case .data(let stored) = LocalStore.shared.readOutcome(key) { data = stored }
+      else { return false }
+      guard matches(data) else { return false }
 #if DEBUG
       try consumeInjectedFailure()
 #endif
       try LocalStore.shared.applyBatch(writes: [], removing: [key])
+      return true
+    }
+    if removed { pendingDataWrites.removeValue(forKey: key) }
+  }
+
+  private static func dataWriteRevisions(for keys: [String]) -> [String: UUID] {
+    Dictionary(uniqueKeysWithValues: Set(keys).compactMap { key in
+      pendingDataWrites[key].map { (key, $0.id) }
+    })
+  }
+
+  private static func settleDataWrites(_ revisions: [String: UUID]) {
+    for (key, id) in revisions where pendingDataWrites[key]?.id == id {
+      pendingDataWrites.removeValue(forKey: key)
     }
   }
 }

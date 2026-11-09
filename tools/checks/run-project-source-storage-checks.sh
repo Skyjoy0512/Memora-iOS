@@ -15,7 +15,7 @@ PY
 swiftc App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift -D MEMORA_HOST_CHECKS -D MEMORA_DRAFT_STORAGE_CHECKS Shared/MemoraIcon.swift App/LocalStore.swift App/MemoraSpace.swift \
   App/RecordPrivacy.swift App/SummarySensitivity.swift App/ProjectSource.swift App/ProjectSourceText.swift \
   App/ProjectSourceFiles.swift App/ProjectSourceTextReader.swift App/IdentifiableIndex.swift App/ProjectCitation.swift App/PersistenceFailurePresentation.swift \
-  App/MemoraModel+ProjectSourceStorage.swift App/ProjectSourceURL.swift App/DraftStore.swift "$check_dir/ProjectLinks.swift" \
+  App/MemoraModel+ProjectSourceStorage.swift App/ProjectSourceURL.swift App/DraftStore.swift App/LocalSaveFailure.swift "$check_dir/ProjectLinks.swift" \
   tools/checks/ProjectSourceStorageFixture.swift tools/checks/DraftStoreRecordFixture.swift \
   tools/checks/ProjectSourceStorageChecks.swift -lsqlite3 -o "$check_dir/checks"
 "$check_dir/checks" "$check_dir"

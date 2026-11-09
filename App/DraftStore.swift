@@ -36,7 +36,7 @@ enum DraftStore {
 
   /// An unreadable draft must not become an empty editor that overwrites it.
   static func read(_ key: String) -> LoadOutcome {
-    switch RecordStore.load(storageKey(for: key)) {
+    switch RecordStore.loadLatestData(storageKey(for: key)) {
     case .absent: return .absent
     case .failed: return .unreadable
     case .data(let data):
@@ -64,7 +64,9 @@ enum DraftStore {
 
   static func save(_ text: String, key: String) {
     guard read(key) != .unreadable else { return }
-    RecordStore.saveData(encode(text), key: prefix + key)
+    RecordStore.saveData(encode(text), key: prefix + key) {
+      LocalSaveFailure.report("下書きを保存できませんでした。入力内容はアプリ内に保持していますが、再起動すると失われる可能性があります。ストレージの空き容量を確認して、保存し直してください。")
+    }
   }
 
   /// Saves and waits for the write, for callers that must know the draft landed
