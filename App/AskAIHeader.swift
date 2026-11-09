@@ -18,9 +18,14 @@ struct AskAIHeader: View {
         Button("検索", icon: .magnifyingglass, action: onSearch)
       } label: {
         HStack(spacing: MemoraSpacing.xs) {
-          Text(model.aiPersonScopeID.flatMap { model.person(id: $0)?.name } ?? "Memora")
-            .font(MemoraTypography.body.weight(.semibold))
-            .lineLimit(1)
+          if let name = model.aiPersonScopeID.flatMap({ model.person(id: $0)?.name }) {
+            Text(name)
+              .font(MemoraTypography.body.weight(.semibold))
+              .lineLimit(1)
+          } else {
+            MemoraWordmark(width: 100)
+              .accessibilityHidden(true)
+          }
           Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)
             .foregroundStyle(MemoraPalette.textSecondary)
             .accessibilityHidden(true)

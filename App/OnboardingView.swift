@@ -11,7 +11,10 @@ struct OnboardingView: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        Text("Memora").font(.headline)
+        HStack(spacing: MemoraSpacing.sm) {
+          MemoraSymbol().accessibilityHidden(true)
+          MemoraWordmark(width: 100)
+        }
         Spacer()
         Button("スキップ", action: skip)
           .font(.subheadline)

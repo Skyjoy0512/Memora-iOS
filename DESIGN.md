@@ -8,7 +8,7 @@ Historical visual experiments are superseded.
 use from the first page; explanatory pages are optional. Auth providers carry
 an unavailable label until connected. Plans use native Form/Picker, separating
 future pricing/credits from current on-device/BYOK features and local settings.
-No new logo assets. Floating Ask AI controls use native Liquid Glass; motion follows the restrained page/text treatment below. See docs/UI_UX_2026_10.md.
+Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating Ask AI controls use native Liquid Glass; motion follows the restrained page/text treatment below. See docs/UI_UX_2026_10.md.
 
 ## Everyday interactions
 
@@ -374,8 +374,8 @@ bottom right, with its entire 44pt glass circle inside the tappable label.
 It is the only Settings entry in the drawer; the top group contains destinations
 only, not a second copy of the same action.
 The drawer uses secondaryBackground, subtly separated from the conversation canvas.
-The supplied 132×27 vector brand mark sits above Library, aligned with the row
-icons. Its original light and dark artwork is selected by the asset catalog;
+The supplied 410×68 geometric MEMORA wordmark is displayed at 118pt wide
+above Library, aligned with the row icons. Its original light and dark artwork is selected by the asset catalog;
 do not tint or redraw the geometry.
 At accessibility sizes, secondary row values move below the title rather than
 competing for a narrow horizontal column.

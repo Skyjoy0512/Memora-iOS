@@ -19,8 +19,8 @@ test('sidebar glass: supplied logo sits above Library in both appearances', asyn
     const row = await library.boundingBox();
     expect(mark).not.toBeNull();
     expect(row).not.toBeNull();
-    expect(mark!.width).toBeCloseTo(132, 0);
-    expect(mark!.height).toBeCloseTo(27, 0);
+    expect(mark!.width).toBeCloseTo(118, 0);
+    expect(mark!.height).toBeCloseTo(118 * 68 / 410, 0);
     expect(mark!.y + mark!.height).toBeLessThan(row!.y);
     await expect(screen.getByTestId('sidebar.settings')).toBeVisible();
     await app.screenshot(`sidebar-logo-${appearance}`);

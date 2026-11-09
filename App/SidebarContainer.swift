@@ -50,7 +50,6 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
         content()
           .frame(width: proxy.size.width, height: proxy.size.height)
           .compositingGroup()
-          .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
           .overlay {
             if isOpen || progress > 0 {
               // A light wash, not a blur: the pushed-aside screen stays readable
@@ -65,6 +64,8 @@ struct SidebarContainer<Sidebar: View, Content: View>: View {
                 .accessibilityAddTraits(.isButton)
             }
           }
+          // Clip the closing overlay too, so it cannot fill the rounded corners.
+          .clipShape(RoundedRectangle(cornerRadius: 28 * progress, style: .continuous))
           .accessibilityHidden(isOpen)
           .modifier(SidebarSlideEffect(offset: offset, onClosed: onCloseAnimationCompleted))
           .shadow(color: .black.opacity(0.10 * progress), radius: 12, x: -3)
