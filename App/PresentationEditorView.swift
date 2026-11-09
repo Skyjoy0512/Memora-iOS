@@ -6,6 +6,7 @@ struct PresentationEditorView: View {
   var document: MemoraDocument
   @State private var slidePath: [UUID]
   @State private var didLoadDraft = false
+  @State private var isDraftReady = false
   @State private var draft: MemoraDocument
   @State private var failure: String?
   @State private var confirmsDiscard = false
@@ -71,9 +72,10 @@ struct PresentationEditorView: View {
             .font(.footnote).foregroundStyle(.secondary)
         }
       }
+      .disabled(!isDraftReady)
       .navigationDestination(for: UUID.self) { id in
         if let index = draft.slides.firstIndex(where: { $0.id == id }) {
-          PresentationSlideEditor(slide: $draft.slides[index])
+          PresentationSlideEditor(slide: $draft.slides[index]).disabled(!isDraftReady)
         } else { Text("このスライドは削除されています。") }
       }
       .navigationTitle("スライドを編集")
@@ -87,18 +89,26 @@ struct PresentationEditorView: View {
         ToolbarItem(placement: .primaryAction) { EditButton() }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark, action: save)
-            .disabled(draft.slides.isEmpty)
+            .disabled(!isDraftReady || draft.slides.isEmpty)
         }
       }
       .task {
         guard !didLoadDraft else { return }
         didLoadDraft = true
-        if let json = DraftStore.load(draftKey), let data = json.data(using: .utf8),
-           let restored = try? JSONDecoder().decode(MemoraDocument.self, from: data),
-           restored.id == document.id, restored.updatedAt == document.updatedAt { draft = restored }
+        do {
+          if let json = try DraftStore.readAll([draftKey])[draftKey] {
+            guard let data = json.data(using: .utf8),
+                  let restored = try? JSONDecoder().decode(MemoraDocument.self, from: data),
+                  restored.id == document.id, restored.updatedAt == document.updatedAt else {
+              throw DraftStore.Failure.unreadable
+            }
+            draft = restored
+          }
+          isDraftReady = true
+        } catch { failure = error.localizedDescription }
       }
       .onChange(of: draft) { _, value in
-        if let data = try? JSONEncoder().encode(value), let json = String(data: data, encoding: .utf8) {
+        if isDraftReady, let data = try? JSONEncoder().encode(value), let json = String(data: data, encoding: .utf8) {
           DraftStore.save(json, key: draftKey)
         }
       }
@@ -116,6 +126,7 @@ struct PresentationEditorView: View {
   private var draftKey: String { "presentation.\(document.id).\(document.updatedAt.timeIntervalSince1970)" }
 
   private func save() {
+    guard isDraftReady else { return }
     guard model.updateDocumentSlides(document.id, title: draft.title, slides: draft.slides, expectedUpdatedAt: document.updatedAt,
                                     plan: draft.presentationPlan) else {
       failure = "資料が別の画面で変更されたか、保存先に書き込めません。入力内容は下書きに残っています。"

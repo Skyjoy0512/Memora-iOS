@@ -11,6 +11,7 @@ struct PresentationRevisionView: View {
   @State private var session = PresentationRevisionSession()
   @State private var task: Task<Void, Never>?
   @State private var inputFailure: String?
+  @State private var isDraftReady = false
 
   var body: some View {
     let configuration = model.askAIConfiguration
@@ -28,12 +29,12 @@ struct PresentationRevisionView: View {
         ForEach(draft.slides.enumerated(), id: \.element.id) { index, slide in
           Toggle("\(index + 1). \(slide.title.isEmpty ? "無題のスライド" : slide.title)", isOn: $selectedIDs[containsValue: slide.id])
             .accessibilityLabel("\(index + 1)枚目、\(slide.title.isEmpty ? "無題のスライド" : slide.title)")
-            .disabled(session.isBusy || (!selectedIDs.contains(slide.id) && selectedIDs.count >= 3))
+            .disabled(!isDraftReady || session.isBusy || (!selectedIDs.contains(slide.id) && selectedIDs.count >= 3))
         }
       }
       Section("修正の依頼") {
         TextField("例: 結論を先に、文章を短くする", text: $instruction, axis: .vertical)
-          .lineLimit(3...8).disabled(session.isBusy)
+          .lineLimit(3...8).disabled(session.isBusy || !isDraftReady)
       }
       Section {
         if session.isBusy {
@@ -42,7 +43,7 @@ struct PresentationRevisionView: View {
         } else {
           Button(session.proposal == nil ? "修正案を生成" : "もう一度生成") { generate() }
             .frame(minHeight: 44)
-            .disabled(selectedIDs.isEmpty || instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(!isDraftReady || selectedIDs.isEmpty || instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         if let failure = inputFailure ?? session.failure {
           Text(failure).font(.footnote).foregroundStyle(MemoraPalette.danger)
@@ -70,12 +71,22 @@ struct PresentationRevisionView: View {
     }
     .onDisappear { stop() }
     .onChange(of: scenePhase) { _, value in if value != .active { stop() } }
-    .onAppear { instruction = DraftStore.load(draftKey) ?? "" }
+    .onAppear {
+      guard !isDraftReady else { return }
+      do {
+        instruction = try DraftStore.readAll([draftKey])[draftKey] ?? ""
+        isDraftReady = true
+      } catch { inputFailure = error.localizedDescription }
+    }
     .onChange(of: selectedIDs) { _, _ in stop() }
-    .onChange(of: instruction) { _, value in stop(); DraftStore.save(value, key: draftKey) }
+    .onChange(of: instruction) { _, value in
+      stop()
+      if isDraftReady { DraftStore.save(value, key: draftKey) }
+    }
   }
 
   private func generate() {
+    guard isDraftReady else { return }
     stop(); inputFailure = nil
     let configuration = model.askAIConfiguration
     let cloud = AIEngineService.effectiveEngine(configuration.engine) == .cloud

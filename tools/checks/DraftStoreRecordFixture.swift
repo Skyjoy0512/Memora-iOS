@@ -17,4 +17,8 @@ import Foundation
   static func saveData(_ data: Data, key: String) { try! store.write(key, data: data) }
   static func saveDataNow(_ data: Data, key: String) throws { try store.write(key, data: data) }
   static func remove(_ key: String) throws { try store.applyBatch(writes: [], removing: [key]) }
+  static func remove(_ key: String, ifMatching matches: @Sendable (Data) -> Bool) throws {
+    guard case .data(let data) = store.readOutcome(key), matches(data) else { return }
+    try remove(key)
+  }
 }

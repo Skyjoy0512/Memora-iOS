@@ -122,6 +122,31 @@ enum MeetingEditChecks {
     expected.text = "訂正：承認されていません。"
     precondition(model.meetings[0].transcript == [expected] && model.meetings[0].decisions == record.decisions)
     precondition(model.failures == 4)
+    model.meetings = initial
+    model.meetingSearchTexts = [record.id: "original cache"]
+    precondition(model.persistNow(initial, forKey: MemoraModel.StorageKey.meetings))
+    execute("CREATE TRIGGER fail_edit BEFORE INSERT ON documents WHEN NEW.key='memoraMeetings' BEGIN SELECT RAISE(ABORT, 'synchronous edit failure'); END;")
+    precondition(!model.updateMeeting(record.id) { $0.title = "未保存の名前" })
+    precondition(model.meetings == initial && model.meetingSearchTexts[record.id] == "original cache")
+    let rejectedRename = try read()
+    precondition(rejectedRename == initial)
+    execute("DROP TRIGGER fail_edit;")
+    for state in 0..<4 {
+      model.isRestoring = state == 0
+      model.isStoreProtected = state == 1
+      model.currentTeamID = state == 2 ? "team" : nil
+      let task = Task { @MainActor in model.updateMeeting(record.id) { $0.title = "拒否する名前" } }
+      if state == 3 { task.cancel() }
+      let accepted = await task.value
+      precondition(!accepted && model.meetings == initial && model.meetingSearchTexts[record.id] == "original cache")
+    }
+    model.isRestoring = false
+    model.isStoreProtected = false
+    model.currentTeamID = nil
+    precondition(model.updateMeeting(record.id) { $0.title = "保存した名前" })
+    let renamed = try read()
+    precondition(renamed == model.meetings && renamed[0].title == "保存した名前")
+    print("Synchronous meeting edits: SQLite failure leaves model/cache/store unchanged; protected/team/restore/cancel guards and retry passed")
     for state in 0..<7 {
       model.meetings = initial
       model.currentTeamID = nil

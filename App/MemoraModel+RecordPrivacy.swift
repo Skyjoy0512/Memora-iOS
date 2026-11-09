@@ -156,11 +156,6 @@ extension MemoraModel {
     guard updated.classification.rank >= record.minimumPrivacyClassification.rank else { return false }
     updated.blocksOneTimeCloudSummary = !updated.allowsCloudAI
     updated.updatedAt = .now
-    guard updateMeeting(meetingID, change: { $0.privacy = updated }) else { return false }
-    guard await persistNowAsync(meetings, forKey: StorageKey.meetings) else {
-      if meeting(id: meetingID)?.privacy == updated { updateMeeting(meetingID) { $0.privacy = record.privacy } }
-      return false
-    }
-    return true
+    return updateMeeting(meetingID) { $0.privacy = updated }
   }
 }

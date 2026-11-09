@@ -12,7 +12,9 @@ test('project source notes retain failed creates and edits, persist drafts, and 
   const sourceAdd = screen.getByRole('button', { name: '参考資料を追加', exact: true }).first();
   const triggers = new Set<string>();
   let database: string | undefined;
-  const reveal = (control: any) => scrollToControl(screen, control, { minimumY: 140, maximumY: 850 });
+  // A visible toolbar/row needs no drag. Pulling down at the top can dismiss
+  // a native zoom destination rather than scroll its already visible content.
+  const reveal = (control: any) => scrollToControl(screen, control);
   async function closeKeyboard() {
     const close = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
     if (await close.isVisible()) await tapControl(close);

@@ -8,24 +8,43 @@ struct ProjectNoteEditSheet: View {
   @State private var text: String
   @State private var isSaving = false
   @State private var errorMessage: String?
+  @State private var context: LocalImportContext?
+  @State private var isDraftReady = false
+  private var draftKey: String { "workspace.note.\(source.id)" }
 
   init(source: ProjectSource, text: String) {
     self.source = source
-    _title = State(initialValue: DraftStore.load("workspace.note.\(source.id).title") ?? source.title)
-    _text = State(initialValue: DraftStore.load("workspace.note.\(source.id)") ?? text)
+    _title = State(initialValue: source.title)
+    _text = State(initialValue: text)
   }
 
   var body: some View {
     NavigationStack {
       MemoraForm {
         if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
-        TextField("タイトル", text: $title).accessibilityLabel("タイトル")
-        TextEditor(text: $text).frame(minHeight: 240).accessibilityLabel("メモ本文")
-        InlineLinkSummaryView(text: $text)
+        Group {
+          TextField("タイトル", text: $title).accessibilityLabel("タイトル")
+          TextEditor(text: $text).frame(minHeight: 240).accessibilityLabel("メモ本文")
+          InlineLinkSummaryView(text: $text)
+        }.disabled(!isDraftReady || context?.isCurrent(in: model) != true)
       }
       .disabled(isSaving)
-      .onChange(of: title) { _, value in DraftStore.save(value, key: "workspace.note.\(source.id).title") }
-      .onChange(of: text) { _, value in DraftStore.save(value, key: "workspace.note.\(source.id)") }
+      .onAppear {
+        guard !isDraftReady else { return }
+        do {
+          let values = try DraftStore.readAll([draftKey, draftKey + ".title"])
+          context = LocalImportContext(projectID: source.projectID, in: model)
+          title = values[draftKey + ".title"] ?? title
+          text = values[draftKey] ?? text
+          isDraftReady = true
+        } catch { errorMessage = error.localizedDescription }
+      }
+      .onChange(of: title) { _, value in
+        if isDraftReady, context?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey + ".title") }
+      }
+      .onChange(of: text) { _, value in
+        if isDraftReady, context?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey) }
+      }
       .navigationTitle("メモを編集").navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -37,15 +56,18 @@ struct ProjectNoteEditSheet: View {
             Task {
               defer { isSaving = false }
               do {
-                if try await model.updateProjectNote(source.id, title: title, text: text, presentsErrorsLocally: true) {
-                  DraftStore.clear("workspace.note.\(source.id)")
-                  DraftStore.clear("workspace.note.\(source.id).title")
+                guard context?.isCurrent(in: model) == true else {
+                  errorMessage = "保存先が変更されました。開き直して確認してください。"
+                  return
+                }
+                if try await model.updateProjectNote(source.id, title: title, text: text, presentsErrorsLocally: true,
+                  expectedSource: source, removing: [draftKey, draftKey + ".title"].map { DraftStore.storageKey(for: $0) }) {
                   dismiss()
                 }
                 else { errorMessage = "保存できませんでした。開き直して確認してください。" }
               } catch { errorMessage = error.localizedDescription }
             }
-          }.disabled(isSaving || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+          }.disabled(isSaving || !isDraftReady || context?.isCurrent(in: model) != true || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
       }
       .interactiveDismissDisabled(isSaving)

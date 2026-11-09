@@ -212,7 +212,13 @@ extension MemoraModel {
   func retryPendingMediaDeletions(onlyIDs: Set<UUID>? = nil) {}
   func updateAgentMessage(_ id: UUID, change: (inout FixtureMessage) -> Void) { change(&message) }
   @discardableResult func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) -> Bool {
-    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return false }; change(&meetings[index]); return true
+    guard !isRestoring, !isStoreProtected, currentTeamID == nil,
+          let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
+    var candidate = meetings
+    change(&candidate[index])
+    guard persistNow(candidate, forKey: StorageKey.meetings) else { return false }
+    meetings = candidate
+    return true
   }
   func persistNowAsync<T: Encodable>(_ value: T, forKey key: String) async -> Bool { persistNow(value, forKey: key) }
   static func meetings(in scope: AIChatScope, from meetings: [Meeting]) -> [Meeting] {

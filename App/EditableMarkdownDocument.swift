@@ -20,6 +20,8 @@ struct EditableMarkdownDocument: View {
   @State private var draft = ""
   @State private var editorID = UUID()
   @State private var draftSaveTask: Task<Void, Never>?
+  @State private var isDraftReady = false
+  @State private var draftRevision = UUID()
   @FocusState private var isFocused: Bool
   @ScaledMetric(relativeTo: .body) private var listIndent = MemoraTypography.listIndent
 
@@ -53,7 +55,7 @@ struct EditableMarkdownDocument: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .onChange(of: markdown) { _, _ in
       // The stored copy has caught up; it is the one to show again.
-      if target == nil { working = nil }
+      if target == nil, working == markdown { working = nil }
     }
     .onChange(of: isFocused) { _, focused in
       guard !focused else { return }
@@ -65,6 +67,7 @@ struct EditableMarkdownDocument: View {
       }
     }
     .onChange(of: draft) { _, newValue in
+      draftRevision = UUID()
       handleReturn(in: newValue)
     }
     .onAppear(perform: restoreDraft)
@@ -295,6 +298,8 @@ struct EditableMarkdownDocument: View {
   }
 
   private func begin(_ newTarget: EditTarget, text: String) {
+    guard isDraftReady else { return }
+    draftRevision = UUID()
     if case .block(let index) = newTarget,
        let block = MarkdownBlockParser.sourcedBlocks(for: working ?? markdown)[safe: index]?.block,
        !isEditable(block) {
@@ -423,12 +428,14 @@ struct EditableMarkdownDocument: View {
 
   private func save(_ document: String) {
     draftSaveTask?.cancel()
+    let revision = draftRevision
     if let draftKey {
       try? DraftStore.saveAndWait(document, key: draftKey)
     }
     Task { @MainActor in
-      guard await onCommit(document), let draftKey, working == document || working == nil else { return }
-      DraftStore.clear(draftKey)
+      guard await onCommit(document), draftRevision == revision, let draftKey,
+            working == document || working == nil else { return }
+      DraftStore.clear(draftKey, matching: document)
     }
   }
 
@@ -449,9 +456,12 @@ struct EditableMarkdownDocument: View {
 
   /// A document left mid-edit last time is put back and stored.
   private func restoreDraft() {
-    guard let draftKey, let stored = DraftStore.load(draftKey), stored != markdown else { return }
-    working = stored
-    save(stored)
+    guard !isDraftReady else { return }
+    do {
+      let stored = try draftKey.flatMap { try DraftStore.readAll([$0])[$0] }
+      isDraftReady = true
+      if let stored, stored != markdown { working = stored; save(stored) }
+    } catch { model.persistenceFailureMessage = error.localizedDescription }
   }
 }
 

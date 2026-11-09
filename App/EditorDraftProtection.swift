@@ -11,6 +11,7 @@ struct EditorDraftProtection: ViewModifier {
   @State private var loadedKey: String?
   @State private var confirmsDiscard = false
   @State private var draftError = false
+  @Environment(MemoraModel.self) private var model
 
   private var values: [String: String] { Dictionary(uniqueKeysWithValues: fields.map { ($0.name, $0.value) }) }
   private var isDirty: Bool { baseline.map { $0 != values } ?? false }
@@ -51,12 +52,25 @@ struct EditorDraftProtection: ViewModifier {
   private func prepare() {
     guard ready, loadedKey == nil else { return }
     let initial = values
-    baseline = initial
-    loadedKey = key
-    guard let text = DraftStore.load(key), let data = text.data(using: .utf8),
-          let envelope = try? JSONDecoder().decode(EditorDraftEnvelope.self, from: data),
-          let restored = envelope.restored(matching: initial) else { return }
-    for field in fields { if let value = restored[field.name] { field.restore(value) } }
+    do {
+      let text = try DraftStore.readAll([key])[key]
+      let envelope: EditorDraftEnvelope?
+      if let text {
+        guard let data = text.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode(EditorDraftEnvelope.self, from: data) else {
+          throw DraftStore.Failure.unreadable
+        }
+        envelope = decoded
+      } else { envelope = nil }
+      baseline = initial
+      loadedKey = key
+      if let restored = envelope?.restored(matching: initial) {
+        for field in fields { if let value = restored[field.name] { field.restore(value) } }
+      }
+    } catch {
+      model.persistenceFailureMessage = error.localizedDescription
+      dismiss()
+    }
   }
 }
 

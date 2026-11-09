@@ -38,9 +38,9 @@ extension MemoraModel {
   }
 
   func retryProcessing(_ id: UUID) {
-    updateMeeting(id) { meeting in
+    guard updateMeeting(id, change: { meeting in
       meeting.status = .transcribing(0.08)
-    }
+    }) else { return }
     beginProcessing(id)
   }
 
@@ -50,7 +50,7 @@ extension MemoraModel {
     guard let meeting = meeting(id: id),
           meeting.hasTranscriptionAudio,
           !processing.isActive(id), !speakerAnalysisIDs.contains(id), !isRestoring, isStoreWritable() else { return }
-    updateMeeting(id) { $0.status = .transcribing(0.08) }
+    guard updateMeeting(id, change: { $0.status = .transcribing(0.08) }) else { return }
     runTranscription(id, preparation: .milliseconds(0), progress: 0.62, recordsTiming: false, onDeviceOnly: onDeviceOnly, automaticallySummarize: automaticallySummarize)
   }
 
@@ -113,7 +113,7 @@ extension MemoraModel {
       guard self.aiWorkspaceGeneration == generation, self.currentTeamID == nil,
             self.meeting(id: id)?.privacy == original.privacy,
             self.meeting(id: id)?.hasSameAudioInput(as: original) == true else { return .cancelled }
-      self.updateMeeting(id) { $0.status = .transcribing(progress) }
+      self.updateMeetingTransiently(id) { $0.status = .transcribing(progress) }
 
       // Only a real engine's transcript is ever stored. When none can run, the
       // record says so and keeps the audio for a retry — never sample text.
@@ -158,10 +158,10 @@ extension MemoraModel {
   private func applyTranscription(_ outcome: TranscriptionOutcome, to id: UUID, automaticallySummarize: Bool = false) {
     switch outcome {
     case .segments(let segments):
-      updateMeeting(id) { meeting in
+      guard updateMeeting(id, change: { meeting in
         meeting.transcript = segments
         meeting.status = .waitingForSummary
-      }
+      }) else { return }
       announce("文字起こしができました。要約を作成しています。")
       enqueueAutomaticSummaryIfNeeded(for: id, required: automaticallySummarize)
       if automaticallyAnalyzesSpeakers, SpeakerModelAssets.isInstalled {

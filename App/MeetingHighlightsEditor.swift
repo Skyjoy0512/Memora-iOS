@@ -11,6 +11,7 @@ struct MeetingHighlightsEditor: View {
   @State private var context: LocalImportContext?
   @State private var isSaving = false
   @State private var failure: String?
+  @State private var isDraftReady = false
   private var draftPrefix: String { "meeting.\(meetingID).highlights" }
 
   var body: some View {
@@ -22,7 +23,7 @@ struct MeetingHighlightsEditor: View {
         if let failure { Section { Text(failure).foregroundStyle(.red) } }
       }
       .scrollDismissesKeyboard(.interactively)
-      .disabled(isSaving)
+      .disabled(isSaving || !isDraftReady)
       .navigationTitle("要点・決定事項")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -31,18 +32,22 @@ struct MeetingHighlightsEditor: View {
         }
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("保存", icon: .checkmark) { save() }
-            .disabled(isSaving || context?.isCurrent(in: model) != true || model.processing.isActive(meetingID))
+            .disabled(isSaving || !isDraftReady || context?.isCurrent(in: model) != true || model.processing.isActive(meetingID))
             .accessibilityIdentifier("meeting.highlights.save")
         }
       }
       .interactiveDismissDisabled(isSaving)
       .onAppear {
         guard original == nil, let meeting = model.meeting(id: meetingID) else { return }
-        context = LocalImportContext(in: model)
-        original = meeting
-        points = DraftStore.load(draftPrefix + ".points") ?? meeting.keyPoints.joined(separator: "\n")
-        decisions = DraftStore.load(draftPrefix + ".decisions") ?? meeting.decisions.joined(separator: "\n")
-        questions = DraftStore.load(draftPrefix + ".questions") ?? meeting.openQuestions.joined(separator: "\n")
+        do {
+          let values = try DraftStore.readAll(["points", "decisions", "questions"].map { draftPrefix + "." + $0 })
+          context = LocalImportContext(in: model)
+          original = meeting
+          points = values[draftPrefix + ".points"] ?? meeting.keyPoints.joined(separator: "\n")
+          decisions = values[draftPrefix + ".decisions"] ?? meeting.decisions.joined(separator: "\n")
+          questions = values[draftPrefix + ".questions"] ?? meeting.openQuestions.joined(separator: "\n")
+          isDraftReady = true
+        } catch { model.persistenceFailureMessage = error.localizedDescription }
       }
       .onChange(of: points) { _, value in saveDraft(value, field: "points") }
       .onChange(of: decisions) { _, value in saveDraft(value, field: "decisions") }
@@ -51,12 +56,12 @@ struct MeetingHighlightsEditor: View {
   }
 
   private func saveDraft(_ value: String, field: String) {
-    guard context?.isCurrent(in: model) == true else { return }
+    guard isDraftReady, context?.isCurrent(in: model) == true else { return }
     DraftStore.save(value, key: draftPrefix + "." + field)
   }
 
   private func save() {
-    guard !isSaving else { return }
+    guard !isSaving, isDraftReady else { return }
     isSaving = true
     Task { @MainActor in
       defer { isSaving = false }

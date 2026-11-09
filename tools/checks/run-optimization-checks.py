@@ -20,7 +20,7 @@ checks = [
     ('ProjectSearchIndexChecks', project + ['ProjectSearchIndex'], []),
     ('ProjectContextChecks', ['ProjectCitation', 'ProjectEvidenceChunk', 'ProjectContextBuilder'], []),
     ('ProjectChatHistoryChecks', ['ProjectCitation', 'ProjectChatTurn', 'ProjectChatThread', 'ProjectChatHistory'], []),
-    ('RecordStoreFailureChecks', ['RecordStore'], ['-DDEBUG']),
+    ('RecordStoreFailureChecks', ['RecordStore', 'DraftStore'], ['-DDEBUG']),
     ('HealthReviewLoaderChecks', ['HealthReviewSnapshot', 'HealthReviewLoader', 'ReviewPeriod'], []),
     ('JournalPerformanceChecks', ['TaskOwnership', 'TaskRelationships'], ['-O']),
     ('JournalActivityDaysChecks', ['JournalActivityDays', 'TaskOwnership', 'MemoraTask', 'TaskRelationships', 'TaskProgress', 'RecordPrivacy', 'SummarySensitivity'], []),

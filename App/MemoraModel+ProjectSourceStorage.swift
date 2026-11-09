@@ -107,9 +107,11 @@ extension MemoraModel {
     return storeProjectSource(note)
   }
 
-  func updateProjectNote(_ id: UUID, title: String, text: String, presentsErrorsLocally: Bool = false) async throws -> Bool {
+  func updateProjectNote(_ id: UUID, title: String, text: String, presentsErrorsLocally: Bool = false,
+                         expectedSource: ProjectSource? = nil, removing: [String] = []) async throws -> Bool {
     guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
           let previous = source(id: id), previous.kind == .note,
+          expectedSource.map({ $0 == previous }) ?? true,
           !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
     let project = previous.projectID.flatMap { space(id: $0) }
     guard previous.projectID == nil || project != nil else { return false }
@@ -130,7 +132,7 @@ extension MemoraModel {
     current.textCoverage = .complete
     current.errorInformation = nil
     current.updatedAt = .now
-    guard storeProjectSource(current, presentsErrorsLocally: presentsErrorsLocally) else {
+    guard storeProjectSource(current, presentsErrorsLocally: presentsErrorsLocally, removing: removing) else {
       await ProjectSourceFiles.shared.remove([name]); return false
     }
     if let old = previous.extractedTextReference, !projectSources.contains(where: { $0.fileReferences.contains(old) }) {

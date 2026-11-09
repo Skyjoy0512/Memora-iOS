@@ -100,6 +100,9 @@ struct InlineMarkdownEditor: View {
 
   private func beginEditing() {
     guard !isEditing else { return }
+    let stored: String?
+    do { stored = try draftKey.flatMap { try DraftStore.readAll([$0])[$0] } }
+    catch { model.persistenceFailureMessage = error.localizedDescription; return }
     // Reopening supersedes an older save still encoding in the background.
     commitTask?.cancel()
     // A new session under the same key; an older commit must not clear its draft.
@@ -108,7 +111,7 @@ struct InlineMarkdownEditor: View {
     if let retainedDraft, retainedDraft != text {
       draft = retainedDraft
       didRestoreDraft = true
-    } else if let draftKey, let stored = DraftStore.load(draftKey), stored != text {
+    } else if let stored, stored != text {
       draft = stored
       didRestoreDraft = true
     } else {
@@ -121,6 +124,7 @@ struct InlineMarkdownEditor: View {
     model.focusedInlineEditorID = editorID
     Task { @MainActor in
       try? await Task.sleep(for: .milliseconds(60))
+      guard isEditing else { return }
       isFocused = true
     }
   }
@@ -154,12 +158,12 @@ struct InlineMarkdownEditor: View {
       commitTask = Task { @MainActor in
         guard await onCommit(value), draftSessionID == session else { return }
         retainedDraft = nil
-        if let key { DraftStore.clear(key) }
+        if let key { DraftStore.clear(key, matching: value) }
       }
     } else {
       // Nothing changed, so the safety copy has served its purpose.
       retainedDraft = nil
-      if let key { DraftStore.clear(key) }
+      if let key { DraftStore.clear(key, matching: value) }
     }
   }
 

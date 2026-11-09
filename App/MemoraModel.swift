@@ -591,11 +591,12 @@ final class MemoraModel {
     let storedProvider = LLMProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
     aiProvider = storedProvider
     aiModelID = Self.storedModelID(for: storedProvider)
-    let savedMentions = DraftStore.load("composer.mentions").flatMap { $0.data(using: .utf8) }.flatMap { try? JSONDecoder().decode([ComposerMention].self, from: $0) } ?? []
-    let savedDraft = DraftStore.load(Self.composerDraftKey) ?? ""
+    let composerDrafts = try? DraftStore.readAll(["composer.mentions", Self.composerDraftKey, "composer.attachment.v1"])
+    let savedMentions = composerDrafts?["composer.mentions"].flatMap { $0.data(using: .utf8) }.flatMap { try? JSONDecoder().decode([ComposerMention].self, from: $0) } ?? []
+    let savedDraft = composerDrafts?[Self.composerDraftKey] ?? ""
     composerDraft = savedDraft
     composerMentions = savedMentions.filter { $0.isValid(in: savedDraft) }
-    composerAttachment = DraftStore.load("composer.attachment.v1")
+    composerAttachment = composerDrafts?["composer.attachment.v1"]
       .flatMap { $0.data(using: .utf8) }
       .flatMap { try? JSONDecoder().decode(AIAttachmentFileReference.self, from: $0) }?.resolve()
     cloudStorageEnabled = false
@@ -630,7 +631,7 @@ final class MemoraModel {
     }
 
     var didFindUnreadableData = false
-    var didFailToReadStore = false
+    var didFailToReadStore = composerDrafts == nil
 
     // A first run starts empty. Sample content is only added when the person
     // chooses it from onboarding, so their own records are never mixed with it.

@@ -2,13 +2,14 @@ import Foundation
 
 extension MemoraModel {
   func analyzeSpeakers(_ id: UUID) async {
-    guard !isEnrollingSpeaker, !speakerAnalysisIDs.contains(id), !processing.isActive(id), !isRestoring, isStoreWritable(),
+    guard currentTeamID == nil, !isEnrollingSpeaker, !speakerAnalysisIDs.contains(id), !processing.isActive(id), !isRestoring, isStoreWritable(),
           let record = meeting(id: id), let audioURL = record.audioURL, !record.transcript.isEmpty else { return }
     guard record.transcript.contains(where: { $0.endTime != nil }) else {
       speakerAnalysisMessages[id] = "この文字起こしには発言の終了時刻がありません。自動の話者割り当ては行いません。話者名は手動で編集できます。"
       return
     }
     let revision = ProcessingService.inputRevision(record.transcript)
+    let generation = aiWorkspaceGeneration
     speakerAnalysisIDs.insert(id)
     speakerAnalysisMessages[id] = "端末内で話者を解析しています…"
     defer { speakerAnalysisIDs.remove(id) }
@@ -16,14 +17,14 @@ extension MemoraModel {
       let service: any SpeakerDiarizationService = FluidSpeakerDiarizationService.shared
       let result = try await service.analyze(audioURL)
       try Task.checkCancellation()
-      guard !isRestoring, isStoreWritable(), let current = meeting(id: id), current.audioURL == audioURL,
+      guard !isRestoring, currentTeamID == nil, aiWorkspaceGeneration == generation, isStoreWritable(),
+            let current = meeting(id: id), current.audioURL == audioURL, current.privacy == record.privacy,
             ProcessingService.inputRevision(current.transcript) == revision else {
         speakerAnalysisMessages[id] = "記録が変わったため解析結果は反映しませんでした。"
         return
       }
       let aligned = SpeakerTranscriptAligner.align(current.transcript, intervals: result.intervals, minimumDuration: 1)
-      guard updateMeeting(id, change: { $0.transcript = aligned }),
-            await persistNowAsync(meetings, forKey: StorageKey.meetings) else {
+      guard updateMeeting(id, change: { $0.transcript = aligned }) else {
         speakerAnalysisMessages[id] = "解析しましたが、話者情報の保存を完了できませんでした。原音声・原文は保持しています。保存状態を確認して再試行してください。"
         return
       }

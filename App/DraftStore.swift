@@ -12,7 +12,15 @@ import Foundation
 @MainActor
 enum DraftStore {
   private static let prefix = "draft."
-  private static let textFormatMarker: UInt8 = 0x01
+  nonisolated private static let textFormatMarker: UInt8 = 0x01
+
+  enum Failure: LocalizedError {
+    case unreadable
+
+    var errorDescription: String? {
+      "下書きを読み込めなかったため、上書きを止めています。画面を閉じて、もう一度開いてください。"
+    }
+  }
 
   static func storageKey(for key: String) -> String { prefix + key }
 
@@ -40,13 +48,29 @@ enum DraftStore {
     read(key).text
   }
 
+  /// Validate every field before enabling an editor; a partial restore must
+  /// not replace the unreadable fields with their saved record or empty text.
+  static func readAll(_ keys: [String]) throws -> [String: String] {
+    var values: [String: String] = [:]
+    for key in keys {
+      switch read(key) {
+      case .absent: break
+      case .text(let text): values[key] = text
+      case .unreadable: throw Failure.unreadable
+      }
+    }
+    return values
+  }
+
   static func save(_ text: String, key: String) {
+    guard read(key) != .unreadable else { return }
     RecordStore.saveData(encode(text), key: prefix + key)
   }
 
   /// Saves and waits for the write, for callers that must know the draft landed
   /// before they continue. Throws when it could not be stored.
   static func saveAndWait(_ text: String, key: String) throws {
+    guard read(key) != .unreadable else { throw Failure.unreadable }
     try RecordStore.saveDataNow(encode(text), key: prefix + key)
   }
 
@@ -54,7 +78,12 @@ enum DraftStore {
   /// arrive out of order. The committed text is what matters; the draft is only
   /// a safety copy, so a failure here is not reported as a lost record.
   static func clear(_ key: String) {
+    guard read(key) != .unreadable else { return }
     try? RecordStore.remove(prefix + key)
+  }
+
+  static func clear(_ key: String, matching text: String) {
+    try? RecordStore.remove(storageKey(for: key)) { decode($0) == text }
   }
 
   private static func encode(_ text: String) -> Data {
@@ -63,7 +92,7 @@ enum DraftStore {
     return data
   }
 
-  private static func decode(_ data: Data) -> String? {
+  nonisolated private static func decode(_ data: Data) -> String? {
     if data.first == textFormatMarker {
       return String(data: Data(data.dropFirst()), encoding: .utf8)
     }

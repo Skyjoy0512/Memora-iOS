@@ -262,6 +262,8 @@ final class MemoraModel {
   var pendingMediaDeletions: [PendingMediaDeletion] = []
   var recordingDraft: RecordingDraft?
   var isStoreProtected = false
+  var isRestoring = false
+  var currentTeamID: String?
   var meetingSearchTexts: [UUID: String] = [:]
   var persistenceFailureMessage: String?
   var deletionFailureMessage: String?
@@ -300,8 +302,14 @@ final class MemoraModel {
   }
   func persistPendingMediaDeletions() { _ = persistNow(pendingMediaDeletions, forKey: StorageKey.pendingMediaDeletions) }
   func scheduleUndo(_ action: UndoAction) { undoAction?.finalize(); undoAction = action }
-  func updateMeeting(_ id: UUID, _ edit: (inout Meeting) -> Void) {
-    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return }; edit(&meetings[index])
+  func meeting(id: UUID) -> Meeting? { meetings.first { $0.id == id } }
+  func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) -> Bool {
+    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
+    var candidate = meetings
+    change(&candidate[index])
+    guard persistNow(candidate, forKey: StorageKey.meetings) else { return false }
+    meetings = candidate
+    return true
   }
 }
 

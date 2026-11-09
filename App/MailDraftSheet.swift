@@ -12,6 +12,7 @@ struct MailDraftSheet: View {
   @State private var bcc: String
   @State private var opensMail = false
   @State private var failure = false
+  @State private var isDraftReady = false
 
   init(draft: MailDraft, onFinish: @escaping () -> Void) {
     self.onFinish = onFinish
@@ -45,19 +46,25 @@ struct MailDraftSheet: View {
           if !MFMailComposeViewController.canSendMail() { Text("Mailのアカウントが未設定です。本文のコピー・共有を利用できます。").font(.footnote).foregroundStyle(.secondary) }
         }
       }
+      .disabled(!isDraftReady)
       .tint(.primary)
       .navigationTitle("メール下書き").navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { ToolbarIconButton("閉じる", icon: .xmark, action: onFinish) }
-        ToolbarItem(placement: .confirmationAction) { ToolbarIconButton("保存", icon: .checkmark) { if save() { onFinish() } } }
+        ToolbarItem(placement: .confirmationAction) { ToolbarIconButton("保存", icon: .checkmark) { if save() { onFinish() } }.disabled(!isDraftReady) }
       }
       .onAppear {
-        guard edited.workspaceID == model.currentTeamID else { return }
-        edited.body = DraftStore.load("mail.\(edited.id).body") ?? edited.body
-        edited.subject = DraftStore.load("mail.\(edited.id).subject") ?? edited.subject
-        to = DraftStore.load("mail.\(edited.id).to") ?? to
-        cc = DraftStore.load("mail.\(edited.id).cc") ?? cc
-        bcc = DraftStore.load("mail.\(edited.id).bcc") ?? bcc
+        guard !isDraftReady, edited.workspaceID == model.currentTeamID else { return }
+        do {
+          let prefix = "mail.\(edited.id)."
+          let values = try DraftStore.readAll(["body", "subject", "to", "cc", "bcc"].map { prefix + $0 })
+          edited.body = values[prefix + "body"] ?? edited.body
+          edited.subject = values[prefix + "subject"] ?? edited.subject
+          to = values[prefix + "to"] ?? to
+          cc = values[prefix + "cc"] ?? cc
+          bcc = values[prefix + "bcc"] ?? bcc
+          isDraftReady = true
+        } catch { model.persistenceFailureMessage = error.localizedDescription }
       }
       .onChange(of: edited.body) { _, value in keepDraft(value, field: "body") }
       .onChange(of: edited.subject) { _, value in keepDraft(value, field: "subject") }
@@ -70,11 +77,12 @@ struct MailDraftSheet: View {
   }
 
   private func keepDraft(_ value: String, field: String) {
-    guard edited.workspaceID == model.currentTeamID, !model.isStoreProtected, value.utf8.count <= 400_000 else { return }
+    guard isDraftReady, edited.workspaceID == model.currentTeamID, !model.isStoreProtected, value.utf8.count <= 400_000 else { return }
     DraftStore.save(value, key: "mail.\(edited.id).\(field)")
   }
 
   private func save() -> Bool {
+    guard isDraftReady else { return false }
     func addresses(_ value: String) -> [String] { value.components(separatedBy: CharacterSet(charactersIn: ",;\n")).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty } }
     edited.recipients = addresses(to); edited.cc = addresses(cc); edited.bcc = addresses(bcc); edited.updatedAt = .now
     let stored = model.saveMailDraft(edited)

@@ -232,4 +232,16 @@ enum RecordStore {
   static func remove(_ key: String) throws {
     try commitNow(writes: [], removing: [key])
   }
+
+  /// Compare after earlier queued writes, in the same turn as the removal.
+  /// Otherwise an older commit can erase a newer editor's debounced draft.
+  static func remove(_ key: String, ifMatching matches: @Sendable (Data) -> Bool) throws {
+    try queue.sync {
+      guard case .data(let data) = LocalStore.shared.readOutcome(key), matches(data) else { return }
+#if DEBUG
+      try consumeInjectedFailure()
+#endif
+      try LocalStore.shared.applyBatch(writes: [], removing: [key])
+    }
+  }
 }

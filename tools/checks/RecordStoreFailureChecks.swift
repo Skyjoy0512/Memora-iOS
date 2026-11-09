@@ -34,6 +34,34 @@ struct RecordStoreFailureChecks {
     guard case .data(let recovered) = RecordStore.load("record") else { preconditionFailure() }
     let recoveredValue = try JSONDecoder().decode(String.self, from: recovered)
     precondition(recoveredValue == "recovered")
+    let key = "editor.check"
+    try DraftStore.saveAndWait("保存した本文", key: key)
+    DraftStore.save("次の編集中の本文", key: key)
+    DraftStore.clear(key, matching: "保存した本文")
+    precondition(DraftStore.read(key) == .text("次の編集中の本文"), "A late completion erased a newer queued draft")
+    DraftStore.clear(key, matching: "次の編集中の本文")
+    precondition(DraftStore.read(key) == .absent)
+    try RecordStore.saveDataNow(JSONEncoder().encode("旧形式"), key: DraftStore.storageKey(for: key))
+    DraftStore.clear(key, matching: "旧形式")
+    precondition(DraftStore.read(key) == .absent)
+    let invalid = Data([1, 255])
+    try RecordStore.saveDataNow(invalid, key: DraftStore.storageKey(for: key))
+    precondition(DraftStore.read(key) == .unreadable)
+    do {
+      _ = try DraftStore.readAll(["absent.field", key])
+      preconditionFailure("Unreadable field admitted a partially restored editor")
+    } catch DraftStore.Failure.unreadable {}
+    do {
+      try DraftStore.saveAndWait("replacement", key: key)
+      preconditionFailure("Unreadable draft was overwritten")
+    } catch DraftStore.Failure.unreadable {}
+    DraftStore.save("replacement", key: key)
+    DraftStore.clear(key)
+    DraftStore.clear(key, matching: "replacement")
+    await RecordStore.flushAsync()
+    guard case .data(let retained) = RecordStore.load(DraftStore.storageKey(for: key)) else { preconditionFailure("Unreadable draft was deleted") }
+    precondition(retained == invalid)
+    print("DraftStore checks: newer queued draft retention, matching clear, legacy clear, partial restore refusal and unreadable-byte protection passed")
     print("RecordStoreFailureChecks: passed (async rollback, concurrent one-shot failure, sync recovery)")
   }
 }

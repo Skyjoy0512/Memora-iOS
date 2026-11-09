@@ -25,7 +25,7 @@ test('Japanese replacement, Unicode paste and navigation keep exact committed te
   await replaceEditorWithPaste(screen, device, editor, final);
   await expect(editor).toHaveValue(final);
   await app.screenshot('replacement-before-navigation-light');
-  await tapControl(screen.getByRole('button', { name: '前に戻る', exact: true }));
+  await tapControl(screen.getByTestId('BackButton'));
   const records = () => JSON.parse(sql(database, "SELECT CAST(data AS TEXT) FROM documents WHERE key='memoraMeetings';"));
   await expect.poll(() => records()[0].summary.includes(final)).toBe(true);
   expect(records()[0].summary.includes(original)).toBe(false);

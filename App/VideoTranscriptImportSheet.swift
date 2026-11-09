@@ -11,6 +11,7 @@ struct VideoTranscriptImportSheet: View {
   @State private var isImporting = false
   @State private var isSaving = false
   @State private var errorMessage: String?
+  @State private var isDraftReady = false
   @State private var captions = YouTubeCaptionService.shared
   private var draftKey: String { "video.transcript.\(source.id)" }
 
@@ -71,16 +72,22 @@ struct VideoTranscriptImportSheet: View {
         if let errorMessage { Section { Text(errorMessage).foregroundStyle(MemoraPalette.danger) } }
         if isSaving { Section { ProgressView("準備しています…") } }
       }
-      .disabled(isSaving || context?.isCurrent(in: model) != true)
+      .disabled(isSaving || !isDraftReady || context?.isCurrent(in: model) != true)
       .navigationTitle("字幕・動画を追加").navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { ToolbarIconButton("閉じる", icon: .xmark) { dismiss() } }
       }
       .onAppear {
-        context = LocalImportContext(projectID: source.projectID, in: model)
-        text = DraftStore.load(draftKey) ?? ""
+        guard !isDraftReady else { return }
+        do {
+          text = try DraftStore.readAll([draftKey])[draftKey] ?? ""
+          context = LocalImportContext(projectID: source.projectID, in: model)
+          isDraftReady = true
+        } catch { model.persistenceFailureMessage = error.localizedDescription }
       }
-      .onChange(of: text) { _, value in DraftStore.save(value, key: draftKey) }
+      .onChange(of: text) { _, value in
+        if isDraftReady, context?.isCurrent(in: model) == true { DraftStore.save(value, key: draftKey) }
+      }
       .fileImporter(isPresented: $isImporting,
         allowedContentTypes: [.movie, .audio, .plainText, UTType(filenameExtension: "srt") ?? .data, UTType(filenameExtension: "vtt") ?? .data]) { result in
           switch result {
@@ -92,7 +99,7 @@ struct VideoTranscriptImportSheet: View {
   }
 
   private func save(_ operation: @escaping @MainActor () async throws -> UUID?) {
-    guard !isSaving else { return }
+    guard !isSaving, isDraftReady, context?.isCurrent(in: model) == true else { return }
     isSaving = true; errorMessage = nil
     Task { @MainActor in
       defer { isSaving = false }

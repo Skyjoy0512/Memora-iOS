@@ -287,6 +287,21 @@ struct ProjectSourceStorageChecks {
     precondition(model.source(id: id)?.projectID == project.id)
     expect(try reload(model) == model.projectSources)
     guard case .missing = model.store.readOutcome(key) else { preconditionFailure("Committed memo left a duplicate draft") }
+    let original = model.source(id: id)!
+    try model.store.write(key, data: Data("edited draft".utf8))
+    let editFiles = try files()
+    try sql("CREATE TRIGGER fail_edit_draft BEFORE DELETE ON documents WHEN OLD.key = '\(key)' BEGIN SELECT RAISE(ABORT, 'edit draft removal'); END;", url: url)
+    expect(try await !model.updateProjectNote(id, title: "編集", text: "編集本文", expectedSource: original, removing: [key]))
+    expect(try model.source(id: id) == original && reload(model) == [original] && files() == editFiles)
+    guard case .data = model.store.readOutcome(key) else { preconditionFailure("Failed note edit lost its draft") }
+    try sql("DROP TRIGGER fail_edit_draft;", url: url)
+    expect(try await model.updateProjectNote(id, title: "編集", text: "編集本文", expectedSource: original, removing: [key]))
+    guard case .missing = model.store.readOutcome(key) else { preconditionFailure("Committed note edit left a stale draft") }
+    let current = model.source(id: id)!
+    let currentFiles = try files()
+    expect(try await !model.updateProjectNote(id, title: "古い画面", text: "上書きしない本文", expectedSource: original))
+    expect(try model.source(id: id) == current && files() == currentFiles && reload(model) == [current])
+    print("Memo edit: atomic draft settlement, SQL rollback and stale opened-source refusal passed")
     print("Memo draft: atomic commit/removal and SQLite delete-failure rollback passed")
   }
   private static func text(_ source: ProjectSource) throws -> String {

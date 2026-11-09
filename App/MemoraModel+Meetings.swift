@@ -66,10 +66,16 @@ extension MemoraModel {
 
   @discardableResult
   func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) -> Bool {
-    guard let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
+    guard !Task.isCancelled, !isRestoring, currentTeamID == nil, isStoreWritable(),
+          let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
+    var candidate = meetings
+    change(&candidate[index])
+    guard candidate != meetings else { return true }
+    // Callers use success to start follow-up work or discard their drafts.
+    // Publish only the snapshot that actually reached the ordered store.
+    guard persistBatch({ [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))] }) else { return false }
     meetingSearchTexts.removeValue(forKey: id)
-    change(&meetings[index])
-    persistMeetings()
+    meetings = candidate
     return true
   }
 

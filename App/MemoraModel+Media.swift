@@ -10,14 +10,18 @@ extension MemoraModel {
   }
 
   func addMeetingPhoto(_ id: UUID, data: Data) {
+    guard !Task.isCancelled, !isRestoring, currentTeamID == nil, isStoreWritable(), meeting(id: id) != nil else { return }
     guard let name = MediaFiles.writePhoto(data, thumbnailMaxSide: 400) else {
       persistenceFailureMessage = "写真を保存できませんでした。ストレージの空き容量を確認してください。"
       return
     }
-    updateMeeting(id) { meeting in
+    guard updateMeeting(id, change: { meeting in
       var names = meeting.photoFileNames ?? []
       names.append(name)
       meeting.photoFileNames = names
+    }) else {
+      deleteMedia(audioURL: nil, photoNames: [name])
+      return
     }
   }
 
