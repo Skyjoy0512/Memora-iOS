@@ -56,12 +56,17 @@ import Foundation
     var message = AIChatMessage(role: .assistant, text: "# 確認事項\n\n" + text + "\n会議【資料1】\n不明【タスク:\(otherID)】")
     message.sources = [second]; message.artifactProvenance = provenance
     let document = AIAnswerDocumentBuilder.make(message: message, question: "田中さんとの確認事項")
+    precondition(document.sourceAnswerID == message.id)
     precondition(document.provenance == provenance && document.sourceProjectFileIDs == [id] && document.sourceRecordIDs == [id])
     precondition(!document.markdown.contains(otherID.uuidString) && !document.markdown.contains("【人物:"))
     precondition(targets.allSatisfy { document.markdown.contains(AnswerSourceCitation.url(for: $0).absoluteString) })
     precondition(document.markdown.contains(MeetingLink.url(for: id)!.absoluteString))
     let restored = try JSONDecoder().decode(MemoraDocument.self, from: JSONEncoder().encode(document))
     precondition(restored == document)
+    var legacy = try JSONSerialization.jsonObject(with: JSONEncoder().encode(document)) as! [String: Any]
+    legacy.removeValue(forKey: "sourceAnswerID")
+    let legacyDocument = try JSONDecoder().decode(MemoraDocument.self, from: JSONSerialization.data(withJSONObject: legacy))
+    precondition(legacyDocument.sourceAnswerID == nil)
     let snapshot = AIConversationSnapshot(messages: [message], workspaceID: nil)
     let restoredMessage = try AIConversationSnapshot.decode(JSONEncoder().encode(snapshot), workspaceID: nil).restoredMessages()[0]
     precondition(restoredMessage.artifactProvenance == provenance && restoredMessage.cloudAuthorizationTargets == nil)

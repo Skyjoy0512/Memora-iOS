@@ -160,6 +160,52 @@ struct NativeAIInterface: Codable, Equatable {
     return (markdown, interface)
   }
 
+  /// Reference-backed cards use the same live grants as their onscreen views.
+  /// Display JSON never supplies replacement titles, event dates or task counts.
+  static func exportMarkdown(_ text: String,
+    referenceText: (Kind, [UUID]) -> [String]? = { _, _ in nil }
+  ) -> String {
+    let response = response(text)
+    guard let interface = response.interface else { return response.markdown }
+    func cell(_ text: String) -> String {
+      text.replacingOccurrences(of: "\\", with: "\\\\")
+        .replacingOccurrences(of: "|", with: "\\|")
+        .components(separatedBy: .newlines).joined(separator: " ")
+    }
+    func block(_ component: Component) -> String {
+      if component.kind == .row || component.kind == .column {
+        return (component.components ?? []).map(block).filter { !$0.isEmpty }.joined(separator: "\n\n")
+      }
+      var lines: [String] = []
+      if let title = component.title, !title.isEmpty {
+        lines.append("### " + title.components(separatedBy: .newlines).joined(separator: " "))
+      }
+      switch component.kind {
+      case .comparisonTable:
+        let columns = component.columns ?? []
+        lines.append("| " + columns.map(cell).joined(separator: " | ") + " |")
+        lines.append("| " + columns.map { _ in "---" }.joined(separator: " | ") + " |")
+        lines += component.items.map { "| " + ($0.cells ?? []).map(cell).joined(separator: " | ") + " |" }
+      case .chart:
+        lines += component.items.map { "- \($0.title ?? ""): \(($0.value ?? 0).formatted())" }
+      case .timeline, .disclosure:
+        lines += component.items.map { item in
+          "- " + (item.title ?? "") + (item.detail.map { "\n  " + $0.replacingOccurrences(of: "\n", with: "\n  ") } ?? "")
+        }
+      case .row, .column: break
+      default:
+        if let resolved = referenceText(component.kind, component.items.compactMap(\.referenceID)) {
+          lines += resolved.map { "- " + $0 }
+        } else {
+          lines.append("この項目は現在参照できません。")
+        }
+      }
+      return lines.joined(separator: "\n")
+    }
+    return ([response.markdown] + interface.components.map(block))
+      .filter { !$0.isEmpty }.joined(separator: "\n\n")
+  }
+
   static var instructions: String {
     """
     通常はMarkdownだけで答える。操作・比較・日程の表示が明確に役立つ場合だけ、完全なMarkdown回答の末尾に1つの```memora-ui JSONブロックを付けてよい。

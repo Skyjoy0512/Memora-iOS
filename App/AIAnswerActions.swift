@@ -10,7 +10,7 @@ struct AIAnswerActions: View {
   @State private var skillDraft: MemoraSkill?
 
   var body: some View {
-    let exportText = AnswerCitations.stripped(NativeAIInterface.response(message.text).markdown)
+    let exportText = AnswerCitations.stripped(model.answerExportMarkdown(message))
     AIResponseActionBar(text: exportText, canRetry: model.canRetryAIAnswer(message.id),
       isSpeaking: model.isSpeakingAnswer(message.id), readAloud: {
         InteractionFeedback.shared.send(.tap)
@@ -18,7 +18,8 @@ struct AIAnswerActions: View {
       }, save: saveDocument, retry: {
         InteractionFeedback.shared.send(.tap)
         model.retryAIAnswer(message.id)
-      }, saveSkill: { skillDraft = .draft(instructions: exportText) })
+      }, saveSkill: { skillDraft = .draft(instructions: exportText) },
+      saveTitle: model.savedAnswerDocument(for: message) == nil ? "回答を資料に保存" : "保存した資料を開く")
     .sheet(item: $skillDraft) { SkillEditorView(skill: $0, reviewsAnswer: true) }
     .sheet(item: $savedDocument) { document in
       NavigationStack {
@@ -46,7 +47,11 @@ struct AIAnswerActions: View {
   }
 
   private func saveDocument() {
-    let document = model.document(from: message)
+    if let existing = model.savedAnswerDocument(for: message) {
+      savedDocument = existing
+      return
+    }
+    let document = model.document(from: message, exportedAnswer: model.answerExportMarkdown(message))
     if model.addDocument(document) {
       InteractionFeedback.shared.send(.success)
       savedDocument = document

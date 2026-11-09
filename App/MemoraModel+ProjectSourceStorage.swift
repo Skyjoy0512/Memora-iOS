@@ -83,11 +83,13 @@ extension MemoraModel {
     guard var note = source(id: noteID), note.kind == .note else { return false }
     var ids = note.attachedSourceIDs ?? []
     var seen = Set(ids)
-    for id in attachmentIDs where ids.count < 64 {
+    for id in attachmentIDs {
       guard id != noteID, !seen.contains(id), let candidate = source(id: id),
             candidate.projectID == note.projectID, seen.insert(id).inserted else { continue }
       ids.append(id)
     }
+    // A successful operation must include every eligible selection.
+    guard ids.count <= 64 else { return false }
     guard ids != (note.attachedSourceIDs ?? []) else { return true }
     note.attachedSourceIDs = ids.isEmpty ? nil : ids
     note.updatedAt = .now

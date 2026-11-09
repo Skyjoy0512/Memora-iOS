@@ -7,14 +7,15 @@ extension MemoraModel {
     Set(documents.flatMap(\.artifactFileReferences) + companyTemplates.map(\.fileReference))
   }
 
-  func document(from message: AIChatMessage) -> MemoraDocument {
+  func document(from message: AIChatMessage, exportedAnswer: String? = nil) -> MemoraDocument {
     let question: String?
     if message.residentName == nil, let index = aiMessages.firstIndex(where: { $0.id == message.id }) {
       question = aiMessages[..<index].last { $0.role == .user }?.text
     } else {
       question = nil
     }
-    return AIAnswerDocumentBuilder.make(message: message, question: question, provenance: artifactProvenance(for: message))
+    return AIAnswerDocumentBuilder.make(message: message, question: question, provenance: artifactProvenance(for: message),
+      exportedAnswer: exportedAnswer)
   }
 
   func document(id: UUID) -> MemoraDocument? {

@@ -1,17 +1,17 @@
 import SwiftUI
 
 /// The agent's questions, one at a time: pick a choice or write your own. A
-/// single choice moves on by itself; several choices wait for 次へ. The answers
+/// choices wait for explicit confirmation. The answers
 /// go back to the agent, which goes on from there.
 struct AgentQuestionCard: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
   var request: AgentQuestionRequest
 
   @State private var index = 0
   @State private var picked: [Int: Set<Int>] = [:]
   @State private var custom: [Int: String] = [:]
-  @State private var advanceTask: Task<Void, Never>?
   @State private var movingForward = true
 
   private var questions: [AgentQuestion] { request.questions }
@@ -43,14 +43,13 @@ struct AgentQuestionCard: View {
       } label: {
         Image(icon: .xmark, size: 13)
           .foregroundStyle(.tertiary)
-          .frame(width: 36, height: 36)
+          .frame(width: 44, height: 44)
           .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel("答えずに閉じる")
     }
     .animation(reduceMotion ? nil : .smooth(duration: 0.36), value: index)
-    .onDisappear { advanceTask?.cancel() }
   }
 
   // MARK: - Question
@@ -78,6 +77,7 @@ struct AgentQuestionCard: View {
               Spacer(minLength: 0)
             }
             .padding(.vertical, 7)
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
@@ -127,9 +127,14 @@ struct AgentQuestionCard: View {
   // MARK: - Footer
 
   private var footer: some View {
-    HStack(spacing: 6) {
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+      : AnyLayout(HStackLayout(spacing: 6))
+    return layout {
+      HStack(spacing: 6) {
       Button { go(to: index - 1) } label: {
         Image(icon: .chevronUp, size: 13)
+          .frame(width: 44, height: 44).contentShape(Rectangle())
       }
       .disabled(index == 0)
       .accessibilityLabel("前の質問")
@@ -141,19 +146,22 @@ struct AgentQuestionCard: View {
 
       Button { go(to: index + 1) } label: {
         Image(icon: .chevronDown, size: 13)
+          .frame(width: 44, height: 44).contentShape(Rectangle())
       }
       .disabled(isLast)
       .accessibilityLabel("次の質問")
+      }
 
-      Spacer()
+      if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
 
+      HStack(spacing: 6) {
       Button("スキップ") {
         if isLast { send() } else { go(to: index + 1) }
       }
       .font(.subheadline)
       .foregroundStyle(.secondary)
       .padding(.horizontal, MemoraSpacing.md)
-      .frame(minHeight: 36)
+      .frame(minHeight: 44)
 
       Button {
         InteractionFeedback.shared.send(.tap)
@@ -163,11 +171,12 @@ struct AgentQuestionCard: View {
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(Color(uiColor: .systemBackground))
           .padding(.horizontal, MemoraSpacing.lg)
-          .frame(minHeight: 36)
+          .frame(minHeight: 44)
           .background(hasAnswer ? Color.primary : Color.secondary.opacity(0.4), in: Capsule())
       }
       .buttonStyle(.plain)
       .disabled(!hasAnswer)
+      }
     }
     .buttonStyle(.plain)
     .foregroundStyle(.secondary)
@@ -186,13 +195,6 @@ struct AgentQuestionCard: View {
     }
     picked[index] = [option]
     custom[index] = ""
-    // A single choice moves on by itself, a moment after it is shown.
-    advanceTask?.cancel()
-    advanceTask = Task { @MainActor in
-      try? await Task.sleep(for: .milliseconds(480))
-      guard !Task.isCancelled else { return }
-      advance()
-    }
   }
 
   private func advance() {
@@ -200,14 +202,12 @@ struct AgentQuestionCard: View {
   }
 
   private func go(to next: Int) {
-    advanceTask?.cancel()
     let target = min(max(next, 0), questions.count - 1)
     movingForward = target > index
     index = target
   }
 
   private func send() {
-    advanceTask?.cancel()
     let answers = questions.indices.map { questionIndex in
       let choices = picked[questionIndex, default: []].sorted().map { questions[questionIndex].options[$0] }
       let written = (custom[questionIndex] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)

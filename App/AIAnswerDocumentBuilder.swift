@@ -1,7 +1,8 @@
 import Foundation
 
 enum AIAnswerDocumentBuilder {
-  static func make(message: AIChatMessage, question: String?, provenance: ArtifactProvenance? = nil) -> MemoraDocument {
+  static func make(message: AIChatMessage, question: String?, provenance: ArtifactProvenance? = nil,
+                   exportedAnswer: String? = nil) -> MemoraDocument {
     let provenance = provenance ?? message.artifactProvenance
     // Grounded answers cite retrieved project sources without artifact
     // provenance; keep those links in the saved answer too.
@@ -11,7 +12,7 @@ enum AIAnswerDocumentBuilder {
     }
     let allowed = AnswerSourceCitation.targets(provenance: provenance,
       meetingIDs: message.sources.map(\.meetingID), projectFileIDs: groundedProjectFiles)
-    let answer = NativeAIInterface.response(message.text).markdown
+    let answer = exportedAnswer ?? NativeAIInterface.exportMarkdown(message.text)
     let questionTitle = question?.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ") ?? ""
     let answerTitle = AnswerCitations.stripped(answer)
       .components(separatedBy: .newlines)
@@ -35,8 +36,10 @@ enum AIAnswerDocumentBuilder {
       markdown += "\n\nリンクは、元の記録がある端末のMemoraで開けます。"
     }
     let storedProjectFiles = Array(Set((provenance?.projectSources.map(\.id) ?? []) + groundedProjectFiles))
-    return MemoraDocument(title: title, kind: .document, markdown: markdown,
+    var document = MemoraDocument(title: title, kind: .document, markdown: markdown,
       sourceProjectFileIDs: storedProjectFiles.isEmpty ? nil : storedProjectFiles,
       sourceRecordIDs: message.sources.map(\.meetingID), provenance: provenance)
+    document.sourceAnswerID = message.id
+    return document
   }
 }

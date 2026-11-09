@@ -12,6 +12,7 @@ struct AIResponseActionBar: View {
   var save: () -> Void
   var retry: () -> Void
   var saveSkill: (() -> Void)? = nil
+  var saveTitle = "回答を資料に保存"
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var didCopy = false
   @State private var resetTask: Task<Void, Never>?
@@ -36,7 +37,7 @@ struct AIResponseActionBar: View {
       Menu {
         Button("テキストを選択…", icon: .textAlignleft) { selectsText = true }
           .disabled(text.isEmpty)
-        Button("回答を資料に保存", icon: .docText, action: save)
+        Button(saveTitle, icon: .docText, action: save)
         if let saveSkill {
           Button("回答からスキルを作成", icon: .squareAndPencil, action: saveSkill)
             .disabled(text.isEmpty)

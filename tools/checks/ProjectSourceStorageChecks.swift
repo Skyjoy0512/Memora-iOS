@@ -266,6 +266,19 @@ struct ProjectSourceStorageChecks {
     precondition(prunedNote?.attachedSourceIDs == [third.id])
     precondition(pruned.contains { $0.id == first.id } && pruned.contains { $0.id == foreign.id })
     precondition(pruned.count == model.projectSources.count, "pruning a link never deletes a source")
+    let extras = (0..<63).map { source("容量\($0)", projectID: project.id) }
+    for value in extras { expect(model.storeProjectSource(value)) }
+    expect(model.attachProjectSources(Array(extras.prefix(61)).map(\.id), toNote: noteID))
+    let beforeLimit = model.source(id: noteID)!
+    precondition(beforeLimit.attachedSourceIDs?.count == 63)
+    expect(!model.attachProjectSources(Array(extras.suffix(2)).map(\.id), toNote: noteID))
+    precondition(model.source(id: noteID) == beforeLimit)
+    expect(try reload(model).first { $0.id == noteID } == beforeLimit)
+    expect(model.attachProjectSources([extras[61].id], toNote: noteID))
+    let full = model.source(id: noteID)!
+    precondition(full.attachedSourceIDs?.count == 64)
+    expect(!model.attachProjectSources([extras[62].id], toNote: noteID))
+    precondition(model.source(id: noteID) == full)
     print("Note attachments: creation/later attach, same-project filtering, ordering/reorder, reload, link-only detach and non-cascading pruning passed")
   }
 

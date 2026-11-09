@@ -30,6 +30,7 @@ struct MemoraDocument: Identifiable, Hashable, Codable, Sendable {
   var sourceProjectFileIDs: [UUID]?
   var sourceRecordIDs: [UUID]?
   var provenance: ArtifactProvenance?
+  var sourceAnswerID: UUID?
   /// Optional so documents and backups written before presentation planning still decode.
   var presentationPlan: PresentationPlan?
   /// The evidence a generated deck was built from, kept with the deck so its
