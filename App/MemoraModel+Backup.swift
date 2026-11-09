@@ -190,26 +190,77 @@ extension MemoraModel {
       cloudShareMessage = "チーム共有はチームプランで利用できます。設定の「プラン」から選べます。"
       return
     }
+    guard !cloudSharing.isWorking, cloudSharePreparation == nil else {
+      cloudShareMessage = "共有の準備中です。完了するまでお待ちください。"
+      return
+    }
+    let preparation = CloudSharePreparation(workspaceID: currentTeamID, generation: aiWorkspaceGeneration,
+      snapshot: snapshot, ownerName: profile.name.trimmingCharacters(in: .whitespacesAndNewlines))
+    guard !Task.isCancelled, cloudSharePreparationIsCurrent(preparation) else {
+      cloudShareMessage = RecordAccessPolicy.refusal
+      return
+    }
+    cloudSharePreparation = preparation
+    defer {
+      if cloudSharePreparation?.id == preparation.id { cloudSharePreparation = nil }
+      if cloudShareTask?.id == preparation.id { cloudShareTask = nil }
+    }
     await cloudSharing.refreshAvailability()
+    guard cloudSharePreparation?.id == preparation.id, !Task.isCancelled,
+          cloudSharePreparationIsCurrent(preparation) else { return }
     if let message = cloudSharing.availabilityMessage {
       cloudShareMessage = message
       return
     }
     do {
-      guard snapshot.meetings.allSatisfy({ allowsRecordAccess($0.id, purpose: .teamSharing) }),
-            snapshot.tasks.allSatisfy({ allowsRecordAccess(.task($0.id), purpose: .teamSharing) }) else {
-        throw TeamShareError.privacyRestricted
-      }
       let payload = try RecordStore.encoded(snapshot)
-      pendingCloudShare = try await cloudSharing.makeShare(
-        title: title,
-        kind: snapshot.kind.rawValue,
-        payload: payload,
-        ownerName: profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
-      )
+      let service = cloudSharing
+      let operation = Task { @MainActor [weak self] in
+        try await service.makeShare(title: title, kind: snapshot.kind.rawValue, payload: payload,
+          ownerName: preparation.ownerName) { [weak self] in
+          self?.cloudSharePreparation?.id == preparation.id
+            && self?.cloudSharePreparationIsCurrent(preparation) == true
+        }
+      }
+      cloudShareTask = (preparation.id, operation)
+      let request = try await withTaskCancellationHandler {
+        try await operation.value
+      } onCancel: { operation.cancel() }
+      guard !Task.isCancelled, cloudSharePreparation?.id == preparation.id,
+            cloudSharePreparationIsCurrent(preparation) else {
+        try await cloudSharing.discardUnpublishedShare(request)
+        return
+      }
+      pendingCloudShare = request
     } catch {
-      cloudShareMessage = "共有を開始できませんでした。\(error.localizedDescription)"
+      if cloudSharePreparation?.id == preparation.id || (error as? CloudSharingError) == .cleanupFailed {
+        cloudShareMessage = "共有を開始できませんでした。\(error.localizedDescription)"
+      }
     }
+  }
+
+  func invalidatePendingCloudShare() {
+    guard let preparation = cloudSharePreparation, !cloudSharePreparationIsCurrent(preparation) else { return }
+    if cloudShareTask?.id == preparation.id { cloudShareTask?.task.cancel() }
+    cloudSharePreparation = nil
+    cloudShareMessage = "設定や共有する内容が変わったため、共有の準備を中止しました。"
+  }
+
+  private func cloudSharePreparationIsCurrent(_ preparation: CloudSharePreparation) -> Bool {
+    let snapshot = preparation.snapshot
+    guard !isRestoring, !isStoreProtected, currentTeamID == nil, hasTeamPlan,
+          currentTeamID == preparation.workspaceID, aiWorkspaceGeneration == preparation.generation,
+          profile.name.trimmingCharacters(in: .whitespacesAndNewlines) == preparation.ownerName,
+          snapshot.meetings.allSatisfy({ meeting(id: $0.id) == $0 && allowsRecordAccess($0.id, purpose: .teamSharing) }) else { return false }
+    if snapshot.kind == .project {
+      guard let project = snapshot.space, space(id: project.id) == project,
+            meetings.filter({ $0.spaceID == project.id }) == snapshot.meetings else { return false }
+    } else {
+      guard snapshot.meetings.count == 1,
+            snapshot.meetings[0].spaceID.flatMap({ space(id: $0) }) == snapshot.space else { return false }
+    }
+    let ids = Set(snapshot.meetings.map(\.id))
+    return tasks.filter { $0.meetingID.map(ids.contains) == true && allowsTaskAccess($0, purpose: .teamSharing) } == snapshot.tasks
   }
 
   /// Restores a package. It refuses to run when this device already holds

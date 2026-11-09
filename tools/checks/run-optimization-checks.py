@@ -12,6 +12,8 @@ subprocess.run(['python3', '-B', 'tools/checks/test_process_resource_sampler.py'
 subprocess.run(['bash', 'tools/checks/run-recording-recovery-checks.sh'], check=True)
 subprocess.run(['python3', 'tools/checks/run-local-store-checks.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-location-persistence-checks.py'], check=True)
+subprocess.run(['python3', 'tools/checks/run-webhook-lifecycle-checks.py'], check=True)
+subprocess.run(['python3', 'tools/checks/run-cloud-share-lifecycle-checks.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-meeting-persistence-performance-checks.py'], check=True)
 subprocess.run(['bash', 'tools/checks/run-tool-integration-checks.sh'], check=True)
 subprocess.run(['bash', 'tools/checks/run-license-persistence-checks.sh'], check=True)

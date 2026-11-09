@@ -29,6 +29,8 @@ final class MemoraModel {
     didSet {
       UserDefaults.standard.set(currentTeamID, forKey: StorageKey.currentTeamID)
       if oldValue != currentTeamID {
+        invalidatePendingWebhookDeliveries()
+        invalidatePendingCloudShare()
         MemoryRetrievalOrchestrator.invalidate()
         didChangeConversationWorkspace(from: oldValue)
         cancelProjectWebFetches()
@@ -77,12 +79,15 @@ final class MemoraModel {
       }
       rebuildMeetingAggregates()
       refreshSampleContentFlag()
+      invalidatePendingWebhookDeliveries()
+      invalidatePendingCloudShare()
     }
   }
   var spaces: [MemoraSpace] {
     didSet {
       spaceIndex.invalidate()
       refreshSampleContentFlag()
+      invalidatePendingCloudShare()
     }
   }
   /// Documents and slides made from the records, newest first.
@@ -136,6 +141,8 @@ final class MemoraModel {
       tasksByMeeting = nil
       rebuildProjectTaskCounts()
       refreshSampleContentFlag()
+      invalidatePendingWebhookDeliveries()
+      invalidatePendingCloudShare()
     }
   }
   var lifeLogEntries: [LifeLogEntry] {
@@ -204,10 +211,15 @@ final class MemoraModel {
   var installedTemplateIDs: [String] = []
   /// Where finished summaries are sent. Settings; their URLs are in the keychain.
   var webhookEndpoints: [WebhookEndpoint] = MemoraModel.storedSetting([WebhookEndpoint].self, forKey: StorageKey.webhooks) ?? [] {
-    didSet { MemoraModel.storeSetting(webhookEndpoints, forKey: StorageKey.webhooks) }
+    didSet {
+      MemoraModel.storeSetting(webhookEndpoints, forKey: StorageKey.webhooks)
+      invalidatePendingWebhookDeliveries()
+    }
   }
   /// How the last send to each endpoint went, for this session.
   var webhookResults: [UUID: WebhookResult] = [:]
+  @ObservationIgnored var webhookDeliveries: [UUID: WebhookDeliveryJob] = [:]
+  @ObservationIgnored var latestWebhookDeliveryIDs: [UUID: UUID] = [:]
   /// Remote MCP servers whose tools the agent may use. Settings; tokens are in
   /// the keychain.
   var customSkills: [MemoraSkill] = []
@@ -324,6 +336,8 @@ final class MemoraModel {
   /// written, so a record added meanwhile cannot be silently replaced.
   var isRestoring = false {
     didSet {
+      invalidatePendingWebhookDeliveries()
+      invalidatePendingCloudShare()
       if isRestoring {
         cancelProjectWebFetches()
         interruptPendingSummaries(requiresUserRetry: true)
@@ -466,7 +480,12 @@ final class MemoraModel {
   private static let composerDraftKey = "composer.question"
   /// True when the store could not be read at startup. Persisting is refused
   /// while it is set, so unreadable existing data is never written over.
-  @ObservationIgnored var isStoreProtected = false
+  @ObservationIgnored var isStoreProtected = false {
+    didSet {
+      invalidatePendingWebhookDeliveries()
+      invalidatePendingCloudShare()
+    }
+  }
   /// The engine Ask AI and summaries actually use. The model owns it, so what
   /// the composer shows and what the request calls cannot drift apart.
   var registeredLLMs = RegisteredLLMStore()
@@ -517,9 +536,9 @@ final class MemoraModel {
   var isSubscribed: Bool
   /// The chosen plan. Billing is not connected yet, so this is a local choice
   /// that decides which features are unlocked; nil means the free plan.
-  var plan: MemoraPlan?
+  var plan: MemoraPlan? { didSet { invalidatePendingCloudShare() } }
   /// A company license activated with a code; it outranks the personal plan.
-  var license: MemoraLicense?
+  var license: MemoraLicense? { didSet { invalidatePendingCloudShare() } }
   /// Team features come with the team plan or a company license.
   var hasTeamPlan: Bool { activeLicense != nil || plan?.includesTeam == true }
   var hasOfferedPlus: Bool
@@ -548,6 +567,8 @@ final class MemoraModel {
   /// CloudKit team sharing. Kept out of the local write path: it runs only when
   /// the person shares something or opens the team list.
   @ObservationIgnored let cloudSharing = CloudSharingService.shared
+  @ObservationIgnored var cloudSharePreparation: CloudSharePreparation?
+  @ObservationIgnored var cloudShareTask: (id: UUID, task: Task<CloudSharingService.ShareRequest, Error>)?
   /// The share the system sharing sheet is presenting, if any.
   var pendingCloudShare: CloudSharingService.ShareRequest?
   /// A team-sharing message to show, whether a refusal or a failure.

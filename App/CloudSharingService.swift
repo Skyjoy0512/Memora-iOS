@@ -30,6 +30,7 @@ final class CloudSharingService {
     var share: CKShare
     var container: CKContainer
     var title: String
+    var rootRecordID: CKRecord.ID
   }
 
   /// A project or record someone else has shared with this person.
@@ -134,12 +135,15 @@ final class CloudSharingService {
   /// Publishes a snapshot and returns a share to invite people with. Saving both
   /// the record and its share is atomic, so a share never exists without its
   /// content.
-  func makeShare(title: String, kind: String, payload: Data, ownerName: String) async throws -> ShareRequest {
+  func makeShare(title: String, kind: String, payload: Data, ownerName: String,
+                 authorize: @escaping @MainActor () -> Bool) async throws -> ShareRequest {
+    try checkShareAuthorization(authorize)
     isWorking = true
     defer { isWorking = false }
 
     let zone = CKRecordZone(zoneName: Self.zoneName)
     _ = try? await privateDatabase.save(zone)
+    try checkShareAuthorization(authorize)
 
     let recordID = CKRecord.ID(recordName: UUID().uuidString, zoneID: zone.zoneID)
     let record = CKRecord(recordType: Self.recordType, recordID: recordID)
@@ -152,26 +156,64 @@ final class CloudSharingService {
     let share = CKShare(rootRecord: record)
     share[CKShare.SystemFieldKey.title] = title as CKRecordValue
 
-    let outcome = try await privateDatabase.modifyRecords(
-      saving: [record, share],
-      deleting: [],
-      savePolicy: .ifServerRecordUnchanged,
-      atomically: true
-    )
-    guard let saved = try outcome.saveResults[share.recordID]?.get() as? CKShare else {
-      throw CloudSharingError.saveFailed
+    do {
+      try checkShareAuthorization(authorize)
+      let outcome = try await privateDatabase.modifyRecords(
+        saving: [record, share],
+        deleting: [],
+        savePolicy: .ifServerRecordUnchanged,
+        atomically: true
+      )
+      try checkShareAuthorization(authorize)
+      guard let saved = try outcome.saveResults[share.recordID]?.get() as? CKShare else {
+        throw CloudSharingError.saveFailed
+      }
+      try? await subscribeIfNeeded()
+      try checkShareAuthorization(authorize)
+      return ShareRequest(share: saved, container: container, title: title, rootRecordID: recordID)
+    } catch {
+      // A response may fail after the server committed. These IDs belong only
+      // to this preparation; remove both before reporting that it was stopped.
+      try await removePreparedShare(recordID: recordID, shareID: share.recordID)
+      throw error
     }
-    try? await subscribeIfNeeded()
-    return ShareRequest(share: saved, container: container, title: title)
+  }
+
+  func discardUnpublishedShare(_ request: ShareRequest) async throws {
+    try await removePreparedShare(recordID: request.rootRecordID, shareID: request.share.recordID)
+  }
+
+  private func checkShareAuthorization(_ authorize: @MainActor () -> Bool) throws {
+    try Task.checkCancellation()
+    guard authorize() else { throw TeamShareError.privacyRestricted }
+  }
+
+  private func removePreparedShare(recordID: CKRecord.ID, shareID: CKRecord.ID) async throws {
+    // Cancellation of the preparation cannot cancel its cleanup as well.
+    let cleanup = Task { @MainActor [self] in
+      let ids = [recordID, shareID]
+      let outcome = try await privateDatabase.modifyRecords(saving: [], deleting: ids,
+        savePolicy: .ifServerRecordUnchanged, atomically: false)
+      for id in ids {
+        guard let result = outcome.deleteResults[id] else { throw CloudSharingError.cleanupFailed }
+        do { try result.get() }
+        catch let error as CKError where error.code == .unknownItem { continue }
+      }
+    }
+    do { try await cleanup.value }
+    catch { throw CloudSharingError.cleanupFailed }
   }
 
   /// Updates a snapshot the owner already shared, so teammates see the change.
-  func updateShare(recordName: String, payload: Data) async throws {
+  func updateShare(recordName: String, payload: Data, authorize: @escaping @MainActor () -> Bool) async throws {
+    try checkShareAuthorization(authorize)
     let recordID = CKRecord.ID(recordName: recordName, zoneID: CKRecordZone(zoneName: Self.zoneName).zoneID)
     let record = try await privateDatabase.record(for: recordID)
+    try checkShareAuthorization(authorize)
     record["payload"] = payload as CKRecordValue
     record["updatedAt"] = Date() as CKRecordValue
     _ = try await privateDatabase.save(record)
+    try checkShareAuthorization(authorize)
   }
 
   /// Accepts a share the person opened from the system, then refreshes the list.
