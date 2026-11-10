@@ -10,6 +10,7 @@ enum BackupPackage {
   static let manifestName = "manifest.json"
   static let mediaFolderName = "media"
   static let currentVersion = 3
+  static let maximumManifestBytes = 64 * 1024 * 1024
 
   struct Manifest: Codable {
     var version: Int
@@ -41,6 +42,7 @@ enum BackupPackage {
   enum BackupError: LocalizedError {
     case notEmpty
     case unreadable
+    case manifestTooLarge
     case unsupportedVersion(Int)
     case duplicateIdentifiers
     /// A record points at a file name that is not a plain file name.
@@ -72,6 +74,8 @@ enum BackupPackage {
         "この端末にすでに記録があります。復元は、記録が空のときだけ行えます。"
       case .unreadable:
         "バックアップを読み込めませんでした。フォルダとファイルを確認してください。"
+      case .manifestTooLarge:
+        "バックアップの記録情報が大きすぎるため処理できません（上限64 MB）。"
       case .unsupportedVersion(let version):
         "このバックアップは対応していない版です（版\(version)）。"
       case .duplicateIdentifiers:
@@ -202,7 +206,11 @@ enum BackupPackage {
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     do {
       let data = try encoder.encode(manifest)
+      guard data.count <= maximumManifestBytes else { throw BackupError.manifestTooLarge }
       try data.write(to: packageURL.appendingPathComponent(manifestName), options: .atomic)
+    } catch let error as BackupError {
+      try? FileManager.default.removeItem(at: packageURL)
+      throw error
     } catch {
       try? FileManager.default.removeItem(at: packageURL)
       throw BackupError.copyFailed([manifestName])
@@ -217,8 +225,11 @@ enum BackupPackage {
     try Task.checkCancellation()
     let data: Data
     do {
-      guard let file = BackupPackageFile.resolve(manifestName, in: packageURL) else { throw BackupError.unreadable }
-      data = try Data(contentsOf: file)
+      data = try BackupPackageFile.read(manifestName, in: packageURL, maximumBytes: maximumManifestBytes)
+    } catch is CancellationError {
+      throw CancellationError()
+    } catch let error as BackupError {
+      throw error
     } catch {
       throw BackupError.unreadable
     }

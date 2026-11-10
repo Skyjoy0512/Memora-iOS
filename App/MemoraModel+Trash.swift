@@ -54,7 +54,7 @@ extension MemoraModel {
     let trashID = candidateTrash[0].id
     scheduleUndo(
       UndoAction(message: "「\(removed.displayTitle)」を削除しました") { [weak self] in
-        self?.restoreTrashedRecord(trashID, preservingPosition: true)
+        self?.restoreTrashedRecord(trashID, preservingPosition: true) ?? false
       } finalize: {}
     )
   }
@@ -116,9 +116,7 @@ extension MemoraModel {
     let trashIDs = candidateTrash.prefix(removed.count).map(\.id)
     scheduleUndo(
       UndoAction(message: "\(removed.count)件の記録を削除しました") { [weak self] in
-        for id in trashIDs {
-          self?.restoreTrashedRecord(id, preservingPosition: true)
-        }
+        self?.restoreTrashedRecords(Set(trashIDs), preservingPosition: true) ?? false
       } finalize: {}
     )
   }
@@ -127,54 +125,65 @@ extension MemoraModel {
   /// The saved position is only used when `preservingPosition` is set, which is
   /// the undo path; a restore from the trash days later goes back by date, since
   /// records added meanwhile would have made the old index wrong.
-  func restoreTrashedRecord(_ id: UUID, preservingPosition: Bool = false) {
-    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
-    guard let index = trashedRecords.firstIndex(where: { $0.id == id }) else { return }
+  @discardableResult
+  func restoreTrashedRecord(_ id: UUID, preservingPosition: Bool = false) -> Bool {
+    restoreTrashedRecords([id], preservingPosition: preservingPosition)
+  }
 
-    var candidateTrash = trashedRecords
-    let record = candidateTrash.remove(at: index)
+  /// The entire undo batch commits together, including attached tasks and journal entries.
+  @discardableResult
+  func restoreTrashedRecords(_ ids: Set<UUID>, preservingPosition: Bool = false) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), !ids.isEmpty else { return false }
+    let records = trashedRecords.filter { ids.contains($0.id) }
+    let available = Set(records.map(\.id)).union(meetings.map(\.id))
+    guard ids.isSubset(of: available) else {
+      deletionFailureMessage = "ごみ箱に復元する記録が見つかりませんでした。"
+      return false
+    }
+    guard !records.isEmpty else { return true }
+    let restoredTasks = records.flatMap(\.tasks)
+    let restoredEntries = records.flatMap(\.lifeLogEntries)
+    guard Set(records.map(\.id)).count == records.count,
+          Set(restoredTasks.map(\.id)).count == restoredTasks.count,
+          Set(restoredEntries.map(\.id)).count == restoredEntries.count,
+          Set(records.map(\.id)).isDisjoint(with: meetings.map(\.id)),
+          Set(restoredTasks.map(\.id)).isDisjoint(with: tasks.map(\.id)),
+          Set(restoredEntries.map(\.id)).isDisjoint(with: lifeLogEntries.map(\.id)) else {
+      deletionFailureMessage = "同じIDの項目があるため、上書きせずに復元を止めました。"
+      return false
+    }
     var candidateMeetings = meetings
+    let ordered = records.enumerated().sorted { lhs, rhs in
+      if preservingPosition { return (lhs.element.meetingPosition ?? lhs.offset) < (rhs.element.meetingPosition ?? rhs.offset) }
+      return lhs.element.meeting.createdAt > rhs.element.meeting.createdAt
+    }.map(\.element)
+    for record in ordered {
+      let datePosition = candidateMeetings.firstIndex { $0.createdAt < record.meeting.createdAt } ?? candidateMeetings.count
+      let position = preservingPosition ? (record.meetingPosition ?? datePosition) : datePosition
+      candidateMeetings.insert(record.meeting, at: min(max(0, position), candidateMeetings.count))
+    }
+    let positions = preservingPosition
+      ? records.reduce(into: [UUID: Int]()) { $0.merge($1.taskPositions ?? [:]) { first, _ in first } } : [:]
+    let orderedTasks = restoredTasks.enumerated().sorted {
+      (positions[$0.element.id] ?? $0.offset) < (positions[$1.element.id] ?? $1.offset)
+    }.map(\.element)
     var candidateTasks = tasks
-    var candidateEntries = lifeLogEntries
-    // Put it back where it was. Undo uses the saved position; a later restore
-    // goes by date, which is how the list reads. Records saved before positions
-    // existed fall back to date order too.
-    let datePosition = candidateMeetings.firstIndex { $0.createdAt < record.meeting.createdAt }
-      ?? candidateMeetings.count
-    let meetingPosition = preservingPosition ? (record.meetingPosition ?? datePosition) : datePosition
-    candidateMeetings.insert(record.meeting, at: min(meetingPosition, candidateMeetings.count))
-
-    // Attached tasks go back to their own positions on undo, in ascending order
-    // so the inserts do not shift each other.
-    let positions = preservingPosition ? record.taskPositions : nil
-    let orderedTasks = record.tasks.enumerated()
-      .sorted { lhs, rhs in
-        (positions?[lhs.element.id] ?? lhs.offset) < (positions?[rhs.element.id] ?? rhs.offset)
-      }
-      .map(\.element)
-    for task in orderedTasks {
-      let position = positions?[task.id] ?? 0
-      candidateTasks.insert(task, at: min(position, candidateTasks.count))
+    for (offset, task) in orderedTasks.enumerated() {
+      candidateTasks.insert(task, at: min(max(0, positions[task.id] ?? offset), candidateTasks.count))
     }
-
-    if !record.lifeLogEntries.isEmpty {
-      candidateEntries.append(contentsOf: record.lifeLogEntries)
-    }
-
-    let stored = persistBatch {
-      [
-        (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
-        (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
-        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
-        (key: StorageKey.trash, data: try RecordStore.encoded(candidateTrash))
-      ]
-    }
-    guard stored else { return }
-
+    let candidateEntries = lifeLogEntries + restoredEntries
+    let candidateTrash = trashedRecords.filter { !ids.contains($0.id) }
+    guard persistBatch({ [
+      (key: StorageKey.meetings, data: try RecordStore.encoded(candidateMeetings)),
+      (key: StorageKey.tasks, data: try RecordStore.encoded(candidateTasks)),
+      (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
+      (key: StorageKey.trash, data: try RecordStore.encoded(candidateTrash))
+    ] }) else { return false }
     trashedRecords = candidateTrash
     meetings = candidateMeetings
     tasks = candidateTasks
     lifeLogEntries = candidateEntries
+    return true
   }
 
   /// Where each given task sat in the full list, so a restore can put it back.

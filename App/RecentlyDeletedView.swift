@@ -32,7 +32,7 @@ struct RecentlyDeletedView: View {
               .swipeActions(edge: .leading) {
                 Button {
                   withAnimation {
-                    model.restoreTrashedLifeLogEntry(record.id)
+                    _ = model.restoreTrashedLifeLogEntry(record.id)
                   }
                 } label: {
                   Label("復元", icon: .arrowUturnBackward)
@@ -56,7 +56,7 @@ struct RecentlyDeletedView: View {
             .swipeActions(edge: .leading) {
               Button {
                 withAnimation {
-                  model.restoreTrashedRecord(record.id)
+                  _ = model.restoreTrashedRecord(record.id)
                 }
               } label: {
                 Label("復元", icon: .arrowUturnBackward)

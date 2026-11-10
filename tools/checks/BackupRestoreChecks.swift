@@ -4,6 +4,50 @@ import Darwin
 
 @main
 struct BackupRestoreChecks {
+  static func manifestBounds(in package: URL, originalJSON: Data, meeting: Meeting, exportRoot: URL) throws {
+    let file = package.appendingPathComponent(BackupPackage.manifestName)
+    let handle = try FileHandle(forWritingTo: file)
+    try handle.truncate(atOffset: UInt64(BackupPackage.maximumManifestBytes + 1))
+    try handle.close()
+    do { _ = try BackupPackage.read(from: package); preconditionFailure("Oversized manifest was loaded") }
+    catch BackupPackage.BackupError.manifestTooLarge {}
+    try originalJSON.write(to: file, options: .atomic)
+    let boundary = package.appendingPathComponent("bounded.bin")
+    for size in [31, 32, 33] {
+      let bytes = Data(repeating: 0x20, count: size)
+      try bytes.write(to: boundary, options: .atomic)
+      if size <= 32 {
+        let read = try BackupPackageFile.read("bounded.bin", in: package, maximumBytes: 32)
+        precondition(read == bytes)
+      } else {
+        do { _ = try BackupPackageFile.read("bounded.bin", in: package, maximumBytes: 32); preconditionFailure() }
+        catch BackupPackage.BackupError.manifestTooLarge {}
+      }
+    }
+    let fifo = package.appendingPathComponent("pipe.bin")
+    precondition(mkfifo(fifo.path, 0o600) == 0)
+    do { _ = try BackupPackageFile.read("pipe.bin", in: package, maximumBytes: 32); preconditionFailure() }
+    catch BackupPackage.BackupError.unreadable {}
+    try FileManager.default.removeItem(at: fifo)
+    let link = package.appendingPathComponent("link.bin")
+    try FileManager.default.createSymbolicLink(at: link, withDestinationURL: boundary)
+    do { _ = try BackupPackageFile.read("link.bin", in: package, maximumBytes: 32); preconditionFailure() }
+    catch BackupPackage.BackupError.unreadable {}
+    try FileManager.default.removeItem(at: link)
+    try FileManager.default.removeItem(at: boundary)
+    let existing = try FileManager.default.contentsOfDirectory(atPath: exportRoot.path).sorted()
+    var huge = meeting
+    huge.notes = String(repeating: "x", count: BackupPackage.maximumManifestBytes + 1)
+    do {
+      _ = try BackupPackage.write(meetings: [huge], spaces: [], tasks: [], lifeLogEntries: [], people: [], aiHistory: [], into: exportRoot)
+      preconditionFailure("Exporter made a package the reader cannot accept")
+    } catch BackupPackage.BackupError.manifestTooLarge {}
+    let remaining = try FileManager.default.contentsOfDirectory(atPath: exportRoot.path).sorted()
+    let preserved = try Data(contentsOf: file)
+    precondition(remaining == existing && preserved == originalJSON)
+    print("PASS backup manifest: sparse 64 MiB+1 refusal, exact small reader boundary, FIFO/symlink refusal, oversized export cleanup and original package preservation")
+  }
+
   enum FixtureFailure: Error { case rejected }
 
   @MainActor static func main() async throws {
@@ -74,6 +118,7 @@ struct BackupRestoreChecks {
     }
     let manifestURL = package.appendingPathComponent(BackupPackage.manifestName)
     let originalJSON = try Data(contentsOf: manifestURL)
+    try manifestBounds(in: package, originalJSON: originalJSON, meeting: meeting, exportRoot: input)
     var json = try JSONSerialization.jsonObject(with: originalJSON) as! [String: Any]
     for key in ["aiMemories", "mailDrafts", "companyTemplates", "documents", "projectSources", "projectChats", "customSkills", "skillSelections", "webResearchReports"] { json.removeValue(forKey: key) }
     json["version"] = 1

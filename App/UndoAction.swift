@@ -9,15 +9,13 @@ struct UndoAction {
   var undo: () -> Bool
   var finalize: () -> Void
 
-  init(message: String, undo: @escaping () -> Void, finalize: @escaping () -> Void) {
+  init(message: String, undo: @escaping () -> Bool, finalize: @escaping () -> Void) {
     self.message = message
-    self.undo = { undo(); return true }
+    self.undo = undo
     self.finalize = finalize
   }
 
   static func retryable(message: String, attempt: @escaping () -> Bool, finalize: @escaping () -> Void) -> Self {
-    var action = Self(message: message, undo: {}, finalize: finalize)
-    action.undo = attempt
-    return action
+    Self(message: message, undo: attempt, finalize: finalize)
   }
 }

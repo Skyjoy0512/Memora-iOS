@@ -122,22 +122,28 @@ extension MemoraModel {
     TaskReminderScheduler.cancel(taskID: id)
     scheduleUndo(
       UndoAction(message: "「\(removed.title)」を削除しました") { [weak self] in
-        self?.restoreTask(removed, at: index)
+        self?.restoreTask(removed, at: index) ?? false
       } finalize: {}
     )
     return true
   }
 
   /// Puts a removed task back where it was, so an undo restores its order too.
-  private func restoreTask(_ task: MemoraTask, at index: Int) {
-    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
-    let position = min(index, tasks.count)
-    guard !tasks.contains(where: { $0.id == task.id }) else { return }
+  private func restoreTask(_ task: MemoraTask, at index: Int) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return false }
+    if let existing = tasks.first(where: { $0.id == task.id }) {
+      guard existing == task else {
+        deletionFailureMessage = "同じIDのタスクが更新されているため、上書きせずに復元を止めました。"
+        return false
+      }
+      return true
+    }
     var candidate = tasks
-    candidate.insert(task, at: position)
-    guard persistNow(candidate, forKey: StorageKey.tasks) else { return }
+    candidate.insert(task, at: min(max(0, index), tasks.count))
+    guard persistNow(candidate, forKey: StorageKey.tasks) else { return false }
     tasks = candidate
     TaskReminderScheduler.refresh(task)
+    return true
   }
 
   @discardableResult

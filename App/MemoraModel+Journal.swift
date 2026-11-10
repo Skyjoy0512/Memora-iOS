@@ -129,7 +129,7 @@ extension MemoraModel {
     let trashID = candidateTrash[0].id
     scheduleUndo(
       UndoAction(message: "「\(removed.title)」を削除しました") { [weak self] in
-        self?.restoreTrashedLifeLogEntry(trashID)
+        self?.restoreTrashedLifeLogEntry(trashID) ?? false
       } finalize: {}
     )
     return true
@@ -163,33 +163,41 @@ extension MemoraModel {
     let trashIDs = candidateTrash.prefix(removed.count).map(\.id)
     scheduleUndo(
       UndoAction(message: "\(removed.count)件の記録を削除しました") { [weak self] in
-        for id in trashIDs {
-          self?.restoreTrashedLifeLogEntry(id)
-        }
+        self?.restoreTrashedLifeLogEntries(Set(trashIDs)) ?? false
       } finalize: {}
     )
     return true
   }
 
-  func restoreTrashedLifeLogEntry(_ id: UUID) {
-    guard !isRestoring, currentTeamID == nil, isStoreWritable() else { return }
-    guard let index = trashedLifeLogEntries.firstIndex(where: { $0.id == id }) else { return }
+  @discardableResult
+  func restoreTrashedLifeLogEntry(_ id: UUID) -> Bool {
+    restoreTrashedLifeLogEntries([id])
+  }
 
-    var candidateTrash = trashedLifeLogEntries
-    let record = candidateTrash.remove(at: index)
-    var candidateEntries = lifeLogEntries
-    candidateEntries.append(record.entry)
-
-    let stored = persistBatch {
-      [
-        (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
-        (key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidateTrash))
-      ]
+  @discardableResult
+  func restoreTrashedLifeLogEntries(_ ids: Set<UUID>) -> Bool {
+    guard !isRestoring, currentTeamID == nil, isStoreWritable(), !ids.isEmpty else { return false }
+    let records = trashedLifeLogEntries.filter { ids.contains($0.id) }
+    let available = Set(records.map(\.id)).union(lifeLogEntries.map(\.id))
+    guard ids.isSubset(of: available) else {
+      deletionFailureMessage = "ごみ箱に復元する記録が見つかりませんでした。"
+      return false
     }
-    guard stored else { return }
-
+    guard !records.isEmpty else { return true }
+    guard Set(records.map(\.id)).count == records.count,
+          Set(records.map(\.id)).isDisjoint(with: lifeLogEntries.map(\.id)) else {
+      deletionFailureMessage = "同じIDの項目があるため、上書きせずに復元を止めました。"
+      return false
+    }
+    let candidateEntries = lifeLogEntries + records.map(\.entry)
+    let candidateTrash = trashedLifeLogEntries.filter { !ids.contains($0.id) }
+    guard persistBatch({ [
+      (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(candidateEntries)),
+      (key: StorageKey.lifeLogTrash, data: try RecordStore.encoded(candidateTrash))
+    ] }) else { return false }
     trashedLifeLogEntries = candidateTrash
     lifeLogEntries = candidateEntries
+    return true
   }
 
   func permanentlyDeleteTrashedLifeLogEntry(_ id: UUID) {
