@@ -392,6 +392,12 @@ struct SettingsCategoryView: View {
           }
 
           NavigationLink {
+            ComposerDraftRecoveryView()
+          } label: {
+            SettingsLabel("Ask AIの下書き", icon: .docText)
+          }
+
+          NavigationLink {
             SettingsBackupView()
           } label: {
             SettingsLabel("バックアップ", icon: .externaldriveFill)

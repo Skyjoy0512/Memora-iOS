@@ -88,13 +88,13 @@ enum DraftStore {
     try? RecordStore.remove(storageKey(for: key)) { decode($0) == text }
   }
 
-  private static func encode(_ text: String) -> Data {
+  static func encode(_ text: String) -> Data {
     var data = Data([textFormatMarker])
     data.append(contentsOf: text.utf8)
     return data
   }
 
-  nonisolated private static func decode(_ data: Data) -> String? {
+  nonisolated static func decode(_ data: Data) -> String? {
     if data.first == textFormatMarker {
       return String(data: Data(data.dropFirst()), encoding: .utf8)
     }

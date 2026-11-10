@@ -2,7 +2,7 @@ import Foundation
 
 extension MemoraModel {
   func saveComposerAttachment() {
-    guard conversationPersistenceReady, !isRestoring, !isStoreProtected else { return }
+    guard conversationPersistenceReady, !isRestoring, !isStoreProtected, composerDraftFailure == nil else { return }
     guard let reference = composerAttachment.flatMap(AIAttachmentFileReference.init),
           let data = try? JSONEncoder().encode(reference), let text = String(data: data, encoding: .utf8) else {
       DraftStore.clear("composer.attachment.v1")

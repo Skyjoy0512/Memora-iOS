@@ -322,10 +322,12 @@ struct ProjectSource {
   var kind: Kind
   var title: String
   var originalURL: URL?
+  var processingStatus = ProcessingStatus.pending
   var canProvideText = false
   var privacy = false
   var errorInformation: String?
   enum Kind { case web, youtube, document }
+  enum ProcessingStatus { case pending, processing, ready, unavailable, failed }
 }
 struct ProjectChatThread { var id: UUID; var projectID: UUID }
 enum RootTab { case library, home, askAI }

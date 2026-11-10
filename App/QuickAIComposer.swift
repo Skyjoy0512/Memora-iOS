@@ -39,6 +39,7 @@ struct QuickAIComposer: View {
     @Bindable var model = model
 
     return VStack(spacing: MemoraSpacing.sm) {
+      if model.composerDraftFailure != nil { ComposerDraftRecoveryPrompt() }
       if isPreparingAttachment, attachmentPreparationTask != nil {
         HStack {
           Text("添付を解析しています").font(.footnote).foregroundStyle(.secondary)
@@ -75,6 +76,7 @@ struct QuickAIComposer: View {
         mentionScope: scope,
         dismissMentionMenu: { dismissedMention = activeMention }
       )
+      .disabled(model.composerDraftFailure != nil)
       .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { composerTop = $0 }
     }
     .sheet(item: $selectedSetup) { plugin in

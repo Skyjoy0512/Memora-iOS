@@ -470,9 +470,10 @@ final class MemoraModel {
   /// What is typed in the composer. It lives here, not in the view, so it
   /// survives the composer being rebuilt, and in the draft store so it survives
   /// the app being stopped.
+  var composerDraftFailure: ComposerDraftStore.Failure?
   var composerDraft = "" {
     didSet {
-      guard composerDraft != oldValue else { return }
+      guard composerDraft != oldValue, composerDraftFailure == nil else { return }
       updateComposerMentions(from: oldValue, to: composerDraft)
       scheduleComposerDraftSave()
     }
@@ -493,7 +494,7 @@ final class MemoraModel {
   /// Auto-dismiss for the undo toast. Cancelled when the offer is taken or
   /// replaced, so only the live toast finalizes.
   @ObservationIgnored var undoDismissTask: Task<Void, Never>?
-  private static let composerDraftKey = "composer.question"
+  private static let composerDraftKey = ComposerDraftStore.questionKey
   /// True when the store could not be read at startup. Persisting is refused
   /// while it is set, so unreadable existing data is never written over.
   @ObservationIgnored var isStoreProtected = false {
@@ -630,14 +631,19 @@ final class MemoraModel {
     let storedProvider = LLMProvider(rawValue: defaults.string(forKey: StorageKey.aiProvider) ?? "") ?? .openAI
     aiProvider = storedProvider
     aiModelID = Self.storedModelID(for: storedProvider)
-    let composerDrafts = try? DraftStore.readAll(["composer.mentions", Self.composerDraftKey, "composer.attachment.v1"])
-    let savedMentions = composerDrafts?["composer.mentions"].flatMap { $0.data(using: .utf8) }.flatMap { try? JSONDecoder().decode([ComposerMention].self, from: $0) } ?? []
-    let savedDraft = composerDrafts?[Self.composerDraftKey] ?? ""
-    composerDraft = savedDraft
-    composerMentions = savedMentions.filter { $0.isValid(in: savedDraft) }
-    composerAttachment = composerDrafts?["composer.attachment.v1"]
-      .flatMap { $0.data(using: .utf8) }
-      .flatMap { try? JSONDecoder().decode(AIAttachmentFileReference.self, from: $0) }?.resolve()
+    var composerStoreReadFailed = false
+    let composerSnapshot: ComposerDraftSnapshot
+    do {
+      composerSnapshot = try ComposerDraftStore.load()
+    } catch {
+      composerSnapshot = ComposerDraftSnapshot()
+      let failure = (error as? ComposerDraftStore.Failure) ?? .unavailable
+      composerDraftFailure = failure
+      composerStoreReadFailed = failure == .unavailable
+    }
+    composerDraft = composerSnapshot.question
+    composerMentions = composerSnapshot.mentions
+    composerAttachment = composerSnapshot.attachment?.resolve()
     cloudStorageEnabled = false
     if case .data(let data) = RecordStore.load(StorageKey.account) {
       account = try? JSONDecoder().decode(MemoraAccount.self, from: data)
@@ -670,7 +676,7 @@ final class MemoraModel {
     }
 
     var didFindUnreadableData = false
-    var didFailToReadStore = composerDrafts == nil
+    var didFailToReadStore = composerStoreReadFailed
 
     // A first run starts empty. Sample content is only added when the person
     // chooses it from onboarding, so their own records are never mixed with it.
@@ -1029,10 +1035,11 @@ final class MemoraModel {
   /// Drafts are written a moment after typing stops, so a keystroke does not
   /// wait on the store.
   private func scheduleComposerDraftSave() {
+    guard composerDraftFailure == nil, !isStoreProtected, !isRestoring else { return }
     composerDraftSaveTask?.cancel()
     composerDraftSaveTask = Task { [weak self] in
       try? await Task.sleep(for: .milliseconds(600))
-      guard let self, !Task.isCancelled else { return }
+      guard let self, !Task.isCancelled, self.composerDraftFailure == nil, !self.isStoreProtected, !self.isRestoring else { return }
       if self.composerDraft.isEmpty {
         DraftStore.clear(Self.composerDraftKey)
       } else {

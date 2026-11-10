@@ -108,7 +108,7 @@ extension MemoraModel {
   }
 
   func saveComposerMentions() {
-    guard !isStoreProtected else { return }
+    guard !isStoreProtected, composerDraftFailure == nil else { return }
     guard !composerMentions.isEmpty, let data = try? JSONEncoder().encode(composerMentions) else {
       DraftStore.clear("composer.mentions"); return
     }
