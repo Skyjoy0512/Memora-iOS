@@ -87,6 +87,7 @@ struct TaskProposalExecutionChecks {
     precondition(!model.agentApprovalWaiter.resolve(true, id: approval.id))
     let result = await operation.value
     precondition(result.text == "承認した1件を保存しました。" && outcomes.count == 3 && outcomes.allSatisfy { !$0.isError })
+    precondition(outcomes[0].dataChange == .none && outcomes[1].dataChange == .committed && outcomes[2].dataChange == .none)
     let task = model.tasks[0]
     precondition(model.tasks.count == 1 && task.id == edited[0].id && task.title == edited[0].title)
     precondition(task.detail == edited[0].detail && task.meetingID == meeting.id && task.assignee == nil && task.dueDate == nil)
@@ -148,7 +149,7 @@ struct TaskProposalExecutionChecks {
       let outcome = await operation.value
       // Source/privacy changes may invalidate the cloud approval itself first.
       precondition(outcome.isError || model.message.agentSteps.last?.state == .declined)
-      precondition(model.tasks.isEmpty && model.message.createdTaskIDs.isEmpty && model.approvedAgentTaskDrafts.isEmpty)
+      precondition(model.tasks.isEmpty && model.message.createdTaskIDs.isEmpty && model.approvedAgentTaskDrafts.isEmpty && !model.message.didChangeData)
       try assertStored(url, equals: [])
     }
   }
@@ -182,7 +183,15 @@ struct TaskProposalExecutionChecks {
     model.approvedAgentTaskDrafts[model.message.id] = approval.taskDrafts
     model.agentApprovalWaiter.resolve(true, id: approval.id)
     let outcome = await operation.value
-    precondition(!outcome.isError && model.tasks.count == 1 && outcome.text.contains("1件は追加していません"))
+    precondition(!outcome.isError && model.tasks.count == 1 && outcome.text.contains("1件は追加していません") && outcome.dataChange == .committed)
+    try assertStored(url, equals: model.tasks)
+    model.agentBlockedExternalTools.removeAll()
+    let retry = Task { await model.addTasksTool(proposal, messageID: model.message.id, scope: .all) }
+    let again = await awaitingApproval(model)
+    model.approvedAgentTaskDrafts[model.message.id] = again.taskDrafts
+    model.agentApprovalWaiter.resolve(true, id: again.id)
+    let unchanged = await retry.value
+    precondition(!unchanged.isError && unchanged.dataChange == .none && model.tasks.count == 1)
     try assertStored(url, equals: model.tasks)
   }
 

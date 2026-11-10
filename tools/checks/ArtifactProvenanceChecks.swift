@@ -139,7 +139,7 @@ import Foundation
     model.rejectWrites = false
     let call = AgentToolCall(id: "mail", name: "draft_email", arguments: ["to": [], "subject": "確認", "body": "確認をお願いします。"])
     let saved = await model.draftEmailTool(call, messageID: messageID)
-    precondition(!saved.isError && model.mailDrafts.count == 1 && model.pendingMailDraft?.provenance == local)
+    precondition(!saved.isError && model.mailDrafts.count == 1 && model.pendingMailDraft?.provenance == local && saved.dataChange == .committed)
     var draft = model.mailDrafts[0]
     draft.body = "本人が編集した本文"; precondition(model.saveMailDraft(draft))
     let reopened = LocalStore(fileURL: storeURL); try reopened.prepare()
@@ -183,7 +183,7 @@ import Foundation
     reset()
     model.approvalAction = { await Task.yield(); model.people[0].privacy.allowsCloudAI = false }
     let denied = await model.draftEmailTool(call, messageID: messageID)
-    precondition(denied.isError && model.mailDrafts.isEmpty)
+    precondition(denied.isError && model.mailDrafts.isEmpty && denied.dataChange == .none)
     reset(cloud: false)
     model.approvalAction = { withUnsafeCurrentTask { $0?.cancel() } }
     let cancelled = Task { @MainActor in await model.draftEmailTool(call, messageID: messageID) }

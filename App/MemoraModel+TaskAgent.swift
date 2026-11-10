@@ -80,7 +80,7 @@ extension MemoraModel {
       if let saved = tasks.first(where: { $0.id == task.id }) { TaskReminderScheduler.refresh(saved) }
     }
     finishAgentStep(stepID, on: messageID, state: .done, detail: "\(changed.count)件")
-    return AgentToolOutcome(text: "承認された\(changed.count)件を変更しました。期限・担当・本文はそのままです。")
+    return AgentToolOutcome(text: "承認された\(changed.count)件を変更しました。期限・担当・本文はそのままです。", dataChange: .committed)
   }
 
   private func taskUpdateContextIsCurrent(_ call: AgentToolCall, messageID: UUID) -> Bool {

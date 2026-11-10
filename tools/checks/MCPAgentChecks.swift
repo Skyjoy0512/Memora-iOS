@@ -142,6 +142,7 @@ struct MCPAgentChecks {
       precondition(!outcome.isError && outcome.text.contains("PRIVATE_FIXTURE_RESULT"))
       precondition(model.approvals == (mode == 1 ? 0 : 1) && MCPClient.shared.dispatched == 1)
       precondition(model.message.steps.last?.state == .done)
+      precondition(outcome.dataChange == (tool.isReadOnly ? .none : .unconfirmed))
       let reopened = LocalStore(fileURL: model.storeURL)
       try reopened.prepare()
       guard case .data(let data) = reopened.readOutcome("memora.integrations.usage.v1") else { preconditionFailure() }
@@ -152,7 +153,7 @@ struct MCPAgentChecks {
     denied.approves = false
     let refusal = await denied.performMCPTool(tool, call: call, messageID: denied.message.id)
     precondition(!refusal.text.contains("PRIVATE_FIXTURE_RESULT") && MCPClient.shared.dispatched == 0 && denied.integrationUsage.isEmpty)
-    precondition(denied.message.steps.last?.state == .declined)
+    precondition(denied.message.steps.last?.state == .declined && refusal.dataChange == .none)
 
     for saveFailure in [false, true] {
       let (model, tool, call) = try setup(root)
@@ -163,7 +164,7 @@ struct MCPAgentChecks {
         precondition(sqlite3_exec(handle, "CREATE TRIGGER reject_usage BEFORE INSERT ON documents BEGIN SELECT RAISE(ABORT,'fixture'); END;", nil, nil, nil) == SQLITE_OK)
       } else { model.integrationUsage = [.init(day: Calendar.current.startOfDay(for: .now), serverID: tool.serverID, count: 50)] }
       let outcome = await model.performMCPTool(tool, call: call, messageID: model.message.id)
-      precondition(outcome.isError && MCPClient.shared.dispatched == 0)
+      precondition(outcome.isError && MCPClient.shared.dispatched == 0 && outcome.dataChange == .none)
       precondition(model.integrationUsage.count == (saveFailure ? 0 : 1))
     }
     for error in [MCPClientError.timeout as Error, ExternalToolFailure.authenticationExpired,
@@ -172,7 +173,7 @@ struct MCPAgentChecks {
       MCPClient.shared.failure = error
       let outcome = await model.performMCPTool(tool, call: call, messageID: model.message.id)
       precondition(outcome.isError && !outcome.text.contains("PRIVATE_ERROR_PAYLOAD") && MCPClient.shared.dispatched == 1)
-      precondition(model.message.steps.last?.state == .failed)
+      precondition(model.message.steps.last?.state == .failed && outcome.dataChange == .unconfirmed)
     }
     let (model, otherTool, otherCall) = try setup(root)
     model.agentPluginPolicies[model.message.id] = .init(pluginIDs: [], toolIDs: [], recordIDs: [], limitsRecordReads: true)

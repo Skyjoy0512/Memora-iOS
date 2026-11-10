@@ -16,7 +16,7 @@ extension MemoraModel {
     let stepID = beginAgentStep(AgentStep(icon: .magnifyingglass, title: "Web調査"), on: messageID)
     let approval = AgentApproval(messageID: messageID, icon: .magnifyingglass, title: "Webへ問い合わせます",
       lines: queries + [mode == .deepResearch ? ResearchPlan.costNotice : "Braveへ1回送信します。契約に応じた料金が発生します。"], confirmTitle: "Web調査を開始")
-    guard await requestAgentApproval(approval, changesData: false), !Task.isCancelled else {
+    guard await requestAgentApproval(approval), !Task.isCancelled else {
       finishAgentStep(stepID, on: messageID, state: .declined)
       return AgentToolOutcome(text: "利用者がWeb調査を辞退しました。再要求しないでください。", isError: true)
     }

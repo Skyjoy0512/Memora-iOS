@@ -86,7 +86,7 @@ struct NotionAgentChecks {
         precondition(result.isComplete && result.pageURL?.absoluteString == pageURL && model.approvals == 0)
       } else {
         let result = await model.saveToNotionTool(call, messageID: model.message.id, scope: .all, environment: wire.environment)
-        precondition(!result.isError && result.text.contains(pageURL) && model.approvals == 1)
+        precondition(!result.isError && result.text.contains(pageURL) && model.approvals == 1 && result.dataChange == .committed)
         precondition(Set(model.recordedReads) == [.meeting(model.meetings[0].id), .task(model.tasks[0].id)])
       }
       precondition(wire.requests.count == 3)
@@ -96,7 +96,7 @@ struct NotionAgentChecks {
     let (denied, wire, call) = setup()
     denied.approves = false
     let result = await denied.saveToNotionTool(call, messageID: denied.message.id, scope: .all, environment: wire.environment)
-    precondition(!result.text.contains(pageURL) && wire.requests.isEmpty && denied.message.steps.last?.state == .declined)
+    precondition(!result.text.contains(pageURL) && wire.requests.isEmpty && denied.message.steps.last?.state == .declined && result.dataChange == .none)
     let repeated = await denied.saveToNotionTool(call, messageID: denied.message.id, scope: .all, environment: wire.environment)
     precondition(repeated.isError && denied.approvals == 1)
     for mode in [0, 5, 6, 7, 9] {
@@ -130,6 +130,7 @@ struct NotionAgentChecks {
     let result = await operation.value
     precondition(result.isError && !result.text.contains(pageURL))
     precondition(wire.requests.count == phase)
+    precondition(result.dataChange == (phase == 0 ? .none : .committed))
     if mode <= 4 { precondition(model.message.steps == steps) }
     else if phase > 0 { precondition(model.message.steps.last?.detail?.contains(pageURL) == true) }
   }
@@ -162,6 +163,7 @@ struct NotionAgentChecks {
         wire.failAt = failAt; wire.status = status
         let result = await model.saveToNotionTool(call, messageID: model.message.id, scope: .all, environment: wire.environment)
         precondition(result.isError && wire.requests.count == failAt)
+        precondition(result.dataChange == (failAt == 1 ? .unconfirmed : .committed))
         if failAt > 1 { precondition(result.text.contains(pageURL)) }
         let repeated = await model.saveToNotionTool(call, messageID: model.message.id, scope: .all, environment: wire.environment)
         precondition(repeated.isError && wire.requests.count == failAt && model.approvals == 1)

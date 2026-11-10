@@ -23,7 +23,7 @@ extension MemoraModel {
         "\(llm.modelLabel)で\(assignments.count)担当を並列実行します。追加のAPI利用料金が発生します。",
         "各担当は最大6往復で、依頼全体の利用上限も適用します。読むことだけができ、変更には別途承認が必要です。"
       ], confirmTitle: "分担調査を開始")
-    guard await requestAgentApproval(approval, changesData: false) else {
+    guard await requestAgentApproval(approval) else {
       finishAgentStep(stepID, on: messageID, state: .declined)
       return AgentToolOutcome(text: "利用者が分担調査を辞退しました。再要求せず、主担当だけで続けてください。")
     }

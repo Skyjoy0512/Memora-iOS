@@ -10,7 +10,7 @@ extension MemoraModel {
     let approved = await requestAgentApproval(AgentApproval(messageID: messageID, icon: .envelopeOpen,
       title: "Gmailで\(call.tool == .searchEmail ? "メールを検索" : "メールを閲覧")",
       lines: [service.connectedEmail.map { "アカウント: " + $0 } ?? "アカウント名を取得できていません。Gmailの接続設定を確認してください。", "取得したメールは選択中のAIへ送られます。", "外部処理の料金は未確認です。今回の操作だけを許可します。", String(decoding: (try? JSONSerialization.data(withJSONObject: call.arguments, options: [.sortedKeys])) ?? Data(), as: UTF8.self)],
-      confirmTitle: "実行"), changesData: false)
+      confirmTitle: "実行"))
     guard context.isCurrent(in: self) else {
       return AgentToolOutcome(text: AIAnswerFailure.contextChanged.message, isError: true)
     }

@@ -32,7 +32,7 @@ extension MemoraModel {
     let step = beginAgentStep(AgentStep(icon: .calendar, title: "カレンダーを確認"), on: messageID)
     if message.cloudProvenance != nil {
       let approved = await requestAgentApproval(AgentApproval(messageID: messageID, icon: .calendar,
-        title: "予定を選択中のAIへ共有", lines: ["対象日: " + text, "共有する内容: 予定名・開始/終了日時・終日設定（最大30件）。"], confirmTitle: "共有する"), changesData: false)
+        title: "予定を選択中のAIへ共有", lines: ["対象日: " + text, "共有する内容: 予定名・開始/終了日時・終日設定（最大30件）。"], confirmTitle: "共有する"))
       guard context.isCurrent(in: self) else {
         failCalendarRead(call, messageID: messageID, stepID: step, context: context)
         return AgentToolOutcome(text: AIAnswerFailure.contextChanged.message, isError: true)

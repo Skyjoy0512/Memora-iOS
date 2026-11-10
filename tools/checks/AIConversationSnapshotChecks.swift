@@ -87,8 +87,19 @@ enum AIConversationSnapshotChecks {
     interrupted.isThinking = true
     interrupted.text = "途中\n```memora-ui\n{}"
     let recovered = AIConversationSnapshot(messages: [interrupted], workspaceID: nil).restoredMessages()[0]
-    precondition(recovered.didChangeData && recovered.cloudProvenance == nil && !recovered.isThinking)
+    precondition(!recovered.didChangeData && recovered.hasUnconfirmedDataChange && recovered.cloudProvenance == nil && !recovered.isThinking)
     precondition(recovered.text.contains("自動再実行しません") && !recovered.text.contains("memora-ui"))
+    var uncertain = answer
+    uncertain.hasUnconfirmedDataChange = true
+    let uncertainData = try JSONEncoder().encode(AIConversationSnapshot(messages: [uncertain], workspaceID: nil))
+    let uncertainRestored = try AIConversationSnapshot.decode(uncertainData, workspaceID: nil).restoredMessages()[0]
+    precondition(uncertainRestored.hasUnconfirmedDataChange && !uncertainRestored.didChangeData)
+    var legacyUncertain = try JSONSerialization.jsonObject(with: uncertainData) as! [String: Any]
+    var legacyTurns = legacyUncertain["turns"] as! [[String: Any]]
+    legacyTurns[0].removeValue(forKey: "hasUnconfirmedDataChange")
+    legacyUncertain["turns"] = legacyTurns
+    let oldUncertain = try AIConversationSnapshot.decode(JSONSerialization.data(withJSONObject: legacyUncertain), workspaceID: nil)
+    precondition(!oldUncertain.restoredMessages()[0].hasUnconfirmedDataChange)
     let blank = AIConversationSnapshot(messages: [], workspaceID: nil)
     let decodedBlank = try AIConversationSnapshot.decode(JSONEncoder().encode(blank), workspaceID: nil)
     precondition(decodedBlank.turns.isEmpty)

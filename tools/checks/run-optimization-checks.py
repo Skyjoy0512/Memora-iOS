@@ -15,6 +15,7 @@ subprocess.run(['python3', 'tools/checks/run-location-persistence-checks.py'], c
 subprocess.run(['python3', 'tools/checks/run-webhook-lifecycle-checks.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-cloud-share-lifecycle-checks.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-resident-lifecycle-checks.py'], check=True)
+subprocess.run(['python3', 'tools/checks/run-agent-outcome-checks.py'], check=True)
 subprocess.run(['python3', 'tools/checks/run-meeting-persistence-performance-checks.py'], check=True)
 subprocess.run(['bash', 'tools/checks/run-tool-integration-checks.sh'], check=True)
 subprocess.run(['bash', 'tools/checks/run-license-persistence-checks.sh'], check=True)

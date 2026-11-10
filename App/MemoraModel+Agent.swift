@@ -427,6 +427,8 @@ extension MemoraModel {
       .prefix(8)
       .map { String($0.prefix(160)) }
     updateAgentMessage(messageID) { message in
+      if outcome.dataChange == .committed { message.didChangeData = true }
+      if outcome.dataChange == .unconfirmed { message.hasUnconfirmedDataChange = true }
       guard message.agentSteps.count > before, !lines.isEmpty else { return }
       message.agentSteps[message.agentSteps.count - 1].output = lines
     }

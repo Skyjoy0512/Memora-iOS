@@ -63,7 +63,7 @@ extension MemoraModel {
     finishAgentStep(stepID, on: messageID, state: .done, detail: "\(additions.count)件")
     let duplicateNote = skipped > 0 ? " 同じ内容の未完了タスク\(skipped)件は追加していません。" : ""
     return AgentToolOutcome(text: "承認された内容でタスクを\(additions.count)件追加しました。" + duplicateNote
-      + " 候補は利用者が編集している場合があります。完了報告はこの件数を使い、編集前のタイトル・担当・期限を保存済みと報告しないでください。")
+      + " 候補は利用者が編集している場合があります。完了報告はこの件数を使い、編集前のタイトル・担当・期限を保存済みと報告しないでください。", dataChange: additions.isEmpty ? .none : .committed)
   }
 
   private static func matchesTaskProposal(_ left: MemoraTask, _ right: MemoraTask) -> Bool {

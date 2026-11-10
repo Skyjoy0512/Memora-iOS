@@ -62,6 +62,7 @@ struct AIConversationSnapshot: Codable, Sendable {
     var finishedAt: Date?
     var wasInterrupted: Bool
     var didChangeData: Bool
+    var hasUnconfirmedDataChange: Bool?
     var pluginIDs: [String]
     var details: AIAnswerDetails?
     var sources: [AIChatSource]
@@ -106,6 +107,7 @@ struct AIConversationSnapshot: Codable, Sendable {
       finishedAt = message.finishedAt
       wasInterrupted = message.isThinking
       didChangeData = message.didChangeData
+      hasUnconfirmedDataChange = message.hasUnconfirmedDataChange
       pluginIDs = message.pluginIDs
       details = message.details
       sources = message.sources
@@ -144,7 +146,8 @@ struct AIConversationSnapshot: Codable, Sendable {
       message.residentSymbol = residentSymbol
       message.suggestions = suggestions
       // Nothing here restores tool policies, UI mutation IDs, continuations or tasks.
-      message.didChangeData = didChangeData || wasInterrupted
+      message.didChangeData = didChangeData
+      message.hasUnconfirmedDataChange = (hasUnconfirmedDataChange ?? false) || wasInterrupted
       if wasInterrupted {
         message.text = NativeAIInterface.response(text).markdown
           + (text.isEmpty ? "" : "\n\n")

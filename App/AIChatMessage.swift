@@ -51,9 +51,10 @@ struct AIChatMessage: Identifiable, Hashable {
   var reasoning = ""
   /// True once the record search for an answer has finished.
   var searchFinished = false
-  /// True once the person approved a change in this reply, so asking again
-  /// could repeat it.
+  /// True only after a tool confirms that a change was saved.
   var didChangeData = false
+  /// A dispatched external change or interrupted run needs checking before retry.
+  var hasUnconfirmedDataChange = false
   /// The resident agent that posted this on its own, shown above the reply.
   var residentName: String?
   var residentAgentID: UUID?

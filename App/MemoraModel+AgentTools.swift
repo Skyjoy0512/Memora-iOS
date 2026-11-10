@@ -162,7 +162,7 @@ extension MemoraModel {
     updateAgentMessage(messageID) { $0.cloudProvenance?.memoryFingerprint = fingerprint }
     finishAgentStep(stepID, on: messageID, state: stored || exists ? .done : .failed, detail: stored ? nil : exists ? "すでに覚えています" : "保存できませんでした")
     if !stored && !exists { return AgentToolOutcome(text: "記憶を保存できませんでした。保存先を確認してください。", isError: true) }
-    return AgentToolOutcome(text: stored ? "覚えました。" : "すでに覚えている内容です。")
+    return AgentToolOutcome(text: stored ? "覚えました。" : "すでに覚えている内容です。", dataChange: stored ? .committed : .none)
   }
 
   // MARK: - Reading
@@ -463,7 +463,7 @@ extension MemoraModel {
     }
     updateAgentMessage(messageID) { $0.documentIDs.append(document.id) }
     finishAgentStep(stepID, on: messageID, state: .done, detail: document.displayTitle)
-    return AgentToolOutcome(text: "\(document.artifactFormat ?? kindLabel)ファイルを生成・再読込検証し、資料として保存しました。id=\(document.id.uuidString)。最終フォント・改ページ・文字あふれはプレビューで確認してください。")
+    return AgentToolOutcome(text: "\(document.artifactFormat ?? kindLabel)ファイルを生成・再読込検証し、資料として保存しました。id=\(document.id.uuidString)。最終フォント・改ページ・文字あふれはプレビューで確認してください。", dataChange: .committed)
   }
   private func createProjectTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
     let name = call.string("name")
@@ -486,7 +486,7 @@ extension MemoraModel {
       return AgentToolOutcome(text: "作成できませんでした。", isError: true)
     }
     finishAgentStep(stepID, on: messageID, state: .done, detail: name)
-    return AgentToolOutcome(text: "プロジェクトを作成しました。id=\(id.uuidString)")
+    return AgentToolOutcome(text: "プロジェクトを作成しました。id=\(id.uuidString)", dataChange: .committed)
   }
 
   private func moveRecordsTool(_ call: AgentToolCall, messageID: UUID, scope: AIChatScope) async -> AgentToolOutcome {
@@ -509,12 +509,13 @@ extension MemoraModel {
       messageID: messageID
     ) else { return Self.declinedOutcome }
 
+    let changesProject = records.contains { meeting(id: $0.id)?.spaceID != space.id }
     guard moveMeetings(Set(records.map(\.id)), to: space.id) else {
       finishAgentStep(stepID, on: messageID, state: .failed, detail: "移動を保存できませんでした")
       return AgentToolOutcome(text: "移動を保存できませんでした。元のプロジェクトは変更していません。", isError: true)
     }
     finishAgentStep(stepID, on: messageID, state: .done, detail: space.name)
-    return AgentToolOutcome(text: "\(records.count)件を移動しました。")
+    return AgentToolOutcome(text: "\(records.count)件を移動しました。", dataChange: changesProject ? .committed : .none)
   }
 
   private func addJournalMemoTool(_ call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
@@ -542,7 +543,7 @@ extension MemoraModel {
     )
     finishAgentStep(stepID, on: messageID, state: stored ? .done : .failed, detail: stored ? nil : "保存できませんでした")
     return stored
-      ? AgentToolOutcome(text: "ジャーナルに追加しました。")
+      ? AgentToolOutcome(text: "ジャーナルに追加しました。", dataChange: .committed)
       : AgentToolOutcome(text: "保存に失敗しました。", isError: true)
   }
 
@@ -575,7 +576,7 @@ extension MemoraModel {
         notes: notes.isEmpty ? nil : notes
       )
       finishAgentStep(stepID, on: messageID, state: .done, detail: title)
-      return AgentToolOutcome(text: "カレンダーに追加しました。")
+      return AgentToolOutcome(text: "カレンダーに追加しました。", dataChange: .committed)
     } catch CalendarService.AddEventError.accessDenied {
       finishAgentStep(stepID, on: messageID, state: .failed, detail: "カレンダーへのアクセスが許可されていません")
       return AgentToolOutcome(text: "カレンダーへのアクセスが許可されていないため追加できませんでした。設定アプリで許可するよう伝えてください。", isError: true)

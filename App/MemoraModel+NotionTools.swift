@@ -27,21 +27,29 @@ extension MemoraModel {
       return AgentToolOutcome(text: "承認または参照範囲・接続設定が変わったため、送信を止めました。自動再実行はしません。", isError: approved)
     }
     finishAgentStep(stepID, on: messageID, state: .running, detail: "")
+    var dataChange = AgentToolOutcome.DataChange.none
+    var trackedEnvironment = environment
+    trackedEnvironment.transport = { request in
+      if request.httpMethod == "POST" || request.httpMethod == "PATCH" { dataChange = .unconfirmed }
+      return try await environment.transport(request)
+    }
     do {
-      let outcome = try await saveNotionExport(export, configuration: configuration, environment: environment,
+      let outcome = try await saveNotionExport(export, configuration: configuration, environment: trackedEnvironment,
         isAuthorized: { [weak self] in self.map { context.isCurrent(in: $0) } ?? false })
+      dataChange = .committed
       guard context.isCurrent(in: self), environment.configuration() == configuration else {
         if context.ownsMessage(in: self) {
           agentBlockedExternalTools[messageID, default: []].insert(call.name)
           finishAgentStep(stepID, on: messageID, state: .failed,
             detail: "保存先で結果を確認してください。自動再作成はしません。" + (outcome.pageURL.map { " ページ: " + $0.absoluteString } ?? ""))
         }
-        return AgentToolOutcome(text: AIAnswerFailure.contextChanged.message, isError: true)
+        return AgentToolOutcome(text: AIAnswerFailure.contextChanged.message, isError: true, dataChange: dataChange)
       }
       finishAgentStep(stepID, on: messageID, state: .done, detail: export.meeting.displayTitle)
-      return AgentToolOutcome(text: "Notionに保存しました。\(outcome.pageURL?.absoluteString ?? "")")
+      return AgentToolOutcome(text: "Notionに保存しました。\(outcome.pageURL?.absoluteString ?? "")", dataChange: .committed)
     } catch {
       let partial = error as? NotionService.PartialPageFailure
+      if partial != nil { dataChange = .committed }
       if context.ownsMessage(in: self) {
         agentBlockedExternalTools[messageID, default: []].insert(call.name)
         // Keep a known page for the original person's local trace, not a new
@@ -50,15 +58,15 @@ extension MemoraModel {
         finishAgentStep(stepID, on: messageID, state: .failed, detail: detail ?? "保存できませんでした")
       }
       guard context.isCurrent(in: self), environment.configuration() == configuration else {
-        return AgentToolOutcome(text: AIAnswerFailure.contextChanged.message + "開始済みの送信は取り消せません。Notionで確認してください。自動再作成はしません。", isError: true)
+        return AgentToolOutcome(text: AIAnswerFailure.contextChanged.message + "開始済みの送信は取り消せません。Notionで確認してください。自動再作成はしません。", isError: true, dataChange: dataChange)
       }
       if let partial {
-        return AgentToolOutcome(text: partial.message + (partial.pageURL.map { " ページ: " + $0.absoluteString } ?? ""), isError: true)
+        return AgentToolOutcome(text: partial.message + (partial.pageURL.map { " ページ: " + $0.absoluteString } ?? ""), isError: true, dataChange: dataChange)
       }
       if case NotionService.Failure.http(let code) = error {
-        return AgentToolOutcome(text: ExternalToolFailure.http(code).localizedDescription, isError: true)
+        return AgentToolOutcome(text: ExternalToolFailure.http(code).localizedDescription, isError: true, dataChange: dataChange)
       }
-      return AgentToolOutcome(text: "Notionへの保存結果を確認できませんでした。サービス側でページを確認してください。自動再作成はしません。", isError: true)
+      return AgentToolOutcome(text: "Notionへの保存結果を確認できませんでした。サービス側でページを確認してください。自動再作成はしません。", isError: true, dataChange: dataChange)
     }
   }
 }
