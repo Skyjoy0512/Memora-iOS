@@ -68,9 +68,11 @@ extension MemoraModel {
   func updateMeeting(_ id: UUID, change: (inout Meeting) -> Void) -> Bool {
     guard !Task.isCancelled, !isRestoring, currentTeamID == nil, isStoreWritable(),
           let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
+    var updated = meetings[index]
+    change(&updated)
+    guard updated != meetings[index] else { return true }
     var candidate = meetings
-    change(&candidate[index])
-    guard candidate != meetings else { return true }
+    candidate[index] = updated
     // Callers use success to start follow-up work or discard their drafts.
     // Publish only the snapshot that actually reached the ordered store.
     guard persistBatch({ [(key: StorageKey.meetings, data: try RecordStore.encoded(candidate))] }) else { return false }
@@ -86,29 +88,63 @@ extension MemoraModel {
   func commitMeetingChange(_ id: UUID, change: (inout Meeting) -> Void) async -> Bool {
     guard !Task.isCancelled, !isRestoring, currentTeamID == nil, isStoreWritable(),
           let index = meetings.firstIndex(where: { $0.id == id }) else { return false }
-    let original = meetings
+    let original = meetings[index]
     let generation = aiWorkspaceGeneration
-    var candidate = original
-    change(&candidate[index])
-    let snapshot = candidate
-    let data: Data
-    do {
-      data = try await Task.detached(priority: .userInitiated) { try RecordStore.encoded(snapshot) }.value
-    } catch {
-      return persistBatch { throw error }
+    var updated = original
+    change(&updated)
+    // Encoding can outlast another edit or a processing tick. Rebuild from the
+    // latest collection, but never replay the caller's mutation closure.
+    for _ in 0..<3 {
+      guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
+            aiWorkspaceGeneration == generation, let currentIndex = meetings.firstIndex(where: { $0.id == id }) else { return false }
+      guard let rebased = Self.rebaseMeetingEdit(original: original, updated: updated, current: meetings[currentIndex]) else {
+        break
+      }
+      let base = meetings
+      var candidate = base
+      candidate[currentIndex] = rebased
+      let snapshot = candidate
+      let data: Data
+      do {
+        data = try await Task.detached(priority: .userInitiated) { try RecordStore.encoded(snapshot) }.value
+      } catch {
+        return persistBatch { throw error }
+      }
+      guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
+            aiWorkspaceGeneration == generation else { return false }
+      guard meetings == base else { continue }
+      guard persistBatch({ [(key: StorageKey.meetings, data: data)] }) else { return false }
+      meetingSearchTexts.removeValue(forKey: id)
+      meetings = candidate
+      return true
     }
-    guard !Task.isCancelled, !isRestoring, !isStoreProtected, currentTeamID == nil,
-          aiWorkspaceGeneration == generation else { return false }
-    guard meetings == original else {
-      persistenceFailureMessage = "記録が更新されたため保存を止めました。書きかけの内容を確認して、もう一度保存してください。"
-      return false
+    persistenceFailureMessage = "記録が更新されたため保存を止めました。書きかけの内容を確認して、もう一度保存してください。"
+    return false
+  }
+
+  private static func rebaseMeetingEdit(original: Meeting, updated: Meeting, current: Meeting) -> Meeting? {
+    guard original.id == updated.id, original.id == current.id else { return nil }
+    // Inline editors author these fields. Keep newer processing state and
+    // unrelated edits; unknown mutation shapes retain the strict whole-record gate.
+    var remainder = updated
+    remainder.notes = original.notes
+    remainder.summary = original.summary
+    remainder.transcript = original.transcript
+    guard remainder == original else { return current == original ? updated : nil }
+    var result = current
+    if updated.notes != original.notes {
+      guard current.notes == original.notes || current.notes == updated.notes else { return nil }
+      result.notes = updated.notes
     }
-    // Encoding stays off the UI actor. Only the ordered commit and publication
-    // share a turn: no stale candidate can replace a change made during encoding.
-    guard persistBatch({ [(key: StorageKey.meetings, data: data)] }) else { return false }
-    meetingSearchTexts.removeValue(forKey: id)
-    meetings = candidate
-    return true
+    if updated.summary != original.summary {
+      guard current.summary == original.summary || current.summary == updated.summary else { return nil }
+      result.summary = updated.summary
+    }
+    if updated.transcript != original.transcript {
+      guard current.transcript == original.transcript || current.transcript == updated.transcript else { return nil }
+      result.transcript = updated.transcript
+    }
+    return result
   }
 
   /// Changes a record in memory only, for passing state such as a progress

@@ -31,8 +31,12 @@ final class MemoraModel {
 
 enum RecordStore {
   static let encodingGate = Mutex<(entered: DispatchSemaphore, resume: DispatchSemaphore)?>(nil)
+  static let encodingCount = Mutex(0)
   static func encoded<T: Encodable>(_ value: T) throws -> Data {
-    if let gate = encodingGate.withLock({ $0 }) { gate.entered.signal(); gate.resume.wait() }
+    encodingCount.withLock { $0 += 1 }
+    if let gate = encodingGate.withLock({ value in let gate = value; value = nil; return gate }) {
+      gate.entered.signal(); gate.resume.wait()
+    }
     return try JSONEncoder().encode(value)
   }
 }
@@ -43,6 +47,7 @@ struct Meeting: Codable, Equatable {
   var notes = "保存済みノート"
   var summary = "保存済み要約"
   var decisions = ["本番切替はしない"]
+  var processingLabel = "未処理"
   var transcript: [TranscriptSegment]
 }
 
@@ -147,7 +152,15 @@ enum MeetingEditChecks {
     let renamed = try read()
     precondition(renamed == model.meetings && renamed[0].title == "保存した名前")
     print("Synchronous meeting edits: SQLite failure leaves model/cache/store unchanged; protected/team/restore/cancel guards and retry passed")
-    for state in 0..<7 {
+    let noOpTitle = model.meetings[0].title
+    let beforeNoOp = RecordStore.encodingCount.withLock { $0 }
+    let noOpStore = try read()
+    model.meetingSearchTexts[record.id] = "preserve"
+    precondition(model.updateMeeting(record.id) { $0.title = noOpTitle })
+    let afterNoOpStore = try read()
+    precondition(RecordStore.encodingCount.withLock { $0 } == beforeNoOp && afterNoOpStore == noOpStore)
+    precondition(model.meetingSearchTexts[record.id] == "preserve")
+    for state in 0..<11 {
       model.meetings = initial
       model.currentTeamID = nil
       model.isRestoring = false
@@ -173,19 +186,62 @@ enum MeetingEditChecks {
       case 3: model.isRestoring = true
       case 4: model.isStoreProtected = true
       case 5: pending.cancel()
-      default:
+      case 6:
         model.meetings.removeFirst()
         precondition(model.persistNow(model.meetings, forKey: MemoraModel.StorageKey.meetings))
+      case 7:
+        model.meetings[0].notes = "同じ本文への別の編集"
+        precondition(model.persistNow(model.meetings, forKey: MemoraModel.StorageKey.meetings))
+      case 8:
+        model.meetings[0].summary = "並行した要約の更新"
+        precondition(model.persistNow(model.meetings, forKey: MemoraModel.StorageKey.meetings))
+      case 9: model.updateMeetingTransiently(record.id) { $0.processingLabel = "処理中" }
+      default:
+        model.meetings[0].notes = "古い候補"
+        precondition(model.persistNow(model.meetings, forKey: MemoraModel.StorageKey.meetings))
       }
-      let expectedModel = model.meetings
+      var expectedModel = model.meetings
       let expectedStore = try read()
       resume.signal()
       let stale = await pending.value
       RecordStore.encodingGate.withLock { $0 = nil }
       let persisted = try read()
-      precondition(!stale && model.meetings == expectedModel && persisted == expectedStore)
+      if [0, 8, 9, 10].contains(state) {
+        expectedModel[0].notes = "古い候補"
+        precondition(stale && model.meetings == expectedModel && persisted == expectedModel)
+      } else {
+        precondition(!stale && model.meetings == expectedModel && persisted == expectedStore)
+      }
     }
+    // A continuously changing collection must stop after three encodes, without
+    // replaying the edit closure or committing its stale candidate.
+    model.meetings = initial
+    model.isRestoring = false; model.isStoreProtected = false; model.currentTeamID = nil
+    precondition(model.persistNow(initial, forKey: MemoraModel.StorageKey.meetings))
+    let gates = (0..<3).map { _ in (entered: DispatchSemaphore(value: 0), resume: DispatchSemaphore(value: 0)) }
+    RecordStore.encodingGate.withLock { $0 = gates[0] }
+    let encodesBefore = RecordStore.encodingCount.withLock { $0 }
+    var mutationCalls = 0
+    let busy = Task { @MainActor in
+      await model.commitMeetingChange(record.id) { mutationCalls += 1; $0.notes = "混雑中の編集" }
+    }
+    for round in 0..<3 {
+      let gate = gates[round]
+      let arrived = await withCheckedContinuation { continuation in
+        DispatchQueue.global().async { continuation.resume(returning: gate.entered.wait(timeout: .now() + 10) == .success) }
+      }
+      precondition(arrived)
+      model.meetings[1].notes = "連続した更新\(round)"
+      precondition(model.persistNow(model.meetings, forKey: MemoraModel.StorageKey.meetings))
+      if round < 2 { RecordStore.encodingGate.withLock { $0 = gates[round + 1] } }
+      gate.resume.signal()
+    }
+    let busySaved = await busy.value
+    let afterBusy = try read()
+    precondition(!busySaved && mutationCalls == 1 && RecordStore.encodingCount.withLock { $0 } - encodesBefore == 3)
+    precondition(afterBusy == model.meetings && afterBusy[0].notes == record.notes && model.persistenceFailureMessage != nil)
+    print("Busy collection check passed: exactly three encodes, one edit closure invocation, no stale write")
     print("Meeting edit checks passed: production transcript/summary/notes/speaker edits, SQLite ABORT + retry/reopen, unchanged publication/cache on failure, segment evidence, team/restore/protected/cancel guards")
-    print("Suspended encoding checks passed: concurrent edit, team, workspace generation, restore, protection, cancellation and deletion never publish or persist stale candidates")
+    print("Suspended encoding checks passed: unrelated record/field/processing updates rebase, same-field conflict/team/workspace/restore/protected/cancel/deletion refuse stale writes, no-op skips encoding")
   }
 }
