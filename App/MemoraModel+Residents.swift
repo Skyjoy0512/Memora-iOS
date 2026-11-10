@@ -22,7 +22,9 @@ extension MemoraModel {
 
   func updateResident(_ agent: ResidentAgent) {
     if let index = residentAgents.firstIndex(where: { $0.id == agent.id }) {
-      residentAgents[index] = agent
+      var updated = agent
+      updated.lastRunAt = residentAgents[index].lastRunAt
+      residentAgents[index] = updated
     } else {
       residentAgents.append(agent)
     }
@@ -34,62 +36,119 @@ extension MemoraModel {
     scheduleResidentRefresh()
   }
 
-  /// Runs every enabled agent whose time came since it last finished. A run
-  /// that was missed by more than its window is skipped rather than posted
-  /// late: a morning brief at midnight helps no one.
+  func residentDefinitionsDidChange(from previous: [ResidentAgent]) {
+    for id in Set(previous.map(\.id) + residentAgents.map(\.id)) {
+      var before = previous.first { $0.id == id }
+      var after = residentAgents.first { $0.id == id }
+      // Completion timestamps do not change the definition that authorized a run.
+      before?.lastRunAt = nil
+      after?.lastRunAt = nil
+      if before != after { cancelResident(id) }
+    }
+  }
+
+  func invalidateResidentEnvironment() {
+    residentEnvironmentRevision = UUID()
+    for id in Array(residentJobs.keys) { cancelResident(id) }
+  }
+
+  func invalidatePendingResidents() {
+    for (id, request) in residentRunRequests where !residentRunIsCurrent(request) {
+      cancelResident(id)
+    }
+  }
+
+  private func residentRequest(_ agent: ResidentAgent, meetingID: UUID? = nil, automatic: Bool) -> ResidentRunRequest? {
+    guard let stored = residentAgents.first(where: { $0.id == agent.id }),
+          !automatic || stored.isEnabled, let llm = residentLLM else { return nil }
+    let request = ResidentRunRequest(agent: agent, meetingID: meetingID, automatic: automatic,
+      definitionRevision: residentDefinitionRevisions[agent.id], environmentRevision: residentEnvironmentRevision,
+      workspaceGeneration: aiWorkspaceGeneration, accessRevision: residentAccessRevision,
+      configurationRevision: summaryConfigurationRevision, registeredModelRevision: registeredLLMs.revision,
+      llm: llm, readToolNames: Set(AgentTool.residentTools.filter { enabledAgentTools.contains($0) }.map(\.rawValue)),
+      lastRunAt: stored.lastRunAt)
+    return residentRunIsCurrent(request) ? request : nil
+  }
+
+  private func residentRunIsCurrent(_ request: ResidentRunRequest) -> Bool {
+    guard currentTeamID == nil, !isRestoring, !isStoreProtected,
+          aiWorkspaceGeneration == request.workspaceGeneration,
+          residentEnvironmentRevision == request.environmentRevision,
+          residentDefinitionRevisions[request.agent.id] == request.definitionRevision,
+          residentAccessRevision == request.accessRevision,
+          summaryConfigurationRevision == request.configurationRevision,
+          registeredLLMs.revision == request.registeredModelRevision,
+          residentLLM == request.llm,
+          Set(AgentTool.residentTools.filter { enabledAgentTools.contains($0) }.map(\.rawValue)) == request.readToolNames,
+          let stored = residentAgents.first(where: { $0.id == request.agent.id }),
+          !request.automatic || stored.isEnabled,
+          request.meetingID.map({ allowsRecordAccess($0, purpose: .automaticAgent) }) ?? true else { return false }
+    return true
+  }
+
+  /// Snapshot the queue before its first suspension, so OFF/ON cannot revive a queued run.
   func runDueResidents() async {
-    guard currentTeamID == nil, residentLLM != nil, !isRestoring, !isStoreProtected else { return }
     let now = Date.now
-    for agent in residentAgents where agent.isEnabled {
-      guard agent.trigger.shouldRun(at: now, lastRunAt: agent.lastRunAt) else { continue }
+    let requests = residentAgents.filter { $0.isEnabled && $0.trigger.shouldRun(at: now, lastRunAt: $0.lastRunAt) }
+      .compactMap { residentRequest($0, automatic: true) }
+    for request in requests {
       guard !Task.isCancelled else { return }
-      await runResident(agent)
+      guard residentAgents.first(where: { $0.id == request.agent.id })?.lastRunAt == request.lastRunAt else { continue }
+      await runResident(request)
     }
     scheduleResidentRefresh()
   }
 
-  /// Starts the agents that follow a finished meeting.
   func runResidentsAfterMeeting(_ meetingID: UUID) {
-    guard currentTeamID == nil, residentLLM != nil, allowsRecordAccess(meetingID, purpose: .automaticAgent) else { return }
-    let agents = residentAgents.filter { $0.isEnabled && $0.trigger == .afterMeeting }
-    guard !agents.isEmpty else { return }
+    let requests = residentAgents.filter { $0.isEnabled && $0.trigger == .afterMeeting }
+      .compactMap { residentRequest($0, meetingID: meetingID, automatic: true) }
+    guard !requests.isEmpty else { return }
     Task {
-      for agent in agents {
-        await runResident(agent, meetingID: meetingID)
+      for request in requests {
+        guard !Task.isCancelled else { return }
+        await runResident(request)
       }
     }
   }
 
-  /// Runs one agent now and posts its result. Returns false when it could not
-  /// run or did not finish; `lastRunAt` moves only on a finished run, so a run
-  /// cut short by the system is tried again.
+  /// Explicit runs may use the editor's unsaved instructions, even with scheduling off.
   @discardableResult
   func runResident(_ agent: ResidentAgent, meetingID: UUID? = nil) async -> Bool {
-    guard !Task.isCancelled, residentJobs[agent.id] == nil else { return false }
-    residentRunFailures.removeValue(forKey: agent.id)
-    let job = Task { await executeResident(agent, meetingID: meetingID) }
-    residentJobs[agent.id] = job
-    defer { residentJobs.removeValue(forKey: agent.id) }
+    guard let request = residentRequest(agent, meetingID: meetingID, automatic: false) else { return false }
+    return await runResident(request)
+  }
+
+  @discardableResult
+  private func runResident(_ request: ResidentRunRequest) async -> Bool {
+    let id = request.agent.id
+    guard !Task.isCancelled, residentJobs[id] == nil, residentRunIsCurrent(request) else { return false }
+    residentRunFailures.removeValue(forKey: id)
+    residentRunRequests[id] = request
+    let job = Task { await executeResident(request) }
+    residentJobs[id] = job
+    // Keep ownership until the cancelled task settles; a late callback cannot own a replacement.
+    defer { residentJobs.removeValue(forKey: id); residentRunRequests.removeValue(forKey: id) }
     return await withTaskCancellationHandler {
       await job.value
     } onCancel: { job.cancel() }
   }
 
-  func cancelResident(_ id: UUID) { residentJobs[id]?.cancel() }
+  func cancelResident(_ id: UUID) {
+    residentDefinitionRevisions[id] = UUID()
+    residentJobs[id]?.cancel()
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["resident-\(id.uuidString)"])
+  }
 
-  private func executeResident(_ agent: ResidentAgent, meetingID: UUID?) async -> Bool {
-    guard !Task.isCancelled else { return false }
-    guard currentTeamID == nil, !isRestoring, !isStoreProtected,
-          meetingID.map({ allowsRecordAccess($0, purpose: .automaticAgent) }) ?? true else { return false }
+  private func executeResident(_ request: ResidentRunRequest) async -> Bool {
+    guard !Task.isCancelled, residentRunIsCurrent(request) else { return false }
+    let agent = request.agent
+    let llm = request.llm
     let limits = agent.executionLimits ?? ResidentExecutionLimits()
-    let readTools = AgentTool.residentTools.filter { enabledAgentTools.contains($0) }
-    let allowedNames = Set(readTools.map(\.rawValue))
-    guard let llm = residentLLM, !runningResidentIDs.contains(agent.id),
-          let session = CloudAgentSession(
-            llm: llm,
-            system: Self.residentInstructions(agent),
-            tools: readTools.filter { limits.permits($0.rawValue, availableReadTools: allowedNames) }
-          ) else { return false }
+    let readTools = AgentTool.residentTools.filter {
+      limits.permits($0.rawValue, availableReadTools: request.readToolNames)
+    }
+    guard !runningResidentIDs.contains(agent.id),
+          let session = CloudAgentSession(llm: llm, system: Self.residentInstructions(agent), tools: readTools) else { return false }
     runningResidentIDs.insert(agent.id)
     defer { runningResidentIDs.remove(agent.id) }
 
@@ -100,14 +159,16 @@ extension MemoraModel {
     placeholder.residentSymbol = agent.symbol
     aiMessages.append(placeholder)
 
-    session.addUserMessage(residentOpening(agent, meetingID: meetingID))
-    let result = await runResidentTurns(session: session, messageID: placeholder.id, limits: limits)
-
-    guard case .answer(let raw) = result, !Task.isCancelled, agentMessage(placeholder.id) != nil else {
-      if case .failure(let failure) = result {
-        residentRunFailures[agent.id] = failure == .cancelled ? "実行を停止しました。" : (failure == .rateLimited ? "設定した実行上限で停止しました。" : failure.message)
+    session.addUserMessage(residentOpening(agent, meetingID: request.meetingID))
+    let result = await runResidentTurns(session: session, messageID: placeholder.id, limits: limits, request: request)
+    guard case .answer(let raw) = result, !Task.isCancelled, residentRunIsCurrent(request),
+          agentMessage(placeholder.id) != nil else {
+      if residentAgents.contains(where: { $0.id == agent.id }) {
+        if Task.isCancelled || !residentRunIsCurrent(request) { residentRunFailures[agent.id] = "実行を停止しました。" }
+        else if case .failure(let failure) = result {
+          residentRunFailures[agent.id] = failure == .cancelled ? "実行を停止しました。" : (failure == .rateLimited ? "設定した実行上限で停止しました。" : failure.message)
+        }
       }
-      // Cut short or failed: nothing half-done stays in the conversation.
       aiMessages.removeAll { $0.id == placeholder.id }
       return false
     }
@@ -117,59 +178,40 @@ extension MemoraModel {
       $0.suggestions = suggestions
       $0.isThinking = false
       $0.finishedAt = .now
-      $0.details = AIAnswerDetails(
-        scopeLabel: AIChatScope.all.scopeLabel,
-        engineLabel: "常駐エージェント",
+      $0.details = AIAnswerDetails(scopeLabel: AIChatScope.all.scopeLabel, engineLabel: "常駐エージェント",
         modelLabel: llm.modelLabel,
-        sourceCount: self.agentMessage(placeholder.id)?.agentSteps.filter { $0.icon == AgentTool.readRecord.icon }.count ?? 0,
-        generatedAt: .now
-      )
+        sourceCount: $0.agentSteps.filter { $0.icon == AgentTool.readRecord.icon }.count,
+        generatedAt: .now)
     }
-    if let index = residentAgents.firstIndex(where: { $0.id == agent.id }) {
-      residentAgents[index].lastRunAt = .now
-    }
-    saveAIExchange(
-      question: "\(agent.name)（\(agent.trigger.label)）",
-      answer: text,
-      scopeLabel: AIChatScope.all.scopeLabel,
-      engineLabel: "常駐エージェント",
-      modelLabel: llm.modelLabel
-    )
-    await notifyResidentResult(agent, text: text)
+    if let index = residentAgents.firstIndex(where: { $0.id == agent.id }) { residentAgents[index].lastRunAt = .now }
+    saveAIExchange(question: "\(agent.name)（\(agent.trigger.label)）", answer: text,
+      scopeLabel: AIChatScope.all.scopeLabel, engineLabel: "常駐エージェント", modelLabel: llm.modelLabel)
+    await notifyResidentResult(request, text: text)
     return true
   }
 
-  /// Model turns and reading tools until the agent answers. A call to any tool
-  /// it was not given is refused here too, so an unattended run cannot change
-  /// data even if the model asks.
-  private func runResidentTurns(session: CloudAgentSession, messageID: UUID, limits: ResidentExecutionLimits) async -> AIAnswerResult {
-    let accessRevision = residentAccessRevision
-    let allowed = Set(AgentTool.residentTools.filter { enabledAgentTools.contains($0) }.map(\.rawValue))
+  private func runResidentTurns(session: CloudAgentSession, messageID: UUID, limits: ResidentExecutionLimits,
+                                request: ResidentRunRequest) async -> AIAnswerResult {
     var lastText = ""
     var calls = 0
     for _ in 0..<limits.modelTurnLimit {
-      guard !Task.isCancelled, !isRestoring, !isStoreProtected,
-            accessRevision == residentAccessRevision else { return .failure(.cancelled) }
+      guard !Task.isCancelled, residentRunIsCurrent(request) else { return .failure(.cancelled) }
       let turn: AgentTurn
-      do {
-        turn = try await session.next()
-      } catch let failure as AIAnswerFailure {
-        return .failure(failure)
-      } catch {
-        return .failure(.server)
-      }
-      guard accessRevision == residentAccessRevision else { return .failure(.cancelled) }
+      do { turn = try await session.next() }
+      catch let failure as AIAnswerFailure { return .failure(failure) }
+      catch { return .failure(.server) }
+      guard !Task.isCancelled, residentRunIsCurrent(request) else { return .failure(.cancelled) }
       if !turn.text.isEmpty { lastText = turn.text }
-      guard !turn.toolCalls.isEmpty else {
-        return lastText.isEmpty ? .failure(.empty) : .answer(lastText)
-      }
+      guard !turn.toolCalls.isEmpty else { return lastText.isEmpty ? .failure(.empty) : .answer(lastText) }
       var results: [(call: AgentToolCall, outcome: AgentToolOutcome)] = []
       for call in turn.toolCalls {
+        guard !Task.isCancelled, residentRunIsCurrent(request) else { return .failure(.cancelled) }
         guard calls < limits.toolCallLimit else { return .failure(.rateLimited) }
         calls += 1
-        let outcome = limits.permits(call.name, availableReadTools: allowed)
+        let outcome = limits.permits(call.name, availableReadTools: request.readToolNames)
           ? await runAgentTool(call, messageID: messageID, scope: .all, automaticAccess: true)
           : AgentToolOutcome(text: "常駐中は記録を読むことだけができます。変更は「提案:」として書いてください。", isError: true)
+        guard !Task.isCancelled, residentRunIsCurrent(request) else { return .failure(.cancelled) }
         results.append((call, outcome))
       }
       session.addToolResults(results)
@@ -232,16 +274,23 @@ extension MemoraModel {
 
   /// A notice for a result that arrived while the app was away, only when the
   /// person already allowed notifications; a background run never asks.
-  private func notifyResidentResult(_ agent: ResidentAgent, text: String) async {
-    guard (agent.executionLimits?.notifies ?? true), UIApplication.shared.applicationState != .active else { return }
+  private func notifyResidentResult(_ request: ResidentRunRequest, text: String) async {
+    let agent = request.agent
+    guard !Task.isCancelled, residentRunIsCurrent(request), (agent.executionLimits?.notifies ?? true), UIApplication.shared.applicationState != .active else { return }
     let settings = await UNUserNotificationCenter.current().notificationSettings()
-    guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
+    guard !Task.isCancelled, residentRunIsCurrent(request), UIApplication.shared.applicationState != .active,
+          settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
     let content = UNMutableNotificationContent()
     content.title = agent.name
     content.body = String(text.prefix(160))
     content.userInfo = [Self.residentNotificationKey: agent.id.uuidString]
-    let request = UNNotificationRequest(identifier: "resident-\(agent.id.uuidString)", content: content, trigger: nil)
-    try? await UNUserNotificationCenter.current().add(request)
+    let notification = UNNotificationRequest(identifier: "resident-\(agent.id.uuidString)", content: content, trigger: nil)
+    try? await UNUserNotificationCenter.current().add(notification)
+    if Task.isCancelled || !residentRunIsCurrent(request) {
+      let center = UNUserNotificationCenter.current()
+      center.removePendingNotificationRequests(withIdentifiers: [notification.identifier])
+      center.removeDeliveredNotifications(withIdentifiers: [notification.identifier])
+    }
   }
 
   static let residentNotificationKey = "memora.resident"

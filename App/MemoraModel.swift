@@ -13,7 +13,9 @@ final class MemoraModel {
   }
   @ObservationIgnored var conversationPersistenceReady = false
   @ObservationIgnored var conversationSaveTask: Task<Void, Never>?
-  @ObservationIgnored var aiWorkspaceGeneration = UUID()
+  @ObservationIgnored var aiWorkspaceGeneration = UUID() {
+    didSet { invalidatePendingResidents() }
+  }
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
   var librarySection = LibrarySection.restored(from: UserDefaults.standard.string(forKey: "memora.library.section")) {
@@ -79,6 +81,7 @@ final class MemoraModel {
       }
       rebuildMeetingAggregates()
       refreshSampleContentFlag()
+      invalidatePendingResidents()
       invalidatePendingWebhookDeliveries()
       invalidatePendingCloudShare()
     }
@@ -141,6 +144,7 @@ final class MemoraModel {
       tasksByMeeting = nil
       rebuildProjectTaskCounts()
       refreshSampleContentFlag()
+      invalidatePendingResidents()
       invalidatePendingWebhookDeliveries()
       invalidatePendingCloudShare()
     }
@@ -151,6 +155,7 @@ final class MemoraModel {
       newestEntries = nil
       rebuildLifeLogDays()
       refreshSampleContentFlag()
+      invalidatePendingResidents()
     }
   }
   /// Journal days newest first, with each day's records newest first. Built when
@@ -184,6 +189,7 @@ final class MemoraModel {
       MemoryRetrievalOrchestrator.invalidate()
       personIndex.invalidate()
       refreshSampleContentFlag()
+      invalidatePendingResidents()
     }
   }
   /// Positions for the array lookups the screens do constantly.
@@ -228,15 +234,24 @@ final class MemoraModel {
     didSet { MemoraModel.storeSetting(disabledSkillIDs, forKey: "memora.skills.disabled") }
   }
   var disabledIntegrationIDs: [String] = MemoraModel.storedSetting([String].self, forKey: "memora.integrations.disabled") ?? [] {
-    didSet { MemoraModel.storeSetting(disabledIntegrationIDs, forKey: "memora.integrations.disabled") }
+    didSet {
+      MemoraModel.storeSetting(disabledIntegrationIDs, forKey: "memora.integrations.disabled")
+      if oldValue != disabledIntegrationIDs { invalidateResidentEnvironment() }
+    }
   }
   var mcpServers: [MCPServerConfig] = MemoraModel.storedSetting([MCPServerConfig].self, forKey: StorageKey.mcpServers) ?? [] {
     didSet { MemoraModel.storeSetting(mcpServers, forKey: StorageKey.mcpServers) }
   }
   /// Resident agents and when each last finished. Settings, so UserDefaults.
   var residentAgents: [ResidentAgent] = MemoraModel.storedSetting([ResidentAgent].self, forKey: StorageKey.residentAgents) ?? ResidentAgentCatalog.presets {
-    didSet { MemoraModel.storeSetting(residentAgents, forKey: StorageKey.residentAgents) }
+    didSet {
+      MemoraModel.storeSetting(residentAgents, forKey: StorageKey.residentAgents)
+      residentDefinitionsDidChange(from: oldValue)
+    }
   }
+  @ObservationIgnored var residentDefinitionRevisions: [UUID: UUID] = [:]
+  @ObservationIgnored var residentEnvironmentRevision = UUID()
+  @ObservationIgnored var residentRunRequests: [UUID: ResidentRunRequest] = [:]
   @ObservationIgnored var residentJobs: [UUID: Task<Bool, Never>] = [:]
   var residentRunFailures: [UUID: String] = [:]
   /// Resident agents working right now, so one is never started twice.
@@ -336,6 +351,7 @@ final class MemoraModel {
   /// written, so a record added meanwhile cannot be silently replaced.
   var isRestoring = false {
     didSet {
+      if oldValue != isRestoring { invalidateResidentEnvironment() }
       invalidatePendingWebhookDeliveries()
       invalidatePendingCloudShare()
       if isRestoring {
@@ -482,6 +498,7 @@ final class MemoraModel {
   /// while it is set, so unreadable existing data is never written over.
   @ObservationIgnored var isStoreProtected = false {
     didSet {
+      if oldValue != isStoreProtected { invalidateResidentEnvironment() }
       invalidatePendingWebhookDeliveries()
       invalidatePendingCloudShare()
     }
