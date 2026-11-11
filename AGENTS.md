@@ -335,7 +335,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Apple's native `apple.logo` is limited to the sign-in button. Device calendar is
   EventKit and must not use Google Calendar branding. Interface glyphs remain Lucide.
 - Settings has one entry point: the gear at the bottom right of the side menu
-  (`FileSidebarView` footer, beside Memora Plus). Tabs carry no settings button.
+  (`FileSidebarView` footer). The sidebar wordmark opens a native menu for
+  projects, documents, people, the recorder, account and plan actions; only the
+  four main destinations remain in the drawer rows. Search is the circle beside
+  the wordmark. Tabs carry no settings button.
   Dark mode is a toggle in Settings › 表示と操作, not in the side menu. The editable
   profile picture remains at the top of Settings. The root has topic links only
   (`SettingsCategory`); switches and service connections live inside each topic.

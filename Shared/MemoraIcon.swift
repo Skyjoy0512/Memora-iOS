@@ -19,6 +19,7 @@ enum MemoraIcon: String, CaseIterable, Sendable, Codable {
   case arrowUpRight = "arrow.up.right"
   case arrowUpRightSquare = "arrow.up.right.square"
   case arrowUturnBackward = "arrow.uturn.backward"
+  case bag = "bag"
   case bell = "bell"
   case bellFill = "bell.fill"
   case heading = "heading"

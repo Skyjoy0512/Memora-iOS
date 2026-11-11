@@ -52,12 +52,12 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
         sheet = (APP / "CaptureMenuSheet.swift").read_text()
         self.assertIn("[.recording, .importAudio, .onlineMeeting, .newNote]", sheet)
 
-    def test_sidebar_footer_shortens_secondary_copy_not_tap_targets(self):
+    def test_sidebar_footer_keeps_settings_tap_target(self):
         footer = (APP / "SidebarAccountFooter.swift").read_text()
-        self.assertIn('Text("プラン")', footer)
-        self.assertNotIn('サインイン', footer)
-        self.assertIn('if isSignedIn {', footer)
-        self.assertIn('accessibilityLabel("Memora Plus、プランと利用状況")', footer)
+        self.assertNotIn("Divider()", footer)
+        header = (APP / "SidebarHeaderView.swift").read_text()
+        self.assertIn('Button("プランと利用状況", icon: .crown, action: onOpenPlan)', header)
+        self.assertIn('Button("アカウント", icon: .person, action: onOpenAccount)', header)
         settings = footer.split("Button(action: onSettings) {")[1]
         self.assertIn(".frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)", settings)
         self.assertIn(".contentShape(Circle())", settings)

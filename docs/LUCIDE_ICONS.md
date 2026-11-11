@@ -210,6 +210,7 @@ OSが描く標準ナビゲーション矢印やシステムシート内の記号
 | `photo.on.rectangle` | `images` |
 | `pin` | `pin` |
 | `puzzlepiece` | `puzzle` |
+| `bag` | `shoppingBag` |
 | `wrench.and.screwdriver` | `wrench` |
 | `play` | `play` |
 | `play.fill` | `play` |

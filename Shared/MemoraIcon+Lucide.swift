@@ -23,6 +23,7 @@ extension MemoraIcon {
     case .arrowUpRight: .arrowUpRight
     case .arrowUpRightSquare: .externalLink
     case .arrowUturnBackward: .undo2
+    case .bag: .shoppingBag
     case .bell: .bell
     case .bellFill: .bell
     case .bold: .bold

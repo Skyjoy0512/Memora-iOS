@@ -63,13 +63,16 @@ class SettingsPresentationChecks(unittest.TestCase):
         self.assertNotIn("WorkspaceSwitcher(", sidebar)
         self.assertIn("WorkspaceSettingsView()", (APP / "SettingsCategoryView.swift").read_text())
         self.assertIn("WorkspaceSwitcher(", (APP / "WorkspaceSettingsView.swift").read_text())
-        self.assertLess(sidebar.index('SidebarRow(title: "ライブラリ"'), sidebar.index('sidebarSection("コレクション")'))
-        self.assertIn("SidebarAccountFooter(profile: model.profile", sidebar)
+        self.assertLess(sidebar.index("SidebarHeaderView("), sidebar.index('SidebarRow(title: "ライブラリ"'))
+        self.assertIn("SidebarAccountFooter {", sidebar)
         footer = (APP / "SidebarAccountFooter.swift").read_text()
-        self.assertIn('accessibilityLabel("Memora Plus、プランと利用状況")', footer)
-        self.assertIn(".fixedSize(horizontal: false, vertical: true)", footer)
-        self.assertIn("minHeight: MemoraSpacing.touchTarget", footer)
-        self.assertIn("AnyLayout(VStackLayout(alignment: .leading", sidebar)
+        self.assertIn('accessibilityIdentifier("sidebar.settings")', footer)
+        self.assertIn(".frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)", footer)
+        self.assertIn(".fixedSize(horizontal: false, vertical: true)", sidebar)
+        self.assertIn("ScrollView {", sidebar)
+        header = (APP / "SidebarHeaderView.swift").read_text()
+        for action in ("onOpenProjects", "onOpenDocuments", "onOpenPeople", "onOpenRecorder", "onOpenAccount", "onOpenPlan"):
+            self.assertIn(f"action: {action}", header)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,14 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 
 ## Everyday interactions
 
+- The sidebar follows the supplied sparse drawer reference: canonical wordmark
+  and circular search at the top, Library / Journal / Ask AI / Marketplace in
+  regular-weight rows, and a circular settings button at the bottom right.
+  The wordmark opens a native menu for projects, documents, people, the recorder,
+  account and plan actions. Keep the main drawer free of section headings,
+  selection fills, account cards and upgrade copy. Selected destinations remain
+  exposed to accessibility, and navigation rows grow and scroll with larger text.
+
 - The bottom idle row holds Ask AI and one plus control in native Liquid Glass.
   Plus opens CaptureMenuSheet: horizontal camera/photos/files/link shortcuts above
   recording, audio import, online meeting and note creation, in that order.

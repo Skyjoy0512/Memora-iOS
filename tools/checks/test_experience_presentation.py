@@ -124,7 +124,10 @@ class ExperiencePresentationChecks(unittest.TestCase):
 
     def test_search_and_device_toolbar_reuse_real_model_state(self):
         sidebar = (APP / "FileSidebarView.swift").read_text()
-        self.assertIn('SidebarRow(title: "検索"', sidebar)
+        self.assertIn("SidebarHeaderView(", sidebar)
+        header = (APP / "SidebarHeaderView.swift").read_text()
+        self.assertIn('Label("検索", icon: .magnifyingglass)', header)
+        self.assertIn('accessibilityIdentifier("sidebar.search")', header)
         root = (APP / "RootTabView.swift").read_text()
         self.assertIn("closeSidebar { model.sidebarSearchRequest = UUID() }", root)
         for file in ("LibraryView.swift", "HomeView.swift", "ToolsView.swift", "SearchView.swift"):
