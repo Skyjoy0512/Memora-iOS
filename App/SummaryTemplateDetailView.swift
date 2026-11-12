@@ -16,24 +16,12 @@ struct SummaryTemplateDetailView: View {
       let isDefault = !model.followsOccupationSummaryTemplates && model.defaultSummaryChoice.id == template.id
       ScrollView {
         VStack(alignment: .leading, spacing: MemoraSpacing.section) {
-          MarketplaceDetailHero(item: .template(template), subtitle: "\(template.isCustom ? "マイテンプレート" : "Memora") · 要約テンプレート") {
-            Button {
-              if isDefault { model.useOccupationSummaryTemplates() }
-              else {
-                if !isAdded { model.installTemplate(template.id) }
-                model.setDefaultSummaryTemplate(template.id)
-              }
-            } label: {
-              MarketplaceDetailActionLabel(title: isDefault ? "自動生成の既定を解除" : "自動生成に使用", icon: isDefault ? .checkmark : .arrowUpRight)
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("marketplace.detail.useTemplate")
-          }
+          MarketplaceDetailHero(item: .template(template), subtitle: "提供: \(template.isCustom ? "マイテンプレート" : "Memora")") { EmptyView() }
+          if !template.detail.isEmpty { MarketplaceDescription(text: template.detail) }
           MarketplaceDetailFacts(fields: [
             ("カテゴリー", template.category.title), ("利用状況", isDefault ? "自動生成の既定" : isAdded ? "追加済み" : "未追加"),
-            ("タスク抽出", template.includesActions ? "あり" : "なし"), ("提供", template.isCustom ? "マイテンプレート" : "Memora")
+            ("提供", template.isCustom ? "マイテンプレート" : "Memora"), ("タスク抽出", template.includesActions ? "あり" : "なし")
           ])
-          if !template.detail.isEmpty { Text(template.detail).memoraReadingText().textSelection(.enabled) }
           templateActions(template: template, isAdded: isAdded)
           TemplateArticleContent(template: template)
         }
@@ -43,6 +31,20 @@ struct SummaryTemplateDetailView: View {
         .padding(.bottom, MemoraSpacing.section)
         .frame(maxWidth: .infinity, alignment: .center)
       }
+      .safeAreaInset(edge: .bottom, spacing: 0) {
+        MarketplaceDetailFooter {
+          Button {
+            if isDefault { model.useOccupationSummaryTemplates() }
+            else {
+              if !isAdded { model.installTemplate(template.id) }
+              model.setDefaultSummaryTemplate(template.id)
+            }
+          } label: {
+            MarketplaceDetailActionLabel(title: isDefault ? "自動生成の既定を解除" : "自動生成に使用")
+          }
+          .accessibilityIdentifier("marketplace.detail.useTemplate")
+        }
+      }
       .background(MemoraPalette.background)
       .navigationTitle(template.title)
       .navigationBarTitleDisplayMode(.inline)
@@ -50,14 +52,12 @@ struct SummaryTemplateDetailView: View {
       .navigationBarBackButtonHidden(true)
       .toolbar {
         ToolbarActionItem(placement: .topBarLeading) {
-          ToolbarIconButton(isMarketplaceSheet ? "閉じる" : "1つ前に戻る", icon: isMarketplaceSheet ? .xmark : .chevronLeft) { dismiss() }
+          ToolbarIconButton(isMarketplaceSheet ? "閉じる" : "1つ前に戻る", icon: .chevronLeft) { dismiss() }
         }
         ToolbarActionItem(usesSystemBackground: true) {
-          ToolbarIconButton(isAdded ? "追加済み" : "要約の選択肢に追加", icon: isAdded ? .checkmark : .plus) {
-            model.installTemplate(template.id)
+          ShareLink(item: MarketplaceDefinition(template: template).shareText) {
+            ToolbarActionLabel("テンプレートを共有", icon: .squareAndArrowUp)
           }
-          .disabled(isAdded)
-          .accessibilityIdentifier("marketplace.detail.addTemplate")
         }
       }
       .sheet(isPresented: $publishes) { CommunityPublishSheet(definition: .init(template: template)) }
@@ -95,6 +95,7 @@ struct SummaryTemplateDetailView: View {
           }
         } else {
           Button("要約の選択肢に追加", icon: .plus) { model.installTemplate(template.id) }
+            .accessibilityIdentifier("marketplace.detail.addTemplate")
         }
       }
     } label: {

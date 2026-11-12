@@ -43,8 +43,13 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 - New Ask AI chats show quiet prompt suggestions without a marketing heading,
   repeated generic subtitles or a permanent explanation beneath them. Preserve
   source titles, draft protection and approval at execution time.
-- Marketplace keeps its existing cards, artwork and detail presentation. See
-  [the November UI comparison](docs/ui-minimal-2026-11/README.md).
+- Marketplace follows the supplied catalog reference: a compact title picker,
+  active-item icon strip, and spacious icon/title/description rows with separate
+  add and options controls. Search stays in a floating capsule at the bottom,
+  with global or category scope. Detail screens use a left-aligned icon and title,
+  expandable description, information rows, top share action and bottom primary
+  action. Provider logos retain their original colors. Use real availability and
+  connection state; do not invent popularity, developer names or versions.
 - Show the content and the next useful action first. Avoid repeating titles,
   describing gestures in paragraphs, or showing empty insight groups.
 - Use short action labels: 録音する, 音声を取り込む, 要約する. Use 記録 for

@@ -5,43 +5,32 @@ struct MarketplaceDetailFacts: View {
   var fields: [(String, String)]
 
   var body: some View {
-    VStack(spacing: 0) {
-      ForEach(Array(stride(from: 0, to: fields.count, by: 2)), id: \.self) { index in
-        if index > 0 { Divider() }
-        if typeSize.isAccessibilitySize {
-          fact(fields[index])
-          if index + 1 < fields.count {
-            Divider()
-            fact(fields[index + 1])
-          }
-        } else {
-          HStack(alignment: .top, spacing: 0) {
-            fact(fields[index])
-              .overlay(alignment: .trailing) {
-                if index + 1 < fields.count {
-                  Rectangle().fill(MemoraPalette.border).frame(width: 1).padding(.vertical, 16)
-                }
-              }
-            if index + 1 < fields.count { fact(fields[index + 1]) }
-          }
+    VStack(alignment: .leading, spacing: 0) {
+      Text("情報")
+        .font(.headline)
+        .padding(.bottom, MemoraSpacing.xl)
+        .accessibilityAddTraits(.isHeader)
+      ForEach(fields, id: \.0) { field in
+        let layout = typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.sm))
+          : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: MemoraSpacing.xl))
+        layout {
+          Text(field.0)
+            .foregroundStyle(MemoraPalette.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+          Text(field.1)
+            .foregroundStyle(MemoraPalette.textPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .font(.body)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.vertical, MemoraSpacing.lg)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(field.0)、\(field.1)")
+        if field.0 != fields.last?.0 { Divider() }
       }
     }
-    .accessibilityElement(children: .contain)
+    .frame(maxWidth: .infinity, alignment: .leading)
     .accessibilityIdentifier("marketplace.detail.facts")
-  }
-
-  private func fact(_ field: (String, String)) -> some View {
-    VStack(spacing: MemoraSpacing.sm) {
-      Text(field.0).font(.subheadline).foregroundStyle(.secondary)
-      Text(field.1).font(.headline).foregroundStyle(MemoraPalette.textPrimary)
-    }
-    .multilineTextAlignment(.center)
-    .fixedSize(horizontal: false, vertical: true)
-    .frame(maxWidth: .infinity)
-    .padding(.horizontal, MemoraSpacing.sm)
-    .padding(.vertical, MemoraSpacing.xl)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel("\(field.0)、\(field.1)")
   }
 }

@@ -6,40 +6,21 @@ struct MarketplaceDetailHero<Action: View>: View {
   @ViewBuilder var action: () -> Action
 
   var body: some View {
-    VStack(spacing: MemoraSpacing.xl) {
-      Group {
-        if case .service = item {
-          AIPluginIconView(icon: .resolve(pluginID: item.id, name: item.title), size: 56)
-            .padding(24)
-            .background(.white, in: RoundedRectangle(cornerRadius: 26))
-        } else {
-          Image(icon: item.icon, size: 52)
-            .foregroundStyle(.white)
-            .padding(26)
-            .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 26))
-        }
-      }
-      .accessibilityHidden(true)
-
-      VStack(spacing: MemoraSpacing.sm) {
-        Text(item.title).font(.title.weight(.semibold))
-          .foregroundStyle(.white)
+    VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
+      MarketplaceItemIcon(item: item, size: 56)
+      VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+        Text(item.title)
+          .font(.title)
+          .foregroundStyle(MemoraPalette.textPrimary)
           .accessibilityAddTraits(.isHeader)
-        Text(subtitle).font(.subheadline).foregroundStyle(.white.opacity(0.9))
+        Text(subtitle)
+          .font(.subheadline)
+          .foregroundStyle(MemoraPalette.textSecondary)
       }
-      .multilineTextAlignment(.center)
       .fixedSize(horizontal: false, vertical: true)
-
       action()
     }
-    .padding(MemoraSpacing.xl)
-    .padding(.vertical, MemoraSpacing.lg)
-    .frame(maxWidth: .infinity)
-    .background {
-      LinearGradient(colors: item.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
-        .overlay(LinearGradient(colors: [.clear, .black.opacity(0.18)], startPoint: .top, endPoint: .bottom))
-    }
-    .clipShape(RoundedRectangle(cornerRadius: 20))
+    .frame(maxWidth: .infinity, alignment: .leading)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("marketplace.detail.hero")
   }

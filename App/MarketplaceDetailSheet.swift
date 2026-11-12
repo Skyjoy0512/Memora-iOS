@@ -13,13 +13,13 @@ struct MarketplaceDetailSheet: View {
         IntegrationDetailView(service: service)
           .toolbar {
             ToolbarActionItem(placement: .topBarLeading) {
-              ToolbarIconButton("閉じる", icon: .xmark) { dismiss() }
+              ToolbarIconButton("閉じる", icon: .chevronLeft) { dismiss() }
             }
           }
       }
     }
     .presentationDetents([.large])
-    .presentationDragIndicator(.visible)
+    .presentationDragIndicator(.hidden)
     .presentationCornerRadius(32)
   }
 }

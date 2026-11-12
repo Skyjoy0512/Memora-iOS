@@ -9,19 +9,16 @@ struct MarketplaceCardSection: View {
   var body: some View {
     Section {
       ForEach(items) { item in
-        MarketplaceItemLink(item: item, onConnectorDismiss: onConnectorDismiss) {
-          MarketplaceCard(item: item, showsFullText: true, badge: badges[item.id])
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("marketplace.catalog.\(item.id)")
+        MarketplaceListRow(item: item, badge: badges[item.id], onConnectorDismiss: onConnectorDismiss)
+          .accessibilityIdentifier("marketplace.catalog.\(item.id)")
       }
     } header: {
-      HStack(alignment: .firstTextBaseline, spacing: MemoraSpacing.sm) {
-        ToolsSectionHeading(title: title)
-        Text(items.count.formatted()).font(.subheadline).foregroundStyle(.secondary)
-      }
-      .accessibilityElement(children: .combine)
-      .accessibilityAddTraits(.isHeader)
+      Text(title)
+        .font(.headline)
+        .foregroundStyle(MemoraPalette.textSecondary)
+        .padding(.top, MemoraSpacing.xl)
+        .padding(.bottom, MemoraSpacing.sm)
+        .accessibilityAddTraits(.isHeader)
     }
   }
 }

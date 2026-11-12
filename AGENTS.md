@@ -68,7 +68,8 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   navigation bar because there is none. Search and file selection still hide
   the composer and capture controls so results or the share / move / delete bar own the bottom edge.
 - **Search**: the side menu's Search action searches the current destination.
-  Files, Journal and Tools open `ToolbarSearchField`; Ask AI opens its existing
+  Files and Journal open `ToolbarSearchField`; Marketplace focuses its bottom
+  search capsule. Ask AI opens its existing
   conversation search sheet. The former root search toolbar slot belongs to
   `RecorderStatusToolbarButton`, which opens the existing recorder hub. Battery
   values come only from the connected recorder, never the phone or a fixture.
@@ -77,9 +78,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   drawer. Picking files on Files (`isFileSelectionActive`) hides the composer
   the same way, so the share / move / delete bar owns the bottom edge.
 - **Marketplace**: `ToolsView` retains the saved Tools destination and opens
-  マーケットプレイス from the side menu. It shows a featured recommendation and
-  skill/template/integration shelves. Cards open the existing details; すべて見る
-  opens each full catalog. Home search spans all three catalogs and custom items;
+  マーケットプレイス from the side menu. It shows an active-item icon strip and
+  skill/template/integration rows. Rows open the existing details; section headings
+  open each full catalog. The title picker changes category, and the floating
+  bottom search spans all three catalogs and custom items on the home view;
   category search stays scoped. Creation/import, template management and MCP
   registration remain reachable through native menus and the Settings editors.
   Community publishing uses the Firebase REST client and server implementation in

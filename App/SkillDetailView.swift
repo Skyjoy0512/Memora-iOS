@@ -16,18 +16,12 @@ struct SkillDetailView: View {
       let provider = skill.id.hasPrefix("custom-") ? "マイスキル" : "Memora"
       ScrollView {
         VStack(alignment: .leading, spacing: MemoraSpacing.section) {
-          MarketplaceDetailHero(item: .skill(skill), subtitle: "\(provider) · スキル") {
-            Button { useSkill() } label: {
-              MarketplaceDetailActionLabel(title: enabled ? "チャットで使用" : "有効にしてチャットで使用")
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("marketplace.detail.useSkill")
-          }
+          MarketplaceDetailHero(item: .skill(skill), subtitle: "提供: \(provider)") { EmptyView() }
+          MarketplaceDescription(text: skill.summary)
           MarketplaceDetailFacts(fields: [
             ("利用状況", enabled ? "有効" : "無効"), ("カテゴリー", "スキル"),
-            ("バージョン", String(skill.version ?? 1)), ("提供", provider)
+            ("提供", provider), ("バージョン", String(skill.version ?? 1))
           ])
-          Text(skill.summary).memoraReadingText().textSelection(.enabled)
           Menu {
             Button("コミュニティに投稿", icon: .squareAndArrowUp) { publishes = true }
             ShareLink(item: MarketplaceDefinition(skill: skill).shareText) { Label("スキルを共有", icon: .squareAndArrowUp) }
@@ -55,6 +49,14 @@ struct SkillDetailView: View {
         .padding(.bottom, MemoraSpacing.section)
         .frame(maxWidth: .infinity, alignment: .center)
       }
+      .safeAreaInset(edge: .bottom, spacing: 0) {
+        MarketplaceDetailFooter {
+          Button { useSkill() } label: {
+            MarketplaceDetailActionLabel(title: enabled ? "チャットで使用" : "有効にしてチャットで使用")
+          }
+          .accessibilityIdentifier("marketplace.detail.useSkill")
+        }
+      }
       .background(MemoraPalette.background)
       .navigationTitle(skill.name)
       .navigationBarTitleDisplayMode(.inline)
@@ -63,10 +65,12 @@ struct SkillDetailView: View {
       .sheet(isPresented: $publishes) { CommunityPublishSheet(definition: .init(skill: skill)) }
       .toolbar {
         ToolbarActionItem(placement: .topBarLeading) {
-          ToolbarIconButton(isMarketplaceSheet ? "閉じる" : "1つ前に戻る", icon: isMarketplaceSheet ? .xmark : .chevronLeft) { dismiss() }
+          ToolbarIconButton(isMarketplaceSheet ? "閉じる" : "1つ前に戻る", icon: .chevronLeft) { dismiss() }
         }
         ToolbarActionItem(usesSystemBackground: true) {
-          ToolbarIconButton("スキルをチャットに追加", icon: .plus) { useSkill() }
+          ShareLink(item: MarketplaceDefinition(skill: skill).shareText) {
+            ToolbarActionLabel("スキルを共有", icon: .squareAndArrowUp)
+          }
         }
       }
       .sheet(item: $editing) { SkillEditorView(skill: $0) }

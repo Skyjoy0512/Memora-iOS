@@ -8,6 +8,6 @@ struct MarketplaceItemLink<Label: View>: View {
 
   var body: some View {
     Button { showsDetail = true } label: { label() }
-      .sheet(isPresented: $showsDetail, onDismiss: onConnectorDismiss) { MarketplaceDetailSheet(item: item) }
+      .fullScreenCover(isPresented: $showsDetail, onDismiss: onConnectorDismiss) { MarketplaceDetailSheet(item: item) }
   }
 }

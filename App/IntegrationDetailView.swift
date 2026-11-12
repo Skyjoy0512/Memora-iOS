@@ -11,9 +11,8 @@ struct IntegrationDetailView: View {
     let state = model.integrationState(service)
     ScrollView {
       VStack(alignment: .leading, spacing: MemoraSpacing.section) {
-        MarketplaceDetailHero(item: .service(service), subtitle: "コネクタ · \(service.isImplemented ? (connected ? "接続済み" : state.label) : "準備中")") {
-          if service.isImplemented { connectionAction(ready: connected) }
-        }
+        MarketplaceDetailHero(item: .service(service), subtitle: "コネクタ") { EmptyView() }
+        MarketplaceDescription(text: service.summary)
         MarketplaceDetailFacts(fields: [
           ("接続", service.isImplemented ? (connected ? "接続済み" : state.label) : "準備中"),
           ("カテゴリー", "コネクタ"),
@@ -21,7 +20,6 @@ struct IntegrationDetailView: View {
           ("アクセス", accessLabel)
         ])
 
-        Text(service.summary).memoraReadingText().textSelection(.enabled)
         if service.isImplemented {
           VStack(alignment: .leading, spacing: 16) {
             Text("このコネクタでできること").font(.headline)
@@ -30,8 +28,7 @@ struct IntegrationDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
           }
-          .padding(20).frame(maxWidth: .infinity, alignment: .leading)
-          .background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: 20))
+          .frame(maxWidth: .infinity, alignment: .leading)
           if connected {
             Toggle("Ask AIで使う", isOn: Binding(
               get: { model.integrationIsEnabled(service.id) },
@@ -55,13 +52,20 @@ struct IntegrationDetailView: View {
     }
     .onAppear { connected = model.integrationHasConnection(service.id) }
     .onChange(of: scenePhase) { _, phase in if phase == .active { connected = model.integrationHasConnection(service.id) } }
+    .safeAreaInset(edge: .bottom, spacing: 0) {
+      if service.isImplemented {
+        MarketplaceDetailFooter { connectionAction(ready: connected) }
+      }
+    }
     .background(MemoraPalette.background)
     .tint(MemoraPalette.textPrimary)
     .navigationTitle(service.name)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      if service.isImplemented {
-        ToolbarActionItem(usesSystemBackground: true) { connectionAction(ready: connected, compact: true) }
+      ToolbarActionItem(usesSystemBackground: true) {
+        ShareLink(item: "\(service.name)\n\(service.summary)") {
+          ToolbarActionLabel("コネクタを共有", icon: .squareAndArrowUp)
+        }
       }
     }
     .alert("アクセスを許可できませんでした", isPresented: $permissionFailure) {
@@ -69,16 +73,16 @@ struct IntegrationDetailView: View {
     } message: { Text("設定アプリでカレンダーへのアクセスを確認してください。") }
   }
 
-  @ViewBuilder private func connectionAction(ready: Bool, compact: Bool = false) -> some View {
+  @ViewBuilder private func connectionAction(ready: Bool) -> some View {
     switch service.id {
     case "gmail":
-      NavigationLink { GmailSettingsView() } label: { actionLabel(ready ? "接続を管理" : "接続", compact: compact) }
+      NavigationLink { GmailSettingsView() } label: { actionLabel(ready ? "接続を管理" : "接続") }
         .buttonStyle(.plain)
     case "notion":
-      NavigationLink { NotionSettingsView() } label: { actionLabel(ready ? "接続を管理" : "接続", compact: compact) }
+      NavigationLink { NotionSettingsView() } label: { actionLabel(ready ? "接続を管理" : "接続") }
         .buttonStyle(.plain)
     case "mcp":
-      NavigationLink { MCPServersView() } label: { actionLabel("コネクタを追加・管理", compact: compact) }
+      NavigationLink { MCPServersView() } label: { actionLabel("コネクタを追加・管理") }
         .buttonStyle(.plain)
     case "calendar":
       if CalendarService.access != .granted {
@@ -87,16 +91,18 @@ struct IntegrationDetailView: View {
             if !(await CalendarService.requestAccess()) { permissionFailure = true }
             connected = model.integrationHasConnection(service.id)
           }
-        } label: { actionLabel("接続", compact: compact) }
+        } label: { actionLabel("接続") }
         .buttonStyle(.plain)
+      } else {
+        MarketplaceDetailActionLabel(title: "接続済み", icon: .checkmark)
+          .accessibilityLabel("カレンダーは接続済みです")
       }
     default: EmptyView()
     }
   }
 
-  @ViewBuilder private func actionLabel(_ title: String, compact: Bool) -> some View {
-    if compact { Label(title, icon: .plus).labelStyle(.iconOnly) }
-    else { MarketplaceDetailActionLabel(title: title) }
+  private func actionLabel(_ title: String) -> some View {
+    MarketplaceDetailActionLabel(title: title)
   }
 
   private var accessLabel: String {

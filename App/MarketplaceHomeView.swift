@@ -1,61 +1,52 @@
 import SwiftUI
 
 struct MarketplaceHomeView: View {
-
+  @State private var connectionRevision = 0
   var body: some View {
     let skills = MemoraSkill.bundled
     let templates = SummaryTemplateCatalog.market
     let services = IntegrationCatalog.services.filter(\.isImplemented)
-    let featured = skills.first { $0.id == "meeting-followup" } ?? skills.first
-    let shelfSkills = ["meeting-preparation", "proposal", "decision-timeline", "powerpoint", "task-blockers", "customer-faq"]
+    let shelfSkills = ["meeting-followup", "meeting-preparation", "proposal", "decision-timeline"]
       .compactMap { id in skills.first { $0.id == id } }.map(MarketplaceItem.skill)
-    let shelfTemplates = ["content.video", "market.regular", "market.designReview", "market.incidentReview", "market.readingClub", "market.householdPlanning"]
+    let shelfTemplates = ["content.video", "market.regular", "market.designReview", "market.incidentReview"]
       .compactMap { id in templates.first { $0.id == id } }.map(MarketplaceItem.template)
 
     ScrollView {
-      VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
-        if let featured {
-          let item = MarketplaceItem.skill(featured)
-          MarketplaceItemLink(item: item) { MarketplaceCard(item: item, featured: true) }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("marketplace.featured")
-            .padding(.horizontal, MemoraSpacing.screen)
-        }
-        NavigationLink { CommunityCatalogView() } label: {
-          HStack(spacing: 14) {
-            Image(icon: .person2, size: 28).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-              Text("コミュニティ").font(.headline)
-              Text("みんなのスキル・テンプレート").font(.subheadline).foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-            Image(icon: .chevronRight, size: 14).accessibilityHidden(true)
-          }.padding(20).background(MemoraPalette.card, in: RoundedRectangle(cornerRadius: 20))
-        }
-        .buttonStyle(.plain).padding(.horizontal, MemoraSpacing.screen)
-
+      LazyVStack(alignment: .leading, spacing: MemoraSpacing.section) {
+        MarketplaceInstalledStrip(connectionRevision: connectionRevision)
+        MarketplaceShelf(section: .connectors, items: services.map(MarketplaceItem.service),
+          onConnectorDismiss: { connectionRevision += 1 })
         MarketplaceShelf(section: .skills, items: shelfSkills)
         MarketplaceShelf(section: .templates, items: shelfTemplates)
-        MarketplaceShelf(section: .connectors, items: services.map(MarketplaceItem.service))
-
-        VStack(spacing: 0) {
+        NavigationLink { CommunityCatalogView() } label: {
+          HStack(spacing: MemoraSpacing.sm) {
+            Text("コミュニティ").font(.headline)
+            Image(icon: .chevronRight, size: 12).accessibilityHidden(true)
+          }
+          .foregroundStyle(MemoraPalette.textSecondary)
+          .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, MemoraSpacing.screen)
+        VStack(spacing: MemoraSpacing.sm) {
           NavigationLink { SkillsView() } label: {
             Label("マイスキルを管理", icon: .sliderHorizontal3)
-              .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+              .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
           }
-          Divider()
           NavigationLink { SummaryTemplateMarketplaceView() } label: {
             Label("マイテンプレートを管理", icon: .docOnDoc)
-              .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+              .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
           }
         }
+        .buttonStyle(.plain)
         .font(.subheadline)
         .padding(.horizontal, MemoraSpacing.screen)
       }
-      .padding(.top, MemoraSpacing.md)
+      .padding(.top, MemoraSpacing.xl)
       .padding(.bottom, MemoraSpacing.section)
-      .frame(maxWidth: 900, alignment: .leading)
+      .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
       .frame(maxWidth: .infinity)
     }
+    .scrollDismissesKeyboard(.interactively)
   }
 }

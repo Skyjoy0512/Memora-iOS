@@ -16,17 +16,11 @@ struct CommunityPostDetailView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 24) {
         if let item {
-          MarketplaceDetailHero(item: item, subtitle: "\(post.authorName) · \(post.definition.kind == .skill ? "スキル" : "要約テンプレート")") {
-            Button { authenticated { try await install() } } label: {
-              MarketplaceDetailActionLabel(title: isWorking ? "処理中…" : installTitle, icon: model.hasCommunityItem(post) && pendingVersion == nil ? .checkmark : .arrowDown)
-            }
-            .buttonStyle(.plain)
-            .disabled(cannotInstall)
-          }
+          MarketplaceDetailHero(item: item, subtitle: "\(post.authorName) · \(post.definition.kind == .skill ? "スキル" : "要約テンプレート")") { EmptyView() }
         } else { Text(post.title).font(.largeTitle.weight(.semibold)) }
         if let message { Text(message).font(.subheadline).foregroundStyle(.secondary) }
+        MarketplaceDescription(text: post.summary)
         MarketplaceDetailFacts(fields: facts)
-        Text(post.summary).memoraReadingText().textSelection(.enabled)
         HStack(spacing: 24) {
           Button {
             authenticated {
@@ -41,6 +35,17 @@ struct CommunityPostDetailView: View {
       }
       .padding(20).frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading).frame(maxWidth: .infinity)
     }
+    .safeAreaInset(edge: .bottom, spacing: 0) {
+      if item != nil {
+        MarketplaceDetailFooter {
+          Button { authenticated { try await install() } } label: {
+            MarketplaceDetailActionLabel(title: isWorking ? "処理中…" : installTitle,
+              icon: model.hasCommunityItem(post) && pendingVersion == nil ? .checkmark : nil)
+          }
+          .disabled(cannotInstall)
+        }
+      }
+    }
     .disabled(isWorking)
     .background(MemoraPalette.background)
     .tint(MemoraPalette.textPrimary)
@@ -48,13 +53,12 @@ struct CommunityPostDetailView: View {
     .navigationBarBackButtonHidden(isMarketplaceSheet)
     .toolbar {
       if isMarketplaceSheet {
-        ToolbarActionItem(placement: .topBarLeading) { ToolbarIconButton("閉じる", icon: .xmark) { dismiss() } }
+        ToolbarActionItem(placement: .topBarLeading) { ToolbarIconButton("閉じる", icon: .chevronLeft) { dismiss() } }
       }
       ToolbarActionItem(usesSystemBackground: true) {
-        ToolbarIconButton(model.hasCommunityItem(post) && pendingVersion == nil ? "追加済み" : "追加する", icon: model.hasCommunityItem(post) && pendingVersion == nil ? .checkmark : .plus) {
-          authenticated { try await install() }
+        ShareLink(item: post.definition.shareText) {
+          ToolbarActionLabel("内容を共有", icon: .squareAndArrowUp)
         }
-        .disabled(cannotInstall)
       }
     }
     .sheet(isPresented: $showsAccount) { CommunityAccountView() }
