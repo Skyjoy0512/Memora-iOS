@@ -32,7 +32,7 @@ struct JournalTimelineAddRow: View {
       GeometryReader { geometry in
         Rectangle()
           .fill(Color.primary.opacity(0.12))
-          .frame(width: Self.lineWidth, height: isLast ? Self.side / 2 : geometry.size.height)
+          .frame(width: Self.lineWidth, height: isLast ? geometry.size.height / 2 : geometry.size.height)
           .offset(x: iconColumnLeading + (Self.side - Self.lineWidth) / 2, y: 0)
       }
       .accessibilityHidden(true)
@@ -60,12 +60,13 @@ struct JournalTimelineAddRow: View {
       Image(icon: .plus, size: 12)
       Text(displayLabel)
         .font(.caption.weight(.medium))
-        .lineLimit(1)
-        .fixedSize(horizontal: true, vertical: false)
+        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+        .fixedSize(horizontal: false, vertical: true)
     }
     .foregroundStyle(MemoraPalette.textSecondary)
     .padding(.horizontal, MemoraSpacing.md)
-    .frame(height: Self.side)
+    .padding(.vertical, MemoraSpacing.xs)
+    .frame(minHeight: Self.side)
     .background(MemoraPalette.card, in: Capsule())
     .overlay {
       Capsule()

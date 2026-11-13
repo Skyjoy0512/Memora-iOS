@@ -5,6 +5,7 @@ import SwiftUI
 struct PeopleView: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.revealMemoraSidebar) private var revealSidebar
+  @Environment(\.dynamicTypeSize) private var typeSize
   @State private var isManaging = false
   @State private var query = ""
   @State private var isSearching = false
@@ -20,16 +21,21 @@ struct PeopleView: View {
       Section {
         ForEach(people) { person in
           NavigationLink(value: LibraryRoute.person(person.id)) {
-            HStack(spacing: 12) {
+            let layout = typeSize.isAccessibilitySize
+              ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.sm))
+              : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
+            layout {
               PersonAvatar(name: person.name, size: 44, photoData: person.photoData)
-              VStack(alignment: .leading, spacing: 2) {
+              VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
                 Text(person.name)
                   .font(.body.weight(.medium))
+                  .fixedSize(horizontal: false, vertical: true)
                 Text(caption(for: person))
                   .font(MemoraTypography.metadata)
                   .foregroundStyle(MemoraPalette.textSecondary)
                   .fixedSize(horizontal: false, vertical: true)
               }
+              .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.vertical, MemoraSpacing.xxs)
             .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)

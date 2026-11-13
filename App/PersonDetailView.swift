@@ -4,6 +4,7 @@ import SwiftUI
 /// on, what was decided together, and the meetings and journal entries.
 struct PersonDetailView: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.dynamicTypeSize) private var typeSize
   var personID: UUID
   @State private var isEditing = false
   @State private var isPrivacyPresented = false
@@ -31,9 +32,10 @@ struct PersonDetailView: View {
       }
 
       Section {
-        Button("\(memory.person.name)さんとのことをAIに聞く", icon: .sparkles) {
+        Button("この人物についてAIに聞く", icon: .sparkles) {
           askAgent(about: memory.person)
         }
+        .accessibilityLabel("「\(memory.person.name)」についてAIに聞く")
       }
 
       if let latest = summary.topics.first {
@@ -179,7 +181,10 @@ struct PersonDetailView: View {
   }
 
   private func header(_ memory: PersonMemory) -> some View {
-    HStack(spacing: 16) {
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.md))
+      : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.lg))
+    return layout {
       PersonAvatar(name: memory.person.name, size: 64, photoData: memory.person.photoData)
       VStack(alignment: .leading, spacing: 4) {
         Text(memory.person.name)
@@ -193,6 +198,8 @@ struct PersonDetailView: View {
           .font(.subheadline)
           .foregroundStyle(.secondary)
       }
+      .fixedSize(horizontal: false, vertical: true)
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .accessibilityElement(children: .combine)
   }

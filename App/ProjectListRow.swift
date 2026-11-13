@@ -12,9 +12,12 @@ struct ProjectListRow: View {
   @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
-    HStack(spacing: 0) {
+    HStack(alignment: .top, spacing: 0) {
       NavigationLink(value: LibraryRoute.space(space.id)) {
-        HStack(spacing: 12) {
+        let layout = typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.sm))
+          : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
+        layout {
           MemoraInterfaceIcon(icon: space.icon)
           VStack(alignment: .leading, spacing: 4) {
             Text(space.name)

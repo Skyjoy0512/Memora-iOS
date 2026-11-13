@@ -1,6 +1,6 @@
 # Memora — Native reading and conversation
 
-Updated 2026-11-09. This is the current design specification. Product behavior
+Updated 2026-11-13. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
@@ -66,6 +66,31 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
   implementation details and repeated warnings do not belong in the main flow.
 - Connect and manage services through controls first. Connection status is visible;
   technical access details expand only when requested.
+
+## Cross-screen reading review — 2026-11-13
+
+Collection rows anchor icons and actions near the title. At accessibility sizes,
+documents, reference sources, projects, marketplace items and people place their
+artwork above the text so long Japanese labels can use the available width.
+Document rows follow the same title / metadata / preview order as Library records.
+When a Library row stacks its source icon, its badges and preview also align with
+the title instead of retaining an empty icon-column indent. Selection keeps its
+stable row identity and never animates wrapped heights.
+
+Keep the Marketplace active-count tile intrinsically sized; counts must not turn
+into an ellipsis at large text sizes. Show three leading icons at accessibility
+sizes, five otherwise, and count the remaining items correctly. Journal insertion
+capsules grow vertically
+with their labels while preserving their native menu and at least 44pt targets.
+Search fields shorten the visible prompt to 検索 at accessibility sizes, while
+their accessibility labels retain the full search scope. Contextual Ask AI fields
+use この記録に質問 / このプロジェクトに質問 (質問する at accessibility sizes), with the
+actual record or project name in the field's accessibility hint. Neither the
+question scope nor the draft changes. Sample notices stay secondary and their
+short 削除 action keeps its full spoken label and confirmation dialog.
+
+Review coverage and validation are recorded in
+[UI/UX review](docs/UI_UX_REVIEW_2026_11_13.md).
 
 ## Direction and provenance
 

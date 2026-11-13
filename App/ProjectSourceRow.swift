@@ -2,14 +2,19 @@ import SwiftUI
 
 struct ProjectSourceRow: View {
   var source: ProjectSource
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
     let metadata = [source.kindLabel, MemoraFormat.relativeDate(source.createdAt)]
       + (source.processingStatus == .ready && source.textCoverage == .partial ? ["一部の内容"] : [])
-    HStack(alignment: .top, spacing: MemoraSpacing.md) {
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.sm))
+      : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
+    layout {
       ProjectSourceThumbnail(source: source)
       VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
-        Text(source.title).font(MemoraTypography.body.weight(.medium)).lineLimit(2)
+        Text(source.title).font(MemoraTypography.body.weight(.medium))
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
           .fixedSize(horizontal: false, vertical: true)
         Text(metadata.joined(separator: " · "))
           .font(MemoraTypography.metadata).foregroundStyle(MemoraPalette.textSecondary)

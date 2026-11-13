@@ -8,6 +8,7 @@ struct AIComposerBar: View {
   @Binding var text: String
   @Binding var attachment: AIAttachment?
   var placeholder: String
+  var contextHint = ""
   var isConversation = false
   var offersIdleVoiceInput = true
   var isBusy = false
@@ -74,6 +75,7 @@ struct AIComposerBar: View {
       .onSubmit(submit)
       .focused($isFieldFocused)
       .accessibilityLabel("メッセージ")
+      .accessibilityHint(contextHint)
       .accessibilityIdentifier("ai.composer.input")
       .padding(.vertical, MemoraSpacing.sm)
       // The field takes the width it needs and grows as text is added; the

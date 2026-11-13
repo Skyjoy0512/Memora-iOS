@@ -14,11 +14,15 @@ struct MeetingRow: View {
       MemoraIconBadge(symbol: meeting.source.icon)
 
       VStack(alignment: .leading, spacing: 6) {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        let titleLayout = typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.xs))
+          : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: MemoraSpacing.sm))
+        titleLayout {
           Text(meeting.title)
             .font(MemoraTypography.body.weight(.medium))
             .foregroundStyle(.primary)
-            .lineLimit(2)
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+            .fixedSize(horizontal: false, vertical: true)
 
           if SampleContent.isSample(meetingID: meeting.id) {
             SampleTag()

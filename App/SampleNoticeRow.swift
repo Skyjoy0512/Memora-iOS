@@ -18,8 +18,8 @@ struct SampleNoticeRow: View {
           .foregroundStyle(.primary)
           .accessibilityHidden(true)
 
-        Text("サンプルを表示しています")
-          .font(.subheadline)
+        Text("サンプル表示中")
+          .font(MemoraTypography.metadata)
           .foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
 
@@ -27,14 +27,16 @@ struct SampleNoticeRow: View {
       if !typeSize.isAccessibilitySize { Spacer(minLength: MemoraSpacing.sm) }
 
       Button { isConfirming = true } label: {
-        Text("サンプルを削除")
-          .font(.subheadline.weight(.semibold))
+        Text("削除")
+          .font(.subheadline.weight(.medium))
           .fixedSize(horizontal: false, vertical: true)
-          .frame(minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+          .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget, alignment: .leading)
           .contentShape(Rectangle())
       }
+      .accessibilityLabel("サンプルを削除")
     }
-    .padding(MemoraSpacing.lg)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(MemoraSpacing.md)
     .memoraCard()
     .confirmationDialog("サンプルを削除しますか？", isPresented: $isConfirming, titleVisibility: .visible) {
       Button("削除", role: .destructive) {

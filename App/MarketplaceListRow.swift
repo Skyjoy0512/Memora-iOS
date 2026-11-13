@@ -11,13 +11,17 @@ struct MarketplaceListRow: View {
   @State private var isConnected = false
 
   var body: some View {
-    HStack(alignment: .center, spacing: MemoraSpacing.md) {
+    HStack(alignment: typeSize.isAccessibilitySize ? .top : .center, spacing: MemoraSpacing.md) {
       Button { showsDetail = true } label: {
-        HStack(spacing: MemoraSpacing.lg) {
+        let layout = typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.md))
+          : AnyLayout(HStackLayout(spacing: MemoraSpacing.lg))
+        layout {
           MarketplaceItemIcon(item: item)
           VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
             Text(item.title).font(.body)
               .foregroundStyle(MemoraPalette.textPrimary)
+              .fixedSize(horizontal: false, vertical: true)
             Text(badge ?? item.summary).font(.subheadline)
               .foregroundStyle(MemoraPalette.textSecondary)
               .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
@@ -51,6 +55,7 @@ struct MarketplaceListRow: View {
         }
       } else if case .service(let service) = item, !service.isImplemented {
         Text("準備中").font(.caption).foregroundStyle(MemoraPalette.textSecondary)
+          .fixedSize(horizontal: false, vertical: true)
       } else {
         Button {
           switch item {

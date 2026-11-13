@@ -22,7 +22,7 @@ struct ToolbarSearchField: View {
           .foregroundStyle(.secondary)
           .accessibilityHidden(true)
 
-        TextField(prompt, text: $text)
+        TextField(typeSize.isAccessibilitySize ? "検索" : prompt, text: $text)
           .focused($isFocused)
           .submitLabel(.search)
           .autocorrectionDisabled()

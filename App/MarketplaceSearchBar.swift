@@ -16,7 +16,7 @@ struct MarketplaceSearchBar: View {
         Image(icon: .magnifyingglass, size: 20)
           .foregroundStyle(MemoraPalette.textSecondary)
           .accessibilityHidden(true)
-        TextField(prompt, text: $query)
+        TextField(typeSize.isAccessibilitySize ? "検索" : prompt, text: $query)
           .focused($isFocused)
           .submitLabel(.search)
           .autocorrectionDisabled()

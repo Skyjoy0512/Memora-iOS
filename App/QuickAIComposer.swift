@@ -4,6 +4,7 @@ import SwiftUI
 /// floating control layer with the bottom bar, so it uses the same glass.
 struct QuickAIComposer: View {
   @Environment(MemoraModel.self) private var model
+  @Environment(\.dynamicTypeSize) private var typeSize
   var scope: AIQueryScope
   /// Lets the bottom bar step aside while someone is typing.
   @Binding var isComposing: Bool
@@ -57,6 +58,7 @@ struct QuickAIComposer: View {
         text: $model.composerDraft,
         attachment: Binding(get: { model.composerAttachment }, set: { model.composerAttachment = $0 }),
         placeholder: placeholder,
+        contextHint: contextHint,
         isConversation: !compactIdle && model.selectedTab == .askAI && scope == .global,
         offersIdleVoiceInput: !compactIdle,
         isBusy: isPreparingAttachment || model.activeProjectChatID.map { model.projectChatBusyIDs.contains($0) } == true,
@@ -189,13 +191,15 @@ struct QuickAIComposer: View {
     dismissedMention = nil
   }
 
-  /// Naming the scope saves a trip to the range picker in the common case.
+  /// The page already names its record/project; a short prompt leaves room
+  /// for input, with the complete scope retained for VoiceOver.
   private var placeholder: String {
-    switch scope {
-    case .file(let meetingID):
-      model.meeting(id: meetingID).map { "「\($0.title)」に質問" } ?? "この会議に質問"
-    case .space(let spaceID):
-      model.space(id: spaceID).map { "「\($0.name)」に質問" } ?? "このプロジェクトに質問"
+    if typeSize.isAccessibilitySize { return "質問する" }
+    return switch scope {
+    case .file:
+      "この記録に質問"
+    case .space:
+      "このプロジェクトに質問"
     case .global:
       // On Ask AI itself the hint follows the mode the switch is set to.
       if model.selectedTab == .askAI {
@@ -203,6 +207,14 @@ struct QuickAIComposer: View {
       } else {
         "Memoraに質問"
       }
+    }
+  }
+
+  private var contextHint: String {
+    switch scope {
+    case .file(let id): model.meeting(id: id).map { "「\($0.displayTitle)」について質問します" } ?? "この記録について質問します"
+    case .space(let id): model.space(id: id).map { "「\($0.name)」の記録や資料について質問します" } ?? "このプロジェクトについて質問します"
+    case .global: usesWebSearch ? "Web検索を使って質問します" : "利用できる記録をもとに質問します"
     }
   }
 

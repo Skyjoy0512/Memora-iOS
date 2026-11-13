@@ -4,12 +4,14 @@ struct MarketplaceInstalledStrip: View {
   var connectionRevision = 0
   @Environment(MemoraModel.self) private var model
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.dynamicTypeSize) private var typeSize
   @State private var connectedIDs: Set<String> = []
 
   var body: some View {
     let items = IntegrationCatalog.services.filter { connectedIDs.contains($0.id) }.map(MarketplaceItem.service)
       + model.installedMarketTemplates.map(MarketplaceItem.template)
       + model.skillCatalog.filter { !model.disabledSkillIDs.contains($0.id) }.map(MarketplaceItem.skill)
+    let visibleCount = typeSize.isAccessibilitySize ? 3 : 5
 
     VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
       NavigationLink { MarketplaceInstalledView() } label: {
@@ -28,20 +30,23 @@ struct MarketplaceInstalledStrip: View {
       } else {
         ScrollView(.horizontal) {
           HStack(spacing: MemoraSpacing.md) {
-            ForEach(items.prefix(5)) { item in
+            ForEach(items.prefix(visibleCount)) { item in
               MarketplaceItemLink(item: item, onConnectorDismiss: refreshConnections) {
                 MarketplaceItemIcon(item: item)
               }
               .accessibilityLabel(item.title)
             }
-            if items.count > 5 {
+            if items.count > visibleCount {
               NavigationLink { MarketplaceInstalledView() } label: {
-                Text("+\(items.count - 5)")
+                Text("+\(items.count - visibleCount)")
                   .font(.body.weight(.semibold))
-                  .frame(width: 48, height: 48)
+                  .monospacedDigit()
+                  .fixedSize()
+                  .padding(.horizontal, MemoraSpacing.md)
+                  .frame(minWidth: 48, minHeight: 48)
                   .background(MemoraPalette.selection, in: RoundedRectangle(cornerRadius: 12))
               }
-              .accessibilityLabel("ほか\(items.count - 5)件の利用中の項目")
+              .accessibilityLabel("ほか\(items.count - visibleCount)件の利用中の項目")
             }
           }
         }
