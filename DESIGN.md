@@ -551,9 +551,14 @@ Lucide. See docs/CONNECTOR_LOGOS.md for provenance.
 Main Library, Journal and Ask AI content, Library destinations and settings forms
 fade in briefly on first appearance. Keep navigation chrome, the composer and
 scrolling rows stable; do not replay motion on list updates. Source, recording
-and generated-document titles use a short text reveal. Only a new streaming
-Ask AI reply receives an introduction, once per message; history and later tokens
-remain immediate. Reduce Motion removes text movement and uses a brief page fade.
+and generated-document titles and reading bodies use a short line-opacity reveal
+with fixed layout, once per mounted reading surface. Editing does not restart it.
+Only a new streaming Ask AI reply receives an introduction, once per message;
+arriving prose fades over 200ms in fixed arrival ranges of at most eight characters,
+bounded to eight ranges and the latest 64 parsed characters. A later token never
+changes an earlier range's opacity. Settled prefixes and history stay fully visible.
+No per-frame parsing, timers, blur or per-glyph animation. Reduce Motion shows
+text immediately and retains only the existing brief page fade.
 Marketplace and export renderers keep their existing presentation.
 
 ## Split bottom capture controls — 2026-11-02
@@ -568,7 +573,10 @@ controls belong to a fixed trailing overlay, outside the composer's resizing
 layout. Remove their visual menus without animation while typing; do not shrink
 or fade native glass. Keep the presentation host mounted so a picker's keyboard
 cannot remove its importer. Preserve the editor identity as its trailing padding changes.
-Search/selection retain the bottom edge. Shared received items hide creation.
+Search/selection retain the bottom edge. Record, transcript, source, PDF and
+generated-document details show only the full-width Ask AI composer; the capture
+presentation host stays mounted with its visual plus hidden. Shared received
+items also hide creation.
 Marketplace keeps its existing presentation.
 
 Selection marks replace the source glyph in Library rows, keeping title width

@@ -548,6 +548,7 @@ struct MeetingDetailView: View {
         minHeight: isDocument ? 320 : 120,
         rendersBlocks: true,
         draftKey: "meeting.\(meeting.id).summary",
+        animatesReading: true,
         onCommit: { await model.updateMeetingSummary(meeting.id, summary: $0) }
       )
     }

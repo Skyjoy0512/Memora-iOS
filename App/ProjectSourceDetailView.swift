@@ -59,6 +59,7 @@ struct ProjectSourceDetailView: View {
                 Text("以前の原文から作成した要約です").font(.caption).foregroundStyle(.secondary)
               }
               MarkdownDocumentView(markdown: summary, isLazy: true)
+                .memoraTextReveal()
             }
             if let failure = summaryFailure(for: source) {
               VStack(alignment: .leading, spacing: 8) {
@@ -127,6 +128,7 @@ struct ProjectSourceDetailView: View {
                         }.id("source.text.\(index)")
                       }
                     }
+                    .memoraTextReveal()
                   }
               }.id("source.original")
             }

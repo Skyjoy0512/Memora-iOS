@@ -414,9 +414,9 @@ struct RootTabView: View {
   }
 
   private var showsCaptureButtons: Bool {
-    guard shouldShowComposer, !isComposing, !isKeyboardVisible else { return false }
+    guard shouldShowComposer, !isComposing, !isKeyboardVisible, !isShowingMeetingDetail else { return false }
     switch model.activeNavigationPath.last {
-    case .sharedRecord?, .sharedProject?: return false
+    case .sharedRecord?, .sharedProject?, .projectSource?, .projectPDF?, .document?: return false
     default: return true
     }
   }

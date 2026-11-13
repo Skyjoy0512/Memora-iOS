@@ -70,6 +70,11 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - **Bottom edge**: Ask AI and the capture controls stay at the bottom; scrolling moves no
   navigation bar because there is none. Search and file selection still hide
   the composer and capture controls so results or the share / move / delete bar own the bottom edge.
+  Record/transcript, source/PDF and document detail pages show only Ask AI at
+  full width; keep the capture importer mounted while hiding its visual plus.
+  Reading text uses a brief initial opacity reveal without moving layout.
+  Streaming answers animate only their bounded arriving tail; never reanimate
+  settled history or add per-row reveal to the Library list.
 - **Search**: the side menu's Search action searches the current destination.
   Files and Journal open `ToolbarSearchField`; Marketplace focuses its bottom
   search capsule. Ask AI opens its existing

@@ -20,9 +20,9 @@ extension View {
   }
 
   /// Lets important language resolve into place without turning reading into
-  /// a visual effect. Reduce Motion keeps only the brief opacity change.
-  func memoraTextReveal(delay: Double = 0) -> some View {
-    modifier(MemoraTextReveal(delay: delay))
+  /// a visual effect. Reduce Motion shows the complete text immediately.
+  func memoraTextReveal(enabled: Bool = true, delay: Double = 0) -> some View {
+    modifier(MemoraTextReveal(enabled: enabled, delay: delay))
   }
 }
 
@@ -51,9 +51,17 @@ private struct MemoraAppear: ViewModifier {
 
 private struct MemoraTextReveal: ViewModifier {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  var enabled: Bool
   var delay: Double
-  @State private var revealProgress: Double = 0
-  @State private var isShown = false
+  @State private var revealProgress: Double
+  @State private var isShown: Bool
+
+  init(enabled: Bool, delay: Double) {
+    self.enabled = enabled
+    self.delay = delay
+    _revealProgress = State(initialValue: enabled ? 0 : 1)
+    _isShown = State(initialValue: !enabled)
+  }
 
   func body(content: Content) -> some View {
     content
@@ -63,20 +71,20 @@ private struct MemoraTextReveal: ViewModifier {
       .opacity(isShown ? 1 : 0)
       .onAppear {
         guard revealProgress < 1 else { return }
-        if reduceMotion {
-          // Only the brief fade; the text itself is drawn complete.
+        if reduceMotion || !enabled {
           revealProgress = 1
-          withAnimation(.easeOut(duration: 0.18)) {
-            isShown = true
-          }
+          isShown = true
         } else {
           withAnimation(.easeOut(duration: 0.24).delay(delay)) {
             isShown = true
           }
-          withAnimation(.smooth(duration: 0.4).delay(delay)) {
+          withAnimation(.smooth(duration: 0.32).delay(delay)) {
             revealProgress = 1
           }
         }
+      }
+      .onChange(of: reduceMotion) { _, reduced in
+        if reduced { revealProgress = 1; isShown = true }
       }
   }
 }

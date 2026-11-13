@@ -25,6 +25,7 @@ struct MeetingNotesContent: View {
         minHeight: 360,
         rendersBlocks: true,
         draftKey: "meeting.\(meetingID).notes",
+        animatesReading: true,
         onCommit: { await model.updateMeetingNotes(meetingID, notes: $0) }
       )
 

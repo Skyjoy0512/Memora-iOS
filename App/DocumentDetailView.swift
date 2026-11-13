@@ -74,6 +74,7 @@ struct DocumentDetailView: View {
               placeholder: "タップして入力",
               rendersBlocks: true,
               draftKey: "document.\(document.id).body",
+              animatesReading: true,
               onCommit: { model.updateDocument(document.id, title: document.title, body: $0, expectedUpdatedAt: document.updatedAt) }
             )
             .environment(\.openURL, OpenURLAction { url in

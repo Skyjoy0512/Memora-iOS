@@ -84,8 +84,8 @@ struct MarkdownBlockView: View {
     MemoraTypography.readingBody
   }
 
-  static func inline(_ text: String) -> Text {
-    Text(InlineMarkdownEditor.attributed(text))
+  static func inline(_ text: String) -> some View {
+    MarkdownInlineText(markdown: text)
   }
 }
 

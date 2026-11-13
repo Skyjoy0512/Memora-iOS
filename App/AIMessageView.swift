@@ -149,7 +149,7 @@ struct AIMessageView: View {
     let text = AnswerCitations.linked(researched, sources: message.sources,
       allowedTargets: model.answerCitationTargets(for: message))
 
-    return AIResponseText(text: text, isStreaming: message.isThinking, messageID: message.id)
+    return AIResponseText(text: text, isStreaming: message.isThinking, messageID: message.id, animates: animates)
       .environment(\.openURL, OpenURLAction { url in
         if url.scheme == WebResearchContext.citationScheme {
           guard let source = WebResearchContext.source(for: url, sent: sent) else { return .discarded }

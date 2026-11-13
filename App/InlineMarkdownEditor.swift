@@ -18,6 +18,7 @@ struct InlineMarkdownEditor: View {
   var allowsStructure = true
   /// Reading-only projection. The edit draft always starts from the source text.
   var displayText: String? = nil
+  var animatesReading = false
   /// Commits the text and reports whether it was stored. The draft is only
   /// cleared once this says the text is saved, so a failed write keeps what was
   /// being written.
@@ -89,6 +90,7 @@ struct InlineMarkdownEditor: View {
           .accessibilityAction(named: "編集") { beginEditing() }
         }
       }
+      .memoraTextReveal(enabled: animatesReading)
       EditorSaveStatus(isSaving: isSaving, hasFailure: saveFailed) {
         if let value = retainedDraft { commit(value, key: draftKey, session: draftSessionID) }
       }
