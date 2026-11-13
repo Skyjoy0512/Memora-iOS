@@ -414,7 +414,7 @@ struct RootTabView: View {
   }
 
   private var showsCaptureButtons: Bool {
-    guard shouldShowComposer, !isComposing, !isKeyboardVisible, !isShowingMeetingDetail else { return false }
+    guard model.selectedTab != .askAI, shouldShowComposer, !isComposing, !isKeyboardVisible, !isShowingMeetingDetail else { return false }
     switch model.activeNavigationPath.last {
     case .sharedRecord?, .sharedProject?, .projectSource?, .projectPDF?, .document?: return false
     default: return true

@@ -72,6 +72,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   the composer and capture controls so results or the share / move / delete bar own the bottom edge.
   Record/transcript, source/PDF and document detail pages show only Ask AI at
   full width; keep the capture importer mounted while hiding its visual plus.
+  The Ask AI page also hides the capture FAB and gives its composer full width.
   Reading text uses a brief initial opacity reveal without moving layout.
   Streaming answers animate only their bounded arriving tail; never reanimate
   settled history or add per-row reveal to the Library list.

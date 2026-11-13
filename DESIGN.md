@@ -577,6 +577,7 @@ Search/selection retain the bottom edge. Record, transcript, source, PDF and
 generated-document details show only the full-width Ask AI composer; the capture
 presentation host stays mounted with its visual plus hidden. Shared received
 items also hide creation.
+The Ask AI page likewise shows its full-width composer without the capture FAB.
 Marketplace keeps its existing presentation.
 
 Selection marks replace the source glyph in Library rows, keeping title width
