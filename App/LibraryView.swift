@@ -146,9 +146,6 @@ struct LibraryView: View {
           selectionBar
         }
       }
-      .onChange(of: isSelectionMode) { _, selecting in
-        model.isFileSelectionActive = selecting
-      }
       .onAppear { model.isFileSelectionActive = isSelectionMode }
       .onChange(of: model.meetingTitles) { _, titles in
         guard isSelectionMode else { return }
@@ -411,6 +408,12 @@ struct LibraryView: View {
         }
       }
     }
+    // UICollectionView must measure the settled row layout, not interpolate
+    // cached heights while selection removes headers and changes safe areas.
+    .transaction(value: isSelectionMode) { transaction in
+      transaction.animation = nil
+      transaction.disablesAnimations = true
+    }
     .listStyle(.plain)
     .scrollContentBackground(.hidden)
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
@@ -469,9 +472,7 @@ struct LibraryView: View {
     .swipeActions(edge: .leading) {
       if !isSelectionMode {
         Button {
-          withAnimation(reduceMotion ? nil : MemoraMotion.control) {
-            beginSelection(with: meeting.id)
-          }
+          beginSelection(with: meeting.id)
         } label: {
           Label("選択", icon: .checkmarkCircle)
         }
@@ -571,7 +572,7 @@ struct LibraryView: View {
       }
     }
     .padding(MemoraSpacing.sm)
-    .memoraGlass(in: RoundedRectangle(cornerRadius: MemoraRadius.card, style: .continuous))
+    .memoraGlass(in: Capsule())
     .padding(.horizontal, MemoraSpacing.md)
     .padding(.bottom, MemoraSpacing.sm)
     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -621,16 +622,19 @@ struct LibraryView: View {
 
   private func beginSelection(with id: UUID) {
     InteractionFeedback.shared.send(.selection)
-    beginSelectionMode()
-    selectedMeetingIDs.insert(id)
+    beginSelectionMode(selecting: id)
   }
 
-  private func beginSelectionMode() {
-    isSearching = false
-    query = ""
-    model.isSearchActive = false
-    withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+  private func beginSelectionMode(selecting id: UUID? = nil) {
+    var transaction = Transaction(animation: nil)
+    transaction.disablesAnimations = true
+    withTransaction(transaction) {
+      isSearching = false
+      query = ""
+      model.isSearchActive = false
       isSelectionMode = true
+      selectedMeetingIDs = id.map { [$0] } ?? []
+      model.isFileSelectionActive = true
     }
   }
 
@@ -644,9 +648,12 @@ struct LibraryView: View {
   }
 
   private func endSelection() {
-    withAnimation(reduceMotion ? nil : MemoraMotion.control) {
+    var transaction = Transaction(animation: nil)
+    transaction.disablesAnimations = true
+    withTransaction(transaction) {
       isSelectionMode = false
       selectedMeetingIDs = []
+      model.isFileSelectionActive = false
     }
   }
 

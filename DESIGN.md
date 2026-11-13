@@ -33,6 +33,10 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 - Files (ファイル) and Projects (プロジェクト) switch through the existing pill tabs beneath the Library title.
   Display, sort, filter and selection remain in the adjacent native menu. Library
   sources continue in the lazy list without a three-item preview or a See All link.
+- Multiple selection preserves row identity and text width. Change selection,
+  headers and composer visibility together without animating List row heights.
+  Share, team, move and delete use a floating glass capsule, with two columns
+  at accessibility text sizes.
 - A project's title menu switches between chat, records and reference sources.
   Its options menu retains project-scoped new chat; capture uses the shared
   bottom row and the visible project. A paperclip denotes source-only attachment actions.

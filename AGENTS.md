@@ -64,6 +64,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   share one `libraryPath`. Persist the selected `LibrarySection` as a setting.
   During multiple selection, replace the source icon with the selection mark;
   never add a column that changes title width or animates wrapped row heights.
+  Enter and leave selection in one non-animated transaction, including
+  `isFileSelectionActive`; do not defer that flag to an `onChange`. The selection
+  actions use a capsule-shaped glass bar.
 - **Bottom edge**: Ask AI and the capture controls stay at the bottom; scrolling moves no
   navigation bar because there is none. Search and file selection still hide
   the composer and capture controls so results or the share / move / delete bar own the bottom edge.
