@@ -76,6 +76,9 @@ enum AdaptiveSummaryKnowledgeChecks {
     precondition(SummaryContentProjection.supplements(["公開する"], markdown: "公開しない") == ["公開する"])
     precondition(SummaryContentProjection.supplements(["公開する"], markdown: "公開する\nという案は却下") == ["公開する"])
     precondition(SummaryContentProjection.supplements(["API_KEY_A"], markdown: "api_key_a") == ["API_KEY_A"])
+    precondition(SummaryContentProjection.supplements(["[仕様](https://example.test/b)"],
+      markdown: "[仕様](https://example.test/a)") == ["[仕様](https://example.test/b)"])
+    precondition(SummaryContentProjection.supplements(["仕様"], markdown: "[仕様](https://example.test/a)") == ["仕様"])
     precondition(SummaryContentProjection.supplements(["予算は-100万円"], markdown: "予算は100万円") == ["予算は-100万円"])
     precondition(SummaryContentProjection.supplements(["承認後に公開する"], markdown: "## 方針\n- **承認後に公開する**").isEmpty)
     var mixed = MeetingSummary(markdown: "本文", actions: [.init(title: "実際に合意した行動")], templateID: "work.learning",

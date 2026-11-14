@@ -406,7 +406,7 @@ enum OnDeviceSummarizer {
 
   private static func unique(_ items: [String]) -> [String] {
     var seen: Set<String> = []
-    return items.filter { seen.insert(SummaryResponseParser.taskKey($0)).inserted }
+    return items.filter { seen.insert($0.trimmingCharacters(in: .whitespacesAndNewlines)).inserted }
   }
 
   /// "mm:ss" or "h:mm:ss" as seconds.

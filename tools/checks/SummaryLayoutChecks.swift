@@ -21,6 +21,15 @@ struct SummaryLayoutChecks {
       headline: "記録", overview: "概要", topics: topics.reversed())
     precondition(timeline.range(of: "先に話したこと")!.lowerBound < timeline.range(of: "決定したこと")!.lowerBound)
     precondition(SummaryLength.allCases.map(\.instruction).count == 3)
+    let distinct = SummaryTopic(title: "検討された当初案", startTime: 0, endTime: 60,
+      points: ["API_KEY_Aを無効にする", "api_key_aを無効にする", "予算は-100万円", "予算は100万円", "API_KEY_Aを無効にする"])
+    let preserved = SummaryMarkdownBuilder.build(template: context.template, input: context,
+      headline: "識別子と当初案", overview: "本番ではAPI_KEY_Aを無効にする必要はない。", topics: [distinct])
+    for fact in distinct.points {
+      precondition(preserved.contains("- " + fact + "\n") || preserved.hasSuffix("- " + fact))
+    }
+    precondition(preserved.components(separatedBy: "- API_KEY_Aを無効にする").count == 2,
+      "Only the exactly repeated assertion is removed; a negated overview is not the same assertion")
     print("SummaryLayoutChecks: passed (importance, chronological, explicit timeline)")
   }
 }

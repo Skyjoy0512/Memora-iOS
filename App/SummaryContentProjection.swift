@@ -18,7 +18,9 @@ enum SummaryContentProjection {
   }
 
   private static func normalized(_ value: String) -> String {
-    MarkdownBlockParser.plainText(value)
+    // A link's visible label cannot establish equality of its destination.
+    let text = value.contains("](") || value.contains("<") ? value : MarkdownBlockParser.plainText(value)
+    return text
       .split(whereSeparator: \.isWhitespace).joined(separator: " ")
       .trimmingCharacters(in: .whitespacesAndNewlines)
   }

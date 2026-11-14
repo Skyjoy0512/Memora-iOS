@@ -19,14 +19,14 @@ enum SummaryMarkdownBuilder {
     let questions = unique(topics.flatMap(\.questions))
     let includesActions: Bool = if case .market(let market) = template { market.includesActions } else { true }
     let actions = includesActions ? SummaryResponseParser.deduplicated(topics.flatMap(\.actions)) : []
-    let reserved = Set((decisions + questions + actions.map(\.title)).map(SummaryResponseParser.taskKey))
+    let reserved = Set((decisions + questions + actions.map(\.title)).map(textKey))
     var seen = reserved
-    if !overview.isEmpty { seen.insert(SummaryResponseParser.taskKey(overview)) }
+    if !overview.isEmpty { seen.insert(textKey(overview)) }
     var lines = ["# \(headline)"]
     if !overview.isEmpty { lines += ["", overview] }
     for topic in ordered {
       let points = unique(topic.points + topic.concerns).filter { point in
-        (!overview.contains(point) && seen.insert(SummaryResponseParser.taskKey(point)).inserted) || topic.relations.contains { $0.target == .point && $0.parent == point }
+        seen.insert(textKey(point)).inserted || topic.relations.contains { $0.target == .point && $0.parent == point }
       }
       guard !points.isEmpty else { continue }
       let location = template == .builtIn(.detailedMinutes) && input.duration > 0
@@ -55,6 +55,10 @@ enum SummaryMarkdownBuilder {
 
   private static func unique(_ items: [String]) -> [String] {
     var seen = Set<String>()
-    return items.filter { SummaryActionItem.normalized($0) != nil && seen.insert(SummaryResponseParser.taskKey($0)).inserted }
+    return items.filter { SummaryActionItem.normalized($0) != nil && seen.insert(textKey($0)).inserted }
+  }
+
+  private static func textKey(_ value: String) -> String {
+    value.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }
