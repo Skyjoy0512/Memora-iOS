@@ -15,6 +15,7 @@ final class MemoraModel {
   var notionPermissionRevision = UUID()
   var gmailPermissionRevision = UUID()
   var mcpPermissionRevision = UUID()
+  var mcpServers: [MCPServerConfig] = []
   var activeMCPTools: [String: MCPTool] = [:]
   var disabledIntegrationIDs: [String] = []
   var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]

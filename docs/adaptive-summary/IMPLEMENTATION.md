@@ -49,3 +49,7 @@ LLM呼出し: 通常クラウドは既存の1回を維持。長文は部分抽�
 動的な話題名に「決定」を含むだけで抽出していたMarkdownフォールバックを修正。既知の意味付きラベルだけを読む。理由/条件付きの点は重複削減の対象外として意味を保持。
 
 検証: SummaryPrompt/Layout/Relation/TemplateNotes/Pipeline、生成Markdownの12種の構造/保持/idempotence検証、編集SQLite失敗・競合・再読込、Infographic回帰を実行。iOS preview成功（既存warning 11件）。実モデル内容評価・UI全項目は後続。
+
+## 既存ホストfixture修復
+
+OpenCode Go / DeepSeek run-waun4b4rを実行し、NotionAgentFixtureModelのmcpServers初期状態1行だけを許可・反映。初回でscope/diff/motion/regression/iOS全体build/監督review合格。監督側でNotionAgentChecksも実行し、188 agent race +45 manual race合格。実サービス認証の検証ではない。
