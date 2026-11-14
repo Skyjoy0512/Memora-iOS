@@ -26,10 +26,10 @@ struct PersonDetailView: View {
     let summary = memory.conversationSummary
     return MemoraList {
       Section { header(memory) }
-      if let latest = summary.topics.first {
+      if let latest = summary.latestSubstantiveTopic {
         Section("概要") {
           NavigationLink(value: LibraryRoute.meeting(latest.id)) {
-            Text(summary.overview)
+            Text(latest.summary)
               .font(MemoraTypography.secondary)
               .fixedSize(horizontal: false, vertical: true)
           }
@@ -103,8 +103,8 @@ struct PersonDetailView: View {
   }
 
   private func summary(_ memory: PersonMemory) -> String {
-    guard let lastMet = memory.lastMet else { return "一緒の会議はまだありません" }
-    return "会議\(memory.meetings.count)件 · 最後に会った日 \(lastMet.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))))"
+    guard let date = memory.lastMet else { return "関連する記録はまだありません" }
+    return "記録\(memory.meetings.count)件 · 最新 \(MemoraFormat.documentDate(date))"
   }
 
   /// Hands the question to the agent, which can read the person's records.

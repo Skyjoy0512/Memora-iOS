@@ -9,6 +9,8 @@ import Foundation
     precondition(summary.unresolvedTopics.map(\.id) == [recent.id])
     precondition(summary.overview.contains(recent.title))
     precondition(PersonConversationSummary(topics: []).recentDecisions.isEmpty)
+    precondition(PersonConversationSummary(topics: [older]).latestSubstantiveTopic == nil)
+    precondition(PersonConversationSummary(topics: [older, recent]).latestSubstantiveTopic?.id == recent.id)
     print("PersonSummaryChecks: passed (literal evidence changes, source IDs, unresolved, empty; no inference)")
   }
 }

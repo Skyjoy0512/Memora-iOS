@@ -149,7 +149,7 @@ struct TasksView: View {
       }
 
       if let meetingID = task.meetingID, model.meetingTitles[meetingID] != nil {
-        ToolbarIconButton("元の会議を開く", icon: .chevronRight) {
+        ToolbarIconButton("元の記録を開く", icon: .chevronRight) {
           model.homePath.append(.meeting(meetingID))
         }
         .buttonStyle(.plain)

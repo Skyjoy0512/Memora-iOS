@@ -4,15 +4,19 @@ struct AISettingsView: View {
   @Environment(MemoraModel.self) private var model
   @State private var isAPIKeySheetPresented = false
   @State private var availability = EngineAvailability.Status()
-  @State private var engineAvailability: [AIEngine: EngineAvailability.Status] = [:]
   @State private var hasKey = false
   @State private var readyProviders: Set<LLMProvider> = []
 
   var body: some View {
     MemoraForm {
-      Section("現在の設定で使うAI") {
-        LabeledContent("AI", value: effectiveLabel)
-        LabeledContent("処理する場所", value: usesEffectiveCloud ? model.askAIConfiguration.llm.summaryDestination : "このiPhone")
+      Section("使用中のAI") {
+        VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+          Text(effectiveLabel).font(MemoraTypography.body.weight(.medium))
+          Text(usesEffectiveCloud ? model.askAIConfiguration.llm.summaryDestination : "このiPhoneで処理")
+            .font(MemoraTypography.metadata).foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("settings.ai.effective")
         LabeledContent("状態", value: availability.summary)
         if let message = availability.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
       }
@@ -26,7 +30,9 @@ struct AISettingsView: View {
         .pickerStyle(.navigationLink)
         .accessibilityIdentifier("settings.ai.engine")
       } footer: {
-        Text("使用するモデルを選択すると、そのモデルが標準のAIより優先されます。")
+        Text(model.registeredLLMs.selectedModel == nil
+          ? "下で登録済みモデルを指定すると、そのモデルを使います。"
+          : "現在は登録済みモデルを使用中です。標準のAIの変更は、モデルの指定を解除すると反映されます。")
       }
 
       Section {
@@ -34,7 +40,7 @@ struct AISettingsView: View {
           get: { model.registeredLLMs.selectedID },
           set: { model.registeredLLMs.select($0) }
         )) {
-          Text("標準のAIを使う").tag(UUID?.none)
+          Text("指定なし・標準のAIを使う").tag(UUID?.none)
           ForEach(model.registeredLLMs.models) { registered in
             Text(readyProviders.contains(registered.provider)
                  ? registered.name : "\(registered.name)（APIキー未設定）")
@@ -42,7 +48,7 @@ struct AISettingsView: View {
               .disabled(!readyProviders.contains(registered.provider))
           }
         } label: {
-          SettingsLabel("使用するモデル", icon: .sparkles)
+          SettingsLabel("登録済みモデルを指定", icon: .sparkles)
         }
         .pickerStyle(.menu)
 
@@ -112,7 +118,6 @@ struct AISettingsView: View {
   }
 
   private func refresh() {
-    engineAvailability = Dictionary(uniqueKeysWithValues: AIEngine.allCases.map { ($0, EngineAvailability.ai($0, provider: model.aiProvider)) })
     hasKey = EngineAvailability.hasKey(model.aiProvider.keychainAccount)
     let configuration = model.askAIConfiguration
     availability = EngineAvailability.ai(configuration.llm.isMemoraIntelligence ? .memora : configuration.engine,

@@ -109,6 +109,6 @@ struct PeopleView: View {
       let note = person.note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
       return note.isEmpty ? "記録はまだありません" : note
     }
-    return "会議\(count)件 · 最後に会った日 \(MemoraFormat.documentDate(last))"
+    return "記録\(count)件 · 最新 \(MemoraFormat.documentDate(last))"
   }
 }

@@ -45,7 +45,7 @@ struct ProjectSourceAddSheet: View {
       .background(MemoraPalette.background)
       .scrollDismissesKeyboard(.interactively)
       .disabled(!isDraftReady || isSaving || model.isRestoring || model.isStoreProtected || model.currentTeamID != nil)
-      .navigationTitle(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "新しいノート" : title)
+      .navigationTitle("新しいノート")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

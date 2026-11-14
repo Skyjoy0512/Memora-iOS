@@ -15,8 +15,7 @@ struct IntegrationDetailView: View {
         MarketplaceDescription(text: service.summary)
         MarketplaceDetailFacts(fields: [
           ("接続", service.isImplemented ? (connected ? "接続済み" : state.label) : "準備中"),
-          ("カテゴリー", "コネクタ"),
-          ("Ask AIでの利用", model.integrationIsEnabled(service.id) && service.isImplemented ? "有効" : "無効"),
+          ("Ask AI", state.isReady ? "利用可能" : "利用できません"),
           ("アクセス", accessLabel)
         ])
 
@@ -39,7 +38,6 @@ struct IntegrationDetailView: View {
           DisclosureGroup("アクセスと利用設定") {
             VStack(alignment: .leading, spacing: 12) {
               Text(service.permissions)
-              if let reason = state.reason { Text(reason).foregroundStyle(.secondary) }
             }.font(.subheadline).padding(.top, 12)
           }
         }
@@ -54,7 +52,17 @@ struct IntegrationDetailView: View {
     .onChange(of: scenePhase) { _, phase in if phase == .active { connected = model.integrationHasConnection(service.id) } }
     .safeAreaInset(edge: .bottom, spacing: 0) {
       if service.isImplemented {
-        MarketplaceDetailFooter { connectionAction(ready: connected) }
+        MarketplaceDetailFooter {
+          VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+            if let reason = state.reason {
+              Text(reason).font(MemoraTypography.metadata)
+                .foregroundStyle(MemoraPalette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("connector.requirement")
+            }
+            connectionAction(ready: connected)
+          }
+        }
       }
     }
     .background(MemoraPalette.background)

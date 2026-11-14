@@ -28,10 +28,9 @@ struct AIHistoryDetailView: View {
           Text("回答")
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
-          Text(entry.answer)
-            .memoraReadingText()
-            .textSelection(.enabled)
+          AIResponseText(text: entry.answer, animates: false)
             .frame(maxWidth: .infinity, alignment: .leading)
+          AIResponseActionBar(text: entry.answer, retry: {})
         }
 
         VStack(alignment: .leading, spacing: 6) {
@@ -42,8 +41,12 @@ struct AIHistoryDetailView: View {
         .font(.subheadline)
         .foregroundStyle(.secondary)
 
-        SourceCitationList(citations: entry.sourceCitations ?? [])
-        AttachmentCitationList(citations: entry.attachmentCitations ?? [])
+        if !(entry.sourceCitations ?? []).isEmpty || !(entry.attachmentCitations ?? []).isEmpty {
+          DisclosureGroup("出典") {
+            SourceCitationList(citations: entry.sourceCitations ?? [])
+            AttachmentCitationList(citations: entry.attachmentCitations ?? [])
+          }
+        }
         if let attachment = entry.attachment?.resolve() {
           ForEach(attachment.files) { file in
             NavigationLink(file.name) { ConversationAttachmentView(file: file) }.frame(minHeight: 44)
@@ -79,8 +82,9 @@ struct AIHistoryDetailView: View {
         .buttonStyle(.bordered)
         .tint(MemoraPalette.textPrimary)
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(MemoraSpacing.lg)
+      .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
+      .padding(MemoraSpacing.screen)
+      .frame(maxWidth: .infinity)
     }
     .background(MemoraPalette.background)
     .navigationTitle("質問履歴")

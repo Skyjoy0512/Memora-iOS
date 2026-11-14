@@ -109,6 +109,10 @@ struct RecentlyDeletedView: View {
     }
     .padding(.vertical, MemoraSpacing.xs)
     .accessibilityElement(children: .combine)
+    .contextMenu {
+      Button("復元", icon: .arrowUturnBackward) { _ = model.restoreTrashedRecord(record.id) }
+      Button("完全に削除", icon: .trashSlash, role: .destructive) { pendingDeletion = record }
+    }
   }
 
   private var deletionBinding: Binding<Bool> {
@@ -133,6 +137,10 @@ struct RecentlyDeletedView: View {
     }
     .padding(.vertical, MemoraSpacing.xs)
     .accessibilityElement(children: .combine)
+    .contextMenu {
+      Button("復元", icon: .arrowUturnBackward) { _ = model.restoreTrashedLifeLogEntry(record.id) }
+      Button("完全に削除", icon: .trashSlash, role: .destructive) { pendingEntryDeletion = record }
+    }
   }
 
   private var entryDeletionBinding: Binding<Bool> {

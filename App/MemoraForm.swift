@@ -14,5 +14,6 @@ struct MemoraForm<Content: View>: View {
         .listSectionSeparator(.hidden)
     }
     .memoraPlainList()
+    .contentMargins(.horizontal, 0, for: .scrollContent)
   }
 }

@@ -65,7 +65,7 @@ struct PersonEditSheet: View {
           }
         }
       }
-      .navigationTitle("人を編集")
+      .navigationTitle("人物を編集")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

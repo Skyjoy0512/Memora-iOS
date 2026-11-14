@@ -148,7 +148,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         tasks = (APP / "TasksView.swift").read_text()
         self.assertIn("model.isAddTaskPresented = true", tasks)
         self.assertIn("todayOnly = false", tasks)
-        self.assertIn('ToolbarIconButton("元の会議を開く"', tasks)
+        self.assertIn('ToolbarIconButton("元の記録を開く"', tasks)
         self.assertIn("sourceTitle", (APP / "TaskRow.swift").read_text())
         self.assertIn("model.openSystemDestination(.askAI)", (APP / "DocumentsView.swift").read_text())
         meeting = (APP / "MeetingDetailView.swift").read_text()

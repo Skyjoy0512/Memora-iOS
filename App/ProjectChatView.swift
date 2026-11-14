@@ -28,12 +28,17 @@ struct ProjectChatView: View {
                   AIResponseText(text: message.text)
                 }
                 if message.role == .assistant {
+                  AIResponseActionBar(text: message.text, retry: {})
+                  if !message.citations.isEmpty {
+                    DisclosureGroup("出典") {
                   ForEach(message.citations) { citation in
                     Button { open(citation) } label: {
                       Label(citationLabel(citation), icon: .docText)
                         .font(MemoraTypography.metadata).multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     }.tint(MemoraPalette.textPrimary)
+                  }
+                    }
                   }
                   if let engine = message.engineLabel { Text(engine).font(.caption).foregroundStyle(.secondary) }
                 }

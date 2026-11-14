@@ -54,7 +54,7 @@ struct ProjectSourceDetailView: View {
                 model.resumeProjectSource(sourceID)
               }.frame(minHeight: 44).disabled(cannotChange)
             }
-            if let summary = source.summary, !summary.isEmpty {
+            if source.kind != .note, let summary = source.summary, !summary.isEmpty {
               if source.summaryTextReference != source.extractedTextReference {
                 Text("以前の原文から作成した要約です").font(.caption).foregroundStyle(.secondary)
               }
@@ -74,13 +74,6 @@ struct ProjectSourceDetailView: View {
             }
             if source.kind == .note, !model.attachedSources(of: source).isEmpty {
               attachedSourcesSection(source)
-            }
-            if source.canProvideText {
-              Button("この資料について聞く", icon: .sparkles) { isAsking = true }
-                .buttonStyle(.plain).font(.subheadline)
-                .foregroundStyle(MemoraPalette.textPrimary)
-                .frame(minHeight: 44, alignment: .leading)
-                .accessibilityIdentifier("source.askAI")
             }
             if source.kind == .youtube, !source.canProvideText {
               Text("字幕がまだありません。お持ちの動画・字幕ファイルの追加や、権限のあるYouTubeアカウントとの接続を試せます。")
@@ -104,7 +97,7 @@ struct ProjectSourceDetailView: View {
               }.frame(minHeight: 44).disabled(cannotChange)
             }
             if source.canProvideText || !extracted.isEmpty {
-              DisclosureGroup(source.kind == .audio || source.kind == .video || source.kind == .youtube ? "文字起こし・字幕" : "原文", isExpanded: $showsOriginal) {
+              DisclosureGroup(source.kind == .note ? "ノート本文" : source.kind == .audio || source.kind == .video || source.kind == .youtube ? "文字起こし・字幕" : "原文", isExpanded: $showsOriginal) {
                 MemoraLoadingContainer(state: snapshot.state(for: sourceID), label: "読み込んでいます…",
                   activityID: snapshot.activityID, failure: snapshot.key == sourceID ? snapshot.failure : nil,
                   retry: { textRetry += 1 }, cancel: { textLoader.stop() }) {
@@ -131,6 +124,18 @@ struct ProjectSourceDetailView: View {
                     .memoraTextReveal()
                   }
               }.id("source.original")
+            }
+            if source.kind == .note, let summary = source.summary, !summary.isEmpty {
+              DisclosureGroup("要約") {
+                MarkdownDocumentView(markdown: summary, isLazy: true)
+              }
+            }
+            if source.canProvideText {
+              Button("この資料について聞く", icon: .sparkles) { isAsking = true }
+                .buttonStyle(.plain).font(.subheadline)
+                .foregroundStyle(MemoraPalette.textPrimary)
+                .frame(minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+                .accessibilityIdentifier("source.askAI")
             }
             if availabilityMessage != nil || !previousSummaries.isEmpty || !revisions.isEmpty {
               VStack(alignment: .leading, spacing: 12) {
@@ -241,7 +246,9 @@ struct ProjectSourceDetailView: View {
       }
       .task(id: request) {
         await textLoader.load(request) { model.source(id: sourceID)?.extractedTextReference == request.reference }
-        if source.summary == nil || initialExcerpt != nil { showsOriginal = true }
+        if source.kind == .note || source.summary?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false || initialExcerpt != nil {
+          showsOriginal = true
+        }
       }
       .sheet(isPresented: $isAddingVideoTranscript) { VideoTranscriptImportSheet(source: source) { _ in } }
       .sheet(isPresented: $isAttachingSources) { ProjectNoteAttachSheet(noteID: sourceID) }

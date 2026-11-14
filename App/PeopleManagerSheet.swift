@@ -92,7 +92,7 @@ struct PeopleManagerSheet: View {
           }
         }
       }
-      .navigationTitle("人")
+      .navigationTitle("人物")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {

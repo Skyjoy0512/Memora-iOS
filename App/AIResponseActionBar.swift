@@ -9,7 +9,7 @@ struct AIResponseActionBar: View {
   var canRetry = false
   var isSpeaking = false
   var readAloud: (() -> Void)?
-  var save: () -> Void
+  var save: (() -> Void)? = nil
   var retry: () -> Void
   var saveSkill: (() -> Void)? = nil
   var saveTitle = "回答を資料に保存"
@@ -49,7 +49,9 @@ struct AIResponseActionBar: View {
           selection = AIAnswerTextPresentation(text: value)
         }
           .disabled(text.isEmpty)
-        Button(saveTitle, icon: .docText, action: save)
+        if let save {
+          Button(saveTitle, icon: .docText, action: save)
+        }
         if let saveSkill {
           Button("回答からスキルを作成", icon: .squareAndPencil, action: saveSkill)
             .disabled(text.isEmpty)

@@ -69,7 +69,7 @@ struct AddTaskView: View {
           ToolbarIconButton("キャンセル", icon: .xmark) { cancelsEditing = true }
         }
         ToolbarItem(placement: .confirmationAction) {
-          ToolbarIconButton("追加", icon: .plus) {
+          ToolbarIconButton("追加", icon: .checkmark) {
             let saved = model.addTask(
               title: title,
               assignee: ownedByMe ? "" : assignee,

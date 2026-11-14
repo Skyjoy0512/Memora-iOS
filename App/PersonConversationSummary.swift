@@ -12,6 +12,10 @@ struct PersonConversationSummary {
   }
   var topics: [Topic]
 
+  var latestSubstantiveTopic: Topic? {
+    topics.first { !$0.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+  }
+
   var overview: String {
     guard let recent = topics.first else { return "参加者として紐づいた記録はまだありません。" }
     return "最近の記録は「\(recent.title)」（\(recent.date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))))）です。" +

@@ -511,7 +511,7 @@ struct LibraryView: View {
     .buttonStyle(.plain)
     .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
     .listRowSeparator(.visible, edges: .bottom)
-    .alignmentGuide(.listRowSeparatorLeading) { _ in ProjectLayout.iconSide + 12 }
+    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
     .listRowBackground(Color.clear)
   }
 
@@ -525,7 +525,7 @@ struct LibraryView: View {
     .buttonStyle(.plain)
     .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
     .listRowSeparator(.visible, edges: .bottom)
-    .alignmentGuide(.listRowSeparatorLeading) { _ in ProjectLayout.iconSide + 12 }
+    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
     .listRowBackground(Color.clear)
   }
 
@@ -542,7 +542,7 @@ struct LibraryView: View {
     .buttonStyle(.plain)
     .listRowInsets(EdgeInsets(top: 8, leading: ProjectLayout.horizontalInset, bottom: 8, trailing: ProjectLayout.horizontalInset))
     .listRowSeparator(.visible, edges: .bottom)
-    .alignmentGuide(.listRowSeparatorLeading) { _ in ProjectLayout.iconSide + 12 }
+    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
     .listRowBackground(Color.clear)
   }
 
