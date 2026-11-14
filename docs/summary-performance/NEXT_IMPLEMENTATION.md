@@ -42,3 +42,9 @@
 最新成功iOS previewはphase4-cache-preview-commit.jsonに記録（11既存警告）。phase3-shared-pipeline.log / phase3-selected-model-r2.log / phase3-shared-model-regression.log / phase3-shared-capabilities.logに無料検証。
 
 2026-11-15 cache単位: phase4-cache-prompt-reviewed.log / phase4-cache-lease-reviewed.log / phase4-cache-source-final.log / phase4-cache-background-final.logでhost検証。全10群とE2Eはまだ今単位で再実行していない。cache primitive/lifecycleは実SQLite、model stateとAPI応答はfixture。
+
+## 2026-11-15 最終レビュー修正
+
+キャッシュのhitごとの全量SQLite書き戻しを廃止し、LRU touchをRAMに保持して次回write時に反映する。再起動を挟むLRUは最後の永続化時点となる。10 hit/変更なしowner cleanupでSQLite data_versionが不変であることを実ストアのhost testで確認。起動cleanupもleaseを検証し、古いcleanupが新世代を消去しない。空のcacheではrecord配列の追加比較を避け、分析開始時点で保守的な存在flagを立てて未完了workerの失効を維持する。
+
+fence付き不完全notes JSONを完了した部分結果として扱わない。生成factのspeakerIDsは引用した原文segmentのspeakerIDだけを受理し、不一致はuncertainへ下げる。過去本文・編集は変更しない。SummaryPlanning/SummaryReadingの追加回帰とiOS preview成功（既存11警告）。最終10群の再実行中。

@@ -70,6 +70,18 @@ enum SummaryPipelineChecks {
     guard case .success(let proofSummary) = await proofWork.value else { preconditionFailure("proof summary failed") }
     precondition(proofSummary.evidence.first?.sourceSegmentID == proofInput.transcript[2].id.uuidString)
     precondition(proofSummary.knowledge?.facts.first?.sourceReferences?.first?.sourceSegmentID == proofInput.transcript[2].id.uuidString)
+    var speakerInput = proofInput
+    speakerInput.transcript[0].speakerID = "person-a"
+    speakerInput.transcript[2].speakerID = "person-b"
+    let speakerReply = """
+    原文の条件を確認する。
+    <memora-data>{"templateID":"builtin.detailedOverview","knowledge":{"facts":[{"id":"speaker-proof","category":"constraint","status":"confirmed","content":"試験完了前は公開しない","speakerIDs":["person-a","person-b"],"sourceReferences":[{"sourceSegmentID":"S3","quote":"負荷試験の完了までは公開しません。"}]}]}}</memora-data>
+    """
+    guard case .success(let speakerSummary) = MeetingSummarizer.parseGeneratedReply(speakerReply, input: speakerInput,
+      sourceIndex: SummarySourceIndex(speakerInput.transcript), compact: true) else { preconditionFailure() }
+    precondition(speakerSummary.knowledge?.facts.first?.speakerIDs == ["person-b"])
+    precondition(speakerSummary.knowledge?.facts.first?.status == .uncertain)
+    precondition(speakerInput.transcript[0].speakerID == "person-a")
         for mode in [SummaryProcessingMode.balanced, .fast, .accurate] {
       let gate = SummaryFixtureGate()
       CloudAIService.gate = gate
@@ -145,6 +157,11 @@ enum SummaryPipelineChecks {
   }
 
   static func cacheChecks() async throws {
+    let rawNote = SummaryPartArtifact(notes: "原文に記録された条件を保つ。", sourceReferences: [])
+    let rawJSON = String(decoding: try JSONEncoder().encode(rawNote), as: UTF8.self)
+    precondition(SummaryPartArtifact.decode("```json\r\n" + rawJSON + "\r\n```")?.notes == rawNote.notes)
+    precondition(SummaryPartArtifact.hasMalformedStructuredNotes("```json\n{\"notes\":\"unfinished"))
+    precondition(!SummaryPartArtifact.hasMalformedStructuredNotes("{\"notes\":\"valid technical example\"}"))
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: directory) }
     let store = LocalStore(fileURL: directory.appendingPathComponent("cache.sqlite"))

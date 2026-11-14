@@ -13,6 +13,7 @@ extension MemoraModel {
   }
 
   func invalidateSummaryArtifacts(previous: [Meeting], cache: SummaryArtifactCache = .shared) {
+    guard cache.mayContainArtifacts else { return }
     let current = Dictionary(meetings.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     if previous.contains(where: { old in
       guard let new = current[old.id] else { return true }
@@ -23,6 +24,7 @@ extension MemoraModel {
   }
 
   func invalidateSummaryArtifacts(previous: [ProjectSource], cache: SummaryArtifactCache = .shared) {
+    guard cache.mayContainArtifacts else { return }
     let current = Dictionary(projectSources.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     if previous.contains(where: { old in
       guard let new = current[old.id] else { return true }

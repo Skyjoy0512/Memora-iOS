@@ -25,7 +25,25 @@ struct SummaryPartArtifact: Codable {
 
   static func decode(_ text: String) -> Self? {
     guard text.utf8.count <= SummaryArtifactCache.maximumEntryBytes else { return nil }
-    return try? JSONDecoder().decode(Self.self, from: Data(text.utf8))
+    return try? JSONDecoder().decode(Self.self, from: Data(jsonPayload(text).utf8))
+  }
+
+  static func hasMalformedStructuredNotes(_ text: String) -> Bool {
+    let payload = jsonPayload(text)
+    guard payload.hasPrefix("{"), payload.contains("\"notes\"") else { return false }
+    return (try? JSONSerialization.jsonObject(with: Data(payload.utf8))) == nil
+  }
+
+  private static func jsonPayload(_ text: String) -> String {
+    var value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let newline = value.firstIndex(where: \.isNewline) {
+      let first = value[..<newline].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+      if first == "```json" || first == "```" {
+        value = String(value[value.index(after: newline)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.hasSuffix("```") { value = String(value.dropLast(3)).trimmingCharacters(in: .whitespacesAndNewlines) }
+      }
+    }
+    return value
   }
 
   struct Reference: Codable {

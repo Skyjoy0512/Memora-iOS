@@ -122,7 +122,7 @@ enum MeetingSummarizer {
       request = SummaryPrompt.document(for: input, transcript: legend + parts[0].joined(separator: "\n"))
     } else {
       guard parts.count <= 512 else { return .failure(.executionLimit) }
-      let cacheLease = artifactCache.lease()
+      let cacheLease = artifactCache.lease(ownerID: input.artifactScope?.ownerID)
       let cacheIdentity = input.artifactScope.flatMap { SummaryArtifactIdentity.identity(scope: $0, input: input, llm: llm) }
       let collected = await SummaryPartScheduler.collect(count: parts.count,
         maximumConcurrent: SummaryGenerationPolicy.parallelParts(input.preferences.processingMode, llm: llm)) { index in
@@ -161,10 +161,10 @@ enum MeetingSummarizer {
              let artifact = SummaryPartArtifact.decode(text), artifact.validated(in: sourceIndex, part: part, compact: compact) {
             guard authorize(), !Task.isCancelled else { return .failure(.contextChanged) }
             await artifactCache.write(text, key: key, ownerID: scope.ownerID, lease: cacheLease)
-          } else if text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{"), text.contains("\"notes\"") {
+          } else if SummaryPartArtifact.hasMalformedStructuredNotes(text) {
             // A declared structured note must not hide truncated JSON inside a
             // successful final merge. Legacy prose is still accepted, uncached.
-            guard SummaryPartArtifact.decode(text) != nil else { return .failure(.generationFailed) }
+            return .failure(.generationFailed)
           }
           return .success("# 部分\(index + 1)（\(range)）\n\(text)")
         case .failure(let failure): return .failure(failure)
@@ -254,10 +254,21 @@ enum MeetingSummarizer {
     }
     if var knowledge = summary.knowledge {
       if knowledge.selectedProfileIDs.isEmpty, let id = summary.templateID { knowledge.selectedProfileIDs = [id] }
-      let speakerIDs = Set(input.transcript.compactMap(\.speakerID))
+      let speakers = Dictionary(input.transcript.compactMap { segment in
+        segment.speakerID.map { (segment.id, $0) }
+      }, uniquingKeysWith: { first, _ in first })
       for index in knowledge.facts.indices {
         knowledge.facts[index].origin = .generated
-        knowledge.facts[index].speakerIDs = knowledge.facts[index].speakerIDs?.filter { speakerIDs.contains($0) }
+        let sourceSpeakers = Set((knowledge.facts[index].sourceReferences ?? []).compactMap { reference in
+          sourceIndex.originalID(for: reference.sourceSegmentID, allowShortIDs: false).flatMap { speakers[$0] }
+        })
+        if let claimed = knowledge.facts[index].speakerIDs {
+          let verified = claimed.filter { sourceSpeakers.contains($0) }
+          knowledge.facts[index].speakerIDs = verified
+          if verified.count != claimed.count, knowledge.facts[index].status == .confirmed {
+            knowledge.facts[index].status = .uncertain
+          }
+        }
       }
       summary.knowledge = knowledge
     }

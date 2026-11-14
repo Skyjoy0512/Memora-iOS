@@ -821,7 +821,8 @@ final class MemoraModel {
     refreshSampleContentFlag()
     if !isStoreProtected {
       let owners = Set(meetings.map(\.id) + projectSources.map(\.id))
-      Task { await SummaryArtifactCache.shared.retainOwners(owners) }
+      let lease = SummaryArtifactCache.shared.lease()
+      Task { await SummaryArtifactCache.shared.retainOwners(owners, lease: lease) }
     }
 
     // Automatic records the logger wrote while no model existed are brought in.
