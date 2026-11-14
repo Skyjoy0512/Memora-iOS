@@ -13,3 +13,7 @@ swiftc App/MemoraIntelligence.swift App/LLMModelOption.swift App/LLMProvider.swi
 "$check_dir/budget"
 swiftc App/AIAnswerFailure.swift App/SummaryPartScheduler.swift tools/checks/SummaryConcurrencyChecks.swift -o "$check_dir/concurrency"
 "$check_dir/concurrency"
+swiftc App/LocalStore.swift App/SummaryArtifactCache.swift tools/checks/SummaryArtifactCacheChecks.swift -o "$check_dir/cache"
+"$check_dir/cache"
+swiftc App/LocalStore.swift App/SummaryArtifactCache.swift App/SummaryArtifactScope.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/MemoraModel+SummaryArtifacts.swift tools/checks/SummaryArtifactLifecycleChecks.swift -o "$check_dir/cache-lifecycle"
+"$check_dir/cache-lifecycle"

@@ -45,6 +45,7 @@ extension MemoraModel {
         duration: timed ? (blocks.compactMap(\.time).max() ?? 0) + 1 : 0,
         participantNames: [], transcript: segments, template: resolution.template,
         preferences: resolution.preferences)
+      input.artifactScope = cloud ? summaryArtifactScope(ownerID: id, privacy: context.source.privacy, llm: configuration.llm, projectID: context.source.projectID) : nil
       input.sourceContext = [context.source.originalURL?.absoluteString,
         context.source.textCoverage == .complete ? "抽出本文を参照。" : "一部の文字を参照。未取得部分を読んだと表現しない。",
         context.source.errorInformation].compactMap { $0 }.joined(separator: "\n")

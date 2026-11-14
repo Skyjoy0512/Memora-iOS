@@ -1,5 +1,12 @@
 # Memora — OpenCode 実装計画と進捗
 
+## 2026-11-15 要約性能基盤（継続中）
+
+要約専用のモデル表を増やさず共有ModelCapabilitiesへ統合。容量予算/短縮ID/推論から独立した並列、job内HTTP session再利用、SSE off-main、検証済み長文partの既存SQLite再利用を実装した。固定版J-MeetEval197件/16カテゴリと25独自goldは開発専用。無料検証と実モデルの品質・速度・費用を区別する。実モデル評価は利用者指定で実施しない。
+
+進捗・検証・未実装は [SUMMARY_ARCHITECTURE.md](SUMMARY_ARCHITECTURE.md)、[SUMMARY_BENCHMARK_RESULTS.md](SUMMARY_BENCHMARK_RESULTS.md)、[継続設計](summary-performance/NEXT_IMPLEMENTATION.md) を正本とする。SoT・録音中の先行クラウド処理・性能目標を実装済み/達成済みと記載しない。
+
+
 ## 2026-11-14 適応型構造化要約
 
 固定出力から、55用途別抽出プロファイルと内容に応じた構成へ移行。

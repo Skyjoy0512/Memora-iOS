@@ -5,7 +5,7 @@ check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-summary-reading.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 sources=(Shared/MemoraIcon.swift App/SummaryProcessingMode.swift App/ReadabilityGuide.swift App/SummaryPrompt.swift
   App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/MemoraFormat.swift
-  App/MeetingSummaryInput.swift App/SummaryTemplate.swift App/SummaryMarketTemplate.swift
+  App/SummaryArtifactScope.swift App/MeetingSummaryInput.swift App/SummaryTemplate.swift App/SummaryMarketTemplate.swift
   App/SummaryTemplateChoice.swift App/SummaryUseCase.swift App/VideoSummaryTemplate.swift App/SummarySensitivity.swift App/SummaryLength.swift
   App/SummaryPreferences.swift App/SummaryTemplateCategory.swift App/SummaryTemplateCatalog.swift App/SummaryTemplateCatalog+Workflows.swift
   App/OccupationSummaryTemplates.swift App/SummaryTemplateSelector.swift)
@@ -30,7 +30,7 @@ layout_sources=(App/SummaryKnowledge.swift "${sources[@]}" App/SummaryTopic.swif
   App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift App/MarkdownSummaryExtractor.swift)
 swiftc "${layout_sources[@]}" "${audio_diagnostic_sources[@]}" App/SummaryNoteHierarchy.swift App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
   App/LLMProvider.swift App/LLMModelOption.swift App/AIAnswerFailure.swift App/AIAnswerResult.swift \
-  App/SummaryDiagnostics.swift App/ModelCapabilities.swift App/ModelCapabilityRegistry.swift App/SummaryProviderAdapter.swift App/SummaryGenerationPolicy.swift App/SummaryTokenBudget.swift App/SummaryInputPartition.swift App/SummaryPartScheduler.swift App/SummarySourceIndex.swift App/CloudHTTPTransport.swift App/MeetingSummarizer.swift \
+  App/SummaryDiagnostics.swift App/ModelCapabilities.swift App/ModelCapabilityRegistry.swift App/SummaryProviderAdapter.swift App/SummaryGenerationPolicy.swift App/SummaryTokenBudget.swift App/SummaryInputPartition.swift App/SummaryPartScheduler.swift App/SummarySourceIndex.swift App/CloudHTTPTransport.swift App/LocalStore.swift App/SummaryArtifactCache.swift App/SummaryArtifactIdentity.swift App/SummaryPartArtifact.swift App/MeetingSummarizer.swift \
   tools/checks/SummaryPipelineChecks.swift -o "$check_dir/pipeline"
 "$check_dir/pipeline"
 swiftc "${layout_sources[@]}" App/SummarySection.swift App/SummaryEvidenceLink.swift \

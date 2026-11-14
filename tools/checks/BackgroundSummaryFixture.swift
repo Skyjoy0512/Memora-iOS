@@ -4,6 +4,7 @@ import Foundation
 // queue/generation/ProcessingService/task extraction and real SQLite are linked.
 @MainActor
 final class MemoraModel {
+  func summaryArtifactScope(ownerID: UUID, privacy: RecordPrivacy, llm: LLMSelection, projectID: UUID? = nil) -> SummaryArtifactScope? { nil }
   let store: LocalStore
   let processing = ProcessingService()
   let scheduler = FixtureSummaryScheduler()

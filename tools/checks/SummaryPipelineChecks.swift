@@ -4,6 +4,7 @@ import Foundation
 @main @MainActor
 enum SummaryPipelineChecks {
   static func main() async throws {
+    try await cacheChecks()
     for empty in ["", " \n\t　"] {
       CloudAIService.gate = SummaryFixtureGate()
       var input = makeInput(mode: .fast)
@@ -140,6 +141,80 @@ enum SummaryPipelineChecks {
       transcript: (0..<4).map { index in TranscriptSegment(id: UUID(), speaker: "話者\(index)", speakerIsCertain: false,
         timestamp: Double(index * 1_800), text: String(repeating: "原文の条件と否定・150万円を保持。", count: 15_000)) },
       template: .standard, preferences: SummaryPreferences(processingMode: mode))
+  }
+
+  static func cacheChecks() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let store = LocalStore(fileURL: directory.appendingPathComponent("cache.sqlite"))
+    try store.prepare()
+    let cache = SummaryArtifactCache(store: store)
+    let llm = LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro")
+    var input = makeInput(mode: .accurate)
+    input.artifactScope = .init(ownerID: UUID(), workspace: "personal", account: "synthetic-account",
+      privacy: "synthetic-permission", credentialHash: "synthetic-key-hash")
+    let identity = SummaryArtifactIdentity.identity(scope: input.artifactScope!, input: input, llm: llm)!
+    precondition(SummaryArtifactIdentity.identity(scope: input.artifactScope!, input: input,
+      llm: .init(provider: llm.provider, modelID: "different-model")) != identity)
+    var changed = input
+    changed.transcript[0].endTime = 42
+    precondition(SummaryArtifactIdentity.identity(scope: input.artifactScope!, input: changed, llm: llm) != identity)
+    changed = input
+    changed.transcript[0].speaker = "訂正された話者"
+    precondition(SummaryArtifactIdentity.identity(scope: input.artifactScope!, input: changed, llm: llm) != identity)
+    for property in ["account", "workspace", "credential", "privacy", "owner"] {
+      var scope = input.artifactScope!
+      switch property {
+      case "account": scope.account += "new"
+      case "workspace": scope.workspace += "new"
+      case "credential": scope.credentialHash += "new"
+      case "privacy": scope.privacy += "new"
+      default: scope.ownerID = UUID()
+      }
+      precondition(SummaryArtifactIdentity.identity(scope: scope, input: input, llm: llm) != identity)
+    }
+    for pass in 0..<2 {
+      let gate = SummaryFixtureGate()
+      CloudAIService.gate = gate
+      let snapshot = input
+      let work = Task { await MeetingSummarizer.summarize(snapshot, engine: .cloud, llm: llm,
+        artifactCache: cache, authorize: { true }, progress: { _ in }) }
+      if pass == 0 {
+        var finished = 0
+        while finished < 4 {
+          await wait { !gate.pending.isEmpty }
+          for call in gate.pending.keys.sorted() {
+            let index = (0..<4).first { gate.calls[call].user.contains("S\($0 + 1) A") || gate.calls[call].user.contains(input.transcript[$0].id.uuidString) }!
+            let compact = gate.calls[call].user.contains("S\(index + 1) A")
+            let artifact = SummaryPartArtifact(notes: "区間\(index)では原文の条件と否定・150万円を保持。",
+              sourceReferences: [.init(sourceSegmentID: compact ? "S\(index + 1)" : input.transcript[index].id.uuidString, quote: "原文の条件と否定・150万円を保持。")])
+            let text = String(decoding: try JSONEncoder().encode(artifact), as: UTF8.self)
+            precondition(artifact.validated(in: SummarySourceIndex(input.transcript),
+              part: [SummarySourceIndex(input.transcript).units(hasTimestamps: true, compact: compact)[index].line], compact: compact))
+            gate.finish(call, .answer(text))
+            finished += 1
+          }
+        }
+      }
+      await wait { gate.pending.count == 1 }
+      let last = gate.pending.keys.first!
+      precondition(gate.calls.count == (pass == 0 ? 5 : 1))
+      for index in 0..<4 { precondition(gate.calls[last].user.contains("区間\(index)")) }
+      gate.finish(last, .answer("## 公開条件\n原文の条件と否定・150万円を保持。"))
+      guard case .success = await work.value else { preconditionFailure("Cache path failed") }
+      input.preferences.length = .detailed
+      input.preferences.displayOrder = .chronological
+    }
+    let gate = SummaryFixtureGate()
+    CloudAIService.gate = gate
+    let denied = await MeetingSummarizer.summarize(input, engine: .cloud, llm: llm,
+      artifactCache: cache, authorize: { false }, progress: { _ in })
+    guard case .failure = denied else { preconditionFailure("Revoked access reused analysis") }
+    precondition(gate.calls.isEmpty)
+    let index = SummarySourceIndex(input.transcript)
+    let forged = SummaryPartArtifact(notes: "未検証", sourceReferences: [.init(sourceSegmentID: "S99", quote: "原文の条件と否定・150万円を保持。")])
+    precondition(!forged.validated(in: index, part: index.lines(hasTimestamps: true), compact: true))
+    print("Cached regeneration: actual production orchestration mock requests 5 → 1 across length/order change, source/model/account/permission keys and revoked access checked; no API latency or semantic quality claim.")
   }
 
   static func wait(_ condition: () -> Bool) async {

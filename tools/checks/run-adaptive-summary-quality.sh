@@ -9,7 +9,7 @@ for name in SummaryMarkdownBuilder SummaryPrompt ReadabilityGuide SummaryTemplat
 done
 git show "$baseline:App/SummaryTemplateCatalog+Workflows.swift" | sed 's/extension SummaryTemplateCatalog/extension BaselineSummaryTemplateCatalog/' > "$check_dir/BaselineWorkflows.swift"
 sources=(Shared/MemoraIcon.swift App/SummaryKnowledge.swift App/SummaryProcessingMode.swift App/ReadabilityGuide.swift App/SummaryPrompt.swift
-  App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/MemoraFormat.swift App/MeetingSummaryInput.swift
+  App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/MemoraFormat.swift App/SummaryArtifactScope.swift App/MeetingSummaryInput.swift
   App/SummaryTemplate.swift App/SummaryMarketTemplate.swift App/SummaryTemplateChoice.swift App/SummaryUseCase.swift
   App/VideoSummaryTemplate.swift App/SummarySensitivity.swift App/SummaryLength.swift App/SummaryPreferences.swift
   App/SummaryTemplateCategory.swift App/SummaryTemplateCatalog.swift App/SummaryTemplateCatalog+Workflows.swift App/OccupationSummaryTemplates.swift

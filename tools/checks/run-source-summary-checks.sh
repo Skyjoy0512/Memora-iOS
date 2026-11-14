@@ -10,7 +10,7 @@ swiftc App/SummaryKnowledge.swift -D MEMORA_HOST_CHECKS Shared/MemoraIcon.swift 
   App/SourceSummaryOptions.swift App/SummaryEngineChoice.swift App/SummaryLength.swift App/SummaryProcessingMode.swift \
   App/SummaryPreferences.swift App/SummaryTemplate.swift App/SummaryTemplateCategory.swift App/SummaryMarketTemplate.swift \
   App/SummaryTemplateChoice.swift App/SourceSummaryResolution.swift App/AIAnswerFailure.swift \
-  App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/MeetingSummaryInput.swift \
+  App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/SummaryArtifactScope.swift App/MeetingSummaryInput.swift \
   App/ProjectSourceText.swift App/ProjectSourceFiles.swift App/ProjectSourceTextReader.swift App/IdentifiableIndex.swift \
   App/ProjectCitation.swift App/PersistenceFailurePresentation.swift App/MemoraModel+ProjectSourceStorage.swift \
   App/ProjectSourcePreparationContext.swift App/MemoraModel+ProjectSourceRecovery.swift \

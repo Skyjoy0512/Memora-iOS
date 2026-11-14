@@ -2,7 +2,7 @@
 
 直近の基盤commit: c425146f（通信再利用）。Phase 1 / lossless入力 / 共有能力・容量計画・制限付き並列の単位までcommit・push済み。実モデル評価は利用者指定で実行しない。未実装を完成扱いにしない。
 
-## 次の単位: cache / 統合
+## 次の単位: 階層並列 / SoT候補 / 統合
 
 既存資産を再調査:
 
@@ -12,7 +12,7 @@
 - SourceExtractionPersistenceは既存cache SQLite（32MiB、12件、7日、payload hash/secure_delete、backup除外）。LocalStoreは既存のrecords SQLiteの汎用documents。追加DBは不要。どちらを利用するかはlifecycleの安全性から決める。
 - PendingSummaryJobは送信前attemptStartedAtを保存し、再起動で勝手に課金を再実行しない。requiresUserRetryを維持。途中結果は完了要約に保存しない。
 
-cache採用時の条件:
+長文part cacheを既存LocalStoreへ実装済み（SUMMARY_ARCHITECTURE.md参照）。以後の拡張でも維持する条件:
 
 1. 元のレコード/ソース、scope、account/credential revision、provider/model/endpoint、原文/話者、glossary、sourceContext、分析prompt/spec版をキーに含める。モデル名の表示名変更は意味が無ければ分離。APIキーそのものを保存・出力しない。
 2. partNotesは既存LLM呼出しの結果を再利用し、新たな分類・理解呼出しを足さない。長さ/順序はpartNotesの意味に影響しないが、抽出focusが異なるtemplateは原文から追加分析が必要。旧knowledgeだけを「全原文を理解済み」とみなさない。
@@ -39,4 +39,6 @@ cache採用時の条件:
 - 全10群の無料回帰、適応型要約/復旧E2E、最終preview、docsと未検証一覧、意味単位commit/push。
 
 外部作業ディレクトリ: /Volumes/WorkspaceSSD/Development/Agents/MemoraSummaryPerformanceValidation。
-最新成功iOS preview: 2026-11-14T22-24-37-56c97a02.log（11既存警告）。phase3-shared-pipeline.log / phase3-selected-model-r2.log / phase3-shared-model-regression.log / phase3-shared-capabilities.logに無料検証。
+最新成功iOS previewはphase4-cache-preview-commit.jsonに記録（11既存警告）。phase3-shared-pipeline.log / phase3-selected-model-r2.log / phase3-shared-model-regression.log / phase3-shared-capabilities.logに無料検証。
+
+2026-11-15 cache単位: phase4-cache-prompt-reviewed.log / phase4-cache-lease-reviewed.log / phase4-cache-source-final.log / phase4-cache-background-final.logでhost検証。全10群とE2Eはまだ今単位で再実行していない。cache primitive/lifecycleは実SQLite、model stateとAPI応答はfixture。

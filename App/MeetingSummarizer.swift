@@ -9,6 +9,7 @@ enum MeetingSummarizer {
     _ input: MeetingSummaryInput,
     engine: AIEngine,
     llm: LLMSelection,
+    artifactCache: SummaryArtifactCache = .shared,
     authorize: (@MainActor () -> Bool)? = nil,
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
@@ -17,7 +18,7 @@ enum MeetingSummarizer {
       let effective = AIEngineService.effectiveEngine(engine)
       diagnostic?.setEngine(effective == .cloud || effective == .memora ? .cloudSummary : .onDeviceSummary)
       let span = diagnostic?.begin(.summary, audioSeconds: input.duration)
-      let result = await performSummary(input, engine: engine, llm: llm, authorize: authorize, progress: progress)
+      let result = await performSummary(input, engine: engine, llm: llm, artifactCache: artifactCache, authorize: authorize, progress: progress)
       let outcome: AudioDiagnosticReport.Outcome
       switch result {
       case .success: outcome = .success
@@ -36,6 +37,7 @@ enum MeetingSummarizer {
   }
 
   private static func performSummary(_ input: MeetingSummaryInput, engine: AIEngine, llm: LLMSelection,
+                                     artifactCache: SummaryArtifactCache,
                                      authorize: (@MainActor () -> Bool)?,
                                      progress: @escaping @MainActor (String) -> Void) async -> Result<MeetingSummary, AIAnswerFailure> {
     guard input.transcript.contains(where: { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
@@ -51,7 +53,7 @@ enum MeetingSummarizer {
       // A local LLM still needs a bundled model; this build has none.
       return .failure(.notBundled)
     case .cloud, .memora:
-      return await cloud(input, llm: llm, authorize: authorize, progress: progress)
+      return await cloud(input, llm: llm, artifactCache: artifactCache, authorize: authorize, progress: progress)
     }
   }
 
@@ -72,6 +74,7 @@ enum MeetingSummarizer {
   private static func cloud(
     _ input: MeetingSummaryInput,
     llm: LLMSelection,
+    artifactCache: SummaryArtifactCache,
     authorize: (@MainActor () -> Bool)?,
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
@@ -110,21 +113,31 @@ enum MeetingSummarizer {
       request = SummaryPrompt.document(for: input, transcript: legend + parts[0].joined(separator: "\n"))
     } else {
       guard parts.count <= 512 else { return .failure(.executionLimit) }
+      let cacheLease = artifactCache.lease()
+      let cacheIdentity = input.artifactScope.flatMap { SummaryArtifactIdentity.identity(scope: $0, input: input, llm: llm) }
       let collected = await SummaryPartScheduler.collect(count: parts.count,
         maximumConcurrent: SummaryGenerationPolicy.parallelParts(input.preferences.processingMode, llm: llm)) { index in
         let part = parts[index]
         progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)）")
         guard !Task.isCancelled else { return .failure(.cancelled) }
         let range = timeRange(of: part)
+        let prompt = SummaryPrompt.partNotes(for: input, part: index + 1, of: parts.count,
+          range: range, transcript: legend + part.joined(separator: "\n"))
+        let key = cacheIdentity.map { SummaryArtifactIdentity.key(identity: $0, prompt: prompt) }
+        if let key, let authorize {
+          guard authorize() else { return .failure(.contextChanged) }
+          if let cached = await artifactCache.read(key, lease: cacheLease),
+             let artifact = SummaryPartArtifact.decode(cached),
+             artifact.validated(in: sourceIndex, part: part, compact: compact) {
+            guard authorize(), !Task.isCancelled else { return .failure(.contextChanged) }
+            SummaryDiagnostics.current?.record(.artifactCacheHit)
+            return .success("# 部分\(index + 1)（\(range)）\n\(cached)")
+          }
+          SummaryDiagnostics.current?.record(.artifactCacheMiss)
+        }
         let result = await CloudAIService.completeStreaming(
           system: SummaryPrompt.system,
-          user: SummaryPrompt.partNotes(
-            for: input,
-            part: index + 1,
-            of: parts.count,
-            range: range,
-            transcript: legend + part.joined(separator: "\n")
-          ),
+          user: prompt,
           llm: llm,
           transport: transport,
           processingMode: input.preferences.processingMode,
@@ -134,7 +147,17 @@ enum MeetingSummarizer {
           progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)・\(count)文字）")
         }
         switch result {
-        case .answer(let text): return .success("# 部分\(index + 1)（\(range)）\n\(text)")
+        case .answer(let text):
+          if let key, let authorize, let scope = input.artifactScope,
+             let artifact = SummaryPartArtifact.decode(text), artifact.validated(in: sourceIndex, part: part, compact: compact) {
+            guard authorize(), !Task.isCancelled else { return .failure(.contextChanged) }
+            await artifactCache.write(text, key: key, ownerID: scope.ownerID, lease: cacheLease)
+          } else if text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{"), text.contains("\"notes\"") {
+            // A declared structured note must not hide truncated JSON inside a
+            // successful final merge. Legacy prose is still accepted, uncached.
+            guard SummaryPartArtifact.decode(text) != nil else { return .failure(.generationFailed) }
+          }
+          return .success("# 部分\(index + 1)（\(range)）\n\(text)")
         case .failure(let failure): return .failure(failure)
         }
       }

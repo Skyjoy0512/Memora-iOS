@@ -45,7 +45,7 @@ extension MemoraModel {
 
     if let submission, !submission.consume() { return false }
     let startedAt = Date()
-    let input = MeetingSummaryInput(
+    var input = MeetingSummaryInput(
       title: meeting.displayTitle,
       date: meeting.createdAt,
       duration: meeting.duration,
@@ -56,6 +56,7 @@ extension MemoraModel {
       preferences: preferences ?? summaryPreferences,
       automaticCandidates: automaticallySelect ? automaticSummaryCandidates(for: meeting, fallback: choice) : []
     )
+    input.artifactScope = usesCloud ? summaryArtifactScope(ownerID: id, privacy: meeting.effectivePrivacy, llm: llm, projectID: meeting.spaceID) : nil
     let engine = configuration?.engine ?? settingsAIConfiguration.engine
 
     let job = pendingJob ?? PendingSummaryJob(

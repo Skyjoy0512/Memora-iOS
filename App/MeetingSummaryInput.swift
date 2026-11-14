@@ -15,6 +15,7 @@ struct MeetingSummaryInput {
   var preferences = SummaryPreferences()
   var automaticCandidates: [SummaryTemplateChoice] = []
   var sourceContext: String?
+  var artifactScope: SummaryArtifactScope?
 
   static func sourceSegmentID(sourceID: UUID, index: Int) -> UUID {
     let digest = SHA256.hash(data: Data((sourceID.uuidString + ":" + String(index)).utf8))

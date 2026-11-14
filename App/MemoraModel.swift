@@ -14,7 +14,7 @@ final class MemoraModel {
   @ObservationIgnored var conversationPersistenceReady = false
   @ObservationIgnored var conversationSaveTask: Task<Void, Never>?
   @ObservationIgnored var aiWorkspaceGeneration = UUID() {
-    didSet { invalidatePendingResidents() }
+    didSet { invalidatePendingResidents(); SummaryArtifactCache.shared.revoke(erasing: !isStoreProtected) }
   }
   var homePath: [LibraryRoute] = []
   var libraryPath: [LibraryRoute] = []
@@ -31,6 +31,7 @@ final class MemoraModel {
     didSet {
       UserDefaults.standard.set(currentTeamID, forKey: StorageKey.currentTeamID)
       if oldValue != currentTeamID {
+        SummaryArtifactCache.shared.revoke(erasing: !isStoreProtected)
         invalidatePendingWebhookDeliveries()
         invalidatePendingCloudShare()
         MemoryRetrievalOrchestrator.invalidate()
@@ -71,6 +72,7 @@ final class MemoraModel {
   }
   var meetings: [Meeting] {
     didSet {
+      invalidateSummaryArtifacts(previous: oldValue)
       MemoryRetrievalOrchestrator.invalidate()
       meetingIndex.invalidate()
       // Only entries for records that are gone are dropped here; a record that
@@ -97,6 +99,7 @@ final class MemoraModel {
   var documents: [MemoraDocument] = []
   var projectSources: [ProjectSource] = [] {
     didSet {
+      invalidateSummaryArtifacts(previous: oldValue)
       MemoryRetrievalOrchestrator.invalidate()
       projectSourceIndex.invalidate()
     }
@@ -355,6 +358,7 @@ final class MemoraModel {
       invalidatePendingWebhookDeliveries()
       invalidatePendingCloudShare()
       if isRestoring {
+        SummaryArtifactCache.shared.revoke(erasing: !isStoreProtected)
         cancelProjectWebFetches()
         interruptPendingSummaries(requiresUserRetry: true)
       }
@@ -419,7 +423,9 @@ final class MemoraModel {
   /// Set when a change could not be written to the local store.
   var persistenceFailureMessage: String?
   @ObservationIgnored var persistenceFailurePresentation = PersistenceFailurePresentation()
-  var account: MemoraAccount?
+  var account: MemoraAccount? {
+    didSet { if oldValue != account { aiWorkspaceGeneration = UUID() } }
+  }
   var isAuthPresented = false
   var isPaywallPresented = false
   var omiPairingManager = OmiPairingManager()
@@ -499,7 +505,10 @@ final class MemoraModel {
   /// while it is set, so unreadable existing data is never written over.
   @ObservationIgnored var isStoreProtected = false {
     didSet {
-      if oldValue != isStoreProtected { invalidateResidentEnvironment() }
+      if oldValue != isStoreProtected {
+        invalidateResidentEnvironment()
+        SummaryArtifactCache.shared.revoke(erasing: !isStoreProtected)
+      }
       invalidatePendingWebhookDeliveries()
       invalidatePendingCloudShare()
     }
@@ -810,6 +819,10 @@ final class MemoraModel {
     rebuildMeetingAggregates()
     rebuildLifeLogDays()
     refreshSampleContentFlag()
+    if !isStoreProtected {
+      let owners = Set(meetings.map(\.id) + projectSources.map(\.id))
+      Task { await SummaryArtifactCache.shared.retainOwners(owners) }
+    }
 
     // Automatic records the logger wrote while no model existed are brought in.
     importAutoLifeLogInbox()

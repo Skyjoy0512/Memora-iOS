@@ -6,7 +6,7 @@ trap 'rm -rf "$check_dir"' EXIT
 sources=(Shared/MemoraIcon.swift App/SummaryKnowledge.swift App/SummaryProcessingMode.swift
   App/SummaryTemplate.swift App/SummaryMarketTemplate.swift App/SummaryTemplateChoice.swift App/SummaryTemplateCategory.swift
   App/SummarySensitivity.swift App/SummaryLength.swift App/SummaryPreferences.swift App/VideoSummaryTemplate.swift App/SummaryUseCase.swift
-  App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/MeetingSummaryInput.swift App/MemoraFormat.swift
+  App/TranscriptSegment.swift App/SpeakerIdentificationStatus.swift App/SummaryArtifactScope.swift App/MeetingSummaryInput.swift App/MemoraFormat.swift
   App/SummarySection.swift App/SummaryEvidence.swift App/SummaryEvidenceLink.swift App/GeneratedSummaryEvidence.swift
   App/TemplateSummary.swift App/Meeting+SummaryContent.swift App/Meeting.swift App/MeetingStatus.swift App/MeetingSource.swift
   App/SummaryContentProjection.swift App/Meeting+Privacy.swift App/SummaryTemplateCatalog.swift App/SummaryTemplateCatalog+Workflows.swift

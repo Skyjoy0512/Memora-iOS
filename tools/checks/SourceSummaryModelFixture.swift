@@ -3,6 +3,7 @@ import Foundation
 // Engines, registry data and model state are fixtures. Admission, source-summary
 // orchestration, source storage/recovery, SQLite and original text reads are real.
 @MainActor final class MemoraModel {
+  func summaryArtifactScope(ownerID: UUID, privacy: RecordPrivacy, llm: LLMSelection, projectID: UUID? = nil) -> SummaryArtifactScope? { nil }
   var store: LocalStore
   var storeURL: URL
   var projectSources: [ProjectSource] = [] { didSet { projectSourceIndex.invalidate() } }
