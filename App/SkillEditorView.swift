@@ -66,8 +66,8 @@ struct SkillEditorView: View {
         }
         Section("見つけやすさ（任意）") {
           Picker("用途", selection: $skill.category) {
-            Text("自分で作成").tag(Optional<MemoraSkill.Category>.none)
-            ForEach(MemoraSkill.Category.allCases.filter { $0 != .custom }, id: \.self) {
+            Text("未指定").tag(Optional<MemoraSkill.Category>.none)
+            ForEach(MemoraSkill.Category.allCases, id: \.self) {
               Text($0.title).tag(Optional($0))
             }
           }

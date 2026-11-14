@@ -71,8 +71,9 @@ test('reusable skills: review an answer, save the procedure and reuse it after r
   await expect(screen.getByText('回答アクションの確認', { exact: true }).first()).toBeVisible();
   await app.restart();
   await tapControl(screen, screen.getByLabel('メニュー').first());
-  await tapControl(screen, screen.getByRole('button', { name: 'ツール', exact: true }));
-  await tapControl(screen, screen.getByText('Reusable meeting brief', { exact: true }));
+  await tapControl(screen, screen.getByRole('button', { name: 'マーケットプレイス', exact: true }));
+  await screen.getByTestId('collection.search.input').fill('Reusable meeting brief');
+  await tapControl(screen, screen.getByRole('button', { name: /^Reusable meeting brief、/ }).first());
   // The pushed article follows the still-mounted list row in the native tree.
   await expect(screen.getByText('Use when preparing a meeting brief.', { exact: true }).last()).toBeVisible();
   await app.screenshot('reusable-skill-persisted');

@@ -100,7 +100,7 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   registration remain reachable through native menus and the Settings editors.
   My tools includes used skills, added templates and connected services, never all enabled skills.
   GitHub/Linear presets bind service mentions to reviewed MCP UUIDs and fixed read-only endpoints.
-  Keep the four-server, sixteen-tool and 24KiB prompt limits. Explicit selections over four
+  Keep the four-server, sixteen-tool and 24KiB external-schema limits. Explicit selections over four
   are refused before clearing the composer. Automatic server choice uses local reviewed metadata.
   Community publishing uses the Firebase REST client and server implementation in
   `backend/marketplace`. Until `MemoraMarketplaceURL` and `MemoraFirebaseAPIKey` are

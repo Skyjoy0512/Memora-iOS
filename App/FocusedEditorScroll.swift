@@ -14,7 +14,8 @@ private struct FocusedEditorScroller: ViewModifier {
         Task { @MainActor in
           // Let the keyboard settle before moving, so the target is measured
           // against the final, smaller viewport.
-          try? await Task.sleep(for: .milliseconds(350))
+          do { try await Task.sleep(for: .milliseconds(350)) } catch { return }
+          guard model.focusedInlineEditorID == id, !Task.isCancelled else { return }
           withAnimation(reduceMotion ? nil : MemoraMotion.screen) {
             proxy.scrollTo(id, anchor: .center)
           }
