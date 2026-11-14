@@ -27,7 +27,27 @@ enum SummaryPipelineChecks {
     videoGate.finish(0, .answer("## 重要なポイント\n条件付きの方法。\n<memora-data>{\"templateID\":\"content.video\",\"decisions\":[\"登録する\"],\"actions\":[{\"title\":\"登録する\"}]}</memora-data>"))
     guard case .success(let videoResult) = await videoWork.value else { preconditionFailure("video summary failed") }
     precondition(videoResult.actions.isEmpty && videoResult.decisions.isEmpty && videoResult.templateID == "content.video")
-    let proofGate = SummaryFixtureGate()
+    for modelID in ["unknown-custom", "gpt-6-sol"] {
+      let singleGate = SummaryFixtureGate()
+      CloudAIService.gate = singleGate
+      var singleInput = makeInput(mode: .accurate)
+      let count = modelID == "unknown-custom" ? 1 : 1000
+      singleInput.transcript = (0..<count).map { index in
+        TranscriptSegment(id: UUID(), speaker: "話者", speakerIsCertain: false, timestamp: Double(index),
+          text: "発言\(index)：公開決定は撤回しました。監査承認と性能試験が終わるまで公開しません。金額は150万円です。")
+      }
+      let singleWork = Task { await MeetingSummarizer.summarize(singleInput, engine: .cloud,
+        llm: LLMSelection(provider: .openAI, modelID: modelID), progress: { _ in }) }
+      await wait { singleGate.pending.count == 1 }
+      precondition(singleGate.calls[0].user.contains("# 抽出データ"))
+      precondition(singleGate.calls[0].user.contains(singleInput.transcript.last!.text))
+      precondition(singleGate.calls[0].user.contains(singleInput.transcript.first!.text))
+      singleGate.finish(0, .answer("## 公開条件\n監査承認と性能試験が終わるまで公開しません。"))
+      guard case .success = await singleWork.value else { preconditionFailure("Single pass failed") }
+      precondition(singleGate.calls.count == 1)
+      print("Capacity route: \(modelID) utterances=\(count), actual mock requests=1; all source preserved, not real-model performance")
+    }
+        let proofGate = SummaryFixtureGate()
     CloudAIService.gate = proofGate
     var proofInput = makeInput(mode: .balanced)
     proofInput.transcript = (0..<40).map { index in
@@ -35,8 +55,9 @@ enum SummaryPipelineChecks {
         text: "負荷試験の完了までは公開しません。条件と否定を保持します。")
     }
     let proofWork = Task { await MeetingSummarizer.summarize(proofInput, engine: .cloud,
-      llm: LLMSelection(provider: .openAI, modelID: "fixture"), progress: { _ in }) }
+      llm: LLMSelection(provider: .openAI, modelID: "gpt-6-sol"), progress: { _ in }) }
     await wait { proofGate.pending.count == 1 }
+    precondition(proofGate.calls[0].user.contains("# 抽出データ"), "Fixture expects a single-pass route")
     precondition(proofGate.calls[0].user.contains("S3 A1:"))
     precondition(!proofGate.calls[0].user.contains(proofInput.transcript[2].id.uuidString))
     proofGate.finish(0, .answer("""
@@ -53,7 +74,7 @@ enum SummaryPipelineChecks {
       let input = makeInput(mode: mode)
       let work = Task { await MeetingSummarizer.summarize(input, engine: .cloud,
         llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"), progress: { _ in }) }
-      let width = mode == .fast ? 2 : 1
+      let width = SummaryGenerationPolicy.parallelParts(mode, llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"))
       var virtualSeconds = 0
       for batch in 0..<(4 / width) {
         await wait { gate.pending.count == width }
@@ -91,12 +112,12 @@ enum SummaryPipelineChecks {
       CloudAIService.gate = gate
       let work = Task { await MeetingSummarizer.summarize(makeInput(mode: .fast), engine: .cloud,
         llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"), progress: { _ in }) }
-      await wait { gate.pending.count == 2 }
+      await wait { gate.pending.count == SummaryGenerationPolicy.parallelParts(.fast, llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro")) }
       if cancelled { work.cancel() } else { gate.finish(0, .failure(.providerUnavailable)) }
       let result = await work.value
       guard case .failure(let failure) = result else { throw NSError(domain: "SummaryPipelineChecks.partial", code: 1) }
       precondition(failure == (cancelled ? .cancelled : .providerUnavailable))
-      precondition(gate.calls.count == 2 && gate.pending.isEmpty, "Failure submitted more parts or a merge")
+      precondition(gate.calls.count == SummaryGenerationPolicy.parallelParts(.fast, llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro")) && gate.pending.isEmpty, "Failure submitted more parts or a merge")
     }
     let gate = SummaryFixtureGate()
     CloudAIService.gate = gate
@@ -104,18 +125,18 @@ enum SummaryPipelineChecks {
     var work: Task<Result<MeetingSummary, AIAnswerFailure>, Never>!
     work = Task { await MeetingSummarizer.summarize(makeInput(mode: .fast), engine: .cloud,
       llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro"), progress: { _ in if !allowed { work.cancel() } }) }
-    await wait { gate.pending.count == 2 }
+    await wait { gate.pending.count == SummaryGenerationPolicy.parallelParts(.fast, llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro")) }
     allowed = false
     gate.finish(0, .answer("部分結果"))
     guard case .failure = await work.value else { throw NSError(domain: "SummaryPipelineChecks.revoked", code: 1) }
-    precondition(gate.calls.count == 2 && gate.pending.isEmpty)
+    precondition(gate.calls.count == SummaryGenerationPolicy.parallelParts(.fast, llm: LLMSelection(provider: .deepSeek, modelID: "deepseek-v4-pro")) && gate.pending.isEmpty)
     print("SummaryPipelineChecks: PASS; actual split/ordered merge/parser, bounded concurrency, partial failure, cancellation and revoked progress boundary. Virtual timings are scheduling proof only.")
   }
 
   static func makeInput(mode: SummaryProcessingMode) -> MeetingSummaryInput {
     MeetingSummaryInput(title: "合成記録", date: .distantPast, duration: 7_200, participantNames: [],
       transcript: (0..<4).map { index in TranscriptSegment(id: UUID(), speaker: "話者\(index)", speakerIsCertain: false,
-        timestamp: Double(index * 1_800), text: String(repeating: "原文の条件と否定・150万円を保持。", count: 1_500)) },
+        timestamp: Double(index * 1_800), text: String(repeating: "原文の条件と否定・150万円を保持。", count: 15_000)) },
       template: .standard, preferences: SummaryPreferences(processingMode: mode))
   }
 

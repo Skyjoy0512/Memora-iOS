@@ -12,7 +12,7 @@
 | そのまま再利用 | `SourceMediaChunk`、`SourceMediaAudioExport`、`SourceMediaTranscript` | 資料の15分分割、原本時刻への加算、本文16MB制限 |
 | そのまま再利用 | `SourceMediaSnapshot`、`SourceMediaCheckpointStore` | 不変コピー、前後digest照合、flock、SQLiteの完了prefix、失効世代 |
 | そのまま再利用 | `SourceIntake`、PDF/OCR/Office/Web/YouTubeCaption系 | 利用可能な字幕のみ。取得不能な本文を作らない |
-| そのまま再利用 | `MeetingSummarizer`、`SummaryPartScheduler`、`OnDeviceSummarizer` | 60,000文字超を部分ノート→統合。日単位の永続階層ではない |
+| そのまま再利用 | `MeetingSummarizer`、`SummaryPartScheduler`、`OnDeviceSummarizer` | モデル容量と指示/出力予約に基づく分割→部分ノート→統合。日単位の永続階層ではない（[計画](SUMMARY_ARCHITECTURE.md)） |
 | そのまま再利用 | `MemoraModel+SourceSummary`、SourceSummaryOptions、各テンプレート | 形式・長さ・用途・資料別指定あり |
 | そのまま再利用 | 検索index / SourceTextIndex / AnswerCitations / RecordAccessPolicy | 資料・時刻・ページへの出典、個人・project・privacyの境界 |
 | 要改修 | `CloudTranscriptionService` | BYOKの実APIあり。ただし全文だけ取得し時刻0へ平坦化 |

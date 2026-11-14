@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 # The next-generation suite already includes backup, person privacy/tasks/journal,
 # cloud sessions and artifacts. Design refresh includes motion/loading checks.
 SUITES = (
+    ("summary-planning", "bash", "run-summary-planning-checks.sh"),
     ("summary-evaluation", "python3", "run-summary-evaluation-checks.py"),
     ("next-generation", "bash", "run-next-generation-checks.sh"),
     ("design-refresh", "bash", "run-design-refresh-checks.sh"),

@@ -20,3 +20,13 @@
 各能力はsupported / unsupported / unknown。context、出力上限、tokenizer、schema/JSON、usage、reasoning、cache方式、並列、RPM/TPM、価格、local/externalの属性を独立して持つ。公式の一般上限と利用者アカウントのrate limitは別であり、公式モデルでもアカウントのRPM/TPMはunknownになり得る。
 
 JSON Schemaを利用できる公式モデルでも、利用者の未知endpointに同じパラメーターを送らない。tokenizer不明時の推定を請求token数として保存しない。cache fee・単価が不明なら費用はnull。推論量を並列数に連動させない。モデルの選択や認証情報を能力判定で変更しない。
+
+## 共通カタログへの統合
+
+`ModelCapabilities` と既存の `ModelCapabilityOverrides` を正本として拡張した。要約専用のモデル定義表は作らない。`ModelCapabilityRegistry` は既存resolveへの入口と、要約requestで実際に維持する出力予約を提供する。streaming/JSON Schema/reasoning制御/cache方式/並列/usage/tokenizerには三状態を追加し、価格・RPM/TPMは未確認ならnil。旧boolは既存画面との互換性のため保持。
+
+公式資料を確認したDeepSeek 2 ID、OpenAI 3 ID、現行Claude 4 IDの容量を同じカタログへ反映した。古いClaude aliasや未確認IDは既存のdeclared/conservativeの出自を保持。利用者の容量overrideはカタログより優先。custom endpointまたは独自credential accountは既存の保守的な解決を維持し、unknownのAPI機能を昇格しない。Apple Foundation Modelsは従来どおりruntimeのcontextSizeと逐次guided generationを利用し、クラウドの並列設定を渡さない。
+
+`SummaryProviderAdapter` だけがレビュー済みのDeepSeek固有fieldを送る。標準モードのrequestは変更しない。高速/高精度の既存明示設定を保持する。新しい最適化が自動で推論をオフにすることはない。
+
+[Anthropicの公式fallback仕様](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback)を確認し、従来の `fallbacks=default` / beta headerが別モデルへの切替を許していた点を修正。要約とAsk AIの両方から除去し、拒否は既存の失敗として返す。Anthropicでも指定されたllm.baseURLを使用し、custom endpointを公式URLへ黙って差し替えない。

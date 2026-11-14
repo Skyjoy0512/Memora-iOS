@@ -50,14 +50,30 @@ struct SummarySourceIndex {
       (String(data: encoded, encoding: .utf8) ?? "[]")
   }
 
-  func lines(hasTimestamps: Bool) -> [String] {
-    entries.filter { !$0.segment.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.map { entry in
+  struct Unit {
+    var prefix: String
+    var text: String
+    var beginsBoundary = false
+    var line: String { prefix + text }
+  }
+
+  func units(hasTimestamps: Bool, compact: Bool) -> [Unit] {
+    var previous: Entry?
+    return entries.compactMap { entry in
+      guard !entry.segment.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
       let time = entry.segment.timestamp
       let stamp = hasTimestamps && time.isFinite && time >= 0 && time < Double(Int.max)
         ? MemoraFormat.duration(time) : "時刻不明"
-      return "[\(stamp)] \(entry.shortID) \(entry.speakerAlias): \(entry.segment.text)"
+      let identity = compact ? "\(entry.shortID) \(entry.speakerAlias)" :
+        "[segmentID=\(entry.segment.id.uuidString)] \(entry.segment.speaker)"
+      let boundary = previous.map { $0.speakerAlias != entry.speakerAlias ||
+        (hasTimestamps && time - ($0.segment.endTime ?? $0.segment.timestamp) >= 30) } ?? false
+      previous = entry
+      return Unit(prefix: "[\(stamp)] \(identity): ", text: entry.segment.text, beginsBoundary: boundary)
     }
   }
+
+  func lines(hasTimestamps: Bool) -> [String] { units(hasTimestamps: hasTimestamps, compact: true).map(\.line) }
 
   func originalID(for reference: String, allowShortIDs: Bool = true) -> UUID? {
     if allowShortIDs, let id = byShortID[reference] { return id }

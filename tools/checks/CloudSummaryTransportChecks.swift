@@ -107,6 +107,8 @@ enum CloudSummaryTransportChecks {
               sessionConfiguration: CloudSessionChecks.configuration(), processingMode: mode, onProgress: { _ in })
             check(result, .answer("決定は条件付き。予算150万円、期限は未定。"))
             let body = try CloudSessionChecks.body(Wire.state.requests[0])
+            precondition(body["fallbacks"] == nil && Wire.state.requests[0].value(forHTTPHeaderField: "anthropic-beta") == nil)
+            precondition(Wire.state.requests[0].url == llm.baseURL.appendingPathComponent(provider.usesAnthropicAPI ? "messages" : "chat/completions"))
             let controlled = provider == .deepSeek && !custom && ["deepseek-flash", "deepseek-v4-pro"].contains(model) && mode != .balanced
             if controlled {
               precondition((body["thinking"] as? [String: String])?["type"] == (mode == .fast ? "disabled" : "enabled"))
@@ -115,7 +117,9 @@ enum CloudSummaryTransportChecks {
             } else {
               precondition(body["thinking"] == nil && body["reasoning_effort"] == nil, "Provider flag leaked to an unverified route")
             }
-            precondition(SummaryGenerationPolicy.parallelParts(mode, llm: llm) == (controlled && mode == .fast ? 2 : 1))
+            let expectedWidth = SummaryGenerationPolicy.parallelism(capabilities: ModelCapabilityRegistry.capabilities(for: llm),
+              lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled, thermalState: ProcessInfo.processInfo.thermalState.rawValue)
+            precondition(SummaryGenerationPolicy.parallelParts(mode, llm: llm) == expectedWidth)
             Wire.state.assertConsumed(1)
           }
         }

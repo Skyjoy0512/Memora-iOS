@@ -18,3 +18,14 @@
 
 外部作業ログ: `/Volumes/WorkspaceSSD/Development/Agents/MemoraSummaryPerformanceValidation`。
 実モデル、実アカウント、実機の録音・電池・発熱・CPU性能は未検証。今回の単位はUIを変更していない。以前のUI E2Eを今回実行したとは扱わない。全9群の再実行は統合段階で実施する。
+
+## 容量計画・共通能力・並列
+
+- `run-summary-planning-checks.sh`: shared catalog / user override / custom endpointのunknown、温度・低電力制約、指示/出力予約、UTF-8/emoji/改行のlossless分割、512区間上限、scheduler 1/2/3/4 workerと429 fail-stop成功。
+- `run-summary-reading-checks.sh`: shared ModelCapabilitiesを使う実MeetingSummarizerで、未知モデルの短文・1,000発言の全文一括・巨大4区間の統合・短縮根拠・同時処理/中断を含め成功。
+- `run-cloud-session-checks.sh`: actual summary / CloudAgentSession / URLSession with fail-closed URLProtocol成功。9 provider × model × processing mode × official/custom route、SSE/JSON、EOF・切断・拒否・HTTP失敗・継続上限・失効を確認。Opus 5 / Fable 5.1の別モデルfallback禁止とcustom Anthropic URL維持を追加確認。
+- `run-motion-loading-checks.sh`: 公式資料で更新したshared capability期待値、既存のtoken/agent予算、承認、project会話/cancel/保存失敗の回帰成功。
+
+途中の検証用fixtureにあった「未知容量でも一括になるはず」という仮定を修正し、一括テストにはレビュー済みモデル容量を明示した。未知モデルの短文経路も別に確認した。失敗ログは外部作業ディレクトリに保持。
+
+上記単位の最終iOS preview: `2026-11-14T22-24-37-56c97a02.log` 成功（既存11警告）。性能目標の実測や実機検証とは区別する。

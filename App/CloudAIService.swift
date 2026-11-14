@@ -58,7 +58,7 @@ enum CloudAIService {
 
     do {
       let text = if llm.provider.usesAnthropicAPI {
-        try await anthropic(system: system, user: user, model: llm.modelID, key: key, maximumOutputTokens: maximumOutputTokens)
+        try await anthropic(system: system, user: user, llm: llm, key: key, maximumOutputTokens: maximumOutputTokens)
       } else {
         try await chatCompletions(system: system, user: user, llm: llm, key: key, maximumOutputTokens: maximumOutputTokens)
       }
@@ -153,7 +153,7 @@ enum CloudAIService {
     processingMode: SummaryProcessingMode = .balanced
   ) throws -> URLRequest {
     let anthropicAPI = llm.provider.usesAnthropicAPI
-    var request = URLRequest(url: anthropicAPI ? LLMProvider.anthropic.baseURL.appendingPathComponent("messages") : llm.baseURL.appendingPathComponent("chat/completions"))
+    var request = URLRequest(url: anthropicAPI ? llm.baseURL.appendingPathComponent("messages") : llm.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
     // The gap allowed between two pieces of the stream, not the whole answer.
     // Reasoning models can think quietly for a while before the first word.
@@ -165,10 +165,6 @@ enum CloudAIService {
       request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
       body["system"] = system
       body["max_tokens"] = 16_000
-      if llm.modelID == "claude-opus-5" || llm.modelID == "claude-fable-5-1" {
-        request.setValue("server-side-fallback-2026-07-01", forHTTPHeaderField: "anthropic-beta")
-        body["fallbacks"] = "default"
-      }
     } else {
       request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
       if llm.provider == .openRouter { request.setValue("Memora", forHTTPHeaderField: "X-Title") }
@@ -214,28 +210,22 @@ enum CloudAIService {
     return try completedText(data, provider: .chatCompletions)
   }
 
-  private static func anthropic(system: String, user: String, model: String, key: String, maximumOutputTokens: Int? = nil) async throws -> String {
-    var request = URLRequest(url: LLMProvider.anthropic.baseURL.appendingPathComponent("messages"))
+  private static func anthropic(system: String, user: String, llm: LLMSelection, key: String, maximumOutputTokens: Int? = nil) async throws -> String {
+    var request = URLRequest(url: llm.baseURL.appendingPathComponent("messages"))
     request.httpMethod = "POST"
     request.timeoutInterval = 300
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue(key, forHTTPHeaderField: "x-api-key")
     request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
 
-    var body: [String: Any] = [
-      "model": model,
+    let body: [String: Any] = [
+      "model": llm.modelID,
       // Current models think before answering, and thinking counts against
       // this cap, so a small cap cut summaries off mid-sentence.
       "max_tokens": maximumOutputTokens ?? 16_000,
       "system": system,
       "messages": [["role": "user", "content": user]]
     ]
-    // These models may decline a request on a safety classifier; a server-side
-    // fallback lets another model answer instead of returning nothing.
-    if model == "claude-opus-5" || model == "claude-fable-5-1" {
-      request.setValue("server-side-fallback-2026-07-01", forHTTPHeaderField: "anthropic-beta")
-      body["fallbacks"] = "default"
-    }
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
     let (data, response) = try await URLSession.shared.data(for: request)

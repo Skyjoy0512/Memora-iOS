@@ -5,11 +5,6 @@ import Foundation
 /// section by section and the app lays the document out. Both return the same
 /// shape, so the record is filed the same way either way.
 enum MeetingSummarizer {
-  /// A single cloud pass up to this many characters, about three hours of
-  /// Japanese speech; longer meetings are noted in parts and then merged.
-  static let singlePassCharacterLimit = 60_000
-  static let partCharacterLimit = 40_000
-
   static func summarize(
     _ input: MeetingSummaryInput,
     engine: AIEngine,
@@ -81,26 +76,36 @@ enum MeetingSummarizer {
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
     let sourceIndex = SummarySourceIndex(input.transcript)
-    let originalLines = input.transcript
-      .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-      .map { input.transcriptLine(for: $0, cloud: true) }
-    let compactLines = sourceIndex.lines(hasTimestamps: input.duration > 0)
+    let originalUnits = sourceIndex.units(hasTimestamps: input.duration > 0, compact: false)
+    let compactUnits = sourceIndex.units(hasTimestamps: input.duration > 0, compact: true)
     let sourceLegend = sourceIndex.legend
-    let compactBytes = sourceLegend.utf8.count + 1 + compactLines.reduce(0) { $0 + $1.utf8.count + 1 }
-    let originalBytes = originalLines.reduce(0) { $0 + $1.utf8.count + 1 }
+    let compactBytes = sourceLegend.utf8.count + 1 + compactUnits.reduce(0) { $0 + $1.prefix.utf8.count + $1.text.utf8.count + 1 }
+    let originalBytes = originalUnits.reduce(0) { $0 + $1.prefix.utf8.count + $1.text.utf8.count + 1 }
     let compact = compactBytes < originalBytes
-    let lines = compact ? compactLines : originalLines
+    let units = compact ? compactUnits : originalUnits
     let legend = compact ? sourceLegend + "\n" : ""
-    let transcript = legend + lines.joined(separator: "\n")
+    let instructions = [SummaryPrompt.document(for: input, transcript: ""),
+      SummaryPrompt.partNotes(for: input, part: 512, of: 512, range: "999:59〜999:59", transcript: ""),
+      SummaryPrompt.intermediateMerge(for: input, notes: ""), SummaryPrompt.merge(for: input, notes: "")]
+      .max { $0.utf8.count < $1.utf8.count } ?? ""
+    guard let budget = SummaryTokenBudget(capabilities: ModelCapabilityRegistry.capabilities(for: llm),
+      outputReservation: ModelCapabilityRegistry.outputReservation(for: llm),
+      instructionText: SummaryPrompt.system + instructions + legend) else { return .failure(.contextTooLarge) }
+    let parts: [[String]]
+    switch SummaryInputPartition.make(units, capacity: budget.sourceCapacity) {
+    case .failure(let failure): return .failure(failure)
+    case .success(let value): parts = value
+    }
     SummaryDiagnostics.current?.record(.sourceWireBytes, code: compact ? compactBytes : originalBytes)
     SummaryDiagnostics.current?.record(.sourceOriginalBytes, code: originalBytes)
+    SummaryDiagnostics.current?.record(.plannedParts, code: parts.count)
+    SummaryDiagnostics.current?.record(.planningCapacity, code: budget.sourceCapacity)
 
     let request: String
-    if transcript.count <= singlePassCharacterLimit {
+    if parts.count == 1 {
       await progress("文字起こし全体を読んでいます")
-      request = SummaryPrompt.document(for: input, transcript: transcript)
+      request = SummaryPrompt.document(for: input, transcript: legend + parts[0].joined(separator: "\n"))
     } else {
-      let parts = split(lines, limit: partCharacterLimit)
       guard parts.count <= 512 else { return .failure(.executionLimit) }
       let collected = await SummaryPartScheduler.collect(count: parts.count,
         maximumConcurrent: SummaryGenerationPolicy.parallelParts(input.preferences.processingMode, llm: llm)) { index in
@@ -134,11 +139,11 @@ enum MeetingSummarizer {
       case .success(let collected): notes = collected
       case .failure(let failure): return .failure(failure)
       }
-      let reduced = await SummaryNoteHierarchy.reduce(notes, limit: singlePassCharacterLimit) { group in
+      let reduced = await SummaryNoteHierarchy.reduce(notes, limit: budget.sourceCapacity, measure: SummaryTokenBudget.upperBound) { group in
         progress("全体をまとめています")
         let result = await CloudAIService.completeStreaming(
           system: SummaryPrompt.system,
-          user: SummaryPrompt.intermediateMerge(for: input, notes: group.joined(separator: "\n\n")),
+          user: SummaryPrompt.intermediateMerge(for: input, notes: legend + group.joined(separator: "\n\n")),
           llm: llm, processingMode: input.preferences.processingMode, authorize: authorize,
           onActivity: { progress("全体をまとめています") }
         ) { _ in progress("全体をまとめています") }
@@ -151,7 +156,7 @@ enum MeetingSummarizer {
       case .failure(let failure): return .failure(failure)
       case .success(let notes):
         await progress("全体をまとめています")
-        request = SummaryPrompt.merge(for: input, notes: notes.joined(separator: "\n\n"))
+        request = SummaryPrompt.merge(for: input, notes: legend + notes.joined(separator: "\n\n"))
       }
     }
 
@@ -216,23 +221,6 @@ enum MeetingSummarizer {
     case .failure(let failure):
       return .failure(failure)
     }
-  }
-
-  private static func split(_ lines: [String], limit: Int) -> [[String]] {
-    var parts: [[String]] = []
-    var current: [String] = []
-    var length = 0
-    for line in lines {
-      if !current.isEmpty, length + line.count + 1 > limit {
-        parts.append(current)
-        current = []
-        length = 0
-      }
-      current.append(line)
-      length += line.count + 1
-    }
-    if !current.isEmpty { parts.append(current) }
-    return parts
   }
 
   /// "mm:ss〜mm:ss" read off the first and last line of a part.

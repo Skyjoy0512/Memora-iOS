@@ -6,6 +6,7 @@ struct CloudSessionChecks {
   typealias Response = CloudSessionFixtureResponse
 
   @MainActor static func main() async throws {
+    try await selectedModelAndEndpointChecks()
     try await CloudSummaryTransportChecks.run()
     if ProcessInfo.processInfo.environment["MEMORA_REALTIME_SUMMARY_CHECKS"] == "1" {
       try await SlowSummaryHTTPChecks.run()
@@ -28,6 +29,38 @@ struct CloudSessionChecks {
     try await schemaAndSelectionChecks()
     try await exhaustedBudget()
     print("CloudSessionChecks: passed (production CloudAgentSession + URLSession/JSON/SSE + registry/policy + conversation loop + person/mail/document/SQLite; both API formats, no network/keys/paid API)")
+  }
+
+  @MainActor static func selectedModelAndEndpointChecks() async throws {
+    for id in ["claude-opus-5", "claude-fable-5-1"] {
+      for custom in [false, true] {
+        let llm = LLMSelection(provider: .anthropic, modelID: id,
+          endpoint: custom ? URL(string: "https://offline.invalid/selected/v1") : nil)
+        for streaming in [false, true] {
+          let response = try streaming ? Response.sse(provider: .anthropic, text: "選択したモデルの回答") :
+            Response.json(provider: .anthropic, text: "選択したモデルの回答")
+          Wire.state.reset([response])
+          let result = await CloudAIService.completeStreaming(system: "架空検査", user: "架空検査", llm: llm,
+            sessionConfiguration: configuration(), onProgress: { _ in })
+          precondition(result.text == "選択したモデルの回答" && result.failure == nil)
+          let session = CloudAgentSession(llm: llm, system: "架空検査", tools: [], sessionConfiguration: configuration(), capabilityOverrides: [:])!
+          session.addUserMessage("架空検査")
+          Wire.state.assertConsumed(1)
+          func validate(_ request: URLRequest) throws {
+            precondition(request.url == llm.baseURL.appendingPathComponent("messages"))
+            precondition(request.value(forHTTPHeaderField: "anthropic-beta") == nil)
+            let object = try body(request)
+            precondition(object["model"] as? String == id && object["fallbacks"] == nil)
+          }
+          try validate(Wire.state.requests[0])
+          Wire.state.reset([response])
+          _ = try await next(session, streaming: streaming)
+          try validate(Wire.state.requests[0])
+          Wire.state.assertConsumed(1)
+        }
+      }
+    }
+    print("Selected model/endpoint: PASS; summary and agent, both receive formats, no server-side model fallback")
   }
 
   @MainActor static func configuration() -> URLSessionConfiguration {

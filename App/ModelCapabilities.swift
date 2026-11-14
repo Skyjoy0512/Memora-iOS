@@ -34,6 +34,21 @@ struct ModelCapabilities: Hashable, Sendable {
   var verifiedAt: Date?
   var note: String?
 
+  enum Support: String, Hashable, Sendable { case supported, unsupported, unknown }
+  enum Cache: String, Hashable, Sendable { case automaticPrefix, explicit, unsupported, unknown }
+  var streamingSupport: Support = .unknown
+  var structuredOutputSupport: Support = .unknown
+  var jsonSchemaSupport: Support = .unknown
+  var reasoningControlSupport: Support = .unknown
+  var parallelRequestSupport: Support = .unknown
+  var usageSupport: Support = .unknown
+  var tokenizerSupport: Support = .unknown
+  var promptCachePolicy: Cache = .unknown
+  var requestsPerMinute: Int?
+  var tokensPerMinute: Int?
+  var cachedInputPricePerMillionTokens: Double?
+  var reviewURL: String?
+
   var isVerified: Bool { source == .providerAPI && verifiedAt != nil }
 
   /// The safe floor: a 32K window, 8K output and a 1 MiB request. This is what
@@ -118,6 +133,48 @@ enum ModelCapabilityCatalog {
         maximumRequestBytes: min(4 * 1_048_576, max(1_048_576, spec.2 * 4)),
         source: .declared, verifiedAt: nil,
         note: "アプリが宣言した保守的な上限です。提供元APIでの確認は未実施です。")
+    }
+    // Documentation-reviewed exact IDs share the catalog used by Ask AI and
+    // summaries. Older aliases keep their declared conservative contracts.
+    let reviewed: [(LLMProvider, [String], Int, Int, ModelCapabilities.Cache, String)] = [
+      (.deepSeek, ["deepseek-flash", "deepseek-v4-pro"], 1_000_000, 393_216, .automaticPrefix,
+        "https://api-docs.deepseek.com/quick_start/pricing/"),
+      (.openAI, ["gpt-6-sol", "gpt-6-luna", "gpt-6-astra"], 1_050_000, 128_000, .automaticPrefix,
+        "https://developers.openai.com/api/docs/models/"),
+      (.anthropic, ["claude-fable-5-2", "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"],
+        1_000_000, 128_000, .explicit, "https://platform.claude.com/docs/en/models/overview")
+    ]
+    for (provider, ids, context, output, cache, source) in reviewed {
+      for id in ids {
+        let key = ModelCapabilities.entryKey(provider: provider, modelID: id)
+        var entry = result[key] ?? .conservative(provider: provider, modelID: id)
+        entry.contextWindowTokens = context
+        entry.maximumOutputTokens = output
+        entry.maximumRequestBytes = 4 * 1_048_576
+        entry.source = .providerAPI
+        entry.verifiedAt = Date(timeIntervalSince1970: 1_794_614_400)
+        entry.reviewURL = source + (provider == .openAI ? id : "")
+        entry.note = "容量・記載能力を2026-11-14に公式資料で確認。実API・アカウント制限・価格は未検証です。"
+        entry.streamingSupport = .supported
+        entry.parallelRequestSupport = .supported
+        entry.usageSupport = .supported
+        entry.promptCachePolicy = cache
+        entry.supportsPromptCaching = true
+        if provider == .anthropic {
+          entry.supportsToolCalling = true
+          entry.supportsReasoning = true
+          entry.supportsVision = true
+        }
+        if provider == .deepSeek {
+          entry.supportsVision = id == "deepseek-flash"
+          entry.structuredOutputSupport = .supported
+          entry.reasoningControlSupport = .supported
+        } else if provider == .openAI {
+          entry.structuredOutputSupport = .supported
+          entry.jsonSchemaSupport = .supported
+        }
+        result[key] = entry
+      }
     }
     return result
   }()

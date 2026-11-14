@@ -1846,3 +1846,12 @@ Simulatorで履歴の再開、Library往復、終了後の再起動、明示new 
 - 次段階: Notion検索・閲覧、Drive、Slackの認証とバックエンド、簡単なサインイン。
   実機のVoiceOver／日本語IME／描画性能と、実接続の検証は引き続き必要。
 - 実装範囲と検証の詳細: [今回の実装記録](SCREEN_POLISH_AND_EXPANSION_2026_11_14.md)。
+
+## 2026-11-14: 要約推論・評価基盤
+
+- 固定版J-MeetEval（197件・16カテゴリ、開発専用）、25の合成goldシナリオ、無料CI評価器を導入。
+- lossless短縮IDと根拠の元UUID復元、数値診断、共通能力カタログ、容量計画、推論から独立した制限付き並列を実装・無料回帰検証。
+- 選択したAnthropicモデル/endpointの維持を修正。自動の別モデルfallbackを除去。
+- 未完: 永続分析cache・再生成再利用、SoT候補、確定STT区間とのパイプライン化、通信セッション再利用、統合E2E。
+- 実モデル評価は利用者指定により実施しない。60/30秒達成、実API費用・品質・J-MeetEval総合スコアは未計測。
+- 継続時は [要約アーキテクチャ](SUMMARY_ARCHITECTURE.md) と [検証記録](summary-performance/VALIDATION.md) を参照。

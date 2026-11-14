@@ -147,7 +147,7 @@ final class CloudAgentSession {
   // MARK: - Anthropic
 
   private func anthropicTurn(onText: (@MainActor (String) -> Void)?) async throws -> AgentTurn {
-    var request = URLRequest(url: LLMProvider.anthropic.baseURL.appendingPathComponent("messages"))
+    var request = URLRequest(url: llm.baseURL.appendingPathComponent("messages"))
     request.httpMethod = "POST"
     // Tool arguments may hold a long document, so the full turn gets the same deadline as streaming.
     request.timeoutInterval = 600
@@ -169,12 +169,6 @@ final class CloudAgentSession {
       },
       "messages": outboundMessages()
     ]
-    // Matches `CloudAIService`: these models may decline on a classifier, and
-    // the fallback lets another model answer instead.
-    if llm.modelID == "claude-opus-5" || llm.modelID == "claude-fable-5-1" {
-      request.setValue("server-side-fallback-2026-07-01", forHTTPHeaderField: "anthropic-beta")
-      body["fallbacks"] = "default"
-    }
     let outputIsReserved = try reserveOutput(in: &body, isStreaming: onText != nil)
     request.httpBody = try requestBody(body)
 

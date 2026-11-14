@@ -12,9 +12,9 @@ enum ModelCapabilitiesChecks {
     precondition(custom.source == .conservative)
 
     let declared = ModelCapabilities.resolve(provider: .deepSeek, modelID: "deepseek-v4-pro", hasCustomEndpoint: false, overrides: [:])
-    precondition(declared.source == .declared)
-    precondition(declared.contextWindowTokens == 128_000)
-    precondition(declared.maximumOutputTokens == 32_000)
+    precondition(declared.source == .providerAPI && declared.isVerified && declared.reviewURL != nil)
+    precondition(declared.contextWindowTokens == 1_000_000)
+    precondition(declared.maximumOutputTokens == 393_216)
 
     // A similar but different name must not borrow another model's window.
     let similar = ModelCapabilities.resolve(provider: .deepSeek, modelID: "deepseek-v4", hasCustomEndpoint: false, overrides: [:])
@@ -30,7 +30,7 @@ enum ModelCapabilitiesChecks {
     let invalid = ModelCapabilityOverride(contextWindowTokens: 8_000, maximumOutputTokens: 64_000, maximumRequestBytes: nil)
     let rejected = ModelCapabilities.resolve(provider: .openAI, modelID: "gpt-6-sol", hasCustomEndpoint: false,
       overrides: [overrideKey: invalid])
-    precondition(rejected.source == .declared)
+    precondition(rejected.source == .providerAPI)
 
     let small = TokenBudgetManager.budget(capabilities: unknown, task: .presentation)
     precondition(small.inputTokens < unknown.contextWindowTokens)

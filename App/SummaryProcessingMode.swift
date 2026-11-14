@@ -22,8 +22,8 @@ enum SummaryProcessingMode: String, Codable, CaseIterable, Sendable {
 
   var detail: String {
     switch self {
-    case .fast: "対応するDeepSeekでは推論を無効にし、長文の区間整理を最大2件同時に実行します。重要事項と出典は省略しません。"
-    case .balanced: "従来の生成設定で、長文は順番に整理します。要約の詳しさとは別の設定です。"
+    case .fast: "対応するDeepSeekでは推論を無効にします。重要事項と出典は省略しません。"
+    case .balanced: "従来の生成設定で整理します。要約の詳しさとは別の設定です。"
     case .accurate: "対応するDeepSeekでは推論を有効にします。処理に時間がかかる場合があります。正確性を保証するものではありません。"
     }
   }
