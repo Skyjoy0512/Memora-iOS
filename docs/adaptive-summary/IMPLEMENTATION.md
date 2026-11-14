@@ -73,3 +73,8 @@ E2Eでタスク保存後に一覧が更新されない実不具合を再現。ta
 新E2Eは生成fixtureの初回表示・本文・下部AskAI/capture非表示・原文参照（音声なし）・タスク追加/完了/SQLite原文不変を検証し、81.31秒で合格。UIKitに挿入caretがあってもAX focusがfalseのケースは、fixture入力を実際の文字列値と保存結果で検証する形に修正。期待値だけでアプリのタスク不具合を隠していない。
 旧summary-recoveryの保存失敗テストは、原本DB不変＋未保存draft表示＋再試行を要求する形に修正（再実行は後続）。
 実プレビューでライト/ダークの本文、表の左右scroll、最大Dynamic Typeを観察しスクリーンショット保存。未取得の画面を検証済みにはしない。iOS preview、11個のpresentation静的テストとUI interaction policy合格。
+
+## 既存統合テストの追加修復
+
+Gmail fixtureにもmcpServersを追加。古いchangesData引数のpreconditionは本番から既に削除されたAPIをモデル化していたため、本番と同じ1引数の承認APIへ合わせた。135の承認/接続/取得race合格。
+カレンダー/資料のPersonFixtureも本番MCPServerConfig/MCPTool型を参照するよう更新。54の所有権/許可変更とOFF/ON再検証、cloud/端末内のカレンダーpreview/承認/失効検証合格。fixtureの状態を本番へ合わせた変更であり、権限・承認の本番ロジックは変更していない。

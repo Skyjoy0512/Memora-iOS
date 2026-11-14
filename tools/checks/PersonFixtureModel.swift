@@ -30,7 +30,8 @@ import Foundation
   var mcpPermissionRevision = UUID()
   var gmailPermissionRevision = UUID()
   var notionPermissionRevision = UUID()
-  var activeMCPTools: [String: Bool] = [:]
+  var mcpServers: [MCPServerConfig] = []
+  var activeMCPTools: [String: MCPTool] = [:]
   var isCalendarEnabled: Bool {
     get { integrationIsEnabled("calendar") }
     set { setIntegrationEnabled("calendar", enabled: newValue) }

@@ -10,6 +10,7 @@ if [[ "${1:-}" == "--interface-task-execution" || "${1:-}" == "--calendar-interf
   if [[ "${1:-}" == "--calendar-interface" ]]; then entrypoint=tools/checks/CalendarInterfaceChecks.swift; fi
   if [[ "${1:-}" == "--task-proposals" ]]; then entrypoint=tools/checks/TaskProposalExecutionChecks.swift; fi
   extra_sources+=(-D INTERFACE_TASK_EXECUTION_CHECKS -D CLOUD_SESSION_CHECKS
+    App/MCPServerConfig.swift App/MCPOAuthSettings.swift App/MCPTool.swift
     App/AgentTool.swift App/AIToolRegistry.swift App/AIToolDefinition.swift App/IntegrationProvider.swift App/IntegrationToolResult.swift
     App/AgentApproval.swift App/AgentTaskDraft.swift App/AgentInteractionWaiter.swift App/MemoraModel+AgentApproval.swift App/MemoraModel+TaskAgent.swift App/MemoraModel+TaskProposals.swift App/MemoraModel+CalendarTools.swift App/MemoraModel+IntegrationSettings.swift
     App/AgentConversationExecutionContext.swift App/CalendarAgentReadContext.swift

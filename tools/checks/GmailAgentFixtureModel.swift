@@ -17,6 +17,7 @@ final class MemoraModel {
   var notionPermissionRevision = UUID()
   var gmailResultAuthorizations: [UUID: GmailAgentReadContext] = [:]
   var mcpPermissionRevision = UUID()
+  var mcpServers: [MCPServerConfig] = []
   var activeMCPTools: [String: MCPTool] = [:]
   var disabledIntegrationIDs: [String] = []
   var agentPluginPolicies: [UUID: AIPluginExecutionPolicy] = [:]
@@ -44,8 +45,7 @@ final class MemoraModel {
     }
     return registry
   }
-  func requestAgentApproval(_ approval: AgentApproval, changesData: Bool = true) async -> Bool {
-    precondition(!changesData)
+  func requestAgentApproval(_ approval: AgentApproval) async -> Bool {
     approvals += 1; await onApproval?(); return approves
   }
   func beginAgentStep(_ step: AgentStep, on id: UUID) -> UUID { message.steps.append(step); return step.id }
