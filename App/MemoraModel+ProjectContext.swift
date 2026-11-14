@@ -40,7 +40,7 @@ extension MemoraModel {
         text = blocks.filter { citation.page == nil || $0.page == citation.page }.map(\.text).joined(separator: "\n")
       case .meeting(let id):
         guard let record = meeting(id: id) else { return false }
-        text = ([record.summary] + record.transcript.map(\.text)).joined(separator: "\n")
+        text = ([record.summary, record.summaryKnowledgeText] + record.transcript.map(\.text)).joined(separator: "\n")
       case .document(let id): text = document(id: id)?.plainText ?? ""
       case .task(let id):
         guard let task = self.task(id: id) else { return false }
@@ -67,6 +67,9 @@ extension MemoraModel {
       let target = ProjectCitation.Target.meeting(record.id)
       allowed.insert(target)
       var blocks = [ProjectSourceText(text: record.summary)]
+      if !record.summaryKnowledgeText.isEmpty {
+        blocks += record.summaryKnowledgeText.components(separatedBy: "\n").filter { !record.summary.contains($0) }.map { ProjectSourceText(text: $0) }
+      }
       blocks += record.transcript.map { ProjectSourceText(text: $0.text, time: $0.timestamp) }
       inputs.append(ProjectEvidenceInput(target: target, title: record.displayTitle, blocks: blocks))
     }

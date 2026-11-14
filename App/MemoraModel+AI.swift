@@ -654,11 +654,13 @@ extension MemoraModel {
       "【資料1】会議: \(meeting.displayTitle)",
       "日付: \(meeting.createdAt.formatted(date: .numeric, time: .omitted))"
     ]
-    if !meeting.summary.isEmpty {
-      lines.append("要約: \(meeting.summary)")
-    }
-    lines.append(contentsOf: meeting.decisions.prefix(8).map { "決定: \($0)" })
-    lines.append(contentsOf: meeting.openQuestions.prefix(8).map { "未決: \($0)" })
+    let summaryExcerpt = RelevantTextWindow.text(meeting.summary, matching: words,
+      maximumCharacters: min(1_600, max(0, characterLimit / 2)))
+    if !summaryExcerpt.isEmpty { lines.append("要約: \(summaryExcerpt)") }
+    lines.append(contentsOf: SummaryContentProjection.supplements(meeting.decisions, markdown: summaryExcerpt).prefix(8).map { "決定: \($0)" })
+    lines.append(contentsOf: SummaryContentProjection.supplements(meeting.openQuestions, markdown: summaryExcerpt).prefix(8).map { "未決: \($0)" })
+
+    lines += summaryFactLines(meeting, words: words, document: summaryExcerpt, budget: min(800, characterLimit / 4))
 
     // The transcript takes what is left after the digest, so the whole context
     // stays within the engine's budget.
@@ -679,6 +681,18 @@ extension MemoraModel {
     let joined = lines.joined(separator: "\n")
     let bounded = joined.count > characterLimit ? String(joined.prefix(characterLimit)) : joined
     return (bounded, [source])
+  }
+
+  private static func summaryFactLines(_ meeting: Meeting, words: [String], document: String, budget: Int) -> [String] {
+    let facts = meeting.currentSummaryKnowledge?.relevantFacts(to: words, excluding: "") ?? []
+    let supplemental = Set(SummaryContentProjection.supplements(facts.map(\.content), markdown: document))
+    var used = 0
+    return facts.compactMap { fact in
+      let line = "抽出（" + fact.status.label + "）: " + fact.content
+      guard supplemental.contains(fact.content), used + line.count <= budget else { return nil }
+      used += line.count
+      return line
+    }
   }
 
   /// A wider range: each record's digest and best spans, up to eight records and
@@ -713,16 +727,17 @@ extension MemoraModel {
         "【資料\(sources.count + 1)】会議: \(meeting.displayTitle)",
         "日付: \(meeting.createdAt.formatted(date: .numeric, time: .omitted))"
       ]
-      if !meeting.summary.isEmpty {
-        let summary = prioritizesPassages ? String(meeting.summary.prefix(min(1_200, max(0, characterLimit / 3)))) : meeting.summary
-        lines.append("要約: \(summary)")
-      }
-      lines.append(contentsOf: meeting.decisions.prefix(5).map { "決定: \($0)" })
-      lines.append(contentsOf: meeting.openQuestions.prefix(5).map { "未決: \($0)" })
+      let summaryExcerpt = RelevantTextWindow.text(meeting.summary, matching: words,
+        maximumCharacters: min(prioritizesPassages ? 1_000 : 1_200, max(0, characterLimit / 3)))
+      if !summaryExcerpt.isEmpty { lines.append("要約: \(summaryExcerpt)") }
+      lines.append(contentsOf: SummaryContentProjection.supplements(meeting.decisions, markdown: summaryExcerpt).prefix(5).map { "決定: \($0)" })
+      lines.append(contentsOf: SummaryContentProjection.supplements(meeting.openQuestions, markdown: summaryExcerpt).prefix(5).map { "未決: \($0)" })
       lines.append(contentsOf: tasks
         .filter { $0.meetingID == meeting.id && !$0.isCompleted }
         .prefix(5)
         .map { "タスク: \($0.title)" })
+
+      lines += summaryFactLines(meeting, words: words, document: summaryExcerpt, budget: min(500, characterLimit / 8))
 
       let spans = scoredSpans(of: meeting, words: words)
       let rankedSpans = spans
@@ -890,7 +905,7 @@ extension MemoraModel {
   /// The text a record is searched by, without any cache, so the same result can
   /// be produced outside the model.
   static func searchableText(of meeting: Meeting) -> String {
-    ([meeting.title, meeting.notes, meeting.summary]
+    ([meeting.title, meeting.notes, meeting.summary, meeting.summaryKnowledgeText]
       + meeting.decisions
       + meeting.openQuestions
       + meeting.keyPoints

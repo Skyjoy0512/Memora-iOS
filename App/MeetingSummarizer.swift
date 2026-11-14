@@ -175,8 +175,10 @@ enum MeetingSummarizer {
         return input.transcript.contains { $0.id == id && $0.text.contains(reference.quote) }
       }
       if var knowledge = summary.knowledge {
+        if knowledge.selectedProfileIDs.isEmpty, let id = summary.templateID { knowledge.selectedProfileIDs = [id] }
         let speakerIDs = Set(input.transcript.compactMap(\.speakerID))
         for index in knowledge.facts.indices {
+          knowledge.facts[index].origin = .generated
           knowledge.facts[index].speakerIDs = knowledge.facts[index].speakerIDs?.filter { speakerIDs.contains($0) }
         }
         summary.knowledge = knowledge

@@ -10,6 +10,12 @@ extension Meeting {
     return version.knowledge
   }
 
+  var summaryKnowledgeText: String {
+    (currentSummaryKnowledge?.facts ?? []).filter { $0.status.isVisible }.map {
+      $0.status.label + ": " + $0.content
+    }.joined(separator: "\n")
+  }
+
   var usesVideoSummary: Bool {
     if let version = summaryVersions.first(where: { $0.id == activeSummaryVersionID }),
        let templateID = version.templateID {

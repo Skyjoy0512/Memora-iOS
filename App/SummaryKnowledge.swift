@@ -29,7 +29,7 @@ struct SummaryKnowledge: Codable, Hashable, Sendable {
     var isVisible: Bool { self != .notMentioned && self != .notApplicable }
   }
 
-  enum Category: String, Codable, Sendable {
+  enum Category: String, Codable, CaseIterable, Sendable {
     case overview, background, purpose, keyFact, number, date, decision, rationale, alternative, rejectedOption
     case proposal, agreement, disagreement, issue, risk, constraint, dependency, action, owner, due, openQuestion, entity
     var label: String {
@@ -60,6 +60,8 @@ struct SummaryKnowledge: Codable, Hashable, Sendable {
     }
   }
 
+  enum Origin: String, Codable, Sendable { case generated, user }
+
   struct Topic: Codable, Hashable, Identifiable, Sendable {
     var id: String
     var title: String
@@ -75,6 +77,7 @@ struct SummaryKnowledge: Codable, Hashable, Sendable {
     var sourceReferences: [Reference]?
     var speakerIDs: [String]?
     var temporalContext: String?
+    var origin: Origin?
   }
 
   struct Reference: Codable, Hashable, Sendable {

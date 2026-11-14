@@ -55,6 +55,7 @@ private struct MarkdownTextSurface: UIViewRepresentable {
     view.delegate = context.coordinator
     view.accessibilityLabel = "本文"
     context.coordinator.installToolbar(on: view)
+    context.coordinator.observeKeyboard()
     return view
   }
 
@@ -100,7 +101,10 @@ private struct MarkdownTextSurface: UIViewRepresentable {
 
     init(_ parent: MarkdownTextSurface) { self.parent = parent }
 
-    func textViewDidBeginEditing(_ textView: UITextView) { parent.isFocused.wrappedValue = true }
+    func textViewDidBeginEditing(_ textView: UITextView) {
+      parent.isFocused.wrappedValue = true
+      DispatchQueue.main.async { [weak self] in self?.revealCaret() }
+    }
     func textViewDidEndEditing(_ textView: UITextView) {
       publishCommittedText(textView)
       parent.isFocused.wrappedValue = false
@@ -130,6 +134,30 @@ private struct MarkdownTextSurface: UIViewRepresentable {
       lastMarkdown = value
       parent.markdown = value
       textView.invalidateIntrinsicContentSize()
+    }
+
+    func observeKeyboard() {
+      NotificationCenter.default.addObserver(self, selector: #selector(revealCaret),
+        name: UIResponder.keyboardDidShowNotification, object: nil)
+    }
+
+    deinit { NotificationCenter.default.removeObserver(self) }
+
+    @objc private func revealCaret() {
+      guard let textView, textView.isFirstResponder, let selection = textView.selectedTextRange else { return }
+      var ancestor = textView.superview
+      while let view = ancestor {
+        // A horizontal table consumes ScrollViewReader's target lookup. Move
+        // the actual vertical ancestor so the selected cell clears the keyboard.
+        if let scroll = view as? UIScrollView, scroll.isScrollEnabled,
+           scroll.contentSize.height > scroll.bounds.height - scroll.adjustedContentInset.top - scroll.adjustedContentInset.bottom + 1 {
+          let caret = textView.caretRect(for: selection.end)
+          let target = textView.convert(caret, to: scroll).insetBy(dx: 0, dy: -16)
+          scroll.scrollRectToVisible(target, animated: !UIAccessibility.isReduceMotionEnabled)
+          return
+        }
+        ancestor = view.superview
+      }
     }
 
     func installToolbar(on view: UITextView) {

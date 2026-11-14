@@ -7,6 +7,8 @@ struct SummaryExtractionView: View {
   @Environment(\.dismiss) private var dismiss
   var meetingID: UUID
   @State private var editsHighlights = false
+  @State private var editedFact: SummaryKnowledge.Fact?
+  @State private var addsFact = false
 
   var body: some View {
     let meeting = model.meeting(id: meetingID)
@@ -14,13 +16,13 @@ struct SummaryExtractionView: View {
     let knowledge = version?.knowledge
     let transcriptFingerprint = meeting.flatMap { SummaryEvidence.fingerprint($0.transcript) }
     let current = meeting.map { version?.matches(record: $0) == true } ?? false
-    let visibleFacts = knowledge?.facts.filter { $0.status.isVisible } ?? []
+    let visibleFacts = knowledge?.facts ?? []
     NavigationStack {
       MemoraForm {
         if let meeting {
           Section {
             if knowledge != nil, !current {
-              Text("本文・原文または抽出リストが編集されています。以下は生成時の抽出情報です。現在の記録に合わせるには、内容を確認して要約し直してください。既存タスクは保持されます。")
+              Text("本文・原文または抽出情報が編集されています。生成時の情報と本人の編集を区別して確認してください。本文とタスクは自動的に書き換えません。")
                 .font(.footnote).foregroundStyle(.secondary)
                 .accessibilityIdentifier("summary.extraction.stale")
             } else if knowledge == nil {
@@ -37,8 +39,12 @@ struct SummaryExtractionView: View {
             Section(current ? "原文からの抽出" : "生成時の抽出") {
               ForEach(visibleFacts) { fact in
                 VStack(alignment: .leading, spacing: 8) {
-                  Text(fact.category.label + " · " + fact.status.label).font(.caption).foregroundStyle(.secondary)
+                  Text(fact.category.label + " · " + fact.status.label + (fact.origin == .user ? " · 本人の編集" : "")).font(.caption).foregroundStyle(.secondary)
                   Text(fact.content).textSelection(.enabled)
+                  Button("編集", icon: .pencil) { editedFact = fact }
+                    .buttonStyle(.borderless)
+                    .frame(minHeight: MemoraSpacing.touchTarget)
+                    .accessibilityIdentifier("summary.fact.edit.\(fact.id)")
                   ForEach(fact.sourceReferences ?? [], id: \.self) { reference in
                     if let segment = meeting.transcript.first(where: { $0.id.uuidString.caseInsensitiveCompare(reference.sourceSegmentID) == .orderedSame }),
                        segment.text.contains(reference.quote), version?.sourceFingerprint == transcriptFingerprint {
@@ -65,6 +71,9 @@ struct SummaryExtractionView: View {
               Text("未言及は取得できた原文の範囲での状態です。現実に情報が存在しないことは意味しません。")
             }
           }
+          if knowledge != nil {
+            Section { Button("抽出情報を追加", icon: .plus) { addsFact = true } }
+          }
           Section { SummarySectionIndex(meeting: meeting, onSelect: { dismiss() }) }
         } else { ContentUnavailableView("記録が見つかりません", icon: .docQuestionmark) }
       }
@@ -74,6 +83,12 @@ struct SummaryExtractionView: View {
         ToolbarItem(placement: .confirmationAction) {
           ToolbarIconButton("完了", icon: .checkmark) { dismiss() }
         }
+      }
+      .sheet(item: $editedFact) { fact in
+        if let version { SummaryFactEditor(meetingID: meetingID, versionID: version.id, original: fact) }
+      }
+      .sheet(isPresented: $addsFact) {
+        if let version { SummaryFactEditor(meetingID: meetingID, versionID: version.id) }
       }
       .sheet(isPresented: $editsHighlights) { MeetingHighlightsEditor(meetingID: meetingID) }
     }

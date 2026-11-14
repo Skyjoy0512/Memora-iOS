@@ -76,7 +76,7 @@ enum NotionService {
     // even when the record is long.
     let created = try await createPage(
       configuration: captured,
-      title: meeting.title,
+      title: meeting.displayTitle,
       children: batches.first ?? [],
       send: sendRequest
     )
@@ -214,26 +214,29 @@ enum NotionService {
       paragraph(meeting.summary)
     }
 
-    if !meeting.decisions.isEmpty {
+    let decisions = SummaryContentProjection.supplements(meeting.decisions, markdown: meeting.summary)
+    if !decisions.isEmpty {
       heading("決まったこと")
-      meeting.decisions.forEach(bullet)
+      decisions.forEach(bullet)
     }
 
     let meetingTasks = tasks.filter { $0.meetingID == meeting.id }
     if !meetingTasks.isEmpty {
-      heading("次の行動")
+      heading("タスク（現在の状態）")
       meetingTasks.forEach { task in
+        let state = task.isCompleted ? "完了" : "未完了"
         if let assignee = task.assignee, !assignee.isEmpty {
-          bullet("\(task.title)（\(assignee)）")
+          bullet("[\(state)] \(task.title)（\(assignee)）")
         } else {
-          bullet(task.title)
+          bullet("[\(state)] \(task.title)")
         }
       }
     }
 
-    if !meeting.openQuestions.isEmpty {
+    let questions = SummaryContentProjection.supplements(meeting.openQuestions, markdown: meeting.summary)
+    if !questions.isEmpty {
       heading("まだ決まっていないこと")
-      meeting.openQuestions.forEach(bullet)
+      questions.forEach(bullet)
     }
 
     return children

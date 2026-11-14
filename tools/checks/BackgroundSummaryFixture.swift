@@ -151,9 +151,10 @@ struct TemplateSummary: Codable {
   var decisions: [String] = []
   var openQuestions: [String] = []
   var reconciledUserEdits: Bool?
+  var knowledge: SummaryKnowledge?
   static func snapshot(record: Meeting, templateID: String?, preferences: SummaryPreferences,
     modelInfo: String, evidence: [GeneratedSummaryEvidence] = [], knowledge: SummaryKnowledge? = nil,
     reconciledUserEdits: Bool = false) -> Self {
-      Self(markdown: record.summary, keyPoints: record.keyPoints, decisions: record.decisions, openQuestions: record.openQuestions, reconciledUserEdits: reconciledUserEdits)
+      Self(markdown: record.summary, keyPoints: record.keyPoints, decisions: record.decisions, openQuestions: record.openQuestions, reconciledUserEdits: reconciledUserEdits, knowledge: knowledge)
     }
 }

@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SummaryHistoryView: View {
   @Environment(MemoraModel.self) private var model
-  @State private var restoreID: UUID?
   var meetingID: UUID
 
   var body: some View {
@@ -11,18 +10,7 @@ struct SummaryHistoryView: View {
     MemoraForm {
       ForEach(Array(versions)) { version in
         NavigationLink {
-          ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-              MarkdownDocumentView(markdown: version.markdown)
-              Button("この要約を復元", icon: .arrowCounterclockwise) { restoreID = version.id }
-                .buttonStyle(.bordered)
-                .disabled(model.processing.isActive(meetingID))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(MemoraSpacing.xl)
-          }
-          .navigationTitle("保存した要約")
-          .navigationBarTitleDisplayMode(.inline)
+          SummaryHistoryDetailView(meetingID: meetingID, version: version)
         } label: {
           VStack(alignment: .leading, spacing: 4) {
             Text(version.templateID.flatMap(model.summaryChoice)?.title ?? "旧形式・手動編集")
@@ -36,15 +24,5 @@ struct SummaryHistoryView: View {
     }
     .navigationTitle("要約履歴")
     .navigationBarTitleDisplayMode(.inline)
-    .confirmationDialog("現在の要約も保存して復元します", isPresented: Binding {
-      restoreID != nil
-    } set: { if !$0 { restoreID = nil } }) {
-      Button("復元") {
-        if let restoreID { model.restoreSummary(restoreID, meetingID: meetingID) }
-        restoreID = nil
-      }
-    } message: {
-      Text("原音声・文字起こし・タスクは変更しません。")
-    }
   }
 }

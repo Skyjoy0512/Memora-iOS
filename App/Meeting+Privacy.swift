@@ -10,6 +10,7 @@ extension Meeting {
   var effectivePrivacy: RecordPrivacy {
     var result = privacy
     let ids = summaryVersions.compactMap(\.templateID)
+      + summaryVersions.flatMap { $0.knowledge?.selectedProfileIDs ?? [] }
       + (OccupationCatalog.useCases.first(where: { $0.id == summaryUseCaseID })?.templateIDs ?? [])
     for id in ids {
       if let template = SummaryTemplateCatalog.template(id: id) { result.protect(template.sensitivityClassification) }

@@ -8,7 +8,13 @@ struct Meeting: Identifiable, Hashable, Codable {
   /// Never empty where a name is required, such as the system now-playing
   /// controls, without changing what is stored.
   var displayTitle: String {
-    title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "無題の記録" : title
+    if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return title }
+    if let first = summary.split(separator: "\n", omittingEmptySubsequences: true).first,
+       first.hasPrefix("# ") {
+      let headline = first.dropFirst(2).trimmingCharacters(in: .whitespacesAndNewlines)
+      if !headline.isEmpty { return headline }
+    }
+    return "無題の記録"
   }
 
   var duration: TimeInterval

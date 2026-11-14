@@ -4,7 +4,7 @@ cd "$(dirname "$0")/../.."
 check_root=${MEMORA_CHECK_ROOT:-${TMPDIR:-/tmp}}
 check_dir=$(mktemp -d "$check_root/memora-notion-agent.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
-swiftc Shared/MemoraIcon.swift App/AgentTool.swift App/AgentToolCall.swift App/AgentToolOutcome.swift \
+swiftc App/SummaryContentProjection.swift App/MarkdownBlockParser.swift App/MarkdownBlock.swift App/SourcedMarkdownBlock.swift App/MarkdownFence.swift Shared/MemoraIcon.swift App/AgentTool.swift App/AgentToolCall.swift App/AgentToolOutcome.swift \
   App/AgentStep.swift App/AgentApproval.swift App/AgentTaskDraft.swift App/ReviewPeriod.swift App/AIChatScope.swift \
   App/AIPluginExecutionPolicy.swift App/ToolInputValidator.swift App/AIToolDefinition.swift App/AIToolRegistry.swift \
   App/IntegrationProvider.swift App/IntegrationToolResult.swift App/MCPTool.swift App/MCPServerConfig.swift App/MCPOAuthSettings.swift \

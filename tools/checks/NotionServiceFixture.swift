@@ -5,6 +5,7 @@ import Foundation
 struct Meeting {
   var id = UUID()
   var title = "Fixture meeting"
+  var displayTitle: String { title }
   var createdAt = Date(timeIntervalSince1970: 1_700_000_000)
   var duration: TimeInterval = 60
   var source = FixtureMeetingSource()

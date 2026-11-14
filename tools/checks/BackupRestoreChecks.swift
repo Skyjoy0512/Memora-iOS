@@ -73,6 +73,18 @@ struct BackupRestoreChecks {
       status: .ready, summary: "Fixture summary", keyPoints: [], decisions: [], openQuestions: [], transcript: [],
       spaceID: nil, audioURL: MediaFiles.resolve("audio.m4a"))
     meeting.photoFileNames = ["photo.jpg"]
+    let segment = TranscriptSegment(id: UUID(), speaker: "話者1", speakerIsCertain: true, timestamp: 0,
+      text: "担当者は次回の確認後に決めます。")
+    meeting.transcript = [segment]
+    let version = TemplateSummary.snapshot(record: meeting, templateID: "market.regular",
+      preferences: SummaryPreferences(), modelInfo: "backup fixture",
+      knowledge: .init(selectedProfileIDs: ["market.regular"], facts: [
+        .init(id: "f1", category: .owner, content: segment.text, status: .pending,
+          sourceReferences: [.init(sourceSegmentID: segment.id.uuidString, quote: segment.text)], origin: .user)
+      ], coverage: [.init(aspect: "予算", status: .notMentioned)]), reconciledUserEdits: true)
+    meeting.summaryVersions = [version]
+    meeting.activeSummaryVersionID = version.id
+
     let project = MemoraSpace()
     let person = Person(id: UUID(), name: "検証用の人物", note: nil, contactIdentifier: nil)
     let now = Date.now
@@ -109,6 +121,11 @@ struct BackupRestoreChecks {
     var skill = MemoraSkill.breadthSkills[0]
     skill.id = "custom-" + UUID().uuidString
     let package = try BackupPackage.write(meetings: [meeting], spaces: [project], tasks: [], lifeLogEntries: [], people: [person], aiHistory: [history], aiMemories: [memory], mailDrafts: [draft], companyTemplates: [template, powerpointTemplate], documents: [document], projectSources: [source, attachment], customSkills: [skill], into: input)
+    let summaryRoundtrip = try BackupPackage.read(from: package).meetings[0]
+    precondition(summaryRoundtrip.summaryVersions == meeting.summaryVersions)
+    precondition(summaryRoundtrip.activeSummaryVersionID == version.id)
+    precondition(summaryRoundtrip.summaryVersions[0].sourceFingerprint == SummaryEvidence.fingerprint([segment]))
+
     let manifest = try BackupPackage.read(from: package)
     precondition(manifest.aiMemories == [memory] && manifest.mailDrafts == [draft] && manifest.companyTemplates == [template, powerpointTemplate])
     precondition(manifest.documents == [document] && manifest.aiHistory.first?.episode == episode)
@@ -396,7 +413,6 @@ struct BackupRestoreChecks {
 // Unrelated record shapes, summary UI helpers and container locations are fixtures.
 // Meeting codecs, package validation, installation, cancellation and SQLite are production.
 enum FixtureFiles { static let root = FileManager.default.temporaryDirectory.appendingPathComponent("MemoraBackupChecks-\(UUID())") }
-struct TemplateSummary: Hashable, Codable {}
 enum SummaryPreviewCache { static func preview(for id: UUID, summary: String, build: (String) -> String) -> String { build(summary) } }
 enum MarkdownBlockParser {
   static func hasBlockStructure(_ text: String) -> Bool { false }

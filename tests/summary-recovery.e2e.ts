@@ -3,7 +3,7 @@ import { chmodSync, existsSync, lstatSync, readFileSync, readdirSync, realpathSy
 import { dirname, join, resolve, sep } from 'node:path';
 import { afterEach, test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { tapControl, tapTab, openSummaryPoster } from './ui-helpers';
+import { tapControl, tapTab, openSummaryPoster, replaceEditorWithPaste } from './ui-helpers';
 import { sql } from './sqlite-fixture-helpers';
 import { seedSummaryFixture } from './summary-fixture-helpers';
 
@@ -33,7 +33,7 @@ test('failed transcript saves keep the stored record and durable or in-memory dr
     await tapControl(screen.getByRole('button', { name: '文字起こし', exact: true }));
     await screen.getByTestId('transcript.readable').uncheck();
     await tapControl(screen.getByRole('button', { name: raw, exact: true }));
-    await field.fill(firstEdit);
+    await replaceEditorWithPaste(screen, device, field, firstEdit);
     const original = read();
     inject(false);
     await finish();
@@ -64,12 +64,14 @@ test('failed transcript saves keep the stored record and durable or in-memory dr
     const committed = read();
     inject(true);
     await tapControl(screen.getByRole('button', { name: firstEdit, exact: true }));
-    await field.fill(secondEdit);
-    await finish();
-    await dismissFailure();
+    await replaceEditorWithPaste(screen, device, field, secondEdit);
+    // The debounced draft write now fails too. Its alert resigns the editor,
+    // so waiting for the keyboard's Done button would target a dismissed UI.
+    await expect(screen.getByText('下書きを保存できませんでした。入力内容はアプリ内に保持していますが、再起動すると失われる可能性があります。ストレージの空き容量を確認して、保存し直してください。', { exact: true })).toBeVisible();
+    await tapControl(screen.getByRole('button', { name: 'OK', exact: true }));
     expect(read()).toEqual(committed);
     expect(draft()).toBe('');
-    await tapControl(screen.getByRole('button', { name: firstEdit, exact: true }));
+    await tapControl(screen.getByRole('button', { name: secondEdit, exact: true }));
     await expect(field).toHaveValue(secondEdit);
     await app.screenshot('transcript-memory-draft-when-draft-storage-also-fails');
     recover();

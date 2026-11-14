@@ -189,6 +189,14 @@ extension MemoraModel {
           let editedPoints = previous.map { $0.keyPoints != meeting.keyPoints } ?? !meeting.keyPoints.isEmpty
           let editedDecisions = previous.map { $0.decisions != meeting.decisions } ?? !meeting.decisions.isEmpty
           let editedQuestions = previous.map { $0.openQuestions != meeting.openQuestions } ?? !meeting.openQuestions.isEmpty
+          let authoredFacts = previous?.knowledge?.facts.filter { $0.origin == .user } ?? []
+          var knowledge = summary.knowledge
+          if !authoredFacts.isEmpty {
+            var merged = knowledge ?? SummaryKnowledge()
+            let authoredIDs = Set(authoredFacts.map(\.id))
+            merged.facts = authoredFacts + Array(merged.facts.filter { !authoredIDs.contains($0.id) }.prefix(max(0, 256 - authoredFacts.count)))
+            knowledge = merged
+          }
           meeting.summary = summary.markdown
           if !editedPoints { meeting.keyPoints = summary.keyPoints }
           if !editedDecisions { meeting.decisions = summary.decisions }
@@ -197,16 +205,19 @@ extension MemoraModel {
           if let useCaseID { meeting.summaryUseCaseID = useCaseID.isEmpty ? nil : useCaseID }
           let version = TemplateSummary.snapshot(record: meeting, templateID: summary.templateID,
             preferences: input.preferences, modelInfo: engine == .cloud || engine == .memora ? llm.modelLabel : "端末内AI",
-            evidence: summary.evidence, knowledge: summary.knowledge,
-            reconciledUserEdits: editedPoints || editedDecisions || editedQuestions)
+            evidence: summary.evidence, knowledge: knowledge,
+            reconciledUserEdits: editedPoints || editedDecisions || editedQuestions || !authoredFacts.isEmpty)
           meeting.summaryVersions.append(version)
           meeting.activeSummaryVersionID = version.id
           meeting.privacy = meeting.effectivePrivacy
           if input.automaticCandidates.isEmpty, case .market(let template) = input.template {
             meeting.privacy.protect(template.sensitivityClassification)
           }
-          if let selected = summary.templateID.flatMap(self.summaryChoice), case .market(let template) = selected {
-            meeting.privacy.protect(template.sensitivityClassification)
+          let profileIDs = [summary.templateID].compactMap { $0 } + (summary.knowledge?.selectedProfileIDs ?? [])
+          for profileID in profileIDs {
+            if let selected = self.summaryChoice(profileID), case .market(let template) = selected {
+              meeting.privacy.protect(template.sensitivityClassification)
+            }
           }
           candidateMeetings[index] = meeting
         }

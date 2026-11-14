@@ -41,6 +41,12 @@ enum AdaptiveSummaryKnowledgeChecks {
     let encoded = try JSONEncoder().encode(record)
     let roundtrip = try JSONDecoder().decode(Meeting.self, from: encoded)
     precondition(roundtrip.currentSummaryKnowledge == validated && roundtrip.title == "本人のタイトル")
+    var untitled = record
+    untitled.title = ""
+    untitled.summary = "# 公開時期の再検討\n\n検証後に判断する。"
+    precondition(untitled.displayTitle == "公開時期の再検討" && untitled.title.isEmpty)
+    untitled.title = "本人が付けた題"
+    precondition(untitled.displayTitle == "本人が付けた題")
     var changed = record; changed.transcript[0].text += "訂正がありました。"
     precondition(changed.currentSummaryKnowledge == nil)
     changed = record; changed.summary += "本人の追記"
@@ -67,6 +73,22 @@ enum AdaptiveSummaryKnowledgeChecks {
     let id = UUID()
     precondition(MeetingSummaryInput.sourceSegmentID(sourceID: id, index: 2) == MeetingSummaryInput.sourceSegmentID(sourceID: id, index: 2))
     precondition(MeetingSummaryInput.sourceSegmentID(sourceID: id, index: 2) != MeetingSummaryInput.sourceSegmentID(sourceID: id, index: 3))
+    precondition(SummaryContentProjection.supplements(["公開する"], markdown: "公開しない") == ["公開する"])
+    precondition(SummaryContentProjection.supplements(["公開する"], markdown: "公開する\nという案は却下") == ["公開する"])
+    precondition(SummaryContentProjection.supplements(["API_KEY_A"], markdown: "api_key_a") == ["API_KEY_A"])
+    precondition(SummaryContentProjection.supplements(["予算は-100万円"], markdown: "予算は100万円") == ["予算は-100万円"])
+    precondition(SummaryContentProjection.supplements(["承認後に公開する"], markdown: "## 方針\n- **承認後に公開する**").isEmpty)
+    var mixed = MeetingSummary(markdown: "本文", actions: [.init(title: "実際に合意した行動")], templateID: "work.learning",
+      knowledge: .init(selectedProfileIDs: ["work.learning", "market.regular"]))
+    precondition(SummaryResponseParser.validateTemplate(mixed, allowedIDs: ["work.learning", "market.regular"], actionFreeIDs: ["work.learning"]).actions.count == 1)
+    mixed.knowledge?.selectedProfileIDs = ["work.learning", "forged"]
+    precondition(SummaryResponseParser.validateTemplate(mixed, allowedIDs: ["work.learning", "market.regular"], actionFreeIDs: ["work.learning"]).actions.isEmpty)
+    var protected = record
+    protected.summaryVersions[0].knowledge?.selectedProfileIDs = ["market.regular", "work.care"]
+    precondition(protected.effectivePrivacy.classification == .sensitive)
+    let related = knowledge.relevantFacts(to: ["担当"], excluding: "")
+    precondition(related.allSatisfy { $0.status.isVisible } && related.count == 4)
+
     print("AdaptiveSummaryKnowledgeChecks: passed (six statuses, mixed profiles, lossy facts, real Meeting/history codec, legacy/corrupt optional data, edit invalidation, audio deletion, truncated JSON, unspecified tasks, stable source IDs). No model/network claim.")
   }
 }

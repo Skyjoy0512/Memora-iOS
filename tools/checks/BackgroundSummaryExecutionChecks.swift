@@ -329,6 +329,22 @@ enum BackgroundSummaryExecutionChecks {
     let savedAgain = try read(regenerated, MemoraModel.StorageKey.tasks, as: [MemoraTask].self)
     precondition(savedAgain == [completed])
 
+    let authored = try model()
+    let authoredFact = SummaryKnowledge.Fact(id: "authored", category: .keyFact, content: "本人が残した抽出情報", status: .confirmed, origin: .user)
+    let authoredVersion = TemplateSummary.snapshot(record: authored.meetings[0], templateID: nil,
+      preferences: SummaryPreferences(), modelInfo: "本人の編集", knowledge: .init(facts: [authoredFact]))
+    authored.meetings[0].summaryVersions = [authoredVersion]
+    authored.meetings[0].activeSummaryVersionID = authoredVersion.id
+    let authoredRequest = await start(authored)
+    var many = result
+    many.knowledge = .init(facts: (0..<256).map { .init(id: "generated-\($0)", category: .keyFact,
+      content: "生成情報\($0)", status: .confirmed) })
+    authoredRequest.complete.resume(returning: .success(many))
+    try await settle(authored)
+    let retainedFacts = authored.meetings[0].summaryVersions.last!.knowledge!.facts
+    precondition(retainedFacts.count == 256 && retainedFacts.first == authoredFact)
+    precondition(authored.meetings[0].summaryVersions[0].knowledge?.facts == [authoredFact])
+
     let listRace = try model()
     let listRequest = await start(listRace)
     listRace.meetings[0].decisions = ["生成中に本人が編集した決定"]

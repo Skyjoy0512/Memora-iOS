@@ -13,7 +13,7 @@ export async function tapControl(screenOrLocator: any, locator: any = screenOrLo
 export async function replaceEditorWithPaste(screen: any, device: any, editor: any, value: string) {
   await device.setClipboard(value);
   await selectAllEditorText(screen, editor);
-  await tapControl(screen.getByRole('listitem', { name: /^(ペースト|Paste)$/ }));
+  await tapControl(await nativeEditMenuItem(screen, /^(ペースト|Paste)$/));
   await expect(editor).toHaveValue(value);
 }
 
@@ -24,9 +24,20 @@ export async function selectAllEditorText(screen: any, editor: any) {
   // Tap actual text, then tap the caret to open UIKit's editing menu.
   await editor.tap({ position: { x: 12, y: 10 } });
   await stableBounds(editor);
-  const selectAll = screen.getByRole('listitem', { name: /^(すべてを選択|全選択|Select All)$/ });
-  if (!(await selectAll.isVisible())) await editor.tap({ position: { x: 12, y: 10 } });
-  await tapControl(selectAll);
+  const name = /^(すべてを選択|全選択|Select All)$/;
+  const visible = async () => await screen.getByRole('menuitem', { name }).isVisible()
+    || await screen.getByRole('listitem', { name }).isVisible();
+  if (!(await visible())) await editor.tap({ position: { x: 12, y: 10 } });
+  await tapControl(await nativeEditMenuItem(screen, name));
+}
+
+async function nativeEditMenuItem(screen: any, name: RegExp) {
+  // UIKit exposes both edit-menu presentations: the table cell is a menuitem,
+  // while the transcript's system callout contains listitems on the same OS.
+  const menu = screen.getByRole('menuitem', { name });
+  const callout = screen.getByRole('listitem', { name });
+  await expect.poll(async () => await menu.isVisible() || await callout.isVisible()).toBe(true);
+  return await menu.isVisible() ? menu : callout;
 }
 
 export async function openSummaryImageMenu(screen: any) {

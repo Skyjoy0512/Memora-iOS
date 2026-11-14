@@ -18,7 +18,7 @@ struct ReadabilityGuideChecks {
     for rule in ["条件付き合意", "相槌", "記載なし", "依存条件"] {
       precondition(ReadabilityGuide.summaryRules.contains(rule))
     }
-    for rule in ["条件", "発言者", "担当未定", "確認済みの結果", "テンプレート", "空行", "太字"] {
+    for rule in ["条件", "発言者", "担当未定", "確認済みの結果", "通常の抽出観点は見出しの強制ではない", "空行", "太字"] {
       precondition(ReadabilityGuide.compactRules.contains(rule), "Missing compact rule: \(rule)")
     }
     print("ReadabilityGuide checks passed")

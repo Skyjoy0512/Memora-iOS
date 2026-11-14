@@ -33,6 +33,9 @@ swiftc "${layout_sources[@]}" "${audio_diagnostic_sources[@]}" App/SummaryNoteHi
   App/SummaryDiagnostics.swift App/SummaryGenerationPolicy.swift App/SummaryPartScheduler.swift App/MeetingSummarizer.swift \
   tools/checks/SummaryPipelineChecks.swift -o "$check_dir/pipeline"
 "$check_dir/pipeline"
+swiftc "${layout_sources[@]}" App/SummarySection.swift App/SummaryEvidenceLink.swift \
+  tools/checks/SummaryPersonalizationChecks.swift -o "$check_dir/personalization"
+"$check_dir/personalization"
 swiftc "${layout_sources[@]}" tools/checks/SummaryLayoutChecks.swift -o "$check_dir/layout"
 "$check_dir/layout"
 swiftc "${layout_sources[@]}" App/SummaryTemplateNotes.swift tools/checks/SummaryTemplateNotesChecks.swift -o "$check_dir/template-notes"

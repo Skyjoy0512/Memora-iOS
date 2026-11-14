@@ -10,8 +10,9 @@ enum MeetingPDF {
       metadata: "\(meeting.createdAt.formatted(Date.FormatStyle(date: .long, time: .shortened).locale(Locale(identifier: "ja_JP")))) · \(MemoraFormat.duration(meeting.duration)) · \(meeting.source.label)",
       summary: meeting.summary, decisions: meeting.decisions,
       actions: tasks.filter { $0.meetingID == meeting.id }.map { task in
-        if let assignee = task.assignee, !assignee.isEmpty { return "\(task.title)（\(assignee)）" }
-        return task.title
+        let state = task.isCompleted ? "完了" : "未完了"
+        if let assignee = task.assignee, !assignee.isEmpty { return "[\(state)] \(task.title)（\(assignee)）" }
+        return "[\(state)] \(task.title)"
       }, openQuestions: meeting.openQuestions, keyPoints: meeting.keyPoints)
     let cleaned = meeting.displayTitle.components(separatedBy: CharacterSet(charactersIn: "/\\:?%*|\"<>"))
       .joined(separator: "-").trimmingCharacters(in: .whitespacesAndNewlines)

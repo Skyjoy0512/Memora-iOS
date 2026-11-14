@@ -36,6 +36,10 @@ struct SummaryPersonalizationChecks {
       availableIDs: Set(generics + ["manual", "private"] + (0..<30).map { "work\($0)" }))
     precondition(candidates.count == 8 && Set(generics + ["manual", "private"]).isSubset(of: Set(candidates)))
     precondition(Set(candidates).count == candidates.count)
+    let adaptiveCandidates = SummaryTemplateSelector.candidateIDs(fallbackID: "content.adaptive", contentID: "market.regular",
+      recommendedIDs: ["market.sales"], genericIDs: ["work.learning", "work.journal"],
+      availableIDs: ["content.adaptive", "market.regular", "market.sales", "work.learning", "work.journal"])
+    precondition(adaptiveCandidates.first == "content.adaptive" && Set(adaptiveCandidates).count == 5)
     print("SummaryPersonalizationChecks: passed (content scenarios, sections, output compatibility)")
   }
 }

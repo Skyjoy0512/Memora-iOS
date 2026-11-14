@@ -69,7 +69,10 @@ enum SummaryResponseParser {
       result.evidence = []
       return result
     }
-    if actionFreeIDs.contains(id) { result.actions = [] }
+    let selectedActionProfile = summary.knowledge?.selectedProfileIDs.contains {
+      allowedIDs.contains($0) && !actionFreeIDs.contains($0)
+    } ?? false
+    if actionFreeIDs.contains(id), !selectedActionProfile { result.actions = [] }
     return result
   }
 

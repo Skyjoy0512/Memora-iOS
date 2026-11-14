@@ -40,7 +40,8 @@ class DesignTokenChecks(unittest.TestCase):
         response = (APP / "AIResponseMarkdownBlock.swift").read_text()
         self.assertIn("MarkdownBlockView(block: block)", response)
         editor = (APP / "EditableMarkdownDocument.swift").read_text()
-        self.assertIn("MarkdownTableRow", editor)
+        self.assertIn("MarkdownTableView", editor)
+        self.assertIn("MarkdownTableView", (ROOT / "App/MarkdownBlockView.swift").read_text())
         self.assertIn("MarkdownBlockView", editor)
 
     def test_retired_implementations_are_not_second_theme(self):

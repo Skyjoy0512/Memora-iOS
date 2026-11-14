@@ -26,8 +26,13 @@ struct MeetingDetailView: View {
   @State private var isPrivacyPresented = false
   @State private var isAddingPeople = false
   @State private var isChoosingSpace = false
-  @State private var isSharing = false
-  @State private var shareItems: [Any] = []
+  @State private var sharePayload: SharePayload?
+  @State private var sharedPDFURL: URL?
+
+  private struct SharePayload: Identifiable {
+    let id = UUID()
+    var items: [Any]
+  }
   @State private var statusAlert: StatusAlert?
   @State private var player = AudioPlayerService()
   /// The line the initial time points at, highlighted even without audio.
@@ -56,8 +61,7 @@ struct MeetingDetailView: View {
       isRecording: model.isRecording,
       play: { player.toggle() },
       share: {
-        shareItems = [MeetingShareText.make(meeting: meeting, tasks: model.tasks)]
-        isSharing = true
+        sharePayload = SharePayload(items: [MeetingShareText.make(meeting: meeting, tasks: model.tasks)])
       }
     )
   }
@@ -136,7 +140,6 @@ struct MeetingDetailView: View {
             model.popActiveDetail(meeting.id, tab: detailTab)
             model.isDetailComposerVisible = true
           }
-          .scrollFocusedEditorAboveKeyboard(in: proxy)
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("記録")
@@ -218,8 +221,8 @@ struct MeetingDetailView: View {
         .sheet(isPresented: $isChoosingSpace) {
           SpacePickerSheet(meetingID: meeting.id)
         }
-        .sheet(isPresented: $isSharing) {
-          ActivityView(items: shareItems, onComplete: cleanUpSharedFiles)
+        .sheet(item: $sharePayload, onDismiss: cleanUpSharedFiles) { payload in
+          ActivityView(items: payload.items)
         }
         .alert(item: $statusAlert) { alert in
           if let url = alert.linkURL {
@@ -329,16 +332,16 @@ struct MeetingDetailView: View {
     }, operation: { progress in
       try await MeetingPDF.write(meeting: meeting, tasks: tasks, onProgress: progress)
     }, completed: { url in
-      shareItems = [url]
-      isSharing = true
+      sharedPDFURL = url
+      sharePayload = SharePayload(items: [url])
     }, failed: { message in
       statusAlert = StatusAlert(title: "PDFを作成できませんでした", message: message)
     })
   }
 
   private func cleanUpSharedFiles() {
-    ArtifactExportFile.removeTemporary(shareItems)
-    shareItems = []
+    if let sharedPDFURL { ArtifactExportFile.removeTemporary([sharedPDFURL]) }
+    sharedPDFURL = nil
   }
 
   private func saveToNotion(_ meeting: Meeting) {
