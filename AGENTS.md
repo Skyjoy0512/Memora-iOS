@@ -309,8 +309,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Company-template artifacts retain their original formatting.
 - Readability: summaries, Ask AI answers and the agent write to
   `ReadabilityGuide` (rules adapted from yomiyasu and k16shikano's guide,
-  credited in `docs/THIRD_PARTY.md`): `rules` for cloud prompts,
-  `compactRules` for the on-device window.
+  credited in `docs/THIRD_PARTY.md`): `rules` for general cloud prompts;
+  summaries use `compactRules` plus `summaryRules` on cloud and on-device to
+  keep factual constraints while avoiding unrelated presentation instructions.
 - Resident agents (`ResidentAgent`, `ResidentTrigger`, `ResidentAgentCatalog`,
   `MemoraModel+Residents`, Settings › AIと要約 › 常駐エージェント), after OpenDots' Dots
   (design only; its code is TypeScript): named agents that run every morning,
@@ -336,8 +337,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   is not cut off by an idle timeout, and an answer stopped at the length limit
   is continued. A failed summary on a record with a transcript retries the
   summary, never the transcription.
-- Summaries run through `MeetingSummarizer`, not the Ask AI prompt. 詳細な概要
-  (`SummaryTemplate.detailedOverview`) is the base template. The cloud writes
+- Summaries run through `MeetingSummarizer`, not the Ask AI prompt. Automatic
+  composition uses `content.adaptive`; 詳細な概要 keeps its legacy profile ID.
+  The cloud writes
   the whole document in one pass (part notes merged when very long); on-device
   reads section by section with guided generation and `SummaryMarkdownBuilder`
   lays the document out. Actions become tasks (existing titles skipped); owners
@@ -348,15 +350,21 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   over only its own lines (`MarkdownBlockWriter`). Do not switch the whole
   summary to its markdown source on tap; the source editor is only offered
   from the long-press menu.
-- Summary templates: a marketplace of business templates by category
-  (`SummaryTemplateCatalog`, `SummaryTemplateCategory`), each with its own
-  `sections`, `focus` and whether it writes an action table; the person can
-  write their own as a free prompt (`prompt`, followed instead of sections;
-  `SummaryPrompt.promptFormat` only adds the heading and action table the app
-  reads back) and keep it in `customTemplates` (record store; older saved
-  templates decode with defaults) and choose the
-  default 自動生成 uses (`defaultTemplateID`, `defaultSummaryChoice`). Catalog
-  ids are kept so templates added in older builds stay added.
+- Summary templates are extraction profiles (`SummaryTemplateChoice.extractionProfile`),
+  preserving all 55 marketplace IDs, distinct sections/focus and installed settings.
+  Built-in and catalog summaries use adaptive composition; suggested headings are
+  optional. Explicit custom prompts/formats keep their intended structure.
+  `SummaryResponseParser.generatedMarkdown` runs only at generation boundaries,
+  never on saved/edited text. Never fill absent sections with placeholders.
+- `TemplateSummary` owns versioned optional `SummaryKnowledge` (six statuses,
+  stable fact/topic IDs and validated source references). Legacy/corrupt enrichment
+  must not prevent reading a record. `currentSummaryKnowledge` requires matching
+  source fingerprint, body and lists. Edited extraction is retained as authored,
+  marked for review, and never silently synchronized into prose or tasks.
+  The primary reading surface is Markdown; options expose extraction/highlight
+  editing and live tasks. Keep task creation/completion and history accessible.
+  Re-generation preserves edited facts/lists and completed tasks. See
+  `docs/adaptive-summary/IMPLEMENTATION.md` and `REPORT.md` in that directory.
 - Integrations: webhooks (Settings › 連携 › Webhook, `WebhookEndpoint`,
   `WebhookDelivery`, `MemoraModel+Webhooks`) send every finished summary as
   JSON or a Slack message to https URLs kept in the keychain. Remote MCP

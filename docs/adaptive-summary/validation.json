@@ -1,0 +1,89 @@
+{
+  "reviewCommit": "342094666b366f5420bfe09d48f478ba08ea30ea",
+  "implementationCommit": "a6730e2d",
+  "actualSummaryModelEvaluation": false,
+  "actualSummaryEvaluationLLMCalls": 0,
+  "hostSuites": [
+    {
+      "suite": "next-generation",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "next-generation.log"
+    },
+    {
+      "suite": "design-refresh",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "design-refresh.log"
+    },
+    {
+      "suite": "background-summary",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "background-summary.log"
+    },
+    {
+      "suite": "summary-reliability",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "summary-reliability.log"
+    },
+    {
+      "suite": "adaptive-summary",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "adaptive-summary.log"
+    },
+    {
+      "suite": "adaptive-summary-quality",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "adaptive-summary-quality.log"
+    },
+    {
+      "suite": "composer-layout",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "composer-layout.log"
+    },
+    {
+      "suite": "optimization",
+      "status": "passed",
+      "exitCode": 0,
+      "log": "optimization.log"
+    }
+  ],
+  "hostArtifacts": "/Volumes/WorkspaceSSD/Development/Agents/MemoraAdaptiveValidation/release-quality",
+  "supplemental": [
+    "final-summary-reading.log",
+    "final-adaptive-backup.log",
+    "phase-d-pdf-verified.log",
+    "final-title-and-history.log",
+    "final-lossless-facts.log",
+    "final-lossless-comparison.log",
+    "final-link-identity.log",
+    "final-projection-notion.log"
+  ],
+  "preview": {
+    "result": "succeeded",
+    "platform": "iOS Simulator",
+    "warnings": 11,
+    "log": "2026-11-14T21-31-30-cadb258e.log"
+  },
+  "ui": [
+    {
+      "case": "adaptive reading",
+      "status": "passed",
+      "report": ".e2e/adaptive-final-review/report.json",
+      "seconds": 151.86
+    },
+    {
+      "case": "failed transcript saves",
+      "status": "passed",
+      "report": ".e2e/adaptive-recovery-alert/report.json",
+      "seconds": 86.98
+    }
+  ],
+  "finalImplementationCommit": "8afc4992",
+  "supplementalResult": "passed"
+}

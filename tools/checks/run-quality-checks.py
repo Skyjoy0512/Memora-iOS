@@ -16,6 +16,8 @@ SUITES = (
     ("design-refresh", "bash", "run-design-refresh-checks.sh"),
     ("background-summary", "bash", "run-background-summary-job-checks.sh"),
     ("summary-reliability", "bash", "run-summary-reliability-checks.sh"),
+    ("adaptive-summary", "bash", "run-adaptive-summary-checks.sh"),
+    ("adaptive-summary-quality", "bash", "run-adaptive-summary-quality.sh"),
     ("composer-layout", "bash", "run-composer-layout-checks.sh"),
     ("optimization", "python3", "run-optimization-checks.py"),
 )
