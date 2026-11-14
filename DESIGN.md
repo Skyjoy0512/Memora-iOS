@@ -52,7 +52,7 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 - New Ask AI chats show quiet prompt suggestions without a marketing heading,
   repeated generic subtitles or a permanent explanation beneath them. Preserve
   source titles, draft protection and approval at execution time.
-- Marketplace follows the supplied catalog reference: a compact title picker,
+- Marketplace follows the supplied catalog reference: visible content category tabs,
   active-item icon strip, and spacious icon/title/description rows with separate
   add and options controls. Search stays in a floating capsule at the bottom,
   with global or category scope. Detail screens use a left-aligned icon and title,
@@ -566,7 +566,7 @@ appear once under マイテンプレート, rather than repeating in their categ
 skills and the selected default template retain their status. The connector
 catalog uses cards; Ask AI's connector hub retains its native connection list.
 
-The bundled catalog has 32 skills and 55 summary templates. Sixteen additional
+The bundled catalog has 48 skills and 55 summary templates. Sixteen existing
 skills cover preparation, decision history, blockers, risks, requirements, FAQ,
 feedback, comparisons, learning, interview questions, indexes, procedures,
 handover, estimates, goals and weekly planning. These workflows read permitted
@@ -574,6 +574,13 @@ records/tasks and return sourced answers; they do not grant writes or external
 reads. Twelve additional templates cover design, incidents, releases, experiments,
 partners, onboarding, mentoring, reading groups, workshops, events and family
 discussions. Educational and family summaries do not turn suggestions into tasks.
+
+The 2026-11-14 expansion adds sixteen answer-only skills for learning, writing,
+creative work and everyday preparation. Optional category, example prompts and
+output descriptions survive JSON/Markdown sharing and older imports. Detail pages
+lead with the result and examples, with full instructions in a disclosure.
+My tools uses actual skill selection history; enabled skills alone do not count.
+Visible category tabs preserve the search query. Accessibility sizes use a native picker.
 
 ## Community and connectors — 2026-10-31
 

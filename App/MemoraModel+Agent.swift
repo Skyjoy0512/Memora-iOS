@@ -235,9 +235,7 @@ extension MemoraModel {
       switch runner {
       case .cloud(let session):
         // Connected apps' tools join the agent's own for this run.
-        let serverIDs = pluginPolicy.map { policy in Set(policy.pluginIDs.compactMap { id -> UUID? in
-          id.hasPrefix("mcp:") ? UUID(uuidString: String(id.dropFirst(4))) : nil
-        }) }
+        let serverIDs = pluginPolicy.map { MCPServerConfig.explicitServerIDs(pluginIDs: $0.pluginIDs, servers: self.mcpServers) }
         let externalTools = await self.loadMCPToolsForAgent(messageID: placeholder.id, onlyServerIDs: serverIDs, request: trimmed)
         guard !Task.isCancelled, self.aiChatRequestID == requestID else { return }
         if var policy = self.agentPluginPolicies[placeholder.id] {

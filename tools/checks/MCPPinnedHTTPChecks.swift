@@ -29,7 +29,8 @@ struct MCPPinnedHTTPChecks {
     precondition(wire.contains("Content-Length: \(Self.request.count)\r\n") && request.bytes.suffix(Self.request.count) == Self.request)
     precondition(!wire.contains("Cookie:") && wire.contains("Accept-Encoding: identity"))
     for headers in [["Host": "private"], ["Content-Length": "0"], ["Accept": "x\r\nHost: private"],
-      ["Authorization": "bad\ttoken"], ["accept": "application/json", "Accept": "text/plain"], ["Authorization": "秘密"]] {
+      ["Authorization": "bad\ttoken"], ["accept": "application/json", "Accept": "text/plain"], ["Authorization": "秘密"],
+      ["X-MCP-Toolsets": "issues,pull_requests"]] {
       reject("unsafe header") { _ = try WebSourceRequest(url: endpoint, addresses: ["93.184.215.14"], body: Self.request, headers: headers) }
     }
     for addresses in [[], ["127.0.0.1"], ["93.184.215.14", "10.0.0.1"], ["::ffff:127.0.0.1"], ["mcp.example.com"]] {
@@ -166,13 +167,18 @@ struct MCPPinnedHTTPChecks {
   }
 
   static func transportLifecycle() async throws {
+    let endpoint = URL(string: "https://api.githubcopilot.com/mcp/readonly")!
+    reject("provider write override") {
+      _ = try WebSourceRequest(url: endpoint, addresses: ["93.184.215.14"], body: request, headers: ["X-MCP-Readonly": "false"])
+    }
     let requests = Messages()
     let http = MCPPinnedHTTP(resolve: { _ in ["93.184.215.14"] }, transfer: { request, decoder, handler in
       requests.append(request.bytes)
       let raw = requests.values.count == 1 ? response(reply, extra: "Mcp-Session-Id: fixture-session\r\n") : Data("HTTP/1.1 202 Accepted\r\n\r\n".utf8)
       return try consume([raw], decoder: decoder, handler: handler)!
     })
-    let transport = MCPBoundedHTTPTransport(endpoint: endpoint, token: "fixture-only", http: http)
+    let transport = MCPBoundedHTTPTransport(endpoint: endpoint, token: "fixture-only",
+      presetHeaders: MCPServerConfig.Preset.github.server().presetHeaders, http: http)
     try await transport.connect()
     var iterator = await transport.receive().makeAsyncIterator()
     try await transport.send(request)
@@ -180,6 +186,9 @@ struct MCPPinnedHTTPChecks {
     precondition(received == Data(reply.utf8))
     try await transport.send(notification)
     precondition(String(decoding: requests.values[1], as: UTF8.self).contains("mcp-session-id: fixture-session\r\n"))
+    let wire = String(decoding: requests.values[0], as: UTF8.self)
+    precondition(wire.contains("x-mcp-toolsets: issues,pull_requests\r\n") && wire.contains("x-mcp-readonly: true\r\n"))
+    precondition(wire.contains("authorization: Bearer fixture-only\r\n"))
     try await transport.send(Data(#"{"jsonrpc":"2.0","id":"server-request","result":{}}"#.utf8))
     await transport.disconnect()
     let terminal = try await iterator.next()

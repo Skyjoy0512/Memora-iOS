@@ -10,7 +10,7 @@ struct MCPResultAuthorization {
   var tool: MCPTool
 
   func isCurrent(in model: MemoraModel) -> Bool {
-    context.bindingIsCurrent(in: model) && model.integrationIsEnabled("mcp") &&
+    context.bindingIsCurrent(in: model) && model.mcpServerIsEnabled(server) &&
       model.mcpServers.contains(server) && model.mcpCredentialRevisions[server.id] == credentialRevision &&
       AIRecordFingerprint.make(KeychainStore.string(forKey: server.tokenAccount)) == tokenFingerprint &&
       model.activeMCPTools[tool.agentName]?.fingerprint == tool.fingerprint

@@ -13,9 +13,11 @@ AIPluginIcon.brandAssetNameは登録されたサービスIDだけから画像を
 | Google Drive | [公式ブランドガイド](https://developers.google.com/workspace/drive/api/guides/branding)の配布リンク: [製品ロゴ](https://www.gstatic.com/images/branding/productlogos/drive_2026/v2/web-64dp/logo_drive_2026_color_2x_web_64dp.png) |
 | GitHub | [公式ブランドキット](https://brand.github.com/foundations/logo)の[配布ZIP](https://brand.github.com/GitHub_Logos.zip)内の`GitHub_Invertocat_Black.svg`・`GitHub_Invertocat_White.svg` |
 | MCP | [公式リポジトリのfavicon.svg](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/favicon.svg) |
+| Linear | [公式ブランドガイド](https://linear.app/brand)の[配布ZIP](https://static.linear.app/design-assets/Linear-Brand-Assets.zip?v=3)内の`logo-dark.svg`・`logo-light.svg`（2026-11-14取得、変更なし） |
 
 各商標・ロゴの権利はそれぞれの権利者に帰属する。サービスの識別にのみ使用する。
-Google DriveとGitHubの未対応表示は維持する。ロゴは接続済みを意味しない。
+Google Driveは未対応。GitHub・Linearは公式MCPの読み取り専用設定を提供する。
+ロゴは接続済みを意味しない。
 端末カレンダーはEventKitであり、Google Calendarへの直接接続ではないため、
 GoogleのロゴではなくLucideのカレンダーアイコンを使用する。
 

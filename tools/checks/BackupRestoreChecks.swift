@@ -106,10 +106,15 @@ struct BackupRestoreChecks {
     let sessionID = UUID()
     let episode = AIEpisode(id: UUID(), sessionID: sessionID, date: now, topic: "提案書", objective: "資料作成", summary: "会社書式を確認した", personIDs: [person.id], projectIDs: [project.id], recordIDs: [meeting.id], documentIDs: [document.id])
     let history = AIConversationEntry(id: UUID(), question: "前回の提案書", answer: "保存しました", scopeLabel: "すべて", createdAt: now, episode: episode)
-    let package = try BackupPackage.write(meetings: [meeting], spaces: [project], tasks: [], lifeLogEntries: [], people: [person], aiHistory: [history], aiMemories: [memory], mailDrafts: [draft], companyTemplates: [template, powerpointTemplate], documents: [document], projectSources: [source, attachment], into: input)
+    var skill = MemoraSkill.breadthSkills[0]
+    skill.id = "custom-" + UUID().uuidString
+    let package = try BackupPackage.write(meetings: [meeting], spaces: [project], tasks: [], lifeLogEntries: [], people: [person], aiHistory: [history], aiMemories: [memory], mailDrafts: [draft], companyTemplates: [template, powerpointTemplate], documents: [document], projectSources: [source, attachment], customSkills: [skill], into: input)
     let manifest = try BackupPackage.read(from: package)
     precondition(manifest.aiMemories == [memory] && manifest.mailDrafts == [draft] && manifest.companyTemplates == [template, powerpointTemplate])
     precondition(manifest.documents == [document] && manifest.aiHistory.first?.episode == episode)
+    precondition(manifest.customSkills?.first?.category == skill.category)
+    precondition(manifest.customSkills?.first?.examplePrompts == skill.examplePrompts)
+    precondition(manifest.customSkills?.first?.outputDescription == skill.outputDescription)
     precondition(manifest.projectSources?.first { $0.id == source.id }?.attachedSourceIDs == [attachment.id],
       "attachment link must survive the backup manifest")
     for (name, bytes) in workspaceFiles {

@@ -60,6 +60,7 @@ struct MCPAgentChecks {
       for mode in 0..<21 { try await suspendedExecution(root, phase: phase, mode: mode) }
     }
     try await discovery(root)
+    try await serverSelection(root)
     try await cancelled(root)
     try await retainedResults(root)
     // SDK-dependent code is compiled by Bitrig, not run in this host binary.
@@ -234,7 +235,63 @@ struct MCPAgentChecks {
     let (unknown, cached, _) = try setup(root)
     unknown.mcpServers[0].hasUsageCharges = nil
     let offered = await unknown.loadMCPToolsForAgent(messageID: unknown.message.id)
-    precondition(offered == [cached] && MCPClient.shared.listCalls.isEmpty && MCPClient.shared.cacheReads.count == 1)
+    precondition(offered == [cached] && MCPClient.shared.listCalls.isEmpty && !MCPClient.shared.cacheReads.isEmpty)
+  }
+
+  @MainActor static func serverSelection(_ root: URL) async throws {
+    let (model, original, _) = try setup(root, readOnly: true)
+    for index in 1...5 {
+      var server = model.mcpServers[0]
+      server.id = UUID(); server.name = index == 5 ? "Linear" : "Unrelated \(index)"
+      let tool = MCPTool(serverID: server.id, serverName: server.name, name: index == 5 ? "list_issues" : "unrelated_\(index)",
+        summary: index == 5 ? "Linear issues" : "Other", inputSchema: original.inputSchema, isReadOnly: true)
+      model.mcpServers.append(server)
+      MCPClient.shared.offered[server.id] = [tool]
+    }
+    let last = model.mcpServers.last!
+    let explicit = await model.loadMCPToolsForAgent(messageID: model.message.id, onlyServerIDs: [last.id], request: "課題")
+    precondition(explicit.count == 1 && explicit[0].serverID == last.id)
+    precondition(MCPClient.shared.listCalls == [last.id])
+    MCPClient.shared.listCalls = []
+    let automatic = await model.loadMCPToolsForAgent(messageID: model.message.id, request: "Linearの課題を確認")
+    precondition(automatic.contains { $0.serverID == last.id } && MCPClient.shared.listCalls.contains(last.id))
+    MCPClient.shared.listCalls = []
+    let tooMany = await model.loadMCPToolsForAgent(messageID: model.message.id, onlyServerIDs: Set(model.mcpServers.map(\.id)))
+    precondition(tooMany.isEmpty && MCPClient.shared.listCalls.isEmpty)
+
+    var github = MCPServerConfig.Preset.github.server()
+    github.reviewedEndpoint = github.url; github.hasUsageCharges = false
+    var linear = MCPServerConfig.Preset.linear.server()
+    linear.reviewedEndpoint = linear.url
+    var impostor = github; impostor.id = UUID(); impostor.url = "https://unrelated.example.invalid/mcp"
+    let ids = MCPServerConfig.explicitServerIDs(pluginIDs: ["service:github", "mcp:" + linear.id.uuidString], servers: [impostor, github, linear])
+    precondition(ids == [github.id, linear.id] && !ids.contains(impostor.id))
+    precondition(github.presetHeaders["X-MCP-Toolsets"] == "issues,pull_requests" && impostor.presetHeaders.isEmpty)
+    precondition(!model.saveMCPServer(impostor, token: nil))
+    let legacy = try JSONDecoder().decode(MCPServerConfig.self, from: Data("{\"id\":\"00000000-0000-4000-8000-000000000001\",\"name\":\"Legacy\",\"url\":\"https://example.invalid/mcp\",\"isEnabled\":true}".utf8))
+    precondition(legacy.preset == nil && legacy.validatedPreset == nil)
+
+    let (revoked, tool, call) = try setup(root, readOnly: true)
+    github.id = tool.serverID
+    github.approvedReadToolFingerprints = [tool.name: tool.fingerprint]
+    revoked.mcpServers = [github]
+    KeychainStore.values[github.tokenAccount] = "fixture-only"
+    let gate = HTTPResponseGate()
+    MCPClient.shared.afterDispatch = { await gate.pause() }
+    let running = Task { await revoked.performMCPTool(tool, call: call, messageID: revoked.message.id) }
+    await gate.waitForRequest()
+    revoked.setIntegrationEnabled("github", enabled: false)
+    revoked.setIntegrationEnabled("github", enabled: true)
+    await gate.release()
+    let result = await running.value
+    precondition(result.isError && !result.text.contains("PRIVATE_FIXTURE_RESULT"))
+    let (writeModel, writeTool, writeCall) = try setup(root)
+    var readOnlyServer = MCPServerConfig.Preset.linear.server()
+    readOnlyServer.id = writeTool.serverID; readOnlyServer.reviewedEndpoint = readOnlyServer.url
+    writeModel.mcpServers = [readOnlyServer]
+    let rejectedWrite = await writeModel.performMCPTool(writeTool, call: writeCall, messageID: writeModel.message.id)
+    precondition(rejectedWrite.isError && writeModel.approvals == 0 && MCPClient.shared.dispatched == 0)
+    print("MCP server selection passed: sixth server explicit/automatic, >4 refusal, exact provider UUID binding, endpoint spoof refusal, legacy decoding and provider OFF/ON revocation")
   }
 
   @MainActor static func cancelled(_ root: URL) async throws {

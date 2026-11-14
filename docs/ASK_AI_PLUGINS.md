@@ -61,7 +61,8 @@ npx e2e run tests/screen-polish.e2e.ts tests/answer-actions.e2e.ts tests/minimal
 | 端末のカレンダー | あり | 既存EventKit権限 | 読み取り／承認付き登録 | 端末内エージェントの実読み取りをチャットと開発用完了ログで照合。登録は未検証。Google Calendar OAuthは追加していない |
 | Memora内蔵スキル／検索／記録 | あり | スキル有効化設定 | 既存端末内／BYOKエージェント | 候補、選択、削除、ドラフト、ポリシー検証 |
 | Web検索／Deep Research | あり | 既存Braveキー設定 | 既存承認付きBYOK経路 | キー未設定を表示。有料検索・調査は実行していない |
-| Google Drive／GitHub | 利用不可として表示 | 実接続なし | 未構成Composioが拒否 | 未実装を利用可能として表示しない |
+| Google Drive | 利用不可として表示 | 実接続なし | 未構成Composioが拒否 | 未実装を利用可能として表示しない |
+| GitHub／Linear | 読み取り専用のMCP設定 | Keychainの手動トークン | 確認した接続先UUIDのみ | 実アカウントでの取得は未検証 |
 
 ## 検証
 

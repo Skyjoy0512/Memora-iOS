@@ -66,7 +66,8 @@ enum SemanticToolDiscovery {
   private static func expanded(_ request: String) -> String {
     let aliases = [("メール", " email mail gmail"), ("予定", " calendar event"), ("カレンダー", " calendar"),
       ("タスク", " task todo"), ("資料", " document file"), ("議事録", " meeting notes notion"),
-      ("コード", " code github repository"), ("プルリクエスト", " pull request github")]
+      ("コード", " code github repository"), ("プルリクエスト", " pull request github"),
+      ("課題", " issue linear"), ("イシュー", " issue"), ("ギットハブ", " github"), ("リニア", " linear")]
     return String(request.prefix(3_500)) + aliases.filter { request.localizedCaseInsensitiveContains($0.0) }.map(\.1).joined()
   }
 }

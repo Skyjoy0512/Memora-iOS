@@ -4,6 +4,10 @@ extension MemoraModel {
   @discardableResult
   func sendPluginChat(_ question: String, pluginIDs: [String], attachment: AIAttachment?, preparedAttachment: PreparedAIAttachment? = nil) -> Bool {
     guard !isAIChatResponding else { return false }
+    guard MCPServerConfig.explicitServerIDs(pluginIDs: pluginIDs, servers: mcpServers).count <= 4 else {
+      aiRequestRefusalMessage = "1つの依頼で指定できるMCP接続先は4件までです。指定を減らしてください。入力と添付は保持しています。"
+      return false
+    }
     func refuse(_ reason: String) -> Bool {
       if attachment != nil { aiRequestRefusalMessage = reason; return false }
       var user = AIChatMessage(role: .user, text: question)

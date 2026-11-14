@@ -8,7 +8,7 @@ struct IntegrationDetailView: View {
   @Environment(\.scenePhase) private var scenePhase
 
   var body: some View {
-    let state = model.integrationState(service)
+    let state = model.pluginCatalog().first { $0.id == "service:" + service.id }?.state ?? model.integrationState(service)
     ScrollView {
       VStack(alignment: .leading, spacing: MemoraSpacing.section) {
         MarketplaceDetailHero(item: .service(service), subtitle: "コネクタ") { EmptyView() }
@@ -92,6 +92,11 @@ struct IntegrationDetailView: View {
     case "mcp":
       NavigationLink { MCPServersView() } label: { actionLabel("コネクタを追加・管理") }
         .buttonStyle(.plain)
+    case "github", "linear":
+      if let preset = MCPServerConfig.Preset(rawValue: service.id) {
+        NavigationLink { MCPServiceSettingsView(preset: preset) } label: { actionLabel(ready ? "接続を管理" : "接続") }
+          .buttonStyle(.plain)
+      }
     case "calendar":
       if CalendarService.access != .granted {
         Button {
@@ -115,7 +120,7 @@ struct IntegrationDetailView: View {
 
   private var accessLabel: String {
     switch service.id {
-    case "gmail": "読み取り専用"
+    case "gmail", "github", "linear": "読み取り専用"
     case "calendar": "予定の閲覧・追加"
     case "notion": "ページの作成"
     case "mcp": "接続先に準ずる"

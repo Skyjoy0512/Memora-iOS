@@ -7,6 +7,7 @@ struct MCPServerEditor: View {
   @State private var server: MCPServerConfig
   @State private var token = ""
   @State private var checkedTools: [MCPTool]?
+  @State private var inventoryIsPartial = false
   @State private var errorMessage: String?
   @State private var isChecking = false
   @State private var checkingTask: Task<Void, Never>?
@@ -26,10 +27,15 @@ struct MCPServerEditor: View {
       MemoraForm {
         Section {
           TextField("名前（例: Notion）", text: $server.name)
-          TextField("https://…/mcp", text: $server.url)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .keyboardType(.URL)
+          if let preset = server.validatedPreset {
+            LabeledContent("アクセス", value: "読み取り専用")
+            Text(preset.tokenGuidance).font(.subheadline).foregroundStyle(.secondary)
+          } else {
+            TextField("https://…/mcp", text: $server.url)
+              .textInputAutocapitalization(.never)
+              .autocorrectionDisabled()
+              .keyboardType(.URL)
+          }
           Toggle("エージェントで使う", isOn: $server.isEnabled)
         }
         .disabled(isChecking)
@@ -45,9 +51,11 @@ struct MCPServerEditor: View {
         }
 
         Section {
-          Toggle("ブラウザーでサインイン（OAuth）", isOn: Binding(
-            get: { server.oauth != nil },
-            set: { server.oauth = $0 ? MCPOAuthSettings() : nil; token = "" }))
+          if server.preset == nil {
+            Toggle("ブラウザーでサインイン（OAuth）", isOn: Binding(
+              get: { server.oauth != nil },
+              set: { server.oauth = $0 ? MCPOAuthSettings() : nil; token = "" }))
+          }
           if server.oauth != nil {
             TextField("公開Client ID", text: oauthBinding(\.clientID))
               .textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -73,8 +81,9 @@ struct MCPServerEditor: View {
               }
             }
           } else {
-            SecureField(isNew ? "アクセストークン（必要な場合）" : "変更するときだけ入力", text: $token)
+            SecureField(isNew ? (server.preset == nil ? "アクセストークン（必要な場合）" : "アクセストークン") : "変更するときだけ入力", text: $token)
               .textInputAutocapitalization(.never).autocorrectionDisabled()
+              .accessibilityIdentifier("connector.token")
           }
         } footer: {
           Text(server.oauth == nil ? "Bearerトークンはキーチェーンに保存し、画面には再表示しません。" : "認可・トークンURLは同じホストの公開クライアント・PKCE対応の認証先に限定します。戻り先を事前登録してください。Client Secretは入力しません。権限と認証先を確認した後だけサインインします。解除は端末内の認証情報を削除します。サーバー側の許可取消はサービスの設定で行ってください。")
@@ -90,12 +99,18 @@ struct MCPServerEditor: View {
               if isChecking { ProgressView() }
             }
           }
-          .disabled(isChecking || server.url.trimmingCharacters(in: .whitespaces).isEmpty)
+          .disabled(isChecking || !isValid)
+          .accessibilityIdentifier("connector.check")
 
           if let checkedTools {
-            Text(checkedTools.isEmpty ? "接続できましたが、道具がありません。" : "\(checkedTools.count)個の道具が提供されています")
+            Text(checkedTools.isEmpty ? "接続できましたが、利用できるツールがありません。" : "読み込んだツール \(checkedTools.count)件\(inventoryIsPartial ? "（一部）" : "")")
               .font(.subheadline.weight(.medium))
-            ForEach(checkedTools.prefix(20)) { tool in
+            if inventoryIsPartial {
+              Text("件数・ページ数・形式の上限により一部を読み込んでいます。サーバーの全ツール数ではありません。")
+                .font(.footnote).foregroundStyle(.secondary)
+                .accessibilityIdentifier("connector.partialInventory")
+            }
+            ForEach(checkedTools) { tool in
               VStack(alignment: .leading, spacing: 2) {
                 Text(tool.name).font(.subheadline)
                 Text(tool.isReadOnly ? "読み取り" : "実行前に確認")
@@ -104,6 +119,8 @@ struct MCPServerEditor: View {
               }
             }
           }
+          Text("1接続先から最大40ツール・4ページを確認し、1回の回答には最大4接続先・16ツールを選びます。")
+            .font(.footnote).foregroundStyle(.secondary)
           if let errorMessage {
             Label(errorMessage, icon: .exclamationmarkTriangle)
               .foregroundStyle(.secondary)
@@ -115,7 +132,7 @@ struct MCPServerEditor: View {
       .onDisappear { authorizationTask?.cancel(); checkingTask?.cancel(); browser.cancel() }
       .onChange(of: server.oauth) { _, _ in checkedTools = nil; server.reviewedEndpoint = nil; server.approvedReadToolFingerprints = nil }
       .onChange(of: token) { _, _ in checkedTools = nil; server.approvedReadToolFingerprints = nil }
-      .navigationTitle(isNew ? "接続先を追加" : "接続先を編集")
+      .navigationTitle(server.validatedPreset?.name ?? (isNew ? "接続先を追加" : "接続先を編集"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -133,6 +150,7 @@ struct MCPServerEditor: View {
 
   private var isValid: Bool {
     (try? MCPConnectionPolicy.endpoint(server.url)) != nil && (server.oauth == nil || (try? MCPOAuthPolicy.validated(server.oauth!)) != nil)
+      && (server.preset == nil || (!token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || KeychainStore.has(server.tokenAccount)))
   }
 
   @discardableResult
@@ -192,6 +210,7 @@ struct MCPServerEditor: View {
     checkingTask = Task {
       do {
         let tools = try await model.checkMCPServer(snapshot)
+        let partial = await MCPClient.shared.inventoryIsPartial(on: snapshot.id)
         try Task.checkCancellation()
         let endpoint = try MCPConnectionPolicy.endpoint(snapshot.url).absoluteString
         guard revision == model.mcpCredentialRevisions[snapshot.id], model.mcpServers.contains(snapshot),
@@ -201,6 +220,7 @@ struct MCPServerEditor: View {
         }
         server.url = endpoint
         checkedTools = tools
+        inventoryIsPartial = partial
         server.reviewedEndpoint = endpoint
         model.saveMCPServer(server, token: nil)
       } catch {

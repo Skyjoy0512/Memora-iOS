@@ -15,6 +15,15 @@ test('requires verified identity; rejects unknown tools and invalid definitions'
  assert.throws(()=>definition({...skill,skill:{...skill.skill,instructions:'x'.repeat(6001)}}));
  assert.throws(()=>definition({version:1,kind:'template',template:{title:'空',detail:'',category:'meetings',sections:[]}}));
 });
+test('optional skill metadata survives sanitization and rejects unbounded values',()=>{
+ const metadata={category:'learning',examplePrompts:['この講義から復習クイズを作って'],outputDescription:'問題と解説'};
+ const result=definition({...skill,skill:{...skill.skill,...metadata}}).skill;
+ for(const key of Object.keys(metadata)) assert.deepEqual(result[key],metadata[key]);
+ for(const invalid of [{category:'shell'},{examplePrompts:['a','b','c','d']},{examplePrompts:['行\n改行']},{outputDescription:'x'.repeat(241)}]) {
+  assert.throws(()=>definition({...skill,skill:{...skill.skill,...invalid}}));
+ }
+ assert.equal(definition(skill).skill.category,undefined);
+});
 test('publication is pending, immutable and idempotent; cannot forge counters/author',async()=>{
  const {db,api}=setup(),request={action:'publish',definition:skill,authorName:'作者',requestID:randomUUID(),acceptedTerms:'2026-10',likes:999,authorID:'other',status:'published'};
  const {post}=await api(request,'owner');assert.equal(post.status,'pending');assert.equal(post.likes,0);assert.equal(post.authorID,'owner');

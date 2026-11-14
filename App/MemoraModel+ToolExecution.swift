@@ -26,8 +26,8 @@ extension MemoraModel {
     for tool in activeMCPTools.values {
       let server = mcpServers.first { $0.id == tool.serverID }
       var definition = tool.definition
-      definition.isAvailable = server?.reviewedEndpoint == server?.url
-      definition.isEnabled = server?.isEnabled == true && integrationIsEnabled("mcp")
+      definition.isAvailable = server.map { $0.reviewedEndpoint == $0.url && ($0.validatedPreset == nil || tool.isReadOnly) } ?? false
+      definition.isEnabled = server.map { mcpServerIsEnabled($0) } ?? false
       _ = registry.register(definition)
     }
     return registry

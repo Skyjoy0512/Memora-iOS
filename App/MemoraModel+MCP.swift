@@ -10,12 +10,13 @@ extension MemoraModel {
     var server = server
     let previous = mcpServers.first { $0.id == server.id }
     guard let endpoint = try? MCPConnectionPolicy.endpoint(server.url), MCPConnectionPolicy.tokenIsValid(token) else { return false }
+    guard server.preset == nil || server.validatedPreset != nil else { return false }
     if let oauth = server.oauth {
       guard let normalized = try? MCPOAuthPolicy.validated(oauth) else { return false }
       server.oauth = normalized
     }
     server.url = endpoint.absoluteString
-    if previous?.url != server.url || previous?.oauth != server.oauth {
+    if previous?.url != server.url || previous?.oauth != server.oauth || previous?.preset != server.preset {
       guard KeychainStore.set(nil, forKey: server.tokenAccount), KeychainStore.set(nil, forKey: server.oauthAccount) else { return false }
       mcpCredentialRevisions[server.id] = UUID()
       Task { await MCPOAuthClient.shared.cancel(server.id) }
@@ -33,7 +34,7 @@ extension MemoraModel {
     } else {
       mcpServers.append(server)
     }
-    if previous?.url != server.url || previous?.oauth != server.oauth || token != nil { Task { await MCPClient.shared.forget(server.id) } }
+    if previous?.url != server.url || previous?.oauth != server.oauth || previous?.preset != server.preset || token != nil { Task { await MCPClient.shared.forget(server.id) } }
     return true
   }
 
@@ -60,15 +61,24 @@ extension MemoraModel {
   func loadMCPToolsForAgent(messageID: UUID, onlyServerIDs: Set<UUID>? = nil, request: String = "") async -> [MCPTool] {
     guard let context = MCPAgentExecutionContext(in: self, messageID: messageID) else { return [] }
     guard integrationIsEnabled("mcp") else { activeMCPTools.removeAll(); return [] }
+    guard onlyServerIDs.map({ $0.count <= 4 }) ?? true else { return [] }
     var tools: [MCPTool] = []
     var snapshots: [UUID: (MCPServerConfig, UUID?, String?)] = [:]
-    let servers = mcpServers.filter { $0.isEnabled && $0.reviewedEndpoint == $0.url && (onlyServerIDs?.contains($0.id) ?? true) }
-    for server in servers.prefix(4) {
+    let eligible = mcpServers.filter { mcpServerIsEnabled($0) && $0.reviewedEndpoint == $0.url && (onlyServerIDs?.contains($0.id) ?? true) }
+    var candidates: [SemanticToolDiscovery.Candidate] = []
+    for server in eligible {
+      let cached = await MCPClient.shared.reviewedCachedTools(on: server)
+      guard context.isCurrent(in: self) else { return [] }
+      candidates.append(.init(id: server.id.uuidString, name: server.name + " " + (server.validatedPreset?.rawValue ?? ""),
+        summary: cached.map { $0.name + " " + String($0.summary.prefix(160)) }.joined(separator: " "), schemaBytes: 0))
+    }
+    let selectedServers = Set(SemanticToolDiscovery.select(candidates, request: request, explicit: onlyServerIDs != nil, limit: 4, byteLimit: 0))
+    for server in eligible where selectedServers.contains(server.id.uuidString) {
       let revision = mcpCredentialRevisions[server.id]
       let token = KeychainStore.string(forKey: server.tokenAccount)
       let current: @MainActor @Sendable () -> Bool = { [weak self] in
         guard let self else { return false }
-        return context.isCurrent(in: self) && self.integrationIsEnabled("mcp") &&
+        return context.isCurrent(in: self) && self.mcpServerIsEnabled(server) &&
           self.mcpServers.contains(server) && self.mcpCredentialRevisions[server.id] == revision &&
           KeychainStore.string(forKey: server.tokenAccount) == token
       }
@@ -84,13 +94,13 @@ extension MemoraModel {
       guard context.isCurrent(in: self) else { return [] }
       guard current() else { continue }
       snapshots[server.id] = (server, revision, token)
-      tools.append(contentsOf: offered.filter { $0.serverID == server.id }.prefix(40))
+      tools.append(contentsOf: offered.filter { $0.serverID == server.id && (server.validatedPreset == nil || $0.isReadOnly) }.prefix(40))
     }
     guard context.isCurrent(in: self) else { return [] }
     // An earlier server may have changed while a later server was suspended.
     tools = tools.filter { tool in
       guard let (server, revision, token) = snapshots[tool.serverID] else { return false }
-      return integrationIsEnabled("mcp") && mcpServers.contains(server) &&
+      return mcpServerIsEnabled(server) && mcpServers.contains(server) &&
         mcpCredentialRevisions[server.id] == revision && KeychainStore.string(forKey: server.tokenAccount) == token
     }
     let selected = SemanticToolDiscovery.select(tools.map {
@@ -104,7 +114,8 @@ extension MemoraModel {
 
   func performMCPTool(_ tool: MCPTool, call: AgentToolCall, messageID: UUID) async -> AgentToolOutcome {
     guard let context = MCPAgentExecutionContext(in: self, messageID: messageID),
-          integrationIsEnabled("mcp"), let server = mcpServers.first(where: { $0.id == tool.serverID }), server.isEnabled,
+          let server = mcpServers.first(where: { $0.id == tool.serverID }), mcpServerIsEnabled(server),
+          server.validatedPreset == nil || tool.isReadOnly,
           server.reviewedEndpoint == server.url, activeMCPTools[call.name]?.fingerprint == tool.fingerprint,
           call.name == tool.agentName,
           toolRegistry().permits(call.name, arguments: call.arguments, policy: agentPluginPolicies[messageID]),
@@ -115,7 +126,7 @@ extension MemoraModel {
     let token = KeychainStore.string(forKey: server.tokenAccount)
     let current: @MainActor @Sendable () -> Bool = { [weak self] in
       guard let self else { return false }
-      return context.isCurrent(in: self) && self.integrationIsEnabled("mcp") &&
+      return context.isCurrent(in: self) && self.mcpServerIsEnabled(server) &&
         self.mcpServers.contains(server) && self.mcpCredentialRevisions[server.id] == credentialRevision &&
         KeychainStore.string(forKey: server.tokenAccount) == token &&
         self.activeMCPTools[call.name]?.fingerprint == tool.fingerprint &&

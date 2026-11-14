@@ -94,10 +94,14 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - **Marketplace**: `ToolsView` retains the saved Tools destination and opens
   マーケットプレイス from the side menu. It shows an active-item icon strip and
   skill/template/integration rows. Rows open the existing details; section headings
-  open each full catalog. The title picker changes category, and the floating
+  open each full catalog. Visible content tabs change category without clearing the query, and the floating
   bottom search spans all three catalogs and custom items on the home view;
   category search stays scoped. Creation/import, template management and MCP
   registration remain reachable through native menus and the Settings editors.
+  My tools includes used skills, added templates and connected services, never all enabled skills.
+  GitHub/Linear presets bind service mentions to reviewed MCP UUIDs and fixed read-only endpoints.
+  Keep the four-server, sixteen-tool and 24KiB prompt limits. Explicit selections over four
+  are refused before clearing the composer. Automatic server choice uses local reviewed metadata.
   Community publishing uses the Firebase REST client and server implementation in
   `backend/marketplace`. Until `MemoraMarketplaceURL` and `MemoraFirebaseAPIKey` are
   configured and deployed, show it as unavailable; never fabricate posts or counts.

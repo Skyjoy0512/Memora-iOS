@@ -15,6 +15,10 @@ extension MemoraModel {
     case "notion": return NotionService.isConfigured ? .ready : .setup("Notionのトークンと保存先ページを設定してください。検索・閲覧は未対応です。")
     case "calendar": return CalendarService.access == .granted ? .ready : .setup("端末のカレンダーへのアクセスを許可してください。")
     case "mcp": return .setup("登録・接続確認・ツールと料金の確認を行ってください。")
+    case "github", "linear":
+      guard integrationIsEnabled("mcp") else { return .setup("MCP連携が無効です。連携設定で有効にしてください。") }
+      return mcpServers.contains { $0.validatedPreset?.rawValue == service.id && mcpServerIsEnabled($0) && mcpConnectionIsReviewed($0) }
+        ? .ready : .setup("読み取り用トークンを登録し、接続・ツール・料金を確認してください。ツール対応のクラウドAIで使用できます。")
     default: return .unavailable("現在利用できません。")
     }
   }
@@ -28,10 +32,13 @@ extension MemoraModel {
     let registry = toolRegistry()
     var entries = IntegrationCatalog.services.map { service in
       let state = integrationState(service)
+      let isMCPPreset = MCPServerConfig.Preset(rawValue: service.id) != nil
+      let serverIDs = Set(mcpServers.filter { $0.validatedPreset?.rawValue == service.id }.map(\.id))
+      let toolIDs = isMCPPreset ? Set(activeMCPTools.values.filter { serverIDs.contains($0.serverID) }.map(\.id)) : Set(service.toolNames.map { "memora:" + $0 })
       return AIPlugin(id: "service:" + service.id, name: service.name, summary: service.summary, aliases: service.aliases,
         kind: state.isReady ? .connected : (isConnectable(state) ? .connectable : .unavailable),
-        state: state, toolIDs: Set(service.toolNames.map { "memora:" + $0 }), permissions: [service.permissions],
-        cost: service.id == "calendar" ? .local : .unknown, provider: service.id == "mcp" ? .mcp : (service.isImplemented ? .directAPI : .composio), serviceID: service.id)
+        state: state, toolIDs: toolIDs, permissions: [service.permissions],
+        cost: service.id == "calendar" ? .local : .unknown, provider: service.id == "mcp" || isMCPPreset ? .mcp : (service.isImplemented ? .directAPI : .composio), serviceID: service.id)
     }
     let availableToolNames = Set(registry.tools.values.filter { $0.isAvailable && $0.isEnabled }.map(\.name))
     let onDeviceTools = AIEngineService.effectiveEngine(askAIConfiguration.engine) == .cloud ? nil : Set(AgentTool.onDeviceTools.map(\.rawValue))
@@ -60,8 +67,7 @@ extension MemoraModel {
     }
     for server in mcpServers {
       let tools = registry.tools.values.filter { $0.requiredPermissions == ["mcp:" + server.id.uuidString] }
-      let ready = server.isEnabled && integrationIsEnabled("mcp") && server.reviewedEndpoint == server.url
-        && !tools.isEmpty && tools.allSatisfy { $0.isAvailable && $0.isEnabled }
+      let ready = mcpServerIsEnabled(server) && mcpConnectionIsReviewed(server)
       entries.append(AIPlugin(id: "mcp:" + server.id.uuidString, name: server.name, summary: "登録済みMCPサーバー", aliases: tools.flatMap { [$0.name, $0.summary] },
         kind: ready ? .connected : .connectable, state: ready ? .ready : .setup("MCP設定で接続先・認証・ツール・料金を確認してください。"),
         toolIDs: Set(tools.map(\.id)), permissions: ["mcp:" + server.id.uuidString], cost: server.hasUsageCharges.map { $0 ? .paid : .verifiedFree } ?? .unknown, provider: .mcp, serviceID: "mcp"))
@@ -69,7 +75,7 @@ extension MemoraModel {
     return entries.map { entry in
       var entry = entry
       if entry.state.isReady, let onDeviceTools,
-         !entry.toolIDs.isSubset(of: Set(onDeviceTools.map { "memora:" + $0 })) {
+         entry.provider == .mcp || !entry.toolIDs.isSubset(of: Set(onDeviceTools.map { "memora:" + $0 })) {
         entry.state = .setup("この指定にはツール対応のクラウドAI（BYOK）が必要です。AI整理で選んでください。")
       }
       return entry

@@ -18,12 +18,17 @@ struct WebSourceRequest: Sendable {
     let target = path + (components.percentEncodedQuery.map { "?" + $0 } ?? "")
     guard target.utf8.allSatisfy({ (33...126).contains($0) }) else { throw WebSourceFailure.unsafeAddress }
     // Callers cannot override framing, the validated Host, or connection policy.
-    let allowed = Set(["accept", "content-type", "authorization", "mcp-protocol-version", "mcp-session-id"])
+    var allowed = Set(["accept", "content-type", "authorization", "mcp-protocol-version", "mcp-session-id"])
+    let githubHeaders = ["x-mcp-toolsets": "issues,pull_requests", "x-mcp-readonly": "true"]
+    if checked.absoluteString == "https://api.githubcopilot.com/mcp/readonly", body != nil {
+      allowed.formUnion(githubHeaders.keys)
+    }
     var fields: [String: String] = [:]
     for (name, value) in headers {
       let key = name.lowercased()
       guard allowed.contains(key), fields[key] == nil, value.utf8.count <= 8_192,
             value.utf8.allSatisfy({ (32...126).contains($0) }) else { throw WebSourceFailure.unsafeAddress }
+      if let expected = githubHeaders[key], value != expected { throw WebSourceFailure.unsafeAddress }
       fields[key] = value
     }
     guard body?.count ?? 0 <= 64 * 1024 else { throw WebSourceFailure.tooLarge }

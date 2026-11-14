@@ -10,7 +10,7 @@ struct AIPluginIcon {
     if pluginID.hasPrefix("mcp:") { return "service.mcp" }
     guard pluginID.hasPrefix("service:") else { return nil }
     let service = String(pluginID.dropFirst(8))
-    return ["gmail", "drive", "notion", "github", "mcp"].contains(service) ? "service." + service : nil
+    return ["gmail", "drive", "notion", "github", "linear", "mcp"].contains(service) ? "service." + service : nil
   }
 
   static func resolve(pluginID: String, name: String, iconIdentifier: String? = nil) -> Self {
