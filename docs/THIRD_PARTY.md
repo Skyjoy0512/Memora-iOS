@@ -110,3 +110,10 @@ annotated tag `d45383e66e09c6c179ab593a31c2624e8fbb81fb` の実コミット
 上流のPython lint/diff/checkやインストール手順・フックは導入しない。追加API呼び出しなし。
 同梱MITライセンスは上流と同一（SHA256 `79d802f15bc8caf67f1a83c1bdbe214ccb41a0a0275f9046b329b89c65ee1fca`）。
 指示の組み込みはホストテストで検証。実モデルでの文章品質・意味保持のA/B評価は未実施。
+
+## J-MeetEval (development evaluation only)
+
+Copyright 2026 Nishika, Inc. Apache License 2.0. Pinned upstream code and public
+synthetic benchmark data are under `tools/evaluation/vendor/jmeeteval`, including
+its unmodified LICENSE and NOTICE. They are excluded from app targets. See
+[the integration and exact revisions](JMEETEVAL_INTEGRATION.md).

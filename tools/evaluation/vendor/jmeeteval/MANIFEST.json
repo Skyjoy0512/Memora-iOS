@@ -1,0 +1,47 @@
+{
+  "code": {
+    "repository": "nishika-inc/jmeeteval",
+    "revision": "25365d48d1a4d685ed5b7dc62037ab2c95ae64f8",
+    "license": "Apache-2.0"
+  },
+  "dataset": {
+    "repository": "nishika-inc/jmeeteval",
+    "revision": "6d3fc778e8ab2572ac52e79ae1dbd052fdc9a243",
+    "license": "Apache-2.0"
+  },
+  "sha256": {
+    "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "NOTICE": "425a874fffc2386ae4a134d9d4f533516d621e72d7d6e36dffbd96ebf09e43fe",
+    "README.md": "8aa102bc7348b6ac4b06fe786d1b8880d8fafe3b83e67681444ceaa46daf0922",
+    "data/instructions.jsonl": "bd002dddf786b34b481c0efe7833e23701ac569edc9deb7719841aa506bc8d83",
+    "data/transcripts.jsonl": "75bad4822a5796c0b424f3fab8a7a6a2ff33a220044abbb0af0581fef18834dc",
+    "jmeeteval/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "jmeeteval/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "jmeeteval/core/async_llm_client.py": "2e99fa5dee36b848557b3d680ceac2bd9f63da3e46db49e3f8a272a61f8c3027",
+    "jmeeteval/core/meeting_instructions.py": "b2db275fc548921ed295fbe4cb6f0947773cf74dc4ad5ee890ef24e7251f8d94",
+    "jmeeteval/core/meeting_instructions_registry.py": "d01dcb504d3458192aacb3e99e728cff57cec36a793336517f3210e913f46cbd",
+    "jmeeteval/core/model.py": "ce8941a70f49080d1a084d3a4af4a6b6b1e061933023cfbaed63d625b39e2cee",
+    "jmeeteval/core/usage_tracker.py": "49b7b7c6c59a5dd58b30c6198157f7bb7b0d353c823cff7b7a2e9582e690096a",
+    "jmeeteval/evaluation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "jmeeteval/evaluation/format_results.py": "1efc255998907b82ab98fbc3eee9f92dc2bb9971292ae779a594e0a214ea9a80",
+    "jmeeteval/evaluation/meeting_evaluation_lib.py": "57111f3f8f674158823072099c94671b51c6bc61dd2fd63029d56093540bcdba",
+    "jmeeteval/evaluation/meeting_evaluation_main.py": "37b55abe5a394488a7a94a5a074ae84894846f8f02726b8579fe49791ca909b8",
+    "jmeeteval/generate/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "jmeeteval/generate/generate_meeting_responses.py": "5addd33add85e44e2ecfaf98347019b39c9d41e06ff01770ee550e6b1fb56e29",
+    "jmeeteval/generate/response_generator.py": "0f7565d40e2f26479298e6d1a41d55144667d30c7af822b695e93bdd85d98704",
+    "pyproject.toml": "7d7d8d468595883b3e03be96966ce2f0fc96d1ae501e6cc56e92c3b95aad4609",
+    "test/__init__.py": "7a867a19f89f6ea84c2cdce396a44356297ecb20643a654df6e8d280958d0656",
+    "test/test_evaluation_scoring.py": "c290833189f2d6e812fa61bdb67d5bbe23fa884a03e01ee2e57d1fe52d20fd95",
+    "test/test_format_results.py": "b89b049b1d51894ee76cf00e9da6e75d9dcac60139cbe199b214fdb9f27632f6",
+    "test/test_generation_params.py": "1c7c8e75f9c85de5948d9a6345fe3a1e6a116aed0512da9bd9340cfcf6fef64b",
+    "test/test_judge_context.py": "40bb6d460f378dcf71712840742ea23a0adfca44e7c27fcc7b41f775a3fcb45a",
+    "test/test_judge_loop_safety.py": "73399590738e432c108a834cf4ffe64f469e102fc1fc29e905be81b53b5ef186",
+    "test/test_judge_safety_guards.py": "72d037f2811756c42f2076770402fdc960051d811828d00e3e0dd8bf94f5287e",
+    "test/test_number_format_checker.py": "86734a527f135cbec45b8974b20b8541bf0fae82f35516f4d0deef52d14c0a3a",
+    "test/test_order_specification_llm_checker.py": "71e9160bc0587cf5432bd2f4074881d3191af18e0f4646c0c00fa92aa978c5ed",
+    "test/test_pipeline_reporting.py": "f7164f8918905bffdf9d9ee3778b2dc78478dc503612a62d2add6e3f25cc6364",
+    "test/test_sentence_limit_checker.py": "f81b351c78301bba2861994a9abf4906e9d1f8fb70696305c659aa645090afb0",
+    "test/test_writing_style_llm_checker.py": "3994f0b6b7bf638d4456aba9a460512061cbff80564c4d5323ed93811ded70c5",
+    "jmeet_eval_pipeline.py": "cba3fa7c88bf30ee42917a4eb60ad2d34c183d880cbf1f7751f3b1eab4f2eead"
+  }
+}

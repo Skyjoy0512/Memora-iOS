@@ -1,0 +1,50 @@
+[
+  {
+    "repository": "microsoft/LLMLingua",
+    "revision": "01b9e9481d7395e1e83a48df4a062b11f6304325",
+    "license": "MIT",
+    "updatedAt": "2026-11-13T21:43:20Z"
+  },
+  {
+    "repository": "estebanstifli/Meet2Notes",
+    "revision": "b75077e588f5623d48d9c9bac05aa428b4257c52",
+    "license": "MIT",
+    "updatedAt": "2026-11-12T14:08:01Z"
+  },
+  {
+    "repository": "nishika-inc/jmeeteval",
+    "revision": "25365d48d1a4d685ed5b7dc62037ab2c95ae64f8",
+    "license": "Apache-2.0",
+    "updatedAt": "2026-11-02T09:59:58Z"
+  },
+  {
+    "repository": "langchain-ai/langchain",
+    "revision": "ea17e48f0a4336c920394fd029de99f1568b4c38",
+    "license": "MIT",
+    "updatedAt": "2026-11-14T12:42:20Z"
+  },
+  {
+    "repository": "run-llama/llama_index",
+    "revision": "99d7433f6f71888951379ccca9294e272442c832",
+    "license": "MIT",
+    "updatedAt": "2026-11-14T12:25:08Z"
+  },
+  {
+    "repository": "joaquingit1/loqui",
+    "revision": "ed81308d5795bb12097d75a6b0798d7b57d79bc4",
+    "license": "MIT",
+    "updatedAt": "2026-10-31T03:35:27Z"
+  },
+  {
+    "repository": "imagination-research/sot",
+    "revision": "54f506fee30b762f794321f56d9fc1daeac438bf",
+    "license": "MIT",
+    "updatedAt": "2026-09-30T04:53:03Z"
+  },
+  {
+    "repository": "toon-format/toon",
+    "revision": "22caca377f08d737789a2ca60ab02c425a3aa947",
+    "license": "MIT",
+    "updatedAt": "2026-11-14T12:15:58Z"
+  }
+]

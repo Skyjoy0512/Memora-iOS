@@ -1,0 +1,41 @@
+[project]
+name = "jmeeteval"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "absl-py>=2.3.1",
+    "openai>=2.7.2",
+    "python-dotenv>=1.0.0",
+    "aiohttp",
+    "certifi",
+    "pydantic>=2.0",
+    "huggingface_hub",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.4.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.14.5",
+    "ty>=0.0.12",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["I", "F", "E", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+# LLM judge用プロンプト文字列に120字超の日本語行が含まれるため
+"jmeeteval/core/meeting_instructions.py" = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["test"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

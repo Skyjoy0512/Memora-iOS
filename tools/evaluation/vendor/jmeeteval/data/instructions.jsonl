@@ -1,0 +1,52 @@
+{"id": "inst_001", "instruction_key": "writing_style:number_format", "instruction_text": "数値は全角で統一すること。", "instruction_kwargs": {"format_type": "zenkaku"}}
+{"id": "inst_002", "instruction_key": "writing_style:number_format", "instruction_text": "数値は半角で統一すること。", "instruction_kwargs": {"format_type": "hankaku"}}
+{"id": "inst_003", "instruction_key": "length_control:character_limit", "instruction_text": "500文字以内でまとめること。", "instruction_kwargs": {"max_chars": 500}}
+{"id": "inst_004", "instruction_key": "length_control:character_limit", "instruction_text": "150〜200字でまとめること。", "instruction_kwargs": {"exact_range": true, "max_chars": 200, "min_chars": 150}}
+{"id": "inst_005", "instruction_key": "length_control:proportion", "instruction_text": "元の分量の2割程度にまとめること。", "instruction_kwargs": {"proportion": 0.2}}
+{"id": "inst_006", "instruction_key": "length_control:sentence_limit", "instruction_text": "3文以内でまとめること。", "instruction_kwargs": {"max_sentences": 3}}
+{"id": "inst_007", "instruction_key": "length_control:sentence_limit", "instruction_text": "1文は20文字以内にすること。", "instruction_kwargs": {"sentence_length": 20}}
+{"id": "inst_008", "instruction_key": "output_constraint:no_punctuation", "instruction_text": "句点は除くこと。", "instruction_kwargs": {}}
+{"id": "inst_009", "instruction_key": "output_constraint:filler_removal", "instruction_text": "あのー、えっと、などのフィラーを除くこと。", "instruction_kwargs": {}}
+{"id": "inst_010", "instruction_key": "output_constraint:no_ending_phrase", "instruction_text": "文章の末尾の「以上」は不要とすること。", "instruction_kwargs": {}}
+{"id": "inst_011", "instruction_key": "output_constraint:only_minutes", "instruction_text": "不要な出力を含めないこと：指示文の繰り返し、挨拶や断り書き、作業開始の宣言、余計な説明や解説、個人的な意見や感想", "instruction_kwargs": {"constraint_type": "no_unnecessary"}}
+{"id": "inst_012", "instruction_key": "output_constraint:only_minutes", "instruction_text": "指示内容を繰り返したり、作業開始の宣言をしたりせず、直接内容に入ること。", "instruction_kwargs": {"constraint_type": "no_meta_text"}}
+{"id": "inst_013", "instruction_key": "output_constraint:only_minutes", "instruction_text": "議事録や要約の内容のみを出力し、それ以外の一切の文言を含めないこと", "instruction_kwargs": {"constraint_type": "strict_content_only"}}
+{"id": "inst_014", "instruction_key": "language_translation:japanese_summary", "instruction_text": "要約は日本語で記載すること。", "instruction_kwargs": {}}
+{"id": "inst_015", "instruction_key": "language_translation:english_translation", "instruction_text": "全体を英語に翻訳すること。", "instruction_kwargs": {}}
+{"id": "inst_016", "instruction_key": "structural_granularity:topics_paragraphs", "instruction_text": "主要トピックを3つ挙げること。", "instruction_kwargs": {"granularity_type": "topics", "count": 3}}
+{"id": "inst_017", "instruction_key": "structural_granularity:topics_paragraphs", "instruction_text": "段落2つで構成すること。", "instruction_kwargs": {"granularity_type": "paragraphs", "count": 2}}
+{"id": "inst_018", "instruction_key": "structural_granularity:topics_paragraphs", "instruction_text": "セクションを{count}個挙げること。セクションは見出し記号■で区切ること。\n例：■ セクションタイトル", "instruction_kwargs": {"granularity_type": "sections"}}
+{"id": "inst_019", "instruction_key": "annotation:ending_note", "instruction_text": "末尾に「P.S. この要約は内部共有のみです。」という文言を付け加えること。", "instruction_kwargs": {"ending_text": "P.S. この要約は内部共有のみです。"}}
+{"id": "inst_020", "instruction_key": "annotation:ending_note", "instruction_text": "末尾に「社内共有限定」という文言を付け加えること。", "instruction_kwargs": {"ending_text": "社内共有限定"}}
+{"id": "inst_021", "instruction_key": "annotation:beginning_note", "instruction_text": "冒頭に【社外秘】と明記すること。", "instruction_kwargs": {"beginning_text": "【社外秘】"}}
+{"id": "inst_022", "instruction_key": "template_filling:template", "instruction_text": "【会議名】【日時】【参加者】【概要】の形式で記載すること。", "instruction_kwargs": {"template_type": "basic"}}
+{"id": "inst_023", "instruction_key": "template_filling:template", "instruction_text": "ToDoを抽出して以下の形式で記載すること\nただし担当者が不明の場合は担当者不明、期限が不明の場合は期限不明と記載すること。\n例:\n■ ToDo \n①：[タスク内容]：対応者[ ]：期限[ ]", "instruction_kwargs": {"template_type": "todo"}}
+{"id": "inst_024", "instruction_key": "formatting:bullet_points", "instruction_text": "箇条書きで5点にまとめること。", "instruction_kwargs": {"num_points": 5}}
+{"id": "inst_025", "instruction_key": "formatting:bullet_points", "instruction_text": "箇条書きで2〜6点にまとめること。", "instruction_kwargs": {"range_points": true, "min_points": 2, "max_points": 6}}
+{"id": "inst_026", "instruction_key": "formatting:structured_sections", "instruction_text": "以下のセクション順で構成すること：1. 概要 / 2. 議論 / 3. 決定事項", "instruction_kwargs": {"sections": ["概要", "議論", "決定事項"]}}
+{"id": "inst_027", "instruction_key": "formatting:qa_format", "instruction_text": "Q&A形式でまとめること。", "instruction_kwargs": {"min_qa_pairs": 1}}
+{"id": "inst_028", "instruction_key": "formatting:required_items", "instruction_text": "以下の項目を含めること：【出席者】【議題】【議事内容】【決定事項】【次回アクション】", "instruction_kwargs": {"required_items": ["出席者", "議題", "議事内容", "決定事項", "次回アクション"]}}
+{"id": "inst_029", "instruction_key": "emphasis_rules:bold_tag", "instruction_text": "会議の中で重要な数値・期限は太字で強調すること", "instruction_kwargs": {"target": "numbers"}}
+{"id": "inst_030", "instruction_key": "emphasis_rules:bold_tag", "instruction_text": "会議の中で重要なキーワードは太字で強調すること", "instruction_kwargs": {"target": "keywords"}}
+{"id": "inst_031", "instruction_key": "emphasis_rules:bold_tag", "instruction_text": "決定事項は太字で強調すること。", "instruction_kwargs": {"target": "decisions"}}
+{"id": "inst_032", "instruction_key": "emphasis_rules:bold_tag", "instruction_text": "会議の中で重要な要素には【重要】タグをつけること。", "instruction_kwargs": {"target": "important_tag"}}
+{"id": "inst_033", "instruction_key": "json_output:json_format", "instruction_text": "JSON形式で出力すること：{\"summary\":\"...\",\"items\":[{\"topic\":\"...\",\"points\":[\"...\"]}]}", "instruction_kwargs": {"json_schema": "summary_items"}}
+{"id": "inst_034", "instruction_key": "json_output:json_format", "instruction_text": "JSON形式で出力すること：{\"summary\":\"...\",\"sources\":[{\"id\":1,\"speaker\":\"A\",\"message\":\"...\"}]}", "instruction_kwargs": {"json_schema": "summary_sources"}}
+{"id": "inst_035", "instruction_key": "notation_rules:person_notation", "instruction_text": "人物名を記載する際は必ず役職を付けること。例：田中部長、営業部佐藤課長\nただし役職が不明な場合は様をつけること。", "instruction_kwargs": {"notation_type": "with_title"}}
+{"id": "inst_036", "instruction_key": "notation_rules:person_notation", "instruction_text": "人物名を記載する際は、顧客と社内がわかるようにすること。例：顧客田中、社内佐藤\nただし社内外が不明な場合は不明とつけること。", "instruction_kwargs": {"notation_type": "internal_external"}}
+{"id": "inst_037", "instruction_key": "notation_rules:person_notation", "instruction_text": "氏名を記載する際に敬称（さん、様、氏など）を付けないこと。", "instruction_kwargs": {"notation_type": "no_honorific"}}
+{"id": "inst_038", "instruction_key": "notation_rules:person_notation", "instruction_text": "人物を表記する際は部署名＋姓の形式で記載すること。例：営業部田中、技術部山田\nただし部署が不明な場合は部署不明と記載すること。", "instruction_kwargs": {"notation_type": "dept_surname"}}
+{"id": "inst_039", "instruction_key": "notation_rules:person_notation", "instruction_text": "氏名を記載する際は必ず姓→名の順で表記すること。例：田中太郎（○）、太郎田中（✕）\nただし姓名いずれかしかわからない場合はいずれかのみの記載で良い。", "instruction_kwargs": {"notation_type": "surname_first"}}
+{"id": "inst_040", "instruction_key": "todo_rules:assignment", "instruction_text": "ToDoを担当者と期限と共に記載すること。例：資料作成（田中、3/31まで）\nただし担当者が不明の場合は担当者不明、期限が不明の場合は期限不明と記載すること。", "instruction_kwargs": {"todo_format": "standard"}}
+{"id": "inst_041", "instruction_key": "todo_rules:assignment", "instruction_text": "ToDoには対応者と期限を記載し、決まっていないものは「未設定」と明記すること。", "instruction_kwargs": {"todo_format": "with_unset"}}
+{"id": "inst_042", "instruction_key": "writing_style:writing_style", "instruction_text": "文章全体を「です・ます調」で統一すること。", "instruction_kwargs": {"style_type": "desu_masu"}}
+{"id": "inst_043", "instruction_key": "writing_style:writing_style", "instruction_text": "文章全体を「である調」で統一すること。", "instruction_kwargs": {"style_type": "de_aru"}}
+{"id": "inst_044", "instruction_key": "viewpoint_spec:focus", "instruction_text": "決定事項とその根拠となる発言のみを抽出すること。", "instruction_kwargs": {"viewpoint": "decisions_only"}}
+{"id": "inst_045", "instruction_key": "viewpoint_spec:focus", "instruction_text": "指摘のあった懸念点と要望に絞って抽出すること。", "instruction_kwargs": {"viewpoint": "concerns_requests"}}
+{"id": "inst_046", "instruction_key": "viewpoint_spec:focus", "instruction_text": "意見の対立点と合意点のみを抽出すること。", "instruction_kwargs": {"viewpoint": "conflicts_agreements"}}
+{"id": "inst_047", "instruction_key": "order_spec:arrangement", "instruction_text": "内容は発言順（時系列順）に並べること。議論の流れが分かるように配置する。", "instruction_kwargs": {"order_type": "chronological"}}
+{"id": "inst_048", "instruction_key": "table_format:markdown_table", "instruction_text": "Markdown表（論点｜結論｜担当｜期限）で出力すること。", "instruction_kwargs": {"columns": ["論点", "結論", "担当", "期限"]}}
+{"id": "inst_049", "instruction_key": "anonymization:privacy", "instruction_text": "個人名は発言者A・発言者B・発言者Cのように置換すること。実名を出さないこと。", "instruction_kwargs": {"anonymization_type": "speaker_abc"}}
+{"id": "inst_050", "instruction_key": "anonymization:privacy", "instruction_text": "氏名はイニシャル表記にすること。例：田中太郎→T.T.、山田花子→Y.H.", "instruction_kwargs": {"anonymization_type": "initials"}}
+{"id": "inst_051", "instruction_key": "anonymization:privacy", "instruction_text": "氏名は表示せず役職のみ残すこと。例：田中部長→部長、山田課長→課長\n役職不明な場合は担当者とすること。", "instruction_kwargs": {"anonymization_type": "title_only"}}
+{"id": "inst_052", "instruction_key": "anonymization:privacy", "instruction_text": "社名と製品名を伏せ字に置換すること。例：トヨタ→A社、プリウス→製品X", "instruction_kwargs": {"anonymization_type": "company_product_mask"}}
