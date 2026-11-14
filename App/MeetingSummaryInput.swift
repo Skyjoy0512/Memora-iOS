@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Everything a summary is written from, captured once on the main actor so
@@ -14,6 +15,14 @@ struct MeetingSummaryInput {
   var preferences = SummaryPreferences()
   var automaticCandidates: [SummaryTemplateChoice] = []
   var sourceContext: String?
+
+  static func sourceSegmentID(sourceID: UUID, index: Int) -> UUID {
+    let digest = SHA256.hash(data: Data((sourceID.uuidString + ":" + String(index)).utf8))
+    let hex = digest.prefix(16).map { String(format: "%02x", $0) }.joined()
+    let chars = Array(hex)
+    return UUID(uuidString: [String(chars[0..<8]), String(chars[8..<12]), String(chars[12..<16]),
+      String(chars[16..<20]), String(chars[20..<32])].joined(separator: "-"))!
+  }
 
   /// Speaker labels in the order they first spoke.
   var speakers: [String] {

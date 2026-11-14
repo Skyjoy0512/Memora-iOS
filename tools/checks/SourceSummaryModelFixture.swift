@@ -68,6 +68,7 @@ enum MemoraFormat {
 }
 struct MeetingSummary {
   var markdown: String
+  var knowledge: SummaryKnowledge? = nil
   var actions: [String] = ["fixture action must never become a task"]
 }
 

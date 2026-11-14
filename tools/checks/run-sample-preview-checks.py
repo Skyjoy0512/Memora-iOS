@@ -6,7 +6,7 @@ import tempfile
 
 os.chdir(Path(__file__).resolve().parents[2])
 names = ['RecordingAudioPart', 'RecordingAudioManifest', 'Meeting', 'MeetingSource', 'MeetingStatus', 'RecordingMarker', 'TranscriptSegment',
-         'SpeakerIdentificationStatus', 'RecordPrivacy', 'SummarySensitivity', 'TemplateSummary',
+         'SpeakerIdentificationStatus', 'RecordPrivacy', 'SummarySensitivity', 'SummaryKnowledge', 'TemplateSummary',
          'SummarySection', 'SummaryEvidence', 'SummaryEvidenceLink', 'GeneratedSummaryEvidence',
          'SummaryLength', 'SummaryPreferences', 'SummaryProcessingMode', 'LocalStore',
          'SummaryPreviewCache', 'MarkdownBlockParser', 'MarkdownBlock', 'SourcedMarkdownBlock', 'MarkdownFence',

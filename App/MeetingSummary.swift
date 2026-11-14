@@ -9,5 +9,7 @@ struct MeetingSummary {
   var openQuestions: [String] = []
   var actions: [SummaryActionItem] = []
   var templateID: String? = nil
+  var knowledge: SummaryKnowledge? = nil
+  var hasCompleteExtraction = true
   var evidence: [GeneratedSummaryEvidence] = []
 }

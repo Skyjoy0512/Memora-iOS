@@ -17,7 +17,7 @@ swiftc Shared/MemoraIcon.swift App/AIEngine.swift App/MemoraIntelligence.swift A
   App/SummaryLength.swift App/SummarySensitivity.swift App/PendingSummaryJob.swift App/SummarySubmissionIntent.swift \
   tools/checks/BackgroundSummaryJobChecks.swift -o "$check_dir/check"
 "$check_dir/check"
-swiftc \
+swiftc App/SummaryKnowledge.swift \
   Shared/MemoraIcon.swift App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
   App/LLMProvider.swift App/LLMModelOption.swift App/SummaryTemplate.swift App/SummaryMarketTemplate.swift \
   App/SummaryProcessingMode.swift App/SummaryTemplateCategory.swift App/SummaryTemplateChoice.swift App/SummaryPreferences.swift \

@@ -7,7 +7,7 @@ export MEMORA_WORKSPACE_FILES_DIRECTORY="$check_dir/workspace"
 export SWIFT_BACKTRACE=enable=no
 export MEMORA_AUDIO_DIAGNOSTICS_DIRECTORY="$check_dir/diagnostics"
 source tools/checks/audio-diagnostic-sources.sh
-swiftc "${audio_diagnostic_sources[@]}" App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift -D MEMORA_HOST_CHECKS Shared/MemoraIcon.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
+swiftc App/SummaryKnowledge.swift "${audio_diagnostic_sources[@]}" App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift -D MEMORA_HOST_CHECKS Shared/MemoraIcon.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
   App/ProjectSource.swift App/ProjectSourceText.swift App/ProjectSourceFiles.swift App/ProjectSourceTextReader.swift \
   App/ProjectSourceExtractionResult.swift App/SourceIntake.swift App/ConversationLinkSnapshot.swift \
   App/SourceExtractionSnapshot.swift App/SourceExtractionPersistence.swift \

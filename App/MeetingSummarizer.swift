@@ -167,6 +167,20 @@ enum MeetingSummarizer {
       }
       var summary = SummaryResponseParser.validateTemplate(SummaryResponseParser.parse(reply),
         allowedIDs: Set(choices.map(\.id)), actionFreeIDs: Set(actionFree))
+      guard summary.hasCompleteExtraction else { return .failure(.generationFailed) }
+      summary.knowledge = summary.knowledge?.validated(allowedProfiles: Set(choices.map(\.id))) { reference in
+        guard let id = UUID(uuidString: reference.sourceSegmentID), reference.quote.count >= 8,
+              reference.quote.count <= 2_000,
+              input.transcript.filter({ $0.id == id }).count == 1 else { return false }
+        return input.transcript.contains { $0.id == id && $0.text.contains(reference.quote) }
+      }
+      if var knowledge = summary.knowledge {
+        let speakerIDs = Set(input.transcript.compactMap(\.speakerID))
+        for index in knowledge.facts.indices {
+          knowledge.facts[index].speakerIDs = knowledge.facts[index].speakerIDs?.filter { speakerIDs.contains($0) }
+        }
+        summary.knowledge = knowledge
+      }
       if !input.template.preservesFormat { summary.markdown = SummaryResponseParser.generatedMarkdown(summary.markdown) }
       if summary.templateID == VideoSummaryTemplate.template.id { summary.decisions = [] }
       SummaryDiagnostics.current?.record(.parseCompleted)

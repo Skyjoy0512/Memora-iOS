@@ -7,22 +7,32 @@ enum SummaryResponseParser {
   static func parse(_ reply: String) -> MeetingSummary {
     var document = reply
     var data: DataBlock?
+    var complete = true
 
     if let open = reply.range(of: "<memora-data>") {
       let rest = reply[open.upperBound...]
       let close = rest.range(of: "</memora-data>")
       let json = close.map { String(rest[..<$0.lowerBound]) } ?? String(rest)
       data = decode(json)
+      complete = close != nil && data != nil
       document = String(reply[..<open.lowerBound])
     } else if let fence = trailingJSONFence(in: reply) {
       data = decode(String(reply[fence.json]))
+      complete = data != nil
       document = String(reply[..<fence.whole.lowerBound])
     }
 
+    if data == nil, let fence = document.range(of: "```json"),
+       (document[fence.upperBound...].contains("\"templateID\"") || document[fence.upperBound...].contains("\"actions\"") || document[fence.upperBound...].contains("\"decisions\"")) {
+      document = String(document[..<fence.lowerBound])
+      complete = false
+    }
     let markdown = cleanDocument(document)
     var summary = MeetingSummary(markdown: markdown)
+    summary.hasCompleteExtraction = complete
     if let data {
       summary.templateID = data.templateID
+      summary.knowledge = data.knowledge
       summary.evidence = Array((data.sourceReferences ?? []).prefix(64))
       summary.keyPoints = cleaned(data.keyPoints)
       summary.decisions = cleaned(data.decisions)
@@ -54,6 +64,7 @@ enum SummaryResponseParser {
     var result = summary
     guard let id = summary.templateID, allowedIDs.contains(id) else {
       result.templateID = nil
+      result.knowledge = nil
       result.actions = []
       result.evidence = []
       return result
@@ -109,6 +120,7 @@ enum SummaryResponseParser {
 
   private struct DataBlock: Decodable {
     var templateID: String?
+    var knowledge: SummaryKnowledge?
     var sourceReferences: [GeneratedSummaryEvidence]?
     var keyPoints: [String]?
     var decisions: [String]?

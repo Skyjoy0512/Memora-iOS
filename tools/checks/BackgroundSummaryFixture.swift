@@ -147,6 +147,13 @@ struct Meeting: Codable {
 struct TemplateSummary: Codable {
   var id = UUID()
   var markdown: String
+  var keyPoints: [String] = []
+  var decisions: [String] = []
+  var openQuestions: [String] = []
+  var reconciledUserEdits: Bool?
   static func snapshot(record: Meeting, templateID: String?, preferences: SummaryPreferences,
-    modelInfo: String, evidence: [GeneratedSummaryEvidence] = []) -> Self { Self(markdown: record.summary) }
+    modelInfo: String, evidence: [GeneratedSummaryEvidence] = [], knowledge: SummaryKnowledge? = nil,
+    reconciledUserEdits: Bool = false) -> Self {
+      Self(markdown: record.summary, keyPoints: record.keyPoints, decisions: record.decisions, openQuestions: record.openQuestions, reconciledUserEdits: reconciledUserEdits)
+    }
 }

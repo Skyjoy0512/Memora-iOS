@@ -13,7 +13,7 @@ swiftc "${sources[@]}" tools/checks/SummaryPromptChecks.swift -o "$check_dir/pro
 "$check_dir/prompt"
 swiftc "${sources[@]}" App/TranscriptReadability.swift tools/checks/TranscriptReadabilityChecks.swift -o "$check_dir/transcript"
 "$check_dir/transcript"
-swiftc App/MarkdownBlock.swift App/SourcedMarkdownBlock.swift App/MarkdownFence.swift App/MarkdownBlockParser.swift \
+swiftc App/SummaryKnowledge.swift App/MarkdownBlock.swift App/SourcedMarkdownBlock.swift App/MarkdownFence.swift App/MarkdownBlockParser.swift \
   App/SummaryActionItem.swift App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift \
   App/SummaryResponseParser.swift App/MarkdownSummaryExtractor.swift App/MeetingSummaryPosterSection.swift App/MeetingSummaryPosterContent.swift \
   tools/checks/MeetingSummaryPosterChecks.swift -o "$check_dir/poster"
@@ -25,7 +25,7 @@ swiftc App/LocalStore.swift App/TranscriptSegment.swift App/SpeakerIdentificatio
   App/MemoraModel+Meetings.swift tools/checks/MeetingEditChecks.swift -o "$check_dir/meeting-edit"
 "$check_dir/meeting-edit"
 source tools/checks/audio-diagnostic-sources.sh
-layout_sources=("${sources[@]}" App/SummaryTopic.swift App/SummaryRelation.swift App/SummaryRelationMarkdown.swift
+layout_sources=(App/SummaryKnowledge.swift "${sources[@]}" App/SummaryTopic.swift App/SummaryRelation.swift App/SummaryRelationMarkdown.swift
   App/SummaryMarkdownBuilder.swift App/SummaryActionItem.swift App/SummaryResponseParser.swift
   App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift App/MarkdownSummaryExtractor.swift)
 swiftc "${layout_sources[@]}" "${audio_diagnostic_sources[@]}" App/SummaryNoteHierarchy.swift App/AIEngine.swift App/MemoraIntelligence.swift App/LLMSelection.swift \
@@ -43,6 +43,6 @@ swiftc "${layout_sources[@]}" App/LocalStore.swift App/MarkdownBlock.swift App/S
 "$check_dir/relations" "$@"
 bash tools/checks/run-infographic-checks.sh
 
-swiftc App/SummaryActionItem.swift App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift \
+swiftc App/SummaryKnowledge.swift App/SummaryActionItem.swift App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift \
   App/SummaryResponseParser.swift App/MarkdownSummaryExtractor.swift tools/checks/GeneratedSummaryMarkdownChecks.swift -o "$check_dir/generated-markdown"
 "$check_dir/generated-markdown"

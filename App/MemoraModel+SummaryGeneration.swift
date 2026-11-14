@@ -185,15 +185,20 @@ extension MemoraModel {
             meeting.summaryVersions.append(.snapshot(record: meeting, templateID: nil,
               preferences: input.preferences, modelInfo: "手動編集・旧形式"))
           }
+          let previous = meeting.summaryVersions.first { $0.id == meeting.activeSummaryVersionID }
+          let editedPoints = previous.map { $0.keyPoints != meeting.keyPoints } ?? !meeting.keyPoints.isEmpty
+          let editedDecisions = previous.map { $0.decisions != meeting.decisions } ?? !meeting.decisions.isEmpty
+          let editedQuestions = previous.map { $0.openQuestions != meeting.openQuestions } ?? !meeting.openQuestions.isEmpty
           meeting.summary = summary.markdown
-          meeting.keyPoints = summary.keyPoints
-          meeting.decisions = summary.decisions
-          meeting.openQuestions = summary.openQuestions
+          if !editedPoints { meeting.keyPoints = summary.keyPoints }
+          if !editedDecisions { meeting.decisions = summary.decisions }
+          if !editedQuestions { meeting.openQuestions = summary.openQuestions }
           meeting.status = .ready
           if let useCaseID { meeting.summaryUseCaseID = useCaseID.isEmpty ? nil : useCaseID }
           let version = TemplateSummary.snapshot(record: meeting, templateID: summary.templateID,
             preferences: input.preferences, modelInfo: engine == .cloud || engine == .memora ? llm.modelLabel : "端末内AI",
-            evidence: summary.evidence)
+            evidence: summary.evidence, knowledge: summary.knowledge,
+            reconciledUserEdits: editedPoints || editedDecisions || editedQuestions)
           meeting.summaryVersions.append(version)
           meeting.activeSummaryVersionID = version.id
           meeting.privacy = meeting.effectivePrivacy

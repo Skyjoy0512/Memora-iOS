@@ -45,11 +45,11 @@ enum OnDeviceSummarizer {
     guard !Task.isCancelled else { return .failure(.cancelled) }
     await progress("全体の概要をまとめています")
     let overview: Overview
-    if sourceOnly {
+    if sourceOnly || sections.count == 1 {
       // Every section has already been summarized. Reusing those points avoids
       // a second constrained-window pass that can reject even a short article.
       let points = unique(topics.flatMap(\.points))
-      overview = Overview(headline: input.title, overview: points.prefix(2).joined(separator: " "),
+      overview = Overview(headline: topics.first?.title ?? input.title, overview: points.prefix(2).joined(separator: " "),
         keyPoints: Array(points.prefix(5)))
     } else {
       switch await self.overview(of: topics, input: input, characterLimit: sectionCharacterLimit(model)) {
@@ -80,7 +80,17 @@ enum OnDeviceSummarizer {
       decisions: input.template.id == VideoSummaryTemplate.template.id ? [] : unique(topics.flatMap(\.decisions)),
       openQuestions: unique(topics.flatMap(\.questions)),
       actions: includesActions ? actions : [],
-      templateID: input.template.id
+      templateID: input.template.id,
+      knowledge: SummaryKnowledge(selectedProfileIDs: [input.template.id],
+        topics: topics.enumerated().map { .init(id: "t\($0.offset)", title: $0.element.title) },
+        facts: topics.enumerated().flatMap { index, topic in
+          topic.facts.map { fact in
+            var fact = fact
+            fact.relatedTopicID = "t\(index)"
+            return fact
+          }
+        }),
+      evidence: topics.flatMap(\.evidence)
     ))
   }
 
@@ -233,6 +243,8 @@ enum OnDeviceSummarizer {
         let session = LanguageModelSession(instructions: instructions + "\n" + sourceInstructions)
         let response = try await session.respond(to: """
         次の資料本文にある内容を、必要な話題だけに整理してください。
+        \(input.sourceContext ?? "")
+        取得できた原文だけを扱い、未取得のページ・図・映像を補わない。
         \(length.instruction)
         <transcript>
         \(section.map { input.transcriptLine(for: $0) }.joined(separator: "\n"))
@@ -244,7 +256,8 @@ enum OnDeviceSummarizer {
           guard !points.isEmpty, !title.isEmpty else { return nil }
           let time = seconds(value.startTime) ?? first.timestamp
           return SummaryTopic(title: title, startTime: max(first.timestamp, min(last.timestamp, time)),
-            endTime: last.timestamp, speakers: [], points: points, decisions: [], concerns: [], actions: [], questions: [])
+            endTime: last.timestamp, speakers: [], points: points, decisions: [], concerns: [], actions: [], questions: [],
+            facts: extractedFacts(value.facts, in: section))
         })
       }
       let session = LanguageModelSession(instructions: instructions + (isVideo ? "\n" + videoSourceInstructions : ""))
@@ -303,11 +316,30 @@ enum OnDeviceSummarizer {
         )
       },
       questions: clean(digest.questions),
+      facts: extractedFacts(digest.facts, in: section),
+      evidence: digest.facts.compactMap { fact in
+        let matches = section.filter { $0.text.contains(fact.quote) && fact.quote.count >= 8 }
+        guard matches.count == 1 else { return nil }
+        return GeneratedSummaryEvidence(sectionTitle: title, sourceSegmentID: matches[0].id.uuidString, quote: fact.quote)
+      },
       relations: digest.relations.prefix(2).compactMap {
         SummaryRelation.validated(parent: $0.parent, kind: $0.kind, sourceTime: $0.sourceTime,
           quote: $0.quote, points: points, decisions: decisions, transcript: section, duration: duration)
       }
     )
+  }
+
+  private static func extractedFacts(_ values: [OnDeviceSummaryFactDigest], in section: [TranscriptSegment]) -> [SummaryKnowledge.Fact] {
+    values.prefix(8).compactMap { fact in
+      guard let category = SummaryKnowledge.Category(rawValue: fact.category),
+            let status = SummaryKnowledge.Status(rawValue: fact.status), status.isVisible,
+            !fact.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+      let matches = section.filter { $0.text.contains(fact.quote) && fact.quote.count >= 8 && fact.quote.count <= 2_000 }
+      let references: [SummaryKnowledge.Reference] = matches.count == 1
+        ? [.init(sourceSegmentID: matches[0].id.uuidString, quote: fact.quote)] : []
+      return SummaryKnowledge.Fact(id: UUID().uuidString, category: category,
+        content: fact.content, status: references.isEmpty ? .uncertain : status, sourceReferences: references)
+    }
   }
 
   /// Orders topics by time, sets each one's end to where the next begins, and
@@ -325,6 +357,8 @@ enum OnDeviceSummarizer {
         previous.actions += topic.actions
         previous.questions += topic.questions
         previous.relations += topic.relations
+        previous.facts += topic.facts
+        previous.evidence += topic.evidence
         merged[merged.count - 1] = previous
       } else {
         merged.append(topic)
@@ -451,6 +485,8 @@ private struct TopicDigest {
   var actions: [ActionDigest]
   @Guide(description: "結論が出ずに残った問いを疑問文で。感想や決まったことは含めない。無ければ空。", .maximumCount(3))
   var questions: [String]
+  @Guide(description: "用途に必要な事実と状態。categoryはkeyFact/number/decision/rationale/proposal/risk/constraint/owner/due/openQuestion/entity。statusはconfirmed/proposed/pending/uncertain。未言及をpendingにしない。quoteは根拠の原文8文字以上。無ければ空。", .maximumCount(8))
+  var facts: [OnDeviceSummaryFactDigest]
   @Guide(description: "同じ発言に明示された親と理由・条件・影響だけ。無ければ空配列。", .maximumCount(2))
   var relations: [OnDeviceSummaryRelationDigest]
 }
@@ -471,7 +507,7 @@ private struct ActionDigest {
 private struct OverviewDigest {
   @Guide(description: "記録の内容が分かる見出し（30字以内）")
   var headline: String
-  @Guide(description: "記録のテーマ・中心的な内容・理由が分かる3〜5文の概要。原文にない合意や約束の有無を追加しない。")
+  @Guide(description: "記録のテーマ・中心的な内容・理由が分かる、情報量に応じた概要。最低文数はない。原文にない合意や約束の有無を追加しない。")
   var overview: String
   @Guide(description: "記録全体で重要なポイント。発言の書き写しではなく言い切りの文で。", .maximumCount(5))
   var keyPoints: [String]

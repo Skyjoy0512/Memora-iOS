@@ -35,6 +35,7 @@ struct ProjectSource: Identifiable, Hashable, Codable, Sendable {
   var summaryUpdatedAt: Date?
   var summaryError: String?
   var summaryHistory: [String]?
+  var summaryKnowledge: SummaryKnowledge?
   var summaryOptions: SourceSummaryOptions?
   var revisions: [Revision]?
   /// Sources a note was composed with, in the order they were added. The

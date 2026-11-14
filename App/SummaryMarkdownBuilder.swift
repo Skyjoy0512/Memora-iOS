@@ -26,7 +26,7 @@ enum SummaryMarkdownBuilder {
     if !overview.isEmpty { lines += ["", overview] }
     for topic in ordered {
       let points = unique(topic.points + topic.concerns).filter { point in
-        seen.insert(SummaryResponseParser.taskKey(point)).inserted || topic.relations.contains { $0.target == .point && $0.parent == point }
+        (!overview.contains(point) && seen.insert(SummaryResponseParser.taskKey(point)).inserted) || topic.relations.contains { $0.target == .point && $0.parent == point }
       }
       guard !points.isEmpty else { continue }
       let location = template == .builtIn(.detailedMinutes) && input.duration > 0

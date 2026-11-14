@@ -37,8 +37,8 @@ extension MemoraModel {
         return
       }
       let timed = blocks.contains { $0.time != nil }
-      let segments = blocks.map { block in
-        TranscriptSegment(id: UUID(), speaker: block.page.map { "ページ\($0)" } ?? "原文",
+      let segments = blocks.enumerated().map { index, block in
+        TranscriptSegment(id: MeetingSummaryInput.sourceSegmentID(sourceID: id, index: index), speaker: block.page.map { "ページ\($0)" } ?? "原文",
           speakerIsCertain: false, timestamp: block.time ?? 0, text: block.text)
       }
       var input = MeetingSummaryInput(title: context.source.title, date: context.source.createdAt,
@@ -64,6 +64,7 @@ extension MemoraModel {
           context.source.summaryHistory = Array(((context.source.summaryHistory ?? []) + [previous]).suffix(3))
         }
         context.source.summary = value.markdown
+        context.source.summaryKnowledge = value.knowledge
         context.source.summaryTextReference = reference
         context.source.summaryStatus = .ready
         context.source.summaryUpdatedAt = .now

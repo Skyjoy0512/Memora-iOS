@@ -20,7 +20,7 @@ swiftc App/AIAttachmentCitation.swift App/AIRecordFingerprint.swift App/AIRecord
 "$check_dir/privacy"
 
 # Pure fixtures only: this does not sign in or contact a token endpoint.
-swiftc App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift App/MCPOAuthSettings.swift App/MCPOAuthError.swift App/MCPOAuthPolicy.swift App/MCPOAuthCredential.swift \
+swiftc App/SummaryKnowledge.swift App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift App/MCPOAuthSettings.swift App/MCPOAuthError.swift App/MCPOAuthPolicy.swift App/MCPOAuthCredential.swift \
   App/MCPConnectionPolicy.swift App/MCPClientError.swift App/ProjectSourceURL.swift App/ProjectSource.swift \
   App/RecordPrivacy.swift App/SummarySensitivity.swift tools/checks/MCPOAuthChecks.swift -o "$check_dir/oauth"
 "$check_dir/oauth"

@@ -309,6 +309,34 @@ enum BackgroundSummaryExecutionChecks {
       precondition(MeetingSummarizer.requests.isEmpty && stale.meetings[0].summary == "保存済みの旧要約")
     }
 
+    // Regeneration cannot undo completed/edited tasks or overwrite an authored list.
+    let regenerated = try model()
+    regenerated.meetings[0].keyPoints = ["生成時の要点"]
+    let prior = TemplateSummary.snapshot(record: regenerated.meetings[0], templateID: nil,
+      preferences: SummaryPreferences(), modelInfo: "fixture")
+    regenerated.meetings[0].summaryVersions = [prior]
+    regenerated.meetings[0].activeSummaryVersionID = prior.id
+    regenerated.meetings[0].keyPoints = ["本人が訂正した要点"]
+    let completed = MemoraTask(id: UUID(), title: "承認を確認", meetingID: regenerated.meetings[0].id,
+      assignee: "本人の担当指定", dueDate: nil, isCompleted: true, detail: "本人のメモ")
+    regenerated.tasks = [completed]
+    let repeatRequest = await start(regenerated)
+    repeatRequest.complete.resume(returning: .success(result))
+    try await settle(regenerated)
+    precondition(regenerated.tasks == [completed])
+    precondition(regenerated.meetings[0].keyPoints == ["本人が訂正した要点"])
+    precondition(regenerated.meetings[0].summaryVersions.last?.reconciledUserEdits == true)
+    let savedAgain = try read(regenerated, MemoraModel.StorageKey.tasks, as: [MemoraTask].self)
+    precondition(savedAgain == [completed])
+
+    let listRace = try model()
+    let listRequest = await start(listRace)
+    listRace.meetings[0].decisions = ["生成中に本人が編集した決定"]
+    listRequest.complete.resume(returning: .success(result))
+    try await settle(listRace)
+    precondition(listRace.meetings[0].summary == "保存済みの旧要約" && listRace.tasks.isEmpty)
+    precondition(listRace.meetings[0].decisions == ["生成中に本人が編集した決定"])
+
     print("BackgroundSummaryExecutionChecks: passed (production queue/generation/cancellation, real SQLite atomic save and reopen; OS/model are fixtures)")
   }
 }

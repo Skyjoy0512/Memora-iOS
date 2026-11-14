@@ -1,6 +1,14 @@
+import CryptoKit
 import Foundation
 
 enum SummaryEvidence {
+  static func fingerprint(_ transcript: [TranscriptSegment]) -> String? {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = .sortedKeys
+    guard let data = try? encoder.encode(transcript) else { return nil }
+    return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+  }
+
   static func validatedLinks(_ evidence: [GeneratedSummaryEvidence], sectionTitle: String,
                              recordID: UUID, transcript: [TranscriptSegment], duration: TimeInterval) -> [SummaryEvidenceLink] {
     guard duration.isFinite, duration >= 0, duration < Double(Int.max) else { return [] }

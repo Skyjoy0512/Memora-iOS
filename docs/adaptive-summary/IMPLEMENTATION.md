@@ -53,3 +53,14 @@ LLM呼出し: 通常クラウドは既存の1回を維持。長文は部分抽�
 ## 既存ホストfixture修復
 
 OpenCode Go / DeepSeek run-waun4b4rを実行し、NotionAgentFixtureModelのmcpServers初期状態1行だけを許可・反映。初回でscope/diff/motion/regression/iOS全体build/監督review合格。監督側でNotionAgentChecksも実行し、188 agent race +45 manual race合格。実サービス認証の検証ではない。
+
+## B 状態・根拠・履歴・保存
+
+SummaryKnowledgeをTemplateSummaryの任意拡張として追加（履歴schemaVersion 3）。既存Meetingの本文/リストを正本として維持し、取得範囲に限ったcoverage、6状態、話題/事実ID、関連事実、検証済み引用を保持。追加部分の破損は項目単位で読み飛ばす。旧データは再生成・書換えしない。
+原文fingerprintと本文/リストの一致で利用可否を判定。ユーザーがリストを編集済みなら再生成で上書きせず、抽出と再調整した履歴であることを保持。開始後のリスト編集もjob fingerprintで拒否。既存タスクの完了・担当・メモは件名一致の再抽出で変更しない。
+クラウドは既存1応答へknowledgeを付加。JSON切断・不正な抽出ブロックは確定保存しない。追加の課金retryはなし。根拠のID/引用は原文照合し、不正な参照を除外して要確認にする。見出しだけで根拠を恒久結合しない。同名節の曖昧な旧参照は結合しない。
+端末内は簡潔な状態付きfact schemaを既存digestに追加。短い記録は同じdigestから見出し・概要を構成し、通常1回の呼出し。原文の引用が一意な場合だけ実IDへ結合。クラウドfallback追加なし。
+ProjectSourceも任意のknowledgeを保持。source UUIDと原文block順序から安定したsegment UUIDを作る。原文referenceの一致が前提。未取得ページや図表は補完しない。
+
+検証: AdaptiveSummaryKnowledgeChecks、background queue/atomic save/reopen（完了済タスクと本人の訂正保持、生成中リスト編集の拒否を追加）、source summary13競合、summary reading全群が合格。iOS preview成功。新しいCodable依存をホストsuiteに明示しているためharnessのsource listも更新。全体qualityは継続中。
+E2E旧summary-recoveryの1ケースは保存失敗後に原文表示を期待して失敗。SQLite原本は不変、画面とdraftは失敗した編集を保持しており現行の仕様と整合。後続ではDB・draft・未保存表示の3点を検証し、原文の喪失と混同しない。

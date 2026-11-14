@@ -12,7 +12,7 @@ parser.add_argument('--counts', nargs='+', type=int, choices=[1000, 5000, 10000,
 args = parser.parse_args()
 names = ['Meeting', 'MeetingSource', 'MeetingStatus', 'RecordingMarker', 'TranscriptSegment',
          'RecordingAudioPart', 'RecordingAudioManifest',
-         'SpeakerIdentificationStatus', 'RecordPrivacy', 'SummarySensitivity', 'TemplateSummary',
+         'SpeakerIdentificationStatus', 'RecordPrivacy', 'SummarySensitivity', 'SummaryKnowledge', 'TemplateSummary',
          'SummarySection', 'SummaryEvidence', 'SummaryEvidenceLink', 'GeneratedSummaryEvidence',
          'SummaryLength', 'SummaryPreferences', 'SummaryProcessingMode', 'LocalStore',
          'SummaryPreviewCache', 'MarkdownBlockParser', 'MarkdownBlock', 'SourcedMarkdownBlock', 'MarkdownFence']

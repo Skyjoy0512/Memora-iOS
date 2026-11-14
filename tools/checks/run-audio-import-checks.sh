@@ -14,7 +14,7 @@ source = Path('App/ConversationSourceIntake.swift').read_text()
 failure = source[source.index('  enum Failure: LocalizedError'):source.rindex('\n}')]
 Path(sys.argv[1]).write_text('import Foundation\nenum ConversationSourceIntake {\n' + failure + '\n}\n')
 PY
-swiftc App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift -D MEMORA_HOST_CHECKS -D MEMORA_AUDIO_IMPORT_CHECKS -D MEMORA_SOURCE_IMPORT_CHECKS Shared/MemoraIcon.swift Shared/MemoraAppLink.swift \
+swiftc App/SummaryKnowledge.swift App/SourceSummaryOptions.swift App/SummaryLength.swift App/SummaryEngineChoice.swift -D MEMORA_HOST_CHECKS -D MEMORA_AUDIO_IMPORT_CHECKS -D MEMORA_SOURCE_IMPORT_CHECKS Shared/MemoraIcon.swift Shared/MemoraAppLink.swift \
   App/LocalStore.swift App/MemoraSpace.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
   App/ProjectSource.swift App/ProjectCitation.swift App/IdentifiableIndex.swift App/PersistenceFailurePresentation.swift \
   App/PDFSourcePartition.swift App/PDFSourcePartitionPart.swift App/PDFSourcePartitionSnapshot.swift \

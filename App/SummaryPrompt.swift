@@ -86,9 +86,14 @@ enum SummaryPrompt {
   static let dataContract = """
   文書の最後にタグで囲むJSONを1つ付ける。本文と同じ事実を使い、該当がない配列は空にする。
   <memora-data>
-  {"templateID":"指定または候補のID","keyPoints":[],"decisions":[],"openQuestions":[],"actions":[],"sourceReferences":[]}
+  {"templateID":"指定または候補のID","keyPoints":[],"decisions":[],"openQuestions":[],"actions":[],"sourceReferences":[],"knowledge":{"schemaVersion":1,"selectedProfileIDs":[],"contentType":"unknown","topics":[],"facts":[],"coverage":[]}}
   </memora-data>
   actionsは実際に合意した行動のみ。各項目は {"title":"件名","detail":"内容","owner":null,"due":null}。担当・期限に未言及ならnull、明示保留ならnullに加えてknowledgeにpendingの事実を保持する。発言者を担当にしない。
+  knowledgeは本文の形と独立した抽出。contentTypeはmeeting/sales/brainstorming/oneOnOne/learning/dailyLife/news/technical/document/video/mixed/unknown。複数用途はmixed。
+  topicsは最大64件の {"id":"t1","title":"実際の話題"}。factsは最大256件の {"id":"f1","category":"decision","content":"原文の事実","status":"confirmed","relatedTopicID":"t1","relatedFactIDs":[],"sourceReferences":[{"sourceSegmentID":"入力のID","quote":"短い逐語引用"}],"speakerIDs":[],"temporalContext":null}。
+  categoryはoverview/background/purpose/keyFact/number/date/decision/rationale/alternative/rejectedOption/proposal/agreement/disagreement/issue/risk/constraint/dependency/action/owner/due/openQuestion/entity。関連する決定・理由・条件・行動をrelatedFactIDsで結ぶ。原文にある項目だけを抽出し、空欄を埋めない。人物IDは入力にないものを作らない。
+  statusはconfirmed（原文で確認）、proposed（提案）、pending（明示保留）、notMentioned（取得範囲で未言及）、uncertain（認識不良・曖昧・矛盾）、notApplicable（対象外）。提案をconfirmedのdecisionにしない。
+  coverageは選んだ用途で重要な未言及・対象外の観点だけ最大64件 {"aspect":"予算","status":"notMentioned"} として保持し、本文に表示しない。factsに空欄や未言及を埋める必要はない。
   sourceReferencesは最大64件、{"sectionTitle":"本文の見出し","sourceSegmentID":"入力に存在するsegmentID","quote":"8文字以上の逐語引用"}。ID・引用を創作しない。根拠が不明なら空配列。
   """
 

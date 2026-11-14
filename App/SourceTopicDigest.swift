@@ -9,4 +9,6 @@ struct SourceTopicDigest {
   var points: [String]
   @Guide(description: "原文に時刻がある場合だけ、その話題が始まるmm:ss。時刻がない場合は空文字。")
   var startTime: String
+  @Guide(description: "重要な事実だけをkeyFact/number/rationale/constraint/entity等のcategoryで抽出。confirmed/proposed/uncertainを区別し、原文の逐語引用をquoteに残す。", .maximumCount(4))
+  var facts: [OnDeviceSummaryFactDigest]
 }
