@@ -42,11 +42,12 @@ spacing belongs to the SwiftUI layout, never to the artwork.
 
 ## Placement
 
-- Sidebar header: the supplied mark at 144pt with its wordmark at 120pt
-  stacked beneath it (`SidebarBrandMark`). The wordmark keeps the supplied
-  letterforms and tracking; it is drawn larger than in the print lockup so it
-  stays readable at drawer width. The header stays left aligned and vertically
-  centered with the search button, whose behavior is unchanged.
+- Sidebar header: the supplied `memora-sidebar-wordmark` SVG pair (346×65),
+  drawn at 120pt wide (about 22.5pt high) with no geometric symbol. The asset
+  keeps the original vector, its aspect ratio, and its light/dark fills
+  (`#0B0B0B` / `#F6F4EF`); the header's existing margins, left alignment and
+  search button are unchanged, and the wordmark is centered on the search
+  button's vertical center.
 - Onboarding header: the mark and wordmark side by side, preserving the row's
   previous height.
 - Ask AI header: `MemoraWordmark`, as before.

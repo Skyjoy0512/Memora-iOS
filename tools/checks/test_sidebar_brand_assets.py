@@ -7,6 +7,7 @@ import json
 import struct
 from pathlib import Path
 import unittest
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "App/Assets.xcassets"
@@ -22,6 +23,12 @@ ORIGINALS = {
     "memora-geometric-v3-lockup-dark.svg": "f30980d008761cef6fc782c1a7fa68861362a7f1c2c56bca4d96e50b920fc9a7",
     "memora-geometric-v3-lockup-adaptive.svg": "b3a1f30ee0aaecb2ce88b8caedae79fe1289c15621854a0f938af8d55871f3e7",
 }
+SIDEBAR_WORDMARK = {
+    "App/Assets.xcassets/memora-sidebar-wordmark.imageset/memora-sidebar-wordmark-light.svg":
+        "2715e78664255d9566b8757686ee61a00662ccddcec0ea962a8162eab69b3141",
+    "App/Assets.xcassets/memora-sidebar-wordmark.imageset/memora-sidebar-wordmark-dark.svg":
+        "8a60e98056f8ebb09c37bd0ff1c9f817962433849797cc208f849caaae9cb29a",
+}
 
 
 class BrandAssetChecks(unittest.TestCase):
@@ -29,6 +36,30 @@ class BrandAssetChecks(unittest.TestCase):
         for name, digest in ORIGINALS.items():
             with self.subTest(name=name):
                 self.assertEqual(hashlib.sha256((BRAND / name).read_bytes()).hexdigest(), digest)
+
+    def test_sidebar_uses_the_supplied_wordmark_only(self):
+        for path, digest in SIDEBAR_WORDMARK.items():
+            with self.subTest(path=path):
+                self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).hexdigest(), digest)
+        folder = ASSETS / "memora-sidebar-wordmark.imageset"
+        contents = json.loads((folder / "Contents.json").read_text())
+        self.assertTrue(contents["properties"]["preserves-vector-representation"])
+        self.assertEqual(contents["properties"]["template-rendering-intent"], "original")
+        light, dark = contents["images"]
+        self.assertNotIn("appearances", light)
+        self.assertEqual(dark["appearances"], [{"appearance": "luminosity", "value": "dark"}])
+        svg = ET.parse(folder / light["filename"]).getroot()
+        self.assertEqual((svg.attrib["width"], svg.attrib["height"]), ("346", "65"))
+        a = ET.parse(folder / light["filename"]).getroot()
+        b = ET.parse(folder / dark["filename"]).getroot()
+        clean = lambda svg: [{k: v for k, v in p.items() if k != "fill"}
+                             for p in svg.iter("{http://www.w3.org/2000/svg}path")]
+        self.assertEqual(clean(a), clean(b))
+        sidebar = (ROOT / "App/SidebarBrandMark.swift").read_text()
+        self.assertIn('Image("memora-sidebar-wordmark")', sidebar)
+        self.assertIn("width: CGFloat = 120", sidebar)
+        self.assertIn("width * 65 / 346", sidebar)
+        self.assertNotIn("MemoraBrandMark", sidebar)
 
     def test_icon_appearance_inputs_are_full_size_and_opaque(self):
         folder = ASSETS / "AppIcon.appiconset"
