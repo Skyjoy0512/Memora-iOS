@@ -11,12 +11,12 @@ struct SummaryLayoutChecks {
     ]
     let important = SummaryMarkdownBuilder.build(template: context.template, input: context,
       headline: "記録", overview: "概要", topics: topics)
-    precondition(important.range(of: "### 決定したこと")!.lowerBound < important.range(of: "### 先に話したこと")!.lowerBound)
+    precondition(important.range(of: "## 決定したこと")!.lowerBound < important.range(of: "## 先に話したこと")!.lowerBound)
     var chronological = context
     chronological.preferences.displayOrder = .chronological
     let ordered = SummaryMarkdownBuilder.build(template: context.template, input: chronological,
       headline: "記録", overview: "概要", topics: topics.reversed())
-    precondition(ordered.range(of: "### 先に話したこと")!.lowerBound < ordered.range(of: "### 決定したこと")!.lowerBound)
+    precondition(ordered.range(of: "## 先に話したこと")!.lowerBound < ordered.range(of: "## 決定したこと")!.lowerBound)
     let timeline = SummaryMarkdownBuilder.build(template: .builtIn(.detailedMinutes), input: context,
       headline: "記録", overview: "概要", topics: topics.reversed())
     precondition(timeline.range(of: "先に話したこと")!.lowerBound < timeline.range(of: "決定したこと")!.lowerBound)

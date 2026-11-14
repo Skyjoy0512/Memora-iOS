@@ -123,3 +123,85 @@ enum SummaryResponseParser {
     }
   }
 }
+
+extension SummaryResponseParser {
+  /// Only generation boundaries call this. Saved or user-edited Markdown is
+  /// never normalized on load, render, export, or editor commit.
+  static func generatedMarkdown(_ text: String) -> String {
+    let withoutData = text.range(of: "<memora-data>").map { String(text[..<$0.lowerBound]) } ?? text
+    let lines = withoutData.components(separatedBy: "\n")
+    var protected = Set<Int>()
+    var fence: Character?
+    for (index, line) in lines.enumerated() {
+      let value = line.trimmingCharacters(in: .whitespaces)
+      if value.hasPrefix("```") || value.hasPrefix("~~~") {
+        if fence == nil { fence = value.first } else if fence == value.first { fence = nil }
+        protected.insert(index)
+      } else if fence != nil { protected.insert(index) }
+    }
+    func heading(_ index: Int) -> Int? {
+      guard !protected.contains(index) else { return nil }
+      let line = lines[index]
+      let marks = line.prefix(while: { $0 == "#" }).count
+      return (1...6).contains(marks) && line.dropFirst(marks).hasPrefix(" ") ? marks : nil
+    }
+    func rule(_ line: String) -> Bool {
+      let value = line.filter { !$0.isWhitespace }
+      return value.count >= 3 && (Set(value) == ["-"] || Set(value) == ["*"] || Set(value) == ["_"])
+    }
+    func placeholder(_ line: String) -> Bool {
+      var value = line.trimmingCharacters(in: .whitespacesAndNewlines)
+      if value.hasPrefix("- [ ]") || value.hasPrefix("- [x]") { value = String(value.dropFirst(5)) }
+      else if value.hasPrefix("- ") || value.hasPrefix("* ") { value = String(value.dropFirst(2)) }
+      value = value.replacingOccurrences(of: "**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+      return ["", "なし", "記載なし", "記録なし", "未定", "該当なし", "n/a", "未指定"].contains(value.lowercased())
+    }
+    var omitted = Set<Int>()
+    // A table with no data is scaffolding, including rows of empty cells.
+    var index = 0
+    while index < lines.count {
+      if !protected.contains(index), lines[index].trimmingCharacters(in: .whitespaces).hasPrefix("|") {
+        let start = index
+        while index < lines.count, lines[index].trimmingCharacters(in: .whitespaces).hasPrefix("|"), !protected.contains(index) { index += 1 }
+        let range = start..<index
+        let dataRows = range.dropFirst(2)
+        let empty = dataRows.allSatisfy { row in
+          lines[row].split(separator: "|", omittingEmptySubsequences: false).allSatisfy { placeholder(String($0)) }
+        }
+        if range.count >= 2, lines[start + 1].contains("---"), empty { omitted.formUnion(range) }
+      } else {
+        if !protected.contains(index), lines[index].trimmingCharacters(in: .whitespaces) == "- [ ]" { omitted.insert(index) }
+        index += 1
+      }
+    }
+    // Walk deepest sections first, so an empty parent cannot survive its children.
+    let headings = lines.indices.filter { heading($0) != nil }
+    var seen = Set<String>()
+    for start in headings.reversed() {
+      let depth = heading(start)!
+      let end = headings.first { $0 > start && heading($0)! <= depth } ?? lines.count
+      let body = (start + 1..<end).filter { !omitted.contains($0) }
+      let substantive = body.contains { protected.contains($0) || (heading($0) == nil && !rule(lines[$0]) && !placeholder(lines[$0])) }
+      if !substantive {
+        omitted.formUnion(start..<end)
+      } else {
+        let identity = ([lines[start]] + body.map { lines[$0] }).joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !seen.insert(identity).inserted { omitted.formUnion(start..<end) }
+      }
+    }
+    var output: [String] = []
+    var previousRule = true
+    for i in lines.indices where !omitted.contains(i) {
+      let line = lines[i]
+      if !protected.contains(i), rule(line) {
+        if !previousRule { output.append(line) }
+        previousRule = true
+      } else if !line.trimmingCharacters(in: .whitespaces).isEmpty {
+        output.append(line)
+        previousRule = false
+      } else if output.last != "" { output.append("") }
+    }
+    while let last = output.last, last.isEmpty || rule(last) { output.removeLast() }
+    return output.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+}

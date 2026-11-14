@@ -42,3 +42,7 @@ swiftc "${layout_sources[@]}" App/LocalStore.swift App/MarkdownBlock.swift App/S
   tools/checks/SummaryRelationChecks.swift -o "$check_dir/relations"
 "$check_dir/relations" "$@"
 bash tools/checks/run-infographic-checks.sh
+
+swiftc App/SummaryActionItem.swift App/GeneratedSummaryEvidence.swift App/MeetingSummary.swift \
+  App/SummaryResponseParser.swift App/MarkdownSummaryExtractor.swift tools/checks/GeneratedSummaryMarkdownChecks.swift -o "$check_dir/generated-markdown"
+"$check_dir/generated-markdown"

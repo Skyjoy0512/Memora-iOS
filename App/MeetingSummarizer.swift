@@ -167,6 +167,7 @@ enum MeetingSummarizer {
       }
       var summary = SummaryResponseParser.validateTemplate(SummaryResponseParser.parse(reply),
         allowedIDs: Set(choices.map(\.id)), actionFreeIDs: Set(actionFree))
+      if !input.template.preservesFormat { summary.markdown = SummaryResponseParser.generatedMarkdown(summary.markdown) }
       if summary.templateID == VideoSummaryTemplate.template.id { summary.decisions = [] }
       SummaryDiagnostics.current?.record(.parseCompleted)
       return summary.markdown.isEmpty ? .failure(.empty) : .success(summary)

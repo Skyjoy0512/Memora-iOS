@@ -26,8 +26,8 @@ struct SummaryPreferences: Codable, Equatable {
 
   var orderingInstruction: String {
     displayOrder == .chronological
-      ? "見出しの順序は指定された形式を守り、各見出しの中は発言・出来事の時系列で整理する。"
-      : "見出しの順序は指定された形式を守り、各見出しの中は結論・注意点・約束を先に整理する。"
+      ? "発言・出来事の時系列で整理する。明示的な固定形式だけは指定順序を守る。"
+      : "結論・注意点・約束を先に整理し、背景・理由・条件を関連付ける。明示的な固定形式だけは指定順序を守る。"
   }
 
   static func initial(defaults: UserDefaults = .standard) -> Self {

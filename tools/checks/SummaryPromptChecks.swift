@@ -9,13 +9,9 @@ struct SummaryPromptChecks {
         participantNames: [], transcript: [], template: .market(template))
       let format = SummaryPrompt.format(for: input.template, input: input)
       precondition(!format.contains("\n## 未決事項"))
-      var previous = format.startIndex
-      for section in template.sections {
-        guard let range = format.range(of: "## \(section)", range: previous..<format.endIndex) else {
-          preconditionFailure("section order: \(id)")
-        }
-        previous = range.upperBound
-      }
+      precondition(!input.template.preservesFormat)
+      precondition(format.contains(template.focus))
+      precondition(format.contains("必須の見出しではない"))
       let notes = SummaryPrompt.partNotes(for: input, part: 1, of: 3, range: "00:00〜10:00", transcript: "原文")
       precondition(notes.contains(template.focus))
       precondition(template.sections.allSatisfy { notes.contains($0) })
@@ -26,7 +22,7 @@ struct SummaryPromptChecks {
       precondition(!template.appendsMeetingQuestions, "non-meeting must not gain meeting questions: \(id)")
     }
     precondition(!SummaryTemplateCatalog.template(id: "market.hearing")!.appendsMeetingQuestions)
-    precondition(SummaryTemplateCatalog.template(id: "market.sales")!.focus.contains("記載なし"))
+    precondition(SummaryTemplateCatalog.template(id: "market.sales")!.focus.contains("未言及の項目は本文に出さず"))
     precondition(SummaryTemplateCatalog.template(id: "market.brainstorm")!.focus.contains("勝手に順位"))
     let video = VideoSummaryTemplate.template
     precondition(SummaryTemplateCatalog.template(id: video.id) == video && !video.includesActions)
@@ -41,7 +37,7 @@ struct SummaryPromptChecks {
       participantNames: [], transcript: [], template: .market(video))
     videoInput.automaticCandidates = [.market(video)]
     let videoFormat = SummaryPrompt.generationFormat(videoInput)
-    precondition(video.sections.allSatisfy { videoFormat.contains("## " + $0) })
+    precondition(video.sections.allSatisfy { videoFormat.contains($0) })
     precondition(!videoFormat.contains("**日時**") && !videoFormat.contains("## 決定事項") && !videoFormat.contains("## 未決事項"))
     for request in [SummaryPrompt.document(for: videoInput, transcript: "貼付した字幕"),
                     SummaryPrompt.partNotes(for: videoInput, part: 1, of: 2, range: "不明", transcript: "貼付した字幕"),
@@ -53,7 +49,7 @@ struct SummaryPromptChecks {
     precondition(!videoInput.transcriptLine(for: untimed, cloud: true).contains("00:00"))
     let minutes = MeetingSummaryInput(title: "会議", date: .now, duration: 60,
       participantNames: [], transcript: [], template: .builtIn(.meetingMinutes))
-    precondition(SummaryPrompt.format(for: minutes.template, input: minutes).contains("## 未決事項"))
+    precondition(!SummaryPrompt.format(for: minutes.template, input: minutes).contains("## 未決事項"))
     let adaptive = MeetingSummaryInput(title: "研究論文", date: .now, duration: 0,
       participantNames: [], transcript: [], template: .adaptiveSource)
     let automatic = SummaryPrompt.generationFormat(adaptive)
@@ -75,14 +71,24 @@ struct SummaryPromptChecks {
     precondition(ReadabilityGuide.rules.contains("通常の文章にはこの省略を適用せず"))
     var overview = minutes
     overview.template = .builtIn(.detailedOverview)
-    precondition(SummaryPrompt.format(for: overview.template, input: overview).contains("影響が大きい順"))
+    precondition(SummaryPrompt.format(for: overview.template, input: overview).contains("理解に必要な経緯"))
     overview.preferences.displayOrder = .chronological
-    precondition(SummaryPrompt.format(for: overview.template, input: overview).contains("話題は時間順"))
+    precondition(SummaryPrompt.generationFormat(overview).contains("時系列"))
     var custom = SummaryTemplateCatalog.market[0]
     custom.isCustom = true
     custom.sections = ["私の見出し"]
     custom.prompt = ""
-    precondition(!SummaryPrompt.format(for: .market(custom), input: minutes).contains("## 未決事項"))
+    precondition(SummaryTemplateChoice.market(custom).preservesFormat)
+    precondition(SummaryPrompt.format(for: .market(custom), input: minutes).contains("## 私の見出し"))
+    precondition(SummaryTemplateCatalog.market.count == 55)
+    for profile in SummaryTemplateCatalog.market {
+      let choice = SummaryTemplateChoice.market(profile)
+      precondition(!choice.preservesFormat)
+      precondition(choice.extractionProfile.profileID == profile.id)
+      precondition(choice.extractionProfile.extractionFocus == profile.sections)
+      precondition(choice.extractionProfile.domainSpecificRules == profile.focus)
+      precondition(!SummaryPrompt.format(for: choice, input: minutes).contains("記録なし」}"))
+    }
     let all = SummaryTemplateChoice.builtInChoices + SummaryTemplateCatalog.market.map { .market($0) }
     let ids = SummaryTemplateSelector.candidateIDs(fallbackID: minutes.template.id, contentID: "work.customer-chart",
       recommendedIDs: ["work.customer-chart", "work.treatment", "work.customer-handover"],

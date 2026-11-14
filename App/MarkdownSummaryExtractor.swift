@@ -102,18 +102,17 @@ enum MarkdownSummaryExtractor {
     case decisions, questions, actions, other
 
     init(heading: String) {
-      // Question labels take precedence over the word 決定 inside 未決定.
-      if heading.contains("未決") || heading.contains("オープンクエスチョン") || heading.contains("未解決")
-        || heading.contains("確認が必要") || heading.contains("まだ決まって") {
+      // Dynamic topic titles may contain 決定 or 課題 without declaring a
+      // semantic list. Only known whole labels are safe fallback contracts.
+      if ["未決事項", "未決定事項", "未解決事項", "未解決の問い", "オープンクエスチョン",
+          "確認が必要なこと", "まだ決まっていないこと", "未決事項・確認が必要なこと"].contains(heading) {
         self = .questions
-      } else if heading.contains("決定") || heading.contains("決まったこと") || heading.contains("約束したこと") {
+      } else if ["決定事項", "主要な決定事項", "決まったこと", "約束したこと"].contains(heading) {
         self = .decisions
-      } else if heading.contains("アクション") || heading.contains("今後の予定")
-        || heading.contains("次にやること") || heading.contains("次にすること") {
+      } else if ["アクション", "アクションアイテム", "予定アクション", "今後の予定",
+                 "今後の予定・アクション項目", "次にやること", "次にすること", "次のアクション", "次の行動"].contains(heading) {
         self = .actions
-      } else {
-        self = .other
-      }
+      } else { self = .other }
     }
   }
 

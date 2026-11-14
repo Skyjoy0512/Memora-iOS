@@ -98,9 +98,9 @@ enum SummaryRelationChecks {
       let blocks = MarkdownBlockParser.sourcedBlocks(for: markdown)
       let childBlock = blocks.first { if case .bullet(_, _, let text) = $0.block { return text == child }; return false }!
       if case .bullet(let level, _, _) = childBlock.block {
-        precondition(level == (template == .detailedOverview ? 2 : 1))
+        precondition(level == 1)
       }
-      let edited = MarkdownBlockWriter.replacing(childBlock, with: .bullet(level: template == .detailedOverview ? 2 : 1,
+      let edited = MarkdownBlockWriter.replacing(childBlock, with: .bullet(level: 1,
         marker: .dot, text: "理由：編集した検証メモ"), in: markdown)
       precondition(edited.contains("  - 理由：編集した検証メモ") && edited.contains(parent))
     }

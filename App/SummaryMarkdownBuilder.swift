@@ -1,137 +1,60 @@
 import Foundation
 
-/// Lays out on-device topic notes as the same documents the cloud writes, one
-/// layout per template, so a summary reads alike whichever engine made it.
+/// Composes already-extracted facts without inventing content for a profile.
+/// Semantic extraction stays in the engines; this layer only arranges facts.
 enum SummaryMarkdownBuilder {
-  static func build(
-    template: SummaryTemplateChoice,
-    input: MeetingSummaryInput,
-    headline: String,
-    overview: String,
-    topics: [SummaryTopic]
-  ) -> String {
-    let orderedTopics: [SummaryTopic]
+  static func build(template: SummaryTemplateChoice, input: MeetingSummaryInput,
+                    headline: String, overview: String, topics: [SummaryTopic]) -> String {
+    let ordered: [SummaryTopic]
     if input.preferences.displayOrder == .importance, template != .builtIn(.detailedMinutes) {
-      orderedTopics = topics.enumerated().sorted { first, second in
-        let firstPriority = first.element.decisions.count + first.element.actions.count
-        let secondPriority = second.element.decisions.count + second.element.actions.count
-        return firstPriority == secondPriority ? first.offset < second.offset : firstPriority > secondPriority
+      ordered = topics.enumerated().sorted {
+        let left = $0.element.decisions.count + $0.element.actions.count
+        let right = $1.element.decisions.count + $1.element.actions.count
+        return left == right ? $0.offset < $1.offset : left > right
       }.map(\.element)
     } else {
-      orderedTopics = topics.sorted { $0.startTime < $1.startTime }
+      ordered = topics.sorted { $0.startTime < $1.startTime }
     }
-    let speakers = input.speakers.isEmpty ? "不明" : input.speakers.joined(separator: ", ")
     let decisions = unique(topics.flatMap(\.decisions))
     let questions = unique(topics.flatMap(\.questions))
-    let actions = SummaryResponseParser.deduplicated(topics.flatMap(\.actions))
+    let includesActions: Bool = if case .market(let market) = template { market.includesActions } else { true }
+    let actions = includesActions ? SummaryResponseParser.deduplicated(topics.flatMap(\.actions)) : []
+    let reserved = Set((decisions + questions + actions.map(\.title)).map(SummaryResponseParser.taskKey))
+    var seen = reserved
+    if !overview.isEmpty { seen.insert(SummaryResponseParser.taskKey(overview)) }
+    var lines = ["# \(headline)"]
+    if !overview.isEmpty { lines += ["", overview] }
+    for topic in ordered {
+      let points = unique(topic.points + topic.concerns).filter { point in
+        seen.insert(SummaryResponseParser.taskKey(point)).inserted || topic.relations.contains { $0.target == .point && $0.parent == point }
+      }
+      guard !points.isEmpty else { continue }
+      let location = template == .builtIn(.detailedMinutes) && input.duration > 0
+        ? "[\(MemoraFormat.duration(topic.startTime))-\(MemoraFormat.duration(topic.endTime))] " : ""
+      lines += ["", "## \(location)\(topic.title)"]
+      lines += SummaryRelationMarkdown.bullets(points, relations: topic.relations, target: .point)
+    }
     let relations = topics.flatMap(\.relations)
-
-    var lines: [String] = []
-    switch template {
-    case .builtIn(.detailedOverview):
-      lines = [
-        "# \(headline)",
-        "**日時**: \(input.dateText)  ",
-        "**参加者**: \(speakers)  ",
-        "**会議の概要**:  ",
-        overview
-      ]
-      for (index, topic) in orderedTopics.enumerated() {
-        lines += ["", "---", "## トピック\(index + 1)：\(topic.title)", "### サマリー"]
-        if !topic.speakers.isEmpty {
-          lines.append("- **関与者**: \(topic.speakers.joined(separator: ", "))")
-        }
-        lines.append("- **要点**:")
-        lines += SummaryRelationMarkdown.bullets(topic.points, relations: topic.relations, target: .point, level: 1)
-        lines.append("- **決定事項**:")
-        lines += nested(topic.decisions, relations: topic.relations)
-        lines.append("- **課題・懸念**:")
-        lines += nested(topic.concerns)
-        lines.append("### アクションアイテム")
-        lines += actionTable(topic.actions)
-        lines.append("### オープンクエスチョン")
-        lines += bullets(topic.questions)
-      }
-
-    case .builtIn(.meetingMinutes), .market:
-      lines = [
-        "## 会議情報",
-        "> 日時: \(input.dateText)",
-        "> 参加者: \(speakers)",
-        "## 概要",
-        overview,
-        "## 議事録"
-      ]
-      for topic in orderedTopics {
-        lines.append("### \(topic.title)")
-        lines += SummaryRelationMarkdown.bullets(topic.points, relations: topic.relations, target: .point)
-      }
-      lines.append("## 決定事項")
-      lines += bullets(decisions, relations: relations)
-      lines.append("## 今後の予定・アクション項目")
-      lines += actions.isEmpty
-        ? ["- なし"]
-        : actions.map { "- [ ] \($0.title)（担当: \($0.owner ?? "未定") / 期限: \($0.due ?? "未定")）" }
-      lines.append("## 未決事項")
-      lines += bullets(questions)
-
-    case .builtIn(.detailedMinutes):
-      lines = ["## 会議の要旨", overview, "## 主要な決定事項"]
-      lines += bullets(decisions, relations: relations)
-      lines.append("## アクションアイテム")
-      lines += actions.isEmpty
-        ? ["- なし"]
-        : actions.map { "- @\($0.owner ?? "未定") - \($0.title) - 期限: \($0.due ?? "未定")" }
-      lines.append("## 詳細議事録")
-      for topic in orderedTopics {
-        let range = "\(MemoraFormat.duration(topic.startTime))-\(MemoraFormat.duration(topic.endTime))"
-        lines.append("### [\(range)] \(topic.title)")
-        lines += SummaryRelationMarkdown.bullets(topic.points, relations: topic.relations, target: .point)
-      }
-      lines.append("## 未決事項")
-      lines += bullets(questions)
-
-    case .builtIn(.actionPlan):
-      lines = [
-        "# \(headline)",
-        "**日時**: \(input.dateText)  ",
-        "**概要**: \(overview)",
-        "## アクションアイテム"
-      ]
-      lines += actionTable(actions)
-      lines.append("## 決定事項")
-      lines += bullets(decisions, relations: relations)
-      lines.append("## 未決事項・確認が必要なこと")
-      lines += bullets(questions)
+    if !decisions.isEmpty {
+      lines += ["", "## 決定事項"] + SummaryRelationMarkdown.bullets(decisions, relations: relations)
     }
-    return lines.joined(separator: "\n")
-  }
-
-  private static func bullets(_ items: [String], relations: [SummaryRelation] = []) -> [String] {
-    items.isEmpty ? ["- なし"] : SummaryRelationMarkdown.bullets(items, relations: relations)
-  }
-
-  private static func nested(_ items: [String], relations: [SummaryRelation] = []) -> [String] {
-    items.isEmpty ? ["  - なし"] : SummaryRelationMarkdown.bullets(items, relations: relations, level: 1)
-  }
-
-  private static func actionTable(_ actions: [SummaryActionItem]) -> [String] {
-    guard !actions.isEmpty else { return ["なし"] }
-    return [
-      "| タイトル | 説明 | 責任者 | 期限 | 備考 |",
-      "|:---|:---|:---|:---|:---|"
-    ] + actions.map { action in
-      "| \(cell(action.title)) | \(cell(action.detail)) | \(cell(action.owner ?? "未定")) | \(cell(action.due ?? "未定")) | |"
+    if !actions.isEmpty {
+      lines += ["", "## 次のアクション"]
+      for action in actions {
+        var metadata: [String] = []
+        if let owner = SummaryActionItem.normalized(action.owner) { metadata.append("担当: " + owner) }
+        if let due = SummaryActionItem.normalized(action.due) { metadata.append("期限: " + due) }
+        let suffix = metadata.isEmpty ? "" : "（" + metadata.joined(separator: " / ") + "）"
+        lines.append("- [ ] \(action.title)\(suffix)")
+        if !action.detail.isEmpty, action.detail != action.title { lines.append("  " + action.detail) }
+      }
     }
-  }
-
-  /// A pipe inside a cell would split the row.
-  private static func cell(_ text: String) -> String {
-    text.replacingOccurrences(of: "|", with: "／").replacingOccurrences(of: "\n", with: " ")
+    if !questions.isEmpty { lines += ["", "## 未解決の問い"] + questions.map { "- " + $0 } }
+    return SummaryResponseParser.generatedMarkdown(lines.joined(separator: "\n"))
   }
 
   private static func unique(_ items: [String]) -> [String] {
-    var seen: Set<String> = []
-    return items.filter { seen.insert(SummaryResponseParser.taskKey($0)).inserted }
+    var seen = Set<String>()
+    return items.filter { SummaryActionItem.normalized($0) != nil && seen.insert(SummaryResponseParser.taskKey($0)).inserted }
   }
 }
