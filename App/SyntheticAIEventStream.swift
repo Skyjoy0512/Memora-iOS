@@ -2,7 +2,7 @@
 import Foundation
 
 /// Offline bytes exercise the same SSE receive loop as BYOK, without keys or HTTP.
-struct SyntheticAIEventStream: AsyncSequence {
+struct SyntheticAIEventStream: AsyncSequence, Sendable {
   private var frames: [Data]
   private var interval: Duration
 

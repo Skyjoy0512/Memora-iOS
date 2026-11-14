@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 @main
 enum DeepSeekSummaryChecks {
@@ -12,18 +13,20 @@ enum DeepSeekSummaryChecks {
     let bytes = Data((reasoning + final).utf8)
     print("Synthetic DeepSeek SSE bytes=\(bytes.count); 9000 reasoning-only chunks before answer")
     let start = ContinuousClock.now
-    var tick = 0
+    let tick = Mutex(0)
     var activity = 0
     var publications: [String] = []
     let diagnostics = SummaryDiagnostics(jobID: UUID(), engine: "cloud", provider: "deepSeek", model: "fixture", characters: 10, segments: 1)
       let response = try await SummaryDiagnostics.$current.withValue(diagnostics) {
         try await CloudTurnStreamReader.response(from: Bytes(data: bytes), provider: .chatCompletions,
         responseKind: .textCompletion, now: {
-          defer { tick += 1 }
-          return start.advanced(by: .milliseconds(tick * 6))
+          tick.withLock { value in
+            defer { value += 1 }
+            return start.advanced(by: .milliseconds(value * 6))
+          }
         }, onActivity: {
           activity += 1
-          if tick < 9_000 { precondition(!diagnostics.events.contains { $0.stage == .firstToken }, "Reasoning was mislabeled as visible text") }
+          if tick.withLock({ $0 }) < 9_000 { precondition(!diagnostics.events.contains { $0.stage == .firstToken }, "Reasoning was mislabeled as visible text") }
         }, onText: { publications.append($0) })
       }
       let result = try CloudSummaryResponse(response, provider: .chatCompletions)
@@ -82,7 +85,7 @@ enum DeepSeekSummaryChecks {
     catch AIAnswerFailure.executionLimit {}
   }
 
-  struct Bytes: AsyncSequence {
+  struct Bytes: AsyncSequence, Sendable {
     var data: Data
     func makeAsyncIterator() -> AsyncIterator { AsyncIterator(data: data) }
     struct AsyncIterator: AsyncIteratorProtocol {

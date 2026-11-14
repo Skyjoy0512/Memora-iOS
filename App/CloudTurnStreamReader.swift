@@ -3,12 +3,12 @@ import Foundation
 /// The production receive loop also accepts synthetic byte sequences, so event
 /// framing, publication timing and cancellation can be tested without an API.
 enum CloudTurnStreamReader {
-  @MainActor
-  static func response<Bytes: AsyncSequence>(
+  @concurrent
+  static func response<Bytes: AsyncSequence & Sendable>(
     from bytes: Bytes,
     provider: CloudStreamAccumulator.Provider,
     responseKind: CloudStreamAccumulator.ResponseKind = .agentTurn,
-    now: () -> ContinuousClock.Instant = { .now },
+    now: @Sendable () -> ContinuousClock.Instant = { .now },
     onActivity: (@MainActor () -> Void)? = nil,
     onText: @MainActor (String) -> Void
   ) async throws -> [String: Any] where Bytes.Element == UInt8 {
@@ -39,7 +39,7 @@ enum CloudTurnStreamReader {
         receivedReasoningEvents = accumulator.reasoningEvents
         if accumulator.outputEvents > receivedOutputEvents {
           if lastActivity == nil || lastActivity!.duration(to: instant) >= .seconds(1) {
-            onActivity?()
+            await onActivity?()
             lastActivity = instant
           }
         }
@@ -47,7 +47,7 @@ enum CloudTurnStreamReader {
         if accumulator.text != published, published.isEmpty || lastPublication.duration(to: instant) >= .milliseconds(100) || accumulator.isFinished {
           published = accumulator.text
           lastPublication = instant
-          onText(published)
+          await onText(published)
         }
         if accumulator.isFinished { break }
       }
@@ -57,7 +57,7 @@ enum CloudTurnStreamReader {
     let result = try accumulator.response()
     SummaryDiagnostics.current?.receivedUsage(result, usesAnthropicAPI: provider == .anthropic)
     SummaryDiagnostics.current?.responseCompleted()
-    if accumulator.text != published { onText(accumulator.text) }
+    if accumulator.text != published { await onText(accumulator.text) }
     return result
   }
 }

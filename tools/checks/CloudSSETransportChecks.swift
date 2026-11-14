@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 @main
 struct CloudSSETransportChecks {
@@ -66,18 +67,22 @@ struct CloudSSETransportChecks {
       "data: {\"choices\":[{\"delta\":{\"content\":\"\(value)\"}}]}\n\n"
     }.joined() + "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
     let start = ContinuousClock.now
-    var tick: Int64 = 0
+    let tick = Mutex<Int64>(0)
     var updates: [String] = []
     _ = try await CloudTurnStreamReader.response(from: Bytes(data: Data(rapid.utf8), probe: Probe()), provider: .chatCompletions, now: {
-      defer { tick += 1 }
-      return start.advanced(by: .milliseconds(tick))
+      tick.withLock { value in
+        defer { value += 1 }
+        return start.advanced(by: .milliseconds(value))
+      }
     }, onText: { updates.append($0) })
     precondition(updates == ["A", "ABC"], "First delta or final flush lost; rapid updates not coalesced")
-    tick = 0
+    tick.withLock { $0 = 0 }
     updates = []
     _ = try await CloudTurnStreamReader.response(from: Bytes(data: Data(rapid.utf8), probe: Probe()), provider: .chatCompletions, now: {
-      defer { tick += 1 }
-      return start.advanced(by: .milliseconds(tick * 100))
+      tick.withLock { value in
+        defer { value += 1 }
+        return start.advanced(by: .milliseconds(value * 100))
+      }
     }, onText: { updates.append($0) })
     precondition(updates == ["A", "AB", "ABC"], "100ms publication cadence changed or finish replayed")
 
@@ -113,17 +118,29 @@ struct CloudSSETransportChecks {
     var publications = 0
     var beforeTerminator = false
     let response = try await CloudTurnStreamReader.response(from: bytes, provider: provider, onText: { _ in
+      MainActor.assertIsolated()
       publications += 1
       if probe.pulls < wire.utf8.count { beforeTerminator = true }
     })
+    precondition(probe.offMain, "Receive loop remained on the main thread")
     let turn = try provider == .anthropic ? CloudAgentTurnDecoder.anthropic(response) : CloudAgentTurnDecoder.chatCompletions(response)
     return (turn.text, publications, beforeTerminator)
   }
 
-  final class Probe { var pulls = 0 }
+  final class Probe: Sendable {
+    private let state = Mutex((pulls: 0, offMain: false))
+    var pulls: Int { state.withLock { $0.pulls } }
+    var offMain: Bool { state.withLock { $0.offMain } }
+    func pulled() {
+      state.withLock { value in
+        value.pulls += 1
+        value.offMain = value.offMain || !Thread.isMainThread
+      }
+    }
+  }
   enum ProbeFailure: Error { case disconnected }
 
-  struct Bytes: AsyncSequence {
+  struct Bytes: AsyncSequence, Sendable {
     var data: Data
     var probe: Probe
     var cancelAt: Int? = nil
@@ -133,7 +150,7 @@ struct CloudSSETransportChecks {
       var input: Bytes
       var offset = 0
       mutating func next() async throws -> UInt8? {
-        input.probe.pulls += 1
+        input.probe.pulled()
         if offset == input.cancelAt { withUnsafeCurrentTask { $0?.cancel() } }
         if offset == input.failAt { throw ProbeFailure.disconnected }
         guard offset < input.data.count else { return nil }

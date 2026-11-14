@@ -28,3 +28,5 @@
 `CloudHTTPTransport` の寿命は1つの要約ジョブ。part/merge/final/continuationを同じURLSessionで送受信し、完了・失敗・キャンセル後に閉じる。認証hashはメモリ内だけでbindし、endpoint/auth変更やCookie指定は送信前に拒否。設定はコピーし、cookie/credential/cacheの共有を無効にする。redirectで原文の送信先を変えない。
 
 同一sessionで3応答（長さ継続2応答+次区間1応答）、拒否した変更で追加送信0、caller設定を変更しないことをURLProtocolで確認。実MeetingSummarizerの全part/最終生成が同じtransportを渡すことも確認。診断のsessionReuseは論理sessionの再利用であり、実TCP connection再利用やTLS短縮時間の測定ではない。
+
+SSEのバイトループとJSON蓄積は `@concurrent` でMainActor外へ移動した。UI通知だけを既存間隔でMainActorへawaitし、順序とbackpressureを維持。hostのproduction readerでoff-main実行とMainActor callbackを検証した。これは実機のUIフレーム時間やAPI速度の改善率の測定ではない。詳細は `summary-performance/TRANSPORT_DESIGN.md`。

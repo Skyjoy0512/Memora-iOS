@@ -1,8 +1,8 @@
 # 継続作業の設計メモ
 
-現HEAD: 2e03d71a。Phase 1 / lossless入力 / 共有能力・容量計画・制限付き並列の単位までcommit・push済み。実モデル評価は利用者指定で実行しない。未実装を完成扱いにしない。
+直近の基盤commit: c425146f（通信再利用）。Phase 1 / lossless入力 / 共有能力・容量計画・制限付き並列の単位までcommit・push済み。実モデル評価は利用者指定で実行しない。未実装を完成扱いにしない。
 
-## 次の単位: cache / 通信
+## 次の単位: cache / 統合
 
 既存資産を再調査:
 
@@ -33,7 +33,7 @@ cache採用時の条件:
 ## 残り
 
 - SoT Route B: 全体の事実/撤回/条件を共有した計画とセクション並列、同じSummaryKnowledgeと既存parser/validatorに統合。実品質/費用の採用ゲートが無い候補は既定にしない。別の要約エンジンを新設しない。
-- 通信: URLSessionの安全な接続再利用（認証/endpoint/cookie分離、寿命/キャンセル/所有権）。SSEは既にappend＋100ms publication済み。重複実装しない。
+- 通信はjob単位URLSession再利用とSSE off-mainまで実装済み。TRANSPORT_DESIGN.md参照。実TCP/TLS・実機応答は未検証。
 - 確定STT区間: 既存SourceMedia/PDF checkpointとSpeechAnalyzer/recording finalizedフラグを調べる。暫定STTや未確定話者にクラウド先行処理を追加しない。
 - 評価: 保存済み本番相当応答への公式rule runnerはある。Judge/生成APIは未実行。課金ランナーを実装する場合も独立資格情報とrequest/費用上限が必須。
 - 全10群の無料回帰、適応型要約/復旧E2E、最終preview、docsと未検証一覧、意味単位commit/push。

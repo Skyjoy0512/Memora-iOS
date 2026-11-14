@@ -15,6 +15,10 @@ CloudHTTPTransportによる要約ジョブ内のsession再利用を実装し、�
 - 診断はsessionReuseの数値だけ。物理connectionの再利用と同一視しない。HTTP開始はidentity確認が終わって実際にdispatchする直前に数える。
 - URLProtocolによるofflineテストでreuse、credential/endpoint変更で0追加request、cookie分離、close、両provider形式と既存cancel/EOF/HTTP検証を通過。実HTTP/2・TLS待ち短縮は未測定のまま。
 
-別途調べる箇所:
+受信解析の実行場所:
 
-`CloudTurnStreamReader.response` はMainActor。バイト/SSE/JSON解析をoff-mainへ動かせるか、SyntheticAIEventStreamと各clock fixtureのactor契約を調べる。単にonTextを非同期にばら撒く変更は通知順序・終端・backpressureを壊すため不可。Swiftの@concurrent等の実コンパイラー契約を確認し、MainActor callbackは必要時だけawaitする。テストで実際の処理場所を確認してから採用する。
+`CloudTurnStreamReader.response` を `@concurrent` に変更。Swift 6.4.2のgeneric executorでバイト/SSE/JSONの蓄積を行い、100ms本文通知と1秒activityだけをMainActorへawaitする。TaskLocalの診断、通知の順序とbackpressure、キャンセルを維持し、通知ごとの非同期Taskは作らない。入力sequenceと仮想時計をSendableにし、テスト時計・probeをMutexで保護した。
+
+実際のreaderへ渡したbyte sequenceの実行がmain thread外に到達し、表示callbackがMainActor上にあることをhostでassertした。LF/CRLF/CR、BOM、多行、EOF、途中切断、キャンセル、更新間引きに加え、2,178,128-byte / 9,000推論イベントの合成入力を通過。仮想30〜180秒の受信試験はAPIの実所要時間ではない。iOS previewは2026-11-15T04-10-36-f8eff2a1.logで成功（既存11警告）。実機でのスクロール応答・CPU短縮・電池は未計測。
+
+言語仕様: https://github.com/swiftlang/swift-evolution/blob/main/proposals/0461-async-function-isolation.md 。新しいOS APIの追加はない。

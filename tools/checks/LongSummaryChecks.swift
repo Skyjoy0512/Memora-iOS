@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import FoundationModels
 
 @main
@@ -90,12 +91,16 @@ enum LongSummaryChecks {
     print("LongSummaryChecks: PASS; virtual receive times, EOF rejection, redacted/bounded timeline retaining late failures, and actual FoundationModels error types. No inference or network; OS/HTTP wall-clock deadlines are not simulated by the virtual clock.")
   }
 
-  final class Timeline {
+  final class Timeline: Sendable {
     let start = ContinuousClock.now
-    var elapsed = 0
+    private let state = Mutex(0)
+    var elapsed: Int {
+      get { state.withLock { $0 } }
+      set { state.withLock { $0 = newValue } }
+    }
     var now: ContinuousClock.Instant { start.advanced(by: .seconds(elapsed)) }
   }
-  struct TimedBytes: AsyncSequence {
+  struct TimedBytes: AsyncSequence, Sendable {
     var frames: [(Int, String)]
     var clock: Timeline
     func makeAsyncIterator() -> AsyncIterator { AsyncIterator(frames: frames.map { ($0.0, Array($0.1.utf8)) }, clock: clock) }
