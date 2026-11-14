@@ -32,7 +32,7 @@
 
 ## 残り
 
-- SoT Route B: 全体の事実/撤回/条件を共有した計画とセクション並列、同じSummaryKnowledgeと既存parser/validatorに統合。実品質/費用の採用ゲートが無い候補は既定にしない。別の要約エンジンを新設しない。
+- SoT Route B: 候補実装済み。全原文/共通計画/同じ抽出JSONを共有し、既存parserへ統合。mockの順序/根拠/不正計画/429を通過。SummaryOptimizationGate.reviewsは空で通常無効。実品質/費用/速度なしにgateを開けない。
 - 通信はjob単位URLSession再利用とSSE off-mainまで実装済み。TRANSPORT_DESIGN.md参照。実TCP/TLS・実機応答は未検証。
 - 確定STT区間: 既存SourceMedia/PDF checkpointとSpeechAnalyzer/recording finalizedフラグを調べる。暫定STTや未確定話者にクラウド先行処理を追加しない。
 - 評価: 保存済み本番相当応答への公式rule runnerはある。Judge/生成APIは未実行。課金ランナーを実装する場合も独立資格情報とrequest/費用上限が必須。

@@ -4,6 +4,7 @@ import Foundation
 @main @MainActor
 enum SummaryPipelineChecks {
   static func main() async throws {
+    try await ParallelCompositionChecks.run()
     try await cacheChecks()
     for empty in ["", " \n\t　"] {
       CloudAIService.gate = SummaryFixtureGate()

@@ -4,7 +4,7 @@
 
 | 対象・一次資料 | 確認した実装 | Memoraでの方針 |
 |---|---|---|
-| [Skeleton-of-Thought](https://github.com/imagination-research/sot) | `sot/schedulers/outline_batch_scheduler.py`, router | 全体の骨格を先に共有して並列展開する設計を参考。生成呼び出しと全文入力課金が増えるため品質・費用未検証では既定にしない。 |
+| [Skeleton-of-Thought](https://github.com/imagination-research/sot) | `sot/schedulers/outline_batch_scheduler.py`, router | 全体計画/抽出と原文を共有して並列展開するSwift候補を既存engine内に実装。入力課金・品質の実測gateが空なので通常は無効。 |
 | [LlamaIndex](https://github.com/run-llama/llama_index) | `response_synthesizers/tree_summarize.py`, `indices/prompt_helper.py` | prompt/output余白を引いた再充填とasync統合を参考。無制限gatherや要約の無制限再圧縮は採らない。 |
 | [LangChain](https://github.com/langchain-ai/langchain) | `combine_documents/{map_reduce,refine}.py`, core caches | モデル/chain分離と再利用の責務を参考。逐次Refineを高速化の既定経路にしない。 |
 | [LLMLingua](https://github.com/microsoft/LLMLingua) | `llmlingua/prompt_compressor.py` | LLMLingua-2のtoken選別は意味損失を検証すべき別実験。原文の訂正・否定・条件を落とせないため採用・既定有効化しない。 |

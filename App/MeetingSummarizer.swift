@@ -107,6 +107,15 @@ enum MeetingSummarizer {
     SummaryDiagnostics.current?.record(.plannedParts, code: parts.count)
     SummaryDiagnostics.current?.record(.planningCapacity, code: budget.sourceCapacity)
 
+    if parts.count == 1, SummaryOptimizationGate.permitsParallelComposition(input: input, llm: llm,
+      sourceBytes: compact ? compactBytes : originalBytes) {
+      let candidate = await composeInParallel(input, llm: llm, transcript: legend + parts[0].joined(separator: "\n"),
+        source: sourceIndex, compact: compact, transport: transport, authorize: authorize, progress: progress)
+      // Only a zero-request capacity preflight can fall back automatically.
+      // Never buy another complete generation after a paid candidate failed.
+      if case .failure(.contextTooLarge) = candidate {} else { return candidate }
+    }
+
     let request: String
     if parts.count == 1 {
       await progress("文字起こし全体を読んでいます")
@@ -204,53 +213,58 @@ enum MeetingSummarizer {
     }
     switch reply {
     case .answer(let reply):
-      SummaryDiagnostics.current?.record(.parseStarted)
-      let choices = input.automaticCandidates.isEmpty ? [input.template] : input.automaticCandidates
-      let actionFree = choices.compactMap { choice -> String? in
-        if case .market(let template) = choice, !template.includesActions { return choice.id }
-        return nil
-      }
-      var summary = SummaryResponseParser.validateTemplate(SummaryResponseParser.parse(reply),
-        allowedIDs: Set(choices.map(\.id)), actionFreeIDs: Set(actionFree))
-      guard summary.hasCompleteExtraction else { return .failure(.generationFailed) }
-      summary.evidence = summary.evidence.compactMap { reference in
-        guard let id = sourceIndex.originalID(for: reference.sourceSegmentID, allowShortIDs: compact),
-              sourceIndex.validates(id: reference.sourceSegmentID, quote: reference.quote) else { return nil }
-        var reference = reference
-        reference.sourceSegmentID = id.uuidString
-        return reference
-      }
-      if var knowledge = summary.knowledge {
-        for index in knowledge.facts.indices {
-          guard var references = knowledge.facts[index].sourceReferences else { continue }
-          for reference in references.indices {
-            if let id = sourceIndex.originalID(for: references[reference].sourceSegmentID, allowShortIDs: compact) {
-              references[reference].sourceSegmentID = id.uuidString
-            }
-          }
-          knowledge.facts[index].sourceReferences = references
-        }
-        summary.knowledge = knowledge
-      }
-      summary.knowledge = summary.knowledge?.validated(allowedProfiles: Set(choices.map(\.id))) { reference in
-        sourceIndex.validates(id: reference.sourceSegmentID, quote: reference.quote, allowShortIDs: false)
-      }
-      if var knowledge = summary.knowledge {
-        if knowledge.selectedProfileIDs.isEmpty, let id = summary.templateID { knowledge.selectedProfileIDs = [id] }
-        let speakerIDs = Set(input.transcript.compactMap(\.speakerID))
-        for index in knowledge.facts.indices {
-          knowledge.facts[index].origin = .generated
-          knowledge.facts[index].speakerIDs = knowledge.facts[index].speakerIDs?.filter { speakerIDs.contains($0) }
-        }
-        summary.knowledge = knowledge
-      }
-      if !input.template.preservesFormat { summary.markdown = SummaryResponseParser.generatedMarkdown(summary.markdown) }
-      if summary.templateID == VideoSummaryTemplate.template.id { summary.decisions = [] }
-      SummaryDiagnostics.current?.record(.parseCompleted)
-      return summary.markdown.isEmpty ? .failure(.empty) : .success(summary)
+      return parseGeneratedReply(reply, input: input, sourceIndex: sourceIndex, compact: compact)
     case .failure(let failure):
       return .failure(failure)
     }
+  }
+
+  static func parseGeneratedReply(_ reply: String, input: MeetingSummaryInput,
+    sourceIndex: SummarySourceIndex, compact: Bool) -> Result<MeetingSummary, AIAnswerFailure> {
+    SummaryDiagnostics.current?.record(.parseStarted)
+    let choices = input.automaticCandidates.isEmpty ? [input.template] : input.automaticCandidates
+    let actionFree = choices.compactMap { choice -> String? in
+      if case .market(let template) = choice, !template.includesActions { return choice.id }
+      return nil
+    }
+    var summary = SummaryResponseParser.validateTemplate(SummaryResponseParser.parse(reply),
+      allowedIDs: Set(choices.map(\.id)), actionFreeIDs: Set(actionFree))
+    guard summary.hasCompleteExtraction else { return .failure(.generationFailed) }
+    summary.evidence = summary.evidence.compactMap { reference in
+      guard let id = sourceIndex.originalID(for: reference.sourceSegmentID, allowShortIDs: compact),
+            sourceIndex.validates(id: reference.sourceSegmentID, quote: reference.quote) else { return nil }
+      var reference = reference
+      reference.sourceSegmentID = id.uuidString
+      return reference
+    }
+    if var knowledge = summary.knowledge {
+      for index in knowledge.facts.indices {
+        guard var references = knowledge.facts[index].sourceReferences else { continue }
+        for reference in references.indices {
+          if let id = sourceIndex.originalID(for: references[reference].sourceSegmentID, allowShortIDs: compact) {
+            references[reference].sourceSegmentID = id.uuidString
+          }
+        }
+        knowledge.facts[index].sourceReferences = references
+      }
+      summary.knowledge = knowledge
+    }
+    summary.knowledge = summary.knowledge?.validated(allowedProfiles: Set(choices.map(\.id))) { reference in
+      sourceIndex.validates(id: reference.sourceSegmentID, quote: reference.quote, allowShortIDs: false)
+    }
+    if var knowledge = summary.knowledge {
+      if knowledge.selectedProfileIDs.isEmpty, let id = summary.templateID { knowledge.selectedProfileIDs = [id] }
+      let speakerIDs = Set(input.transcript.compactMap(\.speakerID))
+      for index in knowledge.facts.indices {
+        knowledge.facts[index].origin = .generated
+        knowledge.facts[index].speakerIDs = knowledge.facts[index].speakerIDs?.filter { speakerIDs.contains($0) }
+      }
+      summary.knowledge = knowledge
+    }
+    if !input.template.preservesFormat { summary.markdown = SummaryResponseParser.generatedMarkdown(summary.markdown) }
+    if summary.templateID == VideoSummaryTemplate.template.id { summary.decisions = [] }
+    SummaryDiagnostics.current?.record(.parseCompleted)
+    return summary.markdown.isEmpty ? .failure(.empty) : .success(summary)
   }
 
   /// "mm:ss〜mm:ss" read off the first and last line of a part.
