@@ -30,16 +30,15 @@ struct AskAIHeader: View {
             .foregroundStyle(MemoraPalette.textSecondary)
             .accessibilityHidden(true)
         }
-          .frame(minHeight: 44)
+          .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget)
           .contentShape(Rectangle())
       }
       .buttonStyle(MemoraQuietButtonStyle())
       .accessibilityLabel("Memora、履歴と検索")
-      Spacer(minLength: MemoraSpacing.sm)
       headerButton("新しいチャット", icon: .squareAndPencil, action: onNewChat)
         .disabled(model.aiMessages.isEmpty)
     }
-    .padding(.horizontal, MemoraSpacing.md)
+    .padding(.horizontal, MemoraSpacing.screen)
     .frame(minHeight: 48)
   }
 
@@ -50,9 +49,10 @@ struct AskAIHeader: View {
     } label: {
       ToolbarIconGlyph(icon: icon)
         .frame(width: 44, height: 44)
-        .contentShape(Rectangle())
+        .contentShape(Circle())
+        .memoraGlass(in: Circle(), interactive: true, backed: false)
     }
-    .buttonStyle(MemoraQuietButtonStyle())
+    .buttonStyle(.plain)
     .accessibilityLabel(title)
   }
 }

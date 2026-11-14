@@ -8,13 +8,13 @@ struct SharedProjectView: View {
 
   var body: some View {
     if let project = model.cloudSharing.sharedProject(id: projectID) {
-      List {
+      MemoraList {
         Section {
           VStack(alignment: .leading, spacing: 10) {
             SharedOwnerBadge(ownerName: project.ownerName)
-            Label(project.name, icon: project.icon)
-              .font(.title2.bold())
-            Text("\(project.ownerName)さんのプロジェクトです。閲覧のみで、編集はできません。")
+            Text(project.name)
+              .font(MemoraTypography.screenTitle)
+            Text("閲覧のみ")
               .font(.footnote)
               .foregroundStyle(.secondary)
           }
@@ -37,8 +37,8 @@ struct SharedProjectView: View {
           Text("記録 \(project.records.count)件")
         }
       }
-      .listStyle(.plain)
-      .navigationTitle(project.name)
+      .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
+      .navigationTitle("共有プロジェクト")
       .navigationBarTitleDisplayMode(.inline)
     } else {
       ContentUnavailableView(

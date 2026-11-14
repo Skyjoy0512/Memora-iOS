@@ -250,7 +250,7 @@ Do not reintroduce per-item artwork, scale multipliers or oversized search icons
 | AIPluginMenuRow / AIPluginMenuCopy | succinct display-only builtin explanations; separate availability/cost, selected and pressed feedback |
 | Composer attachment Menu | native anchored attachment actions; mention selection preserves the native input |
 | AIReplyActionsRow | common response controls and a real excerpt count; vertical at accessibility sizes |
-| SidebarAccountFooter | anchored account/plan/settings controls, separated from scrollable destinations |
+| SidebarAccountFooter | single settings gear anchored below scrollable destinations |
 | MemoraForm / native Menu / sheet / alert | settings, integrations, skill setup, editors and confirmation |
 
 Standard presentation pages use SlidePageLayout for line breaks, fixed 24pt
@@ -270,9 +270,9 @@ Ask AI: compact sidebar/history/new-chat header; no idle decoration. A 32pt
 message rhythm and selectable Markdown on the canvas. Keep stable TextField
 identity, native composer Glass and 44pt controls. Candidates appear above the
 composer and respect keyboard height.
-The header is flat, with the title beside the sidebar icon and a visible menu
-chevron. On the Ask AI tab, the composer stays two-row and keeps its width when
-focus changes; only contextual prompts use the compact capsule. Idle voice input
+The header centers its title/history menu between equally sized sidebar and
+new-chat controls. Only the two icon controls use circular glass. The shared
+composer preserves its editor identity when focus and available width change. Idle voice input
 is an outline glyph; send, stop and active voice states earn the inverse circle.
 Active focus/listening belongs to the composer; a saved draft alone neither focuses
 the field nor opens the keyboard. After dismissing the keyboard, a draft can remain
@@ -392,19 +392,20 @@ Workspace selection, team creation and joining live under Settings › ワーク
 Workspace options are visible rows with one checkmark, not a pull-down menu.
 They retain storage descriptions, selected accessibility traits and the existing
 workspace switch path. An unconfigured backend does not fabricate team options.
-The sidebar's recorder entry opens the same recorder hub as Settings: Omi direct
+The root recorder toolbar opens the same recorder hub as Settings: Omi direct
 pairing/details and one audio-import destination for PLAUD, other recorders and voice memos.
 File import is explicitly distinct from Bluetooth pairing and uses the existing
 workspace-bound, validated audio/SQLite path. Other vendor protocols are unsupported.
 
 Tools: the side menu's `ToolsView` opens the marketplace for skills, summary
-templates and connectors. Horizontal card shelves open single-column card catalogs.
-Details use a large gradient hero, native sheet toolbar, metadata grid and a
-scrolling article at the common reading width. Skill use stages
-a mention in the existing Ask AI draft without sending it; template use sets the
-existing automatic-summary preference. The top-right plus opens the same editors
-as Settings and preserves Markdown import and MCP registration. Service state
-comes from the existing catalog; no fabricated connections or authors.
+templates and connectors. Installed items and vertical shelves open plain row
+catalogs. Details use the shared icon/title hero, description and facts. The
+navigation title names the content type once; the body names the actual item.
+Share and management actions live in the toolbar; the bottom has one primary
+use/connect action. The home options menu preserves creation, import, management,
+community browsing and MCP registration. Skill use stages a mention without
+sending, and template use preserves the existing summary preference behavior.
+Service state comes from the existing catalog; no fabricated connections or authors.
 Service entries use official identity images through `AIPluginIcon`; local
 calendar and interface actions use Lucide. Logo sources are
 recorded in `docs/CONNECTOR_LOGOS.md`. Provider logos and the supplied Memora
@@ -437,19 +438,12 @@ align with the 20pt content margin and reading-width limit.
 The capture menu shows action names and icons in 44pt rows with a 260pt width
 that grows with Dynamic Type up to 320pt; explanations remain VoiceOver hints.
 
-Sidebar: the main destinations (Library / Journal / Ask AI /
-Marketplace) first, then collections (Projects / Documents / People), Devices, and
-plan/settings controls. There is no bottom tab bar. A destination name stays constant; connection
-state is a separate secondary value. Rows use the shared 28pt icon column and
-52pt minimum height, growing with text. Signed-in account information and the plan/settings
-actions are anchored below the destinations. Guest sign-in is not shown; account
-setup remains in Settings. They wrap without truncation; the
-profile avatar is a separate 32pt content role, not an interface glyph. At
-accessibility sizes the plan action reads “プラン”; workspace and storage context live in Settings. The
-spoken plan name still identifies Memora Plus. The settings gear stays at the
-bottom right, with its entire 44pt glass circle inside the tappable label.
-It is the only Settings entry in the drawer; the top group contains destinations
-only, not a second copy of the same action.
+Sidebar: Library / Journal / Ask AI / Marketplace lead, then Tasks / Documents /
+People. Projects live in Library's Projects segment. A static wordmark and search
+sit above the scrolling rows; the only footer action is Settings. Recorder setup,
+account, plan and workspace options remain in Settings. Selected route state uses
+a subtle fill and accessibility traits. Rows retain a 28pt icon slot and 52pt
+minimum height and grow with larger text. The entire settings circle is tappable.
 The drawer uses secondaryBackground, subtly separated from the conversation canvas.
 The supplied 410×68 geometric MEMORA wordmark is displayed at 144pt wide
 above Library, aligned with the row icons. Its original light and dark artwork is selected by the asset catalog;
@@ -550,10 +544,11 @@ device verification; a successful back-button tap is not that evidence.
 ## Marketplace — 2026-10-31
 
 The sidebar names the destination マーケットプレイス. Its existing Tools state and
-root navigation remain intact. The home has one editorial recommendation and
-horizontal shelves for skills, summary templates and integrations. Each shelf
-opens a vertically scrolling, single-column card catalog with すべて見る; every card opens the existing working
-detail view. Search is local catalog metadata only and never queries a service.
+root navigation remain intact. The home shows an installed icon strip and vertical
+shelves for skills, summary templates and integrations. Section headings open full
+catalogs, and every row opens its existing details. The floating search spans all
+catalogs on the home and stays scoped within a category. Search is local metadata
+only and never queries a service.
 There are no fabricated installs, rankings, reviews or public publisher claims.
 
 Artwork is a static Lucide glyph on a category gradient, clipped to its own
@@ -646,3 +641,15 @@ The create-menu memo uses the existing source editor in memo mode: body, optiona
 title and current Library/project destination. Drafts are separate from link/file
 addition; note commit and draft removal are atomic. Journal's dated entries and
 existing stored memos are preserved.
+
+## Simplification implementation — 2026-11-14
+
+[Review and validation](docs/UI_UX_SIMPLIFICATION_2026_11_14.md) records the approved
+cross-screen changes. Collection records share LibraryRecordRow, documents share
+DocumentRow, and settings/editing use native Form sections on the flat canvas.
+Person details lead with overview and records; tasks, decisions and journal
+references expand on demand, keeping unconfirmed name matches separately labelled.
+Copy stays directly available under AI replies; sharing, reading aloud and other
+answer actions live in its options menu. Active speech retains an immediate stop.
+Sources expand without changing their live access checks. Technical settings
+explanations expand; availability and send/permission information remain visible.

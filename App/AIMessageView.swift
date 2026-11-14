@@ -113,8 +113,14 @@ struct AIMessageView: View {
       }
 
       if !message.isThinking {
-        SourceCitationList(citations: message.sourceCitations)
-        AttachmentCitationList(citations: message.attachmentCitations)
+        if !message.sourceCitations.isEmpty || !message.attachmentCitations.isEmpty {
+          DisclosureGroup("出典") {
+            SourceCitationList(citations: message.sourceCitations)
+            AttachmentCitationList(citations: message.attachmentCitations)
+          }
+          .font(MemoraTypography.metadata)
+          .frame(minHeight: MemoraSpacing.touchTarget)
+        }
       }
 
       let followUps = model.followUps(for: message)

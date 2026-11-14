@@ -340,10 +340,15 @@ struct SettingsCategoryView: View {
             SettingsLabel("表示するカレンダー", icon: .calendarBadgeCheckmarkFill)
           }
           .disabled(!showCalendarEvents)
+          DisclosureGroup("記録のしくみ") {
+            Text("電池への影響を抑えるため、駅の判定はおおよそです。カレンダーの予定は保存せず、表示のたびに読み込みます。")
+              .font(MemoraTypography.secondary)
+              .foregroundStyle(MemoraPalette.textSecondary)
+          }
         } header: {
           Text("ジャーナル")
         } footer: {
-          Text("場所の自動記録と位置情報の項目はAIへ送信しません。電池への影響を抑えるため、駅の判定はおおよそです。カレンダーの予定は保存せず、表示のたびに読み込みます。")
+          Text("場所の自動記録と位置情報の項目はAIへ送信しません。")
         }
 
 

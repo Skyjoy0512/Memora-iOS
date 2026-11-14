@@ -1,6 +1,6 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
-import { launchMemora, scrollToControl, tapControl, tapTab } from './ui-helpers';
+import { launchMemora, scrollToControl, tapControl, tapTab, selectLibrarySection } from './ui-helpers';
 
 async function openDiagnostics(screen: any) {
   await tapControl(screen.getByLabel('メニュー').first());
@@ -45,7 +45,7 @@ test('screen review samples persist without replacing existing content or duplic
     await scrollToControl(screen, row);
     await tapControl(row);
     await expect(screen.getByText('記録', { exact: true }).first()).toBeVisible();
-    await expect(screen.getByText(title + '（サンプル）', { exact: true })).toBeVisible();
+    await expect(screen.getByText(title + '（サンプル）', { exact: true }).last()).toBeVisible();
     if (action === '準備しています') await expect(screen.getByTestId('ai.waitingStatus')).toBeVisible();
     else if (action) await expect(screen.getByRole('button', { name: action, exact: true })).toBeVisible();
     await app.screenshot('screen-review-state-' + title.slice(0, 2));
@@ -64,4 +64,15 @@ test('screen review samples persist without replacing existing content or duplic
   const journalEntry = screen.getByRole('button', { name: /08 要約失敗（サンプル）/ });
   await expect(journalEntry).toBeVisible();
   await app.screenshot('screen-review-journal');
+  await expect(screen.getByText('この間に記録を追加', { exact: true })).not.toBeVisible();
+  await tapTab(screen, 'ライブラリ');
+  await selectLibrarySection(screen, 'プロジェクト');
+  await tapControl(screen.getByRole('button', { name: /^画面確認（サンプル）、/ }));
+  await expect(screen.getByTestId('project.workspace.sections')).toBeVisible();
+  await expect(screen.getByRole('button', { name: /^01 文字起こし前（サンプル）、/ })).toBeVisible();
+  await app.screenshot('screen-review-project-records-first');
+  await tapControl(screen.getByRole('button', { name: 'チャット', exact: true }));
+  await expect(screen.getByText('チャットを始める', { exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '参考資料', exact: true }));
+  await expect(screen.getByRole('button', { name: '参考資料を追加', exact: true }).last()).toBeVisible();
 });

@@ -536,7 +536,11 @@ struct RootTabView: View {
     // the full-screen drawer closing over the newly selected destination.
     var transaction = Transaction(animation: nil)
     transaction.disablesAnimations = true
-    withTransaction(transaction, update)
+    withTransaction(transaction) {
+      model.composerDismissRequests += 1
+      model.isSearchActive = false
+      update()
+    }
     closeSidebar()
   }
 
@@ -557,7 +561,6 @@ struct RootTabView: View {
     selectFromSidebar {
       model.isToolsPresented = false
       model.selectedTab = .library
-      model.librarySection = .files
       model.libraryPath = [.documents]
     }
   }
@@ -566,7 +569,6 @@ struct RootTabView: View {
     selectFromSidebar {
       model.isToolsPresented = false
       model.selectedTab = .library
-      model.librarySection = .files
       model.libraryPath = [.people]
     }
   }

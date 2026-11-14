@@ -22,20 +22,7 @@ struct SkillDetailView: View {
             ("利用状況", enabled ? "有効" : "無効"), ("カテゴリー", "スキル"),
             ("提供", provider), ("バージョン", String(skill.version ?? 1))
           ])
-          Menu {
-            Button("コミュニティに投稿", icon: .squareAndArrowUp) { publishes = true }
-            ShareLink(item: MarketplaceDefinition(skill: skill).shareText) { Label("スキルを共有", icon: .squareAndArrowUp) }
-            ShareLink(item: skill.skillMarkdown) { Label("Markdownを共有", icon: .squareAndArrowUp) }
-            if skill.id.hasPrefix("custom-") {
-              Button("編集", icon: .pencil) { editing = skill }
-              Button("スキルを削除", icon: .trash, role: .destructive) { deleting = true }
-            }
-          } label: {
-            Label(skill.id.hasPrefix("custom-") ? "共有・編集" : "共有", icon: .ellipsis)
-              .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-              .contentShape(Rectangle())
-          }
-          .accessibilityLabel("スキルの操作")
+
           VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
             Text("使い方").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
             MarkdownDocumentView(markdown: skill.instructions)
@@ -58,7 +45,7 @@ struct SkillDetailView: View {
         }
       }
       .background(MemoraPalette.background)
-      .navigationTitle(skill.name)
+      .navigationTitle("スキル")
       .navigationBarTitleDisplayMode(.inline)
       .tint(MemoraPalette.textPrimary)
       .navigationBarBackButtonHidden(true)
@@ -71,6 +58,19 @@ struct SkillDetailView: View {
           ShareLink(item: MarketplaceDefinition(skill: skill).shareText) {
             ToolbarActionLabel("スキルを共有", icon: .squareAndArrowUp)
           }
+        }
+        ToolbarActionItem {
+          Menu {
+            Button("コミュニティに投稿", icon: .squareAndArrowUp) { publishes = true }
+            ShareLink(item: skill.skillMarkdown) { Label("Markdownを共有", icon: .squareAndArrowUp) }
+            if skill.id.hasPrefix("custom-") {
+              Button("編集", icon: .pencil) { editing = skill }
+              Button("スキルを削除", icon: .trash, role: .destructive) { deleting = true }
+            }
+          } label: {
+            ToolbarActionLabel("スキルの操作", icon: .ellipsis)
+          }
+          .accessibilityLabel("スキルの操作")
         }
       }
       .sheet(item: $editing) { SkillEditorView(skill: $0) }

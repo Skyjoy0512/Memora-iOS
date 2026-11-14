@@ -63,7 +63,7 @@ struct SharedRecordView: View {
         .padding(.bottom, MemoraSpacing.section)
         .frame(maxWidth: .infinity, alignment: .center)
       }
-      .navigationTitle(meeting.displayTitle)
+      .navigationTitle("共有された記録")
       .navigationBarTitleDisplayMode(.inline)
     } else {
       ContentUnavailableView(
@@ -81,19 +81,14 @@ struct SharedRecordView: View {
       Text(record.meeting.displayTitle)
         .font(MemoraTypography.screenTitle)
 
-      HStack(spacing: 8) {
-        Text(MemoraFormat.meetingDate(record.meeting.createdAt))
-        Text("·")
-        Text(MemoraFormat.duration(record.meeting.duration))
-        if let project = record.projectName {
-          Text("·")
-          Label(project, icon: .folder)
-        }
-      }
-      .font(.subheadline)
-      .foregroundStyle(.secondary)
+      Text(([MemoraFormat.meetingDate(record.meeting.createdAt),
+        MemoraFormat.duration(record.meeting.duration)] + (record.projectName.map { [$0] } ?? []))
+        .joined(separator: " · "))
+        .font(MemoraTypography.secondary)
+        .foregroundStyle(MemoraPalette.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
 
-      Label("\(record.ownerName)さんの記録です。閲覧のみで、編集はできません。", icon: .lock)
+      Label("閲覧のみ", icon: .lock)
         .font(.footnote)
         .foregroundStyle(.secondary)
     }

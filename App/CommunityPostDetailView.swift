@@ -49,7 +49,7 @@ struct CommunityPostDetailView: View {
     .disabled(isWorking)
     .background(MemoraPalette.background)
     .tint(MemoraPalette.textPrimary)
-    .navigationTitle(post.title).navigationBarTitleDisplayMode(.inline)
+    .navigationTitle(post.definition.kind == .skill ? "スキル" : "テンプレート").navigationBarTitleDisplayMode(.inline)
     .navigationBarBackButtonHidden(isMarketplaceSheet)
     .toolbar {
       if isMarketplaceSheet {

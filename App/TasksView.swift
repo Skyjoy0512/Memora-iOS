@@ -52,7 +52,7 @@ struct TasksView: View {
             ScrollView {
               MemoraEmptyState(icon: .checkmarkSquare,
                 title: LocalizedStringKey(isFiltered ? "条件に合うタスクはありません" : (showsCompleted ? "完了したタスクはありません" : "タスクはありません")),
-                message: LocalizedStringKey(isFiltered ? "条件を解除すると、ほかのタスクを確認できます。" : (showsCompleted ? "完了にした自分のタスクがここに残ります。" : "自分のタスクを追加できます。会議から見つかった課題は、担当を確認できたものだけがここに並びます。")),
+                message: LocalizedStringKey(isFiltered ? "条件を解除すると、ほかのタスクを確認できます。" : (showsCompleted ? "完了にした自分のタスクがここに残ります。" : "タスクを追加するか、記録から自分の担当を確認してください。")),
                 actionTitle: isFiltered ? "絞り込みを解除" : (showsCompleted ? nil : "タスクを追加"),
                 actionIcon: isFiltered ? .xmark : .plus) {
                 if isFiltered {
@@ -157,7 +157,6 @@ struct TasksView: View {
       }
     }
     .padding(.leading, CGFloat(min(depth, 4)) * 12)
-    .padding(.vertical, 5)
     .listRowBackground(Color.clear)
     .swipeActions(edge: .leading) {
       Button {

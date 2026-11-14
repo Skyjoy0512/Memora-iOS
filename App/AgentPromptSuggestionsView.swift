@@ -9,7 +9,7 @@ struct AgentPromptSuggestionsView: View {
       if !suggestions.isEmpty {
         VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
           VStack(spacing: 0) {
-            ForEach(suggestions) { suggestion in
+            ForEach(suggestions.prefix(3)) { suggestion in
               AgentPromptSuggestionRow(suggestion: suggestion) {
                 InteractionFeedback.shared.send(.selection)
                 model.stageAgentSuggestion(suggestion)

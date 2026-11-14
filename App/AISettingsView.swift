@@ -89,12 +89,9 @@ struct AISettingsView: View {
 
       Section {
         DisclosureGroup("詳細設定") {
-          LabeledContent("現在のAI", value: effectiveLabel)
           NavigationLink("モデルの上限") { ModelCapabilitiesView() }
           NavigationLink("Web検索・調査") { WebResearchSettingsView() }
-          if let message = availability.message {
-            Text(message).font(.footnote).foregroundStyle(.secondary)
-          }
+
         }
       }
 

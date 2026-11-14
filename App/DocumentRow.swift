@@ -9,29 +9,21 @@ struct DocumentRow: View {
 
   var body: some View {
     let preview = document.preview
-    let layout = typeSize.isAccessibilitySize
-      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.sm))
-      : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
-    layout {
-      MemoraInterfaceIcon(icon: document.kind.symbol)
-
-      VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
-        Text(document.displayTitle)
-          .font(.body.weight(.medium))
-          .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
-          .fixedSize(horizontal: false, vertical: true)
-        Text(caption)
-          .font(MemoraTypography.metadata)
+    VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
+      Text(document.displayTitle)
+        .font(.body.weight(.medium))
+        .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+        .fixedSize(horizontal: false, vertical: true)
+      Text(caption)
+        .font(MemoraTypography.metadata)
+        .foregroundStyle(MemoraPalette.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
+      if document.kind == .document && !preview.isEmpty {
+        Text(preview)
+          .font(MemoraTypography.secondary)
           .foregroundStyle(MemoraPalette.textSecondary)
-          .fixedSize(horizontal: false, vertical: true)
-        if document.kind == .document && !preview.isEmpty {
-          Text(preview)
-            .font(MemoraTypography.secondary)
-            .foregroundStyle(MemoraPalette.textSecondary)
-            .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
-        }
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(.vertical, MemoraSpacing.xs)
     .frame(maxWidth: .infinity, minHeight: ProjectLayout.minimumRowHeight, alignment: .leading)

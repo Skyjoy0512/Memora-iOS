@@ -10,6 +10,7 @@ struct SettingsValue: View {
       Text(value)
         .font(MemoraTypography.secondary)
         .foregroundStyle(MemoraPalette.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
     } label: {
       SettingsLabel(title, icon: icon)
     }

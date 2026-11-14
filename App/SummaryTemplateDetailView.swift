@@ -22,7 +22,6 @@ struct SummaryTemplateDetailView: View {
             ("カテゴリー", template.category.title), ("利用状況", isDefault ? "自動生成の既定" : isAdded ? "追加済み" : "未追加"),
             ("提供", template.isCustom ? "マイテンプレート" : "Memora"), ("タスク抽出", template.includesActions ? "あり" : "なし")
           ])
-          templateActions(template: template, isAdded: isAdded)
           TemplateArticleContent(template: template)
         }
         .frame(maxWidth: MemoraSpacing.readingWidth, alignment: .leading)
@@ -46,7 +45,7 @@ struct SummaryTemplateDetailView: View {
         }
       }
       .background(MemoraPalette.background)
-      .navigationTitle(template.title)
+      .navigationTitle("テンプレート")
       .navigationBarTitleDisplayMode(.inline)
       .tint(MemoraPalette.textPrimary)
       .navigationBarBackButtonHidden(true)
@@ -59,6 +58,7 @@ struct SummaryTemplateDetailView: View {
             ToolbarActionLabel("テンプレートを共有", icon: .squareAndArrowUp)
           }
         }
+        ToolbarActionItem { templateActions(template: template, isAdded: isAdded) }
       }
       .sheet(isPresented: $publishes) { CommunityPublishSheet(definition: .init(template: template)) }
       .sheet(item: $editing) { SummaryTemplateEditor(template: $0) }
@@ -76,7 +76,6 @@ struct SummaryTemplateDetailView: View {
 
   private func templateActions(template: SummaryMarketTemplate, isAdded: Bool) -> some View {
     Menu {
-      ShareLink(item: MarketplaceDefinition(template: template).shareText) { Label("テンプレートを共有", icon: .squareAndArrowUp) }
       Button("コミュニティに投稿", icon: .squareAndArrowUp) { publishes = true }
       if template.isCustom {
         Button("編集", icon: .pencil) { editing = template }
@@ -99,9 +98,7 @@ struct SummaryTemplateDetailView: View {
         }
       }
     } label: {
-      Label("共有・編集", icon: .ellipsis)
-        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-        .contentShape(Rectangle())
+      ToolbarActionLabel("テンプレートの操作", icon: .ellipsis)
     }
     .accessibilityLabel("テンプレートの操作")
   }

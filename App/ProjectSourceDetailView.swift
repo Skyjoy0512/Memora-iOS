@@ -37,7 +37,7 @@ struct ProjectSourceDetailView: View {
         ScrollView {
           LazyVStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
-              Text(source.title).font(.title2.weight(.semibold)).textSelection(.enabled)
+              Text(source.title).font(MemoraTypography.screenTitle).textSelection(.enabled)
                 .memoraTextReveal()
               Text(metadataDescription(for: source)).font(.caption).foregroundStyle(.secondary)
             }

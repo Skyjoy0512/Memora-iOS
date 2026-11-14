@@ -43,6 +43,7 @@ struct SummaryGenerationSheet: View {
             ForEach(SummaryLength.allCases) { Text($0.title).tag($0) }
           }
           .pickerStyle(.segmented)
+          .labelsHidden()
           .accessibilityIdentifier("summary.length")
         }
 

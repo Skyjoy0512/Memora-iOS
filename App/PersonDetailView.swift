@@ -24,104 +24,22 @@ struct PersonDetailView: View {
 
   private func content(_ memory: PersonMemory) -> some View {
     let summary = memory.conversationSummary
-    return List {
-      Section {
-        header(memory)
-          .listRowBackground(Color.clear)
-          .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18))
-      }
-
-      Section {
-        Button("この人物についてAIに聞く", icon: .sparkles) {
-          askAgent(about: memory.person)
-        }
-        .accessibilityLabel("「\(memory.person.name)」についてAIに聞く")
-      }
-
+    return MemoraList {
+      Section { header(memory) }
       if let latest = summary.topics.first {
         Section("概要") {
           NavigationLink(value: LibraryRoute.meeting(latest.id)) {
-            Text(summary.overview).font(.subheadline)
-          }
-        }
-        Section("話してきたこと") {
-          ForEach(summary.topics.prefix(8)) { topic in
-            NavigationLink(value: LibraryRoute.meeting(topic.id)) {
-              VStack(alignment: .leading, spacing: 4) {
-                Text(topic.title).font(.subheadline.weight(.medium))
-                if !topic.summary.isEmpty { Text(topic.summary).font(.subheadline).foregroundStyle(.secondary) }
-                Text(MemoraFormat.documentDate(topic.date)).font(.caption).foregroundStyle(.secondary)
-              }
-            }
-          }
-        }
-        if !summary.recentDecisions.isEmpty {
-          Section("最近の記録に加わった決定") {
-            NavigationLink(value: LibraryRoute.meeting(latest.id)) {
-              Text(summary.recentDecisions.joined(separator: "\n")).font(.subheadline)
-            }
+            Text(summary.overview)
+              .font(MemoraTypography.secondary)
+              .fixedSize(horizontal: false, vertical: true)
           }
         }
       }
-      if !summary.unresolvedTopics.isEmpty {
-        Section("未解決の話題") {
-          ForEach(summary.unresolvedTopics.prefix(8)) { topic in
-            NavigationLink(value: LibraryRoute.meeting(topic.id)) {
-              VStack(alignment: .leading, spacing: 4) {
-                Text(topic.unresolved.joined(separator: "\n")).font(.subheadline)
-                Text(topic.title).font(.caption).foregroundStyle(.secondary)
-              }
-            }
-          }
-        }
-      }
-
-      if !memory.assignedTasks.isEmpty {
-        Section("担当する未完了タスク") {
-          ForEach(memory.assignedTasks) { task in
-            TaskRow(task: task, showsSource: true) { editingTask = task }
-          }
-        }
-      }
-
-      if !memory.nameMatchedTasks.isEmpty {
-        Section {
-          ForEach(memory.nameMatchedTasks) { task in
-            TaskRow(task: task, showsSource: true) { editingTask = task }
-          }
-        } header: { Text("担当名のみ一致・本人未確認") }
-        footer: { Text("タスクの編集で人物を選ぶと、この人の担当として関連付けられます。") }
-      }
-
-      if !memory.sharedTasks.isEmpty {
-        Section("一緒の会議で残っていること") {
-          ForEach(memory.sharedTasks) { task in
-            TaskRow(task: task, showsSource: true) { editingTask = task }
-          }
-        }
-      }
-
-      if !memory.decisions.isEmpty {
-        Section("関連する会議の決定") {
-          ForEach(memory.decisions, id: \.self) { decision in
-            NavigationLink(value: LibraryRoute.meeting(decision.meetingID)) {
-              VStack(alignment: .leading, spacing: 3) {
-                Text(decision.text)
-                  .font(.subheadline)
-                Text("\(decision.meetingTitle) · \(decision.date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: "ja_JP"))))")
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-              }
-            }
-          }
-        }
-      }
-
-      Section("会話タイムライン・関連記録") {
+      Section("関連する記録") {
         if memory.meetings.isEmpty {
-          Text("まだ一緒の会議はありません。会議の参加者に追加すると、ここに並びます。")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+          Text("会議の参加者に追加すると、関連する記録がここに並びます。")
+            .font(MemoraTypography.secondary)
+            .foregroundStyle(MemoraPalette.textSecondary)
         } else {
           ForEach(memory.meetings) { meeting in
             NavigationLink(value: LibraryRoute.meeting(meeting.id)) {
@@ -130,35 +48,15 @@ struct PersonDetailView: View {
           }
         }
       }
-
-      if !memory.journalEntries.isEmpty {
-        Section("関連付けたジャーナル") {
-          ForEach(memory.journalEntries) { entry in
-            Button { selectedJournal = entry } label: { LifeLogRow(entry: entry) }
-              .buttonStyle(.plain)
-              .accessibilityElement(children: .combine)
-              .accessibilityHint("元の記録を開きます")
-          }
-        }
-      }
-      if !memory.nameMatchedJournalEntries.isEmpty {
-        Section {
-          ForEach(memory.nameMatchedJournalEntries) { entry in
-            Button { selectedJournal = entry } label: { LifeLogRow(entry: entry) }
-              .buttonStyle(.plain)
-              .accessibilityElement(children: .combine)
-              .accessibilityHint("本人未確認の元の記録を開きます")
-          }
-        } header: { Text("名前の言及のみ・本人未確認") }
-        footer: { Text("記録の編集で人物を選ぶと、この人に関連付けられます。名前の一致だけでは本人と断定しません。") }
-      }
+      PersonSupplementarySections(memory: memory,
+        editTask: { editingTask = $0 }, openJournal: { selectedJournal = $0 })
     }
-    .memoraPlainList()
     .contentMargins(.bottom, model.bottomContentClearance, for: .scrollContent)
-    .navigationTitle(memory.person.name)
+    .navigationTitle("人物")
     .toolbar {
       ToolbarActionItem {
         Menu {
+          Button("この人物についてAIに聞く", icon: .sparkles) { askAgent(about: memory.person) }
           Button("編集", icon: .pencil) { isEditing = true }
           Button("プライバシーと外部送信", icon: .lockShield) { isPrivacyPresented = true }
         } label: {
@@ -185,10 +83,10 @@ struct PersonDetailView: View {
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.md))
       : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.lg))
     return layout {
-      PersonAvatar(name: memory.person.name, size: 64, photoData: memory.person.photoData)
+      PersonAvatar(name: memory.person.name, size: 48, photoData: memory.person.photoData)
       VStack(alignment: .leading, spacing: 4) {
         Text(memory.person.name)
-          .font(.title2.bold())
+          .font(MemoraTypography.screenTitle)
         if let note = memory.person.note, !note.isEmpty {
           Text(note)
             .font(.subheadline)

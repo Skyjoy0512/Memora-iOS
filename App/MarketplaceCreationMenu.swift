@@ -10,6 +10,10 @@ struct MarketplaceCreationMenu: View {
 
   var body: some View {
     Menu {
+      NavigationLink { CommunityCatalogView() } label: { Label("コミュニティ", icon: .person2) }
+      NavigationLink { SkillsView() } label: { Label("マイスキルを管理", icon: .sliderHorizontal3) }
+      NavigationLink { SummaryTemplateMarketplaceView() } label: { Label("マイテンプレートを管理", icon: .docOnDoc) }
+      Divider()
       NavigationLink { CommunitySubmissionPicker() } label: { Label("コミュニティに投稿", icon: .squareAndArrowUp) }
       if section == nil || section == .skills {
         Button("スキルを作成", icon: .squareAndPencil) { newSkill = .draft() }
@@ -24,7 +28,7 @@ struct MarketplaceCreationMenu: View {
       if section == nil || section == .connectors {
         NavigationLink { MCPServersView() } label: { Label("MCPサーバーを追加", icon: .plugsConnected) }
       }
-    } label: { ToolbarActionLabel("作成・追加", icon: .plus) }
+    } label: { ToolbarActionLabel("マーケットプレイスの操作", icon: .ellipsis) }
     .sheet(item: $newSkill) { SkillEditorView(skill: $0) }
     .sheet(item: $newTemplate) { SummaryTemplateEditor(template: $0) }
     .fileImporter(isPresented: $importingSkill, allowedContentTypes: [.plainText, .text, .json], allowsMultipleSelection: false) { result in

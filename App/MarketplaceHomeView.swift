@@ -18,29 +18,7 @@ struct MarketplaceHomeView: View {
           onConnectorDismiss: { connectionRevision += 1 })
         MarketplaceShelf(section: .skills, items: shelfSkills)
         MarketplaceShelf(section: .templates, items: shelfTemplates)
-        NavigationLink { CommunityCatalogView() } label: {
-          HStack(spacing: MemoraSpacing.sm) {
-            Text("コミュニティ").font(.headline)
-            Image(icon: .chevronRight, size: 12).accessibilityHidden(true)
-          }
-          .foregroundStyle(MemoraPalette.textSecondary)
-          .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, MemoraSpacing.screen)
-        VStack(spacing: MemoraSpacing.sm) {
-          NavigationLink { SkillsView() } label: {
-            Label("マイスキルを管理", icon: .sliderHorizontal3)
-              .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-          }
-          NavigationLink { SummaryTemplateMarketplaceView() } label: {
-            Label("マイテンプレートを管理", icon: .docOnDoc)
-              .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-          }
-        }
-        .buttonStyle(.plain)
-        .font(.subheadline)
-        .padding(.horizontal, MemoraSpacing.screen)
+
       }
       .padding(.top, MemoraSpacing.xl)
       .padding(.bottom, MemoraSpacing.section)

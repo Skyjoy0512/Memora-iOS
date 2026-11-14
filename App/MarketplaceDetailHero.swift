@@ -10,7 +10,7 @@ struct MarketplaceDetailHero<Action: View>: View {
       MarketplaceItemIcon(item: item, size: 56)
       VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
         Text(item.title)
-          .font(.title)
+          .font(MemoraTypography.screenTitle)
           .foregroundStyle(MemoraPalette.textPrimary)
           .accessibilityAddTraits(.isHeader)
         Text(subtitle)

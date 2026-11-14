@@ -18,10 +18,8 @@ struct AIResponseActionBar: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var didCopy = false
   @State private var resetTask: Task<Void, Never>?
-  @State private var selectsText = false
-  @State private var selectionText = ""
-  @State private var shareText = ""
-  @State private var isSharing = false
+  @State private var selection: AIAnswerTextPresentation?
+  @State private var sharing: AIAnswerTextPresentation?
 
   var body: some View {
     HStack(spacing: 2) {
@@ -31,21 +29,24 @@ struct AIResponseActionBar: View {
       .contentTransition(reduceMotion ? .identity : .opacity)
       .disabled(text.isEmpty)
 
-      Button("共有", icon: .squareAndArrowUp) {
-        shareText = currentText?() ?? text
-        isSharing = !shareText.isEmpty
-      }
-        .disabled(text.isEmpty)
-
-      if let readAloud {
-        Button(isSpeaking ? "読み上げを停止" : "読み上げ",
-          icon: isSpeaking ? .stopFill : .speakerWave2Fill, action: readAloud)
+      if isSpeaking, let readAloud {
+        Button("読み上げを停止", icon: .stopFill, action: readAloud)
       }
 
       Menu {
+        Button("共有", icon: .squareAndArrowUp) {
+          let value = currentText?() ?? text
+          guard !value.isEmpty else { return }
+          sharing = AIAnswerTextPresentation(text: value)
+        }
+        .disabled(text.isEmpty)
+        if !isSpeaking, let readAloud {
+          Button("読み上げ", icon: .speakerWave2Fill, action: readAloud)
+        }
         Button("テキストを選択…", icon: .textAlignleft) {
-          selectionText = currentText?() ?? text
-          selectsText = true
+          let value = currentText?() ?? text
+          guard !value.isEmpty else { return }
+          selection = AIAnswerTextPresentation(text: value)
         }
           .disabled(text.isEmpty)
         Button(saveTitle, icon: .docText, action: save)
@@ -70,14 +71,14 @@ struct AIResponseActionBar: View {
     .buttonStyle(AIResponseActionStyle())
     .foregroundStyle(.secondary)
     .padding(.leading, -9)
-    .sheet(isPresented: $selectsText) {
-      AIAnswerTextSelectionView(text: selectionText)
+    .sheet(item: $selection) { presentation in
+      AIAnswerTextSelectionView(text: presentation.text)
     }
-    .sheet(isPresented: $isSharing) { ActivityView(items: [shareText]) }
+    .sheet(item: $sharing) { presentation in ActivityView(items: [presentation.text]) }
     .onChange(of: text) { _, _ in
       resetTask?.cancel()
       didCopy = false
-      selectsText = false
+      selection = nil
     }
     .onDisappear { resetTask?.cancel() }
   }

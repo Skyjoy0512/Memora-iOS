@@ -23,7 +23,11 @@ test('answer actions open selectable text and hide an unavailable retry', async 
   await openGallery(app, device, screen);
   await scrollToText(screen, '回答アクション（操作の確認）');
   await screen.getByText('回答アクション（操作の確認）').tap();
-  await screen.getByLabel('回答のその他の操作').tap();
+  await tapControl(screen.getByLabel('回答のその他の操作'));
+  await tapControl(screen.getByRole('button', { name: '読み上げ', exact: true }));
+  await expect(screen.getByRole('button', { name: '読み上げを停止', exact: true })).toBeVisible();
+  await tapControl(screen.getByRole('button', { name: '読み上げを停止', exact: true }));
+  await tapControl(screen.getByLabel('回答のその他の操作'));
   await expect(screen.getByText('もう一度回答')).toBeVisible();
   await screen.getByText('テキストを選択…').tap();
   await expect(screen.getByText('テキストを選択').first()).toBeVisible();

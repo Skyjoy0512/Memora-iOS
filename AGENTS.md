@@ -107,6 +107,14 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   marketplace use the same connector hub/detail sheet and existing setup routes.
 - **Tasks**: `TasksView` lives inside Home's NavigationStack (`.tasks` route),
   including notification navigation. Keep creation, editing and source links reachable.
+- **Shared presentation**: record rows reuse LibraryRecordRow and document rows
+  reuse DocumentRow. Native Form sections handle preferences/editing. Article
+  screens show their type in navigation and the real title once in the body.
+  Marketplace management/share actions belong in its toolbar and options menus;
+  the bottom owns the primary use/connect action. Person details lead with
+  overview/records and disclose supporting evidence, keeping unconfirmed matches
+  separately labelled. AI replies expose copy directly and other actions through
+  options; active speech always has a direct stop control.
 - **Record reading**: keep the stable 記録 navigation title and one body title.
   Participants are an editable text row; summary history/regeneration live in
   options. Pending/recovery states use RecordProcessingStateView without cards.

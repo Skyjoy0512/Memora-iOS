@@ -102,7 +102,7 @@ struct DocumentDetailView: View {
     }
     .contentMargins(.bottom, showsCloseButton ? 0 : model.bottomContentClearance, for: .scrollContent)
     .background(MemoraPalette.background)
-    .navigationTitle(document.displayTitle)
+    .navigationTitle("資料")
     .toolbar {
       if showsCloseButton {
         ToolbarItem(placement: .cancellationAction) {
@@ -188,9 +188,9 @@ struct DocumentDetailView: View {
   private func header(_ document: MemoraDocument) -> some View {
     VStack(alignment: .leading, spacing: 6) {
       Text(document.displayTitle)
-        .font(.title2.bold())
+        .font(MemoraTypography.screenTitle)
         .memoraTextReveal()
-      Label(caption(document), icon: document.kind.symbol)
+      Text(caption(document))
         .font(.subheadline)
         .foregroundStyle(.secondary)
     }

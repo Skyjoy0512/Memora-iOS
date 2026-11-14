@@ -59,7 +59,7 @@ struct IntegrationDetailView: View {
     }
     .background(MemoraPalette.background)
     .tint(MemoraPalette.textPrimary)
-    .navigationTitle(service.name)
+    .navigationTitle("コネクタ")
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarActionItem(usesSystemBackground: true) {

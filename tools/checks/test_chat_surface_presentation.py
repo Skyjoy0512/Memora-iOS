@@ -20,9 +20,9 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
         self.assertIn("isComposing = interacting", quick)
         self.assertIn("!snapshot.hasMarkedText", quick)
 
-    def test_header_is_flat_without_removing_actions(self):
+    def test_header_reserves_glass_for_controls_without_removing_actions(self):
         header = (APP / "AskAIHeader.swift").read_text()
-        self.assertNotIn(".memoraGlass(", header)
+        self.assertEqual(header.count(".memoraGlass("), 1)
         self.assertIn(".buttonStyle(MemoraQuietButtonStyle())", header)
         for action in ("onOpenSidebar", "onNewChat", "onHistory", "onSearch"):
             self.assertIn(action, header)

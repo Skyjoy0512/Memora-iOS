@@ -48,7 +48,8 @@ struct SpaceDetailView: View {
               workspaceScroll {
                 ForEach(files) { item in
                   ProjectWorkspaceRow(item: item)
-                    .padding(.vertical, MemoraSpacing.xs)
+                    .padding(.vertical, MemoraSpacing.md)
+                    .overlay(alignment: .bottom) { Divider().overlay(MemoraPalette.border) }
                 }
               }
             }
@@ -59,7 +60,8 @@ struct SpaceDetailView: View {
               workspaceScroll {
                 ForEach(sources) { item in
                   ProjectWorkspaceRow(item: item)
-                    .padding(.vertical, MemoraSpacing.xs)
+                    .padding(.vertical, MemoraSpacing.md)
+                    .overlay(alignment: .bottom) { Divider().overlay(MemoraPalette.border) }
                 }
               }
             }
