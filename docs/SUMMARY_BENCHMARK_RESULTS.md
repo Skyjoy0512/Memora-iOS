@@ -26,3 +26,5 @@ Phase 2のローカル入力比較（1,000発言、同一原文）: 199,999 → 
 SSEバイト/SSE/JSON解析がmain thread外、表示callbackがMainActorで動作することをhostで確認。2,178,128-byteの合成入力と仮想30〜180秒受信を通過。これらの所要時間を60分録音のAPI性能として扱わない。
 
 階層groupの1/2/3/4並列をproduction reducerで検証。4 groupに対してmerge呼出しは各4回のまま、到着順を逆にしてもab/cd/ef/ghの順序を保持。429で初期2 worker以降の送信を止めた。原文prefixの同一性と既存pipeline/cache回帰を確認。iOS preview 2026-11-15T04-37-47-73cf439d.log成功（既存11警告）。実APIでのヒット率・速度は不明。
+
+計測/比較基盤の追加検証: 開発Python環境の全11単体テスト成功（0.408秒は評価器のテスト時間）。197件/16カテゴリの固定データ監査、300 requestを表示切捨て後も集計、4,097件で欠測明示、実transportの429 outcome・bounded continuationを確認。JSON fallbackのbyte receive/parseもhostでoff-mainを確認。実モデルのスコアは未取得。ログは外部作業ディレクトリのphase0-metrics-* / phase1-all-offline-final.log / phase2-single-serialization.log / phase0-request-failure-metrics.log。

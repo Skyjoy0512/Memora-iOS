@@ -13,4 +13,5 @@ _, _, records, categories = module.load_data()
 subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', str(root / 'tools/evaluation/tests'),
                 '-p', 'test_metrics.py', '-v'], check=True)
 subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', str(root / 'tools/evaluation/tests'), '-p', 'test_gold.py', '-v'], check=True)
+subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', str(root / 'tools/evaluation/tests'), '-p', 'test_report.py', '-v'], check=True)
 print(json.dumps({'pinnedJMeetEvalRecords': len(records), 'categories': len(categories), 'apiRequests': 0}))

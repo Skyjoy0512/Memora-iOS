@@ -36,6 +36,7 @@ final class CloudHTTPTransport: @unchecked Sendable {
     try Task.checkCancellation()
     SummaryDiagnostics.current?.record(.sessionReuse, code: reused ? 1 : 0)
     SummaryDiagnostics.current?.record(.request)
+    if SummaryDiagnostics.isContinuation { SummaryDiagnostics.current?.record(.continuation) }
     return try await session.bytes(for: request)
   }
 

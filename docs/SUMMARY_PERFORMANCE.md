@@ -20,7 +20,7 @@
 
 診断にcachedInputTokens/cacheWriteTokensとsource bytesを追加。`SummaryDiagnostics.metrics` / `metricsJSON` がrequestごとにHTTPヘッダー到着、first reasoning、TTFT、reasoning→本文の観測間隔、本文生成、応答完了の時間を提供する。parse/saveは別span。最初の推論から本文までの間隔は実際の内部推論の総時間とは呼ばない。ネットワークだけの時間やtokenizerが未提供のため、生成token/秒を推測して出さない。Anthropicのinput_tokensはcache read/writeを除く値であり、異なるproviderのcounterを無条件で合算しない。
 
-1チャンク応答のfirst/last token時刻が逆になる既存の計測問題を修正。タイムライン上限で欠落した場合は `timelineIncomplete=true`。nullの使用量はJSONでは省略されるが、0として補完しない。
+1チャンク応答のfirst/last token時刻が逆になる既存の計測問題を修正。表示履歴が欠落した場合は `timelineIncomplete=true`。数値内訳は別に最大4,096 requestを保持し、超過/相関ID不足を `measurementsIncomplete=true` とする。requestCountとcache/continuation回数は表示履歴の切捨てに影響されない。nullの使用量は0として補完しない。
 
 
 ## 通信再利用
@@ -32,3 +32,13 @@
 SSEのバイトループとJSON蓄積は `@concurrent` でMainActor外へ移動した。UI通知だけを既存間隔でMainActorへawaitし、順序とbackpressureを維持。hostのproduction readerでoff-main実行とMainActor callbackを検証した。これは実機のUIフレーム時間やAPI速度の改善率の測定ではない。詳細は `summary-performance/TRANSPORT_DESIGN.md`。
 
 長文partの検証済み応答は既存SQLiteから再利用する。無料のproduction orchestration＋通信mockでは長さ/表示順変更後のrequestが5→1。TTL/LRU/破損/権限・原文変更/失効競合は実SQLiteとproduction lifecycleメソッドで検証した。実APIの時間・料金・品質への効果は未計測。
+
+## 数値の取り出しと比較
+
+`SummaryDiagnostics.metricsJSON` とAudioProcessingDiagnosticsの実spanから開発専用run manifestを作る。`tools/evaluation/summary_report.py` は同一原文hash/指示/model/推論/出力予算を照合し、P50/P95/最大・不明サンプルを品質検査と並べる。`quality_metrics.summary_measurements` は未提供usageや上限超過を検出し、不完全な合計を完全なusageとして扱わない。並列requestの時間を足してsummarySecondsを作らない。parse spanは構造化応答解析・参照検証を含み、純粋なJSON decoder CPU時間とは区別する。
+
+300 requestの無料fixtureで、表示履歴は256件のまま全300 requestと30 failuresを集計し、usage不明の30件を0にしないことを確認。4,097 requestでは内訳を4,096で止めて欠測を示す。APIベンチマークではない。
+
+OpenAI公式Chat Completionsのusage opt-inは既存AgentGenerationPolicyのusage処理だけを要約でも共有し、推論/出力設定には触れない。未知model/endpointへ新しいflagを送らない。[公式仕様](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)に従い、終端usageを受け取れなかった値は不明のまま。
+
+JSONで返す互換serverの受信/JSON解析もoff-mainへ移動。Summary requestはstream flagを初回JSON生成時に含め、MainActorでの全文decode/re-encodeをなくした。他の既存callerのstream付加はoff-main。出力上限・EOF・終端理由・モデル/認証/endpoint保護を維持する。

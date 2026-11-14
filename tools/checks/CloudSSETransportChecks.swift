@@ -5,6 +5,14 @@ import Synchronization
 struct CloudSSETransportChecks {
   @MainActor
   static func main() async throws {
+    let jsonProbe = Probe()
+    let json = try await CloudTurnStreamReader.jsonResponse(from: Bytes(data: Data("{\"value\":42}".utf8), probe: jsonProbe))
+    MainActor.assertIsolated()
+    precondition(json["value"] as? Int == 42 && jsonProbe.offMain)
+    do {
+      _ = try await CloudTurnStreamReader.jsonResponse(from: Bytes(data: Data("{\"value\":".utf8), probe: Probe()))
+      preconditionFailure("Truncated JSON accepted")
+    } catch AIAnswerFailure.server {}
     let first = #"{"choices":[{"index":0,"delta":{"content":"こんにちは👨‍👩‍👧‍👦"}}]}"#
     let last = #"{"index":0,"delta":{"content":"。"},"finish_reason":"stop"}]}"#
     for newline in ["\n", "\r\n", "\r"] {

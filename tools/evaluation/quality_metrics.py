@@ -19,6 +19,8 @@ def quality(gold, annotation):
               for name in ('facts', 'decisions', 'actions')}
     errors = list(annotation.get('criticalErrors', []))
     if any(result[name]['falsePositives'] for name in result):
+        errors.append('unmapped_claim_requires_review')
+    if annotation.get('unsupportedClaims'):
         errors.append('unsupported_claim')
     result['criticalErrors'] = sorted(set(errors))
     result['passesCriticalGate'] = not errors
@@ -39,7 +41,8 @@ def performance(runs):
     for field in ('totalSeconds', 'transcriptionSeconds', 'summarySeconds', 'ttftSeconds',
                   'firstReasoningSeconds', 'bodyGenerationSeconds', 'inputTokens', 'outputTokens',
                   'reasoningTokens', 'cachedInputTokens', 'requests', 'costUSD', 'peakMemoryBytes',
-                  'cpuSeconds', 'mainThreadBusySeconds', 'batteryDelta', 'thermalState'):
+                  'cacheWriteTokens', 'cacheHitRate', 'requestFailures', 'retries', 'tokensPerSecond',
+                  'jsonParseSeconds', 'structuredParseSeconds', 'saveSeconds', 'cpuSeconds', 'mainThreadBusySeconds', 'batteryDelta', 'thermalState'):
         values = [r[field] for r in runs if isinstance(r.get(field), (int, float))
                   and not isinstance(r[field], bool) and math.isfinite(r[field]) and r[field] >= 0]
         result[field] = {'knownSamples': len(values), 'unknownSamples': len(runs) - len(values),
@@ -48,8 +51,41 @@ def performance(runs):
     return result
 
 
+def summary_measurements(diagnostic, provider):
+    """Bridge app numeric exports without summing overlapping request latency."""
+    count = diagnostic.get('requestCount')
+    valid_count = isinstance(count, int) and not isinstance(count, bool) and count >= 0
+    requests = diagnostic.get('requests', [])
+    complete = (valid_count and isinstance(requests, list) and len(requests) == count
+                and not diagnostic.get('measurementsIncomplete', True))
+    def total(field):
+        values = [r.get(field) for r in requests] if complete else []
+        if not values or any(not isinstance(x, int) or isinstance(x, bool) or x < 0 for x in values):
+            return None
+        return sum(values)
+    result = {k: total(k) for k in ('inputTokens', 'outputTokens', 'reasoningTokens',
+                                   'cachedInputTokens', 'cacheWriteTokens')}
+    result['requests'] = count if valid_count else None
+    result['structuredParseSeconds'] = diagnostic.get('parseSeconds')
+    result['saveSeconds'] = diagnostic.get('saveSeconds')
+    outcomes = [r.get('outcome') for r in requests] if complete else []
+    result['requestFailures'] = (sum(x == 'failed' for x in outcomes)
+                                 if outcomes and all(x in ('completed', 'failed', 'cancelled') for x in outcomes) else None)
+    input_tokens, cached = result['inputTokens'], result['cachedInputTokens']
+    denominator = input_tokens
+    if provider == 'anthropic':
+        written = result['cacheWriteTokens']
+        denominator = input_tokens + cached + written if all(x is not None for x in (input_tokens, cached, written)) else None
+    if provider not in ('openAI', 'deepSeek', 'anthropic'):
+        denominator = None
+    result['cacheHitRate'] = (cached / denominator if denominator and cached is not None and 0 <= cached <= denominator else None)
+    # Reasoning and visible token counts differ by API. Never divide aggregate
+    # completion tokens by only the visible-text duration to invent a speed.
+    return result
+
+
 def comparable(before, after):
     # Cache/concurrency deliberately differ between cohorts; all quality knobs must match.
-    fields = ('sourceSHA256', 'instructionSHA256', 'provider', 'model', 'reasoning', 'outputBudget',
+    fields = ('sourceSHA256', 'instructionSHA256', 'endpointSHA256', 'provider', 'model', 'reasoning', 'outputBudget',
               'datasetRevision', 'promptVersion', 'measurementKind')
     return all(before.get(f) is not None and before.get(f) == after.get(f) for f in fields)

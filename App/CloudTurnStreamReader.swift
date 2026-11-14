@@ -4,6 +4,21 @@ import Foundation
 /// framing, publication timing and cancellation can be tested without an API.
 enum CloudTurnStreamReader {
   @concurrent
+  static func jsonResponse<Bytes: AsyncSequence & Sendable>(from bytes: Bytes) async throws -> [String: Any]
+    where Bytes.Element == UInt8 {
+    var data = Data()
+    defer { SummaryDiagnostics.current?.record(.wireBytes, code: data.count) }
+    for try await byte in bytes {
+      try Task.checkCancellation()
+      guard data.count < AgentSessionBudget.maximumResponseBytes else { throw AIAnswerFailure.executionLimit }
+      data.append(byte)
+    }
+    try Task.checkCancellation()
+    guard let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { throw AIAnswerFailure.server }
+    return object
+  }
+
+  @concurrent
   static func response<Bytes: AsyncSequence & Sendable>(
     from bytes: Bytes,
     provider: CloudStreamAccumulator.Provider,

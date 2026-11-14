@@ -23,10 +23,17 @@ import Foundation
       precondition(next.text == "次の区間" && next.failure == nil)
     }
     Wire.state.assertConsumed(3)
+    precondition(diagnostic.metrics.requestCount == 3 && diagnostic.metrics.continuations == 1)
+    precondition(diagnostic.metrics.requests.count == 3 && diagnostic.metrics.requests.allSatisfy { $0.outcome == .completed })
+    precondition(!diagnostic.metrics.measurementsIncomplete)
     precondition(diagnostic.events.filter { $0.stage == .sessionReuse }.map(\.code) == [0, 1, 1])
     precondition(Wire.state.requests.allSatisfy { $0.value(forHTTPHeaderField: "Cookie") == nil })
     precondition(Wire.state.requests.allSatisfy { $0.value(forHTTPHeaderField: "Authorization") == "Bearer offline-fixture-key" })
     precondition(configuration.httpAdditionalHeaders?["Cookie"] as? String == "must-not-leave", "Caller configuration was mutated")
+    precondition(Wire.state.requests.allSatisfy { request in
+      let body = try? CloudSessionChecks.body(request)
+      return ((body?["stream_options"] as? [String: Any])?["include_usage"] as? Bool) == true && body?["reasoning_effort"] == nil
+    })
 
     var changed = Wire.state.requests[0]
     changed.setValue("Bearer other-account", forHTTPHeaderField: "Authorization")
@@ -44,6 +51,14 @@ import Foundation
     do { _ = try await transport.bytes(for: Wire.state.requests[0]); preconditionFailure("Closed transport sent") }
     catch AIAnswerFailure.cancelled {}
     Wire.state.assertConsumed(3)
+    Wire.state.reset([.init(data: Data("{}".utf8), status: 429)])
+    await SummaryDiagnostics.$current.withValue(diagnostic) {
+      let limited = await CloudAIService.completeStreaming(system: "fixture", user: "fixture", llm: llm,
+        sessionConfiguration: configuration, onProgress: { _ in })
+      precondition(limited.failure == .rateLimited)
+    }
+    Wire.state.assertConsumed(1)
+    precondition(diagnostic.metrics.requestCount == 4 && diagnostic.metrics.requests.filter { $0.outcome == .failed }.count == 1)
     print("CloudHTTPTransportChecks: PASS; same-session continuation/parts, copied config, cookie/credential/endpoint isolation, close and zero additional rejected dispatches; real TCP/TLS performance not measured")
   }
 }

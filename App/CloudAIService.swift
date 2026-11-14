@@ -119,9 +119,12 @@ enum CloudAIService {
         try Task.checkCancellation()
         let alreadyWritten = answer.count
         let request = try streamingRequest(system: system, messages: messages, llm: llm, key: key, processingMode: processingMode)
-        let response = try await CloudTurnStreaming.response(for: request, provider: provider,
-          onText: { text in onProgress(alreadyWritten + text.count) },
-          sessionConfiguration: sessionConfiguration, transport: receiver, onActivity: onActivity, responseKind: .textCompletion)
+        let response = try await SummaryDiagnostics.$isContinuation.withValue(attempt > 0) {
+          try await CloudTurnStreaming.response(for: request, provider: provider,
+            onText: { text in onProgress(alreadyWritten + text.count) },
+            sessionConfiguration: sessionConfiguration, transport: receiver, onActivity: onActivity,
+            responseKind: .textCompletion, encoding: .streamAlreadyConfigured)
+        }
         try Task.checkCancellation()
         let part = try CloudSummaryResponse(response, provider: provider)
         answer += part.text
@@ -163,7 +166,7 @@ enum CloudAIService {
     // Reasoning models can think quietly for a while before the first word.
     request.timeoutInterval = 300
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    var body: [String: Any] = ["model": llm.modelID, "messages": messages]
+    var body: [String: Any] = ["model": llm.modelID, "messages": messages, "stream": true]
     if anthropicAPI {
       request.setValue(key, forHTTPHeaderField: "x-api-key")
       request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
@@ -174,6 +177,8 @@ enum CloudAIService {
       if llm.provider == .openRouter { request.setValue("Memora", forHTTPHeaderField: "X-Title") }
     }
     SummaryGenerationPolicy.apply(processingMode, llm: llm, to: &body)
+    AgentGenerationPolicy.resolve(provider: llm.provider, modelID: llm.modelID,
+      hasCustomEndpoint: llm.endpoint != nil || llm.isMemoraIntelligence)?.applyStreamingUsage(to: &body, isStreaming: true)
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
     return request
   }

@@ -14,6 +14,7 @@ final class SummaryDiagnostics: Sendable {
     case inputTokens, outputTokens, reasoningTokens, cachedInputTokens, cacheWriteTokens
     case sourceWireBytes, sourceOriginalBytes, plannedParts, planningCapacity, sessionReuse
     case artifactCacheHit, artifactCacheMiss
+    case requestFailed, requestCancelled, continuation
     case enteredForeground, enteredBackground
     case providerStop
     case processingMode
@@ -36,16 +37,64 @@ final class SummaryDiagnostics: Sendable {
     var events: [Event] = []
     var omittedEvents = 0
     var outputs: [UUID?: Output] = [:]
+    var timings: [UUID: RequestTiming] = [:]
+    var measurementsIncomplete = false
+    var counts: [Stage: Int] = [:]
+    var jobMeasurements: [Stage: Event] = [:]
 
     mutating func append(_ event: Event) {
+      counts[event.stage, default: 0] += 1
+      if [.parseStarted, .parseCompleted, .saveStarted, .saveCompleted, .sourceOriginalBytes, .sourceWireBytes].contains(event.stage) {
+        jobMeasurements[event.stage] = event
+      }
+      if event.stage == .request {
+        if let id = event.requestID, timings.count < 4096 {
+          timings[id] = RequestTiming(start: event.elapsed, value: Metrics.Request(id: id))
+        } else { measurementsIncomplete = true }
+      } else if let id = event.requestID {
+        timings[id]?.consume(event)
+      }
       // Keep the job origin and recent timeline, especially the final save or
       // failure. A long, sectioned job must not hide its eventual outcome.
       if events.count == 256 { events.remove(at: 1); omittedEvents += 1 }
       events.append(event)
     }
   }
+
+  private struct RequestTiming: Sendable {
+    var start: Double
+    var firstReasoning: Double?
+    var firstText: Double?
+    var value: Metrics.Request
+
+    mutating func consume(_ event: Event) {
+      func elapsed(_ start: Double?, to end: Double) -> Double? {
+        guard let start, end >= start else { return nil }
+        return end - start
+      }
+      switch event.stage {
+      case .httpResponse: value.httpStatus = event.code; value.headerDelaySeconds = elapsed(start, to: event.elapsed)
+      case .firstReasoning: firstReasoning = event.elapsed; value.firstReasoningDelaySeconds = elapsed(start, to: event.elapsed)
+      case .firstToken:
+        firstText = event.elapsed
+        value.ttftSeconds = elapsed(start, to: event.elapsed)
+        value.reasoningToBodySeconds = elapsed(firstReasoning, to: event.elapsed)
+      case .lastToken: value.bodyGenerationSeconds = elapsed(firstText, to: event.elapsed)
+      case .responseComplete: value.totalSeconds = elapsed(start, to: event.elapsed); value.outcome = .completed
+      case .requestFailed: value.totalSeconds = elapsed(start, to: event.elapsed); value.outcome = .failed
+      case .requestCancelled: value.totalSeconds = elapsed(start, to: event.elapsed); value.outcome = .cancelled
+      case .inputTokens: value.inputTokens = event.code
+      case .outputTokens: value.outputTokens = event.code
+      case .reasoningTokens: value.reasoningTokens = event.code
+      case .cachedInputTokens: value.cachedInputTokens = event.code
+      case .cacheWriteTokens: value.cacheWriteTokens = event.code
+      default: break
+      }
+    }
+  }
   @TaskLocal static var current: SummaryDiagnostics?
   @TaskLocal static var requestID: UUID?
+  @TaskLocal static var isContinuation = false
   private static let logger = Logger(subsystem: "app.memora", category: "SummaryTimeline")
   private static let recent = Mutex<[SummaryDiagnostics]>([])
   let jobID: UUID
@@ -96,6 +145,16 @@ final class SummaryDiagnostics: Sendable {
   }
 
   func responseCompleted() {
+    settleOutput()
+    record(.responseComplete)
+  }
+
+  func responseFailed(cancelled: Bool) {
+    settleOutput()
+    record(cancelled ? .requestCancelled : .requestFailed)
+  }
+
+  private func settleOutput() {
     let last = state.withLock { value -> Event? in
       let last = value.outputs.removeValue(forKey: Self.requestID)?.last
       if let last { value.append(last) }
@@ -104,7 +163,6 @@ final class SummaryDiagnostics: Sendable {
     if let last {
       Self.logger.info("job=\(self.jobID.uuidString, privacy: .public) request=\(last.requestID?.uuidString ?? "job", privacy: .public) stage=lastToken elapsed=\(last.elapsed, privacy: .public)")
     }
-    record(.responseComplete)
   }
 
   func receivedUsage(_ response: [String: Any], usesAnthropicAPI: Bool) {
@@ -162,12 +220,15 @@ final class SummaryDiagnostics: Sendable {
     }).joined(separator: "\n")
   }
   static var reports: [String] { recent.withLock { $0 }.reversed().map(\.report) }
+  static var metricReports: [String] { recent.withLock { $0 }.reversed().compactMap(\.metricsJSON) }
 
   /// Numeric measurements only. Missing provider counters stay nil rather than
   /// becoming a zero-cost or zero-reasoning claim. Delays include provider work.
   struct Metrics: Codable, Sendable {
     struct Request: Codable, Sendable {
+      enum Outcome: String, Codable, Sendable { case completed, failed, cancelled }
       var id: UUID
+      var outcome: Outcome?
       var httpStatus: Int?
       var headerDelaySeconds: Double?
       var firstReasoningDelaySeconds: Double?
@@ -182,6 +243,11 @@ final class SummaryDiagnostics: Sendable {
       var cacheWriteTokens: Int?
     }
     var timelineIncomplete: Bool
+    var measurementsIncomplete: Bool
+    var requestCount: Int
+    var artifactCacheHits: Int
+    var artifactCacheMisses: Int
+    var continuations: Int
     var requests: [Request]
     var parseSeconds: Double?
     var saveSeconds: Double?
@@ -190,34 +256,28 @@ final class SummaryDiagnostics: Sendable {
   }
 
   var metrics: Metrics {
-    let snapshot = state.withLock { ($0.events + $0.outputs.values.compactMap(\.last), $0.omittedEvents) }
-    let entries = snapshot.0
+    let snapshot = state.withLock { value in
+      var timings = value.timings
+      for output in value.outputs.values.compactMap(\.last) {
+        if let id = output.requestID { timings[id]?.consume(output) }
+      }
+      return (timings.values.sorted { $0.start < $1.start }.map(\.value), value.omittedEvents,
+        value.measurementsIncomplete, value.counts, value.jobMeasurements)
+    }
     func duration(_ first: Double?, _ last: Double?) -> Double? {
       guard let first, let last, last >= first else { return nil }
       return last - first
     }
-    let starts = entries.filter { $0.stage == .request && $0.requestID != nil }
-    let requests = starts.map { start -> Metrics.Request in
-      let values = entries.filter { $0.requestID == start.requestID }
-      func time(_ stage: Stage) -> Double? { values.first { $0.stage == stage }?.elapsed }
-      func count(_ stage: Stage) -> Int? { values.last { $0.stage == stage }?.code }
-      return Metrics.Request(id: start.requestID!, httpStatus: count(.httpResponse),
-        headerDelaySeconds: duration(start.elapsed, time(.httpResponse)),
-        firstReasoningDelaySeconds: duration(start.elapsed, time(.firstReasoning)),
-        ttftSeconds: duration(start.elapsed, time(.firstToken)),
-        reasoningToBodySeconds: duration(time(.firstReasoning), time(.firstToken)),
-        bodyGenerationSeconds: duration(time(.firstToken), time(.lastToken)),
-        totalSeconds: duration(start.elapsed, time(.responseComplete)),
-        inputTokens: count(.inputTokens), outputTokens: count(.outputTokens), reasoningTokens: count(.reasoningTokens),
-        cachedInputTokens: count(.cachedInputTokens), cacheWriteTokens: count(.cacheWriteTokens))
-    }
     func span(_ begin: Stage, _ end: Stage) -> Double? {
-      duration(entries.first { $0.stage == begin }?.elapsed, entries.last { $0.stage == end }?.elapsed)
+      duration(snapshot.4[begin]?.elapsed, snapshot.4[end]?.elapsed)
     }
-    return Metrics(timelineIncomplete: snapshot.1 > 0, requests: requests,
+    return Metrics(timelineIncomplete: snapshot.1 > 0, measurementsIncomplete: snapshot.2,
+      requestCount: snapshot.3[.request, default: 0], artifactCacheHits: snapshot.3[.artifactCacheHit, default: 0],
+      artifactCacheMisses: snapshot.3[.artifactCacheMiss, default: 0], continuations: snapshot.3[.continuation, default: 0],
+      requests: snapshot.0,
       parseSeconds: span(.parseStarted, .parseCompleted), saveSeconds: span(.saveStarted, .saveCompleted),
-      sourceOriginalBytes: entries.last { $0.stage == .sourceOriginalBytes }?.code,
-      sourceWireBytes: entries.last { $0.stage == .sourceWireBytes }?.code)
+      sourceOriginalBytes: snapshot.4[.sourceOriginalBytes]?.code,
+      sourceWireBytes: snapshot.4[.sourceWireBytes]?.code)
   }
 
   var metricsJSON: String? {

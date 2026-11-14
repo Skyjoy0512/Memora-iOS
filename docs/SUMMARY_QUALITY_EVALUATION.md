@@ -6,7 +6,7 @@
 
 `python3 tools/checks/run-summary-evaluation-checks.py` は固定J-MeetEvalの全ファイル・197件・16カテゴリを監査し、Precision/Recall/F1、重大誤りゲート、不明値の保持、同条件比較のテストを実行する。`run-quality-checks.py`から実行する。依存追加なし。
 
-`tools/evaluation/quality_metrics.py` は、原文から独立して付けたゴールドIDと人手照合済みの予測IDを比較する。facts / decisions / actions を別々に集計し、未根拠の予測や重大誤りが1件あれば平均に関係なく不合格。言い換えの正誤判定を文字列一致だけで自動確定しない。レビュー未了をレビュー済みと表示しない。
+`tools/evaluation/quality_metrics.py` は独立に付けたゴールドIDと人手照合済みの予測IDを比較する。facts / decisions / actions を別々に集計する。未対応の予測IDは要レビューとして採用を止める。確認された未根拠の予測・重大誤りは平均に関係なく不合格。言い換えを文字列一致だけで判定しない。レビュー未了をレビュー済みと表示しない。
 
 公式ルールチェッカーの実行環境・コマンドは [J-MeetEval統合](JMEETEVAL_INTEGRATION.md) を参照。テスト専用応答を生成してスコア改善を演出しない。保存済み本番相当応答が無い場合、品質スコアは不明。
 
@@ -19,3 +19,9 @@
 数値・期限・担当・引用・発言者帰属の決定論的照合と、背景・訂正・撤回・可読性の意味評価を分ける。Judgeのみで採用しない。重大な未根拠決定、担当/期限捏造、不正引用の新規発生は許容しない。
 
 `tools/evaluation/fixtures/understanding-gold.json` に25の合成シナリオを追加。5/15/30/60/120/190分の時間軸は `gold_fixtures.load()` で発言単位に展開し、前半の公開決定・中盤の障害・最終撤回を跨区間で検証できる。架空の時間軸であり実音声はない。各重要事実は逐語引用・話者・実在するfixture segment IDに対応し、原文に存在することを自動確認する。実モデルの抽出成績はまだ計測していない。
+
+## オフライン比較レポート
+
+`python3 tools/evaluation/summary_report.py --baseline /external/before.json --candidate /external/after.json --output /external/new-report.json`。入力は [開発用README](../tools/evaluation/README.md) を参照。原文hash、facts/decisions/actionsのPrecision/Recall/F1、担当/期限/話者/引用、撤回、不正出典、重複を検査し、性能分布と同じcaseに表示する。語義・可読性・正当な追加事実の評価を文字列比較で置換しない。
+
+未レビュー、mock/host時間、条件不一致、欠測、3回未満のcohortでは自動採用を止める。3回は最低収集条件であり統計的有意差の証明ではない。人手のリリース判断と公式評価は別途必要。実モデルの比較結果はまだない。

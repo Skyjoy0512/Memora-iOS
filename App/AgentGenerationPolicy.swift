@@ -30,6 +30,10 @@ struct AgentGenerationPolicy {
     if requiresNonReasoningTools, let tools = body["tools"] as? [Any], !tools.isEmpty {
       body["reasoning_effort"] = "none"
     }
+    applyStreamingUsage(to: &body, isStreaming: isStreaming)
+  }
+
+  func applyStreamingUsage(to body: inout [String: Any], isStreaming: Bool) {
     if isStreaming, requestsStreamingUsage {
       var options = body["stream_options"] as? [String: Any] ?? [:]
       options["include_usage"] = true

@@ -17,3 +17,5 @@ swiftc App/LocalStore.swift App/SummaryArtifactCache.swift tools/checks/SummaryA
 "$check_dir/cache"
 swiftc App/LocalStore.swift App/SummaryArtifactCache.swift App/SummaryArtifactScope.swift App/RecordPrivacy.swift App/SummarySensitivity.swift App/MemoraModel+SummaryArtifacts.swift tools/checks/SummaryArtifactLifecycleChecks.swift -o "$check_dir/cache-lifecycle"
 "$check_dir/cache-lifecycle"
+swiftc App/SummaryDiagnostics.swift App/AIAnswerFailure.swift tools/checks/SummaryMetricsRetentionChecks.swift -o "$check_dir/metrics"
+"$check_dir/metrics"

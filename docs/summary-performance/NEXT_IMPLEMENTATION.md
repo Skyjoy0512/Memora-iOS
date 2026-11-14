@@ -1,13 +1,13 @@
 # 継続作業の設計メモ
 
-直近の基盤commit: c425146f（通信再利用）。Phase 1 / lossless入力 / 共有能力・容量計画・制限付き並列の単位までcommit・push済み。実モデル評価は利用者指定で実行しない。未実装を完成扱いにしない。
+基盤commit: 6ef48197（SQLite part cache）、da1167e1（階層並列とprefix）。数値集計/JSON off-main/オフライン比較レポートも追加。実モデル評価は利用者指定で実行しない。未実装を完成扱いにしない。
 
 ## 次の単位: 階層並列 / SoT候補 / 統合
 
 既存資産を再調査:
 
 - ModelCapabilities / ModelCapabilityOverrides / TokenBudgetManager / TokenEstimateは共通正本。新しいモデル表を作らない。
-- AgentGenerationPolicyは既にOpenAIのusage opt-in・モデル固有tool条件を扱う。要約へ丸ごと適用すると推論を無断変更するので、usage取得など責務だけを共有する候補。
+- AgentGenerationPolicyはusage処理だけを要約と共有済み。推論/出力policy全体を要約へ流用しない。
 - SourceExtractionCache + SourceExtractionPersistenceは既存の抽出cache。SourceMediaCheckpointStore / PDFCheckpointStoreは既存の確定部分再利用。NativeAIResponseCacheは表示cacheで用途が異なる。
 - SourceExtractionPersistenceは既存cache SQLite（32MiB、12件、7日、payload hash/secure_delete、backup除外）。LocalStoreは既存のrecords SQLiteの汎用documents。追加DBは不要。どちらを利用するかはlifecycleの安全性から決める。
 - PendingSummaryJobは送信前attemptStartedAtを保存し、再起動で勝手に課金を再実行しない。requiresUserRetryを維持。途中結果は完了要約に保存しない。
