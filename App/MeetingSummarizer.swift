@@ -75,6 +75,9 @@ enum MeetingSummarizer {
     authorize: (@MainActor () -> Bool)?,
     progress: @escaping @MainActor (String) -> Void
   ) async -> Result<MeetingSummary, AIAnswerFailure> {
+    let endpoint = llm.baseURL.appendingPathComponent(llm.provider.usesAnthropicAPI ? "messages" : "chat/completions")
+    let transport = CloudHTTPTransport(endpoint: endpoint)
+    defer { transport.invalidate() }
     let sourceIndex = SummarySourceIndex(input.transcript)
     let originalUnits = sourceIndex.units(hasTimestamps: input.duration > 0, compact: false)
     let compactUnits = sourceIndex.units(hasTimestamps: input.duration > 0, compact: true)
@@ -123,6 +126,7 @@ enum MeetingSummarizer {
             transcript: legend + part.joined(separator: "\n")
           ),
           llm: llm,
+          transport: transport,
           processingMode: input.preferences.processingMode,
           authorize: authorize,
           onActivity: { progress("長い会議を分けて整理中（\(index + 1)/\(parts.count)）") }
@@ -144,7 +148,7 @@ enum MeetingSummarizer {
         let result = await CloudAIService.completeStreaming(
           system: SummaryPrompt.system,
           user: SummaryPrompt.intermediateMerge(for: input, notes: legend + group.joined(separator: "\n\n")),
-          llm: llm, processingMode: input.preferences.processingMode, authorize: authorize,
+          llm: llm, transport: transport, processingMode: input.preferences.processingMode, authorize: authorize,
           onActivity: { progress("全体をまとめています") }
         ) { _ in progress("全体をまとめています") }
         switch result {
@@ -166,6 +170,7 @@ enum MeetingSummarizer {
       system: SummaryPrompt.system,
       user: request,
       llm: llm,
+      transport: transport,
       processingMode: input.preferences.processingMode,
       authorize: authorize,
       onActivity: { progress("要約を作成しています") }

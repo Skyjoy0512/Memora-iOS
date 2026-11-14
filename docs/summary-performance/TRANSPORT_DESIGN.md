@@ -1,0 +1,20 @@
+# 通信再利用の実装と残りの調査
+
+CloudHTTPTransportによる要約ジョブ内のsession再利用を実装し、オフライン通信テストとiOSビルドを確認。実TCP/TLS・API待ち時間は未計測。
+
+変更前はCloudTurnStreamingがrequestごとにephemeral URLSessionを作りinvalidateしていた。変更後は要約ジョブの所有者がpart/merge/finalに同じtransportを渡し、bounded continuationもそのsessionを使う。本文bufferのappend/100ms通知/1秒activityは既に改善済み。
+
+実装した境界:
+
+- Summary単位で所有する `CloudHTTPTransport` を用意し、part/merge/finalとbounded continuationが同じURLSessionを使う。global sessionをアカウント間で共有しない。
+- 設定をcopyし、URLCache/HTTPCookieStorage/URLCredentialStorageを無効にする。HTTP authは各requestの明示headerのみ。
+- endpointを厳密に固定。初回のAuthorization/x-api-keyのfingerprintをメモリにだけbindし、変更された場合は新たな送信をせずキャンセルする。秘密・URL・本文を診断に記録しない。
+- redirectは送信先を変えるため、delegateで拒否する。TLS検証はOS既定のまま。
+- URLSession ownershipとinvalidateを明示し、共有transportをinner requestで閉じない。ジョブ完了・失敗・cancelでclose。TaskGroupの子をdrainしてから破棄する。
+- キャンセル/timeout/EOF/finish_reason/byte上限/出力継続前authorizeの既存保護を維持。拒否/切断/429を別パラメーターで自動リプレイしない。
+- 診断はsessionReuseの数値だけ。物理connectionの再利用と同一視しない。HTTP開始はidentity確認が終わって実際にdispatchする直前に数える。
+- URLProtocolによるofflineテストでreuse、credential/endpoint変更で0追加request、cookie分離、close、両provider形式と既存cancel/EOF/HTTP検証を通過。実HTTP/2・TLS待ち短縮は未測定のまま。
+
+別途調べる箇所:
+
+`CloudTurnStreamReader.response` はMainActor。バイト/SSE/JSON解析をoff-mainへ動かせるか、SyntheticAIEventStreamと各clock fixtureのactor契約を調べる。単にonTextを非同期にばら撒く変更は通知順序・終端・backpressureを壊すため不可。Swiftの@concurrent等の実コンパイラー契約を確認し、MainActor callbackは必要時だけawaitする。テストで実際の処理場所を確認してから採用する。

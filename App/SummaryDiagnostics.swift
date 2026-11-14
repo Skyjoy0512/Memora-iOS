@@ -12,7 +12,7 @@ final class SummaryDiagnostics: Sendable {
     case backgroundExpiration, cancelled, contextChanged, saveFailed, failed, completed
     case onDeviceSection, onDeviceError, wireBytes
     case inputTokens, outputTokens, reasoningTokens, cachedInputTokens, cacheWriteTokens
-    case sourceWireBytes, sourceOriginalBytes, plannedParts, planningCapacity
+    case sourceWireBytes, sourceOriginalBytes, plannedParts, planningCapacity, sessionReuse
     case enteredForeground, enteredBackground
     case providerStop
     case processingMode

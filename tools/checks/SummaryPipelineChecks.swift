@@ -91,6 +91,8 @@ enum SummaryPipelineChecks {
       }
       await wait { gate.pending.count == 1 }
       precondition(gate.calls.count == 5 && gate.calls.allSatisfy { $0.mode == mode })
+      precondition(gate.calls.compactMap(\.transportID).count == 5 && Set(gate.calls.compactMap(\.transportID)).count == 1,
+        "Parts and final request did not share their scoped transport")
       let merge = gate.calls[4].user
       var previous = merge.startIndex
       for index in 0..<4 {
@@ -147,14 +149,14 @@ enum SummaryPipelineChecks {
 }
 
 @MainActor final class SummaryFixtureGate {
-  struct Call { var user: String; var mode: SummaryProcessingMode }
+  struct Call { var user: String; var mode: SummaryProcessingMode; var transportID: ObjectIdentifier? }
   var calls: [Call] = []
   var pending: [Int: CheckedContinuation<AIAnswerResult, Never>] = [:]
   var maximumActive = 0
-  func request(user: String, mode: SummaryProcessingMode) async -> AIAnswerResult {
+  func request(user: String, mode: SummaryProcessingMode, transport: CloudHTTPTransport?) async -> AIAnswerResult {
     guard !Task.isCancelled else { return .failure(.cancelled) }
     let index = calls.count
-    calls.append(Call(user: user, mode: mode))
+    calls.append(Call(user: user, mode: mode, transportID: transport.map(ObjectIdentifier.init)))
     return await withTaskCancellationHandler {
       await withCheckedContinuation { pending[index] = $0; maximumActive = max(maximumActive, pending.count) }
     } onCancel: {
@@ -167,11 +169,11 @@ enum SummaryPipelineChecks {
 @MainActor enum CloudAIService {
   static var gate = SummaryFixtureGate()
   static func completeStreaming(system: String, user: String, llm: LLMSelection,
-    processingMode: SummaryProcessingMode = .balanced,
+    transport: CloudHTTPTransport? = nil, processingMode: SummaryProcessingMode = .balanced,
     authorize: (@MainActor () -> Bool)? = nil,
     onActivity: (@MainActor () -> Void)? = nil, onProgress: @escaping @MainActor (Int) -> Void) async -> AIAnswerResult {
     if let authorize, !authorize() { return .failure(.cancelled) }
-    return await gate.request(user: user, mode: processingMode)
+    return await gate.request(user: user, mode: processingMode, transport: transport)
   }
 }
 enum AIEngineService { static func effectiveEngine(_ engine: AIEngine) -> AIEngine { engine } }

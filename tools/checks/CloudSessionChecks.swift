@@ -6,6 +6,7 @@ struct CloudSessionChecks {
   typealias Response = CloudSessionFixtureResponse
 
   @MainActor static func main() async throws {
+    try await CloudHTTPTransportChecks.run()
     try await selectedModelAndEndpointChecks()
     try await CloudSummaryTransportChecks.run()
     if ProcessInfo.processInfo.environment["MEMORA_REALTIME_SUMMARY_CHECKS"] == "1" {

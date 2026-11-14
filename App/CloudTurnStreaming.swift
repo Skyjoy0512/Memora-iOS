@@ -4,18 +4,18 @@ enum CloudTurnStreaming {
   @MainActor
   static func response(for original: URLRequest, provider: CloudStreamAccumulator.Provider,
                        onText: @escaping @MainActor (String) -> Void,
-                       sessionConfiguration: URLSessionConfiguration = .ephemeral,
+                       sessionConfiguration: URLSessionConfiguration = .ephemeral, transport: CloudHTTPTransport? = nil,
                        onActivity: (@MainActor () -> Void)? = nil,
                        responseKind: CloudStreamAccumulator.ResponseKind = .agentTurn) async throws -> [String: Any] {
     try await SummaryDiagnostics.$requestID.withValue(UUID()) {
       try await performResponse(for: original, provider: provider, onText: onText,
-        sessionConfiguration: sessionConfiguration, onActivity: onActivity, responseKind: responseKind)
+        sessionConfiguration: sessionConfiguration, transport: transport, onActivity: onActivity, responseKind: responseKind)
     }
   }
 
   @MainActor
   private static func performResponse(for original: URLRequest, provider: CloudStreamAccumulator.Provider,
-                       onText: @escaping @MainActor (String) -> Void, sessionConfiguration: URLSessionConfiguration,
+                       onText: @escaping @MainActor (String) -> Void, sessionConfiguration: URLSessionConfiguration, transport: CloudHTTPTransport?,
                        onActivity: (@MainActor () -> Void)?, responseKind: CloudStreamAccumulator.ResponseKind) async throws -> [String: Any] {
     var request = original
     guard let data = request.httpBody,
@@ -23,11 +23,10 @@ enum CloudTurnStreaming {
     body["stream"] = true
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-    sessionConfiguration.timeoutIntervalForResource = 600
-    let session = URLSession(configuration: sessionConfiguration)
-    defer { session.invalidateAndCancel() }
-    SummaryDiagnostics.current?.record(.request)
-    let (bytes, response) = try await session.bytes(for: request)
+    guard let endpoint = request.url else { throw AIAnswerFailure.network }
+    let receiver = transport ?? CloudHTTPTransport(endpoint: endpoint, configuration: sessionConfiguration)
+    defer { if transport == nil { receiver.invalidate() } }
+    let (bytes, response) = try await receiver.bytes(for: request)
     SummaryDiagnostics.current?.record(.httpResponse, code: (response as? HTTPURLResponse)?.statusCode)
     try CloudAIService.validate(response)
     // Some compatible servers ignore stream. Accept that one response without

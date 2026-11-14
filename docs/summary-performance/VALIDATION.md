@@ -29,3 +29,11 @@
 途中の検証用fixtureにあった「未知容量でも一括になるはず」という仮定を修正し、一括テストにはレビュー済みモデル容量を明示した。未知モデルの短文経路も別に確認した。失敗ログは外部作業ディレクトリに保持。
 
 上記単位の最終iOS preview: `2026-11-14T22-24-37-56c97a02.log` 成功（既存11警告）。性能目標の実測や実機検証とは区別する。
+
+
+## 要約ジョブ内の通信session再利用
+
+- `CloudHTTPTransportChecks`: production CloudAIService / CloudTurnStreaming / URLSessionをoffline URLProtocolで実行し、継続/次区間のsessionReuse [0,1,1]、cookie/credential/endpoint/close分離、拒否で追加request0を確認。
+- `run-cloud-session-checks.sh`: 両API、selected model、EOF/HTTP/continuation/cancel/許可・予算・SQLiteの既存回帰成功。
+- `run-summary-reading-checks.sh`: 実MeetingSummarizerの4part+finalが同じtransportを使うこと、既存source/ordered merge/キャンセル・編集等の回帰成功。
+- iOS preview `2026-11-14T22-45-48-045e9839.log` 成功（既存11警告）。実ネットワーク・TLS・実機時間の改善は未計測。

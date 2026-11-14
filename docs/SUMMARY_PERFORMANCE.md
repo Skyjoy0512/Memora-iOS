@@ -21,3 +21,10 @@
 診断にcachedInputTokens/cacheWriteTokensとsource bytesを追加。`SummaryDiagnostics.metrics` / `metricsJSON` がrequestごとにHTTPヘッダー到着、first reasoning、TTFT、reasoning→本文の観測間隔、本文生成、応答完了の時間を提供する。parse/saveは別span。最初の推論から本文までの間隔は実際の内部推論の総時間とは呼ばない。ネットワークだけの時間やtokenizerが未提供のため、生成token/秒を推測して出さない。Anthropicのinput_tokensはcache read/writeを除く値であり、異なるproviderのcounterを無条件で合算しない。
 
 1チャンク応答のfirst/last token時刻が逆になる既存の計測問題を修正。タイムライン上限で欠落した場合は `timelineIncomplete=true`。nullの使用量はJSONでは省略されるが、0として補完しない。
+
+
+## 通信再利用
+
+`CloudHTTPTransport` の寿命は1つの要約ジョブ。part/merge/final/continuationを同じURLSessionで送受信し、完了・失敗・キャンセル後に閉じる。認証hashはメモリ内だけでbindし、endpoint/auth変更やCookie指定は送信前に拒否。設定はコピーし、cookie/credential/cacheの共有を無効にする。redirectで原文の送信先を変えない。
+
+同一sessionで3応答（長さ継続2応答+次区間1応答）、拒否した変更で追加送信0、caller設定を変更しないことをURLProtocolで確認。実MeetingSummarizerの全part/最終生成が同じtransportを渡すことも確認。診断のsessionReuseは論理sessionの再利用であり、実TCP connection再利用やTLS短縮時間の測定ではない。
