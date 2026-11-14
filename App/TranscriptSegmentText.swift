@@ -5,6 +5,7 @@ import SwiftUI
 struct TranscriptSegmentText: View {
   @Environment(MemoraModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
   var meetingID: UUID
   var segment: TranscriptSegment
   var showsSpeaker: Bool
@@ -18,7 +19,10 @@ struct TranscriptSegmentText: View {
   var onEditSpeaker: (() -> Void)?
 
   var body: some View {
-    HStack(alignment: .top, spacing: 12) {
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: MemoraSpacing.sm))
+      : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
+    return layout {
       if showsTime { timeLabel }
 
       VStack(alignment: .leading, spacing: 6) {
@@ -26,6 +30,8 @@ struct TranscriptSegmentText: View {
           if let onEditSpeaker {
             Button(action: onEditSpeaker) {
               speakerLabel
+                .frame(minHeight: MemoraSpacing.touchTarget, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityHint("話者名を編集します")
@@ -67,6 +73,8 @@ struct TranscriptSegmentText: View {
         onSeek(segment.timestamp)
       } label: {
         timeText
+          .frame(minWidth: MemoraSpacing.touchTarget, minHeight: MemoraSpacing.touchTarget, alignment: .topLeading)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel("\(MemoraFormat.duration(segment.timestamp)) から再生")
@@ -79,7 +87,7 @@ struct TranscriptSegmentText: View {
     Text(MemoraFormat.duration(segment.timestamp))
       .font(.caption.monospacedDigit().weight(isActive ? .bold : .medium))
       .foregroundStyle(isActive ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-      .frame(width: timeWidth, alignment: .leading)
+      .frame(width: typeSize.isAccessibilitySize ? nil : timeWidth, alignment: .leading)
   }
 
   private var speakerLabel: some View {

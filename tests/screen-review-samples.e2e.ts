@@ -53,6 +53,12 @@ test('screen review samples persist without replacing existing content or duplic
       await tapControl(screen.getByRole('button', { name: '文字起こし', exact: true }));
       await expect(screen.getByText(/次のリリースでは、録音を始めるまでの迷い/).first()).toBeVisible();
       await app.screenshot('screen-review-transcript');
+      await tapControl(screen.getByTestId('transcript.search'));
+      await screen.getByTestId('transcript.search.input').fill('存在しない発言xyz');
+      await expect(screen.getByText('一致する発言はありません', { exact: true })).toBeVisible();
+      await screen.getByTestId('transcript.search.input').fill('録音');
+      await expect(screen.getByText(/次のリリースでは、録音を始めるまでの迷い/).first()).toBeVisible();
+      await tapControl(screen.getByRole('button', { name: '検索を閉じる', exact: true }));
       await tapControl(screen.getByRole('button', { name: 'ノート', exact: true }));
       await expect(screen.getByText(/画面確認用の架空データです。音声ファイルは含みません/).first()).toBeVisible();
     }

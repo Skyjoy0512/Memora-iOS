@@ -11,6 +11,7 @@ struct MeetingTranscriptContent: View {
   /// The line being played. Kept here and set by `ActiveSegmentTracker`, so
   /// the list redraws when playback moves to another line, not on every tick.
   @State private var activeSegmentID: UUID?
+  @State private var query = ""
   @AppStorage("memora.transcript.readable") private var usesReadableText = true
 
   var body: some View {
@@ -19,6 +20,9 @@ struct MeetingTranscriptContent: View {
     let showsSpeaker = !meeting.transcript.isEmpty
     let hasTimeline = self.hasTimeline
     let seekAction = hasTimeline ? self.seekAction : nil
+    let segments = CollectionSearch.hasQuery(query) ? meeting.transcript.filter {
+      CollectionSearch.matches(query, fields: [$0.text, $0.speaker])
+    } : meeting.transcript
 
     VStack(alignment: .leading, spacing: 22) {
       VStack(alignment: .leading, spacing: 6) {
@@ -48,9 +52,13 @@ struct MeetingTranscriptContent: View {
             .foregroundStyle(MemoraPalette.textSecondary)
         }
       } else {
-        TranscriptReadingOptions(isReadable: $usesReadableText)
+        TranscriptSearchControls(isReadable: $usesReadableText, query: $query)
+        if CollectionSearch.hasQuery(query) {
+          Text(segments.isEmpty ? "一致する発言はありません" : "\(segments.count)件の発言")
+            .font(MemoraTypography.metadata).foregroundStyle(.secondary)
+        }
         LazyVStack(alignment: .leading, spacing: 22) {
-          ForEach(meeting.transcript) { segment in
+          ForEach(segments) { segment in
             TranscriptSegmentText(
               meetingID: meeting.id,
               segment: segment,

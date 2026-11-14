@@ -74,7 +74,7 @@ struct TaskRow: View {
           if overdue {
             Text("期限切れ")
           }
-          Text(MemoraFormat.dueDate(dueDate))
+          Text("期限 \(MemoraFormat.dueDate(dueDate))")
         }
         .font(MemoraTypography.metadata)
         .fixedSize(horizontal: false, vertical: true)

@@ -50,10 +50,6 @@ struct DocumentDetailView: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 20) {
           header(document)
-          if document.companyTemplateID != nil {
-            Text("会社書式の資料は、原本を含むPDF変換に対応していません。WordまたはPowerPointの元の形式で共有してください。")
-              .font(.footnote).foregroundStyle(.secondary)
-          }
           if let name = document.artifactFileReference, let url = ProjectSourceFiles.resolve(name) {
             DocumentArtifactFileView(document: document, url: url) { artifactPreview = url }
           }
@@ -117,6 +113,9 @@ struct DocumentDetailView: View {
           }
           if document.companyTemplateID == nil {
             Button("PDFで共有", icon: .docRichtext) { share(document, as: .pdf) }
+          } else {
+            Button("PDFで共有（会社書式は未対応）", icon: .docRichtext) {}
+              .disabled(true)
           }
           if document.kind == .slides {
             Button(document.companyTemplateID != nil && document.hasOutdatedArtifact ? "会社PowerPoint（編集前）で共有" : "PowerPointで共有", icon: .rectangleOnRectangleAngled) { share(document, as: .powerPoint) }

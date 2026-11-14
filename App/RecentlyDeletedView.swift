@@ -113,6 +113,8 @@ struct RecentlyDeletedView: View {
       Button("復元", icon: .arrowUturnBackward) { _ = model.restoreTrashedRecord(record.id) }
       Button("完全に削除", icon: .trashSlash, role: .destructive) { pendingDeletion = record }
     }
+    .accessibilityAction(named: "復元") { _ = model.restoreTrashedRecord(record.id) }
+    .accessibilityAction(named: "完全に削除") { pendingDeletion = record }
   }
 
   private var deletionBinding: Binding<Bool> {
@@ -141,6 +143,8 @@ struct RecentlyDeletedView: View {
       Button("復元", icon: .arrowUturnBackward) { _ = model.restoreTrashedLifeLogEntry(record.id) }
       Button("完全に削除", icon: .trashSlash, role: .destructive) { pendingEntryDeletion = record }
     }
+    .accessibilityAction(named: "復元") { _ = model.restoreTrashedLifeLogEntry(record.id) }
+    .accessibilityAction(named: "完全に削除") { pendingEntryDeletion = record }
   }
 
   private var entryDeletionBinding: Binding<Bool> {

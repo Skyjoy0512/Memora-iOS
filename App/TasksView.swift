@@ -193,7 +193,7 @@ struct TasksView: View {
         model.setTaskDueDate(task.id, to: Calendar.current.date(byAdding: .day, value: 7, to: .now))
       }
       if let meetingID = task.meetingID, model.meetingTitles[meetingID] != nil {
-        Button("元の会議を開く", icon: .docText) { model.homePath.append(.meeting(meetingID)) }
+        Button("元の記録を開く", icon: .docText) { model.homePath.append(.meeting(meetingID)) }
       }
       Button("削除", icon: .trash, role: .destructive) { model.deleteTask(task.id) }
     }
