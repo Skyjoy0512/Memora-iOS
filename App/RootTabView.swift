@@ -38,35 +38,26 @@ struct RootTabView: View {
       onCloseAnimationCompleted: completeSidebarAction) {
       FileSidebarView(
         onSearch: { closeSidebar { model.sidebarSearchRequest = UUID() } },
-        onOpenRecorder: {
-          closeSidebar { model.isRecorderConnectionPresented = true }
-        },
-        onOpenProjects: {
-          selectFromSidebar {
-            model.isToolsPresented = false
-            model.openProjects()
-          }
-        },
         onOpenDocuments: openDocuments,
         onOpenPeople: openPeople,
+        onOpenTasks: openTasks,
         onSelectTab: { tab in
           selectFromSidebar {
             model.isToolsPresented = false
             model.selectedTab = tab
+            model.isSearchActive = false
+            model.composerDismissRequests += 1
+            switch tab {
+            case .library: model.libraryPath = []
+            case .home: model.homePath = []
+            case .askAI: break
+            }
           }
         },
         onOpenTools: {
           selectFromSidebar { model.isToolsPresented = true }
         },
-        onOpenSettings: openSettings,
-        onOpenAccount: {
-          closeSidebar {
-            if !model.isSignedIn { model.isAuthPresented = true }
-          }
-        },
-        onOpenPlan: {
-          closeSidebar { model.isPaywallPresented = true }
-        }
+        onOpenSettings: openSettings
       )
     } content: {
       GeometryReader { geometry in
@@ -415,10 +406,7 @@ struct RootTabView: View {
 
   private var showsCaptureButtons: Bool {
     guard model.selectedTab != .askAI, shouldShowComposer, !isComposing, !isKeyboardVisible, !isShowingMeetingDetail else { return false }
-    switch model.activeNavigationPath.last {
-    case .sharedRecord?, .sharedProject?, .projectSource?, .projectPDF?, .document?: return false
-    default: return true
-    }
+    return RootNavigation.offersCapture(tab: model.selectedTab, path: model.activeNavigationPath)
   }
 
   /// An open search, or picking files, takes the screen until a record is
@@ -580,6 +568,14 @@ struct RootTabView: View {
       model.selectedTab = .library
       model.librarySection = .files
       model.libraryPath = [.people]
+    }
+  }
+
+  private func openTasks() {
+    selectFromSidebar {
+      model.isToolsPresented = false
+      model.selectedTab = .home
+      model.homePath = [.tasks]
     }
   }
 

@@ -4,37 +4,28 @@ struct FileSidebarView: View {
   @Environment(MemoraModel.self) private var model
 
   var onSearch: () -> Void
-  var onOpenRecorder: () -> Void
-  var onOpenProjects: () -> Void
   var onOpenDocuments: () -> Void
   var onOpenPeople: () -> Void
+  var onOpenTasks: () -> Void
   var onSelectTab: (RootTab) -> Void
   var onOpenTools: () -> Void
   var onOpenSettings: () -> Void
-  var onOpenAccount: () -> Void
-  var onOpenPlan: () -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       SidebarHeaderView(
         searchDestinationTitle: searchDestinationTitle,
-        onSearch: onSearch,
-        onOpenProjects: onOpenProjects,
-        onOpenDocuments: onOpenDocuments,
-        onOpenPeople: onOpenPeople,
-        onOpenRecorder: onOpenRecorder,
-        onOpenAccount: onOpenAccount,
-        onOpenPlan: onOpenPlan
+        onSearch: onSearch
       )
 
       ScrollView {
         VStack(spacing: 0) {
           SidebarRow(title: "ライブラリ", symbol: .folder,
-            isSelected: !model.isToolsPresented && model.selectedTab == .library) {
+            isSelected: isSelected(.library)) {
             onSelectTab(.library)
           }
           SidebarRow(title: "ジャーナル", symbol: .calendar,
-            isSelected: !model.isToolsPresented && model.selectedTab == .home) {
+            isSelected: isSelected(.home)) {
             onSelectTab(.home)
           }
           SidebarRow(title: "Ask AI", symbol: .sparkles,
@@ -44,6 +35,18 @@ struct FileSidebarView: View {
           SidebarRow(title: "マーケットプレイス", symbol: .bag, isSelected: model.isToolsPresented) {
             onOpenTools()
           }
+
+          Divider()
+            .overlay(MemoraPalette.border)
+            .padding(.vertical, MemoraSpacing.lg)
+            .padding(.horizontal, MemoraSpacing.sm)
+
+          SidebarRow(title: "タスク", symbol: .checkmarkSquare,
+            isSelected: isSelected(.home, route: .tasks), action: onOpenTasks)
+          SidebarRow(title: "資料", symbol: .docRichtext,
+            isSelected: isSelected(.library, route: .documents), action: onOpenDocuments)
+          SidebarRow(title: "人物", symbol: .person2,
+            isSelected: isSelected(.library, route: .people), action: onOpenPeople)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, MemoraSpacing.screen)
@@ -69,6 +72,13 @@ struct FileSidebarView: View {
     }
     return model.selectedTab.title
   }
+
+  private func isSelected(_ tab: RootTab, route: LibraryRoute? = nil) -> Bool {
+    guard !model.isToolsPresented, model.selectedTab == tab else { return false }
+    let path = model.activeNavigationPath
+    if let route { return path.contains(route) }
+    return !path.contains(.documents) && !path.contains(.people) && !path.contains(.tasks)
+  }
 }
 
 private struct SidebarRow: View {
@@ -93,6 +103,8 @@ private struct SidebarRow: View {
       .padding(.vertical, MemoraSpacing.sm)
       .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
       .padding(.horizontal, MemoraSpacing.sm)
+      .background(isSelected ? MemoraPalette.card : Color.clear,
+        in: RoundedRectangle(cornerRadius: MemoraRadius.field))
       .contentShape(Rectangle())
     }
     .buttonStyle(MemoraQuietButtonStyle())

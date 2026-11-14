@@ -38,9 +38,13 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 - **Navigation**: there is no bottom tab bar. The app opens on Library, and the
   destinations (Journal, Library, Ask AI, Marketplace) live at the top of the side menu
-  (`FileSidebarView`). The bottom edge holds Ask AI with the shared plus control. `RootTab` still names
+  (`FileSidebarView`). Tasks, Documents and People have visible secondary rows;
+  the wordmark is static. Library/Journal selections reset their navigation stack.
+  Secondary collections use native back navigation. `RootTab` still names
   the destination and keeps the old saved identifiers, but nothing draws tabs.
-- **Create controls**: the idle bottom row is Ask AI / plus.
+- **Create controls**: Library, Journal and project workspaces have Ask AI / plus.
+  Other reading/management screens have only Ask AI; Marketplace has search.
+  Attachments use a paperclip, capture/creation uses the separate plus.
   The plus opens `CaptureMenuSheet` with recording / audio import / online
   meeting / ノート追加 only. Keep recording first and note creation last; the
   sheet has no title, shortcut strip or close-button header. Native sheet
@@ -353,10 +357,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Apple's native `apple.logo` is limited to the sign-in button. Device calendar is
   EventKit and must not use Google Calendar branding. Interface glyphs remain Lucide.
 - Settings has one entry point: the gear at the bottom right of the side menu
-  (`FileSidebarView` footer). The sidebar wordmark opens a native menu for
-  projects, documents, people, the recorder, account and plan actions; only the
-  four main destinations remain in the drawer rows. Search is the circle beside
-  the wordmark. Tabs carry no settings button.
+  (`FileSidebarView` footer). The sidebar wordmark is static; projects live in
+  Library's Projects segment, Documents / People / Tasks have visible sidebar
+  rows, and recorder / account / plans remain reachable in Settings.
   Dark mode is a toggle in Settings › 表示と操作, not in the side menu. The editable
   profile picture remains at the top of Settings. The root has topic links only
   (`SettingsCategory`); switches and service connections live inside each topic.

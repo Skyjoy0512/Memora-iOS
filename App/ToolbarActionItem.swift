@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ToolbarActionItem<Content: View>: ToolbarContent {
-  var usesSystemBackground = false
+  var usesSystemBackground = true
   var placement: ToolbarItemPlacement = .topBarTrailing
   @ViewBuilder var content: () -> Content
 

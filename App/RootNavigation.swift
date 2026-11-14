@@ -1,6 +1,14 @@
 import Foundation
 
 enum RootNavigation {
+  static func offersCapture(tab: RootTab, path: [LibraryRoute]) -> Bool {
+    guard tab != .askAI else { return false }
+    switch path.last {
+    case nil, .space, .projectSources, .projectChats: return true
+    default: return false
+    }
+  }
+
   static func searchCoversScreen(tab: RootTab, path: [LibraryRoute], isSearching: Bool, isSelectingFiles: Bool) -> Bool {
     guard tab != .askAI else { return false }
     if isSearching {

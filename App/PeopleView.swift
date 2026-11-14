@@ -4,7 +4,6 @@ import SwiftUI
 /// records hold about them.
 struct PeopleView: View {
   @Environment(MemoraModel.self) private var model
-  @Environment(\.revealMemoraSidebar) private var revealSidebar
   @Environment(\.dynamicTypeSize) private var typeSize
   @State private var isManaging = false
   @State private var query = ""
@@ -68,14 +67,9 @@ struct PeopleView: View {
       }
     }
     .navigationTitle("人物")
-    .navigationBarBackButtonHidden(isSidebarRoot)
+    .navigationBarTitleDisplayMode(.inline)
     .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "名前・メモを検索")
     .toolbar {
-      if isSidebarRoot, let revealSidebar {
-        ToolbarActionItem(placement: .topBarLeading) {
-          ToolbarIconButton("メニュー", icon: .line3Horizontal, action: revealSidebar.callAsFunction)
-        }
-      }
       ToolbarActionItem {
         ToolbarIconButton("人物を検索", icon: .magnifyingglass) { isSearching = true }
       }

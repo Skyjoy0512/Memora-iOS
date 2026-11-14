@@ -70,6 +70,16 @@ struct RootNavigationChecks {
     precondition(RootNavigation.scope(tab: .home, path: [], detailMeetingID: otherMeeting) == .global)
     precondition(RootNavigation.scope(tab: .home, path: home, detailMeetingID: meeting, detailTab: .home) == .file(meeting))
     precondition(RootNavigation.scope(tab: .askAI, path: [], detailMeetingID: meeting, detailTab: .askAI) == .file(meeting))
+    for tab in [RootTab.library, .home] {
+      precondition(RootNavigation.offersCapture(tab: tab, path: []))
+      precondition(RootNavigation.offersCapture(tab: tab, path: [.space(project)]))
+      for path: [LibraryRoute] in [[.tasks], [.documents], [.people], [.person(UUID())],
+        [.document(UUID())], [.meeting(meeting)], [.transcript(meeting)],
+        [.sharedProject("team")], [.space(project), .projectTasks(project)]] {
+        precondition(!RootNavigation.offersCapture(tab: tab, path: path))
+      }
+    }
+    precondition(!RootNavigation.offersCapture(tab: .askAI, path: []))
     print("RootNavigationChecks: passed (three tabs, legacy IDs, segment restoration, isolated stacks, recording destination, AI scopes)")
   }
 }

@@ -12,15 +12,18 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 
 ## Everyday interactions
 
-- The sidebar follows the supplied sparse drawer reference: canonical wordmark
-  and circular search at the top, Library / Journal / Ask AI / Marketplace in
-  regular-weight rows, and a circular settings button at the bottom right.
-  The wordmark opens a native menu for projects, documents, people, the recorder,
-  account and plan actions. Keep the main drawer free of section headings,
-  selection fills, account cards and upgrade copy. Selected destinations remain
-  exposed to accessibility, and navigation rows grow and scroll with larger text.
+- The sidebar has a static canonical wordmark and search, four primary
+  destinations, then visible Tasks / Documents / People links. A quiet selection
+  fill and accessibility traits track the actual route. Settings stays at the
+  bottom right; account, plans and recorder setup remain in Settings.
+  Explicit Library / Journal selections return to their root. Secondary
+  collections and detail screens use the native back button.
 
-- The bottom idle row holds Ask AI and one plus control in native Liquid Glass.
+- Library, Journal and project workspaces hold Ask AI and one capture plus in
+  native Liquid Glass. Ask AI, record/document/source details, Documents, People
+  and Tasks show only the composer. Marketplace owns its search field. Attachment
+  uses a paperclip; the external plus creates a record. Native toolbar platters
+  supply consistent control sizing.
   Plus opens CaptureMenuSheet with recording, audio import, online meeting and
   note creation, in that order. It has no shortcut strip or close-button header;
   use the native sheet grabber/dismissal. The compact sheet is 300pt at standard text sizes.

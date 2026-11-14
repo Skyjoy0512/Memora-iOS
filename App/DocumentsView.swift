@@ -3,7 +3,6 @@ import SwiftUI
 /// Every document and slide deck, newest first. Opened from the side menu.
 struct DocumentsView: View {
   @Environment(MemoraModel.self) private var model
-  @Environment(\.revealMemoraSidebar) private var revealSidebar
   @State private var pendingDeletion: MemoraDocument?
   @State private var isEmptyWeekNoticePresented = false
   @State private var operationError: String?
@@ -58,14 +57,9 @@ struct DocumentsView: View {
       }
     }
     .navigationTitle("資料")
-    .navigationBarBackButtonHidden(isSidebarRoot)
+    .navigationBarTitleDisplayMode(.inline)
     .toolbarSearch(text: $query, isPresented: $isSearching, prompt: "タイトル・本文を検索")
     .toolbar {
-      if isSidebarRoot, let revealSidebar {
-        ToolbarActionItem(placement: .topBarLeading) {
-          ToolbarIconButton("メニュー", icon: .line3Horizontal, action: revealSidebar.callAsFunction)
-        }
-      }
       ToolbarActionItem {
         ToolbarIconButton("資料を検索", icon: .magnifyingglass) { isSearching = true }
       }

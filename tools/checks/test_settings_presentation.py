@@ -71,8 +71,9 @@ class SettingsPresentationChecks(unittest.TestCase):
         self.assertIn(".fixedSize(horizontal: false, vertical: true)", sidebar)
         self.assertIn("ScrollView {", sidebar)
         header = (APP / "SidebarHeaderView.swift").read_text()
-        for action in ("onOpenProjects", "onOpenDocuments", "onOpenPeople", "onOpenRecorder", "onOpenAccount", "onOpenPlan"):
-            self.assertIn(f"action: {action}", header)
+        self.assertNotIn("Menu {", header)
+        for action in ("onOpenTasks", "onOpenDocuments", "onOpenPeople"):
+            self.assertIn(f"action: {action}", sidebar)
 
 
 if __name__ == "__main__":

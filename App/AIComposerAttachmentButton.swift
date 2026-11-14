@@ -18,7 +18,7 @@ struct AIComposerAttachmentButton: View {
         }
       }
     } label: {
-      ToolbarActionLabel("添付を追加", icon: .plus)
+      ToolbarActionLabel("添付を追加", icon: .paperclip)
         .environment(\.memoraToolbarControlSize, MemoraSpacing.touchTarget)
     }
     .buttonStyle(.plain)
