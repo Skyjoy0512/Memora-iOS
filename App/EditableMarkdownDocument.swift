@@ -8,6 +8,7 @@ struct EditableMarkdownDocument: View {
   var markdown: String
   /// Keeps what is being written, so leaving the screen does not lose it.
   var draftKey: String?
+  var hidesDocumentTitle = false
   /// Stores the whole document after one block changes, and reports whether
   /// it was saved.
   var onCommit: (String) async -> Bool
@@ -52,7 +53,9 @@ struct EditableMarkdownDocument: View {
 
     LazyVStack(alignment: .leading, spacing: MarkdownBlockView.blockSpacing) {
       ForEach(blocks.indices, id: \.self) { index in
-        row(blocks[index].block, at: index)
+        if !(hidesDocumentTitle && blocks.count > 1 && index == 0 && { if case .heading(1, _) = blocks[index].block { return true }; return false }()) {
+          row(blocks[index].block, at: index)
+        }
       }
       EditorSaveStatus(isSaving: isSaving, hasFailure: saveFailed) {
         if let pendingDocument { save(pendingDocument) }
@@ -94,10 +97,9 @@ struct EditableMarkdownDocument: View {
       field(for: block)
         .id(editorID)
     } else if case .table(let header, let rows) = block {
-      VStack(alignment: .leading, spacing: 0) {
-        ForEach(rows.indices, id: \.self) { rowIndex in
-          tableCard(header: header, row: rows[rowIndex], block: index, rowIndex: rowIndex)
-        }
+      MarkdownTableView(header: header, rows: rows) { row, column, value in
+        cell(value, target: .cell(block: index, row: row, column: column), font: row < 0 ? MemoraTypography.secondary.weight(.semibold) : MemoraTypography.readingBody,
+          header: header, row: row < 0 ? header : rows[row])
       }
     } else {
       MarkdownBlockView(block: block)
@@ -127,11 +129,11 @@ struct EditableMarkdownDocument: View {
       HStack(alignment: .top, spacing: 8) {
         MarkdownBulletMarker(marker: marker, level: level)
           .font(MarkdownBlockView.bulletFont(level))
-          .frame(minWidth: listIndent, alignment: .trailing)
+          .frame(minWidth: min(listIndent, 24), alignment: .trailing)
         textField("項目", font: MarkdownBlockView.bulletFont(level))
           .font(MarkdownBlockView.bulletFont(level))
       }
-      .padding(.leading, CGFloat(min(level, 4)) * listIndent)
+      .padding(.leading, CGFloat(min(level, 4)) * min(listIndent, 24))
     case .quote:
       HStack(alignment: .top, spacing: MemoraSpacing.md) {
         RoundedRectangle(cornerRadius: 1.5)
@@ -152,14 +154,6 @@ struct EditableMarkdownDocument: View {
     MarkdownEditorField(markdown: $draft, font: font, minHeight: 44,
       isFocused: $isFocused, onStructure: applyStructure)
       .frame(maxWidth: .infinity, alignment: .leading)
-  }
-
-  /// A table row's card, with each value editable on its own.
-  private func tableCard(header: [String], row: [String], block: Int, rowIndex: Int) -> some View {
-    MarkdownTableRow(header: header, row: row) { column, value, font in
-      cell(value, target: .cell(block: block, row: rowIndex, column: column), font: font, header: header, row: row)
-        .font(font)
-    }
   }
 
   @ViewBuilder

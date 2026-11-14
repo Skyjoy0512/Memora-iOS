@@ -25,12 +25,12 @@ struct MarkdownBlockView: View {
     case .bullet(let level, let marker, let text):
       HStack(alignment: .firstTextBaseline, spacing: MemoraSpacing.sm) {
         MarkdownBulletMarker(marker: marker, level: level)
-          .frame(minWidth: listIndent, alignment: .trailing)
+          .frame(minWidth: min(listIndent, 24), alignment: .trailing)
         Self.inline(text)
           .font(Self.bulletFont(level))
           .lineSpacing(readingLineSpacing)
       }
-      .padding(.leading, CGFloat(min(level, 4)) * listIndent)
+      .padding(.leading, CGFloat(min(level, 4)) * min(listIndent, 24))
 
     case .quote(let text):
       HStack(alignment: .top, spacing: MemoraSpacing.md) {
@@ -45,12 +45,8 @@ struct MarkdownBlockView: View {
       .fixedSize(horizontal: false, vertical: true)
 
     case .table(let header, let rows):
-      VStack(alignment: .leading, spacing: 0) {
-        ForEach(rows.indices, id: \.self) { index in
-          MarkdownTableRow(header: header, row: rows[index]) { _, value, font in
-            Self.inline(value).font(font)
-          }
-        }
+      MarkdownTableView(header: header, rows: rows) { row, _, value in
+        Self.inline(value).font(row < 0 ? MemoraTypography.secondary.weight(.semibold) : MemoraTypography.readingBody)
       }
 
     case .rule:

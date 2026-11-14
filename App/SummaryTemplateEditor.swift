@@ -77,7 +77,7 @@ struct SummaryTemplateEditor: View {
         Section {
           Toggle("アクションアイテム（タスク）を作る", isOn: $template.includesActions)
         } footer: {
-          Text("オンにすると、要約の最後に会議で明示された担当・期限を含む行動を付け、タスクに追加します。")
+          Text("オンにすると、実際に約束した行動をタスクに追加します。担当・期限が未言及なら未指定のままにします。カスタムプロンプトの見出し・順序は固定フォーマットとして維持します。")
         }
       }
       .navigationTitle(model.customTemplates.contains { $0.id == template.id } ? "テンプレートを編集" : "テンプレートを作成")

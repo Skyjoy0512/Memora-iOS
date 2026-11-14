@@ -64,3 +64,12 @@ ProjectSourceも任意のknowledgeを保持。source UUIDと原文block順序か
 
 検証: AdaptiveSummaryKnowledgeChecks、background queue/atomic save/reopen（完了済タスクと本人の訂正保持、生成中リスト編集の拒否を追加）、source summary13競合、summary reading全群が合格。iOS preview成功。新しいCodable依存をホストsuiteに明示しているためharnessのsource listも更新。全体qualityは継続中。
 E2E旧summary-recoveryの1ケースは保存失敗後に原文表示を期待して失敗。SQLite原本は不変、画面とdraftは失敗した編集を保持しており現行の仕様と整合。後続ではDB・draft・未保存表示の3点を検証し、原文の喪失と混同しない。
+
+## C 読書・操作・UI
+
+本文の下へ無条件に再掲していた決定/未決/要点を削除し、その他→抽出情報を確認から既存編集とタスクへ到達可能にした。未言及はこの補助画面だけで表示。生成時情報と編集後の失効を明示。原文参照は音声なしでもsegment IDで正確な発言を開く。
+本文と資料の先頭H1は読み取り表示でのみ省略（保存文字列と編集位置は維持、タイトルだけの文書は隠さない）。Markdown表は読む/セル編集の両方で同じ横スクロール配置。Dynamic Typeで本文を拡大しながら、字下げと表列幅が無制限に広がらないよう上限を設けた。新しいFABやカード装飾なし。
+E2Eでタスク保存後に一覧が更新されない実不具合を再現。tasks(forMeeting:)のcache hitでも元配列のObservation依存を登録し、同一テストが合格。
+新E2Eは生成fixtureの初回表示・本文・下部AskAI/capture非表示・原文参照（音声なし）・タスク追加/完了/SQLite原文不変を検証し、81.31秒で合格。UIKitに挿入caretがあってもAX focusがfalseのケースは、fixture入力を実際の文字列値と保存結果で検証する形に修正。期待値だけでアプリのタスク不具合を隠していない。
+旧summary-recoveryの保存失敗テストは、原本DB不変＋未保存draft表示＋再試行を要求する形に修正（再実行は後続）。
+実プレビューでライト/ダークの本文、表の左右scroll、最大Dynamic Typeを観察しスクリーンショット保存。未取得の画面を検証済みにはしない。iOS preview、11個のpresentation静的テストとUI interaction policy合格。

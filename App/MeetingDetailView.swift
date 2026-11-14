@@ -19,6 +19,7 @@ struct MeetingDetailView: View {
   @State private var isRenaming = false
   @State private var isAddingTask = false
   @State private var isEditingHighlights = false
+  @State private var isReviewingExtraction = false
   @State private var isDeleting = false
   @State private var isRemovingAudio = false
   @State private var isSummaryGenerationPresented = false
@@ -128,7 +129,7 @@ struct MeetingDetailView: View {
           }
           .onChange(of: model.detailPlaybackRequest) { _, request in
             guard let request, request.meetingID == meeting.id else { return }
-            applyPlaybackRequest(request.time, meeting: meeting, proxy: proxy)
+            applyPlaybackRequest(request.time, meeting: meeting, proxy: proxy, segmentID: request.segmentID)
             model.detailPlaybackRequest = nil
           }
           .onDisappear {
@@ -173,6 +174,10 @@ struct MeetingDetailView: View {
                   Label("要約の履歴", icon: .clockArrowCirclepath)
                 }
               }
+              Button("要約をコピー", icon: .docOnDoc) { UIPasteboard.general.string = meeting.summary }
+                .disabled(meeting.summary.isEmpty)
+              Button("抽出情報を確認", icon: .listBulletRectangle) { isReviewingExtraction = true }
+                .accessibilityIdentifier("meeting.summary.extraction")
               Button("タスクを追加", icon: .textBadgePlus) { isAddingTask = true }
               Button("要点・決定事項を編集", icon: .pencil) { isEditingHighlights = true }
               Button("参加者を編集", icon: .personBadgePlus) { isAddingPeople = true }
@@ -205,6 +210,7 @@ struct MeetingDetailView: View {
           RecordPrivacySettingsView(meetingID: meeting.id)
         }
         .sheet(isPresented: $isAddingTask) { AddTaskView(meetingID: meeting.id) }
+        .sheet(isPresented: $isReviewingExtraction) { SummaryExtractionView(meetingID: meeting.id) }
         .sheet(isPresented: $isEditingHighlights) { MeetingHighlightsEditor(meetingID: meeting.id) }
         .sheet(isPresented: $isAddingPeople) {
           AddPeopleSheet(meetingID: meeting.id)
@@ -378,15 +384,15 @@ struct MeetingDetailView: View {
   /// Brings the detail to its transcript at a time: plays from there when the
   /// record has audio, and otherwise just highlights the line so the source is
   /// still identifiable.
-  private func applyPlaybackRequest(_ time: TimeInterval?, meeting: Meeting, proxy: ScrollViewProxy) {
+  private func applyPlaybackRequest(_ time: TimeInterval?, meeting: Meeting, proxy: ScrollViewProxy, segmentID: UUID? = nil) {
     selectedSection = meeting.transcript.isEmpty ? .summary : .transcript
-    // A request with no time only opens the transcript; it does not play.
-    guard let time else { return }
-    if meeting.hasPlaybackAudio && !model.isRecording {
+    // An untimed reference can still focus its exact transcript segment.
+    if let time, meeting.hasPlaybackAudio && !model.isRecording {
       player.seek(to: time)
       player.play()
     }
-    guard let segment = meeting.transcript.last(where: { $0.timestamp <= time }) else { return }
+    guard let segment = segmentID.flatMap({ id in meeting.transcript.first { $0.id == id } })
+      ?? time.flatMap({ time in meeting.transcript.last { $0.timestamp <= time } }) else { return }
     focusedSegmentID = segment.id
     Task { @MainActor in
       // Let the transcript render before scrolling to the line.
@@ -506,18 +512,9 @@ struct MeetingDetailView: View {
         rendersBlocks: true,
         draftKey: "meeting.\(meeting.id).summary",
         animatesReading: true,
+        hidesDocumentTitle: true,
         onCommit: { await model.updateMeetingSummary(meeting.id, summary: $0) }
       )
-    }
-
-    if !meeting.decisions.isEmpty {
-      CollapsibleInsightSection(.decisions) {
-        InlineEditableList(
-          items: meeting.decisions,
-          emptyText: "明確な決定は見つかりませんでした",
-          onCommit: { model.updateMeetingList(meeting.id, \.decisions, items: $0) }
-        )
-      }
     }
 
     if hasTasks {
@@ -526,25 +523,6 @@ struct MeetingDetailView: View {
       }
     }
 
-    if !meeting.openQuestions.isEmpty {
-      CollapsibleInsightSection(.openQuestions) {
-        InlineEditableList(
-          items: meeting.openQuestions,
-          emptyText: "未決事項はありません",
-          onCommit: { model.updateMeetingList(meeting.id, \.openQuestions, items: $0) }
-        )
-      }
-    }
-
-    if !meeting.keyPoints.isEmpty {
-      CollapsibleInsightSection(.keyPoints) {
-        InlineEditableList(
-          items: meeting.keyPoints,
-          emptyText: "重要なポイントはありません",
-          onCommit: { model.updateMeetingList(meeting.id, \.keyPoints, items: $0) }
-        )
-      }
-    }
   }
 
 }

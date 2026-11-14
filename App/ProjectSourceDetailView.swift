@@ -58,7 +58,7 @@ struct ProjectSourceDetailView: View {
               if source.summaryTextReference != source.extractedTextReference {
                 Text("以前の原文から作成した要約です").font(.caption).foregroundStyle(.secondary)
               }
-              MarkdownDocumentView(markdown: summary, isLazy: true)
+              MarkdownDocumentView(markdown: summary, isLazy: true, hidesDocumentTitle: true)
                 .memoraTextReveal()
             }
             if let failure = summaryFailure(for: source) {

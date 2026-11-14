@@ -19,6 +19,7 @@ struct InlineMarkdownEditor: View {
   /// Reading-only projection. The edit draft always starts from the source text.
   var displayText: String? = nil
   var animatesReading = false
+  var hidesDocumentTitle = false
   /// Commits the text and reports whether it was stored. The draft is only
   /// cleared once this says the text is saved, so a failed write keeps what was
   /// being written.
@@ -69,7 +70,7 @@ struct InlineMarkdownEditor: View {
         } else if rendersBlocks, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
           // A document is edited where it is read, block by block, so it keeps
           // the look it had. The whole source stays reachable for bigger changes.
-          EditableMarkdownDocument(markdown: text, draftKey: draftKey,
+          EditableMarkdownDocument(markdown: text, draftKey: draftKey, hidesDocumentTitle: hidesDocumentTitle,
             onCommit: onCommit, onEditSource: beginEditing)
         } else {
           Group {

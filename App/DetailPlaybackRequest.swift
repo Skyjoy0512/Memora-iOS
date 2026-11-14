@@ -9,4 +9,5 @@ struct DetailPlaybackRequest: Equatable {
   /// Where to play from. `nil` only moves to the transcript without playing,
   /// such as when a source's title is tapped.
   var time: TimeInterval?
+  var segmentID: UUID? = nil
 }

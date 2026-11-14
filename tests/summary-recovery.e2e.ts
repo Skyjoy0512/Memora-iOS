@@ -39,7 +39,10 @@ test('failed transcript saves keep the stored record and durable or in-memory dr
     await finish();
     await dismissFailure();
     expect(read()).toEqual(original);
-    await expect(screen.getByRole('button', { name: raw, exact: true })).toBeVisible();
+    // The unsaved edit stays visible with its failure state; SQLite above
+    // still contains the original. Both facts matter for recovery.
+    await expect(screen.getByRole('button', { name: firstEdit, exact: true })).toBeVisible();
+    await expect(screen.getByRole('button', { name: 'もう一度保存', exact: true })).toBeVisible();
     const storedDraft = Buffer.from(draft(), 'hex');
     expect(storedDraft[0]).toBe(1);
     expect(storedDraft.subarray(1).toString('utf8')).toBe(firstEdit);

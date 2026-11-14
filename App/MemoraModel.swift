@@ -1009,6 +1009,9 @@ final class MemoraModel {
 
   /// The tasks attached to one meeting, grouped once per change.
   func tasks(forMeeting id: UUID) -> [MemoraTask] {
+    // Cache hits must track the same source as misses. Otherwise a view's
+    // next evaluation drops its subscription and additions never appear.
+    access(keyPath: \.tasks)
     if tasksByMeeting == nil {
       var grouped: [UUID: [MemoraTask]] = [:]
       for task in tasks {

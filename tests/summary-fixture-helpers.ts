@@ -13,8 +13,11 @@ export async function seedSummaryFixture(app: any, device: any, screen: any,
   await screen.getByRole('textbox', { name: 'タイトル', exact: true }).fill(marker);
   const body = screen.getByRole('textbox', { name: 'ノート本文', exact: true });
   await tapControl(body);
-  await expect(body).toBeFocused();
-  await body.pressSequentially('Isolated summary fixture ' + marker);
+  // UITextView can have a visible insertion caret without exposing AX focus.
+  // Verify actual entry rather than that unreliable accessibility flag.
+  const markerBody = 'Isolated summary fixture ' + marker;
+  await body.fill(markerBody);
+  await expect(body).toHaveValue(markerBody);
   const closeKeyboard = screen.getByRole('button', { name: 'キーボードを閉じる', exact: true });
   if (await closeKeyboard.isVisible()) await tapControl(closeKeyboard);
   await tapControl(screen.getByRole('button', { name: '保存', exact: true }));

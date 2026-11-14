@@ -9,6 +9,7 @@ struct MarkdownDocumentView: View {
   /// summary does not lay out every paragraph at once. Rendering to a PDF
   /// needs every block, so it stays eager there.
   var isLazy = false
+  var hidesDocumentTitle = false
 
   var body: some View {
     let blocks = MarkdownBlockParser.blocks(for: markdown)
@@ -30,7 +31,9 @@ struct MarkdownDocumentView: View {
 
   private func rows(_ blocks: [MarkdownBlock]) -> some View {
     ForEach(blocks.indices, id: \.self) { index in
-      MarkdownBlockView(block: blocks[index])
+      if !(hidesDocumentTitle && blocks.count > 1 && index == 0 && { if case .heading(1, _) = blocks[index] { return true }; return false }()) {
+        MarkdownBlockView(block: blocks[index])
+      }
     }
   }
 }
