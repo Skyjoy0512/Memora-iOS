@@ -63,8 +63,12 @@ struct OmiPairingView: View {
         Text("見つけたデバイスへ、このiPhoneから直接接続します。")
           .font(.subheadline)
           .foregroundStyle(.secondary)
-        Button("Omiを探す", icon: .antennaRadiowavesLeftAndRight) {
+        Button {
           manager.startScanning()
+        } label: {
+          Text("Omiを探す")
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, minHeight: MemoraSpacing.touchTarget, alignment: .center)
         }
         .buttonStyle(.borderedProminent)
       }

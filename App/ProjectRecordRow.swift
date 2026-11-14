@@ -3,6 +3,7 @@ import SwiftUI
 struct ProjectRecordRow: View {
   var meeting: Meeting
   var showsReadyStatus = false
+  var showsSourceIcon = true
   var selectionState: Bool? = nil
 
   @Environment(\.dynamicTypeSize) private var typeSize
@@ -17,6 +18,8 @@ struct ProjectRecordRow: View {
       Image(icon: selectionState.map { $0 ? .checkmarkCircleFill : .circle } ?? meeting.source.icon, size: 17)
         .frame(width: ProjectLayout.iconSide, height: 24)
         .foregroundStyle(MemoraPalette.textSecondary)
+        // Preserve the selection lane so wrapped titles never change width.
+        .opacity(showsSourceIcon || selectionState != nil ? 1 : 0)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
         Text(meeting.displayTitle)

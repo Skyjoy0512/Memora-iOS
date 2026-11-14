@@ -3,6 +3,12 @@ import Foundation
 
 @MainActor enum DesignReviewFixture {
   static let recordID = UUID(uuidString: "1AFAB0D2-BEEA-4C73-8452-F159D40F1F01")!
+  static var upcomingMeeting: UpcomingMeeting {
+    let calendar = Calendar(identifier: .gregorian)
+    let start = calendar.date(from: DateComponents(year: 2026, month: 11, day: 20, hour: 10))!
+    return UpcomingMeeting(id: "design-review-event", title: "予定の表示例（保存しません）",
+      start: start, end: start.addingTimeInterval(3600))
+  }
   static let selectionRecords = (1...3).map { index in
     Meeting(id: UUID(), title: "表示例\(index)：長いファイル名を複数選択しても隣のファイル名や説明と重ならずに表示するための確認", createdAt: .now,
       duration: 180, source: .importFile, status: .ready,

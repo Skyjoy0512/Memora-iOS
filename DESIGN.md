@@ -1,6 +1,6 @@
 # Memora — Native reading and conversation
 
-Updated 2026-11-13. This is the current design specification. Product behavior
+Updated 2026-11-14. This is the current design specification. Product behavior
 and access constraints remain in AGENTS.md and domain documents under docs/.
 Historical visual experiments are superseded.
 
@@ -21,8 +21,9 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
   exposed to accessibility, and navigation rows grow and scroll with larger text.
 
 - The bottom idle row holds Ask AI and one plus control in native Liquid Glass.
-  Plus opens CaptureMenuSheet: horizontal camera/photos/files/link shortcuts above
-  recording, audio import, online meeting and note creation, in that order.
+  Plus opens CaptureMenuSheet with recording, audio import, online meeting and
+  note creation, in that order. It has no shortcut strip or close-button header;
+  use the native sheet grabber/dismissal. The compact sheet is 300pt at standard text sizes.
   There is no separate memo button or top-right create control. Project creation
   stays in Projects' options menu and empty state.
 - AI questions advance only after 次へ/送信. All question controls have at least
@@ -91,6 +92,20 @@ short 削除 action keeps its full spoken label and confirmation dialog.
 
 Review coverage and validation are recorded in
 [UI/UX review](docs/UI_UX_REVIEW_2026_11_13.md).
+
+## Capture and Library refinements — 2026-11-14
+
+The attachment menu sits outside the composer's glass foreground so native menu
+presentation keeps the input capsule visible. The editor, draft and attachment
+pickers retain their identity. The separate capture sheet contains only its four
+main actions, with native drag dismissal.
+
+Upcoming events show only the day number in the left tile; the full date and time
+remain beside the title. Library rows hide source glyphs while reserving the same
+space for selection marks, preserving wrapped title widths during selection.
+PLAUD shares the other-recorder/voice-memo import route. The recorder hub omits its
+long explanatory footer; import-specific instructions remain on the import screen.
+The Omi search button centers its text and provides at least a 44pt touch target.
 
 ## Direction and provenance
 
@@ -358,7 +373,7 @@ Workspace options are visible rows with one checkmark, not a pull-down menu.
 They retain storage descriptions, selected accessibility traits and the existing
 workspace switch path. An unconfigured backend does not fabricate team options.
 The sidebar's recorder entry opens the same recorder hub as Settings: Omi direct
-pairing/details, PLAUD audio import and generic recorder/voice-memo audio import.
+pairing/details and one audio-import destination for PLAUD, other recorders and voice memos.
 File import is explicitly distinct from Bluetooth pairing and uses the existing
 workspace-bound, validated audio/SQLite path. Other vendor protocols are unsupported.
 
@@ -605,7 +620,7 @@ items also hide creation.
 The Ask AI page likewise shows its full-width composer without the capture FAB.
 Marketplace keeps its existing presentation.
 
-Selection marks replace the source glyph in Library rows, keeping title width
+Library source glyphs are hidden; selection marks use the reserved lane, keeping title width
 and wrapped height unchanged. Avoid animating the list for individual selection toggles.
 The create-menu memo uses the existing source editor in memo mode: body, optional
 title and current Library/project destination. Drafts are separate from link/file

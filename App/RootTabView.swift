@@ -179,7 +179,7 @@ struct RootTabView: View {
       }
     }
     .sheet(isPresented: $isCaptureMenuPresented, onDismiss: completeCaptureMenuDismissal) {
-      CaptureMenuSheet(onSelect: selectCaptureMenuItem, onClose: dismissCaptureMenu)
+      CaptureMenuSheet(onSelect: selectCaptureMenuItem)
     }
     .photosPicker(isPresented: $isCapturePhotosPresented, selection: $capturePhotos, maxSelectionCount: 6, matching: .images)
     .onChange(of: capturePhotos) { _, photos in

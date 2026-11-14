@@ -38,19 +38,14 @@ struct UpcomingEventCard: View {
   }
 
   private var dateTile: some View {
-    VStack(spacing: 2) {
-      Text(meeting.start, format: .dateTime.weekday(.abbreviated))
-        .font(.caption2.weight(.bold))
-        .foregroundStyle(.secondary)
-      Text(meeting.start, format: .dateTime.day())
-        .font(.title2.weight(.semibold).monospacedDigit())
-        .foregroundStyle(.primary)
-    }
-    .padding(.vertical, MemoraSpacing.sm)
-    .frame(width: dateTileWidth)
-    .frame(minHeight: dateTileHeight)
-    .background(MemoraPalette.card)
-    .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
-    .accessibilityHidden(true)
+    Text(Calendar.current.component(.day, from: meeting.start), format: .number.grouping(.never))
+      .font(.title2.monospacedDigit())
+      .foregroundStyle(.primary)
+      .padding(.vertical, MemoraSpacing.sm)
+      .frame(width: dateTileWidth)
+      .frame(minHeight: dateTileHeight)
+      .background(MemoraPalette.card)
+      .clipShape(RoundedRectangle(cornerRadius: MemoraRadius.field, style: .continuous))
+      .accessibilityHidden(true)
   }
 }

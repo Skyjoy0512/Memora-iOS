@@ -18,7 +18,7 @@ struct RecorderAudioImportView: View {
       Section {
         Text(isPlaud
           ? "PLAUDアプリから音声を書き出し、「ファイル」に保存して選択してください。"
-          : "ICレコーダーやボイスメモから音声を書き出し、「ファイル」に保存して選択してください。USBストレージも「ファイル」に表示されていれば選択できます。")
+          : "PLAUD、ICレコーダー、ボイスメモから音声を書き出し、「ファイル」に保存して選択してください。USBストレージも「ファイル」に表示されていれば選択できます。")
           .foregroundStyle(.secondary)
         Button("音声を選んで取り込む", icon: .squareAndArrowDown) {
           importContext = LocalImportContext(in: model)

@@ -158,17 +158,15 @@ struct AIComposerBar: View {
       }
     }
     .background { listeningBackdrop }
-    // Keep attachment presentation separate from the native text field so its
-    // menu does not replace the editor or interrupt keyboard focus.
+    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
+      interactive: true, backed: false)
+    // The native menu must sit outside the glass's foreground; otherwise iOS
+    // lifts the whole composer as its source and hides it while the menu is open.
     .overlay(alignment: usesStackedLayout ? .bottomLeading : .leading) {
       attachmentMenu
         .padding(.leading, usesStackedLayout ? MemoraSpacing.sm : MemoraSpacing.xs)
         .padding(.bottom, usesStackedLayout ? MemoraSpacing.sm : 0)
     }
-    // Include the attachment control in the glass foreground, not behind a
-    // sibling surface when the composer belongs to a glass container.
-    .memoraGlass(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous),
-      interactive: true, backed: false)
     .preservesComposerFocus()
     .animation(reduceMotion ? nil : MemoraMotion.control, value: attachment)
     .animation(reduceMotion ? nil : MemoraMotion.control, value: hasContent)

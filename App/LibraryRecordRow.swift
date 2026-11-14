@@ -15,7 +15,7 @@ struct LibraryRecordRow: View {
       : AnyLayout(HStackLayout(alignment: .top, spacing: MemoraSpacing.md))
     return layout {
       VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
-        ProjectRecordRow(meeting: meeting, showsReadyStatus: false,
+        ProjectRecordRow(meeting: meeting, showsReadyStatus: false, showsSourceIcon: false,
           selectionState: isSelecting ? isSelected : nil)
         if let sharedBy {
           SharedOwnerBadge(ownerName: sharedBy)

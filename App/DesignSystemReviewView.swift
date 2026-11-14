@@ -10,6 +10,10 @@ struct DesignSystemReviewView: View {
 
   var body: some View {
     MemoraList {
+      Section("予定の表示例・保存しません") {
+        UpcomingEventCard(meeting: DesignReviewFixture.upcomingMeeting)
+          .accessibilityIdentifier("design.review.upcoming")
+      }
       Section("ファイル選択の表示例・保存しません") {
         Button(isSelectingFiles ? "選択を終了" : "複数選択") { isSelectingFiles.toggle() }
         ForEach(DesignReviewFixture.selectionRecords) { meeting in

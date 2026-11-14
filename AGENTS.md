@@ -41,10 +41,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   (`FileSidebarView`). The bottom edge holds Ask AI with the shared plus control. `RootTab` still names
   the destination and keeps the old saved identifiers, but nothing draws tabs.
 - **Create controls**: the idle bottom row is Ask AI / plus.
-  The plus opens `CaptureMenuSheet`: camera / photos / files / link shortcuts
-  scroll horizontally above recording / audio import / online meeting / ノート追加.
-  Keep recording first and note creation last; the sheet has no title and closes
-  with the Lucide CircleX. Do not restore the top-right ＋ or a separate memo FAB.
+  The plus opens `CaptureMenuSheet` with recording / audio import / online
+  meeting / ノート追加 only. Keep recording first and note creation last; the
+  sheet has no title, shortcut strip or close-button header. Native sheet
+  dismissal and the grabber remain. Do not restore the top-right ＋ or a separate memo FAB.
   Dispatch after dismissal, rechecking the captured LocalImportContext.
   While composing, give Ask AI the full row; hide capture controls without
   unmounting their file importer. The controls stay in a fixed trailing overlay;
@@ -62,8 +62,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Library tab lists records across all projects; projects are opened and
   created in the Library's Projects segment (`ProjectsView`); both segments
   share one `libraryPath`. Persist the selected `LibrarySection` as a setting.
-  During multiple selection, replace the source icon with the selection mark;
-  never add a column that changes title width or animates wrapped row heights.
+  Library records hide source icons in the reserved selection lane. During
+  multiple selection, show the selection mark in that same lane; never change
+  title width or animate wrapped row heights.
   Enter and leave selection in one non-animated transaction, including
   `isFileSelectionActive`; do not defer that flag to an `onChange`. The selection
   actions use a capsule-shaped glass bar.

@@ -47,16 +47,23 @@ test('agent entry: native attachment menu preserves draft and all existing route
 
 test('agent entry: recorder hub exposes direct pairing and honest generic import', async ({ app, device, screen }) => {
   await launchMemora(app, device, screen);
-  await tapControl(screen, screen.getByLabel('メニュー').first());
-  await expect(screen.getByRole('button', { name: 'サインイン', exact: true })).not.toBeVisible();
-  await app.screenshot('agent-sidebar-no-sign-in');
-  await tapControl(screen, screen.getByRole('button', { name: /外部レコーダー/ }));
+  await tapControl(screen.getByTestId('recorder.toolbarStatus'));
   await expect(screen.getByTestId('recorder.omi')).toBeVisible();
-  await expect(screen.getByTestId('recorder.plaud')).toBeVisible();
+  await expect(screen.getByTestId('recorder.plaud')).not.toBeVisible();
   await expect(screen.getByTestId('recorder.other')).toBeVisible();
+  await expect(screen.getByText(/OmiはBluetoothで直接接続できます/)).not.toBeVisible();
   await app.screenshot('agent-recorder-hub');
+  await tapControl(screen.getByTestId('recorder.omi'));
+  const search = screen.getByRole('button', { name: 'Omiを探す', exact: true });
+  await expect(search).toBeVisible();
+  const searchBox = await search.boundingBox();
+  if (!searchBox) throw new Error('Omi search button has no frame');
+  expect(searchBox.height).toBeGreaterThanOrEqual(44);
+  await app.screenshot('recorder-omi-centered-label');
+  await tapControl(screen.getByRole('button', { name: '完了', exact: true }));
   await tapControl(screen, screen.getByTestId('recorder.other'));
   await expect(screen.getByTestId('recorder.importAudio')).toBeVisible();
+  await expect(screen.getByText(/PLAUD、ICレコーダー、ボイスメモから音声を書き出し/)).toBeVisible();
   await expect(screen.getByText('Bluetooth直接接続', { exact: true })).toBeVisible();
   await expect(screen.getByText('Bluetooth直接接続、未対応', { exact: true })).toBeVisible();
   await app.screenshot('agent-recorder-generic-import');

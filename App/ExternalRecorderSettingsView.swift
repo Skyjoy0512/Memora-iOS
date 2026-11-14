@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 struct ExternalRecorderSettingsView: View {
   @Environment(MemoraModel.self) private var model
   @State private var isOmiPresented = false
-  @State private var isPlaudPresented = false
 
   var body: some View {
     MemoraForm {
@@ -20,23 +19,14 @@ struct ExternalRecorderSettingsView: View {
         }
         .accessibilityIdentifier("recorder.omi")
 
-        Button {
-          isPlaudPresented = true
-        } label: {
-          recorderRow(title: "PLAUD", detail: "音声取り込み", symbol: .waveformBadgeMic)
-        }
-        .accessibilityIdentifier("recorder.plaud")
-
         NavigationLink {
           RecorderAudioImportView(title: "他のレコーダー・ボイスメモ", isPlaud: false)
         } label: {
-          recorderRow(title: "他のレコーダー・ボイスメモ", detail: "音声取り込み", symbol: .squareAndArrowDown)
+          recorderRow(title: "他のレコーダー・ボイスメモ", detail: "PLAUD・ICレコーダーなどの音声取り込み", symbol: .squareAndArrowDown)
         }
         .accessibilityIdentifier("recorder.other")
       } header: {
         Text("レコーダー")
-      } footer: {
-        Text("OmiはBluetoothで直接接続できます。PLAUD、ICレコーダー、ボイスメモなどは書き出した音声を取り込めます。他社機器のBluetooth直接接続には対応していません。")
       }
     }
     .navigationTitle("外部レコーダー")
@@ -54,9 +44,6 @@ struct ExternalRecorderSettingsView: View {
       } else {
         OmiPairingView(manager: model.omiPairingManager)
       }
-    }
-    .sheet(isPresented: $isPlaudPresented) {
-      PlaudConnectionView()
     }
   }
 
