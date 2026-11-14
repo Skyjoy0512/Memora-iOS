@@ -15,21 +15,30 @@ struct ProjectRecordRow: View {
     let metadata = [MemoraFormat.relativeDate(meeting.createdAt), meeting.source.label]
       + (meeting.duration > 0 ? [MemoraFormat.duration(meeting.duration)] : [])
     return layout {
-      Image(icon: selectionState.map { $0 ? .checkmarkCircleFill : .circle } ?? meeting.source.icon, size: 17)
-        .frame(width: ProjectLayout.iconSide, height: 24)
-        .foregroundStyle(MemoraPalette.textSecondary)
-        // Preserve the selection lane so wrapped titles never change width.
-        .opacity(showsSourceIcon || selectionState != nil ? 1 : 0)
-        .accessibilityHidden(true)
+      if showsSourceIcon {
+        Image(icon: meeting.source.icon, size: 17)
+          .frame(width: ProjectLayout.iconSide, height: 24)
+          .foregroundStyle(MemoraPalette.textSecondary)
+          .accessibilityHidden(true)
+      }
       VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
         Text(meeting.displayTitle)
           .font(MemoraTypography.body.weight(.medium))
           .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
           .fixedSize(horizontal: false, vertical: true)
-        Text(metadata.joined(separator: " · "))
-          .font(MemoraTypography.metadata)
-          .foregroundStyle(MemoraPalette.textSecondary)
-          .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .top, spacing: MemoraSpacing.sm) {
+          Text(metadata.joined(separator: " · "))
+            .font(MemoraTypography.metadata)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+          // Selection must not take width away from a wrapped title.
+          if let selectionState {
+            Image(icon: selectionState ? .checkmarkCircleFill : .circle, size: 17)
+              .frame(width: ProjectLayout.iconSide, height: 20)
+              .accessibilityHidden(true)
+          }
+        }
+        .foregroundStyle(MemoraPalette.textSecondary)
         if showsReadyStatus || meeting.status != .ready {
           MeetingStatusLabel(status: meeting.status)
         }

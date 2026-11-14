@@ -74,9 +74,9 @@ Collection rows anchor icons and actions near the title. At accessibility sizes,
 documents, reference sources, projects, marketplace items and people place their
 artwork above the text so long Japanese labels can use the available width.
 Document rows follow the same title / metadata / preview order as Library records.
-When a Library row stacks its source icon, its badges and preview also align with
-the title instead of retaining an empty icon-column indent. Selection keeps its
-stable row identity and never animates wrapped heights.
+Library titles, metadata, badges and previews align to the row's leading edge
+without an empty source-icon column. Selection keeps its stable row identity
+and never animates wrapped heights.
 
 Keep the Marketplace active-count tile intrinsically sized; counts must not turn
 into an ellipsis at large text sizes. Show three leading icons at accessibility
@@ -101,8 +101,9 @@ pickers retain their identity. The separate capture sheet contains only its four
 main actions, with native drag dismissal.
 
 Upcoming events show only the day number in the left tile; the full date and time
-remain beside the title. Library rows hide source glyphs while reserving the same
-space for selection marks, preserving wrapped title widths during selection.
+remain beside the title. Library rows omit source glyphs and their column.
+Selection marks sit at the trailing edge of the metadata row, preserving title
+widths and left alignment during selection.
 PLAUD shares the other-recorder/voice-memo import route. The recorder hub omits its
 long explanatory footer; import-specific instructions remain on the import screen.
 The Omi search button centers its text and provides at least a 44pt touch target.
@@ -620,8 +621,8 @@ items also hide creation.
 The Ask AI page likewise shows its full-width composer without the capture FAB.
 Marketplace keeps its existing presentation.
 
-Library source glyphs are hidden; selection marks use the reserved lane, keeping title width
-and wrapped height unchanged. Avoid animating the list for individual selection toggles.
+Library source glyphs and their indent are removed; selection marks sit beside
+metadata without changing title width. Avoid animating the list for individual selection toggles.
 The create-menu memo uses the existing source editor in memo mode: body, optional
 title and current Library/project destination. Drafts are separate from link/file
 addition; note commit and draft removal are atomic. Journal's dated entries and

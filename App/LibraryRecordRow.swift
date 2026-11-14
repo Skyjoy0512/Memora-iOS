@@ -19,17 +19,15 @@ struct LibraryRecordRow: View {
           selectionState: isSelecting ? isSelected : nil)
         if let sharedBy {
           SharedOwnerBadge(ownerName: sharedBy)
-            .padding(.leading, typeSize.isAccessibilitySize ? 0 : ProjectLayout.iconSide + MemoraSpacing.md)
         }
         if SampleContent.isSample(meetingID: meeting.id) {
-          SampleTag().padding(.leading, typeSize.isAccessibilitySize ? 0 : ProjectLayout.iconSide + MemoraSpacing.md)
+          SampleTag()
         }
         if showsPreview, hasPreview {
           Text(meeting.shortSummaryPreview)
             .font(MemoraTypography.secondary)
             .foregroundStyle(MemoraPalette.textSecondary)
             .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
-            .padding(.leading, typeSize.isAccessibilitySize ? 0 : ProjectLayout.iconSide + MemoraSpacing.md)
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)

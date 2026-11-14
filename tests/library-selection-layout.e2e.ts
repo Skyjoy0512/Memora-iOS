@@ -15,6 +15,10 @@ async function verifyRowLayout(screen: any) {
   const metadataBox = await metadata.boundingBox();
   const summaryBox = await summary.boundingBox();
   if (!rowBox || !titleBox || !metadataBox || !summaryBox) throw new Error('Record content has no frame');
+  // The full-width native row includes the standard 20pt content inset.
+  expect(titleBox.x).toBeCloseTo(rowBox.x + 20, 0);
+  expect(metadataBox.x).toBeCloseTo(titleBox.x, 0);
+  expect(summaryBox.x).toBeCloseTo(titleBox.x, 0);
   expect(titleBox.y + titleBox.height).toBeLessThanOrEqual(metadataBox.y);
   expect(metadataBox.y + metadataBox.height).toBeLessThanOrEqual(summaryBox.y);
   expect(summaryBox.y + summaryBox.height).toBeLessThanOrEqual(rowBox.y + rowBox.height + 1);

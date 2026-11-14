@@ -62,9 +62,9 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   Library tab lists records across all projects; projects are opened and
   created in the Library's Projects segment (`ProjectsView`); both segments
   share one `libraryPath`. Persist the selected `LibrarySection` as a setting.
-  Library records hide source icons in the reserved selection lane. During
-  multiple selection, show the selection mark in that same lane; never change
-  title width or animate wrapped row heights.
+  Library records omit source icons and align titles, metadata and previews to
+  the row's leading edge. Multiple selection puts its mark at the trailing edge
+  of the metadata row; never change title width or animate wrapped row heights.
   Enter and leave selection in one non-animated transaction, including
   `isFileSelectionActive`; do not defer that flag to an `onChange`. The selection
   actions use a capsule-shaped glass bar.
