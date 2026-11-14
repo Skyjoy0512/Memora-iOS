@@ -111,6 +111,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 
 ## Known gaps (not bugs to fix silently)
 
+- Screen review samples are explicitly added from Settings › 診断とプレビュー ›
+  画面確認用のサンプルを追加. `ScreenReviewSamples` supplies fixed identities for
+  eight record states, journal links, tasks, documents and a history entry.
+  Preserve existing collections and edits; save the additions in one SQLite
+  transaction. Processing states are display fixtures without jobs, audio or
+  external requests. See `docs/SCREEN_REVIEW_SAMPLES.md`.
 - Cloud storage, the ChatGPT (MCP) server screen, Google Drive, on-device
   Whisper and local LLM are preferences only; the services behind them are not implemented. The app says
   so rather than returning sample results.

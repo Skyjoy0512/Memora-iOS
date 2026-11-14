@@ -467,6 +467,18 @@ struct SettingsCategoryView: View {
           }
         }
         Section("表示と動作") {
+          Button("画面確認用のサンプルを追加", icon: .rectangleStackFill) {
+            summarySampleFailure = nil
+            if model.handlingPersistenceFailureLocally({ model.addScreenReviewSamples() }) {
+              closeSettings()
+            } else {
+              summarySampleFailure = "サンプルを追加できませんでした。既存の記録は変更していません。"
+            }
+          }
+          .disabled(model.currentTeamID != nil || model.isRestoring)
+          .accessibilityIdentifier("screenReview.samples.add")
+          Text("文字起こし前・要約前・処理中・失敗・完了の記録と、ジャーナル・タスク・資料・質問履歴を追加します。既存のデータは残り、繰り返し押しても重複しません。")
+            .font(.footnote).foregroundStyle(.secondary)
           Button("要約済み音声のサンプルを見る", icon: .docText) {
             summarySampleFailure = nil
             if model.handlingPersistenceFailureLocally({ model.openSummarizedAudioSample() }) {

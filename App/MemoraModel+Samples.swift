@@ -32,7 +32,10 @@ extension MemoraModel {
     guard isStoreWritable() else { return }
 
     let keptMeetings = meetings.filter { !SampleContent.isSample(meetingID: $0.id) }
-    let keptSpaces = spaces.filter { !SampleContent.isSample(spaceID: $0.id) }
+    let keptDocuments = documents.filter { !ScreenReviewSamples.documentIDs.contains($0.id) }
+    let referencedSpaces = Set(keptMeetings.compactMap(\.spaceID) + keptDocuments.compactMap(\.spaceID)
+      + projectSources.compactMap(\.projectID) + projectChats.compactMap(\.projectID))
+    let keptSpaces = spaces.filter { !SampleContent.isSample(spaceID: $0.id) || referencedSpaces.contains($0.id) }
     let keptTasks = tasks.filter { !SampleContent.isSample(task: $0) }
     let keptLifeLog = lifeLogEntries.filter { !SampleContent.isSample(lifeLogEntry: $0) }
     // A sample person stays if a record the person made still points at them, so
@@ -41,7 +44,7 @@ extension MemoraModel {
     let keptPeople = people.filter { person in
       !SampleContent.isSample(personID: person.id) || referencedPeople.contains(person.id)
     }
-    let keptHistory = aiHistory.filter { $0.id != Self.seedAIHistoryID }
+    let keptHistory = aiHistory.filter { $0.id != Self.seedAIHistoryID && $0.id != ScreenReviewSamples.historyID }
 
     let stored = persistBatch {
       [
@@ -50,7 +53,8 @@ extension MemoraModel {
         (key: StorageKey.tasks, data: try RecordStore.encoded(keptTasks)),
         (key: StorageKey.lifeLogEntries, data: try RecordStore.encoded(keptLifeLog)),
         (key: StorageKey.people, data: try RecordStore.encoded(keptPeople)),
-        (key: StorageKey.aiHistory, data: try RecordStore.encoded(keptHistory))
+        (key: StorageKey.aiHistory, data: try RecordStore.encoded(keptHistory)),
+        (key: StorageKey.documents, data: try RecordStore.encoded(keptDocuments))
       ]
     }
     guard stored else { return }
@@ -61,14 +65,17 @@ extension MemoraModel {
     lifeLogEntries = keptLifeLog
     people = keptPeople
     aiHistory = keptHistory
+    documents = keptDocuments
     // A route left pointing at a removed sample would open an empty screen.
     homePath.removeAll { route in
       if case .meeting(let id) = route { return SampleContent.isSample(meetingID: id) }
+      if case .document(let id) = route { return ScreenReviewSamples.documentIDs.contains(id) }
       return false
     }
     libraryPath.removeAll { route in
       if case .meeting(let id) = route { return SampleContent.isSample(meetingID: id) }
-      if case .space(let id) = route { return SampleContent.isSample(spaceID: id) }
+      if case .space(let id) = route { return !keptSpaces.contains(where: { $0.id == id }) }
+      if case .document(let id) = route { return ScreenReviewSamples.documentIDs.contains(id) }
       return false
     }
   }

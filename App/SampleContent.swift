@@ -24,14 +24,14 @@ enum SampleContent {
   static let releaseReviewID = UUID(uuidString: "20000000-0000-0000-0000-000000000003")!
   static let arrivedStationID = UUID(uuidString: "20000000-0000-0000-0000-000000000004")!
 
-  static let meetingIDs: Set<UUID> = [
+  static let meetingIDs: Set<UUID> = Set([
     productMeetingID, oneOnOneMeetingID, salesMeetingID, designMeetingID,
     weeklyMeetingID, interviewMeetingID, ideaMeetingID, importedWaitingMeetingID, SummarizedAudioSample.id
-  ]
-  static let spaceIDs: Set<UUID> = [productSpaceID, salesSpaceID]
-  static let personIDs: Set<UUID> = [tanakaID, satoID]
-  static let taskIDs: Set<UUID> = [firstTaskID, secondTaskID, thirdTaskID]
-  static let lifeLogIDs: Set<UUID> = [morningMemoID, standupTalkID, releaseReviewID, arrivedStationID]
+  ]).union(ScreenReviewSamples.meetingIDs)
+  static let spaceIDs: Set<UUID> = [productSpaceID, salesSpaceID, ScreenReviewSamples.spaceID]
+  static let personIDs: Set<UUID> = [tanakaID, satoID, ScreenReviewSamples.personID]
+  static let taskIDs: Set<UUID> = Set([firstTaskID, secondTaskID, thirdTaskID]).union(ScreenReviewSamples.taskIDs)
+  static let lifeLogIDs: Set<UUID> = Set([morningMemoID, standupTalkID, releaseReviewID, arrivedStationID]).union(ScreenReviewSamples.journalIDs)
 
   /// True when a record is one of the samples. Records and projects carry fixed
   /// ids; tasks and journal entries are either fixed too, or tied to a sample
