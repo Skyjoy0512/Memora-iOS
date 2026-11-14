@@ -36,6 +36,17 @@ struct SummaryPromptChecks {
     var videoInput = MeetingSummaryInput(title: "動画", date: .now, duration: 0,
       participantNames: [], transcript: [], template: .market(video))
     videoInput.automaticCandidates = [.market(video)]
+    let original = "原文の数値150万円・否定・訂正を保持する。"
+    let firstDocument = SummaryPrompt.document(for: videoInput, transcript: original)
+    var secondInput = videoInput
+    secondInput.preferences.length = .detailed
+    secondInput.preferences.displayOrder = .chronological
+    secondInput.template = .standard
+    secondInput.automaticCandidates = []
+    let secondDocument = SummaryPrompt.document(for: secondInput, transcript: original)
+    let boundary = "# 構成と抽出観点"
+    precondition(firstDocument.components(separatedBy: boundary).first == secondDocument.components(separatedBy: boundary).first)
+    precondition(firstDocument.range(of: original)!.lowerBound < firstDocument.range(of: boundary)!.lowerBound)
     let videoFormat = SummaryPrompt.generationFormat(videoInput)
     precondition(video.sections.allSatisfy { videoFormat.contains($0) })
     precondition(!videoFormat.contains("**日時**") && !videoFormat.contains("## 決定事項") && !videoFormat.contains("## 未決事項"))

@@ -24,3 +24,5 @@ Phase 2のローカル入力比較（1,000発言、同一原文）: 199,999 → 
 2026-11-15追加: 同一合成長文のproductionオーケストレーター+通信mockで、初回4部分+最終の5 request → 長さ/表示順変更後はcache再利用で最終1 request。全区間を順番どおり最終promptへ保持し、原文/話者/owner/workspace/account/認証/権限/model key変更と拒否時0追加送信を検証。実API速度・費用・品質の改善率ではない。SQLite再起動、TTL/LRU/容量、破損hash、旧leaseの書戻し拒否を実SQLiteで検証。
 
 SSEバイト/SSE/JSON解析がmain thread外、表示callbackがMainActorで動作することをhostで確認。2,178,128-byteの合成入力と仮想30〜180秒受信を通過。これらの所要時間を60分録音のAPI性能として扱わない。
+
+階層groupの1/2/3/4並列をproduction reducerで検証。4 groupに対してmerge呼出しは各4回のまま、到着順を逆にしてもab/cd/ef/ghの順序を保持。429で初期2 worker以降の送信を止めた。原文prefixの同一性と既存pipeline/cache回帰を確認。iOS preview 2026-11-15T04-37-47-73cf439d.log成功（既存11警告）。実APIでのヒット率・速度は不明。

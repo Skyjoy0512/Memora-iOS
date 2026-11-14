@@ -166,7 +166,9 @@ enum MeetingSummarizer {
       case .success(let collected): notes = collected
       case .failure(let failure): return .failure(failure)
       }
-      let reduced = await SummaryNoteHierarchy.reduce(notes, limit: budget.sourceCapacity, measure: SummaryTokenBudget.upperBound) { group in
+      let reduced = await SummaryNoteHierarchy.reduce(notes, limit: budget.sourceCapacity,
+        maximumConcurrent: SummaryGenerationPolicy.parallelParts(input.preferences.processingMode, llm: llm),
+        measure: SummaryTokenBudget.upperBound) { group in
         progress("全体をまとめています")
         let result = await CloudAIService.completeStreaming(
           system: SummaryPrompt.system,

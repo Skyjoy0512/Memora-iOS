@@ -4,8 +4,9 @@ import Foundation
 /// A model that expands its notes stops the run rather than buying more loops.
 enum SummaryNoteHierarchy {
   @MainActor
-  static func reduce(_ original: [String], limit: Int, measure: (String) -> Int = { $0.count },
-                     merge: @MainActor ([String]) async -> Result<String, AIAnswerFailure>) async -> Result<[String], AIAnswerFailure> {
+  static func reduce(_ original: [String], limit: Int, maximumConcurrent: Int = 1,
+                     measure: @escaping (String) -> Int = { $0.count },
+                     merge: @escaping @MainActor ([String]) async -> Result<String, AIAnswerFailure>) async -> Result<[String], AIAnswerFailure> {
     var notes = original
     for _ in 0..<8 {
       guard !Task.isCancelled else { return .failure(.cancelled) }
@@ -26,16 +27,21 @@ enum SummaryNoteHierarchy {
         current.append(note)
       }
       if !current.isEmpty { groups.append(current) }
-      var reduced: [String] = []
-      for group in groups {
+      let level = groups
+      let result = await SummaryPartScheduler.collect(count: level.count, maximumConcurrent: maximumConcurrent) { index in
         guard !Task.isCancelled else { return .failure(.cancelled) }
-        switch await merge(group) {
+        switch await merge(level[index]) {
         case .failure(let failure): return .failure(failure)
         case .success(let note):
           guard !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                 measure(note) <= limit else { return .failure(.executionLimit) }
-          reduced.append(note)
+          return .success(note)
         }
+      }
+      let reduced: [String]
+      switch result {
+      case .failure(let failure): return .failure(failure)
+      case .success(let value): reduced = value
       }
       guard length(reduced, measure: measure) < before else { return .failure(.executionLimit) }
       notes = reduced
