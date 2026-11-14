@@ -16,7 +16,7 @@ struct MeetingCard: View {
       HStack(alignment: .top, spacing: 8) {
         badge
 
-        if SampleContent.isSample(meetingID: meeting.id) {
+        if SampleContent.isSample(meetingID: meeting.id), !meeting.displayTitle.contains("（サンプル）") {
           SampleTag()
         }
 

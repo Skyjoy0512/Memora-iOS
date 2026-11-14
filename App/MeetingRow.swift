@@ -24,7 +24,7 @@ struct MeetingRow: View {
             .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
             .fixedSize(horizontal: false, vertical: true)
 
-          if SampleContent.isSample(meetingID: meeting.id) {
+          if SampleContent.isSample(meetingID: meeting.id), !meeting.displayTitle.contains("（サンプル）") {
             SampleTag()
           }
         }

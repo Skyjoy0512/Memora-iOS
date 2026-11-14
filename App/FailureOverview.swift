@@ -6,16 +6,13 @@ struct FailureOverview: View {
   var showsSummaryDiagnostics = false
 
   var body: some View {
-    ContentUnavailableView {
-      Label("処理を完了できませんでした", icon: .exclamationmarkTriangle)
-    } description: {
-      Text(message)
-    } actions: {
-      Button("もう一度試す", icon: .arrowClockwise, action: retry)
-        .buttonStyle(MemoraButtonStyle())
+    VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+      RecordProcessingStateView(title: "処理を完了できませんでした", message: message,
+        actionTitle: "もう一度試す", action: retry)
       if showsSummaryDiagnostics {
         NavigationLink("原因を確認") { SummaryDiagnosticsView() }
-          .frame(minHeight: 44)
+          .font(MemoraTypography.secondary)
+          .frame(minHeight: MemoraSpacing.touchTarget)
       }
     }
   }

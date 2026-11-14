@@ -69,8 +69,6 @@ struct MeetingDetailView: View {
             VStack(alignment: .leading, spacing: MemoraSpacing.xxl) {
               meetingHeader(meeting)
 
-              if !model.participants(in: meeting.id).isEmpty { participantsRow(meeting) }
-
               if !meeting.recordingMarkers.isEmpty {
                 RecordingMarkersView(markers: meeting.recordingMarkers,
                   onSeek: !meeting.hasPlaybackAudio && meeting.transcript.isEmpty ? nil : { time in
@@ -140,7 +138,7 @@ struct MeetingDetailView: View {
           .scrollFocusedEditorAboveKeyboard(in: proxy)
         }
         .navigationBarTitleDisplayMode(.inline)
-        .navigationTitle(meeting.displayTitle)
+        .navigationTitle("記録")
         .toolbar {
           if isSavingToNotion {
             ToolbarItem(placement: .topBarTrailing) {
@@ -169,6 +167,12 @@ struct MeetingDetailView: View {
                 isSummaryGenerationPresented = true
               }
               .disabled(meeting.transcript.isEmpty)
+              .accessibilityIdentifier("meeting.summary.regenerate")
+              if !meeting.summaryVersions.isEmpty {
+                NavigationLink { SummaryHistoryView(meetingID: meeting.id) } label: {
+                  Label("要約の履歴", icon: .clockArrowCirclepath)
+                }
+              }
               Button("タスクを追加", icon: .textBadgePlus) { isAddingTask = true }
               Button("要点・決定事項を編集", icon: .pencil) { isEditingHighlights = true }
               Button("参加者を編集", icon: .personBadgePlus) { isAddingPeople = true }
@@ -280,53 +284,25 @@ struct MeetingDetailView: View {
     .onDisappear { pdfExport.cancel() }
   }
 
-  /// People tagged on the recording, shown as round story-style avatars with a
-  /// round add button at the end.
-  @ViewBuilder
   private func participantsRow(_ meeting: Meeting) -> some View {
-    let participants = model.participants(in: meeting.id)
-
-    if participants.isEmpty {
-      Button("参加者を追加", icon: .personBadgePlus) {
-        isAddingPeople = true
+    let names = model.participants(in: meeting.id).map(\.name).joined(separator: "、")
+    return Button { isAddingPeople = true } label: {
+      HStack(alignment: .firstTextBaseline, spacing: MemoraSpacing.sm) {
+        Text("参加者")
+        Text(names)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        Image(icon: .chevronRight, size: MemoraIconMetrics.accessory)
+          .accessibilityHidden(true)
       }
-      .font(.subheadline)
-      .foregroundStyle(.secondary)
-      .frame(minHeight: 44)
-    } else {
-      ScrollView(.horizontal) {
-        HStack(spacing: 14) {
-          ForEach(participants) { person in
-            PersonBubble(title: person.name, photoData: person.photoData, size: 56)
-          }
-
-          Button {
-            isAddingPeople = true
-          } label: {
-            VStack(spacing: 6) {
-              ZStack {
-                Circle()
-                  .fill(Color.primary.opacity(0.08))
-                Image(icon: .plus, size: 20)
-                  .foregroundStyle(.primary)
-              }
-              .frame(width: 56, height: 56)
-
-              Text("追加")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(width: 64)
-            }
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel("参加者を追加")
-        }
-        .padding(.horizontal, MemoraSpacing.lg)
-        .padding(.vertical, MemoraSpacing.xxs)
-      }
-      .scrollIndicators(.hidden)
-      .padding(.horizontal, -18)
+      .font(MemoraTypography.secondary)
+      .foregroundStyle(MemoraPalette.textSecondary)
+      .fixedSize(horizontal: false, vertical: true)
+      .frame(minHeight: MemoraSpacing.touchTarget)
+      .contentShape(Rectangle())
     }
+    .buttonStyle(.plain)
+    .accessibilityLabel("参加者、\(names)")
+    .accessibilityHint("参加者を編集します")
   }
 
   private func copyLink(_ meeting: Meeting) {
@@ -427,14 +403,14 @@ struct MeetingDetailView: View {
     case .summary:
       switch meeting.status {
       case .waitingForTranscription:
-        ManualAIProcessingCard(symbol: .textBubble, title: "音声を文字にする",
+        ManualAIProcessingCard(symbol: .textBubble, title: "文字起こし前",
           detail: "", actionTitle: "文字起こしする") {
           model.startTranscription(meeting.id)
         }
       case .waitingForSummary:
         let pendingJob = model.pendingSummaryJobs.first { $0.meetingID == meeting.id }
         ManualAIProcessingCard(symbol: .sparkles,
-          title: pendingJob == nil ? "文字起こしを要約する" : "要約が途中で止まりました",
+          title: pendingJob == nil ? "要約前" : "要約が途中で止まりました",
           detail: "", actionTitle: pendingJob == nil ? "要約する" : "もう一度要約する") {
           isSummaryGenerationPresented = true
         }
@@ -489,10 +465,10 @@ struct MeetingDetailView: View {
         .fixedSize(horizontal: false, vertical: true)
 
       if SampleContent.isSample(meetingID: meeting.id) {
-        SampleTag()
-        Text("表示用の架空データです。実際の音声・AI処理の結果ではありません。")
-          .font(.caption).foregroundStyle(.secondary)
+        if !meeting.displayTitle.contains("（サンプル）") { SampleTag() }
       }
+
+      if !model.participants(in: meeting.id).isEmpty { participantsRow(meeting) }
 
       if !meeting.hasAudioFiles, !SampleContent.isSample(meetingID: meeting.id) {
         Label("音声なし", icon: .waveformSlash)
@@ -501,21 +477,6 @@ struct MeetingDetailView: View {
       }
     }
     .padding(.top, MemoraSpacing.sm)
-  }
-
-  @ViewBuilder
-  private func summaryActions(_ meeting: Meeting) -> some View {
-    if !meeting.summaryVersions.isEmpty {
-      NavigationLink { SummaryHistoryView(meetingID: meeting.id) } label: {
-        Label("履歴", icon: .clockArrowCirclepath).font(.subheadline)
-      }
-      .frame(minHeight: 44)
-      .accessibilityValue("\(meeting.summaryVersions.count)件")
-    }
-    Button("要約し直す", icon: .sparkles) { isSummaryGenerationPresented = true }
-      .font(.subheadline)
-      .frame(minHeight: 44)
-      .accessibilityIdentifier("meeting.summary.regenerate")
   }
 
   @ViewBuilder
@@ -534,10 +495,6 @@ struct MeetingDetailView: View {
     }
 
     VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
-      ViewThatFits(in: .horizontal) {
-        HStack(spacing: MemoraSpacing.lg) { summaryActions(meeting) }
-        VStack(alignment: .leading, spacing: MemoraSpacing.sm) { summaryActions(meeting) }
-      }
       // A generated document reads and edits at body size; a short summary
       // keeps its large single-text look.
       let isDocument = MarkdownBlockParser.hasBlockStructure(meeting.summary)

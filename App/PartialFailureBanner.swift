@@ -5,17 +5,7 @@ struct PartialFailureBanner: View {
   var retry: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      Label("文字起こしは使えます", icon: .exclamationmarkTriangleFill)
-        .font(.headline)
-        .foregroundStyle(MemoraPalette.warning)
-      Text(message)
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-      Button("要約を再試行", icon: .arrowClockwise, action: retry)
-        .font(.subheadline.weight(.semibold))
-    }
-    .padding(MemoraSpacing.lg)
-    .memoraCard()
+    RecordProcessingStateView(title: "文字起こしは使えます", message: message,
+      actionTitle: "要約を再試行", action: retry)
   }
 }

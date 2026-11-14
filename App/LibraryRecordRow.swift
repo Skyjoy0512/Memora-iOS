@@ -20,7 +20,7 @@ struct LibraryRecordRow: View {
         if let sharedBy {
           SharedOwnerBadge(ownerName: sharedBy)
         }
-        if SampleContent.isSample(meetingID: meeting.id) {
+        if SampleContent.isSample(meetingID: meeting.id), !meeting.displayTitle.contains("（サンプル）") {
           SampleTag()
         }
         if showsPreview, hasPreview {

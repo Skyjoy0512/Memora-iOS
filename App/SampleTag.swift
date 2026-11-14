@@ -5,11 +5,8 @@ import SwiftUI
 struct SampleTag: View {
   var body: some View {
     Text("サンプル")
-      .font(.caption2.weight(.semibold))
+      .font(MemoraTypography.metadata)
       .foregroundStyle(.secondary)
-      .padding(.horizontal, MemoraSpacing.sm)
-      .padding(.vertical, 3)
-      .background(.quaternary, in: Capsule())
       .accessibilityLabel("サンプル")
   }
 }

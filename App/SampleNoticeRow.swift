@@ -14,10 +14,6 @@ struct SampleNoticeRow: View {
       : AnyLayout(HStackLayout(spacing: MemoraSpacing.sm))
     return layout {
       HStack(spacing: MemoraSpacing.sm) {
-        Image(icon: .sparkles)
-          .foregroundStyle(.primary)
-          .accessibilityHidden(true)
-
         Text("サンプル表示中")
           .font(MemoraTypography.metadata)
           .foregroundStyle(.secondary)
@@ -36,8 +32,7 @@ struct SampleNoticeRow: View {
       .accessibilityLabel("サンプルを削除")
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(MemoraSpacing.md)
-    .memoraCard()
+
     .confirmationDialog("サンプルを削除しますか？", isPresented: $isConfirming, titleVisibility: .visible) {
       Button("削除", role: .destructive) {
         model.deleteSampleContent()

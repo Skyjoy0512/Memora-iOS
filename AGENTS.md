@@ -107,6 +107,10 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
   marketplace use the same connector hub/detail sheet and existing setup routes.
 - **Tasks**: `TasksView` lives inside Home's NavigationStack (`.tasks` route),
   including notification navigation. Keep creation, editing and source links reachable.
+- **Record reading**: keep the stable 記録 navigation title and one body title.
+  Participants are an editable text row; summary history/regeneration live in
+  options. Pending/recovery states use RecordProcessingStateView without cards.
+  A sample suffix in the title replaces the separate sample tag.
 - **Project context**: capture uses `visibleProjectID` from the active navigation
   path. Ask AI uses global scope on its tab, project scope on a project detail,
   and record scope on a meeting/transcript. Shared projects remain read-only.

@@ -5,9 +5,17 @@ struct ProcessingOverview: View {
   var meeting: Meeting
 
   var body: some View {
-    WorkingStatus(label: "準備しています", startedAt: model.processing.startedAt[meeting.id])
+    WorkingStatus(label: label, startedAt: model.processing.startedAt[meeting.id])
       .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(MemoraSpacing.lg)
-      .memoraCard()
+      .frame(minHeight: MemoraSpacing.touchTarget)
+  }
+
+  private var label: String {
+    switch meeting.status {
+    case .importing: "音声を取り込んでいます"
+    case .transcribing: "文字起こししています"
+    case .organizing: "要約しています"
+    default: "準備しています"
+    }
   }
 }

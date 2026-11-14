@@ -44,7 +44,8 @@ test('screen review samples persist without replacing existing content or duplic
     const row = screen.getByRole('button', { name: new RegExp(`^${title}（サンプル）、`) });
     await scrollToControl(screen, row);
     await tapControl(row);
-    await expect(screen.getByText('表示用の架空データです。実際の音声・AI処理の結果ではありません。', { exact: true })).toBeVisible();
+    await expect(screen.getByRole('heading', { name: '記録', exact: true })).toBeVisible();
+    await expect(screen.getByText(title + '（サンプル）', { exact: true })).toBeVisible();
     if (action === '準備しています') await expect(screen.getByTestId('ai.waitingStatus')).toBeVisible();
     else if (action) await expect(screen.getByRole('button', { name: action, exact: true })).toBeVisible();
     await app.screenshot('screen-review-state-' + title.slice(0, 2));

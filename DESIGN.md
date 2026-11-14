@@ -71,6 +71,19 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
 - Connect and manage services through controls first. Connection status is visible;
   technical access details expand only when requested.
 
+## Minimal reading hierarchy — 2026-11-14
+
+The record detail uses a stable navigation title (記録) and one body title.
+Participants form a short editable text row. Summary history and regeneration
+live in the options menu. Waiting, failure and partial failure share one flat
+state/action treatment; processing uses the actual import/transcription/summary
+state and only a real start time. Do not add icon tiles or full-width action
+cards around these states.
+
+Sample notices are compact rows, not cards. A sample title that already contains
+（サンプル） needs no additional tag; renamed sample records retain their marker.
+Stored titles and sample identities are unchanged.
+
 ## Cross-screen reading review — 2026-11-13
 
 Collection rows anchor icons and actions near the title. At accessibility sizes,
