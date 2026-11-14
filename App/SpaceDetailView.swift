@@ -5,7 +5,7 @@ struct SpaceDetailView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var spaceID: UUID
-  @State private var selectedTab = ProjectWorkspaceTab.chat
+  @State private var selectedTab = ProjectWorkspaceTab.files
   @State private var isAskingAI = false
   @State private var isRenaming = false
   @State private var isDeleting = false
@@ -20,6 +20,10 @@ struct SpaceDetailView: View {
       let sources = model.workspaceSources(projectID: spaceID)
 
       VStack(spacing: 0) {
+        MemoraSectionPicker(items: ProjectWorkspaceTab.allCases, selection: $selectedTab, title: \.title)
+          .padding(.horizontal, MemoraSpacing.screen)
+          .padding(.vertical, MemoraSpacing.md)
+          .accessibilityIdentifier("project.workspace.sections")
         Group {
           switch selectedTab {
           case .chat:
@@ -66,33 +70,9 @@ struct SpaceDetailView: View {
       .animation(reduceMotion ? nil : MemoraMotion.control, value: selectedTab)
       .background(MemoraPalette.background)
       .onAppear { model.noteProjectUsed(space.id) }
-      .navigationTitle("")
+      .navigationTitle(space.name)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        ToolbarItem(placement: .principal) {
-          Menu {
-            Picker("表示する内容", selection: $selectedTab) {
-              ForEach(ProjectWorkspaceTab.allCases) { tab in
-                Text(tab.title).tag(tab)
-              }
-            }
-            .pickerStyle(.inline)
-          } label: {
-            VStack(spacing: 2) {
-              Text(space.name).font(.headline).lineLimit(1)
-              HStack(spacing: MemoraSpacing.xs) {
-                Text(selectedTab.title).font(.caption)
-                Image(icon: .chevronDown, size: MemoraIconMetrics.accessory)
-                  .accessibilityHidden(true)
-              }
-              .foregroundStyle(MemoraPalette.textSecondary)
-            }
-            .frame(minHeight: MemoraSpacing.touchTarget)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel("\(space.name)、\(selectedTab.title)、表示切り替え")
-        }
         if selectedTab == .sources {
           ToolbarActionItem(usesSystemBackground: true) {
             ToolbarIconButton("参考資料を追加", icon: .paperclip) {
@@ -150,7 +130,7 @@ struct SpaceDetailView: View {
       .padding(.top, MemoraSpacing.md)
       .padding(.bottom, model.bottomContentClearance)
     }
-    .scrollIndicators(.hidden)
+    .scrollIndicators(.visible)
   }
 
   private func workspaceEmpty(_ tab: ProjectWorkspaceTab, action: @escaping () -> Void) -> some View {

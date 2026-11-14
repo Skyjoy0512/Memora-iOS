@@ -9,7 +9,6 @@ struct JournalTimelineAddRow: View {
   /// When present, the row opens a native menu instead of acting immediately.
   var menuActions: [JournalAddAction] = []
   @Environment(\.dynamicTypeSize) private var typeSize
-  @ScaledMetric(relativeTo: .caption) private var timeWidth = 38.0
 
   private static let side: CGFloat = 44
   private static let lineWidth: CGFloat = 1.5
@@ -17,10 +16,6 @@ struct JournalTimelineAddRow: View {
 
   var body: some View {
     HStack(spacing: Self.columnSpacing) {
-      if !typeSize.isAccessibilitySize {
-        Color.clear
-          .frame(width: timeWidth, height: Self.side)
-      }
 
       control
         .accessibilityLabel(Text(label))
@@ -67,16 +62,11 @@ struct JournalTimelineAddRow: View {
     .padding(.horizontal, MemoraSpacing.md)
     .padding(.vertical, MemoraSpacing.xs)
     .frame(minHeight: Self.side)
-    .background(MemoraPalette.card, in: Capsule())
-    .overlay {
-      Capsule()
-        .stroke(MemoraPalette.border.opacity(0.8), lineWidth: 0.5)
-    }
     .contentShape(Capsule())
   }
 
   private var iconColumnLeading: CGFloat {
-    typeSize.isAccessibilitySize ? 0 : timeWidth + Self.columnSpacing
+    0
   }
 
   /// The full sentence helps at ordinary sizes; at accessibility sizes the

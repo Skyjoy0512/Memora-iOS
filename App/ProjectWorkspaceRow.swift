@@ -32,7 +32,7 @@ struct ProjectWorkspaceRow: View {
   @ViewBuilder private var rowContent: some View {
     switch item {
     case .source(let value): ProjectSourceRow(source: value)
-    case .recording(let value): ProjectRecordRow(meeting: value)
+    case .recording(let value): LibraryRecordRow(meeting: value, showsPreview: true)
     case .document(let value): ProjectDocumentRow(document: value)
     }
   }

@@ -1,11 +1,9 @@
 import SwiftUI
 
-/// The three surfaces of a project workspace. The title menu keeps chat first
-/// because a project is usually opened to ask
-/// something about it.
+/// Stable stored identifiers; records lead the visible workspace switcher.
 enum ProjectWorkspaceTab: String, CaseIterable, Identifiable {
-  case chat
   case files
+  case chat
   case sources
 
   var id: String { rawValue }

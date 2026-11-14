@@ -22,9 +22,6 @@ struct MeetingTranscriptContent: View {
 
     VStack(alignment: .leading, spacing: 22) {
       VStack(alignment: .leading, spacing: 6) {
-        Text("文字起こし")
-          .font(MemoraTypography.sectionHeading)
-
         if !meeting.transcript.isEmpty, meeting.audioURL != nil {
           Button("話者を端末内で解析", icon: .personWave2) {
             Task { await model.analyzeSpeakers(meeting.id) }
@@ -37,12 +34,19 @@ struct MeetingTranscriptContent: View {
       }
 
       if meeting.transcript.isEmpty {
-        ContentUnavailableView {
-          Label("文字起こし中", icon: .textBubble)
-        } description: {
-          Text("完成した発言から、この画面に表示されます。")
+        switch meeting.status {
+        case .waitingForTranscription:
+          ManualAIProcessingCard(symbol: .textBubble, title: "文字起こし前", detail: "",
+            actionTitle: "文字起こしする") { model.startTranscription(meeting.id) }
+        case .importing, .transcribing:
+          ProcessingOverview(meeting: meeting)
+        case .failed(let message):
+          FailureOverview(message: message) { model.retryProcessing(meeting.id) }
+        default:
+          Text("文字起こしはありません")
+            .font(MemoraTypography.secondary)
+            .foregroundStyle(MemoraPalette.textSecondary)
         }
-        .frame(maxWidth: .infinity)
       } else {
         TranscriptReadingOptions(isReadable: $usesReadableText)
         LazyVStack(alignment: .leading, spacing: 22) {

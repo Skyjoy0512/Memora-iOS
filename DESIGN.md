@@ -41,9 +41,10 @@ Brand assets follow the supplied canonical artwork in docs/BRANDING.md. Floating
   headers and composer visibility together without animating List row heights.
   Share, team, move and delete use a floating glass capsule, with two columns
   at accessibility text sizes.
-- A project's title menu switches between chat, records and reference sources.
-  Its options menu retains project-scoped new chat; capture uses the shared
-  bottom row and the visible project. A paperclip denotes source-only attachment actions.
+- Projects open on records. A visible Records / Chat / Reference Sources
+  switcher stays beneath the project title. Its options menu retains
+  project-scoped new chat; capture uses the shared bottom row and visible project.
+  A paperclip denotes source-only attachment actions.
 - Keep the Ask AI composer compact, using untinted regular Liquid Glass without
   an opaque card backing or a simulated border. Normal ready states need no badges;
   partial content, failures and recovery actions stay visible. Source metadata
@@ -96,9 +97,11 @@ and never animates wrapped heights.
 
 Keep the Marketplace active-count tile intrinsically sized; counts must not turn
 into an ellipsis at large text sizes. Show three leading icons at accessibility
-sizes, five otherwise, and count the remaining items correctly. Journal insertion
-capsules grow vertically
-with their labels while preserving their native menu and at least 44pt targets.
+sizes, five otherwise, and count the remaining items correctly. Journal shows its date selector and timeline first, with one visible add row at
+its end. Every row also offers dated insertion through its context menu and an
+accessible action. Recap, weekly review and health details follow the timeline.
+Times appear once, in the row content; tasks and recent projects have dedicated
+collection destinations. All add controls retain at least 44pt targets.
 Search fields shorten the visible prompt to 検索 at accessibility sizes, while
 their accessibility labels retain the full search scope. Contextual Ask AI fields
 use この記録に質問 / このプロジェクトに質問 (質問する at accessibility sizes), with the

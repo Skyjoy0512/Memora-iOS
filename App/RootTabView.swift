@@ -429,7 +429,7 @@ struct RootTabView: View {
     case .home:
       return model.homePath.isEmpty
     case .library:
-      return model.libraryPath.isEmpty || model.libraryPath == [.documents] || model.libraryPath == [.people]
+      return model.libraryPath.isEmpty
     case .askAI:
       return true
     }

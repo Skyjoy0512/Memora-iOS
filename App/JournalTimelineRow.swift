@@ -7,19 +7,9 @@ struct JournalTimelineRow<Content: View>: View {
   var connectsToNext = true
   var nextDate: Date?
   @ViewBuilder var content: () -> Content
-  @Environment(\.dynamicTypeSize) private var typeSize
-  @ScaledMetric(relativeTo: .caption) private var timeWidth = 38.0
 
   var body: some View {
     HStack(alignment: .top, spacing: JournalTimelineMetrics.columnSpacing) {
-      if !typeSize.isAccessibilitySize {
-        Text(time)
-          .font(.caption.monospacedDigit())
-          .foregroundStyle(.primary)
-          .multilineTextAlignment(.leading)
-          .frame(width: timeWidth, height: JournalTimelineMetrics.iconSide, alignment: .leading)
-          .accessibilityHidden(true)
-      }
 
       Image(icon: icon, size: 20)
         .foregroundStyle(MemoraPalette.textSecondary)
@@ -48,7 +38,7 @@ struct JournalTimelineRow<Content: View>: View {
 
   /// The icon column's leading edge, so the hairline runs through its centre.
   private var iconColumnLeading: CGFloat {
-    typeSize.isAccessibilitySize ? 0 : timeWidth + JournalTimelineMetrics.columnSpacing
+    0
   }
 }
 

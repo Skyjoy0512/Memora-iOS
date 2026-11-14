@@ -85,10 +85,6 @@ struct HomeView: View {
               SampleNoticeRow()
             }
 
-            if let review = model.unreadWeeklyReview {
-              WeeklyReviewCard(review: review)
-            }
-
             VStack(alignment: .leading, spacing: MemoraSpacing.xs) {
               dateLayout {
                 Text(MemoraFormat.monthTitle(selectedDate))
@@ -114,21 +110,6 @@ struct HomeView: View {
               JournalCalendar(selectedDate: $selectedDate, markedDays: markedDays)
             }
 
-            if recap.hasActivity {
-              JournalDailyRecapCard(recap: recap, date: selectedDate, backdrop: backdrops.current) {
-                showsSummary = true
-              }
-              .matchedTransitionSource(id: "journalSummary", in: summaryNamespace)
-            }
-
-            if healthRequest.canRead, selectedDate <= .now {
-              HealthReviewStatusView(loader: healthLoader, period: healthRequest.period) { healthRefreshID += 1 }
-                .padding(MemoraSpacing.lg)
-                .memoraCard(fill: MemoraPalette.card)
-            }
-
-            HomeActivityLinks()
-
             if showCalendarEvents {
               MemoraLoadingContainer(state: calendarLoad.state(for: calendarRequest.contentKey), label: "この日の予定を確認しています…", activityID: calendarLoad.activityID) {
                 EmptyView()
@@ -139,6 +120,29 @@ struct HomeView: View {
               emptyDay
             } else {
               timelineContent(entries, tasks: ownTasks)
+            }
+            if recap.hasActivity {
+              Button("1日のサマリー", icon: .chevronRight) {
+                InteractionFeedback.shared.send(.tap)
+                showsSummary = true
+              }
+              .font(MemoraTypography.secondary)
+              .frame(minHeight: MemoraSpacing.touchTarget)
+              .matchedTransitionSource(id: "journalSummary", in: summaryNamespace)
+            }
+            if let review = model.unreadWeeklyReview {
+              NavigationLink(value: LibraryRoute.document(review.id)) {
+                Label("先週の振り返り", icon: .chevronRight)
+                  .font(MemoraTypography.secondary)
+                  .frame(minHeight: MemoraSpacing.touchTarget)
+              }
+            }
+            if healthRequest.canRead, selectedDate <= .now {
+              DisclosureGroup("健康と活動") {
+                HealthReviewStatusView(loader: healthLoader, period: healthRequest.period) { healthRefreshID += 1 }
+              }
+              .font(MemoraTypography.secondary)
+              .frame(minHeight: MemoraSpacing.touchTarget)
             }
             if !recap.hasActivity, !recap.isFuture {
               Button("振り返りを見る") {
@@ -380,7 +384,10 @@ struct HomeView: View {
     VStack(alignment: .leading, spacing: 10) {
       // The day heading the list had before, with the rows grouped under it and
       // the all-day events right below it.
-      MemoraSectionHeading(title: "タイムライン", detail: dayLabel(for: selectedDate))
+      Text("タイムライン")
+        .font(MemoraTypography.metadata.weight(.medium))
+        .foregroundStyle(MemoraPalette.textSecondary)
+        .accessibilityAddTraits(.isHeader)
 
       if !timeline.allDayEvents.isEmpty {
         allDayEventChips(timeline.allDayEvents)
@@ -390,10 +397,18 @@ struct HomeView: View {
         ForEach(Array(timeline.items.enumerated()), id: \.element.id) { index, item in
           let nextDate = index + 1 < timeline.items.count
             ? timeline.items[index + 1].date(on: selectedDate) : nil
-          timelineRow(item, connectsToNext: true, nextDate: nextDate)
-          if index < timeline.items.count - 1 {
-            JournalTimelineAddRow(label: "この間に記録を追加", isLast: false,
-              menuActions: journalAddActions(after: index, in: timeline.items))
+          VStack(alignment: .leading, spacing: 0) {
+            timelineRow(item, connectsToNext: index < timeline.items.count - 1, nextDate: nextDate)
+          }
+          .contextMenu {
+            Section("この後に追加") {
+              ForEach(journalAddActions(after: index, in: timeline.items)) { action in
+                Button(action.title, icon: action.icon, action: action.handler)
+              }
+            }
+          }
+          .accessibilityAction(named: "この後に記録を追加") {
+            beginJournalEntry(after: index, in: timeline.items)
           }
         }
         JournalTimelineAddRow(label: "記録を追加", isLast: true,

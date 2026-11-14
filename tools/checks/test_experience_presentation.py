@@ -68,7 +68,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         self.assertIn(".disabled(isViewingToday)", home)
         self.assertIn("AnyLayout(VStackLayout", (APP / "HomeActivityLinks.swift").read_text())
         self.assertIn("JournalInsertionTime.suggestion(on: selectedDate)", home)
-        self.assertIn("menuActions: journalAddActions(after: index, in: timeline.items)", home)
+        self.assertIn("ForEach(journalAddActions(after: index, in: timeline.items))", home)
         self.assertIn("beginJournalEntry(after: index, in: items, kind: kind)", home)
         root = (APP / "RootTabView.swift").read_text()
         self.assertIn("LifeLogCreationSheet(date: model.lifeLogCreationDate ?? .now, eventDate: model.lifeLogCreationDate)", root)
@@ -76,7 +76,7 @@ class ExperiencePresentationChecks(unittest.TestCase):
         empty = home.split("private var emptyDay:")[1].split("///")[0]
         self.assertNotIn("memoraCard", empty)
         self.assertNotIn("memoraCard", (APP / "HomeActivityLinks.swift").read_text())
-        self.assertIn('MemoraSectionHeading(title: "タイムライン"', home)
+        self.assertIn('Text("タイムライン")', home)
 
     def test_search_states_are_scoped_and_clear_real_bindings(self):
         home = (APP / "HomeView.swift").read_text()

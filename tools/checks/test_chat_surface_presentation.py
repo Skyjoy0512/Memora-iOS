@@ -56,8 +56,10 @@ class ChatSurfacePresentationChecks(unittest.TestCase):
         footer = (APP / "SidebarAccountFooter.swift").read_text()
         self.assertNotIn("Divider()", footer)
         header = (APP / "SidebarHeaderView.swift").read_text()
-        self.assertIn('Button("プランと利用状況", icon: .crown, action: onOpenPlan)', header)
-        self.assertIn('Button("アカウント", icon: .person, action: onOpenAccount)', header)
+        self.assertNotIn("Menu {", header)
+        settings_root = (APP / "SettingsCategory.swift").read_text()
+        self.assertIn("case account", settings_root)
+        self.assertIn('case .plan: "プランと利用状況"', settings_root)
         settings = footer.split("Button(action: onSettings) {")[1]
         self.assertIn(".frame(width: MemoraSpacing.touchTarget, height: MemoraSpacing.touchTarget)", settings)
         self.assertIn(".contentShape(Circle())", settings)

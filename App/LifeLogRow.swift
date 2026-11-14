@@ -17,19 +17,16 @@ struct LifeLogRow: View {
             .font(.caption.monospacedDigit().weight(.medium))
             .foregroundStyle(.secondary)
           Spacer()
-          if SampleContent.isSample(lifeLogEntry: entry) {
+          if SampleContent.isSample(lifeLogEntry: entry), !entry.title.contains("（サンプル）") {
             SampleTag()
           }
           if isAutomatic {
             AutomaticLogTag()
           }
-          Text(entry.source.label)
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(.secondary)
         }
 
         Text(entry.title)
-          .font(.headline)
+          .font(MemoraTypography.body.weight(.medium))
           .foregroundStyle(.primary)
           .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -42,7 +39,8 @@ struct LifeLogRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
 
-        if let eventDate = entry.eventDate {
+        if let eventDate = entry.eventDate,
+           abs(eventDate.timeIntervalSince(entry.occurredAt)) > 60 {
           Label(eventDate.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP"))), icon: .calendar)
             .font(.caption.weight(.medium))
             .foregroundStyle(.secondary)

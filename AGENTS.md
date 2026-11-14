@@ -114,8 +114,12 @@ App sources live in `App/`, configuration in `Project.json`, design notes in
 - **Project context**: capture uses `visibleProjectID` from the active navigation
   path. Ask AI uses global scope on its tab, project scope on a project detail,
   and record scope on a meeting/transcript. Shared projects remain read-only.
-- **Journal (Home)**: the screen's own `ScrollView`/`List` must stay its
-  primary scroll view, so the large title collapses the way the system expects.
+- **Journal (Home)**: its date selector and timeline come first. Recap, weekly
+  review and health details follow; tasks/recent projects use their own collections.
+  Each time is shown once. A single bottom add row and row context/accessibility
+  actions preserve dated insertion. Keep the screen's own primary scroll view.
+- **Project workspace**: open on records with a visible Records / Chat /
+  Reference Sources switcher. Preserve stored ProjectWorkspaceTab raw values.
 
 ## Known gaps (not bugs to fix silently)
 

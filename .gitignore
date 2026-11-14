@@ -54,3 +54,6 @@ build-*/
 
 .e2e/morph-report/
 .e2e/review-*/
+
+# Local UI verification artifacts
+.e2e/
