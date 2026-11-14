@@ -21,7 +21,7 @@ swiftc App/RecordingAudioPart.swift App/RecordingAudioManifest.swift App/Meeting
   App/OfficeArchiveReader.swift App/OfficeXMLDocument.swift App/OfficeDocumentExtraction.swift \
   App/ProjectSource.swift App/ProjectSourceURL.swift App/RecordPrivacy.swift App/SummarySensitivity.swift \
   App/WebResearchReport.swift App/WebResearchSource.swift App/ResearchPlan.swift \
-  App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkillMarkdown.swift App/SkillSelection.swift \
+  App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkill+Breadth.swift App/MemoraSkillMarkdown.swift App/SkillSelection.swift \
   App/BackupPackage.swift App/BackupPackageFile.swift App/ProjectWorkspaceBackup.swift App/BackupRestoreTransaction.swift \
   App/Person.swift App/RecordAccessPolicy.swift App/TeamShareError.swift \
   tools/checks/BackupRestoreChecks.swift tools/checks/TeamSharePackageChecks.swift "$check_dir/TeamShareProduction.swift" -o "$check_dir/backup"

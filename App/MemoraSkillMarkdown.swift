@@ -22,7 +22,7 @@ enum MemoraSkillMarkdown {
     let lines = markdown.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
     guard lines.first == "---", let end = lines.dropFirst().firstIndex(of: "---"), end <= 24 else { throw Failure.invalid }
     var metadata: [String: String] = [:]
-    let keys: Set<String> = ["name", "description", "tools", "keywords", "permissions", "version", "icon", "scopes", "cost"]
+    let keys: Set<String> = ["name", "description", "tools", "keywords", "permissions", "version", "icon", "scopes", "cost", "category", "examples", "output"]
     for line in lines[1..<end] where !line.trimmingCharacters(in: .whitespaces).isEmpty {
       guard let separator = line.firstIndex(of: ":") else { throw Failure.invalid }
       let key = String(line[..<separator]).trimmingCharacters(in: .whitespaces)
@@ -33,14 +33,22 @@ enum MemoraSkillMarkdown {
       (metadata[key] ?? "").trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
         .components(separatedBy: ",").map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " \"'")) }.filter { !$0.isEmpty }
     }
+    var examples: [String]?
+    if let json = metadata["examples"] {
+      guard let data = json.data(using: .utf8), let decoded = try? JSONDecoder().decode([String].self, from: data) else { throw Failure.invalid }
+      examples = decoded
+    }
     let skill = MemoraSkill(id: "custom-" + UUID().uuidString, name: metadata["name"] ?? "", summary: metadata["description"] ?? "",
       instructions: lines[(end + 1)...].joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines),
       keywords: list("keywords"), declaredToolNames: list("tools"), declaredPermissions: list("permissions"), version: metadata["version"].flatMap(Int.init),
       iconIdentifier: metadata["icon"], scopes: metadata["scopes"] == nil ? nil : list("scopes").compactMap(MemoraSkill.Scope.init(rawValue:)),
-      cost: metadata["cost"].flatMap(MemoraSkill.Cost.init(rawValue:)))
+      cost: metadata["cost"].flatMap(MemoraSkill.Cost.init(rawValue:)),
+      category: metadata["category"].flatMap(MemoraSkill.Category.init(rawValue:)),
+      examplePrompts: examples, outputDescription: metadata["output"])
     guard metadata["version"] == nil || (skill.version.map { (1...100).contains($0) } ?? false),
           metadata["scopes"] == nil || list("scopes").count == skill.scopes?.count,
           metadata["cost"] == nil || skill.cost != nil,
+          metadata["category"] == nil || skill.category != nil,
           (skill.iconIdentifier?.count ?? 0) <= 80, valid(skill), skill.toolNames.allSatisfy(allowedTools.contains) else { throw Failure.invalid }
     return skill
   }
@@ -55,5 +63,8 @@ enum MemoraSkillMarkdown {
       && skill.toolNames.allSatisfy { (1...128).contains($0.count) && !$0.contains("\n") }
       && (skill.declaredPermissions ?? []).count <= 8
       && (skill.declaredPermissions ?? []).allSatisfy { (1...120).contains($0.count) && !$0.contains("\n") }
+      && (skill.examplePrompts ?? []).count <= 3
+      && (skill.examplePrompts ?? []).allSatisfy { (1...300).contains($0.count) && !$0.contains("\n") }
+      && skill.outputDescription.map { (1...240).contains($0.count) && !$0.contains("\n") } != false
   }
 }

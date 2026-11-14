@@ -22,11 +22,21 @@ export function definition(input) {
     if (scopes.some(s => !['global','project','record','person'].includes(s))) fail();
     const cost = s.cost ?? '料金未確認';
     if (!['選択中のAIの料金','外部処理は承認時に確認','料金未確認'].includes(cost)) fail();
+    const extra = {};
+    if (s.category !== undefined) {
+      if (!['work','learning','writing','creative','life','custom'].includes(s.category)) fail();
+      extra.category = s.category;
+    }
+    if (s.examplePrompts !== undefined) extra.examplePrompts = list(s.examplePrompts,3,300);
+    if (s.outputDescription !== undefined) {
+      extra.outputDescription = text(s.outputDescription,240,true);
+      if (/[\r\n]/.test(extra.outputDescription)) fail();
+    }
     return {version:1,kind:'skill',skill:{id:'custom-00000000-0000-4000-8000-000000000000',
       name:text(s.name,80,true),summary:text(s.summary,400,true),instructions:text(s.instructions,6000,true),
       keywords:list(s.keywords ?? [],8,40),declaredToolNames:names,
       declaredPermissions:list(s.declaredPermissions ?? [],8,120),version:1,
-      iconIdentifier:text(s.iconIdentifier ?? 'doc.richtext',80),scopes,cost}};
+      iconIdentifier:text(s.iconIdentifier ?? 'doc.richtext',80),scopes,cost,...extra}};
   }
   if (input.kind === 'template') {
     const t = input.template;

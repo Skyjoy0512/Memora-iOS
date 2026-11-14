@@ -6,7 +6,7 @@ struct MarketplaceSearchResults: View {
 
   var body: some View {
     let skills = model.skillCatalog.filter {
-      ToolsCatalogSearch.matches(query, fields: [$0.name, $0.summary] + $0.keywords)
+      ToolsCatalogSearch.matches(query, fields: $0.searchFields)
     }.map(MarketplaceItem.skill)
     let templates = (model.customTemplates + SummaryTemplateCatalog.market).filter {
       ToolsCatalogSearch.matches(query, fields: [$0.title, $0.detail, $0.category.title, $0.focus]

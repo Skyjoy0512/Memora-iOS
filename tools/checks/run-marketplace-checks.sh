@@ -4,7 +4,7 @@ cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-marketplace.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
 swiftc Shared/MemoraIcon.swift App/CommunityError.swift App/MarketplaceDefinition.swift \
-  App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkillMarkdown.swift \
+  App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkill+Breadth.swift App/MemoraSkillMarkdown.swift \
   App/SummaryMarketTemplate.swift App/SummaryTemplateCategory.swift App/SummarySensitivity.swift \
   App/SummaryLength.swift App/SummaryTemplate.swift App/SummaryTemplateChoice.swift \
   App/SummaryUseCase.swift App/VideoSummaryTemplate.swift App/SummaryTemplateCatalog.swift App/SummaryTemplateCatalog+Workflows.swift \

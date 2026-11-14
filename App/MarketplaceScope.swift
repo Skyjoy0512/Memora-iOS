@@ -18,4 +18,12 @@ enum MarketplaceScope: String, CaseIterable, Identifiable {
   }
 
   var title: String { section?.title ?? "マーケットプレイス" }
+  var shortTitle: String {
+    switch self {
+    case .all: "すべて"
+    case .skills: "スキル"
+    case .templates: "要約"
+    case .connectors: "コネクタ"
+    }
+  }
 }

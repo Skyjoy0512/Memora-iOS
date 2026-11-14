@@ -18,6 +18,7 @@ extension MemoraSkill {
       ("person-conversation", "人物との会話要約", "人物IDと関連記録から根拠付きの要約", ["人物", "この人"], "person")
     ]
     return specs.map { id, name, summary, keywords, icon in
+      let output = businessOutput(id)
       let mail = id == "email-draft" || id == "meeting-followup"
       let tools = ["search_records", "read_record", "read_person", "list_tasks"] +
         (mail ? ["draft_email"] : [id == "powerpoint" ? "create_slides" : "create_document"])
@@ -29,9 +30,28 @@ extension MemoraSkill {
         procedure += "まず提示された根拠パックの時系列・意思決定・関係者・数値・矛盾・未確認を読み、現在有効な決定と撤回済みの決定を分ける。過去の最終提出版があれば構成・書式・説明の深さを引き継ぎ、数値は今回の記録で確認し直す。決定者・担当・期限が記録にない場合は補完しない。"
         procedure += "次に目的・読者・判断事項・許可された材料と未確認事項を整理し、根拠に対応した主張の列を作る。次に比較・推移・内訳・因果・手順の関係を決めて型を選ぶ。1枚1メッセージ。型名をタイトルにしない。Jinbaのslide-rulesと65型の情報構造を正典とし、独自の汎用カードや箇条書きへ置き換えない。create_slidesのlayoutとcontent_jsonを使い、bulletsは空。sourcesに原資料名と参照箇所、notesに留保を残す。数値を捏造して型を埋めない。自動検査で拒否されたら上限2回まで修正し、不足材料は要確認として報告する。外部調査は依頼の範囲だけ。会社指定は元の書式を優先し、マーカー置換のみ対応の制限を伝える。標準PPTXの図表は編集可能な図形で、Officeのチャートデータ編集ではない。論理・日本語・出典は原資料と見直し、機械検査を事実確認済みと呼ばない。型対応: b01表紙、b02全体マップ、b03目次、b04章扉、b05矢羽、b06前提帰結、b07数値表、b08カード2×2、b09軸表、b10裏表紙、b11主張と図、b12効果表、b13状態ヒートマップ、b14ハーベイ評価、b15ドット割合、b16バブル行列、b17順位棒、b18散布図、b19柱と土台、b20対向矢羽、b21根拠グリッド、b22比例円、b23増減合計、b24シナリオ線、b25調査土台、b26課題施策、b27アジェンダ扉、b28スイムレーン、b29表裏、b30一問一答、m01サマリー、m02根拠整理、m03数値対比、m04KPI、m05図と示唆、m06積み上げ、m07ブリッジ、m08厳密ブリッジ、m09小図比較、m10選択肢表、m11シナリオ表、m12リスク表、m13横軸評価、m14ヒートマップ、m15軸2×2、m16プロセス観点、m17入れ子行、m18時系列行列、m19テーマ、m20提言、m21施策、m22状況課題対策、m23課題施策対応、m24原因解決、m25ツリー、m26現状目標、m27計算、m28フロー、m29循環、m30段階矢羽、m31価値連鎖、m32分岐、m33ロードマップ、m34ガント、m35意思決定。"
       }
+      procedure += "出力構成: " + output + "。各節に確認できた根拠を対応させ、資料不足の節は未確認と示す。"
       return Self(id: id, name: name, summary: summary, instructions: procedure, keywords: keywords,
         declaredToolNames: tools, declaredPermissions: ["記録の許可を個別に確認。保存・外部処理は既存の承認を使用。"],
-        version: 1, iconIdentifier: icon, scopes: [.global, .project, .record, .person], cost: .model)
+        version: 1, iconIdentifier: icon, scopes: [.global, .project, .record, .person], cost: .model,
+        category: .work, examplePrompts: ["この記録を使って「\(name)」を進めて。足りない条件は確認して"], outputDescription: output)
+    }
+  }
+
+  private static func businessOutput(_ id: String) -> String {
+    switch id {
+    case "proposal": "課題・提案・選択肢比較・費用の根拠・判断してほしい点"
+    case "executive-report": "経営向け要点・期間付き指標・前期との差・リスク・意思決定事項"
+    case "meeting-report": "会議の目的・議題別要点・決定事項・担当と期限・未決事項"
+    case "business-plan": "狙い・対象・仮説・実行手順・必要資源・検証方法"
+    case "powerpoint": "読者と判断事項・根拠に対応する各スライド・出典・編集可能なPowerPoint"
+    case "word-document": "文書の目的・見出し構成・本文と表・出典・編集可能な文書"
+    case "company-template": "原本の差し込み範囲・対応項目と不足項目・書式を保った生成ファイル"
+    case "periodic-report": "対象期間・実績と成果・計画との差・課題・次期の予定"
+    case "research-report": "調査の問い・取得済み資料・比較結果・限界・次に確認すること"
+    case "email-draft": "確認した宛先・件名・本文・依頼事項・送信前の確認点"
+    case "meeting-followup": "決定の再確認・担当別の次の行動・未決の質問・確認用メール下書き"
+    default: "対象人物の確認・本人の発言・会議全体の決定・関連記録と未確認事項"
     }
   }
 }

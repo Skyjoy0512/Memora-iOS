@@ -14,18 +14,30 @@ struct SkillDetailView: View {
     if let skill = model.skillCatalog.first(where: { $0.id == skillID }) {
       let enabled = !model.disabledSkillIDs.contains(skillID)
       let provider = skill.id.hasPrefix("custom-") ? "マイスキル" : "Memora"
+      let requirement = model.pluginCatalog().first { $0.id == "skill:" + skill.id }?.state.reason
       ScrollView {
         VStack(alignment: .leading, spacing: MemoraSpacing.section) {
           MarketplaceDetailHero(item: .skill(skill), subtitle: "提供: \(provider)") { EmptyView() }
           MarketplaceDescription(text: skill.summary)
           MarketplaceDetailFacts(fields: [
-            ("利用状況", enabled ? "有効" : "無効"), ("カテゴリー", "スキル"),
+            ("利用状況", enabled ? "有効" : "無効"), ("カテゴリー", skill.resolvedCategory.title),
             ("提供", provider), ("バージョン", String(skill.version ?? 1))
           ])
 
-          VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
-            Text("使い方").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
-            MarkdownDocumentView(markdown: skill.instructions)
+          if let output = skill.outputDescription {
+            VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+              Text("できあがるもの").font(.headline).accessibilityAddTraits(.isHeader)
+              Text(output).foregroundStyle(MemoraPalette.textSecondary)
+            }
+          }
+          if let examples = skill.examplePrompts, !examples.isEmpty {
+            VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+              Text("依頼の例").font(.headline).accessibilityAddTraits(.isHeader)
+              ForEach(examples, id: \.self) { Text($0) }
+            }
+          }
+          DisclosureGroup("詳しい手順") {
+            MarkdownDocumentView(markdown: skill.instructions).padding(.top, MemoraSpacing.md)
           }
           .textSelection(.enabled)
           SkillArticleSettings(skill: skill)
@@ -38,10 +50,18 @@ struct SkillDetailView: View {
       }
       .safeAreaInset(edge: .bottom, spacing: 0) {
         MarketplaceDetailFooter {
-          Button { useSkill() } label: {
-            MarketplaceDetailActionLabel(title: enabled ? "チャットで使用" : "有効にしてチャットで使用")
+          VStack(alignment: .leading, spacing: MemoraSpacing.sm) {
+            if let requirement {
+              Text(requirement).font(MemoraTypography.metadata).foregroundStyle(MemoraPalette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+              NavigationLink("AIとツールの設定を確認") { AISettingsView() }
+                .font(.subheadline).frame(minHeight: MemoraSpacing.touchTarget)
+            }
+            Button { useSkill() } label: {
+              MarketplaceDetailActionLabel(title: enabled ? "チャットで使用" : "有効にしてチャットで使用")
+            }
+            .accessibilityIdentifier("marketplace.detail.useSkill")
           }
-          .accessibilityIdentifier("marketplace.detail.useSkill")
         }
       }
       .background(MemoraPalette.background)

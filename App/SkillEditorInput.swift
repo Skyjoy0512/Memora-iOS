@@ -42,5 +42,7 @@ struct SkillEditorInput {
     return candidate.name != baseline.name || candidate.summary != baseline.summary
       || candidate.instructions != baseline.instructions || candidate.keywords != baseline.keywords
       || candidate.toolNames != baseline.toolNames
+      || candidate.category != baseline.category || candidate.examplePrompts != baseline.examplePrompts
+      || candidate.outputDescription != baseline.outputDescription
   }
 }

@@ -25,6 +25,17 @@ struct DiscoverySkillChecks {
     precondition(roundTrip.id == skill.id && roundTrip.instructions == skill.instructions)
     let imported = try MemoraSkillMarkdown.parse(skill.skillMarkdown, allowedTools: known)
     precondition(imported.id != skill.id && imported.name == skill.name && imported.toolNames == skill.toolNames)
+    precondition(skill.category == nil && skill.examplePrompts == nil && skill.outputDescription == nil)
+    let legacyJSON = "{\"id\":\"legacy\",\"name\":\"旧スキル\",\"summary\":\"用途\",\"instructions\":\"手順\",\"keywords\":[]}"
+    let legacySkill = try JSONDecoder().decode(MemoraSkill.self, from: Data(legacyJSON.utf8))
+    precondition(legacySkill.category == nil && legacySkill.examplePrompts == nil)
+    precondition(MemoraSkill.bundled.count == 48)
+    for original in MemoraSkill.breadthSkills {
+      let decoded = try MemoraSkillMarkdown.parse(original.skillMarkdown, allowedTools: ["search_records", "read_record"])
+      precondition(decoded.category == original.category && decoded.examplePrompts == original.examplePrompts && decoded.outputDescription == original.outputDescription)
+      precondition(Set(decoded.toolNames) == ["search_records", "read_record"])
+      precondition(MemoraSkill.automaticSelection(for: original.name, disabled: []).first?.id == original.id)
+    }
     let context = MemoraSkill.context(for: "会議のフォロー", disabled: [], budget: 300, catalog: [skill])
     precondition(context.contains("未信頼") && context.contains("実際の記録"))
     precondition(MemoraSkill.context(for: "会議", disabled: [skill.id], budget: 300, catalog: [skill]).isEmpty)

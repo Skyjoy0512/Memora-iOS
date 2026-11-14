@@ -6,7 +6,7 @@ struct MarketplaceHomeView: View {
     let skills = MemoraSkill.bundled
     let templates = SummaryTemplateCatalog.market
     let services = IntegrationCatalog.services.filter(\.isImplemented)
-    let shelfSkills = ["meeting-followup", "meeting-preparation", "proposal", "decision-timeline"]
+    let shelfSkills = ["meeting-followup", "study-quiz", "blog-outline", "packing-shopping-list"]
       .compactMap { id in skills.first { $0.id == id } }.map(MarketplaceItem.skill)
     let shelfTemplates = ["content.video", "market.regular", "market.designReview", "market.incidentReview"]
       .compactMap { id in templates.first { $0.id == id } }.map(MarketplaceItem.template)

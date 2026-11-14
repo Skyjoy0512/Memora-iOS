@@ -12,6 +12,31 @@ struct MemoraSkill: Identifiable, Codable, Sendable {
   var iconIdentifier: String?
   var scopes: [Scope]?
   var cost: Cost?
+  var category: Category? = nil
+  var examplePrompts: [String]? = nil
+  var outputDescription: String? = nil
+
+  enum Category: String, Codable, CaseIterable, Sendable {
+    case work, learning, writing, creative, life, custom
+    var title: String {
+      switch self {
+      case .work: "仕事"
+      case .learning: "学習"
+      case .writing: "執筆・発信"
+      case .creative: "創作"
+      case .life: "暮らし"
+      case .custom: "自分で作成"
+      }
+    }
+  }
+
+  var resolvedCategory: Category {
+    category ?? (id.hasPrefix("custom-") ? .custom : (["travel-plan", "journal-review"].contains(id) ? .life : .work))
+  }
+
+  var searchFields: [String] {
+    [name, summary, resolvedCategory.title, outputDescription ?? ""] + keywords + (examplePrompts ?? [])
+  }
 
   enum Scope: String, Codable, CaseIterable, Sendable { case global, project, record, person }
   enum Cost: String, Codable, Sendable { case model = "選択中のAIの料金", external = "外部処理は承認時に確認", unknown = "料金未確認" }
@@ -35,7 +60,13 @@ struct MemoraSkill: Identifiable, Codable, Sendable {
 
   // Procedures are instruction text, never executable code or permission grants.
   var skillMarkdown: String {
-    "---\nname: \(name)\ndescription: \(summary)\ntools: \(toolNames.joined(separator: ", "))\nkeywords: \(keywords.joined(separator: ", "))\npermissions: \((declaredPermissions ?? []).joined(separator: ", "))\nversion: \(version ?? 1)\nicon: \(iconIdentifier ?? "doc.text")\nscopes: \((scopes ?? [.global]).map(\.rawValue).joined(separator: ", "))\ncost: \((cost ?? .unknown).rawValue)\n---\n\n\(instructions)"
+    var metadata = "---\nname: \(name)\ndescription: \(summary)\ntools: \(toolNames.joined(separator: ", "))\nkeywords: \(keywords.joined(separator: ", "))\npermissions: \((declaredPermissions ?? []).joined(separator: ", "))\nversion: \(version ?? 1)\nicon: \(iconIdentifier ?? "doc.text")\nscopes: \((scopes ?? [.global]).map(\.rawValue).joined(separator: ", "))\ncost: \((cost ?? .unknown).rawValue)"
+    if let category { metadata += "\ncategory: " + category.rawValue }
+    if let examplePrompts, let data = try? JSONEncoder().encode(examplePrompts), let json = String(data: data, encoding: .utf8) {
+      metadata += "\nexamples: " + json
+    }
+    if let outputDescription { metadata += "\noutput: " + outputDescription }
+    return metadata + "\n---\n\n" + instructions
   }
 
   static var bundled: [MemoraSkill] {
@@ -44,7 +75,7 @@ struct MemoraSkill: Identifiable, Codable, Sendable {
       .init(id: "journal-review", name: "ジャーナル分析", summary: "記録に基づく日々の振り返り", instructions: "振り返る期間を特定し、review_periodで実際の記録を確認する。実施したことと予定を分ける。件数は検索上位から推測しない。健康や位置情報を勝手に追加しない。", keywords: ["ジャーナル", "振り返", "journal", "review"]),
       .init(id: "project-organize", name: "プロジェクト整理", summary: "既存プロジェクトと記録の整理", instructions: "list_projectsで現在の所属先を確認する。記録の根拠に基づいて整理を提案する。移動・作成は通常の承認付きツールを使う。同名のプロジェクトを無条件に増やさない。", keywords: ["プロジェクト", "整理", "project", "organize"]),
       .init(id: "travel-plan", name: "旅行計画", summary: "利用可能な資料に基づく旅行計画", instructions: "目的地・日程・制約を利用者の依頼と許可された資料から確認する。Web検索は実際に取得できた情報のみ根拠にする。予約・支払い・外部送信は行わない。不明な料金・営業時間は未確認と示す。", keywords: ["旅行", "旅程", "travel", "trip"])
-    ] + businessSkills + workflowSkills
+    ] + businessSkills + workflowSkills + breadthSkills
   }
 
   func unavailabilityReason(enabled: Bool, availableTools: Set<String>, onDeviceTools: Set<String>?) -> String? {

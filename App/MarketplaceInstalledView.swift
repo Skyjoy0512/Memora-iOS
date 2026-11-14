@@ -8,7 +8,8 @@ struct MarketplaceInstalledView: View {
   var body: some View {
     let services = IntegrationCatalog.services.filter { connectedIDs.contains($0.id) }.map(MarketplaceItem.service)
     let templates = model.installedMarketTemplates.map(MarketplaceItem.template)
-    let skills = model.skillCatalog.filter { !model.disabledSkillIDs.contains($0.id) }.map(MarketplaceItem.skill)
+    let skills = model.skillCatalog.filter { !model.disabledSkillIDs.contains($0.id) && model.skillLastSelectedAt[$0.id] != nil }
+      .sorted { model.skillLastSelectedAt[$0.id, default: .distantPast] > model.skillLastSelectedAt[$1.id, default: .distantPast] }.map(MarketplaceItem.skill)
     MarketplaceCatalogColumn {
       if !services.isEmpty {
         MarketplaceCardSection(title: "コネクタ", items: services, onConnectorDismiss: refreshConnections)
@@ -16,10 +17,10 @@ struct MarketplaceInstalledView: View {
       if !templates.isEmpty { MarketplaceCardSection(title: "要約テンプレート", items: templates) }
       if !skills.isEmpty { MarketplaceCardSection(title: "スキル", items: skills) }
       if services.isEmpty && templates.isEmpty && skills.isEmpty {
-        ContentUnavailableView("利用中の項目はありません", icon: .bag)
+        ContentUnavailableView("マイツールはまだありません", icon: .bag)
       }
     }
-    .navigationTitle("利用中")
+    .navigationTitle("マイツール")
     .navigationBarTitleDisplayMode(.inline)
     .onAppear(perform: refreshConnections)
     .onChange(of: scenePhase) { _, phase in

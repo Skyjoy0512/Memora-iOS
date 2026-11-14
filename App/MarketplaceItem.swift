@@ -34,7 +34,7 @@ enum MarketplaceItem: Identifiable {
 
   var category: String {
     switch self {
-    case .skill: "スキル"
+    case .skill(let value): value.resolvedCategory.title
     case .template(let value): value.category.title
     case .service(let value): value.isImplemented ? "連携" : "準備中"
     }

@@ -77,7 +77,7 @@ swiftc -D DEBUG App/SummaryDiagnostics.swift App/AIAnswerFailure.swift App/Agent
 "$check_dir/sse-transport"
 swiftc App/ToolInputValidator.swift App/NativeAIInterface.swift App/NativeAIComponentStream.swift tools/checks/NativeAIInterfaceChecks.swift -o "$check_dir/ui"
 "$check_dir/ui"
-swiftc App/SemanticToolDiscovery.swift App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkillMarkdown.swift tools/checks/DiscoverySkillChecks.swift -o "$check_dir/skills"
+swiftc App/SemanticToolDiscovery.swift App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkill+Breadth.swift App/MemoraSkillMarkdown.swift tools/checks/DiscoverySkillChecks.swift -o "$check_dir/skills"
 "$check_dir/skills"
 swiftc Shared/MemoraIcon.swift App/ResidentAgent.swift App/ResidentTrigger.swift App/ResidentExecutionLimits.swift tools/checks/ResidentLimitsChecks.swift -o "$check_dir/residents"
 "$check_dir/residents"

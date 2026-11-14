@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/memora-memory-artifact.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT
-swiftc Shared/MemoraIcon.swift App/AIPluginIcon.swift App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkillMarkdown.swift tools/checks/PluginIconChecks.swift -o "$check_dir/icons"
+swiftc Shared/MemoraIcon.swift App/AIPluginIcon.swift App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkill+Breadth.swift App/MemoraSkillMarkdown.swift tools/checks/PluginIconChecks.swift -o "$check_dir/icons"
 "$check_dir/icons"
 swiftc App/PersonConversationSummary.swift tools/checks/PersonSummaryChecks.swift -o "$check_dir/person"
 "$check_dir/person"

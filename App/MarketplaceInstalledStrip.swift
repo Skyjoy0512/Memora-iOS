@@ -10,22 +10,23 @@ struct MarketplaceInstalledStrip: View {
   var body: some View {
     let items = IntegrationCatalog.services.filter { connectedIDs.contains($0.id) }.map(MarketplaceItem.service)
       + model.installedMarketTemplates.map(MarketplaceItem.template)
-      + model.skillCatalog.filter { !model.disabledSkillIDs.contains($0.id) }.map(MarketplaceItem.skill)
+      + model.skillCatalog.filter { !model.disabledSkillIDs.contains($0.id) && model.skillLastSelectedAt[$0.id] != nil }
+      .sorted { model.skillLastSelectedAt[$0.id, default: .distantPast] > model.skillLastSelectedAt[$1.id, default: .distantPast] }.map(MarketplaceItem.skill)
     let visibleCount = typeSize.isAccessibilitySize ? 3 : 5
 
     VStack(alignment: .leading, spacing: MemoraSpacing.lg) {
       NavigationLink { MarketplaceInstalledView() } label: {
         HStack(spacing: MemoraSpacing.sm) {
-          Text("利用中").font(.headline)
+          Text("マイツール").font(.headline)
           Image(icon: .chevronRight, size: 12).accessibilityHidden(true)
         }
         .foregroundStyle(MemoraPalette.textSecondary)
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
       }
-      .accessibilityLabel("利用中の項目をすべて見る")
+      .accessibilityLabel("マイツールをすべて見る")
       .accessibilityAddTraits(.isHeader)
       if items.isEmpty {
-        Text("まだ利用中の項目はありません")
+        Text("使ったスキルや追加したテンプレート、接続済みのサービスが並びます")
           .font(.subheadline).foregroundStyle(MemoraPalette.textSecondary)
       } else {
         ScrollView(.horizontal) {
@@ -46,7 +47,7 @@ struct MarketplaceInstalledStrip: View {
                   .frame(minWidth: 48, minHeight: 48)
                   .background(MemoraPalette.selection, in: RoundedRectangle(cornerRadius: 12))
               }
-              .accessibilityLabel("ほか\(items.count - visibleCount)件の利用中の項目")
+              .accessibilityLabel("ほか\(items.count - visibleCount)件のマイツール")
             }
           }
         }

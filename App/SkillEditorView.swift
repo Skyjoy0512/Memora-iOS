@@ -64,6 +64,20 @@ struct SkillEditorView: View {
           Text("依頼にスキル名やキーワードが含まれると自動で選択します。@で指定するか、詳細画面の「チャットで使用」から選ぶこともできます。")
             .font(.footnote).foregroundStyle(.secondary)
         }
+        Section("見つけやすさ（任意）") {
+          Picker("用途", selection: $skill.category) {
+            Text("自分で作成").tag(Optional<MemoraSkill.Category>.none)
+            ForEach(MemoraSkill.Category.allCases.filter { $0 != .custom }, id: \.self) {
+              Text($0.title).tag(Optional($0))
+            }
+          }
+          TextField("できあがるもの", text: Binding(
+            get: { skill.outputDescription ?? "" },
+            set: { skill.outputDescription = $0.isEmpty ? nil : $0 }), axis: .vertical)
+          TextField("依頼の例（1行に1つ、3件まで）", text: Binding(
+            get: { (skill.examplePrompts ?? []).joined(separator: "\n") },
+            set: { skill.examplePrompts = $0.isEmpty ? nil : $0.components(separatedBy: "\n") }), axis: .vertical)
+        }
         Section {
           DisclosureGroup("利用するツール") {
             ForEach(tools) { tool in

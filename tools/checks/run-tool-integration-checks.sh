@@ -6,7 +6,7 @@ trap 'rm -rf "$check_dir"' EXIT
 
 swiftc App/ToolInputValidator.swift App/AIToolDefinition.swift App/AIToolRegistry.swift App/AIPluginExecutionPolicy.swift \
   App/MCPEventStream.swift App/MCPOAuthSettings.swift App/MCPServerConfig.swift App/MCPTool.swift \
-  App/MCPPublicAddressPolicy.swift App/MCPDNSLookup.swift App/MCPClientError.swift App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift \
+  App/MCPPublicAddressPolicy.swift App/MCPDNSLookup.swift App/MCPClientError.swift App/MemoraSkill.swift App/MemoraSkill+Business.swift App/MemoraSkill+Workflows.swift App/MemoraSkill+Breadth.swift \
   App/IntegrationProvider.swift App/IntegrationToolResult.swift App/IntegrationConnectionError.swift App/ComposioProvider.swift \
   tools/checks/ToolIntegrationChecks.swift -o "$check_dir/tools"
 "$check_dir/tools"

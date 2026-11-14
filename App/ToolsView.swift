@@ -30,6 +30,12 @@ struct ToolsView: View {
     .navigationTitle(section?.title ?? "マーケットプレイス")
     .navigationBarTitleDisplayMode(.inline)
     .toolbarBackground(MemoraPalette.background, for: .navigationBar)
+    .safeAreaInset(edge: .top, spacing: 0) {
+      MemoraTextTabBar(items: MarketplaceScope.allCases, selection: $scope) { $0.shortTitle }
+        .padding(.vertical, MemoraSpacing.sm)
+        .background(MemoraPalette.background)
+        .accessibilityIdentifier("marketplace.scope")
+    }
     .safeAreaInset(edge: .bottom, spacing: 0) {
       MarketplaceSearchBar(query: $query, isSearching: $isSearching,
         prompt: "\(section?.title ?? "マーケットプレイス")を検索")
@@ -38,30 +44,8 @@ struct ToolsView: View {
       ToolbarActionItem(placement: .topBarLeading) {
         ToolbarIconButton("メニュー", icon: .line3Horizontal) { onOpenSidebar() }
       }
-      ToolbarItem(placement: .principal) {
-        Menu {
-          Picker("カタログ", selection: $scope) {
-            ForEach(MarketplaceScope.allCases) { scope in
-              Text(scope.title).tag(scope)
-            }
-          }
-        } label: {
-          HStack(spacing: MemoraSpacing.xs) {
-            Text(section?.title ?? "マーケットプレイス").font(.headline)
-            Image(icon: .chevronDown, size: 12)
-              .foregroundStyle(MemoraPalette.textSecondary)
-              .accessibilityHidden(true)
-          }
-          .frame(minHeight: 44)
-          .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("カタログ、\(section?.title ?? "マーケットプレイス")")
-        .accessibilityIdentifier("marketplace.scope")
-      }
       ToolbarActionItem(usesSystemBackground: true) { MarketplaceCreationMenu(section: section) }
     }
-    .onChange(of: scope) { _, _ in query = "" }
     .onChange(of: isSearching) { _, active in model.isSearchActive = active }
     .onChange(of: model.isSearchActive) { _, active in
       if !active { isSearching = false; query = "" }

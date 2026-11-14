@@ -10,7 +10,7 @@ struct SkillsView: View {
 
   var body: some View {
     let skills = model.skillCatalog.filter {
-      query.isEmpty || ([$0.name, $0.summary] + $0.keywords).contains { $0.localizedStandardContains(query) }
+      ToolsCatalogSearch.matches(query, fields: $0.searchFields)
     }
     MemoraForm {
       Section {
